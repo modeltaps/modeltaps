@@ -1,0 +1,3 @@
+web/package.json merge=ours
+web/index.html merge=ours
+web/README.md merge=ours

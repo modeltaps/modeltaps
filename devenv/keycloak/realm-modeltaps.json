@@ -1,0 +1,53 @@
+{
+  "realm": "modeltaps",
+  "enabled": true,
+  "displayName": "Modeltaps devenv",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "verifyEmail": false,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["zh-CN", "en", "ja"],
+  "defaultLocale": "en",
+  "clients": [
+    {
+      "clientId": "modeltaps",
+      "name": "Modeltaps (devenv)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "modeltaps-devenv-secret",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "rootUrl": "${MODELTAPS_URL}",
+      "baseUrl": "${MODELTAPS_URL}",
+      "redirectUris": ["${MODELTAPS_URL}/oauth/oidc/keycloak"],
+      "webOrigins": ["${MODELTAPS_URL}"],
+      "attributes": {
+        "post.logout.redirect.uris": "${MODELTAPS_URL}/signed-out"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "modeltaps-dev",
+      "enabled": true,
+      "email": "modeltaps-dev@example.com",
+      "emailVerified": true,
+      "firstName": "Modeltaps",
+      "lastName": "Dev",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "modeltaps-dev-password",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,335 @@
+package controller
+
+import (
+	"github.com/modeltaps/modeltaps/common"
+	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/common/logger"
+	"github.com/modeltaps/modeltaps/common/notify"
+	"github.com/modeltaps/modeltaps/common/redis"
+	"github.com/modeltaps/modeltaps/common/utils"
+	"github.com/modeltaps/modeltaps/model"
+	"github.com/modeltaps/modeltaps/providers/gemini"
+	"github.com/modeltaps/modeltaps/types"
+	"fmt"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-gonic/gin"
+	"golang.org/x/sync/singleflight"
+	"gorm.io/gorm"
+)
+
+// disableNotifyDedupTTL 控制"渠道自动禁用通知"在跨节点之间的去重窗口。
+// 一次禁用动作在各节点上的并发抖动通常在秒级，5 分钟足够覆盖，
+// 又不会长到让人为重新禁用的二次通知被吞掉。
+const disableNotifyDedupTTL = 5 * time.Minute
+
+// shouldSendChannelDisableNotify 跨节点对"渠道自动禁用"通知去重：
+// 第一个 SETNX 成功的节点发邮件，其余节点静默。
+// Redis 未启用时跳过去重（同节点重复触发由 disableGroup singleflight 兜底）。
+// SETNX 抖动失败时宁可多发也不静默丢。
+func shouldSendChannelDisableNotify(channelId int) bool {
+	if !config.RedisEnabled {
+		return true
+	}
+	key := fmt.Sprintf("notify_lock:channel_disable:%d", channelId)
+	ok, err := redis.RedisSetNX(key, "1", disableNotifyDedupTTL)
+	if err != nil {
+		logger.SysError(fmt.Sprintf("notify dedup SETNX failed (channel=%d): %v", channelId, err))
+		return true
+	}
+	return ok
+}
+
+var disableGroup singleflight.Group
+
+// 正则表达式匹配特定的文件访问权限错误，这类错误不应该禁用渠道
+var fileAccessPermissionRegex = regexp.MustCompile(`You do not have permission to access the File .+ or it may not exist\.`)
+
+// 模型限制为特定客户端使用的错误，这类错误不应该禁用渠道（渠道本身没问题，只是特定模型不可用）
+var modelRestrictedRegex = regexp.MustCompile(`(?i)restricted to .+ clients only`)
+
+// sub2api 等上游对"图像生成被分组拒绝"返回 permission_error，
+// 实际只是单次请求路由错（如文字模型打到 /v1/images/generations），
+// 渠道本身没坏，不应禁用
+var imageGenNotEnabledRegex = regexp.MustCompile(`(?i)image generation is not enabled for this group`)
+
+var geminiUnrestrictedKeyWarningRegex = regexp.MustCompile(`(?i)accessing Gemini API with one or more unrestricted keys`)
+
+var geminiCallerNoPermissionRegex = regexp.MustCompile(`(?i)The caller does not have permission`)
+
+func shouldEnableChannel(err error, openAIErr *types.OpenAIErrorWithStatusCode) bool {
+	if !config.AutomaticEnableChannelEnabled {
+		return false
+	}
+	if err != nil {
+		return false
+	}
+	if openAIErr != nil {
+		return false
+	}
+	return true
+}
+
+func ShouldDisableChannel(channelType int, err *types.OpenAIErrorWithStatusCode) bool {
+	if !config.AutomaticDisableChannelEnabled || err == nil || err.LocalError {
+		return false
+	}
+
+	// 上游通过 Retry-After / RetryInfo 等机制给出了精确的恢复时间 →
+	// 视为 transient failure，交由渠道+模型粒度的冷却处理，不做永久禁用。
+	// 参考 RFC 6585 §4 / RFC 7231 §7.1.3。
+	// 这一层让位关键词匹配等启发式判定，避免日配额/分钟限流等可自愈错误被永久禁用并发邮件。
+	if err.RateLimitResetAt > time.Now().Unix() {
+		return false
+	}
+
+	// 用户在禁用关键词里显式配置的文案，优先级高于下面所有"默认豁免"白名单：
+	// 既然用户明确要禁这类消息，启发式豁免就必须让位，否则用户配了也禁不掉。
+	// 注意：关键词匹配大小写敏感，用户须按上游原文大小写配置才能命中。
+	userKeywordHit := common.DisableChannelKeywordsInstance.IsContains(err.OpenAIError.Message)
+
+	// 检查是否为特定的文件访问权限错误，这类错误不应该禁用渠道（用户显式配置可覆盖）
+	if !userKeywordHit && fileAccessPermissionRegex.MatchString(err.OpenAIError.Message) {
+		return false
+	}
+
+	// 检查是否为模型限制为特定客户端的错误，这类错误不应该禁用渠道（用户显式配置可覆盖）
+	if !userKeywordHit && modelRestrictedRegex.MatchString(err.OpenAIError.Message) {
+		return false
+	}
+
+	// 上游因图像生成未开放返回的 permission_error 只是单次请求级别的能力限制，渠道本身没坏（用户显式配置可覆盖）
+	if !userKeywordHit && imageGenNotEnabledRegex.MatchString(err.OpenAIError.Message) {
+		return false
+	}
+
+	// Gemini 未限制 key 的过渡期预告警告（403），渠道本身没坏，不应禁用（必须放在 403 状态码规则之前；用户显式配置可覆盖）
+	if !userKeywordHit && geminiUnrestrictedKeyWarningRegex.MatchString(err.OpenAIError.Message) {
+		return false
+	}
+
+	// Gemini/GCP 代理层抖动成片返回的 403 caller 权限错，多为 transient 级联，默认不永久禁用（必须放在 403 状态码规则之前；用户显式配置可覆盖）
+	if !userKeywordHit && geminiCallerNoPermissionRegex.MatchString(err.OpenAIError.Message) {
+		return false
+	}
+
+	// CachedContent 引用失效，渠道本身没坏，不应禁用（必须放在 403 状态码规则之前；用户显式配置可覆盖）
+	if !userKeywordHit && strings.Contains(err.OpenAIError.Message, gemini.CachedContentNotFoundMsg) {
+		return false
+	}
+
+	// 状态码检查（在关键词 / code / type 之上；白名单短路已在前面处理）
+	if err.StatusCode == http.StatusUnauthorized {
+		return true
+	}
+	// 403 Forbidden 自动禁用（Gemini, Codex, GeminiCli, ClaudeCode）
+	if err.StatusCode == http.StatusForbidden {
+		switch channelType {
+		case config.ChannelTypeGemini, config.ChannelTypeCodex, config.ChannelTypeGeminiCli, config.ChannelTypeClaudeCode:
+			return true
+		}
+	}
+
+	// 禁用关键词检查（命中结果已在前面白名单判定时算过，直接复用）
+	if userKeywordHit {
+		return true
+	}
+
+	// 错误代码检查
+	switch err.OpenAIError.Code {
+	case "invalid_api_key", "account_deactivated", "billing_not_active":
+		return true
+	}
+
+	// 错误类型检查
+	switch err.OpenAIError.Type {
+	case "insufficient_quota", "authentication_error", "permission_error", "forbidden":
+		return true
+	}
+
+	switch err.OpenAIError.Param {
+	case "PERMISSIONDENIED":
+		return true
+	}
+
+	return false
+}
+
+// disable & notify
+func DisableChannel(channelId int, channelName string, reason string, sendNotify bool) {
+	key := fmt.Sprintf("disable_channel_%d", channelId)
+
+	// 使用 singleflight 确保同一渠道的并发禁用请求只执行一次
+	_, err, _ := disableGroup.Do(key, func() (interface{}, error) {
+		// 检查渠道当前状态，避免重复禁用和重复发送邮件
+		channel, err := model.GetChannelById(channelId)
+		if err != nil {
+			return nil, err
+		}
+
+		// 如果渠道已经被禁用，不需要重复操作
+		if channel.Status == config.ChannelStatusAutoDisabled || channel.Status == config.ChannelStatusManuallyDisabled {
+			return nil, nil
+		}
+
+		// 执行禁用操作
+		model.UpdateChannelStatusById(channelId, config.ChannelStatusAutoDisabled)
+
+		// 发送通知：受全局开关控制，并通过 SETNX 在多节点间去重。
+		// reason 可能来自上游 err.Message,可能包含 URL/IP/api_key 等敏感串,
+		// 通知会直达运维收件人,这里强制脱敏。
+		if sendNotify && config.AutomaticDisableChannelNotifyEnabled && shouldSendChannelDisableNotify(channelId) {
+			subject := fmt.Sprintf("Channel \"%s\" (#%d) has been disabled", channelName, channelId)
+			content := fmt.Sprintf("Channel \"%s\" (#%d) has been disabled. Reason: %s", channelName, channelId, utils.MaskSensitiveInfo(reason))
+			notify.Send(subject, content)
+		}
+
+		return nil, nil
+	})
+
+	// 处理错误
+	if err != nil {
+		logger.SysError(fmt.Sprintf("DisableChannel failed for channel %d: %v", channelId, err))
+	}
+}
+
+// enable & notify
+func EnableChannel(channelId int, channelName string, sendNotify bool) {
+	model.UpdateChannelStatusById(channelId, config.ChannelStatusEnabled)
+	if !sendNotify {
+		return
+	}
+
+	subject := fmt.Sprintf("Channel \"%s\" (#%d) has been enabled", channelName, channelId)
+	content := fmt.Sprintf("Channel \"%s\" (#%d) has been enabled", channelName, channelId)
+	notify.Send(subject, content)
+}
+
+func RelayNotFound(c *gin.Context) {
+	err := types.OpenAIError{
+		Message: fmt.Sprintf("Invalid URL (%s %s)", c.Request.Method, c.Request.URL.Path),
+		Type:    "invalid_request_error",
+		Param:   "",
+		Code:    "",
+	}
+	c.JSON(http.StatusNotFound, gin.H{
+		"error": err,
+	})
+}
+
+// apiPathHints 用于在 SPA 兜底路由里判定"这明显是一次 API 调用走错了地址"。
+var apiPathHints = []string{"/chat/", "/completions", "/messages", "/models", "/embeddings", "/responses", "/images/"}
+
+// IsLikelyAPIRequest 判断未匹配到任何路由的请求是否更像一次 API 调用而非前端页面刷新。
+// 命中任一即视为 API：非 GET/HEAD 方法；Accept/Content-Type 含 application/json；
+// 或路径包含常见 API 片段。前端 SPA 刷新（GET + text/html）不会命中，仍回 index.html。
+func IsLikelyAPIRequest(c *gin.Context) bool {
+	if c.Request.Method != http.MethodGet && c.Request.Method != http.MethodHead {
+		return true
+	}
+	if strings.Contains(c.GetHeader("Content-Type"), "application/json") ||
+		strings.Contains(c.GetHeader("Accept"), "application/json") {
+		return true
+	}
+	path := c.Request.URL.Path
+	for _, hint := range apiPathHints {
+		if strings.Contains(path, hint) {
+			return true
+		}
+	}
+	return false
+}
+
+// RelayAPINotFound 针对"明显是 API 调用但走错地址"的未匹配请求返回 OpenAI 风格 JSON 404，
+// 并在缺少 /v1 前缀时提示正确路径，避免客户端收到 200+HTML 被解析成"空流"。
+func RelayAPINotFound(c *gin.Context) {
+	path := c.Request.URL.Path
+	message := fmt.Sprintf("Invalid URL (%s %s)", c.Request.Method, path)
+	if !strings.HasPrefix(path, "/v1/") && path != "/v1" {
+		message = fmt.Sprintf("%s. Did you mean /v1%s? The Base URL should end with /v1.", message, path)
+	}
+	c.JSON(http.StatusNotFound, gin.H{
+		"error": types.OpenAIError{
+			Message: message,
+			Type:    "invalid_request_error",
+		},
+	})
+}
+
+// oauthUsernameMaxRunes 对齐 model.User.Username 的 `max=12` 校验；validator 的 max 对
+// 字符串按 rune 计数，这里同样按 rune 截断。
+const oauthUsernameMaxRunes = 12
+
+// sanitizeOAuthUsername 把第三方身份源给出的登录名裁成可作本地用户名的形态：
+// 登录解析按「标识符含 @ 即按邮箱查」显式分列，用户名一旦带 @ 就永远无法用用户名登录，
+// 因此只取 @ 之前的部分；再按 rune 截到 oauthUsernameMaxRunes 以满足 users.username 的
+// max=12 校验，最后去掉首尾空白。裁剪后为空时返回空串，由调用方走随机用户名兜底。
+func sanitizeOAuthUsername(name string) string {
+	name = strings.TrimSpace(name)
+	if i := strings.Index(name, "@"); i >= 0 {
+		name = name[:i]
+	}
+	if runes := []rune(name); len(runes) > oauthUsernameMaxRunes {
+		name = string(runes[:oauthUsernameMaxRunes])
+	}
+	return strings.TrimSpace(name)
+}
+
+// oauthUsername 为第三方登录注册生成本地用户名：取外部登录名 @ 之前的部分并截到 12 个 rune，
+// 为空或已被占用时退回 "<prefix>_<下一个用户 id>"（沿用 GitHub 注册既有的兜底写法）。
+func oauthUsername(externalName, fallbackPrefix string) string {
+	name := sanitizeOAuthUsername(externalName)
+	if name == "" || model.IsUsernameAlreadyTaken(name) {
+		name = fallbackPrefix + "_" + strconv.Itoa(model.GetMaxUserId()+1)
+	}
+	return name
+}
+
+// validateAndUseInviteCodeForOAuth 为第三方登录验证和使用邀请码
+// 返回值：inviteCode string, error
+func validateAndUseInviteCodeForOAuth(c *gin.Context, tx *gorm.DB) (string, error) {
+	// 如果未启用邀请码注册，直接返回
+	if !config.InviteCodeRegisterEnabled {
+		return "", nil
+	}
+
+	session := sessions.Default(c)
+	inviteCodeInterface := session.Get("oauth_invite_code")
+	if inviteCodeInterface == nil {
+		return "", fmt.Errorf("NEED_INVITE_CODE:Sign-up requires an invite code. Please provide one.")
+	}
+
+	// 安全的类型断言
+	inviteCode, ok := inviteCodeInterface.(string)
+	if !ok {
+		return "", fmt.Errorf("Invalid invite code format")
+	}
+
+	if inviteCode == "" {
+		return "", fmt.Errorf("Invite code is required")
+	}
+
+	// 验证邀请码
+	if err := model.CheckInviteCode(inviteCode); err != nil {
+		return "", err
+	}
+
+	// 在事务中使用邀请码
+	if err := model.UseInviteCodeWithTx(tx, inviteCode); err != nil {
+		return "", err
+	}
+
+	// 清除会话中的邀请码信息
+	session.Delete("oauth_invite_code")
+	if err := session.Save(); err != nil {
+		// 记录日志但不影响主流程
+		logger.SysError("Failed to save session after clearing invite code: " + err.Error())
+	}
+
+	return inviteCode, nil
+}

@@ -1,0 +1,31 @@
+version: 2
+# Security updates only: open-pull-requests-limit 0 turns off routine version-update PRs,
+# while Dependabot security PRs (enabled in the repository's security settings) still use
+# the commit-message prefixes below.
+updates:
+  # Workflow actions, including the SHA-pinned ones (Dependabot rewrites both the
+  # SHA and the trailing version comment).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    commit-message:
+      prefix: "ci"
+
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    commit-message:
+      prefix: "deps"
+
+  # pnpm workspace (web, docs, ittest/authgear): the single pnpm-lock.yaml lives at the root.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    commit-message:
+      prefix: "deps(web)"

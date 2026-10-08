@@ -1,0 +1,41 @@
+# 与主 Dockerfile 保持一致的运行时基线,唯一区别:不在此编译,而是 COPY workflow
+# 预编译好的、按 TARGETARCH 命名的二进制(保留与 workflow 的 ARG 契约)。
+# alpine:3.24
+FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+
+ARG TARGETARCH
+
+# 静态 OCI 元数据;动态 revision/version 由 workflow 的 docker/metadata-action 注入。
+LABEL org.opencontainers.image.source="https://github.com/modeltaps/modeltaps" \
+      org.opencontainers.image.description="Modeltaps — multi-provider AI gateway with organization/multi-tenant layer" \
+      org.opencontainers.image.licenses="AGPL-3.0-only"
+
+RUN apk update \
+    && apk upgrade \
+    && apk add --no-cache ca-certificates tzdata \
+    && update-ca-certificates 2>/dev/null || true
+
+# 专用非 root 用户,固定 UID/GID=10001,与主 Dockerfile 一致。
+RUN addgroup -g 10001 modeltaps && \
+    adduser -D -H -u 10001 -G modeltaps modeltaps
+
+COPY modeltaps-$TARGETARCH /modeltaps
+# 预编译产物可能缺少可执行位,显式补齐。
+RUN chmod 0755 /modeltaps
+
+# /data 为运行时工作目录,归属非 root 用户。
+# 迁移提示:现有部署若以 root 属主创建了宿主 ./data 挂载卷,切换到本镜像后
+# 容器内 modeltaps(10001) 将无写权限。请在宿主执行 `chown -R 10001:10001 ./data`,
+# 或在 compose 中用 `user: "0:0"` 覆盖回 root(不推荐)。
+RUN mkdir -p /data && chown -R modeltaps:modeltaps /data
+
+EXPOSE 3000
+WORKDIR /data
+USER modeltaps
+
+# busybox wget 探活 /api/status。默认端口 3000;env 形式的 PORT 覆盖会同步生效,
+# 经配置文件设置的 port 则不会被感知(仍打 3000),需相应调整或改用 compose healthcheck。
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider "http://localhost:${PORT:-3000}/api/status" || exit 1
+
+ENTRYPOINT ["/modeltaps"]

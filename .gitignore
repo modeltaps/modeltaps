@@ -1,0 +1,28 @@
+.idea
+.vscode
+upload
+*.exe
+*.db
+build
+*.db-journal
+logs
+data
+tmp/
+/test/
+ittest/*
+!ittest/authgear/
+.env
+.env.deploy
+common/balancer/
+config.yaml
+dist
+test.yaml
+_output
+.DS_Store
+/modeltaps
+# Key material must never be committed
+*.pem
+*.key
+.wrangler/
+# Commit convention toolchain dependencies at the repo root (commitlint + husky)
+/node_modules/

@@ -1,0 +1,13 @@
+# Used instead of the root .dockerignore when building with docs/Dockerfile
+# (context: repository root). Only the workspace manifests and docs/ are sent;
+# dependencies and build caches are regenerated inside the image.
+*
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!docs
+docs/node_modules
+docs/.vitepress/cache
+docs/.vitepress/dist
+docs/Dockerfile
+docs/Dockerfile.dockerignore

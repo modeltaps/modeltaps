@@ -1,0 +1,180 @@
+/**
+ * 主题色：黑白单色体系
+ * 默认主题的 brand 色是 indigo，会渗透到按钮、链接、侧边栏与搜索高亮。
+ * 这里把 brand 收敛为亮色近黑 / 暗色近白，与黑白品牌资产保持一致。
+ */
+:root {
+  --vp-c-brand-1: #1b1b1f;
+  --vp-c-brand-2: #3c3c43;
+  --vp-c-brand-3: #1b1b1f;
+  --vp-c-brand-soft: rgba(60, 60, 67, 0.12);
+
+  --vp-button-brand-border: transparent;
+  --vp-button-brand-text: #ffffff;
+  --vp-button-brand-bg: #1b1b1f;
+  --vp-button-brand-hover-border: transparent;
+  --vp-button-brand-hover-text: #ffffff;
+  --vp-button-brand-hover-bg: #3c3c43;
+  --vp-button-brand-active-border: transparent;
+  --vp-button-brand-active-text: #ffffff;
+  --vp-button-brand-active-bg: #000000;
+
+  --vp-home-hero-name-color: var(--vp-c-brand-1);
+  --vp-home-hero-name-background: transparent;
+}
+
+.dark {
+  --vp-c-brand-1: #e4e4e7;
+  --vp-c-brand-2: #fafafa;
+  --vp-c-brand-3: #e4e4e7;
+  --vp-c-brand-soft: rgba(228, 228, 231, 0.16);
+
+  --vp-button-brand-text: #1b1b1f;
+  --vp-button-brand-bg: #e4e4e7;
+  --vp-button-brand-hover-text: #1b1b1f;
+  --vp-button-brand-hover-bg: #fafafa;
+  --vp-button-brand-active-text: #1b1b1f;
+  --vp-button-brand-active-bg: #ffffff;
+}
+
+/* 单色体系下活动态与正文颜色接近，补一层字重区分，避免仅靠颜色传达状态。 */
+.VPSidebarItem.is-active > .item > .link .text,
+.VPDocAsideOutline .outline-link.active {
+  font-weight: 600;
+}
+
+/**
+ * 首页 hero 品牌组合
+ * 默认主题只渲染 "Modeltaps" 文字，这里在名称前内联图形标构成品牌锁定组合。
+ * 图形标用 mask + background-color 上色，明暗主题自动跟随 brand 色。
+ */
+:root {
+  --modeltaps-hero-mark-size: 40px;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --modeltaps-hero-mark-size: 48px;
+  }
+}
+
+@media (min-width: 960px) {
+  :root {
+    --modeltaps-hero-mark-size: 56px;
+  }
+}
+
+/* 名称与标语两行贴得过近，补一档行间距让品牌组合有呼吸感。 */
+.VPHero .heading {
+  row-gap: 8px;
+}
+
+@media (min-width: 640px) {
+  .VPHero .heading {
+    row-gap: 12px;
+  }
+}
+
+@media (min-width: 960px) {
+  .VPHero .heading {
+    row-gap: 16px;
+  }
+}
+
+.VPHero .name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  /* 取消默认的 background-clip: text，避免伪元素被裁剪成文字形状 */
+  background: transparent;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentColor;
+  color: var(--vp-c-brand-1);
+}
+
+.VPHero .name::before {
+  content: '';
+  flex: none;
+  width: var(--modeltaps-hero-mark-size);
+  height: var(--modeltaps-hero-mark-size);
+  background-color: var(--vp-c-brand-1);
+  -webkit-mask: url('/brand-mark.svg') center / contain no-repeat;
+  mask: url('/brand-mark.svg') center / contain no-repeat;
+}
+
+/**
+ * 首页 hero 配图
+ * 默认主题按方形插画（absolute + 320/392px）定位，这里改为按 3:2 配图自然排布。
+ */
+:root {
+  --modeltaps-hero-art-width: 288px;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --modeltaps-hero-art-width: 320px;
+  }
+}
+
+@media (min-width: 960px) {
+  :root {
+    --modeltaps-hero-art-width: 420px;
+  }
+}
+
+/**
+ * 默认主题在 <960px 时把配图排在文字块之前（order: 1），首屏先看到插画。
+ * 这里改成文字优先：名称 → 标语 → tagline → 按钮 → 配图。
+ */
+.VPHero .main {
+  order: 1;
+}
+
+.VPHero .image {
+  order: 2;
+  margin: 48px auto 0;
+}
+
+.VPHero .image-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--modeltaps-hero-art-width);
+  height: auto;
+  transform: none;
+}
+
+.VPHero .image-src {
+  position: static;
+  width: var(--modeltaps-hero-art-width);
+  height: auto;
+  max-width: var(--modeltaps-hero-art-width);
+  max-height: none;
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
+  transform: none;
+}
+
+.VPHero .image-bg {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  .VPHero .name {
+    justify-content: flex-start;
+  }
+
+  .VPHero .container {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .VPHero .image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+  }
+}

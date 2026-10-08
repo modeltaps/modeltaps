@@ -1,0 +1,246 @@
+package common
+
+import (
+	"bytes"
+	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/common/logger"
+	"github.com/modeltaps/modeltaps/types"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
+)
+
+// readBody 读取请求体，使用读穿缓存保证全链路只读一次 c.Request.Body
+// 首次调用从 HTTP 流读取并缓存到 GinRequestBodyKey；后续调用直接返回缓存
+func readBody(c *gin.Context) ([]byte, error) {
+	if cached, exists := c.Get(config.GinRequestBodyKey); exists {
+		if data, ok := cached.([]byte); ok && data != nil {
+			return data, nil
+		}
+	}
+
+	// body 为 nil 时（如渠道测试用 http.NewRequest(..., nil) 构造的伪请求）直接返回空字节，
+	// 避免 buf.ReadFrom(nil) 触发 nil-pointer panic。上层透传逻辑读到空 body 会回退结构体序列化。
+	if c.Request == nil || c.Request.Body == nil {
+		c.Set(config.GinRequestBodyKey, []byte{})
+		return []byte{}, nil
+	}
+
+	size := c.Request.ContentLength
+	if size <= 0 || size > 100<<20 {
+		size = 512
+	}
+	buf := bytes.NewBuffer(make([]byte, 0, size))
+	if _, err := buf.ReadFrom(c.Request.Body); err != nil {
+		return nil, err
+	}
+	c.Request.Body.Close()
+
+	data := buf.Bytes()
+	c.Set(config.GinRequestBodyKey, data)
+	return data, nil
+}
+
+// ReadBodyRaw 只读取请求体原始 bytes 并缓存到 context，不做 JSON 反序列化
+// 适用于大 payload 场景（如含 base64 图片的 Gemini 请求），避免 json.Unmarshal 对所有字符串的内存分配
+func ReadBodyRaw(c *gin.Context) ([]byte, error) {
+	return readBody(c)
+}
+
+func UnmarshalBodyReusable(c *gin.Context, v any) error {
+	requestBody, err := readBody(c)
+	if err != nil {
+		return err
+	}
+
+	// JSON 请求：直接从 []byte 反序列化，避免创建中间 bytes.Buffer
+	contentType := c.ContentType()
+	if contentType == "" || strings.Contains(contentType, "json") {
+		if err = json.Unmarshal(requestBody, v); err != nil {
+			return err
+		}
+		if err = binding.Validator.ValidateStruct(v); err != nil {
+			if errs, ok := err.(validator.ValidationErrors); ok {
+				return fmt.Errorf("field %s is required", errs[0].Field())
+			}
+			return err
+		}
+		return nil
+	}
+
+	// 非 JSON（multipart、form 等）：回退到 ShouldBind
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
+	err = c.ShouldBind(v)
+	if err != nil {
+		if errs, ok := err.(validator.ValidationErrors); ok {
+			return fmt.Errorf("field %s is required", errs[0].Field())
+		}
+		return err
+	}
+	return nil
+}
+
+// 已知安全的网络错误短标识：仅追加这些固定短词到客户端可见消息，避免泄露 URL/IP/Key
+var safeNetErrPatterns = []string{
+	"no such host",
+	"connection refused",
+	"connection reset by peer",
+	"context deadline exceeded",
+	"TLS handshake timeout",
+	"handshake failure",
+	"unrecognized name",
+	"tunnel failed",
+	"Bad Gateway",
+	"i/o timeout",
+	"use of closed network connection",
+	"PROTOCOL_ERROR",
+	"internal error",
+	"EOF",
+}
+
+// SafeNetErrHint 从错误文本中匹配一个已知安全的网络错误短标识：命中白名单返回该短词，
+// 否则返回空串。供各 provider 在不泄露 URL/IP/Key 的前提下，向客户端暴露可读的网络失败原因。
+func SafeNetErrHint(errString string) string {
+	for _, p := range safeNetErrPatterns {
+		if strings.Contains(errString, p) {
+			return p
+		}
+	}
+	return ""
+}
+
+func ErrorWrapper(err error, code string, statusCode int) *types.OpenAIErrorWithStatusCode {
+	errString := "error"
+	if err != nil {
+		errString = err.Error()
+	}
+
+	if strings.Contains(errString, "Post") || strings.Contains(errString, "dial") {
+		logger.SysError(fmt.Sprintf("error: %s", errString))
+		errString = "Upstream request failed"
+		if hint := SafeNetErrHint(err.Error()); hint != "" {
+			errString = "Upstream request failed: " + hint
+		}
+	}
+
+	return StringErrorWrapper(errString, code, statusCode)
+}
+
+func ErrorWrapperLocal(err error, code string, statusCode int) *types.OpenAIErrorWithStatusCode {
+	openaiErr := ErrorWrapper(err, code, statusCode)
+	openaiErr.LocalError = true
+	return openaiErr
+}
+
+func ErrorToOpenAIError(err error) *types.OpenAIError {
+	// type 用 system_error 而非品牌名（SEC-14）：该错误经 provider errChan 后由
+	// responseStreamClient/responseGeneralStreamClient 以 err.Error() 全量 JSON 直写 SSE，不经 FilterOpenAIErr。
+	return &types.OpenAIError{
+		Code:    "system error",
+		Message: err.Error(),
+		Type:    "system_error",
+	}
+}
+
+func StringErrorWrapper(err string, code string, statusCode int) *types.OpenAIErrorWithStatusCode {
+	openAIError := types.OpenAIError{
+		Message: err,
+		Type:    "modeltaps_error",
+		Code:    code,
+	}
+	return &types.OpenAIErrorWithStatusCode{
+		OpenAIError: openAIError,
+		StatusCode:  statusCode,
+	}
+}
+
+func StringErrorWrapperLocal(err string, code string, statusCode int) *types.OpenAIErrorWithStatusCode {
+	openaiErr := StringErrorWrapper(err, code, statusCode)
+	openaiErr.LocalError = true
+	return openaiErr
+
+}
+
+// UpstreamUnavailableError 构造"渠道整体不可用"类的 LocalError，专供 FilterOpenAIErr 坍缩使用。
+//
+// 之所以单独封装：StringErrorWrapper 把 Type 硬编码为 modeltaps_error，第二参数赋给 Code；
+// 而 FilterOpenAIErr 的 collapse 路由依赖 Type == "upstream_unavailable" 作为内部 sentinel。
+// 调用方手工补一行 openaiErr.OpenAIError.Type = "upstream_unavailable" 容易漏写或拼错，
+// 因此把 sentinel 字符串和赋值步骤封进这里，唯一入口。
+//
+// 客户端永远看不到 Type=upstream_unavailable —— 要么被 collapse 改写成 system_error +
+// service_unavailable/rate_limit_exceeded，要么走 fall-through 段的 type 改写兜底。
+// Code 这里给 service_unavailable 是防御性默认值（万一某天有路径绕过 collapse），
+// 行业语义安全，不暴露上游身份。
+func UpstreamUnavailableError(msg string) *types.OpenAIErrorWithStatusCode {
+	e := StringErrorWrapperLocal(msg, "service_unavailable", http.StatusServiceUnavailable)
+	e.OpenAIError.Type = "upstream_unavailable"
+	return e
+}
+
+// ModelNotFoundError 构造 OpenAI 标准 model_not_found 错误（404 / invalid_request_error）。
+// 文案对齐 OpenAI 官方，不暴露内部分组结构。Type 非 upstream_unavailable，不触发 FilterOpenAIErr collapse。
+func ModelNotFoundError(modelName string) *types.OpenAIErrorWithStatusCode {
+	msg := fmt.Sprintf("The model `%s` does not exist or you do not have access to it.", modelName)
+	e := StringErrorWrapperLocal(msg, "model_not_found", http.StatusNotFound)
+	e.OpenAIError.Type = "invalid_request_error"
+	return e
+}
+
+func AbortWithMessage(c *gin.Context, statusCode int, message string) {
+	// type 用 system_error 而非品牌名（SEC-14）：此函数不经 FilterOpenAIErr，直出客户端。
+	c.JSON(statusCode, gin.H{
+		"error": gin.H{
+			"message": message,
+			"type":    "system_error",
+		},
+	})
+	c.Abort()
+	logger.LogError(c.Request.Context(), message)
+}
+
+func AbortWithErr(c *gin.Context, statusCode int, err error) {
+	c.JSON(statusCode, err)
+	c.Abort()
+	logger.LogError(c.Request.Context(), err.Error())
+}
+
+func APIRespondWithError(c *gin.Context, status int, err error) {
+	c.JSON(status, gin.H{
+		"success": false,
+		"message": err.Error(),
+	})
+}
+
+func StringRerankErrorWrapper(err string, code string, statusCode int) *types.RerankErrorWithStatusCode {
+	rerankError := types.RerankError{
+		Detail: err,
+	}
+	return &types.RerankErrorWithStatusCode{
+		RerankError: rerankError,
+		StatusCode:  statusCode,
+	}
+}
+
+func StringRerankErrorWrapperLocal(err string, code string, statusCode int) *types.RerankErrorWithStatusCode {
+	rerankError := StringRerankErrorWrapper(err, code, statusCode)
+	rerankError.LocalError = true
+	return rerankError
+
+}
+
+func OpenAIErrorToRerankError(err *types.OpenAIErrorWithStatusCode) *types.RerankErrorWithStatusCode {
+	return &types.RerankErrorWithStatusCode{
+		RerankError: types.RerankError{
+			Detail: err.Message,
+		},
+		StatusCode: err.StatusCode,
+		LocalError: err.LocalError,
+	}
+}

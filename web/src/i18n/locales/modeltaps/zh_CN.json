@@ -1,0 +1,1018 @@
+{
+  "channelPage": {
+    "stats": {
+      "all": "全部",
+      "enabled": "已启用",
+      "manual": "已禁用",
+      "auto": "自动禁用"
+    },
+    "searchPlaceholder": "搜索渠道名称或标签",
+    "openModels": "查看模型",
+    "enabledColumn": "启用",
+    "batchStatusFailed": "{{count}} 个渠道操作失败",
+    "emptyTitle": "还没有渠道",
+    "emptyDescription": "添加一个上游供应商的 key，模型才能被调用。"
+  },
+  "apiCatalogPage": {
+    "endpoints": "接口端点",
+    "examples": "请求示例",
+    "models": "可用模型",
+    "playground": "在线试用",
+    "docs": "查看完整文档",
+    "copied": "已复制",
+    "copyFailed": "复制失败",
+    "keyHint": "示例中的 sk-YOUR_TOKEN 为占位符，请替换为你在「API Key」页创建的 Key。",
+    "chat": {
+      "apiName": "对话 API",
+      "intro": "以 OpenAI、Claude、Gemini 三套兼容协议调用对话模型，同一把 Key 通用。",
+      "capabilities": {
+        "text": {
+          "title": "文本生成",
+          "desc": "用 OpenAI 兼容的 chat/completions 接口生成文本回复。"
+        },
+        "streaming": {
+          "title": "流式输出",
+          "desc": "以 SSE 逐段返回，边生成边展示。"
+        },
+        "reasoning": {
+          "title": "推理",
+          "desc": "让模型先思考再回答，可按需调节推理强度。"
+        },
+        "structured": {
+          "title": "结构化输出",
+          "desc": "用 JSON Schema 约束回复结构，直接得到可解析的 JSON。"
+        },
+        "tools": {
+          "title": "工具调用",
+          "desc": "声明函数让模型按需调用，拿到结构化的调用参数。"
+        },
+        "vision": {
+          "title": "图片理解",
+          "desc": "在消息里传入图片 URL，让模型读图作答。"
+        },
+        "files": {
+          "title": "文件输入",
+          "desc": "在消息里传入 PDF 等文件，让模型基于文档作答。"
+        },
+        "responses": {
+          "title": "Responses API",
+          "desc": "OpenAI 新版 Responses 接口，单次调用即可处理多段输入。"
+        },
+        "claude": {
+          "title": "Claude 兼容",
+          "desc": "以 Anthropic Messages 协议调用，SDK 只需改 base_url。"
+        },
+        "gemini": {
+          "title": "Gemini 兼容",
+          "desc": "以 Google GenAI 协议调用，SDK 只需改 base_url。"
+        }
+      }
+    },
+    "image": {
+      "apiName": "图像 API",
+      "intro": "生成、编辑图像，或把图片作为输入让模型读图作答，同一把 Key 通用。",
+      "capabilities": {
+        "generations": {
+          "title": "图像生成 · Images API",
+          "desc": "OpenAI 标准写法，调用 /v1/images/generations 直接拿到图片。"
+        },
+        "chatGenerations": {
+          "title": "图像生成 · Chat 写法",
+          "desc": "在 chat/completions 里声明 modalities: [\"image\", \"text\"]，由对话模型输出图片。",
+          "note": "modalities 与响应里的 message.images 是 OpenRouter 风格扩展，不是 OpenAI 标准字段。"
+        },
+        "edits": {
+          "title": "图像编辑 · Images API",
+          "desc": "OpenAI 标准写法，上传原图与提示词，返回编辑后的图片。"
+        },
+        "chatEdits": {
+          "title": "图像编辑 · Chat 写法",
+          "desc": "在 chat/completions 里同时传入原图与提示词，让模型输出编辑后的图片。",
+          "note": "modalities 与响应里的 message.images 是 OpenRouter 风格扩展，不是 OpenAI 标准字段。"
+        },
+        "vision": {
+          "title": "图片理解",
+          "desc": "在消息里传入图片 URL，让模型读图作答。"
+        }
+      },
+      "endpoints": {
+        "recraftGenerations": "Recraft 文生图",
+        "recraftVectorize": "转换为矢量图",
+        "recraftRemoveBackground": "去除背景",
+        "recraftClarityUpscale": "清晰度放大",
+        "recraftGenerativeUpscale": "生成式放大",
+        "mjImagine": "提交绘图任务",
+        "mjChange": "对已有任务执行放大 / 变体",
+        "mjBlend": "多图混合",
+        "mjDescribe": "图生文描述",
+        "mjFetch": "查询任务状态"
+      },
+      "extras": {
+        "title": "其他兼容入口",
+        "hint": "厂商专有写法，按需使用",
+        "recraft": "Recraft",
+        "midjourney": "Midjourney",
+        "midjourneyTasks": "任务记录见日志页 → Midjourney"
+      }
+    },
+    "speech": {
+      "apiName": "音频 API",
+      "intro": "以 OpenAI 兼容协议完成语音合成与语音识别，也可在对话接口里直接传入音频、让模型用语音回答。",
+      "capabilities": {
+        "tts": {
+          "title": "语音合成（TTS）",
+          "desc": "把文本合成为语音文件，可指定音色与输出格式。"
+        },
+        "stt": {
+          "title": "语音识别（STT）",
+          "desc": "上传音频文件，转写为文本。"
+        },
+        "audioInput": {
+          "title": "音频输入理解",
+          "desc": "在对话消息里传入音频，让模型听音作答。"
+        },
+        "audioOutput": {
+          "title": "音频输出对话",
+          "desc": "让对话模型在文本之外同时返回语音回复。"
+        },
+        "realtime": {
+          "title": "实时语音",
+          "desc": "通过 WebSocket 建立实时语音会话，兼容 OpenAI Realtime 写法。"
+        }
+      },
+      "extras": {
+        "title": "其他兼容入口",
+        "suno": "Suno",
+        "endpoints": {
+          "sunoMusic": "提交音乐生成任务",
+          "sunoLyrics": "提交歌词生成任务",
+          "sunoFetch": "批量查询任务",
+          "sunoFetchById": "按 ID 查询任务"
+        },
+        "tasks": "任务记录见日志页 → 异步任务"
+      }
+    },
+    "video": {
+      "apiName": "视频 API",
+      "intro": "以 Gemini 兼容协议传入视频让模型理解内容；视频生成走「创建任务 → 轮询状态 → 取回文件」三步接口。",
+      "capabilities": {
+        "understanding": {
+          "title": "视频理解",
+          "desc": "以 Gemini 兼容协议在请求里传入视频内容，让模型看视频作答。",
+          "note": "视频输入走 Gemini 兼容协议：OpenAI 兼容的 chat/completions 没有视频 content part，网关不会转发。"
+        },
+        "generation": {
+          "title": "视频生成",
+          "desc": "提交生成任务后轮询状态，完成后取回视频文件。"
+        }
+      },
+      "extras": {
+        "title": "其他兼容入口",
+        "kling": "Kling",
+        "veo": "Gemini 原生 Veo",
+        "endpoints": {
+          "klingText2video": "文生视频，提交后返回任务 ID",
+          "klingImage2video": "图生视频，提交后返回任务 ID",
+          "klingFetchText2video": "查询文生视频任务",
+          "klingFetchImage2video": "查询图生视频任务",
+          "veoPredict": "Gemini 原生 Veo 长任务接口"
+        },
+        "tasks": "任务记录见日志页 → 异步任务"
+      }
+    },
+    "model": "模型",
+    "modelCount_other": "{{count}} 个可用模型",
+    "noModels": "暂无可用模型",
+    "availabilityUnknown": "可用性未知",
+    "comingSoon": "即将上线",
+    "recommended": "推荐模型",
+    "contextLength": "上下文长度",
+    "inputPrice": "输入价格",
+    "outputPrice": "输出价格",
+    "priceNote": "价格按基准分组（倍率 x1）折算，实际价格以你所属分组为准。",
+    "viewModel": "查看模型",
+    "openPlayground": "在试用区打开",
+    "overview": {
+      "title": "API 概览",
+      "intro": "一把 Key 调用对话、图像、音频、视频四类模型，兼容 OpenAI、Claude、Gemini 三套协议。",
+      "quickstart": "快速开始",
+      "viewApi": "查看接口",
+      "links": {
+        "title": "相关链接",
+        "models": "模型广场",
+        "modelsDesc": "查看全部可用模型与分组价格。",
+        "keys": "API Key",
+        "keysDesc": "创建与管理调用所需的密钥。",
+        "docs": "开发文档",
+        "docsDesc": "接入指南与完整接口说明。"
+      }
+    },
+    "loadFailed": "可用模型列表加载失败，页面展示的可用性可能不准确。",
+    "retry": "重试"
+  },
+  "playground": {
+    "curlHint": "sk-YOUR_TOKEN 为占位符",
+    "errors": {
+      "request": "请求失败。",
+      "unauthorized": "试用 Key 被拒绝，请确认账户仍有访问权限。",
+      "notFound": "接口或模型不存在。",
+      "rateLimited": "请求过于频繁，请稍后再试。",
+      "upstream": "上游供应商返回错误。",
+      "upstreamAuth": "上游渠道认证失败，请联系管理员检查渠道配置。",
+      "network": "无法连接到网关。",
+      "aborted": "请求已停止。",
+      "keyFailed": "试用 Key 准备失败。"
+    },
+    "audio": {
+      "stt": {
+        "errors": {
+          "missingFile": "请先选择一个音频文件。",
+          "unsupportedType": "该文件不是受支持的音频格式。",
+          "tooLarge": "音频文件需小于等于 25 MB。"
+        }
+      }
+    },
+    "picker": {
+      "title": "选择模型",
+      "searchPlaceholder": "搜索模型或供应商…",
+      "hideUnavailable": "隐藏不可用",
+      "allProviders": "全部",
+      "unknownProvider": "未知供应商",
+      "available": "可用",
+      "degraded": "降级",
+      "unavailable": "不可用",
+      "noChannel": "无可用渠道",
+      "channels": "{{count}} 渠道",
+      "priceUnknown": "价格未配置",
+      "perCall": "按次",
+      "columns": {
+        "unit": "价格 / 1M tokens",
+        "context": "上下文",
+        "input": "输入",
+        "output": "输出"
+      },
+      "priceNote": "价格为每 1M tokens 的输入 / 输出单价，按次计费只给单次价，图像 / 语音按目录单位计；点击渠道数展开同模型的其他渠道报价。",
+      "selectedCount": "已选 {{count}} 个",
+      "empty": "没有匹配的模型",
+      "loadFailed": "模型列表加载失败"
+    }
+  },
+  "playgroundConsole": {
+    "comingSoonDesc": "视频控制台还没上线，先看接口文档接入。",
+    "viewDocs": "接口文档",
+    "run": "运行",
+    "modality": {
+      "chat": "对话",
+      "image": "图像",
+      "audio": "语音",
+      "compare": "对比",
+      "video": "视频"
+    },
+    "tabs": {
+      "chat": "对话",
+      "form": "表单"
+    },
+    "state": {
+      "loading": "正在加载模型目录…"
+    },
+    "model": {
+      "pick": "选择模型",
+      "none": "暂无模型"
+    },
+    "noModels": {
+      "title": "暂无可用的{{modality}}模型",
+      "adminDesc": "当前没有渠道提供{{modality}}模型，去渠道管理添加或启用一个渠道后再回来。",
+      "adminAction": "去渠道管理",
+      "userDesc": "你所在的分组还没有开放{{modality}}模型，可先看看可用模型列表，或联系管理员开通。",
+      "userAction": "查看可用模型",
+      "transcription": {
+        "title": "当前站点没有接入语音转文字模型",
+        "adminDesc": "还没有任何模型声明语音转文字（audio.transcription）接口。去渠道管理接入一个提供转写模型的渠道，或在管理端的模型目录里给已有转写模型勾选 audio.transcription 接口。",
+        "userDesc": "当前站点还没有接入语音转文字（转写）模型，暂时无法在这里转写音频。可先看看可用模型列表，或联系管理员接入转写模型。",
+        "userChatDesc": "当前站点还没有接入语音转文字（转写）模型。可以改用能听懂音频的对话模型：在对话页上传音频，让模型帮你整理成文字。",
+        "userChatAction": "去对话页"
+      }
+    },
+    "gate": {
+      "org": "试用区只覆盖个人 API Key。",
+      "orgAction": "切回个人上下文",
+      "chatDisabled": "站点已关闭内置试用区。",
+      "chatDisabledAction": "查看接口示例"
+    },
+    "chat": {
+      "clear": "清空",
+      "viewCode": "查看代码",
+      "codeTitle": "示例代码",
+      "params": "参数",
+      "reasoning": "思考过程 · {{parts}} 段",
+      "waiting": "等待首个 token…",
+      "empty": {
+        "title": "从示例开始对话",
+        "subtitle": "挑一个场景看它的提示词与参数，再改成你自己的。"
+      },
+      "tags": {
+        "code": "代码",
+        "stream": "流式输出",
+        "json": "JSON 输出",
+        "reasoning": "思考",
+        "longContext": "长上下文",
+        "data": "数据",
+        "translate": "翻译"
+      },
+      "examples": {
+        "stream": {
+          "title": "流式调用",
+          "desc": "最短可运行的 Python 流式请求",
+          "prompt": "用 Python 流式调用 /v1/chat/completions，给最短可运行版本"
+        },
+        "schema": {
+          "title": "JSON 转类型",
+          "desc": "把接口回包转成 TypeScript 类型",
+          "prompt": "把这段 JSON 转成带类型标注的 TypeScript interface（贴在下一行）："
+        },
+        "debug": {
+          "title": "排查 429",
+          "desc": "解释限流原因并给出重试配置",
+          "prompt": "解释这次请求为什么返回 429，以及网关侧该怎么配重试"
+        },
+        "review": {
+          "title": "代码审查",
+          "desc": "按「问题 · 影响 · 修法」逐条过一遍",
+          "prompt": "审查下面这段代码，按「问题 · 影响 · 修法」逐条列出："
+        },
+        "summarize": {
+          "title": "长文摘要",
+          "desc": "压成若干条要点",
+          "prompt": "把下面这段文档压成 5 条要点，每条不超过 20 字："
+        },
+        "extract": {
+          "title": "结构化抽取",
+          "desc": "从自由文本里抽出字段",
+          "prompt": "从下面这段文本里抽出公司、金额、日期三个字段，以 JSON 返回："
+        },
+        "sql": {
+          "title": "自然语言转 SQL",
+          "desc": "按表结构生成查询",
+          "prompt": "表 orders(id, user_id, amount, created_at)，写一条查询：统计最近 7 天每天的订单数与总金额"
+        },
+        "translate": {
+          "title": "技术文档翻译",
+          "desc": "保留术语与代码块原文",
+          "prompt": "把下面这段英文技术文档翻成中文，保留专有名词与代码块原文："
+        }
+      },
+      "meta": {
+        "generating": "生成中",
+        "firstToken": "首 token {{value}}",
+        "tokensUnit": "tokens",
+        "interrupted": "已中断"
+      },
+      "actions": {
+        "code": "查看该条代码",
+        "copy": "复制",
+        "rerun": "重跑"
+      },
+      "composer": {
+        "placeholder": "问模型点什么",
+        "attach": "附件"
+      },
+      "settings": {
+        "system": "系统提示词",
+        "systemPlaceholder": "可选，例如：回答尽量给出可直接运行的代码",
+        "temperature": "温度",
+        "topP": "Top P",
+        "maxTokens": "最大 tokens",
+        "seed": "种子",
+        "thinking": "启用思考",
+        "reasoningEffort": "思考深度",
+        "reasoningEffortOptions": {
+          "default": "默认",
+          "low": "低",
+          "medium": "中",
+          "high": "高"
+        },
+        "thinkingBudget": "思考预算",
+        "stream": "流式输出",
+        "jsonMode": "JSON 模式"
+      }
+    },
+    "stop": "停止",
+    "fields": {
+      "size": "尺寸",
+      "count": "张数",
+      "countHint": "范围 1–4，默认 1。",
+      "quality": "质量",
+      "style": "风格",
+      "responseFormat": "响应格式",
+      "responseFormatHint": "url 返回直链，b64_json 返回内联字节。",
+      "voice": "音色",
+      "speed": "语速",
+      "speedHint": "范围 0.25–4.0，默认 1.0。",
+      "format": "格式",
+      "language": "语言",
+      "languagePlaceholder": "如 zh、en（留空自动识别）",
+      "sttPrompt": "提示词",
+      "sttPromptPlaceholder": "补充专有名词，提高识别准确度",
+      "granularity": "时间戳粒度"
+    },
+    "result": {
+      "title": "结果",
+      "empty": "还没有结果。",
+      "waiting": "正在生成…",
+      "status": {
+        "idle": "空闲",
+        "running": "生成中",
+        "done": "完成",
+        "error": "失败"
+      },
+      "tabs": {
+        "preview": "Preview",
+        "json": "JSON"
+      }
+    },
+    "code": {
+      "copy": "复制",
+      "copied": "已复制",
+      "sync": "随运行设置实时同步",
+      "keyHint": "sk-YOUR_TOKEN 为占位符，真实 Key 不进页面。"
+    },
+    "image": {
+      "reference": "参考图（可选）",
+      "referenceHint": "点击上传 · png / jpg / webp ≤ 8MB",
+      "clearReference": "移除参考图",
+      "chatBadge": "对话出图",
+      "noImage": "模型没有返回图片，可在 JSON 里查看完整回包。",
+      "download": "下载",
+      "downloadAll": "全部下载",
+      "errors": {
+        "missingFile": "请先选择参考图。",
+        "unsupportedType": "只支持 png / jpeg / webp。",
+        "tooLarge": "参考图不能超过 8MB。"
+      },
+      "clear": "清空",
+      "viewCode": "查看代码",
+      "codeTitle": "示例代码",
+      "params": "参数",
+      "composer": {
+        "placeholder": "想生成什么图像？"
+      },
+      "empty": {
+        "title": "从模板开始出图",
+        "subtitle": "挑一个模板看它的提示词与参数，再改成你自己的。"
+      },
+      "examples": {
+        "poster": {
+          "title": "活动海报",
+          "desc": "竖版主视觉，留出标题位",
+          "prompt": "一张科技发布会主视觉海报，深蓝渐变背景，几何光线，中央留出放标题的空白区域"
+        },
+        "product": {
+          "title": "产品图",
+          "desc": "纯色背景的商品摆拍",
+          "prompt": "一只白色陶瓷马克杯的产品图，浅灰纯色背景，柔和顶光，轻微投影，电商主图风格"
+        },
+        "portrait": {
+          "title": "人像写真",
+          "desc": "柔光棚拍，浅景深",
+          "prompt": "一位年轻女性的棚拍半身人像，柔光箱布光，浅景深，自然肤色，胶片质感"
+        },
+        "illustration": {
+          "title": "儿童插画",
+          "desc": "扁平配色的故事插图",
+          "prompt": "一只小狐狸提着灯笼穿过秋天的森林，扁平插画风格，暖色调，柔和纹理"
+        },
+        "icon": {
+          "title": "应用图标",
+          "desc": "一次出四版可挑选",
+          "prompt": "一个天气应用的图标，圆角方形，太阳与云朵的简洁符号，渐变蓝色，扁平设计"
+        },
+        "landscape": {
+          "title": "宽幅风景",
+          "desc": "横版自然场景",
+          "prompt": "清晨的山谷，云海漫过山脊，远处雪峰被日出染成金色，广角，超写实"
+        }
+      }
+    },
+    "audio": {
+      "tts": "文字转语音",
+      "stt": "语音转文字",
+      "viewCode": "查看代码",
+      "codeTitle": "示例代码",
+      "pickExample": "选一个示例生成",
+      "customText": "或输入任意文本",
+      "examples": {
+        "support": {
+          "label": "客服",
+          "text": "您好，这里是 Modeltaps 客服。您的工单已经受理，我们会在一个工作日内给您回复。"
+        },
+        "sales": {
+          "label": "销售",
+          "text": "感谢您关注 Modeltaps。企业版支持私有部署与专属额度，方便的话我们约个时间细聊。"
+        },
+        "podcast": {
+          "label": "播客",
+          "text": "欢迎收听本期节目。今天我们聊聊怎么用一个网关同时接入多家模型供应商。"
+        },
+        "announcement": {
+          "label": "公告",
+          "text": "系统将于本周六凌晨两点例行维护，预计三十分钟，期间接口可能短暂波动。"
+        },
+        "meditation": {
+          "label": "冥想",
+          "text": "请找一个舒服的姿势坐下，慢慢吸气，再缓缓呼出，把注意力放回到呼吸上。"
+        }
+      },
+      "generate": "生成语音",
+      "play": "播放",
+      "pause": "暂停",
+      "seek": "跳到指定位置",
+      "searchVoices": "搜索音色",
+      "noVoiceMatch": "没有匹配的音色",
+      "otherLanguage": "其他",
+      "gender": {
+        "neutral": "中性",
+        "male": "男声",
+        "female": "女声"
+      },
+      "tags": {
+        "broadcast": "播报",
+        "support": "客服",
+        "audiobook": "有声书",
+        "ad": "广告"
+      },
+      "input": "要朗读的文本",
+      "inputPlaceholder": "输入要合成的文本",
+      "download": "下载 {{format}}",
+      "unplayable": "浏览器无法直接播放 {{format}}，请下载后用播放器打开",
+      "sttTitle": "上传音频转写",
+      "dropHint": "拖放音频到这里，或点击上传",
+      "uploadHint": "mp3 / wav / m4a ≤ 25MB",
+      "transcribe": "转写",
+      "startRecord": "开始录音",
+      "stopRecord": "停止录音",
+      "transcript": "转写结果",
+      "upload": "上传音频",
+      "sttEmpty": "选择音频开始转写"
+    },
+    "compare": {
+      "addColumn": "添加列",
+      "removeColumn": "删除此列",
+      "column": "列 {{index}}",
+      "override": "覆盖",
+      "overrideCount": "覆盖 {{count}} 项",
+      "emptyColumn": "发送后这一列的回复会出现在这里",
+      "pickModel": "先在列头选择模型",
+      "placeholder": "输入一条消息，同时发给各列模型",
+      "stopAll": "全部停止",
+      "syncOn": "同步输入",
+      "syncOff": "仅激活列"
+    }
+  },
+  "nav_subtitles": {
+    "playground": "对话、图像、语音与多模型对比的在线试运行",
+    "api_audio": "在文字与语音之间转换",
+    "api_compare": "多个对话模型并排，同一条输入同时发出",
+    "pricing": "模型目录、价格、渠道与厂商"
+  },
+  "api_compare": "对比",
+  "modelInfoPage": {
+    "price": "价格",
+    "notInCatalog": "未入目录",
+    "setPrice": "设置价格",
+    "deletePrice": "删除价格",
+    "deleteCatalog": "删除目录条目",
+    "noChannel": "无渠道",
+    "columns": "列",
+    "modalities": "模态",
+    "sectionBasic": "基本信息",
+    "sectionEndpoints": "接口与能力",
+    "sectionLimits": "模态与上限",
+    "sectionPrice": "价格",
+    "sectionSource": "来源与同步时间",
+    "priceEmptyTip": "尚未定价；填写价格后保存即新建价格，留空则不定价。",
+    "catalogNotSaved": "目录信息未保存：{{message}}",
+    "priceNotSaved": "价格未保存：{{message}}"
+  },
+  "pricingPage": {
+    "catalogTabs": {
+      "models": "模型",
+      "vendors": "厂商"
+    }
+  },
+  "listPage": {
+    "searchPlaceholder": "搜索",
+    "clearSearch": "清除搜索",
+    "selected": "已选 {{count}} 项",
+    "selectedOf": "已选 {{count}}",
+    "clearSelection": "取消选择",
+    "clearFilters": "清除筛选",
+    "emptyTitle": "暂无数据",
+    "noMatchTitle": "没有匹配的结果",
+    "noMatchDescription": "换个关键词，或减少筛选条件试试。",
+    "pageOf": "第 {{page}} / {{pages}} 页",
+    "firstPage": "第一页",
+    "prevPage": "上一页",
+    "nextPage": "下一页",
+    "lastPage": "最后一页"
+  },
+  "pricing": "模型",
+  "modelsPage": {
+    "addVendor": "添加厂商",
+    "aliasTo": "别名 → {{model}}",
+    "batchDeleteConfirm": "确定删除选中的 {{count}} 项?此操作不可撤销。",
+    "batchDeleteFailed": "{{count}} 项删除失败",
+    "batchHide": "批量隐藏",
+    "batchShow": "批量显示",
+    "billing": "计费方式",
+    "billingNone": "未定价",
+    "billingTimes": "按次",
+    "billingTokens": "按 Token",
+    "channelCount": "{{count}} 个渠道",
+    "channelsTab": "渠道与分组",
+    "columnsShort": "列",
+    "copyName": "复制模型名",
+    "editProfile": "编辑资料",
+    "emptyDescription": "渠道里配置的模型会自动出现在这里;也可以手动新建目录条目。",
+    "emptyTitle": "还没有模型",
+    "export": "导出 JSON",
+    "labeling": "标注",
+    "moreActions": "更多操作",
+    "onlyUsable": "只看完整可用",
+    "priceHeader": "价格 / 1{{unit}} tokens",
+    "priceUnitToggle": "点击切换为每 1{{unit}} tokens 计价",
+    "priceIn": "输入",
+    "priceOut": "输出",
+    "searchPlaceholder": "搜索模型名、别名、标签",
+    "searchVendors": "搜索厂商名或 Slug",
+    "setPrice": "定价",
+    "sync": "同步",
+    "syncGroup": "上游同步",
+    "unbound": "未绑定",
+    "vendorModelCount": "模型数",
+    "visibility": "可见性",
+    "visibleNeedsCatalog": "需先建目录条目才能控制可见性",
+    "visibleNo": "隐藏",
+    "visibleToUsers": "对用户可见",
+    "visibleYes": "可见",
+    "sheet": {
+      "availableGroups": "可用分组",
+      "channelsReadonly": "渠道与分组为只读,需在渠道页修改",
+      "goChannels": "前往渠道页",
+      "groupCount": "{{count}} 个分组",
+      "groups": "分组",
+      "noChannelHint": "暂无启用的渠道提供该模型,用户将无法调用。",
+      "openChannel": "打开渠道 {{name}}",
+      "priorityWeight": "优先级 / 权重",
+      "providingChannels": "提供渠道({{count}})",
+      "routingHint": "请求按优先级从高到低路由,同优先级按权重分流。",
+      "status": "状态",
+      "tabPricing": "定价",
+      "tabProfile": "资料"
+    },
+    "stats": {
+      "all": "全部",
+      "usable": "完整可用",
+      "nochannel": "无渠道",
+      "unpriced": "未定价",
+      "hidden": "已隐藏"
+    },
+    "status": {
+      "ok": "可用",
+      "nochannel": "无渠道",
+      "unpriced": "未定价"
+    }
+  },
+  "brandIconPicker": {
+    "mode": {
+      "auto": "自动：按厂商名称、标识或域名解析",
+      "builtin": "内置图标",
+      "upload": "已上传的图标"
+    },
+    "chooseBuiltin": "选择内置图标",
+    "searchBuiltin": "搜索图标",
+    "noBuiltin": "没有匹配的图标",
+    "upload": "上传",
+    "uploadSuccess": "图标已上传",
+    "uploadTooLarge": "图标不能超过 256 KB",
+    "resetAuto": "恢复自动",
+    "refresh": "刷新",
+    "refreshDone": "已刷新 {{domain}} 的图标",
+    "refreshNotFound": "未找到 {{domain}} 的图标",
+    "librarySynced": "图标库已同步"
+  },
+  "modelOwnedby": {
+    "iconTip": "留空则自动解析；也可选择内置图标或上传图标（SVG / PNG / JPEG / GIF / WebP / ICO，不超过 256 KB）。不支持填写外部链接。"
+  },
+  "channel_edit": {
+    "icon": "图标",
+    "iconTip": "按渠道类型与 API 地址自动解析；刷新会重新抓取 API 地址所在站点的图标。"
+  },
+  "brandIconSettings": {
+    "title": "品牌图标",
+    "description": "厂商与渠道图标来自内嵌的 lobehub 图标库；可在后台自动同步新版本，并为未知厂商抓取站点图标。浏览器始终只从本站加载图标。",
+    "syncEnabled": "自动同步图标库",
+    "syncEnabledDescription": "每 24 小时从 npm registry 检查 @lobehub/icons-static-svg 新版本，校验通过后切换；失败时继续使用当前版本",
+    "faviconFetchEnabled": "抓取未知厂商图标",
+    "faviconFetchEnabledDescription": "保存厂商或渠道时，若没有内置图标，则由服务器抓取其站点 favicon 并缓存",
+    "registry": "npm registry 地址",
+    "registryDescription": "同步图标库使用的 npm registry，留空则使用 npmmirror"
+  },
+  "userPage": {
+    "statsAll": "全部",
+    "statsEnabled": "已启用",
+    "statsDisabled": "已禁用",
+    "statsAdmin": "管理员",
+    "statsNoOidc": "未绑 OIDC",
+    "orgFilterLabel": "组织",
+    "org": "组织",
+    "shadowAccount": "影子账户",
+    "balance": "余额",
+    "neverLoggedIn": "从未登录",
+    "statusEnabled": "启用",
+    "statusDisabled": "已禁用",
+    "enableSwitch": "启用",
+    "moreActions": "更多操作",
+    "selectAll": "全选本页",
+    "batchEnable": "启用",
+    "batchDisable": "禁用",
+    "batchDeleteConfirm": "确定删除选中的 {{count}} 个用户？此操作不可撤销。",
+    "batchFailed": "{{count}} 个用户操作失败",
+    "emptyTitle": "还没有用户",
+    "emptyDescription": "开放注册或手动新建用户后会显示在这里。",
+    "searchShort": "搜索 ID、用户名、邮箱"
+  },
+  "command": {
+    "search": "搜索"
+  },
+  "common": {
+    "error": "出错了",
+    "close": "关闭",
+    "copySucceeded": "复制成功！",
+    "copyNamedSuccess": "复制{{name}}成功！",
+    "copyFailedManual": "复制失败，请手动复制：",
+    "copyNamedFailed": "复制{{name}}失败，请手动复制："
+  },
+  "Log Context": "日志上下文",
+  "View Context": "查看上下文",
+  "Regex": "正则",
+  "Enter regular expression...": "输入正则表达式…",
+  "chrome": {
+    "menu": "菜单",
+    "collapseSidebar": "收起侧栏",
+    "expandSidebar": "展开侧栏"
+  },
+  "notice": {
+    "announcement": "公告"
+  },
+  "channelForm": {
+    "label": {
+      "name": "渠道名称",
+      "type": "渠道类型",
+      "base_url": "渠道API地址",
+      "key": "密钥",
+      "other": "其他参数",
+      "proxy": "代理地址",
+      "test_model": "测速模型",
+      "models": "模型",
+      "model_mapping": "模型映射关系",
+      "model_headers": "自定义模型请求头",
+      "header_override": "请求头透传",
+      "custom_parameter": "额外参数",
+      "groups": "用户组",
+      "only_chat": "仅支持聊天",
+      "tag": "标签",
+      "pre_cost": "预计费选项",
+      "disabled_stream": "禁用流式的模型",
+      "compatible_response": "兼容Response API",
+      "allow_extra_body": "允许额外字段透传",
+      "pass_through_body": "请求体完整透传",
+      "apiVersion": "默认 API 版本",
+      "pluginParams": "插件参数",
+      "version": "版本号",
+      "region": "位置/区域",
+      "projectIdOptional": "Project ID（可选）"
+    },
+    "prompt": {
+      "type": "请选择渠道类型",
+      "name": "请为渠道命名",
+      "base_url": "可空，请输入中转API地址，例如通过cloudflare中转。支持使用{model}变量，例如：https://api.example.com/v1/{model}/chat",
+      "key": "请输入渠道对应的鉴权密钥",
+      "proxy": "单独设置代理地址，支持http和socks5，例如：http://127.0.0.1:1080,代理地址中可以通过 `%s` 作为会话标识占位符，程序中检测到有占位符会根据Key生成唯一会话标识符进行替换",
+      "test_model": "用于测试使用的模型，为空时无法测速,如：gpt-3.5-turbo，仅支持chat模型",
+      "models": "请选择该渠道所支持的模型,你也可以输入通配符*来匹配模型，例如：gpt-3.5*，表示支持所有gpt-3.5开头的模型，*号只能在最后一位使用，前面必须有字符，例如：gpt-3.5*是正确的，*gpt-3.5是错误的",
+      "model_mapping": "模型映射：每行将「用户请求的模型名」转发为「上游真实模型名」（如 opus-latest → claude-opus-4.8）。默认按上游真实模型计费；勾选「按传入计费」则改为按请求名计费（需先在「模型价格」给请求名配价）。",
+      "model_headers": "自定义模型请求头，例如：{\"key\": \"value\"}",
+      "header_override": "将客户端请求头透传至上游。值支持固定值、{api_key}（渠道密钥）、{client_header:X-Request-Id}（取客户端同名请求头）；键填 * 透传全部客户端请求头，键以 re: 或 regex: 开头按正则透传匹配的请求头。注意：鉴权头由渠道自身处理，不会被覆盖；键名建议使用标准 Header 大小写（如 X-Request-Id），避免同名头大小写不一致。",
+      "custom_parameter": "支持通过 JSON 注入额外参数（可嵌套）。可用控制项：overwrite：设为 true 覆盖同名字段，未设置或 false 时仅补充缺失字段；per_model：设为 true 后按模型名进行参数覆盖，如 {\"per_model\":true,\"gpt-3.5-turbo\":{\"temperature\": 0.7},\"gpt-4\":{\"temperature\": 0.5}}；pre_add：设为 true 时在请求入口即完成参数覆盖，否则会在发送请求前再进行参数覆盖，适用于所有渠道（含 Claude、Gemini），如 {\"pre_add\":true,\"overwrite\":true,\"stream\":false}。",
+      "groups": "请选择该渠道所支持的用户组",
+      "only_chat": "如果选择了仅支持聊天，那么遇到有函数调用的请求会跳过该渠道",
+      "provider_models_list": "必须填写所有数据后才能获取模型列表",
+      "tag": "你可以为你的渠道打一个标签，打完标签后，可以通过标签进行批量管理渠道，注意：设置标签后某些设置只能通过渠道标签修改，无法在渠道列表中修改。",
+      "pre_cost": "这里选择预计费选项，用于预估费用，如果你觉得计算图片占用太多资源，可以选择关闭图片计费。但是请注意：有些渠道在stream下是不会返回tokens的，这会导致输入tokens计算错误。",
+      "disabled_stream": "这里填写禁用流式的模型，注意：如果填写了禁用流式的模型，那么这些模型在流式请求时会跳过该渠道",
+      "allow_extra_body": "开启后，将会透传用户请求中的额外字段（如OpenAI SDK的extra_body参数），适用于需要传递自定义参数到上游API的场景",
+      "pass_through_body": "开启后，将客户端请求体原样转发至上游，仅改写映射后的模型名，保留未知字段与原始字节；适用于同协议透明代理场景。注意：仅对 OpenAI 协议渠道生效（Claude、Gemini 等自建请求体的渠道不读取该项）；开启后将跳过额外字段合并（仅渠道额外参数仍以字节方式生效）。",
+      "enterValue": "请填写{{name}}",
+      "apiVersionExample": "请输入默认API版本，例如：{{example}}",
+      "keyFormat": "按照如下格式输入：{{format}}",
+      "keyFormatExample": "按照如下格式输入：{{format}}，例如：{{example}}",
+      "keyFormatBaidu": "按照如下格式输入：APIKey|SecretKey, 如果开启了OpenAI API，请直接输入APIKEY",
+      "keyFormatAws": "按照如下格式输入：Region|AccessKeyID|SecretAccessKey|SessionToken 其中SessionToken可不填空",
+      "format": "格式：{{format}}",
+      "dashscopePlugin": "请输入插件参数，即 X-DashScope-Plugin 请求头的取值",
+      "versionExample": "请输入版本号，例如：{{example}}",
+      "speechRegion": "请输入你 Speech Studio 的位置/区域，例如：eastasia",
+      "proxyKey": "密钥填写{{service}}的密钥，如果没有设置密钥，可以随便填",
+      "proxyAddress": "地址填写{{service}}部署的地址",
+      "cozeModels": "模型名称为coze-{bot_id}，你也可以直接使用 coze-* 通配符来匹配所有coze开头的模型",
+      "cozeMapping": "模型名称映射， 你可以取一个容易记忆的名字来代替coze-{bot_id}，例如：{\"coze-translate\": \"coze-xxxxx\"},注意：如果使用了模型映射，那么上面的模型名称必须使用映射前的名称，上述例子中，你应该在模型中填入coze-translate(如果已经使用了coze-*，可以忽略)。",
+      "ollamaUrl": "请输入你部署的Ollama地址，例如：http://127.0.0.1:11434，如果你使用了cloudflare Zero Trust，可以在下方插件填入授权信息",
+      "anyValue": "请随意填写",
+      "keySeeDocs": "请参考文档获取 key。",
+      "keySeeUrl": "密钥信息请参考{{url}}",
+      "vertexRegion": "Region|ProjectID 或 Region1|Region2|Region3|ProjectID（支持多个Region随机选择）",
+      "siliconflowUrl": "官方api地址https://api.siliconflow.com即将停用，请使用https://api.siliconflow.cn",
+      "oauthJson": "请输入完整的 OAuth2 凭证 JSON，或点击下方\"OAuth 授权\"按钮自动获取",
+      "claudeOauth": "请输入 access_token（sk-ant-sid01-xxx）或完整的 OAuth2 凭证 JSON，也可点击下方\"OAuth 授权\"按钮自动获取",
+      "gcpProjectId": "请输入 Google Cloud Project ID，例如：my-project-123",
+      "projectIdOptional": "可选，留空将自动检测或随机生成。例如：my-project-123",
+      "vertexExpressKey": "请输入 API Key（从 Google Cloud Console 获取）"
+    },
+    "fetchModelsFrom": "从{{source}}获取模型列表",
+    "fetchModelsFromChannel": "从渠道获取模型列表",
+    "fetchAzureDeployments": "从Azure获取已部署模型列表"
+  },
+  "channelPlugin": {
+    "enable": "启用",
+    "useOpenaiApi": {
+      "name": "使用OpenAI API",
+      "enableDescNoPlugins": "是否启用使用OpenAI API, 开启用直接使用{{vendor}}官方兼容OpenAI的API，不再做类型转换, 且上述插件无效",
+      "enableDesc": "是否启用使用OpenAI API, 开启用直接使用{{vendor}}官方兼容OpenAI的API，不再做类型转换"
+    },
+    "webSearch": {
+      "name": "网页搜索",
+      "description": "使用网页搜索功能，对用户输入的内容进行搜索",
+      "enableDesc": "是否启用网页搜索"
+    },
+    "retrieval": {
+      "name": "知识库",
+      "description": "请前往开放平台的知识库上传文档，然后使用知识库功能进行检索。",
+      "knowledgeId": {
+        "name": "知识库ID",
+        "description": "当涉及到知识库ID时，请前往开放平台的知识库模块进行创建或获取(是知识库ID不是文档ID！)"
+      },
+      "promptTemplate": {
+        "name": "知识库模板",
+        "description": "请求模型时的知识库模板, 请查看文档填写，否则不用填写"
+      }
+    },
+    "webBrowser": {
+      "name": "搜索工具",
+      "description": "使用搜索工具功能，仅glm-4-alltools有效",
+      "enableDesc": "是否启用搜索工具"
+    },
+    "drawingTool": {
+      "name": "绘图工具",
+      "description": "使用绘图工具功能，仅glm-4-alltools有效",
+      "enableDesc": "是否启用绘图工具"
+    },
+    "codeInterpreter": {
+      "name": "代码工具",
+      "description": "使用代码工具功能，仅glm-4-alltools有效",
+      "sandbox": {
+        "name": "沙盒模式",
+        "description": "auto 自动调用沙盒环境执行代码，none 不启用沙盒环境，必填"
+      }
+    },
+    "voice": {
+      "name": "声音映射",
+      "azureDescription": "将OpenAI的声音角色映射到azure的声音角色, 如果有role，请用|隔开，例如zh-CN-YunxiNeural|boy",
+      "minimaxDescription": "将OpenAI的声音角色映射到minimax的声音角色, 如果有emotion，请用|隔开，例如female-chengshu|happy",
+      "mappingName": "{{voice}} 映射",
+      "defaultValue": "默认 {{value}}"
+    },
+    "headers": {
+      "name": "Header 配置",
+      "description": "本配置主要是用于使用cloudflare Zero Trust将端口暴露到公网时，需要配置的header"
+    },
+    "codeExecution": {
+      "name": "代码执行",
+      "description": "使用代码执行功能，开启后，计算tokens不准确，建议个人使用开启",
+      "enableDesc": "是否启用代码执行"
+    },
+    "codex": {
+      "name": "Codex 设置",
+      "description": "Codex 渠道专属配置",
+      "imagesMainModel": {
+        "name": "图像编排模型",
+        "description": "生图请求使用的 Responses 编排模型（不是图像模型本身）。留空使用默认的 gpt-5.6-luna；上游下线该模型时，可改为账号支持的文本模型"
+      }
+    },
+    "customize": {
+      "name": "自定义参数",
+      "description": "你可以自定义每个请求的地址，空为默认值，disable为禁用该请求",
+      "endpointName": "{{endpoint}}地址",
+      "endpointDefault": "默认为： {{path}}"
+    },
+    "override": {
+      "name": "覆盖参数",
+      "provider": "供应商"
+    },
+    "promptCaching": {
+      "name": "Prompt Caching 自动注入",
+      "description": "自动注入 cache_control 启用 Anthropic Prompt Caching。请求已自带 cache_control 时不注入（用户显式优先）。",
+      "enabled": {
+        "name": "启用方式",
+        "description": "inherit 跟随运营设置中的全局开关；on 强制开启；off 强制关闭",
+        "inherit": "inherit（跟随全局）",
+        "on": "on（强制开启）",
+        "off": "off（强制关闭）"
+      },
+      "ttl": {
+        "name": "缓存 TTL",
+        "description": "缓存有效期，1h 会自动附加 extended-cache-ttl beta 头",
+        "5m": "5 分钟",
+        "1h": "1 小时"
+      },
+      "strategy": {
+        "name": "注入策略",
+        "description": "system 仅注入 system 末尾；system+last_user 同时注入最后一条 user 消息末尾",
+        "systemLastUser": "system + 最后一条 user"
+      },
+      "matchMode": {
+        "name": "模型识别方式",
+        "description": "auto 按内置 Anthropic 命名规则识别（基于模型映射后的上游模型名）；custom 仅匹配下方通配符列表；regex 按自定义正则匹配；auto+custom 取内置规则与自定义规则（通配符/正则）的并集",
+        "auto": "auto（内置 claude 规则）",
+        "custom": "custom（自定义通配符）",
+        "regex": "regex（自定义正则）",
+        "autoCustom": "auto+custom（内置规则+自定义，取并集）"
+      },
+      "patterns": {
+        "name": "自定义模型通配符",
+        "description": "仅 custom 模式生效，逗号分隔，支持 *，例如：claude-*,my-model"
+      },
+      "regex": {
+        "name": "自定义模型正则",
+        "description": "仅 regex / auto+custom 模式生效；对模型映射后的上游模型名做大小写不敏感匹配，例如 ^(anthropic/)?claude 或 opus|sonnet|haiku"
+      }
+    }
+  },
+  "paymentConfig": {
+    "types": {
+      "epay": "易支付",
+      "alipay": "支付宝",
+      "wxpay": "微信支付",
+      "stripe": "Stripe"
+    },
+    "currency": {
+      "CNY": "人民币",
+      "USD": "美元"
+    },
+    "fields": {
+      "payDomain": "支付域名",
+      "merchantId": "商户号",
+      "key": "密钥",
+      "payType": "支付类型"
+    },
+    "epay": {
+      "payTypeDesc": "支付类型,如果需要跳转到易支付收银台,请选择收银台",
+      "checkout": "收银台",
+      "wechat": "微信",
+      "qq": "QQ",
+      "jd": "京东",
+      "unionpay": "银联",
+      "paypal": "Paypal",
+      "usdt": "USDT"
+    },
+    "alipay": {
+      "appId": "应用ID",
+      "appIdDesc": "支付宝应用ID",
+      "privateKey": "应用私钥",
+      "privateKeyDesc": "应用私钥，开发者自己生成，详细参考官方文档 {{url}}",
+      "publicKey": "支付宝公钥",
+      "publicKeyDesc": "支付宝公钥，详细参考官方文档 {{url}}",
+      "payTypeDesc": "支付类型,需要您再支付宝开发者中心开通相关权限才可以使用对应类型支付方式",
+      "facepay": "当面付",
+      "pagepay": "电脑网站支付",
+      "wappay": "手机网站支付"
+    },
+    "wxpay": {
+      "appId": "AppID",
+      "appIdDesc": "应用ID 详见{{url}}",
+      "mchIdDesc": "微信商户号 详见{{url}}",
+      "certSerial": "商户证书序列号",
+      "certSerialDesc": "商户证书序列号 详见{{url}}",
+      "apiv3Key": "商户APIv3密钥",
+      "apiv3KeyDesc": "商户APIv3密钥 详见{{url}}",
+      "privateKey": "商户私钥",
+      "privateKeyDesc": "商户私钥 详见{{url}}",
+      "native": "Native支付"
+    },
+    "stripe": {
+      "secretKey": "SecretKey",
+      "secretKeyDesc": "API 私钥",
+      "webhookSecret": "WebHookSecret",
+      "webhookSecretDesc": "回调验证密钥，不用填写，创建网关后会自动在stripe后台创建webhook并获取webhook密钥"
+    }
+  }
+}

@@ -1,0 +1,1082 @@
+{
+  "channelPage": {
+    "stats": {
+      "all": "All",
+      "enabled": "Enabled",
+      "manual": "Disabled",
+      "auto": "Auto-disabled"
+    },
+    "searchPlaceholder": "Search channel name or tag",
+    "openModels": "View models",
+    "enabledColumn": "On",
+    "batchStatusFailed": "{{count}} channel(s) failed",
+    "emptyTitle": "No channels yet",
+    "emptyDescription": "Add an upstream provider key so models can be called."
+  },
+  "apiCatalogPage": {
+    "endpoints": "Endpoints",
+    "examples": "Request examples",
+    "models": "Available models",
+    "playground": "Try it out",
+    "docs": "Read the full documentation",
+    "copied": "Copied",
+    "copyFailed": "Copy failed",
+    "keyHint": "sk-YOUR_TOKEN is a placeholder — replace it with a key created on the API Keys page.",
+    "chat": {
+      "apiName": "Chat API",
+      "intro": "Call chat models through the OpenAI, Claude and Gemini compatible protocols with the same API key.",
+      "capabilities": {
+        "text": {
+          "title": "Text generation",
+          "desc": "Generate text replies through the OpenAI-compatible chat completions endpoint."
+        },
+        "streaming": {
+          "title": "Streaming",
+          "desc": "Stream the reply chunk by chunk over SSE."
+        },
+        "reasoning": {
+          "title": "Reasoning",
+          "desc": "Let the model think before answering, with adjustable reasoning effort."
+        },
+        "structured": {
+          "title": "Structured output",
+          "desc": "Constrain the reply with a JSON Schema and get parsable JSON back."
+        },
+        "tools": {
+          "title": "Tool calling",
+          "desc": "Declare functions so the model can call them and return structured arguments."
+        },
+        "vision": {
+          "title": "Image understanding",
+          "desc": "Pass an image URL in the message and let the model read it."
+        },
+        "files": {
+          "title": "File input",
+          "desc": "Pass a PDF or other file in the message and answer from the document."
+        },
+        "responses": {
+          "title": "Responses API",
+          "desc": "OpenAI's newer Responses endpoint, handling multi-part input in one call."
+        },
+        "claude": {
+          "title": "Claude compatible",
+          "desc": "Call through the Anthropic Messages protocol; SDKs only need a new base URL."
+        },
+        "gemini": {
+          "title": "Gemini compatible",
+          "desc": "Call through the Google GenAI protocol; SDKs only need a new base URL."
+        }
+      }
+    },
+    "image": {
+      "apiName": "Image API",
+      "intro": "Generate or edit images, or send an image as input and let the model read it — all with the same API key.",
+      "capabilities": {
+        "generations": {
+          "title": "Image generation · Images API",
+          "desc": "The OpenAI standard: call /v1/images/generations and get an image back."
+        },
+        "chatGenerations": {
+          "title": "Image generation · Chat style",
+          "desc": "Set modalities: [\"image\", \"text\"] on chat/completions and let a chat model return an image.",
+          "note": "modalities and the message.images field in the response are OpenRouter-style extensions, not part of the OpenAI standard."
+        },
+        "edits": {
+          "title": "Image editing · Images API",
+          "desc": "The OpenAI standard: upload the source image with a prompt and get the edited image back."
+        },
+        "chatEdits": {
+          "title": "Image editing · Chat style",
+          "desc": "Send the source image and the prompt together on chat/completions and let the model return the edited image.",
+          "note": "modalities and the message.images field in the response are OpenRouter-style extensions, not part of the OpenAI standard."
+        },
+        "vision": {
+          "title": "Image understanding",
+          "desc": "Pass an image URL in the message and let the model answer based on it."
+        }
+      },
+      "endpoints": {
+        "recraftGenerations": "Recraft text-to-image generation",
+        "recraftVectorize": "Convert to vector graphics",
+        "recraftRemoveBackground": "Remove background",
+        "recraftClarityUpscale": "Clarity upscale",
+        "recraftGenerativeUpscale": "Generative upscale",
+        "mjImagine": "Submit an imagine task",
+        "mjChange": "Upscale or vary an existing task",
+        "mjBlend": "Blend multiple images",
+        "mjDescribe": "Describe an image",
+        "mjFetch": "Query task status"
+      },
+      "extras": {
+        "title": "Other compatible entry points",
+        "hint": "Vendor-specific endpoints, use as needed",
+        "recraft": "Recraft",
+        "midjourney": "Midjourney",
+        "midjourneyTasks": "Task history on the Logs page → Midjourney"
+      }
+    },
+    "speech": {
+      "apiName": "Audio API",
+      "intro": "Synthesize and transcribe speech through the OpenAI-compatible protocol, or pass audio straight into the chat endpoint and get a spoken reply.",
+      "capabilities": {
+        "tts": {
+          "title": "Text to speech (TTS)",
+          "desc": "Turn text into an audio file, with a selectable voice and output format."
+        },
+        "stt": {
+          "title": "Speech to text (STT)",
+          "desc": "Upload an audio file and transcribe it into text."
+        },
+        "audioInput": {
+          "title": "Audio understanding",
+          "desc": "Pass audio in the chat message and let the model answer from what it hears."
+        },
+        "audioOutput": {
+          "title": "Audio replies",
+          "desc": "Let a chat model return a spoken reply alongside the text."
+        },
+        "realtime": {
+          "title": "Realtime audio",
+          "desc": "Open a realtime audio session over WebSocket, compatible with the OpenAI Realtime protocol."
+        }
+      },
+      "extras": {
+        "title": "Other compatible endpoints",
+        "suno": "Suno",
+        "endpoints": {
+          "sunoMusic": "Submit a music generation task",
+          "sunoLyrics": "Submit a lyrics generation task",
+          "sunoFetch": "Query tasks in bulk",
+          "sunoFetchById": "Query a task by ID"
+        },
+        "tasks": "Task history on the Logs page → Tasks"
+      }
+    },
+    "video": {
+      "apiName": "Video API",
+      "intro": "Pass a video through the Gemini-compatible protocol for understanding; video generation follows the create task → poll → download file flow.",
+      "capabilities": {
+        "understanding": {
+          "title": "Video understanding",
+          "desc": "Send the clip through the Gemini-compatible protocol and let the model answer from it.",
+          "note": "Video input goes through the Gemini-compatible protocol: the OpenAI-compatible chat/completions endpoint has no video content part, so the gateway drops it."
+        },
+        "generation": {
+          "title": "Video generation",
+          "desc": "Submit a generation task, poll its status, then download the finished video."
+        }
+      },
+      "extras": {
+        "title": "Other compatible endpoints",
+        "kling": "Kling",
+        "veo": "Native Gemini Veo",
+        "endpoints": {
+          "klingText2video": "Text to video, returns a task ID",
+          "klingImage2video": "Image to video, returns a task ID",
+          "klingFetchText2video": "Query a text-to-video task",
+          "klingFetchImage2video": "Query an image-to-video task",
+          "veoPredict": "Native Gemini Veo long-running endpoint"
+        },
+        "tasks": "Task history on the Logs page → Tasks"
+      }
+    },
+    "model": "Model",
+    "modelCount_one": "{{count}} model available",
+    "modelCount_other": "{{count}} models available",
+    "noModels": "No models available",
+    "availabilityUnknown": "Availability unknown",
+    "comingSoon": "Coming soon",
+    "recommended": "Recommended model",
+    "contextLength": "Context length",
+    "inputPrice": "Input price",
+    "outputPrice": "Output price",
+    "priceNote": "Prices are converted at the base group rate (x1); your actual price depends on your group.",
+    "viewModel": "View model",
+    "openPlayground": "Open in playground",
+    "overview": {
+      "title": "API overview",
+      "intro": "One key for chat, image, audio and video models, compatible with the OpenAI, Claude and Gemini protocols.",
+      "quickstart": "Quickstart",
+      "viewApi": "View API",
+      "links": {
+        "title": "Related links",
+        "models": "Model marketplace",
+        "modelsDesc": "Browse every available model and its group price.",
+        "keys": "API keys",
+        "keysDesc": "Create and manage the keys used for requests.",
+        "docs": "Developer docs",
+        "docsDesc": "Integration guide and full API reference."
+      }
+    },
+    "loadFailed": "Failed to load the available model list, so the availability shown here may be wrong.",
+    "retry": "Retry"
+  },
+  "playground": {
+    "curlHint": "sk-YOUR_TOKEN is a placeholder",
+    "errors": {
+      "request": "The request failed.",
+      "unauthorized": "The playground key was rejected. Check that your account still has access.",
+      "notFound": "The endpoint or the model was not found.",
+      "rateLimited": "Rate limited. Wait a moment and run it again.",
+      "upstream": "The upstream provider returned an error.",
+      "upstreamAuth": "Upstream channel authentication failed. Ask an administrator to check the channel configuration.",
+      "network": "Could not reach the gateway.",
+      "aborted": "The request was stopped.",
+      "keyFailed": "Could not prepare the playground key."
+    },
+    "audio": {
+      "stt": {
+        "errors": {
+          "missingFile": "Choose an audio file first.",
+          "unsupportedType": "That file is not a supported audio format.",
+          "tooLarge": "The audio file must be 25 MB or smaller."
+        }
+      }
+    },
+    "picker": {
+      "title": "Select a model",
+      "searchPlaceholder": "Search models or providers…",
+      "hideUnavailable": "Hide unavailable",
+      "allProviders": "All",
+      "unknownProvider": "Unknown provider",
+      "available": "Available",
+      "degraded": "Degraded",
+      "unavailable": "Unavailable",
+      "noChannel": "No channel available",
+      "channels": "{{count}} channels",
+      "priceUnknown": "Price not configured",
+      "perCall": "per call",
+      "columns": {
+        "unit": "Price / 1M tokens",
+        "context": "Context",
+        "input": "Input",
+        "output": "Output"
+      },
+      "priceNote": "Prices are the input / output rate per 1M tokens; per-call models show a single price, and image and audio follow the catalog unit. Click the channel count to expand the other channel quotes for the same model.",
+      "selectedCount": "Selected {{count}}",
+      "empty": "No matching model",
+      "loadFailed": "Failed to load the model list"
+    }
+  },
+  "playgroundConsole": {
+    "comingSoonDesc": "The video console is not available yet — start from the API docs.",
+    "viewDocs": "API docs",
+    "run": "Run",
+    "modality": {
+      "chat": "Chat",
+      "image": "Image",
+      "audio": "Speech",
+      "compare": "Compare",
+      "video": "Video"
+    },
+    "tabs": {
+      "chat": "Chat",
+      "form": "Form"
+    },
+    "state": {
+      "loading": "Loading the model catalog…"
+    },
+    "model": {
+      "pick": "Select a model",
+      "none": "No model"
+    },
+    "noModels": {
+      "title": "No {{modality}} model available",
+      "adminDesc": "No channel serves a {{modality}} model yet. Add or enable one in channel management, then come back.",
+      "adminAction": "Go to channels",
+      "userDesc": "Your group has no {{modality}} model enabled yet. Check the available model list or ask an administrator.",
+      "userAction": "View available models",
+      "transcription": {
+        "title": "This site has no speech-to-text model",
+        "adminDesc": "No model declares the speech-to-text (audio.transcription) endpoint yet. Add a channel that serves a transcription model in channel management, or tick the audio.transcription endpoint for an existing transcription model in the admin model catalog.",
+        "userDesc": "This site has no speech-to-text (transcription) model yet, so audio cannot be transcribed here. Check the available model list or ask an administrator to add a transcription model.",
+        "userChatDesc": "This site has no speech-to-text (transcription) model yet. You can use a chat model that understands audio instead: upload the audio on the chat page and ask the model to write it out.",
+        "userChatAction": "Go to chat"
+      }
+    },
+    "gate": {
+      "org": "The playground only covers personal API keys.",
+      "orgAction": "Switch back to your personal context",
+      "chatDisabled": "The built-in playground is turned off on this site.",
+      "chatDisabledAction": "See the API examples"
+    },
+    "chat": {
+      "clear": "Clear",
+      "viewCode": "View code",
+      "codeTitle": "Example code",
+      "params": "Params",
+      "reasoning": "Thinking · {{parts}} paragraphs",
+      "waiting": "Waiting for the first token…",
+      "empty": {
+        "title": "Start a chat with examples",
+        "subtitle": "Pick a use case to see the exact prompt and settings, then make it your own."
+      },
+      "tags": {
+        "code": "Code",
+        "stream": "Streaming",
+        "json": "JSON output",
+        "reasoning": "Reasoning",
+        "longContext": "Long context",
+        "data": "Data",
+        "translate": "Translation"
+      },
+      "examples": {
+        "stream": {
+          "title": "Streaming call",
+          "desc": "Shortest runnable streaming request in Python",
+          "prompt": "Call /v1/chat/completions from Python with streaming — shortest runnable version"
+        },
+        "schema": {
+          "title": "JSON to types",
+          "desc": "Turn an API payload into TypeScript types",
+          "prompt": "Turn the JSON below into a TypeScript interface with type annotations:"
+        },
+        "debug": {
+          "title": "Debug a 429",
+          "desc": "Explain the rate limit and the retry config",
+          "prompt": "Explain why this request returned 429 and how to configure retries at the gateway"
+        },
+        "review": {
+          "title": "Code review",
+          "desc": "Issue · impact · fix, one by one",
+          "prompt": "Review the code below and list findings as issue · impact · fix:"
+        },
+        "summarize": {
+          "title": "Summarize a long doc",
+          "desc": "Boil it down to a few bullets",
+          "prompt": "Summarize the document below into 5 bullets, 15 words each at most:"
+        },
+        "extract": {
+          "title": "Structured extraction",
+          "desc": "Pull fields out of free text",
+          "prompt": "Extract company, amount and date from the text below and answer with JSON:"
+        },
+        "sql": {
+          "title": "Text to SQL",
+          "desc": "Write a query against a given schema",
+          "prompt": "Given orders(id, user_id, amount, created_at), write a query for daily order count and total amount over the last 7 days"
+        },
+        "translate": {
+          "title": "Translate technical docs",
+          "desc": "Keep terminology and code blocks intact",
+          "prompt": "Translate the technical documentation below into Chinese, keeping proper nouns and code blocks as-is:"
+        }
+      },
+      "meta": {
+        "generating": "Generating",
+        "firstToken": "first token {{value}}",
+        "tokensUnit": "tokens",
+        "interrupted": "Interrupted"
+      },
+      "actions": {
+        "code": "View code for this reply",
+        "copy": "Copy",
+        "rerun": "Rerun"
+      },
+      "composer": {
+        "placeholder": "Ask the model something",
+        "attach": "Attach"
+      },
+      "settings": {
+        "system": "System prompt",
+        "systemPlaceholder": "Optional, e.g. answer with code that runs as-is",
+        "temperature": "Temperature",
+        "topP": "Top P",
+        "maxTokens": "Max tokens",
+        "seed": "Seed",
+        "thinking": "Enable thinking",
+        "reasoningEffort": "Reasoning effort",
+        "reasoningEffortOptions": {
+          "default": "Default",
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
+        },
+        "thinkingBudget": "Thinking budget",
+        "stream": "Streaming",
+        "jsonMode": "JSON mode"
+      }
+    },
+    "stop": "Stop",
+    "fields": {
+      "size": "Size",
+      "count": "Images",
+      "countHint": "1–4, defaults to 1.",
+      "quality": "Quality",
+      "style": "Style",
+      "responseFormat": "Response format",
+      "responseFormatHint": "url returns a link, b64_json returns inline bytes.",
+      "voice": "Voice",
+      "speed": "Speed",
+      "speedHint": "0.25–4.0, defaults to 1.0.",
+      "format": "Format",
+      "language": "Language",
+      "languagePlaceholder": "e.g. zh, en (blank to auto-detect)",
+      "sttPrompt": "Prompt",
+      "sttPromptPlaceholder": "Add proper nouns to improve accuracy",
+      "granularity": "Timestamp granularity"
+    },
+    "result": {
+      "title": "Result",
+      "empty": "No result yet.",
+      "waiting": "Generating…",
+      "status": {
+        "idle": "Idle",
+        "running": "Running",
+        "done": "Done",
+        "error": "Failed"
+      },
+      "tabs": {
+        "preview": "Preview",
+        "json": "JSON"
+      }
+    },
+    "code": {
+      "copy": "Copy",
+      "copied": "Copied",
+      "sync": "Kept in sync with run settings",
+      "keyHint": "sk-YOUR_TOKEN is a placeholder; the real key never reaches the page."
+    },
+    "image": {
+      "reference": "Reference image (optional)",
+      "referenceHint": "Click to upload · png / jpg / webp ≤ 8MB",
+      "clearReference": "Remove reference",
+      "chatBadge": "Chat image",
+      "noImage": "The model returned no image. Check the JSON tab for the full response.",
+      "download": "Download",
+      "downloadAll": "Download all",
+      "errors": {
+        "missingFile": "Pick a reference image first.",
+        "unsupportedType": "Only png / jpeg / webp are supported.",
+        "tooLarge": "The reference image must be 8MB or smaller."
+      },
+      "clear": "Clear",
+      "viewCode": "View code",
+      "codeTitle": "Example code",
+      "params": "Params",
+      "composer": {
+        "placeholder": "What image would you like to generate?"
+      },
+      "empty": {
+        "title": "Start from a template",
+        "subtitle": "Pick a template to see its prompt and settings, then make it your own."
+      },
+      "examples": {
+        "poster": {
+          "title": "Event poster",
+          "desc": "Portrait key visual with room for a headline",
+          "prompt": "Key visual poster for a tech launch event, deep blue gradient background, geometric light rays, empty space in the centre for a headline"
+        },
+        "product": {
+          "title": "Product shot",
+          "desc": "Studio product on a plain background",
+          "prompt": "Product shot of a white ceramic mug, plain light grey background, soft top light, subtle shadow, e-commerce hero style"
+        },
+        "portrait": {
+          "title": "Studio portrait",
+          "desc": "Soft light, shallow depth of field",
+          "prompt": "Studio half-body portrait of a young woman, softbox lighting, shallow depth of field, natural skin tones, film look"
+        },
+        "illustration": {
+          "title": "Storybook art",
+          "desc": "Flat colours, children illustration",
+          "prompt": "A little fox carrying a lantern through an autumn forest, flat illustration style, warm palette, soft texture"
+        },
+        "icon": {
+          "title": "App icon",
+          "desc": "Four variants in one run",
+          "prompt": "App icon for a weather app, rounded square, simple sun and cloud symbol, blue gradient, flat design"
+        },
+        "landscape": {
+          "title": "Wide landscape",
+          "desc": "Landscape-format nature scene",
+          "prompt": "A valley at dawn, sea of clouds rolling over the ridge, distant snow peaks lit gold by sunrise, wide angle, hyperrealistic"
+        }
+      }
+    },
+    "audio": {
+      "tts": "Text to speech",
+      "stt": "Speech to text",
+      "viewCode": "View code",
+      "codeTitle": "Sample code",
+      "pickExample": "Pick an example to generate",
+      "customText": "or enter any custom text",
+      "examples": {
+        "support": {
+          "label": "Support",
+          "text": "Hi, this is Modeltaps support. Your ticket is open and we will get back to you within one business day."
+        },
+        "sales": {
+          "label": "Sales",
+          "text": "Thanks for your interest in Modeltaps. The enterprise plan covers private deployment and a dedicated quota."
+        },
+        "podcast": {
+          "label": "Podcast",
+          "text": "Welcome back to the show. Today we look at routing every model provider through a single gateway."
+        },
+        "announcement": {
+          "label": "Announcement",
+          "text": "Scheduled maintenance starts Saturday at two in the morning and takes about thirty minutes."
+        },
+        "meditation": {
+          "label": "Meditation",
+          "text": "Find a comfortable seat, breathe in slowly, and let the breath out even more slowly."
+        }
+      },
+      "generate": "Generate audio",
+      "play": "Play",
+      "pause": "Pause",
+      "seek": "Seek",
+      "searchVoices": "Search voices",
+      "noVoiceMatch": "No matching voices",
+      "otherLanguage": "Other",
+      "gender": {
+        "neutral": "Neutral",
+        "male": "Male",
+        "female": "Female"
+      },
+      "tags": {
+        "broadcast": "Broadcast",
+        "support": "Support",
+        "audiobook": "Audiobook",
+        "ad": "Ads"
+      },
+      "input": "Text to read",
+      "inputPlaceholder": "Enter the text to synthesize",
+      "download": "Download {{format}}",
+      "unplayable": "Browsers can't play {{format}} directly; download it to listen",
+      "sttTitle": "Transcribe an audio file",
+      "dropHint": "Drop audio here, or click to upload",
+      "uploadHint": "mp3 / wav / m4a ≤ 25MB",
+      "transcribe": "Transcribe",
+      "startRecord": "Start recording",
+      "stopRecord": "Stop recording",
+      "transcript": "Transcript",
+      "upload": "Upload audio",
+      "sttEmpty": "Pick an audio file to start transcribing"
+    },
+    "compare": {
+      "addColumn": "Add column",
+      "removeColumn": "Remove column",
+      "column": "Column {{index}}",
+      "override": "Override",
+      "overrideCount": "{{count}} overridden",
+      "emptyColumn": "This column's reply will appear here",
+      "pickModel": "Pick a model in the column header first",
+      "placeholder": "Type a message to send to every column",
+      "stopAll": "Stop all",
+      "syncOn": "Sync input",
+      "syncOff": "Active column only"
+    }
+  },
+  "nav_subtitles": {
+    "playground": "Run chat, image, speech and side-by-side comparisons against the gateway",
+    "api_audio": "Convert between text and speech",
+    "api_compare": "Run several chat models side by side on the same input",
+    "pricing": "Model catalog, prices, channels and vendors"
+  },
+  "api_compare": "Compare",
+  "modelInfoPage": {
+    "price": "Price",
+    "notInCatalog": "Not in catalog",
+    "setPrice": "Set price",
+    "deletePrice": "Delete price",
+    "deleteCatalog": "Delete catalog entry",
+    "noChannel": "No channel",
+    "columns": "Columns",
+    "modalities": "Modalities",
+    "sectionBasic": "Basic info",
+    "sectionEndpoints": "Endpoints & capabilities",
+    "sectionLimits": "Modalities & limits",
+    "sectionPrice": "Price",
+    "sectionSource": "Source & sync time",
+    "priceEmptyTip": "Not priced yet. Fill in a price to create one on save, or leave it empty.",
+    "catalogNotSaved": "Catalog info was not saved: {{message}}",
+    "priceNotSaved": "Price was not saved: {{message}}"
+  },
+  "pricingPage": {
+    "catalogTabs": {
+      "models": "Models",
+      "vendors": "Vendors"
+    }
+  },
+  "listPage": {
+    "searchPlaceholder": "Search",
+    "clearSearch": "Clear search",
+    "selected": "{{count}} selected",
+    "selectedOf": "{{count}} selected",
+    "clearSelection": "Clear selection",
+    "clearFilters": "Clear filters",
+    "emptyTitle": "Nothing here yet",
+    "noMatchTitle": "No matching results",
+    "noMatchDescription": "Try a different keyword or remove some filters.",
+    "pageOf": "Page {{page}} / {{pages}}",
+    "firstPage": "First page",
+    "prevPage": "Previous page",
+    "nextPage": "Next page",
+    "lastPage": "Last page"
+  },
+  "pricing": "Models",
+  "modelsPage": {
+    "addVendor": "Add vendor",
+    "aliasTo": "Alias → {{model}}",
+    "batchDeleteConfirm": "Delete the {{count}} selected items? This cannot be undone.",
+    "batchDeleteFailed": "{{count}} items failed to delete",
+    "batchHide": "Hide selected",
+    "batchShow": "Show selected",
+    "billing": "Billing",
+    "billingNone": "Unpriced",
+    "billingTimes": "Per request",
+    "billingTokens": "Per token",
+    "channelCount": "{{count}} channels",
+    "channelsTab": "Channels & groups",
+    "columnsShort": "Columns",
+    "copyName": "Copy model name",
+    "editProfile": "Edit profile",
+    "emptyDescription": "Models configured in channels show up here automatically; you can also create catalog entries manually.",
+    "emptyTitle": "No models yet",
+    "export": "Export JSON",
+    "labeling": "Labels",
+    "moreActions": "More actions",
+    "onlyUsable": "Fully usable only",
+    "priceHeader": "Price / 1{{unit}} tokens",
+    "priceUnitToggle": "Click to show prices per 1{{unit}} tokens",
+    "priceIn": "Input",
+    "priceOut": "Output",
+    "searchPlaceholder": "Search model name, alias, tag",
+    "searchVendors": "Search vendor name or slug",
+    "setPrice": "Price",
+    "sync": "Sync",
+    "syncGroup": "Upstream sync",
+    "unbound": "Unbound",
+    "vendorModelCount": "Models",
+    "visibility": "Visibility",
+    "visibleNeedsCatalog": "Create a catalog entry first to control visibility",
+    "visibleNo": "Hidden",
+    "visibleToUsers": "Visible to users",
+    "visibleYes": "Visible",
+    "sheet": {
+      "availableGroups": "Available groups",
+      "channelsReadonly": "Channels and groups are read-only; edit them on the Channels page",
+      "goChannels": "Go to Channels",
+      "groupCount": "{{count}} groups",
+      "groups": "Groups",
+      "noChannelHint": "No enabled channel provides this model, so users cannot call it.",
+      "openChannel": "Open channel {{name}}",
+      "priorityWeight": "Priority / weight",
+      "providingChannels": "Providing channels ({{count}})",
+      "routingHint": "Requests route by priority from high to low; equal priority splits by weight.",
+      "status": "Status",
+      "tabPricing": "Pricing",
+      "tabProfile": "Profile"
+    },
+    "stats": {
+      "all": "All",
+      "usable": "Fully usable",
+      "nochannel": "No channel",
+      "unpriced": "Unpriced",
+      "hidden": "Hidden"
+    },
+    "status": {
+      "ok": "Usable",
+      "nochannel": "No channel",
+      "unpriced": "Unpriced"
+    }
+  },
+  "brandIconPicker": {
+    "mode": {
+      "auto": "Auto: resolved from the vendor name, slug or domain",
+      "builtin": "Built-in icon",
+      "upload": "Uploaded icon"
+    },
+    "chooseBuiltin": "Choose a built-in icon",
+    "searchBuiltin": "Search icons",
+    "noBuiltin": "No matching icon",
+    "upload": "Upload",
+    "uploadSuccess": "Icon uploaded",
+    "uploadTooLarge": "The icon must be 256 KB or smaller",
+    "resetAuto": "Reset to auto",
+    "refresh": "Refresh",
+    "refreshDone": "Refreshed the icon of {{domain}}",
+    "refreshNotFound": "No icon found for {{domain}}",
+    "librarySynced": "Icon library synced"
+  },
+  "modelOwnedby": {
+    "iconTip": "Leave empty to resolve automatically, choose a built-in icon, or upload one (SVG / PNG / JPEG / GIF / WebP / ICO, up to 256 KB). External URLs are not accepted."
+  },
+  "channel_edit": {
+    "icon": "Icon",
+    "iconTip": "Resolved automatically from the channel type and API address. Refresh re-fetches the site icon of the API address.",
+    "editSuccess": "Updated successfully"
+  },
+  "brandIconSettings": {
+    "title": "Brand Icons",
+    "description": "Vendor and channel icons come from the embedded lobehub icon library. The server can sync newer versions in the background and fetch site icons for unknown vendors. Browsers always load icons from this site only.",
+    "syncEnabled": "Auto-sync icon library",
+    "syncEnabledDescription": "Checks the npm registry for a new @lobehub/icons-static-svg version every 24 hours and switches after verification; keeps the current version on failure",
+    "faviconFetchEnabled": "Fetch icons for unknown vendors",
+    "faviconFetchEnabledDescription": "When a vendor or channel without a built-in icon is saved, the server fetches and caches its site favicon",
+    "registry": "npm registry URL",
+    "registryDescription": "npm registry used for icon library sync; leave empty to use npmmirror"
+  },
+  "userPage": {
+    "statsAll": "All",
+    "statsEnabled": "Enabled",
+    "statsDisabled": "Disabled",
+    "statsAdmin": "Admins",
+    "statsNoOidc": "No OIDC",
+    "orgFilterLabel": "Organization",
+    "org": "Organization",
+    "shadowAccount": "Shadow account",
+    "balance": "Balance",
+    "neverLoggedIn": "Never",
+    "statusEnabled": "Enabled",
+    "statusDisabled": "Disabled",
+    "enableSwitch": "Enabled",
+    "moreActions": "More actions",
+    "selectAll": "Select all on this page",
+    "batchEnable": "Enable",
+    "batchDisable": "Disable",
+    "batchDeleteConfirm": "Delete {{count}} selected users? This cannot be undone.",
+    "batchFailed": "{{count}} users could not be updated",
+    "emptyTitle": "No users yet",
+    "emptyDescription": "Users appear here after they sign up or you create one.",
+    "searchShort": "Search ID, username, email",
+    "adminUserRole": "Admin",
+    "cUserRole": "User",
+    "reliableUserRole": "Trusted user",
+    "superAdminRole": "Root"
+  },
+  "command": {
+    "search": "Search"
+  },
+  "common": {
+    "error": "Something went wrong",
+    "close": "Close",
+    "copySucceeded": "Copied",
+    "copyNamedSuccess": "Copied {{name}}",
+    "copyFailedManual": "Copy failed. Copy it manually:",
+    "copyNamedFailed": "Couldn't copy {{name}}. Copy it manually:",
+    "back": "Back",
+    "create": "Create",
+    "delete": "Delete",
+    "disable": "Disabled",
+    "enable": "Enabled",
+    "edit": "Edit",
+    "executeConfirm": "Execute",
+    "exhaust": "Exhausted",
+    "expired": "Expired",
+    "loginOk": "Signed in successfully",
+    "none": "None",
+    "registerOk": "Signed up successfully",
+    "show": "Show",
+    "submit": "Submit",
+    "unknown": "Unknown"
+  },
+  "Log Context": "Log Context",
+  "View Context": "View Context",
+  "Regex": "Regex",
+  "Enter regular expression...": "Enter regular expression...",
+  "chrome": {
+    "menu": "Menu",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar"
+  },
+  "notice": {
+    "announcement": "Announcement"
+  },
+  "channelForm": {
+    "label": {
+      "name": "Channel name",
+      "type": "Channel type",
+      "base_url": "Channel API URL",
+      "key": "Key",
+      "other": "Other parameters",
+      "proxy": "Proxy URL",
+      "test_model": "Test model",
+      "models": "Models",
+      "model_mapping": "Model mapping",
+      "model_headers": "Custom model request headers",
+      "header_override": "Header pass-through",
+      "custom_parameter": "Extra parameters",
+      "groups": "User groups",
+      "only_chat": "Chat only",
+      "tag": "Tag",
+      "pre_cost": "Pre-billing option",
+      "disabled_stream": "Models with streaming disabled",
+      "compatible_response": "Responses API compatibility",
+      "allow_extra_body": "Pass through extra fields",
+      "pass_through_body": "Pass through full request body",
+      "apiVersion": "Default API version",
+      "pluginParams": "Plugin parameters",
+      "version": "Version",
+      "region": "Location/region",
+      "projectIdOptional": "Project ID (optional)"
+    },
+    "prompt": {
+      "type": "Select a channel type",
+      "name": "Name the channel",
+      "base_url": "Optional. Enter a relay API URL, e.g. one relayed through Cloudflare. The {model} variable is supported, e.g. https://api.example.com/v1/{model}/chat",
+      "key": "Enter the authentication key for this channel",
+      "proxy": "Proxy for this channel only; http and socks5 are supported, e.g. http://127.0.0.1:1080. Put `%s` in the proxy URL as a session placeholder: it is replaced with a unique session ID derived from the key.",
+      "test_model": "Model used to test the channel; tests are unavailable when empty. Chat models only, e.g. gpt-3.5-turbo",
+      "models": "Select the models this channel supports. You can also use a * wildcard, e.g. gpt-3.5* matches every model starting with gpt-3.5. The * may only appear at the end and must follow at least one character: gpt-3.5* is valid, *gpt-3.5 is not.",
+      "model_mapping": "Model mapping: each line forwards the model name the user requests to the real upstream model name (e.g. opus-latest → claude-opus-4.8). Billing uses the real upstream model by default; tick \"Bill on incoming\" to bill by the requested name instead (price it under model pricing first).",
+      "model_headers": "Custom request headers per model, e.g. {\"key\": \"value\"}",
+      "header_override": "Pass client request headers through to the upstream. A value can be a fixed value, {api_key} (the channel key) or {client_header:X-Request-Id} (the client header of that name). Use * as the key to pass through every client header, or start the key with re: or regex: to pass through headers matching a regular expression. Note: authentication headers are handled by the channel and are never overridden. Use standard header casing for keys (e.g. X-Request-Id) so the same header is not sent with different casing.",
+      "custom_parameter": "Inject extra parameters as JSON (nesting allowed). Control options: overwrite: true replaces fields of the same name; when unset or false, only missing fields are added. per_model: true applies the overrides per model name, e.g. {\"per_model\":true,\"gpt-3.5-turbo\":{\"temperature\": 0.7},\"gpt-4\":{\"temperature\": 0.5}}. pre_add: true applies the overrides as soon as the request arrives instead of just before it is sent upstream; works for all channels (including Claude and Gemini), e.g. {\"pre_add\":true,\"overwrite\":true,\"stream\":false}.",
+      "groups": "Select the user groups this channel serves",
+      "only_chat": "With chat only selected, requests that include function calls skip this channel",
+      "provider_models_list": "Fill in all fields before fetching the model list",
+      "tag": "Tag the channel to manage channels in bulk by tag. Note: once a tag is set, some settings can only be changed through the channel tag, not from the channel list.",
+      "pre_cost": "Choose the pre-billing option used to estimate cost. If counting images takes too many resources, you can turn off image billing. Note: some channels return no token counts when streaming, which makes input token counts inaccurate.",
+      "disabled_stream": "Models listed here have streaming disabled: streaming requests for these models skip this channel",
+      "allow_extra_body": "When on, extra fields in the user's request (such as the OpenAI SDK's extra_body parameter) are passed through, for sending custom parameters to the upstream API",
+      "pass_through_body": "When on, the client request body is forwarded upstream as is: only the mapped model name is rewritten, and unknown fields and the original bytes are kept. Useful for transparent proxying over the same protocol. Note: only OpenAI-protocol channels honor this (channels that build their own body, such as Claude and Gemini, ignore it); when on, extra-field merging is skipped (only the channel extra parameters still apply, at byte level).",
+      "enterValue": "Enter {{name}}",
+      "apiVersionExample": "Enter the default API version, e.g. {{example}}",
+      "keyFormat": "Use the format {{format}}",
+      "keyFormatExample": "Use the format {{format}}, e.g. {{example}}",
+      "keyFormatBaidu": "Use the format APIKey|SecretKey. If the OpenAI API plugin is enabled, enter the API key directly",
+      "keyFormatAws": "Use the format Region|AccessKeyID|SecretAccessKey|SessionToken (SessionToken is optional)",
+      "format": "Format: {{format}}",
+      "dashscopePlugin": "Enter the plugin parameters, i.e. the value of the X-DashScope-Plugin request header",
+      "versionExample": "Enter the version, e.g. {{example}}",
+      "speechRegion": "Enter the location/region of your Speech Studio, e.g. eastasia",
+      "proxyKey": "Enter the {{service}} key; if it has no key set, any value works",
+      "proxyAddress": "Enter the address where {{service}} is deployed",
+      "cozeModels": "Model names take the form coze-{bot_id}; you can also use the coze-* wildcard to match every model starting with coze",
+      "cozeMapping": "Model name mapping: use an easy-to-remember name instead of coze-{bot_id}, e.g. {\"coze-translate\": \"coze-xxxxx\"}. Note: with model mapping, the model names above must be the pre-mapping names; in this example, add coze-translate to the models (not needed if you already use coze-*).",
+      "ollamaUrl": "Enter the address of your Ollama deployment, e.g. http://127.0.0.1:11434. If you use Cloudflare Zero Trust, enter the access credentials in the plugin settings below",
+      "anyValue": "Any value works",
+      "keySeeDocs": "See the documentation for how to get the key.",
+      "keySeeUrl": "For the key, see {{url}}",
+      "vertexRegion": "Region|ProjectID or Region1|Region2|Region3|ProjectID (one of several regions is picked at random)",
+      "siliconflowUrl": "The official API URL https://api.siliconflow.com is being retired; use https://api.siliconflow.cn",
+      "oauthJson": "Enter the full OAuth2 credential JSON, or click \"OAuth authorization\" below to fetch it automatically",
+      "claudeOauth": "Enter an access_token (sk-ant-sid01-xxx) or the full OAuth2 credential JSON, or click \"OAuth authorization\" below to fetch it automatically",
+      "gcpProjectId": "Enter the Google Cloud project ID, e.g. my-project-123",
+      "projectIdOptional": "Optional. Leave blank to detect it automatically or generate one at random, e.g. my-project-123",
+      "vertexExpressKey": "Enter an API key (from the Google Cloud Console)"
+    },
+    "fetchModelsFrom": "Fetch models from {{source}}",
+    "fetchModelsFromChannel": "Fetch models from channel",
+    "fetchAzureDeployments": "Fetch deployed models from Azure"
+  },
+  "channelPlugin": {
+    "enable": "Enable",
+    "useOpenaiApi": {
+      "name": "Use OpenAI API",
+      "enableDescNoPlugins": "Whether to use the OpenAI API. When on, requests go straight to {{vendor}}'s official OpenAI-compatible API without format conversion, and the plugins above have no effect",
+      "enableDesc": "Whether to use the OpenAI API. When on, requests go straight to {{vendor}}'s official OpenAI-compatible API without format conversion"
+    },
+    "webSearch": {
+      "name": "Web search",
+      "description": "Search the web for the user's input",
+      "enableDesc": "Whether to enable web search"
+    },
+    "retrieval": {
+      "name": "Knowledge base",
+      "description": "Upload documents to the knowledge base on the open platform, then use the knowledge base feature to search them.",
+      "knowledgeId": {
+        "name": "Knowledge base ID",
+        "description": "Create or look up the knowledge base ID in the knowledge base module of the open platform (the knowledge base ID, not a document ID!)"
+      },
+      "promptTemplate": {
+        "name": "Knowledge base template",
+        "description": "Knowledge base template used when calling the model. Fill it in according to the documentation, otherwise leave it blank"
+      }
+    },
+    "webBrowser": {
+      "name": "Search tool",
+      "description": "Use the search tool (glm-4-alltools only)",
+      "enableDesc": "Whether to enable the search tool"
+    },
+    "drawingTool": {
+      "name": "Drawing tool",
+      "description": "Use the drawing tool (glm-4-alltools only)",
+      "enableDesc": "Whether to enable the drawing tool"
+    },
+    "codeInterpreter": {
+      "name": "Code tool",
+      "description": "Use the code tool (glm-4-alltools only)",
+      "sandbox": {
+        "name": "Sandbox mode",
+        "description": "auto runs code in a sandbox automatically; none disables the sandbox. Required"
+      }
+    },
+    "voice": {
+      "name": "Voice mapping",
+      "azureDescription": "Map OpenAI voices to Azure voices. To add a role, separate it with |, e.g. zh-CN-YunxiNeural|boy",
+      "minimaxDescription": "Map OpenAI voices to MiniMax voices. To add an emotion, separate it with |, e.g. female-chengshu|happy",
+      "mappingName": "{{voice}} mapping",
+      "defaultValue": "Default: {{value}}"
+    },
+    "headers": {
+      "name": "Header settings",
+      "description": "Headers required when the port is exposed to the internet through Cloudflare Zero Trust"
+    },
+    "codeExecution": {
+      "name": "Code execution",
+      "description": "Use code execution. Token counts become inaccurate when it is on, so it is best kept for personal use",
+      "enableDesc": "Whether to enable code execution"
+    },
+    "codex": {
+      "name": "Codex settings",
+      "description": "Codex channel-specific settings",
+      "imagesMainModel": {
+        "name": "Image orchestration model",
+        "description": "Responses model that orchestrates image requests (not the image model itself). Leave empty to use the default gpt-5.6-luna; if the upstream retires it, switch to a text model your account supports"
+      }
+    },
+    "customize": {
+      "name": "Custom endpoints",
+      "description": "Customize the path of each request: leave blank for the default, or enter disable to turn that request off",
+      "endpointName": "{{endpoint}} path",
+      "endpointDefault": "Default: {{path}}"
+    },
+    "override": {
+      "name": "Override parameters",
+      "provider": "Provider"
+    },
+    "promptCaching": {
+      "name": "Prompt caching auto-injection",
+      "description": "Automatically injects cache_control to enable Anthropic prompt caching. Requests that already carry cache_control are left alone (explicit settings win).",
+      "enabled": {
+        "name": "Mode",
+        "description": "inherit follows the global switch in operation settings; on always enables it; off always disables it",
+        "inherit": "inherit (follow global setting)",
+        "on": "on (always on)",
+        "off": "off (always off)"
+      },
+      "ttl": {
+        "name": "Cache TTL",
+        "description": "Cache lifetime; 1h automatically adds the extended-cache-ttl beta header",
+        "5m": "5 minutes",
+        "1h": "1 hour"
+      },
+      "strategy": {
+        "name": "Injection strategy",
+        "description": "system injects only at the end of the system prompt; system+last_user also injects at the end of the last user message",
+        "systemLastUser": "system + last user message"
+      },
+      "matchMode": {
+        "name": "Model matching",
+        "description": "auto matches the built-in Anthropic naming rules (against the upstream model name after model mapping); custom matches only the wildcard list below; regex matches a custom regular expression; auto+custom combines the built-in rules with the custom rules (wildcards/regex)",
+        "auto": "auto (built-in Claude rules)",
+        "custom": "custom (custom wildcards)",
+        "regex": "regex (custom regular expression)",
+        "autoCustom": "auto+custom (built-in and custom rules combined)"
+      },
+      "patterns": {
+        "name": "Custom model wildcards",
+        "description": "Only used in custom mode. Comma-separated, * supported, e.g. claude-*,my-model"
+      },
+      "regex": {
+        "name": "Custom model regex",
+        "description": "Only used in regex and auto+custom modes. Matched case-insensitively against the upstream model name after model mapping, e.g. ^(anthropic/)?claude or opus|sonnet|haiku"
+      }
+    }
+  },
+  "paymentConfig": {
+    "types": {
+      "epay": "EPay",
+      "alipay": "Alipay",
+      "wxpay": "WeChat Pay",
+      "stripe": "Stripe"
+    },
+    "currency": {
+      "CNY": "Chinese yuan (CNY)",
+      "USD": "US dollar (USD)"
+    },
+    "fields": {
+      "payDomain": "Payment domain",
+      "merchantId": "Merchant ID",
+      "key": "Key",
+      "payType": "Payment type"
+    },
+    "epay": {
+      "payTypeDesc": "Payment type. To redirect to the EPay checkout page, choose Checkout",
+      "checkout": "Checkout",
+      "wechat": "WeChat",
+      "qq": "QQ",
+      "jd": "JD",
+      "unionpay": "UnionPay",
+      "paypal": "PayPal",
+      "usdt": "USDT"
+    },
+    "alipay": {
+      "appId": "App ID",
+      "appIdDesc": "Alipay app ID",
+      "privateKey": "App private key",
+      "privateKeyDesc": "App private key, generated by the developer. See the official documentation: {{url}}",
+      "publicKey": "Alipay public key",
+      "publicKeyDesc": "Alipay public key. See the official documentation: {{url}}",
+      "payTypeDesc": "Payment type. Each type must first be enabled for your app in the Alipay developer center",
+      "facepay": "In-person payment",
+      "pagepay": "Desktop website payment",
+      "wappay": "Mobile website payment"
+    },
+    "wxpay": {
+      "appId": "AppID",
+      "appIdDesc": "App ID, see {{url}}",
+      "mchIdDesc": "WeChat Pay merchant ID, see {{url}}",
+      "certSerial": "Merchant certificate serial number",
+      "certSerialDesc": "Merchant certificate serial number, see {{url}}",
+      "apiv3Key": "Merchant APIv3 key",
+      "apiv3KeyDesc": "Merchant APIv3 key, see {{url}}",
+      "privateKey": "Merchant private key",
+      "privateKeyDesc": "Merchant private key, see {{url}}",
+      "native": "Native payment"
+    },
+    "stripe": {
+      "secretKey": "SecretKey",
+      "secretKeyDesc": "API secret key",
+      "webhookSecret": "WebHookSecret",
+      "webhookSecretDesc": "Webhook signing secret. Leave it blank: once the gateway is created, a webhook is created in Stripe automatically and its secret is fetched"
+    }
+  },
+  "error": {
+    "unknownError": "Unknown error"
+  },
+  "auth": {
+    "restPassword": "Reset password"
+  },
+  "channel_index": {
+    "selectAll": "Select all"
+  },
+  "channel_row": {
+    "test": "Test",
+    "updateOk": "Updated successfully"
+  },
+  "payment_edit": {
+    "updateOk": "Updated successfully"
+  },
+  "pricing_edit": {
+    "delTip": "Delete this item?",
+    "name": "Name",
+    "type": "Type"
+  },
+  "redemption_edit": {
+    "number": "Quantity"
+  },
+  "taskPage": {
+    "channel": "Channel",
+    "platform": "Platform",
+    "progress": "Progress",
+    "time": "Duration",
+    "type": "Type",
+    "user": "User"
+  },
+  "midjourneyPage": {
+    "timeConsuming": "Duration"
+  },
+  "userGroup": {
+    "ratio": "Ratio"
+  },
+  "suno": {
+    "lyrics": "Lyrics",
+    "response": "Response body",
+    "video": "Video"
+  }
+}

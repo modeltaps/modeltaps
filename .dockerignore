@@ -1,0 +1,35 @@
+# Version control
+.git
+.gitignore
+
+# Dependencies (reinstalled inside the image)
+node_modules
+web/node_modules
+
+# Databases / local data
+**/*.db
+**/*.db-journal
+data
+
+# Logs / temp / build artifacts
+logs
+tmp
+dist
+web/dist
+web/build
+
+# Sync conflicts
+*.sync-conflict-*
+
+# Credentials (never bake into the image)
+.env
+.env.*
+!.env.deploy.example
+
+# Tests / docs
+ittest
+docs
+
+# Editor / IDE
+.idea
+.vscode

@@ -1,0 +1,62 @@
+/* Scoped highlight.js token colors for <CodeBlock>. We deliberately do NOT
+   import any prebuilt hljs theme (e.g. dracula.css); colors come from the
+   shadcn design tokens in styles/tailwind.css so light/dark stay in sync.
+   All rules are scoped under .code-block-hl to avoid leaking globally. */
+
+.code-block-hl .hljs {
+  color: inherit;
+  background: transparent;
+}
+
+.code-block-hl .hljs-comment,
+.code-block-hl .hljs-quote {
+  color: var(--code-comment);
+  font-style: italic;
+}
+
+.code-block-hl .hljs-keyword,
+.code-block-hl .hljs-selector-tag,
+.code-block-hl .hljs-subst {
+  color: var(--code-keyword);
+}
+
+/* Command name (bash) + generic titles/built-ins/section names */
+.code-block-hl .hljs-title,
+.code-block-hl .hljs-built_in,
+.code-block-hl .hljs-section,
+.code-block-hl .hljs-name {
+  color: var(--code-function);
+}
+
+/* Short/long CLI flags (e.g. -H, --data) */
+.code-block-hl .hljs-params {
+  color: var(--code-params);
+}
+
+.code-block-hl .hljs-string,
+.code-block-hl .hljs-regexp {
+  color: var(--code-string);
+}
+
+.code-block-hl .hljs-number,
+.code-block-hl .hljs-literal {
+  color: var(--code-number);
+}
+
+/* JSON keys / attributes */
+.code-block-hl .hljs-attr,
+.code-block-hl .hljs-attribute,
+.code-block-hl .hljs-property {
+  color: var(--code-attr);
+}
+
+.code-block-hl .hljs-variable,
+.code-block-hl .hljs-template-variable {
+  color: var(--code-params);
+}
+
+/* Structural punctuation stays in the default foreground so it reads as
+   neutral scaffolding rather than competing with the colored tokens. */
+.code-block-hl .hljs-punctuation {
+  color: inherit;
+}

@@ -1,0 +1,747 @@
+package model
+
+import (
+	"crypto/md5"
+	"encoding/hex"
+	"fmt"
+	"github.com/modeltaps/modeltaps/common/cache"
+	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/common/logger"
+	"github.com/modeltaps/modeltaps/common/utils"
+	"slices"
+	"strings"
+
+	"gorm.io/datatypes"
+	"gorm.io/gorm"
+)
+
+type Channel struct {
+	Id                 int      `json:"id"`
+	Type               int      `json:"type" form:"type" gorm:"default:0"`
+	Key                string   `json:"key" form:"key" gorm:"type:text"`
+	Status             int      `json:"status" form:"status" gorm:"default:1"`
+	Name               string   `json:"name" form:"name" gorm:"index"`
+	Weight             *uint    `json:"weight" gorm:"default:1"`
+	CreatedTime        int64    `json:"created_time" gorm:"bigint"`
+	TestTime           int64    `json:"test_time" gorm:"bigint"`
+	ResponseTime       int      `json:"response_time"` // in milliseconds
+	BaseURL            *string  `json:"base_url" gorm:"column:base_url;default:''"`
+	Other              string   `json:"other" form:"other"`
+	Balance            float64  `json:"balance"` // in USD
+	BalanceUpdatedTime int64    `json:"balance_updated_time" gorm:"bigint"`
+	Models             string   `json:"models" form:"models"`
+	Group              string   `json:"group" form:"group" gorm:"type:varchar(255);default:'default'"`
+	Tag                string   `json:"tag" form:"tag" gorm:"type:varchar(32);default:''"`
+	UsedQuota          int64    `json:"used_quota" gorm:"bigint;default:0"`
+	ModelMapping       *string  `json:"model_mapping" gorm:"type:text"`
+	ModelHeaders       *string  `json:"model_headers" gorm:"type:varchar(1024);default:''"`
+	HeaderOverride     *string  `json:"header_override" gorm:"type:text"`
+	CustomParameter    *string  `json:"custom_parameter" gorm:"type:text"`
+	Priority           *int64   `json:"priority" gorm:"bigint;default:0"`
+	Proxy              *string  `json:"proxy" gorm:"type:varchar(255);default:''"`
+	TestModel          string   `json:"test_model" form:"test_model" gorm:"type:varchar(50);default:''"`
+	OnlyChat           bool     `json:"only_chat" form:"only_chat" gorm:"default:false"`
+	PreCost            int      `json:"pre_cost" form:"pre_cost" gorm:"default:1"`
+	CompatibleResponse bool     `json:"compatible_response" gorm:"default:false"`
+	AllowExtraBody     bool     `json:"allow_extra_body" form:"allow_extra_body" gorm:"default:false"`
+	PassThroughBody    bool     `json:"pass_through_body" form:"pass_through_body" gorm:"default:false"`
+	CostRatio          *float64 `json:"cost_ratio" form:"cost_ratio" gorm:"type:decimal(10,4);default:0"`
+
+	DisabledStream *datatypes.JSONSlice[string] `json:"disabled_stream,omitempty" gorm:"type:json"`
+
+	Plugin     *datatypes.JSONType[PluginType]       `json:"plugin" form:"plugin" gorm:"type:json"`
+	ModelDrift *datatypes.JSONType[ModelDriftResult] `json:"model_drift,omitempty" gorm:"type:json"`
+	DeletedAt  gorm.DeletedAt                        `json:"-" gorm:"index"`
+
+	KeyStatus *ChannelKeyStatus `json:"key_status,omitempty" gorm:"-"`
+}
+
+// ChannelKeyStatus 是渠道 key 的安全投影：是否已配置、条数、每条的掩码（最多露末 4 位），不含完整 key。
+type ChannelKeyStatus struct {
+	Configured bool     `json:"configured"`
+	Count      int      `json:"count"`
+	Masked     []string `json:"masked"`
+}
+
+const (
+	keyMaskPrefix     = "····"
+	keyMaskTailLen    = 4
+	keyMaskMinReveal  = 8
+	keyMaskMaxEntries = 10
+)
+
+// maskKey 返回单条 key 的掩码；短于 keyMaskMinReveal 的 key 不露任何字符，避免泄露大半。
+func maskKey(key string) string {
+	runes := []rune(key)
+	if len(runes) < keyMaskMinReveal {
+		return keyMaskPrefix
+	}
+	return keyMaskPrefix + string(runes[len(runes)-keyMaskTailLen:])
+}
+
+// MaskChannelKey 按换行拆分 key，统计非空条数并生成掩码（最多 keyMaskMaxEntries 条）。
+func MaskChannelKey(key string) ChannelKeyStatus {
+	status := ChannelKeyStatus{Masked: []string{}}
+	for _, line := range strings.Split(key, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		status.Count++
+		if len(status.Masked) < keyMaskMaxEntries {
+			status.Masked = append(status.Masked, maskKey(line))
+		}
+	}
+	status.Configured = status.Count > 0
+	return status
+}
+
+// HideKey 用掩码状态替换完整 key，供接口返回前调用。
+func (channel *Channel) HideKey() {
+	status := MaskChannelKey(channel.Key)
+	channel.KeyStatus = &status
+	channel.Key = ""
+}
+
+// ModelDriftResult 记录一次「渠道 models vs 上游实时模型列表」对比结果。
+// MissingModels 为渠道配置了、但上游已不再返回的模型名（对外别名按 model_mapping 解析为上游名后对比）。
+// NewModels 为上游相对「上次检测快照」新出现、且渠道尚未配置的模型名（累计，直到被加入渠道或被管理员忽略）。
+// UpstreamSnapshot 为本次上游返回的完整模型 id 列表，作为下次检测判定「新增」的基线。
+type ModelDriftResult struct {
+	CheckedAt        int64    `json:"checked_at"`
+	MissingModels    []string `json:"missing_models"`
+	NewModels        []string `json:"new_models,omitempty"`
+	UpstreamSnapshot []string `json:"upstream_snapshot,omitempty"`
+	OK               bool     `json:"ok"`
+}
+
+func (c *Channel) AllowStream(modelName string) bool {
+	if c.DisabledStream == nil {
+		return true
+	}
+
+	return !slices.Contains(*c.DisabledStream, modelName)
+}
+
+type PluginType map[string]map[string]interface{}
+
+var allowedChannelOrderFields = map[string]bool{
+	"id":            true,
+	"name":          true,
+	"group":         true,
+	"type":          true,
+	"status":        true,
+	"response_time": true,
+	"balance":       true,
+	"used_quota":    true,
+	"priority":      true,
+	"weight":        true,
+	"cost_ratio":    true,
+}
+
+type SearchChannelsParams struct {
+	Channel
+	PaginationParams
+	FilterTag int    `json:"filter_tag" form:"filter_tag"`
+	BaseURL   string `json:"base_url" form:"base_url"`
+}
+
+func GetChannelsList(params *SearchChannelsParams) (*DataResult[Channel], error) {
+	var channels []*Channel
+
+	db := DB
+	// 代表行取组内最小 id，与 GetChannelsTag 取 channels[0]（Order id ASC）保持一致
+	tagDB := DB.Model(&Channel{}).Select("MIN(id) as id").Where("tag != ''").Group("tag")
+
+	if params.Type != 0 {
+		db = db.Where("type = ?", params.Type)
+		tagDB = tagDB.Where("type = ?", params.Type)
+	}
+
+	if params.Status != 0 {
+		db = db.Where("status = ?", params.Status)
+		tagDB = tagDB.Where("status = ?", params.Status)
+	}
+
+	if params.Name != "" {
+		like := "%" + params.Name + "%"
+		db = db.Where("name LIKE ? OR tag LIKE ?", like, like)
+		tagDB = tagDB.Where("name LIKE ? OR tag LIKE ?", like, like)
+	}
+
+	if params.Group != "" {
+		groupKey := quotePostgresField("group")
+		db = db.Where("( "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" = ?)",
+			"%,"+params.Group+",%", params.Group+",%", "%,"+params.Group, params.Group)
+		tagDB = tagDB.Where("( "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" = ?)",
+			"%,"+params.Group+",%", params.Group+",%", "%,"+params.Group, params.Group)
+	}
+
+	if params.Models != "" {
+		db = db.Where("models LIKE ?", "%"+params.Models+"%")
+		tagDB = tagDB.Where("models LIKE ?", "%"+params.Models+"%")
+	}
+
+	if params.Other != "" {
+		db = db.Where("other LIKE ?", params.Other+"%")
+		tagDB = tagDB.Where("other LIKE ?", params.Other+"%")
+	}
+
+	if params.Key != "" {
+		db = db.Where(quotePostgresField("key")+" = ?", params.Key)
+		tagDB = tagDB.Where(quotePostgresField("key")+" = ?", params.Key)
+	}
+
+	if params.TestModel != "" {
+		db = db.Where("test_model LIKE ?", params.TestModel+"%")
+		tagDB = tagDB.Where("test_model LIKE ?", params.TestModel+"%")
+	}
+
+	if params.BaseURL != "" {
+		db = db.Where("base_url LIKE ?", "%"+params.BaseURL+"%")
+		tagDB = tagDB.Where("base_url LIKE ?", "%"+params.BaseURL+"%")
+	}
+
+	if params.Tag != "" {
+		db = db.Where("tag = ?", params.Tag)
+		tagDB = tagDB.Where("tag = ?", params.Tag)
+	}
+
+	switch params.FilterTag {
+	case 1:
+		db = db.Where("tag = ''")
+	case 2:
+		db = db.Where("id IN (?)", tagDB)
+	default:
+		db = db.Where("tag = '' OR id IN (?)", tagDB)
+	}
+
+	// 标签代表行只是组内最小 id 的那条渠道，默认排序会按它「自身」的列值排位；
+	// 但「已使用/余额/响应时间」展示的是整组合计/平均、「名称」展示的是标签名，
+	// 直接按自身值排会与显示值错位。这里对这几列改用标签感知表达式：
+	// 代表行按整组聚合排序、普通渠道仍按自身值，使排序与所见一致。
+	if order := strings.TrimSpace(params.Order); order != "" {
+		field, dir := order, "ASC"
+		if strings.HasPrefix(field, "-") {
+			field, dir = field[1:], "DESC"
+		}
+		if expr := tagAwareOrderExpr(field, dir); expr != "" {
+			db = db.Order(expr)
+			params.Order = "" // 已自定义排序，避免 PaginateAndOrder 对该列重复套用
+		}
+	}
+
+	result, err := PaginateAndOrder(db, &params.PaginationParams, &channels, allowedChannelOrderFields)
+	if err != nil {
+		return nil, err
+	}
+	for _, channel := range channels {
+		channel.HideKey()
+	}
+	return result, nil
+}
+
+// tagAwareOrderExpr 为「展示值=整组聚合」的列返回标签感知的排序表达式：标签代表行
+// (tag != ”) 按整组聚合排序，普通渠道 (tag = ”) 仍按自身列值；聚合口径与
+// GetChannelsTagAllList 的 _all 统计保持一致（SUM/SUM/已测平均）。返回 "" 表示该列
+// 代表行展示的就是自身值，无需特殊处理，交由通用排序。dir 取 "ASC"/"DESC"。
+func tagAwareOrderExpr(field, dir string) string {
+	var expr string
+	switch field {
+	case "used_quota":
+		expr = "CASE WHEN channels.tag = '' THEN channels.used_quota " +
+			"ELSE (SELECT SUM(c2.used_quota) FROM channels c2 WHERE c2.tag = channels.tag) END"
+	case "balance":
+		expr = "CASE WHEN channels.tag = '' THEN channels.balance " +
+			"ELSE (SELECT SUM(c2.balance) FROM channels c2 WHERE c2.tag = channels.tag) END"
+	case "response_time":
+		expr = "CASE WHEN channels.tag = '' THEN channels.response_time " +
+			"ELSE (SELECT AVG(CASE WHEN c2.response_time > 0 THEN c2.response_time ELSE NULL END) " +
+			"FROM channels c2 WHERE c2.tag = channels.tag) END"
+	case "name":
+		expr = "CASE WHEN channels.tag = '' THEN channels.name ELSE channels.tag END"
+	default:
+		return ""
+	}
+	return expr + " " + dir
+}
+
+func GetAllChannels() ([]*Channel, error) {
+	var channels []*Channel
+	err := DB.Order("id desc").Find(&channels).Error
+	return channels, err
+}
+
+func GetChannelById(id int) (*Channel, error) {
+	channel := Channel{Id: id}
+	err := DB.First(&channel, "id = ?", id).Error
+
+	return &channel, err
+}
+
+func GetChannelsByTag(tag string) ([]*Channel, error) {
+	var channels []*Channel
+	err := DB.Where("tag = ?", tag).Find(&channels).Error
+	return channels, err
+}
+
+func DeleteChannelTag(channelId int) error {
+	result := DB.Model(&Channel{}).Where("id = ?", channelId).Update("tag", "")
+	if result.Error == nil && result.RowsAffected > 0 {
+		ChannelGroup.Load()
+	}
+	return result.Error
+}
+
+func BatchDeleteChannel(ids []int) (int64, error) {
+	result := DB.Where("id IN ?", ids).Delete(&Channel{})
+	if result.Error == nil && result.RowsAffected > 0 {
+		ChannelGroup.Load()
+	}
+	return result.RowsAffected, result.Error
+}
+
+func BatchInsertChannels(channels []Channel) error {
+	err := DB.Omit("UsedQuota").Create(&channels).Error
+	if err != nil {
+		return err
+	}
+
+	ChannelGroup.Load()
+	return nil
+}
+
+type BatchChannelsParams struct {
+	Value string `json:"value" form:"value" binding:"required"`
+	Ids   []int  `json:"ids" form:"ids" binding:"required"`
+}
+
+func BatchUpdateChannelsAzureApi(params *BatchChannelsParams) (int64, error) {
+	db := DB.Model(&Channel{}).Where("id IN ?", params.Ids).Update("other", params.Value)
+	if db.Error != nil {
+		return 0, db.Error
+	}
+
+	if db.RowsAffected > 0 {
+		ChannelGroup.Load()
+	}
+	return db.RowsAffected, nil
+}
+
+func BatchDelModelChannels(params *BatchChannelsParams) (int64, error) {
+	var count int64
+
+	var channels []*Channel
+	err := DB.Select("id, models, "+quotePostgresField("group")).Find(&channels, "id IN ?", params.Ids).Error
+	if err != nil {
+		return 0, err
+	}
+
+	for _, channel := range channels {
+		modelsSlice := strings.Split(channel.Models, ",")
+		for i, m := range modelsSlice {
+			if m == params.Value {
+				modelsSlice = append(modelsSlice[:i], modelsSlice[i+1:]...)
+				break
+			}
+		}
+
+		channel.Models = strings.Join(modelsSlice, ",")
+		channel.UpdateRaw(false)
+		count++
+	}
+
+	if count > 0 {
+		ChannelGroup.Load()
+	}
+
+	return count, nil
+}
+
+// BatchAddUserGroupToChannels 批量添加用户分组到渠道
+func BatchAddUserGroupToChannels(params *BatchChannelsParams) (int64, error) {
+	var count int64
+
+	var channels []*Channel
+	err := DB.Select("id, "+quotePostgresField("group")).Find(&channels, "id IN ?", params.Ids).Error
+	if err != nil {
+		return 0, err
+	}
+
+	for _, channel := range channels {
+		// 获取当前渠道的用户分组列表
+		currentGroups := strings.Split(channel.Group, ",")
+
+		// 清理空字符串并去重
+		uniqueGroups := make(map[string]bool)
+		for _, group := range currentGroups {
+			group = strings.TrimSpace(group)
+			if group != "" {
+				uniqueGroups[group] = true
+			}
+		}
+
+		// 检查要添加的分组是否已存在
+		newGroup := strings.TrimSpace(params.Value)
+		if newGroup != "" && !uniqueGroups[newGroup] {
+			// 分组不存在，添加到渠道
+			uniqueGroups[newGroup] = true
+
+			// 重新构建分组字符串
+			var groupSlice []string
+			for group := range uniqueGroups {
+				groupSlice = append(groupSlice, group)
+			}
+
+			newGroupString := strings.Join(groupSlice, ",")
+
+			// 更新渠道分组
+			err = DB.Model(&Channel{}).Where("id = ?", channel.Id).Update("group", newGroupString).Error
+			if err != nil {
+				return count, err
+			}
+			count++
+		}
+	}
+
+	if count > 0 {
+		ChannelGroup.Load()
+	}
+
+	return count, nil
+}
+
+// BatchAddModelToChannels 批量添加模型到渠道
+func BatchAddModelToChannels(params *BatchChannelsParams) (int64, error) {
+	var count int64
+
+	var channels []*Channel
+	err := DB.Select("id, models").Find(&channels, "id IN ?", params.Ids).Error
+	if err != nil {
+		return 0, err
+	}
+
+	// 解析要添加的模型列表（支持逗号分隔的多个模型）
+	newModels := strings.Split(params.Value, ",")
+	var trimmedNewModels []string
+	for _, model := range newModels {
+		model = strings.TrimSpace(model)
+		if model != "" {
+			trimmedNewModels = append(trimmedNewModels, model)
+		}
+	}
+
+	if len(trimmedNewModels) == 0 {
+		return 0, nil
+	}
+
+	for _, channel := range channels {
+		// 获取当前渠道的模型列表
+		currentModels := strings.Split(channel.Models, ",")
+
+		// 清理空字符串并去重
+		uniqueModels := make(map[string]bool)
+		for _, model := range currentModels {
+			model = strings.TrimSpace(model)
+			if model != "" {
+				uniqueModels[model] = true
+			}
+		}
+
+		// 检查要添加的模型，只添加不存在的模型
+		hasNewModel := false
+		for _, newModel := range trimmedNewModels {
+			if !uniqueModels[newModel] {
+				uniqueModels[newModel] = true
+				hasNewModel = true
+			}
+		}
+
+		// 如果有新模型添加，则更新渠道
+		if hasNewModel {
+			// 重新构建模型字符串
+			var modelSlice []string
+			for model := range uniqueModels {
+				modelSlice = append(modelSlice, model)
+			}
+
+			newModelString := strings.Join(modelSlice, ",")
+
+			// 更新渠道模型
+			err = DB.Model(&Channel{}).Where("id = ?", channel.Id).Update("models", newModelString).Error
+			if err != nil {
+				return count, err
+			}
+			count++
+		}
+	}
+
+	if count > 0 {
+		ChannelGroup.Load()
+	}
+
+	return count, nil
+}
+
+func (c *Channel) SetProxy() {
+	if c.Proxy == nil {
+		return
+	}
+
+	if strings.Contains(*c.Proxy, "%s") {
+		md5Str := md5.Sum([]byte(c.Key))
+		idStr := hex.EncodeToString(md5Str[:])
+		*c.Proxy = strings.Replace(*c.Proxy, "%s", idStr, 1)
+	}
+
+}
+
+func (c *Channel) GetProxy() string {
+	if c.Proxy == nil {
+		return ""
+	}
+	return *c.Proxy
+}
+
+func (channel *Channel) GetPriority() int64 {
+	if channel.Priority == nil {
+		return 0
+	}
+	return *channel.Priority
+}
+
+// GetWeight 兜住 weight 为 NULL 的渠道：管理员更新渠道不带 weight 时该列会被写成 NULL，
+// 按默认权重参与负载均衡，与「0 视为默认权重」的既有语义一致。
+func (channel *Channel) GetWeight() int64 {
+	if channel.Weight == nil {
+		return int64(config.DefaultChannelWeight)
+	}
+	return int64(*channel.Weight)
+}
+
+func (channel *Channel) GetCostRatio() float64 {
+	if channel.CostRatio == nil || *channel.CostRatio <= 0 {
+		return 0
+	}
+	return *channel.CostRatio
+}
+
+func (channel *Channel) GetBaseURL() string {
+	if channel.BaseURL == nil {
+		return ""
+	}
+	return *channel.BaseURL
+}
+
+func (channel *Channel) GetModelMapping() string {
+	if channel.ModelMapping == nil {
+		return ""
+	}
+	return *channel.ModelMapping
+}
+
+func (channel *Channel) GetCustomParameter() string {
+	if channel.CustomParameter == nil {
+		return ""
+	}
+	return *channel.CustomParameter
+}
+
+func (channel *Channel) Insert() error {
+	err := DB.Omit("UsedQuota").Create(channel).Error
+	if err == nil {
+		ChannelGroup.Load()
+	}
+
+	return err
+}
+
+func (channel *Channel) Update(overwrite bool) error {
+
+	err := channel.UpdateRaw(overwrite)
+
+	if err == nil {
+		ChannelGroup.Load()
+		ChannelGroup.ClearChannelCooldowns(channel.Id)
+	}
+
+	return err
+}
+
+func (channel *Channel) UpdateRaw(overwrite bool) error {
+	var err error
+
+	if overwrite {
+		omit := []string{"UsedQuota"}
+		// 编辑时 key 留空表示保留原 key，Select("*") 不能把它覆盖成空串
+		if channel.Key == "" {
+			omit = append(omit, "Key")
+		}
+		err = DB.Model(channel).Select("*").Omit(omit...).Updates(channel).Error
+	} else {
+		err = DB.Model(channel).Omit("UsedQuota").Updates(channel).Error
+	}
+	if err != nil {
+		return err
+	}
+	DB.Model(channel).First(channel, "id = ?", channel.Id)
+	return err
+}
+
+func (channel *Channel) UpdateResponseTime(responseTime int64) {
+	err := DB.Model(channel).Select("response_time", "test_time").Updates(Channel{
+		TestTime:     utils.GetTimestamp(),
+		ResponseTime: int(responseTime),
+	}).Error
+	if err != nil {
+		logger.SysError("failed to update response time: " + err.Error())
+	}
+}
+
+// GetModelDrift 返回上次漂移检测结果，未检测过返回 nil。
+func (channel *Channel) GetModelDrift() *ModelDriftResult {
+	if channel.ModelDrift == nil {
+		return nil
+	}
+	result := channel.ModelDrift.Data()
+	return &result
+}
+
+// DismissNewModels 清空渠道 NewModels，保留 MissingModels 与上游快照（供管理员忽略新增模型）。
+func (channel *Channel) DismissNewModels() error {
+	result := channel.GetModelDrift()
+	if result == nil {
+		return nil
+	}
+	if len(result.NewModels) == 0 {
+		return nil
+	}
+	result.NewModels = nil
+	return channel.UpdateModelDrift(*result)
+}
+
+// UpdateModelDrift 只更新渠道漂移结果列，不触及其它字段（供漂移检测 cron / 手动触发写回）。
+func (channel *Channel) UpdateModelDrift(result ModelDriftResult) error {
+	drift := datatypes.NewJSONType(result)
+	err := DB.Model(&Channel{}).Where("id = ?", channel.Id).Update("model_drift", drift).Error
+	if err != nil {
+		logger.SysError("failed to update channel model drift: " + err.Error())
+		return err
+	}
+	channel.ModelDrift = &drift
+	return nil
+}
+
+func (channel *Channel) UpdateBalance(balance float64) {
+	err := DB.Model(channel).Select("balance_updated_time", "balance").Updates(Channel{
+		BalanceUpdatedTime: utils.GetTimestamp(),
+		Balance:            balance,
+	}).Error
+	if err != nil {
+		logger.SysError("failed to update balance: " + err.Error())
+	}
+}
+
+func (channel *Channel) Delete() error {
+	err := DB.Delete(channel).Error
+	if err == nil {
+		ChannelGroup.Load()
+	}
+	return err
+}
+
+func (channel *Channel) StatusToStr() string {
+	switch channel.Status {
+	case config.ChannelStatusEnabled:
+		return "Enabled"
+	case config.ChannelStatusAutoDisabled:
+		return "Auto-disabled"
+	case config.ChannelStatusManuallyDisabled:
+		return "Manually disabled"
+	}
+
+	return "Disabled"
+}
+
+func UpdateChannelStatusById(id int, status int) {
+	tx := DB.Begin()
+	err := tx.Model(&Channel{}).Where("id = ?", id).Update("status", status).Error
+	if err != nil {
+		logger.SysError("failed to update channel status: " + err.Error())
+		tx.Rollback()
+		return
+	}
+
+	tx.Commit()
+
+	isEnabled := status == config.ChannelStatusEnabled
+	go ChannelGroup.ChangeStatus(id, isEnabled)
+
+	// 启用渠道时清除冻结缓存
+	if isEnabled {
+		ChannelGroup.ClearChannelCooldowns(id)
+	}
+}
+
+func UpdateChannelUsedQuota(id int, quota int) {
+	if config.BatchUpdateEnabled {
+		addNewRecord(BatchUpdateTypeChannelUsedQuota, id, quota)
+		return
+	}
+	updateChannelUsedQuota(id, quota)
+}
+
+func updateChannelUsedQuota(id int, quota int) {
+	err := DB.Model(&Channel{}).Where("id = ?", id).Update("used_quota", gorm.Expr("used_quota + ?", quota)).Error
+	if err != nil {
+		logger.SysError("failed to update channel used quota: " + err.Error())
+	}
+}
+
+func ClearChannelTokenCache(channelId int) {
+	cacheKeys := []string{
+		fmt.Sprintf("api_token:codex:%d", channelId),
+		fmt.Sprintf("api_token:geminicli:%d", channelId),
+		fmt.Sprintf("api_token:claudecode:%d", channelId),
+		fmt.Sprintf("api_token:vertexai:%d", channelId),
+		fmt.Sprintf("api_token:gemini_sa:%d", channelId),
+		fmt.Sprintf("api_token:antigravity:%d", channelId),
+	}
+
+	for _, key := range cacheKeys {
+		if err := cache.DeleteCache(key); err != nil {
+			logger.SysError(fmt.Sprintf("failed to clear token cache %s: %v", key, err))
+		}
+	}
+}
+
+func UpdateChannelKey(id int, key string) error {
+	err := DB.Model(&Channel{}).Where("id = ?", id).Update("key", key).Error
+	if err != nil {
+		logger.SysError("failed to update channel key: " + err.Error())
+		return err
+	}
+
+	ClearChannelTokenCache(id)
+	ChannelGroup.Load()
+
+	return nil
+}
+
+func DeleteDisabledChannel() (int64, error) {
+	result := DB.Where("status = ? or status = ?", config.ChannelStatusAutoDisabled, config.ChannelStatusManuallyDisabled).Delete(&Channel{})
+	if result.Error == nil && result.RowsAffected > 0 {
+		ChannelGroup.Load()
+	}
+	return result.RowsAffected, result.Error
+}
+
+type ChannelStatistics struct {
+	TotalChannels int `json:"total_channels"`
+	Status        int `json:"status"`
+}
+
+func GetStatisticsChannel() (statistics []*ChannelStatistics, err error) {
+	err = DB.Model(&Channel{}).Select("count(*) as total_channels, status").Group("status").Scan(&statistics).Error
+	return statistics, err
+}

@@ -1,0 +1,31 @@
+Modeltaps
+Copyright 2026 The Modeltaps Authors
+
+This product is licensed under the GNU Affero General Public License,
+version 3, with additional terms under section 7. See the LICENSE file for
+the full license text.
+
+This product is a fork and incorporates software developed by the following
+upstream projects. Their original copyright notices and license terms are
+retained; the licenses below are compatible with, and permit relicensing
+of the combined work under, the GNU Affero General Public License v3:
+
+  - one-api — MIT License
+    Copyright (c) songquanpeng and contributors
+    https://github.com/songquanpeng/one-api
+    Modeltaps is developed on top of this project (via one-hub and done-hub).
+
+  - one-hub — Apache License, Version 2.0
+    Copyright (c) MartialBE and contributors
+    https://github.com/MartialBE/one-hub
+    Modeltaps is developed on top of this project (via done-hub).
+
+  - done-hub — Apache License, Version 2.0
+    Copyright (c) deanxv and contributors
+    https://github.com/deanxv/done-hub
+    Modeltaps is a direct fork of and is developed on top of this project.
+
+Portions of this software — in particular the web frontend (web/) and
+substantial backend components — are derived from these upstream projects.
+The frontend (web/) is periodically synced one-way from the done-hub
+upstream; the backend is fully forked and is never synced from upstream.

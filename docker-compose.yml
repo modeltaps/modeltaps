@@ -1,0 +1,86 @@
+services:
+  modeltaps:
+    image: ghcr.io/modeltaps/modeltaps:latest
+    container_name: modeltaps
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      # 容器以非 root(uid=10001) 运行（见 Dockerfile）；宿主目录须可被该 uid 读写，
+      # 例如：mkdir -p ./data && sudo chown -R 10001:10001 ./data（或为本服务加 user: 覆盖）
+      - ./data:/data
+    environment:
+      # 秘密类变量必须显式提供，缺失即 fail-fast（${VAR:?...}）；取值/生成方式见 .env.example
+      # SQL_DSN 数据库名（末尾 /modeltaps）须与下方 MYSQL_DATABASE 一致；注释掉本行改用 SQLite
+      - SQL_DSN=modeltaps:${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set - see .env.example}@tcp(db:3306)/modeltaps
+      - REDIS_CONN_STRING=redis://redis # redis
+      - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET must be set - see .env.example}
+      - USER_TOKEN_SECRET=${USER_TOKEN_SECRET:?USER_TOKEN_SECRET must be set - see .env.example}
+      - TZ=${TZ:-UTC}
+      # - HASHIDS_SALT=${HASHIDS_SALT} # 可空，建议设置，字符串元素不能重复
+    #      - NODE_TYPE=slave  # 多机部署时从节点取消注释该行
+    #      - SYNC_FREQUENCY=60  # 需要定期从数据库加载数据时取消注释该行
+    #      - FRONTEND_BASE_URL=https://modeltaps.example.com  # 多机部署时从节点取消注释该行
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q -O - http://localhost:3000/api/status | grep -o '\"success\":\\s*true' | awk -F: '{print $$2}'",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 可选的本地文档站,默认不启动;需要时用 `docker compose --profile docs up -d`。
+  # Needs the repository source (build context: repository root); local/self-hosted use only.
+  docs:
+    profiles: ["docs"]
+    build:
+      context: .
+      dockerfile: docs/Dockerfile
+    container_name: modeltaps-docs
+    restart: always
+    ports:
+      - "3001:80"
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db:
+    image: mysql:8.2.0
+    restart: always
+    container_name: mysql
+    volumes:
+      - ./data/mysql:/var/lib/mysql # 挂载目录，持久化存储
+    # 默认不暴露 3306 到宿主机；如需从宿主机直连数据库，按需取消下面注释
+    # ports:
+    #   - "3306:3306"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    environment:
+      TZ: ${TZ:-UTC} # 设置时区
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set - see .env.example}" # root 口令，必填
+      MYSQL_USER: modeltaps # 创建专用用户
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set - see .env.example}" # 专用用户口令，必填（须与上方 SQL_DSN 一致）
+      # 须与上方 SQL_DSN 末尾的库名保持一致。
+      MYSQL_DATABASE: modeltaps # 自动创建数据库（仅首次初始化生效）

@@ -1,0 +1,1018 @@
+{
+  "channelPage": {
+    "stats": {
+      "all": "全部",
+      "enabled": "已啟用",
+      "manual": "已停用",
+      "auto": "自動停用"
+    },
+    "searchPlaceholder": "搜尋渠道名稱或標籤",
+    "openModels": "查看模型",
+    "enabledColumn": "啟用",
+    "batchStatusFailed": "{{count}} 個渠道操作失敗",
+    "emptyTitle": "還沒有渠道",
+    "emptyDescription": "新增一個上游供應商的 key，模型才能被調用。"
+  },
+  "apiCatalogPage": {
+    "endpoints": "接口端點",
+    "examples": "請求示例",
+    "models": "可用模型",
+    "playground": "線上試用",
+    "docs": "查看完整文檔",
+    "copied": "已複製",
+    "copyFailed": "複製失敗",
+    "keyHint": "示例中的 sk-YOUR_TOKEN 為佔位符，請替換為你在「API Key」頁建立的 Key。",
+    "chat": {
+      "apiName": "對話 API",
+      "intro": "以 OpenAI、Claude、Gemini 三套相容協議呼叫對話模型，同一把 Key 通用。",
+      "capabilities": {
+        "text": {
+          "title": "文本生成",
+          "desc": "用 OpenAI 相容的 chat/completions 接口生成文本回覆。"
+        },
+        "streaming": {
+          "title": "串流輸出",
+          "desc": "以 SSE 逐段返回，邊生成邊展示。"
+        },
+        "reasoning": {
+          "title": "推理",
+          "desc": "讓模型先思考再回答，可按需調節推理強度。"
+        },
+        "structured": {
+          "title": "結構化輸出",
+          "desc": "用 JSON Schema 約束回覆結構，直接得到可解析的 JSON。"
+        },
+        "tools": {
+          "title": "工具呼叫",
+          "desc": "宣告函數讓模型按需呼叫，拿到結構化的呼叫參數。"
+        },
+        "vision": {
+          "title": "圖片理解",
+          "desc": "在訊息裡傳入圖片 URL，讓模型讀圖作答。"
+        },
+        "files": {
+          "title": "檔案輸入",
+          "desc": "在訊息裡傳入 PDF 等檔案，讓模型基於文檔作答。"
+        },
+        "responses": {
+          "title": "Responses API",
+          "desc": "OpenAI 新版 Responses 接口，單次呼叫即可處理多段輸入。"
+        },
+        "claude": {
+          "title": "Claude 相容",
+          "desc": "以 Anthropic Messages 協議呼叫，SDK 只需改 base_url。"
+        },
+        "gemini": {
+          "title": "Gemini 相容",
+          "desc": "以 Google GenAI 協議呼叫，SDK 只需改 base_url。"
+        }
+      }
+    },
+    "image": {
+      "apiName": "圖像 API",
+      "intro": "生成、編輯圖像，或把圖片作為輸入讓模型讀圖作答，同一把 Key 通用。",
+      "capabilities": {
+        "generations": {
+          "title": "圖像生成 · Images API",
+          "desc": "OpenAI 標準寫法，呼叫 /v1/images/generations 直接取得圖片。"
+        },
+        "chatGenerations": {
+          "title": "圖像生成 · Chat 寫法",
+          "desc": "在 chat/completions 裡宣告 modalities: [\"image\", \"text\"]，由對話模型輸出圖片。",
+          "note": "modalities 與回應裡的 message.images 是 OpenRouter 風格擴充，並非 OpenAI 標準欄位。"
+        },
+        "edits": {
+          "title": "圖像編輯 · Images API",
+          "desc": "OpenAI 標準寫法，上傳原圖與提示詞，回傳編輯後的圖片。"
+        },
+        "chatEdits": {
+          "title": "圖像編輯 · Chat 寫法",
+          "desc": "在 chat/completions 裡同時傳入原圖與提示詞，讓模型輸出編輯後的圖片。",
+          "note": "modalities 與回應裡的 message.images 是 OpenRouter 風格擴充，並非 OpenAI 標準欄位。"
+        },
+        "vision": {
+          "title": "圖片理解",
+          "desc": "在訊息裡傳入圖片 URL，讓模型讀圖作答。"
+        }
+      },
+      "endpoints": {
+        "recraftGenerations": "Recraft 文生圖",
+        "recraftVectorize": "轉換為向量圖",
+        "recraftRemoveBackground": "移除背景",
+        "recraftClarityUpscale": "清晰度放大",
+        "recraftGenerativeUpscale": "生成式放大",
+        "mjImagine": "提交繪圖任務",
+        "mjChange": "對已有任務執行放大 / 變體",
+        "mjBlend": "多圖混合",
+        "mjDescribe": "圖生文描述",
+        "mjFetch": "查詢任務狀態"
+      },
+      "extras": {
+        "title": "其他相容入口",
+        "hint": "廠商專有寫法，按需使用",
+        "recraft": "Recraft",
+        "midjourney": "Midjourney",
+        "midjourneyTasks": "任務記錄見日誌頁 → Midjourney"
+      }
+    },
+    "speech": {
+      "apiName": "音訊 API",
+      "intro": "以 OpenAI 相容協議完成語音合成與語音辨識，也可在對話接口裡直接傳入音訊、讓模型用語音回答。",
+      "capabilities": {
+        "tts": {
+          "title": "語音合成（TTS）",
+          "desc": "把文本合成為語音檔案，可指定音色與輸出格式。"
+        },
+        "stt": {
+          "title": "語音辨識（STT）",
+          "desc": "上傳音訊檔案，轉寫為文本。"
+        },
+        "audioInput": {
+          "title": "音訊輸入理解",
+          "desc": "在對話訊息裡傳入音訊，讓模型聽音作答。"
+        },
+        "audioOutput": {
+          "title": "音訊輸出對話",
+          "desc": "讓對話模型在文本之外同時回傳語音回覆。"
+        },
+        "realtime": {
+          "title": "即時語音",
+          "desc": "透過 WebSocket 建立即時語音會話，相容 OpenAI Realtime 寫法。"
+        }
+      },
+      "extras": {
+        "title": "其他相容入口",
+        "suno": "Suno",
+        "endpoints": {
+          "sunoMusic": "提交音樂生成任務",
+          "sunoLyrics": "提交歌詞生成任務",
+          "sunoFetch": "批次查詢任務",
+          "sunoFetchById": "按 ID 查詢任務"
+        },
+        "tasks": "任務記錄見日誌頁 → 非同步任務"
+      }
+    },
+    "video": {
+      "apiName": "影片 API",
+      "intro": "以 Gemini 相容協定傳入影片讓模型理解內容；影片生成走「建立任務 → 輪詢狀態 → 取回檔案」三步接口。",
+      "capabilities": {
+        "understanding": {
+          "title": "影片理解",
+          "desc": "以 Gemini 相容協定在請求裡傳入影片內容，讓模型看影片作答。",
+          "note": "影片輸入走 Gemini 相容協定：OpenAI 相容的 chat/completions 沒有影片 content part，閘道不會轉發。"
+        },
+        "generation": {
+          "title": "影片生成",
+          "desc": "提交生成任務後輪詢狀態，完成後取回影片檔案。"
+        }
+      },
+      "extras": {
+        "title": "其他相容入口",
+        "kling": "Kling",
+        "veo": "Gemini 原生 Veo",
+        "endpoints": {
+          "klingText2video": "文生影片，提交後回傳任務 ID",
+          "klingImage2video": "圖生影片，提交後回傳任務 ID",
+          "klingFetchText2video": "查詢文生影片任務",
+          "klingFetchImage2video": "查詢圖生影片任務",
+          "veoPredict": "Gemini 原生 Veo 長任務接口"
+        },
+        "tasks": "任務記錄見日誌頁 → 非同步任務"
+      }
+    },
+    "model": "模型",
+    "modelCount_other": "{{count}} 個可用模型",
+    "noModels": "暫無可用模型",
+    "availabilityUnknown": "可用性未知",
+    "comingSoon": "即將上線",
+    "recommended": "推薦模型",
+    "contextLength": "上下文長度",
+    "inputPrice": "輸入價格",
+    "outputPrice": "輸出價格",
+    "priceNote": "價格按基準分組（倍率 x1）折算，實際價格以你所屬分組為準。",
+    "viewModel": "查看模型",
+    "openPlayground": "在試用區開啟",
+    "overview": {
+      "title": "API 概覽",
+      "intro": "一把 Key 調用對話、圖像、音訊、視訊四類模型，相容 OpenAI、Claude、Gemini 三套協定。",
+      "quickstart": "快速開始",
+      "viewApi": "查看介面",
+      "links": {
+        "title": "相關連結",
+        "models": "模型廣場",
+        "modelsDesc": "查看全部可用模型與分組價格。",
+        "keys": "API Key",
+        "keysDesc": "建立與管理調用所需的金鑰。",
+        "docs": "開發文檔",
+        "docsDesc": "接入指南與完整介面說明。"
+      }
+    },
+    "loadFailed": "可用模型列表載入失敗，頁面顯示的可用性可能不準確。",
+    "retry": "重試"
+  },
+  "playground": {
+    "curlHint": "sk-YOUR_TOKEN 為佔位符",
+    "errors": {
+      "request": "請求失敗。",
+      "unauthorized": "試用 Key 被拒絕，請確認帳戶仍有存取權限。",
+      "notFound": "接口或模型不存在。",
+      "rateLimited": "請求過於頻繁，請稍後再試。",
+      "upstream": "上游供應商返回錯誤。",
+      "upstreamAuth": "上游渠道認證失敗，請聯絡管理員檢查渠道配置。",
+      "network": "無法連接到網關。",
+      "aborted": "請求已停止。",
+      "keyFailed": "試用 Key 準備失敗。"
+    },
+    "audio": {
+      "stt": {
+        "errors": {
+          "missingFile": "請先揀一個音訊檔案。",
+          "unsupportedType": "呢個檔案唔係支援嘅音訊格式。",
+          "tooLarge": "音訊檔案需要細過或等於 25 MB。"
+        }
+      }
+    },
+    "picker": {
+      "title": "選擇模型",
+      "searchPlaceholder": "搜尋模型或供應商…",
+      "hideUnavailable": "隱藏不可用",
+      "allProviders": "全部",
+      "unknownProvider": "未知供應商",
+      "available": "可用",
+      "degraded": "降級",
+      "unavailable": "不可用",
+      "noChannel": "無可用渠道",
+      "channels": "{{count}} 渠道",
+      "priceUnknown": "價格未配置",
+      "perCall": "按次",
+      "columns": {
+        "unit": "價格 / 1M tokens",
+        "context": "上下文",
+        "input": "輸入",
+        "output": "輸出"
+      },
+      "priceNote": "價格為每 1M tokens 的輸入 / 輸出單價，按次計費只給單次價，圖像 / 語音按目錄單位計；點擊渠道數展開同模型的其他渠道報價。",
+      "selectedCount": "已選 {{count}} 個",
+      "empty": "沒有符合的模型",
+      "loadFailed": "模型列表載入失敗"
+    }
+  },
+  "playgroundConsole": {
+    "comingSoonDesc": "影片控制台尚未上線，先看介面文件接入。",
+    "viewDocs": "介面文件",
+    "run": "執行",
+    "modality": {
+      "chat": "對話",
+      "image": "圖像",
+      "audio": "語音",
+      "compare": "對比",
+      "video": "影片"
+    },
+    "tabs": {
+      "chat": "對話",
+      "form": "表單"
+    },
+    "state": {
+      "loading": "正在載入模型目錄…"
+    },
+    "model": {
+      "pick": "選擇模型",
+      "none": "暫無模型"
+    },
+    "noModels": {
+      "title": "暫無可用的{{modality}}模型",
+      "adminDesc": "目前沒有通道提供{{modality}}模型，先到通道管理新增或啟用一個通道再回來。",
+      "adminAction": "前往通道管理",
+      "userDesc": "你所在的分組尚未開放{{modality}}模型，可先查看可用模型清單，或聯絡管理員開通。",
+      "userAction": "查看可用模型",
+      "transcription": {
+        "title": "目前站點未接入語音轉文字模型",
+        "adminDesc": "尚未有任何模型聲明語音轉文字（audio.transcription）介面。先到通道管理接入一個提供轉寫模型的通道，或在管理端的模型目錄為已有的轉寫模型勾選 audio.transcription 介面。",
+        "userDesc": "目前站點尚未接入語音轉文字（轉寫）模型，暫時無法在這裡轉寫音訊。可先查看可用模型清單，或聯絡管理員接入轉寫模型。",
+        "userChatDesc": "目前站點尚未接入語音轉文字（轉寫）模型。可改用能聽懂音訊的對話模型：在對話頁上傳音訊，讓模型幫你整理成文字。",
+        "userChatAction": "前往對話頁"
+      }
+    },
+    "gate": {
+      "org": "試用區只涵蓋個人 API Key。",
+      "orgAction": "切回個人內容",
+      "chatDisabled": "站點已關閉內建試用區。",
+      "chatDisabledAction": "查看介面範例"
+    },
+    "chat": {
+      "clear": "清空",
+      "viewCode": "查看程式碼",
+      "codeTitle": "範例程式碼",
+      "params": "參數",
+      "reasoning": "思考過程 · {{parts}} 段",
+      "waiting": "等待首個 token…",
+      "empty": {
+        "title": "從示例開始對話",
+        "subtitle": "挑一個場景看它的提示詞與參數，再改成你自己的。"
+      },
+      "tags": {
+        "code": "程式碼",
+        "stream": "串流輸出",
+        "json": "JSON 輸出",
+        "reasoning": "思考",
+        "longContext": "長上下文",
+        "data": "資料",
+        "translate": "翻譯"
+      },
+      "examples": {
+        "stream": {
+          "title": "串流呼叫",
+          "desc": "最短可執行的 Python 串流請求",
+          "prompt": "用 Python 串流呼叫 /v1/chat/completions，給最短可執行版本"
+        },
+        "schema": {
+          "title": "JSON 轉型別",
+          "desc": "把介面回應轉成 TypeScript 型別",
+          "prompt": "把這段 JSON 轉成帶型別標註的 TypeScript interface（貼在下一行）："
+        },
+        "debug": {
+          "title": "排查 429",
+          "desc": "解釋限流原因並給出重試設定",
+          "prompt": "解釋這次請求為何回傳 429，以及閘道端該怎麼設定重試"
+        },
+        "review": {
+          "title": "程式碼審查",
+          "desc": "按「問題 · 影響 · 修法」逐條過一遍",
+          "prompt": "審查下面這段程式碼，按「問題 · 影響 · 修法」逐條列出："
+        },
+        "summarize": {
+          "title": "長文摘要",
+          "desc": "壓成若干條要點",
+          "prompt": "把下面這段文件壓成 5 條要點，每條不超過 20 字："
+        },
+        "extract": {
+          "title": "結構化擷取",
+          "desc": "從自由文字裡擷取欄位",
+          "prompt": "從下面這段文字擷取公司、金額、日期三個欄位，以 JSON 回傳："
+        },
+        "sql": {
+          "title": "自然語言轉 SQL",
+          "desc": "按資料表結構產生查詢",
+          "prompt": "資料表 orders(id, user_id, amount, created_at)，寫一條查詢：統計最近 7 天每天的訂單數與總金額"
+        },
+        "translate": {
+          "title": "技術文件翻譯",
+          "desc": "保留術語與程式碼區塊原文",
+          "prompt": "把下面這段英文技術文件翻成中文，保留專有名詞與程式碼區塊原文："
+        }
+      },
+      "meta": {
+        "generating": "生成中",
+        "firstToken": "首個 token {{value}}",
+        "tokensUnit": "tokens",
+        "interrupted": "已中斷"
+      },
+      "actions": {
+        "code": "查看該則程式碼",
+        "copy": "複製",
+        "rerun": "重跑"
+      },
+      "composer": {
+        "placeholder": "想問模型什麼",
+        "attach": "附件"
+      },
+      "settings": {
+        "system": "系統提示詞",
+        "systemPlaceholder": "選填，例如：回答盡量給出可直接執行的程式碼",
+        "temperature": "溫度",
+        "topP": "Top P",
+        "maxTokens": "最大 tokens",
+        "seed": "種子",
+        "thinking": "啟用思考",
+        "reasoningEffort": "思考深度",
+        "reasoningEffortOptions": {
+          "default": "預設",
+          "low": "低",
+          "medium": "中",
+          "high": "高"
+        },
+        "thinkingBudget": "思考預算",
+        "stream": "串流輸出",
+        "jsonMode": "JSON 模式"
+      }
+    },
+    "stop": "停止",
+    "fields": {
+      "size": "尺寸",
+      "count": "張數",
+      "countHint": "範圍 1–4，預設 1。",
+      "quality": "品質",
+      "style": "風格",
+      "responseFormat": "回應格式",
+      "responseFormatHint": "url 回傳直連，b64_json 回傳內嵌位元組。",
+      "voice": "音色",
+      "speed": "語速",
+      "speedHint": "範圍 0.25–4.0，預設 1.0。",
+      "format": "格式",
+      "language": "語言",
+      "languagePlaceholder": "如 zh、en（留空自動辨識）",
+      "sttPrompt": "提示詞",
+      "sttPromptPlaceholder": "補充專有名詞，提高辨識準確度",
+      "granularity": "時間戳粒度"
+    },
+    "result": {
+      "title": "結果",
+      "empty": "還沒有結果。",
+      "waiting": "正在生成…",
+      "status": {
+        "idle": "閒置",
+        "running": "生成中",
+        "done": "完成",
+        "error": "失敗"
+      },
+      "tabs": {
+        "preview": "Preview",
+        "json": "JSON"
+      }
+    },
+    "code": {
+      "copy": "複製",
+      "copied": "已複製",
+      "sync": "隨執行設定即時同步",
+      "keyHint": "sk-YOUR_TOKEN 為佔位符，真實 Key 不進頁面。"
+    },
+    "image": {
+      "reference": "參考圖（選填）",
+      "referenceHint": "點擊上傳 · png / jpg / webp ≤ 8MB",
+      "clearReference": "移除參考圖",
+      "chatBadge": "對話出圖",
+      "noImage": "模型沒有返回圖片，可在 JSON 裡查看完整回包。",
+      "download": "下載",
+      "downloadAll": "全部下載",
+      "errors": {
+        "missingFile": "請先選擇參考圖。",
+        "unsupportedType": "只支援 png / jpeg / webp。",
+        "tooLarge": "參考圖不能超過 8MB。"
+      },
+      "clear": "清空",
+      "viewCode": "查看程式碼",
+      "codeTitle": "範例程式碼",
+      "params": "參數",
+      "composer": {
+        "placeholder": "想生成甚麼圖像？"
+      },
+      "empty": {
+        "title": "從範本開始出圖",
+        "subtitle": "挑一個範本看它的提示詞與參數，再改成你自己的。"
+      },
+      "examples": {
+        "poster": {
+          "title": "活動海報",
+          "desc": "直版主視覺，留出標題位",
+          "prompt": "一張科技發布會主視覺海報，深藍漸變背景，幾何光線，中央留出放標題的空白區域"
+        },
+        "product": {
+          "title": "產品圖",
+          "desc": "純色背景的商品擺拍",
+          "prompt": "一隻白色陶瓷馬克杯的產品圖，淺灰純色背景，柔和頂光，輕微投影，電商主圖風格"
+        },
+        "portrait": {
+          "title": "人像寫真",
+          "desc": "柔光棚拍，淺景深",
+          "prompt": "一位年輕女性的棚拍半身人像，柔光箱佈光，淺景深，自然膚色，菲林質感"
+        },
+        "illustration": {
+          "title": "兒童插畫",
+          "desc": "扁平配色的故事插圖",
+          "prompt": "一隻小狐狸提著燈籠穿過秋天的森林，扁平插畫風格，暖色調，柔和紋理"
+        },
+        "icon": {
+          "title": "應用圖示",
+          "desc": "一次出四版可挑選",
+          "prompt": "一個天氣應用的圖示，圓角方形，太陽與雲朵的簡潔符號，漸變藍色，扁平設計"
+        },
+        "landscape": {
+          "title": "寬幅風景",
+          "desc": "橫版自然場景",
+          "prompt": "清晨的山谷，雲海漫過山脊，遠處雪峰被日出染成金色，廣角，超寫實"
+        }
+      }
+    },
+    "audio": {
+      "tts": "文字轉語音",
+      "stt": "語音轉文字",
+      "viewCode": "查看程式碼",
+      "codeTitle": "範例程式碼",
+      "pickExample": "選一個範例生成",
+      "customText": "或輸入任何文字",
+      "examples": {
+        "support": {
+          "label": "客服",
+          "text": "您好，這裡是 Modeltaps 客服。您的工單已經受理，我們會在一個工作天內回覆您。"
+        },
+        "sales": {
+          "label": "銷售",
+          "text": "感謝您關注 Modeltaps。企業版支援私有部署與專屬額度，方便的話我們約個時間細談。"
+        },
+        "podcast": {
+          "label": "播客",
+          "text": "歡迎收聽本期節目。今天我們聊聊怎麼用一個閘道同時接入多家模型供應商。"
+        },
+        "announcement": {
+          "label": "公告",
+          "text": "系統將於本週六凌晨兩點例行維護，預計三十分鐘，期間介面可能短暫波動。"
+        },
+        "meditation": {
+          "label": "冥想",
+          "text": "請找一個舒服的姿勢坐下，慢慢吸氣，再緩緩呼出，把注意力放回到呼吸上。"
+        }
+      },
+      "generate": "生成語音",
+      "play": "播放",
+      "pause": "暫停",
+      "seek": "跳到指定位置",
+      "searchVoices": "搜尋音色",
+      "noVoiceMatch": "沒有相符的音色",
+      "otherLanguage": "其他",
+      "gender": {
+        "neutral": "中性",
+        "male": "男聲",
+        "female": "女聲"
+      },
+      "tags": {
+        "broadcast": "播報",
+        "support": "客服",
+        "audiobook": "有聲書",
+        "ad": "廣告"
+      },
+      "input": "要朗讀的文字",
+      "inputPlaceholder": "輸入要合成的文字",
+      "download": "下載 {{format}}",
+      "unplayable": "瀏覽器無法直接播放 {{format}}，請下載後用播放器開啟",
+      "sttTitle": "上傳音訊轉寫",
+      "dropHint": "拖放音訊到這裡，或點擊上傳",
+      "uploadHint": "mp3 / wav / m4a ≤ 25MB",
+      "transcribe": "轉寫",
+      "startRecord": "開始錄音",
+      "stopRecord": "停止錄音",
+      "transcript": "轉寫結果",
+      "upload": "上傳音訊",
+      "sttEmpty": "選擇音訊開始轉寫"
+    },
+    "compare": {
+      "addColumn": "新增欄",
+      "removeColumn": "刪除此欄",
+      "column": "第 {{index}} 欄",
+      "override": "覆寫",
+      "overrideCount": "覆寫 {{count}} 項",
+      "emptyColumn": "發送後這一欄的回覆會出現在這裡",
+      "pickModel": "先在欄頭選擇模型",
+      "placeholder": "輸入一條訊息，同時發給各欄模型",
+      "stopAll": "全部停止",
+      "syncOn": "同步輸入",
+      "syncOff": "僅啟用欄"
+    }
+  },
+  "nav_subtitles": {
+    "playground": "對話、圖像、語音與多模型對比的線上試運行",
+    "api_audio": "在文字與語音之間轉換",
+    "api_compare": "多個對話模型並排，同一條輸入同時發出",
+    "pricing": "模型目錄、價格、渠道與廠商"
+  },
+  "api_compare": "對比",
+  "modelInfoPage": {
+    "price": "價格",
+    "notInCatalog": "未入目錄",
+    "setPrice": "設定價格",
+    "deletePrice": "刪除價格",
+    "deleteCatalog": "刪除目錄條目",
+    "noChannel": "無渠道",
+    "columns": "欄",
+    "modalities": "模態",
+    "sectionBasic": "基本資訊",
+    "sectionEndpoints": "介面與能力",
+    "sectionLimits": "模態與上限",
+    "sectionPrice": "價格",
+    "sectionSource": "來源與同步時間",
+    "priceEmptyTip": "尚未定價；填寫價格後儲存即新建價格，留空則不定價。",
+    "catalogNotSaved": "目錄資訊未儲存：{{message}}",
+    "priceNotSaved": "價格未儲存：{{message}}"
+  },
+  "pricingPage": {
+    "catalogTabs": {
+      "models": "模型",
+      "vendors": "廠商"
+    }
+  },
+  "listPage": {
+    "searchPlaceholder": "搜尋",
+    "clearSearch": "清除搜尋",
+    "selected": "已選 {{count}} 項",
+    "selectedOf": "已選 {{count}}",
+    "clearSelection": "取消選擇",
+    "clearFilters": "清除篩選",
+    "emptyTitle": "暫無數據",
+    "noMatchTitle": "沒有符合的結果",
+    "noMatchDescription": "換個關鍵詞，或減少篩選條件試試。",
+    "pageOf": "第 {{page}} / {{pages}} 頁",
+    "firstPage": "第一頁",
+    "prevPage": "上一頁",
+    "nextPage": "下一頁",
+    "lastPage": "最後一頁"
+  },
+  "pricing": "模型",
+  "modelsPage": {
+    "addVendor": "添加廠商",
+    "aliasTo": "別名 → {{model}}",
+    "batchDeleteConfirm": "確定刪除選中的 {{count}} 項?此操作不可撤銷。",
+    "batchDeleteFailed": "{{count}} 項刪除失敗",
+    "batchHide": "批量隱藏",
+    "batchShow": "批量顯示",
+    "billing": "計費方式",
+    "billingNone": "未定價",
+    "billingTimes": "按次",
+    "billingTokens": "按 Token",
+    "channelCount": "{{count}} 個渠道",
+    "channelsTab": "渠道與分組",
+    "columnsShort": "列",
+    "copyName": "複製模型名",
+    "editProfile": "編輯資料",
+    "emptyDescription": "渠道裡配置的模型會自動出現在這裡;也可以手動新建目錄條目。",
+    "emptyTitle": "還沒有模型",
+    "export": "導出 JSON",
+    "labeling": "標註",
+    "moreActions": "更多操作",
+    "onlyUsable": "只看完整可用",
+    "priceHeader": "價格 / 1{{unit}} tokens",
+    "priceUnitToggle": "點擊切換為每 1{{unit}} tokens 計價",
+    "priceIn": "輸入",
+    "priceOut": "輸出",
+    "searchPlaceholder": "搜索模型名、別名、標籤",
+    "searchVendors": "搜索廠商名或 Slug",
+    "setPrice": "定價",
+    "sync": "同步",
+    "syncGroup": "上游同步",
+    "unbound": "未綁定",
+    "vendorModelCount": "模型數",
+    "visibility": "可見性",
+    "visibleNeedsCatalog": "需先建目錄條目才能控制可見性",
+    "visibleNo": "隱藏",
+    "visibleToUsers": "對用戶可見",
+    "visibleYes": "可見",
+    "sheet": {
+      "availableGroups": "可用分組",
+      "channelsReadonly": "渠道與分組為只讀,需在渠道頁修改",
+      "goChannels": "前往渠道頁",
+      "groupCount": "{{count}} 個分組",
+      "groups": "分組",
+      "noChannelHint": "暫無啟用的渠道提供該模型,用戶將無法調用。",
+      "openChannel": "打開渠道 {{name}}",
+      "priorityWeight": "優先級 / 權重",
+      "providingChannels": "提供渠道({{count}})",
+      "routingHint": "請求按優先級從高到低路由,同優先級按權重分流。",
+      "status": "狀態",
+      "tabPricing": "定價",
+      "tabProfile": "資料"
+    },
+    "stats": {
+      "all": "全部",
+      "usable": "完整可用",
+      "nochannel": "無渠道",
+      "unpriced": "未定價",
+      "hidden": "已隱藏"
+    },
+    "status": {
+      "ok": "可用",
+      "nochannel": "無渠道",
+      "unpriced": "未定價"
+    }
+  },
+  "brandIconPicker": {
+    "mode": {
+      "auto": "自動：按廠商名稱、標識或網域解析",
+      "builtin": "內建圖示",
+      "upload": "已上載的圖示"
+    },
+    "chooseBuiltin": "選擇內建圖示",
+    "searchBuiltin": "搜尋圖示",
+    "noBuiltin": "沒有相符的圖示",
+    "upload": "上載",
+    "uploadSuccess": "圖示已上載",
+    "uploadTooLarge": "圖示不能超過 256 KB",
+    "resetAuto": "還原自動",
+    "refresh": "重新整理",
+    "refreshDone": "已重新整理 {{domain}} 的圖示",
+    "refreshNotFound": "找不到 {{domain}} 的圖示",
+    "librarySynced": "圖示庫已同步"
+  },
+  "modelOwnedby": {
+    "iconTip": "留空則自動解析；亦可選擇內建圖示或上載圖示（SVG / PNG / JPEG / GIF / WebP / ICO，不超過 256 KB）。不支援填寫外部連結。"
+  },
+  "channel_edit": {
+    "icon": "圖示",
+    "iconTip": "按渠道類型與 API 地址自動解析；重新整理會重新擷取 API 地址所在網站的圖示。"
+  },
+  "brandIconSettings": {
+    "title": "品牌圖示",
+    "description": "廠商與渠道圖示來自內嵌的 lobehub 圖示庫；可在後台自動同步新版本，並為未知廠商抓取網站圖示。瀏覽器始終只從本站載入圖示。",
+    "syncEnabled": "自動同步圖示庫",
+    "syncEnabledDescription": "每 24 小時從 npm registry 檢查 @lobehub/icons-static-svg 新版本，校驗通過後切換；失敗時繼續使用目前版本",
+    "faviconFetchEnabled": "抓取未知廠商圖示",
+    "faviconFetchEnabledDescription": "儲存廠商或渠道時，若沒有內建圖示，則由伺服器抓取其網站 favicon 並快取",
+    "registry": "npm registry 地址",
+    "registryDescription": "同步圖示庫使用的 npm registry，留空則使用 npmmirror"
+  },
+  "userPage": {
+    "statsAll": "全部",
+    "statsEnabled": "已啟用",
+    "statsDisabled": "已停用",
+    "statsAdmin": "管理員",
+    "statsNoOidc": "未綁 OIDC",
+    "orgFilterLabel": "組織",
+    "org": "組織",
+    "shadowAccount": "影子帳戶",
+    "balance": "餘額",
+    "neverLoggedIn": "從未登入",
+    "statusEnabled": "啟用",
+    "statusDisabled": "已停用",
+    "enableSwitch": "啟用",
+    "moreActions": "更多操作",
+    "selectAll": "全選本頁",
+    "batchEnable": "啟用",
+    "batchDisable": "停用",
+    "batchDeleteConfirm": "確定刪除選取的 {{count}} 個用戶？此操作無法復原。",
+    "batchFailed": "{{count}} 個用戶操作失敗",
+    "emptyTitle": "還沒有用戶",
+    "emptyDescription": "開放註冊或手動新增用戶後會顯示在這裡。",
+    "searchShort": "搜尋 ID、用戶名、電郵"
+  },
+  "command": {
+    "search": "搜尋"
+  },
+  "common": {
+    "error": "出錯了",
+    "close": "關閉",
+    "copySucceeded": "複製成功！",
+    "copyNamedSuccess": "複製{{name}}成功！",
+    "copyFailedManual": "複製失敗，請手動複製：",
+    "copyNamedFailed": "複製{{name}}失敗，請手動複製："
+  },
+  "Log Context": "日誌上下文",
+  "View Context": "查看上下文",
+  "Regex": "正則",
+  "Enter regular expression...": "輸入正則表達式…",
+  "chrome": {
+    "menu": "選單",
+    "collapseSidebar": "收起側欄",
+    "expandSidebar": "展開側欄"
+  },
+  "notice": {
+    "announcement": "公告"
+  },
+  "channelForm": {
+    "label": {
+      "name": "渠道名稱",
+      "type": "渠道類型",
+      "base_url": "渠道API地址",
+      "key": "密鑰",
+      "other": "其他參數",
+      "proxy": "代理地址",
+      "test_model": "測速模型",
+      "models": "模型",
+      "model_mapping": "模型映射關係",
+      "model_headers": "自訂模型請求頭",
+      "header_override": "請求頭透傳",
+      "custom_parameter": "額外參數",
+      "groups": "用戶組",
+      "only_chat": "僅支援聊天",
+      "tag": "標籤",
+      "pre_cost": "預計費選項",
+      "disabled_stream": "禁用流式的模型",
+      "compatible_response": "相容Response API",
+      "allow_extra_body": "允許額外欄位透傳",
+      "pass_through_body": "請求體完整透傳",
+      "apiVersion": "預設 API 版本",
+      "pluginParams": "插件參數",
+      "version": "版本號",
+      "region": "位置/區域",
+      "projectIdOptional": "Project ID（可選）"
+    },
+    "prompt": {
+      "type": "請選擇渠道類型",
+      "name": "請為渠道命名",
+      "base_url": "可空，請輸入中轉API地址，例如透過cloudflare中轉。支援使用{model}變數，例如：https://api.example.com/v1/{model}/chat",
+      "key": "請輸入渠道對應的鑑權密鑰",
+      "proxy": "單獨設定代理地址，支援http和socks5，例如：http://127.0.0.1:1080,代理地址中可以透過 `%s` 作為會話標識佔位符，程式中檢測到有佔位符會根據Key生成唯一會話標識符進行替換",
+      "test_model": "用於測試使用的模型，為空時無法測速,如：gpt-3.5-turbo，僅支援chat模型",
+      "models": "請選擇該渠道所支援的模型,你也可以輸入通配符*來匹配模型，例如：gpt-3.5*，表示支援所有gpt-3.5開頭的模型，*號只能在最後一位使用，前面必須有字元，例如：gpt-3.5*是正確的，*gpt-3.5是錯誤的",
+      "model_mapping": "模型映射：每行將「用戶請求的模型名」轉發為「上游真實模型名」（如 opus-latest → claude-opus-4.8）。預設按上游真實模型計費；勾選「按傳入計費」則改為按請求名計費（需先在「模型價格」給請求名配價）。",
+      "model_headers": "自訂模型請求頭，例如：{\"key\": \"value\"}",
+      "header_override": "將客戶端請求頭透傳至上游。值支援固定值、{api_key}（渠道密鑰）、{client_header:X-Request-Id}（取客戶端同名請求頭）；鍵填 * 透傳全部客戶端請求頭，鍵以 re: 或 regex: 開頭按正則透傳匹配的請求頭。注意：鑑權頭由渠道自身處理，不會被覆蓋；鍵名建議使用標準 Header 大小寫（如 X-Request-Id），避免同名頭大小寫不一致。",
+      "custom_parameter": "支援透過 JSON 注入額外參數（可巢狀）。可用控制項：overwrite：設為 true 覆蓋同名欄位，未設定或 false 時僅補充缺失欄位；per_model：設為 true 後按模型名進行參數覆蓋，如 {\"per_model\":true,\"gpt-3.5-turbo\":{\"temperature\": 0.7},\"gpt-4\":{\"temperature\": 0.5}}；pre_add：設為 true 時在請求入口即完成參數覆蓋，否則會在發送請求前再進行參數覆蓋，適用於所有渠道（含 Claude、Gemini），如 {\"pre_add\":true,\"overwrite\":true,\"stream\":false}。",
+      "groups": "請選擇該渠道所支援的用戶組",
+      "only_chat": "如果選擇了僅支援聊天，那麼遇到有函數調用的請求會跳過該渠道",
+      "provider_models_list": "必須填寫所有資料後才能獲取模型列表",
+      "tag": "你可以為你的渠道打一個標籤，打完標籤後，可以透過標籤進行批量管理渠道，注意：設定標籤後某些設定只能透過渠道標籤修改，無法在渠道列表中修改。",
+      "pre_cost": "這裡選擇預計費選項，用於預估費用，如果你覺得計算圖片佔用太多資源，可以選擇關閉圖片計費。但是請注意：有些渠道在stream下是不會返回tokens的，這會導致輸入tokens計算錯誤。",
+      "disabled_stream": "這裡填寫禁用流式的模型，注意：如果填寫了禁用流式的模型，那麼這些模型在流式請求時會跳過該渠道",
+      "allow_extra_body": "開啟後，將會透傳用戶請求中的額外欄位（如OpenAI SDK的extra_body參數），適用於需要傳遞自訂參數到上游API的場景",
+      "pass_through_body": "開啟後，將客戶端請求體原樣轉發至上游，僅改寫映射後的模型名，保留未知欄位與原始位元組；適用於同協議透明代理場景。注意：僅對 OpenAI 協議渠道生效（Claude、Gemini 等自建請求體的渠道不讀取該項）；開啟後將跳過額外欄位合併（僅渠道額外參數仍以位元組方式生效）。",
+      "enterValue": "請填寫{{name}}",
+      "apiVersionExample": "請輸入預設API版本，例如：{{example}}",
+      "keyFormat": "按照如下格式輸入：{{format}}",
+      "keyFormatExample": "按照如下格式輸入：{{format}}，例如：{{example}}",
+      "keyFormatBaidu": "按照如下格式輸入：APIKey|SecretKey, 如果開啟了OpenAI API，請直接輸入APIKEY",
+      "keyFormatAws": "按照如下格式輸入：Region|AccessKeyID|SecretAccessKey|SessionToken 其中SessionToken可不填",
+      "format": "格式：{{format}}",
+      "dashscopePlugin": "請輸入插件參數，即 X-DashScope-Plugin 請求頭的取值",
+      "versionExample": "請輸入版本號，例如：{{example}}",
+      "speechRegion": "請輸入你 Speech Studio 的位置/區域，例如：eastasia",
+      "proxyKey": "密鑰填寫{{service}}的密鑰，如果沒有設定密鑰，可以隨便填",
+      "proxyAddress": "地址填寫{{service}}部署的地址",
+      "cozeModels": "模型名稱為coze-{bot_id}，你也可以直接使用 coze-* 通配符來匹配所有coze開頭的模型",
+      "cozeMapping": "模型名稱映射， 你可以取一個容易記憶的名字來代替coze-{bot_id}，例如：{\"coze-translate\": \"coze-xxxxx\"},注意：如果使用了模型映射，那麼上面的模型名稱必須使用映射前的名稱，上述例子中，你應該在模型中填入coze-translate(如果已經使用了coze-*，可以忽略)。",
+      "ollamaUrl": "請輸入你部署的Ollama地址，例如：http://127.0.0.1:11434，如果你使用了cloudflare Zero Trust，可以在下方插件填入授權資訊",
+      "anyValue": "請隨意填寫",
+      "keySeeDocs": "請參考文件獲取 key。",
+      "keySeeUrl": "密鑰資訊請參考{{url}}",
+      "vertexRegion": "Region|ProjectID 或 Region1|Region2|Region3|ProjectID（支援多個Region隨機選擇）",
+      "siliconflowUrl": "官方api地址https://api.siliconflow.com即將停用，請使用https://api.siliconflow.cn",
+      "oauthJson": "請輸入完整的 OAuth2 憑證 JSON，或點擊下方\"OAuth 授權\"按鈕自動獲取",
+      "claudeOauth": "請輸入 access_token（sk-ant-sid01-xxx）或完整的 OAuth2 憑證 JSON，也可點擊下方\"OAuth 授權\"按鈕自動獲取",
+      "gcpProjectId": "請輸入 Google Cloud Project ID，例如：my-project-123",
+      "projectIdOptional": "可選，留空將自動檢測或隨機生成。例如：my-project-123",
+      "vertexExpressKey": "請輸入 API Key（從 Google Cloud Console 獲取）"
+    },
+    "fetchModelsFrom": "從{{source}}獲取模型列表",
+    "fetchModelsFromChannel": "從渠道獲取模型列表",
+    "fetchAzureDeployments": "從Azure獲取已部署模型列表"
+  },
+  "channelPlugin": {
+    "enable": "啟用",
+    "useOpenaiApi": {
+      "name": "使用OpenAI API",
+      "enableDescNoPlugins": "是否啟用使用OpenAI API, 開啟後直接使用{{vendor}}官方相容OpenAI的API，不再做類型轉換, 且上述插件無效",
+      "enableDesc": "是否啟用使用OpenAI API, 開啟後直接使用{{vendor}}官方相容OpenAI的API，不再做類型轉換"
+    },
+    "webSearch": {
+      "name": "網頁搜尋",
+      "description": "使用網頁搜尋功能，對用戶輸入的內容進行搜尋",
+      "enableDesc": "是否啟用網頁搜尋"
+    },
+    "retrieval": {
+      "name": "知識庫",
+      "description": "請前往開放平台的知識庫上傳文件，然後使用知識庫功能進行檢索。",
+      "knowledgeId": {
+        "name": "知識庫ID",
+        "description": "當涉及到知識庫ID時，請前往開放平台的知識庫模組進行建立或獲取(是知識庫ID不是文件ID！)"
+      },
+      "promptTemplate": {
+        "name": "知識庫模板",
+        "description": "請求模型時的知識庫模板, 請查看文件填寫，否則不用填寫"
+      }
+    },
+    "webBrowser": {
+      "name": "搜尋工具",
+      "description": "使用搜尋工具功能，僅glm-4-alltools有效",
+      "enableDesc": "是否啟用搜尋工具"
+    },
+    "drawingTool": {
+      "name": "繪圖工具",
+      "description": "使用繪圖工具功能，僅glm-4-alltools有效",
+      "enableDesc": "是否啟用繪圖工具"
+    },
+    "codeInterpreter": {
+      "name": "程式碼工具",
+      "description": "使用程式碼工具功能，僅glm-4-alltools有效",
+      "sandbox": {
+        "name": "沙盒模式",
+        "description": "auto 自動調用沙盒環境執行程式碼，none 不啟用沙盒環境，必填"
+      }
+    },
+    "voice": {
+      "name": "聲音映射",
+      "azureDescription": "將OpenAI的聲音角色映射到azure的聲音角色, 如果有role，請用|隔開，例如zh-CN-YunxiNeural|boy",
+      "minimaxDescription": "將OpenAI的聲音角色映射到minimax的聲音角色, 如果有emotion，請用|隔開，例如female-chengshu|happy",
+      "mappingName": "{{voice}} 映射",
+      "defaultValue": "預設 {{value}}"
+    },
+    "headers": {
+      "name": "Header 配置",
+      "description": "本配置主要是用於使用cloudflare Zero Trust將端口暴露到公網時，需要配置的header"
+    },
+    "codeExecution": {
+      "name": "程式碼執行",
+      "description": "使用程式碼執行功能，開啟後，計算tokens不準確，建議個人使用開啟",
+      "enableDesc": "是否啟用程式碼執行"
+    },
+    "codex": {
+      "name": "Codex 設定",
+      "description": "Codex 渠道專屬配置",
+      "imagesMainModel": {
+        "name": "圖像編排模型",
+        "description": "生圖請求使用的 Responses 編排模型（不是圖像模型本身）。留空使用預設的 gpt-5.6-luna；上游下線該模型時，可改為帳戶支援的文字模型"
+      }
+    },
+    "customize": {
+      "name": "自訂參數",
+      "description": "你可以自訂每個請求的地址，空為預設值，disable為禁用該請求",
+      "endpointName": "{{endpoint}}地址",
+      "endpointDefault": "預設為： {{path}}"
+    },
+    "override": {
+      "name": "覆蓋參數",
+      "provider": "供應商"
+    },
+    "promptCaching": {
+      "name": "Prompt Caching 自動注入",
+      "description": "自動注入 cache_control 啟用 Anthropic Prompt Caching。請求已自帶 cache_control 時不注入（用戶顯式優先）。",
+      "enabled": {
+        "name": "啟用方式",
+        "description": "inherit 跟隨營運設定中的全局開關；on 強制開啟；off 強制關閉",
+        "inherit": "inherit（跟隨全局）",
+        "on": "on（強制開啟）",
+        "off": "off（強制關閉）"
+      },
+      "ttl": {
+        "name": "快取 TTL",
+        "description": "快取有效期，1h 會自動附加 extended-cache-ttl beta 頭",
+        "5m": "5 分鐘",
+        "1h": "1 小時"
+      },
+      "strategy": {
+        "name": "注入策略",
+        "description": "system 僅注入 system 末尾；system+last_user 同時注入最後一條 user 訊息末尾",
+        "systemLastUser": "system + 最後一條 user"
+      },
+      "matchMode": {
+        "name": "模型識別方式",
+        "description": "auto 按內置 Anthropic 命名規則識別（基於模型映射後的上游模型名）；custom 僅匹配下方通配符列表；regex 按自訂正則匹配；auto+custom 取內置規則與自訂規則（通配符/正則）的並集",
+        "auto": "auto（內置 claude 規則）",
+        "custom": "custom（自訂通配符）",
+        "regex": "regex（自訂正則）",
+        "autoCustom": "auto+custom（內置規則+自訂，取並集）"
+      },
+      "patterns": {
+        "name": "自訂模型通配符",
+        "description": "僅 custom 模式生效，逗號分隔，支援 *，例如：claude-*,my-model"
+      },
+      "regex": {
+        "name": "自訂模型正則",
+        "description": "僅 regex / auto+custom 模式生效；對模型映射後的上游模型名做大小寫不敏感匹配，例如 ^(anthropic/)?claude 或 opus|sonnet|haiku"
+      }
+    }
+  },
+  "paymentConfig": {
+    "types": {
+      "epay": "易支付",
+      "alipay": "支付寶",
+      "wxpay": "微信支付",
+      "stripe": "Stripe"
+    },
+    "currency": {
+      "CNY": "人民幣",
+      "USD": "美元"
+    },
+    "fields": {
+      "payDomain": "支付域名",
+      "merchantId": "商戶號",
+      "key": "密鑰",
+      "payType": "支付類型"
+    },
+    "epay": {
+      "payTypeDesc": "支付類型,如果需要跳轉到易支付收銀台,請選擇收銀台",
+      "checkout": "收銀台",
+      "wechat": "微信",
+      "qq": "QQ",
+      "jd": "京東",
+      "unionpay": "銀聯",
+      "paypal": "Paypal",
+      "usdt": "USDT"
+    },
+    "alipay": {
+      "appId": "應用ID",
+      "appIdDesc": "支付寶應用ID",
+      "privateKey": "應用私鑰",
+      "privateKeyDesc": "應用私鑰，開發者自己生成，詳細參考官方文件 {{url}}",
+      "publicKey": "支付寶公鑰",
+      "publicKeyDesc": "支付寶公鑰，詳細參考官方文件 {{url}}",
+      "payTypeDesc": "支付類型,需要您在支付寶開發者中心開通相關權限才可以使用對應類型支付方式",
+      "facepay": "當面付",
+      "pagepay": "電腦網站支付",
+      "wappay": "手機網站支付"
+    },
+    "wxpay": {
+      "appId": "AppID",
+      "appIdDesc": "應用ID 詳見{{url}}",
+      "mchIdDesc": "微信商戶號 詳見{{url}}",
+      "certSerial": "商戶證書序號",
+      "certSerialDesc": "商戶證書序號 詳見{{url}}",
+      "apiv3Key": "商戶APIv3密鑰",
+      "apiv3KeyDesc": "商戶APIv3密鑰 詳見{{url}}",
+      "privateKey": "商戶私鑰",
+      "privateKeyDesc": "商戶私鑰 詳見{{url}}",
+      "native": "Native支付"
+    },
+    "stripe": {
+      "secretKey": "SecretKey",
+      "secretKeyDesc": "API 私鑰",
+      "webhookSecret": "WebHookSecret",
+      "webhookSecretDesc": "回調驗證密鑰，不用填寫，建立網關後會自動在stripe後台建立webhook並獲取webhook密鑰"
+    }
+  }
+}

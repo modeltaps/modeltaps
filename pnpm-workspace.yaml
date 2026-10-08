@@ -1,0 +1,13 @@
+packages:
+  - web
+  - docs
+  - ittest/authgear
+
+overrides:
+  monaco-editor>dompurify: ^3.4.14
+
+# Dependencies whose install scripts may run (pnpm skips all others).
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - esbuild
+  - workerd

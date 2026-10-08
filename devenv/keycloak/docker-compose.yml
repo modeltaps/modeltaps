@@ -1,0 +1,63 @@
+# 本地 OIDC 开发环境：Keycloak（预置 realm / client / 测试用户）
+#
+# 用途：不依赖线上 IdP，在本地完整跑通「直达登录 → 退出（end_session + id_token_hint）
+# → /signed-out」。用的是 start-dev + 文件数据库（dev-file），不需要 Postgres。
+#
+# 启动 / 停止：
+#   cd devenv/keycloak && docker compose up -d
+#   docker compose logs -f keycloak          # 等 "Listening on" 出现（约 20s）
+#   docker compose down -v                   # 连同 realm 数据一起丢掉（下次重新导入）
+#
+# 换局域网 IP（让其他设备参与测试）时只改一处：
+#   DEVENV_HOST=192.168.1.23 docker compose up -d --force-recreate
+# realm 里的 redirect / post-logout URI、KC_HOSTNAME、issuer 都由它推导。
+# 注意 realm 只在首次创建时导入，改了 DEVENV_HOST 必须先 `docker compose down -v`。
+#
+# Modeltaps 不跑在默认 3000 端口时同理：
+#   MODELTAPS_PORT=3010 docker compose up -d --force-recreate
+#
+# 固定值（devenv 专用，勿用于任何真实环境）：
+#   Keycloak 控制台   http://localhost:8087/  admin / admin
+#   realm            modeltaps
+#   issuer           http://localhost:8087/realms/modeltaps
+#   client id        modeltaps
+#   client secret    modeltaps-devenv-secret
+#   测试用户         modeltaps-dev@example.com / modeltaps-dev-password（邮箱已验证）
+#
+# Modeltaps 后台「OIDC 提供方」要填的值（系统设置里 ServerAddress 须为 http://localhost:3000）：
+#   slug             keycloak        # 决定回调地址 <ServerAddress>/oauth/oidc/keycloak
+#   issuer           http://localhost:8087/realms/modeltaps
+#   client id        modeltaps
+#   client secret    modeltaps-devenv-secret
+#   scopes           openid profile email
+# 退出链路需要 realm 里已登记的 <ServerAddress>/signed-out，本文件已随 MODELTAPS_URL 一起生成。
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.3
+    container_name: modeltaps-devenv-keycloak
+    command: ["start-dev", "--import-realm"]
+    environment:
+      # devenv 固定弱口令，仅本机可达
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      # 容器内监听端口与宿主端口保持一致，避免 issuer 与实际端口错位
+      KC_HTTP_PORT: "${KC_PORT:-8087}"
+      # issuer 固定为该 URL——必须是浏览器实际访问的 host，不能是容器内网名，
+      # 否则 Modeltaps 校验 id_token 的 iss 会失败
+      KC_HOSTNAME: "http://${DEVENV_HOST:-localhost}:${KC_PORT:-8087}"
+      KC_HOSTNAME_STRICT: "false"
+      # realm-modeltaps.json 里的 ${MODELTAPS_URL} 占位符由 Keycloak 的 realm 导入替换
+      MODELTAPS_URL: "http://${DEVENV_HOST:-localhost}:${MODELTAPS_PORT:-3000}"
+    ports:
+      - "${KC_PORT:-8087}:${KC_PORT:-8087}"
+    volumes:
+      # 导入目录只读取 *.json，文件名按 <realm>-realm.json 约定
+      - ./realm-modeltaps.json:/opt/keycloak/data/import/modeltaps-realm.json:ro
+    healthcheck:
+      # 镜像里没有 curl / wget，用 bash 的 /dev/tcp 探端口
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/${KC_PORT:-8087}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s

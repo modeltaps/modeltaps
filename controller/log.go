@@ -1,0 +1,650 @@
+package controller
+
+import (
+	"encoding/csv"
+	"fmt"
+	"github.com/modeltaps/modeltaps/common"
+	"github.com/modeltaps/modeltaps/model"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
+
+// 日志最早可查回溯天数（lookback）：约束 start/end 不得早于 now-该天数
+const MaxLogLookbackDays = 731
+
+// 日志单次查询最大时间跨度（span）：约束 start~end 的跨度上限
+const MaxLogQuerySpanDays = 366
+
+// validateLogTimeRange 验证日志查询的时间范围
+func validateLogTimeRange(startTimestamp, endTimestamp int64) error {
+	if startTimestamp == 0 && endTimestamp == 0 {
+		return nil
+	}
+
+	now := time.Now()
+	lookbackDuration := time.Duration(MaxLogLookbackDays) * 24 * time.Hour
+	minAllowedTime := now.Add(-lookbackDuration)
+	spanDuration := time.Duration(MaxLogQuerySpanDays) * 24 * time.Hour
+
+	if startTimestamp > 0 {
+		if time.Unix(startTimestamp, 0).Before(minAllowedTime) {
+			return fmt.Errorf("start time must not be earlier than %d days ago", MaxLogLookbackDays)
+		}
+	}
+
+	if endTimestamp > 0 {
+		if time.Unix(endTimestamp, 0).Before(minAllowedTime) {
+			return fmt.Errorf("end time must not be earlier than %d days ago", MaxLogLookbackDays)
+		}
+	}
+
+	if startTimestamp > 0 && endTimestamp > 0 {
+		if endTimestamp < startTimestamp {
+			return fmt.Errorf("end time must not be earlier than start time")
+		}
+		if time.Unix(endTimestamp, 0).Sub(time.Unix(startTimestamp, 0)) > spanDuration {
+			return fmt.Errorf("query time range must not exceed %d days", MaxLogQuerySpanDays)
+		}
+	}
+
+	return nil
+}
+
+// checkLogTimeRange 校验时间范围，失败时写入错误响应并返回 true
+func checkLogTimeRange(c *gin.Context, startTimestamp, endTimestamp int64) bool {
+	if err := validateLogTimeRange(startTimestamp, endTimestamp); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return true
+	}
+	return false
+}
+
+// histogramBucketWindowSeconds 请求量直方图切换到「按小时」的窗口上限(含):≤2 天按小时,更长按天。
+const histogramBucketWindowSeconds = 2 * 24 * 3600
+
+// histogramBucketType 依据查询窗口自适应桶粒度。窗口无法判定(起止缺失或非法)时保守按天。
+func histogramBucketType(startTimestamp, endTimestamp int64) string {
+	if startTimestamp <= 0 || endTimestamp <= startTimestamp {
+		return "day"
+	}
+	if endTimestamp-startTimestamp <= histogramBucketWindowSeconds {
+		return "hour"
+	}
+	return "day"
+}
+
+func GetLogsList(c *gin.Context) {
+	var params model.LogsListParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+
+	if checkLogTimeRange(c, params.StartTimestamp, params.EndTimestamp) {
+		return
+	}
+
+	logs, err := model.GetLogsList(&params)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    logs,
+	})
+}
+
+func GetUserLogsList(c *gin.Context) {
+	userId := c.GetInt("id")
+
+	var params model.LogsListParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+
+	if checkLogTimeRange(c, params.StartTimestamp, params.EndTimestamp) {
+		return
+	}
+
+	logs, err := model.GetUserLogsList(userId, &params)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    logs,
+	})
+}
+
+func GetLogsStat(c *gin.Context) {
+	var params model.LogsListParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+
+	if checkLogTimeRange(c, params.StartTimestamp, params.EndTimestamp) {
+		return
+	}
+
+	quotaNum := model.SumUsedQuota(&params)
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"quota": quotaNum,
+		},
+	})
+}
+
+func GetLogsSelfStat(c *gin.Context) {
+	var params model.LogsListParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+
+	if checkLogTimeRange(c, params.StartTimestamp, params.EndTimestamp) {
+		return
+	}
+
+	params.Username = c.GetString("username")
+	// SumUsedQuota 与 admin 的 GetLogsStat 共享实现，会读取 ChannelId / SourceIp；
+	// 这两个字段在 GetUserLogsList 里被忽略，stat 也要保持一致，否则普通用户在工具栏
+	// 填了 source_ip 后会出现「列表不过滤、总消费过滤」的数字对不上。
+	params.ChannelId = 0
+	params.SourceIp = ""
+	params.UpstreamRequestId = ""
+	// W9-D:多值/排除口径同上,self 上下文清空 admin 专属维度,保证列表与总消费数字一致。
+	params.Usernames = nil
+	params.ChannelIds = nil
+	params.SourceIps = nil
+	params.ExcludeUsernames = nil
+	params.ExcludeChannelIds = nil
+	params.ExcludeSourceIps = nil
+
+	quotaNum := model.SumUsedQuota(&params)
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"quota": quotaNum,
+		},
+	})
+}
+
+// GetLogsHistogram 站点管理员上下文的请求量直方图(与列表同筛选口径,桶粒度按窗口自适应)。
+func GetLogsHistogram(c *gin.Context) {
+	var params model.LogsListParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+
+	if checkLogTimeRange(c, params.StartTimestamp, params.EndTimestamp) {
+		return
+	}
+
+	bucket := histogramBucketType(params.StartTimestamp, params.EndTimestamp)
+	buckets, err := model.GetLogsRequestHistogram(&params, bucket)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"bucket":  bucket,
+			"buckets": buckets,
+		},
+	})
+}
+
+// GetLogsSelfHistogram 个人上下文的请求量直方图(锁定当前用户,忽略 admin 专属维度)。
+func GetLogsSelfHistogram(c *gin.Context) {
+	userId := c.GetInt("id")
+
+	var params model.LogsListParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+
+	if checkLogTimeRange(c, params.StartTimestamp, params.EndTimestamp) {
+		return
+	}
+
+	bucket := histogramBucketType(params.StartTimestamp, params.EndTimestamp)
+	buckets, err := model.GetUserLogsRequestHistogram(userId, &params, bucket)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"bucket":  bucket,
+			"buckets": buckets,
+		},
+	})
+}
+
+func DeleteHistoryLogs(c *gin.Context) {
+	targetTimestamp, _ := strconv.ParseInt(c.Query("target_timestamp"), 10, 64)
+	if targetTimestamp == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "target timestamp is required",
+		})
+		return
+	}
+	count, err := model.DeleteOldLog(targetTimestamp)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    count,
+	})
+}
+
+func ExportLogsList(c *gin.Context) {
+	var params model.LogsListParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+
+	if checkLogTimeRange(c, params.StartTimestamp, params.EndTimestamp) {
+		return
+	}
+
+	// Get all matching records without pagination
+	logs, err := model.GetAllLogsList(&params)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+
+	// Set response headers for CSV download
+	filename := fmt.Sprintf("logs_export_%s.csv", time.Now().Format("20060102_150405"))
+	c.Header("Content-Type", "text/csv")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+
+	// Create CSV writer
+	writer := csv.NewWriter(c.Writer)
+	defer writer.Flush()
+
+	// Write CSV headers
+	headers := []string{
+		"Time", "Channel", "User", "Group", "API Key", "Type", "Model",
+		"Duration (s)", "Input Tokens", "Output Tokens", "Quota", "Source IP", "Request ID", "Upstream Request ID", "Details",
+	}
+	if err := writer.Write(headers); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+
+	// Write data rows
+	for _, log := range logs {
+		row := formatLogToCSVRow(log, true) // true for admin
+		if err := writer.Write(row); err != nil {
+			common.APIRespondWithError(c, http.StatusOK, err)
+			return
+		}
+	}
+}
+
+func ExportUserLogsList(c *gin.Context) {
+	userId := c.GetInt("id")
+
+	var params model.LogsListParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+
+	if checkLogTimeRange(c, params.StartTimestamp, params.EndTimestamp) {
+		return
+	}
+
+	// Get all matching records without pagination
+	logs, err := model.GetAllUserLogsList(userId, &params)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+
+	// Set response headers for CSV download
+	filename := fmt.Sprintf("logs_export_%s.csv", time.Now().Format("20060102_150405"))
+	c.Header("Content-Type", "text/csv")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+
+	// Create CSV writer
+	writer := csv.NewWriter(c.Writer)
+	defer writer.Flush()
+
+	// Write CSV headers (without admin-only columns)
+	headers := []string{
+		"Time", "Group", "API Key", "Type", "Model",
+		"Duration (s)", "Input Tokens", "Output Tokens", "Quota", "Source IP", "Request ID", "Details",
+	}
+	if err := writer.Write(headers); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+
+	// Write data rows
+	for _, log := range logs {
+		row := formatLogToCSVRow(log, false) // false for regular user
+		if err := writer.Write(row); err != nil {
+			common.APIRespondWithError(c, http.StatusOK, err)
+			return
+		}
+	}
+}
+
+// csvSafeField 防 CSV 公式注入：值以 = + - @ 或制表/回车开头时前置单引号，
+// 使 Excel / Sheets 等表格软件按文本而非公式解析。仅用于导出，不改存储值。
+func csvSafeField(v string) string {
+	if v == "" {
+		return v
+	}
+	switch v[0] {
+	case '=', '+', '-', '@', '\t', '\r':
+		return "'" + v
+	}
+	return v
+}
+
+func formatLogToCSVRow(log *model.Log, isAdmin bool) []string {
+	// Format timestamp
+	timeStr := time.Unix(log.CreatedAt, 0).Format("2006-01-02 15:04:05")
+
+	// Format log type
+	typeStr := getLogTypeText(log.Type)
+
+	// Format channel info
+	channelStr := ""
+	if log.Channel != nil {
+		channelStr = fmt.Sprintf("%d (%s)", log.ChannelId, log.Channel.Name)
+	} else if log.ChannelId != 0 {
+		channelStr = strconv.Itoa(log.ChannelId)
+	}
+
+	// Format duration
+	durationStr := ""
+	if log.RequestTime > 0 {
+		durationStr = fmt.Sprintf("%.2f", float64(log.RequestTime)/1000.0)
+	}
+
+	// Format quota
+	quotaStr := ""
+	if log.Quota > 0 {
+		quotaStr = fmt.Sprintf("%.6f", float64(log.Quota)/500000.0)
+	} else {
+		quotaStr = "0"
+	}
+
+	// Format tokens
+	inputTokensStr := ""
+	if log.PromptTokens > 0 {
+		inputTokensStr = strconv.Itoa(log.PromptTokens)
+	}
+
+	outputTokensStr := ""
+	if log.CompletionTokens > 0 {
+		outputTokensStr = strconv.Itoa(log.CompletionTokens)
+	}
+
+	// Get group name from metadata
+	groupStr := ""
+	if metadataData := log.Metadata.Data(); metadataData != nil {
+		if groupName, ok := metadataData["group_name"]; ok {
+			if groupNameStr, ok := groupName.(string); ok {
+				groupStr = groupNameStr
+			}
+		}
+	}
+
+	// Format detail content
+	detailStr := formatLogDetail(log)
+
+	if isAdmin {
+		// Admin view includes channel and user columns
+		return []string{
+			timeStr,
+			csvSafeField(channelStr),
+			csvSafeField(log.Username),
+			csvSafeField(groupStr),
+			csvSafeField(log.TokenName),
+			typeStr,
+			csvSafeField(log.ModelName),
+			durationStr,
+			inputTokensStr,
+			outputTokensStr,
+			quotaStr,
+			csvSafeField(log.SourceIp),
+			csvSafeField(log.RequestId),
+			csvSafeField(log.UpstreamRequestId),
+			csvSafeField(detailStr),
+		}
+	} else {
+		// User view excludes admin-only columns (含上游请求ID)
+		return []string{
+			timeStr,
+			csvSafeField(groupStr),
+			csvSafeField(log.TokenName),
+			typeStr,
+			csvSafeField(log.ModelName),
+			durationStr,
+			inputTokensStr,
+			outputTokensStr,
+			quotaStr,
+			csvSafeField(log.SourceIp),
+			csvSafeField(log.RequestId),
+			csvSafeField(detailStr),
+		}
+	}
+}
+
+func getLogTypeText(logType int) string {
+	switch logType {
+	case model.LogTypeTopup:
+		return "Top-up"
+	case model.LogTypeConsume:
+		return "Consumption"
+	case model.LogTypeManage:
+		return "Management"
+	case model.LogTypeSystem:
+		return "System"
+	default:
+		return "Unknown"
+	}
+}
+
+func formatLogDetail(log *model.Log) string {
+	if metadataData := log.Metadata.Data(); metadataData != nil {
+		// Check if we have price ratio information
+		if inputRatio, hasInputRatio := metadataData["input_ratio"]; hasInputRatio {
+			inputRatioFloat, ok := inputRatio.(float64)
+			if !ok {
+				// Try to convert from other numeric types
+				if inputRatioInt, ok := inputRatio.(int); ok {
+					inputRatioFloat = float64(inputRatioInt)
+				} else {
+					return log.Content
+				}
+			}
+
+			// Get group discount ratio
+			groupRatio := 1.0
+			if groupRatioVal, ok := metadataData["group_ratio"]; ok {
+				if groupRatioFloat, ok := groupRatioVal.(float64); ok {
+					groupRatio = groupRatioFloat
+				}
+			}
+
+			// Get price type
+			priceType := ""
+			if priceTypeVal, ok := metadataData["price_type"]; ok {
+				if priceTypeStr, ok := priceTypeVal.(string); ok {
+					priceType = priceTypeStr
+				}
+			}
+
+			if priceType == "times" {
+				// Calculate price for 'times' type
+				price := calculatePrice(inputRatioFloat, groupRatio, true)
+				return fmt.Sprintf("$%s / request", price)
+			} else {
+				// Calculate prices for standard type
+				inputPrice := calculatePrice(inputRatioFloat, groupRatio, false)
+
+				// Get output ratio
+				outputRatioFloat := 0.0
+				if outputRatio, hasOutputRatio := metadataData["output_ratio"]; hasOutputRatio {
+					if outputRatioVal, ok := outputRatio.(float64); ok {
+						outputRatioFloat = outputRatioVal
+					} else if outputRatioInt, ok := outputRatio.(int); ok {
+						outputRatioFloat = float64(outputRatioInt)
+					}
+				}
+
+				outputPrice := calculatePrice(outputRatioFloat, groupRatio, false)
+				return fmt.Sprintf("Input: $%s /M\nOutput: $%s /M", inputPrice, outputPrice)
+			}
+		}
+
+		// Check for free consumption
+		if log.Quota == 0 && log.Type == model.LogTypeConsume {
+			return "Free"
+		}
+	}
+
+	// Fallback to original content
+	return log.Content
+}
+
+// respondLogDetail 渲染单条日志的完整请求/响应明细,以 CanViewTokenLogIO 为唯一鉴权闸门(T50f)。
+// orgRole 非空表示组织上下文;ownerUserId>0 时(组织上下文影子账户)额外要求明细/日志归属该账户,
+// 防止跨组织/跨个人凭 log_id 越权读取。无明细时区分「未开启留存」与「已过期清理」返回空态而非报错。
+func respondLogDetail(c *gin.Context, logId, viewerId, viewerRole int, orgRole string, ownerUserId int) {
+	forbid := func() {
+		c.JSON(http.StatusForbidden, gin.H{
+			"success": false,
+			"message": "You are not allowed to view this request's details",
+		})
+	}
+
+	if detail, err := model.GetLogDetailByLogId(logId); err == nil && detail != nil {
+		if ownerUserId != 0 && detail.UserId != ownerUserId {
+			forbid()
+			return
+		}
+		// 归属字段在写入时随明细落库,专供读取端鉴权(见 model.LogDetail 注释)。
+		token := &model.Token{Id: detail.TokenId, UserId: detail.UserId, CreatedBy: detail.CreatedBy}
+		if !model.CanViewTokenLogIO(viewerId, viewerRole, orgRole, token) {
+			forbid()
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+			"data": gin.H{
+				"has_detail":         true,
+				"request_body":       detail.RequestBody,
+				"response_body":      detail.ResponseBody,
+				"request_truncated":  detail.RequestTruncated,
+				"response_truncated": detail.ResponseTruncated,
+				"created_at":         detail.CreatedAt,
+			},
+		})
+		return
+	}
+
+	// 无明细:仍以日志归属做鉴权(空态也不得绕过权限),再据日志时间区分空态原因。
+	logRow, err := model.GetLogById(logId)
+	if err != nil || logRow == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+			"data":    gin.H{"has_detail": false, "reason": "expired"},
+		})
+		return
+	}
+	if ownerUserId != 0 && logRow.UserId != ownerUserId {
+		forbid()
+		return
+	}
+	token := &model.Token{UserId: logRow.UserId, CreatedBy: orgMemberIdFromLog(logRow)}
+	if !model.CanViewTokenLogIO(viewerId, viewerRole, orgRole, token) {
+		forbid()
+		return
+	}
+	reason := "not_enabled"
+	if logRow.CreatedAt < time.Now().AddDate(0, 0, -model.LogIORetentionDays).Unix() {
+		reason = "expired"
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    gin.H{"has_detail": false, "reason": reason},
+	})
+}
+
+// GetLogDetail 返回单条日志的完整请求/响应明细(站点管理员 /api/log 与个人 /api/log/self 上下文)。
+func GetLogDetail(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	respondLogDetail(c, id, c.GetInt("id"), c.GetInt("role"), "", 0)
+}
+
+func calculatePrice(ratio, groupDiscount float64, isTimes bool) string {
+	if ratio == 0 {
+		ratio = 0
+	}
+	if groupDiscount == 0 {
+		groupDiscount = 0
+	}
+
+	discount := ratio * groupDiscount
+
+	if !isTimes {
+		discount = discount * 1000
+	}
+
+	// Calculate the price: discount * 0.002
+	price := discount * 0.002
+
+	// Format with 6 decimal places and trim trailing zeros
+	priceStr := fmt.Sprintf("%.6f", price)
+
+	// Remove trailing zeros
+	priceStr = strings.TrimRight(priceStr, "0")
+	priceStr = strings.TrimRight(priceStr, ".")
+
+	return priceStr
+}

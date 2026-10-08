@@ -1,0 +1,8 @@
+# 基础 docker-compose.yml 已将秘密类变量（SQL_DSN 内嵌口令、SESSION_SECRET、
+# USER_TOKEN_SECRET、MYSQL 口令）参数化为 ${VAR:?} 必填（fail-fast）。
+# 此 override 仅补充基础文件未定义、且非秘密的 GIN_MODE 透传；不再重复声明 SQL_DSN/
+# SESSION_SECRET 等——重复声明会覆盖基础文件并抵消 fail-fast，且会重新引入弱默认口令。
+services:
+  modeltaps:
+    environment:
+      - GIN_MODE=${GIN_MODE:-release}

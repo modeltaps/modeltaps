@@ -1,0 +1,1018 @@
+{
+  "channelPage": {
+    "stats": {
+      "all": "すべて",
+      "enabled": "有効",
+      "manual": "無効",
+      "auto": "自動無効"
+    },
+    "searchPlaceholder": "チャネル名またはタグで検索",
+    "openModels": "モデルを表示",
+    "enabledColumn": "有効",
+    "batchStatusFailed": "{{count}} 件のチャネルで失敗しました",
+    "emptyTitle": "チャネルがまだありません",
+    "emptyDescription": "上流プロバイダーのキーを追加すると、モデルを呼び出せます。"
+  },
+  "apiCatalogPage": {
+    "endpoints": "エンドポイント",
+    "examples": "リクエスト例",
+    "models": "利用可能なモデル",
+    "playground": "お試し",
+    "docs": "詳細なドキュメントを見る",
+    "copied": "コピーしました",
+    "copyFailed": "コピーに失敗しました",
+    "keyHint": "例の sk-YOUR_TOKEN はプレースホルダーです。「API キー」ページで作成したキーに置き換えてください。",
+    "chat": {
+      "apiName": "チャット API",
+      "intro": "OpenAI・Claude・Gemini の互換プロトコルで対話モデルを呼び出せます。API キーは共通です。",
+      "capabilities": {
+        "text": {
+          "title": "テキスト生成",
+          "desc": "OpenAI 互換の chat/completions でテキスト応答を生成します。"
+        },
+        "streaming": {
+          "title": "ストリーミング",
+          "desc": "SSE で生成しながら逐次返します。"
+        },
+        "reasoning": {
+          "title": "推論",
+          "desc": "回答前に思考させ、推論の強さを調整できます。"
+        },
+        "structured": {
+          "title": "構造化出力",
+          "desc": "JSON Schema で応答形式を固定し、解析可能な JSON を得られます。"
+        },
+        "tools": {
+          "title": "ツール呼び出し",
+          "desc": "関数を宣言し、モデルに必要に応じて呼び出させます。"
+        },
+        "vision": {
+          "title": "画像理解",
+          "desc": "メッセージに画像 URL を渡して画像について回答させます。"
+        },
+        "files": {
+          "title": "ファイル入力",
+          "desc": "PDF などのファイルを渡し、文書に基づいて回答させます。"
+        },
+        "responses": {
+          "title": "Responses API",
+          "desc": "OpenAI の新しい Responses エンドポイントです。"
+        },
+        "claude": {
+          "title": "Claude 互換",
+          "desc": "Anthropic Messages 形式で呼び出せます。SDK は base_url の変更だけで済みます。"
+        },
+        "gemini": {
+          "title": "Gemini 互換",
+          "desc": "Google GenAI 形式で呼び出せます。SDK は base_url の変更だけで済みます。"
+        }
+      }
+    },
+    "image": {
+      "apiName": "画像 API",
+      "intro": "画像の生成・編集に加え、画像を入力してモデルに読ませることもできます。いずれも同じ API キーで利用できます。",
+      "capabilities": {
+        "generations": {
+          "title": "画像生成 · Images API",
+          "desc": "OpenAI 標準の書き方。/v1/images/generations を呼ぶと画像が返ります。"
+        },
+        "chatGenerations": {
+          "title": "画像生成 · Chat 方式",
+          "desc": "chat/completions で modalities: [\"image\", \"text\"] を指定し、対話モデルに画像を出力させます。",
+          "note": "modalities とレスポンスの message.images は OpenRouter 系の拡張であり、OpenAI 標準の項目ではありません。"
+        },
+        "edits": {
+          "title": "画像編集 · Images API",
+          "desc": "OpenAI 標準の書き方。元画像とプロンプトを送ると編集後の画像が返ります。"
+        },
+        "chatEdits": {
+          "title": "画像編集 · Chat 方式",
+          "desc": "chat/completions で元画像とプロンプトを同時に渡し、編集後の画像を出力させます。",
+          "note": "modalities とレスポンスの message.images は OpenRouter 系の拡張であり、OpenAI 標準の項目ではありません。"
+        },
+        "vision": {
+          "title": "画像理解",
+          "desc": "メッセージに画像 URL を渡し、モデルに画像を読んで回答させます。"
+        }
+      },
+      "endpoints": {
+        "recraftGenerations": "Recraft のテキストから画像生成",
+        "recraftVectorize": "ベクター画像へ変換",
+        "recraftRemoveBackground": "背景除去",
+        "recraftClarityUpscale": "高精細アップスケール",
+        "recraftGenerativeUpscale": "生成的アップスケール",
+        "mjImagine": "描画タスクを送信",
+        "mjChange": "既存タスクのアップスケール / バリエーション",
+        "mjBlend": "複数画像のブレンド",
+        "mjDescribe": "画像から説明文を生成",
+        "mjFetch": "タスク状態の照会"
+      },
+      "extras": {
+        "title": "その他の互換エンドポイント",
+        "hint": "ベンダー固有の書き方。必要に応じて利用",
+        "recraft": "Recraft",
+        "midjourney": "Midjourney",
+        "midjourneyTasks": "タスク履歴はログページ → Midjourney"
+      }
+    },
+    "speech": {
+      "apiName": "音声 API",
+      "intro": "OpenAI 互換プロトコルで音声合成と音声認識ができます。チャットエンドポイントに音声を渡して、音声で回答させることもできます。",
+      "capabilities": {
+        "tts": {
+          "title": "音声合成（TTS）",
+          "desc": "テキストを音声ファイルに変換します。音色と出力形式を指定できます。"
+        },
+        "stt": {
+          "title": "音声認識（STT）",
+          "desc": "音声ファイルをアップロードしてテキストに書き起こします。"
+        },
+        "audioInput": {
+          "title": "音声入力の理解",
+          "desc": "チャットメッセージに音声を渡し、その内容に基づいて回答させます。"
+        },
+        "audioOutput": {
+          "title": "音声出力の対話",
+          "desc": "チャットモデルにテキストと音声の両方で回答させます。"
+        },
+        "realtime": {
+          "title": "リアルタイム音声",
+          "desc": "WebSocket でリアルタイム音声セッションを開きます。OpenAI Realtime 形式に対応します。"
+        }
+      },
+      "extras": {
+        "title": "その他の互換エンドポイント",
+        "suno": "Suno",
+        "endpoints": {
+          "sunoMusic": "音楽生成タスクを送信",
+          "sunoLyrics": "歌詞生成タスクを送信",
+          "sunoFetch": "タスクの一括照会",
+          "sunoFetchById": "ID でタスクを照会"
+        },
+        "tasks": "タスク履歴はログページ → 非同期タスク"
+      }
+    },
+    "video": {
+      "apiName": "動画 API",
+      "intro": "Gemini 互換プロトコルで動画を渡して内容を理解させます。動画生成はタスク作成 → 状態のポーリング → ファイル取得の 3 ステップです。",
+      "capabilities": {
+        "understanding": {
+          "title": "動画理解",
+          "desc": "Gemini 互換プロトコルで動画を渡し、その内容について回答させます。",
+          "note": "動画入力は Gemini 互換プロトコル経由です。OpenAI 互換の chat/completions には動画の content part がなく、ゲートウェイは転送しません。"
+        },
+        "generation": {
+          "title": "動画生成",
+          "desc": "生成タスクを送信して状態をポーリングし、完了後に動画ファイルを取得します。"
+        }
+      },
+      "extras": {
+        "title": "その他の互換エンドポイント",
+        "kling": "Kling",
+        "veo": "Gemini ネイティブ Veo",
+        "endpoints": {
+          "klingText2video": "テキストから動画生成、タスク ID を返します",
+          "klingImage2video": "画像から動画生成、タスク ID を返します",
+          "klingFetchText2video": "テキストから動画生成タスクの照会",
+          "klingFetchImage2video": "画像から動画生成タスクの照会",
+          "veoPredict": "Gemini ネイティブ Veo の長時間実行エンドポイント"
+        },
+        "tasks": "タスク履歴はログページ → 非同期タスク"
+      }
+    },
+    "model": "モデル",
+    "modelCount_other": "利用可能 {{count}} モデル",
+    "noModels": "利用可能なモデルがありません",
+    "availabilityUnknown": "可用性不明",
+    "comingSoon": "近日公開",
+    "recommended": "おすすめモデル",
+    "contextLength": "コンテキスト長",
+    "inputPrice": "入力価格",
+    "outputPrice": "出力価格",
+    "priceNote": "価格は基準グループ（倍率 x1）換算です。実際の価格は所属グループによります。",
+    "viewModel": "モデルを見る",
+    "openPlayground": "お試しで開く",
+    "overview": {
+      "title": "API 概要",
+      "intro": "1 つのキーでチャット・画像・音声・動画のモデルを呼び出せます。OpenAI / Claude / Gemini の 3 プロトコルに対応。",
+      "quickstart": "クイックスタート",
+      "viewApi": "API を見る",
+      "links": {
+        "title": "関連リンク",
+        "models": "モデル一覧",
+        "modelsDesc": "利用可能なモデルとグループ価格を確認できます。",
+        "keys": "API キー",
+        "keysDesc": "リクエストに使うキーの作成と管理。",
+        "docs": "開発ドキュメント",
+        "docsDesc": "導入ガイドと詳細な API リファレンス。"
+      }
+    },
+    "loadFailed": "利用可能なモデル一覧の読み込みに失敗しました。表示されている可用性は正確でない可能性があります。",
+    "retry": "再試行"
+  },
+  "playground": {
+    "curlHint": "sk-YOUR_TOKEN はプレースホルダーです",
+    "errors": {
+      "request": "リクエストに失敗しました。",
+      "unauthorized": "お試し用キーが拒否されました。アカウントの権限をご確認ください。",
+      "notFound": "エンドポイントまたはモデルが見つかりません。",
+      "rateLimited": "レート制限中です。少し待ってから再実行してください。",
+      "upstream": "上流プロバイダーがエラーを返しました。",
+      "upstreamAuth": "上流チャネルの認証に失敗しました。管理者にチャネル設定の確認を依頼してください。",
+      "network": "ゲートウェイに接続できません。",
+      "aborted": "リクエストを停止しました。",
+      "keyFailed": "お試し用キーを準備できませんでした。"
+    },
+    "audio": {
+      "stt": {
+        "errors": {
+          "missingFile": "先に音声ファイルを選んでください。",
+          "unsupportedType": "このファイルは対応していない音声形式です。",
+          "tooLarge": "音声ファイルは 25 MB 以下にしてください。"
+        }
+      }
+    },
+    "picker": {
+      "title": "モデルを選択",
+      "searchPlaceholder": "モデルまたはプロバイダーを検索…",
+      "hideUnavailable": "利用不可を隠す",
+      "allProviders": "すべて",
+      "unknownProvider": "不明なプロバイダー",
+      "available": "利用可能",
+      "degraded": "劣化",
+      "unavailable": "利用不可",
+      "noChannel": "利用可能なチャネルがありません",
+      "channels": "{{count}} チャネル",
+      "priceUnknown": "価格未設定",
+      "perCall": "回数課金",
+      "columns": {
+        "unit": "価格 / 1M トークン",
+        "context": "コンテキスト",
+        "input": "入力",
+        "output": "出力"
+      },
+      "priceNote": "価格は 1M トークンあたりの入力 / 出力単価です（回数課金は 1 回あたりの価格のみ、画像・音声はカタログの単位に従います）。チャネル数をクリックすると同一モデルの他チャネルの価格を表示します。",
+      "selectedCount": "{{count}} 件選択中",
+      "empty": "一致するモデルがありません",
+      "loadFailed": "モデル一覧の読み込みに失敗しました"
+    }
+  },
+  "playgroundConsole": {
+    "comingSoonDesc": "動画コンソールは未提供です。まずは API ドキュメントをご覧ください。",
+    "viewDocs": "API ドキュメント",
+    "run": "実行",
+    "modality": {
+      "chat": "チャット",
+      "image": "画像",
+      "audio": "音声",
+      "compare": "比較",
+      "video": "動画"
+    },
+    "tabs": {
+      "chat": "チャット",
+      "form": "フォーム"
+    },
+    "state": {
+      "loading": "モデルカタログを読み込み中…"
+    },
+    "model": {
+      "pick": "モデルを選択",
+      "none": "モデルなし"
+    },
+    "noModels": {
+      "title": "利用できる{{modality}}モデルがありません",
+      "adminDesc": "{{modality}}モデルを提供するチャネルがまだありません。チャネル管理で追加または有効化してください。",
+      "adminAction": "チャネル管理へ",
+      "userDesc": "あなたのグループでは{{modality}}モデルがまだ開放されていません。利用可能なモデル一覧を確認するか、管理者にお問い合わせください。",
+      "userAction": "利用可能なモデルを見る",
+      "transcription": {
+        "title": "このサイトには音声文字起こしモデルがありません",
+        "adminDesc": "音声文字起こし（audio.transcription）エンドポイントを宣言しているモデルがまだありません。チャネル管理で文字起こしモデルを提供するチャネルを追加するか、管理画面のモデルカタログで既存の文字起こしモデルに audio.transcription エンドポイントを設定してください。",
+        "userDesc": "このサイトにはまだ音声文字起こしモデルがないため、ここでは音声を文字起こしできません。利用可能なモデル一覧を確認するか、管理者に文字起こしモデルの追加を依頼してください。",
+        "userChatDesc": "このサイトにはまだ音声文字起こしモデルがありません。代わりに音声を理解できるチャットモデルを使えます。チャットページで音声をアップロードし、文字に起こすよう依頼してください。",
+        "userChatAction": "チャットへ"
+      }
+    },
+    "gate": {
+      "org": "プレイグラウンドは個人の API キーのみ対象です。",
+      "orgAction": "個人コンテキストに戻る",
+      "chatDisabled": "このサイトでは内蔵プレイグラウンドが無効です。",
+      "chatDisabledAction": "API の例を見る"
+    },
+    "chat": {
+      "clear": "クリア",
+      "viewCode": "コードを見る",
+      "codeTitle": "サンプルコード",
+      "params": "パラメータ",
+      "reasoning": "思考過程 · {{parts}} 段落",
+      "waiting": "最初のトークンを待機中…",
+      "empty": {
+        "title": "例から会話を始める",
+        "subtitle": "ユースケースを選ぶとプロンプトと設定がそのまま入ります。あとは自由に変更してください。"
+      },
+      "tags": {
+        "code": "コード",
+        "stream": "ストリーミング",
+        "json": "JSON 出力",
+        "reasoning": "思考",
+        "longContext": "長いコンテキスト",
+        "data": "データ",
+        "translate": "翻訳"
+      },
+      "examples": {
+        "stream": {
+          "title": "ストリーミング呼び出し",
+          "desc": "Python で動く最小のストリーミング実装",
+          "prompt": "Python で /v1/chat/completions をストリーミング呼び出しする最小の実行可能コードを教えて"
+        },
+        "schema": {
+          "title": "JSON を型に変換",
+          "desc": "API レスポンスを TypeScript の型へ",
+          "prompt": "次の JSON を型注釈付きの TypeScript interface に変換して:"
+        },
+        "debug": {
+          "title": "429 の調査",
+          "desc": "レート制限の理由とリトライ設定",
+          "prompt": "このリクエストが 429 を返した理由と、ゲートウェイ側のリトライ設定を説明して"
+        },
+        "review": {
+          "title": "コードレビュー",
+          "desc": "問題 · 影響 · 修正案を一つずつ",
+          "prompt": "次のコードをレビューし、問題 · 影響 · 修正案の順に列挙して:"
+        },
+        "summarize": {
+          "title": "長文の要約",
+          "desc": "要点だけに絞る",
+          "prompt": "次のドキュメントを 5 つの箇条書き（各 20 字以内）に要約して:"
+        },
+        "extract": {
+          "title": "構造化抽出",
+          "desc": "自由文からフィールドを取り出す",
+          "prompt": "次のテキストから会社・金額・日付の 3 項目を抽出し、JSON で返して:"
+        },
+        "sql": {
+          "title": "自然言語から SQL",
+          "desc": "スキーマに沿ったクエリを書く",
+          "prompt": "テーブル orders(id, user_id, amount, created_at) に対し、直近 7 日間の日別注文数と合計金額を集計するクエリを書いて"
+        },
+        "translate": {
+          "title": "技術文書の翻訳",
+          "desc": "用語とコードブロックはそのまま",
+          "prompt": "次の英語の技術文書を日本語に翻訳して。固有名詞とコードブロックは原文のまま残すこと:"
+        }
+      },
+      "meta": {
+        "generating": "生成中",
+        "firstToken": "最初のトークン {{value}}",
+        "tokensUnit": "tokens",
+        "interrupted": "中断されました"
+      },
+      "actions": {
+        "code": "この返信のコードを見る",
+        "copy": "コピー",
+        "rerun": "再実行"
+      },
+      "composer": {
+        "placeholder": "モデルに質問してみましょう",
+        "attach": "添付"
+      },
+      "settings": {
+        "system": "システムプロンプト",
+        "systemPlaceholder": "任意。例: そのまま実行できるコードで回答して",
+        "temperature": "温度",
+        "topP": "Top P",
+        "maxTokens": "最大 tokens",
+        "seed": "シード",
+        "thinking": "思考を有効化",
+        "reasoningEffort": "思考の深さ",
+        "reasoningEffortOptions": {
+          "default": "既定",
+          "low": "低",
+          "medium": "中",
+          "high": "高"
+        },
+        "thinkingBudget": "思考予算",
+        "stream": "ストリーミング",
+        "jsonMode": "JSON モード"
+      }
+    },
+    "stop": "停止",
+    "fields": {
+      "size": "サイズ",
+      "count": "枚数",
+      "countHint": "1〜4、既定は 1。",
+      "quality": "品質",
+      "style": "スタイル",
+      "responseFormat": "レスポンス形式",
+      "responseFormatHint": "url はリンク、b64_json はインラインのバイト列を返します。",
+      "voice": "ボイス",
+      "speed": "速度",
+      "speedHint": "0.25〜4.0、既定は 1.0。",
+      "format": "形式",
+      "language": "言語",
+      "languagePlaceholder": "例: zh、en（空欄で自動判定）",
+      "sttPrompt": "プロンプト",
+      "sttPromptPlaceholder": "固有名詞を補うと精度が上がります",
+      "granularity": "タイムスタンプ粒度"
+    },
+    "result": {
+      "title": "結果",
+      "empty": "まだ結果はありません。",
+      "waiting": "生成中…",
+      "status": {
+        "idle": "待機",
+        "running": "生成中",
+        "done": "完了",
+        "error": "失敗"
+      },
+      "tabs": {
+        "preview": "Preview",
+        "json": "JSON"
+      }
+    },
+    "code": {
+      "copy": "コピー",
+      "copied": "コピーしました",
+      "sync": "実行設定とリアルタイムに同期",
+      "keyHint": "sk-YOUR_TOKEN はプレースホルダーです。実際のキーはページに出ません。"
+    },
+    "image": {
+      "reference": "参照画像（任意）",
+      "referenceHint": "クリックしてアップロード · png / jpg / webp ≤ 8MB",
+      "clearReference": "参照画像を削除",
+      "chatBadge": "チャット生成",
+      "noImage": "モデルから画像が返されませんでした。JSON で完全なレスポンスを確認できます。",
+      "download": "ダウンロード",
+      "downloadAll": "すべてダウンロード",
+      "errors": {
+        "missingFile": "先に参照画像を選んでください。",
+        "unsupportedType": "png / jpeg / webp のみ対応しています。",
+        "tooLarge": "参照画像は 8MB 以下にしてください。"
+      },
+      "clear": "クリア",
+      "viewCode": "コードを見る",
+      "codeTitle": "サンプルコード",
+      "params": "パラメータ",
+      "composer": {
+        "placeholder": "どんな画像を生成しますか？"
+      },
+      "empty": {
+        "title": "テンプレートから始める",
+        "subtitle": "テンプレートを選ぶとプロンプトと設定がそのまま入ります。あとは自由に変更してください。"
+      },
+      "examples": {
+        "poster": {
+          "title": "イベントポスター",
+          "desc": "縦型のメインビジュアル、見出し用の余白あり",
+          "prompt": "テックイベント発表会のメインビジュアルポスター、濃紺のグラデーション背景、幾何学的な光線、中央に見出し用の余白"
+        },
+        "product": {
+          "title": "商品写真",
+          "desc": "無地背景のスタジオ撮影",
+          "prompt": "白い陶器のマグカップの商品写真、明るいグレーの無地背景、柔らかいトップライト、薄い影、EC メイン画像風"
+        },
+        "portrait": {
+          "title": "ポートレート",
+          "desc": "柔らかい光、浅い被写界深度",
+          "prompt": "若い女性のスタジオ半身ポートレート、ソフトボックス照明、浅い被写界深度、自然な肌色、フィルム調"
+        },
+        "illustration": {
+          "title": "絵本イラスト",
+          "desc": "フラットな配色の物語挿絵",
+          "prompt": "ランタンを持った子ギツネが秋の森を歩く、フラットイラスト風、暖色パレット、柔らかいテクスチャ"
+        },
+        "icon": {
+          "title": "アプリアイコン",
+          "desc": "一度に 4 案を生成",
+          "prompt": "天気アプリのアイコン、角丸の正方形、太陽と雲のシンプルな記号、青のグラデーション、フラットデザイン"
+        },
+        "landscape": {
+          "title": "ワイド風景",
+          "desc": "横型の自然風景",
+          "prompt": "夜明けの谷、尾根を越える雲海、遠くの雪山が日の出で金色に染まる、広角、超写実的"
+        }
+      }
+    },
+    "audio": {
+      "tts": "テキスト読み上げ",
+      "stt": "音声認識",
+      "viewCode": "コードを表示",
+      "codeTitle": "サンプルコード",
+      "pickExample": "サンプルを選んで生成",
+      "customText": "または任意のテキストを入力",
+      "examples": {
+        "support": {
+          "label": "カスタマー",
+          "text": "Modeltaps サポートです。お問い合わせを受け付けました。一営業日以内にご返信いたします。"
+        },
+        "sales": {
+          "label": "セールス",
+          "text": "Modeltaps にご関心をお寄せいただきありがとうございます。法人プランでは専用枠とプライベート配置に対応しています。"
+        },
+        "podcast": {
+          "label": "ポッドキャスト",
+          "text": "番組へようこそ。今日は一つのゲートウェイで複数のモデルプロバイダーをまとめる方法を取り上げます。"
+        },
+        "announcement": {
+          "label": "アナウンス",
+          "text": "今週土曜の午前二時から定期メンテナンスを行います。所要時間は約三十分です。"
+        },
+        "meditation": {
+          "label": "瞑想",
+          "text": "楽な姿勢で座り、ゆっくり息を吸って、さらにゆっくり吐き出しましょう。"
+        }
+      },
+      "generate": "音声を生成",
+      "play": "再生",
+      "pause": "一時停止",
+      "seek": "再生位置を変更",
+      "searchVoices": "音声を検索",
+      "noVoiceMatch": "一致する音声がありません",
+      "otherLanguage": "その他",
+      "gender": {
+        "neutral": "ニュートラル",
+        "male": "男性",
+        "female": "女性"
+      },
+      "tags": {
+        "broadcast": "アナウンス",
+        "support": "カスタマー",
+        "audiobook": "オーディオブック",
+        "ad": "広告"
+      },
+      "input": "読み上げるテキスト",
+      "inputPlaceholder": "合成するテキストを入力",
+      "download": "{{format}} をダウンロード",
+      "unplayable": "{{format}} はブラウザで直接再生できません。ダウンロードして再生してください",
+      "sttTitle": "音声をアップロードして文字起こし",
+      "dropHint": "ここに音声をドロップ、またはクリックしてアップロード",
+      "uploadHint": "mp3 / wav / m4a ≤ 25MB",
+      "transcribe": "文字起こし",
+      "startRecord": "録音開始",
+      "stopRecord": "録音停止",
+      "transcript": "文字起こし結果",
+      "upload": "音声をアップロード",
+      "sttEmpty": "音声を選んで文字起こしを開始"
+    },
+    "compare": {
+      "addColumn": "列を追加",
+      "removeColumn": "この列を削除",
+      "column": "列 {{index}}",
+      "override": "上書き",
+      "overrideCount": "{{count}} 項目を上書き",
+      "emptyColumn": "送信するとこの列の返信がここに表示されます",
+      "pickModel": "まず列の見出しでモデルを選択してください",
+      "placeholder": "メッセージを入力すると各列のモデルに同時送信します",
+      "stopAll": "すべて停止",
+      "syncOn": "入力を同期",
+      "syncOff": "アクティブ列のみ"
+    }
+  },
+  "nav_subtitles": {
+    "playground": "チャット・画像・音声・モデル比較をその場で試す",
+    "api_audio": "テキストと音声を相互に変換",
+    "api_compare": "複数のチャットモデルを並べ、同じ入力を同時に送信",
+    "pricing": "モデルカタログ・価格・チャネル・ベンダー"
+  },
+  "api_compare": "比較",
+  "modelInfoPage": {
+    "price": "価格",
+    "notInCatalog": "カタログ未登録",
+    "setPrice": "価格を設定",
+    "deletePrice": "価格を削除",
+    "deleteCatalog": "カタログ項目を削除",
+    "noChannel": "チャネルなし",
+    "columns": "列",
+    "modalities": "モダリティ",
+    "sectionBasic": "基本情報",
+    "sectionEndpoints": "エンドポイントと機能",
+    "sectionLimits": "モダリティと上限",
+    "sectionPrice": "価格",
+    "sectionSource": "ソースと同期日時",
+    "priceEmptyTip": "価格未設定です。価格を入力して保存すると新規作成され、空欄のままなら設定しません。",
+    "catalogNotSaved": "カタログ情報は保存されませんでした：{{message}}",
+    "priceNotSaved": "価格は保存されませんでした：{{message}}"
+  },
+  "pricingPage": {
+    "catalogTabs": {
+      "models": "モデル",
+      "vendors": "ベンダー"
+    }
+  },
+  "listPage": {
+    "searchPlaceholder": "検索",
+    "clearSearch": "検索をクリア",
+    "selected": "{{count}} 件を選択中",
+    "selectedOf": "{{count}} 件選択",
+    "clearSelection": "選択を解除",
+    "clearFilters": "フィルターをクリア",
+    "emptyTitle": "まだデータがありません",
+    "noMatchTitle": "一致する結果がありません",
+    "noMatchDescription": "キーワードを変えるか、フィルターを減らしてください。",
+    "pageOf": "{{page}} / {{pages}} ページ",
+    "firstPage": "最初のページ",
+    "prevPage": "前のページ",
+    "nextPage": "次のページ",
+    "lastPage": "最後のページ"
+  },
+  "pricing": "モデル",
+  "modelsPage": {
+    "addVendor": "ベンダーを追加",
+    "aliasTo": "エイリアス → {{model}}",
+    "batchDeleteConfirm": "選択した {{count}} 件を削除しますか?この操作は元に戻せません。",
+    "batchDeleteFailed": "{{count}} 件の削除に失敗しました",
+    "batchHide": "一括非表示",
+    "batchShow": "一括表示",
+    "billing": "課金方式",
+    "billingNone": "未設定",
+    "billingTimes": "回数課金",
+    "billingTokens": "Token 課金",
+    "channelCount": "{{count}} チャネル",
+    "channelsTab": "チャネルとグループ",
+    "columnsShort": "列",
+    "copyName": "モデル名をコピー",
+    "editProfile": "プロフィールを編集",
+    "emptyDescription": "チャネルで設定したモデルは自動的にここに表示されます。カタログ項目を手動で作成することもできます。",
+    "emptyTitle": "モデルがまだありません",
+    "export": "JSON をエクスポート",
+    "labeling": "ラベル",
+    "moreActions": "その他の操作",
+    "onlyUsable": "完全に利用可能のみ",
+    "priceHeader": "価格 / 1{{unit}} tokens",
+    "priceUnitToggle": "クリックで 1{{unit}} tokens あたりの表示に切り替え",
+    "priceIn": "入力",
+    "priceOut": "出力",
+    "searchPlaceholder": "モデル名・エイリアス・タグを検索",
+    "searchVendors": "ベンダー名または Slug を検索",
+    "setPrice": "価格設定",
+    "sync": "同期",
+    "syncGroup": "アップストリーム同期",
+    "unbound": "未割当",
+    "vendorModelCount": "モデル数",
+    "visibility": "表示状態",
+    "visibleNeedsCatalog": "表示を制御するには先にカタログ項目を作成してください",
+    "visibleNo": "非表示",
+    "visibleToUsers": "ユーザーに表示",
+    "visibleYes": "表示",
+    "sheet": {
+      "availableGroups": "利用可能なグループ",
+      "channelsReadonly": "チャネルとグループは読み取り専用です。チャネルページで編集してください",
+      "goChannels": "チャネルページへ",
+      "groupCount": "{{count}} グループ",
+      "groups": "グループ",
+      "noChannelHint": "このモデルを提供する有効なチャネルがないため、ユーザーは呼び出せません。",
+      "openChannel": "チャネル {{name}} を開く",
+      "priorityWeight": "優先度 / 重み",
+      "providingChannels": "提供チャネル({{count}})",
+      "routingHint": "リクエストは優先度の高い順にルーティングされ、同じ優先度では重みで分配されます。",
+      "status": "ステータス",
+      "tabPricing": "価格",
+      "tabProfile": "プロフィール"
+    },
+    "stats": {
+      "all": "すべて",
+      "usable": "完全に利用可能",
+      "nochannel": "チャネルなし",
+      "unpriced": "未設定",
+      "hidden": "非表示"
+    },
+    "status": {
+      "ok": "利用可能",
+      "nochannel": "チャネルなし",
+      "unpriced": "未設定"
+    }
+  },
+  "brandIconPicker": {
+    "mode": {
+      "auto": "自動：ベンダー名・識別子・ドメインから解決",
+      "builtin": "組み込みアイコン",
+      "upload": "アップロードしたアイコン"
+    },
+    "chooseBuiltin": "組み込みアイコンを選択",
+    "searchBuiltin": "アイコンを検索",
+    "noBuiltin": "一致するアイコンがありません",
+    "upload": "アップロード",
+    "uploadSuccess": "アイコンをアップロードしました",
+    "uploadTooLarge": "アイコンは 256 KB 以下にしてください",
+    "resetAuto": "自動に戻す",
+    "refresh": "更新",
+    "refreshDone": "{{domain}} のアイコンを更新しました",
+    "refreshNotFound": "{{domain}} のアイコンが見つかりません",
+    "librarySynced": "アイコンライブラリを同期しました"
+  },
+  "modelOwnedby": {
+    "iconTip": "空欄にすると自動で解決します。組み込みアイコンを選ぶか、アイコンをアップロードすることもできます（SVG / PNG / JPEG / GIF / WebP / ICO、256 KB まで）。外部 URL は使用できません。"
+  },
+  "channel_edit": {
+    "icon": "アイコン",
+    "iconTip": "チャネルの種類と API アドレスから自動で解決します。更新すると API アドレスのサイトアイコンを再取得します。"
+  },
+  "brandIconSettings": {
+    "title": "ブランドアイコン",
+    "description": "ベンダーとチャネルのアイコンは内蔵の lobehub アイコンライブラリを使用します。サーバーはバックグラウンドで新しいバージョンを同期し、未知のベンダーのサイトアイコンを取得できます。ブラウザは常に本サイトからのみアイコンを読み込みます。",
+    "syncEnabled": "アイコンライブラリを自動同期",
+    "syncEnabledDescription": "24 時間ごとに npm registry で @lobehub/icons-static-svg の新バージョンを確認し、検証後に切り替えます。失敗時は現在のバージョンを維持します",
+    "faviconFetchEnabled": "未知のベンダーのアイコンを取得",
+    "faviconFetchEnabledDescription": "内蔵アイコンのないベンダーやチャネルを保存すると、サーバーがサイトの favicon を取得してキャッシュします",
+    "registry": "npm registry URL",
+    "registryDescription": "アイコンライブラリの同期に使う npm registry。空欄の場合は npmmirror を使用します"
+  },
+  "userPage": {
+    "statsAll": "すべて",
+    "statsEnabled": "有効",
+    "statsDisabled": "無効",
+    "statsAdmin": "管理者",
+    "statsNoOidc": "OIDC 未連携",
+    "orgFilterLabel": "組織",
+    "org": "組織",
+    "shadowAccount": "シャドウアカウント",
+    "balance": "残高",
+    "neverLoggedIn": "未ログイン",
+    "statusEnabled": "有効",
+    "statusDisabled": "無効",
+    "enableSwitch": "有効化",
+    "moreActions": "その他の操作",
+    "selectAll": "このページをすべて選択",
+    "batchEnable": "有効化",
+    "batchDisable": "無効化",
+    "batchDeleteConfirm": "選択した {{count}} 人のユーザーを削除しますか？この操作は元に戻せません。",
+    "batchFailed": "{{count}} 人のユーザーの操作に失敗しました",
+    "emptyTitle": "ユーザーはまだいません",
+    "emptyDescription": "登録されるか、手動で作成するとここに表示されます。",
+    "searchShort": "ID・ユーザー名・メールで検索"
+  },
+  "command": {
+    "search": "検索"
+  },
+  "common": {
+    "error": "エラーが発生しました",
+    "close": "閉じる",
+    "copySucceeded": "コピーしました",
+    "copyNamedSuccess": "{{name}}をコピーしました",
+    "copyFailedManual": "コピーできませんでした。手動でコピーしてください：",
+    "copyNamedFailed": "{{name}}をコピーできませんでした。手動でコピーしてください："
+  },
+  "Log Context": "ログコンテキスト",
+  "View Context": "コンテキストを表示",
+  "Regex": "正規表現",
+  "Enter regular expression...": "正規表現を入力…",
+  "chrome": {
+    "menu": "メニュー",
+    "collapseSidebar": "サイドバーを折りたたむ",
+    "expandSidebar": "サイドバーを展開"
+  },
+  "notice": {
+    "announcement": "お知らせ"
+  },
+  "channelForm": {
+    "label": {
+      "name": "チャネル名",
+      "type": "チャネルタイプ",
+      "base_url": "チャネル API URL",
+      "key": "キー",
+      "other": "その他のパラメータ",
+      "proxy": "プロキシ URL",
+      "test_model": "テストモデル",
+      "models": "モデル",
+      "model_mapping": "モデルマッピング",
+      "model_headers": "モデル別のカスタムリクエストヘッダー",
+      "header_override": "リクエストヘッダーのパススルー",
+      "custom_parameter": "追加パラメータ",
+      "groups": "ユーザーグループ",
+      "only_chat": "チャットのみ",
+      "tag": "タグ",
+      "pre_cost": "事前課金オプション",
+      "disabled_stream": "ストリーミングを無効にするモデル",
+      "compatible_response": "Responses API 互換",
+      "allow_extra_body": "追加フィールドのパススルーを許可",
+      "pass_through_body": "リクエストボディを完全にパススルー",
+      "apiVersion": "デフォルトの API バージョン",
+      "pluginParams": "プラグインパラメータ",
+      "version": "バージョン",
+      "region": "場所/リージョン",
+      "projectIdOptional": "Project ID（任意）"
+    },
+    "prompt": {
+      "type": "チャネルタイプを選択してください",
+      "name": "チャネル名を入力してください",
+      "base_url": "任意。中継 API の URL を入力します（例：Cloudflare 経由の中継）。{model} 変数を使用できます。例：https://api.example.com/v1/{model}/chat",
+      "key": "このチャネルの認証キーを入力してください",
+      "proxy": "このチャネル専用のプロキシを設定します。http と socks5 に対応しています。例：http://127.0.0.1:1080。プロキシ URL に `%s` を含めるとセッション識別子のプレースホルダーとなり、キーから生成した一意のセッション ID に置き換えられます。",
+      "test_model": "チャネルのテストに使うモデルです。空の場合はテストできません。チャットモデルのみ対応。例：gpt-3.5-turbo",
+      "models": "このチャネルが対応するモデルを選択します。ワイルドカード * も使用できます。例：gpt-3.5* は gpt-3.5 で始まるすべてのモデルに一致します。* は末尾にのみ使用でき、前に 1 文字以上必要です（gpt-3.5* は有効、*gpt-3.5 は無効）。",
+      "model_mapping": "モデルマッピング：各行で「ユーザーがリクエストしたモデル名」を「上流の実モデル名」に転送します（例：opus-latest → claude-opus-4.8）。デフォルトでは上流の実モデルで課金されます。「受信名で課金」をオンにするとリクエスト名で課金されます（先に「モデル価格」でリクエスト名の価格を設定してください）。",
+      "model_headers": "モデル別のカスタムリクエストヘッダー。例：{\"key\": \"value\"}",
+      "header_override": "クライアントのリクエストヘッダーを上流へパススルーします。値には固定値、{api_key}（チャネルのキー）、{client_header:X-Request-Id}（同名のクライアントヘッダー）を指定できます。キーに * を指定するとすべてのクライアントヘッダーを、re: または regex: で始まるキーは正規表現に一致するヘッダーをパススルーします。注意：認証ヘッダーはチャネル側で処理され、上書きされません。同じヘッダーの大文字小文字の不一致を避けるため、キー名は標準的な表記（例：X-Request-Id）を使用してください。",
+      "custom_parameter": "JSON で追加パラメータを注入できます（ネスト可）。制御項目：overwrite：true にすると同名フィールドを上書きし、未設定または false の場合は不足しているフィールドのみ補完します。per_model：true にするとモデル名ごとにパラメータを上書きします。例：{\"per_model\":true,\"gpt-3.5-turbo\":{\"temperature\": 0.7},\"gpt-4\":{\"temperature\": 0.5}}。pre_add：true にするとリクエスト受信時に上書きを適用し、それ以外は上流への送信直前に適用します。すべてのチャネル（Claude、Gemini を含む）で有効です。例：{\"pre_add\":true,\"overwrite\":true,\"stream\":false}。",
+      "groups": "このチャネルが対応するユーザーグループを選択してください",
+      "only_chat": "「チャットのみ」を選択すると、関数呼び出しを含むリクエストではこのチャネルがスキップされます",
+      "provider_models_list": "モデル一覧を取得するには、すべての項目を入力してください",
+      "tag": "チャネルにタグを付けると、タグ単位でチャネルを一括管理できます。注意：タグを設定すると、一部の設定はチャネルタグからのみ変更でき、チャネル一覧からは変更できません。",
+      "pre_cost": "費用の見積もりに使う事前課金オプションを選択します。画像の計算に負荷がかかりすぎる場合は、画像の課金をオフにできます。注意：一部のチャネルはストリーミング時にトークン数を返さないため、入力トークン数が不正確になります。",
+      "disabled_stream": "ストリーミングを無効にするモデルを入力します。注意：ここに入力したモデルのストリーミングリクエストでは、このチャネルがスキップされます",
+      "allow_extra_body": "オンにすると、ユーザーのリクエストに含まれる追加フィールド（OpenAI SDK の extra_body パラメータなど）をパススルーします。上流 API にカスタムパラメータを渡す場合に使用します",
+      "pass_through_body": "オンにすると、クライアントのリクエストボディをそのまま上流へ転送し、マッピング後のモデル名のみを書き換えます。未知のフィールドと元のバイト列は保持されます。同じプロトコル間の透過プロキシに適しています。注意：OpenAI プロトコルのチャネルでのみ有効です（Claude、Gemini など独自にボディを構築するチャネルは参照しません）。オンの場合、追加フィールドのマージはスキップされます（チャネルの追加パラメータのみ、バイト単位で適用されます）。",
+      "enterValue": "{{name}} を入力してください",
+      "apiVersionExample": "デフォルトの API バージョンを入力してください。例：{{example}}",
+      "keyFormat": "次の形式で入力してください：{{format}}",
+      "keyFormatExample": "次の形式で入力してください：{{format}}。例：{{example}}",
+      "keyFormatBaidu": "次の形式で入力してください：APIKey|SecretKey。OpenAI API プラグインを有効にしている場合は API キーをそのまま入力してください",
+      "keyFormatAws": "次の形式で入力してください：Region|AccessKeyID|SecretAccessKey|SessionToken（SessionToken は省略可）",
+      "format": "形式：{{format}}",
+      "dashscopePlugin": "プラグインパラメータ（X-DashScope-Plugin リクエストヘッダーの値）を入力してください",
+      "versionExample": "バージョンを入力してください。例：{{example}}",
+      "speechRegion": "Speech Studio の場所/リージョンを入力してください。例：eastasia",
+      "proxyKey": "{{service}} のキーを入力してください。キーを設定していない場合は任意の値で構いません",
+      "proxyAddress": "{{service}} をデプロイしたアドレスを入力してください",
+      "cozeModels": "モデル名は coze-{bot_id} の形式です。coze-* ワイルドカードで coze で始まるすべてのモデルに一致させることもできます",
+      "cozeMapping": "モデル名のマッピング：coze-{bot_id} の代わりに覚えやすい名前を使えます。例：{\"coze-translate\": \"coze-xxxxx\"}。注意：モデルマッピングを使う場合、上のモデル名にはマッピング前の名前を指定する必要があります。この例ではモデルに coze-translate を入力します（coze-* を使用している場合は不要です）。",
+      "ollamaUrl": "デプロイした Ollama のアドレスを入力してください。例：http://127.0.0.1:11434。Cloudflare Zero Trust を使用している場合は、下のプラグインに認証情報を入力できます",
+      "anyValue": "任意の値を入力してください",
+      "keySeeDocs": "キーの取得方法はドキュメントを参照してください。",
+      "keySeeUrl": "キーについては {{url}} を参照してください",
+      "vertexRegion": "Region|ProjectID または Region1|Region2|Region3|ProjectID（複数のリージョンからランダムに選択）",
+      "siliconflowUrl": "公式 API の URL https://api.siliconflow.com はまもなく廃止されます。https://api.siliconflow.cn を使用してください",
+      "oauthJson": "完全な OAuth2 認証情報 JSON を入力するか、下の「OAuth 認可」ボタンで自動取得してください",
+      "claudeOauth": "access_token（sk-ant-sid01-xxx）または完全な OAuth2 認証情報 JSON を入力してください。下の「OAuth 認可」ボタンで自動取得することもできます",
+      "gcpProjectId": "Google Cloud のプロジェクト ID を入力してください。例：my-project-123",
+      "projectIdOptional": "任意。空欄の場合は自動検出またはランダムに生成されます。例：my-project-123",
+      "vertexExpressKey": "API キーを入力してください（Google Cloud Console で取得）"
+    },
+    "fetchModelsFrom": "{{source}} からモデル一覧を取得",
+    "fetchModelsFromChannel": "チャネルからモデル一覧を取得",
+    "fetchAzureDeployments": "Azure からデプロイ済みモデル一覧を取得"
+  },
+  "channelPlugin": {
+    "enable": "有効にする",
+    "useOpenaiApi": {
+      "name": "OpenAI API を使用",
+      "enableDescNoPlugins": "OpenAI API を使用するかどうか。オンにすると {{vendor}} 公式の OpenAI 互換 API を直接使用し、形式の変換は行いません。上記のプラグインは無効になります",
+      "enableDesc": "OpenAI API を使用するかどうか。オンにすると {{vendor}} 公式の OpenAI 互換 API を直接使用し、形式の変換は行いません"
+    },
+    "webSearch": {
+      "name": "ウェブ検索",
+      "description": "ウェブ検索機能でユーザーの入力内容を検索します",
+      "enableDesc": "ウェブ検索を有効にするかどうか"
+    },
+    "retrieval": {
+      "name": "ナレッジベース",
+      "description": "オープンプラットフォームのナレッジベースにドキュメントをアップロードしてから、ナレッジベース機能で検索してください。",
+      "knowledgeId": {
+        "name": "ナレッジベース ID",
+        "description": "ナレッジベース ID は、オープンプラットフォームのナレッジベースモジュールで作成または取得してください（ドキュメント ID ではなくナレッジベース ID です）"
+      },
+      "promptTemplate": {
+        "name": "ナレッジベーステンプレート",
+        "description": "モデル呼び出し時に使うナレッジベーステンプレートです。ドキュメントに従って入力してください。不要な場合は空欄のままにします"
+      }
+    },
+    "webBrowser": {
+      "name": "検索ツール",
+      "description": "検索ツールを使用します（glm-4-alltools のみ有効）",
+      "enableDesc": "検索ツールを有効にするかどうか"
+    },
+    "drawingTool": {
+      "name": "描画ツール",
+      "description": "描画ツールを使用します（glm-4-alltools のみ有効）",
+      "enableDesc": "描画ツールを有効にするかどうか"
+    },
+    "codeInterpreter": {
+      "name": "コードツール",
+      "description": "コードツールを使用します（glm-4-alltools のみ有効）",
+      "sandbox": {
+        "name": "サンドボックスモード",
+        "description": "auto はサンドボックス環境で自動的にコードを実行し、none はサンドボックスを使用しません。必須"
+      }
+    },
+    "voice": {
+      "name": "音声マッピング",
+      "azureDescription": "OpenAI の音声を Azure の音声にマッピングします。ロールを指定する場合は | で区切ります。例：zh-CN-YunxiNeural|boy",
+      "minimaxDescription": "OpenAI の音声を MiniMax の音声にマッピングします。感情を指定する場合は | で区切ります。例：female-chengshu|happy",
+      "mappingName": "{{voice}} のマッピング",
+      "defaultValue": "デフォルト：{{value}}"
+    },
+    "headers": {
+      "name": "ヘッダー設定",
+      "description": "Cloudflare Zero Trust でポートをインターネットに公開する場合に必要なヘッダーです"
+    },
+    "codeExecution": {
+      "name": "コード実行",
+      "description": "コード実行機能を使用します。オンにするとトークン数の計算が不正確になるため、個人利用でのみオンにすることをおすすめします",
+      "enableDesc": "コード実行を有効にするかどうか"
+    },
+    "codex": {
+      "name": "Codex 設定",
+      "description": "Codex チャンネル専用設定",
+      "imagesMainModel": {
+        "name": "画像オーケストレーションモデル",
+        "description": "画像リクエストを処理する Responses オーケストレーションモデル（画像モデル自体ではありません）。空欄の場合はデフォルトの gpt-5.6-luna を使用します。上流で廃止された場合は、アカウントで利用できるテキストモデルに切り替えてください"
+      }
+    },
+    "customize": {
+      "name": "カスタムエンドポイント",
+      "description": "リクエストごとのパスをカスタマイズできます。空欄の場合はデフォルト、disable を入力するとそのリクエストを無効にします",
+      "endpointName": "{{endpoint}} のパス",
+      "endpointDefault": "デフォルト：{{path}}"
+    },
+    "override": {
+      "name": "上書きパラメータ",
+      "provider": "プロバイダー"
+    },
+    "promptCaching": {
+      "name": "Prompt Caching の自動挿入",
+      "description": "cache_control を自動挿入して Anthropic Prompt Caching を有効にします。リクエストに cache_control が既に含まれている場合は挿入しません（明示的な指定が優先）。",
+      "enabled": {
+        "name": "有効化モード",
+        "description": "inherit は運用設定のグローバルスイッチに従い、on は常に有効、off は常に無効にします",
+        "inherit": "inherit（グローバル設定に従う）",
+        "on": "on（常に有効）",
+        "off": "off（常に無効）"
+      },
+      "ttl": {
+        "name": "キャッシュ TTL",
+        "description": "キャッシュの有効期間です。1h の場合は extended-cache-ttl beta ヘッダーを自動で付加します",
+        "5m": "5 分",
+        "1h": "1 時間"
+      },
+      "strategy": {
+        "name": "挿入方法",
+        "description": "system は system の末尾にのみ挿入し、system+last_user は最後の user メッセージの末尾にも挿入します",
+        "systemLastUser": "system + 最後の user メッセージ"
+      },
+      "matchMode": {
+        "name": "モデルの判定方式",
+        "description": "auto は組み込みの Anthropic 命名規則で判定します（モデルマッピング後の上流モデル名が対象）。custom は下のワイルドカード一覧のみ、regex はカスタム正規表現で判定し、auto+custom は組み込み規則とカスタム規則（ワイルドカード/正規表現）を合わせて判定します",
+        "auto": "auto（組み込みの Claude 規則）",
+        "custom": "custom（カスタムワイルドカード）",
+        "regex": "regex（カスタム正規表現）",
+        "autoCustom": "auto+custom（組み込み規則とカスタム規則を併用）"
+      },
+      "patterns": {
+        "name": "カスタムモデルワイルドカード",
+        "description": "custom モードでのみ有効です。カンマ区切りで * を使用できます。例：claude-*,my-model"
+      },
+      "regex": {
+        "name": "カスタムモデル正規表現",
+        "description": "regex / auto+custom モードでのみ有効です。モデルマッピング後の上流モデル名に対し、大文字小文字を区別せずに照合します。例：^(anthropic/)?claude または opus|sonnet|haiku"
+      }
+    }
+  },
+  "paymentConfig": {
+    "types": {
+      "epay": "EPay",
+      "alipay": "Alipay",
+      "wxpay": "WeChat Pay",
+      "stripe": "Stripe"
+    },
+    "currency": {
+      "CNY": "人民元（CNY）",
+      "USD": "米ドル（USD）"
+    },
+    "fields": {
+      "payDomain": "決済ドメイン",
+      "merchantId": "加盟店 ID",
+      "key": "キー",
+      "payType": "決済タイプ"
+    },
+    "epay": {
+      "payTypeDesc": "決済タイプ。EPay の決済ページに遷移する場合は「決済ページ」を選択してください",
+      "checkout": "決済ページ",
+      "wechat": "WeChat",
+      "qq": "QQ",
+      "jd": "JD",
+      "unionpay": "銀聯（UnionPay）",
+      "paypal": "PayPal",
+      "usdt": "USDT"
+    },
+    "alipay": {
+      "appId": "アプリ ID",
+      "appIdDesc": "Alipay のアプリ ID",
+      "privateKey": "アプリの秘密鍵",
+      "privateKeyDesc": "アプリの秘密鍵（開発者が生成）。詳しくは公式ドキュメントを参照してください：{{url}}",
+      "publicKey": "Alipay 公開鍵",
+      "publicKeyDesc": "Alipay 公開鍵。詳しくは公式ドキュメントを参照してください：{{url}}",
+      "payTypeDesc": "決済タイプ。各タイプを使用するには、Alipay 開発者センターで対応する権限を有効にする必要があります",
+      "facepay": "対面決済",
+      "pagepay": "PC サイト決済",
+      "wappay": "モバイルサイト決済"
+    },
+    "wxpay": {
+      "appId": "AppID",
+      "appIdDesc": "アプリ ID。詳細：{{url}}",
+      "mchIdDesc": "WeChat Pay の加盟店 ID。詳細：{{url}}",
+      "certSerial": "加盟店証明書のシリアル番号",
+      "certSerialDesc": "加盟店証明書のシリアル番号。詳細：{{url}}",
+      "apiv3Key": "加盟店 APIv3 キー",
+      "apiv3KeyDesc": "加盟店 APIv3 キー。詳細：{{url}}",
+      "privateKey": "加盟店の秘密鍵",
+      "privateKeyDesc": "加盟店の秘密鍵。詳細：{{url}}",
+      "native": "Native 決済"
+    },
+    "stripe": {
+      "secretKey": "SecretKey",
+      "secretKeyDesc": "API シークレットキー",
+      "webhookSecret": "WebHookSecret",
+      "webhookSecretDesc": "Webhook の署名シークレットです。入力は不要です。ゲートウェイを作成すると Stripe 側で Webhook が自動作成され、シークレットが取得されます"
+    }
+  }
+}

@@ -1,0 +1,74 @@
+services:
+  postgres:
+    image: modeltaps-ag-it-postgres-partman:local
+    build:
+      context: ./postgres
+      args:
+        BASE_IMAGE: ${POSTGRES_IMAGE}
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+    - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: ${REDIS_IMAGE}
+    volumes:
+    - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  # Mailpit 始终在栈内：DEV_MODE=false 时邮件会真的投递到这里，
+  # otp.sh 可以退回用它的 API 取验证码。
+  mailpit:
+    image: ${MAILPIT_IMAGE}
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+    ports:
+    - "${MAILPIT_HTTP_PORT}:8025"
+    - "${MAILPIT_SMTP_PORT}:1025"
+
+  init-migrate:
+    image: ${AUTHGEAR_IMAGE}
+    env_file:
+    - ./var/env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+    - |
+      authgear database migrate up &&
+      authgear audit database migrate up &&
+      authgear search database migrate up
+
+  authgear:
+    image: ${AUTHGEAR_IMAGE}
+    command: ["authgear", "start", "main", "admin"]
+    env_file:
+    - ./var/env
+    volumes:
+    - ./var/app:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    ports:
+    - "${AUTHGEAR_PORT}:3000"
+    - "${AUTHGEAR_ADMIN_PORT}:3002"
+
+volumes:
+  db_data:
+  redis_data:

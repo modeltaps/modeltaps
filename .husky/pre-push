@@ -1,0 +1,47 @@
+#!/bin/sh
+# Lint the commit messages being pushed. The commit-msg hook only covers commits
+# made with `git commit`; helper tools can create commits that bypass it.
+
+remote="$1"
+ZERO='0000000000000000000000000000000000000000'
+status=0
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -z "$local_ref" ] && continue
+  case "$local_ref" in
+    refs/tags/*) continue ;;
+  esac
+  # Branch deletion.
+  [ "$local_sha" = "$ZERO" ] && continue
+
+  # Commits being pushed: everything after the remote tip when it is known
+  # locally, otherwise everything not yet on any ref of this remote. With no
+  # remote refs at all (first push to a new repository) this is the whole
+  # history, including the root commit.
+  if [ "$remote_sha" != "$ZERO" ] && git rev-parse --verify --quiet "$remote_sha^{commit}" >/dev/null; then
+    commits=$(git rev-list "$remote_sha..$local_sha")
+  else
+    commits=$(git rev-list "$local_sha" --not --remotes="$remote")
+  fi
+  [ -z "$commits" ] && continue
+
+  bad=""
+  for sha in $commits; do
+    if ! git log -1 --format=%B "$sha" | pnpm exec commitlint; then
+      bad="$bad $sha"
+    fi
+  done
+
+  if [ -n "$bad" ]; then
+    echo ""
+    echo "commitlint rejected commits on $local_ref:"
+    for sha in $bad; do
+      git log -1 --oneline "$sha"
+    done
+    echo ""
+    echo "Reword them with: git rebase -i <base> (or --root for the first commit), then push again."
+    status=1
+  fi
+done
+
+exit $status

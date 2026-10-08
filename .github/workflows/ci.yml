@@ -1,0 +1,176 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+# One run per ref. A newer push to a PR cancels its older run; on main a newer
+# run waits and replaces any run still queued, so bursts of merges collapse.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# The jobs below run on GitHub-hosted runners, which start from a fresh VM
+# every time. The pnpm store (setup-node `cache: pnpm`) and the Go module/build
+# caches (setup-go default cache) are restored through actions/cache. pnpm is
+# set up before Node because setup-node needs the pnpm binary to locate the
+# store it caches.
+
+jobs:
+  go:
+    name: Go (vet / build / test)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Installs the pnpm version pinned by packageManager in package.json.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.21.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      # main.go embeds web/build, which is gitignored. Build the frontend
+      # first so the Go package can compile (mirrors the release workflows).
+      - name: Build Frontend (for embed)
+        working-directory: web
+        env:
+          CI: ""
+        run: |
+          pnpm install --frozen-lockfile --filter modeltaps-web
+          pnpm build
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...
+
+      # -race guards the project's core concurrency work (atomic budget/period
+      # accrual, redemption single-winner, order locks) which plain `go test`
+      # cannot catch. CGO is already on (go-sqlite3), which -race requires.
+      - name: Test
+        run: go test -race ./...
+
+  frontend:
+    name: Frontend (lint / build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.21.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter modeltaps-web
+
+      # eslint runs in report mode: warnings do not fail the job, errors do.
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        env:
+          CI: ""
+        run: pnpm build
+
+  docs:
+    name: Docs (zh-HK lint / build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.21.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter docs
+
+      # Blocks simplified-Chinese characters and Taiwan-style terms from
+      # regressing into the zh-HK translations.
+      - name: Lint zh-HK docs
+        run: pnpm docs:lint:hk
+
+      - name: Build
+        run: pnpm docs:build
+
+  # Dependabot security PRs with patch/minor updates merge themselves once the three jobs
+  # above pass (routine version updates are off in dependabot.yml).
+  # GitHub's native auto-merge is not usable here: this private repo is on a
+  # Free plan without branch protection, so "gh pr merge --auto" would have no
+  # required checks to wait for and would merge immediately. Gating on "needs"
+  # gives the "all of CI is green" guarantee inside this workflow instead.
+  # Merges made with GITHUB_TOKEN do not trigger other workflows, so
+  # docker-image.yml will not publish a dev image for these merges; the next
+  # manual merge or release picks it up. Major updates are never merged here.
+  dependabot-auto-merge:
+    name: Dependabot auto-merge
+    runs-on: ubuntu-latest
+    needs: [go, frontend, docs]
+    if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]'
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+
+      - name: Merge patch and minor updates
+        if: contains(fromJSON('["version-update:semver-patch", "version-update:semver-minor"]'), steps.metadata.outputs.update-type)
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge --squash --delete-branch "$PR_URL"
+
+      - name: Leave a note on major updates
+        if: steps.metadata.outputs.update-type == 'version-update:semver-major'
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment "$PR_URL" --body \
+            "Major version update: auto-merge skipped, manual review required."

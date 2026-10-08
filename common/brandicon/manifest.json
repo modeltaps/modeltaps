@@ -1,0 +1,794 @@
+{
+  "version": "1.95.1",
+  "source": "@lobehub/icons-static-svg@1.95.1",
+  "icons": {
+    "ai21": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "ai360": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "alibaba": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "alibabacloud": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "anthropic": {
+      "mono": true,
+      "color": false,
+      "scale": 1.12
+    },
+    "antigravity": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "aws": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "azure": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "azureai": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "baichuan": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "baidu": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "baiducloud": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "bailian": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "bedrock": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "bfl": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "bytedance": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "cerebras": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "chatglm": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "claude": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "cloudflare": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "codex": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "cohere": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "coze": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "dalle": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "dbrx": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "deepinfra": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "deepmind": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "deepseek": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "doubao": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "elevenlabs": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "fireworks": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "flux": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "gemini": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "geminicli": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "gemma": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "github": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "githubcopilot": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "google": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "grok": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "groq": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "hailuo": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "huggingface": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "hunyuan": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "ideogram": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "iflytekcloud": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "inflection": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "internlm": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "jimeng": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "jina": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "kimi": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "kling": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "liquid": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "llava": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "lmstudio": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "luma": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "meta": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "microsoft": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "midjourney": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "minimax": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "mistral": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "modelscope": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "moonshot": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "nousresearch": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "novita": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "nvidia": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "ollama": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "openai": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "openrouter": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "palm": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "perplexity": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "pika": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "ppio": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "qwen": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "recraft": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "reka": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "replicate": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "runway": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "sambanova": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "siliconcloud": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "sora": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "spark": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "stability": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "stepfun": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "suno": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "tencent": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "tencentcloud": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "tii": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "together": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "upstage": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "vertexai": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "vidu": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "vllm": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "volcengine": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "voyage": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "wenxin": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "workersai": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "xai": {
+      "mono": true,
+      "color": false,
+      "scale": 0.82
+    },
+    "xiaomimimo": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "yi": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "zeroone": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "zhipu": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    }
+  },
+  "aliases": {
+    "360": "ai360",
+    "01-ai": "yi",
+    "01ai": "yi",
+    "360ai": "ai360",
+    "ali": "qwen",
+    "aliyun": "alibabacloud",
+    "amazon": "aws",
+    "amazon-bedrock": "bedrock",
+    "amazonwebservices": "aws",
+    "anthropic-claude": "claude",
+    "ark": "volcengine",
+    "azure-openai": "azure",
+    "baichuan-ai": "baichuan",
+    "bigmodel": "zhipu",
+    "black-forest-labs": "bfl",
+    "blackforestlabs": "bfl",
+    "bytedance-seed": "doubao",
+    "cloudflare-ai": "cloudflare",
+    "dashscope": "qwen",
+    "deepseek-ai": "deepseek",
+    "ernie": "wenxin",
+    "fireworks-ai": "fireworks",
+    "github-copilot": "githubcopilot",
+    "glm": "zhipu",
+    "google-gemini": "gemini",
+    "google-palm": "palm",
+    "google-vertex": "vertexai",
+    "googlecloud": "vertexai",
+    "googlegemini": "gemini",
+    "hf": "huggingface",
+    "hugging-face": "huggingface",
+    "iflytek": "spark",
+    "jina-ai": "jina",
+    "kuaishou": "kling",
+    "lingyi": "yi",
+    "lingyiwanwu": "yi",
+    "llama": "meta",
+    "meta-llama": "meta",
+    "microsoftazure": "azure",
+    "mimo": "xiaomimimo",
+    "mistralai": "mistral",
+    "moonshotai": "moonshot",
+    "nvidia-nim": "nvidia",
+    "perplexity-ai": "perplexity",
+    "recraftai": "recraft",
+    "siliconflow": "siliconcloud",
+    "stability-ai": "stability",
+    "stabilityai": "stability",
+    "stepfun-ai": "stepfun",
+    "tencent-hunyuan": "hunyuan",
+    "together-ai": "together",
+    "togetherai": "together",
+    "tongyi": "qwen",
+    "vertex": "vertexai",
+    "volcano": "volcengine",
+    "workers-ai": "workersai",
+    "x": "xai",
+    "x-ai": "xai",
+    "xiaomi": "xiaomimimo",
+    "xunfei": "spark",
+    "z-ai": "zhipu",
+    "zai": "zhipu",
+    "zhipuai": "zhipu",
+    "即梦": "jimeng",
+    "可灵": "kling",
+    "字节跳动": "bytedance",
+    "文心一言": "wenxin",
+    "智谱": "zhipu",
+    "月之暗面": "moonshot",
+    "火山引擎": "volcengine",
+    "百川": "baichuan",
+    "百度": "baidu",
+    "硅基流动": "siliconcloud",
+    "腾讯混元": "hunyuan",
+    "讯飞星火": "spark",
+    "豆包": "doubao",
+    "通义千问": "qwen",
+    "阿里云": "alibabacloud",
+    "零一万物": "yi"
+  },
+  "channelTypes": {
+    "1": "openai",
+    "3": "azure",
+    "11": "palm",
+    "14": "claude",
+    "15": "wenxin",
+    "16": "zhipu",
+    "17": "qwen",
+    "18": "spark",
+    "19": "ai360",
+    "20": "openrouter",
+    "23": "hunyuan",
+    "24": "azure",
+    "25": "gemini",
+    "26": "baichuan",
+    "27": "minimax",
+    "28": "deepseek",
+    "29": "moonshot",
+    "30": "mistral",
+    "31": "groq",
+    "32": "bedrock",
+    "33": "yi",
+    "34": "midjourney",
+    "35": "cloudflare",
+    "36": "cohere",
+    "37": "stability",
+    "38": "coze",
+    "39": "ollama",
+    "40": "hunyuan",
+    "41": "suno",
+    "42": "vertexai",
+    "43": "meta",
+    "44": "ideogram",
+    "45": "siliconcloud",
+    "46": "flux",
+    "47": "jina",
+    "49": "github",
+    "51": "recraft",
+    "52": "replicate",
+    "53": "kling",
+    "54": "azure",
+    "55": "azure",
+    "56": "xai",
+    "57": "geminicli",
+    "58": "claude",
+    "59": "codex",
+    "60": "antigravity",
+    "61": "vertexai"
+  },
+  "modelPrefixes": {
+    "360gpt": "ai360",
+    "abab": "minimax",
+    "babbage": "openai",
+    "baichuan": "baichuan",
+    "bison": "google",
+    "chat-bison": "google",
+    "chatglm": "zhipu",
+    "chatgpt": "openai",
+    "chirp": "suno",
+    "claude": "claude",
+    "code-bison": "google",
+    "codechat-bison": "google",
+    "codestral": "mistral",
+    "codex": "codex",
+    "cogvideo": "zhipu",
+    "cogview": "zhipu",
+    "command": "cohere",
+    "dall-e": "dalle",
+    "davinci": "openai",
+    "dbrx": "dbrx",
+    "deepseek": "deepseek",
+    "devstral": "mistral",
+    "doubao": "doubao",
+    "eleven_": "elevenlabs",
+    "embed-": "cohere",
+    "ernie": "wenxin",
+    "falcon": "tii",
+    "flux": "flux",
+    "gemini": "gemini",
+    "gemma": "gemma",
+    "glm": "zhipu",
+    "gpt": "openai",
+    "grok": "xai",
+    "hailuo": "hailuo",
+    "hermes": "nousresearch",
+    "hunyuan": "hunyuan",
+    "ideogram": "ideogram",
+    "imagen": "google",
+    "internlm": "internlm",
+    "jamba": "ai21",
+    "jimeng": "jimeng",
+    "jina": "jina",
+    "kimi": "moonshot",
+    "kling": "kling",
+    "lfm": "liquid",
+    "llama": "meta",
+    "llava": "llava",
+    "magistral": "mistral",
+    "midjourney": "midjourney",
+    "mimo": "xiaomimimo",
+    "minimax": "minimax",
+    "ministral": "mistral",
+    "mistral": "mistral",
+    "mixtral": "mistral",
+    "mj_": "midjourney",
+    "moonshot": "moonshot",
+    "nemotron": "nvidia",
+    "nova-": "aws",
+    "o1": "openai",
+    "o3": "openai",
+    "o4": "openai",
+    "omni-moderation": "openai",
+    "palm": "palm",
+    "phi-": "microsoft",
+    "pika": "pika",
+    "pixtral": "mistral",
+    "qvq": "qwen",
+    "qwen": "qwen",
+    "qwq": "qwen",
+    "recraft": "recraft",
+    "reka": "reka",
+    "rerank-": "cohere",
+    "sd3": "stability",
+    "sdxl": "stability",
+    "seedance": "doubao",
+    "seedream": "doubao",
+    "solar": "upstage",
+    "sonar": "perplexity",
+    "sora": "sora",
+    "spark": "spark",
+    "stable-diffusion": "stability",
+    "step-": "stepfun",
+    "suno": "suno",
+    "text-bison": "google",
+    "text-embedding": "openai",
+    "titan": "aws",
+    "tts-1": "openai",
+    "veo": "google",
+    "vidu": "vidu",
+    "voyage": "voyage",
+    "whisper": "openai",
+    "yi-": "yi"
+  },
+  "domains": {
+    "01.ai": "yi",
+    "360.cn": "ai360",
+    "ai21.com": "ai21",
+    "aiplatform.googleapis.com": "vertexai",
+    "aliyuncs.com": "alibabacloud",
+    "amazonaws.com": "aws",
+    "anthropic.com": "claude",
+    "azure.com": "azure",
+    "baichuan-ai.com": "baichuan",
+    "baidubce.com": "wenxin",
+    "bfl.ai": "bfl",
+    "bigmodel.cn": "zhipu",
+    "claude.ai": "claude",
+    "cloudflare.com": "cloudflare",
+    "cohere.ai": "cohere",
+    "cohere.com": "cohere",
+    "coze.cn": "coze",
+    "coze.com": "coze",
+    "dashscope.aliyuncs.com": "qwen",
+    "deepseek.com": "deepseek",
+    "fireworks.ai": "fireworks",
+    "generativelanguage.googleapis.com": "gemini",
+    "github.com": "github",
+    "githubusercontent.com": "github",
+    "groq.com": "groq",
+    "huggingface.co": "huggingface",
+    "hunyuan.cloud.tencent.com": "hunyuan",
+    "ideogram.ai": "ideogram",
+    "jina.ai": "jina",
+    "klingai.com": "kling",
+    "lingyiwanwu.com": "yi",
+    "minimax.chat": "minimax",
+    "minimax.io": "minimax",
+    "minimaxi.com": "minimax",
+    "mistral.ai": "mistral",
+    "moonshot.ai": "moonshot",
+    "moonshot.cn": "moonshot",
+    "nvidia.com": "nvidia",
+    "ollama.com": "ollama",
+    "openai.com": "openai",
+    "openrouter.ai": "openrouter",
+    "perplexity.ai": "perplexity",
+    "recraft.ai": "recraft",
+    "replicate.com": "replicate",
+    "siliconflow.cn": "siliconcloud",
+    "siliconflow.com": "siliconcloud",
+    "stability.ai": "stability",
+    "stepfun.com": "stepfun",
+    "suno.com": "suno",
+    "tencentcloudapi.com": "hunyuan",
+    "together.ai": "together",
+    "together.xyz": "together",
+    "volces.com": "volcengine",
+    "x.ai": "xai",
+    "xf-yun.com": "spark",
+    "xiaomimimo.com": "xiaomimimo",
+    "z.ai": "zhipu"
+  }
+}

@@ -1,0 +1,37 @@
+# 本地邮件测试环境：Mailpit（假 SMTP 服务器 + Web 收件箱）
+#
+# 用途：不往真实邮箱发信，在本地验证「邮箱验证码 / 找回密码 / 额度告警」等邮件链路。
+# Mailpit 收下所有信件但从不投递出去，收到的邮件在 Web 界面里看。
+#
+# 启动 / 停止：
+#   cd devenv/mailpit && docker compose up -d
+#   docker compose logs -f mailpit
+#   docker compose down                      # 邮件只存在容器里，停掉即清空
+#
+# 端口被占用时改端口（Modeltaps 里填的端口要跟着改）：
+#   MAILPIT_SMTP_PORT=1125 MAILPIT_HTTP_PORT=8125 docker compose up -d --force-recreate
+#
+# 固定值（devenv 专用，勿用于任何真实环境）：
+#   SMTP            localhost:1025          # 无加密，接受任意账号 / 凭证
+#   Web 界面 / API   http://localhost:8025
+#
+# Modeltaps 后台「系统设置 → 邮件」要填的值：
+#   SMTP 服务器      localhost
+#   SMTP 端口        1025
+#   SMTP 账号        任意非空，如 mailpit
+#   SMTP 凭证        任意非空，如 mailpit
+#   发件人地址       任意，如 dev@modeltaps.local
+#   TLS 模式         none                    # Mailpit 默认不开 TLS
+
+services:
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: modeltaps-devenv-mailpit
+    environment:
+      # 接受任意用户名 / 凭证，省得在 Modeltaps 里配真实账号
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      # 允许在未加密连接上做认证（Modeltaps 的 TLS 模式 none 走的就是这条）
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_HTTP_PORT:-8025}:8025"
