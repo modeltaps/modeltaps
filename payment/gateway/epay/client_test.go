@@ -115,25 +115,11 @@ func TestVerify_ValidPayload(t *testing.T) {
 	c := newTestClient()
 	params := validSignedPayload(c)
 
-	result, ok := c.Verify(params)
-	if !ok {
-		t.Fatalf("Verify() ok = false, want true for a correctly signed TRADE_SUCCESS payload")
+	if err := c.verifySignature(params); err != nil {
+		t.Fatalf("verifySignature() = %v, want nil for a correctly signed payload", err)
 	}
-	if result == nil {
-		t.Fatalf("Verify() result = nil, want parsed PaymentResult")
-	}
-
-	if result.OutTradeNo != "ORDER-20260701-0001" {
-		t.Errorf("OutTradeNo = %q, want %q", result.OutTradeNo, "ORDER-20260701-0001")
-	}
-	if result.TradeNo != "GATEWAY-TXN-777" {
-		t.Errorf("TradeNo = %q, want %q", result.TradeNo, "GATEWAY-TXN-777")
-	}
-	if result.Money != "12.34" {
-		t.Errorf("Money = %q, want %q", result.Money, "12.34")
-	}
-	if result.TradeStatus != TradeStatusSuccess {
-		t.Errorf("TradeStatus = %q, want %q", result.TradeStatus, TradeStatusSuccess)
+	if err := validateNotifyParams(params); err != nil {
+		t.Fatalf("validateNotifyParams() = %v, want nil for a genuine callback payload", err)
 	}
 }
 
@@ -144,9 +130,8 @@ func TestVerify_TamperedParamAfterSigning(t *testing.T) {
 	// Tamper a signed field (out_trade_no) without re-signing.
 	params["out_trade_no"] = "ORDER-EVIL-9999"
 
-	result, ok := c.Verify(params)
-	if ok || result != nil {
-		t.Errorf("Verify() = (%v, %v), want (nil, false) for a tampered param", result, ok)
+	if err := c.verifySignature(params); err == nil {
+		t.Errorf("verifySignature() = nil, want error for a tampered param")
 	}
 }
 
@@ -158,34 +143,8 @@ func TestVerify_TamperedMoneyProvesAmountIsSigned(t *testing.T) {
 	// would still verify. It must fail, proving money is inside the digest.
 	params["money"] = "999999.99"
 
-	result, ok := c.Verify(params)
-	if ok || result != nil {
-		t.Errorf("Verify() = (%v, %v), want (nil, false) when money is tampered", result, ok)
-	}
-}
-
-func TestVerify_NonSuccessTradeStatus(t *testing.T) {
-	c := newTestClient()
-
-	// Build an otherwise-correct payload but with a failure status, signed correctly.
-	params := map[string]string{
-		"pid":          "1001",
-		"trade_no":     "GATEWAY-TXN-778",
-		"out_trade_no": "ORDER-2",
-		"money":        "5.00",
-		"trade_status": "TRADE_ERROR",
-	}
-	params["sign"] = c.Sign(params)
-	params["sign_type"] = FormArgsSignType
-
-	// Sanity: the sign itself is valid, so failure must be due to trade_status.
-	if params["sign"] != c.Sign(params) {
-		t.Fatalf("precondition failed: sign should be self-consistent")
-	}
-
-	result, ok := c.Verify(params)
-	if ok || result != nil {
-		t.Errorf("Verify() = (%v, %v), want (nil, false) for trade_status != TRADE_SUCCESS", result, ok)
+	if err := c.verifySignature(params); err == nil {
+		t.Errorf("verifySignature() = nil, want error when money is tampered")
 	}
 }
 
@@ -195,16 +154,39 @@ func TestVerify_EmptyOrMissingSign(t *testing.T) {
 	t.Run("empty sign", func(t *testing.T) {
 		params := validSignedPayload(c)
 		params["sign"] = ""
-		if result, ok := c.Verify(params); ok || result != nil {
-			t.Errorf("Verify() = (%v, %v), want (nil, false) for empty sign", result, ok)
+		if err := c.verifySignature(params); err == nil {
+			t.Errorf("verifySignature() = nil, want error for empty sign")
 		}
 	})
 
 	t.Run("missing sign", func(t *testing.T) {
 		params := validSignedPayload(c)
 		delete(params, "sign")
-		if result, ok := c.Verify(params); ok || result != nil {
-			t.Errorf("Verify() = (%v, %v), want (nil, false) for missing sign", result, ok)
+		if err := c.verifySignature(params); err == nil {
+			t.Errorf("verifySignature() = nil, want error for missing sign")
 		}
 	})
+}
+
+// A validly signed payment-request payload replayed as a callback must be rejected:
+// notify_url / return_url only appear in payment requests, and a value containing
+// "&" could smuggle request params past the concatenated signature string.
+func TestValidateNotifyParams_RejectsForgedShapes(t *testing.T) {
+	c := newTestClient()
+
+	cases := map[string]func(map[string]string){
+		"notify_url present": func(p map[string]string) { p["notify_url"] = "https://evil.example.com/notify" },
+		"return_url present": func(p map[string]string) { p["return_url"] = "https://evil.example.com/return" },
+		"value contains &":   func(p map[string]string) { p["name"] = "x&trade_status=TRADE_SUCCESS" },
+	}
+	for name, mutate := range cases {
+		t.Run(name, func(t *testing.T) {
+			params := validSignedPayload(c)
+			mutate(params)
+			params["sign"] = c.Sign(params)
+			if err := validateNotifyParams(params); err == nil {
+				t.Errorf("validateNotifyParams() = nil, want error")
+			}
+		})
+	}
 }

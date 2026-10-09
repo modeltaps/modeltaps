@@ -213,8 +213,8 @@ func PaymentCallback(c *gin.Context) {
 // creditPaidOrder 为已验签的支付成功通知入账。返回 nil 表示订单已入账（本次或之前的通知），
 // 可以向网关确认；返回 error 表示本次没有入账，调用方应回网关失败应答让其重发。
 func creditPaidOrder(c *gin.Context, payNotify *types.PayNotify) error {
-	LockOrder(payNotify.GatewayNo)
-	defer UnlockOrder(payNotify.GatewayNo)
+	LockOrder(payNotify.TradeNo)
+	defer UnlockOrder(payNotify.TradeNo)
 
 	// 锁内读取订单再判状态：锁外读到的快照可能已被并发回调入账
 	order, err := model.GetOrderByTradeNo(payNotify.TradeNo)

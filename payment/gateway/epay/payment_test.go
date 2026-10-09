@@ -48,12 +48,23 @@ func TestEpayHandleCallback_RejectedRespondsFail(t *testing.T) {
 	tampered := validSignedPayload(newTestClient())
 	tampered["money"] = "999999.99"
 
+	client := newTestClient()
+	failedStatus := validSignedPayload(client)
+	failedStatus["trade_status"] = "TRADE_ERROR"
+	failedStatus["sign"] = client.Sign(failedStatus)
+
+	withNotifyURL := validSignedPayload(client)
+	withNotifyURL["notify_url"] = "https://evil.example.com/notify"
+	withNotifyURL["sign"] = client.Sign(withNotifyURL)
+
 	cases := map[string]struct {
 		params map[string]string
 		config string
 	}{
-		"篡改金额":   {params: tampered, config: epayTestGatewayConfig},
-		"配置解析失败": {params: validSignedPayload(newTestClient()), config: "{not-json"},
+		"篡改金额":       {params: tampered, config: epayTestGatewayConfig},
+		"配置解析失败":     {params: validSignedPayload(newTestClient()), config: "{not-json"},
+		"签名有效但交易未成功": {params: failedStatus, config: epayTestGatewayConfig},
+		"携带下单专用参数":   {params: withNotifyURL, config: epayTestGatewayConfig},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
