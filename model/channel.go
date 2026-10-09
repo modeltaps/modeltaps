@@ -46,6 +46,8 @@ type Channel struct {
 	AllowExtraBody     bool     `json:"allow_extra_body" form:"allow_extra_body" gorm:"default:false"`
 	PassThroughBody    bool     `json:"pass_through_body" form:"pass_through_body" gorm:"default:false"`
 	CostRatio          *float64 `json:"cost_ratio" form:"cost_ratio" gorm:"type:decimal(10,4);default:0"`
+	// UnifiedRequestResponseModel 渠道级「响应模型名统一为请求模型名」开关；全局开关开启时对所有渠道生效。
+	UnifiedRequestResponseModel bool `json:"unified_request_response_model" form:"unified_request_response_model" gorm:"default:false"`
 
 	DisabledStream *datatypes.JSONSlice[string] `json:"disabled_stream,omitempty" gorm:"type:json"`
 

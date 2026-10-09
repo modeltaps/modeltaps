@@ -322,8 +322,11 @@ func (p *BaseProvider) GetResponseModelName(requestModel string) string {
 // ok=false 表示无需替换（开关关闭 / 无 original_model / 与上游名一致）。
 // 仅在确实发生替换时记录一条日志，并用 context 标志位保证每个请求只记一次
 // （流式场景下替换函数会被每个 chunk 调用）。
+// 开关来源：全局 UnifiedRequestResponseModelEnabled 优先，其次是渠道级配置
+// （relay 层 GetProvider 写入 context 的 channel_unified_request_response_model）。
 func resolveUnifiedModel(ctx *gin.Context, upstreamModel string) (originalModel string, ok bool) {
-	if ctx == nil || !config.UnifiedRequestResponseModelEnabled {
+	source := unifiedModelSource(ctx)
+	if source == "" {
 		return "", false
 	}
 
@@ -339,9 +342,23 @@ func resolveUnifiedModel(ctx *gin.Context, upstreamModel string) (originalModel 
 	if !ctx.GetBool("unified_model_logged") {
 		ctx.Set("unified_model_logged", true)
 		logger.LogInfo(ctx.Request.Context(), fmt.Sprintf(
-			"unified_response_model: replaced upstream response model name %s with requested %s", upstreamModel, originalModelStr))
+			"unified_response_model(%s): replaced upstream response model name %s with requested %s", source, upstreamModel, originalModelStr))
 	}
 	return originalModelStr, true
+}
+
+// unifiedModelSource 返回生效的开关来源（"global" / "channel"），均未开启时返回空串。
+func unifiedModelSource(ctx *gin.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	if config.UnifiedRequestResponseModelEnabled {
+		return "global"
+	}
+	if ctx.GetBool("channel_unified_request_response_model") {
+		return "channel"
+	}
+	return ""
 }
 
 // GetResponseModelNameFromContext 从 Context 获取响应模型名称的静态函数
@@ -360,7 +377,7 @@ func GetResponseModelNameFromContext(ctx *gin.Context, fallbackModel string) str
 // modelPath 为 gjson/sjson 路径，如 claude 流式的 "message.model"、responses 的 "response.model"、
 // gemini 的 "modelVersion"。字段不存在或无需替换时返回原始字节、changed=false。
 func UnifyModelInJSONBytes(ctx *gin.Context, raw []byte, modelPath string) (out []byte, changed bool) {
-	if ctx == nil || !config.UnifiedRequestResponseModelEnabled {
+	if unifiedModelSource(ctx) == "" {
 		return raw, false
 	}
 
