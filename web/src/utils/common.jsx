@@ -26,7 +26,7 @@ export function showError(error) {
     if (error.name === 'AxiosError') {
       switch (error.response.status) {
         case 429:
-          toast.error(i18n.t('common.errorPrefix') + i18n.t('common.errTooManyRequests'));
+          toast.error(i18n.t('common.errorPrefix') + (error.response.data?.error?.message || i18n.t('common.errTooManyRequests')));
           break;
         case 500:
           toast.error(i18n.t('common.errorPrefix') + i18n.t('common.errServerInternal'));

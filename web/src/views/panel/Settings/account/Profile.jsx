@@ -61,9 +61,16 @@ export default function Profile() {
   };
 
   const groupInfo = () => {
-    const g = userGroupMap[inputs.group];
-    if (!g) return inputs.group || 'default';
-    return `${t('profilePage.group')}: ${g.name} (${t('profilePage.rate')}: ${g.ratio} / ${t('profilePage.speed')}: ${g.api_rate})`;
+    const g = inputs.group ? userGroupMap[inputs.group] : null;
+    if (!g) return <Badge variant="outline">{inputs.group || 'default'}</Badge>;
+    return (
+      <div className="inline-block max-w-full rounded-md border border-primary px-3 py-2 text-left">
+        <p className="break-words text-sm font-semibold text-primary">{g.name}</p>
+        <p className="text-xs text-muted-foreground">
+          {t('profilePage.rate')}: {g.ratio} / {t('profilePage.speed')}: {g.api_rate}
+        </p>
+      </div>
+    );
   };
 
   return (
@@ -78,11 +85,11 @@ export default function Profile() {
                 <UserRound className="h-3/4 w-3/4 text-muted-foreground" />
               )}
             </span>
-            <div className="space-y-1 text-center sm:text-left">
+            <div className="min-w-0 space-y-1 text-center sm:text-left">
               <p className="text-xl font-semibold">{inputs.username}</p>
-              {inputs.email && <p className="text-sm text-muted-foreground">{inputs.email}</p>}
+              {inputs.email && <p className="break-words text-sm text-muted-foreground">{inputs.email}</p>}
               {inputs.phone_number && <p className="text-sm text-muted-foreground">{inputs.phone_number}</p>}
-              <Badge variant="outline">{groupInfo()}</Badge>
+              {groupInfo()}
             </div>
           </div>
         </CardContent>

@@ -57,7 +57,8 @@ const EMPTY = {
   disabled_stream: '',
   compatible_response: false,
   allow_extra_body: false,
-  pass_through_body: false
+  pass_through_body: false,
+  unified_request_response_model: false
 };
 
 // Same values as v1 PreCostType (type/other.js): 1=normal, 2=skip images, 3=skip all.
@@ -387,7 +388,8 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
         disabled_stream: Array.isArray(data.disabled_stream) ? data.disabled_stream.join(',') : '',
         compatible_response: !!data.compatible_response,
         allow_extra_body: !!data.allow_extra_body,
-        pass_through_body: !!data.pass_through_body
+        pass_through_body: !!data.pass_through_body,
+        unified_request_response_model: !!data.unified_request_response_model
       });
       setHasTag(!!data.tag);
       // Seed the original-name mapping from the stored model_mapping so later
@@ -794,6 +796,12 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
             <ToggleRow control={control} name="compatible_response" label={configText(t, defaultConfig.inputLabel.compatible_response)} />
             <ToggleRow control={control} name="allow_extra_body" label={configText(t, defaultConfig.inputLabel.allow_extra_body)} />
             <ToggleRow control={control} name="pass_through_body" label={configText(t, defaultConfig.inputLabel.pass_through_body)} />
+            <ToggleRow
+              control={control}
+              name="unified_request_response_model"
+              label={configText(t, defaultConfig.inputLabel.unified_request_response_model)}
+              help={configText(t, defaultConfig.prompt.unified_request_response_model)}
+            />
           </div>
         </TabsContent>
 
@@ -873,15 +881,18 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
   }
 }
 
-function ToggleRow({ control, name, label }) {
+function ToggleRow({ control, name, label, help }) {
   return (
     <Controller
       control={control}
       name={name}
       render={({ field }) => (
-        <div className="flex items-center justify-between">
-          <span className="text-sm">{label}</span>
-          <Switch checked={!!field.value} onCheckedChange={field.onChange} />
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-1">
+            <span className="text-sm">{label}</span>
+            {help && <p className="text-xs text-muted-foreground">{help}</p>}
+          </div>
+          <Switch checked={!!field.value} onCheckedChange={field.onChange} className="shrink-0" />
         </div>
       )}
     />

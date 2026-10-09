@@ -22,7 +22,8 @@ const defaultConfig = {
     disabled_stream: [],
     compatible_response: false,
     allow_extra_body: false,
-    pass_through_body: false
+    pass_through_body: false,
+    unified_request_response_model: false
   },
   inputLabel: {
     name: 'channelForm.label.name',
@@ -45,7 +46,8 @@ const defaultConfig = {
     disabled_stream: 'channelForm.label.disabled_stream',
     compatible_response: 'channelForm.label.compatible_response',
     allow_extra_body: 'channelForm.label.allow_extra_body',
-    pass_through_body: 'channelForm.label.pass_through_body'
+    pass_through_body: 'channelForm.label.pass_through_body',
+    unified_request_response_model: 'channelForm.label.unified_request_response_model'
   },
   prompt: {
     type: 'channelForm.prompt.type',
@@ -68,7 +70,8 @@ const defaultConfig = {
     disabled_stream: 'channelForm.prompt.disabled_stream',
     compatible_response: 'channelForm.label.compatible_response',
     allow_extra_body: 'channelForm.prompt.allow_extra_body',
-    pass_through_body: 'channelForm.prompt.pass_through_body'
+    pass_through_body: 'channelForm.prompt.pass_through_body',
+    unified_request_response_model: 'channelForm.prompt.unified_request_response_model'
   },
   modelGroup: 'OpenAI'
 }
