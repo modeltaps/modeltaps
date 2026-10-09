@@ -71,8 +71,17 @@ LOGS_FILENAME="modeltaps.log"
 12. `BATCH_UPDATE_INTERVAL=5`：批量更新聚合的時間間隔，單位為秒，預設為 `5`。
     - 例子：`BATCH_UPDATE_INTERVAL=5`
 13. 請求頻率限制：
-    - `GLOBAL_API_RATE_LIMIT`：全局 API 速率限制（除中繼請求外），單 ip 三分鐘內的最大請求數，預設為 `180`。
-    - `GLOBAL_WEB_RATE_LIMIT`：全局 Web 速率限制，單 ip 三分鐘內的最大請求數，預設為 `60`。
+    - `GLOBAL_API_RATE_LIMIT`：全局 API 速率限制（除中繼請求外），三分鐘內的最大請求數，預設為 `300`。
+    - `GLOBAL_WEB_RATE_LIMIT`：全局 Web 速率限制，三分鐘內的最大請求數，預設為 `300`。
+    - 計數口徑分兩種情況：
+      - **能識別出登入用戶時**（攜帶有效 Web 會話），同時佔用**用戶**配額與**來源 IP**上限兩個桶，任一滿即 `429`。用戶配額為上面配置的值，IP 上限為其 4 倍。這樣同一 NAT / 公司出口後面的多個用戶各有獨立額度、不會互相擠佔，而單機靠多註冊帳號也無法線性放大配額。
+      - **識別不出登入用戶時**（未登入訪問，或按令牌鑑權的 `/dashboard` 等介面），只按來源 IP 計，限額就是上面配置的值、不做放寬。
+      - 本機直連（對端與解析出的客戶端 IP 均為 loopback）的請求不計入；經同機反向代理轉發的請求仍按真實客戶端 IP 計數。
+    - `GLOBAL_RATE_LIMIT_WHITELIST`：免限流的來源地址，支援 IP 與 CIDR，多個用逗號分隔，預設為空。供管理腳本、監控探針等高頻可信調用方使用。
+      - 例子：`GLOBAL_RATE_LIMIT_WHITELIST=10.0.0.5,192.168.0.0/16`
+      - 生效範圍僅限上面兩項總量限流。登入、註冊、改密、OAuth 回調等敏感端點以及上傳 / 下載有獨立的限流，**不受白名單豁免**，以保留口令爆破防護。
+      - 白名單匹配的是系統判定出的客戶端 IP，其可信度由 `TRUSTED_PROXIES` 決定，公網直連時無法靠偽造請求頭取得豁免。
+    - 被限流時返回 `429`，響應頭帶 `Retry-After`（秒）與 `X-RateLimit-Limit` / `X-RateLimit-Remaining` / `X-RateLimit-Reset`（跨域請求也可讀取），響應體為 JSON 錯誤訊息（含還需等待的秒數與 request id）。
 14. 編碼器快取設定：
     - `TIKTOKEN_CACHE_DIR`：預設程式啟動時會聯網下載一些通用的詞元的編碼，如：`gpt-3.5-turbo`，在一些網絡環境不穩定，或者離線情況，可能會導致啟動有問題，可以配置此目錄快取數據，可遷移到離線環境。
     - `DATA_GYM_CACHE_DIR`：目前該配置作用與 `TIKTOKEN_CACHE_DIR` 一致，但是優先級沒有它高。

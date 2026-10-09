@@ -111,9 +111,15 @@ func (l *InMemoryRateLimiter) doCleanup() {
 	}
 }
 
+// queueInitialCap 是新 key 的队列初始容量上限。
+// 不按 maxRequestNum 预分配：key 数量由来源决定、并无上界，多数 key 只落几个请求就过期，
+// 按上限预分配会让内存随扫段流量线性放大。
+const queueInitialCap = 16
+
 // Request 检查并记录请求，duration单位为秒
-// 返回true表示允许请求，false表示被限流
-func (l *InMemoryRateLimiter) Request(key string, maxRequestNum int, duration int64) bool {
+// 第一个返回值为true表示允许请求，false表示被限流；
+// 被限流时第二个返回值是最旧请求滑出窗口所需的秒数，供调用方回填 Retry-After，允许时为 0。
+func (l *InMemoryRateLimiter) Request(key string, maxRequestNum int, duration int64) (bool, int64) {
 	shard := l.getShard(key)
 	shard.mutex.Lock()
 	defer shard.mutex.Unlock()
@@ -123,17 +129,21 @@ func (l *InMemoryRateLimiter) Request(key string, maxRequestNum int, duration in
 	queue, ok := shard.store[key]
 	if !ok {
 		// 新key，创建队列
-		s := make([]int64, 0, maxRequestNum)
+		capHint := maxRequestNum
+		if capHint > queueInitialCap {
+			capHint = queueInitialCap
+		}
+		s := make([]int64, 0, capHint)
 		s = append(s, now)
 		shard.store[key] = &s
-		return true
+		return true, 0
 	}
 
 	// 队列顺序：[旧 --> 新]
 	if len(*queue) < maxRequestNum {
 		// 未达到限制，直接追加
 		*queue = append(*queue, now)
-		return true
+		return true, 0
 	}
 
 	// 达到限制，检查最旧的请求是否过期
@@ -142,9 +152,9 @@ func (l *InMemoryRateLimiter) Request(key string, maxRequestNum int, duration in
 		// 最旧的请求已过期，移除并添加新请求
 		*queue = (*queue)[1:]
 		*queue = append(*queue, now)
-		return true
+		return true, 0
 	}
 
-	// 限流
-	return false
+	// 限流：最旧的一次请求还要 duration-elapsed 秒才滑出窗口，届时才会腾出配额
+	return false, duration - (now - (*queue)[0])
 }

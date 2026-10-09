@@ -5,6 +5,7 @@ package middleware
 // 等测试设施，且任务约束不引入新依赖，故不做单测。
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +15,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/utils"
@@ -40,6 +43,11 @@ func uniqueMark(t *testing.T) string {
 func uniqueIP() string {
 	n := atomic.AddInt64(&rateLimitTestSeq, 1)
 	return fmt.Sprintf("10.99.%d.%d", (n>>8)&0xFF, n&0xFF)
+}
+
+// memoryLimitIP 以单个 IP 桶调用 memoryRateLimiter，对应未登录 / 敏感端点的分桶口径
+func memoryLimitIP(c *gin.Context, maxRequestNum int, duration int64, mark string) {
+	memoryRateLimiter(c, duration, mark, rateLimitBuckets(c, c.ClientIP(), maxRequestNum, false))
 }
 
 func newRateLimitContext(ip string) (*gin.Context, *httptest.ResponseRecorder) {
@@ -74,7 +82,7 @@ func drainLimit(t *testing.T, handler func(*gin.Context), ip string, limit int) 
 func TestMemoryRateLimiterAllowThenReject(t *testing.T) {
 	mark := uniqueMark(t)
 	drainLimit(t, func(c *gin.Context) {
-		memoryRateLimiter(c, 3, 60, mark)
+		memoryLimitIP(c, 3, 60, mark)
 	}, "10.1.0.1", 3)
 }
 
@@ -83,7 +91,7 @@ func TestMemoryRateLimiterRecoversAfterWindow(t *testing.T) {
 	mark := uniqueMark(t)
 	call := func() *gin.Context {
 		c, _ := newRateLimitContext(ip)
-		memoryRateLimiter(c, 1, 1, mark)
+		memoryLimitIP(c, 1, 1, mark)
 		return c
 	}
 	if c := call(); c.IsAborted() {
@@ -104,7 +112,7 @@ func TestMemoryRateLimiterMarkIsolation(t *testing.T) {
 	markA, markB := uniqueMark(t), uniqueMark(t)
 	callMark := func(mark string) *gin.Context {
 		c, _ := newRateLimitContext(ip)
-		memoryRateLimiter(c, 1, 60, mark)
+		memoryLimitIP(c, 1, 60, mark)
 		return c
 	}
 	if c := callMark(markA); c.IsAborted() {
@@ -122,7 +130,7 @@ func TestMemoryRateLimiterIPIsolation(t *testing.T) {
 	mark := uniqueMark(t)
 	callIP := func(ip string) *gin.Context {
 		c, _ := newRateLimitContext(ip)
-		memoryRateLimiter(c, 1, 60, mark)
+		memoryLimitIP(c, 1, 60, mark)
 		return c
 	}
 	if c := callIP("10.1.0.4"); c.IsAborted() {
@@ -152,7 +160,7 @@ func TestMemoryRateLimiterConcurrent(t *testing.T) {
 			defer wg.Done()
 			for i := 0; i < perEach; i++ {
 				c, _ := newRateLimitContext(ip)
-				memoryRateLimiter(c, maxNum, 60, mark)
+				memoryLimitIP(c, maxNum, 60, mark)
 				if !c.IsAborted() {
 					atomic.AddInt64(&allowed, 1)
 				}
@@ -173,7 +181,7 @@ func TestRateLimitConstants(t *testing.T) {
 		duration, wantDur int64
 	}{
 		{"GlobalApi", GlobalApiRateLimitNum, 300, GlobalApiRateLimitDuration, 3 * 60},
-		{"GlobalWeb", GlobalWebRateLimitNum, 180, GlobalWebRateLimitDuration, 3 * 60},
+		{"GlobalWeb", GlobalWebRateLimitNum, 300, GlobalWebRateLimitDuration, 3 * 60},
 		{"Upload", UploadRateLimitNum, 10, UploadRateLimitDuration, 60},
 		{"Download", DownloadRateLimitNum, 10, DownloadRateLimitDuration, 60},
 		{"Critical", CriticalRateLimitNum, 200, CriticalRateLimitDuration, 20 * 60},
@@ -302,7 +310,7 @@ func TestRateLimitKeyIgnoresForwardedForWhenNoTrustedProxy(t *testing.T) {
 	ip := uniqueIP()
 	call := func(spoofed string) *gin.Context {
 		c := newSpoofedContext(ip, false, "X-Forwarded-For", spoofed)
-		memoryRateLimiter(c, 1, 60, mark)
+		memoryLimitIP(c, 1, 60, mark)
 		return c
 	}
 	if c := call("203.0.113.1"); c.IsAborted() {
@@ -310,5 +318,120 @@ func TestRateLimitKeyIgnoresForwardedForWhenNoTrustedProxy(t *testing.T) {
 	}
 	if c := call("203.0.113.2"); !c.IsAborted() {
 		t.Fatal("rate limit key must be the peer address, not X-Forwarded-For")
+	}
+}
+
+// 被限流时返回 Retry-After / X-RateLimit-* 头与 JSON 错误体
+func TestRateLimitTooManyRequestsResponse(t *testing.T) {
+	mark := uniqueMark(t)
+	ip := uniqueIP()
+	c, _ := newRateLimitContext(ip)
+	memoryLimitIP(c, 1, 60, mark)
+	c, w := newRateLimitContext(ip)
+	memoryLimitIP(c, 1, 60, mark)
+	if w.Code != http.StatusTooManyRequests {
+		t.Fatalf("status = %d, want 429", w.Code)
+	}
+	retryAfter, err := strconv.Atoi(w.Header().Get("Retry-After"))
+	if err != nil || retryAfter < 1 || retryAfter > 60 {
+		t.Fatalf("Retry-After = %q, want 1..60", w.Header().Get("Retry-After"))
+	}
+	if got := w.Header().Get("X-RateLimit-Limit"); got != "1" {
+		t.Fatalf("X-RateLimit-Limit = %q, want 1", got)
+	}
+	if got := w.Header().Get("X-RateLimit-Remaining"); got != "0" {
+		t.Fatalf("X-RateLimit-Remaining = %q, want 0", got)
+	}
+	if got := w.Header().Get("X-RateLimit-Reset"); got != w.Header().Get("Retry-After") {
+		t.Fatalf("X-RateLimit-Reset = %q, want same as Retry-After", got)
+	}
+	var body struct {
+		Error struct {
+			Message string `json:"message"`
+			Type    string `json:"type"`
+			Code    string `json:"code"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body.Error.Type != "system_error" || body.Error.Code != "rate_limit_exceeded" || body.Error.Message == "" {
+		t.Fatalf("unexpected error body: %+v", body.Error)
+	}
+}
+
+// 同机反代：对端恒为 127.0.0.1，但可信反代解析出的 ClientIP 不是回环，不得豁免
+func TestRateLimitSameHostProxyNotBypassed(t *testing.T) {
+	if config.RedisEnabled {
+		t.Skip("requires memory rate limit path (redis disabled)")
+	}
+	handler := DownloadRateLimit()
+	clientIP := uniqueIP()
+	call := func() *gin.Context {
+		c := newSpoofedContext("127.0.0.1", true, "X-Forwarded-For", clientIP)
+		handler(c)
+		return c
+	}
+	for i := 0; i < DownloadRateLimitNum; i++ {
+		if c := call(); c.IsAborted() {
+			t.Fatalf("request %d/%d: expected allow, got aborted", i+1, DownloadRateLimitNum)
+		}
+	}
+	if c := call(); !c.IsAborted() {
+		t.Fatal("same-host proxied request must be rate limited by its client IP")
+	}
+}
+
+// 登录用户占用「用户配额 + 放宽的 IP 天花板」：同一 IP 下另一用户不受前一用户打满影响
+func TestRateLimitPerUserQuota(t *testing.T) {
+	if config.RedisEnabled {
+		t.Skip("requires memory rate limit path (redis disabled)")
+	}
+	const limit = 2
+	handler := rateLimitFactory(limit, 60, uniqueMark(t), false, true)
+	engine := gin.New()
+	engine.Use(sessions.Sessions("rl-test", cookie.NewStore([]byte("rate-limit-test-secret"))))
+	engine.GET("/:uid", func(c *gin.Context) {
+		if uid, _ := strconv.Atoi(c.Param("uid")); uid > 0 {
+			sessions.Default(c).Set("id", uid)
+		}
+		handler(c)
+		if !c.IsAborted() {
+			c.Status(http.StatusOK)
+		}
+	})
+	ip := uniqueIP()
+	do := func(uid int64) *httptest.ResponseRecorder {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/"+strconv.FormatInt(uid, 10), nil)
+		req.RemoteAddr = ip + ":12345"
+		engine.ServeHTTP(w, req)
+		return w
+	}
+	userA := atomic.AddInt64(&rateLimitTestSeq, 1)
+	userB := atomic.AddInt64(&rateLimitTestSeq, 1)
+	for i := 0; i < limit; i++ {
+		if w := do(userA); w.Code != http.StatusOK {
+			t.Fatalf("user A request %d: status %d, want 200", i+1, w.Code)
+		}
+	}
+	w := do(userA)
+	if w.Code != http.StatusTooManyRequests {
+		t.Fatalf("user A over quota: status %d, want 429", w.Code)
+	}
+	if got := w.Header().Get("X-RateLimit-Limit"); got != strconv.Itoa(limit) {
+		t.Fatalf("user bucket X-RateLimit-Limit = %q, want %d", got, limit)
+	}
+	if w := do(userB); w.Code != http.StatusOK {
+		t.Fatalf("user B on same IP: status %d, want 200", w.Code)
+	}
+	// 匿名请求走独立的 ip: 桶，限额保持原值
+	for i := 0; i < limit; i++ {
+		if w := do(0); w.Code != http.StatusOK {
+			t.Fatalf("anonymous request %d: status %d, want 200", i+1, w.Code)
+		}
+	}
+	if w := do(0); w.Code != http.StatusTooManyRequests {
+		t.Fatalf("anonymous over limit: status %d, want 429", w.Code)
 	}
 }

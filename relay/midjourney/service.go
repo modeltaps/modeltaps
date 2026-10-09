@@ -64,6 +64,23 @@ func GetMjRequestModel(relayMode int, midjRequest *mjProvider.MidjourneyRequest,
 	return modelName, nil, true
 }
 
+// customIdIndexSegment 是 customId 中承载图格索引的段位下标，
+// 形如 "MJ::JOB::upsample::2::<taskId>" 中的 "2"。
+const customIdIndexSegment = 3
+
+// parseCustomIdIndex 取出 customId 的索引段。customId 来自客户端可控入参，
+// 段数不足时必须当作请求错误返回，不能直接下标访问（否则 panic 成 500）。
+func parseCustomIdIndex(splits []string) (int, *mjProvider.MidjourneyResponse) {
+	if len(splits) <= customIdIndexSegment {
+		return 0, mjProvider.MidjourneyErrorWrapper(mjProvider.MjRequestError, "index_parse_failed")
+	}
+	index, err := strconv.Atoi(splits[customIdIndexSegment])
+	if err != nil {
+		return 0, mjProvider.MidjourneyErrorWrapper(mjProvider.MjRequestError, "index_parse_failed")
+	}
+	return index, nil
+}
+
 func CoverPlusActionToNormalAction(midjRequest *mjProvider.MidjourneyRequest) *mjProvider.MidjourneyResponse {
 	// "customId": "MJ::JOB::upsample::2::3dbbd469-36af-4a0f-8f02-df6c579e7011"
 	customId := midjRequest.CustomId
@@ -71,8 +88,15 @@ func CoverPlusActionToNormalAction(midjRequest *mjProvider.MidjourneyRequest) *m
 		return mjProvider.MidjourneyErrorWrapper(mjProvider.MjRequestError, "custom_id_is_required")
 	}
 	splits := strings.Split(customId, "::")
+	// 至少需要 2 段才能判定 action 所在位置，不足则是畸形 customId
+	if len(splits) < 2 {
+		return mjProvider.MidjourneyErrorWrapper(mjProvider.MjRequestError, "unknown_action:"+customId)
+	}
 	var action string
 	if splits[1] == "JOB" {
+		if len(splits) < 3 {
+			return mjProvider.MidjourneyErrorWrapper(mjProvider.MjRequestError, "unknown_action:"+customId)
+		}
 		action = splits[2]
 	} else {
 		action = splits[1]
@@ -82,18 +106,18 @@ func CoverPlusActionToNormalAction(midjRequest *mjProvider.MidjourneyRequest) *m
 		return mjProvider.MidjourneyErrorWrapper(mjProvider.MjRequestError, "unknown_action")
 	}
 	if strings.Contains(action, "upsample") {
-		index, err := strconv.Atoi(splits[3])
-		if err != nil {
-			return mjProvider.MidjourneyErrorWrapper(mjProvider.MjRequestError, "index_parse_failed")
+		index, mjErr := parseCustomIdIndex(splits)
+		if mjErr != nil {
+			return mjErr
 		}
 		midjRequest.Index = index
 		midjRequest.Action = mjProvider.MjActionUpscale
 	} else if strings.Contains(action, "variation") {
 		midjRequest.Index = 1
 		if action == "variation" {
-			index, err := strconv.Atoi(splits[3])
-			if err != nil {
-				return mjProvider.MidjourneyErrorWrapper(mjProvider.MjRequestError, "index_parse_failed")
+			index, mjErr := parseCustomIdIndex(splits)
+			if mjErr != nil {
+				return mjErr
 			}
 			midjRequest.Index = index
 			midjRequest.Action = mjProvider.MjActionVariation
@@ -133,13 +157,21 @@ func ConvertSimpleChangeParams(content string) *mjProvider.MidjourneyRequest {
 	changeParams := &mjProvider.MidjourneyRequest{}
 	changeParams.TaskId = split[0]
 
+	if action == "r" {
+		changeParams.Action = "REROLL"
+		return changeParams
+	}
+
+	// content 是客户端可控入参，"taskId " / "taskId u" 这类残缺动作会让下面的
+	// action[0]、action[1:2] 越界 panic；除 "r" 外合法动作都是 "u<n>" / "v<n>"，先卡住长度。
+	if len(action) < 2 {
+		return nil
+	}
+
 	if action[0] == 'u' {
 		changeParams.Action = "UPSCALE"
 	} else if action[0] == 'v' {
 		changeParams.Action = "VARIATION"
-	} else if action == "r" {
-		changeParams.Action = "REROLL"
-		return changeParams
 	} else {
 		return nil
 	}

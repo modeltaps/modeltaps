@@ -1,9 +1,11 @@
 package config
 
 import (
+	"net"
 	"strings"
 	"time"
 
+	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/utils"
 
 	"github.com/spf13/viper"
@@ -66,6 +68,34 @@ func ParseTrustedProxies(raw []string) []string {
 	return proxies
 }
 
+// ParseCIDRList 把 IP / CIDR 混合列表（YAML 列表或逗号分隔）预编译成网段，裸 IP 按单机处理（/32、/128）。
+// 非法条目跳过并告警：宁可少放行一个来源（表现为被限流，可见），也不要让运维误以为已生效。
+func ParseCIDRList(raw []string, optionName string) []*net.IPNet {
+	items := ParseTrustedProxies(raw)
+	out := make([]*net.IPNet, 0, len(items))
+	for _, item := range items {
+		if !strings.Contains(item, "/") {
+			ip := net.ParseIP(item)
+			if ip == nil {
+				logger.SysError(optionName + ": invalid entry ignored: " + item)
+				continue
+			}
+			bits := 128
+			if ip.To4() != nil {
+				bits = 32
+			}
+			out = append(out, &net.IPNet{IP: ip, Mask: net.CIDRMask(bits, bits)})
+			continue
+		}
+		if _, ipNet, err := net.ParseCIDR(item); err == nil {
+			out = append(out, ipNet)
+		} else {
+			logger.SysError(optionName + ": invalid entry ignored: " + item)
+		}
+	}
+	return out
+}
+
 func defaultConfig() {
 	viper.SetDefault("port", "3000")
 	viper.SetDefault("gin_mode", "release")
@@ -85,6 +115,8 @@ func defaultConfig() {
 	viper.SetDefault("redis_write_timeout", 2)
 	viper.SetDefault("global.api_rate_limit", 300)
 	viper.SetDefault("global.web_rate_limit", 300)
+	// 免限流来源（IP 或 CIDR），供管理脚本 / 监控探针等高频可信调用方使用。
+	viper.SetDefault("global.rate_limit_whitelist", []string{})
 	viper.SetDefault("connect_timeout", 5)
 	viper.SetDefault("auto_price_updates", false)
 	viper.SetDefault("auto_price_updates_mode", "system")

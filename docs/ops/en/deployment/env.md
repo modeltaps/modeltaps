@@ -71,8 +71,17 @@ LOGS_FILENAME="modeltaps.log"
 12. `BATCH_UPDATE_INTERVAL=5`: the batching interval, in seconds. Defaults to `5`.
     - Example: `BATCH_UPDATE_INTERVAL=5`
 13. Rate limiting:
-    - `GLOBAL_API_RATE_LIMIT`: global API rate limit (excluding relay requests), the maximum number of requests per IP within three minutes. Defaults to `180`.
-    - `GLOBAL_WEB_RATE_LIMIT`: global web rate limit, the maximum number of requests per IP within three minutes. Defaults to `60`.
+    - `GLOBAL_API_RATE_LIMIT`: global API rate limit (excluding relay requests), the maximum number of requests within three minutes. Defaults to `300`.
+    - `GLOBAL_WEB_RATE_LIMIT`: global web rate limit, the maximum number of requests within three minutes. Defaults to `300`.
+    - How requests are counted:
+      - **When a signed-in user is recognized** (a valid web session is present), each request takes from two buckets: the **user** quota and the **source IP** ceiling; whichever fills first returns `429`. The user quota is the value configured above and the IP ceiling is four times that. Users behind the same NAT or office gateway get separate quotas and do not crowd each other out, while registering more accounts on one machine does not multiply the quota.
+      - **When no signed-in user is recognized** (anonymous access, or token-authenticated endpoints such as `/dashboard`), requests are counted per source IP only, at exactly the configured value.
+      - Direct local requests (both the peer and the resolved client IP are loopback) are not counted; requests forwarded by a reverse proxy on the same host are still counted by the real client IP.
+    - `GLOBAL_RATE_LIMIT_WHITELIST`: source addresses exempt from rate limiting, as IPs or CIDRs separated by commas. Empty by default. Intended for trusted high-volume callers such as admin scripts and monitoring probes.
+      - Example: `GLOBAL_RATE_LIMIT_WHITELIST=10.0.0.5,192.168.0.0/16`
+      - It only applies to the two global limits above. Sensitive endpoints (sign-in, registration, password change, OAuth callbacks) and uploads / downloads have their own limits and are **not exempted**, so brute-force protection stays in place.
+      - The whitelist matches the client IP the server resolves, whose trust is governed by `TRUSTED_PROXIES`; spoofed request headers cannot obtain an exemption on a directly exposed instance.
+    - A rate-limited request gets `429` with `Retry-After` (seconds) and `X-RateLimit-Limit` / `X-RateLimit-Remaining` / `X-RateLimit-Reset` headers (readable by cross-origin callers), and a JSON error body that includes the remaining wait in seconds and the request id.
 14. Encoder cache settings:
     - `TIKTOKEN_CACHE_DIR`: by default the program downloads common token encodings at startup (for example for `gpt-3.5-turbo`), which can fail on unstable networks or offline hosts. Point this at a directory to cache the data; the cache can be moved to an offline environment.
     - `DATA_GYM_CACHE_DIR`: currently equivalent to `TIKTOKEN_CACHE_DIR`, but with lower precedence.
