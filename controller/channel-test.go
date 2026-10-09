@@ -341,7 +341,7 @@ func TestChannel(c *gin.Context) {
 	if openaiErr != nil {
 		if ShouldDisableChannel(channel.Type, openaiErr) {
 			msg = fmt.Sprintf("speed test failed, channel disabled, reason: %s", utils.MaskSensitiveInfo(err.Error()))
-			DisableChannel(channel.Id, channel.Name, err.Error(), false)
+			DisableChannel(channel.Id, channel.Name, testModel, err.Error(), false)
 		} else {
 			msg = fmt.Sprintf("speed test failed, reason: %s", utils.MaskSensitiveInfo(err.Error()))
 		}
@@ -474,13 +474,13 @@ func testAllChannels(isNotify bool) error {
 				if milliseconds > disableThreshold {
 					errMsg := fmt.Sprintf("Response time %.2fs exceeds threshold %.2fs ", float64(milliseconds)/1000.0, float64(disableThreshold)/1000.0)
 					sb.WriteString(fmt.Sprintf("- %s \n\n- Disabled\n\n", errMsg))
-					DisableChannel(channel.Id, channel.Name, errMsg, false)
+					DisableChannel(channel.Id, channel.Name, channel.TestModel, errMsg, false)
 					continue
 				}
 
 				if ShouldDisableChannel(channel.Type, openaiErr) {
 					sb.WriteString(fmt.Sprintf("- Disabled, reason: %s\n\n", utils.EscapeMarkdownText(utils.MaskSensitiveInfo(err.Error()))))
-					DisableChannel(channel.Id, channel.Name, err.Error(), false)
+					DisableChannel(channel.Id, channel.Name, channel.TestModel, err.Error(), false)
 					continue
 				}
 

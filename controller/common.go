@@ -161,7 +161,10 @@ func ShouldDisableChannel(channelType int, err *types.OpenAIErrorWithStatusCode)
 }
 
 // disable & notify
-func DisableChannel(channelId int, channelName string, reason string, sendNotify bool) {
+//
+// modelName 是触发禁用的那次请求所用的模型（上游实际收到的名称，已过模型映射），
+// 带进通知正文便于定位是哪个模型触发的；余额巡检等与具体模型无关的场景传空串，此时正文省略该字段。
+func DisableChannel(channelId int, channelName string, modelName string, reason string, sendNotify bool) {
 	key := fmt.Sprintf("disable_channel_%d", channelId)
 
 	// 使用 singleflight 确保同一渠道的并发禁用请求只执行一次
@@ -185,8 +188,7 @@ func DisableChannel(channelId int, channelName string, reason string, sendNotify
 		// 通知会直达运维收件人,这里强制脱敏。
 		if sendNotify && config.AutomaticDisableChannelNotifyEnabled && shouldSendChannelDisableNotify(channelId) {
 			subject := fmt.Sprintf("Channel \"%s\" (#%d) has been disabled", channelName, channelId)
-			content := fmt.Sprintf("Channel \"%s\" (#%d) has been disabled. Reason: %s", channelName, channelId, utils.MaskSensitiveInfo(reason))
-			notify.Send(subject, content)
+			notify.Send(subject, channelDisableNotifyContent(channelId, channelName, modelName, reason))
 		}
 
 		return nil, nil
@@ -196,6 +198,16 @@ func DisableChannel(channelId int, channelName string, reason string, sendNotify
 	if err != nil {
 		logger.SysError(fmt.Sprintf("DisableChannel failed for channel %d: %v", channelId, err))
 	}
+}
+
+// channelDisableNotifyContent 生成渠道禁用通知正文。reason 强制脱敏；模型名来自本地模型映射配置
+// 而非上游报文，不含凭据或主机信息，不做脱敏。
+func channelDisableNotifyContent(channelId int, channelName string, modelName string, reason string) string {
+	modelPart := ""
+	if modelName != "" {
+		modelPart = fmt.Sprintf(" Model: %s.", modelName)
+	}
+	return fmt.Sprintf("Channel \"%s\" (#%d) has been disabled.%s Reason: %s", channelName, channelId, modelPart, utils.MaskSensitiveInfo(reason))
 }
 
 // enable & notify

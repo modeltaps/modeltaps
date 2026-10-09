@@ -343,6 +343,7 @@ func getProvider(c *gin.Context, modelName string, catalogExempt bool) (provider
 	}
 	provider.SetOriginalModel(modelName) // 保存用户原始请求的模型名称
 	c.Set("original_model", modelName)
+	c.Set("channel_unified_request_response_model", channel.UnifiedRequestResponseModel)
 	// routing_model 是 balancer 实际用于选路与 cooldown 判定的模型名（通配符/大小写匹配后、
 	// model_mapping 映射前）。与 original_model（用户原文）和 new_model（映射后的上游名）都可能不同，
 	// 写 cooldown 的一方必须用它，否则 IsInCooldown 查不到。
@@ -461,7 +462,8 @@ func fetchChannelByModel(c *gin.Context, modelName string) (*model.Channel, erro
 }
 
 // unifyResponseModel 在响应写出前统一把含 model 字段的响应对象改写为用户原始请求模型名。
-// 仅在 UnifiedRequestResponseModelEnabled 开启且 context 存在 original_model 时生效（由
+// 仅在全局 UnifiedRequestResponseModelEnabled 或渠道级 UnifiedRequestResponseModel 开启、
+// 且 context 存在 original_model 时生效（由
 // GetResponseModelNameFromContext 内部判断）；未启用时返回原值，幂等无副作用。
 // 这是所有非流式 JSON 响应（chat/completions/embeddings/moderations/rerank/responses/claude/gemini）
 // 的统一出口拦截点，避免逐个 provider 手动改写导致的覆盖遗漏。
@@ -880,12 +882,21 @@ func isModelNotFoundErr(apiErr *types.OpenAIErrorWithStatusCode) bool {
 		strings.Contains(msg, "unknown model")
 }
 
-func processChannelRelayError(ctx context.Context, channelId int, channelName string, err *types.OpenAIErrorWithStatusCode, channelType int) {
+func processChannelRelayError(ctx context.Context, channelId int, channelName string, modelName string, err *types.OpenAIErrorWithStatusCode, channelType int) {
 	if controller.ShouldDisableChannel(channelType, err) {
-		logger.LogError(ctx, fmt.Sprintf("channel_disabled channel_id=%d channel_name=\"%s\" channel_type=%d status_code=%d error=\"%s\" auto_disabled=true",
-			channelId, channelName, channelType, err.StatusCode, err.Message))
-		controller.DisableChannel(channelId, channelName, err.Message, true)
+		logger.LogError(ctx, fmt.Sprintf("channel_disabled channel_id=%d channel_name=\"%s\" channel_type=%d model=\"%s\" status_code=%d error=\"%s\" auto_disabled=true",
+			channelId, channelName, channelType, modelName, err.StatusCode, err.Message))
+		controller.DisableChannel(channelId, channelName, modelName, err.Message, true)
 	}
+}
+
+// relayErrorModelName 返回渠道禁用日志与通知里使用的模型名：优先 new_model（过映射后真正发给上游的名称），
+// 缺失时（如 setProvider 失败、new_model 尚未写入）退回 original_model。
+func relayErrorModelName(c *gin.Context) string {
+	if modelName := c.GetString("new_model"); modelName != "" {
+		return modelName
+	}
+	return c.GetString("original_model")
 }
 
 // RoutingModelName 返回重试链路上「选路 / 计数 / cooldown / 过滤」应使用的模型名。
@@ -946,10 +957,12 @@ func quarantineModelNotFound(ctx context.Context, c *gin.Context, channel *model
 var relayErrorNotifyWG sync.WaitGroup
 
 func notifyChannelRelayError(ctx context.Context, c *gin.Context, channel *model.Channel, apiErr *types.OpenAIErrorWithStatusCode) {
+	// 必须在启动 goroutine 前同步从 c 取值：handler 返回后 c 会被 gin 回收复用，在 goroutine 里读 c 是数据竞争。
+	modelName := relayErrorModelName(c)
 	relayErrorNotifyWG.Add(1)
 	go func() {
 		defer relayErrorNotifyWG.Done()
-		processChannelRelayError(ctx, channel.Id, channel.Name, apiErr, channel.Type)
+		processChannelRelayError(ctx, channel.Id, channel.Name, modelName, apiErr, channel.Type)
 	}()
 	// 先做隔离判定再置 429 标记：本次就是 429 时上面的状态码分支已拦下，顺序不影响结果，
 	// 但保持"读到的是本次调用前的链上状态"更符合直觉。
