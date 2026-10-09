@@ -211,6 +211,20 @@ func (h *GeminiRelayStreamHandler) HandlerStream(rawLine *[]byte, dataChan chan 
 	h.Usage.CompletionTokens = completionTokens
 	h.Usage.CompletionTokensDetails.ReasoningTokens = geminiResponse.UsageMetadata.ThoughtsTokenCount
 
+	// Streaming completion breakdown (image/audio/text), aligned with non-streaming ConvertOpenAIUsage
+	// so extra ratios such as output_image_tokens apply. Overwrite semantics, like PromptTokens:
+	// Gemini sends the full usage only in the final chunk.
+	for _, c := range geminiResponse.UsageMetadata.CandidatesTokensDetails {
+		switch c.Modality {
+		case "IMAGE":
+			h.Usage.CompletionTokensDetails.ImageTokens = c.TokenCount
+		case "AUDIO":
+			h.Usage.CompletionTokensDetails.AudioTokens = c.TokenCount
+		case "TEXT":
+			h.Usage.CompletionTokensDetails.TextTokens = c.TokenCount
+		}
+	}
+
 	// total 兜底：保证 total >= prompt + completion（OpenAI 协议契约）。
 	// 允许 upstream total 比它大（reasoning 模型 thoughts 已计入 completion 不会偏大；
 	// 真大说明 upstream 有额外计费维度如 cache 包含在 prompt 里，信任 upstream 值不去动）。

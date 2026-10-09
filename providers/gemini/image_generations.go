@@ -101,10 +101,19 @@ func (p *GeminiProvider) CreateImageGenerations(request *types.ImageRequest) (*t
 		})
 	}
 
+	// All predictions blocked by content policy: return an explicit error instead of an empty success.
+	if len(openaiResponse.Data) == 0 {
+		return nil, common.StringErrorWrapper("all generated images were blocked by content policy", "content_policy_violation", http.StatusBadRequest)
+	}
+
 	usage := p.GetUsage()
 	// PromptTokens保持之前根据prompt内容计算的值
-	// CompletionTokens根据生成的图像数量计算，避免空回复计费问题
-	usage.CompletionTokens = imageCount * 258
+	// Imagen :predict bills 258 tokens per image (native generateContent image output uses 1290, see chat.go).
+	// Count only images actually returned, so partially blocked predictions are not billed.
+	const imagenTokensPerImage = 258
+	imageTokens := len(openaiResponse.Data) * imagenTokensPerImage
+	usage.CompletionTokens = imageTokens
+	usage.CompletionTokensDetails.ImageTokens = imageTokens
 	usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
 
 	return openaiResponse, nil
