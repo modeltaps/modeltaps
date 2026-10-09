@@ -13,7 +13,6 @@ import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/requester"
-	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/model"
 
 	"gorm.io/gorm"
@@ -99,8 +98,7 @@ func fetchGenerationWithRetry(baseURL, apiKey, proxyAddr, genID string) *Generat
 // fetchGeneration 发一次带渠道代理与鉴权的 GET,解析 generation 数据。
 // 使用 context 超时兜底(全局 HTTPClient.Timeout 面向长连接过长),只读 Authorization 用渠道 key。
 func fetchGeneration(reqURL, apiKey, proxyAddr string) (*GenerationData, error) {
-	ctx := utils.SetProxy(proxyAddr, context.Background())
-	ctx, cancel := context.WithTimeout(ctx, genFetchTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), genFetchTimeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
@@ -110,7 +108,7 @@ func fetchGeneration(reqURL, apiKey, proxyAddr string) (*GenerationData, error) 
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := requester.HTTPClient.Do(req)
+	resp, err := requester.GetHTTPClient(proxyAddr).Do(req)
 	if err != nil {
 		return nil, err
 	}
