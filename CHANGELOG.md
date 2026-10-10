@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-10
+
+### Changed
+
+- The home page hero figure is redrawn as symmetric line art: lines from members, apps and API
+  keys gather into the Modeltaps mark and fan out to model providers, with dots on both ring
+  crossings. The documentation site home page uses the same figure, and the figure's
+  screen-reader description is updated in every language.
+- The Hong Kong Chinese environment variable guide now uses Hong Kong wording for "account".
+
 ## [0.1.0] - 2026-10-09
 
 ### Added
