@@ -3143,7 +3143,7 @@
       "subline": "OpenAI、Anthropic、Gemini 三种协议走同一个地址，工具只改 base URL 就能用任意模型。自己部署，key 和日志都在自己手里。",
       "ctaPrimary": "获取 API Key",
       "ctaSecondary": "浏览模型",
-      "gatewayAria": "网关示意图：左侧多位成员与应用各持一把钥匙，接入中间虚线标出的组织边界；边界内是 Modeltaps 网关与预算量表，右侧分出云端供应商与组织自带 key 两条通路。"
+      "gatewayAria": "网关示意图：左侧成员、应用与 API Key 的连线汇入中间的 Modeltaps 标志，再向右散开到各家模型厂商。左侧虚线环表示组织预算与白名单检查，右侧虚线环表示渠道路由与负载均衡；琥珀色圆点表示被限流或切换了渠道的请求。"
     },
     "howItWorks": {
       "title": "三步接入",

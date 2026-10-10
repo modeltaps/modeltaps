@@ -575,7 +575,7 @@
       "badge": "Multi-protocol AI gateway",
       "ctaPrimary": "Get API key",
       "ctaSecondary": "Browse models",
-      "gatewayAria": "Diagram of the gateway: members and apps on the left each hold a key and connect into the dashed organization boundary, which holds the Modeltaps gateway and a budget meter; two lanes on the right lead to cloud providers and organization-owned keys.",
+      "gatewayAria": "Diagram of the gateway: lines from members, apps and API keys on the left gather into the Modeltaps mark at the centre, then fan out on the right to model providers. Dashed rings on the left mark the organization's budget and allow-list checks, those on the right mark channel routing and load balancing; amber dots show requests that were rate-limited or switched to another channel.",
       "subline": "OpenAI, Anthropic and Gemini APIs behind a single base URL. Point your tools at one address and use any model — self-hosted, with your own keys.",
       "tagline": "Every model, every protocol. One gateway."
     },
