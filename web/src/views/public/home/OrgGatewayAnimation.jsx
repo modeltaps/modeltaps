@@ -20,7 +20,8 @@ const RINGS = [
   { x: 158, rx: 9, ry: 45.7 }
 ];
 
-// Arc / ring crossings on each ring's outer half (solved numerically from the curves above), tone per point.
+// Both arc / ring crossings (outer and inner half of each ring, solved numerically from the curves above),
+// tone per point. Inner-ring dots are slightly smaller so the tighter ring does not crowd.
 const RING_DOTS = [
   { x: 71.3, y: 49.8, tone: 'primary' },
   { x: 63.2, y: 91.2, tone: 'muted' },
@@ -28,12 +29,24 @@ const RING_DOTS = [
   { x: 60.3, y: 183.2, tone: 'primary' },
   { x: 63.2, y: 228.8, tone: 'primary' },
   { x: 71.3, y: 270.2, tone: 'muted' },
-  { x: 154.1, y: 118.9, tone: 'primary' },
-  { x: 150.7, y: 133.5, tone: 'primary' },
-  { x: 149.2, y: 150.9, tone: 'primary' },
-  { x: 149.2, y: 169.1, tone: 'warn' },
-  { x: 150.7, y: 186.5, tone: 'muted' },
-  { x: 154.1, y: 201.1, tone: 'primary' }
+  { x: 83.3, y: 57.5, tone: 'primary' },
+  { x: 89.8, y: 101.2, tone: 'primary' },
+  { x: 91.8, y: 140.7, tone: 'primary' },
+  { x: 91.8, y: 179.3, tone: 'muted' },
+  { x: 89.8, y: 218.8, tone: 'warn' },
+  { x: 83.3, y: 262.5, tone: 'primary' },
+  { x: 154.1, y: 118.9, tone: 'primary', small: true },
+  { x: 150.7, y: 133.5, tone: 'primary', small: true },
+  { x: 149.2, y: 150.9, tone: 'primary', small: true },
+  { x: 149.2, y: 169.1, tone: 'warn', small: true },
+  { x: 150.7, y: 186.5, tone: 'muted', small: true },
+  { x: 154.1, y: 201.1, tone: 'primary', small: true },
+  { x: 164.4, y: 127.7, tone: 'primary', small: true },
+  { x: 166.2, y: 141.5, tone: 'muted', small: true },
+  { x: 166.9, y: 154.0, tone: 'primary', small: true },
+  { x: 166.9, y: 166.0, tone: 'primary', small: true },
+  { x: 166.2, y: 178.5, tone: 'primary', small: true },
+  { x: 164.4, y: 192.3, tone: 'primary', small: true }
 ];
 
 const SCATTER = [
@@ -87,7 +100,7 @@ export default function OrgGatewayAnimation() {
         ))}
 
         {mirror(RING_DOTS).map((p) => (
-          <circle key={`d-${p.x}-${p.y}`} className={`capog-pt capog-pt-${p.tone}`} cx={p.x} cy={p.y} r="2.6" />
+          <circle key={`d-${p.x}-${p.y}`} className={`capog-pt capog-pt-${p.tone}`} cx={p.x} cy={p.y} r={p.small ? 2.1 : 2.6} />
         ))}
       </svg>
 

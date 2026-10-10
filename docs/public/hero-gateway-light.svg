@@ -51,24 +51,48 @@
   <circle cx="60.3" cy="183.2" r="2.6" fill="#1d1d1f" />
   <circle cx="63.2" cy="228.8" r="2.6" fill="#1d1d1f" />
   <circle cx="71.3" cy="270.2" r="2.6" fill="#5f5f66" />
-  <circle cx="154.1" cy="118.9" r="2.6" fill="#1d1d1f" />
-  <circle cx="150.7" cy="133.5" r="2.6" fill="#1d1d1f" />
-  <circle cx="149.2" cy="150.9" r="2.6" fill="#1d1d1f" />
-  <circle cx="149.2" cy="169.1" r="2.6" fill="#d77924" />
-  <circle cx="150.7" cy="186.5" r="2.6" fill="#5f5f66" />
-  <circle cx="154.1" cy="201.1" r="2.6" fill="#1d1d1f" />
+  <circle cx="83.3" cy="57.5" r="2.6" fill="#1d1d1f" />
+  <circle cx="89.8" cy="101.2" r="2.6" fill="#1d1d1f" />
+  <circle cx="91.8" cy="140.7" r="2.6" fill="#1d1d1f" />
+  <circle cx="91.8" cy="179.3" r="2.6" fill="#5f5f66" />
+  <circle cx="89.8" cy="218.8" r="2.6" fill="#d77924" />
+  <circle cx="83.3" cy="262.5" r="2.6" fill="#1d1d1f" />
+  <circle cx="154.1" cy="118.9" r="2.1" fill="#1d1d1f" />
+  <circle cx="150.7" cy="133.5" r="2.1" fill="#1d1d1f" />
+  <circle cx="149.2" cy="150.9" r="2.1" fill="#1d1d1f" />
+  <circle cx="149.2" cy="169.1" r="2.1" fill="#d77924" />
+  <circle cx="150.7" cy="186.5" r="2.1" fill="#5f5f66" />
+  <circle cx="154.1" cy="201.1" r="2.1" fill="#1d1d1f" />
+  <circle cx="164.4" cy="127.7" r="2.1" fill="#1d1d1f" />
+  <circle cx="166.2" cy="141.5" r="2.1" fill="#5f5f66" />
+  <circle cx="166.9" cy="154" r="2.1" fill="#1d1d1f" />
+  <circle cx="166.9" cy="166" r="2.1" fill="#1d1d1f" />
+  <circle cx="166.2" cy="178.5" r="2.1" fill="#1d1d1f" />
+  <circle cx="164.4" cy="192.3" r="2.1" fill="#1d1d1f" />
   <circle cx="408.7" cy="49.8" r="2.6" fill="#1d1d1f" />
   <circle cx="416.8" cy="91.2" r="2.6" fill="#5f5f66" />
   <circle cx="419.7" cy="136.8" r="2.6" fill="#1d1d1f" />
   <circle cx="419.7" cy="183.2" r="2.6" fill="#1d1d1f" />
   <circle cx="416.8" cy="228.8" r="2.6" fill="#1d1d1f" />
   <circle cx="408.7" cy="270.2" r="2.6" fill="#5f5f66" />
-  <circle cx="325.9" cy="118.9" r="2.6" fill="#1d1d1f" />
-  <circle cx="329.3" cy="133.5" r="2.6" fill="#1d1d1f" />
-  <circle cx="330.8" cy="150.9" r="2.6" fill="#1d1d1f" />
-  <circle cx="330.8" cy="169.1" r="2.6" fill="#d77924" />
-  <circle cx="329.3" cy="186.5" r="2.6" fill="#5f5f66" />
-  <circle cx="325.9" cy="201.1" r="2.6" fill="#1d1d1f" />
+  <circle cx="396.7" cy="57.5" r="2.6" fill="#1d1d1f" />
+  <circle cx="390.2" cy="101.2" r="2.6" fill="#1d1d1f" />
+  <circle cx="388.2" cy="140.7" r="2.6" fill="#1d1d1f" />
+  <circle cx="388.2" cy="179.3" r="2.6" fill="#5f5f66" />
+  <circle cx="390.2" cy="218.8" r="2.6" fill="#d77924" />
+  <circle cx="396.7" cy="262.5" r="2.6" fill="#1d1d1f" />
+  <circle cx="325.9" cy="118.9" r="2.1" fill="#1d1d1f" />
+  <circle cx="329.3" cy="133.5" r="2.1" fill="#1d1d1f" />
+  <circle cx="330.8" cy="150.9" r="2.1" fill="#1d1d1f" />
+  <circle cx="330.8" cy="169.1" r="2.1" fill="#d77924" />
+  <circle cx="329.3" cy="186.5" r="2.1" fill="#5f5f66" />
+  <circle cx="325.9" cy="201.1" r="2.1" fill="#1d1d1f" />
+  <circle cx="315.6" cy="127.7" r="2.1" fill="#1d1d1f" />
+  <circle cx="313.8" cy="141.5" r="2.1" fill="#5f5f66" />
+  <circle cx="313.1" cy="154" r="2.1" fill="#1d1d1f" />
+  <circle cx="313.1" cy="166" r="2.1" fill="#1d1d1f" />
+  <circle cx="313.8" cy="178.5" r="2.1" fill="#1d1d1f" />
+  <circle cx="315.6" cy="192.3" r="2.1" fill="#1d1d1f" />
 
   <circle cx="240" cy="160" r="30" fill="#ffffff" stroke="#e0e0e3" stroke-width="1" />
   <g transform="translate(229.8 147.76) scale(0.1275) translate(-48 -32)" fill="none" stroke="#1d1d1f" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
