@@ -575,7 +575,7 @@
       "badge": "多協議 AI 網關",
       "ctaPrimary": "取得 API Key",
       "ctaSecondary": "瀏覽模型",
-      "gatewayAria": "網關示意圖：左側多位成員與應用各持一把鑰匙，接入中間虛線標出的組織邊界；邊界內是 Modeltaps 網關與預算量表，右側分出雲端供應商與組織自帶 key 兩條通路。",
+      "gatewayAria": "網關示意圖：左側成員、應用與 API Key 的連線匯入中間的 Modeltaps 標誌，再向右散開到各家模型供應商。左側虛線環表示組織預算與白名單檢查，右側虛線環表示渠道路由與負載平衡；琥珀色圓點表示被限流或切換了渠道的請求。",
       "subline": "OpenAI、Anthropic、Gemini 三種協議共用同一個地址，工具只需改 base URL 便可使用任何模型。自行部署，key 與日誌都保留在自己手上。",
       "tagline": "一個網關，接通所有模型"
     },

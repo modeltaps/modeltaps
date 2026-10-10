@@ -1,87 +1,77 @@
 <!-- Static counterpart of web/src/views/public/home/OrgGatewayAnimation.jsx (viewBox 480x320). -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" fill="none" stroke-linecap="round" stroke-linejoin="round" role="img" aria-labelledby="hero-gateway-dark-title" aria-label="Diagram of the gateway: members and apps on the left each hold a key and connect into the dashed organization boundary, which holds the Modeltaps gateway; two lanes on the right lead to cloud providers and organization-owned keys.">
-  <title id="hero-gateway-dark-title">Diagram of the gateway: members and apps on the left each hold a key and connect into the dashed organization boundary, which holds the Modeltaps gateway; two lanes on the right lead to cloud providers and organization-owned keys.</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" fill="none" stroke-linecap="round" stroke-linejoin="round" role="img" aria-labelledby="hero-gateway-dark-title" aria-label="Diagram of the gateway: lines from members, apps and API keys on the left gather into the Modeltaps mark at the centre, then fan out on the right to model providers. Dashed rings on the left mark the organization&#39;s budget and allow-list checks, those on the right mark channel routing and load balancing; amber dots show requests that were rate-limited or switched to another channel.">
+  <title id="hero-gateway-dark-title">Diagram of the gateway: lines from members, apps and API keys on the left gather into the Modeltaps mark at the centre, then fan out on the right to model providers. Dashed rings on the left mark the organization&#39;s budget and allow-list checks, those on the right mark channel routing and load balancing; amber dots show requests that were rate-limited or switched to another channel.</title>
 
-  <rect x="165" y="24" width="150" height="252" rx="20" fill="#202024" stroke="#3F3F46" stroke-width="1.4" stroke-dasharray="6 6" />
+  <path d="M0 160H480" stroke="#f4f4f5" stroke-opacity="0.16" stroke-width="1" />
 
-  <g stroke="#56565C" stroke-width="1.4">
-    <path d="M70 40 C135 40 151 150 203 150" />
-    <path d="M70 110 C135 110 160 150 203 150" />
-    <path d="M70 190 C135 190 160 150 203 150" />
-    <path d="M70 260 C135 260 151 150 203 150" />
-    <path d="M271 150 C332 150 350 113 404 113" />
-    <path d="M271 150 C332 150 350 187 404 187" />
-  </g>
-
-  <g>
-    <circle cx="46" cy="40" r="18" fill="#232326" stroke="#3F3F46" stroke-width="1.2" />
-    <g transform="translate(37 31) scale(0.75)" stroke="#A1A1AA" stroke-width="1.5">
-      <circle cx="12" cy="9.3" r="3.2" />
-      <path d="M5.8 18.6a6.2 6.2 0 0 1 12.4 0" />
-    </g>
-    <circle cx="59" cy="53" r="7" fill="#232326" stroke="#3F3F46" stroke-width="1.2" />
-    <g transform="translate(59 53)" stroke="#A1A1AA" stroke-width="1.5">
-      <circle cx="-1.6" cy="0" r="1.7" />
-      <path d="M0.1 0H3.6M2.4 0v1.6" />
-    </g>
-  </g>
-  <g>
-    <circle cx="46" cy="110" r="18" fill="#232326" stroke="#3F3F46" stroke-width="1.2" />
-    <g transform="translate(37 101) scale(0.75)" stroke="#A1A1AA" stroke-width="1.5">
-      <circle cx="12" cy="9.3" r="3.2" />
-      <path d="M5.8 18.6a6.2 6.2 0 0 1 12.4 0" />
-    </g>
-    <circle cx="59" cy="123" r="7" fill="#232326" stroke="#3F3F46" stroke-width="1.2" />
-    <g transform="translate(59 123)" stroke="#A1A1AA" stroke-width="1.5">
-      <circle cx="-1.6" cy="0" r="1.7" />
-      <path d="M0.1 0H3.6M2.4 0v1.6" />
-    </g>
-  </g>
-  <g>
-    <circle cx="46" cy="190" r="18" fill="#232326" stroke="#3F3F46" stroke-width="1.2" />
-    <g transform="translate(37 181) scale(0.75)" stroke="#A1A1AA" stroke-width="1.5">
-      <circle cx="12" cy="9.3" r="3.2" />
-      <path d="M5.8 18.6a6.2 6.2 0 0 1 12.4 0" />
-    </g>
-    <circle cx="59" cy="203" r="7" fill="#232326" stroke="#3F3F46" stroke-width="1.2" />
-    <g transform="translate(59 203)" stroke="#A1A1AA" stroke-width="1.5">
-      <circle cx="-1.6" cy="0" r="1.7" />
-      <path d="M0.1 0H3.6M2.4 0v1.6" />
-    </g>
-  </g>
-  <g>
-    <circle cx="46" cy="260" r="18" fill="#232326" stroke="#3F3F46" stroke-width="1.2" />
-    <g transform="translate(37 251) scale(0.75)" stroke="#A1A1AA" stroke-width="1.5">
-      <circle cx="12" cy="9.3" r="3.2" />
-      <path d="M5.8 18.6a6.2 6.2 0 0 1 12.4 0" />
-    </g>
-    <circle cx="59" cy="273" r="7" fill="#232326" stroke="#3F3F46" stroke-width="1.2" />
-    <g transform="translate(59 273)" stroke="#A1A1AA" stroke-width="1.5">
-      <circle cx="-1.6" cy="0" r="1.7" />
-      <path d="M0.1 0H3.6M2.4 0v1.6" />
-    </g>
+  <g stroke="#f4f4f5" stroke-opacity="0.22" stroke-width="1">
+    <path d="M0 30 C112 30 150 160 240 160" />
+    <path d="M0 82 C112 82 150 160 240 160" />
+    <path d="M0 134 C112 134 150 160 240 160" />
+    <path d="M0 186 C112 186 150 160 240 160" />
+    <path d="M0 238 C112 238 150 160 240 160" />
+    <path d="M0 290 C112 290 150 160 240 160" />
+    <path d="M240 160 C330 160 368 30 480 30" />
+    <path d="M240 160 C330 160 368 82 480 82" />
+    <path d="M240 160 C330 160 368 134 480 134" />
+    <path d="M240 160 C330 160 368 186 480 186" />
+    <path d="M240 160 C330 160 368 238 480 238" />
+    <path d="M240 160 C330 160 368 290 480 290" />
   </g>
 
-  <g>
-    <circle cx="426" cy="113" r="22" fill="#232326" stroke="#3F3F46" stroke-width="1.2" />
-    <g transform="translate(415 102) scale(0.9)" stroke="#A1A1AA" stroke-width="1.5">
-      <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
-    </g>
-  </g>
-  <g>
-    <circle cx="426" cy="187" r="22" fill="#232326" stroke="#3F3F46" stroke-width="1.2" />
-    <g transform="translate(415 176) scale(0.9)" stroke="#A1A1AA" stroke-width="2.2">
-      <g transform="translate(-2.5 -2.5) scale(0.54)">
-        <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
-      </g>
-      <g transform="translate(3.6 4.6) scale(0.88)">
-        <path d="M2.6 17.4A2 2 0 0 0 2 18.8V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.2a2 2 0 0 0 1.4-.6l.8-.8a6.5 6.5 0 1 0-4-4z" />
-      </g>
-    </g>
+  <g stroke="#f4f4f5" stroke-opacity="0.34" stroke-width="1" stroke-dasharray="3 4" stroke-linecap="butt">
+    <ellipse cx="76" cy="160" rx="16" ry="115.3" />
+    <ellipse cx="158" cy="160" rx="9" ry="45.7" />
+    <ellipse cx="404" cy="160" rx="16" ry="115.3" />
+    <ellipse cx="322" cy="160" rx="9" ry="45.7" />
   </g>
 
-  <circle cx="240" cy="150" r="32" fill="#232326" stroke="#3F3F46" stroke-width="1.2" />
-  <g transform="translate(222 132) scale(0.140625)" fill="none" stroke="#E4E4E7" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="30" cy="56" r="1.6" fill="#f4f4f5" fill-opacity="0.28" />
+  <circle cx="104" cy="40" r="1.6" fill="#f4f4f5" fill-opacity="0.28" />
+  <circle cx="40" cy="108" r="1.6" fill="#f4f4f5" fill-opacity="0.28" />
+  <circle cx="24" cy="212" r="1.6" fill="#f4f4f5" fill-opacity="0.28" />
+  <circle cx="116" cy="68" r="1.6" fill="#f4f4f5" fill-opacity="0.28" />
+  <circle cx="196" cy="128" r="1.6" fill="#f4f4f5" fill-opacity="0.28" />
+  <circle cx="36" cy="268" r="1.6" fill="#f4f4f5" fill-opacity="0.28" />
+  <circle cx="188" cy="96" r="1.6" fill="#f4f4f5" />
+  <circle cx="120" cy="248" r="1.6" fill="#f4f4f5" fill-opacity="0.28" />
+  <circle cx="450" cy="56" r="1.6" fill="#f4f4f5" fill-opacity="0.28" />
+  <circle cx="376" cy="40" r="1.6" fill="#f4f4f5" fill-opacity="0.28" />
+  <circle cx="440" cy="108" r="1.6" fill="#f4f4f5" fill-opacity="0.28" />
+  <circle cx="456" cy="212" r="1.6" fill="#f4f4f5" fill-opacity="0.28" />
+  <circle cx="364" cy="68" r="1.6" fill="#f4f4f5" fill-opacity="0.28" />
+  <circle cx="284" cy="128" r="1.6" fill="#f4f4f5" fill-opacity="0.28" />
+  <circle cx="444" cy="268" r="1.6" fill="#f4f4f5" fill-opacity="0.28" />
+  <circle cx="292" cy="96" r="1.6" fill="#f4f4f5" />
+  <circle cx="360" cy="248" r="1.6" fill="#f4f4f5" fill-opacity="0.28" />
+
+  <circle cx="71.3" cy="49.8" r="2.6" fill="#f4f4f5" />
+  <circle cx="63.2" cy="91.2" r="2.6" fill="#9a9aa2" />
+  <circle cx="60.3" cy="136.8" r="2.6" fill="#f4f4f5" />
+  <circle cx="60.3" cy="183.2" r="2.6" fill="#f4f4f5" />
+  <circle cx="63.2" cy="228.8" r="2.6" fill="#f4f4f5" />
+  <circle cx="71.3" cy="270.2" r="2.6" fill="#9a9aa2" />
+  <circle cx="154.1" cy="118.9" r="2.6" fill="#f4f4f5" />
+  <circle cx="150.7" cy="133.5" r="2.6" fill="#f4f4f5" />
+  <circle cx="149.2" cy="150.9" r="2.6" fill="#f4f4f5" />
+  <circle cx="149.2" cy="169.1" r="2.6" fill="#f39a45" />
+  <circle cx="150.7" cy="186.5" r="2.6" fill="#9a9aa2" />
+  <circle cx="154.1" cy="201.1" r="2.6" fill="#f4f4f5" />
+  <circle cx="408.7" cy="49.8" r="2.6" fill="#f4f4f5" />
+  <circle cx="416.8" cy="91.2" r="2.6" fill="#9a9aa2" />
+  <circle cx="419.7" cy="136.8" r="2.6" fill="#f4f4f5" />
+  <circle cx="419.7" cy="183.2" r="2.6" fill="#f4f4f5" />
+  <circle cx="416.8" cy="228.8" r="2.6" fill="#f4f4f5" />
+  <circle cx="408.7" cy="270.2" r="2.6" fill="#9a9aa2" />
+  <circle cx="325.9" cy="118.9" r="2.6" fill="#f4f4f5" />
+  <circle cx="329.3" cy="133.5" r="2.6" fill="#f4f4f5" />
+  <circle cx="330.8" cy="150.9" r="2.6" fill="#f4f4f5" />
+  <circle cx="330.8" cy="169.1" r="2.6" fill="#f39a45" />
+  <circle cx="329.3" cy="186.5" r="2.6" fill="#9a9aa2" />
+  <circle cx="325.9" cy="201.1" r="2.6" fill="#f4f4f5" />
+
+  <circle cx="240" cy="160" r="30" fill="#171719" stroke="#2c2c30" stroke-width="1" />
+  <g transform="translate(229.8 147.76) scale(0.1275) translate(-48 -32)" fill="none" stroke="#f4f4f5" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
     <path d="M64 144V80a32 32 0 0 1 64 0v64M128 80a32 32 0 0 1 64 0v96a32 32 0 0 1-32 32" />
   </g>
 </svg>
