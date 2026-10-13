@@ -4,6 +4,7 @@ import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/providers/base"
+	"github.com/modeltaps/modeltaps/providers/openai"
 	"github.com/modeltaps/modeltaps/types"
 	"encoding/json"
 	"net/http"
@@ -107,6 +108,18 @@ func (p *CodexProvider) CreateResponsesStream(request *types.OpenAIResponsesRequ
 	resp, errWithCode := p.Requester.SendRequestRaw(req)
 	if errWithCode != nil {
 		return nil, errWithCode
+	}
+
+	// Chat-to-Responses path: reuse the OpenAI chat conversion handler so chat
+	// clients receive chat chunks instead of raw Responses events.
+	if request.ConvertChat {
+		chatHandler := openai.OpenAIResponsesStreamHandler{
+			Usage:   p.Usage,
+			Prefix:  `data: `,
+			Model:   p.GetResponseModelName(request.Model),
+			Context: p.Context,
+		}
+		return requester.RequestStream(p.Requester, resp, chatHandler.HandlerChatStream)
 	}
 
 	// 创建流式处理器
