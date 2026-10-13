@@ -350,6 +350,9 @@ func TestRateLimitTooManyRequestsResponse(t *testing.T) {
 			Message string `json:"message"`
 			Type    string `json:"type"`
 			Code    string `json:"code"`
+			Params  struct {
+				RetryAfter int64 `json:"retry_after"`
+			} `json:"params"`
 		} `json:"error"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
@@ -357,6 +360,9 @@ func TestRateLimitTooManyRequestsResponse(t *testing.T) {
 	}
 	if body.Error.Type != "system_error" || body.Error.Code != "rate_limit_exceeded" || body.Error.Message == "" {
 		t.Fatalf("unexpected error body: %+v", body.Error)
+	}
+	if got := strconv.FormatInt(body.Error.Params.RetryAfter, 10); got != w.Header().Get("Retry-After") {
+		t.Fatalf("params.retry_after = %s, want same as Retry-After %q", got, w.Header().Get("Retry-After"))
 	}
 }
 

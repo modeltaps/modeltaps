@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 func GetChannelsList(c *gin.Context) {
@@ -34,18 +35,12 @@ func GetChannelsList(c *gin.Context) {
 func GetChannel(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, invalidChannelIDError())
 		return
 	}
 	channel, err := model.GetChannelById(id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, channelLookupError(err))
 		return
 	}
 	channel.HideKey()
@@ -67,10 +62,7 @@ func AddChannel(c *gin.Context) {
 		return
 	}
 	if err = model.CheckTagTypeConsistency(channel.Tag, channel.Type, 0); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	// 复制渠道时前端拿不到完整 key，由后端从源渠道取
@@ -197,10 +189,7 @@ func UpdateChannel(c *gin.Context) {
 	oldChannel, getErr := model.GetChannelById(channel.Id)
 	if getErr != nil || oldChannel.Tag != channel.Tag || (channel.Tag != "" && oldChannel.Type != channel.Type) {
 		if err = model.CheckTagTypeConsistency(channel.Tag, channel.Type, channel.Id); err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 	}
@@ -236,7 +225,7 @@ func BatchUpdateChannelsAzureApi(c *gin.Context) {
 	}
 
 	if params.Ids == nil || len(params.Ids) == 0 {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("ids must not be empty"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelIDsRequired, "ids must not be empty", nil)
 		return
 	}
 	var count int64
@@ -261,7 +250,7 @@ func BatchDelModelChannels(c *gin.Context) {
 	}
 
 	if params.Ids == nil || len(params.Ids) == 0 {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("ids must not be empty"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelIDsRequired, "ids must not be empty", nil)
 		return
 	}
 
@@ -287,12 +276,12 @@ func BatchAddUserGroupToChannels(c *gin.Context) {
 	}
 
 	if params.Ids == nil || len(params.Ids) == 0 {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("ids must not be empty"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelIDsRequired, "ids must not be empty", nil)
 		return
 	}
 
 	if params.Value == "" {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("user group must not be empty"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelUserGroupRequired, "user group must not be empty", nil)
 		return
 	}
 
@@ -318,12 +307,12 @@ func BatchAddModelToChannels(c *gin.Context) {
 	}
 
 	if params.Ids == nil || len(params.Ids) == 0 {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("ids must not be empty"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelIDsRequired, "ids must not be empty", nil)
 		return
 	}
 
 	if params.Value == "" {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("model must not be empty"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelModelRequired, "model must not be empty", nil)
 		return
 	}
 
@@ -349,7 +338,7 @@ func BatchDeleteChannel(c *gin.Context) {
 	}
 
 	if params.Ids == nil || len(params.Ids) == 0 {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("ids must not be empty"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelIDsRequired, "ids must not be empty", nil)
 		return
 	}
 
@@ -363,4 +352,17 @@ func BatchDeleteChannel(c *gin.Context) {
 		"message": "",
 		"data":    count,
 	})
+}
+
+// invalidChannelIDError replaces the strconv message for a malformed :id.
+func invalidChannelIDError() error {
+	return common.NewAPIError(common.APICodeInvalidChannelID, "invalid channel id", nil)
+}
+
+// channelLookupError gives a missing channel a stable code; other lookup errors pass through.
+func channelLookupError(err error) error {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return common.NewAPIError(common.APICodeChannelNotFound, "channel not found", nil)
+	}
+	return err
 }

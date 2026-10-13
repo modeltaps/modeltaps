@@ -211,11 +211,10 @@ func AbortWithErr(c *gin.Context, statusCode int, err error) {
 	logger.LogError(c.Request.Context(), err.Error())
 }
 
+// APIRespondWithError answers {success:false, message}; an *APIError anywhere in the chain also
+// sets code and params (see api_error.go).
 func APIRespondWithError(c *gin.Context, status int, err error) {
-	c.JSON(status, gin.H{
-		"success": false,
-		"message": err.Error(),
-	})
+	c.JSON(status, APIErrorBody(err))
 }
 
 func StringRerankErrorWrapper(err string, code string, statusCode int) *types.RerankErrorWithStatusCode {

@@ -4,7 +4,6 @@ import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/model"
-	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +12,7 @@ import (
 func GetChannelsTagList(c *gin.Context) {
 	tag := c.Param("tag")
 	if tag == "" {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("tag is required"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelTagRequired, "tag is required", nil)
 		return
 	}
 
@@ -53,7 +52,7 @@ func GetChannelsTagAllList(c *gin.Context) {
 func GetChannelsTag(c *gin.Context) {
 	tag := c.Param("tag")
 	if tag == "" {
-		common.AbortWithMessage(c, http.StatusOK, "tag is required")
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelTagRequired, "tag is required", nil)
 		return
 	}
 	channel, err := model.GetChannelsTag(tag)
@@ -72,7 +71,7 @@ func GetChannelsTag(c *gin.Context) {
 func UpdateChannelsTag(c *gin.Context) {
 	tag := c.Param("tag")
 	if tag == "" {
-		common.AbortWithMessage(c, http.StatusOK, "tag is required")
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelTagRequired, "tag is required", nil)
 		return
 	}
 	channel := model.Channel{}
@@ -96,7 +95,7 @@ func UpdateChannelsTag(c *gin.Context) {
 func DeleteChannelsTag(c *gin.Context) {
 	tag := c.Param("tag")
 	if tag == "" {
-		common.AbortWithMessage(c, http.StatusOK, "tag is required")
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelTagRequired, "tag is required", nil)
 		return
 	}
 	err := model.DeleteChannelsTag(tag, false)
@@ -113,7 +112,7 @@ func DeleteChannelsTag(c *gin.Context) {
 func DeleteDisabledChannelsTag(c *gin.Context) {
 	tag := c.Param("tag")
 	if tag == "" {
-		common.AbortWithMessage(c, http.StatusOK, "tag is required")
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelTagRequired, "tag is required", nil)
 		return
 	}
 	err := model.DeleteChannelsTag(tag, true)
@@ -137,7 +136,7 @@ type UpdateChannelsTagParams struct {
 func UpdateChannelsTagPriority(c *gin.Context) {
 	tag := c.Param("tag")
 	if tag == "" {
-		common.AbortWithMessage(c, http.StatusOK, "tag is required")
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelTagRequired, "tag is required", nil)
 		return
 	}
 
@@ -162,7 +161,7 @@ func UpdateChannelsTagPriority(c *gin.Context) {
 		}
 		err = model.UpdateChannelsTagCostRatio(tag, params.Value)
 	default:
-		common.AbortWithMessage(c, http.StatusOK, "invalid type")
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelTagInvalidSettingType, "invalid type", nil)
 		return
 	}
 
@@ -181,7 +180,7 @@ func ChangeChannelsTagStatus(c *gin.Context) {
 	tag := c.Param("tag")
 	status := c.Param("status")
 	if tag == "" {
-		common.AbortWithMessage(c, http.StatusOK, "tag is required")
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelTagRequired, "tag is required", nil)
 		return
 	}
 
@@ -194,7 +193,7 @@ func ChangeChannelsTagStatus(c *gin.Context) {
 	}
 
 	if statusInt == 0 {
-		common.AbortWithMessage(c, http.StatusOK, "invalid status")
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelTagInvalidStatus, "invalid status", nil)
 		return
 	}
 

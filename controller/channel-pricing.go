@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/modeltaps/modeltaps/common"
 	"fmt"
 	"net/http"
 	"runtime/debug"
@@ -140,25 +141,25 @@ func SyncChannelPricing(c *gin.Context) {
 
 	if channel.Key == "" {
 		if channel.Id == 0 {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": "key is required"})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelKeyRequired, "key is required", nil)
 			return
 		}
 		var err error
 		channel, err = model.GetChannelById(channel.Id)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			common.APIRespondWithError(c, http.StatusOK, channelLookupError(err))
 			return
 		}
 	}
 
 	provider := providers.GetProvider(channel, c)
 	if provider == nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "provider not found"})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelProviderNotFound, "provider not found", nil)
 		return
 	}
 
 	if _, ok := provider.(providersBase.ModelPriceListInterface); !ok {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "channel does not support pricing sync"})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelPricingSyncUnsupported, "channel does not support pricing sync", nil)
 		return
 	}
 
