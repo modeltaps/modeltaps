@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, ChevronRight, FlaskConical, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, FlaskConical, Gauge, Trash2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,14 +11,14 @@ import { toast } from '@/components/ui/sonner';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
 import { manageChannel, fetchTagChannels, manageTag } from './channelApi';
 import ProviderIcon from '@/components/brand/ProviderIcon';
-import { KeyMissingBadge, ModelCountChip, NumberCell, ResponseTime, StatusDot } from './channelColumns';
+import { ChannelRemark, KeyMissingBadge, ModelCountChip, NumberCell, ResponseTime, StatusDot } from './channelColumns';
 
 // Aggregated tag row. The backend channel list returns one representative row
 // per tag (when filter_tag is 0/2); this component renders it as a tag-level
 // row with enable/disable, priority editing and tag deletion, and expands into
 // a sub-table of the tag's channels (`GET /api/channel_tag/:tag/list`).
 // Ported from v1 `component/TableRow.jsx` tag branches + `TagTableRow.jsx`.
-export default function TagRow({ item, colSpan, requestConfirm, onRefresh }) {
+export default function TagRow({ item, colSpan, requestConfirm, onRefresh, onMultiTest }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -239,12 +239,13 @@ export default function TagRow({ item, colSpan, requestConfirm, onRefresh }) {
                           <span className="font-mono text-xs">{channel.id}</span>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-x-2">
                             <span className="font-medium">{channel.name}</span>
                             {channel.key_status?.configured && (
                               <span className="font-mono text-xs text-muted-foreground">{channel.key_status.masked.join(' ')}</span>
                             )}
                             <KeyMissingBadge t={t} keyStatus={channel.key_status} />
+                            <ChannelRemark remark={channel.remark} />
                           </div>
                         </TableCell>
                         <TableCell>
@@ -270,6 +271,16 @@ export default function TagRow({ item, colSpan, requestConfirm, onRefresh }) {
                               onClick={() => testChannel(channel)}
                             >
                               <FlaskConical className="size-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                              aria-label={t('channelTest.action')}
+                              title={t('channelTest.action')}
+                              onClick={() => onMultiTest?.(channel)}
+                            >
+                              <Gauge className="size-4" />
                             </Button>
                             <Button
                               variant="ghost"
@@ -300,7 +311,8 @@ TagRow.propTypes = {
   item: PropTypes.object,
   colSpan: PropTypes.number,
   requestConfirm: PropTypes.func,
-  onRefresh: PropTypes.func
+  onRefresh: PropTypes.func,
+  onMultiTest: PropTypes.func
 };
 
 // 标签级启用 / 禁用 / 删除(表格行与窄屏卡片共用)。
