@@ -174,6 +174,9 @@ func UpdateChannelsTag(tag string, channel *Channel) error {
 		addChannels := make([]Channel, 0, len(addKeys))
 		for _, key := range addKeys {
 			addChannel := *channel
+			// The request body may carry a non-zero id; inserting with it collides on
+			// the primary key and BatchInsert drops the row while reporting success.
+			addChannel.Id = 0
 			addChannel.Name = fmt.Sprintf("%s_%d", channel.Name, maxKey)
 			addChannel.Key = key
 			addChannel.Status = config.ChannelStatusEnabled
