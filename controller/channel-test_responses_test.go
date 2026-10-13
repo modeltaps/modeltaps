@@ -71,7 +71,7 @@ func testChannelOverResponses(t *testing.T, testModel, mapping string) {
 		channel.ModelMapping = &mapping
 	}
 
-	if _, err := testChannel(channel, testModel); err != nil {
+	if _, err := testChannel(channel, testModel, ""); err != nil {
 		t.Fatalf("testChannel: %v", err)
 	}
 	if responsesHits.Load() != 1 || chatHits.Load() != 0 {

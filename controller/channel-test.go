@@ -126,7 +126,7 @@ func selectTestModel(channel *model.Channel, testModel string) (string, error) {
 	return "", errors.New("channel has no testable model configured")
 }
 
-func testChannel(channel *model.Channel, testModel string) (openaiErr *types.OpenAIErrorWithStatusCode, err error) {
+func testChannel(channel *model.Channel, testModel string, endpointType string) (openaiErr *types.OpenAIErrorWithStatusCode, err error) {
 	testModel, err = selectTestModel(channel, testModel)
 	if err != nil {
 		return nil, err
@@ -141,7 +141,7 @@ func testChannel(channel *model.Channel, testModel string) (openaiErr *types.Ope
 		testModel = parts[0]
 	}
 
-	channelType := getModelType(testModel)
+	channelType := resolveTestChannelType(endpointType, testModel)
 	channel.SetProxy()
 
 	var url string
@@ -232,7 +232,7 @@ func testChannel(channel *model.Channel, testModel string) (openaiErr *types.Ope
 	case "chat":
 		// Mirror the relay: chat requests for Responses-only models go through the
 		// Responses API, so test them the same way.
-		if config.NeedsResponsesAPI(newModelName) {
+		if channel.ShouldUseResponsesForModel(newModelName) {
 			if responseProvider, ok := provider.(providers_base.ResponsesInterface); ok {
 				response, openAIErrorWithStatusCode = createChatResponsesForTest(responseProvider, newModelName)
 				break
@@ -341,6 +341,18 @@ func createChatResponsesForTest(responseProvider providers_base.ResponsesInterfa
 	}
 }
 
+// resolveTestChannelType picks the endpoint a test request uses. An explicit
+// endpoint_type (chat, embeddings, image, response) wins, for models whose name
+// does not tell the endpoint; anything else falls back to the model name.
+func resolveTestChannelType(endpointType string, testModel string) string {
+	switch endpointType = strings.TrimSpace(endpointType); endpointType {
+	case "chat", "embeddings", "image", "response":
+		return endpointType
+	default:
+		return getModelType(testModel)
+	}
+}
+
 func getModelType(modelName string) string {
 	if noSupportRegex.MatchString(modelName) {
 		return "noSupport"
@@ -398,25 +410,22 @@ func TestChannel(c *gin.Context) {
 		return
 	}
 	tik := time.Now()
-	openaiErr, err := testChannel(channel, testModel)
+	_, err = testChannel(channel, testModel, c.Query("endpoint_type"))
 	tok := time.Now()
 	milliseconds := tok.Sub(tik).Milliseconds()
 	consumedTime := float64(milliseconds) / 1000.0
 
-	success := false
-	msg := ""
-	if openaiErr != nil {
-		if ShouldDisableChannel(channel.Type, openaiErr) {
-			msg = fmt.Sprintf("speed test failed, channel disabled, reason: %s", utils.MaskSensitiveInfo(err.Error()))
-			DisableChannel(channel.Id, channel.Name, testModel, err.Error(), false)
-		} else {
-			msg = fmt.Sprintf("speed test failed, reason: %s", utils.MaskSensitiveInfo(err.Error()))
-		}
-	} else if err != nil {
+	// A manual test is a diagnostic and never disables the channel: when several models are
+	// tested one by one, a single failing model must not take the whole channel down. The
+	// scheduled test of all channels still disables channels as before.
+	// testChannel always returns a non-nil err together with a non-nil openaiErr.
+	success := err == nil
+	msg := "speed test succeeded"
+	if !success {
 		msg = fmt.Sprintf("speed test failed, reason: %s", utils.MaskSensitiveInfo(err.Error()))
-	} else {
-		success = true
-		msg = "speed test succeeded"
+	} else if defaultModel, _ := selectTestModel(channel, ""); testModel == defaultModel {
+		// The list shows one response time per channel, measured with its test model. Testing
+		// other models (the multi-model test) must not overwrite it with their latency.
 		go channel.UpdateResponseTime(milliseconds)
 	}
 
@@ -445,7 +454,7 @@ func testChannelWithTimeout(channel *model.Channel, testModel string, timeout ti
 	}
 	ch := make(chan result, 1)
 	go func() {
-		openaiErr, err := testChannel(channel, testModel)
+		openaiErr, err := testChannel(channel, testModel, "")
 		ch <- result{openaiErr, err}
 	}()
 	timer := time.NewTimer(timeout)
