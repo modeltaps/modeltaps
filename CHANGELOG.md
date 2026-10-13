@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Channels have a remark field for admin notes, shown under the channel name. It is kept per
+  channel and not shared across a tag.
+- Channels can adjust which chat models are sent to the Responses API ("Chat-to-Responses
+  models"): listed models are added to the built-in list, and a `-` prefix removes one.
+- A multi-model test dialog tests several models of a channel at once, with an optional
+  endpoint override. Image, video and deep research models are not selected by default.
+
+### Changed
+
+- A manual channel test no longer disables the channel when it fails; the scheduled test of
+  all channels still does. Only tests of the channel's test model update its response time.
+
 ### Fixed
 
 - Moderation requests without a `model` now default to `omni-moderation-latest`, since the
