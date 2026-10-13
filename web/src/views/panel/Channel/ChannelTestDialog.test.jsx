@@ -19,7 +19,9 @@ describe('ChannelTestDialog', () => {
     await i18n.changeLanguage('en_US');
     testChannelModel.mockReset();
     testChannelModel.mockImplementation(async (_id, model) =>
-      model === 'broken-model' ? { success: false, message: 'model does not exist' } : { success: true, time: 0.42 }
+      model === 'broken-model'
+        ? { success: false, message: 'speed test failed, reason: model does not exist' }
+        : { success: true, time: 0.42 }
     );
   });
   afterEach(cleanup);
@@ -40,6 +42,7 @@ describe('ChannelTestDialog', () => {
     expect(within(rowOf('gpt-4o-mini')).getByText('Passed')).toBeTruthy();
     expect(within(rowOf('gpt-4o-mini')).getByText('0.42s')).toBeTruthy();
     expect(within(rowOf('broken-model')).getByText('model does not exist')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Endpoint' }).textContent).toContain('Endpoint: Auto detect');
     expect(within(rowOf('dall-e-3')).getByText('Not tested')).toBeTruthy();
   });
 

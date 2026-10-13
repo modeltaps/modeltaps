@@ -119,17 +119,14 @@ export default function ChannelTestDialog({ item, open, onClose, onFinished }) {
 
           <div className="flex flex-wrap items-center gap-2">
             <Select value={endpointType} onValueChange={setEndpointType}>
-              <SelectTrigger className="h-8 w-64" disabled={running} aria-label={t('channelTest.endpointType')}>
+              <SelectTrigger className="h-8 w-80" disabled={running} aria-label={t('channelTest.endpointType')}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ENDPOINT_AUTO}>
-                  {t('channelTest.endpointType')}: {t('channelTest.endpointAuto')}
-                </SelectItem>
+                {/* SelectValue only shows an item's label when its children is a single string. */}
+                <SelectItem value={ENDPOINT_AUTO}>{`${t('channelTest.endpointType')}: ${t('channelTest.endpointAuto')}`}</SelectItem>
                 {ENDPOINT_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {t('channelTest.endpointType')}: {o.label}
-                  </SelectItem>
+                  <SelectItem key={o.value} value={o.value}>{`${t('channelTest.endpointType')}: ${o.label}`}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -164,12 +161,12 @@ export default function ChannelTestDialog({ item, open, onClose, onFinished }) {
           {models.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">{t('channelTest.noModels')}</p>
           ) : (
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10" />
-                  <TableHead>{t('channelTest.colModel')}</TableHead>
-                  <TableHead className="w-28">{t('channelTest.colStatus')}</TableHead>
+                  <TableHead className="w-[38%]">{t('channelTest.colModel')}</TableHead>
+                  <TableHead className="w-24">{t('channelTest.colStatus')}</TableHead>
                   <TableHead>{t('channelTest.colResult')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -188,7 +185,7 @@ export default function ChannelTestDialog({ item, open, onClose, onFinished }) {
                     <TableCell>
                       <StatusCell t={t} result={results[model]} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-normal">
                       <ResultCell t={t} result={results[model]} />
                     </TableCell>
                   </TableRow>
@@ -254,9 +251,11 @@ function ResultCell({ t, result }) {
       </span>
     );
   }
+  // The status column already says the test failed; drop the backend's English lead-in.
+  const message = (result.message || '').replace(/^speed test failed, reason:\s*/i, '');
   return (
-    <span className="line-clamp-2 break-all text-xs text-destructive" title={result.message}>
-      {result.message}
+    <span className="line-clamp-3 block break-words text-xs text-destructive" title={message}>
+      {message}
     </span>
   );
 }
