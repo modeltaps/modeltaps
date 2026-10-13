@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The channel list API accepts `exact_model`, which matches a whole entry of a channel's model
   list. Batch model removal uses it, so searching `gemini-2.5-flash` no longer lists every
   `gemini-2.5-flash-*` channel and pushes the wanted ones past the first 100 results.
+- Admin API responses can carry a stable `code` (snake_case) and optional `params` next to the
+  unchanged English `message`; the 429 rate-limit body adds `params.retry_after` under `error`.
+  The web console shows coded messages in the interface language (English, Simplified Chinese,
+  Traditional Chinese, Japanese) and falls back to `message` for anything else. The first codes
+  cover channel tests (the upstream reason stays as is), rate limiting and common channel and
+  channel tag validation errors.
 
 ### Changed
 
@@ -65,6 +71,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as user messages.
 - Codex channels with a custom `user_agent` in their settings no longer drop the `version` and
   `originator` headers; the custom value now replaces only the User-Agent.
+- Channel tag endpoints answered missing tags and invalid status or setting types with an error
+  shape the web console could not read, so no message was shown; they now answer
+  `{success: false, message, code}` like the other admin endpoints.
+- Malformed or unknown channel ids now answer "invalid channel id" / "channel not found"
+  instead of raw parser and database text.
 
 ## [0.1.1] - 2026-10-10
 

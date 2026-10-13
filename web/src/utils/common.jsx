@@ -7,6 +7,7 @@ import i18n from 'i18n/i18n';
 import { uiLocalesQuery } from 'i18n/uiLocale';
 import { brandName } from './brand';
 import { sanitizeHtml } from './sanitize';
+import { apiMessage } from './apiError';
 
 export function getSystemName() {
   return brandName(localStorage.getItem('system_name'));
@@ -26,7 +27,7 @@ export function showError(error) {
     if (error.name === 'AxiosError') {
       switch (error.response.status) {
         case 429:
-          toast.error(i18n.t('common.errorPrefix') + (error.response.data?.error?.message || i18n.t('common.errTooManyRequests')));
+          toast.error(i18n.t('common.errorPrefix') + apiMessage(error.response.data, i18n.t('common.errTooManyRequests')));
           break;
         case 500:
           toast.error(i18n.t('common.errorPrefix') + i18n.t('common.errServerInternal'));
