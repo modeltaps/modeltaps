@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { channelTestModels, defaultTestSelection, isCostlyTestModel, runWithConcurrency } from './channelTestUtils';
+import { channelTestModels, defaultTestSelection, isCostlyTestModel, runWithConcurrency, testFailureText } from './channelTestUtils';
 
 describe('channelTestModels', () => {
   it('keeps list order, drops blanks and duplicates', () => {
@@ -59,5 +59,19 @@ describe('runWithConcurrency', () => {
       () => stopped
     );
     expect(started).toEqual([1, 2]);
+  });
+});
+
+describe('testFailureText', () => {
+  it('shows only the untranslated reason of a coded test failure', () => {
+    const res = { success: false, message: '测试失败：quota exceeded', code: 'channel_test_failed', params: { reason: 'quota exceeded' } };
+    expect(testFailureText(res, 'Failed')).toBe('quota exceeded');
+  });
+
+  it('keeps the message for other failures and falls back when there is none', () => {
+    expect(testFailureText({ success: false, message: '渠道不存在', code: 'channel_not_found' }, 'Failed')).toBe('渠道不存在');
+    expect(testFailureText({ success: false, message: 'network error' }, 'Failed')).toBe('network error');
+    expect(testFailureText({ success: false, code: 'channel_test_failed', params: {} }, 'Failed')).toBe('Failed');
+    expect(testFailureText(undefined, 'Failed')).toBe('Failed');
   });
 });

@@ -20,7 +20,12 @@ describe('ChannelTestDialog', () => {
     testChannelModel.mockReset();
     testChannelModel.mockImplementation(async (_id, model) =>
       model === 'broken-model'
-        ? { success: false, message: 'speed test failed, reason: model does not exist' }
+        ? {
+            success: false,
+            message: 'speed test failed, reason: model does not exist',
+            code: 'channel_test_failed',
+            params: { reason: 'model does not exist' }
+          }
         : { success: true, time: 0.42 }
     );
   });

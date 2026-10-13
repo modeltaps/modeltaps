@@ -16,7 +16,8 @@ import {
   TEST_CONCURRENCY,
   channelTestModels,
   defaultTestSelection,
-  runWithConcurrency
+  runWithConcurrency,
+  testFailureText
 } from './channelTestUtils';
 
 const EMPTY_PROGRESS = { done: 0, total: 0 };
@@ -63,7 +64,7 @@ export default function ChannelTestDialog({ item, open, onClose, onFinished }) {
       if (runId !== runIdRef.current) return null;
       const result = res?.success
         ? { status: 'success', time: Number(res.time) || 0 }
-        : { status: 'error', message: res?.message || t('channelTest.failed') };
+        : { status: 'error', message: testFailureText(res, t('channelTest.failed')) };
       setResults((prev) => ({ ...prev, [model]: result }));
       return result;
     },
@@ -315,8 +316,7 @@ function ResultCell({ t, result }) {
       </span>
     );
   }
-  // The status column already says the test failed; drop the backend's English lead-in.
-  const message = (result.message || '').replace(/^speed test failed, reason:\s*/i, '');
+  const message = result.message || '';
   return (
     <span className="line-clamp-3 block break-words text-xs text-destructive" title={message}>
       {message}
