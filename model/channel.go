@@ -48,6 +48,11 @@ type Channel struct {
 	CostRatio          *float64 `json:"cost_ratio" form:"cost_ratio" gorm:"type:decimal(10,4);default:0"`
 	// UnifiedRequestResponseModel 渠道级「响应模型名统一为请求模型名」开关；全局开关开启时对所有渠道生效。
 	UnifiedRequestResponseModel bool `json:"unified_request_response_model" form:"unified_request_response_model" gorm:"default:false"`
+	// Remark is a free-text note for admins; it is kept per channel and not shared across a tag.
+	Remark string `json:"remark" form:"remark" gorm:"type:text"`
+	// Need2ResponseModels adjusts which chat models go to the Responses API on this channel
+	// (see ShouldUseResponsesForModel). Empty means the built-in list.
+	Need2ResponseModels *string `json:"need2response_models" form:"need2response_models" gorm:"type:text"`
 
 	DisabledStream *datatypes.JSONSlice[string] `json:"disabled_stream,omitempty" gorm:"type:json"`
 

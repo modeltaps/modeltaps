@@ -121,3 +121,42 @@ func TestChatToResponsesRetryDoesNotPassThroughRawResponses(t *testing.T) {
 	}
 	assertChatCompletion(t, w.Body.Bytes(), "hi from responses")
 }
+
+// The channel's need2response_models setting adds models to, or removes them
+// from, the built-in list.
+func TestChatToResponsesFollowsChannelSetting(t *testing.T) {
+	cases := []struct {
+		name     string
+		model    string
+		setting  string
+		wantPath string
+	}{
+		{"added model goes to responses", "gpt-5-pro", "gpt-5-pro", "/v1/responses"},
+		{"default still applies when adding", "o3-pro", "gpt-5-pro", "/v1/responses"},
+		{"removed default stays on chat", "o3-pro", "-o3-pro", "/v1/chat/completions"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fake := NewFakeProvider(t)
+			if tc.wantPath == "/v1/responses" {
+				fake.SetResponse(FakeResponse{JSON: responsesJSON(tc.model, "routed")})
+			} else {
+				fake.SetResponse(FakeResponse{JSON: ChatCompletionJSON(tc.model, "routed", 5, 3)})
+			}
+
+			h := NewHarness(t, HarnessOptions{
+				Model:    tc.model,
+				Channels: []ChannelSpec{{Name: "routes", BaseURL: fake.Server.URL, Need2ResponseModels: tc.setting}},
+			})
+
+			w := h.Post("/v1/chat/completions", `{"model":"`+tc.model+`","messages":[{"role":"user","content":"hi"}]}`)
+			if w.Code != http.StatusOK {
+				t.Fatalf("want 200, got %d, body=%s", w.Code, w.Body.String())
+			}
+			assertChatCompletion(t, w.Body.Bytes(), "routed")
+			if got := fake.LastRequest(t).Path; got != tc.wantPath {
+				t.Fatalf("upstream path = %s, want %s", got, tc.wantPath)
+			}
+		})
+	}
+}

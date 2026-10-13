@@ -100,7 +100,7 @@ func (r *relayChat) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
 		return
 	}
 
-	if config.NeedsResponsesAPI(r.modelName) {
+	if r.provider.GetChannel().ShouldUseResponsesForModel(r.modelName) {
 		resProvider, ok := r.provider.(providersBase.ResponsesInterface)
 		if ok {
 			return r.compatibleSend(resProvider)

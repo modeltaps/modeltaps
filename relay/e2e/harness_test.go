@@ -31,8 +31,9 @@ type ChannelSpec struct {
 	Priority int64
 	Key      string // 空则用占位 key
 	// ModelMapping is the channel's model mapping JSON; empty means none.
-	ModelMapping    string
-	PassThroughBody bool
+	ModelMapping        string
+	PassThroughBody     bool
+	Need2ResponseModels string // channel need2response_models setting; empty means none
 }
 
 // PriceSpec 描述一个测试模型的价格（Input/Output 为倍率，语义同 model.Price）。
