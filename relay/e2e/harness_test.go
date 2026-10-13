@@ -24,12 +24,15 @@ var relayTestDBSeq atomic.Int64
 // ChannelSpec 描述一个待 seed 的渠道。BaseURL 一般指向 fake 上游。
 type ChannelSpec struct {
 	Name     string
-	Type     int    // 0 视为 config.ChannelTypeOpenAI
+	Type     int // 0 视为 config.ChannelTypeOpenAI
 	BaseURL  string
 	Models   string // 逗号分隔；空则用 HarnessOptions.Model
 	Group    string // 空则 "default"
 	Priority int64
 	Key      string // 空则用占位 key
+	// ModelMapping is the channel's model mapping JSON; empty means none.
+	ModelMapping    string
+	PassThroughBody bool
 }
 
 // PriceSpec 描述一个测试模型的价格（Input/Output 为倍率，语义同 model.Price）。

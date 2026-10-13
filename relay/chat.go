@@ -84,18 +84,6 @@ func (r *relayChat) forcePromptTokens() int {
 	return common.CountTokenMessages(r.chatRequest.Messages, r.modelName, config.PreCostDefault)
 }
 
-var need2Response = map[string]bool{
-	"o3-pro-2025-06-10":                true,
-	"o3-pro":                           true,
-	"o1-pro-2025-03-19":                true,
-	"o1-pro":                           true,
-	"o3-deep-research-2025-06-26":      true,
-	"o3-deep-research":                 true,
-	"o4-mini-deep-research-2025-06-26": true,
-	"o4-mini-deep-research":            true,
-	"codex-mini-latest":                true,
-}
-
 func (r *relayChat) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
 	// 图像生成模型走 chat 入口是非标用法，按 chat 协议处理会把上游 base64 当文本反算成百万级 token、
 	// 计费爆炸；按渠道降级约定，在 chat 入口分流到 image generations 协议。
@@ -112,7 +100,7 @@ func (r *relayChat) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
 		return
 	}
 
-	if need2Response[r.modelName] {
+	if config.NeedsResponsesAPI(r.modelName) {
 		resProvider, ok := r.provider.(providersBase.ResponsesInterface)
 		if ok {
 			return r.compatibleSend(resProvider)
@@ -382,7 +370,16 @@ func writeChatStreamFrame(c *gin.Context, chunk types.ChatCompletionStreamRespon
 }
 
 func (r *relayChat) compatibleSend(resProvider providersBase.ResponsesInterface) (err *types.OpenAIErrorWithStatusCode, done bool) {
+	// The Responses output is converted back to chat, so raw passthrough must stay off.
+	// The key lives on the gin.Context across retries: an earlier attempt on the chat
+	// branch may have set it, which would leak raw Responses bytes to a chat client.
+	// Mirrors compatibleSendImage.
+	r.c.Set(config.GinRawPassThroughAllowedKey, false)
+
 	resRequest := r.chatRequest.ToResponsesRequest()
+	// chatRequest.Model still holds the client's model name (the mapped name is only
+	// written back on the chat branch), so use the channel-mapped name explicitly.
+	resRequest.Model = r.modelName
 	resRequest.ConvertChat = true
 
 	if r.chatRequest.Stream {
