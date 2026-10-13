@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Moderation requests without a `model` now default to `omni-moderation-latest`, since the
+  `text-moderation` models were retired upstream. `omni-moderation` models are priced at 0 by
+  default.
+- Chat requests routed to the Responses API (o1-pro, o3-pro, deep-research and
+  `codex-mini-latest`) now honor the channel model mapping, always return chat completions
+  (also after a retry on a passthrough channel), and stream chat chunks on Codex channels.
+- Channel tests for those models use the Responses API, matching real traffic.
+- Adding keys while editing a channel tag no longer silently drops the new channels.
+
 ## [0.1.1] - 2026-10-10
 
 ### Changed

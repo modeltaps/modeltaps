@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/notify"
@@ -229,6 +230,15 @@ func testChannel(channel *model.Channel, testModel string) (openaiErr *types.Ope
 
 		response, openAIErrorWithStatusCode = responseProvider.CreateResponses(testRequest)
 	case "chat":
+		// Mirror the relay: chat requests for Responses-only models go through the
+		// Responses API, so test them the same way.
+		if config.NeedsResponsesAPI(newModelName) {
+			if responseProvider, ok := provider.(providers_base.ResponsesInterface); ok {
+				response, openAIErrorWithStatusCode = createChatResponsesForTest(responseProvider, newModelName)
+				break
+			}
+		}
+
 		// 仅实现 Claude 原生 Messages 接口的渠道（如 Bedrock Messages）不满足 ChatInterface，
 		// 回退到 Claude 接口测速。
 		if chatProvider, ok := provider.(providers_base.ChatInterface); ok {
@@ -272,6 +282,63 @@ func testChannel(channel *model.Channel, testModel string) (openaiErr *types.Ope
 	logger.SysLog(fmt.Sprintf("test channel %s : %s response: %s", channel.Name, newModelName, string(jsonBytes)))
 
 	return nil, nil
+}
+
+// createChatResponsesForTest tests a model over the chat-to-Responses path the
+// relay uses. Pro and deep-research models can exceed the test timeout when run
+// to completion, so it streams and treats the first non-empty event as success.
+func createChatResponsesForTest(responseProvider providers_base.ResponsesInterface, modelName string) (any, *types.OpenAIErrorWithStatusCode) {
+	chatRequest := &types.ChatCompletionRequest{
+		Messages: []types.ChatCompletionMessage{
+			{
+				Role:    "user",
+				Content: "You just need to output 'hi' next.",
+			},
+		},
+		Model:  modelName,
+		Stream: true,
+	}
+	streamRequest := chatRequest.ToResponsesRequest()
+	streamRequest.Model = modelName
+	streamRequest.ConvertChat = true
+
+	stream, streamErr := responseProvider.CreateResponsesStream(streamRequest)
+	if streamErr != nil {
+		return nil, streamErr
+	}
+	defer stream.Close()
+
+	dataChan, errChan := stream.Recv()
+	timeout := time.NewTimer(15 * time.Second)
+	defer timeout.Stop()
+
+	for {
+		select {
+		case data, ok := <-dataChan:
+			if !ok {
+				return nil, common.StringErrorWrapperLocal("responses stream returned no data", "no_response", http.StatusInternalServerError)
+			}
+			if strings.TrimSpace(data) == "" {
+				continue
+			}
+			return map[string]any{
+				"model": modelName,
+				"mode":  "chat_to_responses_stream",
+				"ok":    true,
+			}, nil
+		case readErr, ok := <-errChan:
+			if !ok {
+				// A closed channel is always ready; nil it so select blocks on the others.
+				errChan = nil
+				continue
+			}
+			if readErr != nil {
+				return nil, common.ErrorWrapperLocal(readErr, "stream_read_failed", http.StatusInternalServerError)
+			}
+		case <-timeout.C:
+			return nil, common.StringErrorWrapperLocal("responses stream test timed out", "stream_timeout", http.StatusGatewayTimeout)
+		}
+	}
 }
 
 func getModelType(modelName string) string {
