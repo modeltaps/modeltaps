@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -24,16 +25,20 @@ const (
 	DefaultClientID = "pdlLIX2Y72MIl2rhLhTE9VV9bN905kBh"
 	TokenEndpoint   = "https://auth0.openai.com/oauth/token"
 
-	// DefaultCodexVersion 是伪装的 Codex CLI 版本号。
-	// 上游 chatgpt.com/backend-api/codex/responses 会用该版本号对模型访问做灰度门控：
-	// 修改时必须同步更新 DefaultCodexUserAgent 中内嵌的版本号。
-	DefaultCodexVersion = "0.144.1"
+	// DefaultCodexVersion is the Codex CLI version the gateway presents.
+	// chatgpt.com/backend-api/codex/responses compares the version header with each model's
+	// minimal_client_version and rejects clients below it. A channel can override this value with
+	// the codex.client_version plugin setting when the upstream raises the threshold again.
+	DefaultCodexVersion = "0.159.0"
 
-	// DefaultCodexUserAgent 是 Codex CLI 伪装 UA 的统一来源，
-	// 同时被 chat/responses 请求头、Token Refresh、OAuth 授权码换 token 三处复用，
-	// 避免单点升级时漏改导致 auth0 灰度场景下行为不一致。
-	// 版本号必须与 DefaultCodexVersion 保持一致。
-	DefaultCodexUserAgent = "codex_cli_rs/" + DefaultCodexVersion + " (Ubuntu 22.4.0; x86_64) xterm-256color"
+	// codexUserAgentPlatform is the part of the User-Agent after the version; it is reused when a
+	// channel overrides the version.
+	codexUserAgentPlatform = "(Ubuntu 22.4.0; x86_64) xterm-256color"
+
+	// DefaultCodexUserAgent is the single source of the Codex CLI User-Agent. Chat/responses requests
+	// use it when the channel does not override the version; token refresh and the OAuth code
+	// exchange, which have no channel settings, always use it.
+	DefaultCodexUserAgent = "codex_cli_rs/" + DefaultCodexVersion + " " + codexUserAgentPlatform
 
 	// DefaultCodexOriginator 是官方 Codex CLI 的 originator 标识，
 	// 上游据此识别请求来自官方客户端。缺失时新模型可能被拒或降级。
@@ -74,9 +79,11 @@ func (f CodexProviderFactory) Create(channel *model.Channel) base.ProviderInterf
 func parseCodexConfig(provider *CodexProvider) {
 	channel := provider.Channel
 
-	// Plugin setting: override the image orchestration model, so a model the upstream retires for
-	// some ChatGPT plans can be swapped without a code change.
+	// Plugin settings: override the image orchestration model, so a model the upstream retires for
+	// some ChatGPT plans can be swapped without a code change; override the client version, so a
+	// higher minimal_client_version for new models can be met without a code change.
 	mainModel := imagesResponsesMainModel
+	clientVersion := DefaultCodexVersion
 	if channel.Plugin != nil {
 		if codexConfig, ok := channel.Plugin.Data()["codex"]; ok {
 			if m, ok := codexConfig["images_main_model"].(string); ok {
@@ -84,9 +91,19 @@ func parseCodexConfig(provider *CodexProvider) {
 					mainModel = m
 				}
 			}
+			if v, ok := codexConfig["client_version"].(string); ok {
+				if v = strings.TrimSpace(v); v != "" {
+					if codexClientVersionPattern.MatchString(v) {
+						clientVersion = v
+					} else {
+						logger.SysError(fmt.Sprintf("[Codex] channel %d: invalid client_version %q, falling back to %s", channel.Id, v, DefaultCodexVersion))
+					}
+				}
+			}
 		}
 	}
 	provider.ImagesMainModel = mainModel
+	provider.ClientVersion = clientVersion
 
 	if channel.Key == "" {
 		return
@@ -131,6 +148,17 @@ type CodexProvider struct {
 	openai.OpenAIProvider
 	Credentials     *OAuth2Credentials // OAuth2 凭证（包含 refresh_token）
 	ImagesMainModel string             // Responses model that orchestrates image requests; set by parseCodexConfig
+	ClientVersion   string             // Codex CLI version for the version header and default User-Agent; set by parseCodexConfig
+}
+
+// codexClientVersionPattern accepts versions such as 0.159.0 or 0.158.0-alpha.2, so a mistyped
+// value is never copied into the request headers.
+var codexClientVersionPattern = regexp.MustCompile(`^\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?$`)
+
+// defaultUserAgent returns the default User-Agent for ClientVersion, so the version header and the
+// User-Agent always report the same version.
+func (p *CodexProvider) defaultUserAgent() string {
+	return "codex_cli_rs/" + p.ClientVersion + " " + codexUserAgentPlatform
 }
 
 func getConfig() base.ProviderConfig {
