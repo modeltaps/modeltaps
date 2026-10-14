@@ -47,6 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   version. A channel can set its own version with the new **Client version** plugin setting
   (`codex.client_version`); a value that is not a version such as `0.159.0` or
   `0.158.0-alpha.2` is logged and the default is used.
+- New AWS Bedrock channels list the Claude 4.5 and later models (sonnet-4-5 through fable-5-1,
+  including haiku-5-5) in their default model list, not only the Claude 2 and 3 models.
 
 ### Fixed
 
