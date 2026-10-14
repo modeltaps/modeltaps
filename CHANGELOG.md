@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Codex channels now report Codex CLI version 0.159.0 (was 0.144.1) in the `version` header and
+  the default User-Agent, since the upstream rejects new models for clients below a minimum
+  version. A channel can set its own version with the new **Client version** plugin setting
+  (`codex.client_version`); a value that is not a version such as `0.159.0` or
+  `0.158.0-alpha.2` is logged and the default is used.
+
+### Fixed
+
+- Codex channels with a custom `user_agent` in their settings no longer drop the `version` and
+  `originator` headers; the custom value now replaces only the User-Agent.
+
 ## [0.1.1] - 2026-10-10
 
 ### Changed

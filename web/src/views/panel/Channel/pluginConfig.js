@@ -220,6 +220,12 @@ const pluginConfig = {
           "description": `${P}.codex.imagesMainModel.description`,
           "type": "string",
           "required": false
+        },
+        "client_version": {
+          "name": `${P}.codex.clientVersion.name`,
+          "description": `${P}.codex.clientVersion.description`,
+          "type": "string",
+          "required": false
         }
       }
     }

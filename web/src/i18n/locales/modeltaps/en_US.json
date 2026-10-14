@@ -929,6 +929,10 @@
       "imagesMainModel": {
         "name": "Image orchestration model",
         "description": "Responses model that orchestrates image requests (not the image model itself). Leave empty to use the default gpt-5.6-luna; if the upstream retires it, switch to a text model your account supports"
+      },
+      "clientVersion": {
+        "name": "Client version",
+        "description": "Codex CLI version reported to the upstream (for example 0.159.0), used for the version header and the default User-Agent. The upstream gates new models by version; raise it if a model is reported as unsupported. Leave empty to use the built-in default, which is also used when the value is not a valid version"
       }
     },
     "customize": {

@@ -111,23 +111,25 @@ func (p *CodexProvider) applyDefaultHeaders(headers map[string]string) {
 	}
 
 	// 设置 User-Agent（如果没有从客户端透传或 ModelHeaders 设置）
+	// A custom User-Agent only replaces the User-Agent itself; the headers below must still be
+	// filled in, otherwise the upstream version gate rejects the request.
 	if _, exists := headers["User-Agent"]; !exists {
+		headers["User-Agent"] = p.defaultUserAgent()
 		// 尝试从 Other 字段读取自定义 UA
 		if p.Channel.Other != "" {
 			var config map[string]string
 			if err := json.Unmarshal([]byte(p.Channel.Other), &config); err == nil {
 				if userAgent, exists := config["user_agent"]; exists && userAgent != "" {
 					headers["User-Agent"] = userAgent
-					return
 				}
 			}
 		}
-		headers["User-Agent"] = DefaultCodexUserAgent
 	}
 
-	// 设置 version（上游据此对新模型做灰度门控，缺失时 gpt-5.6 等可能 404）
+	// The upstream gates models by minimal_client_version; a missing or low version gets new models
+	// such as gpt-6 rejected.
 	if _, exists := headers["version"]; !exists {
-		headers["version"] = DefaultCodexVersion
+		headers["version"] = p.ClientVersion
 	}
 
 	// 设置 originator（官方 Codex CLI 标识，缺失时可能被拒或降级）
