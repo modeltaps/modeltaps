@@ -85,8 +85,9 @@ var awsModelCanCrossRegionMap = map[string]map[string]string{
 	"anthropic.claude-sonnet-4-5-20250929-v1:0": {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
 	"anthropic.claude-sonnet-4-6":               {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
 	"anthropic.claude-haiku-4-5-20251001-v1:0":  {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
-	// haiku-5-5: like haiku-4-5 it cannot be called in-region by bare id, so every region needs a
-	// profile. Its US geo profile accepts Canadian source regions.
+	// haiku-5-5: no in-region access, so every region needs a profile. Geo ids are us./eu./au./jp.,
+	// and the us. profile lists ca-central-1 and ca-west-1 as source regions (AWS model card
+	// 2026-10-14).
 	"anthropic.claude-haiku-5-5":              {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
 	"anthropic.claude-opus-4-5-20251101-v1:0": {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
 	"anthropic.claude-opus-4-6-v1":            {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},

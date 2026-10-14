@@ -20,6 +20,7 @@ func TestGetModelNameRegionPrefix(t *testing.T) {
 		// haiku-5-5 always needs a profile: geo in us/ca/eu, global elsewhere.
 		{"claude-haiku-5-5", "us-east-1", "us.anthropic.claude-haiku-5-5"},
 		{"claude-haiku-5-5", "ca-central-1", "us.anthropic.claude-haiku-5-5"},
+		{"claude-haiku-5-5", "ca-west-1", "us.anthropic.claude-haiku-5-5"},
 		{"claude-haiku-5-5", "eu-west-1", "eu.anthropic.claude-haiku-5-5"},
 		{"claude-haiku-5-5", "ap-northeast-1", "global.anthropic.claude-haiku-5-5"},
 		{"claude-haiku-5-5", "sa-east-1", "global.anthropic.claude-haiku-5-5"},
