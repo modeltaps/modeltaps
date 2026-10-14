@@ -410,7 +410,10 @@ function BatchDelModel() {
   const handleSearch = async () => {
     setFetching(true);
     try {
-      const res = await fetchChannelData(0, 100, { models: value }, 'desc', 'id');
+      // exact_model matches the whole model name, so gemini-2.5-flash does not also list every
+      // gemini-2.5-flash-* channel and push the wanted ones past the first 100 rows.
+      const res = await fetchChannelData(0, 100, { exact_model: value.trim() }, 'desc', 'id');
+      // A channel whose only model this is cannot lose it.
       if (res) setData((res.data || []).filter((item) => item.models && item.models.split(',').length > 1));
       else toast.error(t('channel_index.getChannelsFailed'));
     } finally {
@@ -423,7 +426,7 @@ function BatchDelModel() {
     if (value === '' || selected.length === 0) return;
     setLoading(true);
     try {
-      const res = await API.put('/api/channel/batch/del_model', { ids: selected, value });
+      const res = await API.put('/api/channel/batch/del_model', { ids: selected, value: value.trim() });
       const { success, message, data: count } = res.data;
       if (success) toast.success(t('channel_index.batchDeleteSuccess', { count }));
       else toast.error(message);

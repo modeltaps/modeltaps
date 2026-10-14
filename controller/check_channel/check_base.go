@@ -1,151 +1,157 @@
 package check_channel
 
 import (
+	"math"
+	"regexp"
+	"slices"
+	"strings"
+	"time"
+
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/types"
-	"regexp"
-	"strings"
 )
+
+// Snapshot suffix: a date such as 2024-08-06 or 0613.
+var snapshotSuffixPattern = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2}|\d{4})$`)
 
 type CheckBaseProcess struct {
 	ModelName string
+	challenge challenge
 }
 
 func CreateCheckBaseProcess(modelName string) *CheckBaseProcess {
-	return &CheckBaseProcess{
-		ModelName: modelName,
-	}
+	return &CheckBaseProcess{ModelName: modelName, challenge: generateChallenge()}
 }
 
-func (c *CheckBaseProcess) GetName() string {
-	return "Basic check"
+const baseProbeKey = "base"
+
+func (c *CheckBaseProcess) GetKey() string {
+	return baseProbeKey
 }
 
 func (c *CheckBaseProcess) GetRequest() *types.ChatCompletionRequest {
-	req := &types.ChatCompletionRequest{
+	return &types.ChatCompletionRequest{
 		Model: c.ModelName,
 		Messages: []types.ChatCompletionMessage{
-			{
-				Role:    types.ChatMessageRoleUser,
-				Content: "hi",
-			},
+			{Role: types.ChatMessageRoleUser, Content: c.challenge.Prompt},
 		},
 	}
-
-	if strings.Contains(c.ModelName, "o1") {
-		req.MaxCompletionTokens = 1
-	} else {
-		req.MaxTokens = 1
-	}
-	return req
 }
 
-func (c *CheckBaseProcess) Check(req *types.ChatCompletionRequest, resp *types.ChatCompletionResponse, openaiErr *types.OpenAIError) []*CheckResult {
-	checkResults := make([]*CheckResult, 0)
+func (c *CheckBaseProcess) Check(_ CheckContext, req *types.ChatCompletionRequest, resp *types.ChatCompletionResponse, openaiErr *types.OpenAIError) []*CheckResult {
 	if openaiErr != nil {
-		checkResults = append(checkResults, &CheckResult{
-			Name:   "Response",
-			Status: CheckStatusFailed,
-			Remark: openaiErr.Message,
-		})
-
-		return checkResults
+		return failedResponse(openaiErr)
+	}
+	if resp == nil {
+		return []*CheckResult{noContent(resultResponse)}
 	}
 
-	if resp.Usage == nil || resp.Usage.CompletionTokens <= 0 || resp.Usage.PromptTokens <= 0 {
-		checkResults = append(checkResults, &CheckResult{
-			Name:   "Response",
-			Status: CheckStatusFailed,
-			Remark: "Usage data is empty",
-		})
+	results := []*CheckResult{c.checkChallenge(resp), checkUsage(resp)}
+	// Infer the official format from the mapped upstream model: a channel alias says nothing about the upstream.
+	channelType := getChannelTypeByModelName(req.Model)
+	return append(results, checkResponseModel(channelType, req.Model, resp.Model), checkResponseID(channelType, resp.ID))
+}
+
+// checkChallenge is the only result that proves a working model was really called: the question
+// is random, so a faked response cannot answer it.
+func (c *CheckBaseProcess) checkChallenge(resp *types.ChatCompletionResponse) *CheckResult {
+	answer, ok := firstChoiceContent(resp)
+	if !ok {
+		return noContent(resultChallenge)
+	}
+	params := map[string]any{"expected": c.challenge.Expected}
+	if validateChallenge(answer, c.challenge.Expected) {
+		return &CheckResult{Name: resultChallenge, Status: CheckStatusSuccess, Code: "challenge_passed", Params: params}
+	}
+	params["answer"] = truncate(answer, 200)
+	return &CheckResult{Name: resultChallenge, Status: CheckStatusFailed, Code: "challenge_mismatch", Params: params}
+}
+
+func checkUsage(resp *types.ChatCompletionResponse) *CheckResult {
+	if resp.Usage == nil || resp.Usage.PromptTokens <= 0 || resp.Usage.CompletionTokens <= 0 {
+		return &CheckResult{Name: resultUsage, Status: CheckStatusWarning, Code: "usage_missing"}
+	}
+	return &CheckResult{
+		Name:   resultUsage,
+		Status: CheckStatusSuccess,
+		Code:   "usage_ok",
+		Params: map[string]any{"prompt_tokens": resp.Usage.PromptTokens, "completion_tokens": resp.Usage.CompletionTokens},
+	}
+}
+
+// The response model and ID can be rewritten freely by a relay, so they are hints and never fail.
+func checkResponseModel(channelType int, requestModel, responseModel string) *CheckResult {
+	if responseModel == "" {
+		return &CheckResult{Name: resultResponseModel, Status: CheckStatusWarning, Code: "response_model_missing"}
 	}
 
-	channelType := getChannelTypeByModelName(c.ModelName)
-
-	modelCheckResult := &CheckResult{
-		Name:   "Model check",
-		Status: CheckStatusFailed,
-		Remark: "Model check failed",
-	}
-
-	if resp.Model == "" {
-		modelCheckResult.Remark = "Returned model is empty"
-	} else {
-		switch channelType {
-		case config.ChannelTypeOpenAI:
-			// 正则 检查是否是4个数字结尾的格式 (如 gpt-4-0613)
-			numberEndingPattern := regexp.MustCompile(`\d{4}$`)
-			// 正则 检查是否是年月日结尾的格式 (如 gpt-4o-mini-2024-07-18)
-			dateEndingPattern := regexp.MustCompile(`\d{4}-\d{2}-\d{2}$`)
-
-			isVersioned := numberEndingPattern.MatchString(c.ModelName) || dateEndingPattern.MatchString(c.ModelName)
-
-			// 如果是带版本的模型，那么请求模型应该等于响应模型
-			if isVersioned {
-				if req.Model != resp.Model {
-					modelCheckResult.Remark = "Request model and response model should match (except azure)"
-				} else {
-					modelCheckResult.Status = CheckStatusSuccess
-					modelCheckResult.Remark = "SUCCESS"
-				}
-			} else {
-				// 否则，请求模型一定不等于响应模型
-				if req.Model == resp.Model {
-					modelCheckResult.Remark = "Request model and response model should not match (except azure)"
-				} else {
-					// 响应模型的前缀应该等于请求模型的前缀
-					if strings.HasPrefix(resp.Model, req.Model) {
-						modelCheckResult.Status = CheckStatusSuccess
-						modelCheckResult.Remark = "SUCCESS"
-					} else {
-						modelCheckResult.Remark = "Response model prefix should equal the request model (except azure)"
-					}
-				}
-			}
-		default:
-			if resp.Model != req.Model {
-				modelCheckResult.Remark = "Request model and response model should match (not absolute, use your judgment)"
-			} else {
-				modelCheckResult.Status = CheckStatusSuccess
-				modelCheckResult.Remark = "SUCCESS"
-			}
+	consistent := responseModel == requestModel
+	if !consistent && channelType == config.ChannelTypeOpenAI {
+		// OpenAI answers an alias without a version with a dated snapshot, e.g. gpt-4o -> gpt-4o-2024-08-06.
+		// Accept only "alias-date" so gpt-4o-mini cannot pass for gpt-4o.
+		if suffix, ok := strings.CutPrefix(responseModel, requestModel+"-"); ok {
+			consistent = snapshotSuffixPattern.MatchString(suffix)
 		}
 	}
 
-	checkResults = append(checkResults, modelCheckResult)
-
-	IDCheckResult := &CheckResult{
-		Name:   "ID check",
-		Status: CheckStatusFailed,
-		Remark: "ID check failed",
+	if consistent {
+		return &CheckResult{Name: resultResponseModel, Status: CheckStatusSuccess, Code: "response_model_match", Params: map[string]any{"model": responseModel}}
 	}
+	return &CheckResult{
+		Name:   resultResponseModel,
+		Status: CheckStatusWarning,
+		Code:   "response_model_mismatch",
+		Params: map[string]any{"request": requestModel, "response": responseModel},
+	}
+}
 
-	if resp.ID == "" {
-		IDCheckResult.Remark = "ID is empty (not absolute, e.g. gemini has no ID)"
-	} else {
-		switch channelType {
-		case config.ChannelTypeOpenAI:
-			if strings.HasPrefix(resp.ID, "chatcmpl-") {
-				IDCheckResult.Status = CheckStatusSuccess
-				IDCheckResult.Remark = "SUCCESS"
-			} else {
-				IDCheckResult.Remark = "ID should start with chatcmpl"
-			}
+// Codex and OpenAI channels that route chat to the Responses API return a Responses resp_ ID.
+var officialIDPrefixes = map[int][]string{
+	config.ChannelTypeOpenAI:    {"chatcmpl-", "resp_"},
+	config.ChannelTypeAnthropic: {"msg_"},
+}
 
-		case config.ChannelTypeAnthropic:
-			if strings.HasPrefix(resp.ID, "msg_") {
-				IDCheckResult.Status = CheckStatusSuccess
-				IDCheckResult.Remark = "SUCCESS"
-			} else {
-				IDCheckResult.Remark = "ID should start with msg_"
-			}
-		default:
-			IDCheckResult.Status = CheckStatusSuccess
-			IDCheckResult.Remark = "SUCCESS"
+func checkResponseID(channelType int, id string) *CheckResult {
+	prefixes, ok := officialIDPrefixes[channelType]
+	switch {
+	case id == "":
+		return &CheckResult{Name: resultResponseID, Status: CheckStatusWarning, Code: "response_id_missing"}
+	case !ok || slices.ContainsFunc(prefixes, func(p string) bool { return strings.HasPrefix(id, p) }):
+		return &CheckResult{Name: resultResponseID, Status: CheckStatusSuccess, Code: "response_id_ok", Params: map[string]any{"id": id}}
+	default:
+		return &CheckResult{
+			Name:   resultResponseID,
+			Status: CheckStatusWarning,
+			Code:   "response_id_unofficial",
+			Params: map[string]any{"id": id, "prefixes": strings.Join(prefixes, ", ")},
 		}
 	}
+}
 
-	checkResults = append(checkResults, IDCheckResult)
+// checkLatency reports a successful base request that took longer than slowThreshold as slow.
+func checkLatency(latency time.Duration) *CheckResult {
+	params := map[string]any{"seconds": math.Round(latency.Seconds()*100) / 100}
+	if latency >= slowThreshold {
+		return &CheckResult{Name: resultLatency, Status: CheckStatusWarning, Code: "latency_slow", Params: params}
+	}
+	return &CheckResult{Name: resultLatency, Status: CheckStatusSuccess, Code: "latency_ok", Params: params}
+}
 
-	return checkResults
+// getChannelTypeByModelName infers the official upstream of a model to judge the official format
+// of the response fields.
+func getChannelTypeByModelName(modelName string) int {
+	switch {
+	case strings.HasPrefix(modelName, "gpt-"), strings.HasPrefix(modelName, "chatgpt-"),
+		strings.HasPrefix(modelName, "o1"), strings.HasPrefix(modelName, "o3"), strings.HasPrefix(modelName, "o4"):
+		// -all / -realtime / -instruct are third-party or non-chat variants without the official format.
+		if strings.Contains(modelName, "-all") || strings.Contains(modelName, "-realtime") || strings.Contains(modelName, "-instruct") {
+			return config.ChannelTypeUnknown
+		}
+		return config.ChannelTypeOpenAI
+	case strings.HasPrefix(modelName, "claude-"):
+		return config.ChannelTypeAnthropic
+	case strings.HasPrefix(modelName, "gemini-"):
+		return config.ChannelTypeGemini
+	}
+	return config.ChannelTypeUnknown
 }

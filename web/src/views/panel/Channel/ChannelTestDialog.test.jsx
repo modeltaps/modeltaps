@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import i18n from 'i18n/i18n';
@@ -50,5 +50,40 @@ describe('ChannelTestDialog', () => {
     render(<ChannelTestDialog open item={item} onClose={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
     expect(screen.getByText('3 selected')).toBeTruthy();
+  });
+
+  it('retries only the failed models and keeps the passed rows', async () => {
+    const onFinished = vi.fn();
+    render(<ChannelTestDialog open item={item} onClose={() => {}} onFinished={onFinished} />);
+    fireEvent.click(screen.getByRole('button', { name: /Start test/ }));
+    const retry = await screen.findByRole('button', { name: 'Retry failed (1)' });
+
+    testChannelModel.mockClear();
+    testChannelModel.mockResolvedValue({ success: true, time: 1.5 });
+    fireEvent.click(retry);
+
+    await waitFor(() => expect(within(rowOf('broken-model')).getByText('1.50s')).toBeTruthy());
+    expect(testChannelModel.mock.calls.map((c) => c[1])).toEqual(['broken-model']);
+    expect(within(rowOf('gpt-4o-mini')).getByText('0.42s')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Retry failed/ })).toBeNull();
+    expect(screen.getByText(/2 passed, 0 failed/)).toBeTruthy();
+  });
+
+  it('tests a single row and blocks a batch while it runs', async () => {
+    let resolve;
+    testChannelModel.mockImplementation(() => new Promise((r) => (resolve = r)));
+    render(<ChannelTestDialog open item={item} onClose={() => {}} />);
+
+    fireEvent.click(within(rowOf('dall-e-3')).getByRole('button', { name: 'Test dall-e-3' }));
+    expect(testChannelModel).toHaveBeenCalledWith(7, 'dall-e-3', '');
+    expect(within(rowOf('dall-e-3')).getByText('Testing')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Start test/ }).disabled).toBe(true);
+    expect(screen.getByRole('button', { name: 'Endpoint' }).disabled).toBe(true);
+
+    await act(async () => resolve({ success: false, message: 'quota exceeded' }));
+    expect(within(rowOf('dall-e-3')).getByText('quota exceeded')).toBeTruthy();
+    expect(within(rowOf('dall-e-3')).getByRole('button', { name: 'Retry dall-e-3' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Start test/ }).disabled).toBe(false);
+    expect(screen.getByRole('button', { name: 'Retry failed (1)' })).toBeTruthy();
   });
 });

@@ -4,7 +4,7 @@ const get = vi.fn();
 vi.mock('utils/api', () => ({ API: { get: (...args) => get(...args) } }));
 vi.mock('@/components/ui/sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
-import { fetchChannelStatusCounts, fetchTagChannels, statusCountParams } from './channelApi';
+import { checkChannelModel, fetchChannelStatusCounts, fetchTagChannels, statusCountParams } from './channelApi';
 
 describe('statusCountParams', () => {
   it('keeps the other filters and swaps in the chip status', () => {
@@ -59,5 +59,23 @@ describe('fetchTagChannels', () => {
   it('throws the server message on failure', async () => {
     get.mockResolvedValue({ data: { success: false, message: 'boom' } });
     await expect(fetchTagChannels('t')).rejects.toThrow('boom');
+  });
+});
+
+describe('checkChannelModel', () => {
+  beforeEach(() => get.mockReset());
+
+  it('checks one model through the per-model endpoint', async () => {
+    const data = { model: 'gpt-4o', status: 1, items: [] };
+    get.mockResolvedValue({ data: { success: true, message: '', data } });
+    await expect(checkChannelModel(3, 'gpt-4o#high')).resolves.toEqual(data);
+    expect(get).toHaveBeenCalledWith('/api/channel/check/3', { params: { model: 'gpt-4o#high' } });
+  });
+
+  it('throws the server message when the check cannot run', async () => {
+    get.mockResolvedValue({ data: { success: false, message: 'record not found' } });
+    await expect(checkChannelModel(3, 'x')).rejects.toThrow('record not found');
+    get.mockResolvedValue(undefined);
+    await expect(checkChannelModel(3, 'x')).rejects.toThrow('check failed');
   });
 });
