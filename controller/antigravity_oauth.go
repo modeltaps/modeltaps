@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"net/url"
@@ -38,7 +39,9 @@ type AntigravityOAuthStateData struct {
 	ChannelID int    `json:"channel_id"`
 	ProjectID string `json:"project_id"`
 	Proxy     string `json:"proxy"`
-	CreatedAt int64  `json:"created_at"`
+	// OpenerOrigin is the console origin that started the authorization; the callback page posts the credentials only to it.
+	OpenerOrigin string `json:"opener_origin"`
+	CreatedAt    int64  `json:"created_at"`
 }
 
 // AntigravityOAuthResultData OAuth 结果数据
@@ -76,10 +79,11 @@ func StartAntigravityOAuth(c *gin.Context) {
 
 	// 保存 state 到缓存
 	stateData := AntigravityOAuthStateData{
-		ChannelID: req.ChannelID,
-		ProjectID: req.ProjectID,
-		Proxy:     req.Proxy,
-		CreatedAt: time.Now().Unix(),
+		ChannelID:    req.ChannelID,
+		ProjectID:    req.ProjectID,
+		Proxy:        req.Proxy,
+		OpenerOrigin: oauthOpenerOrigin(c),
+		CreatedAt:    time.Now().Unix(),
 	}
 	cacheKey := AntigravityOAuthStateCachePrefix + state
 	cache.SetCache(cacheKey, stateData, AntigravityOAuthStateCacheDuration)
@@ -163,17 +167,20 @@ func AntigravityOAuthCallback(c *gin.Context) {
 		errorDesc := c.Query("error_description")
 		logger.SysError(fmt.Sprintf("Antigravity OAuth callback error: %s - %s", errorParam, errorDesc))
 
+		// error_description comes from the query of a route that needs no sign-in: truncate it here, the render step escapes it.
+		message := fmt.Sprintf("Authorization failed: %s", truncateErrorDescription(errorDesc))
+
 		if state != "" {
 			resultCacheKey := AntigravityOAuthResultCachePrefix + state
 			resultData := AntigravityOAuthResultData{
 				Success:     false,
-				Message:     fmt.Sprintf("Authorization failed: %s", errorDesc),
+				Message:     message,
 				CompletedAt: time.Now().Unix(),
 			}
 			cache.SetCache(resultCacheKey, resultData, AntigravityOAuthResultCacheDuration)
 		}
 
-		renderAntigravityOAuthResult(c, false, fmt.Sprintf("Authorization failed: %s", errorDesc), "", "", state)
+		renderAntigravityOAuthResult(c, false, message, "", "", "")
 		return
 	}
 
@@ -197,7 +204,7 @@ func AntigravityOAuthCallback(c *gin.Context) {
 		}
 		cache.SetCache(resultCacheKey, resultData, AntigravityOAuthResultCacheDuration)
 
-		renderAntigravityOAuthResult(c, false, "Authorization state has expired, please start authorization again", "", "", state)
+		renderAntigravityOAuthResult(c, false, "Authorization state has expired, please start authorization again", "", "", "")
 		return
 	}
 
@@ -214,7 +221,7 @@ func AntigravityOAuthCallback(c *gin.Context) {
 		}
 		cache.SetCache(resultCacheKey, resultData, AntigravityOAuthResultCacheDuration)
 
-		renderAntigravityOAuthResult(c, false, fmt.Sprintf("Failed to get access token: %s", err.Error()), "", "", state)
+		renderAntigravityOAuthResult(c, false, fmt.Sprintf("Failed to get access token: %s", err.Error()), "", "", stateData.OpenerOrigin)
 		return
 	}
 
@@ -231,7 +238,7 @@ func AntigravityOAuthCallback(c *gin.Context) {
 		projectID, err = fetchAntigravityProjectID(ctx, tokenResp.AccessToken, stateData.Proxy)
 		if err != nil {
 			logger.LogInfo(ctx, fmt.Sprintf("Failed to detect project ID automatically: %s, using a randomly generated Project ID", err.Error()))
-			projectID = generateAntigravityRandomProjectID()
+			projectID = generateRandomProjectID()
 		}
 
 		autoDetected = true
@@ -264,7 +271,7 @@ func AntigravityOAuthCallback(c *gin.Context) {
 		}
 		cache.SetCache(resultCacheKey, resultData, AntigravityOAuthResultCacheDuration)
 
-		renderAntigravityOAuthResult(c, false, "Failed to serialize credentials", "", "", state)
+		renderAntigravityOAuthResult(c, false, "Failed to serialize credentials", "", "", stateData.OpenerOrigin)
 		return
 	}
 
@@ -287,7 +294,7 @@ func AntigravityOAuthCallback(c *gin.Context) {
 		message = fmt.Sprintf("Authorization successful, detected project ID: %s", projectID)
 	}
 
-	renderAntigravityOAuthResult(c, true, message, projectID, credentialsJSON, state)
+	renderAntigravityOAuthResult(c, true, message, projectID, credentialsJSON, stateData.OpenerOrigin)
 }
 
 // AntigravityTokenResponse Token 响应
@@ -340,17 +347,6 @@ func exchangeAntigravityToken(code string, proxyURL string) (*AntigravityTokenRe
 	}
 
 	return &tokenResp, nil
-}
-
-// generateAntigravityRandomProjectID 生成随机的项目 ID（当无法检测到项目时使用）
-func generateAntigravityRandomProjectID() string {
-	randomBytes := make([]byte, 4)
-	if _, err := rand.Read(randomBytes); err != nil {
-		// 降级使用时间戳
-		randomBytes = []byte(fmt.Sprintf("%08x", time.Now().UnixNano()&0xFFFFFFFF))[:4]
-	}
-	randomID := fmt.Sprintf("%x", randomBytes)
-	return fmt.Sprintf("projects/random-%s/locations/global", randomID)
 }
 
 // fetchAntigravityProjectID 获取项目 ID
@@ -565,7 +561,15 @@ func createAntigravityHTTPClient(proxyURL string, timeout time.Duration) *http.C
 }
 
 // renderAntigravityOAuthResult 渲染 OAuth 结果页面
-func renderAntigravityOAuthResult(c *gin.Context, success bool, message, projectID, credentials, state string) {
+func renderAntigravityOAuthResult(c *gin.Context, success bool, message, projectID, credentials, openerOrigin string) {
+	nonce := generateNonce()
+	if nonce == "" {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	// Escape the message here so every caller, including the err.Error() paths, is covered.
+	detailMessage := html.EscapeString(message)
+
 	successStr := "true"
 	credentialsJSON := "null"
 	statusClass := "success"
@@ -575,7 +579,6 @@ func renderAntigravityOAuthResult(c *gin.Context, success bool, message, project
 		<circle cx="40" cy="40" r="32" fill="#34C759"/>
 		<path d="M25 40L35 50L55 30" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
 	</svg>`
-	detailMessage := message
 
 	if !success {
 		statusClass = "error"
@@ -587,14 +590,10 @@ func renderAntigravityOAuthResult(c *gin.Context, success bool, message, project
 			<path d="M30 30L50 50M50 30L30 50" stroke="white" stroke-width="4" stroke-linecap="round"/>
 		</svg>`
 	} else if credentials != "" {
-		// 转义 JSON 字符串中的特殊字符
-		escapedCreds := strings.ReplaceAll(credentials, `\`, `\\`)
-		escapedCreds = strings.ReplaceAll(escapedCreds, `"`, `\"`)
-		escapedCreds = strings.ReplaceAll(escapedCreds, "\n", `\n`)
-		credentialsJSON = fmt.Sprintf(`"%s"`, escapedCreds)
+		credentialsJSON = jsStringLiteral(credentials)
 	}
 
-	html := fmt.Sprintf(`
+	page := fmt.Sprintf(`
 <!DOCTYPE html>
 <html>
 <head>
@@ -716,26 +715,21 @@ func renderAntigravityOAuthResult(c *gin.Context, success bool, message, project
         <h1>%s</h1>
         <p class="message">%s</p>
         <p class="countdown" id="countdown">This window will close automatically in 3 seconds</p>
-        <button class="close-btn" onclick="closeWindow()">Close window</button>
+        <button class="close-btn" id="closeBtn">Close window</button>
     </div>
-    <script>
-        console.log('Antigravity OAuth callback page loaded');
-        console.log('Success:', %s);
-        console.log('ProjectID:', '%s');
-        console.log('Credentials:', %s);
+    <script nonce="%s">
+        // The CSP forbids inline event handlers, so the button is wired up here.
+        document.getElementById('closeBtn').addEventListener('click', closeWindow);
 
-        // 发送消息给父窗口
-        if (window.opener && !window.opener.closed) {
-            console.log('Sending message to parent window');
+        // Post the credentials only to the origin that started the flow; without one the console falls back to polling.
+        var openerOrigin = %s;
+        if (openerOrigin && window.opener && !window.opener.closed) {
             window.opener.postMessage({
                 type: 'antigravity_oauth_result',
                 success: %s,
-                projectId: '%s',
+                projectId: %s,
                 credentials: %s
-            }, '*');
-            console.log('Message sent');
-        } else {
-            console.error('No opener window found');
+            }, openerOrigin);
         }
 
         function closeWindow() {
@@ -768,8 +762,7 @@ func renderAntigravityOAuthResult(c *gin.Context, success bool, message, project
     </script>
 </body>
 </html>
-`, statusClass, iconSVG, statusText, detailMessage, successStr, projectID, credentialsJSON, successStr, projectID, credentialsJSON)
+`, statusClass, iconSVG, statusText, detailMessage, nonce, jsStringLiteral(openerOrigin), successStr, jsStringLiteral(projectID), credentialsJSON)
 
-	c.Header("Content-Type", "text/html; charset=utf-8")
-	c.String(http.StatusOK, html)
+	writeOAuthResultPage(c, nonce, page)
 }
