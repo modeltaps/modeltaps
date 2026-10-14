@@ -225,6 +225,15 @@ func seedChannels(t *testing.T, opts HarnessOptions) []*model.Channel {
 			PreCost:     config.PreCostDefault,
 			CreatedTime: utils.GetTimestamp(),
 		}
+		if spec.ModelMapping != "" {
+			mapping := spec.ModelMapping
+			channel.ModelMapping = &mapping
+		}
+		channel.PassThroughBody = spec.PassThroughBody
+		if spec.Need2ResponseModels != "" {
+			routes := spec.Need2ResponseModels
+			channel.Need2ResponseModels = &routes
+		}
 		if err := model.DB.Create(channel).Error; err != nil {
 			t.Fatalf("写入测试渠道失败: %v", err)
 		}

@@ -791,7 +791,9 @@
       "pluginParams": "プラグインパラメータ",
       "version": "バージョン",
       "region": "場所/リージョン",
-      "projectIdOptional": "Project ID（任意）"
+      "projectIdOptional": "Project ID（任意）",
+      "remark": "備考",
+      "need2response_models": "Chat から Responses に変換するモデル"
     },
     "prompt": {
       "type": "チャネルタイプを選択してください",
@@ -838,7 +840,9 @@
       "claudeOauth": "access_token（sk-ant-sid01-xxx）または完全な OAuth2 認証情報 JSON を入力してください。下の「OAuth 認可」ボタンで自動取得することもできます",
       "gcpProjectId": "Google Cloud のプロジェクト ID を入力してください。例：my-project-123",
       "projectIdOptional": "任意。空欄の場合は自動検出またはランダムに生成されます。例：my-project-123",
-      "vertexExpressKey": "API キーを入力してください（Google Cloud Console で取得）"
+      "vertexExpressKey": "API キーを入力してください（Google Cloud Console で取得）",
+      "remark": "管理者向けのメモ（キーの入手元や有効期限など）。チャネルごとに保存され、タグ内では共有されません。",
+      "need2response_models": "1 行に 1 モデル（カンマ区切りも可）。これらのモデルへの chat/completions リクエストは Responses API に送られ、chat 形式に変換して返されます。入力したモデルは組み込みリスト（o1-pro、o3-pro、o3 / o4-mini deep research、codex-mini-latest）に追加されます。モデル名の前に - を付けると、このチャネルではそのモデルを変換しません（上流が chat/completions で提供している場合向け）。空欄の場合は組み込みリストを使います。"
     },
     "fetchModelsFrom": "{{source}} からモデル一覧を取得",
     "fetchModelsFromChannel": "チャネルからモデル一覧を取得",
@@ -1016,5 +1020,29 @@
       "webhookSecret": "WebHookSecret",
       "webhookSecretDesc": "Webhook の署名シークレットです。入力は不要です。ゲートウェイを作成すると Stripe 側で Webhook が自動作成され、シークレットが取得されます"
     }
+  },
+  "channelTest": {
+    "action": "複数モデルのテスト",
+    "title": "複数モデルのテスト",
+    "hint": "選択した各モデルについて、上流に実際のリクエストを 1 回送ります。画像・動画・deep research 系のモデルはテスト費用がかかる場合があるため、既定では選択されません。ここでのテスト失敗でチャネルが無効になることはなく、応答時間はチャネルのテストモデルでのみ更新されます。",
+    "endpointType": "エンドポイント",
+    "endpointAuto": "自動判定",
+    "selectAll": "すべて選択",
+    "clear": "クリア",
+    "invert": "選択を反転",
+    "selected": "{{count}} 件選択中",
+    "start": "テスト開始",
+    "stop": "停止",
+    "noModels": "このチャネルにはモデルが設定されていません",
+    "colModel": "モデル",
+    "colStatus": "状態",
+    "colResult": "結果",
+    "notTested": "未テスト",
+    "testing": "テスト中",
+    "passed": "成功",
+    "failed": "失敗",
+    "summary": "成功 {{success}} 件、失敗 {{failed}} 件",
+    "stopped": "停止しました：成功 {{success}} 件、失敗 {{failed}} 件",
+    "seconds": "{{time}} 秒"
   }
 }
