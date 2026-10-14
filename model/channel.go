@@ -146,11 +146,16 @@ var allowedChannelOrderFields = map[string]bool{
 	"cost_ratio":    true,
 }
 
+// likeEscaper escapes LIKE wildcards for use with ESCAPE '!', which MySQL, PostgreSQL and SQLite all support.
+var likeEscaper = strings.NewReplacer("!", "!!", "%", "!%", "_", "!_")
+
 type SearchChannelsParams struct {
 	Channel
 	PaginationParams
 	FilterTag int    `json:"filter_tag" form:"filter_tag"`
 	BaseURL   string `json:"base_url" form:"base_url"`
+	// ExactModel matches channels whose comma-separated models list contains exactly this model.
+	ExactModel string `json:"exact_model" form:"exact_model"`
 }
 
 func GetChannelsList(params *SearchChannelsParams) (*DataResult[Channel], error) {
@@ -187,6 +192,17 @@ func GetChannelsList(params *SearchChannelsParams) (*DataResult[Channel], error)
 	if params.Models != "" {
 		db = db.Where("models LIKE ?", "%"+params.Models+"%")
 		tagDB = tagDB.Where("models LIKE ?", "%"+params.Models+"%")
+	}
+
+	// Match a whole entry of the comma-separated models list, so gemini-2.5-flash does not also hit
+	// gemini-2.5-flash-image and push the channels actually wanted onto later pages. _ is a LIKE
+	// wildcard and must be escaped, or mj_imagine would also match mj-imagine.
+	if params.ExactModel != "" {
+		escaped := likeEscaper.Replace(params.ExactModel)
+		cond := "(models = ? OR models LIKE ? ESCAPE '!' OR models LIKE ? ESCAPE '!' OR models LIKE ? ESCAPE '!')"
+		args := []any{params.ExactModel, escaped + ",%", "%," + escaped, "%," + escaped + ",%"}
+		db = db.Where(cond, args...)
+		tagDB = tagDB.Where(cond, args...)
 	}
 
 	if params.Other != "" {
