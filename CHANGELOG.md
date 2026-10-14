@@ -76,6 +76,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `{success: false, message, code}` like the other admin endpoints.
 - Malformed or unknown channel ids now answer "invalid channel id" / "channel not found"
   instead of raw parser and database text.
+- Binding LINUX DO while signed in with an access token no longer crashes the request, and an
+  account already linked to LINUX DO must be unlinked before it can be linked to another one.
+
+### Security
+
+- The Gemini CLI and Antigravity OAuth callback pages, which need no sign-in, put the
+  `error_description` query parameter into the page unescaped, so a crafted link could run
+  script on the console's origin. All text on these pages is now escaped, the pages send a
+  nonce-based Content-Security-Policy, and they no longer use inline event handlers.
+- These callback pages sent the OAuth credentials with `postMessage` to any opener window.
+  They now send them only to the console origin that started the authorization (taken from
+  the start request), and fall back to polling when that origin is unknown; the console only
+  accepts messages from the popup it opened.
+- The admin user list and user detail endpoints returned each user's `access_token`, so an
+  admin could read the root user's token and act as root. Only `/api/user/self` returns it now.
 
 ## [0.1.1] - 2026-10-10
 

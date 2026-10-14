@@ -653,7 +653,7 @@ func GetAffCode(c *gin.Context) {
 
 func GetSelf(c *gin.Context) {
 	id := c.GetInt("id")
-	user, err := model.GetUserById(id, false)
+	user, err := model.GetSelfById(id)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,

@@ -85,14 +85,31 @@ func LinuxDoBind(c *gin.Context) {
 		return
 	}
 
-	id := session.Get("id")
-	user.Id = id.(int)
+	// UserAuth also accepts access tokens, which leave no id in the session, so do not assert the type.
+	userId, ok := session.Get("id").(int)
+	if !ok || userId == 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "Session is invalid, please sign in again",
+		})
+		return
+	}
+	user.Id = userId
 
 	err = user.FillUserById()
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": err.Error(),
+		})
+		return
+	}
+
+	// An account already linked to LINUX DO must be unlinked before linking another one.
+	if user.LinuxDoId != 0 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "This account is already linked to LINUX DO, unlink it first to change",
 		})
 		return
 	}

@@ -117,6 +117,8 @@ function PopupOAuth({ flow, channelId, getValues, onCredentials }) {
       popupRef.current = window.open(data.auth_url, '_blank');
 
       const handleMessage = (event) => {
+        // only trust the popup this flow opened; anything else falls back to polling
+        if (event.source !== popupRef.current) return;
         if (!event.data || event.data.type !== flow.messageType) return;
         finish(event.data.success, event.data.credentials);
       };

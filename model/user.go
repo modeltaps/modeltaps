@@ -184,18 +184,23 @@ type UserListItem struct {
 	IsShadow bool   `json:"is_shadow"`
 }
 
+// userSensitiveColumns are never loaded for queries about other users (admin list, detail).
+// An access_token calls the management API as its user, so an admin who can read root's token
+// effectively has root.
+var userSensitiveColumns = []string{"password", "access_token"}
+
 func GetUsersList(params *SearchUserParams) (*DataResult[UserListItem], error) {
 	var users []*User
 	var db *gorm.DB
 	if params.OrgId > 0 {
-		db = DB.Omit("password").Where(
+		db = DB.Omit(userSensitiveColumns...).Where(
 			"((type IS NULL OR type = ?) AND id IN (?)) OR id IN (?)",
 			config.UserTypeNormal,
 			DB.Model(&OrganizationMember{}).Select("user_id").Where("organization_id = ?", params.OrgId),
 			DB.Model(&Organization{}).Select("shadow_user_id").Where("id = ?", params.OrgId),
 		)
 	} else {
-		db = ExcludeShadowUsers(DB.Omit("password"))
+		db = ExcludeShadowUsers(DB.Omit(userSensitiveColumns...))
 	}
 	if params.Status > 0 {
 		db = db.Where("status = ?", params.Status)
@@ -329,8 +334,19 @@ func GetUserById(id int, selectAll bool) (*User, error) {
 	if selectAll {
 		err = DB.First(&user, "id = ?", id).Error
 	} else {
-		err = DB.Omit("password").First(&user, "id = ?", id).Error
+		err = DB.Omit(userSensitiveColumns...).First(&user, "id = ?", id).Error
 	}
+	return &user, err
+}
+
+// GetSelfById is only for /api/user/self, after the caller is authenticated: it keeps the
+// access_token (users may see their own) and still omits the password. Never use it for other users.
+func GetSelfById(id int) (*User, error) {
+	if id == 0 {
+		return nil, errors.New("id is empty")
+	}
+	user := User{Id: id}
+	err := DB.Omit("password").First(&user, "id = ?", id).Error
 	return &user, err
 }
 

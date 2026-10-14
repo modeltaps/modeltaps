@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"net/url"
@@ -37,7 +38,9 @@ type OAuthStateData struct {
 	ChannelID int    `json:"channel_id"`
 	ProjectID string `json:"project_id"`
 	Proxy     string `json:"proxy"` // 代理配置（JSON 字符串）
-	CreatedAt int64  `json:"created_at"`
+	// OpenerOrigin is the console origin that started the authorization; the callback page posts the credentials only to it.
+	OpenerOrigin string `json:"opener_origin"`
+	CreatedAt    int64  `json:"created_at"`
 }
 
 // OAuthResultData OAuth 结果数据
@@ -75,10 +78,11 @@ func StartGeminiCliOAuth(c *gin.Context) {
 
 	// 保存 state 到缓存（包含代理配置）
 	stateData := OAuthStateData{
-		ChannelID: req.ChannelID,
-		ProjectID: req.ProjectID,
-		Proxy:     req.Proxy, // 保存代理配置，用于后续 token 交换
-		CreatedAt: time.Now().Unix(),
+		ChannelID:    req.ChannelID,
+		ProjectID:    req.ProjectID,
+		Proxy:        req.Proxy, // 保存代理配置，用于后续 token 交换
+		OpenerOrigin: oauthOpenerOrigin(c),
+		CreatedAt:    time.Now().Unix(),
 	}
 	cacheKey := OAuthStateCachePrefix + state
 	cache.SetCache(cacheKey, stateData, OAuthStateCacheDuration)
@@ -169,18 +173,21 @@ func GeminiCliOAuthCallback(c *gin.Context) {
 		errorDesc := c.Query("error_description")
 		logger.SysError(fmt.Sprintf("OAuth callback error: %s - %s", errorParam, errorDesc))
 
+		// error_description comes from the query of a route that needs no sign-in: truncate it here, the render step escapes it.
+		message := fmt.Sprintf("Authorization failed: %s", truncateErrorDescription(errorDesc))
+
 		// 保存错误结果到缓存
 		if state != "" {
 			resultCacheKey := OAuthResultCachePrefix + state
 			resultData := OAuthResultData{
 				Success:     false,
-				Message:     fmt.Sprintf("Authorization failed: %s", errorDesc),
+				Message:     message,
 				CompletedAt: time.Now().Unix(),
 			}
 			cache.SetCache(resultCacheKey, resultData, OAuthResultCacheDuration)
 		}
 
-		renderOAuthResult(c, false, fmt.Sprintf("Authorization failed: %s", errorDesc), "", "", state)
+		renderOAuthResult(c, false, message, "", "", "")
 		return
 	}
 
@@ -205,7 +212,7 @@ func GeminiCliOAuthCallback(c *gin.Context) {
 		}
 		cache.SetCache(resultCacheKey, resultData, OAuthResultCacheDuration)
 
-		renderOAuthResult(c, false, "OAuth state has expired or is invalid, please restart the authorization flow", "", "", state)
+		renderOAuthResult(c, false, "OAuth state has expired or is invalid, please restart the authorization flow", "", "", "")
 		return
 	}
 
@@ -228,7 +235,7 @@ func GeminiCliOAuthCallback(c *gin.Context) {
 		}
 		cache.SetCache(resultCacheKey, resultData, OAuthResultCacheDuration)
 
-		renderOAuthResult(c, false, fmt.Sprintf("Failed to get token: %s", err.Error()), "", "", state)
+		renderOAuthResult(c, false, fmt.Sprintf("Failed to get token: %s", err.Error()), "", "", stateData.OpenerOrigin)
 		return
 	}
 
@@ -261,7 +268,7 @@ func GeminiCliOAuthCallback(c *gin.Context) {
 				}
 				cache.SetCache(resultCacheKey, resultData, OAuthResultCacheDuration)
 
-				renderOAuthResult(c, false, fmt.Sprintf("Failed to detect project ID automatically: %s. Please enter the Project ID manually and authorize again", err.Error()), "", "", state)
+				renderOAuthResult(c, false, fmt.Sprintf("Failed to detect project ID automatically: %s. Please enter the Project ID manually and authorize again", err.Error()), "", "", stateData.OpenerOrigin)
 				return
 			}
 
@@ -309,7 +316,7 @@ func GeminiCliOAuthCallback(c *gin.Context) {
 		}
 		cache.SetCache(resultCacheKey, resultData, OAuthResultCacheDuration)
 
-		renderOAuthResult(c, false, "Failed to serialize credentials", "", "", state)
+		renderOAuthResult(c, false, "Failed to serialize credentials", "", "", stateData.OpenerOrigin)
 		return
 	}
 
@@ -343,11 +350,19 @@ func GeminiCliOAuthCallback(c *gin.Context) {
 	cache.SetCache(resultCacheKey, resultData, OAuthResultCacheDuration)
 
 	// 返回 HTML 页面，通过 postMessage 发送凭证给父窗口（如果有的话）
-	renderOAuthResult(c, true, successMessage, projectID, credsJSON, state)
+	renderOAuthResult(c, true, successMessage, projectID, credsJSON, stateData.OpenerOrigin)
 }
 
-// renderOAuthResult 渲染 OAuth 结果页面
-func renderOAuthResult(c *gin.Context, success bool, message, projectID, credentials, state string) {
+// renderOAuthResult renders the OAuth result page. With an empty openerOrigin it does not postMessage and the console polls for the result.
+func renderOAuthResult(c *gin.Context, success bool, message, projectID, credentials, openerOrigin string) {
+	nonce := generateNonce()
+	if nonce == "" {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	// Escape the message here so every caller, including the err.Error() paths, is covered.
+	detailMessage := html.EscapeString(message)
+
 	successStr := "true"
 	credentialsJSON := "null"
 	statusClass := "success"
@@ -357,7 +372,6 @@ func renderOAuthResult(c *gin.Context, success bool, message, projectID, credent
 		<circle cx="40" cy="40" r="32" fill="#34C759"/>
 		<path d="M25 40L35 50L55 30" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
 	</svg>`
-	detailMessage := message
 
 	if !success {
 		statusClass = "error"
@@ -369,14 +383,10 @@ func renderOAuthResult(c *gin.Context, success bool, message, projectID, credent
 			<path d="M30 30L50 50M50 30L30 50" stroke="white" stroke-width="4" stroke-linecap="round"/>
 		</svg>`
 	} else if credentials != "" {
-		// 转义 JSON 字符串中的特殊字符
-		escapedCreds := strings.ReplaceAll(credentials, `\`, `\\`)
-		escapedCreds = strings.ReplaceAll(escapedCreds, `"`, `\"`)
-		escapedCreds = strings.ReplaceAll(escapedCreds, "\n", `\n`)
-		credentialsJSON = fmt.Sprintf(`"%s"`, escapedCreds)
+		credentialsJSON = jsStringLiteral(credentials)
 	}
 
-	html := fmt.Sprintf(`
+	page := fmt.Sprintf(`
 <!DOCTYPE html>
 <html>
 <head>
@@ -498,26 +508,21 @@ func renderOAuthResult(c *gin.Context, success bool, message, projectID, credent
         <h1>%s</h1>
         <p class="message">%s</p>
         <p class="countdown" id="countdown">This window will close automatically in 3 seconds</p>
-        <button class="close-btn" onclick="closeWindow()">Close window</button>
+        <button class="close-btn" id="closeBtn">Close window</button>
     </div>
-    <script>
-        console.log('OAuth callback page loaded');
-        console.log('Success:', %s);
-        console.log('ProjectID:', '%s');
-        console.log('Credentials:', %s);
+    <script nonce="%s">
+        // The CSP forbids inline event handlers, so the button is wired up here.
+        document.getElementById('closeBtn').addEventListener('click', closeWindow);
 
-        // 发送消息给父窗口
-        if (window.opener && !window.opener.closed) {
-            console.log('Sending message to parent window');
+        // Post the credentials only to the origin that started the flow; without one the console falls back to polling.
+        var openerOrigin = %s;
+        if (openerOrigin && window.opener && !window.opener.closed) {
             window.opener.postMessage({
                 type: 'geminicli_oauth_result',
                 success: %s,
-                projectId: '%s',
+                projectId: %s,
                 credentials: %s
-            }, '*');
-            console.log('Message sent');
-        } else {
-            console.error('No opener window found');
+            }, openerOrigin);
         }
 
         function closeWindow() {
@@ -550,10 +555,9 @@ func renderOAuthResult(c *gin.Context, success bool, message, projectID, credent
     </script>
 </body>
 </html>
-`, statusClass, iconSVG, statusText, detailMessage, successStr, projectID, credentialsJSON, successStr, projectID, credentialsJSON)
+`, statusClass, iconSVG, statusText, detailMessage, nonce, jsStringLiteral(openerOrigin), successStr, jsStringLiteral(projectID), credentialsJSON)
 
-	c.Header("Content-Type", "text/html; charset=utf-8")
-	c.String(http.StatusOK, html)
+	writeOAuthResultPage(c, nonce, page)
 }
 
 // enableRequiredAPIs 启用必需的 API 服务
@@ -799,17 +803,6 @@ func getUserProjects(accessToken, proxyURL string) ([]GoogleCloudProject, error)
 	}
 
 	return activeProjects, nil
-}
-
-// generateRandomProjectID 生成随机的项目 ID（当无法检测到项目时使用）
-func generateRandomProjectID() string {
-	randomBytes := make([]byte, 4)
-	if _, err := rand.Read(randomBytes); err != nil {
-		// 降级使用时间戳
-		randomBytes = []byte(fmt.Sprintf("%08x", time.Now().UnixNano()&0xFFFFFFFF))[:4]
-	}
-	randomID := fmt.Sprintf("%x", randomBytes)
-	return fmt.Sprintf("projects/random-%s/locations/global", randomID)
 }
 
 // selectDefaultProject 从项目列表中选择默认项目
