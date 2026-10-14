@@ -1043,7 +1043,11 @@
     "failed": "失败",
     "summary": "成功 {{success}} 个，失败 {{failed}} 个",
     "stopped": "已停止：成功 {{success}} 个，失败 {{failed}} 个",
-    "seconds": "{{time}} 秒"
+    "seconds": "{{time}} 秒",
+    "colAction": "操作",
+    "testOne": "测试 {{model}}",
+    "retry": "重试 {{model}}",
+    "retryFailed": "重试失败项（{{count}}）"
   },
   "channelCheck": {
     "title": "渠道检测",

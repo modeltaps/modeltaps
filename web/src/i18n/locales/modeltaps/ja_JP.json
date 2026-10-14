@@ -1043,7 +1043,11 @@
     "failed": "失敗",
     "summary": "成功 {{success}} 件、失敗 {{failed}} 件",
     "stopped": "停止しました：成功 {{success}} 件、失敗 {{failed}} 件",
-    "seconds": "{{time}} 秒"
+    "seconds": "{{time}} 秒",
+    "colAction": "操作",
+    "testOne": "{{model}} をテスト",
+    "retry": "{{model}} を再テスト",
+    "retryFailed": "失敗分を再テスト（{{count}}）"
   },
   "channelCheck": {
     "title": "チャネル検査",

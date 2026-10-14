@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, Loader2, Play, Square, Timer, XCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, Play, RotateCcw, Square, Timer, XCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -19,7 +19,7 @@ import {
   runWithConcurrency
 } from './channelTestUtils';
 
-const EMPTY_PROGRESS = { done: 0, total: 0, success: 0, failed: 0 };
+const EMPTY_PROGRESS = { done: 0, total: 0 };
 
 // Tests several models of one channel through the regular channel test endpoint, a few at a
 // time, and lists the latency or error of each. A manual test never disables the channel.
@@ -54,54 +54,89 @@ export default function ChannelTestDialog({ item, open, onClose, onFinished }) {
     setSelected((prev) => (prev.includes(model) ? prev.filter((m) => m !== model) : [...prev, model]));
   }, []);
 
-  const start = useCallback(async () => {
-    const targets = models.filter((m) => selectedSet.has(m));
-    if (!item || targets.length === 0) return;
+  // testOne tests one model and writes its row; returns null when its run was dropped.
+  const testOne = useCallback(
+    async (model, runId) => {
+      // Mark a model as testing only once it is picked up, so queued ones keep their state.
+      setResults((prev) => ({ ...prev, [model]: { status: 'testing' } }));
+      const res = await testChannelModel(item.id, model, endpointType === ENDPOINT_AUTO ? '' : endpointType);
+      if (runId !== runIdRef.current) return null;
+      const result = res?.success
+        ? { status: 'success', time: Number(res.time) || 0 }
+        : { status: 'error', message: res?.message || t('channelTest.failed') };
+      setResults((prev) => ({ ...prev, [model]: result }));
+      return result;
+    },
+    [endpointType, item, t]
+  );
 
-    stopRef.current = false;
-    const runId = (runIdRef.current += 1);
-    const isStopped = () => stopRef.current || runId !== runIdRef.current;
-    setRunning(true);
-    setResults({});
-    setProgress({ ...EMPTY_PROGRESS, total: targets.length });
+  // runBatch tests targets; with reset false the other rows keep their results (retry failed).
+  const runBatch = useCallback(
+    async (targets, reset) => {
+      if (!item || targets.length === 0) return;
 
-    let done = 0;
-    let success = 0;
-    let failed = 0;
-    await runWithConcurrency(
-      targets,
-      TEST_CONCURRENCY,
-      async (model) => {
-        // Mark a model as testing only once it is picked up, so queued ones stay "not tested".
-        setResults((prev) => ({ ...prev, [model]: { status: 'testing' } }));
-        const res = await testChannelModel(item.id, model, endpointType === ENDPOINT_AUTO ? '' : endpointType);
-        if (runId !== runIdRef.current) return;
-        let result;
-        if (res?.success) {
-          result = { status: 'success', time: Number(res.time) || 0 };
-          success += 1;
-        } else {
-          result = { status: 'error', message: res?.message || t('channelTest.failed') };
-          failed += 1;
-        }
-        done += 1;
-        setResults((prev) => ({ ...prev, [model]: result }));
-        setProgress({ done, total: targets.length, success, failed });
-      },
-      isStopped
-    );
-    if (runId !== runIdRef.current) return;
+      stopRef.current = false;
+      const runId = (runIdRef.current += 1);
+      const isStopped = () => stopRef.current || runId !== runIdRef.current;
+      setRunning(true);
+      if (reset) setResults({});
+      setProgress({ done: 0, total: targets.length });
 
-    setRunning(false);
-    onFinished?.();
-    if (stopRef.current && done < targets.length) {
-      toast.info(t('channelTest.stopped', { success, failed }));
-    } else if (failed > 0) {
-      toast.error(t('channelTest.summary', { success, failed }));
-    } else {
-      toast.success(t('channelTest.summary', { success, failed }));
-    }
-  }, [endpointType, item, models, onFinished, selectedSet, t]);
+      let done = 0;
+      let success = 0;
+      let failed = 0;
+      await runWithConcurrency(
+        targets,
+        TEST_CONCURRENCY,
+        async (model) => {
+          const result = await testOne(model, runId);
+          if (!result) return;
+          done += 1;
+          if (result.status === 'success') success += 1;
+          else failed += 1;
+          setProgress({ done, total: targets.length });
+        },
+        isStopped
+      );
+      if (runId !== runIdRef.current) return;
+
+      setRunning(false);
+      onFinished?.();
+      if (stopRef.current && done < targets.length) {
+        toast.info(t('channelTest.stopped', { success, failed }));
+      } else if (failed > 0) {
+        toast.error(t('channelTest.summary', { success, failed }));
+      } else {
+        toast.success(t('channelTest.summary', { success, failed }));
+      }
+    },
+    [item, onFinished, t, testOne]
+  );
+
+  const start = useCallback(
+    () =>
+      runBatch(
+        models.filter((m) => selectedSet.has(m)),
+        true
+      ),
+    [models, runBatch, selectedSet]
+  );
+  const failedModels = useMemo(() => models.filter((m) => results[m]?.status === 'error'), [models, results]);
+  // A single-row test joins the current run instead of starting one, so closing the dialog drops it too.
+  const testRow = useCallback((model) => testOne(model, runIdRef.current), [testOne]);
+
+  // Counted from the rows, so single-row tests and retries keep the summary right.
+  const counts = useMemo(() => {
+    const values = Object.values(results);
+    return {
+      success: values.filter((r) => r.status === 'success').length,
+      failed: values.filter((r) => r.status === 'error').length,
+      testing: values.filter((r) => r.status === 'testing').length
+    };
+  }, [results]);
+  // While single-row tests are in flight no batch may start, and single-row tests are capped at
+  // the batch concurrency, so the two never stack up against the upstream.
+  const busy = running || counts.testing > 0;
 
   const percent = progress.total === 0 ? 0 : Math.round((progress.done / progress.total) * 100);
 
@@ -119,7 +154,7 @@ export default function ChannelTestDialog({ item, open, onClose, onFinished }) {
 
           <div className="flex flex-wrap items-center gap-2">
             <Select value={endpointType} onValueChange={setEndpointType}>
-              <SelectTrigger className="h-8 w-80" disabled={running} aria-label={t('channelTest.endpointType')}>
+              <SelectTrigger className="h-8 w-80" disabled={busy} aria-label={t('channelTest.endpointType')}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -153,7 +188,7 @@ export default function ChannelTestDialog({ item, open, onClose, onFinished }) {
                 <div className="h-full bg-primary transition-all" style={{ width: `${percent}%` }} />
               </div>
               <p className="text-xs text-muted-foreground tabular-nums">
-                {progress.done}/{progress.total} · {t('channelTest.summary', { success: progress.success, failed: progress.failed })}
+                {progress.done}/{progress.total} · {t('channelTest.summary', { success: counts.success, failed: counts.failed })}
               </p>
             </div>
           )}
@@ -168,6 +203,9 @@ export default function ChannelTestDialog({ item, open, onClose, onFinished }) {
                   <TableHead className="w-[38%]">{t('channelTest.colModel')}</TableHead>
                   <TableHead className="w-24">{t('channelTest.colStatus')}</TableHead>
                   <TableHead>{t('channelTest.colResult')}</TableHead>
+                  <TableHead className="w-12 text-center">
+                    <span className="sr-only">{t('channelTest.colAction')}</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -188,6 +226,15 @@ export default function ChannelTestDialog({ item, open, onClose, onFinished }) {
                     <TableCell className="whitespace-normal">
                       <ResultCell t={t} result={results[model]} />
                     </TableCell>
+                    <TableCell className="text-center">
+                      <RowTestButton
+                        t={t}
+                        model={model}
+                        retry={results[model]?.status === 'error'}
+                        disabled={running || counts.testing >= TEST_CONCURRENCY || results[model]?.status === 'testing'}
+                        onClick={() => testRow(model)}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -204,14 +251,31 @@ export default function ChannelTestDialog({ item, open, onClose, onFinished }) {
               {t('channelTest.stop')}
             </Button>
           ) : (
-            <Button disabled={selected.length === 0} onClick={start}>
-              <Play className="size-4" />
-              {t('channelTest.start')}
-            </Button>
+            <>
+              {failedModels.length > 0 && (
+                <Button variant="outline" disabled={busy} onClick={() => runBatch(failedModels, false)}>
+                  <RotateCcw className="size-4" />
+                  {t('channelTest.retryFailed', { count: failedModels.length })}
+                </Button>
+              )}
+              <Button disabled={selected.length === 0 || busy} onClick={start}>
+                <Play className="size-4" />
+                {t('channelTest.start')}
+              </Button>
+            </>
           )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function RowTestButton({ t, model, retry, disabled, onClick }) {
+  const label = t(retry ? 'channelTest.retry' : 'channelTest.testOne', { model });
+  return (
+    <Button variant="ghost" size="icon" className="size-7" aria-label={label} title={label} disabled={disabled} onClick={onClick}>
+      {retry ? <RotateCcw className="size-4" /> : <Play className="size-4" />}
+    </Button>
   );
 }
 
@@ -262,6 +326,13 @@ function ResultCell({ t, result }) {
 
 const resultShape = PropTypes.shape({ status: PropTypes.string, time: PropTypes.number, message: PropTypes.string });
 
+RowTestButton.propTypes = {
+  t: PropTypes.func.isRequired,
+  model: PropTypes.string.isRequired,
+  retry: PropTypes.bool,
+  disabled: PropTypes.bool,
+  onClick: PropTypes.func.isRequired
+};
 StatusCell.propTypes = { t: PropTypes.func.isRequired, result: resultShape };
 ResultCell.propTypes = { t: PropTypes.func.isRequired, result: resultShape };
 

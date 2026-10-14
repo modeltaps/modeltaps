@@ -1107,7 +1107,11 @@
     "failed": "Failed",
     "summary": "{{success}} passed, {{failed}} failed",
     "stopped": "Stopped: {{success}} passed, {{failed}} failed",
-    "seconds": "{{time}}s"
+    "seconds": "{{time}}s",
+    "colAction": "Action",
+    "testOne": "Test {{model}}",
+    "retry": "Retry {{model}}",
+    "retryFailed": "Retry failed ({{count}})"
   },
   "channelCheck": {
     "title": "Channel check",
