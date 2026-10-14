@@ -29,3 +29,12 @@ Portions of this software — in particular the web frontend (web/) and
 substantial backend components — are derived from these upstream projects.
 The frontend (web/) is periodically synced one-way from the done-hub
 upstream; the backend is fully forked and is never synced from upstream.
+
+This product also includes material from the following third-party
+projects, used under their original license terms:
+
+  - OpenAI Codex — Apache License, Version 2.0
+    Copyright 2025 OpenAI
+    https://github.com/openai/codex
+    The default Codex CLI system prompt embedded in
+    providers/codex/instructions.go is taken from this project.
