@@ -15,11 +15,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   models"): listed models are added to the built-in list, and a `-` prefix removes one.
 - A multi-model test dialog tests several models of a channel at once, with an optional
   endpoint override. Image, video and deep research models are not selected by default.
+- The multi-model test dialog can retry only the failed models and test a single row; a batch
+  cannot start while single-row tests are running.
+- The channel list API accepts `exact_model`, which matches a whole entry of a channel's model
+  list. Batch model removal uses it, so searching `gemini-2.5-flash` no longer lists every
+  `gemini-2.5-flash-*` channel and pushes the wanted ones past the first 100 results.
 
 ### Changed
 
 - A manual channel test no longer disables the channel when it fails; the scheduled test of
   all channels still does. Only tests of the channel's test model update its response time.
+- **The channel check is rewritten.** It now checks one model per request at
+  `GET /api/channel/check/:id?model=` (admin only); the dialog runs two models at a time, warns
+  that each model sends up to five real requests to the upstream, and asks before starting. The
+  checks are a random arithmetic challenge instead of "hi", reading digits from a locally
+  rendered image, a JSON schema answer, two parallel tool calls and a relay hint. Each result is
+  passed, warning, failed or not applicable, and only a failed basic check fails a model. Checks
+  that a request conversion makes meaningless (response_format on channels converted to Claude,
+  the invalid-role probe on Claude and Gemini conversions) are marked not applicable instead of
+  failed, and upstream errors are grouped into categories such as authentication, quota or rate
+  limit. Results are returned as stable codes and translated in the web console. The SSE endpoint
+  `POST /api/sse/channel/check` is removed; scripts calling it must switch to the new endpoint.
 
 ### Fixed
 
@@ -31,6 +47,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (also after a retry on a passthrough channel), and stream chat chunks on Codex channels.
 - Channel tests for those models use the Responses API, matching real traffic.
 - Adding keys while editing a channel tag no longer silently drops the new channels.
+- The channel check applies the channel's model mapping and `#` suffix, uses the Responses API
+  for Responses-only models like real traffic does, and masks upstream URLs and keys in errors.
+  A provider panic during a check no longer crashes the server, and a closed dialog no longer
+  leaves check goroutines blocked.
+- The image check no longer needs a server address reachable from the internet, and the public
+  `GET /api/image/:id` endpoint it relied on is removed: anyone could add access records to a
+  running check through it without signing in.
 
 ## [0.1.1] - 2026-10-10
 
