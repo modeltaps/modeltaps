@@ -47,3 +47,14 @@ export async function runWithConcurrency(items, limit, worker, isStopped) {
   });
   await Promise.all(runners);
 }
+
+const TEST_FAILED_CODES = ['channel_test_failed', 'channel_test_failed_disabled'];
+
+// The text of a failed test. The status column already says the test failed, so a coded test
+// failure shows only its reason, which is upstream text and stays untranslated. Other failures
+// (no test model, unknown channel) keep the message the API interceptor already translated.
+export function testFailureText(res, fallback) {
+  const reason = res?.params?.reason;
+  if (TEST_FAILED_CODES.includes(res?.code) && typeof reason === 'string' && reason) return reason;
+  return res?.message || fallback;
+}

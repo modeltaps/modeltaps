@@ -2,6 +2,7 @@ package model
 
 import (
 	"crypto/md5"
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"encoding/hex"
 	"errors"
@@ -44,7 +45,9 @@ func CheckTagTypeConsistency(tag string, channelType int, excludeID int) error {
 	}
 	for _, t := range types {
 		if t != channelType {
-			return fmt.Errorf("tag \"%s\" already contains channels of another type; channels of a different type cannot be added. Use the same type or a different tag name.", tag)
+			return common.NewAPIError(common.APICodeChannelTagTypeMismatch,
+				fmt.Sprintf("tag \"%s\" already contains channels of another type; channels of a different type cannot be added. Use the same type or a different tag name.", tag),
+				map[string]any{"tag": tag})
 		}
 	}
 	return nil

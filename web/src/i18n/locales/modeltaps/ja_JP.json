@@ -1155,5 +1155,25 @@
       "bad_request": "リクエストが非対応",
       "server_error": "上流サーバーエラー"
     }
+  },
+  "apiError": {
+    "rate_limit_exceeded": "リクエストが多すぎます。{{retry_after}} 秒後に再試行してください。",
+    "channel_test_succeeded": "テスト成功",
+    "channel_test_failed": "テスト失敗：{{reason}}",
+    "channel_test_failed_disabled": "テストに失敗したため、チャネルを無効にしました：{{reason}}",
+    "channel_no_test_model": "このチャネルにはテストできるモデルがありません。テストモデルを設定するか、チャットモデルを追加してください。",
+    "invalid_channel_id": "チャネル ID が無効です",
+    "channel_not_found": "チャネルが見つかりません",
+    "channel_key_required": "先にキーを入力してください",
+    "channel_provider_not_found": "このチャネルタイプはサポートされていません",
+    "channel_model_list_unsupported": "このチャネルタイプはモデル一覧を取得できません",
+    "channel_pricing_sync_unsupported": "このチャネルタイプには同期できる価格がありません",
+    "channel_ids_required": "チャネルを 1 つ以上選択してください",
+    "channel_user_group_required": "ユーザーグループを選択してください",
+    "channel_model_required": "モデルを入力してください",
+    "channel_tag_required": "タグが必要です",
+    "channel_tag_type_mismatch": "タグ「{{tag}}」には別のタイプのチャネルがあります。同じタイプにするか、別のタグを使ってください。",
+    "channel_tag_invalid_setting_type": "不明な設定タイプです",
+    "channel_tag_invalid_status": "不明なステータスです"
   }
 }

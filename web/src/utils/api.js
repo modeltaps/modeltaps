@@ -3,6 +3,7 @@ import axios from 'axios';
 import { store } from 'store/index';
 import { LOGIN } from 'store/actions';
 import { rewriteOrgUrl } from './orgScope';
+import { apiMessage, localizeApiMessage } from './apiError';
 import { clearChatSession } from 'views/panel/Playground/chat/chatPersistence';
 
 export const API = axios.create({
@@ -17,8 +18,13 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
+// Messages that carry a known code are translated here, so every call site that shows
+// res.data.message or error.message gets the UI language (see utils/apiError.js).
 API.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    localizeApiMessage(response.data);
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('user');
@@ -33,7 +39,7 @@ API.interceptors.response.use(
     }
 
     if (error.response?.data?.message) {
-      error.message = error.response.data.message;
+      error.message = apiMessage(error.response.data);
     }
 
     showError(error);

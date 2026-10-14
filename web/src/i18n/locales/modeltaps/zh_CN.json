@@ -1155,5 +1155,25 @@
       "bad_request": "请求不被支持",
       "server_error": "上游服务错误"
     }
+  },
+  "apiError": {
+    "rate_limit_exceeded": "请求过于频繁，请 {{retry_after}} 秒后重试。",
+    "channel_test_succeeded": "测试通过",
+    "channel_test_failed": "测试失败：{{reason}}",
+    "channel_test_failed_disabled": "测试失败，渠道已被禁用：{{reason}}",
+    "channel_no_test_model": "该渠道没有可测试的模型，请设置测试模型或添加对话模型。",
+    "invalid_channel_id": "渠道 ID 无效",
+    "channel_not_found": "渠道不存在",
+    "channel_key_required": "请先填写密钥",
+    "channel_provider_not_found": "不支持该渠道类型",
+    "channel_model_list_unsupported": "该渠道类型不支持获取模型列表",
+    "channel_pricing_sync_unsupported": "该渠道类型不提供可同步的价格",
+    "channel_ids_required": "请至少选择一个渠道",
+    "channel_user_group_required": "请选择用户分组",
+    "channel_model_required": "请填写模型",
+    "channel_tag_required": "缺少标签",
+    "channel_tag_type_mismatch": "标签「{{tag}}」下已有其他类型的渠道，请使用相同类型或换一个标签。",
+    "channel_tag_invalid_setting_type": "未知的设置类型",
+    "channel_tag_invalid_status": "未知的状态"
   }
 }

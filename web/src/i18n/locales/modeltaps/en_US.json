@@ -1219,5 +1219,25 @@
       "bad_request": "Request not supported",
       "server_error": "Upstream server error"
     }
+  },
+  "apiError": {
+    "rate_limit_exceeded": "Too many requests. Try again in {{retry_after}} seconds.",
+    "channel_test_succeeded": "Test passed",
+    "channel_test_failed": "Test failed: {{reason}}",
+    "channel_test_failed_disabled": "Test failed and the channel was disabled: {{reason}}",
+    "channel_no_test_model": "This channel has no model to test. Set a test model or add a chat model.",
+    "invalid_channel_id": "Invalid channel ID",
+    "channel_not_found": "Channel not found",
+    "channel_key_required": "Enter a key first",
+    "channel_provider_not_found": "This channel type is not supported",
+    "channel_model_list_unsupported": "This channel type cannot fetch a model list",
+    "channel_pricing_sync_unsupported": "This channel type does not provide prices to sync",
+    "channel_ids_required": "Select at least one channel",
+    "channel_user_group_required": "Choose a user group",
+    "channel_model_required": "Enter a model",
+    "channel_tag_required": "A tag is required",
+    "channel_tag_type_mismatch": "Tag \"{{tag}}\" already has channels of another type. Use the same type or a different tag.",
+    "channel_tag_invalid_setting_type": "Unknown setting type",
+    "channel_tag_invalid_status": "Unknown status"
   }
 }

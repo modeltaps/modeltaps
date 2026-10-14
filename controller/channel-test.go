@@ -109,7 +109,7 @@ func selectTestModel(channel *model.Channel, testModel string) (string, error) {
 	}
 	models := parseChannelModels(channel.Models)
 	if len(models) == 0 {
-		return "", errors.New("channel has no testable model configured")
+		return "", errNoTestModel()
 	}
 	chatModels := make([]string, 0, len(models))
 	for _, m := range models {
@@ -123,7 +123,11 @@ func selectTestModel(channel *model.Channel, testModel string) (string, error) {
 	if len(chatModels) > 0 {
 		return chatModels[0], nil
 	}
-	return "", errors.New("channel has no testable model configured")
+	return "", errNoTestModel()
+}
+
+func errNoTestModel() error {
+	return common.NewAPIError(common.APICodeChannelNoTestModel, "channel has no testable model configured", nil)
 }
 
 func testChannel(channel *model.Channel, testModel string, endpointType string) (openaiErr *types.OpenAIErrorWithStatusCode, err error) {
@@ -387,26 +391,17 @@ func getModelType(modelName string) string {
 func TestChannel(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, invalidChannelIDError())
 		return
 	}
 	channel, err := model.GetChannelById(id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, channelLookupError(err))
 		return
 	}
 	testModel, err := selectTestModel(channel, c.Query("model"))
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	tik := time.Now()
@@ -421,20 +416,26 @@ func TestChannel(c *gin.Context) {
 	// testChannel always returns a non-nil err together with a non-nil openaiErr.
 	success := err == nil
 	msg := "speed test succeeded"
+	code := common.APICodeChannelTestSucceeded
+	// The reason is upstream or transport text: it travels as a param and is shown as is.
+	var params map[string]any
 	if !success {
-		msg = fmt.Sprintf("speed test failed, reason: %s", utils.MaskSensitiveInfo(err.Error()))
+		reason := utils.MaskSensitiveInfo(err.Error())
+		code = common.APICodeChannelTestFailed
+		params = map[string]any{"reason": reason}
+		msg = fmt.Sprintf("speed test failed, reason: %s", reason)
 	} else if defaultModel, _ := selectTestModel(channel, ""); testModel == defaultModel {
 		// The list shows one response time per channel, measured with its test model. Testing
 		// other models (the multi-model test) must not overwrite it with their latency.
 		go channel.UpdateResponseTime(milliseconds)
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusOK, common.WithAPICode(gin.H{
 		"success": success,
 		"message": msg,
 		"time":    consumedTime,
 		"model":   baseModelName(testModel),
-	})
+	}, code, params))
 }
 
 var testAllChannelsLock sync.Mutex

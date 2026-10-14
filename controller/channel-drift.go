@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/modeltaps/modeltaps/common"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -141,7 +142,7 @@ func CheckModelDrift(c *gin.Context) {
 	if req.Id > 0 {
 		channel, err := model.GetChannelById(req.Id)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+			common.APIRespondWithError(c, http.StatusOK, channelLookupError(err))
 			return
 		}
 		result, err := CheckChannelModelDrift(channel)
@@ -172,13 +173,13 @@ func DismissNewModels(c *gin.Context) {
 		Id int `json:"id"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil || req.Id <= 0 {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Invalid channel ID"})
+		common.APIRespondWithError(c, http.StatusOK, invalidChannelIDError())
 		return
 	}
 
 	channel, err := model.GetChannelById(req.Id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+		common.APIRespondWithError(c, http.StatusOK, channelLookupError(err))
 		return
 	}
 	if err := channel.DismissNewModels(); err != nil {

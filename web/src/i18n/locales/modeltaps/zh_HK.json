@@ -1155,5 +1155,25 @@
       "bad_request": "請求不被支援",
       "server_error": "上游服務錯誤"
     }
+  },
+  "apiError": {
+    "rate_limit_exceeded": "請求過於頻繁，請 {{retry_after}} 秒後重試。",
+    "channel_test_succeeded": "測試通過",
+    "channel_test_failed": "測試失敗：{{reason}}",
+    "channel_test_failed_disabled": "測試失敗，渠道已被停用：{{reason}}",
+    "channel_no_test_model": "此渠道沒有可測試的模型，請設定測試模型或加入對話模型。",
+    "invalid_channel_id": "渠道 ID 無效",
+    "channel_not_found": "渠道不存在",
+    "channel_key_required": "請先填寫密鑰",
+    "channel_provider_not_found": "不支援此渠道類型",
+    "channel_model_list_unsupported": "此渠道類型不支援取得模型列表",
+    "channel_pricing_sync_unsupported": "此渠道類型不提供可同步的價格",
+    "channel_ids_required": "請至少選擇一個渠道",
+    "channel_user_group_required": "請選擇用戶分組",
+    "channel_model_required": "請填寫模型",
+    "channel_tag_required": "缺少標籤",
+    "channel_tag_type_mismatch": "標籤「{{tag}}」下已有其他類型的渠道，請使用相同類型或換一個標籤。",
+    "channel_tag_invalid_setting_type": "未知的設定類型",
+    "channel_tag_invalid_status": "未知的狀態"
   }
 }

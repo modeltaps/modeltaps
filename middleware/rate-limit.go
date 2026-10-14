@@ -119,7 +119,9 @@ func abortWithTooManyRequests(c *gin.Context, bucket rateLimitBucket, retryAfter
 				c.GetString(logger.RequestIdKey),
 			),
 			"type": "system_error",
-			"code": "rate_limit_exceeded",
+			"code": common.APICodeRateLimitExceeded,
+			// The web console builds its translated notice from params (see common/api_error.go).
+			"params": gin.H{"retry_after": retryAfterSeconds},
 		},
 	})
 	c.Abort()
