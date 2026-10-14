@@ -12,7 +12,8 @@ import {
   AlertTriangle,
   PlusCircle,
   KeyRound,
-  Box
+  Box,
+  Gauge
 } from 'lucide-react';
 
 import { renderSpend, timestamp2string } from 'utils/common';
@@ -213,6 +214,17 @@ function NewModelsBadge({ t, drift, onDismiss, dismissing }) {
   );
 }
 
+// Admin note under the channel name: one line, full text on hover. Empty renders nothing.
+export function ChannelRemark({ remark }) {
+  const text = (remark || '').trim();
+  if (!text) return null;
+  return (
+    <span className="max-w-[16rem] truncate text-xs text-muted-foreground" title={text}>
+      {text}
+    </span>
+  );
+}
+
 // Amber warning shown next to the channel name when the stored key is empty
 // (`row.key_status.configured === false`). Rows without `key_status` render nothing.
 export function KeyMissingBadge({ t, keyStatus }) {
@@ -264,6 +276,7 @@ export function getColumns({ t, handlers, testingIds, driftCheckingIds, dismissi
               <span className="max-w-[16rem] truncate font-medium" title={c.name}>
                 {c.name}
               </span>
+              <ChannelRemark remark={c.remark} />
               <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                 <span>{opt ? opt.text : t('common.unknown')}</span>
                 <KeyMissingBadge t={t} keyStatus={c.key_status} />
@@ -378,6 +391,11 @@ export function getColumns({ t, handlers, testingIds, driftCheckingIds, dismissi
             primary: true,
             disabled: testing,
             onClick: () => handlers.onTest(row.original)
+          },
+          {
+            label: t('channelTest.action'),
+            icon: Gauge,
+            onClick: () => handlers.onMultiTest(row.original)
           },
           {
             label: t('common.edit'),

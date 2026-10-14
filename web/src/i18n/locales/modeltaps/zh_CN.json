@@ -791,7 +791,9 @@
       "pluginParams": "插件参数",
       "version": "版本号",
       "region": "位置/区域",
-      "projectIdOptional": "Project ID（可选）"
+      "projectIdOptional": "Project ID（可选）",
+      "remark": "备注",
+      "need2response_models": "Chat 转 Responses 模型"
     },
     "prompt": {
       "type": "请选择渠道类型",
@@ -838,7 +840,9 @@
       "claudeOauth": "请输入 access_token（sk-ant-sid01-xxx）或完整的 OAuth2 凭证 JSON，也可点击下方\"OAuth 授权\"按钮自动获取",
       "gcpProjectId": "请输入 Google Cloud Project ID，例如：my-project-123",
       "projectIdOptional": "可选，留空将自动检测或随机生成。例如：my-project-123",
-      "vertexExpressKey": "请输入 API Key（从 Google Cloud Console 获取）"
+      "vertexExpressKey": "请输入 API Key（从 Google Cloud Console 获取）",
+      "remark": "给管理员看的备注，例如密钥来源、到期时间。每个渠道单独保存，不随标签分组同步。",
+      "need2response_models": "一行一个模型名（也可以用逗号分隔）。这些模型的 chat/completions 请求会改走 Responses 接口，再转换回 chat 格式。填写的模型会加到内置列表（o1-pro、o3-pro、o3 / o4-mini deep research、codex-mini-latest）上；在模型名前加 - 表示本渠道不对该模型做转换，适用于上游在 chat/completions 上就能提供该模型的情况。留空则使用内置列表。"
     },
     "fetchModelsFrom": "从{{source}}获取模型列表",
     "fetchModelsFromChannel": "从渠道获取模型列表",
@@ -1020,5 +1024,29 @@
       "webhookSecret": "WebHookSecret",
       "webhookSecretDesc": "回调验证密钥，不用填写，创建网关后会自动在stripe后台创建webhook并获取webhook密钥"
     }
+  },
+  "channelTest": {
+    "action": "多模型测试",
+    "title": "多模型测试",
+    "hint": "每个选中的模型都会向上游发一次真实请求。生图、视频和 deep research 类模型测试费用可能较高，默认不勾选。这里的测试失败不会禁用渠道，只有渠道的测速模型会更新响应时间。",
+    "endpointType": "端点类型",
+    "endpointAuto": "自动识别",
+    "selectAll": "全选",
+    "clear": "清空",
+    "invert": "反选",
+    "selected": "已选 {{count}} 个",
+    "start": "开始测试",
+    "stop": "停止",
+    "noModels": "该渠道未配置模型",
+    "colModel": "模型",
+    "colStatus": "状态",
+    "colResult": "结果",
+    "notTested": "未测试",
+    "testing": "测试中",
+    "passed": "成功",
+    "failed": "失败",
+    "summary": "成功 {{success}} 个，失败 {{failed}} 个",
+    "stopped": "已停止：成功 {{success}} 个，失败 {{failed}} 个",
+    "seconds": "{{time}} 秒"
   }
 }

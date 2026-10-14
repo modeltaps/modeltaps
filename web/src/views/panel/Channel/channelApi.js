@@ -119,6 +119,20 @@ export async function manageChannel(id, action, value) {
   }
 }
 
+// Tests one model of a channel (`GET /api/channel/test/:id`). endpointType forces the endpoint
+// (chat / response / embeddings / image); empty lets the backend infer it from the model name.
+// A manual test never disables the channel.
+export async function testChannelModel(id, model, endpointType) {
+  const params = { model };
+  if (endpointType) params.endpoint_type = endpointType;
+  try {
+    const res = await API.get(`/api/channel/test/${id}`, { params });
+    return res?.data ?? { success: false, message: '' };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+}
+
 // Fetches upstream provider models for the check dialog (same endpoint as v1
 // `component/ChannelCheck.jsx` getProviderModels). Keeps every model the
 // provider reports, including audio models, without vendor-prefix filtering.

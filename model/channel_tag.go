@@ -174,6 +174,10 @@ func UpdateChannelsTag(tag string, channel *Channel) error {
 		addChannels := make([]Channel, 0, len(addKeys))
 		for _, key := range addKeys {
 			addChannel := *channel
+			// The request body may carry a non-zero id; inserting with it collides on
+			// the primary key and BatchInsert drops the row while reporting success.
+			addChannel.Id = 0
+			addChannel.Remark = ""
 			addChannel.Name = fmt.Sprintf("%s_%d", channel.Name, maxKey)
 			addChannel.Key = key
 			addChannel.Status = config.ChannelStatusEnabled
@@ -200,12 +204,13 @@ func UpdateChannelsTag(tag string, channel *Channel) error {
 	//  - type 为渠道的根本属性，由创建时决定；分组编辑弹窗不显示类型字段，故统一编辑不得改写 type，
 	//    否则会把代表渠道的类型悄悄覆盖到全组（类型不一致的分组尤其危险），违反「所见即所得」
 	//  - model_drift 为逐行漂移检测结果（运行时写回），不属共享配置，必须排除避免整组被代表行覆盖
+	//  - remark is a per-channel note, like name, so a tag edit must not overwrite it
 	err = tx.Model(&Channel{}).Where("tag = ?", tag).
 		Select("*").
 		Omit("id", "key", "type", "status", "priority", "weight", "cost_ratio",
 			"used_quota", "balance", "balance_updated_time",
 			"response_time", "created_time", "test_time", "name", "deleted_at",
-			"model_drift").
+			"model_drift", "remark").
 		Updates(channel).Error
 
 	if err != nil {

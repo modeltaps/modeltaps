@@ -40,6 +40,7 @@ const EMPTY = {
   key: '',
   base_url: '',
   other: '',
+  remark: '',
   proxy: '',
   test_model: '',
   models: '',
@@ -49,6 +50,7 @@ const EMPTY = {
   model_headers: [],
   header_override: [],
   custom_parameter: '',
+  need2response_models: '',
   plugin: {},
   only_chat: false,
   priority: 0,
@@ -371,6 +373,7 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
         key: '',
         base_url: data.base_url ?? '',
         other: data.other ?? '',
+        remark: data.remark ?? '',
         proxy: data.proxy ?? '',
         test_model: data.test_model ?? '',
         models: data.models ?? '',
@@ -380,6 +383,7 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
         model_headers: headers,
         header_override: overrideHeaders,
         custom_parameter: custom,
+        need2response_models: data.need2response_models ?? '',
         plugin: data.plugin && typeof data.plugin === 'object' ? data.plugin : {},
         only_chat: !!data.only_chat,
         priority: data.priority ?? 0,
@@ -568,6 +572,14 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
         <TabsContent value="basic" className="space-y-5">
           <FormField id="channel-name" label={t('channel_index.name')} required error={errors.name}>
             <Input id="channel-name" {...register('name')} />
+          </FormField>
+
+          <FormField
+            id="channel-remark"
+            label={configText(t, defaultConfig.inputLabel.remark)}
+            hint={configText(t, defaultConfig.prompt.remark)}
+          >
+            <Textarea id="channel-remark" rows={2} {...register('remark')} />
           </FormField>
 
           <FormField id="channel-type" label={t('channel_index.type')} required>
@@ -762,6 +774,20 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
 
           <FormField id="channel-disabled-stream" label={configText(t, defaultConfig.inputLabel.disabled_stream)} hint={configText(t, defaultConfig.prompt.disabled_stream)}>
             <Textarea id="channel-disabled-stream" rows={2} disabled={hasTag} placeholder="gpt-4o, o1-mini" {...register('disabled_stream')} />
+          </FormField>
+
+          <FormField
+            id="channel-need2response-models"
+            label={configText(t, defaultConfig.inputLabel.need2response_models)}
+            help={configText(t, defaultConfig.prompt.need2response_models)}
+          >
+            <Textarea
+              id="channel-need2response-models"
+              rows={3}
+              className="font-mono text-xs"
+              placeholder={'gpt-5-pro\n-o3-pro'}
+              {...register('need2response_models')}
+            />
           </FormField>
 
           <FormField id="channel-test-model" label={t('channel_index.testModel')} hint={configText(t, defaultConfig.prompt.test_model)}>
