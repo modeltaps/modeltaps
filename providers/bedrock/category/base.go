@@ -85,11 +85,14 @@ var awsModelCanCrossRegionMap = map[string]map[string]string{
 	"anthropic.claude-sonnet-4-5-20250929-v1:0": {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
 	"anthropic.claude-sonnet-4-6":               {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
 	"anthropic.claude-haiku-4-5-20251001-v1:0":  {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
-	"anthropic.claude-opus-4-5-20251101-v1:0":   {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
-	"anthropic.claude-opus-4-6-v1":              {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
-	"anthropic.claude-opus-4-7":                 {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
-	"anthropic.claude-opus-4-8":                 {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
-	"anthropic.claude-opus-5":                   {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
+	// haiku-5-5: like haiku-4-5 it cannot be called in-region by bare id, so every region needs a
+	// profile. Its US geo profile accepts Canadian source regions.
+	"anthropic.claude-haiku-5-5":              {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
+	"anthropic.claude-opus-4-5-20251101-v1:0": {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
+	"anthropic.claude-opus-4-6-v1":            {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
+	"anthropic.claude-opus-4-7":               {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
+	"anthropic.claude-opus-4-8":               {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
+	"anthropic.claude-opus-5":                 {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
 	// opus-5-5 has the widest geo coverage (us/eu/au/jp); AP still maps to global. as above.
 	"anthropic.claude-opus-5-5": {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
 	// sonnet-5: no geo profile in the EU, global only (AWS model card 2026-06-30).
