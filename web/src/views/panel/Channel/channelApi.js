@@ -188,37 +188,16 @@ export async function fetchUpstreamModelList(channel) {
   return [...new Set(data)];
 }
 
-// Streams per-model availability results from `POST /api/sse/channel/check`.
-// Parses the accumulated SSE text on each progress tick and invokes
-// `onResult(data)` for every `result` event (same contract as v1).
-// `signal` (AbortSignal) cancels the in-flight stream, e.g. on dialog close.
-export async function checkChannelModels(id, models, onResult, signal) {
-  const readEventText = (progressEvent) =>
-    progressEvent?.event?.target?.response ?? progressEvent?.event?.currentTarget?.response ?? progressEvent?.currentTarget?.response ?? '';
-
-  const res = await API.post(
-    '/api/sse/channel/check',
-    { id, models },
-    {
-      responseType: 'text',
-      signal,
-      onDownloadProgress: (progressEvent) => {
-        const text = readEventText(progressEvent);
-        text.split('\n').forEach((line) => {
-          if (line.trim() === '' || !line.startsWith('data:')) return;
-          try {
-            const eventData = JSON.parse(line.slice(5));
-            if (eventData.type === 'result') onResult(eventData.data);
-          } catch (e) {
-            // ignore partial/invalid SSE lines
-          }
-        });
-      }
-    }
-  );
-  if (res.status !== 200) {
-    throw new Error(res.data?.message || 'check failed');
+// Runs every check against one model of a channel (`GET /api/channel/check/:id?model=`) and
+// resolves to its result `{ model, status, items }`. Each call sends up to five real requests to
+// the upstream. Rejects with the server message when the check could not run.
+export async function checkChannelModel(id, model) {
+  const res = await API.get(`/api/channel/check/${id}`, { params: { model } });
+  const { success, message, data } = res?.data || {};
+  if (!success || !data) {
+    throw new Error(message || 'check failed');
   }
+  return data;
 }
 
 // Triggers a manual model-drift check (MODEL-1b `POST /api/channel/check_drift`,

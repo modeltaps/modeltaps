@@ -36,7 +36,6 @@ func SetApiRouter(router *gin.Engine) {
 	apiRouter.POST("/telegram/:token", middleware.Telegram(), controller.TelegramBotWebHook)
 	apiRouter.Use(middleware.GlobalAPIRateLimit())
 	{
-		apiRouter.GET("/image/:id", controller.CheckImg)
 		apiRouter.GET("/brand-icon/domain/:domain", controller.GetBrandIconByDomain)
 		apiRouter.HEAD("/brand-icon/domain/:domain", controller.GetBrandIconByDomain)
 		apiRouter.GET("/brand-icon/upload/:assetId", controller.GetBrandIconUpload)
@@ -236,6 +235,7 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.GET("/:id", controller.GetChannel)
 			channelRoute.GET("/test", controller.TestAllChannels)
 			channelRoute.GET("/test/:id", controller.TestChannel)
+			channelRoute.GET("/check/:id", controller.CheckChannel)
 			channelRoute.GET("/update_balance", controller.UpdateAllChannelsBalance)
 			channelRoute.GET("/update_balance/:id", controller.UpdateChannelBalance)
 			channelRoute.POST("/", controller.AddChannel)
@@ -402,12 +402,6 @@ func SetApiRouter(router *gin.Engine) {
 			organizationAdminRoute.PUT("/:id/quota", controller.AdminChangeOrganizationQuota)
 			organizationAdminRoute.DELETE("/:id", controller.AdminDissolveOrganization)
 		}
-	}
-
-	sseRouter := router.Group("/api/sse")
-	sseRouter.Use(middleware.GlobalAPIRateLimit())
-	{
-		sseRouter.POST("/channel/check", middleware.AdminAuth(), controller.CheckChannel)
 	}
 
 }
