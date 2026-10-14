@@ -812,7 +812,9 @@
       "pluginParams": "Plugin parameters",
       "version": "Version",
       "region": "Location/region",
-      "projectIdOptional": "Project ID (optional)"
+      "projectIdOptional": "Project ID (optional)",
+      "remark": "Remark",
+      "need2response_models": "Chat-to-Responses models"
     },
     "prompt": {
       "type": "Select a channel type",
@@ -859,7 +861,9 @@
       "claudeOauth": "Enter an access_token (sk-ant-sid01-xxx) or the full OAuth2 credential JSON, or click \"OAuth authorization\" below to fetch it automatically",
       "gcpProjectId": "Enter the Google Cloud project ID, e.g. my-project-123",
       "projectIdOptional": "Optional. Leave blank to detect it automatically or generate one at random, e.g. my-project-123",
-      "vertexExpressKey": "Enter an API key (from the Google Cloud Console)"
+      "vertexExpressKey": "Enter an API key (from the Google Cloud Console)",
+      "remark": "A note for admins, such as where the key comes from or when it expires. Kept per channel and not shared across a tag.",
+      "need2response_models": "One model per line (commas also work). Chat completions requests for these models are sent to the Responses API and converted back. Entries are added to the built-in list (o1-pro, o3-pro, o3 / o4-mini deep research, codex-mini-latest); put - before a model to stop converting it on this channel, for upstreams that serve it on chat completions. Leave empty to use the built-in list."
     },
     "fetchModelsFrom": "Fetch models from {{source}}",
     "fetchModelsFromChannel": "Fetch models from channel",
@@ -1080,5 +1084,29 @@
     "lyrics": "Lyrics",
     "response": "Response body",
     "video": "Video"
+  },
+  "channelTest": {
+    "action": "Multi-model test",
+    "title": "Multi-model test",
+    "hint": "Each selected model sends one real request to the upstream. Image, video and deep research models can be costly to test, so they are not selected by default. A failed test here never disables the channel, and only the channel test model updates its response time.",
+    "endpointType": "Endpoint",
+    "endpointAuto": "Auto detect",
+    "selectAll": "Select all",
+    "clear": "Clear",
+    "invert": "Invert",
+    "selected": "{{count}} selected",
+    "start": "Start test",
+    "stop": "Stop",
+    "noModels": "This channel has no models configured",
+    "colModel": "Model",
+    "colStatus": "Status",
+    "colResult": "Result",
+    "notTested": "Not tested",
+    "testing": "Testing",
+    "passed": "Passed",
+    "failed": "Failed",
+    "summary": "{{success}} passed, {{failed}} failed",
+    "stopped": "Stopped: {{success}} passed, {{failed}} failed",
+    "seconds": "{{time}}s"
   }
 }

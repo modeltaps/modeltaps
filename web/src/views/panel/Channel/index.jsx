@@ -28,6 +28,7 @@ import { getColumns } from './channelColumns';
 import { buildChannelFilterFields, CHANNEL_FILTER_PARAM_KEYS } from './channelFilterFields';
 import ChannelSheet from './ChannelSheet';
 import ChannelCheckDialog from './ChannelCheckDialog';
+import ChannelTestDialog from './ChannelTestDialog';
 import ConfirmDialog from './ConfirmDialog';
 import TagRow, { TagCard } from './TagRow';
 import BatchModal from './BatchModal';
@@ -97,6 +98,7 @@ export default function Channel() {
   const [sheetTab, setSheetTab] = useState('basic');
   const [batchOpen, setBatchOpen] = useState(false);
   const [checkItem, setCheckItem] = useState(null);
+  const [testItem, setTestItem] = useState(null);
   const [editId, setEditId] = useState(linkedChannelId);
   const [confirm, setConfirm] = useState({ open: false, title: '', content: '', onConfirm: null });
 
@@ -237,6 +239,7 @@ export default function Channel() {
       success ? toast.success(t('userPage.operationSuccess')) : toast.error(message);
     },
     onCheck: (row) => setCheckItem(row),
+    onMultiTest: (row) => setTestItem(row),
     onCheckDrift: async (row) => {
       if (driftCheckingIds.has(row.id)) return; // 同一渠道检测进行中，忽略重复触发
       setDriftCheckingIds((prev) => new Set(prev).add(row.id));
@@ -537,6 +540,7 @@ export default function Channel() {
                       item={row.original}
                       colSpan={columns.length}
                       requestConfirm={requestConfirm}
+                      onMultiTest={setTestItem}
                       onRefresh={() => setRefreshFlag((f) => !f)}
                     />
                   ) : (
@@ -703,6 +707,13 @@ export default function Channel() {
         />
 
         <ChannelCheckDialog open={!!checkItem} item={checkItem} onClose={() => setCheckItem(null)} />
+
+        <ChannelTestDialog
+          open={!!testItem}
+          item={testItem}
+          onClose={() => setTestItem(null)}
+          onFinished={() => setRefreshFlag((f) => !f)}
+        />
 
         <BatchModal open={batchOpen} onOpenChange={setBatchOpen} groupOptions={groupOptions} modelOptions={modelOptions} />
 

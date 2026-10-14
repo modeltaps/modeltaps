@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/notify"
@@ -125,7 +126,7 @@ func selectTestModel(channel *model.Channel, testModel string) (string, error) {
 	return "", errors.New("channel has no testable model configured")
 }
 
-func testChannel(channel *model.Channel, testModel string) (openaiErr *types.OpenAIErrorWithStatusCode, err error) {
+func testChannel(channel *model.Channel, testModel string, endpointType string) (openaiErr *types.OpenAIErrorWithStatusCode, err error) {
 	testModel, err = selectTestModel(channel, testModel)
 	if err != nil {
 		return nil, err
@@ -140,7 +141,7 @@ func testChannel(channel *model.Channel, testModel string) (openaiErr *types.Ope
 		testModel = parts[0]
 	}
 
-	channelType := getModelType(testModel)
+	channelType := resolveTestChannelType(endpointType, testModel)
 	channel.SetProxy()
 
 	var url string
@@ -229,6 +230,15 @@ func testChannel(channel *model.Channel, testModel string) (openaiErr *types.Ope
 
 		response, openAIErrorWithStatusCode = responseProvider.CreateResponses(testRequest)
 	case "chat":
+		// Mirror the relay: chat requests for Responses-only models go through the
+		// Responses API, so test them the same way.
+		if channel.ShouldUseResponsesForModel(newModelName) {
+			if responseProvider, ok := provider.(providers_base.ResponsesInterface); ok {
+				response, openAIErrorWithStatusCode = createChatResponsesForTest(responseProvider, newModelName)
+				break
+			}
+		}
+
 		// 仅实现 Claude 原生 Messages 接口的渠道（如 Bedrock Messages）不满足 ChatInterface，
 		// 回退到 Claude 接口测速。
 		if chatProvider, ok := provider.(providers_base.ChatInterface); ok {
@@ -272,6 +282,75 @@ func testChannel(channel *model.Channel, testModel string) (openaiErr *types.Ope
 	logger.SysLog(fmt.Sprintf("test channel %s : %s response: %s", channel.Name, newModelName, string(jsonBytes)))
 
 	return nil, nil
+}
+
+// createChatResponsesForTest tests a model over the chat-to-Responses path the
+// relay uses. Pro and deep-research models can exceed the test timeout when run
+// to completion, so it streams and treats the first non-empty event as success.
+func createChatResponsesForTest(responseProvider providers_base.ResponsesInterface, modelName string) (any, *types.OpenAIErrorWithStatusCode) {
+	chatRequest := &types.ChatCompletionRequest{
+		Messages: []types.ChatCompletionMessage{
+			{
+				Role:    "user",
+				Content: "You just need to output 'hi' next.",
+			},
+		},
+		Model:  modelName,
+		Stream: true,
+	}
+	streamRequest := chatRequest.ToResponsesRequest()
+	streamRequest.Model = modelName
+	streamRequest.ConvertChat = true
+
+	stream, streamErr := responseProvider.CreateResponsesStream(streamRequest)
+	if streamErr != nil {
+		return nil, streamErr
+	}
+	defer stream.Close()
+
+	dataChan, errChan := stream.Recv()
+	timeout := time.NewTimer(15 * time.Second)
+	defer timeout.Stop()
+
+	for {
+		select {
+		case data, ok := <-dataChan:
+			if !ok {
+				return nil, common.StringErrorWrapperLocal("responses stream returned no data", "no_response", http.StatusInternalServerError)
+			}
+			if strings.TrimSpace(data) == "" {
+				continue
+			}
+			return map[string]any{
+				"model": modelName,
+				"mode":  "chat_to_responses_stream",
+				"ok":    true,
+			}, nil
+		case readErr, ok := <-errChan:
+			if !ok {
+				// A closed channel is always ready; nil it so select blocks on the others.
+				errChan = nil
+				continue
+			}
+			if readErr != nil {
+				return nil, common.ErrorWrapperLocal(readErr, "stream_read_failed", http.StatusInternalServerError)
+			}
+		case <-timeout.C:
+			return nil, common.StringErrorWrapperLocal("responses stream test timed out", "stream_timeout", http.StatusGatewayTimeout)
+		}
+	}
+}
+
+// resolveTestChannelType picks the endpoint a test request uses. An explicit
+// endpoint_type (chat, embeddings, image, response) wins, for models whose name
+// does not tell the endpoint; anything else falls back to the model name.
+func resolveTestChannelType(endpointType string, testModel string) string {
+	switch endpointType = strings.TrimSpace(endpointType); endpointType {
+	case "chat", "embeddings", "image", "response":
+		return endpointType
+	default:
+		return getModelType(testModel)
+	}
 }
 
 func getModelType(modelName string) string {
@@ -331,25 +410,22 @@ func TestChannel(c *gin.Context) {
 		return
 	}
 	tik := time.Now()
-	openaiErr, err := testChannel(channel, testModel)
+	_, err = testChannel(channel, testModel, c.Query("endpoint_type"))
 	tok := time.Now()
 	milliseconds := tok.Sub(tik).Milliseconds()
 	consumedTime := float64(milliseconds) / 1000.0
 
-	success := false
-	msg := ""
-	if openaiErr != nil {
-		if ShouldDisableChannel(channel.Type, openaiErr) {
-			msg = fmt.Sprintf("speed test failed, channel disabled, reason: %s", utils.MaskSensitiveInfo(err.Error()))
-			DisableChannel(channel.Id, channel.Name, testModel, err.Error(), false)
-		} else {
-			msg = fmt.Sprintf("speed test failed, reason: %s", utils.MaskSensitiveInfo(err.Error()))
-		}
-	} else if err != nil {
+	// A manual test is a diagnostic and never disables the channel: when several models are
+	// tested one by one, a single failing model must not take the whole channel down. The
+	// scheduled test of all channels still disables channels as before.
+	// testChannel always returns a non-nil err together with a non-nil openaiErr.
+	success := err == nil
+	msg := "speed test succeeded"
+	if !success {
 		msg = fmt.Sprintf("speed test failed, reason: %s", utils.MaskSensitiveInfo(err.Error()))
-	} else {
-		success = true
-		msg = "speed test succeeded"
+	} else if defaultModel, _ := selectTestModel(channel, ""); testModel == defaultModel {
+		// The list shows one response time per channel, measured with its test model. Testing
+		// other models (the multi-model test) must not overwrite it with their latency.
 		go channel.UpdateResponseTime(milliseconds)
 	}
 
@@ -378,7 +454,7 @@ func testChannelWithTimeout(channel *model.Channel, testModel string, timeout ti
 	}
 	ch := make(chan result, 1)
 	go func() {
-		openaiErr, err := testChannel(channel, testModel)
+		openaiErr, err := testChannel(channel, testModel, "")
 		ch <- result{openaiErr, err}
 	}()
 	timer := time.NewTimer(timeout)
