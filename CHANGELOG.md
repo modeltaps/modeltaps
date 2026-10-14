@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Chat requests sent to Claude channels (Anthropic, Claude Code, Bedrock and Vertex AI) now treat
+  `developer` messages as system instructions instead of sending them as assistant messages.
+  Several system messages are joined with line breaks, and messages with an unknown role are sent
+  as user messages.
+
 ## [0.1.1] - 2026-10-10
 
 ### Changed
