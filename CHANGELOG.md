@@ -78,6 +78,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead of raw parser and database text.
 - Binding LINUX DO while signed in with an access token no longer crashes the request, and an
   account already linked to LINUX DO must be unlinked before it can be linked to another one.
+- AWS Bedrock sent `claude-haiku-5-5` by its bare model id, which AWS rejects because the model
+  is only available through inference profiles. It now uses the `us.` profile in US and Canadian
+  regions, `eu.` in EU regions and `global.` elsewhere.
 
 ### Security
 
@@ -122,6 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `GLOBAL_RATE_LIMIT_WHITELIST`, and local loopback requests are not counted.
 - Channel auto-disable logs and notifications now name the model that triggered the disable.
 - AWS Bedrock supports `claude-haiku-5-5`, with a default price.
+- New AWS Bedrock channels are prefilled with the current Claude models (Sonnet 4.5 to Fable
+  5.1) instead of only the Claude 2 and 3 models.
 
 ### Fixed
 
