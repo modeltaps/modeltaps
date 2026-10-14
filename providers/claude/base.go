@@ -184,11 +184,13 @@ func stopReasonClaude2OpenAI(reason string) string {
 	}
 }
 
+// convertRole maps an OpenAI role to a Claude role. Claude only has user and assistant;
+// system and developer messages are lifted into the system field before this is called.
+// Any other role becomes user: mapping it to assistant would present client input as the
+// model's own words and could produce two adjacent assistant messages.
 func convertRole(role string) string {
-	switch role {
-	case types.ChatMessageRoleUser, types.ChatMessageRoleTool, types.ChatMessageRoleFunction:
-		return types.ChatMessageRoleUser
-	default:
+	if role == types.ChatMessageRoleAssistant {
 		return types.ChatMessageRoleAssistant
 	}
+	return types.ChatMessageRoleUser
 }

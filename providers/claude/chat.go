@@ -171,13 +171,18 @@ func ConvertFromChatOpenai(request *types.ChatCompletionRequest) (*ClaudeRequest
 
 	// 处理 messages
 	for index, msg := range request.Messages {
-		if isThink && index == mgsLen && (msg.Role == types.ChatMessageRoleAssistant || msg.Role == types.ChatMessageRoleSystem) {
+		if isThink && index == mgsLen && (msg.Role == types.ChatMessageRoleAssistant || msg.IsSystemRole()) {
 			msg.Role = types.ChatMessageRoleUser
 		}
 
-		if msg.Role == types.ChatMessageRoleSystem {
+		// developer is the newer OpenAI name for system; both go into the Claude system field
+		if msg.IsSystemRole() {
 			// 如果没有预设的 system 字段，从 messages 中提取
 			if request.System == nil {
+				// Separate multiple system messages so their contents do not run together
+				if systemMessage != "" {
+					systemMessage += "\n"
+				}
 				systemMessage += msg.StringContent()
 			}
 			continue

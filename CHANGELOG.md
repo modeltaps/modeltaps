@@ -36,6 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   failed, and upstream errors are grouped into categories such as authentication, quota or rate
   limit. Results are returned as stable codes and translated in the web console. The SSE endpoint
   `POST /api/sse/channel/check` is removed; scripts calling it must switch to the new endpoint.
+- Codex channels now report Codex CLI version 0.159.0 (was 0.144.1) in the `version` header and
+  the default User-Agent, since the upstream rejects new models for clients below a minimum
+  version. A channel can set its own version with the new **Client version** plugin setting
+  (`codex.client_version`); a value that is not a version such as `0.159.0` or
+  `0.158.0-alpha.2` is logged and the default is used.
 
 ### Fixed
 
@@ -54,6 +59,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The image check no longer needs a server address reachable from the internet, and the public
   `GET /api/image/:id` endpoint it relied on is removed: anyone could add access records to a
   running check through it without signing in.
+- Chat requests sent to Claude channels (Anthropic, Claude Code, Bedrock and Vertex AI) now treat
+  `developer` messages as system instructions instead of sending them as assistant messages.
+  Several system messages are joined with line breaks, and messages with an unknown role are sent
+  as user messages.
+- Codex channels with a custom `user_agent` in their settings no longer drop the `version` and
+  `originator` headers; the custom value now replaces only the User-Agent.
 
 ## [0.1.1] - 2026-10-10
 
