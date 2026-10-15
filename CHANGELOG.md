@@ -26,6 +26,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Traditional Chinese, Japanese) and falls back to `message` for anything else. The first codes
   cover channel tests (the upstream reason stays as is), rate limiting and common channel and
   channel tag validation errors.
+- The built-in default price table covers current models at their official list prices,
+  including cache read and write prices and long-context tiers: OpenAI GPT-6 (Astra, 6.1 Sol, Sol,
+  Luna), GPT-5.x and the Codex models, GPT-4.1, o-series; Anthropic Claude Fable 5 / 5.1, Opus,
+  Sonnet and Haiku 4.x / 5.x; Gemini 4 Argon, 3.x and 2.5 (with audio input and image output
+  prices); and DeepSeek Flash / V4 Pro. Model names that Antigravity maps to Claude or Gemini
+  models use the target model's price. Codex, Claude Code, Gemini CLI, Antigravity, Bedrock and
+  Vertex AI channels bill these models at the same prices, since prices are keyed by model name.
+  New deployments no longer reject these models under the default `unpriced_model_policy=block`;
+  existing deployments get the new entries on restart with `auto_price_updates` on, or through
+  `Update Prices` with `/api/prices?type=default` as the price source.
 - Codex channels can sign in with a device code, the default in the authorization dialog: the
   console shows a one-time code to enter at `auth.openai.com/codex/device` from any browser,
   so nothing has to reach `localhost:1455`. The first use needs device code login turned on in
@@ -53,6 +63,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   version. A channel can set its own version with the new **Client version** plugin setting
   (`codex.client_version`); a value that is not a version such as `0.159.0` or
   `0.158.0-alpha.2` is logged and the default is used.
+- **Codex channels no longer add the Codex CLI system prompt to requests without
+  instructions.** Chat requests and `/v1/responses` requests that bring no `instructions` now
+  get the one-line "You are a helpful assistant." instead of the 2025 coding-agent prompt of
+  about 24,000 characters; instructions sent by the client are passed through unchanged. On a
+  real Codex channel this bills about 5,000 fewer input tokens per request (a one-word chat
+  prompt went from 5,017 to 22 input tokens). The output style changes with it: answers no
+  longer follow the coding-agent conventions of that prompt, and tool calls start without a
+  preamble sentence. Clients that relied on that behavior should send their own instructions.
+- The default price of `gpt-4o` is the current official price ($2.50 / $10 per 1M tokens, cached
+  input $1.25) instead of the 2024-05-13 snapshot price. Built-in defaults never overwrite
+  existing price entries; update `gpt-4o` from `Update Prices` if needed.
 
 - The ClaudeCode and Codex paste dialogs explain what to copy for each provider (the Codex
   error page's address, the Claude authentication code), check the pasted text as it is typed
@@ -62,6 +83,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Chat requests on Codex channels returned no tool calls, streaming or not: function call
+  events were dropped and only the text was forwarded. They now return `tool_calls` with
+  `finish_reason: "tool_calls"`, and stream reasoning text as well.
+- Streamed chat answers converted from the Responses API end with `finish_reason:
+  "tool_calls"` instead of `"stop"` when the model called a function, as non-streamed answers
+  already did.
+- `/v1/responses` on Codex channels accepts a string `input`, as the public Responses API does;
+  the upstream rejected it with 400 "Input must be a list".
 - The ClaudeCode and Codex code exchange checks that a pasted callback belongs to the login
   session, and no longer ends the session when the paste is wrong or the code is rejected, so
   the admin can paste again or reopen the same authorization link within its 10 minutes. Only
