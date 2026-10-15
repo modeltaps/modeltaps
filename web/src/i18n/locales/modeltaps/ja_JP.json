@@ -1175,6 +1175,67 @@
     "channel_tag_required": "タグが必要です",
     "channel_tag_type_mismatch": "タグ「{{tag}}」には別のタイプのチャネルがあります。同じタイプにするか、別のタグを使ってください。",
     "channel_tag_invalid_setting_type": "不明な設定タイプです",
-    "channel_tag_invalid_status": "不明なステータスです"
+    "channel_tag_invalid_status": "不明なステータスです",
+    "channel_oauth_session_expired": "このログインは期限切れです。やり直してください。",
+    "channel_oauth_state_mismatch": "このコールバックは以前のログイン試行のものです。このダイアログから開いたページを使ってください。",
+    "channel_oauth_access_denied": "アクセスが許可されませんでした。",
+    "channel_oauth_invalid_input": "貼り付けた内容に認可コードが見つかりません。",
+    "channel_oauth_code_rejected": "この認可コードは使用済みか期限切れです。認可ページを開き直し、新しい結果を貼り付けてください。",
+    "channel_oauth_exchange_failed": "認可コードを認証情報に交換できませんでした。",
+    "channel_oauth_device_auth_disabled": "OpenAI は現在デバイスコードによるログインを提供していません。「コールバック URL を貼り付け」タブを使ってください。",
+    "channel_oauth_device_code_expired": "承認される前にコードの有効期限が切れました。新しいコードを取得してください。",
+    "channel_oauth_device_auth_failed": "OpenAI がデバイスコードによるログインを拒否しました。"
+  },
+  "channelOAuth": {
+    "tip": {
+      "device": "ワンタイムのデバイスコードでサインインできます（推奨）。従来どおりコールバック URL を貼り付けることもできます。",
+      "code": "{{provider}} の認可ページを開きます。承認後、ページに表示されたコードをダイアログに貼り付けてください。"
+    },
+    "tabs": {
+      "device": "デバイスコード（推奨）",
+      "paste": "コールバック URL を貼り付け"
+    },
+    "device": {
+      "requesting": "デバイスコードを取得しています…",
+      "step1": "OpenAI のデバイスページを開き、ChatGPT アカウントでサインインします。",
+      "step2": "そこでこのワンタイムコードを入力します：",
+      "copyAndOpen": "コードをコピーしてデバイスページを開く",
+      "copyCode": "コードをコピー",
+      "codeCopied": "コードをコピーしました",
+      "waiting": "承認を待っています…コードの有効期限まで {{time}}",
+      "enableTip": "初めての場合は、ChatGPT の設定 → セキュリティでデバイスコードによるログインを有効にしてください。ワークスペースのアカウントでは、管理者がワークスペースの権限で有効にします。",
+      "phishingTip": "このコードは auth.openai.com でのみ、ここで開始したログインに限って入力してください。",
+      "retry": "新しいコードを取得",
+      "fallbackHint": "デバイスコードでのログインが使えない場合は「コールバック URL を貼り付け」タブを使ってください。"
+    },
+    "paste": {
+      "url": {
+        "step1": "認可ページを開き、{{provider}} アカウントでサインインします。",
+        "step2": "承認するとブラウザが localhost:1455 に移動し、「このサイトにアクセスできません」などのエラーが表示されます。これは想定どおりです。",
+        "step3": "アドレスバーのアドレス全体をコピーして下に貼り付けます。",
+        "mockError": "このサイトにアクセスできません",
+        "mockCaption": "code と state を含むアドレス全体をコピー",
+        "placeholder": "http://localhost:1455/auth/callback?code=…&state=…"
+      },
+      "code": {
+        "step1": "認可ページを開き、{{provider}} アカウントでサインインします。",
+        "step2": "承認すると、ページに認証コード（Authentication Code）が表示されます。",
+        "step3": "「Copy Code」をクリックして下に貼り付けます。",
+        "mockTitle": "Authentication Code",
+        "mockCopy": "Copy Code",
+        "mockCaption": "# 以降も含めてコード全体をコピー",
+        "placeholder": "認証コードを貼り付け（xxxx#yyyy の形式）"
+      },
+      "status": {
+        "ok": "認可コードを認識しました",
+        "stateMismatch": "以前のログイン試行のものです。このダイアログから開いたページを使ってください。",
+        "denied": "アクセスが許可されませんでした：{{error}}",
+        "authLink": "これは認可リンクそのものです。開いて承認し、その後に表示される内容をコピーしてください。",
+        "invalid_url": "認可コードが見つかりません。承認後に表示されたアドレス全体を貼り付けてください。",
+        "invalid_code": "認証コードではないようです。"
+      },
+      "expiresTip": "このログインは {{minutes}} 分間有効です。認可コードは 1 回しか使えません。失敗した場合は認可ページを開き直してください。",
+      "restart": "やり直す"
+    }
   }
 }

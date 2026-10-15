@@ -1175,6 +1175,67 @@
     "channel_tag_required": "缺少标签",
     "channel_tag_type_mismatch": "标签「{{tag}}」下已有其他类型的渠道，请使用相同类型或换一个标签。",
     "channel_tag_invalid_setting_type": "未知的设置类型",
-    "channel_tag_invalid_status": "未知的状态"
+    "channel_tag_invalid_status": "未知的状态",
+    "channel_oauth_session_expired": "本次登录已过期，请重新开始。",
+    "channel_oauth_state_mismatch": "这个回调属于之前某次登录，请使用本弹窗打开的授权页面。",
+    "channel_oauth_access_denied": "对方没有授予访问权限。",
+    "channel_oauth_invalid_input": "粘贴的内容里没有找到授权码。",
+    "channel_oauth_code_rejected": "这个授权码已经用过或已过期。请重新打开授权页面，粘贴新的结果。",
+    "channel_oauth_exchange_failed": "用授权码换取凭证失败。",
+    "channel_oauth_device_auth_disabled": "OpenAI 目前不提供设备码登录，请使用「粘贴回调地址」。",
+    "channel_oauth_device_code_expired": "代码在授权前已过期，请重新获取。",
+    "channel_oauth_device_auth_failed": "OpenAI 拒绝了这次设备码登录。"
+  },
+  "channelOAuth": {
+    "tip": {
+      "device": "推荐用一次性设备码登录，也可以和以前一样粘贴回调地址。",
+      "code": "点击后打开 {{provider}} 授权页面。同意授权后，把页面上显示的授权码粘贴到弹窗里。"
+    },
+    "tabs": {
+      "device": "设备码登录（推荐）",
+      "paste": "粘贴回调地址"
+    },
+    "device": {
+      "requesting": "正在获取设备码…",
+      "step1": "打开 OpenAI 设备码页面，登录你的 ChatGPT 账号。",
+      "step2": "在页面上输入这个一次性代码：",
+      "copyAndOpen": "复制代码并打开设备码页面",
+      "copyCode": "复制代码",
+      "codeCopied": "代码已复制",
+      "waiting": "等待授权…代码将在 {{time}} 后过期",
+      "enableTip": "第一次使用？请先在 ChatGPT 设置 → 安全 中开启设备码登录。工作空间账号需要管理员在工作空间权限里开启。",
+      "phishingTip": "只在 auth.openai.com 上输入这个代码，并且只用于你在这里发起的登录。",
+      "retry": "重新获取代码",
+      "fallbackHint": "如果设备码登录不可用，请切换到「粘贴回调地址」。"
+    },
+    "paste": {
+      "url": {
+        "step1": "打开授权页面，登录你的 {{provider}} 账号。",
+        "step2": "同意授权后，浏览器会跳到 localhost:1455 并显示「无法访问此网站」之类的错误，这是正常的。",
+        "step3": "复制地址栏里的完整地址，粘贴到下面。",
+        "mockError": "无法访问此网站",
+        "mockCaption": "复制这一整段地址，包括 code 和 state",
+        "placeholder": "http://localhost:1455/auth/callback?code=…&state=…"
+      },
+      "code": {
+        "step1": "打开授权页面，登录你的 {{provider}} 账号。",
+        "step2": "同意授权后，页面会显示一个授权码（Authentication Code）。",
+        "step3": "点击「Copy Code」，粘贴到下面。",
+        "mockTitle": "Authentication Code",
+        "mockCopy": "Copy Code",
+        "mockCaption": "复制完整的授权码，包括 # 后面的部分",
+        "placeholder": "粘贴授权码（形如 xxxx#yyyy）"
+      },
+      "status": {
+        "ok": "已识别到授权码",
+        "stateMismatch": "这是之前某次登录的地址，请使用本弹窗打开的授权页面。",
+        "denied": "没有获得授权：{{error}}",
+        "authLink": "这是授权链接本身。请先打开它并同意授权，再复制之后得到的内容。",
+        "invalid_url": "没有找到授权码。请粘贴同意授权后显示的完整地址。",
+        "invalid_code": "这看起来不像授权码。"
+      },
+      "expiresTip": "本次登录 {{minutes}} 分钟内有效。每个授权码只能使用一次，失败后请重新打开授权页面。",
+      "restart": "重新开始"
+    }
   }
 }

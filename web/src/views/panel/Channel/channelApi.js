@@ -244,6 +244,19 @@ export async function exchangeChannelOAuthCode(endpoint, sessionId, callbackUrl)
   return res.data;
 }
 
+// Codex device code login: start returns `{ session_id, user_code, verification_url,
+// interval, expires_in }`; poll returns `status: 'pending' | 'completed'` (with credentials) or
+// a coded failure `{ success: false, message, code, params }`.
+export async function startCodexDeviceOAuth(payload) {
+  const res = await API.post('/api/codex/oauth/device/start', payload);
+  return res.data;
+}
+
+export async function pollCodexDeviceOAuth(sessionId) {
+  const res = await API.post('/api/codex/oauth/device/poll', { session_id: sessionId });
+  return res.data;
+}
+
 export async function fetchGroups() {
   try {
     const res = await API.get('/api/group/');

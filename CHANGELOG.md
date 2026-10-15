@@ -40,6 +40,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the channel type and the price-table models of that type (Azure OpenAI channels use the OpenAI
   entries, Vertex AI Express the Gemini ones). Models already in the list are not suggested.
   Enter still adds the typed text, and "Edit as text" is unchanged.
+- Codex channels can sign in with a device code, the default in the authorization dialog: the
+  console shows a one-time code to enter at `auth.openai.com/codex/device` from any browser,
+  so nothing has to reach `localhost:1455`. The first use needs device code login turned on in
+  ChatGPT Settings → Security (a workspace admin turns it on for workspace accounts). New admin
+  endpoints `POST /api/codex/oauth/device/start` and `POST /api/codex/oauth/device/poll`; the
+  credentials are returned once, in the poll response, to the admin who started the login.
 
 ### Changed
 
@@ -85,6 +91,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   input $1.25) instead of the 2024-05-13 snapshot price. Built-in defaults never overwrite
   existing price entries; update `gpt-4o` from `Update Prices` if needed.
 
+- The ClaudeCode and Codex paste dialogs explain what to copy for each provider (the Codex
+  error page's address, the Claude authentication code), check the pasted text as it is typed
+  and submit a valid paste by itself. Pasting a callback from another login attempt, the
+  authorization link itself, a provider error or an already used code now gives a specific,
+  translated message.
+
 ### Fixed
 
 - Chat requests on Codex channels returned no tool calls, streaming or not: function call
@@ -95,7 +107,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   already did.
 - `/v1/responses` on Codex channels accepts a string `input`, as the public Responses API does;
   the upstream rejected it with 400 "Input must be a list".
-
+- The ClaudeCode and Codex code exchange checks that a pasted callback belongs to the login
+  session, and no longer ends the session when the paste is wrong or the code is rejected, so
+  the admin can paste again or reopen the same authorization link within its 10 minutes. Only
+  the admin who started a login can finish it.
 - Moderation requests without a `model` now default to `omni-moderation-latest`, since the
   `text-moderation` models were retired upstream. `omni-moderation` models are priced at 0 by
   default.

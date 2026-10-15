@@ -1239,6 +1239,67 @@
     "channel_tag_required": "A tag is required",
     "channel_tag_type_mismatch": "Tag \"{{tag}}\" already has channels of another type. Use the same type or a different tag.",
     "channel_tag_invalid_setting_type": "Unknown setting type",
-    "channel_tag_invalid_status": "Unknown status"
+    "channel_tag_invalid_status": "Unknown status",
+    "channel_oauth_session_expired": "This login has expired. Start again.",
+    "channel_oauth_state_mismatch": "This callback belongs to an earlier login attempt. Use the page opened from this dialog.",
+    "channel_oauth_access_denied": "The provider did not grant access.",
+    "channel_oauth_invalid_input": "No authorization code found in the pasted text.",
+    "channel_oauth_code_rejected": "This authorization code was already used or has expired. Open the authorization page again and paste the new one.",
+    "channel_oauth_exchange_failed": "Could not exchange the authorization code for credentials.",
+    "channel_oauth_device_auth_disabled": "OpenAI does not offer device code login right now. Use the \"Paste callback URL\" tab.",
+    "channel_oauth_device_code_expired": "The code expired before it was approved. Get a new code.",
+    "channel_oauth_device_auth_failed": "OpenAI refused the device code login."
+  },
+  "channelOAuth": {
+    "tip": {
+      "device": "Sign in with a one-time device code (recommended), or paste the callback URL as before.",
+      "code": "Opens the {{provider}} authorization page. After you approve, paste the code the page shows into the dialog."
+    },
+    "tabs": {
+      "device": "Device code (recommended)",
+      "paste": "Paste callback URL"
+    },
+    "device": {
+      "requesting": "Requesting a device code…",
+      "step1": "Open the OpenAI device page and sign in to your ChatGPT account.",
+      "step2": "Enter this one-time code there:",
+      "copyAndOpen": "Copy code and open the device page",
+      "copyCode": "Copy code",
+      "codeCopied": "Code copied",
+      "waiting": "Waiting for approval… the code expires in {{time}}",
+      "enableTip": "First time? Turn on device code login in ChatGPT Settings → Security. For a workspace account, an admin enables it in the workspace permissions.",
+      "phishingTip": "Only enter this code on auth.openai.com, and only for a login you started here.",
+      "retry": "Get a new code",
+      "fallbackHint": "If device code login is not available, use the \"Paste callback URL\" tab."
+    },
+    "paste": {
+      "url": {
+        "step1": "Open the authorization page and sign in to your {{provider}} account.",
+        "step2": "After you approve, the browser goes to localhost:1455 and shows an error such as \"This site can’t be reached\". That is expected.",
+        "step3": "Copy the whole address from the address bar and paste it below.",
+        "mockError": "This site can’t be reached",
+        "mockCaption": "Copy this whole address, including code and state",
+        "placeholder": "http://localhost:1455/auth/callback?code=…&state=…"
+      },
+      "code": {
+        "step1": "Open the authorization page and sign in to your {{provider}} account.",
+        "step2": "After you approve, the page shows an authentication code.",
+        "step3": "Click \"Copy Code\" and paste it below.",
+        "mockTitle": "Authentication Code",
+        "mockCopy": "Copy Code",
+        "mockCaption": "Copy the whole code, including the part after #",
+        "placeholder": "Paste the authentication code (xxxx#yyyy)"
+      },
+      "status": {
+        "ok": "Authorization code found",
+        "stateMismatch": "This is from an earlier login attempt. Use the page opened from this dialog.",
+        "denied": "Access was not granted: {{error}}",
+        "authLink": "This is the authorization link itself. Open it, approve access, then copy what you get afterwards.",
+        "invalid_url": "No authorization code found. Paste the full address shown after you approve.",
+        "invalid_code": "This does not look like an authentication code."
+      },
+      "expiresTip": "This login is valid for {{minutes}} minutes. Each authorization code works only once; if it fails, open the authorization page again.",
+      "restart": "Start again"
+    }
   }
 }
