@@ -11,7 +11,24 @@ import { cn } from '@/lib/utils';
 // the serialized model_mapping and runtime matching stay exact.
 //
 // options: string[]   createLabel: (input) => node
-export function ModelCombobox({ value, onChange, options = [], placeholder, createLabel, disabled, className, id }) {
+//
+// Picker mode (onSelect given): the input is only a query. Picking a row, or pressing Enter on
+// a non-empty query, calls onSelect(value) instead of onChange, and Enter never submits the
+// surrounding form. allowCreate=false hides the "create" row (e.g. the typed value is already
+// taken); inputClassName adds classes to the input (e.g. room for a leading icon).
+export function ModelCombobox({
+  value,
+  onChange,
+  onSelect,
+  options = [],
+  placeholder,
+  createLabel,
+  allowCreate = true,
+  disabled,
+  className,
+  inputClassName,
+  id
+}) {
   const [open, setOpen] = React.useState(false);
   const [active, setActive] = React.useState(0);
   const rootRef = React.useRef(null);
@@ -30,7 +47,7 @@ export function ModelCombobox({ value, onChange, options = [], placeholder, crea
   const ql = q.toLowerCase();
   const filtered = options.filter((o) => o && o.toLowerCase().includes(ql));
   const hasExact = options.some((o) => o && o.toLowerCase() === ql);
-  const showCreate = q !== '' && !hasExact;
+  const showCreate = allowCreate && q !== '' && !hasExact;
 
   const rows = [
     ...(showCreate ? [{ type: 'create', value: q }] : []),
@@ -42,7 +59,8 @@ export function ModelCombobox({ value, onChange, options = [], placeholder, crea
   }, [value, open]);
 
   const commit = (v) => {
-    onChange(v);
+    if (onSelect) onSelect(v);
+    else onChange(v);
     setOpen(false);
   };
 
@@ -58,6 +76,9 @@ export function ModelCombobox({ value, onChange, options = [], placeholder, crea
       if (open && rows[active]) {
         e.preventDefault();
         commit(rows[active].value);
+      } else if (onSelect && q !== '') {
+        e.preventDefault();
+        if (allowCreate) commit(q);
       }
     } else if (e.key === 'Escape') {
       setOpen(false);
@@ -82,7 +103,10 @@ export function ModelCombobox({ value, onChange, options = [], placeholder, crea
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
-        className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        className={cn(
+          'flex h-9 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+          inputClassName
+        )}
       />
       {open && rows.length > 0 && (
         <div
@@ -118,10 +142,13 @@ export function ModelCombobox({ value, onChange, options = [], placeholder, crea
 ModelCombobox.propTypes = {
   value: PropTypes.string,
   onChange: PropTypes.func.isRequired,
+  onSelect: PropTypes.func,
   options: PropTypes.arrayOf(PropTypes.string),
   placeholder: PropTypes.string,
   createLabel: PropTypes.func,
+  allowCreate: PropTypes.bool,
   disabled: PropTypes.bool,
   className: PropTypes.string,
+  inputClassName: PropTypes.string,
   id: PropTypes.string
 };
