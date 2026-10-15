@@ -272,6 +272,8 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			codexRoute.POST("/oauth/start", controller.StartCodexOAuth)
 			codexRoute.POST("/oauth/exchange-code", controller.CodexOAuthCallback)
+			codexRoute.POST("/oauth/device/start", controller.StartCodexDeviceOAuth)
+			codexRoute.POST("/oauth/device/poll", controller.PollCodexDeviceOAuth)
 		}
 
 		// Antigravity OAuth routes
