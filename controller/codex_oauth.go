@@ -6,9 +6,11 @@ import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/cache"
 	"github.com/modeltaps/modeltaps/common/logger"
+	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/providers/codex"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -36,9 +38,13 @@ const (
 	CodexScopes       = "openid profile email offline_access"
 )
 
+// codexAuthBaseURL is the OpenAI auth issuer; tests point it at a fake server.
+var codexAuthBaseURL = "https://auth.openai.com"
+
 // CodexOAuthStateData OAuth 状态数据
 type CodexOAuthStateData struct {
 	ChannelID    int    `json:"channel_id"`
+	UserID       int    `json:"user_id"` // admin who started the login; only they may finish it
 	CodeVerifier string `json:"code_verifier"`
 	State        string `json:"state"`
 	Proxy        string `json:"proxy"` // 代理配置（JSON 字符串）
@@ -96,6 +102,7 @@ func StartCodexOAuth(c *gin.Context) {
 	// 保存 state 到缓存（包含代理配置）
 	stateData := CodexOAuthStateData{
 		ChannelID:    req.ChannelID,
+		UserID:       c.GetInt("id"),
 		CodeVerifier: codeVerifier,
 		State:        state,
 		Proxy:        req.Proxy, // 保存代理配置，用于后续 token 交换
@@ -125,11 +132,12 @@ func StartCodexOAuth(c *gin.Context) {
 			"auth_url":   authURL,
 			"state":      state,
 			"session_id": state, // 使用 state 作为 session_id
+			"expires_in": int(CodexOAuthStateCacheDuration.Seconds()),
 			"instructions": []string{
 				"1. Open the authorization link and sign in to your OpenAI account in the new window",
 				"2. Grant the requested permissions",
-				"3. After authorization succeeds, copy the full URL from the browser address bar",
-				"4. Paste the full callback URL into the field below",
+				"3. The browser then opens localhost:1455 and shows an error page; this is expected",
+				"4. Copy the full address from the browser address bar and paste it into the field below",
 			},
 		},
 	})
@@ -144,6 +152,9 @@ type ExchangeCodexCodeRequest struct {
 
 // CodexOAuthCallback 处理用户提交的授权码
 // POST /api/codex/oauth/exchange-code
+//
+// The session is kept when the pasted text is wrong or the code is rejected, so the admin can
+// paste again or re-open the same authorization link; it is deleted once tokens are issued.
 func CodexOAuthCallback(c *gin.Context) {
 	var req ExchangeCodexCodeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -156,40 +167,41 @@ func CodexOAuthCallback(c *gin.Context) {
 		return
 	}
 
-	state := req.SessionID
-
-	// 从缓存中获取 state 数据
-	cacheKey := CodexOAuthStateCachePrefix + state
+	cacheKey := CodexOAuthStateCachePrefix + req.SessionID
 	stateData, err := cache.GetCache[CodexOAuthStateData](cacheKey)
-	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, fmt.Errorf("invalid or expired OAuth session"))
+	if err != nil || stateData.UserID != c.GetInt("id") {
+		respondOAuthError(c, common.NewAPIError(common.APICodeChannelOAuthSessionExpired, "This login session has expired. Start the authorization again.", nil))
 		return
 	}
 
-	// 删除已使用的 state
-	cache.DeleteCache(cacheKey)
-
-	// 解析授权码（可能是完整的 URL 或直接的 code）
 	inputValue := req.CallbackURL
 	if inputValue == "" {
 		inputValue = req.AuthorizationCode
 	}
-
-	code, err := parseCodexCallbackURL(inputValue)
-	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, fmt.Errorf("failed to parse authorization code: %w", err))
+	code, pasteErr := checkOAuthPaste(inputValue, stateData.State)
+	if pasteErr != nil {
+		respondOAuthError(c, pasteErr)
 		return
 	}
 
-	// 使用 code 交换 token（使用会话中保存的代理配置）
-	tokenResp, err := exchangeCodexCodeForToken(code, stateData.CodeVerifier, stateData.State, stateData.Proxy)
+	tokenResp, err := exchangeCodexCodeForToken(code, stateData.CodeVerifier, CodexRedirectURI, stateData.Proxy)
 	if err != nil {
 		logger.SysError(fmt.Sprintf("Failed to exchange code for token: %s", err.Error()))
-		common.APIRespondWithError(c, http.StatusOK, fmt.Errorf("failed to exchange code for token: %w", err))
+		if errors.Is(err, errOAuthCodeRejected) {
+			respondOAuthError(c, common.NewAPIError(common.APICodeChannelOAuthCodeRejected, "This authorization code was already used or has expired. Open the authorization page again and paste the new address.", nil))
+			return
+		}
+		respondOAuthError(c, oauthAPIError(common.APICodeChannelOAuthExchangeFailed, "Failed to exchange the authorization code for credentials", err.Error()))
 		return
 	}
+	cache.DeleteCache(cacheKey)
 
-	// 从 id_token 中提取 account_id（优先使用 id_token，如果没有则使用 access_token）
+	respondCodexCredentials(c, tokenResp)
+}
+
+// respondCodexCredentials answers with the channel key JSON built from a token response. The
+// account ID comes from the id_token, falling back to the access token.
+func respondCodexCredentials(c *gin.Context, tokenResp *codex.TokenRefreshResponse) {
 	accountID := ""
 	if tokenResp.IDToken != "" {
 		accountID = extractAccountIDFromToken(tokenResp.IDToken)
@@ -198,7 +210,6 @@ func CodexOAuthCallback(c *gin.Context) {
 		accountID = extractAccountIDFromToken(tokenResp.AccessToken)
 	}
 
-	// 构建凭证对象
 	credentials := &codex.OAuth2Credentials{
 		AccessToken:  tokenResp.AccessToken,
 		RefreshToken: tokenResp.RefreshToken,
@@ -207,8 +218,6 @@ func CodexOAuthCallback(c *gin.Context) {
 		TokenType:    tokenResp.TokenType,
 		ExpiresAt:    time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second),
 	}
-
-	// 序列化凭证
 	credentialsJSON, err := credentials.ToJSON()
 	if err != nil {
 		logger.SysError(fmt.Sprintf("Failed to serialize credentials: %s", err.Error()))
@@ -216,48 +225,14 @@ func CodexOAuthCallback(c *gin.Context) {
 		return
 	}
 
-	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Authorization succeeded",
 		"data": gin.H{
+			"status":      "completed",
 			"credentials": credentialsJSON,
 		},
 	})
-}
-
-// parseCodexCallbackURL 解析回调 URL 或授权码
-func parseCodexCallbackURL(input string) (string, error) {
-	if input == "" {
-		return "", fmt.Errorf("empty input")
-	}
-
-	trimmedInput := strings.TrimSpace(input)
-
-	// 情况1: 尝试作为完整URL解析
-	if strings.HasPrefix(trimmedInput, "http://") || strings.HasPrefix(trimmedInput, "https://") {
-		parsedURL, err := url.Parse(trimmedInput)
-		if err != nil {
-			return "", fmt.Errorf("invalid URL format: %w", err)
-		}
-
-		code := parsedURL.Query().Get("code")
-		if code == "" {
-			return "", fmt.Errorf("code parameter not found in callback URL")
-		}
-
-		return code, nil
-	}
-
-	// 情况2: 直接的授权码（可能包含URL fragments）
-	cleanedCode := strings.Split(strings.Split(trimmedInput, "#")[0], "&")[0]
-
-	// 验证授权码格式
-	if len(cleanedCode) < 10 {
-		return "", fmt.Errorf("authorization code too short")
-	}
-
-	return cleanedCode, nil
 }
 
 // extractAccountIDFromToken 从 JWT access_token 中提取 account_id
@@ -289,18 +264,27 @@ func extractAccountIDFromToken(accessToken string) string {
 	return accountID
 }
 
+// codexOAuthHTTPClient returns the client for the auth issuer, through the channel proxy if set.
+func codexOAuthHTTPClient(proxyURL string) (*http.Client, error) {
+	client, err := utils.NewProxyHTTPClient(proxyURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid proxy: %w", err)
+	}
+	client.Timeout = 30 * time.Second
+	return client, nil
+}
+
 // exchangeCodexCodeForToken 使用授权码交换访问令牌（支持代理）
-func exchangeCodexCodeForToken(code, codeVerifier, state, proxyURL string) (*codex.TokenRefreshResponse, error) {
-	// 准备请求数据（使用 form-urlencoded 格式）
+// The device flow passes its own redirect URI and the verifier issued by the device endpoint.
+func exchangeCodexCodeForToken(code, codeVerifier, redirectURI, proxyURL string) (*codex.TokenRefreshResponse, error) {
 	requestBody := url.Values{}
 	requestBody.Set("grant_type", "authorization_code")
 	requestBody.Set("client_id", CodexClientID)
 	requestBody.Set("code", code)
-	requestBody.Set("redirect_uri", CodexRedirectURI)
+	requestBody.Set("redirect_uri", redirectURI)
 	requestBody.Set("code_verifier", codeVerifier)
 
-	// 创建请求
-	req, err := http.NewRequest("POST", CodexTokenURL, strings.NewReader(requestBody.Encode()))
+	req, err := http.NewRequest("POST", codexAuthBaseURL+"/oauth/token", strings.NewReader(requestBody.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -309,44 +293,35 @@ func exchangeCodexCodeForToken(code, codeVerifier, state, proxyURL string) (*cod
 	req.Header.Set("User-Agent", codex.DefaultCodexUserAgent)
 	req.Header.Set("Accept", "application/json")
 
-	// 创建 HTTP 客户端
-	client := &http.Client{Timeout: 30 * time.Second}
-
-	// 如果有代理配置，设置代理
-	if proxyURL != "" {
-		proxyURLParsed, err := url.Parse(proxyURL)
-		if err == nil {
-			client.Transport = &http.Transport{
-				Proxy: http.ProxyURL(proxyURLParsed),
-			}
-			logger.SysLog(fmt.Sprintf("Using proxy for Codex token exchange: %s", proxyURL))
-		} else {
-			logger.SysError(fmt.Sprintf("Failed to parse proxy URL: %s", err.Error()))
-		}
+	client, err := codexOAuthHTTPClient(proxyURL)
+	if err != nil {
+		return nil, err
 	}
 
-	// 发送请求
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	// 读取响应
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	// 检查响应状态
 	if resp.StatusCode != http.StatusOK {
+		if isOAuthCodeRejected(resp.StatusCode, bodyBytes) {
+			return nil, fmt.Errorf("%w: status %d: %s", errOAuthCodeRejected, resp.StatusCode, string(bodyBytes))
+		}
 		return nil, fmt.Errorf("token exchange failed with status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
-	// 解析响应
 	var tokenResp codex.TokenRefreshResponse
 	if err := json.Unmarshal(bodyBytes, &tokenResp); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+	if tokenResp.AccessToken == "" || tokenResp.RefreshToken == "" {
+		return nil, fmt.Errorf("token response is missing access_token or refresh_token")
 	}
 
 	return &tokenResp, nil

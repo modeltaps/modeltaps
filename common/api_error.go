@@ -31,6 +31,17 @@ const (
 	APICodeChannelTagTypeMismatch        = "channel_tag_type_mismatch"
 	APICodeChannelTagInvalidSettingType  = "channel_tag_invalid_setting_type"
 	APICodeChannelTagInvalidStatus       = "channel_tag_invalid_status"
+
+	// Channel OAuth (ClaudeCode / Codex). The provider's own text goes in params.reason.
+	APICodeChannelOAuthSessionExpired    = "channel_oauth_session_expired"
+	APICodeChannelOAuthStateMismatch     = "channel_oauth_state_mismatch"
+	APICodeChannelOAuthAccessDenied      = "channel_oauth_access_denied"
+	APICodeChannelOAuthInvalidInput      = "channel_oauth_invalid_input"
+	APICodeChannelOAuthCodeRejected      = "channel_oauth_code_rejected"
+	APICodeChannelOAuthExchangeFailed    = "channel_oauth_exchange_failed"
+	APICodeChannelOAuthDeviceAuthOff     = "channel_oauth_device_auth_disabled"
+	APICodeChannelOAuthDeviceCodeExpired = "channel_oauth_device_code_expired"
+	APICodeChannelOAuthDeviceAuthFailed  = "channel_oauth_device_auth_failed"
 )
 
 // APIError is an error with a stable code. Returning one from a model or controller helper lets

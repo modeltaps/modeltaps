@@ -10,6 +10,7 @@ import (
 	"github.com/modeltaps/modeltaps/providers/claudecode"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -40,6 +41,7 @@ const (
 // ClaudeCodeOAuthStateData OAuth 状态数据
 type ClaudeCodeOAuthStateData struct {
 	ChannelID    int    `json:"channel_id"`
+	UserID       int    `json:"user_id"` // admin who started the login; only they may finish it
 	CodeVerifier string `json:"code_verifier"`
 	Proxy        string `json:"proxy"` // 代理配置（JSON 字符串）
 	CreatedAt    int64  `json:"created_at"`
@@ -96,6 +98,7 @@ func StartClaudeCodeOAuth(c *gin.Context) {
 	// 保存 state 到缓存（包含代理配置）
 	stateData := ClaudeCodeOAuthStateData{
 		ChannelID:    req.ChannelID,
+		UserID:       c.GetInt("id"),
 		CodeVerifier: codeVerifier,
 		Proxy:        req.Proxy, // 保存代理配置，用于后续 token 交换
 		CreatedAt:    time.Now().Unix(),
@@ -123,11 +126,12 @@ func StartClaudeCodeOAuth(c *gin.Context) {
 			"auth_url":   authURL,
 			"state":      state,
 			"session_id": state, // 使用 state 作为 session_id
+			"expires_in": int(ClaudeCodeOAuthStateCacheDuration.Seconds()),
 			"instructions": []string{
 				"1. Click the authorization link and sign in to your Claude account in the new window",
 				"2. Grant the requested permissions",
-				"3. After authorization succeeds, copy the full URL from the browser address bar",
-				"4. Paste the full callback URL into the input box below",
+				"3. The page then shows an authentication code; copy it",
+				"4. Paste the code into the input box below",
 			},
 		},
 	})
@@ -156,36 +160,36 @@ func ClaudeCodeOAuthCallback(c *gin.Context) {
 
 	state := req.SessionID
 
-	// 从缓存中获取 state 数据
+	// The session is kept when the pasted text is wrong or the code is rejected, so the admin
+	// can paste again or re-open the same authorization link; it is deleted once tokens are issued.
 	cacheKey := ClaudeCodeOAuthStateCachePrefix + state
 	stateData, err := cache.GetCache[ClaudeCodeOAuthStateData](cacheKey)
-	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, fmt.Errorf("invalid or expired OAuth session"))
+	if err != nil || stateData.UserID != c.GetInt("id") {
+		respondOAuthError(c, common.NewAPIError(common.APICodeChannelOAuthSessionExpired, "This login session has expired. Start the authorization again.", nil))
 		return
 	}
 
-	// 删除已使用的 state
-	cache.DeleteCache(cacheKey)
-
-	// 解析授权码（可能是完整的 URL 或直接的 code）
 	inputValue := req.CallbackURL
 	if inputValue == "" {
 		inputValue = req.AuthorizationCode
 	}
-
-	code, err := parseCallbackURL(inputValue)
-	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, fmt.Errorf("failed to parse authorization code: %w", err))
+	code, pasteErr := checkOAuthPaste(inputValue, state)
+	if pasteErr != nil {
+		respondOAuthError(c, pasteErr)
 		return
 	}
 
-	// 使用 code 交换 token（使用会话中保存的代理配置）
 	tokenResp, err := exchangeClaudeCodeForToken(code, stateData.CodeVerifier, state, stateData.Proxy)
 	if err != nil {
 		logger.SysError(fmt.Sprintf("Failed to exchange code for token: %s", err.Error()))
-		common.APIRespondWithError(c, http.StatusOK, fmt.Errorf("failed to exchange code for token: %w", err))
+		if errors.Is(err, errOAuthCodeRejected) {
+			respondOAuthError(c, common.NewAPIError(common.APICodeChannelOAuthCodeRejected, "This authorization code was already used or has expired. Open the authorization page again and paste the new code.", nil))
+			return
+		}
+		respondOAuthError(c, oauthAPIError(common.APICodeChannelOAuthExchangeFailed, "Failed to exchange the authorization code for credentials", err.Error()))
 		return
 	}
+	cache.DeleteCache(cacheKey)
 
 	// 构建凭证对象
 	credentials := &claudecode.OAuth2Credentials{
@@ -217,40 +221,6 @@ func ClaudeCodeOAuthCallback(c *gin.Context) {
 			"credentials": credentialsJSON,
 		},
 	})
-}
-
-// parseCallbackURL 解析回调 URL 或授权码
-func parseCallbackURL(input string) (string, error) {
-	if input == "" {
-		return "", fmt.Errorf("empty input")
-	}
-
-	trimmedInput := strings.TrimSpace(input)
-
-	// 情况1: 尝试作为完整URL解析
-	if strings.HasPrefix(trimmedInput, "http://") || strings.HasPrefix(trimmedInput, "https://") {
-		parsedURL, err := url.Parse(trimmedInput)
-		if err != nil {
-			return "", fmt.Errorf("invalid URL format: %w", err)
-		}
-
-		code := parsedURL.Query().Get("code")
-		if code == "" {
-			return "", fmt.Errorf("code parameter not found in callback URL")
-		}
-
-		return code, nil
-	}
-
-	// 情况2: 直接的授权码（可能包含URL fragments）
-	cleanedCode := strings.Split(strings.Split(trimmedInput, "#")[0], "&")[0]
-
-	// 验证授权码格式
-	if len(cleanedCode) < 10 {
-		return "", fmt.Errorf("authorization code too short")
-	}
-
-	return cleanedCode, nil
 }
 
 // exchangeClaudeCodeForToken 使用授权码交换访问令牌（支持代理）
@@ -314,6 +284,9 @@ func exchangeClaudeCodeForToken(code, codeVerifier, state, proxyURL string) (*cl
 
 	// 检查响应状态
 	if resp.StatusCode != http.StatusOK {
+		if isOAuthCodeRejected(resp.StatusCode, bodyBytes) {
+			return nil, fmt.Errorf("%w: status %d: %s", errOAuthCodeRejected, resp.StatusCode, string(bodyBytes))
+		}
 		return nil, fmt.Errorf("token exchange failed with status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
