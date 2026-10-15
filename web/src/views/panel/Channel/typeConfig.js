@@ -82,6 +82,13 @@ const defaultConfig = {
   modelGroup: 'OpenAI'
 }
 
+// inputLabel.provider_models_list shows the "fetch models" button. Only set it for types whose
+// backend provider implements GetModelList against an endpoint that exists upstream (see
+// providers/*/model.go): a button that always fails is worse than none.
+//
+// input.models are the defaults filled in when the type is picked; list only models the backend
+// can forward for that type (e.g. the bedrockMap in providers/bedrock/category/base.go).
+// input.test_model should be a cheap model every account of that type can call.
 const typeConfig = {
   1: {
     inputLabel: {
@@ -131,14 +138,21 @@ const typeConfig = {
     },
     input: {
       models: [
-        'claude-instant-1.2',
-        'claude-2.0',
-        'claude-2.1',
-        'claude-3-opus-20240229',
-        'claude-3-sonnet-20240229',
-        'claude-3-haiku-20240307'
+        'claude-fable-5-1',
+        'claude-opus-5-5',
+        'claude-sonnet-5-5',
+        'claude-haiku-5-5',
+        'claude-fable-5',
+        'claude-opus-5',
+        'claude-sonnet-5',
+        'claude-opus-4-8',
+        'claude-opus-4-7',
+        'claude-opus-4-6',
+        'claude-sonnet-4-6',
+        'claude-opus-4-5-20251101',
+        'claude-haiku-4-5-20251001'
       ],
-      test_model: 'claude-3-haiku-20240307'
+      test_model: 'claude-haiku-5-5'
     },
     modelGroup: 'Anthropic'
   },
@@ -187,8 +201,8 @@ const typeConfig = {
   },
   16: {
     input: {
-      models: ['glm-3-turbo', 'glm-4', 'glm-4v', 'embedding-2', 'cogview-3'],
-      test_model: 'glm-3-turbo'
+      models: ['glm-5.3', 'glm-5.3-flash', 'glm-5.2', 'embedding-3'],
+      test_model: 'glm-5.3-flash'
     },
     modelGroup: 'Zhipu'
   },
@@ -247,8 +261,16 @@ const typeConfig = {
       provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Gemini' }]
     },
     input: {
-      models: ['gemini-pro', 'gemini-pro-vision', 'gemini-1.0-pro', 'gemini-1.5-pro'],
-      test_model: 'gemini-pro'
+      models: [
+        'gemini-4-argon',
+        'gemini-3.8-flash',
+        'gemini-3.6-flash',
+        'gemini-3.5-flash-lite',
+        'gemini-3.1-flash-lite',
+        'gemini-3.1-pro-preview',
+        'gemini-embedding-001'
+      ],
+      test_model: 'gemini-3.5-flash-lite'
     },
     prompt: {
       other: ['channelForm.prompt.versionExample', { example: 'v1' }]
@@ -277,15 +299,15 @@ const typeConfig = {
   },
   27: {
     input: {
-      models: ['abab6.5s-chat', 'MiniMax-Text-01', 'speech-01-turbo', 'speech-01-240228', 'speech-01-turbo-240228'],
-      test_model: 'abab6.5s-chat'
+      models: ['MiniMax-M3', 'MiniMax-M2.7', 'MiniMax-M2.7-highspeed'],
+      test_model: 'MiniMax-M2.7'
     },
     modelGroup: 'MiniMax'
   },
   28: {
     input: {
-      models: ['deepseek-coder', 'deepseek-chat'],
-      test_model: 'deepseek-chat'
+      models: ['deepseek-flash', 'deepseek-v4-pro'],
+      test_model: 'deepseek-flash'
     },
     inputLabel: {
       provider_models_list: ['channelForm.fetchModelsFrom', { source: 'DeepSeek' }]
@@ -297,22 +319,22 @@ const typeConfig = {
       provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Moonshot' }]
     },
     input: {
-      models: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'],
-      test_model: 'moonshot-v1-8k'
+      models: ['kimi-k3', 'kimi-k2.7-code', 'kimi-k2.7-code-highspeed', 'kimi-k2.6'],
+      test_model: 'kimi-k2.6'
     },
     modelGroup: 'Moonshot'
   },
   30: {
     input: {
       models: [
-        'open-mistral-7b',
-        'open-mixtral-8x7b',
-        'mistral-small-latest',
-        'mistral-medium-latest',
         'mistral-large-latest',
+        'mistral-medium-latest',
+        'mistral-small-latest',
+        'ministral-8b-latest',
+        'codestral-latest',
         'mistral-embed'
       ],
-      test_model: 'open-mistral-7b'
+      test_model: 'mistral-small-latest'
     },
     inputLabel: {
       provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Mistral' }]
@@ -320,10 +342,6 @@ const typeConfig = {
     modelGroup: 'Mistral'
   },
   31: {
-    input: {
-      models: ['llama2-7b-2048', 'llama2-70b-4096', 'mixtral-8x7b-32768', 'gemma-7b-it'],
-      test_model: 'llama2-7b-2048'
-    },
     inputLabel: {
       provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Groq' }]
     },
@@ -332,28 +350,21 @@ const typeConfig = {
   32: {
     input: {
       models: [
-        'claude-instant-1.2',
-        'claude-2.0',
-        'claude-2.1',
-        'claude-3-opus-20240229',
-        'claude-3-sonnet-20240229',
-        'claude-3-haiku-20240307',
-        'claude-sonnet-4-5-20250929',
-        'claude-sonnet-4-6',
-        'claude-haiku-4-5-20251001',
-        'claude-haiku-5-5',
-        'claude-opus-4-5-20251101',
-        'claude-opus-4-6',
-        'claude-opus-4-7',
-        'claude-opus-4-8',
-        'claude-opus-5',
+        'claude-fable-5-1',
         'claude-opus-5-5',
-        'claude-sonnet-5',
         'claude-sonnet-5-5',
+        'claude-haiku-5-5',
         'claude-fable-5',
-        'claude-fable-5-1'
+        'claude-opus-5',
+        'claude-sonnet-5',
+        'claude-opus-4-8',
+        'claude-opus-4-7',
+        'claude-opus-4-6',
+        'claude-sonnet-4-6',
+        'claude-opus-4-5-20251101',
+        'claude-haiku-4-5-20251001'
       ],
-      test_model: 'claude-3-haiku-20240307'
+      test_model: 'claude-haiku-4-5-20251001'
     },
     prompt: {
       key: 'channelForm.prompt.keyFormatAws'
@@ -419,8 +430,18 @@ const typeConfig = {
   },
   36: {
     input: {
-      models: ['command-r', 'command-r-plus'],
-      test_model: 'command-r'
+      models: [
+        'command-a-plus-05-2026',
+        'command-a-reasoning-08-2025',
+        'command-a-03-2025',
+        'command-r-plus-08-2024',
+        'command-r-08-2024',
+        'command-r7b-12-2024',
+        'rerank-v4.0-pro',
+        'rerank-v4.0-fast',
+        'rerank-v3.5'
+      ],
+      test_model: 'command-r7b-12-2024'
     },
     inputLabel: {
       provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Cohere' }]
@@ -451,6 +472,9 @@ const typeConfig = {
     input: {
       models: ['phi3', 'llama3']
     },
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Ollama' }]
+    },
     prompt: {
       base_url: 'channelForm.prompt.ollamaUrl',
       key: 'channelForm.prompt.anyValue'
@@ -480,7 +504,8 @@ const typeConfig = {
   },
   42: {
     input: {
-      models: ['claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307']
+      models: ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'],
+      test_model: 'gemini-3.5-flash-lite'
     },
     prompt: {
       key: 'channelForm.prompt.keySeeDocs',
@@ -564,6 +589,15 @@ const typeConfig = {
     modelGroup: 'Kling'
   },
   54: {
+    input: {
+      models: [
+        'databricks-gpt-oss-120b',
+        'databricks-gpt-oss-20b',
+        'databricks-meta-llama-3-3-70b-instruct',
+        'databricks-meta-llama-3-1-8b-instruct'
+      ],
+      test_model: 'databricks-meta-llama-3-1-8b-instruct'
+    },
     inputLabel: {
       base_url: 'Azure Databricks Endpoint',
       key: 'DATABRICKS_TOKEN'
@@ -578,6 +612,15 @@ const typeConfig = {
       provider_models_list: ['channelForm.fetchModelsFrom', { source: 'OpenRouter' }]
     }
   },
+  56: {
+    input: {
+      models: ['grok-4.7'],
+      test_model: 'grok-4.7'
+    },
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'xAI' }]
+    }
+  },
   57: {
     inputLabel: {
       other: 'Project ID'
@@ -588,6 +631,10 @@ const typeConfig = {
     }
   },
   58: {
+    input: {
+      models: ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-haiku-5-5'],
+      test_model: 'claude-haiku-5-5'
+    },
     inputLabel: {
       other: ''
     },
@@ -597,6 +644,10 @@ const typeConfig = {
     }
   },
   59: {
+    input: {
+      models: ['gpt-6.1-sol', 'gpt-6-astra', 'gpt-5.6-sol'],
+      test_model: 'gpt-6.1-sol'
+    },
     inputLabel: {
       other: ''
     },
@@ -616,8 +667,8 @@ const typeConfig = {
   },
   61: {
     input: {
-      models: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'],
-      test_model: 'gemini-2.5-flash'
+      models: ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'],
+      test_model: 'gemini-3.5-flash-lite'
     },
     inputLabel: {
       other: 'Region|ProjectID'
