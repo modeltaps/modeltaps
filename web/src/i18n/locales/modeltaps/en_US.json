@@ -707,7 +707,8 @@
   "channel_edit": {
     "icon": "Icon",
     "iconTip": "Resolved automatically from the channel type and API address. Refresh re-fetches the site icon of the API address.",
-    "editSuccess": "Updated successfully"
+    "editSuccess": "Updated successfully",
+    "modelAddValue": "Add \"{{model}}\""
   },
   "brandIconSettings": {
     "title": "Brand Icons",

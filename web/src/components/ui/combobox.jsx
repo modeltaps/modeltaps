@@ -11,10 +11,14 @@ import { cn } from '@/lib/utils';
 // enough that a plain Select becomes hard to scan (e.g. channel types).
 //
 // options: [{ value: string, label: string }]
+// groups (optional, replaces options): [{ key: string, heading?: node, options: [...] }]. Groups
+// render in order with a separator between them; cmdk filters every group while searching and
+// hides the separators and any group left without a match.
 export function Combobox({
   value,
   onValueChange,
   options,
+  groups,
   placeholder,
   searchPlaceholder,
   emptyText,
@@ -36,7 +40,27 @@ export function Combobox({
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [open]);
 
-  const selected = options.find((o) => o.value === value);
+  const allOptions = groups ? groups.flatMap((g) => g.options) : options;
+  const selected = allOptions.find((o) => o.value === value);
+
+  const renderItem = (o) => (
+    <Command.Item
+      key={o.value}
+      value={o.label}
+      onSelect={() => {
+        onValueChange?.(o.value);
+        setOpen(false);
+      }}
+      className="relative flex w-full cursor-pointer select-none items-center rounded-md py-1.5 pl-8 pr-2 text-sm outline-none data-[selected=true]:bg-muted"
+    >
+      {o.value === value && (
+        <span className="absolute left-2 flex size-4 items-center justify-center">
+          <Check className="size-4" />
+        </span>
+      )}
+      {o.label}
+    </Command.Item>
+  );
 
   return (
     <div ref={rootRef} className="relative">
@@ -74,24 +98,19 @@ export function Combobox({
           </div>
           <Command.List id={listId} className="max-h-60 overflow-y-auto p-1">
             {emptyText && <Command.Empty className="px-2 py-3 text-center text-sm text-muted-foreground">{emptyText}</Command.Empty>}
-            {options.map((o) => (
-              <Command.Item
-                key={o.value}
-                value={o.label}
-                onSelect={() => {
-                  onValueChange?.(o.value);
-                  setOpen(false);
-                }}
-                className="relative flex w-full cursor-pointer select-none items-center rounded-md py-1.5 pl-8 pr-2 text-sm outline-none data-[selected=true]:bg-muted"
-              >
-                {o.value === value && (
-                  <span className="absolute left-2 flex size-4 items-center justify-center">
-                    <Check className="size-4" />
-                  </span>
-                )}
-                {o.label}
-              </Command.Item>
-            ))}
+            {groups
+              ? groups.map((g, i) => (
+                  <React.Fragment key={g.key}>
+                    {i > 0 && <Command.Separator className="-mx-1 my-1 h-px bg-border" />}
+                    <Command.Group
+                      heading={g.heading}
+                      className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:text-muted-foreground"
+                    >
+                      {g.options.map(renderItem)}
+                    </Command.Group>
+                  </React.Fragment>
+                ))
+              : options.map(renderItem)}
           </Command.List>
         </Command>
       )}

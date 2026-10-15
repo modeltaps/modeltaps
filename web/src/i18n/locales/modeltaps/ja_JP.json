@@ -705,7 +705,8 @@
   },
   "channel_edit": {
     "icon": "アイコン",
-    "iconTip": "チャネルの種類と API アドレスから自動で解決します。更新すると API アドレスのサイトアイコンを再取得します。"
+    "iconTip": "チャネルの種類と API アドレスから自動で解決します。更新すると API アドレスのサイトアイコンを再取得します。",
+    "modelAddValue": "「{{model}}」を追加"
   },
   "brandIconSettings": {
     "title": "ブランドアイコン",
