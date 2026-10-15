@@ -57,11 +57,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   version. A channel can set its own version with the new **Client version** plugin setting
   (`codex.client_version`); a value that is not a version such as `0.159.0` or
   `0.158.0-alpha.2` is logged and the default is used.
+- **Codex channels no longer add the Codex CLI system prompt to requests without
+  instructions.** Chat requests and `/v1/responses` requests that bring no `instructions` now
+  get the one-line "You are a helpful assistant." instead of the 2025 coding-agent prompt of
+  about 24,000 characters; instructions sent by the client are passed through unchanged. On a
+  real Codex channel this bills about 5,000 fewer input tokens per request (a one-word chat
+  prompt went from 5,017 to 22 input tokens). The output style changes with it: answers no
+  longer follow the coding-agent conventions of that prompt, and tool calls start without a
+  preamble sentence. Clients that relied on that behavior should send their own instructions.
 - The default price of `gpt-4o` is the current official price ($2.50 / $10 per 1M tokens, cached
   input $1.25) instead of the 2024-05-13 snapshot price. Built-in defaults never overwrite
   existing price entries; update `gpt-4o` from `Update Prices` if needed.
 
 ### Fixed
+
+- Chat requests on Codex channels returned no tool calls, streaming or not: function call
+  events were dropped and only the text was forwarded. They now return `tool_calls` with
+  `finish_reason: "tool_calls"`, and stream reasoning text as well.
+- Streamed chat answers converted from the Responses API end with `finish_reason:
+  "tool_calls"` instead of `"stop"` when the model called a function, as non-streamed answers
+  already did.
+- `/v1/responses` on Codex channels accepts a string `input`, as the public Responses API does;
+  the upstream rejected it with 400 "Input must be a list".
 
 - Moderation requests without a `model` now default to `omni-moderation-latest`, since the
   `text-moderation` models were retired upstream. `omni-moderation` models are priced at 0 by
