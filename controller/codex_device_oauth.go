@@ -38,6 +38,9 @@ const (
 	codexDeviceRedirectPath     = "/deviceauth/callback"
 	codexDeviceDefaultInterval  = 5
 	codexDeviceMaxInterval      = 30
+	// The cache entry outlives the code a little, so a late poll learns the code expired
+	// instead of finding no session.
+	codexDeviceCacheGrace = time.Minute
 )
 
 // CodexDeviceSession is the server-side state of one device login. DeviceAuthID never leaves
@@ -135,7 +138,7 @@ func StartCodexDeviceOAuth(c *gin.Context) {
 		ExpiresAt:    expiresAt.Unix(),
 		NextPollAt:   now.Add(time.Duration(interval) * time.Second).Unix(),
 	}
-	if err := cache.SetCache(CodexDeviceSessionCachePrefix+sessionID, session, time.Until(expiresAt)); err != nil {
+	if err := cache.SetCache(CodexDeviceSessionCachePrefix+sessionID, session, time.Until(expiresAt)+codexDeviceCacheGrace); err != nil {
 		common.APIRespondWithError(c, http.StatusOK, fmt.Errorf("failed to store device session: %w", err))
 		return
 	}
@@ -239,9 +242,7 @@ func PollCodexDeviceOAuth(c *gin.Context) {
 			session.Interval += codexDeviceDefaultInterval
 			session.NextPollAt = time.Now().Add(time.Duration(session.Interval) * time.Second).Unix()
 		}
-		if ttl := time.Until(time.Unix(session.ExpiresAt, 0)); ttl > 0 {
-			cache.SetCache(cacheKey, session, ttl)
-		}
+		cache.SetCache(cacheKey, session, time.Until(time.Unix(session.ExpiresAt, 0))+codexDeviceCacheGrace)
 		pending()
 		return
 	}
