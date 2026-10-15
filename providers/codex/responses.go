@@ -140,21 +140,38 @@ func (p *CodexProvider) prepareCodexRequest(request *types.OpenAIResponsesReques
 	storeFalse := false
 	request.Store = &storeFalse
 
+	// The upstream rejects a string input with 400 "Input must be a list", while the public
+	// Responses API accepts one; wrap it as a single user message.
+	if text, ok := request.Input.(string); ok {
+		request.Input = []map[string]any{{
+			"role": types.ChatMessageRoleUser,
+			"content": []map[string]any{{
+				"type": types.ContentTypeInputText,
+				"text": text,
+			}},
+		}}
+	}
+
 	// 剥离 ChatGPT internal Codex 端点不接受的字段，补齐默认 instructions。
 	p.adaptCodexCLI(request)
 }
 
+// DefaultCodexInstructions is sent when the client brings no instructions: the upstream
+// answers 400 "Instructions are required" to an empty value but does not check the content.
+// It stays short and names no tools, since every input token is billed to the user.
+const DefaultCodexInstructions = "You are a helpful assistant."
+
 // adaptCodexCLI 对 Codex OAuth 端点做请求规整：
 //   - 无条件剥离 temperature / top_p / max_output_tokens —— Codex OAuth 端点会因为这些字段直接 400，
 //     不论客户端是否伪装成 Codex CLI 都必须清掉。
-//   - 仅在 instructions 为空时补默认 Codex CLI 提示词，不覆盖用户自带 instructions。
+//   - 仅在 instructions 为空时补 DefaultCodexInstructions，不覆盖用户自带 instructions。
 func (p *CodexProvider) adaptCodexCLI(request *types.OpenAIResponsesRequest) {
 	request.Temperature = nil
 	request.TopP = nil
 	request.MaxOutputTokens = 0
 
 	if strings.TrimSpace(request.Instructions) == "" {
-		request.Instructions = CodexCLIInstructions
+		request.Instructions = DefaultCodexInstructions
 	}
 }
 

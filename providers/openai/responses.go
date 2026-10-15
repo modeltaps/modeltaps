@@ -25,8 +25,9 @@ type OpenAIResponsesStreamHandler struct {
 	MessageID string
 	Context   *gin.Context
 
-	searchType string
-	toolIndex  int
+	searchType  string
+	toolIndex   int
+	hasToolCall bool
 
 	// SSE 事件缓冲
 	eventBuffer strings.Builder
@@ -513,6 +514,7 @@ func (h *OpenAIResponsesStreamHandler) HandlerChatStream(rawLine *[]byte, dataCh
 				})
 				needOutput = true
 			case types.InputTypeFunctionCall:
+				h.hasToolCall = true
 				chatRes.Choices = append(chatRes.Choices, types.ChatCompletionStreamChoice{
 					Index: 0,
 					Delta: types.ChatCompletionStreamChoiceDelta{
@@ -537,10 +539,15 @@ func (h *OpenAIResponsesStreamHandler) HandlerChatStream(rawLine *[]byte, dataCh
 		// 终止事件携带最终 usage：判定与提取统一走 base helper（与原生 responses 路径共享）。
 		if base.ExtractResponsesStreamUsage(&openaiResponse, h.Usage) {
 			getResponsesExtraBilling(openaiResponse.Response, h.Usage)
+			// A completed response that called functions ends with tool_calls, as in ToChat.
+			finishReason := types.ConvertResponsesStatusToChat(openaiResponse.Response.Status)
+			if h.hasToolCall && finishReason == types.FinishReasonStop {
+				finishReason = types.FinishReasonToolCalls
+			}
 			chatRes.Choices = append(chatRes.Choices, types.ChatCompletionStreamChoice{
 				Index:        0,
 				Delta:        types.ChatCompletionStreamChoiceDelta{},
-				FinishReason: types.ConvertResponsesStatusToChat(openaiResponse.Response.Status),
+				FinishReason: finishReason,
 			})
 			needOutput = true
 		}
