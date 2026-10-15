@@ -26,6 +26,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Traditional Chinese, Japanese) and falls back to `message` for anything else. The first codes
   cover channel tests (the upstream reason stays as is), rate limiting and common channel and
   channel tag validation errors.
+- The built-in default price table covers current models at their official list prices,
+  including cache read and write prices and long-context tiers: OpenAI GPT-6 (Astra, 6.1 Sol, Sol,
+  Luna), GPT-5.x and the Codex models, GPT-4.1, o-series; Anthropic Claude Fable 5 / 5.1, Opus,
+  Sonnet and Haiku 4.x / 5.x; Gemini 4 Argon, 3.x and 2.5 (with audio input and image output
+  prices); and DeepSeek Flash / V4 Pro. Model names that Antigravity maps to Claude or Gemini
+  models use the target model's price. Codex, Claude Code, Gemini CLI, Antigravity, Bedrock and
+  Vertex AI channels bill these models at the same prices, since prices are keyed by model name.
+  New deployments no longer reject these models under the default `unpriced_model_policy=block`;
+  existing deployments get the new entries on restart with `auto_price_updates` on, or through
+  `Update Prices` with `/api/prices?type=default` as the price source.
 
 ### Changed
 
@@ -47,6 +57,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   version. A channel can set its own version with the new **Client version** plugin setting
   (`codex.client_version`); a value that is not a version such as `0.159.0` or
   `0.158.0-alpha.2` is logged and the default is used.
+- The default price of `gpt-4o` is the current official price ($2.50 / $10 per 1M tokens, cached
+  input $1.25) instead of the 2024-05-13 snapshot price. Built-in defaults never overwrite
+  existing price entries; update `gpt-4o` from `Update Prices` if needed.
 
 ### Fixed
 
