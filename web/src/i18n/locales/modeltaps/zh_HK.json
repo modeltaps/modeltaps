@@ -1174,6 +1174,67 @@
     "channel_tag_required": "缺少標籤",
     "channel_tag_type_mismatch": "標籤「{{tag}}」下已有其他類型的渠道，請使用相同類型或換一個標籤。",
     "channel_tag_invalid_setting_type": "未知的設定類型",
-    "channel_tag_invalid_status": "未知的狀態"
+    "channel_tag_invalid_status": "未知的狀態",
+    "channel_oauth_session_expired": "本次登入已過期，請重新開始。",
+    "channel_oauth_state_mismatch": "這個回調屬於之前某次登入，請使用本彈窗開啟的授權頁面。",
+    "channel_oauth_access_denied": "對方沒有授予存取權限。",
+    "channel_oauth_invalid_input": "貼上的內容裏找不到授權碼。",
+    "channel_oauth_code_rejected": "這個授權碼已經用過或已過期。請重新開啟授權頁面，貼上新的結果。",
+    "channel_oauth_exchange_failed": "用授權碼換取憑證失敗。",
+    "channel_oauth_device_auth_disabled": "OpenAI 目前不提供裝置碼登入，請使用「貼上回調地址」。",
+    "channel_oauth_device_code_expired": "代碼在授權前已過期，請重新取得。",
+    "channel_oauth_device_auth_failed": "OpenAI 拒絕了這次裝置碼登入。"
+  },
+  "channelOAuth": {
+    "tip": {
+      "device": "建議用一次性裝置碼登入，也可以像以前一樣貼上回調地址。",
+      "code": "點擊後開啟 {{provider}} 授權頁面。同意授權後，把頁面上顯示的授權碼貼到彈窗裏。"
+    },
+    "tabs": {
+      "device": "裝置碼登入（建議）",
+      "paste": "貼上回調地址"
+    },
+    "device": {
+      "requesting": "正在取得裝置碼…",
+      "step1": "開啟 OpenAI 裝置碼頁面，登入你的 ChatGPT 帳戶。",
+      "step2": "在頁面上輸入這個一次性代碼：",
+      "copyAndOpen": "複製代碼並開啟裝置碼頁面",
+      "copyCode": "複製代碼",
+      "codeCopied": "代碼已複製",
+      "waiting": "等待授權…代碼將在 {{time}} 後過期",
+      "enableTip": "第一次使用？請先在 ChatGPT 設定 → 安全 中開啟裝置碼登入。工作空間帳戶需要管理員在工作空間權限裏開啟。",
+      "phishingTip": "只在 auth.openai.com 上輸入這個代碼，並且只用於你在這裏發起的登入。",
+      "retry": "重新取得代碼",
+      "fallbackHint": "如果裝置碼登入不可用，請切換到「貼上回調地址」。"
+    },
+    "paste": {
+      "url": {
+        "step1": "開啟授權頁面，登入你的 {{provider}} 帳戶。",
+        "step2": "同意授權後，瀏覽器會跳到 localhost:1455 並顯示「無法連線至此網站」之類的錯誤，這是正常的。",
+        "step3": "複製地址欄裏的完整地址，貼到下面。",
+        "mockError": "無法連線至此網站",
+        "mockCaption": "複製這一整段地址，包括 code 和 state",
+        "placeholder": "http://localhost:1455/auth/callback?code=…&state=…"
+      },
+      "code": {
+        "step1": "開啟授權頁面，登入你的 {{provider}} 帳戶。",
+        "step2": "同意授權後，頁面會顯示一個授權碼（Authentication Code）。",
+        "step3": "點擊「Copy Code」，貼到下面。",
+        "mockTitle": "Authentication Code",
+        "mockCopy": "Copy Code",
+        "mockCaption": "複製完整的授權碼，包括 # 後面的部分",
+        "placeholder": "貼上授權碼（形如 xxxx#yyyy）"
+      },
+      "status": {
+        "ok": "已識別到授權碼",
+        "stateMismatch": "這是之前某次登入的地址，請使用本彈窗開啟的授權頁面。",
+        "denied": "沒有獲得授權：{{error}}",
+        "authLink": "這是授權連結本身。請先開啟它並同意授權，再複製之後得到的內容。",
+        "invalid_url": "找不到授權碼。請貼上同意授權後顯示的完整地址。",
+        "invalid_code": "這看起來不像授權碼。"
+      },
+      "expiresTip": "本次登入 {{minutes}} 分鐘內有效。每個授權碼只能使用一次，失敗後請重新開啟授權頁面。",
+      "restart": "重新開始"
+    }
   }
 }

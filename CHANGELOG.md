@@ -26,6 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Traditional Chinese, Japanese) and falls back to `message` for anything else. The first codes
   cover channel tests (the upstream reason stays as is), rate limiting and common channel and
   channel tag validation errors.
+- Codex channels can sign in with a device code, the default in the authorization dialog: the
+  console shows a one-time code to enter at `auth.openai.com/codex/device` from any browser,
+  so nothing has to reach `localhost:1455`. The first use needs device code login turned on in
+  ChatGPT Settings → Security (a workspace admin turns it on for workspace accounts). New admin
+  endpoints `POST /api/codex/oauth/device/start` and `POST /api/codex/oauth/device/poll`; the
+  credentials are returned once, in the poll response, to the admin who started the login.
 
 ### Changed
 
@@ -48,8 +54,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`codex.client_version`); a value that is not a version such as `0.159.0` or
   `0.158.0-alpha.2` is logged and the default is used.
 
+- The ClaudeCode and Codex paste dialogs explain what to copy for each provider (the Codex
+  error page's address, the Claude authentication code), check the pasted text as it is typed
+  and submit a valid paste by itself. Pasting a callback from another login attempt, the
+  authorization link itself, a provider error or an already used code now gives a specific,
+  translated message.
+
 ### Fixed
 
+- The ClaudeCode and Codex code exchange checks that a pasted callback belongs to the login
+  session, and no longer ends the session when the paste is wrong or the code is rejected, so
+  the admin can paste again or reopen the same authorization link within its 10 minutes. Only
+  the admin who started a login can finish it.
 - Moderation requests without a `model` now default to `omni-moderation-latest`, since the
   `text-moderation` models were retired upstream. `omni-moderation` models are priced at 0 by
   default.
