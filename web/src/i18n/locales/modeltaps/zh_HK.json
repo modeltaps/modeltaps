@@ -705,7 +705,8 @@
   },
   "channel_edit": {
     "icon": "圖示",
-    "iconTip": "按渠道類型與 API 地址自動解析；重新整理會重新擷取 API 地址所在網站的圖示。"
+    "iconTip": "按渠道類型與 API 地址自動解析；重新整理會重新擷取 API 地址所在網站的圖示。",
+    "modelAddValue": "新增「{{model}}」"
   },
   "brandIconSettings": {
     "title": "品牌圖示",

@@ -315,17 +315,25 @@ export const CHANNEL_OPTIONS = {
   }
 };
 
-// Curated display order for the channel-type dropdown. JS iterates integer-keyed
-// objects in ascending numeric order, which scatters entries (e.g. custom=8 would
-// land mid-list); this preserves the intended order — major providers first,
-// 自定义渠道 last. Any id missing here is appended automatically so newly added
-// types never disappear from the dropdown.
-export const CHANNEL_TYPE_ORDER = [
-  1, 14, 3, 55, 11, 25, 15, 17, 18, 16, 19, 20, 23, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,
-  45, 47, 24, 49, 51, 52, 53, 54, 56, 57, 58, 59, 60, 61, 8
-];
+// Channel types pinned to the top of the channel-type dropdown, in this order. The custom
+// channel closes the group: it is the catch-all for any OpenAI-compatible endpoint, so it is
+// used often and would be hard to find in the alphabetical list below.
+export const COMMON_CHANNEL_TYPES = [1, 14, 25, 3, 32, 42, 20, 28, 59, 58, 8];
 
-export const CHANNEL_OPTIONS_ORDERED = [
-  ...CHANNEL_TYPE_ORDER.filter((id) => CHANNEL_OPTIONS[id]).map((id) => CHANNEL_OPTIONS[id]),
-  ...Object.values(CHANNEL_OPTIONS).filter((o) => !CHANNEL_TYPE_ORDER.includes(o.value))
-];
+// Channel-type dropdown groups: the common types first, then every other type sorted by its
+// displayed name in the current language. `labelOf` maps an option to the text shown for it;
+// any type added to CHANNEL_OPTIONS lands in the second group automatically. `language` takes the
+// app's language codes (zh_CN) as well as BCP 47 tags (zh-CN).
+export function channelTypeGroups(labelOf = (o) => o.text, language) {
+  const locale = language ? String(language).replace('_', '-') : undefined;
+  const toOption = (o) => ({ value: String(o.value), label: labelOf(o) });
+  const common = COMMON_CHANNEL_TYPES.filter((id) => CHANNEL_OPTIONS[id]).map((id) => toOption(CHANNEL_OPTIONS[id]));
+  const others = Object.values(CHANNEL_OPTIONS)
+    .filter((o) => !COMMON_CHANNEL_TYPES.includes(o.value))
+    .map(toOption)
+    .sort((a, b) => a.label.localeCompare(b.label, locale, { sensitivity: 'base' }));
+  return [
+    { key: 'common', options: common },
+    { key: 'others', options: others }
+  ];
+}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useForm, Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -17,10 +17,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Combobox } from '@/components/ui/combobox';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetBody, SheetFooter } from '@/components/ui/sheet';
-import { CHANNEL_OPTIONS_ORDERED } from 'constants/ChannelConstants';
+import { channelTypeGroups } from 'constants/ChannelConstants';
 import { configText } from 'i18n/configText';
 import { defaultConfig, typeConfig } from './typeConfig';
 import { syncChannelPricing, fetchUpstreamModelList } from './channelApi';
+import { buildModelSuggestions, fetchPriceList } from './modelSuggestions';
 import ChannelOAuth from './ChannelOAuth';
 import ModelHeadersInput from './ModelHeadersInput';
 import ModelListInput from './ModelListInput';
@@ -71,7 +72,7 @@ const PRE_COST_OPTIONS = [
 ];
 
 export default function ChannelSheet({ open, channelId, initialTab = 'basic', onClose, onSaved, groupOptions }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
   const [hasTag, setHasTag] = useState(false);
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
@@ -88,6 +89,10 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
   const [syncingPricing, setSyncingPricing] = useState(false);
   const [fetchSyncing, setFetchSyncing] = useState(false);
   const [pruning, setPruning] = useState(false);
+  // Price list behind the model picker's suggestions; loaded once, the first time the sheet opens.
+  const [prices, setPrices] = useState(null);
+  const typeGroups = useMemo(() => channelTypeGroups((o) => o.text, i18n.language), [i18n.language]);
+  const modelSuggestions = useMemo(() => buildModelSuggestions(typeValue, prices || []), [typeValue, prices]);
 
   // OpenRouter(type=20) 自带价格：从上游 /v1/models 拉真实价并 upsert 进价格表。
   // 一键：拉取上游全量模型 → 追加进 models(去重,不删) → 同步价格+元信息。
@@ -182,6 +187,15 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
     if (cfg?.models) setValue('models', cfg.models.join(','));
     if (cfg?.test_model !== undefined) setValue('test_model', cfg.test_model);
   };
+
+  useEffect(() => {
+    if (!open || prices !== null) return;
+    let alive = true;
+    fetchPriceList().then((list) => alive && setPrices(list));
+    return () => {
+      alive = false;
+    };
+  }, [open, prices]);
 
   useEffect(() => {
     if (!open) return;
@@ -594,7 +608,7 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
                     field.onChange(Number(v));
                     applyTypeDefaults(Number(v));
                   }}
-                  options={CHANNEL_OPTIONS_ORDERED.map((o) => ({ value: String(o.value), label: o.text }))}
+                  groups={typeGroups}
                   searchPlaceholder={t('channel_index.typeSearchPlaceholder')}
                   emptyText={t('channel_index.typeSearchEmpty')}
                 />
@@ -691,6 +705,7 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
                 <ModelListInput
                   value={field.value}
                   onChange={field.onChange}
+                  suggestions={modelSuggestions}
                   headerActions={
                     typeConfig[typeValue]?.inputLabel?.provider_models_list ? (
                       <>

@@ -36,9 +36,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   New deployments no longer reject these models under the default `unpriced_model_policy=block`;
   existing deployments get the new entries on restart with `auto_price_updates` on, or through
   `Update Prices` with `/api/prices?type=default` as the price source.
+- The model search box of the channel form suggests models as you type: the default models of
+  the channel type and the price-table models of that type (Azure OpenAI channels use the OpenAI
+  entries, Vertex AI Express the Gemini ones). Models already in the list are not suggested.
+  Enter still adds the typed text, and "Edit as text" is unchanged.
 
 ### Changed
 
+- The provider dropdown of the channel form lists common providers first (OpenAI, Anthropic,
+  Gemini, Azure OpenAI, Amazon Bedrock, Vertex AI, OpenRouter, DeepSeek, Codex, Claude Code and
+  the custom channel), then a separator and every other provider sorted by name. Search covers
+  both parts.
+- Default models of new channels are the current ones: Anthropic, Bedrock and Claude Code list
+  Claude 4.5 to 5.5 (retired Claude 1 to 3 models are gone); Gemini, Vertex AI and Vertex AI
+  Express list Gemini 4 Argon and 3.x; DeepSeek, Moonshot (Kimi), Mistral, Zhipu, MiniMax and
+  Cohere follow their current model lists; Codex, xAI and Azure Databricks get default models.
+  Vertex AI defaults are Gemini only. Groq no longer prefills its retired models; use **Fetch
+  models**. Test models are cheap models of each list.
+- The **Fetch models** button is shown only for channel types whose backend can list models;
+  xAI and Ollama channels get it.
 - A manual channel test no longer disables the channel when it fails; the scheduled test of
   all channels still does. Only tests of the channel's test model update its response time.
 - **The channel check is rewritten.** It now checks one model per request at
