@@ -42,6 +42,65 @@ const (
 	APICodeChannelOAuthDeviceAuthOff     = "channel_oauth_device_auth_disabled"
 	APICodeChannelOAuthDeviceCodeExpired = "channel_oauth_device_code_expired"
 	APICodeChannelOAuthDeviceAuthFailed  = "channel_oauth_device_auth_failed"
+
+	// Shared by many endpoints.
+	APICodeInvalidParams           = "invalid_params"
+	APICodeInvalidInput            = "invalid_input"
+	APICodeInvalidEmail            = "invalid_email"
+	APICodeSessionSaveFailed       = "session_save_failed"
+	APICodeVerificationCodeInvalid = "verification_code_invalid"
+	APICodeEmailSendFailed         = "email_send_failed"
+
+	// Field validation; params carry the limit (min / max) from the validate tag.
+	APICodeUsernameRequired    = "username_required"
+	APICodeUsernameTooLong     = "username_too_long"
+	APICodeUsernameHasAt       = "username_has_at"
+	APICodePasswordRequired    = "password_required"
+	APICodePasswordTooShort    = "password_too_short"
+	APICodePasswordTooLong     = "password_too_long"
+	APICodeDisplayNameTooLong  = "display_name_too_long"
+	APICodeEmailTooLong        = "email_too_long"
+	APICodeUsernameTaken       = "username_taken"
+	APICodeEmailTaken          = "email_taken"
+	APICodeInviteCodeRequired  = "invite_code_required"
+	APICodeInviteCodeInvalid   = "invite_code_invalid"
+	APICodeEmailNotRegistered  = "email_not_registered"
+	APICodeEmailSharedAccounts = "email_shared_by_accounts"
+
+	// Sign-in, sign-up and password reset.
+	APICodePasswordLoginDisabled     = "password_login_disabled"
+	APICodeLoginFailed               = "login_failed"
+	APICodeEmailCodeLoginDisabled    = "email_code_login_disabled"
+	APICodeRegisterDisabled          = "register_disabled"
+	APICodePasswordRegisterDisabled  = "password_register_disabled"
+	APICodeEmailVerificationRequired = "email_verification_required"
+	APICodeEmailDomainNotAllowed     = "email_domain_not_allowed"
+	APICodePasswordManagedExternally = "password_managed_externally"
+	APICodeResetLinkInvalid          = "reset_link_invalid"
+	APICodeTurnstileTokenMissing     = "turnstile_token_missing"
+	APICodeTurnstileFailed           = "turnstile_failed"
+	APICodeTurnstileUnavailable      = "turnstile_unavailable"
+
+	// Session and permission checks on signed-in requests.
+	APICodeNotSignedIn        = "not_signed_in"
+	APICodeInvalidAccessToken = "invalid_access_token"
+	APICodeInvalidSession     = "invalid_session"
+	APICodeSessionExpired     = "session_expired"
+	APICodeUserCheckFailed    = "user_check_failed"
+	APICodeUserBanned         = "user_banned"
+	APICodePermissionDenied   = "permission_denied"
+
+	// Account security page.
+	APICodeSelfPasswordUnavailable    = "self_password_unavailable"
+	APICodeCurrentPasswordRequired    = "current_password_required"
+	APICodeCurrentPasswordIncorrect   = "current_password_incorrect"
+	APICodeCurrentAccountLoadFailed   = "current_account_load_failed"
+	APICodeSessionCannotRevokeCurrent = "session_cannot_revoke_current"
+	APICodeSessionNotFound            = "session_not_found"
+	APICodeUnbindUnknownType          = "unbind_unknown_type"
+	APICodeUnbindLastMethod           = "unbind_last_method"
+	APICodeUnbindNoMethod             = "unbind_no_method"
+	APICodeUnbindUnknownProvider      = "unbind_unknown_provider"
 )
 
 // APIError is an error with a stable code. Returning one from a model or controller helper lets

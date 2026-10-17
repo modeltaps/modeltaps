@@ -27,6 +27,13 @@ describe('apiMessage', () => {
     expect(apiMessage(data)).toBe('A tag is required');
   });
 
+  it('translates sign-in failures and validation limits', () => {
+    const failed = { success: false, message: 'incorrect username or password, or the user is banned', code: 'login_failed' };
+    expect(apiMessage(failed)).toBe('用户名或密码错误，或账号已被封禁');
+    const tooShort = { success: false, message: 'Password must be at least 8 characters', code: 'password_too_short', params: { min: '8' } };
+    expect(apiMessage(tooShort)).toBe('密码至少 8 个字符');
+  });
+
   it('reads code and params nested under error (rate limiter 429)', () => {
     const data = {
       error: {

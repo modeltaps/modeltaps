@@ -150,10 +150,7 @@ func GetHomePageContent(c *gin.Context) {
 func SendEmailVerification(c *gin.Context) {
 	email := common.NormalizeEmail(c.Query("email"))
 	if err := common.ValidateEmailStrict(email); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid email format",
-		})
+		common.APIRespondWithError(c, http.StatusOK, errInvalidEmail)
 		return
 	}
 	if config.EmailDomainRestrictionEnabled {
@@ -165,10 +162,7 @@ func SendEmailVerification(c *gin.Context) {
 			}
 		}
 		if !allowed {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "The admin has enabled an email domain allowlist, and your email domain is not on it",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeEmailDomainNotAllowed, "The admin has enabled an email domain allowlist, and your email domain is not on it", nil)
 			return
 		}
 	}
@@ -184,10 +178,7 @@ func SendEmailVerification(c *gin.Context) {
 	common.RegisterVerificationCodeWithKey(email, code, common.EmailVerificationPurpose)
 	err := stmp.SendVerificationCodeEmail(email, code)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, emailSendFailed(err))
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -201,10 +192,7 @@ func passwordManagedExternally(c *gin.Context) bool {
 	if !config.IsExternalAccountSystem() {
 		return false
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": false,
-		"message": "Accounts on this site are managed by single sign-on. Please reset your password from the sign-in page.",
-	})
+	common.APIRespondWithCode(c, http.StatusOK, common.APICodePasswordManagedExternally, "Accounts on this site are managed by single sign-on. Please reset your password from the sign-in page.", nil)
 	return true
 }
 
@@ -214,10 +202,7 @@ func SendPasswordResetEmail(c *gin.Context) {
 	}
 	email := common.NormalizeEmail(c.Query("email"))
 	if err := common.Validate.Var(email, "required,email"); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid parameters",
-		})
+		common.APIRespondWithError(c, http.StatusOK, errInvalidParams)
 		return
 	}
 
@@ -245,10 +230,7 @@ func SendPasswordResetEmail(c *gin.Context) {
 	err := stmp.SendPasswordResetEmail(userName, email, link)
 
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, emailSendFailed(err))
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -269,35 +251,23 @@ func ResetPassword(c *gin.Context) {
 	var req PasswordResetRequest
 	err := json.NewDecoder(c.Request.Body).Decode(&req)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid parameters",
-		})
+		common.APIRespondWithError(c, http.StatusOK, errInvalidParams)
 		return
 	}
 
 	req.Email = common.NormalizeEmail(req.Email)
 	if req.Email == "" || req.Token == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid parameters",
-		})
+		common.APIRespondWithError(c, http.StatusOK, errInvalidParams)
 		return
 	}
 	if !common.VerifyCodeWithKey(req.Email, req.Token, common.PasswordResetPurpose) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Reset link is invalid or has expired",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeResetLinkInvalid, "Reset link is invalid or has expired", nil)
 		return
 	}
 	password := common.GenerateVerificationCode(12)
 	err = model.ResetUserPasswordByEmail(req.Email, password)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	common.DeleteKey(req.Email, common.PasswordResetPurpose)

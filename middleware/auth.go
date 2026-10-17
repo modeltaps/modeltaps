@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"github.com/modeltaps/modeltaps/common"
 	"fmt"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
@@ -26,10 +27,7 @@ func authHelper(c *gin.Context, minRole int) {
 		if accessToken == "" {
 			token := c.Param("accessToken")
 			if token == "" {
-				c.JSON(http.StatusUnauthorized, gin.H{
-					"success": false,
-					"message": "Permission denied: not signed in and no access token provided",
-				})
+				common.APIRespondWithCode(c, http.StatusUnauthorized, common.APICodeNotSignedIn, "Permission denied: not signed in and no access token provided", nil)
 				c.Abort()
 				return
 			}
@@ -44,10 +42,7 @@ func authHelper(c *gin.Context, minRole int) {
 			status = user.Status
 			useAccessToken = true
 		} else {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Permission denied: invalid access token",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidAccessToken, "Permission denied: invalid access token", nil)
 			c.Abort()
 			return
 		}
@@ -58,10 +53,7 @@ func authHelper(c *gin.Context, minRole int) {
 	if !useAccessToken {
 		idInt, ok := id.(int)
 		if !ok {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Permission denied: invalid session",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidSession, "Permission denied: invalid session", nil)
 			c.Abort()
 			return
 		}
@@ -74,19 +66,13 @@ func authHelper(c *gin.Context, minRole int) {
 			if saveErr := session.Save(); saveErr != nil {
 				logger.SysError("Failed to clear expired session: " + saveErr.Error())
 			}
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusUnauthorized, err)
 			c.Abort()
 			return
 		}
 		currentRole, currentStatus, err := model.CacheGetUserRoleStatus(idInt)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Permission denied: user verification failed",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserCheckFailed, "Permission denied: user verification failed", nil)
 			c.Abort()
 			return
 		}
@@ -94,18 +80,12 @@ func authHelper(c *gin.Context, minRole int) {
 		status = currentStatus
 	}
 	if status.(int) == config.UserStatusDisabled {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "User has been banned",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserBanned, "User has been banned", nil)
 		c.Abort()
 		return
 	}
 	if role.(int) < minRole {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Permission denied",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodePermissionDenied, "Permission denied", nil)
 		c.Abort()
 		return
 	}

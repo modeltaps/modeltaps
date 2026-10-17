@@ -71,7 +71,7 @@ func TestSessionRevocationInvalidatesCookie(t *testing.T) {
 	if err := model.DeleteUserSessionsExcept(nil, user.Id, ""); err != nil {
 		t.Fatalf("吊销会话失败: %v", err)
 	}
-	if resp := me(); resp["success"] != false || resp["message"] != model.ErrUserSessionInvalid.Error() {
+	if resp := me(); resp["success"] != false || resp["message"] != model.ErrUserSessionInvalid.Error() || resp["code"] != common.APICodeSessionExpired {
 		t.Fatalf("会话行吊销后同一 cookie 应失效，实际 %v", resp)
 	}
 }

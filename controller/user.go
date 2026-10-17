@@ -31,48 +31,51 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-// getFriendlyValidationMessage 将验证错误转换为友好的中文提示
-func getFriendlyValidationMessage(err error) string {
+// friendlyValidationError turns a validator error into a coded error for the first failing
+// field. Limits come from the validate tag, so the text always matches the rule.
+func friendlyValidationError(err error) error {
 	if validationErrors, ok := err.(validator.ValidationErrors); ok {
 		for _, fieldError := range validationErrors {
-			field := fieldError.Field()
-			tag := fieldError.Tag()
-
-			switch field {
+			limit := fieldError.Param()
+			switch fieldError.Field() {
 			case "Username":
-				switch tag {
+				switch fieldError.Tag() {
 				case "required":
-					return "Username must not be empty"
+					return common.NewAPIError(common.APICodeUsernameRequired, "Username must not be empty", nil)
 				case "max":
-					return "Username must not exceed 12 characters"
+					return common.NewAPIError(common.APICodeUsernameTooLong, "Username must not exceed "+limit+" characters", map[string]any{"max": limit})
 				case "excludes":
-					return "Username must not contain the @ symbol"
+					return common.NewAPIError(common.APICodeUsernameHasAt, "Username must not contain the @ symbol", nil)
 				}
 			case "Password":
-				switch tag {
+				switch fieldError.Tag() {
 				case "required":
-					return "Password must not be empty"
+					return common.NewAPIError(common.APICodePasswordRequired, "Password must not be empty", nil)
 				case "min":
-					return "Password must be at least 8 characters"
+					return common.NewAPIError(common.APICodePasswordTooShort, "Password must be at least "+limit+" characters", map[string]any{"min": limit})
 				case "max":
-					return "Password must not exceed 20 characters"
+					return common.NewAPIError(common.APICodePasswordTooLong, "Password must not exceed "+limit+" characters", map[string]any{"max": limit})
 				}
 			case "DisplayName":
-				switch tag {
-				case "max":
-					return "Display name must not exceed 20 characters"
+				if fieldError.Tag() == "max" {
+					return common.NewAPIError(common.APICodeDisplayNameTooLong, "Display name must not exceed "+limit+" characters", map[string]any{"max": limit})
 				}
 			case "Email":
-				switch tag {
+				switch fieldError.Tag() {
 				case "email":
-					return "Invalid email format"
+					return errInvalidEmail
 				case "max":
-					return "Email must not exceed 50 characters"
+					return common.NewAPIError(common.APICodeEmailTooLong, "Email must not exceed "+limit+" characters", map[string]any{"max": limit})
 				}
 			}
 		}
 	}
-	return "Invalid input parameters"
+	return common.NewAPIError(common.APICodeInvalidInput, "Invalid input parameters", nil)
+}
+
+// getFriendlyValidationMessage is the English text of friendlyValidationError.
+func getFriendlyValidationMessage(err error) string {
+	return friendlyValidationError(err).Error()
 }
 
 func Login(c *gin.Context) {
@@ -98,17 +101,11 @@ func Login(c *gin.Context) {
 	// 密码登录关闭时只给 root 留一条不依赖身份提供方的逃生口（IdP 不可用时仍能进后台改配置），
 	// 其余情形（含请求非法、账号不存在）响应完全一致且不记失败计数，避免给不可登录的账号累积锁定。
 	if !config.EffectivePasswordLogin() && (resolvedUser == nil || !config.LocalPasswordAllowedForRole(resolvedUser.Role)) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "The admin has disabled password sign-in",
-			"success": false,
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodePasswordLoginDisabled, "The admin has disabled password sign-in", nil)
 		return
 	}
 	if invalidParams {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Invalid parameters",
-			"success": false,
-		})
+		common.APIRespondWithError(c, http.StatusOK, errInvalidParams)
 		return
 	}
 
@@ -117,19 +114,13 @@ func Login(c *gin.Context) {
 	// 避免通过响应文案或耗时暴露账号是否存在/是否被锁。
 	if common.IsLoginLocked(failureKey) {
 		_ = model.ValidateLoginPassword(nil, password)
-		c.JSON(http.StatusOK, gin.H{
-			"message": model.ErrLoginFailed.Error(),
-			"success": false,
-		})
+		common.APIRespondWithError(c, http.StatusOK, model.ErrLoginFailed)
 		return
 	}
 
 	if err := model.ValidateLoginPassword(resolvedUser, password); err != nil {
 		common.RecordLoginFailure(failureKey)
-		c.JSON(http.StatusOK, gin.H{
-			"message": err.Error(),
-			"success": false,
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	common.ClearLoginFailures(failureKey)
@@ -164,10 +155,7 @@ func setupLoginSession(user *model.User, c *gin.Context, info loginSessionInfo) 
 	userSession, err := model.CreateUserSession(user.Id, info.method, c.Request.UserAgent(), c.ClientIP(), providerId, idToken)
 	if err != nil {
 		logger.SysError("failed to create login session: " + err.Error())
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Unable to save session, please try again",
-			"success": false,
-		})
+		common.APIRespondWithError(c, http.StatusOK, errSessionSaveFailed)
 		return
 	}
 	session.Set("sid", userSession.SessionKey)
@@ -177,10 +165,7 @@ func setupLoginSession(user *model.User, c *gin.Context, info loginSessionInfo) 
 	session.Set("status", user.Status)
 	err = session.Save()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "Unable to save session, please try again",
-			"success": false,
-		})
+		common.APIRespondWithError(c, http.StatusOK, errSessionSaveFailed)
 		return
 	}
 	user.LastLoginTime = time.Now().Unix()
@@ -218,10 +203,7 @@ func Logout(c *gin.Context) {
 	session.Clear()
 	err := session.Save()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"message": err.Error(),
-			"success": false,
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -235,70 +217,44 @@ func Logout(c *gin.Context) {
 
 func Register(c *gin.Context) {
 	if !config.RegisterEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "The admin has disabled new user sign-up",
-			"success": false,
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeRegisterDisabled, "The admin has disabled new user sign-up", nil)
 		return
 	}
 	if !config.EffectivePasswordRegister() {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "The admin has disabled password sign-up. Please sign up with a third-party account.",
-			"success": false,
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodePasswordRegisterDisabled, "The admin has disabled password sign-up. Please sign up with a third-party account.", nil)
 		return
 	}
 	var user model.User
 	err := c.ShouldBindJSON(&user)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	// 密码注册特定验证
 	if strings.TrimSpace(user.Password) == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Password must not be empty",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodePasswordRequired, "Password must not be empty", nil)
 		return
 	}
 
 	if err := common.Validate.Struct(&user); err != nil {
-		// 友好的验证错误提示
-		friendlyMessage := getFriendlyValidationMessage(err)
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": friendlyMessage,
-		})
+		common.APIRespondWithError(c, http.StatusOK, friendlyValidationError(err))
 		return
 	}
 	user.Email = model.NullableEmail(common.NormalizeEmail(string(user.Email)))
 	if config.EmailVerificationEnabled {
 		if user.Email == "" || user.VerificationCode == "" {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "The admin has enabled email verification. Please enter your email address and verification code.",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeEmailVerificationRequired, "The admin has enabled email verification. Please enter your email address and verification code.", nil)
 			return
 		}
 
 		// 严格验证邮箱格式
 		if err := common.ValidateEmailStrict(string(user.Email)); err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Invalid email format",
-			})
+			common.APIRespondWithError(c, http.StatusOK, errInvalidEmail)
 			return
 		}
 
 		if !common.VerifyCodeWithKey(string(user.Email), user.VerificationCode, common.EmailVerificationPurpose) {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Verification code is incorrect or has expired",
-			})
+			common.APIRespondWithError(c, http.StatusOK, errVerificationCodeInvalid)
 			return
 		}
 	}
@@ -306,10 +262,7 @@ func Register(c *gin.Context) {
 	// 邀请码基本验证（仅适用于密码注册，三方登录注册不需要邀请码）
 	if config.InviteCodeRegisterEnabled {
 		if user.InviteCode == "" {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "The admin has enabled invite-code sign-up. Please enter an invite code.",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeInviteCodeRequired, "The admin has enabled invite-code sign-up. Please enter an invite code.", nil)
 			return
 		}
 	}
@@ -361,10 +314,7 @@ func Register(c *gin.Context) {
 		// 在锁保护下验证邀请码（防止TOCTOU攻击）
 		err := model.CheckInviteCode(user.InviteCode)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 	}
@@ -387,10 +337,7 @@ func Register(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -461,18 +408,12 @@ func GetOidcCoverage(c *gin.Context) {
 func GetUser(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	user, err := model.GetUserById(id, false)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	// 影子记账账户对后台直查不可见,与列表/搜索的 ExcludeShadowUsers 语义一致
@@ -502,20 +443,14 @@ func GetRateRealtime(c *gin.Context) {
 	id := c.GetInt("id")
 	user, err := model.GetUserById(id, false)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
 	// 与 /panel/analytics 实时流量同一口径：logs 表最近60秒滑动窗口，仅统计消费日志
 	rpmTpmStats, err := model.GetRpmTpmStatistics(id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -593,10 +528,7 @@ func GenerateAccessToken(c *gin.Context) {
 	id := c.GetInt("id")
 	user, err := model.GetUserById(id, true)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	user.AccessToken = utils.GetUUID()
@@ -610,10 +542,7 @@ func GenerateAccessToken(c *gin.Context) {
 	}
 
 	if err := user.Update(false); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -628,19 +557,13 @@ func GetAffCode(c *gin.Context) {
 	id := c.GetInt("id")
 	user, err := model.GetUserById(id, true)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	if user.AffCode == "" {
 		user.AffCode = utils.GetRandomString(4)
 		if err := user.Update(false); err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 	}
@@ -655,10 +578,7 @@ func GetSelf(c *gin.Context) {
 	id := c.GetInt("id")
 	user, err := model.GetSelfById(id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -769,20 +689,14 @@ func UpdateUser(c *gin.Context) {
 	var updatedUser model.User
 	err := json.NewDecoder(c.Request.Body).Decode(&updatedUser)
 	if err != nil || updatedUser.Id == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid parameters",
-		})
+		common.APIRespondWithError(c, http.StatusOK, errInvalidParams)
 		return
 	}
 	if updatedUser.Password == "" {
 		updatedUser.Password = "$I_LOVE_U" // make Validator happy :)
 	}
 	if err := common.Validate.Struct(&updatedUser); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": getFriendlyValidationMessage(err),
-		})
+		common.APIRespondWithError(c, http.StatusOK, friendlyValidationError(err))
 		return
 	}
 
@@ -790,19 +704,13 @@ func UpdateUser(c *gin.Context) {
 	updatedUser.Email = model.NullableEmail(common.NormalizeEmail(string(updatedUser.Email)))
 	if updatedUser.Email != "" {
 		if err := common.ValidateEmailStrict(string(updatedUser.Email)); err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Invalid email format",
-			})
+			common.APIRespondWithError(c, http.StatusOK, errInvalidEmail)
 			return
 		}
 	}
 	originUser, err := model.GetUserById(updatedUser.Id, false)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	// 影子记账账户不接受后台管理操作,与 GetUser/GetUsersList 的排除语义一致
@@ -844,19 +752,13 @@ func UpdateUser(c *gin.Context) {
 		updatedUser.EmailVerified = false
 	}
 	if err := updatedUser.Update(updatePassword); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	// false 是零值，Updates(struct) 会跳过，须显式写列
 	if emailReplaced {
 		if err := model.UpdateUser(updatedUser.Id, map[string]interface{}{"email_verified": false}); err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 	}
@@ -881,17 +783,11 @@ func UpdateSelf(c *gin.Context) {
 	var user selfUpdateRequest
 	err := json.NewDecoder(c.Request.Body).Decode(&user)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid parameters",
-		})
+		common.APIRespondWithError(c, http.StatusOK, errInvalidParams)
 		return
 	}
 	if err := common.Validate.Struct(&user); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": getFriendlyValidationMessage(err),
-		})
+		common.APIRespondWithError(c, http.StatusOK, friendlyValidationError(err))
 		return
 	}
 
@@ -905,26 +801,17 @@ func UpdateSelf(c *gin.Context) {
 	// 其余字段照常更新需由前端另发一次不带 password 的请求。
 	// 例外：root 的逃生口密码必须可轮换，否则关闭密码登录后就再也改不动了。
 	if updatePassword && !config.LocalPasswordAllowedForRole(c.GetInt("role")) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Password sign-in is not enabled on this site; passwords are managed by the identity provider",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeSelfPasswordUnavailable, "Password sign-in is not enabled on this site; passwords are managed by the identity provider", nil)
 		return
 	}
 	if updatePassword {
-		if msg := checkOriginalPassword(cleanUser.Id, user.OriginalPassword); msg != "" {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": msg,
-			})
+		if err := checkOriginalPassword(cleanUser.Id, user.OriginalPassword); err != nil {
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 	}
 	if err := cleanUser.Update(updatePassword); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	// 改密后踢掉其它设备：只保留发起改密的这一个会话
@@ -940,24 +827,24 @@ func UpdateSelf(c *gin.Context) {
 	})
 }
 
-// checkOriginalPassword returns an error message when the current password does not authorize a
-// password change, or "" when it does. Accounts without a stored password (created through a
+// checkOriginalPassword returns an error when the current password does not authorize a
+// password change, or nil when it does. Accounts without a stored password (created through a
 // third-party sign-in) set their first password without one.
-func checkOriginalPassword(userId int, originalPassword string) string {
+func checkOriginalPassword(userId int, originalPassword string) error {
 	stored, err := model.GetUserById(userId, true)
 	if err != nil {
-		return "Failed to load the current account"
+		return common.NewAPIError(common.APICodeCurrentAccountLoadFailed, "Failed to load the current account", nil)
 	}
 	if stored.Password == "" {
-		return ""
+		return nil
 	}
 	if originalPassword == "" {
-		return "Current password is required to change the password"
+		return common.NewAPIError(common.APICodeCurrentPasswordRequired, "Current password is required to change the password", nil)
 	}
 	if !common.ValidatePasswordAndHash(originalPassword, stored.Password) {
-		return "Current password is incorrect"
+		return common.NewAPIError(common.APICodeCurrentPasswordIncorrect, "Current password is incorrect", nil)
 	}
-	return ""
+	return nil
 }
 
 // GetUserSetting 获取当前用户的偏好设置（仅 self）
@@ -965,10 +852,7 @@ func GetUserSetting(c *gin.Context) {
 	id := c.GetInt("id")
 	setting, err := model.GetUserSettingById(id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -982,40 +866,25 @@ func GetUserSetting(c *gin.Context) {
 func UpdateUserSetting(c *gin.Context) {
 	var update model.UserSettingUpdate
 	if err := json.NewDecoder(c.Request.Body).Decode(&update); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid parameters",
-		})
+		common.APIRespondWithError(c, http.StatusOK, errInvalidParams)
 		return
 	}
 	id := c.GetInt("id")
 	setting, err := model.GetUserSettingById(id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	if err := setting.ApplyUpdate(update); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	if err := setting.Validate(); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	if err := model.UpdateUserSettingById(id, *setting); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -1028,18 +897,12 @@ func UpdateUserSetting(c *gin.Context) {
 func DeleteUser(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	originUser, err := model.GetUserById(id, false)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	// 影子记账账户不接受后台管理操作,与 GetUser/GetUsersList 的排除语义一致
@@ -1059,10 +922,7 @@ func DeleteUser(c *gin.Context) {
 		return
 	}
 	if err := model.DeleteUserById(id); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -1075,36 +935,22 @@ func CreateUser(c *gin.Context) {
 	var user model.User
 	err := c.ShouldBindJSON(&user)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
 	// 管理员创建用户时的特定验证
 	if strings.TrimSpace(user.Username) == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Username must not be empty",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUsernameRequired, "Username must not be empty", nil)
 		return
 	}
 
 	if strings.TrimSpace(user.Password) == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Password must not be empty",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodePasswordRequired, "Password must not be empty", nil)
 		return
 	}
 	if err := common.Validate.Struct(&user); err != nil {
-		// 友好的验证错误提示
-		friendlyMessage := getFriendlyValidationMessage(err)
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": friendlyMessage,
-		})
+		common.APIRespondWithError(c, http.StatusOK, friendlyValidationError(err))
 		return
 	}
 
@@ -1112,10 +958,7 @@ func CreateUser(c *gin.Context) {
 	user.Email = model.NullableEmail(common.NormalizeEmail(string(user.Email)))
 	if user.Email != "" {
 		if err := common.ValidateEmailStrict(string(user.Email)); err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Invalid email format",
-			})
+			common.APIRespondWithError(c, http.StatusOK, errInvalidEmail)
 			return
 		}
 	}
@@ -1138,10 +981,7 @@ func CreateUser(c *gin.Context) {
 		DisplayName: user.DisplayName,
 	}
 	if err := cleanUser.Insert(0); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -1162,10 +1002,7 @@ func ManageUser(c *gin.Context) {
 	err := json.NewDecoder(c.Request.Body).Decode(&req)
 
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid parameters",
-		})
+		common.APIRespondWithError(c, http.StatusOK, errInvalidParams)
 		return
 	}
 
@@ -1226,10 +1063,7 @@ func ManageUser(c *gin.Context) {
 			return
 		}
 		if err := user.Delete(); err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 	case "promote":
@@ -1279,10 +1113,7 @@ func ManageUser(c *gin.Context) {
 	}
 
 	if err := user.Update(false); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	clearUser := model.User{
@@ -1302,18 +1133,12 @@ func EmailBind(c *gin.Context) {
 
 	// 严格验证邮箱格式
 	if err := common.ValidateEmailStrict(email); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid email format",
-		})
+		common.APIRespondWithError(c, http.StatusOK, errInvalidEmail)
 		return
 	}
 
 	if !common.VerifyCodeWithKey(email, code, common.EmailVerificationPurpose) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Verification code is incorrect or has expired",
-		})
+		common.APIRespondWithError(c, http.StatusOK, errVerificationCodeInvalid)
 		return
 	}
 	id := c.GetInt("id")
@@ -1322,10 +1147,7 @@ func EmailBind(c *gin.Context) {
 	}
 	err := user.FillUserById()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	user.Email = model.NullableEmail(email)
@@ -1334,10 +1156,7 @@ func EmailBind(c *gin.Context) {
 	// no need to check if this email already taken, because we have used verification code to check it
 	err = user.Update(false)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -1355,19 +1174,13 @@ func TopUp(c *gin.Context) {
 	req := topUpRequest{}
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	id := c.GetInt("id")
 	quota, err := model.Redeem(req.Key, id, c.ClientIP())
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -1385,10 +1198,7 @@ type ChangeUserQuotaRequest struct {
 func ChangeUserQuota(c *gin.Context) {
 	userId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	var req ChangeUserQuotaRequest
@@ -1404,10 +1214,7 @@ func ChangeUserQuota(c *gin.Context) {
 
 	targetUser, err := model.GetUserById(userId, false)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	// 影子记账账户不接受后台管理操作,与 GetUser/GetUsersList 的排除语义一致
@@ -1429,10 +1236,7 @@ func ChangeUserQuota(c *gin.Context) {
 
 	err = model.ChangeUserQuota(userId, req.Quota, false)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -1482,18 +1286,12 @@ var unbindClearedColumns = map[string]map[string]interface{}{
 func Unbind(c *gin.Context) {
 	var req UnbindRequest
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid parameters",
-		})
+		common.APIRespondWithError(c, http.StatusOK, errInvalidParams)
 		return
 	}
 	updates, known := unbindClearedColumns[req.Type]
 	if !known && req.Type != model.LoginMethodOidc {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Unknown link type",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUnbindUnknownType, "Unknown link type", nil)
 		return
 	}
 	id := c.GetInt("id")
@@ -1514,7 +1312,7 @@ func Unbind(c *gin.Context) {
 			if err := tx.First(&provider, "slug = ?", req.Provider).Error; err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					logger.SysLog("unlink failed: identity provider " + req.Provider + " not found")
-					return errors.New(unbindUnknownProviderMessage)
+					return common.NewAPIError(common.APICodeUnbindUnknownProvider, unbindUnknownProviderMessage, nil)
 				}
 				return err
 			}
@@ -1525,9 +1323,9 @@ func Unbind(c *gin.Context) {
 		if remaining < 1 {
 			// remaining 未减少说明本次解绑的身份本就不计入可用方式，账号是已经零方式而非「解绑掉最后一种」。
 			if remaining == methods.Total() {
-				return errors.New(unbindNoLoginMethodMessage)
+				return common.NewAPIError(common.APICodeUnbindNoMethod, unbindNoLoginMethodMessage, nil)
 			}
-			return errors.New(unbindLastLoginMethodMessage)
+			return common.NewAPIError(common.APICodeUnbindLastMethod, unbindLastLoginMethodMessage, nil)
 		}
 		if req.Type == model.LoginMethodOidc {
 			// provider 为空即旧前端的全量解绑，删该用户全部 OIDC 身份。
@@ -1540,10 +1338,7 @@ func Unbind(c *gin.Context) {
 		return tx.Model(&model.User{}).Where("id = ?", id).Updates(updates).Error
 	})
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

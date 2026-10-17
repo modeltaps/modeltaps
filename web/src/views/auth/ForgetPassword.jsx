@@ -93,7 +93,7 @@ export default function ForgetPassword() {
         <p className="py-5 text-center text-lg font-semibold text-foreground">{t('registerForm.restSendEmail')}</p>
       ) : (
         <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <FormField label="Email" htmlFor="email" error={errors.email?.message}>
+          <FormField label={t('login.email')} htmlFor="email" error={errors.email?.message}>
             <Input id="email" type="text" {...register('email')} />
           </FormField>
 

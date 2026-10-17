@@ -99,6 +99,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Sign-in, sign-up, password reset, email code and account security errors (wrong password,
+  validation, invite code, verification code, expired session, unlinking the last sign-in
+  method and similar) were shown in English whatever the interface language. These responses
+  now carry a `code` and the web console shows them in the interface language; `message` is
+  unchanged. Email labels on the sign-up and forgot-password pages are translated as well.
+- Password length errors said "at most 20 characters" while the limit is 64; length messages
+  now take their limits from the validation rules.
+- When Turnstile was enabled and the session could not be saved after a successful check, the
+  request still went on to the handler after the error response.
 - Chat requests on Codex channels returned no tool calls, streaming or not: function call
   events were dropped and only the text was forwarded. They now return `tool_calls` with
   `finish_reason: "tool_calls"`, and stream reasoning text as well.

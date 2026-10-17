@@ -144,7 +144,7 @@ const WEBAUTHN_SERVER_ERROR_CODES = [
   'webauthn_disabled'
 ];
 
-// 翻译 WebAuthn 服务端错误:优先 code 映射,其次 message,最后回退通用 key;detail 仅输出到 console
+// 翻译 WebAuthn 服务端错误:优先 WebAuthn code 映射,其次通用 apiError code 或 message,最后回退通用 key;detail 仅输出到 console
 function translateWebAuthnServerError(data, fallbackKey) {
   if (data?.detail) {
     console.warn('WebAuthn server error detail:', data.detail);
@@ -152,7 +152,7 @@ function translateWebAuthnServerError(data, fallbackKey) {
   if (data?.code && WEBAUTHN_SERVER_ERROR_CODES.includes(data.code)) {
     return i18n.t(`webauthn.server.${data.code}`);
   }
-  return data?.message || i18n.t(fallbackKey);
+  return apiMessage(data) || i18n.t(fallbackKey);
 }
 
 export async function onWebAuthnClicked(username, showError, showSuccess, navigateToStatus) {
@@ -481,7 +481,7 @@ export async function deleteWebAuthnCredential(credentialId, showError, showSucc
         onSuccess();
       }
     } else {
-      showError(data.message || i18n.t('webauthn.deleteFailed'));
+      showError(apiMessage(data) || i18n.t('webauthn.deleteFailed'));
     }
   } catch (error) {
     showError(i18n.t('webauthn.deleteFailedDetail', { message: error.message }));

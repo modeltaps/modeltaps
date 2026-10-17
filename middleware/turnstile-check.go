@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"encoding/json"
@@ -29,10 +30,7 @@ func TurnstileCheck() gin.HandlerFunc {
 			}
 			response := c.Query("turnstile")
 			if response == "" {
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": "Turnstile token is empty",
-				})
+				common.APIRespondWithCode(c, http.StatusOK, common.APICodeTurnstileTokenMissing, "Turnstile token is empty", nil)
 				c.Abort()
 				return
 			}
@@ -43,10 +41,7 @@ func TurnstileCheck() gin.HandlerFunc {
 			})
 			if err != nil {
 				logger.SysError(err.Error())
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": err.Error(),
-				})
+				common.APIRespondWithCode(c, http.StatusOK, common.APICodeTurnstileUnavailable, err.Error(), nil)
 				c.Abort()
 				return
 			}
@@ -55,28 +50,20 @@ func TurnstileCheck() gin.HandlerFunc {
 			err = json.NewDecoder(rawRes.Body).Decode(&res)
 			if err != nil {
 				logger.SysError(err.Error())
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": err.Error(),
-				})
+				common.APIRespondWithCode(c, http.StatusOK, common.APICodeTurnstileUnavailable, err.Error(), nil)
 				c.Abort()
 				return
 			}
 			if !res.Success {
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": "Turnstile verification failed, please refresh and try again!",
-				})
+				common.APIRespondWithCode(c, http.StatusOK, common.APICodeTurnstileFailed, "Turnstile verification failed, please refresh and try again!", nil)
 				c.Abort()
 				return
 			}
 			session.Set("turnstile", time.Now().Unix())
 			err = session.Save()
 			if err != nil {
-				c.JSON(http.StatusOK, gin.H{
-					"message": "Unable to save session, please try again",
-					"success": false,
-				})
+				common.APIRespondWithCode(c, http.StatusOK, common.APICodeSessionSaveFailed, "Unable to save session, please try again", nil)
+				c.Abort()
 				return
 			}
 		}

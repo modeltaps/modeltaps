@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/model"
 
 	"github.com/gin-contrib/sessions"
@@ -42,10 +43,7 @@ func GetUserSessions(c *gin.Context) {
 	userId := c.GetInt("id")
 	sessionList, err := model.ListUserSessions(userId)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	current := currentSessionKey(c)
@@ -73,34 +71,22 @@ func RevokeUserSession(c *gin.Context) {
 	userId := c.GetInt("id")
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil || id <= 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid parameters",
-		})
+		common.APIRespondWithError(c, http.StatusOK, errInvalidParams)
 		return
 	}
 	if current := currentSessionKey(c); current != "" {
 		if session, err := model.GetUserSessionByKey(current); err == nil && session.Id == id {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Cannot revoke the current session, use \"Sign out\" instead",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeSessionCannotRevokeCurrent, "Cannot revoke the current session, use \"Sign out\" instead", nil)
 			return
 		}
 	}
 	deleted, err := model.DeleteUserSessionById(userId, id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	if !deleted {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Session not found",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeSessionNotFound, "Session not found", nil)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -113,10 +99,7 @@ func RevokeUserSession(c *gin.Context) {
 func LogoutOtherSessions(c *gin.Context) {
 	userId := c.GetInt("id")
 	if err := model.DeleteUserSessionsExcept(nil, userId, currentSessionKey(c)); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

@@ -394,20 +394,20 @@ func DeleteUserById(id int) (err error) {
 
 func (user *User) Insert(inviterId int) error {
 	if strings.TrimSpace(user.Username) == "" {
-		return errors.New("username must not be empty")
+		return common.NewAPIError(common.APICodeUsernameRequired, "username must not be empty", nil)
 	}
 	if RecordExists(&User{}, "username", user.Username, nil) {
-		return errors.New("username already exists")
+		return common.NewAPIError(common.APICodeUsernameTaken, "username already exists", nil)
 	}
 
 	// 如果提供了邮箱，先归一化再进行严格验证与查重
 	user.Email = NullableEmail(common.NormalizeEmail(string(user.Email)))
 	if user.Email != "" {
 		if err := common.ValidateEmailStrict(string(user.Email)); err != nil {
-			return errors.New("invalid email format")
+			return common.NewAPIError(common.APICodeInvalidEmail, "invalid email format", nil)
 		}
 		if RecordExists(&User{}, "email", string(user.Email), nil) {
-			return errors.New("this email is already in use")
+			return common.NewAPIError(common.APICodeEmailTaken, "this email is already in use", nil)
 		}
 	}
 	var err error
@@ -451,10 +451,10 @@ func (user *User) InsertWithTx(tx *gorm.DB, inviterId int) error {
 // (QuotaForNewUser 与赠送日志);组织代建等受控路径应传 false,避免刷免费额度(SEC-11)
 func (user *User) insertWithTx(tx *gorm.DB, inviterId int, grantSignupBonus bool) error {
 	if strings.TrimSpace(user.Username) == "" {
-		return errors.New("username must not be empty")
+		return common.NewAPIError(common.APICodeUsernameRequired, "username must not be empty", nil)
 	}
 	if RecordExistsWithTx(tx, &User{}, "username", user.Username, nil) {
-		return errors.New("username already exists")
+		return common.NewAPIError(common.APICodeUsernameTaken, "username already exists", nil)
 	}
 
 	// 如果提供了邮箱，先归一化再进行严格验证与查重（与 username 查重同等位置，
@@ -462,10 +462,10 @@ func (user *User) insertWithTx(tx *gorm.DB, inviterId int, grantSignupBonus bool
 	user.Email = NullableEmail(common.NormalizeEmail(string(user.Email)))
 	if user.Email != "" {
 		if err := common.ValidateEmailStrict(string(user.Email)); err != nil {
-			return errors.New("invalid email format")
+			return common.NewAPIError(common.APICodeInvalidEmail, "invalid email format", nil)
 		}
 		if RecordExistsWithTx(tx, &User{}, "email", string(user.Email), nil) {
-			return errors.New("this email is already in use")
+			return common.NewAPIError(common.APICodeEmailTaken, "this email is already in use", nil)
 		}
 	}
 	var err error
@@ -517,7 +517,7 @@ func (user *User) Update(updatePassword bool) error {
 
 	user.Email = NullableEmail(common.NormalizeEmail(string(user.Email)))
 	if user.Email != "" && RecordExists(&User{}, "email", string(user.Email), user.Id) {
-		return errors.New("this email is already in use")
+		return common.NewAPIError(common.APICodeEmailTaken, "this email is already in use", nil)
 	}
 
 	err = DB.Model(user).Omit(omitFields...).Updates(user).Error
@@ -658,7 +658,7 @@ const dummyPasswordHash = "$2a$10$G3XFuXDg4ofRs/KXk6L1L.TwAiaHBi20fbJH/U8uoJ6Eiy
 
 // ErrLoginFailed 密码登录的统一失败文案。用户不存在、密码错误、账号被封禁共用同一文本，
 // 避免通过响应差异区分账号是否存在。
-var ErrLoginFailed = errors.New("incorrect username or password, or the user is banned")
+var ErrLoginFailed error = common.NewAPIError(common.APICodeLoginFailed, "incorrect username or password, or the user is banned", nil)
 
 // ResolveLoginUser 按标识符类型显式解析登录用户：标识符含 "@" 只按归一化邮箱查，
 // 否则只按用户名查；两者均排除组织影子账户。不做跨列兜底，
@@ -923,10 +923,10 @@ func ResetUserPasswordByEmail(email string, password string) error {
 	}
 	if count > 1 {
 		logger.SysError(fmt.Sprintf("password reset failed: email %s is linked to %d accounts", email, count))
-		return errors.New("this email is linked to multiple accounts, so the password cannot be reset by yourself. Please contact the admin.")
+		return common.NewAPIError(common.APICodeEmailSharedAccounts, "this email is linked to multiple accounts, so the password cannot be reset by yourself. Please contact the admin.", nil)
 	}
 	if count == 0 {
-		return errors.New("this email is not registered")
+		return common.NewAPIError(common.APICodeEmailNotRegistered, "this email is not registered", nil)
 	}
 	hashedPassword, err := common.Password2Hash(password)
 	if err != nil {
