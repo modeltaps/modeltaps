@@ -227,6 +227,16 @@ function CodeOAuth({ flow, channelId, getValues, onCredentials }) {
     toast.success(t('channel_edit.oauth.success'));
     setOpen(false);
   };
+  const close = () => setOpen(false);
+
+  const tabs = flow.device ? (
+    <Tabs value={mode} onValueChange={setMode}>
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="device">{t('channelOAuth.tabs.device')}</TabsTrigger>
+        <TabsTrigger value="paste">{t('channelOAuth.tabs.paste')}</TabsTrigger>
+      </TabsList>
+    </Tabs>
+  ) : null;
 
   return (
     <div className="space-y-2">
@@ -253,32 +263,42 @@ function CodeOAuth({ flow, channelId, getValues, onCredentials }) {
           <DialogHeader>
             <DialogTitle>{t('channel_edit.oauth.dialogTitle', { provider: flow.provider })}</DialogTitle>
           </DialogHeader>
-          <DialogBody className="space-y-4">
-            {flow.device && (
-              <Tabs value={mode} onValueChange={setMode}>
-                <TabsList className="w-full">
-                  <TabsTrigger value="device" className="flex-1">
-                    {t('channelOAuth.tabs.device')}
-                  </TabsTrigger>
-                  <TabsTrigger value="paste" className="flex-1">
-                    {t('channelOAuth.tabs.paste')}
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            )}
-            {open && mode === 'device' && <DeviceCodePanel channelId={channelId} getValues={getValues} onDone={done} />}
-            {open && mode === 'paste' && (
-              <PastePanel flow={flow} channelId={channelId} getValues={getValues} onDone={done} autoOpen={!flow.device} />
-            )}
-          </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              {t('common.cancel')}
-            </Button>
-          </DialogFooter>
+          {open && mode === 'device' && (
+            <DeviceCodePanel tabs={tabs} channelId={channelId} getValues={getValues} onDone={done} onCancel={close} />
+          )}
+          {open && mode === 'paste' && (
+            <PastePanel
+              tabs={tabs}
+              flow={flow}
+              channelId={channelId}
+              getValues={getValues}
+              onDone={done}
+              onCancel={close}
+              autoOpen={!flow.device}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// Body (tabs on top) plus a footer with Cancel and the panel's main action on the right.
+function OAuthPanelShell({ tabs, onCancel, primary, children }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <DialogBody className="space-y-5">
+        {tabs}
+        {children}
+      </DialogBody>
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          {t('common.cancel')}
+        </Button>
+        {primary}
+      </DialogFooter>
+    </>
   );
 }
 
@@ -298,7 +318,7 @@ function OAuthError({ error, action }) {
 
 // Device code login (Codex). Polls one request at a time, at the interval the
 // server reports, until approved, refused or expired; unmounting stops it.
-function DeviceCodePanel({ channelId, getValues, onDone }) {
+function DeviceCodePanel({ tabs, channelId, getValues, onDone, onCancel }) {
   const { t } = useTranslation();
   const [device, setDevice] = useState(null); // { sessionId, userCode, verificationUrl, expiresAt }
   const [error, setError] = useState(null);
@@ -386,29 +406,6 @@ function DeviceCodePanel({ channelId, getValues, onDone }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const retry = (
-    <Button type="button" size="sm" variant="outline" onClick={restart}>
-      {t('channelOAuth.device.retry')}
-    </Button>
-  );
-
-  if (error) {
-    return (
-      <div className="space-y-3">
-        <OAuthError error={error} action={retry} />
-        <p className="text-sm text-muted-foreground">{t('channelOAuth.device.fallbackHint')}</p>
-      </div>
-    );
-  }
-  if (!device) {
-    return (
-      <p className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="size-4 animate-spin" />
-        {t('channelOAuth.device.requesting')}
-      </p>
-    );
-  }
-
   // Copy first, while this page still has focus (the browser refuses clipboard writes once the
   // new tab takes it), then open the page within the same click so popup blockers allow it.
   const openPage = (e) => {
@@ -421,47 +418,83 @@ function DeviceCodePanel({ channelId, getValues, onDone }) {
     if (ok) toast.success(t('channelOAuth.device.codeCopied'));
     else toast.error(t('channel_edit.oauth.copyFail'));
   };
-  const hint = {
-    '': t('channelOAuth.device.openHint'),
-    yes: t('channelOAuth.device.copiedHint'),
-    no: t('channelOAuth.device.copyFailedHint')
-  }[copied];
+
+  if (error) {
+    return (
+      <OAuthPanelShell
+        tabs={tabs}
+        onCancel={onCancel}
+        primary={
+          <Button type="button" onClick={restart}>
+            {t('channelOAuth.device.retry')}
+          </Button>
+        }
+      >
+        <OAuthError error={error} />
+        <p className="text-center text-sm text-muted-foreground">{t('channelOAuth.device.fallbackHint')}</p>
+      </OAuthPanelShell>
+    );
+  }
+
+  const hint = device
+    ? { '': t('channelOAuth.device.openHint'), yes: t('channelOAuth.device.copiedHint'), no: t('channelOAuth.device.copyFailedHint') }[
+        copied
+      ]
+    : '';
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col items-center gap-3 pt-2 text-center">
-        <p className="text-sm text-muted-foreground">{t('channelOAuth.device.codeLabel')}</p>
-        <div className="flex items-center gap-1 rounded-lg border bg-muted/50 py-1 pl-5 pr-1">
-          <code data-testid="device-user-code" className="font-mono text-3xl font-semibold tracking-[0.15em]">
-            {device.userCode}
-          </code>
-          <Button type="button" variant="ghost" size="icon" aria-label={t('channelOAuth.device.copyCode')} onClick={copyCode}>
-            <Copy className="size-4" />
-          </Button>
-        </div>
-        <Button type="button" size="lg" className="mt-1 w-full max-w-xs" onClick={openPage}>
+    <OAuthPanelShell
+      tabs={tabs}
+      onCancel={onCancel}
+      primary={
+        <Button type="button" disabled={!device} onClick={openPage}>
           <ExternalLink className="size-4" />
           {t('channelOAuth.device.open')}
         </Button>
-        <p
-          className={`flex max-w-sm items-start justify-center gap-1.5 text-xs ${copied === 'yes' ? 'text-emerald-600' : 'text-muted-foreground'}`}
-          aria-live="polite"
-        >
-          {copied === 'yes' && <CircleCheck className="mt-px size-3.5 shrink-0" />}
-          <span>{hint}</span>
-        </p>
-        <p className="flex w-full items-center justify-center gap-2 border-t pt-4 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" />
-          {t('channelOAuth.device.waiting', { time: formatCountdown((device.expiresAt - now) / 1000) })}
-        </p>
+      }
+    >
+      <div className="flex min-h-48 flex-col items-center justify-center gap-4 text-center">
+        {device ? (
+          <>
+            <p className="text-sm text-muted-foreground">{t('channelOAuth.device.codeLabel')}</p>
+            <button
+              type="button"
+              title={t('channelOAuth.device.copyCode')}
+              aria-label={t('channelOAuth.device.copyCode')}
+              onClick={copyCode}
+              className="group flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-5 py-3 transition-colors hover:bg-muted"
+            >
+              {/* spacer as wide as the icon keeps the code itself centered */}
+              <span className="size-4" aria-hidden="true" />
+              <code data-testid="device-user-code" className="font-mono text-3xl font-semibold tracking-[0.15em]">
+                {device.userCode}
+              </code>
+              <Copy className="size-4 text-muted-foreground group-hover:text-foreground" />
+            </button>
+            <p
+              className={`flex max-w-md items-start justify-center gap-1.5 text-balance text-sm ${copied === 'yes' ? 'text-emerald-600' : 'text-muted-foreground'}`}
+              aria-live="polite"
+            >
+              {copied === 'yes' && <CircleCheck className="mt-0.5 size-4 shrink-0" />}
+              <span>{hint}</span>
+            </p>
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="size-3.5 animate-spin" />
+              {t('channelOAuth.device.waiting', { time: formatCountdown((device.expiresAt - now) / 1000) })}
+            </p>
+          </>
+        ) : (
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            {t('channelOAuth.device.requesting')}
+          </p>
+        )}
       </div>
-      <Alert variant="info">
-        <AlertDescription className="space-y-1 text-xs">
-          <p>{t('channelOAuth.device.enableTip')}</p>
-          <p>{t('channelOAuth.device.phishingTip')}</p>
-        </AlertDescription>
-      </Alert>
-    </div>
+      <div className="space-y-1 rounded-lg bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
+        <p>{t('channelOAuth.device.enableTip')}</p>
+        <p>{t('channelOAuth.device.phishingTip')}</p>
+      </div>
+    </OAuthPanelShell>
   );
 }
 
@@ -471,39 +504,54 @@ function PasteExample({ paste }) {
   const { t } = useTranslation();
   if (paste === 'url') {
     return (
-      <figure className="overflow-hidden rounded-md border text-xs" aria-hidden="true">
-        <div className="flex items-center gap-2 border-b bg-muted px-3 py-2">
-          <span className="flex-1 truncate rounded bg-background px-2 py-1 font-mono ring-2 ring-primary">
+      <figure className="overflow-hidden rounded-lg border border-border text-xs" aria-hidden="true">
+        <div className="flex items-center gap-2 border-b border-border bg-muted px-3 py-2">
+          <span className="flex-1 truncate rounded-full bg-background px-3 py-1 font-mono ring-1 ring-primary/40">
             localhost:1455/auth/callback?code=ac_…&amp;state=…
           </span>
         </div>
         <div className="px-3 py-3 text-muted-foreground">{t('channelOAuth.paste.url.mockError')}</div>
-        <figcaption className="border-t px-3 py-1.5 text-muted-foreground">{t('channelOAuth.paste.url.mockCaption')}</figcaption>
+        <figcaption className="border-t border-border bg-muted/40 px-3 py-1.5 text-muted-foreground">
+          {t('channelOAuth.paste.url.mockCaption')}
+        </figcaption>
       </figure>
     );
   }
   return (
-    <figure className="overflow-hidden rounded-md border text-xs" aria-hidden="true">
+    <figure className="overflow-hidden rounded-lg border border-border text-xs" aria-hidden="true">
       <div className="space-y-2 px-3 py-3">
         <div className="font-medium">{t('channelOAuth.paste.code.mockTitle')}</div>
         <div className="flex items-center gap-2">
           <span className="flex-1 truncate rounded bg-muted px-2 py-1 font-mono">xxxxxxxxxxxx#yyyyyyyy</span>
-          <span className="rounded bg-primary px-2 py-1 text-primary-foreground ring-2 ring-primary ring-offset-1">
-            {t('channelOAuth.paste.code.mockCopy')}
-          </span>
+          <span className="rounded bg-primary px-2 py-1 text-primary-foreground">{t('channelOAuth.paste.code.mockCopy')}</span>
         </div>
       </div>
-      <figcaption className="border-t px-3 py-1.5 text-muted-foreground">{t('channelOAuth.paste.code.mockCaption')}</figcaption>
+      <figcaption className="border-t border-border bg-muted/40 px-3 py-1.5 text-muted-foreground">
+        {t('channelOAuth.paste.code.mockCaption')}
+      </figcaption>
     </figure>
   );
 }
 
 const PASTE_STATUS_OK = new Set(['ok']);
 
+// One numbered step of the paste instructions.
+function Step({ n, title, children }) {
+  return (
+    <li className="flex gap-3">
+      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">{n}</span>
+      <div className="min-w-0 flex-1 space-y-2 pt-0.5">
+        <p className="text-sm">{title}</p>
+        {children}
+      </div>
+    </li>
+  );
+}
+
 // Paste flow: start an authorization session, open the provider page, then
 // paste what it ends on. The input is checked as you type; a valid paste for
 // this session is submitted right away.
-function PastePanel({ flow, channelId, getValues, onDone, autoOpen }) {
+function PastePanel({ tabs, flow, channelId, getValues, onDone, onCancel, autoOpen }) {
   const { t } = useTranslation();
   const [session, setSession] = useState(null); // { authURL, state, minutes }
   const [input, setInput] = useState('');
@@ -582,75 +630,85 @@ function PastePanel({ flow, channelId, getValues, onDone, autoOpen }) {
       </Button>
     ) : null;
 
+  const submitButton = (
+    <Button type="button" disabled={busy || !session || status.kind !== 'ok'} onClick={() => submit(input)}>
+      {busy && <Loader2 className="size-4 animate-spin" />}
+      {busy ? t('channel_edit.oauth.submitting') : t('channel_edit.oauth.submitCode')}
+    </Button>
+  );
+
   if (!session) {
-    return error ? (
-      <OAuthError error={error} action={restartButton} />
-    ) : (
-      <p className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="size-4 animate-spin" />
-        {t('channel_edit.oauth.gettingLink')}
-      </p>
+    return (
+      <OAuthPanelShell tabs={tabs} onCancel={onCancel} primary={submitButton}>
+        {error ? (
+          <OAuthError error={error} action={restartButton} />
+        ) : (
+          <p className="flex min-h-48 items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            {t('channel_edit.oauth.gettingLink')}
+          </p>
+        )}
+      </OAuthPanelShell>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <ol className="list-decimal space-y-1 pl-5 text-sm">
-        <li>{t(`channelOAuth.paste.${flow.paste}.step1`, { provider: flow.provider })}</li>
-        <li>{t(`channelOAuth.paste.${flow.paste}.step2`)}</li>
-        <li>{t(`channelOAuth.paste.${flow.paste}.step3`)}</li>
+    <OAuthPanelShell tabs={tabs} onCancel={onCancel} primary={submitButton}>
+      <ol className="space-y-5">
+        <Step n={1} title={t(`channelOAuth.paste.${flow.paste}.step1`, { provider: flow.provider })}>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant="outline" onClick={() => window.open(session.authURL, '_blank', 'noopener,noreferrer')}>
+              <ExternalLink className="size-4" />
+              {t('channel_edit.oauth.openAuthPage')}
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => copyText(t, session.authURL, 'channel_edit.oauth.copySuccess')}>
+              <Copy className="size-4" />
+              {t('channel_edit.oauth.copyLink')}
+            </Button>
+          </div>
+        </Step>
+        <Step n={2} title={t(`channelOAuth.paste.${flow.paste}.step2`)}>
+          <PasteExample paste={flow.paste} />
+        </Step>
+        <Step n={3} title={t(`channelOAuth.paste.${flow.paste}.step3`)}>
+          <Textarea
+            rows={3}
+            value={input}
+            className="font-mono text-xs"
+            aria-label={t(`channelOAuth.paste.${flow.paste}.placeholder`)}
+            placeholder={t(`channelOAuth.paste.${flow.paste}.placeholder`)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              setError(null);
+            }}
+            onPaste={(e) => {
+              const text = e.clipboardData?.getData('text') || '';
+              if (describeOAuthPaste(text, session.state).kind === 'ok') {
+                e.preventDefault();
+                setInput(text.trim());
+                submit(text);
+              }
+            }}
+          />
+          {statusText ? (
+            <p
+              className={`flex items-start gap-1.5 text-xs ${PASTE_STATUS_OK.has(status.kind) ? 'text-emerald-600' : 'text-destructive'}`}
+              aria-live="polite"
+            >
+              {PASTE_STATUS_OK.has(status.kind) ? (
+                <CircleCheck className="mt-px size-3.5 shrink-0" />
+              ) : (
+                <CircleAlert className="mt-px size-3.5 shrink-0" />
+              )}
+              {statusText}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">{t('channelOAuth.paste.expiresTip', { minutes: session.minutes })}</p>
+          )}
+        </Step>
       </ol>
-      <PasteExample paste={flow.paste} />
-      <div className="flex gap-2">
-        <Button type="button" className="flex-1" onClick={() => window.open(session.authURL, '_blank', 'noopener,noreferrer')}>
-          <ExternalLink className="size-4" />
-          {t('channel_edit.oauth.openAuthPage')}
-        </Button>
-        <Button type="button" variant="outline" onClick={() => copyText(t, session.authURL, 'channel_edit.oauth.copySuccess')}>
-          <Copy className="size-4" />
-          {t('channel_edit.oauth.copyLink')}
-        </Button>
-      </div>
-      <div className="space-y-1.5">
-        <Textarea
-          rows={3}
-          value={input}
-          aria-label={t(`channelOAuth.paste.${flow.paste}.placeholder`)}
-          placeholder={t(`channelOAuth.paste.${flow.paste}.placeholder`)}
-          onChange={(e) => {
-            setInput(e.target.value);
-            setError(null);
-          }}
-          onPaste={(e) => {
-            const text = e.clipboardData?.getData('text') || '';
-            if (describeOAuthPaste(text, session.state).kind === 'ok') {
-              e.preventDefault();
-              setInput(text.trim());
-              submit(text);
-            }
-          }}
-        />
-        {statusText && (
-          <p
-            className={`flex items-start gap-1.5 text-xs ${PASTE_STATUS_OK.has(status.kind) ? 'text-emerald-600' : 'text-destructive'}`}
-            aria-live="polite"
-          >
-            {PASTE_STATUS_OK.has(status.kind) ? (
-              <CircleCheck className="mt-px size-3.5 shrink-0" />
-            ) : (
-              <CircleAlert className="mt-px size-3.5 shrink-0" />
-            )}
-            {statusText}
-          </p>
-        )}
-      </div>
       <OAuthError error={error} action={restartButton} />
-      <p className="text-xs text-muted-foreground">{t('channelOAuth.paste.expiresTip', { minutes: session.minutes })}</p>
-      <Button type="button" className="w-full" disabled={busy || status.kind !== 'ok'} onClick={() => submit(input)}>
-        {busy && <Loader2 className="size-4 animate-spin" />}
-        {busy ? t('channel_edit.oauth.submitting') : t('channel_edit.oauth.submitCode')}
-      </Button>
-    </div>
+    </OAuthPanelShell>
   );
 }
 
@@ -676,12 +734,16 @@ CodeOAuth.propTypes = {
 };
 
 DeviceCodePanel.propTypes = {
+  tabs: PropTypes.node,
+  onCancel: PropTypes.func.isRequired,
   channelId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   getValues: PropTypes.func.isRequired,
   onDone: PropTypes.func.isRequired
 };
 
 PastePanel.propTypes = {
+  tabs: PropTypes.node,
+  onCancel: PropTypes.func.isRequired,
   flow: PropTypes.object.isRequired,
   channelId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   getValues: PropTypes.func.isRequired,
@@ -691,6 +753,19 @@ PastePanel.propTypes = {
 
 PasteExample.propTypes = {
   paste: PropTypes.oneOf(['url', 'code']).isRequired
+};
+
+OAuthPanelShell.propTypes = {
+  tabs: PropTypes.node,
+  onCancel: PropTypes.func.isRequired,
+  primary: PropTypes.node,
+  children: PropTypes.node
+};
+
+Step.propTypes = {
+  n: PropTypes.number.isRequired,
+  title: PropTypes.node.isRequired,
+  children: PropTypes.node
 };
 
 OAuthError.propTypes = {
