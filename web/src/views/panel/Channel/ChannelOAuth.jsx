@@ -188,6 +188,31 @@ const copyText = (t, text, successKey) =>
     .then(() => toast.success(t(successKey)))
     .catch(() => toast.error(t('channel_edit.oauth.copyFail')));
 
+// Copies synchronously inside a click, so it works before a new tab takes focus and on plain
+// http deployments where navigator.clipboard is missing. The textarea goes into `host` (inside
+// the dialog) so the dialog keeps focus. Returns whether the copy worked.
+function copyNow(text, host) {
+  const area = document.createElement('textarea');
+  area.value = text;
+  area.setAttribute('readonly', '');
+  area.style.position = 'fixed';
+  area.style.opacity = '0';
+  (host || document.body).appendChild(area);
+  area.select();
+  let ok = false;
+  try {
+    ok = document.execCommand('copy');
+  } catch {
+    // execCommand is missing or refused; fall back to the async clipboard below
+  }
+  area.remove();
+  if (!ok && navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).catch(() => {});
+    ok = true;
+  }
+  return ok;
+}
+
 const channelIdOf = (channelId) => (channelId ? parseInt(channelId, 10) : 0);
 
 // ClaudeCode/Codex dialog. Codex opens on the device code tab; the paste tab
@@ -278,6 +303,7 @@ function DeviceCodePanel({ channelId, getValues, onDone }) {
   const [device, setDevice] = useState(null); // { sessionId, userCode, verificationUrl, expiresAt }
   const [error, setError] = useState(null);
   const [now, setNow] = useState(() => Date.now());
+  const [copied, setCopied] = useState(''); // empty until the code is copied, then yes or no
   const aliveRef = useRef(true);
   const timerRef = useRef(null);
   const onDoneRef = useRef(onDone);
@@ -344,6 +370,7 @@ function DeviceCodePanel({ channelId, getValues, onDone }) {
     stopTimer();
     setError(null);
     setDevice(null);
+    setCopied('');
     request();
   };
 
@@ -382,50 +409,54 @@ function DeviceCodePanel({ channelId, getValues, onDone }) {
     );
   }
 
-  const openPage = () => {
-    // open first, inside the click, so popup blockers let it through
+  // Copy first, while this page still has focus (the browser refuses clipboard writes once the
+  // new tab takes it), then open the page within the same click so popup blockers allow it.
+  const openPage = (e) => {
+    setCopied(copyNow(device.userCode, e.currentTarget.parentElement) ? 'yes' : 'no');
     window.open(device.verificationUrl, '_blank', 'noopener,noreferrer');
-    copyText(t, device.userCode, 'channelOAuth.device.codeCopied');
   };
+  const copyCode = (e) => {
+    const ok = copyNow(device.userCode, e.currentTarget.parentElement);
+    setCopied(ok ? 'yes' : 'no');
+    if (ok) toast.success(t('channelOAuth.device.codeCopied'));
+    else toast.error(t('channel_edit.oauth.copyFail'));
+  };
+  const hint = {
+    '': t('channelOAuth.device.openHint'),
+    yes: t('channelOAuth.device.copiedHint'),
+    no: t('channelOAuth.device.copyFailedHint')
+  }[copied];
 
   return (
-    <div className="space-y-4">
-      <ol className="list-decimal space-y-3 pl-5 text-sm">
-        <li>
-          <p>{t('channelOAuth.device.step1')}</p>
-          <p className="break-all font-mono text-xs text-muted-foreground">{device.verificationUrl}</p>
-        </li>
-        <li>
-          <p>{t('channelOAuth.device.step2')}</p>
-          <div className="mt-2 flex items-center gap-2">
-            <code
-              data-testid="device-user-code"
-              className="rounded-md border bg-muted px-4 py-2 font-mono text-2xl font-semibold tracking-widest"
-            >
-              {device.userCode}
-            </code>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label={t('channelOAuth.device.copyCode')}
-              onClick={() => copyText(t, device.userCode, 'channelOAuth.device.codeCopied')}
-            >
-              <Copy className="size-4" />
-            </Button>
-          </div>
-        </li>
-      </ol>
-      <Button type="button" className="w-full" onClick={openPage}>
-        <ExternalLink className="size-4" />
-        {t('channelOAuth.device.copyAndOpen')}
-      </Button>
-      <p className="flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
-        <Loader2 className="size-4 animate-spin" />
-        {t('channelOAuth.device.waiting', { time: formatCountdown((device.expiresAt - now) / 1000) })}
-      </p>
+    <div className="space-y-5">
+      <div className="flex flex-col items-center gap-3 pt-2 text-center">
+        <p className="text-sm text-muted-foreground">{t('channelOAuth.device.codeLabel')}</p>
+        <div className="flex items-center gap-1 rounded-lg border bg-muted/50 py-1 pl-5 pr-1">
+          <code data-testid="device-user-code" className="font-mono text-3xl font-semibold tracking-[0.15em]">
+            {device.userCode}
+          </code>
+          <Button type="button" variant="ghost" size="icon" aria-label={t('channelOAuth.device.copyCode')} onClick={copyCode}>
+            <Copy className="size-4" />
+          </Button>
+        </div>
+        <Button type="button" size="lg" className="mt-1 w-full max-w-xs" onClick={openPage}>
+          <ExternalLink className="size-4" />
+          {t('channelOAuth.device.open')}
+        </Button>
+        <p
+          className={`flex max-w-sm items-start justify-center gap-1.5 text-xs ${copied === 'yes' ? 'text-emerald-600' : 'text-muted-foreground'}`}
+          aria-live="polite"
+        >
+          {copied === 'yes' && <CircleCheck className="mt-px size-3.5 shrink-0" />}
+          <span>{hint}</span>
+        </p>
+        <p className="flex w-full items-center justify-center gap-2 border-t pt-4 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          {t('channelOAuth.device.waiting', { time: formatCountdown((device.expiresAt - now) / 1000) })}
+        </p>
+      </div>
       <Alert variant="info">
-        <AlertDescription className="space-y-1">
+        <AlertDescription className="space-y-1 text-xs">
           <p>{t('channelOAuth.device.enableTip')}</p>
           <p>{t('channelOAuth.device.phishingTip')}</p>
         </AlertDescription>

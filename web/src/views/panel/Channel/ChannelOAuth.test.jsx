@@ -59,9 +59,20 @@ describe('Codex device code login', () => {
     expect(screen.getByTestId('device-user-code').textContent).toBe('ABCD-12345');
     expect(screen.getByText(/expires in 15:00/)).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Copy code and open the device page' }));
+    // The code is copied before the new tab opens (and takes focus away from this page).
+    const order = [];
+    navigator.clipboard.writeText.mockImplementation((text) => {
+      order.push(`copy:${text}`);
+      return Promise.resolve();
+    });
+    window.open.mockImplementation((url) => {
+      order.push(`open:${url}`);
+      return null;
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Open the OpenAI sign-in page' }));
+    expect(order).toEqual(['copy:ABCD-12345', 'open:https://auth.openai.com/codex/device']);
     expect(window.open).toHaveBeenCalledWith('https://auth.openai.com/codex/device', '_blank', 'noopener,noreferrer');
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('ABCD-12345');
+    expect(screen.getByText(/^Code copied\./)).toBeTruthy();
 
     await act(() => vi.advanceTimersByTimeAsync(4900));
     expect(pollCodexDeviceOAuth).not.toHaveBeenCalled();
@@ -95,6 +106,22 @@ describe('Codex device code login', () => {
     await flush();
     expect(startCodexDeviceOAuth).toHaveBeenCalledTimes(2);
   });
+});
+
+it('copies with execCommand when it works, without the async clipboard', async () => {
+  startCodexDeviceOAuth.mockResolvedValue({
+    success: true,
+    data: { session_id: 'sid', user_code: 'ABCD-12345', verification_url: 'https://x/codex/device', interval: 5, expires_in: 900 }
+  });
+  document.execCommand = vi.fn(() => true);
+  render(<ChannelOAuth type={59} getValues={getValues} onCredentials={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: /OAuth Authorize/ }));
+  await flush();
+  fireEvent.click(screen.getByRole('button', { name: 'Open the OpenAI sign-in page' }));
+  expect(document.execCommand).toHaveBeenCalledWith('copy');
+  expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+  expect(window.open).toHaveBeenCalled();
+  delete document.execCommand;
 });
 
 describe('paste flow', () => {
