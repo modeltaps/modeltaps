@@ -1,10 +1,10 @@
 package model
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/utils"
@@ -23,12 +23,12 @@ func ValidateOrgBudget(budget *QuotaResetSetting) error {
 		return nil
 	}
 	if budget.Limit <= 0 {
-		return errors.New("budget must be greater than 0")
+		return common.NewAPIError(common.APICodeOrgBudgetInvalid, "budget must be greater than 0", nil)
 	}
 	switch budget.Period {
 	case TokenQuotaResetPeriodDaily, TokenQuotaResetPeriodWeekly, TokenQuotaResetPeriodMonthly:
 	default:
-		return errors.New("budget period must be daily, weekly or monthly")
+		return common.NewAPIError(common.APICodeOrgBudgetPeriodInvalid, "budget period must be daily, weekly or monthly", nil)
 	}
 	return nil
 }

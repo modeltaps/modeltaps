@@ -154,10 +154,7 @@ func AddToken(c *gin.Context) {
 		return
 	}
 	if len(token.Name) > 30 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "API key name is too long",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenNameTooLong, "API key name is too long", nil)
 		return
 	}
 
@@ -257,10 +254,7 @@ func UpdateToken(c *gin.Context) {
 		return
 	}
 	if len(token.Name) > 30 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "API key name is too long",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenNameTooLong, "API key name is too long", nil)
 		return
 	}
 
@@ -281,17 +275,11 @@ func UpdateToken(c *gin.Context) {
 	}
 	if token.Status == config.TokenStatusEnabled {
 		if cleanToken.Status == config.TokenStatusExpired && cleanToken.ExpiredTime <= utils.GetTimestamp() && cleanToken.ExpiredTime != -1 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "API key has expired and cannot be enabled. Change its expiration time or set it to never expire first.",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenExpiredCannotEnable, "API key has expired and cannot be enabled. Change its expiration time or set it to never expire first.", nil)
 			return
 		}
 		if cleanToken.Status == config.TokenStatusExhausted && cleanToken.RemainQuota <= 0 && !cleanToken.UnlimitedQuota {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "API key quota is exhausted and it cannot be enabled. Change its remaining quota or set it to unlimited first.",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenQuotaExhaustedCannotEnable, "API key quota is exhausted and it cannot be enabled. Change its remaining quota or set it to unlimited first.", nil)
 			return
 		}
 	}
@@ -403,10 +391,7 @@ func UpdateTokenByAdmin(c *gin.Context) {
 		return
 	}
 	if len(token.Name) > 30 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "API key name is too long",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenNameTooLong, "API key name is too long", nil)
 		return
 	}
 
@@ -428,17 +413,11 @@ func UpdateTokenByAdmin(c *gin.Context) {
 
 	if token.Status == config.TokenStatusEnabled {
 		if cleanToken.Status == config.TokenStatusExpired && cleanToken.ExpiredTime <= utils.GetTimestamp() && cleanToken.ExpiredTime != -1 {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "API key has expired and cannot be enabled. Change its expiration time or set it to never expire first.",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenExpiredCannotEnable, "API key has expired and cannot be enabled. Change its expiration time or set it to never expire first.", nil)
 			return
 		}
 		if cleanToken.Status == config.TokenStatusExhausted && cleanToken.RemainQuota <= 0 && !cleanToken.UnlimitedQuota {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "API key quota is exhausted and it cannot be enabled. Change its remaining quota or set it to unlimited first.",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenQuotaExhaustedCannotEnable, "API key quota is exhausted and it cannot be enabled. Change its remaining quota or set it to unlimited first.", nil)
 			return
 		}
 	}

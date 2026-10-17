@@ -1,11 +1,11 @@
 package model
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/cache"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
@@ -179,17 +179,17 @@ func invalidateOrgMemberGuardrailCacheByOrg(organizationId int, memberUserId int
 func UpdateOrgMemberLimits(org *Organization, targetUserId int, budget *QuotaResetSetting, whitelist []string) (*OrganizationMember, error) {
 	if budget != nil {
 		if budget.Limit <= 0 {
-			return nil, errors.New("budget must be greater than 0")
+			return nil, common.NewAPIError(common.APICodeOrgBudgetInvalid, "budget must be greater than 0", nil)
 		}
 		switch budget.Period {
 		case TokenQuotaResetPeriodDaily, TokenQuotaResetPeriodWeekly, TokenQuotaResetPeriodMonthly:
 		default:
-			return nil, errors.New("budget period must be daily, weekly or monthly")
+			return nil, common.NewAPIError(common.APICodeOrgBudgetPeriodInvalid, "budget period must be daily, weekly or monthly", nil)
 		}
 	}
 	member, err := GetOrganizationMember(org.Id, targetUserId)
 	if err != nil {
-		return nil, errors.New("this user is not a member of the organization")
+		return nil, common.NewAPIError(common.APICodeOrgUserNotMember, "this user is not a member of the organization", nil)
 	}
 	setting := member.Setting.Data()
 	oldPeriod, newPeriod := "", ""

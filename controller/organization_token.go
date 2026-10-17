@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -20,10 +19,10 @@ func getOrgTokenForOperator(c *gin.Context, tokenId int) (*model.Token, error) {
 	org, role := getOrgFromContext(c)
 	token, err := model.GetTokenByIds(tokenId, org.ShadowUserId)
 	if err != nil {
-		return nil, errors.New("API key not found")
+		return nil, common.NewAPIError(common.APICodeTokenNotFound, "API key not found", nil)
 	}
 	if role == model.OrgRoleMember && token.CreatedBy != c.GetInt("id") {
-		return nil, errors.New("Not allowed to operate on this API key")
+		return nil, common.NewAPIError(common.APICodeTokenAccessDenied, "Not allowed to operate on this API key", nil)
 	}
 	return token, nil
 }
@@ -101,7 +100,7 @@ func AddOrgToken(c *gin.Context) {
 		return
 	}
 	if len(token.Name) > 30 {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("API key name is too long"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenNameTooLong, "API key name is too long", nil)
 		return
 	}
 
@@ -166,7 +165,7 @@ func UpdateOrgToken(c *gin.Context) {
 		return
 	}
 	if len(token.Name) > 30 {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("API key name is too long"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenNameTooLong, "API key name is too long", nil)
 		return
 	}
 
@@ -183,11 +182,11 @@ func UpdateOrgToken(c *gin.Context) {
 	}
 	if token.Status == config.TokenStatusEnabled {
 		if cleanToken.Status == config.TokenStatusExpired && cleanToken.ExpiredTime <= utils.GetTimestamp() && cleanToken.ExpiredTime != -1 {
-			common.APIRespondWithError(c, http.StatusOK, errors.New("API key has expired and cannot be enabled. Change its expiration time or set it to never expire first."))
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenExpiredCannotEnable, "API key has expired and cannot be enabled. Change its expiration time or set it to never expire first.", nil)
 			return
 		}
 		if cleanToken.Status == config.TokenStatusExhausted && cleanToken.RemainQuota <= 0 && !cleanToken.UnlimitedQuota {
-			common.APIRespondWithError(c, http.StatusOK, errors.New("API key quota is exhausted and it cannot be enabled. Change its remaining quota or set it to unlimited first."))
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenQuotaExhaustedCannotEnable, "API key quota is exhausted and it cannot be enabled. Change its remaining quota or set it to unlimited first.", nil)
 			return
 		}
 	}

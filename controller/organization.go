@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -31,7 +30,7 @@ type CreateOrganizationRequest struct {
 func CreateOrganization(c *gin.Context) {
 	var req CreateOrganizationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invalid parameters"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "invalid parameters", nil)
 		return
 	}
 	userId := c.GetInt("id")
@@ -42,7 +41,7 @@ func CreateOrganization(c *gin.Context) {
 			return
 		}
 		if count >= int64(config.OrganizationMaxPerUser) {
-			common.APIRespondWithError(c, http.StatusOK, fmt.Errorf("each user can create at most %d organizations", config.OrganizationMaxPerUser))
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgLimitPerUser, fmt.Sprintf("each user can create at most %d organizations", config.OrganizationMaxPerUser), map[string]any{"max": config.OrganizationMaxPerUser})
 			return
 		}
 	}
@@ -124,7 +123,7 @@ type UpdateOrganizationRequest struct {
 func UpdateOrganization(c *gin.Context) {
 	var req UpdateOrganizationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invalid parameters"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "invalid parameters", nil)
 		return
 	}
 	org, _ := getOrgFromContext(c)
@@ -147,7 +146,7 @@ func UpdateOrganization(c *gin.Context) {
 	if req.LogIODefault != nil {
 		v, ok := model.ParseLogIOTriState(*req.LogIODefault)
 		if !ok {
-			common.APIRespondWithError(c, http.StatusOK, errors.New("invalid log_io_default value"))
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "invalid log_io_default value", nil)
 			return
 		}
 		setting := org.Setting.Data()
@@ -190,7 +189,7 @@ type TransferOrgOwnershipRequest struct {
 func TransferOrgOwnership(c *gin.Context) {
 	var req TransferOrgOwnershipRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invalid parameters"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "invalid parameters", nil)
 		return
 	}
 	org, _ := getOrgFromContext(c)
@@ -214,12 +213,12 @@ type DissolveOrganizationRequest struct {
 func DissolveOrganization(c *gin.Context) {
 	var req DissolveOrganizationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invalid parameters"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "invalid parameters", nil)
 		return
 	}
 	org, _ := getOrgFromContext(c)
 	if strings.TrimSpace(req.Name) != org.Name {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("organization name confirmation does not match"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgNameConfirmationMismatch, "organization name confirmation does not match", nil)
 		return
 	}
 	userId := c.GetInt("id")

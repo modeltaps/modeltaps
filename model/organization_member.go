@@ -62,7 +62,7 @@ func (member *OrganizationMember) Insert() error {
 		return errors.New("organization id or user id must not be empty")
 	}
 	if !IsValidOrgRole(member.Role) {
-		return errors.New("invalid organization role")
+		return common.NewAPIError(common.APICodeOrgRoleInvalid, "invalid organization role", nil)
 	}
 	member.CreatedTime = utils.GetTimestamp()
 	member.UpdatedTime = member.CreatedTime
@@ -225,10 +225,10 @@ func GetOrgMemberBudget(organizationId int, userId int) (*MemberBudgetView, erro
 // grantSignupBonus 默认应传 false:代建账号不发新用户注册奖励,防止刷免费额度(SEC-11)。
 func CreateOrgMemberAccount(org *Organization, username, password, displayName, email, role string, grantSignupBonus bool) (*User, *OrganizationMember, error) {
 	if role != OrgRoleAdmin && role != OrgRoleMember {
-		return nil, nil, errors.New("role must be admin or member")
+		return nil, nil, common.NewAPIError(common.APICodeOrgRoleInvalid, "role must be admin or member", nil)
 	}
 	if password == "" {
-		return nil, nil, errors.New("password must not be empty")
+		return nil, nil, common.NewAPIError(common.APICodePasswordRequired, "password must not be empty", nil)
 	}
 	if displayName == "" {
 		displayName = username
@@ -242,7 +242,7 @@ func CreateOrgMemberAccount(org *Organization, username, password, displayName, 
 		var locked Organization
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			First(&locked, "id = ?", org.Id).Error; err != nil {
-			return errors.New("organization not found or deleted")
+			return common.NewAPIError(common.APICodeOrgNotFound, "organization not found or deleted", nil)
 		}
 		if maxMembers := locked.GetMaxMembers(); maxMembers > 0 {
 			var count int64
@@ -250,7 +250,7 @@ func CreateOrgMemberAccount(org *Organization, username, password, displayName, 
 				return err
 			}
 			if count >= int64(maxMembers) {
-				return errors.New("organization member limit reached")
+				return common.NewAPIError(common.APICodeOrgMemberLimitReached, "organization member limit reached", nil)
 			}
 		}
 		if err := user.insertWithTx(tx, 0, grantSignupBonus); err != nil {
@@ -276,14 +276,14 @@ func CreateOrgMemberAccount(org *Organization, username, password, displayName, 
 // Owner 角色不可经本函数授予或剥夺(走所有权转移);角色层级校验(操作者 vs 目标)由调用方完成
 func UpdateOrganizationMemberRole(organizationId int, targetUserId int, newRole string) (*OrganizationMember, error) {
 	if newRole != OrgRoleAdmin && newRole != OrgRoleMember {
-		return nil, errors.New("role must be admin or member")
+		return nil, common.NewAPIError(common.APICodeOrgRoleInvalid, "role must be admin or member", nil)
 	}
 	member, err := GetOrganizationMember(organizationId, targetUserId)
 	if err != nil {
-		return nil, errors.New("this user is not a member of the organization")
+		return nil, common.NewAPIError(common.APICodeOrgUserNotMember, "this user is not a member of the organization", nil)
 	}
 	if member.Role == OrgRoleOwner {
-		return nil, errors.New("cannot change the role of the organization owner")
+		return nil, common.NewAPIError(common.APICodeOrgOwnerRoleUnchangeable, "cannot change the role of the organization owner", nil)
 	}
 	if member.Role == newRole {
 		return member, nil
@@ -307,10 +307,10 @@ func RemoveOrganizationMember(org *Organization, targetUserId int) error {
 	err := DB.Transaction(func(tx *gorm.DB) error {
 		var member OrganizationMember
 		if err := tx.First(&member, "organization_id = ? AND user_id = ?", org.Id, targetUserId).Error; err != nil {
-			return errors.New("this user is not a member of the organization")
+			return common.NewAPIError(common.APICodeOrgUserNotMember, "this user is not a member of the organization", nil)
 		}
 		if member.Role == OrgRoleOwner {
-			return errors.New("the organization owner cannot leave or be removed; transfer ownership first")
+			return common.NewAPIError(common.APICodeOrgOwnerCannotLeave, "the organization owner cannot leave or be removed; transfer ownership first", nil)
 		}
 		if err := tx.Delete(&member).Error; err != nil {
 			return err

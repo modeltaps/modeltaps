@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -24,12 +23,12 @@ func GetOrgMemberLimits(c *gin.Context) {
 	org, _ := getOrgFromContext(c)
 	targetUserId := utils.String2Int(c.Param("user_id"))
 	if targetUserId == 0 {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invalid user ID"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidUserID, "invalid user ID", nil)
 		return
 	}
 	member, err := model.GetOrganizationMember(org.Id, targetUserId)
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("this user is not a member of the organization"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgUserNotMember, "this user is not a member of the organization", nil)
 		return
 	}
 	setting := member.Setting.Data()
@@ -50,23 +49,23 @@ func GetOrgMemberLimits(c *gin.Context) {
 func UpdateOrgMemberLimits(c *gin.Context) {
 	var req OrgMemberLimitsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invalid parameters"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "invalid parameters", nil)
 		return
 	}
 	org, operatorRole := getOrgFromContext(c)
 	operatorId := c.GetInt("id")
 	targetUserId := utils.String2Int(c.Param("user_id"))
 	if targetUserId == 0 {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invalid user ID"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidUserID, "invalid user ID", nil)
 		return
 	}
 	target, err := model.GetOrganizationMember(org.Id, targetUserId)
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("this user is not a member of the organization"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgUserNotMember, "this user is not a member of the organization", nil)
 		return
 	}
 	if model.OrgRoleWeight(target.Role) > model.OrgRoleWeight(operatorRole) {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("you cannot configure members with a higher role than yours"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgMemberRoleHigherModify, "you cannot configure members with a higher role than yours", nil)
 		return
 	}
 	member, err := model.UpdateOrgMemberLimits(org, targetUserId, req.Budget, req.ModelWhitelist)

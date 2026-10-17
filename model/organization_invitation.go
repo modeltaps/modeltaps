@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/utils"
 
 	"gorm.io/gorm"
@@ -42,10 +43,10 @@ func (invitation *OrganizationInvitation) Insert() error {
 		return errors.New("organization id or inviter id must not be empty")
 	}
 	if !IsValidOrgRole(invitation.Role) {
-		return errors.New("invalid organization role")
+		return common.NewAPIError(common.APICodeOrgRoleInvalid, "invalid organization role", nil)
 	}
 	if invitation.Role == OrgRoleOwner {
-		return errors.New("invitation role cannot be owner")
+		return common.NewAPIError(common.APICodeOrgRoleInvalid, "invitation role cannot be owner", nil)
 	}
 	if strings.TrimSpace(invitation.Token) == "" {
 		invitation.Token = utils.GetUUID()
@@ -175,15 +176,15 @@ func GetUserPendingOrgInvitations(userId int) ([]*UserOrgInvitation, error) {
 func invitationStatusError(status int) error {
 	switch status {
 	case OrgInvitationStatusAccepted:
-		return errors.New("invitation already accepted")
+		return common.NewAPIError(common.APICodeOrgInvitationAccepted, "invitation already accepted", nil)
 	case OrgInvitationStatusRejected:
-		return errors.New("invitation already declined")
+		return common.NewAPIError(common.APICodeOrgInvitationDeclined, "invitation already declined", nil)
 	case OrgInvitationStatusRevoked:
-		return errors.New("invitation has been revoked")
+		return common.NewAPIError(common.APICodeOrgInvitationRevoked, "invitation has been revoked", nil)
 	case OrgInvitationStatusExpired:
-		return errors.New("invitation has expired")
+		return common.NewAPIError(common.APICodeOrgInvitationExpired, "invitation has expired", nil)
 	default:
-		return errors.New("invalid invitation status")
+		return common.NewAPIError(common.APICodeOrgInvitationInvalid, "invalid invitation status", nil)
 	}
 }
 
@@ -203,30 +204,30 @@ func AcceptOrganizationInvitation(token string, userId int) (*OrganizationInvita
 	}
 	invitation, err := GetOrganizationInvitationByToken(token)
 	if err != nil {
-		return nil, errors.New("invitation not found")
+		return nil, common.NewAPIError(common.APICodeOrgInvitationNotFound, "invitation not found", nil)
 	}
 	if invitation.InviteeId > 0 && invitation.InviteeId != userId {
-		return nil, errors.New("this invitation is not addressed to the current user")
+		return nil, common.NewAPIError(common.APICodeOrgInvitationNotForYou, "this invitation is not addressed to the current user", nil)
 	}
 	if invitation.Status != OrgInvitationStatusPending {
 		return nil, invitationStatusError(invitation.Status)
 	}
 	if invitation.IsExpired() {
 		markInvitationExpired(invitation.Id)
-		return nil, errors.New("invitation has expired")
+		return nil, common.NewAPIError(common.APICodeOrgInvitationExpired, "invitation has expired", nil)
 	}
 	if invitation.MaxUses > 0 && invitation.UsedCount >= invitation.MaxUses {
-		return nil, errors.New("invitation link has reached its maximum number of uses")
+		return nil, common.NewAPIError(common.APICodeOrgInvitationUsedUp, "invitation link has reached its maximum number of uses", nil)
 	}
 	err = DB.Transaction(func(tx *gorm.DB) error {
 		// 行锁组织记录,使"统计成员数→插入成员"在锁内串行,防并发绕过成员上限(ORG-5)
 		var org Organization
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			First(&org, "id = ?", invitation.OrganizationId).Error; err != nil {
-			return errors.New("organization not found or deleted")
+			return common.NewAPIError(common.APICodeOrgNotFound, "organization not found or deleted", nil)
 		}
 		if org.Status != OrganizationStatusEnabled {
-			return errors.New("organization is disabled")
+			return common.NewAPIError(common.APICodeOrgDisabled, "organization is disabled", nil)
 		}
 		var existing int64
 		if err := tx.Model(&OrganizationMember{}).
@@ -234,7 +235,7 @@ func AcceptOrganizationInvitation(token string, userId int) (*OrganizationInvita
 			return err
 		}
 		if existing > 0 {
-			return errors.New("you are already a member of this organization")
+			return common.NewAPIError(common.APICodeOrgAlreadyMember, "you are already a member of this organization", nil)
 		}
 		if maxMembers := org.GetMaxMembers(); maxMembers > 0 {
 			var count int64
@@ -243,7 +244,7 @@ func AcceptOrganizationInvitation(token string, userId int) (*OrganizationInvita
 				return err
 			}
 			if count >= int64(maxMembers) {
-				return errors.New("organization member limit reached")
+				return common.NewAPIError(common.APICodeOrgMemberLimitReached, "organization member limit reached", nil)
 			}
 		}
 		now := utils.GetTimestamp()
@@ -259,7 +260,7 @@ func AcceptOrganizationInvitation(token string, userId int) (*OrganizationInvita
 			return result.Error
 		}
 		if result.RowsAffected != 1 {
-			return errors.New("invitation is no longer valid")
+			return common.NewAPIError(common.APICodeOrgInvitationInvalid, "invitation is no longer valid", nil)
 		}
 		member := &OrganizationMember{
 			OrganizationId: org.Id,
@@ -280,20 +281,20 @@ func AcceptOrganizationInvitation(token string, userId int) (*OrganizationInvita
 func RejectOrganizationInvitation(token string, userId int) (*OrganizationInvitation, error) {
 	invitation, err := GetOrganizationInvitationByToken(token)
 	if err != nil {
-		return nil, errors.New("invitation not found")
+		return nil, common.NewAPIError(common.APICodeOrgInvitationNotFound, "invitation not found", nil)
 	}
 	if invitation.InviteeId == 0 {
-		return nil, errors.New("link invitations do not need to be declined")
+		return nil, common.NewAPIError(common.APICodeOrgInvitationLinkNoDecline, "link invitations do not need to be declined", nil)
 	}
 	if invitation.InviteeId != userId {
-		return nil, errors.New("this invitation is not addressed to the current user")
+		return nil, common.NewAPIError(common.APICodeOrgInvitationNotForYou, "this invitation is not addressed to the current user", nil)
 	}
 	if invitation.Status != OrgInvitationStatusPending {
 		return nil, invitationStatusError(invitation.Status)
 	}
 	if invitation.IsExpired() {
 		markInvitationExpired(invitation.Id)
-		return nil, errors.New("invitation has expired")
+		return nil, common.NewAPIError(common.APICodeOrgInvitationExpired, "invitation has expired", nil)
 	}
 	result := DB.Model(&OrganizationInvitation{}).
 		Where("id = ? AND status = ?", invitation.Id, OrgInvitationStatusPending).
@@ -302,7 +303,7 @@ func RejectOrganizationInvitation(token string, userId int) (*OrganizationInvita
 		return nil, result.Error
 	}
 	if result.RowsAffected != 1 {
-		return nil, errors.New("invitation is no longer valid")
+		return nil, common.NewAPIError(common.APICodeOrgInvitationInvalid, "invitation is no longer valid", nil)
 	}
 	invitation.Status = OrgInvitationStatusRejected
 	return invitation, nil
@@ -312,7 +313,7 @@ func RejectOrganizationInvitation(token string, userId int) (*OrganizationInvita
 func RevokeOrganizationInvitation(organizationId int, invitationId int) (*OrganizationInvitation, error) {
 	var invitation OrganizationInvitation
 	if err := DB.First(&invitation, "id = ? AND organization_id = ?", invitationId, organizationId).Error; err != nil {
-		return nil, errors.New("invitation not found")
+		return nil, common.NewAPIError(common.APICodeOrgInvitationNotFound, "invitation not found", nil)
 	}
 	if invitation.Status != OrgInvitationStatusPending {
 		return nil, invitationStatusError(invitation.Status)
@@ -324,7 +325,7 @@ func RevokeOrganizationInvitation(organizationId int, invitationId int) (*Organi
 		return nil, result.Error
 	}
 	if result.RowsAffected != 1 {
-		return nil, errors.New("invitation is no longer valid")
+		return nil, common.NewAPIError(common.APICodeOrgInvitationInvalid, "invitation is no longer valid", nil)
 	}
 	invitation.Status = OrgInvitationStatusRevoked
 	return &invitation, nil
