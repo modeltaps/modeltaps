@@ -1,11 +1,11 @@
 package controller
 
 import (
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/model"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -29,10 +29,7 @@ type LinuxDoUser struct {
 
 func LinuxDoBind(c *gin.Context) {
 	if !config.EffectiveSocialLogin(config.LinuxDoOAuthEnabled) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "The admin has not enabled sign-in and sign-up via LINUX DO",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOauthProviderDisabled, "The admin has not enabled sign-in and sign-up via LINUX DO", map[string]any{"provider": "LINUX DO"})
 		return
 	}
 
@@ -42,10 +39,7 @@ func LinuxDoBind(c *gin.Context) {
 	session := sessions.Default(c)
 	state := c.Query("state")
 	if state == "" || session.Get("oauth_state") == nil || state != session.Get("oauth_state").(string) {
-		c.JSON(http.StatusForbidden, gin.H{
-			"success": false,
-			"message": "state is empty or not same",
-		})
+		common.APIRespondWithCode(c, http.StatusForbidden, common.APICodeOauthStateInvalid, "state is empty or not same", nil)
 		return
 	}
 
@@ -56,19 +50,13 @@ func LinuxDoBind(c *gin.Context) {
 	code := c.Query("code")
 	linuxDoUser, err := getLinuxDoUserInfoByCode(code, c)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
 	if config.LinuxDoOAuthTrustLevelEnabled {
 		if linuxDoUser.TrustLevel < config.LinuxDoOAuthLowestTrustLevel {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "This LINUX DO account's trust level is too low to access",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeLinuxdoTrustTooLow, "This LINUX DO account's trust level is too low to access", nil)
 			return
 		}
 	}
@@ -78,39 +66,27 @@ func LinuxDoBind(c *gin.Context) {
 	}
 
 	if model.IsLinuxDOIdAlreadyTaken(user.LinuxDoId) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "This LINUX DO account is already linked",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOauthAccountLinked, "This LINUX DO account is already linked", map[string]any{"provider": "LINUX DO"})
 		return
 	}
 
 	// UserAuth also accepts access tokens, which leave no id in the session, so do not assert the type.
 	userId, ok := session.Get("id").(int)
 	if !ok || userId == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Session is invalid, please sign in again",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidSession, "Session is invalid, please sign in again", nil)
 		return
 	}
 	user.Id = userId
 
 	err = user.FillUserById()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
 	// An account already linked to LINUX DO must be unlinked before linking another one.
 	if user.LinuxDoId != 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "This account is already linked to LINUX DO, unlink it first to change",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeLinuxdoAlreadyBound, "This account is already linked to LINUX DO, unlink it first to change", nil)
 		return
 	}
 
@@ -119,10 +95,7 @@ func LinuxDoBind(c *gin.Context) {
 	user.LinuxDoTrustLevel = linuxDoUser.TrustLevel
 	err = user.Update(false)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -134,7 +107,7 @@ func LinuxDoBind(c *gin.Context) {
 
 func getLinuxDoUserInfoByCode(code string, c *gin.Context) (*LinuxDoUser, error) {
 	if code == "" {
-		return nil, errors.New("invalid code")
+		return nil, common.NewAPIError(common.APICodeOauthCodeInvalid, "invalid code", nil)
 	}
 
 	// Get access token using Basic auth
@@ -166,7 +139,7 @@ func getLinuxDoUserInfoByCode(code string, c *gin.Context) (*LinuxDoUser, error)
 	client := http.Client{Timeout: 5 * time.Second}
 	res, err := client.Do(req)
 	if err != nil {
-		return nil, errors.New("failed to connect to Linux DO server")
+		return nil, common.NewAPIError(common.APICodeOauthProviderUnreachable, "failed to connect to Linux DO server", map[string]any{"provider": "LINUX DO"})
 	}
 	defer res.Body.Close()
 
@@ -193,7 +166,7 @@ func getLinuxDoUserInfoByCode(code string, c *gin.Context) (*LinuxDoUser, error)
 
 	res2, err := client.Do(req)
 	if err != nil {
-		return nil, errors.New("failed to get user info from Linux DO")
+		return nil, common.NewAPIError(common.APICodeOauthInvalidResponse, "failed to get user info from Linux DO", nil)
 	}
 	defer res2.Body.Close()
 
@@ -203,7 +176,7 @@ func getLinuxDoUserInfoByCode(code string, c *gin.Context) (*LinuxDoUser, error)
 	}
 
 	if linuxDoUser.Id == 0 {
-		return nil, errors.New("invalid user info returned")
+		return nil, common.NewAPIError(common.APICodeOauthInvalidResponse, "invalid user info returned", nil)
 	}
 
 	return &linuxDoUser, nil
@@ -224,10 +197,7 @@ func LinuxDoOAuth(c *gin.Context) {
 
 	state := c.Query("state")
 	if state == "" || session.Get("oauth_state") == nil || state != session.Get("oauth_state").(string) {
-		c.JSON(http.StatusForbidden, gin.H{
-			"success": false,
-			"message": "state is empty or not same",
-		})
+		common.APIRespondWithCode(c, http.StatusForbidden, common.APICodeOauthStateInvalid, "state is empty or not same", nil)
 		return
 	}
 
@@ -243,20 +213,14 @@ func LinuxDoOAuth(c *gin.Context) {
 	_ = session.Save()
 
 	if !config.EffectiveSocialLogin(config.LinuxDoOAuthEnabled) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "The admin has not enabled sign-in and sign-up via LINUX DO",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOauthProviderDisabled, "The admin has not enabled sign-in and sign-up via LINUX DO", map[string]any{"provider": "LINUX DO"})
 		return
 	}
 
 	code := c.Query("code")
 	linuxDoUser, err := getLinuxDoUserInfoByCode(code, c)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -273,10 +237,7 @@ func LinuxDoOAuth(c *gin.Context) {
 	if config.LinuxDoOAuthTrustLevelEnabled {
 		if config.LinuxDoOAuthDynamicTrustLevel || !isExistingUser {
 			if linuxDoUser.TrustLevel < config.LinuxDoOAuthLowestTrustLevel {
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": "This LINUX DO account's trust level is too low to access",
-				})
+				common.APIRespondWithCode(c, http.StatusOK, common.APICodeLinuxdoTrustTooLow, "This LINUX DO account's trust level is too low to access", nil)
 				return
 			}
 		}
@@ -286,10 +247,7 @@ func LinuxDoOAuth(c *gin.Context) {
 	if isExistingUser {
 		err := user.FillUserByLinuxDOId()
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 
@@ -302,10 +260,7 @@ func LinuxDoOAuth(c *gin.Context) {
 
 			err = updateTrustLevelUser.Update(false)
 			if err != nil {
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": err.Error(),
-				})
+				common.APIRespondWithError(c, http.StatusOK, err)
 				return
 			}
 		}
@@ -351,26 +306,17 @@ func LinuxDoOAuth(c *gin.Context) {
 			})
 
 			if err != nil {
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": err.Error(),
-				})
+				common.APIRespondWithError(c, http.StatusOK, err)
 				return
 			}
 		} else {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "The admin has disabled new user sign-up",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeRegisterDisabled, "The admin has disabled new user sign-up", nil)
 			return
 		}
 	}
 
 	if user.Status != config.UserStatusEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "User has been banned",
-			"success": false,
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserBanned, "User has been banned", nil)
 		return
 	}
 

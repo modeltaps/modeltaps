@@ -1017,7 +1017,8 @@
     "ttftLabel": "初回応答",
     "typeLabel": "タイプ",
     "unknown": "不明",
-    "userLabel": "ユーザー"
+    "userLabel": "ユーザー",
+    "contextFailed": "ログのコンテキストを取得できませんでした：{{message}}"
   },
   "login": {
     "codeRequired": "確認コードを入力する必要があります",
@@ -2427,7 +2428,8 @@
         "title": "請求書設定",
         "updateFailed": "請求書の更新に失敗しました:",
         "updateMonthInvoice": "月次請求書を更新",
-        "updateSuccess": "請求書を更新しました!"
+        "updateSuccess": "請求書を更新しました!",
+        "selectMonth": "請求書の月を選択してください"
       },
       "logSettings": {
         "autoDelete": "消費ログの自動クリーンアップを有効化",

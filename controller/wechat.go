@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/model"
 	"encoding/json"
@@ -23,7 +24,7 @@ type wechatLoginResponse struct {
 
 func getWeChatIdByCode(code string) (string, error) {
 	if code == "" {
-		return "", errors.New("Invalid parameters")
+		return "", common.NewAPIError(common.APICodeInvalidParams, "Invalid parameters", nil)
 	}
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/wechat/user?code=%s", config.WeChatServerAddress, code), nil)
 	if err != nil {
@@ -47,26 +48,20 @@ func getWeChatIdByCode(code string) (string, error) {
 		return "", errors.New(res.Message)
 	}
 	if res.Data == "" {
-		return "", errors.New("Verification code is incorrect or has expired")
+		return "", common.NewAPIError(common.APICodeVerificationCodeInvalid, "Verification code is incorrect or has expired", nil)
 	}
 	return res.Data, nil
 }
 
 func WeChatAuth(c *gin.Context) {
 	if !config.EffectiveSocialLogin(config.WeChatAuthEnabled) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "The admin has not enabled sign-in and sign-up via WeChat",
-			"success": false,
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOauthProviderDisabled, "The admin has not enabled sign-in and sign-up via WeChat", map[string]any{"provider": "WeChat"})
 		return
 	}
 	code := c.Query("code")
 	wechatId, err := getWeChatIdByCode(code)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"message": err.Error(),
-			"success": false,
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	user := model.User{
@@ -75,10 +70,7 @@ func WeChatAuth(c *gin.Context) {
 	if model.IsWeChatIdAlreadyTaken(wechatId) {
 		err := user.FillUserByWeChatId()
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 	} else {
@@ -106,26 +98,17 @@ func WeChatAuth(c *gin.Context) {
 			})
 
 			if err != nil {
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": err.Error(),
-				})
+				common.APIRespondWithError(c, http.StatusOK, err)
 				return
 			}
 		} else {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "The admin has disabled new user sign-up",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeRegisterDisabled, "The admin has disabled new user sign-up", nil)
 			return
 		}
 	}
 
 	if user.Status != config.UserStatusEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "User has been banned",
-			"success": false,
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserBanned, "User has been banned", nil)
 		return
 	}
 	setupLoginSession(&user, c, loginSessionInfo{method: model.LoginMethodWeChat})
@@ -133,10 +116,7 @@ func WeChatAuth(c *gin.Context) {
 
 func WeChatBind(c *gin.Context) {
 	if !config.EffectiveSocialLogin(config.WeChatAuthEnabled) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "The admin has not enabled sign-in and sign-up via WeChat",
-			"success": false,
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOauthProviderDisabled, "The admin has not enabled sign-in and sign-up via WeChat", map[string]any{"provider": "WeChat"})
 		return
 	}
 
@@ -146,10 +126,7 @@ func WeChatBind(c *gin.Context) {
 	session := sessions.Default(c)
 	state := c.Query("state")
 	if state == "" || session.Get("oauth_state") == nil || state != session.Get("oauth_state").(string) {
-		c.JSON(http.StatusForbidden, gin.H{
-			"success": false,
-			"message": "state is empty or not same",
-		})
+		common.APIRespondWithCode(c, http.StatusForbidden, common.APICodeOauthStateInvalid, "state is empty or not same", nil)
 		return
 	}
 
@@ -160,17 +137,11 @@ func WeChatBind(c *gin.Context) {
 	code := c.Query("code")
 	wechatId, err := getWeChatIdByCode(code)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"message": err.Error(),
-			"success": false,
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	if model.IsWeChatIdAlreadyTaken(wechatId) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "This WeChat account is already linked",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOauthAccountLinked, "This WeChat account is already linked", map[string]any{"provider": "WeChat"})
 		return
 	}
 	id := c.GetInt("id")
@@ -179,19 +150,13 @@ func WeChatBind(c *gin.Context) {
 	}
 	err = user.FillUserById()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	user.WeChatId = wechatId
 	err = user.Update(false)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

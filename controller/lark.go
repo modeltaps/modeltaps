@@ -2,6 +2,7 @@ package controller
 
 import (
 	"bytes"
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/model"
@@ -61,7 +62,7 @@ func getLarkAppAccessToken() (string, error) {
 	res, err := client.Do(req)
 	if err != nil {
 		logger.SysError("failed to connect to Lark server, err:" + err.Error())
-		return "", errors.New("Unable to connect to the Lark server. Please try again later.")
+		return "", common.NewAPIError(common.APICodeOauthProviderUnreachable, "Unable to connect to the Lark server. Please try again later.", map[string]any{"provider": "Lark"})
 	}
 	defer res.Body.Close()
 	var appAccessTokenResponse LarkAppAccessTokenResponse
@@ -103,7 +104,7 @@ func getLarkUserAccessToken(code string) (string, error) {
 	res, err := client.Do(req)
 	if err != nil {
 		logger.SysError("failed to connect to Lark server, err:" + err.Error())
-		return "", errors.New("Unable to connect to the Lark server. Please try again later.")
+		return "", common.NewAPIError(common.APICodeOauthProviderUnreachable, "Unable to connect to the Lark server. Please try again later.", map[string]any{"provider": "Lark"})
 	}
 	defer res.Body.Close()
 	var larkUserAccessTokenResponse LarkUserAccessTokenResponse
@@ -119,7 +120,7 @@ func getLarkUserAccessToken(code string) (string, error) {
 
 func getLarkUserInfoByCode(code string) (*LarkUser, error) {
 	if code == "" {
-		return nil, errors.New("Invalid parameters")
+		return nil, common.NewAPIError(common.APICodeInvalidParams, "Invalid parameters", nil)
 	}
 
 	userAccessToken, err := getLarkUserAccessToken(code)
@@ -138,7 +139,7 @@ func getLarkUserInfoByCode(code string) (*LarkUser, error) {
 	res2, err := client.Do(req)
 	if err != nil {
 		logger.SysError("failed to connect to Lark server, err:" + err.Error())
-		return nil, errors.New("Unable to connect to the Lark server. Please try again later.")
+		return nil, common.NewAPIError(common.APICodeOauthProviderUnreachable, "Unable to connect to the Lark server. Please try again later.", map[string]any{"provider": "Lark"})
 	}
 	var larkUser LarkUser
 	err = json.NewDecoder(res2.Body).Decode(&larkUser)
@@ -150,19 +151,13 @@ func getLarkUserInfoByCode(code string) (*LarkUser, error) {
 
 func LarkOAuth(c *gin.Context) {
 	if !config.EffectiveSocialLogin(config.LarkAuthEnabled) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "The admin has not enabled sign-in and sign-up via Lark",
-			"success": false,
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOauthProviderDisabled, "The admin has not enabled sign-in and sign-up via Lark", map[string]any{"provider": "Lark"})
 		return
 	}
 	session := sessions.Default(c)
 	state := c.Query("state")
 	if state == "" || session.Get("oauth_state") == nil || state != session.Get("oauth_state").(string) {
-		c.JSON(http.StatusForbidden, gin.H{
-			"success": false,
-			"message": "state is empty or not same",
-		})
+		common.APIRespondWithCode(c, http.StatusForbidden, common.APICodeOauthStateInvalid, "state is empty or not same", nil)
 		return
 	}
 	// state 一次性使用：校验通过后立即失效，防止重放
@@ -177,10 +172,7 @@ func LarkOAuth(c *gin.Context) {
 	code := c.Query("code")
 	larkUser, err := getLarkUserInfoByCode(code)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	user := model.User{
@@ -189,10 +181,7 @@ func LarkOAuth(c *gin.Context) {
 	if model.IsLarkIdAlreadyTaken(user.LarkId) {
 		err := user.FillUserByLarkId()
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 	} else {
@@ -224,26 +213,17 @@ func LarkOAuth(c *gin.Context) {
 			})
 
 			if err != nil {
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": err.Error(),
-				})
+				common.APIRespondWithError(c, http.StatusOK, err)
 				return
 			}
 		} else {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "The admin has disabled new user sign-up",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeRegisterDisabled, "The admin has disabled new user sign-up", nil)
 			return
 		}
 	}
 
 	if user.Status != config.UserStatusEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "User has been banned",
-			"success": false,
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserBanned, "User has been banned", nil)
 		return
 	}
 	setupLoginSession(&user, c, loginSessionInfo{method: model.LoginMethodLark})
@@ -251,29 +231,20 @@ func LarkOAuth(c *gin.Context) {
 
 func LarkBind(c *gin.Context) {
 	if !config.EffectiveSocialLogin(config.LarkAuthEnabled) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "The admin has not enabled sign-in and sign-up via Lark",
-			"success": false,
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOauthProviderDisabled, "The admin has not enabled sign-in and sign-up via Lark", map[string]any{"provider": "Lark"})
 		return
 	}
 	code := c.Query("code")
 	larkUser, err := getLarkUserInfoByCode(code)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	user := model.User{
 		LarkId: larkUser.Data.OpenID,
 	}
 	if model.IsLarkIdAlreadyTaken(user.LarkId) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "This Lark account is already linked",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOauthAccountLinked, "This Lark account is already linked", map[string]any{"provider": "Lark"})
 		return
 	}
 	session := sessions.Default(c)
@@ -281,19 +252,13 @@ func LarkBind(c *gin.Context) {
 	user.Id = id.(int)
 	err = user.FillUserById()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	user.LarkId = larkUser.Data.OpenID
 	err = user.Update(false)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"runtime/debug"
@@ -35,13 +34,13 @@ type OrderResponse struct {
 func CreateOrder(c *gin.Context) {
 	var orderReq OrderRequest
 	if err := c.ShouldBindJSON(&orderReq); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invalid request"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "invalid request", nil)
 
 		return
 	}
 
 	if orderReq.Amount <= 0 || orderReq.Amount < config.PaymentMinAmount {
-		common.APIRespondWithError(c, http.StatusOK, fmt.Errorf("Amount must be at least %d", config.PaymentMinAmount))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodePaymentAmountTooSmall, fmt.Sprintf("Amount must be at least %d", config.PaymentMinAmount), map[string]any{"min": config.PaymentMinAmount})
 
 		return
 	}
@@ -49,7 +48,7 @@ func CreateOrder(c *gin.Context) {
 	userId := c.GetInt("id")
 	user, err := model.GetUserById(userId, false)
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("User not found"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserNotFound, "User not found", nil)
 		return
 	}
 
@@ -76,7 +75,7 @@ func CreateOrder(c *gin.Context) {
 	tradeNo := utils.GenerateTradeNo()
 	payRequest, err := paymentService.Pay(tradeNo, payMoney, user)
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("Failed to create payment, please try again later"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodePaymentCreateFailed, "Failed to create payment, please try again later", nil)
 		return
 	}
 
@@ -97,7 +96,7 @@ func CreateOrder(c *gin.Context) {
 
 	err = order.Insert()
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("Failed to create order, please try again later"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrderCreateFailed, "Failed to create order, please try again later", nil)
 		return
 	}
 
@@ -193,7 +192,7 @@ func PaymentCallback(c *gin.Context) {
 	paymentService, err := payment.NewPaymentService(uuid)
 	if err != nil {
 		// 不能回 2xx：Stripe / 微信支付把 2xx 当作已送达，查库出错时就再也不会重发
-		common.APIRespondWithError(c, http.StatusNotFound, errors.New("payment not found"))
+		common.APIRespondWithCode(c, http.StatusNotFound, common.APICodePaymentNotFound, "payment not found", nil)
 		return
 	}
 
@@ -349,7 +348,7 @@ func GetUserOrderList(c *gin.Context) {
 	userId := c.GetInt("id")
 	if userId <= 0 {
 		// user_id 为 0 时 model.GetOrderList 不会加 user_id 条件，会返回全站订单
-		common.APIRespondWithError(c, http.StatusOK, errors.New("Invalid user"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserNotFound, "Invalid user", nil)
 		return
 	}
 	params.UserId = userId

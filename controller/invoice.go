@@ -3,7 +3,6 @@ package controller
 import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/model"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
@@ -13,18 +12,18 @@ func GenInvoice(c *gin.Context) {
 	timeStr := c.Param("time")
 	invoiceTime, err := time.Parse("2006-01-02", timeStr)
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, fmt.Errorf("invalid time format"))
+		common.APIRespondWithError(c, http.StatusOK, common.NewAPIError(common.APICodeInvalidTimeFormat, "invalid time format", nil))
 		return
 	}
 	date := time.Date(invoiceTime.Year(), invoiceTime.Month(), 1, 0, 0, 0, 0, time.Local)
 	nowDate := time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.Local)
 	// 如果date大于等于当前月份返回错误
 	if !date.Before(nowDate) {
-		common.APIRespondWithError(c, http.StatusOK, fmt.Errorf("invoice time cannot be later than or equal to current month"))
+		common.APIRespondWithError(c, http.StatusOK, common.NewAPIError(common.APICodeInvoiceMonthNotPast, "invoice time cannot be later than or equal to current month", nil))
 		return
 	}
 	if model.IsStatisticsMonthGenerated(date) {
-		common.APIRespondWithError(c, http.StatusOK, fmt.Errorf("invoice the month data already generated"))
+		common.APIRespondWithError(c, http.StatusOK, common.NewAPIError(common.APICodeInvoiceMonthExists, "invoice the month data already generated", nil))
 		return
 	}
 	err = model.InsertStatisticsMonthForDate(date)
@@ -33,24 +32,24 @@ func GenInvoice(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusOK, common.WithAPICode(gin.H{
 		"success": true,
 		"message": "Invoice task submitted. Invoices for the specified month will be generated in the background.",
-	})
+	}, common.APICodeInvoiceTaskSubmitted, nil))
 }
 
 func UpdateInvoice(c *gin.Context) {
 	timeStr := c.Param("time")
 	invoiceTime, err := time.Parse("2006-01-02", timeStr)
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, fmt.Errorf("invalid time format"))
+		common.APIRespondWithError(c, http.StatusOK, common.NewAPIError(common.APICodeInvalidTimeFormat, "invalid time format", nil))
 		return
 	}
 	date := time.Date(invoiceTime.Year(), invoiceTime.Month(), 1, 0, 0, 0, 0, time.Local)
 	nowDate := time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.Local)
 	// 如果date大于等于当前月份返回错误
 	if !date.Before(nowDate) {
-		common.APIRespondWithError(c, http.StatusOK, fmt.Errorf("invoice time cannot be later than or equal to current month"))
+		common.APIRespondWithError(c, http.StatusOK, common.NewAPIError(common.APICodeInvoiceMonthNotPast, "invoice time cannot be later than or equal to current month", nil))
 		return
 	}
 	err = model.InsertStatisticsMonthForDate(date)
@@ -59,10 +58,10 @@ func UpdateInvoice(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusOK, common.WithAPICode(gin.H{
 		"success": true,
 		"message": "Invoice task submitted. Invoices for the specified month will be generated in the background.",
-	})
+	}, common.APICodeInvoiceTaskSubmitted, nil))
 }
 
 // GetUserInvoice 根据查询参数获取用户的账单统计数据

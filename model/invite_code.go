@@ -179,7 +179,7 @@ func GetInviteCodesList(params *InviteCodeSearchParams) (*DataResult[InviteCode]
 	if params.StartsAtFrom > 0 && params.StartsAtTo > 0 {
 		// 验证时间范围的合理性
 		if params.StartsAtFrom >= params.StartsAtTo {
-			return nil, errors.New("start time must be earlier than end time")
+			return nil, common.NewAPIError(common.APICodeStartAfterExpiry, "start time must be earlier than end time", nil)
 		}
 		// 两个时间区间有交集的条件：
 		// 查询开始时间 <= 邀请码结束时间 AND 查询结束时间 >= 邀请码开始时间
@@ -427,7 +427,7 @@ func GenerateInviteCode() (string, error) {
 			return code, nil
 		}
 	}
-	return "", errors.New("failed to generate invite code, please try again")
+	return "", common.NewAPIError(common.APICodeInviteCodeCreateFailed, "failed to generate invite code, please try again", nil)
 }
 
 // BatchDeleteInviteCodes 批量删除邀请码

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/utils"
@@ -311,9 +312,9 @@ func SetModelInfoHidden(ids []int, hidden bool) (int64, error) {
 
 // 别名写入的校验错误：别名只允许单跳，且必须指向一条真实存在的主名行。
 var (
-	ErrAliasSelfReference = errors.New("alias_of must differ from model")
-	ErrAliasTargetMissing = errors.New("alias_of target does not exist")
-	ErrAliasTargetIsAlias = errors.New("alias_of target is itself an alias")
+	ErrAliasSelfReference = common.NewAPIError(common.APICodeModelAliasSelf, "alias_of must differ from model", nil)
+	ErrAliasTargetMissing = common.NewAPIError(common.APICodeModelAliasTargetMissing, "alias_of target does not exist", nil)
+	ErrAliasTargetIsAlias = common.NewAPIError(common.APICodeModelAliasTargetIsAlias, "alias_of target is itself an alias", nil)
 )
 
 // ValidateAliasTarget 校验一条别名行的 alias_of：不能指向自己、目标必须存在、目标本身不能是别名。

@@ -200,19 +200,13 @@ func oidcAuthorizeURL(c *gin.Context, provider *model.OidcProvider, uiLocales st
 func OIDCEndpoint(c *gin.Context) {
 	provider, err := resolveOidcProvider(c)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"message": err.Error(),
-			"success": false,
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
 	loginURL, err := oidcAuthorizeURL(c, provider, oidcUILocale(c))
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -615,43 +609,28 @@ func oidcIdToken(c *gin.Context, provider *model.OidcProvider, verifier string, 
 	if err != nil {
 		// 上游原文只进日志：换 token 失败的细节（client 配置、IdP 报错）不该回给浏览器
 		logger.SysError(fmt.Sprintf("OIDC token exchange failed: provider=%s err=%s", provider.Slug, err.Error()))
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Login failed, please try again",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOidcLoginFailed, "Login failed, please try again", nil)
 		return "", "", nil, false
 	}
 
 	rawIdToken, ok := token.Extra("id_token").(string)
 	if !ok || rawIdToken == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "IdP did not return an id_token",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOidcLoginFailed, "IdP did not return an id_token", nil)
 		return "", "", nil, false
 	}
 	idToken, err := oidcConfig.Verifier.Verify(ctx, rawIdToken)
 	if err != nil {
 		logger.SysError(fmt.Sprintf("OIDC id_token verification failed: provider=%s err=%s", provider.Slug, err.Error()))
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Login failed, please try again",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOidcLoginFailed, "Login failed, please try again", nil)
 		return "", "", nil, false
 	}
 	if nonce != "" && idToken.Nonce != nonce {
 		logger.SysError(fmt.Sprintf("OIDC nonce mismatch: provider=%s", provider.Slug))
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Login failed, please try again",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOidcLoginFailed, "Login failed, please try again", nil)
 		return "", "", nil, false
 	}
 	if idToken.Subject == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "ID token has no subject",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOidcLoginFailed, "ID token has no subject", nil)
 		return "", "", nil, false
 	}
 
@@ -676,10 +655,7 @@ func OIDCAuth(c *gin.Context) {
 	session := sessions.Default(c)
 	state := c.Query("state")
 	if state == "" || session.Get("oauth_state") == nil || state != session.Get("oauth_state").(string) {
-		c.JSON(http.StatusForbidden, gin.H{
-			"success": false,
-			"message": "state is empty or not same",
-		})
+		common.APIRespondWithCode(c, http.StatusForbidden, common.APICodeOauthStateInvalid, "state is empty or not same", nil)
 		return
 	}
 	// state / code_verifier / nonce 一次性使用：校验通过后立即失效，防止重放
@@ -690,10 +666,7 @@ func OIDCAuth(c *gin.Context) {
 
 	provider, err := resolveOidcProvider(c)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"message": err.Error(),
-			"success": false,
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -719,10 +692,7 @@ func OIDCAuth(c *gin.Context) {
 		oidcSetupLogin(c, provider, existingUser, rawIdToken)
 		return
 	case oidcLinkDisabled:
-		c.JSON(http.StatusOK, gin.H{
-			"message": "User is banned or does not exist",
-			"success": false,
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserBanned, "User is banned or does not exist", nil)
 		return
 	case oidcLinkConflict:
 		// 只记 provider slug / 目标用户 id / subject，邮箱与手机号明文不入日志
@@ -734,10 +704,7 @@ func OIDCAuth(c *gin.Context) {
 		return
 	case oidcLinkError:
 		logger.SysError("Failed to query user: " + err.Error())
-		c.JSON(http.StatusOK, gin.H{
-			"message": err.Error(),
-			"success": false,
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -814,10 +781,7 @@ func oidcBind(c *gin.Context, provider *model.OidcProvider, subject string, clai
 	session := sessions.Default(c)
 	userId, ok := session.Get("id").(int)
 	if !ok || userId == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Unable to read the currently signed-in user",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeCurrentAccountLoadFailed, "Unable to read the currently signed-in user", nil)
 		return
 	}
 
@@ -826,10 +790,7 @@ func oidcBind(c *gin.Context, provider *model.OidcProvider, subject string, clai
 	case oidcBindDenied:
 		// 只记 provider slug / user_id / subject，邮箱明文不入日志
 		logger.SysError(fmt.Sprintf("OIDC link rejected: provider=%s user_id=%d subject=%s session user does not exist or is banned", provider.Slug, userId, subject))
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "User is banned or does not exist",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserBanned, "User is banned or does not exist", nil)
 		return
 	case oidcBindTaken:
 		c.JSON(http.StatusOK, gin.H{
@@ -838,10 +799,7 @@ func oidcBind(c *gin.Context, provider *model.OidcProvider, subject string, clai
 		})
 		return
 	case oidcBindError:
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -926,10 +884,7 @@ func oidcRegister(c *gin.Context, provider *model.OidcProvider, rawIdToken strin
 		return tx.Create(&identity).Error
 	})
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 

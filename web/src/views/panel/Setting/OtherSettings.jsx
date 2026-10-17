@@ -629,7 +629,7 @@ export function InvoiceCard({ ctx }) {
   const [invoiceMonth, setInvoiceMonth] = useState('');
 
   const invoiceAction = async (kind) => {
-    if (!invoiceMonth) return showError('Please select invoice Month');
+    if (!invoiceMonth) return showError(op('invoice.selectMonth'));
     const date = `${invoiceMonth}-01`;
     const res = await API.post(`/api/option/invoice/${kind}/${date}`);
     const { success, message } = res.data;

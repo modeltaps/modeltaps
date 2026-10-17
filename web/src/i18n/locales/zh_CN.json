@@ -1555,7 +1555,8 @@
     "generationData": {
       "title": "生成数据",
       "summary": "Raw JSON"
-    }
+    },
+    "contextFailed": "获取日志上下文失败：{{message}}"
   },
   "redemptionPage": {
     "pageTitle": "兑换",
@@ -2292,7 +2293,8 @@
         "genSuccess": "账单生成成功！",
         "updateSuccess": "账单更新成功！",
         "genFailed": "账单生成失败：",
-        "updateFailed": "账单更新失败："
+        "updateFailed": "账单更新失败：",
+        "selectMonth": "请选择账单月份"
       },
       "otherSettings": {
         "mjNotify": "Midjourney 回调",
