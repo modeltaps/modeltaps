@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/cache"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
@@ -50,7 +51,7 @@ const userSessionMaxUserAgent = 500
 const UserSessionCacheKey = "user_session:%s"
 
 // ErrUserSessionInvalid 会话不存在或已过期。
-var ErrUserSessionInvalid = errors.New("session expired, please sign in again")
+var ErrUserSessionInvalid error = common.NewAPIError(common.APICodeSessionExpired, "session expired, please sign in again", nil)
 
 // CreateUserSession 登录时建一行会话并返回；顺带清掉过期行，这些行没有别的回收时机。
 func CreateUserSession(userId int, method string, userAgent string, ip string, providerId int, idToken string) (*UserSession, error) {

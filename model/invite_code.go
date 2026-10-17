@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/redis"
@@ -207,41 +208,47 @@ func GetInviteCodeById(id int) (*InviteCode, error) {
 	return &inviteCode, err
 }
 
+var (
+	errInviteCodeRequired = common.NewAPIError(common.APICodeInviteCodeRequired, "invite code must not be empty", nil)
+	// 不存在、停用、未生效、过期、用尽共用同一句，不区分原因
+	errInvalidInviteCode = common.NewAPIError(common.APICodeInviteCodeInvalid, "invalid invite code", nil)
+)
+
 // CheckInviteCode 只验证邀请码有效性，不增加使用次数
 func CheckInviteCode(code string) error {
 	if code == "" {
-		return errors.New("invite code must not be empty")
+		return errInviteCodeRequired
 	}
 
 	var inviteCode InviteCode
 	err := DB.Where("code = ?", code).First(&inviteCode).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("invalid invite code")
+			return errInvalidInviteCode
 		}
 		return err
 	}
 
 	// 检查邀请码状态
 	if inviteCode.Status != InviteCodeStatusEnabled {
-		return errors.New("invalid invite code")
+		return errInvalidInviteCode
 	}
 
 	now := utils.GetTimestamp()
 
 	// 检查是否已生效
 	if inviteCode.StartsAt > 0 && inviteCode.StartsAt > now {
-		return errors.New("invalid invite code")
+		return errInvalidInviteCode
 	}
 
 	// 检查是否过期
 	if inviteCode.ExpiresAt > 0 && inviteCode.ExpiresAt < now {
-		return errors.New("invalid invite code")
+		return errInvalidInviteCode
 	}
 
 	// 检查使用次数（MaxUses = 0 表示无限使用）
 	if inviteCode.MaxUses > 0 && inviteCode.UsedCount >= inviteCode.MaxUses {
-		return errors.New("invalid invite code")
+		return errInvalidInviteCode
 	}
 
 	return nil
@@ -250,7 +257,7 @@ func CheckInviteCode(code string) error {
 // UseInviteCode 使用邀请码，增加使用次数
 func UseInviteCode(code string) error {
 	if code == "" {
-		return errors.New("invite code must not be empty")
+		return errInviteCodeRequired
 	}
 
 	// 优先使用Redis分布式锁，失败时使用内存锁
@@ -281,31 +288,31 @@ func UseInviteCode(code string) error {
 		err := tx.Where("code = ?", code).First(&inviteCode).Error
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errors.New("invalid invite code")
+				return errInvalidInviteCode
 			}
 			return err
 		}
 
 		// 检查邀请码状态
 		if inviteCode.Status != InviteCodeStatusEnabled {
-			return errors.New("invalid invite code")
+			return errInvalidInviteCode
 		}
 
 		now := utils.GetTimestamp()
 
 		// 检查是否已生效
 		if inviteCode.StartsAt > 0 && inviteCode.StartsAt > now {
-			return errors.New("invalid invite code")
+			return errInvalidInviteCode
 		}
 
 		// 检查是否过期
 		if inviteCode.ExpiresAt > 0 && inviteCode.ExpiresAt < now {
-			return errors.New("invalid invite code")
+			return errInvalidInviteCode
 		}
 
 		// 检查使用次数（MaxUses = 0 表示无限使用）
 		if inviteCode.MaxUses > 0 && inviteCode.UsedCount >= inviteCode.MaxUses {
-			return errors.New("invalid invite code")
+			return errInvalidInviteCode
 		}
 
 		// 增加使用次数
@@ -327,7 +334,7 @@ func UseInviteCode(code string) error {
 // 注意：此函数在事务中调用，外层已有锁保护
 func UseInviteCodeWithTx(tx *gorm.DB, code string) error {
 	if code == "" {
-		return errors.New("invite code must not be empty")
+		return errInviteCodeRequired
 	}
 
 	var inviteCode InviteCode
@@ -335,31 +342,31 @@ func UseInviteCodeWithTx(tx *gorm.DB, code string) error {
 	err := tx.Where("code = ?", code).First(&inviteCode).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("invalid invite code")
+			return errInvalidInviteCode
 		}
 		return err
 	}
 
 	// 检查邀请码状态
 	if inviteCode.Status != InviteCodeStatusEnabled {
-		return errors.New("invalid invite code")
+		return errInvalidInviteCode
 	}
 
 	now := utils.GetTimestamp()
 
 	// 检查是否已生效
 	if inviteCode.StartsAt > 0 && inviteCode.StartsAt > now {
-		return errors.New("invalid invite code")
+		return errInvalidInviteCode
 	}
 
 	// 检查是否过期
 	if inviteCode.ExpiresAt > 0 && inviteCode.ExpiresAt < now {
-		return errors.New("invalid invite code")
+		return errInvalidInviteCode
 	}
 
 	// 检查使用次数（MaxUses = 0 表示无限使用）
 	if inviteCode.MaxUses > 0 && inviteCode.UsedCount >= inviteCode.MaxUses {
-		return errors.New("invalid invite code")
+		return errInvalidInviteCode
 	}
 
 	// 增加使用次数

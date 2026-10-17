@@ -69,7 +69,7 @@ func TestEmailCodeLoginFlow(t *testing.T) {
 	common.RegisterVerificationCodeWithKey("alice@example.test", "abc123", common.LoginCodePurpose)
 	t.Cleanup(func() { common.DeleteKey("alice@example.test", common.LoginCodePurpose) })
 
-	if _, resp := postJSON(t, r, "/login", `{"email":"alice@example.test","code":"wrong"}`); resp["success"] != false || resp["message"] != errLoginCodeFailed {
+	if _, resp := postJSON(t, r, "/login", `{"email":"alice@example.test","code":"wrong"}`); resp["success"] != false || resp["message"] != errVerificationCodeInvalid.Error() {
 		t.Fatalf("错误验证码应失败，实际 %v", resp)
 	}
 

@@ -24,18 +24,12 @@ const loginCodeResendInterval = 60 * time.Second
 // loginCodeLength 验证码长度（十六进制字符，与注册验证码一致）。
 const loginCodeLength = 6
 
-// errLoginCodeFailed 验证失败的统一文案：验证码错误、过期、账号不可用共用同一句。
-const errLoginCodeFailed = "Verification code is incorrect or has expired"
-
 // emailCodeLoginUnavailable 站点未开放邮箱验证码登录时直接拒绝。
 func emailCodeLoginUnavailable(c *gin.Context) bool {
 	if config.EffectiveEmailCodeLogin(stmp.SystemStmpConfigured()) {
 		return false
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": false,
-		"message": "Email verification code login is not enabled on this site",
-	})
+	common.APIRespondWithCode(c, http.StatusOK, common.APICodeEmailCodeLoginDisabled, "Email verification code login is not enabled on this site", nil)
 	return true
 }
 
@@ -71,18 +65,12 @@ func SendLoginCode(c *gin.Context) {
 	}
 	var req sendLoginCodeRequest
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid parameters",
-		})
+		common.APIRespondWithError(c, http.StatusOK, errInvalidParams)
 		return
 	}
 	email := common.NormalizeEmail(req.Email)
 	if err := common.ValidateEmailStrict(email); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid email format",
-		})
+		common.APIRespondWithError(c, http.StatusOK, errInvalidEmail)
 		return
 	}
 	// 冷却期内重复请求静默成功：既防刷邮件，也不暴露邮箱是否存在
@@ -101,10 +89,7 @@ func SendLoginCode(c *gin.Context) {
 		// 发信失败要让用户知道，否则会一直等；邮箱明文不入日志
 		logger.SysError(fmt.Sprintf("Failed to send login verification code: user_id=%d err=%s", user.Id, err.Error()))
 		common.DeleteKey(email, common.LoginCodePurpose)
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Failed to send verification code, please try again later",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeEmailSendFailed, "Failed to send verification code, please try again later", nil)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": ""})
@@ -122,18 +107,12 @@ func LoginWithCode(c *gin.Context) {
 	}
 	var req loginWithCodeRequest
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid parameters",
-		})
+		common.APIRespondWithError(c, http.StatusOK, errInvalidParams)
 		return
 	}
 	email := common.NormalizeEmail(req.Email)
 	if email == "" || req.Code == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid parameters",
-		})
+		common.APIRespondWithError(c, http.StatusOK, errInvalidParams)
 		return
 	}
 	user := resolveEmailCodeUser(email)
@@ -142,19 +121,13 @@ func LoginWithCode(c *gin.Context) {
 		failureKey = common.LoginFailureKeyForUser(user.Id)
 	}
 	if common.IsLoginLocked(failureKey) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": errLoginCodeFailed,
-		})
+		common.APIRespondWithError(c, http.StatusOK, errVerificationCodeInvalid)
 		return
 	}
-	// 先验码再看账号：验证码本身校验不过与账号不可用返回同一句，且都记一次失败
+	// 先验码再看账号：验证码错误、过期与账号不可用返回同一句，且都记一次失败
 	if !common.VerifyCodeWithKey(email, req.Code, common.LoginCodePurpose) || user == nil {
 		common.RecordLoginFailure(failureKey)
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": errLoginCodeFailed,
-		})
+		common.APIRespondWithError(c, http.StatusOK, errVerificationCodeInvalid)
 		return
 	}
 	common.DeleteKey(email, common.LoginCodePurpose)

@@ -60,6 +60,9 @@ func TestLoginLockedReturnsSameMessage(t *testing.T) {
 	if got := resp["message"]; got != wantMessage {
 		t.Fatalf("首次失败文案 = %v，期望 %q", got, wantMessage)
 	}
+	if got := resp["code"]; got != common.APICodeLoginFailed {
+		t.Fatalf("首次失败 code = %v，期望 %q", got, common.APICodeLoginFailed)
+	}
 
 	ghostKey := common.LoginFailureKeyForIdentifier("ghost")
 	for i := 0; i < config.LoginMaxFailures; i++ {
@@ -76,6 +79,9 @@ func TestLoginLockedReturnsSameMessage(t *testing.T) {
 	}
 	if got := locked["message"]; got != wantMessage {
 		t.Fatalf("锁定期文案 = %v，期望与普通失败一致 %q", got, wantMessage)
+	}
+	if got := locked["code"]; got != common.APICodeLoginFailed {
+		t.Fatalf("锁定期 code = %v，期望与普通失败一致 %q", got, common.APICodeLoginFailed)
 	}
 }
 
