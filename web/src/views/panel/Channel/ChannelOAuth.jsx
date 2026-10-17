@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { CircleAlert, CircleCheck, Copy, ExternalLink, Loader2, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CircleAlert, CircleCheck, Copy, ExternalLink, Loader2, ShieldCheck } from 'lucide-react';
 
 import { toast } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   startChannelOAuth,
   fetchChannelOAuthStatus,
@@ -229,15 +228,6 @@ function CodeOAuth({ flow, channelId, getValues, onCredentials }) {
   };
   const close = () => setOpen(false);
 
-  const tabs = flow.device ? (
-    <Tabs value={mode} onValueChange={setMode}>
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="device">{t('channelOAuth.tabs.device')}</TabsTrigger>
-        <TabsTrigger value="paste">{t('channelOAuth.tabs.paste')}</TabsTrigger>
-      </TabsList>
-    </Tabs>
-  ) : null;
-
   return (
     <div className="space-y-2">
       <Button
@@ -264,12 +254,18 @@ function CodeOAuth({ flow, channelId, getValues, onCredentials }) {
             <DialogTitle>{t('channel_edit.oauth.dialogTitle', { provider: flow.provider })}</DialogTitle>
           </DialogHeader>
           {open && mode === 'device' && (
-            <DeviceCodePanel tabs={tabs} channelId={channelId} getValues={getValues} onDone={done} onCancel={close} />
+            <DeviceCodePanel
+              channelId={channelId}
+              getValues={getValues}
+              onDone={done}
+              onCancel={close}
+              onUsePaste={() => setMode('paste')}
+            />
           )}
           {open && mode === 'paste' && (
             <PastePanel
-              tabs={tabs}
               flow={flow}
+              onBack={flow.device ? () => setMode('device') : undefined}
               channelId={channelId}
               getValues={getValues}
               onDone={done}
@@ -283,16 +279,19 @@ function CodeOAuth({ flow, channelId, getValues, onCredentials }) {
   );
 }
 
-// Body (tabs on top) plus a footer with Cancel and the panel's main action on the right.
-function OAuthPanelShell({ tabs, onCancel, primary, children }) {
+// Body plus a footer: an optional status on the left, Cancel and the panel's main action on the
+// right.
+function OAuthPanelShell({ status, onCancel, primary, children }) {
   const { t } = useTranslation();
   return (
     <>
-      <DialogBody className="space-y-5">
-        {tabs}
-        {children}
-      </DialogBody>
-      <DialogFooter>
+      <DialogBody className="space-y-5">{children}</DialogBody>
+      <DialogFooter className="sm:items-center">
+        {status && (
+          <p className="flex items-center justify-center gap-2 whitespace-nowrap text-sm text-muted-foreground sm:mr-auto" aria-live="polite">
+            {status}
+          </p>
+        )}
         <Button type="button" variant="outline" onClick={onCancel}>
           {t('common.cancel')}
         </Button>
@@ -318,7 +317,7 @@ function OAuthError({ error, action }) {
 
 // Device code login (Codex). Polls one request at a time, at the interval the
 // server reports, until approved, refused or expired; unmounting stops it.
-function DeviceCodePanel({ tabs, channelId, getValues, onDone, onCancel }) {
+function DeviceCodePanel({ channelId, getValues, onDone, onCancel, onUsePaste }) {
   const { t } = useTranslation();
   const [device, setDevice] = useState(null); // { sessionId, userCode, verificationUrl, expiresAt }
   const [error, setError] = useState(null);
@@ -422,7 +421,6 @@ function DeviceCodePanel({ tabs, channelId, getValues, onDone, onCancel }) {
   if (error) {
     return (
       <OAuthPanelShell
-        tabs={tabs}
         onCancel={onCancel}
         primary={
           <Button type="button" onClick={restart}>
@@ -431,21 +429,24 @@ function DeviceCodePanel({ tabs, channelId, getValues, onDone, onCancel }) {
         }
       >
         <OAuthError error={error} />
-        <p className="text-center text-sm text-muted-foreground">{t('channelOAuth.device.fallbackHint')}</p>
+        <UsePasteLink onClick={onUsePaste} />
       </OAuthPanelShell>
     );
   }
 
-  const hint = device
-    ? { '': t('channelOAuth.device.openHint'), yes: t('channelOAuth.device.copiedHint'), no: t('channelOAuth.device.copyFailedHint') }[
-        copied
-      ]
-    : '';
+  const hint = { '': '', yes: t('channelOAuth.device.copiedHint'), no: t('channelOAuth.device.copyFailedHint') }[copied];
 
   return (
     <OAuthPanelShell
-      tabs={tabs}
       onCancel={onCancel}
+      status={
+        device && (
+          <>
+            <Loader2 className="size-4 animate-spin" />
+            {t('channelOAuth.device.waitingStatus')}
+          </>
+        )
+      }
       primary={
         <Button type="button" disabled={!device} onClick={openPage}>
           <ExternalLink className="size-4" />
@@ -471,17 +472,18 @@ function DeviceCodePanel({ tabs, channelId, getValues, onDone, onCancel }) {
               </code>
               <Copy className="size-4 text-muted-foreground group-hover:text-foreground" />
             </button>
-            <p
-              className={`flex max-w-md items-start justify-center gap-1.5 text-balance text-sm ${copied === 'yes' ? 'text-emerald-600' : 'text-muted-foreground'}`}
-              aria-live="polite"
-            >
-              {copied === 'yes' && <CircleCheck className="mt-0.5 size-4 shrink-0" />}
-              <span>{hint}</span>
+            <p className="text-xs text-muted-foreground">
+              {t('channelOAuth.device.expires', { time: formatCountdown((device.expiresAt - now) / 1000) })}
             </p>
-            <p className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="size-3.5 animate-spin" />
-              {t('channelOAuth.device.waiting', { time: formatCountdown((device.expiresAt - now) / 1000) })}
-            </p>
+            {hint && (
+              <p
+                className={`flex max-w-md items-start justify-center gap-1.5 text-balance text-sm ${copied === 'yes' ? 'text-emerald-600' : 'text-destructive'}`}
+                aria-live="polite"
+              >
+                {copied === 'yes' ? <CircleCheck className="mt-0.5 size-4 shrink-0" /> : <CircleAlert className="mt-0.5 size-4 shrink-0" />}
+                <span>{hint}</span>
+              </p>
+            )}
           </>
         ) : (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -494,6 +496,7 @@ function DeviceCodePanel({ tabs, channelId, getValues, onDone, onCancel }) {
         <p>{t('channelOAuth.device.enableTip')}</p>
         <p>{t('channelOAuth.device.phishingTip')}</p>
       </div>
+      <UsePasteLink onClick={onUsePaste} />
     </OAuthPanelShell>
   );
 }
@@ -533,6 +536,29 @@ function PasteExample({ paste }) {
   );
 }
 
+// Way out of device code login when it is turned off for the account, and back.
+function UsePasteLink({ onClick }) {
+  const { t } = useTranslation();
+  return (
+    <p className="text-center text-xs text-muted-foreground">
+      {t('channelOAuth.device.usePasteQuestion')}{' '}
+      <button type="button" className="font-medium text-foreground underline underline-offset-4" onClick={onClick}>
+        {t('channelOAuth.device.usePaste')}
+      </button>
+    </p>
+  );
+}
+
+function BackToDeviceLink({ onClick }) {
+  const { t } = useTranslation();
+  return (
+    <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground" onClick={onClick}>
+      <ArrowLeft className="size-3.5" />
+      {t('channelOAuth.paste.backToDevice')}
+    </button>
+  );
+}
+
 const PASTE_STATUS_OK = new Set(['ok']);
 
 // One numbered step of the paste instructions.
@@ -551,7 +577,7 @@ function Step({ n, title, children }) {
 // Paste flow: start an authorization session, open the provider page, then
 // paste what it ends on. The input is checked as you type; a valid paste for
 // this session is submitted right away.
-function PastePanel({ tabs, flow, channelId, getValues, onDone, onCancel, autoOpen }) {
+function PastePanel({ flow, channelId, getValues, onDone, onCancel, onBack, autoOpen }) {
   const { t } = useTranslation();
   const [session, setSession] = useState(null); // { authURL, state, minutes }
   const [input, setInput] = useState('');
@@ -639,7 +665,8 @@ function PastePanel({ tabs, flow, channelId, getValues, onDone, onCancel, autoOp
 
   if (!session) {
     return (
-      <OAuthPanelShell tabs={tabs} onCancel={onCancel} primary={submitButton}>
+      <OAuthPanelShell onCancel={onCancel} primary={submitButton}>
+        {onBack && <BackToDeviceLink onClick={onBack} />}
         {error ? (
           <OAuthError error={error} action={restartButton} />
         ) : (
@@ -653,7 +680,8 @@ function PastePanel({ tabs, flow, channelId, getValues, onDone, onCancel, autoOp
   }
 
   return (
-    <OAuthPanelShell tabs={tabs} onCancel={onCancel} primary={submitButton}>
+    <OAuthPanelShell onCancel={onCancel} primary={submitButton}>
+      {onBack && <BackToDeviceLink onClick={onBack} />}
       <ol className="space-y-5">
         <Step n={1} title={t(`channelOAuth.paste.${flow.paste}.step1`, { provider: flow.provider })}>
           <div className="flex flex-wrap gap-2">
@@ -734,16 +762,16 @@ CodeOAuth.propTypes = {
 };
 
 DeviceCodePanel.propTypes = {
-  tabs: PropTypes.node,
   onCancel: PropTypes.func.isRequired,
+  onUsePaste: PropTypes.func.isRequired,
   channelId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   getValues: PropTypes.func.isRequired,
   onDone: PropTypes.func.isRequired
 };
 
 PastePanel.propTypes = {
-  tabs: PropTypes.node,
   onCancel: PropTypes.func.isRequired,
+  onBack: PropTypes.func,
   flow: PropTypes.object.isRequired,
   channelId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   getValues: PropTypes.func.isRequired,
@@ -756,11 +784,14 @@ PasteExample.propTypes = {
 };
 
 OAuthPanelShell.propTypes = {
-  tabs: PropTypes.node,
+  status: PropTypes.node,
   onCancel: PropTypes.func.isRequired,
   primary: PropTypes.node,
   children: PropTypes.node
 };
+
+UsePasteLink.propTypes = { onClick: PropTypes.func.isRequired };
+BackToDeviceLink.propTypes = { onClick: PropTypes.func.isRequired };
 
 Step.propTypes = {
   n: PropTypes.number.isRequired,
