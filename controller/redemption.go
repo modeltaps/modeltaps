@@ -32,18 +32,12 @@ func GetRedemptionsList(c *gin.Context) {
 func GetRedemption(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	redemption, err := model.GetRedemptionById(id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -57,45 +51,27 @@ func AddRedemption(c *gin.Context) {
 	redemption := model.Redemption{}
 	err := c.ShouldBindJSON(&redemption)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	if len(redemption.Name) == 0 || len(redemption.Name) > 20 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Redemption code name must be 1-20 characters long",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeRedemptionNameLength, "Redemption code name must be 1-20 characters long", nil)
 		return
 	}
 	if redemption.Count <= 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Redemption code count must be greater than 0",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeRedemptionCountInvalid, "Redemption code count must be greater than 0", nil)
 		return
 	}
 	if redemption.Count > 100 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Cannot generate more than 100 redemption codes at once",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeBatchTooLarge, "Cannot generate more than 100 redemption codes at once", nil)
 		return
 	}
 	if redemption.Quota <= 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Redemption code quota must be greater than 0",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeRedemptionQuotaInvalid, "Redemption code quota must be greater than 0", nil)
 		return
 	}
 	if !model.IsValidRedemptionScope(redemption.Scope) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid redemption code purpose",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeRedemptionPurposeInvalid, "Invalid redemption code purpose", nil)
 		return
 	}
 	if redemption.Scope == "" {
@@ -138,10 +114,7 @@ func DeleteRedemption(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	err := model.DeleteRedemptionById(id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -155,28 +128,19 @@ func UpdateRedemption(c *gin.Context) {
 	redemption := model.Redemption{}
 	err := c.ShouldBindJSON(&redemption)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	cleanRedemption, err := model.GetRedemptionById(redemption.Id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	if statusOnly != "" {
 		cleanRedemption.Status = redemption.Status
 	} else {
 		if !model.IsValidRedemptionScope(redemption.Scope) {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Invalid redemption code purpose",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeRedemptionPurposeInvalid, "Invalid redemption code purpose", nil)
 			return
 		}
 		// If you add more fields, please also update redemption.Update()
@@ -191,10 +155,7 @@ func UpdateRedemption(c *gin.Context) {
 	}
 	err = cleanRedemption.Update()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

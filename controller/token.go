@@ -6,7 +6,6 @@ import (
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/model"
-	"errors"
 	"net/http"
 	"strconv"
 
@@ -79,18 +78,12 @@ func GetToken(c *gin.Context) {
 	userId := c.GetInt("id")
 	userRole := c.GetInt("role")
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	token, err := model.GetTokenByIds(id, userId)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -125,10 +118,7 @@ func GetPlaygroundToken(c *gin.Context) {
 		}
 		err = cleanToken.Insert()
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Failed to create the chat API key, please try again later or contact the admin",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenChatCreateFailed, "Failed to create the chat API key, please try again later or contact the admin", nil)
 			return
 		}
 		token = &cleanToken
@@ -147,10 +137,7 @@ func AddToken(c *gin.Context) {
 	token := model.Token{}
 	err := c.ShouldBindJSON(&token)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	if len(token.Name) > 30 {
@@ -161,20 +148,14 @@ func AddToken(c *gin.Context) {
 	if token.Group != "" {
 		err = validateTokenGroup(token.Group, userId)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 	}
 	if token.BackupGroup != "" {
 		err = validateTokenGroup(token.BackupGroup, userId)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 	}
@@ -207,10 +188,7 @@ func AddToken(c *gin.Context) {
 	cleanToken.Setting.Set(setting)
 	err = cleanToken.Insert()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -228,10 +206,7 @@ func DeleteToken(c *gin.Context) {
 	userId := c.GetInt("id")
 	err := model.DeleteTokenById(id, userId)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -247,10 +222,7 @@ func UpdateToken(c *gin.Context) {
 	token := model.Token{}
 	err := c.ShouldBindJSON(&token)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	if len(token.Name) > 30 {
@@ -267,10 +239,7 @@ func UpdateToken(c *gin.Context) {
 
 	cleanToken, err := model.GetTokenByIds(token.Id, userId)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	if token.Status == config.TokenStatusEnabled {
@@ -287,20 +256,14 @@ func UpdateToken(c *gin.Context) {
 	if cleanToken.Group != token.Group && token.Group != "" {
 		err = validateTokenGroup(token.Group, userId)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 	}
 	if cleanToken.BackupGroup != token.BackupGroup && token.BackupGroup != "" {
 		err = validateTokenGroup(token.BackupGroup, userId)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 	}
@@ -340,10 +303,7 @@ func UpdateToken(c *gin.Context) {
 	}
 	err = cleanToken.Update()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -366,10 +326,7 @@ func DeleteTokenByAdmin(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	err := model.DeleteTokenByIdAdmin(id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -384,10 +341,7 @@ func UpdateTokenByAdmin(c *gin.Context) {
 	token := model.Token{}
 	err := c.ShouldBindJSON(&token)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	if len(token.Name) > 30 {
@@ -404,10 +358,7 @@ func UpdateTokenByAdmin(c *gin.Context) {
 
 	cleanToken, err := model.GetTokenById(token.Id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -426,10 +377,7 @@ func UpdateTokenByAdmin(c *gin.Context) {
 	if token.UserId > 0 && token.UserId != cleanToken.UserId {
 		targetUser, err := model.GetUserById(token.UserId, false)
 		if err != nil || targetUser == nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Target user not found",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserNotFound, "Target user not found", nil)
 			return
 		}
 	}
@@ -443,20 +391,14 @@ func UpdateTokenByAdmin(c *gin.Context) {
 	if cleanToken.Group != token.Group && token.Group != "" {
 		err = validateTokenGroupForUser(token.Group, targetUserId)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 	}
 	if cleanToken.BackupGroup != token.BackupGroup && token.BackupGroup != "" {
 		err = validateTokenGroupForUser(token.BackupGroup, targetUserId)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 	}
@@ -493,10 +435,7 @@ func UpdateTokenByAdmin(c *gin.Context) {
 
 	err = cleanToken.UpdateByAdmin()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -511,16 +450,16 @@ func UpdateTokenByAdmin(c *gin.Context) {
 func validateTokenGroupForUser(tokenGroup string, userId int) error {
 	userGroup, _ := model.CacheGetUserGroup(userId)
 	if userGroup == "" {
-		return errors.New("Failed to get user group info")
+		return common.NewAPIError(common.APICodeUserGroupLoadFailed, "Failed to get user group info", nil)
 	}
 
 	groupRatio := model.GlobalUserGroupRatio.GetBySymbol(tokenGroup)
 	if groupRatio == nil {
-		return errors.New("Invalid user group")
+		return common.NewAPIError(common.APICodeUserGroupInvalid, "Invalid user group", nil)
 	}
 
 	if !groupRatio.Public && userGroup != tokenGroup {
-		return errors.New("Target user is not allowed to use the specified group")
+		return common.NewAPIError(common.APICodeUserGroupNotAllowed, "Target user is not allowed to use the specified group", nil)
 	}
 
 	return nil
@@ -529,16 +468,16 @@ func validateTokenGroupForUser(tokenGroup string, userId int) error {
 func validateTokenGroup(tokenGroup string, userId int) error {
 	userGroup, _ := model.CacheGetUserGroup(userId)
 	if userGroup == "" {
-		return errors.New("Failed to get user group info")
+		return common.NewAPIError(common.APICodeUserGroupLoadFailed, "Failed to get user group info", nil)
 	}
 
 	groupRatio := model.GlobalUserGroupRatio.GetBySymbol(tokenGroup)
 	if groupRatio == nil {
-		return errors.New("Invalid user group")
+		return common.NewAPIError(common.APICodeUserGroupInvalid, "Invalid user group", nil)
 	}
 
 	if !groupRatio.Public && userGroup != tokenGroup {
-		return errors.New("Current user group is not allowed to use the specified group")
+		return common.NewAPIError(common.APICodeUserGroupNotAllowed, "Current user group is not allowed to use the specified group", nil)
 	}
 
 	return nil
@@ -551,7 +490,7 @@ func validateTokenSetting(setting *model.TokenSetting) error {
 
 	if setting.Heartbeat.Enabled {
 		if setting.Heartbeat.TimeoutSeconds < 30 || setting.Heartbeat.TimeoutSeconds > 90 {
-			return errors.New("heartbeat timeout seconds must be between 30 and 90")
+			return common.NewAPIError(common.APICodeTokenHeartbeatRange, "heartbeat timeout seconds must be between 30 and 90", nil)
 		}
 	}
 
@@ -559,10 +498,10 @@ func validateTokenSetting(setting *model.TokenSetting) error {
 		switch rs.Period {
 		case model.TokenQuotaResetPeriodDaily, model.TokenQuotaResetPeriodWeekly, model.TokenQuotaResetPeriodMonthly:
 		default:
-			return errors.New("quota_reset period must be daily, weekly or monthly")
+			return common.NewAPIError(common.APICodeTokenQuotaResetPeriodInvalid, "quota_reset period must be daily, weekly or monthly", nil)
 		}
 		if rs.Limit <= 0 {
-			return errors.New("quota_reset limit must be greater than 0")
+			return common.NewAPIError(common.APICodeTokenQuotaResetLimitInvalid, "quota_reset limit must be greater than 0", nil)
 		}
 	}
 

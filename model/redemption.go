@@ -74,7 +74,7 @@ func GetRedemptionById(id int) (*Redemption, error) {
 
 func Redeem(key string, userId int, ip string) (quota int, err error) {
 	if key == "" {
-		return 0, errors.New("redemption code not provided")
+		return 0, common.NewAPIError(common.APICodeRedemptionCodeRequired, "redemption code not provided", nil)
 	}
 	if userId == 0 {
 		return 0, errors.New("invalid user id")
@@ -90,13 +90,13 @@ func Redeem(key string, userId int, ip string) (quota int, err error) {
 		// 行锁读取(MySQL/PostgreSQL 生效;SQLite 不支持行锁,由下方原子守卫兜底)
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where(keyCol+" = ?", key).First(redemption).Error
 		if err != nil {
-			return errors.New("invalid redemption code")
+			return common.NewAPIError(common.APICodeRedemptionCodeInvalid, "invalid redemption code", nil)
 		}
 		if redemption.Status != config.RedemptionCodeStatusEnabled {
-			return errors.New("this redemption code has already been used")
+			return common.NewAPIError(common.APICodeRedemptionCodeUsed, "this redemption code has already been used", nil)
 		}
 		if redemption.ExpiredTime > 0 && redemption.ExpiredTime < utils.GetTimestamp() {
-			return errors.New("this redemption code has expired")
+			return common.NewAPIError(common.APICodeRedemptionCodeExpired, "this redemption code has expired", nil)
 		}
 		// 用途校验放在标记 used 之前，被拒绝时兑换码保持可用
 		if redemption.Scope == RedemptionScopePersonal || redemption.Scope == RedemptionScopeOrg {
@@ -106,10 +106,10 @@ func Redeem(key string, userId int, ip string) (quota int, err error) {
 			}
 			isOrgAccount := userType == config.UserTypeOrgShadow
 			if redemption.Scope == RedemptionScopeOrg && !isOrgAccount {
-				return errors.New("this redemption code can only be used by organization accounts")
+				return common.NewAPIError(common.APICodeRedemptionCodeOrgOnly, "this redemption code can only be used by organization accounts", nil)
 			}
 			if redemption.Scope == RedemptionScopePersonal && isOrgAccount {
-				return errors.New("this redemption code can only be used by personal accounts")
+				return common.NewAPIError(common.APICodeRedemptionCodePersonalOnly, "this redemption code can only be used by personal accounts", nil)
 			}
 		}
 		// 原子守卫:仅当仍为 enabled 时置为 used,RowsAffected==1 才算抢到(跨库双保险)
@@ -124,7 +124,7 @@ func Redeem(key string, userId int, ip string) (quota int, err error) {
 			return result.Error
 		}
 		if result.RowsAffected != 1 {
-			return errors.New("this redemption code has already been used")
+			return common.NewAPIError(common.APICodeRedemptionCodeUsed, "this redemption code has already been used", nil)
 		}
 		// 抢到后再加额度,保证标记 used 与加额度在同一事务内一致
 		err = tx.Model(&User{}).Where("id = ?", userId).Update("quota", gorm.Expr("quota + ?", redemption.Quota)).Error
@@ -136,7 +136,7 @@ func Redeem(key string, userId int, ip string) (quota int, err error) {
 		return nil
 	})
 	if err != nil {
-		return 0, errors.New("redemption failed: " + err.Error())
+		return 0, fmt.Errorf("redemption failed: %w", err)
 	}
 
 	// Try to upgrade user group based on cumulative recharge amount

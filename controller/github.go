@@ -84,7 +84,7 @@ func configureClientWithGitHubProxy(client *http.Client) error {
 // 否则 GitHubOAuth / GitHubBind 两条写库路径在单测里完全够不着。生产代码不得改写它。
 var getGitHubUserInfoByCode = func(code string) (*GitHubUser, error) {
 	if code == "" {
-		return nil, errors.New("Invalid parameters")
+		return nil, common.NewAPIError(common.APICodeInvalidParams, "Invalid parameters", nil)
 	}
 	values := map[string]string{"client_id": config.GitHubClientId, "client_secret": config.GitHubClientSecret, "code": code}
 	jsonData, err := json.Marshal(values)
@@ -108,12 +108,12 @@ var getGitHubUserInfoByCode = func(code string) (*GitHubUser, error) {
 	res, err := client.Do(req)
 	if err != nil {
 		logger.SysError("failed to connect to GitHub server, err:" + err.Error())
-		return nil, errors.New("Unable to connect to the GitHub server. Please try again later.")
+		return nil, common.NewAPIError(common.APICodeOauthProviderUnreachable, "Unable to connect to the GitHub server. Please try again later.", map[string]any{"provider": "GitHub"})
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, errors.New("Unable to connect to the GitHub server. Please try again later.")
+		return nil, common.NewAPIError(common.APICodeOauthProviderUnreachable, "Unable to connect to the GitHub server. Please try again later.", map[string]any{"provider": "GitHub"})
 	}
 
 	var oAuthResponse GitHubOAuthResponse
@@ -136,11 +136,11 @@ var getGitHubUserInfoByCode = func(code string) (*GitHubUser, error) {
 	res2, err := client.Do(req)
 	if err != nil {
 		logger.SysError("failed to connect to GitHub server, err:" + err.Error())
-		return nil, errors.New("Unable to connect to the GitHub server. Please try again later.")
+		return nil, common.NewAPIError(common.APICodeOauthProviderUnreachable, "Unable to connect to the GitHub server. Please try again later.", map[string]any{"provider": "GitHub"})
 	}
 	defer res2.Body.Close()
 	if res2.StatusCode != http.StatusOK {
-		return nil, errors.New("Unable to connect to the GitHub server. Please try again later.")
+		return nil, common.NewAPIError(common.APICodeOauthProviderUnreachable, "Unable to connect to the GitHub server. Please try again later.", map[string]any{"provider": "GitHub"})
 	}
 
 	var githubUser GitHubUser
@@ -149,7 +149,7 @@ var getGitHubUserInfoByCode = func(code string) (*GitHubUser, error) {
 		return nil, err
 	}
 	if githubUser.Login == "" {
-		return nil, errors.New("Invalid response: user field is empty. Please try again later.")
+		return nil, common.NewAPIError(common.APICodeOauthInvalidResponse, "Invalid response: user field is empty. Please try again later.", nil)
 	}
 
 	if hasUserEmailScope {
@@ -164,7 +164,7 @@ var getGitHubUserInfoByCode = func(code string) (*GitHubUser, error) {
 		}
 		defer res3.Body.Close()
 		if res3.StatusCode != http.StatusOK {
-			return nil, errors.New("Unable to connect to the GitHub server. Please try again later.")
+			return nil, common.NewAPIError(common.APICodeOauthProviderUnreachable, "Unable to connect to the GitHub server. Please try again later.", map[string]any{"provider": "GitHub"})
 		}
 
 		var githubEmails []*GithubEmail
@@ -232,10 +232,7 @@ func GitHubOAuth(c *gin.Context) {
 	session := sessions.Default(c)
 	state := c.Query("state")
 	if state == "" || session.Get("oauth_state") == nil || state != session.Get("oauth_state").(string) {
-		c.JSON(http.StatusForbidden, gin.H{
-			"success": false,
-			"message": "state is empty or not same",
-		})
+		common.APIRespondWithCode(c, http.StatusForbidden, common.APICodeOauthStateInvalid, "state is empty or not same", nil)
 		return
 	}
 	// state 一次性使用：校验通过后立即失效，防止重放
@@ -249,10 +246,7 @@ func GitHubOAuth(c *gin.Context) {
 	}
 
 	if !config.EffectiveSocialLogin(config.GitHubOAuthEnabled) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "The admin has not enabled sign-in and sign-up via GitHub",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOauthProviderDisabled, "The admin has not enabled sign-in and sign-up via GitHub", map[string]any{"provider": "GitHub"})
 		return
 	}
 	code := c.Query("code")
@@ -260,39 +254,27 @@ func GitHubOAuth(c *gin.Context) {
 
 	githubUser, err := getGitHubUserInfoByCode(code)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
 	user, err := getUserByGitHub(githubUser)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
 	// 如果用户不存在，则创建用户
 	if user == nil {
 		if !config.RegisterEnabled {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "The admin has disabled new user sign-up",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeRegisterDisabled, "The admin has disabled new user sign-up", nil)
 			return
 		}
 
 		// 验证 GitHub 提供的邮箱格式
 		if githubUser.Email != "" {
 			if err := common.ValidateEmailStrict(githubUser.Email); err != nil {
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": "Invalid email format",
-				})
+				common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidEmail, "Invalid email format", nil)
 				return
 			}
 		}
@@ -349,10 +331,7 @@ func GitHubOAuth(c *gin.Context) {
 		})
 
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 
@@ -375,10 +354,7 @@ func GitHubOAuth(c *gin.Context) {
 	}
 
 	if user.Status != config.UserStatusEnabled {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "User has been banned",
-			"success": false,
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserBanned, "User has been banned", nil)
 		return
 	}
 
@@ -387,29 +363,20 @@ func GitHubOAuth(c *gin.Context) {
 
 func GitHubBind(c *gin.Context) {
 	if !config.EffectiveSocialLogin(config.GitHubOAuthEnabled) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "The admin has not enabled sign-in and sign-up via GitHub",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOauthProviderDisabled, "The admin has not enabled sign-in and sign-up via GitHub", map[string]any{"provider": "GitHub"})
 		return
 	}
 	code := c.Query("code")
 	githubUser, err := getGitHubUserInfoByCode(code)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	user := model.User{
 		GitHubId: githubUser.Login,
 	}
 	if model.IsGitHubIdAlreadyTaken(user.GitHubId) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "This GitHub account is already linked",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOauthAccountLinked, "This GitHub account is already linked", map[string]any{"provider": "GitHub"})
 		return
 	}
 	session := sessions.Default(c)
@@ -418,10 +385,7 @@ func GitHubBind(c *gin.Context) {
 	user.Id = id.(int)
 	err = user.FillUserById()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	user.GitHubId = githubUser.Login
@@ -439,10 +403,7 @@ func GitHubBind(c *gin.Context) {
 
 	err = user.Update(false)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -457,10 +418,7 @@ func GenerateOAuthCode(c *gin.Context) {
 	session.Set("oauth_state", state)
 	err := session.Save()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -477,20 +435,14 @@ func SetOAuthInviteCode(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid parameter: invite code must not be empty",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "Invalid parameter: invite code must not be empty", nil)
 		return
 	}
 
 	// 清理输入数据
 	req.InviteCode = strings.TrimSpace(req.InviteCode)
 	if req.InviteCode == "" {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invite code must not be empty",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInviteCodeRequired, "Invite code must not be empty", nil)
 		return
 	}
 
@@ -498,18 +450,12 @@ func SetOAuthInviteCode(c *gin.Context) {
 	if config.InviteCodeRegisterEnabled {
 		// 验证邀请码有效性（不消费）
 		if err := model.CheckInviteCode(req.InviteCode); err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 	} else {
 		// 未启用邀请码注册时不应该调用此接口
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invite code sign-up is not enabled",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInviteCodeRegisterDisabled, "Invite code sign-up is not enabled", nil)
 		return
 	}
 
@@ -519,15 +465,12 @@ func SetOAuthInviteCode(c *gin.Context) {
 
 	if err := session.Save(); err != nil {
 		logger.SysError("Failed to save OAuth invite code to session: " + err.Error())
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "System error, please try again",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeSystemError, "System error, please try again", nil)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusOK, common.WithAPICode(gin.H{
 		"success": true,
 		"message": "Invite code set successfully",
-	})
+	}, common.APICodeInviteCodeSet, nil))
 }

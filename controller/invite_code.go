@@ -1,8 +1,8 @@
 package controller
 
 import (
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/model"
-	"errors"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -20,18 +20,18 @@ func validateInviteCodeFormat(code string) error {
 	// 去除前后空格
 	trimmedCode := strings.TrimSpace(code)
 	if trimmedCode != code {
-		return errors.New("invite code must not have leading or trailing spaces")
+		return common.NewAPIError(common.APICodeInviteCodeHasSpaces, "invite code must not have leading or trailing spaces", nil)
 	}
 
 	// 检查长度
 	if len(code) < 3 || len(code) > 32 {
-		return errors.New("invite code must be 3-32 characters long")
+		return common.NewAPIError(common.APICodeInviteCodeLength, "invite code must be 3-32 characters long", nil)
 	}
 
 	// 检查字符格式：只允许字母、数字、下划线和短横线
 	matched, _ := regexp.MatchString("^[a-zA-Z0-9_-]+$", code)
 	if !matched {
-		return errors.New("invite code may only contain letters, digits, underscores and hyphens")
+		return common.NewAPIError(common.APICodeInviteCodeCharset, "invite code may only contain letters, digits, underscores and hyphens", nil)
 	}
 
 	return nil
@@ -40,19 +40,13 @@ func validateInviteCodeFormat(code string) error {
 func GetInviteCodesList(c *gin.Context) {
 	params := model.InviteCodeSearchParams{}
 	if err := c.ShouldBindQuery(&params); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
 	inviteCodes, err := model.GetInviteCodesList(&params)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -65,19 +59,13 @@ func GetInviteCodesList(c *gin.Context) {
 func GetInviteCode(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil || id <= 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid ID parameter",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "Invalid ID parameter", nil)
 		return
 	}
 
 	inviteCode, err := model.GetInviteCodeById(id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Failed to get invite code: " + err.Error(),
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInviteCodeLoadFailed, "Failed to get invite code: "+err.Error(), map[string]any{"reason": err.Error()})
 		return
 	}
 
@@ -101,19 +89,13 @@ func CreateInviteCode(c *gin.Context) {
 	var req CreateInviteCodeRequest
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
 	// 邀请码格式验证
 	if err := validateInviteCodeFormat(req.Code); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -125,19 +107,13 @@ func CreateInviteCode(c *gin.Context) {
 		req.Count = 1
 	}
 	if req.Count > 100 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Cannot create more than 100 at a time",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeBatchTooLarge, "Cannot create more than 100 at a time", nil)
 		return
 	}
 
 	// 时间验证
 	if req.StartsAt > 0 && req.ExpiresAt > 0 && req.StartsAt >= req.ExpiresAt {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Expiration time must be later than the start time",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeStartAfterExpiry, "Expiration time must be later than the start time", nil)
 		return
 	}
 
@@ -155,20 +131,14 @@ func CreateInviteCode(c *gin.Context) {
 			var count int64
 			model.DB.Model(&model.InviteCode{}).Where("code = ?", code).Count(&count)
 			if count > 0 {
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": "Invite code already exists",
-				})
+				common.APIRespondWithCode(c, http.StatusOK, common.APICodeInviteCodeExists, "Invite code already exists", nil)
 				return
 			}
 		} else {
 			// 自动生成邀请码
 			code, err = model.GenerateInviteCode()
 			if err != nil {
-				c.JSON(http.StatusOK, gin.H{
-					"success": false,
-					"message": err.Error(),
-				})
+				common.APIRespondWithError(c, http.StatusOK, err)
 				return
 			}
 		}
@@ -189,10 +159,7 @@ func CreateInviteCode(c *gin.Context) {
 
 		err = inviteCode.Insert()
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Failed to create invite code",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeInviteCodeCreateFailed, "Failed to create invite code", nil)
 			return
 		}
 		createdCodes = append(createdCodes, inviteCode.Code)
@@ -219,74 +186,50 @@ type UpdateInviteCodeRequest struct {
 func UpdateInviteCode(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil || id <= 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid ID parameter",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "Invalid ID parameter", nil)
 		return
 	}
 
 	var req UpdateInviteCodeRequest
 	err = c.ShouldBindJSON(&req)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
 	inviteCode, err := model.GetInviteCodeById(id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
 	// 参数验证（MaxUses = 0 表示无限使用）
 	if req.MaxUses < 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Max uses must not be less than 0",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInviteCodeMaxUsesNegative, "Max uses must not be less than 0", nil)
 		return
 	}
 
 	// 只有当MaxUses发生变化时才检查使用次数限制
 	if req.MaxUses != inviteCode.MaxUses && req.MaxUses > 0 && req.MaxUses < inviteCode.UsedCount {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Max uses must not be less than the current use count",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInviteCodeMaxUsesBelowUsed, "Max uses must not be less than the current use count", nil)
 		return
 	}
 
 	if req.Status != model.InviteCodeStatusEnabled && req.Status != model.InviteCodeStatusDisabled {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid status value",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeStatusInvalid, "Invalid status value", nil)
 		return
 	}
 
 	// 时间验证
 	if req.StartsAt > 0 && req.ExpiresAt > 0 && req.StartsAt >= req.ExpiresAt {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Expiration time must be later than the start time",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeStartAfterExpiry, "Expiration time must be later than the start time", nil)
 		return
 	}
 
 	// 如果要启用邀请码，检查使用次数是否已达上限（MaxUses = 0 表示无限使用）
 	// 使用数据库中的MaxUses值，而不是请求中的值（状态切换时请求中的MaxUses为0）
 	if req.Status == model.InviteCodeStatusEnabled && inviteCode.MaxUses > 0 && inviteCode.UsedCount >= inviteCode.MaxUses {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invite code has reached its usage limit and cannot be enabled",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInviteCodeUsedUp, "Invite code has reached its usage limit and cannot be enabled", nil)
 		return
 	}
 
@@ -307,10 +250,7 @@ func UpdateInviteCode(c *gin.Context) {
 
 	err = inviteCode.Update()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -324,10 +264,7 @@ func UpdateInviteCode(c *gin.Context) {
 func GenerateRandomInviteCode(c *gin.Context) {
 	code, err := model.GenerateInviteCode()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -341,19 +278,13 @@ func GenerateRandomInviteCode(c *gin.Context) {
 func DeleteInviteCode(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil || id <= 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Invalid ID parameter",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "Invalid ID parameter", nil)
 		return
 	}
 
 	err = model.DeleteInviteCodeById(id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -372,27 +303,18 @@ func BatchDeleteInviteCodes(c *gin.Context) {
 	var req BatchDeleteRequest
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
 	if len(req.Ids) == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Please select invite codes to delete",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeDeleteSelectionRequired, "Please select invite codes to delete", nil)
 		return
 	}
 
 	err = model.BatchDeleteInviteCodes(req.Ids)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Bulk delete failed: " + err.Error(),
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeBulkDeleteFailed, "Bulk delete failed: "+err.Error(), map[string]any{"reason": err.Error()})
 		return
 	}
 

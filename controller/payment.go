@@ -85,11 +85,11 @@ func AddPayment(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
+	c.JSON(http.StatusCreated, common.WithAPICode(gin.H{
 		"success": true,
 		"message": "Payment added successfully",
 		"data":    payment,
-	})
+	}, common.APICodePaymentAdded, nil))
 }
 
 func UpdatePayment(c *gin.Context) {

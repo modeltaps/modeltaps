@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/model"
 
@@ -128,10 +129,7 @@ func visibleModelInfos(infos []*model.ModelInfo, routable map[string]map[string]
 func GetAllModelInfo(c *gin.Context) {
 	modelInfos, err := model.GetAllModelInfo()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -146,18 +144,12 @@ func GetAllModelInfo(c *gin.Context) {
 func GetModelInfoCatalog(c *gin.Context) {
 	modelInfos, err := model.GetAllModelInfo()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	channelsByModel, err := boundChannelsByModel()
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
@@ -214,34 +206,22 @@ type hideModelInfoRequest struct {
 func HideModelInfo(c *gin.Context) {
 	req := hideModelInfoRequest{}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	if len(req.Ids) == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "ids is required",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "ids is required", nil)
 		return
 	}
 	// 先取快照：隐藏状态决定模型对外是否可见，审计要能回答改前是什么。
 	before, err := model.GetModelInfosByIds(req.Ids)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	affected, err := model.SetModelInfoHidden(req.Ids, req.Hidden)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	recordHideAudit(c.GetInt("id"), req.Hidden, before)
@@ -270,18 +250,12 @@ func recordHideAudit(actorId int, hidden bool, before []*model.ModelInfo) {
 func GetModelInfo(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	modelInfo, err := model.GetModelInfo(id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -295,55 +269,34 @@ func CreateModelInfo(c *gin.Context) {
 	modelInfo := model.ModelInfo{}
 	err := c.ShouldBindJSON(&modelInfo)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	if !model.IsValidModelMode(modelInfo.Mode) {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "invalid mode",
-		})
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeModelModeInvalid, "invalid mode", nil)
 		return
 	}
 	if !model.IsValidModelCapabilities(modelInfo.Capabilities) {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "invalid capabilities",
-		})
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeModelCapabilitiesInvalid, "invalid capabilities", nil)
 		return
 	}
 	if !model.IsValidModelEndpoints(modelInfo.Endpoints) {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "invalid endpoints",
-		})
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeModelEndpointsInvalid, "invalid endpoints", nil)
 		return
 	}
 	if err := model.ValidateAliasTarget(modelInfo.Model, modelInfo.AliasOf); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusBadRequest, err)
 		return
 	}
 	existingModel, _ := model.GetModelInfoByModel(modelInfo.Model)
 	if existingModel != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "model identifier already exists",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeModelIdentifierExists, "model identifier already exists", nil)
 		return
 	}
 	modelInfo.Source = model.ModelInfoSourceManual
 	err = model.CreateModelInfo(&modelInfo)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -356,72 +309,48 @@ func UpdateModelInfo(c *gin.Context) {
 	modelInfo := model.ModelInfo{}
 	err := c.ShouldBindJSON(&modelInfo)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	if !model.IsValidModelMode(modelInfo.Mode) {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "invalid mode",
-		})
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeModelModeInvalid, "invalid mode", nil)
 		return
 	}
 	if !model.IsValidModelCapabilities(modelInfo.Capabilities) {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "invalid capabilities",
-		})
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeModelCapabilitiesInvalid, "invalid capabilities", nil)
 		return
 	}
 	if !model.IsValidModelEndpoints(modelInfo.Endpoints) {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": "invalid endpoints",
-		})
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeModelEndpointsInvalid, "invalid endpoints", nil)
 		return
 	}
 	if err := model.ValidateAliasTarget(modelInfo.Model, modelInfo.AliasOf); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusBadRequest, err)
 		return
 	}
 	existingModel, _ := model.GetModelInfoByModel(modelInfo.Model)
 	if existingModel != nil && existingModel.Id != modelInfo.Id {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "model identifier already exists",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeModelIdentifierExists, "model identifier already exists", nil)
 		return
 	}
 	// 改名会让指向旧主名的别名悬空：拒绝并列出引用方，由管理员先处理别名。
 	if current, err := model.GetModelInfo(modelInfo.Id); err == nil && current.Model != modelInfo.Model {
 		if refs, err := model.ModelAliasReferences(current.Model); err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		} else if len(refs) > 0 {
-			c.JSON(http.StatusBadRequest, gin.H{
+			c.JSON(http.StatusBadRequest, common.WithAPICode(gin.H{
 				"success": false,
 				"message": "model is referenced by aliases: " + strings.Join(refs, ", "),
 				"data":    refs,
-			})
+			}, common.APICodeModelReferencedByAliases, map[string]any{"aliases": strings.Join(refs, ", ")}))
 			return
 		}
 	}
 	modelInfo.Source = model.ModelInfoSourceManual
 	err = model.UpdateModelInfo(&modelInfo)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -433,37 +362,28 @@ func UpdateModelInfo(c *gin.Context) {
 func DeleteModelInfo(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	// 删除主名同样会让别名悬空：拒绝并列出引用方。
 	if current, err := model.GetModelInfo(id); err == nil {
 		refs, err := model.ModelAliasReferences(current.Model)
 		if err != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": err.Error(),
-			})
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
 		if len(refs) > 0 {
-			c.JSON(http.StatusBadRequest, gin.H{
+			c.JSON(http.StatusBadRequest, common.WithAPICode(gin.H{
 				"success": false,
 				"message": "model is referenced by aliases: " + strings.Join(refs, ", "),
 				"data":    refs,
-			})
+			}, common.APICodeModelReferencedByAliases, map[string]any{"aliases": strings.Join(refs, ", ")}))
 			return
 		}
 	}
 	err = model.DeleteModelInfo(id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

@@ -1017,7 +1017,8 @@
     "ttftLabel": "First token",
     "typeLabel": "Type",
     "unknown": "Unknown",
-    "userLabel": "User"
+    "userLabel": "User",
+    "contextFailed": "Could not load the log context: {{message}}"
   },
   "login": {
     "codeRequired": "verification code must be filled",
@@ -2427,7 +2428,8 @@
         "title": "Invoice Settings",
         "updateFailed": "Invoice update failed: ",
         "updateMonthInvoice": "Update Monthly Invoice",
-        "updateSuccess": "Invoice updated successfully!"
+        "updateSuccess": "Invoice updated successfully!",
+        "selectMonth": "Select an invoice month"
       },
       "logSettings": {
         "autoDelete": "Enable Auto Deletion of Consumption Logs",

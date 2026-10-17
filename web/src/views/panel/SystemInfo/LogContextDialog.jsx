@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import i18n from 'i18n/i18n';
 import { Loader2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +41,7 @@ export default function LogContextDialog({ target, logs, originalLogs, searchTer
         setTargetPosition(0);
       }
     } catch (err) {
-      showError('Error getting context: ' + err.message);
+      showError(i18n.t('logPage.contextFailed', { message: err.message }));
       setContextLogs([targetLog]);
       setTargetPosition(0);
     } finally {

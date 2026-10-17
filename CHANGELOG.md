@@ -109,6 +109,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   protection, shadow accounts, quota changes) are shown in the interface language as well. An
   unknown or malformed user ID in the admin user API now answers "User not found" or "invalid
   user ID" instead of the database or parser text.
+- System settings, invite code, redemption code, API key, model catalog, order, payment method,
+  invoice and third-party sign-in (GitHub, LINUX DO, Lark, WeChat, OIDC) messages are shown in
+  the interface language as well. Redeeming an invalid, used or expired code keeps its reason
+  instead of a generic failure, and the invoice month and log context prompts in the console are
+  translated.
 - Password length errors said "at most 20 characters" while the limit is 64; length messages
   now take their limits from the validation rules.
 - When Turnstile was enabled and the session could not be saved after a successful check, the

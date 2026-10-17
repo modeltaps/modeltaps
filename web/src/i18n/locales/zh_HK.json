@@ -1017,7 +1017,8 @@
     "ttftLabel": "首字延遲",
     "typeLabel": "類型",
     "unknown": "未知",
-    "userLabel": "用戶"
+    "userLabel": "用戶",
+    "contextFailed": "取得日誌上下文失敗：{{message}}"
   },
   "login": {
     "codeRequired": "驗證碼不能為空",
@@ -2427,7 +2428,8 @@
         "title": "賬單設定",
         "updateFailed": "賬單更新失敗：",
         "updateMonthInvoice": "更新月賬單",
-        "updateSuccess": "賬單更新成功！"
+        "updateSuccess": "賬單更新成功！",
+        "selectMonth": "請選擇賬單月份"
       },
       "logSettings": {
         "autoDelete": "啟用消費日誌自動清理",
