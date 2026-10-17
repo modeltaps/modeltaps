@@ -1311,22 +1311,21 @@
       "device": "建議用一次性裝置碼登入，也可以像以前一樣貼上回調地址。",
       "code": "點擊後開啟 {{provider}} 授權頁面。同意授權後，把頁面上顯示的授權碼貼到彈窗裏。"
     },
-    "tabs": {
-      "device": "裝置碼登入（建議）",
-      "paste": "貼上回調地址"
-    },
     "device": {
       "requesting": "正在取得裝置碼…",
-      "step1": "開啟 OpenAI 裝置碼頁面，登入你的 ChatGPT 帳戶。",
-      "step2": "在頁面上輸入這個一次性代碼：",
-      "copyAndOpen": "複製代碼並開啟裝置碼頁面",
+      "codeLabel": "你的一次性代碼",
+      "open": "複製代碼並開啟 OpenAI 授權頁",
+      "copiedHint": "代碼已複製。在新開啟的頁面登入並貼上，授權後這裏會自動繼續。",
+      "copyFailedHint": "未能自動複製代碼，請在新開啟的頁面手動輸入上面的代碼。",
       "copyCode": "複製代碼",
       "codeCopied": "代碼已複製",
-      "waiting": "等待授權…代碼將在 {{time}} 後過期",
       "enableTip": "第一次使用？請先在 ChatGPT 設定 → 安全 中開啟裝置碼登入。工作空間帳戶需要管理員在工作空間權限裏開啟。",
       "phishingTip": "只在 auth.openai.com 上輸入這個代碼，並且只用於你在這裏發起的登入。",
       "retry": "重新取得代碼",
-      "fallbackHint": "如果裝置碼登入不可用，請切換到「貼上回調地址」。"
+      "expires": "代碼 {{time}} 後失效",
+      "waitingStatus": "等待授權中",
+      "usePasteQuestion": "裝置碼登入用不了？",
+      "usePaste": "改用回調地址授權"
     },
     "paste": {
       "url": {
@@ -1355,7 +1354,8 @@
         "invalid_code": "這看起來不像授權碼。"
       },
       "expiresTip": "本次登入 {{minutes}} 分鐘內有效。每個授權碼只能使用一次，失敗後請重新開啟授權頁面。",
-      "restart": "重新開始"
+      "restart": "重新開始",
+      "backToDevice": "返回裝置碼登入"
     }
   }
 }

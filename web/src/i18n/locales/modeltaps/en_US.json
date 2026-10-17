@@ -1375,22 +1375,21 @@
       "device": "Sign in with a one-time device code (recommended), or paste the callback URL as before.",
       "code": "Opens the {{provider}} authorization page. After you approve, paste the code the page shows into the dialog."
     },
-    "tabs": {
-      "device": "Device code (recommended)",
-      "paste": "Paste callback URL"
-    },
     "device": {
       "requesting": "Requesting a device code…",
-      "step1": "Open the OpenAI device page and sign in to your ChatGPT account.",
-      "step2": "Enter this one-time code there:",
-      "copyAndOpen": "Copy code and open the device page",
+      "codeLabel": "Your one-time code",
+      "open": "Copy code and open OpenAI sign-in",
+      "copiedHint": "Code copied. Sign in on the page that opened and paste it; this dialog continues once you approve.",
+      "copyFailedHint": "The code could not be copied automatically. Type the code above on the page that opened.",
       "copyCode": "Copy code",
       "codeCopied": "Code copied",
-      "waiting": "Waiting for approval… the code expires in {{time}}",
       "enableTip": "First time? Turn on device code login in ChatGPT Settings → Security. For a workspace account, an admin enables it in the workspace permissions.",
       "phishingTip": "Only enter this code on auth.openai.com, and only for a login you started here.",
       "retry": "Get a new code",
-      "fallbackHint": "If device code login is not available, use the \"Paste callback URL\" tab."
+      "expires": "Expires in {{time}}",
+      "waitingStatus": "Waiting for approval",
+      "usePasteQuestion": "Device code login not available?",
+      "usePaste": "Use the callback URL instead"
     },
     "paste": {
       "url": {
@@ -1419,7 +1418,8 @@
         "invalid_code": "This does not look like an authentication code."
       },
       "expiresTip": "This login is valid for {{minutes}} minutes. Each authorization code works only once; if it fails, open the authorization page again.",
-      "restart": "Start again"
+      "restart": "Start again",
+      "backToDevice": "Back to device code login"
     }
   }
 }

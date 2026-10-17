@@ -57,11 +57,23 @@ describe('Codex device code login', () => {
     fireEvent.click(screen.getByRole('button', { name: /OAuth Authorize/ }));
     await flush();
     expect(screen.getByTestId('device-user-code').textContent).toBe('ABCD-12345');
-    expect(screen.getByText(/expires in 15:00/)).toBeTruthy();
+    expect(screen.getByText('Expires in 15:00')).toBeTruthy();
+    expect(screen.getByText('Waiting for approval')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Copy code and open the device page' }));
+    // The code is copied before the new tab opens (and takes focus away from this page).
+    const order = [];
+    navigator.clipboard.writeText.mockImplementation((text) => {
+      order.push(`copy:${text}`);
+      return Promise.resolve();
+    });
+    window.open.mockImplementation((url) => {
+      order.push(`open:${url}`);
+      return null;
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Copy code and open OpenAI sign-in' }));
+    expect(order).toEqual(['copy:ABCD-12345', 'open:https://auth.openai.com/codex/device']);
     expect(window.open).toHaveBeenCalledWith('https://auth.openai.com/codex/device', '_blank', 'noopener,noreferrer');
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('ABCD-12345');
+    expect(screen.getByText(/^Code copied\./)).toBeTruthy();
 
     await act(() => vi.advanceTimersByTimeAsync(4900));
     expect(pollCodexDeviceOAuth).not.toHaveBeenCalled();
@@ -97,17 +109,38 @@ describe('Codex device code login', () => {
   });
 });
 
+it('copies with execCommand when it works, without the async clipboard', async () => {
+  startCodexDeviceOAuth.mockResolvedValue({
+    success: true,
+    data: { session_id: 'sid', user_code: 'ABCD-12345', verification_url: 'https://x/codex/device', interval: 5, expires_in: 900 }
+  });
+  document.execCommand = vi.fn(() => true);
+  render(<ChannelOAuth type={59} getValues={getValues} onCredentials={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: /OAuth Authorize/ }));
+  await flush();
+  fireEvent.click(screen.getByRole('button', { name: 'Copy code and open OpenAI sign-in' }));
+  expect(document.execCommand).toHaveBeenCalledWith('copy');
+  expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+  expect(window.open).toHaveBeenCalled();
+  delete document.execCommand;
+});
+
 describe('paste flow', () => {
   const openPasteTab = async (type) => {
     render(<ChannelOAuth type={type} getValues={getValues} onCredentials={onCredentials} />);
     fireEvent.click(screen.getByRole('button', { name: /OAuth Authorize/ }));
-    if (type === 59) fireEvent.click(screen.getByRole('tab', { name: 'Paste callback URL' }));
+    if (type === 59) {
+      await flush();
+      fireEvent.click(screen.getByRole('button', { name: 'Use the callback URL instead' }));
+    }
     await flush();
   };
   let onCredentials;
 
   beforeEach(() => {
     onCredentials = vi.fn();
+    // The account has device code login turned off, so the admin falls back to pasting.
+    startCodexDeviceOAuth.mockResolvedValue({ success: false, code: 'channel_oauth_device_auth_disabled', message: 'off' });
     startChannelOAuth.mockResolvedValue({
       success: true,
       data: { auth_url: 'https://auth.openai.com/oauth/authorize?state=st', session_id: 'st', expires_in: 600 }
@@ -118,6 +151,7 @@ describe('paste flow', () => {
     exchangeChannelOAuthCode.mockResolvedValue({ success: true, data: { credentials: '{"k":1}' } });
     await openPasteTab(59);
     expect(startChannelOAuth).toHaveBeenCalledWith('codex', { channel_id: 0, proxy: '' });
+    expect(screen.getByRole('button', { name: 'Back to device code login' })).toBeTruthy();
     expect(window.open).not.toHaveBeenCalled();
 
     const box = screen.getByRole('textbox');
@@ -147,7 +181,7 @@ describe('paste flow', () => {
   it('opens the Claude page right away and accepts the code#state it shows', async () => {
     exchangeChannelOAuthCode.mockResolvedValue({ success: true, data: { credentials: '{"c":1}' } });
     await openPasteTab(58);
-    expect(screen.queryByRole('tab')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Back to device code login' })).toBeNull();
     expect(window.open).toHaveBeenCalledWith('https://auth.openai.com/oauth/authorize?state=st', '_blank', 'noopener,noreferrer');
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'abcdefghijklmnop#st' } });
     expect(screen.getByText('Authorization code found')).toBeTruthy();
