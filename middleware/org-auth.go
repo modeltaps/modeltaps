@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/modeltaps/modeltaps/common"
@@ -25,8 +24,8 @@ var orgRoleWeight = map[string]int{
 	model.OrgRoleOwner:  3,
 }
 
-func abortOrgRequest(c *gin.Context, status int, message string) {
-	common.APIRespondWithError(c, status, errors.New(message))
+func abortOrgRequest(c *gin.Context, status int, code string, message string) {
+	common.APIRespondWithCode(c, status, code, message, nil)
 	c.Abort()
 }
 
@@ -34,7 +33,7 @@ func abortOrgRequest(c *gin.Context, status int, message string) {
 func OrganizationFeatureEnabled() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !config.OrganizationEnabled {
-			abortOrgRequest(c, http.StatusForbidden, "Organizations are not enabled")
+			abortOrgRequest(c, http.StatusForbidden, common.APICodeOrgFeatureDisabled, "Organizations are not enabled")
 			return
 		}
 		c.Next()
@@ -52,26 +51,26 @@ func OrgAuth(minRole string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		orgId := utils.String2Int(c.Param("id"))
 		if orgId <= 0 {
-			abortOrgRequest(c, http.StatusBadRequest, "Invalid organization ID")
+			abortOrgRequest(c, http.StatusBadRequest, common.APICodeOrgInvalidID, "Invalid organization ID")
 			return
 		}
 		org, err := model.GetOrganizationById(orgId)
 		if err != nil {
-			abortOrgRequest(c, http.StatusNotFound, "Organization not found")
+			abortOrgRequest(c, http.StatusNotFound, common.APICodeOrgNotFound, "Organization not found")
 			return
 		}
 		if org.Status != model.OrganizationStatusEnabled {
-			abortOrgRequest(c, http.StatusForbidden, "Organization is disabled")
+			abortOrgRequest(c, http.StatusForbidden, common.APICodeOrgDisabled, "Organization is disabled")
 			return
 		}
 		userId := c.GetInt("id")
 		member, err := model.GetOrganizationMember(orgId, userId)
 		if err != nil {
-			abortOrgRequest(c, http.StatusForbidden, "You are not a member of this organization")
+			abortOrgRequest(c, http.StatusForbidden, common.APICodeOrgNotMember, "You are not a member of this organization")
 			return
 		}
 		if orgRoleWeight[member.Role] < minWeight {
-			abortOrgRequest(c, http.StatusForbidden, "Permission denied for this organization")
+			abortOrgRequest(c, http.StatusForbidden, common.APICodeOrgPermissionDenied, "Permission denied for this organization")
 			return
 		}
 		c.Set(OrgContextKey, org)

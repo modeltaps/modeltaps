@@ -1,6 +1,10 @@
 package controller
 
 import (
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/modeltaps/modeltaps/common"
@@ -72,5 +76,40 @@ func TestFriendlyValidationErrorUsesTagLimits(t *testing.T) {
 	}
 	if params, _ := body["params"].(map[string]any); params["max"] != "64" {
 		t.Fatalf("params.max = %v, want 64", body["params"])
+	}
+}
+
+// Admin user lookups report a malformed or unknown id with a code instead of strconv or
+// "record not found" text.
+func TestAdminUserLookupCarriesCodes(t *testing.T) {
+	setupGetUserTestDB(t)
+	gin.SetMode(gin.TestMode)
+	get := func(id string) map[string]interface{} {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Params = gin.Params{{Key: "id", Value: id}}
+		c.Request = httptest.NewRequest(http.MethodGet, "/api/user/"+id, nil)
+		c.Set("role", config.RoleRootUser)
+		GetUser(c)
+		var resp map[string]interface{}
+		if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+		return resp
+	}
+	if resp := get("abc"); resp["code"] != common.APICodeInvalidUserID {
+		t.Fatalf("malformed id: %v", resp)
+	}
+	if resp := get("424242"); resp["code"] != common.APICodeUserNotFound {
+		t.Fatalf("unknown id: %v", resp)
+	}
+}
+
+// Model-level organization errors keep their English text and gain a code.
+func TestOrganizationModelErrorsCarryCodes(t *testing.T) {
+	err := model.ValidateOrgBudget(&model.QuotaResetSetting{Limit: 0})
+	var apiErr *common.APIError
+	if !errors.As(err, &apiErr) || apiErr.Code != common.APICodeOrgBudgetInvalid || err.Error() != "budget must be greater than 0" {
+		t.Fatalf("unexpected error: %#v", err)
 	}
 }

@@ -805,7 +805,7 @@ func (user *User) FillUserByLarkId() error {
 // ErrUserNotFound 用户查找未命中的哨兵错误。FillUserByXxx 用它替代裸 errors.New，
 // 使 OAuth/OIDC 处理器可用 errors.Is 区分「未找到(继续/注册)」与「真实 DB 错误(中止)」。
 // 消息文本不变,故对展示该错误的调用方零影响。
-var ErrUserNotFound = errors.New("user not found")
+var ErrUserNotFound error = common.NewAPIError(common.APICodeUserNotFound, "user not found", nil)
 
 func (user *User) FillUserByOidcId() error {
 	if user.OidcId == "" {
@@ -1040,7 +1040,7 @@ func GetUserGroup(id int) (group string, err error) {
 
 func IncreaseUserQuota(id int, quota int) (err error) {
 	if quota < 0 {
-		return errors.New("quota must not be negative")
+		return common.NewAPIError(common.APICodeQuotaNegative, "quota must not be negative", nil)
 	}
 	if config.BatchUpdateEnabled {
 		addNewRecord(BatchUpdateTypeUserQuota, id, quota)
@@ -1065,7 +1065,7 @@ func increaseUserQuota(id int, quota int) (err error) {
 // IncreaseUserQuotaWithTx 在指定事务中增加用户配额
 func IncreaseUserQuotaWithTx(tx *gorm.DB, id int, quota int) (err error) {
 	if quota < 0 {
-		return errors.New("quota must not be negative")
+		return common.NewAPIError(common.APICodeQuotaNegative, "quota must not be negative", nil)
 	}
 	// 注意：在事务中不支持批量更新，直接执行数据库操作
 	err = tx.Model(&User{}).Where("id = ?", id).Update("quota", gorm.Expr("quota + ?", quota)).Error
@@ -1078,7 +1078,7 @@ func IncreaseUserQuotaWithTx(tx *gorm.DB, id int, quota int) (err error) {
 
 func DecreaseUserQuota(id int, quota int) (err error) {
 	if quota < 0 {
-		return errors.New("quota must not be negative")
+		return common.NewAPIError(common.APICodeQuotaNegative, "quota must not be negative", nil)
 	}
 	if config.BatchUpdateEnabled {
 		addNewRecord(BatchUpdateTypeUserQuota, id, -quota)
@@ -1100,7 +1100,7 @@ func decreaseUserQuota(id int, quota int) (err error) {
 }
 
 // ErrUserQuotaNotEnough 预扣阶段原子守卫命中余额不足(WHERE quota >= ? 影响 0 行)。
-var ErrUserQuotaNotEnough = errors.New("insufficient user quota")
+var ErrUserQuotaNotEnough error = common.NewAPIError(common.APICodeUserQuotaInsufficient, "insufficient user quota", nil)
 
 // PreDecreaseUserQuota 预扣阶段的原子条件扣减:UPDATE users SET quota = quota - ?
 // WHERE id = ? AND quota >= ?，以 RowsAffected 判定结果。与 DecreaseUserQuota(结算/批量
@@ -1109,7 +1109,7 @@ var ErrUserQuotaNotEnough = errors.New("insufficient user quota")
 // 条件 UPDATE + RowsAffected 跨库(MySQL/Postgres/SQLite)通用,不依赖行锁语法差异。
 func PreDecreaseUserQuota(id int, quota int) (err error) {
 	if quota < 0 {
-		return errors.New("quota must not be negative")
+		return common.NewAPIError(common.APICodeQuotaNegative, "quota must not be negative", nil)
 	}
 	if quota == 0 {
 		return nil

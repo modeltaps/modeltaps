@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/csv"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -23,7 +22,7 @@ func resolveOrgUsageMemberFilter(c *gin.Context, org *model.Organization, role s
 	}
 	selfId := c.GetInt("id")
 	if requestedMemberId != 0 && requestedMemberId != selfId {
-		return 0, errors.New("The current organization settings do not allow viewing other members' usage")
+		return 0, common.NewAPIError(common.APICodeOrgUsageViewDenied, "The current organization settings do not allow viewing other members' usage", nil)
 	}
 	return selfId, nil
 }

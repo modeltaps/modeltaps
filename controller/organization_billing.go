@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"runtime/debug"
@@ -23,12 +22,12 @@ type OrgQuotaTransferRequest struct {
 // TransferQuotaToOrg Owner/Admin 将个人积分单向转入组织池(规格 §3.3 / a5)
 func TransferQuotaToOrg(c *gin.Context) {
 	if !config.OrganizationQuotaTransferEnabled {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("Quota transfer is not enabled"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgQuotaTransferDisabled, "Quota transfer is not enabled", nil)
 		return
 	}
 	var req OrgQuotaTransferRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("Invalid parameters"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "Invalid parameters", nil)
 		return
 	}
 	org, _ := getOrgFromContext(c)
@@ -57,7 +56,7 @@ type OrgTopUpRequest struct {
 func OrgTopUp(c *gin.Context) {
 	var req OrgTopUpRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("Invalid parameters"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "Invalid parameters", nil)
 		return
 	}
 	org, _ := getOrgFromContext(c)
@@ -79,12 +78,12 @@ func OrgTopUp(c *gin.Context) {
 func CreateOrgOrder(c *gin.Context) {
 	var orderReq OrderRequest
 	if err := c.ShouldBindJSON(&orderReq); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invalid request"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "invalid request", nil)
 		return
 	}
 
 	if orderReq.Amount <= 0 || orderReq.Amount < config.PaymentMinAmount {
-		common.APIRespondWithError(c, http.StatusOK, fmt.Errorf("Amount must be at least %d", config.PaymentMinAmount))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodePaymentAmountTooSmall, fmt.Sprintf("Amount must be at least %d", config.PaymentMinAmount), map[string]any{"min": config.PaymentMinAmount})
 		return
 	}
 
@@ -93,7 +92,7 @@ func CreateOrgOrder(c *gin.Context) {
 	// 支付网关使用操作者(真实用户)信息,入账主体为影子账户
 	user, err := model.GetUserById(userId, false)
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("User not found"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserNotFound, "User not found", nil)
 		return
 	}
 
@@ -120,7 +119,7 @@ func CreateOrgOrder(c *gin.Context) {
 	tradeNo := utils.GenerateTradeNo()
 	payRequest, err := paymentService.Pay(tradeNo, payMoney, user)
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("Failed to create payment, please try again later"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodePaymentCreateFailed, "Failed to create payment, please try again later", nil)
 		return
 	}
 
@@ -140,7 +139,7 @@ func CreateOrgOrder(c *gin.Context) {
 	}
 
 	if err := order.Insert(); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("Failed to create order, please try again later"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrderCreateFailed, "Failed to create order, please try again later", nil)
 		return
 	}
 

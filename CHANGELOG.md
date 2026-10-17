@@ -104,6 +104,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   method and similar) were shown in English whatever the interface language. These responses
   now carry a `code` and the web console shows them in the interface language; `message` is
   unchanged. Email labels on the sign-up and forgot-password pages are translated as well.
+- Organization errors (members, invitations, roles, ownership transfer, budgets, quota transfer,
+  top-ups and organization API keys) and admin user management errors (role limits, root user
+  protection, shadow accounts, quota changes) are shown in the interface language as well. An
+  unknown or malformed user ID in the admin user API now answers "User not found" or "invalid
+  user ID" instead of the database or parser text.
 - Password length errors said "at most 20 characters" while the limit is 64; length messages
   now take their limits from the validation rules.
 - When Turnstile was enabled and the session could not be saved after a successful check, the

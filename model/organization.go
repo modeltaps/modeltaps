@@ -57,7 +57,7 @@ type Organization struct {
 
 func (org *Organization) Insert() error {
 	if strings.TrimSpace(org.Name) == "" {
-		return errors.New("organization name must not be empty")
+		return common.NewAPIError(common.APICodeOrgNameRequired, "organization name must not be empty", nil)
 	}
 	if strings.TrimSpace(org.Slug) == "" {
 		org.Slug = GenerateOrgSlug(org.Name)
@@ -174,7 +174,7 @@ func CreateShadowUserForOrg(tx *gorm.DB, orgSlug string) (*User, error) {
 // Update 更新组织资料(名称/头像),同时刷新 UpdatedTime
 func (org *Organization) Update() error {
 	if strings.TrimSpace(org.Name) == "" {
-		return errors.New("organization name must not be empty")
+		return common.NewAPIError(common.APICodeOrgNameRequired, "organization name must not be empty", nil)
 	}
 	org.UpdatedTime = utils.GetTimestamp()
 	return DB.Model(org).Select("name", "avatar_url", "updated_time").Updates(org).Error
@@ -197,7 +197,7 @@ func (org *Organization) UpdateSetting() error {
 func CreateOrganizationWithOwner(name string, avatarUrl string, creatorId int) (*Organization, error) {
 	name = strings.TrimSpace(name)
 	if name == "" {
-		return nil, errors.New("organization name must not be empty")
+		return nil, common.NewAPIError(common.APICodeOrgNameRequired, "organization name must not be empty", nil)
 	}
 	if creatorId == 0 {
 		return nil, errors.New("creator id must not be empty")
@@ -211,7 +211,7 @@ func CreateOrganizationWithOwner(name string, avatarUrl string, creatorId int) (
 	if creator.Role != config.RoleRootUser &&
 		strings.TrimSpace(string(creator.Email)) == "" &&
 		strings.TrimSpace(string(creator.PhoneNumber)) == "" {
-		return nil, errors.New("verify your email or phone number before creating an organization")
+		return nil, common.NewAPIError(common.APICodeOrgCreateRequiresVerifiedContact, "verify your email or phone number before creating an organization", nil)
 	}
 	slug := GenerateOrgSlug(name)
 	org := &Organization{
@@ -250,15 +250,15 @@ func CreateOrganizationWithOwner(name string, avatarUrl string, creatorId int) (
 // TransferOrganizationOwnership Owner 将所有权转移给指定 Admin,自身降为 Admin(事务,见规格 §3.1)
 func TransferOrganizationOwnership(org *Organization, fromUserId int, toUserId int) error {
 	if fromUserId == toUserId {
-		return errors.New("you cannot transfer ownership to yourself")
+		return common.NewAPIError(common.APICodeOrgTransferToSelf, "you cannot transfer ownership to yourself", nil)
 	}
 	return DB.Transaction(func(tx *gorm.DB) error {
 		var target OrganizationMember
 		if err := tx.First(&target, "organization_id = ? AND user_id = ?", org.Id, toUserId).Error; err != nil {
-			return errors.New("the target user is not a member of this organization")
+			return common.NewAPIError(common.APICodeOrgUserNotMember, "the target user is not a member of this organization", nil)
 		}
 		if target.Role != OrgRoleAdmin {
-			return errors.New("ownership can only be transferred to an organization admin")
+			return common.NewAPIError(common.APICodeOrgTransferTargetNotAdmin, "ownership can only be transferred to an organization admin", nil)
 		}
 		now := utils.GetTimestamp()
 		result := tx.Model(&OrganizationMember{}).
@@ -268,7 +268,7 @@ func TransferOrganizationOwnership(org *Organization, fromUserId int, toUserId i
 			return result.Error
 		}
 		if result.RowsAffected != 1 {
-			return errors.New("only the organization owner can transfer ownership")
+			return common.NewAPIError(common.APICodeOrgTransferOwnerOnly, "only the organization owner can transfer ownership", nil)
 		}
 		return tx.Model(&OrganizationMember{}).
 			Where("id = ?", target.Id).
@@ -308,7 +308,7 @@ func DissolveOrganization(org *Organization, ownerId int) error {
 			return result.Error
 		}
 		if result.RowsAffected != 1 {
-			return errors.New("the organization balance is changing, please try deleting it again later")
+			return common.NewAPIError(common.APICodeOrgDeleteBalanceBusy, "the organization balance is changing, please try deleting it again later", nil)
 		}
 		// 3. 剩余积分按站点策略处理(owner=退回 Owner 个人账户)
 		if config.OrganizationDissolveQuotaRefund == "owner" && shadow.Quota > 0 {
@@ -480,7 +480,7 @@ func GetOrganizationAdminInfo(id int) (*OrganizationAdminInfo, error) {
 // 并清理影子账户启用态缓存(令牌校验链路依赖 CacheIsUserEnabled)
 func SetOrganizationStatus(org *Organization, status int) error {
 	if status != OrganizationStatusEnabled && status != OrganizationStatusDisabled {
-		return errors.New("invalid organization status")
+		return common.NewAPIError(common.APICodeOrgStatusInvalid, "invalid organization status", nil)
 	}
 	userStatus := config.UserStatusEnabled
 	if status == OrganizationStatusDisabled {

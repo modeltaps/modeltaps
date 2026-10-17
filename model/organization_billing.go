@@ -22,7 +22,7 @@ func TransferQuotaToOrganization(org *Organization, fromUserId int, quota int) e
 		return errors.New("user id must not be empty")
 	}
 	if quota <= 0 {
-		return errors.New("transfer amount must be greater than 0")
+		return common.NewAPIError(common.APICodeOrgTransferAmountInvalid, "transfer amount must be greater than 0", nil)
 	}
 	err := DB.Transaction(func(tx *gorm.DB) error {
 		// 条件更新:余额不足时影响行数为 0,保证并发下不透支
@@ -33,7 +33,7 @@ func TransferQuotaToOrganization(org *Organization, fromUserId int, quota int) e
 			return result.Error
 		}
 		if result.RowsAffected != 1 {
-			return errors.New("insufficient personal balance")
+			return common.NewAPIError(common.APICodeOrgTransferInsufficientBalance, "insufficient personal balance", nil)
 		}
 		if err := IncreaseUserQuotaWithTx(tx, org.ShadowUserId, quota); err != nil {
 			return err

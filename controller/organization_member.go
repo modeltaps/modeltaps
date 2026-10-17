@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -31,7 +30,7 @@ type CreateOrgMemberAccountRequest struct {
 func CreateOrgMemberAccount(c *gin.Context) {
 	var req CreateOrgMemberAccountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invalid parameters"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "invalid parameters", nil)
 		return
 	}
 	org, operatorRole := getOrgFromContext(c)
@@ -41,19 +40,19 @@ func CreateOrgMemberAccount(c *gin.Context) {
 		role = model.OrgRoleMember
 	}
 	if role != model.OrgRoleAdmin && role != model.OrgRoleMember {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("role must be admin or member"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgRoleInvalid, "role must be admin or member", nil)
 		return
 	}
 	if model.OrgRoleWeight(role) > model.OrgRoleWeight(operatorRole) {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("you cannot create a member with a higher role than your own"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgMemberRoleHigherCreate, "you cannot create a member with a higher role than your own", nil)
 		return
 	}
 	if strings.TrimSpace(req.Username) == "" {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("username must not be empty"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUsernameRequired, "username must not be empty", nil)
 		return
 	}
 	if strings.TrimSpace(req.Password) == "" {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("password must not be empty"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodePasswordRequired, "password must not be empty", nil)
 		return
 	}
 	// 代建账号复用注册路径的用户名/密码/显示名/邮箱校验规则(SEC-16)
@@ -64,7 +63,7 @@ func CreateOrgMemberAccount(c *gin.Context) {
 		DisplayName: req.DisplayName,
 		Email:       model.NullableEmail(req.Email),
 	}); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New(getFriendlyValidationMessage(err)))
+		common.APIRespondWithError(c, http.StatusOK, friendlyValidationError(err))
 		return
 	}
 	user, _, err := model.CreateOrgMemberAccount(org, req.Username, req.Password, req.DisplayName, req.Email, role, req.GrantSignupBonus)
@@ -106,7 +105,7 @@ type CreateOrgInvitationRequest struct {
 func CreateOrgInvitation(c *gin.Context) {
 	var req CreateOrgInvitationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invalid parameters"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "invalid parameters", nil)
 		return
 	}
 	org, operatorRole := getOrgFromContext(c)
@@ -116,19 +115,19 @@ func CreateOrgInvitation(c *gin.Context) {
 		role = model.OrgRoleMember
 	}
 	if role != model.OrgRoleAdmin && role != model.OrgRoleMember {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invitation role must be admin or member"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgRoleInvalid, "invitation role must be admin or member", nil)
 		return
 	}
 	if model.OrgRoleWeight(role) > model.OrgRoleWeight(operatorRole) {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invitation role cannot be higher than your own role"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgMemberRoleHigherCreate, "invitation role cannot be higher than your own role", nil)
 		return
 	}
 	if req.ExpiredTime != 0 && req.ExpiredTime <= utils.GetTimestamp() {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("expiration time must be later than the current time"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeExpiryInPast, "expiration time must be later than the current time", nil)
 		return
 	}
 	if req.MaxUses < 0 {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("max_uses must not be negative"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgInvitationMaxUsesNegative, "max_uses must not be negative", nil)
 		return
 	}
 	// 成员上限预校验(接受邀请时仍会在事务内复核)
@@ -139,7 +138,7 @@ func CreateOrgInvitation(c *gin.Context) {
 			return
 		}
 		if count >= int64(maxMembers) {
-			common.APIRespondWithError(c, http.StatusOK, errors.New("organization member limit reached"))
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgMemberLimitReached, "organization member limit reached", nil)
 			return
 		}
 	}
@@ -164,15 +163,15 @@ func CreateOrgInvitation(c *gin.Context) {
 			err = invitee.FillUserByUsername()
 		}
 		if err != nil {
-			common.APIRespondWithError(c, http.StatusOK, errors.New("user not found"))
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserNotFound, "user not found", nil)
 			return
 		}
 		if _, err := model.GetOrganizationMember(org.Id, invitee.Id); err == nil {
-			common.APIRespondWithError(c, http.StatusOK, errors.New("this user is already a member of the organization"))
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgUserAlreadyMember, "this user is already a member of the organization", nil)
 			return
 		}
 		if model.HasPendingDirectedInvitation(org.Id, invitee.Id) {
-			common.APIRespondWithError(c, http.StatusOK, errors.New("a pending invitation for this user already exists"))
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgInvitationPendingExists, "a pending invitation for this user already exists", nil)
 			return
 		}
 		invitation.InviteeId = invitee.Id
@@ -223,7 +222,7 @@ func RevokeOrgInvitation(c *gin.Context) {
 	org, _ := getOrgFromContext(c)
 	invitationId := utils.String2Int(c.Param("invitation_id"))
 	if invitationId == 0 {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invalid invitation ID"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "invalid invitation ID", nil)
 		return
 	}
 	invitation, err := model.RevokeOrganizationInvitation(org.Id, invitationId)
@@ -264,7 +263,7 @@ type OrgInvitationTokenRequest struct {
 func AcceptOrgInvitation(c *gin.Context) {
 	var req OrgInvitationTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invalid parameters"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "invalid parameters", nil)
 		return
 	}
 	userId := c.GetInt("id")
@@ -286,7 +285,7 @@ func AcceptOrgInvitation(c *gin.Context) {
 func RejectOrgInvitation(c *gin.Context) {
 	var req OrgInvitationTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invalid parameters"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "invalid parameters", nil)
 		return
 	}
 	userId := c.GetInt("id")
@@ -336,31 +335,31 @@ type UpdateOrgMemberRoleRequest struct {
 func UpdateOrgMemberRole(c *gin.Context) {
 	var req UpdateOrgMemberRoleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invalid parameters"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "invalid parameters", nil)
 		return
 	}
 	org, operatorRole := getOrgFromContext(c)
 	operatorId := c.GetInt("id")
 	targetUserId := utils.String2Int(c.Param("user_id"))
 	if targetUserId == 0 {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invalid user ID"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidUserID, "invalid user ID", nil)
 		return
 	}
 	if targetUserId == operatorId {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("you cannot change your own role"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgCannotChangeOwnRole, "you cannot change your own role", nil)
 		return
 	}
 	target, err := model.GetOrganizationMember(org.Id, targetUserId)
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("this user is not a member of the organization"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgUserNotMember, "this user is not a member of the organization", nil)
 		return
 	}
 	if model.OrgRoleWeight(target.Role) > model.OrgRoleWeight(operatorRole) {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("you cannot modify members with a higher role than yours"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgMemberRoleHigherModify, "you cannot modify members with a higher role than yours", nil)
 		return
 	}
 	if model.OrgRoleWeight(req.Role) > model.OrgRoleWeight(operatorRole) {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("you cannot set a member's role higher than your own"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgMemberRoleSetHigher, "you cannot set a member's role higher than your own", nil)
 		return
 	}
 	member, err := model.UpdateOrganizationMemberRole(org.Id, targetUserId, req.Role)
@@ -384,20 +383,20 @@ func RemoveOrgMember(c *gin.Context) {
 	operatorId := c.GetInt("id")
 	targetUserId := utils.String2Int(c.Param("user_id"))
 	if targetUserId == 0 {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("invalid user ID"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidUserID, "invalid user ID", nil)
 		return
 	}
 	if targetUserId == operatorId {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("you cannot remove yourself; leave the organization instead"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgCannotRemoveSelf, "you cannot remove yourself; leave the organization instead", nil)
 		return
 	}
 	target, err := model.GetOrganizationMember(org.Id, targetUserId)
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("this user is not a member of the organization"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgUserNotMember, "this user is not a member of the organization", nil)
 		return
 	}
 	if model.OrgRoleWeight(target.Role) > model.OrgRoleWeight(operatorRole) {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("you cannot remove members with a higher role than yours"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgMemberRoleHigherRemove, "you cannot remove members with a higher role than yours", nil)
 		return
 	}
 	if err := model.RemoveOrganizationMember(org, targetUserId); err != nil {

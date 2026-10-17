@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -16,7 +15,7 @@ import (
 func getOrgByIdParam(c *gin.Context) (*model.Organization, error) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		return nil, errors.New("Invalid parameters")
+		return nil, common.NewAPIError(common.APICodeInvalidParams, "Invalid parameters", nil)
 	}
 	return model.GetOrganizationById(id)
 }
@@ -44,7 +43,7 @@ func AdminGetOrganizationsList(c *gin.Context) {
 func AdminGetOrganization(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("Invalid parameters"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "Invalid parameters", nil)
 		return
 	}
 	info, err := model.GetOrganizationAdminInfo(id)
@@ -72,7 +71,7 @@ func AdminSetOrganizationStatus(c *gin.Context) {
 	}
 	var req AdminSetOrgStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("Invalid parameters"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "Invalid parameters", nil)
 		return
 	}
 	if err := model.SetOrganizationStatus(org, req.Status); err != nil {
@@ -101,11 +100,11 @@ func AdminChangeOrganizationQuota(c *gin.Context) {
 	}
 	var req ChangeUserQuotaRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("Invalid parameters"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "Invalid parameters", nil)
 		return
 	}
 	if req.Quota == 0 {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("Quota cannot be 0"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeQuotaChangeZero, "Quota cannot be 0", nil)
 		return
 	}
 	if err := model.ChangeUserQuota(org.ShadowUserId, req.Quota, false); err != nil {

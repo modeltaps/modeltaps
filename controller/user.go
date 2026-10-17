@@ -408,28 +408,22 @@ func GetOidcCoverage(c *gin.Context) {
 func GetUser(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
+		common.APIRespondWithError(c, http.StatusOK, errInvalidUserID)
 		return
 	}
 	user, err := model.GetUserById(id, false)
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
+		common.APIRespondWithError(c, http.StatusOK, userLookupError(err))
 		return
 	}
 	// 影子记账账户对后台直查不可见,与列表/搜索的 ExcludeShadowUsers 语义一致
 	if model.IsShadowUser(user) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "User not found",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserNotFound, "User not found", nil)
 		return
 	}
 	myRole := c.GetInt("role")
 	if myRole <= user.Role && myRole != config.RoleRootUser {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "You are not allowed to view users of the same or higher role",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserRoleViewDenied, "You are not allowed to view users of the same or higher role", nil)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -443,7 +437,7 @@ func GetRateRealtime(c *gin.Context) {
 	id := c.GetInt("id")
 	user, err := model.GetUserById(id, false)
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
+		common.APIRespondWithError(c, http.StatusOK, userLookupError(err))
 		return
 	}
 
@@ -710,30 +704,21 @@ func UpdateUser(c *gin.Context) {
 	}
 	originUser, err := model.GetUserById(updatedUser.Id, false)
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
+		common.APIRespondWithError(c, http.StatusOK, userLookupError(err))
 		return
 	}
 	// 影子记账账户不接受后台管理操作,与 GetUser/GetUsersList 的排除语义一致
 	if model.IsShadowUser(originUser) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Cannot operate on an organization shadow account",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserShadowAccount, "Cannot operate on an organization shadow account", nil)
 		return
 	}
 	myRole := c.GetInt("role")
 	if myRole <= originUser.Role && myRole != config.RoleRootUser {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "You are not allowed to update users of the same or higher role",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserRoleUpdateDenied, "You are not allowed to update users of the same or higher role", nil)
 		return
 	}
 	if myRole <= updatedUser.Role && myRole != config.RoleRootUser {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "You are not allowed to raise another user's role to equal or above your own",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserRoleRaiseDenied, "You are not allowed to raise another user's role to equal or above your own", nil)
 		return
 	}
 	if updatedUser.Password == "$I_LOVE_U" {
@@ -897,28 +882,22 @@ func UpdateUserSetting(c *gin.Context) {
 func DeleteUser(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
+		common.APIRespondWithError(c, http.StatusOK, errInvalidUserID)
 		return
 	}
 	originUser, err := model.GetUserById(id, false)
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
+		common.APIRespondWithError(c, http.StatusOK, userLookupError(err))
 		return
 	}
 	// 影子记账账户不接受后台管理操作,与 GetUser/GetUsersList 的排除语义一致
 	if model.IsShadowUser(originUser) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Cannot operate on an organization shadow account",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserShadowAccount, "Cannot operate on an organization shadow account", nil)
 		return
 	}
 	myRole := c.GetInt("role")
 	if myRole <= originUser.Role {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "You are not allowed to delete users of the same or higher role",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserRoleDeleteDenied, "You are not allowed to delete users of the same or higher role", nil)
 		return
 	}
 	if err := model.DeleteUserById(id); err != nil {
@@ -968,10 +947,7 @@ func CreateUser(c *gin.Context) {
 	}
 	myRole := c.GetInt("role")
 	if user.Role >= myRole {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Cannot create a user with a role equal to or above your own",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserRoleCreateDenied, "Cannot create a user with a role equal to or above your own", nil)
 		return
 	}
 	// Even for admin users, we cannot fully trust them!
@@ -1007,45 +983,30 @@ func ManageUser(c *gin.Context) {
 	}
 
 	if req.UserId == 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "User ID must not be empty",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserIDRequired, "User ID must not be empty", nil)
 		return
 	}
 
 	user, err := model.GetUserById(req.UserId, false)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "User not found",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserNotFound, "User not found", nil)
 		return
 	}
 	// 影子记账账户不接受后台管理操作,与 GetUser/GetUsersList 的排除语义一致
 	if model.IsShadowUser(user) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Cannot operate on an organization shadow account",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserShadowAccount, "Cannot operate on an organization shadow account", nil)
 		return
 	}
 	myRole := c.GetInt("role")
 	if myRole <= user.Role && myRole != config.RoleRootUser {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "You are not allowed to update users of the same or higher role",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserRoleUpdateDenied, "You are not allowed to update users of the same or higher role", nil)
 		return
 	}
 	switch req.Action {
 	case "disable":
 		user.Status = config.UserStatusDisabled
 		if user.Role == config.RoleRootUser {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Cannot disable the root user",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeRootCannotDisable, "Cannot disable the root user", nil)
 			return
 		}
 		// 封禁即结束他的全部会话；鉴权中间件本就每次核对状态，这里只是不留残行
@@ -1056,10 +1017,7 @@ func ManageUser(c *gin.Context) {
 		user.Status = config.UserStatusEnabled
 	case "delete":
 		if user.Role == config.RoleRootUser {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Cannot delete the root user",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeRootCannotDelete, "Cannot delete the root user", nil)
 			return
 		}
 		if err := user.Delete(); err != nil {
@@ -1069,44 +1027,29 @@ func ManageUser(c *gin.Context) {
 	case "promote":
 		// 设置为管理员：只有超级管理员能操作
 		if myRole != config.RoleRootUser {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Only root can promote other users to admin",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeAdminPromoteRootOnly, "Only root can promote other users to admin", nil)
 			return
 		}
 		if user.Role == config.RoleRootUser {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Cannot change the root user's role",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeRootRoleUnchangeable, "Cannot change the root user's role", nil)
 			return
 		}
 		user.Role = config.RoleAdminUser
 	case "demote":
 		// 设置为普通用户：不能操作超级管理员
 		if user.Role == config.RoleRootUser {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Cannot change the root user's role",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeRootRoleUnchangeable, "Cannot change the root user's role", nil)
 			return
 		}
 		user.Role = config.RoleCommonUser
 	case "set_reliable":
 		// 设置为可信内部员工：管理员及以上能操作
 		if myRole < config.RoleAdminUser {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Only admin or root can mark users as trusted internal staff",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeTrustedStaffAdminOnly, "Only admin or root can mark users as trusted internal staff", nil)
 			return
 		}
 		if user.Role == config.RoleRootUser {
-			c.JSON(http.StatusOK, gin.H{
-				"success": false,
-				"message": "Cannot change the root user's role",
-			})
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeRootRoleUnchangeable, "Cannot change the root user's role", nil)
 			return
 		}
 		user.Role = config.RoleReliableUser
@@ -1198,7 +1141,7 @@ type ChangeUserQuotaRequest struct {
 func ChangeUserQuota(c *gin.Context) {
 	userId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
+		common.APIRespondWithError(c, http.StatusOK, errInvalidUserID)
 		return
 	}
 	var req ChangeUserQuotaRequest
@@ -1208,29 +1151,23 @@ func ChangeUserQuota(c *gin.Context) {
 	}
 
 	if req.Quota == 0 {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("must not be 0"))
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeQuotaChangeZero, "must not be 0", nil)
 		return
 	}
 
 	targetUser, err := model.GetUserById(userId, false)
 	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
+		common.APIRespondWithError(c, http.StatusOK, userLookupError(err))
 		return
 	}
 	// 影子记账账户不接受后台管理操作,与 GetUser/GetUsersList 的排除语义一致
 	if model.IsShadowUser(targetUser) {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Cannot operate on an organization shadow account",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserShadowAccount, "Cannot operate on an organization shadow account", nil)
 		return
 	}
 	myRole := c.GetInt("role")
 	if myRole <= targetUser.Role && myRole != config.RoleRootUser {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "You are not allowed to update users of the same or higher role",
-		})
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserRoleUpdateDenied, "You are not allowed to update users of the same or higher role", nil)
 		return
 	}
 
