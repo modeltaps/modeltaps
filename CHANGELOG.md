@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-18
+
 ### Added
 
 - Channels have a remark field for admin notes, shown under the channel name. It is kept per
@@ -90,7 +92,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The default price of `gpt-4o` is the current official price ($2.50 / $10 per 1M tokens, cached
   input $1.25) instead of the 2024-05-13 snapshot price. Built-in defaults never overwrite
   existing price entries; update `gpt-4o` from `Update Prices` if needed.
-
 - The ClaudeCode and Codex paste dialogs explain what to copy for each provider (the Codex
   error page's address, the Claude authentication code), check the pasted text as it is typed
   and submit a valid paste by itself. Pasting a callback from another login attempt, the
