@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Azure v1 channels accept `/v1/images/edits` and `/v1/images/variations` instead of answering
+  501 `unsupported_api`.
+
 ## [0.2.0] - 2026-10-18
 
 ### Added
