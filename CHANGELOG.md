@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Vercel AI Gateway channel type: OpenAI-compatible relay, model list with prices and metadata
+  synced like OpenRouter, and balance lookup through `/v1/credits`.
+- OpenRouter channels report the key's remaining amount as the channel balance and store a quota
+  snapshot (limit, remaining, reset interval, daily / weekly / monthly usage).
+- Channels have a low-balance alert threshold; the periodic balance refresh
+  (`CHANNEL_UPDATE_FREQUENCY`) notifies once when the balance drops below it.
+
+### Changed
+
+- Periodic and bulk balance refresh covers every channel type with a balance API instead of
+  OpenAI only, and skips types without one; the single-channel refresh reports "not supported"
+  for those types.
+- Saving a channel no longer overwrites its balance, quota snapshot or model drift result with the
+  form's stale values.
+
 ### Fixed
 
 - Azure v1 channels accept `/v1/images/edits` and `/v1/images/variations` instead of answering

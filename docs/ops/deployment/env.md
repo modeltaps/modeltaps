@@ -59,7 +59,7 @@ LOGS_FILENAME="modeltaps.log"
    - 例子：`SYNC_FREQUENCY=60`
 7. `NODE_TYPE`：设置之后将指定节点类型，可选值为 `master` 和 `slave`，未设置则默认为 `master`。
    - 例子：`NODE_TYPE=slave`
-8. `CHANNEL_UPDATE_FREQUENCY`：设置之后将定期更新渠道余额，单位为分钟，未设置则不进行更新。
+8. `CHANNEL_UPDATE_FREQUENCY`：设置之后将定期更新渠道余额，单位为分钟，未设置则不进行更新。只有带余额接口的渠道类型会刷新（OpenRouter、Vercel AI Gateway、DeepSeek、Moonshot、SiliconFlow）；余额低于渠道的低余额提醒阈值时发送通知，余额为 0 时自动禁用渠道。OpenRouter 返回的是这把 key 的剩余额度，需在 OpenRouter 后台给 key 设置消费上限。
    - 例子：`CHANNEL_UPDATE_FREQUENCY=1440`
 9. `CHANNEL_TEST_FREQUENCY`：设置之后将定期检查渠道，单位为分钟，未设置则不进行检查。
    - 例子：`CHANNEL_TEST_FREQUENCY=1440`

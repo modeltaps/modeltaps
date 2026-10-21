@@ -424,18 +424,18 @@ func CatalogMissingModels(names []string) []string {
 	return missing
 }
 
-// filterChannelSourced 去掉已由渠道自带列表（OpenRouter）提供的元信息 / 价格：渠道来源优先于 models.dev。
+// filterChannelSourced 去掉已由渠道自带列表（OpenRouter、Vercel AI Gateway）提供的元信息 / 价格：渠道来源优先于 models.dev。
 func filterChannelSourced(infos []*ModelInfo, prices []*Price) ([]*ModelInfo, []*Price) {
 	keptInfos := make([]*ModelInfo, 0, len(infos))
 	for _, info := range infos {
-		if existing := lookupModelInfo(info.Model); existing != nil && existing.Source == ModelInfoSourceOpenRouter {
+		if existing := lookupModelInfo(info.Model); existing != nil && isChannelInfoSource(existing.Source) {
 			continue
 		}
 		keptInfos = append(keptInfos, info)
 	}
 	keptPrices := make([]*Price, 0, len(prices))
 	for _, price := range prices {
-		if existing, ok := PricingInstance.priceSnapshot(price.Model); ok && existing.ChannelType == config.ChannelTypeOpenRouter {
+		if existing, ok := PricingInstance.priceSnapshot(price.Model); ok && isChannelPriceSource(existing.ChannelType) {
 			continue
 		}
 		keptPrices = append(keptPrices, price)
@@ -545,4 +545,14 @@ func SyncCatalogPricingDetailed(url string) (*CatalogSyncResult, error) {
 	logger.SysLog(fmt.Sprintf("Catalog synced from models.dev: %d prices, %d unconvertible, %d unmatched channel models",
 		result.Synced, len(result.Unconvertible), len(result.Unmatched)))
 	return result, nil
+}
+
+// isChannelInfoSource / isChannelPriceSource 判断目录行 / 价格是否来自自带价格表的渠道
+// （OpenRouter、Vercel AI Gateway）；这类数据比 models.dev 更贴近实际结算价，不被目录同步覆盖。
+func isChannelInfoSource(source string) bool {
+	return source == ModelInfoSourceOpenRouter || source == ModelInfoSourceVercel
+}
+
+func isChannelPriceSource(channelType int) bool {
+	return channelType == config.ChannelTypeOpenRouter || channelType == config.ChannelTypeVercelAIGateway
 }

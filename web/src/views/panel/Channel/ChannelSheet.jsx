@@ -56,6 +56,7 @@ const EMPTY = {
   only_chat: false,
   priority: 0,
   weight: 1,
+  balance_threshold: 0,
   pre_cost: 1,
   disabled_stream: '',
   compatible_response: false,
@@ -402,6 +403,7 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
         only_chat: !!data.only_chat,
         priority: data.priority ?? 0,
         weight: data.weight ?? 1,
+        balance_threshold: data.balance_threshold ?? 0,
         pre_cost: data.pre_cost ?? 1,
         disabled_stream: Array.isArray(data.disabled_stream) ? data.disabled_stream.join(',') : '',
         compatible_response: !!data.compatible_response,
@@ -507,6 +509,7 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
 
     values.priority = Number(values.priority) || 0;
     values.weight = Number(values.weight) || 1;
+    values.balance_threshold = Math.max(0, Number(values.balance_threshold) || 0);
 
     const modelsStr = Array.from(
       new Set(
@@ -893,6 +896,16 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
 
           <FormField row id="channel-weight" label={t('channel_index.weight')} controlClassName="w-32">
             <Input id="channel-weight" type="number" {...register('weight')} />
+          </FormField>
+
+          <FormField
+            row
+            id="channel-balance-threshold"
+            label={configText(t, defaultConfig.inputLabel.balance_threshold)}
+            help={configText(t, defaultConfig.prompt.balance_threshold)}
+            controlClassName="w-32"
+          >
+            <Input id="channel-balance-threshold" type="number" min="0" step="0.01" {...register('balance_threshold')} />
           </FormField>
 
           <FormField id="channel-proxy" label={configText(t, defaultConfig.inputLabel.proxy)} help={configText(t, defaultConfig.prompt.proxy)}>

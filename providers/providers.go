@@ -41,6 +41,7 @@ import (
 	"github.com/modeltaps/modeltaps/providers/stabilityAI"
 	"github.com/modeltaps/modeltaps/providers/suno"
 	"github.com/modeltaps/modeltaps/providers/tencent"
+	"github.com/modeltaps/modeltaps/providers/vercel"
 	"github.com/modeltaps/modeltaps/providers/vertexai"
 	vertexai_express "github.com/modeltaps/modeltaps/providers/vertexai_express"
 	"github.com/modeltaps/modeltaps/providers/xAI"
@@ -103,6 +104,7 @@ func init() {
 		config.ChannelTypeCodex:           codex.CodexProviderFactory{},
 		config.ChannelTypeAntigravity:     antigravity.AntigravityProviderFactory{},
 		config.ChannelTypeVertexAIExpress: vertexai_express.VertexAIExpressProviderFactory{},
+		config.ChannelTypeVercelAIGateway: vercel.VercelProviderFactory{},
 	}
 }
 

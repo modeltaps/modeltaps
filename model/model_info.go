@@ -21,6 +21,7 @@ const (
 	ModelInfoSourceManual     = "manual"
 	ModelInfoSourceModelsDev  = "models.dev"
 	ModelInfoSourceOpenRouter = "openrouter"
+	ModelInfoSourceVercel     = "vercel"
 )
 
 // 模型能力词表：仅用于展示与筛选，不参与路由与计费。

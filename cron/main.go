@@ -134,7 +134,7 @@ func InitCron() {
 			"sync_channel_pricing",
 			gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(2, 30, 0))),
 			gocron.NewTask(func() {
-				count, err := controller.SyncAllOpenRouterChannelsPricing()
+				count, err := controller.SyncAllChannelsOwnPricing()
 				if err != nil {
 					logger.SysError("Failed to sync OpenRouter channel pricing: " + err.Error())
 					return

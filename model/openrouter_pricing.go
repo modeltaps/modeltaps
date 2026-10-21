@@ -52,11 +52,17 @@ func newRatioPrice(modelID string, channelType int, inputRatio, outputRatio, cac
 // promptUSD/completionUSD/cacheReadUSD 均为 USD/token。
 // ChannelType 固定为 OpenRouter，使前端「供应商」列显示 OpenRouter 而非「未知」。
 func PriceFromOpenRouter(modelID string, promptUSD, completionUSD, cacheReadUSD float64) *Price {
+	return PriceFromUSDPerToken(modelID, config.ChannelTypeOpenRouter, promptUSD, completionUSD, cacheReadUSD)
+}
+
+// PriceFromUSDPerToken 由「USD/token」报价构造一条 Price，ChannelType 标记价格来源的渠道类型。
+// 供 OpenRouter、Vercel AI Gateway 等自带价格表的聚合渠道共用。
+func PriceFromUSDPerToken(modelID string, channelType int, promptUSD, completionUSD, cacheReadUSD float64) *Price {
 	cacheReadRatio := 0.0
 	if promptUSD > 0 && cacheReadUSD > 0 {
 		cacheReadRatio = cacheReadUSD / promptUSD
 	}
-	return newRatioPrice(modelID, config.ChannelTypeOpenRouter,
+	return newRatioPrice(modelID, channelType,
 		RatioFromUSDPerToken(promptUSD), RatioFromUSDPerToken(completionUSD), cacheReadRatio)
 }
 
