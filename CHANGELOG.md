@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Claude-protocol requests (`/v1/messages`, as sent by Claude Code) to OpenRouter and Vercel AI
+  Gateway channels are forwarded to the gateways' Anthropic-compatible endpoints instead of being
+  converted to Chat Completions and back. The conversion dropped the client's `cache_control`
+  breakpoints on system prompts, tool definitions and recent turns, so prompt caching was lost
+  through these channels; thinking blocks and beta headers now also pass through unchanged, and
+  cache read / write tokens are billed from the upstream usage.
+
 ### Added
 
 - Vercel AI Gateway channel type: OpenAI-compatible relay, model list with prices and metadata

@@ -42,7 +42,6 @@ func TestResolveClaudeRoute_DecisionMatrix(t *testing.T) {
 		// 专用分支
 		{"custom", config.ChannelTypeCustom, "claude-3-5-sonnet", claudeRouteOpenAIConvert},
 		{"openai", config.ChannelTypeOpenAI, "gpt-4o", claudeRouteOpenAIConvert},
-		{"openrouter", config.ChannelTypeOpenRouter, "anthropic/claude-3.5-sonnet", claudeRouteOpenAIConvert},
 		{"vertexai gemini model", config.ChannelTypeVertexAI, "gemini-2.0-flash", claudeRouteVertexAIGemini},
 		{"vertexai claude-3-5-haiku", config.ChannelTypeVertexAI, "claude-3-5-haiku-20241022", claudeRouteVertexAIGemini},
 		{"gemini", config.ChannelTypeGemini, "gemini-2.0-flash", claudeRouteGemini},
@@ -50,6 +49,8 @@ func TestResolveClaudeRoute_DecisionMatrix(t *testing.T) {
 
 		// 原生 Claude 实现优先于兜底
 		{"anthropic native", config.ChannelTypeAnthropic, "claude-3-5-sonnet", claudeRouteNative},
+		{"openrouter native (anthropic-compatible endpoint)", config.ChannelTypeOpenRouter, "anthropic/claude-3.5-sonnet", claudeRouteNative},
+		{"vercel ai gateway native (anthropic-compatible endpoint)", config.ChannelTypeVercelAIGateway, "anthropic/claude-opus-5", claudeRouteNative},
 		{"claudecode native", config.ChannelTypeClaudeCode, "claude-3-5-sonnet", claudeRouteNative},
 		{"deepseek native not hijacked by fallback", config.ChannelTypeDeepseek, "deepseek-chat", claudeRouteNative},
 		{"bedrock native not hijacked by fallback", config.ChannelTypeBedrock, "claude-3-5-sonnet", claudeRouteNative},
