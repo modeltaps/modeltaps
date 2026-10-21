@@ -48,7 +48,7 @@ batch_update_interval: 5     # 批量更新聚合时间间隔（秒）
 
 # ---------- 渠道 ----------
 channel:
-  update_frequency: 0        # 定期更新渠道余额（分钟），0 表示不更新
+  update_frequency: 0        # 定期更新渠道余额（分钟），0 表示不更新；支持 OpenRouter / Vercel AI Gateway / DeepSeek / Moonshot / SiliconFlow 等有余额接口的类型，余额低于渠道阈值时发通知
   test_frequency: 0          # 定期检查渠道（分钟），0 表示不检查
 polling_interval: 0          # 批量更新/测试渠道时的请求间隔（秒）
 

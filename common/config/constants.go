@@ -500,6 +500,7 @@ const (
 	ChannelTypeCodex           = 59
 	ChannelTypeAntigravity     = 60
 	ChannelTypeVertexAIExpress = 61
+	ChannelTypeVercelAIGateway = 62
 )
 
 const (

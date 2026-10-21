@@ -2,6 +2,8 @@ package relay
 
 import (
 	"bufio"
+	"encoding/json"
+	"fmt"
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
@@ -16,8 +18,6 @@ import (
 	"github.com/modeltaps/modeltaps/relay/transformer"
 	"github.com/modeltaps/modeltaps/safty"
 	"github.com/modeltaps/modeltaps/types"
-	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -69,6 +69,7 @@ var AllowChannelType = []int{
 	config.ChannelTypeCodex,
 	config.ChannelTypeAntigravity,
 	config.ChannelTypeVertexAIExpress,
+	config.ChannelTypeVercelAIGateway,
 }
 
 // nativeClaudeChannelType 是 Claude 协议下优先选择的原生渠道类型集合（相对 OpenAI/OpenRouter 转换渠道）。
@@ -139,7 +140,7 @@ const (
 // 原生判断必须早于兜底，否则 Deepseek/Bedrock 等既有原生 Claude relay 的渠道会被转换链截胡。
 func resolveClaudeRoute(channelType int, modelName string, provider providersBase.ProviderInterface) claudeSendRoute {
 	// Custom / OpenAI / OpenRouter 渠道复用同一条 Claude→OpenAI→Claude 转换链
-	if channelType == config.ChannelTypeCustom || channelType == config.ChannelTypeOpenAI || channelType == config.ChannelTypeOpenRouter {
+	if channelType == config.ChannelTypeCustom || channelType == config.ChannelTypeOpenAI || channelType == config.ChannelTypeOpenRouter || channelType == config.ChannelTypeVercelAIGateway {
 		return claudeRouteOpenAIConvert
 	}
 

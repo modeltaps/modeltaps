@@ -1,6 +1,7 @@
 package base
 
 import (
+	"errors"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/types"
@@ -165,6 +166,9 @@ type ModelInfoListInterface interface {
 	ProviderInterface
 	GetModelInfoList() ([]*model.ModelInfo, error)
 }
+
+// ErrBalanceNotSupported 由不支持余额查询的 provider 返回，调用方据此区分「不支持」与「查询失败」。
+var ErrBalanceNotSupported = errors.New("balance query not supported")
 
 // 余额接口
 type BalanceInterface interface {

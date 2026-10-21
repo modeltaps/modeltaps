@@ -58,7 +58,16 @@ type Channel struct {
 
 	Plugin     *datatypes.JSONType[PluginType]       `json:"plugin" form:"plugin" gorm:"type:json"`
 	ModelDrift *datatypes.JSONType[ModelDriftResult] `json:"model_drift,omitempty" gorm:"type:json"`
-	DeletedAt  gorm.DeletedAt                        `json:"-" gorm:"index"`
+
+	// BalanceThreshold 低余额提醒阈值（USD）：余额刷新后低于该值发通知；0 = 不提醒。
+	BalanceThreshold float64 `json:"balance_threshold" form:"balance_threshold" gorm:"type:decimal(10,4);default:0"`
+	// BalanceAlertedTime 上次发出低余额提醒的时间戳；余额回到阈值之上时清零，避免每轮刷新重复提醒。
+	BalanceAlertedTime int64 `json:"balance_alerted_time" gorm:"bigint;default:0"`
+	// QuotaSnapshot 上游 key 级配额快照（上限 / 剩余 / 重置周期 / 各窗口用量），由余额刷新写入；
+	// 上游不提供这类信息的渠道为空。
+	QuotaSnapshot *datatypes.JSONType[ChannelQuotaSnapshot] `json:"quota_snapshot,omitempty" gorm:"type:json"`
+
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 
 	KeyStatus *ChannelKeyStatus `json:"key_status,omitempty" gorm:"-"`
 }
@@ -595,7 +604,8 @@ func (channel *Channel) UpdateRaw(overwrite bool) error {
 	var err error
 
 	if overwrite {
-		omit := []string{"UsedQuota"}
+		// 运行时字段由刷新 / 检测任务维护，表单保存不得用过期值覆盖。
+		omit := []string{"UsedQuota", "Balance", "BalanceUpdatedTime", "BalanceAlertedTime", "QuotaSnapshot", "ModelDrift"}
 		// 编辑时 key 留空表示保留原 key，Select("*") 不能把它覆盖成空串
 		if channel.Key == "" {
 			omit = append(omit, "Key")
@@ -656,13 +666,66 @@ func (channel *Channel) UpdateModelDrift(result ModelDriftResult) error {
 }
 
 func (channel *Channel) UpdateBalance(balance float64) {
+	now := utils.GetTimestamp()
 	err := DB.Model(channel).Select("balance_updated_time", "balance").Updates(Channel{
-		BalanceUpdatedTime: utils.GetTimestamp(),
+		BalanceUpdatedTime: now,
 		Balance:            balance,
 	}).Error
 	if err != nil {
 		logger.SysError("failed to update balance: " + err.Error())
+		return
 	}
+	channel.Balance = balance
+	channel.BalanceUpdatedTime = now
+}
+
+// ChannelQuotaSnapshot 是上游按 key 返回的配额信息（目前只有 OpenRouter `GET /api/v1/key` 提供）。
+// 金额单位 USD；Limit / Remaining 为 nil 表示该 key 没有设上限。
+type ChannelQuotaSnapshot struct {
+	Limit         *float64 `json:"limit"`
+	Remaining     *float64 `json:"remaining"`
+	ResetInterval string   `json:"reset_interval"` // daily / weekly / monthly / ""（不重置）
+	Usage         float64  `json:"usage"`
+	UsageDaily    float64  `json:"usage_daily"`
+	UsageWeekly   float64  `json:"usage_weekly"`
+	UsageMonthly  float64  `json:"usage_monthly"`
+	IsFreeTier    bool     `json:"is_free_tier"`
+	FetchedAt     int64    `json:"fetched_at"`
+}
+
+// UpdateQuotaSnapshot 只更新配额快照列，不触及其它字段。
+func (channel *Channel) UpdateQuotaSnapshot(snapshot ChannelQuotaSnapshot) error {
+	jt := datatypes.NewJSONType(snapshot)
+	err := DB.Model(&Channel{}).Where("id = ?", channel.Id).Update("quota_snapshot", jt).Error
+	if err != nil {
+		logger.SysError("failed to update channel quota snapshot: " + err.Error())
+		return err
+	}
+	channel.QuotaSnapshot = &jt
+	return nil
+}
+
+// GetQuotaSnapshot 返回上次的配额快照，没有返回 nil。
+func (channel *Channel) GetQuotaSnapshot() *ChannelQuotaSnapshot {
+	if channel.QuotaSnapshot == nil {
+		return nil
+	}
+	snapshot := channel.QuotaSnapshot.Data()
+	if snapshot.FetchedAt == 0 {
+		return nil
+	}
+	return &snapshot
+}
+
+// UpdateBalanceAlertedTime 记录（或清零）低余额提醒时间，只动这一列。
+func (channel *Channel) UpdateBalanceAlertedTime(ts int64) error {
+	err := DB.Model(&Channel{}).Where("id = ?", channel.Id).Update("balance_alerted_time", ts).Error
+	if err != nil {
+		logger.SysError("failed to update channel balance alerted time: " + err.Error())
+		return err
+	}
+	channel.BalanceAlertedTime = ts
+	return nil
 }
 
 func (channel *Channel) Delete() error {

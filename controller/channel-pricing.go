@@ -27,7 +27,7 @@ type channelPriceSyncProvider interface {
 // ② 其余仍缺价格或目录行的模型再从 models.dev 全量匹配补齐（catalog_pricing.auto_sync，默认开）。
 // best-effort，失败仅日志，不阻断保存。
 func AutoSyncChannelCatalog(channelType int, models string, reason string) {
-	syncOpenRouter := channelType == config.ChannelTypeOpenRouter && viper.GetBool("channel_pricing.auto_sync")
+	syncOpenRouter := ChannelTypeHasOwnPricing(channelType) && viper.GetBool("channel_pricing.auto_sync")
 	syncCatalog := viper.GetBool("catalog_pricing.auto_sync")
 	if !syncOpenRouter && !syncCatalog {
 		return
@@ -39,11 +39,11 @@ func AutoSyncChannelCatalog(channelType int, models string, reason string) {
 			}
 		}()
 		if syncOpenRouter {
-			n, err := SyncAllOpenRouterChannelsPricing()
+			n, err := SyncAllChannelsOwnPricing()
 			if err != nil {
-				logger.SysError("auto sync OpenRouter pricing (" + reason + ") failed: " + err.Error())
+				logger.SysError("auto sync channel pricing (" + reason + ") failed: " + err.Error())
 			} else if n > 0 {
-				logger.SysLog(fmt.Sprintf("auto sync OpenRouter pricing (%s) done: %d models", reason, n))
+				logger.SysLog(fmt.Sprintf("auto sync channel pricing (%s) done: %d models", reason, n))
 			}
 		}
 		if !syncCatalog {
@@ -63,40 +63,73 @@ func AutoSyncChannelCatalog(channelType int, models string, reason string) {
 	}()
 }
 
-// SyncAllOpenRouterChannelsPricing 遍历所有 OpenRouter 渠道，拉取真实价格去重后 upsert。
-// 无需 gin.Context（provider 在 nil context 下仅做无鉴权的 GET /v1/models），供 cron 调用。
-func SyncAllOpenRouterChannelsPricing() (int, error) {
+// ownPricingChannelTypes 列出「上游 API 自带价格与元数据」的渠道类型及其元数据来源标记。
+// 顺序即优先级：同一模型多个渠道都给价时，排在前面的类型胜出（OpenRouter 覆盖面最广，放首位）。
+var ownPricingChannelTypes = []struct {
+	channelType int
+	infoSource  string
+}{
+	{config.ChannelTypeOpenRouter, model.ModelInfoSourceOpenRouter},
+	{config.ChannelTypeVercelAIGateway, model.ModelInfoSourceVercel},
+}
+
+// ChannelTypeHasOwnPricing 判断渠道类型是否自带价格表（可自动同步）。
+func ChannelTypeHasOwnPricing(channelType int) bool {
+	return modelInfoSourceFor(channelType) != ""
+}
+
+func modelInfoSourceFor(channelType int) string {
+	for _, t := range ownPricingChannelTypes {
+		if t.channelType == channelType {
+			return t.infoSource
+		}
+	}
+	return ""
+}
+
+// SyncAllChannelsOwnPricing 遍历所有自带价格表的渠道（OpenRouter、Vercel AI Gateway），
+// 拉取真实价格去重后 upsert；元数据按来源分别落库。
+// 无需 gin.Context（provider 在 nil context 下仅做 GET /v1/models），供启动与 cron 调用。
+func SyncAllChannelsOwnPricing() (int, error) {
 	channels, err := model.GetAllChannels()
 	if err != nil {
 		return 0, err
 	}
 
 	deduped := make(map[string]*model.Price)
-	infoDedup := make(map[string]*model.ModelInfo)
-	for _, ch := range channels {
-		if ch.Type != config.ChannelTypeOpenRouter {
-			continue
-		}
-		provider := providers.GetProvider(ch, nil)
-		if provider == nil {
-			continue
-		}
-		prices, unconvertible, err := getChannelPriceSync(provider)
-		if err != nil {
-			logger.SysError("sync OpenRouter pricing failed for channel " + ch.Name + ": " + err.Error())
-			continue
-		}
-		if len(unconvertible) > 0 {
-			logger.SysLog(fmt.Sprintf("sync OpenRouter pricing for channel %s: %d models with unconvertible prices",
-				ch.Name, len(unconvertible)))
-		}
-		for _, p := range prices {
-			deduped[p.Model] = p
-		}
-		if infoProvider, ok := provider.(providersBase.ModelInfoListInterface); ok {
-			if infos, err := infoProvider.GetModelInfoList(); err == nil {
-				for _, info := range infos {
-					infoDedup[info.Model] = info
+	infoDedup := make(map[string]map[string]*model.ModelInfo) // source -> model -> info
+	// 按类型优先级遍历，先到先得：后面的类型不覆盖已有价格。
+	for _, t := range ownPricingChannelTypes {
+		for _, ch := range channels {
+			if ch.Type != t.channelType {
+				continue
+			}
+			provider := providers.GetProvider(ch, nil)
+			if provider == nil {
+				continue
+			}
+			prices, unconvertible, err := getChannelPriceSync(provider)
+			if err != nil {
+				logger.SysError("sync channel pricing failed for channel " + ch.Name + ": " + err.Error())
+				continue
+			}
+			if len(unconvertible) > 0 {
+				logger.SysLog(fmt.Sprintf("sync channel pricing for channel %s: %d models with unconvertible prices",
+					ch.Name, len(unconvertible)))
+			}
+			for _, p := range prices {
+				if _, exists := deduped[p.Model]; !exists {
+					deduped[p.Model] = p
+				}
+			}
+			if infoProvider, ok := provider.(providersBase.ModelInfoListInterface); ok {
+				if infos, err := infoProvider.GetModelInfoList(); err == nil {
+					if infoDedup[t.infoSource] == nil {
+						infoDedup[t.infoSource] = make(map[string]*model.ModelInfo)
+					}
+					for _, info := range infos {
+						infoDedup[t.infoSource][info.Model] = info
+					}
 				}
 			}
 		}
@@ -114,13 +147,23 @@ func SyncAllOpenRouterChannelsPricing() (int, error) {
 		return 0, err
 	}
 
-	if len(infoDedup) > 0 {
-		infos := make([]*model.ModelInfo, 0, len(infoDedup))
-		for _, info := range infoDedup {
+	// 元数据同样先到先得：OpenRouter 已写过的模型，Vercel 不再覆盖。
+	seenInfo := make(map[string]bool)
+	for _, t := range ownPricingChannelTypes {
+		byModel := infoDedup[t.infoSource]
+		if len(byModel) == 0 {
+			continue
+		}
+		infos := make([]*model.ModelInfo, 0, len(byModel))
+		for name, info := range byModel {
+			if seenInfo[name] {
+				continue
+			}
+			seenInfo[name] = true
 			infos = append(infos, info)
 		}
-		if err := model.UpsertModelInfos(infos, model.ModelInfoSourceOpenRouter); err != nil {
-			logger.SysError("OpenRouter model info upsert failed: " + err.Error())
+		if err := model.UpsertModelInfos(infos, t.infoSource); err != nil {
+			logger.SysError(t.infoSource + " model info upsert failed: " + err.Error())
 		}
 	}
 
@@ -177,7 +220,11 @@ func SyncChannelPricing(c *gin.Context) {
 	// 顺带同步模型元信息（名称/上下文/模态），使模型详情有内容（best-effort，不阻断价格同步）
 	if infoProvider, ok := provider.(providersBase.ModelInfoListInterface); ok {
 		if infos, err := infoProvider.GetModelInfoList(); err == nil {
-			if err := model.UpsertModelInfos(infos, model.ModelInfoSourceOpenRouter); err != nil {
+			source := modelInfoSourceFor(channel.Type)
+			if source == "" {
+				source = model.ModelInfoSourceOpenRouter
+			}
+			if err := model.UpsertModelInfos(infos, source); err != nil {
 				logger.SysError("channel model info upsert failed: " + err.Error())
 			}
 		}

@@ -51,7 +51,8 @@ const defaultConfig = {
     compatible_response: 'channelForm.label.compatible_response',
     allow_extra_body: 'channelForm.label.allow_extra_body',
     pass_through_body: 'channelForm.label.pass_through_body',
-    unified_request_response_model: 'channelForm.label.unified_request_response_model'
+    unified_request_response_model: 'channelForm.label.unified_request_response_model',
+    balance_threshold: 'channelForm.label.balance_threshold'
   },
   prompt: {
     type: 'channelForm.prompt.type',
@@ -77,7 +78,8 @@ const defaultConfig = {
     compatible_response: 'channelForm.label.compatible_response',
     allow_extra_body: 'channelForm.prompt.allow_extra_body',
     pass_through_body: 'channelForm.prompt.pass_through_body',
-    unified_request_response_model: 'channelForm.prompt.unified_request_response_model'
+    unified_request_response_model: 'channelForm.prompt.unified_request_response_model',
+    balance_threshold: 'channelForm.prompt.balance_threshold'
   },
   modelGroup: 'OpenAI'
 }
@@ -678,6 +680,16 @@ const typeConfig = {
       other: ['channelForm.prompt.format', { format: 'us-central1|your-project-id' }]
     },
     modelGroup: 'VertexAI Express'
+  },
+  62: {
+    input: {
+      models: ['anthropic/claude-opus-5', 'openai/gpt-6-astra', 'google/gemini-3.5-flash-lite'],
+      test_model: 'google/gemini-3.5-flash-lite'
+    },
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Vercel AI Gateway' }]
+    },
+    modelGroup: 'Vercel AI Gateway'
   }
 }
 

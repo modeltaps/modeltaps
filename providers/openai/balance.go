@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/modeltaps/modeltaps/providers/base"
 )
 
 func (p *OpenAIProvider) Balance() (float64, error) {
 	if !p.BalanceAction {
-		return 0, errors.New("Balance query not supported")
+		return 0, base.ErrBalanceNotSupported
 	}
 
 	fullRequestURL := p.GetFullRequestURL("/v1/dashboard/billing/subscription", "")

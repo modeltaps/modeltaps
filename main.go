@@ -113,7 +113,7 @@ func main() {
 	// 不必等每日 cron。受 channel_pricing.auto_sync 开关控制(默认开)。
 	if viper.GetBool("channel_pricing.auto_sync") {
 		go func() {
-			n, err := controller.SyncAllOpenRouterChannelsPricing()
+			n, err := controller.SyncAllChannelsOwnPricing()
 			if err != nil {
 				logger.SysError("startup OpenRouter pricing sync failed: " + err.Error())
 				return
@@ -154,7 +154,7 @@ func initMemoryCache() {
 }
 
 func initSync() {
-	// go controller.AutomaticallyUpdateChannels(viper.GetInt("channel.update_frequency"))
+	go controller.AutomaticallyUpdateChannels(viper.GetInt("channel.update_frequency"))
 	go controller.AutomaticallyTestChannels(viper.GetInt("channel.test_frequency"))
 }
 
