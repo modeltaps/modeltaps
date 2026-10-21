@@ -26,6 +26,10 @@ func (f ClaudeProviderFactory) Create(channel *model.Channel) base.ProviderInter
 
 type ClaudeProvider struct {
 	base.BaseProvider
+	// BearerAuth 为 true 时用 `Authorization: Bearer <key>` 鉴权而不是 `x-api-key`。
+	// 聚合网关（OpenRouter、Vercel AI Gateway）的 Anthropic 兼容入口按此约定；OpenRouter
+	// 还会把 x-api-key 当成用户自带的 Anthropic 密钥（BYOK），所以不能两者都发。
+	BearerAuth bool
 }
 
 func getConfig() base.ProviderConfig {
@@ -68,7 +72,11 @@ func (p *ClaudeProvider) GetRequestHeaders() (headers map[string]string) {
 	headers = make(map[string]string)
 	p.CommonRequestHeaders(headers)
 
-	headers["x-api-key"] = p.Channel.Key
+	if p.BearerAuth {
+		headers["Authorization"] = "Bearer " + p.Channel.Key
+	} else {
+		headers["x-api-key"] = p.Channel.Key
+	}
 	anthropicVersion := p.Context.Request.Header.Get("anthropic-version")
 	if anthropicVersion == "" {
 		anthropicVersion = "2023-06-01"

@@ -72,8 +72,9 @@ var AllowChannelType = []int{
 	config.ChannelTypeVercelAIGateway,
 }
 
-// nativeClaudeChannelType 是 Claude 协议下优先选择的原生渠道类型集合（相对 OpenAI/OpenRouter 转换渠道）。
-// 同组同模型既有原生渠道又有 OpenAI/OpenRouter 时，Claude 协议请求优先落到这些类型；仅无原生可用时才落转换链。
+// nativeClaudeChannelType 是 Claude 协议下优先选择的渠道类型集合：直连 / 一方渠道优先于聚合网关
+// （OpenRouter、Vercel AI Gateway）和 OpenAI 转换渠道。同组同模型同时存在时，Claude 协议请求先落到这些类型。
+// 聚合网关虽然也经 Anthropic 兼容入口原生转发（见 resolveClaudeRoute），但有加价与二次路由，故不列入优先集。
 var nativeClaudeChannelType = []int{config.ChannelTypeAnthropic, config.ChannelTypeVertexAI, config.ChannelTypeBedrock, config.ChannelTypeCustom, config.ChannelTypeGemini, config.ChannelTypeGeminiCli, config.ChannelTypeClaudeCode, config.ChannelTypeCodex, config.ChannelTypeAntigravity}
 
 type relayClaudeOnly struct {
@@ -139,8 +140,10 @@ const (
 // 顺序：专用分支 → 原生 Claude 实现 → ChatInterface 兜底转换链 → 不支持。
 // 原生判断必须早于兜底，否则 Deepseek/Bedrock 等既有原生 Claude relay 的渠道会被转换链截胡。
 func resolveClaudeRoute(channelType int, modelName string, provider providersBase.ProviderInterface) claudeSendRoute {
-	// Custom / OpenAI / OpenRouter 渠道复用同一条 Claude→OpenAI→Claude 转换链
-	if channelType == config.ChannelTypeCustom || channelType == config.ChannelTypeOpenAI || channelType == config.ChannelTypeOpenRouter || channelType == config.ChannelTypeVercelAIGateway {
+	// Custom / OpenAI 渠道复用同一条 Claude→OpenAI→Claude 转换链。
+	// OpenRouter / Vercel AI Gateway 不在此列：它们有 Anthropic 兼容入口，走下面的原生判定，
+	// 客户端的 cache_control 断点才能原样到达上游（转换链会丢掉）。
+	if channelType == config.ChannelTypeCustom || channelType == config.ChannelTypeOpenAI {
 		return claudeRouteOpenAIConvert
 	}
 
