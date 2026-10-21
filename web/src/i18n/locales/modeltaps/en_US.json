@@ -1063,7 +1063,9 @@
     "updateOk": "Updated successfully"
   },
   "payment_edit": {
-    "updateOk": "Updated successfully"
+    "updateOk": "Updated successfully",
+    "secretConfigured": "Configured {{masked}}",
+    "secretEditTip": "Leave blank to keep the existing value"
   },
   "pricing_edit": {
     "delTip": "Delete this item?",

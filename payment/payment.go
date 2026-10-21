@@ -21,6 +21,9 @@ type PaymentProcessor interface {
 	// RespondCallback 向网关应答已验签的通知：success 为 true 表示已入账，网关不再重发；
 	// 为 false 写该网关的失败应答，让网关稍后重发。
 	RespondCallback(c *gin.Context, success bool)
+	// SecretConfigKeys 列出网关配置 JSON 里属于密钥的字段名；后台接口下发前按这些字段脱敏，
+	// 编辑时留空的字段沿用库里的值。
+	SecretConfigKeys() []string
 }
 
 var Gateways = make(map[string]PaymentProcessor)

@@ -133,3 +133,31 @@ func MaskSensitiveInfo(str string) string {
 
 	return str
 }
+
+const (
+	// secretMaskStars 是所有敏感值回显共用的中间遮罩。
+	secretMaskStars = "****"
+	// secretMaskEdge 是两端各露出的字符数。
+	secretMaskEdge = 4
+	// secretMaskMinHead 是露出前段所需的最短长度；再短只露尾部,免得短口令被泄露大半。
+	secretMaskMinHead = 16
+	// secretMaskMinTail 是露出尾部所需的最短长度;再短整条打星。
+	secretMaskMinTail = 8
+)
+
+// MaskSecret 把密钥、口令等敏感值变成可供核对的回显:
+// 长度 ≥ 16 露前 4 + **** + 后 4,8–15 只露后 4,更短的全部打星。
+// 这是全站敏感值回显的唯一规则,新接口不要再各自手写。
+func MaskSecret(secret string) string {
+	runes := []rune(strings.TrimSpace(secret))
+	switch {
+	case len(runes) == 0:
+		return ""
+	case len(runes) < secretMaskMinTail:
+		return secretMaskStars
+	case len(runes) < secretMaskMinHead:
+		return secretMaskStars + string(runes[len(runes)-secretMaskEdge:])
+	default:
+		return string(runes[:secretMaskEdge]) + secretMaskStars + string(runes[len(runes)-secretMaskEdge:])
+	}
+}
