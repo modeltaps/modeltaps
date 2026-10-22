@@ -377,6 +377,8 @@ type ChatCompletionResponse struct {
 	Usage               *Usage                 `json:"usage,omitempty"`
 	SystemFingerprint   string                 `json:"system_fingerprint,omitempty"`
 	PromptFilterResults any                    `json:"prompt_filter_results,omitempty"`
+	// ServiceTier is the tier the upstream processed the request at (response only).
+	ServiceTier string `json:"service_tier,omitempty"`
 }
 
 func (cc *ChatCompletionResponse) GetContent() string {
@@ -524,6 +526,7 @@ type ChatCompletionStreamResponse struct {
 	Choices           []ChatCompletionStreamChoice `json:"choices"`
 	PromptAnnotations any                          `json:"prompt_annotations,omitempty"`
 	Usage             *Usage                       `json:"usage,omitempty"`
+	ServiceTier       string                       `json:"service_tier,omitempty"`
 }
 
 func (c *ChatCompletionStreamResponse) GetResponseText() (responseText string) {

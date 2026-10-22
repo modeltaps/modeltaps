@@ -313,6 +313,17 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 			meta["long_context_output_ratio"] = outRatio
 		}
 
+		// 处理档位(SEC-36,additive):上游回报了非标准档位或推理区域时记录,倍率已计入扣费。
+		if usage.ServiceTier != "" {
+			meta["service_tier"] = usage.ServiceTier
+		}
+		if usage.InferenceGeo != "" {
+			meta["inference_geo"] = usage.InferenceGeo
+		}
+		if tier := usage.TierMultiplier(); tier != 1 {
+			meta["service_tier_ratio"] = tier
+		}
+
 		// finish_reason 归一(W8-B,additive):原文另存 native_finish_reason,归一值写 finish_reason。
 		// 无法取得时(空串)不写,不写空串。
 		if usage.FinishReason != "" {

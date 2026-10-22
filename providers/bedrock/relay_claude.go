@@ -4,6 +4,7 @@ import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/requester"
+	"github.com/modeltaps/modeltaps/providers/base"
 	"github.com/modeltaps/modeltaps/providers/bedrock/category"
 	"github.com/modeltaps/modeltaps/providers/claude"
 	"github.com/modeltaps/modeltaps/types"
@@ -187,5 +188,5 @@ func (p *BedrockProvider) patchPassThroughBody(request *claude.ClaudeRequest) ([
 		return nil, false
 	}
 
-	return out, true
+	return p.StripPremiumTierFields(out, base.ClaudePremiumTierRules), true
 }

@@ -386,5 +386,5 @@ func (p *ClaudeProvider) patchClaudeRequestBody(request *ClaudeRequest) ([]byte,
 		out = patched
 	}
 
-	return out, true
+	return p.StripPremiumTierFields(out, base.ClaudePremiumTierRules), true
 }

@@ -422,6 +422,7 @@ func ExtractResponsesStreamUsage(event *types.OpenAIResponsesStreamResponses, ds
 		return false
 	}
 	*dst = *event.Response.Usage.ToOpenAIUsage()
+	dst.ServiceTier = event.Response.ServiceTier
 	return true
 }
 

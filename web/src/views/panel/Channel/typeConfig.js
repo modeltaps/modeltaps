@@ -25,6 +25,7 @@ const defaultConfig = {
     compatible_response: false,
     allow_extra_body: false,
     pass_through_body: false,
+    allow_service_tier: false,
     unified_request_response_model: false
   },
   inputLabel: {
@@ -51,6 +52,7 @@ const defaultConfig = {
     compatible_response: 'channelForm.label.compatible_response',
     allow_extra_body: 'channelForm.label.allow_extra_body',
     pass_through_body: 'channelForm.label.pass_through_body',
+    allow_service_tier: 'channelForm.label.allow_service_tier',
     unified_request_response_model: 'channelForm.label.unified_request_response_model',
     balance_threshold: 'channelForm.label.balance_threshold'
   },
@@ -78,6 +80,7 @@ const defaultConfig = {
     compatible_response: 'channelForm.label.compatible_response',
     allow_extra_body: 'channelForm.prompt.allow_extra_body',
     pass_through_body: 'channelForm.prompt.pass_through_body',
+    allow_service_tier: 'channelForm.prompt.allow_service_tier',
     unified_request_response_model: 'channelForm.prompt.unified_request_response_model',
     balance_threshold: 'channelForm.prompt.balance_threshold'
   },

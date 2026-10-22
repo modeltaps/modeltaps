@@ -531,6 +531,7 @@ type OpenAIResponsesResponses struct {
 	Tools              []ResponsesTools  `json:"tools,omitempty"`
 	TopP               *float64          `json:"top_p,omitempty"`
 	Truncation         string            `json:"truncation,omitempty"`
+	ServiceTier        string            `json:"service_tier,omitempty"`
 
 	Usage *ResponsesUsage `json:"usage,omitempty"`
 }
