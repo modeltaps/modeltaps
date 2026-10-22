@@ -40,6 +40,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Upstream model check: the consume log records the model sent upstream when a mapping renamed
+  it, and flags a response whose declared model is neither the requested nor the mapped one
+  (dated, regional and provider-path variants still match; Azure deployments are skipped). The
+  request log shows a warning on those rows, and `GET /api/channel/cache_stats` counts them per
+  channel.
 - Channel price sync shows a review first: each channel model with its upstream price change
   (new, increase, decrease) and the user groups priced below the channel's cost ratio. Only the
   selected models are written.

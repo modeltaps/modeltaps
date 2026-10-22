@@ -336,6 +336,16 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 		meta["extra_billing"] = q.extraBillingData
 	}
 
+	// 上游模型核对(CHAN-9,additive):映射改了名时记发给上游的模型;上游响应声明的模型与请求、
+	// 映射后的都对不上时记下它并打标,管理员可在日志里发现上游换了模型。
+	if q.upstreamModel != "" && q.upstreamModel != q.requestedModel {
+		meta["upstream_model"] = q.upstreamModel
+	}
+	if responseModelChecked(q.channelType) && responseModelMismatch(q.responseModel, q.requestedModel, q.upstreamModel) {
+		meta["response_model"] = q.responseModel
+		meta["response_model_mismatch"] = true
+	}
+
 	// 会话亲和结果(CHAN-8,additive):hit 沿用会话绑定的渠道,bound 为新绑定;未识别出会话时不写。
 	if q.sessionAffinity != "" {
 		meta["session_affinity"] = q.sessionAffinity

@@ -16,6 +16,9 @@ type ChannelCacheStat struct {
 	CachedReadTokens int64 `json:"cached_read_tokens" gorm:"column:cached_read_tokens"`
 	AffinityHits     int64 `json:"affinity_hits" gorm:"column:affinity_hits"`
 	AffinityBinds    int64 `json:"affinity_binds" gorm:"column:affinity_binds"`
+	// ResponseModelMismatches counts responses whose declared model was neither the requested
+	// nor the mapped one (the upstream may have served another model).
+	ResponseModelMismatches int64 `json:"response_model_mismatches" gorm:"column:response_model_mismatches"`
 }
 
 // sessionAffinityExpr returns the SQL expression for logs.metadata.session_affinity text.
@@ -30,6 +33,19 @@ func sessionAffinityExpr() string {
 	}
 }
 
+// responseModelMismatchExpr returns the SQL expression that is 1 for a log flagged
+// response_model_mismatch and 0 otherwise.
+func responseModelMismatchExpr() string {
+	switch {
+	case common.UsingPostgreSQL:
+		return "CASE WHEN (metadata ->> 'response_model_mismatch') = 'true' THEN 1 ELSE 0 END"
+	case common.UsingSQLite:
+		return "CASE WHEN JSON_EXTRACT(metadata, '$.response_model_mismatch') = 1 THEN 1 ELSE 0 END"
+	default:
+		return "CASE WHEN JSON_EXTRACT(metadata, '$.response_model_mismatch') = true THEN 1 ELSE 0 END"
+	}
+}
+
 // GetChannelCacheStats aggregates consume logs per channel in [start, end] (unix seconds;
 // 0 leaves that side open). channelId > 0 limits the result to one channel.
 func GetChannelCacheStats(start, end int64, channelId int) ([]*ChannelCacheStat, error) {
@@ -41,6 +57,7 @@ func GetChannelCacheStats(start, end int64, channelId int) ([]*ChannelCacheStat,
 		"sum(" + cachedReadTokensExpr() + ") as cached_read_tokens",
 		"sum(CASE WHEN " + affinity + " = 'hit' THEN 1 ELSE 0 END) as affinity_hits",
 		"sum(CASE WHEN " + affinity + " = 'bound' THEN 1 ELSE 0 END) as affinity_binds",
+		"sum(" + responseModelMismatchExpr() + ") as response_model_mismatches",
 	}, ", ")
 
 	tx := DB.Table("logs").Select(selectStr).Where("type = ?", LogTypeConsume)

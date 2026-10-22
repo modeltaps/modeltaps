@@ -364,6 +364,8 @@ func getProvider(c *gin.Context, modelName string, catalogExempt bool) (provider
 
 	c.Set("new_model", newModelName)
 	c.Set("billing_original_model", BillingOriginalModel)
+	// 每次（含重试）选定渠道后清空上一次尝试观察到的上游模型名。
+	c.Set(config.GinUpstreamResponseModelKey, "")
 
 	return
 }

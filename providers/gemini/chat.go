@@ -763,6 +763,8 @@ func BillingPartsText(candidates []GeminiChatCandidate) string {
 }
 
 func ConvertToChatOpenai(provider base.ProviderInterface, response *GeminiChatResponse, request *types.ChatCompletionRequest) (openaiResponse *types.ChatCompletionResponse, errWithCode *types.OpenAIErrorWithStatusCode) {
+	// 改写前记下上游声明的模型名（modelVersion），消费日志据此核对上游是否换了模型。
+	base.ObserveUpstreamModel(provider.GetContext(), response.ModelVersion)
 	// 获取响应中应该使用的模型名称
 	responseModel := provider.GetResponseModelName(request.Model)
 

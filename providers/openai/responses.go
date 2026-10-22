@@ -73,6 +73,7 @@ func (p *OpenAIProvider) CreateResponses(request *types.OpenAIResponsesRequest) 
 
 	*p.Usage = *response.Usage.ToOpenAIUsage()
 	p.Usage.ServiceTier = response.ServiceTier
+	base.ObserveUpstreamModel(p.Context, response.Model)
 
 	getResponsesExtraBilling(response, p.Usage)
 
@@ -235,6 +236,7 @@ func (p *OpenAIProvider) CreateResponsesCompaction(request *types.OpenAIResponse
 
 	*p.Usage = *response.Usage.ToOpenAIUsage()
 	p.Usage.ServiceTier = response.ServiceTier
+	base.ObserveUpstreamModel(p.Context, response.Model)
 
 	// 暂存上游原始字节，由 relay 层字节透传，保留未知字段 / 字段顺序。
 	// 有别名映射需改 model 时，在原始字节上就地 sjson 改写顶层 model（不改字段顺序 / 不丢未知字段）；

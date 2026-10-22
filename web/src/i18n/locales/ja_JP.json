@@ -1052,6 +1052,13 @@
       "cooldown": "クールダウン済み",
       "failed": "失敗",
       "errorLabel": "エラー"
+    },
+    "responseModel": {
+      "mismatchShort": "上流が別のモデルを返しました",
+      "mismatchTooltip": "上流はこの応答が {{model}} からだと示していますが、リクエストしたモデルともマッピング後のモデルとも一致しません。プロバイダーが別のモデルで応答した可能性があります。",
+      "upstreamModel": "上流に送ったモデル",
+      "responseModel": "応答に示されたモデル",
+      "mismatchValue": "{{model}}（リクエストと不一致）"
     }
   },
   "login": {

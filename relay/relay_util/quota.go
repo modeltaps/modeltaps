@@ -76,6 +76,9 @@ type Quota struct {
 	promptCachingStrategy string
 	// sessionAffinity 会话亲和结果(hit / bound),非空时写入消费日志 metadata。
 	sessionAffinity string
+	// 请求 / 上游 / 响应声明的模型名与渠道类型,用于判断上游是否换了模型(CHAN-9)。
+	requestedModel, upstreamModel, responseModel string
+	channelType                                  int
 	// retryAttempts 成功前失败过的上游尝试,非空时写入日志 metadata.retry_attempts。
 	retryAttempts []RelayAttempt
 
@@ -386,6 +389,13 @@ type ConsumeSnapshot struct {
 	// SessionAffinity 本次选渠道的会话亲和结果（hit / bound），由选渠道时写入 gin.Context。
 	SessionAffinity string
 
+	// RequestedModel / UpstreamModel / ResponseModel 是用户请求的模型、发给上游的模型（映射后）
+	// 与上游响应里声明的模型；三者不一致时日志标记上游换了模型。ChannelType 用于跳过 Azure 部署名。
+	RequestedModel string
+	UpstreamModel  string
+	ResponseModel  string
+	ChannelType    int
+
 	// RetryAttempts 成功前失败过的上游尝试（重试链），为空表示首个渠道即成功。
 	RetryAttempts []RelayAttempt
 
@@ -410,6 +420,10 @@ func NewConsumeSnapshot(c *gin.Context) ConsumeSnapshot {
 		PromptCachingStrategy: c.GetString("prompt_caching_strategy"),
 
 		SessionAffinity: c.GetString(model.SessionAffinityContextKey),
+		RequestedModel:  c.GetString("original_model"),
+		UpstreamModel:   c.GetString("new_model"),
+		ResponseModel:   c.GetString(config.GinUpstreamResponseModelKey),
+		ChannelType:     c.GetInt("channel_type"),
 		RetryAttempts:   RelayAttempts(c),
 	}
 }
@@ -436,6 +450,7 @@ func (q *Quota) ConsumeWithSnapshot(snap ConsumeSnapshot, usage *types.Usage, is
 	q.promptCachingTTL = snap.PromptCachingTTL
 	q.promptCachingStrategy = snap.PromptCachingStrategy
 	q.sessionAffinity = snap.SessionAffinity
+	q.requestedModel, q.upstreamModel, q.responseModel, q.channelType = snap.RequestedModel, snap.UpstreamModel, snap.ResponseModel, snap.ChannelType
 	q.retryAttempts = snap.RetryAttempts
 	ctx := snap.Ctx
 	defer func() {

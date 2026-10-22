@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import { useMemo } from 'react';
 import { useTable, flexRender } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { ArrowDown, ArrowUp, ChevronsUpDown, HelpCircle } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, ChevronsUpDown, HelpCircle } from 'lucide-react';
 import { Link } from 'react-router';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -266,10 +266,24 @@ export default function LogTable({
       header: t('logPage.modelLabel'),
       cell: (i) =>
         i.model_name ? (
-          <Badge color="primary">
-            <ModelIcon model={i.model_name} className="mr-1" />
-            {i.model_name}
-          </Badge>
+          <span className="inline-flex items-center gap-1">
+            <Badge color="primary">
+              <ModelIcon model={i.model_name} className="mr-1" />
+              {i.model_name}
+            </Badge>
+            {i.metadata?.response_model_mismatch && (
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <AlertTriangle className="size-3.5 shrink-0 text-amber-500" aria-label={t('logPage.responseModel.mismatchShort')} />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs whitespace-normal text-xs">
+                    {t('logPage.responseModel.mismatchTooltip', { model: i.metadata.response_model })}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </span>
         ) : (
           ''
         )
