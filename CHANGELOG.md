@@ -40,6 +40,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Failed requests are logged: when a request still fails after retries, a log entry records the
+  status and message the client received, the channels tried and their status codes. The request
+  log page switches between succeeded and failed requests, and the log details show the retry chain
+  (the provider responses list and the fallback count) for both. The "Record failed requests"
+  switch in the log settings turns it off.
+- The scheduled channel test is set in the gateway settings (test mode and interval). The new
+  "recovery" mode tests only auto-disabled channels and re-enables those that pass, so healthy
+  channels spend no quota on tests.
 - Session affinity on every channel type: requests of one client session stay on the channel that
   served the session, so the upstream prompt cache keeps hitting when several channels serve a
   model. Sessions are identified by the Claude Code session in `metadata.user_id`, a session
@@ -59,6 +67,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Failover defaults: retries default to 2 (never more than the channels available), automatic
+  re-enabling of auto-disabled channels defaults to on, and the scheduled channel test defaults to
+  recovery mode every 10 minutes. Sites that saved their own values keep them;
+  `CHANNEL_TEST_FREQUENCY` still tests every channel at its interval when set.
 - "Members can view everyone's usage" is a plain organization switch: the site-wide default for it
   is removed and new organizations start with it off, so members only see their own usage until an
   owner or admin turns it on. Existing organizations keep their current behavior.

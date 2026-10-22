@@ -61,7 +61,7 @@ LOGS_FILENAME="modeltaps.log"
    - Example: `NODE_TYPE=slave`
 8. `CHANNEL_UPDATE_FREQUENCY`: when set, channel balances are refreshed periodically, in minutes. No refresh happens when unset. Only channel types with a balance API are refreshed (OpenRouter, Vercel AI Gateway, DeepSeek, Moonshot, SiliconFlow); a channel whose balance drops below its low-balance alert threshold triggers a notification, and a balance of 0 disables the channel. OpenRouter reports the remaining amount of the key, so set a spend limit on the key in the OpenRouter dashboard.
    - Example: `CHANNEL_UPDATE_FREQUENCY=1440`
-9. `CHANNEL_TEST_FREQUENCY`: when set, channels are tested periodically, in minutes. No testing happens when unset.
+9. `CHANNEL_TEST_FREQUENCY`: when set, every channel is tested at this interval (minutes), overriding the scheduled test in System settings → Gateway Behavior → Channel Auto Disable & Recovery. When unset, the admin setting applies; by default only auto-disabled channels are tested every 10 minutes and re-enabled when they pass.
    - Example: `CHANNEL_TEST_FREQUENCY=1440`
 10. `POLLING_INTERVAL`: the interval between requests when refreshing channel balances or testing availability in bulk, in seconds. No interval by default.
     - Example: `POLLING_INTERVAL=5`

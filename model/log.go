@@ -79,6 +79,8 @@ const (
 	LogTypeConsume
 	LogTypeManage
 	LogTypeSystem
+	// LogTypeError 请求最终失败（重试后仍失败）的记录，content 为客户端收到的错误。
+	LogTypeError
 )
 
 func RecordQuotaLog(userId int, logType int, quota int, ip string, content string) {
@@ -216,6 +218,41 @@ func RecordConsumeLog(
 		if err != nil {
 			logger.LogError(ctx, "failed to record log: "+err.Error())
 		}
+	}
+}
+
+// RecordRelayErrorLog 记录一次最终失败的请求：客户端收到的状态码与错误文案、最后尝试的渠道，
+// metadata 带重试链。不扣费，quota 恒为 0；受 LogRelayErrorEnabled 开关控制。
+func RecordRelayErrorLog(ctx context.Context, userId int, channelId int, modelName string, tokenName string,
+	content string, requestTime int, isStream bool, metadata map[string]any, sourceIp string) {
+	if !config.LogRelayErrorEnabled {
+		return
+	}
+	username, _ := CacheGetUsername(userId)
+	requestId, _ := ctx.Value(logger.RequestIdKey).(string)
+	log := &Log{
+		UserId:      userId,
+		Username:    username,
+		CreatedAt:   utils.GetTimestamp(),
+		Type:        LogTypeError,
+		Content:     content,
+		TokenName:   tokenName,
+		ModelName:   modelName,
+		ChannelId:   channelId,
+		RequestTime: requestTime,
+		IsStream:    isStream,
+		SourceIp:    sourceIp,
+		RequestId:   requestId,
+	}
+	if metadata != nil {
+		log.Metadata = datatypes.NewJSONType(metadata)
+	}
+	if config.BatchUpdateEnabled {
+		AddLogToBatch(log)
+		return
+	}
+	if err := DB.Create(log).Error; err != nil {
+		logger.LogError(ctx, "failed to record error log: "+err.Error())
 	}
 }
 

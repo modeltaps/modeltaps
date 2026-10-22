@@ -266,12 +266,16 @@ function ProviderResponsesChart({ item, t }) {
       resolveBrandLabel(item.channel?.type, item.channel?.name) || item.channel?.name || t('logPage.providerResponses.provider');
   }
 
+  // 重试链(metadata.retry_attempts):成功前失败过的渠道;失败日志(type 5)只有失败尝试,没有成功行。
+  const attempts = Array.isArray(metadata.retry_attempts) ? metadata.retry_attempts : [];
+  const isError = item.type === 5;
+
   // No timing data at all
-  if (totalSec <= 0) return null;
+  if (totalSec <= 0 && attempts.length === 0) return null;
 
   const hasTTFT = ttftSec > 0;
-  const ttftPct = Math.min((ttftSec / totalSec) * 100, 100);
-  const genPct = Math.min((generationSec / totalSec) * 100, 100);
+  const ttftPct = totalSec > 0 ? Math.min((ttftSec / totalSec) * 100, 100) : 0;
+  const genPct = totalSec > 0 ? Math.min((generationSec / totalSec) * 100, 100) : 0;
   const secStr = (v) => t('logPage.providerResponses.seconds', { value: v.toFixed(1) });
 
   return (
@@ -281,35 +285,43 @@ function ProviderResponsesChart({ item, t }) {
         {/* Timeline rows share one grid so the auto-width label column (provider name / */}
         {/* "generation") is never truncated and both rows' bars stay vertically aligned. */}
         <div className="grid grid-cols-[max-content_1fr_auto] items-center gap-x-3 gap-y-1.5">
-          {/* Row 1: provider label (name + 200) | timeline | seconds */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm font-semibold text-foreground">{providerName}</span>
-            <span className="shrink-0 rounded bg-emerald-500/15 px-1.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-              200
-            </span>
-          </div>
-          <div className="relative h-5 overflow-hidden rounded bg-muted">
-            <div className="absolute inset-y-0 left-0 rounded-l bg-emerald-500" style={{ width: `${hasTTFT ? ttftPct : 100}%` }} />
-          </div>
-          <span className="text-right text-sm font-medium text-foreground">{secStr(hasTTFT ? ttftSec : totalSec)}</span>
-
-          {/* Row 2: Generation — same grid columns keep bars aligned with row 1 */}
-          {hasTTFT && (
+          {/* Failed attempts before the final one: channel | status | cooldown note */}
+          {attempts.map((a, idx) => (
+            <AttemptRow key={`${a.channel_id}-${idx}`} attempt={a} t={t} />
+          ))}
+          {!isError && (
             <>
-              <span className="text-sm text-muted-foreground">{t('logPage.providerResponses.generation')}</span>
-              <div className="relative h-5 overflow-hidden rounded bg-muted">
-                <div className="absolute inset-y-0 flex items-center bg-blue-500" style={{ left: `${ttftPct}%`, width: `${genPct}%` }}>
-                  {completionTokens > 0 && generationSec > 0 && (
-                    <span className="truncate px-2 text-xs font-medium text-white">
-                      {t('logPage.providerResponses.tokensPerSecond', {
-                        count: completionTokens,
-                        rate: (completionTokens / generationSec).toFixed(1)
-                      })}
-                    </span>
-                  )}
-                </div>
+              {/* Row 1: provider label (name + 200) | timeline | seconds */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-semibold text-foreground">{providerName}</span>
+                <span className="shrink-0 rounded bg-emerald-500/15 px-1.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                  200
+                </span>
               </div>
-              <span className="text-right text-sm font-medium text-foreground">{secStr(generationSec)}</span>
+              <div className="relative h-5 overflow-hidden rounded bg-muted">
+                <div className="absolute inset-y-0 left-0 rounded-l bg-emerald-500" style={{ width: `${hasTTFT ? ttftPct : 100}%` }} />
+              </div>
+              <span className="text-right text-sm font-medium text-foreground">{secStr(hasTTFT ? ttftSec : totalSec)}</span>
+
+              {/* Row 2: Generation — same grid columns keep bars aligned with row 1 */}
+              {hasTTFT && (
+                <>
+                  <span className="text-sm text-muted-foreground">{t('logPage.providerResponses.generation')}</span>
+                  <div className="relative h-5 overflow-hidden rounded bg-muted">
+                    <div className="absolute inset-y-0 flex items-center bg-blue-500" style={{ left: `${ttftPct}%`, width: `${genPct}%` }}>
+                      {completionTokens > 0 && generationSec > 0 && (
+                        <span className="truncate px-2 text-xs font-medium text-white">
+                          {t('logPage.providerResponses.tokensPerSecond', {
+                            count: completionTokens,
+                            rate: (completionTokens / generationSec).toFixed(1)
+                          })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-right text-sm font-medium text-foreground">{secStr(generationSec)}</span>
+                </>
+              )}
             </>
           )}
         </div>
@@ -326,6 +338,29 @@ function ProviderResponsesChart({ item, t }) {
 }
 
 ProviderResponsesChart.propTypes = { item: PropTypes.object, t: PropTypes.func.isRequired };
+
+// One failed upstream attempt of the retry chain: channel id, status code, and whether the
+// channel was put on cooldown before the next attempt.
+function AttemptRow({ attempt, t }) {
+  return (
+    <>
+      <div className="flex items-center gap-1.5">
+        <span className="text-sm font-semibold text-foreground">{`${t('logPage.channelLabel')} ${attempt.channel_id}`}</span>
+        <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-medium text-destructive">
+          {attempt.status || t('logPage.retry.noStatus')}
+        </span>
+      </div>
+      <div className="relative h-5 overflow-hidden rounded bg-muted">
+        <div className="absolute inset-0 bg-destructive/30" />
+      </div>
+      <span className="text-right text-xs text-muted-foreground">
+        {attempt.cooldown ? t('logPage.retry.cooldown') : t('logPage.retry.failed')}
+      </span>
+    </>
+  );
+}
+
+AttemptRow.propTypes = { attempt: PropTypes.object.isRequired, t: PropTypes.func.isRequired };
 
 // Collapsible section container (Usage, Prompt, Completion, Generation Data).
 function CollapsibleSection({ title, summary, open, onToggle, children }) {
@@ -718,6 +753,9 @@ export default function LogDetailDialog({
   const costValue = item.type === 2 ? renderQuota(quota, 6) : null;
   const hasTokens = totalInputTokens > 0 || totalOutputTokens > 0;
   const tokensValue = hasTokens ? `${totalInputTokens} → ${totalOutputTokens}` : null;
+  // 回退次数 = 失败过的尝试数;失败日志的最后一次尝试也在其中,不算回退。
+  const retryAttemptsCount = Array.isArray(metadata.retry_attempts) ? metadata.retry_attempts.length : 0;
+  const retryCount = item.type === 5 ? Math.max(retryAttemptsCount - 1, 0) : retryAttemptsCount;
   const hasMetrics = costValue || tokensValue || hasDuration;
   const hasDetail = io.status === 'ok' && io.data.has_detail;
   // Message count for the Prompt entry row; 0 when the body can't be parsed (viewer falls back to raw).
@@ -803,7 +841,12 @@ export default function LogDetailDialog({
                 />
                 <MetricCard icon={CircleDollarSign} label={t('logPage.metrics.cost')} value={costValue} placeholder="—" />
                 <MetricCard icon={Hash} label={t('logPage.metrics.tokens')} value={tokensValue} placeholder="—" />
-                <MetricCard icon={GitBranch} label={t('logPage.metrics.fallbacks')} value={null} placeholder="—" />
+                <MetricCard
+                  icon={GitBranch}
+                  label={t('logPage.metrics.fallbacks')}
+                  value={retryCount > 0 ? String(retryCount) : null}
+                  placeholder="—"
+                />
                 <MetricCard icon={Timer} label={t('logPage.metrics.fallbackLatency')} value={null} placeholder="—" />
               </section>
             )}
@@ -812,6 +855,7 @@ export default function LogDetailDialog({
             <section>
               <h3 className="mb-3 text-sm font-semibold text-foreground">{t('logPage.overviewLabel')}</h3>
               <div className="space-y-3">
+                {item.type === 5 && <KeyValueRow label={t('logPage.retry.errorLabel')} value={item.content} />}
                 <KeyValueRow label={t('logPage.modelLabel')} value={item.model_name} />
                 <KeyValueRow label={t('logPage.groupLabel')} value={groupName} />
                 <KeyValueRow label={t('logPage.userLabel')} value={item.username} />
@@ -878,7 +922,9 @@ export default function LogDetailDialog({
                     {cachedWriteTokens > 0 && <KeyValueRow label={t('logPage.usage.cachedWrite5m')} value={cachedWriteTokens} />}
                     {cachedWrite1hTokens > 0 && <KeyValueRow label={t('logPage.usage.cachedWrite1h')} value={cachedWrite1hTokens} />}
                     {cachedReadTokens > 0 && <KeyValueRow label={t('logPage.usage.cachedRead')} value={cachedReadTokens} />}
-                    {openaiCacheWriteTokens > 0 && <KeyValueRow label={t('logPage.usage.openaiCacheWrite')} value={openaiCacheWriteTokens} />}
+                    {openaiCacheWriteTokens > 0 && (
+                      <KeyValueRow label={t('logPage.usage.openaiCacheWrite')} value={openaiCacheWriteTokens} />
+                    )}
                   </div>
                 )}
                 {modalityTokenRows.length > 0 && (

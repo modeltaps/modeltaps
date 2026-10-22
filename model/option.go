@@ -147,6 +147,18 @@ func registerOptions() {
 	config.GlobalOption.RegisterFloat("QuotaPerUnit", &config.QuotaPerUnit, config.ScopePublic, config.PublicSpec{StatusKey: "quota_per_unit"})
 	config.GlobalOption.RegisterInt("RetryTimes", &config.RetryTimes, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("RetryCooldownSeconds", &config.RetryCooldownSeconds, config.ScopeAdmin)
+	config.GlobalOption.RegisterCustom("ChannelTestMode", func() string {
+		return config.ChannelTestMode
+	}, func(value string) error {
+		switch value {
+		case "off", "recovery", "all":
+			config.ChannelTestMode = value
+			return nil
+		}
+		return fmt.Errorf("invalid channel test mode %q", value)
+	}, "recovery", config.ScopeAdmin)
+	config.GlobalOption.RegisterInt("ChannelTestIntervalMinutes", &config.ChannelTestIntervalMinutes, config.ScopeAdmin)
+	config.GlobalOption.RegisterBool("LogRelayErrorEnabled", &config.LogRelayErrorEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("SessionAffinityEnabled", &config.SessionAffinityEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("SessionAffinityStrict", &config.SessionAffinityStrict, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("SessionAffinityTTLSeconds", &config.SessionAffinityTTLSeconds, config.ScopeAdmin)

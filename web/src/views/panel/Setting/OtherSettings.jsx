@@ -576,6 +576,13 @@ export function LogConsumeCard({ ctx }) {
         disabled={loading}
       />
       <ToggleRow
+        label={op('logSettings.logRelayError')}
+        description={op('logSettings.logRelayErrorDescription')}
+        checked={is('LogRelayErrorEnabled')}
+        onCheckedChange={() => toggle('LogRelayErrorEnabled')}
+        disabled={loading}
+      />
+      <ToggleRow
         label={op('logSettings.autoDelete')}
         description={op('logSettings.autoDeleteDescription')}
         checked={is('LogAutoDeleteEnabled')}

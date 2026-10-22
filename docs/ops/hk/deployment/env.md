@@ -61,7 +61,7 @@ LOGS_FILENAME="modeltaps.log"
    - 例子：`NODE_TYPE=slave`
 8. `CHANNEL_UPDATE_FREQUENCY`：設定之後將定期更新渠道餘額，單位為分鐘，未設定則不進行更新。
    - 例子：`CHANNEL_UPDATE_FREQUENCY=1440`
-9. `CHANNEL_TEST_FREQUENCY`：設定之後將定期檢查渠道，單位為分鐘，未設定則不進行檢查。
+9. `CHANNEL_TEST_FREQUENCY`：設定之後按該間隔（分鐘）定期測試全部渠道，覆蓋後台「系統設定 → 網關行為 → 渠道自動禁用與恢復」裏的定時測試設定。未設定時按後台設定執行，預設每 10 分鐘只測試被自動禁用的渠道，通過即恢復。
    - 例子：`CHANNEL_TEST_FREQUENCY=1440`
 10. `POLLING_INTERVAL`：批量更新渠道餘額以及測試可用性時的請求間隔，單位為秒，預設無間隔。
     - 例子：`POLLING_INTERVAL=5`
