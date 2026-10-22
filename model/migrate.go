@@ -599,6 +599,7 @@ func migrationAfter(db *gorm.DB) error {
 		migrateModelInfoAudioSpeechEndpoints(),
 		migrateOrgMaxMembersNullable(),
 		migrateOrgUsageVisibleExplicit(),
+		migrateTokenModelLimitNormalized(),
 	})
 	return m.Migrate()
 }
@@ -1701,6 +1702,44 @@ func migrateOrgUsageVisibleExplicit() *gormigrate.Migration {
 				return tx.Where(&Option{Key: orgUsageVisibleDefaultOptionKey}).Delete(&Option{}).Error
 			}
 			return nil
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return nil
+		},
+	}
+}
+
+// migrateTokenModelLimitNormalized 按 ORG-14 的存储口径归一存量令牌的模型限制:关闭限制的令牌清空残留列表;
+// 「开启但列表为空」原本拒绝全部请求,新口径下空列表表示不限制,为不放宽权限改为停用该令牌。
+func migrateTokenModelLimitNormalized() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202610220003",
+		Migrate: func(tx *gorm.DB) error {
+			if !tx.Migrator().HasTable("tokens") {
+				return nil
+			}
+			var tokens []*Token
+			return tx.Unscoped().Select("id", "status", "setting").FindInBatches(&tokens, 500, func(batch *gorm.DB, _ int) error {
+				for _, token := range tokens {
+					setting := token.Setting.Data()
+					limit := setting.Limits.LimitModelSetting
+					normalized := normalizeLimitModelSetting(limit)
+					denyAll := limit.Enabled && len(normalized.Models) == 0
+					if normalized.Enabled == limit.Enabled && len(normalized.Models) == len(limit.Models) && !denyAll {
+						continue
+					}
+					setting.Limits.LimitModelSetting = normalized
+					token.Setting.Set(setting)
+					updates := map[string]interface{}{"setting": token.Setting}
+					if denyAll && token.Status == config.TokenStatusEnabled {
+						updates["status"] = config.TokenStatusDisabled
+					}
+					if err := tx.Unscoped().Model(&Token{}).Where("id = ?", token.Id).Updates(updates).Error; err != nil {
+						return err
+					}
+				}
+				return nil
+			}).Error
 		},
 		Rollback: func(tx *gorm.DB) error {
 			return nil
