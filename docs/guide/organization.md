@@ -151,7 +151,7 @@ Organization settings live on the **Settings** page (user menu). The organizatio
 ### Organization profile
 
 - **Organization name**, **Avatar URL**: how the organization appears in the switcher and on the overview page.
-- **Members can view everyone's usage**: when on, ordinary members can view everyone's usage; when off, only their own. When unset, the site default applies.
+- **Members can view everyone's usage**: when on, ordinary members can view everyone's usage; when off, only their own. New organizations start with it off.
 - **Retain the organization's API request and response bodies**: a switch that decides whether request and response bodies for organization API key calls are retained for later troubleshooting; it is hidden when the site does not allow retention.
 
 Click **Save** to apply changes.

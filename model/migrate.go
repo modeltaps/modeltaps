@@ -598,6 +598,7 @@ func migrationAfter(db *gorm.DB) error {
 		migrateModelOwnedByIcon(),
 		migrateModelInfoAudioSpeechEndpoints(),
 		migrateOrgMaxMembersNullable(),
+		migrateOrgUsageVisibleExplicit(),
 	})
 	return m.Migrate()
 }
@@ -1652,6 +1653,57 @@ func migrateOrgMaxMembersNullable() *gormigrate.Migration {
 				return nil
 			}
 			return tx.Exec("UPDATE organizations SET max_members = 0 WHERE max_members IS NULL").Error
+		},
+	}
+}
+
+// orgUsageVisibleDefaultOptionKey 已删除的站点选项「成员用量可见性默认值」,只在迁移里读取一次
+const orgUsageVisibleDefaultOptionKey = "OrganizationUsageVisibleDefault"
+
+// migrateOrgUsageVisibleExplicit 「成员可见全员用量」改为组织上的普通开关:未设置的存量组织写入迁移时的
+// 站点默认值(选项未保存过时为当时的内置默认 true),行为不变;随后删除该站点选项。
+func migrateOrgUsageVisibleExplicit() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202610220002",
+		Migrate: func(tx *gorm.DB) error {
+			if !tx.Migrator().HasTable("organizations") {
+				return nil
+			}
+			siteDefault := true
+			hasOptions := tx.Migrator().HasTable("options")
+			if hasOptions {
+				var opt Option
+				err := tx.Where(&Option{Key: orgUsageVisibleDefaultOptionKey}).Limit(1).Find(&opt).Error
+				if err != nil {
+					return err
+				}
+				if opt.Key != "" {
+					siteDefault = opt.Value == "true"
+				}
+			}
+			var orgs []*Organization
+			if err := tx.Unscoped().Select("id", "setting").Find(&orgs).Error; err != nil {
+				return err
+			}
+			for _, org := range orgs {
+				setting := org.Setting.Data()
+				if setting.UsageVisibleToMembers != nil {
+					continue
+				}
+				visible := siteDefault
+				setting.UsageVisibleToMembers = &visible
+				org.Setting.Set(setting)
+				if err := tx.Unscoped().Model(&Organization{}).Where("id = ?", org.Id).Update("setting", org.Setting).Error; err != nil {
+					return err
+				}
+			}
+			if hasOptions {
+				return tx.Where(&Option{Key: orgUsageVisibleDefaultOptionKey}).Delete(&Option{}).Error
+			}
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return nil
 		},
 	}
 }

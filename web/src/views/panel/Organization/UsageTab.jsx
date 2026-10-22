@@ -305,7 +305,7 @@ export default function UsageTab({ orgId, isAdmin, detail }) {
   const [dims, setDims] = useState({ member: [], token: [], model: [] });
 
   // Member 在可见性关闭时后端只返回自己的数据,此时隐藏成员筛选器(规格 §3.6 / a4)
-  const showMemberFilter = isAdmin || (detail?.organization?.setting?.usage_visible_to_members ?? true);
+  const showMemberFilter = isAdmin || detail?.organization?.setting?.usage_visible_to_members === true;
 
   const { startTs, endTs } = useMemo(() => {
     if (range === 'custom') {

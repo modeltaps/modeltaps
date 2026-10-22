@@ -37,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- "Members can view everyone's usage" is a plain organization switch: the site-wide default for it
+  is removed and new organizations start with it off, so members only see their own usage until an
+  owner or admin turns it on. Existing organizations keep their current behavior.
 - Periodic and bulk balance refresh covers every channel type with a balance API instead of
   OpenAI only, and skips types without one; the single-channel refresh reports "not supported"
   for those types.

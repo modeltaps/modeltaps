@@ -41,8 +41,8 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
 
   const [name, setName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
-  // null = 未显式设置(沿用站点默认);切换开关后变为明确布尔值
-  const [usageVisible, setUsageVisible] = useState(null);
+  // 成员可见全员用量:组织上的普通开关,未设置即关闭
+  const [usageVisible, setUsageVisible] = useState(false);
   // 组织留存三态哨兵(inherit=未设置,取站点默认 / on / off),经 PUT /api/org/:id 写入。
   const [logIoDefault, setLogIoDefault] = useState('inherit');
   const [saving, setSaving] = useState(false);
@@ -54,7 +54,7 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
     const next = {
       name: org.name || '',
       avatarUrl: org.avatar_url || '',
-      usageVisible: org.setting?.usage_visible_to_members ?? null,
+      usageVisible: org.setting?.usage_visible_to_members === true,
       logIoDefault: triFromServer(org.setting?.log_io_default)
     };
     setName(next.name);
@@ -80,7 +80,7 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
     setSaving(true);
     try {
       const payload = { name: name.trim(), avatar_url: avatarUrl.trim() };
-      if (usageVisible !== null) payload.usage_visible_to_members = usageVisible;
+      if (!sameValue(usageVisible, baseline?.usageVisible)) payload.usage_visible_to_members = usageVisible;
       // 未拨动过留存开关时不带该字段,后端保持原有三态
       if (!sameValue(logIoDefault, baseline?.logIoDefault)) payload.log_io_default = logIoDefault;
       const res = await API.put(`/api/org/${orgId}/`, payload);
@@ -124,7 +124,7 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
             <Label className="font-normal">{t('orgPage.settings.usageVisible')}</Label>
             <p className="text-xs text-muted-foreground">{t('orgPage.settings.usageVisibleHint')}</p>
           </div>
-          <Switch checked={usageVisible === true} onCheckedChange={setUsageVisible} />
+          <Switch checked={usageVisible} onCheckedChange={setUsageVisible} />
         </div>
         {logIoSiteEnabled && (
           <div data-highlight="log-io" className="flex items-center justify-between gap-4 py-1">

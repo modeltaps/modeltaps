@@ -23,7 +23,8 @@ const (
 
 // OrganizationSetting 组织级设置(organizations.setting JSON)
 type OrganizationSetting struct {
-	// UsageVisibleToMembers Member 是否可见全员用量;nil 时取站点默认值 config.OrganizationUsageVisibleDefault
+	// UsageVisibleToMembers Member 是否可见全员用量;组织上的普通开关,未设置(nil)按关闭处理,不回退站点值。
+	// 保留指针仅为兼容迁移前的 JSON(202610220002 已为存量组织写入显式值)
 	UsageVisibleToMembers *bool `json:"usage_visible_to_members,omitempty"`
 	// ModelWhitelist 组织级模型白名单缺省(空=不限制)
 	ModelWhitelist []string `json:"model_whitelist,omitempty"`
@@ -122,13 +123,10 @@ func SetOrganizationMaxMembers(org *Organization, maxMembers *int) error {
 	return nil
 }
 
-// IsUsageVisibleToMembers 返回 Member 是否可见全员用量(组织未配置时取站点默认值)
+// IsUsageVisibleToMembers 返回 Member 是否可见全员用量;未设置时为关闭(成员只看自己)
 func (org *Organization) IsUsageVisibleToMembers() bool {
-	setting := org.Setting.Data()
-	if setting.UsageVisibleToMembers != nil {
-		return *setting.UsageVisibleToMembers
-	}
-	return config.OrganizationUsageVisibleDefault
+	visible := org.Setting.Data().UsageVisibleToMembers
+	return visible != nil && *visible
 }
 
 // ResolveLogIODefault 返回组织令牌「继承」时的 LogIO 默认(组织未配置时取站点默认 config.OrganizationLogIODefault)
