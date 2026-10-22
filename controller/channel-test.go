@@ -468,7 +468,9 @@ func testChannelWithTimeout(channel *model.Channel, testModel string, timeout ti
 	}
 }
 
-func testAllChannels(isNotify bool) error {
+// testAllChannels 串行测试渠道。onlyAutoDisabled 为真时只测被自动禁用的渠道（定时测试的
+// recovery 模式）：通过即按自动恢复规则启用，正常渠道不被测试、不消耗配额。
+func testAllChannels(isNotify bool, onlyAutoDisabled bool) error {
 	channels, err := model.GetAllChannels()
 	if err != nil {
 		return err
@@ -515,6 +517,9 @@ func testAllChannels(isNotify bool) error {
 			// 定时任务跳过手动禁用的渠道：它不会被自动恢复，测试只会消耗配额，无实际意义。
 			// 手动触发（isNotify=true）仍测试全部渠道。
 			if !isNotify && channel.Status == config.ChannelStatusManuallyDisabled {
+				continue
+			}
+			if onlyAutoDisabled && channel.Status != config.ChannelStatusAutoDisabled {
 				continue
 			}
 
@@ -577,7 +582,7 @@ func testAllChannels(isNotify bool) error {
 }
 
 func TestAllChannels(c *gin.Context) {
-	err := testAllChannels(true)
+	err := testAllChannels(true, false)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -591,15 +596,29 @@ func TestAllChannels(c *gin.Context) {
 	})
 }
 
-func AutomaticallyTestChannels(frequency int) {
-	if frequency <= 0 {
-		return
-	}
-
+// AutomaticallyTestChannels 按系统设置的 ChannelTestMode / ChannelTestIntervalMinutes 定时测试渠道，
+// 每轮重新读取设置，修改后无需重启。envFrequency > 0（CHANNEL_TEST_FREQUENCY）时沿用旧行为：
+// 按该分钟数测试全部渠道。
+func AutomaticallyTestChannels(envFrequency int) {
 	for {
-		time.Sleep(time.Duration(frequency) * time.Minute)
-		logger.SysLog("testing all channels")
-		_ = testAllChannels(false)
-		logger.SysLog("channel test finished")
+		mode, interval := scheduledChannelTest(envFrequency)
+		time.Sleep(time.Duration(interval) * time.Minute)
+		if mode, _ = scheduledChannelTest(envFrequency); mode == "off" {
+			continue
+		}
+		logger.SysLog("testing channels, mode: " + mode)
+		_ = testAllChannels(false, mode == "recovery")
 	}
+}
+
+// scheduledChannelTest 返回本轮定时测试的模式与间隔（分钟，至少 1）。
+func scheduledChannelTest(envFrequency int) (mode string, intervalMinutes int) {
+	if envFrequency > 0 {
+		return "all", envFrequency
+	}
+	intervalMinutes = config.ChannelTestIntervalMinutes
+	if intervalMinutes < 1 {
+		intervalMinutes = 1
+	}
+	return config.ChannelTestMode, intervalMinutes
 }

@@ -243,7 +243,8 @@ var InviterRewardType = "fixed" // "fixed" 或 "percentage"
 var InviterRewardValue = 0
 var ChannelDisableThreshold = 5.0
 var AutomaticDisableChannelEnabled = false
-var AutomaticEnableChannelEnabled = false
+// AutomaticEnableChannelEnabled 默认开：只会恢复被自动禁用、且定时测试已通过的渠道。
+var AutomaticEnableChannelEnabled = true
 var AutomaticDisableChannelNotifyEnabled = true
 var QuotaRemindThreshold = 1000
 var PreConsumedQuota = 500
@@ -258,8 +259,21 @@ var EmptyResponseBillingEnabled = true
 // 预留 headroom——作为"防挂死"守卫偏宽松、不会误杀，足够。设为 0 可禁用该守卫。
 var MaxPromptTokens = 1000000
 var DisableTokenEncoders = false
-var RetryTimes = 0
+// RetryTimes 默认 2：失败后最多换两个渠道重试，实际不超过可用渠道数，单渠道部署不受影响。
+var RetryTimes = 2
 var RetryTimeOut = 10
+
+// ChannelTestMode 定时渠道测试的范围："off" 不测、"recovery" 只测被自动禁用的渠道（通过即恢复，
+// 不占用正常渠道的配额）、"all" 测全部未手动禁用的渠道（失败按自动禁用规则处理）。
+// 环境变量 CHANNEL_TEST_FREQUENCY > 0 时沿用旧行为：按该分钟数测全部渠道。
+var ChannelTestMode = "recovery"
+
+// ChannelTestIntervalMinutes 定时渠道测试的间隔（分钟）。
+var ChannelTestIntervalMinutes = 10
+
+// LogRelayErrorEnabled 请求最终失败（含重试后仍失败）时写一条错误日志，记录每次尝试的渠道与状态码。
+// 本地拒绝（余额不足、参数校验等）不写。
+var LogRelayErrorEnabled = true
 
 // SessionAffinityEnabled keeps the requests of one client session (Claude Code
 // metadata.user_id, Codex session_id, OpenAI prompt_cache_key, or the same prompt prefix)

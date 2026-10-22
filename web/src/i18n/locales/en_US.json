@@ -940,7 +940,8 @@
       "consumption": "Consumption",
       "management": "Management",
       "recharge": "Recharge",
-      "system": "System"
+      "system": "System",
+      "error": "Failed"
     },
     "memberLabel": "Member",
     "modelLabel": "Model",
@@ -1018,7 +1019,18 @@
     "typeLabel": "Type",
     "unknown": "Unknown",
     "userLabel": "User",
-    "contextFailed": "Could not load the log context: {{message}}"
+    "contextFailed": "Could not load the log context: {{message}}",
+    "outcome": {
+      "label": "Request result",
+      "succeeded": "Succeeded requests",
+      "failed": "Failed requests"
+    },
+    "retry": {
+      "noStatus": "No response",
+      "cooldown": "Cooled down",
+      "failed": "Failed",
+      "errorLabel": "Error"
+    }
   },
   "login": {
     "codeRequired": "verification code must be filled",
@@ -2467,7 +2479,9 @@
         "logsCleared": "{{count}} logs have been cleared!",
         "selectCleanupTime": "Please select a log cleanup time",
         "selectedTime": "Selected: {{time}}",
-        "title": "Log Settings"
+        "title": "Log Settings",
+        "logRelayError": "Record failed requests",
+        "logRelayErrorDescription": "Write a log entry when a request still fails after retries, with the error the client received and every channel tried. Requests rejected locally (insufficient quota, invalid parameters) are not recorded."
       },
       "promptLimits": {
         "title": "Input Limits",
@@ -2493,7 +2507,18 @@
           "label": "Quota Reminder Threshold",
           "placeholder": "When below this quota, an email will be sent to remind the user"
         },
-        "saveMonitoringSettings": "Save Monitoring Settings"
+        "saveMonitoringSettings": "Save Monitoring Settings",
+        "channelTestMode": {
+          "label": "Scheduled channel test",
+          "description": "Recovery tests only auto-disabled channels and re-enables those that pass, without spending quota on healthy channels. All tests every channel that is not manually disabled and disables failing ones by the auto-disable rules. The CHANNEL_TEST_FREQUENCY environment variable, when set, overrides this with all channels at that interval.",
+          "recovery": "Recovery: auto-disabled channels only",
+          "all": "All channels",
+          "off": "Off"
+        },
+        "channelTestInterval": {
+          "label": "Test interval (minutes)",
+          "description": "Time between scheduled channel tests, at least 1 minute."
+        }
       },
       "otherSettings": {
         "CFWorkerImageUrl": {

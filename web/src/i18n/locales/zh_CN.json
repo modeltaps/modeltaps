@@ -1394,7 +1394,8 @@
       "recharge": "充值",
       "consumption": "消费",
       "management": "管理",
-      "system": "系统"
+      "system": "系统",
+      "error": "失败"
     },
     "quotaDetail": {
       "groupRatio": "分组倍率",
@@ -1557,7 +1558,18 @@
       "title": "生成数据",
       "summary": "Raw JSON"
     },
-    "contextFailed": "获取日志上下文失败：{{message}}"
+    "contextFailed": "获取日志上下文失败：{{message}}",
+    "outcome": {
+      "label": "请求结果",
+      "succeeded": "成功的请求",
+      "failed": "失败的请求"
+    },
+    "retry": {
+      "noStatus": "无响应",
+      "cooldown": "已冷却",
+      "failed": "失败",
+      "errorLabel": "错误"
+    }
   },
   "redemptionPage": {
     "pageTitle": "兑换",
@@ -2356,7 +2368,9 @@
         "autoDelete": "启用消费日志自动清理",
         "autoDeleteDescription": "定期自动删除超过保留天数的消费日志",
         "autoDeleteDays": "自动清理保留天数",
-        "autoDeleteDaysDescription": "超过该天数的消费日志将被自动删除"
+        "autoDeleteDaysDescription": "超过该天数的消费日志将被自动删除",
+        "logRelayError": "记录失败的请求",
+        "logRelayErrorDescription": "请求在重试后仍失败时写一条日志，记录客户端收到的错误和尝试过的每个渠道。本地拒绝的请求（额度不足、参数错误等）不记录。"
       },
       "promptLimits": {
         "title": "输入限制",
@@ -2382,7 +2396,18 @@
         "automaticEnableChannelDescription": "渠道测试成功时自动恢复被自动禁用的渠道；手动禁用的不会恢复",
         "automaticDisableChannelNotify": "自动禁用通道时发送通知",
         "automaticDisableChannelNotifyDescription": "渠道被自动禁用时向管理员发送通知",
-        "saveMonitoringSettings": "保存监控设置"
+        "saveMonitoringSettings": "保存监控设置",
+        "channelTestMode": {
+          "label": "定时渠道测试",
+          "description": "「仅恢复」只测试被自动禁用的渠道，通过即重新启用，不消耗正常渠道的配额；「全部渠道」测试所有未手动禁用的渠道，失败的按自动禁用规则处理。设置了环境变量 CHANNEL_TEST_FREQUENCY 时，按该间隔测试全部渠道，覆盖这里的设置。",
+          "recovery": "仅恢复：只测被自动禁用的渠道",
+          "all": "全部渠道",
+          "off": "关闭"
+        },
+        "channelTestInterval": {
+          "label": "测试间隔（分钟）",
+          "description": "两次定时测试之间的间隔，至少 1 分钟。"
+        }
       },
       "quotaSettings": {
         "title": "额度设置",

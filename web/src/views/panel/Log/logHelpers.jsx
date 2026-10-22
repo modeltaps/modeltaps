@@ -10,7 +10,8 @@ export const LOG_TYPES = [
   { value: '1', labelKey: 'logPage.logType.recharge', color: 'primary' },
   { value: '2', labelKey: 'logPage.logType.consumption', color: 'orange' },
   { value: '3', labelKey: 'logPage.logType.management', color: 'info' },
-  { value: '4', labelKey: 'logPage.logType.system', color: 'secondary' }
+  { value: '4', labelKey: 'logPage.logType.system', color: 'secondary' },
+  { value: '5', labelKey: 'logPage.logType.error', color: 'error' }
 ];
 
 // 账务记录视图的类型子筛选;'0' 表示全部账务(充值/管理/系统,客户端合并 1/3/4)。

@@ -940,7 +940,8 @@
       "consumption": "消費",
       "management": "管理",
       "recharge": "チャージ",
-      "system": "システム"
+      "system": "システム",
+      "error": "失敗"
     },
     "memberLabel": "メンバー",
     "modelLabel": "モデル",
@@ -1018,7 +1019,18 @@
     "typeLabel": "タイプ",
     "unknown": "不明",
     "userLabel": "ユーザー",
-    "contextFailed": "ログのコンテキストを取得できませんでした：{{message}}"
+    "contextFailed": "ログのコンテキストを取得できませんでした：{{message}}",
+    "outcome": {
+      "label": "リクエスト結果",
+      "succeeded": "成功したリクエスト",
+      "failed": "失敗したリクエスト"
+    },
+    "retry": {
+      "noStatus": "応答なし",
+      "cooldown": "クールダウン済み",
+      "failed": "失敗",
+      "errorLabel": "エラー"
+    }
   },
   "login": {
     "codeRequired": "確認コードを入力する必要があります",
@@ -2467,7 +2479,9 @@
         "logsCleared": "{{count}} 件のログをクリーンアップしました!",
         "selectCleanupTime": "ログのクリーンアップ時刻を選択してください",
         "selectedTime": "選択済み：{{time}}",
-        "title": "ログ設定"
+        "title": "ログ設定",
+        "logRelayError": "失敗したリクエストを記録",
+        "logRelayErrorDescription": "再試行しても失敗したリクエストについて、クライアントが受け取ったエラーと試したすべてのチャネルをログに記録します。ローカルで拒否されたリクエスト（クォータ不足、パラメータエラーなど）は記録しません。"
       },
       "promptLimits": {
         "title": "入力制限",
@@ -2493,7 +2507,18 @@
           "label": "クォータ通知しきい値",
           "placeholder": "このクォータを下回ると、ユーザーに通知メールが送信されます"
         },
-        "saveMonitoringSettings": "モニタリング設定を保存"
+        "saveMonitoringSettings": "モニタリング設定を保存",
+        "channelTestMode": {
+          "label": "チャネルの定期テスト",
+          "description": "「復旧のみ」は自動で無効化されたチャネルだけをテストし、合格したものを再度有効にします。正常なチャネルのクォータは消費しません。「すべてのチャネル」は手動で無効化されていないすべてのチャネルをテストし、失敗したものを自動無効化ルールに従って処理します。環境変数 CHANNEL_TEST_FREQUENCY を設定すると、その間隔ですべてのチャネルをテストし、この設定より優先されます。",
+          "recovery": "復旧のみ：自動無効化されたチャネルだけ",
+          "all": "すべてのチャネル",
+          "off": "オフ"
+        },
+        "channelTestInterval": {
+          "label": "テスト間隔（分）",
+          "description": "定期テストの間隔です。最小 1 分。"
+        }
       },
       "otherSettings": {
         "CFWorkerImageUrl": {

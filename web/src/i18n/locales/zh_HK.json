@@ -940,7 +940,8 @@
       "consumption": "消費",
       "management": "管理",
       "recharge": "充值",
-      "system": "系統"
+      "system": "系統",
+      "error": "失敗"
     },
     "memberLabel": "成員",
     "modelLabel": "模型",
@@ -1018,7 +1019,18 @@
     "typeLabel": "類型",
     "unknown": "未知",
     "userLabel": "用戶",
-    "contextFailed": "取得日誌上下文失敗：{{message}}"
+    "contextFailed": "取得日誌上下文失敗：{{message}}",
+    "outcome": {
+      "label": "請求結果",
+      "succeeded": "成功的請求",
+      "failed": "失敗的請求"
+    },
+    "retry": {
+      "noStatus": "無回應",
+      "cooldown": "已冷卻",
+      "failed": "失敗",
+      "errorLabel": "錯誤"
+    }
   },
   "login": {
     "codeRequired": "驗證碼不能為空",
@@ -2467,7 +2479,9 @@
         "logsCleared": "{{count}} 條日誌已清理！",
         "selectCleanupTime": "請選擇日誌清理時間",
         "selectedTime": "已選擇：{{time}}",
-        "title": "日誌設定"
+        "title": "日誌設定",
+        "logRelayError": "記錄失敗的請求",
+        "logRelayErrorDescription": "請求在重試後仍失敗時寫一條日誌，記錄客戶端收到的錯誤和嘗試過的每個渠道。本地拒絕的請求（額度不足、參數錯誤等）不記錄。"
       },
       "promptLimits": {
         "title": "輸入限制",
@@ -2493,7 +2507,18 @@
           "label": "額度提醒閾值",
           "placeholder": "低於此額度時將發送郵件提醒用戶"
         },
-        "saveMonitoringSettings": "保存監控設定"
+        "saveMonitoringSettings": "保存監控設定",
+        "channelTestMode": {
+          "label": "定時渠道測試",
+          "description": "「僅恢復」只測試被自動禁用的渠道，通過即重新啟用，不消耗正常渠道的額度；「全部渠道」測試所有未手動禁用的渠道，失敗的按自動禁用規則處理。設定了環境變數 CHANNEL_TEST_FREQUENCY 時，按該間隔測試全部渠道，覆蓋這裏的設定。",
+          "recovery": "僅恢復：只測被自動禁用的渠道",
+          "all": "全部渠道",
+          "off": "關閉"
+        },
+        "channelTestInterval": {
+          "label": "測試間隔（分鐘）",
+          "description": "兩次定時測試之間的間隔，至少 1 分鐘。"
+        }
       },
       "otherSettings": {
         "CFWorkerImageUrl": {

@@ -79,7 +79,6 @@ export function ServerAddressCard({ ctx }) {
   );
 }
 
-
 // 显示 — 货币/额度展示开关与单位额度。
 export function DisplayCard({ ctx }) {
   const { t } = useTranslation();
@@ -324,7 +323,8 @@ export function ChannelAutoCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, setField, toggle, saveKeys, loading, isDirty } = ctx;
   const is = (k) => inputs[k] === 'true';
-  const keys = ['ChannelDisableThreshold', 'DisableChannelKeywords'];
+  const keys = ['ChannelDisableThreshold', 'DisableChannelKeywords', 'ChannelTestMode', 'ChannelTestIntervalMinutes'];
+  const ms = (k) => t(`setting_index.operationSettings.monitoringSettings.${k}`);
 
   return (
     <SettingsCard title={t('setting_index.cards.channelAuto')} highlight="channel-auto">
@@ -349,6 +349,32 @@ export function ChannelAutoCard({ ctx }) {
           checked={is('AutomaticDisableChannelNotifyEnabled')}
           onCheckedChange={() => toggle('AutomaticDisableChannelNotifyEnabled')}
           disabled={loading}
+        />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="ChannelTestMode">{ms('channelTestMode.label')}</Label>
+          <Select value={inputs.ChannelTestMode || 'recovery'} onValueChange={(v) => setField('ChannelTestMode', v)} disabled={loading}>
+            <SelectTrigger id="ChannelTestMode">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recovery">{ms('channelTestMode.recovery')}</SelectItem>
+              <SelectItem value="all">{ms('channelTestMode.all')}</SelectItem>
+              <SelectItem value="off">{ms('channelTestMode.off')}</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">{ms('channelTestMode.description')}</p>
+        </div>
+        <TextRow
+          id="ChannelTestIntervalMinutes"
+          type="number"
+          label={ms('channelTestInterval.label')}
+          value={inputs.ChannelTestIntervalMinutes}
+          onChange={(v) => setField('ChannelTestIntervalMinutes', v)}
+          placeholder="10"
+          description={ms('channelTestInterval.description')}
+          disabled={loading || inputs.ChannelTestMode === 'off'}
         />
       </div>
       <TextRow

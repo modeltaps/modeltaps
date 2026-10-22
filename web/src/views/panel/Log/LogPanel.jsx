@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { API } from 'utils/api';
 import { showError, showSuccess, useIsAdmin } from 'utils/common';
@@ -35,7 +36,7 @@ import { exportLogs } from './logExport';
 
 // ==============================|| PANEL — LOG VIEWER ||============================== //
 // shadcn/Tailwind port of views/Log. Server-side pagination + filters + CSV export.
-// 仅 API 请求明细(log_type 固定 2);账务记录(充值/管理/系统)已迁出到账户流水页。
+// 仅 API 请求明细(成功 log_type 2 / 失败 log_type 5);账务记录(充值/管理/系统)已迁出到账户流水页。
 
 // 默认时间范围:最近 1 天(now-24h ~ now+1h 缓冲),对齐 OpenRouter 默认档位。log_type 固定为 '2'(仅请求明细)。
 const buildDefaultTimeRange = () => ({
@@ -193,6 +194,8 @@ export default function Log() {
     )
   );
   const [timeRange, setTimeRange] = useState(() => buildTimeRangeFromParams(searchParams));
+  // 请求结果:'2' 成功的请求(消费日志),'5' 最终失败的请求(错误日志,含重试链)。
+  const [outcome, setOutcome] = useState(() => (searchParams.get('log_type') === '5' ? '5' : '2'));
   // 当前时间范围档位(触发器徽标显示用)。首次进入(URL 无时间参数)默认最近 1 天;
   // URL 带时间参数时走 detectPreset(仅识别起点稳定的日历区间,相对区间按自定义呈现)。
   const [timePreset, setTimePreset] = useState(() => {
@@ -258,13 +261,13 @@ export default function Log() {
     [isOrgContext, columnVisibility]
   );
 
-  // 组装筛选查询对象:log_type 固定 '2' + 时间范围 + 级联筛选参数(enum 多值数组 / number 标量)。
+  // 组装筛选查询对象:log_type 按请求结果取 '2'(成功)/ '5'(失败) + 时间范围 + 级联筛选参数(enum 多值数组 / number 标量)。
   // 上下文裁剪已由 filterFields 保证(org 只含 member,admin 才含 channel/username/source_ip)。
   const buildFilterQuery = useCallback(() => {
-    const q = { log_type: '2', start_timestamp: timeRange.start_timestamp, end_timestamp: timeRange.end_timestamp };
+    const q = { log_type: outcome, start_timestamp: timeRange.start_timestamp, end_timestamp: timeRange.end_timestamp };
     Object.assign(q, filterStateToParams(filterFields, filterState));
     return q;
-  }, [timeRange, filterFields, filterState]);
+  }, [outcome, timeRange, filterFields, filterState]);
 
   // 直方图与列表共用同一份筛选口径(时间窗/模型/API Key 等),随筛选联动。
   const filterQuery = useMemo(() => buildFilterQuery(), [buildFilterQuery]);
@@ -315,11 +318,13 @@ export default function Log() {
         }
         params.set('start_timestamp', String(timeRange.start_timestamp));
         params.set('end_timestamp', String(timeRange.end_timestamp));
+        if (outcome === '5') params.set('log_type', '5');
+        else params.delete('log_type');
         return params;
       },
       { replace: true }
     );
-  }, [filterState, filterFields, timeRange, setSearchParams]);
+  }, [outcome, filterState, filterFields, timeRange, setSearchParams]);
 
   // T8 衔接点:切换组织/个人上下文后重置筛选并重新拉取(member_id 等过滤跨组织无意义)。
   // 首次挂载跳过,保持个人上下文初始行为与现网一致。
@@ -497,6 +502,21 @@ export default function Log() {
             <TooltipContent>{t('logPage.refreshButton')}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
+        <Select
+          value={outcome}
+          onValueChange={(v) => {
+            setOutcome(v);
+            setPage(0);
+          }}
+        >
+          <SelectTrigger className="h-8 w-auto gap-2" aria-label={t('logPage.outcome.label')}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="2">{t('logPage.outcome.succeeded')}</SelectItem>
+            <SelectItem value="5">{t('logPage.outcome.failed')}</SelectItem>
+          </SelectContent>
+        </Select>
         <FilterBar
           fields={filterFields}
           state={filterState}

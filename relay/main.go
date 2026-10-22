@@ -71,6 +71,7 @@ func Relay(c *gin.Context) {
 
 	channel := relay.getProvider().GetChannel()
 	notifyChannelRelayError(c.Request.Context(), c, channel, apiErr)
+	relay_util.RecordRelayAttempt(c, channel.Id, apiErr)
 
 	retryTimes := config.RetryTimes
 	// 在重试开始前计算并缓存总渠道数，避免重试过程中动态变化
@@ -119,6 +120,7 @@ func Relay(c *gin.Context) {
 	for i := actualRetryTimes; i > 0; i-- {
 		// 冻结通道并记录是否应用了冷却
 		cooldownApplied := shouldCooldowns(c, channel, apiErr)
+		relay_util.MarkLastRelayAttemptCooldown(c, cooldownApplied)
 
 		if time.Since(startTime) > timeout {
 			logger.LogError(c.Request.Context(), fmt.Sprintf("retry_timeout model=%s channel_id=%d elapsed_time=%.2fs timeout=%.2fs",
@@ -170,6 +172,7 @@ func Relay(c *gin.Context) {
 			modelName, channel.Id, attemptCount, actualRetryTimes, apiErr.StatusCode, c.GetString(config.GinUpstreamRequestIdKey), apiErr.OpenAIError.Type, utils.TruncateBase64InMessage(apiErr.OpenAIError.Message)))
 
 		notifyChannelRelayError(c.Request.Context(), c, channel, apiErr)
+		relay_util.RecordRelayAttempt(c, channel.Id, apiErr)
 		if done || !shouldRetry(c, apiErr, channel.Type) {
 			logger.LogError(c.Request.Context(), fmt.Sprintf("retry_stop_condition model=%s channel_id=%d attempt=%d/%d done=%t should_retry=%t",
 				modelName, channel.Id, attemptCount, actualRetryTimes, done, shouldRetry(c, apiErr, channel.Type)))
@@ -194,6 +197,8 @@ func Relay(c *gin.Context) {
 		if c.GetInt("channel_type") == 0 && channel != nil {
 			c.Set("channel_type", channel.Type)
 		}
+
+		recordRelayErrorLog(c, relay, channel, apiErr, breakReason)
 
 		if heartbeat != nil && heartbeat.IsSafeWriteStream() {
 			relay.HandleStreamError(apiErr)
@@ -451,4 +456,35 @@ func applyPreMappingBeforeRequest(c *gin.Context) {
 	if modifiedBodyBytes, err := json.Marshal(modifiedRequestMap); err == nil {
 		c.Set(config.GinRequestBodyKey, modifiedBodyBytes)
 	}
+}
+
+// recordRelayErrorLog 为最终失败的请求写一条错误日志：content 是客户端收到的状态码与文案
+// （经 FilterOpenAIErr 坍缩与脱敏，与响应一致），metadata 带重试链与退出原因。
+// 本地拒绝（参数、余额、上下文超限等）不记录。
+func recordRelayErrorLog(c *gin.Context, relay RelayBaseInterface, channel *model.Channel, apiErr *types.OpenAIErrorWithStatusCode, breakReason string) {
+	if !config.LogRelayErrorEnabled || apiErr == nil || (apiErr.LocalError && apiErr.OpenAIError.Type != "upstream_unavailable") {
+		return
+	}
+	clientErr := FilterOpenAIErr(c, apiErr)
+	metadata := map[string]any{
+		"error_status": clientErr.StatusCode,
+		"retry_reason": breakReason,
+	}
+	if attempts := relay_util.RelayAttempts(c); len(attempts) > 0 {
+		metadata["retry_attempts"] = attempts
+	}
+	// 组织令牌记账主体是影子账户，与消费日志一样记下实际成员，组织日志按成员筛选时能命中。
+	if createdBy := c.GetInt("token_created_by"); createdBy > 0 && createdBy != c.GetInt("id") {
+		metadata["org_member_id"] = createdBy
+	}
+	if code, ok := clientErr.OpenAIError.Code.(string); ok && code != "" {
+		metadata["error_code"] = code
+	}
+	channelId := 0
+	if channel != nil {
+		channelId = channel.Id
+	}
+	requestTime := int(time.Since(c.GetTime("requestStartTime")).Milliseconds())
+	model.RecordRelayErrorLog(c.Request.Context(), c.GetInt("id"), channelId, relay.getOriginalModel(), c.GetString("token_name"),
+		fmt.Sprintf("%d %s", clientErr.StatusCode, clientErr.OpenAIError.Message), requestTime, relay.IsStream(), metadata, c.ClientIP())
 }

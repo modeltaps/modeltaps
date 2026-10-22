@@ -61,7 +61,7 @@ LOGS_FILENAME="modeltaps.log"
    - 例：`NODE_TYPE=slave`
 8. `CHANNEL_UPDATE_FREQUENCY`：設定するとチャネルの残高を定期的に更新します。単位は分で、未設定の場合は更新しません。
    - 例：`CHANNEL_UPDATE_FREQUENCY=1440`
-9. `CHANNEL_TEST_FREQUENCY`：設定するとチャネルを定期的に検査します。単位は分で、未設定の場合は検査しません。
+9. `CHANNEL_TEST_FREQUENCY`：設定すると、この間隔（分）ですべてのチャネルをテストし、管理画面「システム設定 → ゲートウェイ動作 → チャネルの自動無効化と復帰」の定期テスト設定より優先されます。未設定の場合は管理画面の設定に従い、既定では 10 分ごとに自動無効化されたチャネルだけをテストし、合格すれば再度有効にします。
    - 例：`CHANNEL_TEST_FREQUENCY=1440`
 10. `POLLING_INTERVAL`：チャネル残高の一括更新および利用可否テスト時のリクエスト間隔。単位は秒で、既定では間隔を設けません。
     - 例：`POLLING_INTERVAL=5`
