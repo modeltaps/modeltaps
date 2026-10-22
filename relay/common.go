@@ -93,24 +93,15 @@ func CheckLimitModel(c *gin.Context, modelName string) error {
 		return nil
 	}
 
-	// 检查模型列表是否为空
+	// 开启但列表为空:写入归一与迁移后不再产生,只可能来自迁移前的令牌缓存,按历史语义拒绝全部
 	if len(setting.Limits.LimitModelSetting.Models) == 0 {
-		// Empty model list means no models are allowed
 		// 包上 model_not_found 哨兵：令牌无权使用属配置层错误，返回 404 而非坍缩成 503「上游繁忙」（SDK 会无限重试）
 		return fmt.Errorf("%w: no available models configured for current token", errModelNotFoundSentinel)
 	}
 
-	// Check if modelName is in the allowed models list
-	// 别名与主名同等生效：白名单写别名、请求写主名（或反之）都应放行，故两侧各解析到主名后再比。
-	canonical, _ := model.ResolveCanonicalModel(modelName)
-	for _, allowedModel := range setting.Limits.LimitModelSetting.Models {
-		if allowedModel == modelName {
-			// Found matching model, allow usage
-			return nil
-		}
-		if allowedCanonical, _ := model.ResolveCanonicalModel(allowedModel); allowedCanonical == canonical {
-			return nil
-		}
+	// 匹配规则与组织 / 成员白名单统一(不区分大小写、* 前缀、别名与主名同等生效)
+	if model.ModelAllowlistPermits(setting.Limits.LimitModelSetting.Models, modelName) {
+		return nil
 	}
 
 	// modelName is not in the allowed models list

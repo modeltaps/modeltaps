@@ -305,6 +305,7 @@ func SetApiRouter(router *gin.Engine) {
 			tokenRoute.GET("/playground", controller.GetPlaygroundToken)
 			tokenRoute.GET("/", controller.GetUserTokensList)
 			tokenRoute.GET("/:id", controller.GetToken)
+			tokenRoute.GET("/:id/models", controller.GetTokenModels)
 			tokenRoute.POST("/", controller.AddToken)
 			tokenRoute.PUT("/", controller.UpdateToken)
 			tokenRoute.DELETE("/:id", controller.DeleteToken)

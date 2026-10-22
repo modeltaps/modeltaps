@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
+import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetBody, SheetFooter } from '@/components/ui/sheet';
 import { Alert } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -69,6 +71,65 @@ function FeatureToggle({ label, description, checked, onCheckedChange, children 
   );
 }
 
+// AvailableModels 已保存 Key 的实际可用模型(分组 ∩ 模型限制 ∩ 组织成员白名单,与 /v1/models 同口径)。
+// 组织上下文下 /api/token/* 自动改写为 /api/org/:id/token/*。
+const AVAILABLE_PREVIEW = 12;
+
+function AvailableModels({ tokenId, open }) {
+  const { t } = useTranslation();
+  const [models, setModels] = useState(null);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!open || !tokenId) return undefined;
+    let alive = true;
+    setModels(null);
+    setExpanded(false);
+    API.get(`/api/token/${tokenId}/models`)
+      .then((res) => {
+        if (!alive) return;
+        const { success, data } = res.data;
+        setModels(success && Array.isArray(data) ? data : []);
+      })
+      .catch(() => alive && setModels([]));
+    return () => {
+      alive = false;
+    };
+  }, [open, tokenId]);
+
+  if (!tokenId) return null;
+  const shown = models && !expanded ? models.slice(0, AVAILABLE_PREVIEW) : models;
+
+  return (
+    <div className="space-y-2" data-testid="token-available-models">
+      <Label className="font-medium">{t('token_index.availableModels', { count: models?.length ?? 0 })}</Label>
+      <p className="text-xs text-muted-foreground">{t('token_index.availableModelsHint')}</p>
+      {models === null ? (
+        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+      ) : models.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t('token_index.availableModelsNone')}</p>
+      ) : (
+        <div className="flex flex-wrap gap-1.5">
+          {shown.map((m) => (
+            <Badge key={m} variant="secondary" className="font-mono text-[11px]">
+              {m}
+            </Badge>
+          ))}
+          {models.length > AVAILABLE_PREVIEW && (
+            <button type="button" className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setExpanded((v) => !v)}>
+              {expanded
+                ? t('token_index.availableModelsLess')
+                : t('token_index.availableModelsMore', { count: models.length - AVAILABLE_PREVIEW })}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+AvailableModels.propTypes = { tokenId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]), open: PropTypes.bool };
+
 const RESET_PERIODS = ['__none', 'daily', 'weekly', 'monthly'];
 
 function ToggleRow({ label, checked, onCheckedChange }) {
@@ -98,7 +159,6 @@ export default function TokenSheet({
   const [nameError, setNameError] = useState('');
   const [quotaError, setQuotaError] = useState('');
   const [periodLimitError, setPeriodLimitError] = useState('');
-  const [modelLimitError, setModelLimitError] = useState('');
 
   const setField = (path, value) => {
     setValues((prev) => {
@@ -118,7 +178,6 @@ export default function TokenSheet({
     setNameError('');
     setQuotaError('');
     setPeriodLimitError('');
-    setModelLimitError('');
     API.get('/api/available_model')
       .then((res) => {
         const { success, data } = res.data;
@@ -191,12 +250,6 @@ export default function TokenSheet({
     // 选了周期则额度即为每周期上限，必须 > 0
     if (period && (quotaEmpty || quotaVal <= 0)) {
       setPeriodLimitError(t('token_index.quotaResetLimitRequired'));
-      return;
-    }
-    const modelLimit = values.setting?.limits?.limit_model_setting;
-    // 开启模型限制但一个模型都没选时，服务端会拒绝全部请求，保存前拦下
-    if (modelLimit?.enabled && !(modelLimit.models?.length > 0)) {
-      setModelLimitError(t('token_index.limitModelsRequired'));
       return;
     }
     setSaving(true);
@@ -431,20 +484,21 @@ export default function TokenSheet({
                 onCheckedChange={(c) => {
                   setField('setting.limits.limit_model_setting.enabled', c);
                   if (!c) setField('setting.limits.limit_model_setting.models', []);
-                  setModelLimitError('');
                 }}
               >
                 <ModelLimitSelector
                   models={models}
                   value={values.setting.limits.limit_model_setting.models}
-                  onChange={(ids) => {
-                    setField('setting.limits.limit_model_setting.models', ids);
-                    setModelLimitError('');
-                  }}
+                  onChange={(ids) => setField('setting.limits.limit_model_setting.models', ids)}
                   getGroupLabel={getGroupLabel}
                 />
-                {modelLimitError && <p className="text-sm text-destructive">{modelLimitError}</p>}
+                {/* 列表为空即不限制（服务端写入时归一），与文档口径一致 */}
+                {!(values.setting.limits.limit_model_setting.models?.length > 0) && (
+                  <p className="text-xs text-muted-foreground">{t('token_index.limitModelsEmptyHint')}</p>
+                )}
               </FeatureToggle>
+
+              {values.is_edit && <AvailableModels tokenId={tokenId} open={open} />}
 
               <FeatureToggle
                 label={t('token_index.limits_ip_whitelist_switch')}
