@@ -53,6 +53,10 @@ type Channel struct {
 	// Need2ResponseModels adjusts which chat models go to the Responses API on this channel
 	// (see ShouldUseResponsesForModel). Empty means the built-in list.
 	Need2ResponseModels *string `json:"need2response_models" form:"need2response_models" gorm:"type:text"`
+	// AllowServiceTier forwards request fields that select a pricier upstream tier (OpenAI
+	// service_tier priority / fast / ultrafast, Claude speed fast and inference_geo us).
+	// Off by default: the gateway drops them so a client cannot raise the upstream price.
+	AllowServiceTier bool `json:"allow_service_tier" form:"allow_service_tier" gorm:"default:false"`
 
 	DisabledStream *datatypes.JSONSlice[string] `json:"disabled_stream,omitempty" gorm:"type:json"`
 

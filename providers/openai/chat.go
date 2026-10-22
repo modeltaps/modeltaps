@@ -98,6 +98,7 @@ func (p *OpenAIProvider) CreateChatCompletion(request *types.ChatCompletionReque
 	}
 
 	*p.Usage = *response.Usage
+	p.Usage.ServiceTier = response.ServiceTier
 
 	// Anthropic 缓存读取计费修正：把 cached_tokens 归入 cached_read_tokens 桶(0.1x)。
 	// 严格按模型名门控，非 Anthropic 模型的原生 cached_tokens 计费不受影响。
@@ -233,6 +234,11 @@ func (h *OpenAIStreamHandler) HandlerChatStream(rawLine *[]byte, dataChan chan s
 		h.GenerationIDHandler(openaiResponse.ID)
 	}
 
+	// 每个分片都带 service_tier（上游实际处理档位），下方整体覆盖 Usage 时同 FinishReason 一样保留。
+	if openaiResponse.ServiceTier != "" {
+		h.Usage.ServiceTier = openaiResponse.ServiceTier
+	}
+
 	if openaiResponse.Usage != nil {
 		if openaiResponse.Usage.CompletionTokens > 0 {
 			if h.UsageHandler != nil && h.UsageHandler(openaiResponse.Usage) {
@@ -243,9 +249,11 @@ func (h *OpenAIStreamHandler) HandlerChatStream(rawLine *[]byte, dataChan chan s
 			// FinishReason 同理:finish 分片常先于尾部 usage 分片到达,覆盖时需保留。
 			accumulated := h.Usage.TextBuilder.String()
 			finishReason := h.Usage.FinishReason
+			serviceTier := h.Usage.ServiceTier
 			*h.Usage = *openaiResponse.Usage
 			h.Usage.TextBuilder.WriteString(accumulated)
 			h.Usage.FinishReason = finishReason
+			h.Usage.ServiceTier = serviceTier
 
 			if h.ExtraBilling != nil {
 				h.Usage.ExtraBilling = h.ExtraBilling
@@ -264,9 +272,11 @@ func (h *OpenAIStreamHandler) HandlerChatStream(rawLine *[]byte, dataChan chan s
 				}
 				accumulated := h.Usage.TextBuilder.String()
 				finishReason := h.Usage.FinishReason
+				serviceTier := h.Usage.ServiceTier
 				*h.Usage = *openaiResponse.Choices[0].Usage
 				h.Usage.TextBuilder.WriteString(accumulated)
 				h.Usage.FinishReason = finishReason
+				h.Usage.ServiceTier = serviceTier
 				if h.ExtraBilling != nil {
 					h.Usage.ExtraBilling = h.ExtraBilling
 				}

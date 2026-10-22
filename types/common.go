@@ -26,6 +26,37 @@ type Usage struct {
 	// FinishReason 保存上游返回的原始 finish_reason（流式取最后一个非空值），不参与 JSON
 	// 序列化；由 relay 消费链在 GetLogMeta 归一后写入日志 metadata（native_finish_reason）。
 	FinishReason string `json:"-"`
+
+	// ServiceTier is the processing tier the upstream reports it billed at: OpenAI
+	// service_tier (priority / fast / ultrafast / flex / default) or "fast" for a
+	// Claude usage.speed of fast. InferenceGeo is the Claude usage.inference_geo.
+	// Neither is serialized; billing reads them through TierMultiplier.
+	ServiceTier  string `json:"-"`
+	InferenceGeo string `json:"-"`
+}
+
+// TierMultiplier returns the factor the upstream applies to every token price for
+// the reported processing tier and inference geography. Unknown or standard tiers
+// return 1. Sources (checked 2026-10-22): OpenAI Fast mode is 2x and Ultrafast 6x
+// the Standard rates, Flex is billed at Batch rates (0.5x); Claude fast mode is 2x
+// and US-only inference is 1.1x.
+func (u *Usage) TierMultiplier() float64 {
+	if u == nil {
+		return 1
+	}
+	multiplier := 1.0
+	switch strings.ToLower(u.ServiceTier) {
+	case "priority", "fast":
+		multiplier = 2
+	case "ultrafast":
+		multiplier = 6
+	case "flex":
+		multiplier = 0.5
+	}
+	if strings.EqualFold(u.InferenceGeo, "us") {
+		multiplier *= 1.1
+	}
+	return multiplier
 }
 
 type ExtraBilling struct {

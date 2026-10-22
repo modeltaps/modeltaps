@@ -107,8 +107,10 @@ func (q *Quota) GetTotalQuotaByUsage(usage *types.Usage) (quota int) {
 	promptTokens, completionTokens := q.getComputeTokensByUsage(usage)
 	// 长上下文分档：按原始输入 token（未经缓存折算）判断档位，超阈值时整次请求套用分档倍率。
 	inRatio, outRatio := q.price.GetLongContextMultiplier(usage.PromptTokens)
+	// 上游按处理档位（OpenAI fast / flex、Claude fast、US 区推理）整体调价时，token 部分同比例计费。
+	tier := usage.TierMultiplier()
 	q.GetExtraBillingData(usage.ExtraBilling)
-	return q.calcQuota(promptTokens, completionTokens, q.inputRatio*inRatio, q.outputRatio*outRatio, q.groupRatio)
+	return q.calcQuota(promptTokens, completionTokens, q.inputRatio*inRatio*tier, q.outputRatio*outRatio*tier, q.groupRatio)
 }
 
 // GetCostQuotaByUsage 按渠道成本倍率计算本次请求的上游成本配额，仅用于成本/利润统计，不参与扣费。
@@ -119,8 +121,9 @@ func (q *Quota) GetCostQuotaByUsage(usage *types.Usage) (costQuota int) {
 	}
 	promptTokens, completionTokens := q.getComputeTokensByUsage(usage)
 	inRatio, outRatio := q.price.GetLongContextMultiplier(usage.PromptTokens)
+	tier := usage.TierMultiplier()
 	q.GetExtraBillingData(usage.ExtraBilling)
-	return q.calcQuota(promptTokens, completionTokens, q.price.GetInput()*q.costRatio*inRatio, q.price.GetOutput()*q.costRatio*outRatio, q.costRatio)
+	return q.calcQuota(promptTokens, completionTokens, q.price.GetInput()*q.costRatio*inRatio*tier, q.price.GetOutput()*q.costRatio*outRatio*tier, q.costRatio)
 }
 
 type ExtraBillingData struct {

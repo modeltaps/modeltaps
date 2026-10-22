@@ -62,6 +62,7 @@ const EMPTY = {
   compatible_response: false,
   allow_extra_body: false,
   pass_through_body: false,
+  allow_service_tier: false,
   unified_request_response_model: false
 };
 
@@ -409,6 +410,7 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
         compatible_response: !!data.compatible_response,
         allow_extra_body: !!data.allow_extra_body,
         pass_through_body: !!data.pass_through_body,
+        allow_service_tier: !!data.allow_service_tier,
         unified_request_response_model: !!data.unified_request_response_model
       });
       setHasTag(!!data.tag);
@@ -840,6 +842,12 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
             <ToggleRow control={control} name="compatible_response" label={configText(t, defaultConfig.inputLabel.compatible_response)} />
             <ToggleRow control={control} name="allow_extra_body" label={configText(t, defaultConfig.inputLabel.allow_extra_body)} />
             <ToggleRow control={control} name="pass_through_body" label={configText(t, defaultConfig.inputLabel.pass_through_body)} />
+            <ToggleRow
+              control={control}
+              name="allow_service_tier"
+              label={configText(t, defaultConfig.inputLabel.allow_service_tier)}
+              help={configText(t, defaultConfig.prompt.allow_service_tier)}
+            />
             <ToggleRow
               control={control}
               name="unified_request_response_model"

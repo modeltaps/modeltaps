@@ -168,6 +168,12 @@ type Usage struct {
 	CacheCreation            *CacheCreationUsage `json:"cache_creation,omitempty"`
 
 	ServerToolUse *ServerToolUse `json:"server_tool_use,omitempty"`
+
+	// Speed / InferenceGeo / ServiceTier report how the upstream processed the request
+	// (fast mode, US-only inference, Priority Tier); fast and US-only change the price.
+	Speed        string `json:"speed,omitempty"`
+	InferenceGeo string `json:"inference_geo,omitempty"`
+	ServiceTier  string `json:"service_tier,omitempty"`
 }
 
 // CacheCreationUsage 对应 Anthropic usage.cache_creation 嵌套对象。

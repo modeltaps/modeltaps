@@ -352,7 +352,7 @@ func (p *OpenAIProvider) patchPassThroughBody(modelName string, request any) ([]
 		}
 	}
 
-	return out, true
+	return p.StripPremiumTierFields(out, base.OpenAIPremiumTierRules), true
 }
 
 // 修改GetRequestTextBody函数中的对应部分
@@ -399,6 +399,7 @@ func (p *OpenAIProvider) GetRequestTextBody(relayMode int, ModelName string, req
 		// 如果允许额外字段透传，从原始请求中获取额外字段
 		if p.Channel.AllowExtraBody {
 			requestMap = p.mergeExtraBodyFromRawRequest(requestMap)
+			p.StripPremiumTierMap(requestMap, base.OpenAIPremiumTierRules)
 		}
 
 		// 处理自定义额外参数

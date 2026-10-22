@@ -85,6 +85,16 @@ func ClaudeUsageMerge(usage *Usage, mergeUsage *Usage) {
 	if mergeUsage.CacheReadInputTokens > usage.CacheReadInputTokens {
 		usage.CacheReadInputTokens = mergeUsage.CacheReadInputTokens
 	}
+	// 流式只在 message_start 带档位字段，message_delta 缺省时保留先前的值。
+	if usage.Speed == "" {
+		usage.Speed = mergeUsage.Speed
+	}
+	if usage.InferenceGeo == "" {
+		usage.InferenceGeo = mergeUsage.InferenceGeo
+	}
+	if usage.ServiceTier == "" {
+		usage.ServiceTier = mergeUsage.ServiceTier
+	}
 }
 
 func ClaudeUsageToOpenaiUsage(cUsage *Usage, usage *types.Usage) bool {
@@ -116,6 +126,14 @@ func ClaudeUsageToOpenaiUsage(cUsage *Usage, usage *types.Usage) bool {
 	usage.PromptTokens = cUsage.InputTokens + cacheCreationTokens + cUsage.CacheReadInputTokens
 	usage.CompletionTokens = cUsage.OutputTokens
 	usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+
+	// Priority Tier 是预购容量，不按 token 加价，只有 fast 与 US 区推理改变单价。
+	if strings.EqualFold(cUsage.Speed, "fast") {
+		usage.ServiceTier = "fast"
+	}
+	if cUsage.InferenceGeo != "" {
+		usage.InferenceGeo = cUsage.InferenceGeo
+	}
 
 	return true
 }

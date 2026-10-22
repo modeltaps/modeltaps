@@ -72,6 +72,7 @@ func (p *OpenAIProvider) CreateResponses(request *types.OpenAIResponsesRequest) 
 	}
 
 	*p.Usage = *response.Usage.ToOpenAIUsage()
+	p.Usage.ServiceTier = response.ServiceTier
 
 	getResponsesExtraBilling(response, p.Usage)
 
@@ -188,7 +189,7 @@ func (p *OpenAIProvider) patchResponsesRequestBody(request *types.OpenAIResponse
 		out = p.ResponsesBodyPatch(request.Model, out)
 	}
 
-	return out, true
+	return p.StripPremiumTierFields(out, base.OpenAIPremiumTierRules), true
 }
 
 // CreateResponsesCompaction 处理 POST /v1/responses/compact。
@@ -233,6 +234,7 @@ func (p *OpenAIProvider) CreateResponsesCompaction(request *types.OpenAIResponse
 	}
 
 	*p.Usage = *response.Usage.ToOpenAIUsage()
+	p.Usage.ServiceTier = response.ServiceTier
 
 	// 暂存上游原始字节，由 relay 层字节透传，保留未知字段 / 字段顺序。
 	// 有别名映射需改 model 时，在原始字节上就地 sjson 改写顶层 model（不改字段顺序 / 不丢未知字段）；

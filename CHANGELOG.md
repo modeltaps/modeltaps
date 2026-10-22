@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Request fields that move the upstream to a pricier processing tier are no longer forwarded by
+  default: OpenAI `service_tier` `priority` / `fast` / `ultrafast` on Chat Completions and Responses,
+  and Claude `speed: "fast"` and `inference_geo: "us"` on the native Messages pass-through. The
+  upstream charged the higher rate while the request was billed at the standard price. A new
+  per-channel switch, "Allow premium processing tiers", forwards them again.
+- Requests are billed at the processing tier the upstream reports: OpenAI `service_tier` (Fast /
+  Priority 2x, Ultrafast 6x, Flex 0.5x), Claude `usage.speed` fast (2x) and `usage.inference_geo`
+  `us` (1.1x). The tier and its ratio are recorded in the log details; the upstream cost follows
+  the same factor.
+
 - Claude-protocol requests (`/v1/messages`, as sent by Claude Code) to OpenRouter and Vercel AI
   Gateway channels are forwarded to the gateways' Anthropic-compatible endpoints instead of being
   converted to Chat Completions and back. The conversion dropped the client's `cache_control`
