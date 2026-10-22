@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/modeltaps/modeltaps/common"
@@ -66,30 +65,9 @@ func (g *OrgMemberGuardrail) BudgetExceeded(now time.Time) bool {
 	return g.BudgetStart >= ps.Unix() && g.BudgetUsed >= g.Budget.Limit
 }
 
-// ModelAllowed 白名单匹配:空=不限制;不区分大小写;支持 "*" 后缀做前缀匹配(如 gpt-4*)
+// ModelAllowed 成员生效白名单匹配,规则见 ModelAllowlistPermits(空=不限制)
 func (g *OrgMemberGuardrail) ModelAllowed(modelName string) bool {
-	return orgModelWhitelistAllowed(g.ModelWhitelist, modelName)
-}
-
-func orgModelWhitelistAllowed(whitelist []string, modelName string) bool {
-	if len(whitelist) == 0 {
-		return true
-	}
-	name := strings.ToLower(strings.TrimSpace(modelName))
-	for _, item := range whitelist {
-		item = strings.ToLower(strings.TrimSpace(item))
-		if item == "" {
-			continue
-		}
-		if strings.HasSuffix(item, "*") {
-			if strings.HasPrefix(name, strings.TrimSuffix(item, "*")) {
-				return true
-			}
-		} else if item == name {
-			return true
-		}
-	}
-	return false
+	return ModelAllowlistPermits(g.ModelWhitelist, modelName)
 }
 
 func buildOrgMemberGuardrail(org *Organization, member *OrganizationMember) *OrgMemberGuardrail {

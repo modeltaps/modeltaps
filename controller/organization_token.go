@@ -89,6 +89,21 @@ func GetOrgToken(c *gin.Context) {
 	})
 }
 
+// GetOrgTokenModels 组织令牌实际可调用的模型(含成员白名单),可见范围同 GetOrgToken
+func GetOrgTokenModels(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("token_id"))
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	token, err := getOrgTokenForOperator(c, id)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	respondTokenModels(c, token)
+}
+
 // AddOrgToken 组织上下文创建令牌:user_id 指向影子账户,created_by 记录实际创建成员
 func AddOrgToken(c *gin.Context) {
 	org, _ := getOrgFromContext(c)

@@ -73,6 +73,34 @@ func GetTokensListByAdmin(c *gin.Context) {
 	})
 }
 
+// GetTokenModels 返回令牌实际可调用的模型(口径同 /v1/models),供 Key 详情展示
+func GetTokenModels(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	token, err := model.GetTokenByIds(id, c.GetInt("id"))
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	respondTokenModels(c, token)
+}
+
+func respondTokenModels(c *gin.Context, token *model.Token) {
+	models, err := model.TokenAvailableModels(token)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    models,
+	})
+}
+
 func GetToken(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	userId := c.GetInt("id")
