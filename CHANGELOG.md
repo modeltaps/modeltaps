@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Model lists (`/v1/models`, `/claude/v1/models`, Gemini `models`) for organization API keys only
+  show the models the member's allowlist permits, so clients and coding agents no longer offer
+  models that are then rejected. An API key with the model limit on and no model selected now lists
+  no models, matching the requests it rejects, and the key form no longer saves that combination.
+- Requests for a model the API key may not use return `404 model_not_found` instead of a `503`
+  "upstream at capacity" error that SDKs keep retrying.
 - Claude-protocol requests (`/v1/messages`, as sent by Claude Code) to OpenRouter and Vercel AI
   Gateway channels are forwarded to the gateways' Anthropic-compatible endpoints instead of being
   converted to Chat Completions and back. The conversion dropped the client's `cache_control`

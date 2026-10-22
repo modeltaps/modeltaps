@@ -1185,6 +1185,7 @@
     "quotaReset_weekly": "每周",
     "quotaReset_monthly": "每月",
     "quotaResetLimitRequired": "选择重置周期时必须填写大于 0 的额度",
+    "limitModelsRequired": "开启模型限制后至少选择一个模型，否则该 API Key 的所有请求都会被拒绝",
     "quotaResetHint": "额度在周期边界的 0 点重置；不设周期则用完即停用",
     "quotaResetNext": "下次重置",
     "quotaResetTimezoneNote": "当前按 {{tz}} 时区、{{weekStart}}为周起点重置。",

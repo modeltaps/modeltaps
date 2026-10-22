@@ -3,6 +3,7 @@ package relay
 import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/providers/azureSpeech"
@@ -11,6 +12,7 @@ import (
 	"github.com/modeltaps/modeltaps/providers/minimax"
 	"github.com/modeltaps/modeltaps/providers/openai"
 	"github.com/modeltaps/modeltaps/types"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -56,7 +58,8 @@ func filterModelsByTokenLimit(c *gin.Context, models []string) []string {
 	}
 
 	if len(setting.Limits.LimitModelSetting.Models) == 0 {
-		return models
+		// 开启限制但列表为空时请求一律被拒（CheckLimitModel），列表口径与之一致
+		return []string{}
 	}
 
 	// 如果启用了模型限制，只返回限制的模型列表
@@ -83,6 +86,39 @@ func filterModelsByTokenLimit(c *gin.Context, models []string) []string {
 	}
 
 	return filteredModels
+}
+
+// cacheGetOrgMemberGuardrailFn 测试注入点：列表过滤加载组织成员守护数据的 model 层入口
+var cacheGetOrgMemberGuardrailFn = model.CacheGetOrgMemberGuardrail
+
+// errOrgGuardrailUnavailable 守护数据加载失败时列表接口拒绝返回（fail-closed，与入场校验一致）
+var errOrgGuardrailUnavailable = errors.New("organization member guardrail is temporarily unavailable, please retry")
+
+// filterModelsByOrgGuardrail 组织令牌按成员生效白名单（成员覆盖，空则组织缺省）过滤模型列表，
+// 匹配规则与入场校验 checkOrgMemberGuardrails 同源，避免列出调用时会被拒绝的模型。个人令牌原样返回。
+func filterModelsByOrgGuardrail(c *gin.Context, models []string) ([]string, error) {
+	userId := c.GetInt("id")
+	createdBy := c.GetInt("token_created_by")
+	if createdBy <= 0 || createdBy == userId {
+		return models, nil
+	}
+	guardrail, err := cacheGetOrgMemberGuardrailFn(userId, createdBy)
+	if err != nil {
+		logger.SysError(fmt.Sprintf("failed to load org member guardrail for model list (shadow=%d, member=%d): %s", userId, createdBy, err.Error()))
+		return nil, errOrgGuardrailUnavailable
+	}
+	filtered := make([]string, 0, len(models))
+	for _, modelName := range models {
+		if guardrail.ModelAllowed(modelName) {
+			filtered = append(filtered, modelName)
+		}
+	}
+	return filtered, nil
+}
+
+// filterModelsByTokenScope 依次套用令牌模型限制与组织成员白名单，三个列表接口共用。
+func filterModelsByTokenScope(c *gin.Context, models []string) ([]string, error) {
+	return filterModelsByOrgGuardrail(c, filterModelsByTokenLimit(c, models))
 }
 
 // filterModelsByCatalog 按目录规则收敛公开列表：别名行与被隐藏的模型不出现。
@@ -140,13 +176,18 @@ func ListModelsByToken(c *gin.Context) {
 	}
 	sort.Strings(models)
 
-	// 根据令牌的模型限制过滤模型列表
-	models = filterModelsByTokenLimit(c, models)
+	// 根据令牌的模型限制与组织成员白名单过滤模型列表
+	models, err = filterModelsByTokenScope(c, models)
+	if err != nil {
+		common.AbortWithMessage(c, http.StatusServiceUnavailable, err.Error())
+		return
+	}
 
 	// 按目录规则收敛：去掉别名与被隐藏的模型
 	models = filterModelsByCatalog(models)
 
-	var groupOpenAIModels []*OpenAIModels
+	// 空列表也要编码为 []，客户端按数组解析 data
+	groupOpenAIModels := make([]*OpenAIModels, 0, len(models))
 	for _, modelName := range models {
 		groupOpenAIModels = append(groupOpenAIModels, getOpenAIModelWithName(modelName))
 	}
@@ -189,8 +230,12 @@ func ListGeminiModelsByToken(c *gin.Context) {
 	}
 	sort.Strings(models)
 
-	// 根据令牌的模型限制过滤模型列表
-	models = filterModelsByTokenLimit(c, models)
+	// 根据令牌的模型限制与组织成员白名单过滤模型列表
+	models, err = filterModelsByTokenScope(c, models)
+	if err != nil {
+		common.AbortWithMessage(c, http.StatusServiceUnavailable, err.Error())
+		return
+	}
 
 	// 只返回 Gemini 协议实际可路由的模型（存在对应渠道类型），避免前端选中无渠道的模型渲染出实跑 404 的命令
 	models = filterModelsByChannelType(groupName, models, AllowGeminiChannelType)
@@ -231,8 +276,12 @@ func ListClaudeModelsByToken(c *gin.Context) {
 	}
 	sort.Strings(models)
 
-	// 根据令牌的模型限制过滤模型列表
-	models = filterModelsByTokenLimit(c, models)
+	// 根据令牌的模型限制与组织成员白名单过滤模型列表
+	models, err = filterModelsByTokenScope(c, models)
+	if err != nil {
+		common.AbortWithMessage(c, http.StatusServiceUnavailable, err.Error())
+		return
+	}
 
 	// 只返回 Claude 协议实际可路由的模型（存在对应渠道类型），避免前端选中无渠道的模型渲染出实跑 404 的命令
 	models = filterModelsByChannelType(groupName, models, AllowChannelType)
