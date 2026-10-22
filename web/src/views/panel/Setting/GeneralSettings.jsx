@@ -407,8 +407,9 @@ export function ChannelAutoCard({ ctx }) {
 // 计费规则 — 空回复计费与近似计费。
 export function BillingRulesCard({ ctx }) {
   const { t } = useTranslation();
-  const { inputs, toggle, loading } = ctx;
+  const { inputs, toggle, setField, saveKeys, isDirty, loading } = ctx;
   const is = (k) => inputs[k] === 'true';
+  const ps = (k) => t(`setting_index.operationSettings.generalSettings.priceSyncAutoApply.${k}`);
 
   return (
     <SettingsCard title={t('setting_index.cards.billingRules')} highlight="billing-rules">
@@ -428,6 +429,27 @@ export function BillingRulesCard({ ctx }) {
           disabled={loading}
         />
       </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="PriceSyncAutoApply">{ps('label')}</Label>
+        <Select
+          value={inputs.PriceSyncAutoApply || 'increases'}
+          onValueChange={(v) => setField('PriceSyncAutoApply', v)}
+          disabled={loading}
+        >
+          <SelectTrigger id="PriceSyncAutoApply" className="sm:w-80">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="increases">{ps('increases')}</SelectItem>
+            <SelectItem value="all">{ps('all')}</SelectItem>
+            <SelectItem value="none">{ps('none')}</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">{ps('description')}</p>
+      </div>
+      <SaveButton loading={loading} disabled={!isDirty(['PriceSyncAutoApply'])} onClick={() => saveKeys(['PriceSyncAutoApply'])}>
+        {t('common.save')}
+      </SaveButton>
     </SettingsCard>
   );
 }

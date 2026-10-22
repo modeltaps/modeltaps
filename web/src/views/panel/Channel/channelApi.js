@@ -170,6 +170,27 @@ export async function syncChannelPricing(channel) {
   };
 }
 
+// Previews a channel price sync: per-model changes against the price table for the
+// channel's models, and user groups priced below the channel's cost ratio. Writes nothing.
+export async function previewChannelPricing(channel) {
+  const res = await API.post('/api/channel/sync_pricing', { ...channel, model_mapping: '', sync_preview: true });
+  const { success, message, data } = res.data;
+  if (!success) {
+    throw new Error(message || 'sync pricing failed');
+  }
+  return { changes: data?.changes ?? [], losses: data?.losses ?? [], unmatched: data?.unmatched ?? [] };
+}
+
+// Writes the selected models of a channel price sync.
+export async function applyChannelPricing(channel, models) {
+  const res = await API.post('/api/channel/sync_pricing', { ...channel, model_mapping: '', sync_models: models });
+  const { success, message, data } = res.data;
+  if (!success) {
+    throw new Error(message || 'sync pricing failed');
+  }
+  return { synced: data?.synced ?? 0 };
+}
+
 // Fetches the raw upstream model list for the channel form's model selector.
 // Also keeps every model the provider reports. `channel` carries the current form
 // values (id/type/key/base_url/other); when `key` is blank the backend falls

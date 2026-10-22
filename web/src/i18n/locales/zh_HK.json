@@ -265,12 +265,34 @@
     "selectedCount": "已選{{count}}個模型",
     "syncPricing": "同步價格",
     "syncPricingDone": "已同步 {{count}} 個模型價格",
-    "syncPricingTip": "從 OpenRouter 拉取真實價格寫入價格表（不覆蓋已鎖定價格）",
+    "syncPricingTip": "從上游拉取真實價格，核對漲價 / 降價後寫入價格表（不覆蓋已鎖定價格）",
     "syncPricingUnmatched": "{{count}} 個模型未匹配到價格，請核對模型 id：{{models}}",
     "tabAdvanced": "進階",
     "tabBasic": "基礎",
     "tabModel": "模型",
-    "tabRequest": "請求"
+    "tabRequest": "請求",
+    "priceSync": {
+      "title": "核對價格變動",
+      "description": "本渠道模型的上游價格與價格表的對比。只寫入勾選的模型，鎖定的價格不會被修改。",
+      "lossTitle": "部分分組的售價低於本渠道成本",
+      "lossRow": "分組 {{group}}：倍率 {{groupRatio}} 低於成本倍率 {{costRatio}}，經本渠道的請求會虧本。",
+      "empty": "本渠道的模型沒有價格變動。",
+      "selectAll": "全選",
+      "model": "模型",
+      "change": "變動",
+      "input": "輸入",
+      "output": "輸出",
+      "kind": {
+        "new": "新增",
+        "raised": "漲價",
+        "lowered": "降價",
+        "changed": "有變動",
+        "unchanged": "無變化"
+      },
+      "locked": "已鎖定",
+      "unit": "價格單位：美元 / 百萬 token。",
+      "apply": "寫入選中的 {{count}} 個"
+    }
   },
   "channel_index": {
     "AzureApiVersion": "Azure 版本號",
@@ -2445,6 +2467,13 @@
           "label": "會話保持時長（秒）",
           "placeholder": "3600",
           "description": "會話最後一次請求之後保持綁定的時長。"
+        },
+        "priceSyncAutoApply": {
+          "label": "自動價格同步",
+          "increases": "寫入漲價，降價留待核對",
+          "all": "全部寫入",
+          "none": "只寫入新模型",
+          "description": "每日與啟動時的價格同步（OpenRouter、Vercel AI Gateway、models.dev）對已有價格的模型如何寫入。新模型總會寫入，鎖定的價格不會改。未寫入的變動、以及鎖定價低於上游的模型會發通知，可在渠道的「同步價格」裏核對後寫入。"
         }
       },
       "imageProxySettings": {

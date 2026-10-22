@@ -265,12 +265,34 @@
     "selectedCount": "{{count}}個のモデルを選択済み",
     "syncPricing": "価格を同期",
     "syncPricingDone": "{{count}} 個のモデル価格を同期しました",
-    "syncPricingTip": "OpenRouter から実価格を取得し価格表に反映（ロック済み価格は保持）",
+    "syncPricingTip": "上流から実際の価格を取得し、値上げ・値下げを確認してから価格表に書き込みます（ロックされた価格は変更しません）",
     "syncPricingUnmatched": "{{count}} 個のモデルは価格に一致しませんでした。モデル id を確認してください：{{models}}",
     "tabAdvanced": "詳細",
     "tabBasic": "基本",
     "tabModel": "モデル",
-    "tabRequest": "リクエスト"
+    "tabRequest": "リクエスト",
+    "priceSync": {
+      "title": "価格の変更を確認",
+      "description": "このチャネルのモデルについて、上流の価格と価格表を比較しています。選択したモデルだけが書き込まれ、ロックされた価格は変更されません。",
+      "lossTitle": "一部のグループの販売価格がこのチャネルのコストを下回っています",
+      "lossRow": "グループ {{group}}：倍率 {{groupRatio}} がコスト倍率 {{costRatio}} を下回っているため、このチャネル経由のリクエストは赤字になります。",
+      "empty": "このチャネルのモデルに価格の変更はありません。",
+      "selectAll": "すべて選択",
+      "model": "モデル",
+      "change": "変更",
+      "input": "入力",
+      "output": "出力",
+      "kind": {
+        "new": "新規",
+        "raised": "値上げ",
+        "lowered": "値下げ",
+        "changed": "変更あり",
+        "unchanged": "変更なし"
+      },
+      "locked": "ロック中",
+      "unit": "価格は 100 万トークンあたりの米ドルです。",
+      "apply": "選択した {{count}} 件を書き込む"
+    }
   },
   "channel_index": {
     "AzureApiVersion": "Azureのバージョン番号",
@@ -2445,6 +2467,13 @@
           "label": "セッション保持時間（秒）",
           "placeholder": "3600",
           "description": "最後のリクエストのあと、セッションの紐づけを保持する時間です。"
+        },
+        "priceSyncAutoApply": {
+          "label": "価格の自動同期",
+          "increases": "値上げは書き込み、値下げは確認待ち",
+          "all": "すべて書き込む",
+          "none": "新しいモデルだけ書き込む",
+          "description": "毎日と起動時の価格同期（OpenRouter、Vercel AI Gateway、models.dev）で、すでに価格があるモデルをどう書き込むかを決めます。新しいモデルは常に追加され、ロックされた価格は変更されません。書き込まなかった変更と、上流より安くロックされた価格は通知され、チャネルの「価格を同期」で確認して書き込めます。"
         }
       },
       "imageProxySettings": {

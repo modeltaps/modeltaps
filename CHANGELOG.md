@@ -40,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Channel price sync shows a review first: each channel model with its upstream price change
+  (new, increase, decrease) and the user groups priced below the channel's cost ratio. Only the
+  selected models are written.
 - Failed requests are logged: when a request still fails after retries, a log entry records the
   status and message the client received, the channels tried and their status codes. The request
   log page switches between succeeded and failed requests, and the log details show the retry chain
@@ -67,6 +70,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Automatic price syncs (startup, daily, channel save) write new models and price increases, and
+  hold decreases for review; held changes and locked prices below the upstream price are sent as
+  notifications. The "Automatic price sync" setting in the billing settings can write every change
+  (the previous behavior) or new models only.
 - Failover defaults: retries default to 2 (never more than the channels available), automatic
   re-enabling of auto-disabled channels defaults to on, and the scheduled channel test defaults to
   recovery mode every 10 minutes. Sites that saved their own values keep them;

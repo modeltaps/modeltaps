@@ -20,7 +20,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetBody, SheetFooter } 
 import { channelTypeGroups } from 'constants/ChannelConstants';
 import { configText } from 'i18n/configText';
 import { defaultConfig, typeConfig } from './typeConfig';
-import { syncChannelPricing, fetchUpstreamModelList } from './channelApi';
+import { syncChannelPricing, previewChannelPricing, applyChannelPricing, fetchUpstreamModelList } from './channelApi';
+import PriceSyncDialog from './PriceSyncDialog';
 import { buildModelSuggestions, fetchPriceList } from './modelSuggestions';
 import ChannelOAuth from './ChannelOAuth';
 import ModelHeadersInput from './ModelHeadersInput';
@@ -89,6 +90,8 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
   const baseUrlValue = watch('base_url');
   const [iconRefreshKey, setIconRefreshKey] = useState(0);
   const [syncingPricing, setSyncingPricing] = useState(false);
+  const [pricePreview, setPricePreview] = useState(null);
+  const [applyingPricing, setApplyingPricing] = useState(false);
   const [fetchSyncing, setFetchSyncing] = useState(false);
   const [pruning, setPruning] = useState(false);
   // Price list behind the model picker's suggestions; loaded once, the first time the sheet opens.
@@ -120,25 +123,36 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
     }
   };
 
+  // 同步价格先预览：列出本渠道模型的涨价 / 降价 / 新增与亏本分组，管理员勾选后才写入。
+  // 只发同步所需的字段：编辑态靠 id 后端取存储 key；新建态靠表单 key。
+  // 不要整个 getValues()——其含 model_headers 数组等会触发后端绑定失败。
+  const priceSyncChannel = () => {
+    const v = trims(getValues());
+    return {
+      id: channelId ? parseInt(channelId, 10) : 0,
+      name: v.name,
+      type: v.type,
+      key: v.key || '',
+      models: (v.models || '')
+        .split(/[,\n]/)
+        .map((m) => m.trim())
+        .filter(Boolean)
+        .join(','),
+      group: (v.groups || []).join(',')
+    };
+  };
+
   const handleSyncPricing = async () => {
     setSyncingPricing(true);
     try {
-      // 只发同步所需的最小字段：编辑态靠 id 后端取存储 key；新建态靠表单 key。
-      // 不要整个 getValues()——其含 model_headers 数组等会触发后端绑定失败。
-      const v = trims(getValues());
-      const { synced, unmatched } = await syncChannelPricing({
-        id: channelId ? parseInt(channelId, 10) : 0,
-        name: v.name,
-        type: v.type,
-        key: v.key || ''
-      });
-      toast.success(t('channel_edit.syncPricingDone', { count: synced }));
-      if (unmatched.length) {
+      const preview = await previewChannelPricing(priceSyncChannel());
+      setPricePreview(preview);
+      if (preview.unmatched.length) {
         // 渠道里这些模型没匹配到上游价格（多为 id 带版本/别名），提示用户核对模型名。
         toast.warning(
           t('channel_edit.syncPricingUnmatched', {
-            count: unmatched.length,
-            models: unmatched.join(', ')
+            count: preview.unmatched.length,
+            models: preview.unmatched.join(', ')
           })
         );
       }
@@ -146,6 +160,19 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
       toast.error(e.message);
     } finally {
       setSyncingPricing(false);
+    }
+  };
+
+  const handleApplyPricing = async (models) => {
+    setApplyingPricing(true);
+    try {
+      const { synced } = await applyChannelPricing(priceSyncChannel(), models);
+      toast.success(t('channel_edit.syncPricingDone', { count: synced }));
+      setPricePreview(null);
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setApplyingPricing(false);
     }
   };
 
@@ -566,6 +593,15 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
           </form>
         </SheetContent>
       </Sheet>
+      {pricePreview && (
+        <PriceSyncDialog
+          open
+          preview={pricePreview}
+          applying={applyingPricing}
+          onApply={handleApplyPricing}
+          onClose={() => setPricePreview(null)}
+        />
+      )}
       <ModelSelectorModal
         open={modelSelectorOpen}
         onClose={() => setModelSelectorOpen(false)}
@@ -744,7 +780,7 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
                 />
               )}
             />
-            {typeValue === 20 && (
+            {(typeValue === 20 || typeValue === 62) && (
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <Button
                   type="button"

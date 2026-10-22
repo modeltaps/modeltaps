@@ -1060,7 +1060,7 @@
     "mappingBillIncomingTip": "勾选：按「请求模型」这个名字计费（需先在「模型价格」给它配价）。不勾：按映射后的上游真实模型计费。别名指向已有价格的真实模型时，请保持不勾。",
     "mappingCreate": "使用 \"{{value}}\"（新建）",
     "mappingDupKey": "请求模型名重复（忽略大小写），如 GPT-4 与 gpt-4，请合并为一条。",
-    "syncPricingTip": "从 OpenRouter 拉取真实价格写入价格表（不覆盖已锁定价格）",
+    "syncPricingTip": "从上游拉取真实价格，核对涨价 / 降价后写入价格表（不覆盖已锁定价格）",
     "syncPricingDone": "已同步 {{count}} 个模型价格",
     "syncPricingUnmatched": "{{count}} 个模型未匹配到价格，请核对模型 id：{{models}}",
     "tabModel": "模型",
@@ -1101,7 +1101,29 @@
     "modelsFetched": "模型获取成功",
     "overwriteModels": "覆盖原有模型列表",
     "overwriteModelsTip": "启用后将清空原有的模型列表，仅保留此次选择的模型",
-    "clearModels": "重置"
+    "clearModels": "重置",
+    "priceSync": {
+      "title": "核对价格变动",
+      "description": "本渠道模型的上游价格与价格表的对比。只写入勾选的模型，锁定的价格不会被修改。",
+      "lossTitle": "部分分组的售价低于本渠道成本",
+      "lossRow": "分组 {{group}}：倍率 {{groupRatio}} 低于成本倍率 {{costRatio}}，经本渠道的请求会亏本。",
+      "empty": "本渠道的模型没有价格变动。",
+      "selectAll": "全选",
+      "model": "模型",
+      "change": "变动",
+      "input": "输入",
+      "output": "输出",
+      "kind": {
+        "new": "新增",
+        "raised": "涨价",
+        "lowered": "降价",
+        "changed": "有变动",
+        "unchanged": "无变化"
+      },
+      "locked": "已锁定",
+      "unit": "价格单位：美元 / 百万 token。",
+      "apply": "写入选中的 {{count}} 个"
+    }
   },
   "token_index": {
     "testCommand": "测试命令",
@@ -2305,6 +2327,13 @@
           "label": "会话保持时长（秒）",
           "placeholder": "3600",
           "description": "会话最后一次请求之后保持绑定的时长。"
+        },
+        "priceSyncAutoApply": {
+          "label": "自动价格同步",
+          "increases": "写入涨价，降价留待核对",
+          "all": "全部写入",
+          "none": "只写入新模型",
+          "description": "每日与启动时的价格同步（OpenRouter、Vercel AI Gateway、models.dev）对已有价格的模型如何写入。新模型总会写入，锁定的价格不会改。未写入的变动、以及锁定价低于上游的模型会发通知，可在渠道的「同步价格」里核对后写入。"
         }
       },
       "invoice": {

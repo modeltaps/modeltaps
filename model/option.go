@@ -146,6 +146,16 @@ func registerOptions() {
 	config.GlobalOption.RegisterString("ChatLinks", &config.ChatLinks, config.ScopePublic, config.PublicSpec{StatusKey: "chat_links"})
 	config.GlobalOption.RegisterFloat("QuotaPerUnit", &config.QuotaPerUnit, config.ScopePublic, config.PublicSpec{StatusKey: "quota_per_unit"})
 	config.GlobalOption.RegisterInt("RetryTimes", &config.RetryTimes, config.ScopeAdmin)
+	config.GlobalOption.RegisterCustom("PriceSyncAutoApply", func() string {
+		return config.PriceSyncAutoApply
+	}, func(value string) error {
+		switch value {
+		case "all", "increases", "none":
+			config.PriceSyncAutoApply = value
+			return nil
+		}
+		return fmt.Errorf("invalid price sync auto apply %q", value)
+	}, "increases", config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("RetryCooldownSeconds", &config.RetryCooldownSeconds, config.ScopeAdmin)
 	config.GlobalOption.RegisterCustom("ChannelTestMode", func() string {
 		return config.ChannelTestMode

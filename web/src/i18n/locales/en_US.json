@@ -265,12 +265,34 @@
     "selectedCount": "{{count}} models selected",
     "syncPricing": "Sync Pricing",
     "syncPricingDone": "Synced pricing for {{count}} models",
-    "syncPricingTip": "Pull real pricing from OpenRouter into the price table (locked prices are preserved)",
+    "syncPricingTip": "Pull real prices from the upstream, review increases and decreases, then write them to the price table (locked prices are kept)",
     "syncPricingUnmatched": "{{count}} model(s) had no matching upstream price — check the model id(s): {{models}}",
     "tabAdvanced": "Advanced",
     "tabBasic": "Basics",
     "tabModel": "Models",
-    "tabRequest": "Request"
+    "tabRequest": "Request",
+    "priceSync": {
+      "title": "Review price changes",
+      "description": "Upstream prices for this channel's models compared with the price table. Only the selected models are written; locked prices are never changed.",
+      "lossTitle": "Some groups are priced below this channel's cost",
+      "lossRow": "Group {{group}}: price multiplier {{groupRatio}} is below the cost ratio {{costRatio}}, so its requests through this channel lose money.",
+      "empty": "No price changes for the models of this channel.",
+      "selectAll": "Select all",
+      "model": "Model",
+      "change": "Change",
+      "input": "Input",
+      "output": "Output",
+      "kind": {
+        "new": "New",
+        "raised": "Increase",
+        "lowered": "Decrease",
+        "changed": "Changed",
+        "unchanged": "Unchanged"
+      },
+      "locked": "Locked",
+      "unit": "Prices in USD per 1M tokens.",
+      "apply": "Write {{count}} selected"
+    }
   },
   "channel_index": {
     "AzureApiVersion": "Azure version number",
@@ -2445,6 +2467,13 @@
           "label": "Session lifetime (seconds)",
           "placeholder": "3600",
           "description": "How long a session stays bound after its last request."
+        },
+        "priceSyncAutoApply": {
+          "label": "Automatic price sync",
+          "increases": "Write increases, hold decreases for review",
+          "all": "Write every change",
+          "none": "Write new models only",
+          "description": "What the daily and startup price syncs (OpenRouter, Vercel AI Gateway, models.dev) write for models that already have a price. New models are always added and locked prices never change. Changes that are not written, and locked prices below the upstream price, are sent as notifications; review and apply them from the channel's price sync."
         }
       },
       "imageProxySettings": {
