@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Trash2, Wallet } from 'lucide-react';
+import { Trash2, Users, Wallet } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -12,11 +12,28 @@ import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
 // Site-admin list of organizations (/api/organization/, RootAuth backend).
 // Status 1=enabled 2=disabled mirrors model.OrganizationStatus*.
 
-export default function OrgAdminTable({ rows, searching, onToggleStatus, onAdjustQuota, onDissolve }) {
+// MemberCount 成员数 / 生效上限:max_members 为 null 时跟随站点默认(标注「默认」),0 为不限制。
+function MemberCount({ org }) {
+  const { t } = useTranslation();
+  const limit = org.effective_max_members > 0 ? org.effective_max_members : '∞';
+  return (
+    <span className="font-mono tabular-nums">
+      {org.member_count} / {limit}
+      {org.max_members == null && (
+        <span className="ml-1.5 font-sans text-xs text-muted-foreground">{t('orgAdmin.maxMembersDefaultTag')}</span>
+      )}
+    </span>
+  );
+}
+
+MemberCount.propTypes = { org: PropTypes.object.isRequired };
+
+export default function OrgAdminTable({ rows, searching, onToggleStatus, onAdjustQuota, onSetMaxMembers, onDissolve }) {
   const { t } = useTranslation();
 
   const rowActions = (org) => [
     { label: t('orgAdmin.adjustQuota'), icon: Wallet, onClick: () => onAdjustQuota(org) },
+    { label: t('orgAdmin.maxMembers'), icon: Users, onClick: () => onSetMaxMembers(org) },
     { label: t('orgAdmin.dissolve'), icon: Trash2, destructive: true, onClick: () => onDissolve(org) }
   ];
 
@@ -55,7 +72,9 @@ export default function OrgAdminTable({ rows, searching, onToggleStatus, onAdjus
                     </div>
                   </TableCell>
                   <TableCell>{org.owner_id ? <Badge variant="outline">#{org.owner_id}</Badge> : '-'}</TableCell>
-                  <TableCell className="font-mono tabular-nums">{org.member_count}</TableCell>
+                  <TableCell>
+                    <MemberCount org={org} />
+                  </TableCell>
                   <TableCell className="font-mono tabular-nums">{renderQuota(org.quota, 2)}</TableCell>
                   <TableCell className="font-mono tabular-nums">
                     <SpendAmount quota={org.used_quota} />
@@ -104,7 +123,9 @@ export default function OrgAdminTable({ rows, searching, onToggleStatus, onAdjus
                 </div>
                 <div className="flex items-baseline gap-1.5">
                   <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t('orgAdmin.columns.members')}</dt>
-                  <dd className="min-w-0 flex-1 truncate text-sm font-mono tabular-nums">{org.member_count}</dd>
+                  <dd className="min-w-0 flex-1 truncate text-sm">
+                    <MemberCount org={org} />
+                  </dd>
                 </div>
                 <div className="flex items-baseline gap-1.5">
                   <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t('orgAdmin.columns.quota')}</dt>
@@ -148,5 +169,6 @@ OrgAdminTable.propTypes = {
   searching: PropTypes.bool,
   onToggleStatus: PropTypes.func.isRequired,
   onAdjustQuota: PropTypes.func.isRequired,
+  onSetMaxMembers: PropTypes.func.isRequired,
   onDissolve: PropTypes.func.isRequired
 };

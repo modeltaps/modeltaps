@@ -91,6 +91,40 @@ func AdminSetOrganizationStatus(c *gin.Context) {
 	})
 }
 
+type AdminSetOrgMaxMembersRequest struct {
+	// MaxMembers null=跟随站点默认,0=不限制,正数=上限
+	MaxMembers *int `json:"max_members"`
+}
+
+// AdminSetOrganizationMaxMembers 站点管理后台设置组织成员上限(仅 root;落审计)
+func AdminSetOrganizationMaxMembers(c *gin.Context) {
+	org, err := getOrgByIdParam(c)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	var req AdminSetOrgMaxMembersRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "Invalid parameters", nil)
+		return
+	}
+	if err := model.SetOrganizationMaxMembers(org, req.MaxMembers); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	detail := "Site admin set the member limit to follow the site default"
+	if req.MaxMembers != nil && *req.MaxMembers == 0 {
+		detail = "Site admin set the member limit to unlimited"
+	} else if req.MaxMembers != nil {
+		detail = fmt.Sprintf("Site admin set the member limit to %d", *req.MaxMembers)
+	}
+	model.RecordOrgAudit(org.Id, c.GetInt("id"), "org.admin_max_members", detail)
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+	})
+}
+
 // AdminChangeOrganizationQuota 站点管理后台增减组织池余额(仅 root;落审计并记 root 操作者)
 func AdminChangeOrganizationQuota(c *gin.Context) {
 	org, err := getOrgByIdParam(c)

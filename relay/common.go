@@ -96,7 +96,8 @@ func CheckLimitModel(c *gin.Context, modelName string) error {
 	// 检查模型列表是否为空
 	if len(setting.Limits.LimitModelSetting.Models) == 0 {
 		// Empty model list means no models are allowed
-		return errors.New("No available models configured for current token")
+		// 包上 model_not_found 哨兵：令牌无权使用属配置层错误，返回 404 而非坍缩成 503「上游繁忙」（SDK 会无限重试）
+		return fmt.Errorf("%w: no available models configured for current token", errModelNotFoundSentinel)
 	}
 
 	// Check if modelName is in the allowed models list
@@ -113,7 +114,7 @@ func CheckLimitModel(c *gin.Context, modelName string) error {
 	}
 
 	// modelName is not in the allowed models list
-	return fmt.Errorf("Model %s is not supported for current token", modelName)
+	return fmt.Errorf("%w: model %s is not supported for current token", errModelNotFoundSentinel, modelName)
 }
 
 // resolveCatalogModel 在渠道选择前按目录规则处理请求模型名：别名改写为主名（供选路、计费与

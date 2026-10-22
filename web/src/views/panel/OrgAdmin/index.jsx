@@ -5,9 +5,10 @@ import { RotateCcw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/components/ui/sonner';
 import PageActions from '@/components/chrome/PageActions';
@@ -22,6 +23,13 @@ import OrgAdminTable from './OrgAdminTable';
 // FilterBar 字段:单个关键字文本(后端 keyword 单值,按组织名称/slug 模糊匹配)。
 const ORG_FILTER_FIELDS = [{ key: 'keyword', labelKey: 'filterBar.keyword', type: 'text', placeholderKey: 'orgAdmin.searchPlaceholder' }];
 const ORG_FILTER_PARAM_KEYS = ['keyword'];
+
+// 成员上限三种模式:default=跟随站点默认(提交 null),unlimited=不限制(0),custom=指定正整数
+const MAX_MEMBER_MODES = [
+  { value: 'default', labelKey: 'orgAdmin.maxMembersModeDefault' },
+  { value: 'unlimited', labelKey: 'orgAdmin.maxMembersModeUnlimited' },
+  { value: 'custom', labelKey: 'orgAdmin.maxMembersModeCustom' }
+];
 
 // ==============================|| PANEL — ORG ADMIN (site admin) ||============================== //
 // Site-level organization list (spec §3.8 / a8): list + enable/disable +
@@ -39,6 +47,9 @@ export default function OrgAdmin() {
   const [quotaDelta, setQuotaDelta] = useState('');
   const [quotaRemark, setQuotaRemark] = useState('');
   const [dissolveTarget, setDissolveTarget] = useState(null);
+  const [maxTarget, setMaxTarget] = useState(null);
+  const [maxMode, setMaxMode] = useState('default');
+  const [maxValue, setMaxValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   // 分页列表状态 + 守卫化 fetch 生命周期(UX-13);本页无排序,fetcher 忽略 order/orderBy。
@@ -132,6 +143,48 @@ export default function OrgAdmin() {
     }
   };
 
+  const openMaxMembersDialog = (org) => {
+    setMaxTarget(org);
+    if (org.max_members == null) {
+      setMaxMode('default');
+      setMaxValue('');
+    } else if (org.max_members === 0) {
+      setMaxMode('unlimited');
+      setMaxValue('');
+    } else {
+      setMaxMode('custom');
+      setMaxValue(String(org.max_members));
+    }
+  };
+
+  const submitMaxMembers = async () => {
+    let maxMembers = null;
+    if (maxMode === 'unlimited') {
+      maxMembers = 0;
+    } else if (maxMode === 'custom') {
+      maxMembers = Number(maxValue);
+      if (!Number.isInteger(maxMembers) || maxMembers < 1) {
+        showError(t('orgAdmin.maxMembersPositive'));
+        return;
+      }
+    }
+    setSubmitting(true);
+    try {
+      const res = await API.put(`/api/organization/${maxTarget.id}/max_members`, { max_members: maxMembers });
+      if (res.data.success) {
+        toast.success(t('common.operationSuccess'));
+        setMaxTarget(null);
+        handleRefresh();
+      } else {
+        showError(res.data.message);
+      }
+    } catch (error) {
+      showError(error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const confirmDissolve = async () => {
     if (!dissolveTarget) return;
     setSubmitting(true);
@@ -184,6 +237,7 @@ export default function OrgAdmin() {
             searching={searching}
             onToggleStatus={onToggleStatus}
             onAdjustQuota={openQuotaDialog}
+            onSetMaxMembers={openMaxMembersDialog}
             onDissolve={setDissolveTarget}
           />
 
@@ -220,7 +274,7 @@ export default function OrgAdmin() {
               <DialogTitle>{t('orgAdmin.quotaTitle', { name: quotaTarget?.name })}</DialogTitle>
               <DialogDescription>{t('orgAdmin.quotaDesc')}</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
+            <DialogBody className="space-y-4">
               <QuotaInput
                 id="org-quota-delta"
                 label={t('orgAdmin.quotaLabel')}
@@ -239,12 +293,54 @@ export default function OrgAdmin() {
                   placeholder={t('orgAdmin.remarkPlaceholder')}
                 />
               </div>
-            </div>
+            </DialogBody>
             <DialogFooter>
               <Button variant="outline" onClick={() => setQuotaTarget(null)}>
                 {t('token_index.cancel')}
               </Button>
               <Button onClick={submitQuota} disabled={submitting}>
+                {t('common.submit')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!maxTarget} onOpenChange={(o) => !o && setMaxTarget(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('orgAdmin.maxMembersTitle', { name: maxTarget?.name })}</DialogTitle>
+              <DialogDescription>{t('orgAdmin.maxMembersDesc', { count: maxTarget?.member_count ?? 0 })}</DialogDescription>
+            </DialogHeader>
+            <DialogBody className="space-y-4">
+              <div className="space-y-2">
+                <Label id="org-max-members-mode">{t('orgAdmin.maxMembers')}</Label>
+                <div role="radiogroup" aria-labelledby="org-max-members-mode" className="grid grid-cols-3 gap-2">
+                  {MAX_MEMBER_MODES.map(({ value, labelKey }) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={maxMode === value}
+                      variant={maxMode === value ? 'default' : 'outline'}
+                      onClick={() => setMaxMode(value)}
+                    >
+                      {t(labelKey)}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              {maxMode === 'custom' && (
+                <div className="space-y-2">
+                  <Label htmlFor="org-max-members-value">{t('orgAdmin.maxMembersValueLabel')}</Label>
+                  <Input id="org-max-members-value" type="number" min={1} value={maxValue} onChange={(e) => setMaxValue(e.target.value)} />
+                </div>
+              )}
+            </DialogBody>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setMaxTarget(null)}>
+                {t('token_index.cancel')}
+              </Button>
+              <Button onClick={submitMaxMembers} disabled={submitting}>
                 {t('common.submit')}
               </Button>
             </DialogFooter>

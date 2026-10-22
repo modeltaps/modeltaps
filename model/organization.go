@@ -42,7 +42,7 @@ type Organization struct {
 	Status       int            `json:"status" gorm:"type:int;default:1"`
 	ShadowUserId int            `json:"-" gorm:"type:int;not null;uniqueIndex"`    // 影子记账账户 users.id,仅服务端使用,不对外暴露
 	CreatedBy    int            `json:"created_by" gorm:"type:int;not null;index"` // 创建者(首任 Owner)用户ID
-	MaxMembers   int            `json:"max_members" gorm:"type:int;default:0"`     // 0=使用站点默认值 config.OrganizationDefaultMaxMembers
+	MaxMembers   *int           `json:"max_members" gorm:"type:int"`              // NULL=使用站点默认值 config.OrganizationDefaultMaxMembers;0=不限制;正数=上限
 	CreatedTime  int64          `json:"created_time" gorm:"bigint"`
 	UpdatedTime  int64          `json:"updated_time" gorm:"bigint"`
 	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`
@@ -95,12 +95,31 @@ func CountUserCreatedOrganizations(userId int) (int64, error) {
 	return count, err
 }
 
-// GetMaxMembers 返回组织生效的成员上限(0=不限制)
+// GetMaxMembers 返回组织生效的成员上限(0=不限制):组织未单独设置(NULL)时取站点默认值
 func (org *Organization) GetMaxMembers() int {
-	if org.MaxMembers > 0 {
-		return org.MaxMembers
+	if org.MaxMembers != nil {
+		return *org.MaxMembers
 	}
 	return config.OrganizationDefaultMaxMembers
+}
+
+// SetOrganizationMaxMembers 站点管理员设置组织成员上限:nil=跟随站点默认,0=不限制,正数=上限
+func SetOrganizationMaxMembers(org *Organization, maxMembers *int) error {
+	if maxMembers != nil && *maxMembers < 0 {
+		return common.NewAPIError(common.APICodeInvalidParams, "max members must not be negative", nil)
+	}
+	now := utils.GetTimestamp()
+	var value interface{}
+	if maxMembers != nil {
+		value = *maxMembers
+	}
+	if err := DB.Model(&Organization{}).Where("id = ?", org.Id).
+		Updates(map[string]interface{}{"max_members": value, "updated_time": now}).Error; err != nil {
+		return err
+	}
+	org.MaxMembers = maxMembers
+	org.UpdatedTime = now
+	return nil
 }
 
 // IsUsageVisibleToMembers 返回 Member 是否可见全员用量(组织未配置时取站点默认值)
@@ -376,6 +395,8 @@ type OrganizationAdminInfo struct {
 	Quota       int   `json:"quota"`
 	UsedQuota   int   `json:"used_quota"`
 	MemberCount int64 `json:"member_count"`
+	// EffectiveMaxMembers 生效的成员上限(0=不限制),max_members 为 null 时即站点默认值
+	EffectiveMaxMembers int `json:"effective_max_members"`
 }
 
 // fillOrganizationAdminInfos 批量补全组织池余额、成员数与 Owner
@@ -428,6 +449,8 @@ func fillOrganizationAdminInfos(orgs []*Organization) ([]*OrganizationAdminInfo,
 			Quota:        shadow.Quota,
 			UsedQuota:    shadow.UsedQuota,
 			MemberCount:  countByOrg[org.Id],
+
+			EffectiveMaxMembers: org.GetMaxMembers(),
 		})
 	}
 	return infos, nil
