@@ -251,6 +251,11 @@ var PreConsumedQuota = 500
 var ApproximateTokenEnabled = false
 var EmptyResponseBillingEnabled = true
 
+// PriceSyncAutoApply 决定自动价格同步（启动、每日定时、保存渠道）对已有价格的写入：
+// "increases"（默认）只写涨价、降价留待管理员确认；"all" 全部写入；"none" 只写新模型。
+// 留待确认的变动与锁定价低于上游的模型会发通知。手动同步先预览差异，由管理员勾选写入。
+var PriceSyncAutoApply = "increases"
+
 // MaxPromptTokens 输入 token 上限的粗粒度守卫（仅对 AWS/Bedrock 渠道生效）。
 // AWS 对超过模型上下文窗口（尤其 >1M）的请求既不快速报错也不拒绝，会一直挂起直到
 // 墙钟超时才被砍掉（表现为长时间等待后中断、计费 $0）。在发送上游前用本值预拦截，

@@ -444,11 +444,12 @@ func filterChannelSourced(infos []*ModelInfo, prices []*Price) ([]*ModelInfo, []
 }
 
 // syncCatalogChannelModels 把渠道模型名按 models.dev 全量匹配结果 upsert（不覆盖 locked 与渠道来源）。
-func syncCatalogChannelModels(data map[string]catalogProvider, names []string) (*CatalogSyncResult, error) {
+// auto 为自动同步（定时、保存渠道），已有价格的变动按 PriceSyncAutoApply 处理。
+func syncCatalogChannelModels(data map[string]catalogProvider, names []string, auto bool) (*CatalogSyncResult, error) {
 	infos, prices, unconvertible, unmatched := BuildChannelCatalogEntries(data, names)
 	infos, prices = filterChannelSourced(infos, prices)
 	if len(prices) > 0 {
-		if err := PricingInstance.UpsertPrices(prices); err != nil {
+		if err := writeSyncedPrices(prices, "models.dev", auto); err != nil {
 			return nil, err
 		}
 	}
@@ -469,7 +470,7 @@ func SyncCatalogForModels(url string, names []string) (*CatalogSyncResult, error
 	if err != nil {
 		return nil, err
 	}
-	return syncCatalogChannelModels(data, names)
+	return syncCatalogChannelModels(data, names, true)
 }
 
 const defaultCatalogURL = "https://models.dev/api.json"
@@ -508,9 +509,9 @@ func FetchCatalogPrices(url string) ([]*Price, error) {
 }
 
 // SyncCatalogPricing 拉取 models.dev 目录并 upsert 价格 + 模型元信息（不覆盖 Locked）。
-// 无需 gin.Context，可直接用于 cron。
+// 无需 gin.Context，供 cron 调用：属自动同步，已有价格的变动按 PriceSyncAutoApply 处理。
 func SyncCatalogPricing(url string) (int, error) {
-	result, err := SyncCatalogPricingDetailed(url)
+	result, err := syncCatalogPricing(url, true)
 	if err != nil {
 		return 0, err
 	}
@@ -519,13 +520,18 @@ func SyncCatalogPricing(url string) (int, error) {
 
 // SyncCatalogPricingDetailed 同 SyncCatalogPricing，并返回换算不了 / 匹配不到的渠道模型：
 // 先按已映射 provider 全量刷新，再按所有启用渠道的模型名在 models.dev 全量里匹配补齐。
+// 管理员手动触发，全部写入。
 func SyncCatalogPricingDetailed(url string) (*CatalogSyncResult, error) {
+	return syncCatalogPricing(url, false)
+}
+
+func syncCatalogPricing(url string, auto bool) (*CatalogSyncResult, error) {
 	data, err := fetchCatalogData(url)
 	if err != nil {
 		return nil, err
 	}
 	prices := BuildCatalogPrices(data)
-	if err := PricingInstance.UpsertPrices(prices); err != nil {
+	if err := writeSyncedPrices(prices, "models.dev", auto); err != nil {
 		return nil, err
 	}
 	if err := UpsertModelInfos(BuildCatalogModelInfos(data), ModelInfoSourceModelsDev); err != nil {
@@ -535,7 +541,7 @@ func SyncCatalogPricingDetailed(url string) (*CatalogSyncResult, error) {
 	names, err := EnabledChannelModelNames()
 	if err != nil {
 		logger.SysError("catalog sync: list channel models failed: " + err.Error())
-	} else if channelResult, err := syncCatalogChannelModels(data, names); err != nil {
+	} else if channelResult, err := syncCatalogChannelModels(data, names, auto); err != nil {
 		logger.SysError("catalog sync: channel models upsert failed: " + err.Error())
 	} else {
 		result.Synced += channelResult.Synced

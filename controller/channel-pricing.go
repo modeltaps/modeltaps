@@ -143,7 +143,8 @@ func SyncAllChannelsOwnPricing() (int, error) {
 	for _, p := range deduped {
 		list = append(list, p)
 	}
-	if err := model.PricingInstance.UpsertPrices(list); err != nil {
+	// 启动、每日定时与保存渠道都走这里：已有价格的变动按 PriceSyncAutoApply 处理并通知。
+	if _, err := model.PricingInstance.ApplyAutoPriceSync(list, "channel price lists"); err != nil {
 		return 0, err
 	}
 
@@ -170,15 +171,25 @@ func SyncAllChannelsOwnPricing() (int, error) {
 	return len(list), nil
 }
 
-// SyncChannelPricing 从渠道上游 API 拉取真实价格并落库。
+// channelPriceSyncRequest 是渠道表单提交的渠道，外加价格同步选项：
+// sync_preview 只返回与价格表的差异不写入；sync_models 只写入勾选的模型（两者都缺省时全部写入）。
+type channelPriceSyncRequest struct {
+	model.Channel
+	SyncPreview bool     `json:"sync_preview"`
+	SyncModels  []string `json:"sync_models"`
+}
+
+// SyncChannelPricing 从渠道上游 API 拉取真实价格。
 // 仅支持「自带价格」的渠道（实现 ModelPriceListInterface，如 OpenRouter）。
-// 落库语义为 upsert：新增缺失、更新未锁定、保留锁定，不影响其它渠道的价格。
+// 预览返回逐模型差异（新增 / 涨价 / 降价）与亏本分组；写入语义为 upsert：新增缺失、更新未锁定、
+// 保留锁定，不影响其它渠道的价格。
 func SyncChannelPricing(c *gin.Context) {
-	channel := &model.Channel{}
-	if err := c.ShouldBindJSON(channel); err != nil {
+	req := &channelPriceSyncRequest{}
+	if err := c.ShouldBindJSON(req); err != nil {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 		return
 	}
+	channel := &req.Channel
 	keys := strings.Split(channel.Key, "\n")
 	channel.Key = keys[0]
 
@@ -187,12 +198,22 @@ func SyncChannelPricing(c *gin.Context) {
 			common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelKeyRequired, "key is required", nil)
 			return
 		}
-		var err error
-		channel, err = model.GetChannelById(channel.Id)
+		stored, err := model.GetChannelById(channel.Id)
 		if err != nil {
 			common.APIRespondWithError(c, http.StatusOK, channelLookupError(err))
 			return
 		}
+		// 表单里带了分组 / 模型时优先用正在编辑的值，亏本提示与预览范围反映未保存的修改。
+		if channel.Group != "" {
+			stored.Group = channel.Group
+		}
+		if channel.Models != "" {
+			stored.Models = channel.Models
+		}
+		if channel.CostRatio != nil {
+			stored.CostRatio = channel.CostRatio
+		}
+		channel = stored
 	}
 
 	provider := providers.GetProvider(channel, c)
@@ -212,7 +233,28 @@ func SyncChannelPricing(c *gin.Context) {
 		return
 	}
 
-	if err := model.PricingInstance.UpsertPrices(prices); err != nil {
+	if req.SyncPreview {
+		changes := model.PricingInstance.DiffPrices(onlyChannelModels(prices, channel.Models))
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+			"data": gin.H{
+				"changes":       changes,
+				"losses":        model.ChannelGroupLosses(channel),
+				"unmatched":     findUnpricedChannelModels(channel.Models, prices),
+				"unconvertible": unconvertible,
+			},
+		})
+		return
+	}
+
+	synced := len(prices)
+	if req.SyncModels != nil {
+		synced, err = model.PricingInstance.UpsertSelectedPrices(prices, req.SyncModels)
+	} else {
+		err = model.PricingInstance.UpsertPrices(prices)
+	}
+	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 		return
 	}
@@ -234,7 +276,7 @@ func SyncChannelPricing(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data": gin.H{
-			"synced": len(prices),
+			"synced": synced,
 			// 渠道里配置了、但上游没有精确同名价格的模型(多为 id 带版本/别名)，
 			// 前端据此提示，避免用户误以为同步失败。
 			"unmatched": findUnpricedChannelModels(channel.Models, prices),
@@ -242,6 +284,26 @@ func SyncChannelPricing(c *gin.Context) {
 			"unconvertible": unconvertible,
 		},
 	})
+}
+
+// onlyChannelModels 预览只列渠道配置了的模型（自带价格表的网关有数百个模型）；
+// 渠道未配置模型时列出全部。
+func onlyChannelModels(prices []*model.Price, modelsCSV string) []*model.Price {
+	names := model.SplitChannelModels(modelsCSV)
+	if len(names) == 0 {
+		return prices
+	}
+	want := make(map[string]bool, len(names))
+	for _, n := range names {
+		want[n] = true
+	}
+	out := make([]*model.Price, 0, len(names))
+	for _, p := range prices {
+		if want[p.Model] {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // getChannelPriceSync 拉取渠道自带价格；渠道能列出换算不了的模型时一并返回。
