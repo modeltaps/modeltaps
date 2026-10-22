@@ -2424,7 +2424,16 @@
           "placeholder": "例えば、カード発行ウェブサイトの購入リンク"
         },
         "unifiedRequestResponseModel": "リクエスト/レスポンスのモデル名を統一",
-        "unifiedRequestResponseModelDescription": "レスポンスの model フィールドに、チャネルでマッピングされた実際のモデル名ではなくリクエスト時の元のモデル名を返します"
+        "unifiedRequestResponseModelDescription": "レスポンスの model フィールドに、チャネルでマッピングされた実際のモデル名ではなくリクエスト時の元のモデル名を返します",
+        "sessionAffinityEnabled": "同じセッションを 1 つのチャネルに固定",
+        "sessionAffinityEnabledDescription": "同じクライアントセッション（Claude Code のセッション、Codex の session_id、OpenAI の prompt_cache_key、または同じシステムプロンプトと最初のメッセージ）のリクエストを、最初に処理したチャネルへ送り、上流のプロンプトキャッシュがヒットし続けるようにします。Claude Code・Gemini CLI・Codex のアカウントチャネルは常に固定されます。",
+        "sessionAffinityStrict": "失敗時にセッションのチャネルを切り替えない",
+        "sessionAffinityStrictDescription": "セッションに紐づくチャネルが失敗したとき、他のチャネルで再試行せずにエラーを返します。切り替えると上流のキャッシュと Codex の会話状態が失われます。オフにすると可用性を優先します。",
+        "sessionAffinityTTL": {
+          "label": "セッション保持時間（秒）",
+          "placeholder": "3600",
+          "description": "最後のリクエストのあと、セッションの紐づけを保持する時間です。"
+        }
       },
       "imageProxySettings": {
         "title": "画像プロキシ"
@@ -2885,6 +2894,7 @@
       "display": "表示",
       "externalLinks": "外部リンク",
       "retry": "リトライ",
+      "sessionAffinity": "セッションアフィニティ",
       "errorHandling": "エラー処理",
       "modelNameMatch": "モデル名のマッチング",
       "channelAuto": "チャネルの自動無効化と復帰",

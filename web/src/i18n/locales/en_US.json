@@ -2424,7 +2424,16 @@
           "placeholder": "For example, the purchase link of the card issuing website"
         },
         "unifiedRequestResponseModel": "Unified Request Response Model",
-        "unifiedRequestResponseModelDescription": "Return the originally requested model name in the response model field instead of the channel-mapped actual model"
+        "unifiedRequestResponseModelDescription": "Return the originally requested model name in the response model field instead of the channel-mapped actual model",
+        "sessionAffinityEnabled": "Keep each session on one channel",
+        "sessionAffinityEnabledDescription": "Requests of one client session (Claude Code session, Codex session_id, OpenAI prompt_cache_key, or the same system prompt and first message) go to the channel that served the session, so the upstream prompt cache keeps hitting. Claude Code, Gemini CLI and Codex account channels are always sticky.",
+        "sessionAffinityStrict": "Do not move a session on failure",
+        "sessionAffinityStrictDescription": "When the session's channel fails, return the error instead of retrying on another channel. Moving loses the upstream cache and Codex conversation state; leave off to favor availability.",
+        "sessionAffinityTTL": {
+          "label": "Session lifetime (seconds)",
+          "placeholder": "3600",
+          "description": "How long a session stays bound after its last request."
+        }
       },
       "imageProxySettings": {
         "title": "Image Proxy"
@@ -2885,6 +2894,7 @@
       "display": "Display",
       "externalLinks": "External Links",
       "retry": "Retry",
+      "sessionAffinity": "Session affinity",
       "errorHandling": "Error Handling",
       "modelNameMatch": "Model Name Matching",
       "channelAuto": "Channel Auto Disable & Recovery",

@@ -336,6 +336,11 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 		meta["extra_billing"] = q.extraBillingData
 	}
 
+	// 会话亲和结果(CHAN-8,additive):hit 沿用会话绑定的渠道,bound 为新绑定;未识别出会话时不写。
+	if q.sessionAffinity != "" {
+		meta["session_affinity"] = q.sessionAffinity
+	}
+
 	// Prompt Caching 注入标识(仅注入成功时写入,additive)。
 	if q.promptCachingInjected {
 		meta["prompt_caching_injected"] = true

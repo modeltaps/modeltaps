@@ -261,6 +261,19 @@ var DisableTokenEncoders = false
 var RetryTimes = 0
 var RetryTimeOut = 10
 
+// SessionAffinityEnabled keeps the requests of one client session (Claude Code
+// metadata.user_id, Codex session_id, OpenAI prompt_cache_key, or the same prompt prefix)
+// on the channel that served the first one, so the upstream prompt cache keeps hitting.
+// Account-pool channel types (Claude Code, Gemini CLI, Codex) are always sticky.
+var SessionAffinityEnabled = true
+
+// SessionAffinityStrict stops the retry when the session's channel fails instead of
+// moving the session to another channel (which loses the upstream cache).
+var SessionAffinityStrict = false
+
+// SessionAffinityTTLSeconds is how long a session stays bound after its last request.
+var SessionAffinityTTLSeconds = 3600
+
 // ChannelFailErrorWrapEnabled 是否启用"渠道失败统一封装"。
 // 开启（默认）：FilterOpenAIErr 把所有非 400 上游错误坍缩为 503 + ChannelFailErrorMessage，
 //

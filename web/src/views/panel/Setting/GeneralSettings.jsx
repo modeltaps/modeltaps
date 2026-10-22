@@ -219,6 +219,48 @@ export function RetryCard({ ctx }) {
   );
 }
 
+// 会话亲和 — 同一会话固定渠道以保住上游提示缓存、失败是否换渠道、绑定时长。
+export function SessionAffinityCard({ ctx }) {
+  const { t } = useTranslation();
+  const { inputs, setField, toggle, saveKeys, loading, isDirty } = ctx;
+  const is = (k) => inputs[k] === 'true';
+  const keys = ['SessionAffinityTTLSeconds'];
+
+  return (
+    <SettingsCard title={t('setting_index.cards.sessionAffinity')} highlight="session-affinity">
+      <div className="grid gap-3">
+        <ToggleRow
+          label={t('setting_index.operationSettings.generalSettings.sessionAffinityEnabled')}
+          description={t('setting_index.operationSettings.generalSettings.sessionAffinityEnabledDescription')}
+          checked={is('SessionAffinityEnabled')}
+          onCheckedChange={() => toggle('SessionAffinityEnabled')}
+          disabled={loading}
+        />
+        <ToggleRow
+          label={t('setting_index.operationSettings.generalSettings.sessionAffinityStrict')}
+          description={t('setting_index.operationSettings.generalSettings.sessionAffinityStrictDescription')}
+          checked={is('SessionAffinityStrict')}
+          onCheckedChange={() => toggle('SessionAffinityStrict')}
+          disabled={loading}
+        />
+      </div>
+      <TextRow
+        id="SessionAffinityTTLSeconds"
+        type="number"
+        label={t('setting_index.operationSettings.generalSettings.sessionAffinityTTL.label')}
+        value={inputs.SessionAffinityTTLSeconds}
+        onChange={(v) => setField('SessionAffinityTTLSeconds', v)}
+        placeholder={t('setting_index.operationSettings.generalSettings.sessionAffinityTTL.placeholder')}
+        description={t('setting_index.operationSettings.generalSettings.sessionAffinityTTL.description')}
+        disabled={loading}
+      />
+      <SaveButton loading={loading} disabled={!isDirty(keys)} onClick={() => saveKeys(keys)}>
+        {t('common.save')}
+      </SaveButton>
+    </SettingsCard>
+  );
+}
+
 // 错误处理 — 渠道失败错误包装开关与自定义文案。
 export function ErrorHandlingCard({ ctx }) {
   const { t } = useTranslation();

@@ -139,6 +139,10 @@ const (
 	StickySessionKeyPrefixGeminiCli = "sticky_session_gemini:"
 	// StickySessionKeyPrefixCodex Codex 渠道的 sticky session key 前缀
 	StickySessionKeyPrefixCodex = "sticky_session_codex:"
+	// StickySessionKeyPrefixGeneric 通用会话亲和（非账号池渠道类型）的 key 前缀
+	StickySessionKeyPrefixGeneric = "sticky_session_generic:"
+	// StickyChannelTypeGeneric 通用会话亲和使用的伪渠道类型，只用于选择 key 前缀
+	StickyChannelTypeGeneric = -1
 	// DefaultStickySessionTTL 默认 TTL（1小时）
 	DefaultStickySessionTTL = 1 * time.Hour
 )
@@ -166,6 +170,8 @@ func GetStickySessionKeyPrefix(channelType int) string {
 		return StickySessionKeyPrefixGeminiCli
 	case config.ChannelTypeCodex:
 		return StickySessionKeyPrefixCodex
+	case StickyChannelTypeGeneric:
+		return StickySessionKeyPrefixGeneric
 	default:
 		return StickySessionKeyPrefixClaudeCode // 默认使用 ClaudeCode 前缀
 	}

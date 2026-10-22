@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Sticky sessions for Claude Code, Gemini CLI and Codex account channels never matched: the
+  session lookup asserted an interface the router's request context no longer satisfies, so every
+  request was spread across accounts. They now stick as intended, also without Redis.
 - Request fields that move the upstream to a pricier processing tier are no longer forwarded by
   default: OpenAI `service_tier` `priority` / `fast` / `ultrafast` on Chat Completions and Responses,
   and Claude `speed: "fast"` and `inference_geo: "us"` on the native Messages pass-through. The
@@ -37,6 +40,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Session affinity on every channel type: requests of one client session stay on the channel that
+  served the session, so the upstream prompt cache keeps hitting when several channels serve a
+  model. Sessions are identified by the Claude Code session in `metadata.user_id`, a session
+  header (`session_id`, as sent by Codex), the OpenAI `prompt_cache_key`, or the same system prompt
+  and first message, scoped to the API key and model. It is on by default and works without Redis
+  (an in-process map is used). The new "Session affinity" settings card turns it off, sets the
+  binding lifetime (default one hour after the last request) and offers a strict mode that returns
+  the error instead of moving a session whose channel fails. Each consume log records whether the
+  request stayed on its bound channel (`session_affinity`), and `GET /api/channel/cache_stats`
+  reports per-channel requests, prompt and cache read tokens and affinity counts.
 - Vercel AI Gateway channel type: OpenAI-compatible relay, model list with prices and metadata
   synced like OpenRouter, and balance lookup through `/v1/credits`.
 - OpenRouter channels report the key's remaining amount as the channel balance and store a quota
