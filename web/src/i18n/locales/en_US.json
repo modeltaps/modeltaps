@@ -3057,6 +3057,7 @@
     "weekStartMonday": "Monday",
     "weekStartSunday": "Sunday",
     "quotaResetLimitRequired": "Enter a quota greater than 0 when a reset period is selected",
+    "limitModelsRequired": "Select at least one model when the model limit is on, otherwise every request with this API key is rejected",
     "quotaResetNext": "Next reset",
     "quotaResetNone": "None",
     "quotaResetPeriod": "Reset limit every...",

@@ -3057,6 +3057,7 @@
     "weekStartMonday": "週一",
     "weekStartSunday": "週日",
     "quotaResetLimitRequired": "選擇重置週期時必須填寫大於 0 的額度",
+    "limitModelsRequired": "開啟模型限制後至少選擇一個模型，否則該 API Key 的所有請求都會被拒絕",
     "quotaResetNext": "下次重置",
     "quotaResetNone": "無",
     "quotaResetPeriod": "重置週期",

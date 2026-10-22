@@ -98,6 +98,7 @@ export default function TokenSheet({
   const [nameError, setNameError] = useState('');
   const [quotaError, setQuotaError] = useState('');
   const [periodLimitError, setPeriodLimitError] = useState('');
+  const [modelLimitError, setModelLimitError] = useState('');
 
   const setField = (path, value) => {
     setValues((prev) => {
@@ -117,6 +118,7 @@ export default function TokenSheet({
     setNameError('');
     setQuotaError('');
     setPeriodLimitError('');
+    setModelLimitError('');
     API.get('/api/available_model')
       .then((res) => {
         const { success, data } = res.data;
@@ -189,6 +191,12 @@ export default function TokenSheet({
     // 选了周期则额度即为每周期上限，必须 > 0
     if (period && (quotaEmpty || quotaVal <= 0)) {
       setPeriodLimitError(t('token_index.quotaResetLimitRequired'));
+      return;
+    }
+    const modelLimit = values.setting?.limits?.limit_model_setting;
+    // 开启模型限制但一个模型都没选时，服务端会拒绝全部请求，保存前拦下
+    if (modelLimit?.enabled && !(modelLimit.models?.length > 0)) {
+      setModelLimitError(t('token_index.limitModelsRequired'));
       return;
     }
     setSaving(true);
@@ -423,14 +431,19 @@ export default function TokenSheet({
                 onCheckedChange={(c) => {
                   setField('setting.limits.limit_model_setting.enabled', c);
                   if (!c) setField('setting.limits.limit_model_setting.models', []);
+                  setModelLimitError('');
                 }}
               >
                 <ModelLimitSelector
                   models={models}
                   value={values.setting.limits.limit_model_setting.models}
-                  onChange={(ids) => setField('setting.limits.limit_model_setting.models', ids)}
+                  onChange={(ids) => {
+                    setField('setting.limits.limit_model_setting.models', ids);
+                    setModelLimitError('');
+                  }}
                   getGroupLabel={getGroupLabel}
                 />
+                {modelLimitError && <p className="text-sm text-destructive">{modelLimitError}</p>}
               </FeatureToggle>
 
               <FeatureToggle

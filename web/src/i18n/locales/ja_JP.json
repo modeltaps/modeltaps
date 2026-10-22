@@ -3057,6 +3057,7 @@
     "weekStartMonday": "月曜",
     "weekStartSunday": "日曜",
     "quotaResetLimitRequired": "リセット期間を選択した場合は 0 より大きいクォータを入力してください",
+    "limitModelsRequired": "モデル制限をオンにする場合は少なくとも 1 つのモデルを選択してください。選択しないと、この API キーのリクエストはすべて拒否されます",
     "quotaResetNext": "次回リセット",
     "quotaResetNone": "なし",
     "quotaResetPeriod": "リセット周期",

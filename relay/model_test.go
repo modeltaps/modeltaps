@@ -819,10 +819,8 @@ func TestGetTaskProvider_ExemptFromCatalogEnforce(t *testing.T) {
 		return c
 	}
 
+	// 令牌限制与目录校验都按 model_not_found 拒绝，以令牌限制的文案区分是否越过了目录校验
 	_, _, err := GetTaskProvider(newCtx(), "chirp-v3-5")
-	if IsModelNotFound(err) {
-		t.Fatalf("任务型入口不应被目录校验拦下, got %v", err)
-	}
 	if err == nil || !strings.Contains(err.Error(), "not supported for current token") {
 		t.Fatalf("任务型入口应越过目录校验到达令牌限制, got %v", err)
 	}
