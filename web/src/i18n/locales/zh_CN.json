@@ -2284,7 +2284,16 @@
         "unifiedRequestResponseModelDescription": "响应中的 model 字段返回用户请求的原始模型名，而非渠道映射后的实际模型名",
         "modelNameCaseInsensitive": "模型名称大小写不敏感",
         "modelNameCaseInsensitiveDescription": "匹配渠道与模型价格时忽略模型名大小写",
-        "saveButton": "保存通用设置"
+        "saveButton": "保存通用设置",
+        "sessionAffinityEnabled": "同一会话固定到一个渠道",
+        "sessionAffinityEnabledDescription": "同一客户端会话（Claude Code 会话、Codex session_id、OpenAI prompt_cache_key，或相同的系统提示词与首条消息）的请求发往最初服务它的渠道，保证上游提示缓存持续命中。Claude Code、Gemini CLI、Codex 账号渠道始终保持粘性。",
+        "sessionAffinityStrict": "失败时不切换会话渠道",
+        "sessionAffinityStrictDescription": "会话绑定的渠道失败时直接返回错误，不换其他渠道重试。换渠道会丢掉上游缓存和 Codex 会话状态；关闭则优先保证可用性。",
+        "sessionAffinityTTL": {
+          "label": "会话保持时长（秒）",
+          "placeholder": "3600",
+          "description": "会话最后一次请求之后保持绑定的时长。"
+        }
       },
       "invoice": {
         "title": "账单设置",
@@ -2797,6 +2806,7 @@
       "display": "显示",
       "externalLinks": "外链",
       "retry": "重试",
+      "sessionAffinity": "会话亲和",
       "errorHandling": "错误处理",
       "modelNameMatch": "模型名匹配",
       "channelAuto": "渠道自动禁用与恢复",

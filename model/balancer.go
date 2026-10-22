@@ -192,122 +192,134 @@ func (cc *ChannelsChooser) ChangeStatus(channelId int, status bool) {
 	}
 }
 
+// SessionAffinityContextKey 记录本次选渠道的会话亲和结果，写入消费日志 metadata：
+// "hit" 沿用会话已绑定的渠道，"bound" 为会话新绑定了渠道；未识别出会话时为空。
+const SessionAffinityContextKey = "session_affinity"
+
+// isAccountPoolChannelType 账号池类型沿用各自原有的会话识别与 TTL，且始终开启。
+func isAccountPoolChannelType(channelType int) bool {
+	switch channelType {
+	case config.ChannelTypeClaudeCode, config.ChannelTypeGeminiCli, config.ChannelTypeCodex:
+		return true
+	}
+	return false
+}
+
+// stickyKey 返回会话亲和的 (session hash, key 类型)。账号池类型按渠道类型分 key；
+// 其余类型在开启通用会话亲和时按「令牌 + 模型 + 会话标识」共用一个命名空间，
+// 这样同一会话可以在 OpenRouter、Anthropic、Bedrock 等不同类型的渠道之间固定到一个。
+func stickyKey(channel *Channel, modelName string, ginContext interface{}) (string, int) {
+	if channel == nil || ginContext == nil {
+		return "", 0
+	}
+	if isAccountPoolChannelType(channel.Type) {
+		return generateSessionHashForChannel(channel, ginContext), channel.Type
+	}
+	if !config.SessionAffinityEnabled {
+		return "", 0
+	}
+	c, ok := ginContext.(*gin.Context)
+	if !ok {
+		return "", 0
+	}
+	return session.GenerateGenericSessionHash(c, modelName), redis.StickyChannelTypeGeneric
+}
+
+// stickyTTL 账号池类型保持原有 1 小时；通用会话亲和取 SessionAffinityTTLSeconds，命中即续期。
+func stickyTTL(keyType int) time.Duration {
+	if keyType == redis.StickyChannelTypeGeneric && config.SessionAffinityTTLSeconds > 0 {
+		return time.Duration(config.SessionAffinityTTLSeconds) * time.Second
+	}
+	return redis.DefaultStickySessionTTL
+}
+
+func setSessionAffinity(ginContext interface{}, value string) {
+	if c, ok := ginContext.(*gin.Context); ok {
+		c.Set(SessionAffinityContextKey, value)
+	}
+}
+
 // checkStickySession 检查是否有粘性 session 映射，如果有且渠道可用，则返回该渠道
 func (cc *ChannelsChooser) checkStickySession(channelIds []int, filters []ChannelsFilterFunc, modelName string, ginContext interface{}) *Channel {
-	if !config.RedisEnabled || ginContext == nil || len(channelIds) == 0 {
+	if ginContext == nil || len(channelIds) == 0 {
 		return nil
 	}
+	setSessionAffinity(ginContext, "")
 
-	// 获取第一个候选渠道以确定渠道类型（同一批候选渠道类型相同）
+	// 以第一个候选渠道决定 key 类型（同一优先级内通常类型一致；账号池类型各用各的 key）
 	firstChoice, ok := cc.Channels[channelIds[0]]
 	if !ok {
 		return nil
 	}
 
-	// 根据渠道类型生成 session hash（session hash 与具体渠道无关，只与请求内容和渠道类型有关）
-	sessionHash := generateSessionHashForChannel(firstChoice.Channel, ginContext)
+	sessionHash, keyType := stickyKey(firstChoice.Channel, modelName, ginContext)
 	if sessionHash == "" {
 		return nil
 	}
 
-	// 检查 Redis 中是否有映射（传递渠道类型以使用正确的 key 前缀）
-	channelType := firstChoice.Channel.Type
-	mappedChannelID, err := redis.GetStickySessionMapping(sessionHash, channelType)
-	if err != nil || mappedChannelID <= 0 {
+	mappedChannelID := stickyLookup(sessionHash, keyType)
+	if mappedChannelID <= 0 {
 		return nil
 	}
 
-	// 检查映射的渠道是否存在且未被禁用
+	// 映射的渠道不存在、已禁用、不在本优先级候选里、冷却中或被过滤器排除时，解除绑定，
+	// 由下方按权重重新选择并重新绑定。
 	mappedChoice, ok := cc.Channels[mappedChannelID]
-	if !ok || mappedChoice.Disable {
-		// 映射的渠道不存在或已禁用，删除映射
-		redis.DeleteStickySessionMapping(sessionHash, channelType)
+	if !ok || mappedChoice.Disable || !utils.Contains(mappedChannelID, channelIds) || cc.IsInCooldown(mappedChannelID, modelName) {
+		stickyForget(sessionHash, keyType)
 		return nil
 	}
-
-	// 检查映射的渠道是否在候选列表中
-	isInCandidates := false
-	for _, channelId := range channelIds {
-		if channelId == mappedChannelID {
-			isInCandidates = true
-			break
-		}
-	}
-	if !isInCandidates {
-		// 映射的渠道不在候选列表中，删除映射
-		redis.DeleteStickySessionMapping(sessionHash, channelType)
-		return nil
-	}
-
-	// 检查渠道是否在冷却中
-	if cc.IsInCooldown(mappedChannelID, modelName) {
-		// 渠道在冷却中，删除映射
-		redis.DeleteStickySessionMapping(sessionHash, channelType)
-		return nil
-	}
-
-	// 检查过滤器
 	for _, filter := range filters {
 		if filter(mappedChannelID, mappedChoice) {
-			// 渠道被过滤器排除，删除映射
-			redis.DeleteStickySessionMapping(sessionHash, channelType)
+			stickyForget(sessionHash, keyType)
 			return nil
 		}
 	}
 
-	// 渠道可用，续期 TTL 并返回
-	ttl := 1 * time.Hour
-	renewalThresholdMinutes := 0 // 默认 0（不续期），与 code-relay-demo 保持一致
-	redis.ExtendStickySessionMappingTTL(sessionHash, channelType, ttl, renewalThresholdMinutes)
-
-	// 安全截取 session hash 用于日志显示
-	sessionHashPreview := sessionHash
-	if len(sessionHash) > 8 {
-		sessionHashPreview = sessionHash[:8]
+	// 通用会话亲和按最后一次请求续期，长会话不会中途换渠道。
+	if keyType == redis.StickyChannelTypeGeneric {
+		_ = stickyBind(sessionHash, mappedChannelID, keyType, stickyTTL(keyType))
 	}
+	setSessionAffinity(ginContext, "hit")
 
-	// 从 ginContext 获取 context.Context 用于日志
 	if gc, ok := ginContext.(*gin.Context); ok {
 		logger.LogInfo(gc.Request.Context(), fmt.Sprintf("✓ Using sticky session for %s channel %d (session: %s)",
-			getChannelTypeName(mappedChoice.Channel.Type), mappedChannelID, sessionHashPreview))
+			getChannelTypeName(mappedChoice.Channel.Type), mappedChannelID, sessionHashPreview(sessionHash)))
 	}
 
 	return mappedChoice.Channel
 }
 
 // createStickySession 为选定的渠道创建粘性 session 映射
-func (cc *ChannelsChooser) createStickySession(channel *Channel, ginContext interface{}) {
-	if !config.RedisEnabled || ginContext == nil || channel == nil {
+func (cc *ChannelsChooser) createStickySession(channel *Channel, modelName string, ginContext interface{}) {
+	if ginContext == nil || channel == nil {
 		return
 	}
 
-	sessionHash := generateSessionHashForChannel(channel, ginContext)
+	sessionHash, keyType := stickyKey(channel, modelName, ginContext)
 	if sessionHash == "" {
 		return
 	}
 
-	ttl := 1 * time.Hour
-	channelType := channel.Type
-	err := redis.SetStickySessionMapping(sessionHash, channel.Id, channelType, ttl)
-	if err != nil {
-		// 从 ginContext 获取 context.Context 用于日志
+	if err := stickyBind(sessionHash, channel.Id, keyType, stickyTTL(keyType)); err != nil {
 		if gc, ok := ginContext.(*gin.Context); ok {
 			logger.LogError(gc.Request.Context(), fmt.Sprintf("Failed to create sticky session mapping: %v", err))
 		}
 		return
 	}
+	setSessionAffinity(ginContext, "bound")
 
-	// 安全截取 session hash 用于日志显示
-	sessionHashPreview := sessionHash
-	if len(sessionHash) > 8 {
-		sessionHashPreview = sessionHash[:8]
-	}
-
-	// 从 ginContext 获取 context.Context 用于日志
 	if gc, ok := ginContext.(*gin.Context); ok {
 		logger.LogInfo(gc.Request.Context(), fmt.Sprintf("✓ Created sticky session for %s channel %d (session: %s)",
-			getChannelTypeName(channel.Type), channel.Id, sessionHashPreview))
+			getChannelTypeName(channel.Type), channel.Id, sessionHashPreview(sessionHash)))
 	}
+}
+
+func sessionHashPreview(sessionHash string) string {
+	if len(sessionHash) > 8 {
+		return sessionHash[:8]
+	}
+	return sessionHash
 }
 
 // generateSessionHashForChannel 根据渠道类型生成 session hash
@@ -316,13 +328,10 @@ func generateSessionHashForChannel(channel *Channel, ginContext interface{}) str
 		return ""
 	}
 
-	// 类型断言为 *gin.Context
-	c, ok := ginContext.(interface {
-		Get(key string) (value interface{}, exists bool)
-		GetHeader(key string) string
-		ClientIP() string
-	})
-	if !ok {
+	// 必须断言具体类型：gin v1.12 的 Get 签名是 Get(key any)，按 Get(key string) 声明的
+	// 接口断言恒失败，账号池渠道的粘性会话曾因此整体失效。
+	c, ok := ginContext.(*gin.Context)
+	if !ok || c == nil {
 		return ""
 	}
 
@@ -616,7 +625,7 @@ func (cc *ChannelsChooser) balancer(channelIds []int, filters []ChannelsFilterFu
 	if len(validChannels) == 1 {
 		selectedChannel := validChannels[0].Channel
 		// 建立新的粘性 session 映射
-		cc.createStickySession(selectedChannel, ginContext)
+		cc.createStickySession(selectedChannel, modelName, ginContext)
 		return selectedChannel
 	}
 
@@ -627,7 +636,7 @@ func (cc *ChannelsChooser) balancer(channelIds []int, filters []ChannelsFilterFu
 		if choiceWeight < 0 {
 			selectedChannel := choice.Channel
 			// 建立新的粘性 session 映射
-			cc.createStickySession(selectedChannel, ginContext)
+			cc.createStickySession(selectedChannel, modelName, ginContext)
 			return selectedChannel
 		}
 	}

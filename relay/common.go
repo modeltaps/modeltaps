@@ -791,6 +791,11 @@ func shouldRetry(c *gin.Context, apiErr *types.OpenAIErrorWithStatusCode, channe
 		return false
 	}
 
+	// 严格会话亲和：会话绑定的渠道失败时不换渠道，换渠道会丢掉上游缓存（及 Codex 的会话状态）。
+	if config.SessionAffinityStrict && c.GetString(model.SessionAffinityContextKey) == "hit" {
+		return false
+	}
+
 	switch apiErr.StatusCode {
 	case http.StatusTooManyRequests, http.StatusTemporaryRedirect:
 		return true

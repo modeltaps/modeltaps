@@ -74,6 +74,8 @@ type Quota struct {
 	promptCachingInjected bool
 	promptCachingTTL      string
 	promptCachingStrategy string
+	// sessionAffinity 会话亲和结果(hit / bound),非空时写入消费日志 metadata。
+	sessionAffinity string
 
 	// App 归因(W9-B,additive):NewQuota 时从请求头捕获并 sanitize,GetLogMeta 时非空才写。
 	// appName 取 X-Title,缺省回退 appDomain;appDomain 取 Referer 域名;userAgent 取 User-Agent。
@@ -379,6 +381,9 @@ type ConsumeSnapshot struct {
 	PromptCachingTTL      string
 	PromptCachingStrategy string
 
+	// SessionAffinity 本次选渠道的会话亲和结果（hit / bound），由选渠道时写入 gin.Context。
+	SessionAffinity string
+
 	// LogIODetail 为 LogIO opt-in 时抓取的请求/响应 body 明细(同步路径在 Consume 内填充)。
 	// 异步路径(NewConsumeSnapshot 直调)保持 nil,不写 log_details。
 	LogIODetail *model.LogIODetail
@@ -398,6 +403,8 @@ func NewConsumeSnapshot(c *gin.Context) ConsumeSnapshot {
 		PromptCachingInjected: c.GetBool("prompt_caching_injected"),
 		PromptCachingTTL:      c.GetString("prompt_caching_ttl"),
 		PromptCachingStrategy: c.GetString("prompt_caching_strategy"),
+
+		SessionAffinity: c.GetString(model.SessionAffinityContextKey),
 	}
 }
 
@@ -422,6 +429,7 @@ func (q *Quota) ConsumeWithSnapshot(snap ConsumeSnapshot, usage *types.Usage, is
 	q.promptCachingInjected = snap.PromptCachingInjected
 	q.promptCachingTTL = snap.PromptCachingTTL
 	q.promptCachingStrategy = snap.PromptCachingStrategy
+	q.sessionAffinity = snap.SessionAffinity
 	ctx := snap.Ctx
 	defer func() {
 		if r := recover(); r != nil {

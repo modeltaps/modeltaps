@@ -2424,7 +2424,16 @@
           "placeholder": "例如發卡網站的購買鏈接"
         },
         "unifiedRequestResponseModel": "統一請求響應模型",
-        "unifiedRequestResponseModelDescription": "響應中的 model 字段返回用戶請求的原始模型名，而非渠道映射後的實際模型名"
+        "unifiedRequestResponseModelDescription": "響應中的 model 字段返回用戶請求的原始模型名，而非渠道映射後的實際模型名",
+        "sessionAffinityEnabled": "同一會話固定到一個渠道",
+        "sessionAffinityEnabledDescription": "同一客戶端會話（Claude Code 會話、Codex session_id、OpenAI prompt_cache_key，或相同的系統提示詞與首條訊息）的請求發往最初服務它的渠道，確保上游提示快取持續命中。Claude Code、Gemini CLI、Codex 帳戶渠道始終保持黏性。",
+        "sessionAffinityStrict": "失敗時不切換會話渠道",
+        "sessionAffinityStrictDescription": "會話綁定的渠道失敗時直接返回錯誤，不換其他渠道重試。換渠道會丟失上游快取和 Codex 會話狀態；關閉則優先保證可用性。",
+        "sessionAffinityTTL": {
+          "label": "會話保持時長（秒）",
+          "placeholder": "3600",
+          "description": "會話最後一次請求之後保持綁定的時長。"
+        }
       },
       "imageProxySettings": {
         "title": "圖片代理"
@@ -2885,6 +2894,7 @@
       "display": "顯示",
       "externalLinks": "外部連結",
       "retry": "重試",
+      "sessionAffinity": "會話親和",
       "errorHandling": "錯誤處理",
       "modelNameMatch": "模型名匹配",
       "channelAuto": "渠道自動禁用與恢復",
