@@ -1591,6 +1591,13 @@
       "cooldown": "已冷却",
       "failed": "失败",
       "errorLabel": "错误"
+    },
+    "responseModel": {
+      "mismatchShort": "上游返回了其他模型",
+      "mismatchTooltip": "上游声明本次响应来自 {{model}}，与请求的模型和映射后的模型都不一致，供应商可能换了模型。",
+      "upstreamModel": "发给上游的模型",
+      "responseModel": "响应声明的模型",
+      "mismatchValue": "{{model}}（与请求不符）"
     }
   },
   "redemptionPage": {

@@ -361,9 +361,22 @@ func unifiedModelSource(ctx *gin.Context) string {
 	return ""
 }
 
+// ObserveUpstreamModel 记下上游响应声明的模型名。部分调用方传入的是请求时的模型名（映射后），
+// 因此已记下的值等于映射后的名字时，后来观察到的不同名字会覆盖它；一旦记下不同的名字就不再改。
+func ObserveUpstreamModel(ctx *gin.Context, name string) {
+	if ctx == nil || name == "" {
+		return
+	}
+	cur := ctx.GetString(config.GinUpstreamResponseModelKey)
+	if cur == "" || (cur != name && cur == ctx.GetString("new_model")) {
+		ctx.Set(config.GinUpstreamResponseModelKey, name)
+	}
+}
+
 // GetResponseModelNameFromContext 从 Context 获取响应模型名称的静态函数
 // 用于流式响应等无法访问 BaseProvider 的场景
 func GetResponseModelNameFromContext(ctx *gin.Context, fallbackModel string) string {
+	ObserveUpstreamModel(ctx, fallbackModel)
 	if originalModel, ok := resolveUnifiedModel(ctx, fallbackModel); ok {
 		return originalModel
 	}
@@ -377,12 +390,13 @@ func GetResponseModelNameFromContext(ctx *gin.Context, fallbackModel string) str
 // modelPath 为 gjson/sjson 路径，如 claude 流式的 "message.model"、responses 的 "response.model"、
 // gemini 的 "modelVersion"。字段不存在或无需替换时返回原始字节、changed=false。
 func UnifyModelInJSONBytes(ctx *gin.Context, raw []byte, modelPath string) (out []byte, changed bool) {
-	if unifiedModelSource(ctx) == "" {
-		return raw, false
-	}
-
 	cur := gjson.GetBytes(raw, modelPath)
 	if !cur.Exists() {
+		return raw, false
+	}
+	ObserveUpstreamModel(ctx, cur.String())
+
+	if unifiedModelSource(ctx) == "" {
 		return raw, false
 	}
 

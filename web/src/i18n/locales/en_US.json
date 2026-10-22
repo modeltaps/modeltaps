@@ -1052,6 +1052,13 @@
       "cooldown": "Cooled down",
       "failed": "Failed",
       "errorLabel": "Error"
+    },
+    "responseModel": {
+      "mismatchShort": "Upstream returned another model",
+      "mismatchTooltip": "The upstream says this response came from {{model}}, which is neither the requested model nor the mapped one. The provider may have served a different model.",
+      "upstreamModel": "Model sent upstream",
+      "responseModel": "Model in the response",
+      "mismatchValue": "{{model}} (does not match the request)"
     }
   },
   "login": {

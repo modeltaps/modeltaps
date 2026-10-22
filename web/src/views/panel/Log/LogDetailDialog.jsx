@@ -857,6 +857,15 @@ export default function LogDetailDialog({
               <div className="space-y-3">
                 {item.type === 5 && <KeyValueRow label={t('logPage.retry.errorLabel')} value={item.content} />}
                 <KeyValueRow label={t('logPage.modelLabel')} value={item.model_name} />
+                {metadata.upstream_model && (
+                  <KeyValueRow label={t('logPage.responseModel.upstreamModel')} value={metadata.upstream_model} />
+                )}
+                {metadata.response_model_mismatch && (
+                  <KeyValueRow
+                    label={t('logPage.responseModel.responseModel')}
+                    value={t('logPage.responseModel.mismatchValue', { model: metadata.response_model })}
+                  />
+                )}
                 <KeyValueRow label={t('logPage.groupLabel')} value={groupName} />
                 <KeyValueRow label={t('logPage.userLabel')} value={item.username} />
                 <KeyValueRow label={t('logPage.sourceIp')} value={item.source_ip} />

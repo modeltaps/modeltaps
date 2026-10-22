@@ -4,6 +4,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/common/utils"
+	"github.com/modeltaps/modeltaps/providers/base"
 	"github.com/modeltaps/modeltaps/providers/openai"
 	"github.com/modeltaps/modeltaps/types"
 	"net/http"
@@ -37,6 +38,8 @@ func (p *GroqProvider) CreateChatCompletion(request *types.ChatCompletionRequest
 
 	*p.Usage = *response.Usage
 
+	// 改写前记下上游声明的模型名，消费日志据此核对上游是否换了模型。
+	base.ObserveUpstreamModel(p.Context, response.Model)
 	// 修改响应中的模型名称为用户请求的原始模型名称
 	responseModel := p.GetResponseModelName(request.Model)
 	response.Model = responseModel

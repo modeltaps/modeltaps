@@ -139,6 +139,7 @@ func (p *ClaudeProvider) CreateClaudeChat(request *ClaudeRequest) (*ClaudeRespon
 	}
 
 	usage := p.GetUsage()
+	base.ObserveUpstreamModel(p.Context, claudeResponse.Model)
 
 	isOk := ClaudeUsageToOpenaiUsage(&claudeResponse.Usage, usage)
 	if !isOk {

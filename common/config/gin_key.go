@@ -26,6 +26,8 @@ const (
 	//   2. relay_util.WithUpstreamRequestID 以它为 context.WithValue 的 key，把值带入异步落库。
 	// 改名/删除前需一并评估这两处，勿当成纯临时 gin 键处理。
 	GinUpstreamRequestIdKey = "upstream_request_id"
+	// GinUpstreamResponseModelKey 上游在响应里声明的模型名（统一模型名改写之前），见 base.ObserveUpstreamModel。
+	GinUpstreamResponseModelKey = "upstream_response_model"
 
 	// GinRawResponseBodyKey 通用的非流式响应字节透传：provider 在确认无需改写响应
 	// （尤其是无模型映射需要改 model）时，把上游原始响应字节暂存到此 key，
