@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   no models, matching the requests it rejects, and the key form no longer saves that combination.
 - Requests for a model the API key may not use return `404 model_not_found` instead of a `503`
   "upstream at capacity" error that SDKs keep retrying.
+- Organization member limits: an organization's own limit can now be unlimited even when the
+  site default is not. `max_members` is null to follow the site default, 0 for unlimited, or a
+  positive limit; existing organizations keep following the site default. Site admins set it from
+  the organization list, which also shows each organization's members against its limit.
 - Claude-protocol requests (`/v1/messages`, as sent by Claude Code) to OpenRouter and Vercel AI
   Gateway channels are forwarded to the gateways' Anthropic-compatible endpoints instead of being
   converted to Chat Completions and back. The conversion dropped the client's `cache_control`

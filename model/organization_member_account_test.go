@@ -44,7 +44,7 @@ func TestCreateOrgMemberAccountMemberCapLocked(t *testing.T) {
 
 	readSeq := recordLockedOrgReads(t, "test:org_member_cap_lock")
 
-	// 传入的 org 结构体仍是旧值(MaxMembers=0),上限须以锁内读到的组织行为准
+	// 传入的 org 结构体仍是旧值(MaxMembers=nil),上限须以锁内读到的组织行为准
 	if _, _, err := CreateOrgMemberAccount(org, "cap-u1", "secret123", "", "", OrgRoleMember, false); err == nil {
 		t.Fatal("成员已达上限,代建应被拒绝")
 	}

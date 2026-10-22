@@ -3413,6 +3413,15 @@
     "quotaNonZero": "额度变更不能为 0",
     "remarkLabel": "备注",
     "remarkPlaceholder": "可选",
+    "maxMembers": "成员上限",
+    "maxMembersTitle": "成员上限 — {{name}}",
+    "maxMembersDesc": "当前 {{count}} 名成员。上限只限制新成员加入，不会移除已有成员。",
+    "maxMembersModeDefault": "跟随站点默认",
+    "maxMembersModeUnlimited": "不限制",
+    "maxMembersModeCustom": "指定数量",
+    "maxMembersValueLabel": "成员数量上限",
+    "maxMembersPositive": "请输入大于 0 的整数",
+    "maxMembersDefaultTag": "默认",
     "columns": {
       "name": "组织",
       "owner": "所有者",
@@ -3433,7 +3442,7 @@
       "maxPerUserLabel": "每用户可创建组织数",
       "maxPerUserDesc": "默认 3。",
       "maxMembersLabel": "组织默认成员上限",
-      "maxMembersDesc": "0 表示不限制。",
+      "maxMembersDesc": "组织未单独设置成员上限时使用此值；0 表示不限制。",
       "intError": "请输入不小于 0 的整数"
     }
   },

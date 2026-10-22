@@ -402,6 +402,7 @@ func SetApiRouter(router *gin.Engine) {
 			organizationAdminRoute.GET("/:id", controller.AdminGetOrganization)
 			organizationAdminRoute.PUT("/:id/status", controller.AdminSetOrganizationStatus)
 			organizationAdminRoute.PUT("/:id/quota", controller.AdminChangeOrganizationQuota)
+			organizationAdminRoute.PUT("/:id/max_members", controller.AdminSetOrganizationMaxMembers)
 			organizationAdminRoute.DELETE("/:id", controller.AdminDissolveOrganization)
 		}
 	}

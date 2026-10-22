@@ -597,6 +597,7 @@ func migrationAfter(db *gorm.DB) error {
 		migrateModelInfoHidden(),
 		migrateModelOwnedByIcon(),
 		migrateModelInfoAudioSpeechEndpoints(),
+		migrateOrgMaxMembersNullable(),
 	})
 	return m.Migrate()
 }
@@ -1616,6 +1617,41 @@ func migrateOrgMemberBudgetColumns() *gormigrate.Migration {
 			}
 			logger.SysLog("migrated organization member budget budget_used/budget_start to dedicated columns")
 			return nil
+		},
+	}
+}
+
+// migrateOrgMaxMembersNullable 把 organizations.max_members 从「0=使用站点默认」改为可空:
+// NULL=使用站点默认,0=不限制,正数=上限。既有 0 改写为 NULL,行为不变;此前 0 无法表达「不限制」。
+func migrateOrgMaxMembersNullable() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202610220001",
+		Migrate: func(tx *gorm.DB) error {
+			if !tx.Migrator().HasTable("organizations") {
+				return nil
+			}
+			switch tx.Dialector.Name() {
+			case "mysql":
+				if err := tx.Exec("ALTER TABLE organizations MODIFY COLUMN `max_members` int NULL DEFAULT NULL").Error; err != nil {
+					return err
+				}
+			case "postgres":
+				if err := tx.Exec(`ALTER TABLE organizations ALTER COLUMN max_members DROP DEFAULT`).Error; err != nil {
+					return err
+				}
+				if err := tx.Exec(`ALTER TABLE organizations ALTER COLUMN max_members DROP NOT NULL`).Error; err != nil {
+					return err
+				}
+			default:
+				// sqlite: 原列仅带 DEFAULT 0、无 NOT NULL,GORM 对 nil 指针显式写入 NULL,无需重建表
+			}
+			return tx.Exec("UPDATE organizations SET max_members = NULL WHERE max_members = 0").Error
+		},
+		Rollback: func(tx *gorm.DB) error {
+			if !tx.Migrator().HasTable("organizations") {
+				return nil
+			}
+			return tx.Exec("UPDATE organizations SET max_members = 0 WHERE max_members IS NULL").Error
 		},
 	}
 }
