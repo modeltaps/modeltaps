@@ -242,7 +242,6 @@ func registerOptions() {
 	config.GlobalOption.RegisterInt("OrganizationMaxPerUser", &config.OrganizationMaxPerUser, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("OrganizationDefaultMaxMembers", &config.OrganizationDefaultMaxMembers, config.ScopeAdmin)
 	config.GlobalOption.RegisterString("OrganizationDissolveQuotaRefund", &config.OrganizationDissolveQuotaRefund, config.ScopeAdmin)
-	config.GlobalOption.RegisterBool("OrganizationUsageVisibleDefault", &config.OrganizationUsageVisibleDefault, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("OrganizationQuotaTransferEnabled", &config.OrganizationQuotaTransferEnabled, config.ScopeAdmin)
 
 	// 令牌周期配额重置的时间设置(TK8a)

@@ -1696,7 +1696,7 @@
       "transferSuccess": "Ownership transferred",
       "transferTarget": "Target Admin",
       "usageVisible": "Members can see everyone's usage",
-      "usageVisibleHint": "When enabled, members can view usage across the organization; otherwise only their own. Site default applies until set.",
+      "usageVisibleHint": "When enabled, members can view usage across the organization; otherwise only their own.",
       "logIOHint": "When off, the platform stores no request or response content and records usage only. When on, bodies are stored (never API keys or auth headers), up to {{kb}} KB per entry, and deleted automatically after 30 days; organization owners/admins and platform admins can read them in log details, regular members cannot.",
       "logIOToggle": "Retain the organization's API request and response bodies"
     },

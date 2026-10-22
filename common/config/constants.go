@@ -406,7 +406,6 @@ var OrganizationEnabled = true                // 组织功能全局开关,默认
 var OrganizationMaxPerUser = 3                // 每用户可创建的组织数量
 var OrganizationDefaultMaxMembers = 10        // 组织默认成员上限,0 表示不限制
 var OrganizationDissolveQuotaRefund = "owner" // 解散时剩余积分处理策略:owner=退回 Owner 个人账户,discard=不退回
-var OrganizationUsageVisibleDefault = true    // 成员用量可见性默认值(Member 是否可见全员用量)
 var OrganizationQuotaTransferEnabled = true   // 个人积分转入组织池开关(单向,默认开启)
 
 // 令牌周期配额重置的站点级时间设置(TK8a)

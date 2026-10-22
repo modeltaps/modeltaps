@@ -739,7 +739,7 @@
       "nameRequired": "组织名称不能为空",
       "avatarUrl": "头像 URL",
       "usageVisible": "成员可见全员用量",
-      "usageVisibleHint": "开启后普通成员可查看全员用量；关闭则仅可见自己。未设置时沿用站点默认值",
+      "usageVisibleHint": "开启后普通成员可查看全员用量；关闭则仅可见自己。",
       "teamBudget": "组织周期预算",
       "teamBudgetHint": "全体成员在该周期内的合计消费上限，用尽后组织内所有请求将被拒绝；不限预算时仅受各成员预算约束",
       "save": "保存",
