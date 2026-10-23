@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Malformed request bodies no longer crash the request with a `500` panic: content parts that are
+  not objects or carry non-string `text` / `image_url` fields are skipped during token counting, an
+  OpenAI `tool_choice` of type `function` without a function name returns `400` instead of
+  panicking on Claude channels, and Ali, Baidu and Zhipu embeddings reject empty, non-string and
+  token-array inputs with `400` instead of panicking or sending an empty input upstream. The panics
+  happened after the quota pre-charge and left it unrefunded.
 - Sticky sessions for Claude Code, Gemini CLI and Codex account channels never matched: the
   session lookup asserted an interface the router's request context no longer satisfies, so every
   request was spread across accounts. They now stick as intended, also without Redis.
