@@ -2965,6 +2965,24 @@
       "logIO": "請求／回應留存",
       "mjNotify": "Midjourney 回調",
       "telegram": "Telegram Bot"
+    },
+    "notifications": {
+      "title": "管理員通知",
+      "description": "選擇透過已設定的通知渠道（電郵、釘釘、飛書、企業微信、Telegram、PushDeer）發送哪些通知。每類通知分別限量。",
+      "kind": {
+        "channel_disabled": "渠道被自動禁用",
+        "channel_enabled": "渠道恢復啟用",
+        "channel_test": "渠道測試完成",
+        "low_balance": "渠道餘額不足",
+        "price_change": "上游價格變動",
+        "model_drift": "上游模型列表變化",
+        "model_consistency": "模型元資訊問題",
+        "credential": "渠道憑證問題"
+      },
+      "limit": {
+        "label": "每類每小時最多條數",
+        "description": "同一類通知一小時內超過這個數量的會被丟棄，下一條通知裏會註明丟棄了多少。0 表示不限。"
+      }
     }
   },
   "shimmer 映射": "shimmer 映射",

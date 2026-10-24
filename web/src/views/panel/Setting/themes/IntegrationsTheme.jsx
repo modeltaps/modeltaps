@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next';
 
-import { ChatCard, MjNotifyCard, BrandIconCard } from '../OtherSettings';
+import { ChatCard, MjNotifyCard, BrandIconCard, NotificationsCard } from '../OtherSettings';
 import Telegram from '../../Telegram';
 import { SettingsCard } from '../parts';
 
 // ==============================|| SYSTEM SETTINGS — 集成 ||============================== //
-// 内置聊天与聊天链接 / Telegram Bot(整页嵌入)/ Midjourney 回调 / 品牌图标。
+// 内置聊天与聊天链接 / Telegram Bot(整页嵌入)/ 管理员通知 / Midjourney 回调 / 品牌图标。
 
 export default function IntegrationsTheme({ ctx }) {
   const { t } = useTranslation();
@@ -16,6 +16,7 @@ export default function IntegrationsTheme({ ctx }) {
       <SettingsCard title={t('setting_index.cards.telegram')} description={t('telegramPage.infoMessage')} highlight="telegram">
         <Telegram embedded />
       </SettingsCard>
+      <NotificationsCard ctx={ctx} />
       <MjNotifyCard ctx={ctx} />
       <BrandIconCard ctx={ctx} />
     </div>

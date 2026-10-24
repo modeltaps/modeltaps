@@ -40,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Admin notifications can be turned on or off per kind (channel disabled / re-enabled, channel
+  test, low balance, price changes, model list changes, model metadata, credential problems) in the
+  new "Admin notifications" settings card, and each kind is limited to 20 notices per hour by
+  default; the first notice after a limited hour says how many were dropped.
 - Upstream model check: the consume log records the model sent upstream when a mapping renamed
   it, and flags a response whose declared model is neither the requested nor the mapped one
   (dated, regional and provider-path variants still match; Azure deployments are skipped). The
