@@ -40,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Hourly channel metrics: attempts, successes, latency, time to first token and output speed per
+  channel and model, counted in memory and written every minute, kept 30 days by default.
+  `GET /api/channel/metrics` returns them; the log settings card turns them off or sets the
+  retention.
 - Channel options for the upstream model check: "Ignored upstream models" (exact names, `*`
   patterns or `re:` regular expressions) are never reported as new, and "Add new upstream models
   automatically" adds newly offered models to the channel with their prices and metadata.
