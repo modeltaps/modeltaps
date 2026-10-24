@@ -323,7 +323,7 @@ export function ChannelAutoCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, setField, toggle, saveKeys, loading, isDirty } = ctx;
   const is = (k) => inputs[k] === 'true';
-  const keys = ['ChannelDisableThreshold', 'DisableChannelKeywords', 'ChannelTestMode', 'ChannelTestIntervalMinutes'];
+  const keys = ['ChannelDisableThreshold', 'DisableChannelKeywords', 'ChannelTestMode', 'ChannelTestIntervalMinutes', 'ChannelCredentialRefreshMinutes'];
   const ms = (k) => t(`setting_index.operationSettings.monitoringSettings.${k}`);
 
   return (
@@ -377,6 +377,16 @@ export function ChannelAutoCard({ ctx }) {
           disabled={loading || inputs.ChannelTestMode === 'off'}
         />
       </div>
+      <TextRow
+        id="ChannelCredentialRefreshMinutes"
+        type="number"
+        label={ms('credentialRefresh.label')}
+        value={inputs.ChannelCredentialRefreshMinutes}
+        onChange={(v) => setField('ChannelCredentialRefreshMinutes', v)}
+        placeholder="30"
+        description={ms('credentialRefresh.description')}
+        disabled={loading}
+      />
       <TextRow
         id="ChannelDisableThreshold"
         type="number"

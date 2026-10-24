@@ -282,6 +282,10 @@ var ChannelTestMode = "recovery"
 // ChannelTestIntervalMinutes 定时渠道测试的间隔（分钟）。
 var ChannelTestIntervalMinutes = 10
 
+// ChannelCredentialRefreshMinutes 账号类渠道（Codex、Claude Code、Gemini CLI、Antigravity）
+// OAuth 凭证的后台刷新间隔（分钟）：即将过期的凭证提前刷新，空闲渠道不再因凭证过期而失效。0 关闭。
+var ChannelCredentialRefreshMinutes = 30
+
 // LogRelayErrorEnabled 请求最终失败（含重试后仍失败）时写一条错误日志，记录每次尝试的渠道与状态码。
 // 本地拒绝（余额不足、参数校验等）不写。
 var LogRelayErrorEnabled = true

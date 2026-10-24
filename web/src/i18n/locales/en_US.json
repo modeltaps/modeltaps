@@ -2554,6 +2554,10 @@
         "channelTestInterval": {
           "label": "Test interval (minutes)",
           "description": "Time between scheduled channel tests, at least 1 minute."
+        },
+        "credentialRefresh": {
+          "label": "Account credential refresh (minutes)",
+          "description": "How often OAuth credentials of Codex, Claude Code, Gemini CLI and Antigravity channels are checked; those expiring soon are refreshed even when the channel is idle or auto-disabled. Failures are sent as a credential notice. 0 turns it off."
         }
       },
       "otherSettings": {
