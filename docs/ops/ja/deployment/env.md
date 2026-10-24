@@ -147,7 +147,7 @@ LOGS_FILENAME="modeltaps.log"
 - `CHANNEL_PRICING_AUTO_SYNC`：チャネル価格を自動同期するか。既定は `true`。
 - `UNPRICED_MODEL_POLICY`：価格未設定モデルに対するポリシー。既定は `block`。
 - `UNPRICED_MODEL_DEFAULT_RATIO`：価格未設定モデルの既定倍率。既定は `30.0`。
-- `MODEL_DRIFT_AUTO_CHECK`：モデルのドリフトを自動検出するか。既定は `false`。
+- `MODEL_DRIFT_AUTO_CHECK`：チャネルのモデルと上流のモデル一覧の差分（上流での削除・追加）を毎日自動で検出するか。既定は `true`。チャネルの「上流の新しいモデルを自動で追加」はこの検出に依存します。
 
 ### ログ / メトリクス / 連携
 
