@@ -40,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Channel options for the upstream model check: "Ignored upstream models" (exact names, `*`
+  patterns or `re:` regular expressions) are never reported as new, and "Add new upstream models
+  automatically" adds newly offered models to the channel with their prices and metadata.
 - Admin notifications can be turned on or off per kind (channel disabled / re-enabled, channel
   test, low balance, price changes, model list changes, model metadata, credential problems) in the
   new "Admin notifications" settings card, and each kind is limited to 20 notices per hour by
@@ -79,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The daily upstream model check (`MODEL_DRIFT_AUTO_CHECK`) is on by default.
 - Automatic price syncs (startup, daily, channel save) write new models and price increases, and
   hold decreases for review; held changes and locked prices below the upstream price are sent as
   notifications. The "Automatic price sync" setting in the billing settings can write every change

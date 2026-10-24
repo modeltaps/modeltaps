@@ -64,7 +64,9 @@ const EMPTY = {
   allow_extra_body: false,
   pass_through_body: false,
   allow_service_tier: false,
-  unified_request_response_model: false
+  unified_request_response_model: false,
+  drift_ignore_rules: '',
+  drift_auto_add: false
 };
 
 // Same values as v1 PreCostType (type/other.js): 1=normal, 2=skip images, 3=skip all.
@@ -438,7 +440,9 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
         allow_extra_body: !!data.allow_extra_body,
         pass_through_body: !!data.pass_through_body,
         allow_service_tier: !!data.allow_service_tier,
-        unified_request_response_model: !!data.unified_request_response_model
+        unified_request_response_model: !!data.unified_request_response_model,
+        drift_ignore_rules: data.drift_ignore_rules ?? '',
+        drift_auto_add: !!data.drift_auto_add
       });
       setHasTag(!!data.tag);
       // Seed the original-name mapping from the stored model_mapping so later
@@ -848,6 +852,17 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
 
           <FormField id="channel-test-model" label={t('channel_index.testModel')} hint={configText(t, defaultConfig.prompt.test_model)}>
             <Input id="channel-test-model" {...register('test_model')} />
+          </FormField>
+
+          <ToggleRow control={control} name="drift_auto_add" label={t('channel_edit.drift.autoAdd')} help={t('channel_edit.drift.autoAddHelp')} />
+          <FormField id="channel-drift-ignore" label={t('channel_edit.drift.ignoreRules')} help={t('channel_edit.drift.ignoreRulesHelp')}>
+            <Textarea
+              id="channel-drift-ignore"
+              rows={3}
+              className="font-mono text-xs"
+              placeholder={'*-preview\nre:^gpt-4o-audio'}
+              {...register('drift_ignore_rules')}
+            />
           </FormField>
         </TabsContent>
 

@@ -32,7 +32,34 @@ func CheckChannelModelDrift(channel *model.Channel) (*model.ModelDriftResult, er
 	if !ok {
 		return nil, err
 	}
+	result.NewModels = filterIgnoredModels(result.NewModels, newDriftIgnoreMatcher(channel.DriftIgnoreRules))
 	return result, nil
+}
+
+func filterIgnoredModels(models []string, matcher *driftIgnoreMatcher) []string {
+	var kept []string
+	for _, m := range models {
+		if !matcher.ignored(m) {
+			kept = append(kept, m)
+		}
+	}
+	return kept
+}
+
+// applyDriftAutoAdd adds the new upstream models to a channel that opted in, clears them
+// from the drift result and fills their prices and metadata. It returns the models added.
+func applyDriftAutoAdd(ch *model.Channel, result *model.ModelDriftResult) []string {
+	if !ch.DriftAutoAdd || len(result.NewModels) == 0 {
+		return nil
+	}
+	added := result.NewModels
+	if err := ch.AddDriftModels(added); err != nil {
+		logger.SysError("model drift auto add failed for channel " + ch.Name + ": " + err.Error())
+		return nil
+	}
+	result.NewModels = nil
+	AutoSyncChannelCatalog(ch.Type, strings.Join(added, ","), "drift auto add")
+	return added
 }
 
 // DriftedChannel 记录一个检出漂移或有上游新增模型的渠道，供通知与手动触发 API 汇报。
@@ -41,6 +68,7 @@ type DriftedChannel struct {
 	ChannelName   string   `json:"channel_name"`
 	MissingModels []string `json:"missing_models"`
 	NewModels     []string `json:"new_models,omitempty"`
+	AddedModels   []string `json:"added_models,omitempty"`
 }
 
 // ModelDriftCheckSummary 汇总一次全量漂移检测：写回结果的渠道数、检出漂移的渠道数、有上游新增的渠道数与其明细。
@@ -48,6 +76,7 @@ type ModelDriftCheckSummary struct {
 	Checked  int              `json:"checked"`
 	Drifted  int              `json:"drifted"`
 	WithNew  int              `json:"with_new"`
+	Added    int              `json:"added"`
 	Channels []DriftedChannel `json:"channels"`
 }
 
@@ -72,23 +101,28 @@ func CheckAllChannelsModelDrift() (*ModelDriftCheckSummary, error) {
 			}
 			continue
 		}
+		added := applyDriftAutoAdd(ch, result)
 		if err := ch.UpdateModelDrift(*result); err != nil {
 			logger.SysError("model drift persist failed for channel " + ch.Name + ": " + err.Error())
 			continue
 		}
 		summary.Checked++
+		if len(added) > 0 {
+			summary.Added++
+		}
 		if !result.OK {
 			summary.Drifted++
 		}
 		if len(result.NewModels) > 0 {
 			summary.WithNew++
 		}
-		if !result.OK || len(result.NewModels) > 0 {
+		if !result.OK || len(result.NewModels) > 0 || len(added) > 0 {
 			summary.Channels = append(summary.Channels, DriftedChannel{
 				ChannelId:     ch.Id,
 				ChannelName:   ch.Name,
 				MissingModels: result.MissingModels,
 				NewModels:     result.NewModels,
+				AddedModels:   added,
 			})
 		}
 	}
@@ -102,7 +136,7 @@ func CheckAndNotifyModelDrift() (*ModelDriftCheckSummary, error) {
 	if err != nil {
 		return nil, err
 	}
-	if summary.Drifted > 0 || summary.WithNew > 0 {
+	if summary.Drifted > 0 || summary.WithNew > 0 || summary.Added > 0 {
 		notifyModelDrift(summary)
 	}
 	return summary, nil
@@ -117,6 +151,9 @@ func notifyModelDrift(summary *ModelDriftCheckSummary) {
 	if summary.WithNew > 0 {
 		parts = append(parts, fmt.Sprintf("%d channel(s) with new upstream models", summary.WithNew))
 	}
+	if summary.Added > 0 {
+		parts = append(parts, fmt.Sprintf("%d channel(s) with models added automatically", summary.Added))
+	}
 	subject := "Detected " + strings.Join(parts, ", ")
 
 	var b strings.Builder
@@ -126,6 +163,9 @@ func notifyModelDrift(summary *ModelDriftCheckSummary) {
 		}
 		if len(ch.NewModels) > 0 {
 			b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d) has new upstream models: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(ch.NewModels, ", ")))
+		}
+		if len(ch.AddedModels) > 0 {
+			b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d) added upstream models automatically: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(ch.AddedModels, ", ")))
 		}
 	}
 	notify.SendKind(notify.KindModelDrift, subject, b.String())
@@ -150,6 +190,7 @@ func CheckModelDrift(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			return
 		}
+		applyDriftAutoAdd(channel, result)
 		if err := channel.UpdateModelDrift(*result); err != nil {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			return
