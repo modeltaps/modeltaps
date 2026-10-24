@@ -74,8 +74,38 @@ func maskHostForPlainDomain(domain string) string {
 	return stars + "." + strings.Join(tail, ".")
 }
 
+// publicDocHosts 是供应商公开的文档 / 控制台站点。上游错误常附带这些链接（如配额说明、
+// 参数文档），它们不暴露渠道配置的地址、代理或密钥，保留可读以便客户端排查；
+// API 端点主机不在其列，渠道自定义的 base URL 与代理地址照常遮蔽。
+var publicDocHosts = map[string]struct{}{
+	"platform.openai.com":   {},
+	"help.openai.com":       {},
+	"developers.openai.com": {},
+	"docs.anthropic.com":    {},
+	"docs.claude.com":       {},
+	"platform.claude.com":   {},
+	"support.anthropic.com": {},
+	"console.anthropic.com": {},
+	"ai.google.dev":         {},
+	"aistudio.google.com":   {},
+	"cloud.google.com":      {},
+	"docs.aws.amazon.com":   {},
+	"learn.microsoft.com":   {},
+	"openrouter.ai":         {},
+	"docs.mistral.ai":       {},
+	"api-docs.deepseek.com": {},
+	"docs.x.ai":             {},
+	"console.groq.com":      {},
+}
+
+func isPublicDocHost(host string) bool {
+	_, ok := publicDocHosts[strings.ToLower(host)]
+	return ok
+}
+
 // MaskSensitiveInfo 屏蔽错误消息中的 URL、域名、IP 与 api_key 字面量,
 // 用于将上游错误回写客户端前的最后一道脱敏。规则与渠道脱敏约定对齐。
+// 供应商公开文档站点（publicDocHosts）的链接保留原样，但其中的 api_key 仍会被遮蔽。
 func MaskSensitiveInfo(str string) string {
 	str = maskURLPattern.ReplaceAllStringFunc(str, func(urlStr string) string {
 		u, err := url.Parse(urlStr)
@@ -85,6 +115,9 @@ func MaskSensitiveInfo(str string) string {
 
 		host := u.Host
 		if host == "" {
+			return urlStr
+		}
+		if isPublicDocHost(host) && u.RawQuery == "" && u.User == nil {
 			return urlStr
 		}
 
@@ -125,6 +158,9 @@ func MaskSensitiveInfo(str string) string {
 	})
 
 	str = maskDomainPattern.ReplaceAllStringFunc(str, func(domain string) string {
+		if isPublicDocHost(domain) {
+			return domain
+		}
 		return maskHostForPlainDomain(domain)
 	})
 
