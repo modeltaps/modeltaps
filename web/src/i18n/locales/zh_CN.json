@@ -2406,7 +2406,10 @@
         "autoDeleteDays": "自动清理保留天数",
         "autoDeleteDaysDescription": "超过该天数的消费日志将被自动删除",
         "logRelayError": "记录失败的请求",
-        "logRelayErrorDescription": "请求在重试后仍失败时写一条日志，记录客户端收到的错误和尝试过的每个渠道。本地拒绝的请求（额度不足、参数错误等）不记录。"
+        "logRelayErrorDescription": "请求在重试后仍失败时写一条日志，记录客户端收到的错误和尝试过的每个渠道。本地拒绝的请求（额度不足、参数错误等）不记录。",
+        "channelMetrics": "渠道小时指标",
+        "channelMetricsDescription": "按渠道和模型每小时统计请求数、成功数、延迟、首字延迟和输出速度（GET /api/channel/metrics）。",
+        "channelMetricsRetention": "小时指标保留天数（0 表示一直保留）"
       },
       "promptLimits": {
         "title": "输入限制",

@@ -2517,7 +2517,10 @@
         "selectedTime": "選択済み：{{time}}",
         "title": "ログ設定",
         "logRelayError": "失敗したリクエストを記録",
-        "logRelayErrorDescription": "再試行しても失敗したリクエストについて、クライアントが受け取ったエラーと試したすべてのチャネルをログに記録します。ローカルで拒否されたリクエスト（クォータ不足、パラメータエラーなど）は記録しません。"
+        "logRelayErrorDescription": "再試行しても失敗したリクエストについて、クライアントが受け取ったエラーと試したすべてのチャネルをログに記録します。ローカルで拒否されたリクエスト（クォータ不足、パラメータエラーなど）は記録しません。",
+        "channelMetrics": "チャネルの時間別指標",
+        "channelMetricsDescription": "チャネルとモデルごとに、リクエスト数・成功数・レイテンシ・最初のトークンまでの時間・出力速度を 1 時間単位で集計します（GET /api/channel/metrics）。",
+        "channelMetricsRetention": "時間別指標の保存日数（0 は無期限）"
       },
       "promptLimits": {
         "title": "入力制限",

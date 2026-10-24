@@ -282,6 +282,12 @@ var ChannelTestMode = "recovery"
 // ChannelTestIntervalMinutes 定时渠道测试的间隔（分钟）。
 var ChannelTestIntervalMinutes = 10
 
+// ChannelMetricsEnabled 按「渠道 × 模型 × 小时」聚合成功率、首字延迟与输出速度（内存累计，每分钟落库）。
+var ChannelMetricsEnabled = true
+
+// ChannelMetricsRetentionDays 小时指标保留天数，0 不清理。
+var ChannelMetricsRetentionDays = 30
+
 // ChannelCredentialRefreshMinutes 账号类渠道（Codex、Claude Code、Gemini CLI、Antigravity）
 // OAuth 凭证的后台刷新间隔（分钟）：即将过期的凭证提前刷新，空闲渠道不再因凭证过期而失效。0 关闭。
 var ChannelCredentialRefreshMinutes = 30

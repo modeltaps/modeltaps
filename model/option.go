@@ -170,6 +170,8 @@ func registerOptions() {
 		return fmt.Errorf("invalid channel test mode %q", value)
 	}, "recovery", config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("ChannelTestIntervalMinutes", &config.ChannelTestIntervalMinutes, config.ScopeAdmin)
+	config.GlobalOption.RegisterBool("ChannelMetricsEnabled", &config.ChannelMetricsEnabled, config.ScopeAdmin)
+	config.GlobalOption.RegisterInt("ChannelMetricsRetentionDays", &config.ChannelMetricsRetentionDays, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("ChannelCredentialRefreshMinutes", &config.ChannelCredentialRefreshMinutes, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("LogRelayErrorEnabled", &config.LogRelayErrorEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("SessionAffinityEnabled", &config.SessionAffinityEnabled, config.ScopeAdmin)

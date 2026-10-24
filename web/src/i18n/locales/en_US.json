@@ -2517,7 +2517,10 @@
         "selectedTime": "Selected: {{time}}",
         "title": "Log Settings",
         "logRelayError": "Record failed requests",
-        "logRelayErrorDescription": "Write a log entry when a request still fails after retries, with the error the client received and every channel tried. Requests rejected locally (insufficient quota, invalid parameters) are not recorded."
+        "logRelayErrorDescription": "Write a log entry when a request still fails after retries, with the error the client received and every channel tried. Requests rejected locally (insufficient quota, invalid parameters) are not recorded.",
+        "channelMetrics": "Hourly channel metrics",
+        "channelMetricsDescription": "Count attempts, successes, latency, time to first token and output speed per channel and model every hour (GET /api/channel/metrics).",
+        "channelMetricsRetention": "Keep hourly metrics for (days, 0 keeps them)"
       },
       "promptLimits": {
         "title": "Input Limits",

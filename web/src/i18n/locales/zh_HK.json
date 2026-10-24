@@ -2517,7 +2517,10 @@
         "selectedTime": "已選擇：{{time}}",
         "title": "日誌設定",
         "logRelayError": "記錄失敗的請求",
-        "logRelayErrorDescription": "請求在重試後仍失敗時寫一條日誌，記錄客戶端收到的錯誤和嘗試過的每個渠道。本地拒絕的請求（額度不足、參數錯誤等）不記錄。"
+        "logRelayErrorDescription": "請求在重試後仍失敗時寫一條日誌，記錄客戶端收到的錯誤和嘗試過的每個渠道。本地拒絕的請求（額度不足、參數錯誤等）不記錄。",
+        "channelMetrics": "渠道小時指標",
+        "channelMetricsDescription": "按渠道和模型每小時統計請求數、成功數、延遲、首字延遲和輸出速度（GET /api/channel/metrics）。",
+        "channelMetricsRetention": "小時指標保留天數（0 表示一直保留）"
       },
       "promptLimits": {
         "title": "輸入限制",
