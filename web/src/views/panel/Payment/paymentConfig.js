@@ -1,6 +1,8 @@
 // Payment gateway type metadata. Ported verbatim from the v1
 // `views/Payment/type/Config.js` so the backend config contract stays identical.
 // Display text is stored as i18n keys (or [key, params]); render it through configText().
+// `secret: true` marks fields the backend only returns masked (see payment/secrets.go);
+// the edit form shows the mask and treats a blank value as "keep the stored secret".
 
 const WXPAY_DOC = 'https://pay.weixin.qq.com/wiki/doc/apiv3/open/pay/chapter2_7_1.shtml';
 
@@ -20,7 +22,7 @@ export const PaymentConfig = {
   epay: {
     pay_domain: { name: 'paymentConfig.fields.payDomain', description: 'paymentConfig.fields.payDomain', type: 'text', value: '' },
     partner_id: { name: 'paymentConfig.fields.merchantId', description: 'paymentConfig.fields.merchantId', type: 'text', value: '' },
-    key: { name: 'paymentConfig.fields.key', description: 'paymentConfig.fields.key', type: 'text', value: '' },
+    key: { name: 'paymentConfig.fields.key', description: 'paymentConfig.fields.key', type: 'text', value: '', secret: true },
     pay_type: {
       name: 'paymentConfig.fields.payType',
       description: 'paymentConfig.epay.payTypeDesc',
@@ -44,7 +46,8 @@ export const PaymentConfig = {
       name: 'paymentConfig.alipay.privateKey',
       description: ['paymentConfig.alipay.privateKeyDesc', { url: 'https://opendocs.alipay.com/common/02kipl?pathHash=84adb0fd' }],
       type: 'text',
-      value: ''
+      value: '',
+      secret: true
     },
     public_key: {
       name: 'paymentConfig.alipay.publicKey',
@@ -87,13 +90,15 @@ export const PaymentConfig = {
       name: 'paymentConfig.wxpay.apiv3Key',
       description: ['paymentConfig.wxpay.apiv3KeyDesc', { url: WXPAY_DOC }],
       type: 'text',
-      value: ''
+      value: '',
+      secret: true
     },
     mch_private_key: {
       name: 'paymentConfig.wxpay.privateKey',
       description: ['paymentConfig.wxpay.privateKeyDesc', { url: WXPAY_DOC }],
       type: 'text',
-      value: ''
+      value: '',
+      secret: true
     },
     pay_type: {
       name: 'paymentConfig.fields.payType',
@@ -104,12 +109,33 @@ export const PaymentConfig = {
     }
   },
   stripe: {
-    secret_key: { name: 'paymentConfig.stripe.secretKey', description: 'paymentConfig.stripe.secretKeyDesc', type: 'text', value: '' },
+    secret_key: {
+      name: 'paymentConfig.stripe.secretKey',
+      description: 'paymentConfig.stripe.secretKeyDesc',
+      type: 'text',
+      value: '',
+      secret: true
+    },
     webhook_secret: {
       name: 'paymentConfig.stripe.webhookSecret',
       description: 'paymentConfig.stripe.webhookSecretDesc',
       type: 'text',
-      value: ''
+      value: '',
+      secret: true
     }
   }
 };
+
+// Split a loaded config into the editable values and the masked secrets the
+// backend returned: secret fields start blank so a blank submit keeps the stored value.
+export function splitSecretConfig(type, config) {
+  const fields = PaymentConfig[type] || {};
+  const values = { ...config };
+  const masked = {};
+  for (const [key, param] of Object.entries(fields)) {
+    if (!param.secret) continue;
+    if (values[key]) masked[key] = values[key];
+    values[key] = '';
+  }
+  return { values, masked };
+}

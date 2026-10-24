@@ -26,6 +26,10 @@ func (e *Stripe) Name() string {
 	return "Stripe"
 }
 
+func (e *Stripe) SecretConfigKeys() []string {
+	return []string{"secret_key", "webhook_secret"}
+}
+
 // Pay 处理支付请求
 func (e *Stripe) Pay(config *types.PayConfig, gatewayConfig string) (*types.PayRequest, error) {
 	var stripeConfig StripeConfig

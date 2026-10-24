@@ -1435,5 +1435,9 @@
       "restart": "重新開始",
       "backToDevice": "返回裝置碼登入"
     }
+  },
+  "payment_edit": {
+    "secretConfigured": "已配置 {{masked}}",
+    "secretEditTip": "留空則保持原密鑰不變"
   }
 }
