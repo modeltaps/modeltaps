@@ -103,6 +103,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Upstream errors that reached clients without the usual masking are now masked: errors arriving
+  after a stream started (both stream formats), Midjourney submit errors and image fetch errors,
+  and Suno / Kling task errors could carry the channel's upstream address, proxy or key.
+- Links to providers' public documentation sites (OpenAI, Anthropic, Google AI, AWS, Azure,
+  OpenRouter, Mistral, DeepSeek, xAI, Groq) stay readable in error messages; channel addresses,
+  proxies, IPs and keys are still masked.
+- Removed a debug print that wrote every relay error body to standard output.
 - The admin payment gateway endpoints no longer return gateway credentials (Epay key, Alipay
   private key, WeChat Pay APIv3 key and private key, Stripe secret key and webhook secret) in
   clear text. They are returned masked (first four and last four characters, shorter values show
