@@ -2443,6 +2443,10 @@
         "channelTestInterval": {
           "label": "测试间隔（分钟）",
           "description": "两次定时测试之间的间隔，至少 1 分钟。"
+        },
+        "credentialRefresh": {
+          "label": "账号凭证刷新间隔（分钟）",
+          "description": "每隔多久检查一次 Codex、Claude Code、Gemini CLI、Antigravity 渠道的 OAuth 凭证，即将过期的会提前刷新，空闲或被自动禁用的渠道也会刷新。刷新失败会发「渠道凭证问题」通知。0 表示关闭。"
         }
       },
       "quotaSettings": {
