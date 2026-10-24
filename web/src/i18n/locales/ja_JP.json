@@ -2965,6 +2965,24 @@
       "logIO": "リクエスト・レスポンスの保存",
       "mjNotify": "Midjourney コールバック",
       "telegram": "Telegram Bot"
+    },
+    "notifications": {
+      "title": "管理者向け通知",
+      "description": "設定済みの通知チャネル（メール、DingTalk、Lark、WeCom、Telegram、PushDeer）でどの通知を送るかを選びます。種類ごとに件数を制限します。",
+      "kind": {
+        "channel_disabled": "チャネルの自動無効化",
+        "channel_enabled": "チャネルの再有効化",
+        "channel_test": "チャネルテストの完了",
+        "low_balance": "チャネル残高の不足",
+        "price_change": "上流価格の変更",
+        "model_drift": "上流モデル一覧の変化",
+        "model_consistency": "モデルのメタデータの問題",
+        "credential": "チャネル認証情報の問題"
+      },
+      "limit": {
+        "label": "種類ごとの 1 時間あたり上限",
+        "description": "同じ種類の通知が 1 時間にこの件数を超えると破棄され、次の通知に破棄した件数が記載されます。0 は無制限です。"
+      }
     }
   },
   "shimmer 映射": "シマーマッピング",

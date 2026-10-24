@@ -335,6 +335,66 @@ export function LogIOCard({ ctx }) {
   );
 }
 
+// 管理员通知 — 每类通知单独开关，每类每小时限量。
+const NOTIFY_KINDS = [
+  'channel_disabled',
+  'channel_enabled',
+  'channel_test',
+  'low_balance',
+  'price_change',
+  'model_drift',
+  'model_consistency',
+  'credential'
+];
+
+export function NotificationsCard({ ctx }) {
+  const { t } = useTranslation();
+  const { inputs, setField, saveKeys, loading, isDirty } = ctx;
+  const nt = (k, opts) => t(`setting_index.notifications.${k}`, opts);
+  const keys = ['NotifyDisabledKinds', 'NotifyKindLimitPerHour'];
+  const disabled = new Set(
+    (inputs.NotifyDisabledKinds || '')
+      .split(',')
+      .map((k) => k.trim())
+      .filter(Boolean)
+  );
+  const toggleKind = (kind) => {
+    const next = new Set(disabled);
+    if (next.has(kind)) next.delete(kind);
+    else next.add(kind);
+    setField('NotifyDisabledKinds', NOTIFY_KINDS.filter((k) => next.has(k)).join(','));
+  };
+
+  return (
+    <SettingsCard title={nt('title')} description={nt('description')} highlight="notifications">
+      <div className="grid gap-3">
+        {NOTIFY_KINDS.map((kind) => (
+          <ToggleRow
+            key={kind}
+            label={nt(`kind.${kind}`)}
+            checked={!disabled.has(kind)}
+            onCheckedChange={() => toggleKind(kind)}
+            disabled={loading}
+          />
+        ))}
+      </div>
+      <TextRow
+        id="NotifyKindLimitPerHour"
+        type="number"
+        label={nt('limit.label')}
+        value={inputs.NotifyKindLimitPerHour}
+        onChange={(v) => setField('NotifyKindLimitPerHour', v)}
+        placeholder="20"
+        description={nt('limit.description')}
+        disabled={loading}
+      />
+      <SaveButton loading={loading} disabled={!isDirty(keys)} onClick={() => saveKeys(keys)}>
+        {t('common.save')}
+      </SaveButton>
+    </SettingsCard>
+  );
+}
+
 // Midjourney 回调 — MJ task notify switch.
 export function MjNotifyCard({ ctx }) {
   const { t } = useTranslation();

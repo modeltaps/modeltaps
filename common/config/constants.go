@@ -245,6 +245,12 @@ var ChannelDisableThreshold = 5.0
 var AutomaticDisableChannelEnabled = false
 // AutomaticEnableChannelEnabled 默认开：只会恢复被自动禁用、且定时测试已通过的渠道。
 var AutomaticEnableChannelEnabled = true
+// NotifyDisabledKinds 关闭的管理员通知类型（逗号分隔，取值见 notify.Kinds），空表示全部发送。
+var NotifyDisabledKinds = ""
+
+// NotifyKindLimitPerHour 每类通知每小时最多发送的条数，超出的丢弃并在下一小时第一条里注明数量；0 不限。
+var NotifyKindLimitPerHour = 20
+
 var AutomaticDisableChannelNotifyEnabled = true
 var QuotaRemindThreshold = 1000
 var PreConsumedQuota = 500

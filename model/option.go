@@ -76,6 +76,8 @@ func registerOptions() {
 	config.GlobalOption.RegisterBool("AutomaticDisableChannelEnabled", &config.AutomaticDisableChannelEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("AutomaticEnableChannelEnabled", &config.AutomaticEnableChannelEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("AutomaticDisableChannelNotifyEnabled", &config.AutomaticDisableChannelNotifyEnabled, config.ScopeAdmin)
+	config.GlobalOption.RegisterString("NotifyDisabledKinds", &config.NotifyDisabledKinds, config.ScopeAdmin)
+	config.GlobalOption.RegisterInt("NotifyKindLimitPerHour", &config.NotifyKindLimitPerHour, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("ApproximateTokenEnabled", &config.ApproximateTokenEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("LogConsumeEnabled", &config.LogConsumeEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("LogAutoDeleteEnabled", &config.LogAutoDeleteEnabled, config.ScopeAdmin)

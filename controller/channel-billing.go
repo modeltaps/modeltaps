@@ -101,7 +101,7 @@ func checkLowBalance(channel *model.Channel, balance float64) {
 	subject := fmt.Sprintf("Channel %s balance is low", channel.Name)
 	content := fmt.Sprintf("Channel: %s (ID %d)\nBalance: $%.2f\nThreshold: $%.2f\nChecked at: %s",
 		channel.Name, channel.Id, balance, channel.BalanceThreshold, time.Now().Format(time.RFC3339))
-	notify.Send(subject, content)
+	notify.SendKind(notify.KindLowBalance, subject, content)
 }
 
 func UpdateChannelBalance(c *gin.Context) {

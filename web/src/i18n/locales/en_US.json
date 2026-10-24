@@ -2965,6 +2965,24 @@
       "logIO": "Request & Response Retention",
       "mjNotify": "Midjourney Callback",
       "telegram": "Telegram Bot"
+    },
+    "notifications": {
+      "title": "Admin notifications",
+      "description": "Choose which notices are sent through the configured notification channels (email, DingTalk, Lark, WeCom, Telegram, PushDeer). Each kind is limited separately.",
+      "kind": {
+        "channel_disabled": "Channel disabled automatically",
+        "channel_enabled": "Channel re-enabled",
+        "channel_test": "Channel test finished",
+        "low_balance": "Low channel balance",
+        "price_change": "Upstream price changes",
+        "model_drift": "Upstream model list changes",
+        "model_consistency": "Model metadata problems",
+        "credential": "Channel credential problems"
+      },
+      "limit": {
+        "label": "Notices per kind per hour",
+        "description": "Notices of one kind beyond this count in an hour are dropped; the next one says how many. 0 means no limit."
+      }
     }
   },
   "shimmer 映射": "shimmer mapping",

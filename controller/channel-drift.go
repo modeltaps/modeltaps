@@ -128,7 +128,7 @@ func notifyModelDrift(summary *ModelDriftCheckSummary) {
 			b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d) has new upstream models: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(ch.NewModels, ", ")))
 		}
 	}
-	notify.Send(subject, b.String())
+	notify.SendKind(notify.KindModelDrift, subject, b.String())
 }
 
 // CheckModelDrift 手动触发漂移检测（AdminAuth）。
