@@ -67,6 +67,12 @@ func updateChannelBalance(channel *model.Channel) (float64, error) {
 		return 0, errors.New("provider not found")
 	}
 
+	// 订阅类渠道（Codex、Claude Code）没有金额余额，刷新的是用量窗口；先于余额接口判断，
+	// 因为 Codex 嵌入的 OpenAI provider 也实现了余额接口。
+	if _, err := refreshUsageWindows(channel, provider); err != nil {
+		return 0, err
+	}
+
 	balanceProvider, ok := provider.(providersBase.BalanceInterface)
 	if !ok {
 		return 0, errBalanceNotSupported
@@ -78,6 +84,29 @@ func updateChannelBalance(channel *model.Channel) (float64, error) {
 	}
 	checkLowBalance(channel, balance)
 	return balance, nil
+}
+
+// errUsageWindowsUpdated 标记订阅类渠道刷新了用量窗口（没有金额余额）。
+var errUsageWindowsUpdated = errors.New("usage windows updated")
+
+// refreshUsageWindows 查询并保存订阅类渠道（Codex）的用量窗口；Claude Code 的窗口随响应头更新，
+// 这里只返回已保存的值。不是订阅类渠道时返回 (nil, nil)。
+func refreshUsageWindows(channel *model.Channel, provider providersBase.ProviderInterface) (*model.ChannelUsageWindows, error) {
+	if fetcher, ok := provider.(providersBase.UsageWindowsInterface); ok {
+		w, err := fetcher.FetchUsageWindows()
+		if err != nil {
+			return nil, err
+		}
+		if err := channel.UpdateUsageWindows(*w); err != nil {
+			return nil, err
+		}
+		return w, errUsageWindowsUpdated
+	}
+	if channel.Type == config.ChannelTypeClaudeCode && channel.UsageWindows != nil {
+		w := channel.UsageWindows.Data()
+		return &w, errUsageWindowsUpdated
+	}
+	return nil, nil
 }
 
 // checkLowBalance 在余额低于渠道阈值时发一次通知；余额回到阈值之上后清零标记，下次再跌破才会再发。
@@ -123,6 +152,16 @@ func UpdateChannelBalance(c *gin.Context) {
 	}
 	balance, err := updateChannelBalance(channel)
 	if err != nil {
+		if errors.Is(err, errUsageWindowsUpdated) {
+			fresh, _ := model.GetChannelById(id)
+			var windows *model.ChannelUsageWindows
+			if fresh != nil && fresh.UsageWindows != nil {
+				w := fresh.UsageWindows.Data()
+				windows = &w
+			}
+			c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "usage_windows": windows})
+			return
+		}
 		if errors.Is(err, errBalanceNotSupported) {
 			c.JSON(http.StatusOK, gin.H{
 				"success":   false,
@@ -157,7 +196,7 @@ func updateAllChannelsBalance() error {
 		}
 		balance, err := updateChannelBalance(channel)
 		if err != nil {
-			if !errors.Is(err, errBalanceNotSupported) {
+			if !errors.Is(err, errBalanceNotSupported) && !errors.Is(err, errUsageWindowsUpdated) {
 				logger.SysError(fmt.Sprintf("update balance failed for channel %s (ID %d): %s", channel.Name, channel.Id, err.Error()))
 			}
 			continue

@@ -40,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Subscription channels show their usage windows instead of a money balance: refreshing a Codex
+  channel's balance (or the periodic refresh) queries its 5-hour and weekly windows, and Claude
+  Code channels keep the windows Anthropic reports on each response. The channel list shows the
+  used percentage per window with the reset times in a tooltip.
 - Hourly channel metrics: attempts, successes, latency, time to first token and output speed per
   channel and model, counted in memory and written every minute, kept 30 days by default.
   `GET /api/channel/metrics` returns them; the log settings card turns them off or sets the

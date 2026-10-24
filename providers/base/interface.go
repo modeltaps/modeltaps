@@ -203,3 +203,9 @@ type ResponsesCompactInterface interface {
 	ProviderInterface
 	CreateResponsesCompaction(request *types.OpenAIResponsesRequest) (*types.OpenAIResponsesResponses, *types.OpenAIErrorWithStatusCode)
 }
+
+// UsageWindowsInterface is implemented by subscription channels whose upstream reports usage
+// windows through an API (Codex). The result is stored on the channel and shown as its balance.
+type UsageWindowsInterface interface {
+	FetchUsageWindows() (*model.ChannelUsageWindows, error)
+}

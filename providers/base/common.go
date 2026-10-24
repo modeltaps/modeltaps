@@ -296,6 +296,10 @@ func (p *BaseProvider) SetContext(c *gin.Context) {
 			if requestID := requester.ExtractUpstreamRequestID(resp.Header); requestID != "" {
 				c.Set(config.GinUpstreamRequestIdKey, requestID)
 			}
+			// Claude Code 订阅账号的用量窗口只随响应头下发，没有单独的查询接口。
+			if p.Channel != nil && p.Channel.Type == config.ChannelTypeClaudeCode {
+				model.ObserveClaudeUsageHeaders(p.Channel.Id, resp.Header)
+			}
 		}
 	}
 }

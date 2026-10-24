@@ -1440,5 +1440,10 @@
   "payment_edit": {
     "secretConfigured": "已配置 {{masked}}",
     "secretEditTip": "留空則保持原密鑰不變"
+  },
+  "channel_row": {
+    "usagePlan": "方案：{{plan}}",
+    "usageWindow": "{{name}} 窗口：已用 {{percent}}%，{{reset}} 重設",
+    "usageFetchedAt": "更新於 {{time}}"
   }
 }
