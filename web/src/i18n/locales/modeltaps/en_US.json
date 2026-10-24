@@ -1448,7 +1448,8 @@
     "oauth_code_invalid": "The authorization code is invalid. Start signing in again.",
     "linuxdo_trust_too_low": "This LINUX DO account's trust level is too low",
     "linuxdo_already_bound": "This account is already linked to LINUX DO. Unlink it first to change it.",
-    "oidc_login_failed": "Sign-in failed. Try again."
+    "oidc_login_failed": "Sign-in failed. Try again.",
+    "channel_drift_rule_invalid": "Invalid regular expression in the ignore rules: {{rule}}"
   },
   "channelOAuth": {
     "tip": {

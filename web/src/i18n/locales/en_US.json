@@ -292,6 +292,12 @@
       "locked": "Locked",
       "unit": "Prices in USD per 1M tokens.",
       "apply": "Write {{count}} selected"
+    },
+    "drift": {
+      "autoAdd": "Add new upstream models automatically",
+      "autoAddHelp": "When the daily model check finds models newly offered upstream, add them to this channel (with prices and metadata) instead of only reporting them. Models matching the ignore rules are skipped.",
+      "ignoreRules": "Ignored upstream models",
+      "ignoreRulesHelp": "One rule per line: an exact model name, a pattern with * (for example *-preview), or a regular expression after re: (for example re:^o\\d-mini$). Matching models are never reported as new or added."
     }
   },
   "channel_index": {

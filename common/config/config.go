@@ -125,7 +125,7 @@ func defaultConfig() {
 	viper.SetDefault("catalog_pricing.url", "")
 	viper.SetDefault("catalog_pricing.auto_sync", true)
 	viper.SetDefault("channel_pricing.auto_sync", true)
-	viper.SetDefault("model_drift.auto_check", false)
+	viper.SetDefault("model_drift.auto_check", true)
 	viper.SetDefault("model_drift.check_interval", "")
 	viper.SetDefault("model_info_consistency.auto_check", false)
 	viper.SetDefault("routing.model_info_mode", false)
