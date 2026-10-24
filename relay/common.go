@@ -648,7 +648,8 @@ func responseStreamClient(c *gin.Context, stream requester.StreamReaderInterface
 
 			case err := <-errChan:
 				if !errors.Is(err, io.EOF) {
-					tryWrite("data: " + err.Error() + "\n\n")
+					// 流已开始，错误直接写给客户端，不经 FilterOpenAIErr，这里同样脱敏。
+					tryWrite("data: " + utils.MaskSensitiveInfo(err.Error()) + "\n\n")
 					finalErr = common.StringErrorWrapper(err.Error(), "stream_error", 900)
 					logger.LogError(c.Request.Context(), "Stream err:"+err.Error())
 				} else {
@@ -712,7 +713,7 @@ func responseGeneralStreamClient(c *gin.Context, stream requester.StreamReaderIn
 
 			case err := <-errChan:
 				if !errors.Is(err, io.EOF) {
-					tryWrite(err.Error())
+					tryWrite(utils.MaskSensitiveInfo(err.Error()))
 					logger.LogError(c.Request.Context(), "Stream err:"+err.Error())
 				} else {
 					if endHandler != nil {

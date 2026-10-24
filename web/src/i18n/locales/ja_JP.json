@@ -2560,6 +2560,10 @@
         "channelTestInterval": {
           "label": "テスト間隔（分）",
           "description": "定期テストの間隔です。最小 1 分。"
+        },
+        "credentialRefresh": {
+          "label": "アカウント認証情報の更新間隔（分）",
+          "description": "Codex・Claude Code・Gemini CLI・Antigravity チャネルの OAuth 認証情報を確認する間隔です。まもなく期限切れになるものは、アイドル中や自動無効化中のチャネルでも事前に更新します。失敗すると「チャネル認証情報の問題」通知を送ります。0 でオフ。"
         }
       },
       "otherSettings": {

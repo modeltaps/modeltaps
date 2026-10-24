@@ -43,6 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Channel options for the upstream model check: "Ignored upstream models" (exact names, `*`
   patterns or `re:` regular expressions) are never reported as new, and "Add new upstream models
   automatically" adds newly offered models to the channel with their prices and metadata.
+- Account channel credentials (Codex, Claude Code, Gemini CLI, Antigravity) are refreshed in the
+  background every 30 minutes when they expire soon, including idle and auto-disabled channels;
+  failures are sent as a credential notice. The interval is set in the channel auto-disable
+  settings (0 turns it off).
 - Admin notifications can be turned on or off per kind (channel disabled / re-enabled, channel
   test, low balance, price changes, model list changes, model metadata, credential problems) in the
   new "Admin notifications" settings card, and each kind is limited to 20 notices per hour by
@@ -107,6 +111,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Upstream errors that reached clients without the usual masking are now masked: errors arriving
+  after a stream started (both stream formats), Midjourney submit errors and image fetch errors,
+  and Suno / Kling task errors could carry the channel's upstream address, proxy or key.
+- Links to providers' public documentation sites (OpenAI, Anthropic, Google AI, AWS, Azure,
+  OpenRouter, Mistral, DeepSeek, xAI, Groq) stay readable in error messages; channel addresses,
+  proxies, IPs and keys are still masked.
+- Removed a debug print that wrote every relay error body to standard output.
 - The admin payment gateway endpoints no longer return gateway credentials (Epay key, Alipay
   private key, WeChat Pay APIv3 key and private key, Stripe secret key and webhook secret) in
   clear text. They are returned masked (first four and last four characters, shorter values show
