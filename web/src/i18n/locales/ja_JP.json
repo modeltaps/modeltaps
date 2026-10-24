@@ -292,6 +292,12 @@
       "locked": "ロック中",
       "unit": "価格は 100 万トークンあたりの米ドルです。",
       "apply": "選択した {{count}} 件を書き込む"
+    },
+    "drift": {
+      "autoAdd": "上流の新しいモデルを自動で追加",
+      "autoAddHelp": "毎日のモデル検出で上流が新たに提供するモデルを見つけたら、通知するだけでなくこのチャネルに追加します（価格とメタデータも補完）。無視ルールに一致するモデルは除外します。",
+      "ignoreRules": "無視する上流モデル",
+      "ignoreRulesHelp": "1 行に 1 ルール：完全なモデル名、* を使ったパターン（例 *-preview）、または re: に続く正規表現（例 re:^o\\d-mini$）。一致するモデルは新規として通知も追加もされません。"
     }
   },
   "channel_index": {
@@ -2554,6 +2560,10 @@
         "channelTestInterval": {
           "label": "テスト間隔（分）",
           "description": "定期テストの間隔です。最小 1 分。"
+        },
+        "credentialRefresh": {
+          "label": "アカウント認証情報の更新間隔（分）",
+          "description": "Codex・Claude Code・Gemini CLI・Antigravity チャネルの OAuth 認証情報を確認する間隔です。まもなく期限切れになるものは、アイドル中や自動無効化中のチャネルでも事前に更新します。失敗すると「チャネル認証情報の問題」通知を送ります。0 でオフ。"
         }
       },
       "otherSettings": {

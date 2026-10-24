@@ -256,3 +256,14 @@ func (p *ClaudeCodeProvider) GetFullRequestURL(requestURL string) string {
 	baseURL := strings.TrimSuffix(p.GetBaseURL(), "/")
 	return fmt.Sprintf("%s%s", baseURL, requestURL)
 }
+
+// RefreshCredentialsAhead implements base.CredentialRefresher for the background refresh task.
+func (p *ClaudeCodeProvider) RefreshCredentialsAhead(ctx context.Context, ahead time.Duration) (bool, error) {
+	if p.Credentials == nil {
+		return false, nil
+	}
+	return base.RefreshOAuthAhead(ahead, p.Credentials.RefreshToken != "", p.Credentials.ExpiresAt,
+		func() error { return p.Credentials.Refresh(ctx, p.Channel.GetProxy(), 3) },
+		func() error { return p.saveCredentialsToDatabase(ctx) },
+		fmt.Sprintf("%s:%d", TokenCacheKey, p.Channel.Id))
+}

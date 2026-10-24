@@ -292,6 +292,12 @@
       "locked": "已鎖定",
       "unit": "價格單位：美元 / 百萬 token。",
       "apply": "寫入選中的 {{count}} 個"
+    },
+    "drift": {
+      "autoAdd": "自動加入上游新模型",
+      "autoAddHelp": "每日模型檢測發現上游新提供的模型時，直接加入本渠道（並補齊價格與元資訊），而不只是提醒。符合忽略規則的模型會略過。",
+      "ignoreRules": "忽略的上游模型",
+      "ignoreRulesHelp": "每行一條：精確模型名、帶 * 的萬用字元（如 *-preview），或 re: 開頭的正則表達式（如 re:^o\\d-mini$）。符合的模型不會被報為新增，也不會被自動加入。"
     }
   },
   "channel_index": {
@@ -2554,6 +2560,10 @@
         "channelTestInterval": {
           "label": "測試間隔（分鐘）",
           "description": "兩次定時測試之間的間隔，至少 1 分鐘。"
+        },
+        "credentialRefresh": {
+          "label": "帳戶憑證刷新間隔（分鐘）",
+          "description": "每隔多久檢查一次 Codex、Claude Code、Gemini CLI、Antigravity 渠道的 OAuth 憑證，即將過期的會提前刷新，閒置或被自動禁用的渠道也會刷新。刷新失敗會發「渠道憑證問題」通知。0 表示關閉。"
         }
       },
       "otherSettings": {

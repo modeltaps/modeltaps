@@ -64,6 +64,12 @@ type Channel struct {
 	ModelDrift *datatypes.JSONType[ModelDriftResult] `json:"model_drift,omitempty" gorm:"type:json"`
 	// UsageWindows is the last known usage of a subscription account (Codex, Claude Code).
 	UsageWindows *datatypes.JSONType[ChannelUsageWindows] `json:"usage_windows,omitempty" gorm:"type:json"`
+	// DriftIgnoreRules lists upstream models the drift check never reports as new, one per line:
+	// an exact name, a glob with * (for example *-preview), or a regular expression after "re:".
+	DriftIgnoreRules string `json:"drift_ignore_rules" form:"drift_ignore_rules" gorm:"type:text"`
+	// DriftAutoAdd adds new upstream models (not ignored) to the channel's models when the
+	// drift check finds them, instead of only reporting them.
+	DriftAutoAdd bool `json:"drift_auto_add" form:"drift_auto_add" gorm:"default:false"`
 
 	// BalanceThreshold 低余额提醒阈值（USD）：余额刷新后低于该值发通知；0 = 不提醒。
 	BalanceThreshold float64 `json:"balance_threshold" form:"balance_threshold" gorm:"type:decimal(10,4);default:0"`
@@ -657,6 +663,32 @@ func (channel *Channel) DismissNewModels() error {
 	}
 	result.NewModels = nil
 	return channel.UpdateModelDrift(*result)
+}
+
+// AddDriftModels appends models to the channel's model list (deduplicated) and reloads the
+// routing cache, for the drift check's auto add. It touches no other column.
+func (channel *Channel) AddDriftModels(models []string) error {
+	if len(models) == 0 {
+		return nil
+	}
+	existing := SplitChannelModels(channel.Models)
+	seen := make(map[string]bool, len(existing))
+	for _, m := range existing {
+		seen[m] = true
+	}
+	for _, m := range models {
+		if m != "" && !seen[m] {
+			seen[m] = true
+			existing = append(existing, m)
+		}
+	}
+	merged := strings.Join(existing, ",")
+	if err := DB.Model(&Channel{}).Where("id = ?", channel.Id).Update("models", merged).Error; err != nil {
+		return err
+	}
+	channel.Models = merged
+	ChannelGroup.Load()
+	return nil
 }
 
 // UpdateModelDrift 只更新渠道漂移结果列，不触及其它字段（供漂移检测 cron / 手动触发写回）。

@@ -1382,7 +1382,8 @@
     "oauth_code_invalid": "授权码无效，请重新发起登录",
     "linuxdo_trust_too_low": "该 LINUX DO 账号的信任等级不足",
     "linuxdo_already_bound": "本账号已绑定 LINUX DO，如需更换请先解绑",
-    "oidc_login_failed": "登录失败，请重试"
+    "oidc_login_failed": "登录失败，请重试",
+    "channel_drift_rule_invalid": "忽略规则里的正则表达式无效：{{rule}}"
   },
   "channelOAuth": {
     "tip": {

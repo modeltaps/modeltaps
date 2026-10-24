@@ -156,6 +156,9 @@ func initMemoryCache() {
 func initSync() {
 	go controller.AutomaticallyUpdateChannels(viper.GetInt("channel.update_frequency"))
 	go controller.AutomaticallyTestChannels(viper.GetInt("channel.test_frequency"))
+	if config.IsMasterNode {
+		go controller.AutomaticallyRefreshChannelCredentials()
+	}
 }
 
 func initHttpServer() {

@@ -292,6 +292,12 @@
       "locked": "Locked",
       "unit": "Prices in USD per 1M tokens.",
       "apply": "Write {{count}} selected"
+    },
+    "drift": {
+      "autoAdd": "Add new upstream models automatically",
+      "autoAddHelp": "When the daily model check finds models newly offered upstream, add them to this channel (with prices and metadata) instead of only reporting them. Models matching the ignore rules are skipped.",
+      "ignoreRules": "Ignored upstream models",
+      "ignoreRulesHelp": "One rule per line: an exact model name, a pattern with * (for example *-preview), or a regular expression after re: (for example re:^o\\d-mini$). Matching models are never reported as new or added."
     }
   },
   "channel_index": {
@@ -2554,6 +2560,10 @@
         "channelTestInterval": {
           "label": "Test interval (minutes)",
           "description": "Time between scheduled channel tests, at least 1 minute."
+        },
+        "credentialRefresh": {
+          "label": "Account credential refresh (minutes)",
+          "description": "How often OAuth credentials of Codex, Claude Code, Gemini CLI and Antigravity channels are checked; those expiring soon are refreshed even when the channel is idle or auto-disabled. Failures are sent as a credential notice. 0 turns it off."
         }
       },
       "otherSettings": {

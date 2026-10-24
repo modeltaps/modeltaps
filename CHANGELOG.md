@@ -44,6 +44,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   channel's balance (or the periodic refresh) queries its 5-hour and weekly windows, and Claude
   Code channels keep the windows Anthropic reports on each response. The channel list shows the
   used percentage per window with the reset times in a tooltip.
+- Channel options for the upstream model check: "Ignored upstream models" (exact names, `*`
+  patterns or `re:` regular expressions) are never reported as new, and "Add new upstream models
+  automatically" adds newly offered models to the channel with their prices and metadata.
+- Account channel credentials (Codex, Claude Code, Gemini CLI, Antigravity) are refreshed in the
+  background every 30 minutes when they expire soon, including idle and auto-disabled channels;
+  failures are sent as a credential notice. The interval is set in the channel auto-disable
+  settings (0 turns it off).
 - Admin notifications can be turned on or off per kind (channel disabled / re-enabled, channel
   test, low balance, price changes, model list changes, model metadata, credential problems) in the
   new "Admin notifications" settings card, and each kind is limited to 20 notices per hour by
@@ -83,6 +90,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The daily upstream model check (`MODEL_DRIFT_AUTO_CHECK`) is on by default.
 - Automatic price syncs (startup, daily, channel save) write new models and price increases, and
   hold decreases for review; held changes and locked prices below the upstream price are sent as
   notifications. The "Automatic price sync" setting in the billing settings can write every change
