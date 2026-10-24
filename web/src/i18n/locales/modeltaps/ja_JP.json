@@ -1439,5 +1439,10 @@
   "payment_edit": {
     "secretConfigured": "設定済み {{masked}}",
     "secretEditTip": "空欄の場合は既存の値を維持します"
+  },
+  "channel_row": {
+    "usagePlan": "プラン：{{plan}}",
+    "usageWindow": "{{name}} ウィンドウ：{{percent}}% 使用、{{reset}} にリセット",
+    "usageFetchedAt": "{{time}} に更新"
   }
 }

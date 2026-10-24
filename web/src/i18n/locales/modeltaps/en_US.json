@@ -1062,7 +1062,10 @@
   },
   "channel_row": {
     "test": "Test",
-    "updateOk": "Updated successfully"
+    "updateOk": "Updated successfully",
+    "usagePlan": "Plan: {{plan}}",
+    "usageWindow": "{{name}} window: {{percent}}% used, resets {{reset}}",
+    "usageFetchedAt": "Updated {{time}}"
   },
   "payment_edit": {
     "updateOk": "Updated successfully",

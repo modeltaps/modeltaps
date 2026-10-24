@@ -62,6 +62,8 @@ type Channel struct {
 
 	Plugin     *datatypes.JSONType[PluginType]       `json:"plugin" form:"plugin" gorm:"type:json"`
 	ModelDrift *datatypes.JSONType[ModelDriftResult] `json:"model_drift,omitempty" gorm:"type:json"`
+	// UsageWindows is the last known usage of a subscription account (Codex, Claude Code).
+	UsageWindows *datatypes.JSONType[ChannelUsageWindows] `json:"usage_windows,omitempty" gorm:"type:json"`
 
 	// BalanceThreshold 低余额提醒阈值（USD）：余额刷新后低于该值发通知；0 = 不提醒。
 	BalanceThreshold float64 `json:"balance_threshold" form:"balance_threshold" gorm:"type:decimal(10,4);default:0"`
@@ -609,7 +611,7 @@ func (channel *Channel) UpdateRaw(overwrite bool) error {
 
 	if overwrite {
 		// 运行时字段由刷新 / 检测任务维护，表单保存不得用过期值覆盖。
-		omit := []string{"UsedQuota", "Balance", "BalanceUpdatedTime", "BalanceAlertedTime", "QuotaSnapshot", "ModelDrift"}
+		omit := []string{"UsedQuota", "Balance", "BalanceUpdatedTime", "BalanceAlertedTime", "QuotaSnapshot", "ModelDrift", "UsageWindows"}
 		// 编辑时 key 留空表示保留原 key，Select("*") 不能把它覆盖成空串
 		if channel.Key == "" {
 			omit = append(omit, "Key")

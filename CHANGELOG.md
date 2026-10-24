@@ -40,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Subscription channels show their usage windows instead of a money balance: refreshing a Codex
+  channel's balance (or the periodic refresh) queries its 5-hour and weekly windows, and Claude
+  Code channels keep the windows Anthropic reports on each response. The channel list shows the
+  used percentage per window with the reset times in a tooltip.
 - Admin notifications can be turned on or off per kind (channel disabled / re-enabled, channel
   test, low balance, price changes, model list changes, model metadata, credential problems) in the
   new "Admin notifications" settings card, and each kind is limited to 20 notices per hour by
