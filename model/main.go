@@ -208,6 +208,10 @@ func InitDB() (err error) {
 		if err != nil {
 			return err
 		}
+		err = db.AutoMigrate(&ChannelMetric{})
+		if err != nil {
+			return err
+		}
 		err = db.AutoMigrate(&TelegramMenu{})
 		if err != nil {
 			return err

@@ -643,6 +643,33 @@ export function LogConsumeCard({ ctx }) {
         disabled={loading}
       />
       <ToggleRow
+        label={op('logSettings.channelMetrics')}
+        description={op('logSettings.channelMetricsDescription')}
+        checked={is('ChannelMetricsEnabled')}
+        onCheckedChange={() => toggle('ChannelMetricsEnabled')}
+        disabled={loading}
+      />
+      {is('ChannelMetricsEnabled') && (
+        <div className="flex items-end gap-2">
+          <TextRow
+            id="ChannelMetricsRetentionDays"
+            type="number"
+            label={op('logSettings.channelMetricsRetention')}
+            value={inputs.ChannelMetricsRetentionDays}
+            onChange={(v) => setField('ChannelMetricsRetentionDays', v)}
+            placeholder="30"
+            disabled={loading}
+          />
+          <SaveButton
+            loading={loading}
+            disabled={!isDirty(['ChannelMetricsRetentionDays'])}
+            onClick={() => saveKeys(['ChannelMetricsRetentionDays'])}
+          >
+            {t('common.save')}
+          </SaveButton>
+        </div>
+      )}
+      <ToggleRow
         label={op('logSettings.autoDelete')}
         description={op('logSettings.autoDeleteDescription')}
         checked={is('LogAutoDeleteEnabled')}
