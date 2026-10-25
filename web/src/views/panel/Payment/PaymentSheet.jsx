@@ -192,12 +192,12 @@ export default function PaymentSheet({ open, paymentId, onClose, onSaved }) {
                 key={key}
                 id={`p-config-${key}`}
                 label={configText(t, param.name)}
-                hint={param.secret && paymentId ? t('payment_edit.secretEditTip') : configText(t, param.description)}
+                hint={param.secret && paymentId ? t('common.secretKeepHint') : configText(t, param.description)}
               >
                 {param.secret && paymentId && maskedSecrets[key] && (
                   <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <KeyRound className="size-3.5" />
-                    {t('payment_edit.secretConfigured', { masked: maskedSecrets[key] })}
+                    {t('common.secretConfigured', { masked: maskedSecrets[key] })}
                   </p>
                 )}
                 <Controller

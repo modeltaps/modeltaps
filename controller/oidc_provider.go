@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/model"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -31,16 +32,18 @@ const oidcProviderDiscoveryTimeout = 10 * time.Second
 const oidcProviderDiscoveryErrorLimit = 300
 
 // OidcProviderResponse 后台读接口的响应体。client_secret 靠 model 的 json:"-" 永不下发，
-// 这里只额外告诉前端「有没有配过密钥」，便于编辑表单区分「不改」与「未配置」。
+// 这里只额外告诉前端「有没有配过密钥」和它的回显，便于编辑表单区分「不改」与「未配置」并核对。
 type OidcProviderResponse struct {
 	*model.OidcProvider
-	HasClientSecret bool `json:"has_client_secret"`
+	HasClientSecret    bool   `json:"has_client_secret"`
+	ClientSecretMasked string `json:"client_secret_masked,omitempty"`
 }
 
 func newOidcProviderResponse(provider *model.OidcProvider) *OidcProviderResponse {
 	return &OidcProviderResponse{
-		OidcProvider:    provider,
-		HasClientSecret: provider.ClientSecret != "",
+		OidcProvider:       provider,
+		HasClientSecret:    provider.ClientSecret != "",
+		ClientSecretMasked: utils.MaskSecret(provider.ClientSecret),
 	}
 }
 

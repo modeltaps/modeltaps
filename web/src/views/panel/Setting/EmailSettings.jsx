@@ -14,7 +14,7 @@ const SMTP_TLS_MODES = ['auto', 'ssl', 'starttls', 'starttls_opportunistic', 'no
 
 export function SmtpCard({ ctx }) {
   const { t } = useTranslation();
-  const { inputs, setField, saveKeys, loading, isDirty } = ctx;
+  const { inputs, secrets, setField, saveKeys, loading, isDirty } = ctx;
   const sys = (k) => t(`setting_index.systemSettings.${k}`);
   const field = (key, labelKey, phKey, type = 'text') => (
     <TextRow
@@ -25,6 +25,7 @@ export function SmtpCard({ ctx }) {
       onChange={(v) => setField(key, v)}
       placeholder={phKey}
       disabled={loading}
+      secret={secrets?.[key]}
     />
   );
   const keys = ['SMTPServer', 'SMTPPort', 'SMTPAccount', 'SMTPFrom', 'SMTPToken', 'SMTPTLSMode'];
