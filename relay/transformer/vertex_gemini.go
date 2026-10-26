@@ -327,7 +327,8 @@ func (t *VertexGeminiTransformer) transformGeminiResponse(responseData map[strin
 		switch reason.(string) {
 		case "STOP":
 			finishReason = "stop"
-		case "MAX_TOKENS":
+		case "MAX_TOKENS", "CONTINUATION":
+			// CONTINUATION: a Long Decode hop hit the output limit and can continue, i.e. a length cut-off
 			finishReason = "length"
 		case "SAFETY":
 			finishReason = "content_filter"
@@ -717,7 +718,8 @@ func (t *VertexGeminiTransformer) TransformStreamResponseOut(response *http.Resp
 				switch reason.(string) {
 				case "STOP":
 					finishReason = "stop"
-				case "MAX_TOKENS":
+				case "MAX_TOKENS", "CONTINUATION":
+					// CONTINUATION: a Long Decode hop hit the output limit and can continue, i.e. a length cut-off
 					finishReason = "length"
 				case "SAFETY":
 					finishReason = "content_filter"

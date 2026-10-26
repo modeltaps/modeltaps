@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A user's own usage total on the logs page is counted by user ID, like the log list, instead of
   by username: logs from before a rename are no longer left out, and the query uses the
   per-user index instead of scanning every log in the time range.
+- Gemini Long Decode can be continued through the native non-streaming `generateContent` relay:
+  the response keeps `candidates[].continuationToken` instead of dropping it. A
+  `finishReason` of `CONTINUATION` now maps to `length` on the OpenAI-compatible endpoints and in
+  the logs, instead of `content_filter` / `error`.
 - A channel custom parameter `store` (such as `{"store": false}` to stop OpenAI from retaining
   chats) is now only sent to Chat Completions and Responses. Image, embedding, speech, moderation
   and legacy Completions requests on the same channel failed with `Unknown parameter: 'store'`.
