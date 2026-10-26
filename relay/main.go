@@ -7,6 +7,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/metrics"
 	"github.com/modeltaps/modeltaps/model"
+	"github.com/modeltaps/modeltaps/providers/openai"
 	"github.com/modeltaps/modeltaps/relay/relay_util"
 	"github.com/modeltaps/modeltaps/types"
 	"encoding/json"
@@ -441,6 +442,17 @@ func applyPreMappingBeforeRequest(c *gin.Context) {
 
 	preAdd, exists := customParams["pre_add"]
 	if !exists || preAdd != true {
+		return
+	}
+
+	// Same filtering as OpenAIProvider.GetRequestTextBody: pre_add writes into the raw body, so the
+	// endpoint-level filter there cannot catch it, and legacy completions reject store.
+	relayMode := config.RelayModeChatCompletions
+	if strings.HasPrefix(path, "/v1/completions") {
+		relayMode = config.RelayModeCompletions
+	}
+	customParams = openai.FilterCustomParamsForRelayMode(customParams, relayMode)
+	if customParams == nil {
 		return
 	}
 

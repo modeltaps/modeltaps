@@ -923,8 +923,15 @@ func (p *BaseProvider) NewRequestWithCustomParamsBytes(method, url string, bodyB
 	if err != nil {
 		return nil, common.ErrorWrapper(err, "custom_parameter_error", http.StatusInternalServerError)
 	}
+	return p.NewRequestWithMergedParamsBytes(method, url, bodyBytes, headers, customParams, modelName)
+}
 
+// NewRequestWithMergedParamsBytes merges the given custom parameters into bodyBytes and builds the
+// request. Callers that adjust the channel's custom parameters first (for example dropping fields
+// the endpoint rejects) pass the adjusted map here; a nil map sends the body unchanged.
+func (p *BaseProvider) NewRequestWithMergedParamsBytes(method, url string, bodyBytes []byte, headers map[string]string, customParams map[string]interface{}, modelName string) (*http.Request, *types.OpenAIErrorWithStatusCode) {
 	if customParams != nil {
+		var err error
 		bodyBytes, err = p.MergeCustomParamsBytes(bodyBytes, customParams, modelName)
 		if err != nil {
 			return nil, common.ErrorWrapper(err, "merge_custom_params_bytes_failed", http.StatusInternalServerError)

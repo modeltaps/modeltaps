@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A channel custom parameter `store` (such as `{"store": false}` to stop OpenAI from retaining
+  chats) is now only sent to Chat Completions and Responses. Image, embedding, speech, moderation
+  and legacy Completions requests on the same channel failed with `Unknown parameter: 'store'`.
 - Sticky sessions for Claude Code, Gemini CLI and Codex account channels never matched: the
   session lookup asserted an interface the router's request context no longer satisfies, so every
   request was spread across accounts. They now stick as intended, also without Redis.
