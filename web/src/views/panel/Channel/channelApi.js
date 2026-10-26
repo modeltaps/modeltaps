@@ -209,6 +209,22 @@ export async function fetchUpstreamModelList(channel) {
   return [...new Set(data)];
 }
 
+// Fetches the upstream model list with picker details (`?detail=1`): per-model
+// family / latest / catalog metadata / price, and the families ranked by usage.
+export async function fetchUpstreamModelPicker(channel) {
+  const res = await API.post('/api/channel/provider_models_list?detail=1', {
+    ...channel,
+    models: '',
+    model_mapping: '',
+    model_headers: ''
+  });
+  const { success, message, data } = res.data;
+  if (!success || !data) {
+    throw new Error(message || 'fetch provider models failed');
+  }
+  return { models: data.models || [], families: data.families || [] };
+}
+
 // Runs every check against one model of a channel (`GET /api/channel/check/:id?model=`) and
 // resolves to its result `{ model, status, items }`. Each call sends up to five real requests to
 // the upstream. Rejects with the server message when the check could not run.

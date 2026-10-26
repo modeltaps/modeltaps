@@ -31,7 +31,7 @@ func TestBuildModelPickerLatest(t *testing.T) {
 		"vendor/old-model-9", "vendor/old-model-8",
 		"only/thing:free",
 	}
-	result, err := BuildModelPicker(models, nil)
+	result, err := BuildModelPicker(models, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,12 +65,15 @@ func TestBuildModelPickerCatalog(t *testing.T) {
 	if err := DB.Create(&ModelInfo{Model: "qwen/qwen3.8-27b", OpenWeights: &yes}).Error; err != nil {
 		t.Fatal(err)
 	}
-	result, err := BuildModelPicker([]string{"claude-opus-5-5", "qwen/qwen3.8-27b", "unknown-model-1"}, nil)
+	result, err := BuildModelPicker([]string{"claude-opus-5-5", "qwen/qwen3.8-27b", "unknown-model-1"}, nil, map[string]int{"claude-opus-5-5": 2})
 	if err != nil {
 		t.Fatal(err)
 	}
 	got := pickerByModel(result)
 	opus := got["claude-opus-5-5"]
+	if opus.OtherChannels != 2 || got["unknown-model-1"].OtherChannels != 0 {
+		t.Errorf("other channels: opus=%d unknown=%d", opus.OtherChannels, got["unknown-model-1"].OtherChannels)
+	}
 	if opus.VendorID != 3 || opus.ContextLength != 200000 || opus.ReleasedAt != 1790000000 ||
 		!reflect.DeepEqual(opus.InputModalities, []string{"text", "image"}) ||
 		!reflect.DeepEqual(opus.Capabilities, []string{"tool_call", "reasoning"}) {
@@ -97,7 +100,7 @@ func TestBuildModelPickerFamilyRank(t *testing.T) {
 		}
 	}
 	models := []string{"vendor-a/acme-1", "vendor-a/qwen3.8-flash", "vendor-a/deepseek-v4-flash", "vendor-a/claude-sonnet-5", "vendor-a/glm-5"}
-	result, err := BuildModelPicker(models, map[string]int64{"glm": 40, "acme": 3})
+	result, err := BuildModelPicker(models, map[string]int64{"glm": 40, "acme": 3}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +154,7 @@ func TestBuildModelPickerPrices(t *testing.T) {
 	}}
 	t.Cleanup(func() { PricingInstance = oldPricing })
 
-	result, err := BuildModelPicker([]string{"claude-opus-5-5", "dall-e-9", "no-price-1"}, nil)
+	result, err := BuildModelPicker([]string{"claude-opus-5-5", "dall-e-9", "no-price-1"}, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,5 +165,29 @@ func TestBuildModelPickerPrices(t *testing.T) {
 	}
 	if got["dall-e-9"].InputPrice != nil || got["no-price-1"].InputPrice != nil {
 		t.Errorf("times / unpriced models must have no token price")
+	}
+}
+
+// 渠道计数：按逗号拆 models、去空白与重复，编辑中的渠道自己不计。
+func TestModelChannelCounts(t *testing.T) {
+	setupModelInfoTestDB(t)
+	if err := DB.AutoMigrate(&Channel{}); err != nil {
+		t.Fatal(err)
+	}
+	for _, ch := range []Channel{
+		{Id: 1, Name: "self", Models: "a,b"},
+		{Id: 2, Name: "x", Models: "a, b ,a"},
+		{Id: 3, Name: "y", Models: "a,,c"},
+	} {
+		if err := DB.Create(&ch).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	counts, err := ModelChannelCounts(1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(counts, map[string]int{"a": 2, "b": 1, "c": 1}) {
+		t.Errorf("counts = %v", counts)
 	}
 }

@@ -15,7 +15,9 @@ type ModelPickerItem struct {
 	Model string `json:"model"`
 	ModelFamily
 	// Latest 表示该行是本家族默认勾选的最新版本。
-	Latest           bool     `json:"latest"`
+	Latest bool `json:"latest"`
+	// OtherChannels 是除当前渠道外，已在 models 里配置了该模型的渠道数。
+	OtherChannels    int      `json:"other_channels"`
 	VendorID         int      `json:"vendor_id"`
 	OpenWeights      *bool    `json:"open_weights"`
 	ReleasedAt       int64    `json:"released_at"`
@@ -118,9 +120,33 @@ func FamilyRequestCounts(days int) (map[string]int64, error) {
 	return counts, nil
 }
 
+// ModelChannelCounts 统计每个模型被多少个渠道的 models 配置，excludeID 对应的渠道不计（编辑中的渠道自己）。
+func ModelChannelCounts(excludeID int) (map[string]int, error) {
+	var channels []struct {
+		Id     int
+		Models string
+	}
+	if err := DB.Model(&Channel{}).Select("id, models").Where("id <> ?", excludeID).Find(&channels).Error; err != nil {
+		return nil, err
+	}
+	counts := make(map[string]int)
+	for _, channel := range channels {
+		seen := make(map[string]bool)
+		for _, name := range strings.Split(channel.Models, ",") {
+			name = strings.TrimSpace(name)
+			if name == "" || seen[name] {
+				continue
+			}
+			seen[name] = true
+			counts[name]++
+		}
+	}
+	return counts, nil
+}
+
 // BuildModelPicker 把渠道上游的模型 id 列表加工成挑选表：拆家族、补目录元数据与售价、
 // 标出每个家族的最新版本，并按热度给家族排序。目录按完整 id 查，查不到再按去掉厂商前缀的 id 查。
-func BuildModelPicker(models []string, familyRequests map[string]int64) (*ModelPickerResult, error) {
+func BuildModelPicker(models []string, familyRequests map[string]int64, channelCounts map[string]int) (*ModelPickerResult, error) {
 	names := make([]string, 0, len(models)*2)
 	for _, name := range models {
 		names = append(names, name, bareModelID(name))
@@ -141,6 +167,7 @@ func BuildModelPicker(models []string, familyRequests map[string]int64) (*ModelP
 		item := ModelPickerItem{
 			Model:            name,
 			ModelFamily:      ParseModelFamily(name),
+			OtherChannels:    channelCounts[name],
 			InputModalities:  []string{},
 			OutputModalities: []string{},
 			Capabilities:     []string{},
