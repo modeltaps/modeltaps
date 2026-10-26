@@ -207,6 +207,7 @@ func buildOpenRouterModelInfos(resp *modelPricingResponse) []*model.ModelInfo {
 		if m.Id == "" {
 			continue
 		}
+		openWeights := m.HuggingFaceId != ""
 		infos = append(infos, &model.ModelInfo{
 			Model:            m.Id,
 			Name:             m.Name,
@@ -218,8 +219,11 @@ func buildOpenRouterModelInfos(resp *modelPricingResponse) []*model.ModelInfo {
 			Capabilities:     capabilitiesJSON(m.SupportedParameters),
 			SupportedVoices:  modalitiesJSON(m.SupportedVoices),
 			// OpenRouter 模型名形如 "google/gemini-2.5-pro"，前缀即厂商 slug。
-			VendorID:  model.VendorIDFromModelName(m.Id),
-			Endpoints: model.ModelEndpointsFromModalities(m.Id, m.Architecture.InputModalities, m.Architecture.OutputModalities),
+			VendorID:    model.VendorIDFromModelName(m.Id),
+			Endpoints:   model.ModelEndpointsFromModalities(m.Id, m.Architecture.InputModalities, m.Architecture.OutputModalities),
+			OpenWeights: &openWeights,
+			ReleasedAt:  m.Created,
+			ExpiresAt:   model.ParseCatalogDate(m.ExpirationDate),
 		})
 	}
 	return infos

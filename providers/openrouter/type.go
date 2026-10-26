@@ -41,6 +41,11 @@ type modelWithPricing struct {
 	Pricing             modelPricing      `json:"pricing"`
 	SupportedParameters []string          `json:"supported_parameters"`
 	SupportedVoices     []string          `json:"supported_voices"`
+	// HuggingFaceId 非空表示开放权重（OpenRouter 只给能在 Hugging Face 下载的模型填这个字段）。
+	HuggingFaceId string `json:"hugging_face_id"`
+	// Created 上架时间（Unix 秒）；ExpirationDate 公布的下架日期（"2026-11-11"），未公布为 null。
+	Created        int64  `json:"created"`
+	ExpirationDate string `json:"expiration_date"`
 }
 
 type modelPricingResponse struct {

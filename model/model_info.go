@@ -103,12 +103,17 @@ type ModelInfo struct {
 	// SupportedVoices 文字转语音音色 id 数组（JSON 字符串）：空串 = 未同步。只由同步维护。
 	SupportedVoices string `json:"supported_voices" gorm:"type:text"`
 	// AliasOf 非空表示本行是别名，值为主名模型标识；隐藏状态与厂商随主名。
-	AliasOf   string `json:"alias_of" gorm:"type:varchar(255);index"`
-	Source    string `json:"source" gorm:"type:varchar(32);default:''"`
-	SyncedAt  int64  `json:"synced_at"`
-	Locked    bool   `json:"locked" gorm:"default:false"` // 锁定后同步不再更新该行
-	CreatedAt int64  `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt int64  `json:"updated_at" gorm:"autoUpdateTime"`
+	AliasOf string `json:"alias_of" gorm:"type:varchar(255);index"`
+	// OpenWeights 是否开放权重：nil = 未知。OpenRouter 按 hugging_face_id 非空、Vercel 按 open-weights 标签同步。
+	OpenWeights *bool `json:"open_weights" gorm:"default:null"`
+	// ReleasedAt 发布时间（Unix 秒），0 = 未知；ExpiresAt 上游公布的下架时间，0 = 未公布。只由同步维护。
+	ReleasedAt int64  `json:"released_at" gorm:"default:0"`
+	ExpiresAt  int64  `json:"expires_at" gorm:"default:0"`
+	Source     string `json:"source" gorm:"type:varchar(32);default:''"`
+	SyncedAt   int64  `json:"synced_at"`
+	Locked     bool   `json:"locked" gorm:"default:false"` // 锁定后同步不再更新该行
+	CreatedAt  int64  `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt  int64  `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
 type ModelInfoResponse struct {
@@ -247,6 +252,15 @@ func UpsertModelInfos(infos []*ModelInfo, source string) error {
 			putInt("context_length", info.ContextLength, existing.ContextLength)
 			putInt("max_tokens", info.MaxTokens, existing.MaxTokens)
 			putInt("vendor_id", info.VendorID, existing.VendorID)
+			if info.OpenWeights != nil {
+				updates["open_weights"] = *info.OpenWeights
+			}
+			if info.ReleasedAt != 0 || existing.ReleasedAt == 0 {
+				updates["released_at"] = info.ReleasedAt
+			}
+			if info.ExpiresAt != 0 || existing.ExpiresAt == 0 {
+				updates["expires_at"] = info.ExpiresAt
+			}
 			// endpoints 只在库里为空时填入：已有值可能是管理员改过的，同步不得覆盖。
 			// hidden / alias_of 只由管理员维护，同步一概不写。
 			if existing.Endpoints == "" && info.Endpoints != "" {

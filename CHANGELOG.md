@@ -50,6 +50,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The model catalog records whether a model has open weights, when it was released and when the
+  upstream retires it, synced from OpenRouter (`hugging_face_id`, `created`, `expiration_date`),
+  Vercel AI Gateway (`open-weights` tag, `released`) and models.dev (`open_weights`,
+  `release_date`).
+- `POST /api/channel/provider_models_list?detail=1` returns the upstream models grouped by model
+  family (`claude-opus-4-5` and `anthropic/claude-opus-4.5` are the same family), marks the
+  newest version of each family, adds catalog metadata and token prices, and ranks the families
+  by this site's requests over the last 30 days, falling back to a built-in vendor order. The
+  existing response without `detail` is unchanged.
 - Subscription channels show their usage windows instead of a money balance: refreshing a Codex
   channel's balance (or the periodic refresh) queries its 5-hour and weekly windows, and Claude
   Code channels keep the windows Anthropic reports on each response. The channel list shows the
