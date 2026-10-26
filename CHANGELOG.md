@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A user's own usage total on the logs page is counted by user ID, like the log list, instead of
+  by username: logs from before a rename are no longer left out, and the query uses the
+  per-user index instead of scanning every log in the time range.
 - Sticky sessions for Claude Code, Gemini CLI and Codex account channels never matched: the
   session lookup asserted an interface the router's request context no longer satisfies, so every
   request was spread across accounts. They now stick as intended, also without Redis.
