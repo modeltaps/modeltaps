@@ -113,6 +113,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The channel form's model selector is rebuilt around model families: it fetches the upstream
+  list when opened, lists families hottest first, and shows only the newest version of each
+  family (older versions fold behind "N older"; a search shows every match). A filter panel
+  narrows by selection status, models already configured in other channels, open or closed
+  weights, vendor, capability (tools, reasoning, structured output, vision), output modality,
+  maximum input / output price and minimum context; "Select results" adds every shown model.
+  Rows show context length, site price, and badges for latest, preview, variants, aliases, open
+  weights and upcoming retirement. On narrow screens the filters fold behind a button.
 - The daily upstream model check (`MODEL_DRIFT_AUTO_CHECK`) is on by default.
 - Automatic price syncs (startup, daily, channel save) write new models and price increases, and
   hold decreases for review; held changes and locked prices below the upstream price are sent as

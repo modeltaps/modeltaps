@@ -68,7 +68,12 @@ func GetModelList(c *gin.Context) {
 			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
-		picker, err := model.BuildModelPicker(uniqueModels, familyRequests)
+		channelCounts, err := model.ModelChannelCounts(channel.Id)
+		if err != nil {
+			common.APIRespondWithError(c, http.StatusOK, err)
+			return
+		}
+		picker, err := model.BuildModelPicker(uniqueModels, familyRequests, channelCounts)
 		if err != nil {
 			common.APIRespondWithError(c, http.StatusOK, err)
 			return
