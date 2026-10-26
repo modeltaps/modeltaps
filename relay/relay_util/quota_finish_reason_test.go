@@ -14,6 +14,7 @@ func TestNormalizeFinishReason(t *testing.T) {
 		"  stop  ":       "stop",
 		"length":         "length",
 		"MAX_TOKENS":     "length",
+		"CONTINUATION":   "length",
 		"content_filter": "content_filter",
 		"tool_calls":     "tool_calls",
 		"function_call":  "tool_calls",

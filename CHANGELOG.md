@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Gemini Long Decode can be continued through the native non-streaming `generateContent` relay:
+  the response keeps `candidates[].continuationToken` instead of dropping it. A
+  `finishReason` of `CONTINUATION` now maps to `length` on the OpenAI-compatible endpoints and in
+  the logs, instead of `content_filter` / `error`.
 - A channel custom parameter `store` (such as `{"store": false}` to stop OpenAI from retaining
   chats) is now only sent to Chat Completions and Responses. Image, embedding, speech, moderation
   and legacy Completions requests on the same channel failed with `Unknown parameter: 'store'`.

@@ -379,7 +379,7 @@ func normalizeFinishReason(native string) string {
 	switch strings.ToLower(strings.TrimSpace(native)) {
 	case "stop", "end_turn", "stop_sequence", "eos", "complete", "completed", "finished":
 		return "stop"
-	case "length", "max_tokens", "max_output_tokens", "model_length", "token_limit":
+	case "length", "max_tokens", "max_output_tokens", "model_length", "token_limit", "continuation":
 		return "length"
 	case "content_filter", "safety", "recitation", "blocklist", "blocked", "prohibited_content", "spii", "image_safety":
 		return "content_filter"
