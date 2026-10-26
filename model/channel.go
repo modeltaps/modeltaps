@@ -84,28 +84,14 @@ type Channel struct {
 	KeyStatus *ChannelKeyStatus `json:"key_status,omitempty" gorm:"-"`
 }
 
-// ChannelKeyStatus 是渠道 key 的安全投影：是否已配置、条数、每条的掩码（最多露末 4 位），不含完整 key。
+// ChannelKeyStatus 是渠道 key 的安全投影：是否已配置、条数、每条的回显（utils.MaskSecret），不含完整 key。
 type ChannelKeyStatus struct {
 	Configured bool     `json:"configured"`
 	Count      int      `json:"count"`
 	Masked     []string `json:"masked"`
 }
 
-const (
-	keyMaskPrefix     = "····"
-	keyMaskTailLen    = 4
-	keyMaskMinReveal  = 8
-	keyMaskMaxEntries = 10
-)
-
-// maskKey 返回单条 key 的掩码；短于 keyMaskMinReveal 的 key 不露任何字符，避免泄露大半。
-func maskKey(key string) string {
-	runes := []rune(key)
-	if len(runes) < keyMaskMinReveal {
-		return keyMaskPrefix
-	}
-	return keyMaskPrefix + string(runes[len(runes)-keyMaskTailLen:])
-}
+const keyMaskMaxEntries = 10
 
 // MaskChannelKey 按换行拆分 key，统计非空条数并生成掩码（最多 keyMaskMaxEntries 条）。
 func MaskChannelKey(key string) ChannelKeyStatus {
@@ -117,7 +103,7 @@ func MaskChannelKey(key string) ChannelKeyStatus {
 		}
 		status.Count++
 		if len(status.Masked) < keyMaskMaxEntries {
-			status.Masked = append(status.Masked, maskKey(line))
+			status.Masked = append(status.Masked, utils.MaskSecret(line))
 		}
 	}
 	status.Configured = status.Count > 0

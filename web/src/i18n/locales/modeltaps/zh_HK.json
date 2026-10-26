@@ -706,7 +706,8 @@
   "channel_edit": {
     "icon": "圖示",
     "iconTip": "按渠道類型與 API 地址自動解析；重新整理會重新擷取 API 地址所在網站的圖示。",
-    "modelAddValue": "新增「{{model}}」"
+    "modelAddValue": "新增「{{model}}」",
+    "tabModel": "提供的模型"
   },
   "brandIconSettings": {
     "title": "品牌圖示",
@@ -751,7 +752,9 @@
     "copySucceeded": "複製成功！",
     "copyNamedSuccess": "複製{{name}}成功！",
     "copyFailedManual": "複製失敗，請手動複製：",
-    "copyNamedFailed": "複製{{name}}失敗，請手動複製："
+    "copyNamedFailed": "複製{{name}}失敗，請手動複製：",
+    "secretConfigured": "已配置 {{masked}}",
+    "secretKeepHint": "留空則保持原值不變"
   },
   "Log Context": "日誌上下文",
   "View Context": "查看上下文",
@@ -1436,10 +1439,6 @@
       "restart": "重新開始",
       "backToDevice": "返回裝置碼登入"
     }
-  },
-  "payment_edit": {
-    "secretConfigured": "已配置 {{masked}}",
-    "secretEditTip": "留空則保持原密鑰不變"
   },
   "channel_row": {
     "usagePlan": "方案：{{plan}}",

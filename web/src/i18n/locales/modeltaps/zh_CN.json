@@ -706,7 +706,8 @@
   "channel_edit": {
     "icon": "图标",
     "iconTip": "按渠道类型与 API 地址自动解析；刷新会重新抓取 API 地址所在站点的图标。",
-    "modelAddValue": "添加「{{model}}」"
+    "modelAddValue": "添加「{{model}}」",
+    "tabModel": "提供的模型"
   },
   "brandIconSettings": {
     "title": "品牌图标",
@@ -751,7 +752,9 @@
     "copySucceeded": "复制成功！",
     "copyNamedSuccess": "复制{{name}}成功！",
     "copyFailedManual": "复制失败，请手动复制：",
-    "copyNamedFailed": "复制{{name}}失败，请手动复制："
+    "copyNamedFailed": "复制{{name}}失败，请手动复制：",
+    "secretConfigured": "已配置 {{masked}}",
+    "secretKeepHint": "留空则保持原值不变"
   },
   "Log Context": "日志上下文",
   "View Context": "查看上下文",
@@ -1436,10 +1439,6 @@
       "restart": "重新开始",
       "backToDevice": "返回设备码登录"
     }
-  },
-  "payment_edit": {
-    "secretConfigured": "已配置 {{masked}}",
-    "secretEditTip": "留空则保持原密钥不变"
   },
   "channel_row": {
     "usagePlan": "套餐：{{plan}}",

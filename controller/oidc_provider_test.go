@@ -101,7 +101,7 @@ func TestCreateOidcProviderForceSavesDisabled(t *testing.T) {
 	}
 }
 
-// TestOidcProviderSecretNeverReturned 读接口不得出现 client_secret；has_client_secret 反映是否已配。
+// TestOidcProviderSecretNeverReturned 读接口不得出现 client_secret 原值；has_client_secret 反映是否已配，client_secret_masked 给出回显。
 func TestOidcProviderSecretNeverReturned(t *testing.T) {
 	setupOidcProviderTestDB(t)
 	issuer := newFakeIdP(t)
@@ -138,6 +138,10 @@ func TestOidcProviderSecretNeverReturned(t *testing.T) {
 		}
 		if !strings.Contains(string(raw), `"has_client_secret":true`) {
 			t.Fatalf("%s 响应缺少 has_client_secret=true: %s", name, raw)
+		}
+		// 14 个字符：只露后 4 位
+		if !strings.Contains(string(raw), `"client_secret_masked":"****cret"`) {
+			t.Fatalf("%s 响应缺少密钥回显: %s", name, raw)
 		}
 	}
 }

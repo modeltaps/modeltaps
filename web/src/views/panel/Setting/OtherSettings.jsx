@@ -520,7 +520,7 @@ export function SafetyCard({ ctx }) {
 // 图片代理 — chat image request proxy and Cloudflare worker image relay.
 export function ImageProxyCard({ ctx }) {
   const { t } = useTranslation();
-  const { inputs, setField, saveKeys, loading, isDirty } = ctx;
+  const { inputs, secrets, setField, saveKeys, loading, isDirty } = ctx;
   const op = (k, opts) => t(`setting_index.operationSettings.${k}`, opts);
   const keys = ['ChatImageRequestProxy', 'CFWorkerImageUrl', 'CFWorkerImageKey'];
 
@@ -551,6 +551,7 @@ export function ImageProxyCard({ ctx }) {
           value={inputs.CFWorkerImageKey}
           onChange={(v) => setField('CFWorkerImageKey', v)}
           disabled={loading}
+          secret={secrets?.CFWorkerImageKey}
         />
       </div>
       <SaveButton loading={loading} disabled={!isDirty(keys)} onClick={() => saveKeys(keys)}>

@@ -36,6 +36,7 @@ import {
 import { cn } from '@/lib/utils';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
 import { isPlaygroundToken } from 'utils/playgroundToken';
+import { maskSecret } from 'utils/maskSecret';
 
 export function statusInfo(t, status) {
   switch (status) {
@@ -246,7 +247,7 @@ function TokenCard({
 }) {
   const shown = revealed.has(item.id);
   const k = item.key || '';
-  const masked = k.length > 6 ? `sk-${k.slice(0, 3)}…${k.slice(-3)}` : `sk-${k}`;
+  const masked = maskSecret(`sk-${k}`);
   const info = statusInfo(t, item.status);
   const isAbnormal = item.status === 3 || item.status === 4;
   const accessed = item.accessed_time;
@@ -408,7 +409,7 @@ export default function TokenTable({
           const item = c.row.original;
           const shown = revealed.has(item.id);
           const k = item.key || '';
-          const masked = k.length > 6 ? `sk-${k.slice(0, 3)}…${k.slice(-3)}` : `sk-${k}`;
+          const masked = maskSecret(`sk-${k}`);
           // 试用区专用 Key:不显示掩码与眼睛/复制,仅标注由系统托管。
           return (
             <div className="group/token flex flex-col gap-0.5">

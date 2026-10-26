@@ -296,8 +296,7 @@ func GetTokenModel(key string) (token *Token, err error) {
 
 	token, err = CacheGetTokenByKey(key)
 	if err != nil {
-		maskedKey := key[:3] + "*********" + key[len(key)-3:]
-		logger.SysError(fmt.Sprintf("DB Not Found: userId=%d, tokenId=%d, key=%s, err=%s", userId, tokenId, maskedKey, err.Error()))
+		logger.SysError(fmt.Sprintf("DB Not Found: userId=%d, tokenId=%d, key=%s, err=%s", userId, tokenId, utils.MaskSecret(key), err.Error()))
 		return nil, ErrTokenInvalid
 	}
 

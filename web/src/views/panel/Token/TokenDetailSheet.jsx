@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
 import { isPlaygroundToken } from 'utils/playgroundToken';
 import { statusInfo, GroupBadge, LimitBar, nextResetTime, buildTokenActions } from './TokenTable';
+import { maskSecret } from 'utils/maskSecret';
 
 // 详情行:左侧 muted 标签,右侧右对齐值。
 function Field({ label, children }) {
@@ -57,7 +58,7 @@ export default function TokenDetailSheet({
   const info = statusInfo(t, token.status);
   const isAbnormal = token.status === 3 || token.status === 4;
   const k = token.key || '';
-  const masked = k.length > 6 ? `sk-${k.slice(0, 3)}…${k.slice(-3)}` : `sk-${k}`;
+  const masked = maskSecret(`sk-${k}`);
   const nowSec = Math.floor(Date.now() / 1000);
   const expired = token.expired_time !== -1 && token.expired_time <= nowSec;
 

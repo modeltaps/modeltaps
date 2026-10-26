@@ -42,6 +42,12 @@ func TestOptionManagerScopeFiltering(t *testing.T) {
 		t.Errorf("GetAllNonSecret expected 5 keys, got %d", len(nonSecret))
 	}
 
+	// GetAllSecret 只含 ScopeSecret
+	secrets := cm.GetAllSecret()
+	if len(secrets) != 1 || secrets["SecretKey"] != "s3cret" {
+		t.Errorf("GetAllSecret expected only SecretKey, got %v", secrets)
+	}
+
 	// PublicOptions 仅含 ScopePublic
 	public := cm.PublicOptions()
 	if len(public) != 4 {

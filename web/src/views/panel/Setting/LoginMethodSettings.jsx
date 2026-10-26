@@ -60,7 +60,7 @@ AccountSystemChoice.propTypes = {
 
 export default function LoginMethodSettings({ ctx }) {
   const { t } = useTranslation();
-  const { inputs, setField, toggle, saveKeys, loading, isDirty } = ctx;
+  const { inputs, secrets, setField, toggle, saveKeys, loading, isDirty } = ctx;
   const [pendingSystem, setPendingSystem] = useState('');
   const [pwWarn, setPwWarn] = useState(false);
   const is = (k) => inputs[k] === 'true';
@@ -86,7 +86,15 @@ export default function LoginMethodSettings({ ctx }) {
   };
 
   const field = (key, labelKey, phKey) => (
-    <TextRow id={key} label={labelKey} value={inputs[key]} onChange={(v) => setField(key, v)} placeholder={phKey} disabled={loading} />
+    <TextRow
+      id={key}
+      label={labelKey}
+      value={inputs[key]}
+      onChange={(v) => setField(key, v)}
+      placeholder={phKey}
+      disabled={loading}
+      secret={secrets?.[key]}
+    />
   );
   const toggleRow = (labelKey, key, descriptionKey) => (
     <ToggleRow
@@ -358,6 +366,7 @@ export default function LoginMethodSettings({ ctx }) {
                 onChange={(v) => setField('TurnstileSecretKey', v)}
                 placeholder={sys('configureTurnstile.secretKeyPlaceholder')}
                 disabled={loading}
+                secret={secrets?.TurnstileSecretKey}
               />
             </div>
             <SaveButton

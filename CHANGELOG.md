@@ -121,6 +121,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for those types.
 - Saving a channel no longer overwrites its balance, quota snapshot or model drift result with the
   form's stale values.
+- Secrets are shown with one masking rule everywhere: 16 or more characters show the first four
+  and last four (`sk-t****ghij`), 8 to 15 show only the last four, shorter values show nothing.
+  This applies to channel keys (previously the last four only), API tokens, the OIDC provider
+  client secret and the secret system settings (SMTP password, GitHub and LINUX DO client
+  secrets, Turnstile secret key, WeChat server token, Cloudflare Worker key), which previously
+  showed nothing once saved. Leaving a secret field blank keeps the stored value.
+- The "Models" tab of the channel form is renamed "Served models" so it no longer reads like the
+  Models page in the admin sidebar.
 
 ### Fixed
 

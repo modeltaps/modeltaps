@@ -708,7 +708,8 @@
     "icon": "Icon",
     "iconTip": "Resolved automatically from the channel type and API address. Refresh re-fetches the site icon of the API address.",
     "editSuccess": "Updated successfully",
-    "modelAddValue": "Add \"{{model}}\""
+    "modelAddValue": "Add \"{{model}}\"",
+    "tabModel": "Served models"
   },
   "brandIconSettings": {
     "title": "Brand Icons",
@@ -772,7 +773,9 @@
     "registerOk": "Signed up successfully",
     "show": "Show",
     "submit": "Submit",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "secretConfigured": "Configured {{masked}}",
+    "secretKeepHint": "Leave blank to keep the existing value"
   },
   "Log Context": "Log Context",
   "View Context": "View Context",
@@ -1068,9 +1071,7 @@
     "usageFetchedAt": "Updated {{time}}"
   },
   "payment_edit": {
-    "updateOk": "Updated successfully",
-    "secretConfigured": "Configured {{masked}}",
-    "secretEditTip": "Leave blank to keep the existing value"
+    "updateOk": "Updated successfully"
   },
   "pricing_edit": {
     "delTip": "Delete this item?",

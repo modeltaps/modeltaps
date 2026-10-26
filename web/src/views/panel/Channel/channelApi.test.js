@@ -41,7 +41,7 @@ describe('fetchTagChannels', () => {
   beforeEach(() => get.mockReset());
 
   it('unwraps the paginated list response to the channel array', async () => {
-    const channels = [{ id: 1, name: 'a', key_status: { configured: true, count: 1, masked: ['····1111'] } }];
+    const channels = [{ id: 1, name: 'a', key_status: { configured: true, count: 1, masked: ['sk-a****1111'] } }];
     get.mockResolvedValue({ data: { success: true, data: { data: channels, page: 1, size: 10, total_count: 1 } } });
     await expect(fetchTagChannels('grp/x')).resolves.toEqual(channels);
     expect(get).toHaveBeenCalledWith('/api/channel_tag/grp%2Fx/list');
