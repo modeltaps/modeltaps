@@ -412,3 +412,34 @@ func TestResolveVendorID(t *testing.T) {
 		}
 	}
 }
+
+// 开放权重 / 发布时间 / 下架时间：同步给了就写，没给（nil / 0）不清掉已有值，
+// 另一来源（models.dev）不带下架时间时不会把 OpenRouter 同步的下架时间抹掉。
+func TestUpsertModelInfosLifecycle(t *testing.T) {
+	setupModelInfoTestDB(t)
+	yes, no := true, false
+	if err := UpsertModelInfos([]*ModelInfo{
+		{Model: "a", OpenWeights: &yes, ReleasedAt: 100, ExpiresAt: 900},
+	}, ModelInfoSourceModelsDev); err != nil {
+		t.Fatalf("insert: %v", err)
+	}
+	if err := UpsertModelInfos([]*ModelInfo{{Model: "a"}}, ModelInfoSourceModelsDev); err != nil {
+		t.Fatalf("empty update: %v", err)
+	}
+	got, err := GetModelInfoByModel("a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.OpenWeights == nil || !*got.OpenWeights || got.ReleasedAt != 100 || got.ExpiresAt != 900 {
+		t.Errorf("empty sync must keep lifecycle fields: %+v", got)
+	}
+	if err := UpsertModelInfos([]*ModelInfo{
+		{Model: "a", OpenWeights: &no, ReleasedAt: 200, ExpiresAt: 950},
+	}, ModelInfoSourceModelsDev); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	got, _ = GetModelInfoByModel("a")
+	if got.OpenWeights == nil || *got.OpenWeights || got.ReleasedAt != 200 || got.ExpiresAt != 950 {
+		t.Errorf("new values not written: %+v", got)
+	}
+}

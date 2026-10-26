@@ -69,6 +69,8 @@ type catalogModel struct {
 	ToolCall         bool              `json:"tool_call"`
 	Reasoning        bool              `json:"reasoning"`
 	StructuredOutput bool              `json:"structured_output"`
+	OpenWeights      *bool             `json:"open_weights"`
+	ReleaseDate      string            `json:"release_date"`
 }
 
 type catalogProvider struct {
@@ -195,6 +197,8 @@ func catalogModelInfo(modelName string, vendorID int, m catalogModel) *ModelInfo
 		Capabilities:     catalogCapabilities(m),
 		VendorID:         vendorID,
 		Endpoints:        ModelEndpointsFromModalities(modelName, m.Modalities.Input, m.Modalities.Output),
+		OpenWeights:      m.OpenWeights,
+		ReleasedAt:       ParseCatalogDate(m.ReleaseDate),
 	}
 }
 

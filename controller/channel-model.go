@@ -61,6 +61,26 @@ func GetModelList(c *gin.Context) {
 	// 去除重复的模型名称
 	uniqueModels := removeDuplicates(modelList)
 
+	// ?detail=1：渠道模型挑选用，按家族拆解并补目录元数据、售价与家族热度。
+	if c.Query("detail") == "1" {
+		familyRequests, err := model.FamilyRequestCounts(model.ModelPickerHeatDays)
+		if err != nil {
+			common.APIRespondWithError(c, http.StatusOK, err)
+			return
+		}
+		picker, err := model.BuildModelPicker(uniqueModels, familyRequests)
+		if err != nil {
+			common.APIRespondWithError(c, http.StatusOK, err)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+			"data":    picker,
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
