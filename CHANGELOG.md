@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Gemini Long Decode can be continued through the native non-streaming `generateContent` relay:
+  the response keeps `candidates[].continuationToken` instead of dropping it. A
+  `finishReason` of `CONTINUATION` now maps to `length` on the OpenAI-compatible endpoints and in
+  the logs, instead of `content_filter` / `error`.
 - Sticky sessions for Claude Code, Gemini CLI and Codex account channels never matched: the
   session lookup asserted an interface the router's request context no longer satisfies, so every
   request was spread across accounts. They now stick as intended, also without Redis.
