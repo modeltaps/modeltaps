@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Image generation requests keep the `safety_identifier` field when the channel does not pass the
+  body through: it is now forwarded upstream, and the value echoed in the response (including the
+  synthesized streaming `completed` event) is returned to the client instead of being dropped.
 - Quota reminder emails are checked after a charge succeeds, including the final settlement,
   where the balance actually crosses the threshold. Before, the check ran on the pre-charge
   estimate only, before the charge (a failed charge could still email) and not at all when the
