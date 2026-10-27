@@ -569,6 +569,11 @@ type GeminiChatCandidate struct {
 	GroundingAttributions []any                    `json:"groundingAttributions,omitempty"`
 	GroundingMetadata     *GeminiGroundingMetadata `json:"groundingMetadata,omitempty"`
 	AvgLogprobs           any                      `json:"avgLogprobs,omitempty"`
+	// Long Decode: when maxOutputTokens exceeds the per-request output limit, the upstream ends with
+	// finishReason=CONTINUATION and returns this token, which the client sends back as the top-level
+	// continuationToken to continue. The native non-stream relay re-serializes this struct, so
+	// without the field the token would be dropped.
+	ContinuationToken string `json:"continuationToken,omitempty"`
 }
 
 type GeminiChatSafetyRating struct {

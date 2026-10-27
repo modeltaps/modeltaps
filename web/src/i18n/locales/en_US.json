@@ -292,6 +292,12 @@
       "locked": "Locked",
       "unit": "Prices in USD per 1M tokens.",
       "apply": "Write {{count}} selected"
+    },
+    "drift": {
+      "autoAdd": "Add new upstream models automatically",
+      "autoAddHelp": "When the daily model check finds models newly offered upstream, add them to this channel (with prices and metadata) instead of only reporting them. Models matching the ignore rules are skipped.",
+      "ignoreRules": "Ignored upstream models",
+      "ignoreRulesHelp": "One rule per line: an exact model name, a pattern with * (for example *-preview), or a regular expression after re: (for example re:^o\\d-mini$). Matching models are never reported as new or added."
     }
   },
   "channel_index": {
@@ -2517,7 +2523,10 @@
         "selectedTime": "Selected: {{time}}",
         "title": "Log Settings",
         "logRelayError": "Record failed requests",
-        "logRelayErrorDescription": "Write a log entry when a request still fails after retries, with the error the client received and every channel tried. Requests rejected locally (insufficient quota, invalid parameters) are not recorded."
+        "logRelayErrorDescription": "Write a log entry when a request still fails after retries, with the error the client received and every channel tried. Requests rejected locally (insufficient quota, invalid parameters) are not recorded.",
+        "channelMetrics": "Hourly channel metrics",
+        "channelMetricsDescription": "Count attempts, successes, latency, time to first token and output speed per channel and model every hour (GET /api/channel/metrics).",
+        "channelMetricsRetention": "Keep hourly metrics for (days, 0 keeps them)"
       },
       "promptLimits": {
         "title": "Input Limits",
@@ -2554,6 +2563,10 @@
         "channelTestInterval": {
           "label": "Test interval (minutes)",
           "description": "Time between scheduled channel tests, at least 1 minute."
+        },
+        "credentialRefresh": {
+          "label": "Account credential refresh (minutes)",
+          "description": "How often OAuth credentials of Codex, Claude Code, Gemini CLI and Antigravity channels are checked; those expiring soon are refreshed even when the channel is idle or auto-disabled. Failures are sent as a credential notice. 0 turns it off."
         }
       },
       "otherSettings": {
@@ -2965,6 +2978,24 @@
       "logIO": "Request & Response Retention",
       "mjNotify": "Midjourney Callback",
       "telegram": "Telegram Bot"
+    },
+    "notifications": {
+      "title": "Admin notifications",
+      "description": "Choose which notices are sent through the configured notification channels (email, DingTalk, Lark, WeCom, Telegram, PushDeer). Each kind is limited separately.",
+      "kind": {
+        "channel_disabled": "Channel disabled automatically",
+        "channel_enabled": "Channel re-enabled",
+        "channel_test": "Channel test finished",
+        "low_balance": "Low channel balance",
+        "price_change": "Upstream price changes",
+        "model_drift": "Upstream model list changes",
+        "model_consistency": "Model metadata problems",
+        "credential": "Channel credential problems"
+      },
+      "limit": {
+        "label": "Notices per kind per hour",
+        "description": "Notices of one kind beyond this count in an hour are dropped; the next one says how many. 0 means no limit."
+      }
     }
   },
   "shimmer 映射": "shimmer mapping",

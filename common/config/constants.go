@@ -245,6 +245,12 @@ var ChannelDisableThreshold = 5.0
 var AutomaticDisableChannelEnabled = false
 // AutomaticEnableChannelEnabled 默认开：只会恢复被自动禁用、且定时测试已通过的渠道。
 var AutomaticEnableChannelEnabled = true
+// NotifyDisabledKinds 关闭的管理员通知类型（逗号分隔，取值见 notify.Kinds），空表示全部发送。
+var NotifyDisabledKinds = ""
+
+// NotifyKindLimitPerHour 每类通知每小时最多发送的条数，超出的丢弃并在下一小时第一条里注明数量；0 不限。
+var NotifyKindLimitPerHour = 20
+
 var AutomaticDisableChannelNotifyEnabled = true
 var QuotaRemindThreshold = 1000
 var PreConsumedQuota = 500
@@ -275,6 +281,16 @@ var ChannelTestMode = "recovery"
 
 // ChannelTestIntervalMinutes 定时渠道测试的间隔（分钟）。
 var ChannelTestIntervalMinutes = 10
+
+// ChannelMetricsEnabled 按「渠道 × 模型 × 小时」聚合成功率、首字延迟与输出速度（内存累计，每分钟落库）。
+var ChannelMetricsEnabled = true
+
+// ChannelMetricsRetentionDays 小时指标保留天数，0 不清理。
+var ChannelMetricsRetentionDays = 30
+
+// ChannelCredentialRefreshMinutes 账号类渠道（Codex、Claude Code、Gemini CLI、Antigravity）
+// OAuth 凭证的后台刷新间隔（分钟）：即将过期的凭证提前刷新，空闲渠道不再因凭证过期而失效。0 关闭。
+var ChannelCredentialRefreshMinutes = 30
 
 // LogRelayErrorEnabled 请求最终失败（含重试后仍失败）时写一条错误日志，记录每次尝试的渠道与状态码。
 // 本地拒绝（余额不足、参数校验等）不写。

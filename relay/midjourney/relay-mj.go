@@ -4,15 +4,16 @@ package midjourney
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/logger"
+	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/controller"
 	"github.com/modeltaps/modeltaps/model"
 	provider "github.com/modeltaps/modeltaps/providers/midjourney"
 	"github.com/modeltaps/modeltaps/relay"
 	"github.com/modeltaps/modeltaps/relay/relay_util"
 	"github.com/modeltaps/modeltaps/types"
-	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -42,7 +43,7 @@ func RelayMidjourneyImage(c *gin.Context) {
 	if resp.StatusCode != http.StatusOK {
 		responseBody, _ := io.ReadAll(resp.Body)
 		c.JSON(resp.StatusCode, gin.H{
-			"error": string(responseBody),
+			"error": utils.MaskSensitiveInfo(string(responseBody)),
 		})
 		return
 	}

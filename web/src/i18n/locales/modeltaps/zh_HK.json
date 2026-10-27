@@ -706,7 +706,65 @@
   "channel_edit": {
     "icon": "圖示",
     "iconTip": "按渠道類型與 API 地址自動解析；重新整理會重新擷取 API 地址所在網站的圖示。",
-    "modelAddValue": "新增「{{model}}」"
+    "modelAddValue": "新增「{{model}}」",
+    "tabModel": "提供的模型",
+    "picker": {
+      "filters": "篩選",
+      "status": "狀態",
+      "status_all": "全部",
+      "status_selected": "已選",
+      "status_unselected": "未選",
+      "status_elsewhere": "已在其他渠道",
+      "weights": "權重",
+      "weights_all": "全部",
+      "weights_open": "開放權重",
+      "weights_closed": "閉源",
+      "capabilities": "能力",
+      "cap_tool_call": "工具調用",
+      "cap_reasoning": "推理",
+      "cap_structured_output": "結構化輸出",
+      "cap_vision": "視覺",
+      "output": "輸出",
+      "output_any": "不限",
+      "output_text": "文字",
+      "output_image": "圖像",
+      "output_audio": "音訊",
+      "output_video": "影片",
+      "output_embeddings": "向量",
+      "output_speech": "語音合成",
+      "output_transcription": "語音轉寫",
+      "output_file": "檔案",
+      "maxPrice": "最高價格",
+      "maxInput": "輸入",
+      "maxOutput": "輸出",
+      "priceUnit": "美元 / 百萬 token，本站售價",
+      "minContext": "最小上下文",
+      "anyContext": "不限",
+      "vendors": "廠商",
+      "resetFilters": "重設篩選",
+      "latest": "最新",
+      "preview": "預覽",
+      "alias": "別名",
+      "openWeights": "開放權重",
+      "retiring": "{{date}} 下架",
+      "elsewhere": "其他 {{count}} 個渠道",
+      "elsewhereTip": "已在其他 {{count}} 個渠道配置",
+      "selectFamily": "選擇 {{family}} 目前顯示的模型",
+      "noFamily": "其他",
+      "requestsTip": "近 30 天本站請求數",
+      "familyCount": "共 {{count}} 個版本",
+      "showOlder": "{{count}} 個舊版本",
+      "collapseOlder": "收起舊版本",
+      "searchPlaceholder": "搜尋模型或家族，如 claude-opus",
+      "latestOnly": "只看最新版本",
+      "selectResults": "全選目前結果（{{count}}）",
+      "refresh": "重新整理",
+      "results": "模型列表",
+      "loading": "正在拉取上游模型…",
+      "selectedSummary": "已選 {{count}} 個",
+      "remove": "移除 {{model}}",
+      "selectedOfTotal": "已選 {{selected}} / 共 {{total}}"
+    }
   },
   "brandIconSettings": {
     "title": "品牌圖示",
@@ -751,7 +809,9 @@
     "copySucceeded": "複製成功！",
     "copyNamedSuccess": "複製{{name}}成功！",
     "copyFailedManual": "複製失敗，請手動複製：",
-    "copyNamedFailed": "複製{{name}}失敗，請手動複製："
+    "copyNamedFailed": "複製{{name}}失敗，請手動複製：",
+    "secretConfigured": "已配置 {{masked}}",
+    "secretKeepHint": "留空則保持原值不變"
   },
   "Log Context": "日誌上下文",
   "View Context": "查看上下文",
@@ -1382,7 +1442,8 @@
     "oauth_code_invalid": "授權碼無效，請重新發起登入",
     "linuxdo_trust_too_low": "此 LINUX DO 帳戶的信任等級不足",
     "linuxdo_already_bound": "本帳戶已綁定 LINUX DO，如需更換請先解除綁定",
-    "oidc_login_failed": "登入失敗，請重試"
+    "oidc_login_failed": "登入失敗，請重試",
+    "channel_drift_rule_invalid": "忽略規則裏的正則表達式無效：{{rule}}"
   },
   "channelOAuth": {
     "tip": {
@@ -1435,5 +1496,10 @@
       "restart": "重新開始",
       "backToDevice": "返回裝置碼登入"
     }
+  },
+  "channel_row": {
+    "usagePlan": "方案：{{plan}}",
+    "usageWindow": "{{name}} 窗口：已用 {{percent}}%，{{reset}} 重設",
+    "usageFetchedAt": "更新於 {{time}}"
   }
 }

@@ -3,7 +3,6 @@ package types
 import (
 	"github.com/modeltaps/modeltaps/common/config"
 	"encoding/json"
-	"fmt"
 	"strings"
 )
 
@@ -224,8 +223,6 @@ func (e *OpenAIError) Error() string {
 
 	// 转换为JSON
 	bytes, _ := json.Marshal(response)
-
-	fmt.Println("e", string(bytes))
 	return string(bytes)
 }
 

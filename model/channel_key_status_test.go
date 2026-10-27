@@ -19,10 +19,11 @@ func TestMaskChannelKey(t *testing.T) {
 	}{
 		{"empty", "", ChannelKeyStatus{Configured: false, Count: 0, Masked: []string{}}},
 		{"blank lines only", " \n\n", ChannelKeyStatus{Configured: false, Count: 0, Masked: []string{}}},
-		{"single", "sk-test-abcd1234", ChannelKeyStatus{Configured: true, Count: 1, Masked: []string{"····1234"}}},
-		{"multiline", "sk-first-key-a1b2\n\n  sk-second-key-c3d4  \n", ChannelKeyStatus{Configured: true, Count: 2, Masked: []string{"····a1b2", "····c3d4"}}},
-		{"shorter than 4", "abc", ChannelKeyStatus{Configured: true, Count: 1, Masked: []string{"····"}}},
-		{"short reveals nothing", "abcdefg", ChannelKeyStatus{Configured: true, Count: 1, Masked: []string{"····"}}},
+		{"single", "sk-test-abcd1234", ChannelKeyStatus{Configured: true, Count: 1, Masked: []string{"sk-t****1234"}}},
+		{"medium reveals tail only", "abcdefgh1234", ChannelKeyStatus{Configured: true, Count: 1, Masked: []string{"****1234"}}},
+		{"multiline", "sk-first-key-a1b2\n\n  sk-second-key-c3d4  \n", ChannelKeyStatus{Configured: true, Count: 2, Masked: []string{"sk-f****a1b2", "sk-s****c3d4"}}},
+		{"shorter than 4", "abc", ChannelKeyStatus{Configured: true, Count: 1, Masked: []string{"****"}}},
+		{"short reveals nothing", "abcdefg", ChannelKeyStatus{Configured: true, Count: 1, Masked: []string{"****"}}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -51,7 +52,7 @@ func TestHideKeyClearsRawKey(t *testing.T) {
 	if ch.Key != "" {
 		t.Error("HideKey must clear the raw key")
 	}
-	if ch.KeyStatus == nil || !ch.KeyStatus.Configured || ch.KeyStatus.Masked[0] != "····9876" {
+	if ch.KeyStatus == nil || !ch.KeyStatus.Configured || ch.KeyStatus.Masked[0] != "sk-s****9876" {
 		t.Errorf("unexpected key status %+v", ch.KeyStatus)
 	}
 }

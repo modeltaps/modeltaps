@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A user's own usage total on the logs page is counted by user ID, like the log list, instead of
+  by username: logs from before a rename are no longer left out, and the query uses the
+  per-user index instead of scanning every log in the time range.
+- Gemini Long Decode can be continued through the native non-streaming `generateContent` relay:
+  the response keeps `candidates[].continuationToken` instead of dropping it. A
+  `finishReason` of `CONTINUATION` now maps to `length` on the OpenAI-compatible endpoints and in
+  the logs, instead of `content_filter` / `error`.
+- A channel custom parameter `store` (such as `{"store": false}` to stop OpenAI from retaining
+  chats) is now only sent to Chat Completions and Responses. Image, embedding, speech, moderation
+  and legacy Completions requests on the same channel failed with `Unknown parameter: 'store'`.
 - Sticky sessions for Claude Code, Gemini CLI and Codex account channels never matched: the
   session lookup asserted an interface the router's request context no longer satisfies, so every
   request was spread across accounts. They now stick as intended, also without Redis.
@@ -40,6 +50,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The model catalog records whether a model has open weights, when it was released and when the
+  upstream retires it, synced from OpenRouter (`hugging_face_id`, `created`, `expiration_date`),
+  Vercel AI Gateway (`open-weights` tag, `released`) and models.dev (`open_weights`,
+  `release_date`).
+- `POST /api/channel/provider_models_list?detail=1` returns the upstream models grouped by model
+  family (`claude-opus-4-5` and `anthropic/claude-opus-4.5` are the same family), marks the
+  newest version of each family, adds catalog metadata and token prices, and ranks the families
+  by this site's requests over the last 30 days, falling back to a built-in vendor order. The
+  existing response without `detail` is unchanged.
+- Subscription channels show their usage windows instead of a money balance: refreshing a Codex
+  channel's balance (or the periodic refresh) queries its 5-hour and weekly windows, and Claude
+  Code channels keep the windows Anthropic reports on each response. The channel list shows the
+  used percentage per window with the reset times in a tooltip.
+- Hourly channel metrics: attempts, successes, latency, time to first token and output speed per
+  channel and model, counted in memory and written every minute, kept 30 days by default.
+  `GET /api/channel/metrics` returns them; the log settings card turns them off or sets the
+  retention.
+- Channel options for the upstream model check: "Ignored upstream models" (exact names, `*`
+  patterns or `re:` regular expressions) are never reported as new, and "Add new upstream models
+  automatically" adds newly offered models to the channel with their prices and metadata.
+- Account channel credentials (Codex, Claude Code, Gemini CLI, Antigravity) are refreshed in the
+  background every 30 minutes when they expire soon, including idle and auto-disabled channels;
+  failures are sent as a credential notice. The interval is set in the channel auto-disable
+  settings (0 turns it off).
+- Admin notifications can be turned on or off per kind (channel disabled / re-enabled, channel
+  test, low balance, price changes, model list changes, model metadata, credential problems) in the
+  new "Admin notifications" settings card, and each kind is limited to 20 notices per hour by
+  default; the first notice after a limited hour says how many were dropped.
 - Upstream model check: the consume log records the model sent upstream when a mapping renamed
   it, and flags a response whose declared model is neither the requested nor the mapped one
   (dated, regional and provider-path variants still match; Azure deployments are skipped). The
@@ -75,6 +113,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The channel form's model selector is rebuilt around model families: it fetches the upstream
+  list when opened, lists families hottest first, and shows only the newest version of each
+  family (older versions fold behind "N older"; a search shows every match). A filter panel
+  narrows by selection status, models already configured in other channels, open or closed
+  weights, vendor, capability (tools, reasoning, structured output, vision), output modality,
+  maximum input / output price and minimum context; "Select results" adds every shown model.
+  Rows show context length, site price, and badges for latest, preview, variants, aliases, open
+  weights and upcoming retirement. On narrow screens the filters fold behind a button.
+- The daily upstream model check (`MODEL_DRIFT_AUTO_CHECK`) is on by default.
 - Automatic price syncs (startup, daily, channel save) write new models and price increases, and
   hold decreases for review; held changes and locked prices below the upstream price are sent as
   notifications. The "Automatic price sync" setting in the billing settings can write every change
@@ -91,11 +138,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for those types.
 - Saving a channel no longer overwrites its balance, quota snapshot or model drift result with the
   form's stale values.
+- Secrets are shown with one masking rule everywhere: 16 or more characters show the first four
+  and last four (`sk-t****ghij`), 8 to 15 show only the last four, shorter values show nothing.
+  This applies to channel keys (previously the last four only), API tokens, the OIDC provider
+  client secret and the secret system settings (SMTP password, GitHub and LINUX DO client
+  secrets, Turnstile secret key, WeChat server token, Cloudflare Worker key), which previously
+  showed nothing once saved. Leaving a secret field blank keeps the stored value.
+- The "Models" tab of the channel form is renamed "Served models" so it no longer reads like the
+  Models page in the admin sidebar.
 
 ### Fixed
 
 - Azure v1 channels accept `/v1/images/edits` and `/v1/images/variations` instead of answering
   501 `unsupported_api`.
+
+### Security
+
+- Upstream errors that reached clients without the usual masking are now masked: errors arriving
+  after a stream started (both stream formats), Midjourney submit errors and image fetch errors,
+  and Suno / Kling task errors could carry the channel's upstream address, proxy or key.
+- Links to providers' public documentation sites (OpenAI, Anthropic, Google AI, AWS, Azure,
+  OpenRouter, Mistral, DeepSeek, xAI, Groq) stay readable in error messages; channel addresses,
+  proxies, IPs and keys are still masked.
+- Removed a debug print that wrote every relay error body to standard output.
+- The admin payment gateway endpoints no longer return gateway credentials (Epay key, Alipay
+  private key, WeChat Pay APIv3 key and private key, Stripe secret key and webhook secret) in
+  clear text. They are returned masked (first four and last four characters, shorter values show
+  less), the edit form displays the mask next to an empty field, and leaving the field blank keeps
+  the stored credential.
 
 ## [0.2.0] - 2026-10-18
 

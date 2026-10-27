@@ -138,7 +138,7 @@ func notifyModelInfoConsistency(summary *ModelInfoConsistencySummary) {
 		}
 		b.WriteString(fmt.Sprintf("Model \"%s\" current output modalities: %s\n", m.Model, current))
 	}
-	notify.Send(subject, b.String())
+	notify.SendKind(notify.KindModelConsistency, subject, b.String())
 }
 
 // CheckModelInfoConsistency 手动触发一致性校验（AdminAuth）：只返回校验结果，不发通知。

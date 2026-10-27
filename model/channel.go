@@ -62,6 +62,14 @@ type Channel struct {
 
 	Plugin     *datatypes.JSONType[PluginType]       `json:"plugin" form:"plugin" gorm:"type:json"`
 	ModelDrift *datatypes.JSONType[ModelDriftResult] `json:"model_drift,omitempty" gorm:"type:json"`
+	// UsageWindows is the last known usage of a subscription account (Codex, Claude Code).
+	UsageWindows *datatypes.JSONType[ChannelUsageWindows] `json:"usage_windows,omitempty" gorm:"type:json"`
+	// DriftIgnoreRules lists upstream models the drift check never reports as new, one per line:
+	// an exact name, a glob with * (for example *-preview), or a regular expression after "re:".
+	DriftIgnoreRules string `json:"drift_ignore_rules" form:"drift_ignore_rules" gorm:"type:text"`
+	// DriftAutoAdd adds new upstream models (not ignored) to the channel's models when the
+	// drift check finds them, instead of only reporting them.
+	DriftAutoAdd bool `json:"drift_auto_add" form:"drift_auto_add" gorm:"default:false"`
 
 	// BalanceThreshold 低余额提醒阈值（USD）：余额刷新后低于该值发通知；0 = 不提醒。
 	BalanceThreshold float64 `json:"balance_threshold" form:"balance_threshold" gorm:"type:decimal(10,4);default:0"`
@@ -76,28 +84,14 @@ type Channel struct {
 	KeyStatus *ChannelKeyStatus `json:"key_status,omitempty" gorm:"-"`
 }
 
-// ChannelKeyStatus 是渠道 key 的安全投影：是否已配置、条数、每条的掩码（最多露末 4 位），不含完整 key。
+// ChannelKeyStatus 是渠道 key 的安全投影：是否已配置、条数、每条的回显（utils.MaskSecret），不含完整 key。
 type ChannelKeyStatus struct {
 	Configured bool     `json:"configured"`
 	Count      int      `json:"count"`
 	Masked     []string `json:"masked"`
 }
 
-const (
-	keyMaskPrefix     = "····"
-	keyMaskTailLen    = 4
-	keyMaskMinReveal  = 8
-	keyMaskMaxEntries = 10
-)
-
-// maskKey 返回单条 key 的掩码；短于 keyMaskMinReveal 的 key 不露任何字符，避免泄露大半。
-func maskKey(key string) string {
-	runes := []rune(key)
-	if len(runes) < keyMaskMinReveal {
-		return keyMaskPrefix
-	}
-	return keyMaskPrefix + string(runes[len(runes)-keyMaskTailLen:])
-}
+const keyMaskMaxEntries = 10
 
 // MaskChannelKey 按换行拆分 key，统计非空条数并生成掩码（最多 keyMaskMaxEntries 条）。
 func MaskChannelKey(key string) ChannelKeyStatus {
@@ -109,7 +103,7 @@ func MaskChannelKey(key string) ChannelKeyStatus {
 		}
 		status.Count++
 		if len(status.Masked) < keyMaskMaxEntries {
-			status.Masked = append(status.Masked, maskKey(line))
+			status.Masked = append(status.Masked, utils.MaskSecret(line))
 		}
 	}
 	status.Configured = status.Count > 0
@@ -609,7 +603,7 @@ func (channel *Channel) UpdateRaw(overwrite bool) error {
 
 	if overwrite {
 		// 运行时字段由刷新 / 检测任务维护，表单保存不得用过期值覆盖。
-		omit := []string{"UsedQuota", "Balance", "BalanceUpdatedTime", "BalanceAlertedTime", "QuotaSnapshot", "ModelDrift"}
+		omit := []string{"UsedQuota", "Balance", "BalanceUpdatedTime", "BalanceAlertedTime", "QuotaSnapshot", "ModelDrift", "UsageWindows"}
 		// 编辑时 key 留空表示保留原 key，Select("*") 不能把它覆盖成空串
 		if channel.Key == "" {
 			omit = append(omit, "Key")
@@ -655,6 +649,32 @@ func (channel *Channel) DismissNewModels() error {
 	}
 	result.NewModels = nil
 	return channel.UpdateModelDrift(*result)
+}
+
+// AddDriftModels appends models to the channel's model list (deduplicated) and reloads the
+// routing cache, for the drift check's auto add. It touches no other column.
+func (channel *Channel) AddDriftModels(models []string) error {
+	if len(models) == 0 {
+		return nil
+	}
+	existing := SplitChannelModels(channel.Models)
+	seen := make(map[string]bool, len(existing))
+	for _, m := range existing {
+		seen[m] = true
+	}
+	for _, m := range models {
+		if m != "" && !seen[m] {
+			seen[m] = true
+			existing = append(existing, m)
+		}
+	}
+	merged := strings.Join(existing, ",")
+	if err := DB.Model(&Channel{}).Where("id = ?", channel.Id).Update("models", merged).Error; err != nil {
+		return err
+	}
+	channel.Models = merged
+	ChannelGroup.Load()
+	return nil
 }
 
 // UpdateModelDrift 只更新渠道漂移结果列，不触及其它字段（供漂移检测 cron / 手动触发写回）。

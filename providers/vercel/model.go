@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"slices"
 	"strconv"
 
 	"github.com/modeltaps/modeltaps/common/config"
@@ -20,8 +21,11 @@ type gatewayModel struct {
 	ContextWindow int          `json:"context_window"`
 	MaxTokens     int          `json:"max_tokens"`
 	Type          string       `json:"type"` // language / embedding / reranking / image / video
-	Tags          []string     `json:"tags"` // reasoning / tool-use / vision / file-input …
+	Tags          []string     `json:"tags"` // reasoning / tool-use / vision / file-input / open-weights …
 	Pricing       modelPricing `json:"pricing"`
+	// Released 发布时间、Created 上架时间（Unix 秒）；发布时间缺失时退回上架时间。
+	Released int64 `json:"released"`
+	Created  int64 `json:"created"`
 }
 
 type modelPricing struct {
@@ -194,6 +198,11 @@ func buildModelInfos(resp *modelListResponse) []*model.ModelInfo {
 			continue
 		}
 		input, output := modalitiesFor(m)
+		openWeights := slices.Contains(m.Tags, "open-weights")
+		releasedAt := m.Released
+		if releasedAt == 0 {
+			releasedAt = m.Created
+		}
 		infos = append(infos, &model.ModelInfo{
 			Model:            m.Id,
 			Name:             m.Name,
@@ -204,8 +213,10 @@ func buildModelInfos(resp *modelListResponse) []*model.ModelInfo {
 			OutputModalities: modalitiesJSON(output),
 			Capabilities:     capabilitiesJSON(m.Tags),
 			// 模型名形如 "anthropic/claude-sonnet-4"，前缀即厂商 slug。
-			VendorID:  model.VendorIDFromModelName(m.Id),
-			Endpoints: model.ModelEndpointsFromModalities(m.Id, input, output),
+			VendorID:    model.VendorIDFromModelName(m.Id),
+			Endpoints:   model.ModelEndpointsFromModalities(m.Id, input, output),
+			OpenWeights: &openWeights,
+			ReleasedAt:  releasedAt,
 		})
 	}
 	return infos

@@ -139,6 +139,44 @@ function renderBalance(type, balance) {
   }
 }
 
+// Subscription channels (Codex, Claude Code) have no money balance: show their usage windows
+// (`row.usage_windows = { windows: [{ name, used_percent, reset_at }], fetched_at }`) instead.
+function UsageWindows({ t, usage }) {
+  const windows = usage?.windows || [];
+  if (windows.length === 0) return null;
+  const tone = (p) => (p >= 90 ? 'text-destructive' : p >= 70 ? 'text-amber-600 dark:text-amber-400' : '');
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="flex cursor-help flex-col text-xs leading-tight text-muted-foreground">
+            {windows.map((w, i) => (
+              <span key={w.name || i} className="whitespace-nowrap">
+                {w.name} <span className={tone(w.used_percent)}>{Math.round(w.used_percent)}%</span>
+              </span>
+            ))}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs whitespace-normal text-xs">
+          <div className="space-y-1">
+            {usage.plan_type && <div>{t('channel_row.usagePlan', { plan: usage.plan_type })}</div>}
+            {windows.map((w, i) => (
+              <div key={w.name || i}>
+                {t('channel_row.usageWindow', {
+                  name: w.name,
+                  percent: Math.round(w.used_percent),
+                  reset: w.reset_at ? timestamp2string(w.reset_at) : '-'
+                })}
+              </div>
+            ))}
+            {usage.fetched_at ? <div>{t('channel_row.usageFetchedAt', { time: timestamp2string(usage.fetched_at) })}</div> : null}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 // Amber warning shown next to the channel name when the last drift check found
 // models the channel still advertises but the upstream no longer returns
 // (`row.model_drift = { checked_at, missing_models, ok }`, brought out by
@@ -353,7 +391,11 @@ export function getColumns({ t, handlers, testingIds, driftCheckingIds, dismissi
       cell: ({ row }) => (
         <div className="flex flex-col gap-0.5 text-sm tabular-nums">
           <span>{renderSpend(row.original.used_quota)}</span>
-          <span className="text-xs text-muted-foreground">{renderBalance(row.original.type, Number(row.original.balance || 0))}</span>
+          {row.original.usage_windows?.windows?.length ? (
+            <UsageWindows t={t} usage={row.original.usage_windows} />
+          ) : (
+            <span className="text-xs text-muted-foreground">{renderBalance(row.original.type, Number(row.original.balance || 0))}</span>
+          )}
         </div>
       )
     },

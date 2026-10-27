@@ -270,6 +270,10 @@ type LogsListParams struct {
 	// upstream_request_id 为上游厂商 ID(仅管理员维度,口径同 channel_id)。
 	RequestId         string `form:"request_id"`
 	UpstreamRequestId string `form:"upstream_request_id"`
+	// UserId is set by the server only (the user's own /self endpoints), never bound from the
+	// query. Filtering by user_id instead of username uses idx_user_created_at and stays correct
+	// after a rename, since old logs keep the previous username.
+	UserId int `form:"-"`
 	// W8-E 新增过滤:finish_reason(metadata JSON 归一值)、成本/tokens 下限。
 	FinishReason string `form:"finish_reason"`
 	MinQuota     int    `form:"min_quota"`
@@ -721,6 +725,9 @@ func SearchUserLogs(userId int, keyword string) (logs []*Log, err error) {
 
 func SumUsedQuota(params *LogsListParams) (quota int) {
 	tx := DB.Table("logs").Select(assembleSumSelectStr("quota"))
+	if params.UserId != 0 {
+		tx = tx.Where("user_id = ?", params.UserId)
+	}
 	if params.Username != "" {
 		tx = tx.Where("username = ?", params.Username)
 	}

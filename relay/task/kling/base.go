@@ -1,9 +1,10 @@
 package kling
 
 import (
+	"encoding/json"
+	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/types"
-	"encoding/json"
 
 	KlingProvider "github.com/modeltaps/modeltaps/providers/kling"
 
@@ -13,7 +14,7 @@ import (
 func StringError(c *gin.Context, httpCode int, code, message string) {
 	err := &types.TaskResponse[any]{
 		Code:    code,
-		Message: message,
+		Message: utils.MaskSensitiveInfo(message), // 可能是上游原文，回写客户端前脱敏
 	}
 
 	c.JSON(httpCode, err)

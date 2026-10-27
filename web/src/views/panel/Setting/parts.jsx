@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useState } from 'react';
-import { ChevronRight, Copy, Loader2 } from 'lucide-react';
+import { ChevronRight, Copy, KeyRound, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { API } from 'utils/api';
@@ -21,6 +21,9 @@ export function useOptionSettings() {
   const { t } = useTranslation();
   const [inputs, setInputs] = useState({});
   const [origin, setOrigin] = useState({});
+  // Secret options ({ key: mask }, '' when unset): the backend never returns their values,
+  // only a mask. Their inputs start empty, and saving an empty one keeps the stored value.
+  const [secrets, setSecrets] = useState({});
   const [loading, setLoading] = useState(false);
   const loadStatus = useContext(LoadStatusContext);
 
@@ -37,6 +40,7 @@ export function useOptionSettings() {
         });
         setInputs(next);
         setOrigin(next);
+        setSecrets(res.data.secrets || {});
       } else {
         showError(message);
       }
@@ -92,6 +96,7 @@ export function useOptionSettings() {
         for (const key of keys) {
           let value = inputs[key];
           if (transform && transform[key]) value = transform[key](value);
+          if (key in secrets && !value) continue;
           if (origin[key] !== value) {
             await putOption(key, value ?? '');
           }
@@ -107,7 +112,7 @@ export function useOptionSettings() {
         setLoading(false);
       }
     },
-    [inputs, origin, putOption, loadStatus, refresh, t]
+    [inputs, origin, secrets, putOption, loadStatus, refresh, t]
   );
 
   // Dirty check for a card's own option keys, so its save button stays disabled
@@ -115,7 +120,7 @@ export function useOptionSettings() {
   // number inputs turn origin values like 10 into '10'.
   const isDirty = useCallback((keys) => keys.some((key) => String(inputs[key] ?? '') !== String(origin[key] ?? '')), [inputs, origin]);
 
-  return { inputs, setField, toggle, saveKeys, loading, refresh, isDirty };
+  return { inputs, secrets, setField, toggle, saveKeys, loading, refresh, isDirty };
 }
 
 export function SettingsCard({ title, description, headerAction, children, className, highlight }) {
@@ -168,9 +173,13 @@ export function TextRow({
   description,
   error,
   endAdornment,
-  copyable
+  copyable,
+  secret
 }) {
   const { t } = useTranslation();
+  // `secret` is the backend mask of a secret option ('' when unset, undefined for ordinary
+  // fields): show it above the empty input so the stored value can be checked.
+  const secretSet = Boolean(secret);
   const adornment =
     endAdornment ??
     (copyable && !multiline ? (
@@ -185,14 +194,20 @@ export function TextRow({
       </Button>
     ) : null);
   return (
-    <FormField id={id} label={label} hint={description} error={error}>
+    <FormField id={id} label={label} hint={secretSet ? t('common.secretKeepHint') : description} error={error}>
+      {secretSet && (
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <KeyRound className="size-3.5" />
+          {t('common.secretConfigured', { masked: secret })}
+        </p>
+      )}
       <div className="relative">
         {multiline ? (
           <Textarea
             id={id}
             value={value ?? ''}
             onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder}
+            placeholder={secretSet ? '••••••••' : placeholder}
             disabled={disabled}
             readOnly={readOnly}
             rows={rows}
@@ -203,7 +218,7 @@ export function TextRow({
             type={type}
             value={value ?? ''}
             onChange={(e) => onChange(e.target.value)}
-            placeholder={placeholder}
+            placeholder={secretSet ? '••••••••' : placeholder}
             disabled={disabled}
             readOnly={readOnly}
             className={adornment ? 'pr-12' : undefined}
