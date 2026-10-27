@@ -1,5 +1,10 @@
 package types
 
+import (
+	"errors"
+	"fmt"
+)
+
 type EmbeddingRequest struct {
 	Model          string `json:"model" binding:"required"`
 	Input          any    `json:"input" binding:"required"`
@@ -21,39 +26,49 @@ type EmbeddingResponse struct {
 	Usage  *Usage      `json:"usage,omitempty"`
 }
 
-func (r EmbeddingRequest) ParseInput() []string {
+// ParseInput parses an embeddings input that is a string or an array of strings. Token arrays
+// ([]int) are rejected: text-only upstreams return 400 for them, other channels should forward
+// the raw input.
+func (r EmbeddingRequest) ParseInput() ([]string, error) {
 	if r.Input == nil {
-		return nil
+		return nil, errors.New("input is required")
 	}
-	var input []string
-	switch r.Input.(type) {
+
+	switch input := r.Input.(type) {
 	case string:
-		input = []string{r.Input.(string)}
+		return []string{input}, nil
 	case []any:
-		input = make([]string, 0, len(r.Input.([]any)))
-		for _, item := range r.Input.([]any) {
-			if str, ok := item.(string); ok {
-				input = append(input, str)
-			}
+		if len(input) == 0 {
+			return nil, errors.New("invalid input: empty array")
 		}
+		texts := make([]string, 0, len(input))
+		for i, item := range input {
+			str, ok := item.(string)
+			if !ok {
+				if isNumber(item) {
+					return nil, fmt.Errorf("invalid input[%d]: expected string, got %T (token arrays are not supported)", i, item)
+				}
+				return nil, fmt.Errorf("invalid input[%d]: expected string, got %T", i, item)
+			}
+			texts = append(texts, str)
+		}
+		return texts, nil
+	default:
+		return nil, fmt.Errorf("invalid input: expected string or array of strings, got %T", r.Input)
 	}
-	return input
 }
 
-func (r EmbeddingRequest) ParseInputString() string {
-	if r.Input == nil {
-		return ""
+// ParseInputString returns the first parsed text, for upstreams that accept a single string.
+func (r EmbeddingRequest) ParseInputString() (string, error) {
+	texts, err := r.ParseInput()
+	if err != nil {
+		return "", err
 	}
+	return texts[0], nil
+}
 
-	var input string
-	switch r.Input.(type) {
-	case string:
-		input = r.Input.(string)
-	case []any:
-		// 取第一个
-		if len(r.Input.([]any)) > 0 {
-			input = r.Input.([]any)[0].(string)
-		}
-	}
-	return input
+// isNumber reports whether v is a JSON number (decoded as float64).
+func isNumber(v any) bool {
+	_, ok := v.(float64)
+	return ok
 }

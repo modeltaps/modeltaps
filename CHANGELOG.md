@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Malformed request bodies no longer crash the request with a `500` panic: content parts that are
+  not objects or carry non-string `text` / `image_url` fields are skipped during token counting, an
+  OpenAI `tool_choice` of type `function` without a function name returns `400` instead of
+  panicking on Claude channels, and Ali, Baidu and Zhipu embeddings reject empty, non-string and
+  token-array inputs with `400` instead of panicking or sending an empty input upstream. The panics
+  happened after the quota pre-charge and left it unrefunded.
 - A user's own usage total on the logs page is counted by user ID, like the log list, instead of
   by username: logs from before a rename are no longer left out, and the query uses the
   per-user index instead of scanning every log in the time range.
