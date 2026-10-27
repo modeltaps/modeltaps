@@ -694,11 +694,6 @@ func PreConsumeTokenQuota(tokenId int, quota int) (err error) {
 	if userQuota < quota {
 		return errors.New("insufficient user quota")
 	}
-	quotaTooLow := userQuota >= config.QuotaRemindThreshold && userQuota-quota < config.QuotaRemindThreshold
-	noMoreQuota := userQuota-quota <= 0
-	if quotaTooLow || noMoreQuota {
-		go sendQuotaWarningEmail(token.UserId, userQuota, noMoreQuota)
-	}
 	// 先原子扣减用户额度(共享额度池,check-then-act 竞态的主战场):RowsAffected==0 直接拒绝,
 	// 此时未触碰令牌额度与周期用量,零副作用,无需回滚。
 	if err = PreDecreaseUserQuota(token.UserId, quota); err != nil {
@@ -724,7 +719,18 @@ func PreConsumeTokenQuota(tokenId int, quota int) (err error) {
 			logger.SysError("failed to accrue token period used: " + perr.Error())
 		}
 	}
+	// The warning is checked only after the charge went through. Organization tokens charge the
+	// shadow account, which has no mailbox, so they skip the check entirely.
+	if !tokenIsOrganizationToken(token) {
+		notifyQuotaWarningIfNeeded(token.UserId, userQuota, quota)
+	}
 	return nil
+}
+
+// tokenIsOrganizationToken reports whether the token charges an organization's shadow account:
+// its user_id is the shadow account and created_by the member who created it.
+func tokenIsOrganizationToken(token *Token) bool {
+	return token.CreatedBy > 0 && token.CreatedBy != token.UserId
 }
 
 func sendQuotaWarningEmail(userId int, userQuota int, noMoreQuota bool) {
@@ -757,13 +763,20 @@ func sendQuotaWarningEmail(userId int, userQuota int, noMoreQuota bool) {
 	}
 }
 
-// PostConsumeTokenQuotaWithInfo 消费 token 配额，直接使用传入的 userId 和 unlimitedQuota，避免数据库查询
-func PostConsumeTokenQuotaWithInfo(tokenId int, userId int, unlimitedQuota bool, quota int) (err error) {
+// PostConsumeTokenQuotaWithInfo 消费 token 配额，直接使用传入的 userId 和 unlimitedQuota，避免查询 token 表。
+// remindQuota is false for organization tokens (the user is a shadow account); otherwise, with
+// quota warnings on, a positive settlement reads the user's balance once more, because the final
+// settlement is where the balance actually crosses the warning threshold.
+func PostConsumeTokenQuotaWithInfo(tokenId int, userId int, unlimitedQuota bool, quota int, remindQuota bool) (err error) {
 	if quota == 0 {
 		return nil
 	}
 	if quota > 0 {
+		quotaBefore, remind := loadQuotaBeforeSettlement(userId, remindQuota)
 		err = DecreaseUserQuota(userId, quota)
+		if err == nil && remind {
+			notifyQuotaWarningIfNeeded(userId, quotaBefore, quota)
+		}
 	} else {
 		err = IncreaseUserQuota(userId, -quota)
 	}

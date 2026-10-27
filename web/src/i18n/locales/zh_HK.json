@@ -2547,6 +2547,10 @@
           "label": "最長響應時間",
           "placeholder": "單位秒，當運行通道全部測試時，超過此時間將自動禁用通道"
         },
+        "quotaRemindEnabled": {
+          "label": "額度提醒郵件",
+          "description": "餘額跌破提醒閾值時、以及用盡時各發一封郵件；餘額明顯回升後再次跌破才會再發。關閉後結算時也不再額外讀取餘額。"
+        },
         "quotaRemindThreshold": {
           "description": "用戶額度消費跌破此值時自動發送郵件提醒，需先配置 SMTP",
           "label": "額度提醒閾值",

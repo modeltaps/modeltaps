@@ -252,6 +252,9 @@ var NotifyDisabledKinds = ""
 var NotifyKindLimitPerHour = 20
 
 var AutomaticDisableChannelNotifyEnabled = true
+// QuotaRemindEnabled turns quota warning emails on or off. When off, settlement skips the extra
+// read of the user's balance that the warning check needs.
+var QuotaRemindEnabled = true
 var QuotaRemindThreshold = 1000
 var PreConsumedQuota = 500
 var ApproximateTokenEnabled = false

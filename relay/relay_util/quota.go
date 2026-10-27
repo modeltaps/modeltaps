@@ -287,7 +287,7 @@ func (q *Quota) completedQuotaConsumption(usage *types.Usage, tokenName string, 
 	quotaDelta := quota - q.preConsumedQuota
 	var quotaErr error
 	if quotaDelta != 0 {
-		err := model.PostConsumeTokenQuotaWithInfo(q.tokenId, q.userId, q.unlimitedQuota, quotaDelta)
+		err := model.PostConsumeTokenQuotaWithInfo(q.tokenId, q.userId, q.unlimitedQuota, quotaDelta, !q.isOrgToken())
 		if err != nil {
 			quotaErr = errors.New("error consuming token remain quota: " + err.Error())
 			logger.LogError(ctx, quotaErr.Error())
@@ -345,7 +345,7 @@ func (q *Quota) Undo(c *gin.Context) {
 	// 不再加本地 recover：之前的"defense-in-depth"在已有 gin.Recovery 时是 anti-pattern：
 	// 截胡 panic 让上层拿不到信号、日志失去堆栈、可调试性反而下降。
 	ctx := c.Request.Context()
-	if err := model.PostConsumeTokenQuotaWithInfo(q.tokenId, q.userId, q.unlimitedQuota, -q.preConsumedQuota); err != nil {
+	if err := model.PostConsumeTokenQuotaWithInfo(q.tokenId, q.userId, q.unlimitedQuota, -q.preConsumedQuota, false); err != nil {
 		logger.LogError(ctx, "error return pre-consumed quota: "+err.Error())
 	} else {
 		if q.hasPeriodLimit {
