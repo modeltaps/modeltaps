@@ -1,6 +1,7 @@
 package cron
 
 import (
+	"errors"
 	"fmt"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
@@ -228,28 +229,9 @@ func InitCron() {
 	err = scheduler.Manager.AddJob(
 		"log_auto_delete",
 		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(3, 0, 0))),
-		gocron.NewTask(func() {
-			if !config.LogAutoDeleteEnabled || config.LogAutoDeleteDays <= 0 {
-				return
-			}
-			targetTimestamp := time.Now().AddDate(0, 0, -config.LogAutoDeleteDays).Unix()
-			const batchSize = 10000
-			var totalDeleted int64
-			for {
-				affected, err := model.DeleteOldLogBatch(targetTimestamp, batchSize)
-				if err != nil {
-					logger.SysError(fmt.Sprintf("[cron] Consumption log auto-cleanup failed after deleting %d rows: %v", totalDeleted, err))
-					break
-				}
-				totalDeleted += affected
-				if affected == 0 {
-					break
-				}
-			}
-			if totalDeleted > 0 {
-				logger.SysLog(fmt.Sprintf("[cron] Consumption log auto-cleanup done, deleted %d rows", totalDeleted))
-			}
-		}),
+		gocron.NewTask(autoDeleteLogs),
+		// A large backlog can take hours to clear; never let the next run overlap it.
+		gocron.WithSingletonMode(gocron.LimitModeReschedule),
 	)
 	if err != nil {
 		logger.SysError("Cron job error: " + err.Error())
@@ -306,4 +288,16 @@ func modelDriftJobDefinition() gocron.JobDefinition {
 		return daily
 	}
 	return gocron.DurationJob(interval)
+}
+
+// autoDeleteLogs deletes consume logs older than the retention window. Batching, retries and
+// progress logs live in model.DeleteOldLogs.
+func autoDeleteLogs() {
+	if !config.LogAutoDeleteEnabled || config.LogAutoDeleteDays <= 0 {
+		return
+	}
+	targetTimestamp := time.Now().AddDate(0, 0, -config.LogAutoDeleteDays).Unix()
+	if _, err := model.DeleteOldLogs("cron", targetTimestamp); errors.Is(err, model.ErrLogCleanupRunning) {
+		logger.SysLog("[cron] A consume log cleanup is already running (maybe started by hand), skipping this run")
+	}
 }

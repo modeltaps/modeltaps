@@ -2,12 +2,14 @@ package model
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"gorm.io/datatypes"
@@ -834,13 +836,90 @@ func GetUserLogsRequestHistogram(userId int, params *LogsListParams, bucketType 
 	return queryLogRequestHistogram(tx, bucketType)
 }
 
-func DeleteOldLog(targetTimestamp int64) (int64, error) {
-	result := DB.Where("type = ? AND created_at < ?", LogTypeConsume, targetTimestamp).Delete(&Log{})
-	return result.RowsAffected, result.Error
+// logCleanupRunning lets one consume log cleanup run at a time in this process; the cron job and
+// the manual button share it. A cleanup of a large backlog can take hours and overlapping runs only
+// fight over the same rows. Cron runs on the master node only while the manual endpoint can hit any
+// node, so this does not exclude a cleanup started on another node.
+var logCleanupRunning atomic.Bool
+
+// ErrLogCleanupRunning means another consume log cleanup is already running.
+var ErrLogCleanupRunning = errors.New("log cleanup is already running")
+
+// Batch size, retry policy and the batch function are variables so tests can shrink them.
+var (
+	logCleanupBatchSize     = 10000
+	logCleanupMaxErrs       = 5
+	logCleanupRetryInterval = 5 * time.Second
+	logCleanupProgressEvery = int64(1_000_000)
+	deleteOldLogBatchFunc   = DeleteOldLogBatch
+)
+
+// IsLogCleanupRunning reports whether a consume log cleanup is running in this process.
+func IsLogCleanupRunning() bool {
+	return logCleanupRunning.Load()
+}
+
+// DeleteOldLogs deletes consume logs created before targetTimestamp in batches, with their
+// log_details, and returns the number of deleted logs. It returns ErrLogCleanupRunning at once if
+// another cleanup is running.
+func DeleteOldLogs(source string, targetTimestamp int64) (int64, error) {
+	if !logCleanupRunning.CompareAndSwap(false, true) {
+		return 0, ErrLogCleanupRunning
+	}
+	defer logCleanupRunning.Store(false)
+	return deleteOldLogsLocked(source, targetTimestamp)
+}
+
+// StartLogCleanup runs DeleteOldLogs in the background and returns once the cleanup holds the
+// lock, so a caller learns synchronously whether it started or another cleanup is running.
+func StartLogCleanup(source string, targetTimestamp int64) error {
+	if !logCleanupRunning.CompareAndSwap(false, true) {
+		return ErrLogCleanupRunning
+	}
+	common.SafeGoroutine(func() {
+		defer logCleanupRunning.Store(false)
+		_, _ = deleteOldLogsLocked(source, targetTimestamp)
+	})
+	return nil
+}
+
+// deleteOldLogsLocked is the batch loop; the caller holds logCleanupRunning. A failed batch (lock
+// wait timeout, deadlock) is retried after a pause, and the cleanup gives up only after several
+// failures in a row, so one transient error does not abort the run and let the backlog grow.
+func deleteOldLogsLocked(source string, targetTimestamp int64) (int64, error) {
+	start := time.Now()
+	var totalDeleted int64
+	nextProgress := logCleanupProgressEvery
+	consecutiveErrs := 0
+	for {
+		affected, err := deleteOldLogBatchFunc(targetTimestamp, logCleanupBatchSize)
+		if err != nil {
+			consecutiveErrs++
+			if consecutiveErrs >= logCleanupMaxErrs {
+				logger.SysError(fmt.Sprintf("[%s] Consume log cleanup gave up after %d failures in a row, deleted %d rows: %v", source, consecutiveErrs, totalDeleted, err))
+				return totalDeleted, err
+			}
+			logger.SysError(fmt.Sprintf("[%s] Consume log cleanup batch failed (%d in a row), retrying in %s: %v", source, consecutiveErrs, logCleanupRetryInterval, err))
+			time.Sleep(logCleanupRetryInterval)
+			continue
+		}
+		consecutiveErrs = 0
+		totalDeleted += affected
+		if affected < int64(logCleanupBatchSize) {
+			break
+		}
+		if totalDeleted >= nextProgress {
+			logger.SysLog(fmt.Sprintf("[%s] Consume log cleanup in progress, deleted %d rows in %s", source, totalDeleted, time.Since(start).Round(time.Second)))
+			nextProgress += logCleanupProgressEvery
+		}
+	}
+	logger.SysLog(fmt.Sprintf("[%s] Consume log cleanup done, deleted %d rows in %s", source, totalDeleted, time.Since(start).Round(time.Second)))
+	return totalDeleted, nil
 }
 
 // DeleteOldLogBatch 分批删除指定时间之前的消费日志，返回本批删除行数。
-// 先查一批 ID 再按 ID 删，避免超大事务锁表。
+// 先查一批 ID 再按 ID 删，避免超大事务锁表；拿到 ID 才能级联删 log_details，所以 MySQL 也不走
+// DELETE ... LIMIT 直删。
 func DeleteOldLogBatch(targetTimestamp int64, batchSize int) (int64, error) {
 	var ids []int
 	err := DB.Model(&Log{}).Select("id").

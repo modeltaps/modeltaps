@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Clearing consume logs by hand in the settings no longer runs one unbounded `DELETE` inside the
+  HTTP request, which held the busiest table for minutes on a large backlog and left the
+  request details of the deleted logs behind. The cleanup now runs in background batches like the
+  daily auto-delete, removes the matching request details, retries a failed batch a few times
+  before giving up, and logs progress to the system log. Only one cleanup runs at a time per
+  instance: a second click while one runs is told so, and the daily auto-delete waits instead of
+  overlapping a long run.
 - A user's own usage total on the logs page is counted by user ID, like the log list, instead of
   by username: logs from before a rename are no longer left out, and the query uses the
   per-user index instead of scanning every log in the time range.

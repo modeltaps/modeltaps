@@ -1443,6 +1443,8 @@
     "linuxdo_trust_too_low": "此 LINUX DO 帳戶的信任等級不足",
     "linuxdo_already_bound": "本帳戶已綁定 LINUX DO，如需更換請先解除綁定",
     "oidc_login_failed": "登入失敗，請重試",
+    "log_cleanup_started": "日誌清理已在背景開始，進度見系統日誌",
+    "log_cleanup_running": "已有日誌清理任務在執行，請稍後再試",
     "channel_drift_rule_invalid": "忽略規則裏的正則表達式無效：{{rule}}"
   },
   "channelOAuth": {
