@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it stays low). The email no longer shows a negative balance. Organization keys skip the check
   before any extra read. A new switch in the quota settings, on by default, turns the reminders
   off together with the extra balance read at settlement.
+- Clearing consume logs by hand in the settings no longer runs one unbounded `DELETE` inside the
+  HTTP request, which held the busiest table for minutes on a large backlog and left the
+  request details of the deleted logs behind. The cleanup now runs in background batches like the
+  daily auto-delete, removes the matching request details, retries a failed batch a few times
+  before giving up, and logs progress to the system log. Only one cleanup runs at a time per
+  instance: a second click while one runs is told so, and the daily auto-delete waits instead of
+  overlapping a long run.
 - Malformed request bodies no longer crash the request with a `500` panic: content parts that are
   not objects or carry non-string `text` / `image_url` fields are skipped during token counting, an
   OpenAI `tool_choice` of type `function` without a function name returns `400` instead of

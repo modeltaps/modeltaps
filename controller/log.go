@@ -254,19 +254,16 @@ func DeleteHistoryLogs(c *gin.Context) {
 		})
 		return
 	}
-	count, err := model.DeleteOldLog(targetTimestamp)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
+	// A large backlog can take hours, far longer than an HTTP request, so the cleanup runs in
+	// background batches and progress goes to the system log.
+	if err := model.StartLogCleanup("manual", targetTimestamp); err != nil {
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeLogCleanupRunning, "A log cleanup is already running, try again later", nil)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusOK, common.WithAPICode(gin.H{
 		"success": true,
-		"message": "",
-		"data":    count,
-	})
+		"message": "Log cleanup started in the background, see the system log for progress",
+	}, common.APICodeLogCleanupStarted, nil))
 }
 
 func ExportLogsList(c *gin.Context) {

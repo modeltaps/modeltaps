@@ -615,8 +615,10 @@ export function LogConsumeCard({ ctx }) {
     if (!logTime) return showError(op('logSettings.selectCleanupTime'));
     const ts = Math.floor(new Date(logTime).getTime() / 1000);
     const res = await API.delete(`/api/log/?target_timestamp=${ts}`);
-    const { success, message, data } = res.data;
-    if (success) showSuccess(op('logSettings.logsCleared', { count: data }));
+    const { success, message } = res.data;
+    // The cleanup runs in background batches; the server answers with a localized notice that it
+    // started or that another cleanup is still running.
+    if (success) showSuccess(message);
     else showError(op('logSettings.cleanupFailed') + message);
   };
 

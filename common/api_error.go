@@ -261,6 +261,10 @@ const (
 	APICodeLinuxdoTrustTooLow       = "linuxdo_trust_too_low"
 	APICodeLinuxdoAlreadyBound      = "linuxdo_already_bound"
 	APICodeOidcLoginFailed          = "oidc_login_failed"
+
+	// Manual consume log cleanup.
+	APICodeLogCleanupStarted = "log_cleanup_started"
+	APICodeLogCleanupRunning = "log_cleanup_running"
 )
 
 // APIError is an error with a stable code. Returning one from a model or controller helper lets
