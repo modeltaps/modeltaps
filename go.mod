@@ -152,7 +152,7 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.3.2 // indirect
 	golang.org/x/arch v0.31.0 // indirect
-	golang.org/x/net v0.59.0
+	golang.org/x/net v0.60.0
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.42.0
 	gorm.io/datatypes v1.2.7
