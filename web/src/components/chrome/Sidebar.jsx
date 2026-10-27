@@ -281,14 +281,15 @@ export default function Sidebar({ collapsed = false, onItemClick, onToggleCollap
           )}
         </nav>
 
-        {/* 页脚一行:额度(充值) · 通知 · 更多 · 设置;窄栏时竖排图标。
-            内层 wrapper 不带内边距、只负责排布,「更多」面板以它为锚,于是左右各内缩 8px 落在侧栏内 */}
+        {/* Footer row: balance (top up) · notices · settings · more; icons stack vertically when collapsed.
+            The inner wrapper has no padding and only handles layout. The "More" panel anchors to it,
+            so the panel sits 8px inside the sidebar on both sides. */}
         <div className="border-t border-border/60 px-2 py-2">
-          <div ref={footerRef} className={cn('flex w-full items-center gap-1', collapsed && 'flex-col')}>
+          <div ref={footerRef} className={cn('flex w-full items-center', collapsed ? 'flex-col gap-1' : 'gap-2')}>
             {renderBalance()}
             {renderNoticeButton()}
-            <MoreMenu anchorRef={footerRef} collapsed={collapsed} />
             {renderSettingsButton()}
+            <MoreMenu anchorRef={footerRef} collapsed={collapsed} />
           </div>
         </div>
       </div>
