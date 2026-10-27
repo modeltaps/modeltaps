@@ -1,6 +1,9 @@
 package types
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"errors"
+)
 
 const (
 	ContentTypeText     = "text"
@@ -266,11 +269,22 @@ type WebSearchOptions struct {
 	UserLocation      any    `json:"user_location,omitempty"`
 }
 
-func (r ChatCompletionRequest) ParseToolChoice() (toolType, toolFunc string) {
+// ParseToolChoice parses tool_choice. A function choice without a valid name is an error, so a
+// client forcing a specific tool is never silently downgraded to auto.
+func (r ChatCompletionRequest) ParseToolChoice() (toolType, toolFunc string, err error) {
 	if choice, ok := r.ToolChoice.(map[string]any); ok {
-		if function, ok := choice["function"].(map[string]any); ok {
+		function, hasFunction := choice["function"].(map[string]any)
+		if hasFunction {
+			name, ok := function["name"].(string)
+			if !ok || name == "" {
+				return "", "", errors.New("invalid tool_choice: function.name is required")
+			}
 			toolType = ToolChoiceTypeFunction
-			toolFunc = function["name"].(string)
+			toolFunc = name
+		} else if choiceType, ok := choice["type"].(string); ok && choiceType == ToolChoiceTypeFunction {
+			// type "function" without a function object is rejected rather than downgraded to auto,
+			// which would turn a forced tool call into a free choice by the model.
+			return "", "", errors.New("invalid tool_choice: function object is required")
 		}
 	} else if toolChoiceType, ok := r.ToolChoice.(string); ok {
 		toolType = toolChoiceType
@@ -280,7 +294,7 @@ func (r ChatCompletionRequest) ParseToolChoice() (toolType, toolFunc string) {
 		toolType = ToolChoiceTypeAuto
 	}
 
-	return
+	return toolType, toolFunc, nil
 }
 
 func (r ChatCompletionRequest) GetFunctionCate() string {
