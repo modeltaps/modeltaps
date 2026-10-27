@@ -1,6 +1,7 @@
 package model
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -20,15 +21,25 @@ type sentWarning struct {
 }
 
 // captureQuotaWarningEmails swaps the sender for a synchronous collector, so the cases are deterministic.
+// The collector is safe for concurrent senders.
 func captureQuotaWarningEmails(t *testing.T) func() []sentWarning {
 	t.Helper()
-	var sent []sentWarning
+	var (
+		mu   sync.Mutex
+		sent []sentWarning
+	)
 	orig := sendQuotaWarningEmailFunc
 	sendQuotaWarningEmailFunc = func(userId int, quota int, noMoreQuota bool) {
+		mu.Lock()
+		defer mu.Unlock()
 		sent = append(sent, sentWarning{userId, quota, noMoreQuota})
 	}
 	t.Cleanup(func() { sendQuotaWarningEmailFunc = orig })
-	return func() []sentWarning { return sent }
+	return func() []sentWarning {
+		mu.Lock()
+		defer mu.Unlock()
+		return append([]sentWarning(nil), sent...)
+	}
 }
 
 // fakeQuotaWarningClock replaces the clock of the dedupe windows with one the test moves.
@@ -180,8 +191,8 @@ func TestNotifyQuotaWarning_BounceNearZeroDoesNotRefire(t *testing.T) {
 	}
 }
 
-// Concurrent requests read the same balance and all see the crossing: one email.
-func TestNotifyQuotaWarning_ConcurrentDuplicateSuppressed(t *testing.T) {
+// Repeated requests that read the same balance and see the crossing send one email.
+func TestNotifyQuotaWarning_RepeatedDuplicateSuppressed(t *testing.T) {
 	setupQuotaWarningTest(t)
 	sent := captureQuotaWarningEmails(t)
 
@@ -191,6 +202,55 @@ func TestNotifyQuotaWarning_ConcurrentDuplicateSuppressed(t *testing.T) {
 
 	if got := sent(); len(got) != 1 {
 		t.Fatalf("expected 1 warning, got %+v", got)
+	}
+}
+
+// Requests released at the same instant, all seeing the same crossing, send exactly one email per
+// user and warning kind. Run with -race.
+func TestNotifyQuotaWarning_ConcurrentDuplicateSuppressed(t *testing.T) {
+	setupQuotaWarningTest(t)
+	sent := captureQuotaWarningEmails(t)
+
+	const perCase = 64
+	cases := []struct {
+		userId, before, delta int
+		noMoreQuota           bool
+	}{
+		{21, 500_200, 300, false}, // running low
+		{22, 200, 300, true},      // used up
+		{23, 500_200, 300, false}, // another user is deduped on its own
+	}
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+	for _, c := range cases {
+		for i := 0; i < perCase; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				<-start
+				notifyQuotaWarningIfNeeded(c.userId, c.before, c.delta)
+			}()
+		}
+	}
+	close(start)
+	wg.Wait()
+
+	got := sent()
+	if len(got) != len(cases) {
+		t.Fatalf("expected %d warnings, got %d: %+v", len(cases), len(got), got)
+	}
+	perUser := map[int]sentWarning{}
+	for _, w := range got {
+		if _, dup := perUser[w.userId]; dup {
+			t.Fatalf("user %d warned twice: %+v", w.userId, got)
+		}
+		perUser[w.userId] = w
+	}
+	for _, c := range cases {
+		w, ok := perUser[c.userId]
+		if !ok || w.noMoreQuota != c.noMoreQuota {
+			t.Fatalf("user %d: got %+v, want one warning with noMoreQuota=%v", c.userId, w, c.noMoreQuota)
+		}
 	}
 }
 

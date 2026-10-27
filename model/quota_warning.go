@@ -186,8 +186,14 @@ func evaluateQuotaWarning(quotaAfter, threshold int) (state quotaWarningState, l
 
 // loadQuotaBeforeSettlement reads the balance a positive settlement starts from, when a warning may
 // be sent. Callers pass remind=false for organization tokens, which skips the read; a shadow
-// account found by the read is skipped too. With BatchUpdateEnabled, queued charges are not in the
-// row yet, so the balance can be stale and a crossing may be seen one settlement late.
+// account found by the read is skipped too.
+//
+// Limitation with BatchUpdateEnabled: settlements only queue their charge, and the row changes when
+// the queue is flushed (every BatchUpdateInterval seconds). Until then every read here misses all
+// queued charges, so the balance looks higher than it is and a crossing is reported only by the
+// first charge checked after the flush, which can be any number of settlements later, or by a
+// pre-charge, which is never queued. If the flushed balance is already far below the threshold,
+// the warning sent then shows that balance.
 func loadQuotaBeforeSettlement(userId int, remind bool) (int, bool) {
 	if !remind || !config.QuotaRemindEnabled {
 		return 0, false
