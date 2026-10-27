@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useForm, Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Loader2 } from 'lucide-react';
+import { Loader2, KeyRound } from 'lucide-react';
 
 import { API } from 'utils/api';
 import { trims } from 'utils/common';
@@ -13,7 +13,7 @@ import { FormField } from '@/components/ui/form-field';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetBody, SheetFooter } from '@/components/ui/sheet';
-import { PaymentType, CurrencyType, PaymentConfig } from './paymentConfig';
+import { PaymentType, CurrencyType, PaymentConfig, splitSecretConfig } from './paymentConfig';
 import { configText } from 'i18n/configText';
 
 const EMPTY = {
@@ -34,6 +34,8 @@ const EMPTY = {
 export default function PaymentSheet({ open, paymentId, onClose, onSaved }) {
   const { t } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
+  // Masked secrets from the backend ({ key: 'sk_l****mnop' }); shown next to the blank field.
+  const [maskedSecrets, setMaskedSecrets] = useState({});
   const {
     register,
     handleSubmit,
@@ -47,6 +49,7 @@ export default function PaymentSheet({ open, paymentId, onClose, onSaved }) {
 
   useEffect(() => {
     if (!open) return;
+    setMaskedSecrets({});
     if (paymentId) {
       loadPayment(paymentId);
     } else {
@@ -69,7 +72,9 @@ export default function PaymentSheet({ open, paymentId, onClose, onSaved }) {
       } catch (e) {
         config = {};
       }
-      reset({ ...EMPTY, ...data, config });
+      const { values, masked } = splitSecretConfig(data.type, config);
+      setMaskedSecrets(masked);
+      reset({ ...EMPTY, ...data, config: values });
     } catch (error) {
       toast.error(error.message);
     }
@@ -183,7 +188,18 @@ export default function PaymentSheet({ open, paymentId, onClose, onSaved }) {
             </FormField>
 
             {Object.entries(configFields).map(([key, param]) => (
-              <FormField key={key} id={`p-config-${key}`} label={configText(t, param.name)} hint={configText(t, param.description)}>
+              <FormField
+                key={key}
+                id={`p-config-${key}`}
+                label={configText(t, param.name)}
+                hint={param.secret && paymentId ? t('common.secretKeepHint') : configText(t, param.description)}
+              >
+                {param.secret && paymentId && maskedSecrets[key] && (
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <KeyRound className="size-3.5" />
+                    {t('common.secretConfigured', { masked: maskedSecrets[key] })}
+                  </p>
+                )}
                 <Controller
                   control={control}
                   name={`config.${key}`}
@@ -205,7 +221,7 @@ export default function PaymentSheet({ open, paymentId, onClose, onSaved }) {
                       <Textarea
                         id={`p-config-${key}`}
                         rows={2}
-                        placeholder={configText(t, param.description)}
+                        placeholder={param.secret && paymentId ? '••••••••' : configText(t, param.description)}
                         value={field.value || ''}
                         onChange={field.onChange}
                       />

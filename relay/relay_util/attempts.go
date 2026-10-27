@@ -1,6 +1,7 @@
 package relay_util
 
 import (
+	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/types"
 
 	"github.com/gin-gonic/gin"
@@ -24,6 +25,14 @@ func RecordRelayAttempt(c *gin.Context, channelID int, apiErr *types.OpenAIError
 	}
 	attempts := RelayAttempts(c)
 	c.Set(relayAttemptsKey, append(attempts, RelayAttempt{ChannelID: channelID, Status: apiErr.StatusCode}))
+	// 本地拒绝（参数、额度等）不是渠道的问题，不计入渠道成功率。
+	if !apiErr.LocalError {
+		modelName := c.GetString("new_model")
+		if modelName == "" {
+			modelName = c.GetString("original_model")
+		}
+		model.RecordChannelFailure(channelID, modelName)
+	}
 }
 
 // MarkLastRelayAttemptCooldown 标记上一次失败的渠道被冷却（重试前判定）。

@@ -292,6 +292,12 @@
       "locked": "ロック中",
       "unit": "価格は 100 万トークンあたりの米ドルです。",
       "apply": "選択した {{count}} 件を書き込む"
+    },
+    "drift": {
+      "autoAdd": "上流の新しいモデルを自動で追加",
+      "autoAddHelp": "毎日のモデル検出で上流が新たに提供するモデルを見つけたら、通知するだけでなくこのチャネルに追加します（価格とメタデータも補完）。無視ルールに一致するモデルは除外します。",
+      "ignoreRules": "無視する上流モデル",
+      "ignoreRulesHelp": "1 行に 1 ルール：完全なモデル名、* を使ったパターン（例 *-preview）、または re: に続く正規表現（例 re:^o\\d-mini$）。一致するモデルは新規として通知も追加もされません。"
     }
   },
   "channel_index": {
@@ -2517,7 +2523,10 @@
         "selectedTime": "選択済み：{{time}}",
         "title": "ログ設定",
         "logRelayError": "失敗したリクエストを記録",
-        "logRelayErrorDescription": "再試行しても失敗したリクエストについて、クライアントが受け取ったエラーと試したすべてのチャネルをログに記録します。ローカルで拒否されたリクエスト（クォータ不足、パラメータエラーなど）は記録しません。"
+        "logRelayErrorDescription": "再試行しても失敗したリクエストについて、クライアントが受け取ったエラーと試したすべてのチャネルをログに記録します。ローカルで拒否されたリクエスト（クォータ不足、パラメータエラーなど）は記録しません。",
+        "channelMetrics": "チャネルの時間別指標",
+        "channelMetricsDescription": "チャネルとモデルごとに、リクエスト数・成功数・レイテンシ・最初のトークンまでの時間・出力速度を 1 時間単位で集計します（GET /api/channel/metrics）。",
+        "channelMetricsRetention": "時間別指標の保存日数（0 は無期限）"
       },
       "promptLimits": {
         "title": "入力制限",
@@ -2554,6 +2563,10 @@
         "channelTestInterval": {
           "label": "テスト間隔（分）",
           "description": "定期テストの間隔です。最小 1 分。"
+        },
+        "credentialRefresh": {
+          "label": "アカウント認証情報の更新間隔（分）",
+          "description": "Codex・Claude Code・Gemini CLI・Antigravity チャネルの OAuth 認証情報を確認する間隔です。まもなく期限切れになるものは、アイドル中や自動無効化中のチャネルでも事前に更新します。失敗すると「チャネル認証情報の問題」通知を送ります。0 でオフ。"
         }
       },
       "otherSettings": {
@@ -2965,6 +2978,24 @@
       "logIO": "リクエスト・レスポンスの保存",
       "mjNotify": "Midjourney コールバック",
       "telegram": "Telegram Bot"
+    },
+    "notifications": {
+      "title": "管理者向け通知",
+      "description": "設定済みの通知チャネル（メール、DingTalk、Lark、WeCom、Telegram、PushDeer）でどの通知を送るかを選びます。種類ごとに件数を制限します。",
+      "kind": {
+        "channel_disabled": "チャネルの自動無効化",
+        "channel_enabled": "チャネルの再有効化",
+        "channel_test": "チャネルテストの完了",
+        "low_balance": "チャネル残高の不足",
+        "price_change": "上流価格の変更",
+        "model_drift": "上流モデル一覧の変化",
+        "model_consistency": "モデルのメタデータの問題",
+        "credential": "チャネル認証情報の問題"
+      },
+      "limit": {
+        "label": "種類ごとの 1 時間あたり上限",
+        "description": "同じ種類の通知が 1 時間にこの件数を超えると破棄され、次の通知に破棄した件数が記載されます。0 は無制限です。"
+      }
     }
   },
   "shimmer 映射": "シマーマッピング",

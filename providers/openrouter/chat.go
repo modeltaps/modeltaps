@@ -1,6 +1,7 @@
 package openrouter
 
 import (
+	"encoding/json"
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/image"
@@ -8,7 +9,6 @@ import (
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/providers/openai"
 	"github.com/modeltaps/modeltaps/types"
-	"encoding/json"
 	"net/http"
 	"strings"
 	"sync"

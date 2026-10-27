@@ -136,3 +136,25 @@ func TestBalance(t *testing.T) {
 		t.Errorf("stored balance = %v", stored.Balance)
 	}
 }
+
+// open-weights 标签 → 开放权重；released 缺失时退回 created。
+func TestBuildModelInfosLifecycle(t *testing.T) {
+	raw := `{"data":[
+		{"id":"alibaba/qwen-3-14b","type":"language","tags":["reasoning","open-weights"],"released":1745798400,"created":1755815280},
+		{"id":"anthropic/claude-opus-5.5","type":"language","tags":["reasoning"],"created":1790000000}
+	]}`
+	var resp modelListResponse
+	if err := json.Unmarshal([]byte(raw), &resp); err != nil {
+		t.Fatal(err)
+	}
+	infos := buildModelInfos(&resp)
+	if len(infos) != 2 {
+		t.Fatalf("infos = %d, want 2", len(infos))
+	}
+	if infos[0].OpenWeights == nil || !*infos[0].OpenWeights || infos[0].ReleasedAt != 1745798400 {
+		t.Errorf("open-weights model = %+v", infos[0])
+	}
+	if infos[1].OpenWeights == nil || *infos[1].OpenWeights || infos[1].ReleasedAt != 1790000000 {
+		t.Errorf("closed model = %+v", infos[1])
+	}
+}

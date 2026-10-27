@@ -24,6 +24,10 @@ func (e *Epay) Name() string {
 	return "Epay"
 }
 
+func (e *Epay) SecretConfigKeys() []string {
+	return []string{"key"}
+}
+
 func (e *Epay) Pay(config *types.PayConfig, gatewayConfig string) (*types.PayRequest, error) {
 	epayConfig, err := getEpayConfig(gatewayConfig)
 	if err != nil {

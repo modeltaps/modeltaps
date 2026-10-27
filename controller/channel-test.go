@@ -575,7 +575,7 @@ func testAllChannels(isNotify bool, onlyAutoDisabled bool) error {
 			sb.WriteString(fmt.Sprintf("- Test completed in %.2fs\n\n", float64(milliseconds)/1000.0))
 		}
 		if isNotify {
-			notify.Send("Channel test completed", sb.String())
+			notify.SendKind(notify.KindChannelTest, "Channel test completed", sb.String())
 		}
 	}()
 	return nil

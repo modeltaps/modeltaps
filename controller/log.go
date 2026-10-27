@@ -160,7 +160,9 @@ func GetLogsSelfStat(c *gin.Context) {
 		return
 	}
 
-	params.Username = c.GetString("username")
+	// Filter by user_id like GetUserLogsList; see LogsListParams.UserId.
+	params.UserId = c.GetInt("id")
+	params.Username = ""
 	// SumUsedQuota 与 admin 的 GetLogsStat 共享实现，会读取 ChannelId / SourceIp；
 	// 这两个字段在 GetUserLogsList 里被忽略，stat 也要保持一致，否则普通用户在工具栏
 	// 填了 source_ip 后会出现「列表不过滤、总消费过滤」的数字对不上。

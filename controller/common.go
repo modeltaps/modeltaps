@@ -188,7 +188,7 @@ func DisableChannel(channelId int, channelName string, modelName string, reason 
 		// 通知会直达运维收件人,这里强制脱敏。
 		if sendNotify && config.AutomaticDisableChannelNotifyEnabled && shouldSendChannelDisableNotify(channelId) {
 			subject := fmt.Sprintf("Channel \"%s\" (#%d) has been disabled", channelName, channelId)
-			notify.Send(subject, channelDisableNotifyContent(channelId, channelName, modelName, reason))
+			notify.SendKind(notify.KindChannelDisabled, subject, channelDisableNotifyContent(channelId, channelName, modelName, reason))
 		}
 
 		return nil, nil
@@ -219,7 +219,7 @@ func EnableChannel(channelId int, channelName string, sendNotify bool) {
 
 	subject := fmt.Sprintf("Channel \"%s\" (#%d) has been enabled", channelName, channelId)
 	content := fmt.Sprintf("Channel \"%s\" (#%d) has been enabled", channelName, channelId)
-	notify.Send(subject, content)
+	notify.SendKind(notify.KindChannelEnabled, subject, content)
 }
 
 func RelayNotFound(c *gin.Context) {

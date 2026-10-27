@@ -706,7 +706,65 @@
   "channel_edit": {
     "icon": "アイコン",
     "iconTip": "チャネルの種類と API アドレスから自動で解決します。更新すると API アドレスのサイトアイコンを再取得します。",
-    "modelAddValue": "「{{model}}」を追加"
+    "modelAddValue": "「{{model}}」を追加",
+    "tabModel": "提供モデル",
+    "picker": {
+      "filters": "フィルター",
+      "status": "状態",
+      "status_all": "すべて",
+      "status_selected": "選択済み",
+      "status_unselected": "未選択",
+      "status_elsewhere": "他のチャネルで設定済み",
+      "weights": "ウェイト",
+      "weights_all": "すべて",
+      "weights_open": "オープンウェイト",
+      "weights_closed": "クローズド",
+      "capabilities": "機能",
+      "cap_tool_call": "ツール呼び出し",
+      "cap_reasoning": "推論",
+      "cap_structured_output": "構造化出力",
+      "cap_vision": "画像入力",
+      "output": "出力",
+      "output_any": "指定なし",
+      "output_text": "テキスト",
+      "output_image": "画像",
+      "output_audio": "音声",
+      "output_video": "動画",
+      "output_embeddings": "埋め込み",
+      "output_speech": "音声合成",
+      "output_transcription": "文字起こし",
+      "output_file": "ファイル",
+      "maxPrice": "最高価格",
+      "maxInput": "入力",
+      "maxOutput": "出力",
+      "priceUnit": "100 万トークンあたり USD（当サイトの販売価格）",
+      "minContext": "最小コンテキスト",
+      "anyContext": "指定なし",
+      "vendors": "ベンダー",
+      "resetFilters": "フィルターをリセット",
+      "latest": "最新",
+      "preview": "プレビュー",
+      "alias": "エイリアス",
+      "openWeights": "オープンウェイト",
+      "retiring": "{{date}} 提供終了",
+      "elsewhere": "他 {{count}} チャネル",
+      "elsewhereTip": "他の {{count}} チャネルで設定済み",
+      "selectFamily": "{{family}} の表示中のモデルを選択",
+      "noFamily": "その他",
+      "requestsTip": "当サイトの過去 30 日のリクエスト数",
+      "familyCount": "{{count}} バージョン",
+      "showOlder": "旧バージョン {{count}} 件",
+      "collapseOlder": "旧バージョンを隠す",
+      "searchPlaceholder": "モデルまたはファミリーを検索（例: claude-opus）",
+      "latestOnly": "最新のみ",
+      "selectResults": "表示中をすべて選択（{{count}}）",
+      "refresh": "更新",
+      "results": "モデル一覧",
+      "loading": "上流のモデルを取得中…",
+      "selectedSummary": "{{count}} 件選択",
+      "remove": "{{model}} を外す",
+      "selectedOfTotal": "{{selected}} / {{total}} 件選択"
+    }
   },
   "brandIconSettings": {
     "title": "ブランドアイコン",
@@ -751,7 +809,9 @@
     "copySucceeded": "コピーしました",
     "copyNamedSuccess": "{{name}}をコピーしました",
     "copyFailedManual": "コピーできませんでした。手動でコピーしてください：",
-    "copyNamedFailed": "{{name}}をコピーできませんでした。手動でコピーしてください："
+    "copyNamedFailed": "{{name}}をコピーできませんでした。手動でコピーしてください：",
+    "secretConfigured": "設定済み {{masked}}",
+    "secretKeepHint": "空欄の場合は既存の値を維持します"
   },
   "Log Context": "ログコンテキスト",
   "View Context": "コンテキストを表示",
@@ -1382,7 +1442,8 @@
     "oauth_code_invalid": "認可コードが無効です。もう一度ログインしてください",
     "linuxdo_trust_too_low": "この LINUX DO アカウントの信頼レベルが不足しています",
     "linuxdo_already_bound": "このアカウントは既に LINUX DO と連携しています。変更するには先に連携を解除してください",
-    "oidc_login_failed": "ログインに失敗しました。もう一度お試しください"
+    "oidc_login_failed": "ログインに失敗しました。もう一度お試しください",
+    "channel_drift_rule_invalid": "無視ルールの正規表現が無効です：{{rule}}"
   },
   "channelOAuth": {
     "tip": {
@@ -1435,5 +1496,10 @@
       "restart": "やり直す",
       "backToDevice": "デバイスコードでのログインに戻る"
     }
+  },
+  "channel_row": {
+    "usagePlan": "プラン：{{plan}}",
+    "usageWindow": "{{name}} ウィンドウ：{{percent}}% 使用、{{reset}} にリセット",
+    "usageFetchedAt": "{{time}} に更新"
   }
 }

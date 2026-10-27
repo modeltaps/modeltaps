@@ -4,6 +4,7 @@ import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/stmp"
+	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/safty"
 	"encoding/json"
@@ -21,10 +22,17 @@ func GetOptions(c *gin.Context) {
 			Value: v,
 		})
 	}
+	// 密钥类配置不下发原值，只给回显：键齐全(未设置为空串)，前端据此识别密钥字段，
+	// 留空保存表示不修改。
+	secrets := make(map[string]string)
+	for k, v := range config.GlobalOption.GetAllSecret() {
+		secrets[k] = utils.MaskSecret(v)
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
 		"data":    options,
+		"secrets": secrets,
 	})
 	return
 }

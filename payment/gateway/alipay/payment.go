@@ -26,6 +26,10 @@ func (a *Alipay) Name() string {
 	return "Alipay"
 }
 
+func (a *Alipay) SecretConfigKeys() []string {
+	return []string{"private_key"}
+}
+
 // createClient 创建支付宝客户端，每次调用都创建新实例
 func (a *Alipay) createClient(config *AlipayConfig) (*alipay.Client, error) {
 	client, err := alipay.New(config.AppID, config.PrivateKey, isProduction)

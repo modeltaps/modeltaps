@@ -198,7 +198,7 @@ func notifyPriceSync(report *PriceSyncReport) {
 
 	logger.SysLog(fmt.Sprintf("price sync %s: %d increases applied, %d held, %d locked below upstream",
 		report.Source, len(raised), len(held), len(locked)))
-	notify.Send("Upstream price changes: "+report.Source, body)
+	notify.SendKind(notify.KindPriceChange, "Upstream price changes: "+report.Source, body)
 }
 
 func writeChanges(b *strings.Builder, title string, changes []PriceChange) {

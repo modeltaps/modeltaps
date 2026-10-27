@@ -10,6 +10,7 @@ import CodeBlock from '@/components/ui/code-block';
 import { toast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
 import { resolveServerAddress } from 'utils/serverAddress';
+import { maskSecret } from 'utils/maskSecret';
 
 // curated 默认优先级(子串匹配,兼容 anthropic/claude-opus-4.8 这类带供应商前缀的 id)
 const CURATED = [/claude-opus/i, /claude-sonnet/i, /gpt-5/i, /gemini.*pro/i];
@@ -22,7 +23,6 @@ const curatedPick = (ids) => {
 };
 
 // API Key 密钥脱敏展示(与 TokenTable 一致);命令里用真实 sk-{key}。
-const maskKey = (k) => (k.length > 9 ? `sk-${k.slice(0, 3)}***${k.slice(-6)}` : `sk-${k}`);
 
 // OpenClaw 官网(桌面版 App / CLI 下载入口);未安装 OpenClaw 的用户由此前往安装。
 const OPENCLAW_SITE_URL = 'https://openclaw.ai';
@@ -69,9 +69,7 @@ export default function OpenClawConnectDialog({ open, onOpenChange, token, serve
       .then((body) => {
         if (!alive) return;
         const data = Array.isArray(body?.data) ? body.data : [];
-        const list = data
-          .filter((m) => m && typeof m.id === 'string')
-          .map((m) => ({ id: m.id }));
+        const list = data.filter((m) => m && typeof m.id === 'string').map((m) => ({ id: m.id }));
         setModels(list);
         setModel(curatedPick(list.map((m) => m.id)));
         setLoading(false);
@@ -146,7 +144,9 @@ bash -c "$(curl -fsSL ${base}/openclaw-setup.sh)"`,
           </div>
           <div className="grid gap-1.5">
             <span className="text-sm font-medium text-foreground">{t('token_index.openclawApiKey')}</span>
-            <code className="block truncate rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-xs">{maskKey(rawKey)}</code>
+            <code className="block truncate rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-xs">
+              {maskSecret(`sk-${rawKey}`)}
+            </code>
           </div>
           <div className="grid gap-1.5">
             <span className="text-sm font-medium text-foreground">{t('token_index.openclawModel')}</span>
@@ -162,7 +162,9 @@ bash -c "$(curl -fsSL ${base}/openclaw-setup.sh)"`,
                 emptyText={t('token_index.openclawModelSearchEmpty')}
               />
             ) : (
-              <div className={cn('flex flex-col items-center justify-center gap-1.5 rounded-md border border-border px-4 py-6 text-center')}>
+              <div
+                className={cn('flex flex-col items-center justify-center gap-1.5 rounded-md border border-border px-4 py-6 text-center')}
+              >
                 <Inbox className="size-6 text-muted-foreground/60" aria-hidden="true" />
                 <p className="max-w-sm text-sm text-muted-foreground">{t('token_index.openclawNoModel')}</p>
               </div>
@@ -182,8 +184,7 @@ bash -c "$(curl -fsSL ${base}/openclaw-setup.sh)"`,
                 <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                   <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
                   <span>
-                    {t('token_index.openclawDesktopDesc')}{' '}
-                    {t('token_index.openclawInstallPrompt')}{' '}
+                    {t('token_index.openclawDesktopDesc')} {t('token_index.openclawInstallPrompt')}{' '}
                     <a
                       href={OPENCLAW_SITE_URL}
                       target="_blank"

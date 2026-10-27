@@ -190,6 +190,21 @@ func (cm *OptionManager) GetAllNonSecret() map[string]string {
 	return all
 }
 
+// GetAllSecret 返回 ScopeSecret 配置的原值(含未设置的空串),仅供后台接口脱敏后下发回显。
+func (cm *OptionManager) GetAllSecret() map[string]string {
+	cm.mutex.RLock()
+	defer cm.mutex.RUnlock()
+
+	secrets := make(map[string]string)
+	for k, v := range cm.entries {
+		if v.scope != ScopeSecret {
+			continue
+		}
+		secrets[k] = v.handler.GetValue()
+	}
+	return secrets
+}
+
 // PublicOptions 返回 ScopePublic 配置的 statusKey→类型化取值(供 /api/status 下发)
 func (cm *OptionManager) PublicOptions() map[string]any {
 	cm.mutex.RLock()

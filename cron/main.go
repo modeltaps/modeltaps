@@ -89,6 +89,24 @@ func InitCron() {
 		return
 	}
 
+	// 每日 03:10 清理过期的渠道小时指标(ChannelMetricsRetentionDays,默认 30 天)
+	err = scheduler.Manager.AddJob(
+		"cleanup_channel_metrics",
+		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(3, 10, 0))),
+		gocron.NewTask(func() {
+			rows, err := model.CleanupOldChannelMetrics()
+			if err != nil {
+				logger.SysError("Failed to clean up channel metrics: " + err.Error())
+				return
+			}
+			logger.SysLog(fmt.Sprintf("Cleaned up channel metrics, deleted %d rows", rows))
+		}),
+	)
+	if err != nil {
+		logger.SysError("Cron job error: " + err.Error())
+		return
+	}
+
 	// 每日 03:00 清理过期 log_details(完整请求/响应留存,默认保留 30 天,见 T50d)
 	err = scheduler.Manager.AddJob(
 		"cleanup_log_details",

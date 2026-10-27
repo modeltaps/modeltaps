@@ -38,6 +38,10 @@ func (w *WeChatPay) Name() string {
 	return "WeChat Pay"
 }
 
+func (w *WeChatPay) SecretConfigKeys() []string {
+	return []string{"mch_apiv3_key", "mch_private_key"}
+}
+
 func (w *WeChatPay) InitClient(config *WeChatConfig) error {
 	// 使用 utils 提供的函数从本地文件中加载商户私钥，商户私钥会用来生成请求的签名
 	mchPrivateKey, err := utils.LoadPrivateKey(config.MchPrivateKey)

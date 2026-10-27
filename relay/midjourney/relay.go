@@ -2,9 +2,10 @@
 package midjourney
 
 import (
-	"github.com/modeltaps/modeltaps/common/logger"
-	provider "github.com/modeltaps/modeltaps/providers/midjourney"
 	"fmt"
+	"github.com/modeltaps/modeltaps/common/logger"
+	"github.com/modeltaps/modeltaps/common/utils"
+	provider "github.com/modeltaps/modeltaps/providers/midjourney"
 	"net/http"
 	"strings"
 
@@ -39,7 +40,8 @@ func RelayMidjourney(c *gin.Context) {
 			typeMsg = err.Type
 		}
 		c.JSON(statusCode, gin.H{
-			"description": fmt.Sprintf("%s %s", err.Description, err.Result),
+			// 上游返回的描述可能带渠道地址或密钥，回写客户端前脱敏（日志保留原文）。
+			"description": utils.MaskSensitiveInfo(fmt.Sprintf("%s %s", err.Description, err.Result)),
 			"type":        typeMsg,
 			"code":        err.Code,
 		})

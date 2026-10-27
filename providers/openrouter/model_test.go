@@ -237,3 +237,26 @@ func floatEq(a, b float64) bool {
 	}
 	return d < 1e-9
 }
+
+// hugging_face_id 非空 = 开放权重；created → 发布时间；expiration_date → 下架时间。
+func TestBuildOpenRouterModelInfosLifecycle(t *testing.T) {
+	raw := `{"data":[
+		{"id":"qwen/qwen3.8-27b","hugging_face_id":"Qwen/Qwen3.8-27B","created":1790000000,"expiration_date":null},
+		{"id":"bytedance-seed/seed-2.0-code","hugging_face_id":"","created":1780000000,"expiration_date":"2026-11-11"}
+	]}`
+	resp := &modelPricingResponse{}
+	if err := json.Unmarshal([]byte(raw), resp); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	infos := buildOpenRouterModelInfos(resp)
+	if len(infos) != 2 {
+		t.Fatalf("want 2 infos, got %d", len(infos))
+	}
+	open, closed := infos[0], infos[1]
+	if open.OpenWeights == nil || !*open.OpenWeights || open.ReleasedAt != 1790000000 || open.ExpiresAt != 0 {
+		t.Errorf("open-weights model = %+v", open)
+	}
+	if closed.OpenWeights == nil || *closed.OpenWeights || closed.ReleasedAt != 1780000000 || closed.ExpiresAt != 1794355200 {
+		t.Errorf("closed model with expiry = %+v", closed)
+	}
+}

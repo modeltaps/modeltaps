@@ -309,6 +309,7 @@ func (q *Quota) completedQuotaConsumption(usage *types.Usage, tokenName string, 
 	if quota > 0 {
 		model.UpdateChannelUsedQuota(q.channelId, quota)
 	}
+	model.RecordChannelSuccess(q.channelId, q.metricModelName(), int64(q.getRequestTime()), q.GetFirstResponseTime(), usage.CompletionTokens)
 
 	// 无论配额操作是否成功，都要记录日志，避免上游已计费但本地无记录
 	model.RecordConsumeLog(
@@ -474,4 +475,13 @@ func (q *Quota) GetFirstResponseTime() int64 {
 
 func (q *Quota) SetFirstResponseTime(firstResponseTime time.Time) {
 	q.firstResponseTime = firstResponseTime
+}
+
+// metricModelName is the model the channel served (after mapping), the key of the channel
+// hourly metrics; failures use the same name (see RecordRelayAttempt).
+func (q *Quota) metricModelName() string {
+	if q.upstreamModel != "" {
+		return q.upstreamModel
+	}
+	return q.modelName
 }

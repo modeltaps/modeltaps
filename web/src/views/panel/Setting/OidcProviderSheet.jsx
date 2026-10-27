@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2 } from 'lucide-react';
+import { KeyRound, Loader2 } from 'lucide-react';
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetBody, SheetFooter } from '@/components/ui/sheet';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -110,6 +110,12 @@ export default function OidcProviderSheet({ open, onOpenChange, editing, serverA
 
   const text = (key, label, opts = {}) => (
     <FormField id={`oidc-provider-${key}`} label={label} hint={opts.hint}>
+      {opts.masked && (
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <KeyRound className="size-3.5" />
+          {t('common.secretConfigured', { masked: opts.masked })}
+        </p>
+      )}
       <Input
         id={`oidc-provider-${key}`}
         type={opts.type || 'text'}
@@ -159,7 +165,8 @@ export default function OidcProviderSheet({ open, onOpenChange, editing, serverA
           {text('client_id', t(tk('form.clientId')), { placeholder: t(tk('form.clientIdPlaceholder')) })}
           {text('client_secret', t(tk('form.clientSecret')), {
             type: 'password',
-            placeholder: isEdit ? t(tk('form.clientSecretPlaceholderEdit')) : t(tk('form.clientSecretPlaceholder'))
+            placeholder: isEdit ? t(tk('form.clientSecretPlaceholderEdit')) : t(tk('form.clientSecretPlaceholder')),
+            masked: isEdit ? editing.client_secret_masked : undefined
           })}
           {text('scopes', t(tk('form.scopes')), { placeholder: t(tk('form.scopesPlaceholder')) })}
           {text('username_claim', t(tk('form.usernameClaim')), { placeholder: 'preferred_username' })}
