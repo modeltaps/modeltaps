@@ -1510,6 +1510,8 @@
     "linuxdo_trust_too_low": "This LINUX DO account's trust level is too low",
     "linuxdo_already_bound": "This account is already linked to LINUX DO. Unlink it first to change it.",
     "oidc_login_failed": "Sign-in failed. Try again.",
+    "log_cleanup_started": "Log cleanup started in the background. Progress is written to the system log.",
+    "log_cleanup_running": "A log cleanup is already running. Try again later.",
     "channel_drift_rule_invalid": "Invalid regular expression in the ignore rules: {{rule}}"
   },
   "channelOAuth": {
