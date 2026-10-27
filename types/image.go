@@ -37,14 +37,17 @@ func IsImageGenerationModel(modelName string) bool {
 }
 
 type ImageRequest struct {
-	Prompt           string  `json:"prompt,omitempty" binding:"required"`
-	Model            string  `json:"model,omitempty"`
-	N                int     `json:"n,omitempty"`
-	Quality          string  `json:"quality,omitempty"`
-	Size             string  `json:"size,omitempty"`
-	Style            string  `json:"style,omitempty"`
-	ResponseFormat   string  `json:"response_format,omitempty"`
-	User             string  `json:"user,omitempty"`
+	Prompt         string `json:"prompt,omitempty" binding:"required"`
+	Model          string `json:"model,omitempty"`
+	N              int    `json:"n,omitempty"`
+	Quality        string `json:"quality,omitempty"`
+	Size           string `json:"size,omitempty"`
+	Style          string `json:"style,omitempty"`
+	ResponseFormat string `json:"response_format,omitempty"`
+	User           string `json:"user,omitempty"`
+	// Stable end-user identifier that supersedes user (user is still accepted). It must be
+	// declared here, otherwise re-encoding the struct silently drops it.
+	SafetyIdentifier string  `json:"safety_identifier,omitempty"`
 	AspectRatio      *string `json:"aspect_ratio,omitempty"`
 	OutputQuality    *int    `json:"output_quality,omitempty"`
 	SafetyTolerance  *string `json:"safety_tolerance,omitempty"`
@@ -78,7 +81,10 @@ type ImageResponse struct {
 	OutputFormat json.RawMessage `json:"output_format,omitempty"`
 	Quality      json.RawMessage `json:"quality,omitempty"`
 	Size         json.RawMessage `json:"size,omitempty"`
-	Usage        *ResponsesUsage `json:"usage,omitempty"`
+	// Echo of the effective safety_identifier (falls back to user upstream); kept raw like the
+	// fields above because it is only echoed back, never read.
+	SafetyIdentifier json.RawMessage `json:"safety_identifier,omitempty"`
+	Usage            *ResponsesUsage `json:"usage,omitempty"`
 }
 
 type ImageResponseDataInner struct {
