@@ -464,10 +464,11 @@ export function BillingRulesCard({ ctx }) {
   );
 }
 
-// 额度 — 新用户额度、预扣额度与额度提醒阈值。
+// 额度 — 新用户额度、预扣额度与额度提醒（开关 + 阈值）。
 export function QuotaCard({ ctx }) {
   const { t } = useTranslation();
-  const { inputs, setField, saveKeys, loading, isDirty } = ctx;
+  const { inputs, setField, toggle, saveKeys, loading, isDirty } = ctx;
+  const remindEnabled = inputs.QuotaRemindEnabled !== 'false';
   // origin 是 string、QuotaInput 回传 number；归一避免 saveKeys 的 origin diff 误判触发冗余 PUT
   const setQuotaField = (key) => (v) => setField(key, typeof v === 'number' ? String(v) : v);
   const keys = ['QuotaForNewUser', 'PreConsumedQuota', 'QuotaRemindThreshold'];
@@ -501,9 +502,16 @@ export function QuotaCard({ ctx }) {
           onChange={(v) => setField('QuotaRemindThreshold', v)}
           placeholder={t('setting_index.operationSettings.monitoringSettings.quotaRemindThreshold.placeholder')}
           description={t('setting_index.operationSettings.monitoringSettings.quotaRemindThreshold.description')}
-          disabled={loading}
+          disabled={loading || !remindEnabled}
         />
       </div>
+      <ToggleRow
+        label={t('setting_index.operationSettings.monitoringSettings.quotaRemindEnabled.label')}
+        description={t('setting_index.operationSettings.monitoringSettings.quotaRemindEnabled.description')}
+        checked={remindEnabled}
+        onCheckedChange={() => toggle('QuotaRemindEnabled')}
+        disabled={loading}
+      />
       <SaveButton loading={loading} disabled={!isDirty(keys)} onClick={() => saveKeys(keys)}>
         {t('common.save')}
       </SaveButton>

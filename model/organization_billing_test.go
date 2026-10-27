@@ -149,7 +149,7 @@ func TestOrgTokenPoolIsolation(t *testing.T) {
 	}
 
 	// 回滚(Undo 路径):负数差额回冲组织池
-	if err := PostConsumeTokenQuotaWithInfo(token.Id, org.ShadowUserId, false, -30); err != nil {
+	if err := PostConsumeTokenQuotaWithInfo(token.Id, org.ShadowUserId, false, -30, false); err != nil {
 		t.Fatalf("回滚失败: %v", err)
 	}
 	orgQuota, _ = GetUserQuota(org.ShadowUserId)
@@ -186,7 +186,7 @@ func TestOrgConsumeConcurrent(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := PostConsumeTokenQuotaWithInfo(token.Id, org.ShadowUserId, false, each); err != nil {
+			if err := PostConsumeTokenQuotaWithInfo(token.Id, org.ShadowUserId, false, each, false); err != nil {
 				t.Errorf("并发实扣失败: %v", err)
 			}
 		}()

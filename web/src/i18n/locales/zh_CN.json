@@ -2430,6 +2430,10 @@
           "placeholder": "单位秒，当运行通道全部测试时，超过此时间将自动禁用通道",
           "description": "运行全部渠道测试时，响应时间超过此秒数的渠道将被自动禁用；0 为不限制"
         },
+        "quotaRemindEnabled": {
+          "label": "额度提醒邮件",
+          "description": "余额跌破提醒阈值时、以及用尽时各发一封邮件；余额明显回升后再次跌破才会再发。关闭后结算时也不再额外读取余额。"
+        },
         "quotaRemindThreshold": {
           "label": "额度提醒阈值",
           "placeholder": "低于此额度时将发送邮件提醒用户",

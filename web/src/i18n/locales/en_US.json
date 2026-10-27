@@ -2547,6 +2547,10 @@
           "label": "Maximum Response Time",
           "placeholder": "In seconds, if all running channels exceed this time, the channel will be automatically disabled"
         },
+        "quotaRemindEnabled": {
+          "label": "Quota reminder emails",
+          "description": "Email users once when their balance falls below the reminder threshold and again when it runs out; another email is sent only after the balance has clearly recovered. Turning it off also skips the extra balance read at settlement."
+        },
         "quotaRemindThreshold": {
           "description": "Email users automatically when their quota falls below this value; requires SMTP to be configured",
           "label": "Quota Reminder Threshold",

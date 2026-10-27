@@ -139,6 +139,7 @@ func registerOptions() {
 	config.GlobalOption.RegisterInt("QuotaForInvitee", &config.QuotaForInvitee, config.ScopeAdmin)
 	config.GlobalOption.RegisterString("InviterRewardType", &config.InviterRewardType, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("InviterRewardValue", &config.InviterRewardValue, config.ScopeAdmin)
+	config.GlobalOption.RegisterBool("QuotaRemindEnabled", &config.QuotaRemindEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("QuotaRemindThreshold", &config.QuotaRemindThreshold, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("PreConsumedQuota", &config.PreConsumedQuota, config.ScopeAdmin)
 

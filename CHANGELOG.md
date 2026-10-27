@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Quota reminder emails are checked after a charge succeeds, including the final settlement,
+  where the balance actually crosses the threshold. Before, the check ran on the pre-charge
+  estimate only, before the charge (a failed charge could still email) and not at all when the
+  pre-charge was skipped for a large balance, so most crossings were never reported, while
+  concurrent requests crossing together each sent one. Each warning ("running low", "used up") is
+  now sent once per crossing, across instances with Redis and per instance without it, and again
+  only after the balance has clearly recovered and drops again (at most one reminder a day while
+  it stays low). The email no longer shows a negative balance. Organization keys skip the check
+  before any extra read. A new switch in the quota settings, on by default, turns the reminders
+  off together with the extra balance read at settlement.
 - Clearing consume logs by hand in the settings no longer runs one unbounded `DELETE` inside the
   HTTP request, which held the busiest table for minutes on a large backlog and left the
   request details of the deleted logs behind. The cleanup now runs in background batches like the
