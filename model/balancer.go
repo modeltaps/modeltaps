@@ -819,6 +819,15 @@ func (cc *ChannelsChooser) GetModelsGroups() map[string]map[string]bool {
 	return cc.ModelGroup
 }
 
+// HasModel 判断是否有任一分组的渠道提供该模型名（精确匹配，不含通配）。
+func (cc *ChannelsChooser) HasModel(modelName string) bool {
+	cc.RLock()
+	defer cc.RUnlock()
+
+	_, ok := cc.ModelGroup[modelName]
+	return ok
+}
+
 // GetModelChannelType 返回某个模型的代表渠道 Type（无则返回 0）。
 func (cc *ChannelsChooser) GetModelChannelType(modelName string) int {
 	cc.RLock()

@@ -148,11 +148,36 @@ func isCatalogVisible(modelName string) bool {
 func filterModelsByChannelType(groupName string, models []string, channelTypes []int) []string {
 	filtered := make([]string, 0, len(models))
 	for _, modelName := range models {
-		if model.ChannelGroup.ModelSupportsChannelTypes(groupName, modelName, channelTypes) {
+		if modelSupportsChannelTypes(groupName, modelName, channelTypes) {
 			filtered = append(filtered, modelName)
 		}
 	}
 	return filtered
+}
+
+// modelSupportsChannelTypes 在 balancer 判定之上认路由策略：策略本身没有渠道，按其兜底模型判定
+// （兜底是策略永远可能转发到的目标）。
+func modelSupportsChannelTypes(groupName, modelName string, channelTypes []int) bool {
+	if policy := model.LookupRoutingPolicy(modelName); policy != nil {
+		return model.ChannelGroup.ModelSupportsChannelTypes(groupName, policy.FallbackModel, channelTypes)
+	}
+	return model.ChannelGroup.ModelSupportsChannelTypes(groupName, modelName, channelTypes)
+}
+
+// appendRoutingPolicyModels 把启用的路由策略并入分组的模型列表：策略的兜底模型在该分组可路由
+// （channelTypes 非空时还要有对应协议的渠道）才并入。策略名随后与普通模型一样过令牌 / 组织白名单与目录过滤。
+func appendRoutingPolicyModels(groupName string, models []string, channelTypes []int) []string {
+	groupModels := make(map[string]bool, len(models))
+	for _, name := range models {
+		groupModels[name] = true
+	}
+	added := model.RoutingPolicyModelsFor(models, func(fallback string) bool {
+		if !groupModels[fallback] {
+			return false
+		}
+		return len(channelTypes) == 0 || model.ChannelGroup.ModelSupportsChannelTypes(groupName, fallback, channelTypes)
+	})
+	return append(models, added...)
 }
 
 func ListModelsByToken(c *gin.Context) {
@@ -174,6 +199,7 @@ func ListModelsByToken(c *gin.Context) {
 		})
 		return
 	}
+	models = appendRoutingPolicyModels(groupName, models, nil)
 	sort.Strings(models)
 
 	// 根据令牌的模型限制与组织成员白名单过滤模型列表
@@ -228,6 +254,7 @@ func ListGeminiModelsByToken(c *gin.Context) {
 		})
 		return
 	}
+	models = appendRoutingPolicyModels(groupName, models, AllowGeminiChannelType)
 	sort.Strings(models)
 
 	// 根据令牌的模型限制与组织成员白名单过滤模型列表
@@ -274,6 +301,7 @@ func ListClaudeModelsByToken(c *gin.Context) {
 		})
 		return
 	}
+	models = appendRoutingPolicyModels(groupName, models, AllowChannelType)
 	sort.Strings(models)
 
 	// 根据令牌的模型限制与组织成员白名单过滤模型列表
@@ -475,6 +503,8 @@ type ModelPrice struct {
 // owned_by 为厂商名（与 vendor.name 相同，保留给 ModelPrice 页兼容）；
 // price.channel_type 保留仅供管理端排障，前端不得据此判断可用性——可用性以本接口是否返回该模型为准。
 type AvailableModelResponse struct {
+	// Kind 非空时标记特殊条目：model.ModelInfoKindRoutingPolicy = 自动路由策略（价格取其兜底模型的）。
+	Kind       string           `json:"kind,omitempty"`
 	Groups     []string         `json:"groups"`
 	OwnedBy    string           `json:"owned_by"`
 	Vendor     *ModelVendor     `json:"vendor"`
@@ -637,5 +667,46 @@ func getAvailableModels(groupName string) map[string]*AvailableModelResponse {
 		}
 	}
 
+	appendRoutingPolicyAvailableModels(availableModels, publicModels, publicGroups)
+
 	return availableModels
+}
+
+// appendRoutingPolicyAvailableModels 把启用的路由策略并入可用模型表：分组取其兜底模型可路由的
+// 公开分组，价格与厂商沿用兜底模型（策略按实际转发到的模型计费，兜底是其中必然可达的一个）。
+func appendRoutingPolicyAvailableModels(availableModels map[string]*AvailableModelResponse, publicModels map[string]map[string]bool, publicGroups []string) {
+	for _, policy := range model.EnabledRoutingPolicies() {
+		if _, exists := availableModels[policy.Name]; exists {
+			continue
+		}
+		if !isCatalogVisible(policy.Name) {
+			continue
+		}
+		fallbackGroups := publicModels[policy.FallbackModel]
+		groups := []string{}
+		for _, publicGroup := range publicGroups {
+			if fallbackGroups[publicGroup] {
+				groups = append(groups, publicGroup)
+			}
+		}
+		if len(groups) == 0 {
+			continue
+		}
+		price := model.PricingInstance.GetPrice(policy.FallbackModel)
+		if price.Unconfigured {
+			if mapped := model.ChannelGroup.ResolveMappedPrice(policy.FallbackModel); mapped != nil {
+				price = mapped
+			}
+		}
+		vendor := resolveModelVendor(policy.FallbackModel, price.ChannelType)
+		availableModels[policy.Name] = &AvailableModelResponse{
+			Kind:      model.ModelInfoKindRoutingPolicy,
+			Groups:    groups,
+			OwnedBy:   vendor.Name,
+			Vendor:    vendor,
+			Endpoints: model.ModelEndpoints(policy.Name),
+			Aliases:   model.ModelAliases(policy.Name),
+			Price:     price,
+		}
+	}
 }

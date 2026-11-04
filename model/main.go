@@ -33,6 +33,9 @@ func SetupDB() {
 	if err := ReloadModelInfoCache(); err != nil {
 		logger.SysError("Failed to load model info cache: " + err.Error())
 	}
+	if err := ReloadRoutingPolicyCache(); err != nil {
+		logger.SysError("Failed to load routing policy cache: " + err.Error())
+	}
 
 	if viper.GetBool("batch_update_enabled") {
 		config.BatchUpdateEnabled = true
@@ -258,6 +261,10 @@ func InitDB() (err error) {
 		}
 
 		err = db.AutoMigrate(&ModelInfo{})
+		if err != nil {
+			return err
+		}
+		err = db.AutoMigrate(&RoutingPolicy{})
 		if err != nil {
 			return err
 		}
