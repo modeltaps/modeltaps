@@ -50,7 +50,11 @@ type Quota struct {
 	memberBudgetCacheQuota int
 
 	// routingPolicy 请求走了自动路由时的策略名；组织成员白名单按它判定而非目标模型（设计上目标不再二次校验）。
-	routingPolicy string
+	// routingDecision 是本次请求的决策（写进目标模型那条日志的 metadata）；
+	// routingDecisionCall 标记本 Quota 计的是决策调用本身。
+	routingPolicy       string
+	routingDecision     *RoutingDecision
+	routingDecisionCall bool
 
 	// —— 身份/令牌上下文 ——
 	userId         int
@@ -116,6 +120,8 @@ func NewQuota(c *gin.Context, modelName string, promptTokens int) *Quota {
 		isBackupGroup:  isBackupGroup, // 记录是否使用备用分组
 		routingPolicy:  c.GetString("routing_policy"),
 	}
+	quota.routingDecision = RoutingDecisionFromContext(c)
+	quota.routingDecisionCall = c.GetBool(RoutingDecisionCallContextKey)
 
 	quota.price = *model.PricingInstance.GetPrice(quota.modelName)
 	// 价格未配置时按策略处理(block 拒绝 / zero 不计费 / default 用默认倍率)，

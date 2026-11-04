@@ -4,6 +4,7 @@ package e2e
 // 会话固定、决策失败兜底、Claude 入口与流式各验一遍。决策调用的计费在 ROUTE-3，这里只断言目标请求计费。
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -112,14 +113,127 @@ func TestAutoRoutingChatRoutesToClassifiedTarget(t *testing.T) {
 		t.Fatalf("两个上游各应收到一次请求，实际 target=%d decision=%d", len(target.Requests()), len(decision.Requests()))
 	}
 
-	// 计费：目标模型 1/1 倍率，150 token → 150；决策调用本任务不计费。
+	// 响应头告诉客户端路由去向。
+	if got := w.Header().Get("X-Modeltaps-Route"); got != "policy=auto/coder; label=small; model=cheap-model; confidence=0.90; reason=classified" {
+		t.Fatalf("X-Modeltaps-Route 不对: %q", got)
+	}
+
+	// 计费：目标模型 1/1 倍率 150 token → 150；决策调用按 decider 1/1 倍率 28 token → 28，单独一条日志。
+	if spent := quotaBefore - h.UserQuota(t); spent != 178 {
+		t.Fatalf("应扣 150 + 28 = 178，实际扣 %d", spent)
+	}
+	logs := consumeLogsByModel(t)
+	targetLog, ok := logs[routingCheapModel]
+	if !ok {
+		t.Fatalf("应有 cheap-model 的消费日志，实际 %v", logKeys(logs))
+	}
+	meta := targetLog.Metadata.Data()
+	if meta["routing_policy"] != routingPolicyName || meta["routing_label"] != "small" || meta["routing_reason"] != "classified" || meta["routing_target"] != routingCheapModel {
+		t.Fatalf("目标日志 metadata 缺路由字段: %v", meta)
+	}
+	if conf, _ := meta["routing_confidence"].(float64); conf != 0.9 {
+		t.Fatalf("routing_confidence 期望 0.9，实际 %v", meta["routing_confidence"])
+	}
+	if _, ok := meta["routing_decision_ms"]; !ok {
+		t.Fatalf("目标日志应记决策耗时: %v", meta)
+	}
+	decisionLog, ok := logs[routingDecisionName]
+	if !ok {
+		t.Fatalf("应有 decider 的决策消费日志，实际 %v", logKeys(logs))
+	}
+	if decisionLog.Quota != 28 || decisionLog.PromptTokens != 20 || decisionLog.CompletionTokens != 8 {
+		t.Fatalf("决策日志用量 / 费用不对: quota=%d prompt=%d completion=%d", decisionLog.Quota, decisionLog.PromptTokens, decisionLog.CompletionTokens)
+	}
+	dmeta := decisionLog.Metadata.Data()
+	if dmeta["routing_decision"] != true || dmeta["routing_policy"] != routingPolicyName {
+		t.Fatalf("决策日志应打 routing_decision 标并记策略: %v", dmeta)
+	}
+	if dmeta["request_id"] == nil || dmeta["request_id"] != meta["request_id"] {
+		t.Fatalf("两条日志应共享 request_id: %v / %v", dmeta["request_id"], meta["request_id"])
+	}
+}
+
+// consumeLogsByModel 按模型名索引消费日志；同一模型多条时取最后一条。
+func consumeLogsByModel(t *testing.T) map[string]model.Log {
+	t.Helper()
+	byModel := map[string]model.Log{}
+	for _, l := range consumeLogs(t) {
+		byModel[l.ModelName] = l
+	}
+	return byModel
+}
+
+func logKeys(logs map[string]model.Log) []string {
+	keys := make([]string, 0, len(logs))
+	for k := range logs {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+// 决策计费开关关闭：只扣目标模型的费，决策调用不写消费日志。
+func TestAutoRoutingDecisionBillingSwitchOff(t *testing.T) {
+	decision := NewFakeProvider(t)
+	decision.SetResponse(FakeResponse{JSON: decisionJSON("small", 0.9)})
+	target := NewFakeProvider(t)
+	target.SetResponse(FakeResponse{JSON: ChatCompletionJSON(routingCheapModel, "done", 100, 50)})
+	h := newRoutingHarness(t, decision.Server.URL, target.Server.URL, 0)
+
+	prev := config.RoutingDecisionBillingEnabled
+	config.RoutingDecisionBillingEnabled = false
+	t.Cleanup(func() { config.RoutingDecisionBillingEnabled = prev })
+
+	quotaBefore := h.UserQuota(t)
+	w := h.Post("/v1/chat/completions", chatBodyFor(routingPolicyName, "add a log line"))
+	if w.Code != http.StatusOK {
+		t.Fatalf("期望 200，实际 %d，body=%s", w.Code, w.Body.String())
+	}
 	if spent := quotaBefore - h.UserQuota(t); spent != 150 {
-		t.Fatalf("应按目标模型扣 150，实际扣 %d", spent)
+		t.Fatalf("关闭决策计费应只扣 150，实际 %d", spent)
 	}
-	logs := consumeLogs(t)
-	if len(logs) != 1 || logs[0].ModelName != routingCheapModel {
-		t.Fatalf("应有一条 cheap-model 的消费日志，实际 %+v", logs)
+	if logs := consumeLogs(t); len(logs) != 1 || logs[0].ModelName != routingCheapModel {
+		t.Fatalf("应只有目标模型一条日志，实际 %+v", logs)
 	}
+	if len(decision.Requests()) != 1 {
+		t.Fatalf("关闭计费不影响决策调用本身，实际 %d 次", len(decision.Requests()))
+	}
+}
+
+// 开启「统一返回请求模型名」时响应 model 是策略名；默认关闭时是目标模型。
+func TestAutoRoutingUnifiedResponseModelUsesPolicyName(t *testing.T) {
+	decision := NewFakeProvider(t)
+	decision.SetResponse(FakeResponse{JSON: decisionJSON("small", 0.9)})
+	target := NewFakeProvider(t)
+	target.SetResponse(FakeResponse{JSON: ChatCompletionJSON(routingCheapModel, "done", 10, 5)})
+	h := newRoutingHarness(t, decision.Server.URL, target.Server.URL, 0)
+
+	w := h.Post("/v1/chat/completions", chatBodyFor(routingPolicyName, "add a log line"))
+	if w.Code != http.StatusOK {
+		t.Fatalf("期望 200，实际 %d，body=%s", w.Code, w.Body.String())
+	}
+	if got := jsonField(t, w.Body.Bytes(), "model"); got != routingCheapModel {
+		t.Fatalf("默认应返回目标模型，实际 %v", got)
+	}
+
+	prev := config.UnifiedRequestResponseModelEnabled
+	config.UnifiedRequestResponseModelEnabled = true
+	t.Cleanup(func() { config.UnifiedRequestResponseModelEnabled = prev })
+	w = h.Post("/v1/chat/completions", chatBodyFor(routingPolicyName, "add a log line"))
+	if w.Code != http.StatusOK {
+		t.Fatalf("期望 200，实际 %d，body=%s", w.Code, w.Body.String())
+	}
+	if got := jsonField(t, w.Body.Bytes(), "model"); got != routingPolicyName {
+		t.Fatalf("统一返回请求模型名时应为策略名，实际 %v", got)
+	}
+}
+
+func jsonField(t *testing.T, body []byte, key string) any {
+	t.Helper()
+	var m map[string]any
+	if err := json.Unmarshal(body, &m); err != nil {
+		t.Fatalf("解析响应失败: %v body=%s", err, string(body))
+	}
+	return m[key]
 }
 
 // 同一会话（session_id 头）后续请求命中固定记录：决策上游不再被调用，目标不变；换会话重新分类。
@@ -140,9 +254,18 @@ func TestAutoRoutingPinsSessionAcrossRequests(t *testing.T) {
 
 	post("s1", "add a log line")
 	decision.SetResponse(FakeResponse{JSON: decisionJSON("large", 0.95)})
-	post("s1", "rewrite everything")
+	w := h.PostWithHeaders("/v1/chat/completions", chatBodyFor(routingPolicyName, "rewrite everything"), map[string]string{"session_id": "s1"})
+	if w.Code != http.StatusOK {
+		t.Fatalf("期望 200，实际 %d，body=%s", w.Code, w.Body.String())
+	}
+	if got := w.Header().Get("X-Modeltaps-Route"); got != "policy=auto/coder; label=small; model=cheap-model; reason=pinned" {
+		t.Fatalf("固定命中的响应头不对: %q", got)
+	}
 	if len(decision.Requests()) != 1 {
 		t.Fatalf("同会话第二次请求不应再分类，实际决策上游收到 %d 次", len(decision.Requests()))
+	}
+	if got := len(consumeLogs(t)); got != 3 {
+		t.Fatalf("两次请求应有 2 条目标日志 + 1 条决策日志，实际 %d", got)
 	}
 	reqs := target.Requests()
 	if len(reqs) != 2 || reqs[1].JSONBody(t)["model"] != routingCheapModel {

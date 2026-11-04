@@ -16,6 +16,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/model"
 	providersBase "github.com/modeltaps/modeltaps/providers/base"
+	"github.com/modeltaps/modeltaps/relay/relay_util"
 	"github.com/modeltaps/modeltaps/types"
 
 	"github.com/gin-gonic/gin"
@@ -26,29 +27,17 @@ import (
 // 一次请求只决策一次（结果放进 gin context），重试循环再次 setProvider 时直接复用，
 // 既不多扣决策费，也不会换目标。决策永不拒绝请求：任何失败都走兜底模型。
 
-// 决策结果的原因，进日志 metadata 与响应头。
+// RoutingDecision 与原因常量定义在 relay_util（计费与日志也要用），这里取别名便于阅读。
+type RoutingDecision = relay_util.RoutingDecision
+
 const (
-	RoutingReasonClassified     = "classified"      // 分类成功且过阈值
-	RoutingReasonPinned         = "pinned"          // 命中会话固定记录
-	RoutingReasonBelowThreshold = "below_threshold" // 分类成功但最高概率低于阈值
-	RoutingReasonDecisionError  = "decision_error"  // 决策调用失败 / 超时 / 答非所问
-	RoutingReasonEmptyInput     = "empty_input"     // 首条用户消息没有文本
+	RoutingReasonClassified     = relay_util.RoutingReasonClassified
+	RoutingReasonPinned         = relay_util.RoutingReasonPinned
+	RoutingReasonBelowThreshold = relay_util.RoutingReasonBelowThreshold
+	RoutingReasonDecisionError  = relay_util.RoutingReasonDecisionError
+	RoutingReasonEmptyInput     = relay_util.RoutingReasonEmptyInput
+	RoutingDecisionContextKey   = relay_util.RoutingDecisionContextKey
 )
-
-// RoutingDecisionContextKey gin context 里本次请求的决策结果（*RoutingDecision）。
-const RoutingDecisionContextKey = "routing_decision"
-
-// RoutingDecision 一次请求的路由决策。
-type RoutingDecision struct {
-	Policy      string
-	Label       string
-	TargetModel string
-	Confidence  float64
-	Reason      string
-	DecisionMs  int64
-	// DecisionUsage 决策调用的用量，命中固定记录或未调用时为 nil；计费由调用方处理。
-	DecisionUsage *types.Usage
-}
 
 // ClassifyResult 决策后端的输出：选中的标签与它的置信度（0~1）。
 type ClassifyResult struct {
@@ -91,9 +80,9 @@ func resolveRoutingPolicy(c *gin.Context, modelName string) string {
 	if c.GetString("requested_model") == "" {
 		c.Set("requested_model", policy.Name)
 	}
-	logger.LogInfo(c.Request.Context(), fmt.Sprintf(
-		"routing_decision policy=%s label=%s target=%s confidence=%.2f reason=%s decision_ms=%d",
-		decision.Policy, decision.Label, decision.TargetModel, decision.Confidence, decision.Reason, decision.DecisionMs))
+	// 响应头在选渠道前写，流式与非流式都能带上。
+	c.Header(relay_util.RoutingRouteHeader, decision.HeaderValue())
+	logger.LogInfo(c.Request.Context(), "routing_decision "+decision.String())
 	return decision.TargetModel
 }
 
@@ -260,7 +249,7 @@ func classifyWithDecisionModel(c *gin.Context, policy *model.RoutingPolicy, text
 	ctx, cancel := context.WithTimeout(c.Request.Context(), timeout)
 	defer cancel()
 
-	decisionCtx, err := newDecisionContext(c, ctx)
+	decisionCtx, err := newDecisionContext(c, ctx, policy.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -271,6 +260,16 @@ func classifyWithDecisionModel(c *gin.Context, policy *model.RoutingPolicy, text
 	provider.GetRequester().Context = ctx
 	usage := &types.Usage{}
 	provider.SetUsage(usage)
+
+	// 决策调用按决策模型的价格单独计一笔（站点开关可关）。预扣失败（额度不足 / 预算超限）
+	// 时不发起决策，直接兜底：用户的主请求随后也会被同一道闸拦下。
+	var quota *relay_util.Quota
+	if config.RoutingDecisionBillingEnabled {
+		quota = relay_util.NewQuota(decisionCtx, policy.DecisionModel, 0)
+		if errWithCode := quota.PreQuotaConsumption(); errWithCode != nil {
+			return nil, fmt.Errorf("decision model %s: %s", policy.DecisionModel, errWithCode.Message)
+		}
+	}
 
 	temperature := 0.0
 	request := &types.ChatCompletionRequest{
@@ -291,10 +290,20 @@ func classifyWithDecisionModel(c *gin.Context, policy *model.RoutingPolicy, text
 	}()
 	select {
 	case <-ctx.Done():
+		if quota != nil {
+			quota.Undo(decisionCtx)
+		}
 		return nil, fmt.Errorf("decision model %s: timed out after %s", policy.DecisionModel, timeout)
 	case out := <-done:
 		if out.err != nil {
+			if quota != nil {
+				quota.Undo(decisionCtx)
+			}
 			return nil, out.err
+		}
+		if quota != nil {
+			// 答案解析失败也要计费：上游已经按用量收了钱。
+			quota.Consume(decisionCtx, usage, false)
 		}
 		result, err := parseDecisionAnswer(out.content)
 		if err != nil {
@@ -306,19 +315,32 @@ func classifyWithDecisionModel(c *gin.Context, policy *model.RoutingPolicy, text
 }
 
 // newDecisionContext 复制决策调用需要的身份与分组信息，其余（请求体、令牌白名单）不带。
-func newDecisionContext(c *gin.Context, ctx context.Context) (*gin.Context, error) {
+func newDecisionContext(c *gin.Context, ctx context.Context, policyName string) (*gin.Context, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "/v1/chat/completions", nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if c.Request != nil {
+		req.RemoteAddr = c.Request.RemoteAddr
+		for _, header := range []string{"X-Forwarded-For", "X-Real-Ip"} {
+			if v := c.Request.Header.Get(header); v != "" {
+				req.Header.Set(header, v)
+			}
+		}
+	}
 	decisionCtx, _ := gin.CreateTestContext(httptest.NewRecorder())
 	decisionCtx.Request = req
-	for _, key := range []string{"id", "token_id", "token_name", "token_created_by", "group", "token_group", "token_backup_group", "group_ratio", logger.RequestIdKey} {
+	// 身份、分组与额度相关的键照搬，计费才能落到同一个用户 / 令牌 / 组织成员上；
+	// token_setting 不带（它承载令牌模型白名单）。
+	for _, key := range []string{"id", "token_id", "token_name", "token_created_by", "token_unlimited_quota",
+		"group", "token_group", "token_backup_group", "group_ratio", logger.RequestIdKey} {
 		if value, ok := c.Get(key); ok {
 			decisionCtx.Set(key, value)
 		}
 	}
+	decisionCtx.Set("routing_policy", policyName)
+	decisionCtx.Set(relay_util.RoutingDecisionCallContextKey, true)
 	decisionCtx.Set("requestStartTime", routingPolicyNow())
 	return decisionCtx, nil
 }

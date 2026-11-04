@@ -346,6 +346,17 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 		meta["response_model_mismatch"] = true
 	}
 
+	// 自动路由(ROUTE-3,additive):目标模型那条日志记策略、标签、置信度、原因与决策耗时；
+	// 决策调用自己那条只记策略并打 routing_decision 标，便于按策略汇总决策成本。
+	if q.routingDecisionCall {
+		meta["routing_decision"] = true
+		if q.routingPolicy != "" {
+			meta["routing_policy"] = q.routingPolicy
+		}
+	} else if q.routingDecision != nil {
+		q.routingDecision.LogMeta(meta)
+	}
+
 	// 会话亲和结果(CHAN-8,additive):hit 沿用会话绑定的渠道,bound 为新绑定;未识别出会话时不写。
 	if q.sessionAffinity != "" {
 		meta["session_affinity"] = q.sessionAffinity
