@@ -294,15 +294,18 @@ type LogsListParams struct {
 	AppNames      []string `form:"app_names"`
 	// 消费模态过滤:按 metadata.relay_mode 多值包含/排除(旧日志无该键,不被 IN 命中、不被 NOT IN 误伤)。
 	RelayModes []string `form:"relay_modes"`
+	// 自动路由过滤:按 metadata.routing_policy 多值包含/排除(目标日志与决策日志都带该键)。
+	RoutingPolicies []string `form:"routing_policies"`
 
-	ExcludeModelNames    []string `form:"exclude_model_name"`
-	ExcludeUsernames     []string `form:"exclude_username"`
-	ExcludeTokenNames    []string `form:"exclude_token_name"`
-	ExcludeChannelIds    []int    `form:"exclude_channel_id"`
-	ExcludeSourceIps     []string `form:"exclude_source_ip"`
-	ExcludeFinishReasons []string `form:"exclude_finish_reason"`
-	ExcludeAppNames      []string `form:"exclude_app_name"`
-	ExcludeRelayModes    []string `form:"exclude_relay_mode"`
+	ExcludeModelNames      []string `form:"exclude_model_name"`
+	ExcludeUsernames       []string `form:"exclude_username"`
+	ExcludeTokenNames      []string `form:"exclude_token_name"`
+	ExcludeChannelIds      []int    `form:"exclude_channel_id"`
+	ExcludeSourceIps       []string `form:"exclude_source_ip"`
+	ExcludeFinishReasons   []string `form:"exclude_finish_reason"`
+	ExcludeAppNames        []string `form:"exclude_app_name"`
+	ExcludeRelayModes      []string `form:"exclude_relay_mode"`
+	ExcludeRoutingPolicies []string `form:"exclude_routing_policy"`
 
 	// W9-D ID 查找:按日志主键精确定位单条(0 表示不过滤)。
 	Id int `form:"id"`
@@ -365,6 +368,30 @@ func relayModeExpr() string {
 // NOT IN 对 NULL 恒为 NULL,会误伤无该键的旧日志,故补 OR ... IS NULL 显式保留(口径同 app_name)。
 func applyRelayModeInNotIn(tx *gorm.DB, include, exclude []string) *gorm.DB {
 	expr := relayModeExpr()
+	if len(include) > 0 {
+		tx = tx.Where(expr+" IN ?", include)
+	}
+	if len(exclude) > 0 {
+		tx = tx.Where("("+expr+" NOT IN ? OR "+expr+" IS NULL)", exclude)
+	}
+	return tx
+}
+
+// routingPolicyExpr 返回从 logs.metadata 提取 routing_policy 文本的 SQL 表达式(按数据库方言),与 relayModeExpr 同构。
+func routingPolicyExpr() string {
+	switch {
+	case common.UsingPostgreSQL:
+		return "(metadata ->> 'routing_policy')"
+	case common.UsingSQLite:
+		return "JSON_EXTRACT(metadata, '$.routing_policy')"
+	default:
+		return "JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.routing_policy'))"
+	}
+}
+
+// applyRoutingPolicyInNotIn 对 metadata.routing_policy 施加 IN / NOT IN;NOT IN 保留没走路由的日志。
+func applyRoutingPolicyInNotIn(tx *gorm.DB, include, exclude []string) *gorm.DB {
+	expr := routingPolicyExpr()
 	if len(include) > 0 {
 		tx = tx.Where(expr+" IN ?", include)
 	}
@@ -466,6 +493,7 @@ func applyLogEnumFilters(tx *gorm.DB, params *LogsListParams, admin bool) *gorm.
 	}
 	tx = applyAppNameInNotIn(tx, params.AppNames, params.ExcludeAppNames)
 	tx = applyRelayModeInNotIn(tx, params.RelayModes, params.ExcludeRelayModes)
+	tx = applyRoutingPolicyInNotIn(tx, params.RoutingPolicies, params.ExcludeRoutingPolicies)
 	if params.RequestId != "" {
 		tx = tx.Where("request_id = ?", params.RequestId)
 	}

@@ -242,6 +242,20 @@ const (
 	APICodeModelAliasSelf               = "model_alias_self"
 	APICodeModelAliasTargetMissing      = "model_alias_target_missing"
 	APICodeModelAliasTargetIsAlias      = "model_alias_target_is_alias"
+	APICodeModelManagedByRoutingPolicy  = "model_managed_by_routing_policy"
+
+	// Auto routing policies. params.field names the offending field where one applies.
+	APICodeRoutingPolicyNotFound         = "routing_policy_not_found"
+	APICodeRoutingPolicyNameInvalid      = "routing_policy_name_invalid"
+	APICodeRoutingPolicyNameTaken        = "routing_policy_name_taken"
+	APICodeRoutingPolicyModelRequired    = "routing_policy_model_required"
+	APICodeRoutingPolicyModelIsPolicy    = "routing_policy_model_is_policy"
+	APICodeRoutingPolicyRoutesCount      = "routing_policy_routes_count"
+	APICodeRoutingPolicyLabelInvalid     = "routing_policy_label_invalid"
+	APICodeRoutingPolicyLabelDuplicate   = "routing_policy_label_duplicate"
+	APICodeRoutingPolicyThresholdInvalid = "routing_policy_threshold_invalid"
+	APICodeRoutingPolicyLimitInvalid     = "routing_policy_limit_invalid"
+	APICodeRoutingPolicyReferenced       = "routing_policy_referenced"
 
 	// Orders, payment methods and invoices.
 	APICodePaymentNotFound      = "payment_not_found"

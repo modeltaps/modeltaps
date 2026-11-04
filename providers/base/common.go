@@ -339,6 +339,10 @@ func resolveUnifiedModel(ctx *gin.Context, upstreamModel string) (originalModel 
 		return "", false
 	}
 	originalModelStr, isStr := val.(string)
+	// 走了自动路由时用户请求的是策略名，original_model 已是解析后的目标模型；统一返回请求模型名时应回策略名。
+	if policyName := ctx.GetString("routing_policy"); policyName != "" {
+		originalModelStr, isStr = policyName, true
+	}
 	if !isStr || originalModelStr == "" || originalModelStr == upstreamModel {
 		return "", false
 	}

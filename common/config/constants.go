@@ -359,6 +359,10 @@ func CatalogEnforceHidden() bool {
 // 统一请求响应模型（响应中显示用户请求的原始模型名称）
 var UnifiedRequestResponseModelEnabled = false
 
+// RoutingDecisionBillingEnabled 自动路由的决策调用是否按决策模型价格向用户计费（每个会话一次）。
+// 关闭时决策调用只记录在系统日志，不写消费日志、不扣额度。
+var RoutingDecisionBillingEnabled = true
+
 // FingerprintPassThroughEnabled 让中转响应尽量保留上游的响应指纹：Claude / Bedrock 的
 // 非流式原始字节透传、流式跳过 model 改写，以及上游响应头透传（Bedrock x-amzn-* /
 // Claude anthropic-ratelimit-* / OpenAI x-ratelimit-* 等）。

@@ -179,6 +179,18 @@ func SetApiRouter(router *gin.Engine) {
 			oidcProviderRoute.DELETE("/:id", controller.DeleteOidcProvider)
 		}
 
+		routingPolicyRoute := apiRouter.Group("/routing_policy")
+		routingPolicyRoute.Use(middleware.AdminAuth())
+		{
+			routingPolicyRoute.GET("/", controller.GetRoutingPolicies)
+			routingPolicyRoute.GET("/:id", controller.GetRoutingPolicy)
+			routingPolicyRoute.POST("/", controller.CreateRoutingPolicy)
+			routingPolicyRoute.POST("/try", relay.TryRoutingPolicyHandler)
+			routingPolicyRoute.PUT("/:id", controller.UpdateRoutingPolicy)
+			routingPolicyRoute.PUT("/:id/status", controller.UpdateRoutingPolicyStatus)
+			routingPolicyRoute.DELETE("/:id", controller.DeleteRoutingPolicy)
+		}
+
 		modelOwnedByRoute := apiRouter.Group("/model_ownedby")
 		modelOwnedByRoute.GET("/", controller.GetAllModelOwnedBy)
 		modelOwnedByRoute.Use(middleware.AdminAuth())

@@ -10,6 +10,7 @@ import {
   Columns2,
   User,
   Network,
+  Route,
   Users,
   ReceiptText,
   Boxes,
@@ -100,7 +101,8 @@ export const navSections = [
     id: 'nav_sec_gateway',
     items: [
       { id: 'channel', url: url('channel'), icon: Network, isAdmin: true },
-      { id: 'pricing', url: url('pricing'), icon: Boxes, isAdmin: true }
+      { id: 'pricing', url: url('pricing'), icon: Boxes, isAdmin: true },
+      { id: 'routing_policy', url: url('routing_policy'), icon: Route, isAdmin: true }
     ]
   },
   {

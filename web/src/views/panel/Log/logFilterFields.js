@@ -84,6 +84,17 @@ const staticCommonFields = [
     paramInclude: 'relay_modes',
     paramExclude: 'exclude_relay_mode'
   },
+  // 自动路由维度:按 metadata.routing_policy 过滤(目标日志与决策日志都带);策略名直接打字。
+  {
+    key: 'routing_policy',
+    labelKey: 'logPage.routing.filterLabel',
+    type: 'enum',
+    supportsExclude: true,
+    freeText: true,
+    options: [],
+    paramInclude: 'routing_policies',
+    paramExclude: 'exclude_routing_policy'
+  },
   {
     key: 'min_quota',
     labelKey: 'logPage.finishReason.minQuotaLabel',

@@ -103,9 +103,14 @@ func (q *Quota) checkOrgMemberGuardrails() *types.OpenAIErrorWithStatusCode {
 			errors.New("organization member guardrail is temporarily unavailable, please retry"),
 			"org_guardrail_unavailable", http.StatusServiceUnavailable)
 	}
-	if !guardrail.ModelAllowed(q.modelName) {
+	// 自动路由的请求按用户请求的策略名判定白名单：目标模型由管理员在策略里配置，不再二次校验。
+	allowedName := q.modelName
+	if q.routingPolicy != "" {
+		allowedName = q.routingPolicy
+	}
+	if !guardrail.ModelAllowed(allowedName) {
 		return common.ErrorWrapperLocal(
-			fmt.Errorf("model %s is not allowed by the organization member model whitelist", q.modelName),
+			fmt.Errorf("model %s is not allowed by the organization member model whitelist", allowedName),
 			"org_model_not_allowed", http.StatusForbidden)
 	}
 	if guardrail.BudgetExceeded(time.Now()) {

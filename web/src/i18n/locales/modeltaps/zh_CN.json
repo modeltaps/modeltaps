@@ -365,7 +365,8 @@
         "generating": "生成中",
         "firstToken": "首 token {{value}}",
         "tokensUnit": "tokens",
-        "interrupted": "已中断"
+        "interrupted": "已中断",
+        "routedTo": "由 {{model}} 应答"
       },
       "actions": {
         "code": "查看该条代码",
@@ -572,7 +573,8 @@
     "playground": "对话、图像、语音与多模型对比的在线试运行",
     "api_audio": "在文字与语音之间转换",
     "api_compare": "多个对话模型并排，同一条输入同时发出",
-    "pricing": "模型目录、价格、渠道与厂商"
+    "pricing": "模型目录、价格、渠道与厂商",
+    "routing_policy": "虚拟模型：按每个会话的首条消息选择实际应答的模型"
   },
   "api_compare": "对比",
   "modelInfoPage": {
@@ -1427,6 +1429,18 @@
     "model_alias_self": "模型不能是自己的别名",
     "model_alias_target_missing": "别名指向的模型不存在",
     "model_alias_target_is_alias": "别名不能指向另一个别名",
+    "model_managed_by_routing_policy": "该模型由自动路由策略维护，请到策略里修改",
+    "routing_policy_not_found": "路由策略不存在",
+    "routing_policy_name_invalid": "名称只能包含字母、数字和 . _ / -，最多 100 个字符，且不能以 / 开头或结尾",
+    "routing_policy_name_taken": "该名称已被某个模型或另一条策略占用",
+    "routing_policy_model_required": "{{field}} 必须填写模型",
+    "routing_policy_model_is_policy": "{{field}} 必须是模型，不能是路由策略（{{model}}）",
+    "routing_policy_routes_count": "一条策略需要 {{min}} 到 {{max}} 条路由",
+    "routing_policy_label_invalid": "每条路由都要有标签，且不超过 64 个字符",
+    "routing_policy_label_duplicate": "路由标签重复：{{label}}",
+    "routing_policy_threshold_invalid": "阈值必须在 0 到 1 之间",
+    "routing_policy_limit_invalid": "{{field}} 超出范围（最大 {{max}}）",
+    "routing_policy_referenced": "该策略仍被别名引用：{{aliases}}",
     "payment_not_found": "支付方式不存在",
     "invalid_time_format": "时间格式无效",
     "invoice_month_not_past": "只能生成过去月份的账单",
@@ -1503,5 +1517,133 @@
     "usagePlan": "套餐：{{plan}}",
     "usageWindow": "{{name}} 窗口：已用 {{percent}}%，{{reset}} 重置",
     "usageFetchedAt": "更新于 {{time}}"
+  },
+  "routing_policy": "自动路由",
+  "routingPolicy": {
+    "create": "新建策略",
+    "createTitle": "新建路由策略",
+    "editTitle": "编辑路由策略",
+    "empty": "还没有路由策略。策略是一个客户端可调用的模型名，由每个会话的首条消息决定实际由哪个模型应答。",
+    "columns": {
+      "name": "策略",
+      "decisionModel": "决策模型",
+      "routes": "路由",
+      "fallback": "兜底",
+      "threshold": "阈值",
+      "enabled": "启用"
+    },
+    "form": {
+      "tabBasic": "基础",
+      "tabAdvanced": "高级",
+      "tabTry": "试一试",
+      "name": "模型名",
+      "nameHint": "客户端填在 model 字段里的名字，如 auto/coder。",
+      "nameHelp": "只能用字母、数字和 . _ / -，最多 100 个字符，不能以 / 开头或结尾，不能与已有模型重名。它会出现在 /v1/models 里，也能像普通模型一样加进令牌和组织白名单。",
+      "displayName": "显示名",
+      "displayNameHint": "目录里代替模型名显示。",
+      "description": "描述",
+      "enabled": "启用",
+      "enabledHint": "停用的策略不进模型列表，请求它会得到 model_not_found。",
+      "decisionModel": "决策模型",
+      "decisionModelHint": "一个小而快的对话模型，负责给首条用户消息分类。每个会话向调用方计费一次。",
+      "question": "问题",
+      "questionHint": "先给决策模型一句背景，再问标签要回答的那个问题。",
+      "questionHelp": "写短一点：标签和描述承担大部分含义。不要在这里写长指令，输出格式由网关固定。",
+      "routes": "路由",
+      "routesHint": "每个标签是问题的一个答案，对应应当处理它的模型。",
+      "routesHelp": "2 到 16 条。标签要互不重叠，重叠会分散概率、把请求推向兜底。描述请求本身而不是模型。目标必须是模型，不能是另一条策略。",
+      "useTemplate": "使用模板",
+      "routeLabel": "标签",
+      "routeLabelPlaceholder": "标签",
+      "routeDescription": "描述",
+      "routeDescriptionPlaceholder": "这个标签覆盖哪类请求",
+      "routeTargetPlaceholder": "目标模型",
+      "addRoute": "添加路由",
+      "removeRoute": "删除路由",
+      "moveUp": "上移",
+      "moveDown": "下移",
+      "useTyped": "使用「{{value}}」",
+      "modelPlaceholder": "选择或输入模型",
+      "fallbackModel": "兜底模型",
+      "fallbackModelHint": "置信度低于阈值、决策失败或首条消息没有文本时使用。放你最稳的模型。",
+      "threshold": "置信度阈值",
+      "thresholdHint": "0 到 1，低于它走兜底。",
+      "thresholdHelp": "0.5 是不错的起点。调高会把更多模棱两可的请求送去兜底，调低则更信任决策模型。置信度是决策模型自报的，当排序看，别当概率。",
+      "pinTtl": "会话固定时长（秒）",
+      "pinTtlHint": "会话在首条消息选定模型后保持多久。0 表示每次请求都分类。",
+      "pinTtlHelp": "固定期间的后续轮次跳过决策，上游提示缓存保持命中，对话中途不会换模型。会话靠会话头、Claude Code 元数据、prompt_cache_key 或提示前缀识别。",
+      "maxInputChars": "输入截断（字符）",
+      "maxInputCharsHint": "首条消息分类前截到这个长度。0 用默认值（4000）。",
+      "decisionTimeout": "决策超时（毫秒）",
+      "decisionTimeoutHint": "超时走兜底。0 用默认值（3000）。",
+      "missing": {
+        "name": "请填写模型名",
+        "decision_model": "请选择决策模型",
+        "fallback_model": "请选择兜底模型",
+        "routes": "至少两条路由，每条都要有标签和目标模型"
+      }
+    },
+    "templates": {
+      "coding_change_size": "编码：改动大小",
+      "support_triage": "客服分流",
+      "reasoning_depth": "推理深度"
+    },
+    "tryIt": {
+      "intro": "只跑决策这一步，用的是表单里当前的策略。不转发、不计费、不写会话固定记录。",
+      "message": "首条用户消息",
+      "messageHint": "从日志里粘一条真实的首条消息。",
+      "messagePlaceholder": "给 CLI 加一个 --verbose 参数，并把解析后的参数打到日志",
+      "candidates": "并列比较决策模型",
+      "candidatesHint": "策略的决策模型（{{model}}）总会跑；最多再加三个比较。",
+      "candidatesPlaceholder": "添加决策模型",
+      "run": "运行",
+      "running": "运行中…",
+      "label": "标签",
+      "confidence": "置信度",
+      "target": "将路由到",
+      "latency": "决策耗时"
+    },
+    "reasons": {
+      "classified": "已分类",
+      "pinned": "会话固定",
+      "below_threshold": "低于阈值",
+      "decision_error": "决策失败",
+      "empty_input": "无文本"
+    }
+  },
+  "logPage": {
+    "routing": {
+      "filterLabel": "路由策略",
+      "label": "自动路由",
+      "value": "{{policy}} → {{label}}（{{reason}}{{confidence}}）",
+      "noLabel": "兜底",
+      "decisionCall": "{{policy}} 的决策调用"
+    }
+  },
+  "setting_index": {
+    "cards": {
+      "autoRouting": "自动路由"
+    },
+    "operationSettings": {
+      "generalSettings": {
+        "routingDecisionBilling": "决策调用计费",
+        "routingDecisionBillingDescription": "自动路由策略的分类调用按决策模型价格向调用方计费，每个会话一次，单独记一条日志。关闭后决策照常进行，但不写消费日志。"
+      }
+    }
+  },
+  "modelpricePage": {
+    "routing": {
+      "badge": "自动路由",
+      "badgeTitle": "路由策略：每个会话的首条消息决定由哪个模型应答",
+      "billedByTarget": "按目标模型计费（兜底：{{model}}）",
+      "title": "路由",
+      "intro": "会话的首条用户消息会被归入以下某个标签，请求交给该标签对应的模型；置信度低于 {{threshold}}% 或决策失败时由兜底应答。同一会话的后续轮次保持同一模型。",
+      "label": "标签",
+      "description": "覆盖范围",
+      "target": "模型",
+      "fallback": "兜底",
+      "fallbackDescription": "置信度不足、决策失败或首条消息没有文本",
+      "priceNote": "策略本身没有价格：每次请求按实际应答模型的价格计费。下表是兜底模型（{{model}}）的价格。"
+    }
   }
 }

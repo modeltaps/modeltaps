@@ -143,6 +143,19 @@ func (h *Harness) PostWithToken(tokenKey, path, body string) *httptest.ResponseR
 	return w
 }
 
+// PostWithHeaders 以 seed 的令牌发起请求并附加额外请求头（如会话头）。
+func (h *Harness) PostWithHeaders(path, body string, headers map[string]string) *httptest.ResponseRecorder {
+	req := httptest.NewRequest(http.MethodPost, path, bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+h.Token.Key)
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+	w := httptest.NewRecorder()
+	h.Engine.ServeHTTP(w, req)
+	return w
+}
+
 // UserQuota 读取 seed 用户当前剩余额度。
 func (h *Harness) UserQuota(t *testing.T) int {
 	t.Helper()

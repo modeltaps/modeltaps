@@ -91,6 +91,9 @@ const assistantTurn = () => ({
   firstTokenMs: null,
   durationMs: null,
   raw: '',
+  // 请求的模型与响应声明的模型：走自动路由策略时二者不同，界面据此标出实际应答的模型。
+  requestedModel: '',
+  responseModel: '',
   pending: true,
   completed: false
 });
@@ -120,6 +123,8 @@ export function chatReducer(state, action) {
           firstTokenMs: action.result.firstTokenMs,
           durationMs: action.result.durationMs,
           raw: action.result.raw,
+          requestedModel: action.result.requestedModel || '',
+          responseModel: action.result.responseModel || '',
           pending: false,
           completed: Boolean(action.result.completed),
           interrupted: !action.result.completed
@@ -153,6 +158,7 @@ export async function consumeStream({ response, clock = () => Date.now(), starte
     usage: null,
     firstTokenMs: null,
     durationMs: 0,
+    responseModel: '',
     aborted: false,
     error: null,
     completed: false
@@ -167,6 +173,7 @@ export async function consumeStream({ response, clock = () => Date.now(), starte
       const parsed = parseChunk(data);
       if (parsed.error) throw relayErrorFromResponse(response?.status ?? 0, parsed.payload);
       if (parsed.payload?.choices?.[0]?.finish_reason) result.completed = true;
+      if (!result.responseModel && typeof parsed.payload?.model === 'string') result.responseModel = parsed.payload.model;
       if (parsed.text || parsed.reasoning) {
         if (result.firstTokenMs === null) result.firstTokenMs = clock() - startedAt;
         result.text += parsed.text;
@@ -208,6 +215,7 @@ export function readCompletion(payload) {
     usage: payload?.usage || null,
     raw: payload ? JSON.stringify(payload, null, 2) : '',
     firstTokenMs: null,
+    responseModel: typeof payload?.model === 'string' ? payload.model : '',
     completed: true
   };
 }
@@ -296,7 +304,7 @@ export async function runChat({ prompt, history, modelId, params = {}, send = re
 
   if (!streaming) {
     if (!active()) return;
-    const result = { ...readCompletion(response), durationMs: Date.now() - startedAt };
+    const result = { ...readCompletion(response), durationMs: Date.now() - startedAt, requestedModel: modelId };
     if (!result.text && !result.reasoning) rollback();
     else dispatch({ type: 'finish', result });
     settle(null);
@@ -309,6 +317,7 @@ export async function runChat({ prompt, history, modelId, params = {}, send = re
     onProgress: (partial) => active() && dispatch({ type: 'delta', text: partial.text, reasoning: partial.reasoning })
   });
   if (!active()) return;
+  result.requestedModel = modelId;
   if (!result.text && !result.reasoning) rollback();
   else dispatch({ type: 'finish', result });
   settle(result.error);

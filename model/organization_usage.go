@@ -67,14 +67,16 @@ type OrgLogsListParams struct {
 	FinishReasons []string `form:"finish_reasons"`
 	AppNames      []string `form:"app_names"`
 	// 消费模态过滤:口径同 admin/self 路径(metadata.relay_mode 多值包含/排除)。
-	RelayModes []string `form:"relay_modes"`
+	RelayModes      []string `form:"relay_modes"`
+	RoutingPolicies []string `form:"routing_policies"`
 
-	ExcludeModelNames    []string `form:"exclude_model_name"`
-	ExcludeTokenNames    []string `form:"exclude_token_name"`
-	ExcludeMemberIds     []int    `form:"exclude_member_id"`
-	ExcludeFinishReasons []string `form:"exclude_finish_reason"`
-	ExcludeAppNames      []string `form:"exclude_app_name"`
-	ExcludeRelayModes    []string `form:"exclude_relay_mode"`
+	ExcludeModelNames      []string `form:"exclude_model_name"`
+	ExcludeTokenNames      []string `form:"exclude_token_name"`
+	ExcludeMemberIds       []int    `form:"exclude_member_id"`
+	ExcludeFinishReasons   []string `form:"exclude_finish_reason"`
+	ExcludeAppNames        []string `form:"exclude_app_name"`
+	ExcludeRelayModes      []string `form:"exclude_relay_mode"`
+	ExcludeRoutingPolicies []string `form:"exclude_routing_policy"`
 
 	// W9-D ID 查找:按日志主键精确定位单条(0 表示不过滤)。
 	Id int `form:"id"`
@@ -115,6 +117,7 @@ func applyOrgLogsFilters(tx *gorm.DB, shadowUserId int, params *OrgLogsListParam
 	}
 	tx = applyAppNameInNotIn(tx, params.AppNames, params.ExcludeAppNames)
 	tx = applyRelayModeInNotIn(tx, params.RelayModes, params.ExcludeRelayModes)
+	tx = applyRoutingPolicyInNotIn(tx, params.RoutingPolicies, params.ExcludeRoutingPolicies)
 	if params.Id > 0 {
 		tx = tx.Where("id = ?", params.Id)
 	}

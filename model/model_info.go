@@ -104,6 +104,9 @@ type ModelInfo struct {
 	SupportedVoices string `json:"supported_voices" gorm:"type:text"`
 	// AliasOf 非空表示本行是别名，值为主名模型标识；隐藏状态与厂商随主名。
 	AliasOf string `json:"alias_of" gorm:"type:varchar(255);index"`
+	// Kind 行的种类：空 = 普通模型；ModelInfoKindRoutingPolicy = 自动路由策略的目录行，
+	// 由 routing_policies 联动维护，后台目录接口不允许直接增删改。
+	Kind string `json:"kind" gorm:"type:varchar(32);default:''"`
 	// OpenWeights 是否开放权重：nil = 未知。OpenRouter 按 hugging_face_id 非空、Vercel 按 open-weights 标签同步。
 	OpenWeights *bool `json:"open_weights" gorm:"default:null"`
 	// ReleasedAt 发布时间（Unix 秒），0 = 未知；ExpiresAt 上游公布的下架时间，0 = 未公布。只由同步维护。
@@ -132,6 +135,7 @@ type ModelInfoResponse struct {
 	VendorID         int      `json:"vendor_id"`
 	Hidden           bool     `json:"hidden"`
 	AliasOf          string   `json:"alias_of"`
+	Kind             string   `json:"kind"`
 	CreatedAt        int64    `json:"created_at"`
 	UpdatedAt        int64    `json:"updated_at"`
 }
@@ -156,6 +160,7 @@ func (m *ModelInfo) ToResponse() *ModelInfoResponse {
 		VendorID:      m.VendorID,
 		Hidden:        m.Hidden,
 		AliasOf:       m.AliasOf,
+		Kind:          m.Kind,
 		CreatedAt:     m.CreatedAt,
 		UpdatedAt:     m.UpdatedAt,
 	}

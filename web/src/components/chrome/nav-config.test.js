@@ -107,7 +107,7 @@ describe('admin plane 结构', () => {
     expect(idsOf(filterAdminSections({ isRoot: true }))).toEqual([
       { id: 'nav_sec_overview', items: ['analytics', 'multi_user_stats', 'systemInfo'] },
       { id: 'nav_sec_people', items: ['user', 'user_group', 'org_admin'] },
-      { id: 'nav_sec_gateway', items: ['channel', 'pricing'] },
+      { id: 'nav_sec_gateway', items: ['channel', 'pricing', 'routing_policy'] },
       { id: 'nav_sec_finance', items: ['payment', 'redemption'] },
       { id: 'nav_sec_system', items: SETTING_IDS }
     ]);
@@ -115,7 +115,7 @@ describe('admin plane 结构', () => {
 
   it('非 root 管理员少 3 个 root-only 项(含「组织策略」主题)', () => {
     const nonRootIds = filterAdminSections({ isRoot: false }).flatMap((s) => s.items.map((i) => i.id));
-    expect(nonRootIds).toHaveLength(14);
+    expect(nonRootIds).toHaveLength(15);
     expect(nonRootIds).not.toContain('org_admin');
     expect(nonRootIds).not.toContain('systemInfo');
     expect(nonRootIds).not.toContain('setting_organization');

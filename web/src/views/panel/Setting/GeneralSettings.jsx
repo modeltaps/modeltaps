@@ -323,7 +323,13 @@ export function ChannelAutoCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, setField, toggle, saveKeys, loading, isDirty } = ctx;
   const is = (k) => inputs[k] === 'true';
-  const keys = ['ChannelDisableThreshold', 'DisableChannelKeywords', 'ChannelTestMode', 'ChannelTestIntervalMinutes', 'ChannelCredentialRefreshMinutes'];
+  const keys = [
+    'ChannelDisableThreshold',
+    'DisableChannelKeywords',
+    'ChannelTestMode',
+    'ChannelTestIntervalMinutes',
+    'ChannelCredentialRefreshMinutes'
+  ];
   const ms = (k) => t(`setting_index.operationSettings.monitoringSettings.${k}`);
 
   return (
@@ -637,6 +643,27 @@ export function QuotaResetCard({ ctx }) {
       >
         {t('common.save')}
       </SaveButton>
+    </SettingsCard>
+  );
+}
+
+// 自动路由：决策调用是否向用户计费（每个会话一次，按决策模型价格）。
+export function AutoRoutingCard({ ctx }) {
+  const { t } = useTranslation();
+  const { inputs, toggle, loading } = ctx;
+  const is = (k) => inputs[k] === 'true';
+
+  return (
+    <SettingsCard title={t('setting_index.cards.autoRouting')} highlight="auto-routing">
+      <div className="grid gap-3">
+        <ToggleRow
+          label={t('setting_index.operationSettings.generalSettings.routingDecisionBilling')}
+          description={t('setting_index.operationSettings.generalSettings.routingDecisionBillingDescription')}
+          checked={is('RoutingDecisionBillingEnabled')}
+          onCheckedChange={() => toggle('RoutingDecisionBillingEnabled')}
+          disabled={loading}
+        />
+      </div>
     </SettingsCard>
   );
 }

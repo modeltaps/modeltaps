@@ -29,6 +29,9 @@ const normalize = (id, raw) => ({
   groups: raw?.groups || [],
   price: raw?.price || null,
   info: normalizeInfo(raw?.price?.model_info),
+  // 自动路由策略：kind 标记 + 只读的路由摘要（路由表 / 兜底 / 阈值），普通模型为 null。
+  kind: raw?.kind || '',
+  routing: raw?.routing || null,
   // 文字转语音模型的音色表（{ id, language, gender }），非 TTS 模型为空数组。
   ttsVoices: Array.isArray(raw?.tts_voices) ? raw.tts_voices : [],
   // 文字转语音模型可用的输出格式（response_format），后端没给时为空数组，由消费方回落完整列表。

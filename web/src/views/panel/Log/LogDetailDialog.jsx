@@ -866,6 +866,24 @@ export default function LogDetailDialog({
                     value={t('logPage.responseModel.mismatchValue', { model: metadata.response_model })}
                   />
                 )}
+                {metadata.routing_policy && !metadata.routing_decision && (
+                  <KeyValueRow
+                    label={t('logPage.routing.label')}
+                    value={t('logPage.routing.value', {
+                      policy: metadata.routing_policy,
+                      label: metadata.routing_label || t('logPage.routing.noLabel'),
+                      reason: t(`routingPolicy.reasons.${metadata.routing_reason}`, { defaultValue: metadata.routing_reason || '' }),
+                      confidence:
+                        typeof metadata.routing_confidence === 'number' ? ` · ${Math.round(metadata.routing_confidence * 100)}%` : ''
+                    })}
+                  />
+                )}
+                {metadata.routing_decision && (
+                  <KeyValueRow
+                    label={t('logPage.routing.label')}
+                    value={t('logPage.routing.decisionCall', { policy: metadata.routing_policy })}
+                  />
+                )}
                 <KeyValueRow label={t('logPage.groupLabel')} value={groupName} />
                 <KeyValueRow label={t('logPage.userLabel')} value={item.username} />
                 <KeyValueRow label={t('logPage.sourceIp')} value={item.source_ip} />

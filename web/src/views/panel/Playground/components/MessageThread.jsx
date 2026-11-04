@@ -83,6 +83,11 @@ export default function MessageThread({ turns = [], running = false, error = nul
                 durationMs={turn.interrupted ? null : turn.durationMs}
                 tokensLabel={t('playgroundConsole.chat.meta.tokensUnit')}
                 status={turn.interrupted ? t('playgroundConsole.chat.meta.interrupted') : undefined}
+                note={
+                  turn.responseModel && turn.requestedModel && turn.responseModel !== turn.requestedModel
+                    ? t('playgroundConsole.chat.meta.routedTo', { model: turn.responseModel })
+                    : undefined
+                }
                 onViewCode={onViewCode ? () => onViewCode(index) : undefined}
                 onCopy={() => copySnippet(turn.content)}
                 onRegenerate={onRegenerate && index === turns.length - 1 && !running ? onRegenerate : undefined}

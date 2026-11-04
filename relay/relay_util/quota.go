@@ -49,6 +49,13 @@ type Quota struct {
 	// 本请求已累计入成员预算 Redis tally 的量(SEC-12),结算时回收(镜像 cacheQuota 模式)
 	memberBudgetCacheQuota int
 
+	// routingPolicy 请求走了自动路由时的策略名；组织成员白名单按它判定而非目标模型（设计上目标不再二次校验）。
+	// routingDecision 是本次请求的决策（写进目标模型那条日志的 metadata）；
+	// routingDecisionCall 标记本 Quota 计的是决策调用本身。
+	routingPolicy       string
+	routingDecision     *RoutingDecision
+	routingDecisionCall bool
+
 	// —— 身份/令牌上下文 ——
 	userId         int
 	createdBy      int // 令牌实际创建者(组织令牌:userId 为影子账户,createdBy 为实际成员;0=个人令牌)
@@ -111,7 +118,10 @@ func NewQuota(c *gin.Context, modelName string, promptTokens int) *Quota {
 		unlimitedQuota: c.GetBool("token_unlimited_quota"),
 		HandelStatus:   false,
 		isBackupGroup:  isBackupGroup, // 记录是否使用备用分组
+		routingPolicy:  c.GetString("routing_policy"),
 	}
+	quota.routingDecision = RoutingDecisionFromContext(c)
+	quota.routingDecisionCall = c.GetBool(RoutingDecisionCallContextKey)
 
 	quota.price = *model.PricingInstance.GetPrice(quota.modelName)
 	// 价格未配置时按策略处理(block 拒绝 / zero 不计费 / default 用默认倍率)，

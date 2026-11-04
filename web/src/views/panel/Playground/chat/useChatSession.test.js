@@ -252,6 +252,24 @@ describe('readCompletion', () => {
     const result = readCompletion({ choices: [{ message: { content: 'hi' } }], usage: { total_tokens: 4 } });
     expect(result).toMatchObject({ text: 'hi', usage: { total_tokens: 4 }, firstTokenMs: null });
   });
+
+  it('记下响应声明的模型，供自动路由时显示实际应答者', () => {
+    expect(readCompletion({ model: 'cheap-model', choices: [{ message: { content: 'hi' } }] }).responseModel).toBe('cheap-model');
+    expect(readCompletion({ choices: [{ message: { content: 'hi' } }] }).responseModel).toBe('');
+  });
+});
+
+describe('consumeStream responseModel', () => {
+  it('取第一个带 model 的分片，后续不覆盖', async () => {
+    const response = streamResponse([
+      sse({ model: 'cheap-model', choices: [{ delta: { content: 'a' } }] }),
+      sse({ model: 'other', choices: [{ delta: { content: 'b' }, finish_reason: 'stop' }] }),
+      'data: [DONE]\n\n'
+    ]);
+    const result = await consumeStream({ response, clock: () => 0 });
+    expect(result.responseModel).toBe('cheap-model');
+    expect(result.text).toBe('ab');
+  });
 });
 
 const fakeStorage = (initial = {}) => {

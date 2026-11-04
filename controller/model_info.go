@@ -12,12 +12,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// 目录条目状态：别名优先，其次隐藏，其余按是否有启用渠道可路由判定。
+// 目录条目状态：别名优先，其次隐藏，再次路由策略行（可路由与否看策略是否启用），
+// 其余按是否有启用渠道可路由判定。
 const (
-	modelInfoStateAlias    = "alias"
-	modelInfoStateVisible  = "visible"
-	modelInfoStateUnrouted = "unrouted"
-	modelInfoStateHidden   = "hidden"
+	modelInfoStateAlias         = "alias"
+	modelInfoStateVisible       = "visible"
+	modelInfoStateUnrouted      = "unrouted"
+	modelInfoStateHidden        = "hidden"
+	modelInfoStateRoutingPolicy = "routing_policy"
 )
 
 // boundChannel 是目录页展示的渠道摘要（仅管理员可见）。
@@ -97,7 +99,12 @@ func visibleModelInfos(infos []*model.ModelInfo, routable map[string]map[string]
 		if info.Hidden || info.AliasOf != "" {
 			continue
 		}
-		if _, ok := routable[info.Model]; !ok {
+		// 策略行没有渠道，按策略是否启用决定可见。
+		if info.Kind == model.ModelInfoKindRoutingPolicy {
+			if policy := model.LookupRoutingPolicy(info.Model); policy == nil || !policy.Enabled {
+				continue
+			}
+		} else if _, ok := routable[info.Model]; !ok {
 			continue
 		}
 		visible = append(visible, &publicModelInfo{
@@ -190,6 +197,9 @@ func modelInfoState(info *model.ModelInfo, channelCount int) string {
 	}
 	if info.Hidden {
 		return modelInfoStateHidden
+	}
+	if info.Kind == model.ModelInfoKindRoutingPolicy {
+		return modelInfoStateRoutingPolicy
 	}
 	if channelCount == 0 {
 		return modelInfoStateUnrouted
@@ -293,6 +303,8 @@ func CreateModelInfo(c *gin.Context) {
 		common.APIRespondWithCode(c, http.StatusOK, common.APICodeModelIdentifierExists, "model identifier already exists", nil)
 		return
 	}
+	// kind 只由路由策略联动写入，目录接口建的行一律是普通模型。
+	modelInfo.Kind = ""
 	modelInfo.Source = model.ModelInfoSourceManual
 	err = model.CreateModelInfo(&modelInfo)
 	if err != nil {
@@ -333,6 +345,11 @@ func UpdateModelInfo(c *gin.Context) {
 		common.APIRespondWithCode(c, http.StatusOK, common.APICodeModelIdentifierExists, "model identifier already exists", nil)
 		return
 	}
+	// 策略行随策略联动维护，不允许在目录里直接改。
+	if current, err := model.GetModelInfo(modelInfo.Id); err == nil && current.Kind == model.ModelInfoKindRoutingPolicy {
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeModelManagedByRoutingPolicy, "model is managed by a routing policy", nil)
+		return
+	}
 	// 改名会让指向旧主名的别名悬空：拒绝并列出引用方，由管理员先处理别名。
 	if current, err := model.GetModelInfo(modelInfo.Id); err == nil && current.Model != modelInfo.Model {
 		if refs, err := model.ModelAliasReferences(current.Model); err != nil {
@@ -347,6 +364,7 @@ func UpdateModelInfo(c *gin.Context) {
 			return
 		}
 	}
+	modelInfo.Kind = ""
 	modelInfo.Source = model.ModelInfoSourceManual
 	err = model.UpdateModelInfo(&modelInfo)
 	if err != nil {
@@ -365,8 +383,12 @@ func DeleteModelInfo(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
-	// 删除主名同样会让别名悬空：拒绝并列出引用方。
+	// 删除主名同样会让别名悬空：拒绝并列出引用方。策略行只能随策略删除。
 	if current, err := model.GetModelInfo(id); err == nil {
+		if current.Kind == model.ModelInfoKindRoutingPolicy {
+			common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeModelManagedByRoutingPolicy, "model is managed by a routing policy", nil)
+			return
+		}
 		refs, err := model.ModelAliasReferences(current.Model)
 		if err != nil {
 			common.APIRespondWithError(c, http.StatusOK, err)
