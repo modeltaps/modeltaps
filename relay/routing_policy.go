@@ -49,14 +49,14 @@ type ClassifyResult struct {
 // classifyFunc 把一段文本按策略分类。默认实现调决策模型，测试替换成假的。
 type classifyFunc func(c *gin.Context, policy *model.RoutingPolicy, text string) (*ClassifyResult, error)
 
-// classifyRoute 为 nil 时用 classifyWithDecisionModel；不能在包级直接赋值，那会和 getProvider 形成初始化环。
+// classifyRoute 为 nil 时用 classifyWithDecisionModelOpts；不能在包级直接赋值，那会和 getProvider 形成初始化环。
 var classifyRoute classifyFunc
 
-func classify(c *gin.Context, policy *model.RoutingPolicy, text string) (*ClassifyResult, error) {
+func classify(c *gin.Context, policy *model.RoutingPolicy, text string, bill bool) (*ClassifyResult, error) {
 	if classifyRoute != nil {
 		return classifyRoute(c, policy, text)
 	}
-	return classifyWithDecisionModel(c, policy, text)
+	return classifyWithDecisionModelOpts(c, policy, text, bill)
 }
 
 // routingPolicyNow 便于测试控制耗时。
@@ -144,28 +144,12 @@ func classifyRequest(c *gin.Context, policy *model.RoutingPolicy) *RoutingDecisi
 	}
 
 	started := routingPolicyNow()
-	result, err := classify(c, policy, text)
+	result, err := classify(c, policy, text, config.RoutingDecisionBillingEnabled)
 	decision.DecisionMs = routingPolicyNow().Sub(started).Milliseconds()
-	if err != nil {
-		logger.LogWarn(c.Request.Context(), "routing_decision_failed policy="+policy.Name+" error="+err.Error())
-		decision.Reason = RoutingReasonDecisionError
-		return decision
+	applyClassifyResult(decision, policy, result, err)
+	if decision.Reason == RoutingReasonDecisionError {
+		logger.LogWarn(c.Request.Context(), "routing_decision_failed policy="+policy.Name+" error="+decision.Error)
 	}
-	decision.DecisionUsage = result.Usage
-	decision.Confidence = result.Confidence
-	route := policy.RouteFor(result.Label)
-	if route == nil {
-		logger.LogWarn(c.Request.Context(), "routing_decision_unknown_label policy="+policy.Name+" label="+result.Label)
-		decision.Reason = RoutingReasonDecisionError
-		return decision
-	}
-	decision.Label = route.Label
-	if result.Confidence < policy.Threshold {
-		decision.Reason = RoutingReasonBelowThreshold
-		return decision
-	}
-	decision.TargetModel = route.TargetModel
-	decision.Reason = RoutingReasonClassified
 	return decision
 }
 
@@ -241,7 +225,64 @@ func parseDecisionAnswer(content string) (*ClassifyResult, error) {
 // classifyWithDecisionModel 用用户的分组链给决策模型选渠道，发一条无状态对话请求。
 // 用全新的 gin context：provider 会从 context 读客户端原始请求体做透传，不能让它看到用户的 body；
 // 也不带令牌的模型白名单，决策模型是管理员配的，不受用户 key 限制。
-func classifyWithDecisionModel(c *gin.Context, policy *model.RoutingPolicy, text string) (*ClassifyResult, error) {
+// tryRoutingPolicy 后台「试一试」：只跑决策这一步，不计费、不写固定记录，返回假定按该决策会得到的结果。
+// 调用方是管理员会话（无令牌分组），决策模型按管理员自己的用户分组选渠道。
+func tryRoutingPolicy(c *gin.Context, policy *model.RoutingPolicy, text string) *RoutingDecision {
+	if c.GetString("group") == "" {
+		if group, err := model.CacheGetUserGroup(c.GetInt("id")); err == nil {
+			c.Set("group", group)
+		}
+	}
+	decision := &RoutingDecision{Policy: policy.Name, TargetModel: policy.FallbackModel}
+	text = firstUserMessageTextFromPlain(text, policy.MaxInputChars)
+	if text == "" {
+		decision.Reason = RoutingReasonEmptyInput
+		return decision
+	}
+	started := routingPolicyNow()
+	result, err := classify(c, policy, text, false)
+	decision.DecisionMs = routingPolicyNow().Sub(started).Milliseconds()
+	applyClassifyResult(decision, policy, result, err)
+	return decision
+}
+
+// firstUserMessageTextFromPlain 对已经是纯文本的输入做与请求路径相同的清理与截断。
+func firstUserMessageTextFromPlain(text string, maxChars int) string {
+	text = systemReminderPattern.ReplaceAllString(text, "")
+	text = strings.TrimSpace(text)
+	if maxChars > 0 {
+		if runes := []rune(text); len(runes) > maxChars {
+			text = string(runes[:maxChars])
+		}
+	}
+	return text
+}
+
+// applyClassifyResult 把分类结果按阈值落到决策上：出错 / 未知标签 → decision_error，低于阈值 → below_threshold。
+func applyClassifyResult(decision *RoutingDecision, policy *model.RoutingPolicy, result *ClassifyResult, err error) {
+	if err != nil {
+		decision.Reason = RoutingReasonDecisionError
+		decision.Error = err.Error()
+		return
+	}
+	decision.DecisionUsage = result.Usage
+	decision.Confidence = result.Confidence
+	route := policy.RouteFor(result.Label)
+	if route == nil {
+		decision.Reason = RoutingReasonDecisionError
+		decision.Error = "decision model answered with an unknown label: " + result.Label
+		return
+	}
+	decision.Label = route.Label
+	if result.Confidence < policy.Threshold {
+		decision.Reason = RoutingReasonBelowThreshold
+		return
+	}
+	decision.TargetModel = route.TargetModel
+	decision.Reason = RoutingReasonClassified
+}
+
+func classifyWithDecisionModelOpts(c *gin.Context, policy *model.RoutingPolicy, text string, bill bool) (*ClassifyResult, error) {
 	timeout := time.Duration(policy.DecisionTimeoutMs) * time.Millisecond
 	if timeout <= 0 {
 		timeout = model.RoutingPolicyDefaultTimeoutMs * time.Millisecond
@@ -264,7 +305,7 @@ func classifyWithDecisionModel(c *gin.Context, policy *model.RoutingPolicy, text
 	// 决策调用按决策模型的价格单独计一笔（站点开关可关）。预扣失败（额度不足 / 预算超限）
 	// 时不发起决策，直接兜底：用户的主请求随后也会被同一道闸拦下。
 	var quota *relay_util.Quota
-	if config.RoutingDecisionBillingEnabled {
+	if bill {
 		quota = relay_util.NewQuota(decisionCtx, policy.DecisionModel, 0)
 		if errWithCode := quota.PreQuotaConsumption(); errWithCode != nil {
 			return nil, fmt.Errorf("decision model %s: %s", policy.DecisionModel, errWithCode.Message)

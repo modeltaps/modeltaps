@@ -573,7 +573,8 @@
     "playground": "Run chat, image, speech and side-by-side comparisons against the gateway",
     "api_audio": "Convert between text and speech",
     "api_compare": "Run several chat models side by side on the same input",
-    "pricing": "Model catalog, prices, channels and vendors"
+    "pricing": "Model catalog, prices, channels and vendors",
+    "routing_policy": "Virtual models that pick a target model from the first message of each session"
   },
   "api_compare": "Compare",
   "modelInfoPage": {
@@ -1576,6 +1577,119 @@
       "expiresTip": "This login is valid for {{minutes}} minutes. Each authorization code works only once; if it fails, open the authorization page again.",
       "restart": "Start again",
       "backToDevice": "Back to device code login"
+    }
+  },
+  "routing_policy": "Auto routing",
+  "routingPolicy": {
+    "create": "New policy",
+    "createTitle": "New routing policy",
+    "editTitle": "Edit routing policy",
+    "empty": "No routing policies yet. A policy is a model name clients can call; the first message of each session decides which real model answers.",
+    "columns": {
+      "name": "Policy",
+      "decisionModel": "Decision model",
+      "routes": "Routes",
+      "fallback": "Fallback",
+      "threshold": "Threshold",
+      "enabled": "Enabled"
+    },
+    "form": {
+      "tabBasic": "Basics",
+      "tabAdvanced": "Advanced",
+      "tabTry": "Try it",
+      "name": "Model name",
+      "nameHint": "What clients put in the model field, e.g. auto/coder.",
+      "nameHelp": "Letters, digits and . _ / - only, up to 100 characters, not starting or ending with /. It must not collide with an existing model. The name shows up in /v1/models and can be used in token and organization allow lists like any model.",
+      "displayName": "Display name",
+      "displayNameHint": "Shown in the catalog instead of the model name.",
+      "description": "Description",
+      "enabled": "Enabled",
+      "enabledHint": "Disabled policies are not listed and requests to them get model_not_found.",
+      "decisionModel": "Decision model",
+      "decisionModelHint": "A small, fast chat model that classifies the first user message. Charged to the caller once per session.",
+      "question": "Question",
+      "questionHint": "Give the decision model a sentence of context, then ask the question the labels answer.",
+      "questionHelp": "Keep it short: the labels and their descriptions carry most of the meaning. Do not put long instructions here; the output format is fixed by the gateway.",
+      "routes": "Routes",
+      "routesHint": "Each label is one answer to the question, mapped to the model that should handle it.",
+      "routesHelp": "2 to 16 routes. Labels must be distinct; overlapping labels split the probability and push requests to the fallback. Describe the request, not the model. Targets must be models, not other policies.",
+      "useTemplate": "Use a template",
+      "routeLabel": "Label",
+      "routeLabelPlaceholder": "label",
+      "routeDescription": "Description",
+      "routeDescriptionPlaceholder": "What kind of request this label covers",
+      "routeTargetPlaceholder": "Target model",
+      "addRoute": "Add route",
+      "removeRoute": "Remove route",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "useTyped": "Use \"{{value}}\"",
+      "modelPlaceholder": "Pick or type a model",
+      "fallbackModel": "Fallback model",
+      "fallbackModelHint": "Used when confidence is below the threshold, the decision fails, or the first message has no text. Put your safest model here.",
+      "threshold": "Confidence threshold",
+      "thresholdHint": "0 to 1. Below it the request goes to the fallback.",
+      "thresholdHelp": "0.5 is a good start. Raise it to send more borderline requests to the fallback; lower it to trust the decision model more. The confidence is self-reported by the decision model, so treat it as a ranking, not a probability.",
+      "pinTtl": "Pin per session (seconds)",
+      "pinTtlHint": "How long a session keeps the model chosen at its first message. 0 classifies every request.",
+      "pinTtlHelp": "Later turns of a pinned session skip the decision, keep the upstream prompt cache warm and never switch models mid-conversation. Sessions are identified by the session header, Claude Code metadata, prompt_cache_key or the prompt prefix.",
+      "maxInputChars": "Input limit (characters)",
+      "maxInputCharsHint": "The first message is cut to this length before classification. 0 uses the default (4000).",
+      "decisionTimeout": "Decision timeout (ms)",
+      "decisionTimeoutHint": "On timeout the request goes to the fallback. 0 uses the default (3000).",
+      "missing": {
+        "name": "Model name is required",
+        "decision_model": "Decision model is required",
+        "fallback_model": "Fallback model is required",
+        "routes": "At least two routes, each with a label and a target model"
+      }
+    },
+    "templates": {
+      "coding_change_size": "Coding: size of change",
+      "support_triage": "Support triage",
+      "reasoning_depth": "Reasoning depth"
+    },
+    "tryIt": {
+      "intro": "Run the decision step only, with the policy as it is in this form. Nothing is forwarded, billed or pinned.",
+      "message": "First user message",
+      "messageHint": "Paste a real first message from your logs.",
+      "messagePlaceholder": "Add a --verbose flag to the CLI and log the parsed arguments",
+      "candidates": "Compare decision models",
+      "candidatesHint": "The policy's decision model ({{model}}) always runs; add up to three more to compare.",
+      "candidatesPlaceholder": "Add a decision model",
+      "run": "Run",
+      "running": "Running…",
+      "label": "Label",
+      "confidence": "Confidence",
+      "target": "Would route to",
+      "latency": "Decision time"
+    },
+    "reasons": {
+      "classified": "Classified",
+      "pinned": "Pinned session",
+      "below_threshold": "Below threshold",
+      "decision_error": "Decision failed",
+      "empty_input": "No text"
+    }
+  },
+  "logPage": {
+    "routing": {
+      "filterLabel": "Routing policy",
+      "label": "Auto routing",
+      "value": "{{policy}} → {{label}} ({{reason}}{{confidence}})",
+      "noLabel": "fallback",
+      "decisionCall": "Decision call for {{policy}}"
+    }
+  },
+  "setting_index": {
+    "cards": {
+      "autoRouting": "Auto routing"
+    },
+    "operationSettings": {
+      "generalSettings": {
+        "routingDecisionBilling": "Charge the decision call",
+        "routingDecisionBillingDescription": "Bill the classification call of an auto routing policy to the caller at the decision model's price, once per session, as its own log entry. When off the decision still runs but leaves no consume log."
+      }
     }
   }
 }

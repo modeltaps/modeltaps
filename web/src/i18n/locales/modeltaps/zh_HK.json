@@ -572,7 +572,8 @@
     "playground": "對話、圖像、語音與多模型對比的線上試運行",
     "api_audio": "在文字與語音之間轉換",
     "api_compare": "多個對話模型並排，同一條輸入同時發出",
-    "pricing": "模型目錄、價格、渠道與廠商"
+    "pricing": "模型目錄、價格、渠道與廠商",
+    "routing_policy": "虛擬模型：按每個會話的首條訊息選擇實際應答的模型"
   },
   "api_compare": "對比",
   "modelInfoPage": {
@@ -1515,5 +1516,118 @@
     "usagePlan": "方案：{{plan}}",
     "usageWindow": "{{name}} 窗口：已用 {{percent}}%，{{reset}} 重設",
     "usageFetchedAt": "更新於 {{time}}"
+  },
+  "routing_policy": "自動路由",
+  "routingPolicy": {
+    "create": "新建策略",
+    "createTitle": "新建路由策略",
+    "editTitle": "編輯路由策略",
+    "empty": "還沒有路由策略。策略是一個客戶端可呼叫的模型名，由每個會話的首條訊息決定實際由哪個模型應答。",
+    "columns": {
+      "name": "策略",
+      "decisionModel": "決策模型",
+      "routes": "路由",
+      "fallback": "兜底",
+      "threshold": "閾值",
+      "enabled": "啟用"
+    },
+    "form": {
+      "tabBasic": "基礎",
+      "tabAdvanced": "進階",
+      "tabTry": "試一試",
+      "name": "模型名",
+      "nameHint": "客戶端填在 model 欄位裏的名字，如 auto/coder。",
+      "nameHelp": "只能用字母、數字和 . _ / -，最多 100 個字元，不能以 / 開頭或結尾，不能與已有模型重名。它會出現在 /v1/models 裏，也能像普通模型一樣加進令牌和組織白名單。",
+      "displayName": "顯示名",
+      "displayNameHint": "目錄裏代替模型名顯示。",
+      "description": "描述",
+      "enabled": "啟用",
+      "enabledHint": "停用的策略不進模型列表，請求它會得到 model_not_found。",
+      "decisionModel": "決策模型",
+      "decisionModelHint": "一個小而快的對話模型，負責給首條用戶訊息分類。每個會話向呼叫方計費一次。",
+      "question": "問題",
+      "questionHint": "先給決策模型一句背景，再問標籤要回答的那個問題。",
+      "questionHelp": "寫短一點：標籤和描述承擔大部分含義。不要在這裏寫長指令，輸出格式由閘道固定。",
+      "routes": "路由",
+      "routesHint": "每個標籤是問題的一個答案，對應應當處理它的模型。",
+      "routesHelp": "2 到 16 條。標籤要互不重疊，重疊會分散概率、把請求推向兜底。描述請求本身而不是模型。目標必須是模型，不能是另一條策略。",
+      "useTemplate": "使用範本",
+      "routeLabel": "標籤",
+      "routeLabelPlaceholder": "標籤",
+      "routeDescription": "描述",
+      "routeDescriptionPlaceholder": "這個標籤覆蓋哪類請求",
+      "routeTargetPlaceholder": "目標模型",
+      "addRoute": "新增路由",
+      "removeRoute": "刪除路由",
+      "moveUp": "上移",
+      "moveDown": "下移",
+      "useTyped": "使用「{{value}}」",
+      "modelPlaceholder": "選擇或輸入模型",
+      "fallbackModel": "兜底模型",
+      "fallbackModelHint": "置信度低於閾值、決策失敗或首條訊息沒有文字時使用。放你最穩的模型。",
+      "threshold": "置信度閾值",
+      "thresholdHint": "0 到 1，低於它走兜底。",
+      "thresholdHelp": "0.5 是不錯的起點。調高會把更多模稜兩可的請求送去兜底，調低則更信任決策模型。置信度是決策模型自報的，當排序看，別當概率。",
+      "pinTtl": "會話固定時長（秒）",
+      "pinTtlHint": "會話在首條訊息選定模型後保持多久。0 表示每次請求都分類。",
+      "pinTtlHelp": "固定期間的後續輪次跳過決策，上游提示快取保持命中，對話中途不會換模型。會話靠會話標頭、Claude Code 中繼資料、prompt_cache_key 或提示前綴識別。",
+      "maxInputChars": "輸入截斷（字元）",
+      "maxInputCharsHint": "首條訊息分類前截到這個長度。0 用預設值（4000）。",
+      "decisionTimeout": "決策逾時（毫秒）",
+      "decisionTimeoutHint": "逾時走兜底。0 用預設值（3000）。",
+      "missing": {
+        "name": "請填寫模型名",
+        "decision_model": "請選擇決策模型",
+        "fallback_model": "請選擇兜底模型",
+        "routes": "至少兩條路由，每條都要有標籤和目標模型"
+      }
+    },
+    "templates": {
+      "coding_change_size": "編碼：改動大小",
+      "support_triage": "客服分流",
+      "reasoning_depth": "推理深度"
+    },
+    "tryIt": {
+      "intro": "只跑決策這一步，用的是表單裏目前的策略。不轉發、不計費、不寫會話固定記錄。",
+      "message": "首條用戶訊息",
+      "messageHint": "從日誌裏貼一條真實的首條訊息。",
+      "messagePlaceholder": "給 CLI 加一個 --verbose 參數，並把解析後的參數打到日誌",
+      "candidates": "並列比較決策模型",
+      "candidatesHint": "策略的決策模型（{{model}}）總會跑；最多再加三個比較。",
+      "candidatesPlaceholder": "新增決策模型",
+      "run": "執行",
+      "running": "執行中…",
+      "label": "標籤",
+      "confidence": "置信度",
+      "target": "將路由到",
+      "latency": "決策耗時"
+    },
+    "reasons": {
+      "classified": "已分類",
+      "pinned": "會話固定",
+      "below_threshold": "低於閾值",
+      "decision_error": "決策失敗",
+      "empty_input": "無文字"
+    }
+  },
+  "logPage": {
+    "routing": {
+      "filterLabel": "路由策略",
+      "label": "自動路由",
+      "value": "{{policy}} → {{label}}（{{reason}}{{confidence}}）",
+      "noLabel": "兜底",
+      "decisionCall": "{{policy}} 的決策呼叫"
+    }
+  },
+  "setting_index": {
+    "cards": {
+      "autoRouting": "自動路由"
+    },
+    "operationSettings": {
+      "generalSettings": {
+        "routingDecisionBilling": "決策呼叫計費",
+        "routingDecisionBillingDescription": "自動路由策略的分類呼叫按決策模型價格向呼叫方計費，每個會話一次，單獨記一條日誌。關閉後決策照常進行，但不寫消費日誌。"
+      }
+    }
   }
 }

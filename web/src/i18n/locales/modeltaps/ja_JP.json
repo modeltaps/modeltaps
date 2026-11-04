@@ -572,7 +572,8 @@
     "playground": "チャット・画像・音声・モデル比較をその場で試す",
     "api_audio": "テキストと音声を相互に変換",
     "api_compare": "複数のチャットモデルを並べ、同じ入力を同時に送信",
-    "pricing": "モデルカタログ・価格・チャネル・ベンダー"
+    "pricing": "モデルカタログ・価格・チャネル・ベンダー",
+    "routing_policy": "各セッションの最初のメッセージから実際に応答するモデルを選ぶ仮想モデル"
   },
   "api_compare": "比較",
   "modelInfoPage": {
@@ -1515,5 +1516,118 @@
     "usagePlan": "プラン：{{plan}}",
     "usageWindow": "{{name}} ウィンドウ：{{percent}}% 使用、{{reset}} にリセット",
     "usageFetchedAt": "{{time}} に更新"
+  },
+  "routing_policy": "自動ルーティング",
+  "routingPolicy": {
+    "create": "ポリシーを作成",
+    "createTitle": "ルーティングポリシーを作成",
+    "editTitle": "ルーティングポリシーを編集",
+    "empty": "ルーティングポリシーはまだありません。ポリシーはクライアントが呼び出せるモデル名で、各セッションの最初のメッセージがどの実モデルが応答するかを決めます。",
+    "columns": {
+      "name": "ポリシー",
+      "decisionModel": "判定モデル",
+      "routes": "ルート",
+      "fallback": "フォールバック",
+      "threshold": "しきい値",
+      "enabled": "有効"
+    },
+    "form": {
+      "tabBasic": "基本",
+      "tabAdvanced": "詳細",
+      "tabTry": "試す",
+      "name": "モデル名",
+      "nameHint": "クライアントが model フィールドに指定する名前。例: auto/coder",
+      "nameHelp": "使えるのは英数字と . _ / - のみ、最大 100 文字、先頭と末尾に / は不可、既存モデルと重複不可。/v1/models に表示され、通常のモデルと同様にトークンや組織の許可リストにも追加できます。",
+      "displayName": "表示名",
+      "displayNameHint": "カタログでモデル名の代わりに表示されます。",
+      "description": "説明",
+      "enabled": "有効",
+      "enabledHint": "無効なポリシーはモデル一覧に出ず、リクエストは model_not_found になります。",
+      "decisionModel": "判定モデル",
+      "decisionModelHint": "最初のユーザーメッセージを分類する小さく速いチャットモデル。セッションごとに 1 回、呼び出し元に課金されます。",
+      "question": "質問",
+      "questionHint": "判定モデルに一文の背景を与えてから、ラベルが答える質問をしてください。",
+      "questionHelp": "短くしてください。意味の大半はラベルとその説明が担います。長い指示は書かないでください。出力形式はゲートウェイが固定します。",
+      "routes": "ルート",
+      "routesHint": "各ラベルは質問への答えの一つで、それを処理すべきモデルに対応します。",
+      "routesHelp": "2 〜 16 件。ラベルは重ならないように。重なると確率が分散してフォールバックに流れます。モデルではなくリクエストを説明してください。ターゲットはモデルで、別のポリシーは指定できません。",
+      "useTemplate": "テンプレートを使う",
+      "routeLabel": "ラベル",
+      "routeLabelPlaceholder": "ラベル",
+      "routeDescription": "説明",
+      "routeDescriptionPlaceholder": "このラベルが対象とするリクエストの種類",
+      "routeTargetPlaceholder": "ターゲットモデル",
+      "addRoute": "ルートを追加",
+      "removeRoute": "ルートを削除",
+      "moveUp": "上へ",
+      "moveDown": "下へ",
+      "useTyped": "「{{value}}」を使う",
+      "modelPlaceholder": "モデルを選択または入力",
+      "fallbackModel": "フォールバックモデル",
+      "fallbackModelHint": "確信度がしきい値未満、判定失敗、最初のメッセージにテキストがない場合に使います。最も安全なモデルを置いてください。",
+      "threshold": "確信度のしきい値",
+      "thresholdHint": "0 〜 1。これ未満はフォールバックへ。",
+      "thresholdHelp": "0.5 が良い出発点です。上げると境界的なリクエストがよりフォールバックへ、下げると判定モデルをより信頼します。確信度は判定モデルの自己申告なので、確率ではなく順位として扱ってください。",
+      "pinTtl": "セッション固定時間（秒）",
+      "pinTtlHint": "最初のメッセージで選んだモデルをセッションが保持する時間。0 なら毎回分類します。",
+      "pinTtlHelp": "固定中の後続ターンは判定を省略し、上流のプロンプトキャッシュを保ち、会話の途中でモデルが切り替わりません。セッションはセッションヘッダー、Claude Code のメタデータ、prompt_cache_key、またはプロンプト接頭辞で識別します。",
+      "maxInputChars": "入力上限（文字）",
+      "maxInputCharsHint": "最初のメッセージは分類前にこの長さで切り詰めます。0 は既定値（4000）。",
+      "decisionTimeout": "判定タイムアウト（ms）",
+      "decisionTimeoutHint": "タイムアウト時はフォールバックへ。0 は既定値（3000）。",
+      "missing": {
+        "name": "モデル名は必須です",
+        "decision_model": "判定モデルは必須です",
+        "fallback_model": "フォールバックモデルは必須です",
+        "routes": "ラベルとターゲットモデルを持つルートが 2 件以上必要です"
+      }
+    },
+    "templates": {
+      "coding_change_size": "コーディング: 変更の大きさ",
+      "support_triage": "サポートの振り分け",
+      "reasoning_depth": "推論の深さ"
+    },
+    "tryIt": {
+      "intro": "このフォームの現在のポリシーで判定ステップだけを実行します。転送も課金もセッション固定も行いません。",
+      "message": "最初のユーザーメッセージ",
+      "messageHint": "ログから実際の最初のメッセージを貼り付けてください。",
+      "messagePlaceholder": "CLI に --verbose フラグを追加し、解析した引数をログに出す",
+      "candidates": "判定モデルを比較",
+      "candidatesHint": "ポリシーの判定モデル（{{model}}）は常に実行されます。比較用に最大 3 つ追加できます。",
+      "candidatesPlaceholder": "判定モデルを追加",
+      "run": "実行",
+      "running": "実行中…",
+      "label": "ラベル",
+      "confidence": "確信度",
+      "target": "ルーティング先",
+      "latency": "判定時間"
+    },
+    "reasons": {
+      "classified": "分類済み",
+      "pinned": "セッション固定",
+      "below_threshold": "しきい値未満",
+      "decision_error": "判定失敗",
+      "empty_input": "テキストなし"
+    }
+  },
+  "logPage": {
+    "routing": {
+      "filterLabel": "ルーティングポリシー",
+      "label": "自動ルーティング",
+      "value": "{{policy}} → {{label}}（{{reason}}{{confidence}}）",
+      "noLabel": "フォールバック",
+      "decisionCall": "{{policy}} の判定呼び出し"
+    }
+  },
+  "setting_index": {
+    "cards": {
+      "autoRouting": "自動ルーティング"
+    },
+    "operationSettings": {
+      "generalSettings": {
+        "routingDecisionBilling": "判定呼び出しを課金する",
+        "routingDecisionBillingDescription": "自動ルーティングポリシーの分類呼び出しを判定モデルの価格で呼び出し元に課金します。セッションごとに 1 回、独立したログとして記録します。オフでも判定は実行されますが消費ログは残りません。"
+      }
+    }
   }
 }

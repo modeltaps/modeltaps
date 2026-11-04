@@ -40,6 +40,8 @@ type RoutingDecision struct {
 	DecisionMs  int64
 	// DecisionUsage 决策调用的用量，命中固定记录或未调用时为 nil。
 	DecisionUsage *types.Usage
+	// Error 决策失败的原因文本（只进系统日志与后台「试一试」，不进消费日志）。
+	Error string
 }
 
 // HeaderValue 组成 X-Modeltaps-Route 的值：policy=…; label=…; model=…; confidence=…; reason=…。

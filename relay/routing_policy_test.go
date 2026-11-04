@@ -312,3 +312,43 @@ func TestBuildDecisionMessages(t *testing.T) {
 		}
 	}
 }
+
+// TestTryRoutingPolicyHandler 「试一试」对草稿策略逐个决策模型跑分类，不落库、不写固定记录；空文本直接兜底
+func TestTryRoutingPolicyHandler(t *testing.T) {
+	calls, setResult := setupRoutingResolveTest(t, testPolicy("auto/saved", 3600))
+	setResult("large", 0.8, nil)
+
+	body := `{"policy":{"name":"","decision_model":"decider","routes":[{"label":"small","target_model":"cheap-model"},{"label":"large","target_model":"big-model"}],"fallback_model":"fallback-model","threshold":0.5,"pin_ttl_seconds":3600},"text":"<system-reminder>x</system-reminder>rewrite everything","decision_models":["d1","d2"]}`
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest("POST", "/api/routing_policy/try", strings.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Set("id", 1)
+	c.Set("group", "default")
+	TryRoutingPolicyHandler(c)
+	if rec.Code != 200 {
+		t.Fatalf("期望 200，实际 %d body=%s", rec.Code, rec.Body.String())
+	}
+	out := rec.Body.String()
+	for _, want := range []string{`"decision_model":"d1"`, `"decision_model":"d2"`, `"label":"large"`, `"target_model":"big-model"`, `"reason":"classified"`} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("响应缺少 %s: %s", want, out)
+		}
+	}
+	if *calls != 2 {
+		t.Fatalf("两个候选模型应各分类一次，实际 %d", *calls)
+	}
+	if model.LookupRoutingPolicy("draft") != nil {
+		t.Fatalf("草稿不应落库")
+	}
+
+	// 校验不过（只有一条路由）→ 400 带 code。
+	rec = httptest.NewRecorder()
+	c, _ = gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest("POST", "/api/routing_policy/try", strings.NewReader(`{"policy":{"decision_model":"d","routes":[{"label":"a","target_model":"m"}],"fallback_model":"m"},"text":"hi"}`))
+	c.Request.Header.Set("Content-Type", "application/json")
+	TryRoutingPolicyHandler(c)
+	if rec.Code != 400 || !strings.Contains(rec.Body.String(), "routing_policy_routes_count") {
+		t.Fatalf("校验失败应 400 带 code，实际 %d %s", rec.Code, rec.Body.String())
+	}
+}
