@@ -184,6 +184,8 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			routingPolicyRoute.GET("/", controller.GetRoutingPolicies)
 			routingPolicyRoute.GET("/:id", controller.GetRoutingPolicy)
+			routingPolicyRoute.GET("/:id/stats", controller.GetRoutingPolicyStats)
+			routingPolicyRoute.GET("/:id/samples", relay.RoutingPolicySamplesHandler)
 			routingPolicyRoute.POST("/", controller.CreateRoutingPolicy)
 			routingPolicyRoute.POST("/try", relay.TryRoutingPolicyHandler)
 			routingPolicyRoute.PUT("/:id", controller.UpdateRoutingPolicy)

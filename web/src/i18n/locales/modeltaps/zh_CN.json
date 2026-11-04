@@ -1530,7 +1530,9 @@
       "routes": "路由",
       "fallback": "兜底",
       "threshold": "阈值",
-      "enabled": "启用"
+      "enabled": "启用",
+      "week": "近 7 天",
+      "fallbackRate": "兜底 {{rate}}%"
     },
     "form": {
       "tabBasic": "基础",
@@ -1581,7 +1583,8 @@
         "decision_model": "请选择决策模型",
         "fallback_model": "请选择兜底模型",
         "routes": "至少两条路由，每条都要有标签和目标模型"
-      }
+      },
+      "tabStats": "统计"
     },
     "templates": {
       "coding_change_size": "编码：改动大小",
@@ -1601,7 +1604,10 @@
       "label": "标签",
       "confidence": "置信度",
       "target": "将路由到",
-      "latency": "决策耗时"
+      "latency": "决策耗时",
+      "loadSamples": "从日志里挑一条真实首条消息",
+      "loadingSamples": "加载中…",
+      "noSamples": "还没有留存了请求体的被路由请求。开启请求明细记录后才会有样本。"
     },
     "reasons": {
       "classified": "已分类",
@@ -1609,6 +1615,26 @@
       "below_threshold": "低于阈值",
       "decision_error": "决策失败",
       "empty_input": "无文本"
+    },
+    "stats": {
+      "saveFirst": "先保存策略，统计来自它的日志。",
+      "intro": "来自经这条策略路由的请求的消费日志。",
+      "days": "{{days}} 天",
+      "empty": "近 {{days}} 天没有经这条策略路由的请求。",
+      "requests": "请求数",
+      "fallbackRate": "兜底占比",
+      "fallbackCount": "{{count}} 条由兜底应答",
+      "avgDecision": "平均决策耗时",
+      "decisionCalls": "{{count}} 次决策调用，{{quota}}",
+      "saved": "估算节省",
+      "savedHint": "实际 {{actual}}，若全部走 {{model}} 为 {{fallback}}，再减去决策调用",
+      "noFallbackPrice": "{{model}} 没有配置价格，无法估算节省",
+      "byReason": "按原因",
+      "label": "标签",
+      "target": "模型",
+      "share": "占比",
+      "quota": "花费",
+      "noLabel": "兜底"
     }
   },
   "logPage": {

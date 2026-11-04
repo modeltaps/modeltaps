@@ -160,3 +160,30 @@ func DeleteRoutingPolicy(c *gin.Context) {
 		"message": "",
 	})
 }
+
+// GetRoutingPolicyStats 策略近 N 天效果：原因分布、标签命中、决策耗时、决策成本与估算节省。days 取 7 或 30。
+func GetRoutingPolicyStats(c *gin.Context) {
+	id, ok := routingPolicyIdParam(c)
+	if !ok {
+		return
+	}
+	policy, err := model.GetRoutingPolicyById(id)
+	if err != nil {
+		common.APIRespondWithError(c, routingPolicyStatus(err), err)
+		return
+	}
+	days, _ := strconv.Atoi(c.DefaultQuery("days", "7"))
+	if days != 30 {
+		days = 7
+	}
+	stats, err := model.GetRoutingPolicyStats(policy, days)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusInternalServerError, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    stats,
+	})
+}
