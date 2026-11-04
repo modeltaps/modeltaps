@@ -61,6 +61,14 @@ var allowedTokenOrderFields = map[string]bool{
 	"used_quota":   true,
 }
 
+// BeforeSave 写入前归一令牌模型限制(ORG-14):列表为空即不限制,关闭限制即清空列表
+func (token *Token) BeforeSave(tx *gorm.DB) error {
+	setting := token.Setting.Data()
+	setting.Limits.LimitModelSetting = normalizeLimitModelSetting(setting.Limits.LimitModelSetting)
+	token.Setting.Set(setting)
+	return nil
+}
+
 // 添加 AfterCreate 钩子方法
 func (token *Token) AfterCreate(tx *gorm.DB) (err error) {
 	tokenKey, err := common.GenerateToken(token.Id, token.UserId)

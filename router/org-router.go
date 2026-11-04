@@ -36,6 +36,7 @@ func setOrgRouter(apiRouter *gin.RouterGroup) {
 			// 组织令牌(T4):Member 仅自己创建的,Owner/Admin 全部
 			orgMemberRoute.GET("/token", controller.GetOrgTokensList)
 			orgMemberRoute.GET("/token/:token_id", controller.GetOrgToken)
+			orgMemberRoute.GET("/token/:token_id/models", controller.GetOrgTokenModels)
 			orgMemberRoute.POST("/token", controller.AddOrgToken)
 			orgMemberRoute.PUT("/token", controller.UpdateOrgToken)
 			orgMemberRoute.DELETE("/token/:token_id", controller.DeleteOrgToken)

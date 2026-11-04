@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   model answered. Administrators manage policies under Gateway → Auto routing, with templates and
   a "Try it" panel that runs only the decision step. See the Auto Routing guide in the docs.
 
+## [0.3.0] - 2026-11-04
+
 ### Fixed
 
 - Image generation requests keep the `safety_identifier` field when the channel does not pass the
@@ -149,6 +151,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the error instead of moving a session whose channel fails. Each consume log records whether the
   request stayed on its bound channel (`session_affinity`), and `GET /api/channel/cache_stats`
   reports per-channel requests, prompt and cache read tokens and affinity counts.
+- Editing a saved API key shows the models it can actually call, taking the group, the model limit
+  and, for organization keys, the member allowlist into account (`GET /api/token/:id/models`,
+  `GET /api/org/:id/token/:token_id/models`).
 - Vercel AI Gateway channel type: OpenAI-compatible relay, model list with prices and metadata
   synced like OpenRouter, and balance lookup through `/v1/credits`.
 - OpenRouter channels report the key's remaining amount as the channel balance and store a quota
@@ -175,6 +180,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   re-enabling of auto-disabled channels defaults to on, and the scheduled channel test defaults to
   recovery mode every 10 minutes. Sites that saved their own values keep them;
   `CHANNEL_TEST_FREQUENCY` still tests every channel at its interval when set.
+- API key model limits and organization member allowlists use the same matching rules:
+  case-insensitive, `*` prefix wildcards, and aliases count as their canonical model. A key's model
+  limit with no model selected now means no restriction, as the documentation already said;
+  existing keys whose limit was on with an empty list (which rejected every request) are disabled
+  instead of being opened up.
 - "Members can view everyone's usage" is a plain organization switch: the site-wide default for it
   is removed and new organizations start with it off, so members only see their own usage until an
   owner or admin turns it on. Existing organizations keep their current behavior.

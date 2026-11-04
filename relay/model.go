@@ -40,52 +40,14 @@ type OpenAIModels struct {
 	Capabilities []string           `json:"capabilities,omitempty"`
 }
 
-// filterModelsByTokenLimit 根据令牌的模型限制过滤模型列表
+// filterModelsByTokenLimit 根据令牌的模型限制过滤模型列表，口径与请求校验 CheckLimitModel 同源
 func filterModelsByTokenLimit(c *gin.Context, models []string) []string {
-	// 检查是否启用了模型限制
 	tokenSetting, exists := c.Get("token_setting")
 	if !exists {
 		return models
 	}
-
-	setting, ok := tokenSetting.(*model.TokenSetting)
-	if !ok || setting == nil {
-		return models
-	}
-
-	if !setting.Limits.LimitModelSetting.Enabled {
-		return models
-	}
-
-	if len(setting.Limits.LimitModelSetting.Models) == 0 {
-		// 开启限制但列表为空时请求一律被拒（CheckLimitModel），列表口径与之一致
-		return []string{}
-	}
-
-	// 如果启用了模型限制，只返回限制的模型列表
-	limitedModels := setting.Limits.LimitModelSetting.Models
-	// 创建一个map用于快速查找；别名与主名同等生效，故白名单项额外登记其主名。
-	allowedModelsMap := make(map[string]bool, len(limitedModels))
-	for _, m := range limitedModels {
-		allowedModelsMap[m] = true
-		if canonical, isAlias := model.ResolveCanonicalModel(m); isAlias {
-			allowedModelsMap[canonical] = true
-		}
-	}
-
-	// 过滤模型列表，只保留允许的模型（白名单写主名时别名亦放行，反之亦然）
-	filteredModels := make([]string, 0, len(models))
-	for _, modelName := range models {
-		if allowedModelsMap[modelName] {
-			filteredModels = append(filteredModels, modelName)
-			continue
-		}
-		if canonical, isAlias := model.ResolveCanonicalModel(modelName); isAlias && allowedModelsMap[canonical] {
-			filteredModels = append(filteredModels, modelName)
-		}
-	}
-
-	return filteredModels
+	setting, _ := tokenSetting.(*model.TokenSetting)
+	return model.FilterModelsByTokenSetting(setting, models)
 }
 
 // cacheGetOrgMemberGuardrailFn 测试注入点：列表过滤加载组织成员守护数据的 model 层入口
@@ -107,13 +69,7 @@ func filterModelsByOrgGuardrail(c *gin.Context, models []string) ([]string, erro
 		logger.SysError(fmt.Sprintf("failed to load org member guardrail for model list (shadow=%d, member=%d): %s", userId, createdBy, err.Error()))
 		return nil, errOrgGuardrailUnavailable
 	}
-	filtered := make([]string, 0, len(models))
-	for _, modelName := range models {
-		if guardrail.ModelAllowed(modelName) {
-			filtered = append(filtered, modelName)
-		}
-	}
-	return filtered, nil
+	return model.FilterModelsByAllowlist(guardrail.ModelWhitelist, models), nil
 }
 
 // filterModelsByTokenScope 依次套用令牌模型限制与组织成员白名单，三个列表接口共用。

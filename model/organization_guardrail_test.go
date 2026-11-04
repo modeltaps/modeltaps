@@ -46,8 +46,8 @@ func TestOrgModelWhitelistAllowed(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := orgModelWhitelistAllowed(tt.whitelist, tt.model); got != tt.want {
-				t.Fatalf("orgModelWhitelistAllowed(%v, %q) = %v, want %v", tt.whitelist, tt.model, got, tt.want)
+			if got := ModelAllowlistPermits(tt.whitelist, tt.model); got != tt.want {
+				t.Fatalf("ModelAllowlistPermits(%v, %q) = %v, want %v", tt.whitelist, tt.model, got, tt.want)
 			}
 		})
 	}

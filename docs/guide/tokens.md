@@ -59,7 +59,7 @@ If a group has been deleted or you are not allowed to use it, the group tag in t
 
 ### Advanced settings
 
-- **Model restrictions**: once enabled, you can select the models this API key may use; selecting none means all models are allowed. Useful for restricting an application to a handful of models.
+- **Model restrictions**: once enabled, you can select the models this API key may use; selecting none means all models are allowed. Useful for restricting an application to a handful of models. Editing a saved key shows its available models, which also take the key's group and, for organization keys, your member allowlist into account.
 - **IP allowlist**: once enabled, enter one IP or CIDR range per line (for example `192.168.1.1`, `10.0.0.0/8`); only requests from those addresses are allowed through.
 - **Heartbeat (experimental)**: when a request returns no data for a long time, clients may time out and disconnect. Once enabled, if there is still no response after the wait time you configure, Modeltaps sends a heartbeat every 5 seconds (an empty line for non-streaming responses, `::PING` for streaming) to keep the connection alive. The wait time can be set between 30 and 90 seconds. Not recommended if your requests pass through a relay.
 
