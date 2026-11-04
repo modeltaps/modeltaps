@@ -56,14 +56,16 @@ type RoutingPolicy struct {
 	Question      string                            `json:"question" gorm:"type:text"`
 	Routes        datatypes.JSONSlice[RoutingRoute] `json:"routes" gorm:"type:json"`
 	FallbackModel string                            `json:"fallback_model" gorm:"type:varchar(255);not null"`
+	// 下面几个数值字段都不带 gorm 默认值：0 是合法取值（阈值 0、TTL 0 = 每次分类），
+	// gorm 的 default 会把零值改写成默认值。Normalize 只给「0 = 用默认」的字段补值。
 	// Threshold 0~1：最高标签概率低于它走兜底。
-	Threshold float64 `json:"threshold" gorm:"default:0.5"`
+	Threshold float64 `json:"threshold"`
 	// PinTTLSeconds 会话固定时长，0 = 每次请求都重新分类。
-	PinTTLSeconds int `json:"pin_ttl_seconds" gorm:"default:3600"`
+	PinTTLSeconds int `json:"pin_ttl_seconds"`
 	// MaxInputChars 送给决策模型的首条消息截断长度，0 = 默认值。
-	MaxInputChars int `json:"max_input_chars" gorm:"default:4000"`
+	MaxInputChars int `json:"max_input_chars"`
 	// DecisionTimeoutMs 决策调用超时，0 = 默认值；超时走兜底。
-	DecisionTimeoutMs int   `json:"decision_timeout_ms" gorm:"default:3000"`
+	DecisionTimeoutMs int   `json:"decision_timeout_ms"`
 	CreatedAt         int64 `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt         int64 `json:"updated_at" gorm:"autoUpdateTime"`
 }

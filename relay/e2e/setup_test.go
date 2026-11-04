@@ -83,6 +83,8 @@ func setupTestDB(t *testing.T) {
 		&model.Price{}, &model.ModelInfo{}, &model.Log{}, &model.LogDetail{}, &model.ChannelMetric{},
 		// 组织令牌场景（影子账户记账 / 成员守护）需要组织侧两张表
 		&model.Organization{}, &model.OrganizationMember{},
+		// 自动路由场景
+		&model.RoutingPolicy{},
 	); err != nil {
 		t.Fatalf("迁移测试表失败: %v", err)
 	}

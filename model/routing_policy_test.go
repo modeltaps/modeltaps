@@ -370,3 +370,21 @@ func policyNames(policies []*RoutingPolicy) []string {
 	}
 	return names
 }
+
+// TestRoutingPolicyZeroValuesRoundTrip 阈值 0 与 pin_ttl_seconds 0 是合法取值，落库后不能被默认值改写
+func TestRoutingPolicyZeroValuesRoundTrip(t *testing.T) {
+	setupRoutingPolicyTestDB(t)
+	p := samplePolicy()
+	p.Threshold = 0
+	p.PinTTLSeconds = 0
+	if err := p.Insert(); err != nil {
+		t.Fatalf("Insert 失败: %v", err)
+	}
+	got := LookupRoutingPolicy(p.Name)
+	if got == nil || got.Threshold != 0 || got.PinTTLSeconds != 0 {
+		t.Fatalf("零值应原样读回，实际 %+v", got)
+	}
+	if got.MaxInputChars != RoutingPolicyDefaultInputChars || got.DecisionTimeoutMs != RoutingPolicyDefaultTimeoutMs {
+		t.Fatalf("0 = 默认 的字段应在 Normalize 补值，实际 %+v", got)
+	}
+}
