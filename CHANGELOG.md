@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Auto routing policies: a policy is a virtual model name (such as `auto/coder`) that routes each
+  conversation to one of several real models. On the first user message the gateway asks a small
+  decision model which of the policy's labels fits the request and forwards the conversation to
+  the model mapped to that label; below the confidence threshold, on any decision failure, or when
+  the first message has no text, the fallback model answers, so routing never rejects a request.
+  The choice is pinned per session (session headers, Claude Code metadata, `prompt_cache_key` or
+  the prompt prefix) so a conversation never switches models and the upstream prompt cache keeps
+  hitting. Policies work on the Chat Completions, Claude Messages, Responses and Gemini entries,
+  appear in `/v1/models` and the model catalog (marked as auto routing, billed by the target
+  model), and can be used in token and organization allow lists, which are checked against the
+  policy name. The routed request is billed at the answering model's price; the decision call is
+  billed once per session at the decision model's price as its own log entry (a new setting turns
+  this off). Routed responses carry an `X-Modeltaps-Route` header, consume logs record the policy,
+  label, confidence and reason, logs can be filtered by policy, and the Playground shows which
+  model answered. Administrators manage policies under Gateway → Auto routing, with templates and
+  a "Try it" panel that runs only the decision step. See the Auto Routing guide in the docs.
+
 ### Fixed
 
 - Image generation requests keep the `safety_identifier` field when the channel does not pass the

@@ -365,7 +365,8 @@
         "generating": "生成中",
         "firstToken": "首個 token {{value}}",
         "tokensUnit": "tokens",
-        "interrupted": "已中斷"
+        "interrupted": "已中斷",
+        "routedTo": "由 {{model}} 應答"
       },
       "actions": {
         "code": "查看該則程式碼",
@@ -1628,6 +1629,21 @@
         "routingDecisionBilling": "決策呼叫計費",
         "routingDecisionBillingDescription": "自動路由策略的分類呼叫按決策模型價格向呼叫方計費，每個會話一次，單獨記一條日誌。關閉後決策照常進行，但不寫消費日誌。"
       }
+    }
+  },
+  "modelpricePage": {
+    "routing": {
+      "badge": "自動路由",
+      "badgeTitle": "路由策略：每個會話的首條訊息決定由哪個模型應答",
+      "billedByTarget": "按目標模型計費（兜底：{{model}}）",
+      "title": "路由",
+      "intro": "會話的首條用戶訊息會被歸入以下某個標籤，請求交給該標籤對應的模型；置信度低於 {{threshold}}% 或決策失敗時由兜底應答。同一會話的後續輪次保持同一模型。",
+      "label": "標籤",
+      "description": "覆蓋範圍",
+      "target": "模型",
+      "fallback": "兜底",
+      "fallbackDescription": "置信度不足、決策失敗或首條訊息沒有文字",
+      "priceNote": "策略本身沒有價格：每次請求按實際應答模型的價格計費。下表是兜底模型（{{model}}）的價格。"
     }
   }
 }

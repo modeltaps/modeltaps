@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 // 模型回复下方那行常显灰字：「{tokens} tokens · {ms}ms」+ 该条代码 / 复制 / 重跑三个图标。
 // 缺哪个回调就不画哪个图标；数字由本组件加千位分隔，文案（单位、图标 aria-label）走 props。
 // status 给了就在数字前加一个状态标记（如「已中断」），提示这条回复没有正常收完。
+// note 是中性的补充说明（如自动路由实际应答的模型），放在数字前，不带警示色。
 
 export function formatCount(value) {
   if (value == null || Number.isNaN(Number(value))) return null;
@@ -19,6 +20,7 @@ export default function MessageMeta({
   tokensLabel = 'tokens',
   durationLabel = 'ms',
   status,
+  note,
   onViewCode,
   onCopy,
   onRegenerate,
@@ -39,6 +41,7 @@ export default function MessageMeta({
           {status}
         </span>
       )}
+      {note && <span className="inline-flex items-center rounded-md border border-border px-1.5 py-0.5 font-medium">{note}</span>}
       {stats.length > 0 && <span className="tabular-nums">{stats.join(' · ')}</span>}
       {onViewCode && <MetaIcon onClick={onViewCode} label={viewCodeLabel} icon={<Code2 className="size-3.5" />} />}
       {onCopy && <MetaIcon onClick={onCopy} label={copyLabel} icon={<Copy className="size-3.5" />} />}
@@ -69,6 +72,7 @@ MessageMeta.propTypes = {
   tokensLabel: PropTypes.string,
   durationLabel: PropTypes.string,
   status: PropTypes.node,
+  note: PropTypes.node,
   onViewCode: PropTypes.func,
   onCopy: PropTypes.func,
   onRegenerate: PropTypes.func,

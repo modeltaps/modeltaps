@@ -13,6 +13,7 @@ import {
   DollarSign,
   BarChart3,
   Flame,
+  Route,
   Sparkles
 } from 'lucide-react';
 
@@ -81,7 +82,7 @@ const parseJson = (str) => {
   }
 };
 
-export default function ModelDetailModal({ open, onClose, model, provider, modelInfo, priceData, ownedbyIcon, formatPrice }) {
+export default function ModelDetailModal({ open, onClose, model, provider, modelInfo, priceData, ownedbyIcon, formatPrice, routing }) {
   const { t } = useTranslation();
   if (!model) return null;
 
@@ -197,12 +198,57 @@ export default function ModelDetailModal({ open, onClose, model, provider, model
             </div>
           </div>
 
+          {routing && (
+            <div className="mb-5">
+              <div className="mb-3 flex items-center gap-2">
+                <Route className="size-5" />
+                <h3 className="font-semibold">{t('modelpricePage.routing.title')}</h3>
+              </div>
+              <p className="mb-3 text-sm leading-relaxed text-muted-foreground">
+                {t('modelpricePage.routing.intro', { threshold: Math.round((routing.threshold || 0) * 100) })}
+              </p>
+              <div className="overflow-hidden rounded-lg border border-border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/40 hover:bg-muted/40">
+                      <TableHead className="normal-case">{t('modelpricePage.routing.label')}</TableHead>
+                      <TableHead className="normal-case">{t('modelpricePage.routing.description')}</TableHead>
+                      <TableHead className="normal-case">{t('modelpricePage.routing.target')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {routing.routes?.map((route) => (
+                      <TableRow key={route.label}>
+                        <TableCell>
+                          <Pill tone="primary">{route.label}</Pill>
+                        </TableCell>
+                        <TableCell className="whitespace-normal text-sm leading-relaxed text-muted-foreground">{route.description || '—'}</TableCell>
+                        <TableCell className="whitespace-nowrap font-mono text-sm">{route.target_model}</TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow>
+                      <TableCell>
+                        <Pill tone="warning">{t('modelpricePage.routing.fallback')}</Pill>
+                      </TableCell>
+                      <TableCell className="whitespace-normal text-sm leading-relaxed text-muted-foreground">
+                        {t('modelpricePage.routing.fallbackDescription')}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap font-mono text-sm">{routing.fallback_model}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+
           <div className="mb-2">
             <div className="mb-3 flex items-center gap-2">
               <DollarSign className="size-5" />
               <h3 className="font-semibold">{t('modelpricePage.priceDetails')}</h3>
             </div>
-            <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{t('modelpricePage.priceNote')}</p>
+            <p className="mb-3 text-sm leading-relaxed text-muted-foreground">
+              {routing ? t('modelpricePage.routing.priceNote', { model: routing.fallback_model }) : t('modelpricePage.priceNote')}
+            </p>
             <div className="overflow-hidden rounded-lg border border-border">
               <Table>
                 <TableHeader>
@@ -274,6 +320,7 @@ ModelDetailModal.propTypes = {
   provider: PropTypes.string,
   modelInfo: PropTypes.object,
   priceData: PropTypes.object,
+  routing: PropTypes.object,
   ownedbyIcon: PropTypes.string,
   userGroupMap: PropTypes.object,
   formatPrice: PropTypes.func,

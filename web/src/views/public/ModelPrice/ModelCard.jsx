@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { ArrowDown, Copy, Flame } from 'lucide-react';
+import { ArrowDown, Copy, Flame, Route } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import BrandIcon from '@/components/brand/BrandIcon';
@@ -72,7 +72,7 @@ const formatContext = (ctx) => {
   return `${ctx}`;
 };
 
-export default function ModelCard({ model, provider, modelInfo, price, group, ownedbyIcon, type, formatPrice, onViewDetail }) {
+export default function ModelCard({ model, provider, modelInfo, price, group, ownedbyIcon, type, formatPrice, onViewDetail, routing }) {
   const { t } = useTranslation();
   const inputModalities = modelInfo ? parseJson(modelInfo.input_modalities) : [];
   const outputModalities = modelInfo ? parseJson(modelInfo.output_modalities) : [];
@@ -94,6 +94,11 @@ export default function ModelCard({ model, provider, modelInfo, price, group, ow
             <span className="text-sm font-semibold" title={model}>
               {model}
             </span>
+            {routing && (
+              <Pill tone="info" title={t('modelpricePage.routing.badgeTitle')}>
+                <Route className="size-3" /> {t('modelpricePage.routing.badge')}
+              </Pill>
+            )}
             <button
               type="button"
               onClick={(e) => {
@@ -159,12 +164,15 @@ export default function ModelCard({ model, provider, modelInfo, price, group, ow
                 </span>
               </>
             )}
-            {price.unconfigured ? (
+            {routing ? (
               <>
                 <span className="text-border">·</span>
-                <span className="text-amber-600 dark:text-amber-400">
-                  {t('modelpricePage.priceUnconfigured')}
-                </span>
+                <span>{t('modelpricePage.routing.billedByTarget', { model: routing.fallback_model })}</span>
+              </>
+            ) : price.unconfigured ? (
+              <>
+                <span className="text-border">·</span>
+                <span className="text-amber-600 dark:text-amber-400">{t('modelpricePage.priceUnconfigured')}</span>
               </>
             ) : isPriceAvailable ? (
               <>
@@ -211,6 +219,7 @@ ModelCard.propTypes = {
   provider: PropTypes.string.isRequired,
   modelInfo: PropTypes.object,
   price: PropTypes.object.isRequired,
+  routing: PropTypes.object,
   group: PropTypes.object,
   ownedbyIcon: PropTypes.string,
   unit: PropTypes.string,

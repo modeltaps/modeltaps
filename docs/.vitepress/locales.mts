@@ -20,6 +20,7 @@ export interface LocaleText {
     api: string
     reasoning: string
     special: string
+    routing: string
     tokens: string
     organization: string
     billing: string
@@ -62,6 +63,7 @@ export const localeTexts: Record<'root' | 'zh' | 'ja' | 'hk', LocaleText> = {
       api: 'Compatible APIs',
       reasoning: 'Reasoning',
       special: 'Advanced Usage',
+      routing: 'Auto Routing',
       tokens: 'API Keys and Quota',
       organization: 'Organizations',
       billing: 'Billing and Pricing',
@@ -102,6 +104,7 @@ export const localeTexts: Record<'root' | 'zh' | 'ja' | 'hk', LocaleText> = {
       api: '兼容接口',
       reasoning: '推理设置',
       special: '特殊用法',
+      routing: '自动路由',
       tokens: 'API Key 与额度',
       organization: '组织',
       billing: '计费与价格',
@@ -142,6 +145,7 @@ export const localeTexts: Record<'root' | 'zh' | 'ja' | 'hk', LocaleText> = {
       api: '互換 API',
       reasoning: '推論設定',
       special: '特殊な呼び出し',
+      routing: '自動ルーティング',
       tokens: 'API キーとクォータ',
       organization: '組織',
       billing: '料金と価格',
@@ -182,6 +186,7 @@ export const localeTexts: Record<'root' | 'zh' | 'ja' | 'hk', LocaleText> = {
       api: '相容介面',
       reasoning: '推理設定',
       special: '特殊用法',
+      routing: '自動路由',
       tokens: 'API Key 與額度',
       organization: '組織',
       billing: '計費與價格',
@@ -239,7 +244,8 @@ export function sidebarOf(key: LocaleKey): DefaultTheme.SidebarItem[] {
       items: [
         { text: pages.api, link: `${p}/guide/api` },
         { text: pages.reasoning, link: `${p}/guide/reasoning` },
-        { text: pages.special, link: `${p}/guide/special` }
+        { text: pages.special, link: `${p}/guide/special` },
+        { text: pages.routing, link: `${p}/guide/routing` }
       ]
     },
     { text: pages.tokens, link: `${p}/guide/tokens` },

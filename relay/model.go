@@ -1,6 +1,8 @@
 package relay
 
 import (
+	"errors"
+	"fmt"
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
@@ -12,8 +14,6 @@ import (
 	"github.com/modeltaps/modeltaps/providers/minimax"
 	"github.com/modeltaps/modeltaps/providers/openai"
 	"github.com/modeltaps/modeltaps/types"
-	"errors"
-	"fmt"
 	"net/http"
 	"sort"
 	"strings"
@@ -504,7 +504,9 @@ type ModelPrice struct {
 // price.channel_type 保留仅供管理端排障，前端不得据此判断可用性——可用性以本接口是否返回该模型为准。
 type AvailableModelResponse struct {
 	// Kind 非空时标记特殊条目：model.ModelInfoKindRoutingPolicy = 自动路由策略（价格取其兜底模型的）。
-	Kind       string           `json:"kind,omitempty"`
+	Kind string `json:"kind,omitempty"`
+	// Routing 策略的只读摘要（路由表、兜底、阈值），供目录与 Playground 展示；普通模型为 nil。
+	Routing    *RoutingSummary  `json:"routing,omitempty"`
 	Groups     []string         `json:"groups"`
 	OwnedBy    string           `json:"owned_by"`
 	Vendor     *ModelVendor     `json:"vendor"`
@@ -513,6 +515,28 @@ type AvailableModelResponse struct {
 	Price      *model.Price     `json:"price"`
 	TTSVoices  []types.TTSVoice `json:"tts_voices,omitempty"`
 	TTSFormats []string         `json:"tts_formats,omitempty"`
+}
+
+// RoutingSummary 自动路由策略对用户可见的部分：不含决策模型与问题（那是运营配置），只讲「会被路由到哪些模型」。
+type RoutingSummary struct {
+	Routes        []RoutingSummaryRoute `json:"routes"`
+	FallbackModel string                `json:"fallback_model"`
+	Threshold     float64               `json:"threshold"`
+	PinTTLSeconds int                   `json:"pin_ttl_seconds"`
+}
+
+type RoutingSummaryRoute struct {
+	Label       string `json:"label"`
+	Description string `json:"description"`
+	TargetModel string `json:"target_model"`
+}
+
+func routingSummaryOf(policy *model.RoutingPolicy) *RoutingSummary {
+	routes := make([]RoutingSummaryRoute, 0, len(policy.Routes))
+	for _, route := range policy.Routes {
+		routes = append(routes, RoutingSummaryRoute{Label: route.Label, Description: route.Description, TargetModel: route.TargetModel})
+	}
+	return &RoutingSummary{Routes: routes, FallbackModel: policy.FallbackModel, Threshold: policy.Threshold, PinTTLSeconds: policy.PinTTLSeconds}
 }
 
 // ttsFormatsAll 是 OpenAI 原生 /v1/audio/speech 接受的全部 response_format。
@@ -701,6 +725,7 @@ func appendRoutingPolicyAvailableModels(availableModels map[string]*AvailableMod
 		vendor := resolveModelVendor(policy.FallbackModel, price.ChannelType)
 		availableModels[policy.Name] = &AvailableModelResponse{
 			Kind:      model.ModelInfoKindRoutingPolicy,
+			Routing:   routingSummaryOf(policy),
 			Groups:    groups,
 			OwnedBy:   vendor.Name,
 			Vendor:    vendor,

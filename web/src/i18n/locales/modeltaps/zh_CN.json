@@ -365,7 +365,8 @@
         "generating": "生成中",
         "firstToken": "首 token {{value}}",
         "tokensUnit": "tokens",
-        "interrupted": "已中断"
+        "interrupted": "已中断",
+        "routedTo": "由 {{model}} 应答"
       },
       "actions": {
         "code": "查看该条代码",
@@ -1628,6 +1629,21 @@
         "routingDecisionBilling": "决策调用计费",
         "routingDecisionBillingDescription": "自动路由策略的分类调用按决策模型价格向调用方计费，每个会话一次，单独记一条日志。关闭后决策照常进行，但不写消费日志。"
       }
+    }
+  },
+  "modelpricePage": {
+    "routing": {
+      "badge": "自动路由",
+      "badgeTitle": "路由策略：每个会话的首条消息决定由哪个模型应答",
+      "billedByTarget": "按目标模型计费（兜底：{{model}}）",
+      "title": "路由",
+      "intro": "会话的首条用户消息会被归入以下某个标签，请求交给该标签对应的模型；置信度低于 {{threshold}}% 或决策失败时由兜底应答。同一会话的后续轮次保持同一模型。",
+      "label": "标签",
+      "description": "覆盖范围",
+      "target": "模型",
+      "fallback": "兜底",
+      "fallbackDescription": "置信度不足、决策失败或首条消息没有文本",
+      "priceNote": "策略本身没有价格：每次请求按实际应答模型的价格计费。下表是兜底模型（{{model}}）的价格。"
     }
   }
 }

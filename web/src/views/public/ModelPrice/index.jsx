@@ -531,6 +531,7 @@ export default function ModelPrice({ embedded = false, initialModality }) {
           price,
           group: hasAccess ? group : null,
           type: model.price.type,
+          routing: model.routing || null,
           priceData: { price: model.price, allGroupPrices }
         };
       })
@@ -815,6 +816,7 @@ export default function ModelPrice({ embedded = false, initialModality }) {
                     type={model.type}
                     formatPrice={formatPrice}
                     onViewDetail={() => handleViewDetail(model)}
+                    routing={model.routing}
                   />
                 ))}
               </div>
@@ -883,7 +885,14 @@ export default function ModelPrice({ embedded = false, initialModality }) {
                             </div>
                           </TableCell>
                         )}
-                        {columnVisibility.input && (
+                        {columnVisibility.input && model.routing && (
+                          <TableCell colSpan={columnVisibility.output ? 2 : 1}>
+                            <span className="text-xs text-muted-foreground">
+                              {t('modelpricePage.routing.billedByTarget', { model: model.routing.fallback_model })}
+                            </span>
+                          </TableCell>
+                        )}
+                        {columnVisibility.input && !model.routing && (
                           <TableCell>
                             <div className="flex flex-col gap-0.5">
                               {model.priceData.allGroupPrices.map((gp) => (
@@ -900,7 +909,7 @@ export default function ModelPrice({ embedded = false, initialModality }) {
                             </div>
                           </TableCell>
                         )}
-                        {columnVisibility.output && (
+                        {columnVisibility.output && !model.routing && (
                           <TableCell>
                             <div className="flex flex-col gap-0.5">
                               {model.priceData.allGroupPrices.map((gp) => (
@@ -915,6 +924,13 @@ export default function ModelPrice({ embedded = false, initialModality }) {
                                 </div>
                               ))}
                             </div>
+                          </TableCell>
+                        )}
+                        {columnVisibility.output && !columnVisibility.input && model.routing && (
+                          <TableCell>
+                            <span className="text-xs text-muted-foreground">
+                              {t('modelpricePage.routing.billedByTarget', { model: model.routing.fallback_model })}
+                            </span>
                           </TableCell>
                         )}
                         {columnVisibility.action && (
@@ -991,6 +1007,7 @@ export default function ModelPrice({ embedded = false, initialModality }) {
         provider={selectedModelDetail?.provider}
         modelInfo={selectedModelDetail?.modelInfo}
         priceData={selectedModelDetail?.priceData}
+        routing={selectedModelDetail?.routing}
         ownedbyIcon={selectedModelDetail ? getIconByName(selectedModelDetail.provider) : null}
         userGroupMap={userGroupMap}
         formatPrice={formatPrice}
