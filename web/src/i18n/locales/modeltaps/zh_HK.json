@@ -1530,7 +1530,9 @@
       "routes": "路由",
       "fallback": "兜底",
       "threshold": "閾值",
-      "enabled": "啟用"
+      "enabled": "啟用",
+      "week": "近 7 天",
+      "fallbackRate": "兜底 {{rate}}%"
     },
     "form": {
       "tabBasic": "基礎",
@@ -1581,7 +1583,8 @@
         "decision_model": "請選擇決策模型",
         "fallback_model": "請選擇兜底模型",
         "routes": "至少兩條路由，每條都要有標籤和目標模型"
-      }
+      },
+      "tabStats": "統計"
     },
     "templates": {
       "coding_change_size": "編碼：改動大小",
@@ -1601,7 +1604,10 @@
       "label": "標籤",
       "confidence": "置信度",
       "target": "將路由到",
-      "latency": "決策耗時"
+      "latency": "決策耗時",
+      "loadSamples": "從日誌裏挑一條真實首條訊息",
+      "loadingSamples": "載入中…",
+      "noSamples": "還沒有留存了請求體的被路由請求。開啟請求明細記錄後才會有樣本。"
     },
     "reasons": {
       "classified": "已分類",
@@ -1609,6 +1615,26 @@
       "below_threshold": "低於閾值",
       "decision_error": "決策失敗",
       "empty_input": "無文字"
+    },
+    "stats": {
+      "saveFirst": "先儲存策略，統計來自它的日誌。",
+      "intro": "來自經這條策略路由的請求的消費日誌。",
+      "days": "{{days}} 天",
+      "empty": "近 {{days}} 天沒有經這條策略路由的請求。",
+      "requests": "請求數",
+      "fallbackRate": "兜底佔比",
+      "fallbackCount": "{{count}} 條由兜底應答",
+      "avgDecision": "平均決策耗時",
+      "decisionCalls": "{{count}} 次決策呼叫，{{quota}}",
+      "saved": "估算節省",
+      "savedHint": "實際 {{actual}}，若全部走 {{model}} 為 {{fallback}}，再減去決策呼叫",
+      "noFallbackPrice": "{{model}} 沒有設定價格，無法估算節省",
+      "byReason": "按原因",
+      "label": "標籤",
+      "target": "模型",
+      "share": "佔比",
+      "quota": "花費",
+      "noLabel": "兜底"
     }
   },
   "logPage": {

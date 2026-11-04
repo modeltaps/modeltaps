@@ -33,6 +33,17 @@ export async function deleteRoutingPolicy(id) {
   return res.data;
 }
 
+// 策略效果统计（近 7 / 30 天）与可回放的真实首条消息样本（需要开了请求明细留存）。
+export async function getRoutingPolicyStats(id, days = 7) {
+  const res = await API.get(`${BASE}${id}/stats`, { params: { days } });
+  return res.data;
+}
+
+export async function getRoutingPolicySamples(id, limit = 20) {
+  const res = await API.get(`${BASE}${id}/samples`, { params: { limit } });
+  return res.data;
+}
+
 // 「试一试」：对一份（可能未保存的）策略草稿与一段首条消息，用若干候选决策模型各跑一次分类。
 export async function tryRoutingPolicy({ policy, text, decisionModels }) {
   const res = await API.post(`${BASE}try`, { policy, text, decision_models: decisionModels });

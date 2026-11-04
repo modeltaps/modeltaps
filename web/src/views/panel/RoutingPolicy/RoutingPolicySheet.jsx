@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { showError, showSuccess } from 'utils/common';
 import RoutesEditor, { MIN_ROUTES } from './RoutesEditor';
 import TryItPanel from './TryItPanel';
+import StatsPanel from './StatsPanel';
 import { POLICY_TEMPLATES, applyTemplate } from './templates';
 import {
   EMPTY_POLICY,
@@ -143,6 +144,7 @@ export default function RoutingPolicySheet({ open, policyId, onClose, onSaved })
               <TabsTrigger value="basic">{t('routingPolicy.form.tabBasic')}</TabsTrigger>
               <TabsTrigger value="advanced">{t('routingPolicy.form.tabAdvanced')}</TabsTrigger>
               <TabsTrigger value="try">{t('routingPolicy.form.tabTry')}</TabsTrigger>
+              {isEdit && <TabsTrigger value="stats">{t('routingPolicy.form.tabStats')}</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="basic" className="space-y-5">
@@ -252,8 +254,14 @@ export default function RoutingPolicySheet({ open, policyId, onClose, onSaved })
             </TabsContent>
 
             <TabsContent value="try">
-              <TryItPanel policy={normalized} modelOptions={modelOptions} />
+              <TryItPanel policy={normalized} policyId={isEdit ? policyId : 0} modelOptions={modelOptions} />
             </TabsContent>
+
+            {isEdit && (
+              <TabsContent value="stats">
+                <StatsPanel policyId={policyId} fallbackModel={normalized.fallback_model} />
+              </TabsContent>
+            )}
           </Tabs>
         </SheetBody>
         <SheetFooter>

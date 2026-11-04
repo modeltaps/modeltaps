@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   label, confidence and reason, logs can be filtered by policy, and the Playground shows which
   model answered. Administrators manage policies under Gateway → Auto routing, with templates and
   a "Try it" panel that runs only the decision step. See the Auto Routing guide in the docs.
+- Each routing policy shows its effect over the last 7 or 30 days, from the consume logs: requests
+  by decision reason, hits per label with the model and spend, the fallback share, the average
+  decision time, what the decision calls cost, and the estimated savings against sending everything
+  to the fallback model. The policy list shows the 7-day request count and fallback share, and
+  "Try it" can replay a real first message from the logs when request detail logging is on.
 
 ## [0.3.0] - 2026-11-04
 

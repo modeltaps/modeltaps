@@ -1592,7 +1592,9 @@
       "routes": "Routes",
       "fallback": "Fallback",
       "threshold": "Threshold",
-      "enabled": "Enabled"
+      "enabled": "Enabled",
+      "week": "Last 7 days",
+      "fallbackRate": "{{rate}}% fallback"
     },
     "form": {
       "tabBasic": "Basics",
@@ -1643,7 +1645,8 @@
         "decision_model": "Decision model is required",
         "fallback_model": "Fallback model is required",
         "routes": "At least two routes, each with a label and a target model"
-      }
+      },
+      "tabStats": "Statistics"
     },
     "templates": {
       "coding_change_size": "Coding: size of change",
@@ -1663,7 +1666,10 @@
       "label": "Label",
       "confidence": "Confidence",
       "target": "Would route to",
-      "latency": "Decision time"
+      "latency": "Decision time",
+      "loadSamples": "Pick a real first message from the logs",
+      "loadingSamples": "Loading…",
+      "noSamples": "No routed requests with a stored request body yet. Turn on request detail logging to collect samples."
     },
     "reasons": {
       "classified": "Classified",
@@ -1671,6 +1677,26 @@
       "below_threshold": "Below threshold",
       "decision_error": "Decision failed",
       "empty_input": "No text"
+    },
+    "stats": {
+      "saveFirst": "Save the policy first; statistics come from its logs.",
+      "intro": "From the consume logs of requests routed by this policy.",
+      "days": "{{days}} days",
+      "empty": "No requests routed by this policy in the last {{days}} days.",
+      "requests": "Requests",
+      "fallbackRate": "Fallback rate",
+      "fallbackCount": "{{count}} answered by the fallback",
+      "avgDecision": "Avg. decision time",
+      "decisionCalls": "{{count}} decision calls, {{quota}}",
+      "saved": "Estimated savings",
+      "savedHint": "Actual {{actual}} vs {{fallback}} if everything had gone to {{model}}, minus decision calls",
+      "noFallbackPrice": "No price configured for {{model}}, so savings cannot be estimated",
+      "byReason": "By reason",
+      "label": "Label",
+      "target": "Model",
+      "share": "Share",
+      "quota": "Spent",
+      "noLabel": "fallback"
     }
   },
   "logPage": {

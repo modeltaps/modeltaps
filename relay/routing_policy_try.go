@@ -4,6 +4,7 @@ package relay
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/model"
@@ -84,5 +85,58 @@ func TryRoutingPolicyHandler(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data":    results,
+	})
+}
+
+// routingPolicySample 「试一试」可回放的真实样本：从留存的请求明细里取出首条用户消息。
+type routingPolicySample struct {
+	LogId       int     `json:"log_id"`
+	CreatedAt   int64   `json:"created_at"`
+	RequestId   string  `json:"request_id"`
+	Label       string  `json:"label"`
+	Reason      string  `json:"reason"`
+	TargetModel string  `json:"target_model"`
+	Confidence  float64 `json:"confidence"`
+	Text        string  `json:"text"`
+}
+
+// routingPolicySamplePreviewChars 回放样本的首条消息长度上限；再长对调参没有帮助。
+const routingPolicySamplePreviewChars = 4000
+
+// RoutingPolicySamplesHandler 返回最近被该策略路由、且留存了请求明细的日志，附首条用户消息文本。
+// 没开请求明细留存时为空列表，前端据此提示。
+func RoutingPolicySamplesHandler(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeInvalidParams, "invalid routing policy id", nil)
+		return
+	}
+	policy, err := model.GetRoutingPolicyById(id)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusNotFound, err)
+		return
+	}
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	rows, err := model.GetRoutingPolicyLogSamples(policy.Name, limit)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusInternalServerError, err)
+		return
+	}
+	samples := make([]routingPolicySample, 0, len(rows))
+	for _, row := range rows {
+		text := firstUserMessageText([]byte(row.RequestBody), routingPolicySamplePreviewChars)
+		if text == "" {
+			continue
+		}
+		samples = append(samples, routingPolicySample{
+			LogId: row.LogId, CreatedAt: row.CreatedAt, RequestId: row.RequestId,
+			Label: row.Label, Reason: row.Reason, TargetModel: row.TargetModel, Confidence: row.Confidence,
+			Text: text,
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    samples,
 	})
 }
