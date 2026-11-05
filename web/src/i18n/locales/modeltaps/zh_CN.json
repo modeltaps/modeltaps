@@ -1614,7 +1614,8 @@
       "pinned": "会话固定",
       "below_threshold": "低于阈值",
       "decision_error": "决策失败",
-      "empty_input": "无文本"
+      "empty_input": "无文本",
+      "auxiliary": "Agent 旁路请求"
     },
     "stats": {
       "saveFirst": "先保存策略，统计来自它的日志。",

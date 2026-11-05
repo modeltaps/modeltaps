@@ -1676,7 +1676,8 @@
       "pinned": "Pinned session",
       "below_threshold": "Below threshold",
       "decision_error": "Decision failed",
-      "empty_input": "No text"
+      "empty_input": "No text",
+      "auxiliary": "Agent side request"
     },
     "stats": {
       "saveFirst": "Save the policy first; statistics come from its logs.",

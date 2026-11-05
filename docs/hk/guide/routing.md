@@ -38,12 +38,13 @@ X-Modeltaps-Route: policy=auto/coder; label=additive; model=claude-haiku-5-5; co
 | `below_threshold` | 選中了標籤但置信度不夠，由兜底模型應答。 |
 | `decision_error` | 決策呼叫失敗、逾時或回答了未知標籤，由兜底模型應答。 |
 | `empty_input` | 首條用戶訊息沒有文字（例如只有圖片），由兜底模型應答。 |
+| `auxiliary` | 會話還沒路由時先到了 Claude Code 的旁路請求（例如生成會話標題），由兜底模型應答，不做決策。 |
 
 對策略的請求不會因為路由而被拒絕：只要決策做不出來，就由兜底模型應答。
 
 ## 會話
 
-決策每個會話只做一次，後續輪次直接複用，所以長對話不會中途換模型，上游的提示快取也能持續命中。會話按以下順序識別：會話標頭（`session_id`、`x-session-id`）、Claude Code 放在 `metadata.user_id` 裏的會話、OpenAI 的 `prompt_cache_key`、提示前綴（系統提示加首條用戶訊息）。要把一段對話穩定在一個模型上，最可靠的做法是帶一個固定的會話 id；換一個 id 就是一次新決策。
+決策每個會話只做一次，後續輪次直接複用，所以長對話不會中途換模型，上游的提示快取也能持續命中。會話按以下順序識別：Claude Code 放在 `metadata.user_id` 裏的會話、會話標頭（`session_id`、`session-id`、`x-session-id`、`x-claude-code-session-id`）、OpenAI 的 `prompt_cache_key`、提示前綴（系統提示加首條用戶訊息）。要把一段對話穩定在一個模型上，最可靠的做法是帶一個固定的會話 id；換一個 id 就是一次新決策。只有真正分類出的結果才會固定：`decision_error` 或 `empty_input` 走兜底後，下一輪會重新分類，決策模型短暫故障不會讓新會話一直停在兜底模型上。
 
 會話固定多久由管理員按策略設定（預設一小時）。
 
@@ -52,7 +53,7 @@ X-Modeltaps-Route: policy=auto/coder; label=additive; model=claude-haiku-5-5; co
 **Claude Code**
 
 ```bash
-export ANTHROPIC_BASE_URL=https://your-modeltaps-domain.com
+export ANTHROPIC_BASE_URL=https://your-modeltaps-domain.com/claude
 export ANTHROPIC_AUTH_TOKEN=sk-proj-1234567890
 export ANTHROPIC_MODEL=auto/coder
 claude
@@ -66,7 +67,7 @@ model = "auto/coder"
 
 **Cursor 及其他 OpenAI 相容客戶端**：把閘道新增為 OpenAI 相容端點，自訂模型名填 `auto/coder`。
 
-Claude Code 會話的首條訊息裏常有 Agent 注入的 `<system-reminder>` 區塊，閘道在分類前會去掉它們，決策只看你實際輸入的內容。
+編碼 Agent 會往對話裏加自己的上下文：Claude Code 在首條訊息裏放 `<system-reminder>` 區塊，Codex 把 `<environment_context>` 和你的 `AGENTS.md` 指令作為單獨一條訊息放在你的輸入前面。閘道會去掉這些區塊，並跳過只含這些內容的訊息，決策只看你實際輸入的內容。Claude Code 還會用同一個模型發旁路請求，例如生成會話標題；這類請求不帶工具，不參與分類：會話路由之前走兜底模型，之後跟隨會話。
 
 ## 計費與日誌
 

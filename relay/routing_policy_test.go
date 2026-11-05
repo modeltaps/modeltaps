@@ -32,6 +32,9 @@ func TestFirstUserMessageText(t *testing.T) {
 		{"gemini without role", `{"contents":[{"parts":[{"text":"hello"}]}]}`, "hello"},
 		{"completions prompt", `{"model":"x","prompt":"once upon"}`, "once upon"},
 		{"system reminder stripped", `{"messages":[{"role":"user","content":"<system-reminder>\nlong template\n</system-reminder>\nrename variable <system-reminder>x</system-reminder>"}]}`, "rename variable"},
+		{"codex context message skipped", `{"input":[{"type":"message","role":"developer","content":[{"type":"input_text","text":"You are a coding agent"}]},{"type":"message","role":"user","content":[{"type":"input_text","text":"# AGENTS.md instructions for /repo\n\n<INSTRUCTIONS>\nUse tabs.\n\n</INSTRUCTIONS>"},{"type":"input_text","text":"<environment_context>\n  <cwd>/repo</cwd>\n</environment_context>"}]},{"type":"message","role":"user","content":[{"type":"input_text","text":"refactor the parser"}]}]}`, "refactor the parser"},
+		{"codex user instructions stripped", `{"input":[{"role":"user","content":"<user_instructions>\nbe brief\n</user_instructions>\nadd a test"}]}`, "add a test"},
+		{"reminder-only message skipped", `{"messages":[{"role":"user","content":[{"type":"text","text":"<system-reminder>\nctx\n</system-reminder>"}]},{"role":"user","content":"fix the login"}]}`, "fix the login"},
 		{"no user text", `{"messages":[{"role":"user","content":[{"type":"image_url","image_url":{"url":"u"}}]}]}`, ""},
 		{"invalid json", `{not json`, ""},
 		{"empty", ``, ""},
@@ -293,6 +296,100 @@ func TestResolveRoutingPolicy_PinsSession(t *testing.T) {
 	}
 	if d := decisionOf(t, c4); d.Reason != RoutingReasonClassified {
 		t.Fatalf("重分类原因不对: %+v", d)
+	}
+}
+
+// claudeCodeBody 构造 Claude Code 形状的请求体：metadata.user_id 带会话，主循环带 tools，旁路请求不带。
+func claudeCodeBody(sessionID, text string, withTools bool) string {
+	tools := ""
+	if withTools {
+		tools = `,"tools":[{"name":"Bash","input_schema":{"type":"object"}}]`
+	}
+	return `{"model":"auto/cc","metadata":{"user_id":"{\"device_id\":\"d\",\"account_uuid\":\"\",\"session_id\":\"` + sessionID + `\"}"},"messages":[{"role":"user","content":[{"type":"text","text":"` + text + `"}]}]` + tools + `}`
+}
+
+// TestIsAgentAuxiliaryRequest 只有带 Claude Code 会话、且没有工具的请求算旁路请求
+func TestIsAgentAuxiliaryRequest(t *testing.T) {
+	cases := []struct {
+		name string
+		body string
+		want bool
+	}{
+		{"claude code title request", claudeCodeBody("s1", "write a title", false), true},
+		{"claude code empty tools", strings.Replace(claudeCodeBody("s1", "x", false), `]}]}`, `]}],"tools":[]}`, 1), true},
+		{"claude code agent turn", claudeCodeBody("s1", "refactor", true), false},
+		{"plain chat without metadata", routingBody, false},
+		{"metadata without session", `{"metadata":{"user_id":"user-42"},"messages":[{"role":"user","content":"hi"}]}`, false},
+		{"invalid json", `{not json`, false},
+	}
+	for _, tc := range cases {
+		if got := isAgentAuxiliaryRequest([]byte(tc.body)); got != tc.want {
+			t.Fatalf("%s: 期望 %v，实际 %v", tc.name, tc.want, got)
+		}
+	}
+}
+
+// TestResolveRoutingPolicy_AuxiliaryRequestDoesNotPin Claude Code 的标题请求先到时走兜底、不分类、不固定；
+// 随后的主循环请求按用户的话分类并固定；之后的旁路请求跟随固定结果
+func TestResolveRoutingPolicy_AuxiliaryRequestDoesNotPin(t *testing.T) {
+	calls, setResult := setupRoutingResolveTest(t, testPolicy("auto/cc", 3600))
+	setResult("small", 0.9, nil)
+
+	title := newRoutingRequest("", claudeCodeBody("cc-sess", "<session>refactor everything</session> Write the title", false))
+	if got := resolveRoutingPolicy(title, "auto/cc"); got != "fallback-model" {
+		t.Fatalf("会话未固定时旁路请求应走兜底，实际 %s", got)
+	}
+	if d := decisionOf(t, title); d.Reason != RoutingReasonAuxiliary {
+		t.Fatalf("旁路请求原因不对: %+v", d)
+	}
+	if *calls != 0 {
+		t.Fatalf("旁路请求不应分类，实际 %d 次", *calls)
+	}
+
+	setResult("large", 0.9, nil)
+	turn := newRoutingRequest("", claudeCodeBody("cc-sess", "refactor everything", true))
+	if got := resolveRoutingPolicy(turn, "auto/cc"); got != "big-model" {
+		t.Fatalf("主循环请求应按自己的分类走 big-model，实际 %s", got)
+	}
+	if d := decisionOf(t, turn); d.Reason != RoutingReasonClassified {
+		t.Fatalf("主循环请求应是 classified: %+v", d)
+	}
+
+	later := newRoutingRequest("", claudeCodeBody("cc-sess", "summarize", false))
+	if got := resolveRoutingPolicy(later, "auto/cc"); got != "big-model" {
+		t.Fatalf("会话固定后旁路请求应跟随固定目标，实际 %s", got)
+	}
+	if d := decisionOf(t, later); d.Reason != RoutingReasonPinned {
+		t.Fatalf("应命中固定记录: %+v", d)
+	}
+	if *calls != 1 {
+		t.Fatalf("只应分类一次，实际 %d 次", *calls)
+	}
+}
+
+// TestResolveRoutingPolicy_ErrorFallbackNotPinned 决策失败走兜底但不固定，下一轮重新分类
+func TestResolveRoutingPolicy_ErrorFallbackNotPinned(t *testing.T) {
+	calls, setResult := setupRoutingResolveTest(t, testPolicy("auto/err", 3600))
+
+	setResult("", 0, errors.New("timeout"))
+	c1 := newRoutingRequest("sess-err", routingBody)
+	if got := resolveRoutingPolicy(c1, "auto/err"); got != "fallback-model" {
+		t.Fatalf("出错应走兜底，实际 %s", got)
+	}
+
+	setResult("small", 0.9, nil)
+	c2 := newRoutingRequest("sess-err", routingBody)
+	if got := resolveRoutingPolicy(c2, "auto/err"); got != "cheap-model" {
+		t.Fatalf("出错的兜底不应固定，下一轮应重新分类到 cheap-model，实际 %s", got)
+	}
+	if d := decisionOf(t, c2); d.Reason != RoutingReasonClassified || *calls != 2 {
+		t.Fatalf("应重新分类: %+v calls=%d", d, *calls)
+	}
+
+	setResult("large", 0.9, nil)
+	c3 := newRoutingRequest("sess-err", routingBody)
+	if got := resolveRoutingPolicy(c3, "auto/err"); got != "cheap-model" {
+		t.Fatalf("成功分类后应固定，实际 %s", got)
 	}
 }
 

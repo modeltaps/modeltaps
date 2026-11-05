@@ -19,6 +19,7 @@ const (
 	RoutingReasonBelowThreshold = "below_threshold" // 分类成功但最高概率低于阈值
 	RoutingReasonDecisionError  = "decision_error"  // 决策调用失败 / 超时 / 答非所问
 	RoutingReasonEmptyInput     = "empty_input"     // 首条用户消息没有文本
+	RoutingReasonAuxiliary      = "auxiliary"       // 编码 Agent 的旁路请求（如 Claude Code 生成标题），会话还没固定时直接走兜底
 )
 
 // RoutingDecisionContextKey gin context 里本次请求的决策结果（*RoutingDecision）。

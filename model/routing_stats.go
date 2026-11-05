@@ -46,7 +46,7 @@ type RoutingLabelStat struct {
 type RoutingPolicyStats struct {
 	Days     int   `json:"days"`
 	Requests int64 `json:"requests"`
-	// ByReason 按决策原因计数（classified / pinned / below_threshold / decision_error / empty_input）。
+	// ByReason 按决策原因计数（classified / pinned / below_threshold / decision_error / empty_input / auxiliary）。
 	ByReason map[string]int64 `json:"by_reason"`
 	// FallbackRequests 实际由兜底应答的请求：没有标签的那些（低于阈值、决策失败、空输入，以及固定住的兜底）。
 	FallbackRequests int64              `json:"fallback_requests"`
