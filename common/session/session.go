@@ -3,6 +3,7 @@ package session
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"regexp"
 	"strings"
 
@@ -17,6 +18,17 @@ var sessionIDPattern = regexp.MustCompile(`session_([a-f0-9-]{36})`)
 func ExtractSessionIDFromMetadata(userID string) string {
 	if userID == "" {
 		return ""
+	}
+	// Current Claude Code sends the object format JSON-encoded inside the string:
+	// "{\"device_id\":...,\"account_uuid\":...,\"session_id\":\"<uuid>\"}".
+	if trimmed := strings.TrimSpace(userID); strings.HasPrefix(trimmed, "{") {
+		var object map[string]interface{}
+		if json.Unmarshal([]byte(trimmed), &object) == nil {
+			if sid, ok := object["session_id"].(string); ok {
+				return strings.TrimSpace(sid)
+			}
+			return ""
+		}
 	}
 	matches := sessionIDPattern.FindStringSubmatch(userID)
 	if len(matches) > 1 {

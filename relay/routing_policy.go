@@ -36,6 +36,7 @@ const (
 	RoutingReasonBelowThreshold = relay_util.RoutingReasonBelowThreshold
 	RoutingReasonDecisionError  = relay_util.RoutingReasonDecisionError
 	RoutingReasonEmptyInput     = relay_util.RoutingReasonEmptyInput
+	RoutingReasonAuxiliary      = relay_util.RoutingReasonAuxiliary
 	RoutingDecisionContextKey   = relay_util.RoutingDecisionContextKey
 )
 
@@ -102,9 +103,17 @@ func decideRoute(c *gin.Context, policy *model.RoutingPolicy) *RoutingDecision {
 		}
 	}
 
+	// 旁路请求（Claude Code 生成标题等）与会话首轮并发、常常先到；它的首条消息是 Agent 的模板，
+	// 拿去分类会把整个会话固定错。会话已固定时上面已跟随固定结果，这里不分类、不写固定记录。
+	if isAgentAuxiliaryRequest(requestBody(c)) {
+		return &RoutingDecision{Policy: policy.Name, TargetModel: policy.FallbackModel, Reason: RoutingReasonAuxiliary}
+	}
+
 	decision := classifyRequest(c, policy)
 
-	if pinTTL > 0 && sessionHash != "" {
+	// 只固定真正分类出来的结果。决策失败或没有文本时的兜底不固定：决策模型短暂故障时，
+	// 新会话不该在整个固定时长里都停在兜底上，下一轮重新分类。
+	if pinTTL > 0 && sessionHash != "" && decisionIsPinnable(decision) {
 		pin := model.RoutingPin{Label: decision.Label, TargetModel: decision.TargetModel}
 		bound, err := model.BindRoutingPin(sessionHash, pin, pinTTL)
 		if err != nil {
@@ -115,6 +124,19 @@ func decideRoute(c *gin.Context, policy *model.RoutingPolicy) *RoutingDecision {
 		}
 	}
 	return decision
+}
+
+// decisionIsPinnable 分类成功（含低于阈值走兜底）的决策才写固定记录。
+func decisionIsPinnable(decision *RoutingDecision) bool {
+	return decision.Reason == RoutingReasonClassified || decision.Reason == RoutingReasonBelowThreshold
+}
+
+func requestBody(c *gin.Context) []byte {
+	if raw, ok := c.Get(config.GinRequestBodyKey); ok {
+		body, _ := raw.([]byte)
+		return body
+	}
+	return nil
 }
 
 // policyHasTarget 判断固定记录是否仍对应策略里的一条路由（或兜底）。
@@ -133,11 +155,7 @@ func policyHasTarget(policy *model.RoutingPolicy, label, target string) bool {
 func classifyRequest(c *gin.Context, policy *model.RoutingPolicy) *RoutingDecision {
 	decision := &RoutingDecision{Policy: policy.Name, TargetModel: policy.FallbackModel}
 
-	var body []byte
-	if raw, ok := c.Get(config.GinRequestBodyKey); ok {
-		body, _ = raw.([]byte)
-	}
-	text := firstUserMessageText(body, policy.MaxInputChars)
+	text := firstUserMessageText(requestBody(c), policy.MaxInputChars)
 	if text == "" {
 		decision.Reason = RoutingReasonEmptyInput
 		return decision
@@ -248,14 +266,7 @@ func tryRoutingPolicy(c *gin.Context, policy *model.RoutingPolicy, text string) 
 
 // firstUserMessageTextFromPlain 对已经是纯文本的输入做与请求路径相同的清理与截断。
 func firstUserMessageTextFromPlain(text string, maxChars int) string {
-	text = systemReminderPattern.ReplaceAllString(text, "")
-	text = strings.TrimSpace(text)
-	if maxChars > 0 {
-		if runes := []rune(text); len(runes) > maxChars {
-			text = string(runes[:maxChars])
-		}
-	}
-	return text
+	return truncateRunes(stripAgentContext(text), maxChars)
 }
 
 // applyClassifyResult 把分类结果按阈值落到决策上：出错 / 未知标签 → decision_error，低于阈值 → below_threshold。

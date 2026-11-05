@@ -1614,7 +1614,8 @@
       "pinned": "セッション固定",
       "below_threshold": "しきい値未満",
       "decision_error": "判定失敗",
-      "empty_input": "テキストなし"
+      "empty_input": "テキストなし",
+      "auxiliary": "エージェントの補助リクエスト"
     },
     "stats": {
       "saveFirst": "まずポリシーを保存してください。統計はそのログから集計します。",

@@ -38,12 +38,13 @@ X-Modeltaps-Route: policy=auto/coder; label=additive; model=claude-haiku-5-5; co
 | `below_threshold` | A label was picked but with too little confidence; the fallback model answered. |
 | `decision_error` | The decision call failed, timed out or answered with an unknown label; the fallback model answered. |
 | `empty_input` | The first user message had no text (for example only an image); the fallback model answered. |
+| `auxiliary` | A Claude Code side request (such as generating the session title) arrived before the session was routed; the fallback model answered and no decision was made. |
 
 A request to a policy is never rejected because of routing: whenever the decision cannot be made, the fallback model answers.
 
 ## Sessions
 
-The decision is made once per session and reused for later turns, so a long conversation never switches models halfway and the upstream prompt cache keeps working. A session is recognised, in this order, by a session header (`session_id`, `x-session-id`), the Claude Code session in `metadata.user_id`, the OpenAI `prompt_cache_key`, or the prompt prefix (system prompt plus first user message). Sending a stable session id is the most reliable way to keep a conversation on one model; a new id starts a new decision.
+The decision is made once per session and reused for later turns, so a long conversation never switches models halfway and the upstream prompt cache keeps working. A session is recognised, in this order, by the Claude Code session in `metadata.user_id`, a session header (`session_id`, `session-id`, `x-session-id`, `x-claude-code-session-id`), the OpenAI `prompt_cache_key`, or the prompt prefix (system prompt plus first user message). Sending a stable session id is the most reliable way to keep a conversation on one model; a new id starts a new decision. Only a real classification is pinned: after a `decision_error` or `empty_input` fallback the next turn is classified again, so a brief outage of the decision model does not hold new sessions on the fallback model.
 
 How long a session stays pinned is set per policy by the administrator (one hour by default).
 
@@ -52,7 +53,7 @@ How long a session stays pinned is set per policy by the administrator (one hour
 **Claude Code**
 
 ```bash
-export ANTHROPIC_BASE_URL=https://your-modeltaps-domain.com
+export ANTHROPIC_BASE_URL=https://your-modeltaps-domain.com/claude
 export ANTHROPIC_AUTH_TOKEN=sk-proj-1234567890
 export ANTHROPIC_MODEL=auto/coder
 claude
@@ -66,7 +67,7 @@ model = "auto/coder"
 
 **Cursor and other OpenAI-compatible clients** — add the gateway as an OpenAI-compatible endpoint and enter `auto/coder` as a custom model name.
 
-Inside a Claude Code session the first message often contains agent-injected `<system-reminder>` blocks; the gateway strips them before classification, so the decision is based on what you actually typed.
+Coding agents add their own context to the conversation: Claude Code puts `<system-reminder>` blocks into the first message, and Codex sends `<environment_context>` and your `AGENTS.md` instructions as a separate message ahead of your prompt. The gateway strips these blocks and skips messages that contain nothing else, so the decision is based on what you actually typed. Claude Code also sends side requests with the same model, such as generating the session title; they carry no tools and are not classified. Before the session is routed they go to the fallback model; after that they follow the session.
 
 ## Billing and logs
 

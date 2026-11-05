@@ -1614,7 +1614,8 @@
       "pinned": "會話固定",
       "below_threshold": "低於閾值",
       "decision_error": "決策失敗",
-      "empty_input": "無文字"
+      "empty_input": "無文字",
+      "auxiliary": "Agent 旁路請求"
     },
     "stats": {
       "saveFirst": "先儲存策略，統計來自它的日誌。",

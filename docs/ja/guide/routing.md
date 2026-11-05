@@ -38,12 +38,13 @@ X-Modeltaps-Route: policy=auto/coder; label=additive; model=claude-haiku-5-5; co
 | `below_threshold` | ラベルは選ばれたものの確信度が足りず、フォールバックモデルが応答しました。 |
 | `decision_error` | 判定呼び出しが失敗・タイムアウトした、または未知のラベルを返したため、フォールバックモデルが応答しました。 |
 | `empty_input` | 最初のユーザーメッセージにテキストがなく（画像のみなど）、フォールバックモデルが応答しました。 |
+| `auxiliary` | セッションのルーティング前に Claude Code の補助リクエスト（セッションタイトルの生成など）が届いたため、判定は行わずフォールバックモデルが応答しました。 |
 
 ポリシーへのリクエストがルーティングを理由に拒否されることはありません。判定ができないときは常にフォールバックモデルが応答します。
 
 ## セッション
 
-判定はセッションごとに 1 回行われ、後続のターンで再利用されます。そのため長い会話の途中でモデルが切り替わることはなく、上流のプロンプトキャッシュも効き続けます。セッションは次の順で識別されます: セッションヘッダー（`session_id`、`x-session-id`）、`metadata.user_id` にある Claude Code のセッション、OpenAI の `prompt_cache_key`、プロンプト接頭辞（システムプロンプトと最初のユーザーメッセージ）。会話を 1 つのモデルに固定する最も確実な方法は、安定したセッション ID を送ることです。新しい ID は新しい判定を開始します。
+判定はセッションごとに 1 回行われ、後続のターンで再利用されます。そのため長い会話の途中でモデルが切り替わることはなく、上流のプロンプトキャッシュも効き続けます。セッションは次の順で識別されます: `metadata.user_id` にある Claude Code のセッション、セッションヘッダー（`session_id`、`session-id`、`x-session-id`、`x-claude-code-session-id`）、OpenAI の `prompt_cache_key`、プロンプト接頭辞（システムプロンプトと最初のユーザーメッセージ）。会話を 1 つのモデルに固定する最も確実な方法は、安定したセッション ID を送ることです。新しい ID は新しい判定を開始します。固定されるのは実際に分類できた結果だけです。`decision_error` や `empty_input` でフォールバックした場合は次のターンで改めて分類するので、判定モデルが一時的に落ちても新しいセッションがフォールバックモデルに留まり続けることはありません。
 
 セッションを固定する時間はポリシーごとに管理者が設定します（既定は 1 時間）。
 
@@ -52,7 +53,7 @@ X-Modeltaps-Route: policy=auto/coder; label=additive; model=claude-haiku-5-5; co
 **Claude Code**
 
 ```bash
-export ANTHROPIC_BASE_URL=https://your-modeltaps-domain.com
+export ANTHROPIC_BASE_URL=https://your-modeltaps-domain.com/claude
 export ANTHROPIC_AUTH_TOKEN=sk-proj-1234567890
 export ANTHROPIC_MODEL=auto/coder
 claude
@@ -66,7 +67,7 @@ model = "auto/coder"
 
 **Cursor などの OpenAI 互換クライアント** — ゲートウェイを OpenAI 互換エンドポイントとして追加し、カスタムモデル名に `auto/coder` を入力します。
 
-Claude Code のセッションでは最初のメッセージにエージェントが挿入した `<system-reminder>` ブロックが含まれることがよくあります。ゲートウェイは分類前にそれらを取り除くので、判定は実際に入力した内容に基づきます。
+コーディングエージェントは会話に独自のコンテキストを加えます。Claude Code は最初のメッセージに `<system-reminder>` ブロックを入れ、Codex は `<environment_context>` と `AGENTS.md` の指示を入力より前の別メッセージとして送ります。ゲートウェイはこれらのブロックを取り除き、それしか含まないメッセージは飛ばすので、判定は実際に入力した内容に基づきます。Claude Code は同じモデルでセッションタイトルの生成などの補助リクエストも送ります。これらはツールを持たず分類されません。セッションのルーティング前はフォールバックモデルへ、その後はセッションに従います。
 
 ## 課金とログ
 
