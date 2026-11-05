@@ -120,12 +120,12 @@ func officialTokenPrices() map[string]officialTokenPrice {
 		"gpt-6.1-sol":        openAIPrice(2, 0.1, 2.5, 10, openAILongContext),
 		"gpt-6-sol":          openAIPrice(2, 0.2, 2.5, 10, openAILongContext),
 		"gpt-6-luna":         openAIPrice(0.1, 0.01, 0.125, 0.5, openAILongContext),
-		"gpt-5.6-sol":        openAIPrice(4, 0.4, 5, 20, openAILongContext), // promotional price, at least through 2026-11-21
+		"gpt-5.6-sol":        openAIPrice(4, 0.4, 5, 20, openAILongContext), // promotional price through 2026-11-30; the price after it is not published yet
 		"gpt-5.6":            openAIPrice(4, 0.4, 5, 20, openAILongContext), // alias of gpt-5.6-sol
 		"gpt-5.6-terra":      openAIPrice(2, 0.2, 2.5, 12, openAILongContext),
 		"gpt-5.6-luna":       openAIPrice(0.2, 0.02, 0.25, 1.2, openAILongContext),
 		"gpt-5.5":            openAIPrice(5, 0.5, 0, 30, openAILongContext),
-		"gpt-5.5-pro":        openAIPrice(30, 0, 0, 180, nil),
+		"gpt-5.5-pro":        openAIPrice(30, 0, 0, 180, openAILongContext), // >272K: $60 / $270 (checked 2026-11-05)
 		"gpt-5.4":            openAIPrice(2.5, 0.25, 0, 15, openAILongContext),
 		"gpt-5.4-pro":        openAIPrice(30, 0, 0, 180, openAILongContext),
 		"gpt-5.4-mini":       openAIPrice(0.75, 0.075, 0, 4.5, nil),
@@ -197,9 +197,9 @@ func officialTokenPrices() map[string]officialTokenPrice {
 
 		// Gemini API paid tier, USD per 1M tokens: input, context caching, audio input, output,
 		// image output. https://ai.google.dev/gemini-api/docs/pricing
-		"gemini-4-argon":                     geminiPrice(2, 0.1, 0, 10, 0, nil),        // through 2026-11-30; $4 / $0.20 / $20 from 2026-12-01
-		"gemini-3.8-flash":                   geminiPrice(0.75, 0.075, 0, 3.75, 0, nil), // through 2026-12-31; $1.50 / $0.15 / $7.50 from 2027-01-01
-		"gemini-3.6-flash":                   geminiPrice(0.75, 0.075, 0, 3.75, 0, nil), // through 2026-12-31; $1.50 / $0.15 / $7.50 from 2027-01-01
+		"gemini-4-argon":                     geminiPrice(2, 0.1, 0, 10, 0, nil),        // through 2026-11-30, then scheduledOfficialPrices
+		"gemini-3.8-flash":                   geminiPrice(0.75, 0.075, 0, 3.75, 0, nil), // through 2026-12-31, then scheduledOfficialPrices
+		"gemini-3.6-flash":                   geminiPrice(0.75, 0.075, 0, 3.75, 0, nil), // through 2026-12-31, then scheduledOfficialPrices
 		"gemini-3.5-flash-lite":              geminiPrice(0.3, 0.03, 0, 2.5, 0, nil),
 		"gemini-3.1-flash-lite":              geminiPrice(0.25, 0.025, 0.5, 1.5, 0, nil),
 		"gemini-3.1-pro-preview":             geminiPrice(2, 0.2, 0, 12, 0, geminiProLongContext),
