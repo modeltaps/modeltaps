@@ -118,8 +118,77 @@ func portOf(u *url.URL) uint16 {
 }
 
 func newClient(opts Options) *http.Client {
-	dialer := &net.Dialer{
-		Timeout: opts.Timeout,
+	transport := &http.Transport{
+		Proxy:                  nil,
+		DialContext:            GuardedDialer(opts.Timeout).DialContext,
+		TLSHandshakeTimeout:    opts.Timeout,
+		ResponseHeaderTimeout:  opts.Timeout,
+		DisableKeepAlives:      true,
+		MaxResponseHeaderBytes: 32 << 10,
+	}
+	return &http.Client{
+		Transport:     transport,
+		Timeout:       opts.Timeout,
+		CheckRedirect: CheckRedirect(opts.MaxRedirects),
+	}
+}
+
+// CheckRedirect 返回一个 http.Client.CheckRedirect：限制跳数，且每一跳只允许 http(s)、
+// 拒绝字面量为非公网 IP 的目标（域名由 GuardedDialer 或 CheckHost 在拨号/解析时再校验）。
+func CheckRedirect(maxRedirects int) func(*http.Request, []*http.Request) error {
+	if maxRedirects <= 0 {
+		maxRedirects = DefaultMaxRedirects
+	}
+	return func(req *http.Request, via []*http.Request) error {
+		if len(via) > maxRedirects {
+			return ErrTooManyRedirect
+		}
+		if _, err := checkURL(req.URL.String()); err != nil {
+			return err
+		}
+		if ip, err := netip.ParseAddr(req.URL.Hostname()); err == nil && !allowAddr(netip.AddrPortFrom(ip.Unmap(), portOf(req.URL))) {
+			return ErrForbiddenAddr
+		}
+		return nil
+	}
+}
+
+// CheckURL 校验 rawURL 是绝对 http(s) 地址且不含用户信息。
+func CheckURL(rawURL string) (*url.URL, error) { return checkURL(rawURL) }
+
+// CheckHost 解析 u 的主机名，任一解析结果不是公网地址即拒绝。
+// 用于请求经代理发出、拨号器看不到真实目标的场景；它无法防御 DNS rebinding，
+// 能直连时应优先用 GuardedDialer。
+func CheckHost(ctx context.Context, u *url.URL) error {
+	host := u.Hostname()
+	port := portOf(u)
+	if ip, err := netip.ParseAddr(host); err == nil {
+		if !allowAddr(netip.AddrPortFrom(ip.Unmap(), port)) {
+			return ErrForbiddenAddr
+		}
+		return nil
+	}
+	addrs, err := net.DefaultResolver.LookupNetIP(ctx, "ip", host)
+	if err != nil {
+		return err
+	}
+	if len(addrs) == 0 {
+		return ErrForbiddenAddr
+	}
+	for _, a := range addrs {
+		if !allowAddr(netip.AddrPortFrom(a.Unmap(), port)) {
+			return ErrForbiddenAddr
+		}
+	}
+	return nil
+}
+
+// GuardedDialer 返回在拨号时按实际解析出的 IP 拒绝非公网地址的拨号器，供需要自建 Transport
+// （流式下载、长超时等）的调用方复用 safefetch 的 SSRF 防护；可防 DNS rebinding。
+func GuardedDialer(timeout time.Duration) *net.Dialer {
+	return &net.Dialer{
+		Timeout:   timeout,
+		KeepAlive: 30 * time.Second,
 		Control: func(_, address string, _ syscall.RawConn) error {
 			ap, err := netip.ParseAddrPort(address)
 			if err != nil || !allowAddr(netip.AddrPortFrom(ap.Addr().Unmap(), ap.Port())) {
@@ -128,28 +197,11 @@ func newClient(opts Options) *http.Client {
 			return nil
 		},
 	}
-	transport := &http.Transport{
-		Proxy:                  nil,
-		DialContext:            dialer.DialContext,
-		TLSHandshakeTimeout:    opts.Timeout,
-		ResponseHeaderTimeout:  opts.Timeout,
-		DisableKeepAlives:      true,
-		MaxResponseHeaderBytes: 32 << 10,
-	}
-	return &http.Client{
-		Transport: transport,
-		Timeout:   opts.Timeout,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) > opts.MaxRedirects {
-				return ErrTooManyRedirect
-			}
-			if _, err := checkURL(req.URL.String()); err != nil {
-				return err
-			}
-			if ip, err := netip.ParseAddr(req.URL.Hostname()); err == nil && !allowAddr(netip.AddrPortFrom(ip.Unmap(), portOf(req.URL))) {
-				return ErrForbiddenAddr
-			}
-			return nil
-		},
-	}
+}
+
+// SetAllowAddrForTest 替换地址放行规则（测试用，放行 httptest 的回环地址），返回恢复函数。
+func SetAllowAddrForTest(f func(netip.AddrPort) bool) (restore func()) {
+	orig := allowAddr
+	allowAddr = f
+	return func() { allowAddr = orig }
 }
