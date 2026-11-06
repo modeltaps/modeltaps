@@ -142,6 +142,7 @@ func registerOptions() {
 	config.GlobalOption.RegisterBool("QuotaRemindEnabled", &config.QuotaRemindEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("QuotaRemindThreshold", &config.QuotaRemindThreshold, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("PreConsumedQuota", &config.PreConsumedQuota, config.ScopeAdmin)
+	config.GlobalOption.RegisterInt("PreConsumedOutputTokens", &config.PreConsumedOutputTokens, config.ScopeAdmin)
 
 	config.GlobalOption.RegisterString("TopUpLink", &config.TopUpLink, config.ScopePublic, config.PublicSpec{StatusKey: "top_up_link"})
 	config.GlobalOption.RegisterString("DocsLink", &config.DocsLink, config.ScopePublic, config.PublicSpec{StatusKey: "docs_link"})

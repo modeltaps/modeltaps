@@ -477,7 +477,7 @@ export function QuotaCard({ ctx }) {
   const remindEnabled = inputs.QuotaRemindEnabled !== 'false';
   // origin 是 string、QuotaInput 回传 number；归一避免 saveKeys 的 origin diff 误判触发冗余 PUT
   const setQuotaField = (key) => (v) => setField(key, typeof v === 'number' ? String(v) : v);
-  const keys = ['QuotaForNewUser', 'PreConsumedQuota', 'QuotaRemindThreshold'];
+  const keys = ['QuotaForNewUser', 'PreConsumedQuota', 'PreConsumedOutputTokens', 'QuotaRemindThreshold'];
 
   return (
     <SettingsCard title={t('setting_index.operationSettings.quotaSettings.title')} highlight="quota">
@@ -498,6 +498,15 @@ export function QuotaCard({ ctx }) {
           value={inputs.PreConsumedQuota}
           onChange={setQuotaField('PreConsumedQuota')}
           helperText={t('setting_index.operationSettings.quotaSettings.preConsumedQuota.description')}
+          disabled={loading}
+        />
+        <TextRow
+          id="PreConsumedOutputTokens"
+          type="number"
+          label={t('setting_index.operationSettings.quotaSettings.preConsumedOutputTokens.label')}
+          value={inputs.PreConsumedOutputTokens}
+          onChange={(v) => setField('PreConsumedOutputTokens', v)}
+          description={t('setting_index.operationSettings.quotaSettings.preConsumedOutputTokens.description')}
           disabled={loading}
         />
         <TextRow

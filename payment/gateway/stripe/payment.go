@@ -94,6 +94,8 @@ func (e *Stripe) Pay(config *types.PayConfig, gatewayConfig string) (*types.PayR
 
 func (e *Stripe) CreatedPay(notifyURL string, gatewayConfig *model.Payment) error {
 	eventName := "checkout.session.completed"
+	// 异步支付方式到账后才发这个事件，入账依赖它（见 HandleCallback）
+	asyncEventName := "checkout.session.async_payment_succeeded"
 	var stripeConfig StripeConfig
 	err := json.Unmarshal([]byte(gatewayConfig.Config), &stripeConfig)
 	if err != nil {
@@ -117,12 +119,23 @@ func (e *Stripe) CreatedPay(notifyURL string, gatewayConfig *model.Payment) erro
 	if err := i.Err(); err != nil {
 		return fmt.Errorf("error listing webhooks: %v", err)
 	}
+	// 早期创建的 Webhook 只订阅了 completed：补订阅异步到账事件，否则异步支付永远不会入账
+	if existingWebhook != nil && !contains(existingWebhook.EnabledEvents, asyncEventName) {
+		events := []*string{stripe.String(asyncEventName)}
+		for _, ev := range existingWebhook.EnabledEvents {
+			events = append(events, stripe.String(ev))
+		}
+		if _, err := webhookendpoint.Update(existingWebhook.ID, &stripe.WebhookEndpointParams{EnabledEvents: events}); err != nil {
+			return fmt.Errorf("error updating webhook events: %v", err)
+		}
+	}
 	// 如果不存在匹配的 Webhook，则创建新的
 	if existingWebhook == nil {
 		createParams := &stripe.WebhookEndpointParams{
 			URL: stripe.String(notifyURL),
 			EnabledEvents: []*string{
 				stripe.String(eventName),
+				stripe.String(asyncEventName),
 			},
 			APIVersion: stripe.String(stripe.APIVersion),
 		}
@@ -184,20 +197,25 @@ func (e *Stripe) HandleCallback(c *gin.Context, gatewayConfig string) (*types.Pa
 
 	// 处理事件
 	switch event.Type {
-	case "checkout.session.completed":
+	// 异步支付方式（银行转账、SEPA、ACH 等）完成结账时 payment_status 仍是 unpaid，
+	// 款项到账后才发 async_payment_succeeded；两种事件都只在 paid 时入账。
+	case "checkout.session.completed", "checkout.session.async_payment_succeeded":
 		var session stripe.CheckoutSession
 		err := json.Unmarshal(event.Data.Raw, &session)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse session data: %v", err)
 		}
+		if session.PaymentStatus != stripe.CheckoutSessionPaymentStatusPaid {
+			return nil, nil
+		}
 
-		// 获取订单号
-		orderID := session.ClientReferenceID
-
-		// 构造 PayNotify
 		payNotify := &types.PayNotify{
-			TradeNo:   orderID,
-			GatewayNo: session.PaymentIntent.ID,
+			TradeNo:      session.ClientReferenceID,
+			PaidCents:    session.AmountTotal,
+			PaidCurrency: string(session.Currency),
+		}
+		if session.PaymentIntent != nil {
+			payNotify.GatewayNo = session.PaymentIntent.ID
 		}
 
 		return payNotify, nil

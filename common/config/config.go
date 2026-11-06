@@ -101,6 +101,7 @@ func defaultConfig() {
 	viper.SetDefault("gin_mode", "release")
 	viper.SetDefault("log_dir", "./logs")
 	viper.SetDefault("log_io_max_body_kb", 1024)
+	viper.SetDefault("relay_max_body_mb", 128)
 	// sqlite_path 默认 modeltaps.db，可通过配置(SQLITE_PATH 等)指向其它库文件。
 	viper.SetDefault("sqlite_path", "modeltaps.db")
 	viper.SetDefault("sqlite_busy_timeout", 3000)

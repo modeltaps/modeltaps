@@ -251,8 +251,8 @@ func TestGetTotalQuotaByUsageLongContext(t *testing.T) {
 // 组装 extraBillingData（价格按模型 tier 查默认价表）并计入总额。
 func TestGetTotalQuotaByUsageExtraBilling(t *testing.T) {
 	q := &Quota{
-		modelName: "gpt-4o", // high_tier → web search 0.025$/次 → 12500/次
-		price:     model.Price{Type: model.TokensPriceType, Input: 1, Output: 1},
+		modelName:  "gpt-4o", // high_tier → web search 0.025$/次 → 12500/次
+		price:      model.Price{Type: model.TokensPriceType, Input: 1, Output: 1},
 		inputRatio: 1, outputRatio: 1, groupRatio: 1,
 	}
 	usage := &types.Usage{PromptTokens: 100, CompletionTokens: 0}
@@ -375,10 +375,87 @@ func TestPreQuotaConsumptionZeroPrice(t *testing.T) {
 	}
 }
 
-// TestPreQuotaConsumption100xSkip 个人令牌 userQuota > 100*pre → 跳过预扣（低延迟优化）。
+// mockRealtimeReserve 打开 Redis 开关并把在途预留替换成内存计数，返回计数指针。
+func mockRealtimeReserve(t *testing.T, inFlight int64) *int64 {
+	t.Helper()
+	origEnabled, origReserve, origRelease := realtimeQuotaEnabledFn, cacheReserveUserQuotaFn, cacheReleaseUserQuotaFn
+	t.Cleanup(func() {
+		realtimeQuotaEnabledFn, cacheReserveUserQuotaFn, cacheReleaseUserQuotaFn = origEnabled, origReserve, origRelease
+	})
+	realtimeQuotaEnabledFn = func() bool { return true }
+	counter := inFlight
+	cacheReserveUserQuotaFn = func(_ int, quota int) (int64, error) {
+		counter += int64(quota)
+		return counter, nil
+	}
+	cacheReleaseUserQuotaFn = func(_ int, quota int) (int64, error) {
+		counter -= int64(quota)
+		return counter, nil
+	}
+	return &counter
+}
+
+// TestPreQuotaConsumption100xSkip 不限额令牌 userQuota > 100*pre → 不写库预扣，改在 Redis 登记在途预留。
 func TestPreQuotaConsumption100xSkip(t *testing.T) {
 	setupQuotaTestDB(t)
 	tokenId := seedUserAndToken(t, 1, 100000, 0)
+	reserved := mockRealtimeReserve(t, 0)
+
+	q := &Quota{
+		userId: 1, tokenId: tokenId, promptTokens: 100, unlimitedQuota: true,
+		price:      model.Price{Type: model.TokensPriceType, Input: 1, Output: 1},
+		inputRatio: 1, groupRatio: 1,
+	}
+	if errResp := q.PreQuotaConsumption(); errResp != nil {
+		t.Fatalf("应放行: %+v", errResp)
+	}
+	// pre = 100*1 + PreConsumedQuota(500) = 600；100000 > 60000 → 跳过库预扣
+	if q.preConsumedQuota != 0 || q.HandelStatus {
+		t.Fatalf("100x 应跳过预扣: pre=%d handel=%v", q.preConsumedQuota, q.HandelStatus)
+	}
+	if q.cacheQuota != 600 || *reserved != 600 {
+		t.Fatalf("应登记 600 在途预留: cache=%d reserved=%d", q.cacheQuota, *reserved)
+	}
+	if got := getUserQuota(t, 1); got != 100000 {
+		t.Fatalf("用户额度不应变化: %d", got)
+	}
+}
+
+// TestPreQuotaConsumptionSkipFallsBackWhenInFlightExceedsBalance 在途预留已超过余额时
+// 不再跳过，改走库预扣（SEC-40：并发请求不能把余额打成大额负数）。
+func TestPreQuotaConsumptionSkipFallsBackWhenInFlightExceedsBalance(t *testing.T) {
+	setupQuotaTestDB(t)
+	tokenId := seedUserAndToken(t, 1, 100000, 0)
+	reserved := mockRealtimeReserve(t, 99800)
+	if err := model.DB.Model(&model.Token{}).Where("id = ?", tokenId).Update("unlimited_quota", true).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	q := &Quota{
+		userId: 1, tokenId: tokenId, promptTokens: 100, unlimitedQuota: true,
+		price:      model.Price{Type: model.TokensPriceType, Input: 1, Output: 1},
+		inputRatio: 1, groupRatio: 1,
+	}
+	if errResp := q.PreQuotaConsumption(); errResp != nil {
+		t.Fatalf("余额足够库预扣时应放行: %+v", errResp)
+	}
+	if q.preConsumedQuota != 600 || !q.HandelStatus || q.cacheQuota != 0 {
+		t.Fatalf("应改走库预扣: pre=%d handel=%v cache=%d", q.preConsumedQuota, q.HandelStatus, q.cacheQuota)
+	}
+	if *reserved != 99800 {
+		t.Fatalf("回退时应撤回在途预留: %d", *reserved)
+	}
+	if got := getUserQuota(t, 1); got != 99400 {
+		t.Fatalf("应库预扣 600: %d", got)
+	}
+}
+
+// TestPreQuotaConsumptionLimitedTokenNoSkip 有剩余额度上限的令牌不走 100x 跳过：
+// 令牌额度只在库预扣里校验，跳过即可超出令牌上限。
+func TestPreQuotaConsumptionLimitedTokenNoSkip(t *testing.T) {
+	setupQuotaTestDB(t)
+	tokenId := seedUserAndToken(t, 1, 100000, 1000)
+	mockRealtimeReserve(t, 0)
 
 	q := &Quota{
 		userId: 1, tokenId: tokenId, promptTokens: 100,
@@ -388,12 +465,65 @@ func TestPreQuotaConsumption100xSkip(t *testing.T) {
 	if errResp := q.PreQuotaConsumption(); errResp != nil {
 		t.Fatalf("应放行: %+v", errResp)
 	}
-	// pre = 100*1 + PreConsumedQuota(500) = 600；100000 > 60000 → 跳过并清零
-	if q.preConsumedQuota != 0 || q.HandelStatus {
-		t.Fatalf("100x 应跳过预扣: pre=%d handel=%v", q.preConsumedQuota, q.HandelStatus)
+	if q.preConsumedQuota != 600 || !q.HandelStatus {
+		t.Fatalf("限额令牌应库预扣: pre=%d handel=%v", q.preConsumedQuota, q.HandelStatus)
 	}
-	if got := getUserQuota(t, 1); got != 100000 {
-		t.Fatalf("用户额度不应变化: %d", got)
+	if tok := getToken(t, tokenId); tok.RemainQuota != 400 {
+		t.Fatalf("令牌剩余额度应扣到 400: %d", tok.RemainQuota)
+	}
+}
+
+// TestPreQuotaConsumptionIncludesOutputEstimate 预扣计入输出估算：请求声明的 max_tokens 与
+// PreConsumedOutputTokens 取小，乘输出倍率。
+func TestPreQuotaConsumptionIncludesOutputEstimate(t *testing.T) {
+	setupQuotaTestDB(t)
+	tokenId := seedUserAndToken(t, 1, 100000, 100000)
+	orig := config.PreConsumedOutputTokens
+	t.Cleanup(func() { config.PreConsumedOutputTokens = orig })
+	config.PreConsumedOutputTokens = 4096
+
+	newQ := func(requested int) *Quota {
+		return &Quota{
+			userId: 1, tokenId: tokenId, promptTokens: 100, requestedOutputTokens: requested,
+			price:      model.Price{Type: model.TokensPriceType, Input: 1, Output: 2},
+			inputRatio: 1, outputRatio: 2, groupRatio: 1,
+		}
+	}
+	cases := []struct {
+		requested int
+		want      int
+	}{
+		{0, 100 + 4096*2 + 500},     // 未声明：按上限估算
+		{1000, 100 + 1000*2 + 500},  // 声明更小：按声明
+		{64000, 100 + 4096*2 + 500}, // 声明更大：封顶
+	}
+	for _, tc := range cases {
+		q := newQ(tc.requested)
+		if errResp := q.PreQuotaConsumption(); errResp != nil {
+			t.Fatalf("requested=%d 应放行: %+v", tc.requested, errResp)
+		}
+		if q.preConsumedQuota != tc.want {
+			t.Fatalf("requested=%d: pre=%d want %d", tc.requested, q.preConsumedQuota, tc.want)
+		}
+	}
+}
+
+func TestRequestedMaxOutputTokens(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cases := map[string]int{
+		`{"max_tokens":1234}`:                          1234,
+		`{"max_completion_tokens":50,"max_tokens":99}`: 50,
+		`{"max_output_tokens":77}`:                     77,
+		`{"generationConfig":{"maxOutputTokens":88}}`:  88,
+		`{"messages":[]}`:                              0,
+		`not json`:                                     0,
+	}
+	for body, want := range cases {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		c.Set(config.GinRequestBodyKey, []byte(body))
+		if got := requestedMaxOutputTokens(c); got != want {
+			t.Fatalf("%s: got %d want %d", body, got, want)
+		}
 	}
 }
 
@@ -432,8 +562,8 @@ func TestPreQuotaConsumptionBudgetMemberNoSkip(t *testing.T) {
 // 组织令牌 insufficient_org_quota（影子账户即组织积分池）。
 func TestPreQuotaConsumptionInsufficientQuota(t *testing.T) {
 	setupQuotaTestDB(t)
-	seedUserAndToken(t, 1, 100, 0)     // 个人：100 < pre(600)
-	seedUserAndToken(t, 900, 100, 0)   // 影子账户：100 < pre(600)
+	seedUserAndToken(t, 1, 100, 0)                         // 个人：100 < pre(600)
+	seedUserAndToken(t, 900, 100, 0)                       // 影子账户：100 < pre(600)
 	mockGuardrailFns(t, &model.OrgMemberGuardrail{}, true) // 组织成员无预算限制
 
 	newQ := func(userId, createdBy int) *Quota {

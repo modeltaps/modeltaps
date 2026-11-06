@@ -2,9 +2,11 @@ package controller
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -206,12 +208,29 @@ func PaymentCallback(c *gin.Context) {
 		return
 	}
 
-	paymentService.RespondCallback(c, creditPaidOrder(c, payNotify) == nil)
+	paymentService.RespondCallback(c, creditPaidOrder(c, payNotify, paymentService.Payment.ID) == nil)
+}
+
+// paidOrderMismatch 返回通知与订单不符的原因，相符返回空串。实付允许比订单多（网关侧税费），
+// 少于订单 1 分以上即不符（微信下单时按分截断，可能比四舍五入少 1 分）。
+func paidOrderMismatch(order *model.Order, payNotify *types.PayNotify, gatewayID int) string {
+	if order.GatewayId != gatewayID {
+		return "gateway mismatch"
+	}
+	if payNotify.PaidCurrency != "" && order.OrderCurrency != "" &&
+		!strings.EqualFold(payNotify.PaidCurrency, string(order.OrderCurrency)) {
+		return "currency mismatch"
+	}
+	expected := int64(math.Round(order.OrderAmount * 100))
+	if payNotify.PaidCents <= 0 || payNotify.PaidCents < expected-1 {
+		return "amount mismatch"
+	}
+	return ""
 }
 
 // creditPaidOrder 为已验签的支付成功通知入账。返回 nil 表示订单已入账（本次或之前的通知），
 // 可以向网关确认；返回 error 表示本次没有入账，调用方应回网关失败应答让其重发。
-func creditPaidOrder(c *gin.Context, payNotify *types.PayNotify) error {
+func creditPaidOrder(c *gin.Context, payNotify *types.PayNotify, gatewayID int) error {
 	LockOrder(payNotify.TradeNo)
 	defer UnlockOrder(payNotify.TradeNo)
 
@@ -225,6 +244,15 @@ func creditPaidOrder(c *gin.Context, payNotify *types.PayNotify) error {
 		if order.Status != model.OrderStatusSuccess {
 			logger.SysError(fmt.Sprintf("payment callback for a %s order, paid amount not credited, trade_no: %s, gateway_no: %s", order.Status, payNotify.TradeNo, payNotify.GatewayNo))
 		}
+		return nil
+	}
+
+	// 验签只证明通知来自网关账户，不证明付的是这笔订单：同一账户上的其它收款（Payment Link、
+	// 其它业务）可以带上本站订单号。入账前核对网关、币种与实付金额，不符则确认通知但不入账，
+	// 订单保持 pending 留给人工核查（重发也不会自愈）。
+	if reason := paidOrderMismatch(order, payNotify, gatewayID); reason != "" {
+		logger.SysError(fmt.Sprintf("payment callback does not match the order, not credited: %s, trade_no: %s, gateway_no: %s, gateway_id: %d, paid_cents: %d, paid_currency: %s",
+			reason, payNotify.TradeNo, payNotify.GatewayNo, gatewayID, payNotify.PaidCents, payNotify.PaidCurrency))
 		return nil
 	}
 
@@ -400,5 +428,5 @@ func EpayCallback(c *gin.Context) {
 	}
 
 	// 上面按单号取的 order 只用来找网关，入账时在锁内重新读取（见 creditPaidOrder）
-	paymentService.RespondCallback(c, creditPaidOrder(c, payNotify) == nil)
+	paymentService.RespondCallback(c, creditPaidOrder(c, payNotify, paymentService.Payment.ID) == nil)
 }

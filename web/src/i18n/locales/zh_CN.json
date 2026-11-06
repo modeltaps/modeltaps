@@ -2491,6 +2491,10 @@
           "placeholder": "例如：100",
           "description": "新用户注册成功后自动发放的初始额度"
         },
+        "preConsumedOutputTokens": {
+          "description": "请求开始时按此数量的输出 Token 预扣费用（请求自带的 max_tokens 更小时按 max_tokens），结束后多退少补",
+          "label": "预扣输出 Token 数"
+        },
         "preConsumedQuota": {
           "label": "请求预扣费额度",
           "placeholder": "请求结束后多退少补",

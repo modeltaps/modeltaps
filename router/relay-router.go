@@ -13,6 +13,8 @@ import (
 
 func SetRelayRouter(router *gin.Engine) {
 	router.Use(middleware.CORS())
+	// 之后注册的中继路由都限制请求体大小（engine.Use 只影响之后注册的路由，不影响管理端 API）
+	router.Use(middleware.RelayBodyLimit())
 	// https://platform.openai.com/docs/api-reference/introduction
 	setOpenAIRouter(router)
 	setMJRouter(router)

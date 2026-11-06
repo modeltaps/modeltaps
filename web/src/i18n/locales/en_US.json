@@ -2654,6 +2654,10 @@
           "description": "When off, the site no longer shows invite reward entries",
           "label": "Enable Invite Reward"
         },
+        "preConsumedOutputTokens": {
+          "description": "The output tokens charged in advance when a request starts: the request's own max_tokens when smaller, otherwise this value; settled after completion",
+          "label": "Output Tokens Reserved per Request"
+        },
         "preConsumedQuota": {
           "description": "Fixed quota pre-charged on top of the estimated input cost when a request starts; settled after completion",
           "label": "Pre-consumed Quota for Requests",

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/logger"
+	"github.com/modeltaps/modeltaps/common/safefetch"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/controller"
 	"github.com/modeltaps/modeltaps/model"
@@ -17,11 +18,55 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+// mjImageMaxBytes 限制 /mj/image 回流的图片大小。
+const mjImageMaxBytes int64 = 50 << 20
+
+// mjImagePublicClient 抓取不属于渠道上游主机的图片地址（通常是 Discord/CDN）：
+// 拨号时拒绝私网/回环/链路本地地址，重定向逐跳复检，防 SSRF。
+var mjImagePublicClient = &http.Client{
+	Transport: &http.Transport{
+		Proxy:                 nil,
+		DialContext:           safefetch.GuardedDialer(5 * time.Second).DialContext,
+		TLSHandshakeTimeout:   5 * time.Second,
+		ResponseHeaderTimeout: 30 * time.Second,
+	},
+	Timeout:       60 * time.Second,
+	CheckRedirect: safefetch.CheckRedirect(3),
+}
+
+// mjImageUpstreamClient 抓取与任务所属渠道 base URL 同主机的图片：该地址由管理员配置，
+// 可能是内网部署的 Midjourney 代理，因此不做私网拦截，但不跟随重定向。
+var mjImageUpstreamClient = &http.Client{
+	Transport: &http.Transport{
+		DialContext:           utils.NewDialer().DialContext,
+		TLSHandshakeTimeout:   5 * time.Second,
+		ResponseHeaderTimeout: 30 * time.Second,
+	},
+	Timeout: 60 * time.Second,
+	CheckRedirect: func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	},
+}
+
+// mjImageClient 按图片地址选择 client：与渠道 base URL 同 host:port 才允许访问私网。
+func mjImageClient(task *model.Midjourney, imageURL *url.URL) *http.Client {
+	if task.ChannelId > 0 {
+		if channel, err := model.GetChannelById(task.ChannelId); err == nil && channel.GetBaseURL() != "" {
+			if base, err := url.Parse(channel.GetBaseURL()); err == nil && base.Host != "" &&
+				strings.EqualFold(base.Host, imageURL.Host) && base.Scheme == imageURL.Scheme {
+				return mjImageUpstreamClient
+			}
+		}
+	}
+	return mjImagePublicClient
+}
 
 func RelayMidjourneyImage(c *gin.Context) {
 	taskId := c.Param("id")
@@ -32,7 +77,21 @@ func RelayMidjourneyImage(c *gin.Context) {
 		})
 		return
 	}
-	resp, err := http.Get(midjourneyTask.ImageUrl)
+	imageURL, err := safefetch.CheckURL(midjourneyTask.ImageUrl)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid_image_url",
+		})
+		return
+	}
+	req, err := http.NewRequestWithContext(c.Request.Context(), http.MethodGet, imageURL.String(), nil)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid_image_url",
+		})
+		return
+	}
+	resp, err := mjImageClient(midjourneyTask, imageURL).Do(req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "http_get_image_failed",
@@ -41,65 +100,46 @@ func RelayMidjourneyImage(c *gin.Context) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		responseBody, _ := io.ReadAll(resp.Body)
-		c.JSON(resp.StatusCode, gin.H{
-			"error": utils.MaskSensitiveInfo(string(responseBody)),
+		c.JSON(http.StatusBadGateway, gin.H{
+			"error": "http_get_image_failed",
 		})
 		return
 	}
-	// 从Content-Type头获取MIME类型
+	if resp.ContentLength > mjImageMaxBytes {
+		c.JSON(http.StatusBadGateway, gin.H{
+			"error": "image_too_large",
+		})
+		return
+	}
+	// 只回流图片，避免把任意上游内容（HTML/JSON 等）以本站源返回给浏览器
 	contentType := resp.Header.Get("Content-Type")
 	if contentType == "" {
-		// 如果无法确定内容类型，则默认为jpeg
 		contentType = "image/jpeg"
 	}
-	// 设置响应的内容类型
+	if !strings.HasPrefix(strings.ToLower(contentType), "image/") {
+		c.JSON(http.StatusBadGateway, gin.H{
+			"error": "unexpected_content_type",
+		})
+		return
+	}
 	c.Writer.Header().Set("Content-Type", contentType)
-	// 将图片流式传输到响应体
-	_, err = io.Copy(c.Writer, resp.Body)
+	c.Writer.Header().Set("X-Content-Type-Options", "nosniff")
+	_, err = io.Copy(c.Writer, io.LimitReader(resp.Body, mjImageMaxBytes))
 	if err != nil {
 		log.Println("Failed to stream image:", err)
 	}
 }
 
+// RelayMidjourneyNotify 原本接收上游代理的任务回调，但网关从不下发 notifyHook（任务状态靠轮询同步），
+// 所以这个入口只会被客户端调用；它按任务 ID 改写任意任务的状态和图片地址，
+// 会造成跨租户篡改和 SSRF，因此一律拒绝。
 func RelayMidjourneyNotify(c *gin.Context) *provider.MidjourneyResponse {
-	var midjRequest provider.MidjourneyDto
-	err := common.UnmarshalBodyReusable(c, &midjRequest)
-	if err != nil {
-		return &provider.MidjourneyResponse{
-			Code:        4,
-			Description: "bind_request_body_failed",
-			Properties:  nil,
-			Result:      "",
-		}
+	return &provider.MidjourneyResponse{
+		Code:        4,
+		Description: "notify_not_supported",
+		Properties:  nil,
+		Result:      "",
 	}
-	midjourneyTask := model.GetByOnlyMJId(midjRequest.MjId)
-	if midjourneyTask == nil {
-		return &provider.MidjourneyResponse{
-			Code:        4,
-			Description: "midjourney_task_not_found",
-			Properties:  nil,
-			Result:      "",
-		}
-	}
-	midjourneyTask.Progress = midjRequest.Progress
-	midjourneyTask.PromptEn = midjRequest.PromptEn
-	midjourneyTask.State = midjRequest.State
-	midjourneyTask.SubmitTime = midjRequest.SubmitTime
-	midjourneyTask.StartTime = midjRequest.StartTime
-	midjourneyTask.FinishTime = midjRequest.FinishTime
-	midjourneyTask.ImageUrl = midjRequest.ImageUrl
-	midjourneyTask.Status = midjRequest.Status
-	midjourneyTask.FailReason = midjRequest.FailReason
-	err = midjourneyTask.Update()
-	if err != nil {
-		return &provider.MidjourneyResponse{
-			Code:        4,
-			Description: "update_midjourney_task_failed",
-		}
-	}
-
-	return nil
 }
 
 func coverMidjourneyTaskDto(originTask *model.Midjourney) (midjourneyTask provider.MidjourneyDto) {

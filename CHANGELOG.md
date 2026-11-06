@@ -76,6 +76,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Code sends (a JSON object encoded as a string), so Claude channel session affinity follows the
   Claude Code session instead of falling back to a hash of the cached prompt.
 
+### Security
+
+- Image URLs in requests are no longer fetched from loopback, private-network or cloud-metadata
+  addresses; redirects are re-checked on every hop.
+- The Midjourney notify endpoint is disabled (the gateway never registers it and task state is
+  synced by polling), and `/mj/image` only relays images: it reaches private addresses only on the
+  task channel's own host.
+- The up-front charge now covers an output estimate (the request's `max_tokens` or the new
+  "Output Tokens Reserved per Request" setting, default 4096, whichever is smaller). Skipping the
+  up-front charge for large balances is limited to unlimited tokens and records an in-flight
+  reservation in Redis, so concurrent requests can no longer drive a balance far below zero or
+  exceed a token's quota.
+- Payment callbacks credit an order only when the gateway, currency and paid amount match it, and
+  Stripe only credits paid sessions (asynchronous payment methods are credited on
+  `checkout.session.async_payment_succeeded`, which the webhook now subscribes to).
+- Relay request bodies are capped by `relay_max_body_mb` (default 128 MB).
+- Email verification codes are invalidated after 5 wrong guesses and once used.
+
 ## [0.3.0] - 2026-11-04
 
 ### Fixed
