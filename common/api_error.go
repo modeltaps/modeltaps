@@ -256,6 +256,7 @@ const (
 	APICodeRoutingPolicyThresholdInvalid = "routing_policy_threshold_invalid"
 	APICodeRoutingPolicyLimitInvalid     = "routing_policy_limit_invalid"
 	APICodeRoutingPolicyReferenced       = "routing_policy_referenced"
+	APICodeRoutingPolicyScoringInvalid   = "routing_policy_scoring_invalid"
 
 	// Orders, payment methods and invoices.
 	APICodePaymentNotFound      = "payment_not_found"

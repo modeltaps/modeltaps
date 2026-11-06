@@ -32,6 +32,16 @@ const (
 	routingPolicyMaxNameLen        = 100
 )
 
+// 决策的打分方式。
+const (
+	// RoutingScoringAuto 先用 logprobs 打分；决策模型或渠道不返回 logprobs 时改用自报置信度。
+	RoutingScoringAuto = "auto"
+	// RoutingScoringLogprobs 只用 logprobs：各标签的概率来自模型对选项字母的输出概率。
+	RoutingScoringLogprobs = "logprobs"
+	// RoutingScoringSelfReported 让模型用 JSON 回答标签和它自报的置信度。
+	RoutingScoringSelfReported = "self_reported"
+)
+
 // RoutingRoute 策略里的一条路由：决策模型选中 Label 时请求转发给 TargetModel。
 type RoutingRoute struct {
 	Label       string `json:"label"`
@@ -56,6 +66,8 @@ type RoutingPolicy struct {
 	Question      string                            `json:"question" gorm:"type:text"`
 	Routes        datatypes.JSONSlice[RoutingRoute] `json:"routes" gorm:"type:json"`
 	FallbackModel string                            `json:"fallback_model" gorm:"type:varchar(255);not null"`
+	// Scoring 打分方式（RoutingScoring*）；存量行为空，Normalize 补为 auto。
+	Scoring string `json:"scoring" gorm:"type:varchar(20);default:''"`
 	// 下面几个数值字段都不带 gorm 默认值：0 是合法取值（阈值 0、TTL 0 = 每次分类），
 	// gorm 的 default 会把零值改写成默认值。Normalize 只给「0 = 用默认」的字段补值。
 	// Threshold 0~1：最高标签概率低于它走兜底。
@@ -84,11 +96,17 @@ var (
 	ErrRoutingPolicyNameTaken        = common.NewAPIError(common.APICodeRoutingPolicyNameTaken, "name is already used by a model or another policy", nil)
 	ErrRoutingPolicyRoutesCount      = common.NewAPIError(common.APICodeRoutingPolicyRoutesCount, "a policy needs between 2 and 16 routes", map[string]any{"min": RoutingPolicyMinRoutes, "max": RoutingPolicyMaxRoutes})
 	ErrRoutingPolicyThresholdInvalid = common.NewAPIError(common.APICodeRoutingPolicyThresholdInvalid, "threshold must be between 0 and 1", nil)
+	ErrRoutingPolicyScoringInvalid   = common.NewAPIError(common.APICodeRoutingPolicyScoringInvalid, "scoring must be auto, logprobs or self_reported", nil)
 	ErrRoutingPolicyReferenced       = common.NewAPIError(common.APICodeRoutingPolicyReferenced, "policy is referenced by model aliases", nil)
 )
 
 func routingPolicyModelRequired(field string) error {
 	return common.NewAPIError(common.APICodeRoutingPolicyModelRequired, field+" is required", map[string]any{"field": field})
+}
+
+// ErrRoutingPolicyModelIsPolicy 某个字段填了策略名而不是模型。
+func ErrRoutingPolicyModelIsPolicy(field, name string) error {
+	return routingPolicyModelIsPolicy(field, name)
 }
 
 func routingPolicyModelIsPolicy(field, name string) error {
@@ -127,6 +145,10 @@ func (p *RoutingPolicy) Normalize() {
 		p.Routes[i].Label = strings.TrimSpace(p.Routes[i].Label)
 		p.Routes[i].Description = strings.TrimSpace(p.Routes[i].Description)
 		p.Routes[i].TargetModel = strings.TrimSpace(p.Routes[i].TargetModel)
+	}
+	p.Scoring = strings.TrimSpace(p.Scoring)
+	if p.Scoring == "" {
+		p.Scoring = RoutingScoringAuto
 	}
 	if p.MaxInputChars == 0 {
 		p.MaxInputChars = RoutingPolicyDefaultInputChars
@@ -176,6 +198,11 @@ func (p *RoutingPolicy) Validate(isPolicy func(name string) bool) error {
 		if err := notPolicy("routes[].target_model", route.TargetModel); err != nil {
 			return err
 		}
+	}
+	switch p.Scoring {
+	case RoutingScoringAuto, RoutingScoringLogprobs, RoutingScoringSelfReported:
+	default:
+		return ErrRoutingPolicyScoringInvalid
 	}
 	if p.Threshold < 0 || p.Threshold > 1 {
 		return ErrRoutingPolicyThresholdInvalid

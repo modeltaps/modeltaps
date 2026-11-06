@@ -107,6 +107,7 @@ func TestRoutingPolicyValidate(t *testing.T) {
 		{"negative ttl", func(p *RoutingPolicy) { p.PinTTLSeconds = -1 }, common.APICodeRoutingPolicyLimitInvalid},
 		{"input chars too large", func(p *RoutingPolicy) { p.MaxInputChars = RoutingPolicyMaxInputChars + 1 }, common.APICodeRoutingPolicyLimitInvalid},
 		{"bad name", func(p *RoutingPolicy) { p.Name = "auto coder" }, common.APICodeRoutingPolicyNameInvalid},
+		{"unknown scoring", func(p *RoutingPolicy) { p.Scoring = "vibes" }, common.APICodeRoutingPolicyScoringInvalid},
 	}
 	for _, tc := range cases {
 		p := samplePolicy()
@@ -125,6 +126,9 @@ func TestRoutingPolicyValidate(t *testing.T) {
 	p.Normalize()
 	if err := p.Validate(isPolicy); err != nil {
 		t.Fatalf("合法策略应通过，实际: %v", err)
+	}
+	if p.Scoring != RoutingScoringAuto {
+		t.Fatalf("Normalize 应把空打分方式补为 auto，实际 %q", p.Scoring)
 	}
 	if p.MaxInputChars != RoutingPolicyDefaultInputChars || p.DecisionTimeoutMs != RoutingPolicyDefaultTimeoutMs {
 		t.Fatalf("Normalize 应补默认值，实际 chars=%d timeout=%d", p.MaxInputChars, p.DecisionTimeoutMs)

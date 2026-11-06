@@ -40,11 +40,15 @@ const (
 	RoutingDecisionContextKey   = relay_util.RoutingDecisionContextKey
 )
 
-// ClassifyResult 决策后端的输出：选中的标签与它的置信度（0~1）。
+// ClassifyResult 决策后端的输出：选中的标签与它的置信度（0~1）。logprobs 打分时
+// Confidence 是该标签的归一概率，Probabilities 列出全部标签。
 type ClassifyResult struct {
-	Label      string
-	Confidence float64
-	Usage      *types.Usage
+	Label         string
+	Confidence    float64
+	Scoring       string
+	Probabilities []relay_util.RoutingLabelProbability
+	Coverage      float64
+	Usage         *types.Usage
 }
 
 // classifyFunc 把一段文本按策略分类。默认实现调决策模型，测试替换成假的。
@@ -171,7 +175,7 @@ func classifyRequest(c *gin.Context, policy *model.RoutingPolicy) *RoutingDecisi
 	return decision
 }
 
-// ---- 默认决策后端：普通对话模型 + JSON 自报置信度 ----
+// ---- 自报打分：普通对话模型 + JSON 自报置信度（logprobs 打分见 routing_scoring.go） ----
 
 const routingDecisionSystemPrompt = `You are a request router. You will be given a question, a list of labels with descriptions, and the first message of a user's request. Pick the single label that best answers the question for that request. Reply with a JSON object only, no prose, in the form {"label": "<label>", "confidence": <number between 0 and 1>}. The confidence is how sure you are that the chosen label is right.`
 
@@ -246,11 +250,7 @@ func parseDecisionAnswer(content string) (*ClassifyResult, error) {
 // tryRoutingPolicy 后台「试一试」：只跑决策这一步，不计费、不写固定记录，返回假定按该决策会得到的结果。
 // 调用方是管理员会话（无令牌分组），决策模型按管理员自己的用户分组选渠道。
 func tryRoutingPolicy(c *gin.Context, policy *model.RoutingPolicy, text string) *RoutingDecision {
-	if c.GetString("group") == "" {
-		if group, err := model.CacheGetUserGroup(c.GetInt("id")); err == nil {
-			c.Set("group", group)
-		}
-	}
+	ensureAdminGroup(c)
 	decision := &RoutingDecision{Policy: policy.Name, TargetModel: policy.FallbackModel}
 	text = firstUserMessageTextFromPlain(text, policy.MaxInputChars)
 	if text == "" {
@@ -262,6 +262,15 @@ func tryRoutingPolicy(c *gin.Context, policy *model.RoutingPolicy, text string) 
 	decision.DecisionMs = routingPolicyNow().Sub(started).Milliseconds()
 	applyClassifyResult(decision, policy, result, err)
 	return decision
+}
+
+// ensureAdminGroup 管理员会话没有令牌分组，决策模型按管理员自己的用户分组选渠道。
+func ensureAdminGroup(c *gin.Context) {
+	if c.GetString("group") == "" {
+		if group, err := model.CacheGetUserGroup(c.GetInt("id")); err == nil {
+			c.Set("group", group)
+		}
+	}
 }
 
 // firstUserMessageTextFromPlain 对已经是纯文本的输入做与请求路径相同的清理与截断。
@@ -278,6 +287,9 @@ func applyClassifyResult(decision *RoutingDecision, policy *model.RoutingPolicy,
 	}
 	decision.DecisionUsage = result.Usage
 	decision.Confidence = result.Confidence
+	decision.Scoring = result.Scoring
+	decision.Probabilities = result.Probabilities
+	decision.Coverage = result.Coverage
 	route := policy.RouteFor(result.Label)
 	if route == nil {
 		decision.Reason = RoutingReasonDecisionError
@@ -310,16 +322,55 @@ func classifyWithDecisionModelOpts(c *gin.Context, policy *model.RoutingPolicy, 
 		return nil, fmt.Errorf("decision model %s: %w", policy.DecisionModel, err)
 	}
 	provider.GetRequester().Context = ctx
-	usage := &types.Usage{}
-	provider.SetUsage(usage)
+	call := &decisionCall{ctx: ctx, decisionCtx: decisionCtx, provider: provider, upstreamModel: upstreamModel,
+		decisionModel: policy.DecisionModel, timeout: timeout, bill: bill}
 
-	// 决策调用按决策模型的价格单独计一笔（站点开关可关）。预扣失败（额度不足 / 预算超限）
-	// 时不发起决策，直接兜底：用户的主请求随后也会被同一道闸拦下。
-	var quota *relay_util.Quota
-	if bill {
-		quota = relay_util.NewQuota(decisionCtx, policy.DecisionModel, 0)
-		if errWithCode := quota.PreQuotaConsumption(); errWithCode != nil {
-			return nil, fmt.Errorf("decision model %s: %s", policy.DecisionModel, errWithCode.Message)
+	scoring := policy.Scoring
+	if scoring == "" {
+		scoring = model.RoutingScoringAuto
+	}
+	channelID := 0
+	if channel := provider.GetChannel(); channel != nil {
+		channelID = channel.Id
+	}
+	tryLogprobs := scoring == model.RoutingScoringLogprobs
+	if scoring == model.RoutingScoringAuto {
+		supported, known := lookupLogprobsSupport(channelID, upstreamModel)
+		tryLogprobs = !known || supported
+	}
+	// Responses-only 的模型拿不到逐 token 的 logprobs。
+	if tryLogprobs && call.usesResponses() {
+		rememberLogprobsSupport(channelID, upstreamModel, false)
+		if scoring == model.RoutingScoringLogprobs {
+			return nil, fmt.Errorf("decision model %s: %w", policy.DecisionModel, errNoLogprobs)
+		}
+		tryLogprobs = false
+	}
+
+	usage := &types.Usage{}
+	if tryLogprobs {
+		choice, err := call.send(buildLetterRequest(policy, upstreamModel, text), usage)
+		switch {
+		case err == nil:
+			result, parseErr := parseLetterLogprobs(policy, choice.LogProbs)
+			if !errors.Is(parseErr, errNoLogprobs) {
+				rememberLogprobsSupport(channelID, upstreamModel, true)
+				if parseErr != nil {
+					return nil, parseErr
+				}
+				result.Usage = usage
+				return result, nil
+			}
+			err = parseErr
+			fallthrough
+		case isLogprobsRejection(err):
+			rememberLogprobsSupport(channelID, upstreamModel, false)
+			if scoring == model.RoutingScoringLogprobs {
+				return nil, fmt.Errorf("decision model %s: %w", policy.DecisionModel, errNoLogprobs)
+			}
+			logger.LogInfo(c.Request.Context(), "routing_scoring_fallback policy="+policy.Name+" model="+policy.DecisionModel+" channel="+strconv.Itoa(channelID)+" scoring=self_reported")
+		default:
+			return nil, err
 		}
 	}
 
@@ -330,39 +381,82 @@ func classifyWithDecisionModelOpts(c *gin.Context, policy *model.RoutingPolicy, 
 		MaxTokens:   routingDecisionMaxTokens,
 		Temperature: &temperature,
 	}
+	choice, err := call.send(request, usage)
+	if err != nil {
+		return nil, err
+	}
+	result, err := parseDecisionAnswer(choice.Message.StringContent())
+	if err != nil {
+		return nil, err
+	}
+	result.Scoring = model.RoutingScoringSelfReported
+	result.Usage = usage
+	return result, nil
+}
+
+// decisionCall 一次决策里对决策模型的调用；auto 打分时可能调两次（logprobs、再自报），每次单独计费。
+type decisionCall struct {
+	ctx           context.Context
+	decisionCtx   *gin.Context
+	provider      providersBase.ProviderInterface
+	upstreamModel string
+	decisionModel string
+	timeout       time.Duration
+	bill          bool
+}
+
+func (d *decisionCall) usesResponses() bool {
+	channel := d.provider.GetChannel()
+	if channel == nil || !channel.ShouldUseResponsesForModel(d.upstreamModel) {
+		return false
+	}
+	_, ok := d.provider.(providersBase.ResponsesInterface)
+	return ok
+}
+
+// send 发一次请求，用量累加进 total。决策调用按决策模型的价格单独计一笔（站点开关可关）。
+// 预扣失败（额度不足 / 预算超限）时不发起决策，直接兜底：用户的主请求随后也会被同一道闸拦下。
+func (d *decisionCall) send(request *types.ChatCompletionRequest, total *types.Usage) (*types.ChatCompletionChoice, error) {
+	usage := &types.Usage{}
+	d.provider.SetUsage(usage)
+	var quota *relay_util.Quota
+	if d.bill {
+		quota = relay_util.NewQuota(d.decisionCtx, d.decisionModel, 0)
+		if errWithCode := quota.PreQuotaConsumption(); errWithCode != nil {
+			return nil, fmt.Errorf("decision model %s: %s", d.decisionModel, errWithCode.Message)
+		}
+	}
 
 	type outcome struct {
-		content string
-		err     error
+		choice *types.ChatCompletionChoice
+		err    error
 	}
 	done := make(chan outcome, 1)
 	go func() {
-		content, err := sendDecisionRequest(provider, upstreamModel, request)
-		done <- outcome{content: content, err: err}
+		choice, err := sendDecisionRequest(d.provider, d.upstreamModel, request)
+		done <- outcome{choice: choice, err: err}
 	}()
 	select {
-	case <-ctx.Done():
+	case <-d.ctx.Done():
 		if quota != nil {
-			quota.Undo(decisionCtx)
+			quota.Undo(d.decisionCtx)
 		}
-		return nil, fmt.Errorf("decision model %s: timed out after %s", policy.DecisionModel, timeout)
+		return nil, fmt.Errorf("decision model %s: timed out after %s", d.decisionModel, d.timeout)
 	case out := <-done:
 		if out.err != nil {
 			if quota != nil {
-				quota.Undo(decisionCtx)
+				quota.Undo(d.decisionCtx)
 			}
 			return nil, out.err
 		}
 		if quota != nil {
 			// 答案解析失败也要计费：上游已经按用量收了钱。
-			quota.Consume(decisionCtx, usage, false)
+			quota.Consume(d.decisionCtx, usage, false)
 		}
-		result, err := parseDecisionAnswer(out.content)
-		if err != nil {
-			return nil, err
-		}
-		result.Usage = usage
-		return result, nil
+		total.PromptTokens += usage.PromptTokens
+		total.CompletionTokens += usage.CompletionTokens
+		total.TotalTokens += usage.TotalTokens
+		return out.choice, nil
 	}
 }
 
@@ -398,7 +492,7 @@ func newDecisionContext(c *gin.Context, ctx context.Context, policyName string) 
 }
 
 // sendDecisionRequest 按渠道能力发送：Responses-only 的模型走 Responses，其余走 Chat。
-func sendDecisionRequest(provider providersBase.ProviderInterface, upstreamModel string, request *types.ChatCompletionRequest) (string, error) {
+func sendDecisionRequest(provider providersBase.ProviderInterface, upstreamModel string, request *types.ChatCompletionRequest) (*types.ChatCompletionChoice, error) {
 	channel := provider.GetChannel()
 	if channel != nil && channel.ShouldUseResponsesForModel(upstreamModel) {
 		if resProvider, ok := provider.(providersBase.ResponsesInterface); ok {
@@ -407,25 +501,25 @@ func sendDecisionRequest(provider providersBase.ProviderInterface, upstreamModel
 			resReq.ConvertChat = true
 			resp, errWithCode := resProvider.CreateResponses(resReq)
 			if errWithCode != nil {
-				return "", errors.New(errWithCode.Message)
+				return nil, errors.New(errWithCode.Message)
 			}
-			return firstChatContent(resp.ToChat())
+			return firstChatChoice(resp.ToChat())
 		}
 	}
 	chat, ok := provider.(providersBase.ChatInterface)
 	if !ok {
-		return "", errors.New("decision model channel does not support chat")
+		return nil, errors.New("decision model channel does not support chat")
 	}
 	resp, errWithCode := chat.CreateChatCompletion(request)
 	if errWithCode != nil {
-		return "", errors.New(errWithCode.Message)
+		return nil, errors.New(errWithCode.Message)
 	}
-	return firstChatContent(resp)
+	return firstChatChoice(resp)
 }
 
-func firstChatContent(resp *types.ChatCompletionResponse) (string, error) {
+func firstChatChoice(resp *types.ChatCompletionResponse) (*types.ChatCompletionChoice, error) {
 	if resp == nil || len(resp.Choices) == 0 {
-		return "", errors.New("decision model returned no choices")
+		return nil, errors.New("decision model returned no choices")
 	}
-	return resp.Choices[0].Message.StringContent(), nil
+	return &resp.Choices[0], nil
 }

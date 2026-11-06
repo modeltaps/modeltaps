@@ -63,6 +63,10 @@ type RoutingPolicyStats struct {
 	SavedQuota    int64 `json:"saved_quota"`
 	// FallbackPriceKnown 兜底模型有配置价格时为 true；没有时 FallbackQuota / SavedQuota 无意义，前端不显示。
 	FallbackPriceKnown bool `json:"fallback_price_known"`
+	// ByScoring 做过分类的请求按打分方式计数（logprobs / self_reported；更早的日志没有这个字段，不计入）。
+	ByScoring map[string]int64 `json:"by_scoring"`
+	// AvgTopProbability logprobs 打分的请求里最高标签概率的平均值，越低说明标签越难区分；没有这类请求时为 0。
+	AvgTopProbability float64 `json:"avg_top_probability"`
 }
 
 // routedLogsQuery 统计窗口内走了该策略的目标模型日志（不含决策调用那条）。
@@ -79,7 +83,7 @@ func GetRoutingPolicyStats(policy *RoutingPolicy, days int) (*RoutingPolicyStats
 		days = 7
 	}
 	since := time.Now().Add(-time.Duration(days) * 24 * time.Hour).Unix()
-	stats := &RoutingPolicyStats{Days: days, ByReason: map[string]int64{}, Labels: []RoutingLabelStat{}}
+	stats := &RoutingPolicyStats{Days: days, ByReason: map[string]int64{}, Labels: []RoutingLabelStat{}, ByScoring: map[string]int64{}}
 
 	// 原因分布
 	var reasons []struct {
@@ -130,6 +134,28 @@ func GetRoutingPolicyStats(policy *RoutingPolicy, days int) (*RoutingPolicyStats
 	}
 	if avg.Avg != nil {
 		stats.AvgDecisionMs = math.Round(*avg.Avg*10) / 10
+	}
+
+	// 打分方式分布与 logprobs 打分的平均最高概率
+	var scorings []struct {
+		Scoring string
+		Count   int64
+		AvgTop  *float64
+	}
+	if err := routedLogsQuery(policy.Name, since).
+		Where(metadataTextExpr("routing_scoring") + " IS NOT NULL").
+		Select(metadataTextExpr("routing_scoring") + " as scoring, count(*) as count, AVG(" + metadataNumberExpr("routing_confidence") + ") as avg_top").
+		Group(metadataTextExpr("routing_scoring")).Scan(&scorings).Error; err != nil {
+		return nil, err
+	}
+	for _, sc := range scorings {
+		if sc.Scoring == "" {
+			continue
+		}
+		stats.ByScoring[sc.Scoring] += sc.Count
+		if sc.Scoring == RoutingScoringLogprobs && sc.AvgTop != nil {
+			stats.AvgTopProbability = math.Round(*sc.AvgTop*1000) / 1000
+		}
 	}
 
 	// 决策调用

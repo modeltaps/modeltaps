@@ -117,6 +117,24 @@ export default function StatsPanel({ policyId, fallbackModel }) {
             </div>
           </div>
 
+          {Object.keys(stats.by_scoring || {}).length > 0 && (
+            <div>
+              <p className="mb-2 text-sm font-medium">{t('routingPolicy.stats.byScoring')}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {Object.entries(stats.by_scoring).map(([mode, count]) => (
+                  <Badge key={mode} variant="outline" className="font-normal">
+                    {t(`routingPolicy.scoringUsed.${mode}`, { defaultValue: mode })} · {count}
+                  </Badge>
+                ))}
+                {stats.avg_top_probability > 0 && (
+                  <Badge variant="outline" className="font-normal">
+                    {t('routingPolicy.stats.avgTopProbability', { value: `${Math.round(stats.avg_top_probability * 100)}%` })}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="overflow-hidden rounded-md border border-border">
             <Table>
               <TableHeader>

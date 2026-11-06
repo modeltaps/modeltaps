@@ -178,7 +178,18 @@ export default function TryItPanel({ policy, policyId = 0, modelOptions = [] }) 
                 <span>
                   {t('routingPolicy.tryIt.latency')}: <span className="text-foreground">{r.decision_ms} ms</span>
                 </span>
+                {r.scoring && (
+                  <span>
+                    {t('routingPolicy.tryIt.scoring')}:{' '}
+                    <span className="text-foreground">{t(`routingPolicy.scoringUsed.${r.scoring}`, { defaultValue: r.scoring })}</span>
+                  </span>
+                )}
               </div>
+              {r.probabilities?.length > 0 && (
+                <p className="mt-2 text-xs text-muted-foreground" data-testid="try-probabilities">
+                  {r.probabilities.map((p) => `${p.label} ${Math.round(p.probability * 100)}%`).join(' · ')}
+                </p>
+              )}
               {r.error && <p className="mt-2 break-words text-xs text-destructive">{r.error}</p>}
             </div>
           ))}

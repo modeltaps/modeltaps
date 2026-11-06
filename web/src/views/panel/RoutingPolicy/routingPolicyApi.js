@@ -50,6 +50,12 @@ export async function tryRoutingPolicy({ policy, text, decisionModels }) {
   return res.data;
 }
 
+// 探测一个决策模型在当前渠道上能否返回 logprobs；data.supported 为 null 时探测本身失败（data.error）。
+export async function probeRoutingScoring(decisionModel) {
+  const res = await API.post(`${BASE}probe`, { decision_model: decisionModel });
+  return res.data;
+}
+
 // 管理员目录：全部主名模型（去掉别名行与策略行），供决策 / 目标 / 兜底的下拉建议。
 export async function listCatalogModelNames() {
   const res = await API.get('/api/model_info/catalog');
@@ -60,6 +66,9 @@ export async function listCatalogModelNames() {
     .map((row) => row.model)
     .sort((a, b) => a.localeCompare(b));
 }
+
+// 打分方式：auto 先用 logprobs，不支持时改用自报；logprobs 只用概率；self_reported 只用自报。
+export const SCORING_MODES = ['auto', 'logprobs', 'self_reported'];
 
 // 空策略：新建表单的初始值。数值字段 0 = 用后端默认（截断长度、超时）；pin_ttl_seconds 0 = 每次分类。
 export const EMPTY_POLICY = {
@@ -74,6 +83,7 @@ export const EMPTY_POLICY = {
     { label: '', description: '', target_model: '' }
   ],
   fallback_model: '',
+  scoring: 'auto',
   threshold: 0.5,
   pin_ttl_seconds: 3600,
   max_input_chars: 4000,
@@ -102,6 +112,7 @@ export function normalizePolicy(form) {
     question: (form.question || '').trim(),
     routes,
     fallback_model: (form.fallback_model || '').trim(),
+    scoring: form.scoring || 'auto',
     threshold: num(form.threshold, 0.5),
     pin_ttl_seconds: num(form.pin_ttl_seconds, 3600),
     max_input_chars: num(form.max_input_chars, 0),

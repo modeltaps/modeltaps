@@ -12,6 +12,7 @@ import (
 
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/model"
+	"github.com/modeltaps/modeltaps/relay"
 )
 
 const (
@@ -34,6 +35,12 @@ func ftoa(f float64) string {
 // 再建一条策略 small→cheap、large→big、兜底 big。
 func newRoutingHarness(t *testing.T, decisionURL, targetURL string, channelType int) *Harness {
 	t.Helper()
+	return newRoutingHarnessWithScoring(t, decisionURL, targetURL, channelType, model.RoutingScoringSelfReported)
+}
+
+// newRoutingHarnessWithScoring 同 newRoutingHarness，策略用指定的打分方式。
+func newRoutingHarnessWithScoring(t *testing.T, decisionURL, targetURL string, channelType int, scoring string) *Harness {
+	t.Helper()
 	h := NewHarness(t, HarnessOptions{
 		Model: routingCheapModel,
 		Channels: []ChannelSpec{
@@ -53,7 +60,7 @@ func newRoutingHarness(t *testing.T, decisionURL, targetURL string, channelType 
 			{Label: "small", Description: "additive change", TargetModel: routingCheapModel},
 			{Label: "large", Description: "cross-module change", TargetModel: routingBigModel},
 		},
-		FallbackModel: routingBigModel, Threshold: 0.5, PinTTLSeconds: 3600,
+		FallbackModel: routingBigModel, Threshold: 0.5, PinTTLSeconds: 3600, Scoring: scoring,
 	}
 	if err := policy.Insert(); err != nil {
 		t.Fatalf("建策略失败: %v", err)
@@ -65,7 +72,9 @@ func newRoutingHarness(t *testing.T, decisionURL, targetURL string, channelType 
 	config.RedisEnabled = false
 	// 固定记录按「令牌 + 策略 + 会话」哈希，各用例的 seed 令牌 id 与提示前缀都一样，先清掉上个用例的。
 	model.ClearStickyMemory()
+	relay.ResetRoutingScoringCache()
 	t.Cleanup(func() {
+		relay.ResetRoutingScoringCache()
 		config.RedisEnabled = prevRedis
 		model.ResetRoutingPolicyCache()
 		model.ClearStickyMemory()
@@ -114,7 +123,7 @@ func TestAutoRoutingChatRoutesToClassifiedTarget(t *testing.T) {
 	}
 
 	// 响应头告诉客户端路由去向。
-	if got := w.Header().Get("X-Modeltaps-Route"); got != "policy=auto/coder; label=small; model=cheap-model; confidence=0.90; reason=classified" {
+	if got := w.Header().Get("X-Modeltaps-Route"); got != "policy=auto/coder; label=small; model=cheap-model; confidence=0.90; scoring=self_reported; reason=classified" {
 		t.Fatalf("X-Modeltaps-Route 不对: %q", got)
 	}
 

@@ -1526,7 +1526,8 @@
     "oidc_login_failed": "Sign-in failed. Try again.",
     "log_cleanup_started": "Log cleanup started in the background. Progress is written to the system log.",
     "log_cleanup_running": "A log cleanup is already running. Try again later.",
-    "channel_drift_rule_invalid": "Invalid regular expression in the ignore rules: {{rule}}"
+    "channel_drift_rule_invalid": "Invalid regular expression in the ignore rules: {{rule}}",
+    "routing_policy_scoring_invalid": "Scoring must be auto, logprobs or self-reported"
   },
   "channelOAuth": {
     "tip": {
@@ -1632,7 +1633,7 @@
       "fallbackModelHint": "Used when confidence is below the threshold, the decision fails, or the first message has no text. Put your safest model here.",
       "threshold": "Confidence threshold",
       "thresholdHint": "0 to 1. Below it the request goes to the fallback.",
-      "thresholdHelp": "0.5 is a good start. Raise it to send more borderline requests to the fallback; lower it to trust the decision model more. The confidence is self-reported by the decision model, so treat it as a ranking, not a probability.",
+      "thresholdHelp": "0.5 is a good start. Raise it to send more borderline requests to the fallback; lower it to trust the decision model more. With logprobs scoring the confidence is the label's probability; self-reported confidence is only a ranking.",
       "pinTtl": "Pin per session (seconds)",
       "pinTtlHint": "How long a session keeps the model chosen at its first message. 0 classifies every request.",
       "pinTtlHelp": "Later turns of a pinned session skip the decision, keep the upstream prompt cache warm and never switch models mid-conversation. Sessions are identified by the session header, Claude Code metadata, prompt_cache_key or the prompt prefix.",
@@ -1646,7 +1647,15 @@
         "fallback_model": "Fallback model is required",
         "routes": "At least two routes, each with a label and a target model"
       },
-      "tabStats": "Statistics"
+      "tabStats": "Statistics",
+      "scoring": "Scoring",
+      "scoringHint": "How the decision model's confidence is measured.",
+      "scoringHelp": "Logprobs reads the model's real probability for each label, so the threshold is a probability. It needs a non-reasoning model on a channel that returns logprobs (OpenAI-compatible APIs such as GPT-4.1, DeepSeek in non-thinking mode, or self-hosted vLLM); Claude, reasoning models and most aggregator gateways do not return them. Auto tries logprobs and switches to self-reported confidence for 24 hours on a channel that does not return them.",
+      "probe": "Check support",
+      "probing": "Checking…",
+      "probeSupported": "This decision model returns logprobs on the channel it was routed to: probability scoring works.",
+      "probeUnsupported": "This decision model does not return logprobs on the channel it was routed to: auto uses self-reported confidence, logprobs always falls back.",
+      "probeFailed": "The check failed: {{error}}"
     },
     "templates": {
       "coding_change_size": "Coding: size of change",
@@ -1669,7 +1678,8 @@
       "latency": "Decision time",
       "loadSamples": "Pick a real first message from the logs",
       "loadingSamples": "Loading…",
-      "noSamples": "No routed requests with a stored request body yet. Turn on request detail logging to collect samples."
+      "noSamples": "No routed requests with a stored request body yet. Turn on request detail logging to collect samples.",
+      "scoring": "Scoring"
     },
     "reasons": {
       "classified": "Classified",
@@ -1697,7 +1707,18 @@
       "target": "Model",
       "share": "Share",
       "quota": "Spent",
-      "noLabel": "fallback"
+      "noLabel": "fallback",
+      "byScoring": "By scoring",
+      "avgTopProbability": "Average top probability {{value}}"
+    },
+    "scoring": {
+      "auto": "Auto (logprobs when available)",
+      "logprobs": "Logprobs only",
+      "self_reported": "Self-reported only"
+    },
+    "scoringUsed": {
+      "logprobs": "Logprobs",
+      "self_reported": "Self-reported"
     }
   },
   "logPage": {
