@@ -163,19 +163,18 @@ func GetLogsSelfStat(c *gin.Context) {
 	// Filter by user_id like GetUserLogsList; see LogsListParams.UserId.
 	params.UserId = c.GetInt("id")
 	params.Username = ""
-	// SumUsedQuota 与 admin 的 GetLogsStat 共享实现，会读取 ChannelId / SourceIp；
-	// 这两个字段在 GetUserLogsList 里被忽略，stat 也要保持一致，否则普通用户在工具栏
-	// 填了 source_ip 后会出现「列表不过滤、总消费过滤」的数字对不上。
+	// SumUsedQuota 与 admin 的 GetLogsStat 共享实现，会读取 ChannelId；该字段在
+	// GetUserLogsList 里被忽略，stat 也要保持一致，否则普通用户在工具栏填了 channel_id 后会出现
+	// 「列表不过滤、总消费过滤」的数字对不上。
+	// source_ip（单值与多值）则两边都生效：用户自己的请求 IP 本就可见，列表按它过滤，stat 同样保留。
+	// stat 只汇总消费类日志，不含记录管理员 IP 的 manage/system 日志，不会因此泄露管理员 IP。
 	params.ChannelId = 0
-	params.SourceIp = ""
 	params.UpstreamRequestId = ""
 	// W9-D:多值/排除口径同上,self 上下文清空 admin 专属维度,保证列表与总消费数字一致。
 	params.Usernames = nil
 	params.ChannelIds = nil
-	params.SourceIps = nil
 	params.ExcludeUsernames = nil
 	params.ExcludeChannelIds = nil
-	params.ExcludeSourceIps = nil
 
 	quotaNum := model.SumUsedQuota(&params)
 	c.JSON(http.StatusOK, gin.H{
