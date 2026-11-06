@@ -479,9 +479,30 @@ func applyAppNameInNotIn(tx *gorm.DB, include, exclude []string) *gorm.DB {
 	return tx
 }
 
+// applyUserSourceIpFilters lets a user filter their own logs by request IP (single value, include
+// list and exclude list). Manage and system logs record the administrator's IP, which the user
+// side blanks in the output, so they must not take part in the match either: with an include
+// filter they are left out, with an exclude filter they are kept like any row without an IP.
+// Otherwise a user could probe a candidate IP and read from the row count whether an
+// administrator acted from it, although the field itself is blanked afterwards.
+func applyUserSourceIpFilters(tx *gorm.DB, params *LogsListParams) *gorm.DB {
+	hidden := []int{LogTypeManage, LogTypeSystem}
+	if params.SourceIp != "" {
+		tx = tx.Where("source_ip = ?", params.SourceIp).Where("type NOT IN ?", hidden)
+	}
+	if len(params.SourceIps) > 0 {
+		tx = tx.Where("source_ip IN ?", params.SourceIps).Where("type NOT IN ?", hidden)
+	}
+	if len(params.ExcludeSourceIps) > 0 {
+		tx = tx.Where("(type IN ? OR source_ip NOT IN ?)", hidden, params.ExcludeSourceIps)
+	}
+	return tx
+}
+
 // applyLogEnumFilters 施加 W9-D 级联筛选的多值(IN)/排除(NOT IN)条件,语义与单值旧字段一致。
-// model_name / token_name / finish_reason / app_name 各路径通用;username / channel_id / source_ip 仅在
-// admin 上下文(admin=true)施加,与旧单值逻辑在 self 列表中被忽略的口径保持一致。
+// model_name / token_name / finish_reason / app_name 各路径通用;username / channel_id 仅在
+// admin 上下文(admin=true)施加,与旧单值逻辑在 self 列表中被忽略的口径保持一致。source_ip 在两种
+// 上下文都生效(用户自己的请求 IP 本就可见),self 侧见 applyUserSourceIpFilters。
 func applyLogEnumFilters(tx *gorm.DB, params *LogsListParams, admin bool) *gorm.DB {
 	tx = applyInNotIn(tx, "model_name", params.ModelNames, params.ExcludeModelNames)
 	tx = applyInNotIn(tx, "token_name", params.TokenNames, params.ExcludeTokenNames)
@@ -496,6 +517,9 @@ func applyLogEnumFilters(tx *gorm.DB, params *LogsListParams, admin bool) *gorm.
 	tx = applyRoutingPolicyInNotIn(tx, params.RoutingPolicies, params.ExcludeRoutingPolicies)
 	if params.RequestId != "" {
 		tx = tx.Where("request_id = ?", params.RequestId)
+	}
+	if !admin {
+		tx = applyUserSourceIpFilters(tx, params)
 	}
 	if admin {
 		tx = applyInNotIn(tx, "username", params.Usernames, params.ExcludeUsernames)
@@ -841,7 +865,7 @@ func GetLogsRequestHistogram(params *LogsListParams, bucketType string) ([]*LogR
 }
 
 // GetUserLogsRequestHistogram 个人上下文的请求量直方图,过滤口径与 GetUserLogsList 完全一致
-// (锁定 user_id,忽略 admin 专属维度 channel_id/source_ip/username)。
+// (锁定 user_id,忽略 admin 专属维度 channel_id/username;source_ip 与列表一样可筛)。
 func GetUserLogsRequestHistogram(userId int, params *LogsListParams, bucketType string) ([]*LogRequestHistogramBucket, error) {
 	tx := DB.Table("logs").Where("user_id = ?", userId)
 	if params.LogType != LogTypeUnknown {

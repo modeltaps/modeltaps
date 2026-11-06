@@ -5,7 +5,8 @@ import { appFaviconNode } from './AppFavicon';
 // 驱动可复用 FilterBar 的字段定义(App 专属配置,非组件本身)。按上下文裁剪:
 //   通用(requests):token_name / model_name / finish_reason / min_quota / min_tokens
 //   组织上下文:member_id(选项来自成员列表)
-//   平台管理员(非组织):channel_id / username / source_ip
+//   个人上下文(非组织):request_id / source_ip(自己的请求 IP 本就可见)
+//   平台管理员(非组织):另加 channel_id / username / upstream_request_id
 // enum 字段的 paramInclude/paramExclude 与后端 model.LogsListParams/OrgLogsListParams 的
 // form tag 一一对应(复数 = IN,exclude_ = NOT IN);单值旧字段仍由 Ledger 使用,互不影响。
 
@@ -129,8 +130,11 @@ const memberField = (orgMembers) => ({
   options: (orgMembers || []).map((m) => ({ value: String(m.user_id), label: m.username || `#${m.user_id}` }))
 });
 
+// source_ip 值域无界,保留文本自由输入不做选项。个人与管理员(非组织)都有:后端用户侧列表同样按它过滤。
+const sourceIpField = enumField('source_ip', 'tableToolBar.sourceIp', { freeText: true });
+
 // 平台管理员(非组织)维度。channel_id 预置渠道选项(label「名称 #id」, value=id),仍可打字;
-// username / source_ip 值域无界,保留文本自由输入不做选项。
+// username 值域无界,保留文本自由输入不做选项。
 const channelField = (channelOptions) =>
   enumField('channel_id', 'tableToolBar.channelId', {
     freeText: true,
@@ -140,7 +144,7 @@ const channelField = (channelOptions) =>
 const adminFields = (channelOptions) => [
   channelField(channelOptions),
   enumField('username', 'tableToolBar.username', { freeText: true }),
-  enumField('source_ip', 'tableToolBar.sourceIp', { freeText: true })
+  sourceIpField
 ];
 
 export function buildLogFilterFields({
@@ -160,6 +164,8 @@ export function buildLogFilterFields({
     fields.push(requestIdField);
     if (effectiveAdmin) {
       fields.push(...adminFields(channelOptions), upstreamRequestIdField);
+    } else {
+      fields.push(sourceIpField);
     }
   }
   return fields;

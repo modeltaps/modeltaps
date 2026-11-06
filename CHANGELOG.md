@@ -58,6 +58,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   returned to the client instead of being dropped. Codex image channels forward the same options
   and return SVG and GIF results with the right MIME type instead of `image/png`. The default
   prices include `gpt-image-2.6-flare` and `gpt-image-2.6-sunburst`, priced like the 2.5 models.
+- The log page lets users filter their own logs by request IP (one or several values, or exclude
+  some), also for the CSV export, the histogram and the total spend. Logs of administrator actions
+  on the account never match an IP filter, so the filter cannot be used to find out which IP an
+  administrator acted from.
 
 ### Fixed
 
