@@ -24,7 +24,11 @@ func testGatewayConfig() string {
 }
 
 func completedEventPayload(tradeNo, paymentIntentID string) []byte {
-	return []byte(fmt.Sprintf(`{"id":"evt_1","object":"event","api_version":"`+stripe.APIVersion+`","type":"checkout.session.completed","data":{"object":{"id":"cs_test_1","object":"checkout.session","client_reference_id":%q,"payment_intent":%q}}}`, tradeNo, paymentIntentID))
+	return sessionEventPayload("checkout.session.completed", "paid", tradeNo, paymentIntentID)
+}
+
+func sessionEventPayload(eventType, paymentStatus, tradeNo, paymentIntentID string) []byte {
+	return []byte(fmt.Sprintf(`{"id":"evt_1","object":"event","api_version":"`+stripe.APIVersion+`","type":%q,"data":{"object":{"id":"cs_test_1","object":"checkout.session","client_reference_id":%q,"payment_intent":%q,"payment_status":%q,"amount_total":1250,"currency":"usd"}}}`, eventType, tradeNo, paymentIntentID, paymentStatus))
 }
 
 // signHeader 用 stripe-go 官方测试辅助构造合法的 Stripe-Signature 头。
@@ -62,6 +66,9 @@ func TestStripeHandleCallback_ValidSignatureCompleted(t *testing.T) {
 	}
 	if notify.GatewayNo != "pi_123" {
 		t.Fatalf("GatewayNo 应取 payment_intent ID，got %q", notify.GatewayNo)
+	}
+	if notify.PaidCents != 1250 || notify.PaidCurrency != "usd" {
+		t.Fatalf("实付金额/币种应取 amount_total/currency，got %d %q", notify.PaidCents, notify.PaidCurrency)
 	}
 	if c.Writer.Written() || c.Writer.Status() != http.StatusOK {
 		t.Fatalf("入账前不应应答 Stripe，got status %d", c.Writer.Status())
@@ -153,5 +160,27 @@ func TestStripeHandleCallback_NonCompletedEventIgnored(t *testing.T) {
 	}
 	if notify != nil {
 		t.Fatalf("非 completed 事件不应产生 PayNotify: %+v", notify)
+	}
+}
+
+// 异步支付：completed 时 payment_status=unpaid 不入账；async_payment_succeeded 且 paid 时入账。
+func TestStripeHandleCallback_AsyncPayment(t *testing.T) {
+	for _, tc := range []struct {
+		eventType, status string
+		wantNotify        bool
+	}{
+		{"checkout.session.completed", "unpaid", false},
+		{"checkout.session.async_payment_succeeded", "paid", true},
+		{"checkout.session.async_payment_failed", "unpaid", false},
+	} {
+		payload := sessionEventPayload(tc.eventType, tc.status, "CAP-TRADE-2", "pi_456")
+		c := newStripeCallbackContext(t, payload, signHeader(payload, testWebhookSecret))
+		notify, err := (&Stripe{}).HandleCallback(c, testGatewayConfig())
+		if err != nil {
+			t.Fatalf("%s/%s: unexpected error %v", tc.eventType, tc.status, err)
+		}
+		if (notify != nil) != tc.wantNotify {
+			t.Fatalf("%s/%s: notify=%v, want %v", tc.eventType, tc.status, notify, tc.wantNotify)
+		}
 	}
 }

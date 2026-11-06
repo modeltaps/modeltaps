@@ -116,6 +116,14 @@ func (w *WeChatPay) HandleCallback(c *gin.Context, gatewayConfig string) (*types
 		TradeNo:   *transaction.OutTradeNo,
 		GatewayNo: *transaction.TransactionId,
 	}
+	if transaction.Amount != nil {
+		if transaction.Amount.Total != nil {
+			payNotify.PaidCents = *transaction.Amount.Total
+		}
+		if transaction.Amount.Currency != nil {
+			payNotify.PaidCurrency = *transaction.Amount.Currency
+		}
+	}
 	return payNotify, nil
 
 }
