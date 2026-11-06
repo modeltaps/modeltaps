@@ -36,8 +36,9 @@ func TestBuildToolFromImageRequestMapsSVGAndGIFOptions(t *testing.T) {
 		t.Fatalf("expected one tool, got %s", body)
 	}
 	got := decoded.Tools[0]
-	if got["complexity"] != "medium" {
-		t.Fatalf("complexity must be trimmed and forwarded, got %v", got["complexity"])
+	// The hosted image_generation tool rejects complexity, so the orchestration path drops it.
+	if _, ok := got["complexity"]; ok {
+		t.Fatalf("complexity must not reach the Responses tool, got %v", got["complexity"])
 	}
 	if got["frame_count"] != float64(6) || got["frame_duration_ms"] != float64(200) {
 		t.Fatalf("frame options must be forwarded, got %v", got)

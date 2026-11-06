@@ -75,6 +75,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Claude Code sessions are recognised again from `metadata.user_id` in the format current Claude
   Code sends (a JSON object encoded as a string), so Claude channel session affinity follows the
   Claude Code session instead of falling back to a hash of the cached prompt.
+- Codex image channels no longer fail `gpt-image-*` requests with "Complexity 'medium' is not
+  supported for this image model". The listed models (`gpt-image-1.5`, `gpt-image-2`, and the
+  2.5 and 2.6 variants) are now sent to the ChatGPT backend's native images endpoints instead of
+  through the Responses orchestration model, which filled in `complexity` on its own, so
+  `complexity` reaches the renderer only when the client asked for it. The request is built from
+  an allow-list of image options (no `extra_params` or end-user identifiers), usage is billed as
+  before (with the image estimate when the upstream omits it), and `response_format=url` still
+  returns a data URL. Channels with a custom base URL, and other image models, keep using the
+  Responses path, which now drops `complexity` instead of forwarding a value the hosted tool
+  rejects. `/v1/images/edits` on Codex channels also forwards `background`, `moderation`,
+  `output_compression`, `output_format`, and the SVG and GIF options instead of dropping them.
 
 ### Security
 

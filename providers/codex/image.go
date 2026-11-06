@@ -2,6 +2,7 @@ package codex
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -25,6 +26,19 @@ const (
 	imagesResponsesMainModel = "gpt-5.6-luna"
 	imageToolActionGenerate  = "generate"
 	imageToolActionEdit      = "edit"
+
+	// The ChatGPT backend also exposes the native images protocol (paths relative to the base
+	// URL). Fixed paths instead of ProviderConfig entries: they only exist on the real ChatGPT
+	// backend, so they are used only when the channel does not override the base URL (see
+	// canUseDirectImages).
+	//
+	// gpt-image-* models are sent here instead of through the Responses orchestration. The
+	// orchestration model drives the hosted image_generation tool and fills in complexity itself,
+	// and the renderer rejects that parameter for some models ("Complexity 'medium' is not
+	// supported for this image model"); dropping the field in the tool layer cannot fix it, so the
+	// orchestration is bypassed.
+	codexDirectImagesGenerations = "/backend-api/codex/images/generations"
+	codexDirectImagesEdits       = "/backend-api/codex/images/edits"
 )
 
 type imagesRequestBody struct {
@@ -77,8 +91,13 @@ type imageGenerateTool struct {
 	// The Responses image_generation tool accepts these too (same source as
 	// /v1/images/generations). Without mapping them the chat-to-codex conversion drops them
 	// silently: SVG uses output_format=svg plus svg.model, GIF uses frame_count and
-	// frame_duration_ms, and complexity sets the planning compute of the reference image.
-	Complexity      *string         `json:"complexity,omitempty"`
+	// frame_duration_ms.
+	//
+	// There is deliberately no complexity field: the hosted image_generation tool of
+	// /backend-api/codex/responses rejects it ("Complexity 'medium' is not supported for this
+	// image model", error type image_generation_user_error) whichever image model tools[].model
+	// names, so a client-supplied value is dropped here. Models in codexDirectImageModels do not
+	// take this path; the direct functions send complexity to the native images endpoint.
 	FrameCount      *int            `json:"frame_count,omitempty"`
 	FrameDurationMs *int            `json:"frame_duration_ms,omitempty"`
 	SVG             json.RawMessage `json:"svg,omitempty"`
@@ -106,6 +125,10 @@ func (p *CodexProvider) CreateImageGenerations(request *types.ImageRequest) (*ty
 		return nil, common.StringErrorWrapperLocal("prompt is required", "invalid_request_error", http.StatusBadRequest)
 	}
 
+	if p.shouldUseDirectImages(request.Model) {
+		return p.createImageGenerationsDirect(request)
+	}
+
 	body, err := json.Marshal(buildImagesRequestBody(imageToolActionGenerate, prompt, buildToolFromImageRequest(request), nil, "", p.ImagesMainModel))
 	if err != nil {
 		return nil, common.ErrorWrapperLocal(err, "build_request_failed", http.StatusBadRequest)
@@ -126,32 +149,16 @@ func (p *CodexProvider) CreateImageEdits(request *types.ImageEditRequest) (*type
 		return nil, common.StringErrorWrapperLocal("prompt is required", "invalid_request_error", http.StatusBadRequest)
 	}
 
-	inputImages, errCode := collectEditInputImages(request)
+	if p.shouldUseDirectImages(request.Model) {
+		return p.createImageEditsDirect(request)
+	}
+
+	inputImages, maskURL, errCode := collectEditImages(request)
 	if errCode != nil {
 		return nil, errCode
 	}
-	if len(inputImages) == 0 {
-		return nil, common.StringErrorWrapperLocal("image is required", "invalid_request_error", http.StatusBadRequest)
-	}
 
-	maskURL := ""
-	if request.Mask != nil {
-		dataURL, err := fileHeaderToDataURL(request.Mask)
-		if err != nil {
-			return nil, common.ErrorWrapperLocal(err, "read_mask_failed", http.StatusBadRequest)
-		}
-		maskURL = dataURL
-	}
-
-	tool := imageGenerateTool{Model: strings.TrimSpace(request.Model)}
-	if shouldPassImagesN(request.Model, request.N) {
-		n := request.N
-		tool.N = &n
-	}
-	tool.Size = strings.TrimSpace(request.Size)
-	tool.Quality = strings.TrimSpace(request.Quality)
-
-	body, err := json.Marshal(buildImagesRequestBody(imageToolActionEdit, prompt, tool, inputImages, maskURL, p.ImagesMainModel))
+	body, err := json.Marshal(buildImagesRequestBody(imageToolActionEdit, prompt, buildToolFromImageEditRequest(request), inputImages, maskURL, p.ImagesMainModel))
 	if err != nil {
 		return nil, common.ErrorWrapperLocal(err, "build_request_failed", http.StatusBadRequest)
 	}
@@ -172,29 +179,102 @@ func buildToolFromImageRequest(request *types.ImageRequest) imageGenerateTool {
 	}
 	tool.Size = strings.TrimSpace(request.Size)
 	tool.Quality = strings.TrimSpace(request.Quality)
-	if request.Background != nil {
-		tool.Background = strings.TrimSpace(*request.Background)
-	}
-	if request.OutputFormat != nil {
-		tool.OutputFormat = strings.TrimSpace(*request.OutputFormat)
-	}
-	if request.Moderation != nil {
-		tool.Moderation = strings.TrimSpace(*request.Moderation)
-	}
 	tool.Style = strings.TrimSpace(request.Style)
-	if request.OutputCompression != nil {
-		tool.OutputCompression = request.OutputCompression
-	}
-	if request.Complexity != nil {
-		// Trimmed like the other *string fields, so the upstream does not reject leading or
-		// trailing whitespace as an invalid enum value.
-		complexity := strings.TrimSpace(*request.Complexity)
-		tool.Complexity = &complexity
-	}
-	tool.FrameCount = request.FrameCount
-	tool.FrameDurationMs = request.FrameDurationMs
-	tool.SVG = request.SVG
+	applyImageOptionFields(&tool, imageOptionFields{
+		Background:        request.Background,
+		OutputFormat:      request.OutputFormat,
+		Moderation:        request.Moderation,
+		OutputCompression: request.OutputCompression,
+		FrameCount:        request.FrameCount,
+		FrameDurationMs:   request.FrameDurationMs,
+		SVG:               request.SVG,
+	})
 	return tool
+}
+
+// buildToolFromImageEditRequest maps the /v1/images/edits fields onto the image_generation tool.
+// It mirrors buildToolFromImageRequest: the two entry protocols (multipart and JSON) expose the same
+// optional parameters, so both go through applyImageOptionFields; only the carrier of svg differs
+// (form text that has to become a RawMessage).
+func buildToolFromImageEditRequest(request *types.ImageEditRequest) imageGenerateTool {
+	tool := imageGenerateTool{Model: strings.TrimSpace(request.Model)}
+	if shouldPassImagesN(request.Model, request.N) {
+		n := request.N
+		tool.N = &n
+	}
+	tool.Size = strings.TrimSpace(request.Size)
+	tool.Quality = strings.TrimSpace(request.Quality)
+	applyImageOptionFields(&tool, imageOptionFields{
+		Background:        request.Background,
+		OutputFormat:      request.OutputFormat,
+		Moderation:        request.Moderation,
+		OutputCompression: request.OutputCompression,
+		FrameCount:        request.FrameCount,
+		FrameDurationMs:   request.FrameDurationMs,
+		SVG:               rawMessageFromFormValue(request.SVG),
+	})
+	return tool
+}
+
+// imageOptionFields is the set of optional parameters shared by the generations and edits entries.
+// The official images API exposes the same fields on both; a single mapping keeps one path from
+// dropping a parameter silently while the other forwards it.
+type imageOptionFields struct {
+	Background        *string
+	OutputFormat      *string
+	Moderation        *string
+	OutputCompression *int
+	FrameCount        *int
+	FrameDurationMs   *int
+	SVG               json.RawMessage
+}
+
+func applyImageOptionFields(tool *imageGenerateTool, fields imageOptionFields) {
+	if fields.Background != nil {
+		tool.Background = strings.TrimSpace(*fields.Background)
+	}
+	if fields.OutputFormat != nil {
+		tool.OutputFormat = strings.TrimSpace(*fields.OutputFormat)
+	}
+	if fields.Moderation != nil {
+		tool.Moderation = strings.TrimSpace(*fields.Moderation)
+	}
+	tool.OutputCompression = fields.OutputCompression
+	tool.FrameCount = fields.FrameCount
+	tool.FrameDurationMs = fields.FrameDurationMs
+	tool.SVG = normalizeSVGRawMessage(fields.SVG)
+}
+
+// rawMessageFromFormValue turns the svg text bound from an edits form into a RawMessage. nil stays
+// nil so omitempty applies; a non-empty text (even an empty object {}) is kept as sent.
+func rawMessageFromFormValue(v *string) json.RawMessage {
+	if v == nil {
+		return nil
+	}
+	return json.RawMessage(*v)
+}
+
+// normalizeSVGRawMessage unifies the two carriers of svg: a generations JSON body (already raw JSON)
+// and an edits multipart form (JSON text, possibly quoted). A quoted value has to be unwrapped first,
+// otherwise the upstream parses a JSON string instead of an object and reports a missing svg.model.
+// Blank or undecodable text is dropped.
+func normalizeSVGRawMessage(raw json.RawMessage) json.RawMessage {
+	trimmed := bytes.TrimSpace(raw)
+	if len(trimmed) == 0 {
+		return nil
+	}
+	if trimmed[0] != '"' {
+		return trimmed
+	}
+	var text string
+	if err := json.Unmarshal(trimmed, &text); err != nil {
+		return nil
+	}
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return nil
+	}
+	return json.RawMessage(text)
 }
 
 func buildImagesRequestBody(
@@ -491,6 +571,27 @@ func shouldPassImagesN(model string, n int) bool {
 		return false
 	}
 	return !strings.EqualFold(strings.TrimSpace(model), "dall-e-3")
+}
+
+// collectEditImages reads the uploaded images and the optional mask of an edits request as data
+// URLs; it fails when no image was uploaded.
+func collectEditImages(request *types.ImageEditRequest) (imageURLs []string, maskURL string, errCode *types.OpenAIErrorWithStatusCode) {
+	imageURLs, errCode = collectEditInputImages(request)
+	if errCode != nil {
+		return nil, "", errCode
+	}
+	if len(imageURLs) == 0 {
+		return nil, "", common.StringErrorWrapperLocal("image is required", "invalid_request_error", http.StatusBadRequest)
+	}
+
+	if request.Mask != nil {
+		dataURL, err := fileHeaderToDataURL(request.Mask)
+		if err != nil {
+			return nil, "", common.ErrorWrapperLocal(err, "read_mask_failed", http.StatusBadRequest)
+		}
+		maskURL = dataURL
+	}
+	return imageURLs, maskURL, nil
 }
 
 func collectEditInputImages(request *types.ImageEditRequest) ([]string, *types.OpenAIErrorWithStatusCode) {
