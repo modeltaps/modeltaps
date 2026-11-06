@@ -340,6 +340,10 @@ func Register(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
+	if config.EmailVerificationEnabled {
+		// 验证码一次性：注册成功后作废
+		common.DeleteKey(string(user.Email), common.EmailVerificationPurpose)
+	}
 
 	// 事务提交成功后，刷新相关缓存
 	if config.RedisEnabled {
@@ -1102,6 +1106,8 @@ func EmailBind(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
+	// 验证码一次性：绑定成功后作废，不能再拿去绑定别的账号
+	common.DeleteKey(email, common.EmailVerificationPurpose)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
