@@ -57,6 +57,22 @@ type ImageRequest struct {
 	Moderation        *string `json:"moderation,omitempty"`
 	OutputCompression *int    `json:"output_compression,omitempty"`
 	OutputFormat      *string `json:"output_format,omitempty"`
+	// Complexity is the planning-compute tier (low/medium/high), independent of the render
+	// quality. For SVG output it controls how complex the reference image is; unset leaves it
+	// to the model default. It is declared here because the struct-encoding path silently drops
+	// anything that is not.
+	Complexity *string `json:"complexity,omitempty"`
+	// GIF output only (output_format=gif): the frame count and the frame duration. Like svg they
+	// would be dropped by the struct encoding; the upstream enforces the value ranges (2-16
+	// frames, 20ms-655350ms per frame), so they are not validated here.
+	FrameCount      *int `json:"frame_count,omitempty"`
+	FrameDurationMs *int `json:"frame_duration_ms,omitempty"`
+	// SVG is the SVG output configuration: with output_format=svg, SVG model selection needs
+	// svg.model, and the whole object is omitted when it is not used. It is carried as a
+	// RawMessage instead of a fixed struct: on the struct-encoding path (PassThroughBody and
+	// AllowExtraBody off) any svg sub-field the upstream adds later would otherwise be dropped on
+	// re-encoding. nil means not sent; an empty object {} is preserved as sent.
+	SVG json.RawMessage `json:"svg,omitempty"`
 
 	Stream        *bool `json:"stream,omitempty"`
 	PartialImages *int  `json:"partial_images,omitempty"`
@@ -79,8 +95,16 @@ type ImageResponse struct {
 	// （原样透传上游写法）。全部 omitempty：nil（上游未返回，如 dall-e）时不输出零值。
 	Background   json.RawMessage `json:"background,omitempty"`
 	OutputFormat json.RawMessage `json:"output_format,omitempty"`
-	Quality      json.RawMessage `json:"quality,omitempty"`
-	Size         json.RawMessage `json:"size,omitempty"`
+	// SVG echo. A RawMessage because the upstream may return an object or a string; it is only
+	// echoed, never read.
+	SVG json.RawMessage `json:"svg,omitempty"`
+	// SVGUsage is the token usage of the SVG authoring model (svg.model), which the upstream
+	// reports apart from the render usage: input_tokens / model / output_tokens /
+	// reasoning_tokens / total_tokens. It is echoed only and takes no part in billing: billing
+	// stays on the top-level usage.
+	SVGUsage json.RawMessage `json:"svg_usage,omitempty"`
+	Quality  json.RawMessage `json:"quality,omitempty"`
+	Size     json.RawMessage `json:"size,omitempty"`
 	// Echo of the effective safety_identifier (falls back to user upstream); kept raw like the
 	// fields above because it is only echoed back, never read.
 	SafetyIdentifier json.RawMessage `json:"safety_identifier,omitempty"`

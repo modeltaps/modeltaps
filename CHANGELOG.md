@@ -52,6 +52,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   logs record the scoring method and, with logprobs, every label's probability, "Try it" shows
   both, and the policy statistics break requests down by scoring method with the average top
   probability.
+- Image generation requests keep the SVG and GIF options (`complexity`, `frame_count`,
+  `frame_duration_ms`, `svg`) when the channel does not pass the body through, and the `svg` and
+  `svg_usage` fields of the response (including the synthesized streaming `completed` event) are
+  returned to the client instead of being dropped. Codex image channels forward the same options
+  and return SVG and GIF results with the right MIME type instead of `image/png`. The default
+  prices include `gpt-image-2.6-flare` and `gpt-image-2.6-sunburst`, priced like the 2.5 models.
 
 ### Fixed
 

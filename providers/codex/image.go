@@ -74,6 +74,14 @@ type imageGenerateTool struct {
 	Style             string              `json:"style,omitempty"`
 	OutputCompression *int                `json:"output_compression,omitempty"`
 	InputImageMask    *imagesMaskImageURL `json:"input_image_mask,omitempty"`
+	// The Responses image_generation tool accepts these too (same source as
+	// /v1/images/generations). Without mapping them the chat-to-codex conversion drops them
+	// silently: SVG uses output_format=svg plus svg.model, GIF uses frame_count and
+	// frame_duration_ms, and complexity sets the planning compute of the reference image.
+	Complexity      *string         `json:"complexity,omitempty"`
+	FrameCount      *int            `json:"frame_count,omitempty"`
+	FrameDurationMs *int            `json:"frame_duration_ms,omitempty"`
+	SVG             json.RawMessage `json:"svg,omitempty"`
 }
 
 type imagesMaskImageURL struct {
@@ -177,6 +185,15 @@ func buildToolFromImageRequest(request *types.ImageRequest) imageGenerateTool {
 	if request.OutputCompression != nil {
 		tool.OutputCompression = request.OutputCompression
 	}
+	if request.Complexity != nil {
+		// Trimmed like the other *string fields, so the upstream does not reject leading or
+		// trailing whitespace as an invalid enum value.
+		complexity := strings.TrimSpace(*request.Complexity)
+		tool.Complexity = &complexity
+	}
+	tool.FrameCount = request.FrameCount
+	tool.FrameDurationMs = request.FrameDurationMs
+	tool.SVG = request.SVG
 	return tool
 }
 
@@ -448,6 +465,9 @@ func imageStreamErrorToOpenAI(streamErr *imageStreamError, accessToken string) *
 	}
 }
 
+// imageMIMEType maps the requested output_format to the MIME type of the data URL. svg and gif
+// are official values of the images API (SVG and animated output); leaving them out would make
+// clients decode those results as image/png and fail to render them.
 func imageMIMEType(outputFormat string) string {
 	switch strings.ToLower(strings.TrimSpace(outputFormat)) {
 	case "", "png":
@@ -456,6 +476,10 @@ func imageMIMEType(outputFormat string) string {
 		return "image/jpeg"
 	case "webp":
 		return "image/webp"
+	case "gif":
+		return "image/gif"
+	case "svg":
+		return "image/svg+xml"
 	default:
 		return "image/png"
 	}
