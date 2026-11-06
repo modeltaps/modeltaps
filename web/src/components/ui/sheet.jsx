@@ -9,7 +9,8 @@ function Sheet({ open, onOpenChange, children }) {
   React.useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => {
-      if (e.key === 'Escape') onOpenChange?.(false);
+      // A nested control (dropdown, combobox) that handled Escape itself calls preventDefault.
+      if (e.key === 'Escape' && !e.defaultPrevented) onOpenChange?.(false);
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);

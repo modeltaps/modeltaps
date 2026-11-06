@@ -947,8 +947,6 @@
     "testModel": "测试模型",
     "channelApiAddress": "渠道API地址",
     "channelKey": "密钥",
-    "typeSearchPlaceholder": "搜索供应商…",
-    "typeSearchEmpty": "无匹配的供应商",
     "otherParameters": "其他参数",
     "channelType": "供应商",
     "all": "全部",
@@ -1060,7 +1058,7 @@
     "pruneDone": "已移除 {{count}} 个上游已不存在的模型：{{models}}，请保存渠道以生效",
     "modelCount": "共 {{count}} 个模型",
     "modelCountFiltered": "{{total}} 个中匹配 {{shown}} 个",
-    "modelChipMode": "卡片视图",
+    "modelChipMode": "选择视图",
     "modelTextMode": "编辑为文本",
     "modelSearchAdd": "搜索模型，或输入后回车添加",
     "modelAdd": "添加",
@@ -3577,5 +3575,45 @@
   "nav_sec_admin": "管理",
   "nav_sec_overview": "概览",
   "nav_sec_people": "用户与组织",
-  "nav_sec_gateway": "网关"
+  "nav_sec_gateway": "网关",
+  "modelSelect": {
+    "placeholder": "选择模型",
+    "selectedCount": "已选 {{count}} 个模型",
+    "search": "搜索模型",
+    "add": "添加「{{model}}」",
+    "empty": "没有匹配的模型",
+    "none": "尚未选择模型",
+    "selectGroup": "全选该组",
+    "clearGroup": "取消该组",
+    "onlySelected": "只看已选",
+    "advanced": "高级筛选",
+    "done": "完成",
+    "loadingUpstream": "正在获取上游模型",
+    "upstreamFailed": "未能获取上游模型列表，下方为本地候选",
+    "retry": "重试",
+    "custom": "自定义"
+  },
+  "providerPicker": {
+    "title": "选择供应商",
+    "search": "搜索供应商",
+    "empty": "没有匹配的供应商",
+    "category": {
+      "common": "常用",
+      "vendor": "模型厂商",
+      "cloud": "云平台",
+      "gateway": "聚合网关",
+      "subscription": "订阅账号",
+      "selfhosted": "自托管与兼容",
+      "media": "多媒体与其他",
+      "legacy": "旧版",
+      "other": "其他"
+    },
+    "auth": {
+      "apiKey": "API 密钥",
+      "oauth": "账号授权",
+      "endpoint": "密钥 + 地址",
+      "credentials": "组合凭证"
+    },
+    "customName": "OpenAI 兼容"
+  }
 }

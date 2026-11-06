@@ -8,7 +8,7 @@ export const CHANNEL_OPTIONS = {
   },
   14: {
     key: 14,
-    text: 'Anthropic Claude',
+    text: 'Anthropic',
     value: 14,
     color: 'info',
     url: 'https://console.anthropic.com/'
@@ -29,7 +29,7 @@ export const CHANNEL_OPTIONS = {
   },
   11: {
     key: 11,
-    text: 'Google PaLM2',
+    text: 'Google PaLM 2',
     value: 11,
     color: 'orange',
     url: 'https://aistudio.google.com/'
@@ -106,21 +106,21 @@ export const CHANNEL_OPTIONS = {
   },
   28: {
     key: 28,
-    text: 'Deepseek',
+    text: 'DeepSeek',
     value: 28,
     color: 'default',
     url: 'https://platform.deepseek.com/usage'
   },
   29: {
     key: 29,
-    text: 'Moonshot',
+    text: 'Moonshot AI',
     value: 29,
     color: 'default',
     url: 'https://platform.moonshot.cn/console/info'
   },
   30: {
     key: 30,
-    text: 'Mistral',
+    text: 'Mistral AI',
     value: 30,
     color: 'orange',
     url: 'https://console.mistral.ai/'
@@ -203,14 +203,14 @@ export const CHANNEL_OPTIONS = {
   },
   42: {
     key: 42,
-    text: 'VertexAI',
+    text: 'Google Vertex AI',
     value: 42,
     color: 'orange',
     url: 'https://console.cloud.google.com/'
   },
   45: {
     key: 45,
-    text: 'Siliconflow',
+    text: 'SiliconFlow',
     value: 45,
     color: 'orange',
     url: 'https://siliconflow.cn/'
@@ -231,14 +231,14 @@ export const CHANNEL_OPTIONS = {
   },
   49: {
     key: 49,
-    text: 'Github',
+    text: 'GitHub Models',
     value: 49,
     color: 'default',
     url: 'https://github.com/marketplace/models'
   },
   51: {
     key: 51,
-    text: 'RecraftAI',
+    text: 'Recraft',
     value: 51,
     color: 'orange',
     url: ''
@@ -273,14 +273,14 @@ export const CHANNEL_OPTIONS = {
   },
   57: {
     key: 57,
-    text: 'GeminiCli',
+    text: 'Gemini CLI',
     value: 57,
     color: 'orange',
     url: 'https://aistudio.google.com/'
   },
   58: {
     key: 58,
-    text: 'ClaudeCode',
+    text: 'Claude Code',
     value: 58,
     color: 'info',
     url: 'https://claude.ai/'
@@ -301,7 +301,7 @@ export const CHANNEL_OPTIONS = {
   },
   61: {
     key: 61,
-    text: 'VertexAI Express',
+    text: 'Google Vertex AI Express',
     value: 61,
     color: 'orange',
     url: 'https://console.cloud.google.com/'
@@ -315,7 +315,7 @@ export const CHANNEL_OPTIONS = {
   },
   8: {
     key: 8,
-    text: 'Custom channel',
+    text: 'OpenAI compatible',
     value: 8,
     color: 'primary',
     url: ''
@@ -327,20 +327,47 @@ export const CHANNEL_OPTIONS = {
 // used often and would be hard to find in the alphabetical list below.
 export const COMMON_CHANNEL_TYPES = [1, 14, 25, 3, 32, 42, 20, 28, 59, 58, 8];
 
-// Channel-type dropdown groups: the common types first, then every other type sorted by its
-// displayed name in the current language. `labelOf` maps an option to the text shown for it;
-// any type added to CHANNEL_OPTIONS lands in the second group automatically. `language` takes the
-// app's language codes (zh_CN) as well as BCP 47 tags (zh-CN).
-export function channelTypeGroups(labelOf = (o) => o.text, language) {
-  const locale = language ? String(language).replace('_', '-') : undefined;
-  const toOption = (o) => ({ value: String(o.value), label: labelOf(o) });
-  const common = COMMON_CHANNEL_TYPES.filter((id) => CHANNEL_OPTIONS[id]).map((id) => toOption(CHANNEL_OPTIONS[id]));
-  const others = Object.values(CHANNEL_OPTIONS)
-    .filter((o) => !COMMON_CHANNEL_TYPES.includes(o.value))
-    .map(toOption)
-    .sort((a, b) => a.label.localeCompare(b.label, locale, { sensitivity: 'base' }));
-  return [
-    { key: 'common', options: common },
-    { key: 'others', options: others }
+// Provider categories for the channel-type picker (card grid on create, dropdown on edit), in
+// display order. Every type in CHANNEL_OPTIONS belongs to exactly one category; a type added to
+// CHANNEL_OPTIONS without a category lands in "other" so it is never lost. The common types are
+// shown again in their own section at the top, they are not removed from their category.
+export const CHANNEL_TYPE_CATEGORIES = [
+  { key: 'vendor', types: [1, 14, 25, 28, 56, 30, 29, 36, 17, 16, 27, 33, 26, 15, 18, 19, 40] },
+  { key: 'cloud', types: [3, 55, 32, 42, 61, 54, 35] },
+  { key: 'gateway', types: [20, 62, 45, 31, 49, 52, 38] },
+  { key: 'subscription', types: [58, 59, 57, 60] },
+  { key: 'selfhosted', types: [8, 39] },
+  { key: 'media', types: [34, 41, 53, 37, 51, 24, 47] },
+  { key: 'legacy', types: [11, 23] }
+];
+
+// How a provider is connected, shown next to its name. Derived from the channel form's own
+// fields (typeConfig): OAuth login, a key plus an endpoint address, or a key made of several
+// parts (AK/SK, APPID|Secret, service account JSON). Everything else takes a single API key.
+const AUTH_OAUTH = [57, 58, 59, 60];
+const AUTH_ENDPOINT = [3, 55, 54, 8, 39, 34, 41];
+const AUTH_CREDENTIALS = [15, 18, 23, 32, 35, 40, 42, 53];
+
+export function channelTypeAuth(type) {
+  const id = Number(type);
+  if (AUTH_OAUTH.includes(id)) return 'oauth';
+  if (AUTH_ENDPOINT.includes(id)) return 'endpoint';
+  if (AUTH_CREDENTIALS.includes(id)) return 'credentials';
+  return 'apiKey';
+}
+
+// Sections for the provider picker: common first, then each category, then "other" for types
+// no category lists. Within a category the curated order above is kept (main vendors first),
+// it is not re-sorted by name. `labelOf` maps a CHANNEL_OPTIONS entry to its display name.
+export function channelTypeSections(labelOf = (o) => o.text) {
+  const toOption = (o) => ({ value: String(o.value), label: labelOf(o), type: o.value, auth: channelTypeAuth(o.value) });
+  const listed = new Set(CHANNEL_TYPE_CATEGORIES.flatMap((c) => c.types));
+  const pick = (ids) => ids.filter((id) => CHANNEL_OPTIONS[id]).map((id) => toOption(CHANNEL_OPTIONS[id]));
+  const sections = [
+    { key: 'common', options: pick(COMMON_CHANNEL_TYPES) },
+    ...CHANNEL_TYPE_CATEGORIES.map((c) => ({ key: c.key, options: pick(c.types) }))
   ];
+  const other = Object.values(CHANNEL_OPTIONS).filter((o) => !listed.has(o.value));
+  if (other.length > 0) sections.push({ key: 'other', options: other.map(toOption) });
+  return sections.filter((s) => s.options.length > 0);
 }

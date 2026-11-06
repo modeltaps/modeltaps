@@ -10,7 +10,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem } from '@/components/u
 import QuotaInput from '@/components/QuotaInput';
 import { API } from 'utils/api';
 import { renderSpend, showError, showSuccess } from 'utils/common';
-import ModelLimitSelector from '../Token/ModelLimitSelector';
+import ModelLimitSelector, { toLimitModels } from '../Token/ModelLimitSelector';
 
 // ==============================|| ORGANIZATION — MEMBER BUDGET & MODEL WHITELIST (T5) ||============================== //
 // Sheet editor for org_members.setting: periodic budget (daily/weekly/monthly,
@@ -55,7 +55,7 @@ export default function MemberLimitsSheet({ open, onOpenChange, orgId, member, o
         setWhitelist(data?.model_whitelist || []);
         setBudgetUsed(data?.budget_used || 0);
         const d = modelsRes.data.data;
-        setModels(Object.keys(d).map((id) => ({ id, name: id, owned_by: d[id].owned_by, groups: d[id].groups })));
+        setModels(toLimitModels(d));
       })
       .catch((error) => {
         showError(error);
@@ -149,7 +149,7 @@ export default function MemberLimitsSheet({ open, onOpenChange, orgId, member, o
                 label={t('orgPage.limits.whitelist')}
                 hint={t('orgPage.limits.whitelistHint')}
               >
-                <ModelLimitSelector models={models} value={whitelist} onChange={setWhitelist} />
+                <ModelLimitSelector id="member-model-limit" models={models} value={whitelist} onChange={setWhitelist} />
               </FormField>
             </>
           )}

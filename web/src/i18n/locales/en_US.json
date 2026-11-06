@@ -203,7 +203,7 @@
     "mappingFrom": "Requested model",
     "mappingTo": "Upstream model",
     "modelAdd": "Add",
-    "modelChipMode": "Chip view",
+    "modelChipMode": "Picker view",
     "modelCount": "{{count}} models",
     "modelCountFiltered": "{{shown}} of {{total}} match",
     "modelEmpty": "No models yet — use the buttons below, or type in the search box and press Enter",
@@ -377,8 +377,6 @@
     "testAllChannels": "Test All Channels",
     "testModel": "Test Model",
     "type": "Provider",
-    "typeSearchEmpty": "No matching provider",
-    "typeSearchPlaceholder": "Search provider…",
     "unselectAll": "Anti-select all",
     "updateBalance": "Update Balance",
     "updateEnabledBalance": "Update Enabled Balance",
@@ -3577,5 +3575,45 @@
   "nav_sec_admin": "Admin",
   "nav_sec_gateway": "Gateway",
   "nav_sec_overview": "Overview",
-  "nav_sec_people": "Users & Organizations"
+  "nav_sec_people": "Users & Organizations",
+  "modelSelect": {
+    "placeholder": "Select models",
+    "selectedCount": "{{count}} models selected",
+    "search": "Search models",
+    "add": "Add \"{{model}}\"",
+    "empty": "No matching models",
+    "none": "No models selected",
+    "selectGroup": "Select all in group",
+    "clearGroup": "Clear group",
+    "onlySelected": "Selected",
+    "advanced": "Advanced filters",
+    "done": "Done",
+    "loadingUpstream": "Loading upstream models",
+    "upstreamFailed": "Could not load the upstream list, showing local candidates",
+    "retry": "Retry",
+    "custom": "Custom"
+  },
+  "providerPicker": {
+    "title": "Choose a provider",
+    "search": "Search providers",
+    "empty": "No matching providers",
+    "category": {
+      "common": "Common",
+      "vendor": "Model vendors",
+      "cloud": "Cloud platforms",
+      "gateway": "Gateways",
+      "subscription": "Subscription accounts",
+      "selfhosted": "Self-hosted and compatible",
+      "media": "Media and more",
+      "legacy": "Legacy",
+      "other": "Other"
+    },
+    "auth": {
+      "apiKey": "API key",
+      "oauth": "Account login",
+      "endpoint": "Key + endpoint",
+      "credentials": "Multi-part credentials"
+    },
+    "customName": "OpenAI compatible"
+  }
 }

@@ -15,12 +15,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Combobox } from '@/components/ui/combobox';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetBody, SheetFooter } from '@/components/ui/sheet';
-import { channelTypeGroups } from 'constants/ChannelConstants';
 import { configText } from 'i18n/configText';
 import { defaultConfig, typeConfig } from './typeConfig';
-import { syncChannelPricing, previewChannelPricing, applyChannelPricing, fetchUpstreamModelList } from './channelApi';
+import {
+  syncChannelPricing,
+  previewChannelPricing,
+  applyChannelPricing,
+  fetchUpstreamModelList,
+  fetchUpstreamModelPicker
+} from './channelApi';
 import PriceSyncDialog from './PriceSyncDialog';
 import { buildModelSuggestions, fetchPriceList } from './modelSuggestions';
 import ChannelOAuth from './ChannelOAuth';
@@ -28,6 +32,7 @@ import ModelHeadersInput from './ModelHeadersInput';
 import ModelListInput from './ModelListInput';
 import ModelMappingInput from './ModelMappingInput';
 import ModelSelectorModal from './ModelSelectorModal';
+import { ProviderGrid, ProviderSelect } from './ProviderPicker';
 import PluginForm from './PluginForm';
 import pluginConfig from './pluginConfig';
 import ProviderIcon from '@/components/brand/ProviderIcon';
@@ -77,17 +82,31 @@ const PRE_COST_OPTIONS = [
 ];
 
 export default function ChannelSheet({ open, channelId, initialTab = 'basic', onClose, onSaved, groupOptions }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
   const [hasTag, setHasTag] = useState(false);
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
   const [modelSelectorValues, setModelSelectorValues] = useState(null);
   const [activeTab, setActiveTab] = useState('basic');
+  // A new channel starts on the provider grid; picking a card moves on to the form.
+  const [pickingProvider, setPickingProvider] = useState(false);
+  // Upstream rows for the model dropdown, fetched the first time it opens for the current
+  // type: { status: 'idle' | 'loading' | 'done' | 'error', items, type }.
+  const [upstream, setUpstream] = useState({ status: 'idle', items: [], type: null });
   // Safe projection of the stored key from the backend: { configured, count, masked[] }.
   const [keyStatus, setKeyStatus] = useState(null);
   // displayed model name -> original model name (v1 modelOriginalMapping)
   const [modelOriginalMapping, setModelOriginalMapping] = useState({});
-  const { register, handleSubmit, control, reset, setValue, getValues, watch, formState: { errors } } = useForm({ defaultValues: EMPTY });
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    setValue,
+    getValues,
+    watch,
+    formState: { errors }
+  } = useForm({ defaultValues: EMPTY });
   const typeValue = watch('type');
   const baseUrlValue = watch('base_url');
   const [iconRefreshKey, setIconRefreshKey] = useState(0);
@@ -98,7 +117,6 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
   const [pruning, setPruning] = useState(false);
   // Price list behind the model picker's suggestions; loaded once, the first time the sheet opens.
   const [prices, setPrices] = useState(null);
-  const typeGroups = useMemo(() => channelTypeGroups((o) => o.text, i18n.language), [i18n.language]);
   const modelSuggestions = useMemo(() => buildModelSuggestions(typeValue, prices || []), [typeValue, prices]);
 
   // OpenRouter(type=20) 自带价格：从上游 /v1/models 拉真实价并 upsert 进价格表。
@@ -235,6 +253,8 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
     setModelOriginalMapping({});
     setActiveTab(initialTab);
     setKeyStatus(null);
+    setUpstream({ status: 'idle', items: [], type: null });
+    setPickingProvider(!channelId);
     if (channelId) {
       loadChannel(channelId);
     } else {
@@ -257,6 +277,39 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
       models: v.models
     });
     setModelSelectorOpen(true);
+  };
+
+  // Types whose upstream model list the backend can fetch (typeConfig shows a fetch label).
+  const canFetchModels = Boolean(typeConfig[typeValue]?.inputLabel?.provider_models_list);
+
+  // Loads the upstream list behind the model dropdown once per channel type. A new channel
+  // needs its key first; when editing, the backend falls back to the stored key via `id`.
+  // Failures keep the local candidates and show a retry note instead of a toast.
+  const loadUpstream = async (force = false) => {
+    if (!canFetchModels) return;
+    const v = getValues();
+    if (!channelId && !v.key) return;
+    if (!force && upstream.type === v.type && upstream.status !== 'idle') return;
+    setUpstream({ status: 'loading', items: [], type: v.type });
+    try {
+      const data = await fetchUpstreamModelPicker({
+        id: channelId ? parseInt(channelId, 10) : 0,
+        type: v.type,
+        key: v.key || '',
+        base_url: v.base_url,
+        other: v.other
+      });
+      const items = data.models.map((row) => ({ id: row.model, releasedAt: row.released_at || undefined }));
+      setUpstream({ status: 'done', items, type: v.type });
+    } catch (e) {
+      setUpstream({ status: 'error', items: [], type: v.type });
+    }
+  };
+
+  const pickProvider = (nextType) => {
+    setValue('type', nextType);
+    applyTypeDefaults(nextType);
+    setPickingProvider(false);
   };
 
   // Write the picked models back into the comma-separated Textarea value.
@@ -466,13 +519,13 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
   const onSubmit = async (raw) => {
     const values = trims({ ...raw });
     // All required fields live in the "basic" tab; jump there on any miss.
-    const fail = (key) => {
-      setActiveTab('basic');
+    const fail = (key, tab = 'basic') => {
+      setActiveTab(tab);
       toast.error(t(`channel_edit.${key}`));
       return true;
     };
     if (!values.name && fail('requiredName')) return;
-    if (!values.models && fail('requiredModels')) return;
+    if (!values.models && fail('requiredModels', 'model')) return;
     if ((!values.groups || values.groups.length === 0) && fail('requiredGroup')) return;
     if (!channelId && !values.key && fail('requiredKey')) return;
     if ([3, 8].includes(values.type) && !values.base_url && fail('requiredBaseUrl')) return;
@@ -522,7 +575,7 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
           const param = typePlugins[pluginId].params[paramId];
           const v = values.plugin?.[pluginId]?.[paramId];
           // 未触碰的字段写入声明的默认值而非空串，与表单展示值一致（后端对空串同样归一到默认值）。
-          normalized[pluginId][paramId] = v ?? (param.type === 'bool' ? false : param.default ?? '');
+          normalized[pluginId][paramId] = v ?? (param.type === 'bool' ? false : (param.default ?? ''));
         }
       }
       values.plugin = normalized;
@@ -581,20 +634,33 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
       <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
         <SheetContent onClose={onClose} className="max-w-3xl">
           <SheetHeader>
-            <SheetTitle>{channelId ? t('common.edit') : t('common.create')}</SheetTitle>
+            <SheetTitle>{pickingProvider ? t('providerPicker.title') : channelId ? t('common.edit') : t('common.create')}</SheetTitle>
           </SheetHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
-            <SheetBody className="space-y-4">{renderFields()}</SheetBody>
-            <SheetFooter>
-              <Button type="button" variant="outline" onClick={onClose}>
-                {t('common.cancel')}
-              </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting && <Loader2 className="size-4 animate-spin" />}
-                {t('common.submit')}
-              </Button>
-            </SheetFooter>
-          </form>
+          {pickingProvider ? (
+            <>
+              <SheetBody className="flex min-h-0 flex-col">
+                <ProviderGrid onPick={pickProvider} />
+              </SheetBody>
+              <SheetFooter>
+                <Button type="button" variant="outline" onClick={onClose}>
+                  {t('common.cancel')}
+                </Button>
+              </SheetFooter>
+            </>
+          ) : (
+            <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
+              <SheetBody className="space-y-4">{renderFields()}</SheetBody>
+              <SheetFooter>
+                <Button type="button" variant="outline" onClick={onClose}>
+                  {t('common.cancel')}
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting && <Loader2 className="size-4 animate-spin" />}
+                  {t('common.submit')}
+                </Button>
+              </SheetFooter>
+            </form>
+          )}
         </SheetContent>
       </Sheet>
       {pricePreview && (
@@ -646,16 +712,13 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
               control={control}
               name="type"
               render={({ field }) => (
-                <Combobox
+                <ProviderSelect
                   id="channel-type"
-                  value={String(field.value)}
-                  onValueChange={(v) => {
-                    field.onChange(Number(v));
-                    applyTypeDefaults(Number(v));
+                  value={field.value}
+                  onChange={(v) => {
+                    field.onChange(v);
+                    applyTypeDefaults(v);
                   }}
-                  groups={typeGroups}
-                  searchPlaceholder={t('channel_index.typeSearchPlaceholder')}
-                  emptyText={t('channel_index.typeSearchEmpty')}
                 />
               )}
             />
@@ -728,9 +791,7 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
                         <label key={g} className="flex items-center gap-2 text-sm">
                           <Checkbox
                             checked={checked}
-                            onCheckedChange={(c) =>
-                              field.onChange(c ? [...(field.value || []), g] : field.value.filter((x) => x !== g))
-                            }
+                            onCheckedChange={(c) => field.onChange(c ? [...(field.value || []), g] : field.value.filter((x) => x !== g))}
                           />
                           {g}
                         </label>
@@ -741,8 +802,16 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
               />
             </div>
           </FormField>
+        </TabsContent>
 
-          <FormField id="channel-models" label={configText(t, defaultConfig.inputLabel.models)} required help={configText(t, defaultConfig.prompt.models)}>
+        {/* 模型 */}
+        <TabsContent value="model" className="space-y-5">
+          <FormField
+            id="channel-models"
+            label={configText(t, defaultConfig.inputLabel.models)}
+            required
+            help={configText(t, defaultConfig.prompt.models)}
+          >
             <Controller
               control={control}
               name="models"
@@ -750,71 +819,66 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
                 <ModelListInput
                   value={field.value}
                   onChange={field.onChange}
+                  disabled={hasTag}
                   suggestions={modelSuggestions}
-                  headerActions={
-                    typeConfig[typeValue]?.inputLabel?.provider_models_list ? (
-                      <>
-                        <Button
+                  upstream={upstream.type === typeValue ? upstream.items : []}
+                  onOpen={() => loadUpstream()}
+                  loading={upstream.status === 'loading' && upstream.type === typeValue}
+                  notice={
+                    upstream.status === 'error' && upstream.type === typeValue ? (
+                      <span className="flex items-center gap-2">
+                        {t('modelSelect.upstreamFailed')}
+                        <button
                           type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-7 gap-1 px-2 text-xs"
-                          disabled={hasTag}
-                          title={configText(t, defaultConfig.prompt.provider_models_list)}
-                          onClick={openModelSelector}
+                          className="text-foreground underline-offset-2 hover:underline"
+                          onClick={() => loadUpstream(true)}
                         >
-                          <CloudDownload className="size-3.5" />
-                          {configText(t, typeConfig[typeValue].inputLabel.provider_models_list)}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="h-7 gap-1 px-2 text-xs"
-                          disabled={pruning || hasTag}
+                          {t('modelSelect.retry')}
+                        </button>
+                      </span>
+                    ) : null
+                  }
+                  advanced={canFetchModels && !hasTag ? { onClick: openModelSelector } : undefined}
+                  headerActions={
+                    <>
+                      {canFetchModels && (
+                        <ToolbarButton
+                          busy={pruning}
+                          disabled={hasTag}
+                          icon={Eraser}
                           title={t('channel_edit.pruneStaleTip')}
                           onClick={handlePruneStaleModels}
                         >
-                          {pruning ? <Loader2 className="size-3.5 animate-spin" /> : <Eraser className="size-3.5" />}
                           {t('channel_edit.pruneStale')}
-                        </Button>
-                      </>
-                    ) : null
+                        </ToolbarButton>
+                      )}
+                      {(typeValue === 20 || typeValue === 62) && (
+                        <>
+                          <ToolbarButton
+                            busy={syncingPricing}
+                            icon={CloudDownload}
+                            title={t('channel_edit.syncPricingTip')}
+                            onClick={handleSyncPricing}
+                          >
+                            {t('channel_edit.syncPricing')}
+                          </ToolbarButton>
+                          <ToolbarButton
+                            busy={fetchSyncing}
+                            disabled={hasTag}
+                            icon={CloudDownload}
+                            title={t('channel_edit.fetchAndSyncTip')}
+                            onClick={handleFetchAndSync}
+                          >
+                            {t('channel_edit.fetchAndSync')}
+                          </ToolbarButton>
+                        </>
+                      )}
+                    </>
                   }
                 />
               )}
             />
-            {(typeValue === 20 || typeValue === 62) && (
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={syncingPricing}
-                  title={t('channel_edit.syncPricingTip')}
-                  onClick={handleSyncPricing}
-                >
-                  {syncingPricing ? <Loader2 className="size-4 animate-spin" /> : <CloudDownload className="size-4" />}
-                  {t('channel_edit.syncPricing')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={fetchSyncing || hasTag}
-                  title={t('channel_edit.fetchAndSyncTip')}
-                  onClick={handleFetchAndSync}
-                >
-                  {fetchSyncing ? <Loader2 className="size-4 animate-spin" /> : <CloudDownload className="size-4" />}
-                  {t('channel_edit.fetchAndSync')}
-                </Button>
-              </div>
-            )}
           </FormField>
-        </TabsContent>
-
-        {/* 模型 */}
-        <TabsContent value="model" className="space-y-5">
           <FormField label={configText(t, defaultConfig.inputLabel.model_mapping)} help={configText(t, defaultConfig.prompt.model_mapping)}>
             <Controller
               control={control}
@@ -832,8 +896,18 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
             />
           </FormField>
 
-          <FormField id="channel-disabled-stream" label={configText(t, defaultConfig.inputLabel.disabled_stream)} hint={configText(t, defaultConfig.prompt.disabled_stream)}>
-            <Textarea id="channel-disabled-stream" rows={2} disabled={hasTag} placeholder="gpt-4o, o1-mini" {...register('disabled_stream')} />
+          <FormField
+            id="channel-disabled-stream"
+            label={configText(t, defaultConfig.inputLabel.disabled_stream)}
+            hint={configText(t, defaultConfig.prompt.disabled_stream)}
+          >
+            <Textarea
+              id="channel-disabled-stream"
+              rows={2}
+              disabled={hasTag}
+              placeholder="gpt-4o, o1-mini"
+              {...register('disabled_stream')}
+            />
           </FormField>
 
           <FormField
@@ -854,7 +928,12 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
             <Input id="channel-test-model" {...register('test_model')} />
           </FormField>
 
-          <ToggleRow control={control} name="drift_auto_add" label={t('channel_edit.drift.autoAdd')} help={t('channel_edit.drift.autoAddHelp')} />
+          <ToggleRow
+            control={control}
+            name="drift_auto_add"
+            label={t('channel_edit.drift.autoAdd')}
+            help={t('channel_edit.drift.autoAddHelp')}
+          />
           <FormField id="channel-drift-ignore" label={t('channel_edit.drift.ignoreRules')} help={t('channel_edit.drift.ignoreRulesHelp')}>
             <Textarea
               id="channel-drift-ignore"
@@ -868,7 +947,11 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
 
         {/* 请求 */}
         <TabsContent value="request" className="space-y-5">
-          <FormField id="channel-custom-parameter" label={configText(t, defaultConfig.inputLabel.custom_parameter)} help={configText(t, defaultConfig.prompt.custom_parameter)}>
+          <FormField
+            id="channel-custom-parameter"
+            label={configText(t, defaultConfig.inputLabel.custom_parameter)}
+            help={configText(t, defaultConfig.prompt.custom_parameter)}
+          >
             <Textarea id="channel-custom-parameter" rows={3} className="font-mono text-xs" {...register('custom_parameter')} />
           </FormField>
 
@@ -880,7 +963,10 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
             />
           </FormField>
 
-          <FormField label={configText(t, defaultConfig.inputLabel.header_override)} hint={configText(t, defaultConfig.prompt.header_override)}>
+          <FormField
+            label={configText(t, defaultConfig.inputLabel.header_override)}
+            hint={configText(t, defaultConfig.prompt.header_override)}
+          >
             <Controller
               control={control}
               name="header_override"
@@ -910,7 +996,12 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
 
         {/* 高级 */}
         <TabsContent value="advanced" className="space-y-5">
-          <FormField id="channel-pre-cost" row label={configText(t, defaultConfig.inputLabel.pre_cost)} help={configText(t, defaultConfig.prompt.pre_cost)}>
+          <FormField
+            id="channel-pre-cost"
+            row
+            label={configText(t, defaultConfig.inputLabel.pre_cost)}
+            help={configText(t, defaultConfig.prompt.pre_cost)}
+          >
             <Controller
               control={control}
               name="pre_cost"
@@ -967,7 +1058,11 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
             <Input id="channel-balance-threshold" type="number" min="0" step="0.01" {...register('balance_threshold')} />
           </FormField>
 
-          <FormField id="channel-proxy" label={configText(t, defaultConfig.inputLabel.proxy)} help={configText(t, defaultConfig.prompt.proxy)}>
+          <FormField
+            id="channel-proxy"
+            label={configText(t, defaultConfig.inputLabel.proxy)}
+            help={configText(t, defaultConfig.prompt.proxy)}
+          >
             <Input id="channel-proxy" {...register('proxy')} />
           </FormField>
 
@@ -1019,4 +1114,31 @@ ChannelSheet.propTypes = {
   onClose: PropTypes.func,
   onSaved: PropTypes.func,
   groupOptions: PropTypes.array
+};
+
+// Small outline action under the model field (prune, price sync).
+function ToolbarButton({ busy, disabled, icon: Icon, title, onClick, children }) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="h-7 gap-1.5 px-2 text-xs"
+      disabled={busy || disabled}
+      title={title}
+      onClick={onClick}
+    >
+      {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Icon className="size-3.5" />}
+      {children}
+    </Button>
+  );
+}
+
+ToolbarButton.propTypes = {
+  busy: PropTypes.bool,
+  disabled: PropTypes.bool,
+  icon: PropTypes.elementType.isRequired,
+  title: PropTypes.string,
+  onClick: PropTypes.func.isRequired,
+  children: PropTypes.node
 };

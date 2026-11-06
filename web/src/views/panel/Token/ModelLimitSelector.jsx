@@ -1,97 +1,49 @@
-import { useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { X } from 'lucide-react';
+import { useMemo } from 'react';
+import PropTypes from 'prop-types';
 
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
+import ModelMultiSelect from '@/components/model/ModelMultiSelect';
 
 // ==============================|| TOKEN — MODEL LIMIT SELECTOR ||============================== //
-// Searchable, grouped multi-select replacing the v1 MUI Autocomplete. Stores the
-// selected model ids in `setting.limits.limit_model_setting.models`.
+// Model allowlist picker for tokens and organization members, on the shared ModelMultiSelect:
+// vendor groups with logos, newest first, checkboxes, search. Stores the selected model ids.
+// `models` are catalog rows (see toLimitModels); only listed models can be picked, ids already
+// saved but no longer in the catalog stay visible so they can be removed.
 
-export default function ModelLimitSelector({ models = [], value = [], onChange, getGroupLabel }) {
-  const { t } = useTranslation();
-  const [search, setSearch] = useState('');
-  const selected = useMemo(() => new Set(value), [value]);
-
-  const grouped = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const list = q ? models.filter((m) => (m.name || '').toLowerCase().includes(q)) : models;
-    const sorted = [...list].sort((a, b) => (a.owned_by || '').localeCompare(b.owned_by || ''));
-    const map = new Map();
-    sorted.forEach((m) => {
-      if (!map.has(m.owned_by)) map.set(m.owned_by, []);
-      map.get(m.owned_by).push(m);
-    });
-    return [...map.entries()];
-  }, [models, search]);
-
-  const selectedModels = useMemo(() => models.filter((m) => selected.has(m.id)), [models, selected]);
-
-  const toggle = (id) => {
-    const next = new Set(selected);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    onChange?.([...next]);
-  };
-
-  return (
-    <div className="space-y-2">
-      {selectedModels.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {selectedModels.map((m) => (
-            <Badge key={m.id} variant="secondary" className="gap-1">
-              {m.name}
-              <button type="button" aria-label="remove" onClick={() => toggle(m.id)} className="hover:text-foreground">
-                <X className="size-3" />
-              </button>
-            </Badge>
-          ))}
-        </div>
-      )}
-      <Input placeholder={t('token_index.limit_models')} value={search} onChange={(e) => setSearch(e.target.value)} />
-      <div className="max-h-64 overflow-y-auto rounded-md border border-border">
-        {grouped.length === 0 ? (
-          <p className="px-3 py-4 text-center text-sm text-muted-foreground">{t('token_index.limit_models_info')}</p>
-        ) : (
-          grouped.map(([owner, items]) => (
-            <div key={owner}>
-              <div className="sticky top-0 bg-muted/70 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">{owner}</div>
-              {items.map((m) => (
-                <div
-                  key={m.id}
-                  role="option"
-                  tabIndex={0}
-                  aria-selected={selected.has(m.id)}
-                  onClick={() => toggle(m.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      toggle(m.id);
-                    }
-                  }}
-                  className={cn(
-                    'flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted focus:bg-muted focus:outline-none',
-                    selected.has(m.id) && 'bg-muted/50'
-                  )}
-                >
-                  <Checkbox checked={selected.has(m.id)} />
-                  <span className="flex-1 truncate">{m.name}</span>
-                  <span className="flex flex-wrap justify-end gap-1">
-                    {m.groups?.map((g) => (
-                      <Badge key={g} variant="outline" className="px-1.5 py-0 text-[10px]">
-                        {getGroupLabel ? getGroupLabel(g) : g}
-                      </Badge>
-                    ))}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
+// Catalog rows from GET /api/available_model ({ [id]: { owned_by, vendor, groups, price } }).
+export function toLimitModels(data) {
+  return Object.keys(data || {}).map((id) => {
+    const row = data[id] || {};
+    return {
+      id,
+      owned_by: row.owned_by,
+      vendor: row.vendor,
+      groups: row.groups,
+      released_at: row.price?.model_info?.released_at
+    };
+  });
 }
+
+export default function ModelLimitSelector({ id, models = [], value = [], onChange, getGroupLabel }) {
+  const options = useMemo(
+    () =>
+      models.map((m) => {
+        const owner = m.vendor?.name || m.owned_by || '';
+        return {
+          id: m.id,
+          vendor: owner ? { key: m.vendor?.slug || owner.toLowerCase(), name: owner, icon: m.vendor?.icon } : undefined,
+          releasedAt: m.released_at || undefined,
+          meta: m.groups?.length ? m.groups.map((g) => (getGroupLabel ? getGroupLabel(g) : g)).join(', ') : undefined
+        };
+      }),
+    [models, getGroupLabel]
+  );
+  return <ModelMultiSelect id={id} value={value} onChange={(ids) => onChange?.(ids)} options={options} allowCreate={false} />;
+}
+
+ModelLimitSelector.propTypes = {
+  id: PropTypes.string,
+  models: PropTypes.arrayOf(PropTypes.object),
+  value: PropTypes.arrayOf(PropTypes.string),
+  onChange: PropTypes.func,
+  getGroupLabel: PropTypes.func
+};
