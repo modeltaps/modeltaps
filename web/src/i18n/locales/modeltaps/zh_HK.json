@@ -1459,7 +1459,8 @@
     "oidc_login_failed": "登入失敗，請重試",
     "log_cleanup_started": "日誌清理已在背景開始，進度見系統日誌",
     "log_cleanup_running": "已有日誌清理任務在執行，請稍後再試",
-    "channel_drift_rule_invalid": "忽略規則裏的正則表達式無效：{{rule}}"
+    "channel_drift_rule_invalid": "忽略規則裏的正則表達式無效：{{rule}}",
+    "routing_policy_scoring_invalid": "評分方式只能是自動、logprobs 或自報"
   },
   "channelOAuth": {
     "tip": {
@@ -1570,7 +1571,7 @@
       "fallbackModelHint": "置信度低於閾值、決策失敗或首條訊息沒有文字時使用。放你最穩的模型。",
       "threshold": "置信度閾值",
       "thresholdHint": "0 到 1，低於它走兜底。",
-      "thresholdHelp": "0.5 是不錯的起點。調高會把更多模稜兩可的請求送去兜底，調低則更信任決策模型。置信度是決策模型自報的，當排序看，別當概率。",
+      "thresholdHelp": "0.5 是不錯的起點。調高會把更多模稜兩可的請求送去兜底，調低則更信任決策模型。用 logprobs 評分時置信度就是該標籤的概率；自報的置信度只能當排序看。",
       "pinTtl": "會話固定時長（秒）",
       "pinTtlHint": "會話在首條訊息選定模型後保持多久。0 表示每次請求都分類。",
       "pinTtlHelp": "固定期間的後續輪次跳過決策，上游提示快取保持命中，對話中途不會換模型。會話靠會話標頭、Claude Code 中繼資料、prompt_cache_key 或提示前綴識別。",
@@ -1584,7 +1585,15 @@
         "fallback_model": "請選擇兜底模型",
         "routes": "至少兩條路由，每條都要有標籤和目標模型"
       },
-      "tabStats": "統計"
+      "tabStats": "統計",
+      "scoring": "評分方式",
+      "scoringHint": "決策模型的置信度從哪裏來。",
+      "scoringHelp": "logprobs 讀取模型對每個標籤的真實輸出概率，閾值因此是概率。它需要非推理模型，而且渠道會返回 logprobs（OpenAI 兼容接口，例如 GPT-4.1、非思考模式的 DeepSeek、自行部署的 vLLM）；Claude、推理模型和大部分聚合網關不會返回。自動模式先試 logprobs，渠道不返回時 24 小時內改用自報置信度。",
+      "probe": "檢查支援",
+      "probing": "檢查中…",
+      "probeSupported": "這個決策模型在今次選中的渠道上返回 logprobs，可以用概率評分。",
+      "probeUnsupported": "這個決策模型在今次選中的渠道上不返回 logprobs：自動模式會改用自報置信度，只用 logprobs 的模式會一直走兜底。",
+      "probeFailed": "檢查失敗：{{error}}"
     },
     "templates": {
       "coding_change_size": "編碼：改動大小",
@@ -1607,7 +1616,8 @@
       "latency": "決策耗時",
       "loadSamples": "從日誌裏挑一條真實首條訊息",
       "loadingSamples": "載入中…",
-      "noSamples": "還沒有留存了請求體的被路由請求。開啟請求明細記錄後才會有樣本。"
+      "noSamples": "還沒有留存了請求體的被路由請求。開啟請求明細記錄後才會有樣本。",
+      "scoring": "評分方式"
     },
     "reasons": {
       "classified": "已分類",
@@ -1635,7 +1645,18 @@
       "target": "模型",
       "share": "佔比",
       "quota": "花費",
-      "noLabel": "兜底"
+      "noLabel": "兜底",
+      "byScoring": "按評分方式",
+      "avgTopProbability": "平均最高概率 {{value}}"
+    },
+    "scoring": {
+      "auto": "自動（可用 logprobs 時使用）",
+      "logprobs": "只用 logprobs",
+      "self_reported": "只用自報"
+    },
+    "scoringUsed": {
+      "logprobs": "logprobs",
+      "self_reported": "自報"
     }
   },
   "logPage": {

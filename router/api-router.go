@@ -188,6 +188,7 @@ func SetApiRouter(router *gin.Engine) {
 			routingPolicyRoute.GET("/:id/samples", relay.RoutingPolicySamplesHandler)
 			routingPolicyRoute.POST("/", controller.CreateRoutingPolicy)
 			routingPolicyRoute.POST("/try", relay.TryRoutingPolicyHandler)
+			routingPolicyRoute.POST("/probe", relay.ProbeRoutingScoringHandler)
 			routingPolicyRoute.PUT("/:id", controller.UpdateRoutingPolicy)
 			routingPolicyRoute.PUT("/:id/status", controller.UpdateRoutingPolicyStatus)
 			routingPolicyRoute.DELETE("/:id", controller.DeleteRoutingPolicy)

@@ -3,11 +3,13 @@ package relay
 // 「试一试」的 HTTP 处理放在 relay 包：它要调决策链路，而 relay 又依赖 controller，不能反过来。
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/model"
+	"github.com/modeltaps/modeltaps/relay/relay_util"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,6 +33,10 @@ type tryRoutingPolicyResult struct {
 	PromptTokens  int     `json:"prompt_tokens"`
 	OutputTokens  int     `json:"completion_tokens"`
 	Error         string  `json:"error,omitempty"`
+	// Scoring 实际用的打分方式；Probabilities / Coverage 只在 logprobs 打分时有。
+	Scoring       string                               `json:"scoring,omitempty"`
+	Probabilities []relay_util.RoutingLabelProbability `json:"probabilities,omitempty"`
+	Coverage      float64                              `json:"coverage,omitempty"`
 }
 
 // routingPolicyTryMaxModels 一次最多并列比较的决策模型数。
@@ -74,6 +80,9 @@ func TryRoutingPolicyHandler(c *gin.Context) {
 			Reason:        decision.Reason,
 			DecisionMs:    decision.DecisionMs,
 			Error:         decision.Error,
+			Scoring:       decision.Scoring,
+			Probabilities: decision.Probabilities,
+			Coverage:      decision.Coverage,
 		}
 		if decision.DecisionUsage != nil {
 			result.PromptTokens = decision.DecisionUsage.PromptTokens
@@ -139,4 +148,59 @@ func RoutingPolicySamplesHandler(c *gin.Context) {
 		"message": "",
 		"data":    samples,
 	})
+}
+
+// probeRoutingScoringRequest 探测一个决策模型能否做 logprobs 打分。
+type probeRoutingScoringRequest struct {
+	DecisionModel string `json:"decision_model"`
+}
+
+// probeRoutingScoringResult Supported 为 nil 表示探测本身失败（Error 说明原因）。
+type probeRoutingScoringResult struct {
+	DecisionModel string `json:"decision_model"`
+	Supported     *bool  `json:"supported"`
+	Error         string `json:"error,omitempty"`
+}
+
+// probeRoutingPolicy 用的固定小题：两个选项，答案明确。
+var probeRoutingPolicy = model.RoutingPolicy{
+	Name:     "probe",
+	Question: "What is this request about?",
+	Routes: []model.RoutingRoute{
+		{Label: "code", Description: "writing or changing source code"},
+		{Label: "other", Description: "anything else"},
+	},
+	Scoring:           model.RoutingScoringLogprobs,
+	MaxInputChars:     model.RoutingPolicyDefaultInputChars,
+	DecisionTimeoutMs: 10000,
+}
+
+// ProbeRoutingScoringHandler 发一次 logprobs 打分请求（不计费），结论写进能力缓存，后台据此提示
+// 这个决策模型「支持概率打分 / 仅自报」。结论针对本次选中的渠道。
+func ProbeRoutingScoringHandler(c *gin.Context) {
+	req := probeRoutingScoringRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil || req.DecisionModel == "" {
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeInvalidParams, "decision_model is required", nil)
+		return
+	}
+	if model.IsRoutingPolicyModel(req.DecisionModel) {
+		common.APIRespondWithError(c, http.StatusBadRequest, model.ErrRoutingPolicyModelIsPolicy("decision_model", req.DecisionModel))
+		return
+	}
+	ensureAdminGroup(c)
+	policy := probeRoutingPolicy
+	policy.DecisionModel = req.DecisionModel
+	result := probeRoutingScoringResult{DecisionModel: req.DecisionModel}
+	_, err := classify(c, &policy, "Fix the off-by-one error in the pagination helper.", false)
+	switch {
+	case err == nil:
+		supported := true
+		result.Supported = &supported
+	case errors.Is(err, errNoLogprobs):
+		supported := false
+		result.Supported = &supported
+	default:
+		result.Error = err.Error()
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": result})
 }

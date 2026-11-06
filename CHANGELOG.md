@@ -34,6 +34,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   decision time, what the decision calls cost, and the estimated savings against sending everything
   to the fallback model. The policy list shows the 7-day request count and fallback share, and
   "Try it" can replay a real first message from the logs when request detail logging is on.
+- Routing policies can score the decision with logprobs: the labels are sent as lettered options,
+  the decision model answers with one letter, and each label's probability is read from the
+  model's output probabilities, so the confidence threshold compares a real probability instead of
+  a number the model reports about itself. A new per-policy "Scoring" setting chooses auto (the
+  default for new and existing policies), logprobs only, or self-reported only. Auto uses logprobs
+  and, when the decision model does not return them on a channel (Claude, reasoning models and most
+  aggregator gateways do not), decides that request again with self-reported confidence and keeps
+  using self-reported confidence on that channel for 24 hours; logprobs only sends the request to
+  the fallback model instead. A "Check support" button in the policy form tests whether the
+  decision model returns logprobs. The `X-Modeltaps-Route` header carries `scoring=`, consume
+  logs record the scoring method and, with logprobs, every label's probability, "Try it" shows
+  both, and the policy statistics break requests down by scoring method with the average top
+  probability.
 
 ### Fixed
 

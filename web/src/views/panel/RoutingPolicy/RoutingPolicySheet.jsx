@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { FormField } from '@/components/ui/form-field';
 import { ModelCombobox } from '@/components/ui/model-combobox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -23,6 +24,8 @@ import {
   getRoutingPolicy,
   listCatalogModelNames,
   normalizePolicy,
+  probeRoutingScoring,
+  SCORING_MODES,
   updateRoutingPolicy
 } from './routingPolicyApi';
 
@@ -34,6 +37,8 @@ export default function RoutingPolicySheet({ open, policyId, onClose, onSaved })
   const [activeTab, setActiveTab] = useState('basic');
   const [submitting, setSubmitting] = useState(false);
   const [modelOptions, setModelOptions] = useState([]);
+  // 探测结果只对探测时的决策模型有效，换模型就清掉。
+  const [probe, setProbe] = useState({ model: '', running: false, result: null });
   const isEdit = Boolean(policyId);
 
   const set = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
@@ -71,6 +76,27 @@ export default function RoutingPolicySheet({ open, policyId, onClose, onSaved })
   }, [open]);
 
   const normalized = useMemo(() => normalizePolicy(form), [form]);
+
+  const runProbe = async () => {
+    const decisionModel = normalized.decision_model;
+    if (!decisionModel) return;
+    setProbe({ model: decisionModel, running: true, result: null });
+    try {
+      const { success, message, data } = await probeRoutingScoring(decisionModel);
+      if (!success) showError(message);
+      setProbe({ model: decisionModel, running: false, result: success ? data : null });
+    } catch (e) {
+      setProbe({ model: decisionModel, running: false, result: null });
+    }
+  };
+  const probeResult = probe.model === normalized.decision_model ? probe.result : null;
+  const probeText = !probeResult
+    ? ''
+    : probeResult.supported === true
+      ? t('routingPolicy.form.probeSupported')
+      : probeResult.supported === false
+        ? t('routingPolicy.form.probeUnsupported')
+        : t('routingPolicy.form.probeFailed', { error: probeResult.error || '' });
 
   // 前端只拦最明显的缺项，细规则（名字格式、重复标签、嵌套策略）交给后端的稳定错误码。
   const missing = () => {
@@ -182,6 +208,46 @@ export default function RoutingPolicySheet({ open, policyId, onClose, onSaved })
                 required: true,
                 hint: t('routingPolicy.form.decisionModelHint')
               })}
+              <FormField
+                id="rp-scoring"
+                label={t('routingPolicy.form.scoring')}
+                hint={t('routingPolicy.form.scoringHint')}
+                help={t('routingPolicy.form.scoringHelp')}
+              >
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Select value={form.scoring || 'auto'} onValueChange={(v) => set('scoring', v)}>
+                      <SelectTrigger id="rp-scoring" className="w-64">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SCORING_MODES.map((mode) => (
+                          <SelectItem key={mode} value={mode}>
+                            {t(`routingPolicy.scoring.${mode}`)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={!normalized.decision_model || probe.running}
+                      onClick={runProbe}
+                    >
+                      {probe.running ? t('routingPolicy.form.probing') : t('routingPolicy.form.probe')}
+                    </Button>
+                  </div>
+                  {probeText && (
+                    <p
+                      data-testid="rp-probe-result"
+                      className={probeResult?.supported === true ? 'text-xs text-foreground' : 'text-xs text-muted-foreground'}
+                    >
+                      {probeText}
+                    </p>
+                  )}
+                </div>
+              </FormField>
               <FormField
                 id="rp-question"
                 label={t('routingPolicy.form.question')}
