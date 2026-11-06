@@ -203,7 +203,7 @@
     "mappingFrom": "リクエストモデル",
     "mappingTo": "上流の実モデル",
     "modelAdd": "追加",
-    "modelChipMode": "チップ表示",
+    "modelChipMode": "選択表示",
     "modelCount": "モデル {{count}} 件",
     "modelCountFiltered": "{{total}} 件中 {{shown}} 件一致",
     "modelEmpty": "モデルがありません。下のボタンで取得するか、検索欄に入力して Enter で追加してください",
@@ -377,8 +377,6 @@
     "testAllChannels": "すべてのチャネルをテスト",
     "testModel": "テストモデル",
     "type": "プロバイダー",
-    "typeSearchEmpty": "一致するプロバイダーがありません",
-    "typeSearchPlaceholder": "プロバイダーを検索…",
     "unselectAll": "すべてを非選択にする",
     "updateBalance": "残高を更新",
     "updateEnabledBalance": "有効残高を更新",
@@ -3560,5 +3558,45 @@
   "nav_sec_admin": "管理",
   "nav_sec_gateway": "ゲートウェイ",
   "nav_sec_overview": "概要",
-  "nav_sec_people": "ユーザーと組織"
+  "nav_sec_people": "ユーザーと組織",
+  "modelSelect": {
+    "placeholder": "モデルを選択",
+    "selectedCount": "{{count}} 個のモデルを選択",
+    "search": "モデルを検索",
+    "add": "「{{model}}」を追加",
+    "empty": "一致するモデルはありません",
+    "none": "モデルが選択されていません",
+    "selectGroup": "グループをすべて選択",
+    "clearGroup": "グループの選択を解除",
+    "onlySelected": "選択済み",
+    "advanced": "詳細フィルター",
+    "done": "完了",
+    "loadingUpstream": "上流モデルを取得中",
+    "upstreamFailed": "上流の一覧を取得できませんでした。ローカル候補を表示しています",
+    "retry": "再試行",
+    "custom": "カスタム"
+  },
+  "providerPicker": {
+    "title": "プロバイダーを選択",
+    "search": "プロバイダーを検索",
+    "empty": "一致するプロバイダーはありません",
+    "category": {
+      "common": "よく使う",
+      "vendor": "モデルベンダー",
+      "cloud": "クラウド",
+      "gateway": "ゲートウェイ",
+      "subscription": "サブスクリプション",
+      "selfhosted": "セルフホスト・互換",
+      "media": "メディア・その他",
+      "legacy": "レガシー",
+      "other": "その他"
+    },
+    "auth": {
+      "apiKey": "API キー",
+      "oauth": "アカウント認証",
+      "endpoint": "キー + エンドポイント",
+      "credentials": "複合認証情報"
+    },
+    "customName": "OpenAI 互換"
+  }
 }

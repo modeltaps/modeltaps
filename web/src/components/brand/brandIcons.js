@@ -81,7 +81,7 @@ export function resolveChannelBrand(type) {
 
 // Human-readable brand names for resolved brand keys. Proper-noun brand names render
 // literally (identical across locales), matching the "Works with" strip convention.
-const BRAND_LABELS = {
+export const BRAND_LABELS = {
   openai: 'OpenAI',
   anthropic: 'Anthropic',
   googlegemini: 'Google Gemini',

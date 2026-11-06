@@ -52,6 +52,7 @@ describe('TokenSheet model limit', () => {
   it('saves once a model is selected', async () => {
     openNewToken();
     fireEvent.click(modelLimitSwitch());
+    fireEvent.click(document.getElementById('token-model-limit'));
     fireEvent.click(await screen.findByRole('option', { name: /gpt-a/ }));
     submit();
 

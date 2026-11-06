@@ -203,7 +203,7 @@
     "mappingFrom": "請求模型",
     "mappingTo": "上游真實模型",
     "modelAdd": "新增",
-    "modelChipMode": "卡片視圖",
+    "modelChipMode": "選擇視圖",
     "modelCount": "共 {{count}} 個模型",
     "modelCountFiltered": "{{total}} 個中匹配 {{shown}} 個",
     "modelEmpty": "暫無模型，用下方按鈕獲取，或在上方搜尋框輸入後按 Enter 新增",
@@ -377,8 +377,6 @@
     "testAllChannels": "測試所有渠道",
     "testModel": "測試模型",
     "type": "供應商",
-    "typeSearchEmpty": "無匹配的供應商",
-    "typeSearchPlaceholder": "搜索供應商…",
     "unselectAll": "反全選",
     "updateBalance": "更新餘額",
     "updateEnabledBalance": "更新啟用餘額",
@@ -3560,5 +3558,45 @@
   "nav_sec_admin": "管理",
   "nav_sec_gateway": "網關",
   "nav_sec_overview": "概覽",
-  "nav_sec_people": "用戶與組織"
+  "nav_sec_people": "用戶與組織",
+  "modelSelect": {
+    "placeholder": "選擇模型",
+    "selectedCount": "已選 {{count}} 個模型",
+    "search": "搜尋模型",
+    "add": "新增「{{model}}」",
+    "empty": "沒有符合的模型",
+    "none": "尚未選擇模型",
+    "selectGroup": "全選該組",
+    "clearGroup": "取消該組",
+    "onlySelected": "只看已選",
+    "advanced": "進階篩選",
+    "done": "完成",
+    "loadingUpstream": "正在獲取上游模型",
+    "upstreamFailed": "未能獲取上游模型列表，下方為本地候選",
+    "retry": "重試",
+    "custom": "自訂"
+  },
+  "providerPicker": {
+    "title": "選擇供應商",
+    "search": "搜尋供應商",
+    "empty": "沒有符合的供應商",
+    "category": {
+      "common": "常用",
+      "vendor": "模型廠商",
+      "cloud": "雲平台",
+      "gateway": "聚合網關",
+      "subscription": "訂閱帳戶",
+      "selfhosted": "自託管與相容",
+      "media": "多媒體與其他",
+      "legacy": "舊版",
+      "other": "其他"
+    },
+    "auth": {
+      "apiKey": "API 金鑰",
+      "oauth": "帳戶授權",
+      "endpoint": "金鑰 + 地址",
+      "credentials": "組合憑證"
+    },
+    "customName": "OpenAI 相容"
+  }
 }
