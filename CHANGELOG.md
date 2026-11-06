@@ -48,8 +48,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   both, and the policy statistics break requests down by scoring method with the average top
   probability.
 
+- Announced official price changes take effect on their date without a release: `gemini-4-argon`
+  moves to $4 / $20 per 1M tokens (cache $0.20) on 2026-12-01, and `gemini-3.8-flash` and
+  `gemini-3.6-flash` to $1.50 / $7.50 (cache $0.15) on 2027-01-01. An hourly job updates stored
+  prices that still equal the previous default; prices an administrator edited or locked are left
+  alone.
+- `gpt-5.5-pro` default price includes the long-context tier (over 272K input tokens: $60 / $270).
+
 ### Fixed
 
+- DeepSeek cache hits reported only as `prompt_cache_hit_tokens` on the OpenAI format are billed
+  at the cache hit price instead of the full input price.
 - Claude Code sessions are recognised again from `metadata.user_id` in the format current Claude
   Code sends (a JSON object encoded as a string), so Claude channel session affinity follows the
   Claude Code session instead of falling back to a hash of the cached prompt.

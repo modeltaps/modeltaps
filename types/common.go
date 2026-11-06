@@ -18,6 +18,10 @@ type Usage struct {
 	CacheCreationInputTokens int `json:"cache_creation_input_tokens,omitempty"`
 	CacheReadInputTokens     int `json:"cache_read_input_tokens,omitempty"`
 
+	// PromptCacheHitTokens is DeepSeek's OpenAI-format cache hit count (prompt_tokens includes
+	// it, like cached_tokens). Used only when prompt_tokens_details.cached_tokens is absent.
+	PromptCacheHitTokens int `json:"prompt_cache_hit_tokens,omitempty"`
+
 	ExtraTokens  map[string]int          `json:"-"`
 	ExtraBilling map[string]ExtraBilling `json:"-"`
 	TextBuilder  strings.Builder         `json:"-"`
@@ -71,6 +75,10 @@ func (u *Usage) GetExtraTokens() map[string]int {
 	// 组装，已有的数据
 
 	// 缓存数据
+	if u.PromptCacheHitTokens > 0 && u.PromptTokensDetails.CachedTokens == 0 &&
+		u.PromptTokensDetails.CachedReadTokens == 0 && u.CacheReadInputTokens == 0 {
+		u.PromptTokensDetails.CachedTokens = u.PromptCacheHitTokens
+	}
 	if u.PromptTokensDetails.CachedTokens > 0 && u.ExtraTokens[config.UsageExtraCache] == 0 {
 		u.ExtraTokens[config.UsageExtraCache] = u.PromptTokensDetails.CachedTokens
 	}
