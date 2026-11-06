@@ -909,7 +909,7 @@
       "keyFormat": "Use the format {{format}}",
       "keyFormatExample": "Use the format {{format}}, e.g. {{example}}",
       "keyFormatBaidu": "Use the format APIKey|SecretKey. If the OpenAI API plugin is enabled, enter the API key directly",
-      "keyFormatAws": "Use the format Region|AccessKeyID|SecretAccessKey|SessionToken (SessionToken is optional)",
+      "keyFormatAws": "Use the format Region|AccessKeyID|SecretAccessKey|SessionToken (SessionToken is optional). AssumeRole mode: Region|AccessKeyID|SecretAccessKey|RoleArn (put arn:aws:iam::ACCOUNT:role/ROLE_NAME in the fourth field; temporary credentials are fetched and renewed automatically). Role chaining: Region|AccessKeyID|SecretAccessKey|SessionToken|RoleArn. Or Region|BearerToken",
       "format": "Format: {{format}}",
       "dashscopePlugin": "Enter the plugin parameters, i.e. the value of the X-DashScope-Plugin request header",
       "versionExample": "Enter the version, e.g. {{example}}",

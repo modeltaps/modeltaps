@@ -888,7 +888,7 @@
       "keyFormat": "次の形式で入力してください：{{format}}",
       "keyFormatExample": "次の形式で入力してください：{{format}}。例：{{example}}",
       "keyFormatBaidu": "次の形式で入力してください：APIKey|SecretKey。OpenAI API プラグインを有効にしている場合は API キーをそのまま入力してください",
-      "keyFormatAws": "次の形式で入力してください：Region|AccessKeyID|SecretAccessKey|SessionToken（SessionToken は省略可）",
+      "keyFormatAws": "次の形式で入力してください：Region|AccessKeyID|SecretAccessKey|SessionToken（SessionToken は省略可）。AssumeRole モード：Region|AccessKeyID|SecretAccessKey|RoleArn（4番目に arn:aws:iam::アカウント:role/ロール名 を指定すると、実行時に一時認証情報を取得して自動更新します）。ロールチェーン：Region|AccessKeyID|SecretAccessKey|SessionToken|RoleArn。または Region|BearerToken",
       "format": "形式：{{format}}",
       "dashscopePlugin": "プラグインパラメータ（X-DashScope-Plugin リクエストヘッダーの値）を入力してください",
       "versionExample": "バージョンを入力してください。例：{{example}}",

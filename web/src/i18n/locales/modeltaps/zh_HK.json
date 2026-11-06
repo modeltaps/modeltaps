@@ -888,7 +888,7 @@
       "keyFormat": "按照如下格式輸入：{{format}}",
       "keyFormatExample": "按照如下格式輸入：{{format}}，例如：{{example}}",
       "keyFormatBaidu": "按照如下格式輸入：APIKey|SecretKey, 如果開啟了OpenAI API，請直接輸入APIKEY",
-      "keyFormatAws": "按照如下格式輸入：Region|AccessKeyID|SecretAccessKey|SessionToken 其中SessionToken可不填",
+      "keyFormatAws": "按照如下格式輸入：Region|AccessKeyID|SecretAccessKey|SessionToken 其中SessionToken可不填；AssumeRole 模式：Region|AccessKeyID|SecretAccessKey|RoleArn（第四段填 arn:aws:iam::帳戶:role/角色名稱，執行時自動換取臨時憑證並續期）；角色鏈：Region|AccessKeyID|SecretAccessKey|SessionToken|RoleArn；或 Region|BearerToken",
       "format": "格式：{{format}}",
       "dashscopePlugin": "請輸入插件參數，即 X-DashScope-Plugin 請求頭的取值",
       "versionExample": "請輸入版本號，例如：{{example}}",

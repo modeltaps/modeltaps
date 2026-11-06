@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   site default (and switch back to it). The site switch still wins: when it is off nobody gets
   the emails. The settlement reads the setting from the same user row it already loads, and a
   changed setting applies at once instead of after the 24-hour "already sent" window.
+- Bedrock channels can use an IAM role instead of a long-lived key with Bedrock permissions. Put
+  the role ARN in the fourth field of the channel key (`Region|AccessKeyID|SecretAccessKey|RoleArn`),
+  or `Region|AccessKeyID|SecretAccessKey|SessionToken|RoleArn` when the source key is itself a
+  temporary credential. The gateway assumes the role through STS, caches the temporary credentials
+  per key and proxy, and renews them five minutes before they expire, so the access key only needs
+  `sts:AssumeRole`. A key with the wrong number of segments is now logged as invalid instead of
+  being read as an empty configuration.
 - Auto routing policies: a policy is a virtual model name (such as `auto/coder`) that routes each
   conversation to one of several real models. On the first user message the gateway asks a small
   decision model which of the policy's labels fits the request and forwards the conversation to
