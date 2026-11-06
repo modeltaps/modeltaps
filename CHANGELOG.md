@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Personal quota warning settings: Settings, Preferences has a Quota warnings card where users
+  turn the low-balance and used-up emails off, or set their own warning threshold instead of the
+  site default (and switch back to it). The site switch still wins: when it is off nobody gets
+  the emails. The settlement reads the setting from the same user row it already loads, and a
+  changed setting applies at once instead of after the 24-hour "already sent" window.
 - Auto routing policies: a policy is a virtual model name (such as `auto/coder`) that routes each
   conversation to one of several real models. On the first user message the gateway asks a small
   decision model which of the policy's labels fits the request and forwards the conversation to

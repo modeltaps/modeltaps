@@ -75,7 +75,7 @@ func drain(userId, from, to, step int) {
 		if q-d < to {
 			d = q - to
 		}
-		notifyQuotaWarningIfNeeded(userId, q, d)
+		notifyQuotaWarningIfNeeded(userId, q, d, config.QuotaRemindThreshold)
 	}
 }
 
@@ -162,10 +162,10 @@ func TestNotifyQuotaWarning_BounceInBandDoesNotRefire(t *testing.T) {
 	sent := captureQuotaWarningEmails(t)
 	advance := fakeQuotaWarningClock(t)
 
-	notifyQuotaWarningIfNeeded(3, 500_200, 300) // crosses, one email
+	notifyQuotaWarningIfNeeded(3, 500_200, 300, config.QuotaRemindThreshold) // crosses, one email
 	for i := 0; i < 6; i++ {
-		advance(11 * time.Minute)                   // the burst lock has expired
-		notifyQuotaWarningIfNeeded(3, 500_400, 500) // refunded to 500400, charged down to 499900
+		advance(11 * time.Minute)                                                // the burst lock has expired
+		notifyQuotaWarningIfNeeded(3, 500_400, 500, config.QuotaRemindThreshold) // refunded to 500400, charged down to 499900
 	}
 
 	if got := sent(); len(got) != 1 {
@@ -179,10 +179,10 @@ func TestNotifyQuotaWarning_BounceNearZeroDoesNotRefire(t *testing.T) {
 	sent := captureQuotaWarningEmails(t)
 	advance := fakeQuotaWarningClock(t)
 
-	notifyQuotaWarningIfNeeded(4, 200, 200)
+	notifyQuotaWarningIfNeeded(4, 200, 200, config.QuotaRemindThreshold)
 	for i := 0; i < 6; i++ {
 		advance(11 * time.Minute)
-		notifyQuotaWarningIfNeeded(4, 400, 400)
+		notifyQuotaWarningIfNeeded(4, 400, 400, config.QuotaRemindThreshold)
 	}
 
 	got := sent()
@@ -197,7 +197,7 @@ func TestNotifyQuotaWarning_RepeatedDuplicateSuppressed(t *testing.T) {
 	sent := captureQuotaWarningEmails(t)
 
 	for i := 0; i < 3; i++ {
-		notifyQuotaWarningIfNeeded(5, 500_200, 300)
+		notifyQuotaWarningIfNeeded(5, 500_200, 300, config.QuotaRemindThreshold)
 	}
 
 	if got := sent(); len(got) != 1 {
@@ -228,7 +228,7 @@ func TestNotifyQuotaWarning_ConcurrentDuplicateSuppressed(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				<-start
-				notifyQuotaWarningIfNeeded(c.userId, c.before, c.delta)
+				notifyQuotaWarningIfNeeded(c.userId, c.before, c.delta, config.QuotaRemindThreshold)
 			}()
 		}
 	}
@@ -261,9 +261,9 @@ func TestNotifyQuotaWarning_PostConsumeAfterPreConsumeSuppressed(t *testing.T) {
 	sent := captureQuotaWarningEmails(t)
 	advance := fakeQuotaWarningClock(t)
 
-	notifyQuotaWarningIfNeeded(6, 500_200, 300) // pre-charge
+	notifyQuotaWarningIfNeeded(6, 500_200, 300, config.QuotaRemindThreshold) // pre-charge
 	advance(11 * time.Minute)
-	notifyQuotaWarningIfNeeded(6, 499_900, 50) // final settlement
+	notifyQuotaWarningIfNeeded(6, 499_900, 50, config.QuotaRemindThreshold) // final settlement
 
 	if got := sent(); len(got) != 1 {
 		t.Fatalf("expected post-consume to be suppressed, got %+v", got)
@@ -278,10 +278,10 @@ func TestNotifyQuotaWarning_ThresholdAboveBalanceDailyFallback(t *testing.T) {
 
 	config.QuotaRemindThreshold = 5_000_000_000 // $10000
 	for i := 0; i < 5; i++ {
-		notifyQuotaWarningIfNeeded(7, 200_000-i*500, 500)
+		notifyQuotaWarningIfNeeded(7, 200_000-i*500, 500, config.QuotaRemindThreshold)
 	}
 	advance(25 * time.Hour)
-	notifyQuotaWarningIfNeeded(7, 190_000, 500)
+	notifyQuotaWarningIfNeeded(7, 190_000, 500, config.QuotaRemindThreshold)
 
 	got := sent()
 	if len(got) != 2 || got[0].noMoreQuota || got[1].noMoreQuota {
@@ -297,7 +297,7 @@ func TestNotifyQuotaWarning_Skips(t *testing.T) {
 		setupQuotaWarningTest(t)
 		config.QuotaRemindEnabled = false
 		sent := captureQuotaWarningEmails(t)
-		notifyQuotaWarningIfNeeded(12, 500_200, 300)
+		notifyQuotaWarningIfNeeded(12, 500_200, 300, config.QuotaRemindThreshold)
 		if got := sent(); len(got) != 0 {
 			t.Fatalf("expected none, got %+v", got)
 		}
@@ -305,7 +305,7 @@ func TestNotifyQuotaWarning_Skips(t *testing.T) {
 	t.Run("refund delta", func(t *testing.T) {
 		setupQuotaWarningTest(t)
 		sent := captureQuotaWarningEmails(t)
-		notifyQuotaWarningIfNeeded(13, 400_000, -100)
+		notifyQuotaWarningIfNeeded(13, 400_000, -100, config.QuotaRemindThreshold)
 		if got := sent(); len(got) != 0 {
 			t.Fatalf("expected none, got %+v", got)
 		}
@@ -313,7 +313,7 @@ func TestNotifyQuotaWarning_Skips(t *testing.T) {
 	t.Run("balance healthy", func(t *testing.T) {
 		setupQuotaWarningTest(t)
 		sent := captureQuotaWarningEmails(t)
-		notifyQuotaWarningIfNeeded(14, 10_000_000, 100)
+		notifyQuotaWarningIfNeeded(14, 10_000_000, 100, config.QuotaRemindThreshold)
 		if got := sent(); len(got) != 0 {
 			t.Fatalf("expected none, got %+v", got)
 		}
@@ -322,7 +322,7 @@ func TestNotifyQuotaWarning_Skips(t *testing.T) {
 		setupQuotaWarningTest(t)
 		config.QuotaRemindThreshold = 0
 		sent := captureQuotaWarningEmails(t)
-		notifyQuotaWarningIfNeeded(15, 50, 10)
+		notifyQuotaWarningIfNeeded(15, 50, 10, config.QuotaRemindThreshold)
 		if got := sent(); len(got) != 0 {
 			t.Fatalf("expected none, got %+v", got)
 		}

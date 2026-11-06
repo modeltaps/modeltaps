@@ -872,6 +872,9 @@ func UpdateUserSetting(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
+	if update.QuotaRemindEnabled != nil || update.QuotaRemindThreshold != nil {
+		model.ResetQuotaWarning(id)
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

@@ -184,9 +184,10 @@ func evaluateQuotaWarning(quotaAfter, threshold int) (state quotaWarningState, l
 	return state, lowRearm, exhaustedRearm
 }
 
-// loadQuotaBeforeSettlement reads the balance a positive settlement starts from, when a warning may
-// be sent. Callers pass remind=false for organization tokens, which skips the read; a shadow
-// account found by the read is skipped too.
+// loadQuotaBeforeSettlement reads the balance a positive settlement starts from, with the user's
+// warning threshold, when a warning may be sent. Callers pass remind=false for organization tokens,
+// which skips the read; a shadow account, or a user who turned warnings off, is skipped too. The
+// setting comes from the same row read, so the personal threshold costs no extra query.
 //
 // Limitation with BatchUpdateEnabled: settlements only queue their charge, and the row changes when
 // the queue is flushed (every BatchUpdateInterval seconds). Until then every read here misses all
@@ -194,29 +195,58 @@ func evaluateQuotaWarning(quotaAfter, threshold int) (state quotaWarningState, l
 // first charge checked after the flush, which can be any number of settlements later, or by a
 // pre-charge, which is never queued. If the flushed balance is already far below the threshold,
 // the warning sent then shows that balance.
-func loadQuotaBeforeSettlement(userId int, remind bool) (int, bool) {
+func loadQuotaBeforeSettlement(userId int, remind bool) (quota int, threshold int, ok bool) {
 	if !remind || !config.QuotaRemindEnabled {
-		return 0, false
+		return 0, 0, false
 	}
 	var user User
-	if err := DB.Select("quota", "type").Where("id = ?", userId).Take(&user).Error; err != nil {
+	if err := DB.Select("quota", "type", "setting").Where("id = ?", userId).Take(&user).Error; err != nil {
 		logger.SysError(fmt.Sprintf("failed to load the balance for the quota warning (user=%d): %v", userId, err))
-		return 0, false
+		return 0, 0, false
 	}
 	if IsShadowUser(&user) {
+		return 0, 0, false
+	}
+	setting := user.Setting.Data()
+	if !setting.QuotaRemindAllowed() {
+		return 0, 0, false
+	}
+	return user.Quota, setting.EffectiveQuotaRemindThreshold(), true
+}
+
+// loadQuotaRemindThreshold reads only the user's warning setting, for the pre-charge path, which
+// already has the balance. That path runs only when the balance is low enough for a pre-charge
+// (see relay_util.Quota), so the extra single-row read stays off healthy accounts.
+func loadQuotaRemindThreshold(userId int) (int, bool) {
+	if !config.QuotaRemindEnabled {
 		return 0, false
 	}
-	return user.Quota, true
+	setting, err := GetUserSettingById(userId)
+	if err != nil {
+		logger.SysError(fmt.Sprintf("failed to load the quota warning setting (user=%d): %v", userId, err))
+		return 0, false
+	}
+	if !setting.QuotaRemindAllowed() {
+		return 0, false
+	}
+	return setting.EffectiveQuotaRemindThreshold(), true
+}
+
+// ResetQuotaWarning releases both "sent" locks of a user, after the user changed their warning
+// setting, so a new threshold applies at once instead of after the 24h lock expires.
+func ResetQuotaWarning(userId int) {
+	rearmQuotaWarning(userId, true, true)
 }
 
 // notifyQuotaWarningIfNeeded checks after a successful charge whether to send a quota warning.
-// quotaBefore is the balance before the charge and delta the amount charged.
-func notifyQuotaWarningIfNeeded(userId int, quotaBefore int, delta int) {
+// quotaBefore is the balance before the charge, delta the amount charged and threshold the
+// "running low" threshold that applies to the user.
+func notifyQuotaWarningIfNeeded(userId int, quotaBefore int, delta int, threshold int) {
 	if delta <= 0 || !config.QuotaRemindEnabled {
 		return
 	}
 	quotaAfter := quotaBefore - delta
-	state, lowRearm, exhaustedRearm := evaluateQuotaWarning(quotaAfter, config.QuotaRemindThreshold)
+	state, lowRearm, exhaustedRearm := evaluateQuotaWarning(quotaAfter, threshold)
 	rearmQuotaWarning(userId, lowRearm, exhaustedRearm)
 	switch state {
 	case quotaWarningStateExhausted:

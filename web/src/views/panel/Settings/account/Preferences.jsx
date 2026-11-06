@@ -6,11 +6,13 @@ import { setAppLanguage } from 'utils/userSetting';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import QuotaRemindCard from './QuotaRemindCard';
 
 // ==============================|| SETTINGS — ACCOUNT / PREFERENCES ||============================== //
 // 主题与语言:原先挂在侧边栏用户菜单的子菜单,这里作为设置面「个人账号」组的常驻页面。
 // 两项都即改即生效并自行持久化(主题写 localStorage + 服务端偏好,语言由 i18next 的
 // language detector 落 localStorage),因此没有保存按钮。
+// The quota warning card below saves its own threshold explicitly (see QuotaRemindCard).
 
 export default function Preferences() {
   const { t, i18n } = useTranslation();
@@ -56,6 +58,8 @@ export default function Preferences() {
           </Select>
         </CardContent>
       </Card>
+
+      <QuotaRemindCard />
     </div>
   );
 }
