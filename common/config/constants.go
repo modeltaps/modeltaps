@@ -257,6 +257,12 @@ var AutomaticDisableChannelNotifyEnabled = true
 var QuotaRemindEnabled = true
 var QuotaRemindThreshold = 1000
 var PreConsumedQuota = 500
+
+// PreConsumedOutputTokens is the number of output tokens reserved up front for every request priced
+// per token: the request's own max_tokens when it is smaller, otherwise this value. It keeps the
+// reservation close to what the request can cost so concurrent requests cannot drive a balance
+// far below zero.
+var PreConsumedOutputTokens = 4096
 var ApproximateTokenEnabled = false
 var EmptyResponseBillingEnabled = true
 

@@ -28,20 +28,58 @@ import (
 	"github.com/modeltaps/modeltaps/types"
 
 	"github.com/gin-gonic/gin"
+	"github.com/tidwall/gjson"
 )
+
+// Redis 实时额度的注入点，测试可替换：realtimeQuotaEnabledFn 判断能否登记在途预留，
+// cacheReserveUserQuotaFn 登记并返回登记后的在途总额，cacheReleaseUserQuotaFn 释放。
+var (
+	realtimeQuotaEnabledFn  = func() bool { return config.RedisEnabled }
+	cacheReserveUserQuotaFn = model.CacheIncreaseUserRealtimeQuota
+	cacheReleaseUserQuotaFn = model.CacheDecreaseUserRealtimeQuota
+)
+
+// maxOutputTokenFields 是各协议请求体里声明输出上限的字段（OpenAI Chat / Responses / Claude / Gemini）。
+var maxOutputTokenFields = []string{
+	"max_completion_tokens",
+	"max_tokens",
+	"max_output_tokens",
+	"generationConfig.maxOutputTokens",
+	"generation_config.max_output_tokens",
+}
+
+// requestedMaxOutputTokens 从已缓存的请求体里读出客户端声明的输出 token 上限，未声明返回 0。
+func requestedMaxOutputTokens(c *gin.Context) int {
+	raw, ok := c.Get(config.GinRequestBodyKey)
+	if !ok {
+		return 0
+	}
+	body, ok := raw.([]byte)
+	if !ok || len(body) == 0 || !gjson.ValidBytes(body) {
+		return 0
+	}
+	for _, field := range maxOutputTokenFields {
+		if v := gjson.GetBytes(body, field); v.Exists() && v.Int() > 0 {
+			return int(v.Int())
+		}
+	}
+	return 0
+}
 
 type Quota struct {
 	// —— 计价上下文(quota_calc.go 消费):模型/分组与各类倍率,NewQuota 时确定 ——
-	modelName       string
-	promptTokens    int
-	price           model.Price
-	groupName       string
-	isBackupGroup   bool // 新增字段记录是否使用备用分组
-	backupGroupName string
-	groupRatio      float64
-	inputRatio      float64
-	outputRatio     float64
-	costRatio       float64
+	modelName    string
+	promptTokens int
+	// requestedOutputTokens 是请求声明的输出上限（max_tokens 等），0 表示未声明；用于预扣估算。
+	requestedOutputTokens int
+	price                 model.Price
+	groupName             string
+	isBackupGroup         bool // 新增字段记录是否使用备用分组
+	backupGroupName       string
+	groupRatio            float64
+	inputRatio            float64
+	outputRatio           float64
+	costRatio             float64
 
 	// —— 结算状态:预扣额与实时累计额,结算/回退时对账 ——
 	preConsumedQuota int
@@ -120,6 +158,7 @@ func NewQuota(c *gin.Context, modelName string, promptTokens int) *Quota {
 		isBackupGroup:  isBackupGroup, // 记录是否使用备用分组
 		routingPolicy:  c.GetString("routing_policy"),
 	}
+	quota.requestedOutputTokens = requestedMaxOutputTokens(c)
 	quota.routingDecision = RoutingDecisionFromContext(c)
 	quota.routingDecisionCall = c.GetBool(RoutingDecisionCallContextKey)
 
@@ -188,7 +227,9 @@ func (q *Quota) PreQuotaConsumption() *types.OpenAIErrorWithStatusCode {
 	if q.price.Type == model.TimesPriceType {
 		q.preConsumedQuota = common.QuotaFromFloat(1000 * q.inputRatio)
 	} else if q.price.Input != 0 || q.price.Output != 0 {
-		q.preConsumedQuota = common.QuotaFromFloat(float64(q.promptTokens)*q.inputRatio) + config.PreConsumedQuota
+		// 预扣要覆盖输出成本：只按输入估算时，高输出单价的请求实际花费可达预扣额的上百倍。
+		q.preConsumedQuota = common.QuotaFromFloat(float64(q.promptTokens)*q.inputRatio+
+			float64(q.expectedOutputTokens())*q.outputRatio) + config.PreConsumedQuota
 	}
 
 	if q.preConsumedQuota == 0 {
@@ -200,13 +241,22 @@ func (q *Quota) PreQuotaConsumption() *types.OpenAIErrorWithStatusCode {
 		return common.ErrorWrapper(err, "get_user_quota_failed", http.StatusInternalServerError)
 	}
 
-	// 预算受限的组织成员令牌不走 100x 跳过(SEC-9):必须逐请求对成员预算做原子预留(硬闸),
-	// 且保持 preConsumedQuota 非零,使结算/回退的成员预算对账语义与既有一致。配置了团队级预算
-	// 的组织令牌同理(T1)。个人令牌与未配置预算的组织令牌仍走跳过(orgGuardrail 为 nil 时
-	// HasBudget()/HasOrgBudget() 安全返回 false),保留低延迟优化。
-	if !q.orgGuardrail.HasBudget() && !q.orgGuardrail.HasOrgBudget() && userQuota > 100*q.preConsumedQuota {
-		q.preConsumedQuota = 0
-		return nil
+	// 100x 跳过（低延迟优化）：余额远高于本次预扣时不写库预扣，改在 Redis 实时额度里登记在途预留，
+	// 结算/回退时释放。没有这份预留时，并发请求各自都能通过余额检查，结算后可把余额打成大额负数（SEC-40）。
+	// 只有不受任何额度约束的令牌才能跳过：令牌剩余额度、周期上限、成员预算、团队预算都只在库预扣
+	// （PreConsumeTokenQuota / reserve*）里校验，跳过即绕过（SEC-9）。Redis 不可用时一律走库预扣。
+	if q.canSkipPreConsume() && userQuota > 100*q.preConsumedQuota {
+		reserved, err := cacheReserveUserQuotaFn(q.userId, q.preConsumedQuota)
+		if err == nil {
+			q.cacheQuota += q.preConsumedQuota
+			if reserved <= int64(userQuota) {
+				q.preConsumedQuota = 0
+				return nil
+			}
+			// 在途预留已超过余额：撤回预留，改走库预扣，由原子扣减决定能否放行
+			cacheReleaseUserQuotaFn(q.userId, q.preConsumedQuota)
+			q.cacheQuota -= q.preConsumedQuota
+		}
 	}
 
 	if userQuota < q.preConsumedQuota {
@@ -241,6 +291,32 @@ func (q *Quota) PreQuotaConsumption() *types.OpenAIErrorWithStatusCode {
 	}
 
 	return nil
+}
+
+// expectedOutputTokens 是预扣时假定的输出 token 数：请求声明的上限与 PreConsumedOutputTokens 取小。
+func (q *Quota) expectedOutputTokens() int {
+	limit := config.PreConsumedOutputTokens
+	if limit < 0 {
+		limit = 0
+	}
+	if q.requestedOutputTokens > 0 && q.requestedOutputTokens < limit {
+		return q.requestedOutputTokens
+	}
+	return limit
+}
+
+// canSkipPreConsume 判断本次请求能否用 Redis 在途预留代替库预扣。
+func (q *Quota) canSkipPreConsume() bool {
+	return realtimeQuotaEnabledFn() && q.unlimitedQuota && !q.hasPeriodLimit &&
+		!q.orgGuardrail.HasBudget() && !q.orgGuardrail.HasOrgBudget()
+}
+
+// releaseRealtimeQuota 释放本请求在 Redis 实时额度里的在途预留与流式累计。
+func (q *Quota) releaseRealtimeQuota() {
+	if q.cacheQuota > 0 {
+		cacheReleaseUserQuotaFn(q.userId, q.cacheQuota)
+		q.cacheQuota = 0
+	}
 }
 
 // 更新用户实时配额
@@ -284,9 +360,7 @@ func (q *Quota) UpdateUserRealtimeQuota(usage *types.UsageEvent, nowUsage *types
 
 func (q *Quota) completedQuotaConsumption(usage *types.Usage, tokenName string, isStream bool, sourceIp string, ctx context.Context, logIODetail *model.LogIODetail) error {
 	defer func() {
-		if q.cacheQuota > 0 {
-			model.CacheDecreaseUserRealtimeQuota(q.userId, q.cacheQuota)
-		}
+		q.releaseRealtimeQuota()
 		// SEC-12:同步回收成员预算实时 tally(镜像 cacheQuota 回收模式)
 		q.releaseOrgMemberRealtimeBudget()
 	}()
@@ -348,6 +422,8 @@ func (q *Quota) Undo(c *gin.Context) {
 	// SEC-12:回退路径同步回收成员预算实时 tally(与 completedQuotaConsumption 的 defer 对称),
 	// 无累计时 noop;须在 HandelStatus 短路前执行——实时累计与预扣是否成功无关。
 	q.releaseOrgMemberRealtimeBudget()
+	// 在途预留（100x 跳过时登记）与流式实时累计同样要释放，否则失败请求会一直占着用户的可用额度
+	q.releaseRealtimeQuota()
 	if !q.HandelStatus {
 		return
 	}
