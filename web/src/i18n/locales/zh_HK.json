@@ -2190,7 +2190,20 @@
     "backToAdmin": "返回管理後台",
     "preferences": {
       "themeHint": "選擇介面配色，跟隨系統時會隨裝置的深淺色設定切換。",
-      "languageHint": "選擇介面語言，切換後即時生效。"
+      "languageHint": "選擇介面語言，切換後即時生效。",
+      "quotaRemind": {
+        "title": "額度提醒",
+        "hint": "個人餘額不足或用盡時發郵件提醒。組織令牌不在此列。",
+        "toggle": "郵件提醒額度",
+        "toggleHint": "餘額低於閾值時發一封，用盡時再發一封。",
+        "threshold": "提醒閾值",
+        "thresholdPlaceholder": "站點預設：{{amount}}",
+        "followingSite": "目前跟隨站點預設（{{amount}}），填寫金額即可自訂。",
+        "thresholdHint": "餘額低於該值時發送「額度不足」郵件；填 0 則只在用盡時提醒。",
+        "useSiteDefault": "恢復站點預設",
+        "siteDisabled": "本站已關閉額度提醒郵件。",
+        "noEmail": "綁定郵箱後才能收到額度提醒。"
+      }
     },
     "sessions": {
       "title": "已登入裝置",

@@ -2190,7 +2190,20 @@
     "backToAdmin": "Back to admin console",
     "preferences": {
       "themeHint": "Choose the interface colour scheme; System follows your device setting.",
-      "languageHint": "Choose the interface language; the change applies immediately."
+      "languageHint": "Choose the interface language; the change applies immediately.",
+      "quotaRemind": {
+        "title": "Quota warnings",
+        "hint": "Get an email when your personal balance runs low or runs out. Organization tokens are not covered.",
+        "toggle": "Email quota warnings",
+        "toggleHint": "One email when the balance drops below the threshold, and one when it runs out.",
+        "threshold": "Warning threshold",
+        "thresholdPlaceholder": "Site default: {{amount}}",
+        "followingSite": "Following the site default ({{amount}}). Enter an amount to set your own.",
+        "thresholdHint": "You get the \"running low\" email when the balance drops below this amount. 0 sends only the \"used up\" email.",
+        "useSiteDefault": "Use site default",
+        "siteDisabled": "Quota warning emails are turned off for this site.",
+        "noEmail": "Bind an email address to receive quota warnings."
+      }
     },
     "sessions": {
       "title": "Signed-in devices",

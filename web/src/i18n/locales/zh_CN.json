@@ -492,7 +492,20 @@
     "backToAdmin": "返回管理后台",
     "preferences": {
       "themeHint": "选择界面配色，跟随系统时随设备的深浅色设置切换。",
-      "languageHint": "选择界面语言，切换后立即生效。"
+      "languageHint": "选择界面语言，切换后立即生效。",
+      "quotaRemind": {
+        "title": "额度提醒",
+        "hint": "个人余额不足或用尽时发邮件提醒。组织令牌不在此列。",
+        "toggle": "邮件提醒额度",
+        "toggleHint": "余额低于阈值时发一封，用尽时再发一封。",
+        "threshold": "提醒阈值",
+        "thresholdPlaceholder": "站点默认：{{amount}}",
+        "followingSite": "当前跟随站点默认（{{amount}}），填写金额即可自定义。",
+        "thresholdHint": "余额低于该值时发送「额度不足」邮件；填 0 则只在用尽时提醒。",
+        "useSiteDefault": "恢复站点默认",
+        "siteDisabled": "本站已关闭额度提醒邮件。",
+        "noEmail": "绑定邮箱后才能收到额度提醒。"
+      }
     },
     "sessions": {
       "title": "已登录设备",

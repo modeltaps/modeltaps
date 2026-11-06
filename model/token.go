@@ -730,7 +730,9 @@ func PreConsumeTokenQuota(tokenId int, quota int) (err error) {
 	// The warning is checked only after the charge went through. Organization tokens charge the
 	// shadow account, which has no mailbox, so they skip the check entirely.
 	if !tokenIsOrganizationToken(token) {
-		notifyQuotaWarningIfNeeded(token.UserId, userQuota, quota)
+		if threshold, remind := loadQuotaRemindThreshold(token.UserId); remind {
+			notifyQuotaWarningIfNeeded(token.UserId, userQuota, quota, threshold)
+		}
 	}
 	return nil
 }
@@ -780,10 +782,10 @@ func PostConsumeTokenQuotaWithInfo(tokenId int, userId int, unlimitedQuota bool,
 		return nil
 	}
 	if quota > 0 {
-		quotaBefore, remind := loadQuotaBeforeSettlement(userId, remindQuota)
+		quotaBefore, threshold, remind := loadQuotaBeforeSettlement(userId, remindQuota)
 		err = DecreaseUserQuota(userId, quota)
 		if err == nil && remind {
-			notifyQuotaWarningIfNeeded(userId, quotaBefore, quota)
+			notifyQuotaWarningIfNeeded(userId, quotaBefore, quota, threshold)
 		}
 	} else {
 		err = IncreaseUserQuota(userId, -quota)
