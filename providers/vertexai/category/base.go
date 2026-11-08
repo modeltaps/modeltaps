@@ -9,8 +9,16 @@ import (
 	"net/http"
 )
 
+// Publisher values for the publishers/{publisher} segment of a Vertex AI request URL.
+const (
+	PublisherGoogle    = "google"
+	PublisherAnthropic = "anthropic"
+)
+
 type Category struct {
-	Category                  string
+	Category string
+	// Publisher is the publishers/{publisher} segment of the request URL.
+	Publisher                 string
 	ChatComplete              ChatCompletionConvert
 	ResponseChatComplete      ChatCompletionResponse
 	ResponseChatCompleteStrem ChatCompletionStreamResponse

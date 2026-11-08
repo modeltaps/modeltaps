@@ -72,6 +72,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Claude models on Vertex AI channels now work. Requests were sent to Google's publisher path, so
+  Claude models were not found there; Claude now uses the Anthropic publisher, and model IDs with
+  a date (`claude-sonnet-4-5-20250929`) are converted to Vertex's `name@date` form while models
+  without a date (`claude-opus-5-5`) are sent unchanged. Requests to `/claude/v1/messages` are
+  forwarded as sent instead of being converted to the OpenAI format and back, so cache control,
+  tools and other Claude fields reach Vertex unchanged; the premium service-tier fields stay
+  stripped unless the channel allows them, and only the `anthropic-beta` values Vertex accepts are
+  forwarded. The region can be `global`, `us`, `eu` or a specific region (`us` and `eu` use
+  Google's multi-region hosts). A custom API address now needs six `%s` placeholders (host,
+  project, region, publisher, model, action); the older five-placeholder form still serves Gemini
+  models, and any other address is rejected with an error instead of being ignored. Vertex errors
+  show the upstream message with the project ID masked instead of a fixed text, and an empty
+  error list no longer crashes the handler. A Claude model mapped to a Gemini model still takes
+  the Gemini conversion path.
 - Claude Code sessions are recognised again from `metadata.user_id` in the format current Claude
   Code sends (a JSON object encoded as a string), so Claude channel session affinity follows the
   Claude Code session instead of falling back to a hash of the cached prompt.
@@ -353,7 +367,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Claude 4.5 to 5.5 (retired Claude 1 to 3 models are gone); Gemini, Vertex AI and Vertex AI
   Express list Gemini 4 Argon and 3.x; DeepSeek, Moonshot (Kimi), Mistral, Zhipu, MiniMax and
   Cohere follow their current model lists; Codex, xAI and Azure Databricks get default models.
-  Vertex AI defaults are Gemini only. Groq no longer prefills its retired models; use **Fetch
+  Vertex AI also lists Claude 4.5 to 5.5. Groq no longer prefills its retired models; use **Fetch
   models**. Test models are cheap models of each list.
 - The **Fetch models** button is shown only for channel types whose backend can list models;
   xAI and Ollama channels get it.

@@ -922,7 +922,7 @@
       "anyValue": "Any value works",
       "keySeeDocs": "See the documentation for how to get the key.",
       "keySeeUrl": "For the key, see {{url}}",
-      "vertexRegion": "Region|ProjectID or Region1|Region2|Region3|ProjectID (one of several regions is picked at random)",
+      "vertexRegion": "Region|ProjectID or Region1|Region2|Region3|ProjectID (one of several regions is picked at random). Region can be global, us, eu or a specific region such as us-east5",
       "siliconflowUrl": "The official API URL https://api.siliconflow.com is being retired; use https://api.siliconflow.cn",
       "oauthJson": "Enter the full OAuth2 credential JSON, or click \"OAuth authorization\" below to fetch it automatically",
       "claudeOauth": "Enter an access_token (sk-ant-sid01-xxx) or the full OAuth2 credential JSON, or click \"OAuth authorization\" below to fetch it automatically",

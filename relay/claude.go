@@ -147,9 +147,10 @@ func resolveClaudeRoute(channelType int, modelName string, provider providersBas
 		return claudeRouteOpenAIConvert
 	}
 
-	// VertexAI 渠道且模型包含 gemini，使用 Gemini->Claude 转换逻辑
-	if channelType == config.ChannelTypeVertexAI &&
-		(model_utils.ContainsCaseInsensitive(modelName, "gemini") || model_utils.ContainsCaseInsensitive(modelName, "claude-3-5-haiku-20241022")) {
+	// VertexAI 渠道且映射后的模型包含 gemini，使用 Gemini->Claude 转换逻辑
+	// （modelName 是渠道映射之后的名字，所以 Claude 模型被映射到 Gemini 的场景也走这里）；
+	// VertexAI 上的 Claude 模型由 VertexAIProvider 实现的 ClaudeChatInterface 原生透传。
+	if channelType == config.ChannelTypeVertexAI && model_utils.ContainsCaseInsensitive(modelName, "gemini") {
 		return claudeRouteVertexAIGemini
 	}
 
@@ -180,7 +181,7 @@ func (r *relayClaudeOnly) send() (err *types.OpenAIErrorWithStatusCode, done boo
 
 	channelType := r.provider.GetChannel().Type
 
-	switch resolveClaudeRoute(channelType, r.claudeRequest.Model, r.provider) {
+	switch resolveClaudeRoute(channelType, r.modelName, r.provider) {
 	case claudeRouteOpenAIConvert:
 		return r.sendCustomChannelWithClaudeFormat()
 	case claudeRouteVertexAIGemini:

@@ -43,7 +43,10 @@ func TestResolveClaudeRoute_DecisionMatrix(t *testing.T) {
 		{"custom", config.ChannelTypeCustom, "claude-3-5-sonnet", claudeRouteOpenAIConvert},
 		{"openai", config.ChannelTypeOpenAI, "gpt-4o", claudeRouteOpenAIConvert},
 		{"vertexai gemini model", config.ChannelTypeVertexAI, "gemini-2.0-flash", claudeRouteVertexAIGemini},
-		{"vertexai claude-3-5-haiku", config.ChannelTypeVertexAI, "claude-3-5-haiku-20241022", claudeRouteVertexAIGemini},
+		// Claude models on Vertex AI go through the native pass-through
+		{"vertexai claude-3-5-haiku", config.ChannelTypeVertexAI, "claude-3-5-haiku-20241022", claudeRouteNative},
+		// the mapped name decides: a Claude model mapped to Gemini keeps the conversion route
+		{"vertexai claude mapped to gemini", config.ChannelTypeVertexAI, "gemini-2.5-flash", claudeRouteVertexAIGemini},
 		{"gemini", config.ChannelTypeGemini, "gemini-2.0-flash", claudeRouteGemini},
 		{"antigravity", config.ChannelTypeAntigravity, "claude-sonnet-4", claudeRouteAntigravity},
 
@@ -84,8 +87,7 @@ func TestResolveClaudeRoute_DecisionMatrix(t *testing.T) {
 		{"geminicli", config.ChannelTypeGeminiCli, "gemini-2.0-flash", claudeRouteOpenAIConvert},
 		{"codex", config.ChannelTypeCodex, "gpt-5-codex", claudeRouteOpenAIConvert},
 		{"vertexai express", config.ChannelTypeVertexAIExpress, "gemini-2.0-flash", claudeRouteOpenAIConvert},
-		// VertexAI 无原生 Claude 实现，claude 模型经 category 走转换链
-		{"vertexai claude model", config.ChannelTypeVertexAI, "claude-sonnet-4", claudeRouteOpenAIConvert},
+		{"vertexai claude model", config.ChannelTypeVertexAI, "claude-sonnet-4", claudeRouteNative},
 	}
 
 	for _, tt := range tests {
