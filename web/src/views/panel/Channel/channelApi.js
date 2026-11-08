@@ -383,3 +383,23 @@ export function statusLabel(t, status) {
       return t('common.unknown');
   }
 }
+
+// One channel with its key hidden (key_status carries the safe projection).
+export async function fetchChannel(id) {
+  const res = await API.get(`/api/channel/${id}`);
+  return res.data;
+}
+
+// Hourly metrics rows for one channel in [start, end] (unix seconds).
+export async function fetchChannelMetrics(id, start, end) {
+  const res = await API.get('/api/channel/metrics', { params: { channel_id: id, start_timestamp: start, end_timestamp: end } });
+  return res.data?.success ? res.data.data || [] : [];
+}
+
+// Prompt cache and session affinity counters for one channel in [start, end].
+export async function fetchChannelCacheStat(id, start, end) {
+  const res = await API.get('/api/channel/cache_stats', { params: { channel_id: id, start_timestamp: start, end_timestamp: end } });
+  if (!res.data?.success) return null;
+  const list = res.data.data || [];
+  return list.find((s) => s.channel_id === Number(id)) || null;
+}

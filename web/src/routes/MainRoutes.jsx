@@ -15,6 +15,7 @@ const Billing = Loadable(lazy(() => import('views/panel/Billing')));
 const Dashboard = Loadable(lazy(() => import('views/panel/Dashboard')));
 const Analytics = Loadable(lazy(() => import('views/panel/Analytics')));
 const Channel = Loadable(lazy(() => import('views/panel/Channel')));
+const ChannelDetail = Loadable(lazy(() => import('views/panel/Channel/ChannelDetail')));
 const RoutingPolicy = Loadable(lazy(() => import('views/panel/RoutingPolicy')));
 const User = Loadable(lazy(() => import('views/panel/User')));
 const UserGroup = Loadable(lazy(() => import('views/panel/UserGroup')));
@@ -100,6 +101,15 @@ const MainRoutes = {
       element: (
         <AdminGuard>
           <Channel />
+        </AdminGuard>
+      )
+    },
+    {
+      // `new` opens the create form; a number opens that channel.
+      path: 'channel/:id',
+      element: (
+        <AdminGuard>
+          <ChannelDetail />
         </AdminGuard>
       )
     },

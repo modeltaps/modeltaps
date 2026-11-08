@@ -10,12 +10,12 @@ import { toast } from '@/components/ui/sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetBody, SheetFooter } from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
 import { configText } from 'i18n/configText';
 import { defaultConfig, typeConfig } from './typeConfig';
 import {
@@ -81,7 +81,9 @@ const PRE_COST_OPTIONS = [
   { value: 3, labelKey: 'channel_edit.preCostNone' }
 ];
 
-export default function ChannelSheet({ open, channelId, initialTab = 'basic', onClose, onSaved, groupOptions }) {
+// Full-page channel editor (create and edit). Sections sit in a left nav; the save bar
+// sticks to the bottom of the page and says when there are unsaved changes.
+export default function ChannelForm({ channelId, initialTab = 'basic', onCancel, onSaved, onDirtyChange, onTabChange, groupOptions }) {
   const { t } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
   const [hasTag, setHasTag] = useState(false);
@@ -105,8 +107,12 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
     setValue,
     getValues,
     watch,
-    formState: { errors }
+    formState: { errors, isDirty }
   } = useForm({ defaultValues: EMPTY });
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
   const typeValue = watch('type');
   const baseUrlValue = watch('base_url');
   const [iconRefreshKey, setIconRefreshKey] = useState(0);
@@ -238,16 +244,15 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
   };
 
   useEffect(() => {
-    if (!open || prices !== null) return;
+    if (prices !== null) return;
     let alive = true;
     fetchPriceList().then((list) => alive && setPrices(list));
     return () => {
       alive = false;
     };
-  }, [open, prices]);
+  }, [prices]);
 
   useEffect(() => {
-    if (!open) return;
     setHasTag(false);
     setModelSelectorOpen(false);
     setModelOriginalMapping({});
@@ -261,7 +266,11 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
       reset(EMPTY);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, channelId]);
+  }, [channelId]);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   // Snapshot the form values the selector needs at open time. When editing,
   // `key` is usually blank, so include `id` for the backend stored-key
@@ -521,6 +530,7 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
     // All required fields live in the "basic" tab; jump there on any miss.
     const fail = (key, tab = 'basic') => {
       setActiveTab(tab);
+      onTabChange?.(tab);
       toast.error(t(`channel_edit.${key}`));
       return true;
     };
@@ -617,9 +627,10 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
       }
       const { success, message, data } = res.data;
       if (success) {
-        if (data?.key_status) setKeyStatus(data.key_status);
         toast.success(channelId ? t('channel_edit.editSuccess') : t('channel_edit.addSuccess'));
-        onSaved();
+        // Reload so the form is clean again and shows the stored key status.
+        if (channelId) await loadChannel(channelId);
+        onSaved?.({ ids: data?.ids || [] });
       } else {
         toast.error(message);
       }
@@ -631,38 +642,30 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
 
   return (
     <>
-      <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-        <SheetContent onClose={onClose} className="max-w-3xl">
-          <SheetHeader>
-            <SheetTitle>{pickingProvider ? t('providerPicker.title') : channelId ? t('common.edit') : t('common.create')}</SheetTitle>
-          </SheetHeader>
-          {pickingProvider ? (
-            <>
-              <SheetBody className="flex min-h-0 flex-col">
-                <ProviderGrid onPick={pickProvider} />
-              </SheetBody>
-              <SheetFooter>
-                <Button type="button" variant="outline" onClick={onClose}>
-                  {t('common.cancel')}
-                </Button>
-              </SheetFooter>
-            </>
-          ) : (
-            <form onSubmit={handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
-              <SheetBody className="space-y-4">{renderFields()}</SheetBody>
-              <SheetFooter>
-                <Button type="button" variant="outline" onClick={onClose}>
-                  {t('common.cancel')}
-                </Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting && <Loader2 className="size-4 animate-spin" />}
-                  {t('common.submit')}
-                </Button>
-              </SheetFooter>
-            </form>
-          )}
-        </SheetContent>
-      </Sheet>
+      {pickingProvider ? (
+        <div className="flex h-[min(760px,calc(100vh-220px))] min-h-[420px] flex-col rounded-xl border border-border bg-card p-6">
+          <ProviderGrid onPick={pickProvider} />
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col">
+          {renderFields()}
+          <div className="sticky bottom-0 z-10 mt-6 flex items-center justify-end gap-2 border-t border-border bg-background py-3">
+            {isDirty && <span className="mr-auto text-sm text-muted-foreground">{t('channelDetail.unsaved')}</span>}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={submitting || (channelId && !isDirty)}
+              onClick={() => (channelId ? loadChannel(channelId) : onCancel?.())}
+            >
+              {channelId ? t('channelDetail.discard') : t('common.cancel')}
+            </Button>
+            <Button type="submit" disabled={submitting || (channelId && !isDirty)}>
+              {submitting && <Loader2 className="size-4 animate-spin" />}
+              {channelId ? t('channelDetail.save') : t('channelDetail.create')}
+            </Button>
+          </div>
+        </form>
+      )}
       {pricePreview && (
         <PriceSyncDialog
           open
@@ -683,407 +686,446 @@ export default function ChannelSheet({ open, channelId, initialTab = 'basic', on
 
   function renderFields() {
     const hasPlugin = Boolean(pluginConfig[String(typeValue)]);
+    const sections = [
+      { value: 'basic', label: t('channel_edit.tabBasic'), hint: t('channelDetail.sectionHint.basic') },
+      { value: 'model', label: t('channel_edit.tabModel'), hint: t('channelDetail.sectionHint.model') },
+      { value: 'request', label: t('channel_edit.tabRequest'), hint: t('channelDetail.sectionHint.request') },
+      { value: 'advanced', label: t('channel_edit.tabAdvanced'), hint: t('channelDetail.sectionHint.advanced') },
+      ...(hasPlugin ? [{ value: 'plugin', label: t('channel_edit.pluginConfig'), hint: '' }] : [])
+    ];
+    const current = sections.find((s) => s.value === activeTab) || sections[0];
     return (
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="basic">{t('channel_edit.tabBasic')}</TabsTrigger>
-          <TabsTrigger value="model">{t('channel_edit.tabModel')}</TabsTrigger>
-          <TabsTrigger value="request">{t('channel_edit.tabRequest')}</TabsTrigger>
-          <TabsTrigger value="advanced">{t('channel_edit.tabAdvanced')}</TabsTrigger>
-          {hasPlugin && <TabsTrigger value="plugin">{t('channel_edit.pluginConfig')}</TabsTrigger>}
-        </TabsList>
-
-        {/* 基础：必填集中在这里，填完即可创建。 */}
-        <TabsContent value="basic" className="space-y-5">
-          <FormField id="channel-name" label={t('channel_index.name')} required error={errors.name}>
-            <Input id="channel-name" {...register('name')} />
-          </FormField>
-
-          <FormField
-            id="channel-remark"
-            label={configText(t, defaultConfig.inputLabel.remark)}
-            hint={configText(t, defaultConfig.prompt.remark)}
-          >
-            <Textarea id="channel-remark" rows={2} {...register('remark')} />
-          </FormField>
-
-          <FormField id="channel-type" label={t('channel_index.type')} required>
-            <Controller
-              control={control}
-              name="type"
-              render={({ field }) => (
-                <ProviderSelect
-                  id="channel-type"
-                  value={field.value}
-                  onChange={(v) => {
-                    field.onChange(v);
-                    applyTypeDefaults(v);
-                  }}
-                />
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="grid gap-6 md:grid-cols-[176px_minmax(0,1fr)]">
+        <div
+          role="tablist"
+          aria-label={t('channelDetail.tabConfig')}
+          className="flex gap-1 overflow-x-auto md:sticky md:top-0 md:flex-col md:self-start"
+        >
+          {sections.map((s) => (
+            <button
+              key={s.value}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === s.value}
+              onClick={() => {
+                setActiveTab(s.value);
+                onTabChange?.(s.value);
+              }}
+              className={cn(
+                'h-8 shrink-0 rounded-md px-3 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                activeTab === s.value
+                  ? 'bg-muted font-medium text-foreground'
+                  : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
               )}
-            />
-          </FormField>
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+        <div className="min-w-0 max-w-3xl rounded-xl border border-border bg-card p-6">
+          <div className="mb-5">
+            <h2 className="text-base font-medium">{current.label}</h2>
+            {current.hint && <p className="mt-1 text-sm text-muted-foreground">{current.hint}</p>}
+          </div>
 
-          <FormField
-            id="channel-key"
-            label={configText(t, defaultConfig.inputLabel.key)}
-            required={!channelId}
-            hint={channelId ? t('channel_edit.keyEditTip', { defaultValue: 'Leave blank to keep the existing key' }) : null}
-          >
-            {channelId && keyStatus ? (
-              keyStatus.configured ? (
-                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <KeyRound className="size-3.5" />
-                  {keyStatus.count > 1
-                    ? t('channel_edit.keyConfiguredMulti', {
-                        count: keyStatus.count,
-                        masked: keyStatus.masked.join(' ')
-                      })
-                    : t('channel_edit.keyConfigured', {
-                        masked: keyStatus.masked[0]
-                      })}
-                </p>
-              ) : (
-                <p className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
-                  <AlertTriangle className="size-3.5" />
-                  {t('channel_edit.keyNotConfigured')}
-                </p>
-              )
-            ) : null}
-            <Textarea id="channel-key" rows={2} {...register('key')} placeholder={channelId ? '••••••••' : ''} />
-            {[57, 58, 59, 60].includes(typeValue) && (
-              <ChannelOAuth
-                key={typeValue}
-                type={typeValue}
-                channelId={channelId}
-                getValues={getValues}
-                onCredentials={(credentials) => setValue('key', credentials)}
-              />
-            )}
-          </FormField>
+          {/* 基础：必填集中在这里，填完即可创建。 */}
+          <TabsContent value="basic" className="mt-0 space-y-5">
+            <FormField id="channel-name" label={t('channel_index.name')} required error={errors.name}>
+              <Input id="channel-name" {...register('name')} />
+            </FormField>
 
-          <FormField id="channel-base-url" label={t('channel_index.channelApiAddress')} required={[3, 8].includes(typeValue)}>
-            <Input id="channel-base-url" {...register('base_url')} />
-          </FormField>
+            <FormField
+              id="channel-remark"
+              label={configText(t, defaultConfig.inputLabel.remark)}
+              hint={configText(t, defaultConfig.prompt.remark)}
+            >
+              <Textarea id="channel-remark" rows={2} {...register('remark')} />
+            </FormField>
 
-          <FormField label={t('channel_edit.icon')} hint={t('channel_edit.iconTip')}>
-            <div className="flex items-center gap-3">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-md border border-border bg-background">
-                <ProviderIcon key={iconRefreshKey} type={typeValue} name={watch('name')} baseUrl={baseUrlValue} className="size-6" />
-              </span>
-              <BrandIconRefreshButton
-                domain={iconCacheHost(baseUrlValue) || undefined}
-                onRefreshed={() => setIconRefreshKey((k) => k + 1)}
-              />
-            </div>
-          </FormField>
-
-          <FormField label={t('channel_index.group')} required>
-            <div className="flex flex-wrap gap-3">
+            <FormField id="channel-type" label={t('channel_index.type')} required>
               <Controller
                 control={control}
-                name="groups"
+                name="type"
                 render={({ field }) => (
-                  <>
-                    {(groupOptions.length ? groupOptions : ['default']).map((g) => {
-                      const checked = field.value?.includes(g);
-                      return (
-                        <label key={g} className="flex items-center gap-2 text-sm">
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={(c) => field.onChange(c ? [...(field.value || []), g] : field.value.filter((x) => x !== g))}
-                          />
-                          {g}
-                        </label>
-                      );
-                    })}
-                  </>
+                  <ProviderSelect
+                    id="channel-type"
+                    value={field.value}
+                    onChange={(v) => {
+                      field.onChange(v);
+                      applyTypeDefaults(v);
+                    }}
+                  />
                 )}
               />
-            </div>
-          </FormField>
-        </TabsContent>
+            </FormField>
 
-        {/* 模型 */}
-        <TabsContent value="model" className="space-y-5">
-          <FormField
-            id="channel-models"
-            label={configText(t, defaultConfig.inputLabel.models)}
-            required
-            help={configText(t, defaultConfig.prompt.models)}
-          >
-            <Controller
-              control={control}
-              name="models"
-              render={({ field }) => (
-                <ModelListInput
-                  value={field.value}
-                  onChange={field.onChange}
-                  disabled={hasTag}
-                  suggestions={modelSuggestions}
-                  upstream={upstream.type === typeValue ? upstream.items : []}
-                  onOpen={() => loadUpstream()}
-                  loading={upstream.status === 'loading' && upstream.type === typeValue}
-                  notice={
-                    upstream.status === 'error' && upstream.type === typeValue ? (
-                      <span className="flex items-center gap-2">
-                        {t('modelSelect.upstreamFailed')}
-                        <button
-                          type="button"
-                          className="text-foreground underline-offset-2 hover:underline"
-                          onClick={() => loadUpstream(true)}
-                        >
-                          {t('modelSelect.retry')}
-                        </button>
-                      </span>
-                    ) : null
-                  }
-                  advanced={canFetchModels && !hasTag ? { onClick: openModelSelector } : undefined}
-                  headerActions={
+            <FormField
+              id="channel-key"
+              label={configText(t, defaultConfig.inputLabel.key)}
+              required={!channelId}
+              hint={channelId ? t('channel_edit.keyEditTip', { defaultValue: 'Leave blank to keep the existing key' }) : null}
+            >
+              {channelId && keyStatus ? (
+                keyStatus.configured ? (
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <KeyRound className="size-3.5" />
+                    {keyStatus.count > 1
+                      ? t('channel_edit.keyConfiguredMulti', {
+                          count: keyStatus.count,
+                          masked: keyStatus.masked.join(' ')
+                        })
+                      : t('channel_edit.keyConfigured', {
+                          masked: keyStatus.masked[0]
+                        })}
+                  </p>
+                ) : (
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                    <AlertTriangle className="size-3.5" />
+                    {t('channel_edit.keyNotConfigured')}
+                  </p>
+                )
+              ) : null}
+              <Textarea id="channel-key" rows={2} {...register('key')} placeholder={channelId ? '••••••••' : ''} />
+              {[57, 58, 59, 60].includes(typeValue) && (
+                <ChannelOAuth
+                  key={typeValue}
+                  type={typeValue}
+                  channelId={channelId}
+                  getValues={getValues}
+                  onCredentials={(credentials) => setValue('key', credentials)}
+                />
+              )}
+            </FormField>
+
+            <FormField id="channel-base-url" label={t('channel_index.channelApiAddress')} required={[3, 8].includes(typeValue)}>
+              <Input id="channel-base-url" {...register('base_url')} />
+            </FormField>
+
+            <FormField label={t('channel_edit.icon')} hint={t('channel_edit.iconTip')}>
+              <div className="flex items-center gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-md border border-border bg-background">
+                  <ProviderIcon key={iconRefreshKey} type={typeValue} name={watch('name')} baseUrl={baseUrlValue} className="size-6" />
+                </span>
+                <BrandIconRefreshButton
+                  domain={iconCacheHost(baseUrlValue) || undefined}
+                  onRefreshed={() => setIconRefreshKey((k) => k + 1)}
+                />
+              </div>
+            </FormField>
+
+            <FormField label={t('channel_index.group')} required>
+              <div className="flex flex-wrap gap-3">
+                <Controller
+                  control={control}
+                  name="groups"
+                  render={({ field }) => (
                     <>
-                      {canFetchModels && (
-                        <ToolbarButton
-                          busy={pruning}
-                          disabled={hasTag}
-                          icon={Eraser}
-                          title={t('channel_edit.pruneStaleTip')}
-                          onClick={handlePruneStaleModels}
-                        >
-                          {t('channel_edit.pruneStale')}
-                        </ToolbarButton>
-                      )}
-                      {(typeValue === 20 || typeValue === 62) && (
-                        <>
-                          <ToolbarButton
-                            busy={syncingPricing}
-                            icon={CloudDownload}
-                            title={t('channel_edit.syncPricingTip')}
-                            onClick={handleSyncPricing}
-                          >
-                            {t('channel_edit.syncPricing')}
-                          </ToolbarButton>
-                          <ToolbarButton
-                            busy={fetchSyncing}
-                            disabled={hasTag}
-                            icon={CloudDownload}
-                            title={t('channel_edit.fetchAndSyncTip')}
-                            onClick={handleFetchAndSync}
-                          >
-                            {t('channel_edit.fetchAndSync')}
-                          </ToolbarButton>
-                        </>
-                      )}
+                      {(groupOptions.length ? groupOptions : ['default']).map((g) => {
+                        const checked = field.value?.includes(g);
+                        return (
+                          <label key={g} className="flex items-center gap-2 text-sm">
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(c) => field.onChange(c ? [...(field.value || []), g] : field.value.filter((x) => x !== g))}
+                            />
+                            {g}
+                          </label>
+                        );
+                      })}
                     </>
-                  }
+                  )}
                 />
-              )}
-            />
-          </FormField>
-          <FormField label={configText(t, defaultConfig.inputLabel.model_mapping)} help={configText(t, defaultConfig.prompt.model_mapping)}>
-            <Controller
-              control={control}
-              name="model_mapping"
-              render={({ field }) => (
-                <ModelMappingInput
-                  value={field.value}
-                  models={splitModels(watch('models'))}
-                  onChange={(v) => {
-                    field.onChange(v);
-                    syncModelMappingToModels(v);
-                  }}
-                />
-              )}
-            />
-          </FormField>
-
-          <FormField
-            id="channel-disabled-stream"
-            label={configText(t, defaultConfig.inputLabel.disabled_stream)}
-            hint={configText(t, defaultConfig.prompt.disabled_stream)}
-          >
-            <Textarea
-              id="channel-disabled-stream"
-              rows={2}
-              disabled={hasTag}
-              placeholder="gpt-4o, o1-mini"
-              {...register('disabled_stream')}
-            />
-          </FormField>
-
-          <FormField
-            id="channel-need2response-models"
-            label={configText(t, defaultConfig.inputLabel.need2response_models)}
-            help={configText(t, defaultConfig.prompt.need2response_models)}
-          >
-            <Textarea
-              id="channel-need2response-models"
-              rows={3}
-              className="font-mono text-xs"
-              placeholder={'gpt-5-pro\n-o3-pro'}
-              {...register('need2response_models')}
-            />
-          </FormField>
-
-          <FormField id="channel-test-model" label={t('channel_index.testModel')} hint={configText(t, defaultConfig.prompt.test_model)}>
-            <Input id="channel-test-model" {...register('test_model')} />
-          </FormField>
-
-          <ToggleRow
-            control={control}
-            name="drift_auto_add"
-            label={t('channel_edit.drift.autoAdd')}
-            help={t('channel_edit.drift.autoAddHelp')}
-          />
-          <FormField id="channel-drift-ignore" label={t('channel_edit.drift.ignoreRules')} help={t('channel_edit.drift.ignoreRulesHelp')}>
-            <Textarea
-              id="channel-drift-ignore"
-              rows={3}
-              className="font-mono text-xs"
-              placeholder={'*-preview\nre:^gpt-4o-audio'}
-              {...register('drift_ignore_rules')}
-            />
-          </FormField>
-        </TabsContent>
-
-        {/* 请求 */}
-        <TabsContent value="request" className="space-y-5">
-          <FormField
-            id="channel-custom-parameter"
-            label={configText(t, defaultConfig.inputLabel.custom_parameter)}
-            help={configText(t, defaultConfig.prompt.custom_parameter)}
-          >
-            <Textarea id="channel-custom-parameter" rows={3} className="font-mono text-xs" {...register('custom_parameter')} />
-          </FormField>
-
-          <FormField label={configText(t, defaultConfig.inputLabel.model_headers)} hint={configText(t, defaultConfig.prompt.model_headers)}>
-            <Controller
-              control={control}
-              name="model_headers"
-              render={({ field }) => <ModelHeadersInput value={field.value} onChange={field.onChange} />}
-            />
-          </FormField>
-
-          <FormField
-            label={configText(t, defaultConfig.inputLabel.header_override)}
-            hint={configText(t, defaultConfig.prompt.header_override)}
-          >
-            <Controller
-              control={control}
-              name="header_override"
-              render={({ field }) => <ModelHeadersInput value={field.value} onChange={field.onChange} />}
-            />
-          </FormField>
-
-          <div className="space-y-3">
-            <ToggleRow control={control} name="only_chat" label={configText(t, defaultConfig.inputLabel.only_chat)} />
-            <ToggleRow control={control} name="compatible_response" label={configText(t, defaultConfig.inputLabel.compatible_response)} />
-            <ToggleRow control={control} name="allow_extra_body" label={configText(t, defaultConfig.inputLabel.allow_extra_body)} />
-            <ToggleRow control={control} name="pass_through_body" label={configText(t, defaultConfig.inputLabel.pass_through_body)} />
-            <ToggleRow
-              control={control}
-              name="allow_service_tier"
-              label={configText(t, defaultConfig.inputLabel.allow_service_tier)}
-              help={configText(t, defaultConfig.prompt.allow_service_tier)}
-            />
-            <ToggleRow
-              control={control}
-              name="unified_request_response_model"
-              label={configText(t, defaultConfig.inputLabel.unified_request_response_model)}
-              help={configText(t, defaultConfig.prompt.unified_request_response_model)}
-            />
-          </div>
-        </TabsContent>
-
-        {/* 高级 */}
-        <TabsContent value="advanced" className="space-y-5">
-          <FormField
-            id="channel-pre-cost"
-            row
-            label={configText(t, defaultConfig.inputLabel.pre_cost)}
-            help={configText(t, defaultConfig.prompt.pre_cost)}
-          >
-            <Controller
-              control={control}
-              name="pre_cost"
-              render={({ field }) => (
-                <Select value={String(field.value)} onValueChange={(v) => field.onChange(Number(v))}>
-                  <SelectTrigger id="channel-pre-cost" disabled={hasTag}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PRE_COST_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={String(o.value)}>
-                        {t(o.labelKey)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </FormField>
-
-          <FormField
-            row
-            id="channel-priority"
-            label={t('channel_index.priority')}
-            controlClassName="w-32"
-            help={
-              <>
-                {t('channel_index.priorityWeightExplanation')}
-                <br />
-                {t('channel_index.description1')}
-                <br />
-                {t('channel_index.description2')}
-                <br />
-                {t('channel_index.description3')}
-                <br />
-                {t('channel_index.description4')}
-              </>
-            }
-          >
-            <Input id="channel-priority" type="number" {...register('priority')} />
-          </FormField>
-
-          <FormField row id="channel-weight" label={t('channel_index.weight')} controlClassName="w-32">
-            <Input id="channel-weight" type="number" {...register('weight')} />
-          </FormField>
-
-          <FormField
-            row
-            id="channel-balance-threshold"
-            label={configText(t, defaultConfig.inputLabel.balance_threshold)}
-            help={configText(t, defaultConfig.prompt.balance_threshold)}
-            controlClassName="w-32"
-          >
-            <Input id="channel-balance-threshold" type="number" min="0" step="0.01" {...register('balance_threshold')} />
-          </FormField>
-
-          <FormField
-            id="channel-proxy"
-            label={configText(t, defaultConfig.inputLabel.proxy)}
-            help={configText(t, defaultConfig.prompt.proxy)}
-          >
-            <Input id="channel-proxy" {...register('proxy')} />
-          </FormField>
-
-          <FormField id="channel-other" label={configText(t, defaultConfig.inputLabel.other)}>
-            <Input id="channel-other" {...register('other')} />
-          </FormField>
-
-          <FormField id="channel-tag" label={configText(t, defaultConfig.inputLabel.tag)} help={configText(t, defaultConfig.prompt.tag)}>
-            <Input id="channel-tag" {...register('tag')} />
-          </FormField>
-        </TabsContent>
-
-        {hasPlugin && (
-          <TabsContent value="plugin" className="space-y-5">
-            <Controller
-              control={control}
-              name="plugin"
-              render={({ field }) => <PluginForm type={typeValue} value={field.value} onChange={field.onChange} />}
-            />
+              </div>
+            </FormField>
           </TabsContent>
-        )}
+
+          {/* 模型 */}
+          <TabsContent value="model" className="mt-0 space-y-5">
+            <FormField
+              id="channel-models"
+              label={configText(t, defaultConfig.inputLabel.models)}
+              required
+              help={configText(t, defaultConfig.prompt.models)}
+            >
+              <Controller
+                control={control}
+                name="models"
+                render={({ field }) => (
+                  <ModelListInput
+                    value={field.value}
+                    onChange={field.onChange}
+                    disabled={hasTag}
+                    suggestions={modelSuggestions}
+                    upstream={upstream.type === typeValue ? upstream.items : []}
+                    onOpen={() => loadUpstream()}
+                    loading={upstream.status === 'loading' && upstream.type === typeValue}
+                    notice={
+                      upstream.status === 'error' && upstream.type === typeValue ? (
+                        <span className="flex items-center gap-2">
+                          {t('modelSelect.upstreamFailed')}
+                          <button
+                            type="button"
+                            className="text-foreground underline-offset-2 hover:underline"
+                            onClick={() => loadUpstream(true)}
+                          >
+                            {t('modelSelect.retry')}
+                          </button>
+                        </span>
+                      ) : null
+                    }
+                    advanced={canFetchModels && !hasTag ? { onClick: openModelSelector } : undefined}
+                    headerActions={
+                      <>
+                        {canFetchModels && (
+                          <ToolbarButton
+                            busy={pruning}
+                            disabled={hasTag}
+                            icon={Eraser}
+                            title={t('channel_edit.pruneStaleTip')}
+                            onClick={handlePruneStaleModels}
+                          >
+                            {t('channel_edit.pruneStale')}
+                          </ToolbarButton>
+                        )}
+                        {(typeValue === 20 || typeValue === 62) && (
+                          <>
+                            <ToolbarButton
+                              busy={syncingPricing}
+                              icon={CloudDownload}
+                              title={t('channel_edit.syncPricingTip')}
+                              onClick={handleSyncPricing}
+                            >
+                              {t('channel_edit.syncPricing')}
+                            </ToolbarButton>
+                            <ToolbarButton
+                              busy={fetchSyncing}
+                              disabled={hasTag}
+                              icon={CloudDownload}
+                              title={t('channel_edit.fetchAndSyncTip')}
+                              onClick={handleFetchAndSync}
+                            >
+                              {t('channel_edit.fetchAndSync')}
+                            </ToolbarButton>
+                          </>
+                        )}
+                      </>
+                    }
+                  />
+                )}
+              />
+            </FormField>
+            <FormField
+              label={configText(t, defaultConfig.inputLabel.model_mapping)}
+              help={configText(t, defaultConfig.prompt.model_mapping)}
+            >
+              <Controller
+                control={control}
+                name="model_mapping"
+                render={({ field }) => (
+                  <ModelMappingInput
+                    value={field.value}
+                    models={splitModels(watch('models'))}
+                    onChange={(v) => {
+                      field.onChange(v);
+                      syncModelMappingToModels(v);
+                    }}
+                  />
+                )}
+              />
+            </FormField>
+
+            <FormField
+              id="channel-disabled-stream"
+              label={configText(t, defaultConfig.inputLabel.disabled_stream)}
+              hint={configText(t, defaultConfig.prompt.disabled_stream)}
+            >
+              <Textarea
+                id="channel-disabled-stream"
+                rows={2}
+                disabled={hasTag}
+                placeholder="gpt-4o, o1-mini"
+                {...register('disabled_stream')}
+              />
+            </FormField>
+
+            <FormField
+              id="channel-need2response-models"
+              label={configText(t, defaultConfig.inputLabel.need2response_models)}
+              help={configText(t, defaultConfig.prompt.need2response_models)}
+            >
+              <Textarea
+                id="channel-need2response-models"
+                rows={3}
+                className="font-mono text-xs"
+                placeholder={'gpt-5-pro\n-o3-pro'}
+                {...register('need2response_models')}
+              />
+            </FormField>
+
+            <FormField id="channel-test-model" label={t('channel_index.testModel')} hint={configText(t, defaultConfig.prompt.test_model)}>
+              <Input id="channel-test-model" {...register('test_model')} />
+            </FormField>
+
+            <ToggleRow
+              control={control}
+              name="drift_auto_add"
+              label={t('channel_edit.drift.autoAdd')}
+              help={t('channel_edit.drift.autoAddHelp')}
+            />
+            <FormField id="channel-drift-ignore" label={t('channel_edit.drift.ignoreRules')} help={t('channel_edit.drift.ignoreRulesHelp')}>
+              <Textarea
+                id="channel-drift-ignore"
+                rows={3}
+                className="font-mono text-xs"
+                placeholder={'*-preview\nre:^gpt-4o-audio'}
+                {...register('drift_ignore_rules')}
+              />
+            </FormField>
+          </TabsContent>
+
+          {/* 请求 */}
+          <TabsContent value="request" className="mt-0 space-y-5">
+            <FormField
+              id="channel-custom-parameter"
+              label={configText(t, defaultConfig.inputLabel.custom_parameter)}
+              help={configText(t, defaultConfig.prompt.custom_parameter)}
+            >
+              <Textarea id="channel-custom-parameter" rows={3} className="font-mono text-xs" {...register('custom_parameter')} />
+            </FormField>
+
+            <FormField
+              label={configText(t, defaultConfig.inputLabel.model_headers)}
+              hint={configText(t, defaultConfig.prompt.model_headers)}
+            >
+              <Controller
+                control={control}
+                name="model_headers"
+                render={({ field }) => <ModelHeadersInput value={field.value} onChange={field.onChange} />}
+              />
+            </FormField>
+
+            <FormField
+              label={configText(t, defaultConfig.inputLabel.header_override)}
+              hint={configText(t, defaultConfig.prompt.header_override)}
+            >
+              <Controller
+                control={control}
+                name="header_override"
+                render={({ field }) => <ModelHeadersInput value={field.value} onChange={field.onChange} />}
+              />
+            </FormField>
+
+            <div className="space-y-3">
+              <ToggleRow control={control} name="only_chat" label={configText(t, defaultConfig.inputLabel.only_chat)} />
+              <ToggleRow control={control} name="compatible_response" label={configText(t, defaultConfig.inputLabel.compatible_response)} />
+              <ToggleRow control={control} name="allow_extra_body" label={configText(t, defaultConfig.inputLabel.allow_extra_body)} />
+              <ToggleRow control={control} name="pass_through_body" label={configText(t, defaultConfig.inputLabel.pass_through_body)} />
+              <ToggleRow
+                control={control}
+                name="allow_service_tier"
+                label={configText(t, defaultConfig.inputLabel.allow_service_tier)}
+                help={configText(t, defaultConfig.prompt.allow_service_tier)}
+              />
+              <ToggleRow
+                control={control}
+                name="unified_request_response_model"
+                label={configText(t, defaultConfig.inputLabel.unified_request_response_model)}
+                help={configText(t, defaultConfig.prompt.unified_request_response_model)}
+              />
+            </div>
+          </TabsContent>
+
+          {/* 高级 */}
+          <TabsContent value="advanced" className="mt-0 space-y-5">
+            <FormField
+              id="channel-pre-cost"
+              row
+              label={configText(t, defaultConfig.inputLabel.pre_cost)}
+              help={configText(t, defaultConfig.prompt.pre_cost)}
+            >
+              <Controller
+                control={control}
+                name="pre_cost"
+                render={({ field }) => (
+                  <Select value={String(field.value)} onValueChange={(v) => field.onChange(Number(v))}>
+                    <SelectTrigger id="channel-pre-cost" disabled={hasTag}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRE_COST_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={String(o.value)}>
+                          {t(o.labelKey)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </FormField>
+
+            <FormField
+              row
+              id="channel-priority"
+              label={t('channel_index.priority')}
+              controlClassName="w-32"
+              help={
+                <>
+                  {t('channel_index.priorityWeightExplanation')}
+                  <br />
+                  {t('channel_index.description1')}
+                  <br />
+                  {t('channel_index.description2')}
+                  <br />
+                  {t('channel_index.description3')}
+                  <br />
+                  {t('channel_index.description4')}
+                </>
+              }
+            >
+              <Input id="channel-priority" type="number" {...register('priority')} />
+            </FormField>
+
+            <FormField row id="channel-weight" label={t('channel_index.weight')} controlClassName="w-32">
+              <Input id="channel-weight" type="number" {...register('weight')} />
+            </FormField>
+
+            <FormField
+              row
+              id="channel-balance-threshold"
+              label={configText(t, defaultConfig.inputLabel.balance_threshold)}
+              help={configText(t, defaultConfig.prompt.balance_threshold)}
+              controlClassName="w-32"
+            >
+              <Input id="channel-balance-threshold" type="number" min="0" step="0.01" {...register('balance_threshold')} />
+            </FormField>
+
+            <FormField
+              id="channel-proxy"
+              label={configText(t, defaultConfig.inputLabel.proxy)}
+              help={configText(t, defaultConfig.prompt.proxy)}
+            >
+              <Input id="channel-proxy" {...register('proxy')} />
+            </FormField>
+
+            <FormField id="channel-other" label={configText(t, defaultConfig.inputLabel.other)}>
+              <Input id="channel-other" {...register('other')} />
+            </FormField>
+
+            <FormField id="channel-tag" label={configText(t, defaultConfig.inputLabel.tag)} help={configText(t, defaultConfig.prompt.tag)}>
+              <Input id="channel-tag" {...register('tag')} />
+            </FormField>
+          </TabsContent>
+
+          {hasPlugin && (
+            <TabsContent value="plugin" className="mt-0 space-y-5">
+              <Controller
+                control={control}
+                name="plugin"
+                render={({ field }) => <PluginForm type={typeValue} value={field.value} onChange={field.onChange} />}
+              />
+            </TabsContent>
+          )}
+        </div>
       </Tabs>
     );
   }
@@ -1107,12 +1149,13 @@ function ToggleRow({ control, name, label, help }) {
   );
 }
 
-ChannelSheet.propTypes = {
-  open: PropTypes.bool,
+ChannelForm.propTypes = {
   channelId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   initialTab: PropTypes.string,
-  onClose: PropTypes.func,
+  onCancel: PropTypes.func,
   onSaved: PropTypes.func,
+  onDirtyChange: PropTypes.func,
+  onTabChange: PropTypes.func,
   groupOptions: PropTypes.array
 };
 

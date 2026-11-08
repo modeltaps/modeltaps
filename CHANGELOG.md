@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Channel pages: every channel has its own page at `/panel/channel/<id>`. The overview shows
+  what the gateway charged, the upstream balance or subscription windows (with the OpenRouter
+  quota snapshot), requests and success rate over 24 hours or 7 days with an hourly chart,
+  prompt cache hit and session affinity rates, last test, latency, first token time and output
+  speed per model, model drift with its actions, and routing (groups, priority, weight, tag).
+  The configuration tab holds the full channel form with its sections in a side nav, a save bar
+  that says when there are unsaved changes, and switching tabs keeps them. New channels are
+  created at `/panel/channel/new`; a single new channel opens its page after saving.
+  `POST /api/channel/` now returns the created ids.
+- The channel list links names to the channel page, folds the enable switch into the status
+  column (auto-disabled channels say so next to it) and keeps only the gateway spend; the
+  upstream balance moved to the channel page. Links from the model catalog and logs, and old
+  `?channel_id=` links, open the channel page.
 - Personal quota warning settings: Settings, Preferences has a Quota warnings card where users
   turn the low-balance and used-up emails off, or set their own warning threshold instead of the
   site default (and switch back to it). The site switch still wins: when it is off nobody gets
@@ -72,6 +85,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Saving a channel no longer resets its last test time, response time and creation time; the
+  form does not carry them, and the full-row update wrote them back as zero.
 - Claude Code sessions are recognised again from `metadata.user_id` in the format current Claude
   Code sends (a JSON object encoded as a string), so Claude channel session affinity follows the
   Claude Code session instead of falling back to a hash of the cached prompt.

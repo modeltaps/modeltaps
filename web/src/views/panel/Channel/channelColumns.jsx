@@ -128,55 +128,6 @@ function HeaderWithTip({ label, tip }) {
   );
 }
 
-function renderBalance(type, balance) {
-  switch (type) {
-    case 28: // Deepseek
-      return <>¥{balance}</>;
-    case 45: // Deepseek
-      return <>¥{balance}</>;
-    default:
-      return <>${balance.toFixed(2)}</>;
-  }
-}
-
-// Subscription channels (Codex, Claude Code) have no money balance: show their usage windows
-// (`row.usage_windows = { windows: [{ name, used_percent, reset_at }], fetched_at }`) instead.
-function UsageWindows({ t, usage }) {
-  const windows = usage?.windows || [];
-  if (windows.length === 0) return null;
-  const tone = (p) => (p >= 90 ? 'text-destructive' : p >= 70 ? 'text-amber-600 dark:text-amber-400' : '');
-  return (
-    <TooltipProvider delayDuration={150}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="flex cursor-help flex-col text-xs leading-tight text-muted-foreground">
-            {windows.map((w, i) => (
-              <span key={w.name || i} className="whitespace-nowrap">
-                {w.name} <span className={tone(w.used_percent)}>{Math.round(w.used_percent)}%</span>
-              </span>
-            ))}
-          </span>
-        </TooltipTrigger>
-        <TooltipContent className="max-w-xs whitespace-normal text-xs">
-          <div className="space-y-1">
-            {usage.plan_type && <div>{t('channel_row.usagePlan', { plan: usage.plan_type })}</div>}
-            {windows.map((w, i) => (
-              <div key={w.name || i}>
-                {t('channel_row.usageWindow', {
-                  name: w.name,
-                  percent: Math.round(w.used_percent),
-                  reset: w.reset_at ? timestamp2string(w.reset_at) : '-'
-                })}
-              </div>
-            ))}
-            {usage.fetched_at ? <div>{t('channel_row.usageFetchedAt', { time: timestamp2string(usage.fetched_at) })}</div> : null}
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
-
 // Amber warning shown next to the channel name when the last drift check found
 // models the channel still advertises but the upstream no longer returns
 // (`row.model_drift = { checked_at, missing_models, ok }`, brought out by
@@ -311,9 +262,14 @@ export function getColumns({ t, handlers, testingIds, driftCheckingIds, dismissi
           <div className="flex min-w-0 items-center gap-2.5">
             <ProviderIcon type={c.type} name={c.name} baseUrl={c.base_url} className="size-6 flex-none" />
             <div className="flex min-w-0 flex-col">
-              <span className="max-w-[16rem] truncate font-medium" title={c.name}>
+              <button
+                type="button"
+                onClick={() => handlers.onOpen(c)}
+                className="max-w-[16rem] truncate text-left font-medium underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
+                title={c.name}
+              >
                 {c.name}
-              </span>
+              </button>
               <ChannelRemark remark={c.remark} />
               <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                 <span>{opt ? opt.text : t('common.unknown')}</span>
@@ -386,35 +342,23 @@ export function getColumns({ t, handlers, testingIds, driftCheckingIds, dismissi
     },
     {
       id: 'used',
-      header: t('channel_index.usedBalance'),
+      header: () => <HeaderWithTip label={t('channelDetail.used')} tip={t('channelDetail.usedTip')} />,
       enableSorting: false,
-      cell: ({ row }) => (
-        <div className="flex flex-col gap-0.5 text-sm tabular-nums">
-          <span>{renderSpend(row.original.used_quota)}</span>
-          {row.original.usage_windows?.windows?.length ? (
-            <UsageWindows t={t} usage={row.original.usage_windows} />
-          ) : (
-            <span className="text-xs text-muted-foreground">{renderBalance(row.original.type, Number(row.original.balance || 0))}</span>
-          )}
-        </div>
-      )
+      cell: ({ row }) => <span className="text-sm tabular-nums">{renderSpend(row.original.used_quota)}</span>
     },
     {
       accessorKey: 'status',
       header: t('channel_index.status'),
-      cell: ({ row }) => <StatusDot t={t} status={row.original.status} />
-    },
-    {
-      id: 'enabled',
-      header: t('channelPage.enabledColumn'),
-      enableSorting: false,
-      meta: { className: 'w-16' },
+      meta: { className: 'w-32' },
       cell: ({ row }) => (
-        <Switch
-          checked={row.original.status === 1}
-          aria-label={t('channelPage.enabledColumn')}
-          onCheckedChange={() => handlers.onToggleStatus(row.original)}
-        />
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={row.original.status === 1}
+            aria-label={t('channelPage.enabledColumn')}
+            onCheckedChange={() => handlers.onToggleStatus(row.original)}
+          />
+          {row.original.status === 3 && <span className="whitespace-nowrap text-xs text-destructive">{statusLabel(t, 3)}</span>}
+        </div>
       )
     },
     {

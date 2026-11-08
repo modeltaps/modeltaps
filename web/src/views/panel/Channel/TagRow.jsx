@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router';
 import { ChevronDown, ChevronRight, FlaskConical, Gauge, Trash2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -240,7 +241,9 @@ export default function TagRow({ item, colSpan, requestConfirm, onRefresh, onMul
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap items-center gap-x-2">
-                            <span className="font-medium">{channel.name}</span>
+                            <Link to={`/panel/channel/${channel.id}`} className="font-medium underline-offset-4 hover:underline">
+                              {channel.name}
+                            </Link>
                             {channel.key_status?.configured && (
                               <span className="font-mono text-xs text-muted-foreground">{channel.key_status.masked.join(' ')}</span>
                             )}

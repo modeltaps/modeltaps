@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { Navigate, useNavigate, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useTable, flexRender } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
@@ -26,10 +26,8 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getColumns } from './channelColumns';
 import { buildChannelFilterFields, CHANNEL_FILTER_PARAM_KEYS } from './channelFilterFields';
-import ChannelSheet from './ChannelSheet';
-import ChannelCheckDialog from './ChannelCheckDialog';
-import ChannelTestDialog from './ChannelTestDialog';
-import ConfirmDialog from './ConfirmDialog';
+import useChannelActions from './useChannelActions';
+import { channelUrl } from './channelUrl';
 import TagRow, { TagCard } from './TagRow';
 import BatchModal from './BatchModal';
 import {
@@ -38,9 +36,8 @@ import {
   fetchGroups,
   fetchTags,
   fetchModels,
-  checkChannelDrift,
-  dismissChannelNewModels,
   fetchChannelStatusCounts,
+  checkChannelDrift,
   CHANNEL_STATUS_CHIPS
 } from './channelApi';
 
@@ -72,9 +69,6 @@ export default function Channel() {
   const [channels, setChannels] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshFlag, setRefreshFlag] = useState(false);
-  const [testingIds, setTestingIds] = useState(() => new Set());
-  const [driftCheckingIds, setDriftCheckingIds] = useState(() => new Set());
-  const [dismissingIds, setDismissingIds] = useState(() => new Set());
   const [driftCheckingAll, setDriftCheckingAll] = useState(false);
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -92,15 +86,21 @@ export default function Channel() {
   const [batchBusy, setBatchBusy] = useState(false);
 
   const [rowSelection, setRowSelection] = useState({});
-  // ?channel_id=<id>(如模型页渠道图标跳转)直接打开该渠道的编辑抽屉;参数随下方 URL 同步清除,刷新不重复弹出。
+  const navigate = useNavigate();
+  // Old links (?channel_id=<id>) open the channel's own page.
   const [linkedChannelId] = useState(() => parseInt(searchParams.get('channel_id'), 10) || 0);
-  const [sheetOpen, setSheetOpen] = useState(linkedChannelId > 0);
-  const [sheetTab, setSheetTab] = useState('basic');
   const [batchOpen, setBatchOpen] = useState(false);
-  const [checkItem, setCheckItem] = useState(null);
-  const [testItem, setTestItem] = useState(null);
-  const [editId, setEditId] = useState(linkedChannelId);
-  const [confirm, setConfirm] = useState({ open: false, title: '', content: '', onConfirm: null });
+  const {
+    handlers: actions,
+    testingIds,
+    driftCheckingIds,
+    dismissingIds,
+    requestConfirm,
+    dialogs
+  } = useChannelActions({
+    onChanged: () => setRefreshFlag((f) => !f),
+    onDriftDismissed: (row, drift) => setChannels((prev) => prev.map((c) => (c.id === row.id ? { ...c, model_drift: drift } : c)))
+  });
 
   const queryParams = useMemo(() => {
     const q = filterStateToParams(CHANNEL_PARAM_FIELDS, filterState);
@@ -159,6 +159,9 @@ export default function Channel() {
 
   // 已应用筛选同步到 URL(replace,刷新可恢复;先清空筛选键再按当前 state 重写)。
   useEffect(() => {
+    // An old ?channel_id link is being redirected to the channel page; rewriting the list URL
+    // here would navigate back to the list.
+    if (linkedChannelId) return;
     setSearchParams(
       (prev) => {
         const params = new URLSearchParams(prev);
@@ -169,7 +172,7 @@ export default function Channel() {
       },
       { replace: true }
     );
-  }, [queryParams, setSearchParams]);
+  }, [queryParams, setSearchParams, linkedChannelId]);
 
   const doRefresh = (reset) => {
     if (reset) {
@@ -217,117 +220,9 @@ export default function Channel() {
   };
 
   const handlers = {
-    onEdit: (row, tab = 'basic') => {
-      setEditId(row.id);
-      setSheetTab(tab);
-      setSheetOpen(true);
-    },
-    onToggleStatus: async (row) => {
-      const next = row.status === 1 ? 2 : 1;
-      const { success, message } = await manageChannel(row.id, 'status', next);
-      if (success) {
-        toast.success(t('userPage.operationSuccess'));
-        setRefreshFlag((f) => !f);
-      } else if (message) toast.error(message);
-    },
-    onUpdatePriority: async (row, value) => {
-      const { success, message } = await manageChannel(row.id, 'priority', value);
-      success ? toast.success(t('userPage.operationSuccess')) : toast.error(message);
-    },
-    onUpdateWeight: async (row, value) => {
-      const { success, message } = await manageChannel(row.id, 'weight', value);
-      success ? toast.success(t('userPage.operationSuccess')) : toast.error(message);
-    },
-    onCheck: (row) => setCheckItem(row),
-    onMultiTest: (row) => setTestItem(row),
-    onCheckDrift: async (row) => {
-      if (driftCheckingIds.has(row.id)) return; // 同一渠道检测进行中，忽略重复触发
-      setDriftCheckingIds((prev) => new Set(prev).add(row.id));
-      try {
-        const { success, message, data } = await checkChannelDrift(row.id);
-        if (success) {
-          const count = data?.missing_models?.length ?? 0;
-          count > 0
-            ? toast.warning(t('channel_row.driftFound', { channel: row.name, count }))
-            : toast.success(t('channel_row.driftNone', { channel: row.name }));
-          setRefreshFlag((f) => !f);
-        } else if (message) toast.error(message);
-      } catch (e) {
-        toast.error(e.message);
-      } finally {
-        setDriftCheckingIds((prev) => {
-          const next = new Set(prev);
-          next.delete(row.id);
-          return next;
-        });
-      }
-    },
-    // 忽略上游新增模型标记：仅就地更新该行的 model_drift（后端返回最新结果），不整页刷新。
-    onDismissNewModels: async (row) => {
-      if (dismissingIds.has(row.id)) return;
-      setDismissingIds((prev) => new Set(prev).add(row.id));
-      try {
-        const { success, message, data } = await dismissChannelNewModels(row.id);
-        if (success) {
-          setChannels((prev) => prev.map((c) => (c.id === row.id ? { ...c, model_drift: data } : c)));
-          toast.success(t('channel_row.newModelsDismissed', { channel: row.name }));
-        } else if (message) toast.error(message);
-      } catch (e) {
-        toast.error(e.message);
-      } finally {
-        setDismissingIds((prev) => {
-          const next = new Set(prev);
-          next.delete(row.id);
-          return next;
-        });
-      }
-    },
-    onTest: async (row) => {
-      if (testingIds.has(row.id)) return; // 同一行测试进行中，忽略重复触发
-      setTestingIds((prev) => new Set(prev).add(row.id));
-      try {
-        const { success, time, message, model } = await manageChannel(row.id, 'test', row.test_model);
-        if (success) {
-          toast.success(t('channel_row.modelTestSuccess', { channel: row.name, model, time: time.toFixed(2) }));
-          setRefreshFlag((f) => !f);
-        } else if (message) toast.error(message);
-      } finally {
-        setTestingIds((prev) => {
-          const next = new Set(prev);
-          next.delete(row.id);
-          return next;
-        });
-      }
-    },
-    onRefreshBalance: async (row) => {
-      try {
-        const res = await API.get(`/api/channel/update_balance/${row.id}`);
-        const { success, message } = res.data;
-        success ? toast.success(t('channel_row.updateOk')) : toast.error(message);
-      } catch (e) {
-        toast.error(e.message);
-      }
-    },
-    onCopy: async (row) => {
-      const { success, message } = await manageChannel(row.id, 'copy');
-      if (success) {
-        toast.success(t('userPage.operationSuccess'));
-        setRefreshFlag((f) => !f);
-      } else if (message) toast.error(message);
-    },
-    onDelete: (row) => {
-      setConfirm({
-        open: true,
-        title: `${t('common.delete')} #${row.id}`,
-        onConfirm: async () => {
-          const { success, message } = await manageChannel(row.id, 'delete');
-          if (success) {
-            toast.success(t('userPage.operationSuccess'));
-            setRefreshFlag((f) => !f);
-          } else if (message) toast.error(message);
-        }
-      });
-    }
+    ...actions,
+    onOpen: (row, tab) => navigate(channelUrl(row.id, tab)),
+    onEdit: (row, section = 'basic') => navigate(channelUrl(row.id, 'config', section))
   };
 
   const columns = useMemo(
@@ -350,17 +245,13 @@ export default function Channel() {
 
   const batchDelete = () => {
     if (!selectedIds.length) return toast.error(t('channel_index.pleaseSelectChannels'));
-    setConfirm({
-      open: true,
-      title: t('channel_index.batchDeleteChannels'),
-      onConfirm: async () => {
-        const { success, message } = await manageChannel(null, 'batch_delete', selectedIds);
-        if (success) {
-          toast.success(t('channel_index.batchDeleteChannelsSuccess', { count: selectedIds.length }));
-          setRowSelection({});
-          setRefreshFlag((f) => !f);
-        } else if (message) toast.error(message);
-      }
+    requestConfirm(t('channel_index.batchDeleteChannels'), '', async () => {
+      const { success, message } = await manageChannel(null, 'batch_delete', selectedIds);
+      if (success) {
+        toast.success(t('channel_index.batchDeleteChannelsSuccess', { count: selectedIds.length }));
+        setRowSelection({});
+        setRefreshFlag((f) => !f);
+      } else if (message) toast.error(message);
     });
   };
 
@@ -380,9 +271,7 @@ export default function Channel() {
     }
   };
 
-  const bulk = (title, fn) => setConfirm({ open: true, title, content: '', onConfirm: fn });
-
-  const requestConfirm = (title, content, fn) => setConfirm({ open: true, title, content, onConfirm: fn });
+  const bulk = (title, fn) => requestConfirm(title, '', fn);
 
   const testAll = async () => {
     try {
@@ -448,11 +337,7 @@ export default function Channel() {
     }))
   ];
 
-  const openCreate = () => {
-    setEditId(0);
-    setSheetTab('basic');
-    setSheetOpen(true);
-  };
+  const openCreate = () => navigate('/panel/channel/new');
 
   // 窄屏卡片:选择框在标题旁、操作在右上,其余字段单列「标签 / 值」。
   const renderCard = (original) => {
@@ -540,7 +425,7 @@ export default function Channel() {
                       item={row.original}
                       colSpan={columns.length}
                       requestConfirm={requestConfirm}
-                      onMultiTest={setTestItem}
+                      onMultiTest={actions.onMultiTest}
                       onRefresh={() => setRefreshFlag((f) => !f)}
                     />
                   ) : (
@@ -567,6 +452,8 @@ export default function Channel() {
       </>
     );
   }
+
+  if (linkedChannelId) return <Navigate to={channelUrl(linkedChannelId)} replace />;
 
   return (
     <>
@@ -694,39 +581,9 @@ export default function Channel() {
           {body}
         </ListPage>
 
-        <ChannelSheet
-          open={sheetOpen}
-          channelId={editId || 0}
-          initialTab={sheetTab}
-          groupOptions={groupOptions}
-          onClose={() => setSheetOpen(false)}
-          onSaved={() => {
-            setSheetOpen(false);
-            setRefreshFlag((f) => !f);
-          }}
-        />
-
-        <ChannelCheckDialog open={!!checkItem} item={checkItem} onClose={() => setCheckItem(null)} />
-
-        <ChannelTestDialog
-          open={!!testItem}
-          item={testItem}
-          onClose={() => setTestItem(null)}
-          onFinished={() => setRefreshFlag((f) => !f)}
-        />
+        {dialogs}
 
         <BatchModal open={batchOpen} onOpenChange={setBatchOpen} groupOptions={groupOptions} modelOptions={modelOptions} />
-
-        <ConfirmDialog
-          open={confirm.open}
-          title={confirm.title}
-          content={confirm.content}
-          onCancel={() => setConfirm((c) => ({ ...c, open: false }))}
-          onConfirm={() => {
-            confirm.onConfirm?.();
-            setConfirm((c) => ({ ...c, open: false }));
-          }}
-        />
       </div>
     </>
   );

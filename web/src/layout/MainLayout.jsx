@@ -10,6 +10,7 @@ import { useIsAdmin } from 'utils/common';
 import { trackSettingsReturnPath } from 'utils/adminPlane';
 import { useOrg } from 'contexts/OrgContext';
 import PageHeader from '@/components/chrome/PageHeader';
+import { PageHeaderOverrideContext } from '@/components/chrome/PageHeaderOverride';
 import { SidebarToggle } from '@/components/chrome/SidebarControls';
 import { PageActionsContext } from '@/components/chrome/PageActions';
 import { PageTitleExtraContext } from '@/components/chrome/PageTitleExtra';
@@ -83,6 +84,8 @@ export default function MainLayout() {
   // DOM node of the PageHeader inline title-extra slot; pages portal controls
   // that sit left-aligned next to the title into it via <PageTitleExtra>.
   const [titleExtraSlot, setTitleExtraSlot] = useState(null);
+  // Title set by a detail page through usePageHeader; replaces the nav-derived one.
+  const [headerOverride, setHeaderOverride] = useState(null);
 
   const toggleCollapse = () => setCollapsed((v) => !v);
   const openCommand = () => setCommandOpen(true);
@@ -95,12 +98,14 @@ export default function MainLayout() {
   const toggle = <SidebarToggle collapsed={collapsed} onOpenMobile={() => setMobileOpen(true)} onExpand={toggleCollapse} />;
   const pageHeader = isNotFound
     ? { title: t('common.pageNotFound') }
-    : settingsPlane
-      ? settingsHeader
-      : activeItem && {
-          title: navLabel(t, activeItem),
-          subtitle: t(`nav_subtitles.${activeItem.id}`, { defaultValue: '' })
-        };
+    : headerOverride
+      ? headerOverride
+      : settingsPlane
+        ? settingsHeader
+        : activeItem && {
+            title: navLabel(t, activeItem),
+            subtitle: t(`nav_subtitles.${activeItem.id}`, { defaultValue: '' })
+          };
 
   return (
     <AuthGuard>
@@ -131,6 +136,7 @@ export default function MainLayout() {
               <PageHeader
                 title={pageHeader.title}
                 subtitle={pageHeader.subtitle}
+                back={pageHeader.back}
                 leading={toggle}
                 actionsRef={setActionsSlot}
                 titleExtraRef={setTitleExtraSlot}
@@ -139,11 +145,13 @@ export default function MainLayout() {
               /* 当前页没有标题时按钮单独占一行,电脑端侧栏展开时整行隐藏 */
               <div className={cn('mb-4 flex', !collapsed && 'md:hidden')}>{toggle}</div>
             )}
-            <PageActionsContext.Provider value={actionsSlot}>
-              <PageTitleExtraContext.Provider value={titleExtraSlot}>
-                <Outlet />
-              </PageTitleExtraContext.Provider>
-            </PageActionsContext.Provider>
+            <PageHeaderOverrideContext.Provider value={setHeaderOverride}>
+              <PageActionsContext.Provider value={actionsSlot}>
+                <PageTitleExtraContext.Provider value={titleExtraSlot}>
+                  <Outlet />
+                </PageTitleExtraContext.Provider>
+              </PageActionsContext.Provider>
+            </PageHeaderOverrideContext.Provider>
           </main>
         </MobilePushFrame>
 
