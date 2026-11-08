@@ -30,3 +30,9 @@ lastUpdated: true
 6. Download the generated JSON file, open it locally and copy its entire content into the channel's `Key` field.
 
 7. Finally, enable the `IAM Service Account Credentials API` on [this page](https://console.cloud.google.com/apis/library/iamcredentials.googleapis.com).
+
+## Channel settings
+
+- **Other**: `Region|ProjectID`, or `Region1|Region2|Region3|ProjectID` to pick one of several regions at random for each request. `Region` can be `global`, the multi-regions `us` and `eu`, or a specific region such as `us-east5`.
+- **Claude models**: Claude models are served by the Anthropic publisher of Vertex AI. Enable each model for the project in Vertex AI Model Garden first, and pick a region that serves it (see Google's documentation). Requests to the Claude-compatible endpoint (`/claude/v1/messages`) are forwarded as sent, so prompt caching fields, tools and the like reach Vertex unchanged; the OpenAI-compatible chat endpoint works as well. Of the `anthropic-beta` values a client sends, only those Vertex accepts are forwarded; to pin the header yourself, set `anthropic-beta` in the channel's model headers.
+- **API address**: leave it empty to use Google's endpoint. A custom address (for example a proxy) must contain six `%s` placeholders, in this order: host, project, region, publisher, model and action, for example `https://proxy.example.com/%s/v1/projects/%s/locations/%s/publishers/%s/models/%s:%s`. An address in the older five-placeholder form (no publisher) keeps working for Gemini models only. Any other address is rejected with an error instead of being ignored, so traffic never bypasses your proxy.

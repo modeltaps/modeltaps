@@ -901,7 +901,7 @@
       "anyValue": "任意の値を入力してください",
       "keySeeDocs": "キーの取得方法はドキュメントを参照してください。",
       "keySeeUrl": "キーについては {{url}} を参照してください",
-      "vertexRegion": "Region|ProjectID または Region1|Region2|Region3|ProjectID（複数のリージョンからランダムに選択）",
+      "vertexRegion": "Region|ProjectID または Region1|Region2|Region3|ProjectID（複数のリージョンからランダムに選択）。Region には global、us、eu、または us-east5 のような個別のリージョンを指定できます",
       "siliconflowUrl": "公式 API の URL https://api.siliconflow.com はまもなく廃止されます。https://api.siliconflow.cn を使用してください",
       "oauthJson": "完全な OAuth2 認証情報 JSON を入力するか、下の「OAuth 認可」ボタンで自動取得してください",
       "claudeOauth": "access_token（sk-ant-sid01-xxx）または完全な OAuth2 認証情報 JSON を入力してください。下の「OAuth 認可」ボタンで自動取得することもできます",

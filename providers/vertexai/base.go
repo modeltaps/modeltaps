@@ -19,6 +19,7 @@ import (
 	"math/big"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -55,7 +56,8 @@ type VertexAIProvider struct {
 
 func getConfig() base.ProviderConfig {
 	return base.ProviderConfig{
-		BaseURL:           "https://%saiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:%s",
+		// The placeholder count and order are described by vertexURLPlaceholders.
+		BaseURL:           "https://%s/v1/projects/%s/locations/%s/publishers/%s/models/%s:%s",
 		ChatCompletions:   "/",
 		ImagesGenerations: "/predict",
 	}
@@ -85,11 +87,77 @@ func getKeyConfig(vertexAI *VertexAIProvider) {
 	vertexAI.Region = regions[randomIndex.Int64()]
 }
 
-func (p *VertexAIProvider) GetFullRequestURL(modelName string, other string) string {
-	if p.Region == "global" {
-		return fmt.Sprintf(p.GetBaseURL(), "", p.ProjectID, p.Region, modelName, other)
+// vertexHost picks the Vertex AI service host for a region:
+//   - global              -> aiplatform.googleapis.com
+//   - us / eu multi-region -> aiplatform.{us|eu}.rep.googleapis.com
+//   - any other region    -> {region}-aiplatform.googleapis.com
+func vertexHost(region string) string {
+	switch region {
+	case "global":
+		return "aiplatform.googleapis.com"
+	case "us", "eu":
+		return "aiplatform." + region + ".rep.googleapis.com"
+	default:
+		return region + "-aiplatform.googleapis.com"
 	}
-	return fmt.Sprintf(p.GetBaseURL(), p.Region+"-", p.ProjectID, p.Region, modelName, other)
+}
+
+const (
+	// vertexURLPlaceholders is the number of %s in a base_url template:
+	// host, project, region, publisher, model, action.
+	vertexURLPlaceholders = 6
+	// legacyVertexURLPlaceholders is the number of %s in the template shape used before the
+	// publisher became a placeholder: host prefix, project, region, model, action. The
+	// publisher was fixed to google, so such a template can only serve Gemini models.
+	legacyVertexURLPlaceholders = 5
+)
+
+// GetFullRequestURL builds the request URL from the publisher of the current Category.
+// With no Category set (for example Imagen image generation) the publisher is google.
+// It returns "" when a custom base_url cannot be used for this request.
+func (p *VertexAIProvider) GetFullRequestURL(modelName string, other string) string {
+	publisher := category.PublisherGoogle
+	if p.Category != nil && p.Category.Publisher != "" {
+		publisher = p.Category.Publisher
+	}
+
+	tpl := p.GetBaseURL()
+	switch strings.Count(tpl, "%s") {
+	case vertexURLPlaceholders:
+		return fmt.Sprintf(tpl, vertexHost(p.Region), p.ProjectID, p.Region, publisher, modelName, other)
+	case legacyVertexURLPlaceholders:
+		if publisher == category.PublisherGoogle {
+			hostPrefix := ""
+			if p.Region != "global" {
+				hostPrefix = p.Region + "-"
+			}
+			return fmt.Sprintf(tpl, hostPrefix, p.ProjectID, p.Region, modelName, other)
+		}
+	}
+
+	p.warnInvalidBaseURL(publisher)
+	return ""
+}
+
+// invalidBaseURLWarned remembers the channels already warned about an unusable base_url so the
+// log is not repeated for every request.
+var invalidBaseURLWarned sync.Map
+
+// warnInvalidBaseURL logs once per channel and publisher. A custom base_url that does not fit
+// the template is rejected instead of silently falling back to the built-in one: a channel
+// configured with a proxy would otherwise start sending traffic straight to Google. The
+// template itself is not logged because a proxy URL may carry credentials.
+func (p *VertexAIProvider) warnInvalidBaseURL(publisher string) {
+	var channelID int
+	if p.Channel != nil {
+		channelID = p.Channel.Id
+	}
+	key := fmt.Sprintf("%d:%s", channelID, publisher)
+	if _, warned := invalidBaseURLWarned.LoadOrStore(key, struct{}{}); warned {
+		return
+	}
+	logger.SysError(fmt.Sprintf("vertexai channel %d: custom base_url must contain %d %%s placeholders (host/project/region/publisher/model/action) to serve publisher %s, request rejected",
+		channelID, vertexURLPlaceholders, publisher))
 }
 
 func (p *VertexAIProvider) GetRequestHeaders() (headers map[string]string) {
@@ -165,7 +233,10 @@ func (p *VertexAIProvider) GetToken() (string, error) {
 	return tok.AccessToken, nil
 }
 
-func RequestErrorHandle(otherErr requester.HttpErrorHandler) requester.HttpErrorHandler {
+// RequestErrorHandle gives the category's own error handler (Claude / Gemini error bodies) the
+// first look, then falls back to Vertex's own {"error":{...}} shape. projectID is redacted from
+// the message.
+func RequestErrorHandle(otherErr requester.HttpErrorHandler, projectID string) requester.HttpErrorHandler {
 
 	return func(resp *http.Response) *types.OpenAIError {
 		requestBody, _ := io.ReadAll(resp.Body)
@@ -174,18 +245,19 @@ func RequestErrorHandle(otherErr requester.HttpErrorHandler) requester.HttpError
 		if otherErr != nil {
 			err := otherErr(resp)
 			if err != nil {
+				err.Message = redactProjectID(err.Message, projectID)
 				return err
 			}
 		}
 		vertexaiErrors := &VertexaiErrors{}
-		if err := json.Unmarshal(requestBody, vertexaiErrors); err == nil {
+		if err := json.Unmarshal(requestBody, vertexaiErrors); err == nil && len(*vertexaiErrors) > 0 {
 			if vertexaiError := vertexaiErrors.Error(); vertexaiError != nil {
-				return errorHandle(vertexaiError)
+				return errorHandle(vertexaiError, projectID)
 			}
 		} else {
 			vertexaiError := &VertexaiError{}
 			if err := json.Unmarshal(requestBody, vertexaiError); err == nil {
-				return errorHandle(vertexaiError)
+				return errorHandle(vertexaiError, projectID)
 			}
 		}
 
@@ -193,17 +265,32 @@ func RequestErrorHandle(otherErr requester.HttpErrorHandler) requester.HttpError
 	}
 }
 
-func errorHandle(vertexaiError *VertexaiError) *types.OpenAIError {
+// errorHandle turns a Vertex error body into an OpenAI error. Like the Gemini and Claude
+// channels it surfaces the real upstream message instead of a fixed text, so a model that is
+// not enabled, an unsupported region or missing permissions can be diagnosed. The project ID
+// is replaced (Vertex errors often contain projects/{id}/locations/... paths) and base64 data
+// is truncated. URL and host masking is left to relay.FilterOpenAIErr.
+func errorHandle(vertexaiError *VertexaiError, projectID string) *types.OpenAIError {
 	if vertexaiError.Error.Message == "" {
 		return nil
 	}
 
-	logger.SysError(fmt.Sprintf("VertexAI error: %s", utils.TruncateBase64InMessage(vertexaiError.Error.Message)))
+	message := redactProjectID(utils.TruncateBase64InMessage(vertexaiError.Error.Message), projectID)
+
+	logger.SysError(fmt.Sprintf("VertexAI error: %s", message))
 
 	return &types.OpenAIError{
-		Message: "VertexAI error",
-		Type:    "gemini_error",
+		Message: message,
+		Type:    "vertexai_error",
 		Param:   vertexaiError.Error.Status,
 		Code:    vertexaiError.Error.Code,
 	}
+}
+
+// redactProjectID replaces the GCP project ID in an upstream error message.
+func redactProjectID(message, projectID string) string {
+	if projectID == "" {
+		return message
+	}
+	return strings.ReplaceAll(message, projectID, "xxxxx")
 }

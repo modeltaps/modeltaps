@@ -8,6 +8,8 @@ import (
 	"github.com/modeltaps/modeltaps/types"
 	"encoding/json"
 	"net/http"
+	"regexp"
+	"strings"
 )
 
 const AnthropicVersion = "vertex-2023-10-16"
@@ -17,27 +19,24 @@ type ClaudeRequest struct {
 	AnthropicVersion string `json:"anthropic_version"`
 }
 
-var claudeMap = map[string]string{
-	"claude-3-5-sonnet-20240620": "claude-3-5-sonnet@20240620",
+// claudeModelOverrides holds the model IDs that the generic date rule cannot derive
+// (Vertex AI IDs that differ from the Anthropic ones). A regular "-YYYYMMDD" suffix is
+// converted to "@YYYYMMDD" by NormalizeClaudeModelName and needs no entry here.
+var claudeModelOverrides = map[string]string{
 	"claude-3-5-sonnet-20241022": "claude-3-5-sonnet-v2@20241022",
-	"claude-3-opus-20240229":     "claude-3-opus@20240229",
-	"claude-3-sonnet-20240229":   "claude-3-sonnet@20240229",
-	"claude-3-haiku-20240307":    "claude-3-haiku@20240307",
-	"claude-3-5-haiku-20241022":  "claude-3-5-haiku@20241022",
-	"claude-3-7-sonnet-20250219": "claude-3-7-sonnet@20250219",
-	"claude-sonnet-4-20250514":   "claude-sonnet-4@20250514",
-	"claude-opus-4-20250514":     "claude-opus-4@20250514",
-	"claude-opus-4-1-20250805":   "claude-opus-4-1@20250805",
 }
+
+var claudeDatedModelPattern = regexp.MustCompile(`^(.+)-(\d{8})$`)
 
 func init() {
 	CategoryMap["claude"] = &Category{
 		Category:                  "claude",
+		Publisher:                 PublisherAnthropic,
 		ChatComplete:              ConvertClaudeFromChatOpenai,
 		ResponseChatComplete:      ConvertClaudeToChatOpenai,
 		ResponseChatCompleteStrem: ClaudeChatCompleteStrem,
 		ErrorHandler:              claude.RequestErrorHandle,
-		GetModelName:              GetClaudeModelName,
+		GetModelName:              NormalizeClaudeModelName,
 		GetOtherUrl:               getClaudeOtherUrl,
 	}
 }
@@ -78,14 +77,26 @@ func ClaudeChatCompleteStrem(provider base.ProviderInterface, request *types.Cha
 	return chatHandler.HandlerStream
 }
 
-func GetClaudeModelName(modelName string) string {
-	if value, exists := claudeMap[modelName]; exists {
-		modelName = value
+// NormalizeClaudeModelName converts an Anthropic model ID into the Vertex AI model ID:
+//   - an explicit override wins (irregular names such as the v2 model)
+//   - an ID that already contains "@" is returned unchanged
+//   - "claude-xxx-YYYYMMDD" becomes "claude-xxx@YYYYMMDD"
+//   - anything else (models without a date suffix) is returned unchanged
+func NormalizeClaudeModelName(modelName string) string {
+	if mapped, ok := claudeModelOverrides[modelName]; ok {
+		return mapped
 	}
-
+	if strings.Contains(modelName, "@") {
+		return modelName
+	}
+	if m := claudeDatedModelPattern.FindStringSubmatch(modelName); len(m) == 3 {
+		return m[1] + "@" + m[2]
+	}
 	return modelName
 }
 
+// getClaudeOtherUrl returns the Vertex AI action for Claude models: streamRawPredict when
+// streaming, rawPredict otherwise.
 func getClaudeOtherUrl(stream bool) string {
 	if stream {
 		return "streamRawPredict"

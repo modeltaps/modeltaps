@@ -901,7 +901,7 @@
       "anyValue": "请随意填写",
       "keySeeDocs": "请参考文档获取 key。",
       "keySeeUrl": "密钥信息请参考{{url}}",
-      "vertexRegion": "Region|ProjectID 或 Region1|Region2|Region3|ProjectID（支持多个Region随机选择）",
+      "vertexRegion": "Region|ProjectID 或 Region1|Region2|Region3|ProjectID（支持多个Region随机选择）。Region 可填 global、us、eu 或具体区域如 us-east5",
       "siliconflowUrl": "官方api地址https://api.siliconflow.com即将停用，请使用https://api.siliconflow.cn",
       "oauthJson": "请输入完整的 OAuth2 凭证 JSON，或点击下方\"OAuth 授权\"按钮自动获取",
       "claudeOauth": "请输入 access_token（sk-ant-sid01-xxx）或完整的 OAuth2 凭证 JSON，也可点击下方\"OAuth 授权\"按钮自动获取",
