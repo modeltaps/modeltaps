@@ -231,7 +231,15 @@ func DismissNewModels(c *gin.Context) {
 }
 
 // fetchUpstreamModels 构造 provider 并拉取上游实时模型列表（取 key 首行，同 GetModelList）。
-func fetchUpstreamModels(channel *model.Channel) ([]string, error) {
+// The drift check runs from a scheduled job with no recover above it, so a panic in one
+// provider would stop the whole process: turn it into an error and the channel is skipped.
+func fetchUpstreamModels(channel *model.Channel) (models []string, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			models = nil
+			err = fmt.Errorf("model list panicked: %v", r)
+		}
+	}()
 	// 拷贝一份用于取 key 首行，避免污染调用方持有的渠道对象。
 	probe := *channel
 	keys := strings.Split(probe.Key, "\n")
