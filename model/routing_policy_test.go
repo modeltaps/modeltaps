@@ -357,11 +357,11 @@ func TestRoutingPolicyModelsFor(t *testing.T) {
 	}
 
 	routable := func(name string) bool { return name == "claude-opus-5-5" }
-	got := RoutingPolicyModelsFor([]string{"claude-opus-5-5"}, routable)
+	got := RoutingPolicyModelsFor(0, []string{"claude-opus-5-5"}, routable)
 	if strings.Join(got, ",") != "auto/coder" {
 		t.Fatalf("期望只并入 auto/coder，实际 %v", got)
 	}
-	got = RoutingPolicyModelsFor([]string{"claude-opus-5-5", "auto/coder"}, routable)
+	got = RoutingPolicyModelsFor(0, []string{"claude-opus-5-5", "auto/coder"}, routable)
 	if len(got) != 0 {
 		t.Fatalf("已在列表里的策略不应重复加入，实际 %v", got)
 	}

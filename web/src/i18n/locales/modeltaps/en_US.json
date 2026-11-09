@@ -1025,7 +1025,7 @@
       "anyValue": "Any value works",
       "keySeeDocs": "See the documentation for how to get the key.",
       "keySeeUrl": "For the key, see {{url}}",
-      "vertexRegion": "Region|ProjectID or Region1|Region2|Region3|ProjectID (one of several regions is picked at random)",
+      "vertexRegion": "Region|ProjectID or Region1|Region2|Region3|ProjectID (one of several regions is picked at random). Region can be global, us, eu or a specific region such as us-east5",
       "siliconflowUrl": "The official API URL https://api.siliconflow.com is being retired; use https://api.siliconflow.cn",
       "oauthJson": "Enter the full OAuth2 credential JSON, or click \"OAuth authorization\" below to fetch it automatically",
       "claudeOauth": "Enter an access_token (sk-ant-sid01-xxx) or the full OAuth2 credential JSON, or click \"OAuth authorization\" below to fetch it automatically",
@@ -1630,7 +1630,10 @@
     "log_cleanup_started": "Log cleanup started in the background. Progress is written to the system log.",
     "log_cleanup_running": "A log cleanup is already running. Try again later.",
     "channel_drift_rule_invalid": "Invalid regular expression in the ignore rules: {{rule}}",
-    "routing_policy_scoring_invalid": "Scoring must be auto, logprobs or self-reported"
+    "routing_policy_scoring_invalid": "Scoring must be auto, logprobs or self-reported",
+    "routing_policy_model_unavailable": "{{field}} is not available to this organization ({{model}})",
+    "routing_policy_count_exceeded": "This organization already has the maximum of {{max}} routing policies",
+    "org_routing_policy_disabled": "Organization routing policies are not enabled on this site"
   },
   "channelOAuth": {
     "tip": {
@@ -1790,7 +1793,8 @@
       "below_threshold": "Below threshold",
       "decision_error": "Decision failed",
       "empty_input": "No text",
-      "auxiliary": "Agent side request"
+      "auxiliary": "Agent side request",
+      "target_unavailable": "Target unavailable"
     },
     "stats": {
       "saveFirst": "Save the policy first; statistics come from its logs.",

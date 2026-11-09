@@ -1004,7 +1004,7 @@
       "anyValue": "任意の値を入力してください",
       "keySeeDocs": "キーの取得方法はドキュメントを参照してください。",
       "keySeeUrl": "キーについては {{url}} を参照してください",
-      "vertexRegion": "Region|ProjectID または Region1|Region2|Region3|ProjectID（複数のリージョンからランダムに選択）",
+      "vertexRegion": "Region|ProjectID または Region1|Region2|Region3|ProjectID（複数のリージョンからランダムに選択）。Region には global、us、eu、または us-east5 のような個別のリージョンを指定できます",
       "siliconflowUrl": "公式 API の URL https://api.siliconflow.com はまもなく廃止されます。https://api.siliconflow.cn を使用してください",
       "oauthJson": "完全な OAuth2 認証情報 JSON を入力するか、下の「OAuth 認可」ボタンで自動取得してください",
       "claudeOauth": "access_token（sk-ant-sid01-xxx）または完全な OAuth2 認証情報 JSON を入力してください。下の「OAuth 認可」ボタンで自動取得することもできます",
@@ -1563,7 +1563,10 @@
     "log_cleanup_started": "ログのクリーンアップをバックグラウンドで開始しました。進捗はシステムログに記録されます",
     "log_cleanup_running": "ログのクリーンアップがすでに実行中です。しばらくしてからもう一度お試しください",
     "channel_drift_rule_invalid": "無視ルールの正規表現が無効です：{{rule}}",
-    "routing_policy_scoring_invalid": "スコアリングは auto、logprobs、自己申告のいずれかを指定してください"
+    "routing_policy_scoring_invalid": "スコアリングは auto、logprobs、自己申告のいずれかを指定してください",
+    "routing_policy_model_unavailable": "{{field}} はこの組織では利用できません（{{model}}）",
+    "routing_policy_count_exceeded": "この組織のルーティングポリシーは上限の {{max}} 件に達しています",
+    "org_routing_policy_disabled": "このサイトでは組織のルーティングポリシーが有効になっていません"
   },
   "channelOAuth": {
     "tip": {
@@ -1728,7 +1731,8 @@
       "below_threshold": "しきい値未満",
       "decision_error": "判定失敗",
       "empty_input": "テキストなし",
-      "auxiliary": "エージェントの補助リクエスト"
+      "auxiliary": "エージェントの補助リクエスト",
+      "target_unavailable": "ターゲット利用不可"
     },
     "stats": {
       "saveFirst": "まずポリシーを保存してください。統計はそのログから集計します。",

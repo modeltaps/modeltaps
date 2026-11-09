@@ -600,8 +600,30 @@ func migrationAfter(db *gorm.DB) error {
 		migrateOrgMaxMembersNullable(),
 		migrateOrgUsageVisibleExplicit(),
 		migrateTokenModelLimitNormalized(),
+		migrateRoutingPolicyScopedNameIndex(),
 	})
 	return m.Migrate()
+}
+
+// migrateRoutingPolicyScopedNameIndex drops the old global unique index on routing_policies.name.
+// AutoMigrate has already added organization_id and the (organization_id, name) unique index; the
+// old index would otherwise stop two organizations from using the same policy name.
+func migrateRoutingPolicyScopedNameIndex() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202611090001",
+		Migrate: func(tx *gorm.DB) error {
+			if !tx.Migrator().HasTable(&RoutingPolicy{}) {
+				return nil
+			}
+			if tx.Migrator().HasIndex(&RoutingPolicy{}, "idx_routing_policies_name") {
+				return tx.Migrator().DropIndex(&RoutingPolicy{}, "idx_routing_policies_name")
+			}
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return nil
+		},
+	}
 }
 
 // migrateModelInfoAudioSpeechEndpoints 修正旧版同步推导误给对话出音频模型（及纯 TTS 模型）追加的

@@ -69,11 +69,22 @@ type RoutingPolicyStats struct {
 	AvgTopProbability float64 `json:"avg_top_probability"`
 }
 
+// routingPolicyLogScope narrows logs to one policy. Names are only unique within a scope, so logs
+// carry routing_policy_id as well; logs written before that field existed have none and belong to
+// the platform policy of that name (organization policies did not exist yet).
+func routingPolicyLogScope(db *gorm.DB, policy *RoutingPolicy) *gorm.DB {
+	db = db.Where(metadataTextExpr("routing_policy")+" = ?", policy.Name)
+	idExpr := metadataNumberExpr("routing_policy_id")
+	if policy.IsOrganizationPolicy() {
+		return db.Where(idExpr+" = ?", policy.Id)
+	}
+	return db.Where("("+idExpr+" IS NULL OR "+idExpr+" = ?)", policy.Id)
+}
+
 // routedLogsQuery 统计窗口内走了该策略的目标模型日志（不含决策调用那条）。
-func routedLogsQuery(policyName string, since int64) *gorm.DB {
-	return DB.Table("logs").
-		Where("type = ? AND created_at >= ?", LogTypeConsume, since).
-		Where(metadataTextExpr("routing_policy")+" = ?", policyName).
+func routedLogsQuery(policy *RoutingPolicy, since int64) *gorm.DB {
+	return routingPolicyLogScope(DB.Table("logs").
+		Where("type = ? AND created_at >= ?", LogTypeConsume, since), policy).
 		Where(metadataTextExpr("routing_decision") + " IS NULL")
 }
 
@@ -90,7 +101,7 @@ func GetRoutingPolicyStats(policy *RoutingPolicy, days int) (*RoutingPolicyStats
 		Reason string
 		Count  int64
 	}
-	if err := routedLogsQuery(policy.Name, since).
+	if err := routedLogsQuery(policy, since).
 		Select(metadataTextExpr("routing_reason") + " as reason, count(*) as count").
 		Group(metadataTextExpr("routing_reason")).Scan(&reasons).Error; err != nil {
 		return nil, err
@@ -107,7 +118,7 @@ func GetRoutingPolicyStats(policy *RoutingPolicy, days int) (*RoutingPolicyStats
 		Count  int64
 		Quota  int64
 	}
-	if err := routedLogsQuery(policy.Name, since).
+	if err := routedLogsQuery(policy, since).
 		Select(metadataTextExpr("routing_label") + " as label, " + metadataTextExpr("routing_target") + " as target, count(*) as count, COALESCE(sum(quota), 0) as quota").
 		Group(metadataTextExpr("routing_label") + ", " + metadataTextExpr("routing_target")).Scan(&labels).Error; err != nil {
 		return nil, err
@@ -127,7 +138,7 @@ func GetRoutingPolicyStats(policy *RoutingPolicy, days int) (*RoutingPolicyStats
 
 	// 平均决策耗时：只算做过分类的行
 	var avg struct{ Avg *float64 }
-	if err := routedLogsQuery(policy.Name, since).
+	if err := routedLogsQuery(policy, since).
 		Where(metadataNumberExpr("routing_decision_ms") + " IS NOT NULL").
 		Select("AVG(" + metadataNumberExpr("routing_decision_ms") + ") as avg").Scan(&avg).Error; err != nil {
 		return nil, err
@@ -142,7 +153,7 @@ func GetRoutingPolicyStats(policy *RoutingPolicy, days int) (*RoutingPolicyStats
 		Count   int64
 		AvgTop  *float64
 	}
-	if err := routedLogsQuery(policy.Name, since).
+	if err := routedLogsQuery(policy, since).
 		Where(metadataTextExpr("routing_scoring") + " IS NOT NULL").
 		Select(metadataTextExpr("routing_scoring") + " as scoring, count(*) as count, AVG(" + metadataNumberExpr("routing_confidence") + ") as avg_top").
 		Group(metadataTextExpr("routing_scoring")).Scan(&scorings).Error; err != nil {
@@ -163,10 +174,11 @@ func GetRoutingPolicyStats(policy *RoutingPolicy, days int) (*RoutingPolicyStats
 		Count int64
 		Quota int64
 	}
-	if err := DB.Table("logs").
-		Where("type = ? AND created_at >= ?", LogTypeConsume, since).
-		Where(metadataTextExpr("routing_policy")+" = ?", policy.Name).
+	// Decision calls made by "Try it" in the organization console are billed but are not traffic.
+	if err := routingPolicyLogScope(DB.Table("logs").
+		Where("type = ? AND created_at >= ?", LogTypeConsume, since), policy).
 		Where(metadataTextExpr("routing_decision") + " IS NOT NULL").
+		Where(metadataTextExpr("routing_try") + " IS NULL").
 		Select("count(*) as count, COALESCE(sum(quota), 0) as quota").Scan(&decision).Error; err != nil {
 		return nil, err
 	}
@@ -180,7 +192,7 @@ func GetRoutingPolicyStats(policy *RoutingPolicy, days int) (*RoutingPolicyStats
 		CompletionTokens int64
 		Quota            int64
 	}
-	if err := routedLogsQuery(policy.Name, since).
+	if err := routedLogsQuery(policy, since).
 		Select("model_name, " + metadataNumberExpr("group_ratio") + " as group_ratio, COALESCE(sum(prompt_tokens), 0) as prompt_tokens, COALESCE(sum(completion_tokens), 0) as completion_tokens, COALESCE(sum(quota), 0) as quota").
 		Group("model_name, " + metadataNumberExpr("group_ratio")).Scan(&buckets).Error; err != nil {
 		return nil, err
@@ -242,7 +254,7 @@ type RoutingPolicyLogSample struct {
 }
 
 // GetRoutingPolicyLogSamples 返回最近 limit 条带请求明细的被路由日志（新的在前）。
-func GetRoutingPolicyLogSamples(policyName string, limit int) ([]*RoutingPolicyLogSample, error) {
+func GetRoutingPolicyLogSamples(policy *RoutingPolicy, limit int) ([]*RoutingPolicyLogSample, error) {
 	if limit <= 0 || limit > 50 {
 		limit = 20
 	}
@@ -256,10 +268,9 @@ func GetRoutingPolicyLogSamples(policyName string, limit int) ([]*RoutingPolicyL
 		Confidence  *float64
 		RequestBody string
 	}
-	err := DB.Table("logs").
+	err := routingPolicyLogScope(DB.Table("logs").
 		Joins("JOIN log_details ON log_details.log_id = logs.id").
-		Where("logs.type = ?", LogTypeConsume).
-		Where(metadataTextExpr("routing_policy")+" = ?", policyName).
+		Where("logs.type = ?", LogTypeConsume), policy).
 		Where(metadataTextExpr("routing_decision") + " IS NULL").
 		Select("logs.id as log_id, logs.created_at as created_at, logs.request_id as request_id, " +
 			metadataTextExpr("routing_label") + " as label, " + metadataTextExpr("routing_reason") + " as reason, " +

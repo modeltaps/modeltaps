@@ -10,7 +10,7 @@ import { renderQuota as renderQuotaBase } from 'utils/common';
 const renderQuota = (quota) => renderQuotaBase(quota, 4);
 import { getRoutingPolicyStats } from './routingPolicyApi';
 
-const REASONS = ['classified', 'pinned', 'below_threshold', 'decision_error', 'empty_input', 'auxiliary'];
+const REASONS = ['classified', 'pinned', 'below_threshold', 'decision_error', 'empty_input', 'auxiliary', 'target_unavailable'];
 
 function Stat({ label, value, hint }) {
   return (

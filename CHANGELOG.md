@@ -25,6 +25,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   column (auto-disabled channels say so next to it) and keeps only the gateway spend; the
   upstream balance moved to the channel page. Links from the model catalog and logs, and old
   `?channel_id=` links, open the channel page.
+- Organization routing policies (backend): with the new site option
+  `OrganizationRoutingPolicyEnabled` (off by default), organization owners and admins manage
+  routing policies that only their organization's API keys can use, through
+  `/api/org/:id/routing_policy` (list, create, update, enable or disable, delete, stats, "Try it"
+  and the logprobs probe). An organization policy may reuse a platform policy's name and then
+  replaces it for that organization; personal keys and other organizations keep the platform
+  policy. Organization policies may only use models the organization's group can route to and the
+  catalog does not hide, checked when saved and again per request: a target hidden later sends the
+  request to the fallback (reason `target_unavailable`), and a hidden fallback answers model not
+  found. "Try it" and the probe are billed to the organization and logged with `routing_try`, which
+  keeps them out of the stats. Changes are written to the organization audit log, each organization
+  is capped by `OrganizationRoutingPolicyMaxCount` (default 20), and system admins can list an
+  organization's policies with `/api/routing_policy/?organization_id=N`. Logs now carry
+  `routing_policy_id`, and session pins are keyed by policy id, so conversations already pinned
+  under a platform policy are classified once more after upgrading. The console tab comes in a
+  later release.
 - Personal quota warning settings: Settings, Preferences has a Quota warnings card where users
   turn the low-balance and used-up emails off, or set their own warning threshold instead of the
   site default (and switch back to it). The site switch still wins: when it is off nobody gets
@@ -90,6 +106,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Saving a channel no longer resets its last test time, response time and creation time; the
   form does not carry them, and the full-row update wrote them back as zero.
+- Claude models on Vertex AI channels now work. Requests were sent to Google's publisher path, so
+  Claude models were not found there; Claude now uses the Anthropic publisher, and model IDs with
+  a date (`claude-sonnet-4-5-20250929`) are converted to Vertex's `name@date` form while models
+  without a date (`claude-opus-5-5`) are sent unchanged. Requests to `/claude/v1/messages` are
+  forwarded as sent instead of being converted to the OpenAI format and back, so cache control,
+  tools and other Claude fields reach Vertex unchanged; the premium service-tier fields stay
+  stripped unless the channel allows them, and only the `anthropic-beta` values Vertex accepts are
+  forwarded. The region can be `global`, `us`, `eu` or a specific region (`us` and `eu` use
+  Google's multi-region hosts). A custom API address now needs six `%s` placeholders (host,
+  project, region, publisher, model, action); the older five-placeholder form still serves Gemini
+  models, and any other address is rejected with an error instead of being ignored. Vertex errors
+  show the upstream message with the project ID masked instead of a fixed text, and an empty
+  error list no longer crashes the handler. A Claude model mapped to a Gemini model still takes
+  the Gemini conversion path.
 - Claude Code sessions are recognised again from `metadata.user_id` in the format current Claude
   Code sends (a JSON object encoded as a string), so Claude channel session affinity follows the
   Claude Code session instead of falling back to a hash of the cached prompt.
@@ -371,7 +401,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Claude 4.5 to 5.5 (retired Claude 1 to 3 models are gone); Gemini, Vertex AI and Vertex AI
   Express list Gemini 4 Argon and 3.x; DeepSeek, Moonshot (Kimi), Mistral, Zhipu, MiniMax and
   Cohere follow their current model lists; Codex, xAI and Azure Databricks get default models.
-  Vertex AI defaults are Gemini only. Groq no longer prefills its retired models; use **Fetch
+  Vertex AI also lists Claude 4.5 to 5.5. Groq no longer prefills its retired models; use **Fetch
   models**. Test models are cheap models of each list.
 - The **Fetch models** button is shown only for channel types whose backend can list models;
   xAI and Ollama channels get it.
