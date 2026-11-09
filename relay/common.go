@@ -222,7 +222,11 @@ func getProvider(c *gin.Context, modelName string, catalogExempt bool) (provider
 
 	// 自动路由：策略名在白名单判定之后换成目标模型。目标是管理员配置的有限集合，不再过令牌白名单
 	// 与隐藏约束（管理员可以把目标藏起来、只经策略使用），只把目标别名解析到主名。
-	if target := resolveRoutingPolicy(c, modelName); target != modelName {
+	target, err := routeRoutingPolicy(c, modelName)
+	if err != nil {
+		return nil, "", err
+	}
+	if target != modelName {
 		modelName, _ = model.ResolveCanonicalModel(target)
 	}
 

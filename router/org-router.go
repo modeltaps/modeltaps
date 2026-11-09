@@ -4,6 +4,7 @@ import (
 	"github.com/modeltaps/modeltaps/controller"
 	"github.com/modeltaps/modeltaps/middleware"
 	"github.com/modeltaps/modeltaps/model"
+	"github.com/modeltaps/modeltaps/relay"
 
 	"github.com/gin-gonic/gin"
 )
@@ -78,6 +79,22 @@ func setOrgRouter(apiRouter *gin.RouterGroup) {
 			orgAdminRoute.POST("/topup", controller.OrgTopUp)
 			orgAdminRoute.POST("/order", controller.CreateOrgOrder)
 			orgAdminRoute.GET("/order", controller.GetOrgOrdersList)
+
+			// Routing policies of this organization (ROUTE-11). Log sample replay is left out until
+			// reading members' prompts from the console is tightened (SEC-51).
+			orgRoutingRoute := orgAdminRoute.Group("/routing_policy")
+			orgRoutingRoute.Use(middleware.OrgRoutingPolicyEnabled())
+			{
+				orgRoutingRoute.GET("/", controller.GetOrgRoutingPolicies)
+				orgRoutingRoute.POST("/", controller.CreateOrgRoutingPolicy)
+				orgRoutingRoute.POST("/try", middleware.CriticalRateLimit(), relay.OrgTryRoutingPolicyHandler)
+				orgRoutingRoute.POST("/probe", middleware.CriticalRateLimit(), relay.OrgProbeRoutingScoringHandler)
+				orgRoutingRoute.GET("/:policy_id", controller.GetOrgRoutingPolicy)
+				orgRoutingRoute.PUT("/:policy_id", controller.UpdateOrgRoutingPolicy)
+				orgRoutingRoute.PUT("/:policy_id/status", controller.UpdateOrgRoutingPolicyStatus)
+				orgRoutingRoute.DELETE("/:policy_id", controller.DeleteOrgRoutingPolicy)
+				orgRoutingRoute.GET("/:policy_id/stats", controller.GetOrgRoutingPolicyStats)
+			}
 			orgAdminRoute.GET("/order/status", controller.CheckOrgOrderStatus)
 		}
 

@@ -137,7 +137,7 @@ func TestGetRoutingPolicyLogSamples(t *testing.T) {
 	if err := db.Create(&details).Error; err != nil {
 		t.Fatalf("写明细失败: %v", err)
 	}
-	samples, err := GetRoutingPolicyLogSamples("auto/t", 10)
+	samples, err := GetRoutingPolicyLogSamples(&RoutingPolicy{Name: "auto/t"}, 10)
 	if err != nil {
 		t.Fatalf("取样本失败: %v", err)
 	}

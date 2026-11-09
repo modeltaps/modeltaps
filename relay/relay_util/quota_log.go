@@ -353,6 +353,12 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 		if q.routingPolicy != "" {
 			meta["routing_policy"] = q.routingPolicy
 		}
+		if q.routingPolicyId > 0 {
+			meta["routing_policy_id"] = q.routingPolicyId
+		}
+		if q.routingTry {
+			meta["routing_try"] = true
+		}
 	} else if q.routingDecision != nil {
 		q.routingDecision.LogMeta(meta)
 	}

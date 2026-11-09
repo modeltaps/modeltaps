@@ -8,6 +8,8 @@ import (
 	"strconv"
 
 	"github.com/modeltaps/modeltaps/common"
+	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/middleware"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/relay/relay_util"
 
@@ -67,11 +69,16 @@ func TryRoutingPolicyHandler(c *gin.Context) {
 		models = models[:routingPolicyTryMaxModels]
 	}
 
+	respondTryRoutingPolicy(c, &policy, models, req.Text, false)
+}
+
+// respondTryRoutingPolicy runs the draft once per decision model and writes the results.
+func respondTryRoutingPolicy(c *gin.Context, policy *model.RoutingPolicy, models []string, text string, bill bool) {
 	results := make([]tryRoutingPolicyResult, 0, len(models))
 	for _, decisionModel := range models {
-		candidate := policy
+		candidate := *policy
 		candidate.DecisionModel = decisionModel
-		decision := tryRoutingPolicy(c, &candidate, req.Text)
+		decision := tryRoutingPolicy(c, &candidate, text, bill)
 		result := tryRoutingPolicyResult{
 			DecisionModel: decisionModel,
 			Label:         decision.Label,
@@ -126,7 +133,7 @@ func RoutingPolicySamplesHandler(c *gin.Context) {
 		return
 	}
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-	rows, err := model.GetRoutingPolicyLogSamples(policy.Name, limit)
+	rows, err := model.GetRoutingPolicyLogSamples(policy, limit)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusInternalServerError, err)
 		return
@@ -188,10 +195,14 @@ func ProbeRoutingScoringHandler(c *gin.Context) {
 		return
 	}
 	ensureAdminGroup(c)
+	respondProbeRoutingScoring(c, req.DecisionModel, false)
+}
+
+func respondProbeRoutingScoring(c *gin.Context, decisionModel string, bill bool) {
 	policy := probeRoutingPolicy
-	policy.DecisionModel = req.DecisionModel
-	result := probeRoutingScoringResult{DecisionModel: req.DecisionModel}
-	_, err := classify(c, &policy, "Fix the off-by-one error in the pagination helper.", false)
+	policy.DecisionModel = decisionModel
+	result := probeRoutingScoringResult{DecisionModel: decisionModel}
+	_, err := classify(c, &policy, "Fix the off-by-one error in the pagination helper.", bill)
 	switch {
 	case err == nil:
 		supported := true
@@ -203,4 +214,105 @@ func ProbeRoutingScoringHandler(c *gin.Context) {
 		result.Error = err.Error()
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": result})
+}
+
+// ---- Organization console ----
+//
+// "Try it" and the probe call the decision model for real. On the platform console that is the
+// admin's own site and goes unbilled; in an organization it would be free model access, so these
+// calls are charged to the organization like its API keys are (shadow account, the operator's member
+// budget and the team budget) and logged with routing_try=true, which keeps them out of the stats.
+
+// organizationFromContext returns the organization OrgAuth put on the request.
+func organizationFromContext(c *gin.Context) *model.Organization {
+	org, _ := c.MustGet(middleware.OrgContextKey).(*model.Organization)
+	return org
+}
+
+// useOrganizationBilling makes the console request look like a call with an organization API key
+// owned by the operator, so the decision call is billed and guarded like one. It has no API key, so
+// it runs with unlimited key quota and is bounded by the account, member and team budgets.
+func useOrganizationBilling(c *gin.Context, org *model.Organization) error {
+	group, err := model.CacheGetUserGroup(org.ShadowUserId)
+	if err != nil {
+		return err
+	}
+	operator := c.GetInt("id")
+	c.Set("id", org.ShadowUserId)
+	c.Set("token_created_by", operator)
+	c.Set("token_id", 0)
+	c.Set("token_unlimited_quota", true)
+	c.Set("group", group)
+	c.Set("token_group", group)
+	c.Set(relay_util.RoutingTryContextKey, true)
+	return nil
+}
+
+// OrgTryRoutingPolicyHandler is TryRoutingPolicyHandler for the organization console.
+func OrgTryRoutingPolicyHandler(c *gin.Context) {
+	org := organizationFromContext(c)
+	req := tryRoutingPolicyRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeInvalidParams, err.Error(), nil)
+		return
+	}
+	policy := req.Policy
+	if policy.Name == "" {
+		policy.Name = "draft"
+	}
+	// Only a saved policy of this organization may lend its id to the billing log.
+	if policy.Id > 0 {
+		if _, err := model.GetOrganizationRoutingPolicyById(org.Id, policy.Id); err != nil {
+			policy.Id = 0
+		}
+	}
+	policy.OrganizationId = org.Id
+	policy.Normalize()
+	if err := policy.Validate(model.IsRoutingPolicyModelFor(org.Id)); err != nil {
+		common.APIRespondWithError(c, http.StatusBadRequest, err)
+		return
+	}
+	models := req.DecisionModels
+	if len(models) == 0 {
+		models = []string{policy.DecisionModel}
+	}
+	if len(models) > routingPolicyTryMaxModels {
+		models = models[:routingPolicyTryMaxModels]
+	}
+	for _, decisionModel := range models {
+		candidate := policy
+		candidate.DecisionModel = decisionModel
+		if err := candidate.ValidateOrganizationModels(org.Id); err != nil {
+			common.APIRespondWithError(c, http.StatusBadRequest, err)
+			return
+		}
+	}
+	if err := useOrganizationBilling(c, org); err != nil {
+		common.APIRespondWithError(c, http.StatusInternalServerError, err)
+		return
+	}
+	respondTryRoutingPolicy(c, &policy, models, req.Text, config.RoutingDecisionBillingEnabled)
+}
+
+// OrgProbeRoutingScoringHandler is ProbeRoutingScoringHandler for the organization console.
+func OrgProbeRoutingScoringHandler(c *gin.Context) {
+	org := organizationFromContext(c)
+	req := probeRoutingScoringRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil || req.DecisionModel == "" {
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeInvalidParams, "decision_model is required", nil)
+		return
+	}
+	if model.IsRoutingPolicyModelFor(org.Id)(req.DecisionModel) {
+		common.APIRespondWithError(c, http.StatusBadRequest, model.ErrRoutingPolicyModelIsPolicy("decision_model", req.DecisionModel))
+		return
+	}
+	if err := model.CheckOrganizationRoutingModel(org.Id, "decision_model", req.DecisionModel); err != nil {
+		common.APIRespondWithError(c, http.StatusBadRequest, err)
+		return
+	}
+	if err := useOrganizationBilling(c, org); err != nil {
+		common.APIRespondWithError(c, http.StatusInternalServerError, err)
+		return
+	}
+	respondProbeRoutingScoring(c, req.DecisionModel, config.RoutingDecisionBillingEnabled)
 }

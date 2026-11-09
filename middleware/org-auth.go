@@ -40,6 +40,18 @@ func OrganizationFeatureEnabled() gin.HandlerFunc {
 	}
 }
 
+// OrgRoutingPolicyEnabled gates the organization console's routing policy endpoints on the
+// OrganizationRoutingPolicyEnabled site option.
+func OrgRoutingPolicyEnabled() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if !config.OrganizationRoutingPolicyEnabled {
+			abortOrgRequest(c, http.StatusForbidden, common.APICodeOrgRoutingPolicyDisabled, "Organization routing policies are not enabled")
+			return
+		}
+		c.Next()
+	}
+}
+
 // OrgAuth 组织权限中间件:解析路由参数 :id 为组织ID,校验组织存在且启用、
 // 当前用户(UserAuth 注入的 id)为组织成员且角色不低于 minRole,
 // 然后注入 org / org_role 到上下文。须置于 UserAuth 之后。

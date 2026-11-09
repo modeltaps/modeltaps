@@ -21,7 +21,16 @@ const (
 	RoutingReasonDecisionError  = "decision_error"  // 决策调用失败 / 超时 / 答非所问
 	RoutingReasonEmptyInput     = "empty_input"     // 首条用户消息没有文本
 	RoutingReasonAuxiliary      = "auxiliary"       // 编码 Agent 的旁路请求（如 Claude Code 生成标题），会话还没固定时直接走兜底
+	// RoutingReasonTargetUnavailable the chosen target of an organization policy is no longer usable
+	// (hidden in the catalog), so the request went to the fallback model.
+	RoutingReasonTargetUnavailable = "target_unavailable"
 )
+
+// RoutingPolicyIdContextKey gin context key holding the id of the policy a decision call belongs to.
+const RoutingPolicyIdContextKey = "routing_policy_id"
+
+// RoutingTryContextKey marks decision calls made by "Try it" in the organization console.
+const RoutingTryContextKey = "routing_try"
 
 // RoutingDecisionContextKey gin context 里本次请求的决策结果（*RoutingDecision）。
 const RoutingDecisionContextKey = "routing_decision"
@@ -40,7 +49,9 @@ type RoutingLabelProbability struct {
 
 // RoutingDecision 一次请求的路由决策。
 type RoutingDecision struct {
-	Policy      string
+	Policy string
+	// PolicyId tells policies with the same name apart (an organization may override a platform policy).
+	PolicyId    int
 	Label       string
 	TargetModel string
 	Confidence  float64
@@ -78,6 +89,9 @@ func (d *RoutingDecision) HeaderValue() string {
 // LogMeta 写进消费日志 metadata 的字段。
 func (d *RoutingDecision) LogMeta(meta map[string]any) {
 	meta["routing_policy"] = d.Policy
+	if d.PolicyId > 0 {
+		meta["routing_policy_id"] = d.PolicyId
+	}
 	meta["routing_reason"] = d.Reason
 	meta["routing_target"] = d.TargetModel
 	if d.Label != "" {
