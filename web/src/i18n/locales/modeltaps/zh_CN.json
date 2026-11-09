@@ -1460,7 +1460,10 @@
     "log_cleanup_started": "日志清理已在后台开始，进度见系统日志",
     "log_cleanup_running": "已有日志清理任务在执行，请稍后再试",
     "channel_drift_rule_invalid": "忽略规则里的正则表达式无效：{{rule}}",
-    "routing_policy_scoring_invalid": "打分方式只能是自动、logprobs 或自报"
+    "routing_policy_scoring_invalid": "打分方式只能是自动、logprobs 或自报",
+    "routing_policy_model_unavailable": "{{field}} 对本组织不可用（{{model}}）",
+    "routing_policy_count_exceeded": "本组织的路由策略已达上限 {{max}} 条",
+    "org_routing_policy_disabled": "本站未开启组织路由策略"
   },
   "channelOAuth": {
     "tip": {
@@ -1625,7 +1628,8 @@
       "below_threshold": "低于阈值",
       "decision_error": "决策失败",
       "empty_input": "无文本",
-      "auxiliary": "Agent 旁路请求"
+      "auxiliary": "Agent 旁路请求",
+      "target_unavailable": "目标不可用"
     },
     "stats": {
       "saveFirst": "先保存策略，统计来自它的日志。",

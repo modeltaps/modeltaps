@@ -2,6 +2,7 @@ package controller
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -34,8 +35,14 @@ func routingPolicyStatus(err error) int {
 	return http.StatusInternalServerError
 }
 
+// GetRoutingPolicies lists the platform policies, or one organization's with ?organization_id=N so
+// system admins can review (and disable) what organizations configured.
 func GetRoutingPolicies(c *gin.Context) {
-	policies, err := model.GetRoutingPolicies()
+	organizationId, _ := strconv.Atoi(c.DefaultQuery("organization_id", "0"))
+	if organizationId < 0 {
+		organizationId = 0
+	}
+	policies, err := model.GetRoutingPoliciesByOrganization(organizationId)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusInternalServerError, err)
 		return
@@ -90,6 +97,7 @@ func CreateRoutingPolicy(c *gin.Context) {
 		return
 	}
 	policy.Id = 0
+	policy.OrganizationId = 0
 	if err := policy.Insert(); err != nil {
 		common.APIRespondWithError(c, routingPolicyStatus(err), err)
 		return
@@ -172,6 +180,10 @@ func GetRoutingPolicyStats(c *gin.Context) {
 		common.APIRespondWithError(c, routingPolicyStatus(err), err)
 		return
 	}
+	respondRoutingPolicyStats(c, policy)
+}
+
+func respondRoutingPolicyStats(c *gin.Context, policy *model.RoutingPolicy) {
 	days, _ := strconv.Atoi(c.DefaultQuery("days", "7"))
 	if days != 30 {
 		days = 7
@@ -186,4 +198,122 @@ func GetRoutingPolicyStats(c *gin.Context) {
 		"message": "",
 		"data":    stats,
 	})
+}
+
+// ---- Organization console ----
+//
+// Owners and admins manage the routing policies of their own organization. Every handler runs behind
+// OrgAuth(OrgRoleAdmin) and OrgRoutingPolicyEnabled; ids of other organizations' policies are 404.
+
+func GetOrgRoutingPolicies(c *gin.Context) {
+	org, _ := getOrgFromContext(c)
+	policies, err := model.GetRoutingPoliciesByOrganization(org.Id)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusInternalServerError, err)
+		return
+	}
+	if policies == nil {
+		policies = []*model.RoutingPolicy{}
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": policies})
+}
+
+// orgRoutingPolicyParam loads the :policy_id of the current organization.
+func orgRoutingPolicyParam(c *gin.Context) (*model.Organization, *model.RoutingPolicy, bool) {
+	org, _ := getOrgFromContext(c)
+	id, err := strconv.Atoi(c.Param("policy_id"))
+	if err != nil || id <= 0 {
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeInvalidParams, "invalid routing policy id", nil)
+		return nil, nil, false
+	}
+	policy, err := model.GetOrganizationRoutingPolicyById(org.Id, id)
+	if err != nil {
+		common.APIRespondWithError(c, routingPolicyStatus(err), err)
+		return nil, nil, false
+	}
+	return org, policy, true
+}
+
+func GetOrgRoutingPolicy(c *gin.Context) {
+	_, policy, ok := orgRoutingPolicyParam(c)
+	if !ok {
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": policy})
+}
+
+func CreateOrgRoutingPolicy(c *gin.Context) {
+	org, _ := getOrgFromContext(c)
+	policy, ok := bindRoutingPolicy(c)
+	if !ok {
+		return
+	}
+	policy.Id = 0
+	policy.OrganizationId = org.Id
+	if err := policy.Insert(); err != nil {
+		common.APIRespondWithError(c, routingPolicyStatus(err), err)
+		return
+	}
+	model.RecordOrgAudit(org.Id, c.GetInt("id"), "routing_policy.create", fmt.Sprintf("Created routing policy %s (id: %d)", policy.Name, policy.Id))
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": policy})
+}
+
+func UpdateOrgRoutingPolicy(c *gin.Context) {
+	org, current, ok := orgRoutingPolicyParam(c)
+	if !ok {
+		return
+	}
+	policy, ok := bindRoutingPolicy(c)
+	if !ok {
+		return
+	}
+	policy.Id = current.Id
+	if err := policy.Update(); err != nil {
+		common.APIRespondWithError(c, routingPolicyStatus(err), err)
+		return
+	}
+	model.RecordOrgAudit(org.Id, c.GetInt("id"), "routing_policy.update", fmt.Sprintf("Updated routing policy %s (id: %d)", policy.Name, policy.Id))
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": policy})
+}
+
+func UpdateOrgRoutingPolicyStatus(c *gin.Context) {
+	org, current, ok := orgRoutingPolicyParam(c)
+	if !ok {
+		return
+	}
+	var req struct {
+		Enabled bool `json:"enabled"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeInvalidParams, err.Error(), nil)
+		return
+	}
+	policy, err := model.SetRoutingPolicyEnabled(current.Id, req.Enabled)
+	if err != nil {
+		common.APIRespondWithError(c, routingPolicyStatus(err), err)
+		return
+	}
+	model.RecordOrgAudit(org.Id, c.GetInt("id"), "routing_policy.status", fmt.Sprintf("Set routing policy %s (id: %d) enabled: %t", policy.Name, policy.Id, req.Enabled))
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": policy})
+}
+
+func DeleteOrgRoutingPolicy(c *gin.Context) {
+	org, current, ok := orgRoutingPolicyParam(c)
+	if !ok {
+		return
+	}
+	if err := model.DeleteRoutingPolicyById(current.Id); err != nil {
+		common.APIRespondWithError(c, routingPolicyStatus(err), err)
+		return
+	}
+	model.RecordOrgAudit(org.Id, c.GetInt("id"), "routing_policy.delete", fmt.Sprintf("Deleted routing policy %s (id: %d)", current.Name, current.Id))
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": ""})
+}
+
+func GetOrgRoutingPolicyStats(c *gin.Context) {
+	_, policy, ok := orgRoutingPolicyParam(c)
+	if !ok {
+		return
+	}
+	respondRoutingPolicyStats(c, policy)
 }

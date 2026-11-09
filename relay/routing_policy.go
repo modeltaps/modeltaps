@@ -31,13 +31,14 @@ import (
 type RoutingDecision = relay_util.RoutingDecision
 
 const (
-	RoutingReasonClassified     = relay_util.RoutingReasonClassified
-	RoutingReasonPinned         = relay_util.RoutingReasonPinned
-	RoutingReasonBelowThreshold = relay_util.RoutingReasonBelowThreshold
-	RoutingReasonDecisionError  = relay_util.RoutingReasonDecisionError
-	RoutingReasonEmptyInput     = relay_util.RoutingReasonEmptyInput
-	RoutingReasonAuxiliary      = relay_util.RoutingReasonAuxiliary
-	RoutingDecisionContextKey   = relay_util.RoutingDecisionContextKey
+	RoutingReasonClassified        = relay_util.RoutingReasonClassified
+	RoutingReasonPinned            = relay_util.RoutingReasonPinned
+	RoutingReasonBelowThreshold    = relay_util.RoutingReasonBelowThreshold
+	RoutingReasonDecisionError     = relay_util.RoutingReasonDecisionError
+	RoutingReasonEmptyInput        = relay_util.RoutingReasonEmptyInput
+	RoutingReasonAuxiliary         = relay_util.RoutingReasonAuxiliary
+	RoutingReasonTargetUnavailable = relay_util.RoutingReasonTargetUnavailable
+	RoutingDecisionContextKey      = relay_util.RoutingDecisionContextKey
 )
 
 // ClassifyResult 决策后端的输出：选中的标签与它的置信度（0~1）。logprobs 打分时
@@ -68,19 +69,47 @@ func classify(c *gin.Context, policy *model.RoutingPolicy, text string, bill boo
 var routingPolicyNow = time.Now
 
 // resolveRoutingPolicy 把策略名解析为目标模型；不是策略（或策略已停用）时原样返回。
-// 同一请求内第二次调用直接返回缓存的决策。
+// 同一请求内第二次调用直接返回缓存的决策。The error case of routeRoutingPolicy (an organization
+// policy whose fallback is no longer usable) comes back as an empty target.
 func resolveRoutingPolicy(c *gin.Context, modelName string) string {
+	target, _ := routeRoutingPolicy(c, modelName)
+	return target
+}
+
+// errRoutingFallbackUnavailable an organization policy's target and fallback are both unusable.
+var errRoutingFallbackUnavailable = fmt.Errorf("%w: the routing policy's models are not available", errModelNotFoundSentinel)
+
+// routeRoutingPolicy resolves a model name that may be a routing policy: the organization's own
+// policy first (for organization API keys), then the platform policy. Requests are never refused
+// over the decision itself; the only error is an organization policy whose target and fallback
+// have both become unusable, which is a configuration problem the caller reports as model not found.
+func routeRoutingPolicy(c *gin.Context, modelName string) (string, error) {
 	if cached, ok := utils.GetGinValue[*RoutingDecision](c, RoutingDecisionContextKey); ok && cached != nil && cached.Policy == modelName {
-		return cached.TargetModel
+		if cached.TargetModel == "" {
+			return "", errRoutingFallbackUnavailable
+		}
+		return cached.TargetModel, nil
 	}
-	policy := model.LookupRoutingPolicy(modelName)
-	if policy == nil || !policy.Enabled {
-		return modelName
+	policy := model.ResolveRoutingPolicy(routingOrganizationId(c), modelName)
+	if policy == nil {
+		return modelName, nil
 	}
 
 	decision := decideRoute(c, policy)
+	if policy.IsOrganizationPolicy() && !model.OrganizationRoutingTargetUsable(decision.TargetModel) {
+		// The platform hid the model after the policy was saved; an organization policy must not reach it.
+		decision.Label, decision.Reason = "", RoutingReasonTargetUnavailable
+		decision.TargetModel = policy.FallbackModel
+		if !model.OrganizationRoutingTargetUsable(policy.FallbackModel) {
+			decision.TargetModel = ""
+		}
+	}
 	c.Set(RoutingDecisionContextKey, decision)
 	c.Set("routing_policy", policy.Name)
+	if decision.TargetModel == "" {
+		logger.LogWarn(c.Request.Context(), "routing_fallback_unavailable policy="+policy.Name+" id="+strconv.Itoa(policy.Id))
+		return "", errRoutingFallbackUnavailable
+	}
 	// 用户请求的是策略名；别名改写已经填过 requested_model 时保留用户原文。
 	if c.GetString("requested_model") == "" {
 		c.Set("requested_model", policy.Name)
@@ -88,7 +117,29 @@ func resolveRoutingPolicy(c *gin.Context, modelName string) string {
 	// 响应头在选渠道前写，流式与非流式都能带上。
 	c.Header(relay_util.RoutingRouteHeader, decision.HeaderValue())
 	logger.LogInfo(c.Request.Context(), "routing_decision "+decision.String())
-	return decision.TargetModel
+	return decision.TargetModel, nil
+}
+
+// routingOrganizationContextKey caches the organization of the request's API key (0 = none).
+const routingOrganizationContextKey = "routing_organization_id"
+
+// routingOrganizationId returns the organization whose policies the request may use: organization API
+// keys charge the shadow account ("id") on behalf of a member ("token_created_by"). Any failure to load
+// the membership means no organization policies; the organization guardrail rejects such requests later.
+func routingOrganizationId(c *gin.Context) int {
+	if cached, ok := c.Get(routingOrganizationContextKey); ok {
+		id, _ := cached.(int)
+		return id
+	}
+	organizationId := 0
+	shadowId, memberId := c.GetInt("id"), c.GetInt("token_created_by")
+	if config.OrganizationRoutingPolicyEnabled && memberId > 0 && memberId != shadowId {
+		if guardrail, err := cacheGetOrgMemberGuardrailFn(shadowId, memberId); err == nil && guardrail != nil {
+			organizationId = guardrail.OrganizationId
+		}
+	}
+	c.Set(routingOrganizationContextKey, organizationId)
+	return organizationId
 }
 
 // decideRoute 先查会话固定记录，没有再分类；分类结果写回固定记录。
@@ -96,11 +147,12 @@ func decideRoute(c *gin.Context, policy *model.RoutingPolicy) *RoutingDecision {
 	pinTTL := time.Duration(policy.PinTTLSeconds) * time.Second
 	sessionHash := ""
 	if pinTTL > 0 {
-		sessionHash = session.GenerateGenericSessionHash(c, policy.Name)
+		// Keyed by policy id: an organization policy may share a platform policy's name.
+		sessionHash = session.GenerateGenericSessionHash(c, routingPinScope(policy))
 		if pin, ok := model.LookupRoutingPin(sessionHash); ok {
 			if policyHasTarget(policy, pin.Label, pin.TargetModel) {
 				model.RenewRoutingPin(sessionHash, pin, pinTTL)
-				return &RoutingDecision{Policy: policy.Name, Label: pin.Label, TargetModel: pin.TargetModel, Reason: RoutingReasonPinned}
+				return &RoutingDecision{Policy: policy.Name, PolicyId: policy.Id, Label: pin.Label, TargetModel: pin.TargetModel, Reason: RoutingReasonPinned}
 			}
 			// 策略改过，固定的目标已不在路由表里：丢弃并重新分类。
 			model.ForgetRoutingPin(sessionHash)
@@ -110,7 +162,7 @@ func decideRoute(c *gin.Context, policy *model.RoutingPolicy) *RoutingDecision {
 	// 旁路请求（Claude Code 生成标题等）与会话首轮并发、常常先到；它的首条消息是 Agent 的模板，
 	// 拿去分类会把整个会话固定错。会话已固定时上面已跟随固定结果，这里不分类、不写固定记录。
 	if isAgentAuxiliaryRequest(requestBody(c)) {
-		return &RoutingDecision{Policy: policy.Name, TargetModel: policy.FallbackModel, Reason: RoutingReasonAuxiliary}
+		return &RoutingDecision{Policy: policy.Name, PolicyId: policy.Id, TargetModel: policy.FallbackModel, Reason: RoutingReasonAuxiliary}
 	}
 
 	decision := classifyRequest(c, policy)
@@ -128,6 +180,11 @@ func decideRoute(c *gin.Context, policy *model.RoutingPolicy) *RoutingDecision {
 		}
 	}
 	return decision
+}
+
+// routingPinScope is the model part of a policy's session pin key.
+func routingPinScope(policy *model.RoutingPolicy) string {
+	return "routing_policy:" + strconv.Itoa(policy.Id)
 }
 
 // decisionIsPinnable 分类成功（含低于阈值走兜底）的决策才写固定记录。
@@ -157,7 +214,7 @@ func policyHasTarget(policy *model.RoutingPolicy, label, target string) bool {
 
 // classifyRequest 取首条用户消息、调分类、按阈值定目标。失败一律兜底。
 func classifyRequest(c *gin.Context, policy *model.RoutingPolicy) *RoutingDecision {
-	decision := &RoutingDecision{Policy: policy.Name, TargetModel: policy.FallbackModel}
+	decision := &RoutingDecision{Policy: policy.Name, PolicyId: policy.Id, TargetModel: policy.FallbackModel}
 
 	text := firstUserMessageText(requestBody(c), policy.MaxInputChars)
 	if text == "" {
@@ -249,16 +306,16 @@ func parseDecisionAnswer(content string) (*ClassifyResult, error) {
 // 也不带令牌的模型白名单，决策模型是管理员配的，不受用户 key 限制。
 // tryRoutingPolicy 后台「试一试」：只跑决策这一步，不计费、不写固定记录，返回假定按该决策会得到的结果。
 // 调用方是管理员会话（无令牌分组），决策模型按管理员自己的用户分组选渠道。
-func tryRoutingPolicy(c *gin.Context, policy *model.RoutingPolicy, text string) *RoutingDecision {
+func tryRoutingPolicy(c *gin.Context, policy *model.RoutingPolicy, text string, bill bool) *RoutingDecision {
 	ensureAdminGroup(c)
-	decision := &RoutingDecision{Policy: policy.Name, TargetModel: policy.FallbackModel}
+	decision := &RoutingDecision{Policy: policy.Name, PolicyId: policy.Id, TargetModel: policy.FallbackModel}
 	text = firstUserMessageTextFromPlain(text, policy.MaxInputChars)
 	if text == "" {
 		decision.Reason = RoutingReasonEmptyInput
 		return decision
 	}
 	started := routingPolicyNow()
-	result, err := classify(c, policy, text, false)
+	result, err := classify(c, policy, text, bill)
 	decision.DecisionMs = routingPolicyNow().Sub(started).Milliseconds()
 	applyClassifyResult(decision, policy, result, err)
 	return decision
@@ -313,7 +370,7 @@ func classifyWithDecisionModelOpts(c *gin.Context, policy *model.RoutingPolicy, 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), timeout)
 	defer cancel()
 
-	decisionCtx, err := newDecisionContext(c, ctx, policy.Name)
+	decisionCtx, err := newDecisionContext(c, ctx, policy)
 	if err != nil {
 		return nil, err
 	}
@@ -461,7 +518,7 @@ func (d *decisionCall) send(request *types.ChatCompletionRequest, total *types.U
 }
 
 // newDecisionContext 复制决策调用需要的身份与分组信息，其余（请求体、令牌白名单）不带。
-func newDecisionContext(c *gin.Context, ctx context.Context, policyName string) (*gin.Context, error) {
+func newDecisionContext(c *gin.Context, ctx context.Context, policy *model.RoutingPolicy) (*gin.Context, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "/v1/chat/completions", nil)
 	if err != nil {
 		return nil, err
@@ -480,12 +537,15 @@ func newDecisionContext(c *gin.Context, ctx context.Context, policyName string) 
 	// 身份、分组与额度相关的键照搬，计费才能落到同一个用户 / 令牌 / 组织成员上；
 	// token_setting 不带（它承载令牌模型白名单）。
 	for _, key := range []string{"id", "token_id", "token_name", "token_created_by", "token_unlimited_quota",
-		"group", "token_group", "token_backup_group", "group_ratio", logger.RequestIdKey} {
+		"group", "token_group", "token_backup_group", "group_ratio", logger.RequestIdKey, relay_util.RoutingTryContextKey} {
 		if value, ok := c.Get(key); ok {
 			decisionCtx.Set(key, value)
 		}
 	}
-	decisionCtx.Set("routing_policy", policyName)
+	decisionCtx.Set("routing_policy", policy.Name)
+	if policy.Id > 0 {
+		decisionCtx.Set(relay_util.RoutingPolicyIdContextKey, policy.Id)
+	}
 	decisionCtx.Set(relay_util.RoutingDecisionCallContextKey, true)
 	decisionCtx.Set("requestStartTime", routingPolicyNow())
 	return decisionCtx, nil
