@@ -18,20 +18,11 @@ import RoutesEditor, { MIN_ROUTES } from './RoutesEditor';
 import TryItPanel from './TryItPanel';
 import StatsPanel from './StatsPanel';
 import { POLICY_TEMPLATES, applyTemplate } from './templates';
-import {
-  EMPTY_POLICY,
-  createRoutingPolicy,
-  getRoutingPolicy,
-  listCatalogModelNames,
-  normalizePolicy,
-  probeRoutingScoring,
-  SCORING_MODES,
-  updateRoutingPolicy
-} from './routingPolicyApi';
+import { EMPTY_POLICY, normalizePolicy, platformRoutingPolicyApi, SCORING_MODES } from './routingPolicyApi';
 
 // 新建 / 编辑策略的抽屉。字段多且跨「基础 / 高级 / 试一试」三个关注点，按约定用 Tab 抽屉，
 // 必填全部在第一个 Tab；提交缺必填时跳回第一个 Tab 并提示。
-export default function RoutingPolicySheet({ open, policyId, onClose, onSaved }) {
+export default function RoutingPolicySheet({ open, policyId, onClose, onSaved, api = platformRoutingPolicyApi }) {
   const { t } = useTranslation();
   const [form, setForm] = useState(EMPTY_POLICY);
   const [activeTab, setActiveTab] = useState('basic');
@@ -49,7 +40,7 @@ export default function RoutingPolicySheet({ open, policyId, onClose, onSaved })
     if (policyId) {
       (async () => {
         try {
-          const { success, message, data } = await getRoutingPolicy(policyId);
+          const { success, message, data } = await api.get(policyId);
           if (success) setForm({ ...EMPTY_POLICY, ...data, routes: data.routes?.length ? data.routes : EMPTY_POLICY.routes });
           else showError(message);
         } catch (e) {
@@ -59,13 +50,14 @@ export default function RoutingPolicySheet({ open, policyId, onClose, onSaved })
     } else {
       setForm(EMPTY_POLICY);
     }
-  }, [open, policyId]);
+  }, [api, open, policyId]);
 
   // 目录模型名只在抽屉打开时取一次，供三处下拉建议。
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    listCatalogModelNames()
+    api
+      .listModels()
       .then((names) => {
         if (!cancelled) setModelOptions(names);
       })
@@ -73,7 +65,7 @@ export default function RoutingPolicySheet({ open, policyId, onClose, onSaved })
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, [api, open]);
 
   const normalized = useMemo(() => normalizePolicy(form), [form]);
 
@@ -82,7 +74,7 @@ export default function RoutingPolicySheet({ open, policyId, onClose, onSaved })
     if (!decisionModel) return;
     setProbe({ model: decisionModel, running: true, result: null });
     try {
-      const { success, message, data } = await probeRoutingScoring(decisionModel);
+      const { success, message, data } = await api.probe(decisionModel);
       if (!success) showError(message);
       setProbe({ model: decisionModel, running: false, result: success ? data : null });
     } catch (e) {
@@ -117,7 +109,7 @@ export default function RoutingPolicySheet({ open, policyId, onClose, onSaved })
     }
     setSubmitting(true);
     try {
-      const { success, message } = isEdit ? await updateRoutingPolicy(policyId, normalized) : await createRoutingPolicy(normalized);
+      const { success, message } = isEdit ? await api.update(policyId, normalized) : await api.create(normalized);
       if (success) {
         showSuccess(t('userPage.saveSuccess'));
         onSaved?.();
@@ -320,12 +312,12 @@ export default function RoutingPolicySheet({ open, policyId, onClose, onSaved })
             </TabsContent>
 
             <TabsContent value="try">
-              <TryItPanel policy={normalized} policyId={isEdit ? policyId : 0} modelOptions={modelOptions} />
+              <TryItPanel policy={normalized} policyId={isEdit ? policyId : 0} modelOptions={modelOptions} api={api} />
             </TabsContent>
 
             {isEdit && (
               <TabsContent value="stats">
-                <StatsPanel policyId={policyId} fallbackModel={normalized.fallback_model} />
+                <StatsPanel policyId={policyId} fallbackModel={normalized.fallback_model} api={api} />
               </TabsContent>
             )}
           </Tabs>

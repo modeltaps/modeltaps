@@ -1,8 +1,10 @@
-import { Database, KeyRound, ShieldCheck, SlidersHorizontal, User, Users, Wallet } from 'lucide-react';
+import { useOrg } from 'contexts/OrgContext';
+import { Database, KeyRound, Route, ShieldCheck, SlidersHorizontal, User, Users, Wallet } from 'lucide-react';
 
 import MembersTab from '../Organization/MembersTab';
 import GeneralSection from './org/GeneralSection';
 import BudgetSection from './org/BudgetSection';
+import RoutingSection from './org/RoutingSection';
 
 // ==============================|| PANEL — SETTINGS SECTION REGISTRY ||============================== //
 // Single source of truth for the two settings groups:组织分组的内容组件登记在 component 上,
@@ -11,8 +13,25 @@ import BudgetSection from './org/BudgetSection';
 export const ORG_SECTIONS = [
   { id: 'general', labelKey: 'settingsPage.sections.general', fallback: 'General', icon: SlidersHorizontal, component: GeneralSection },
   { id: 'members', labelKey: 'settingsPage.sections.members', fallback: 'Members', icon: Users, component: MembersTab },
-  { id: 'budget', labelKey: 'settingsPage.sections.budget', fallback: 'Budget', icon: Wallet, component: BudgetSection }
+  { id: 'budget', labelKey: 'settingsPage.sections.budget', fallback: 'Budget', icon: Wallet, component: BudgetSection },
+  {
+    id: 'routing',
+    labelKey: 'settingsPage.sections.routing',
+    fallback: 'Auto routing',
+    icon: Route,
+    component: RoutingSection,
+    // Shown only while the site lets organizations manage their own routing policies.
+    statusFlag: 'organization_routing_policy_enabled'
+  }
 ];
+
+// availableOrgSections filters ORG_SECTIONS by site flags ({ organization_routing_policy_enabled }).
+export const availableOrgSections = (flags) => ORG_SECTIONS.filter((item) => !item.statusFlag || flags?.[item.statusFlag] === true);
+
+export function useOrgSections() {
+  const { orgRoutingPolicyEnabled } = useOrg();
+  return availableOrgSections({ organization_routing_policy_enabled: orgRoutingPolicyEnabled });
+}
 
 export const ACCOUNT_SECTIONS = [
   { id: 'profile', labelKey: 'settingsPage.sections.profile', fallback: 'Profile', icon: User },

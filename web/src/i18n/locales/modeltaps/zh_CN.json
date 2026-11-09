@@ -1536,7 +1536,8 @@
       "threshold": "阈值",
       "enabled": "启用",
       "week": "近 7 天",
-      "fallbackRate": "兜底 {{rate}}%"
+      "fallbackRate": "兜底 {{rate}}%",
+      "organization": "组织"
     },
     "form": {
       "tabBasic": "基础",
@@ -1620,7 +1621,8 @@
       "loadSamples": "从日志里挑一条真实首条消息",
       "loadingSamples": "加载中…",
       "noSamples": "还没有留存了请求体的被路由请求。开启请求明细记录后才会有样本。",
-      "scoring": "打分方式"
+      "scoring": "打分方式",
+      "introBilled": "只跑决策这一步，用的是表单里当前的策略。不转发、不写会话固定记录，但决策调用会计费，记在组织账上。"
     },
     "reasons": {
       "classified": "已分类",
@@ -1661,7 +1663,15 @@
     "scoringUsed": {
       "logprobs": "logprobs",
       "self_reported": "自报"
-    }
+    },
+    "scope": {
+      "platform": "平台策略",
+      "organizations": "组织策略"
+    },
+    "overridesPlatform": "覆盖平台策略",
+    "organizationsIntro": "各组织在自己的设置里管理的路由策略，只对该组织的 API Key生效。发现滥用可以在这里停用。",
+    "organizationsEmpty": "还没有组织建路由策略。",
+    "orgIntro": "这里的策略只对本组织的 API Key生效。与平台策略同名时，本组织成员会用这里的策略。「试一试」会真实调用决策模型，费用记在组织账上。"
   },
   "logPage": {
     "routing": {
@@ -1679,7 +1689,11 @@
     "operationSettings": {
       "generalSettings": {
         "routingDecisionBilling": "决策调用计费",
-        "routingDecisionBillingDescription": "自动路由策略的分类调用按决策模型价格向调用方计费，每个会话一次，单独记一条日志。关闭后决策照常进行，但不写消费日志。"
+        "routingDecisionBillingDescription": "自动路由策略的分类调用按决策模型价格向调用方计费，每个会话一次，单独记一条日志。关闭后决策照常进行，但不写消费日志。",
+        "orgRoutingPolicy": "允许组织管理自己的路由策略",
+        "orgRoutingPolicyDescription": "组织 Owner 和 Admin 的组织设置里会出现「自动路由」。组织的策略只对本组织的 API Key生效；与平台策略同名时，该组织用自己的策略。",
+        "orgRoutingPolicyMaxCount": "每个组织的策略上限",
+        "orgRoutingPolicyMaxCountDescription": "一个组织最多能建多少条路由策略，0 表示不限。"
       }
     }
   },
@@ -1696,6 +1710,11 @@
       "fallback": "兜底",
       "fallbackDescription": "置信度不足、决策失败或首条消息没有文本",
       "priceNote": "策略本身没有价格：每次请求按实际应答模型的价格计费。下表是兜底模型（{{model}}）的价格。"
+    }
+  },
+  "settingsPage": {
+    "sections": {
+      "routing": "自动路由"
     }
   }
 }

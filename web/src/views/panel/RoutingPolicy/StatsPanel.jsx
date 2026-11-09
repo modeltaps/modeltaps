@@ -8,7 +8,7 @@ import { renderQuota as renderQuotaBase } from 'utils/common';
 
 // 单条策略的金额通常很小，保留 4 位小数，否则全显示成 $0.00。
 const renderQuota = (quota) => renderQuotaBase(quota, 4);
-import { getRoutingPolicyStats } from './routingPolicyApi';
+import { platformRoutingPolicyApi } from './routingPolicyApi';
 
 const REASONS = ['classified', 'pinned', 'below_threshold', 'decision_error', 'empty_input', 'auxiliary', 'target_unavailable'];
 
@@ -26,7 +26,7 @@ const pct = (part, total) => (total > 0 ? `${Math.round((part / total) * 100)}%`
 
 // 策略效果：近 7 / 30 天请求数、兜底占比（按原因拆）、各标签命中与费用、平均决策耗时、决策成本、
 // 按「全部走兜底」估算的节省。只读，供调阈值与标签描述时参考。
-export default function StatsPanel({ policyId, fallbackModel }) {
+export default function StatsPanel({ policyId, fallbackModel, api = platformRoutingPolicyApi }) {
   const { t } = useTranslation();
   const [days, setDays] = useState(7);
   const [stats, setStats] = useState(null);
@@ -36,7 +36,8 @@ export default function StatsPanel({ policyId, fallbackModel }) {
     if (!policyId) return undefined;
     let cancelled = false;
     setLoading(true);
-    getRoutingPolicyStats(policyId, days)
+    api
+      .getStats(policyId, days)
       .then(({ success, data }) => {
         if (!cancelled && success) setStats(data);
       })
@@ -47,7 +48,7 @@ export default function StatsPanel({ policyId, fallbackModel }) {
     return () => {
       cancelled = true;
     };
-  }, [policyId, days]);
+  }, [api, policyId, days]);
 
   if (!policyId) {
     return <p className="text-sm text-muted-foreground">{t('routingPolicy.stats.saveFirst')}</p>;

@@ -5,14 +5,13 @@ import { isOrgAdminRole } from '../Organization';
 import OrgSectionHost from './org/OrgSectionHost';
 import AccountSection from './account';
 import {
-  ORG_SECTIONS,
   ACCOUNT_SECTIONS,
   DEFAULT_ORG_SECTION,
   DEFAULT_ACCOUNT_SECTION,
-  orgSectionIds,
   accountSectionIds,
   orgSettingsUrl,
-  accountSettingsUrl
+  accountSettingsUrl,
+  useOrgSections
 } from './sections';
 
 // ==============================|| PANEL — UNIFIED SETTINGS ||============================== //
@@ -24,6 +23,7 @@ export default function Settings() {
   const { search } = useLocation();
   const { orgId: orgIdParam, section } = useParams();
   const { organizations, orgsLoaded, currentOrgId } = useOrg();
+  const orgSections = useOrgSections();
 
   const managedOrgs = organizations.filter((org) => isOrgAdminRole(org.role));
   // 默认落点:当前全局上下文是我管理的组织 → 该组织;否则第一个我管理的组织;都没有 → 个人资料。
@@ -38,7 +38,7 @@ export default function Settings() {
 
   if (!section) return <Navigate to={`${defaultTarget}${search}`} replace />;
   // 未知 section 或不在我管理列表中的 orgId 回退到默认落点。
-  if (orgScope && !(managedOrgs.some((org) => org.id === orgId) && orgSectionIds.includes(section))) {
+  if (orgScope && !(managedOrgs.some((org) => org.id === orgId) && orgSections.some(({ id }) => id === section))) {
     return <Navigate to={defaultTarget} replace />;
   }
   if (!orgScope && !accountSectionIds.includes(section)) {
@@ -47,7 +47,7 @@ export default function Settings() {
 
   const activeOrgId = orgScope ? orgId : (defaultOrg?.id ?? null);
   const activeOrgRole = managedOrgs.find((org) => org.id === activeOrgId)?.role;
-  const activeSection = orgScope ? ORG_SECTIONS.find(({ id }) => id === section) : ACCOUNT_SECTIONS.find(({ id }) => id === section);
+  const activeSection = orgScope ? orgSections.find(({ id }) => id === section) : ACCOUNT_SECTIONS.find(({ id }) => id === section);
 
   return (
     <div className="mx-auto max-w-4xl">

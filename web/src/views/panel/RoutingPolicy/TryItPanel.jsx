@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { FormField } from '@/components/ui/form-field';
 import { ModelCombobox } from '@/components/ui/model-combobox';
 import { showError } from 'utils/common';
-import { getRoutingPolicySamples, tryRoutingPolicy } from './routingPolicyApi';
+import { platformRoutingPolicyApi } from './routingPolicyApi';
 import { timestamp2string } from 'utils/common';
 
 // 置信度不足或决策失败的原因，用 routingPolicy.reasons.* 文案。
@@ -22,7 +22,7 @@ const REASON_TONE = {
 
 // 「试一试」：粘贴一条首条用户消息，用当前表单里的策略（可以还没保存）跑一次决策，只调决策模型。
 // 可以再加几个候选决策模型并列比较，看哪个在真实消息上更稳。
-export default function TryItPanel({ policy, policyId = 0, modelOptions = [] }) {
+export default function TryItPanel({ policy, policyId = 0, modelOptions = [], api = platformRoutingPolicyApi }) {
   const { t } = useTranslation();
   const [text, setText] = useState('');
   // 真实样本：从留存了请求明细的被路由日志里取首条消息，点一条填进输入框回放。
@@ -33,7 +33,7 @@ export default function TryItPanel({ policy, policyId = 0, modelOptions = [] }) 
     if (!policyId) return;
     setLoadingSamples(true);
     try {
-      const { success, message, data } = await getRoutingPolicySamples(policyId, 20);
+      const { success, message, data } = await api.getSamples(policyId, 20);
       if (success) setSamples(data || []);
       else showError(message);
     } catch (e) {
@@ -59,7 +59,7 @@ export default function TryItPanel({ policy, policyId = 0, modelOptions = [] }) 
     setRunning(true);
     try {
       const decisionModels = [policy.decision_model, ...candidates].filter(Boolean);
-      const { success, message, data } = await tryRoutingPolicy({ policy, text, decisionModels });
+      const { success, message, data } = await api.tryPolicy({ policy, text, decisionModels });
       if (success) setResults(data || []);
       else showError(message);
     } catch (e) {
@@ -73,7 +73,7 @@ export default function TryItPanel({ policy, policyId = 0, modelOptions = [] }) 
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-muted-foreground">{t('routingPolicy.tryIt.intro')}</p>
+      <p className="text-sm text-muted-foreground">{t(api.billedTry ? 'routingPolicy.tryIt.introBilled' : 'routingPolicy.tryIt.intro')}</p>
       <FormField id="rp-try-text" label={t('routingPolicy.tryIt.message')} hint={t('routingPolicy.tryIt.messageHint')}>
         <Textarea
           id="rp-try-text"
@@ -83,7 +83,7 @@ export default function TryItPanel({ policy, policyId = 0, modelOptions = [] }) 
           placeholder={t('routingPolicy.tryIt.messagePlaceholder')}
         />
       </FormField>
-      {policyId > 0 && (
+      {policyId > 0 && api.getSamples && (
         <div className="space-y-2">
           {samples === null ? (
             <Button type="button" variant="outline" size="sm" onClick={loadSamples} disabled={loadingSamples}>

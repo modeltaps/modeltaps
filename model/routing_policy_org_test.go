@@ -319,3 +319,34 @@ func TestMigrateRoutingPolicyScopedNameIndex(t *testing.T) {
 		t.Fatal("names stay unique within one organization")
 	}
 }
+
+// The console's model pickers list the organization's routable, visible, non-policy models.
+func TestOrganizationRoutingModels(t *testing.T) {
+	setupOrgRoutingTestDB(t)
+	acme := createRoutingTestOrg(t, "acme")
+	prevHidden, hadHidden := viper.Get("catalog.enforce_hidden"), viper.IsSet("catalog.enforce_hidden")
+	viper.Set("catalog.enforce_hidden", true)
+	t.Cleanup(func() {
+		if hadHidden {
+			viper.Set("catalog.enforce_hidden", prevHidden)
+		} else {
+			viper.Set("catalog.enforce_hidden", true)
+		}
+	})
+	if err := DB.Create(&ModelInfo{Model: "secret-model", Hidden: true}).Error; err != nil {
+		t.Fatal(err)
+	}
+	got, err := OrganizationRoutingModels(acme.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"big-model", "cheap-model", "decider"}
+	if len(got) != len(want) {
+		t.Fatalf("want %v, got %v", want, got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("want %v, got %v", want, got)
+		}
+	}
+}

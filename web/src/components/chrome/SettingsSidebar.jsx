@@ -13,7 +13,7 @@ import OrgSelector from 'views/panel/Settings/OrgSelector';
 import {
   ACCOUNT_SECTIONS,
   DEFAULT_ORG_SECTION,
-  ORG_SECTIONS,
+  useOrgSections,
   accountSettingsUrl,
   orgSettingsUrl,
   parseSettingsPath
@@ -28,6 +28,7 @@ export default function SettingsSidebar({ collapsed = false, onItemClick, onTogg
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const { organizations, currentOrgId } = useOrg();
+  const orgSections = useOrgSections();
 
   const { orgScope, orgId, section } = parseSettingsPath(pathname);
   const managedOrgs = organizations.filter((org) => isOrgAdminRole(org.role));
@@ -130,7 +131,7 @@ export default function SettingsSidebar({ collapsed = false, onItemClick, onTogg
                   </p>
                 </>
               )}
-              {ORG_SECTIONS.map((item) => renderLeaf(item, orgSettingsUrl(activeOrgId, item.id), orgScope && item.id === section))}
+              {orgSections.map((item) => renderLeaf(item, orgSettingsUrl(activeOrgId, item.id), orgScope && item.id === section))}
             </div>
           )}
           <div className={cn('space-y-0.5', collapsed && managedOrgs.length > 0 && 'mt-4')}>

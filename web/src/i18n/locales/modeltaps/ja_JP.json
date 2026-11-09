@@ -1536,7 +1536,8 @@
       "threshold": "しきい値",
       "enabled": "有効",
       "week": "直近 7 日",
-      "fallbackRate": "フォールバック {{rate}}%"
+      "fallbackRate": "フォールバック {{rate}}%",
+      "organization": "組織"
     },
     "form": {
       "tabBasic": "基本",
@@ -1620,7 +1621,8 @@
       "loadSamples": "ログから実際の最初のメッセージを選ぶ",
       "loadingSamples": "読み込み中…",
       "noSamples": "リクエスト本文が保存されたルーティング済みリクエストはまだありません。リクエスト詳細の記録を有効にするとサンプルが集まります。",
-      "scoring": "スコアリング"
+      "scoring": "スコアリング",
+      "introBilled": "このフォームの現在のポリシーで判定ステップだけを実行します。転送もセッション固定も行いませんが、判定の呼び出しは組織に課金されます。"
     },
     "reasons": {
       "classified": "分類済み",
@@ -1661,7 +1663,15 @@
     "scoringUsed": {
       "logprobs": "logprobs",
       "self_reported": "自己申告"
-    }
+    },
+    "scope": {
+      "platform": "プラットフォームのポリシー",
+      "organizations": "組織のポリシー"
+    },
+    "overridesPlatform": "プラットフォームのポリシーを上書き",
+    "organizationsIntro": "各組織が自分の設定で管理しているルーティングポリシーです。その組織の API キーにだけ適用されます。不正利用があればここで無効にできます。",
+    "organizationsEmpty": "ルーティングポリシーを作成した組織はまだありません。",
+    "orgIntro": "ここのポリシーはこの組織の API キーにだけ適用されます。プラットフォームのポリシーと同じ名前なら、メンバーにはこちらが使われます。「試す」は決定モデルを実際に呼び出し、費用は組織に計上されます。"
   },
   "logPage": {
     "routing": {
@@ -1679,7 +1689,11 @@
     "operationSettings": {
       "generalSettings": {
         "routingDecisionBilling": "判定呼び出しを課金する",
-        "routingDecisionBillingDescription": "自動ルーティングポリシーの分類呼び出しを判定モデルの価格で呼び出し元に課金します。セッションごとに 1 回、独立したログとして記録します。オフでも判定は実行されますが消費ログは残りません。"
+        "routingDecisionBillingDescription": "自動ルーティングポリシーの分類呼び出しを判定モデルの価格で呼び出し元に課金します。セッションごとに 1 回、独立したログとして記録します。オフでも判定は実行されますが消費ログは残りません。",
+        "orgRoutingPolicy": "組織が自分のルーティングポリシーを管理できるようにする",
+        "orgRoutingPolicyDescription": "組織の Owner と Admin の組織設定に「自動ルーティング」が表示されます。組織のポリシーはその組織の API キーにだけ適用され、プラットフォームのポリシーと同じ名前ならその組織ではこちらが使われます。",
+        "orgRoutingPolicyMaxCount": "組織ごとのポリシー上限",
+        "orgRoutingPolicyMaxCountDescription": "1 つの組織が作成できるルーティングポリシーの最大数です。0 は無制限です。"
       }
     }
   },
@@ -1696,6 +1710,11 @@
       "fallback": "フォールバック",
       "fallbackDescription": "確信度不足、判定失敗、または最初のメッセージにテキストがない場合",
       "priceNote": "ポリシー自体に価格はなく、各リクエストは実際に応答したモデルの価格で課金されます。下の表はフォールバックモデル（{{model}}）の価格です。"
+    }
+  },
+  "settingsPage": {
+    "sections": {
+      "routing": "自動ルーティング"
     }
   }
 }

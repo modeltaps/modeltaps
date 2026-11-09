@@ -106,3 +106,17 @@ The decision model can report its confidence in two ways:
 **Check support** next to the setting sends one small test request to the decision model and tells you whether the channel it was routed to returns logprobs.
 
 The decision billing switch is under **Settings → Gateway → Auto routing**.
+
+## Organization policies
+
+A site administrator can let organizations manage their own policies: turn on **Let organizations manage their own routing policies** under **Settings → Gateway → Auto routing**, and optionally change the number of policies each organization may create (20 by default).
+
+Organization owners and admins then find **Auto routing** in their organization settings, next to General, Members and Budget. Members do not see it; they only find the organization's policies in `/v1/models` and can call them with an organization API key.
+
+- An organization's policies only apply to its own API keys. Personal keys and other organizations never see them.
+- An organization policy may use the same name as a platform policy. For that organization's keys it replaces the platform policy; switch it off and the platform policy applies again.
+- The decision model, targets and fallback must be models the organization can already call and that the catalog does not hide. If the site hides a target later, requests go to the fallback (reason `target_unavailable`). If the fallback is hidden too, the request fails with model not found.
+- **Try it** and **Check support** call the decision model for real and are charged to the organization. They do not count in the policy statistics. Replaying first messages from the logs is not available to organizations.
+- Creating, changing, switching and deleting a policy is recorded in the organization's audit log.
+
+Site administrators can review every organization's policies on the **Organization policies** tab of **Gateway → Auto routing** and switch one off there.

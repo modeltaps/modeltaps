@@ -35,12 +35,22 @@ func routingPolicyStatus(err error) int {
 	return http.StatusInternalServerError
 }
 
-// GetRoutingPolicies lists the platform policies, or one organization's with ?organization_id=N so
-// system admins can review (and disable) what organizations configured.
+// adminOrgRoutingPolicy is an organization policy as the platform console lists it.
+type adminOrgRoutingPolicy struct {
+	*model.RoutingPolicy
+	OrganizationName string `json:"organization_name"`
+	// OverridesPlatform the organization's policy hides a platform policy of the same name.
+	OverridesPlatform bool `json:"overrides_platform"`
+}
+
+// GetRoutingPolicies lists the platform policies, one organization's with ?organization_id=N, or
+// every organization's with ?organization_id=-1, so system admins can review (and disable) what
+// organizations configured.
 func GetRoutingPolicies(c *gin.Context) {
 	organizationId, _ := strconv.Atoi(c.DefaultQuery("organization_id", "0"))
 	if organizationId < 0 {
-		organizationId = 0
+		respondAllOrganizationRoutingPolicies(c)
+		return
 	}
 	policies, err := model.GetRoutingPoliciesByOrganization(organizationId)
 	if err != nil {
@@ -316,4 +326,40 @@ func GetOrgRoutingPolicyStats(c *gin.Context) {
 		return
 	}
 	respondRoutingPolicyStats(c, policy)
+}
+
+// GetOrgRoutingModels lists the models the organization's policies may use (for the model pickers).
+func GetOrgRoutingModels(c *gin.Context) {
+	org, _ := getOrgFromContext(c)
+	models, err := model.OrganizationRoutingModels(org.Id)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusInternalServerError, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": models})
+}
+
+func respondAllOrganizationRoutingPolicies(c *gin.Context) {
+	policies, err := model.GetAllOrganizationRoutingPolicies()
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusInternalServerError, err)
+		return
+	}
+	names := map[int]string{}
+	items := make([]adminOrgRoutingPolicy, 0, len(policies))
+	for _, policy := range policies {
+		name, ok := names[policy.OrganizationId]
+		if !ok {
+			if org, err := model.GetOrganizationById(policy.OrganizationId); err == nil {
+				name = org.Name
+			}
+			names[policy.OrganizationId] = name
+		}
+		items = append(items, adminOrgRoutingPolicy{
+			RoutingPolicy:     policy,
+			OrganizationName:  name,
+			OverridesPlatform: model.LookupRoutingPolicy(policy.Name) != nil,
+		})
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": items})
 }

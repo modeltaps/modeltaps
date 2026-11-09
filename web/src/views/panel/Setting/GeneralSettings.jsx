@@ -659,8 +659,10 @@ export function QuotaResetCard({ ctx }) {
 // 自动路由：决策调用是否向用户计费（每个会话一次，按决策模型价格）。
 export function AutoRoutingCard({ ctx }) {
   const { t } = useTranslation();
-  const { inputs, toggle, loading } = ctx;
+  const { inputs, toggle, loading, setField, isDirty, saveKeys } = ctx;
   const is = (k) => inputs[k] === 'true';
+  const g = (k) => t(`setting_index.operationSettings.generalSettings.${k}`);
+  const keys = ['OrganizationRoutingPolicyMaxCount'];
 
   return (
     <SettingsCard title={t('setting_index.cards.autoRouting')} highlight="auto-routing">
@@ -672,7 +674,27 @@ export function AutoRoutingCard({ ctx }) {
           onCheckedChange={() => toggle('RoutingDecisionBillingEnabled')}
           disabled={loading}
         />
+        <ToggleRow
+          label={g('orgRoutingPolicy')}
+          description={g('orgRoutingPolicyDescription')}
+          checked={is('OrganizationRoutingPolicyEnabled')}
+          onCheckedChange={() => toggle('OrganizationRoutingPolicyEnabled')}
+          disabled={loading}
+        />
       </div>
+      <TextRow
+        id="OrganizationRoutingPolicyMaxCount"
+        type="number"
+        label={g('orgRoutingPolicyMaxCount')}
+        value={inputs.OrganizationRoutingPolicyMaxCount}
+        onChange={(v) => setField('OrganizationRoutingPolicyMaxCount', v)}
+        placeholder="20"
+        description={g('orgRoutingPolicyMaxCountDescription')}
+        disabled={loading || !is('OrganizationRoutingPolicyEnabled')}
+      />
+      <SaveButton loading={loading} disabled={!isDirty(keys)} onClick={() => saveKeys(keys)}>
+        {t('common.save')}
+      </SaveButton>
     </SettingsCard>
   );
 }

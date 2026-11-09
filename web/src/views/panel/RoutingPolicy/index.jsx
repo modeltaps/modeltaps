@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import PropTypes from 'prop-types';
+import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
@@ -17,10 +19,38 @@ import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import PageActions from '@/components/chrome/PageActions';
 import { showError, showSuccess } from 'utils/common';
 import RoutingPolicySheet from './RoutingPolicySheet';
-import { deleteRoutingPolicy, getRoutingPolicyStats, listRoutingPolicies, setRoutingPolicyEnabled } from './routingPolicyApi';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import OrganizationPoliciesTable from './OrganizationPoliciesTable';
+import { platformRoutingPolicyApi } from './routingPolicyApi';
 
-// 自动路由策略列表：策略不多，一次取全量，不分页。
+// Platform console: the platform's own policies, plus a read-only review of what organizations
+// configured (system admins can disable an organization policy there).
 export default function RoutingPolicy() {
+  const { t } = useTranslation();
+  const organizationsEnabled = useSelector((state) => state.siteInfo?.organization_enabled === true);
+  const [scope, setScope] = useState('platform');
+  return (
+    <div className="space-y-4">
+      {organizationsEnabled && (
+        <Tabs value={scope} onValueChange={setScope}>
+          <TabsList>
+            <TabsTrigger value="platform">{t('routingPolicy.scope.platform')}</TabsTrigger>
+            <TabsTrigger value="organizations">{t('routingPolicy.scope.organizations')}</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
+      {scope === 'platform' || !organizationsEnabled ? (
+        <RoutingPolicyManager api={platformRoutingPolicyApi} />
+      ) : (
+        <OrganizationPoliciesTable />
+      )}
+    </div>
+  );
+}
+
+// 自动路由策略列表：策略不多，一次取全量，不分页。Shared by the platform console and an
+// organization's settings; `inlineToolbar` puts the buttons above the table instead of the page header.
+export function RoutingPolicyManager({ api, inlineToolbar = false }) {
   const { t } = useTranslation();
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -33,14 +63,14 @@ export default function RoutingPolicy() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const { success, message, data } = await listRoutingPolicies();
+      const { success, message, data } = await api.list();
       if (success) {
         const list = data || [];
         setPolicies(list);
         const entries = await Promise.all(
           list.map(async (p) => {
             try {
-              const res = await getRoutingPolicyStats(p.id, 7);
+              const res = await api.getStats(p.id, 7);
               return [p.id, res.success ? res.data : null];
             } catch (e) {
               return [p.id, null];
@@ -54,7 +84,7 @@ export default function RoutingPolicy() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [api]);
 
   useEffect(() => {
     refresh();
@@ -67,7 +97,7 @@ export default function RoutingPolicy() {
 
   const toggleEnabled = async (policy, enabled) => {
     try {
-      const { success, message } = await setRoutingPolicyEnabled(policy.id, enabled);
+      const { success, message } = await api.setEnabled(policy.id, enabled);
       if (success) {
         setPolicies((prev) => prev.map((p) => (p.id === policy.id ? { ...p, enabled } : p)));
       } else {
@@ -83,7 +113,7 @@ export default function RoutingPolicy() {
     setPendingDelete(null);
     if (!policy) return;
     try {
-      const { success, message } = await deleteRoutingPolicy(policy.id);
+      const { success, message } = await api.remove(policy.id);
       if (success) {
         showSuccess(t('userPage.operationSuccess'));
         refresh();
@@ -195,21 +225,25 @@ export default function RoutingPolicy() {
 
   const table = useTable({ features: appTableFeatures, data: policies, columns });
 
+  const toolbar = (
+    <>
+      <TooltipProvider delayDuration={150}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" aria-label={t('userPage.refresh')} onClick={refresh}>
+              <RotateCcw className={loading ? 'size-4 animate-spin' : 'size-4'} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{t('userPage.refresh')}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <ResponsiveToolbarButton primary icon={Plus} label={t('routingPolicy.create')} onClick={() => openEdit(0)} />
+    </>
+  );
+
   return (
     <div className="space-y-6">
-      <PageActions>
-        <TooltipProvider delayDuration={150}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="sm" aria-label={t('userPage.refresh')} onClick={refresh}>
-                <RotateCcw className={loading ? 'size-4 animate-spin' : 'size-4'} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{t('userPage.refresh')}</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <ResponsiveToolbarButton primary icon={Plus} label={t('routingPolicy.create')} onClick={() => openEdit(0)} />
-      </PageActions>
+      {inlineToolbar ? <div className="flex items-center justify-end gap-2">{toolbar}</div> : <PageActions>{toolbar}</PageActions>}
 
       <Card>
         <div className="hidden overflow-x-auto md:block">
@@ -257,6 +291,7 @@ export default function RoutingPolicy() {
       </Card>
 
       <RoutingPolicySheet
+        api={api}
         open={sheetOpen}
         policyId={editId}
         onClose={() => setSheetOpen(false)}
@@ -287,3 +322,8 @@ export default function RoutingPolicy() {
     </div>
   );
 }
+
+RoutingPolicyManager.propTypes = {
+  api: PropTypes.object.isRequired,
+  inlineToolbar: PropTypes.bool
+};

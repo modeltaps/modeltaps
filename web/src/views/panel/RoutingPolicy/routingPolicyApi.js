@@ -1,59 +1,31 @@
 import { API } from 'utils/api';
 
-// 自动路由策略的后台接口封装；返回值统一为 res.data（{ success, message, code, data }）。
-const BASE = '/api/routing_policy/';
-
-export async function listRoutingPolicies() {
-  const res = await API.get(BASE);
-  return res.data;
-}
-
-export async function getRoutingPolicy(id) {
-  const res = await API.get(`${BASE}${id}`);
-  return res.data;
-}
-
-export async function createRoutingPolicy(policy) {
-  const res = await API.post(BASE, policy);
-  return res.data;
-}
-
-export async function updateRoutingPolicy(id, policy) {
-  const res = await API.put(`${BASE}${id}`, policy);
-  return res.data;
-}
-
-export async function setRoutingPolicyEnabled(id, enabled) {
-  const res = await API.put(`${BASE}${id}/status`, { enabled });
-  return res.data;
-}
-
-export async function deleteRoutingPolicy(id) {
-  const res = await API.delete(`${BASE}${id}`);
-  return res.data;
-}
-
-// 策略效果统计（近 7 / 30 天）与可回放的真实首条消息样本（需要开了请求明细留存）。
-export async function getRoutingPolicyStats(id, days = 7) {
-  const res = await API.get(`${BASE}${id}/stats`, { params: { days } });
-  return res.data;
-}
-
-export async function getRoutingPolicySamples(id, limit = 20) {
-  const res = await API.get(`${BASE}${id}/samples`, { params: { limit } });
-  return res.data;
-}
-
-// 「试一试」：对一份（可能未保存的）策略草稿与一段首条消息，用若干候选决策模型各跑一次分类。
-export async function tryRoutingPolicy({ policy, text, decisionModels }) {
-  const res = await API.post(`${BASE}try`, { policy, text, decision_models: decisionModels });
-  return res.data;
-}
-
-// 探测一个决策模型在当前渠道上能否返回 logprobs；data.supported 为 null 时探测本身失败（data.error）。
-export async function probeRoutingScoring(decisionModel) {
-  const res = await API.post(`${BASE}probe`, { decision_model: decisionModel });
-  return res.data;
+// Routing policy endpoints; every call resolves to res.data ({ success, message, code, data }).
+// createRoutingPolicyApi(base) builds the same client for one scope: the platform console uses
+// /api/routing_policy/, an organization's settings use /api/org/:id/routing_policy/. The organization
+// scope has no log sample replay (getSamples is null) and lists its own usable models.
+export function createRoutingPolicyApi(base, { listModels, samples = true, billedTry = false } = {}) {
+  return {
+    // billedTry: "Try it" and the probe are charged (organization scope).
+    billedTry,
+    list: async (params) => (await API.get(base, params ? { params } : undefined)).data,
+    get: async (id) => (await API.get(`${base}${id}`)).data,
+    create: async (policy) => (await API.post(base, policy)).data,
+    update: async (id, policy) => (await API.put(`${base}${id}`, policy)).data,
+    setEnabled: async (id, enabled) => (await API.put(`${base}${id}/status`, { enabled })).data,
+    remove: async (id) => (await API.delete(`${base}${id}`)).data,
+    // 策略效果统计（近 7 / 30 天）。
+    getStats: async (id, days = 7) => (await API.get(`${base}${id}/stats`, { params: { days } })).data,
+    // 可回放的真实首条消息样本（需要开了请求明细留存）。
+    getSamples: samples ? async (id, limit = 20) => (await API.get(`${base}${id}/samples`, { params: { limit } })).data : null,
+    // 「试一试」：对一份（可能未保存的）策略草稿与一段首条消息，用若干候选决策模型各跑一次分类。
+    tryPolicy: async ({ policy, text, decisionModels }) =>
+      (await API.post(`${base}try`, { policy, text, decision_models: decisionModels })).data,
+    // 探测一个决策模型在当前渠道上能否返回 logprobs；data.supported 为 null 时探测本身失败（data.error）。
+    probe: async (decisionModel) => (await API.post(`${base}probe`, { decision_model: decisionModel })).data,
+    // 决策 / 目标 / 兜底的下拉建议。
+    listModels: listModels || (async () => [])
+  };
 }
 
 // 管理员目录：全部主名模型（去掉别名行与策略行），供决策 / 目标 / 兜底的下拉建议。
@@ -65,6 +37,22 @@ export async function listCatalogModelNames() {
     .filter((row) => !row.alias_of && row.kind !== 'routing_policy')
     .map((row) => row.model)
     .sort((a, b) => a.localeCompare(b));
+}
+
+export const platformRoutingPolicyApi = createRoutingPolicyApi('/api/routing_policy/', { listModels: listCatalogModelNames });
+
+// orgRoutingPolicyApi the client for one organization's policies (Owner / Admin only).
+export function orgRoutingPolicyApi(orgId) {
+  const base = `/api/org/${orgId}/routing_policy/`;
+  return createRoutingPolicyApi(base, {
+    samples: false,
+    billedTry: true,
+    listModels: async () => {
+      const res = await API.get(`${base}models`);
+      const { success, data } = res.data || {};
+      return success && Array.isArray(data) ? data : [];
+    }
+  });
 }
 
 // 打分方式：auto 先用 logprobs，不支持时改用自报；logprobs 只用概率；self_reported 只用自报。
