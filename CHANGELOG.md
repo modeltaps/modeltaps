@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The channel model picker list (`provider_models_list?detail=1`) returns, for each upstream
+  model, the canonical name to publish it under (`canonical`) and how it was found
+  (`canonical_source`: a catalog alias, a seed alias, or the name without its `vendor/` prefix;
+  empty when there is none).
 - Personal quota warning settings: Settings, Preferences has a Quota warnings card where users
   turn the low-balance and used-up emails off, or set their own warning threshold instead of the
   site default (and switch back to it). The site switch still wins: when it is off nobody gets
@@ -72,6 +76,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A channel that listed an upstream model name the catalog marks as an alias (for example
+  `anthropic/claude-opus-5`, an alias of `claude-opus-5`) served neither name: the alias is
+  rewritten to the canonical name before a channel is chosen, and public model lists leave aliases
+  out. Saving a channel now replaces such names with the canonical name and maps it back to the
+  upstream name in the model mapping; the save response lists what was rewritten in
+  `canonicalized`. Names that are not catalog aliases are saved as sent.
+- Applying the catalog seed on a fresh install changed nothing for aliases, because it only
+  marked alias rows that already existed. It now creates the missing alias rows (reported as
+  `created_aliases`, replacing `missing_aliases`), so channels that list those upstream names get
+  the canonical name and mapping in the same run.
+- A request billed under an upstream alias that has no price of its own (the usual case after a
+  channel maps `claude-opus-5` to `anthropic/claude-opus-5`) was rejected as unpriced. Billing now
+  falls back to the canonical model's price, as the catalog already promised for aliases; an alias
+  with its own price keeps it.
 - Claude models on Vertex AI channels now work. Requests were sent to Google's publisher path, so
   Claude models were not found there; Claude now uses the Anthropic publisher, and model IDs with
   a date (`claude-sonnet-4-5-20250929`) are converted to Vertex's `name@date` form while models

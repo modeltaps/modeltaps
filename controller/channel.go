@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"github.com/modeltaps/modeltaps/common"
+	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/model"
 	"net/http"
@@ -82,6 +83,7 @@ func AddChannel(c *gin.Context) {
 		}
 		channel.Key = source.Key
 	}
+	canonicalized := canonicalizeChannelModels(&channel, "")
 	channel.CreatedTime = utils.GetTimestamp()
 	keys := strings.Split(channel.Key, "\n")
 
@@ -122,8 +124,9 @@ func AddChannel(c *gin.Context) {
 		model.TriggerChannelBrandIconFetch(&channels[i])
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
+		"success":       true,
+		"message":       "",
+		"canonicalized": canonicalized,
 	})
 }
 
@@ -199,6 +202,14 @@ func UpdateChannel(c *gin.Context) {
 			return
 		}
 	}
+	canonicalized := map[string]string{}
+	if channel.Models != "" {
+		fallbackMapping := ""
+		if getErr == nil && oldChannel != nil {
+			fallbackMapping = oldChannel.GetModelMapping()
+		}
+		canonicalized = canonicalizeChannelModels(&channel, fallbackMapping)
+	}
 	if channel.Models == "" {
 		err = channel.Update(false)
 	} else {
@@ -216,9 +227,10 @@ func UpdateChannel(c *gin.Context) {
 	model.TriggerChannelBrandIconFetch(&channel)
 	channel.HideKey()
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    channel,
+		"success":       true,
+		"message":       "",
+		"data":          channel,
+		"canonicalized": canonicalized,
 	})
 }
 
@@ -371,4 +383,35 @@ func channelLookupError(err error) error {
 		return common.NewAPIError(common.APICodeChannelNotFound, "channel not found", nil)
 	}
 	return err
+}
+
+// canonicalizeChannelModels rewrites catalog aliases in channel.Models to their canonical names and
+// maps them back to the upstream name (see model.CanonicalizeChannelModels). fallbackMapping is the
+// stored model_mapping, used when the request leaves model_mapping out. It never blocks a save: on
+// any error the channel is kept as sent. Returns alias -> canonical for each rewritten model.
+func canonicalizeChannelModels(channel *model.Channel, fallbackMapping string) map[string]string {
+	changes := map[string]string{}
+	if channel.Models == "" {
+		return changes
+	}
+	mapping := fallbackMapping
+	if channel.ModelMapping != nil {
+		mapping = *channel.ModelMapping
+	}
+	resolver, err := model.NewCanonicalResolver()
+	if err != nil {
+		logger.SysError("canonicalize channel models: load catalog failed: " + err.Error())
+		return changes
+	}
+	models, newMapping, changes, err := model.CanonicalizeChannelModels(resolver, channel.Models, mapping)
+	if err != nil {
+		logger.SysError("canonicalize channel models: " + err.Error())
+		return map[string]string{}
+	}
+	if len(changes) == 0 {
+		return changes
+	}
+	channel.Models = models
+	channel.ModelMapping = &newMapping
+	return changes
 }
