@@ -9,13 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Channel pages: every channel has its own page at `/panel/channel/<id>`. The overview shows
-  what the gateway charged, the upstream balance or subscription windows (with the OpenRouter
-  quota snapshot), requests and success rate over 24 hours or 7 days with an hourly chart,
-  prompt cache hit and session affinity rates, last test, latency, first token time and output
-  speed per model, model drift with its actions, and routing (groups, priority, weight, tag).
-  The configuration tab holds the full channel form with its sections in a side nav, a save bar
-  that says when there are unsaved changes, and switching tabs keeps them. New channels are
+- Channel pages: every channel has its own page at `/panel/channel/<id>`, laid out as one
+  document. The header carries the name, status and `#id · provider · host`; a row of figures
+  shows the gateway spend, upstream balance or subscription windows, requests and success rate
+  over 24 hours or 7 days, and prompt cache hit and session affinity rates. Below are sections
+  that read first and edit in place: models (each with its requests, success rate, latency,
+  first token time and output speed), traffic (hourly chart, last test), key and quota (the
+  OpenRouter quota snapshot, low balance alert, key replacement), routing and forwarding
+  (groups, priority, weight, base URL, proxy, test model) and model drift (check, dismiss, rules).
+  Request rewriting, compatibility options and plugins stay in the full form under All settings,
+  which keeps its section nav, unsaved-changes save bar and leave warning. New channels are
   created at `/panel/channel/new`; a single new channel opens its page after saving.
   `POST /api/channel/` now returns the created ids.
 - The channel list links names to the channel page, folds the enable switch into the status

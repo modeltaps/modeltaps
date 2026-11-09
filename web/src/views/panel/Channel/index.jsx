@@ -221,8 +221,8 @@ export default function Channel() {
 
   const handlers = {
     ...actions,
-    onOpen: (row, tab) => navigate(channelUrl(row.id, tab)),
-    onEdit: (row, section = 'basic') => navigate(channelUrl(row.id, 'config', section))
+    onOpen: (row) => navigate(channelUrl(row.id)),
+    onEdit: (row, section = 'basic') => navigate(channelUrl(row.id, 'settings', section))
   };
 
   const columns = useMemo(

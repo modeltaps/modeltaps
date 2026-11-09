@@ -403,3 +403,13 @@ export async function fetchChannelCacheStat(id, start, end) {
   const list = res.data.data || [];
   return list.find((s) => s.channel_id === Number(id)) || null;
 }
+
+// Saves part of a channel. PUT /api/channel/ writes the whole row, so the patch is merged into
+// the channel as loaded (its key is hidden, and an empty key keeps the stored one). Runtime
+// fields the backend maintains are left out.
+export async function updateChannel(channel, patch) {
+  // eslint-disable-next-line no-unused-vars
+  const { key_status, model_drift, usage_windows, quota_snapshot, ...rest } = channel;
+  const res = await API.put('/api/channel/', { ...rest, key: '', ...patch, id: channel.id });
+  return res.data;
+}

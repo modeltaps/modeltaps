@@ -1,8 +1,9 @@
-// Detail page URL: overview by default, `config` (optionally on one section) for editing.
-export function channelUrl(id, tab, section) {
+// Channel page URL. Without a view it is the detail page; `settings` opens the full form,
+// optionally on one of its sections.
+export function channelUrl(id, view, section) {
   const params = new URLSearchParams();
-  if (tab && tab !== 'overview') params.set('tab', tab);
-  if (section && section !== 'basic') params.set('section', section);
+  if (view === 'settings') params.set('view', 'settings');
+  if (view === 'settings' && section && section !== 'basic') params.set('section', section);
   const q = params.toString();
   return `/panel/channel/${id}${q ? `?${q}` : ''}`;
 }
