@@ -2767,5 +2767,46 @@
         }
       }
     }
+  },
+  "home": {
+    "hero": {
+      "tagline": "所有模型，一個出口",
+      "subline": "自己部署的 AI 閘道，一個地址同時講 OpenAI、Anthropic、Gemini 三種協定。工具指過來就能用任意模型，key 和日誌都留在你自己的伺服器上。",
+      "ctaPrimary": "取得 API Key",
+      "ctaSecondary": "瀏覽模型",
+      "toolsAria": "接入工具",
+      "copied": "已複製",
+      "protocolNote": "走 {{protocol}} 協定",
+      "logTitle": "閘道日誌"
+    },
+    "facts": {
+      "protocols": {
+        "label": "/v1 · /claude · /gemini",
+        "title": "三套原生協定",
+        "desc": "OpenAI、Anthropic、Gemini 相容介面同時在線，Claude Code、Codex CLI、Cursor 只需改接入地址。"
+      },
+      "sources": {
+        "label": "cloud · 自帶 key",
+        "title": "模型從哪來，你說了算",
+        "desc": "平台代付 20+ 家雲端供應商，也可以把組織自己的 OpenRouter 或廠商 key 錄成渠道，成員看不到明文。"
+      },
+      "ledger": {
+        "label": "logs · pricing",
+        "title": "每一筆都對得上",
+        "desc": "價格與模型目錄每日同步，上游增刪模型會被標出來，每筆呼叫都記下模型、Token、時延和成員。"
+      }
+    },
+    "control": {
+      "title": "給每位成員一份預算",
+      "subtitle": "每把 API Key 按所屬成員的預算扣費，每筆呼叫都記在對應成員名下。",
+      "mock": {
+        "title": "本期用量",
+        "period": "11 月 1 日 – 30 日",
+        "teamBudget": "組織週期預算"
+      }
+    },
+    "finalCta": {
+      "title": "一把 API Key，接入所有模型"
+    }
   }
 }

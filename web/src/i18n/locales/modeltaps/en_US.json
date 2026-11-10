@@ -2857,5 +2857,46 @@
         }
       }
     }
+  },
+  "home": {
+    "hero": {
+      "tagline": "Every model. One tap.",
+      "subline": "A self-hosted gateway that speaks OpenAI, Anthropic and Gemini on one address. Point your tools at it, use any model, and keep keys and logs on your own server.",
+      "ctaPrimary": "Get API key",
+      "ctaSecondary": "Browse models",
+      "toolsAria": "Connect a tool",
+      "copied": "Copied",
+      "protocolNote": "Speaks the {{protocol}} protocol",
+      "logTitle": "Gateway log"
+    },
+    "facts": {
+      "protocols": {
+        "label": "/v1 · /claude · /gemini",
+        "title": "Three native protocols",
+        "desc": "OpenAI, Anthropic and Gemini compatible endpoints run side by side. Claude Code, Codex CLI and Cursor need nothing but a new base URL."
+      },
+      "sources": {
+        "label": "cloud · your keys",
+        "title": "Your models, your keys",
+        "desc": "Use 20+ cloud providers paid for by the platform, or add your organization's own OpenRouter or vendor key as a channel. Members never see the plaintext."
+      },
+      "ledger": {
+        "label": "logs · pricing",
+        "title": "Every call adds up",
+        "desc": "Model catalogs and prices sync daily, upstream changes get flagged, and every call records model, tokens, latency and member."
+      }
+    },
+    "control": {
+      "title": "Give every member a budget",
+      "subtitle": "Each API key spends against its member's budget, and every call is recorded under their name.",
+      "mock": {
+        "title": "Spend this period",
+        "period": "Nov 1–30",
+        "teamBudget": "Organization period budget"
+      }
+    },
+    "finalCta": {
+      "title": "One API key. Every model."
+    }
   }
 }

@@ -1,65 +1,75 @@
+import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Wallet, CalendarClock, BarChart3, Users } from 'lucide-react';
+
+import { cn } from '@/lib/utils';
 
 // ==============================|| PUBLIC HOME — ORG CONTROL ||============================== //
-// Left: headline plus the four control capabilities (member budget, team period budget,
-// usage analytics, roles & members). Right: a product mock of the member budget panel —
-// per-member "remaining this period" bars over an organization-wide period budget bar.
-// Monochrome product tokens only; member names are literal, figures are static mock data.
+// Left: what an organization gets, as a plain list. Right: a product view of the member budget
+// panel — each member's spend this period against their own limit, over the organization's period
+// budget. A member close to the limit turns amber; the organization bar carries the page accent.
+// Names and figures are static mock data, deliberately not translated.
 
-const POINTS = [
-  { key: 'memberBudget', Icon: Wallet },
-  { key: 'teamBudget', Icon: CalendarClock },
-  { key: 'analytics', Icon: BarChart3 },
-  { key: 'roles', Icon: Users }
-];
+const POINTS = ['memberBudget', 'teamBudget', 'analytics', 'roles'];
 
-// Static mock data — literal names and figures, deliberately not i18n.
 const MEMBERS = [
-  { name: 'Alice', used: '$32', limit: '$50', pct: 64 },
-  { name: 'Bob', used: '$11', limit: '$50', pct: 22 },
-  { name: 'Chen', used: '$46', limit: '$50', pct: 92 },
-  { name: 'Dana', used: '$8', limit: '$30', pct: 27 }
+  { name: 'Alice', used: 32.4, limit: 50 },
+  { name: 'Bob', used: 11.08, limit: 50 },
+  { name: 'Chen', used: 46.2, limit: 50 },
+  { name: 'Dana', used: 7.9, limit: 30 }
 ];
 
-const TEAM_BUDGET = { used: '$97', limit: '$500', pct: 19 };
+const TEAM = { used: 97.58, limit: 500 };
 
-function BudgetMock() {
+const usd = (n) => `$${n.toFixed(2)}`;
+
+function Bar({ pct, tone }) {
+  return (
+    <span className="block h-1.5 overflow-hidden rounded-full bg-muted">
+      <span className={cn('block h-full rounded-full', tone)} style={{ width: `${Math.min(pct, 100)}%` }} />
+    </span>
+  );
+}
+
+Bar.propTypes = { pct: PropTypes.number.isRequired, tone: PropTypes.string.isRequired };
+
+function BudgetPanel() {
   const { t } = useTranslation();
+  const teamPct = (TEAM.used / TEAM.limit) * 100;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-6">
-      <div className="flex items-baseline justify-between">
-        <span className="text-sm font-semibold text-foreground">{t('home.control.mock.remaining')}</span>
-        <span className="font-mono text-[11.5px] text-muted-foreground">{t('home.control.mock.used')}</span>
+    <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
+      <div className="flex items-baseline justify-between gap-4">
+        <p className="text-sm font-medium text-foreground">{t('home.control.mock.title')}</p>
+        <p className="text-[12px] tabular-nums text-muted-foreground">{t('home.control.mock.period')}</p>
       </div>
 
-      <ul className="mt-4 grid gap-3.5">
-        {MEMBERS.map(({ name, used, limit, pct }) => (
-          <li key={name} className="grid gap-1.5">
-            <div className="flex items-baseline justify-between gap-2 text-[13px]">
-              <span className="font-medium text-foreground">{name}</span>
-              <span className="font-mono text-[11.5px] text-muted-foreground">
-                {used} / {limit}
-              </span>
-            </div>
-            <span className="block h-1.5 overflow-hidden rounded-full bg-muted">
-              <span className="block h-full rounded-full bg-foreground" style={{ width: `${pct}%` }} />
-            </span>
-          </li>
-        ))}
+      <ul className="mt-6 grid gap-5">
+        {MEMBERS.map(({ name, used, limit }) => {
+          const pct = (used / limit) * 100;
+          return (
+            <li key={name} className="grid gap-2">
+              <div className="flex items-baseline justify-between gap-2 text-[13px]">
+                <span className="text-foreground">{name}</span>
+                <span className="font-mono tabular-nums text-muted-foreground">
+                  {usd(used)} <span className="text-muted-foreground/60">/ {usd(limit)}</span>
+                </span>
+              </div>
+              <Bar pct={pct} tone={pct >= 90 ? 'bg-warning' : 'bg-foreground/80'} />
+            </li>
+          );
+        })}
       </ul>
 
-      <div className="mt-6 border-t border-border pt-5">
+      <div className="mt-8 border-t border-border pt-6">
         <div className="flex items-baseline justify-between gap-2 text-[13px]">
-          <span className="font-semibold text-foreground">{t('home.control.mock.teamBudget')}</span>
-          <span className="font-mono text-[11.5px] text-muted-foreground">
-            {TEAM_BUDGET.used} / {TEAM_BUDGET.limit}
+          <span className="font-medium text-foreground">{t('home.control.mock.teamBudget')}</span>
+          <span className="font-mono tabular-nums text-muted-foreground">
+            {usd(TEAM.used)} <span className="text-muted-foreground/60">/ {usd(TEAM.limit)}</span>
           </span>
         </div>
-        <span className="mt-1.5 block h-2 overflow-hidden rounded-full bg-muted">
-          <span className="block h-full rounded-full bg-foreground" style={{ width: `${TEAM_BUDGET.pct}%` }} />
-        </span>
+        <div className="mt-2">
+          <Bar pct={teamPct} tone="bg-info" />
+        </div>
       </div>
     </div>
   );
@@ -70,29 +80,22 @@ export default function OrgControlSection() {
 
   return (
     <section className="border-b border-border">
-      <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
-        <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-2 lg:gap-16">
-          <div>
-            <h2 className="text-balance text-3xl font-semibold leading-snug sm:text-4xl">{t('home.control.title')}</h2>
-            <p className="mt-4 text-pretty text-base leading-relaxed text-muted-foreground">{t('home.control.subtitle')}</p>
+      <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-28">
+        <div>
+          <h2 className="text-balance break-keep text-3xl font-semibold leading-tight sm:text-4xl">{t('home.control.title')}</h2>
+          <p className="mt-4 max-w-[32rem] text-pretty text-base leading-relaxed text-muted-foreground">{t('home.control.subtitle')}</p>
 
-            <ul className="mt-10 grid gap-7">
-              {POINTS.map(({ key, Icon }) => (
-                <li key={key} className="flex gap-4">
-                  <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-                    <Icon className="size-5" aria-hidden="true" />
-                  </span>
-                  <div>
-                    <h3 className="text-[15px] font-semibold text-foreground">{t(`home.control.${key}.title`)}</h3>
-                    <p className="mt-1 text-[14.5px] leading-relaxed text-muted-foreground">{t(`home.control.${key}.desc`)}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <BudgetMock />
+          <dl className="mt-10 divide-y divide-border border-y border-border">
+            {POINTS.map((key) => (
+              <div key={key} className="grid gap-1 py-4 sm:grid-cols-[10rem_1fr] sm:gap-6">
+                <dt className="text-[15px] font-medium text-foreground">{t(`home.control.${key}.title`)}</dt>
+                <dd className="text-[15px] leading-relaxed text-muted-foreground">{t(`home.control.${key}.desc`)}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
+
+        <BudgetPanel />
       </div>
     </section>
   );

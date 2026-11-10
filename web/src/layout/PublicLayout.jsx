@@ -24,7 +24,7 @@ export default function PublicLayout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3 sm:px-6">
+      <header className="flex h-14 items-center justify-between gap-2 border-b border-border px-4 sm:px-6">
         <Link to="/" className="flex items-center gap-2 text-foreground">
           <LogoMark size={20} />
           <span className="text-sm font-semibold leading-none">{brandWordmark(siteInfo.system_name)}</span>
@@ -35,9 +35,14 @@ export default function PublicLayout() {
             {dark ? <Sun className="size-5" /> : <Moon className="size-5" />}
           </Button>
           {account.user ? (
-            <div className="ml-1">
-              <UserMenu />
-            </div>
+            <>
+              <Button asChild variant="ghost" size="sm" className="ml-1 hidden sm:inline-flex">
+                <Link to="/panel/dashboard">{t('home.cta.console')}</Link>
+              </Button>
+              <div className="ml-1 flex">
+                <UserMenu />
+              </div>
+            </>
           ) : (
             <>
               <Button asChild variant="ghost" size="sm" className="ml-1 hidden sm:inline-flex">
