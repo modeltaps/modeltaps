@@ -108,7 +108,7 @@ export default function MainLayout() {
           }
         >
           {/* Content column (pushed right while the mobile drawer is open) */}
-          <main className="flex-1 overflow-y-auto px-4 pb-4 pt-3 sm:px-6 sm:pb-6">
+          <main className="flex-1 overflow-y-auto px-4 pb-4 pt-4 sm:px-6 sm:pb-6">
             {pageHeader ? (
               <PageHeader
                 title={pageHeader.title}
