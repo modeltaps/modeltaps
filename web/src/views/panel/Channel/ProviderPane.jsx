@@ -256,11 +256,11 @@ export default function ProviderPane({
             <colgroup>
               <col className="w-11" />
               <col />
-              <col className="w-[13%]" />
-              <col className="w-[13%]" />
               <col className="w-[10%]" />
               <col className="w-[11%]" />
-              <col className="w-[12%]" />
+              <col className="w-[9%]" />
+              <col className="w-[10%]" />
+              <col className="w-[11%]" />
               <col className="w-[76px]" />
               <col className="w-[52px]" />
             </colgroup>
@@ -328,7 +328,11 @@ export default function ProviderPane({
                           {c.name}
                         </span>
                         {c.tag && (
-                          <span className="inline-flex h-[22px] items-center rounded-full bg-muted px-2 text-xs text-muted-foreground">
+                          // The tag gives way before the name does.
+                          <span
+                            className="inline-block h-[22px] min-w-0 shrink-[4] truncate rounded-full bg-muted px-2 text-xs leading-[22px] text-muted-foreground"
+                            title={c.tag}
+                          >
                             {c.tag}
                           </span>
                         )}
