@@ -711,7 +711,8 @@
     "catalogTabs": {
       "models": "模型",
       "vendors": "厂商",
-      "paused": "暂停中"
+      "paused": "暂停中",
+      "pending": "新上游模型"
     }
   },
   "listPage": {
@@ -1609,7 +1610,8 @@
     "routing_policy_model_unavailable": "{{field}} 对本组织不可用（{{model}}）",
     "routing_policy_count_exceeded": "本组织的路由策略已达上限 {{max}} 条",
     "org_routing_policy_disabled": "本站未开启组织路由策略",
-    "supply_pause_rules_invalid": "暂停规则无效：{{message}}"
+    "supply_pause_rules_invalid": "暂停规则无效：{{message}}",
+    "model_supply_pending_not_found": "这个上游模型不在这些渠道的待处理列表里"
   },
   "channelOAuth": {
     "tip": {
@@ -2468,6 +2470,34 @@
       "next": "下一个",
       "servingTier": "正在接请求",
       "failed": "无法读取该分组的预览"
+    },
+    "pendingPage": {
+      "description": "渠道上游新列出、还没有任何供应使用的模型。挂到公开模型之前，它们不会对外公开。",
+      "empty": "没有新的上游模型",
+      "emptyHint": "模型漂移检测发现渠道上游新提供某个模型时，会列在这里。",
+      "upstream": "上游模型",
+      "channels": "渠道",
+      "suggestion": "公开模型",
+      "source": {
+        "alias": "目录别名",
+        "seed": "目录种子",
+        "bare": "去掉厂商前缀"
+      },
+      "isNew": "新建",
+      "attach": "挂接…",
+      "ignore": "忽略",
+      "ignored": "{{model}} 不会再列出",
+      "ignoreHint": "忽略后不再列出，除非该渠道的上游先下架、之后又重新提供这个模型。",
+      "attachTitle": "挂接 {{model}}",
+      "attachDescription": "每个选中的渠道都会新增一条该公开模型的供应，发给上游的就是这个名字，优先级和权重沿用渠道自己的设置，之后可在模型的「供应」页调整。",
+      "publicModel": "公开模型",
+      "willCreate": "{{model}} 还不是公开模型，会新建为草稿：设好价格后在它的页面上发布。",
+      "isAlias": "{{model}} 是 {{canonical}} 的别名，供应会记在 {{canonical}} 下。",
+      "isPolicy": "{{model}} 是路由策略，不是公开模型。",
+      "noChannel": "至少选一个渠道",
+      "attachButton": "挂接",
+      "attached_other": "已挂到 {{model}}，共 {{count}} 个渠道",
+      "skipped_other": "{{count}} 个渠道已有 {{model}} 的供应（上游名不同），这个模型在那些渠道上仍待处理。"
     }
   },
   "settingsUi": {

@@ -660,6 +660,28 @@ func (channel *Channel) DismissNewModels() error {
 	return channel.UpdateModelDrift(*result)
 }
 
+// RemoveNewModels takes names off the drift check's new models, keeping the rest of the result.
+func (channel *Channel) RemoveNewModels(names ...string) error {
+	result := channel.GetModelDrift()
+	if result == nil || len(result.NewModels) == 0 {
+		return nil
+	}
+	kept := make([]string, 0, len(result.NewModels))
+	for _, m := range result.NewModels {
+		if !slices.Contains(names, m) {
+			kept = append(kept, m)
+		}
+	}
+	if len(kept) == len(result.NewModels) {
+		return nil
+	}
+	if len(kept) == 0 {
+		kept = nil
+	}
+	result.NewModels = kept
+	return channel.UpdateModelDrift(*result)
+}
+
 // AddDriftModels appends models to the channel's model list (deduplicated) and reloads the
 // routing cache, for the drift check's auto add. It touches no other column.
 func (channel *Channel) AddDriftModels(models []string) error {

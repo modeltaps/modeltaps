@@ -244,3 +244,31 @@ export function parseSupplyForm({ upstream_model, priority, weight }) {
 export function modelSupplyPath(model) {
   return `/panel/pricing?tab=models&model=${encodeURIComponent(model)}&panel=supplies`;
 }
+
+// Public model names among catalog rows (not aliases, not routing policies), sorted.
+export function publicModelNames(rows = []) {
+  return rows
+    .filter((row) => row?.model && !row.alias_of && !row.kind)
+    .map((row) => row.model)
+    .sort((a, b) => a.localeCompare(b));
+}
+
+// What attaching a waiting upstream model to `name` does, judged from the catalog rows:
+// "public" supplies that model, "alias" supplies the model the alias points at (`canonical`),
+// "policy" is refused (routing policies have no supplies), "new" creates the model as a draft.
+export function pendingTarget(name, rows = []) {
+  const model = String(name || '').trim();
+  if (!model) return { kind: 'empty', model };
+  const byModel = new Map(rows.filter((row) => row?.model).map((row) => [row.model, row]));
+  const row = byModel.get(model);
+  if (!row) return { kind: 'new', model };
+  if (row.kind) return { kind: 'policy', model };
+  if (!row.alias_of) return { kind: 'public', model };
+  let target = row;
+  const seen = new Set();
+  while (target.alias_of && !seen.has(target.model)) {
+    seen.add(target.model);
+    target = byModel.get(target.alias_of) || { model: target.alias_of };
+  }
+  return { kind: 'alias', model, canonical: target.model };
+}

@@ -711,7 +711,8 @@
     "catalogTabs": {
       "models": "モデル",
       "vendors": "ベンダー",
-      "paused": "一時停止中"
+      "paused": "一時停止中",
+      "pending": "新しい上流モデル"
     }
   },
   "listPage": {
@@ -1609,7 +1610,8 @@
     "routing_policy_model_unavailable": "{{field}} はこの組織では利用できません（{{model}}）",
     "routing_policy_count_exceeded": "この組織のルーティングポリシーは上限の {{max}} 件に達しています",
     "org_routing_policy_disabled": "このサイトでは組織のルーティングポリシーが有効になっていません",
-    "supply_pause_rules_invalid": "一時停止ルールが無効です：{{message}}"
+    "supply_pause_rules_invalid": "一時停止ルールが無効です：{{message}}",
+    "model_supply_pending_not_found": "この上流モデルは指定したチャネルで保留中ではありません"
   },
   "channelOAuth": {
     "tip": {
@@ -2468,6 +2470,34 @@
       "next": "次",
       "servingTier": "現在リクエストを処理中",
       "failed": "このグループのプレビューを読み込めませんでした"
+    },
+    "pendingPage": {
+      "description": "チャネルの上流が新たに提供し始め、まだどの供給にも使われていないモデルです。公開モデルに割り当てるまでは公開されません。",
+      "empty": "新しい上流モデルはありません",
+      "emptyHint": "モデルのドリフト検出で、チャネルの上流が新しく提供し始めたモデルがここに表示されます。",
+      "upstream": "上流モデル",
+      "channels": "チャネル",
+      "suggestion": "公開モデル",
+      "source": {
+        "alias": "カタログの別名",
+        "seed": "カタログのシード",
+        "bare": "ベンダー接頭辞を除いた名前"
+      },
+      "isNew": "新規",
+      "attach": "割り当て…",
+      "ignore": "無視",
+      "ignored": "{{model}} は今後表示されません",
+      "ignoreHint": "無視したモデルは、チャネルの上流がいったん提供をやめて再び提供し始めない限り表示されません。",
+      "attachTitle": "{{model}} を割り当て",
+      "attachDescription": "選択した各チャネルに、この上流名を送る公開モデルの供給が追加されます。優先度と重みはチャネルの設定を使い、あとでモデルの「供給」タブで変更できます。",
+      "publicModel": "公開モデル",
+      "willCreate": "{{model}} はまだ公開モデルではありません。下書きとして作成されるので、価格を設定してからモデルのページで公開してください。",
+      "isAlias": "{{model}} は {{canonical}} の別名です。供給は {{canonical}} に追加されます。",
+      "isPolicy": "{{model}} はルーティングポリシーで、公開モデルではありません。",
+      "noChannel": "チャネルを 1 つ以上選択してください",
+      "attachButton": "割り当て",
+      "attached_other": "{{model}} に割り当てました（{{count}} チャネル）",
+      "skipped_other": "{{count}} チャネルはすでに別の上流名で {{model}} を供給しているため、そこでは保留のままです。"
     }
   },
   "settingsUi": {

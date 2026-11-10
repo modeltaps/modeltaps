@@ -2,7 +2,7 @@
 // 模型页(「模型」表 + 「厂商」页签)的纯函数:页签解析、旧地址映射、列偏好持久化、
 // 价格与目录按模型名合并。无 React / API 依赖,便于单测。
 
-export const CATALOG_TABS = ['models', 'vendors', 'paused'];
+export const CATALOG_TABS = ['models', 'vendors', 'paused', 'pending'];
 export const DEFAULT_CATALOG_TAB = 'models';
 
 // 旧页签值(价格 / 目录 / 厂商)→ 新页签。

@@ -147,7 +147,7 @@ The following commonly used keys are read by the code but not covered above. For
 - `CHANNEL_PRICING_AUTO_SYNC`: whether to sync channel prices automatically, defaults to `true`.
 - `UNPRICED_MODEL_POLICY`: policy for unpriced models, defaults to `block`.
 - `UNPRICED_MODEL_DEFAULT_RATIO`: default ratio for unpriced models, defaults to `30.0`.
-- `MODEL_DRIFT_AUTO_CHECK`: whether to compare channel models with the upstream model lists every day (models removed or added upstream), defaults to `true`. The channel option "Add new upstream models automatically" relies on this check.
+- `MODEL_DRIFT_AUTO_CHECK`: whether to compare channel models with the upstream model lists every day (models removed or added upstream), defaults to `true`. The channel option "Add new upstream models automatically" relies on this check. Once supplies route requests (`ModelSupplyEnabled`), new models are no longer added to channels: they are listed under "New upstream models" on the models page, where an admin attaches them to a public model or ignores them.
 
 ### Logging, metrics and integrations
 

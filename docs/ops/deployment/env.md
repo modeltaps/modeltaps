@@ -162,7 +162,7 @@ LOGS_FILENAME="modeltaps.log"
 - `CHANNEL_PRICING_AUTO_SYNC`：是否自动同步渠道价格，默认 `true`。
 - `UNPRICED_MODEL_POLICY`：未定价模型策略，默认 `block`。
 - `UNPRICED_MODEL_DEFAULT_RATIO`：未定价模型默认倍率，默认 `30.0`。
-- `MODEL_DRIFT_AUTO_CHECK`：是否每天自动检测渠道模型与上游列表的差异（上游下架 / 新增），默认 `true`。渠道开启「自动加入上游新模型」时依赖此检测。
+- `MODEL_DRIFT_AUTO_CHECK`：是否每天自动检测渠道模型与上游列表的差异（上游下架 / 新增），默认 `true`。渠道开启「自动加入上游新模型」时依赖此检测。打开按供应路由（`ModelSupplyEnabled`）后，新增模型不再自动加入渠道，而是列在模型页的「新上游模型」里，由管理员挂到公开模型或忽略。
 
 ### 日志 / 指标 / 集成
 

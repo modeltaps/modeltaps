@@ -712,7 +712,8 @@
     "catalogTabs": {
       "models": "Models",
       "vendors": "Vendors",
-      "paused": "Paused"
+      "paused": "Paused",
+      "pending": "New upstream models"
     }
   },
   "listPage": {
@@ -1687,7 +1688,8 @@
     "routing_policy_model_unavailable": "{{field}} is not available to this organization ({{model}})",
     "routing_policy_count_exceeded": "This organization already has the maximum of {{max}} routing policies",
     "org_routing_policy_disabled": "Organization routing policies are not enabled on this site",
-    "supply_pause_rules_invalid": "The pause rules are not valid: {{message}}"
+    "supply_pause_rules_invalid": "The pause rules are not valid: {{message}}",
+    "model_supply_pending_not_found": "This upstream model is not waiting on those channels."
   },
   "channelOAuth": {
     "tip": {
@@ -2559,6 +2561,36 @@
       "next": "Next",
       "servingTier": "takes requests now",
       "failed": "Couldn't load the preview for this group"
+    },
+    "pendingPage": {
+      "description": "Models that a channel's upstream started listing and that no supply uses yet. They stay private until you attach them to a public model.",
+      "empty": "No new upstream models",
+      "emptyHint": "The model drift check lists a model here when a channel's upstream starts offering it.",
+      "upstream": "Upstream model",
+      "channels": "Channels",
+      "suggestion": "Public model",
+      "source": {
+        "alias": "catalog alias",
+        "seed": "catalog seed",
+        "bare": "name without vendor prefix"
+      },
+      "isNew": "new",
+      "attach": "Attach…",
+      "ignore": "Ignore",
+      "ignored": "{{model}} will not be listed again",
+      "ignoreHint": "An ignored model is not listed again unless its channel stops offering it and offers it again.",
+      "attachTitle": "Attach {{model}}",
+      "attachDescription": "Each selected channel gets a supply of the public model that sends this upstream name, at the channel's priority and weight. You can change them on the model's Supplies tab.",
+      "publicModel": "Public model",
+      "willCreate": "{{model}} is not a public model yet. It is created as a draft: give it a price and publish it on its page.",
+      "isAlias": "{{model}} is an alias of {{canonical}}; the supplies go to {{canonical}}.",
+      "isPolicy": "{{model}} is a routing policy, not a public model.",
+      "noChannel": "Select at least one channel",
+      "attachButton": "Attach",
+      "attached_one": "Attached to {{model}} on {{count}} channel",
+      "attached_other": "Attached to {{model}} on {{count}} channels",
+      "skipped_one": "{{count}} channel already supplies {{model}} under another upstream name, so the model still waits there.",
+      "skipped_other": "{{count}} channels already supply {{model}} under another upstream name, so the model still waits there."
     }
   },
   "settingsUi": {

@@ -7,12 +7,13 @@ import { cn } from '@/lib/utils';
 import ModelOwnedby from '../ModelOwnedby';
 import ModelInfo from '../ModelInfo';
 import PausedSupplies from '../ModelInfo/supply/PausedSupplies';
+import PendingModels from '../ModelInfo/supply/PendingModels';
 import { CATALOG_TABS, resolveCatalogTab } from './modelCatalog';
 
 // ==============================|| PANEL — MODELS (Tab 容器) ||============================== //
-// 模型页承载三个 Tab:模型表(目录 + 价格 + 渠道合一,../ModelInfo)、厂商(../ModelOwnedby)
-// 与暂停的供应(../ModelInfo/supply/PausedSupplies)。
-// 当前 Tab 由 ?tab=models|vendors|paused 单向驱动(无本地状态,刷新/深链自动恢复);旧值
+// 模型页承载四个 Tab:模型表(目录 + 价格 + 渠道合一,../ModelInfo)、厂商(../ModelOwnedby)、
+// 暂停的供应(../ModelInfo/supply/PausedSupplies)与新上游模型(../ModelInfo/supply/PendingModels)。
+// 当前 Tab 由 ?tab=models|vendors|paused|pending 单向驱动(无本地状态,刷新/深链自动恢复);旧值
 // price / info / ownedby 映射到新 Tab 并写回 URL。仅挂载当前 Tab 的组件:PageActions 走 portal,
 // 同时挂载会互相残留。Tab 条渲染在页头下方、各 Tab 内容(统计 chip / 工具栏 / 表格)之上。
 
@@ -65,6 +66,7 @@ export default function ModelCatalog() {
       {tab === 'models' && <ModelInfo />}
       {tab === 'vendors' && <ModelOwnedby />}
       {tab === 'paused' && <PausedSupplies />}
+      {tab === 'pending' && <PendingModels />}
     </div>
   );
 }
