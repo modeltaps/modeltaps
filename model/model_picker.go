@@ -29,6 +29,9 @@ type ModelPickerItem struct {
 	// InputPrice / OutputPrice 本站按 token 计费的售价（USD / 1M tokens）；未配置或非 token 计费为 null。
 	InputPrice  *float64 `json:"input_price"`
 	OutputPrice *float64 `json:"output_price"`
+	// CanonicalMatch is the canonical name to publish this upstream model under. When Source is
+	// empty no canonical name was found and Canonical equals Model.
+	CanonicalMatch
 }
 
 // ModelPickerFamily 是一个家族的汇总，按 Rank 从热到冷排列。
@@ -161,6 +164,10 @@ func BuildModelPicker(models []string, familyRequests map[string]int64, channelC
 	for _, info := range infos {
 		catalog[info.Model] = info
 	}
+	resolver, err := NewCanonicalResolver()
+	if err != nil {
+		return nil, err
+	}
 
 	items := make([]ModelPickerItem, 0, len(models))
 	for _, name := range models {
@@ -171,6 +178,7 @@ func BuildModelPicker(models []string, familyRequests map[string]int64, channelC
 			InputModalities:  []string{},
 			OutputModalities: []string{},
 			Capabilities:     []string{},
+			CanonicalMatch:   resolver.Resolve(name),
 		}
 		info := catalog[name]
 		if info == nil {

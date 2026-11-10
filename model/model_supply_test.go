@@ -161,6 +161,44 @@ func TestMigrateChannelsToSuppliesApply(t *testing.T) {
 	}
 }
 
+// Applying the migration writes the new alias rows, so the name a channel listed keeps
+// resolving to the public model it is now supplied under.
+func TestMigrateChannelsToSuppliesCreatesAliases(t *testing.T) {
+	useSupplyTestDB(t)
+	if err := DB.Create(&ModelInfo{Model: "claude-opus-5", Status: ModelStatusPublished}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := DB.Create(migrationChannel(1, "default", 0, 1, "anthropic/claude-opus-5", "")).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	report, err := MigrateChannelsToSupplies(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(report.NewAliases) != 1 || report.NewAliases[0].Alias != "anthropic/claude-opus-5" || len(report.NewModels) != 0 {
+		t.Fatalf("new aliases %+v, new models %v", report.NewAliases, report.NewModels)
+	}
+	alias, err := GetModelInfoByModel("anthropic/claude-opus-5")
+	if err != nil || alias == nil || alias.AliasOf != "claude-opus-5" || alias.Source != ModelInfoSourceMigrated {
+		t.Fatalf("alias row = %+v, err %v", alias, err)
+	}
+	if canonical, isAlias := ResolveCanonicalModel("anthropic/claude-opus-5"); canonical != "claude-opus-5" || !isAlias {
+		t.Fatalf("resolve = %q alias %v, want the public model", canonical, isAlias)
+	}
+	if list, _ := GetModelSupplies("claude-opus-5", 0); len(list) != 1 || list[0].UpstreamModel != "anthropic/claude-opus-5" {
+		t.Fatalf("supplies = %+v", list)
+	}
+
+	again, err := MigrateChannelsToSupplies(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(again.NewAliases) != 0 || again.SuppliesPlanned != 0 {
+		t.Fatalf("second run: aliases %+v, supplies %d", again.NewAliases, again.SuppliesPlanned)
+	}
+}
+
 // Switching ModelSupplyEnabled through the settings rebuilds the routing table from the other
 // source at once.
 func TestModelSupplySwitchReloadsRoutingTable(t *testing.T) {

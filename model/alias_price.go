@@ -50,3 +50,23 @@ func (cc *ChannelsChooser) ResolveMappedPrice(modelName string) *Price {
 	}
 	return nil
 }
+
+// GetBillingPrice is GetPrice for billing. When modelName has no price of its own and is a catalog
+// alias, it bills at the canonical model's price: an alias is the same model under another name.
+// This matters once a channel maps a canonical name to the upstream alias it serves
+// (claude-opus-5 -> anthropic/claude-opus-5): billing uses the upstream name, which usually has no
+// price row, while the canonical name does. An alias with its own price keeps it.
+func (p *Pricing) GetBillingPrice(modelName string) *Price {
+	price := p.GetPrice(modelName)
+	if price == nil || !price.Unconfigured {
+		return price
+	}
+	canonical, isAlias := ResolveCanonicalModel(modelName)
+	if !isAlias {
+		return price
+	}
+	if canonicalPrice := p.GetPrice(canonical); canonicalPrice != nil && !canonicalPrice.Unconfigured {
+		return canonicalPrice
+	}
+	return price
+}

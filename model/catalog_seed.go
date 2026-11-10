@@ -79,8 +79,9 @@ type SeedApplyResult struct {
 	AliasedModels     []string            `json:"aliased_models"`
 	SkippedLockedRows []string            `json:"skipped_locked_rows"`
 	Channels          []SeedChannelChange `json:"channels"`
-	MissingAliases    []string            `json:"missing_aliases"`
-	UnknownVendors    []string            `json:"unknown_vendors"`
+	// CreatedAliases lists seed aliases that had no catalog row; the seed creates them as alias rows.
+	CreatedAliases []string `json:"created_aliases"`
+	UnknownVendors []string `json:"unknown_vendors"`
 }
 
 // LoadCatalogSeed 解析内置种子并做基本校验：主名唯一、接口能力属于词表。
@@ -200,7 +201,7 @@ func applyCatalogSeedTx(tx *gorm.DB, dryRun bool) (*SeedApplyResult, bool, bool,
 		AliasedModels:     []string{},
 		SkippedLockedRows: []string{},
 		Channels:          []SeedChannelChange{},
-		MissingAliases:    []string{},
+		CreatedAliases:    []string{},
 		UnknownVendors:    []string{},
 	}
 	// aliasByCanonical 保存每条主名在目录里实际存在的别名，供渠道步骤复用。
@@ -218,17 +219,17 @@ func applyCatalogSeedTx(tx *gorm.DB, dryRun bool) (*SeedApplyResult, bool, bool,
 		endpointsJSON := ModelEndpointsJSON(entry.Endpoints)
 
 		aliases := make([]string, 0, len(entry.Aliases))
+		missingAliases := make([]string, 0)
 		for _, alias := range entry.Aliases {
 			if alias == "" || alias == entry.Canonical {
 				continue
 			}
 			if byModel[alias] == nil {
-				result.MissingAliases = append(result.MissingAliases, alias)
+				missingAliases = append(missingAliases, alias)
 				continue
 			}
 			aliases = append(aliases, alias)
 		}
-		aliasByCanonical[entry.Canonical] = aliases
 
 		row := byModel[entry.Canonical]
 		if row != nil && row.Locked {
@@ -272,6 +273,29 @@ func applyCatalogSeedTx(tx *gorm.DB, dryRun bool) (*SeedApplyResult, bool, bool,
 			}
 		}
 
+		// Seed aliases without a catalog row get one now (after the canonical row exists, so the
+		// canonical row only inherits metadata from aliases that were synced). Without the row the
+		// alias is not rewritten to the canonical name and channels listing it are not fixed below.
+		for _, alias := range missingAliases {
+			created := &ModelInfo{
+				Model:    alias,
+				Name:     alias,
+				VendorID: vendorID,
+				AliasOf:  entry.Canonical,
+				Source:   ModelInfoSourceManual,
+			}
+			result.CreatedAliases = append(result.CreatedAliases, alias)
+			if !dryRun {
+				if err := tx.Create(created).Error; err != nil {
+					return nil, false, false, err
+				}
+				modelsChanged = true
+			}
+			byModel[alias] = created
+		}
+		aliases = append(aliases, missingAliases...)
+		aliasByCanonical[entry.Canonical] = aliases
+
 		for _, alias := range aliases {
 			aliasRow := byModel[alias]
 			if aliasRow.Locked {
@@ -303,7 +327,7 @@ func applyCatalogSeedTx(tx *gorm.DB, dryRun bool) (*SeedApplyResult, bool, bool,
 		result.SkippedLockedRows = append(result.SkippedLockedRows, name)
 	}
 	sort.Strings(result.UnknownVendors)
-	sort.Strings(result.MissingAliases)
+	sort.Strings(result.CreatedAliases)
 	sort.Strings(result.SkippedLockedRows)
 	result.Created = len(result.CreatedModels)
 	result.SkippedLocked = len(result.SkippedLockedRows)

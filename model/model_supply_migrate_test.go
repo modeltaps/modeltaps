@@ -175,3 +175,92 @@ func TestPlanSupplyMigrationEquivalentConfigHasNoDifferences(t *testing.T) {
 		t.Fatalf("billing changes = %+v, want channel 2 moving from the unpriced upstream name to the public price", report.BillingChanges)
 	}
 }
+
+// Names without a catalog row that the seed or their bare name identifies are supplied under
+// the public model and become its aliases; names with a row of their own keep it.
+func TestPlanSupplyMigrationResolvesUnlistedNames(t *testing.T) {
+	in := supplyMigrationInput{
+		infos: []*ModelInfo{
+			{Id: 1, Model: "claude-opus-5", Status: ModelStatusPublished},
+			// Catalog sync creates vendor-prefixed rows of their own; they stay public models.
+			{Id: 2, Model: "xai/grok-4", Status: ModelStatusPublished},
+			{Id: 3, Model: "grok-4", Status: ModelStatusPublished},
+			{Id: 4, Model: "auto/coder", Kind: ModelInfoKindRoutingPolicy},
+			// A policy whose name is some upstream name without its vendor prefix.
+			{Id: 5, Model: "coder", Kind: ModelInfoKindRoutingPolicy},
+		},
+		seed: &CatalogSeed{Models: []CatalogSeedEntry{
+			{Canonical: "gpt-6-astra", Aliases: []string{"gpt6-astra"}},
+			{Canonical: "mistral-large"},
+		}},
+		channels: []*Channel{
+			migrationChannel(1, "default", 0, 1, "anthropic/claude-opus-5", ""),
+			migrationChannel(2, "default", 0, 1, "gpt6-astra", ""),
+			migrationChannel(3, "default", 0, 1, "xai/grok-4", ""),
+			migrationChannel(4, "default", 0, 1, "claude-opus-5,anthropic/claude-opus-5", ""),
+			migrationChannel(5, "default", 0, 1, "mistralai/*", "", "mistralai/mistral-large"),
+			migrationChannel(6, "default", 0, 1, "openrouter/unknown-9,openrouter/coder", ""),
+		},
+		policies: []*RoutingPolicy{{
+			Name: "auto/coder", Enabled: true, DecisionModel: "gpt6-astra", FallbackModel: "anthropic/claude-opus-5",
+		}},
+	}
+	plan, report := planSupplyMigration(in)
+
+	wantSupplies := []string{
+		"claude-opus-5@1=anthropic/claude-opus-5 p0 w1",
+		"claude-opus-5@4=claude-opus-5 p0 w1",
+		"gpt-6-astra@2=gpt6-astra p0 w1",
+		"mistral-large@5=mistralai/mistral-large p0 w1",
+		"openrouter/coder@6=openrouter/coder p0 w1",
+		"openrouter/unknown-9@6=openrouter/unknown-9 p0 w1",
+		"xai/grok-4@3=xai/grok-4 p0 w1",
+	}
+	if got := supplyStrings(plan.supplies); fmt.Sprint(got) != fmt.Sprint(wantSupplies) {
+		t.Fatalf("supplies\n got %v\nwant %v", got, wantSupplies)
+	}
+	wantAliases := []SupplyNewAlias{
+		{Alias: "anthropic/claude-opus-5", Model: "claude-opus-5", Source: CanonicalSourceBare},
+		{Alias: "gpt6-astra", Model: "gpt-6-astra", Source: CanonicalSourceSeed},
+		{Alias: "mistralai/mistral-large", Model: "mistral-large", Source: CanonicalSourceBare},
+	}
+	if fmt.Sprint(report.NewAliases) != fmt.Sprint(wantAliases) {
+		t.Fatalf("new aliases\n got %+v\nwant %+v", report.NewAliases, wantAliases)
+	}
+	if len(plan.newAliases) != len(wantAliases) {
+		t.Fatalf("planned alias rows = %d, want %d", len(plan.newAliases), len(wantAliases))
+	}
+	for i, row := range plan.newAliases {
+		if row.Model != wantAliases[i].Alias || row.AliasOf != wantAliases[i].Model || row.Source != ModelInfoSourceMigrated {
+			t.Errorf("alias row %d = %+v", i, row)
+		}
+	}
+	// The public models the seed names get a catalog row; aliases are not public models.
+	if fmt.Sprint(report.NewModels) != "[gpt-6-astra mistral-large openrouter/coder openrouter/unknown-9]" {
+		t.Errorf("new models = %v", report.NewModels)
+	}
+	if len(report.DuplicateEntries) != 1 || report.DuplicateEntries[0].ChannelId != 4 {
+		t.Errorf("duplicates = %+v, want channel 4's prefixed name dropped for the public one", report.DuplicateEntries)
+	}
+	if len(report.PolicyGaps) != 0 {
+		t.Errorf("policy gaps = %+v, want none: both targets resolve through the new aliases", report.PolicyGaps)
+	}
+	// A name that becomes an alias is not reported as lost: it reaches the public model.
+	for _, d := range report.RoutingDifferences {
+		if d.Model == "anthropic/claude-opus-5" || d.Model == "gpt6-astra" || d.Model == "mistralai/mistral-large" {
+			t.Errorf("routing difference reported for a new alias: %+v", d)
+		}
+	}
+
+	// A second run finds the aliases in the catalog and plans nothing new.
+	in.infos = append(in.infos, plan.newInfos...)
+	in.infos = append(in.infos, plan.newAliases...)
+	in.existing = plan.supplies
+	second, report2 := planSupplyMigration(in)
+	if len(second.supplies) != 0 || len(second.newAliases) != 0 || len(second.newInfos) != 0 {
+		t.Fatalf("second run planned %d supplies, %d aliases, %d models", len(second.supplies), len(second.newAliases), len(second.newInfos))
+	}
+	if len(report2.PolicyGaps) != 0 {
+		t.Errorf("second run policy gaps = %+v", report2.PolicyGaps)
+	}
+}

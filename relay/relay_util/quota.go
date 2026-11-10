@@ -170,7 +170,7 @@ func NewQuota(c *gin.Context, modelName string, promptTokens int) *Quota {
 	quota.routingPolicyId = c.GetInt(RoutingPolicyIdContextKey)
 	quota.routingTry = c.GetBool(RoutingTryContextKey)
 
-	quota.price = *model.PricingInstance.GetPrice(quota.modelName)
+	quota.price = *model.PricingInstance.GetBillingPrice(quota.modelName)
 	// 价格未配置时按策略处理(block 拒绝 / zero 不计费 / default 用默认倍率)，
 	// 不再静默按旧的 30 倍率计费。须在下方倍率计算前应用。
 	quota.unpricedReject = quota.price.ApplyUnpricedPolicy(config.UnpricedModelPolicy, config.UnpricedModelDefaultRatio)
