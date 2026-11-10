@@ -463,7 +463,7 @@ function DeviceCodePanel({ channelId, getValues, onDone, onCancel, onUsePaste })
               title={t('channelOAuth.device.copyCode')}
               aria-label={t('channelOAuth.device.copyCode')}
               onClick={copyCode}
-              className="group flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-5 py-3 transition-colors hover:bg-muted"
+              className="group flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-5 py-3 transition-colors hover:bg-muted"
             >
               {/* spacer as wide as the icon keeps the code itself centered */}
               <span className="size-4" aria-hidden="true" />

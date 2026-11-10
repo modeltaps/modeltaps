@@ -158,9 +158,9 @@ export default function MultiUserStats() {
                 </Table>
               </div>
 
-              <div className="md:hidden flex flex-col gap-3 p-3">
+              <div className="md:hidden flex flex-col divide-y divide-border">
                 {statistics.map((s, i) => (
-                  <div key={i} className="rounded-lg border border-border bg-card p-3.5 shadow-sm">
+                  <div key={i} className="p-3.5">
                     <div className="mb-2 text-sm font-medium">{s.username}</div>
                     <dl className="flex flex-col divide-y divide-border/60">
                       <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
@@ -268,9 +268,9 @@ export default function MultiUserStats() {
                   </Table>
                 </div>
 
-                <div className="md:hidden flex flex-col gap-3 p-3">
+                <div className="md:hidden flex flex-col divide-y divide-border">
                   {modelUsage.map((m, i) => (
-                    <div key={i} className="rounded-lg border border-border bg-card p-3.5 shadow-sm">
+                    <div key={i} className="p-3.5">
                       <div className="mb-2 text-sm font-medium">{m.username}</div>
                       <dl className="flex flex-col divide-y divide-border/60">
                         <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">

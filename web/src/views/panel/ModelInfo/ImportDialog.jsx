@@ -181,9 +181,9 @@ export default function ImportDialog({ open, onOpenChange, existingModels = [], 
                   </TableBody>
                 </Table>
               </div>
-              <div className="md:hidden flex flex-col gap-3">
+              <div className="md:hidden flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
                 {previewData.map((row, i) => (
-                  <div key={`${row.model}-${i}`} className="rounded-lg border border-border bg-card p-3.5 shadow-sm">
+                  <div key={`${row.model}-${i}`} className="p-3.5">
                     <div className="mb-2 text-sm font-medium">{row.name}</div>
                     <dl className="flex flex-col divide-y divide-border/60">
                       <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">

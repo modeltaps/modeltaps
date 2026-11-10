@@ -34,9 +34,12 @@
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
 
-  /* Radius is layered, not a single value: containers and buttons 12px,
-     popovers / inputs / select triggers 10px, chips and in-table controls 8px,
-     badges 6px. `--radius` stays the single source the four steps derive from. */
+  /* Radius is layered, not a single value. Cards, panels, dialogs and sheets
+     use Tailwind's `rounded-2xl` (16px). Controls (buttons, inputs, select
+     triggers, popovers, bordered option lists) use `rounded-lg` (10px). Items
+     inside a padded control follow inner = outer - padding (min 4px):
+     `rounded-md` 8px, `rounded-sm` 6px. `--radius` is the single source the
+     four control steps derive from. */
   --radius: 0.625rem;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

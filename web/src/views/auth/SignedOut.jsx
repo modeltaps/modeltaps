@@ -25,7 +25,7 @@ export default function SignedOut() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-6 text-foreground">
-      <Card className="w-full max-w-sm shadow-sm">
+      <Card className="w-full max-w-sm">
         <CardHeader className="items-center space-y-3 text-center">
           {siteInfo.logo ? (
             <img src={siteInfo.logo} alt={name} className="size-12 object-contain" />

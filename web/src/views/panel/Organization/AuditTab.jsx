@@ -113,9 +113,9 @@ export default function AuditTab({ orgId }) {
           </TableBody>
         </Table>
       </div>
-      <div className="md:hidden flex flex-col gap-3 p-3">
+      <div className="md:hidden flex flex-col divide-y divide-border">
         {logs.map((log) => (
-          <div key={log.id} className="rounded-lg border border-border bg-card p-3.5 shadow-sm">
+          <div key={log.id} className="p-3.5">
             <div className="mb-2 text-sm font-medium text-muted-foreground">{timestamp2string(log.created_time)}</div>
             <dl className="flex flex-col divide-y divide-border/60">
               <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">

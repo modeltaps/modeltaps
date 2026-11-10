@@ -129,9 +129,9 @@ export default function InvoiceDetailSheet({ date, t, onClose }) {
                     </TableBody>
                   </Table>
                 </div>
-                <div className="md:hidden flex flex-col gap-3">
+                <div className="md:hidden flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
                   {rows.map((item, index) => (
-                    <div key={index} className="rounded-lg border border-border bg-card p-3.5 shadow-sm">
+                    <div key={index} className="p-3.5">
                       <div className="mb-2 text-sm font-medium">{item.model_name}</div>
                       <dl className="flex flex-col divide-y divide-border/60">
                         <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">

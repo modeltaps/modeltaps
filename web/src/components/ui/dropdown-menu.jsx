@@ -168,7 +168,7 @@ const DropdownMenuItem = React.forwardRef(({ className, onClick, disabled, ...pr
         setOpen(false);
       }}
       className={cn(
-        'relative flex w-full cursor-pointer select-none items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none transition-colors hover:bg-muted focus:bg-muted disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0',
+        'relative flex w-full cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors hover:bg-muted focus:bg-muted disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0',
         className
       )}
       {...props}
@@ -247,7 +247,7 @@ const DropdownMenuSubTrigger = React.forwardRef(({ className, children, onKeyDow
         }
       }}
       className={cn(
-        'relative flex w-full cursor-pointer select-none items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none transition-colors hover:bg-muted focus:bg-muted [&_svg]:size-4 [&_svg]:shrink-0',
+        'relative flex w-full cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors hover:bg-muted focus:bg-muted [&_svg]:size-4 [&_svg]:shrink-0',
         className
       )}
       {...props}
@@ -373,7 +373,7 @@ const DropdownMenuRadioItem = React.forwardRef(({ className, value, children, on
         setOpen(false);
       }}
       className={cn(
-        'relative flex w-full cursor-pointer select-none items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none transition-colors hover:bg-muted focus:bg-muted [&_svg]:size-4 [&_svg]:shrink-0',
+        'relative flex w-full cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors hover:bg-muted focus:bg-muted [&_svg]:size-4 [&_svg]:shrink-0',
         className
       )}
       {...props}

@@ -41,7 +41,7 @@ const SheetContent = React.forwardRef(({ className, children, onClose, side = 'r
     className={cn(
       'absolute flex flex-col bg-card shadow-xl',
       side === 'bottom'
-        ? 'inset-x-0 bottom-0 max-h-[90vh] w-full rounded-t-xl border-t border-border'
+        ? 'inset-x-0 bottom-0 max-h-[90vh] w-full rounded-t-2xl border-t border-border'
         : 'inset-y-0 right-0 w-full max-w-xl border-l border-border',
       className
     )}

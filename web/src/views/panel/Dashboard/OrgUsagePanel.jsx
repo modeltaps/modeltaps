@@ -72,13 +72,13 @@ function DimensionTable({ t, rows, nameOf }) {
         </Table>
       </div>
       {rows.length === 0 ? (
-        <div className="md:hidden rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+        <div className="md:hidden rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
           {t('dashboard_index.no_data', { defaultValue: 'No data' })}
         </div>
       ) : (
-        <div className="md:hidden flex flex-col gap-3">
+        <div className="md:hidden flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
           {rows.map((r, idx) => (
-            <div key={idx} className="rounded-lg border border-border bg-card p-3.5 shadow-sm">
+            <div key={idx} className="p-3.5">
               <div className="mb-2 text-sm font-medium">{nameOf(r)}</div>
               <dl className="flex flex-col divide-y divide-border/60">
                 <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">

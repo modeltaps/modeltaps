@@ -33,7 +33,7 @@ try {
 }
 
 const rowBase =
-  'group flex w-full items-center rounded-[10px] text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+  'group flex w-full items-center rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 // Active: a subtle raised surface with a hairline, no fill colour or indicator bar.
 const rowActive = 'bg-card font-medium text-foreground shadow-[inset_0_0_0_1px_var(--border)]';
 const rowIdle = 'text-foreground/85 hover:bg-muted hover:text-foreground';
@@ -130,7 +130,7 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
         <span className="truncate font-medium tabular-nums text-foreground">{balanceValue}</span>
       </>
     );
-    const cls = 'flex h-9 w-full items-center justify-between gap-3 rounded-[10px] px-3 text-sm';
+    const cls = 'flex h-9 w-full items-center justify-between gap-3 rounded-lg px-3 text-sm';
     return canOpenBilling ? (
       <button
         type="button"

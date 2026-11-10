@@ -24,7 +24,7 @@ import { ConsoleContext } from './shared/ConsoleContext';
 function ModalitySwitch({ activeId }) {
   const { t } = useTranslation();
   return (
-    <nav aria-label={t('nav.playground.modality')} className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-[10px] bg-muted p-0.5">
+    <nav aria-label={t('nav.playground.modality')} className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg bg-muted p-0.5">
       {MODALITIES.map((entry) => {
         const active = entry.id === activeId;
         const Icon = entry.icon;
@@ -34,7 +34,7 @@ function ModalitySwitch({ activeId }) {
             to={modalityHref(entry)}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'flex h-7 shrink-0 items-center gap-1.5 rounded-[8px] px-2.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               active ? 'bg-card text-foreground shadow-[0_0_0_1px_var(--border)]' : 'text-muted-foreground hover:text-foreground'
             )}
           >

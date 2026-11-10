@@ -72,8 +72,8 @@ export default function ContextSwitcher({ context, collapsed = false, onNavigate
   const hasMenu = isAdmin || orgEnabled;
   const markSize = collapsed ? 'size-7 text-[13px]' : 'size-6 text-xs';
   const triggerClass = collapsed
-    ? 'flex size-9 items-center justify-center rounded-[10px] transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-    : 'flex h-9 w-full items-center gap-2.5 rounded-[10px] px-2 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+    ? 'flex size-9 items-center justify-center rounded-lg transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+    : 'flex h-9 w-full items-center gap-2.5 rounded-lg px-2 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
   const body = (
     <>

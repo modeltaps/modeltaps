@@ -155,7 +155,7 @@ export default function Billing() {
   if (isOrgContext && !isOrgAdmin) return <Navigate to="/panel/log" replace />;
 
   const balanceBanner = (
-    <div className="flex flex-col gap-1 rounded-xl bg-muted p-6">
+    <div className="flex flex-col gap-1 rounded-2xl bg-muted p-6">
       <div className="flex items-center gap-1.5">
         <span className="text-sm text-muted-foreground">{t('billingPage.availableBalance')}</span>
         <TooltipProvider delayDuration={150}>

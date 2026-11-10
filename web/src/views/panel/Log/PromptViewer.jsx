@@ -554,7 +554,7 @@ export default function PromptViewer({ requestBody, truncated, promptTokens, cac
       <div
         role="dialog"
         aria-modal="true"
-        className="absolute inset-4 flex flex-col overflow-hidden rounded-lg border border-border bg-background shadow-2xl sm:inset-8"
+        className="absolute inset-4 flex flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl sm:inset-8"
       >
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-5 py-3">

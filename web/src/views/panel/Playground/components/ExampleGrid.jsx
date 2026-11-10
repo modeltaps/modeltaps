@@ -28,7 +28,7 @@ export default function ExampleGrid({ title, subtitle, items = [], onPick, colum
             key={item.id ?? index}
             type="button"
             onClick={() => onPick?.(item)}
-            className="flex h-full flex-col items-start gap-2 rounded-xl border border-border bg-card p-3 text-left transition-colors hover:border-foreground/20 hover:bg-muted/50"
+            className="flex h-full flex-col items-start gap-2 rounded-2xl border border-border bg-card p-3 text-left transition-colors hover:border-foreground/20 hover:bg-muted/50"
           >
             {item.icon && (
               <span className="flex size-8 items-center justify-center rounded-full bg-muted text-foreground">{item.icon}</span>

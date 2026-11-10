@@ -59,7 +59,7 @@ export default function AuthShell({ title, children }) {
         {!isUserLoaded ? (
           <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
         ) : (
-          <Card className="w-full max-w-sm shadow-sm">
+          <Card className="w-full max-w-sm">
             <CardHeader className="items-center space-y-3 text-center">
               <LogoMark size={40} className="text-foreground" />
               <CardTitle className="text-2xl font-semibold">{title}</CardTitle>

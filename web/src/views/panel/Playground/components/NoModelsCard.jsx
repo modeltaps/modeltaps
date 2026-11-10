@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 export default function NoModelsCard({ title, description, actionLabel, actionHref, className }) {
   return (
-    <div className={cn('mx-auto flex max-w-md flex-col items-center gap-3 rounded-xl border border-border bg-card p-6 text-center', className)}>
+    <div className={cn('mx-auto flex max-w-md flex-col items-center gap-3 rounded-2xl border border-border bg-card p-6 text-center', className)}>
       <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <PackageOpen className="size-5" />
       </span>

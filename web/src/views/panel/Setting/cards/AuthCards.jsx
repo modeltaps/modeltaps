@@ -131,7 +131,7 @@ export function AccountSystemCard({ ctx }) {
       <div
         role="radiogroup"
         aria-label={t(tk('accountSystem'))}
-        className="divide-y divide-border overflow-hidden rounded-xl border border-border"
+        className="divide-y divide-border overflow-hidden rounded-lg border border-border"
       >
         <AccountSystemChoice
           value="builtin"

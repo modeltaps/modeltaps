@@ -319,7 +319,7 @@ export function CollectionCard({
             )
           }
         />
-        <div className="overflow-x-auto rounded-xl border border-border">
+        <div className="overflow-x-auto rounded-lg border border-border">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -414,7 +414,7 @@ CollectionCard.propTypes = {
 
 // Several switches as one bordered list, one option per row.
 export function OptionList({ children, className }) {
-  return <div className={cn('divide-y divide-border overflow-hidden rounded-xl border border-border', className)}>{children}</div>;
+  return <div className={cn('divide-y divide-border overflow-hidden rounded-lg border border-border', className)}>{children}</div>;
 }
 
 OptionList.propTypes = { children: PropTypes.node, className: PropTypes.string };
