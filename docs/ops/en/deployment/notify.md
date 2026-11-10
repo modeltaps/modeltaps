@@ -15,7 +15,7 @@ Fill in the following fields in `config.yaml`. Leave any notification method you
 
 ```yaml
 notify: # Notification settings; every configured method receives its own notification. Remove this section if you do not need notifications.
-  email: # Email notifications (SMTP is configured in the admin console; enabled by default — disable it below if not needed)
+  email: # Email notifications (SMTP is configured in Platform admin → Platform settings; enabled by default — disable it below if not needed)
     disable: false # Whether to disable email notifications
     smtp_to: "" # Recipient address (optional; falls back to the super administrator's email)
   dingTalk: # DingTalk bot notifications
