@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MoreHorizontal, Pencil, Trash2, Wallet, User as UserIcon, ShieldCheck, ShieldUser } from 'lucide-react';
+import { MoreHorizontal, PanelRight, Trash2, Wallet, User as UserIcon, ShieldCheck, ShieldUser } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
@@ -46,15 +46,14 @@ export function StatusDot({ status }) {
   );
 }
 
-export function ActionsCell({ item, manageUser, onEdit }) {
+// 调整余额对话框:正数增加、负数扣减(不超过当前余额),附备注。
+export function QuotaDialog({ item, open, onOpenChange, manageUser }) {
   const { t } = useTranslation();
-  const [openDelete, setOpenDelete] = useState(false);
-  const [openQuota, setOpenQuota] = useState(false);
   const [quotaDelta, setQuotaDelta] = useState('');
   const [remark, setRemark] = useState('');
 
-  const closeQuota = () => {
-    setOpenQuota(false);
+  const close = () => {
+    onOpenChange(false);
     setQuotaDelta('');
     setRemark('');
   };
@@ -70,8 +69,50 @@ export function ActionsCell({ item, manageUser, onEdit }) {
       return;
     }
     const res = await manageUser(item.id, 'quota', { quota, remark });
-    if (res?.success) closeQuota();
+    if (res?.success) close();
   };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => (o ? onOpenChange(true) : close())}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t('userPage.changeQuota')}</DialogTitle>
+        </DialogHeader>
+        <DialogBody className="space-y-4">
+          <QuotaInput
+            id={`q-${item.id}`}
+            name="quotaDelta"
+            label={t('userPage.changeQuota')}
+            value={quotaDelta}
+            onChange={setQuotaDelta}
+            defaultUnit={QUOTA_UNIT_CURRENCY}
+            maxDeduct={Math.max(0, item.quota)}
+            helperText={t('userPage.changeQuotaHelperText', {
+              tokens: renderNumber(Math.max(0, item.quota)),
+              money: '$' + calculateQuota(Math.max(0, item.quota), 6)
+            })}
+          />
+          <div className="space-y-2.5">
+            <Label htmlFor={`r-${item.id}`}>{t('userPage.quotaRemark')}</Label>
+            <Input id={`r-${item.id}`} value={remark} onChange={(e) => setRemark(e.target.value)} />
+          </div>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="outline" onClick={close}>
+            {t('userPage.cancel')}
+          </Button>
+          <Button onClick={applyQuota}>{t('common.submit')}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// 行 / 面板的「⋯」菜单:打开(仅列表行)、调整余额、设角色、删除(先确认)。
+export function ActionsCell({ item, manageUser, onOpen, triggerClassName = 'size-7' }) {
+  const { t } = useTranslation();
+  const [openDelete, setOpenDelete] = useState(false);
+  const [openQuota, setOpenQuota] = useState(false);
 
   const roleActions =
     item.role === 100
@@ -86,15 +127,17 @@ export function ActionsCell({ item, manageUser, onEdit }) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button type="button" variant="ghost" size="icon" className="size-7" aria-label={t('userPage.moreActions')}>
+          <Button type="button" variant="ghost" size="icon" className={triggerClassName} aria-label={t('userPage.moreActions')}>
             <MoreHorizontal className="size-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onClick={() => onEdit(item.id)}>
-            <Pencil className="size-4" />
-            {t('common.edit')}
-          </DropdownMenuItem>
+          {onOpen && (
+            <DropdownMenuItem onClick={() => onOpen(item.id)}>
+              <PanelRight className="size-4" />
+              {t('objects.open')}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={() => setOpenQuota(true)}>
             <Wallet className="size-4" />
             {t('userPage.changeQuota')}
@@ -141,38 +184,7 @@ export function ActionsCell({ item, manageUser, onEdit }) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={openQuota} onOpenChange={(o) => (o ? setOpenQuota(true) : closeQuota())}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('userPage.changeQuota')}</DialogTitle>
-          </DialogHeader>
-          <DialogBody className="space-y-4">
-            <QuotaInput
-              id={`q-${item.id}`}
-              name="quotaDelta"
-              label={t('userPage.changeQuota')}
-              value={quotaDelta}
-              onChange={setQuotaDelta}
-              defaultUnit={QUOTA_UNIT_CURRENCY}
-              maxDeduct={Math.max(0, item.quota)}
-              helperText={t('userPage.changeQuotaHelperText', {
-                tokens: renderNumber(Math.max(0, item.quota)),
-                money: '$' + calculateQuota(Math.max(0, item.quota), 6)
-              })}
-            />
-            <div className="space-y-2.5">
-              <Label htmlFor={`r-${item.id}`}>{t('userPage.quotaRemark')}</Label>
-              <Input id={`r-${item.id}`} value={remark} onChange={(e) => setRemark(e.target.value)} />
-            </div>
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={closeQuota}>
-              {t('userPage.cancel')}
-            </Button>
-            <Button onClick={applyQuota}>{t('common.submit')}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <QuotaDialog item={item} open={openQuota} onOpenChange={setOpenQuota} manageUser={manageUser} />
     </>
   );
 }

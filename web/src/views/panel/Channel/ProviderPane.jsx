@@ -17,7 +17,8 @@ import { channelSeries, formatBalance, metricsByChannel } from './channelMetrics
 import { channelDot, filterChannels, openIssues, selectionState, statusCounts, tagOptions } from './channelGroups';
 import { Checkbox } from '@/components/ui/checkbox';
 import ChannelToolbar from './ChannelToolbar';
-import { Dot, ProviderTile, Segmented, useProviderName } from './channelParts';
+import { Dot, Segmented } from '@/components/objects';
+import { ProviderTile, useProviderName } from './channelParts';
 import TrafficChart from './TrafficChart';
 
 export const RANGES = [

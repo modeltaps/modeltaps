@@ -10,7 +10,11 @@ function Dialog({ open, onOpenChange, children }) {
     if (!open) return undefined;
     const onKey = (e) => {
       // A nested control (dropdown, combobox) that handled Escape itself calls preventDefault.
-      if (e.key === 'Escape' && !e.defaultPrevented) onOpenChange?.(false);
+      // Closing marks the event handled too, so a sheet underneath stays open.
+      if (e.key === 'Escape' && !e.defaultPrevented) {
+        onOpenChange?.(false);
+        e.preventDefault();
+      }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);

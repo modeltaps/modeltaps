@@ -912,7 +912,29 @@
     "batchFailed": "{{count}} 个用户操作失败",
     "emptyTitle": "还没有用户",
     "emptyDescription": "开放注册或手动新建用户后会显示在这里。",
-    "searchShort": "搜索 ID、用户名、邮箱"
+    "searchShort": "搜索 ID、用户名、邮箱",
+    "panel": {
+      "tabs": "用户设置",
+      "tab": {
+        "overview": "概览",
+        "profile": "资料",
+        "access": "额度与分组",
+        "security": "安全"
+      },
+      "account": "账号",
+      "quotaHint": "调整是增加或扣减一笔额度并附备注记录，不随「保存」提交。",
+      "groupHint": "分组决定用户的价格倍率和可用的渠道。",
+      "roleLocked": "超级管理员的角色不能在这里修改。",
+      "newPassword": "新密码",
+      "passwordHint": "8 到 64 个字符，替换当前密码。",
+      "setPassword": "设置密码"
+    },
+    "new": {
+      "subtitle": "用用户名和密码登录的账号",
+      "passwordHint": "8 到 64 个字符。",
+      "defaults": "创建为 default 分组的普通用户",
+      "created": "已创建 {{username}}"
+    }
   },
   "command": {
     "search": "搜索"
@@ -1546,7 +1568,6 @@
     "model_supply_upstream_missing": "请填写发给该渠道的模型名",
     "model_supply_exists": "该渠道已经在供应这个模型",
     "supply_pause_seconds_invalid": "请填写暂停秒数，需大于 0",
-    "supply_pause_rules_invalid": "暂停规则无效：{{message}}",
     "model_identifier_exists": "该模型标识已存在",
     "model_referenced_by_aliases": "该模型仍被别名引用：{{aliases}}",
     "model_alias_self": "模型不能是自己的别名",
@@ -1586,7 +1607,8 @@
     "routing_policy_scoring_invalid": "打分方式只能是自动、logprobs 或自报",
     "routing_policy_model_unavailable": "{{field}} 对本组织不可用（{{model}}）",
     "routing_policy_count_exceeded": "本组织的路由策略已达上限 {{max}} 条",
-    "org_routing_policy_disabled": "本站未开启组织路由策略"
+    "org_routing_policy_disabled": "本站未开启组织路由策略",
+    "supply_pause_rules_invalid": "暂停规则无效：{{message}}"
   },
   "channelOAuth": {
     "tip": {
@@ -1649,7 +1671,6 @@
   "routingPolicy": {
     "create": "新建策略",
     "createTitle": "新建路由策略",
-    "editTitle": "编辑路由策略",
     "empty": "还没有路由策略。策略是一个客户端可调用的模型名，由每个会话的首条消息决定实际由哪个模型应答。",
     "columns": {
       "name": "策略",
@@ -1662,17 +1683,12 @@
       "fallbackRate": "兜底 {{rate}}%"
     },
     "form": {
-      "tabBasic": "基础",
-      "tabAdvanced": "高级",
-      "tabTry": "试一试",
       "name": "模型名",
       "nameHint": "客户端填在 model 字段里的名字，如 auto/coder。",
       "nameHelp": "只能用字母、数字和 . _ / -，最多 100 个字符，不能以 / 开头或结尾，不能与已有模型重名。它会出现在 /v1/models 里，也能像普通模型一样加进令牌和组织白名单。",
       "displayName": "显示名",
       "displayNameHint": "目录里代替模型名显示。",
       "description": "描述",
-      "enabled": "启用",
-      "enabledHint": "停用的策略不进模型列表，请求它会得到 model_not_found。",
       "decisionModel": "决策模型",
       "decisionModelHint": "一个小而快的对话模型，负责给首条用户消息分类。每个会话向调用方计费一次。",
       "question": "问题",
@@ -1719,7 +1735,12 @@
       "probing": "检测中…",
       "probeSupported": "这个决策模型在本次选中的渠道上返回 logprobs，可以用概率打分。",
       "probeUnsupported": "这个决策模型在本次选中的渠道上不返回 logprobs：自动模式会改用自报置信度，仅 logprobs 模式会一直走兜底。",
-      "probeFailed": "检测失败：{{error}}"
+      "probeFailed": "检测失败：{{error}}",
+      "tabBasic": "基础",
+      "tabAdvanced": "高级",
+      "tabTry": "试一试",
+      "enabled": "启用",
+      "enabledHint": "停用的策略不进模型列表，请求它会得到 model_not_found。"
     },
     "templates": {
       "coding_change_size": "编码：改动大小",
@@ -1727,7 +1748,7 @@
       "reasoning_depth": "推理深度"
     },
     "tryIt": {
-      "intro": "只跑决策这一步，用的是表单里当前的策略。不转发、不计费、不写会话固定记录。",
+      "intro": "只跑决策这一步，用的是已保存的策略。不转发、不计费、不写会话固定记录。",
       "message": "首条用户消息",
       "messageHint": "从日志里粘一条真实的首条消息。",
       "messagePlaceholder": "给 CLI 加一个 --verbose 参数，并把解析后的参数打到日志",
@@ -1774,7 +1795,8 @@
       "quota": "花费",
       "noLabel": "兜底",
       "byScoring": "按打分方式",
-      "avgTopProbability": "平均最高概率 {{value}}"
+      "avgTopProbability": "平均最高概率 {{value}}",
+      "range": "时间范围"
     },
     "scoring": {
       "auto": "自动（能用 logprobs 就用）",
@@ -1784,7 +1806,25 @@
     "scoringUsed": {
       "logprobs": "logprobs",
       "self_reported": "自报"
-    }
+    },
+    "panel": {
+      "tabs": "策略设置",
+      "tab": {
+        "overview": "概览",
+        "routes": "路由",
+        "try": "试一试",
+        "settings": "设置"
+      },
+      "summary": "路由方式",
+      "routeCount_one": "{{count}} 条路由",
+      "routeCount_other": "{{count}} 条路由"
+    },
+    "new": {
+      "subtitle": "客户端调用的模型名，由首条消息决定实际模型",
+      "defaults": "创建后即启用，自动打分、阈值 {{threshold}}，可在「路由」里修改",
+      "created": "策略已创建"
+    },
+    "editTitle": "编辑路由策略"
   },
   "logPage": {
     "routing": {
@@ -1996,7 +2036,6 @@
       "connectFailed": "连接失败，请检查密钥和地址"
     },
     "newChannel": "新建渠道",
-    "optional": "可选",
     "pane": {
       "refreshDone_other": "已刷新 {{count}} 个渠道的模型列表",
       "refreshModels": "刷新模型列表",
@@ -2007,13 +2046,8 @@
       "testPartial": "{{count}} 个渠道中 {{failed}} 个测试失败"
     },
     "panel": {
-      "discard": "撤销",
-      "discardConfirm": "有未保存的改动，确定关闭吗？",
       "enabled": "启用",
-      "save": "保存",
-      "saved": "已保存",
       "scope": "改动只作用于这个渠道",
-      "switchConfirm": "这个 Tab 有未保存的改动，确定切换吗？",
       "tab": {
         "models": "模型",
         "connection": "连接",
@@ -2023,6 +2057,11 @@
         "advanced": "高级"
       },
       "tabs": "渠道设置",
+      "discard": "撤销",
+      "discardConfirm": "有未保存的改动，确定关闭吗？",
+      "save": "保存",
+      "saved": "已保存",
+      "switchConfirm": "这个 Tab 有未保存的改动，确定切换吗？",
       "unsaved": "有未保存的改动"
     },
     "range": {
@@ -2131,7 +2170,8 @@
       "delete": "删除标签及其渠道",
       "priorityTitle": "标签 {{tag}} 的优先级",
       "priorityHint": "给带这个标签的所有渠道设置同一优先级"
-    }
+    },
+    "optional": "可选"
   },
   "nav": {
     "sections": {
@@ -2203,6 +2243,78 @@
       "label": "分组"
     },
     "mainLabel": "主导航"
+  },
+  "objects": {
+    "optional": "可选",
+    "help": "说明",
+    "notFound": "对象不存在或已删除",
+    "more": "更多操作",
+    "panel": {
+      "discard": "撤销",
+      "discardConfirm": "有未保存的改动，确定关闭吗？",
+      "save": "保存",
+      "saved": "已保存",
+      "scope": "保存只作用于这个 Tab",
+      "switchConfirm": "这个 Tab 有未保存的改动，确定切换吗？",
+      "unsaved": "有未保存的改动"
+    },
+    "new": {
+      "create": "创建",
+      "discardConfirm": "放弃已填写的内容吗？",
+      "missing": "还差：{{items}}",
+      "listSep": "、"
+    },
+    "open": "打开"
+  },
+  "orgAdmin": {
+    "panel": {
+      "tabs": "组织设置",
+      "tab": {
+        "overview": "概览",
+        "balance": "余额",
+        "members": "成员"
+      },
+      "details": "详情",
+      "slug": "标识",
+      "ownerId": "所有者 #{{id}}",
+      "followsDefault": "跟随站点默认",
+      "apply": "执行调整"
+    }
+  },
+  "userGroup": {
+    "panel": {
+      "settings": "设置",
+      "symbolFixed": "标识创建后不能修改。",
+      "publicHint": "用户可以给自己的令牌选择公开分组。",
+      "scope": "作用于这个分组的所有用户"
+    },
+    "new": {
+      "subtitle": "同一分组的用户共用价格倍率和速率限制",
+      "defaults": "创建后即启用，倍率 1、每分钟 300 次请求，可在分组面板里修改",
+      "created": "已创建分组 {{symbol}}"
+    }
+  },
+  "redemptionPage": {
+    "panel": {
+      "details": "详情",
+      "edit": "兑换码",
+      "scope": "改动只作用于这个兑换码"
+    },
+    "new": {
+      "subtitle": "用户兑换余额用的码",
+      "nameHint": "同一次生成的兑换码共用这个名称，导出批次也按名称。",
+      "defaults": "不限账号类型、永不过期，可在兑换码面板里修改",
+      "defaultsMany": "生成 {{count}} 个，不限账号类型、永不过期；创建后下载兑换码文本文件"
+    }
+  },
+  "orderlogPage": {
+    "panel": {
+      "details": "详情",
+      "amounts": "费用与汇率",
+      "copyTradeNo": "复制订单号",
+      "copied": "订单号已复制",
+      "viewUser": "打开该用户"
+    }
   },
   "modelSupply": {
     "tab": "供应",

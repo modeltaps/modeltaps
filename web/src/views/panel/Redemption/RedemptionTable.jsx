@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { Copy, Download, Pencil, Trash2, ChevronsUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Copy, Download, PanelRight, Trash2, ChevronsUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import DataCards from '@/components/ui/data-cards';
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RowActions as ActionColumn } from '@/components/ui/row-actions';
+import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 import { renderQuota, timestamp2string } from 'utils/common';
 
 function StatusCell({ item, onToggleStatus }) {
@@ -22,29 +23,33 @@ function StatusCell({ item, onToggleStatus }) {
     );
   }
   return (
-    <div className="flex items-center gap-2">
-      <Switch checked={item.status === 1} onCheckedChange={() => onToggleStatus(item)} />
+    <RowControl className="gap-2">
+      <Switch checked={item.status === 1} aria-label={t('common.enable')} onCheckedChange={() => onToggleStatus(item)} />
       <Badge variant={item.status === 1 ? 'default' : 'secondary'}>{item.status === 1 ? t('common.enable') : t('common.disable')}</Badge>
-    </div>
+    </RowControl>
   );
 }
 
-function RowActions({ item, onCopyKey, onEdit, onDelete, onExportBatch }) {
+function RowActions({ item, onCopyKey, onOpen, onDelete, onExportBatch }) {
   const { t } = useTranslation();
-  const editable = item.status === 1 || item.status === 2;
   const actions = [
     { label: t('redemptionPage.exportBatch'), icon: Download, onClick: () => onExportBatch(item) },
-    { label: t('common.edit'), icon: Pencil, primary: true, disabled: !editable, onClick: () => onEdit(item.id) },
+    { label: t('objects.open'), icon: PanelRight, primary: true, onClick: () => onOpen(item.id) },
     { label: t('token_index.copy'), icon: Copy, onClick: () => onCopyKey(item) },
     { label: t('common.delete'), icon: Trash2, destructive: true, primary: true, onClick: () => onDelete(item) }
   ];
-  return <ActionColumn actions={actions} />;
+  return (
+    <RowControl>
+      <ActionColumn actions={actions} />
+    </RowControl>
+  );
 }
 
 export default function RedemptionTable({
   redemptions,
   onCopyKey,
-  onEdit,
+  openId,
+  onOpen,
   onDelete,
   onToggleStatus,
   onExportBatch,
@@ -73,11 +78,13 @@ export default function RedemptionTable({
           />
         ),
         cell: (c) => (
-          <Checkbox
-            checked={selectedIds.includes(c.row.original.id)}
-            onCheckedChange={() => onToggleSelect(c.row.original.id)}
-            aria-label={t('common.select')}
-          />
+          <RowControl>
+            <Checkbox
+              checked={selectedIds.includes(c.row.original.id)}
+              onCheckedChange={() => onToggleSelect(c.row.original.id)}
+              aria-label={t('common.select')}
+            />
+          </RowControl>
         )
       },
       { accessorKey: 'id', header: t('redemptionPage.headLabels.id'), meta: { sortable: true } },
@@ -135,14 +142,14 @@ export default function RedemptionTable({
         header: t('redemptionPage.headLabels.action'),
         meta: { className: 'sticky right-0 bg-card z-10 text-right w-[1%]' },
         cell: (c) => (
-          <RowActions item={c.row.original} onCopyKey={onCopyKey} onEdit={onEdit} onDelete={onDelete} onExportBatch={onExportBatch} />
+          <RowActions item={c.row.original} onCopyKey={onCopyKey} onOpen={onOpen} onDelete={onDelete} onExportBatch={onExportBatch} />
         )
       }
     ],
     [
       t,
       onCopyKey,
-      onEdit,
+      onOpen,
       onDelete,
       onToggleStatus,
       onExportBatch,
@@ -193,7 +200,12 @@ export default function RedemptionTable({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow
+                key={row.id}
+                className={ROW_OPENS}
+                data-state={row.original.id === openId ? 'selected' : undefined}
+                {...rowOpenProps(() => onOpen(row.original.id))}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
                     {flexRender(cell.column.columnDef.cell ?? cell.getValue, cell.getContext())}
@@ -204,7 +216,13 @@ export default function RedemptionTable({
           </TableBody>
         </Table>
       </div>
-      <DataCards table={table} className="md:hidden" primaryColumnId="name" actionColumnIds={['select', 'actions']} />
+      <DataCards
+        table={table}
+        className="md:hidden"
+        primaryColumnId="name"
+        actionColumnIds={['select', 'actions']}
+        onRowClick={(r) => onOpen(r.id)}
+      />
     </>
   );
 }

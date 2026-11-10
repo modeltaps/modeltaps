@@ -1,18 +1,19 @@
 import { useId, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Check, ExternalLink, X } from 'lucide-react';
+import { ExternalLink, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { OptionList, OptionRow } from '@/components/objects';
 import ProviderIcon from '@/components/brand/ProviderIcon';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
 import { useProviderLabel } from './ProviderPicker';
 import { consoleUrl } from './providerDefaults';
 
-// Small building blocks shared by the provider page, the channel panel and the new channel
-// sheet: fields with top-aligned labels, option lists (one bordered list, a row per option),
-// segmented controls, chip inputs and provider tiles.
+// Channel-specific building blocks shared by the provider page, the channel panel and the new
+// channel sheet: provider names and tiles, the key link, group and usage option lists and chip
+// inputs. Generic fields, option lists and segmented controls are in components/objects.
 
 export function useProviderName() {
   const labelOf = useProviderLabel();
@@ -35,49 +36,6 @@ export function ProviderTile({ type, size = 'sm' }) {
 
 ProviderTile.propTypes = { type: PropTypes.number, size: PropTypes.oneOf(['sm', 'lg']) };
 
-const DOT = { live: 'bg-success', warn: 'bg-warning', off: 'bg-muted-foreground/45', bad: 'bg-destructive' };
-
-export function Dot({ tone = 'live', className, title }) {
-  return <span title={title} className={cn('inline-block size-2 shrink-0 rounded-full', DOT[tone], className)} />;
-}
-
-Dot.propTypes = { tone: PropTypes.oneOf(['live', 'warn', 'off', 'bad']), className: PropTypes.string, title: PropTypes.string };
-
-// A form field: label on top (with an optional marker and something on the right such as a
-// link), the control, and a one-line hint. Consecutive fields are separated by a hairline.
-export function Field({ label, htmlFor, optional, extra, hint, error, children, className }) {
-  const { t } = useTranslation();
-  return (
-    <div className={cn('py-3 [&+&]:border-t [&+&]:border-border/60', className)}>
-      {(label || extra) && (
-        <div className="mb-1.5 flex items-baseline justify-between gap-3 text-sm font-medium">
-          {label && (
-            <label htmlFor={htmlFor}>
-              {label}
-              {optional && <span className="ml-1.5 text-xs font-normal text-muted-foreground">{t('channels.optional')}</span>}
-            </label>
-          )}
-          {extra && <span className="text-xs font-normal text-muted-foreground">{extra}</span>}
-        </div>
-      )}
-      {children}
-      {hint && !error && <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p>}
-      {error && <p className="mt-1.5 text-xs text-destructive">{error}</p>}
-    </div>
-  );
-}
-
-Field.propTypes = {
-  label: PropTypes.node,
-  htmlFor: PropTypes.string,
-  optional: PropTypes.bool,
-  extra: PropTypes.node,
-  hint: PropTypes.node,
-  error: PropTypes.node,
-  children: PropTypes.node,
-  className: PropTypes.string
-};
-
 // "Get a key" link to the provider's console, when one is known.
 export function KeyLink({ type }) {
   const { t } = useTranslation();
@@ -98,67 +56,6 @@ export function KeyLink({ type }) {
 }
 
 KeyLink.propTypes = { type: PropTypes.number };
-
-export function OptionList({ children, label }) {
-  return (
-    <div role="group" aria-label={label} className="overflow-hidden rounded-lg border border-border">
-      {children}
-    </div>
-  );
-}
-
-OptionList.propTypes = { children: PropTypes.node, label: PropTypes.string };
-
-// One option of an option list: a checkbox or radio mark, a short title, a description and an
-// optional figure on the right.
-export function OptionRow({ kind = 'check', selected, title, description, meta, onClick, mono }) {
-  return (
-    <button
-      type="button"
-      role={kind === 'radio' ? 'radio' : 'checkbox'}
-      aria-checked={selected}
-      onClick={onClick}
-      className={cn(
-        'grid min-h-12 w-full grid-cols-[16px_minmax(5rem,auto)_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 text-left transition-colors',
-        '[&+&]:border-t [&+&]:border-border hover:bg-foreground/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
-        selected && 'bg-accent/55'
-      )}
-    >
-      {kind === 'radio' ? (
-        <span
-          className={cn(
-            'size-4 rounded-full',
-            selected
-              ? 'shadow-[inset_0_0_0_5px_var(--foreground)]'
-              : 'shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--foreground)_35%,transparent)]'
-          )}
-        />
-      ) : (
-        <span
-          className={cn(
-            'flex size-4 items-center justify-center rounded-[5px] border',
-            selected ? 'border-primary bg-primary text-primary-foreground' : 'border-foreground/30'
-          )}
-        >
-          {selected && <Check className="size-3" strokeWidth={2.5} />}
-        </span>
-      )}
-      <span className={cn('truncate text-sm font-medium', mono && 'font-mono')}>{title}</span>
-      <span className="min-w-0 text-xs text-muted-foreground">{description}</span>
-      <span className={cn('whitespace-nowrap text-xs tabular-nums', selected ? 'text-foreground' : 'text-muted-foreground')}>{meta}</span>
-    </button>
-  );
-}
-
-OptionRow.propTypes = {
-  kind: PropTypes.oneOf(['check', 'radio']),
-  selected: PropTypes.bool,
-  title: PropTypes.node,
-  description: PropTypes.node,
-  meta: PropTypes.node,
-  onClick: PropTypes.func,
-  mono: PropTypes.bool
-};
 
 // Multi-select list of user groups. At least one group stays selected.
 export function GroupOptions({ groups, value, onChange }) {
@@ -263,44 +160,6 @@ UsageOptions.propTypes = {
   onChange: PropTypes.func.isRequired,
   custom: PropTypes.object.isRequired,
   onCustomChange: PropTypes.func.isRequired
-};
-
-// Segmented control. `size` mini is for a switch inside a label row; wide stretches the
-// segments over the full width.
-export function Segmented({ options, value, onChange, label, size = 'md', role = 'radiogroup' }) {
-  return (
-    <div
-      role={role}
-      aria-label={label}
-      className={cn('inline-flex gap-0.5 rounded-lg bg-muted p-[3px]', size === 'mini' && 'p-0.5', size === 'wide' && 'flex w-full')}
-    >
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          role="radio"
-          aria-checked={value === o.value}
-          onClick={() => onChange(o.value)}
-          className={cn(
-            'rounded-[7px] px-3 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            size === 'mini' ? 'h-6 px-2.5 text-xs' : size === 'wide' ? 'h-8 flex-1' : 'h-7',
-            value === o.value ? 'bg-card text-foreground shadow-[0_0_0_1px_var(--border)]' : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-Segmented.propTypes = {
-  options: PropTypes.array.isRequired,
-  value: PropTypes.string,
-  onChange: PropTypes.func.isRequired,
-  label: PropTypes.string,
-  size: PropTypes.oneOf(['mini', 'md', 'wide']),
-  role: PropTypes.string
 };
 
 // Chip input: Enter adds the typed value (through `transform`, which may return '' to refuse

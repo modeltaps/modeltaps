@@ -1,11 +1,12 @@
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Trash2, Users, Wallet } from 'lucide-react';
+import { PanelRight, Trash2, Users, Wallet } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { RowActions, RowActionsSurfaceContext } from '@/components/ui/row-actions';
+import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
 
 // ==============================|| ORG ADMIN — ORGANIZATIONS TABLE ||============================== //
@@ -28,12 +29,13 @@ function MemberCount({ org }) {
 
 MemberCount.propTypes = { org: PropTypes.object.isRequired };
 
-export default function OrgAdminTable({ rows, searching, onToggleStatus, onAdjustQuota, onSetMaxMembers, onDissolve }) {
+export default function OrgAdminTable({ rows, searching, openId, onOpen, onToggleStatus, onDissolve }) {
   const { t } = useTranslation();
 
   const rowActions = (org) => [
-    { label: t('orgAdmin.adjustQuota'), icon: Wallet, onClick: () => onAdjustQuota(org) },
-    { label: t('orgAdmin.maxMembers'), icon: Users, onClick: () => onSetMaxMembers(org) },
+    { label: t('objects.open'), icon: PanelRight, onClick: () => onOpen(org.id) },
+    { label: t('orgAdmin.adjustQuota'), icon: Wallet, onClick: () => onOpen(org.id, 'balance') },
+    { label: t('orgAdmin.maxMembers'), icon: Users, onClick: () => onOpen(org.id, 'members') },
     { label: t('orgAdmin.dissolve'), icon: Trash2, destructive: true, onClick: () => onDissolve(org) }
   ];
 
@@ -63,7 +65,12 @@ export default function OrgAdminTable({ rows, searching, onToggleStatus, onAdjus
               </TableRow>
             ) : (
               rows.map((org) => (
-                <TableRow key={org.id}>
+                <TableRow
+                  key={org.id}
+                  className={ROW_OPENS}
+                  data-state={org.id === openId ? 'selected' : undefined}
+                  {...rowOpenProps(() => onOpen(org.id))}
+                >
                   <TableCell className="font-mono tabular-nums">{org.id}</TableCell>
                   <TableCell>
                     <div className="flex flex-col">
@@ -80,16 +87,18 @@ export default function OrgAdminTable({ rows, searching, onToggleStatus, onAdjus
                     <SpendAmount quota={org.used_quota} />
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Switch checked={org.status === 1} onCheckedChange={() => onToggleStatus(org)} />
+                    <RowControl className="gap-2">
+                      <Switch checked={org.status === 1} aria-label={t('common.enable')} onCheckedChange={() => onToggleStatus(org)} />
                       <Badge variant={org.status === 1 ? 'default' : 'secondary'}>
                         {org.status === 1 ? t('common.enable') : t('common.disable')}
                       </Badge>
-                    </div>
+                    </RowControl>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{timestamp2string(org.created_time)}</TableCell>
                   <TableCell className="sticky right-0 z-10 bg-card text-right">
-                    <RowActions actions={rowActions(org)} />
+                    <RowControl>
+                      <RowActions actions={rowActions(org)} />
+                    </RowControl>
                   </TableCell>
                 </TableRow>
               ))
@@ -106,10 +115,10 @@ export default function OrgAdminTable({ rows, searching, onToggleStatus, onAdjus
         <div className="md:hidden flex flex-col gap-3">
           {rows.map((org) => (
             <div key={org.id} className="rounded-lg border border-border bg-card p-3 shadow-sm">
-              <div className="mb-1.5">
+              <button type="button" className="mb-1.5 block w-full text-left" onClick={() => onOpen(org.id)}>
                 <div className="text-sm font-medium">{org.name}</div>
                 <div className="text-xs text-muted-foreground">{org.slug}</div>
-              </div>
+              </button>
               <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                 <div className="flex items-baseline gap-1.5">
                   <dt className="shrink-0 text-xs font-medium text-muted-foreground">ID</dt>
@@ -167,8 +176,8 @@ export default function OrgAdminTable({ rows, searching, onToggleStatus, onAdjus
 OrgAdminTable.propTypes = {
   rows: PropTypes.array,
   searching: PropTypes.bool,
+  openId: PropTypes.number,
+  onOpen: PropTypes.func.isRequired,
   onToggleStatus: PropTypes.func.isRequired,
-  onAdjustQuota: PropTypes.func.isRequired,
-  onSetMaxMembers: PropTypes.func.isRequired,
   onDissolve: PropTypes.func.isRequired
 };

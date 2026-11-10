@@ -15,8 +15,10 @@ import { API } from 'utils/api';
 import { showError, downloadTextAsFile } from 'utils/common';
 import { PAGE_SIZE_OPTIONS } from 'constants';
 import usePaginatedList from 'hooks/usePaginatedList';
+import { useObjectRoute } from '@/components/objects';
 import RedemptionTable from './RedemptionTable';
-import RedemptionSheet from './RedemptionSheet';
+import RedemptionPanel from './RedemptionPanel';
+import NewRedemptionSheet from './NewRedemptionSheet';
 
 // FilterBar 字段:单个名称文本 chip(后端 keyword 单值,按兑换码名称模糊匹配)。
 const REDEMPTION_FILTER_FIELDS = [
@@ -29,8 +31,9 @@ export default function Redemption() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filterState, setFilterState] = useState(() => paramsToFilterState(REDEMPTION_FILTER_FIELDS, searchParams));
 
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [editId, setEditId] = useState(0);
+  const route = useObjectRoute(['details']);
+  // Bumped after a list action so an open code panel reloads.
+  const [reloadKey, setReloadKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -101,7 +104,10 @@ export default function Redemption() {
       const { success } = res.data;
       if (success) {
         toast.success(t('redemptionPage.successMessage'));
-        if (action === 'delete') handleRefresh();
+        if (action === 'delete') {
+          if (id === route.openId) route.close();
+          handleRefresh();
+        } else setReloadKey((k) => k + 1);
       }
       return res.data;
     } catch (error) {
@@ -124,19 +130,7 @@ export default function Redemption() {
     }
   };
 
-  const openCreate = () => {
-    setEditId(0);
-    setSheetOpen(true);
-  };
-  const openEdit = (id) => {
-    setEditId(id);
-    setSheetOpen(true);
-  };
-  const onSaved = () => {
-    setSheetOpen(false);
-    setEditId(0);
-    handleRefresh();
-  };
+  const openCreate = route.openNew;
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
@@ -272,7 +266,8 @@ export default function Redemption() {
             <RedemptionTable
               redemptions={redemptions}
               onCopyKey={onCopyKey}
-              onEdit={openEdit}
+              openId={route.openId}
+              onOpen={route.open}
               onDelete={setDeleteTarget}
               onToggleStatus={onToggleStatus}
               onExportBatch={exportBatch}
@@ -314,7 +309,30 @@ export default function Redemption() {
           </div>
         </Card>
 
-        <RedemptionSheet open={sheetOpen} onOpenChange={setSheetOpen} redemptionId={editId} onSaved={onSaved} />
+        {route.openId > 0 && (
+          <RedemptionPanel
+            key={route.openId}
+            codeId={route.openId}
+            onClose={route.close}
+            onChanged={handleRefresh}
+            onToggleStatus={onToggleStatus}
+            onCopyKey={onCopyKey}
+            onExportBatch={exportBatch}
+            onDelete={setDeleteTarget}
+            reloadKey={reloadKey}
+          />
+        )}
+
+        {route.isNew && (
+          <NewRedemptionSheet
+            onClose={route.close}
+            onCreated={() => {
+              toast.success(t('redemption_edit.addOk'));
+              route.close();
+              handleRefresh();
+            }}
+          />
+        )}
 
         <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
           <DialogContent>

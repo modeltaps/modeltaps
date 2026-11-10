@@ -6,7 +6,8 @@ import { Plus, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { openIssues } from './channelGroups';
-import { Dot, ProviderTile, useProviderName } from './channelParts';
+import { Dot } from '@/components/objects';
+import { ProviderTile, useProviderName } from './channelParts';
 
 // Left lane: a search over every provider's channels, then one row per provider type that has
 // channels, with a warning dot when one of its channels needs attention (or a faded dot when all
