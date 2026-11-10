@@ -2042,6 +2042,14 @@
       "thresholdHint": "Notifies you when the upstream balance drops below this",
       "thresholdOff": "Off"
     },
+    "pauseRules": {
+      "label": "Pause rules",
+      "hint": "JSON list tried before the site rules; the first matching rule wins. Leave empty to use the site rules only.",
+      "siteRules": "Site rules in force ({{count}})",
+      "siteOff": "Pause rules are turned off for the site, so these and the channel's own rules do not apply.",
+      "invalidJson": "The pause rules are not valid JSON",
+      "notArray": "The pause rules must be a JSON array"
+    },
     "more": "More",
     "new": {
       "allModels": "All models",

@@ -1961,6 +1961,14 @@
       "thresholdHint": "上游餘額低於這個數時通知你",
       "thresholdOff": "不提醒"
     },
+    "pauseRules": {
+      "label": "暫停規則",
+      "hint": "JSON 陣列，先於站點規則比對，第一條命中生效。留空則只用站點規則。",
+      "siteRules": "目前生效的站點規則（{{count}} 條）",
+      "siteOff": "站點已關閉暫停規則，站點規則和渠道規則都不會生效。",
+      "invalidJson": "暫停規則不是有效的 JSON",
+      "notArray": "暫停規則必須是 JSON 陣列"
+    },
     "more": "更多",
     "new": {
       "allModels": "全部模型",
