@@ -2604,7 +2604,32 @@
         "label": "自訂規則（JSON）",
         "description": "留空使用內置預設規則；填寫後整體取代預設規則，按順序第一條命中的生效。",
         "invalidJson": "暫停規則不是有效的 JSON",
-        "notArray": "暫停規則必須是 JSON 陣列"
+        "notArray": "暫停規則必須是 JSON 陣列",
+        "builtIn": "正在使用內建規則",
+        "useDefaults": "從預設規則開始",
+        "useDefaultsHint": "「從預設規則開始」會把這些規則填入編輯框以便修改；儲存卡片前不會生效。",
+        "showBuiltIn": "查看內建規則",
+        "replaceWithDefaults": "替換為預設規則",
+        "replaceHint": "用內建規則替換編輯框內容；復原可恢復已儲存的規則。",
+        "summary": {
+          "status": "HTTP {{codes}}",
+          "patterns_other": "{{count}} 個錯誤特徵",
+          "unusable": "憑證被拒或帳戶不可用",
+          "modelNotFound": "上游沒有該模型",
+          "rateLimitReset": "上游給出了重置時間",
+          "perStatus": "該狀態碼設定了單獨冷卻",
+          "anyError": "任何錯誤",
+          "times_other": "{{duration}} 內 {{count}} 次",
+          "retry": "改試下一條供應",
+          "pause_channel": "暫停渠道 {{duration}}",
+          "pause_model": "暫停該模型 {{duration}}",
+          "pauseUntilReset_channel": "暫停渠道到重置時間",
+          "pauseUntilReset_model": "暫停該模型到重置時間",
+          "pauseConfigured_channel": "按設定的時長暫停渠道",
+          "pauseConfigured_model": "按設定的時長暫停該模型",
+          "probe": "恢復前先測試",
+          "notify": "發通知"
+        }
       }
     },
     "personal": {

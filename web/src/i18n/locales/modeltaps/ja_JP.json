@@ -2604,7 +2604,32 @@
         "label": "カスタムルール（JSON）",
         "description": "空欄なら組み込みのルールを使います。入力するとルール全体が置き換わり、上から順に最初に一致したルールが適用されます。",
         "invalidJson": "一時停止ルールが正しい JSON ではありません",
-        "notArray": "一時停止ルールは JSON 配列にしてください"
+        "notArray": "一時停止ルールは JSON 配列にしてください",
+        "builtIn": "組み込みルールを使用中",
+        "useDefaults": "デフォルトから始める",
+        "useDefaultsHint": "「デフォルトから始める」でこれらのルールをエディタにコピーして編集できます。カードを保存するまで反映されません。",
+        "showBuiltIn": "組み込みルールを表示",
+        "replaceWithDefaults": "デフォルトに置き換える",
+        "replaceHint": "エディタの内容を組み込みルールに置き換えます。元に戻すと保存済みのルールに戻ります。",
+        "summary": {
+          "status": "HTTP {{codes}}",
+          "patterns_other": "エラーパターン {{count}} 件",
+          "unusable": "認証情報の拒否またはアカウント利用不可",
+          "modelNotFound": "上流にモデルがない",
+          "rateLimitReset": "上流がリセット時刻を返した",
+          "perStatus": "ステータス別クールダウンが設定されている",
+          "anyError": "すべてのエラー",
+          "times_other": "{{duration}} 以内に {{count}} 回",
+          "retry": "次の供給を試す",
+          "pause_channel": "チャネルを {{duration}} 一時停止",
+          "pause_model": "このモデルを {{duration}} 一時停止",
+          "pauseUntilReset_channel": "リセット時刻までチャネルを一時停止",
+          "pauseUntilReset_model": "リセット時刻までこのモデルを一時停止",
+          "pauseConfigured_channel": "設定された時間だけチャネルを一時停止",
+          "pauseConfigured_model": "設定された時間だけこのモデルを一時停止",
+          "probe": "復帰前にテスト",
+          "notify": "通知"
+        }
       }
     },
     "personal": {

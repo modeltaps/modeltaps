@@ -1,11 +1,18 @@
+import { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { ChevronRight } from 'lucide-react';
+
+import { API } from 'utils/api';
+import { Button } from '@/components/ui/button';
+import { durationLabel } from 'views/panel/ModelInfo/supply/supplyParts';
 
 import { verifyJSON } from 'utils/common';
 import { FieldSection, OptionList } from '@/components/settings/cards';
 import { SelectRow, TextRow, ToggleRow } from '../parts';
 import OptionCard, { bindSwitch, cardText } from './OptionCard';
-import { pauseRulesError } from './pauseRules';
+import { describePauseRule, pauseRulesError, pauseRulesText } from './pauseRules';
 
 // ==============================|| PLATFORM SETTINGS — 网关 ||============================== //
 // Retry, error handling, channel auto disable / recover, session affinity, model name matching,
@@ -158,12 +165,66 @@ const PAUSE_RULES_EXAMPLE = `[
   }
 ]`;
 
+// The built-in rules from the backend ({ defaults } of /api/supply_pause/rules), or [] when
+// they cannot be read.
+function useDefaultPauseRules() {
+  const [defaults, setDefaults] = useState([]);
+  useEffect(() => {
+    let alive = true;
+    API.get('/api/supply_pause/rules')
+      .then((res) => {
+        const { success, data } = res?.data || {};
+        if (alive && success && Array.isArray(data?.defaults)) setDefaults(data.defaults);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return defaults;
+}
+
+// Read-only list of rules in words: name, when it matches, what it does.
+function PauseRuleList({ rules }) {
+  const { t } = useTranslation();
+  const phrase = ([key, params = {}]) =>
+    t(`settingsUi.platform.pauseRules.summary.${key}`, {
+      ...params,
+      ...(params.seconds !== undefined && { duration: durationLabel(t, params.seconds) })
+    });
+  return (
+    <ul className="divide-y divide-border overflow-hidden rounded-[10px] border border-border">
+      {rules.map((rule, index) => {
+        const { when, then } = describePauseRule(rule);
+        return (
+          <li key={`${rule.name}-${index}`} className="grid gap-x-4 gap-y-0.5 px-3 py-2 text-[13px] sm:grid-cols-[10rem_1fr]">
+            <span className="truncate font-mono" title={rule.name}>
+              {rule.name || '—'}
+            </span>
+            <span className="min-w-0 text-muted-foreground">
+              {when.map(phrase).join(' · ')}
+              <span aria-hidden> → </span>
+              <span className="text-foreground">{then.map(phrase).join(' · ')}</span>
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+PauseRuleList.propTypes = { rules: PropTypes.array.isRequired };
+
 export function SupplyPauseRulesCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, setField } = ctx;
   const pr = (k) => t(`settingsUi.platform.pauseRules.${k}`);
   const error = pauseRulesError(inputs.PauseRules);
   const validate = (i) => (pauseRulesError(i.PauseRules) ? pr(pauseRulesError(i.PauseRules)) : null);
+  const defaults = useDefaultPauseRules();
+  const empty = !String(inputs.PauseRules ?? '').trim();
+  // Only fills the editor; the footer saves it like any other edit.
+  const fillDefaults = () => setField('PauseRules', pauseRulesText(defaults));
 
   return (
     <OptionCard ctx={ctx} id="supply-pause-rules" enableKey="PauseRulesEnabled" options={{ validate }}>
@@ -178,6 +239,33 @@ export function SupplyPauseRulesCard({ ctx }) {
         multiline
         rows={10}
       />
+      {defaults.length > 0 &&
+        (empty ? (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[13px] font-medium">{pr('builtIn')}</p>
+              <Button type="button" variant="outline" size="sm" className="rounded-[10px]" onClick={fillDefaults}>
+                {pr('useDefaults')}
+              </Button>
+            </div>
+            <PauseRuleList rules={defaults} />
+            <p className="text-xs text-muted-foreground">{pr('useDefaultsHint')}</p>
+          </div>
+        ) : (
+          <details className="group space-y-2">
+            <summary className="flex cursor-pointer list-none items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+              <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" />
+              {pr('showBuiltIn')}
+            </summary>
+            <PauseRuleList rules={defaults} />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground">{pr('replaceHint')}</p>
+              <Button type="button" variant="outline" size="sm" className="rounded-[10px]" onClick={fillDefaults}>
+                {pr('replaceWithDefaults')}
+              </Button>
+            </div>
+          </details>
+        ))}
     </OptionCard>
   );
 }
