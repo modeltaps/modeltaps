@@ -2422,7 +2422,8 @@
       "outsideRow": "Not in group {{group}}",
       "notActive": "not in effect until supply routing is on",
       "next": "Next",
-      "servingTier": "takes requests now"
+      "servingTier": "takes requests now",
+      "failed": "Couldn't load the preview for this group"
     }
   },
   "settingsUi": {

@@ -2329,7 +2329,8 @@
       "outsideRow": "不在分组 {{group}} 中",
       "notActive": "按供应路由开启后才生效",
       "next": "下一个",
-      "servingTier": "正在接请求"
+      "servingTier": "正在接请求",
+      "failed": "无法读取该分组的预览"
     }
   },
   "settingsUi": {

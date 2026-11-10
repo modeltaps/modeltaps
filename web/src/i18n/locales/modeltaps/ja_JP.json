@@ -2329,7 +2329,8 @@
       "outsideRow": "グループ {{group}} に含まれません",
       "notActive": "供給によるルーティングをオンにすると有効になります",
       "next": "次",
-      "servingTier": "現在リクエストを処理中"
+      "servingTier": "現在リクエストを処理中",
+      "failed": "このグループのプレビューを読み込めませんでした"
     }
   },
   "settingsUi": {

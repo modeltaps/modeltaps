@@ -229,7 +229,7 @@ const groupLabel = (g) => (g.name && g.name !== g.symbol ? `${g.name} (${g.symbo
 
 // Which supply a request from a user group would try first, from the preview API. An empty
 // group previews a request from any group.
-function RequestPreview({ groups, group, onGroupChange, preview }) {
+function RequestPreview({ groups, group, onGroupChange, preview, failed = false }) {
   const { t } = useTranslation();
   let summary = null;
   if (preview) {
@@ -272,6 +272,8 @@ function RequestPreview({ groups, group, onGroupChange, preview }) {
             )}
             {preview.active === false && <span className="text-muted-foreground"> · {t('modelSupply.preview.notActive')}</span>}
           </>
+        ) : failed ? (
+          <span className="text-muted-foreground">{t('modelSupply.preview.failed')}</span>
         ) : (
           <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
         )}
@@ -284,7 +286,8 @@ RequestPreview.propTypes = {
   groups: PropTypes.array.isRequired,
   group: PropTypes.string.isRequired,
   onGroupChange: PropTypes.func.isRequired,
-  preview: PropTypes.object
+  preview: PropTypes.object,
+  failed: PropTypes.bool
 };
 
 function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMoveDown, busy, onAction }) {
@@ -481,6 +484,7 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
   // from `group` only. Both come from the preview API.
   const [preview, setPreview] = useState(null);
   const [groupPreview, setGroupPreview] = useState(null);
+  const [groupFailed, setGroupFailed] = useState(false);
   const [pauses, setPauses] = useState([]);
   const [groups, setGroups] = useState([]);
   const [group, setGroup] = useState('');
@@ -503,6 +507,7 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
       setPreview(s.success ? s.data || { tiers: [] } : { tiers: [] });
       setPauses(p.success ? p.data || [] : []);
       setGroupPreview(g?.success ? g.data : null);
+      setGroupFailed(Boolean(group) && !g?.success);
       if (!s.success) toast.error(s.message);
       else if (g && !g.success) toast.error(g.message);
     } catch {
@@ -528,6 +533,7 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
 
   const changeGroup = (next) => {
     setGroupPreview(null);
+    setGroupFailed(false);
     setGroup(next);
   };
 
@@ -634,7 +640,7 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
 
       <SupplySwitchNote switches={switches} active={preview?.active} />
 
-      {supplies && supplies.length > 0 && <RequestPreview groups={groups} group={group} onGroupChange={changeGroup} preview={view} />}
+      {supplies && supplies.length > 0 && <RequestPreview groups={groups} group={group} onGroupChange={changeGroup} preview={view} failed={Boolean(group) && groupFailed} />}
 
       {adding && supplies && (
         <AddSupplyForm

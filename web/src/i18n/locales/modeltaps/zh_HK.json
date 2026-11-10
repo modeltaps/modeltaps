@@ -2329,7 +2329,8 @@
       "outsideRow": "不在分組 {{group}} 中",
       "notActive": "按供應路由開啟後才生效",
       "next": "下一個",
-      "servingTier": "正在接請求"
+      "servingTier": "正在接請求",
+      "failed": "無法讀取該分組的預覽"
     }
   },
   "settingsUi": {
