@@ -227,6 +227,17 @@ func SetApiRouter(router *gin.Engine) {
 			modelInfoRoute.DELETE("/:id", controller.DeleteModelInfo)
 		}
 
+		modelSupplyRoute := apiRouter.Group("/model_supply")
+		modelSupplyRoute.Use(middleware.AdminAuth())
+		{
+			modelSupplyRoute.GET("/", controller.GetModelSupplies)
+			modelSupplyRoute.POST("/", controller.CreateModelSupply)
+			modelSupplyRoute.PUT("/", controller.UpdateModelSupply)
+			modelSupplyRoute.DELETE("/:id", controller.DeleteModelSupply)
+			// Rewrites how every model is routed once ModelSupplyEnabled is on: root only.
+			modelSupplyRoute.POST("/migrate", middleware.RootAuth(), controller.MigrateModelSupplies)
+		}
+
 		userGroup := apiRouter.Group("/user_group")
 		userGroup.Use(middleware.AdminAuth())
 		{

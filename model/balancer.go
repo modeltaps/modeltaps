@@ -905,6 +905,13 @@ func (cc *ChannelsChooser) countValidChannels(channelIds []int, filters []Channe
 
 var ChannelGroup = ChannelsChooser{}
 
+// Loaded reports whether the routing table has been built at least once.
+func (cc *ChannelsChooser) Loaded() bool {
+	cc.RLock()
+	defer cc.RUnlock()
+	return cc.Rule != nil
+}
+
 func (cc *ChannelsChooser) Load() {
 	var channels []*Channel
 	DB.Where("status = ?", config.ChannelStatusEnabled).Find(&channels)

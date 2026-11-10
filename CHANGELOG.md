@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Model supplies, backend groundwork (no change to request handling yet). A new `model_supplies`
+  table records which channel supplies a public model, under which upstream name, with its own
+  priority, weight and on/off switch; admins manage them through `/api/model_supply`. Root can
+  run `POST /api/model_supply/migrate`, a dry run unless the body says `{"dry_run": false}`, which
+  turns the channels' model lists and model mappings into supplies and reports what changes: new
+  catalog rows, status changes, prices copied from upstream names and conflicts between them,
+  requests that will be priced by the public model instead of the upstream name, `+` mappings,
+  wildcards expanded from the last upstream model list or left unresolved, duplicates, routing
+  policies whose models have no supply, and per-group routing differences. Catalog rows gain
+  `status` (draft, published, retired) and `supply_mode` (balance, failover); hiding a model keeps
+  `status` in step until the migration runs, and saves that leave the two fields out keep them.
+  The `ModelSupplyEnabled` setting is added but has no effect until requests are routed through
+  supplies in a later release.
 - Organization routing policies (backend): with the new site option
   `OrganizationRoutingPolicyEnabled` (off by default), organization owners and admins manage
   routing policies that only their organization's API keys can use, through
