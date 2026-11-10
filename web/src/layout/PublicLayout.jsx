@@ -9,7 +9,7 @@ import { LogoMark } from '@/components/chrome/Logo';
 import UserMenu from '@/components/chrome/UserMenu';
 import LanguageSwitcher from '@/components/auth/LanguageSwitcher';
 import Footer from '@/components/chrome/Footer';
-import { brandName } from 'utils/brand';
+import { brandWordmark } from 'utils/brand';
 
 // ==============================|| PUBLIC LAYOUT (shadcn) ||============================== //
 // Header + footer chrome for unauthenticated/public pages (OAuth callbacks,
@@ -27,7 +27,7 @@ export default function PublicLayout() {
       <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3 sm:px-6">
         <Link to="/" className="flex items-center gap-2 text-foreground">
           <LogoMark size={20} />
-          <span className="text-sm font-semibold leading-none">{brandName(siteInfo.system_name)}</span>
+          <span className="text-sm font-semibold leading-none">{brandWordmark(siteInfo.system_name)}</span>
         </Link>
         <div className="flex items-center gap-1">
           <LanguageSwitcher />
