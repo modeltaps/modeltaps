@@ -155,7 +155,7 @@ export default function Billing() {
   if (isOrgContext && !isOrgAdmin) return <Navigate to="/panel/log" replace />;
 
   const balanceBanner = (
-    <div className="flex flex-col gap-1 rounded-xl bg-muted p-6">
+    <div className="flex flex-col gap-1 rounded-2xl bg-muted p-6">
       <div className="flex items-center gap-1.5">
         <span className="text-sm text-muted-foreground">{t('billingPage.availableBalance')}</span>
         <TooltipProvider delayDuration={150}>
@@ -175,7 +175,7 @@ export default function Billing() {
           </Tooltip>
         </TooltipProvider>
       </div>
-      <span className="text-4xl font-semibold tabular-nums">{balance === null ? '—' : `$${balance.toFixed(2)}`}</span>
+      <span className="text-4xl font-medium tabular-nums">{balance === null ? '—' : `$${balance.toFixed(2)}`}</span>
       <span className="text-xs text-muted-foreground">
         {isOrgContext ? t('billingPage.poolCaption') : t('billingPage.balanceCaption')}
       </span>
@@ -189,7 +189,7 @@ export default function Billing() {
           <Wallet className="size-4" />
         </span>
         <div className="flex flex-col gap-1">
-          <CardTitle className="text-sm font-semibold">{t('topup')}</CardTitle>
+          <CardTitle className="text-sm font-medium">{t('topup')}</CardTitle>
           <p className="text-xs text-muted-foreground">{t('billingPage.topupDescription')}</p>
         </div>
       </CardHeader>
@@ -265,7 +265,7 @@ export default function Billing() {
 
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">{t('billingPage.recentRecords')}</h2>
+          <h2 className="text-sm font-medium">{t('billingPage.recentRecords')}</h2>
           <Tabs value={tab} onValueChange={handleTabChange}>
             <TabsList>
               <TabsTrigger value="ledger">{t('billingPage.tabs.ledger')}</TabsTrigger>

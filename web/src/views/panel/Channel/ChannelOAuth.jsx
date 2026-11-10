@@ -463,11 +463,11 @@ function DeviceCodePanel({ channelId, getValues, onDone, onCancel, onUsePaste })
               title={t('channelOAuth.device.copyCode')}
               aria-label={t('channelOAuth.device.copyCode')}
               onClick={copyCode}
-              className="group flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-5 py-3 transition-colors hover:bg-muted"
+              className="group flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-5 py-3 transition-colors hover:bg-muted"
             >
               {/* spacer as wide as the icon keeps the code itself centered */}
               <span className="size-4" aria-hidden="true" />
-              <code data-testid="device-user-code" className="font-mono text-3xl font-semibold tracking-[0.15em]">
+              <code data-testid="device-user-code" className="font-mono text-3xl font-medium tracking-[0.15em]">
                 {device.userCode}
               </code>
               <Copy className="size-4 text-muted-foreground group-hover:text-foreground" />
@@ -565,7 +565,7 @@ const PASTE_STATUS_OK = new Set(['ok']);
 function Step({ n, title, children }) {
   return (
     <li className="flex gap-3">
-      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">{n}</span>
+      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">{n}</span>
       <div className="min-w-0 flex-1 space-y-2 pt-0.5">
         <p className="text-sm">{title}</p>
         {children}

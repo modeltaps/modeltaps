@@ -12,7 +12,6 @@ import {
   Tags,
   DollarSign,
   BarChart3,
-  Flame,
   Route,
   Sparkles
 } from 'lucide-react';
@@ -36,11 +35,11 @@ const copyText = (text, label) => {
 
 const TONES = {
   primary: 'bg-muted text-foreground',
-  success: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-  warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  info: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  error: 'bg-red-500/10 text-red-600 dark:text-red-400',
-  secondary: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
+  success: 'bg-muted text-foreground',
+  warning: 'bg-warning/10 text-warning',
+  info: 'bg-muted text-foreground',
+  error: 'bg-destructive/10 text-destructive',
+  secondary: 'bg-muted text-muted-foreground',
   default: 'bg-muted text-muted-foreground'
 };
 const OUTLINE_TONES = {
@@ -115,9 +114,7 @@ export default function ModelDetailModal({ open, onClose, model, provider, model
           </div>
           <div className="flex items-center gap-2">
             {tags.includes('Hot') && (
-              <Pill tone="error" className="font-semibold">
-                <Flame className="size-4" /> Hot
-              </Pill>
+              <Pill tone="primary">Hot</Pill>
             )}
             <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground">
               <X className="size-5" />
@@ -131,7 +128,7 @@ export default function ModelDetailModal({ open, onClose, model, provider, model
           <div className="mb-5">
             <div className="mb-3 flex items-center gap-2">
               <Info className="size-5" />
-              <h3 className="font-semibold">{t('modelpricePage.modelInfo')}</h3>
+              <h3 className="font-medium">{t('modelpricePage.modelInfo')}</h3>
             </div>
             <div className="space-y-3">
               <InfoRow icon={<Package className={iconCls} />} label={t('modelpricePage.type')}>
@@ -202,7 +199,7 @@ export default function ModelDetailModal({ open, onClose, model, provider, model
             <div className="mb-5">
               <div className="mb-3 flex items-center gap-2">
                 <Route className="size-5" />
-                <h3 className="font-semibold">{t('modelpricePage.routing.title')}</h3>
+                <h3 className="font-medium">{t('modelpricePage.routing.title')}</h3>
               </div>
               <p className="mb-3 text-sm leading-relaxed text-muted-foreground">
                 {t('modelpricePage.routing.intro', { threshold: Math.round((routing.threshold || 0) * 100) })}
@@ -244,7 +241,7 @@ export default function ModelDetailModal({ open, onClose, model, provider, model
           <div className="mb-2">
             <div className="mb-3 flex items-center gap-2">
               <DollarSign className="size-5" />
-              <h3 className="font-semibold">{t('modelpricePage.priceDetails')}</h3>
+              <h3 className="font-medium">{t('modelpricePage.priceDetails')}</h3>
             </div>
             <p className="mb-3 text-sm leading-relaxed text-muted-foreground">
               {routing ? t('modelpricePage.routing.priceNote', { model: routing.fallback_model }) : t('modelpricePage.priceNote')}
@@ -295,7 +292,7 @@ export default function ModelDetailModal({ open, onClose, model, provider, model
             <div className="mt-5">
               <div className="mb-3 flex items-center gap-2">
                 <BarChart3 className="size-5" />
-                <h3 className="font-semibold">{t('modelpricePage.otherInfo')}</h3>
+                <h3 className="font-medium">{t('modelpricePage.otherInfo')}</h3>
               </div>
               <div className="space-y-1.5">
                 {Object.entries(priceData.price.extra_ratios).map(([key, value]) => (

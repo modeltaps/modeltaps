@@ -9,8 +9,13 @@ function Sheet({ open, onOpenChange, children }) {
   React.useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => {
-      // A nested control (dropdown, combobox) that handled Escape itself calls preventDefault.
-      if (e.key === 'Escape' && !e.defaultPrevented) onOpenChange?.(false);
+      // A nested control (dropdown, combobox) or a dialog opened over the sheet that handled
+      // Escape calls preventDefault. Their listeners may run after this one, so look once the
+      // event has been dispatched.
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      setTimeout(() => {
+        if (!e.defaultPrevented) onOpenChange?.(false);
+      }, 0);
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -20,11 +25,7 @@ function Sheet({ open, onOpenChange, children }) {
 
   return (
     <div className="fixed inset-0 z-[1300]">
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={() => onOpenChange?.(false)}
-        aria-hidden="true"
-      />
+      <div className="absolute inset-0 bg-black/30" onClick={() => onOpenChange?.(false)} aria-hidden="true" />
       {children}
     </div>
   );
@@ -40,7 +41,7 @@ const SheetContent = React.forwardRef(({ className, children, onClose, side = 'r
     className={cn(
       'absolute flex flex-col bg-card shadow-xl',
       side === 'bottom'
-        ? 'inset-x-0 bottom-0 max-h-[90vh] w-full rounded-t-xl border-t border-border'
+        ? 'inset-x-0 bottom-0 max-h-[90vh] w-full rounded-t-2xl border-t border-border'
         : 'inset-y-0 right-0 w-full max-w-xl border-l border-border',
       className
     )}
@@ -80,12 +81,7 @@ function SheetBody({ className, ...props }) {
 }
 
 function SheetFooter({ className, ...props }) {
-  return (
-    <div
-      className={cn('shrink-0 border-t border-border px-6 py-4 flex items-center justify-end gap-2', className)}
-      {...props}
-    />
-  );
+  return <div className={cn('shrink-0 border-t border-border px-6 py-4 flex items-center justify-end gap-2', className)} {...props} />;
 }
 
 export { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetBody, SheetFooter };

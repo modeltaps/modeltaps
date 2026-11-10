@@ -13,6 +13,109 @@
     "emptyTitle": "No channels yet",
     "emptyDescription": "Add an upstream provider key so models can be called."
   },
+  "channelDetail": {
+    "back": "Channels",
+    "backToChannel": "Back to channel",
+    "newTitle": "New channel",
+    "notFound": "This channel does not exist or was deleted",
+    "allSettings": "All settings",
+    "tabConfig": "Settings sections",
+    "unsaved": "Unsaved changes",
+    "discard": "Discard",
+    "save": "Save",
+    "saved": "Saved",
+    "create": "Create channel",
+    "more": "More actions",
+    "enable": "Enable channel",
+    "disable": "Disable channel",
+    "autoDisabled": "Disabled automatically after repeated errors. Re-enable it from More actions once fixed",
+    "sectionHint": {
+      "basic": "Name, provider, key and groups: enough to create the channel",
+      "model": "Which models this channel serves and how their names map",
+      "request": "Headers, custom parameters and compatibility options",
+      "advanced": "Priority, weight, balance alert and proxy"
+    },
+    "used": "Spent",
+    "usedTip": "Total charged by this gateway at its own prices, not the upstream bill",
+    "usedCaption": "Gateway prices, all time",
+    "balance": "Upstream balance",
+    "subscription": "Subscription usage",
+    "windowUsed": "{{name}} used",
+    "balanceUpdated": "Updated {{time}}",
+    "balanceNever": "Not checked yet",
+    "balanceHint": "Not checked yet; providers without a balance API say so",
+    "refreshBalance": "Refresh balance",
+    "threshold": "Low balance alert",
+    "thresholdHint": "Notify when the balance drops below this; 0 turns it off",
+    "thresholdOff": "Off",
+    "checkedAt": "Checked",
+    "resetsAt": "Resets {{time}}",
+    "quotaRemaining": "Remaining / limit",
+    "upstreamUsage": "Upstream usage",
+    "usageLine": "Today {{day}} · week {{week}} · month {{month}}",
+    "reset": {
+      "daily": "resets daily",
+      "weekly": "resets weekly",
+      "monthly": "resets monthly",
+      "none": "no reset"
+    },
+    "unlimited": "No limit",
+    "range": "Range",
+    "range24h": "24 hours",
+    "range7d": "7 days",
+    "requests": "Requests",
+    "requestsIn": "Requests · {{range}}",
+    "successRate": "{{rate}} succeeded",
+    "noTraffic": "No traffic yet",
+    "cacheHit": "Prompt cache hits",
+    "affinity": "{{rate}} stayed on session channel",
+    "modelsTitle": "Models {{count}}",
+    "modelsHint": "Models this channel serves and how they did over {{range}}",
+    "modelsTagged": "The model list is managed by the tag {{tag}}",
+    "mappingSettings": "Mapping and sync",
+    "noModels": "No models yet",
+    "showAll": "Show all {{count}}",
+    "showFewer": "Show fewer",
+    "colModel": "Model",
+    "colSuccess": "Success",
+    "avgLatency": "Avg latency",
+    "ttft": "First token",
+    "speed": "Output speed",
+    "failures": "Failed",
+    "trafficTitle": "Traffic",
+    "metricsEmpty": "No requests went through this channel in this range",
+    "lastTest": "Last test",
+    "neverTested": "Not tested",
+    "keysTitle": "Key and quota",
+    "key": "Key",
+    "keyCount": "{{count}} keys",
+    "replaceKey": "Replace key",
+    "replaceKeyHint": "Leave empty to keep the current key; one key per line",
+    "routingTitle": "Routing and forwarding",
+    "routingHint": "How the gateway picks this channel and where requests go",
+    "priorityHint": "Higher goes first; channels with the same priority share by weight",
+    "weightHint": "Share of traffic among channels with the same priority",
+    "baseUrl": "Base URL",
+    "baseUrlDefault": "Provider default",
+    "proxy": "Proxy",
+    "testModelAuto": "Picked automatically",
+    "tag": "Tag",
+    "driftTitle": "Model drift",
+    "driftHint": "Compares what the upstream offers with the models configured here",
+    "driftCheck": "Check now",
+    "driftRules": "Rules",
+    "driftState": "Status",
+    "driftNever": "Not checked yet",
+    "driftOk": "Matches upstream",
+    "driftChanged": "Differs from upstream",
+    "driftMissing": "Gone upstream ({{count}})",
+    "driftNew": "New upstream ({{count}})",
+    "driftDismiss": "Dismiss",
+    "driftCheckedAt": "checked {{time}}",
+    "on": "On",
+    "off": "Off",
+    "moreInSettings": "Request rewriting, compatibility options, plugins and the note are in"
+  },
   "apiCatalogPage": {
     "endpoints": "Endpoints",
     "examples": "Request examples",
@@ -575,7 +678,15 @@
     "api_audio": "Convert between text and speech",
     "api_compare": "Run several chat models side by side on the same input",
     "pricing": "Model catalog, prices, channels and vendors",
-    "routing_policy": "Virtual models that pick a target model from the first message of each session"
+    "routing_policy": "Virtual models that pick a target model from the first message of each session",
+    "channel": "Grouped by provider; a channel is one set of credentials and an address for that provider",
+    "org_members": "Invite members and set each member’s budget and model scope",
+    "org_settings": "Organization profile, retention and danger zone",
+    "organization": "Organization balance, usage and audit log",
+    "platform_settings": "Platform-wide defaults and switches",
+    "personal_settings": "Applies to your own account only",
+    "token": "Keys for calling the API",
+    "invite_code": "Create, enable and revoke registration invite codes"
   },
   "api_compare": "Compare",
   "modelInfoPage": {
@@ -599,7 +710,8 @@
   "pricingPage": {
     "catalogTabs": {
       "models": "Models",
-      "vendors": "Vendors"
+      "vendors": "Vendors",
+      "paused": "Paused"
     }
   },
   "listPage": {
@@ -806,7 +918,29 @@
     "adminUserRole": "Admin",
     "cUserRole": "User",
     "reliableUserRole": "Trusted user",
-    "superAdminRole": "Root"
+    "superAdminRole": "Root",
+    "panel": {
+      "tabs": "User settings",
+      "tab": {
+        "overview": "Overview",
+        "profile": "Profile",
+        "access": "Quota & groups",
+        "security": "Security"
+      },
+      "account": "Account",
+      "quotaHint": "Adjusting adds or deducts an amount and records it with a remark; it is not part of Save.",
+      "groupHint": "The group sets the user's price ratio and which channels serve them.",
+      "roleLocked": "A super administrator's role cannot be changed here.",
+      "newPassword": "New password",
+      "passwordHint": "8 to 64 characters. Replaces the current password.",
+      "setPassword": "Set password"
+    },
+    "new": {
+      "subtitle": "An account that signs in with a username and password",
+      "passwordHint": "8 to 64 characters.",
+      "defaults": "Created as a common user in the default group",
+      "created": "Created {{username}}"
+    }
   },
   "command": {
     "search": "Search"
@@ -834,7 +968,9 @@
     "submit": "Submit",
     "unknown": "Unknown",
     "secretConfigured": "Configured {{masked}}",
-    "secretKeepHint": "Leave blank to keep the existing value"
+    "secretKeepHint": "Leave blank to keep the existing value",
+    "reload": "Reload",
+    "reloadHint": "Reload the page to continue. If this keeps happening, contact the administrator."
   },
   "Log Context": "Log Context",
   "View Context": "View Context",
@@ -1152,7 +1288,18 @@
     "timeConsuming": "Duration"
   },
   "userGroup": {
-    "ratio": "Ratio"
+    "ratio": "Ratio",
+    "panel": {
+      "settings": "Settings",
+      "symbolFixed": "The identifier cannot be changed after the group is created.",
+      "publicHint": "Users can pick a public group for their API keys.",
+      "scope": "Applies to every user in this group"
+    },
+    "new": {
+      "subtitle": "Users in a group share its price ratio and rate limit",
+      "defaults": "Created enabled with ratio 1 and 300 requests per minute; change them in its panel",
+      "created": "Created group {{symbol}}"
+    }
   },
   "suno": {
     "lyrics": "Lyrics",
@@ -1491,6 +1638,14 @@
     "model_mode_invalid": "Unknown model type",
     "model_capabilities_invalid": "Unknown model capability",
     "model_endpoints_invalid": "Unknown model endpoint",
+    "model_status_invalid": "Unknown model status; use draft, published or retired",
+    "model_supply_mode_invalid": "Unknown supply mode; use balance or failover",
+    "model_supply_model_not_found": "The public model does not exist",
+    "model_supply_model_not_public": "Supplies can only be added to public models, not to aliases or routing policies",
+    "model_supply_channel_not_found": "The channel does not exist",
+    "model_supply_upstream_missing": "Enter the model name the channel should receive",
+    "model_supply_exists": "This channel already supplies this model",
+    "supply_pause_seconds_invalid": "Enter how many seconds to pause, more than 0",
     "model_identifier_exists": "A model with this identifier already exists",
     "model_referenced_by_aliases": "This model is still used by aliases: {{aliases}}",
     "model_alias_self": "A model cannot be an alias of itself",
@@ -1530,7 +1685,8 @@
     "routing_policy_scoring_invalid": "Scoring must be auto, logprobs or self-reported",
     "routing_policy_model_unavailable": "{{field}} is not available to this organization ({{model}})",
     "routing_policy_count_exceeded": "This organization already has the maximum of {{max}} routing policies",
-    "org_routing_policy_disabled": "Organization routing policies are not enabled on this site"
+    "org_routing_policy_disabled": "Organization routing policies are not enabled on this site",
+    "supply_pause_rules_invalid": "The pause rules are not valid: {{message}}"
   },
   "channelOAuth": {
     "tip": {
@@ -1588,7 +1744,6 @@
   "routingPolicy": {
     "create": "New policy",
     "createTitle": "New routing policy",
-    "editTitle": "Edit routing policy",
     "empty": "No routing policies yet. A policy is a model name clients can call; the first message of each session decides which real model answers.",
     "columns": {
       "name": "Policy",
@@ -1602,17 +1757,12 @@
       "organization": "Organization"
     },
     "form": {
-      "tabBasic": "Basics",
-      "tabAdvanced": "Advanced",
-      "tabTry": "Try it",
       "name": "Model name",
       "nameHint": "What clients put in the model field, e.g. auto/coder.",
       "nameHelp": "Letters, digits and . _ / - only, up to 100 characters, not starting or ending with /. It must not collide with an existing model. The name shows up in /v1/models and can be used in token and organization allow lists like any model.",
       "displayName": "Display name",
       "displayNameHint": "Shown in the catalog instead of the model name.",
       "description": "Description",
-      "enabled": "Enabled",
-      "enabledHint": "Disabled policies are not listed and requests to them get model_not_found.",
       "decisionModel": "Decision model",
       "decisionModelHint": "A small, fast chat model that classifies the first user message. Charged to the caller once per session.",
       "question": "Question",
@@ -1659,7 +1809,12 @@
       "probing": "Checking…",
       "probeSupported": "This decision model returns logprobs on the channel it was routed to: probability scoring works.",
       "probeUnsupported": "This decision model does not return logprobs on the channel it was routed to: auto uses self-reported confidence, logprobs always falls back.",
-      "probeFailed": "The check failed: {{error}}"
+      "probeFailed": "The check failed: {{error}}",
+      "tabBasic": "Basics",
+      "tabAdvanced": "Advanced",
+      "tabTry": "Try it",
+      "enabled": "Enabled",
+      "enabledHint": "Disabled policies are not listed and requests to them get model_not_found."
     },
     "templates": {
       "coding_change_size": "Coding: size of change",
@@ -1667,7 +1822,7 @@
       "reasoning_depth": "Reasoning depth"
     },
     "tryIt": {
-      "intro": "Run the decision step only, with the policy as it is in this form. Nothing is forwarded, billed or pinned.",
+      "intro": "Run the decision step only, with the saved policy. Nothing is forwarded, billed or pinned.",
       "message": "First user message",
       "messageHint": "Paste a real first message from your logs.",
       "messagePlaceholder": "Add a --verbose flag to the CLI and log the parsed arguments",
@@ -1715,7 +1870,8 @@
       "quota": "Spent",
       "noLabel": "fallback",
       "byScoring": "By scoring",
-      "avgTopProbability": "Average top probability {{value}}"
+      "avgTopProbability": "Average top probability {{value}}",
+      "range": "Period"
     },
     "scoring": {
       "auto": "Auto (logprobs when available)",
@@ -1726,6 +1882,24 @@
       "logprobs": "Logprobs",
       "self_reported": "Self-reported"
     },
+    "panel": {
+      "tabs": "Policy settings",
+      "tab": {
+        "overview": "Overview",
+        "routes": "Routes",
+        "try": "Try it",
+        "settings": "Settings"
+      },
+      "summary": "How it routes",
+      "routeCount_one": "{{count}} route",
+      "routeCount_other": "{{count}} routes"
+    },
+    "new": {
+      "subtitle": "A model name clients call; the first message picks the real model",
+      "defaults": "Created enabled with automatic scoring and a {{threshold}} threshold; change these in Routes",
+      "created": "Policy created"
+    },
+    "editTitle": "Edit routing policy",
     "scope": {
       "platform": "Platform policies",
       "organizations": "Organization policies"
@@ -1772,6 +1946,992 @@
       "fallback": "Fallback",
       "fallbackDescription": "Low confidence, decision failure, or no text in the first message",
       "priceNote": "A policy has no price of its own: each request is billed at the price of the model that answered. The prices below are the fallback model's ({{model}})."
+    }
+  },
+  "channels": {
+    "action": {
+      "copy": "Copy",
+      "delete": "Delete",
+      "test": "Test"
+    },
+    "advanced": {
+      "costRatio": "Cost ratio",
+      "costRatioHint": "What the upstream charges relative to the list price, used to warn about groups sold below cost; empty means unknown",
+      "danger": "Danger zone",
+      "dangerHint": "Copy creates a new channel with the same key and settings; delete cannot be undone",
+      "name": "Name"
+    },
+    "chart": {
+      "aria": "Requests per channel",
+      "empty": "No traffic for this provider in this period",
+      "title": "Traffic"
+    },
+    "conn": {
+      "account": "Account",
+      "authorized": "Account authorized",
+      "balance": "Balance",
+      "baseUrl": "Base URL",
+      "baseUrlDefault": "Leave empty to use {{url}}",
+      "key": "Key",
+      "noKey": "No key stored",
+      "oneKey": "A channel stores one key: paste a single key, or create more channels for more keys",
+      "proxy": "Proxy",
+      "proxyHint": "Only needed when this server cannot reach the upstream directly",
+      "refreshBalance": "Refresh balance",
+      "replaceHint": "The new key replaces the stored one when you save",
+      "replaceKey": "Replace key",
+      "replacedPending": "new key, not saved yet",
+      "resetsAt": "Resets {{time}}",
+      "subscription": "Subscription usage"
+    },
+    "created": {
+      "adjust": "Adjust",
+      "allModels_one": "{{count}} model (all)",
+      "allModels_other": "All {{count}} models",
+      "blocked_one": "{{count}} blocked",
+      "blocked_other": "{{count}} blocked",
+      "colon": ": ",
+      "comma": ", ",
+      "groups": "{{groups}} group",
+      "listSep": ", ",
+      "models_one": "{{count}} model",
+      "models_other": "{{count}} models",
+      "prefix": "Created",
+      "relative": "{{usage}} (relative to {{name}})"
+    },
+    "getKey": "Get a key from {{provider}}",
+    "groupMissing": "This group no longer exists",
+    "groupRatio": "Ratio {{ratio}}×",
+    "groups": "Groups",
+    "groupsHint": "Tokens only use channels of their own groups; select one or more",
+    "issue": {
+      "autoDisabled": "Disabled automatically after failed requests",
+      "dismiss": "Dismiss",
+      "driftMissing_one": "{{count}} model is no longer listed upstream",
+      "driftMissing_other": "{{count}} models are no longer listed upstream",
+      "driftNew_one": "Upstream added {{count}} model",
+      "driftNew_other": "Upstream added {{count}} models",
+      "enable": "Enable again",
+      "keyMissing": "No key stored",
+      "lowBalance": "Balance {{balance}} is below {{threshold}}",
+      "refreshBalance": "Refresh balance",
+      "setKey": "Set key",
+      "view": "View"
+    },
+    "lane": {
+      "allOff": "All channels disabled",
+      "attention": "A channel needs attention",
+      "label": "Providers",
+      "newOther": "Channel of another provider"
+    },
+    "models": {
+      "add": "Add",
+      "autoAdd": "new upstream models are added automatically",
+      "count_one": "{{count}} model",
+      "count_other": "{{count}} models",
+      "doneAdding": "Done",
+      "fetch": "Fetch from upstream",
+      "fetched_one": "Added {{count}} model from the upstream; save to keep it",
+      "fetched_other": "Added {{count}} models from the upstream; save to keep them",
+      "mappedTo": "Mapped to",
+      "mappingHint": "Points a requested model name at another upstream name, such as a deployment name",
+      "mappingInvalid": "The model mapping is not valid JSON",
+      "model": "Model",
+      "none": "No models yet; add some or fetch them from the upstream",
+      "prune": "Remove stale",
+      "pruned_one": "Removed {{count}} model the upstream no longer lists; save to apply",
+      "pruned_other": "Removed {{count}} models the upstream no longer lists; save to apply",
+      "remove": "Remove {{model}}",
+      "syncPrices": "Sync prices",
+      "ttft": "First token"
+    },
+    "monitor": {
+      "checkNow": "Check model list now",
+      "drift": "Model list changes",
+      "ignore": "Drift ignore rules",
+      "ignoreHint": "One per line: a name, a glob such as *-preview, or re: followed by a regular expression; matching models are never reported or added",
+      "testModel": "Test model",
+      "testModelHint": "Used by connection tests and scheduled checks; empty uses the first model",
+      "threshold": "Balance alert (USD)",
+      "thresholdHint": "Notifies you when the upstream balance drops below this",
+      "thresholdOff": "Off"
+    },
+    "pauseRules": {
+      "label": "Pause rules",
+      "hint": "JSON list tried before the site rules; the first matching rule wins. Leave empty to use the site rules only.",
+      "siteRules": "Site rules in force ({{count}})",
+      "siteOff": "Pause rules are turned off for the site, so these and the channel's own rules do not apply.",
+      "invalidJson": "The pause rules are not valid JSON",
+      "notArray": "The pause rules must be a JSON array"
+    },
+    "more": "More",
+    "new": {
+      "allModels": "All models",
+      "allowAllHint": "All current and future upstream models are offered; to offer only some, remove \"All models\" and add them one by one",
+      "allowEmpty": "Without allowed models this channel offers nothing",
+      "allowSomeHint_one": "Only this {{count}} entry is offered",
+      "allowSomeHint_other": "Only these {{count}} entries are offered",
+      "allowWildcardHint": "A wildcard matches by prefix: gpt-4.1* covers every model whose name starts with gpt-4.1",
+      "allowed": "Allowed models",
+      "authMethod": "Authentication",
+      "authorizeHint": "Sign in to the account in a new window and authorize",
+      "authorized": "Authorized; credentials received",
+      "baseUrlHint": "Full address of the service",
+      "blocked": "Blocked models",
+      "blockedEmpty": "No blocked models",
+      "blockedHint": "Wins over allowed: these are never offered, and the model list check never adds them back",
+      "createFailed": "Could not create the channel",
+      "created": "Created {{name}}; connection test passed",
+      "credentials": "Credentials",
+      "discardConfirm": "What you entered will be lost. Close anyway?",
+      "editKey": "Edit",
+      "jsonHint": "Paste the whole service account JSON; it is stored as one key",
+      "jsonPlaceholder": "Paste the service account JSON",
+      "jsonSet": "Service account JSON",
+      "keyHidden": "Only the start and end are shown",
+      "keyHint": "After you leave the field only the start and end are shown",
+      "keyPlaceholder": "Paste the key; several keys go one per line",
+      "keysCount_one": "{{count}} key",
+      "keysCount_other": "{{count}} keys, one channel each",
+      "mapping": "Model mapping",
+      "mappingHint": "Points a requested model name at another upstream name, such as a deployment name",
+      "matchMode": "Match by",
+      "missing": {
+        "account": "account authorization",
+        "baseUrl": "base URL",
+        "json": "service account JSON",
+        "key": "key",
+        "models": "at least one allowed model",
+        "name": "name"
+      },
+      "missingList": "Still needed: {{items}}",
+      "modeModels": "Models",
+      "modeWildcard": "Wildcard",
+      "multiKey_one": "{{count}} key creates {{count}} channel",
+      "multiKey_other": "{{count}} keys: this creates {{count}} channels ({{first}}, {{second}}, …)",
+      "name": "Name",
+      "noModelList": "Could not get the upstream model list; add the models by name",
+      "oauthHint": "Subscription usage is tracked once authorized",
+      "pasteCredentials": "Or paste the credentials",
+      "provider": "Provider",
+      "readyHint": "Saves, then tests the connection",
+      "readyNoTest": "This provider can only be tested after saving",
+      "saveAndTest": "Save and test",
+      "saving": "Saving…",
+      "serviceAccount": "Service account JSON",
+      "subtitle": "A set of credentials and an address for {{provider}}",
+      "testFail": "Connection failed: {{message}}",
+      "testFailed_one": "Created, but {{count}} test failed: {{message}}",
+      "testFailed_other": "Created, but {{count}} tests failed: {{message}}",
+      "testOk_one": "Connected · {{ms}} ms · {{count}} model",
+      "testOk_other": "Connected · {{ms}} ms · {{count}} models",
+      "wildcardInvalid": "A wildcard is a single * at the end, such as gpt-4.1*",
+      "wildcardPlaceholder": "Type a prefix and press Enter, such as gpt-4.1",
+      "parts": {
+        "region": "Region",
+        "token": "API key",
+        "accessKey": "Access key ID",
+        "secretKey": "Secret access key",
+        "sessionToken": "Session token",
+        "roleArn": "Role ARN",
+        "mode": {
+          "apiKey": "API key",
+          "access": "Access keys",
+          "role": "Assume role"
+        }
+      },
+      "partsHint": "Stored as one key in the format the provider expects",
+      "connectFailed": "Couldn't connect. Check the key and the address"
+    },
+    "newChannel": "New channel",
+    "pane": {
+      "refreshDone_one": "Refreshed the model list of {{count}} channel",
+      "refreshDone_other": "Refreshed the model lists of {{count}} channels",
+      "refreshModels": "Refresh model list",
+      "refreshPartial": "{{failed}} of {{count}} channels could not be refreshed",
+      "summary_one": "{{count}} channel · {{requests}} requests in {{range}}",
+      "summary_other": "{{count}} channels · {{requests}} requests in {{range}}",
+      "testAll": "Test all",
+      "testDone_one": "The channel passed the test",
+      "testDone_other": "All {{count}} channels passed the test",
+      "testPartial": "{{failed}} of {{count}} channels failed the test"
+    },
+    "panel": {
+      "enabled": "Enabled",
+      "scope": "Changes apply to this channel only",
+      "tab": {
+        "models": "Models",
+        "connection": "Connection",
+        "routing": "Groups & routing",
+        "rewrite": "Request rewriting",
+        "monitor": "Monitoring",
+        "advanced": "Advanced"
+      },
+      "tabs": "Channel settings",
+      "discard": "Discard",
+      "discardConfirm": "You have unsaved changes. Close anyway?",
+      "save": "Save",
+      "saved": "Saved",
+      "switchConfirm": "This tab has unsaved changes. Switch anyway?",
+      "unsaved": "Unsaved changes"
+    },
+    "range": {
+      "24h": "24 hours",
+      "7d": "7 days",
+      "30d": "30 days",
+      "label": "Time range",
+      "short": {
+        "24h": "24h",
+        "7d": "7d",
+        "30d": "30d"
+      }
+    },
+    "removeChip": "Remove {{value}}",
+    "retry": "Retry",
+    "rewrite": {
+      "invalidJson": "The parameter override is not valid JSON: {{message}}",
+      "paramsHint": "Forces parameters of every request, as JSON; most channels do not need it"
+    },
+    "table": {
+      "actions": "Actions",
+      "avgLatency": "Average latency",
+      "balance": "Balance / usage",
+      "balanceUnknown": "Not queried yet, or the upstream does not report it",
+      "enable": "Enable {{name}}",
+      "enabled": "Enabled",
+      "hint": "Click a row to view and edit",
+      "name": "Name",
+      "new": "New",
+      "priorityWeight": "Priority · weight",
+      "requests": "Requests · {{range}}",
+      "successRate": "Success rate",
+      "title": "Channels",
+      "usageUsed": "{{pct}}% used"
+    },
+    "tag": "Tag",
+    "tagHint": "Channels with the same tag can be managed together; a tag holds channels of one provider",
+    "unknownProvider": "Type {{type}}",
+    "usage": {
+      "label": "Usage",
+      "only": "Only provider",
+      "onlyDesc": "No other channel in these groups serves this provider",
+      "backup": "Backup",
+      "backupDesc": "Used only when {{name}} fails",
+      "share": "Share",
+      "shareDesc": "Splits traffic with {{name}}, about {{share}}% here",
+      "first": "Prefer",
+      "firstDesc": "Tried first, falls back to {{name}}",
+      "custom": "Custom",
+      "customDesc": "Set priority and weight yourself",
+      "customHint": "Higher priority is tried first, lower tiers only when every channel above is unavailable; weight splits traffic within a priority",
+      "numbers": "Priority {{priority}} · weight {{weight}}",
+      "peerExisting": "{{name}} is already in these groups",
+      "peerNote": "{{name}} serves these models in the same groups too",
+      "priority": "Priority",
+      "weight": "Weight"
+    },
+    "batch": {
+      "label": "Selected channels",
+      "selected_one": "{{count}} selected",
+      "selected_other": "{{count}} selected",
+      "enable": "Enable",
+      "disable": "Disable",
+      "test": "Test",
+      "groups": "Groups",
+      "numbers": "Priority · weight",
+      "delete": "Delete",
+      "clear": "Clear selection",
+      "selectAll": "Select all visible channels",
+      "selectRow": "Select {{name}}",
+      "done_one": "Updated {{count}} channel",
+      "done_other": "Updated {{count}} channels",
+      "partial": "{{failed}} of {{count}} channels could not be updated",
+      "deleteTitle_one": "Delete {{count}} channel",
+      "deleteTitle_other": "Delete {{count}} channels",
+      "deleteConfirm_one": "The selected channel and its settings are deleted. This cannot be undone.",
+      "deleteConfirm_other": "The {{count}} selected channels and their settings are deleted. This cannot be undone.",
+      "groupsTitle_one": "Groups of {{count}} channel",
+      "groupsTitle_other": "Groups of {{count}} channels",
+      "groupsHint": "The selected channels get exactly these groups",
+      "numbersTitle_one": "Priority and weight of {{count}} channel",
+      "numbersTitle_other": "Priority and weight of {{count}} channels",
+      "numbersHint": "Leave a field empty to keep each channel's current value",
+      "unchanged": "Unchanged"
+    },
+    "filter": {
+      "label": "Filter channels",
+      "status": "Status",
+      "all": "All",
+      "enabled": "Enabled",
+      "manual": "Disabled",
+      "auto": "Auto-disabled",
+      "allTags": "All tags",
+      "noTag": "No tag",
+      "empty": "No channels match these filters.",
+      "clear": "Clear filters"
+    },
+    "search": {
+      "label": "Search channels",
+      "placeholder": "Name, model, tag, key or host",
+      "clear": "Clear search",
+      "results": "Providers with matches",
+      "none": "Nothing matches",
+      "emptyTitle": "No matching channels",
+      "emptyDescription": "No channel of any provider matches \"{{query}}\""
+    },
+    "tagActions": {
+      "label": "Tag {{tag}}",
+      "enable": "Enable all in tag",
+      "disable": "Disable all in tag",
+      "priority": "Set tag priority",
+      "delete": "Delete tag and its channels",
+      "priorityTitle": "Priority of tag {{tag}}",
+      "priorityHint": "Sets the same priority on every channel with this tag, across providers"
+    },
+    "optional": "optional"
+  },
+  "nav": {
+    "sections": {
+      "develop": "Develop",
+      "organization": "Organization",
+      "gateway": "Gateway",
+      "people": "Users",
+      "finance": "Finance",
+      "settings": "Settings"
+    },
+    "items": {
+      "dashboard": "Dashboard",
+      "usage": "Usage",
+      "log": "Logs",
+      "token": "API Keys",
+      "models": "Models",
+      "playground": "Playground",
+      "docs": "Docs",
+      "orgOverview": "Organization overview",
+      "orgMembers": "Members & budgets",
+      "billing": "Billing",
+      "orgSettings": "Organization settings",
+      "health": "System health",
+      "stats": "Statistics",
+      "channels": "Channels",
+      "catalog": "Model catalog",
+      "routing": "Auto routing",
+      "users": "Users",
+      "userGroups": "User groups",
+      "orgs": "Organizations",
+      "orders": "Orders",
+      "redemption": "Redemption codes",
+      "platformSettings": "Platform settings",
+      "personalSettings": "Personal settings",
+      "inviteCodes": "Invite codes"
+    },
+    "context": {
+      "personal": "Personal",
+      "admin": "Platform admin",
+      "switch": "Switch space",
+      "personalMark": "P",
+      "adminMark": "A",
+      "organizations": "Organizations",
+      "adminRole": "Admin",
+      "current": "Current"
+    },
+    "account": {
+      "menu": "Account menu",
+      "settings": "Personal settings",
+      "appearance": "Appearance",
+      "language": "Language",
+      "docs": "Docs & help",
+      "logout": "Log out"
+    },
+    "balance": {
+      "personal": "Balance",
+      "pool": "Organization balance",
+      "mine": "My balance"
+    },
+    "stats": {
+      "tabs": "Statistics view",
+      "platform": "Platform",
+      "byUser": "By user"
+    },
+    "playground": {
+      "modality": "Modality"
+    },
+    "subnav": {
+      "label": "Sections"
+    },
+    "mainLabel": "Main navigation"
+  },
+  "objects": {
+    "optional": "optional",
+    "help": "Help",
+    "notFound": "This item does not exist or was deleted",
+    "more": "More actions",
+    "panel": {
+      "discard": "Discard",
+      "discardConfirm": "You have unsaved changes. Close anyway?",
+      "save": "Save",
+      "saved": "Saved",
+      "scope": "Saving applies to this tab only",
+      "switchConfirm": "This tab has unsaved changes. Switch anyway?",
+      "unsaved": "Unsaved changes"
+    },
+    "new": {
+      "create": "Create",
+      "discardConfirm": "Discard what you have entered?",
+      "missing": "Still needed: {{items}}",
+      "listSep": ", "
+    },
+    "open": "Open"
+  },
+  "orgAdmin": {
+    "panel": {
+      "tabs": "Organization settings",
+      "tab": {
+        "overview": "Overview",
+        "balance": "Balance",
+        "members": "Members"
+      },
+      "details": "Details",
+      "slug": "Slug",
+      "ownerId": "owner #{{id}}",
+      "followsDefault": "Follows the site default",
+      "apply": "Apply"
+    }
+  },
+  "redemptionPage": {
+    "panel": {
+      "details": "Details",
+      "edit": "Code",
+      "scope": "Changes apply to this code only"
+    },
+    "new": {
+      "subtitle": "Codes users redeem for balance",
+      "nameHint": "Codes created together share the name, which is how a batch is exported.",
+      "defaults": "Anyone can redeem it and it never expires; change that in its panel",
+      "defaultsMany": "{{count}} codes, unrestricted and never expiring; the keys download as a text file"
+    }
+  },
+  "orderlogPage": {
+    "panel": {
+      "details": "Details",
+      "amounts": "Fees and rate",
+      "copyTradeNo": "Copy trade no.",
+      "copied": "Trade number copied",
+      "viewUser": "Open the user"
+    }
+  },
+  "modelSupply": {
+    "tab": "Supplies",
+    "column": "Supply",
+    "count_one": "{{count}} supply",
+    "count_other": "{{count}} supplies",
+    "channel": "Channel",
+    "model": "Model",
+    "upstream": "Upstream model",
+    "priority": "Priority",
+    "weight": "Weight",
+    "stateLabel": "State",
+    "enabled": "Use this supply",
+    "actions": "Supply actions",
+    "edit": "Edit",
+    "save": "Save",
+    "delete": "Delete supply",
+    "deleteTitle": "Delete supply",
+    "deleteConfirm": "Stop sending {{model}} to {{channel}}? The channel itself is not changed.",
+    "deleted": "Supply deleted",
+    "moveUp": "Move to a higher tier",
+    "moveDown": "Move to a lower tier",
+    "pauseFor": "Pause for",
+    "paused": "Paused for {{time}}",
+    "resume": "Resume now",
+    "resumeChannel": "Resume the whole channel",
+    "resumeNow": "Resume",
+    "resumed": "Back in rotation",
+    "openChannel": "Open channel {{name}}",
+    "channelDeleted": "Deleted channel #{{id}}",
+    "savedRightAway": "Changes on this tab are saved right away.",
+    "empty": "No channel supplies this model yet",
+    "emptyHint": "Add a supply to choose which channel serves it and under which upstream name.",
+    "orderHint": "Higher priority tiers are tried first; a lower tier is used only when every supply above it is unavailable.",
+    "switchOff": "Supply routing is off. These supplies are saved, but requests still follow each channel's model list until ModelSupplyEnabled is turned on.",
+    "upstreamRequired": "Enter the model name the channel should receive",
+    "priorityInvalid": "Priority must be a whole number",
+    "weightInvalid": "Weight must be a whole number, 0 or more",
+    "minutes_one": "{{count}} minute",
+    "minutes_other": "{{count}} minutes",
+    "hours_one": "{{count}} hour",
+    "hours_other": "{{count}} hours",
+    "seconds_one": "{{count}} second",
+    "seconds_other": "{{count}} seconds",
+    "status": {
+      "label": "Status",
+      "help": "Draft: not listed and not callable. Published: listed and callable. Retired: callable but no longer listed. Applies once supply routing is on.",
+      "draft": "Draft",
+      "published": "Published",
+      "retired": "Retired"
+    },
+    "mode": {
+      "label": "Within a tier",
+      "balance": "Balance",
+      "failover": "Failover",
+      "balanceHint": "Requests are split across the supplies of a tier by weight.",
+      "failoverHint": "The supply with the highest weight in a tier takes every request; the others are its backups.",
+      "saved": "Supply mode saved"
+    },
+    "tier": {
+      "only": "One tier",
+      "first": "Tried first",
+      "backup_one": "Backup {{count}}",
+      "backup_other": "Backup {{count}}",
+      "priority": "priority {{priority}}"
+    },
+    "state": {
+      "ok": "Available",
+      "paused": "Paused",
+      "pausedUntil": "Paused until {{time}}",
+      "probing": "Waiting for recovery test",
+      "disabled": "Off",
+      "channel_off": "Channel disabled",
+      "wholeChannel": "whole channel",
+      "cooling": "Cooling down",
+      "coolingUntil": "Cooling down until {{time}}",
+      "coolingHint": "A short cool-down after an error such as a rate limit. It is kept in memory on the server that answered this page only."
+    },
+    "pause": {
+      "rule": "Rule: {{rule}}",
+      "probeHint": "A test request runs when the pause ends; it resumes only if the test passes."
+    },
+    "rule": {
+      "quota": "Quota or balance used up",
+      "credential": "Invalid credentials",
+      "model_not_found": "Model not found upstream",
+      "upstream_failure": "Repeated upstream failures",
+      "manual": "Paused by an admin"
+    },
+    "add": {
+      "button": "Add supply",
+      "submit": "Add",
+      "done": "Supply added",
+      "offering": "Already lists this model",
+      "others": "Other channels",
+      "pickChannel": "Choose a channel",
+      "searchChannel": "Search channels",
+      "noChannel": "No channel found",
+      "channelRequired": "Choose a channel",
+      "hint": "The upstream name comes from the channel's model mapping. A new supply joins as a backup below the lowest tier."
+    },
+    "channelSupplies": {
+      "title_one": "Supplies {{count}} public model",
+      "title_other": "Supplies {{count}} public models",
+      "readonly": "Edited on the model page",
+      "none": "No public model uses this channel as a supply yet.",
+      "open": "Open the supplies of {{model}}"
+    },
+    "pausedPage": {
+      "description": "Channels, or models on a channel, that a pause rule or an admin has taken out of rotation. They come back on their own when the pause ends.",
+      "empty": "Nothing is paused",
+      "emptyHint": "Pauses shorter than a minute are kept in memory only and are not listed.",
+      "scope": "Paused",
+      "rule": "Rule",
+      "until": "Until",
+      "reason": "Upstream error",
+      "probe": "test before resuming",
+      "probes_one": "{{count}} failed test",
+      "probes_other": "{{count}} failed tests",
+      "rulesOff": "Pause rules are off: failures go back to the old auto-disable and cool-down. Pauses already listed still end on time."
+    },
+    "channelGroups": "Groups: {{groups}}",
+    "preview": {
+      "label": "Request preview",
+      "group": "Group of the request",
+      "anyGroup": "Any group",
+      "first": "The next request goes to {{channel}}",
+      "split_one": "The next request goes to one of {{count}} supply, picked by share",
+      "split_other": "The next request goes to one of {{count}} supplies, picked by share",
+      "none": "No supply can take a request right now",
+      "outside_one": "{{count}} supply is not in group {{group}}",
+      "outside_other": "{{count}} supplies are not in group {{group}}",
+      "outsideRow": "Not in group {{group}}",
+      "notActive": "not in effect until supply routing is on",
+      "next": "Next",
+      "servingTier": "takes requests now",
+      "failed": "Couldn't load the preview for this group"
+    }
+  },
+  "settingsUi": {
+    "search": {
+      "placeholder": "Search settings",
+      "clear": "Clear search",
+      "title": "Search “{{query}}”",
+      "empty": "No matching settings",
+      "count_one": "{{count}} card",
+      "count_other": "{{count}} cards"
+    },
+    "unsaved": "Unsaved changes",
+    "undo": "Undo",
+    "leave": {
+      "title": "You have unsaved changes",
+      "description": "Leaving this page discards the changes you have not saved.",
+      "stay": "Stay",
+      "discard": "Discard changes"
+    },
+    "collection": {
+      "add": "Add",
+      "more": "More actions",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "empty": "Nothing here yet",
+      "enable": "Enable",
+      "disable": "Disable",
+      "status": "Status"
+    },
+    "platform": {
+      "label": "Platform settings groups",
+      "groups": {
+        "site": {
+          "label": "Site",
+          "description": "Address, branding and what visitors see"
+        },
+        "auth": {
+          "label": "Sign-in & registration",
+          "description": "Who can sign in, how, and how accounts are created"
+        },
+        "billing": {
+          "label": "Billing",
+          "description": "Quota, billing rules and periodic limits"
+        },
+        "payment": {
+          "label": "Payments",
+          "description": "How you get paid, top-ups and invoices"
+        },
+        "gateway": {
+          "label": "Gateway",
+          "description": "Forwarding, retries and channel health"
+        },
+        "privacy": {
+          "label": "Logs & privacy",
+          "description": "What is recorded, for how long, and who can see it"
+        },
+        "notify": {
+          "label": "Notifications & integrations",
+          "description": "Mail, bots and callbacks"
+        },
+        "orgpolicy": {
+          "label": "Organization policy",
+          "description": "What organizations can do; root only"
+        }
+      },
+      "cards": {
+        "server-address": {
+          "title": "Server address",
+          "description": "Used by callbacks, links in emails and the docs examples",
+          "hint": "A trailing slash is removed"
+        },
+        "branding": {
+          "title": "Branding",
+          "description": "Site name, logo, page content and provider icons",
+          "hint": "An SVG logo 32px high works best"
+        },
+        "display": {
+          "title": "Display",
+          "description": "How quota and usage are shown to users",
+          "hint": "Affects display only, not billing"
+        },
+        "external-links": {
+          "title": "External links",
+          "description": "Where top-up, chat and docs links point",
+          "hint": "Leave empty to hide"
+        },
+        "version-notice": {
+          "title": "Version notice",
+          "description": "A notice shown at the top after sign-in; check for a new version here too",
+          "hint": "Markdown is supported"
+        },
+        "account-system": {
+          "title": "Account system",
+          "hint": "You confirm once more before it is saved"
+        },
+        "login-methods": {
+          "title": "Sign-in methods",
+          "description": "Sign-in, registration and bot checks for site accounts",
+          "hint": "Keep at least one way to sign in"
+        },
+        "oidc-providers": {
+          "title": "OIDC providers"
+        },
+        "admin-login": {
+          "title": "Admin emergency sign-in"
+        },
+        "github-oauth": {
+          "title": "GitHub sign-in",
+          "hint": "Secrets are not shown again once saved"
+        },
+        "wechat-auth": {
+          "title": "WeChat sign-in",
+          "hint": "Secrets are not shown again once saved"
+        },
+        "lark-auth": {
+          "title": "Lark sign-in",
+          "hint": "Secrets are not shown again once saved"
+        },
+        "linuxdo-oauth": {
+          "title": "LINUX DO sign-in",
+          "hint": "Secrets are not shown again once saved"
+        },
+        "turnstile": {
+          "title": "Bot check",
+          "hint": "Secrets are not shown again once saved"
+        },
+        "email-domain": {
+          "title": "Email domain restriction",
+          "hint": "One domain per line"
+        },
+        "quota": {
+          "title": "Quota",
+          "description": "New user quota, pre-consumption and balance reminders",
+          "hint": "Only affects accounts created from now on"
+        },
+        "billing-rules": {
+          "title": "Billing rules",
+          "description": "Empty replies, approximate counting and price sync",
+          "hint": "Applies to new requests right away"
+        },
+        "quota-reset": {
+          "title": "Periodic limit reset",
+          "hint": "Sets where daily, weekly and monthly limits start"
+        },
+        "invite-reward": {
+          "title": "Invite rewards",
+          "hint": "When off, no new rewards are granted"
+        },
+        "payment": {
+          "title": "Payment settings",
+          "hint": "The rate only changes what CNY gateways charge, not balances"
+        },
+        "payment-gateways": {
+          "title": "Payment gateways",
+          "description": "Several can be on at once; users choose on the top-up page"
+        },
+        "invoice": {
+          "title": "Monthly invoices",
+          "description": "Generate or update the invoices of a month"
+        },
+        "retry": {
+          "title": "Retries",
+          "description": "Retry on another channel when the upstream fails",
+          "hint": "Only for errors that can be retried"
+        },
+        "error-handling": {
+          "title": "Error handling",
+          "description": "What callers see when a request fails",
+          "hint": "Applies to new requests right away"
+        },
+        "channel-auto": {
+          "title": "Channel auto disable & recovery",
+          "description": "Channels that keep failing are paused and come back after a successful probe",
+          "hint": "Admins can be notified of both"
+        },
+        "session-affinity": {
+          "title": "Session affinity",
+          "description": "Keep a session on one channel so the prompt cache holds",
+          "hint": "Applies to new sessions"
+        },
+        "model-name-match": {
+          "title": "Model name matching",
+          "description": "How the model name a caller sends matches the names on channels",
+          "hint": "Applies to new requests right away"
+        },
+        "native-protocol": {
+          "title": "Native protocols",
+          "description": "Pass-through to upstream native APIs and their parameters",
+          "hint": "Only for providers that support it"
+        },
+        "prompt-limits": {
+          "title": "Prompt limits",
+          "description": "The input limit of a single request",
+          "hint": "Requests over the limit are rejected"
+        },
+        "image-proxy": {
+          "title": "Image proxy",
+          "description": "Send image requests through a proxy or this site",
+          "hint": "Leave empty for no proxy"
+        },
+        "auto-routing": {
+          "title": "Auto routing",
+          "description": "How decision calls are billed; policies are managed on the auto routing page.",
+          "hint": "Add and edit policies on the auto routing page"
+        },
+        "log-consume": {
+          "title": "Consume logs",
+          "description": "Usage records of every request and how long they are kept",
+          "hint": "Usage statistics depend on these records"
+        },
+        "log-io": {
+          "title": "Request & response retention",
+          "description": "Keep bodies for troubleshooting; API keys and auth headers are never stored",
+          "hint": "Users and organizations can change it in their own settings"
+        },
+        "safety": {
+          "title": "Content safety",
+          "hint": "One keyword per line"
+        },
+        "smtp": {
+          "title": "Mail sending",
+          "description": "Verification codes, notifications and billing emails are sent from here",
+          "hint": "The password is not shown again once saved"
+        },
+        "notifications": {
+          "title": "Notifications",
+          "hint": "Each kind is capped per hour"
+        },
+        "telegram": {
+          "title": "Telegram bot"
+        },
+        "builtin-chat": {
+          "title": "Built-in chat",
+          "description": "Open the chat page right in the console",
+          "hint": "Applies to every user"
+        },
+        "chat-links": {
+          "title": "Chat links"
+        },
+        "mj-notify": {
+          "title": "Midjourney callback",
+          "description": "Call the caller's address when a task finishes",
+          "hint": "When off, callers poll the task status"
+        },
+        "org-policy": {
+          "title": "Organizations",
+          "hint": "Existing organizations are not affected"
+        },
+        "supply-pause-rules": {
+          "title": "Supply pause rules",
+          "description": "Pause a channel or model on upstream errors by rule; it comes back after a passing test",
+          "hint": "When off, the older auto disable and cooldown apply"
+        }
+      },
+      "actions": {
+        "manageInviteCodes": "Manage invite codes ›",
+        "openRouting": "Open auto routing ›",
+        "currentVersion": "Current version {{version}}",
+        "check": "Check",
+        "purge": "Purge",
+        "purgeDescription": "Deletes logs older than the time you pick; this cannot be undone",
+        "invoiceGenDescription": "Creates the invoices of the month you pick",
+        "invoiceUpdateDescription": "Recalculates the existing invoices of the month you pick"
+      },
+      "chatLinks": {
+        "add": "Add chat link",
+        "edit": "Edit chat link"
+      },
+      "telegram": {
+        "add": "Add command"
+      },
+      "pauseRules": {
+        "label": "Custom rules (JSON)",
+        "description": "Leave empty for the built-in rules; a custom list replaces them as a whole, and the first matching rule wins.",
+        "invalidJson": "The pause rules are not valid JSON",
+        "notArray": "The pause rules must be a JSON array",
+        "builtIn": "Built-in rules in effect",
+        "useDefaults": "Start from defaults",
+        "useDefaultsHint": "Start from defaults copies these rules into the editor to change them; nothing is saved until you save the card.",
+        "showBuiltIn": "Show the built-in rules",
+        "replaceWithDefaults": "Replace with defaults",
+        "replaceHint": "Replaces the editor text with the built-in rules; Undo brings back the saved rules.",
+        "summary": {
+          "status": "HTTP {{codes}}",
+          "patterns_one": "{{count}} error pattern",
+          "patterns_other": "{{count}} error patterns",
+          "unusable": "credentials rejected or account unusable",
+          "modelNotFound": "model not found upstream",
+          "rateLimitReset": "upstream gives a reset time",
+          "perStatus": "status has a per-status cool-down",
+          "anyError": "any error",
+          "times_one": "{{count}} time within {{duration}}",
+          "times_other": "{{count}} times within {{duration}}",
+          "retry": "try the next supply",
+          "pause_channel": "pause the channel for {{duration}}",
+          "pause_model": "pause the model for {{duration}}",
+          "pauseUntilReset_channel": "pause the channel until the reset time",
+          "pauseUntilReset_model": "pause the model until the reset time",
+          "pauseConfigured_channel": "pause the channel for the configured time",
+          "pauseConfigured_model": "pause the model for the configured time",
+          "probe": "test before resuming",
+          "notify": "notify"
+        }
+      }
+    },
+    "personal": {
+      "label": "Personal settings groups",
+      "username": "Username",
+      "groups": {
+        "profile": "Profile",
+        "profileDescription": "Display name and account details",
+        "security": "Sign-in & security",
+        "securityDescription": "Sign-in methods, identifiers, sessions and the access token",
+        "privacy": "Data & privacy",
+        "privacyDescription": "What the platform keeps for you",
+        "preferences": "Preferences",
+        "preferencesDescription": "Only affect you"
+      },
+      "cards": {
+        "profile": {
+          "title": "Profile",
+          "description": "Display name and avatar",
+          "hint": "The username cannot be changed"
+        },
+        "logIO": {
+          "description": "When on, log details show the full bodies",
+          "hint": "Only affects requests from now on"
+        },
+        "appearance": {
+          "title": "Appearance",
+          "description": "Theme and language, just for you",
+          "hint": "Applied as soon as you save",
+          "languageHint": "Pick the interface language; it follows the browser by default."
+        },
+        "quotaRemind": {
+          "hint": "At most one reminder a day"
+        },
+        "accessToken": {
+          "title": "Access token",
+          "rowHint": "For the management API; not an API key for model calls",
+          "reset": "Regenerate",
+          "confirm": "Once regenerated, the previous access token stops working."
+        }
+      },
+      "sessions": {
+        "device": "Device",
+        "where": "Address & method"
+      }
+    },
+    "org": {
+      "label": "Organization settings groups",
+      "groups": {
+        "general": "General",
+        "generalDescription": "Organization profile and team budget",
+        "danger": "Danger zone",
+        "dangerDescription": "Leave, transfer and dissolve"
+      },
+      "cards": {
+        "profile": {
+          "description": "The name shows in members' context switcher",
+          "hint": "Changes apply to every member"
+        },
+        "budget": {
+          "hint": "The period follows the platform settings"
+        },
+        "danger": {
+          "description": "These actions affect every member"
+        }
+      }
+    }
+  },
+  "home": {
+    "hero": {
+      "tagline": "Every model. One tap.",
+      "ctaPrimary": "Get API key",
+      "catchphrase": "Just turn it on."
     }
   },
   "settingsPage": {

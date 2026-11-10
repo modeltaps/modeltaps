@@ -313,19 +313,23 @@ docker compose --profile docs stop docs
    ./modeltaps --port 3000 --log-dir ./logs
    ```
 
-3. **アプリケーションにアクセスする**：ブラウザで `http://localhost:3000` にアクセスしてログインします。初期アカウントのユーザー名は `root` で、初期パスワードは初回起動時の設定によって決まります。
+3. **アプリケーションにアクセスする**：ブラウザで `http://localhost:3000` にアクセスしてログインします。初期アカウントはスーパー管理者（ロールは root。以下 root と呼びます）で、ユーザー名は `admin` です。初期パスワードは初回起動時の設定によって決まります。
 
    - `ROOT_PASSWORD` を設定した場合（長さ 8〜64 文字）：その値が root の初期パスワードになります。長さが要件を満たさない場合、プログラムは起動に失敗します。
    - `ROOT_PASSWORD` を設定しない場合：プログラムが `crypto/rand` で 16 文字の強いランダムパスワードを生成し、**初回起動時のログに 1 度だけ出力**します。形式は次のとおりです。
 
      ```text
-     no user exists, create a root user for you: username is root, initial root password: <ランダムパスワード>
+     no user exists, created the super admin account: username is admin, initial password: <ランダムパスワード>
      ```
 
-   ローカル開発の取り決め：`ROOT_PASSWORD=root` と `ROOT_PASSWORD_ALLOW_INSECURE=true` を設定すると、初回起動後に `root/root` でログインできます。このスイッチはローカル開発専用で、本番環境では絶対に有効化しないでください。
+   ローカル開発の取り決め：`ROOT_PASSWORD=admin` と `ROOT_PASSWORD_ALLOW_INSECURE=true` を設定すると、初回起動後に `admin/admin` でログインできます。このスイッチはローカル開発専用で、本番環境では絶対に有効化しないでください。
 
    ::: warning 初期パスワード
    この処理はデータベースにまだユーザーが存在しない場合にのみ有効です。初回ログイン後は直ちに root のパスワードを変更し、初期パスワードを含む起動ログを削除してください（[ディレクトリ権限の強化](#ディレクトリ権限の強化) を参照）。
+   :::
+
+   ::: info 旧バージョンからのアップグレード
+   以前のバージョンでは、初回起動時に作成されるアカウントのユーザー名は `root`、表示名は `Root User` でした。アップグレードしても既存のアカウントは変更されず、`root` はそのままログインできます。`/login/admin` もユーザー名ではなくロールで判定するため、引き続き使えます。名前を変えたい場合は「ユーザー管理」で変更してください。
    :::
 
 実行方法と設定項目はコンテナデプロイと同じです。`.env` / 環境変数で注入することも、`--config ./config.yaml` で設定ファイルを指定することもできます（[コマンドライン引数](./cli.md) を参照）。本番環境では [ベアメタル（手動）デプロイ](#ベアメタル-手動-デプロイ) に従ってディレクトリとファイルの権限を強化してください。
@@ -362,7 +366,7 @@ docker compose --profile docs stop docs
 初回起動時（データベースにまだユーザーが存在しない場合）、`ROOT_PASSWORD` が未設定であればプログラムは 16 文字のランダムパスワードを生成し、**平文で 1 度出力**します。
 
 ```text
-no user exists, create a root user for you: username is root, initial root password: <ランダムパスワード>
+no user exists, created the super admin account: username is admin, initial password: <ランダムパスワード>
 ```
 
 このログは同時に 2 か所に書き込まれます。
@@ -444,7 +448,7 @@ root のパスワードを変更した後も、初期パスワードはログ内
 
 ```bash
 # 1. ログに該当行が存在するか確認する
-sudo grep -l "initial root password" /data/modeltaps/logs/*.log
+sudo grep -l -E "initial (root )?password" /data/modeltaps/logs/*.log
 
 # 2. 該当行を含むログファイルを削除する（ローテーションで生成された履歴ファイルを含む）
 sudo rm -f /data/modeltaps/logs/modeltaps.log /data/modeltaps/logs/modeltaps-*.log
@@ -454,7 +458,7 @@ sudo rm -f /data/modeltaps/logs/modeltaps.log /data/modeltaps/logs/modeltaps-*.l
 
 ```bash
 # 確認
-docker logs modeltaps 2>&1 | grep "initial root password"
+docker logs modeltaps 2>&1 | grep -E "initial (root )?password"
 # 削除：コンテナを再作成する（データはマウントされたボリュームにあるため失われません）
 docker rm -f modeltaps && docker run -d ...   # 元の起動コマンドで再作成します
 ```

@@ -1,21 +1,21 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { KeyRound } from 'lucide-react';
 
 import { API } from 'utils/api';
 import { copy, showError } from 'utils/common';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import { ActionCard, ActionRow } from '@/components/settings/cards';
 import { TextRow } from '../../Setting/parts';
 
 // ==============================|| SETTINGS — ACCOUNT / ACCESS TOKEN ||============================== //
-// 系统管理用访问 Token(非 API 调用 Key)的生成与重置。
+// The access token for the management API (not an API key for model calls): generated or reset as
+// a one-off action. Resetting invalidates the previous token, so it asks first.
 
-export default function Tokens() {
+export default function AccessTokenCard() {
   const { t } = useTranslation();
   const [accessToken, setAccessToken] = useState('');
 
-  const generateAccessToken = async () => {
+  const generate = async () => {
     const res = await API.get('/api/user/token');
     const { success, message, data } = res.data;
     if (success) {
@@ -24,16 +24,29 @@ export default function Tokens() {
     } else {
       showError(message);
     }
+    return success;
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">{t('profilePage.token')}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Alert variant="info">{t('profilePage.tokenNotice')}</Alert>
-        {accessToken && (
+    <ActionCard
+      title={t('settingsUi.personal.cards.accessToken.title')}
+      description={t('profilePage.tokenNotice')}
+      highlight="access-token"
+    >
+      <ActionRow
+        icon={KeyRound}
+        title={t('settingsUi.personal.cards.accessToken.title')}
+        description={t('settingsUi.personal.cards.accessToken.rowHint')}
+        actionLabel={t('settingsUi.personal.cards.accessToken.reset')}
+        confirm={{
+          title: t('profilePage.resetToken'),
+          description: t('settingsUi.personal.cards.accessToken.confirm'),
+          label: t('profilePage.generateToken')
+        }}
+        onAction={generate}
+      />
+      {accessToken && (
+        <div className="pb-2 pt-1">
           <TextRow
             id="access_token"
             label={t('profilePage.yourTokenIs')}
@@ -43,9 +56,8 @@ export default function Tokens() {
             copyable
             description={t('profilePage.keepSafe')}
           />
-        )}
-        <Button onClick={generateAccessToken}>{accessToken ? t('profilePage.resetToken') : t('profilePage.generateToken')}</Button>
-      </CardContent>
-    </Card>
+        </div>
+      )}
+    </ActionCard>
   );
 }

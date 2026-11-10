@@ -20,7 +20,7 @@ const render = (siteInfo) => renderAuthPage(Register, '/register', siteInfo);
 const USERNAME_FIELD = 'id="username"';
 const PASSWORD_FIELD = 'id="password"';
 const LOGIN_LINK = 'href="/login"';
-const OR_DIVIDER = 'uppercase tracking-wide';
+const OR_DIVIDER = 'h-px flex-1 bg-border';
 const SOCIAL_BUTTON = '使用 Github 登录';
 const DISABLED_NOTICE = '管理员关闭了通过密码注册';
 

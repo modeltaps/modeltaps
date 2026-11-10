@@ -172,6 +172,33 @@ func registerOptions() {
 		return fmt.Errorf("invalid channel test mode %q", value)
 	}, "recovery", config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("ChannelTestIntervalMinutes", &config.ChannelTestIntervalMinutes, config.ScopeAdmin)
+	config.GlobalOption.RegisterBool("PauseRulesEnabled", &config.PauseRulesEnabled, config.ScopeAdmin)
+	config.GlobalOption.RegisterCustom("PauseRules", func() string {
+		return config.PauseRules
+	}, func(value string) error {
+		if err := SetCustomPauseRules(value); err != nil {
+			return err
+		}
+		config.PauseRules = value
+		return nil
+	}, "", config.ScopeAdmin)
+	config.GlobalOption.RegisterCustom("ModelSupplyEnabled", func() string {
+		return strconv.FormatBool(config.ModelSupplyEnabled)
+	}, func(value string) error {
+		enabled, err := strconv.ParseBool(value)
+		if err != nil {
+			return fmt.Errorf("invalid ModelSupplyEnabled %q", value)
+		}
+		changed := enabled != config.ModelSupplyEnabled
+		config.ModelSupplyEnabled = enabled
+		// Switching rebuilds the routing table and the catalog views from the other source. During
+		// startup the channels are not loaded yet and main loads them afterwards.
+		if changed && ChannelGroup.Loaded() {
+			ChannelGroup.Load()
+			refreshCatalogCaches()
+		}
+		return nil
+	}, "false", config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("ChannelMetricsEnabled", &config.ChannelMetricsEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("ChannelMetricsRetentionDays", &config.ChannelMetricsRetentionDays, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("ChannelCredentialRefreshMinutes", &config.ChannelCredentialRefreshMinutes, config.ScopeAdmin)
@@ -325,12 +352,18 @@ func UpdateOption(key string, value string) error {
 		Key: key,
 	}
 	// https://gorm.io/docs/update.html#Save-All-Fields
-	DB.FirstOrCreate(&option, Option{Key: key})
+	// A failed write leaves the running value alone: applying it in memory only would look saved
+	// on this node and revert at the next restart or sync.
+	if err := DB.FirstOrCreate(&option, Option{Key: key}).Error; err != nil {
+		return fmt.Errorf("save option %s: %w", key, err)
+	}
 	option.Value = value
 	// Save is a combination function.
 	// If save value does not contain primary key, it will execute Create,
 	// otherwise it will execute Update (with all fields).
-	DB.Save(&option)
+	if err := DB.Save(&option).Error; err != nil {
+		return fmt.Errorf("save option %s: %w", key, err)
+	}
 	// Update OptionMap
 	return config.GlobalOption.Set(key, value)
 }

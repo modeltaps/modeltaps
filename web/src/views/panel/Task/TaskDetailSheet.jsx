@@ -91,7 +91,7 @@ export default function TaskDetailSheet({ item, t, onClose }) {
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           <section className="mb-4">
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('taskPage.title')}</h3>
+            <h3 className="mb-2 text-xs font-medium text-muted-foreground">{t('taskPage.title')}</h3>
             <Row label={t('taskPage.task')} value={item.task_id} />
             <Row label={t('taskPage.subTime')} value={timestamp2string(item.submit_time)} />
             <Row label={t('taskPage.finishTime')} value={timestamp2string(item.finish_time)} />
@@ -105,16 +105,12 @@ export default function TaskDetailSheet({ item, t, onClose }) {
 
           {suno ? (
             <section>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {t('suno.music', { defaultValue: 'Music' })}
-              </h3>
+              <h3 className="mb-2 text-xs font-medium text-muted-foreground">{t('suno.music', { defaultValue: 'Music' })}</h3>
               <SunoMusic items={item.data} t={t} />
             </section>
           ) : item.data ? (
             <section>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {t('suno.response', { defaultValue: 'Response' })}
-              </h3>
+              <h3 className="mb-2 text-xs font-medium text-muted-foreground">{t('suno.response', { defaultValue: 'Response' })}</h3>
               <CodeBlock language="json" showCopy={false} code={JSON.stringify(item.data, null, 2)} />
             </section>
           ) : null}

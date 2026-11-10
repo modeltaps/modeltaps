@@ -341,6 +341,9 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 	if q.upstreamModel != "" && q.upstreamModel != q.requestedModel {
 		meta["upstream_model"] = q.upstreamModel
 	}
+	if q.supplyId > 0 {
+		meta["supply_id"] = q.supplyId
+	}
 	if responseModelChecked(q.channelType) && responseModelMismatch(q.responseModel, q.requestedModel, q.upstreamModel) {
 		meta["response_model"] = q.responseModel
 		meta["response_model_mismatch"] = true

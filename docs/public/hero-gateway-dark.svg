@@ -95,7 +95,5 @@
   <circle cx="315.6" cy="192.3" r="2.1" fill="#f4f4f5" />
 
   <circle cx="240" cy="160" r="30" fill="#171719" stroke="#2c2c30" stroke-width="1" />
-  <g transform="translate(229.8 147.76) scale(0.1275) translate(-48 -32)" fill="none" stroke="#f4f4f5" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M64 144V80a32 32 0 0 1 64 0v64M128 80a32 32 0 0 1 64 0v96a32 32 0 0 1-32 32" />
-  </g>
+  <path transform="translate(230.4 148) scale(1.2)" fill="#f4f4f5" fill-rule="evenodd" d="M6.613 0.683A1.75 1.75 0 0 1 9.387 0.683L14.341 7.122A8 8 0 1 1 1.659 7.122ZM12 13a2 2 0 1 0 -4 0a2 2 0 1 0 4 0Z" />
 </svg>

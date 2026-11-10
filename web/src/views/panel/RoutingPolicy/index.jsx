@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import PropTypes from 'prop-types';
-import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { PanelRight, Plus, RotateCcw, Trash2 } from 'lucide-react';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import DataCards from '@/components/ui/data-cards';
@@ -17,45 +15,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFoo
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import PageActions from '@/components/chrome/PageActions';
+import { ROW_OPENS, rowOpenProps, RowControl, useObjectRoute } from '@/components/objects';
 import { showError, showSuccess } from 'utils/common';
-import RoutingPolicySheet from './RoutingPolicySheet';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import OrganizationPoliciesTable from './OrganizationPoliciesTable';
-import { platformRoutingPolicyApi } from './routingPolicyApi';
+import RoutingPolicyPanel from './RoutingPolicyPanel';
+import NewRoutingPolicySheet from './NewRoutingPolicySheet';
+import { POLICY_TAB_KEYS } from './policyTabs';
+import { platformRoutingPolicyApi as api } from './routingPolicyApi';
 
-// Platform console: the platform's own policies, plus a read-only review of what organizations
-// configured (system admins can disable an organization policy there).
+// 自动路由策略列表：策略不多，一次取全量，不分页。点一行在右侧打开策略面板（?id=，Tab 各自保存），
+// 新建用右侧面板（?new=1），只填必需项。
 export default function RoutingPolicy() {
   const { t } = useTranslation();
-  const organizationsEnabled = useSelector((state) => state.siteInfo?.organization_enabled === true);
-  const [scope, setScope] = useState('platform');
-  return (
-    <div className="space-y-4">
-      {organizationsEnabled && (
-        <Tabs value={scope} onValueChange={setScope}>
-          <TabsList>
-            <TabsTrigger value="platform">{t('routingPolicy.scope.platform')}</TabsTrigger>
-            <TabsTrigger value="organizations">{t('routingPolicy.scope.organizations')}</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      )}
-      {scope === 'platform' || !organizationsEnabled ? (
-        <RoutingPolicyManager api={platformRoutingPolicyApi} />
-      ) : (
-        <OrganizationPoliciesTable />
-      )}
-    </div>
-  );
-}
-
-// 自动路由策略列表：策略不多，一次取全量，不分页。Shared by the platform console and an
-// organization's settings; `inlineToolbar` puts the buttons above the table instead of the page header.
-export function RoutingPolicyManager({ api, inlineToolbar = false }) {
-  const { t } = useTranslation();
+  const route = useObjectRoute(POLICY_TAB_KEYS);
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [editId, setEditId] = useState(0);
+  const [modelOptions, setModelOptions] = useState([]);
   const [pendingDelete, setPendingDelete] = useState(null);
   // 近 7 天概览（请求数 / 兜底率），按策略逐个取；策略很少，并行几次请求可以接受。
   const [weekStats, setWeekStats] = useState({});
@@ -84,28 +58,32 @@ export function RoutingPolicyManager({ api, inlineToolbar = false }) {
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, []);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
-  const openEdit = (id) => {
-    setEditId(id);
-    setSheetOpen(true);
-  };
+  // 目录模型名只取一次，供决策 / 目标 / 兜底三处下拉建议。
+  useEffect(() => {
+    api
+      .listModels()
+      .then(setModelOptions)
+      .catch(() => {});
+  }, []);
 
   const toggleEnabled = async (policy, enabled) => {
     try {
       const { success, message } = await api.setEnabled(policy.id, enabled);
       if (success) {
         setPolicies((prev) => prev.map((p) => (p.id === policy.id ? { ...p, enabled } : p)));
-      } else {
-        showError(message);
+        return true;
       }
+      showError(message);
     } catch (e) {
       // surfaced globally
     }
+    return false;
   };
 
   const confirmDelete = async () => {
@@ -116,6 +94,7 @@ export function RoutingPolicyManager({ api, inlineToolbar = false }) {
       const { success, message } = await api.remove(policy.id);
       if (success) {
         showSuccess(t('userPage.operationSuccess'));
+        if (policy.id === route.openId) route.close();
         refresh();
       } else {
         showError(message);
@@ -194,11 +173,13 @@ export function RoutingPolicyManager({ api, inlineToolbar = false }) {
         cell: (c) => {
           const p = c.row.original;
           return (
-            <Switch
-              checked={Boolean(p.enabled)}
-              aria-label={t('routingPolicy.columns.enabled')}
-              onCheckedChange={(v) => toggleEnabled(p, v)}
-            />
+            <RowControl>
+              <Switch
+                checked={Boolean(p.enabled)}
+                aria-label={t('routingPolicy.columns.enabled')}
+                onCheckedChange={(v) => toggleEnabled(p, v)}
+              />
+            </RowControl>
           );
         }
       },
@@ -209,41 +190,39 @@ export function RoutingPolicyManager({ api, inlineToolbar = false }) {
         cell: (c) => {
           const p = c.row.original;
           return (
-            <RowActions
-              actions={[
-                { label: t('common.edit'), icon: Pencil, onClick: () => openEdit(p.id) },
-                { label: t('common.delete'), icon: Trash2, destructive: true, onClick: () => setPendingDelete(p) }
-              ]}
-            />
+            <RowControl>
+              <RowActions
+                actions={[
+                  { label: t('objects.open'), icon: PanelRight, onClick: () => route.open(p.id) },
+                  { label: t('common.delete'), icon: Trash2, destructive: true, onClick: () => setPendingDelete(p) }
+                ]}
+              />
+            </RowControl>
           );
         }
       }
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, weekStats]
+    [t, weekStats, route.openId]
   );
 
   const table = useTable({ features: appTableFeatures, data: policies, columns });
 
-  const toolbar = (
-    <>
-      <TooltipProvider delayDuration={150}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" aria-label={t('userPage.refresh')} onClick={refresh}>
-              <RotateCcw className={loading ? 'size-4 animate-spin' : 'size-4'} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{t('userPage.refresh')}</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-      <ResponsiveToolbarButton primary icon={Plus} label={t('routingPolicy.create')} onClick={() => openEdit(0)} />
-    </>
-  );
-
   return (
     <div className="space-y-6">
-      {inlineToolbar ? <div className="flex items-center justify-end gap-2">{toolbar}</div> : <PageActions>{toolbar}</PageActions>}
+      <PageActions>
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="sm" aria-label={t('userPage.refresh')} onClick={refresh}>
+                <RotateCcw className={loading ? 'size-4 animate-spin' : 'size-4'} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{t('userPage.refresh')}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <ResponsiveToolbarButton primary icon={Plus} label={t('routingPolicy.create')} onClick={route.openNew} />
+      </PageActions>
 
       <Card>
         <div className="hidden overflow-x-auto md:block">
@@ -268,7 +247,12 @@ export function RoutingPolicyManager({ api, inlineToolbar = false }) {
                 </TableRow>
               ) : (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow
+                    key={row.id}
+                    className={ROW_OPENS}
+                    data-state={row.original.id === route.openId ? 'selected' : undefined}
+                    {...rowOpenProps(() => route.open(row.original.id))}
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
                         {flexRender(cell.column.columnDef.cell ?? cell.getValue, cell.getContext())}
@@ -287,19 +271,36 @@ export function RoutingPolicyManager({ api, inlineToolbar = false }) {
           actionColumnIds={['action']}
           empty={t('routingPolicy.empty')}
           searching={loading}
+          onRowClick={(p) => route.open(p.id)}
         />
       </Card>
 
-      <RoutingPolicySheet
-        api={api}
-        open={sheetOpen}
-        policyId={editId}
-        onClose={() => setSheetOpen(false)}
-        onSaved={() => {
-          setSheetOpen(false);
-          refresh();
-        }}
-      />
+      {route.openId > 0 && (
+        <RoutingPolicyPanel
+          key={route.openId}
+          policyId={route.openId}
+          tab={route.tab}
+          onTabChange={route.setTab}
+          onClose={route.close}
+          onChanged={refresh}
+          onToggleEnabled={toggleEnabled}
+          onDelete={setPendingDelete}
+          modelOptions={modelOptions}
+        />
+      )}
+
+      {route.isNew && (
+        <NewRoutingPolicySheet
+          modelOptions={modelOptions}
+          onClose={route.close}
+          onCreated={(policy) => {
+            showSuccess(t('routingPolicy.new.created'));
+            refresh();
+            if (policy?.id) route.open(policy.id);
+            else route.close();
+          }}
+        />
+      )}
 
       <Dialog open={Boolean(pendingDelete)} onOpenChange={(o) => !o && setPendingDelete(null)}>
         <DialogContent className="max-w-md">
@@ -322,8 +323,3 @@ export function RoutingPolicyManager({ api, inlineToolbar = false }) {
     </div>
   );
 }
-
-RoutingPolicyManager.propTypes = {
-  api: PropTypes.object.isRequired,
-  inlineToolbar: PropTypes.bool
-};

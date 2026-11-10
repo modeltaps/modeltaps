@@ -8,12 +8,12 @@ import { API } from 'utils/api';
 import QuotaRemindCard from './QuotaRemindCard';
 
 // The personal quota warning card: a null threshold follows the site default, saving an amount
-// sets it, "use site default" sends -1, and the site switch disables the controls.
+// sets it, "use site default" saves -1, the switch saves with the footer like the threshold, and
+// the site switch disables the controls.
 
 vi.mock('utils/api', () => ({ API: { get: vi.fn(), put: vi.fn() } }));
 vi.mock('utils/common', () => ({ showError: vi.fn(), showSuccess: vi.fn(), renderSpend: (q) => '$' + q / 500000 }));
 const selfUser = { inputs: { id: 1, email: 'alice@example.test' } };
-vi.mock('./useSelfUser', () => ({ default: () => selfUser }));
 
 const setting = (over = {}) => ({
   quota_remind_enabled: true,
@@ -44,7 +44,7 @@ afterEach(cleanup);
 
 const renderCard = async (data) => {
   API.get.mockResolvedValue({ data: { success: true, data } });
-  render(createElement(QuotaRemindCard));
+  render(createElement(QuotaRemindCard, { self: selfUser }));
   await waitFor(() => expect(API.get).toHaveBeenCalled());
   await screen.findByText(i18n.t('settingsPage.preferences.quotaRemind.title'));
 };
@@ -71,14 +71,18 @@ describe('QuotaRemindCard', () => {
     await renderCard(setting({ quota_remind_threshold: 2000000 }));
     await waitFor(() => expect(input().value).toBe('2000000'));
     fireEvent.click(button('settingsPage.preferences.quotaRemind.useSiteDefault'));
+    expect(input().value).toBe('');
+    fireEvent.click(button('common.save'));
     await waitFor(() => expect(API.put).toHaveBeenCalledTimes(1));
     expect(API.put.mock.calls[0][1]).toEqual({ quota_remind_threshold: -1 });
   });
 
-  it('saves the switch at once', async () => {
+  it('saves the switch with the footer', async () => {
     await renderCard(setting());
     await waitFor(() => expect(toggle().getAttribute('aria-checked')).toBe('true'));
     fireEvent.click(toggle());
+    expect(API.put).not.toHaveBeenCalled();
+    fireEvent.click(button('common.save'));
     await waitFor(() => expect(API.put).toHaveBeenCalledTimes(1));
     expect(API.put.mock.calls[0][1]).toEqual({ quota_remind_enabled: false });
     await waitFor(() => expect(input().disabled).toBe(true));

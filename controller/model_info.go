@@ -96,7 +96,16 @@ type publicModelInfo struct {
 func visibleModelInfos(infos []*model.ModelInfo, routable map[string]map[string]bool) []*publicModelInfo {
 	visible := make([]*publicModelInfo, 0, len(infos))
 	for _, info := range infos {
-		if info.Hidden || info.AliasOf != "" {
+		if info.AliasOf != "" {
+			continue
+		}
+		// With supplies routing, the public state is status: only published models are listed.
+		// Otherwise hiding decides, whatever catalog.enforce_hidden says.
+		if config.ModelSupplyEnabled {
+			if info.Kind == "" && info.Status != model.ModelStatusPublished {
+				continue
+			}
+		} else if info.Hidden {
 			continue
 		}
 		// 策略行没有渠道，按策略是否启用决定可见。
@@ -298,6 +307,9 @@ func CreateModelInfo(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusBadRequest, err)
 		return
 	}
+	if !validModelSupplyFields(c, &modelInfo) {
+		return
+	}
 	existingModel, _ := model.GetModelInfoByModel(modelInfo.Model)
 	if existingModel != nil {
 		common.APIRespondWithCode(c, http.StatusOK, common.APICodeModelIdentifierExists, "model identifier already exists", nil)
@@ -338,6 +350,19 @@ func UpdateModelInfo(c *gin.Context) {
 	}
 	if err := model.ValidateAliasTarget(modelInfo.Model, modelInfo.AliasOf); err != nil {
 		common.APIRespondWithError(c, http.StatusBadRequest, err)
+		return
+	}
+	// The row is saved whole, so a client that does not send status or supply_mode (the console
+	// before the models page) keeps the stored values instead of blanking them.
+	if current, err := model.GetModelInfo(modelInfo.Id); err == nil {
+		if modelInfo.Status == "" {
+			modelInfo.Status = current.Status
+		}
+		if modelInfo.SupplyMode == "" {
+			modelInfo.SupplyMode = current.SupplyMode
+		}
+	}
+	if !validModelSupplyFields(c, &modelInfo) {
 		return
 	}
 	existingModel, _ := model.GetModelInfoByModel(modelInfo.Model)
@@ -412,4 +437,18 @@ func DeleteModelInfo(c *gin.Context) {
 		"success": true,
 		"message": "",
 	})
+}
+
+// validModelSupplyFields checks status and supply_mode when set and answers the request when one
+// is unknown. Empty values take the column defaults (draft, balance) on create.
+func validModelSupplyFields(c *gin.Context, info *model.ModelInfo) bool {
+	if info.Status != "" && !model.IsValidModelStatus(info.Status) {
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeModelStatusInvalid, "invalid status", nil)
+		return false
+	}
+	if info.SupplyMode != "" && !model.IsValidSupplyMode(info.SupplyMode) {
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeModelSupplyModeInvalid, "invalid supply_mode", nil)
+		return false
+	}
+	return true
 }

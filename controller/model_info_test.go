@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/model"
 
 	"github.com/gin-gonic/gin"
@@ -422,5 +423,66 @@ func TestModelInfoState(t *testing.T) {
 		if got := modelInfoState(c.info, c.channels); got != c.want {
 			t.Errorf("%s: modelInfoState = %q, want %q", c.name, got, c.want)
 		}
+	}
+}
+
+func putModelInfo(t *testing.T, body string) *httptest.ResponseRecorder {
+	t.Helper()
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPut, "/api/model_info/", strings.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	UpdateModelInfo(c)
+	return w
+}
+
+// The console saves catalog rows whole and does not know about status or supply_mode yet: a
+// save without them keeps the stored values, and unknown values are refused.
+func TestUpdateModelInfoKeepsSupplyFields(t *testing.T) {
+	setupModelInfoVisibilityDB(t)
+	row := &model.ModelInfo{Model: "gpt-5", Status: model.ModelStatusPublished, SupplyMode: model.SupplyModeFailover}
+	if err := model.DB.Create(row).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	w := putModelInfo(t, `{"id":`+strconv.Itoa(row.Id)+`,"model":"gpt-5","name":"GPT-5","description":"edited"}`)
+	if !strings.Contains(w.Body.String(), `"success":true`) {
+		t.Fatalf("save failed: %s", w.Body.String())
+	}
+	saved, _ := model.GetModelInfo(row.Id)
+	if saved.Status != model.ModelStatusPublished || saved.SupplyMode != model.SupplyModeFailover || saved.Description != "edited" {
+		t.Fatalf("saved = status %q mode %q description %q", saved.Status, saved.SupplyMode, saved.Description)
+	}
+
+	for _, body := range []string{
+		`{"id":` + strconv.Itoa(row.Id) + `,"model":"gpt-5","status":"live"}`,
+		`{"id":` + strconv.Itoa(row.Id) + `,"model":"gpt-5","supply_mode":"random"}`,
+	} {
+		if w := putModelInfo(t, body); w.Code != http.StatusBadRequest {
+			t.Errorf("%s: status %d, want 400 (%s)", body, w.Code, w.Body.String())
+		}
+	}
+}
+
+// With supplies routing, the public catalog lists published models only.
+func TestPublicCatalogFollowsStatusWithSupplies(t *testing.T) {
+	old := config.ModelSupplyEnabled
+	config.ModelSupplyEnabled = true
+	t.Cleanup(func() { config.ModelSupplyEnabled = old })
+	routable := map[string]map[string]bool{"pub": {"default": true}, "drafted": {"default": true}, "old": {"default": true}, "hidden-pub": {"default": true}}
+	infos := []*model.ModelInfo{
+		{Model: "pub", Status: model.ModelStatusPublished},
+		{Model: "drafted", Status: model.ModelStatusDraft},
+		{Model: "old", Status: model.ModelStatusRetired},
+		// hidden is no longer read once status decides
+		{Model: "hidden-pub", Status: model.ModelStatusPublished, Hidden: true},
+	}
+	listed := map[string]bool{}
+	for _, info := range visibleModelInfos(infos, routable) {
+		listed[info.Model] = true
+	}
+	if !listed["pub"] || !listed["hidden-pub"] || listed["drafted"] || listed["old"] {
+		t.Fatalf("listed = %v, want the two published models", listed)
 	}
 }

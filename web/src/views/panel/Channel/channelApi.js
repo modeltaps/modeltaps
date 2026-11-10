@@ -383,3 +383,84 @@ export function statusLabel(t, status) {
       return t('common.unknown');
   }
 }
+
+// One channel with its key hidden (key_status carries the safe projection).
+export async function fetchChannel(id) {
+  const res = await API.get(`/api/channel/${id}`);
+  return res.data;
+}
+
+// Hourly metrics rows for one channel in [start, end] (unix seconds).
+export async function fetchChannelMetrics(id, start, end) {
+  const res = await API.get('/api/channel/metrics', { params: { channel_id: id, start_timestamp: start, end_timestamp: end } });
+  return res.data?.success ? res.data.data || [] : [];
+}
+
+// Prompt cache and session affinity counters for one channel in [start, end].
+export async function fetchChannelCacheStat(id, start, end) {
+  const res = await API.get('/api/channel/cache_stats', { params: { channel_id: id, start_timestamp: start, end_timestamp: end } });
+  if (!res.data?.success) return null;
+  const list = res.data.data || [];
+  return list.find((s) => s.channel_id === Number(id)) || null;
+}
+
+// Saves part of a channel. PUT /api/channel/ writes the whole row, so the patch is merged into
+// the channel as loaded (its key is hidden, and an empty key keeps the stored one). Runtime
+// fields the backend maintains are left out.
+export async function updateChannel(channel, patch) {
+  // pause_rules is sent only when a tab changes it: the backend keeps the stored value otherwise.
+  // eslint-disable-next-line no-unused-vars
+  const { key_status, model_drift, usage_windows, quota_snapshot, pause_rules, ...rest } = channel;
+  const res = await API.put('/api/channel/', { ...rest, key: '', ...patch, id: channel.id });
+  return res.data;
+}
+
+const PAGE_SIZE = 100;
+
+// Every row of a paginated channel list endpoint, page by page.
+async function fetchPaged(url, params = {}) {
+  const rows = [];
+  for (let page = 1; ; page++) {
+    const res = await API.get(url, { params: { ...params, page, size: PAGE_SIZE } });
+    const { success, message, data } = res.data || {};
+    if (!success) throw new Error(message || 'fetch channels failed');
+    const list = Array.isArray(data) ? data : data?.data || [];
+    rows.push(...list);
+    const total = Array.isArray(data) ? list.length : (data?.total_count ?? list.length);
+    if (list.length < PAGE_SIZE || rows.length >= total) return rows;
+  }
+}
+
+// Every channel, keys hidden. The list endpoint folds each tag into one row, so channels
+// without a tag come from it and tagged channels from their tag's list.
+export async function fetchAllChannels() {
+  const untagged = await fetchPaged('/api/channel/', { filter_tag: 1 });
+  const tags = await fetchTags();
+  const tagged = await Promise.all(
+    (tags || []).filter((t) => t?.tag).map((t) => fetchPaged(`/api/channel_tag/${encodeURIComponent(t.tag)}/list`))
+  );
+  const byId = new Map();
+  for (const c of [...untagged, ...tagged.flat()]) byId.set(c.id, c);
+  return [...byId.values()];
+}
+
+// User groups with their description and price ratio: [{ symbol, name, description, ratio }].
+export async function fetchGroupOptions() {
+  try {
+    const res = await API.get('/api/group/');
+    const list = Array.isArray(res.data?.data) ? res.data.data : [];
+    return list
+      .map((g) => (typeof g === 'string' ? { symbol: g } : g))
+      .filter((g) => g?.symbol)
+      .sort((a, b) => String(a.symbol).localeCompare(String(b.symbol)));
+  } catch {
+    return [];
+  }
+}
+
+// Creates channels (one per key line). Resolves to { success, message, ids }.
+export async function createChannel(body) {
+  const res = await API.post('/api/channel/', body);
+  const { success, message, data } = res.data || {};
+  return { success: !!success, message, ids: data?.ids || [] };
+}

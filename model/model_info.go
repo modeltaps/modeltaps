@@ -22,6 +22,8 @@ const (
 	ModelInfoSourceModelsDev  = "models.dev"
 	ModelInfoSourceOpenRouter = "openrouter"
 	ModelInfoSourceVercel     = "vercel"
+	// ModelInfoSourceMigrated marks rows the supply migration created for names channels listed.
+	ModelInfoSourceMigrated = "migrated"
 )
 
 // 模型能力词表：仅用于展示与筛选，不参与路由与计费。
@@ -40,6 +42,29 @@ var modelCapabilityOrder = []string{
 
 // ModelCapabilitiesJSON 按词表固定顺序把能力集合序列化为 JSON 数组字符串；
 // 词表外的值丢弃，一项都没有时返回 "[]"（明确表示三项都不支持，区别于空串的未知）。
+const (
+	ModelStatusDraft     = "draft"
+	ModelStatusPublished = "published"
+	ModelStatusRetired   = "retired"
+
+	SupplyModeBalance  = "balance"
+	SupplyModeFailover = "failover"
+)
+
+// IsValidModelStatus reports whether status is a known public state.
+func IsValidModelStatus(status string) bool {
+	switch status {
+	case ModelStatusDraft, ModelStatusPublished, ModelStatusRetired:
+		return true
+	}
+	return false
+}
+
+// IsValidSupplyMode reports whether mode is a known supply mode.
+func IsValidSupplyMode(mode string) bool {
+	return mode == SupplyModeBalance || mode == SupplyModeFailover
+}
+
 func ModelCapabilitiesJSON(caps []string) string {
 	has := make(map[string]bool, len(caps))
 	for _, c := range caps {
@@ -104,6 +129,14 @@ type ModelInfo struct {
 	SupportedVoices string `json:"supported_voices" gorm:"type:text"`
 	// AliasOf 非空表示本行是别名，值为主名模型标识；隐藏状态与厂商随主名。
 	AliasOf string `json:"alias_of" gorm:"type:varchar(255);index"`
+	// Status is the public state of the model, read only while ModelSupplyEnabled is on: draft
+	// models are neither listed nor callable, published ones are both, retired ones stay callable
+	// but are no longer listed. Until the supply migration runs it follows Hidden (see
+	// SetModelInfoHidden).
+	Status string `json:"status" gorm:"type:varchar(16);default:'draft'"`
+	// SupplyMode picks a supply within one priority tier: balance chooses by weight at random,
+	// failover takes the highest weight. Tiers are always tried in order.
+	SupplyMode string `json:"supply_mode" gorm:"type:varchar(16);default:'balance'"`
 	// Kind 行的种类：空 = 普通模型；ModelInfoKindRoutingPolicy = 自动路由策略的目录行，
 	// 由 routing_policies 联动维护，后台目录接口不允许直接增删改。
 	Kind string `json:"kind" gorm:"type:varchar(32);default:''"`
@@ -322,7 +355,12 @@ func SetModelInfoHidden(ids []int, hidden bool) (int64, error) {
 	if len(ids) == 0 {
 		return 0, nil
 	}
-	result := DB.Model(&ModelInfo{}).Where("id IN ?", ids).Update("hidden", hidden)
+	// Keep Status in step with Hidden, so the supply migration starts from what admins chose.
+	status := ModelStatusPublished
+	if hidden {
+		status = ModelStatusDraft
+	}
+	result := DB.Model(&ModelInfo{}).Where("id IN ?", ids).Updates(map[string]any{"hidden": hidden, "status": status})
 	if result.Error != nil {
 		return 0, result.Error
 	}
@@ -515,6 +553,11 @@ func ResolveCanonicalModel(name string) (canonical string, isAlias bool) {
 func IsModelHidden(name string) bool {
 	canonical, _ := ResolveCanonicalModel(name)
 	info := lookupModelInfo(canonical)
+	if config.ModelSupplyEnabled {
+		// Status decides once supplies drive routing: a draft cannot be called; published and
+		// retired models can. Routing policy rows are managed by their policy.
+		return info != nil && info.Kind == "" && info.Status == ModelStatusDraft
+	}
 	return info != nil && info.Hidden
 }
 
@@ -529,6 +572,16 @@ func HasCatalogRow(name string) bool {
 // 「可路由」由调用方保证（列表取自渠道分组）。catalog.enforce_hidden 关闭时一律可见，
 // 退回「所有可路由模型」的行为。公开面的可见性判定只此一处，避免各接口口径漂移。
 func IsCatalogVisible(name string) bool {
+	if config.ModelSupplyEnabled {
+		// Only published models are listed; aliases, drafts and retired models are not. A name
+		// without a row can only be an organization's routing policy here, since every supplied
+		// model has a catalog row.
+		if _, isAlias := ResolveCanonicalModel(name); isAlias {
+			return false
+		}
+		info := lookupModelInfo(name)
+		return info == nil || info.Kind != "" || info.Status == ModelStatusPublished
+	}
 	if !config.CatalogEnforceHidden() {
 		return true
 	}

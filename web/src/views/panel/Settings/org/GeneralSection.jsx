@@ -2,28 +2,23 @@ import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { Loader2 } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import { FormField } from '@/components/ui/form-field';
+import { FormCard, OptionList } from '@/components/settings/cards';
 import { API } from 'utils/api';
 import { showError, showSuccess } from 'utils/common';
 import { useOrg } from 'contexts/OrgContext';
-import useHighlightTarget from 'hooks/useHighlightTarget';
-import DangerSection from './DangerSection';
+import { ToggleRow } from '../../Setting/parts';
 
 // ==============================|| SETTINGS — ORG GENERAL ||============================== //
-// 组织资料卡:名称 / 头像 / 用量可见性 / 请求响应留存(Admin+),其后接危险操作卡
-// (退出组织 / 转让所有权 / 解散组织),不再单列 section。
-// 由 /panel/settings/org/:orgId/general 与组织工作台设置 Tab 共用。
+// Organization profile card (Admin+): name, avatar, usage visibility and request / response
+// retention, saved by the card footer. The danger zone is its own group (DangerSection).
 
 // 服务端三态可能回 "inherit"|"on"|"off" 字符串,也可能回 *bool;统一归一为哨兵字符串。
 const triFromServer = (v) => (v === 'on' || v === true ? 'on' : v === 'off' || v === false ? 'off' : 'inherit');
 
-// 脏值比较统一归一为字符串,null / undefined / '' 视为相等(同 Setting/parts.jsx 的 isDirty)。
+// 脏值比较统一归一为字符串,null / undefined / '' 视为相等(as isDirty in Setting/parts.jsx)。
 const sameValue = (a, b) => String(a ?? '') === String(b ?? '');
 
 const DEFAULT_MAX_BODY_KB = 1024;
@@ -32,7 +27,6 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
   const { t } = useTranslation();
   const { refreshOrganizations, refreshOrgDetail } = useOrg();
   const isAdmin = role === 'owner' || role === 'admin';
-  useHighlightTarget();
   const org = detail?.organization;
   const siteInfo = useSelector((state) => state.siteInfo);
   const logIoSiteEnabled = Boolean(siteInfo?.log_io_enabled);
@@ -107,48 +101,54 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
 
   if (!isAdmin) return null;
 
+  const reset = () => {
+    if (!baseline) return;
+    setName(baseline.name);
+    setAvatarUrl(baseline.avatarUrl);
+    setUsageVisible(baseline.usageVisible);
+    setLogIoDefault(baseline.logIoDefault);
+  };
+
   return (
-    <div className="space-y-6">
-      <Card className="space-y-5 p-6">
-        <h3 className="text-base font-semibold">{t('orgPage.settings.profile')}</h3>
-        <div className="space-y-4">
-          <Label htmlFor="org-settings-name">{t('orgPage.settings.name')}</Label>
+    <FormCard
+      title={t('orgPage.settings.profile')}
+      description={t('settingsUi.org.cards.profile.description')}
+      hint={t('settingsUi.org.cards.profile.hint')}
+      highlight="profile"
+      dirty={profileDirty}
+      saving={saving}
+      onSave={saveProfile}
+      onReset={reset}
+    >
+      <div className="grid gap-5 sm:grid-cols-2">
+        <FormField id="org-settings-name" label={t('orgPage.settings.name')}>
           <Input id="org-settings-name" value={name} maxLength={100} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div className="space-y-4">
-          <Label htmlFor="org-settings-avatar">{t('orgPage.settings.avatarUrl')}</Label>
+        </FormField>
+        <FormField id="org-settings-avatar" label={t('orgPage.settings.avatarUrl')}>
           <Input id="org-settings-avatar" value={avatarUrl} maxLength={500} onChange={(e) => setAvatarUrl(e.target.value)} />
-        </div>
-        <div className="flex items-center justify-between gap-4 py-1">
-          <div className="space-y-0.5">
-            <Label className="font-normal">{t('orgPage.settings.usageVisible')}</Label>
-            <p className="text-xs text-muted-foreground">{t('orgPage.settings.usageVisibleHint')}</p>
-          </div>
-          <Switch checked={usageVisible} onCheckedChange={setUsageVisible} />
-        </div>
+        </FormField>
+      </div>
+      <OptionList>
+        <ToggleRow
+          id="org-usage-visible"
+          label={t('orgPage.settings.usageVisible')}
+          description={t('orgPage.settings.usageVisibleHint')}
+          checked={usageVisible}
+          onCheckedChange={setUsageVisible}
+        />
         {logIoSiteEnabled && (
-          <div data-highlight="log-io" className="flex items-center justify-between gap-4 py-1">
-            <div className="space-y-0.5">
-              <Label className="font-normal">{t('orgPage.settings.logIOToggle')}</Label>
-              <p className="text-xs text-muted-foreground">{t('orgPage.settings.logIOHint', { kb: logIoMaxBodyKb })}</p>
-            </div>
-            <Switch
+          <div data-highlight="log-io">
+            <ToggleRow
+              id="org-log-io"
+              label={t('orgPage.settings.logIOToggle')}
+              description={t('orgPage.settings.logIOHint', { kb: logIoMaxBodyKb })}
               checked={logIoDefault === 'inherit' ? logIoSiteDefault : logIoDefault === 'on'}
               onCheckedChange={(next) => setLogIoDefault(next ? 'on' : 'off')}
             />
           </div>
         )}
-        <div className="flex justify-end">
-          <Button onClick={saveProfile} disabled={saving || !profileDirty}>
-            {saving && <Loader2 className="size-4 animate-spin" />}
-            {t('orgPage.settings.save')}
-          </Button>
-        </div>
-      </Card>
-      <div id="danger">
-        <DangerSection orgId={orgId} role={role} detail={detail} onRefresh={onRefresh} />
-      </div>
-    </div>
+      </OptionList>
+    </FormCard>
   );
 }
 

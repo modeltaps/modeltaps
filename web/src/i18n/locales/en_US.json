@@ -1120,7 +1120,7 @@
     "noAccount": "No account yet?",
     "externalNotConfigured": "The sign-in service is not configured yet. Please contact an administrator.",
     "redirectFailed": "Could not reach the sign-in service. Please try again later.",
-    "or": "OR"
+    "or": "or"
   },
   "menu": {
     "login": "Login",
@@ -1579,11 +1579,9 @@
     "quotaDesc": "Positive adds, negative deducts; the action is recorded in the audit log.",
     "quotaLabel": "Quota change",
     "quotaNonZero": "Quota change cannot be 0",
-    "quotaTitle": "Adjust pool balance — {{name}}",
     "remarkLabel": "Remark",
     "remarkPlaceholder": "Optional",
     "maxMembers": "Member limit",
-    "maxMembersTitle": "Member limit — {{name}}",
     "maxMembersDesc": "{{count}} members now. The limit only stops new members from joining; existing members are not removed.",
     "maxMembersModeDefault": "Follow the site default",
     "maxMembersModeUnlimited": "Unlimited",
@@ -3009,7 +3007,10 @@
         "price_change": "Upstream price changes",
         "model_drift": "Upstream model list changes",
         "model_consistency": "Model metadata problems",
-        "credential": "Channel credential problems"
+        "credential": "Channel credential problems",
+        "supply_paused": "Channel or model paused",
+        "supply_resumed": "Paused channel or model resumed",
+        "supply_failover": "Request switched to a backup channel"
       },
       "limit": {
         "label": "Notices per kind per hour",

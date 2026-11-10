@@ -4,7 +4,6 @@ vi.mock('utils/api', () => ({ API: { get: vi.fn(), post: vi.fn(), put: vi.fn(), 
 
 import { API } from 'utils/api';
 import { orgRoutingPolicyApi, platformRoutingPolicyApi } from './routingPolicyApi';
-import { availableOrgSections } from '../Settings/sections';
 
 describe('routing policy api scopes', () => {
   beforeEach(() => {
@@ -40,12 +39,5 @@ describe('routing policy api scopes', () => {
   it('lists every organization policy for the platform console', async () => {
     await platformRoutingPolicyApi.list({ organization_id: -1 });
     expect(API.get).toHaveBeenCalledWith('/api/routing_policy/', { params: { organization_id: -1 } });
-  });
-});
-
-describe('organization settings sections', () => {
-  it('shows auto routing only while the site option is on', () => {
-    expect(availableOrgSections({}).map(({ id }) => id)).not.toContain('routing');
-    expect(availableOrgSections({ organization_routing_policy_enabled: true }).map(({ id }) => id)).toContain('routing');
   });
 });

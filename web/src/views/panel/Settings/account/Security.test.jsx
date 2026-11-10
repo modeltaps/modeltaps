@@ -1,14 +1,27 @@
+import { Fragment, createElement } from 'react';
+import { useSelector } from 'react-redux';
 import { describe, expect, it, vi } from 'vitest';
 
 import { renderAuthPage, silenceRouterLayoutEffectWarning } from 'views/auth/authPageTestUtils';
-import Security from './Security';
+import { securityCards } from './Security';
 
-// 登录会话卡自己拉接口,与这里的判定无关,换成空壳。
+// The sessions and access token cards load their own data and do not depend on the account
+// system; render them as empty shells.
 vi.mock('./SessionsCard', () => ({ default: () => null }));
+vi.mock('./Tokens', () => ({ default: () => null }));
 
-// useSelfUser 走 /api/user/self,测试直接注入 inputs。
+// The page loads /api/user/self once; the test injects the inputs.
 const selfUser = { inputs: {}, reloadUser: () => {} };
-vi.mock('./useSelfUser', () => ({ default: () => selfUser }));
+
+// The 登录与安全 group as the settings page renders it.
+function Security() {
+  const siteInfo = useSelector((state) => state.siteInfo);
+  return createElement(
+    'div',
+    null,
+    securityCards({ siteInfo, self: selfUser }).map((card) => createElement(Fragment, { key: card.id }, card.render()))
+  );
+}
 
 silenceRouterLayoutEffectWarning();
 

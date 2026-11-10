@@ -53,11 +53,11 @@ function QuotaCell({ item }) {
     return (
       <div className="flex flex-col items-end leading-tight">
         <SpendAmount quota={calculateOriginalQuota(item)} className="font-mono tabular-nums text-xs text-muted-foreground line-through" />
-        <SpendAmount quota={quota} className="font-mono tabular-nums font-medium text-emerald-600 dark:text-emerald-400" />
+        <SpendAmount quota={quota} className="font-mono tabular-nums font-medium text-foreground" />
       </div>
     );
   }
-  return <SpendAmount quota={quota} className="font-mono tabular-nums font-medium text-emerald-600 dark:text-emerald-400" />;
+  return <SpendAmount quota={quota} className="font-mono tabular-nums font-medium text-foreground" />;
 }
 QuotaCell.propTypes = { item: PropTypes.object };
 
@@ -166,7 +166,7 @@ export default function LogTable({
         cell: (i) =>
           i.channel_id ? (
             <Link
-              to={i.channel?.name ? `/panel/channel?name=${encodeURIComponent(i.channel.name)}` : '/panel/channel'}
+              to={`/panel/channel/${i.channel_id}`}
               onClick={(e) => e.stopPropagation()}
               className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground hover:underline"
             >

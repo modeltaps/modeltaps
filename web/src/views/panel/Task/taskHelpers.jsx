@@ -13,19 +13,21 @@ export const STATUS_TYPE = {
   UNKNOWN: { labelKey: 'taskPage.statusType.unknown', color: 'default' }
 };
 
-// color token → Tailwind classes for soft badges. Same palette as the Log view.
+// color token → Tailwind classes for soft badges. Same palette as the Log view:
+// one quiet neutral style; the failure state (orange) keeps the error tint.
+const NEUTRAL_BADGE = 'bg-muted text-foreground';
 const BADGE_CLASSES = {
-  default: 'bg-muted text-foreground',
-  primary: 'bg-muted text-foreground',
-  orange: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
-  info: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  default: NEUTRAL_BADGE,
+  primary: NEUTRAL_BADGE,
+  orange: 'bg-destructive/10 text-destructive',
+  info: NEUTRAL_BADGE,
   secondary: 'bg-muted text-muted-foreground',
-  success: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  success: NEUTRAL_BADGE,
   error: 'bg-destructive/10 text-destructive'
 };
 
 export const badgeClass = (color) =>
-  `inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${BADGE_CLASSES[color] || BADGE_CLASSES.default}`;
+  `inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium ${BADGE_CLASSES[color] || BADGE_CLASSES.default}`;
 
 export function statusMeta(status) {
   return STATUS_TYPE[status] || null;

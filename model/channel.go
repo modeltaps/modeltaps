@@ -67,6 +67,10 @@ type Channel struct {
 	// DriftIgnoreRules lists upstream models the drift check never reports as new, one per line:
 	// an exact name, a glob with * (for example *-preview), or a regular expression after "re:".
 	DriftIgnoreRules string `json:"drift_ignore_rules" form:"drift_ignore_rules" gorm:"type:text"`
+	// PauseRules are this channel's own pause rules as JSON (see PauseRule). They are tried
+	// before the site-wide rules; empty means only the site-wide rules apply. Nil in an update
+	// keeps the stored value, since the console saves channels whole.
+	PauseRules *string `json:"pause_rules,omitempty" gorm:"type:text"`
 	// DriftAutoAdd adds new upstream models (not ignored) to the channel's models when the
 	// drift check finds them, instead of only reporting them.
 	DriftAutoAdd bool `json:"drift_auto_add" form:"drift_auto_add" gorm:"default:false"`
@@ -603,10 +607,15 @@ func (channel *Channel) UpdateRaw(overwrite bool) error {
 
 	if overwrite {
 		// 运行时字段由刷新 / 检测任务维护，表单保存不得用过期值覆盖。
-		omit := []string{"UsedQuota", "Balance", "BalanceUpdatedTime", "BalanceAlertedTime", "QuotaSnapshot", "ModelDrift", "UsageWindows"}
+		// CreatedTime, TestTime and ResponseTime are not form fields either.
+		omit := []string{"UsedQuota", "Balance", "BalanceUpdatedTime", "BalanceAlertedTime", "QuotaSnapshot", "ModelDrift", "UsageWindows",
+			"CreatedTime", "TestTime", "ResponseTime"}
 		// 编辑时 key 留空表示保留原 key，Select("*") 不能把它覆盖成空串
 		if channel.Key == "" {
 			omit = append(omit, "Key")
+		}
+		if channel.PauseRules == nil {
+			omit = append(omit, "PauseRules")
 		}
 		err = DB.Model(channel).Select("*").Omit(omit...).Updates(channel).Error
 	} else {
@@ -771,6 +780,24 @@ func (channel *Channel) StatusToStr() string {
 	}
 
 	return "Disabled"
+}
+
+// EnableAutoDisabledChannel re-enables a channel only while it is still disabled automatically,
+// in one conditional update, and reports whether this call changed it. When several nodes run
+// the recovery check at the same moment, exactly one of them gets true.
+func EnableAutoDisabledChannel(id int) (bool, error) {
+	result := DB.Model(&Channel{}).
+		Where("id = ? AND status = ?", id, config.ChannelStatusAutoDisabled).
+		Update("status", config.ChannelStatusEnabled)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return false, nil
+	}
+	go ChannelGroup.ChangeStatus(id, true)
+	ChannelGroup.ClearChannelCooldowns(id)
+	return true, nil
 }
 
 func UpdateChannelStatusById(id int, status int) {

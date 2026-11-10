@@ -65,6 +65,9 @@ func AddChannel(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
+	if rejectInvalidPauseRules(c, channel.PauseRules) {
+		return
+	}
 	if rejectInvalidDriftRules(c, channel.DriftIgnoreRules) {
 		return
 	}
@@ -118,12 +121,16 @@ func AddChannel(c *gin.Context) {
 	}
 	// 保存后异步为渠道模型补齐元信息与价格（OpenRouter 自带列表优先，其余走 models.dev），免去手动同步。
 	AutoSyncChannelCatalog(channel.Type, channel.Models, "channel add")
+	ids := make([]int, 0, len(channels))
 	for i := range channels {
 		model.TriggerChannelBrandIconFetch(&channels[i])
+		ids = append(ids, channels[i].Id)
 	}
+	// ids lets the admin UI open the new channel's page (one id per key line in batch mode).
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
+		"data":    gin.H{"ids": ids},
 	})
 }
 
@@ -189,6 +196,9 @@ func UpdateChannel(c *gin.Context) {
 	// 校验类型一致性：标签变化（加入/切换标签）时校验；标签未变但「在组内单独编辑改了类型」时
 	// 也要校验，防止单渠道编辑把同一标签分组变成混合类型。仅编辑已有成员且类型未变则放行，
 	// 避免阻断历史遗留的混合分组成员的正常编辑。
+	if rejectInvalidPauseRules(c, channel.PauseRules) {
+		return
+	}
 	if rejectInvalidDriftRules(c, channel.DriftIgnoreRules) {
 		return
 	}

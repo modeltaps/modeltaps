@@ -69,24 +69,24 @@ export default function InviteCard({ className }) {
           <Gift className="size-4" />
         </span>
         <div className="flex flex-col gap-1">
-          <CardTitle className="text-sm font-semibold">{t('inviteCard.inviteReward')}</CardTitle>
+          <CardTitle className="text-sm font-medium">{t('inviteCard.inviteReward')}</CardTitle>
           <p className="text-xs text-muted-foreground">{t('inviteCard.inviteDescription')}</p>
         </div>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4 p-4 pt-0">
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{t('inviteCard.stats.totalReward')}</span>
+            <span className="text-[10px] text-muted-foreground">{t('inviteCard.stats.totalReward')}</span>
             {stats ? (
-              <span className="text-sm font-semibold tabular-nums">{renderQuota(stats.aff_quota || 0)}</span>
+              <span className="text-sm font-medium tabular-nums">{renderQuota(stats.aff_quota || 0)}</span>
             ) : (
               <span className="h-5 w-16 animate-pulse rounded bg-muted" />
             )}
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{t('inviteCard.stats.invited')}</span>
+            <span className="text-[10px] text-muted-foreground">{t('inviteCard.stats.invited')}</span>
             {stats ? (
-              <span className="text-sm font-semibold tabular-nums">
+              <span className="text-sm font-medium tabular-nums">
                 {t('inviteCard.stats.invitedValue', { value: stats.aff_count || 0 })}
               </span>
             ) : (

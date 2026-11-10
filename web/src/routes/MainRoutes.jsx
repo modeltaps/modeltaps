@@ -27,6 +27,7 @@ const ApiCatalogOverview = Loadable(lazy(() => import('views/panel/ApiCatalog/Ov
 const ModelPrice = Loadable(lazy(() => import('views/public/ModelPrice')));
 const Payment = Loadable(lazy(() => import('views/panel/Payment')));
 const Redemption = Loadable(lazy(() => import('views/panel/Redemption')));
+const InviteCode = Loadable(lazy(() => import('views/panel/InviteCode')));
 const Pricing = Loadable(lazy(() => import('views/panel/Pricing')));
 const Usage = Loadable(lazy(() => import('views/panel/Usage')));
 const OrgAdmin = Loadable(lazy(() => import('views/panel/OrgAdmin')));
@@ -96,7 +97,9 @@ const MainRoutes = {
       element: <Token />
     },
     {
-      path: 'channel',
+      // One page: `/panel/channel/:id` opens that channel's panel, `/panel/channel/new` the new
+      // channel sheet, over the provider page.
+      path: 'channel/:id?',
       element: (
         <AdminGuard>
           <Channel />
@@ -230,9 +233,17 @@ const MainRoutes = {
       )
     },
     {
-      // 旧路由:Telegram Bot 已并入系统设置「集成」主题页
+      path: 'invite_code',
+      element: (
+        <AdminGuard>
+          <InviteCode />
+        </AdminGuard>
+      )
+    },
+    {
+      // Legacy route: the Telegram bot lives in platform settings (通知与集成)
       path: 'telegram',
-      element: <Navigate to="/panel/setting/integrations?highlight=telegram" replace />
+      element: <Navigate to="/panel/setting/notify?highlight=telegram" replace />
     },
     {
       // 旧路由:模型归属 / 模型详情已并入模型页 Tab

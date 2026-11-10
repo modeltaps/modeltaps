@@ -23,7 +23,7 @@ export default function ConfirmDialog({ open, title, content, onConfirm, onCance
   return (
     <div className="fixed inset-0 z-[1400] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} aria-hidden="true" />
-      <div role="alertdialog" aria-modal="true" className="relative w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-xl">
+      <div role="alertdialog" aria-modal="true" className="relative w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
         <h2 className="text-lg font-semibold text-foreground">{title}</h2>
         {content && <p className="mt-2 text-sm text-muted-foreground">{content}</p>}
         <div className="mt-6 flex justify-end gap-2">

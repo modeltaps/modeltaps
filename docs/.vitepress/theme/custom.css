@@ -178,3 +178,9 @@
     margin: 0;
   }
 }
+
+/* Nav logo: a 32 x 40 PNG of the 16 x 20 pixel grid shown at 20 px (exact 2:1), not an SVG, which
+   Chromium would rasterize with 4-sample MSAA. */
+.VPNavBarTitle .logo {
+  height: 20px;
+}

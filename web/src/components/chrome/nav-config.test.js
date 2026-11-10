@@ -1,142 +1,221 @@
 import { describe, expect, it } from 'vitest';
 
-import { filterUserSections, filterAdminSections, findActiveItem, isAdminPath } from './nav-config';
-
-// N3 侧栏结构回归:用户侧栏只剩「主组 + API 组」,账单进主组(组织态仅 Owner/Admin),
-// 充值 / 设置无侧栏入口但仍要解析出标题。
+import {
+  commandSections,
+  settingsCommandItems,
+  contextSwitchTarget,
+  deriveContext,
+  findActiveItem,
+  firstAdminUrl,
+  isAdminPath,
+  navSectionsFor
+} from './nav-config';
 
 const idsOf = (sections) => sections.map((s) => ({ id: s.id, items: s.items.map((i) => i.id) }));
 
-describe('filterUserSections', () => {
-  it('个人上下文:主组 6 项 + API 组 6 项(五个模态控制台 + 接口文档)', () => {
-    expect(idsOf(filterUserSections({ orgActive: false }))).toEqual([
-      { id: 'nav_sec_build', items: ['dashboard', 'token', 'model_price', 'usage', 'log', 'billing'] },
-      { id: 'nav_sec_api', items: ['api_chat', 'api_image', 'api_audio', 'api_compare', 'api_video', 'api_docs'] }
+const MAIN = { id: 'main', items: ['dashboard', 'usage', 'log'] };
+const DEVELOP = { id: 'develop', items: ['token', 'model_price', 'playground', 'api_docs'] };
+
+describe('deriveContext', () => {
+  it('admin pages are the admin context for admins only', () => {
+    expect(deriveContext({ pathname: '/panel/channel', isAdmin: true })).toBe('admin');
+    expect(deriveContext({ pathname: '/panel/setting/site', isAdmin: true, orgId: 3 })).toBe('admin');
+    expect(deriveContext({ pathname: '/panel/channel', isAdmin: false })).toBe('personal');
+  });
+
+  it('workbench pages follow the org context', () => {
+    expect(deriveContext({ pathname: '/panel/dashboard', isAdmin: true })).toBe('personal');
+    expect(deriveContext({ pathname: '/panel/dashboard', orgId: 7 })).toBe('org');
+    expect(deriveContext({ pathname: '/panel/settings/account/profile', isAdmin: true, orgId: 7 })).toBe('org');
+  });
+});
+
+describe('navSectionsFor (workbench)', () => {
+  it('personal: main group and 开发, no 组织 group', () => {
+    expect(idsOf(navSectionsFor({ context: 'personal' }))).toEqual([MAIN, DEVELOP]);
+  });
+
+  it('org member: the 组织 group only has the org overview', () => {
+    expect(idsOf(navSectionsFor({ context: 'org', orgRole: 'member', orgId: 7 }))).toEqual([
+      MAIN,
+      DEVELOP,
+      { id: 'organization', items: ['organization'] }
     ]);
   });
 
-  it('组织上下文 Member:无「账单」,主组多「组织」一项,API 组不变', () => {
-    expect(idsOf(filterUserSections({ orgActive: true, orgRole: 'member' }))).toEqual([
-      { id: 'nav_sec_build', items: ['dashboard', 'token', 'model_price', 'usage', 'log', 'organization'] },
-      { id: 'nav_sec_api', items: ['api_chat', 'api_image', 'api_audio', 'api_compare', 'api_video', 'api_docs'] }
+  it('org owner/admin: members & budget, billing and org settings', () => {
+    for (const orgRole of ['owner', 'admin']) {
+      expect(idsOf(navSectionsFor({ context: 'org', orgRole, orgId: 7 }))).toEqual([
+        MAIN,
+        DEVELOP,
+        { id: 'organization', items: ['organization', 'org_members', 'billing', 'org_settings'] }
+      ]);
+    }
+  });
+
+  it('org-scoped urls carry the active organization', () => {
+    const org = navSectionsFor({ context: 'org', orgRole: 'owner', orgId: 7 }).find((s) => s.id === 'organization');
+    expect(org.items.find((i) => i.id === 'org_members').href).toBe('/panel/settings/org/7/members');
+    expect(org.items.find((i) => i.id === 'org_settings').href).toBe('/panel/settings/org/7/general');
+  });
+
+  it('workbench menus never contain admin pages', () => {
+    const ids = navSectionsFor({ context: 'org', orgRole: 'owner', orgId: 1, isRoot: true }).flatMap((s) => s.items.map((i) => i.id));
+    expect(ids).not.toContain('channel');
+    expect(ids).not.toContain('platform_settings');
+  });
+});
+
+describe('navSectionsFor (platform admin)', () => {
+  it('root sees every group', () => {
+    expect(idsOf(navSectionsFor({ context: 'admin', isRoot: true }))).toEqual([
+      { id: 'admin_main', items: ['systemInfo', 'analytics'] },
+      { id: 'gateway', items: ['channel', 'pricing', 'routing_policy'] },
+      { id: 'people', items: ['user', 'user_group', 'org_admin'] },
+      { id: 'finance', items: ['payment', 'redemption', 'invite_code'] },
+      { id: 'admin_settings', items: ['platform_settings'] }
     ]);
   });
 
-  it('组织上下文 Owner/Admin:比 Member 多「账单」(组织池充值)', () => {
-    expect(idsOf(filterUserSections({ orgActive: true, orgRole: 'admin' }))).toEqual([
-      { id: 'nav_sec_build', items: ['dashboard', 'token', 'model_price', 'usage', 'log', 'billing', 'organization'] },
-      { id: 'nav_sec_api', items: ['api_chat', 'api_image', 'api_audio', 'api_compare', 'api_video', 'api_docs'] }
-    ]);
+  it('non-root admins lose 运行状况 and 组织', () => {
+    const ids = navSectionsFor({ context: 'admin', isRoot: false }).flatMap((s) => s.items.map((i) => i.id));
+    expect(ids).not.toContain('systemInfo');
+    expect(ids).not.toContain('org_admin');
+    expect(ids).toContain('analytics');
   });
 
-  it('站点关闭内置试用区:API 组不再有受门禁的条目', () => {
-    const api = filterUserSections({ orgActive: false, chatEnabled: false }).find((s) => s.id === 'nav_sec_api');
-    expect(api.items.map((i) => i.id)).toEqual(['api_chat', 'api_image', 'api_audio', 'api_compare', 'api_video', 'api_docs']);
-  });
-
-  it('不含任何管理侧条目', () => {
-    const all = filterUserSections({ orgActive: true, orgRole: 'owner' }).flatMap((s) => s.items);
-    expect(all.some((i) => i.isAdmin)).toBe(false);
-  });
-
-  it('没有「管理」组:不进 navSections,由 Sidebar 在导航末尾自行追加', () => {
-    const sections = filterUserSections({ orgActive: false, isAdmin: true });
-    expect(sections.some((s) => s.id === 'nav_sec_admin')).toBe(false);
-    expect(sections.flatMap((s) => s.items).some((i) => i.enterAdmin)).toBe(false);
+  it('first admin page depends on root', () => {
+    expect(firstAdminUrl({ isRoot: true })).toBe('/panel/system_info');
+    expect(firstAdminUrl({ isRoot: false })).toBe('/panel/analytics');
   });
 });
 
 describe('findActiveItem', () => {
-  it('解析 API 控制台页', () => {
-    expect(findActiveItem('/panel/api/image')?.id).toBe('api_image');
-    expect(findActiveItem('/panel/api/chat')?.id).toBe('api_chat');
-    expect(findActiveItem('/panel/api/compare')?.id).toBe('api_compare');
-  });
-
-  it('解析接口文档页(所有模态共用一个标题)', () => {
+  it('every API console resolves to 演练场, docs to 文档', () => {
+    for (const m of ['chat', 'image', 'speech', 'compare', 'video']) expect(findActiveItem(`/panel/api/${m}`)?.id).toBe('playground');
     expect(findActiveItem('/panel/api/docs/chat')?.id).toBe('api_docs');
     expect(findActiveItem('/panel/api/docs/speech')?.id).toBe('api_docs');
+    expect(findActiveItem('/panel/api')).toBeNull();
   });
 
-  it('Playground 旧路径只做重定向,不再解析标题', () => {
-    expect(findActiveItem('/panel/playground')).toBeNull();
-    expect(findActiveItem('/panel/playground/speech')).toBeNull();
+  it('per-user stats share the 统计 item', () => {
+    expect(findActiveItem('/panel/multi_user_stats')?.id).toBe('analytics');
+    expect(findActiveItem('/panel/analytics')?.id).toBe('analytics');
   });
 
-  it('解析无侧栏入口的账户类页面', () => {
-    expect(findActiveItem('/panel/topup')?.id).toBe('topup');
-    expect(findActiveItem('/panel/billing')?.id).toBe('billing');
-    expect(findActiveItem('/panel/settings')?.id).toBe('settings');
-    expect(findActiveItem('/panel/settings/account/profile')?.id).toBe('settings');
+  it('platform settings groups resolve to one item', () => {
+    expect(findActiveItem('/panel/setting')?.id).toBe('platform_settings');
+    expect(findActiveItem('/panel/setting/gateway')?.id).toBe('platform_settings');
+    expect(findActiveItem('/panel/invite_code')?.id).toBe('invite_code');
   });
 
-  it('统一设置页不与管理后台系统设置混淆', () => {
-    expect(findActiveItem('/panel/setting/site')?.id).toBe('setting_site');
-    expect(isAdminPath('/panel/settings')).toBe(false);
+  it('settings pages: personal vs organization', () => {
+    expect(findActiveItem('/panel/settings')?.id).toBe('personal_settings');
+    expect(findActiveItem('/panel/settings/account/security')?.id).toBe('personal_settings');
+    expect(findActiveItem('/panel/settings/org/3/general')?.id).toBe('org_settings');
+    expect(findActiveItem('/panel/settings/org/3/members')?.id).toBe('org_members');
+    expect(findActiveItem('/panel/settings/org/3/danger')?.id).toBe('org_settings');
+    // The old budget section redirects to the 常规 group of the organization settings.
+    expect(findActiveItem('/panel/settings/org/3/budget')?.id).toBe('org_settings');
   });
 
-  it('个人设置/账户流水/月度账单旧路径只做重定向,不再解析标题', () => {
-    expect(findActiveItem('/panel/profile')).toBeNull();
-    expect(findActiveItem('/panel/ledger')).toBeNull();
-    expect(findActiveItem('/panel/invoice')).toBeNull();
+  it('redirect-only legacy paths do not resolve', () => {
+    for (const p of ['/panel/playground', '/panel/profile', '/panel/ledger', '/panel/invoice', '/panel/topup', '/panel/not-a-page']) {
+      expect(findActiveItem(p)).toBeNull();
+    }
   });
 
-  it('日志页仍解析为 log(Tab 走 query string)', () => {
-    expect(findActiveItem('/panel/log')?.id).toBe('log');
-  });
-
-  it('未登记路径返回 null', () => {
-    expect(findActiveItem('/panel/not-a-page')).toBeNull();
+  it('a path only matches whole segments', () => {
+    expect(findActiveItem('/panel/logout')).toBeNull();
+    expect(findActiveItem('/panel/channel/12')?.id).toBe('channel');
   });
 });
 
-// 管理侧栏:5 组(概览 / 用户与组织 / 网关 / 财务 / 系统设置),系统设置 7 个主题平铺在最后一组。
-// Telegram、模型归属、模型详情不再有侧栏入口。
-const SETTING_IDS = [
-  'setting_site',
-  'setting_auth',
-  'setting_billing',
-  'setting_relay',
-  'setting_privacy',
-  'setting_integrations',
-  'setting_organization'
-];
+describe('isAdminPath', () => {
+  it('recognises admin pages and legacy admin redirects', () => {
+    for (const p of [
+      '/panel/channel',
+      '/panel/setting',
+      '/panel/setting/site',
+      '/panel/telegram',
+      '/panel/model_info',
+      '/panel/multi_user_stats'
+    ]) {
+      expect(isAdminPath(p)).toBe(true);
+    }
+    for (const p of ['/panel/settings', '/panel/settings/account/profile', '/panel/dashboard', '/panel/billing']) {
+      expect(isAdminPath(p)).toBe(false);
+    }
+  });
+});
 
-describe('admin plane 结构', () => {
-  it('root 可见 5 组,系统设置是最后一组', () => {
-    expect(idsOf(filterAdminSections({ isRoot: true }))).toEqual([
-      { id: 'nav_sec_overview', items: ['analytics', 'multi_user_stats', 'systemInfo'] },
-      { id: 'nav_sec_people', items: ['user', 'user_group', 'org_admin'] },
-      { id: 'nav_sec_gateway', items: ['channel', 'pricing', 'routing_policy'] },
-      { id: 'nav_sec_finance', items: ['payment', 'redemption'] },
-      { id: 'nav_sec_system', items: SETTING_IDS }
+describe('contextSwitchTarget', () => {
+  it('entering platform admin lands on its first visible page', () => {
+    expect(contextSwitchTarget({ pathname: '/panel/log', to: { kind: 'admin' }, isRoot: false })).toBe('/panel/analytics');
+    expect(contextSwitchTarget({ pathname: '/panel/log', to: { kind: 'admin' }, isRoot: true })).toBe('/panel/system_info');
+  });
+
+  it('leaving platform admin goes to the dashboard', () => {
+    expect(contextSwitchTarget({ pathname: '/panel/channel', to: { kind: 'personal' } })).toBe('/panel/dashboard');
+    expect(contextSwitchTarget({ pathname: '/panel/setting/site', to: { kind: 'org', orgId: 2, role: 'owner' } })).toBe('/panel/dashboard');
+  });
+
+  it('shared workbench pages stay', () => {
+    expect(contextSwitchTarget({ pathname: '/panel/log', to: { kind: 'org', orgId: 2, role: 'member' } })).toBeNull();
+    expect(contextSwitchTarget({ pathname: '/panel/api/image', to: { kind: 'personal' } })).toBeNull();
+    expect(contextSwitchTarget({ pathname: '/panel/settings/account/profile', to: { kind: 'personal' } })).toBeNull();
+    expect(contextSwitchTarget({ pathname: '/panel/billing', to: { kind: 'personal' } })).toBeNull();
+  });
+
+  it('org admin pages follow the new organization or fall back to the dashboard', () => {
+    expect(contextSwitchTarget({ pathname: '/panel/settings/org/1/budget', to: { kind: 'org', orgId: 2, role: 'admin' } })).toBe(
+      '/panel/settings/org/2/budget'
+    );
+    expect(contextSwitchTarget({ pathname: '/panel/settings/org/1/general', to: { kind: 'org', orgId: 2, role: 'member' } })).toBe(
+      '/panel/dashboard'
+    );
+    expect(contextSwitchTarget({ pathname: '/panel/settings/org/1/general', to: { kind: 'personal' } })).toBe('/panel/dashboard');
+    expect(contextSwitchTarget({ pathname: '/panel/billing', to: { kind: 'org', orgId: 2, role: 'member' } })).toBe('/panel/dashboard');
+  });
+});
+
+describe('commandSections', () => {
+  it('non-admins get no platform admin entries', () => {
+    const ids = commandSections({ isAdmin: false }).flatMap((s) => s.items.map((i) => i.id));
+    expect(ids).toContain('personal_settings');
+    expect(ids).not.toContain('channel');
+  });
+
+  it('admins can reach every admin page they may see', () => {
+    const admin = commandSections({ isAdmin: true, isRoot: false }).find((s) => s.admin);
+    expect(admin.items.map((i) => i.id)).toEqual([
+      'admin_home',
+      'analytics',
+      'channel',
+      'pricing',
+      'routing_policy',
+      'user',
+      'user_group',
+      'payment',
+      'redemption',
+      'invite_code',
+      'platform_settings'
     ]);
+    expect(admin.items[0].href).toBe('/panel/analytics');
   });
 
-  it('非 root 管理员少 3 个 root-only 项(含「组织策略」主题)', () => {
-    const nonRootIds = filterAdminSections({ isRoot: false }).flatMap((s) => s.items.map((i) => i.id));
-    expect(nonRootIds).toHaveLength(15);
-    expect(nonRootIds).not.toContain('org_admin');
-    expect(nonRootIds).not.toContain('systemInfo');
-    expect(nonRootIds).not.toContain('setting_organization');
-    expect(nonRootIds).toContain('channel');
-    expect(nonRootIds).toContain('setting_site');
-  });
-
-  it('侧栏无 Telegram / 模型归属 / 模型详情', () => {
-    const allIds = filterAdminSections({ isRoot: true }).flatMap((s) => s.items.map((i) => i.id));
-    expect(allIds).not.toContain('telegram');
-    expect(allIds).not.toContain('model_ownedby');
-    expect(allIds).not.toContain('model_info');
-  });
-
-  it('isAdminPath 识别管理面路径(含被重定向的旧 url)', () => {
-    expect(isAdminPath('/panel/channel')).toBe(true);
-    expect(isAdminPath('/panel/setting/site')).toBe(true);
-    expect(isAdminPath('/panel/setting')).toBe(true);
-    expect(isAdminPath('/panel/telegram')).toBe(true);
-    expect(isAdminPath('/panel/model_ownedby')).toBe(true);
-    expect(isAdminPath('/panel/model_info')).toBe(true);
-    expect(isAdminPath('/panel/dashboard')).toBe(false);
+  it('platform settings groups are listed; cards only show while typing', () => {
+    const groupIds = (isRoot) =>
+      commandSections({ isAdmin: true, isRoot })
+        .find((s) => s.id === 'platform_settings')
+        .items.filter((i) => !i.searchOnly)
+        .map((i) => i.href);
+    expect(groupIds(false)).toEqual(
+      ['site', 'auth', 'billing', 'payment', 'gateway', 'privacy', 'notify'].map((g) => `/panel/setting/${g}`)
+    );
+    expect(groupIds(true)).toContain('/panel/setting/orgpolicy');
+    const cards = settingsCommandItems({ isRoot: false }).filter((i) => i.searchOnly);
+    expect(cards.find((i) => i.id === 'setting_card_smtp').href).toBe('/panel/setting/notify?highlight=smtp');
+    expect(cards.some((i) => i.id === 'setting_card_org-policy')).toBe(false);
   });
 });

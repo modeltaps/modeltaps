@@ -52,7 +52,7 @@ export function ModelFacts({ model }) {
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="font-mono text-sm font-semibold">{model.id}</span>
+        <span className="font-mono text-sm font-medium">{model.id}</span>
         {model.ownedBy && <span className="rounded bg-muted px-1.5 py-0.5 text-[0.6875rem] text-muted-foreground">{model.ownedBy}</span>}
       </div>
 

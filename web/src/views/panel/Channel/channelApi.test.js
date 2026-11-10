@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const get = vi.fn();
-vi.mock('utils/api', () => ({ API: { get: (...args) => get(...args) } }));
+const put = vi.fn();
+vi.mock('utils/api', () => ({ API: { get: (...args) => get(...args), put: (...args) => put(...args) } }));
 vi.mock('@/components/ui/sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
-import { checkChannelModel, fetchChannelStatusCounts, fetchTagChannels, statusCountParams } from './channelApi';
+import { checkChannelModel, fetchChannelStatusCounts, fetchTagChannels, statusCountParams, updateChannel } from './channelApi';
 
 describe('statusCountParams', () => {
   it('keeps the other filters and swaps in the chip status', () => {
@@ -77,5 +78,32 @@ describe('checkChannelModel', () => {
     await expect(checkChannelModel(3, 'x')).rejects.toThrow('record not found');
     get.mockResolvedValue(undefined);
     await expect(checkChannelModel(3, 'x')).rejects.toThrow('check failed');
+  });
+});
+
+describe('updateChannel', () => {
+  beforeEach(() => put.mockReset());
+
+  it('sends the whole channel with the patch, keeps the stored key and drops runtime fields', async () => {
+    put.mockResolvedValue({ data: { success: true } });
+    const channel = {
+      id: 4,
+      name: 'a',
+      key: '',
+      models: 'm1,m2',
+      priority: 1,
+      key_status: { configured: true },
+      model_drift: { ok: true },
+      usage_windows: {},
+      quota_snapshot: {}
+    };
+    await expect(updateChannel(channel, { priority: 5 })).resolves.toEqual({ success: true });
+    expect(put).toHaveBeenCalledWith('/api/channel/', { id: 4, name: 'a', key: '', models: 'm1,m2', priority: 5 });
+  });
+
+  it('passes a replacement key through', async () => {
+    put.mockResolvedValue({ data: { success: true } });
+    await updateChannel({ id: 1, models: 'm' }, { key: 'sk-new' });
+    expect(put.mock.calls[0][1].key).toBe('sk-new');
   });
 });

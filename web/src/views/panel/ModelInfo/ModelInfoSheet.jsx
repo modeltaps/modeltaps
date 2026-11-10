@@ -22,6 +22,9 @@ import { statusLabel } from '../Channel/channelApi';
 import { PriceFields, buildPricePayload, priceFormValues, usePriceUnits } from '../Pricing/PricingSheet';
 import { enabledChannels, modelGroups, modelStatus, splitChannelGroups } from '../Pricing/modelCatalog';
 import { ChannelGlyph, channelEditPath } from './ModelTable';
+import SuppliesPanel from './supply/SuppliesPanel';
+import { ModelStatusPill } from './supply/supplyParts';
+import { MODEL_STATUSES, isPublicModelRow, normalizeModelStatus } from './supply/supplyHelpers';
 import {
   ModelStatusBadge,
   MODALITY_VALUES,
@@ -42,7 +45,7 @@ const VENDOR_NONE = 'none';
 // 渠道未带状态(后端摘要)时视为启用;只有启用渠道才算可路由。
 const isChannelEnabled = (channel) => (channel.status ?? 1) === 1;
 
-export const SHEET_TABS = ['profile', 'pricing', 'channels'];
+export const SHEET_TABS = ['profile', 'pricing', 'channels', 'supplies'];
 
 const ORIGIN = {
   model: '',
@@ -59,6 +62,8 @@ const ORIGIN = {
   hidden: false,
   endpoints: '',
   alias_of: '',
+  status: 'draft',
+  supply_mode: 'balance',
   locked: false
 };
 
@@ -100,7 +105,7 @@ async function callApi(request) {
 function Section({ title, children }) {
   return (
     <section className="space-y-4">
-      <h3 className="border-b border-border pb-1.5 text-sm font-semibold">{title}</h3>
+      <h3 className="border-b border-border pb-1.5 text-sm font-medium">{title}</h3>
       {children}
     </section>
   );
@@ -117,7 +122,7 @@ function ChannelsPanel({ row }) {
   return (
     <div className="space-y-6">
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold">{t('modelsPage.sheet.providingChannels', { count: channels.length })}</h3>
+        <h3 className="text-sm font-medium">{t('modelsPage.sheet.providingChannels', { count: channels.length })}</h3>
         {enabledChannels(row).length === 0 && (
           <div className="space-y-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
             <p className="text-warning">{t('modelInfoPage.noChannel')}</p>
@@ -186,7 +191,7 @@ function ChannelsPanel({ row }) {
       </section>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold">{t('modelsPage.sheet.availableGroups')}</h3>
+        <h3 className="text-sm font-medium">{t('modelsPage.sheet.availableGroups')}</h3>
         {groups.length > 0 ? (
           <div className="flex flex-wrap gap-1.5">
             {groups.map((group) => (
@@ -202,7 +207,7 @@ function ChannelsPanel({ row }) {
 
       {row.alias_of && (
         <section className="space-y-2">
-          <h3 className="text-sm font-semibold">{t('modelInfoPage.aliasOf')}</h3>
+          <h3 className="text-sm font-medium">{t('modelInfoPage.aliasOf')}</h3>
           <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{row.alias_of}</code>
         </section>
       )}
@@ -286,20 +291,29 @@ export default function ModelInfoSheet({
   prices = [],
   ownedby = [],
   unit = 'M',
-  onSaved
+  channels = [],
+  supplyCount,
+  switches = null,
+  onSaved,
+  onSupplyChanged
 }) {
   const { t } = useTranslation();
   const editId = row?.catalogId || 0;
   const hasPrice = !!row?.price;
+  const isPublic = isPublicModelRow(row);
   const [tab, setTab] = useState(initialTab);
 
   useEffect(() => {
-    if (open) setTab(row && SHEET_TABS.includes(initialTab) ? initialTab : 'profile');
+    if (!open) return;
+    const allowed = row && SHEET_TABS.includes(initialTab) && (initialTab !== 'supplies' || isPublicModelRow(row));
+    setTab(allowed ? initialTab : 'profile');
   }, [open, row, initialTab]);
   const [values, setValues] = useState(ORIGIN);
   const [baseline, setBaseline] = useState(ORIGIN);
   const [originalModel, setOriginalModel] = useState('');
   const [originalCapabilities, setOriginalCapabilities] = useState('');
+  // The row as last read from the server: the supply mode switch saves it with only that field changed.
+  const [stored, setStored] = useState(null);
   const [modelOptions, setModelOptions] = useState([]);
   const [vendorOptions, setVendorOptions] = useState([]);
   const [errors, setErrors] = useState({});
@@ -349,6 +363,7 @@ export default function ModelInfoSheet({
       setBaseline(initial);
       setOriginalModel('');
       setOriginalCapabilities('');
+      setStored(null);
       return;
     }
     API.get(`/api/model_info/${editId}`)
@@ -362,6 +377,8 @@ export default function ModelInfoSheet({
         if (!data.capabilities) data.capabilities = '';
         if (!data.endpoints) data.endpoints = '';
         if (!data.alias_of) data.alias_of = '';
+        setStored({ ...ORIGIN, ...data });
+        data.status = normalizeModelStatus(data.status);
         // 决策 4:编辑已有记录时锁定默认打开,防止改完被下次同步冲掉。
         const loaded = { ...ORIGIN, ...data, locked: true };
         setValues(loaded);
@@ -458,6 +475,20 @@ export default function ModelInfoSheet({
     setField('endpoints', next.length === 0 ? '' : JSON.stringify(next));
   };
 
+  // Saves the supply mode at once (the Supplies tab saves on every change), leaving any
+  // unsaved profile edits as they are.
+  const changeSupplyMode = async (mode) => {
+    if (!stored) return;
+    const payload = { ...buildCatalogPayload(stored, stored.capabilities), id: editId, supply_mode: mode };
+    const result = await callApi(() => API.put('/api/model_info/', payload));
+    if (!result.ok) return toast.error(result.message);
+    setStored((prev) => ({ ...prev, supply_mode: mode }));
+    setValues((prev) => ({ ...prev, supply_mode: mode }));
+    setBaseline((prev) => ({ ...prev, supply_mode: mode }));
+    toast.success(t('modelSupply.mode.saved'));
+    onSupplyChanged?.();
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent onClose={() => onOpenChange(false)}>
@@ -467,6 +498,7 @@ export default function ModelInfoSheet({
             <SheetDescription className="flex flex-wrap items-center gap-2">
               <span className="font-mono text-foreground">{row.model}</span>
               <ModelStatusBadge status={modelStatus(row)} />
+              {isPublic && <ModelStatusPill status={values.status || row.status} />}
               <span>
                 {t('modelsPage.channelCount', { count: enabledChannels(row).length })} ·{' '}
                 {t('modelsPage.sheet.groupCount', { count: modelGroups(row).length })}
@@ -482,6 +514,12 @@ export default function ModelInfoSheet({
               {row && (
                 <TabsTrigger value="channels">
                   {t('modelsPage.channelsTab')} ({(row.bound_channels || []).length})
+                </TabsTrigger>
+              )}
+              {isPublic && (
+                <TabsTrigger value="supplies">
+                  {t('modelSupply.tab')}
+                  {supplyCount !== undefined && ` (${supplyCount})`}
                 </TabsTrigger>
               )}
             </TabsList>
@@ -556,6 +594,23 @@ export default function ModelInfoSheet({
                   onChange={(e) => setField('alias_of', e.target.value)}
                 />
               </FormField>
+
+              {!values.alias_of?.trim() && (
+                <FormField label={t('modelSupply.status.label')} help={t('modelSupply.status.help')}>
+                  <Select value={normalizeModelStatus(values.status)} onValueChange={(v) => setField('status', v)}>
+                    <SelectTrigger aria-label={t('modelSupply.status.label')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MODEL_STATUSES.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {t(`modelSupply.status.${s}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
+              )}
 
               <FormField row label={t('modelInfoPage.hidden')} help={t('modelInfoPage.hiddenTip')} controlClassName="w-auto">
                 <Switch checked={!!values.hidden} onCheckedChange={(v) => setField('hidden', v)} />
@@ -664,16 +719,40 @@ export default function ModelInfoSheet({
               <ChannelsPanel row={row} />
             </div>
           )}
+
+          {isPublic && open && tab === 'supplies' && (
+            <div role="tabpanel">
+              <SuppliesPanel
+                model={row.model}
+                supplyMode={values.supply_mode || row.supply_mode}
+                onSupplyModeChange={stored ? changeSupplyMode : undefined}
+                channels={channels}
+                switches={switches}
+                onChanged={onSupplyChanged}
+              />
+            </div>
+          )}
         </SheetBody>
         <SheetFooter>
           {tab === 'channels' && <span className="mr-auto text-xs text-muted-foreground">{t('modelsPage.sheet.channelsReadonly')}</span>}
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t('common.cancel')}
-          </Button>
-          <Button onClick={submit} disabled={saving}>
-            {saving && <Loader2 className="size-4 animate-spin" />}
-            {t('common.submit')}
-          </Button>
+          {tab === 'supplies' ? (
+            <>
+              <span className="mr-auto text-xs text-muted-foreground">{t('modelSupply.savedRightAway')}</span>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                {t('common.close')}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button onClick={submit} disabled={saving}>
+                {saving && <Loader2 className="size-4 animate-spin" />}
+                {t('common.submit')}
+              </Button>
+            </>
+          )}
         </SheetFooter>
       </SheetContent>
     </Sheet>
@@ -689,5 +768,9 @@ ModelInfoSheet.propTypes = {
   prices: PropTypes.array,
   ownedby: PropTypes.array,
   unit: PropTypes.string,
-  onSaved: PropTypes.func
+  channels: PropTypes.array,
+  supplyCount: PropTypes.number,
+  switches: PropTypes.object,
+  onSaved: PropTypes.func,
+  onSupplyChanged: PropTypes.func
 };

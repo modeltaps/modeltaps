@@ -83,16 +83,14 @@ export default function InvoiceDetailSheet({ date, t, onClose }) {
           ) : (
             <>
               <section className="mb-5">
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('invoice_index.userinfo')}</h3>
+                <h3 className="mb-2 text-xs font-medium text-muted-foreground">{t('invoice_index.userinfo')}</h3>
                 <Row label={t('invoice_index.username')} value={user?.username} />
                 <Row label={t('invoice_index.email')} value={user?.email} />
                 <Row label={t('invoice_index.date')} value={date} />
               </section>
 
               <section className="mb-5">
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {t('invoice_index.usage_statistics')}
-                </h3>
+                <h3 className="mb-2 text-xs font-medium text-muted-foreground">{t('invoice_index.usage_statistics')}</h3>
                 <Row label={t('invoice_index.promptTokens')} value={thousandsSeparator(totals.prompt)} />
                 <Row label={t('invoice_index.completionTokens')} value={thousandsSeparator(totals.completion)} />
                 <Row label={t('invoice_index.requestTime')} value={`${(totals.time / 1000).toFixed(3)}s`} />
@@ -100,9 +98,7 @@ export default function InvoiceDetailSheet({ date, t, onClose }) {
               </section>
 
               <section className="mb-5">
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {t('invoice_index.usage_details')}
-                </h3>
+                <h3 className="mb-2 text-xs font-medium text-muted-foreground">{t('invoice_index.usage_details')}</h3>
                 <div className="hidden md:block overflow-x-auto rounded-md border border-border">
                   <Table>
                     <TableHeader>
@@ -129,21 +125,19 @@ export default function InvoiceDetailSheet({ date, t, onClose }) {
                     </TableBody>
                   </Table>
                 </div>
-                <div className="md:hidden flex flex-col gap-3">
+                <div className="md:hidden flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
                   {rows.map((item, index) => (
-                    <div key={index} className="rounded-lg border border-border bg-card p-3.5 shadow-sm">
+                    <div key={index} className="p-3.5">
                       <div className="mb-2 text-sm font-medium">{item.model_name}</div>
                       <dl className="flex flex-col divide-y divide-border/60">
                         <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                          <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                            {t('invoice_index.promptTokens')}
-                          </dt>
+                          <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">{t('invoice_index.promptTokens')}</dt>
                           <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">
                             {thousandsSeparator(item.prompt_tokens)}
                           </dd>
                         </div>
                         <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                          <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
                             {t('invoice_index.completionTokens')}
                           </dt>
                           <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">
@@ -151,25 +145,19 @@ export default function InvoiceDetailSheet({ date, t, onClose }) {
                           </dd>
                         </div>
                         <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                          <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                            {t('invoice_index.requestCount')}
-                          </dt>
+                          <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">{t('invoice_index.requestCount')}</dt>
                           <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">
                             {thousandsSeparator(item.request_count)}
                           </dd>
                         </div>
                         <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                          <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                            {t('invoice_index.requestTime')}
-                          </dt>
+                          <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">{t('invoice_index.requestTime')}</dt>
                           <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">
                             {(item.request_time / 1000).toFixed(3)}s
                           </dd>
                         </div>
                         <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                          <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                            {t('invoice_index.amount')}
-                          </dt>
+                          <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">{t('invoice_index.amount')}</dt>
                           <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">${calculateQuota(item.quota, 6)}</dd>
                         </div>
                       </dl>
@@ -180,7 +168,7 @@ export default function InvoiceDetailSheet({ date, t, onClose }) {
 
               <div className="flex items-baseline justify-end gap-3">
                 <span className="text-sm font-medium text-muted-foreground">{t('invoice_index.quota')}</span>
-                <span className="text-xl font-bold text-foreground">${calculateQuota(totals.quota, 6)}</span>
+                <span className="text-xl font-medium text-foreground">${calculateQuota(totals.quota, 6)}</span>
               </div>
             </>
           )}

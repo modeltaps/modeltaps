@@ -76,7 +76,7 @@ export default function IdentifiersCard({ siteInfo, inputs, reloadUser }) {
     const links = externalIdentityLinks(siteInfo, inputs) || {};
     const href = links.identity_url || links.account_settings_url || '';
     return (
-      <SecurityCard title={t(tk('identifiers'))} description={t(tk('identifiersHintExternal'))}>
+      <SecurityCard highlight="identifiers" title={t(tk('identifiers'))} description={t(tk('identifiersHintExternal'))}>
         <MethodRow
           icon={Mail}
           title={t(tk('email'))}
@@ -135,7 +135,7 @@ export default function IdentifiersCard({ siteInfo, inputs, reloadUser }) {
   ].filter((item) => item.enabled);
 
   return (
-    <SecurityCard title={t(tk('identifiers'))} description={t(tk('identifiersHint'))}>
+    <SecurityCard highlight="identifiers" title={t(tk('identifiers'))} description={t(tk('identifiersHint'))}>
       <MethodRow
         icon={Mail}
         title={t(tk('email'))}

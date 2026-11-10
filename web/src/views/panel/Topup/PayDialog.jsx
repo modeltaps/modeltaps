@@ -145,7 +145,7 @@ export default function PayDialog({ open, onClose, amount, uuid, onSuccess }) {
           )}
           {qrCodeUrl && <QRCode value={qrCodeUrl} size={256} qrStyle="dots" eyeRadius={20} fgColor="#1D1D1F" />}
           {success && <img src={successSvg} alt="success" height="100" />}
-          <p className="text-lg font-semibold">{message}</p>
+          <p className="text-lg font-medium">{message}</p>
           {subMessage && <p className="text-sm text-muted-foreground">{subMessage}</p>}
           {qrCodeUrl && qrCodeUrl.startsWith('https://qr.alipay.com') && !success && (
             <Button onClick={() => handleOpenAlipay(qrCodeUrl)}>{t('payDialog.openAlipay')}</Button>

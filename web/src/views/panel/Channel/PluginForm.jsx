@@ -23,7 +23,7 @@ export default function PluginForm({ type, value, onChange }) {
       {Object.entries(plugins).map(([pluginId, cfg], idx) => (
         <div key={pluginId} className={`space-y-3 ${idx > 0 ? 'border-t border-foreground/10 pt-6' : ''}`}>
           <div className="space-y-1">
-            <p className="text-sm font-semibold text-foreground">{configText(t, cfg.name)}</p>
+            <p className="text-sm font-medium text-foreground">{configText(t, cfg.name)}</p>
             <p className="text-xs text-muted-foreground">{configText(t, cfg.description)}</p>
           </div>
           {Object.entries(cfg.params).map(([paramId, param]) =>

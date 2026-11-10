@@ -10,7 +10,11 @@ function Dialog({ open, onOpenChange, children }) {
     if (!open) return undefined;
     const onKey = (e) => {
       // A nested control (dropdown, combobox) that handled Escape itself calls preventDefault.
-      if (e.key === 'Escape' && !e.defaultPrevented) onOpenChange?.(false);
+      // Closing marks the event handled too, so a sheet underneath stays open.
+      if (e.key === 'Escape' && !e.defaultPrevented) {
+        onOpenChange?.(false);
+        e.preventDefault();
+      }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -31,7 +35,7 @@ const DialogContent = React.forwardRef(({ className, children, ...props }, ref) 
     role="dialog"
     aria-modal="true"
     className={cn(
-      'relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-xl',
+      'relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-xl',
       className
     )}
     {...props}

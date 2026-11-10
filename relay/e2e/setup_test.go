@@ -85,6 +85,9 @@ func setupTestDB(t *testing.T) {
 		&model.Organization{}, &model.OrganizationMember{},
 		// 自动路由场景
 		&model.RoutingPolicy{},
+		// model supplies
+		&model.ModelSupply{},
+		&model.SupplyPause{},
 	); err != nil {
 		t.Fatalf("迁移测试表失败: %v", err)
 	}

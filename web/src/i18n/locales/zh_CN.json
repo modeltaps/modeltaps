@@ -2926,7 +2926,10 @@
         "price_change": "上游价格变动",
         "model_drift": "上游模型列表变化",
         "model_consistency": "模型元信息问题",
-        "credential": "渠道凭证问题"
+        "credential": "渠道凭证问题",
+        "supply_paused": "渠道或模型被暂停",
+        "supply_resumed": "暂停的渠道或模型已恢复",
+        "supply_failover": "请求切换到备用渠道"
       },
       "limit": {
         "label": "每类每小时最多条数",
@@ -3533,14 +3536,12 @@
     "adjustQuota": "调整额度",
     "dissolve": "解散组织",
     "dissolveConfirm": "确定解散组织 “{{name}}” 吗？该组织全部 API Key将立即失效，剩余额度按站点策略退回所有者。",
-    "quotaTitle": "调整组织池余额 — {{name}}",
     "quotaDesc": "正数增加、负数扣减，操作将记录审计日志。",
     "quotaLabel": "增减额度",
     "quotaNonZero": "额度变更不能为 0",
     "remarkLabel": "备注",
     "remarkPlaceholder": "可选",
     "maxMembers": "成员上限",
-    "maxMembersTitle": "成员上限 — {{name}}",
     "maxMembersDesc": "当前 {{count}} 名成员。上限只限制新成员加入，不会移除已有成员。",
     "maxMembersModeDefault": "跟随站点默认",
     "maxMembersModeUnlimited": "不限制",

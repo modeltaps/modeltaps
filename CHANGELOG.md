@@ -9,6 +9,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Console endpoints for the model supply pages. `GET /api/model_supply/preview?model=&group=`
+  shows in which order a request for a public model would try its supplies, tier by tier, with
+  each supply's state (available, paused until, waiting for its recovery test, cooling down,
+  disabled, channel disabled), its share of the tier's traffic, and which supply takes the next
+  request when that is certain; it also works before `ModelSupplyEnabled` is on and says so.
+  `GET /api/supply_pause/rules` returns the pause rules in effect and the built-in defaults, and
+  a channel's own rules with `channel_id`. Channels can carry their own pause rules
+  (`pause_rules`), tried before the site-wide ones; invalid rules are refused on save, and
+  saving a channel without the field keeps them. The supply list also returns each channel's
+  groups. With `ModelSupplyEnabled` on, the public model list (`/api/model_info/`, used by the
+  pricing page) shows published models only.
+- Pause rules for failing channels, on by default (`PauseRulesEnabled`). When a request fails,
+  the first matching rule decides what happens to the channel: an exhausted quota or balance
+  (402, `insufficient_quota`, `billing_not_active`, "credit balance is too low" and similar)
+  pauses the whole channel for 30 minutes, a rejected key or disabled account for an hour; a
+  rate limit cools the model down until the upstream's reset time, or for `RetryCooldownSeconds`;
+  a missing model is paused for `ModelNotFoundCooldownSeconds`; `RetryCooldownPerStatus` still
+  applies; and a 5xx pauses the model for 2 minutes on the third failure within a minute. The
+  request that hit the failure still moves to the next channel. Pauses of a minute or more are
+  stored and shared between nodes, and when one ends with a recovery test, the channel resumes
+  only if a test request passes; otherwise the pause doubles, up to 6 hours. A balance refresh
+  that finds money ends a quota pause early (refreshing a channel's balance by hand after a
+  top-up resumes it at once), and the scheduled balance refresh now pauses a channel with an
+  empty balance instead of disabling it. Admins get the new "channel or model paused", "paused
+  channel or model resumed" and "request switched to a backup channel" notices (the last at most
+  once an hour per model and channel). Rules can be replaced as JSON in `PauseRules`, and
+  `/api/supply_pause` lists, adds and removes pauses. With `PauseRulesEnabled` off, failures are
+  handled as before (automatic disabling, per-status cooldowns, model-not-found quarantine).
+- Channels are organized by provider. The channel page lists the providers that have channels
+  on the left (with a dot when one needs attention and the channel count) and a search box that
+  finds channels across providers by name, model, tag, key suffix or host. The selected provider
+  shows what needs attention (auto-disabled channels, missing keys, low balance, upstream model
+  drift), one traffic chart with a line per channel over 24 hours, 7 days or 30 days, and the
+  channel table with priority and weight, requests, success rate, average latency, balance or
+  subscription usage and an enable switch. The table filters by status and tag, selects rows for
+  batch enable, disable, test, group, priority and weight changes and delete, and offers
+  tag-wide actions when a tag is picked.
+- Clicking a channel opens a side panel whose tabs save on their own: models (per-model
+  requests, success rate, latency and first token time; model list and mapping), connection
+  (base URL, proxy, masked key and replacement, OAuth account, subscription windows), groups
+  and routing (groups, and the channel's place next to the other channels of the same provider:
+  backup, share or first, with the priority and weight that saves), request rewriting, monitoring
+  (test model, balance alert, drift) and advanced fields. `/panel/channel/<id>` opens the panel
+  directly; older `?view=settings`, `?tab=config` and `?channel_id=` links land on it.
+- New channels are created in a side sheet: provider, name, allowed models (all by default, or a
+  list with `*` prefix wildcards), blocked models (removed from the list and added to the drift
+  ignore rules so they are not added back), model mapping, the provider's auth method and key
+  with a link to where the provider issues keys, groups and usage. Test checks the connection
+  before saving; Save and test creates the channel and then tests it. Several keys, one per
+  line, create one channel each. `/panel/channel/new` opens the sheet. `POST /api/channel/` now
+  returns the created ids.
+- Model supplies, backend groundwork (no change to request handling yet). A new `model_supplies`
+  table records which channel supplies a public model, under which upstream name, with its own
+  priority, weight and on/off switch; admins manage them through `/api/model_supply`, whose list
+  shows each supply's channel name, status, type and tag. Root can
+  run `POST /api/model_supply/migrate`, a dry run unless the body says `{"dry_run": false}`, which
+  turns the channels' model lists and model mappings into supplies and reports what changes: new
+  catalog rows, status changes, prices copied from upstream names and conflicts between them,
+  requests that will be priced by the public model instead of the upstream name, `+` mappings,
+  wildcards expanded from the last upstream model list or left unresolved, duplicates, routing
+  policies whose models have no supply, and per-group routing differences. Catalog rows gain
+  `status` (draft, published, retired) and `supply_mode` (balance, failover); hiding a model keeps
+  `status` in step until the migration runs, and saves that leave the two fields out keep them.
+- Routing through model supplies, behind the new `ModelSupplyEnabled` setting (off by default;
+  turn it on after running the migration). While it is on, the channels' model lists and model
+  mappings no longer route: each public model reaches the channels that supply it, in tiers by
+  the supplies' priority (highest first), and within a tier `balance` models split by supply
+  weight while `failover` models take the heaviest supply. The supply names the upstream model,
+  so `model_mapping` and its `+` prefix no longer apply, and requests are billed by the public
+  model's price rather than the upstream name's. `status` decides what clients see: published
+  models are listed and callable, retired ones stay callable but are no longer listed, drafts
+  answer model not found, and aliases keep working without being listed. The request log
+  records the supply in `metadata.supply_id`. Switching the setting rebuilds routing at once,
+  in both directions.
 - Organization routing policies (backend): with the new site option
   `OrganizationRoutingPolicyEnabled` (off by default), organization owners and admins manage
   routing policies that only their organization's API keys can use, through
@@ -94,8 +168,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on the account never match an IP filter, so the filter cannot be used to find out which IP an
   administrator acted from.
 
+### Changed
+
+- Every panel page uses one sidebar. Under the brand, a one-line switcher shows the current space
+  (personal, the active organization, or platform admin for administrators) and switches between
+  them; platform admin is no longer a separate sidebar with a back row, and the user menu and the
+  workbench no longer carry their own admin entries. The workbench menu is dashboard, usage and
+  logs, then a Develop group (API keys, models, playground, docs) and, for organization owners and
+  admins, an Organization group (members and budgets, billing, organization settings). The five
+  API consoles are one Playground item with a modality switch on the page; analytics and per-user
+  statistics are one Statistics item with a tab switch. The platform settings groups,
+  personal settings and organization settings each get a section list on the left of the page
+  instead of sidebar entries. The bottom of the sidebar shows the balance, the account row (with
+  personal settings, appearance, language, docs and log out) and notifications. URLs are unchanged.
+- New brand mark: a solid, rounded drop with an off-centre round hole replaces the stroked
+  lowercase m. The mark is square-ish and filled, so it holds its weight next to the wordmark in
+  the sidebar and header and stays legible as a 16 px favicon. The favicon, PWA icons, Open Graph
+  image and the documentation site's logo and favicon use the same shape. It is drawn on whole-pixel
+  grids at 12, 16 and 20 px and shown as pre-rendered bitmaps in the interface and as PNG
+  favicons, so its edges stay smooth on standard-density screens.
+- Platform, organization and personal settings are one kind of page with three kinds of cards.
+  A form card saves everything in it, switches and its on/off switch included, from its footer
+  (Undo and Save); nothing saves the moment it is clicked any more, and no card has several save
+  buttons. Lists of objects (OIDC providers, payment gateways, the Telegram bot menu, chat links,
+  login sessions) are collection cards whose rows open an editor that saves the item on its own.
+  One-off actions (purging logs, monthly invoices, transferring or dissolving an organization)
+  are action rows with a confirmation. Groups with unsaved cards get a dot in the section list,
+  leaving the page with unsaved changes asks first, and pages with more than three groups have a
+  settings search that also finds fields, hints and list entries in other groups.
+- Platform settings are regrouped into Site, Sign-in & registration, Billing, Payments, Gateway,
+  Logs & privacy, Notifications & integrations and Organization policy (root only); mail sending
+  moves to Notifications & integrations and the provider icon library into Branding. Old group
+  and section links (`relay`, `integrations`, `organization`, `?tab=`, `?highlight=` of a card
+  that moved) redirect to the new place, and the command palette lists the groups and, while
+  typing, every card. Gateway gets a supply pause rules card (on/off switch and custom rules
+  as JSON), and the notification switches cover paused, resumed and failed-over supplies.
+- Invite codes have their own page under Finance in platform admin (`/panel/invite_code`); the
+  settings keep the "registration requires an invite code" switch with a link to it.
+- Personal access tokens move into Sign-in & security, and the organization team budget joins
+  the organization profile under General; members and budgets stay their own page.
+
 ### Fixed
 
+- Saving a channel no longer resets its last test time, response time and creation time; the
+  form does not carry them, and the full-row update wrote them back as zero.
+- Channels that list a wildcard model such as `gpt-4o*` now send the requested model upstream
+  (`gpt-4o-mini`) instead of the literal pattern. The pattern was also the name billing looked
+  up, so with the default unpriced-model policy these requests were rejected with "has no
+  configured price" before reaching the provider. A channel's model mapping may name the
+  requested model or the pattern; the requested model's entry wins.
+- The channel that failed last in a request is now cooled down as well, when retries are turned
+  off or the retry budget runs out before the channels do. A rate-limited primary was otherwise
+  picked again by the next request. Sessions held on their channel by strict session affinity
+  are left where they are.
+- A provider error that is not retried is counted once in the `provider_requests_total` metric
+  instead of twice.
+- Saving a setting now reports a database error instead of applying the value in memory only,
+  where it looked saved until the next restart or sync.
+- A request whose channel turns out to be out of quota or credit now moves to the next channel
+  instead of failing. Some providers report an empty balance as a 400 (for example "Your credit
+  balance is too low"), which ended the request on every channel type except Anthropic, even
+  though the channel was then disabled. Any error that matches the automatic disable rules
+  (exhausted quota or balance, rejected key, disabled account, a disable keyword) now retries on
+  another channel whatever its status code and whether or not automatic disabling is on, and also
+  when strict session affinity binds the session to that channel. A malformed request still
+  returns its 400 without retrying.
+- The scheduled recovery check now sends the "Channel re-enabled" notice when it puts an
+  automatically disabled channel back into rotation; the notice type was listed in the
+  notification settings but never sent. With several nodes running the check, only the node that
+  re-enables the channel sends it. A recovery also clears the disable notice's de-duplication
+  window, so a channel that fails again within five minutes is reported again.
 - Claude models on Vertex AI channels now work. Requests were sent to Google's publisher path, so
   Claude models were not found there; Claude now uses the Anthropic publisher, and model IDs with
   a date (`claude-sonnet-4-5-20250929`) are converted to Vertex's `name@date` form while models

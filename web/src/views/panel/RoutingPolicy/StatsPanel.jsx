@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Segmented } from '@/components/objects';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { renderQuota as renderQuotaBase } from 'utils/common';
 
@@ -14,9 +14,9 @@ const REASONS = ['classified', 'pinned', 'below_threshold', 'decision_error', 'e
 
 function Stat({ label, value, hint }) {
   return (
-    <div className="rounded-md border border-border p-3">
+    <div className="min-w-0">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-lg font-semibold tabular-nums">{value}</div>
+      <div className="mt-0.5 text-lg font-medium tabular-nums">{value}</div>
       {hint && <div className="mt-0.5 text-xs text-muted-foreground">{hint}</div>}
     </div>
   );
@@ -59,15 +59,15 @@ export default function StatsPanel({ policyId, fallbackModel, api = platformRout
 
   return (
     <div className="space-y-5" data-testid="routing-stats">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{t('routingPolicy.stats.intro')}</p>
-        <div className="flex gap-1">
-          {[7, 30].map((d) => (
-            <Button key={d} type="button" size="sm" variant={days === d ? 'default' : 'outline'} onClick={() => setDays(d)}>
-              {t('routingPolicy.stats.days', { days: d })}
-            </Button>
-          ))}
-        </div>
+        <Segmented
+          size="mini"
+          label={t('routingPolicy.stats.range')}
+          value={String(days)}
+          onChange={(v) => setDays(Number(v))}
+          options={[7, 30].map((d) => ({ value: String(d), label: t('routingPolicy.stats.days', { days: d }) }))}
+        />
       </div>
 
       {loading && !stats ? (
@@ -76,7 +76,7 @@ export default function StatsPanel({ policyId, fallbackModel, api = platformRout
         <p className="text-sm text-muted-foreground">{t('routingPolicy.stats.empty', { days })}</p>
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
             <Stat label={t('routingPolicy.stats.requests')} value={total} />
             <Stat
               label={t('routingPolicy.stats.fallbackRate')}
@@ -136,7 +136,7 @@ export default function StatsPanel({ policyId, fallbackModel, api = platformRout
             </div>
           )}
 
-          <div className="overflow-hidden rounded-md border border-border">
+          <div className="overflow-hidden rounded-lg border border-border">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">

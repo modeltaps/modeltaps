@@ -52,9 +52,11 @@ func RelayRerank(c *gin.Context) {
 	modelName := RoutingModelName(c)
 	totalChannelsAtStart := model.ChannelGroup.CountAvailableChannels(groupName, modelName)
 
-	if done || !shouldRetry(c, apiErr, channel.Type) {
+	// Evaluate once: shouldRetry records the failure in the provider metrics.
+	retryable := shouldRetry(c, apiErr, channel.Type)
+	if done || !retryable {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("retry_skip model=%s channel_id=%d status_code=%d done=%t should_retry=%t total_channels=%d error=\"%s\"",
-			modelName, channel.Id, apiErr.StatusCode, done, shouldRetry(c, apiErr, channel.Type), totalChannelsAtStart, utils.TruncateBase64InMessage(apiErr.OpenAIError.Message)))
+			modelName, channel.Id, apiErr.StatusCode, done, retryable, totalChannelsAtStart, utils.TruncateBase64InMessage(apiErr.OpenAIError.Message)))
 		retryTimes = 0
 	}
 
@@ -119,9 +121,10 @@ func RelayRerank(c *gin.Context) {
 			modelName, channel.Id, attemptCount, actualRetryTimes, apiErr.StatusCode, apiErr.OpenAIError.Type, utils.TruncateBase64InMessage(apiErr.OpenAIError.Message)))
 
 		notifyChannelRelayError(c.Request.Context(), c, channel, apiErr)
-		if done || !shouldRetry(c, apiErr, channel.Type) {
+		retryable := shouldRetry(c, apiErr, channel.Type)
+		if done || !retryable {
 			logger.LogError(c.Request.Context(), fmt.Sprintf("retry_stop_condition model=%s channel_id=%d attempt=%d/%d done=%t should_retry=%t",
-				modelName, channel.Id, attemptCount, actualRetryTimes, done, shouldRetry(c, apiErr, channel.Type)))
+				modelName, channel.Id, attemptCount, actualRetryTimes, done, retryable))
 			break
 		}
 	}

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { marked } from 'marked';
 import { Loader2 } from 'lucide-react';
@@ -8,16 +7,10 @@ import { API } from 'utils/api';
 import { showError } from 'utils/common';
 import { sanitizeHtml } from 'utils/sanitize';
 import Hero from './home/Hero';
-import SourcesSection from './home/SourcesSection';
-import OrgControlSection from './home/OrgControlSection';
-import ProtocolsSection from './home/ProtocolsSection';
-import HowItWorks from './home/HowItWorks';
-import TrustBand from './home/TrustBand';
-import CtaBand from './home/CtaBand';
 import 'assets/css/content-viewer.css';
 
 // ==============================|| PUBLIC HOME (shadcn) ||============================== //
-// Multi-section marketing landing at `/` (Linear-flavored, monochrome neutral base),
+// Landing at `/`: a single screen with the headline, one action and the gateway animation;
 // shown to visitors whether signed in or not.
 // When HomePageContent is set in the admin settings, it replaces the marketing page:
 // URL → full-page iframe; otherwise Markdown/HTML rendered via the content viewer.
@@ -88,24 +81,6 @@ export default function Home() {
   return (
     <div className="bg-background">
       <Hero />
-      <SourcesSection />
-      <OrgControlSection />
-      <ProtocolsSection />
-      <HowItWorks />
-      <TrustBand />
-      <CtaBand />
-
-      <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-border px-4 py-6 text-sm">
-        <Link to="/about" className="text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none">
-          {t('home.links.about')}
-        </Link>
-        <Link to="/price" className="text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none">
-          {t('home.links.pricing')}
-        </Link>
-        <Link to="/panel/api/chat" className="text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none">
-          {t('home.links.playground')}
-        </Link>
-      </nav>
     </div>
   );
 }

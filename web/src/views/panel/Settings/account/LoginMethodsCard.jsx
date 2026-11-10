@@ -110,6 +110,7 @@ export default function LoginMethodsCard({ siteInfo, inputs, reloadUser }) {
 
     return (
       <SecurityCard
+        highlight="login-verification"
         title={t(tk('loginVerification'))}
         description={t(tk(rows.length > 0 ? 'loginVerificationHintExternal' : 'loginVerificationHintManaged'))}
       >
@@ -142,7 +143,7 @@ export default function LoginMethodsCard({ siteInfo, inputs, reloadUser }) {
     passkeyCount === null ? t(tk('passkeyHint')) : passkeyCount > 0 ? t(tk('passkeyCount'), { count: passkeyCount }) : t(tk('passkeyNone'));
 
   return (
-    <SecurityCard title={t(tk('loginVerification'))} description={t(tk('loginVerificationHintBuiltin'))}>
+    <SecurityCard highlight="login-verification" title={t(tk('loginVerification'))} description={t(tk('loginVerificationHintBuiltin'))}>
       {showPassword && (
         <MethodRow
           icon={KeyRound}

@@ -27,7 +27,12 @@ export default function EmailBindModal({ open, onClose, turnstileEnabled, turnst
     email: z.string().email(t('profilePage.invalidEmail')),
     email_verification_code: z.string().min(1, t('profilePage.codeRequired'))
   });
-  const { register, handleSubmit, watch, formState: { errors } } = useForm({
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors }
+  } = useForm({
     resolver: zodResolver(schema),
     defaultValues: { email: '', email_verification_code: '' }
   });
@@ -92,13 +97,15 @@ export default function EmailBindModal({ open, onClose, turnstileEnabled, turnst
               <Input id="email_verification_code" {...register('email_verification_code')} />
               {errors.email_verification_code && <p className="text-sm text-destructive">{errors.email_verification_code.message}</p>}
             </div>
-            {turnstileEnabled && (
-              <Turnstile sitekey={turnstileSiteKey} ref={turnstileRef} onVerify={(token) => setTurnstileToken(token)} />
-            )}
+            {turnstileEnabled && <Turnstile sitekey={turnstileSiteKey} ref={turnstileRef} onVerify={(token) => setTurnstileToken(token)} />}
           </DialogBody>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>{t('profilePage.cancel')}</Button>
-            <Button type="submit" disabled={loading}>{t('profilePage.submit')}</Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              {t('profilePage.cancel')}
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {t('profilePage.submit')}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -227,6 +227,27 @@ func SetApiRouter(router *gin.Engine) {
 			modelInfoRoute.DELETE("/:id", controller.DeleteModelInfo)
 		}
 
+		supplyPauseRoute := apiRouter.Group("/supply_pause")
+		supplyPauseRoute.Use(middleware.AdminAuth())
+		{
+			supplyPauseRoute.GET("/", controller.GetSupplyPauses)
+			supplyPauseRoute.GET("/rules", controller.GetPauseRules)
+			supplyPauseRoute.POST("/", controller.CreateSupplyPause)
+			supplyPauseRoute.DELETE("/:id", controller.DeleteSupplyPause)
+		}
+
+		modelSupplyRoute := apiRouter.Group("/model_supply")
+		modelSupplyRoute.Use(middleware.AdminAuth())
+		{
+			modelSupplyRoute.GET("/", controller.GetModelSupplies)
+			modelSupplyRoute.GET("/preview", controller.PreviewModelSupply)
+			modelSupplyRoute.POST("/", controller.CreateModelSupply)
+			modelSupplyRoute.PUT("/", controller.UpdateModelSupply)
+			modelSupplyRoute.DELETE("/:id", controller.DeleteModelSupply)
+			// Rewrites how every model is routed once ModelSupplyEnabled is on: root only.
+			modelSupplyRoute.POST("/migrate", middleware.RootAuth(), controller.MigrateModelSupplies)
+		}
+
 		userGroup := apiRouter.Group("/user_group")
 		userGroup.Use(middleware.AdminAuth())
 		{

@@ -168,12 +168,7 @@ export default function ImportDialog({ open, onOpenChange, existingModels = [], 
                           {row.isConflict ? (
                             <Badge variant="secondary">{t('modelInfoPage.importExists')}</Badge>
                           ) : (
-                            <Badge
-                              variant="outline"
-                              className="border-transparent bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                            >
-                              {t('modelInfoPage.importNew')}
-                            </Badge>
+                            <Badge variant="outline">{t('modelInfoPage.importNew')}</Badge>
                           )}
                         </TableCell>
                       </TableRow>
@@ -181,43 +176,30 @@ export default function ImportDialog({ open, onOpenChange, existingModels = [], 
                   </TableBody>
                 </Table>
               </div>
-              <div className="md:hidden flex flex-col gap-3">
+              <div className="md:hidden flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
                 {previewData.map((row, i) => (
-                  <div key={`${row.model}-${i}`} className="rounded-lg border border-border bg-card p-3.5 shadow-sm">
+                  <div key={`${row.model}-${i}`} className="p-3.5">
                     <div className="mb-2 text-sm font-medium">{row.name}</div>
                     <dl className="flex flex-col divide-y divide-border/60">
                       <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                        <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                          {t('modelInfoPage.model')}
-                        </dt>
+                        <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">{t('modelInfoPage.model')}</dt>
                         <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right font-mono text-xs">{row.model}</dd>
                       </div>
                       <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                        <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                          {t('modelInfoPage.contextLength')}
-                        </dt>
+                        <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">{t('modelInfoPage.contextLength')}</dt>
                         <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm tabular-nums">{row.context_length}</dd>
                       </div>
                       <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                        <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                          {t('modelInfoPage.maxTokens')}
-                        </dt>
+                        <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">{t('modelInfoPage.maxTokens')}</dt>
                         <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm tabular-nums">{row.max_tokens}</dd>
                       </div>
                       <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                        <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                          {t('modelInfoPage.status')}
-                        </dt>
+                        <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">{t('modelInfoPage.status')}</dt>
                         <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">
                           {row.isConflict ? (
                             <Badge variant="secondary">{t('modelInfoPage.importExists')}</Badge>
                           ) : (
-                            <Badge
-                              variant="outline"
-                              className="border-transparent bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                            >
-                              {t('modelInfoPage.importNew')}
-                            </Badge>
+                            <Badge variant="outline">{t('modelInfoPage.importNew')}</Badge>
                           )}
                         </dd>
                       </div>

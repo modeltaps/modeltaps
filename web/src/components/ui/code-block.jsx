@@ -98,7 +98,7 @@ export default function CodeBlock({
   return (
     <div className={cn('code-block-hl overflow-hidden rounded-lg border border-border', className)}>
       <div className="flex items-center justify-between gap-2 border-b border-border bg-muted px-3 py-1.5">
-        <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{language}</span>
+        <span className="font-mono text-[11px] font-medium text-muted-foreground">{language}</span>
         {showCopy && (
           <Button variant="ghost" size="sm" className="h-7 shrink-0 gap-1.5 px-2" onClick={handleCopy}>
             {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}

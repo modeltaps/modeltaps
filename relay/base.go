@@ -92,6 +92,13 @@ func (r *relayBase) getOriginalModel() string {
 }
 
 func (r *relayBase) getModelName() string {
+	// A request sent through a supply is billed by its public model, the name the request
+	// resolved to after aliases and routing policies.
+	if r.c.GetInt(model.SupplyIdContextKey) > 0 {
+		if publicModel := r.c.GetString("original_model"); publicModel != "" {
+			return publicModel
+		}
+	}
 	billingOriginalModel := r.c.GetBool("billing_original_model")
 
 	if billingOriginalModel {

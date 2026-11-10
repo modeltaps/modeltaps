@@ -163,10 +163,10 @@ IoBlock.propTypes = {
 // Always-visible status pill next to the IO section title. `statusKey` is derived from
 // the fetch outcome (see computeIoStatus) and maps to a localized label + tone.
 const IO_STATUS_TONE = {
-  emerald: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-  amber: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+  emerald: 'bg-muted text-foreground',
+  amber: 'bg-warning/10 text-warning',
   muted: 'bg-muted text-muted-foreground',
-  red: 'bg-red-500/15 text-red-600 dark:text-red-400'
+  red: 'bg-destructive/10 text-destructive'
 };
 
 const IO_STATUS_META = {
@@ -280,7 +280,7 @@ function ProviderResponsesChart({ item, t }) {
 
   return (
     <div className="rounded-lg border border-border p-3">
-      <h3 className="mb-2 text-sm font-semibold text-foreground">{t('logPage.providerResponses.title')}</h3>
+      <h3 className="mb-2 text-sm font-medium text-foreground">{t('logPage.providerResponses.title')}</h3>
       <div className="space-y-1.5">
         {/* Timeline rows share one grid so the auto-width label column (provider name / */}
         {/* "generation") is never truncated and both rows' bars stay vertically aligned. */}
@@ -293,10 +293,8 @@ function ProviderResponsesChart({ item, t }) {
             <>
               {/* Row 1: provider label (name + 200) | timeline | seconds */}
               <div className="flex items-center gap-1.5">
-                <span className="text-sm font-semibold text-foreground">{providerName}</span>
-                <span className="shrink-0 rounded bg-emerald-500/15 px-1.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                  200
-                </span>
+                <span className="text-sm font-medium text-foreground">{providerName}</span>
+                <span className="shrink-0 rounded-sm bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums text-foreground">200</span>
               </div>
               <div className="relative h-5 overflow-hidden rounded bg-muted">
                 <div className="absolute inset-y-0 left-0 rounded-l bg-emerald-500" style={{ width: `${hasTTFT ? ttftPct : 100}%` }} />
@@ -345,7 +343,7 @@ function AttemptRow({ attempt, t }) {
   return (
     <>
       <div className="flex items-center gap-1.5">
-        <span className="text-sm font-semibold text-foreground">{`${t('logPage.channelLabel')} ${attempt.channel_id}`}</span>
+        <span className="text-sm font-medium text-foreground">{`${t('logPage.channelLabel')} ${attempt.channel_id}`}</span>
         <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-medium text-destructive">
           {attempt.status || t('logPage.retry.noStatus')}
         </span>
@@ -373,7 +371,7 @@ function CollapsibleSection({ title, summary, open, onToggle, children }) {
       >
         <div className="flex min-w-0 items-center gap-2">
           {open ? <ChevronDown className="size-4 shrink-0" /> : <ChevronRight className="size-4 shrink-0" />}
-          <span className="truncate text-sm font-semibold text-foreground">{title}</span>
+          <span className="truncate text-sm font-medium text-foreground">{title}</span>
           {summary && <span className="shrink-0 text-sm text-muted-foreground">{summary}</span>}
         </div>
       </button>
@@ -429,7 +427,7 @@ function ChoiceView({ choice, t }) {
       )}
       {hasTools ? (
         <div className="space-y-2">
-          <div className="text-xs font-semibold text-muted-foreground">{t('logPage.completion.toolCalls')}</div>
+          <div className="text-xs font-medium text-muted-foreground">{t('logPage.completion.toolCalls')}</div>
           {choice.toolCalls.map((tc, i) => {
             const fn = tc.function || tc;
             const name = fn.name || '';
@@ -445,7 +443,7 @@ function ChoiceView({ choice, t }) {
         </div>
       ) : choice.content ? (
         <div className="space-y-1">
-          <div className="text-xs font-semibold text-muted-foreground">{t('logPage.completion.text')}</div>
+          <div className="text-xs font-medium text-muted-foreground">{t('logPage.completion.text')}</div>
           <CodeBlock
             language="text"
             wrap
@@ -478,7 +476,7 @@ function CompletionBody({ io, isStream, t }) {
   if (isStream) {
     return (
       <div className="space-y-2">
-        <div className="text-xs font-semibold text-muted-foreground">{t('logPage.completion.streamedText')}</div>
+        <div className="text-xs font-medium text-muted-foreground">{t('logPage.completion.streamedText')}</div>
         <CodeBlock
           language="text"
           wrap
@@ -853,7 +851,7 @@ export default function LogDetailDialog({
 
             {/* Overview Section */}
             <section>
-              <h3 className="mb-3 text-sm font-semibold text-foreground">{t('logPage.overviewLabel')}</h3>
+              <h3 className="mb-3 text-sm font-medium text-foreground">{t('logPage.overviewLabel')}</h3>
               <div className="space-y-3">
                 {item.type === 5 && <KeyValueRow label={t('logPage.retry.errorLabel')} value={item.content} />}
                 <KeyValueRow label={t('logPage.modelLabel')} value={item.model_name} />
@@ -893,7 +891,7 @@ export default function LogDetailDialog({
 
             {/* Request Section */}
             <section className="border-t border-border/60 pt-5">
-              <h3 className="mb-3 text-sm font-semibold text-foreground">{t('logPage.requestSection.title')}</h3>
+              <h3 className="mb-3 text-sm font-medium text-foreground">{t('logPage.requestSection.title')}</h3>
               <div className="space-y-3">
                 {appName && <KeyValueRow label={t('logPage.requestSection.app')} value={appName} />}
                 <KeyValueRow label={t('logPage.requestSection.token')} value={item.token_name} />
@@ -945,7 +943,7 @@ export default function LogDetailDialog({
                 </div>
                 {(cachedWriteTokens > 0 || cachedWrite1hTokens > 0 || cachedReadTokens > 0 || openaiCacheWriteTokens > 0) && (
                   <div className="space-y-1">
-                    <div className="text-xs font-semibold text-muted-foreground">{t('logPage.usage.cachedTokensSection')}</div>
+                    <div className="text-xs font-medium text-muted-foreground">{t('logPage.usage.cachedTokensSection')}</div>
                     {cachedWriteTokens > 0 && <KeyValueRow label={t('logPage.usage.cachedWrite5m')} value={cachedWriteTokens} />}
                     {cachedWrite1hTokens > 0 && <KeyValueRow label={t('logPage.usage.cachedWrite1h')} value={cachedWrite1hTokens} />}
                     {cachedReadTokens > 0 && <KeyValueRow label={t('logPage.usage.cachedRead')} value={cachedReadTokens} />}
@@ -956,7 +954,7 @@ export default function LogDetailDialog({
                 )}
                 {modalityTokenRows.length > 0 && (
                   <div className="space-y-1">
-                    <div className="text-xs font-semibold text-muted-foreground">{t('logPage.usage.modalityTokensSection')}</div>
+                    <div className="text-xs font-medium text-muted-foreground">{t('logPage.usage.modalityTokensSection')}</div>
                     {modalityTokenRows.map((r) => (
                       <KeyValueRow key={r.key} label={t(r.labelKey)} value={Number(metadata[r.key])} />
                     ))}
@@ -982,7 +980,7 @@ export default function LogDetailDialog({
             >
               <div className="flex min-w-0 items-center gap-2">
                 <Expand className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
-                <span className="truncate text-sm font-semibold text-foreground">{t('logPage.prompt.title')}</span>
+                <span className="truncate text-sm font-medium text-foreground">{t('logPage.prompt.title')}</span>
                 <span className="shrink-0 text-sm text-muted-foreground">
                   {t('logPage.prompt.summary', { tokens: item.prompt_tokens || 0, count: promptCount })}
                 </span>
@@ -1016,7 +1014,7 @@ export default function LogDetailDialog({
           {!hasDetail && (
             <section className="flex shrink-0 flex-col gap-2">
               <div className="flex items-center gap-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('logPage.io.title')}</h3>
+                <h3 className="text-xs font-medium text-muted-foreground">{t('logPage.io.title')}</h3>
                 <IoStatusBadge statusKey={ioStatusKey} t={t} />
               </div>
 
