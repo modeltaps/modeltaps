@@ -700,7 +700,7 @@ function MonitorBody({ object: channel, draft, setDraft, ctx }) {
       </Field>
       <ToggleField
         label={t('channel_edit.drift.autoAdd')}
-        hint={t('channel_edit.drift.autoAddHelp')}
+        hint={t('channels.monitor.autoAddHint')}
         checked={draft.drift_auto_add}
         onChange={(v) => setDraft({ ...draft, drift_auto_add: v })}
       />
