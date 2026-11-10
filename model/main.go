@@ -65,6 +65,13 @@ func generateRootPassword(length int) (string, error) {
 	return string(buf), nil
 }
 
+// rootSeedUsername / rootSeedDisplayName 是首次启动（库里还没有任何用户）时种下的超级管理员账号。
+// 只影响新装：已有库里的 root 账号不会被改名。超级管理员身份只看 Role == config.RoleRootUser，不看用户名。
+const (
+	rootSeedUsername    = "admin"
+	rootSeedDisplayName = "Admin"
+)
+
 func createRootAccountIfNeed() error {
 	var user User
 	//if user.Status != common.UserStatusEnabled {
@@ -79,25 +86,25 @@ func createRootAccountIfNeed() error {
 				return fmt.Errorf("ROOT_PASSWORD length must be between 8 and 64 characters, got %d", len(envPassword))
 			}
 			password = envPassword
-			logger.SysLog("no user exists, create a root user for you: username is root, password is set via ROOT_PASSWORD env")
+			logger.SysLog("no user exists, created the super admin account: username is " + rootSeedUsername + ", password is set via ROOT_PASSWORD env")
 		} else {
 			randomPassword, err := generateRootPassword(16)
 			if err != nil {
 				return err
 			}
 			password = randomPassword
-			logger.SysLog("no user exists, create a root user for you: username is root, initial root password: " + password)
+			logger.SysLog("no user exists, created the super admin account: username is " + rootSeedUsername + ", initial password: " + password)
 		}
 		hashedPassword, err := common.Password2Hash(password)
 		if err != nil {
 			return err
 		}
 		rootUser := User{
-			Username:    "root",
+			Username:    rootSeedUsername,
 			Password:    hashedPassword,
 			Role:        config.RoleRootUser,
 			Status:      config.UserStatusEnabled,
-			DisplayName: "Root User",
+			DisplayName: rootSeedDisplayName,
 			AccessToken: utils.GetUUID(),
 			Quota:       100000000,
 		}

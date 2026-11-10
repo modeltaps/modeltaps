@@ -44,13 +44,13 @@ wait_http "${MODELTAPS_BASE}/api/status" 90 || {
   die "Modeltaps 未就绪，完整日志见 out/modeltaps.log"
 }
 
-log "以 root 登录后台"
+log "以超级管理员 ${ROOT_USERNAME} 登录后台"
 rm -f "$COOKIES"
 curl -fsS -c "$COOKIES" -X POST "${MODELTAPS_BASE}/api/user/login" \
   -H 'Content-Type: application/json' \
-  -d "{\"username\":\"root\",\"password\":\"${ROOT_PASSWORD}\"}" \
+  -d "{\"username\":\"${ROOT_USERNAME}\",\"password\":\"${ROOT_PASSWORD}\"}" \
   | python3 -c 'import sys,json; d=json.load(sys.stdin); sys.exit(0 if d.get("success") else print("login failed:", d.get("message")) or 1)' \
-  || die "root 登录失败"
+  || die "超级管理员登录失败"
 
 log "设置服务器地址为 ${MODELTAPS_BASE}（回调地址由它拼出）"
 curl -fsS -b "$COOKIES" -X PUT "${MODELTAPS_BASE}/api/option/" \
@@ -117,6 +117,7 @@ curl -fsS -b "$COOKIES" -X PUT "${MODELTAPS_BASE}/api/option/" \
 cat >"$OUT_DIR/modeltaps.env" <<EOF
 MODELTAPS_PORT=${MODELTAPS_PORT}
 MODELTAPS_BASE=${MODELTAPS_BASE}
+MODELTAPS_ROOT_USERNAME=${ROOT_USERNAME}
 MODELTAPS_ROOT_PASSWORD=${ROOT_PASSWORD}
 MODELTAPS_COOKIES=${COOKIES}
 MODELTAPS_DATA_DIR=${DATA_DIR}
