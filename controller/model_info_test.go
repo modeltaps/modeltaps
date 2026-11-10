@@ -424,3 +424,42 @@ func TestModelInfoState(t *testing.T) {
 		}
 	}
 }
+
+func putModelInfo(t *testing.T, body string) *httptest.ResponseRecorder {
+	t.Helper()
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPut, "/api/model_info/", strings.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	UpdateModelInfo(c)
+	return w
+}
+
+// The console saves catalog rows whole and does not know about status or supply_mode yet: a
+// save without them keeps the stored values, and unknown values are refused.
+func TestUpdateModelInfoKeepsSupplyFields(t *testing.T) {
+	setupModelInfoVisibilityDB(t)
+	row := &model.ModelInfo{Model: "gpt-5", Status: model.ModelStatusPublished, SupplyMode: model.SupplyModeFailover}
+	if err := model.DB.Create(row).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	w := putModelInfo(t, `{"id":`+strconv.Itoa(row.Id)+`,"model":"gpt-5","name":"GPT-5","description":"edited"}`)
+	if !strings.Contains(w.Body.String(), `"success":true`) {
+		t.Fatalf("save failed: %s", w.Body.String())
+	}
+	saved, _ := model.GetModelInfo(row.Id)
+	if saved.Status != model.ModelStatusPublished || saved.SupplyMode != model.SupplyModeFailover || saved.Description != "edited" {
+		t.Fatalf("saved = status %q mode %q description %q", saved.Status, saved.SupplyMode, saved.Description)
+	}
+
+	for _, body := range []string{
+		`{"id":` + strconv.Itoa(row.Id) + `,"model":"gpt-5","status":"live"}`,
+		`{"id":` + strconv.Itoa(row.Id) + `,"model":"gpt-5","supply_mode":"random"}`,
+	} {
+		if w := putModelInfo(t, body); w.Code != http.StatusBadRequest {
+			t.Errorf("%s: status %d, want 400 (%s)", body, w.Code, w.Body.String())
+		}
+	}
+}

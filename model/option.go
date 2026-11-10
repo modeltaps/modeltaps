@@ -172,6 +172,23 @@ func registerOptions() {
 		return fmt.Errorf("invalid channel test mode %q", value)
 	}, "recovery", config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("ChannelTestIntervalMinutes", &config.ChannelTestIntervalMinutes, config.ScopeAdmin)
+	config.GlobalOption.RegisterCustom("ModelSupplyEnabled", func() string {
+		return strconv.FormatBool(config.ModelSupplyEnabled)
+	}, func(value string) error {
+		enabled, err := strconv.ParseBool(value)
+		if err != nil {
+			return fmt.Errorf("invalid ModelSupplyEnabled %q", value)
+		}
+		changed := enabled != config.ModelSupplyEnabled
+		config.ModelSupplyEnabled = enabled
+		// Switching rebuilds the routing table and the catalog views from the other source. During
+		// startup the channels are not loaded yet and main loads them afterwards.
+		if changed && ChannelGroup.Loaded() {
+			ChannelGroup.Load()
+			refreshCatalogCaches()
+		}
+		return nil
+	}, "false", config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("ChannelMetricsEnabled", &config.ChannelMetricsEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("ChannelMetricsRetentionDays", &config.ChannelMetricsRetentionDays, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("ChannelCredentialRefreshMinutes", &config.ChannelCredentialRefreshMinutes, config.ScopeAdmin)

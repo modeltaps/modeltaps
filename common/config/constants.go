@@ -291,6 +291,11 @@ var ChannelTestMode = "recovery"
 // ChannelTestIntervalMinutes 定时渠道测试的间隔（分钟）。
 var ChannelTestIntervalMinutes = 10
 
+// ModelSupplyEnabled routes requests through model supplies (model_supplies) instead of the
+// channels' models and model_mapping fields, bills by the public model, and lists only
+// published models. Off until the supply migration has run.
+var ModelSupplyEnabled = false
+
 // ChannelMetricsEnabled 按「渠道 × 模型 × 小时」聚合成功率、首字延迟与输出速度（内存累计，每分钟落库）。
 var ChannelMetricsEnabled = true
 

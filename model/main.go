@@ -264,6 +264,10 @@ func InitDB() (err error) {
 		if err != nil {
 			return err
 		}
+		err = db.AutoMigrate(&ModelSupply{})
+		if err != nil {
+			return err
+		}
 		err = db.AutoMigrate(&RoutingPolicy{})
 		if err != nil {
 			return err
