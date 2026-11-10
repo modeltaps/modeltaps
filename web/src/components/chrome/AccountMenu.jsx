@@ -1,8 +1,8 @@
 import PropTypes from 'prop-types';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { ArrowUpRight, BookOpen, Globe, LogOut, Monitor, Moon, Settings, Sun } from 'lucide-react';
+import { ArrowUpRight, BookOpen, Check, Globe, LogOut, Monitor, Moon, Palette, Settings, ShieldUser, Sun, Wallet } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import {
@@ -24,12 +24,16 @@ import useTheme from 'hooks/useTheme';
 import useI18n from 'hooks/useI18n';
 import { setAppLanguage } from 'utils/userSetting';
 import i18nList from 'i18n/i18nList';
+import { useIsAdmin, useIsRoot } from 'utils/common';
+import { useOrg } from 'contexts/OrgContext';
+import { contextSwitchTarget } from './nav-config';
 import UserAvatar, { accountDisplayName } from './avatar';
 
 // ==============================|| CHROME — ACCOUNT MENU ||============================== //
 // The account row at the bottom of the sidebar is the only place that shows who is signed in
-// (avatar, name, email). Its menu: personal settings, appearance, language, docs & help (when
-// the site has a docs link) and log out. In the collapsed rail the row shrinks to the avatar
+// (avatar and name; the email sits at the top of its menu). Its menu: the balance (links to
+// billing), personal settings, appearance, language, platform admin (admins only), docs & help
+// (when the site has a docs link) and log out. In the collapsed rail the row shrinks to the avatar
 // and the menu opens to the right.
 
 const THEME_OPTIONS = [
@@ -40,7 +44,7 @@ const THEME_OPTIONS = [
 
 export const PERSONAL_SETTINGS_URL = '/panel/settings/account/profile';
 
-export default function AccountMenu({ collapsed = false, anchorRef = null, onNavigate }) {
+export default function AccountMenu({ collapsed = false, anchorRef = null, context = 'personal', balance = null, onNavigate }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useSelector((state) => state.account.user);
@@ -48,6 +52,10 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, onNav
   const { theme, setTheme } = useTheme();
   const i18n = useI18n();
   const { logout } = useLogin();
+  const { pathname } = useLocation();
+  const isAdmin = useIsAdmin();
+  const isRoot = useIsRoot();
+  const { orgRoutingPolicyEnabled } = useOrg();
 
   const name = accountDisplayName(user);
   // Shown under the name at the top of the menu (the sidebar row itself is one line): the email
@@ -57,9 +65,19 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, onNav
   const currentLangName = i18nList.find((item) => item.lng === currentLang)?.name || currentLang;
   const docsLink = siteInfo?.docs_link;
 
-  const openSettings = () => {
-    navigate(PERSONAL_SETTINGS_URL);
+  const go = (to) => {
+    navigate(to);
     onNavigate?.();
+  };
+  const openSettings = () => go(PERSONAL_SETTINGS_URL);
+  const openAdmin = () => {
+    const target = contextSwitchTarget({
+      pathname,
+      to: { kind: 'admin' },
+      isRoot,
+      features: { orgRoutingPolicy: orgRoutingPolicyEnabled }
+    });
+    if (target) go(target);
   };
 
   const trigger = collapsed ? (
@@ -104,14 +122,22 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, onNav
           <span className="block truncate text-[13px] font-medium text-foreground">{name}</span>
           {secondary && <span className="block truncate">{secondary}</span>}
         </DropdownMenuLabel>
+        {balance && (
+          <DropdownMenuItem disabled={!balance.href} onClick={() => balance.href && go(balance.href)} className="disabled:opacity-100">
+            <Wallet />
+            <span className="flex-1">{balance.label}</span>
+            <span className="font-medium tabular-nums text-foreground">{balance.value}</span>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={openSettings}>
           <Settings />
           <span className="flex-1">{t('nav.account.settings')}</span>
         </DropdownMenuItem>
         {/* Appearance: an inline segmented switch, so the menu stays open while trying themes. */}
-        <div className="flex items-center justify-between gap-2 px-2 py-1.5 text-sm">
-          <span>{t('nav.account.appearance')}</span>
+        <div className="flex items-center gap-2 px-2 py-1.5 text-sm [&>svg]:size-4 [&>svg]:shrink-0">
+          <Palette />
+          <span className="flex-1">{t('nav.account.appearance')}</span>
           <div role="radiogroup" aria-label={t('nav.account.appearance')} className="flex items-center gap-0.5 rounded-md bg-muted p-0.5">
             {THEME_OPTIONS.map(({ value, Icon, labelKey }) => (
               <button
@@ -150,6 +176,16 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, onNav
             </DropdownMenuRadioGroup>
           </DropdownMenuSubContent>
         </DropdownMenuSub>
+        {isAdmin && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={openAdmin}>
+              <ShieldUser />
+              <span className="flex-1">{t('nav.context.admin')}</span>
+              {context === 'admin' && <Check className="opacity-70" />}
+            </DropdownMenuItem>
+          </>
+        )}
         <DropdownMenuSeparator />
         {docsLink && (
           <DropdownMenuItem onClick={() => window.open(docsLink, '_blank', 'noopener,noreferrer')}>
@@ -170,5 +206,7 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, onNav
 AccountMenu.propTypes = {
   collapsed: PropTypes.bool,
   anchorRef: PropTypes.shape({ current: PropTypes.any }),
+  context: PropTypes.oneOf(['personal', 'org', 'admin']),
+  balance: PropTypes.shape({ label: PropTypes.string, value: PropTypes.string, href: PropTypes.string }),
   onNavigate: PropTypes.func
 };

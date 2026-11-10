@@ -8,6 +8,8 @@
    light/dark values can be swapped at runtime via :root / .dark below. */
 @theme {
   --color-background: var(--background);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-accent: var(--sidebar-accent);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -51,6 +53,9 @@
 :root {
   color-scheme: light;
   --background: #f6f6f7;
+  /* Sidebar: one step lighter than the page so the menu reads as a lighter rail */
+  --sidebar: #fbfbfc;
+  --sidebar-accent: #ececef;
   --foreground: #1d1d1f;
   --card: #ffffff;
   --card-foreground: #1d1d1f;
@@ -93,6 +98,8 @@
 .dark {
   color-scheme: dark;
   --background: #0e0e10;
+  --sidebar: #18181b;
+  --sidebar-accent: #26262a;
   --foreground: #f4f4f5;
   --card: #171719;
   --card-foreground: #f4f4f5;

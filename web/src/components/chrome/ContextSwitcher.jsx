@@ -5,25 +5,19 @@ import { useTranslation } from 'react-i18next';
 import { Check, ChevronsUpDown, Plus } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuLabel
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useOrg } from 'contexts/OrgContext';
-import { useIsAdmin, useIsRoot } from 'utils/common';
+import { useIsRoot } from 'utils/common';
 import CreateOrgDialog from '../org/CreateOrgDialog';
 import { contextSwitchTarget } from './nav-config';
 
 // ==============================|| CHROME — CONTEXT SWITCHER ||============================== //
 // One line under the brand row that only says which space the user is in: 个人, the active
 // organization's name, or 平台管理. No user identity here; that lives in the account row at the
-// bottom of the sidebar. The popover lists personal, the user's organizations (role muted),
-// "create organization", and platform admin for admins. Markers are neutral outlined squares
+// bottom of the sidebar. The popover lists personal, the user's organizations (role muted) and
+// "create organization"; platform admin is entered from the account menu, and while it is open
+// this row names it and the popover leads back to personal or an organization. Markers are neutral outlined squares
 // (个 / the org's first letter / 管), deliberately unlike the round avatar.
 
 export const firstLetter = (name) => (Array.from((name || '').trim())[0] || '?').toUpperCase();
@@ -48,7 +42,6 @@ export default function ContextSwitcher({ context, collapsed = false, onNavigate
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const isAdmin = useIsAdmin();
   const isRoot = useIsRoot();
   const { orgEnabled, orgRoutingPolicyEnabled, organizations, currentOrg, switchOrg } = useOrg();
   const [createOpen, setCreateOpen] = useState(false);
@@ -69,7 +62,7 @@ export default function ContextSwitcher({ context, collapsed = false, onNavigate
     onNavigate?.();
   };
 
-  const hasMenu = isAdmin || orgEnabled;
+  const hasMenu = orgEnabled || context === 'admin';
   const markSize = collapsed ? 'size-7 text-[13px]' : 'size-6 text-xs';
   const triggerClass = collapsed
     ? 'flex size-9 items-center justify-center rounded-lg transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
@@ -134,16 +127,6 @@ export default function ContextSwitcher({ context, collapsed = false, onNavigate
                   <Plus className="size-4" />
                 </span>
                 <span className="flex-1 truncate">{t('org.createOrg')}</span>
-              </DropdownMenuItem>
-            </>
-          )}
-          {isAdmin && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => select({ kind: 'admin' })}>
-                <ContextMark className={rowMark}>{t('nav.context.adminMark')}</ContextMark>
-                <span className="flex-1 truncate">{t('nav.context.admin')}</span>
-                {context === 'admin' ? check : <span className="shrink-0 text-xs text-muted-foreground">{t('nav.context.adminRole')}</span>}
               </DropdownMenuItem>
             </>
           )}

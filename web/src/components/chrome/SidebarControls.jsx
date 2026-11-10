@@ -50,7 +50,7 @@ CollapseButton.propTypes = { onClick: PropTypes.func };
 export function SidebarSearch({ collapsed = false, onClick }) {
   const { t } = useTranslation();
   const label = t('common.search', { defaultValue: 'Search' });
-  const kbd = <kbd className="rounded border border-border bg-muted px-1 font-mono text-[0.6875rem] text-muted-foreground">⌘K</kbd>;
+  const kbd = <kbd className="rounded border border-border bg-sidebar px-1 font-mono text-[0.6875rem] text-muted-foreground">⌘K</kbd>;
   if (collapsed) {
     return (
       <SidebarIconButton
@@ -73,7 +73,7 @@ export function SidebarSearch({ collapsed = false, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex h-[34px] w-full items-center gap-2.5 rounded-lg px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="flex h-[34px] w-full items-center gap-2.5 rounded-lg border border-border bg-background px-3 text-sm text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Search className="size-4 shrink-0" />
       <span className="flex-1 text-left">{label}</span>
