@@ -61,7 +61,7 @@ export default function AuthShell({ title, children }) {
         ) : (
           <Card className="w-full max-w-sm shadow-sm">
             <CardHeader className="items-center space-y-3 text-center">
-              <LogoMark className="h-9 w-auto text-foreground" />
+              <LogoMark size={40} className="text-foreground" />
               <CardTitle className="text-2xl">{title}</CardTitle>
             </CardHeader>
             <CardContent className="pt-2">{children}</CardContent>

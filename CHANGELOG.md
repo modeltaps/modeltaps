@@ -34,7 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   returns the created ids.
 - Model supplies, backend groundwork (no change to request handling yet). A new `model_supplies`
   table records which channel supplies a public model, under which upstream name, with its own
-  priority, weight and on/off switch; admins manage them through `/api/model_supply`. Root can
+  priority, weight and on/off switch; admins manage them through `/api/model_supply`, whose list
+  shows each supply's channel name, status, type and tag. Root can
   run `POST /api/model_supply/migrate`, a dry run unless the body says `{"dry_run": false}`, which
   turns the channels' model lists and model mappings into supplies and reports what changes: new
   catalog rows, status changes, prices copied from upstream names and conflicts between them,
@@ -144,6 +145,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   personal settings and organization settings each get a section list on the left of the page
   instead of sidebar entries. The bottom of the sidebar shows the balance, the account row (with
   personal settings, appearance, language, docs and log out) and notifications. URLs are unchanged.
+- New brand mark: a solid, rounded drop with an off-centre round hole replaces the stroked
+  lowercase m. The mark is square-ish and filled, so it holds its weight next to the wordmark in
+  the sidebar and header and stays legible as a 16 px favicon. The favicon, PWA icons, Open Graph
+  image and the documentation site's logo and favicon use the same shape. It is drawn on whole-pixel
+  grids at 12, 16 and 20 px so its edges and hole stay crisp on standard-density screens.
 
 ### Fixed
 

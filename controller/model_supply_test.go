@@ -119,3 +119,61 @@ func itoa(i int) string {
 	b, _ := json.Marshal(i)
 	return string(b)
 }
+
+// The list carries each supply's channel name, status, type and tag; a deleted channel leaves
+// the name empty and the status 0.
+func TestModelSupplyListIncludesChannelFields(t *testing.T) {
+	setupSupplyHandlerDB(t)
+	weight := uint(1)
+	live := &model.Channel{Name: "openrouter-a", Status: config.ChannelStatusEnabled, Type: config.ChannelTypeOpenRouter, Tag: "team-a", Weight: &weight}
+	gone := &model.Channel{Name: "old", Status: config.ChannelStatusAutoDisabled, Type: config.ChannelTypeOpenAI, Weight: &weight}
+	for _, ch := range []*model.Channel{live, gone} {
+		if err := model.DB.Create(ch).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := model.DB.Create(&model.ModelInfo{Model: "m", Status: model.ModelStatusPublished}).Error; err != nil {
+		t.Fatal(err)
+	}
+	for _, ch := range []*model.Channel{live, gone} {
+		if err := model.DB.Create(&model.ModelSupply{Model: "m", ChannelId: ch.Id, UpstreamModel: "m", Enabled: true}).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := model.DB.Delete(gone).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/model_supply/?model=m", nil)
+	GetModelSupplies(c)
+	var resp struct {
+		Success bool `json:"success"`
+		Data    []struct {
+			ChannelId     int    `json:"channel_id"`
+			UpstreamModel string `json:"upstream_model"`
+			ChannelName   string `json:"channel_name"`
+			ChannelStatus int    `json:"channel_status"`
+			ChannelType   int    `json:"channel_type"`
+			ChannelTag    string `json:"channel_tag"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil || !resp.Success || len(resp.Data) != 2 {
+		t.Fatalf("response %s (err %v)", w.Body.String(), err)
+	}
+	for _, item := range resp.Data {
+		switch item.ChannelId {
+		case live.Id:
+			if item.ChannelName != "openrouter-a" || item.ChannelStatus != config.ChannelStatusEnabled ||
+				item.ChannelType != config.ChannelTypeOpenRouter || item.ChannelTag != "team-a" || item.UpstreamModel != "m" {
+				t.Errorf("live channel item = %+v", item)
+			}
+		case gone.Id:
+			if item.ChannelName != "" || item.ChannelStatus != 0 {
+				t.Errorf("deleted channel item = %+v, want empty name and status 0", item)
+			}
+		}
+	}
+}

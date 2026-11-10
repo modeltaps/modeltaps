@@ -178,3 +178,8 @@
     margin: 0;
   }
 }
+
+/* Nav logo at 20px: the mark is drawn on a 16 x 20 pixel grid, so it renders crisp at 1x. */
+.VPNavBarTitle .logo {
+  height: 20px;
+}
