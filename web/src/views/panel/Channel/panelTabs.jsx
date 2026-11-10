@@ -27,6 +27,7 @@ import ChannelOAuth from './ChannelOAuth';
 import ModelListInput from './ModelListInput';
 import ModelMappingInput from './ModelMappingInput';
 import ModelHeadersInput from './ModelHeadersInput';
+import PauseRulesField, { pauseRulesPatch, pauseRulesText } from './PauseRulesField';
 import PluginForm from './PluginForm';
 import pluginConfig from './pluginConfig';
 import PriceSyncDialog from './PriceSyncDialog';
@@ -713,6 +714,7 @@ function MonitorBody({ object: channel, draft, setDraft, ctx }) {
           onChange={(e) => setDraft({ ...draft, drift_ignore_rules: e.target.value })}
         />
       </Field>
+      <PauseRulesField channelId={channel.id} value={draft.pause_rules} onChange={(v) => setDraft({ ...draft, pause_rules: v })} />
     </>
   );
 }
@@ -723,14 +725,20 @@ const monitorTab = {
     test_model: c.test_model || '',
     balance_threshold: c.balance_threshold ? String(c.balance_threshold) : '',
     drift_auto_add: !!c.drift_auto_add,
-    drift_ignore_rules: c.drift_ignore_rules || ''
+    drift_ignore_rules: c.drift_ignore_rules || '',
+    pause_rules: pauseRulesText(c.pause_rules)
   }),
-  patch: (d) => ({
-    test_model: d.test_model.trim(),
-    balance_threshold: Math.max(0, Number(d.balance_threshold) || 0),
-    drift_auto_add: d.drift_auto_add,
-    drift_ignore_rules: d.drift_ignore_rules.trim()
-  }),
+  patch: (d, c, { t }) => {
+    const rules = pauseRulesPatch(d.pause_rules, c, t);
+    if (rules.error) return rules;
+    return {
+      test_model: d.test_model.trim(),
+      balance_threshold: Math.max(0, Number(d.balance_threshold) || 0),
+      drift_auto_add: d.drift_auto_add,
+      drift_ignore_rules: d.drift_ignore_rules.trim(),
+      ...rules
+    };
+  },
   Body: MonitorBody
 };
 
