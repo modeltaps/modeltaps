@@ -56,7 +56,7 @@ const channelTypeName = (type) => CHANNEL_OPTIONS[type]?.text || `#${type}`;
 function ModeSwitch({ value, onChange, disabled }) {
   const { t } = useTranslation();
   return (
-    <div role="radiogroup" aria-label={t('modelSupply.mode.label')} className="inline-flex rounded-[10px] bg-muted p-0.5">
+    <div role="radiogroup" aria-label={t('modelSupply.mode.label')} className="inline-flex rounded-lg bg-control p-0.5">
       {SUPPLY_MODES.map((mode) => (
         <button
           key={mode}
@@ -67,7 +67,7 @@ function ModeSwitch({ value, onChange, disabled }) {
           onClick={() => value !== mode && onChange(mode)}
           className={cn(
             'h-7 rounded-lg px-3 text-[13px] font-medium transition-colors disabled:opacity-50',
-            value === mode ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            value === mode ? 'bg-control-thumb text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
           )}
         >
           {t(`modelSupply.mode.${mode}`)}

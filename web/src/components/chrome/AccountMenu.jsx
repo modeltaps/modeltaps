@@ -140,7 +140,7 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, conte
         <div className="flex items-center gap-2 px-2 py-1.5 text-sm [&>svg]:size-4 [&>svg]:shrink-0">
           <Palette />
           <span className="flex-1">{t('nav.account.appearance')}</span>
-          <div role="radiogroup" aria-label={t('nav.account.appearance')} className="flex items-center gap-0.5 rounded-md bg-muted p-0.5">
+          <div role="radiogroup" aria-label={t('nav.account.appearance')} className="flex items-center gap-0.5 rounded-md bg-control p-0.5">
             {THEME_OPTIONS.map(({ value, Icon, labelKey }) => (
               <button
                 key={value}
@@ -152,9 +152,7 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, conte
                 onClick={() => setTheme(value)}
                 className={cn(
                   'flex h-6 w-7 items-center justify-center rounded-[5px] transition-colors',
-                  theme === value
-                    ? 'bg-card text-foreground shadow-[0_0_0_1px_var(--border)]'
-                    : 'text-muted-foreground hover:text-foreground'
+                  theme === value ? 'bg-control-thumb text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 <Icon className="size-3.5" />

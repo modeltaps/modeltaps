@@ -36,7 +36,11 @@ export default function CompareCodeView({ session, baseUrl }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="shrink-0 px-4 pt-4">
-        <div role="tablist" aria-label={t('playgroundConsole.chat.codeTitle')} className="inline-flex flex-wrap rounded-lg bg-muted p-0.5">
+        <div
+          role="tablist"
+          aria-label={t('playgroundConsole.chat.codeTitle')}
+          className="inline-flex flex-wrap rounded-lg bg-control p-0.5"
+        >
           {columns.map((item, index) => {
             const selected = item.id === column?.id;
             const name = t('playgroundConsole.compare.column', { index: index + 1 });
@@ -49,7 +53,7 @@ export default function CompareCodeView({ session, baseUrl }) {
                 onClick={() => setPickedId(item.id)}
                 className={cn(
                   SEG_CLASS,
-                  selected ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  selected ? 'bg-control-thumb text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 {item.modelId ? `${name} · ${item.modelId}` : name}

@@ -163,7 +163,7 @@ export function Segmented({ options, value, onChange, label, size = 'md', role =
     <div
       role={role}
       aria-label={label}
-      className={cn('inline-flex gap-0.5 rounded-lg bg-muted p-[3px]', size === 'mini' && 'p-0.5', size === 'wide' && 'flex w-full')}
+      className={cn('inline-flex gap-0.5 rounded-lg bg-control p-[3px]', size === 'mini' && 'p-0.5', size === 'wide' && 'flex w-full')}
     >
       {options.map((o) => (
         <button
@@ -175,7 +175,7 @@ export function Segmented({ options, value, onChange, label, size = 'md', role =
           className={cn(
             'rounded-[7px] px-3 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             size === 'mini' ? 'h-6 px-2.5 text-xs' : size === 'wide' ? 'h-8 flex-1' : 'h-7',
-            value === o.value ? 'bg-card text-foreground shadow-[0_0_0_1px_var(--border)]' : 'text-muted-foreground hover:text-foreground'
+            value === o.value ? 'bg-control-thumb text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
           )}
         >
           {o.label}
