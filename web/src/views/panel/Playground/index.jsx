@@ -1,13 +1,16 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { Navigate, useLocation, useParams, useSearchParams } from 'react-router';
+import { Link, Navigate, useLocation, useParams, useSearchParams } from 'react-router';
 
+import { cn } from '@/lib/utils';
 import { findActiveItem } from '@/components/chrome/nav-config';
 import PageActions from '@/components/chrome/PageActions';
+import PageTitleExtra from '@/components/chrome/PageTitleExtra';
 import { resolveServerAddress } from 'utils/serverAddress';
 import useCatalogModels from 'views/panel/ApiCatalog/useCatalogModels';
-import { DEFAULT_MODALITY, resolveModality } from './modalities';
+import { DEFAULT_MODALITY, MODALITIES, modalityHref, resolveModality } from './modalities';
 import { ConsoleContext } from './shared/ConsoleContext';
 
 // ==============================|| PANEL — API CONSOLE ||============================== //
@@ -15,6 +18,36 @@ import { ConsoleContext } from './shared/ConsoleContext';
 // 选中模型通过 ConsoleContext 交给各模态。页壳是最简结构(标题 + 右上动作 + 居中主区)，
 // 正式页壳与输入框 chip 由组件任务提供。接口文档在 `/panel/api/docs/:modality`。
 // 分层规则见 modalities.js 顶部注释。
+
+// The sidebar has one 演练场 item for every console; this segmented switch next to the page
+// title moves between modalities (each keeps its own route).
+function ModalitySwitch({ activeId }) {
+  const { t } = useTranslation();
+  return (
+    <nav aria-label={t('nav.playground.modality')} className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-[10px] bg-muted p-0.5">
+      {MODALITIES.map((entry) => {
+        const active = entry.id === activeId;
+        const Icon = entry.icon;
+        return (
+          <Link
+            key={entry.id}
+            to={modalityHref(entry)}
+            aria-current={active ? 'page' : undefined}
+            className={cn(
+              'flex h-7 shrink-0 items-center gap-1.5 rounded-[8px] px-2.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              active ? 'bg-card text-foreground shadow-[0_0_0_1px_var(--border)]' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <Icon className="size-3.5" />
+            {t(entry.labelKey)}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+ModalitySwitch.propTypes = { activeId: PropTypes.string };
 
 export default function ApiConsole() {
   const { t } = useTranslation();
@@ -82,11 +115,16 @@ export default function ApiConsole() {
         >
           {/* 有导航标题时动作传送到 PageHeader 标题行右侧，页内不再单独占一行。 */}
           {hasNavHeader ? (
-            Actions && (
-              <PageActions>
-                <Actions />
-              </PageActions>
-            )
+            <>
+              <PageTitleExtra>
+                <ModalitySwitch activeId={entry.id} />
+              </PageTitleExtra>
+              {Actions && (
+                <PageActions>
+                  <Actions />
+                </PageActions>
+              )}
+            </>
           ) : (
             <div className="flex items-start justify-between gap-2">
               <h1 className="text-2xl font-semibold tracking-tight">{t(entry.labelKey)}</h1>

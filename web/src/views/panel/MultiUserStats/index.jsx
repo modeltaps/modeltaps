@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import CollapsibleFilter from '@/components/CollapsibleFilter';
 import { API } from 'utils/api';
 import { calculateQuota, showError, showSuccess, thousandsSeparator } from 'utils/common';
+import StatsTabs from '../Analytics/StatsTabs';
 
 // ==============================|| PANEL — MULTI-USER TOKEN STATISTICS ||============================== //
 // shadcn/Tailwind port of views/MultiUserStats. Admin tool that queries the same
@@ -86,6 +87,7 @@ export default function MultiUserStats() {
 
   return (
     <div className="space-y-6">
+      <StatsTabs />
       <CollapsibleFilter activeCount={usernames.trim() ? 1 : 0} contentClassName="space-y-4">
         <div className="space-y-4">
           <Label htmlFor="usernames">{t('multi_user_stats_index.usernamesLabel')}</Label>
