@@ -287,7 +287,7 @@ export default function ModelSelectorModal({ open, onClose, onConfirm, channelVa
             onCheckedChange={() => setSelected((prev) => toggleMany(prev, ids))}
             aria-label={p('selectFamily', { family: group.family })}
           />
-          <span className="text-sm font-semibold">{group.family || p('noFamily')}</span>
+          <span className="text-sm font-medium">{group.family || p('noFamily')}</span>
           {group.requests > 0 && (
             <span className="flex items-center gap-0.5 text-[11px] text-orange-600 dark:text-orange-400" title={p('requestsTip')}>
               <Flame className="size-3" />

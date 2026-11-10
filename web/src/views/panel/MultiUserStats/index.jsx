@@ -23,7 +23,7 @@ function StatTooltip({ active, payload, label }) {
   return (
     <div className="rounded-md border border-border bg-card px-3 py-2 text-xs shadow-md">
       <p className="mb-1 font-medium text-muted-foreground">{label}</p>
-      <p className="font-mono font-semibold tabular-nums text-foreground">{'$' + calculateQuota(payload[0].value, 6)}</p>
+      <p className="font-mono font-medium tabular-nums text-foreground">{'$' + calculateQuota(payload[0].value, 6)}</p>
     </div>
   );
 }
@@ -148,7 +148,7 @@ export default function MultiUserStats() {
                       <TableRow key={i}>
                         <TableCell className="font-medium">{s.username}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums">{thousandsSeparator(s.request_count)}</TableCell>
-                        <TableCell className="text-right font-mono font-semibold tabular-nums text-foreground">${calculateQuota(s.quota, 6)}</TableCell>
+                        <TableCell className="text-right font-mono font-medium tabular-nums text-foreground">${calculateQuota(s.quota, 6)}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums">{thousandsSeparator(s.prompt_tokens)}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums">{thousandsSeparator(s.completion_tokens)}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums">{(s.request_time / 1000).toFixed(2)}s</TableCell>
@@ -175,7 +175,7 @@ export default function MultiUserStats() {
                         <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                           {t('multi_user_stats_index.quota')}
                         </dt>
-                        <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm font-mono font-semibold tabular-nums text-foreground">
+                        <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm font-mono font-medium tabular-nums text-foreground">
                           ${calculateQuota(s.quota, 6)}
                         </dd>
                       </div>

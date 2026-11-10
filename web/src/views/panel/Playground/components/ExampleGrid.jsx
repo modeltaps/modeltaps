@@ -17,7 +17,7 @@ export default function ExampleGrid({ title, subtitle, items = [], onPick, colum
     <div className={cn('flex flex-col items-center gap-5', className)}>
       {(title || subtitle) && (
         <div className="text-center">
-          {title && <h2 className="text-lg font-semibold text-foreground">{title}</h2>}
+          {title && <h2 className="text-lg font-medium text-foreground">{title}</h2>}
           {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
         </div>
       )}

@@ -46,7 +46,7 @@ export default function StatCard({ label, value, valueTitle, hint, icon: Icon, a
             <span
               title={valueTitle}
               className={cn(
-                'min-w-0 truncate font-mono font-semibold leading-none tabular-nums',
+                'min-w-0 truncate font-mono font-medium leading-none tabular-nums',
                 String(value ?? '').length > 7 ? 'text-2xl' : 'text-3xl',
                 'text-foreground'
               )}

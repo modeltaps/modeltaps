@@ -42,7 +42,7 @@ export default function LanguageSwitcher() {
         {i18nList.map((item) => {
           const isActive = item.lng === currentLang;
           return (
-            <DropdownMenuItem key={item.lng} onClick={() => setAppLanguage(item.lng)} className={cn(isActive && 'font-semibold')}>
+            <DropdownMenuItem key={item.lng} onClick={() => setAppLanguage(item.lng)} className={cn(isActive && 'font-medium')}>
               <span className="flex w-4 justify-center text-foreground">{isActive && <Check className="size-4" />}</span>
               {item.name}
             </DropdownMenuItem>

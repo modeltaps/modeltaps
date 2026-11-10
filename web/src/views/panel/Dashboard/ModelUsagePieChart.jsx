@@ -14,7 +14,7 @@ function PieTooltip({ active, payload }) {
   return (
     <div className="rounded-md border border-border bg-card px-3 py-2 text-xs shadow-md">
       <span className="font-medium text-foreground">{name}: </span>
-      <span className="font-mono font-semibold tabular-nums">{value.toLocaleString()}</span>
+      <span className="font-mono font-medium tabular-nums">{value.toLocaleString()}</span>
     </div>
   );
 }

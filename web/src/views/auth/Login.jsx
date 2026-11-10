@@ -302,7 +302,7 @@ export default function Login() {
           {submitError && <p className="text-sm text-destructive">{submitError}</p>}
 
           <div className="space-y-3">
-            <Button type="submit" disabled={isSubmitting} className="h-11 w-full font-semibold">
+            <Button type="submit" disabled={isSubmitting} className="h-11 w-full font-medium">
               {isSubmitting && <Loader2 className="size-4 animate-spin" />}
               {isSubmitting ? t('login.loggingIn') : t('menu.login')}
             </Button>

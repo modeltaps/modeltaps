@@ -33,7 +33,7 @@ function CardHeading({ title, description, aside }) {
   return (
     <div className="space-y-1">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h3 className="text-[15px] font-semibold leading-6">{title}</h3>
+        <h3 className="text-[15px] font-medium leading-6">{title}</h3>
         {aside && <div className="flex flex-wrap items-center gap-2">{aside}</div>}
       </div>
       {description && <div className="max-w-3xl text-sm text-muted-foreground">{description}</div>}

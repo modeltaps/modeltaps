@@ -107,7 +107,7 @@ export function parsePromptMessages(rawBody) {
 // Small role text tag (colored label, no filled block) for the message list, reading-pane
 // header and by-role table — matches OpenRouter's compact role labels.
 function RoleTag({ role, t }) {
-  return <span className={cn('truncate text-[11px] font-semibold', roleStyle(role).text)}>{roleLabel(role, t)}</span>;
+  return <span className={cn('truncate text-[11px] font-medium', roleStyle(role).text)}>{roleLabel(role, t)}</span>;
 }
 
 RoleTag.propTypes = { role: PropTypes.string, t: PropTypes.func.isRequired };
@@ -254,20 +254,20 @@ function StatsPanel({ promptTokens, cachedTokens, visibleEst, cost, model, roleA
     <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3 lg:w-80 lg:shrink-0 lg:grid-cols-1">
       <div className="flex flex-col">
         <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{t('logPage.promptViewer.tokensTotal')}</span>
-        <span className="text-sm font-semibold tabular-nums text-foreground">
+        <span className="text-sm font-medium tabular-nums text-foreground">
           {t('logPage.promptViewer.tokensOfTotal', { shown: (visibleEst || 0).toLocaleString(), total: pt.toLocaleString() })}
         </span>
       </div>
       <div className="flex flex-col">
         <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{t('logPage.promptViewer.prompt')}</span>
-        <span className="text-sm font-semibold tabular-nums text-foreground">
+        <span className="text-sm font-medium tabular-nums text-foreground">
           {promptFresh.toLocaleString()}
           <span className="ml-1 text-xs font-normal text-muted-foreground">{freshPct}%</span>
         </span>
       </div>
       <div className="flex flex-col">
         <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{t('logPage.promptViewer.cached')}</span>
-        <span className="text-sm font-semibold tabular-nums text-foreground">
+        <span className="text-sm font-medium tabular-nums text-foreground">
           {cached.toLocaleString()}
           <span className="ml-1 text-xs font-normal text-muted-foreground">{cachedPct}%</span>
         </span>
@@ -275,7 +275,7 @@ function StatsPanel({ promptTokens, cachedTokens, visibleEst, cost, model, roleA
       {cost && (
         <div className="flex flex-col">
           <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{t('logPage.promptViewer.cost')}</span>
-          <span className="text-sm font-semibold text-foreground">{cost}</span>
+          <span className="text-sm font-medium text-foreground">{cost}</span>
         </div>
       )}
       {model && (
@@ -380,7 +380,7 @@ function MessageContent({ msg, t }) {
       )}
       {tools.length > 0 && (
         <div className="space-y-2">
-          <div className="text-xs font-semibold text-muted-foreground">{t('logPage.promptViewer.toolCalls')}</div>
+          <div className="text-xs font-medium text-muted-foreground">{t('logPage.promptViewer.toolCalls')}</div>
           {tools.map((tc, i) => {
             const fn = tc.function || tc;
             const args = fn.arguments;

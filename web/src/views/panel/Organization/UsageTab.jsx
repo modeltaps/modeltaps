@@ -66,7 +66,7 @@ function StatCard({ icon: Icon, label, value }) {
     <Card className="flex items-center justify-between gap-3 p-5">
       <div className="min-w-0 space-y-1">
         <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="truncate text-2xl font-semibold tabular-nums">{value}</p>
+        <p className="truncate text-2xl font-medium tabular-nums">{value}</p>
       </div>
       <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
         <Icon className="size-5" />
@@ -219,7 +219,7 @@ function ChartTooltip({ active, payload, label, format }) {
   return (
     <div className="rounded-md border border-border bg-card px-3 py-2 text-xs shadow-md">
       <p className="mb-1 font-medium text-muted-foreground">{label}</p>
-      <p className="font-mono font-semibold tabular-nums text-foreground">{format(payload[0].value)}</p>
+      <p className="font-mono font-medium tabular-nums text-foreground">{format(payload[0].value)}</p>
     </div>
   );
 }

@@ -32,18 +32,18 @@ export default function SignedOut() {
           ) : (
             <LogoMark size={40} className="text-foreground" />
           )}
-          <CardTitle className="text-2xl">{t(stillSignedIn ? 'login.stillSignedInTitle' : 'login.signedOutTitle')}</CardTitle>
+          <CardTitle className="text-2xl font-semibold">{t(stillSignedIn ? 'login.stillSignedInTitle' : 'login.signedOutTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-5 pt-2 text-center">
           <p className="text-sm text-muted-foreground">
             {stillSignedIn ? t('login.stillSignedInDescription') : t('login.signedOutDescription', { name })}
           </p>
           {stillSignedIn ? (
-            <Button className="h-11 w-full font-semibold" onClick={() => navigate('/panel/dashboard')}>
+            <Button className="h-11 w-full font-medium" onClick={() => navigate('/panel/dashboard')}>
               {t('login.goConsole')}
             </Button>
           ) : (
-            <Button className="h-11 w-full font-semibold" onClick={() => navigate('/login')}>
+            <Button className="h-11 w-full font-medium" onClick={() => navigate('/login')}>
               {t('login.retryLogin')}
             </Button>
           )}

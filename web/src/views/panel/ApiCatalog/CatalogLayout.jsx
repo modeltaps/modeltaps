@@ -52,7 +52,7 @@ function EndpointList({ endpoints, link }) {
       <ul className="space-y-2">
         {endpoints.map((ep) => (
           <li key={`${ep.method} ${ep.path}`} className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.6875rem] font-semibold uppercase text-foreground">
+            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.6875rem] font-medium uppercase text-foreground">
               {ep.method}
             </span>
             <code className="font-mono text-sm">{ep.path}</code>
@@ -146,7 +146,7 @@ export default function CatalogLayout({ entry }) {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        {entry.apiNameKey && <h2 className="text-lg font-semibold tracking-tight">{t(entry.apiNameKey)}</h2>}
+        {entry.apiNameKey && <h2 className="text-lg font-medium tracking-tight">{t(entry.apiNameKey)}</h2>}
         <p className="text-sm text-muted-foreground">{t(entry.introKey)}</p>
         <CapabilityChips sections={sections} loading={loading} error={error} />
       </div>

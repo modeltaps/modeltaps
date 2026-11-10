@@ -90,7 +90,7 @@ export default function ForgetPassword() {
   return (
     <AuthShell title={t('login.forgetPassword')}>
       {sendEmail ? (
-        <p className="py-5 text-center text-lg font-semibold text-foreground">{t('registerForm.restSendEmail')}</p>
+        <p className="py-5 text-center text-lg font-medium text-foreground">{t('registerForm.restSendEmail')}</p>
       ) : (
         <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <FormField label={t('login.email')} htmlFor="email" error={errors.email?.message}>
@@ -99,7 +99,7 @@ export default function ForgetPassword() {
 
           {turnstileEnabled && <Turnstile sitekey={turnstileSiteKey} onVerify={(token) => setTurnstileToken(token)} />}
 
-          <Button type="submit" disabled={isSubmitting || disableButton} className="h-11 w-full font-semibold">
+          <Button type="submit" disabled={isSubmitting || disableButton} className="h-11 w-full font-medium">
             {disableButton ? t('common.again', { count: countdown }) : t('common.submit')}
           </Button>
         </form>

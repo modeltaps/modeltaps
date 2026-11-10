@@ -105,7 +105,7 @@ async function callApi(request) {
 function Section({ title, children }) {
   return (
     <section className="space-y-4">
-      <h3 className="border-b border-border pb-1.5 text-sm font-semibold">{title}</h3>
+      <h3 className="border-b border-border pb-1.5 text-sm font-medium">{title}</h3>
       {children}
     </section>
   );
@@ -122,7 +122,7 @@ function ChannelsPanel({ row }) {
   return (
     <div className="space-y-6">
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold">{t('modelsPage.sheet.providingChannels', { count: channels.length })}</h3>
+        <h3 className="text-sm font-medium">{t('modelsPage.sheet.providingChannels', { count: channels.length })}</h3>
         {enabledChannels(row).length === 0 && (
           <div className="space-y-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
             <p className="text-warning">{t('modelInfoPage.noChannel')}</p>
@@ -191,7 +191,7 @@ function ChannelsPanel({ row }) {
       </section>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold">{t('modelsPage.sheet.availableGroups')}</h3>
+        <h3 className="text-sm font-medium">{t('modelsPage.sheet.availableGroups')}</h3>
         {groups.length > 0 ? (
           <div className="flex flex-wrap gap-1.5">
             {groups.map((group) => (
@@ -207,7 +207,7 @@ function ChannelsPanel({ row }) {
 
       {row.alias_of && (
         <section className="space-y-2">
-          <h3 className="text-sm font-semibold">{t('modelInfoPage.aliasOf')}</h3>
+          <h3 className="text-sm font-medium">{t('modelInfoPage.aliasOf')}</h3>
           <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{row.alias_of}</code>
         </section>
       )}

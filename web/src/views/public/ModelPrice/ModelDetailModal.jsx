@@ -115,7 +115,7 @@ export default function ModelDetailModal({ open, onClose, model, provider, model
           </div>
           <div className="flex items-center gap-2">
             {tags.includes('Hot') && (
-              <Pill tone="error" className="font-semibold">
+              <Pill tone="error" className="font-medium">
                 <Flame className="size-4" /> Hot
               </Pill>
             )}
@@ -131,7 +131,7 @@ export default function ModelDetailModal({ open, onClose, model, provider, model
           <div className="mb-5">
             <div className="mb-3 flex items-center gap-2">
               <Info className="size-5" />
-              <h3 className="font-semibold">{t('modelpricePage.modelInfo')}</h3>
+              <h3 className="font-medium">{t('modelpricePage.modelInfo')}</h3>
             </div>
             <div className="space-y-3">
               <InfoRow icon={<Package className={iconCls} />} label={t('modelpricePage.type')}>
@@ -202,7 +202,7 @@ export default function ModelDetailModal({ open, onClose, model, provider, model
             <div className="mb-5">
               <div className="mb-3 flex items-center gap-2">
                 <Route className="size-5" />
-                <h3 className="font-semibold">{t('modelpricePage.routing.title')}</h3>
+                <h3 className="font-medium">{t('modelpricePage.routing.title')}</h3>
               </div>
               <p className="mb-3 text-sm leading-relaxed text-muted-foreground">
                 {t('modelpricePage.routing.intro', { threshold: Math.round((routing.threshold || 0) * 100) })}
@@ -244,7 +244,7 @@ export default function ModelDetailModal({ open, onClose, model, provider, model
           <div className="mb-2">
             <div className="mb-3 flex items-center gap-2">
               <DollarSign className="size-5" />
-              <h3 className="font-semibold">{t('modelpricePage.priceDetails')}</h3>
+              <h3 className="font-medium">{t('modelpricePage.priceDetails')}</h3>
             </div>
             <p className="mb-3 text-sm leading-relaxed text-muted-foreground">
               {routing ? t('modelpricePage.routing.priceNote', { model: routing.fallback_model }) : t('modelpricePage.priceNote')}
@@ -295,7 +295,7 @@ export default function ModelDetailModal({ open, onClose, model, provider, model
             <div className="mt-5">
               <div className="mb-3 flex items-center gap-2">
                 <BarChart3 className="size-5" />
-                <h3 className="font-semibold">{t('modelpricePage.otherInfo')}</h3>
+                <h3 className="font-medium">{t('modelpricePage.otherInfo')}</h3>
               </div>
               <div className="space-y-1.5">
                 {Object.entries(priceData.price.extra_ratios).map(([key, value]) => (

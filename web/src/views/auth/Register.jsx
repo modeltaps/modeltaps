@@ -212,7 +212,7 @@ export default function Register() {
 
         {turnstileEnabled && <Turnstile sitekey={turnstileSiteKey} onVerify={(token) => setTurnstileToken(token)} />}
 
-        <Button type="submit" disabled={isSubmitting} className="h-11 w-full font-semibold">
+        <Button type="submit" disabled={isSubmitting} className="h-11 w-full font-medium">
           {isSubmitting && <Loader2 className="size-4 animate-spin" />}
           {isSubmitting ? t('registerForm.registering') : t('menu.signup')}
         </Button>

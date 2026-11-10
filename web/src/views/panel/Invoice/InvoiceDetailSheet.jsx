@@ -83,14 +83,14 @@ export default function InvoiceDetailSheet({ date, t, onClose }) {
           ) : (
             <>
               <section className="mb-5">
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('invoice_index.userinfo')}</h3>
+                <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('invoice_index.userinfo')}</h3>
                 <Row label={t('invoice_index.username')} value={user?.username} />
                 <Row label={t('invoice_index.email')} value={user?.email} />
                 <Row label={t('invoice_index.date')} value={date} />
               </section>
 
               <section className="mb-5">
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   {t('invoice_index.usage_statistics')}
                 </h3>
                 <Row label={t('invoice_index.promptTokens')} value={thousandsSeparator(totals.prompt)} />
@@ -100,7 +100,7 @@ export default function InvoiceDetailSheet({ date, t, onClose }) {
               </section>
 
               <section className="mb-5">
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   {t('invoice_index.usage_details')}
                 </h3>
                 <div className="hidden md:block overflow-x-auto rounded-md border border-border">
@@ -180,7 +180,7 @@ export default function InvoiceDetailSheet({ date, t, onClose }) {
 
               <div className="flex items-baseline justify-end gap-3">
                 <span className="text-sm font-medium text-muted-foreground">{t('invoice_index.quota')}</span>
-                <span className="text-xl font-bold text-foreground">${calculateQuota(totals.quota, 6)}</span>
+                <span className="text-xl font-medium text-foreground">${calculateQuota(totals.quota, 6)}</span>
               </div>
             </>
           )}

@@ -78,7 +78,7 @@ export default function SupportModels() {
               >
                 {preview.map(([provider, models]) => (
                   <div key={provider} className="flex items-center gap-2">
-                    <span className="whitespace-nowrap text-sm font-semibold text-muted-foreground">{provider}:</span>
+                    <span className="whitespace-nowrap text-sm font-medium text-muted-foreground">{provider}:</span>
                     {models.map((model) => (
                       <Badge
                         key={model}
@@ -115,7 +115,7 @@ export default function SupportModels() {
               <div key={provider}>
                 <div className="mb-2 flex items-center gap-2">
                   <BrandIcon icon={getIconByName(provider)} ownedBy={provider} fallbackText={provider} className="size-4" />
-                  <span className="text-sm font-semibold text-muted-foreground">{provider}</span>
+                  <span className="text-sm font-medium text-muted-foreground">{provider}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 pl-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                   {models.map((model) => (

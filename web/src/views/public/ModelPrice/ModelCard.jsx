@@ -91,7 +91,7 @@ export default function ModelCard({ model, provider, modelInfo, price, group, ow
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <BrandIcon icon={ownedbyIcon} ownedBy={provider} model={model} fallbackText={provider} className="size-5" />
-            <span className="text-sm font-semibold" title={model}>
+            <span className="text-sm font-medium" title={model}>
               {model}
             </span>
             {routing && (
@@ -111,7 +111,7 @@ export default function ModelCard({ model, provider, modelInfo, price, group, ow
               <Copy className="size-4" />
             </button>
             {hot && (
-              <Pill tone="error" className="font-semibold">
+              <Pill tone="error" className="font-medium">
                 <Flame className="size-3" /> HOT
               </Pill>
             )}
@@ -199,11 +199,11 @@ export default function ModelCard({ model, provider, modelInfo, price, group, ow
         {group && (
           <div className="flex shrink-0 items-center gap-1">
             {group.ratio > 0 ? (
-              <Pill tone={group.ratio > 1 ? 'warning' : 'info'} className="font-semibold">
+              <Pill tone={group.ratio > 1 ? 'warning' : 'info'} className="font-medium">
                 x{group.ratio}
               </Pill>
             ) : (
-              <Pill tone="success" className="font-semibold">
+              <Pill tone="success" className="font-medium">
                 {t('modelpricePage.free')}
               </Pill>
             )}

@@ -15,7 +15,7 @@ export default function NoModelsCard({ title, description, actionLabel, actionHr
       <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <PackageOpen className="size-5" />
       </span>
-      {title && <h2 className="text-sm font-semibold text-foreground">{title}</h2>}
+      {title && <h2 className="text-sm font-medium text-foreground">{title}</h2>}
       {description && <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>}
       {actionHref && actionLabel && (
         <Button asChild size="sm" variant="outline">

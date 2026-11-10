@@ -31,7 +31,7 @@ function StatTile({ icon: Icon, title, content, subContent, accent = false, load
         {loading ? (
           <div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
         ) : (
-          <span className="font-mono text-2xl font-semibold tabular-nums text-foreground">
+          <span className="font-mono text-2xl font-medium tabular-nums text-foreground">
             {content}
           </span>
         )}

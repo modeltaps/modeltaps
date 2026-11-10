@@ -24,7 +24,7 @@ export function StatChip({ label, count, active = false, onClick, tone }) {
     <>
       {tone && <span className={cn('size-1.5 rounded-full', active ? 'bg-primary-foreground' : TONE_DOT[tone] || TONE_DOT.default)} />}
       <span>{label}</span>
-      {count != null && <span className="font-semibold tabular-nums">{count}</span>}
+      {count != null && <span className="font-medium tabular-nums">{count}</span>}
     </>
   );
   if (!onClick) {

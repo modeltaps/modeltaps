@@ -182,7 +182,7 @@ function DropdownMenuSeparator({ className }) {
 }
 
 function DropdownMenuLabel({ className, ...props }) {
-  return <div className={cn('px-2 py-1.5 text-xs font-semibold text-muted-foreground', className)} {...props} />;
+  return <div className={cn('px-2 py-1.5 text-xs font-medium text-muted-foreground', className)} {...props} />;
 }
 
 // Sub-menus reuse the portal + fixed positioning of the root content so they are

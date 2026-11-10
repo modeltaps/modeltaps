@@ -142,7 +142,7 @@ export default function VoiceGallery({ voices: source = TTS_VOICES, value, onCha
                   )}
                 >
                   <span className="min-w-0 flex-1">
-                    <span className={cn('block truncate text-sm text-foreground', selected ? 'font-semibold' : 'font-medium')}>
+                    <span className="block truncate text-sm font-medium text-foreground">
                       {voice.id}
                     </span>
                     {facts.length > 0 && <span className="block truncate text-xs text-muted-foreground">{facts.join(' · ')}</span>}

@@ -185,7 +185,7 @@ export default function FilterBar({
         >
           {triggerVariant === 'plus' ? <Plus className="size-4" /> : <Filter className="size-4" />}
           {triggerVariant !== 'plus' && count > 0 && (
-            <span className="absolute -right-1 -top-1 flex min-w-[18px] items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-semibold leading-4 text-background">
+            <span className="absolute -right-1 -top-1 flex min-w-[18px] items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-medium leading-4 text-background">
               {count}
             </span>
           )}

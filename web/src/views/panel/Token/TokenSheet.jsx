@@ -47,7 +47,7 @@ const fromLocal = (s) => Math.floor(new Date(s).getTime() / 1000);
 function Section({ title, description, children }) {
   return (
     <section className="py-6 first:pt-0 last:pb-0">
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      <h3 className="text-sm font-medium text-foreground">{title}</h3>
       {description && <p className="mt-1 text-xs text-muted-foreground">{description}</p>}
       <div className="mt-4 space-y-4">{children}</div>
     </section>
