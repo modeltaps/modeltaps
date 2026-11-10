@@ -684,7 +684,8 @@
     "organization": "組織的餘額、用量與審計記錄",
     "platform_settings": "整個平台的預設值與開關",
     "personal_settings": "只對你自己的賬號生效",
-    "token": "調用介面用的金鑰"
+    "token": "調用介面用的金鑰",
+    "invite_code": "生成、啟用與作廢註冊用的邀請碼"
   },
   "api_compare": "對比",
   "modelInfoPage": {
@@ -2160,7 +2161,8 @@
       "orders": "訂單",
       "redemption": "兌換碼",
       "platformSettings": "平台設定",
-      "personalSettings": "個人設定"
+      "personalSettings": "個人設定",
+      "inviteCodes": "邀請碼"
     },
     "context": {
       "personal": "個人",
@@ -2197,5 +2199,335 @@
       "label": "分組"
     },
     "mainLabel": "主導覽"
+  },
+  "settingsUi": {
+    "search": {
+      "placeholder": "搜尋設定",
+      "clear": "清除搜尋",
+      "title": "搜尋「{{query}}」",
+      "empty": "沒有符合的設定",
+      "count": "{{count}} 張卡片"
+    },
+    "unsaved": "有未儲存的改動",
+    "undo": "復原",
+    "leave": {
+      "title": "有未儲存的改動",
+      "description": "離開這個頁面會丟掉還沒儲存的改動。",
+      "stay": "留下",
+      "discard": "放棄改動"
+    },
+    "collection": {
+      "add": "新增",
+      "more": "更多操作",
+      "enabled": "啟用",
+      "disabled": "已停用",
+      "empty": "還沒有項目",
+      "enable": "啟用",
+      "disable": "停用",
+      "status": "狀態"
+    },
+    "platform": {
+      "label": "平台設定分組",
+      "groups": {
+        "site": {
+          "label": "站點",
+          "description": "站點地址、品牌和對外展示"
+        },
+        "auth": {
+          "label": "登入與註冊",
+          "description": "誰能登入、怎樣登入、怎樣註冊"
+        },
+        "billing": {
+          "label": "計費",
+          "description": "額度、計費規則與週期限額"
+        },
+        "payment": {
+          "label": "支付",
+          "description": "收款方式、充值與發票"
+        },
+        "gateway": {
+          "label": "網關",
+          "description": "轉發、重試和渠道健康"
+        },
+        "privacy": {
+          "label": "日誌與私隱",
+          "description": "記錄甚麼、保存多久、誰能看"
+        },
+        "notify": {
+          "label": "通知與整合",
+          "description": "郵件、機械人和第三方回調"
+        },
+        "orgpolicy": {
+          "label": "組織策略",
+          "description": "組織能做甚麼，僅 root 可改"
+        }
+      },
+      "cards": {
+        "server-address": {
+          "title": "伺服器地址",
+          "description": "回調、郵件連結和文件範例都用這個地址",
+          "hint": "末尾的斜線會被移除"
+        },
+        "branding": {
+          "title": "品牌",
+          "description": "站點名稱、Logo、頁面內容與供應商圖示",
+          "hint": "Logo 建議用 SVG，高 32px"
+        },
+        "display": {
+          "title": "顯示",
+          "description": "額度和用量怎樣展示給用戶",
+          "hint": "只影響展示，不影響計費"
+        },
+        "external-links": {
+          "title": "外部連結",
+          "description": "充值、聊天和文件的入口",
+          "hint": "留空則不顯示"
+        },
+        "version-notice": {
+          "title": "版本公告",
+          "description": "登入後頂部顯示的公告；也可以在這裏檢查新版本",
+          "hint": "支援 Markdown"
+        },
+        "account-system": {
+          "title": "賬號體系",
+          "hint": "儲存前會再確認一次"
+        },
+        "login-methods": {
+          "title": "登入方式",
+          "description": "本站賬號的登入、註冊與人機驗證",
+          "hint": "至少保留一種可用的登入方式"
+        },
+        "oidc-providers": {
+          "title": "OIDC 提供方"
+        },
+        "admin-login": {
+          "title": "管理員應急登入"
+        },
+        "github-oauth": {
+          "title": "GitHub 登入",
+          "hint": "密鑰儲存後不再顯示"
+        },
+        "wechat-auth": {
+          "title": "微信登入",
+          "hint": "密鑰儲存後不再顯示"
+        },
+        "lark-auth": {
+          "title": "飛書登入",
+          "hint": "密鑰儲存後不再顯示"
+        },
+        "linuxdo-oauth": {
+          "title": "LINUX DO 登入",
+          "hint": "密鑰儲存後不再顯示"
+        },
+        "turnstile": {
+          "title": "人機驗證",
+          "hint": "密鑰儲存後不再顯示"
+        },
+        "email-domain": {
+          "title": "郵箱網域限制",
+          "hint": "每行一個網域"
+        },
+        "quota": {
+          "title": "額度",
+          "description": "新用戶額度、預扣與餘額提醒",
+          "hint": "只影響之後註冊的賬號"
+        },
+        "billing-rules": {
+          "title": "計費規則",
+          "description": "空回覆、近似計費與價格同步",
+          "hint": "改動對新請求立即生效"
+        },
+        "quota-reset": {
+          "title": "週期限額重置",
+          "hint": "影響日、週、月限額的起點"
+        },
+        "invite-reward": {
+          "title": "邀請獎勵",
+          "hint": "關閉後不再發放新的獎勵"
+        },
+        "payment": {
+          "title": "支付設定",
+          "hint": "匯率只影響人民幣網關實付，不影響餘額"
+        },
+        "payment-gateways": {
+          "title": "支付網關",
+          "description": "可以同時啟用多個，用戶在充值頁選擇"
+        },
+        "invoice": {
+          "title": "月度賬單",
+          "description": "生成或更新某個月的賬單"
+        },
+        "retry": {
+          "title": "重試",
+          "description": "上游失敗時換渠道重試",
+          "hint": "只對可重試的錯誤生效"
+        },
+        "error-handling": {
+          "title": "錯誤處理",
+          "description": "返回給調用方的錯誤訊息",
+          "hint": "改動對新請求立即生效"
+        },
+        "channel-auto": {
+          "title": "渠道自動停用與恢復",
+          "description": "連續失敗的渠道先停用，探測成功後恢復",
+          "hint": "停用和恢復都可以通知管理員"
+        },
+        "session-affinity": {
+          "title": "會話親和",
+          "description": "同一會話盡量落在同一個渠道，保住提示快取",
+          "hint": "改動對新會話生效"
+        },
+        "model-name-match": {
+          "title": "模型名匹配",
+          "description": "調用方寫的模型名和渠道裏的名字怎樣對上",
+          "hint": "改動對新請求立即生效"
+        },
+        "native-protocol": {
+          "title": "原生協議",
+          "description": "直通上游原生介面與相關參數",
+          "hint": "只對支援的供應商生效"
+        },
+        "prompt-limits": {
+          "title": "提示詞限制",
+          "description": "單次請求的輸入上限",
+          "hint": "超過上限的請求會被拒絕"
+        },
+        "image-proxy": {
+          "title": "圖片代理",
+          "description": "圖片請求經代理或本站中轉",
+          "hint": "留空則不代理"
+        },
+        "auto-routing": {
+          "title": "自動路由",
+          "description": "決策調用怎樣計費；策略在自動路由頁管理。",
+          "hint": "策略的增刪改在自動路由頁"
+        },
+        "log-consume": {
+          "title": "消費日誌",
+          "description": "每次請求的用量記錄與保留時間",
+          "hint": "用量統計依賴這些記錄"
+        },
+        "log-io": {
+          "title": "請求與回應留存",
+          "description": "保存正文便於排查；不含 API 密鑰與鑑權頭",
+          "hint": "用戶和組織可以在自己的設定裏改"
+        },
+        "safety": {
+          "title": "內容安全",
+          "hint": "每行一個關鍵詞"
+        },
+        "smtp": {
+          "title": "郵件發送",
+          "description": "驗證碼、通知和賬單郵件都從這裏發",
+          "hint": "密碼儲存後不再顯示"
+        },
+        "notifications": {
+          "title": "通知",
+          "hint": "每類通知每小時有上限"
+        },
+        "telegram": {
+          "title": "Telegram 機械人"
+        },
+        "builtin-chat": {
+          "title": "內置聊天",
+          "description": "在控制台裏直接打開聊天頁",
+          "hint": "改動對所有用戶生效"
+        },
+        "chat-links": {
+          "title": "聊天連結"
+        },
+        "mj-notify": {
+          "title": "Midjourney 回調",
+          "description": "任務完成後回調調用方提供的地址",
+          "hint": "關閉後只能輪詢任務狀態"
+        },
+        "org-policy": {
+          "title": "組織",
+          "hint": "已有組織不受影響"
+        }
+      },
+      "actions": {
+        "manageInviteCodes": "管理邀請碼 ›",
+        "openRouting": "打開自動路由 ›",
+        "currentVersion": "目前版本 {{version}}",
+        "check": "檢查",
+        "purge": "清理",
+        "purgeDescription": "刪除早於所選時間的日誌，不能恢復",
+        "invoiceGenDescription": "按所選月份生成賬單",
+        "invoiceUpdateDescription": "重新計算所選月份已有的賬單"
+      },
+      "chatLinks": {
+        "add": "新增聊天連結",
+        "edit": "編輯聊天連結"
+      },
+      "telegram": {
+        "add": "新增命令"
+      }
+    },
+    "personal": {
+      "label": "個人設定分組",
+      "username": "用戶名",
+      "groups": {
+        "profile": "資料",
+        "profileDescription": "顯示名稱與賬號資訊",
+        "security": "登入與安全",
+        "securityDescription": "登入方式、賬號標識、會話與存取權杖",
+        "privacy": "數據與私隱",
+        "privacyDescription": "平台為你保存哪些數據",
+        "preferences": "偏好",
+        "preferencesDescription": "只對你自己生效"
+      },
+      "cards": {
+        "profile": {
+          "title": "資料",
+          "description": "顯示名稱和頭像",
+          "hint": "用戶名不能修改"
+        },
+        "logIO": {
+          "description": "開啟後可在日誌明細裏看到完整正文",
+          "hint": "只影響之後的請求"
+        },
+        "appearance": {
+          "title": "外觀",
+          "description": "主題與語言，只對你自己生效",
+          "hint": "儲存後立即套用",
+          "languageHint": "選擇介面語言；預設跟隨瀏覽器。"
+        },
+        "quotaRemind": {
+          "hint": "每天最多提醒一次"
+        },
+        "accessToken": {
+          "title": "存取權杖",
+          "rowHint": "用於調用管理介面，不是調用模型的 API Key",
+          "reset": "重新生成",
+          "confirm": "重新生成後，原來的存取權杖立即失效。"
+        }
+      },
+      "sessions": {
+        "device": "裝置",
+        "where": "地址與方式"
+      }
+    },
+    "org": {
+      "label": "組織設定分組",
+      "groups": {
+        "general": "一般",
+        "generalDescription": "組織資料與團隊預算",
+        "danger": "危險操作",
+        "dangerDescription": "退出、轉讓與解散"
+      },
+      "cards": {
+        "profile": {
+          "description": "名稱在成員的上下文切換器裏顯示",
+          "hint": "改動對所有成員生效"
+        },
+        "budget": {
+          "hint": "週期與平台設定一致"
+        },
+        "danger": {
+          "description": "這些操作會影響所有成員"
+        }
+      }
+    }
   }
 }

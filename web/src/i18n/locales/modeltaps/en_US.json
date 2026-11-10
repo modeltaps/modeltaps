@@ -685,7 +685,8 @@
     "organization": "Organization balance, usage and audit log",
     "platform_settings": "Platform-wide defaults and switches",
     "personal_settings": "Applies to your own account only",
-    "token": "Keys for calling the API"
+    "token": "Keys for calling the API",
+    "invite_code": "Create, enable and revoke registration invite codes"
   },
   "api_compare": "Compare",
   "modelInfoPage": {
@@ -2244,7 +2245,8 @@
       "orders": "Orders",
       "redemption": "Redemption codes",
       "platformSettings": "Platform settings",
-      "personalSettings": "Personal settings"
+      "personalSettings": "Personal settings",
+      "inviteCodes": "Invite codes"
     },
     "context": {
       "personal": "Personal",
@@ -2281,5 +2283,336 @@
       "label": "Sections"
     },
     "mainLabel": "Main navigation"
+  },
+  "settingsUi": {
+    "search": {
+      "placeholder": "Search settings",
+      "clear": "Clear search",
+      "title": "Search “{{query}}”",
+      "empty": "No matching settings",
+      "count_one": "{{count}} card",
+      "count_other": "{{count}} cards"
+    },
+    "unsaved": "Unsaved changes",
+    "undo": "Undo",
+    "leave": {
+      "title": "You have unsaved changes",
+      "description": "Leaving this page discards the changes you have not saved.",
+      "stay": "Stay",
+      "discard": "Discard changes"
+    },
+    "collection": {
+      "add": "Add",
+      "more": "More actions",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "empty": "Nothing here yet",
+      "enable": "Enable",
+      "disable": "Disable",
+      "status": "Status"
+    },
+    "platform": {
+      "label": "Platform settings groups",
+      "groups": {
+        "site": {
+          "label": "Site",
+          "description": "Address, branding and what visitors see"
+        },
+        "auth": {
+          "label": "Sign-in & registration",
+          "description": "Who can sign in, how, and how accounts are created"
+        },
+        "billing": {
+          "label": "Billing",
+          "description": "Quota, billing rules and periodic limits"
+        },
+        "payment": {
+          "label": "Payments",
+          "description": "How you get paid, top-ups and invoices"
+        },
+        "gateway": {
+          "label": "Gateway",
+          "description": "Forwarding, retries and channel health"
+        },
+        "privacy": {
+          "label": "Logs & privacy",
+          "description": "What is recorded, for how long, and who can see it"
+        },
+        "notify": {
+          "label": "Notifications & integrations",
+          "description": "Mail, bots and callbacks"
+        },
+        "orgpolicy": {
+          "label": "Organization policy",
+          "description": "What organizations can do; root only"
+        }
+      },
+      "cards": {
+        "server-address": {
+          "title": "Server address",
+          "description": "Used by callbacks, links in emails and the docs examples",
+          "hint": "A trailing slash is removed"
+        },
+        "branding": {
+          "title": "Branding",
+          "description": "Site name, logo, page content and provider icons",
+          "hint": "An SVG logo 32px high works best"
+        },
+        "display": {
+          "title": "Display",
+          "description": "How quota and usage are shown to users",
+          "hint": "Affects display only, not billing"
+        },
+        "external-links": {
+          "title": "External links",
+          "description": "Where top-up, chat and docs links point",
+          "hint": "Leave empty to hide"
+        },
+        "version-notice": {
+          "title": "Version notice",
+          "description": "A notice shown at the top after sign-in; check for a new version here too",
+          "hint": "Markdown is supported"
+        },
+        "account-system": {
+          "title": "Account system",
+          "hint": "You confirm once more before it is saved"
+        },
+        "login-methods": {
+          "title": "Sign-in methods",
+          "description": "Sign-in, registration and bot checks for site accounts",
+          "hint": "Keep at least one way to sign in"
+        },
+        "oidc-providers": {
+          "title": "OIDC providers"
+        },
+        "admin-login": {
+          "title": "Admin emergency sign-in"
+        },
+        "github-oauth": {
+          "title": "GitHub sign-in",
+          "hint": "Secrets are not shown again once saved"
+        },
+        "wechat-auth": {
+          "title": "WeChat sign-in",
+          "hint": "Secrets are not shown again once saved"
+        },
+        "lark-auth": {
+          "title": "Lark sign-in",
+          "hint": "Secrets are not shown again once saved"
+        },
+        "linuxdo-oauth": {
+          "title": "LINUX DO sign-in",
+          "hint": "Secrets are not shown again once saved"
+        },
+        "turnstile": {
+          "title": "Bot check",
+          "hint": "Secrets are not shown again once saved"
+        },
+        "email-domain": {
+          "title": "Email domain restriction",
+          "hint": "One domain per line"
+        },
+        "quota": {
+          "title": "Quota",
+          "description": "New user quota, pre-consumption and balance reminders",
+          "hint": "Only affects accounts created from now on"
+        },
+        "billing-rules": {
+          "title": "Billing rules",
+          "description": "Empty replies, approximate counting and price sync",
+          "hint": "Applies to new requests right away"
+        },
+        "quota-reset": {
+          "title": "Periodic limit reset",
+          "hint": "Sets where daily, weekly and monthly limits start"
+        },
+        "invite-reward": {
+          "title": "Invite rewards",
+          "hint": "When off, no new rewards are granted"
+        },
+        "payment": {
+          "title": "Payment settings",
+          "hint": "The rate only changes what CNY gateways charge, not balances"
+        },
+        "payment-gateways": {
+          "title": "Payment gateways",
+          "description": "Several can be on at once; users choose on the top-up page"
+        },
+        "invoice": {
+          "title": "Monthly invoices",
+          "description": "Generate or update the invoices of a month"
+        },
+        "retry": {
+          "title": "Retries",
+          "description": "Retry on another channel when the upstream fails",
+          "hint": "Only for errors that can be retried"
+        },
+        "error-handling": {
+          "title": "Error handling",
+          "description": "What callers see when a request fails",
+          "hint": "Applies to new requests right away"
+        },
+        "channel-auto": {
+          "title": "Channel auto disable & recovery",
+          "description": "Channels that keep failing are paused and come back after a successful probe",
+          "hint": "Admins can be notified of both"
+        },
+        "session-affinity": {
+          "title": "Session affinity",
+          "description": "Keep a session on one channel so the prompt cache holds",
+          "hint": "Applies to new sessions"
+        },
+        "model-name-match": {
+          "title": "Model name matching",
+          "description": "How the model name a caller sends matches the names on channels",
+          "hint": "Applies to new requests right away"
+        },
+        "native-protocol": {
+          "title": "Native protocols",
+          "description": "Pass-through to upstream native APIs and their parameters",
+          "hint": "Only for providers that support it"
+        },
+        "prompt-limits": {
+          "title": "Prompt limits",
+          "description": "The input limit of a single request",
+          "hint": "Requests over the limit are rejected"
+        },
+        "image-proxy": {
+          "title": "Image proxy",
+          "description": "Send image requests through a proxy or this site",
+          "hint": "Leave empty for no proxy"
+        },
+        "auto-routing": {
+          "title": "Auto routing",
+          "description": "How decision calls are billed; policies are managed on the auto routing page.",
+          "hint": "Add and edit policies on the auto routing page"
+        },
+        "log-consume": {
+          "title": "Consume logs",
+          "description": "Usage records of every request and how long they are kept",
+          "hint": "Usage statistics depend on these records"
+        },
+        "log-io": {
+          "title": "Request & response retention",
+          "description": "Keep bodies for troubleshooting; API keys and auth headers are never stored",
+          "hint": "Users and organizations can change it in their own settings"
+        },
+        "safety": {
+          "title": "Content safety",
+          "hint": "One keyword per line"
+        },
+        "smtp": {
+          "title": "Mail sending",
+          "description": "Verification codes, notifications and billing emails are sent from here",
+          "hint": "The password is not shown again once saved"
+        },
+        "notifications": {
+          "title": "Notifications",
+          "hint": "Each kind is capped per hour"
+        },
+        "telegram": {
+          "title": "Telegram bot"
+        },
+        "builtin-chat": {
+          "title": "Built-in chat",
+          "description": "Open the chat page right in the console",
+          "hint": "Applies to every user"
+        },
+        "chat-links": {
+          "title": "Chat links"
+        },
+        "mj-notify": {
+          "title": "Midjourney callback",
+          "description": "Call the caller's address when a task finishes",
+          "hint": "When off, callers poll the task status"
+        },
+        "org-policy": {
+          "title": "Organizations",
+          "hint": "Existing organizations are not affected"
+        }
+      },
+      "actions": {
+        "manageInviteCodes": "Manage invite codes ›",
+        "openRouting": "Open auto routing ›",
+        "currentVersion": "Current version {{version}}",
+        "check": "Check",
+        "purge": "Purge",
+        "purgeDescription": "Deletes logs older than the time you pick; this cannot be undone",
+        "invoiceGenDescription": "Creates the invoices of the month you pick",
+        "invoiceUpdateDescription": "Recalculates the existing invoices of the month you pick"
+      },
+      "chatLinks": {
+        "add": "Add chat link",
+        "edit": "Edit chat link"
+      },
+      "telegram": {
+        "add": "Add command"
+      }
+    },
+    "personal": {
+      "label": "Personal settings groups",
+      "username": "Username",
+      "groups": {
+        "profile": "Profile",
+        "profileDescription": "Display name and account details",
+        "security": "Sign-in & security",
+        "securityDescription": "Sign-in methods, identifiers, sessions and the access token",
+        "privacy": "Data & privacy",
+        "privacyDescription": "What the platform keeps for you",
+        "preferences": "Preferences",
+        "preferencesDescription": "Only affect you"
+      },
+      "cards": {
+        "profile": {
+          "title": "Profile",
+          "description": "Display name and avatar",
+          "hint": "The username cannot be changed"
+        },
+        "logIO": {
+          "description": "When on, log details show the full bodies",
+          "hint": "Only affects requests from now on"
+        },
+        "appearance": {
+          "title": "Appearance",
+          "description": "Theme and language, just for you",
+          "hint": "Applied as soon as you save",
+          "languageHint": "Pick the interface language; it follows the browser by default."
+        },
+        "quotaRemind": {
+          "hint": "At most one reminder a day"
+        },
+        "accessToken": {
+          "title": "Access token",
+          "rowHint": "For the management API; not an API key for model calls",
+          "reset": "Regenerate",
+          "confirm": "Once regenerated, the previous access token stops working."
+        }
+      },
+      "sessions": {
+        "device": "Device",
+        "where": "Address & method"
+      }
+    },
+    "org": {
+      "label": "Organization settings groups",
+      "groups": {
+        "general": "General",
+        "generalDescription": "Organization profile and team budget",
+        "danger": "Danger zone",
+        "dangerDescription": "Leave, transfer and dissolve"
+      },
+      "cards": {
+        "profile": {
+          "description": "The name shows in members' context switcher",
+          "hint": "Changes apply to every member"
+        },
+        "budget": {
+          "hint": "The period follows the platform settings"
+        },
+        "danger": {
+          "description": "These actions affect every member"
+        }
+      }
+    }
   }
 }
