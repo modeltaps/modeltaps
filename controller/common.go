@@ -36,13 +36,27 @@ func shouldSendChannelDisableNotify(channelId int) bool {
 	if !config.RedisEnabled {
 		return true
 	}
-	key := fmt.Sprintf("notify_lock:channel_disable:%d", channelId)
-	ok, err := redis.RedisSetNX(key, "1", disableNotifyDedupTTL)
+	ok, err := redis.RedisSetNX(channelDisableNotifyLockKey(channelId), "1", disableNotifyDedupTTL)
 	if err != nil {
 		logger.SysError(fmt.Sprintf("notify dedup SETNX failed (channel=%d): %v", channelId, err))
 		return true
 	}
 	return ok
+}
+
+func channelDisableNotifyLockKey(channelId int) string {
+	return fmt.Sprintf("notify_lock:channel_disable:%d", channelId)
+}
+
+// clearChannelDisableNotifyLock drops the disable notice's de-dup lock once the channel is back,
+// so a new disable inside disableNotifyDedupTTL is still reported.
+func clearChannelDisableNotifyLock(channelId int) {
+	if !config.RedisEnabled {
+		return
+	}
+	if err := redis.RedisDel(channelDisableNotifyLockKey(channelId)); err != nil {
+		logger.SysError(fmt.Sprintf("notify dedup DEL failed (channel=%d): %v", channelId, err))
+	}
 }
 
 var disableGroup singleflight.Group
@@ -75,8 +89,18 @@ func shouldEnableChannel(err error, openAIErr *types.OpenAIErrorWithStatusCode) 
 	return true
 }
 
+// ShouldDisableChannel reports whether err should disable the channel automatically: the error
+// says the channel itself can no longer serve, and automatic disabling is turned on.
 func ShouldDisableChannel(channelType int, err *types.OpenAIErrorWithStatusCode) bool {
-	if !config.AutomaticDisableChannelEnabled || err == nil || err.LocalError {
+	return config.AutomaticDisableChannelEnabled && IsChannelUnusableError(channelType, err)
+}
+
+// IsChannelUnusableError reports whether err says the channel itself can no longer serve
+// requests: a rejected credential, an exhausted quota or balance, a disabled account, or a
+// message matching a disable keyword. It does not depend on automatic disabling being turned
+// on, so the relay can also use it to move a request to another channel.
+func IsChannelUnusableError(channelType int, err *types.OpenAIErrorWithStatusCode) bool {
+	if err == nil || err.LocalError {
 		return false
 	}
 
@@ -210,16 +234,26 @@ func channelDisableNotifyContent(channelId int, channelName string, modelName st
 	return fmt.Sprintf("Channel \"%s\" (#%d) has been disabled.%s Reason: %s", channelName, channelId, modelPart, utils.MaskSensitiveInfo(reason))
 }
 
-// enable & notify
-func EnableChannel(channelId int, channelName string, sendNotify bool) {
-	model.UpdateChannelStatusById(channelId, config.ChannelStatusEnabled)
-	if !sendNotify {
-		return
+// RecoverChannel puts an automatically disabled channel back into rotation after a check against
+// its upstream passed, and reports whether this call re-enabled it. Only the node whose update
+// changed the status goes on: it clears the disable notice's de-dup lock, so the channel failing
+// again soon after is reported again, and with sendNotify set it sends a re-enabled notice.
+func RecoverChannel(channelId int, channelName string, sendNotify bool) bool {
+	recovered, err := model.EnableAutoDisabledChannel(channelId)
+	if err != nil {
+		logger.SysError(fmt.Sprintf("RecoverChannel failed for channel %d: %v", channelId, err))
+		return false
 	}
-
-	subject := fmt.Sprintf("Channel \"%s\" (#%d) has been enabled", channelName, channelId)
-	content := fmt.Sprintf("Channel \"%s\" (#%d) has been enabled", channelName, channelId)
-	notify.SendKind(notify.KindChannelEnabled, subject, content)
+	if !recovered {
+		return false
+	}
+	clearChannelDisableNotifyLock(channelId)
+	if sendNotify {
+		subject := fmt.Sprintf("Channel \"%s\" (#%d) has been re-enabled", channelName, channelId)
+		content := fmt.Sprintf("Channel \"%s\" (#%d) passed a recovery check and is back in rotation.", channelName, channelId)
+		notify.SendKind(notify.KindChannelEnabled, subject, content)
+	}
+	return true
 }
 
 func RelayNotFound(c *gin.Context) {

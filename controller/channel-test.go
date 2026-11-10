@@ -545,7 +545,9 @@ func testAllChannels(isNotify bool, onlyAutoDisabled bool) error {
 				// 手动禁用的通道，不会自动恢复
 				if shouldEnableChannel(err, openaiErr) {
 					if channel.Status == config.ChannelStatusAutoDisabled {
-						EnableChannel(channel.Id, channel.Name, false)
+						// A manual run reports re-enabled channels in its summary; a scheduled
+						// run sends no summary, so each recovery gets its own notice.
+						RecoverChannel(channel.Id, channel.Name, !isNotify)
 						sb.WriteString("- Enabled \n\n")
 					} else {
 						sb.WriteString("- Manually disabled channel, will not be re-enabled automatically \n\n")
