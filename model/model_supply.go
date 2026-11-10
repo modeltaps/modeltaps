@@ -94,13 +94,15 @@ func GetModelSupplies(modelName string, channelId int) ([]*ModelSupply, error) {
 }
 
 // ModelSupplyView is a supply with the channel facts the console shows on every row. A
-// deleted channel leaves the name empty and the status 0.
+// deleted channel leaves the name and groups empty and the status 0.
 type ModelSupplyView struct {
 	*ModelSupply
 	ChannelName   string `json:"channel_name"`
 	ChannelStatus int    `json:"channel_status"`
 	ChannelType   int    `json:"channel_type"`
 	ChannelTag    string `json:"channel_tag"`
+	// ChannelGroup is the channel's comma-separated user groups.
+	ChannelGroup string `json:"channel_group"`
 }
 
 // GetModelSupplyViews lists supplies like GetModelSupplies, each with its channel's name,
@@ -121,7 +123,7 @@ func GetModelSupplyViews(modelName string, channelId int) ([]*ModelSupplyView, e
 	byId := map[int]*Channel{}
 	if len(ids) > 0 {
 		var channels []*Channel
-		if err := DB.Select("id", "name", "status", "type", "tag").Where("id IN ?", ids).Find(&channels).Error; err != nil {
+		if err := DB.Select("id", "name", "status", "type", "tag", "group").Where("id IN ?", ids).Find(&channels).Error; err != nil {
 			return nil, err
 		}
 		for _, ch := range channels {
@@ -133,6 +135,7 @@ func GetModelSupplyViews(modelName string, channelId int) ([]*ModelSupplyView, e
 		view := &ModelSupplyView{ModelSupply: s}
 		if ch := byId[s.ChannelId]; ch != nil {
 			view.ChannelName, view.ChannelStatus, view.ChannelType, view.ChannelTag = ch.Name, ch.Status, ch.Type, ch.Tag
+			view.ChannelGroup = ch.Group
 		}
 		views = append(views, view)
 	}

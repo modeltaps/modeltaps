@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useOrg } from 'contexts/OrgContext';
 import { useIsRoot } from 'utils/common';
-import { brandName } from 'utils/brand';
+import { brandWordmark } from 'utils/brand';
 import { formatFullAmount } from 'utils/compactAmount';
 import { useNotice } from 'ui-component/notice';
 import { DASHBOARD_URL, findActiveItem, isOrgAdminRole, navLabel, navSectionsFor } from './nav-config';
@@ -51,7 +51,7 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
 
   const sections = navSectionsFor({ context, orgRole, orgId: currentOrgId, isRoot });
   const activeId = findActiveItem(pathname)?.id;
-  const brand = brandName(siteInfo?.system_name);
+  const brand = brandWordmark(siteInfo?.system_name);
 
   // Balance: personal balance; in org context the pool for owners/admins, the member's own
   // balance otherwise (the pool is not visible to members). Hidden in platform admin.

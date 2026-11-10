@@ -26,7 +26,7 @@ const ORG_FILTER_PARAM_KEYS = ['keyword'];
 // ==============================|| PANEL — ORG ADMIN (site admin) ||============================== //
 // Site-level organization list (spec §3.8 / a8): list + enable/disable + dissolve; a row opens
 // the organization's panel (?id=) with pool balance adjustment and the member limit. Global org options moved to the Setting page
-// (`/panel/setting/org`, root-only) per IA-2/IA-4 — this page is a pure list now.
+// (`/panel/setting/orgpolicy`, root-only) per IA-2/IA-4 — this page is a pure list now.
 // Backend is /api/organization/* (RootAuth); route is wrapped in AdminGuard like
 // other admin pages and non-admins get the in-place 404.
 

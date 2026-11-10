@@ -231,6 +231,7 @@ func SetApiRouter(router *gin.Engine) {
 		supplyPauseRoute.Use(middleware.AdminAuth())
 		{
 			supplyPauseRoute.GET("/", controller.GetSupplyPauses)
+			supplyPauseRoute.GET("/rules", controller.GetPauseRules)
 			supplyPauseRoute.POST("/", controller.CreateSupplyPause)
 			supplyPauseRoute.DELETE("/:id", controller.DeleteSupplyPause)
 		}
@@ -239,6 +240,7 @@ func SetApiRouter(router *gin.Engine) {
 		modelSupplyRoute.Use(middleware.AdminAuth())
 		{
 			modelSupplyRoute.GET("/", controller.GetModelSupplies)
+			modelSupplyRoute.GET("/preview", controller.PreviewModelSupply)
 			modelSupplyRoute.POST("/", controller.CreateModelSupply)
 			modelSupplyRoute.PUT("/", controller.UpdateModelSupply)
 			modelSupplyRoute.DELETE("/:id", controller.DeleteModelSupply)

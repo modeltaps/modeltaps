@@ -147,6 +147,17 @@ func (cc *ChannelsChooser) SetCooldownsWithDuration(channelId int, modelName str
 	return true
 }
 
+// CooldownUntil returns the end of a short in-memory cooldown of modelName on channelId, if one
+// is running. Stored pauses are reported by ActivePauseFor instead.
+func (cc *ChannelsChooser) CooldownUntil(channelId int, modelName string) (int64, bool) {
+	value, ok := cc.Cooldowns.Load(fmt.Sprintf("%d:%s", channelId, modelName))
+	if !ok {
+		return 0, false
+	}
+	until := value.(int64)
+	return until, until > time.Now().Unix()
+}
+
 func (cc *ChannelsChooser) IsInCooldown(channelId int, modelName string) bool {
 	if channelId == 0 || modelName == "" {
 		return false

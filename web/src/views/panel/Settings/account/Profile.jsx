@@ -1,117 +1,109 @@
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { UserRound } from 'lucide-react';
 
 import { API } from 'utils/api';
 import { showError, showSuccess, trims } from 'utils/common';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
-import useSelfUser from './useSelfUser';
+import { FormCard } from '@/components/settings/cards';
 
 // ==============================|| SETTINGS — ACCOUNT / PROFILE ||============================== //
-// 头像、用户名、邮箱、用户组等只读信息 + 显示名称修改。额度三卡留在仪表盘,不在此重复。
+// Who you are (avatar, username, email, user group; read-only) and the display name, saved by the
+// card footer. Quota figures stay on the dashboard.
 
-export default function Profile() {
+export default function ProfileCard({ self }) {
   const { t } = useTranslation();
   const account = useSelector((state) => state.account);
-  const { inputs, reloadUser } = useSelfUser();
+  const { inputs, reloadUser } = self;
   const [userGroupMap, setUserGroupMap] = useState({});
+  const [displayName, setDisplayName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const saved = inputs.display_name || '';
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { isDirty, isSubmitting }
-  } = useForm({
-    defaultValues: { display_name: '' }
-  });
+  useEffect(() => setDisplayName(saved), [saved]);
 
   useEffect(() => {
-    reset({ display_name: inputs.display_name || '' });
-  }, [inputs.display_name, reset]);
-
-  useEffect(() => {
-    const loadUserGroup = async () => {
-      const res = await API.get('/api/user_group_map');
-      if (res.data?.success) setUserGroupMap(res.data.data || {});
-    };
-    loadUserGroup();
+    API.get('/api/user_group_map')
+      .then((res) => {
+        if (res.data?.success) setUserGroupMap(res.data.data || {});
+      })
+      .catch(() => {});
   }, []);
 
-  const onSubmit = async (values) => {
-    const displayName = trims(values.display_name || '');
+  const dirty = trims(displayName) !== saved;
+
+  const save = async () => {
+    const value = trims(displayName);
+    setSaving(true);
     try {
-      const res = await API.put('/api/user/self', { ...inputs, display_name: displayName, password: '' });
+      const res = await API.put('/api/user/self', { ...inputs, display_name: value, password: '' });
       const { success, message } = res.data;
       if (success) {
         showSuccess(t('profilePage.updateSuccess'));
-        reset({ display_name: displayName });
-        reloadUser();
+        await reloadUser();
       } else {
         showError(message);
       }
     } catch (err) {
       showError(err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const groupInfo = () => {
-    const g = inputs.group ? userGroupMap[inputs.group] : null;
-    if (!g) return <Badge variant="outline">{inputs.group || 'default'}</Badge>;
-    return (
-      <div className="inline-block max-w-full rounded-md border border-primary px-3 py-2 text-left">
-        <p className="break-words text-sm font-semibold text-primary">{g.name}</p>
-        <p className="text-xs text-muted-foreground">
-          {t('profilePage.rate')}: {g.ratio} / {t('profilePage.speed')}: {g.api_rate}
-        </p>
-      </div>
-    );
-  };
+  const group = inputs.group ? userGroupMap[inputs.group] : null;
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-5">
-            <span className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted">
-              {account.user?.avatar_url ? (
-                <img src={account.user.avatar_url} alt={inputs.username} className="size-full object-cover" />
-              ) : (
-                <UserRound className="h-3/4 w-3/4 text-muted-foreground" />
-              )}
-            </span>
-            <div className="min-w-0 space-y-1 text-center sm:text-left">
-              <p className="text-xl font-semibold">{inputs.username}</p>
-              {inputs.email && <p className="break-words text-sm text-muted-foreground">{inputs.email}</p>}
-              {inputs.phone_number && <p className="text-sm text-muted-foreground">{inputs.phone_number}</p>}
-              {groupInfo()}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">{t('profilePage.personalInfo')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <FormField label={t('profilePage.displayName')} htmlFor="display_name">
-              <Input id="display_name" placeholder={t('profilePage.inputDisplayNamePlaceholder')} {...register('display_name')} />
-            </FormField>
-            <div className="flex justify-end">
-              <Button type="submit" disabled={!isDirty || isSubmitting}>
-                {t('common.save')}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <FormCard
+      title={t('settingsUi.personal.cards.profile.title')}
+      description={t('settingsUi.personal.cards.profile.description')}
+      hint={t('settingsUi.personal.cards.profile.hint')}
+      highlight="profile"
+      dirty={dirty}
+      saving={saving}
+      onSave={save}
+      onReset={() => setDisplayName(saved)}
+    >
+      <div className="flex items-center gap-4">
+        <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted">
+          {account.user?.avatar_url ? (
+            <img src={account.user.avatar_url} alt={inputs.username} className="size-full object-cover" />
+          ) : (
+            <UserRound className="h-3/4 w-3/4 text-muted-foreground" />
+          )}
+        </span>
+        <div className="min-w-0 space-y-0.5">
+          <p className="truncate font-mono text-sm font-medium">{inputs.username}</p>
+          {inputs.email && <p className="truncate text-sm text-muted-foreground">{inputs.email}</p>}
+          {inputs.phone_number && <p className="text-sm text-muted-foreground">{inputs.phone_number}</p>}
+          <p className="text-xs text-muted-foreground">
+            {t('profilePage.group')}:{' '}
+            {group
+              ? `${group.name} · ${t('profilePage.rate')} ${group.ratio} / ${t('profilePage.speed')} ${group.api_rate}`
+              : inputs.group || 'default'}
+          </p>
+        </div>
+      </div>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <FormField label={t('profilePage.displayName')} htmlFor="display_name">
+          <Input
+            id="display_name"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder={t('profilePage.inputDisplayNamePlaceholder')}
+          />
+        </FormField>
+        <FormField label={t('settingsUi.personal.username')} htmlFor="username">
+          <Input id="username" className="font-mono" value={inputs.username || ''} disabled readOnly />
+        </FormField>
+      </div>
+    </FormCard>
   );
 }
+
+ProfileCard.propTypes = {
+  self: PropTypes.shape({ inputs: PropTypes.object, reloadUser: PropTypes.func }).isRequired
+};

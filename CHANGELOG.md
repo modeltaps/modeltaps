@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Console endpoints for the model supply pages. `GET /api/model_supply/preview?model=&group=`
+  shows in which order a request for a public model would try its supplies, tier by tier, with
+  each supply's state (available, paused until, waiting for its recovery test, cooling down,
+  disabled, channel disabled), its share of the tier's traffic, and which supply takes the next
+  request when that is certain; it also works before `ModelSupplyEnabled` is on and says so.
+  `GET /api/supply_pause/rules` returns the pause rules in effect and the built-in defaults, and
+  a channel's own rules with `channel_id`. Channels can carry their own pause rules
+  (`pause_rules`), tried before the site-wide ones; invalid rules are refused on save, and
+  saving a channel without the field keeps them. The supply list also returns each channel's
+  groups. With `ModelSupplyEnabled` on, the public model list (`/api/model_info/`, used by the
+  pricing page) shows published models only.
 - Pause rules for failing channels, on by default (`PauseRulesEnabled`). When a request fails,
   the first matching rule decides what happens to the channel: an exhausted quota or balance
   (402, `insufficient_quota`, `billing_not_active`, "credit balance is too low" and similar)
@@ -158,7 +169,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   logs, then a Develop group (API keys, models, playground, docs) and, for organization owners and
   admins, an Organization group (members and budgets, billing, organization settings). The five
   API consoles are one Playground item with a modality switch on the page; analytics and per-user
-  statistics are one Statistics item with a tab switch. The seven platform settings themes,
+  statistics are one Statistics item with a tab switch. The platform settings groups,
   personal settings and organization settings each get a section list on the left of the page
   instead of sidebar entries. The bottom of the sidebar shows the balance, the account row (with
   personal settings, appearance, language, docs and log out) and notifications. URLs are unchanged.
@@ -168,6 +179,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   image and the documentation site's logo and favicon use the same shape. It is drawn on whole-pixel
   grids at 12, 16 and 20 px and shown as pre-rendered bitmaps in the interface and as PNG
   favicons, so its edges stay smooth on standard-density screens.
+- Platform, organization and personal settings are one kind of page with three kinds of cards.
+  A form card saves everything in it, switches and its on/off switch included, from its footer
+  (Undo and Save); nothing saves the moment it is clicked any more, and no card has several save
+  buttons. Lists of objects (OIDC providers, payment gateways, the Telegram bot menu, chat links,
+  login sessions) are collection cards whose rows open an editor that saves the item on its own.
+  One-off actions (purging logs, monthly invoices, transferring or dissolving an organization)
+  are action rows with a confirmation. Groups with unsaved cards get a dot in the section list,
+  leaving the page with unsaved changes asks first, and pages with more than three groups have a
+  settings search that also finds fields, hints and list entries in other groups.
+- Platform settings are regrouped into Site, Sign-in & registration, Billing, Payments, Gateway,
+  Logs & privacy, Notifications & integrations and Organization policy (root only); mail sending
+  moves to Notifications & integrations and the provider icon library into Branding. Old group
+  and section links (`relay`, `integrations`, `organization`, `?tab=`, `?highlight=` of a card
+  that moved) redirect to the new place, and the command palette lists the groups and, while
+  typing, every card. Gateway gets a supply pause rules card (on/off switch and custom rules
+  as JSON), and the notification switches cover paused, resumed and failed-over supplies.
+- Invite codes have their own page under Finance in platform admin (`/panel/invite_code`); the
+  settings keep the "registration requires an invite code" switch with a link to it.
+- Personal access tokens move into Sign-in & security, and the organization team budget joins
+  the organization profile under General; members and budgets stay their own page.
 
 ### Fixed
 

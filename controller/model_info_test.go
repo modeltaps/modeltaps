@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/model"
 
 	"github.com/gin-gonic/gin"
@@ -461,5 +462,27 @@ func TestUpdateModelInfoKeepsSupplyFields(t *testing.T) {
 		if w := putModelInfo(t, body); w.Code != http.StatusBadRequest {
 			t.Errorf("%s: status %d, want 400 (%s)", body, w.Code, w.Body.String())
 		}
+	}
+}
+
+// With supplies routing, the public catalog lists published models only.
+func TestPublicCatalogFollowsStatusWithSupplies(t *testing.T) {
+	old := config.ModelSupplyEnabled
+	config.ModelSupplyEnabled = true
+	t.Cleanup(func() { config.ModelSupplyEnabled = old })
+	routable := map[string]map[string]bool{"pub": {"default": true}, "drafted": {"default": true}, "old": {"default": true}, "hidden-pub": {"default": true}}
+	infos := []*model.ModelInfo{
+		{Model: "pub", Status: model.ModelStatusPublished},
+		{Model: "drafted", Status: model.ModelStatusDraft},
+		{Model: "old", Status: model.ModelStatusRetired},
+		// hidden is no longer read once status decides
+		{Model: "hidden-pub", Status: model.ModelStatusPublished, Hidden: true},
+	}
+	listed := map[string]bool{}
+	for _, info := range visibleModelInfos(infos, routable) {
+		listed[info.Model] = true
+	}
+	if !listed["pub"] || !listed["hidden-pub"] || listed["drafted"] || listed["old"] {
+		t.Fatalf("listed = %v, want the two published models", listed)
 	}
 }

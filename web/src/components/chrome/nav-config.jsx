@@ -1,3 +1,4 @@
+import { PLATFORM_GROUPS, cardTitleKey, groupLabelKey, settingsGroupUrl } from 'views/panel/Setting/registry';
 import {
   Activity,
   BarChart3,
@@ -5,6 +6,7 @@ import {
   Boxes,
   Building2,
   FileText,
+  MailPlus,
   KeyRound,
   LayoutDashboard,
   Network,
@@ -93,7 +95,7 @@ export const workbenchSections = [
       {
         id: 'org_members',
         url: `/panel/settings/org/${ORG_PARAM}/members`,
-        match: [/^\/panel\/settings\/org\/[^/]+\/(members|budget)(\/|$)/],
+        match: [/^\/panel\/settings\/org\/[^/]+\/members(\/|$)/],
         icon: UsersRound,
         labelKey: 'nav.items.orgMembers',
         orgAdmin: true
@@ -102,7 +104,7 @@ export const workbenchSections = [
       {
         id: 'org_settings',
         url: `/panel/settings/org/${ORG_PARAM}/general`,
-        match: [/^\/panel\/settings\/org\/[^/]+\/general(\/|$)/],
+        match: [/^\/panel\/settings\/org\/[^/]+\/(general|danger|budget)(\/|$)/],
         icon: Settings,
         labelKey: 'nav.items.orgSettings',
         orgAdmin: true
@@ -145,14 +147,15 @@ export const adminSections = [
     labelKey: 'nav.sections.finance',
     items: [
       { id: 'payment', url: url('payment'), icon: Wallet, labelKey: 'nav.items.orders' },
-      { id: 'redemption', url: url('redemption'), icon: Ticket, labelKey: 'nav.items.redemption' }
+      { id: 'redemption', url: url('redemption'), icon: Ticket, labelKey: 'nav.items.redemption' },
+      { id: 'invite_code', url: url('invite_code'), icon: MailPlus, labelKey: 'nav.items.inviteCodes' }
     ]
   },
   {
     id: 'admin_settings',
     labelKey: 'nav.sections.settings',
     items: [
-      // One item for the platform settings; its themes are an in-page subnav.
+      // One item for the platform settings; its groups are an in-page subnav.
       { id: 'platform_settings', url: url('setting'), icon: SlidersHorizontal, labelKey: 'nav.items.platformSettings' }
     ]
   }
@@ -300,9 +303,38 @@ export function commandSections({ isAdmin = false, isRoot = false, orgId = null,
   if (!isAdmin) return sections;
   const admin = navSectionsFor({ context: 'admin', isRoot }).flatMap((section) => section.items);
   const home = { id: 'admin_home', icon: ShieldUser, labelKey: 'nav.context.admin', href: firstAdminUrl({ isRoot }) };
-  return [...sections, { id: 'admin', admin: true, labelKey: 'nav.context.admin', items: [home, ...admin] }];
+  return [
+    ...sections,
+    { id: 'admin', admin: true, labelKey: 'nav.context.admin', items: [home, ...admin] },
+    { id: 'platform_settings', admin: true, labelKey: 'nav.items.platformSettings', items: settingsCommandItems({ isRoot }) }
+  ];
+}
+
+// Command palette entries for the platform settings: one per group, and one per card that only
+// shows while typing (`searchOnly`), so the palette indexes the cards without listing ~40 of them.
+export function settingsCommandItems({ isRoot = false } = {}) {
+  const groups = PLATFORM_GROUPS.filter((group) => !group.rootOnly || isRoot);
+  const groupItems = groups.map((group) => ({
+    id: `setting_${group.id}`,
+    icon: SlidersHorizontal,
+    labelKey: groupLabelKey(group.id),
+    prefixKey: 'nav.items.platformSettings',
+    href: settingsGroupUrl(group.id)
+  }));
+  const cardItems = groups.flatMap((group) =>
+    group.cards.map((card) => ({
+      id: `setting_card_${card.id}`,
+      icon: SlidersHorizontal,
+      labelKey: cardTitleKey(card.id),
+      prefixKey: groupLabelKey(group.id),
+      searchOnly: true,
+      href: `${settingsGroupUrl(group.id)}?highlight=${card.id}`
+    }))
+  );
+  return [...groupItems, ...cardItems];
 }
 
 export function navLabel(t, item) {
-  return t(item.labelKey);
+  const label = t(item.labelKey);
+  return item.prefixKey ? `${t(item.prefixKey)} · ${label}` : label;
 }

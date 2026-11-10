@@ -67,6 +67,10 @@ type Channel struct {
 	// DriftIgnoreRules lists upstream models the drift check never reports as new, one per line:
 	// an exact name, a glob with * (for example *-preview), or a regular expression after "re:".
 	DriftIgnoreRules string `json:"drift_ignore_rules" form:"drift_ignore_rules" gorm:"type:text"`
+	// PauseRules are this channel's own pause rules as JSON (see PauseRule). They are tried
+	// before the site-wide rules; empty means only the site-wide rules apply. Nil in an update
+	// keeps the stored value, since the console saves channels whole.
+	PauseRules *string `json:"pause_rules,omitempty" gorm:"type:text"`
 	// DriftAutoAdd adds new upstream models (not ignored) to the channel's models when the
 	// drift check finds them, instead of only reporting them.
 	DriftAutoAdd bool `json:"drift_auto_add" form:"drift_auto_add" gorm:"default:false"`
@@ -609,6 +613,9 @@ func (channel *Channel) UpdateRaw(overwrite bool) error {
 		// 编辑时 key 留空表示保留原 key，Select("*") 不能把它覆盖成空串
 		if channel.Key == "" {
 			omit = append(omit, "Key")
+		}
+		if channel.PauseRules == nil {
+			omit = append(omit, "PauseRules")
 		}
 		err = DB.Model(channel).Select("*").Omit(omit...).Updates(channel).Error
 	} else {

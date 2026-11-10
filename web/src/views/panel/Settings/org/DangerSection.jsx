@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
+import { ArrowRightLeft, LogOut, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { ActionCard, ActionRow } from '@/components/settings/cards';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from '@/components/ui/dialog';
@@ -13,8 +14,9 @@ import { showError, showSuccess } from 'utils/common';
 import { useOrg } from 'contexts/OrgContext';
 
 // ==============================|| SETTINGS — ORG DANGER ZONE ||============================== //
-// 退出组织(任意成员,Owner 须先转让);转让所有权 / 解散组织(仅 Owner)。后端同样校验。
-// 设置页可管理的组织未必是左上角的当前上下文,仅当两者一致时才回落到个人上下文。
+// Action rows: leave (any member; the owner transfers first), transfer ownership and dissolve
+// (owner only; the backend checks too). The organization on this page is not necessarily the
+// active context, so only leaving or dissolving the active one drops back to personal context.
 
 export default function DangerSection({ orgId, role, detail, onRefresh }) {
   const { t } = useTranslation();
@@ -113,49 +115,38 @@ export default function DangerSection({ orgId, role, detail, onRefresh }) {
 
   return (
     <>
-      <Card className="space-y-4 border-destructive/40 p-6">
-        <h3 className="text-base font-semibold text-destructive">{t('orgPage.settings.dangerZone')}</h3>
-
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-0.5">
-            <p className="text-sm font-medium">{t('orgPage.settings.leave')}</p>
-            <p className="text-xs text-muted-foreground">{isOwner ? t('orgPage.settings.leaveOwnerHint') : t('orgPage.settings.leaveConfirm')}</p>
-          </div>
-          <Button variant="outline" className="shrink-0" disabled={isOwner} onClick={() => setLeaveOpen(true)}>
-            {t('orgPage.settings.leave')}
-          </Button>
-        </div>
-
+      <ActionCard title={t('orgPage.settings.dangerZone')} description={t('settingsUi.org.cards.danger.description')} highlight="danger">
+        <ActionRow
+          icon={LogOut}
+          title={t('orgPage.settings.leave')}
+          description={isOwner ? t('orgPage.settings.leaveOwnerHint') : t('orgPage.settings.leaveConfirm')}
+          actionLabel={t('orgPage.settings.leave')}
+          disabled={isOwner}
+          onAction={() => setLeaveOpen(true)}
+        />
         {isOwner && (
           <>
-            <div className="flex flex-col gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-0.5">
-                <p className="text-sm font-medium">{t('orgPage.settings.transferOwnership')}</p>
-                <p className="text-xs text-muted-foreground">{t('orgPage.settings.transferOwnershipDesc')}</p>
-              </div>
-              <Button variant="outline" className="shrink-0" onClick={() => setTransferOpen(true)}>
-                {t('orgPage.settings.transferOwnership')}
-              </Button>
-            </div>
-            <div className="flex flex-col gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-0.5">
-                <p className="text-sm font-medium">{t('orgPage.settings.dissolve')}</p>
-                <p className="text-xs text-muted-foreground">{t('orgPage.settings.dissolveDesc')}</p>
-              </div>
-              <Button
-                variant="destructive"
-                className="shrink-0"
-                onClick={() => {
-                  setDissolveName('');
-                  setDissolveOpen(true);
-                }}
-              >
-                {t('orgPage.settings.dissolve')}
-              </Button>
-            </div>
+            <ActionRow
+              icon={ArrowRightLeft}
+              title={t('orgPage.settings.transferOwnership')}
+              description={t('orgPage.settings.transferOwnershipDesc')}
+              actionLabel={t('orgPage.settings.transferOwnership')}
+              onAction={() => setTransferOpen(true)}
+            />
+            <ActionRow
+              icon={Trash2}
+              title={t('orgPage.settings.dissolve')}
+              description={t('orgPage.settings.dissolveDesc')}
+              actionLabel={t('orgPage.settings.dissolve')}
+              destructive
+              onAction={() => {
+                setDissolveName('');
+                setDissolveOpen(true);
+              }}
+            />
           </>
         )}
-      </Card>
+      </ActionCard>
 
       <Dialog open={leaveOpen} onOpenChange={setLeaveOpen}>
         <DialogContent>
