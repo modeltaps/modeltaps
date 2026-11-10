@@ -924,7 +924,9 @@
     "copyFailedManual": "复制失败，请手动复制：",
     "copyNamedFailed": "复制{{name}}失败，请手动复制：",
     "secretConfigured": "已配置 {{masked}}",
-    "secretKeepHint": "留空则保持原值不变"
+    "secretKeepHint": "留空则保持原值不变",
+    "reload": "重新加载",
+    "reloadHint": "重新加载页面后继续。如果反复出现，请联系管理员。"
   },
   "Log Context": "日志上下文",
   "View Context": "查看上下文",

@@ -945,7 +945,9 @@
     "submit": "Submit",
     "unknown": "Unknown",
     "secretConfigured": "Configured {{masked}}",
-    "secretKeepHint": "Leave blank to keep the existing value"
+    "secretKeepHint": "Leave blank to keep the existing value",
+    "reload": "Reload",
+    "reloadHint": "Reload the page to continue. If this keeps happening, contact the administrator."
   },
   "Log Context": "Log Context",
   "View Context": "View Context",
