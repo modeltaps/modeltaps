@@ -174,7 +174,9 @@ const GF_CSS = `
 .gf-near { transform: translate3d(calc(var(--gf-x) * 8px), calc(var(--gf-y) * 5px), 0); }
 
 .gf-speck { fill: color-mix(in srgb, var(--foreground) 22%, transparent); }
-.gf-line { stroke: color-mix(in srgb, var(--foreground) 22%, transparent); stroke-width: 1px; vector-effect: non-scaling-stroke; stroke-dasharray: 1; stroke-dashoffset: 1; animation: gf-draw 1100ms var(--gf-ease) forwards; }
+/* No vector-effect here: with non-scaling-stroke the dash is measured in screen pixels while
+   pathLength is in user units, so on a large screen the draw-in stops short of the path's end. */
+.gf-line { stroke: color-mix(in srgb, var(--foreground) 22%, transparent); stroke-width: 0.7; stroke-dasharray: 1; stroke-dashoffset: 1; animation: gf-draw 1100ms var(--gf-ease) forwards; }
 .gf-ring { stroke: color-mix(in srgb, var(--foreground) 34%, transparent); stroke-width: 1px; vector-effect: non-scaling-stroke; stroke-dasharray: 3 4; opacity: 0; animation: gf-fade 700ms var(--gf-ease) 700ms forwards; }
 
 .gf-particles { opacity: 0; animation: gf-fade 900ms var(--gf-ease) 1300ms forwards; }
