@@ -2916,7 +2916,8 @@
   "home": {
     "hero": {
       "tagline": "Every model. One tap.",
-      "ctaPrimary": "Get API key"
+      "ctaPrimary": "Get API key",
+      "catchphrase": "Just turn it on."
     }
   }
 }
