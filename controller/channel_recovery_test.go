@@ -19,6 +19,25 @@ import (
 	"go.uber.org/zap"
 )
 
+// waitTestAllChannelsDone waits for the run testAllChannels started on its own goroutine.
+func waitTestAllChannelsDone(t *testing.T) {
+	t.Helper()
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		testAllChannelsLock.Lock()
+		running := testAllChannelsRunning
+		testAllChannelsLock.Unlock()
+		if !running {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Error("the channel test run did not finish")
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
 func (r *recordingNotifier) countContaining(part string) int {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -122,6 +141,10 @@ func TestScheduledRecoveryCheckNotifiesReEnabledChannel(t *testing.T) {
 	oldEnable := config.AutomaticEnableChannelEnabled
 	config.AutomaticEnableChannelEnabled = true
 	t.Cleanup(func() { config.AutomaticEnableChannelEnabled = oldEnable })
+	// Repeated runs (-count) would otherwise reach the hourly limit and drop the notice.
+	oldLimit := config.NotifyKindLimitPerHour
+	config.NotifyKindLimitPerHour = 0
+	t.Cleanup(func() { config.NotifyKindLimitPerHour = oldLimit })
 
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -145,6 +168,10 @@ func TestScheduledRecoveryCheckNotifiesReEnabledChannel(t *testing.T) {
 
 	title := fmt.Sprintf("(#%d) has been re-enabled", channel.Id)
 	before := testNotifier.countContaining(title)
+	// The check runs on its own goroutine and still records the response time after the
+	// notice; registered last, this cleanup runs first and keeps the database in place until
+	// the run is over.
+	t.Cleanup(func() { waitTestAllChannelsDone(t) })
 	if err := testAllChannels(false, true); err != nil {
 		t.Fatal(err)
 	}
