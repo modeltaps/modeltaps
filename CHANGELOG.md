@@ -88,6 +88,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Channels that list a wildcard model such as `gpt-4o*` now send the requested model upstream
+  (`gpt-4o-mini`) instead of the literal pattern. The pattern was also the name billing looked
+  up, so with the default unpriced-model policy these requests were rejected with "has no
+  configured price" before reaching the provider. A channel's model mapping may name the
+  requested model or the pattern; the requested model's entry wins.
+- The channel that failed last in a request is now cooled down as well, when retries are turned
+  off or the retry budget runs out before the channels do. A rate-limited primary was otherwise
+  picked again by the next request. Sessions held on their channel by strict session affinity
+  are left where they are.
+- A provider error that is not retried is counted once in the `provider_requests_total` metric
+  instead of twice.
+- Saving a setting now reports a database error instead of applying the value in memory only,
+  where it looked saved until the next restart or sync.
 - A request whose channel turns out to be out of quota or credit now moves to the next channel
   instead of failing. Some providers report an empty balance as a 400 (for example "Your credit
   balance is too low"), which ended the request on every channel type except Anthropic, even
