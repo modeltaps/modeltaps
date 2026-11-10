@@ -1,9 +1,9 @@
 import { useRef } from 'react';
 import PropTypes from 'prop-types';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { Bell, Wallet } from 'lucide-react';
+import { Bell } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -21,7 +21,7 @@ import { CollapseButton, SidebarIconButton, SidebarSearch } from './SidebarContr
 // ==============================|| CHROME — SIDEBAR (one shell, three contexts) ||============================== //
 // Every panel page uses this sidebar. Top: brand row, context switcher (personal / org /
 // platform admin), search. Middle: the menu of the current context (nav-config). Bottom:
-// balance row (workbench only), the account row and the notification bell.
+// the account row (its menu carries the balance and the platform admin entry) and the bell.
 // Shared by the desktop rail and the mobile drawer; `collapsed` switches the desktop rail to
 // an icon column.
 
@@ -35,12 +35,11 @@ try {
 const rowBase =
   'group flex w-full items-center rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 // Active: a subtle raised surface with a hairline, no fill colour or indicator bar.
-const rowActive = 'bg-card font-medium text-foreground shadow-[inset_0_0_0_1px_var(--border)]';
-const rowIdle = 'text-foreground/85 hover:bg-muted hover:text-foreground';
+const rowActive = 'bg-sidebar-accent font-medium text-foreground shadow-[inset_0_0_0_1px_var(--border)]';
+const rowIdle = 'text-foreground/85 hover:bg-sidebar-accent/70 hover:text-foreground';
 
 export default function Sidebar({ context, collapsed = false, onItemClick, onToggleCollapse, onOpenCommand }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { pathname } = useLocation();
   const { openNotice } = useNotice();
   const { currentOrgId, orgRole, orgDetail, orgRoutingPolicyEnabled } = useOrg();
@@ -60,24 +59,25 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
   const brand = brandWordmark(siteInfo?.system_name);
 
   // Balance: personal balance; in org context the pool for owners/admins, the member's own
-  // balance otherwise (the pool is not visible to members). Hidden in platform admin.
+  // balance otherwise (the pool is not visible to members). Hidden in platform admin. It is shown
+  // in the account menu, not as a sidebar row.
   const orgActive = context === 'org';
   const isOrgAdmin = isOrgAdminRole(orgRole);
   const quotaPerUnit = Number(localStorage.getItem('quota_per_unit')) || 500000;
   const showPool = orgActive && isOrgAdmin;
-  const canOpenBilling = !orgActive || isOrgAdmin;
-  const balanceLabel = showPool ? t('nav.balance.pool') : orgActive ? t('nav.balance.mine') : t('nav.balance.personal');
   const balanceAmount = showPool
     ? typeof orgDetail?.quota === 'number'
       ? orgDetail.quota / quotaPerUnit
       : null
     : (user?.quota || 0) / quotaPerUnit;
-  const balanceValue = balanceAmount === null ? '—' : formatFullAmount(balanceAmount);
-
-  const goBilling = () => {
-    onItemClick?.();
-    navigate('/panel/billing');
-  };
+  const balance =
+    context === 'admin'
+      ? null
+      : {
+          label: showPool ? t('nav.balance.pool') : orgActive ? t('nav.balance.mine') : t('nav.balance.personal'),
+          value: balanceAmount === null ? '—' : formatFullAmount(balanceAmount),
+          href: !orgActive || isOrgAdmin ? '/panel/billing' : null
+        };
 
   const renderItem = (item) => {
     const Icon = item.icon;
@@ -115,41 +115,6 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
     );
   };
 
-  const renderBalance = () => {
-    if (context === 'admin') return null;
-    const text = `${balanceLabel} ${balanceValue}`;
-    if (collapsed) {
-      const icon = <Wallet className="size-[1.125rem]" />;
-      return canOpenBilling ? (
-        <SidebarIconButton label={text} tooltip={text} side="right" onClick={goBilling} className="size-9">
-          {icon}
-        </SidebarIconButton>
-      ) : (
-        <span title={text} aria-label={text} className="flex size-9 items-center justify-center text-muted-foreground">
-          {icon}
-        </span>
-      );
-    }
-    const content = (
-      <>
-        <span className="text-[13px] text-muted-foreground">{balanceLabel}</span>
-        <span className="truncate font-medium tabular-nums text-foreground">{balanceValue}</span>
-      </>
-    );
-    const cls = 'flex h-9 w-full items-center justify-between gap-3 rounded-lg px-3 text-sm';
-    return canOpenBilling ? (
-      <button
-        type="button"
-        onClick={goBilling}
-        className={cn(cls, 'transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring')}
-      >
-        {content}
-      </button>
-    ) : (
-      <div className={cls}>{content}</div>
-    );
-  };
-
   const noticeLabel = t('notice.title', { defaultValue: 'Notifications' });
   const bell = (
     <SidebarIconButton
@@ -167,7 +132,7 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
 
   return (
     <TooltipProvider delayDuration={150}>
-      <div className="flex h-full flex-col bg-background">
+      <div className="flex h-full flex-col bg-sidebar">
         {/* Brand row; the collapse button sits at its end (the drawer uses it to close). */}
         {collapsed ? (
           <div className="flex h-12 shrink-0 items-center justify-center">
@@ -183,13 +148,13 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
               className="flex min-w-0 flex-1 items-center gap-2.5 text-foreground transition-opacity hover:opacity-90"
             >
               <LogoMark size={20} />
-              <span className="truncate text-[17px] font-semibold leading-none tracking-tight">{brand}</span>
+              <span className="truncate text-[17px] font-semibold leading-none tracking-[0.01em]">{brand}</span>
             </Link>
             {onToggleCollapse && <CollapseButton onClick={onToggleCollapse} />}
           </div>
         )}
 
-        <div className={cn('shrink-0 space-y-0.5', collapsed ? 'flex flex-col items-center gap-1 px-1' : 'px-2')}>
+        <div className={cn('flex shrink-0 flex-col pb-1', collapsed ? 'items-center gap-1 px-1' : 'gap-2 px-2')}>
           <ContextSwitcher context={context} collapsed={collapsed} onNavigate={onItemClick} />
           <SidebarSearch collapsed={collapsed} onClick={onOpenCommand} />
         </div>
@@ -210,15 +175,14 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
         </nav>
 
         <div className={cn('shrink-0 border-t border-border/70 p-2', collapsed && 'flex flex-col items-center gap-1')}>
-          {renderBalance()}
           {collapsed ? (
             <>
-              <AccountMenu collapsed onNavigate={onItemClick} />
+              <AccountMenu collapsed context={context} balance={balance} onNavigate={onItemClick} />
               {bell}
             </>
           ) : (
-            <div ref={footerRef} className="mt-0.5 flex items-center gap-1">
-              <AccountMenu anchorRef={footerRef} onNavigate={onItemClick} />
+            <div ref={footerRef} className="flex items-center gap-1">
+              <AccountMenu anchorRef={footerRef} context={context} balance={balance} onNavigate={onItemClick} />
               {bell}
             </div>
           )}
