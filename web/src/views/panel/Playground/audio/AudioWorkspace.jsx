@@ -45,7 +45,7 @@ import { canRecordAudio, isPlayableSpeechFormat, speechFileName } from './useAud
 
 const sessionShape = PropTypes.object;
 
-const CARD = 'space-y-3 rounded-2xl border border-border bg-card p-3 shadow-sm';
+const CARD = 'space-y-3 rounded-2xl border border-border bg-card p-3';
 
 const SEG_CLASS = 'rounded-full px-3 py-1.5 text-sm font-medium transition-colors';
 

@@ -336,9 +336,7 @@ export default function Login() {
           {showForm && (
             <div className="flex items-center gap-3 py-4">
               <span className="h-px flex-1 bg-border" />
-              <span className="text-xs font-medium text-muted-foreground">
-                {t('login.or', { defaultValue: 'or' })}
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">{t('login.or', { defaultValue: 'or' })}</span>
               <span className="h-px flex-1 bg-border" />
             </div>
           )}

@@ -22,7 +22,7 @@ export default function FactsSection() {
             }
           >
             <p className="font-mono text-[12px] text-muted-foreground">{t(`home.facts.${key}.label`)}</p>
-            <h2 className="mt-3 text-xl font-semibold leading-snug text-foreground">{t(`home.facts.${key}.title`)}</h2>
+            <h2 className="mt-3 text-xl font-medium leading-snug text-foreground">{t(`home.facts.${key}.title`)}</h2>
             <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">{t(`home.facts.${key}.desc`)}</p>
           </div>
         ))}

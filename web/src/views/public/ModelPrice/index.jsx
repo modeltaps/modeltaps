@@ -611,9 +611,7 @@ export default function ModelPrice({ embedded = false, initialModality }) {
     value: key,
     label: group.name,
     badge: (
-      <span
-        className="ml-auto rounded-sm bg-muted px-1 py-0.5 text-[0.6875rem] font-medium tabular-nums text-muted-foreground"
-      >
+      <span className="ml-auto rounded-sm bg-muted px-1 py-0.5 text-[0.6875rem] font-medium tabular-nums text-muted-foreground">
         {group.ratio > 0 ? `x${group.ratio}` : t('modelpricePage.free')}
       </span>
     )
@@ -841,7 +839,9 @@ export default function ModelPrice({ embedded = false, initialModality }) {
                                   <Copy className="size-4" />
                                 </button>
                                 {getTags(model.modelInfo?.tags).some((tag) => tag.toLowerCase() === 'hot') && (
-                                  <span className="rounded-sm bg-muted px-1.5 py-0.5 text-[0.6875rem] font-medium text-foreground">Hot</span>
+                                  <span className="rounded-sm bg-muted px-1.5 py-0.5 text-[0.6875rem] font-medium text-foreground">
+                                    Hot
+                                  </span>
                                 )}
                               </div>
                               <div className="flex flex-wrap gap-1">

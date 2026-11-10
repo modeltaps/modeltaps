@@ -40,7 +40,7 @@ export default function ComposerBar({
   };
 
   return (
-    <div className={cn('rounded-2xl border border-border bg-card px-2 py-3 shadow-sm sm:px-3', className)}>
+    <div className={cn('rounded-2xl border border-border bg-card px-2 py-3 sm:px-3', className)}>
       {disabledReason && <p className="mb-2 text-xs text-muted-foreground">{disabledReason}</p>}
 
       <Textarea

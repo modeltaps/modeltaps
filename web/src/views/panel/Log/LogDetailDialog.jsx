@@ -294,9 +294,7 @@ function ProviderResponsesChart({ item, t }) {
               {/* Row 1: provider label (name + 200) | timeline | seconds */}
               <div className="flex items-center gap-1.5">
                 <span className="text-sm font-medium text-foreground">{providerName}</span>
-                <span className="shrink-0 rounded-sm bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums text-foreground">
-                  200
-                </span>
+                <span className="shrink-0 rounded-sm bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums text-foreground">200</span>
               </div>
               <div className="relative h-5 overflow-hidden rounded bg-muted">
                 <div className="absolute inset-y-0 left-0 rounded-l bg-emerald-500" style={{ width: `${hasTTFT ? ttftPct : 100}%` }} />

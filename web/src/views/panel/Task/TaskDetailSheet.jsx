@@ -105,16 +105,12 @@ export default function TaskDetailSheet({ item, t, onClose }) {
 
           {suno ? (
             <section>
-              <h3 className="mb-2 text-xs font-medium text-muted-foreground">
-                {t('suno.music', { defaultValue: 'Music' })}
-              </h3>
+              <h3 className="mb-2 text-xs font-medium text-muted-foreground">{t('suno.music', { defaultValue: 'Music' })}</h3>
               <SunoMusic items={item.data} t={t} />
             </section>
           ) : item.data ? (
             <section>
-              <h3 className="mb-2 text-xs font-medium text-muted-foreground">
-                {t('suno.response', { defaultValue: 'Response' })}
-              </h3>
+              <h3 className="mb-2 text-xs font-medium text-muted-foreground">{t('suno.response', { defaultValue: 'Response' })}</h3>
               <CodeBlock language="json" showCopy={false} code={JSON.stringify(item.data, null, 2)} />
             </section>
           ) : null}

@@ -110,9 +110,7 @@ export default function ModelCard({ model, provider, modelInfo, price, group, ow
             >
               <Copy className="size-4" />
             </button>
-            {hot && (
-              <Pill tone="primary">Hot</Pill>
-            )}
+            {hot && <Pill tone="primary">Hot</Pill>}
             {modelInfo && outputModalities.length === 0 ? (
               <Pill tone="default" className="border border-border/60" title={t('modelpricePage.outputModality')}>
                 {t('modelpricePage.unlabeledModality')}

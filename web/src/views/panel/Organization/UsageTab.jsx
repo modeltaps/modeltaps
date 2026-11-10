@@ -167,33 +167,25 @@ function DimensionTable({ t, rows, nameOf, onRowClick }) {
               </div>
               <dl className="flex flex-col divide-y divide-border/60">
                 <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                  <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
-                    {t('orgPage.usage.colRequests')}
-                  </dt>
+                  <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">{t('orgPage.usage.colRequests')}</dt>
                   <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm font-mono tabular-nums">
                     {renderNumber(r.request_count || 0)}
                   </dd>
                 </div>
                 <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                  <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
-                    {t('orgPage.usage.colQuota')}
-                  </dt>
+                  <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">{t('orgPage.usage.colQuota')}</dt>
                   <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm font-mono tabular-nums">
                     <SpendAmount quota={r.quota || 0} />
                   </dd>
                 </div>
                 <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                  <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
-                    {t('orgPage.usage.colInputTokens')}
-                  </dt>
+                  <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">{t('orgPage.usage.colInputTokens')}</dt>
                   <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm font-mono tabular-nums">
                     {renderNumber(r.prompt_tokens || 0)}
                   </dd>
                 </div>
                 <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                  <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
-                    {t('orgPage.usage.colOutputTokens')}
-                  </dt>
+                  <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">{t('orgPage.usage.colOutputTokens')}</dt>
                   <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm font-mono tabular-nums">
                     {renderNumber(r.completion_tokens || 0)}
                   </dd>
