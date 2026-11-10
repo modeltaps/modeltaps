@@ -253,20 +253,20 @@ function StatsPanel({ promptTokens, cachedTokens, visibleEst, cost, model, roleA
   return (
     <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3 lg:w-80 lg:shrink-0 lg:grid-cols-1">
       <div className="flex flex-col">
-        <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{t('logPage.promptViewer.tokensTotal')}</span>
+        <span className="text-[11px] text-muted-foreground">{t('logPage.promptViewer.tokensTotal')}</span>
         <span className="text-sm font-medium tabular-nums text-foreground">
           {t('logPage.promptViewer.tokensOfTotal', { shown: (visibleEst || 0).toLocaleString(), total: pt.toLocaleString() })}
         </span>
       </div>
       <div className="flex flex-col">
-        <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{t('logPage.promptViewer.prompt')}</span>
+        <span className="text-[11px] text-muted-foreground">{t('logPage.promptViewer.prompt')}</span>
         <span className="text-sm font-medium tabular-nums text-foreground">
           {promptFresh.toLocaleString()}
           <span className="ml-1 text-xs font-normal text-muted-foreground">{freshPct}%</span>
         </span>
       </div>
       <div className="flex flex-col">
-        <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{t('logPage.promptViewer.cached')}</span>
+        <span className="text-[11px] text-muted-foreground">{t('logPage.promptViewer.cached')}</span>
         <span className="text-sm font-medium tabular-nums text-foreground">
           {cached.toLocaleString()}
           <span className="ml-1 text-xs font-normal text-muted-foreground">{cachedPct}%</span>
@@ -274,13 +274,13 @@ function StatsPanel({ promptTokens, cachedTokens, visibleEst, cost, model, roleA
       </div>
       {cost && (
         <div className="flex flex-col">
-          <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{t('logPage.promptViewer.cost')}</span>
+          <span className="text-[11px] text-muted-foreground">{t('logPage.promptViewer.cost')}</span>
           <span className="text-sm font-medium text-foreground">{cost}</span>
         </div>
       )}
       {model && (
         <div className="flex flex-col">
-          <span className="text-[11px] uppercase tracking-wide text-muted-foreground">{t('logPage.promptViewer.model')}</span>
+          <span className="text-[11px] text-muted-foreground">{t('logPage.promptViewer.model')}</span>
           <span className="flex items-center gap-1">
             <span className="truncate font-mono text-sm font-medium text-foreground" title={model}>
               {model}
@@ -298,7 +298,7 @@ function StatsPanel({ promptTokens, cachedTokens, visibleEst, cost, model, roleA
         </div>
       )}
       <div className="col-span-2 sm:col-span-3 lg:col-span-1">
-        <div className="mb-1 grid grid-cols-[1fr_3rem_2rem] gap-x-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+        <div className="mb-1 grid grid-cols-[1fr_3rem_2rem] gap-x-2 text-[11px] text-muted-foreground">
           <span>{t('logPage.promptViewer.byRole')}</span>
           <span className="text-right">%</span>
           <span className="text-right">#</span>
@@ -606,7 +606,7 @@ export default function PromptViewer({ requestBody, truncated, promptTokens, cac
             {/* Chart + stats — kept visible in both message-list and show-request modes */}
             <div className="flex shrink-0 flex-col gap-4 border-b border-border px-5 py-4 lg:flex-row">
               <div className="min-w-0 flex-1">
-                <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                <div className="mb-2 flex items-center gap-2 text-[11px] text-muted-foreground">
                   <span>{t('logPage.promptViewer.tokensPerMessage')}</span>
                   <span className="rounded bg-muted px-1.5 py-0.5 normal-case tracking-normal text-muted-foreground">
                     {t('logPage.promptViewer.estimated')}
@@ -695,7 +695,7 @@ export default function PromptViewer({ requestBody, truncated, promptTokens, cac
                       ))}
                     </SelectContent>
                   </Select>
-                  <div className="grid grid-cols-[2rem_4.5rem_1fr] gap-2 px-2 pb-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <div className="grid grid-cols-[2rem_4.5rem_1fr] gap-2 px-2 pb-1 text-[11px] text-muted-foreground">
                     <span className="text-right">#</span>
                     <span>{t('logPage.promptViewer.colRole')}</span>
                     <span>{t('logPage.promptViewer.colPreview')}</span>

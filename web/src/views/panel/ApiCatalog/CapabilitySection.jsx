@@ -96,7 +96,7 @@ export default function CapabilitySection({ capability, models, baseUrl, apiKey,
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.6875rem] font-medium uppercase text-foreground">
+          <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.6875rem] font-medium text-foreground">
             {capability.endpoint.method}
           </span>
           <code className="font-mono text-sm">{capability.endpoint.path}</code>

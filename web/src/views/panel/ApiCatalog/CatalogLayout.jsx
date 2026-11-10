@@ -52,7 +52,7 @@ function EndpointList({ endpoints, link }) {
       <ul className="space-y-2">
         {endpoints.map((ep) => (
           <li key={`${ep.method} ${ep.path}`} className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.6875rem] font-medium uppercase text-foreground">
+            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.6875rem] font-medium text-foreground">
               {ep.method}
             </span>
             <code className="font-mono text-sm">{ep.path}</code>

@@ -36,7 +36,7 @@ export default function StatCard({ label, value, valueTitle, hint, icon: Icon, a
     <Card className={cn(accent && 'border-foreground/30')}>
       <CardContent className="flex flex-col gap-2 p-5">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+          <span className="text-xs font-medium text-muted-foreground">{label}</span>
           {Icon && <Icon className={cn('size-4', accent ? 'text-foreground' : 'text-muted-foreground')} />}
         </div>
         {loading ? (

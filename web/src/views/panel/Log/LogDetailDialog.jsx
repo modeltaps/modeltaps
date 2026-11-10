@@ -1016,7 +1016,7 @@ export default function LogDetailDialog({
           {!hasDetail && (
             <section className="flex shrink-0 flex-col gap-2">
               <div className="flex items-center gap-2">
-                <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('logPage.io.title')}</h3>
+                <h3 className="text-xs font-medium text-muted-foreground">{t('logPage.io.title')}</h3>
                 <IoStatusBadge statusKey={ioStatusKey} t={t} />
               </div>
 

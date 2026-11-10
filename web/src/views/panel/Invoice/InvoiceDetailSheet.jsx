@@ -83,14 +83,14 @@ export default function InvoiceDetailSheet({ date, t, onClose }) {
           ) : (
             <>
               <section className="mb-5">
-                <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('invoice_index.userinfo')}</h3>
+                <h3 className="mb-2 text-xs font-medium text-muted-foreground">{t('invoice_index.userinfo')}</h3>
                 <Row label={t('invoice_index.username')} value={user?.username} />
                 <Row label={t('invoice_index.email')} value={user?.email} />
                 <Row label={t('invoice_index.date')} value={date} />
               </section>
 
               <section className="mb-5">
-                <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <h3 className="mb-2 text-xs font-medium text-muted-foreground">
                   {t('invoice_index.usage_statistics')}
                 </h3>
                 <Row label={t('invoice_index.promptTokens')} value={thousandsSeparator(totals.prompt)} />
@@ -100,7 +100,7 @@ export default function InvoiceDetailSheet({ date, t, onClose }) {
               </section>
 
               <section className="mb-5">
-                <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <h3 className="mb-2 text-xs font-medium text-muted-foreground">
                   {t('invoice_index.usage_details')}
                 </h3>
                 <div className="hidden md:block overflow-x-auto rounded-md border border-border">
@@ -135,7 +135,7 @@ export default function InvoiceDetailSheet({ date, t, onClose }) {
                       <div className="mb-2 text-sm font-medium">{item.model_name}</div>
                       <dl className="flex flex-col divide-y divide-border/60">
                         <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                          <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
                             {t('invoice_index.promptTokens')}
                           </dt>
                           <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">
@@ -143,7 +143,7 @@ export default function InvoiceDetailSheet({ date, t, onClose }) {
                           </dd>
                         </div>
                         <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                          <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
                             {t('invoice_index.completionTokens')}
                           </dt>
                           <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">
@@ -151,7 +151,7 @@ export default function InvoiceDetailSheet({ date, t, onClose }) {
                           </dd>
                         </div>
                         <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                          <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
                             {t('invoice_index.requestCount')}
                           </dt>
                           <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">
@@ -159,7 +159,7 @@ export default function InvoiceDetailSheet({ date, t, onClose }) {
                           </dd>
                         </div>
                         <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                          <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
                             {t('invoice_index.requestTime')}
                           </dt>
                           <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">
@@ -167,7 +167,7 @@ export default function InvoiceDetailSheet({ date, t, onClose }) {
                           </dd>
                         </div>
                         <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                          <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
                             {t('invoice_index.amount')}
                           </dt>
                           <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">${calculateQuota(item.quota, 6)}</dd>

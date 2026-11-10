@@ -164,7 +164,7 @@ export default function MultiUserStats() {
                     <div className="mb-2 text-sm font-medium">{s.username}</div>
                     <dl className="flex flex-col divide-y divide-border/60">
                       <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                        <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
                           {t('multi_user_stats_index.requestCount')}
                         </dt>
                         <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm font-mono tabular-nums">
@@ -172,7 +172,7 @@ export default function MultiUserStats() {
                         </dd>
                       </div>
                       <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                        <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
                           {t('multi_user_stats_index.quota')}
                         </dt>
                         <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm font-mono font-medium tabular-nums text-foreground">
@@ -180,7 +180,7 @@ export default function MultiUserStats() {
                         </dd>
                       </div>
                       <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                        <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
                           {t('multi_user_stats_index.inputTokens')}
                         </dt>
                         <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm font-mono tabular-nums">
@@ -188,7 +188,7 @@ export default function MultiUserStats() {
                         </dd>
                       </div>
                       <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                        <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
                           {t('multi_user_stats_index.outputTokens')}
                         </dt>
                         <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm font-mono tabular-nums">
@@ -196,7 +196,7 @@ export default function MultiUserStats() {
                         </dd>
                       </div>
                       <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                        <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
                           {t('multi_user_stats_index.requestTime')}
                         </dt>
                         <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm font-mono tabular-nums">
@@ -274,13 +274,13 @@ export default function MultiUserStats() {
                       <div className="mb-2 text-sm font-medium">{m.username}</div>
                       <dl className="flex flex-col divide-y divide-border/60">
                         <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                          <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
                             {t('multi_user_stats_index.modelName')}
                           </dt>
                           <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">{m.model_name}</dd>
                         </div>
                         <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                          <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
                             {t('multi_user_stats_index.requestCount')}
                           </dt>
                           <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm font-mono tabular-nums">
