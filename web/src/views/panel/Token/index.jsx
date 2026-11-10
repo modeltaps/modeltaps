@@ -30,9 +30,11 @@ import { PAGE_SIZE_OPTIONS } from 'constants';
 import { UserContext } from 'contexts/UserContext';
 import { useOrg } from 'contexts/OrgContext';
 import usePaginatedList from 'hooks/usePaginatedList';
+import { useObjectRoute } from '@/components/objects';
 import TokenTable from './TokenTable';
-import TokenSheet from './TokenSheet';
-import TokenDetailSheet from './TokenDetailSheet';
+import TokenPanel from './TokenPanel';
+import NewTokenDialog from './NewTokenDialog';
+import { TOKEN_TAB_KEYS } from './tokenTabs';
 import TokenUsageDialog from './TokenUsageDialog';
 import OpenClawConnectDialog from './OpenClawConnectDialog';
 
@@ -146,14 +148,13 @@ export default function Token() {
   const [todayUsage, setTodayUsage] = useState(null);
   const [revealed, setRevealed] = useState(new Set());
 
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [editTokenId, setEditTokenId] = useState(0);
+  // The key open in the right-side panel (?id=, &tab=) and the create dialog (?new=1).
+  const route = useObjectRoute(TOKEN_TAB_KEYS);
+  const [reloadKey, setReloadKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [usageTarget, setUsageTarget] = useState(null);
   const [openClawTarget, setOpenClawTarget] = useState(null);
-  // TC3:移动端点卡片弹出的详情 Sheet 只存 API Key id,实时从 tokens 派生,状态开关等改动即时反映。
-  const [detailId, setDetailId] = useState(null);
   const [apiType, setApiType] = useState('openai');
 
   const { loadUserGroup } = useContext(UserContext);
@@ -328,7 +329,10 @@ export default function Token() {
       const { success } = res.data;
       if (success) {
         toast.success(t('common.operationSuccess'));
-        if (action === 'delete') handleRefresh();
+        if (action === 'delete') {
+          if (id === route.openId) route.close();
+          handleRefresh();
+        } else setReloadKey((k) => k + 1);
       }
       return res.data;
     } catch (error) {
@@ -361,19 +365,8 @@ export default function Token() {
 
   const onCopyKey = (item) => copyText(`sk-${item.key}`, t('token_index.token'));
 
-  const openCreate = () => {
-    setEditTokenId(0);
-    setSheetOpen(true);
-  };
-  const openEdit = (id) => {
-    setEditTokenId(id);
-    setSheetOpen(true);
-  };
-  const onSaved = () => {
-    setSheetOpen(false);
-    setEditTokenId(0);
-    handleRefresh();
-  };
+  const openCreate = route.openNew;
+  const openEdit = (id) => route.open(id, 'basics');
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
@@ -396,9 +389,6 @@ export default function Token() {
   const hasExtraApiProviders = Boolean(siteInfo.GeminiAPIEnabled || siteInfo.ClaudeAPIEnabled);
 
   const totalPages = Math.max(1, Math.ceil(listCount / rowsPerPage));
-
-  // 从 tokens 派生当前详情 API Key(找不到则视为已关闭),保证开关/删除后 Sheet 内容与列表同步。
-  const detailToken = useMemo(() => (detailId == null ? null : tokens.find((x) => x.id === detailId) || null), [detailId, tokens]);
 
   return (
     <>
@@ -540,7 +530,8 @@ export default function Token() {
               onToggleStatus={onToggleStatus}
               onShowUsage={setUsageTarget}
               onConnectOpenClaw={setOpenClawTarget}
-              onCardClick={(item) => setDetailId(item.id)}
+              onOpen={(item) => route.open(item.id)}
+              openId={route.openId}
               order={order}
               orderBy={orderBy}
               onSort={handleSort}
@@ -577,23 +568,49 @@ export default function Token() {
           </div>
         </Card>
 
-        <TokenSheet
-          open={sheetOpen}
-          onOpenChange={setSheetOpen}
-          tokenId={editTokenId}
-          adminMode={!!isAdminSearch}
-          userGroupOptions={userGroupOptions}
-          userGroup={userGroup}
-          userIsReliable={userIsReliable}
-          isOrgContext={isOrgContext}
-          onSaved={onSaved}
-        />
+        {/* The panel comes first so the dialogs it opens (delete, test command, client setup) stack above it. */}
+        {route.openId > 0 && (
+          <TokenPanel
+            key={route.openId}
+            tokenId={route.openId}
+            tab={route.tab}
+            onTabChange={route.setTab}
+            onClose={route.close}
+            onChanged={handleRefresh}
+            adminMode={isAdminSearch}
+            reloadKey={reloadKey}
+            userGroup={userGroup}
+            groupOptions={userGroupOptions}
+            userIsReliable={userIsReliable}
+            orgMemberNames={isOrgContext ? orgMemberNames : null}
+            todayUsage={todayUsage}
+            resetTimezone={siteInfo?.quota_reset_timezone}
+            resetWeekStart={siteInfo?.quota_reset_week_start}
+            onToggleStatus={onToggleStatus}
+            onCopyKey={onCopyKey}
+            onDelete={setDeleteTarget}
+            onShowUsage={setUsageTarget}
+            onConnectOpenClaw={setOpenClawTarget}
+          />
+        )}
+
+        {route.isNew && (
+          <NewTokenDialog
+            onClose={route.close}
+            onCreated={handleRefresh}
+            onOpen={(id) => route.open(id)}
+            baseUrl={apiAddress}
+            onCopy={copyText}
+          />
+        )}
 
         <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{t('common.delete')}</DialogTitle>
-              <DialogDescription>{t('common.deleteConfirm', { title: `Token "${deleteTarget?.name}"` })}</DialogDescription>
+              <DialogDescription>
+                {t('common.deleteConfirm', { title: `${t('token_index.token')} "${deleteTarget?.name}"` })}
+              </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDeleteTarget(null)}>
@@ -605,24 +622,6 @@ export default function Token() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        <TokenDetailSheet
-          open={!!detailToken}
-          onOpenChange={(o) => !o && setDetailId(null)}
-          token={detailToken}
-          userGroup={userGroup}
-          userIsReliable={userIsReliable}
-          orgMemberNames={isOrgContext ? orgMemberNames : null}
-          todayUsage={todayUsage}
-          quotaResetTimezone={siteInfo?.quota_reset_timezone}
-          quotaResetWeekStart={siteInfo?.quota_reset_week_start}
-          onToggleStatus={onToggleStatus}
-          onCopyKey={onCopyKey}
-          onEdit={openEdit}
-          onDelete={setDeleteTarget}
-          onShowUsage={setUsageTarget}
-          onConnectOpenClaw={setOpenClawTarget}
-        />
 
         <TokenUsageDialog
           open={!!usageTarget}

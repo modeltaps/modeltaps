@@ -34,6 +34,7 @@ import {
   DropdownMenuLabel
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
 import { isPlaygroundToken } from 'utils/playgroundToken';
 import { maskSecret } from 'utils/maskSecret';
@@ -383,7 +384,8 @@ export default function TokenTable({
   onToggleStatus,
   onShowUsage,
   onConnectOpenClaw,
-  onCardClick,
+  onOpen,
+  openId,
   order,
   orderBy,
   onSort,
@@ -421,14 +423,14 @@ export default function TokenTable({
               ) : (
                 <div className="flex items-center gap-1">
                   <code className="font-mono text-[13px] text-muted-foreground">{shown ? `sk-${item.key}` : masked}</code>
-                  <div className="flex items-center opacity-0 transition-opacity focus-within:opacity-100 group-hover/token:opacity-100 max-md:opacity-100">
+                  <RowControl className="opacity-0 transition-opacity focus-within:opacity-100 group-hover/token:opacity-100 max-md:opacity-100">
                     <Button variant="ghost" size="icon" className="size-6" onClick={() => onToggleReveal(item.id)} aria-label="reveal">
                       {shown ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
                     </Button>
                     <Button variant="ghost" size="icon" className="size-6" onClick={() => onCopyKey(item)} aria-label="copy">
                       <Copy className="size-3.5" />
                     </Button>
-                  </div>
+                  </RowControl>
                 </div>
               )}
             </div>
@@ -585,14 +587,14 @@ export default function TokenTable({
           const info = statusInfo(t, item.status);
           const isAbnormal = item.status === 3 || item.status === 4;
           return (
-            <div className="flex items-center gap-2">
+            <RowControl className="gap-2">
               <Switch checked={item.status === 1} onCheckedChange={() => onToggleStatus(item)} title={info.label} aria-label={info.label} />
               {isAbnormal && (
                 <Badge variant="destructive" className="text-[11px]">
                   {info.label}
                 </Badge>
               )}
-            </div>
+            </RowControl>
           );
         }
       },
@@ -601,14 +603,16 @@ export default function TokenTable({
         header: t('token_index.actions'),
         meta: { className: 'sticky right-0 bg-card z-10 text-right w-[1%]' },
         cell: (c) => (
-          <TokenRowActions
-            item={c.row.original}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onCopyKey={onCopyKey}
-            onShowUsage={onShowUsage}
-            onConnectOpenClaw={onConnectOpenClaw}
-          />
+          <RowControl>
+            <TokenRowActions
+              item={c.row.original}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onCopyKey={onCopyKey}
+              onShowUsage={onShowUsage}
+              onConnectOpenClaw={onConnectOpenClaw}
+            />
+          </RowControl>
         )
       }
     );
@@ -672,7 +676,12 @@ export default function TokenTable({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow
+                key={row.id}
+                className={ROW_OPENS}
+                data-state={row.original.id === openId ? 'selected' : undefined}
+                {...rowOpenProps(() => onOpen(row.original))}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
                     {flexRender(cell.column.columnDef.cell ?? cell.getValue, cell.getContext())}
@@ -686,7 +695,7 @@ export default function TokenTable({
       <DataCards
         table={table}
         className="md:hidden"
-        onRowClick={onCardClick}
+        onRowClick={onOpen}
         renderCard={(item) => (
           <TokenCard
             item={item}

@@ -2877,5 +2877,51 @@
       "ctaPrimary": "API キーを取得",
       "catchphrase": "ひねれば、すぐ使える"
     }
+  },
+  "apiKey": {
+    "panel": {
+      "tabs": "API キーの設定",
+      "tab": {
+        "overview": "概要",
+        "basics": "基本",
+        "access": "アクセス",
+        "advanced": "詳細設定"
+      },
+      "key": "キー",
+      "reveal": "キーを表示",
+      "hide": "キーを隠す",
+      "used": "累計利用額",
+      "left": "残り",
+      "leftOfPeriod": "上限 {{limit}}（{{period}}）",
+      "leftOfTotal": "使い切ると無効",
+      "details": "詳細",
+      "owner": "所有ユーザー",
+      "enabled": "有効",
+      "expiresAt": "日時を指定",
+      "neverHint": "無効化または削除するまで有効です。",
+      "limit": "利用上限",
+      "limitHint": "空欄で上限なし。上限はこのキーだけに適用され、アカウント残高の制限も受けます。",
+      "noReset": "リセットなし",
+      "nameRequired": "名前を入力してください",
+      "routing": "グループ",
+      "noBackup": "予備グループなし",
+      "groupHint": "このグループのチャネルを使い、利用できないときは予備グループに切り替えます。",
+      "restrictions": "制限",
+      "availableHint": "保存済みの設定で計算"
+    },
+    "new": {
+      "description": "名前だけで使えます。グループ、モデル、IP の制限は作成後に詳細で変更できます。",
+      "namePlaceholder": "例: my-app",
+      "limit": "利用上限",
+      "expiry": "有効期限",
+      "days": "{{count}} 日",
+      "create": "作成",
+      "later": "既定: アカウントのグループ、全モデル、IP 制限なし",
+      "createdTitle": "「{{name}}」を作成しました",
+      "createdHint": "クライアントに貼り付けて使えます。あとから詳細でも確認できます。",
+      "copied": "コピーしました",
+      "openDetails": "詳細を開く",
+      "done": "完了"
+    }
   }
 }

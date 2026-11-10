@@ -163,9 +163,14 @@ func AddOrgToken(c *gin.Context) {
 		return
 	}
 	model.RecordOrgAudit(org.Id, userId, "token.create", fmt.Sprintf("Created organization API key %s (ID: %d)", cleanToken.Name, cleanToken.Id))
+	// Same shape as the personal endpoint: the console shows the new key right away.
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
+		"data": gin.H{
+			"id":  cleanToken.Id,
+			"key": cleanToken.Key,
+		},
 	})
 }
 
