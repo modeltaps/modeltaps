@@ -2383,7 +2383,10 @@
       "probing": "等待恢复测试",
       "disabled": "已停用",
       "channel_off": "渠道已停用",
-      "wholeChannel": "整个渠道"
+      "wholeChannel": "整个渠道",
+      "cooling": "冷却中",
+      "coolingUntil": "冷却到 {{time}}",
+      "coolingHint": "出错（如普通限流）后的短暂冷却，只记在内存里，且只反映响应本页的那台服务器。"
     },
     "pause": {
       "rule": "规则：{{rule}}",
@@ -2425,6 +2428,21 @@
       "probe": "恢复前先测试",
       "probes_other": "测试失败 {{count}} 次",
       "rulesOff": "暂停规则已关闭：出错时回到旧的自动禁用与冷却。已列出的暂停仍会按时结束。"
+    },
+    "channelGroups": "分组：{{groups}}",
+    "preview": {
+      "label": "请求预览",
+      "group": "请求所属分组",
+      "anyGroup": "任意分组",
+      "first": "下一个请求会发往 {{channel}}",
+      "split_other": "下一个请求会按占比发往 {{count}} 个供应之一",
+      "none": "现在没有可接请求的供应",
+      "outside_other": "{{count}} 个供应不在分组 {{group}} 中",
+      "outsideRow": "不在分组 {{group}} 中",
+      "notActive": "按供应路由开启后才生效",
+      "next": "下一个",
+      "servingTier": "正在接请求",
+      "failed": "无法读取该分组的预览"
     }
   },
   "settingsUi": {
@@ -2699,7 +2717,32 @@
         "label": "自定义规则（JSON）",
         "description": "留空使用内置默认规则；填写后整体替换默认规则，按顺序第一条命中的生效。",
         "invalidJson": "暂停规则不是合法的 JSON",
-        "notArray": "暂停规则必须是 JSON 数组"
+        "notArray": "暂停规则必须是 JSON 数组",
+        "builtIn": "正在使用内置规则",
+        "useDefaults": "从默认规则开始",
+        "useDefaultsHint": "「从默认规则开始」会把这些规则填进编辑框以便修改；保存卡片前不会生效。",
+        "showBuiltIn": "查看内置规则",
+        "replaceWithDefaults": "替换为默认规则",
+        "replaceHint": "用内置规则替换编辑框内容；撤销可恢复已保存的规则。",
+        "summary": {
+          "status": "HTTP {{codes}}",
+          "patterns_other": "{{count}} 个错误特征",
+          "unusable": "凭据被拒或账号不可用",
+          "modelNotFound": "上游没有该模型",
+          "rateLimitReset": "上游给出了重置时间",
+          "perStatus": "该状态码设置了单独冷却",
+          "anyError": "任何错误",
+          "times_other": "{{duration}} 内 {{count}} 次",
+          "retry": "改试下一条供应",
+          "pause_channel": "暂停渠道 {{duration}}",
+          "pause_model": "暂停该模型 {{duration}}",
+          "pauseUntilReset_channel": "暂停渠道到重置时间",
+          "pauseUntilReset_model": "暂停该模型到重置时间",
+          "pauseConfigured_channel": "按配置的时长暂停渠道",
+          "pauseConfigured_model": "按配置的时长暂停该模型",
+          "probe": "恢复前先测试",
+          "notify": "发通知"
+        }
       }
     },
     "personal": {

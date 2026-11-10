@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  channelGroups,
   countSuppliesByModel,
   defaultNewPriority,
   groupTiers,
@@ -9,10 +10,13 @@ import {
   moveSupply,
   parseSupplyForm,
   pausesFor,
+  previewEntryState,
+  previewOutcome,
+  previewShares,
+  previewSupplyList,
   supplyCandidates,
   supplyState,
   supplyUpdateBody,
-  tierShares,
   upstreamFor
 } from './supplyHelpers';
 
@@ -111,18 +115,6 @@ describe('defaultNewPriority', () => {
   });
 });
 
-describe('tierShares', () => {
-  const tier = { priority: 0, supplies: [supply(1, 0, 3), supply(2, 0, 1), supply(3, 0, 0, { enabled: false })] };
-
-  it('splits by weight in balance mode, skipping disabled supplies', () => {
-    expect(tierShares(tier, 'balance')).toEqual({ 1: 75, 2: 25 });
-  });
-
-  it('sends everything to the first supply in failover mode', () => {
-    expect(tierShares(tier, 'failover')).toEqual({ 1: 100 });
-  });
-});
-
 describe('supplyState', () => {
   const now = 1000;
 
@@ -156,6 +148,76 @@ describe('supplyState', () => {
   it('waits for the recovery test once a probing pause is due', () => {
     expect(supplyState(supply(1, 0), [{ id: 1, channel_id: 10, model: 'gpt-a', until: 900, probe: true }], now).kind).toBe('probing');
     expect(supplyState(supply(1, 0), [{ id: 1, channel_id: 10, model: 'gpt-a', until: 900 }], now).kind).toBe('ok');
+  });
+});
+
+describe('previewEntryState', () => {
+  const entry = (state, extra = {}) => ({ ...supply(1, 0), state, ...extra });
+
+  it('maps the preview states to row states', () => {
+    expect(previewEntryState(entry('channel_disabled')).kind).toBe('channel_off');
+    expect(previewEntryState(entry('disabled')).kind).toBe('disabled');
+    expect(previewEntryState(entry('available')).kind).toBe('ok');
+    expect(previewEntryState(entry('cooling_down', { until: 1200 }))).toEqual({ kind: 'cooling', until: 1200, pauses: [] });
+  });
+
+  it('takes the pause from the pause list when it is there', () => {
+    const pauses = [
+      { id: 7, channel_id: 10, model: '', until: 2000, rule: 'quota' },
+      { id: 8, channel_id: 10, model: 'gpt-a', until: 1500, rule: 'manual' }
+    ];
+    const state = previewEntryState(entry('paused', { pause_id: 7, until: 2000 }), pauses);
+    expect(state.kind).toBe('paused');
+    expect(state.pause.model).toBe('');
+    expect(state.pauses.map((p) => p.id)).toEqual([7, 8]);
+  });
+
+  it('builds the pause from the preview otherwise', () => {
+    const state = previewEntryState(entry('awaiting_test', { pause_id: 9, until: 900, pause_rule: 'quota', pause_reason: 'r' }));
+    expect(state.kind).toBe('probing');
+    expect(state.pause).toMatchObject({ id: 9, model: 'gpt-a', rule: 'quota', reason: 'r', probe: true });
+    expect(state.pauses.map((p) => p.id)).toEqual([9]);
+  });
+});
+
+describe('preview summary', () => {
+  const preview = (extra = {}) => ({
+    tiers: [
+      { priority: 10, supplies: [{ id: 1, share: 0 }] },
+      {
+        priority: 0,
+        supplies: [
+          { id: 2, share: 0.75 },
+          { id: 3, share: 0.25 },
+          { id: 4, share: 0 }
+        ]
+      },
+      { priority: -1, supplies: [{ id: 5, share: 0 }] }
+    ],
+    ...extra
+  });
+
+  it('lists the supplies in order', () => {
+    expect(previewSupplyList(preview()).map((s) => s.id)).toEqual([1, 2, 3, 4, 5]);
+  });
+
+  it('gives the shares of the tier that takes requests', () => {
+    expect(previewShares(preview())).toEqual({ priority: 0, shares: { 2: 75, 3: 25, 4: 0 }, count: 2 });
+    expect(previewShares({ tiers: [{ priority: 0, supplies: [{ id: 1, share: 0 }] }] }).count).toBe(0);
+  });
+
+  it('names the first choice, a random split or no supply', () => {
+    expect(previewOutcome(preview({ first_choice: 3 }))).toEqual({ kind: 'first', supply: { id: 3, share: 0.25 } });
+    expect(previewOutcome(preview())).toEqual({ kind: 'split', count: 2 });
+    expect(previewOutcome({ tiers: [] })).toEqual({ kind: 'none' });
+  });
+});
+
+describe('channelGroups', () => {
+  it('splits the channel group list', () => {
+    expect(channelGroups({ channel_group: 'default, vip,,' })).toEqual(['default', 'vip']);
+    expect(channelGroups({ groups: ['a'], channel_group: 'b' })).toEqual(['a']);
+    expect(channelGroups({})).toEqual([]);
   });
 });
 

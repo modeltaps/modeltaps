@@ -113,21 +113,6 @@ export function defaultNewPriority(supplies = []) {
   return Math.max(0, lowest - 1);
 }
 
-// Share of requests each supply of a tier gets in balance mode, in percent (0–100).
-export function tierShares(tier, mode) {
-  const items = tier.supplies.filter((s) => s.enabled !== false);
-  const shares = {};
-  if (normalizeSupplyMode(mode) === 'failover') {
-    if (items[0]) shares[items[0].id] = 100;
-    return shares;
-  }
-  const total = items.reduce((sum, s) => sum + effectiveWeight(s), 0);
-  items.forEach((s) => {
-    shares[s.id] = total ? Math.round((effectiveWeight(s) / total) * 100) : 0;
-  });
-  return shares;
-}
-
 // Pauses that block a supply: one on the whole channel, or one on this model on the channel
 // (the model is the public name while supplies route, the channel's model name before).
 export function pausesFor(supply, pauses = []) {
@@ -148,6 +133,76 @@ export function supplyState(supply, pauses = [], now = Math.floor(Date.now() / 1
   const probing = matching.find((p) => p.probe);
   if (probing) return { kind: 'probing', pause: probing, pauses: matching };
   return { kind: 'ok', pauses: matching };
+}
+
+// Preview states (from the preview API) as the state kinds SupplyStateLabel shows.
+const PREVIEW_KINDS = {
+  channel_disabled: 'channel_off',
+  disabled: 'disabled',
+  paused: 'paused',
+  awaiting_test: 'probing',
+  cooling_down: 'cooling',
+  available: 'ok'
+};
+
+// State of a supply from a preview entry, in the shape supplyState returns. The pause comes
+// from the pause list when it is there (it says whether the pause covers the whole channel);
+// `pauses` are every pause on the supply, for the resume actions.
+export function previewEntryState(entry, pauses = []) {
+  const kind = PREVIEW_KINDS[entry.state] || 'ok';
+  const matching = pausesFor(entry, pauses);
+  if (kind === 'cooling') return { kind, until: entry.until, pauses: matching };
+  if (kind !== 'paused' && kind !== 'probing') return { kind, pauses: matching };
+  const listed = matching.find((p) => p.id === entry.pause_id);
+  if (listed) return { kind, pause: listed, pauses: matching };
+  const pause = {
+    id: entry.pause_id,
+    channel_id: entry.channel_id,
+    model: entry.model,
+    until: entry.until,
+    rule: entry.pause_rule,
+    reason: entry.pause_reason,
+    probe: kind === 'probing'
+  };
+  return { kind, pause, pauses: entry.pause_id ? [pause, ...matching] : matching };
+}
+
+// Every supply of a preview, in the order a request tries them.
+export function previewSupplyList(preview) {
+  return (preview?.tiers || []).flatMap((tier) => tier.supplies || []);
+}
+
+// The tier that takes requests now (the first with an available supply) and each of its
+// supplies' share in percent. Lower tiers get nothing while this one stays available.
+export function previewShares(preview) {
+  const serving = (preview?.tiers || []).find((tier) => (tier.supplies || []).some((s) => s.share > 0));
+  if (!serving) return { priority: null, shares: {}, count: 0 };
+  const shares = {};
+  serving.supplies.forEach((s) => {
+    shares[s.id] = Math.round((Number(s.share) || 0) * 100);
+  });
+  return { priority: serving.priority, shares, count: serving.supplies.filter((s) => s.share > 0).length };
+}
+
+// What the next request does: { kind: 'first', supply } when one supply is certain to take
+// it, { kind: 'split', count } when it picks among several at random, { kind: 'none' } when
+// no supply can take it.
+export function previewOutcome(preview) {
+  if (preview?.first_choice) {
+    const supply = previewSupplyList(preview).find((s) => s.id === preview.first_choice);
+    if (supply) return { kind: 'first', supply };
+  }
+  const { count } = previewShares(preview);
+  return count > 0 ? { kind: 'split', count } : { kind: 'none' };
+}
+
+// A channel's comma-separated user groups as a list.
+export function channelGroups(supply) {
+  if (Array.isArray(supply?.groups)) return supply.groups;
+  return String(supply?.channel_group || '')
+    .split(',')
+    .map((g) => g.trim())
+    .filter(Boolean);
 }
 
 // Supplies per public model, for the catalog table.
