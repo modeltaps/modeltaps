@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Check, Loader2, Pencil, Play, X } from 'lucide-react';
+import { Check, Loader2, Pencil, Play } from 'lucide-react';
 
 import { configText } from 'i18n/configText';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Sheet } from '@/components/ui/sheet';
 import { toast } from '@/components/ui/sonner';
 import { createChannel, fetchUpstreamModelList, manageChannel } from './channelApi';
 import { buildModelSuggestions, fetchPriceList } from './modelSuggestions';
@@ -27,7 +26,8 @@ import {
   toWildcard
 } from './newChannel';
 import { BASE_URL_REQUIRED, BASE_URL_SHOWN, credentialKind, typeLabels } from './providerDefaults';
-import { ChipInput, Dot, Field, GroupOptions, KeyLink, ProviderTile, Segmented, UsageOptions, useProviderName } from './channelParts';
+import { Dot, Field, ObjectSheet, Segmented, SheetBar } from '@/components/objects';
+import { ChipInput, GroupOptions, KeyLink, ProviderTile, UsageOptions, useProviderName } from './channelParts';
 import { ProviderSelect } from './ProviderPicker';
 import ChannelOAuth from './ChannelOAuth';
 import ModelMappingInput from './ModelMappingInput';
@@ -318,7 +318,7 @@ export default function NewChannelSheet({ initialType, allChannels, groups, onCl
             <label key={f} className={cn('space-y-1.5 text-xs text-muted-foreground', (f === 'token' || f === 'roleArn') && 'col-span-2')}>
               <span>
                 {t(`channels.new.parts.${f}`)}
-                {f === 'sessionToken' && <span className="ml-1">{t('channels.optional')}</span>}
+                {f === 'sessionToken' && <span className="ml-1">{t('objects.optional')}</span>}
               </span>
               <Input
                 className="font-mono text-[13px] text-foreground"
@@ -405,217 +405,197 @@ export default function NewChannelSheet({ initialType, allChannels, groups, onCl
       : t('channels.new.allowSomeHint', { count: d.allow.length });
 
   return (
-    <Sheet open onOpenChange={(open) => !open && requestClose()}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="new-channel-title"
-        className="absolute inset-y-2 right-2 flex w-[calc(100%-1rem)] max-w-[640px] flex-col rounded-2xl border border-border bg-popover shadow-2xl"
-      >
-        <div className="flex items-center justify-between gap-4 border-b border-border px-6 py-[18px]">
-          <div className="flex min-w-0 items-center gap-3">
-            <ProviderTile type={d.type} size="lg" />
-            <div className="min-w-0">
-              <h2 id="new-channel-title" className="text-base font-medium">
-                {t('channels.newChannel')}
-              </h2>
-              <p className="truncate text-xs text-muted-foreground">{t('channels.new.subtitle', { provider: providerName(d.type) })}</p>
-            </div>
-          </div>
-          <Button variant="ghost" size="icon" className="size-8 rounded-lg" aria-label={t('common.close')} onClick={requestClose}>
-            <X className="size-4" />
+    <ObjectSheet
+      titleId="new-channel-title"
+      size="md"
+      icon={<ProviderTile type={d.type} size="lg" />}
+      title={t('channels.newChannel')}
+      subtitle={t('channels.new.subtitle', { provider: providerName(d.type) })}
+      onClose={requestClose}
+      bodyClassName="[&>*:first-child]:pt-0"
+      footer={
+        <SheetBar status={status}>
+          <Button variant="outline" className="rounded-lg" onClick={requestClose}>
+            {t('common.cancel')}
           </Button>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 [&>*:first-child]:pt-0">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label={t('channels.new.provider')} htmlFor="nc-type" className="pt-0">
-              <ProviderSelect id="nc-type" value={d.type} onChange={pickType} />
-            </Field>
-            <Field label={t('channels.new.name')} htmlFor="nc-name" className="!border-t-0 pt-0">
-              <Input
-                id="nc-name"
-                className="font-mono text-[13px]"
-                value={d.name}
-                onChange={(e) => set({ name: e.target.value, nameEdited: true })}
-              />
-            </Field>
-          </div>
-
-          <Field
-            label={t('channels.new.allowed')}
-            htmlFor="nc-allow"
-            extra={
-              <Segmented
-                size="mini"
-                label={t('channels.new.matchMode')}
-                value={d.allowMode}
-                onChange={(v) => set({ allowMode: v })}
-                options={[
-                  { value: 'model', label: t('channels.new.modeModels') },
-                  { value: 'wildcard', label: t('channels.new.modeWildcard') }
-                ]}
-              />
-            }
-            hint={allowHint}
+          <Button
+            variant="outline"
+            className="rounded-lg"
+            disabled={!authOk || !baseOk || busy || !labels.canFetchModels}
+            title={labels.canFetchModels ? undefined : t('channels.new.readyNoTest')}
+            onClick={runTest}
           >
-            <ChipInput
-              id="nc-allow"
-              values={d.allow}
-              onChange={allowChange}
-              suggestions={d.allowMode === 'model' ? suggestions : []}
-              transform={entryTransform('allow')}
-              onReject={() => toast.error(t('channels.new.wildcardInvalid'))}
-              chipLabel={(v) => (v === '*' ? <span className="font-sans">{t('channels.new.allModels')}</span> : v)}
-              placeholder={d.allowMode === 'wildcard' ? t('channels.new.wildcardPlaceholder') : t('channels.new.allowEmpty')}
-            />
-          </Field>
-
-          <Field
-            label={t('channels.new.blocked')}
-            htmlFor="nc-block"
-            optional
-            extra={
-              <Segmented
-                size="mini"
-                label={t('channels.new.matchMode')}
-                value={d.blockMode}
-                onChange={(v) => set({ blockMode: v })}
-                options={[
-                  { value: 'model', label: t('channels.new.modeModels') },
-                  { value: 'wildcard', label: t('channels.new.modeWildcard') }
-                ]}
-              />
-            }
-            hint={t('channels.new.blockedHint')}
-          >
-            <ChipInput
-              id="nc-block"
-              values={d.block}
-              onChange={(block) => set({ block })}
-              suggestions={d.blockMode === 'model' ? suggestions : []}
-              transform={entryTransform('block')}
-              onReject={() => toast.error(t('channels.new.wildcardInvalid'))}
-              placeholder={d.blockMode === 'wildcard' ? t('channels.new.wildcardPlaceholder') : t('channels.new.blockedEmpty')}
-            />
-          </Field>
-
-          <Field label={t('channels.new.mapping')} optional hint={t('channels.new.mappingHint')}>
-            <ModelMappingInput key={mapVersion} value={d.mapping} models={suggestions} onChange={(v) => set({ mapping: v })} />
-          </Field>
-
-          {kind === 'parts' && (
-            <Field label={t('channels.new.authMethod')}>
-              <Segmented
-                size="wide"
-                label={t('channels.new.authMethod')}
-                value={d.partsMode}
-                onChange={(v) => {
-                  set({ partsMode: v });
-                  resetTest();
-                }}
-                options={Object.keys(KEY_PART_MODES).map((m) => ({ value: m, label: t(`channels.new.parts.mode.${m}`) }))}
-              />
-            </Field>
-          )}
-
-          <Field
-            label={credLabel}
-            htmlFor={kind === 'key' || kind === 'json' ? 'nc-key' : undefined}
-            extra={kind !== 'oauth' && <KeyLink type={d.type} />}
-            hint={
-              kind === 'oauth'
-                ? t('channels.new.oauthHint')
-                : kind === 'parts'
-                  ? t('channels.new.partsHint')
-                  : kind === 'json'
-                    ? t('channels.new.jsonHint')
-                    : t('channels.new.keyHint')
-            }
-          >
-            {credential}
-            {keyCount > 1 && (
-              <p className="mt-2 rounded-lg bg-muted px-3 py-2 text-[13px] text-muted-foreground">
-                {t('channels.new.multiKey', { count: keyCount, first: d.name.trim() || '…', second: `${d.name.trim() || '…'}_2` })}
-              </p>
-            )}
-          </Field>
-
-          {labels.hasOther && (
-            <Field label={configText(t, labels.label.other)} htmlFor="nc-other" hint={configText(t, labels.prompt.other)}>
-              <Input
-                id="nc-other"
-                className="font-mono text-[13px]"
-                value={d.other}
-                onChange={(e) => {
-                  set({ other: e.target.value });
-                  resetTest();
-                }}
-              />
-            </Field>
-          )}
-
-          {showBase && (
-            <Field
-              label={t('channels.conn.baseUrl')}
-              htmlFor="nc-base"
-              optional={!baseRequired}
-              hint={configText(t, labels.prompt.base_url) || t('channels.new.baseUrlHint')}
-            >
-              <Input
-                id="nc-base"
-                className="font-mono text-[13px]"
-                value={d.base_url}
-                placeholder={d.type === 3 ? 'https://your-resource.openai.azure.com' : 'https://your-host/v1'}
-                onChange={(e) => {
-                  set({ base_url: e.target.value });
-                  resetTest();
-                }}
-              />
-            </Field>
-          )}
-
-          <Field label={t('channels.groups')} extra={t('channels.groupsHint')}>
-            <GroupOptions groups={groups} value={d.groups} onChange={(g) => set({ groups: g })} />
-          </Field>
-
-          <Field label={t('channels.usage.label')} extra={usage.top ? t('channels.usage.peerExisting', { name: usage.top.name }) : null}>
-            <UsageOptions
-              usage={usage}
-              value={usageKey}
-              onChange={(k) => set({ usage: k })}
-              custom={d.custom}
-              onCustomChange={(custom) => set({ custom })}
-            />
-          </Field>
-        </div>
-
-        <div className="flex items-center justify-between gap-3 border-t border-border py-3 pl-6 pr-4">
-          <span className="min-w-0 text-[13px] text-muted-foreground" aria-live="polite">
-            {status}
-          </span>
-          <div className="flex shrink-0 gap-2">
-            <Button variant="outline" className="rounded-lg" onClick={requestClose}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="outline"
-              className="rounded-lg"
-              disabled={!authOk || !baseOk || busy || !labels.canFetchModels}
-              title={labels.canFetchModels ? undefined : t('channels.new.readyNoTest')}
-              onClick={runTest}
-            >
-              {test.status === 'running' && !saving ? <Loader2 className="animate-spin" /> : <Play />}
-              {t('channels.action.test')}
-            </Button>
-            <Button className="rounded-lg" disabled={!ready || busy} onClick={saveAndTest}>
-              {saving && <Loader2 className="animate-spin" />}
-              {saving ? t('channels.new.saving') : t('channels.new.saveAndTest')}
-            </Button>
-          </div>
-        </div>
+            {test.status === 'running' && !saving ? <Loader2 className="animate-spin" /> : <Play />}
+            {t('channels.action.test')}
+          </Button>
+          <Button className="rounded-lg" disabled={!ready || busy} onClick={saveAndTest}>
+            {saving && <Loader2 className="animate-spin" />}
+            {saving ? t('channels.new.saving') : t('channels.new.saveAndTest')}
+          </Button>
+        </SheetBar>
+      }
+    >
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field label={t('channels.new.provider')} htmlFor="nc-type" className="pt-0">
+          <ProviderSelect id="nc-type" value={d.type} onChange={pickType} />
+        </Field>
+        <Field label={t('channels.new.name')} htmlFor="nc-name" className="!border-t-0 pt-0">
+          <Input
+            id="nc-name"
+            className="font-mono text-[13px]"
+            value={d.name}
+            onChange={(e) => set({ name: e.target.value, nameEdited: true })}
+          />
+        </Field>
       </div>
-    </Sheet>
+
+      <Field
+        label={t('channels.new.allowed')}
+        htmlFor="nc-allow"
+        extra={
+          <Segmented
+            size="mini"
+            label={t('channels.new.matchMode')}
+            value={d.allowMode}
+            onChange={(v) => set({ allowMode: v })}
+            options={[
+              { value: 'model', label: t('channels.new.modeModels') },
+              { value: 'wildcard', label: t('channels.new.modeWildcard') }
+            ]}
+          />
+        }
+        hint={allowHint}
+      >
+        <ChipInput
+          id="nc-allow"
+          values={d.allow}
+          onChange={allowChange}
+          suggestions={d.allowMode === 'model' ? suggestions : []}
+          transform={entryTransform('allow')}
+          onReject={() => toast.error(t('channels.new.wildcardInvalid'))}
+          chipLabel={(v) => (v === '*' ? <span className="font-sans">{t('channels.new.allModels')}</span> : v)}
+          placeholder={d.allowMode === 'wildcard' ? t('channels.new.wildcardPlaceholder') : t('channels.new.allowEmpty')}
+        />
+      </Field>
+
+      <Field
+        label={t('channels.new.blocked')}
+        htmlFor="nc-block"
+        optional
+        extra={
+          <Segmented
+            size="mini"
+            label={t('channels.new.matchMode')}
+            value={d.blockMode}
+            onChange={(v) => set({ blockMode: v })}
+            options={[
+              { value: 'model', label: t('channels.new.modeModels') },
+              { value: 'wildcard', label: t('channels.new.modeWildcard') }
+            ]}
+          />
+        }
+        hint={t('channels.new.blockedHint')}
+      >
+        <ChipInput
+          id="nc-block"
+          values={d.block}
+          onChange={(block) => set({ block })}
+          suggestions={d.blockMode === 'model' ? suggestions : []}
+          transform={entryTransform('block')}
+          onReject={() => toast.error(t('channels.new.wildcardInvalid'))}
+          placeholder={d.blockMode === 'wildcard' ? t('channels.new.wildcardPlaceholder') : t('channels.new.blockedEmpty')}
+        />
+      </Field>
+
+      <Field label={t('channels.new.mapping')} optional hint={t('channels.new.mappingHint')}>
+        <ModelMappingInput key={mapVersion} value={d.mapping} models={suggestions} onChange={(v) => set({ mapping: v })} />
+      </Field>
+
+      {kind === 'parts' && (
+        <Field label={t('channels.new.authMethod')}>
+          <Segmented
+            size="wide"
+            label={t('channels.new.authMethod')}
+            value={d.partsMode}
+            onChange={(v) => {
+              set({ partsMode: v });
+              resetTest();
+            }}
+            options={Object.keys(KEY_PART_MODES).map((m) => ({ value: m, label: t(`channels.new.parts.mode.${m}`) }))}
+          />
+        </Field>
+      )}
+
+      <Field
+        label={credLabel}
+        htmlFor={kind === 'key' || kind === 'json' ? 'nc-key' : undefined}
+        extra={kind !== 'oauth' && <KeyLink type={d.type} />}
+        hint={
+          kind === 'oauth'
+            ? t('channels.new.oauthHint')
+            : kind === 'parts'
+              ? t('channels.new.partsHint')
+              : kind === 'json'
+                ? t('channels.new.jsonHint')
+                : t('channels.new.keyHint')
+        }
+      >
+        {credential}
+        {keyCount > 1 && (
+          <p className="mt-2 rounded-lg bg-muted px-3 py-2 text-[13px] text-muted-foreground">
+            {t('channels.new.multiKey', { count: keyCount, first: d.name.trim() || '…', second: `${d.name.trim() || '…'}_2` })}
+          </p>
+        )}
+      </Field>
+
+      {labels.hasOther && (
+        <Field label={configText(t, labels.label.other)} htmlFor="nc-other" hint={configText(t, labels.prompt.other)}>
+          <Input
+            id="nc-other"
+            className="font-mono text-[13px]"
+            value={d.other}
+            onChange={(e) => {
+              set({ other: e.target.value });
+              resetTest();
+            }}
+          />
+        </Field>
+      )}
+
+      {showBase && (
+        <Field
+          label={t('channels.conn.baseUrl')}
+          htmlFor="nc-base"
+          optional={!baseRequired}
+          hint={configText(t, labels.prompt.base_url) || t('channels.new.baseUrlHint')}
+        >
+          <Input
+            id="nc-base"
+            className="font-mono text-[13px]"
+            value={d.base_url}
+            placeholder={d.type === 3 ? 'https://your-resource.openai.azure.com' : 'https://your-host/v1'}
+            onChange={(e) => {
+              set({ base_url: e.target.value });
+              resetTest();
+            }}
+          />
+        </Field>
+      )}
+
+      <Field label={t('channels.groups')} extra={t('channels.groupsHint')}>
+        <GroupOptions groups={groups} value={d.groups} onChange={(g) => set({ groups: g })} />
+      </Field>
+
+      <Field label={t('channels.usage.label')} extra={usage.top ? t('channels.usage.peerExisting', { name: usage.top.name }) : null}>
+        <UsageOptions
+          usage={usage}
+          value={usageKey}
+          onChange={(k) => set({ usage: k })}
+          custom={d.custom}
+          onCustomChange={(custom) => set({ custom })}
+        />
+      </Field>
+    </ObjectSheet>
   );
 }
 

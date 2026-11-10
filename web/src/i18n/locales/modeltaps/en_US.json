@@ -2066,7 +2066,6 @@
       "connectFailed": "Couldn't connect. Check the key and the address"
     },
     "newChannel": "New channel",
-    "optional": "optional",
     "pane": {
       "refreshDone_one": "Refreshed the model list of {{count}} channel",
       "refreshDone_other": "Refreshed the model lists of {{count}} channels",
@@ -2080,13 +2079,8 @@
       "testPartial": "{{failed}} of {{count}} channels failed the test"
     },
     "panel": {
-      "discard": "Discard",
-      "discardConfirm": "You have unsaved changes. Close anyway?",
       "enabled": "Enabled",
-      "save": "Save",
-      "saved": "Saved",
       "scope": "Changes apply to this channel only",
-      "switchConfirm": "This tab has unsaved changes. Switch anyway?",
       "tab": {
         "models": "Models",
         "connection": "Connection",
@@ -2095,8 +2089,7 @@
         "monitor": "Monitoring",
         "advanced": "Advanced"
       },
-      "tabs": "Channel settings",
-      "unsaved": "Unsaved changes"
+      "tabs": "Channel settings"
     },
     "range": {
       "24h": "24 hours",
@@ -2281,5 +2274,26 @@
       "label": "Sections"
     },
     "mainLabel": "Main navigation"
+  },
+  "objects": {
+    "optional": "optional",
+    "help": "Help",
+    "notFound": "This item does not exist or was deleted",
+    "more": "More actions",
+    "panel": {
+      "discard": "Discard",
+      "discardConfirm": "You have unsaved changes. Close anyway?",
+      "save": "Save",
+      "saved": "Saved",
+      "scope": "Saving applies to this tab only",
+      "switchConfirm": "This tab has unsaved changes. Switch anyway?",
+      "unsaved": "Unsaved changes"
+    },
+    "new": {
+      "create": "Create",
+      "discardConfirm": "Discard what you have entered?",
+      "missing": "Still needed: {{items}}",
+      "listSep": ", "
+    }
   }
 }

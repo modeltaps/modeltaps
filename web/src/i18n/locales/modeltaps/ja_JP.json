@@ -1991,7 +1991,6 @@
       "connectFailed": "接続できませんでした。キーとアドレスを確認してください"
     },
     "newChannel": "新しいチャネル",
-    "optional": "任意",
     "pane": {
       "refreshDone_other": "{{count}} チャネルのモデル一覧を更新しました",
       "refreshModels": "モデル一覧を更新",
@@ -2002,13 +2001,8 @@
       "testPartial": "{{count}} チャネル中 {{failed}} 件のテストに失敗しました"
     },
     "panel": {
-      "discard": "破棄",
-      "discardConfirm": "未保存の変更があります。閉じますか？",
       "enabled": "有効",
-      "save": "保存",
-      "saved": "保存しました",
       "scope": "変更はこのチャネルにのみ適用されます",
-      "switchConfirm": "このタブには未保存の変更があります。切り替えますか？",
       "tab": {
         "models": "モデル",
         "connection": "接続",
@@ -2017,8 +2011,7 @@
         "monitor": "監視",
         "advanced": "詳細設定"
       },
-      "tabs": "チャネル設定",
-      "unsaved": "未保存の変更があります"
+      "tabs": "チャネル設定"
     },
     "range": {
       "24h": "24 時間",
@@ -2197,5 +2190,26 @@
       "label": "セクション"
     },
     "mainLabel": "メインナビゲーション"
+  },
+  "objects": {
+    "optional": "任意",
+    "help": "ヘルプ",
+    "notFound": "存在しないか、削除されています",
+    "more": "その他の操作",
+    "panel": {
+      "discard": "破棄",
+      "discardConfirm": "未保存の変更があります。閉じますか？",
+      "save": "保存",
+      "saved": "保存しました",
+      "scope": "保存はこのタブにのみ適用されます",
+      "switchConfirm": "このタブには未保存の変更があります。切り替えますか？",
+      "unsaved": "未保存の変更があります"
+    },
+    "new": {
+      "create": "作成",
+      "discardConfirm": "入力した内容を破棄しますか？",
+      "missing": "未入力：{{items}}",
+      "listSep": "、"
+    }
   }
 }

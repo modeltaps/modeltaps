@@ -1991,7 +1991,6 @@
       "connectFailed": "连接失败，请检查密钥和地址"
     },
     "newChannel": "新建渠道",
-    "optional": "可选",
     "pane": {
       "refreshDone_other": "已刷新 {{count}} 个渠道的模型列表",
       "refreshModels": "刷新模型列表",
@@ -2002,13 +2001,8 @@
       "testPartial": "{{count}} 个渠道中 {{failed}} 个测试失败"
     },
     "panel": {
-      "discard": "撤销",
-      "discardConfirm": "有未保存的改动，确定关闭吗？",
       "enabled": "启用",
-      "save": "保存",
-      "saved": "已保存",
       "scope": "改动只作用于这个渠道",
-      "switchConfirm": "这个 Tab 有未保存的改动，确定切换吗？",
       "tab": {
         "models": "模型",
         "connection": "连接",
@@ -2017,8 +2011,7 @@
         "monitor": "监控",
         "advanced": "高级"
       },
-      "tabs": "渠道设置",
-      "unsaved": "有未保存的改动"
+      "tabs": "渠道设置"
     },
     "range": {
       "24h": "24 小时",
@@ -2197,5 +2190,26 @@
       "label": "分组"
     },
     "mainLabel": "主导航"
+  },
+  "objects": {
+    "optional": "可选",
+    "help": "说明",
+    "notFound": "对象不存在或已删除",
+    "more": "更多操作",
+    "panel": {
+      "discard": "撤销",
+      "discardConfirm": "有未保存的改动，确定关闭吗？",
+      "save": "保存",
+      "saved": "已保存",
+      "scope": "保存只作用于这个 Tab",
+      "switchConfirm": "这个 Tab 有未保存的改动，确定切换吗？",
+      "unsaved": "有未保存的改动"
+    },
+    "new": {
+      "create": "创建",
+      "discardConfirm": "放弃已填写的内容吗？",
+      "missing": "还差：{{items}}",
+      "listSep": "、"
+    }
   }
 }

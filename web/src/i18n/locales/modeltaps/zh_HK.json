@@ -1991,7 +1991,6 @@
       "connectFailed": "連線失敗，請檢查密鑰和地址"
     },
     "newChannel": "新建渠道",
-    "optional": "可選",
     "pane": {
       "refreshDone_other": "已重新整理 {{count}} 個渠道的模型列表",
       "refreshModels": "重新整理模型列表",
@@ -2002,13 +2001,8 @@
       "testPartial": "{{count}} 個渠道中 {{failed}} 個測試失敗"
     },
     "panel": {
-      "discard": "撤銷",
-      "discardConfirm": "有未儲存的改動，確定關閉嗎？",
       "enabled": "啟用",
-      "save": "儲存",
-      "saved": "已儲存",
       "scope": "改動只作用於這個渠道",
-      "switchConfirm": "這個分頁有未儲存的改動，確定切換嗎？",
       "tab": {
         "models": "模型",
         "connection": "連線",
@@ -2017,8 +2011,7 @@
         "monitor": "監控",
         "advanced": "進階"
       },
-      "tabs": "渠道設定",
-      "unsaved": "有未儲存的改動"
+      "tabs": "渠道設定"
     },
     "range": {
       "24h": "24 小時",
@@ -2197,5 +2190,26 @@
       "label": "分組"
     },
     "mainLabel": "主導覽"
+  },
+  "objects": {
+    "optional": "可選",
+    "help": "說明",
+    "notFound": "項目不存在或已刪除",
+    "more": "更多操作",
+    "panel": {
+      "discard": "撤銷",
+      "discardConfirm": "有未儲存的改動，確定關閉嗎？",
+      "save": "儲存",
+      "saved": "已儲存",
+      "scope": "儲存只作用於這個分頁",
+      "switchConfirm": "這個分頁有未儲存的改動，確定切換嗎？",
+      "unsaved": "有未儲存的改動"
+    },
+    "new": {
+      "create": "建立",
+      "discardConfirm": "放棄已填寫的內容嗎？",
+      "missing": "還差：{{items}}",
+      "listSep": "、"
+    }
   }
 }

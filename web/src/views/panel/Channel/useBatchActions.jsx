@@ -188,7 +188,7 @@ export default function useBatchActions({ groups, requestConfirm, onDone }) {
         title={t('channels.batch.groupsTitle', { count: groupsDialog?.rows.length || 0 })}
         description={t('channels.batch.groupsHint')}
         busy={busy}
-        confirmLabel={t('channels.panel.save')}
+        confirmLabel={t('objects.panel.save')}
         onCancel={() => setGroupsDialog(null)}
         onConfirm={saveGroups}
       >
@@ -201,7 +201,7 @@ export default function useBatchActions({ groups, requestConfirm, onDone }) {
         title={t('channels.batch.numbersTitle', { count: numbersDialog?.rows.length || 0 })}
         description={t('channels.batch.numbersHint')}
         busy={busy}
-        confirmLabel={t('channels.panel.save')}
+        confirmLabel={t('objects.panel.save')}
         onCancel={() => setNumbersDialog(null)}
         onConfirm={saveNumbers}
       >
@@ -228,7 +228,7 @@ export default function useBatchActions({ groups, requestConfirm, onDone }) {
         title={t('channels.tagActions.priorityTitle', { tag: tagDialog?.tag || '' })}
         description={t('channels.tagActions.priorityHint')}
         busy={busy}
-        confirmLabel={t('channels.panel.save')}
+        confirmLabel={t('objects.panel.save')}
         onCancel={() => setTagDialog(null)}
         onConfirm={saveTagPriority}
       >
