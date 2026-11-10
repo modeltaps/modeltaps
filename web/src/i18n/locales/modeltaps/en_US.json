@@ -2138,6 +2138,64 @@
       "peerNote": "{{name}} serves these models in the same groups too",
       "priority": "Priority",
       "weight": "Weight"
+    },
+    "batch": {
+      "label": "Selected channels",
+      "selected_one": "{{count}} selected",
+      "selected_other": "{{count}} selected",
+      "enable": "Enable",
+      "disable": "Disable",
+      "test": "Test",
+      "groups": "Groups",
+      "numbers": "Priority · weight",
+      "delete": "Delete",
+      "clear": "Clear selection",
+      "selectAll": "Select all visible channels",
+      "selectRow": "Select {{name}}",
+      "done_one": "Updated {{count}} channel",
+      "done_other": "Updated {{count}} channels",
+      "partial": "{{failed}} of {{count}} channels could not be updated",
+      "deleteTitle_one": "Delete {{count}} channel",
+      "deleteTitle_other": "Delete {{count}} channels",
+      "deleteConfirm_one": "The selected channel and its settings are deleted. This cannot be undone.",
+      "deleteConfirm_other": "The {{count}} selected channels and their settings are deleted. This cannot be undone.",
+      "groupsTitle_one": "Groups of {{count}} channel",
+      "groupsTitle_other": "Groups of {{count}} channels",
+      "groupsHint": "The selected channels get exactly these groups",
+      "numbersTitle_one": "Priority and weight of {{count}} channel",
+      "numbersTitle_other": "Priority and weight of {{count}} channels",
+      "numbersHint": "Leave a field empty to keep each channel's current value",
+      "unchanged": "Unchanged"
+    },
+    "filter": {
+      "label": "Filter channels",
+      "status": "Status",
+      "all": "All",
+      "enabled": "Enabled",
+      "manual": "Disabled",
+      "auto": "Auto-disabled",
+      "allTags": "All tags",
+      "noTag": "No tag",
+      "empty": "No channels match these filters.",
+      "clear": "Clear filters"
+    },
+    "search": {
+      "label": "Search channels",
+      "placeholder": "Name, model, tag, key or host",
+      "clear": "Clear search",
+      "results": "Providers with matches",
+      "none": "Nothing matches",
+      "emptyTitle": "No matching channels",
+      "emptyDescription": "No channel of any provider matches \"{{query}}\""
+    },
+    "tagActions": {
+      "label": "Tag {{tag}}",
+      "enable": "Enable all in tag",
+      "disable": "Disable all in tag",
+      "priority": "Set tag priority",
+      "delete": "Delete tag and its channels",
+      "priorityTitle": "Priority of tag {{tag}}",
+      "priorityHint": "Sets the same priority on every channel with this tag, across providers"
     }
   }
 }

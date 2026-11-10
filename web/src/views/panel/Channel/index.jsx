@@ -23,7 +23,8 @@ import ProviderPane, { RANGES } from './ProviderPane';
 import ChannelPanel from './ChannelPanel';
 import NewChannelSheet from './NewChannelSheet';
 import { LEGACY_SECTION_TAB, PANEL_TABS } from './panelTabs';
-import { groupChannelsByType } from './channelGroups';
+import { NO_TAG, STATUS_FILTERS, channelMatches, groupChannelsByType } from './channelGroups';
+import useBatchActions from './useBatchActions';
 import { checkChannelDrift, fetchAllChannels, fetchChannelMetrics, fetchGroupOptions, fetchModels, manageChannel } from './channelApi';
 
 const DISMISSED_KEY = 'channels.dismissedIssues';
@@ -92,15 +93,30 @@ export default function Channel() {
     fetchGroupOptions().then(setGroups);
   }, [reload]);
 
+  // Search (?q=) across every provider, and the table filters (?status=, ?tag= / ?untagged=1).
+  const query = searchParams.get('q') || '';
+  const statusFilter = STATUS_FILTERS[searchParams.get('status')] ? searchParams.get('status') : '';
+  const tagFilter = searchParams.get('untagged') === '1' ? NO_TAG : searchParams.get('tag') || '';
+  const filters = useMemo(() => ({ status: statusFilter, tag: tagFilter }), [statusFilter, tagFilter]);
+
   const providerGroups = useMemo(() => groupChannelsByType(channels), [channels]);
+  const visibleGroups = useMemo(
+    () =>
+      query.trim()
+        ? providerGroups
+            .map((g) => ({ ...g, channels: g.channels.filter((c) => channelMatches(c, query)) }))
+            .filter((g) => g.channels.length)
+        : providerGroups,
+    [providerGroups, query]
+  );
   const openRow = openId ? channels.find((c) => c.id === openId) : null;
   const selectedType =
-    (typeParam && providerGroups.some((g) => g.type === typeParam) && typeParam) ||
-    openRow?.type ||
-    providerGroups[0]?.type ||
-    typeParam ||
+    (typeParam && visibleGroups.some((g) => g.type === typeParam) && typeParam) ||
+    (openRow && visibleGroups.some((g) => g.type === openRow.type) && openRow.type) ||
+    visibleGroups[0]?.type ||
+    (query.trim() ? 0 : typeParam) ||
     0;
-  const selected = providerGroups.find((g) => g.type === selectedType);
+  const selected = visibleGroups.find((g) => g.type === selectedType);
   const selectedChannels = useMemo(() => selected?.channels || [], [selected]);
   const range = RANGES.find((r) => r.key === rangeKey) || RANGES[0];
 
@@ -123,9 +139,16 @@ export default function Channel() {
     };
   }, [metricIds, range.seconds, metricsTick]);
 
+  // Links keep the provider, the search and the filters.
   const withType = (path, type = selectedType, extra = {}) => {
     const p = new URLSearchParams();
     if (type) p.set('type', String(type));
+    if (query) p.set('q', query);
+    if (type === selectedType) {
+      if (statusFilter) p.set('status', statusFilter);
+      if (tagFilter === NO_TAG) p.set('untagged', '1');
+      else if (tagFilter) p.set('tag', tagFilter);
+    }
     for (const [k, v] of Object.entries(extra)) if (v) p.set(k, v);
     const q = p.toString();
     return `${path}${q ? `?${q}` : ''}`;
@@ -138,7 +161,22 @@ export default function Channel() {
     const present = new Set(providerGroups.map((g) => g.type));
     openNew(COMMON_CHANNEL_TYPES.find((x) => !present.has(x)) || 1);
   };
-  const selectType = (type) => setSearchParams({ type: String(type) });
+  const selectType = (type) => setSearchParams(query ? { type: String(type), q: query } : { type: String(type) });
+  const updateParams = useCallback(
+    (patch) =>
+      setSearchParams(
+        (prev) => {
+          const p = new URLSearchParams(prev);
+          for (const [k, v] of Object.entries(patch)) v ? p.set(k, v) : p.delete(k);
+          return p;
+        },
+        { replace: true }
+      ),
+    [setSearchParams]
+  );
+  const setQuery = useCallback((q) => updateParams({ q, status: '', tag: '', untagged: '' }), [updateParams]);
+  const setFilters = ({ status, tag }) =>
+    updateParams({ status, tag: tag && tag !== NO_TAG ? tag : '', untagged: tag === NO_TAG ? '1' : '' });
 
   const {
     handlers: actions,
@@ -157,6 +195,20 @@ export default function Channel() {
     onDeleted: (row) => {
       reload();
       if (row.id === openId) closeOverlay();
+    }
+  });
+
+  const {
+    batch,
+    tag: tagActions,
+    busy: batchBusy,
+    dialogs: batchDialogs
+  } = useBatchActions({
+    groups,
+    requestConfirm,
+    onDone: () => {
+      reload();
+      setMetricsTick((x) => x + 1);
     }
   });
 
@@ -348,14 +400,30 @@ export default function Channel() {
     body = (
       <div className="grid items-start gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
         <ProviderLane
-          groups={providerGroups}
+          groups={visibleGroups}
           selected={selectedType}
           onSelect={selectType}
           dismissed={dismissed}
           onNewOther={openNewOther}
+          query={query}
+          onQueryChange={setQuery}
         />
+        {!selected && query.trim() && (
+          <ListEmptyState
+            variant="noMatch"
+            title={t('channels.search.emptyTitle')}
+            description={t('channels.search.emptyDescription', { query })}
+            onClearFilters={() => setQuery('')}
+          />
+        )}
         {selected && (
           <ProviderPane
+            key={`${selectedType}|${query}|${statusFilter}|${tagFilter}`}
+            filters={filters}
+            onFiltersChange={setFilters}
+            batch={batch}
+            tagActions={tagActions}
+            batchBusy={batchBusy}
             type={selectedType}
             channels={selectedChannels}
             metrics={metrics}
@@ -427,6 +495,7 @@ export default function Channel() {
       )}
 
       {dialogs}
+      {batchDialogs}
 
       <BatchModal open={batchOpen} onOpenChange={setBatchOpen} groupOptions={groups.map((g) => g.symbol)} modelOptions={modelOptions} />
     </>

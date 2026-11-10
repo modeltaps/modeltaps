@@ -2060,6 +2060,58 @@
       "peerNote": "同じグループで {{name}} もこれらのモデルを提供しています",
       "priority": "優先度",
       "weight": "重み"
+    },
+    "batch": {
+      "label": "選択したチャネル",
+      "selected_other": "{{count}} 件を選択",
+      "enable": "有効化",
+      "disable": "無効化",
+      "test": "テスト",
+      "groups": "グループ",
+      "numbers": "優先度 · 重み",
+      "delete": "削除",
+      "clear": "選択を解除",
+      "selectAll": "表示中のチャネルをすべて選択",
+      "selectRow": "{{name}} を選択",
+      "done_other": "{{count}} チャネルを更新しました",
+      "partial": "{{count}} チャネル中 {{failed}} 件を更新できませんでした",
+      "deleteTitle_other": "{{count}} チャネルを削除",
+      "deleteConfirm_other": "選択した {{count}} チャネルと設定を削除します。元に戻せません。",
+      "groupsTitle_other": "{{count}} チャネルのグループ",
+      "groupsHint": "選択したチャネルのグループをここで選んだものに置き換えます",
+      "numbersTitle_other": "{{count}} チャネルの優先度と重み",
+      "numbersHint": "空欄の項目は各チャネルの現在の値のままです",
+      "unchanged": "変更しない"
+    },
+    "filter": {
+      "label": "チャネルを絞り込む",
+      "status": "状態",
+      "all": "すべて",
+      "enabled": "有効",
+      "manual": "手動で無効",
+      "auto": "自動で無効",
+      "allTags": "すべてのタグ",
+      "noTag": "タグなし",
+      "empty": "条件に一致するチャネルはありません。",
+      "clear": "絞り込みを解除"
+    },
+    "search": {
+      "label": "チャネルを検索",
+      "placeholder": "名前、モデル、タグ、キー、ホスト",
+      "clear": "検索をクリア",
+      "results": "一致するプロバイダー",
+      "none": "一致するものはありません",
+      "emptyTitle": "一致するチャネルはありません",
+      "emptyDescription": "「{{query}}」に一致するチャネルはありません"
+    },
+    "tagActions": {
+      "label": "タグ {{tag}}",
+      "enable": "タグ内をすべて有効化",
+      "disable": "タグ内をすべて無効化",
+      "priority": "タグの優先度を設定",
+      "delete": "タグとチャネルを削除",
+      "priorityTitle": "タグ {{tag}} の優先度",
+      "priorityHint": "このタグのすべてのチャネルに同じ優先度を設定します"
     }
   }
 }

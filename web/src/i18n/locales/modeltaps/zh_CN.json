@@ -2060,6 +2060,58 @@
       "peerNote": "同组还有 {{name}} 提供这些模型",
       "priority": "优先级",
       "weight": "权重"
+    },
+    "batch": {
+      "label": "已选渠道",
+      "selected_other": "已选 {{count}} 个",
+      "enable": "启用",
+      "disable": "停用",
+      "test": "测试",
+      "groups": "分组",
+      "numbers": "优先级 · 权重",
+      "delete": "删除",
+      "clear": "取消选择",
+      "selectAll": "选择所有可见渠道",
+      "selectRow": "选择 {{name}}",
+      "done_other": "已更新 {{count}} 个渠道",
+      "partial": "{{count}} 个渠道中 {{failed}} 个更新失败",
+      "deleteTitle_other": "删除 {{count}} 个渠道",
+      "deleteConfirm_other": "选中的 {{count}} 个渠道及其设置会被删除，不能撤销。",
+      "groupsTitle_other": "修改 {{count}} 个渠道的分组",
+      "groupsHint": "选中的渠道会改为这里勾选的分组",
+      "numbersTitle_other": "修改 {{count}} 个渠道的优先级与权重",
+      "numbersHint": "留空的项保持各渠道原值",
+      "unchanged": "不修改"
+    },
+    "filter": {
+      "label": "筛选渠道",
+      "status": "状态",
+      "all": "全部",
+      "enabled": "已启用",
+      "manual": "手动停用",
+      "auto": "自动停用",
+      "allTags": "全部标签",
+      "noTag": "无标签",
+      "empty": "没有符合筛选条件的渠道。",
+      "clear": "清除筛选"
+    },
+    "search": {
+      "label": "搜索渠道",
+      "placeholder": "名称、模型、标签、密钥或地址",
+      "clear": "清除搜索",
+      "results": "有匹配的供应商",
+      "none": "没有匹配项",
+      "emptyTitle": "没有匹配的渠道",
+      "emptyDescription": "没有任何供应商的渠道匹配「{{query}}」"
+    },
+    "tagActions": {
+      "label": "标签 {{tag}}",
+      "enable": "启用标签内全部渠道",
+      "disable": "停用标签内全部渠道",
+      "priority": "设置标签优先级",
+      "delete": "删除标签及其渠道",
+      "priorityTitle": "标签 {{tag}} 的优先级",
+      "priorityHint": "给带这个标签的所有渠道设置同一优先级"
     }
   }
 }

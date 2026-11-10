@@ -14,7 +14,9 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { channelSeries, formatBalance, metricsByChannel } from './channelMetrics';
-import { channelDot, openIssues } from './channelGroups';
+import { channelDot, filterChannels, openIssues, selectionState, statusCounts, tagOptions } from './channelGroups';
+import { Checkbox } from '@/components/ui/checkbox';
+import ChannelToolbar from './ChannelToolbar';
 import { Dot, ProviderTile, Segmented, useProviderName } from './channelParts';
 import TrafficChart from './TrafficChart';
 
@@ -120,7 +122,12 @@ export default function ProviderPane({
   refreshingModels,
   testingAll,
   actions,
-  testingIds
+  testingIds,
+  filters,
+  onFiltersChange,
+  batch,
+  tagActions,
+  batchBusy
 }) {
   const { t } = useTranslation();
   const providerName = useProviderName();
@@ -145,6 +152,21 @@ export default function ProviderPane({
   const total = useMemo(() => channels.reduce((a, c) => a + (perChannel.get(c.id)?.requests || 0), 0), [channels, perChannel]);
   const issues = openIssues(channels, dismissed);
   const name = providerName(type);
+  const rows = useMemo(() => filterChannels(channels, filters), [channels, filters]);
+  const counts = useMemo(() => statusCounts(channels, filters.tag), [channels, filters.tag]);
+  const { tags, hasUntagged } = useMemo(() => tagOptions(channels), [channels]);
+  // Selection lives here; the page remounts the pane when the provider, query or filters change.
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const rowIds = rows.map((c) => c.id);
+  const headState = selectionState(rowIds, selectedIds);
+  const selectedRows = rows.filter((c) => selectedIds.has(c.id));
+  const toggleRow = (id) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  const toggleAll = () => setSelectedIds(headState === 'all' ? new Set() : new Set(rowIds));
 
   return (
     <section aria-label={name} className="min-w-0">
@@ -216,113 +238,159 @@ export default function ProviderPane({
         <h3 className="text-sm font-medium">{t('channels.table.title')}</h3>
         <span className="text-xs text-muted-foreground">{t('channels.table.hint')}</span>
       </div>
-      <div className="overflow-x-auto rounded-2xl border border-border bg-card">
-        <table className="w-full min-w-[760px] table-fixed border-collapse text-sm" onMouseLeave={() => setHoverId(null)}>
-          <colgroup>
-            <col />
-            <col className="w-[13%]" />
-            <col className="w-[13%]" />
-            <col className="w-[10%]" />
-            <col className="w-[11%]" />
-            <col className="w-[12%]" />
-            <col className="w-[76px]" />
-            <col className="w-[52px]" />
-          </colgroup>
-          <thead>
-            <tr className="text-left text-xs text-muted-foreground [&>th]:h-10 [&>th]:leading-tight [&>th]:border-b [&>th]:border-border [&>th]:px-3 [&>th]:font-medium">
-              <th>{t('channels.table.name')}</th>
-              <th className="text-right">{t('channels.table.priorityWeight')}</th>
-              <th className="text-right">{t('channels.table.requests', { range: t(`channels.range.short.${range.key}`) })}</th>
-              <th className="text-right">{t('channels.table.successRate')}</th>
-              <th className="text-right">{t('channels.table.avgLatency')}</th>
-              <th className="text-right">{t('channels.table.balance')}</th>
-              <th>{t('channels.table.enabled')}</th>
-              <th>
-                <span className="sr-only">{t('channels.table.actions')}</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {channels.map((c) => {
-              const m = perChannel.get(c.id);
-              const off = c.status !== 1;
-              const isNew = highlightIds.has(c.id);
-              return (
-                <tr
-                  key={c.id}
-                  onClick={() => onOpen(c.id)}
-                  onMouseEnter={() => setHoverId(c.id)}
-                  className={cn(
-                    'cursor-pointer transition-colors hover:bg-foreground/[0.04] [&>td]:h-[52px] [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0',
-                    off && '[&>td:not(.keep)]:text-muted-foreground',
-                    isNew && 'bg-info/[0.06]'
-                  )}
-                >
-                  <td>
-                    <span className="flex min-w-0 items-center gap-2">
-                      <Dot tone={channelDot(c, dismissed)} />
-                      <span className="truncate font-mono text-[13px]" title={c.name}>
-                        {c.name}
-                      </span>
-                      {c.tag && (
-                        <span className="inline-flex h-[22px] items-center rounded-full bg-muted px-2 text-xs text-muted-foreground">
-                          {c.tag}
-                        </span>
-                      )}
-                      {isNew && (
-                        <span className="inline-flex h-[22px] items-center rounded-full bg-info/10 px-2 text-xs text-info">
-                          {t('channels.table.new')}
-                        </span>
-                      )}
-                    </span>
-                  </td>
-                  <td className="text-right tabular-nums">
-                    {c.priority ?? 0} · {c.weight ?? 1}
-                  </td>
-                  <td className="text-right tabular-nums">{m?.requests ? m.requests.toLocaleString() : <Muted>0</Muted>}</td>
-                  <td className="text-right tabular-nums">
-                    {m?.requests ? <span className={cn(m.successRate < 0.95 && 'text-destructive')}>{pct(m.successRate)}</span> : <Muted />}
-                  </td>
-                  <td className="text-right tabular-nums">{m?.avgLatencyMs != null ? sec(m.avgLatencyMs) : <Muted />}</td>
-                  <td className="text-right tabular-nums">
-                    <BalanceText channel={c} />
-                  </td>
-                  <td className="keep !overflow-visible" onClick={(e) => e.stopPropagation()}>
-                    <Switch
-                      checked={c.status === 1}
-                      aria-label={t('channels.table.enable', { name: c.name })}
-                      onCheckedChange={() => actions.onToggleStatus(c)}
-                    />
-                  </td>
-                  <td className="keep !overflow-visible !px-2 text-right" onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="size-[30px] rounded-lg" aria-label={t('channels.more')}>
-                          {testingIds.has(c.id) ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-44">
-                        <DropdownMenuItem onClick={() => actions.onTest(c)}>
-                          <FlaskConical className="size-4" />
-                          {t('channels.action.test')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => actions.onCopy(c)}>
-                          <Copy className="size-4" />
-                          {t('channels.action.copy')}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive" onClick={() => actions.onDelete(c)}>
-                          <Trash2 className="size-4" />
-                          {t('channels.action.delete')}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+        <ChannelToolbar
+          counts={counts}
+          tags={tags}
+          hasUntagged={hasUntagged}
+          filters={filters}
+          onFiltersChange={onFiltersChange}
+          selected={selectedRows}
+          onClear={() => setSelectedIds(new Set())}
+          batch={batch}
+          tagActions={tagActions}
+          busy={batchBusy}
+        />
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] table-fixed border-collapse text-sm" onMouseLeave={() => setHoverId(null)}>
+            <colgroup>
+              <col className="w-11" />
+              <col />
+              <col className="w-[13%]" />
+              <col className="w-[13%]" />
+              <col className="w-[10%]" />
+              <col className="w-[11%]" />
+              <col className="w-[12%]" />
+              <col className="w-[76px]" />
+              <col className="w-[52px]" />
+            </colgroup>
+            <thead>
+              <tr className="text-left text-xs text-muted-foreground [&>th]:h-10 [&>th]:leading-tight [&>th]:border-b [&>th]:border-border [&>th]:px-3 [&>th]:font-medium">
+                <th className="!pr-0">
+                  <Checkbox
+                    checked={headState === 'all'}
+                    indeterminate={headState === 'some'}
+                    disabled={!rows.length}
+                    aria-label={t('channels.batch.selectAll')}
+                    onCheckedChange={toggleAll}
+                  />
+                </th>
+                <th>{t('channels.table.name')}</th>
+                <th className="text-right">{t('channels.table.priorityWeight')}</th>
+                <th className="text-right">{t('channels.table.requests', { range: t(`channels.range.short.${range.key}`) })}</th>
+                <th className="text-right">{t('channels.table.successRate')}</th>
+                <th className="text-right">{t('channels.table.avgLatency')}</th>
+                <th className="text-right">{t('channels.table.balance')}</th>
+                <th>{t('channels.table.enabled')}</th>
+                <th>
+                  <span className="sr-only">{t('channels.table.actions')}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="h-24 text-center text-sm text-muted-foreground">
+                    {t('channels.filter.empty')}{' '}
+                    <button type="button" className="text-info hover:underline" onClick={() => onFiltersChange({ status: '', tag: '' })}>
+                      {t('channels.filter.clear')}
+                    </button>
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              )}
+              {rows.map((c) => {
+                const m = perChannel.get(c.id);
+                const off = c.status !== 1;
+                const isNew = highlightIds.has(c.id);
+                return (
+                  <tr
+                    key={c.id}
+                    onClick={() => onOpen(c.id)}
+                    onMouseEnter={() => setHoverId(c.id)}
+                    className={cn(
+                      'cursor-pointer transition-colors hover:bg-foreground/[0.04] [&>td]:h-[52px] [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0',
+                      off && '[&>td:not(.keep)]:text-muted-foreground',
+                      isNew && 'bg-info/[0.06]',
+                      selectedIds.has(c.id) && 'bg-accent/50'
+                    )}
+                  >
+                    <td className="keep !pr-0" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedIds.has(c.id)}
+                        aria-label={t('channels.batch.selectRow', { name: c.name })}
+                        onCheckedChange={() => toggleRow(c.id)}
+                      />
+                    </td>
+                    <td>
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Dot tone={channelDot(c, dismissed)} />
+                        <span className="truncate font-mono text-[13px]" title={c.name}>
+                          {c.name}
+                        </span>
+                        {c.tag && (
+                          <span className="inline-flex h-[22px] items-center rounded-full bg-muted px-2 text-xs text-muted-foreground">
+                            {c.tag}
+                          </span>
+                        )}
+                        {isNew && (
+                          <span className="inline-flex h-[22px] items-center rounded-full bg-info/10 px-2 text-xs text-info">
+                            {t('channels.table.new')}
+                          </span>
+                        )}
+                      </span>
+                    </td>
+                    <td className="text-right tabular-nums">
+                      {c.priority ?? 0} · {c.weight ?? 1}
+                    </td>
+                    <td className="text-right tabular-nums">{m?.requests ? m.requests.toLocaleString() : <Muted>0</Muted>}</td>
+                    <td className="text-right tabular-nums">
+                      {m?.requests ? (
+                        <span className={cn(m.successRate < 0.95 && 'text-destructive')}>{pct(m.successRate)}</span>
+                      ) : (
+                        <Muted />
+                      )}
+                    </td>
+                    <td className="text-right tabular-nums">{m?.avgLatencyMs != null ? sec(m.avgLatencyMs) : <Muted />}</td>
+                    <td className="text-right tabular-nums">
+                      <BalanceText channel={c} />
+                    </td>
+                    <td className="keep !overflow-visible" onClick={(e) => e.stopPropagation()}>
+                      <Switch
+                        checked={c.status === 1}
+                        aria-label={t('channels.table.enable', { name: c.name })}
+                        onCheckedChange={() => actions.onToggleStatus(c)}
+                      />
+                    </td>
+                    <td className="keep !overflow-visible !px-2 text-right" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="size-[30px] rounded-lg" aria-label={t('channels.more')}>
+                            {testingIds.has(c.id) ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                          <DropdownMenuItem onClick={() => actions.onTest(c)}>
+                            <FlaskConical className="size-4" />
+                            {t('channels.action.test')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => actions.onCopy(c)}>
+                            <Copy className="size-4" />
+                            {t('channels.action.copy')}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive" onClick={() => actions.onDelete(c)}>
+                            <Trash2 className="size-4" />
+                            {t('channels.action.delete')}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );
@@ -349,5 +417,10 @@ ProviderPane.propTypes = {
   refreshingModels: PropTypes.bool,
   testingAll: PropTypes.bool,
   actions: PropTypes.object.isRequired,
-  testingIds: PropTypes.instanceOf(Set).isRequired
+  testingIds: PropTypes.instanceOf(Set).isRequired,
+  filters: PropTypes.object.isRequired,
+  onFiltersChange: PropTypes.func.isRequired,
+  batch: PropTypes.object.isRequired,
+  tagActions: PropTypes.object.isRequired,
+  batchBusy: PropTypes.bool
 };
