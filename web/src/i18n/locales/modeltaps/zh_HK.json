@@ -2877,5 +2877,51 @@
       "ctaPrimary": "取得 API Key",
       "catchphrase": "扭開就用"
     }
+  },
+  "apiKey": {
+    "panel": {
+      "tabs": "API Key 設定",
+      "tab": {
+        "overview": "概覽",
+        "basics": "基本",
+        "access": "存取",
+        "advanced": "進階"
+      },
+      "key": "金鑰",
+      "reveal": "顯示金鑰",
+      "hide": "隱藏金鑰",
+      "used": "累計用量",
+      "left": "剩餘額度",
+      "leftOfPeriod": "本週期上限 {{limit}}（{{period}}）",
+      "leftOfTotal": "用完即停用",
+      "details": "詳情",
+      "owner": "所屬用戶",
+      "enabled": "啟用",
+      "expiresAt": "指定時間",
+      "neverHint": "這把 Key 一直有效，可隨時停用或刪除。",
+      "limit": "額度上限",
+      "limitHint": "留空不限額。額度只限制這把 Key，實際使用還受帳戶餘額限制。",
+      "noReset": "不重設",
+      "nameRequired": "請填寫名稱",
+      "routing": "分組",
+      "noBackup": "不用備用分組",
+      "groupHint": "請求走這個分組的渠道；分組不可用時改走備用分組。",
+      "restrictions": "限制",
+      "availableHint": "按已儲存的設定計算"
+    },
+    "new": {
+      "description": "取個名字就能用。分組、模型和 IP 限制建立後在詳情裡改。",
+      "namePlaceholder": "例如 my-app",
+      "limit": "額度上限",
+      "expiry": "有效期",
+      "days": "{{count}} 天",
+      "create": "建立",
+      "later": "預設：帳戶分組，全部模型，不限 IP",
+      "createdTitle": "已建立「{{name}}」",
+      "createdHint": "複製到用戶端即可使用，之後也能在詳情裡查看。",
+      "copied": "已複製",
+      "openDetails": "開啟詳情",
+      "done": "完成"
+    }
   }
 }

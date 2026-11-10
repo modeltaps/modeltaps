@@ -20,7 +20,7 @@ const Checkbox = React.forwardRef(({ className, checked = false, indeterminate =
       disabled={disabled}
       onClick={toggle}
       className={cn(
-        'flex size-4 shrink-0 items-center justify-center rounded-sm border border-input ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        'flex size-4 shrink-0 items-center justify-center rounded-sm border border-control-off ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
         (checked || indeterminate) && 'border-primary bg-primary text-primary-foreground',
         className
       )}

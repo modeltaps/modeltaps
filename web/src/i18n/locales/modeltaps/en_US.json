@@ -2973,5 +2973,52 @@
       "ctaPrimary": "Get API key",
       "catchphrase": "Just turn it on."
     }
+  },
+  "apiKey": {
+    "panel": {
+      "tabs": "API key settings",
+      "tab": {
+        "overview": "Overview",
+        "basics": "Basics",
+        "access": "Access",
+        "advanced": "Advanced"
+      },
+      "key": "Key",
+      "reveal": "Show key",
+      "hide": "Hide key",
+      "used": "Total spend",
+      "left": "Remaining",
+      "leftOfPeriod": "Cap {{limit}} ({{period}})",
+      "leftOfTotal": "Disabled when used up",
+      "details": "Details",
+      "owner": "Owner",
+      "enabled": "Enabled",
+      "expiresAt": "On a date",
+      "neverHint": "This key stays valid until you disable or delete it.",
+      "limit": "Spending limit",
+      "limitHint": "Leave empty for no limit. The limit only caps this key; your account balance still applies.",
+      "noReset": "No reset",
+      "nameRequired": "Enter a name",
+      "routing": "Groups",
+      "noBackup": "No backup group",
+      "groupHint": "Requests use this group's channels, and the backup group when it is unavailable.",
+      "restrictions": "Restrictions",
+      "availableHint": "From the saved settings"
+    },
+    "new": {
+      "description": "A name is all it needs. Groups, model and IP restrictions can be changed in its details later.",
+      "namePlaceholder": "e.g. my-app",
+      "limit": "Spending limit",
+      "expiry": "Expires",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "create": "Create",
+      "later": "Defaults: account group, all models, any IP",
+      "createdTitle": "Created “{{name}}”",
+      "createdHint": "Paste it into your client. You can also view it in its details later.",
+      "copied": "Copied",
+      "openDetails": "Open details",
+      "done": "Done"
+    }
   }
 }

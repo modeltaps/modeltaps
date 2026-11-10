@@ -27,7 +27,7 @@ export function ObjectTabs({ tabs, current, onSelect, dirty, label, children }) 
             onClick={() => onSelect(x.key)}
             className={cn(
               'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              x.key === current ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground'
+              x.key === current ? 'bg-control text-foreground' : 'text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground'
             )}
           >
             {x.label}

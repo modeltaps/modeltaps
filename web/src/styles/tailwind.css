@@ -26,6 +26,9 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
+  --color-control: var(--control);
+  --color-control-thumb: var(--control-thumb);
+  --color-control-off: var(--control-off);
   --color-ring: var(--ring);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
@@ -72,6 +75,13 @@
   --accent-foreground: #29292c;
   --border: #e0e0e3;
   --input: #e0e0e3;
+  /* Interactive controls. --control is the track of segmented controls and tab lists,
+     --control-thumb the selected segment on it, --control-off the off track of a switch and
+     the border of an empty checkbox. They sit a clear step away from cards and sheets in
+     both themes so a control never blends into its surface. */
+  --control: #e8e8eb;
+  --control-thumb: #ffffff;
+  --control-off: #cdcdd2;
   --ring: #1d1d1f;
   --destructive: #db5555;
   --destructive-foreground: #ffffff;
@@ -116,6 +126,9 @@
   --accent-foreground: #f7f7f8;
   --border: #2c2c30;
   --input: #38383d;
+  --control: #27272b;
+  --control-thumb: #3d3d43;
+  --control-off: #4d4d54;
   --ring: #f4f4f5;
   --destructive: #f26d6d;
   --destructive-foreground: #1b0f0f;
@@ -173,10 +186,14 @@
 @keyframes highlight-target-fade {
   0%,
   60% {
-    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--primary);
+    box-shadow:
+      0 0 0 2px var(--background),
+      0 0 0 4px var(--primary);
   }
   100% {
-    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px transparent;
+    box-shadow:
+      0 0 0 2px var(--background),
+      0 0 0 4px transparent;
   }
 }
 
