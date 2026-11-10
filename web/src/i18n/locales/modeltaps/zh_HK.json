@@ -2895,7 +2895,7 @@
       "leftOfPeriod": "本週期上限 {{limit}}（{{period}}）",
       "leftOfTotal": "用完即停用",
       "details": "詳情",
-      "owner": "所屬使用者",
+      "owner": "所屬用戶",
       "enabled": "啟用",
       "expiresAt": "指定時間",
       "neverHint": "這把 Key 一直有效，可隨時停用或刪除。",
