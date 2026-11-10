@@ -151,6 +151,10 @@ func (cc *ChannelsChooser) IsInCooldown(channelId int, modelName string) bool {
 	if channelId == 0 || modelName == "" {
 		return false
 	}
+	// Stored pauses (whole channel or this model) count as cooldowns everywhere a channel is picked.
+	if IsPaused(channelId, modelName) {
+		return true
+	}
 
 	key := fmt.Sprintf("%d:%s", channelId, modelName)
 	nowTime := time.Now().Unix()

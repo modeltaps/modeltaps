@@ -296,6 +296,14 @@ var ChannelTestIntervalMinutes = 10
 // published models. Off until the supply migration has run.
 var ModelSupplyEnabled = false
 
+// PauseRulesEnabled sends every relay failure through the pause rules (see model.PauseRule):
+// channels or models are paused for a while and resumed automatically, instead of the older
+// automatic disabling, per-status cooldowns and model-not-found quarantine.
+var PauseRulesEnabled = true
+
+// PauseRules holds custom pause rules as JSON; empty means the built-in defaults.
+var PauseRules = ""
+
 // ChannelMetricsEnabled 按「渠道 × 模型 × 小时」聚合成功率、首字延迟与输出速度（内存累计，每分钟落库）。
 var ChannelMetricsEnabled = true
 

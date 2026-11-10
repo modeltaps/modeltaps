@@ -152,11 +152,15 @@ func TestQuarantineModelNotFound_BalancerSkipsChannel(t *testing.T) {
 func TestNotifyChannelRelayError_Quarantine(t *testing.T) {
 	prevSeconds := config.ModelNotFoundCooldownSeconds
 	prevAutoDisable := config.AutomaticDisableChannelEnabled
+	prevPauseRules := config.PauseRulesEnabled
 	config.ModelNotFoundCooldownSeconds = 21600
 	config.AutomaticDisableChannelEnabled = false // 让异步的 processChannelRelayError 成为 no-op，不碰 DB
+	// This test covers the path used when pause rules are off; the rules have their own tests.
+	config.PauseRulesEnabled = false
 	defer func() {
 		config.ModelNotFoundCooldownSeconds = prevSeconds
 		config.AutomaticDisableChannelEnabled = prevAutoDisable
+		config.PauseRulesEnabled = prevPauseRules
 	}()
 	// 异步的 processChannelRelayError 会读 AutomaticDisableChannelEnabled；defer 后进先出，
 	// 这里先等它结束再执行上面的还原，否则 -race 会报测试与后台 goroutine 的数据竞争。

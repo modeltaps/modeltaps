@@ -1535,6 +1535,7 @@
     "model_supply_channel_not_found": "渠道不存在",
     "model_supply_upstream_missing": "请填写发给该渠道的模型名",
     "model_supply_exists": "该渠道已经在供应这个模型",
+    "supply_pause_seconds_invalid": "请填写暂停秒数，需大于 0",
     "model_identifier_exists": "该模型标识已存在",
     "model_referenced_by_aliases": "该模型仍被别名引用：{{aliases}}",
     "model_alias_self": "模型不能是自己的别名",

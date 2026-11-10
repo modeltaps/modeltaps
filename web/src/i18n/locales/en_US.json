@@ -3009,7 +3009,10 @@
         "price_change": "Upstream price changes",
         "model_drift": "Upstream model list changes",
         "model_consistency": "Model metadata problems",
-        "credential": "Channel credential problems"
+        "credential": "Channel credential problems",
+        "supply_paused": "Channel or model paused",
+        "supply_resumed": "Paused channel or model resumed",
+        "supply_failover": "Request switched to a backup channel"
       },
       "limit": {
         "label": "Notices per kind per hour",

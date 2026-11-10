@@ -83,6 +83,10 @@ func NewHarness(t *testing.T, opts HarnessOptions) *Harness {
 
 	model.GlobalUserGroupRatio.Load()
 	model.ChannelGroup.Load()
+	// Pauses live in a process-wide index; start each test from this test's (empty) table.
+	if err := model.ReloadPauses(); err != nil {
+		t.Fatalf("load pauses: %v", err)
+	}
 	t.Cleanup(func() {
 		model.GlobalUserGroupRatio = model.UserGroupRatio{}
 		model.ChannelGroup = model.ChannelsChooser{}
