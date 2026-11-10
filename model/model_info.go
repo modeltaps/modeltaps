@@ -553,6 +553,11 @@ func ResolveCanonicalModel(name string) (canonical string, isAlias bool) {
 func IsModelHidden(name string) bool {
 	canonical, _ := ResolveCanonicalModel(name)
 	info := lookupModelInfo(canonical)
+	if config.ModelSupplyEnabled {
+		// Status decides once supplies drive routing: a draft cannot be called; published and
+		// retired models can. Routing policy rows are managed by their policy.
+		return info != nil && info.Kind == "" && info.Status == ModelStatusDraft
+	}
 	return info != nil && info.Hidden
 }
 
@@ -567,6 +572,16 @@ func HasCatalogRow(name string) bool {
 // 「可路由」由调用方保证（列表取自渠道分组）。catalog.enforce_hidden 关闭时一律可见，
 // 退回「所有可路由模型」的行为。公开面的可见性判定只此一处，避免各接口口径漂移。
 func IsCatalogVisible(name string) bool {
+	if config.ModelSupplyEnabled {
+		// Only published models are listed; aliases, drafts and retired models are not. A name
+		// without a row can only be an organization's routing policy here, since every supplied
+		// model has a catalog row.
+		if _, isAlias := ResolveCanonicalModel(name); isAlias {
+			return false
+		}
+		info := lookupModelInfo(name)
+		return info == nil || info.Kind != "" || info.Status == ModelStatusPublished
+	}
 	if !config.CatalogEnforceHidden() {
 		return true
 	}
