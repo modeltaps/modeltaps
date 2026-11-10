@@ -1,5 +1,6 @@
 import Statistics from './Statistics';
 import Overview from './Overview';
+import StatsTabs from './StatsTabs';
 
 // ==============================|| PANEL — ANALYTICS (shadcn) ||============================== //
 // Admin marketing/analytics dashboard. shadcn/Tailwind + recharts port of views/Analytics,
@@ -8,6 +9,7 @@ import Overview from './Overview';
 export default function Analytics() {
   return (
     <div className="space-y-6">
+      <StatsTabs />
       <Statistics />
       <Overview />
     </div>

@@ -1,61 +1,63 @@
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import useTheme from 'hooks/useTheme';
 import i18nList from 'i18n/i18nList';
 import { setAppLanguage } from 'utils/userSetting';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FormCard } from '@/components/settings/cards';
+import { SelectRow } from '../../Setting/parts';
 
-// ==============================|| SETTINGS — ACCOUNT / PREFERENCES ||============================== //
-// 主题与语言:原先挂在侧边栏用户菜单的子菜单,这里作为设置面「个人账号」组的常驻页面。
-// 两项都即改即生效并自行持久化(主题写 localStorage + 服务端偏好,语言由 i18next 的
-// language detector 落 localStorage),因此没有保存按钮。
+// ==============================|| SETTINGS — ACCOUNT / APPEARANCE ||============================== //
+// Theme and language, applied when the card is saved (both persist themselves: the theme in
+// localStorage and the account preferences, the language through setAppLanguage).
 
-export default function Preferences() {
+export default function AppearanceCard() {
   const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
-  // 语言列表以后还会变长,因此语言用下拉而不是分段控件;主题固定三项仍用 Tabs。
-  const currentLanguage = i18nList.find((item) => item.lng === i18n.language) || i18nList[0];
+  const language = (i18nList.find((item) => item.lng === i18n.language) || i18nList[0]).lng;
+  const [draft, setDraft] = useState({ theme, language });
+
+  useEffect(() => setDraft({ theme, language }), [theme, language]);
+
+  const dirty = draft.theme !== theme || draft.language !== language;
+
+  const save = () => {
+    if (draft.theme !== theme) setTheme(draft.theme);
+    if (draft.language !== language) setAppLanguage(draft.language);
+  };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">{t('theme.title', { defaultValue: 'Theme' })}</CardTitle>
-          <CardDescription>{t('settingsPage.preferences.themeHint')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={theme} onValueChange={setTheme}>
-            <TabsList>
-              <TabsTrigger value="light">{t('theme.light', { defaultValue: 'Light' })}</TabsTrigger>
-              <TabsTrigger value="dark">{t('theme.dark', { defaultValue: 'Dark' })}</TabsTrigger>
-              <TabsTrigger value="system">{t('theme.auto', { defaultValue: 'System' })}</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">{t('language.select', { defaultValue: 'Language' })}</CardTitle>
-          <CardDescription>{t('settingsPage.preferences.languageHint')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Select value={currentLanguage.lng} onValueChange={setAppLanguage}>
-            <SelectTrigger className="w-56 max-w-full" aria-label={t('language.select', { defaultValue: 'Language' })}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {i18nList.map((item) => (
-                <SelectItem key={item.lng} value={item.lng}>
-                  {item.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
-    </div>
+    <FormCard
+      title={t('settingsUi.personal.cards.appearance.title')}
+      description={t('settingsUi.personal.cards.appearance.description')}
+      hint={t('settingsUi.personal.cards.appearance.hint')}
+      highlight="appearance"
+      dirty={dirty}
+      onSave={save}
+      onReset={() => setDraft({ theme, language })}
+    >
+      <div className="grid gap-5 sm:grid-cols-2">
+        <SelectRow
+          id="pref-theme"
+          label={t('theme.title', { defaultValue: 'Theme' })}
+          description={t('settingsPage.preferences.themeHint')}
+          value={draft.theme}
+          onChange={(v) => setDraft((d) => ({ ...d, theme: v }))}
+          options={[
+            { value: 'system', label: t('theme.auto', { defaultValue: 'System' }) },
+            { value: 'light', label: t('theme.light', { defaultValue: 'Light' }) },
+            { value: 'dark', label: t('theme.dark', { defaultValue: 'Dark' }) }
+          ]}
+        />
+        <SelectRow
+          id="pref-language"
+          label={t('language.select', { defaultValue: 'Language' })}
+          description={t('settingsUi.personal.cards.appearance.languageHint')}
+          value={draft.language}
+          onChange={(v) => setDraft((d) => ({ ...d, language: v }))}
+          options={i18nList.map((item) => ({ value: item.lng, label: item.name }))}
+        />
+      </div>
+    </FormCard>
   );
 }

@@ -66,7 +66,7 @@ function StatCard({ icon: Icon, label, value }) {
     <Card className="flex items-center justify-between gap-3 p-5">
       <div className="min-w-0 space-y-1">
         <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="truncate text-2xl font-semibold tabular-nums">{value}</p>
+        <p className="truncate text-2xl font-medium tabular-nums">{value}</p>
       </div>
       <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
         <Icon className="size-5" />
@@ -149,13 +149,13 @@ function DimensionTable({ t, rows, nameOf, onRowClick }) {
         </Table>
       </div>
       {sorted.length === 0 ? (
-        <div className="md:hidden rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+        <div className="md:hidden rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
           {t('orgPage.usage.empty')}
         </div>
       ) : (
-        <div className="md:hidden flex flex-col gap-3">
+        <div className="md:hidden flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
           {sorted.map((r, idx) => (
-            <div key={idx} className="rounded-lg border border-border bg-card p-3.5 shadow-sm">
+            <div key={idx} className="p-3.5">
               <div className="mb-2 text-sm font-medium">
                 {onRowClick ? (
                   <button type="button" className="underline-offset-2 hover:underline" onClick={() => onRowClick(r)}>
@@ -167,33 +167,25 @@ function DimensionTable({ t, rows, nameOf, onRowClick }) {
               </div>
               <dl className="flex flex-col divide-y divide-border/60">
                 <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                  <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    {t('orgPage.usage.colRequests')}
-                  </dt>
+                  <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">{t('orgPage.usage.colRequests')}</dt>
                   <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm font-mono tabular-nums">
                     {renderNumber(r.request_count || 0)}
                   </dd>
                 </div>
                 <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                  <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    {t('orgPage.usage.colQuota')}
-                  </dt>
+                  <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">{t('orgPage.usage.colQuota')}</dt>
                   <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm font-mono tabular-nums">
                     <SpendAmount quota={r.quota || 0} />
                   </dd>
                 </div>
                 <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                  <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    {t('orgPage.usage.colInputTokens')}
-                  </dt>
+                  <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">{t('orgPage.usage.colInputTokens')}</dt>
                   <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm font-mono tabular-nums">
                     {renderNumber(r.prompt_tokens || 0)}
                   </dd>
                 </div>
                 <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                  <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    {t('orgPage.usage.colOutputTokens')}
-                  </dt>
+                  <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">{t('orgPage.usage.colOutputTokens')}</dt>
                   <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm font-mono tabular-nums">
                     {renderNumber(r.completion_tokens || 0)}
                   </dd>
@@ -219,7 +211,7 @@ function ChartTooltip({ active, payload, label, format }) {
   return (
     <div className="rounded-md border border-border bg-card px-3 py-2 text-xs shadow-md">
       <p className="mb-1 font-medium text-muted-foreground">{label}</p>
-      <p className="font-mono font-semibold tabular-nums text-foreground">{format(payload[0].value)}</p>
+      <p className="font-mono font-medium tabular-nums text-foreground">{format(payload[0].value)}</p>
     </div>
   );
 }

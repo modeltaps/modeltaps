@@ -104,7 +104,7 @@ func seedPaymentFixtures(t *testing.T, payment *model.Payment, userID int, initi
 		TradeNo:       tradeNo,
 		Amount:        1,
 		OrderAmount:   1.00,
-		OrderCurrency: model.CurrencyTypeCNY,
+		OrderCurrency: payment.Currency,
 		Quota:         orderQuota,
 		Status:        status,
 	}

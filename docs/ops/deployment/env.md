@@ -97,12 +97,12 @@ LOGS_FILENAME="modeltaps.log"
 23. `AUTO_PRICE_UPDATES_INTERVAL` ：价格自动更新时间，单位分钟，仅`AUTO_PRICE_UPDATES_MODE`为`add`、`overwrite`时生效，系统将按照此时间周期性从价格更新服务器获取价格配置并更新系统价格。默认值：1440
 24. `UPDATE_PRICE_SERVICE` ：价格更新服务地址，设置之后将从该地址拉取价格数据更新价格。默认为空，为空时不启用外部价格服务（此时 `AUTO_PRICE_UPDATES_MODE` 请使用 `system`，即以程序内置价格表初始化）。
 25. `USER_INVOICE_MONTH`：是否开启用户月度账单功能，开启后系统每月 1 日凌晨生成用户上一月度的数据汇总账单；数据量较大时资源消耗较高，请谨慎开启，默认 `false`。
-26. `ROOT_PASSWORD` ：root 账号的初始密码，仅在数据库中还没有任何用户（即首次启动）时生效，长度需为 8–64 位，超出范围程序会启动失败。
+26. `ROOT_PASSWORD` ：首次启动种下的超级管理员账号（用户名 `admin`，角色为 root）的初始密码，仅在数据库中还没有任何用户（即首次启动）时生效，长度需为 8–64 位，超出范围程序会启动失败。
     - 不设置时，程序会生成 16 位强随机密码，并仅在首次启动日志中打印一次。
     - 请在首次登录后立即修改 root 密码，并清理含有初始密码的启动日志。
     - 该变量**仅首次建库生效**，之后修改或删除都不影响已存在的 root 密码，不能当作逃生手段；关闭密码登录前请先读[管理员逃生口](./index.md#管理员逃生口)。
 27. `ROOT_PASSWORD_ALLOW_INSECURE`：是否跳过 `ROOT_PASSWORD` 的 8–64 位长度校验，可选值 `true` / `false`，默认 `false`。**仅限本地开发环境，生产环境严禁开启。**
-    - 本地开发约定：`ROOT_PASSWORD=root` + `ROOT_PASSWORD_ALLOW_INSECURE=true`，首次启动后即可用 `root/root` 登录。
+    - 本地开发约定：`ROOT_PASSWORD=admin` + `ROOT_PASSWORD_ALLOW_INSECURE=true`，首次启动后即可用 `admin/admin` 登录。在此之前建的库种的是 `root`，继续用原来的账号登录。
     - 开启后启动日志会打印一行警告；未设置 `ROOT_PASSWORD` 时该开关不生效，仍走 16 位随机密码分支。
 
 ## 更多配置项
@@ -511,7 +511,7 @@ Logto 在 `profile` scope 下同时下发标准 claim（`preferred_username`、`
 1. 保留密码登录，配置 Authgear 提供方并开启「按已验证邮箱关联」。
 2. 开启「禁止首登自动建号」（迁移期）。
 3. 通知用户：用原方式登录 → 个人设置 → 账号绑定 → 绑定 Authgear。
-4. 管理后台核查「无 OIDC 身份的活跃用户」直到归零（或可接受）。
+4. 在平台管理里核查「无 OIDC 身份的活跃用户」直到归零（或可接受）。
 5. 在「登录方式」把账号体系切换到**外部身份提供方**（切换前先读[管理员逃生口](./index.md#管理员逃生口)，
    给 root 设好应急密码与通行密钥）；如需开放新用户注册，再关闭「禁止首登自动建号」。
 
@@ -562,7 +562,7 @@ Logto 在 `profile` scope 下同时下发标准 claim（`preferred_username`、`
 
 #### 核查「无 OIDC 身份的活跃用户」
 
-管理后台「用户」页顶部有三张核查卡片：活跃用户总数、已绑 OIDC、未绑 OIDC；
+平台管理的「用户」页顶部有三张核查卡片：活跃用户总数、已绑 OIDC、未绑 OIDC；
 对应接口是 `GET /api/user/oidc_coverage`（仅管理员），另按提供方返回各自已绑人数。
 
 口径：**活跃用户** = 未删除 + 已启用 + 非组织影子账户；**已绑**只计**启用中**的提供方——

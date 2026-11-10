@@ -21,7 +21,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { API } from 'utils/api';
 import { showError, showSuccess, renderQuota, renderSpend, renderNumber, timestamp2string, useIsRoot } from 'utils/common';
 import usePaginatedList from 'hooks/usePaginatedList';
-import UserSheet from './UserSheet';
+import { ROW_OPENS, RowControl, rowOpenProps, useObjectRoute } from '@/components/objects';
+import UserPanel from './UserPanel';
+import NewUserSheet from './NewUserSheet';
+import { USER_TAB_KEYS } from './userTabs';
 import { StatusCell, StatusDot, ActionsCell } from './UserRowCells';
 
 // 工具栏分面:登录方式(当前仅 no_oidc,未绑任何启用提供方身份)与组织(org_id,候选项来自 root 专属的
@@ -67,14 +70,13 @@ const KEYWORD_DEBOUNCE_MS = 300;
 function roleBadge(t, role) {
   const map = {
     1: ['secondary', t('userPage.cUserRole')],
-    3: ['default', t('userPage.reliableUserRole')],
-    10: ['default', t('userPage.adminUserRole')],
+    3: ['secondary', t('userPage.reliableUserRole')],
+    10: ['outline', t('userPage.adminUserRole')],
     100: ['outline', t('userPage.superAdminRole')]
   };
   const [variant, label] = map[role] || ['destructive', t('userPage.uUserRole')];
-  const cls = role === 10 ? 'bg-orange-500 text-white' : role === 100 ? 'bg-green-600 text-white' : undefined;
   return (
-    <Badge variant={variant} className={cls ? cls + ' whitespace-nowrap' : 'whitespace-nowrap'}>
+    <Badge variant={variant} className="whitespace-nowrap">
       {label}
     </Badge>
   );
@@ -89,7 +91,7 @@ function SortHeader({ id, label, order, orderBy, onSort, alignEnd = false }) {
       onClick={() => onSort(id)}
       className={cn(
         'inline-flex items-center gap-1 whitespace-nowrap',
-        active ? 'font-semibold text-foreground' : 'hover:text-foreground',
+        active ? 'font-medium text-foreground' : 'hover:text-foreground',
         alignEnd && 'ml-auto'
       )}
     >
@@ -113,7 +115,7 @@ function UserCell({ user }) {
   const secondary = [user.display_name, user.email].filter(Boolean).join(' · ');
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <span className="flex size-8 flex-none items-center justify-center rounded-full bg-muted text-xs font-semibold uppercase">
+      <span className="flex size-8 flex-none items-center justify-center rounded-full bg-muted text-xs font-medium uppercase">
         {(user.username || '?').slice(0, 2)}
       </span>
       <div className="min-w-0">
@@ -153,8 +155,10 @@ export default function Users() {
   const [quick, setQuick] = useState(() => (QUICK_FILTERS[searchParams.get('quick')] ? searchParams.get('quick') : ''));
   const [keywordInput, setKeywordInput] = useState(() => searchParams.get('keyword') || '');
   const [keyword, setKeyword] = useState(() => (searchParams.get('keyword') || '').trim());
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [editId, setEditId] = useState(0);
+  const route = useObjectRoute(USER_TAB_KEYS);
+  const [groups, setGroups] = useState([]);
+  // Bumped after a row or menu action so an open user panel reloads the stored user.
+  const [reloadKey, setReloadKey] = useState(0);
   const [stats, setStats] = useState(null);
   const [coverage, setCoverage] = useState(null);
   const [orgs, setOrgs] = useState([]);
@@ -178,6 +182,16 @@ export default function Users() {
   useEffect(() => {
     loadStats();
   }, [loadStats]);
+
+  // 用户分组候选项,供面板里改分组。
+  useEffect(() => {
+    API.get('/api/group/')
+      .then((res) => {
+        const list = Array.isArray(res.data?.data) ? res.data.data.map((g) => (typeof g === 'string' ? g : g.symbol)) : [];
+        setGroups(list.sort((a, b) => String(a).localeCompare(String(b))));
+      })
+      .catch(() => {});
+  }, []);
 
   // 组织分面候选项:组织列表接口仅 root 可用。
   useEffect(() => {
@@ -296,6 +310,8 @@ export default function Users() {
       const res = await API.post(url, body);
       if (res.data.success) {
         showSuccess(t('userPage.operationSuccess'));
+        if (action === 'delete' && userId === route.openId) route.close();
+        else setReloadKey((k) => k + 1);
         reload();
       } else {
         showError(res.data.message);
@@ -321,11 +337,6 @@ export default function Users() {
       setBatchDeleteOpen(false);
       reload();
     }
-  };
-
-  const openEdit = (id) => {
-    setEditId(id);
-    setSheetOpen(true);
   };
 
   const toggleSelect = useCallback((id) => {
@@ -359,11 +370,13 @@ export default function Users() {
         ),
         meta: { className: 'w-[1%]' },
         cell: (c) => (
-          <Checkbox
-            checked={selectedIds.has(c.row.original.id)}
-            onCheckedChange={() => toggleSelect(c.row.original.id)}
-            aria-label={c.row.original.username}
-          />
+          <RowControl>
+            <Checkbox
+              checked={selectedIds.has(c.row.original.id)}
+              onCheckedChange={() => toggleSelect(c.row.original.id)}
+              aria-label={c.row.original.username}
+            />
+          </RowControl>
         )
       },
       {
@@ -421,20 +434,24 @@ export default function Users() {
         header: t('userPage.enableSwitch'),
         meta: { className: 'w-12 min-w-12 text-center' },
         cell: (c) => (
-          <span className="flex justify-center">
+          <RowControl className="flex justify-center">
             <StatusCell item={c.row.original} manageUser={manageUser} />
-          </span>
+          </RowControl>
         )
       },
       {
         id: 'actions',
         header: () => <span className="sr-only">{t('userPage.action')}</span>,
         meta: { className: 'sticky right-0 bg-card z-10 text-right w-[1%]' },
-        cell: (c) => <ActionsCell item={c.row.original} manageUser={manageUser} onEdit={openEdit} />
+        cell: (c) => (
+          <RowControl>
+            <ActionsCell item={c.row.original} manageUser={manageUser} onOpen={(id) => route.open(id)} />
+          </RowControl>
+        )
       }
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, order, orderBy, selectedIds, allSelected, someSelected]
+    [t, order, orderBy, selectedIds, allSelected, someSelected, route.openId]
   );
 
   const table = useTable({
@@ -448,13 +465,17 @@ export default function Users() {
   const renderCard = (u) => (
     <>
       <div className="flex items-center gap-2">
-        <Checkbox checked={selectedIds.has(u.id)} onCheckedChange={() => toggleSelect(u.id)} aria-label={u.username} />
+        <RowControl>
+          <Checkbox checked={selectedIds.has(u.id)} onCheckedChange={() => toggleSelect(u.id)} aria-label={u.username} />
+        </RowControl>
         <div className="min-w-0 flex-1">
           <UserCell user={u} />
         </div>
         <StatusDot status={u.status} />
-        <StatusCell item={u} manageUser={manageUser} />
-        <ActionsCell item={u} manageUser={manageUser} onEdit={openEdit} />
+        <RowControl className="gap-2">
+          <StatusCell item={u} manageUser={manageUser} />
+          <ActionsCell item={u} manageUser={manageUser} onOpen={(id) => route.open(id)} />
+        </RowControl>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2 pl-6">
         {roleBadge(t, u.role)}
@@ -465,7 +486,7 @@ export default function Users() {
       </div>
       <div className="mt-2 flex items-center gap-3 pl-6 text-xs">
         <span className="text-muted-foreground">{t('userPage.balance')}</span>
-        <span className="font-semibold tabular-nums">{renderQuota(u.quota)}</span>
+        <span className="font-medium tabular-nums">{renderQuota(u.quota)}</span>
         <span className="text-muted-foreground">{t('userPage.usedShort')}</span>
         <span className="tabular-nums">{renderSpend(u.used_quota)}</span>
       </div>
@@ -491,7 +512,7 @@ export default function Users() {
         title={t('userPage.emptyTitle')}
         description={t('userPage.emptyDescription')}
         action={
-          <Button size="sm" onClick={() => openEdit(0)}>
+          <Button size="sm" onClick={route.openNew}>
             <Plus className="size-4" /> {t('userPage.createUser')}
           </Button>
         }
@@ -515,7 +536,12 @@ export default function Users() {
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={selectedIds.has(row.original.id) ? 'selected' : undefined}>
+                <TableRow
+                  key={row.id}
+                  className={ROW_OPENS}
+                  data-state={selectedIds.has(row.original.id) || row.original.id === route.openId ? 'selected' : undefined}
+                  {...rowOpenProps(() => route.open(row.original.id))}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className={cn('py-1.5', cell.column.columnDef.meta?.className)}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -526,7 +552,7 @@ export default function Users() {
             </TableBody>
           </Table>
         </div>
-        <DataCards table={table} className="md:hidden" renderCard={renderCard} searching={searching} />
+        <DataCards table={table} className="md:hidden" renderCard={renderCard} searching={searching} onRowClick={(u) => route.open(u.id)} />
       </>
     );
   }
@@ -555,7 +581,7 @@ export default function Users() {
             <TooltipContent>{t('userPage.refresh')}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        <ResponsiveToolbarButton primary size="sm" icon={Plus} label={t('userPage.createUser')} onClick={() => openEdit(0)} />
+        <ResponsiveToolbarButton primary size="sm" icon={Plus} label={t('userPage.createUser')} onClick={route.openNew} />
       </PageActions>
 
       <ListPage
@@ -625,15 +651,32 @@ export default function Users() {
         {body}
       </ListPage>
 
-      <UserSheet
-        open={sheetOpen}
-        userId={editId}
-        onClose={() => setSheetOpen(false)}
-        onSaved={() => {
-          setSheetOpen(false);
-          reload();
-        }}
-      />
+      {route.openId > 0 && (
+        <UserPanel
+          key={route.openId}
+          userId={route.openId}
+          tab={route.tab}
+          onTabChange={route.setTab}
+          onClose={route.close}
+          onChanged={reload}
+          manageUser={manageUser}
+          groups={groups}
+          isRoot={isRoot}
+          reloadKey={reloadKey}
+        />
+      )}
+
+      {route.isNew && (
+        <NewUserSheet
+          onClose={route.close}
+          onCreated={(username) => {
+            showSuccess(t('userPage.new.created', { username }));
+            route.close();
+            setKeywordInput(username);
+            reload();
+          }}
+        />
+      )}
 
       <Dialog open={batchDeleteOpen} onOpenChange={(o) => !o && setBatchDeleteOpen(false)}>
         <DialogContent>

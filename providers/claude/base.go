@@ -77,7 +77,14 @@ func (p *ClaudeProvider) GetRequestHeaders() (headers map[string]string) {
 	} else {
 		headers["x-api-key"] = p.Channel.Key
 	}
-	anthropicVersion := p.Context.Request.Header.Get("anthropic-version")
+	// Background callers (model drift check, credential refresh) have no client request, so
+	// p.Context is nil there: use the default version and pass no client headers through.
+	var clientHeader http.Header
+	if p.Context != nil && p.Context.Request != nil {
+		clientHeader = p.Context.Request.Header
+	}
+
+	anthropicVersion := clientHeader.Get("anthropic-version")
 	if anthropicVersion == "" {
 		anthropicVersion = "2023-06-01"
 	}
@@ -85,7 +92,7 @@ func (p *ClaudeProvider) GetRequestHeaders() (headers map[string]string) {
 
 	// 透传客户端的 anthropic-beta（仅在 ModelHeaders 未自定义时生效）
 	if _, exists := headers["anthropic-beta"]; !exists {
-		if anthropicBeta := p.Context.Request.Header.Get("anthropic-beta"); anthropicBeta != "" {
+		if anthropicBeta := clientHeader.Get("anthropic-beta"); anthropicBeta != "" {
 			headers["anthropic-beta"] = anthropicBeta
 		}
 	}
@@ -99,7 +106,7 @@ func (p *ClaudeProvider) GetRequestHeaders() (headers map[string]string) {
 	//   - x-app：relay-code-github 等中转会校验非空
 	//   - x-stainless-*：Anthropic SDK 指纹头
 	//   - 任何未来新增的客户端识别头
-	for headerName, values := range p.Context.Request.Header {
+	for headerName, values := range clientHeader {
 		if len(values) == 0 || values[0] == "" {
 			continue
 		}

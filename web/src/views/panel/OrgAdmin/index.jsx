@@ -5,36 +5,28 @@ import { RotateCcw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/components/ui/sonner';
 import PageActions from '@/components/chrome/PageActions';
 import { FilterBar, filterStateToParams, paramsToFilterState } from '@/components/filter-bar';
-import QuotaInput from '@/components/QuotaInput';
+import { useObjectRoute } from '@/components/objects';
 import { API } from 'utils/api';
-import { renderQuota, showError, trims } from 'utils/common';
+import { showError } from 'utils/common';
 import { PAGE_SIZE_OPTIONS } from 'constants';
 import usePaginatedList from 'hooks/usePaginatedList';
 import OrgAdminTable from './OrgAdminTable';
+import OrgPanel from './OrgPanel';
+import { ORG_TAB_KEYS } from './orgTabs';
 
 // FilterBar 字段:单个关键字文本(后端 keyword 单值,按组织名称/slug 模糊匹配)。
 const ORG_FILTER_FIELDS = [{ key: 'keyword', labelKey: 'filterBar.keyword', type: 'text', placeholderKey: 'orgAdmin.searchPlaceholder' }];
 const ORG_FILTER_PARAM_KEYS = ['keyword'];
 
-// 成员上限三种模式:default=跟随站点默认(提交 null),unlimited=不限制(0),custom=指定正整数
-const MAX_MEMBER_MODES = [
-  { value: 'default', labelKey: 'orgAdmin.maxMembersModeDefault' },
-  { value: 'unlimited', labelKey: 'orgAdmin.maxMembersModeUnlimited' },
-  { value: 'custom', labelKey: 'orgAdmin.maxMembersModeCustom' }
-];
-
 // ==============================|| PANEL — ORG ADMIN (site admin) ||============================== //
-// Site-level organization list (spec §3.8 / a8): list + enable/disable +
-// pool quota adjustment + dissolve. Global org options moved to the Setting page
-// (`/panel/setting/org`, root-only) per IA-2/IA-4 — this page is a pure list now.
+// Site-level organization list (spec §3.8 / a8): list + enable/disable + dissolve; a row opens
+// the organization's panel (?id=) with pool balance adjustment and the member limit. Global org options moved to the Setting page
+// (`/panel/setting/orgpolicy`, root-only) per IA-2/IA-4 — this page is a pure list now.
 // Backend is /api/organization/* (RootAuth); route is wrapped in AdminGuard like
 // other admin pages and non-admins get the in-place 404.
 
@@ -43,14 +35,11 @@ export default function OrgAdmin() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filterState, setFilterState] = useState(() => paramsToFilterState(ORG_FILTER_FIELDS, searchParams));
 
-  const [quotaTarget, setQuotaTarget] = useState(null);
-  const [quotaDelta, setQuotaDelta] = useState('');
-  const [quotaRemark, setQuotaRemark] = useState('');
+  const route = useObjectRoute(ORG_TAB_KEYS);
   const [dissolveTarget, setDissolveTarget] = useState(null);
-  const [maxTarget, setMaxTarget] = useState(null);
-  const [maxMode, setMaxMode] = useState('default');
-  const [maxValue, setMaxValue] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Bumped after a list action so an open organization panel reloads.
+  const [reloadKey, setReloadKey] = useState(0);
 
   // 分页列表状态 + 守卫化 fetch 生命周期(UX-13);本页无排序,fetcher 忽略 order/orderBy。
   const { page, setPage, rowsPerPage, listCount, searching, rows, setRows, refresh, onRowsPerPageChange } = usePaginatedList({
@@ -106,82 +95,12 @@ export default function OrgAdmin() {
       if (res.data.success) {
         toast.success(t('common.operationSuccess'));
         setRows((prev) => prev.map((x) => (x.id === org.id ? { ...x, status: next } : x)));
+        setReloadKey((k) => k + 1);
       } else {
         showError(res.data.message);
       }
     } catch (error) {
       showError(error);
-    }
-  };
-
-  const openQuotaDialog = (org) => {
-    setQuotaTarget(org);
-    setQuotaDelta('');
-    setQuotaRemark('');
-  };
-
-  const submitQuota = async () => {
-    const delta = Number(quotaDelta);
-    if (!Number.isInteger(delta) || delta === 0) {
-      showError(t('orgAdmin.quotaNonZero'));
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const res = await API.put(`/api/organization/${quotaTarget.id}/quota`, { quota: delta, remark: trims(quotaRemark) });
-      if (res.data.success) {
-        toast.success(t('common.operationSuccess'));
-        setQuotaTarget(null);
-        handleRefresh();
-      } else {
-        showError(res.data.message);
-      }
-    } catch (error) {
-      showError(error);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const openMaxMembersDialog = (org) => {
-    setMaxTarget(org);
-    if (org.max_members == null) {
-      setMaxMode('default');
-      setMaxValue('');
-    } else if (org.max_members === 0) {
-      setMaxMode('unlimited');
-      setMaxValue('');
-    } else {
-      setMaxMode('custom');
-      setMaxValue(String(org.max_members));
-    }
-  };
-
-  const submitMaxMembers = async () => {
-    let maxMembers = null;
-    if (maxMode === 'unlimited') {
-      maxMembers = 0;
-    } else if (maxMode === 'custom') {
-      maxMembers = Number(maxValue);
-      if (!Number.isInteger(maxMembers) || maxMembers < 1) {
-        showError(t('orgAdmin.maxMembersPositive'));
-        return;
-      }
-    }
-    setSubmitting(true);
-    try {
-      const res = await API.put(`/api/organization/${maxTarget.id}/max_members`, { max_members: maxMembers });
-      if (res.data.success) {
-        toast.success(t('common.operationSuccess'));
-        setMaxTarget(null);
-        handleRefresh();
-      } else {
-        showError(res.data.message);
-      }
-    } catch (error) {
-      showError(error);
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -192,6 +111,7 @@ export default function OrgAdmin() {
       const res = await API.delete(`/api/organization/${dissolveTarget.id}`);
       if (res.data.success) {
         toast.success(t('common.operationSuccess'));
+        if (dissolveTarget.id === route.openId) route.close();
         setDissolveTarget(null);
         handleRefresh();
       } else {
@@ -235,9 +155,9 @@ export default function OrgAdmin() {
           <OrgAdminTable
             rows={rows}
             searching={searching}
+            openId={route.openId}
+            onOpen={route.open}
             onToggleStatus={onToggleStatus}
-            onAdjustQuota={openQuotaDialog}
-            onSetMaxMembers={openMaxMembersDialog}
             onDissolve={setDissolveTarget}
           />
 
@@ -268,84 +188,19 @@ export default function OrgAdmin() {
           </div>
         </Card>
 
-        <Dialog open={!!quotaTarget} onOpenChange={(o) => !o && setQuotaTarget(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t('orgAdmin.quotaTitle', { name: quotaTarget?.name })}</DialogTitle>
-              <DialogDescription>{t('orgAdmin.quotaDesc')}</DialogDescription>
-            </DialogHeader>
-            <DialogBody className="space-y-4">
-              <QuotaInput
-                id="org-quota-delta"
-                label={t('orgAdmin.quotaLabel')}
-                value={quotaDelta}
-                onChange={setQuotaDelta}
-                maxDeduct={quotaTarget?.quota}
-                helperText={`${t('orgAdmin.columns.quota')}: ${renderQuota(quotaTarget?.quota || 0, 2)}`}
-              />
-              <div className="space-y-4">
-                <Label htmlFor="org-quota-remark">{t('orgAdmin.remarkLabel')}</Label>
-                <Textarea
-                  id="org-quota-remark"
-                  rows={2}
-                  value={quotaRemark}
-                  onChange={(e) => setQuotaRemark(e.target.value)}
-                  placeholder={t('orgAdmin.remarkPlaceholder')}
-                />
-              </div>
-            </DialogBody>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setQuotaTarget(null)}>
-                {t('token_index.cancel')}
-              </Button>
-              <Button onClick={submitQuota} disabled={submitting}>
-                {t('common.submit')}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={!!maxTarget} onOpenChange={(o) => !o && setMaxTarget(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t('orgAdmin.maxMembersTitle', { name: maxTarget?.name })}</DialogTitle>
-              <DialogDescription>{t('orgAdmin.maxMembersDesc', { count: maxTarget?.member_count ?? 0 })}</DialogDescription>
-            </DialogHeader>
-            <DialogBody className="space-y-4">
-              <div className="space-y-2">
-                <Label id="org-max-members-mode">{t('orgAdmin.maxMembers')}</Label>
-                <div role="radiogroup" aria-labelledby="org-max-members-mode" className="grid grid-cols-3 gap-2">
-                  {MAX_MEMBER_MODES.map(({ value, labelKey }) => (
-                    <Button
-                      key={value}
-                      type="button"
-                      role="radio"
-                      aria-checked={maxMode === value}
-                      variant={maxMode === value ? 'default' : 'outline'}
-                      onClick={() => setMaxMode(value)}
-                    >
-                      {t(labelKey)}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-              {maxMode === 'custom' && (
-                <div className="space-y-2">
-                  <Label htmlFor="org-max-members-value">{t('orgAdmin.maxMembersValueLabel')}</Label>
-                  <Input id="org-max-members-value" type="number" min={1} value={maxValue} onChange={(e) => setMaxValue(e.target.value)} />
-                </div>
-              )}
-            </DialogBody>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setMaxTarget(null)}>
-                {t('token_index.cancel')}
-              </Button>
-              <Button onClick={submitMaxMembers} disabled={submitting}>
-                {t('common.submit')}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {route.openId > 0 && (
+          <OrgPanel
+            key={route.openId}
+            orgId={route.openId}
+            tab={route.tab}
+            onTabChange={route.setTab}
+            onClose={route.close}
+            onChanged={handleRefresh}
+            onToggleStatus={onToggleStatus}
+            onDissolve={setDissolveTarget}
+            reloadKey={reloadKey}
+          />
+        )}
 
         <Dialog open={!!dissolveTarget} onOpenChange={(o) => !o && setDissolveTarget(null)}>
           <DialogContent>

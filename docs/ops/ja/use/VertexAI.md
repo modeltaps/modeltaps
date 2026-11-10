@@ -30,3 +30,9 @@ lastUpdated: true
 6. 作成に成功したら JSON ファイルをダウンロードし、ローカルで開いてその内容をすべてチャネルの `Key` にコピーします。
 
 7. 最後に [このページ](https://console.cloud.google.com/apis/library/iamcredentials.googleapis.com) で `IAM Service Account Credentials API` を有効にします。
+
+## チャネル設定
+
+- **その他**：`Region|ProjectID`、または `Region1|Region2|Region3|ProjectID`（リクエストごとにリージョンをランダムに選択）を入力します。`Region` には `global`、マルチリージョンの `us`・`eu`、または `us-east5` のような個別のリージョンを指定できます。
+- **Claude モデル**：Claude モデルは Vertex AI の Anthropic パブリッシャーが提供します。先に Vertex AI Model Garden でプロジェクトに対して該当モデルを有効にし、そのモデルを提供するリージョンを選んでください（Google のドキュメントを参照）。Claude 互換エンドポイント（`/claude/v1/messages`）へのリクエストはそのまま転送されるため、プロンプトキャッシュのフィールドやツールなどが変更されずに Vertex に届きます。OpenAI 互換のチャットエンドポイントも利用できます。クライアントが送る `anthropic-beta` のうち、Vertex が受け付ける値だけが転送されます。ヘッダーを固定したい場合は、チャネルのモデルヘッダーに `anthropic-beta` を設定してください。
+- **API アドレス**：空欄にすると Google の公式アドレスを使います。カスタムアドレス（プロキシなど）には、host、project、region、publisher、model、action の順に `%s` プレースホルダーを 6 個含める必要があります。例：`https://proxy.example.com/%s/v1/projects/%s/locations/%s/publishers/%s/models/%s:%s`。旧形式（publisher なしの 5 個）のアドレスは Gemini モデルに限り引き続き使えます。それ以外のアドレスは無視されずエラーになるため、トラフィックがプロキシを迂回することはありません。

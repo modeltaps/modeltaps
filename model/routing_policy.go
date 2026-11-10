@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/modeltaps/modeltaps/common"
+	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 
 	"gorm.io/datatypes"
@@ -32,6 +33,16 @@ const (
 	routingPolicyMaxNameLen        = 100
 )
 
+// 决策的打分方式。
+const (
+	// RoutingScoringAuto 先用 logprobs 打分；决策模型或渠道不返回 logprobs 时改用自报置信度。
+	RoutingScoringAuto = "auto"
+	// RoutingScoringLogprobs 只用 logprobs：各标签的概率来自模型对选项字母的输出概率。
+	RoutingScoringLogprobs = "logprobs"
+	// RoutingScoringSelfReported 让模型用 JSON 回答标签和它自报的置信度。
+	RoutingScoringSelfReported = "self_reported"
+)
+
 // RoutingRoute 策略里的一条路由：决策模型选中 Label 时请求转发给 TargetModel。
 type RoutingRoute struct {
 	Label       string `json:"label"`
@@ -44,8 +55,13 @@ type RoutingRoute struct {
 // FallbackModel。决策按会话固定 PinTTLSeconds 秒。目录里同时有一行 kind=routing_policy 的
 // model_info，使策略能出现在模型列表、被白名单引用、被隐藏。
 type RoutingPolicy struct {
-	Id          int    `json:"id"`
-	Name        string `json:"name" gorm:"type:varchar(100);not null;uniqueIndex:idx_routing_policies_name"`
+	Id int `json:"id"`
+	// OrganizationId is 0 for platform policies (managed by system admins, usable by everyone) and the
+	// owning organization otherwise (usable only by that organization's API keys). Names are unique
+	// within one scope; an organization policy may reuse a platform policy's name and then wins for
+	// that organization.
+	OrganizationId int    `json:"organization_id" gorm:"not null;default:0;uniqueIndex:idx_routing_policies_org_name,priority:1"`
+	Name           string `json:"name" gorm:"type:varchar(100);not null;uniqueIndex:idx_routing_policies_org_name,priority:2"`
 	DisplayName string `json:"display_name" gorm:"type:varchar(100);default:''"`
 	Description string `json:"description" gorm:"type:text"`
 	// Enabled 不带 gorm 默认值：带了 default:true 时 false 会被当零值替换成 true。
@@ -56,6 +72,8 @@ type RoutingPolicy struct {
 	Question      string                            `json:"question" gorm:"type:text"`
 	Routes        datatypes.JSONSlice[RoutingRoute] `json:"routes" gorm:"type:json"`
 	FallbackModel string                            `json:"fallback_model" gorm:"type:varchar(255);not null"`
+	// Scoring 打分方式（RoutingScoring*）；存量行为空，Normalize 补为 auto。
+	Scoring string `json:"scoring" gorm:"type:varchar(20);default:''"`
 	// 下面几个数值字段都不带 gorm 默认值：0 是合法取值（阈值 0、TTL 0 = 每次分类），
 	// gorm 的 default 会把零值改写成默认值。Normalize 只给「0 = 用默认」的字段补值。
 	// Threshold 0~1：最高标签概率低于它走兜底。
@@ -84,11 +102,28 @@ var (
 	ErrRoutingPolicyNameTaken        = common.NewAPIError(common.APICodeRoutingPolicyNameTaken, "name is already used by a model or another policy", nil)
 	ErrRoutingPolicyRoutesCount      = common.NewAPIError(common.APICodeRoutingPolicyRoutesCount, "a policy needs between 2 and 16 routes", map[string]any{"min": RoutingPolicyMinRoutes, "max": RoutingPolicyMaxRoutes})
 	ErrRoutingPolicyThresholdInvalid = common.NewAPIError(common.APICodeRoutingPolicyThresholdInvalid, "threshold must be between 0 and 1", nil)
+	ErrRoutingPolicyScoringInvalid   = common.NewAPIError(common.APICodeRoutingPolicyScoringInvalid, "scoring must be auto, logprobs or self_reported", nil)
 	ErrRoutingPolicyReferenced       = common.NewAPIError(common.APICodeRoutingPolicyReferenced, "policy is referenced by model aliases", nil)
+	ErrOrgRoutingPolicyDisabled      = common.NewAPIError(common.APICodeOrgRoutingPolicyDisabled, "organization routing policies are not enabled", nil)
 )
+
+// routingPolicyModelUnavailable a model an organization policy refers to is hidden or has no
+// channel in the organization's group.
+func routingPolicyModelUnavailable(field, name string) error {
+	return common.NewAPIError(common.APICodeRoutingPolicyModelUnavailable, field+" is not available to this organization: "+name, map[string]any{"field": field, "model": name})
+}
+
+func routingPolicyCountExceeded(max int) error {
+	return common.NewAPIError(common.APICodeRoutingPolicyCountExceeded, "this organization already has the maximum number of routing policies", map[string]any{"max": max})
+}
 
 func routingPolicyModelRequired(field string) error {
 	return common.NewAPIError(common.APICodeRoutingPolicyModelRequired, field+" is required", map[string]any{"field": field})
+}
+
+// ErrRoutingPolicyModelIsPolicy 某个字段填了策略名而不是模型。
+func ErrRoutingPolicyModelIsPolicy(field, name string) error {
+	return routingPolicyModelIsPolicy(field, name)
 }
 
 func routingPolicyModelIsPolicy(field, name string) error {
@@ -127,6 +162,10 @@ func (p *RoutingPolicy) Normalize() {
 		p.Routes[i].Label = strings.TrimSpace(p.Routes[i].Label)
 		p.Routes[i].Description = strings.TrimSpace(p.Routes[i].Description)
 		p.Routes[i].TargetModel = strings.TrimSpace(p.Routes[i].TargetModel)
+	}
+	p.Scoring = strings.TrimSpace(p.Scoring)
+	if p.Scoring == "" {
+		p.Scoring = RoutingScoringAuto
 	}
 	if p.MaxInputChars == 0 {
 		p.MaxInputChars = RoutingPolicyDefaultInputChars
@@ -176,6 +215,11 @@ func (p *RoutingPolicy) Validate(isPolicy func(name string) bool) error {
 		if err := notPolicy("routes[].target_model", route.TargetModel); err != nil {
 			return err
 		}
+	}
+	switch p.Scoring {
+	case RoutingScoringAuto, RoutingScoringLogprobs, RoutingScoringSelfReported:
+	default:
+		return ErrRoutingPolicyScoringInvalid
 	}
 	if p.Threshold < 0 || p.Threshold > 1 {
 		return ErrRoutingPolicyThresholdInvalid
@@ -243,9 +287,22 @@ func (p *RoutingPolicy) catalogRow(existing *ModelInfo) *ModelInfo {
 
 // ---- 查询 ----
 
+// IsOrganizationPolicy reports whether the policy belongs to an organization rather than the platform.
+func (p *RoutingPolicy) IsOrganizationPolicy() bool {
+	return p.OrganizationId > 0
+}
+
+// GetRoutingPolicies returns every policy, platform and organization ones alike.
 func GetRoutingPolicies() ([]*RoutingPolicy, error) {
 	var policies []*RoutingPolicy
 	err := DB.Order("id asc").Find(&policies).Error
+	return policies, err
+}
+
+// GetRoutingPoliciesByOrganization returns the policies of one scope (0 = platform).
+func GetRoutingPoliciesByOrganization(organizationId int) ([]*RoutingPolicy, error) {
+	var policies []*RoutingPolicy
+	err := DB.Where("organization_id = ?", organizationId).Order("id asc").Find(&policies).Error
 	return policies, err
 }
 
@@ -258,31 +315,55 @@ func GetRoutingPolicyById(id int) (*RoutingPolicy, error) {
 	return policy, err
 }
 
+// GetOrganizationRoutingPolicyById returns the policy only when it belongs to the organization, so
+// one organization can never read or change another's policy by guessing an id.
+func GetOrganizationRoutingPolicyById(organizationId, id int) (*RoutingPolicy, error) {
+	policy, err := GetRoutingPolicyById(id)
+	if err != nil {
+		return nil, err
+	}
+	if policy.OrganizationId != organizationId {
+		return nil, ErrRoutingPolicyNotFound
+	}
+	return policy, nil
+}
+
+// GetRoutingPolicyByName looks up a platform policy by name.
 func GetRoutingPolicyByName(name string) (*RoutingPolicy, error) {
+	return getRoutingPolicyByScopedName(0, name)
+}
+
+func getRoutingPolicyByScopedName(organizationId int, name string) (*RoutingPolicy, error) {
 	policy := &RoutingPolicy{}
-	err := DB.First(policy, "name = ?", name).Error
+	err := DB.First(policy, "organization_id = ? AND name = ?", organizationId, name).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, ErrRoutingPolicyNotFound
 	}
 	return policy, err
 }
 
-// routingPolicyNameTaken 判断名字是否已被目录里的模型（含别名）或另一条策略占用。
+func countOrganizationRoutingPolicies(organizationId int) (int64, error) {
+	var count int64
+	err := DB.Model(&RoutingPolicy{}).Where("organization_id = ?", organizationId).Count(&count).Error
+	return count, err
+}
+
+// routingPolicyNameTaken 判断名字是否已被目录里的模型（含别名）或同一作用域里的另一条策略占用。
 // 渠道提供的模型未必有目录行，所以还要问 balancer；它没加载时视为未占用。
-func routingPolicyNameTaken(name string, selfId int) (bool, error) {
+// An organization policy may share a platform policy's name (it overrides it for that organization),
+// so the catalog row a platform policy owns does not count against it.
+func routingPolicyNameTaken(organizationId int, name string, selfId int) (bool, error) {
 	if info, err := GetModelInfoByModel(name); err == nil && info != nil {
-		// 自己联动出来的那一行不算占用（改名以外的更新会走到这里）。
 		if info.Kind != ModelInfoKindRoutingPolicy {
-			return true, nil
-		}
-		if other, err := GetRoutingPolicyByName(name); err == nil && other.Id != selfId {
 			return true, nil
 		}
 	} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return false, err
 	}
-	if other, err := GetRoutingPolicyByName(name); err == nil && other.Id != selfId {
+	if other, err := getRoutingPolicyByScopedName(organizationId, name); err == nil && other.Id != selfId {
 		return true, nil
+	} else if err != nil && !errors.Is(err, ErrRoutingPolicyNotFound) {
+		return false, err
 	}
 	if ChannelGroup.HasModel(name) {
 		return true, nil
@@ -290,22 +371,123 @@ func routingPolicyNameTaken(name string, selfId int) (bool, error) {
 	return false, nil
 }
 
-func isOtherRoutingPolicy(selfId int) func(name string) bool {
+// isOtherRoutingPolicy reports whether a name refers to a policy other than selfId that the policy
+// could see: platform policies for everyone, plus the organization's own policies. Policies must not
+// point at policies, so this is the "no nesting" check of Validate.
+func isOtherRoutingPolicy(organizationId, selfId int) func(name string) bool {
 	return func(name string) bool {
-		other, err := GetRoutingPolicyByName(name)
-		return err == nil && other.Id != selfId
+		if other := LookupRoutingPolicy(name); other != nil && other.Id != selfId {
+			return true
+		}
+		if organizationId > 0 {
+			if other := lookupScopedRoutingPolicy(organizationId, name); other != nil && other.Id != selfId {
+				return true
+			}
+		}
+		return false
 	}
+}
+
+// IsRoutingPolicyModelFor is the nesting check for drafts of the given scope (0 = platform).
+func IsRoutingPolicyModelFor(organizationId int) func(name string) bool {
+	return isOtherRoutingPolicy(organizationId, 0)
+}
+
+// ValidateOrganizationModels checks that every model an organization policy refers to can be used
+// by the organization: it is not hidden in the catalog and the organization's group has a channel
+// for it. Platform admins hide models they only want reachable through their own policies; an
+// organization policy must not reach them.
+func (p *RoutingPolicy) ValidateOrganizationModels(organizationId int) error {
+	group, err := organizationRoutingGroup(organizationId)
+	if err != nil {
+		return err
+	}
+	check := func(field, name string) error {
+		return checkOrganizationRoutingModel(group, field, name)
+	}
+	if err := check("decision_model", p.DecisionModel); err != nil {
+		return err
+	}
+	if err := check("fallback_model", p.FallbackModel); err != nil {
+		return err
+	}
+	for _, route := range p.Routes {
+		if err := check("routes[].target_model", route.TargetModel); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// CheckOrganizationRoutingModel is ValidateOrganizationModels for a single model (used by the
+// decision model probe of the organization console).
+func CheckOrganizationRoutingModel(organizationId int, field, name string) error {
+	group, err := organizationRoutingGroup(organizationId)
+	if err != nil {
+		return err
+	}
+	return checkOrganizationRoutingModel(group, field, name)
+}
+
+func checkOrganizationRoutingModel(group, field, name string) error {
+	if !OrganizationRoutingTargetUsable(name) {
+		return routingPolicyModelUnavailable(field, name)
+	}
+	canonical, _ := ResolveCanonicalModel(name)
+	if _, err := ChannelGroup.GetMatchedModelName(group, canonical); err != nil {
+		return routingPolicyModelUnavailable(field, name)
+	}
+	return nil
+}
+
+// OrganizationRoutingTargetUsable reports whether an organization policy may send a request to the
+// model: hidden catalog models are off limits (checked again at request time, since the platform
+// may hide a model after the policy was saved).
+func OrganizationRoutingTargetUsable(name string) bool {
+	canonical, _ := ResolveCanonicalModel(name)
+	return !(config.CatalogEnforceHidden() && IsModelHidden(canonical))
+}
+
+// organizationRoutingGroup returns the user group of the organization's shadow account, which is the
+// group its API keys route in by default.
+func organizationRoutingGroup(organizationId int) (string, error) {
+	org, err := GetOrganizationById(organizationId)
+	if err != nil {
+		return "", err
+	}
+	return CacheGetUserGroup(org.ShadowUserId)
 }
 
 // ---- 写入 ----
 
-// Insert 校验并写入策略，同一事务里建目录行。
-func (p *RoutingPolicy) Insert() error {
+// validateForWrite runs the checks shared by Insert and Update.
+func (p *RoutingPolicy) validateForWrite() error {
 	p.Normalize()
-	if err := p.Validate(isOtherRoutingPolicy(0)); err != nil {
+	if err := p.Validate(isOtherRoutingPolicy(p.OrganizationId, p.Id)); err != nil {
 		return err
 	}
-	taken, err := routingPolicyNameTaken(p.Name, 0)
+	if p.IsOrganizationPolicy() {
+		return p.ValidateOrganizationModels(p.OrganizationId)
+	}
+	return nil
+}
+
+// Insert 校验并写入策略；平台策略在同一事务里建目录行。Organization policies get no catalog row:
+// the catalog is global and would show the policy to every other organization.
+func (p *RoutingPolicy) Insert() error {
+	if err := p.validateForWrite(); err != nil {
+		return err
+	}
+	if p.IsOrganizationPolicy() {
+		count, err := countOrganizationRoutingPolicies(p.OrganizationId)
+		if err != nil {
+			return err
+		}
+		if max := config.OrganizationRoutingPolicyMaxCount; max > 0 && count >= int64(max) {
+			return routingPolicyCountExceeded(max)
+		}
+	}
+	taken, err := routingPolicyNameTaken(p.OrganizationId, p.Name, 0)
 	if err != nil {
 		return err
 	}
@@ -315,6 +497,9 @@ func (p *RoutingPolicy) Insert() error {
 	err = DB.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(p).Error; err != nil {
 			return err
+		}
+		if p.IsOrganizationPolicy() {
+			return nil
 		}
 		return tx.Create(p.catalogRow(nil)).Error
 	})
@@ -326,34 +511,40 @@ func (p *RoutingPolicy) Insert() error {
 }
 
 // Update 校验并整行保存策略；改名时目录行跟着改名，被别名引用的旧名不允许改。
+// The owning scope never changes: a policy cannot move between the platform and an organization.
 func (p *RoutingPolicy) Update() error {
 	current, err := GetRoutingPolicyById(p.Id)
 	if err != nil {
 		return err
 	}
-	p.Normalize()
-	if err := p.Validate(isOtherRoutingPolicy(p.Id)); err != nil {
+	p.OrganizationId = current.OrganizationId
+	if err := p.validateForWrite(); err != nil {
 		return err
 	}
 	if p.Name != current.Name {
-		taken, err := routingPolicyNameTaken(p.Name, p.Id)
+		taken, err := routingPolicyNameTaken(p.OrganizationId, p.Name, p.Id)
 		if err != nil {
 			return err
 		}
 		if taken {
 			return ErrRoutingPolicyNameTaken
 		}
-		refs, err := ModelAliasReferences(current.Name)
-		if err != nil {
-			return err
-		}
-		if len(refs) > 0 {
-			return routingPolicyReferenced(refs)
+		if !p.IsOrganizationPolicy() {
+			refs, err := ModelAliasReferences(current.Name)
+			if err != nil {
+				return err
+			}
+			if len(refs) > 0 {
+				return routingPolicyReferenced(refs)
+			}
 		}
 	}
 	err = DB.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Omit("created_at").Save(p).Error; err != nil {
 			return err
+		}
+		if p.IsOrganizationPolicy() {
+			return nil
 		}
 		existing := &ModelInfo{}
 		findErr := tx.Where("model = ? AND kind = ?", current.Name, ModelInfoKindRoutingPolicy).First(existing).Error
@@ -396,16 +587,21 @@ func DeleteRoutingPolicyById(id int) error {
 	if err != nil {
 		return err
 	}
-	refs, err := ModelAliasReferences(current.Name)
-	if err != nil {
-		return err
-	}
-	if len(refs) > 0 {
-		return routingPolicyReferenced(refs)
+	if !current.IsOrganizationPolicy() {
+		refs, err := ModelAliasReferences(current.Name)
+		if err != nil {
+			return err
+		}
+		if len(refs) > 0 {
+			return routingPolicyReferenced(refs)
+		}
 	}
 	err = DB.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Delete(&RoutingPolicy{}, id).Error; err != nil {
 			return err
+		}
+		if current.IsOrganizationPolicy() {
+			return nil
 		}
 		return tx.Where("model = ? AND kind = ?", current.Name, ModelInfoKindRoutingPolicy).Delete(&ModelInfo{}).Error
 	})
@@ -421,10 +617,18 @@ func DeleteRoutingPolicyById(id int) error {
 // 请求路径按名查策略，不能每次打库。与 modelInfoCache 一样是进程内索引：本进程写入后立即刷新，
 // 其它实例在下次启动时加载。
 
+// routingPolicyKey indexes a policy by scope (0 = platform) and name.
+type routingPolicyKey struct {
+	organizationId int
+	name           string
+}
+
 type routingPolicyIndex struct {
 	sync.RWMutex
 	loaded bool
-	byName map[string]*RoutingPolicy
+	byKey  map[routingPolicyKey]*RoutingPolicy
+	// byOrganization lists each organization's policies for model listings.
+	byOrganization map[int][]*RoutingPolicy
 }
 
 var routingPolicyCache routingPolicyIndex
@@ -435,13 +639,16 @@ func ReloadRoutingPolicyCache() error {
 	if err != nil {
 		return err
 	}
-	byName := make(map[string]*RoutingPolicy, len(policies))
+	byKey := make(map[routingPolicyKey]*RoutingPolicy, len(policies))
+	byOrganization := make(map[int][]*RoutingPolicy)
 	for _, policy := range policies {
-		byName[policy.Name] = policy
+		byKey[routingPolicyKey{policy.OrganizationId, policy.Name}] = policy
+		byOrganization[policy.OrganizationId] = append(byOrganization[policy.OrganizationId], policy)
 	}
 	routingPolicyCache.Lock()
 	defer routingPolicyCache.Unlock()
-	routingPolicyCache.byName = byName
+	routingPolicyCache.byKey = byKey
+	routingPolicyCache.byOrganization = byOrganization
 	routingPolicyCache.loaded = true
 	return nil
 }
@@ -450,7 +657,8 @@ func ReloadRoutingPolicyCache() error {
 func ResetRoutingPolicyCache() {
 	routingPolicyCache.Lock()
 	defer routingPolicyCache.Unlock()
-	routingPolicyCache.byName = nil
+	routingPolicyCache.byKey = nil
+	routingPolicyCache.byOrganization = nil
 	routingPolicyCache.loaded = false
 }
 
@@ -467,14 +675,15 @@ func refreshRoutingPolicyCaches() {
 	refreshCatalogCaches()
 }
 
-// LookupRoutingPolicy 按名查策略（含已禁用的）；索引未加载时回落 DB，查不到返回 nil。
-func LookupRoutingPolicy(name string) *RoutingPolicy {
+// lookupScopedRoutingPolicy finds a policy of one scope by name (disabled ones included); the index
+// falls back to the database when it is not loaded, and returns nil when nothing matches.
+func lookupScopedRoutingPolicy(organizationId int, name string) *RoutingPolicy {
 	if name == "" {
 		return nil
 	}
 	routingPolicyCache.RLock()
 	if routingPolicyCache.loaded {
-		policy := routingPolicyCache.byName[name]
+		policy := routingPolicyCache.byKey[routingPolicyKey{organizationId, name}]
 		routingPolicyCache.RUnlock()
 		return policy
 	}
@@ -482,39 +691,93 @@ func LookupRoutingPolicy(name string) *RoutingPolicy {
 	if DB == nil {
 		return nil
 	}
-	policy, err := GetRoutingPolicyByName(name)
+	policy, err := getRoutingPolicyByScopedName(organizationId, name)
 	if err != nil {
 		return nil
 	}
 	return policy
 }
 
-// IsRoutingPolicyModel 判断模型名是否是一条策略（无论启用与否）。
+// scopedRoutingPolicies lists the policies of one scope (disabled ones included).
+func scopedRoutingPolicies(organizationId int) []*RoutingPolicy {
+	routingPolicyCache.RLock()
+	if routingPolicyCache.loaded {
+		policies := append([]*RoutingPolicy(nil), routingPolicyCache.byOrganization[organizationId]...)
+		routingPolicyCache.RUnlock()
+		return policies
+	}
+	routingPolicyCache.RUnlock()
+	if DB == nil {
+		return nil
+	}
+	policies, err := GetRoutingPoliciesByOrganization(organizationId)
+	if err != nil {
+		return nil
+	}
+	return policies
+}
+
+// LookupRoutingPolicy 按名查平台策略（含已禁用的）；索引未加载时回落 DB，查不到返回 nil。
+func LookupRoutingPolicy(name string) *RoutingPolicy {
+	return lookupScopedRoutingPolicy(0, name)
+}
+
+// organizationPoliciesActive reports whether organization policies take part in resolution.
+func organizationPoliciesActive(organizationId int) bool {
+	return organizationId > 0 && config.OrganizationRoutingPolicyEnabled
+}
+
+// ResolveRoutingPolicy returns the enabled policy a request for name uses: the organization's own
+// policy when it has an enabled one with that name, otherwise the enabled platform policy, otherwise
+// nil. organizationId is 0 for keys outside any organization.
+func ResolveRoutingPolicy(organizationId int, name string) *RoutingPolicy {
+	if organizationPoliciesActive(organizationId) {
+		if policy := lookupScopedRoutingPolicy(organizationId, name); policy != nil && policy.Enabled {
+			return policy
+		}
+	}
+	if policy := LookupRoutingPolicy(name); policy != nil && policy.Enabled {
+		return policy
+	}
+	return nil
+}
+
+// IsRoutingPolicyModel 判断模型名是否是一条平台策略（无论启用与否）。
 func IsRoutingPolicyModel(name string) bool {
 	return LookupRoutingPolicy(name) != nil
 }
 
-// EnabledRoutingPolicies 返回所有启用的策略，按名排序。
+// EnabledRoutingPolicies 返回所有启用的平台策略，按名排序。
 func EnabledRoutingPolicies() []*RoutingPolicy {
-	var all []*RoutingPolicy
-	routingPolicyCache.RLock()
-	if routingPolicyCache.loaded {
-		all = make([]*RoutingPolicy, 0, len(routingPolicyCache.byName))
-		for _, policy := range routingPolicyCache.byName {
-			all = append(all, policy)
-		}
-		routingPolicyCache.RUnlock()
-	} else {
-		routingPolicyCache.RUnlock()
-		if DB == nil {
-			return nil
-		}
-		var err error
-		all, err = GetRoutingPolicies()
-		if err != nil {
-			return nil
+	return enabledSorted(scopedRoutingPolicies(0))
+}
+
+// EnabledRoutingPoliciesFor returns the enabled policies an API key of the organization can call
+// (0 = outside any organization): its own policies plus the platform ones it does not override.
+func EnabledRoutingPoliciesFor(organizationId int) []*RoutingPolicy {
+	platform := EnabledRoutingPolicies()
+	if !organizationPoliciesActive(organizationId) {
+		return platform
+	}
+	own := enabledSorted(scopedRoutingPolicies(organizationId))
+	if len(own) == 0 {
+		return platform
+	}
+	overridden := make(map[string]bool, len(own))
+	for _, policy := range own {
+		overridden[policy.Name] = true
+	}
+	merged := own
+	for _, policy := range platform {
+		if !overridden[policy.Name] {
+			merged = append(merged, policy)
 		}
 	}
+	sort.Slice(merged, func(i, j int) bool { return merged[i].Name < merged[j].Name })
+	return merged
+}
+
+func enabledSorted(all []*RoutingPolicy) []*RoutingPolicy {
 	enabled := make([]*RoutingPolicy, 0, len(all))
 	for _, policy := range all {
 		if policy.Enabled {
@@ -527,14 +790,15 @@ func EnabledRoutingPolicies() []*RoutingPolicy {
 
 // RoutingPolicyModelsFor 返回应当并入某个模型列表的策略名：策略启用，且 routable 对它的兜底
 // 模型返回 true（兜底是永远可能被转发到的目标，兜底都到不了的策略对这条列表没有意义）。
-// 已在列表里的名字不重复加入。
-func RoutingPolicyModelsFor(existing []string, routable func(modelName string) bool) []string {
+// 已在列表里的名字不重复加入。organizationId selects which organization's own policies are added
+// on top of the platform ones (0 = none).
+func RoutingPolicyModelsFor(organizationId int, existing []string, routable func(modelName string) bool) []string {
 	present := make(map[string]bool, len(existing))
 	for _, name := range existing {
 		present[name] = true
 	}
 	added := make([]string, 0)
-	for _, policy := range EnabledRoutingPolicies() {
+	for _, policy := range EnabledRoutingPoliciesFor(organizationId) {
 		if present[policy.Name] {
 			continue
 		}

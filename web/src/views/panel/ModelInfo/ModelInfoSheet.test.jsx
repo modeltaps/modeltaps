@@ -211,7 +211,7 @@ describe('ModelInfoSheet — 绑定渠道', () => {
     expect(badges()).toHaveLength(1);
     expect(badges()[0].closest('tr').textContent).toContain('openai-off');
     const link = screen.getByRole('link', { name: i18n.t('modelsPage.sheet.openChannel', { name: 'openai-main' }), hidden: true });
-    expect(link.getAttribute('href')).toBe('/panel/channel?name=openai-main&channel_id=9');
+    expect(link.getAttribute('href')).toBe('/panel/channel/9');
   });
 
   it('initialTab=channels 时默认打开渠道与分组 Tab', async () => {

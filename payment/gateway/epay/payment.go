@@ -95,6 +95,7 @@ func (e *Epay) HandleCallback(c *gin.Context, gatewayConfig string) (*types.PayN
 	return &types.PayNotify{
 		TradeNo:   queryMap["out_trade_no"],
 		GatewayNo: queryMap["trade_no"],
+		PaidCents: types.YuanToCents(queryMap["money"]),
 	}, nil
 }
 

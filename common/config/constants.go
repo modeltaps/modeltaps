@@ -257,6 +257,12 @@ var AutomaticDisableChannelNotifyEnabled = true
 var QuotaRemindEnabled = true
 var QuotaRemindThreshold = 1000
 var PreConsumedQuota = 500
+
+// PreConsumedOutputTokens is the number of output tokens reserved up front for every request priced
+// per token: the request's own max_tokens when it is smaller, otherwise this value. It keeps the
+// reservation close to what the request can cost so concurrent requests cannot drive a balance
+// far below zero.
+var PreConsumedOutputTokens = 4096
 var ApproximateTokenEnabled = false
 var EmptyResponseBillingEnabled = true
 
@@ -284,6 +290,19 @@ var ChannelTestMode = "recovery"
 
 // ChannelTestIntervalMinutes 定时渠道测试的间隔（分钟）。
 var ChannelTestIntervalMinutes = 10
+
+// ModelSupplyEnabled routes requests through model supplies (model_supplies) instead of the
+// channels' models and model_mapping fields, bills by the public model, and lists only
+// published models. Off until the supply migration has run.
+var ModelSupplyEnabled = false
+
+// PauseRulesEnabled sends every relay failure through the pause rules (see model.PauseRule):
+// channels or models are paused for a while and resumed automatically, instead of the older
+// automatic disabling, per-status cooldowns and model-not-found quarantine.
+var PauseRulesEnabled = true
+
+// PauseRules holds custom pause rules as JSON; empty means the built-in defaults.
+var PauseRules = ""
 
 // ChannelMetricsEnabled 按「渠道 × 模型 × 小时」聚合成功率、首字延迟与输出速度（内存累计，每分钟落库）。
 var ChannelMetricsEnabled = true
@@ -362,6 +381,13 @@ var UnifiedRequestResponseModelEnabled = false
 // RoutingDecisionBillingEnabled 自动路由的决策调用是否按决策模型价格向用户计费（每个会话一次）。
 // 关闭时决策调用只记录在系统日志，不写消费日志、不扣额度。
 var RoutingDecisionBillingEnabled = true
+
+// OrganizationRoutingPolicyEnabled lets organization owners and admins manage routing policies that
+// only their organization can use. Off by default; when off, organization policies are kept but not resolved.
+var OrganizationRoutingPolicyEnabled = false
+
+// OrganizationRoutingPolicyMaxCount caps the routing policies one organization can create.
+var OrganizationRoutingPolicyMaxCount = 20
 
 // FingerprintPassThroughEnabled 让中转响应尽量保留上游的响应指纹：Claude / Bedrock 的
 // 非流式原始字节透传、流式跳过 model 改写，以及上游响应头透传（Bedrock x-amzn-* /

@@ -60,8 +60,8 @@ describe('ChannelsCell', () => {
 });
 
 describe('channelEditPath', () => {
-  it('filters the channel page by name and opens the edit drawer by id', () => {
-    expect(channelEditPath(CHANNELS[1])).toBe('/panel/channel?name=claude%20one&channel_id=2');
+  it('points at the channel page', () => {
+    expect(channelEditPath(CHANNELS[1])).toBe('/panel/channel/2');
   });
 });
 

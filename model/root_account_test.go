@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/modeltaps/modeltaps/common"
+	"github.com/modeltaps/modeltaps/common/config"
 
 	"github.com/spf13/viper"
 	"gorm.io/driver/sqlite"
@@ -31,8 +32,19 @@ func setupRootTestDB(t *testing.T) {
 func fetchRootUser(t *testing.T) User {
 	t.Helper()
 	var user User
-	if err := DB.Where("username = ?", "root").First(&user).Error; err != nil {
-		t.Fatalf("未找到 root 用户: %v", err)
+	if err := DB.Where("username = ?", "admin").First(&user).Error; err != nil {
+		t.Fatalf("未找到种下的超级管理员 admin: %v", err)
+	}
+	if user.Role != config.RoleRootUser {
+		t.Fatalf("admin 的角色应为 RoleRootUser，实际 %d", user.Role)
+	}
+	if user.DisplayName != "Admin" {
+		t.Fatalf("admin 的显示名应为 Admin，实际 %q", user.DisplayName)
+	}
+	var legacy int64
+	DB.Model(&User{}).Where("username = ?", "root").Count(&legacy)
+	if legacy != 0 {
+		t.Fatal("新装不应再种 root 用户")
 	}
 	return user
 }
@@ -142,7 +154,7 @@ func TestCreateRootAccountAllowInsecure(t *testing.T) {
 		}
 		user := fetchRootUser(t)
 		if !common.ValidatePasswordAndHash("root", user.Password) {
-			t.Fatal("root 用户应可用 root/root 登录")
+			t.Fatal("admin 应可用 ROOT_PASSWORD 指定的短密码登录")
 		}
 	})
 
@@ -183,5 +195,29 @@ func TestCreateRootAccountExistingUserUntouched(t *testing.T) {
 	DB.Model(&User{}).Where("username = ?", "root").Count(&rootCount)
 	if rootCount != 0 {
 		t.Fatal("已有用户时不应创建 root 用户")
+	}
+}
+
+// 旧库里已有的 root 超级管理员不改名，也不额外种 admin。
+func TestCreateRootAccountLegacyRootKept(t *testing.T) {
+	setupRootTestDB(t)
+	legacy := User{Username: "root", Password: "already-hashed", Role: config.RoleRootUser, DisplayName: "Root User"}
+	if err := DB.Create(&legacy).Error; err != nil {
+		t.Fatalf("预置旧 root 失败: %v", err)
+	}
+	if err := createRootAccountIfNeed(); err != nil {
+		t.Fatalf("已有用户时应直接返回 nil: %v", err)
+	}
+	var got User
+	if err := DB.Where("role = ?", config.RoleRootUser).First(&got).Error; err != nil {
+		t.Fatalf("应仍有一个超级管理员: %v", err)
+	}
+	if got.Username != "root" || got.DisplayName != "Root User" {
+		t.Fatalf("旧 root 不应被改名，实际 %q / %q", got.Username, got.DisplayName)
+	}
+	var adminCount int64
+	DB.Model(&User{}).Where("username = ?", "admin").Count(&adminCount)
+	if adminCount != 0 {
+		t.Fatal("已有 root 时不应再种 admin")
 	}
 }

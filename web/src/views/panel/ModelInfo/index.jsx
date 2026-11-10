@@ -62,6 +62,9 @@ import ModelTable from './ModelTable';
 import ModelInfoSheet from './ModelInfoSheet';
 import ImportDialog from './ImportDialog';
 import { ENDPOINT_LABEL_KEYS, ENDPOINT_VALUES, isUnlabeled, safeJsonArray } from './modelInfoHelpers';
+import { listSupplies } from './supply/supplyApi';
+import { useSupplySwitches, SupplySwitchNote } from './supply/supplyParts';
+import { MODEL_STATUSES, countSuppliesByModel, isPublicModelRow, normalizeModelStatus } from './supply/supplyHelpers';
 
 // 工具栏分面:厂商 / 状态 / 可见性 / 计费方式 / 接口 + 「仅看未标注」。全部为前端本地过滤,
 // 单选枚举的 paramInclude 即字段键,刷新可由 URL 恢复;状态分面与页头统计 chip 共用取值。
@@ -87,6 +90,11 @@ const buildFilterFields = (vendors) => [
     'modelInfoPage.state',
     STATUS_FILTERS.map((s) => ({ value: s, labelKey: `modelsPage.stats.${s}` }))
   ),
+  singleEnum(
+    'publish',
+    'modelSupply.status.label',
+    MODEL_STATUSES.map((s) => ({ value: s, labelKey: `modelSupply.status.${s}` }))
+  ),
   singleEnum('visible', 'modelsPage.visibility', [
     { value: 'true', labelKey: 'modelsPage.visibleYes' },
     { value: 'false', labelKey: 'modelsPage.visibleNo' }
@@ -104,7 +112,7 @@ const buildFilterFields = (vendors) => [
   singleEnum('labels', 'modelsPage.labeling', [{ value: 'unlabeled', labelKey: 'modelInfoPage.onlyUnlabeled' }])
 ];
 
-const MODELINFO_FILTER_PARAM_KEYS = ['vendor_id', 'status', 'visible', 'billing', 'endpoint', 'labels'];
+const MODELINFO_FILTER_PARAM_KEYS = ['vendor_id', 'status', 'publish', 'visible', 'billing', 'endpoint', 'labels'];
 // 参数映射只依赖 key/type/single/paramInclude,与动态厂商选项无关,URL 解析用静态描述即可。
 const MODELINFO_FILTER_FIELDS = buildFilterFields({});
 
@@ -117,6 +125,7 @@ export function filterCatalogRows(rows, { keyword = '', params = {}, onlyUsable 
     if (onlyUsable && !isFullyUsable(row)) return false;
     if (params.status && !matchesStatusFilter(row, params.status)) return false;
     if (params.vendor_id && String(row.vendor_id || 0) !== params.vendor_id) return false;
+    if (params.publish && !(isPublicModelRow(row) && normalizeModelStatus(row.status) === params.publish)) return false;
     if (params.visible && String(isVisibleToUsers(row)) !== params.visible) return false;
     if (params.billing && billingType(row) !== params.billing) return false;
     if (params.endpoint && !safeJsonArray(row.endpoints).includes(params.endpoint)) return false;
@@ -184,6 +193,8 @@ export default function ModelInfo() {
   const [modelList, setModelList] = useState([]);
   const [channelsByModel, setChannelsByModel] = useState({});
   const [channelList, setChannelList] = useState([]);
+  const [supplyCounts, setSupplyCounts] = useState({});
+  const supplySwitches = useSupplySwitches();
   const [vendors, setVendors] = useState({});
   const [ownedby, setOwnedby] = useState([]);
   const [refreshFlag, setRefreshFlag] = useState(false);
@@ -230,12 +241,13 @@ export default function ModelInfo() {
           const catalog = cres.data.success ? cres.data.data || [] : [];
           const priceRows = pres.data.success ? pres.data.data || [] : [];
           const models = mres.data.success ? mres.data.data || [] : [];
-          const channels = await fetchAllChannels();
-          return { cres, catalog, priceRows, models, channels };
+          const [channels, supplies] = await Promise.all([fetchAllChannels(), listSupplies().catch(() => null)]);
+          return { cres, catalog, priceRows, models, channels, supplies };
         },
         {
           onStart: () => setLoading(true),
-          onResult: ({ cres, catalog, priceRows, models, channels }) => {
+          onResult: ({ cres, catalog, priceRows, models, channels, supplies }) => {
+            setSupplyCounts(supplies?.success ? countSuppliesByModel(supplies.data || []) : {});
             if (!cres.data.success) showError(cres.data.message);
             setModelInfos(catalog);
             setPrices(priceRows);
@@ -343,8 +355,11 @@ export default function ModelInfo() {
   }, [modelInfos]);
 
   const rows = useMemo(
-    () => attachChannelDetails(mergeCatalogRows({ catalog: modelInfos, prices, modelList, channelsByModel }), channelList),
-    [modelInfos, prices, modelList, channelsByModel, channelList]
+    () =>
+      attachChannelDetails(mergeCatalogRows({ catalog: modelInfos, prices, modelList, channelsByModel }), channelList).map((row) =>
+        isPublicModelRow(row) ? { ...row, supplyCounts: supplyCounts[row.model] || { total: 0, usable: 0 } } : row
+      ),
+    [modelInfos, prices, modelList, channelsByModel, channelList, supplyCounts]
   );
 
   // 本地过滤条件(搜索框 + 分面 + 「只看完整可用」)。
@@ -433,6 +448,25 @@ export default function ModelInfo() {
     setEditRow(null);
     handleRefresh();
   };
+
+  // Deep link from elsewhere (channel panel, paused supplies): ?model=<name>&panel=<tab> opens
+  // that model's panel once the rows are loaded, then the two keys are dropped from the URL.
+  const linkedModel = searchParams.get('model');
+  const linkedPanel = searchParams.get('panel');
+  useEffect(() => {
+    if (!linkedModel || loading || rows.length === 0) return;
+    const row = rows.find((r) => r.model === linkedModel);
+    if (row) openSheet(row, linkedPanel || 'profile');
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('model');
+        next.delete('panel');
+        return next;
+      },
+      { replace: true }
+    );
+  }, [linkedModel, linkedPanel, loading, rows, openSheet, setSearchParams]);
 
   // 批量定价:选中模型统一设价,已有价格的模型走更新,其余新增。
   const openBatchPrice = () => {
@@ -741,6 +775,8 @@ export default function ModelInfo() {
         {body}
       </ListPage>
 
+      {params.publish && <SupplySwitchNote switches={supplySwitches} className="mt-2" />}
+
       {unlabeledCount > 0 && params.labels !== 'unlabeled' && (
         <p className="mt-2 text-xs text-muted-foreground">
           <button
@@ -763,7 +799,11 @@ export default function ModelInfo() {
           prices={prices}
           ownedby={ownedby}
           unit={unit}
+          channels={channelList}
+          supplyCount={editRow ? supplyCounts[editRow.model]?.total || 0 : undefined}
+          switches={supplySwitches}
           onSaved={onSaved}
+          onSupplyChanged={handleRefresh}
         />
 
         <ImportDialog

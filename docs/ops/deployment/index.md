@@ -313,19 +313,23 @@ docker compose --profile docs stop docs
    ./modeltaps --port 3000 --log-dir ./logs
    ```
 
-3. **访问应用**：在浏览器中访问 `http://localhost:3000` 并登录。初始账号用户名为 `root`，初始密码取决于首次启动时的配置：
+3. **访问应用**：在浏览器中访问 `http://localhost:3000` 并登录。初始账号是超级管理员（角色为 root，下文简称 root），用户名为 `admin`，初始密码取决于首次启动时的配置：
 
    - 设置了 `ROOT_PASSWORD`（长度 8–64 位）：使用该值作为 root 初始密码；长度不合规时程序会启动失败。
    - 未设置 `ROOT_PASSWORD`：程序会用 `crypto/rand` 生成 16 位强随机密码，并**仅在首次启动日志中打印一次**，形如：
 
      ```text
-     no user exists, create a root user for you: username is root, initial root password: <随机密码>
+     no user exists, created the super admin account: username is admin, initial password: <随机密码>
      ```
 
-   本地开发约定：设置 `ROOT_PASSWORD=root` 与 `ROOT_PASSWORD_ALLOW_INSECURE=true`，首启后即可用 `root/root` 登录；该开关仅限本地开发，生产环境严禁开启。
+   本地开发约定：设置 `ROOT_PASSWORD=admin` 与 `ROOT_PASSWORD_ALLOW_INSECURE=true`，首启后即可用 `admin/admin` 登录；该开关仅限本地开发，生产环境严禁开启。
 
    ::: warning 初始密码
    该逻辑只在数据库中还没有任何用户时生效。请在首次登录后立即修改 root 密码，并清理含有初始密码的启动日志（见 [目录权限收紧](#目录权限收紧)）。
+   :::
+
+   ::: info 旧版本升级
+   早期版本首次启动种下的账号用户名是 `root`、显示名 `Root User`。升级不会改动已有账号，原来的 `root` 照常登录，`/login/admin` 也照常可用（它按角色放行，不看用户名）；想改名可在「用户管理」里自行修改。
    :::
 
 运行方式与配置项和容器部署一致：既可用 `.env` / 环境变量注入，也可用 `--config ./config.yaml` 指定配置文件（见 [命令行参数](./cli.md)）。生产环境请按 [裸机（手动）部署](#裸机-手动-部署) 收紧目录与文件权限。
@@ -362,7 +366,7 @@ docker compose --profile docs stop docs
 首次启动时（数据库中还没有任何用户），若未设置 `ROOT_PASSWORD`，程序会生成 16 位随机密码并**以明文打印一次**：
 
 ```text
-no user exists, create a root user for you: username is root, initial root password: <随机密码>
+no user exists, created the super admin account: username is admin, initial password: <随机密码>
 ```
 
 这条日志会同时写到两个地方：
@@ -444,7 +448,7 @@ sudo -u modeltaps /opt/modeltaps/modeltaps --port 3000 --log-dir /opt/modeltaps/
 
 ```bash
 # 1. 确认日志中是否存在该行
-sudo grep -l "initial root password" /data/modeltaps/logs/*.log
+sudo grep -l -E "initial (root )?password" /data/modeltaps/logs/*.log
 
 # 2. 删除含该行的日志文件（含轮转产生的历史文件）
 sudo rm -f /data/modeltaps/logs/modeltaps.log /data/modeltaps/logs/modeltaps-*.log
@@ -454,7 +458,7 @@ sudo rm -f /data/modeltaps/logs/modeltaps.log /data/modeltaps/logs/modeltaps-*.l
 
 ```bash
 # 确认
-docker logs modeltaps 2>&1 | grep "initial root password"
+docker logs modeltaps 2>&1 | grep -E "initial (root )?password"
 # 清理：重建容器（数据在挂载卷中，不会丢）
 docker rm -f modeltaps && docker run -d ...   # 用原来的启动命令重新创建
 ```

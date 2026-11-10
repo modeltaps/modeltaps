@@ -99,7 +99,7 @@ export default function ChipPopover({
             minWidth: box.maxWidth ?? undefined
           }}
           className={cn(
-            'absolute z-30 min-w-[240px] rounded-xl border border-border bg-card p-3 shadow-xl',
+            'absolute z-30 min-w-[240px] rounded-lg border border-border bg-card p-3 shadow-xl',
             side === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2',
             box.align === 'end' ? 'right-0' : 'left-0',
             contentClassName

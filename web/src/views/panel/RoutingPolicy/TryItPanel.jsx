@@ -93,7 +93,7 @@ export default function TryItPanel({ policy, policyId = 0, modelOptions = [] }) 
           ) : samples.length === 0 ? (
             <p className="text-xs text-muted-foreground">{t('routingPolicy.tryIt.noSamples')}</p>
           ) : (
-            <div className="max-h-56 space-y-1 overflow-y-auto rounded-md border border-border p-1" data-testid="try-samples">
+            <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-border p-1" data-testid="try-samples">
               {samples.map((s) => (
                 <button
                   key={s.log_id}
@@ -155,7 +155,7 @@ export default function TryItPanel({ policy, policyId = 0, modelOptions = [] }) 
       {results && (
         <div className="space-y-2" data-testid="try-results">
           {results.map((r) => (
-            <div key={r.decision_model} className="rounded-md border border-border p-3 text-sm">
+            <div key={r.decision_model} className="rounded-lg border border-border p-3 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="font-medium">{r.decision_model}</span>
                 <Badge variant={REASON_TONE[r.reason] || 'secondary'}>
@@ -178,7 +178,18 @@ export default function TryItPanel({ policy, policyId = 0, modelOptions = [] }) 
                 <span>
                   {t('routingPolicy.tryIt.latency')}: <span className="text-foreground">{r.decision_ms} ms</span>
                 </span>
+                {r.scoring && (
+                  <span>
+                    {t('routingPolicy.tryIt.scoring')}:{' '}
+                    <span className="text-foreground">{t(`routingPolicy.scoringUsed.${r.scoring}`, { defaultValue: r.scoring })}</span>
+                  </span>
+                )}
               </div>
+              {r.probabilities?.length > 0 && (
+                <p className="mt-2 text-xs text-muted-foreground" data-testid="try-probabilities">
+                  {r.probabilities.map((p) => `${p.label} ${Math.round(p.probability * 100)}%`).join(' · ')}
+                </p>
+              )}
               {r.error && <p className="mt-2 break-words text-xs text-destructive">{r.error}</p>}
             </div>
           ))}

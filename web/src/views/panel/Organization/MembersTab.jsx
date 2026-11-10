@@ -313,9 +313,9 @@ export default function MembersTab({ orgId, role }) {
               </TableBody>
             </Table>
           </div>
-          <div className="md:hidden flex flex-col gap-3 p-3">
+          <div className="md:hidden flex flex-col divide-y divide-border">
             {invitations.map((inv) => (
-              <div key={inv.id} className="rounded-lg border border-border bg-card p-3 shadow-sm">
+              <div key={inv.id} className="p-3">
                 <div className="mb-1.5 text-sm font-medium">
                   {inv.invitee_id > 0 ? (
                     <span className="font-medium">{inv.email || `#${inv.invitee_id}`}</span>
@@ -437,9 +437,9 @@ export default function MembersTab({ orgId, role }) {
               </TableBody>
             </Table>
           </div>
-          <div className="md:hidden flex flex-col gap-3 p-3">
+          <div className="md:hidden flex flex-col divide-y divide-border">
             {filteredMembers.map((m) => (
-              <div key={m.id} className="rounded-lg border border-border bg-card p-3 shadow-sm">
+              <div key={m.id} className="p-3">
                 <div className="mb-1.5 text-sm font-medium">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{m.display_name || m.username || `#${m.user_id}`}</span>

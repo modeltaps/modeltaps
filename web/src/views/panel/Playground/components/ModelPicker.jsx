@@ -236,7 +236,7 @@ export default function ModelPicker({
             maxWidth: box.maxWidth ?? undefined
           }}
           className={cn(
-            'absolute z-30 flex max-h-[60vh] w-[420px] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xl',
+            'absolute z-30 flex max-h-[60vh] w-[420px] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-xl',
             placement === 'top' ? 'bottom-full mb-2' : 'top-full mt-2',
             box.align === 'end' ? 'right-0' : 'left-0'
           )}

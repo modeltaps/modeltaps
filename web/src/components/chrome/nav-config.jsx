@@ -1,212 +1,340 @@
+import { PLATFORM_GROUPS, cardTitleKey, groupLabelKey, settingsGroupUrl } from 'views/panel/Setting/registry';
 import {
-  LayoutDashboard,
-  BarChart3,
-  Building2,
-  ChartColumnBig,
-  MessageSquare,
   Activity,
-  AudioLines,
-  Clapperboard,
-  Columns2,
-  User,
-  Network,
-  Route,
-  Users,
-  ReceiptText,
-  Boxes,
-  Ticket,
-  Wallet,
-  KeyRound,
-  Settings,
-  CreditCard,
-  PackageOpen,
-  FileText,
+  BarChart3,
   BookOpen,
-  Image
+  Boxes,
+  Building2,
+  FileText,
+  MailPlus,
+  KeyRound,
+  LayoutDashboard,
+  Network,
+  PackageOpen,
+  Play,
+  ReceiptText,
+  Route,
+  Settings,
+  ShieldUser,
+  SlidersHorizontal,
+  Ticket,
+  User,
+  Users,
+  UsersRound,
+  Wallet
 } from 'lucide-react';
 
-import { THEME_META } from 'views/panel/Setting/themeMeta';
+// ==============================|| CHROME — NAV CONFIG ||============================== //
+// Single source of truth for the panel navigation. One sidebar shell serves three contexts:
+//   personal  the workbench of the signed-in user
+//   org       the same workbench scoped to the active organization (plus the 组织 group)
+//   admin     platform administration (admins only)
+// The context is derived from the route (admin pages) and the org context (personal vs org),
+// so URLs never change. Labels resolve through `labelKey` (our own locale files, `nav.*`);
+// page subtitles keep resolving through `nav_subtitles.<item id>`.
+//
+// Item fields:
+//   url          link target; `:orgId` is replaced with the active organization id
+//   match        extra paths (segment prefixes) or RegExps that make the item active
+//   orgAdmin     org context, owner/admin only
+//   root         root admins only
+//   pageIn       contexts where the page works even though the item is not in the menu
+//                (used when switching context to decide whether to stay on the page)
 
-// ==============================|| CHROME NAV CONFIG ||============================== //
-// The single source of truth for navigation: a flat list of labelled sections
-// (`nav_sec_*`). Admin-only items carry `isAdmin: true`;
-// labels are resolved at render time via navLabel (item.labelKey, else t(id)).
-// Non-admins see no admin sections at all (filterSections drops them).
+export const DASHBOARD_URL = '/panel/dashboard';
+export const ORG_PARAM = ':orgId';
 
 const url = (id) => `/panel/${id}`;
+const ORG_SETTINGS_PREFIX = /^\/panel\/settings\/org\/[^/]+/;
 
-// 系统设置的 7 个主题项直接由 THEME_META 生成(同一份 id / 顺序 / 标签 / root 限定),
-// 避免侧边栏与设置页各自维护一份主题清单。
-const themeItems = THEME_META.map((theme) => ({
-  id: `setting_${theme.id}`,
-  url: `/panel/setting/${theme.id}`,
-  icon: theme.icon,
-  labelKey: theme.labelKey,
-  fallback: theme.fallback,
-  isAdmin: true,
-  ...(theme.rootOnly ? { isRoot: true } : {})
-}));
+// ---------------------------------------------------------------- workbench (personal / org)
 
-export const navSections = [
-  // N3: Grok-style layout. The build group (no section label) holds the five core
-  // entries plus `billing` and `organization` (the latter org context only); the
-  // API group lists the four modality consoles plus the API docs. The remaining account
-  // entries (top-up / settings) have no sidebar entry — top-up is a tab of the
-  // billing page, settings lives in the user menu — and keep their page titles
-  // via `hiddenNavItems`.
+export const workbenchSections = [
   {
-    id: 'nav_sec_build',
+    id: 'main',
     items: [
-      { id: 'dashboard', url: url('dashboard'), icon: LayoutDashboard },
-      { id: 'token', url: url('token'), icon: KeyRound },
-      { id: 'model_price', url: url('model_price'), icon: PackageOpen },
-      { id: 'usage', url: url('usage'), icon: BarChart3 },
-      { id: 'log', url: url('log'), icon: FileText },
-      { id: 'billing', url: url('billing'), icon: ReceiptText, orgAdminOnly: true },
-      { id: 'organization', url: url('organization'), icon: Building2, orgOnly: true }
+      { id: 'dashboard', url: url('dashboard'), icon: LayoutDashboard, labelKey: 'nav.items.dashboard' },
+      { id: 'usage', url: url('usage'), icon: BarChart3, labelKey: 'nav.items.usage' },
+      { id: 'log', url: url('log'), icon: FileText, labelKey: 'nav.items.log' }
     ]
   },
   {
-    // 五个模态项是控制台页(`/panel/api/:modality`),接口文档单独一项收在组末尾。
-    // 对比页没有对应的接口文档页。
-    id: 'nav_sec_api',
+    id: 'develop',
+    labelKey: 'nav.sections.develop',
     items: [
-      { id: 'api_chat', url: url('api/chat'), icon: MessageSquare },
-      { id: 'api_image', url: url('api/image'), icon: Image },
-      { id: 'api_audio', url: url('api/speech'), icon: AudioLines },
-      { id: 'api_compare', url: url('api/compare'), icon: Columns2 },
-      { id: 'api_video', url: url('api/video'), icon: Clapperboard },
-      { id: 'api_docs', url: url('api/docs/chat'), icon: BookOpen }
-    ]
-  },
-  // 管理后台按管理对象分 5 组:概览 / 用户与组织 / 网关 / 财务 / 系统设置(最后)。
-  // Telegram、模型归属、模型详情不再有侧栏入口(前者并入集成主题页,后两者并入模型页 Tab)。
-  {
-    id: 'nav_sec_overview',
-    items: [
-      { id: 'analytics', url: url('analytics'), icon: BarChart3, isAdmin: true },
-      { id: 'multi_user_stats', url: url('multi_user_stats'), icon: ChartColumnBig, isAdmin: true },
-      { id: 'systemInfo', url: url('system_info'), icon: Activity, isAdmin: true, isRoot: true }
+      { id: 'token', url: url('token'), icon: KeyRound, labelKey: 'nav.items.token' },
+      { id: 'model_price', url: url('model_price'), icon: PackageOpen, labelKey: 'nav.items.models' },
+      // One item for the five API consoles (`/panel/api/:modality`); the console pages switch
+      // modality in-page. `/panel/api` itself (the API overview) is not part of it.
+      {
+        id: 'playground',
+        url: url('api/chat'),
+        match: [/^\/panel\/api\/(?!docs(\/|$))[^/]+/],
+        icon: Play,
+        labelKey: 'nav.items.playground'
+      },
+      // The docs share one title for every modality page.
+      { id: 'api_docs', url: url('api/docs/chat'), match: [url('api/docs')], icon: BookOpen, labelKey: 'nav.items.docs' }
     ]
   },
   {
-    id: 'nav_sec_people',
+    id: 'organization',
+    labelKey: 'nav.sections.organization',
+    orgOnly: true,
     items: [
-      { id: 'user', url: url('user'), icon: User, isAdmin: true },
-      { id: 'user_group', url: url('user_group'), icon: Users, isAdmin: true },
-      { id: 'org_admin', url: url('org_admin'), icon: Building2, isAdmin: true, isRoot: true }
+      // Org console (overview / usage / audit, leaving the organization). Visible to every
+      // member, so members keep a way to reach it; in personal context the same route shows
+      // the user's pending invitations.
+      {
+        id: 'organization',
+        url: url('organization'),
+        icon: Building2,
+        labelKey: 'nav.items.orgOverview',
+        pageIn: ['personal']
+      },
+      {
+        id: 'org_members',
+        url: `/panel/settings/org/${ORG_PARAM}/members`,
+        match: [/^\/panel\/settings\/org\/[^/]+\/members(\/|$)/],
+        icon: UsersRound,
+        labelKey: 'nav.items.orgMembers',
+        orgAdmin: true
+      },
+      { id: 'billing', url: url('billing'), icon: ReceiptText, labelKey: 'nav.items.billing', orgAdmin: true, pageIn: ['personal'] },
+      {
+        id: 'org_settings',
+        url: `/panel/settings/org/${ORG_PARAM}/general`,
+        match: [/^\/panel\/settings\/org\/[^/]+\/(general|danger|budget)(\/|$)/],
+        icon: Settings,
+        labelKey: 'nav.items.orgSettings',
+        orgAdmin: true
+      }
     ]
-  },
-  {
-    id: 'nav_sec_gateway',
-    items: [
-      { id: 'channel', url: url('channel'), icon: Network, isAdmin: true },
-      { id: 'pricing', url: url('pricing'), icon: Boxes, isAdmin: true },
-      { id: 'routing_policy', url: url('routing_policy'), icon: Route, isAdmin: true }
-    ]
-  },
-  {
-    id: 'nav_sec_finance',
-    items: [
-      { id: 'payment', url: url('payment'), icon: Wallet, isAdmin: true },
-      { id: 'redemption', url: url('redemption'), icon: Ticket, isAdmin: true }
-    ]
-  },
-  {
-    id: 'nav_sec_system',
-    items: themeItems
   }
 ];
 
-// Pages that are reachable (footer balance row, user menu, direct URL) but have
-// no sidebar entry. They take part in `findActiveItem` only, so the PageHeader
-// still resolves a title/subtitle for them.
-export const hiddenNavItems = [
-  { id: 'topup', url: url('topup'), icon: CreditCard, hidden: true },
-  { id: 'settings', url: url('settings'), icon: Settings, hidden: true },
-  // 侧栏的文档项只指向对话文档;其余模态文档页靠这条前缀解析出同一个标题。
-  { id: 'api_docs', url: url('api/docs'), icon: BookOpen, hidden: true }
+// ---------------------------------------------------------------- platform admin
+
+export const adminSections = [
+  {
+    id: 'admin_main',
+    items: [
+      { id: 'systemInfo', url: url('system_info'), icon: Activity, labelKey: 'nav.items.health', root: true },
+      // Analytics and per-user stats share one item; the pages switch with in-page tabs.
+      { id: 'analytics', url: url('analytics'), match: [url('multi_user_stats')], icon: BarChart3, labelKey: 'nav.items.stats' }
+    ]
+  },
+  {
+    id: 'gateway',
+    labelKey: 'nav.sections.gateway',
+    items: [
+      { id: 'channel', url: url('channel'), icon: Network, labelKey: 'nav.items.channels' },
+      { id: 'pricing', url: url('pricing'), icon: Boxes, labelKey: 'nav.items.catalog' },
+      { id: 'routing_policy', url: url('routing_policy'), icon: Route, labelKey: 'nav.items.routing' }
+    ]
+  },
+  {
+    id: 'people',
+    labelKey: 'nav.sections.people',
+    items: [
+      { id: 'user', url: url('user'), icon: User, labelKey: 'nav.items.users' },
+      { id: 'user_group', url: url('user_group'), icon: Users, labelKey: 'nav.items.userGroups' },
+      { id: 'org_admin', url: url('org_admin'), icon: Building2, labelKey: 'nav.items.orgs', root: true }
+    ]
+  },
+  {
+    id: 'finance',
+    labelKey: 'nav.sections.finance',
+    items: [
+      { id: 'payment', url: url('payment'), icon: Wallet, labelKey: 'nav.items.orders' },
+      { id: 'redemption', url: url('redemption'), icon: Ticket, labelKey: 'nav.items.redemption' },
+      { id: 'invite_code', url: url('invite_code'), icon: MailPlus, labelKey: 'nav.items.inviteCodes' }
+    ]
+  },
+  {
+    id: 'admin_settings',
+    labelKey: 'nav.sections.settings',
+    items: [
+      // One item for the platform settings; its groups are an in-page subnav.
+      { id: 'platform_settings', url: url('setting'), icon: SlidersHorizontal, labelKey: 'nav.items.platformSettings' }
+    ]
+  }
 ];
 
-// Flatten navSections (sections → items) into a list of routable items, then
-// match the current pathname against the longest `item.url` (exact or prefix).
-// Shared by the top Header and the in-body PageHeader so both resolve the same
-// active menu item from a path.
-const flatNavItems = [...navSections.flatMap((section) => section.items), ...hiddenNavItems];
+// Pages without a menu item that still need a title: personal settings open from the account
+// menu and render inside the workbench.
+export const hiddenNavItems = [
+  {
+    id: 'personal_settings',
+    url: url('settings'),
+    match: [url('settings/account')],
+    icon: Settings,
+    labelKey: 'nav.items.personalSettings',
+    pageIn: ['personal', 'org']
+  }
+];
+
+// Legacy admin routes that redirect into admin pages; they keep the admin chrome during the
+// redirect so the sidebar does not flash the workbench.
+const LEGACY_ADMIN_URLS = [url('telegram'), url('model_ownedby'), url('model_info')];
+
+const workbenchItems = workbenchSections.flatMap((section) => section.items);
+const adminItems = adminSections.flatMap((section) => section.items);
+const adminItemIds = new Set(adminItems.map((item) => item.id));
+const allItems = [...workbenchItems, ...adminItems, ...hiddenNavItems];
+
+// ---------------------------------------------------------------- matching
+
+const segmentPrefix = (pathname, prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`);
+
+// Length of the best match of `item` against `pathname`, or 0. Longer matches win, so a docs
+// page resolves to 文档 rather than 演练场.
+function matchLength(item, pathname) {
+  let best = 0;
+  const candidates = [item.url.includes(ORG_PARAM) ? null : item.url, ...(item.match || [])].filter(Boolean);
+  for (const candidate of candidates) {
+    if (candidate instanceof RegExp) {
+      const m = pathname.match(candidate);
+      if (m && m.index === 0) best = Math.max(best, m[0].length);
+    } else if (segmentPrefix(pathname, candidate)) {
+      best = Math.max(best, candidate.length);
+    }
+  }
+  return best;
+}
 
 export function findActiveItem(pathname) {
   let match = null;
-  for (const item of flatNavItems) {
-    if (pathname === item.url || pathname.startsWith(item.url)) {
-      if (!match || item.url.length > match.url.length) match = item;
+  let length = 0;
+  for (const item of allItems) {
+    const l = matchLength(item, pathname);
+    if (l > length) {
+      match = item;
+      length = l;
     }
   }
   return match;
 }
 
-// Mirror of v1 MenuList filtering: hide admin-only items for non-admins; gate
-// `requiresInvoice` items behind `siteInfo.UserInvoiceMonth` and `requiresChat`
-// items behind `siteInfo.builtin_chat_enabled` (callers pass the resolved flags).
-// Sections whose items are all filtered out are dropped (so their labels never
-// render).
-export function filterSections({ isAdmin, isRoot = false, orgActive = false, invoiceEnabled = false, chatEnabled = true }) {
-  const visible = (item) =>
-    (!item.isAdmin || isAdmin) &&
-    (!item.isRoot || isRoot) &&
-    !(item.orgOnly && !orgActive) &&
-    !(item.requiresInvoice && !invoiceEnabled) &&
-    !(item.requiresChat && !chatEnabled);
-  return navSections.map((section) => ({ ...section, items: section.items.filter(visible) })).filter((section) => section.items.length > 0);
+export const isItemActive = (item, pathname) => findActiveItem(pathname)?.id === item.id;
+
+// Whether a pathname belongs to platform admin (exact match or sub-path).
+export function isAdminPath(pathname) {
+  if (LEGACY_ADMIN_URLS.some((u) => segmentPrefix(pathname, u))) return true;
+  const item = findActiveItem(pathname);
+  return Boolean(item && adminItemIds.has(item.id));
 }
 
-// T19 split: the admin sections (`isAdmin: true` groups) render in a dedicated
-// admin sidebar; the user sidebar drops them plus the `settings` item (the user
-// menu already links to settings). Routes/urls are untouched.
-// 系统设置是管理侧栏的最后一组(7 个主题平铺,root 限定项由 filterAdminSections 过滤)。
-export const adminNavSections = navSections
-  .map((section) => ({ ...section, items: section.items.filter((item) => item.isAdmin) }))
-  .filter((section) => section.items.length > 0);
+// ---------------------------------------------------------------- contexts and filtering
 
-// Admin-sidebar sections with root-only items (`isRoot: true`) dropped for
-// non-root admins, mirroring the backend RootAuth gating. `adminNavSections`
-// (and `isAdminPath`) keep every admin url so the admin plane still resolves
-// for root users.
-export function filterAdminSections({ isRoot = false }) {
-  const visible = (item) => !item.isRoot || isRoot;
-  return adminNavSections
-    .map((section) => ({ ...section, items: section.items.filter(visible) }))
+export const isOrgAdminRole = (role) => role === 'owner' || role === 'admin';
+
+// The shell context of a page. Non-admins on admin routes keep the workbench chrome (the
+// route guard renders its 404 in place).
+export function deriveContext({ pathname, isAdmin = false, orgId = null }) {
+  if (isAdmin && isAdminPath(pathname)) return 'admin';
+  return orgId ? 'org' : 'personal';
+}
+
+export function itemUrl(item, orgId = null) {
+  return item.url.includes(ORG_PARAM) ? item.url.replace(ORG_PARAM, String(orgId ?? '')) : item.url;
+}
+
+// Whether an item shows in the menu of `context`.
+export function isItemVisible(item, { context, orgRole = null, isRoot = false }) {
+  if (adminItemIds.has(item.id)) return context === 'admin' && (!item.root || isRoot);
+  if (context === 'admin') return false;
+  if (item.orgAdmin) return context === 'org' && isOrgAdminRole(orgRole);
+  if (hiddenNavItems.includes(item)) return false;
+  return true;
+}
+
+const isOrgOnlyItem = (item) => workbenchSections.some((section) => section.orgOnly && section.items.includes(item));
+
+function itemShows(item, ctx) {
+  if (isOrgOnlyItem(item) && ctx.context !== 'org') return false;
+  return isItemVisible(item, ctx);
+}
+
+// Whether the page of `item` works in `context` (menu item or `pageIn`).
+export function isPageAvailable(item, ctx) {
+  return itemShows(item, ctx) || Boolean(item.pageIn?.includes(ctx.context));
+}
+
+// Menu sections of a context with urls resolved; empty sections are dropped.
+export function navSectionsFor({ context, orgRole = null, orgId = null, isRoot = false }) {
+  const sections = context === 'admin' ? adminSections : workbenchSections;
+  const ctx = { context, orgRole, isRoot };
+  return sections
+    .filter((section) => !section.orgOnly || context === 'org')
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => itemShows(item, ctx)).map((item) => ({ ...item, href: itemUrl(item, orgId) }))
+    }))
     .filter((section) => section.items.length > 0);
 }
 
-// 已从侧边栏移除但仍在册的管理面路径:裸 `/panel/setting`(跳首个主题)与三条重定向旧
-// 路由。重定向发生在路由层,这一瞬间也要用管理面 chrome,否则会闪一下用户侧栏。
-const LEGACY_ADMIN_URLS = ['/panel/setting', '/panel/telegram', '/panel/model_ownedby', '/panel/model_info'];
-
-const adminUrls = [...adminNavSections.flatMap((section) => section.items.map((item) => item.url)), ...LEGACY_ADMIN_URLS];
-
-// Whether a pathname belongs to the admin plane (exact match or sub-path).
-export function isAdminPath(pathname) {
-  return adminUrls.some((u) => pathname === u || pathname.startsWith(`${u}/`));
+export function firstAdminUrl({ isRoot = false } = {}) {
+  return navSectionsFor({ context: 'admin', isRoot })[0].items[0].href;
 }
 
-// 条目标签:主题项带 `labelKey`(复用设置页的 sectionNav 文案),其余沿用 t(item.id)。
+// Where to go after switching context, or null to stay on the current page.
+//   to: { kind: 'personal' } | { kind: 'org', orgId, role } | { kind: 'admin' }
+// Entering admin lands on its first visible page; leaving admin lands on the dashboard.
+// Between workbench contexts the page stays when it exists in the target context (org-scoped
+// pages are retargeted to the new organization), otherwise the dashboard.
+export function contextSwitchTarget({ pathname, to, isRoot = false }) {
+  if (to.kind === 'admin') return firstAdminUrl({ isRoot });
+  if (isAdminPath(pathname)) return DASHBOARD_URL;
+  const item = findActiveItem(pathname);
+  if (!item) return null;
+  const context = to.kind === 'org' ? 'org' : 'personal';
+  if (!isPageAvailable(item, { context, orgRole: to.role ?? null, isRoot })) return DASHBOARD_URL;
+  if (ORG_SETTINGS_PREFIX.test(pathname)) return pathname.replace(ORG_SETTINGS_PREFIX, `/panel/settings/org/${to.orgId}`);
+  return null;
+}
+
+// Command palette: the current workbench plus, for admins, every platform admin page under one
+// heading (with an entry for platform admin itself).
+export function commandSections({ isAdmin = false, isRoot = false, orgId = null, orgRole = null }) {
+  const workbench = navSectionsFor({ context: orgId ? 'org' : 'personal', orgId, orgRole, isRoot });
+  const extras = [{ ...hiddenNavItems[0], href: hiddenNavItems[0].url }];
+  const sections = [...workbench, { id: 'account', items: extras }];
+  if (!isAdmin) return sections;
+  const admin = navSectionsFor({ context: 'admin', isRoot }).flatMap((section) => section.items);
+  const home = { id: 'admin_home', icon: ShieldUser, labelKey: 'nav.context.admin', href: firstAdminUrl({ isRoot }) };
+  return [
+    ...sections,
+    { id: 'admin', admin: true, labelKey: 'nav.context.admin', items: [home, ...admin] },
+    { id: 'platform_settings', admin: true, labelKey: 'nav.items.platformSettings', items: settingsCommandItems({ isRoot }) }
+  ];
+}
+
+// Command palette entries for the platform settings: one per group, and one per card that only
+// shows while typing (`searchOnly`), so the palette indexes the cards without listing ~40 of them.
+export function settingsCommandItems({ isRoot = false } = {}) {
+  const groups = PLATFORM_GROUPS.filter((group) => !group.rootOnly || isRoot);
+  const groupItems = groups.map((group) => ({
+    id: `setting_${group.id}`,
+    icon: SlidersHorizontal,
+    labelKey: groupLabelKey(group.id),
+    prefixKey: 'nav.items.platformSettings',
+    href: settingsGroupUrl(group.id)
+  }));
+  const cardItems = groups.flatMap((group) =>
+    group.cards.map((card) => ({
+      id: `setting_card_${card.id}`,
+      icon: SlidersHorizontal,
+      labelKey: cardTitleKey(card.id),
+      prefixKey: groupLabelKey(group.id),
+      searchOnly: true,
+      href: `${settingsGroupUrl(group.id)}?highlight=${card.id}`
+    }))
+  );
+  return [...groupItems, ...cardItems];
+}
+
 export function navLabel(t, item) {
-  return item.labelKey ? t(item.labelKey, { defaultValue: item.fallback }) : t(item.id);
-}
-
-// User-sidebar sections: no admin items. `orgOnly` items only show in org
-// context; the remaining gates (`hideInOrganization`, `orgAdminOnly`,
-// `requiresInvoice`, `requiresChat`) stay available for future entries.
-// The admin plane is entered from a pinned row at the end of the sidebar nav
-// (rendered by Sidebar.jsx, admins only), so no admin group here.
-export function filterUserSections({ orgActive = false, orgRole = null, invoiceEnabled = false, chatEnabled = true }) {
-  const isOrgAdmin = orgRole === 'owner' || orgRole === 'admin';
-  const visible = (item) =>
-    !item.isAdmin &&
-    !(item.orgOnly && !orgActive) &&
-    !(item.hideInOrganization && orgActive) &&
-    !(item.orgAdminOnly && orgActive && !isOrgAdmin) &&
-    !(item.requiresInvoice && !invoiceEnabled) &&
-    !(item.requiresChat && !chatEnabled);
-  return navSections.map((section) => ({ ...section, items: section.items.filter(visible) })).filter((section) => section.items.length > 0);
+  const label = t(item.labelKey);
+  return item.prefixKey ? `${t(item.prefixKey)} · ${label}` : label;
 }

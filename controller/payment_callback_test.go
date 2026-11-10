@@ -169,7 +169,12 @@ func seedStripeFixtures(t *testing.T, userID, initialQuota, orderQuota int, trad
 }
 
 func stripeCompletedEvent(tradeNo, paymentIntentID string) []byte {
-	return []byte(fmt.Sprintf(`{"id":"evt_1","object":"event","api_version":"`+stripe.APIVersion+`","type":"checkout.session.completed","data":{"object":{"id":"cs_test_1","object":"checkout.session","client_reference_id":%q,"payment_intent":%q}}}`, tradeNo, paymentIntentID))
+	return stripeCompletedEventPaid(tradeNo, paymentIntentID, 100, "usd")
+}
+
+// stripeCompletedEventPaid 构造一条已付款的 checkout.session.completed，实付 amountTotal（分）与币种可调。
+func stripeCompletedEventPaid(tradeNo, paymentIntentID string, amountTotal int64, currency string) []byte {
+	return []byte(fmt.Sprintf(`{"id":"evt_1","object":"event","api_version":"`+stripe.APIVersion+`","type":"checkout.session.completed","data":{"object":{"id":"cs_test_1","object":"checkout.session","client_reference_id":%q,"payment_intent":%q,"payment_status":"paid","amount_total":%d,"currency":%q}}}`, tradeNo, paymentIntentID, amountTotal, currency))
 }
 
 // stripeEventRequest 用 stripe-go 官方测试辅助为 payload 生成合法的 Stripe-Signature 头。
@@ -218,4 +223,42 @@ func TestPaymentCallbackStripeIgnoredEventAcked(t *testing.T) {
 		t.Fatalf("无需入账的事件应响应 200, 实际 %d", code)
 	}
 	assertTopupState(t, 72, "stripe-ignored-event", model.OrderStatusPending, 1000, 0)
+}
+
+// TestPaymentCallbackStripeAmountMismatchNotCredited 验签通过但实付金额少于订单或币种不符：
+// 确认通知（重发不会自愈）但不入账，订单保持 pending 留给人工核查。
+func TestPaymentCallbackStripeAmountMismatchNotCredited(t *testing.T) {
+	for i, tc := range []struct {
+		amount   int64
+		currency string
+	}{
+		{1, "usd"},   // 付 $0.01 冒充 $1.00 的订单
+		{100, "eur"}, // 币种不符
+	} {
+		t.Run(tc.currency, func(t *testing.T) {
+			setupEpayCallbackTestDB(t)
+			userID := 81 + i
+			tradeNo := fmt.Sprintf("stripe-mismatch-%d", i)
+			uuid := seedStripeFixtures(t, userID, 1000, 5000, tradeNo)
+			payload := stripeCompletedEventPaid(tradeNo, "pi_mismatch", tc.amount, tc.currency)
+			if code := callPaymentCallback(t, stripeEventRequest(uuid, payload)).Code; code != http.StatusOK {
+				t.Fatalf("不符的通知应确认, 实际 %d", code)
+			}
+			assertTopupState(t, userID, tradeNo, model.OrderStatusPending, 1000, 0)
+		})
+	}
+}
+
+// TestPaymentCallbackGatewayMismatchNotCredited 用 A 网关的通知给 B 网关下的订单入账：不入账。
+func TestPaymentCallbackGatewayMismatchNotCredited(t *testing.T) {
+	setupEpayCallbackTestDB(t)
+	uuid := seedStripeFixtures(t, 91, 1000, 5000, "stripe-gateway-mismatch")
+	if err := model.DB.Model(&model.Order{}).Where("trade_no = ?", "stripe-gateway-mismatch").Update("gateway_id", 9999).Error; err != nil {
+		t.Fatal(err)
+	}
+	payload := stripeCompletedEvent("stripe-gateway-mismatch", "pi_gw")
+	if code := callPaymentCallback(t, stripeEventRequest(uuid, payload)).Code; code != http.StatusOK {
+		t.Fatalf("不符的通知应确认, 实际 %d", code)
+	}
+	assertTopupState(t, 91, "stripe-gateway-mismatch", model.OrderStatusPending, 1000, 0)
 }

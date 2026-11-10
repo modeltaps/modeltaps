@@ -492,7 +492,20 @@
     "backToAdmin": "返回管理后台",
     "preferences": {
       "themeHint": "选择界面配色，跟随系统时随设备的深浅色设置切换。",
-      "languageHint": "选择界面语言，切换后立即生效。"
+      "languageHint": "选择界面语言，切换后立即生效。",
+      "quotaRemind": {
+        "title": "额度提醒",
+        "hint": "个人余额不足或用尽时发邮件提醒。组织令牌不在此列。",
+        "toggle": "邮件提醒额度",
+        "toggleHint": "余额低于阈值时发一封，用尽时再发一封。",
+        "threshold": "提醒阈值",
+        "thresholdPlaceholder": "站点默认：{{amount}}",
+        "followingSite": "当前跟随站点默认（{{amount}}），填写金额即可自定义。",
+        "thresholdHint": "余额低于该值时发送「额度不足」邮件；填 0 则只在用尽时提醒。",
+        "useSiteDefault": "恢复站点默认",
+        "siteDisabled": "本站已关闭额度提醒邮件。",
+        "noEmail": "绑定邮箱后才能收到额度提醒。"
+      }
     },
     "sessions": {
       "title": "已登录设备",
@@ -934,8 +947,6 @@
     "testModel": "测试模型",
     "channelApiAddress": "渠道API地址",
     "channelKey": "密钥",
-    "typeSearchPlaceholder": "搜索供应商…",
-    "typeSearchEmpty": "无匹配的供应商",
     "otherParameters": "其他参数",
     "channelType": "供应商",
     "all": "全部",
@@ -1047,7 +1058,7 @@
     "pruneDone": "已移除 {{count}} 个上游已不存在的模型：{{models}}，请保存渠道以生效",
     "modelCount": "共 {{count}} 个模型",
     "modelCountFiltered": "{{total}} 个中匹配 {{shown}} 个",
-    "modelChipMode": "卡片视图",
+    "modelChipMode": "选择视图",
     "modelTextMode": "编辑为文本",
     "modelSearchAdd": "搜索模型，或输入后回车添加",
     "modelAdd": "添加",
@@ -2478,6 +2489,10 @@
           "placeholder": "例如：100",
           "description": "新用户注册成功后自动发放的初始额度"
         },
+        "preConsumedOutputTokens": {
+          "description": "请求开始时按此数量的输出 Token 预扣费用（请求自带的 max_tokens 更小时按 max_tokens），结束后多退少补",
+          "label": "预扣输出 Token 数"
+        },
         "preConsumedQuota": {
           "label": "请求预扣费额度",
           "placeholder": "请求结束后多退少补",
@@ -2911,7 +2926,10 @@
         "price_change": "上游价格变动",
         "model_drift": "上游模型列表变化",
         "model_consistency": "模型元信息问题",
-        "credential": "渠道凭证问题"
+        "credential": "渠道凭证问题",
+        "supply_paused": "渠道或模型被暂停",
+        "supply_resumed": "暂停的渠道或模型已恢复",
+        "supply_failover": "请求切换到备用渠道"
       },
       "limit": {
         "label": "每类每小时最多条数",
@@ -3518,14 +3536,12 @@
     "adjustQuota": "调整额度",
     "dissolve": "解散组织",
     "dissolveConfirm": "确定解散组织 “{{name}}” 吗？该组织全部 API Key将立即失效，剩余额度按站点策略退回所有者。",
-    "quotaTitle": "调整组织池余额 — {{name}}",
     "quotaDesc": "正数增加、负数扣减，操作将记录审计日志。",
     "quotaLabel": "增减额度",
     "quotaNonZero": "额度变更不能为 0",
     "remarkLabel": "备注",
     "remarkPlaceholder": "可选",
     "maxMembers": "成员上限",
-    "maxMembersTitle": "成员上限 — {{name}}",
     "maxMembersDesc": "当前 {{count}} 名成员。上限只限制新成员加入，不会移除已有成员。",
     "maxMembersModeDefault": "跟随站点默认",
     "maxMembersModeUnlimited": "不限制",
@@ -3560,5 +3576,45 @@
   "nav_sec_admin": "管理",
   "nav_sec_overview": "概览",
   "nav_sec_people": "用户与组织",
-  "nav_sec_gateway": "网关"
+  "nav_sec_gateway": "网关",
+  "modelSelect": {
+    "placeholder": "选择模型",
+    "selectedCount": "已选 {{count}} 个模型",
+    "search": "搜索模型",
+    "add": "添加「{{model}}」",
+    "empty": "没有匹配的模型",
+    "none": "尚未选择模型",
+    "selectGroup": "全选该组",
+    "clearGroup": "取消该组",
+    "onlySelected": "只看已选",
+    "advanced": "高级筛选",
+    "done": "完成",
+    "loadingUpstream": "正在获取上游模型",
+    "upstreamFailed": "未能获取上游模型列表，下方为本地候选",
+    "retry": "重试",
+    "custom": "自定义"
+  },
+  "providerPicker": {
+    "title": "选择供应商",
+    "search": "搜索供应商",
+    "empty": "没有匹配的供应商",
+    "category": {
+      "common": "常用",
+      "vendor": "模型厂商",
+      "cloud": "云平台",
+      "gateway": "聚合网关",
+      "subscription": "订阅账号",
+      "selfhosted": "自托管与兼容",
+      "media": "多媒体与其他",
+      "legacy": "旧版",
+      "other": "其他"
+    },
+    "auth": {
+      "apiKey": "API 密钥",
+      "oauth": "账号授权",
+      "endpoint": "密钥 + 地址",
+      "credentials": "组合凭证"
+    },
+    "customName": "OpenAI 兼容"
+  }
 }

@@ -56,6 +56,27 @@ type ChannelsChooser struct {
 	ModelGroup map[string]map[string]bool
 	// model -> 一个服务该模型的渠道 Type，用于在价格表推不出供应商时回退取 owner（避免「未知」）。
 	ModelChannelType map[string]int
+	// Supplies holds, while ModelSupplyEnabled is on, the supply behind each model and channel
+	// in the routing table (model -> channel id -> supply). Nil otherwise.
+	Supplies map[string]map[int]*ModelSupply
+}
+
+// SupplyFor returns the supply through which channelId serves modelName, when supplies drive
+// the routing table.
+func (cc *ChannelsChooser) SupplyFor(modelName string, channelId int) (*ModelSupply, bool) {
+	cc.RLock()
+	defer cc.RUnlock()
+	supply, ok := cc.Supplies[modelName][channelId]
+	return supply, ok
+}
+
+// supplyWeight is the weight used to pick channelId for modelName within a tier: the supply's
+// weight when supplies drive routing, the channel's otherwise. Callers hold the lock.
+func (cc *ChannelsChooser) supplyWeight(modelName string, channel *Channel) int {
+	if supply, ok := cc.Supplies[modelName][channel.Id]; ok {
+		return supply.EffectiveWeight()
+	}
+	return int(channel.GetWeight())
 }
 
 type ChannelsFilterFunc func(channelId int, choice *ChannelChoice) bool
@@ -126,9 +147,24 @@ func (cc *ChannelsChooser) SetCooldownsWithDuration(channelId int, modelName str
 	return true
 }
 
+// CooldownUntil returns the end of a short in-memory cooldown of modelName on channelId, if one
+// is running. Stored pauses are reported by ActivePauseFor instead.
+func (cc *ChannelsChooser) CooldownUntil(channelId int, modelName string) (int64, bool) {
+	value, ok := cc.Cooldowns.Load(fmt.Sprintf("%d:%s", channelId, modelName))
+	if !ok {
+		return 0, false
+	}
+	until := value.(int64)
+	return until, until > time.Now().Unix()
+}
+
 func (cc *ChannelsChooser) IsInCooldown(channelId int, modelName string) bool {
 	if channelId == 0 || modelName == "" {
 		return false
+	}
+	// Stored pauses (whole channel or this model) count as cooldowns everywhere a channel is picked.
+	if IsPaused(channelId, modelName) {
+		return true
 	}
 
 	key := fmt.Sprintf("%d:%s", channelId, modelName)
@@ -613,13 +649,29 @@ func (cc *ChannelsChooser) balancer(channelIds []int, filters []ChannelsFilterFu
 			continue
 		}
 
-		weight := int(choice.Channel.GetWeight())
+		weight := cc.supplyWeight(modelName, choice.Channel)
 		totalWeight += weight
 		validChannels = append(validChannels, choice)
 	}
 
 	if len(validChannels) == 0 {
 		return nil
+	}
+
+	// A failover model takes the heaviest supply of the tier; only a tie is broken at random.
+	if cc.Supplies != nil && supplyModeOf(modelName) == SupplyModeFailover {
+		heaviest := 0
+		for _, choice := range validChannels {
+			heaviest = max(heaviest, cc.supplyWeight(modelName, choice.Channel))
+		}
+		tied := validChannels[:0:0]
+		for _, choice := range validChannels {
+			if cc.supplyWeight(modelName, choice.Channel) == heaviest {
+				tied = append(tied, choice)
+			}
+		}
+		validChannels = tied
+		totalWeight = heaviest * len(tied)
 	}
 
 	if len(validChannels) == 1 {
@@ -631,7 +683,7 @@ func (cc *ChannelsChooser) balancer(channelIds []int, filters []ChannelsFilterFu
 
 	choiceWeight := rand.Intn(totalWeight)
 	for _, choice := range validChannels {
-		weight := int(choice.Channel.GetWeight())
+		weight := cc.supplyWeight(modelName, choice.Channel)
 		choiceWeight -= weight
 		if choiceWeight < 0 {
 			selectedChannel := choice.Channel
@@ -905,9 +957,21 @@ func (cc *ChannelsChooser) countValidChannels(channelIds []int, filters []Channe
 
 var ChannelGroup = ChannelsChooser{}
 
+// Loaded reports whether the routing table has been built at least once.
+func (cc *ChannelsChooser) Loaded() bool {
+	cc.RLock()
+	defer cc.RUnlock()
+	return cc.Rule != nil
+}
+
 func (cc *ChannelsChooser) Load() {
 	var channels []*Channel
 	DB.Where("status = ?", config.ChannelStatusEnabled).Find(&channels)
+
+	if config.ModelSupplyEnabled {
+		cc.loadFromSupplies(channels)
+		return
+	}
 
 	newGroup := make(map[string]map[string][][]int)
 	newChannels := make(map[int]*ChannelChoice)
@@ -1015,6 +1079,100 @@ func (cc *ChannelsChooser) Load() {
 	cc.Match = newMatchList
 	cc.ModelGroup = newModelGroup
 	cc.ModelChannelType = newModelChannelType
+	cc.Supplies = nil
 	cc.Unlock()
 	logger.SysLog("channels Load success")
+}
+
+// supplyModeOf returns the catalog's supply mode for a public model, balance when unset.
+func supplyModeOf(modelName string) string {
+	if info := lookupModelInfo(modelName); info != nil && info.SupplyMode != "" {
+		return info.SupplyMode
+	}
+	return SupplyModeBalance
+}
+
+// loadFromSupplies builds the routing table from enabled supplies on enabled channels: each
+// supply puts its channel in the tier given by the supply's priority, for every group of the
+// channel. There is no wildcard matching; supplies name models exactly.
+func (cc *ChannelsChooser) loadFromSupplies(channels []*Channel) {
+	var supplies []*ModelSupply
+	if err := DB.Where("enabled = ?", true).Find(&supplies).Error; err != nil {
+		logger.SysError("load model supplies failed: " + err.Error())
+		return
+	}
+
+	newChannels := make(map[int]*ChannelChoice, len(channels))
+	for _, channel := range channels {
+		channel.SetProxy()
+		if channel.GetWeight() == 0 {
+			channel.Weight = &config.DefaultChannelWeight
+		}
+		newChannels[channel.Id] = &ChannelChoice{Channel: channel}
+	}
+
+	tiers := make(map[string]map[string]map[int64][]int) // group -> model -> priority -> channel ids
+	newSupplies := make(map[string]map[int]*ModelSupply)
+	newModelGroup := make(map[string]map[string]bool)
+	newModelChannelType := make(map[string]int)
+	for _, supply := range supplies {
+		choice, ok := newChannels[supply.ChannelId]
+		if !ok {
+			continue
+		}
+		channel := choice.Channel
+		if newSupplies[supply.Model] == nil {
+			newSupplies[supply.Model] = make(map[int]*ModelSupply)
+		}
+		newSupplies[supply.Model][channel.Id] = supply
+		if _, ok := newModelChannelType[supply.Model]; !ok {
+			newModelChannelType[supply.Model] = channel.Type
+		}
+		for _, group := range strings.Split(channel.Group, ",") {
+			group = strings.TrimSpace(group)
+			if group == "" {
+				continue
+			}
+			if tiers[group] == nil {
+				tiers[group] = make(map[string]map[int64][]int)
+			}
+			if tiers[group][supply.Model] == nil {
+				tiers[group][supply.Model] = make(map[int64][]int)
+			}
+			tiers[group][supply.Model][supply.Priority] = append(tiers[group][supply.Model][supply.Priority], channel.Id)
+			if newModelGroup[supply.Model] == nil {
+				newModelGroup[supply.Model] = make(map[string]bool)
+			}
+			newModelGroup[supply.Model][group] = true
+		}
+	}
+
+	newRule := make(map[string]map[string][][]int, len(tiers))
+	for group, models := range tiers {
+		newRule[group] = make(map[string][][]int, len(models))
+		for modelName, byPriority := range models {
+			priorities := make([]int64, 0, len(byPriority))
+			for p := range byPriority {
+				priorities = append(priorities, p)
+			}
+			sort.Slice(priorities, func(i, j int) bool { return priorities[i] > priorities[j] })
+			list := make([][]int, 0, len(priorities))
+			for _, p := range priorities {
+				ids := byPriority[p]
+				sort.Ints(ids)
+				list = append(list, ids)
+			}
+			newRule[group][modelName] = list
+		}
+	}
+
+	cc.Lock()
+	cc.Rule = newRule
+	cc.Channels = newChannels
+	cc.Match = nil
+	cc.ModelGroup = newModelGroup
+	cc.ModelChannelType = newModelChannelType
+	cc.Supplies = newSupplies
+	cc.Unlock()
+	logger.SysLog(fmt.Sprintf("channels Load success (from %d model supplies)", len(supplies)))
 }

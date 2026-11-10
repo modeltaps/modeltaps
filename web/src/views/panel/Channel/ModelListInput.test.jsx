@@ -1,69 +1,96 @@
 // @vitest-environment jsdom
 import { useState } from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import i18n from 'i18n/i18n';
 import ModelListInput from './ModelListInput';
 
-beforeAll(() => i18n.changeLanguage('en_US'));
+beforeAll(() => {
+  i18n.changeLanguage('en_US');
+  Element.prototype.scrollIntoView ??= () => {};
+});
 afterAll(() => i18n.changeLanguage('zh_CN'));
 afterEach(cleanup);
 
-function Harness({ initial = '', suggestions }) {
+function Harness({ initial = '', ...props }) {
   const [value, setValue] = useState(initial);
   return (
     <>
-      <ModelListInput value={value} onChange={setValue} suggestions={suggestions} />
+      <ModelListInput value={value} onChange={setValue} {...props} />
       <output data-testid="value">{value}</output>
     </>
   );
 }
 
-const input = () => screen.getByRole('combobox');
-const rows = () => screen.queryAllByRole('listbox').flatMap((l) => [...l.querySelectorAll('button')].map((b) => b.textContent));
 const value = () => screen.getByTestId('value').textContent;
-
-describe('ModelListInput suggestions', () => {
-  it('offers candidates without the models already in the list', () => {
-    render(<Harness initial="gpt-4o,Claude-X" suggestions={['gpt-4o', 'claude-x', 'gpt-6.1-sol', 'gpt-6.1-sol', 'o9']} />);
-    fireEvent.focus(input());
-    expect(rows()).toEqual(['gpt-6.1-sol', 'o9']);
+const open = () => fireEvent.click(document.getElementById('channel-models'));
+const search = () => screen.getByRole('searchbox');
+describe('ModelListInput', () => {
+  it('shows the selection as a count and opens a grouped, newest-first list', () => {
+    render(
+      <Harness
+        initial="openai/gpt-5.5"
+        upstream={[
+          { id: 'openai/gpt-5.5', releasedAt: 100 },
+          { id: 'openai/gpt-6.1-sol', releasedAt: 200 }
+        ]}
+        suggestions={['claude-opus-5-5']}
+      />
+    );
+    expect(screen.getByRole('combobox').textContent).toContain('1 models selected');
+    open();
+    const options = within(screen.getByRole('listbox')).getAllByRole('option');
+    const ids = options.map((o) => o.textContent);
+    expect(ids.findIndex((t) => t.startsWith('openai/gpt-6.1-sol'))).toBeLessThan(ids.findIndex((t) => t.startsWith('openai/gpt-5.5')));
+    expect(ids.some((t) => t.startsWith('Anthropic'))).toBe(true);
   });
 
-  it('adds a picked candidate and stops offering it', () => {
+  it('checks rows without closing and writes a comma-separated value', () => {
     render(<Harness initial="a" suggestions={['gpt-6.1-sol', 'gpt-6-astra']} />);
-    fireEvent.change(input(), { target: { value: 'astra' } });
-    expect(rows()).toEqual(['Add "astra"', 'gpt-6-astra']);
-    fireEvent.mouseDown(screen.getByText('gpt-6-astra'));
-    expect(value()).toBe('a,gpt-6-astra');
-    expect(input().value).toBe('');
-    fireEvent.focus(input());
-    expect(rows()).toEqual(['gpt-6.1-sol']);
+    open();
+    fireEvent.click(screen.getByText('gpt-6-astra'));
+    fireEvent.click(screen.getByText('gpt-6.1-sol'));
+    expect(value()).toBe('a,gpt-6-astra,gpt-6.1-sol');
+    expect(screen.getByRole('listbox')).toBeTruthy();
   });
 
-  it('adds the typed text on Enter', () => {
-    render(<Harness initial="a" suggestions={['gpt-6.1-sol']} />);
-    fireEvent.change(input(), { target: { value: 'my-model' } });
-    fireEvent.keyDown(input(), { key: 'Enter' });
-    expect(value()).toBe('a,my-model');
-  });
-
-  it('adds the highlighted candidate on Enter after arrowing to it', () => {
-    render(<Harness initial="a" suggestions={['gpt-6.1-sol', 'gpt-6-astra']} />);
-    fireEvent.change(input(), { target: { value: 'gpt' } });
-    fireEvent.keyDown(input(), { key: 'ArrowDown' });
-    fireEvent.keyDown(input(), { key: 'Enter' });
-    expect(value()).toBe('a,gpt-6.1-sol');
-  });
-
-  it('does not offer to add a model that is already listed', () => {
+  it('adds a typed model on Enter and never duplicates one already listed', () => {
     render(<Harness initial="gpt-4o" suggestions={['gpt-4o-mini']} />);
-    fireEvent.change(input(), { target: { value: 'GPT-4O' } });
-    expect(rows()).toEqual(['gpt-4o-mini']);
-    fireEvent.keyDown(input(), { key: 'Escape' });
-    fireEvent.keyDown(input(), { key: 'Enter' });
-    expect(value()).toBe('gpt-4o');
+    open();
+    fireEvent.change(search(), { target: { value: 'my-model' } });
+    fireEvent.keyDown(search(), { key: 'Enter' });
+    expect(value()).toBe('gpt-4o,my-model');
+    fireEvent.change(search(), { target: { value: 'GPT-4O' } });
+    expect(screen.queryByText('Add "GPT-4O"')).toBeNull();
+  });
+
+  it('selects a whole vendor group from its header', () => {
+    render(<Harness suggestions={['claude-opus-5-5', 'claude-sonnet-5-5', 'gpt-5.5']} />);
+    open();
+    fireEvent.click(screen.getByText('Anthropic'));
+    expect(value()).toBe('claude-sonnet-5-5,claude-opus-5-5');
+  });
+
+  it('closes on Escape without letting the event reach the surrounding sheet', () => {
+    const onDocKey = vi.fn((e) => e.defaultPrevented);
+    document.addEventListener('keydown', onDocKey);
+    render(<Harness suggestions={['gpt-5.5']} />);
+    open();
+    fireEvent.keyDown(search(), { key: 'Escape' });
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(onDocKey.mock.results[0].value).toBe(true);
+    document.removeEventListener('keydown', onDocKey);
+  });
+
+  it('opens the advanced picker from the footer and calls onOpen when opening', () => {
+    const onAdvanced = vi.fn();
+    const onOpen = vi.fn();
+    render(<Harness suggestions={['gpt-5.5']} advanced={{ onClick: onAdvanced }} onOpen={onOpen} />);
+    open();
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByText('Advanced filters'));
+    expect(onAdvanced).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the text editing mode', () => {

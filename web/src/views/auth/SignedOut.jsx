@@ -25,25 +25,25 @@ export default function SignedOut() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-6 text-foreground">
-      <Card className="w-full max-w-sm shadow-sm">
+      <Card className="w-full max-w-sm">
         <CardHeader className="items-center space-y-3 text-center">
           {siteInfo.logo ? (
             <img src={siteInfo.logo} alt={name} className="size-12 object-contain" />
           ) : (
-            <LogoMark className="h-9 w-auto text-foreground" />
+            <LogoMark size={40} className="text-foreground" />
           )}
-          <CardTitle className="text-2xl">{t(stillSignedIn ? 'login.stillSignedInTitle' : 'login.signedOutTitle')}</CardTitle>
+          <CardTitle className="text-2xl font-semibold">{t(stillSignedIn ? 'login.stillSignedInTitle' : 'login.signedOutTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-5 pt-2 text-center">
           <p className="text-sm text-muted-foreground">
             {stillSignedIn ? t('login.stillSignedInDescription') : t('login.signedOutDescription', { name })}
           </p>
           {stillSignedIn ? (
-            <Button className="h-11 w-full font-semibold" onClick={() => navigate('/panel/dashboard')}>
+            <Button className="h-11 w-full font-medium" onClick={() => navigate('/panel/dashboard')}>
               {t('login.goConsole')}
             </Button>
           ) : (
-            <Button className="h-11 w-full font-semibold" onClick={() => navigate('/login')}>
+            <Button className="h-11 w-full font-medium" onClick={() => navigate('/login')}>
               {t('login.retryLogin')}
             </Button>
           )}

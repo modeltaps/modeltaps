@@ -1,154 +1,95 @@
 import { useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Search, X, Plus } from 'lucide-react';
-import { ModelCombobox } from '@/components/ui/model-combobox';
-import { Textarea } from '@/components/ui/textarea';
 
-// 渠道「模型」列表输入：替代裸逗号文本框。默认 chip 视图（可搜索、可逐个删除、
-// 输入回车添加），保留「编辑为文本」逃生口用于批量粘贴。底层仍序列化成逗号串，
-// 后端零改动。大小写不敏感去重（仅录入层）。
-// suggestions: candidate model ids offered in the search box dropdown; ids already in the list
-// are left out (case-insensitive), so picking one never creates a duplicate.
+import { Textarea } from '@/components/ui/textarea';
+import ModelMultiSelect from '@/components/model/ModelMultiSelect';
+import { mergeOptions } from '@/components/model/modelSelectIndex';
+
+// Channel "models" field: the shared ModelMultiSelect dropdown (search, vendor groups, newest
+// first, checkboxes) with an "edit as text" escape hatch for pasting long lists. The value stays
+// a comma-separated string, so the backend is unchanged; ids are deduplicated case-insensitively.
+//
+// Options come from `upstream` (rows of the channel's upstream list, with release dates, loaded
+// by the caller through `onOpen`) and `suggestions` (the type's default models and its
+// price-table models), upstream first so its metadata wins.
 const split = (str) =>
   (str || '')
     .split(/[,\n]/)
     .map((m) => m.trim())
     .filter(Boolean);
-const join = (arr) => Array.from(new Set(arr.filter(Boolean))).join(',');
-
-export default function ModelListInput({ value, onChange, disabled, headerActions, suggestions = [] }) {
-  const { t } = useTranslation();
-  const [mode, setMode] = useState('chips'); // 'chips' | 'text'
-  const [query, setQuery] = useState('');
-
-  const models = useMemo(() => split(value), [value]);
-  const candidates = useMemo(() => {
-    const taken = new Set(models.map((m) => m.toLowerCase()));
-    const seen = new Set();
-    return suggestions.filter((s) => {
-      const k = (s || '').trim().toLowerCase();
-      if (!k || taken.has(k) || seen.has(k)) return false;
+const join = (arr) => {
+  const seen = new Set();
+  return arr
+    .filter((m) => {
+      const k = m.toLowerCase();
+      if (!m || seen.has(k)) return false;
       seen.add(k);
       return true;
-    });
-  }, [models, suggestions]);
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return q ? models.filter((m) => m.toLowerCase().includes(q)) : models;
-  }, [models, query]);
+    })
+    .join(',');
+};
 
-  const remove = (m) => onChange(join(models.filter((x) => x !== m)));
-  const add = (raw) => {
-    const v = raw.trim();
-    if (!v || models.some((x) => x.toLowerCase() === v.toLowerCase())) return;
-    onChange(join([...models, v]));
-    setQuery('');
-  };
-  const canAdd = query.trim() !== '' && !models.some((x) => x.toLowerCase() === query.trim().toLowerCase());
+export default function ModelListInput({
+  value,
+  onChange,
+  disabled,
+  headerActions,
+  suggestions = [],
+  upstream = [],
+  onOpen,
+  loading,
+  notice,
+  advanced
+}) {
+  const { t } = useTranslation();
+  const [mode, setMode] = useState('select'); // 'select' | 'text'
+  const models = useMemo(() => split(value), [value]);
+  const options = useMemo(() => mergeOptions(upstream, suggestions), [upstream, suggestions]);
+
+  const toolbar = (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center gap-2">{headerActions}</div>
+      <button
+        type="button"
+        onClick={() => setMode(mode === 'text' ? 'select' : 'text')}
+        className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+      >
+        {mode === 'text' ? t('channel_edit.modelChipMode') : t('channel_edit.modelTextMode')}
+      </button>
+    </div>
+  );
 
   if (mode === 'text') {
     return (
       <div className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">
-              {t('channel_edit.modelCount', { count: models.length })}
-            </span>
-            {headerActions}
-          </div>
-          <button type="button" onClick={() => setMode('chips')} className="text-xs text-primary-text hover:underline">
-            {t('channel_edit.modelChipMode')}
-          </button>
-        </div>
         <Textarea
-          rows={4}
-          placeholder="gpt-3.5-turbo, gpt-4"
+          rows={6}
+          className="font-mono text-xs"
+          placeholder="gpt-5.5, claude-sonnet-5-5"
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
         />
+        {toolbar}
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-2.5 z-10 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <ModelCombobox
-            inputClassName="pl-8"
-            placeholder={t('channel_edit.modelSearchAdd')}
-            value={query}
-            onChange={setQuery}
-            onSelect={add}
-            options={candidates}
-            allowCreate={canAdd}
-            createLabel={(v) => t('channel_edit.modelAddValue', { model: v })}
-            disabled={disabled}
-          />
-        </div>
-        {canAdd && (
-          <button
-            type="button"
-            onClick={() => add(query)}
-            className="inline-flex h-9 shrink-0 items-center gap-1 rounded-md border border-input px-2.5 text-sm hover:bg-muted"
-          >
-            <Plus className="size-4" />
-            {t('channel_edit.modelAdd')}
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => setMode('text')}
-          className="shrink-0 whitespace-nowrap text-xs text-muted-foreground hover:text-foreground"
-        >
-          {t('channel_edit.modelTextMode')}
-        </button>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">
-          {query.trim()
-            ? t('channel_edit.modelCountFiltered', {
-                shown: filtered.length,
-                total: models.length
-              })
-            : t('channel_edit.modelCount', { count: models.length })}
-        </p>
-        {headerActions && <div className="flex flex-wrap items-center gap-2">{headerActions}</div>}
-      </div>
-
-      <div className="max-h-48 overflow-y-auto rounded-md border border-input bg-background p-2">
-        {filtered.length === 0 ? (
-          <p className="py-4 text-center text-xs text-muted-foreground">
-            {models.length === 0
-              ? t('channel_edit.modelEmpty')
-              : t('channel_edit.modelNoMatch')}
-          </p>
-        ) : (
-          <div className="flex flex-wrap gap-1.5">
-            {filtered.map((m) => (
-              <span key={m} className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs">
-                <span className="max-w-[240px] truncate" title={m}>
-                  {m}
-                </span>
-                {!disabled && (
-                  <button
-                    type="button"
-                    onClick={() => remove(m)}
-                    className="text-muted-foreground hover:text-destructive"
-                    aria-label={`remove ${m}`}
-                  >
-                    <X className="size-3" />
-                  </button>
-                )}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      <ModelMultiSelect
+        id="channel-models"
+        value={models}
+        onChange={(ids) => onChange(join(ids))}
+        options={options}
+        onOpen={onOpen}
+        loading={loading}
+        notice={notice}
+        advanced={advanced}
+        disabled={disabled}
+      />
+      {toolbar}
     </div>
   );
 }
@@ -158,5 +99,10 @@ ModelListInput.propTypes = {
   onChange: PropTypes.func.isRequired,
   disabled: PropTypes.bool,
   headerActions: PropTypes.node,
-  suggestions: PropTypes.arrayOf(PropTypes.string)
+  suggestions: PropTypes.arrayOf(PropTypes.string),
+  upstream: PropTypes.arrayOf(PropTypes.object),
+  onOpen: PropTypes.func,
+  loading: PropTypes.bool,
+  notice: PropTypes.node,
+  advanced: PropTypes.object
 };

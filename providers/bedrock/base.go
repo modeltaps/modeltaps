@@ -1,12 +1,15 @@
 package bedrock
 
 import (
+	"fmt"
+	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/providers/base"
 	"net/http"
 	"strings"
 
+	"github.com/modeltaps/modeltaps/providers/bedrock/awscreds"
 	"github.com/modeltaps/modeltaps/providers/bedrock/category"
 
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
@@ -38,9 +41,12 @@ type BedrockProvider struct {
 	AccessKeyID     string
 	SecretAccessKey string
 	SessionToken    string
-	APIToken        string
-	Category        *category.Category
-	client          *bedrockruntime.Client
+	// RoleArn, when set, makes the provider assume the role with the AK/SK and sign with the
+	// temporary credentials (see the awscreds package).
+	RoleArn  string
+	APIToken string
+	Category *category.Category
+	client   *bedrockruntime.Client
 	// errBody 缓存最近一次上游错误响应的原始 body（由 captureResponseMiddleware 在
 	// Deserialize 前 tee 出来）。用于在 SDK 反序列化失败（如中间层返回 HTML）时，
 	// 让 awsErrorToOpenAI 拿到上游真实返回而非 SDK 的解析器噪声。
@@ -62,20 +68,32 @@ func (p *BedrockProvider) GetRequestHeaders() (headers map[string]string) {
 	return headers
 }
 
+// getKeyConfig parses channel.Key; the formats are documented on awscreds.ParseKey.
 func getKeyConfig(bedrock *BedrockProvider) {
-	keys := strings.Split(bedrock.Channel.Key, "|")
-	if len(keys) < 2 {
+	cfg, ok := awscreds.ParseKey(bedrock.Channel.Key)
+	if !ok {
+		// A malformed key must not be swallowed: the channel would look configured while the
+		// region and credentials stay empty, and requests would only end in signing errors that
+		// are hard to trace back to the key.
+		logger.SysError(fmt.Sprintf("[%s] invalid aws key format, expect Region|AK|SK[|SessionToken[|RoleArn]] or Region|BearerToken", bedrock.Channel.Name))
 		return
 	}
-	bedrock.Region = keys[0]
-	if len(keys) == 2 {
-		bedrock.APIToken = keys[1]
-		return
-	}
-	bedrock.AccessKeyID = keys[1]
-	bedrock.SecretAccessKey = keys[2]
-	if len(keys) == 4 && keys[3] != "" {
-		bedrock.SessionToken = keys[3]
+	bedrock.Region = cfg.Region
+	bedrock.APIToken = cfg.APIToken
+	bedrock.AccessKeyID = cfg.AccessKeyID
+	bedrock.SecretAccessKey = cfg.SecretAccessKey
+	bedrock.SessionToken = cfg.SessionToken
+	bedrock.RoleArn = cfg.RoleArn
+}
+
+// credsConfig assembles the credential configuration for the awscreds package.
+func (p *BedrockProvider) credsConfig() awscreds.Config {
+	return awscreds.Config{
+		Region:          p.Region,
+		AccessKeyID:     p.AccessKeyID,
+		SecretAccessKey: p.SecretAccessKey,
+		SessionToken:    p.SessionToken,
+		RoleArn:         p.RoleArn,
 	}
 }
 

@@ -13,10 +13,10 @@ import (
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/requester"
+	"github.com/modeltaps/modeltaps/providers/bedrock/awscreds"
 	"github.com/modeltaps/modeltaps/types"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
 	"github.com/aws/smithy-go/auth/bearer"
 	smithymiddleware "github.com/aws/smithy-go/middleware"
@@ -51,9 +51,9 @@ func (p *BedrockProvider) getAwsClient() (*bedrockruntime.Client, error) {
 	if p.APIToken != "" {
 		opts.BearerAuthTokenProvider = bearer.StaticTokenProvider{Token: bearer.Token{Value: p.APIToken}}
 	} else {
-		opts.Credentials = aws.NewCredentialsCache(
-			credentials.NewStaticCredentialsProvider(p.AccessKeyID, p.SecretAccessKey, p.SessionToken),
-		)
+		// Static credentials, or (with a RoleArn) AssumeRole credentials that are cached
+		// globally and renewed automatically.
+		opts.Credentials = awscreds.Provider(p.credsConfig(), p.Channel.GetProxy())
 	}
 
 	p.client = bedrockruntime.New(opts)

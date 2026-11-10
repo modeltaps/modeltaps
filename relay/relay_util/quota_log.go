@@ -341,6 +341,9 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 	if q.upstreamModel != "" && q.upstreamModel != q.requestedModel {
 		meta["upstream_model"] = q.upstreamModel
 	}
+	if q.supplyId > 0 {
+		meta["supply_id"] = q.supplyId
+	}
 	if responseModelChecked(q.channelType) && responseModelMismatch(q.responseModel, q.requestedModel, q.upstreamModel) {
 		meta["response_model"] = q.responseModel
 		meta["response_model_mismatch"] = true
@@ -352,6 +355,12 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 		meta["routing_decision"] = true
 		if q.routingPolicy != "" {
 			meta["routing_policy"] = q.routingPolicy
+		}
+		if q.routingPolicyId > 0 {
+			meta["routing_policy_id"] = q.routingPolicyId
+		}
+		if q.routingTry {
+			meta["routing_try"] = true
 		}
 	} else if q.routingDecision != nil {
 		q.routingDecision.LogMeta(meta)

@@ -107,6 +107,7 @@ func TestRoutingPolicyValidate(t *testing.T) {
 		{"negative ttl", func(p *RoutingPolicy) { p.PinTTLSeconds = -1 }, common.APICodeRoutingPolicyLimitInvalid},
 		{"input chars too large", func(p *RoutingPolicy) { p.MaxInputChars = RoutingPolicyMaxInputChars + 1 }, common.APICodeRoutingPolicyLimitInvalid},
 		{"bad name", func(p *RoutingPolicy) { p.Name = "auto coder" }, common.APICodeRoutingPolicyNameInvalid},
+		{"unknown scoring", func(p *RoutingPolicy) { p.Scoring = "vibes" }, common.APICodeRoutingPolicyScoringInvalid},
 	}
 	for _, tc := range cases {
 		p := samplePolicy()
@@ -125,6 +126,9 @@ func TestRoutingPolicyValidate(t *testing.T) {
 	p.Normalize()
 	if err := p.Validate(isPolicy); err != nil {
 		t.Fatalf("合法策略应通过，实际: %v", err)
+	}
+	if p.Scoring != RoutingScoringAuto {
+		t.Fatalf("Normalize 应把空打分方式补为 auto，实际 %q", p.Scoring)
 	}
 	if p.MaxInputChars != RoutingPolicyDefaultInputChars || p.DecisionTimeoutMs != RoutingPolicyDefaultTimeoutMs {
 		t.Fatalf("Normalize 应补默认值，实际 chars=%d timeout=%d", p.MaxInputChars, p.DecisionTimeoutMs)
@@ -353,11 +357,11 @@ func TestRoutingPolicyModelsFor(t *testing.T) {
 	}
 
 	routable := func(name string) bool { return name == "claude-opus-5-5" }
-	got := RoutingPolicyModelsFor([]string{"claude-opus-5-5"}, routable)
+	got := RoutingPolicyModelsFor(0, []string{"claude-opus-5-5"}, routable)
 	if strings.Join(got, ",") != "auto/coder" {
 		t.Fatalf("期望只并入 auto/coder，实际 %v", got)
 	}
-	got = RoutingPolicyModelsFor([]string{"claude-opus-5-5", "auto/coder"}, routable)
+	got = RoutingPolicyModelsFor(0, []string{"claude-opus-5-5", "auto/coder"}, routable)
 	if len(got) != 0 {
 		t.Fatalf("已在列表里的策略不应重复加入，实际 %v", got)
 	}

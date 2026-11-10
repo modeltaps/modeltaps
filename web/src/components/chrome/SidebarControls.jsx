@@ -6,13 +6,14 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // ==============================|| CHROME — SIDEBAR CONTROLS ||============================== //
-// 面板没有顶部栏:搜索与收起按钮放在侧栏第一行(四种侧栏共用 SidebarTopBar),
-// 收起后的展开按钮与手机端的抽屉菜单按钮放在页面标题左侧(SidebarToggle)。
+// The panel has no top bar: the collapse button sits on the sidebar's brand row and the search
+// row sits under the context switcher. When the rail is collapsed (desktop) or hidden (mobile),
+// the expand / drawer buttons sit left of the page title (SidebarToggle).
 
 const iconButtonClass =
-  'flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+  'flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
-function IconButton({ label, tooltip, side = 'bottom', onClick, className, children }) {
+export function SidebarIconButton({ label, tooltip, side = 'bottom', onClick, className, children }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -25,7 +26,7 @@ function IconButton({ label, tooltip, side = 'bottom', onClick, className, child
   );
 }
 
-IconButton.propTypes = {
+SidebarIconButton.propTypes = {
   label: PropTypes.string.isRequired,
   tooltip: PropTypes.node,
   side: PropTypes.string,
@@ -34,72 +35,72 @@ IconButton.propTypes = {
   children: PropTypes.node
 };
 
-export function SidebarSearchButton({ collapsed = false, onClick }) {
+export function CollapseButton({ onClick }) {
   const { t } = useTranslation();
-  const label = t('common.search', { defaultValue: 'Search' });
   return (
-    <IconButton
-      label={label}
-      side={collapsed ? 'right' : 'bottom'}
-      onClick={onClick}
-      tooltip={
-        <span className="flex items-center gap-2">
-          {label}
-          <kbd className="rounded border border-border/60 px-1 font-mono text-[0.625rem]">⌘K</kbd>
-        </span>
-      }
-    >
-      <Search className="size-[1.125rem]" />
-    </IconButton>
+    <SidebarIconButton label={t('chrome.collapseSidebar', { defaultValue: 'Collapse sidebar' })} onClick={onClick}>
+      <PanelLeft className="size-[1.125rem]" />
+    </SidebarIconButton>
   );
 }
 
-SidebarSearchButton.propTypes = { collapsed: PropTypes.bool, onClick: PropTypes.func };
+CollapseButton.propTypes = { onClick: PropTypes.func };
 
-// 侧栏第一行(h-14):左侧是各侧栏原有内容(logo / 返回行),右端依次是搜索、收起。
-// 收起态只剩搜索图标;各侧栏原有的收起态内容由调用方接在下面。
-export function SidebarTopBar({ collapsed = false, onOpenCommand, onToggleCollapse, children }) {
+// Search: a full row under the context switcher, an icon in the collapsed rail.
+export function SidebarSearch({ collapsed = false, onClick }) {
   const { t } = useTranslation();
+  const label = t('common.search', { defaultValue: 'Search' });
+  const kbd = <kbd className="rounded border border-border bg-muted px-1 font-mono text-[0.6875rem] text-muted-foreground">⌘K</kbd>;
   if (collapsed) {
     return (
-      <div className="flex h-14 shrink-0 items-center justify-center">
-        <SidebarSearchButton collapsed onClick={onOpenCommand} />
-      </div>
+      <SidebarIconButton
+        label={label}
+        side="right"
+        onClick={onClick}
+        tooltip={
+          <span className="flex items-center gap-2">
+            {label}
+            {kbd}
+          </span>
+        }
+        className="size-9"
+      >
+        <Search className="size-[1.125rem]" />
+      </SidebarIconButton>
     );
   }
   return (
-    <div className="flex h-14 shrink-0 items-center gap-1 pl-4 pr-3">
-      <div className="flex min-w-0 flex-1 items-center">{children}</div>
-      <SidebarSearchButton onClick={onOpenCommand} />
-      {onToggleCollapse && (
-        <IconButton label={t('chrome.collapseSidebar', { defaultValue: 'Collapse sidebar' })} onClick={onToggleCollapse}>
-          <PanelLeft className="size-[1.125rem]" />
-        </IconButton>
-      )}
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-[34px] w-full items-center gap-2.5 rounded-lg px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <Search className="size-4 shrink-0" />
+      <span className="flex-1 text-left">{label}</span>
+      {kbd}
+    </button>
   );
 }
 
-SidebarTopBar.propTypes = {
-  collapsed: PropTypes.bool,
-  onOpenCommand: PropTypes.func,
-  onToggleCollapse: PropTypes.func,
-  children: PropTypes.node
-};
+SidebarSearch.propTypes = { collapsed: PropTypes.bool, onClick: PropTypes.func };
 
-// 页面标题左侧的按钮:手机端(md 以下)打开侧栏抽屉;电脑端仅在侧栏收起时出现,用于展开。
-// 两个按钮都不显示时不占位(display:none 不参与 flex 间距)。
+// Left of the page title: opens the drawer below md; on desktop it only shows while the rail
+// is collapsed, to expand it. Neither takes space when hidden (display:none).
 export function SidebarToggle({ collapsed = false, onOpenMobile, onExpand }) {
   const { t } = useTranslation();
   return (
     <TooltipProvider delayDuration={150}>
-      <IconButton label={t('chrome.menu', { defaultValue: 'Menu' })} onClick={onOpenMobile} className="md:hidden">
+      <SidebarIconButton label={t('chrome.menu', { defaultValue: 'Menu' })} onClick={onOpenMobile} className="md:hidden">
         <Menu className="size-5" />
-      </IconButton>
+      </SidebarIconButton>
       {collapsed && (
-        <IconButton label={t('chrome.expandSidebar', { defaultValue: 'Expand sidebar' })} onClick={onExpand} className="hidden md:flex">
+        <SidebarIconButton
+          label={t('chrome.expandSidebar', { defaultValue: 'Expand sidebar' })}
+          onClick={onExpand}
+          className="hidden md:flex"
+        >
           <PanelLeft className="size-5" />
-        </IconButton>
+        </SidebarIconButton>
       )}
     </TooltipProvider>
   );

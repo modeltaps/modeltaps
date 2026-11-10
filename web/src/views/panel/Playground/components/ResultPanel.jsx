@@ -27,9 +27,9 @@ export default function ResultPanel({
   children
 }) {
   return (
-    <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 rounded-lg border border-border bg-card p-3">
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 rounded-2xl border border-border bg-card p-3">
       <header className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-semibold text-foreground">{title}</span>
+        <span className="text-xs font-medium text-foreground">{title}</span>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
           <span className={cn('inline-block size-1.5 rounded-full', DOT_CLASS[status] || DOT_CLASS.idle)} />
           {statusLabel}
@@ -46,7 +46,7 @@ export default function ResultPanel({
                 onClick={() => onTabChange?.(tab.id)}
                 className={cn(
                   'rounded-md px-2 py-0.5 text-[11px] transition-colors',
-                  tab.id === activeTab ? 'bg-secondary font-semibold text-foreground' : 'text-muted-foreground hover:bg-accent'
+                  tab.id === activeTab ? 'bg-secondary font-medium text-foreground' : 'text-muted-foreground hover:bg-accent'
                 )}
               >
                 {tab.label}

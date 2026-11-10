@@ -105,6 +105,7 @@ func (a *Alipay) HandleCallback(c *gin.Context, gatewayConfig string) (*types.Pa
 		payNotify := &types.PayNotify{
 			TradeNo:   noti.OutTradeNo,
 			GatewayNo: noti.TradeNo,
+			PaidCents: types.YuanToCents(noti.TotalAmount),
 		}
 		return payNotify, nil
 	}

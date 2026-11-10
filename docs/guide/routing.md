@@ -28,8 +28,10 @@ curl -X POST https://your-modeltaps-domain.com/v1/chat/completions \
 The response `model` field is the model that actually answered (unless the site is configured to echo the requested name). Every routed response also carries a header:
 
 ```
-X-Modeltaps-Route: policy=auto/coder; label=additive; model=claude-haiku-5-5; confidence=0.90; reason=classified
+X-Modeltaps-Route: policy=auto/coder; label=additive; model=claude-haiku-5-5; confidence=0.90; scoring=logprobs; reason=classified
 ```
+
+`confidence` and `scoring` appear when the decision model picked a label. `scoring` says how the confidence was measured: `logprobs` (the label's probability) or `self_reported` (see [Scoring](#scoring)).
 
 | Reason | Meaning |
 | --- | --- |
@@ -72,8 +74,8 @@ Coding agents add their own context to the conversation: Claude Code puts `<syst
 ## Billing and logs
 
 - The routed request is billed at the price of the model that answered, not at a price of the policy itself. On the model catalog, a policy shows "billed by target model" instead of its own prices.
-- The decision call is billed to you once per session at the decision model's price, as its own log entry marked as a decision call. The site administrator can turn this off.
-- In your logs, the routed request shows the policy, the chosen label, the confidence and the reason; you can filter logs by routing policy.
+- The decision call is billed to you once per session at the decision model's price, as its own log entry marked as a decision call. With automatic scoring, the first session on a channel that does not return logprobs makes two decision calls (one with logprobs, then one self-reported), and both are billed. The site administrator can turn decision billing off.
+- In your logs, the routed request shows the policy, the chosen label, the confidence, the scoring method (with every label's probability when logprobs were used) and the reason; you can filter logs by routing policy.
 
 ## Setting up a policy (administrators)
 
@@ -82,9 +84,25 @@ Policies are created in the console under **Gateway → Auto routing**. A policy
 - **Model name** — what clients call, for example `auto/coder`. Letters, digits and `. _ / -` only; it must not collide with an existing model. Once created it shows up in `/v1/models` and can be added to token and organization allow lists like any model. Allow lists are checked against the policy name; the target models do not have to be in the caller's allow list, so you can keep expensive or hidden models reachable only through a policy.
 - **Decision model** — a small, fast chat model that classifies the first message. Any chat model the gateway serves will do; pick one that follows instructions well. It must not itself be a policy.
 - **Question and routes** — a one-sentence question and two to sixteen labels, each with a short description and a target model. Describe the request, not the model, and keep labels distinct: overlapping labels split the probability and push requests to the fallback. Three templates (coding change size, support triage, reasoning depth) give a starting point.
-- **Fallback model and threshold** — the fallback answers whenever the decision cannot be trusted. Put your safest model there. The threshold (0 to 1, 0.5 is a good start) is compared with the confidence the decision model reports; raising it sends more borderline requests to the fallback. The confidence is self-reported, so treat it as a ranking rather than a probability.
+- **Scoring** — how the confidence is measured; see [Scoring](#scoring). Auto is the default.
+- **Fallback model and threshold** — the fallback answers whenever the decision cannot be trusted. Put your safest model there. The threshold (0 to 1, 0.5 is a good start) is compared with the confidence of the chosen label; raising it sends more borderline requests to the fallback. With logprobs scoring the confidence is a probability; self-reported confidence is only a ranking.
 - **Advanced** — how long a session stays pinned (0 classifies every request), how many characters of the first message are sent to the decision model, and the decision timeout.
 
-The **Try it** tab runs only the decision step on a pasted first message, optionally comparing several decision models side by side, without forwarding, billing or pinning anything. Test with real first messages from your logs before enabling a policy.
+The **Try it** tab runs only the decision step on a pasted first message, optionally comparing several decision models side by side, without forwarding, billing or pinning anything. Each result shows the scoring method and, with logprobs, every label's probability. Test with real first messages from your logs before enabling a policy.
+
+### Scoring
+
+The decision model can report its confidence in two ways:
+
+- **Logprobs** — the labels are presented as lettered options and the model answers with one letter. The gateway reads the model's output probability for each letter, so every label gets a real probability and the threshold means what it says. This needs a non-reasoning model on a channel that returns logprobs: OpenAI-compatible APIs such as GPT-4.1, DeepSeek in non-thinking mode, or a self-hosted vLLM server. Claude, reasoning models and most aggregator gateways do not return logprobs.
+- **Self-reported** — the model answers with a label and a confidence number it chooses itself. It works with any chat model, but the number is not calibrated.
+
+| Setting | Behaviour |
+| --- | --- |
+| Auto (default) | Uses logprobs. On a channel where the decision model does not return them, that request is decided again with self-reported confidence, and the channel uses self-reported confidence for the next 24 hours. |
+| Logprobs only | Uses logprobs; on a channel that does not return them, the fallback model answers. |
+| Self-reported only | Always uses self-reported confidence. |
+
+**Check support** next to the setting sends one small test request to the decision model and tells you whether the channel it was routed to returns logprobs.
 
 The decision billing switch is under **Settings → Gateway → Auto routing**.

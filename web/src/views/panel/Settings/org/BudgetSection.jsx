@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Loader2 } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
+import { FormField } from '@/components/ui/form-field';
+import { FormCard } from '@/components/settings/cards';
 import { Select, SelectTrigger, SelectContent, SelectItem } from '@/components/ui/select';
 import QuotaInput from '@/components/QuotaInput';
 import { API } from 'utils/api';
@@ -13,10 +11,10 @@ import { renderSpend, showError, showSuccess } from 'utils/common';
 import { useOrg } from 'contexts/OrgContext';
 
 // ==============================|| SETTINGS — ORG BUDGET ||============================== //
-// 组织周期预算(T1):budget/budget_used 仅对 Admin+ 返回;period 为空哨兵 = 不限预算。
-// 由 /panel/settings/org/:orgId/budget 与组织工作台设置 Tab 共用。
+// Team budget card: budget / budget_used are returned to Admin+ only; an empty period sentinel
+// means no budget. Part of the organization settings 常规 group.
 
-// 脏值比较统一归一为字符串,null / undefined / '' 视为相等(同 Setting/parts.jsx 的 isDirty)。
+// 脏值比较统一归一为字符串,null / undefined / '' 视为相等(as isDirty in Setting/parts.jsx)。
 const sameValue = (a, b) => String(a ?? '') === String(b ?? '');
 
 export default function BudgetSection({ orgId, role, detail, onRefresh }) {
@@ -46,8 +44,7 @@ export default function BudgetSection({ orgId, role, detail, onRefresh }) {
   // 未取到组织详情前一律视为无改动;选「不限」与原本无预算都归一为 __none/'',视为相等
   const budgetDirty =
     !!baseline &&
-    (!sameValue(budgetPeriod, baseline.budgetPeriod) ||
-      (budgetPeriod !== '__none' && !sameValue(budgetLimit, baseline.budgetLimit)));
+    (!sameValue(budgetPeriod, baseline.budgetPeriod) || (budgetPeriod !== '__none' && !sameValue(budgetLimit, baseline.budgetLimit)));
 
   // 组织预算单独提交:name/avatar_url 为后端必填且会被覆写,回填服务端当前值,
   // 避免与资料卡未保存的草稿相互污染。limit<=0 即后端语义的「清除限制」。
@@ -87,44 +84,48 @@ export default function BudgetSection({ orgId, role, detail, onRefresh }) {
   if (!isAdmin) return null;
 
   return (
-    <Card className="space-y-5 p-6">
-      <div className="space-y-1">
-        <h3 className="text-base font-semibold">{t('orgPage.settings.teamBudget')}</h3>
-        <p className="text-xs text-muted-foreground">{t('orgPage.settings.teamBudgetHint')}</p>
+    <FormCard
+      title={t('orgPage.settings.teamBudget')}
+      description={t('orgPage.settings.teamBudgetHint')}
+      hint={t('settingsUi.org.cards.budget.hint')}
+      highlight="team-budget"
+      dirty={budgetDirty}
+      saving={savingBudget}
+      onSave={saveBudget}
+      onReset={() => {
+        if (!baseline) return;
+        setBudgetPeriod(baseline.budgetPeriod);
+        setBudgetLimit(baseline.budgetLimit);
+      }}
+    >
+      <div className="grid gap-5 sm:grid-cols-2">
+        <FormField label={t('orgPage.limits.budget')}>
+          <Select value={budgetPeriod} onValueChange={setBudgetPeriod}>
+            <SelectTrigger>
+              <span className="truncate">
+                {budgetPeriod === '__none' ? t('orgPage.limits.budgetNone') : t(`orgPage.limits.period_${budgetPeriod}`)}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none">{t('orgPage.limits.budgetNone')}</SelectItem>
+              <SelectItem value="daily">{t('orgPage.limits.period_daily')}</SelectItem>
+              <SelectItem value="weekly">{t('orgPage.limits.period_weekly')}</SelectItem>
+              <SelectItem value="monthly">{t('orgPage.limits.period_monthly')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </FormField>
+        {budgetPeriod !== '__none' && (
+          <QuotaInput
+            id="org-team-budget-limit"
+            label={t('orgPage.limits.limitLabel')}
+            value={budgetLimit}
+            onChange={setBudgetLimit}
+            allowEmpty
+            helperText={t('orgPage.limits.budgetUsed', { used: renderSpend(detail?.budget_used || 0) })}
+          />
+        )}
       </div>
-      <div className="space-y-4">
-        <Label>{t('orgPage.limits.budget')}</Label>
-        <Select value={budgetPeriod} onValueChange={setBudgetPeriod}>
-          <SelectTrigger>
-            <span className="truncate">
-              {budgetPeriod === '__none' ? t('orgPage.limits.budgetNone') : t(`orgPage.limits.period_${budgetPeriod}`)}
-            </span>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__none">{t('orgPage.limits.budgetNone')}</SelectItem>
-            <SelectItem value="daily">{t('orgPage.limits.period_daily')}</SelectItem>
-            <SelectItem value="weekly">{t('orgPage.limits.period_weekly')}</SelectItem>
-            <SelectItem value="monthly">{t('orgPage.limits.period_monthly')}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      {budgetPeriod !== '__none' && (
-        <QuotaInput
-          id="org-team-budget-limit"
-          label={t('orgPage.limits.limitLabel')}
-          value={budgetLimit}
-          onChange={setBudgetLimit}
-          allowEmpty
-          helperText={t('orgPage.limits.budgetUsed', { used: renderSpend(detail?.budget_used || 0) })}
-        />
-      )}
-      <div className="flex justify-end">
-        <Button onClick={saveBudget} disabled={savingBudget || !budgetDirty}>
-          {savingBudget && <Loader2 className="size-4 animate-spin" />}
-          {t('orgPage.settings.save')}
-        </Button>
-      </div>
-    </Card>
+    </FormCard>
   );
 }
 

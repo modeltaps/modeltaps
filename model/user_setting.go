@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 
+	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/database"
 )
 
@@ -15,11 +16,30 @@ type UserSetting struct {
 	LogIODefault *bool `json:"log_io_default,omitempty"`
 	// EmailCodeLogin 是否允许用邮箱验证码登录本账号；nil 表示未设置，按开启处理
 	EmailCodeLogin *bool `json:"email_code_login,omitempty"`
+	// QuotaRemindEnabled is whether the user receives quota warning emails; nil means on.
+	QuotaRemindEnabled *bool `json:"quota_remind_enabled,omitempty"`
+	// QuotaRemindThreshold is the user's "running low" threshold in quota units; nil follows the
+	// site default config.QuotaRemindThreshold.
+	QuotaRemindThreshold *int `json:"quota_remind_threshold,omitempty"`
 }
 
 // EmailCodeLoginAllowed 用户是否允许邮箱验证码登录（默认允许）。
 func (s *UserSetting) EmailCodeLoginAllowed() bool {
 	return s.EmailCodeLogin == nil || *s.EmailCodeLogin
+}
+
+// QuotaRemindAllowed reports whether the user wants quota warning emails (default on). The site
+// switch config.QuotaRemindEnabled is checked separately and always wins.
+func (s *UserSetting) QuotaRemindAllowed() bool {
+	return s.QuotaRemindEnabled == nil || *s.QuotaRemindEnabled
+}
+
+// EffectiveQuotaRemindThreshold is the user's threshold, or the site default when unset.
+func (s *UserSetting) EffectiveQuotaRemindThreshold() int {
+	if s.QuotaRemindThreshold != nil {
+		return *s.QuotaRemindThreshold
+	}
+	return config.QuotaRemindThreshold
 }
 
 // UserSettingUpdate PUT /api/user/setting 的请求体;nil 字段表示不修改(部分更新)。
@@ -29,6 +49,10 @@ type UserSettingUpdate struct {
 	Language       *string `json:"language"`
 	LogIODefault   *string `json:"log_io_default"`
 	EmailCodeLogin *bool   `json:"email_code_login"`
+	// QuotaRemindEnabled turns the user's quota warning emails on or off.
+	QuotaRemindEnabled *bool `json:"quota_remind_enabled"`
+	// QuotaRemindThreshold sets the user's threshold; a negative value resets it to the site default.
+	QuotaRemindThreshold *int `json:"quota_remind_threshold"`
 }
 
 // LogIOTriStateString 把 LogIO 三态 *bool 编码为 API 哨兵字符串(nil→inherit / true→on / false→off)。
@@ -65,8 +89,18 @@ func (s *UserSetting) APIView() map[string]any {
 		"language":         s.Language,
 		"log_io_default":   LogIOTriStateString(s.LogIODefault),
 		"email_code_login": s.EmailCodeLoginAllowed(),
+		// quota_remind_threshold is null while the user follows the site default; the site values
+		// are returned alongside so the page can show what applies.
+		"quota_remind_enabled":        s.QuotaRemindAllowed(),
+		"quota_remind_threshold":      s.QuotaRemindThreshold,
+		"site_quota_remind_enabled":   config.QuotaRemindEnabled,
+		"site_quota_remind_threshold": config.QuotaRemindThreshold,
 	}
 }
+
+// maxQuotaRemindThreshold bounds a personal threshold far above any real balance, so the rearm
+// level (threshold plus margin) cannot overflow.
+const maxQuotaRemindThreshold = 1 << 50
 
 var userSettingThemes = map[string]bool{
 	"":       true,
@@ -102,6 +136,18 @@ func (s *UserSetting) ApplyUpdate(update UserSettingUpdate) error {
 		value := *update.EmailCodeLogin
 		s.EmailCodeLogin = &value
 	}
+	if update.QuotaRemindEnabled != nil {
+		value := *update.QuotaRemindEnabled
+		s.QuotaRemindEnabled = &value
+	}
+	if update.QuotaRemindThreshold != nil {
+		if *update.QuotaRemindThreshold < 0 {
+			s.QuotaRemindThreshold = nil
+		} else {
+			value := *update.QuotaRemindThreshold
+			s.QuotaRemindThreshold = &value
+		}
+	}
 	return nil
 }
 
@@ -112,6 +158,9 @@ func (s *UserSetting) Validate() error {
 	}
 	if !userSettingLanguages[s.Language] {
 		return errors.New("invalid language setting")
+	}
+	if s.QuotaRemindThreshold != nil && *s.QuotaRemindThreshold > maxQuotaRemindThreshold {
+		return errors.New("quota warning threshold is too large")
 	}
 	return nil
 }

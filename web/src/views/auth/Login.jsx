@@ -302,7 +302,7 @@ export default function Login() {
           {submitError && <p className="text-sm text-destructive">{submitError}</p>}
 
           <div className="space-y-3">
-            <Button type="submit" disabled={isSubmitting} className="h-11 w-full font-semibold">
+            <Button type="submit" disabled={isSubmitting} className="h-11 w-full font-medium">
               {isSubmitting && <Loader2 className="size-4 animate-spin" />}
               {isSubmitting ? t('login.loggingIn') : t('menu.login')}
             </Button>
@@ -336,9 +336,7 @@ export default function Login() {
           {showForm && (
             <div className="flex items-center gap-3 py-4">
               <span className="h-px flex-1 bg-border" />
-              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {t('login.or', { defaultValue: 'OR' })}
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">{t('login.or', { defaultValue: 'or' })}</span>
               <span className="h-px flex-1 bg-border" />
             </div>
           )}

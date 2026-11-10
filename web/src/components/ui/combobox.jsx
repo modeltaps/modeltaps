@@ -10,7 +10,8 @@ import { cn } from '@/lib/utils';
 // item's `value`, which we set to the label). Use when an option list is long
 // enough that a plain Select becomes hard to scan (e.g. channel types).
 //
-// options: [{ value: string, label: string }]
+// options: [{ value: string, label: string, icon?: node, hint?: node }]; `icon` renders before the
+// label (also in the trigger), `hint` as muted text at the end of the row.
 // groups (optional, replaces options): [{ key: string, heading?: node, options: [...] }]. Groups
 // render in order with a separator between them; cmdk filters every group while searching and
 // hides the separators and any group left without a match.
@@ -51,14 +52,16 @@ export function Combobox({
         onValueChange?.(o.value);
         setOpen(false);
       }}
-      className="relative flex w-full cursor-pointer select-none items-center rounded-md py-1.5 pl-8 pr-2 text-sm outline-none data-[selected=true]:bg-muted"
+      className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none data-[selected=true]:bg-muted"
     >
       {o.value === value && (
         <span className="absolute left-2 flex size-4 items-center justify-center">
           <Check className="size-4" />
         </span>
       )}
-      {o.label}
+      {o.icon && <span className="mr-2 flex size-4 shrink-0 items-center justify-center">{o.icon}</span>}
+      <span className="truncate">{o.label}</span>
+      {o.hint && <span className="ml-auto shrink-0 pl-3 text-xs text-muted-foreground">{o.hint}</span>}
     </Command.Item>
   );
 
@@ -78,12 +81,22 @@ export function Combobox({
           className
         )}
       >
-        <span className={cn('truncate', !selected && 'text-muted-foreground')}>{selected ? selected.label : placeholder}</span>
+        <span className={cn('flex min-w-0 items-center gap-2', !selected && 'text-muted-foreground')}>
+          {selected?.icon && <span className="flex size-4 shrink-0 items-center justify-center">{selected.icon}</span>}
+          <span className="truncate">{selected ? selected.label : placeholder}</span>
+        </span>
         <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
       </button>
 
       {open && (
         <Command
+          onKeyDown={(e) => {
+            // Close only the dropdown; preventDefault keeps a surrounding Sheet / Dialog open.
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              setOpen(false);
+            }
+          }}
           className={cn(
             'absolute z-50 mt-1 w-full min-w-[8rem] overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-md',
             contentClassName

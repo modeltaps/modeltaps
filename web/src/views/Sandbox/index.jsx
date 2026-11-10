@@ -26,7 +26,7 @@ export default function Sandbox() {
     <div className="min-h-screen bg-background text-foreground p-8">
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Sandbox</h1>
+          <h1 className="text-3xl font-semibold">Sandbox</h1>
           <Button variant="outline" size="icon" aria-label="Toggle theme" onClick={() => setDark((v) => !v)}>
             {dark ? <Sun /> : <Moon />}
           </Button>

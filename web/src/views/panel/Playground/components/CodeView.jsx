@@ -92,7 +92,7 @@ export default function CodeView({ snippets, meta, labels, language, onLanguageC
               onClick={() => select(item.id)}
               className={cn(
                 'rounded-md px-2.5 py-1 text-xs transition-colors',
-                item.id === tab.id ? 'bg-secondary font-semibold text-foreground' : 'text-muted-foreground hover:bg-accent'
+                item.id === tab.id ? 'bg-secondary font-medium text-foreground' : 'text-muted-foreground hover:bg-accent'
               )}
             >
               {item.label}

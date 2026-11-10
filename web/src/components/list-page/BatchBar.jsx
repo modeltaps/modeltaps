@@ -17,7 +17,7 @@ export default function BatchBar({ count, actions, onClear, className }) {
       aria-label={t('listPage.selected', { count })}
       className={cn('flex min-h-[3.75rem] flex-wrap items-center gap-2 py-3', className)}
     >
-      <span className="mr-1 text-sm font-semibold tabular-nums">{t('listPage.selected', { count })}</span>
+      <span className="mr-1 text-sm font-medium tabular-nums">{t('listPage.selected', { count })}</span>
       {actions}
       <Button
         type="button"

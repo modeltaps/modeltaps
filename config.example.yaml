@@ -70,6 +70,7 @@ session:
 connect_timeout: 5           # 连接超时（秒）
 relay_timeout: 600           # 中继整体超时（秒）
 relay_request_timeout: 300   # 中继单次请求超时（秒）
+relay_max_body_mb: 128       # 中继请求体上限（MB），超出返回 413；0 表示不限
 response_header_timeout: 120 # 响应头超时（秒）
 tls_handshake_timeout: 30    # TLS 握手超时（秒）
 tls_insecure_skip_verify: false  # 跳过 TLS 证书校验（不安全，慎用）

@@ -42,7 +42,7 @@ export default function ResetPassword() {
     <AuthShell title={t('login.forgetPassword')}>
       <div className="flex flex-col items-center justify-center gap-6 py-6 text-center">
         {!inputs.email || !inputs.token ? (
-          <p className="text-lg font-semibold text-foreground">{t('auth.invalidLink')}</p>
+          <p className="text-lg font-medium text-foreground">{t('auth.invalidLink')}</p>
         ) : newPassword ? (
           <div className="w-full rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-left text-sm text-foreground">
             {t('auth.newPasswordInfo')} <b>{newPassword}</b>
@@ -50,7 +50,7 @@ export default function ResetPassword() {
             {t('auth.newPasswordEdit')}
           </div>
         ) : (
-          <Button onClick={submit} type="submit" className="h-11 w-full font-semibold">
+          <Button onClick={submit} type="submit" className="h-11 w-full font-medium">
             {t('auth.restPasswordClick')}
           </Button>
         )}

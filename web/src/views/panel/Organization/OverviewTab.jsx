@@ -25,7 +25,7 @@ function StatCard({ icon: Icon, label, value, hint, action }) {
     <Card className="flex items-center justify-between gap-3 p-5">
       <div className="min-w-0 space-y-1">
         <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="truncate text-2xl font-semibold tabular-nums">{value}</p>
+        <p className="truncate text-2xl font-medium tabular-nums">{value}</p>
         {hint && <p className="truncate text-xs text-muted-foreground">{hint}</p>}
       </div>
       <div className="flex shrink-0 flex-col items-end gap-2">

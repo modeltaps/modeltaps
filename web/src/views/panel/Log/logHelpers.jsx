@@ -22,19 +22,21 @@ export const BILLING_LOG_TYPES = [
   { value: '4', labelKey: 'logPage.logType.system' }
 ];
 
-// color token → Tailwind classes for soft badges.
+// color token → Tailwind classes for soft badges. Status and category chips
+// share one quiet neutral style; only error states keep a tint.
+const NEUTRAL_BADGE = 'bg-muted text-foreground';
 const BADGE_CLASSES = {
-  default: 'bg-muted text-foreground',
-  primary: 'bg-muted text-foreground',
-  orange: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
-  info: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  default: NEUTRAL_BADGE,
+  primary: NEUTRAL_BADGE,
+  orange: NEUTRAL_BADGE,
+  info: NEUTRAL_BADGE,
   secondary: 'bg-muted text-muted-foreground',
-  success: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  success: NEUTRAL_BADGE,
   error: 'bg-destructive/10 text-destructive'
 };
 
 export const badgeClass = (color) =>
-  `inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${BADGE_CLASSES[color] || BADGE_CLASSES.default}`;
+  `inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium ${BADGE_CLASSES[color] || BADGE_CLASSES.default}`;
 
 export function logTypeMeta(type) {
   return LOG_TYPES.find((o) => o.value === String(type)) || null;

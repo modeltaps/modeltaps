@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { Pencil, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { PanelRight, Plus, RotateCcw, Trash2 } from 'lucide-react';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import DataCards from '@/components/ui/data-cards';
@@ -15,17 +15,27 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFoo
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import PageActions from '@/components/chrome/PageActions';
+import { ROW_OPENS, rowOpenProps, RowControl, useObjectRoute } from '@/components/objects';
 import { showError, showSuccess } from 'utils/common';
-import RoutingPolicySheet from './RoutingPolicySheet';
-import { deleteRoutingPolicy, getRoutingPolicyStats, listRoutingPolicies, setRoutingPolicyEnabled } from './routingPolicyApi';
+import RoutingPolicyPanel from './RoutingPolicyPanel';
+import NewRoutingPolicySheet from './NewRoutingPolicySheet';
+import { POLICY_TAB_KEYS } from './policyTabs';
+import {
+  deleteRoutingPolicy,
+  getRoutingPolicyStats,
+  listCatalogModelNames,
+  listRoutingPolicies,
+  setRoutingPolicyEnabled
+} from './routingPolicyApi';
 
-// 自动路由策略列表：策略不多，一次取全量，不分页。
+// 自动路由策略列表：策略不多，一次取全量，不分页。点一行在右侧打开策略面板（?id=，Tab 各自保存），
+// 新建用右侧面板（?new=1），只填必需项。
 export default function RoutingPolicy() {
   const { t } = useTranslation();
+  const route = useObjectRoute(POLICY_TAB_KEYS);
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [editId, setEditId] = useState(0);
+  const [modelOptions, setModelOptions] = useState([]);
   const [pendingDelete, setPendingDelete] = useState(null);
   // 近 7 天概览（请求数 / 兜底率），按策略逐个取；策略很少，并行几次请求可以接受。
   const [weekStats, setWeekStats] = useState({});
@@ -60,22 +70,25 @@ export default function RoutingPolicy() {
     refresh();
   }, [refresh]);
 
-  const openEdit = (id) => {
-    setEditId(id);
-    setSheetOpen(true);
-  };
+  // 目录模型名只取一次，供决策 / 目标 / 兜底三处下拉建议。
+  useEffect(() => {
+    listCatalogModelNames()
+      .then(setModelOptions)
+      .catch(() => {});
+  }, []);
 
   const toggleEnabled = async (policy, enabled) => {
     try {
       const { success, message } = await setRoutingPolicyEnabled(policy.id, enabled);
       if (success) {
         setPolicies((prev) => prev.map((p) => (p.id === policy.id ? { ...p, enabled } : p)));
-      } else {
-        showError(message);
+        return true;
       }
+      showError(message);
     } catch (e) {
       // surfaced globally
     }
+    return false;
   };
 
   const confirmDelete = async () => {
@@ -86,6 +99,7 @@ export default function RoutingPolicy() {
       const { success, message } = await deleteRoutingPolicy(policy.id);
       if (success) {
         showSuccess(t('userPage.operationSuccess'));
+        if (policy.id === route.openId) route.close();
         refresh();
       } else {
         showError(message);
@@ -164,11 +178,13 @@ export default function RoutingPolicy() {
         cell: (c) => {
           const p = c.row.original;
           return (
-            <Switch
-              checked={Boolean(p.enabled)}
-              aria-label={t('routingPolicy.columns.enabled')}
-              onCheckedChange={(v) => toggleEnabled(p, v)}
-            />
+            <RowControl>
+              <Switch
+                checked={Boolean(p.enabled)}
+                aria-label={t('routingPolicy.columns.enabled')}
+                onCheckedChange={(v) => toggleEnabled(p, v)}
+              />
+            </RowControl>
           );
         }
       },
@@ -179,18 +195,20 @@ export default function RoutingPolicy() {
         cell: (c) => {
           const p = c.row.original;
           return (
-            <RowActions
-              actions={[
-                { label: t('common.edit'), icon: Pencil, onClick: () => openEdit(p.id) },
-                { label: t('common.delete'), icon: Trash2, destructive: true, onClick: () => setPendingDelete(p) }
-              ]}
-            />
+            <RowControl>
+              <RowActions
+                actions={[
+                  { label: t('objects.open'), icon: PanelRight, onClick: () => route.open(p.id) },
+                  { label: t('common.delete'), icon: Trash2, destructive: true, onClick: () => setPendingDelete(p) }
+                ]}
+              />
+            </RowControl>
           );
         }
       }
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, weekStats]
+    [t, weekStats, route.openId]
   );
 
   const table = useTable({ features: appTableFeatures, data: policies, columns });
@@ -208,7 +226,7 @@ export default function RoutingPolicy() {
             <TooltipContent>{t('userPage.refresh')}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        <ResponsiveToolbarButton primary icon={Plus} label={t('routingPolicy.create')} onClick={() => openEdit(0)} />
+        <ResponsiveToolbarButton primary icon={Plus} label={t('routingPolicy.create')} onClick={route.openNew} />
       </PageActions>
 
       <Card>
@@ -234,7 +252,12 @@ export default function RoutingPolicy() {
                 </TableRow>
               ) : (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow
+                    key={row.id}
+                    className={ROW_OPENS}
+                    data-state={row.original.id === route.openId ? 'selected' : undefined}
+                    {...rowOpenProps(() => route.open(row.original.id))}
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
                         {flexRender(cell.column.columnDef.cell ?? cell.getValue, cell.getContext())}
@@ -253,18 +276,36 @@ export default function RoutingPolicy() {
           actionColumnIds={['action']}
           empty={t('routingPolicy.empty')}
           searching={loading}
+          onRowClick={(p) => route.open(p.id)}
         />
       </Card>
 
-      <RoutingPolicySheet
-        open={sheetOpen}
-        policyId={editId}
-        onClose={() => setSheetOpen(false)}
-        onSaved={() => {
-          setSheetOpen(false);
-          refresh();
-        }}
-      />
+      {route.openId > 0 && (
+        <RoutingPolicyPanel
+          key={route.openId}
+          policyId={route.openId}
+          tab={route.tab}
+          onTabChange={route.setTab}
+          onClose={route.close}
+          onChanged={refresh}
+          onToggleEnabled={toggleEnabled}
+          onDelete={setPendingDelete}
+          modelOptions={modelOptions}
+        />
+      )}
+
+      {route.isNew && (
+        <NewRoutingPolicySheet
+          modelOptions={modelOptions}
+          onClose={route.close}
+          onCreated={(policy) => {
+            showSuccess(t('routingPolicy.new.created'));
+            refresh();
+            if (policy?.id) route.open(policy.id);
+            else route.close();
+          }}
+        />
+      )}
 
       <Dialog open={Boolean(pendingDelete)} onOpenChange={(o) => !o && setPendingDelete(null)}>
         <DialogContent className="max-w-md">

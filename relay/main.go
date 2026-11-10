@@ -3,6 +3,7 @@ package relay
 import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/controller"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/metrics"
@@ -71,6 +72,7 @@ func Relay(c *gin.Context) {
 	}
 
 	channel := relay.getProvider().GetChannel()
+	firstChannel := channel
 	notifyChannelRelayError(c.Request.Context(), c, channel, apiErr)
 	relay_util.RecordRelayAttempt(c, channel.Id, apiErr)
 
@@ -85,9 +87,11 @@ func Relay(c *gin.Context) {
 	modelName := RoutingModelName(c)
 	totalChannelsAtStart := model.ChannelGroup.CountAvailableChannels(groupName, modelName)
 
-	if done || !shouldRetry(c, apiErr, channel.Type) {
+	// Evaluate once: shouldRetry records the failure in the provider metrics.
+	retryable := shouldRetry(c, apiErr, channel.Type)
+	if done || !retryable {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("retry_skip model=%s channel_id=%d status_code=%d upstream_id=%s done=%t should_retry=%t total_channels=%d error=\"%s\"",
-			modelName, channel.Id, apiErr.StatusCode, c.GetString(config.GinUpstreamRequestIdKey), done, shouldRetry(c, apiErr, channel.Type), totalChannelsAtStart, utils.TruncateBase64InMessage(apiErr.OpenAIError.Message)))
+			modelName, channel.Id, apiErr.StatusCode, c.GetString(config.GinUpstreamRequestIdKey), done, retryable, totalChannelsAtStart, utils.TruncateBase64InMessage(apiErr.OpenAIError.Message)))
 		retryTimes = 0
 	}
 
@@ -118,10 +122,16 @@ func Relay(c *gin.Context) {
 		breakReason = "skipped"
 	}
 
+	// pendingCooldown: the channel that failed last has not been through shouldCooldowns yet.
+	// Each loop turn cools the previous failure before picking the next channel, so the channel
+	// tried last (and the first one when the loop never runs) is cooled after the loop instead.
+	pendingCooldown := true
+
 	for i := actualRetryTimes; i > 0; i-- {
 		// 冻结通道并记录是否应用了冷却
 		cooldownApplied := shouldCooldowns(c, channel, apiErr)
 		relay_util.MarkLastRelayAttemptCooldown(c, cooldownApplied)
+		pendingCooldown = false
 
 		if time.Since(startTime) > timeout {
 			logger.LogError(c.Request.Context(), fmt.Sprintf("retry_timeout model=%s channel_id=%d elapsed_time=%.2fs timeout=%.2fs",
@@ -165,6 +175,9 @@ func Relay(c *gin.Context) {
 			logger.LogInfo(c.Request.Context(), fmt.Sprintf("retry_success model=%s channel_id=%d attempt=%d/%d total_channels=%d",
 				modelName, channel.Id, attemptCount, actualRetryTimes, c.GetInt("total_channels_at_start")))
 			metrics.RecordProvider(c, 200)
+			if config.PauseRulesEnabled {
+				controller.NotifySupplyFailover(modelName, firstChannel, channel)
+			}
 			return
 		}
 
@@ -174,12 +187,19 @@ func Relay(c *gin.Context) {
 
 		notifyChannelRelayError(c.Request.Context(), c, channel, apiErr)
 		relay_util.RecordRelayAttempt(c, channel.Id, apiErr)
-		if done || !shouldRetry(c, apiErr, channel.Type) {
+		pendingCooldown = true
+		retryable := shouldRetry(c, apiErr, channel.Type)
+		if done || !retryable {
 			logger.LogError(c.Request.Context(), fmt.Sprintf("retry_stop_condition model=%s channel_id=%d attempt=%d/%d done=%t should_retry=%t",
-				modelName, channel.Id, attemptCount, actualRetryTimes, done, shouldRetry(c, apiErr, channel.Type)))
+				modelName, channel.Id, attemptCount, actualRetryTimes, done, retryable))
 			breakReason = "stop_condition"
 			break
 		}
+	}
+
+	// With pause rules on, this only records whether the rules paused the last channel.
+	if pendingCooldown && (config.PauseRulesEnabled || shouldCooldownFinalFailure(c, apiErr)) {
+		relay_util.MarkLastRelayAttemptCooldown(c, shouldCooldowns(c, channel, apiErr))
 	}
 
 	// 记录最终失败：循环自然跑完用 retry_exhausted，中途 break 用 retry_aborted + reason
@@ -324,7 +344,20 @@ func RelayHandler(relay RelayBaseInterface) (err *types.OpenAIErrorWithStatusCod
 	return
 }
 
+// shouldCooldownFinalFailure reports whether the failure that ends a request should go through
+// the cooldown rules. A local error is the gateway's own (quota, validation) and says nothing
+// about the channel, and a session held on its channel by strict affinity stays there: cooling
+// the channel would move the session on its next turn.
+func shouldCooldownFinalFailure(c *gin.Context, apiErr *types.OpenAIErrorWithStatusCode) bool {
+	return apiErr != nil && !apiErr.LocalError && !strictAffinityHolds(c)
+}
+
 func shouldCooldowns(c *gin.Context, channel *model.Channel, apiErr *types.OpenAIErrorWithStatusCode) bool {
+	if config.PauseRulesEnabled {
+		// The pause rules already ran for this failure in notifyChannelRelayError.
+		skipChannel(c, channel.Id)
+		return c.GetBool(lastFailurePausedKey)
+	}
 	modelName := RoutingModelName(c)
 	channelId := channel.Id
 	statusCode := apiErr.StatusCode
@@ -376,15 +409,19 @@ func shouldCooldowns(c *gin.Context, channel *model.Channel, apiErr *types.OpenA
 			channelId, modelName, statusCode, reason))
 	}
 
+	skipChannel(c, channelId)
+
+	return duration > 0
+}
+
+// skipChannel keeps the rest of this request away from a channel that failed it.
+func skipChannel(c *gin.Context, channelId int) {
 	skipChannelIds, ok := utils.GetGinValue[[]int](c, "skip_channel_ids")
 	if !ok {
 		skipChannelIds = make([]int, 0)
 	}
-
 	skipChannelIds = append(skipChannelIds, channelId)
 	c.Set("skip_channel_ids", skipChannelIds)
-
-	return duration > 0
 }
 
 // applies pre-mapping before setRequest to ensure modifications take effect
@@ -428,6 +465,7 @@ func applyPreMappingBeforeRequest(c *gin.Context) {
 		c.Set("routing_model", nil)
 		c.Set("new_model", nil)
 		c.Set("billing_original_model", nil)
+		c.Set(model.SupplyIdContextKey, nil)
 	}()
 
 	provider, _, err := GetProvider(c, modelName)

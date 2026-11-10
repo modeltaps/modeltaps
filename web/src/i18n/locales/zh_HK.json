@@ -203,7 +203,7 @@
     "mappingFrom": "請求模型",
     "mappingTo": "上游真實模型",
     "modelAdd": "新增",
-    "modelChipMode": "卡片視圖",
+    "modelChipMode": "選擇視圖",
     "modelCount": "共 {{count}} 個模型",
     "modelCountFiltered": "{{total}} 個中匹配 {{shown}} 個",
     "modelEmpty": "暫無模型，用下方按鈕獲取，或在上方搜尋框輸入後按 Enter 新增",
@@ -377,8 +377,6 @@
     "testAllChannels": "測試所有渠道",
     "testModel": "測試模型",
     "type": "供應商",
-    "typeSearchEmpty": "無匹配的供應商",
-    "typeSearchPlaceholder": "搜索供應商…",
     "unselectAll": "反全選",
     "updateBalance": "更新餘額",
     "updateEnabledBalance": "更新啟用餘額",
@@ -1581,11 +1579,9 @@
     "quotaDesc": "正數增加、負數扣減，操作將記錄審計日誌。",
     "quotaLabel": "增減額度",
     "quotaNonZero": "額度變更不能為 0",
-    "quotaTitle": "調整組織池餘額 — {{name}}",
     "remarkLabel": "備註",
     "remarkPlaceholder": "可選",
     "maxMembers": "成員上限",
-    "maxMembersTitle": "成員上限 — {{name}}",
     "maxMembersDesc": "目前 {{count}} 名成員。上限只限制新成員加入，不會移除現有成員。",
     "maxMembersModeDefault": "跟隨站點預設",
     "maxMembersModeUnlimited": "不限制",
@@ -2190,7 +2186,20 @@
     "backToAdmin": "返回管理後台",
     "preferences": {
       "themeHint": "選擇介面配色，跟隨系統時會隨裝置的深淺色設定切換。",
-      "languageHint": "選擇介面語言，切換後即時生效。"
+      "languageHint": "選擇介面語言，切換後即時生效。",
+      "quotaRemind": {
+        "title": "額度提醒",
+        "hint": "個人餘額不足或用盡時發郵件提醒。組織令牌不在此列。",
+        "toggle": "郵件提醒額度",
+        "toggleHint": "餘額低於閾值時發一封，用盡時再發一封。",
+        "threshold": "提醒閾值",
+        "thresholdPlaceholder": "站點預設：{{amount}}",
+        "followingSite": "目前跟隨站點預設（{{amount}}），填寫金額即可自訂。",
+        "thresholdHint": "餘額低於該值時發送「額度不足」郵件；填 0 則只在用盡時提醒。",
+        "useSiteDefault": "恢復站點預設",
+        "siteDisabled": "本站已關閉額度提醒郵件。",
+        "noEmail": "綁定郵箱後才能收到額度提醒。"
+      }
     },
     "sessions": {
       "title": "已登入裝置",
@@ -2641,6 +2650,10 @@
           "description": "關閉後站點不再展示邀請獎勵入口",
           "label": "啟用邀請獎勵"
         },
+        "preConsumedOutputTokens": {
+          "description": "請求開始時按此數量的輸出 Token 預扣費用（請求自帶的 max_tokens 更小時按 max_tokens），結束後多退少補",
+          "label": "預扣輸出 Token 數"
+        },
         "preConsumedQuota": {
           "description": "請求開始時在輸入估算費用基礎上額外預扣的固定額度，結束後多退少補",
           "label": "請求預扣費額度",
@@ -2994,7 +3007,10 @@
         "price_change": "上游價格變動",
         "model_drift": "上游模型列表變化",
         "model_consistency": "模型元資訊問題",
-        "credential": "渠道憑證問題"
+        "credential": "渠道憑證問題",
+        "supply_paused": "渠道或模型被暫停",
+        "supply_resumed": "暫停的渠道或模型已恢復",
+        "supply_failover": "請求切換到備用渠道"
       },
       "limit": {
         "label": "每類每小時最多條數",
@@ -3560,5 +3576,45 @@
   "nav_sec_admin": "管理",
   "nav_sec_gateway": "網關",
   "nav_sec_overview": "概覽",
-  "nav_sec_people": "用戶與組織"
+  "nav_sec_people": "用戶與組織",
+  "modelSelect": {
+    "placeholder": "選擇模型",
+    "selectedCount": "已選 {{count}} 個模型",
+    "search": "搜尋模型",
+    "add": "新增「{{model}}」",
+    "empty": "沒有符合的模型",
+    "none": "尚未選擇模型",
+    "selectGroup": "全選該組",
+    "clearGroup": "取消該組",
+    "onlySelected": "只看已選",
+    "advanced": "進階篩選",
+    "done": "完成",
+    "loadingUpstream": "正在獲取上游模型",
+    "upstreamFailed": "未能獲取上游模型列表，下方為本地候選",
+    "retry": "重試",
+    "custom": "自訂"
+  },
+  "providerPicker": {
+    "title": "選擇供應商",
+    "search": "搜尋供應商",
+    "empty": "沒有符合的供應商",
+    "category": {
+      "common": "常用",
+      "vendor": "模型廠商",
+      "cloud": "雲平台",
+      "gateway": "聚合網關",
+      "subscription": "訂閱帳戶",
+      "selfhosted": "自託管與相容",
+      "media": "多媒體與其他",
+      "legacy": "舊版",
+      "other": "其他"
+    },
+    "auth": {
+      "apiKey": "API 金鑰",
+      "oauth": "帳戶授權",
+      "endpoint": "金鑰 + 地址",
+      "credentials": "組合憑證"
+    },
+    "customName": "OpenAI 相容"
+  }
 }

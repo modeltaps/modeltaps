@@ -203,7 +203,7 @@
     "mappingFrom": "Requested model",
     "mappingTo": "Upstream model",
     "modelAdd": "Add",
-    "modelChipMode": "Chip view",
+    "modelChipMode": "Picker view",
     "modelCount": "{{count}} models",
     "modelCountFiltered": "{{shown}} of {{total}} match",
     "modelEmpty": "No models yet — use the buttons below, or type in the search box and press Enter",
@@ -377,8 +377,6 @@
     "testAllChannels": "Test All Channels",
     "testModel": "Test Model",
     "type": "Provider",
-    "typeSearchEmpty": "No matching provider",
-    "typeSearchPlaceholder": "Search provider…",
     "unselectAll": "Anti-select all",
     "updateBalance": "Update Balance",
     "updateEnabledBalance": "Update Enabled Balance",
@@ -1122,7 +1120,7 @@
     "noAccount": "No account yet?",
     "externalNotConfigured": "The sign-in service is not configured yet. Please contact an administrator.",
     "redirectFailed": "Could not reach the sign-in service. Please try again later.",
-    "or": "OR"
+    "or": "or"
   },
   "menu": {
     "login": "Login",
@@ -1581,11 +1579,9 @@
     "quotaDesc": "Positive adds, negative deducts; the action is recorded in the audit log.",
     "quotaLabel": "Quota change",
     "quotaNonZero": "Quota change cannot be 0",
-    "quotaTitle": "Adjust pool balance — {{name}}",
     "remarkLabel": "Remark",
     "remarkPlaceholder": "Optional",
     "maxMembers": "Member limit",
-    "maxMembersTitle": "Member limit — {{name}}",
     "maxMembersDesc": "{{count}} members now. The limit only stops new members from joining; existing members are not removed.",
     "maxMembersModeDefault": "Follow the site default",
     "maxMembersModeUnlimited": "Unlimited",
@@ -2190,7 +2186,20 @@
     "backToAdmin": "Back to admin console",
     "preferences": {
       "themeHint": "Choose the interface colour scheme; System follows your device setting.",
-      "languageHint": "Choose the interface language; the change applies immediately."
+      "languageHint": "Choose the interface language; the change applies immediately.",
+      "quotaRemind": {
+        "title": "Quota warnings",
+        "hint": "Get an email when your personal balance runs low or runs out. Organization tokens are not covered.",
+        "toggle": "Email quota warnings",
+        "toggleHint": "One email when the balance drops below the threshold, and one when it runs out.",
+        "threshold": "Warning threshold",
+        "thresholdPlaceholder": "Site default: {{amount}}",
+        "followingSite": "Following the site default ({{amount}}). Enter an amount to set your own.",
+        "thresholdHint": "You get the \"running low\" email when the balance drops below this amount. 0 sends only the \"used up\" email.",
+        "useSiteDefault": "Use site default",
+        "siteDisabled": "Quota warning emails are turned off for this site.",
+        "noEmail": "Bind an email address to receive quota warnings."
+      }
     },
     "sessions": {
       "title": "Signed-in devices",
@@ -2641,6 +2650,10 @@
           "description": "When off, the site no longer shows invite reward entries",
           "label": "Enable Invite Reward"
         },
+        "preConsumedOutputTokens": {
+          "description": "The output tokens charged in advance when a request starts: the request's own max_tokens when smaller, otherwise this value; settled after completion",
+          "label": "Output Tokens Reserved per Request"
+        },
         "preConsumedQuota": {
           "description": "Fixed quota pre-charged on top of the estimated input cost when a request starts; settled after completion",
           "label": "Pre-consumed Quota for Requests",
@@ -2994,7 +3007,10 @@
         "price_change": "Upstream price changes",
         "model_drift": "Upstream model list changes",
         "model_consistency": "Model metadata problems",
-        "credential": "Channel credential problems"
+        "credential": "Channel credential problems",
+        "supply_paused": "Channel or model paused",
+        "supply_resumed": "Paused channel or model resumed",
+        "supply_failover": "Request switched to a backup channel"
       },
       "limit": {
         "label": "Notices per kind per hour",
@@ -3560,5 +3576,45 @@
   "nav_sec_admin": "Admin",
   "nav_sec_gateway": "Gateway",
   "nav_sec_overview": "Overview",
-  "nav_sec_people": "Users & Organizations"
+  "nav_sec_people": "Users & Organizations",
+  "modelSelect": {
+    "placeholder": "Select models",
+    "selectedCount": "{{count}} models selected",
+    "search": "Search models",
+    "add": "Add \"{{model}}\"",
+    "empty": "No matching models",
+    "none": "No models selected",
+    "selectGroup": "Select all in group",
+    "clearGroup": "Clear group",
+    "onlySelected": "Selected",
+    "advanced": "Advanced filters",
+    "done": "Done",
+    "loadingUpstream": "Loading upstream models",
+    "upstreamFailed": "Could not load the upstream list, showing local candidates",
+    "retry": "Retry",
+    "custom": "Custom"
+  },
+  "providerPicker": {
+    "title": "Choose a provider",
+    "search": "Search providers",
+    "empty": "No matching providers",
+    "category": {
+      "common": "Common",
+      "vendor": "Model vendors",
+      "cloud": "Cloud platforms",
+      "gateway": "Gateways",
+      "subscription": "Subscription accounts",
+      "selfhosted": "Self-hosted and compatible",
+      "media": "Media and more",
+      "legacy": "Legacy",
+      "other": "Other"
+    },
+    "auth": {
+      "apiKey": "API key",
+      "oauth": "Account login",
+      "endpoint": "Key + endpoint",
+      "credentials": "Multi-part credentials"
+    },
+    "customName": "OpenAI compatible"
+  }
 }

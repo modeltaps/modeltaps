@@ -31,7 +31,7 @@ export default function UserAvatar({ user, className, textClass = 'text-xs' }) {
   }
   return (
     <span
-      className={cn('inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-white', className, textClass)}
+      className={cn('inline-flex shrink-0 items-center justify-center rounded-full font-medium text-white', className, textClass)}
       style={{ backgroundColor: `hsl(${hueOf(name)} 55% 42%)` }}
     >
       {initialsOf(name)}

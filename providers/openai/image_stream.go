@@ -114,10 +114,10 @@ func (h *OpenAIImageStreamHandler) HandlerImageStream(rawLine *[]byte, dataChan 
 	}
 	if strings.HasSuffix(event.Type, ".completed") {
 		quality, size := h.ReqQuality, h.ReqSize
-		if v := rawMessageToString(event.Quality); v != "" {
+		if v := RawMessageToString(event.Quality); v != "" {
 			quality = v
 		}
-		if v := rawMessageToString(event.Size); v != "" {
+		if v := RawMessageToString(event.Size); v != "" {
 			size = v
 		}
 		h.fallbackTokens += ImageFallbackOutputTokens(h.Model, quality, size)
@@ -138,6 +138,8 @@ type imageStreamCompletedEvent struct {
 	CreatedAt        any                   `json:"created_at,omitempty"`
 	Background       json.RawMessage       `json:"background,omitempty"`
 	OutputFormat     json.RawMessage       `json:"output_format,omitempty"`
+	SVG              json.RawMessage       `json:"svg,omitempty"`
+	SVGUsage         json.RawMessage       `json:"svg_usage,omitempty"`
 	Quality          json.RawMessage       `json:"quality,omitempty"`
 	Size             json.RawMessage       `json:"size,omitempty"`
 	SafetyIdentifier json.RawMessage       `json:"safety_identifier,omitempty"`
@@ -159,6 +161,8 @@ func ImageResponseToSSE(prefix string, response *types.ImageResponse) string {
 			CreatedAt:        response.Created,
 			Background:       response.Background,
 			OutputFormat:     response.OutputFormat,
+			SVG:              response.SVG,
+			SVGUsage:         response.SVGUsage,
 			Quality:          response.Quality,
 			Size:             response.Size,
 			SafetyIdentifier: response.SafetyIdentifier,
@@ -235,10 +239,10 @@ func (p *OpenAIProvider) imageJSONToStream(resp *http.Response, prefix, model, r
 
 	if p.Usage.TotalTokens == 0 {
 		quality, size := reqQuality, reqSize
-		if v := rawMessageToString(response.Quality); v != "" {
+		if v := RawMessageToString(response.Quality); v != "" {
 			quality = v
 		}
-		if v := rawMessageToString(response.Size); v != "" {
+		if v := RawMessageToString(response.Size); v != "" {
 			size = v
 		}
 		p.Usage.CompletionTokens = len(response.Data) * ImageFallbackOutputTokens(model, quality, size)

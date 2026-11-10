@@ -89,7 +89,7 @@ export default function StatusPanel() {
           <span className="truncate text-sm font-medium">{monitor.name}</span>
         </div>
         <div className="text-xs">
-          <span className={cn('font-mono font-semibold', uptimeColor(uptime))}>{uptime}%</span>
+          <span className={cn('font-mono font-medium', uptimeColor(uptime))}>{uptime}%</span>
           <span className="text-muted-foreground"> {t('dashboard_index.availability')}(24H)</span>
         </div>
         {renderHistory(monitor.id)}
@@ -116,7 +116,7 @@ export default function StatusPanel() {
           <div className="space-y-6">
             {statusData.publicGroupList.map((group) => (
               <div key={group.id}>
-                <h3 className="mb-2 border-b border-border pb-2 text-sm font-semibold">{group.name}</h3>
+                <h3 className="mb-2 border-b border-border pb-2 text-sm font-medium">{group.name}</h3>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   {group.monitorList.map((monitor) => renderMonitor(monitor))}
                 </div>

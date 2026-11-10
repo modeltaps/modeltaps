@@ -18,7 +18,7 @@ import { toast } from '@/components/ui/sonner';
 import QuotaInput from '@/components/QuotaInput';
 import { API } from 'utils/api';
 import { showError } from 'utils/common';
-import ModelLimitSelector from './ModelLimitSelector';
+import ModelLimitSelector, { toLimitModels } from './ModelLimitSelector';
 
 const ORIGIN = {
   is_edit: false,
@@ -47,7 +47,7 @@ const fromLocal = (s) => Math.floor(new Date(s).getTime() / 1000);
 function Section({ title, description, children }) {
   return (
     <section className="py-6 first:pt-0 last:pb-0">
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      <h3 className="text-sm font-medium text-foreground">{title}</h3>
       {description && <p className="mt-1 text-xs text-muted-foreground">{description}</p>}
       <div className="mt-4 space-y-4">{children}</div>
     </section>
@@ -182,7 +182,7 @@ export default function TokenSheet({
       .then((res) => {
         const { success, data } = res.data;
         if (success) {
-          setModels(Object.keys(data).map((id) => ({ id, name: id, owned_by: data[id].owned_by, groups: data[id].groups })));
+          setModels(toLimitModels(data));
         }
       })
       .catch(showError);
@@ -487,6 +487,7 @@ export default function TokenSheet({
                 }}
               >
                 <ModelLimitSelector
+                  id="token-model-limit"
                   models={models}
                   value={values.setting.limits.limit_model_setting.models}
                   onChange={(ids) => setField('setting.limits.limit_model_setting.models', ids)}

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { ArrowLeftRight, Copy, DollarSign, Lock, MoreHorizontal, Network, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, Copy, DollarSign, Layers, Lock, MoreHorizontal, Network, Pencil, Trash2 } from 'lucide-react';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import DataCards from '@/components/ui/data-cards';
@@ -35,6 +35,8 @@ import {
   VendorIcon,
   safeJsonArray
 } from './modelInfoHelpers';
+import { ModelStatusPill } from './supply/supplyParts';
+import { isPublicModelRow, normalizeSupplyMode } from './supply/supplyHelpers';
 
 // 同步来源 → 文案 key;空值(历史数据)显示「未知」。
 const SOURCE_LABEL_KEYS = {
@@ -46,9 +48,9 @@ const SOURCE_LABEL_KEYS = {
 const MAX_CHIP_ICONS = 2;
 const CHANNEL_STATUS_ENABLED = 1;
 
-// 渠道页按渠道名筛选并通过 channel_id 直接打开该渠道的编辑抽屉。
+// The channel's own page.
 export function channelEditPath(channel) {
-  return `/panel/channel?name=${encodeURIComponent(channel.name || '')}&channel_id=${channel.id}`;
+  return `/panel/channel/${channel.id}`;
 }
 
 // 单个渠道的提示内容:渠道名、类型名称、状态,以及有值时的优先级 / 权重。
@@ -101,6 +103,31 @@ export function ChannelsCell({ channels, onOpen }) {
 }
 
 ChannelsCell.propTypes = { channels: PropTypes.array, onOpen: PropTypes.func };
+
+// Public status, supply mode and number of supplies of a public model; opens the Supplies tab.
+// Aliases and routing policies have no supplies of their own.
+export function SupplyCell({ row, onOpen }) {
+  const { t } = useTranslation();
+  if (!isPublicModelRow(row)) return <span className="text-muted-foreground">—</span>;
+  const counts = row.supplyCounts || { total: 0, usable: 0 };
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="flex flex-col items-start rounded-md text-left leading-5 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <ModelStatusPill status={row.status} />
+      <span className="whitespace-nowrap text-xs text-muted-foreground">
+        {t(`modelSupply.mode.${normalizeSupplyMode(row.supply_mode)}`)} ·{' '}
+        <span className={counts.total > 0 && counts.usable === 0 ? 'text-warning' : undefined}>
+          {t('modelSupply.count', { count: counts.total })}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+SupplyCell.propTypes = { row: PropTypes.object.isRequired, onOpen: PropTypes.func };
 
 function VendorCell({ vendor }) {
   const { t } = useTranslation();
@@ -247,6 +274,12 @@ function RowActionsCell({ row, onOpen, onDeleteCatalog, onDeletePrice }) {
             <Network className="size-4" />
             {t('modelsPage.channelsTab')}
           </DropdownMenuItem>
+          {isPublicModelRow(row) && (
+            <DropdownMenuItem onClick={() => onOpen(row, 'supplies')}>
+              <Layers className="size-4" />
+              {t('modelSupply.tab')}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={() => copy(row.model, t('modelInfoPage.model'))}>
             <Copy className="size-4" />
             {t('modelsPage.copyName')}
@@ -344,6 +377,11 @@ export default function ModelTable({
         cell: (c) => <ChannelsCell channels={c.row.original.bound_channels} onOpen={() => onOpen(c.row.original, 'channels')} />
       },
       {
+        id: 'supply',
+        header: t('modelSupply.column'),
+        cell: (c) => <SupplyCell row={c.row.original} onOpen={() => onOpen(c.row.original, 'supplies')} />
+      },
+      {
         id: 'price',
         header: () => <PriceHeader unit={unit} onUnitChange={onUnitChange} />,
         cell: (c) => <PriceCell price={c.row.original.price} unit={unit} hideUnit />
@@ -385,7 +423,7 @@ export default function ModelTable({
         header: t('modelInfoPage.aliasOf'),
         cell: (c) => {
           const row = c.row.original;
-          if (row.alias_of) return <span className="whitespace-nowrap text-sky-600 dark:text-sky-400">→ {row.alias_of}</span>;
+          if (row.alias_of) return <span className="whitespace-nowrap text-muted-foreground">→ {row.alias_of}</span>;
           if (row.alias_count > 0) {
             return (
               <Badge variant="secondary" className="whitespace-nowrap px-1.5 py-0 font-normal">
@@ -494,7 +532,17 @@ export default function ModelTable({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} data-state={selectedKeys?.has(row.original.key) ? 'selected' : undefined}>
+              <TableRow
+                key={row.id}
+                data-state={selectedKeys?.has(row.original.key) ? 'selected' : undefined}
+                className="cursor-pointer"
+                onClick={(e) => {
+                  // Clicks on controls in the row, and on menus rendered in a portal, keep their own meaning.
+                  if (!e.currentTarget.contains(e.target)) return;
+                  if (e.target.closest('button, a, input, label, [role="switch"], [role="checkbox"], [role="menuitem"]')) return;
+                  onOpen(row.original, 'profile');
+                }}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id} className={`py-1.5 ${cell.column.columnDef.meta?.className ?? ''}`}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

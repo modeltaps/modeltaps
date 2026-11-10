@@ -28,6 +28,12 @@ describe('normalizePolicy', () => {
       { label: 'a', description: '', target_model: 'm1' },
       { label: 'b', description: 'desc', target_model: 'm2' }
     ]);
+    expect(out.scoring).toBe('auto');
+  });
+
+  it('keeps the chosen scoring and defaults a missing one to auto', () => {
+    expect(normalizePolicy({ ...EMPTY_POLICY, scoring: 'logprobs' }).scoring).toBe('logprobs');
+    expect(normalizePolicy({ ...EMPTY_POLICY, scoring: undefined }).scoring).toBe('auto');
   });
 });
 

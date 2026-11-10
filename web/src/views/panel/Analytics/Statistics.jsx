@@ -24,14 +24,14 @@ function StatTile({ icon: Icon, title, content, subContent, accent = false, load
     <Card className={accent ? 'border-foreground/30' : undefined}>
       <CardContent className="flex flex-col gap-2 p-5">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</span>
+          <span className="text-xs font-medium text-muted-foreground">{title}</span>
           {filter}
           {Icon && <Icon className={accent ? 'size-4 text-foreground' : 'size-4 text-muted-foreground'} />}
         </div>
         {loading ? (
           <div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
         ) : (
-          <span className="font-mono text-2xl font-semibold tabular-nums text-foreground">
+          <span className="font-mono text-2xl font-medium tabular-nums text-foreground">
             {content}
           </span>
         )}

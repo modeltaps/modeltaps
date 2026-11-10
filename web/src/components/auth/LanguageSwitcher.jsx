@@ -35,14 +35,14 @@ export default function LanguageSwitcher() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" aria-label={ariaLabel} className="gap-1.5 px-2">
           <Globe className="size-5" />
-          <span className="text-sm font-medium uppercase">{current.shortCode}</span>
+          <span className="text-sm font-medium">{current.shortCode}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-40" onKeyDown={onMenuKeyDown}>
         {i18nList.map((item) => {
           const isActive = item.lng === currentLang;
           return (
-            <DropdownMenuItem key={item.lng} onClick={() => setAppLanguage(item.lng)} className={cn(isActive && 'font-semibold')}>
+            <DropdownMenuItem key={item.lng} onClick={() => setAppLanguage(item.lng)} className={cn(isActive && 'font-medium')}>
               <span className="flex w-4 justify-center text-foreground">{isActive && <Check className="size-4" />}</span>
               {item.name}
             </DropdownMenuItem>

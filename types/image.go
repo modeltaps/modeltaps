@@ -57,6 +57,24 @@ type ImageRequest struct {
 	Moderation        *string `json:"moderation,omitempty"`
 	OutputCompression *int    `json:"output_compression,omitempty"`
 	OutputFormat      *string `json:"output_format,omitempty"`
+	// Complexity is the planning-compute tier (low/medium/high), independent of the render
+	// quality. For SVG output it controls how complex the reference image is; unset leaves it
+	// to the model default. It is declared here because the struct-encoding path silently drops
+	// anything that is not. The Codex channel sends it to the native images endpoint for the
+	// models in its direct whitelist; the Responses-orchestrated models drop it, because the hosted
+	// image_generation tool rejects the parameter.
+	Complexity *string `json:"complexity,omitempty"`
+	// GIF output only (output_format=gif): the frame count and the frame duration. Like svg they
+	// would be dropped by the struct encoding; the upstream enforces the value ranges (2-16
+	// frames, 20ms-655350ms per frame), so they are not validated here.
+	FrameCount      *int `json:"frame_count,omitempty"`
+	FrameDurationMs *int `json:"frame_duration_ms,omitempty"`
+	// SVG is the SVG output configuration: with output_format=svg, SVG model selection needs
+	// svg.model, and the whole object is omitted when it is not used. It is carried as a
+	// RawMessage instead of a fixed struct: on the struct-encoding path (PassThroughBody and
+	// AllowExtraBody off) any svg sub-field the upstream adds later would otherwise be dropped on
+	// re-encoding. nil means not sent; an empty object {} is preserved as sent.
+	SVG json.RawMessage `json:"svg,omitempty"`
 
 	Stream        *bool `json:"stream,omitempty"`
 	PartialImages *int  `json:"partial_images,omitempty"`
@@ -79,8 +97,16 @@ type ImageResponse struct {
 	// （原样透传上游写法）。全部 omitempty：nil（上游未返回，如 dall-e）时不输出零值。
 	Background   json.RawMessage `json:"background,omitempty"`
 	OutputFormat json.RawMessage `json:"output_format,omitempty"`
-	Quality      json.RawMessage `json:"quality,omitempty"`
-	Size         json.RawMessage `json:"size,omitempty"`
+	// SVG echo. A RawMessage because the upstream may return an object or a string; it is only
+	// echoed, never read.
+	SVG json.RawMessage `json:"svg,omitempty"`
+	// SVGUsage is the token usage of the SVG authoring model (svg.model), which the upstream
+	// reports apart from the render usage: input_tokens / model / output_tokens /
+	// reasoning_tokens / total_tokens. It is echoed only and takes no part in billing: billing
+	// stays on the top-level usage.
+	SVGUsage json.RawMessage `json:"svg_usage,omitempty"`
+	Quality  json.RawMessage `json:"quality,omitempty"`
+	Size     json.RawMessage `json:"size,omitempty"`
 	// Echo of the effective safety_identifier (falls back to user upstream); kept raw like the
 	// fields above because it is only echoed back, never read.
 	SafetyIdentifier json.RawMessage `json:"safety_identifier,omitempty"`
@@ -106,6 +132,26 @@ type ImageEditRequest struct {
 	User           string                  `form:"user"`
 	Stream         *bool                   `form:"stream"`
 	PartialImages  *int                    `form:"partial_images"`
+
+	// Official /v1/images/edits fields that were not modeled before. The OpenAI channel forwards
+	// the raw body and is unaffected; the Codex channel rebuilds the request for its own
+	// protocols and would otherwise drop them silently (gif and svg depend on output_format and
+	// the fields below).
+	Background        *string `form:"background"`
+	Complexity        *string `form:"complexity"`
+	Moderation        *string `form:"moderation"`
+	OutputCompression *int    `form:"output_compression"`
+	OutputFormat      *string `form:"output_format"`
+	FrameCount        *int    `form:"frame_count"`
+	FrameDurationMs   *int    `form:"frame_duration_ms"`
+	// SVG arrives in the multipart form as JSON text, which gin cannot bind into a RawMessage, so
+	// it is read as a string and decoded by the Codex channel. json:"-" is required: without a
+	// tag encoding/json matches keys to field names case-insensitively, so a JSON-shaped edits
+	// request carrying "svg": {...} would hit this *string field and fail to decode, turning a
+	// previously ignored key into a 400. The form binding is unaffected. Trade-off: a JSON-shaped
+	// edits request does not forward svg on the Codex channel (the official edits API is
+	// multipart-only, and the OpenAI channel forwards the raw bytes).
+	SVG *string `json:"-" form:"svg"`
 }
 
 // StreamEnabled 判断请求是否要求流式返回。edits 走 multipart 表单，stream 以字符串
