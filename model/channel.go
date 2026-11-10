@@ -773,6 +773,24 @@ func (channel *Channel) StatusToStr() string {
 	return "Disabled"
 }
 
+// EnableAutoDisabledChannel re-enables a channel only while it is still disabled automatically,
+// in one conditional update, and reports whether this call changed it. When several nodes run
+// the recovery check at the same moment, exactly one of them gets true.
+func EnableAutoDisabledChannel(id int) (bool, error) {
+	result := DB.Model(&Channel{}).
+		Where("id = ? AND status = ?", id, config.ChannelStatusAutoDisabled).
+		Update("status", config.ChannelStatusEnabled)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return false, nil
+	}
+	go ChannelGroup.ChangeStatus(id, true)
+	ChannelGroup.ClearChannelCooldowns(id)
+	return true, nil
+}
+
 func UpdateChannelStatusById(id int, status int) {
 	tx := DB.Begin()
 	err := tx.Model(&Channel{}).Where("id = ?", id).Update("status", status).Error

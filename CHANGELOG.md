@@ -13,6 +13,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   model, the canonical name to publish it under (`canonical`) and how it was found
   (`canonical_source`: a catalog alias, a seed alias, or the name without its `vendor/` prefix;
   empty when there is none).
+- Organization routing policies (backend): with the new site option
+  `OrganizationRoutingPolicyEnabled` (off by default), organization owners and admins manage
+  routing policies that only their organization's API keys can use, through
+  `/api/org/:id/routing_policy` (list, create, update, enable or disable, delete, stats, "Try it"
+  and the logprobs probe). An organization policy may reuse a platform policy's name and then
+  replaces it for that organization; personal keys and other organizations keep the platform
+  policy. Organization policies may only use models the organization's group can route to and the
+  catalog does not hide, checked when saved and again per request: a target hidden later sends the
+  request to the fallback (reason `target_unavailable`), and a hidden fallback answers model not
+  found. "Try it" and the probe are billed to the organization and logged with `routing_try`, which
+  keeps them out of the stats. Changes are written to the organization audit log, each organization
+  is capped by `OrganizationRoutingPolicyMaxCount` (default 20), and system admins can list an
+  organization's policies with `/api/routing_policy/?organization_id=N`. Logs now carry
+  `routing_policy_id`, and session pins are keyed by policy id, so conversations already pinned
+  under a platform policy are classified once more after upgrading. The console tab comes in a
+  later release.
 - Personal quota warning settings: Settings, Preferences has a Quota warnings card where users
   turn the low-balance and used-up emails off, or set their own warning threshold instead of the
   site default (and switch back to it). The site switch still wins: when it is off nobody gets
@@ -90,6 +106,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   channel maps `claude-opus-5` to `anthropic/claude-opus-5`) was rejected as unpriced. Billing now
   falls back to the canonical model's price, as the catalog already promised for aliases; an alias
   with its own price keeps it.
+- A request whose channel turns out to be out of quota or credit now moves to the next channel
+  instead of failing. Some providers report an empty balance as a 400 (for example "Your credit
+  balance is too low"), which ended the request on every channel type except Anthropic, even
+  though the channel was then disabled. Any error that matches the automatic disable rules
+  (exhausted quota or balance, rejected key, disabled account, a disable keyword) now retries on
+  another channel whatever its status code and whether or not automatic disabling is on, and also
+  when strict session affinity binds the session to that channel. A malformed request still
+  returns its 400 without retrying.
+- The scheduled recovery check now sends the "Channel re-enabled" notice when it puts an
+  automatically disabled channel back into rotation; the notice type was listed in the
+  notification settings but never sent. With several nodes running the check, only the node that
+  re-enables the channel sends it. A recovery also clears the disable notice's de-duplication
+  window, so a channel that fails again within five minutes is reported again.
 - Claude models on Vertex AI channels now work. Requests were sent to Google's publisher path, so
   Claude models were not found there; Claude now uses the Anthropic publisher, and model IDs with
   a date (`claude-sonnet-4-5-20250929`) are converted to Vertex's `name@date` form while models

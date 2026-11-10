@@ -93,6 +93,10 @@ type Quota struct {
 	routingPolicy       string
 	routingDecision     *RoutingDecision
 	routingDecisionCall bool
+	// routingPolicyId identifies the policy of a decision call (names repeat across organizations);
+	// routingTry marks decision calls made by "Try it" in the organization console.
+	routingPolicyId int
+	routingTry      bool
 
 	// —— 身份/令牌上下文 ——
 	userId         int
@@ -161,6 +165,8 @@ func NewQuota(c *gin.Context, modelName string, promptTokens int) *Quota {
 	quota.requestedOutputTokens = requestedMaxOutputTokens(c)
 	quota.routingDecision = RoutingDecisionFromContext(c)
 	quota.routingDecisionCall = c.GetBool(RoutingDecisionCallContextKey)
+	quota.routingPolicyId = c.GetInt(RoutingPolicyIdContextKey)
+	quota.routingTry = c.GetBool(RoutingTryContextKey)
 
 	quota.price = *model.PricingInstance.GetBillingPrice(quota.modelName)
 	// 价格未配置时按策略处理(block 拒绝 / zero 不计费 / default 用默认倍率)，
@@ -279,7 +285,14 @@ func (q *Quota) PreQuotaConsumption() *types.OpenAIErrorWithStatusCode {
 			q.accrueOrgMemberBudget(-q.preConsumedQuota)
 			return errResp
 		}
-		err := model.PreConsumeTokenQuota(q.tokenId, q.preConsumedQuota)
+		// Calls without an API key ("Try it" in the organization console) charge the account directly;
+		// they run with token_unlimited_quota so settlement never touches a token row.
+		var err error
+		if q.tokenId > 0 {
+			err = model.PreConsumeTokenQuota(q.tokenId, q.preConsumedQuota)
+		} else {
+			err = model.PreDecreaseUserQuota(q.userId, q.preConsumedQuota)
+		}
 		if err != nil {
 			// 池预扣失败:回冲刚才的成员/团队预算预留,避免预算被无效占用
 			q.accrueOrgMemberBudget(-q.preConsumedQuota)

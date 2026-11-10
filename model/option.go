@@ -265,6 +265,9 @@ func registerOptions() {
 
 	// 自动路由：决策调用是否计费
 	config.GlobalOption.RegisterBool("RoutingDecisionBillingEnabled", &config.RoutingDecisionBillingEnabled, config.ScopeAdmin)
+	// Organization-level routing policies
+	config.GlobalOption.RegisterBool("OrganizationRoutingPolicyEnabled", &config.OrganizationRoutingPolicyEnabled, config.ScopePublic, config.PublicSpec{StatusKey: "organization_routing_policy_enabled"})
+	config.GlobalOption.RegisterInt("OrganizationRoutingPolicyMaxCount", &config.OrganizationRoutingPolicyMaxCount, config.ScopeAdmin)
 
 	// 注册响应指纹透传配置项
 	config.GlobalOption.RegisterBool("FingerprintPassThroughEnabled", &config.FingerprintPassThroughEnabled, config.ScopeAdmin)

@@ -222,7 +222,11 @@ func getProvider(c *gin.Context, modelName string, catalogExempt bool) (provider
 
 	// 自动路由：策略名在白名单判定之后换成目标模型。目标是管理员配置的有限集合，不再过令牌白名单
 	// 与隐藏约束（管理员可以把目标藏起来、只经策略使用），只把目标别名解析到主名。
-	if target := resolveRoutingPolicy(c, modelName); target != modelName {
+	target, err := routeRoutingPolicy(c, modelName)
+	if err != nil {
+		return nil, "", err
+	}
+	if target != modelName {
 		modelName, _ = model.ResolveCanonicalModel(target)
 	}
 
@@ -789,6 +793,15 @@ func shouldRetry(c *gin.Context, apiErr *types.OpenAIErrorWithStatusCode, channe
 	if apiErr.LocalError ||
 		(channelId > 0 && !ignore) {
 		return false
+	}
+
+	// An error saying this channel can no longer serve (exhausted quota or balance, rejected
+	// credential, a disable keyword) moves the request to another channel whatever its status
+	// code: some providers report an empty balance as a 400, which would otherwise end the
+	// request here. Strict session affinity gives way too, since the bound channel is unusable
+	// and staying on it cannot keep the session's cache.
+	if controller.IsChannelUnusableError(channelType, apiErr) {
+		return true
 	}
 
 	// 严格会话亲和：会话绑定的渠道失败时不换渠道，换渠道会丢掉上游缓存（及 Codex 的会话状态）。

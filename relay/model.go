@@ -102,9 +102,15 @@ func isCatalogVisible(modelName string) bool {
 // 用于让 Gemini/Claude 列表端点只返回该协议实际可路由的模型（其余模型经该协议请求会 model_not_found）；
 // 无可路由模型时返回空列表。
 func filterModelsByChannelType(groupName string, models []string, channelTypes []int) []string {
+	return filterModelsByChannelTypeFor(0, groupName, models, channelTypes)
+}
+
+// filterModelsByChannelTypeFor is filterModelsByChannelType for an organization's API key, whose own
+// routing policies count as models too.
+func filterModelsByChannelTypeFor(organizationId int, groupName string, models []string, channelTypes []int) []string {
 	filtered := make([]string, 0, len(models))
 	for _, modelName := range models {
-		if modelSupportsChannelTypes(groupName, modelName, channelTypes) {
+		if modelSupportsChannelTypes(organizationId, groupName, modelName, channelTypes) {
 			filtered = append(filtered, modelName)
 		}
 	}
@@ -113,8 +119,8 @@ func filterModelsByChannelType(groupName string, models []string, channelTypes [
 
 // modelSupportsChannelTypes 在 balancer 判定之上认路由策略：策略本身没有渠道，按其兜底模型判定
 // （兜底是策略永远可能转发到的目标）。
-func modelSupportsChannelTypes(groupName, modelName string, channelTypes []int) bool {
-	if policy := model.LookupRoutingPolicy(modelName); policy != nil {
+func modelSupportsChannelTypes(organizationId int, groupName, modelName string, channelTypes []int) bool {
+	if policy := model.ResolveRoutingPolicy(organizationId, modelName); policy != nil {
 		return model.ChannelGroup.ModelSupportsChannelTypes(groupName, policy.FallbackModel, channelTypes)
 	}
 	return model.ChannelGroup.ModelSupportsChannelTypes(groupName, modelName, channelTypes)
@@ -122,12 +128,12 @@ func modelSupportsChannelTypes(groupName, modelName string, channelTypes []int) 
 
 // appendRoutingPolicyModels 把启用的路由策略并入分组的模型列表：策略的兜底模型在该分组可路由
 // （channelTypes 非空时还要有对应协议的渠道）才并入。策略名随后与普通模型一样过令牌 / 组织白名单与目录过滤。
-func appendRoutingPolicyModels(groupName string, models []string, channelTypes []int) []string {
+func appendRoutingPolicyModels(organizationId int, groupName string, models []string, channelTypes []int) []string {
 	groupModels := make(map[string]bool, len(models))
 	for _, name := range models {
 		groupModels[name] = true
 	}
-	added := model.RoutingPolicyModelsFor(models, func(fallback string) bool {
+	added := model.RoutingPolicyModelsFor(organizationId, models, func(fallback string) bool {
 		if !groupModels[fallback] {
 			return false
 		}
@@ -155,7 +161,7 @@ func ListModelsByToken(c *gin.Context) {
 		})
 		return
 	}
-	models = appendRoutingPolicyModels(groupName, models, nil)
+	models = appendRoutingPolicyModels(routingOrganizationId(c), groupName, models, nil)
 	sort.Strings(models)
 
 	// 根据令牌的模型限制与组织成员白名单过滤模型列表
@@ -210,7 +216,7 @@ func ListGeminiModelsByToken(c *gin.Context) {
 		})
 		return
 	}
-	models = appendRoutingPolicyModels(groupName, models, AllowGeminiChannelType)
+	models = appendRoutingPolicyModels(routingOrganizationId(c), groupName, models, AllowGeminiChannelType)
 	sort.Strings(models)
 
 	// 根据令牌的模型限制与组织成员白名单过滤模型列表
@@ -221,7 +227,7 @@ func ListGeminiModelsByToken(c *gin.Context) {
 	}
 
 	// 只返回 Gemini 协议实际可路由的模型（存在对应渠道类型），避免前端选中无渠道的模型渲染出实跑 404 的命令
-	models = filterModelsByChannelType(groupName, models, AllowGeminiChannelType)
+	models = filterModelsByChannelTypeFor(routingOrganizationId(c), groupName, models, AllowGeminiChannelType)
 
 	geminiModels := make([]gemini.ModelDetails, 0, len(models))
 	for _, modelName := range models {
@@ -257,7 +263,7 @@ func ListClaudeModelsByToken(c *gin.Context) {
 		})
 		return
 	}
-	models = appendRoutingPolicyModels(groupName, models, AllowChannelType)
+	models = appendRoutingPolicyModels(routingOrganizationId(c), groupName, models, AllowChannelType)
 	sort.Strings(models)
 
 	// 根据令牌的模型限制与组织成员白名单过滤模型列表
@@ -268,7 +274,7 @@ func ListClaudeModelsByToken(c *gin.Context) {
 	}
 
 	// 只返回 Claude 协议实际可路由的模型（存在对应渠道类型），避免前端选中无渠道的模型渲染出实跑 404 的命令
-	models = filterModelsByChannelType(groupName, models, AllowChannelType)
+	models = filterModelsByChannelTypeFor(routingOrganizationId(c), groupName, models, AllowChannelType)
 
 	claudeModelsData := make([]claude.Model, 0, len(models))
 	for _, modelName := range models {
