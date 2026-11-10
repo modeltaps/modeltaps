@@ -8,9 +8,13 @@ import { ObjectSheet, SheetBar } from './ObjectSheet';
 import useTabDrafts from './useTabDrafts';
 
 // Tab bar and tab content of an object panel, in one bordered box. The open tab carries a dot
-// while it has unsaved changes.
+// while it has unsaved changes. A small object with a single tab shows its content without a
+// tab bar.
 export function ObjectTabs({ tabs, current, onSelect, dirty, label, children }) {
   const { t } = useTranslation();
+  if (tabs.length === 1) {
+    return <div className="rounded-2xl border border-border bg-card px-5 pb-5 pt-1">{children}</div>;
+  }
   return (
     <div className="rounded-2xl border border-border bg-card">
       <div role="tablist" aria-label={label} className="flex gap-0.5 overflow-x-auto border-b border-border p-1">

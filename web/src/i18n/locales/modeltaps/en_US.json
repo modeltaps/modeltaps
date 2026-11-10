@@ -916,7 +916,29 @@
     "adminUserRole": "Admin",
     "cUserRole": "User",
     "reliableUserRole": "Trusted user",
-    "superAdminRole": "Root"
+    "superAdminRole": "Root",
+    "panel": {
+      "tabs": "User settings",
+      "tab": {
+        "overview": "Overview",
+        "profile": "Profile",
+        "access": "Quota & groups",
+        "security": "Security"
+      },
+      "account": "Account",
+      "quotaHint": "Adjusting adds or deducts an amount and records it with a remark; it is not part of Save.",
+      "groupHint": "The group sets the user's price ratio and which channels serve them.",
+      "roleLocked": "A super administrator's role cannot be changed here.",
+      "newPassword": "New password",
+      "passwordHint": "8 to 64 characters. Replaces the current password.",
+      "setPassword": "Set password"
+    },
+    "new": {
+      "subtitle": "An account that signs in with a username and password",
+      "passwordHint": "8 to 64 characters.",
+      "defaults": "Created as a common user in the default group",
+      "created": "Created {{username}}"
+    }
   },
   "command": {
     "search": "Search"
@@ -1262,7 +1284,18 @@
     "timeConsuming": "Duration"
   },
   "userGroup": {
-    "ratio": "Ratio"
+    "ratio": "Ratio",
+    "panel": {
+      "settings": "Settings",
+      "symbolFixed": "The identifier cannot be changed after the group is created.",
+      "publicHint": "Users can pick a public group for their API keys.",
+      "scope": "Applies to every user in this group"
+    },
+    "new": {
+      "subtitle": "Users in a group share its price ratio and rate limit",
+      "defaults": "Created enabled with ratio 1 and 300 requests per minute; change them in its panel",
+      "created": "Created group {{symbol}}"
+    }
   },
   "suno": {
     "lyrics": "Lyrics",
@@ -1706,7 +1739,6 @@
   "routingPolicy": {
     "create": "New policy",
     "createTitle": "New routing policy",
-    "editTitle": "Edit routing policy",
     "empty": "No routing policies yet. A policy is a model name clients can call; the first message of each session decides which real model answers.",
     "columns": {
       "name": "Policy",
@@ -1719,17 +1751,12 @@
       "fallbackRate": "{{rate}}% fallback"
     },
     "form": {
-      "tabBasic": "Basics",
-      "tabAdvanced": "Advanced",
-      "tabTry": "Try it",
       "name": "Model name",
       "nameHint": "What clients put in the model field, e.g. auto/coder.",
       "nameHelp": "Letters, digits and . _ / - only, up to 100 characters, not starting or ending with /. It must not collide with an existing model. The name shows up in /v1/models and can be used in token and organization allow lists like any model.",
       "displayName": "Display name",
       "displayNameHint": "Shown in the catalog instead of the model name.",
       "description": "Description",
-      "enabled": "Enabled",
-      "enabledHint": "Disabled policies are not listed and requests to them get model_not_found.",
       "decisionModel": "Decision model",
       "decisionModelHint": "A small, fast chat model that classifies the first user message. Charged to the caller once per session.",
       "question": "Question",
@@ -1784,7 +1811,7 @@
       "reasoning_depth": "Reasoning depth"
     },
     "tryIt": {
-      "intro": "Run the decision step only, with the policy as it is in this form. Nothing is forwarded, billed or pinned.",
+      "intro": "Run the decision step only, with the saved policy. Nothing is forwarded, billed or pinned.",
       "message": "First user message",
       "messageHint": "Paste a real first message from your logs.",
       "messagePlaceholder": "Add a --verbose flag to the CLI and log the parsed arguments",
@@ -1831,7 +1858,8 @@
       "quota": "Spent",
       "noLabel": "fallback",
       "byScoring": "By scoring",
-      "avgTopProbability": "Average top probability {{value}}"
+      "avgTopProbability": "Average top probability {{value}}",
+      "range": "Period"
     },
     "scoring": {
       "auto": "Auto (logprobs when available)",
@@ -1841,6 +1869,23 @@
     "scoringUsed": {
       "logprobs": "Logprobs",
       "self_reported": "Self-reported"
+    },
+    "panel": {
+      "tabs": "Policy settings",
+      "tab": {
+        "overview": "Overview",
+        "routes": "Routes",
+        "try": "Try it",
+        "settings": "Settings"
+      },
+      "summary": "How it routes",
+      "routeCount_one": "{{count}} route",
+      "routeCount_other": "{{count}} routes"
+    },
+    "new": {
+      "subtitle": "A model name clients call; the first message picks the real model",
+      "defaults": "Created enabled with automatic scoring and a {{threshold}} threshold; change these in Routes",
+      "created": "Policy created"
     }
   },
   "logPage": {
@@ -2294,6 +2339,44 @@
       "discardConfirm": "Discard what you have entered?",
       "missing": "Still needed: {{items}}",
       "listSep": ", "
+    },
+    "open": "Open"
+  },
+  "orgAdmin": {
+    "panel": {
+      "tabs": "Organization settings",
+      "tab": {
+        "overview": "Overview",
+        "balance": "Balance",
+        "members": "Members"
+      },
+      "details": "Details",
+      "slug": "Slug",
+      "ownerId": "owner #{{id}}",
+      "followsDefault": "Follows the site default",
+      "apply": "Apply"
+    }
+  },
+  "redemptionPage": {
+    "panel": {
+      "details": "Details",
+      "edit": "Code",
+      "scope": "Changes apply to this code only"
+    },
+    "new": {
+      "subtitle": "Codes users redeem for balance",
+      "nameHint": "Codes created together share the name, which is how a batch is exported.",
+      "defaults": "Anyone can redeem it and it never expires; change that in its panel",
+      "defaultsMany": "{{count}} codes, unrestricted and never expiring; the keys download as a text file"
+    }
+  },
+  "orderlogPage": {
+    "panel": {
+      "details": "Details",
+      "amounts": "Fees and rate",
+      "copyTradeNo": "Copy trade no.",
+      "copied": "Trade number copied",
+      "viewUser": "Open the user"
     }
   }
 }

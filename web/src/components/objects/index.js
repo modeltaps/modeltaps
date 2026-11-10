@@ -7,9 +7,8 @@ export { default as useTabDrafts } from './useTabDrafts';
 export { default as useObjectRoute } from './useObjectRoute';
 export { Dot, Field, InfoRow, InfoRows, OptionList, OptionRow, Section, Segmented, StatRow, ToggleField } from './fields';
 
-// A table row that opens the object's panel; controls inside it stop the click with `stopRowClick`.
+// A table row that opens the object's panel; controls inside it are wrapped in `RowControl`.
 export const ROW_OPENS = 'cursor-pointer';
-export const stopRowClick = (e) => e.stopPropagation();
 
 // Keyboard access for a clickable row: Enter or Space opens it.
 export const rowOpenProps = (onOpen) => ({
@@ -23,3 +22,7 @@ export const rowOpenProps = (onOpen) => ({
     }
   }
 });
+
+// Wraps controls inside a clickable row (a switch, a row menu) so using them does not open the
+// row.
+export { default as RowControl } from './RowControl';

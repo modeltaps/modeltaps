@@ -1,58 +1,38 @@
 import { useState } from 'react';
+import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Pencil, Trash2 } from 'lucide-react';
+import { PanelRight, Trash2 } from 'lucide-react';
 
 import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { RowActions } from '@/components/ui/row-actions';
 
-export function StatusCell({ item, manageUserGroup }) {
-  const [checked, setChecked] = useState(!!item.enable);
-  const onToggle = async () => {
-    const res = await manageUserGroup(item.id, 'status');
-    if (res?.success) setChecked((c) => !c);
+// 启用开关:以行数据为准(操作成功后列表重拉),请求期间禁用防连点。
+export function StatusCell({ item, onToggle }) {
+  const { t } = useTranslation();
+  const [pending, setPending] = useState(false);
+  const toggle = async () => {
+    setPending(true);
+    try {
+      await onToggle(item);
+    } finally {
+      setPending(false);
+    }
   };
-  return <Switch checked={checked} onCheckedChange={onToggle} />;
+  return <Switch checked={!!item.enable} disabled={pending} aria-label={t('userGroup.enable')} onCheckedChange={toggle} />;
 }
 
-export function ActionsCell({ item, manageUserGroup, onEdit }) {
+StatusCell.propTypes = { item: PropTypes.object.isRequired, onToggle: PropTypes.func.isRequired };
+
+export function ActionsCell({ item, onOpen, onDelete }) {
   const { t } = useTranslation();
-  const [openDelete, setOpenDelete] = useState(false);
-
   return (
-    <>
-      <RowActions
-        actions={[
-          { label: t('common.edit'), icon: Pencil, onClick: () => onEdit(item.id) },
-          { label: t('common.delete'), icon: Trash2, destructive: true, onClick: () => setOpenDelete(true) }
-        ]}
-      />
-
-      <Dialog open={openDelete} onOpenChange={setOpenDelete}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('common.delete')}</DialogTitle>
-          </DialogHeader>
-          <DialogBody>
-            <p className="text-sm text-muted-foreground">{t('common.deleteConfirm', { title: item.name })}</p>
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenDelete(false)}>
-              {t('userPage.cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                setOpenDelete(false);
-                manageUserGroup(item.id, 'delete');
-              }}
-            >
-              {t('common.delete')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    <RowActions
+      actions={[
+        { label: t('objects.open'), icon: PanelRight, onClick: () => onOpen(item.id) },
+        { label: t('common.delete'), icon: Trash2, destructive: true, onClick: () => onDelete(item) }
+      ]}
+    />
   );
 }
+
+ActionsCell.propTypes = { item: PropTypes.object.isRequired, onOpen: PropTypes.func.isRequired, onDelete: PropTypes.func.isRequired };

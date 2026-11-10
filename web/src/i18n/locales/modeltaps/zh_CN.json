@@ -910,7 +910,29 @@
     "batchFailed": "{{count}} 个用户操作失败",
     "emptyTitle": "还没有用户",
     "emptyDescription": "开放注册或手动新建用户后会显示在这里。",
-    "searchShort": "搜索 ID、用户名、邮箱"
+    "searchShort": "搜索 ID、用户名、邮箱",
+    "panel": {
+      "tabs": "用户设置",
+      "tab": {
+        "overview": "概览",
+        "profile": "资料",
+        "access": "额度与分组",
+        "security": "安全"
+      },
+      "account": "账号",
+      "quotaHint": "调整是增加或扣减一笔额度并附备注记录，不随「保存」提交。",
+      "groupHint": "分组决定用户的价格倍率和可用的渠道。",
+      "roleLocked": "超级管理员的角色不能在这里修改。",
+      "newPassword": "新密码",
+      "passwordHint": "8 到 64 个字符，替换当前密码。",
+      "setPassword": "设置密码"
+    },
+    "new": {
+      "subtitle": "用用户名和密码登录的账号",
+      "passwordHint": "8 到 64 个字符。",
+      "defaults": "创建为 default 分组的普通用户",
+      "created": "已创建 {{username}}"
+    }
   },
   "command": {
     "search": "搜索"
@@ -1644,7 +1666,6 @@
   "routingPolicy": {
     "create": "新建策略",
     "createTitle": "新建路由策略",
-    "editTitle": "编辑路由策略",
     "empty": "还没有路由策略。策略是一个客户端可调用的模型名，由每个会话的首条消息决定实际由哪个模型应答。",
     "columns": {
       "name": "策略",
@@ -1657,17 +1678,12 @@
       "fallbackRate": "兜底 {{rate}}%"
     },
     "form": {
-      "tabBasic": "基础",
-      "tabAdvanced": "高级",
-      "tabTry": "试一试",
       "name": "模型名",
       "nameHint": "客户端填在 model 字段里的名字，如 auto/coder。",
       "nameHelp": "只能用字母、数字和 . _ / -，最多 100 个字符，不能以 / 开头或结尾，不能与已有模型重名。它会出现在 /v1/models 里，也能像普通模型一样加进令牌和组织白名单。",
       "displayName": "显示名",
       "displayNameHint": "目录里代替模型名显示。",
       "description": "描述",
-      "enabled": "启用",
-      "enabledHint": "停用的策略不进模型列表，请求它会得到 model_not_found。",
       "decisionModel": "决策模型",
       "decisionModelHint": "一个小而快的对话模型，负责给首条用户消息分类。每个会话向调用方计费一次。",
       "question": "问题",
@@ -1722,7 +1738,7 @@
       "reasoning_depth": "推理深度"
     },
     "tryIt": {
-      "intro": "只跑决策这一步，用的是表单里当前的策略。不转发、不计费、不写会话固定记录。",
+      "intro": "只跑决策这一步，用的是已保存的策略。不转发、不计费、不写会话固定记录。",
       "message": "首条用户消息",
       "messageHint": "从日志里粘一条真实的首条消息。",
       "messagePlaceholder": "给 CLI 加一个 --verbose 参数，并把解析后的参数打到日志",
@@ -1769,7 +1785,8 @@
       "quota": "花费",
       "noLabel": "兜底",
       "byScoring": "按打分方式",
-      "avgTopProbability": "平均最高概率 {{value}}"
+      "avgTopProbability": "平均最高概率 {{value}}",
+      "range": "时间范围"
     },
     "scoring": {
       "auto": "自动（能用 logprobs 就用）",
@@ -1779,6 +1796,23 @@
     "scoringUsed": {
       "logprobs": "logprobs",
       "self_reported": "自报"
+    },
+    "panel": {
+      "tabs": "策略设置",
+      "tab": {
+        "overview": "概览",
+        "routes": "路由",
+        "try": "试一试",
+        "settings": "设置"
+      },
+      "summary": "路由方式",
+      "routeCount_one": "{{count}} 条路由",
+      "routeCount_other": "{{count}} 条路由"
+    },
+    "new": {
+      "subtitle": "客户端调用的模型名，由首条消息决定实际模型",
+      "defaults": "创建后即启用，自动打分、阈值 {{threshold}}，可在「路由」里修改",
+      "created": "策略已创建"
     }
   },
   "logPage": {
@@ -2210,6 +2244,57 @@
       "discardConfirm": "放弃已填写的内容吗？",
       "missing": "还差：{{items}}",
       "listSep": "、"
+    },
+    "open": "打开"
+  },
+  "orgAdmin": {
+    "panel": {
+      "tabs": "组织设置",
+      "tab": {
+        "overview": "概览",
+        "balance": "余额",
+        "members": "成员"
+      },
+      "details": "详情",
+      "slug": "标识",
+      "ownerId": "所有者 #{{id}}",
+      "followsDefault": "跟随站点默认",
+      "apply": "执行调整"
+    }
+  },
+  "userGroup": {
+    "panel": {
+      "settings": "设置",
+      "symbolFixed": "标识创建后不能修改。",
+      "publicHint": "用户可以给自己的令牌选择公开分组。",
+      "scope": "作用于这个分组的所有用户"
+    },
+    "new": {
+      "subtitle": "同一分组的用户共用价格倍率和速率限制",
+      "defaults": "创建后即启用，倍率 1、每分钟 300 次请求，可在分组面板里修改",
+      "created": "已创建分组 {{symbol}}"
+    }
+  },
+  "redemptionPage": {
+    "panel": {
+      "details": "详情",
+      "edit": "兑换码",
+      "scope": "改动只作用于这个兑换码"
+    },
+    "new": {
+      "subtitle": "用户兑换余额用的码",
+      "nameHint": "同一次生成的兑换码共用这个名称，导出批次也按名称。",
+      "defaults": "不限账号类型、永不过期，可在兑换码面板里修改",
+      "defaultsMany": "生成 {{count}} 个，不限账号类型、永不过期；创建后下载兑换码文本文件"
+    }
+  },
+  "orderlogPage": {
+    "panel": {
+      "details": "详情",
+      "amounts": "费用与汇率",
+      "copyTradeNo": "复制订单号",
+      "copied": "订单号已复制",
+      "viewUser": "打开该用户"
     }
   }
 }
