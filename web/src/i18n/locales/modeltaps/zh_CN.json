@@ -685,7 +685,8 @@
     "platform_settings": "整个平台的默认值与开关",
     "personal_settings": "只对你自己的账号生效",
     "token": "调用接口用的密钥",
-    "invite_code": "生成、启用与作废注册用的邀请码"
+    "invite_code": "生成、启用与作废注册用的邀请码",
+    "org_routing": "本组织 API Key 使用的路由策略；与平台策略同名时替换平台策略"
   },
   "api_compare": "对比",
   "modelInfoPage": {
@@ -1828,13 +1829,15 @@
     },
     "editTitle": "编辑路由策略",
     "scope": {
-      "platform": "平台策略",
-      "organizations": "组织策略"
+      "label": "范围",
+      "platform": "平台",
+      "organization": "组织"
     },
     "overridesPlatform": "覆盖平台策略",
-    "organizationsIntro": "各组织在自己的设置里管理的路由策略，只对该组织的 API Key生效。发现滥用可以在这里停用。",
+    "organizationsIntro": "各组织在自己的「自动路由」页管理的策略，只对该组织的 API Key 生效。这里只能停用。",
     "organizationsEmpty": "还没有组织建路由策略。",
-    "orgIntro": "这里的策略只对本组织的 API Key生效。与平台策略同名时，本组织成员会用这里的策略。「试一试」会真实调用决策模型，费用记在组织账上。"
+    "orgIntro": "这里的策略只对本组织的 API Key 生效。与平台策略同名时，本组织成员会用这里的策略。「试一试」会真实调用决策模型，费用记在组织账上。",
+    "overridesPlatformHint": "有同名的平台策略。该组织的 API Key 会用组织的这条策略，而不是平台的。"
   },
   "logPage": {
     "routing": {
@@ -2838,11 +2841,6 @@
       "tagline": "所有模型，一个出口",
       "ctaPrimary": "获取 API Key",
       "catchphrase": "拧开就用"
-    }
-  },
-  "settingsPage": {
-    "sections": {
-      "routing": "自动路由"
     }
   }
 }

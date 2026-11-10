@@ -6,6 +6,8 @@ import { API } from 'utils/api';
 // scope has no log sample replay (getSamples is null) and lists its own usable models.
 export function createRoutingPolicyApi(base, { listModels, samples = true, billedTry = false } = {}) {
   return {
+    // review: the platform console's read-only view of organization policies (organizationReviewApi).
+    review: false,
     // billedTry: "Try it" and the probe are charged (organization scope).
     billedTry,
     list: async (params) => (await API.get(base, params ? { params } : undefined)).data,
@@ -40,6 +42,16 @@ export async function listCatalogModelNames() {
 }
 
 export const platformRoutingPolicyApi = createRoutingPolicyApi('/api/routing_policy/', { listModels: listCatalogModelNames });
+
+// organizationReviewApi: every organization's policies as the platform console reviews them
+// (?organization_id=-1, rows carry organization_name and overrides_platform). Review is read-only:
+// an admin can open a policy and switch it off, nothing else.
+export const organizationReviewApi = {
+  ...platformRoutingPolicyApi,
+  review: true,
+  list: () => platformRoutingPolicyApi.list({ organization_id: -1 }),
+  getSamples: null
+};
 
 // orgRoutingPolicyApi the client for one organization's policies (Owner / Admin only).
 export function orgRoutingPolicyApi(orgId) {

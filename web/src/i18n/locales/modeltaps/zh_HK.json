@@ -685,7 +685,8 @@
     "platform_settings": "整個平台的預設值與開關",
     "personal_settings": "只對你自己的賬號生效",
     "token": "調用介面用的金鑰",
-    "invite_code": "生成、啟用與作廢註冊用的邀請碼"
+    "invite_code": "生成、啟用與作廢註冊用的邀請碼",
+    "org_routing": "本組織 API Key 使用的路由策略；與平台策略同名時取代平台策略"
   },
   "api_compare": "對比",
   "modelInfoPage": {
@@ -1828,13 +1829,15 @@
     },
     "editTitle": "編輯路由策略",
     "scope": {
-      "platform": "平台策略",
-      "organizations": "組織策略"
+      "label": "範圍",
+      "platform": "平台",
+      "organization": "組織"
     },
     "overridesPlatform": "覆蓋平台策略",
-    "organizationsIntro": "各組織在自己的設定裏管理的路由策略，只對該組織的 API Key生效。發現濫用可以在這裏停用。",
+    "organizationsIntro": "各組織在自己的「自動路由」頁管理的策略，只對該組織的 API Key 生效。這裏只能停用。",
     "organizationsEmpty": "還沒有組織建立路由策略。",
-    "orgIntro": "這裏的策略只對本組織的 API Key生效。與平台策略同名時，本組織成員會使用這裏的策略。「試一試」會實際呼叫決策模型，費用記在組織賬上。"
+    "orgIntro": "這裏的策略只對本組織的 API Key 生效。與平台策略同名時，本組織成員會使用這裏的策略。「試一試」會實際呼叫決策模型，費用記在組織賬上。",
+    "overridesPlatformHint": "有同名的平台策略。該組織的 API Key 會使用組織的這條策略，而不是平台的。"
   },
   "logPage": {
     "routing": {
@@ -2838,11 +2841,6 @@
       "tagline": "所有模型，一個出口",
       "ctaPrimary": "取得 API Key",
       "catchphrase": "扭開就用"
-    }
-  },
-  "settingsPage": {
-    "sections": {
-      "routing": "自動路由"
     }
   }
 }

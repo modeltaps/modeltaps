@@ -686,7 +686,8 @@
     "platform_settings": "Platform-wide defaults and switches",
     "personal_settings": "Applies to your own account only",
     "token": "Keys for calling the API",
-    "invite_code": "Create, enable and revoke registration invite codes"
+    "invite_code": "Create, enable and revoke registration invite codes",
+    "org_routing": "Routing policies for this organization’s API keys; a policy can replace a platform policy of the same name"
   },
   "api_compare": "Compare",
   "modelInfoPage": {
@@ -1901,13 +1902,15 @@
     },
     "editTitle": "Edit routing policy",
     "scope": {
-      "platform": "Platform policies",
-      "organizations": "Organization policies"
+      "label": "Scope",
+      "platform": "Platform",
+      "organization": "Organizations"
     },
     "overridesPlatform": "Overrides a platform policy",
-    "organizationsIntro": "Routing policies organizations manage in their own settings. They only apply to that organization's API keys; switch one off here if it is misused.",
+    "organizationsIntro": "Policies organizations manage on their own Auto routing page. They only apply to that organization's API keys; you can only switch one off here.",
     "organizationsEmpty": "No organization has a routing policy yet.",
-    "orgIntro": "Policies here only apply to this organization's API keys. A policy with the same name as a platform policy replaces it for your members. \"Try it\" calls the decision model and is charged to the organization."
+    "orgIntro": "Policies here only apply to this organization's API keys. A policy with the same name as a platform policy replaces it for your members. \"Try it\" calls the decision model and is charged to the organization.",
+    "overridesPlatformHint": "A platform policy has the same name. This organization's API keys use the organization's policy instead of the platform's."
   },
   "logPage": {
     "routing": {
@@ -2932,11 +2935,6 @@
       "tagline": "Every model. One tap.",
       "ctaPrimary": "Get API key",
       "catchphrase": "Just turn it on."
-    }
-  },
-  "settingsPage": {
-    "sections": {
-      "routing": "Auto routing"
     }
   }
 }

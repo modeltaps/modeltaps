@@ -6,7 +6,7 @@ import { Split } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { NewObjectSheet, Field, ObjectTile } from '@/components/objects';
 import { showError } from 'utils/common';
-import { EMPTY_POLICY, normalizePolicy, platformRoutingPolicyApi as api } from './routingPolicyApi';
+import { EMPTY_POLICY, normalizePolicy } from './routingPolicyApi';
 import { ModelField, RoutesField, missingFields } from './policyFields';
 
 const LABEL_KEY = {
@@ -19,7 +19,7 @@ const LABEL_KEY = {
 // New routing policy: only what a policy cannot work without (model name, decision model,
 // routes, fallback model). Scoring, threshold, pinning and limits start from the defaults and
 // are changed in the policy's panel, which opens after the policy is created.
-export default function NewRoutingPolicySheet({ modelOptions, onClose, onCreated }) {
+export default function NewRoutingPolicySheet({ api, modelOptions, onClose, onCreated }) {
   const { t } = useTranslation();
   const [form, setForm] = useState(EMPTY_POLICY);
   const [busy, setBusy] = useState(false);
@@ -101,6 +101,7 @@ export default function NewRoutingPolicySheet({ modelOptions, onClose, onCreated
 }
 
 NewRoutingPolicySheet.propTypes = {
+  api: PropTypes.object.isRequired,
   modelOptions: PropTypes.array.isRequired,
   onClose: PropTypes.func.isRequired,
   onCreated: PropTypes.func.isRequired

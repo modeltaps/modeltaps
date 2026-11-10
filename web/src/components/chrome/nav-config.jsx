@@ -38,6 +38,7 @@ import {
 //   match        extra paths (segment prefixes) or RegExps that make the item active
 //   orgAdmin     org context, owner/admin only
 //   root         root admins only
+//   requires     a site feature that must be on (`features` of the context, e.g. orgRoutingPolicy)
 //   pageIn       contexts where the page works even though the item is not in the menu
 //                (used when switching context to decide whether to stay on the page)
 
@@ -99,6 +100,16 @@ export const workbenchSections = [
         icon: UsersRound,
         labelKey: 'nav.items.orgMembers',
         orgAdmin: true
+      },
+      // The organization's own routing policies, while the site lets organizations manage them.
+      {
+        id: 'org_routing',
+        url: `/panel/settings/org/${ORG_PARAM}/routing`,
+        match: [/^\/panel\/settings\/org\/[^/]+\/routing(\/|$)/],
+        icon: Route,
+        labelKey: 'nav.items.routing',
+        orgAdmin: true,
+        requires: 'orgRoutingPolicy'
       },
       { id: 'billing', url: url('billing'), icon: ReceiptText, labelKey: 'nav.items.billing', orgAdmin: true, pageIn: ['personal'] },
       {
@@ -241,7 +252,8 @@ export function itemUrl(item, orgId = null) {
 }
 
 // Whether an item shows in the menu of `context`.
-export function isItemVisible(item, { context, orgRole = null, isRoot = false }) {
+export function isItemVisible(item, { context, orgRole = null, isRoot = false, features = {} }) {
+  if (item.requires && !features?.[item.requires]) return false;
   if (adminItemIds.has(item.id)) return context === 'admin' && (!item.root || isRoot);
   if (context === 'admin') return false;
   if (item.orgAdmin) return context === 'org' && isOrgAdminRole(orgRole);
@@ -262,9 +274,9 @@ export function isPageAvailable(item, ctx) {
 }
 
 // Menu sections of a context with urls resolved; empty sections are dropped.
-export function navSectionsFor({ context, orgRole = null, orgId = null, isRoot = false }) {
+export function navSectionsFor({ context, orgRole = null, orgId = null, isRoot = false, features = {} }) {
   const sections = context === 'admin' ? adminSections : workbenchSections;
-  const ctx = { context, orgRole, isRoot };
+  const ctx = { context, orgRole, isRoot, features };
   return sections
     .filter((section) => !section.orgOnly || context === 'org')
     .map((section) => ({
@@ -283,21 +295,21 @@ export function firstAdminUrl({ isRoot = false } = {}) {
 // Entering admin lands on its first visible page; leaving admin lands on the dashboard.
 // Between workbench contexts the page stays when it exists in the target context (org-scoped
 // pages are retargeted to the new organization), otherwise the dashboard.
-export function contextSwitchTarget({ pathname, to, isRoot = false }) {
+export function contextSwitchTarget({ pathname, to, isRoot = false, features = {} }) {
   if (to.kind === 'admin') return firstAdminUrl({ isRoot });
   if (isAdminPath(pathname)) return DASHBOARD_URL;
   const item = findActiveItem(pathname);
   if (!item) return null;
   const context = to.kind === 'org' ? 'org' : 'personal';
-  if (!isPageAvailable(item, { context, orgRole: to.role ?? null, isRoot })) return DASHBOARD_URL;
+  if (!isPageAvailable(item, { context, orgRole: to.role ?? null, isRoot, features })) return DASHBOARD_URL;
   if (ORG_SETTINGS_PREFIX.test(pathname)) return pathname.replace(ORG_SETTINGS_PREFIX, `/panel/settings/org/${to.orgId}`);
   return null;
 }
 
 // Command palette: the current workbench plus, for admins, every platform admin page under one
 // heading (with an entry for platform admin itself).
-export function commandSections({ isAdmin = false, isRoot = false, orgId = null, orgRole = null }) {
-  const workbench = navSectionsFor({ context: orgId ? 'org' : 'personal', orgId, orgRole, isRoot });
+export function commandSections({ isAdmin = false, isRoot = false, orgId = null, orgRole = null, features = {} }) {
+  const workbench = navSectionsFor({ context: orgId ? 'org' : 'personal', orgId, orgRole, isRoot, features });
   const extras = [{ ...hiddenNavItems[0], href: hiddenNavItems[0].url }];
   const sections = [...workbench, { id: 'account', items: extras }];
   if (!isAdmin) return sections;

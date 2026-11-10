@@ -13,6 +13,7 @@ import OrgSectionHost, { useOrgDetail } from './org/OrgSectionHost';
 import GeneralSection from './org/GeneralSection';
 import BudgetSection from './org/BudgetSection';
 import DangerSection from './org/DangerSection';
+import RoutingPage from './org/RoutingPage';
 import useSelfUser from './account/useSelfUser';
 import { accountGroupCards } from './account';
 import {
@@ -20,6 +21,7 @@ import {
   DEFAULT_ACCOUNT_SECTION,
   ORG_GROUPS,
   ORG_MEMBERS_SECTION,
+  ORG_ROUTING_SECTION,
   accountSettingsUrl,
   orgSettingsUrl,
   resolveAccountSection,
@@ -30,7 +32,8 @@ import {
 // Both are a SettingsPage inside the sidebar shell.
 // - Personal settings (`/panel/settings/account/:group`) open from the account menu.
 // - Organization settings (`/panel/settings/org/:orgId/:group`) are the org context's 组织设置;
-//   `/panel/settings/org/:orgId/members` on the same route is the 成员与预算 page. The context
+//   `/panel/settings/org/:orgId/members` on the same route is the 成员与预算 page and
+//   `/panel/settings/org/:orgId/routing` the organization's 自动路由 page. The context
 //   switcher picks the organization: opening a deep link to another organization the user manages
 //   switches the active context to it, so the sidebar and the page talk about the same one.
 
@@ -79,7 +82,7 @@ OrgSettings.propTypes = { orgId: PropTypes.number.isRequired, role: PropTypes.st
 export default function Settings() {
   const { search } = useLocation();
   const { orgId: orgIdParam, section } = useParams();
-  const { organizations, orgsLoaded, currentOrgId, switchOrg } = useOrg();
+  const { organizations, orgsLoaded, currentOrgId, switchOrg, orgRoutingPolicyEnabled } = useOrg();
   useHighlightTarget();
 
   const orgScope = orgIdParam !== undefined;
@@ -107,7 +110,7 @@ export default function Settings() {
 
   // Organizations the user does not manage fall back to personal settings.
   if (!managedOrg) return <Navigate to={accountDefault} replace />;
-  const target = resolveOrgSection(orgId, section);
+  const target = resolveOrgSection(orgId, section, { routing: orgRoutingPolicyEnabled });
   if (target) return <Navigate to={target} replace />;
   if (section === ORG_MEMBERS_SECTION) {
     return (
@@ -116,5 +119,6 @@ export default function Settings() {
       </div>
     );
   }
+  if (section === ORG_ROUTING_SECTION) return <RoutingPage orgId={orgId} />;
   return <OrgSettings orgId={orgId} role={managedOrg.role} section={section} />;
 }

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('utils/api', () => ({ API: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() } }));
 
 import { API } from 'utils/api';
-import { orgRoutingPolicyApi, platformRoutingPolicyApi } from './routingPolicyApi';
+import { organizationReviewApi, orgRoutingPolicyApi, platformRoutingPolicyApi } from './routingPolicyApi';
 
 describe('routing policy api scopes', () => {
   beforeEach(() => {
@@ -36,8 +36,11 @@ describe('routing policy api scopes', () => {
     expect(platformRoutingPolicyApi.billedTry).toBe(false);
   });
 
-  it('lists every organization policy for the platform console', async () => {
-    await platformRoutingPolicyApi.list({ organization_id: -1 });
+  it('reviews every organization policy from the platform console', async () => {
+    await organizationReviewApi.list();
     expect(API.get).toHaveBeenCalledWith('/api/routing_policy/', { params: { organization_id: -1 } });
+    expect(organizationReviewApi.review).toBe(true);
+    expect(organizationReviewApi.getSamples).toBeNull();
+    expect(platformRoutingPolicyApi.review).toBe(false);
   });
 });

@@ -85,14 +85,14 @@ NumberField.propTypes = {
 
 // Scoring mode with a "check support" button: asks whether the decision model returns logprobs
 // on the channel it is routed to. A result is only shown for the model it was checked with.
-export function ScoringField({ value, onChange, decisionModel }) {
+export function ScoringField({ value, onChange, decisionModel, api = platformRoutingPolicyApi }) {
   const { t } = useTranslation();
   const [probe, setProbe] = useState({ model: '', running: false, result: null });
   const runProbe = async () => {
     if (!decisionModel) return;
     setProbe({ model: decisionModel, running: true, result: null });
     try {
-      const { success, message, data } = await platformRoutingPolicyApi.probe(decisionModel);
+      const { success, message, data } = await api.probe(decisionModel);
       if (!success) showError(message);
       setProbe({ model: decisionModel, running: false, result: success ? data : null });
     } catch {
@@ -144,7 +144,12 @@ export function ScoringField({ value, onChange, decisionModel }) {
   );
 }
 
-ScoringField.propTypes = { value: PropTypes.string, onChange: PropTypes.func.isRequired, decisionModel: PropTypes.string };
+ScoringField.propTypes = {
+  value: PropTypes.string,
+  onChange: PropTypes.func.isRequired,
+  decisionModel: PropTypes.string,
+  api: PropTypes.object
+};
 
 export function QuestionField({ value, onChange }) {
   const { t } = useTranslation();
