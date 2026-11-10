@@ -34,7 +34,7 @@ export default function Hero() {
       <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-4 py-16 sm:px-6 sm:py-20 min-[1120px]:grid-cols-2 min-[1120px]:gap-12">
         <div className="flex flex-col items-center text-center min-[1120px]:items-start min-[1120px]:text-left">
           <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-sm font-medium text-muted-foreground">
-            <LogoMark className="h-3 w-auto shrink-0 text-muted-foreground" />
+            <LogoMark size={12} className="text-muted-foreground" />
             {t('home.hero.badge')}
           </span>
 

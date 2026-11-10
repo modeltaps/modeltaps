@@ -136,7 +136,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New brand mark: a solid, rounded drop with an off-centre round hole replaces the stroked
   lowercase m. The mark is square-ish and filled, so it holds its weight next to the wordmark in
   the sidebar and header and stays legible as a 16 px favicon. The favicon, PWA icons, Open Graph
-  image and the documentation site's logo and favicon use the same shape.
+  image and the documentation site's logo and favicon use the same shape. It is drawn on whole-pixel
+  grids at 12, 16 and 20 px so its edges and hole stay crisp on standard-density screens.
 
 ### Fixed
 

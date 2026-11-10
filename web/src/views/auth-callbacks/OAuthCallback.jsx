@@ -147,7 +147,7 @@ export default function OAuthCallback({ provider }) {
     <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center px-4 py-6">
       <Card className="w-full max-w-md shadow-sm">
         <CardHeader className="items-center space-y-3 text-center">
-          <LogoMark className="h-9 w-auto text-foreground" />
+          <LogoMark size={40} className="text-foreground" />
           <CardTitle className="text-2xl text-foreground">{t(terminalAction ? 'login.signInFailed' : config.titleKey)}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-5 py-6">

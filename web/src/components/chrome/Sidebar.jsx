@@ -255,7 +255,7 @@ export default function Sidebar({ collapsed = false, onItemClick, onToggleCollap
             aria-label="Modeltaps"
             className="flex items-center gap-2 text-foreground transition-opacity hover:opacity-90"
           >
-            <LogoMark className="h-5 w-auto shrink-0" />
+            <LogoMark size={20} />
             <span className="text-[1.15rem] font-bold leading-none tracking-tight">Modeltaps</span>
           </Link>
         </SidebarTopBar>
