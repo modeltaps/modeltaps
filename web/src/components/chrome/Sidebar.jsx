@@ -135,20 +135,23 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
       <div className="flex h-full flex-col bg-sidebar">
         {/* Brand row; the collapse button sits at its end (the drawer uses it to close). */}
         {collapsed ? (
-          <div className="flex h-12 shrink-0 items-center justify-center">
+          <div className="flex h-16 shrink-0 items-center justify-center">
             <Link to={DASHBOARD_URL} onClick={onItemClick} aria-label={brand} className="text-foreground hover:opacity-90">
               <LogoMark size={20} />
             </Link>
           </div>
         ) : (
-          <div className="flex h-12 shrink-0 items-center gap-1 pl-4 pr-2">
+          <div className="flex h-16 shrink-0 items-center gap-1 pl-4 pr-2">
             <Link
               to={DASHBOARD_URL}
               onClick={onItemClick}
               className="flex min-w-0 flex-1 items-center gap-2.5 text-foreground transition-opacity hover:opacity-90"
             >
               <LogoMark size={20} />
-              <span className="truncate text-[17px] font-semibold leading-none tracking-[0.01em]">{brand}</span>
+              {/* Wordmark in Inter (already bundled): the system face at this size read small and tight. */}
+              <span className="truncate font-['Inter_Variable',sans-serif] text-xl font-semibold leading-none tracking-[-0.015em]">
+                {brand}
+              </span>
             </Link>
             {onToggleCollapse && <CollapseButton onClick={onToggleCollapse} />}
           </div>
