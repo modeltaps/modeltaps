@@ -202,7 +202,15 @@ export default function NewChannelSheet({ initialType, allChannels, groups, onCl
     setSaving(true);
     try {
       let list = upstream;
-      if (d.allow.includes('*') && !list.length && labels.canFetchModels) list = (await runTest()) || [];
+      if (d.allow.includes('*') && !list.length && labels.canFetchModels) {
+        // A failed connection is not "no models": stop and say so instead of creating nothing.
+        const fetched = await runTest();
+        if (!fetched) {
+          toast.error(t('channels.new.connectFailed'));
+          return;
+        }
+        list = fetched;
+      }
       const mapping = parseMapping(d.mapping);
       const resolved = resolveAllowedModels({ allow: d.allow, upstream: list, defaults: labels.defaultModels });
       const mapped = applyMappingToModels(resolved.models, mapping);

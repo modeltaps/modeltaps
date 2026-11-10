@@ -2048,7 +2048,8 @@
           "role": "Assume role"
         }
       },
-      "partsHint": "Stored as one key in the format the provider expects"
+      "partsHint": "Stored as one key in the format the provider expects",
+      "connectFailed": "Couldn't connect. Check the key and the address"
     },
     "newChannel": "New channel",
     "optional": "optional",

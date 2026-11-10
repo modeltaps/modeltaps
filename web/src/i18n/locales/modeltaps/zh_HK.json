@@ -1973,7 +1973,8 @@
           "role": "代入角色"
         }
       },
-      "partsHint": "按供應商要求的格式存成一個密鑰"
+      "partsHint": "按供應商要求的格式存成一個密鑰",
+      "connectFailed": "連線失敗，請檢查密鑰和地址"
     },
     "newChannel": "新建渠道",
     "optional": "可選",
