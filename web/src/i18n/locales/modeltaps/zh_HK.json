@@ -912,7 +912,29 @@
     "batchFailed": "{{count}} 個用戶操作失敗",
     "emptyTitle": "還沒有用戶",
     "emptyDescription": "開放註冊或手動新增用戶後會顯示在這裡。",
-    "searchShort": "搜尋 ID、用戶名、電郵"
+    "searchShort": "搜尋 ID、用戶名、電郵",
+    "panel": {
+      "tabs": "用戶設定",
+      "tab": {
+        "overview": "概覽",
+        "profile": "資料",
+        "access": "額度與分組",
+        "security": "安全"
+      },
+      "account": "帳戶",
+      "quotaHint": "調整是增加或扣減一筆額度並附備註記錄，不隨「儲存」提交。",
+      "groupHint": "分組決定用戶的價格倍率和可用的渠道。",
+      "roleLocked": "超級管理員的角色不能在這裡修改。",
+      "newPassword": "新密碼",
+      "passwordHint": "8 到 64 個字元，取代目前密碼。",
+      "setPassword": "設定密碼"
+    },
+    "new": {
+      "subtitle": "用用戶名和密碼登入的帳戶",
+      "passwordHint": "8 到 64 個字元。",
+      "defaults": "建立為 default 分組的普通用戶",
+      "created": "已建立 {{username}}"
+    }
   },
   "command": {
     "search": "搜尋"
@@ -1546,7 +1568,6 @@
     "model_supply_upstream_missing": "請填寫傳給該渠道的模型名稱",
     "model_supply_exists": "該渠道已經在供應這個模型",
     "supply_pause_seconds_invalid": "請填寫暫停秒數，需大於 0",
-    "supply_pause_rules_invalid": "暫停規則無效：{{message}}",
     "model_identifier_exists": "此模型標識已存在",
     "model_referenced_by_aliases": "此模型仍被別名引用：{{aliases}}",
     "model_alias_self": "模型不能是自己的別名",
@@ -1586,7 +1607,8 @@
     "routing_policy_scoring_invalid": "評分方式只能是自動、logprobs 或自報",
     "routing_policy_model_unavailable": "{{field}} 對本組織不可用（{{model}}）",
     "routing_policy_count_exceeded": "本組織的路由策略已達上限 {{max}} 條",
-    "org_routing_policy_disabled": "本站未開啟組織路由策略"
+    "org_routing_policy_disabled": "本站未開啟組織路由策略",
+    "supply_pause_rules_invalid": "暫停規則無效：{{message}}"
   },
   "channelOAuth": {
     "tip": {
@@ -1649,7 +1671,6 @@
   "routingPolicy": {
     "create": "新建策略",
     "createTitle": "新建路由策略",
-    "editTitle": "編輯路由策略",
     "empty": "還沒有路由策略。策略是一個客戶端可呼叫的模型名，由每個會話的首條訊息決定實際由哪個模型應答。",
     "columns": {
       "name": "策略",
@@ -1662,17 +1683,12 @@
       "fallbackRate": "兜底 {{rate}}%"
     },
     "form": {
-      "tabBasic": "基礎",
-      "tabAdvanced": "進階",
-      "tabTry": "試一試",
       "name": "模型名",
       "nameHint": "客戶端填在 model 欄位裏的名字，如 auto/coder。",
       "nameHelp": "只能用字母、數字和 . _ / -，最多 100 個字元，不能以 / 開頭或結尾，不能與已有模型重名。它會出現在 /v1/models 裏，也能像普通模型一樣加進令牌和組織白名單。",
       "displayName": "顯示名",
       "displayNameHint": "目錄裏代替模型名顯示。",
       "description": "描述",
-      "enabled": "啟用",
-      "enabledHint": "停用的策略不進模型列表，請求它會得到 model_not_found。",
       "decisionModel": "決策模型",
       "decisionModelHint": "一個小而快的對話模型，負責給首條用戶訊息分類。每個會話向呼叫方計費一次。",
       "question": "問題",
@@ -1719,7 +1735,12 @@
       "probing": "檢查中…",
       "probeSupported": "這個決策模型在今次選中的渠道上返回 logprobs，可以用概率評分。",
       "probeUnsupported": "這個決策模型在今次選中的渠道上不返回 logprobs：自動模式會改用自報置信度，只用 logprobs 的模式會一直走兜底。",
-      "probeFailed": "檢查失敗：{{error}}"
+      "probeFailed": "檢查失敗：{{error}}",
+      "tabBasic": "基礎",
+      "tabAdvanced": "進階",
+      "tabTry": "試一試",
+      "enabled": "啟用",
+      "enabledHint": "停用的策略不進模型列表，請求它會得到 model_not_found。"
     },
     "templates": {
       "coding_change_size": "編碼：改動大小",
@@ -1727,7 +1748,7 @@
       "reasoning_depth": "推理深度"
     },
     "tryIt": {
-      "intro": "只跑決策這一步，用的是表單裏目前的策略。不轉發、不計費、不寫會話固定記錄。",
+      "intro": "只跑決策這一步，用的是已儲存的策略。不轉發、不計費、不寫會話固定記錄。",
       "message": "首條用戶訊息",
       "messageHint": "從日誌裏貼一條真實的首條訊息。",
       "messagePlaceholder": "給 CLI 加一個 --verbose 參數，並把解析後的參數打到日誌",
@@ -1774,7 +1795,8 @@
       "quota": "花費",
       "noLabel": "兜底",
       "byScoring": "按評分方式",
-      "avgTopProbability": "平均最高概率 {{value}}"
+      "avgTopProbability": "平均最高概率 {{value}}",
+      "range": "時間範圍"
     },
     "scoring": {
       "auto": "自動（可用 logprobs 時使用）",
@@ -1784,7 +1806,25 @@
     "scoringUsed": {
       "logprobs": "logprobs",
       "self_reported": "自報"
-    }
+    },
+    "panel": {
+      "tabs": "策略設定",
+      "tab": {
+        "overview": "概覽",
+        "routes": "路由",
+        "try": "試一試",
+        "settings": "設定"
+      },
+      "summary": "路由方式",
+      "routeCount_one": "{{count}} 條路由",
+      "routeCount_other": "{{count}} 條路由"
+    },
+    "new": {
+      "subtitle": "客戶端呼叫的模型名，由首條訊息決定實際模型",
+      "defaults": "建立後即啟用，自動打分、閾值 {{threshold}}，可在「路由」裡修改",
+      "created": "策略已建立"
+    },
+    "editTitle": "編輯路由策略"
   },
   "logPage": {
     "routing": {
@@ -1996,7 +2036,6 @@
       "connectFailed": "連線失敗，請檢查密鑰和地址"
     },
     "newChannel": "新建渠道",
-    "optional": "可選",
     "pane": {
       "refreshDone_other": "已重新整理 {{count}} 個渠道的模型列表",
       "refreshModels": "重新整理模型列表",
@@ -2007,13 +2046,8 @@
       "testPartial": "{{count}} 個渠道中 {{failed}} 個測試失敗"
     },
     "panel": {
-      "discard": "撤銷",
-      "discardConfirm": "有未儲存的改動，確定關閉嗎？",
       "enabled": "啟用",
-      "save": "儲存",
-      "saved": "已儲存",
       "scope": "改動只作用於這個渠道",
-      "switchConfirm": "這個分頁有未儲存的改動，確定切換嗎？",
       "tab": {
         "models": "模型",
         "connection": "連線",
@@ -2023,6 +2057,11 @@
         "advanced": "進階"
       },
       "tabs": "渠道設定",
+      "discard": "撤銷",
+      "discardConfirm": "有未儲存的改動，確定關閉嗎？",
+      "save": "儲存",
+      "saved": "已儲存",
+      "switchConfirm": "這個分頁有未儲存的改動，確定切換嗎？",
       "unsaved": "有未儲存的改動"
     },
     "range": {
@@ -2131,7 +2170,8 @@
       "delete": "刪除標籤及其渠道",
       "priorityTitle": "標籤 {{tag}} 的優先級",
       "priorityHint": "給帶這個標籤的所有渠道設定同一優先級"
-    }
+    },
+    "optional": "可選"
   },
   "nav": {
     "sections": {
@@ -2203,6 +2243,78 @@
       "label": "分組"
     },
     "mainLabel": "主導覽"
+  },
+  "objects": {
+    "optional": "可選",
+    "help": "說明",
+    "notFound": "項目不存在或已刪除",
+    "more": "更多操作",
+    "panel": {
+      "discard": "撤銷",
+      "discardConfirm": "有未儲存的改動，確定關閉嗎？",
+      "save": "儲存",
+      "saved": "已儲存",
+      "scope": "儲存只作用於這個分頁",
+      "switchConfirm": "這個分頁有未儲存的改動，確定切換嗎？",
+      "unsaved": "有未儲存的改動"
+    },
+    "new": {
+      "create": "建立",
+      "discardConfirm": "放棄已填寫的內容嗎？",
+      "missing": "還差：{{items}}",
+      "listSep": "、"
+    },
+    "open": "開啟"
+  },
+  "orgAdmin": {
+    "panel": {
+      "tabs": "組織設定",
+      "tab": {
+        "overview": "概覽",
+        "balance": "餘額",
+        "members": "成員"
+      },
+      "details": "詳情",
+      "slug": "標識",
+      "ownerId": "擁有者 #{{id}}",
+      "followsDefault": "跟隨站點預設",
+      "apply": "執行調整"
+    }
+  },
+  "userGroup": {
+    "panel": {
+      "settings": "設定",
+      "symbolFixed": "標識建立後不能修改。",
+      "publicHint": "用戶可以給自己的令牌選擇公開分組。",
+      "scope": "作用於這個分組的所有用戶"
+    },
+    "new": {
+      "subtitle": "同一分組的用戶共用價格倍率和速率限制",
+      "defaults": "建立後即啟用，倍率 1、每分鐘 300 次請求，可在分組面板裡修改",
+      "created": "已建立分組 {{symbol}}"
+    }
+  },
+  "redemptionPage": {
+    "panel": {
+      "details": "詳情",
+      "edit": "兌換碼",
+      "scope": "改動只作用於這個兌換碼"
+    },
+    "new": {
+      "subtitle": "用戶兌換餘額用的碼",
+      "nameHint": "同一次產生的兌換碼共用這個名稱，匯出批次也按名稱。",
+      "defaults": "不限帳戶類型、永不過期，可在兌換碼面板裡修改",
+      "defaultsMany": "產生 {{count}} 個，不限帳戶類型、永不過期；建立後下載兌換碼文字檔"
+    }
+  },
+  "orderlogPage": {
+    "panel": {
+      "details": "詳情",
+      "amounts": "費用與匯率",
+      "copyTradeNo": "複製訂單號",
+      "copied": "訂單號已複製",
+      "viewUser": "開啟該用戶"
+    }
   },
   "modelSupply": {
     "tab": "供應",

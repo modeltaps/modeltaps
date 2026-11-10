@@ -912,7 +912,29 @@
     "batchFailed": "{{count}} 人のユーザーの操作に失敗しました",
     "emptyTitle": "ユーザーはまだいません",
     "emptyDescription": "登録されるか、手動で作成するとここに表示されます。",
-    "searchShort": "ID・ユーザー名・メールで検索"
+    "searchShort": "ID・ユーザー名・メールで検索",
+    "panel": {
+      "tabs": "ユーザー設定",
+      "tab": {
+        "overview": "概要",
+        "profile": "プロフィール",
+        "access": "残高とグループ",
+        "security": "セキュリティ"
+      },
+      "account": "アカウント",
+      "quotaHint": "調整は金額の追加・差し引きを備考付きで記録します。「保存」には含まれません。",
+      "groupHint": "グループで価格倍率と利用できるチャネルが決まります。",
+      "roleLocked": "スーパー管理者のロールはここでは変更できません。",
+      "newPassword": "新しいパスワード",
+      "passwordHint": "8〜64 文字。現在のパスワードを置き換えます。",
+      "setPassword": "パスワードを設定"
+    },
+    "new": {
+      "subtitle": "ユーザー名とパスワードでログインするアカウント",
+      "passwordHint": "8〜64 文字。",
+      "defaults": "default グループの一般ユーザーとして作成します",
+      "created": "{{username}} を作成しました"
+    }
   },
   "command": {
     "search": "検索"
@@ -1546,7 +1568,6 @@
     "model_supply_upstream_missing": "このチャネルに送るモデル名を入力してください",
     "model_supply_exists": "このチャネルはすでにこのモデルを供給しています",
     "supply_pause_seconds_invalid": "一時停止する秒数を 0 より大きい値で入力してください",
-    "supply_pause_rules_invalid": "一時停止ルールが無効です：{{message}}",
     "model_identifier_exists": "この識別子のモデルは既に存在します",
     "model_referenced_by_aliases": "このモデルはまだエイリアスから参照されています：{{aliases}}",
     "model_alias_self": "モデルを自分自身のエイリアスにすることはできません",
@@ -1586,7 +1607,8 @@
     "routing_policy_scoring_invalid": "スコアリングは auto、logprobs、自己申告のいずれかを指定してください",
     "routing_policy_model_unavailable": "{{field}} はこの組織では利用できません（{{model}}）",
     "routing_policy_count_exceeded": "この組織のルーティングポリシーは上限の {{max}} 件に達しています",
-    "org_routing_policy_disabled": "このサイトでは組織のルーティングポリシーが有効になっていません"
+    "org_routing_policy_disabled": "このサイトでは組織のルーティングポリシーが有効になっていません",
+    "supply_pause_rules_invalid": "一時停止ルールが無効です：{{message}}"
   },
   "channelOAuth": {
     "tip": {
@@ -1649,7 +1671,6 @@
   "routingPolicy": {
     "create": "ポリシーを作成",
     "createTitle": "ルーティングポリシーを作成",
-    "editTitle": "ルーティングポリシーを編集",
     "empty": "ルーティングポリシーはまだありません。ポリシーはクライアントが呼び出せるモデル名で、各セッションの最初のメッセージがどの実モデルが応答するかを決めます。",
     "columns": {
       "name": "ポリシー",
@@ -1662,17 +1683,12 @@
       "fallbackRate": "フォールバック {{rate}}%"
     },
     "form": {
-      "tabBasic": "基本",
-      "tabAdvanced": "詳細",
-      "tabTry": "試す",
       "name": "モデル名",
       "nameHint": "クライアントが model フィールドに指定する名前。例: auto/coder",
       "nameHelp": "使えるのは英数字と . _ / - のみ、最大 100 文字、先頭と末尾に / は不可、既存モデルと重複不可。/v1/models に表示され、通常のモデルと同様にトークンや組織の許可リストにも追加できます。",
       "displayName": "表示名",
       "displayNameHint": "カタログでモデル名の代わりに表示されます。",
       "description": "説明",
-      "enabled": "有効",
-      "enabledHint": "無効なポリシーはモデル一覧に出ず、リクエストは model_not_found になります。",
       "decisionModel": "判定モデル",
       "decisionModelHint": "最初のユーザーメッセージを分類する小さく速いチャットモデル。セッションごとに 1 回、呼び出し元に課金されます。",
       "question": "質問",
@@ -1719,7 +1735,12 @@
       "probing": "確認中…",
       "probeSupported": "この判定モデルは選ばれたチャネルで logprobs を返します。確率によるスコアリングが使えます。",
       "probeUnsupported": "この判定モデルは選ばれたチャネルで logprobs を返しません。自動では自己申告の確信度を使い、logprobs のみでは常にフォールバックします。",
-      "probeFailed": "確認に失敗しました: {{error}}"
+      "probeFailed": "確認に失敗しました: {{error}}",
+      "tabBasic": "基本",
+      "tabAdvanced": "詳細",
+      "tabTry": "試す",
+      "enabled": "有効",
+      "enabledHint": "無効なポリシーはモデル一覧に出ず、リクエストは model_not_found になります。"
     },
     "templates": {
       "coding_change_size": "コーディング: 変更の大きさ",
@@ -1727,7 +1748,7 @@
       "reasoning_depth": "推論の深さ"
     },
     "tryIt": {
-      "intro": "このフォームの現在のポリシーで判定ステップだけを実行します。転送も課金もセッション固定も行いません。",
+      "intro": "保存済みのポリシーで判定ステップだけを実行します。転送も課金もセッション固定も行いません。",
       "message": "最初のユーザーメッセージ",
       "messageHint": "ログから実際の最初のメッセージを貼り付けてください。",
       "messagePlaceholder": "CLI に --verbose フラグを追加し、解析した引数をログに出す",
@@ -1774,7 +1795,8 @@
       "quota": "支出",
       "noLabel": "フォールバック",
       "byScoring": "スコアリング別",
-      "avgTopProbability": "最高確率の平均 {{value}}"
+      "avgTopProbability": "最高確率の平均 {{value}}",
+      "range": "期間"
     },
     "scoring": {
       "auto": "自動（使える場合は logprobs）",
@@ -1784,7 +1806,25 @@
     "scoringUsed": {
       "logprobs": "logprobs",
       "self_reported": "自己申告"
-    }
+    },
+    "panel": {
+      "tabs": "ポリシー設定",
+      "tab": {
+        "overview": "概要",
+        "routes": "ルート",
+        "try": "試す",
+        "settings": "設定"
+      },
+      "summary": "ルーティングの仕組み",
+      "routeCount_one": "{{count}} 件のルート",
+      "routeCount_other": "{{count}} 件のルート"
+    },
+    "new": {
+      "subtitle": "クライアントが呼ぶモデル名。最初のメッセージで実際のモデルが決まります",
+      "defaults": "有効・自動スコアリング・しきい値 {{threshold}} で作成します。「ルート」で変更できます",
+      "created": "ポリシーを作成しました"
+    },
+    "editTitle": "ルーティングポリシーを編集"
   },
   "logPage": {
     "routing": {
@@ -1996,7 +2036,6 @@
       "connectFailed": "接続できませんでした。キーとアドレスを確認してください"
     },
     "newChannel": "新しいチャネル",
-    "optional": "任意",
     "pane": {
       "refreshDone_other": "{{count}} チャネルのモデル一覧を更新しました",
       "refreshModels": "モデル一覧を更新",
@@ -2007,13 +2046,8 @@
       "testPartial": "{{count}} チャネル中 {{failed}} 件のテストに失敗しました"
     },
     "panel": {
-      "discard": "破棄",
-      "discardConfirm": "未保存の変更があります。閉じますか？",
       "enabled": "有効",
-      "save": "保存",
-      "saved": "保存しました",
       "scope": "変更はこのチャネルにのみ適用されます",
-      "switchConfirm": "このタブには未保存の変更があります。切り替えますか？",
       "tab": {
         "models": "モデル",
         "connection": "接続",
@@ -2023,6 +2057,11 @@
         "advanced": "詳細設定"
       },
       "tabs": "チャネル設定",
+      "discard": "破棄",
+      "discardConfirm": "未保存の変更があります。閉じますか？",
+      "save": "保存",
+      "saved": "保存しました",
+      "switchConfirm": "このタブには未保存の変更があります。切り替えますか？",
       "unsaved": "未保存の変更があります"
     },
     "range": {
@@ -2131,7 +2170,8 @@
       "delete": "タグとチャネルを削除",
       "priorityTitle": "タグ {{tag}} の優先度",
       "priorityHint": "このタグのすべてのチャネルに同じ優先度を設定します"
-    }
+    },
+    "optional": "任意"
   },
   "nav": {
     "sections": {
@@ -2203,6 +2243,78 @@
       "label": "セクション"
     },
     "mainLabel": "メインナビゲーション"
+  },
+  "objects": {
+    "optional": "任意",
+    "help": "ヘルプ",
+    "notFound": "存在しないか、削除されています",
+    "more": "その他の操作",
+    "panel": {
+      "discard": "破棄",
+      "discardConfirm": "未保存の変更があります。閉じますか？",
+      "save": "保存",
+      "saved": "保存しました",
+      "scope": "保存はこのタブにのみ適用されます",
+      "switchConfirm": "このタブには未保存の変更があります。切り替えますか？",
+      "unsaved": "未保存の変更があります"
+    },
+    "new": {
+      "create": "作成",
+      "discardConfirm": "入力した内容を破棄しますか？",
+      "missing": "未入力：{{items}}",
+      "listSep": "、"
+    },
+    "open": "開く"
+  },
+  "orgAdmin": {
+    "panel": {
+      "tabs": "組織の設定",
+      "tab": {
+        "overview": "概要",
+        "balance": "残高",
+        "members": "メンバー"
+      },
+      "details": "詳細",
+      "slug": "スラッグ",
+      "ownerId": "オーナー #{{id}}",
+      "followsDefault": "サイトの既定値に従う",
+      "apply": "適用"
+    }
+  },
+  "userGroup": {
+    "panel": {
+      "settings": "設定",
+      "symbolFixed": "識別子は作成後に変更できません。",
+      "publicHint": "ユーザーは自分の API キーに公開グループを選べます。",
+      "scope": "このグループのすべてのユーザーに適用されます"
+    },
+    "new": {
+      "subtitle": "同じグループのユーザーは価格倍率とレート制限を共有します",
+      "defaults": "有効・倍率 1・毎分 300 リクエストで作成します。グループのパネルで変更できます",
+      "created": "グループ {{symbol}} を作成しました"
+    }
+  },
+  "redemptionPage": {
+    "panel": {
+      "details": "詳細",
+      "edit": "コード",
+      "scope": "変更はこのコードにのみ適用されます"
+    },
+    "new": {
+      "subtitle": "ユーザーが残高と交換するコード",
+      "nameHint": "一度に作成したコードは同じ名前になり、バッチのエクスポートも名前で行います。",
+      "defaults": "誰でも交換でき、期限はありません。コードのパネルで変更できます",
+      "defaultsMany": "{{count}} 件・制限なし・期限なしで作成し、コードをテキストファイルでダウンロードします"
+    }
+  },
+  "orderlogPage": {
+    "panel": {
+      "details": "詳細",
+      "amounts": "手数料と為替レート",
+      "copyTradeNo": "注文番号をコピー",
+      "copied": "注文番号をコピーしました",
+      "viewUser": "ユーザーを開く"
+    }
   },
   "modelSupply": {
     "tab": "供給",

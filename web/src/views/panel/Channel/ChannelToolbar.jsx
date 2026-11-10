@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { NO_TAG } from './channelGroups';
-import { Segmented } from './channelParts';
+import { Segmented } from '@/components/objects';
 
 const STATUS_KEYS = ['all', 'enabled', 'manual', 'auto'];
 

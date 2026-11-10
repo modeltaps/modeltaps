@@ -17,7 +17,9 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { FilterBar, filterStateToParams, isEntryActive, paramsToFilterState } from '@/components/filter-bar';
 
+import { ROW_OPENS, rowOpenProps, useObjectRoute } from '@/components/objects';
 import { ORDER_STATUS, fetchOrders } from './paymentApi';
+import OrderPanel from './OrderPanel';
 
 // FilterBar 字段:文本(gateway_id/user_id/trade_no/gateway_no)+ status 单选 enum;
 // 时间范围由共享 TimeRangeSelect 承担(与 Log 一致,时间不入 chip)。后端均为单值标量参数。
@@ -54,8 +56,10 @@ function statusBadge(status, t) {
   return <Badge variant={opt?.variant || 'secondary'}>{opt ? t(opt.labelKey) : t('common.unknown')}</Badge>;
 }
 
+// 支付订单列表:点一行在右侧打开订单面板(?trade=<交易号>,只读)。
 export default function PaymentOrder() {
   const { t, i18n } = useTranslation();
+  const route = useObjectRoute([], { param: 'trade' });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(() => getPageSize('paymentOrder'));
   const [order, setOrder] = useState('desc');
@@ -234,7 +238,12 @@ export default function PaymentOrder() {
                 </TableRow>
               ) : (
                 orderList.map((row, index) => (
-                  <TableRow key={`${row.id}_${index}`}>
+                  <TableRow
+                    key={`${row.id}_${index}`}
+                    className={ROW_OPENS}
+                    data-state={row.trade_no === route.openId ? 'selected' : undefined}
+                    {...rowOpenProps(() => route.open(row.trade_no))}
+                  >
                     <TableCell className="whitespace-nowrap text-sm">{timestamp2string(row.created_at)}</TableCell>
                     <TableCell>{row.gateway_id}</TableCell>
                     <TableCell>{row.user_id}</TableCell>
@@ -264,85 +273,25 @@ export default function PaymentOrder() {
             {searching ? '…' : t('common.noData', { defaultValue: 'No data' })}
           </div>
         ) : (
-          <div className="md:hidden flex flex-col gap-3 p-3">
+          <div className="flex flex-col divide-y divide-border md:hidden">
             {orderList.map((row, index) => (
-              <div key={`${row.id}_${index}`} className="rounded-lg border border-border bg-card p-3.5 shadow-sm">
-                <div className="mb-2 text-sm font-medium font-mono text-xs">{row.trade_no}</div>
-                <dl className="flex flex-col divide-y divide-border/60">
-                  <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                    <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      {t('orderlogPage.tableHeaders.created_at')}
-                    </dt>
-                    <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">{timestamp2string(row.created_at)}</dd>
-                  </div>
-                  <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                    <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      {t('orderlogPage.tableHeaders.gateway_id')}
-                    </dt>
-                    <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">{row.gateway_id}</dd>
-                  </div>
-                  <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                    <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      {t('orderlogPage.tableHeaders.user_id')}
-                    </dt>
-                    <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">{row.user_id}</dd>
-                  </div>
-                  <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                    <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      {t('orderlogPage.tableHeaders.gateway_no')}
-                    </dt>
-                    <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm font-mono text-xs">{row.gateway_no}</dd>
-                  </div>
-                  <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                    <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      {t('orderlogPage.tableHeaders.amount')}
-                    </dt>
-                    <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">${row.amount}</dd>
-                  </div>
-                  <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                    <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      {t('orderlogPage.tableHeaders.fee')}
-                    </dt>
-                    <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">${row.fee}</dd>
-                  </div>
-                  <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                    <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      {t('orderlogPage.tableHeaders.discount')}
-                    </dt>
-                    <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">
-                      {row.discount} {row.order_currency}
-                    </dd>
-                  </div>
-                  <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                    <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      {t('orderlogPage.tableHeaders.order_amount')}
-                    </dt>
-                    <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">
-                      {row.order_amount} {row.order_currency}
-                    </dd>
-                  </div>
-                  <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                    <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      {t('orderlogPage.tableHeaders.exchange_rate')}
-                    </dt>
-                    <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">
-                      {row.exchange_rate > 0 ? row.exchange_rate : '-'}
-                    </dd>
-                  </div>
-                  <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                    <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      {t('orderlogPage.tableHeaders.quota')}
-                    </dt>
-                    <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">{row.quota}</dd>
-                  </div>
-                  <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
-                    <dt className="shrink-0 pt-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      {t('orderlogPage.tableHeaders.status')}
-                    </dt>
-                    <dd className="flex min-w-0 flex-wrap justify-end gap-1 text-right text-sm">{statusBadge(row.status, t)}</dd>
-                  </div>
-                </dl>
-              </div>
+              <button
+                key={`${row.id}_${index}`}
+                type="button"
+                onClick={() => route.open(row.trade_no)}
+                className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate font-mono text-xs">{row.trade_no}</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                    {timestamp2string(row.created_at)} · {t('orderlogPage.tableHeaders.user_id')} {row.user_id}
+                  </span>
+                </span>
+                <span className="flex shrink-0 flex-col items-end gap-1">
+                  <span className="text-sm tabular-nums">${row.amount}</span>
+                  {statusBadge(row.status, t)}
+                </span>
+              </button>
             ))}
           </div>
         )}
@@ -387,6 +336,8 @@ export default function PaymentOrder() {
           </div>
         </div>
       </Card>
+
+      {route.openId && <OrderPanel key={route.openId} tradeNo={route.openId} rows={orderList} onClose={route.close} />}
     </div>
   );
 }

@@ -10,13 +10,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ROW_OPENS, RowControl, rowOpenProps, useObjectRoute } from '@/components/objects';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import PageActions from '@/components/chrome/PageActions';
 import { API } from 'utils/api';
 import { showError, showSuccess } from 'utils/common';
 import { PAGE_SIZE_OPTIONS } from 'constants';
 import usePaginatedList from 'hooks/usePaginatedList';
-import UserGroupSheet from './UserGroupSheet';
+import UserGroupPanel from './UserGroupPanel';
+import NewUserGroupSheet from './NewUserGroupSheet';
 import { StatusCell, ActionsCell } from './UserGroupRowCells';
 import Pagination from '../components/Pagination';
 
@@ -26,10 +29,13 @@ const boolBadge = (t, v) => (
   </Badge>
 );
 
+// 用户分组列表:点一行在右侧打开分组面板(?id=,整张保存),新建用右侧面板(?new=1),只填标识和名称。
 export default function UserGroup() {
   const { t } = useTranslation();
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [editId, setEditId] = useState(0);
+  const route = useObjectRoute(['settings']);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  // Bumped after a list action so an open group panel reloads.
+  const [reloadKey, setReloadKey] = useState(0);
 
   // 分页列表状态 + 守卫化 fetch 生命周期(UX-13);本页固定 order=-id,无表头排序。
   const {
@@ -58,6 +64,8 @@ export default function UserGroup() {
       else return false;
       if (res.data.success) {
         showSuccess(t('userPage.operationSuccess'));
+        if (action === 'delete' && id === route.openId) route.close();
+        else setReloadKey((k) => k + 1);
         refresh();
       } else {
         showError(res.data.message);
@@ -68,9 +76,11 @@ export default function UserGroup() {
     }
   };
 
-  const openEdit = (id) => {
-    setEditId(id);
-    setSheetOpen(true);
+  const toggle = (item) => manageUserGroup(item.id, 'status');
+  const confirmDelete = () => {
+    const item = pendingDelete;
+    setPendingDelete(null);
+    if (item) manageUserGroup(item.id, 'delete');
   };
 
   const columns = useMemo(
@@ -84,16 +94,28 @@ export default function UserGroup() {
       { accessorKey: 'promotion', header: t('userGroup.promotion'), cell: (c) => boolBadge(t, c.getValue()) },
       { accessorKey: 'min', header: t('userGroup.min') + '($)' },
       { accessorKey: 'max', header: t('userGroup.max') + '($)' },
-      { id: 'enable', header: t('userGroup.enable'), cell: (c) => <StatusCell item={c.row.original} manageUserGroup={manageUserGroup} /> },
+      {
+        id: 'enable',
+        header: t('userGroup.enable'),
+        cell: (c) => (
+          <RowControl>
+            <StatusCell item={c.row.original} onToggle={toggle} />
+          </RowControl>
+        )
+      },
       {
         id: 'action',
         header: t('userPage.action'),
         meta: { className: 'sticky right-0 bg-card z-10 text-right w-[1%]' },
-        cell: (c) => <ActionsCell item={c.row.original} manageUserGroup={manageUserGroup} onEdit={openEdit} />
+        cell: (c) => (
+          <RowControl>
+            <ActionsCell item={c.row.original} onOpen={(id) => route.open(id)} onDelete={setPendingDelete} />
+          </RowControl>
+        )
       }
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t]
+    [t, route.openId]
   );
 
   const table = useTable({
@@ -124,7 +146,7 @@ export default function UserGroup() {
             <TooltipContent>{t('userPage.refresh')}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        <ResponsiveToolbarButton primary icon={Plus} label={t('userGroup.create')} onClick={() => openEdit(0)} />
+        <ResponsiveToolbarButton primary icon={Plus} label={t('userGroup.create')} onClick={route.openNew} />
       </PageActions>
 
       <Card>
@@ -150,7 +172,12 @@ export default function UserGroup() {
                 </TableRow>
               ) : (
                 table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow
+                    key={row.id}
+                    className={ROW_OPENS}
+                    data-state={row.original.id === route.openId ? 'selected' : undefined}
+                    {...rowOpenProps(() => route.open(row.original.id))}
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
                         {flexRender(cell.column.columnDef.cell ?? cell.getValue, cell.getContext())}
@@ -169,6 +196,7 @@ export default function UserGroup() {
           actionColumnIds={['action']}
           empty={t('common.noData', { defaultValue: 'No data' })}
           searching={searching}
+          onRowClick={(g) => route.open(g.id)}
         />
         <Pagination
           page={page}
@@ -180,15 +208,48 @@ export default function UserGroup() {
         />
       </Card>
 
-      <UserGroupSheet
-        open={sheetOpen}
-        groupId={editId}
-        onClose={() => setSheetOpen(false)}
-        onSaved={() => {
-          setSheetOpen(false);
-          refresh();
-        }}
-      />
+      {route.openId > 0 && (
+        <UserGroupPanel
+          key={route.openId}
+          groupId={route.openId}
+          onClose={route.close}
+          onChanged={refresh}
+          onToggle={toggle}
+          onDelete={setPendingDelete}
+          reloadKey={reloadKey}
+        />
+      )}
+
+      {route.isNew && (
+        <NewUserGroupSheet
+          onClose={route.close}
+          onCreated={(symbol) => {
+            showSuccess(t('userGroup.new.created', { symbol }));
+            route.close();
+            setPage(0);
+            refresh();
+          }}
+        />
+      )}
+
+      <Dialog open={Boolean(pendingDelete)} onOpenChange={(o) => !o && setPendingDelete(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('common.delete')}</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <p className="text-sm text-muted-foreground">{t('common.deleteConfirm', { title: pendingDelete?.name })}</p>
+          </DialogBody>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingDelete(null)}>
+              {t('userPage.cancel')}
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              {t('common.delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

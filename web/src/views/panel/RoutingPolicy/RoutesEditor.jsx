@@ -27,7 +27,7 @@ export default function RoutesEditor({ routes, onChange, modelOptions = [] }) {
   return (
     <div className="space-y-3">
       {routes.map((route, index) => (
-        <div key={index} className="rounded-md border border-border p-3" data-testid={`route-row-${index}`}>
+        <div key={index} className="rounded-lg border border-border p-3" data-testid={`route-row-${index}`}>
           <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
             <Input
               aria-label={t('routingPolicy.form.routeLabel')}

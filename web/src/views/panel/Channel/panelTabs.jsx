@@ -9,7 +9,6 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/sonner';
 import ProviderIcon from '@/components/brand/ProviderIcon';
@@ -22,7 +21,8 @@ import { splitList } from './channelGroups';
 import { usageNumbers, usageOf, usageOptions, usagePeers } from './channelUsage';
 import { applyMappingToModels, normalizeKeyInput } from './newChannel';
 import { BASE_URL_REQUIRED, DEFAULT_BASE_URLS, OAUTH_TYPES, typeLabels } from './providerDefaults';
-import { Field, GroupOptions, KeyLink, UsageOptions } from './channelParts';
+import { Field, ToggleField } from '@/components/objects';
+import { GroupOptions, KeyLink, UsageOptions } from './channelParts';
 import ChannelOAuth from './ChannelOAuth';
 import ModelListInput from './ModelListInput';
 import ModelMappingInput from './ModelMappingInput';
@@ -33,10 +33,9 @@ import PriceSyncDialog from './PriceSyncDialog';
 import ModelSelectorModal from './ModelSelectorModal';
 import ChannelSupplies from '../ModelInfo/supply/ChannelSupplies';
 
-// Tabs of the channel panel. Each tab edits a part of the channel on its own: `make(channel)`
-// builds the tab's draft, `patch(draft, channel, ctx)` turns it into the fields to save (or
-// `{ error }`), and `Body` renders the draft. The panel compares drafts to know when a tab has
-// unsaved changes.
+// Tabs of the channel panel (see components/objects/ObjectPanel). Each tab edits a part of the
+// channel on its own: `make(channel)` builds the tab's draft, `patch(draft, channel, ctx)` turns
+// it into the fields to save (or `{ error }`), and `Body` renders the draft.
 
 const pct = (v) => (v === null || v === undefined ? '—' : `${(v * 100).toFixed(1)}%`);
 const sec = (v) => (v === null || v === undefined ? '—' : `${(v / 1000).toFixed(2)} s`);
@@ -87,23 +86,9 @@ function ToolButton({ busy, icon: Icon, children, ...props }) {
 
 ToolButton.propTypes = { busy: PropTypes.bool, icon: PropTypes.elementType, children: PropTypes.node, disabled: PropTypes.bool };
 
-function ToggleField({ label, hint, checked, onChange }) {
-  return (
-    <div className="flex items-start justify-between gap-4 py-3 [&+&]:border-t [&+&]:border-border/60">
-      <div className="min-w-0">
-        <p className="text-sm font-medium">{label}</p>
-        {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
-      </div>
-      <Switch checked={!!checked} onCheckedChange={onChange} className="mt-0.5 shrink-0" />
-    </div>
-  );
-}
-
-ToggleField.propTypes = { label: PropTypes.node, hint: PropTypes.node, checked: PropTypes.bool, onChange: PropTypes.func };
-
 // ---------- Models ----------
 
-function ModelsBody({ channel, draft, setDraft, ctx }) {
+function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   const { t } = useTranslation();
   const labels = typeLabels(channel.type);
   const models = splitList(draft.models);
@@ -380,7 +365,7 @@ function UsageWindows({ channel }) {
 
 UsageWindows.propTypes = { channel: PropTypes.object.isRequired };
 
-function ConnectionBody({ channel, draft, setDraft, ctx }) {
+function ConnectionBody({ object: channel, draft, setDraft, ctx }) {
   const { t } = useTranslation();
   const labels = typeLabels(channel.type);
   const oauth = OAUTH_TYPES.has(channel.type);
@@ -539,7 +524,7 @@ const connectionTab = {
 
 // ---------- Groups & routing ----------
 
-function RoutingBody({ channel, draft, setDraft, ctx }) {
+function RoutingBody({ object: channel, draft, setDraft, ctx }) {
   const { t } = useTranslation();
   const peers = usagePeers({ ...channel, groups: draft.groups }, ctx.allChannels);
   const usage = usageOptions(channel, peers);
@@ -588,7 +573,7 @@ const routingTab = {
 
 // ---------- Request rewriting ----------
 
-function RewriteBody({ channel, draft, setDraft }) {
+function RewriteBody({ object: channel, draft, setDraft }) {
   const { t } = useTranslation();
   const labels = typeLabels(channel.type);
   return (
@@ -636,7 +621,7 @@ const rewriteTab = {
 
 // ---------- Monitoring ----------
 
-function MonitorBody({ channel, draft, setDraft, ctx }) {
+function MonitorBody({ object: channel, draft, setDraft, ctx }) {
   const { t } = useTranslation();
   const drift = channel.model_drift;
   const missing = drift?.missing_models || [];
@@ -766,7 +751,7 @@ const FLAGS = [
   'unified_request_response_model'
 ];
 
-function AdvancedBody({ channel, draft, setDraft, ctx }) {
+function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
   const { t } = useTranslation();
   const labels = typeLabels(channel.type);
   const hasPlugin = Boolean(pluginConfig[String(channel.type)]);
@@ -936,7 +921,7 @@ export const PANEL_TABS = [modelsTab, connectionTab, routingTab, rewriteTab, mon
 export const LEGACY_SECTION_TAB = { basic: 'connection', model: 'models', request: 'rewrite', advanced: 'advanced', plugin: 'advanced' };
 
 const bodyProps = {
-  channel: PropTypes.object.isRequired,
+  object: PropTypes.object.isRequired,
   draft: PropTypes.object.isRequired,
   setDraft: PropTypes.func.isRequired,
   ctx: PropTypes.object
