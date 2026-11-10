@@ -158,7 +158,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   logs, then a Develop group (API keys, models, playground, docs) and, for organization owners and
   admins, an Organization group (members and budgets, billing, organization settings). The five
   API consoles are one Playground item with a modality switch on the page; analytics and per-user
-  statistics are one Statistics item with a tab switch. The seven platform settings themes,
+  statistics are one Statistics item with a tab switch. The platform settings groups,
   personal settings and organization settings each get a section list on the left of the page
   instead of sidebar entries. The bottom of the sidebar shows the balance, the account row (with
   personal settings, appearance, language, docs and log out) and notifications. URLs are unchanged.
@@ -168,6 +168,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   image and the documentation site's logo and favicon use the same shape. It is drawn on whole-pixel
   grids at 12, 16 and 20 px and shown as pre-rendered bitmaps in the interface and as PNG
   favicons, so its edges stay smooth on standard-density screens.
+- Platform, organization and personal settings are one kind of page with three kinds of cards.
+  A form card saves everything in it, switches and its on/off switch included, from its footer
+  (Undo and Save); nothing saves the moment it is clicked any more, and no card has several save
+  buttons. Lists of objects (OIDC providers, payment gateways, the Telegram bot menu, chat links,
+  login sessions) are collection cards whose rows open an editor that saves the item on its own.
+  One-off actions (purging logs, monthly invoices, transferring or dissolving an organization)
+  are action rows with a confirmation. Groups with unsaved cards get a dot in the section list,
+  leaving the page with unsaved changes asks first, and pages with more than three groups have a
+  settings search that also finds fields, hints and list entries in other groups.
+- Platform settings are regrouped into Site, Sign-in & registration, Billing, Payments, Gateway,
+  Logs & privacy, Notifications & integrations and Organization policy (root only); mail sending
+  moves to Notifications & integrations and the provider icon library into Branding. Old group
+  and section links (`relay`, `integrations`, `organization`, `?tab=`, `?highlight=` of a card
+  that moved) redirect to the new place, and the command palette lists the groups and, while
+  typing, every card.
+- Invite codes have their own page under Finance in platform admin (`/panel/invite_code`); the
+  settings keep the "registration requires an invite code" switch with a link to it.
+- Personal access tokens move into Sign-in & security, and the organization team budget joins
+  the organization profile under General; members and budgets stay their own page.
 
 ### Fixed
 
