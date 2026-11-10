@@ -93,6 +93,52 @@ func GetModelSupplies(modelName string, channelId int) ([]*ModelSupply, error) {
 	return supplies, err
 }
 
+// ModelSupplyView is a supply with the channel facts the console shows on every row. A
+// deleted channel leaves the name empty and the status 0.
+type ModelSupplyView struct {
+	*ModelSupply
+	ChannelName   string `json:"channel_name"`
+	ChannelStatus int    `json:"channel_status"`
+	ChannelType   int    `json:"channel_type"`
+	ChannelTag    string `json:"channel_tag"`
+}
+
+// GetModelSupplyViews lists supplies like GetModelSupplies, each with its channel's name,
+// status, type and tag, reading the channels in one query.
+func GetModelSupplyViews(modelName string, channelId int) ([]*ModelSupplyView, error) {
+	supplies, err := GetModelSupplies(modelName, channelId)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]int, 0, len(supplies))
+	seen := map[int]bool{}
+	for _, s := range supplies {
+		if !seen[s.ChannelId] {
+			seen[s.ChannelId] = true
+			ids = append(ids, s.ChannelId)
+		}
+	}
+	byId := map[int]*Channel{}
+	if len(ids) > 0 {
+		var channels []*Channel
+		if err := DB.Select("id", "name", "status", "type", "tag").Where("id IN ?", ids).Find(&channels).Error; err != nil {
+			return nil, err
+		}
+		for _, ch := range channels {
+			byId[ch.Id] = ch
+		}
+	}
+	views := make([]*ModelSupplyView, 0, len(supplies))
+	for _, s := range supplies {
+		view := &ModelSupplyView{ModelSupply: s}
+		if ch := byId[s.ChannelId]; ch != nil {
+			view.ChannelName, view.ChannelStatus, view.ChannelType, view.ChannelTag = ch.Name, ch.Status, ch.Type, ch.Tag
+		}
+		views = append(views, view)
+	}
+	return views, nil
+}
+
 func GetModelSupply(id int) (*ModelSupply, error) {
 	var supply ModelSupply
 	if err := DB.First(&supply, id).Error; err != nil {
