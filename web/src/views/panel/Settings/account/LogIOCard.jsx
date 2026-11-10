@@ -3,18 +3,17 @@ import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 
 import { API } from 'utils/api';
-import { saveUserSetting } from 'utils/userSetting';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import { showError, showSuccess } from 'utils/common';
+import { FormCard, OptionList } from '@/components/settings/cards';
+import { ToggleRow } from '../../Setting/parts';
 
 // ==============================|| SETTINGS — ACCOUNT / LOG IO CARD ||============================== //
-// 个人 LogIO 留存开关,渲染在「数据与隐私」section:后端存三态(未设置 / on / off),
-// 前端只呈现「生效值」开关——未设置时取站点默认 log_io_default_user,拨动后写入显式 on/off。
-// 站点总闸门 log_io_enabled 关闭时整张卡不渲染。
-// 日志明细弹窗以 ?highlight=log-io 深链到本卡片(高亮 hook 挂在 account 分组层)。
+// Personal request / response retention, in 数据与隐私. The server keeps three states (unset / on /
+// off); the switch shows the effective value (unset follows the site default log_io_default_user)
+// and saving writes an explicit on / off. When the site switch log_io_enabled is off the page shows
+// a notice instead (see Privacy.jsx). The log detail dialog deep-links here with ?highlight=log-io.
 
-// 服务端三态可能回 "inherit"|"on"|"off" 字符串,也可能回 *bool;统一归一为哨兵字符串。
+// The server may answer "inherit" | "on" | "off" or a *bool; normalise to the sentinel strings.
 const triFromServer = (v) => (v === 'on' || v === true ? 'on' : v === 'off' || v === false ? 'off' : 'inherit');
 
 const DEFAULT_MAX_BODY_KB = 1024;
@@ -22,48 +21,64 @@ const DEFAULT_MAX_BODY_KB = 1024;
 export default function LogIOCard() {
   const { t } = useTranslation();
   const siteInfo = useSelector((state) => state.siteInfo);
-  const siteEnabled = Boolean(siteInfo?.log_io_enabled);
   const siteDefault = Boolean(siteInfo?.log_io_default_user);
   const maxBodyKb = Number(siteInfo?.log_io_max_body_kb) || DEFAULT_MAX_BODY_KB;
-  const [logIoDefault, setLogIoDefault] = useState('inherit');
+  const [stored, setStored] = useState('inherit');
+  const [draft, setDraft] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const loadUserSetting = async () => {
-      try {
-        const res = await API.get('/api/user/setting');
+    API.get('/api/user/setting')
+      .then((res) => {
         const { success, data } = res.data || {};
-        if (success && data) setLogIoDefault(triFromServer(data.log_io_default));
-      } catch {
-        /* 静默降级:拉取失败时维持哨兵默认 */
-      }
-    };
-    loadUserSetting();
+        if (success && data) setStored(triFromServer(data.log_io_default));
+      })
+      .catch(() => {});
   }, []);
 
-  if (!siteEnabled) return null;
+  const effective = stored === 'inherit' ? siteDefault : stored === 'on';
+  const checked = draft ?? effective;
+  const dirty = draft !== null && draft !== effective;
 
-  const checked = logIoDefault === 'inherit' ? siteDefault : logIoDefault === 'on';
-
-  const toggle = (next) => {
-    const value = next ? 'on' : 'off';
-    setLogIoDefault(value);
-    saveUserSetting({ log_io_default: value });
+  const save = async () => {
+    const value = checked ? 'on' : 'off';
+    setSaving(true);
+    try {
+      const res = await API.put('/api/user/setting', { log_io_default: value });
+      if (res.data?.success) {
+        setStored(value);
+        setDraft(null);
+        showSuccess(t('common.saveSuccess'));
+      } else {
+        showError(res.data?.message);
+      }
+    } catch (error) {
+      showError(error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <Card data-highlight="log-io">
-      <CardHeader>
-        <CardTitle className="text-lg">{t('profilePage.logIOSection')}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between gap-4">
-          <div className="space-y-0.5">
-            <Label className="font-normal">{t('profilePage.logIOToggle')}</Label>
-            <p className="text-xs text-muted-foreground">{t('profilePage.logIOHint', { kb: maxBodyKb })}</p>
-          </div>
-          <Switch checked={checked} onCheckedChange={toggle} />
-        </div>
-      </CardContent>
-    </Card>
+    <FormCard
+      title={t('profilePage.logIOSection')}
+      description={t('settingsUi.personal.cards.logIO.description')}
+      hint={t('settingsUi.personal.cards.logIO.hint')}
+      highlight="log-io"
+      dirty={dirty}
+      saving={saving}
+      onSave={save}
+      onReset={() => setDraft(null)}
+    >
+      <OptionList>
+        <ToggleRow
+          id="log-io-default"
+          label={t('profilePage.logIOToggle')}
+          description={t('profilePage.logIOHint', { kb: maxBodyKb })}
+          checked={checked}
+          onCheckedChange={setDraft}
+        />
+      </OptionList>
+    </FormCard>
   );
 }

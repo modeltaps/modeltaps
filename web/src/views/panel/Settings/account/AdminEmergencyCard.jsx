@@ -28,7 +28,7 @@ export default function AdminEmergencyCard({ siteInfo, inputs, reloadUser }) {
   }, []);
 
   return (
-    <SecurityCard title={t(tk('emergency'))} description={t(tk('emergencyHint'))}>
+    <SecurityCard title={t(tk('emergency'))} description={t(tk('emergencyHint'))} highlight="emergency">
       <div className="mb-2 flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
         <TriangleAlert className="mt-0.5 size-4 shrink-0 text-amber-500" aria-hidden="true" />
         <span>{t(tk('emergencyWarning'), { url })}</span>

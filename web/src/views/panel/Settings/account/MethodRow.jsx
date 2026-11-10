@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import { ExternalLink } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ActionCard } from '@/components/settings/cards';
 
 // ==============================|| SETTINGS — SECURITY PAGE PRIMITIVES ||============================== //
 // 账号安全页的一行:图标 + 标题 / 副标题 + 右侧唯一的动作。状态只用文字,不用带边框的标签,
@@ -66,18 +66,12 @@ export function RowGroupLabel({ children }) {
 
 RowGroupLabel.propTypes = { children: PropTypes.node };
 
-export function SecurityCard({ title, description, headerAction, children }) {
+// Security cards hold action rows only, so they use the settings ActionCard shell.
+export function SecurityCard({ title, description, headerAction, highlight, children }) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-        <div className="space-y-1.5">
-          <CardTitle className="text-lg">{title}</CardTitle>
-          {description && <CardDescription>{description}</CardDescription>}
-        </div>
-        {headerAction}
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
+    <ActionCard title={title} description={description} aside={headerAction} highlight={highlight}>
+      {children}
+    </ActionCard>
   );
 }
 
@@ -85,5 +79,6 @@ SecurityCard.propTypes = {
   title: PropTypes.node,
   description: PropTypes.node,
   headerAction: PropTypes.node,
+  highlight: PropTypes.string,
   children: PropTypes.node
 };

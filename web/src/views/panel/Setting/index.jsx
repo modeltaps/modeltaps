@@ -1,72 +1,103 @@
 import { Navigate, useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { CreditCard, Globe, Landmark, LogIn, Plug, ReceiptText, Route, ShieldCheck } from 'lucide-react';
 
-import SettingsLayout from '@/components/chrome/SettingsLayout';
-
+import SettingsPage from '@/components/settings/SettingsPage';
 import { useIsAdmin, useIsRoot } from 'utils/common';
 import useHighlightTarget from 'hooks/useHighlightTarget';
 import { useOptionSettings } from './parts';
-import { THEME_META } from './themeMeta';
-import SiteTheme from './themes/SiteTheme';
-import AuthTheme from './themes/AuthTheme';
-import BillingTheme from './themes/BillingTheme';
-import RelayTheme from './themes/RelayTheme';
-import PrivacyTheme from './themes/PrivacyTheme';
-import IntegrationsTheme from './themes/IntegrationsTheme';
-import OrganizationTheme from './themes/OrganizationTheme';
+import { groupDescriptionKey, groupLabelKey, resolveSettingsTarget, settingsGroupUrl, visibleGroups } from './registry';
+import { BrandingCard, DisplayCard, ExternalLinksCard, ServerAddressCard, VersionNoticeCard } from './cards/SiteCards';
+import {
+  AccountSystemCard,
+  AdminLoginCard,
+  EmailDomainCard,
+  GitHubOAuthCard,
+  LarkAuthCard,
+  LinuxDoOAuthCard,
+  LoginMethodsCard,
+  OidcProvidersCard,
+  TurnstileCard,
+  WeChatAuthCard
+} from './cards/AuthCards';
+import { BillingRulesCard, InviteRewardCard, QuotaCard, QuotaResetCard } from './cards/BillingCards';
+import { InvoiceCard, PaymentGatewaysCard, PaymentSettingsCard } from './cards/PaymentCards';
+import {
+  AutoRoutingCard,
+  ChannelAutoCard,
+  ErrorHandlingCard,
+  ImageProxyCard,
+  ModelNameMatchCard,
+  NativeProtocolCard,
+  PromptLimitsCard,
+  RetryCard,
+  SessionAffinityCard,
+  SupplyPauseRulesCard
+} from './cards/GatewayCards';
+import { LogConsumeCard, LogIOCard, SafetyCard } from './cards/PrivacyCards';
+import { BuiltinChatCard, ChatLinksCard, MjNotifyCard, NotificationsCard, SmtpCard, TelegramCard } from './cards/NotifyCards';
+import { OrgPolicyCard } from './cards/OrgPolicyCards';
 
-// ==============================|| PANEL — SYSTEM SETTINGS (admin) ||============================== //
-// Seven theme pages, one per `/panel/setting/:section` route, each a single column of
-// cards. The sidebar has one 平台设置 item; the themes are this page's in-page subnav.
-// Every option key maps 1:1 to the `/api/option/` API for functional parity.
-// The 13 legacy section ids and the older `?tab=` values redirect to their theme
-// with `?highlight=<card>` so old deep links land on the same card.
+// ==============================|| PANEL — PLATFORM SETTINGS (admin) ||============================== //
+// One settings page in eight groups (`/panel/setting/:group`); the groups and their cards come
+// from `./registry`, this file attaches a component to every card. All option cards share one
+// `useOptionSettings` state, so unsaved edits survive a group switch. Old group ids, the older
+// section ids and `?tab=` values, and highlights of cards that moved redirect to the right group.
 
-const THEME_COMPONENTS = {
-  site: SiteTheme,
-  auth: AuthTheme,
-  billing: BillingTheme,
-  relay: RelayTheme,
-  privacy: PrivacyTheme,
-  integrations: IntegrationsTheme,
-  organization: OrganizationTheme
+const CARD_COMPONENTS = {
+  'server-address': ServerAddressCard,
+  branding: BrandingCard,
+  display: DisplayCard,
+  'external-links': ExternalLinksCard,
+  'version-notice': VersionNoticeCard,
+  'account-system': AccountSystemCard,
+  'login-methods': LoginMethodsCard,
+  'oidc-providers': OidcProvidersCard,
+  'admin-login': AdminLoginCard,
+  'github-oauth': GitHubOAuthCard,
+  'wechat-auth': WeChatAuthCard,
+  'lark-auth': LarkAuthCard,
+  'linuxdo-oauth': LinuxDoOAuthCard,
+  turnstile: TurnstileCard,
+  'email-domain': EmailDomainCard,
+  quota: QuotaCard,
+  'billing-rules': BillingRulesCard,
+  'quota-reset': QuotaResetCard,
+  'invite-reward': InviteRewardCard,
+  payment: PaymentSettingsCard,
+  'payment-gateways': PaymentGatewaysCard,
+  invoice: InvoiceCard,
+  retry: RetryCard,
+  'error-handling': ErrorHandlingCard,
+  'channel-auto': ChannelAutoCard,
+  'supply-pause-rules': SupplyPauseRulesCard,
+  'session-affinity': SessionAffinityCard,
+  'model-name-match': ModelNameMatchCard,
+  'native-protocol': NativeProtocolCard,
+  'prompt-limits': PromptLimitsCard,
+  'image-proxy': ImageProxyCard,
+  'auto-routing': AutoRoutingCard,
+  'log-consume': LogConsumeCard,
+  'log-io': LogIOCard,
+  safety: SafetyCard,
+  smtp: SmtpCard,
+  notifications: NotificationsCard,
+  telegram: TelegramCard,
+  'builtin-chat': BuiltinChatCard,
+  'chat-links': ChatLinksCard,
+  'mj-notify': MjNotifyCard,
+  'org-policy': OrgPolicyCard
 };
 
-// Theme list (id / order / label / root-only) comes from `./themeMeta`.
-export const THEMES = THEME_META.map((theme) => ({ ...theme, Component: THEME_COMPONENTS[theme.id] }));
-
-const DEFAULT_THEME = THEMES[0].id;
-
-// 旧 section id → 新主题 + 落点卡片。
-const LEGACY_SECTION_MAP = {
-  general: { theme: 'site', highlight: 'server-address' },
-  branding: { theme: 'site', highlight: 'branding' },
-  email: { theme: 'site', highlight: 'smtp' },
-  oauth: { theme: 'auth', highlight: 'login-methods' },
-  login: { theme: 'auth', highlight: 'login-methods' },
-  invite: { theme: 'auth', highlight: 'invite-code' },
-  payment: { theme: 'billing', highlight: 'payment' },
-  gateways: { theme: 'billing', highlight: 'payment-gateways' },
-  model: { theme: 'relay', highlight: 'native-protocol' },
-  image: { theme: 'relay', highlight: 'image-proxy' },
-  ops: { theme: 'relay', highlight: 'channel-auto' },
-  safety: { theme: 'privacy', highlight: 'safety' },
-  chat: { theme: 'integrations', highlight: 'chat' },
-  org: { theme: 'organization', highlight: 'org-policy' }
-};
-
-// 更老的 `/panel/setting?tab=xxx`:先折叠到旧 section id,再走上面的映射。
-const LEGACY_TAB_MAP = { other: 'branding' };
-
-// 旧链接自带的 `?highlight=`(如日志详情的留存开关)决定落到哪个主题。
-const HIGHLIGHT_THEME_MAP = { 'log-io': 'privacy' };
-
-// 旧 section(可选叠加旧 tab)解析成新主题路径;未知值落到默认主题。
-const resolveLegacyTarget = (section, highlight) => {
-  const legacy = LEGACY_SECTION_MAP[section];
-  const theme = HIGHLIGHT_THEME_MAP[highlight] || legacy?.theme || DEFAULT_THEME;
-  const anchor = highlight || legacy?.highlight;
-  return anchor ? `/panel/setting/${theme}?highlight=${anchor}` : `/panel/setting/${theme}`;
+const GROUP_ICONS = {
+  site: Globe,
+  auth: LogIn,
+  billing: ReceiptText,
+  payment: CreditCard,
+  gateway: Route,
+  privacy: ShieldCheck,
+  notify: Plug,
+  orgpolicy: Landmark
 };
 
 export default function Setting() {
@@ -80,36 +111,26 @@ export default function Setting() {
 
   if (!isAdmin) return <Navigate to="/panel/dashboard" replace />;
 
-  // Root-only themes (组织策略) are hidden from non-root admins entirely.
-  const themes = THEMES.filter((s) => !s.rootOnly || isRoot);
-  const themeIds = themes.map(({ id }) => id);
-  const highlight = searchParams.get('highlight');
+  const target = resolveSettingsTarget({
+    section,
+    tab: searchParams.get('tab'),
+    highlight: searchParams.get('highlight'),
+    isRoot
+  });
+  if (target) return <Navigate to={target} replace />;
 
-  // Bare `/panel/setting`: honor a legacy `?tab=` link, otherwise land on the
-  // first theme.
-  if (!section) {
-    const legacyTab = searchParams.get('tab');
-    if (!legacyTab && !highlight) return <Navigate to={`/panel/setting/${DEFAULT_THEME}`} replace />;
-    return <Navigate to={resolveLegacyTarget(LEGACY_TAB_MAP[legacyTab] || legacyTab, highlight)} replace />;
-  }
-
-  // Legacy / unknown / root-gated section id redirects to the owning theme.
-  if (!themeIds.includes(section)) {
-    return <Navigate to={resolveLegacyTarget(section, highlight)} replace />;
-  }
-
-  const Active = themes.find(({ id }) => id === section).Component;
-  const items = themes.map((theme) => ({
-    id: theme.id,
-    label: t(theme.labelKey, { defaultValue: theme.fallback }),
-    to: `/panel/setting/${theme.id}`
+  const groups = visibleGroups(isRoot).map((group) => ({
+    id: group.id,
+    to: settingsGroupUrl(group.id),
+    icon: GROUP_ICONS[group.id],
+    label: t(groupLabelKey(group.id)),
+    description: t(groupDescriptionKey(group.id)),
+    badge: group.rootOnly ? 'root' : undefined,
+    cards: group.cards.map((card) => {
+      const Component = CARD_COMPONENTS[card.id];
+      return { id: card.id, render: () => <Component ctx={ctx} /> };
+    })
   }));
 
-  return (
-    <SettingsLayout label={t('nav.subnav.label')} items={items} activeId={section} className="max-w-7xl">
-      <div className="max-w-5xl">
-        <Active ctx={ctx} />
-      </div>
-    </SettingsLayout>
-  );
+  return <SettingsPage label={t('settingsUi.platform.label')} groups={groups} activeGroupId={section} className="max-w-7xl" />;
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   commandSections,
+  settingsCommandItems,
   contextSwitchTarget,
   deriveContext,
   findActiveItem,
@@ -71,7 +72,7 @@ describe('navSectionsFor (platform admin)', () => {
       { id: 'admin_main', items: ['systemInfo', 'analytics'] },
       { id: 'gateway', items: ['channel', 'pricing', 'routing_policy'] },
       { id: 'people', items: ['user', 'user_group', 'org_admin'] },
-      { id: 'finance', items: ['payment', 'redemption'] },
+      { id: 'finance', items: ['payment', 'redemption', 'invite_code'] },
       { id: 'admin_settings', items: ['platform_settings'] }
     ]);
   });
@@ -102,9 +103,10 @@ describe('findActiveItem', () => {
     expect(findActiveItem('/panel/analytics')?.id).toBe('analytics');
   });
 
-  it('platform settings themes resolve to one item', () => {
+  it('platform settings groups resolve to one item', () => {
     expect(findActiveItem('/panel/setting')?.id).toBe('platform_settings');
-    expect(findActiveItem('/panel/setting/billing')?.id).toBe('platform_settings');
+    expect(findActiveItem('/panel/setting/gateway')?.id).toBe('platform_settings');
+    expect(findActiveItem('/panel/invite_code')?.id).toBe('invite_code');
   });
 
   it('settings pages: personal vs organization', () => {
@@ -112,7 +114,9 @@ describe('findActiveItem', () => {
     expect(findActiveItem('/panel/settings/account/security')?.id).toBe('personal_settings');
     expect(findActiveItem('/panel/settings/org/3/general')?.id).toBe('org_settings');
     expect(findActiveItem('/panel/settings/org/3/members')?.id).toBe('org_members');
-    expect(findActiveItem('/panel/settings/org/3/budget')?.id).toBe('org_members');
+    expect(findActiveItem('/panel/settings/org/3/danger')?.id).toBe('org_settings');
+    // The old budget section redirects to the 常规 group of the organization settings.
+    expect(findActiveItem('/panel/settings/org/3/budget')?.id).toBe('org_settings');
   });
 
   it('redirect-only legacy paths do not resolve', () => {
@@ -194,8 +198,24 @@ describe('commandSections', () => {
       'user_group',
       'payment',
       'redemption',
+      'invite_code',
       'platform_settings'
     ]);
     expect(admin.items[0].href).toBe('/panel/analytics');
+  });
+
+  it('platform settings groups are listed; cards only show while typing', () => {
+    const groupIds = (isRoot) =>
+      commandSections({ isAdmin: true, isRoot })
+        .find((s) => s.id === 'platform_settings')
+        .items.filter((i) => !i.searchOnly)
+        .map((i) => i.href);
+    expect(groupIds(false)).toEqual(
+      ['site', 'auth', 'billing', 'payment', 'gateway', 'privacy', 'notify'].map((g) => `/panel/setting/${g}`)
+    );
+    expect(groupIds(true)).toContain('/panel/setting/orgpolicy');
+    const cards = settingsCommandItems({ isRoot: false }).filter((i) => i.searchOnly);
+    expect(cards.find((i) => i.id === 'setting_card_smtp').href).toBe('/panel/setting/notify?highlight=smtp');
+    expect(cards.some((i) => i.id === 'setting_card_org-policy')).toBe(false);
   });
 });

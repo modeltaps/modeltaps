@@ -34,7 +34,7 @@ const MAX_MEMBER_MODES = [
 // ==============================|| PANEL — ORG ADMIN (site admin) ||============================== //
 // Site-level organization list (spec §3.8 / a8): list + enable/disable +
 // pool quota adjustment + dissolve. Global org options moved to the Setting page
-// (`/panel/setting/org`, root-only) per IA-2/IA-4 — this page is a pure list now.
+// (`/panel/setting/orgpolicy`, root-only) per IA-2/IA-4 — this page is a pure list now.
 // Backend is /api/organization/* (RootAuth); route is wrapped in AdminGuard like
 // other admin pages and non-admins get the in-place 404.
 
