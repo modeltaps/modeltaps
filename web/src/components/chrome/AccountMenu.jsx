@@ -95,7 +95,9 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, conte
       className="flex h-9 w-full min-w-0 items-center gap-2 rounded-lg px-2 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <UserAvatar user={user} className="size-6" textClass="text-[10px]" />
-      <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">{name}</span>
+      {/* Optical nudge: Latin caps sit ~0.6 px above the line box centre, so the name looked high
+          against the round avatar (measured at 1x: ink 1 px above the avatar centre). */}
+      <span className="min-w-0 flex-1 translate-y-[0.5px] truncate text-[13px] font-medium text-foreground">{name}</span>
     </button>
   );
 
