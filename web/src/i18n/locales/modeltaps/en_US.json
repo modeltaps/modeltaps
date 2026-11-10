@@ -709,7 +709,8 @@
   "pricingPage": {
     "catalogTabs": {
       "models": "Models",
-      "vendors": "Vendors"
+      "vendors": "Vendors",
+      "paused": "Paused"
     }
   },
   "listPage": {
@@ -2281,5 +2282,123 @@
       "label": "Sections"
     },
     "mainLabel": "Main navigation"
+  },
+  "modelSupply": {
+    "tab": "Supplies",
+    "column": "Supply",
+    "count_one": "{{count}} supply",
+    "count_other": "{{count}} supplies",
+    "channel": "Channel",
+    "model": "Model",
+    "upstream": "Upstream model",
+    "priority": "Priority",
+    "weight": "Weight",
+    "stateLabel": "State",
+    "enabled": "Use this supply",
+    "actions": "Supply actions",
+    "edit": "Edit",
+    "save": "Save",
+    "delete": "Delete supply",
+    "deleteTitle": "Delete supply",
+    "deleteConfirm": "Stop sending {{model}} to {{channel}}? The channel itself is not changed.",
+    "deleted": "Supply deleted",
+    "moveUp": "Move to a higher tier",
+    "moveDown": "Move to a lower tier",
+    "pauseFor": "Pause for",
+    "paused": "Paused for {{time}}",
+    "resume": "Resume now",
+    "resumeChannel": "Resume the whole channel",
+    "resumeNow": "Resume",
+    "resumed": "Back in rotation",
+    "openChannel": "Open channel {{name}}",
+    "channelDeleted": "Deleted channel #{{id}}",
+    "savedRightAway": "Changes on this tab are saved right away.",
+    "empty": "No channel supplies this model yet",
+    "emptyHint": "Add a supply to choose which channel serves it and under which upstream name.",
+    "orderHint": "Higher priority tiers are tried first; a lower tier is used only when every supply above it is unavailable.",
+    "switchOff": "Supply routing is off. These supplies are saved, but requests still follow each channel's model list until ModelSupplyEnabled is turned on.",
+    "upstreamRequired": "Enter the model name the channel should receive",
+    "priorityInvalid": "Priority must be a whole number",
+    "weightInvalid": "Weight must be a whole number, 0 or more",
+    "minutes_one": "{{count}} minute",
+    "minutes_other": "{{count}} minutes",
+    "hours_one": "{{count}} hour",
+    "hours_other": "{{count}} hours",
+    "seconds_one": "{{count}} second",
+    "seconds_other": "{{count}} seconds",
+    "status": {
+      "label": "Status",
+      "help": "Draft: not listed and not callable. Published: listed and callable. Retired: callable but no longer listed. Applies once supply routing is on.",
+      "draft": "Draft",
+      "published": "Published",
+      "retired": "Retired"
+    },
+    "mode": {
+      "label": "Within a tier",
+      "balance": "Balance",
+      "failover": "Failover",
+      "balanceHint": "Requests are split across the supplies of a tier by weight.",
+      "failoverHint": "The supply with the highest weight in a tier takes every request; the others are its backups.",
+      "saved": "Supply mode saved"
+    },
+    "tier": {
+      "only": "One tier",
+      "first": "Tried first",
+      "backup_one": "Backup {{count}}",
+      "backup_other": "Backup {{count}}",
+      "priority": "priority {{priority}}"
+    },
+    "state": {
+      "ok": "Available",
+      "paused": "Paused",
+      "pausedUntil": "Paused until {{time}}",
+      "probing": "Waiting for recovery test",
+      "disabled": "Off",
+      "channel_off": "Channel disabled",
+      "wholeChannel": "whole channel"
+    },
+    "pause": {
+      "rule": "Rule: {{rule}}",
+      "probeHint": "A test request runs when the pause ends; it resumes only if the test passes."
+    },
+    "rule": {
+      "quota": "Quota or balance used up",
+      "credential": "Invalid credentials",
+      "model_not_found": "Model not found upstream",
+      "upstream_failure": "Repeated upstream failures",
+      "manual": "Paused by an admin"
+    },
+    "add": {
+      "button": "Add supply",
+      "submit": "Add",
+      "done": "Supply added",
+      "offering": "Already lists this model",
+      "others": "Other channels",
+      "pickChannel": "Choose a channel",
+      "searchChannel": "Search channels",
+      "noChannel": "No channel found",
+      "channelRequired": "Choose a channel",
+      "hint": "The upstream name comes from the channel's model mapping. A new supply joins as a backup below the lowest tier."
+    },
+    "channelSupplies": {
+      "title_one": "Supplies {{count}} public model",
+      "title_other": "Supplies {{count}} public models",
+      "readonly": "Edited on the model page",
+      "none": "No public model uses this channel as a supply yet.",
+      "open": "Open the supplies of {{model}}"
+    },
+    "pausedPage": {
+      "description": "Channels, or models on a channel, that a pause rule or an admin has taken out of rotation. They come back on their own when the pause ends.",
+      "empty": "Nothing is paused",
+      "emptyHint": "Pauses shorter than a minute are kept in memory only and are not listed.",
+      "scope": "Paused",
+      "rule": "Rule",
+      "until": "Until",
+      "reason": "Upstream error",
+      "probe": "test before resuming",
+      "probes_one": "{{count}} failed test",
+      "probes_other": "{{count}} failed tests",
+      "rulesOff": "Pause rules are off: failures go back to the old auto-disable and cool-down. Pauses already listed still end on time."
+    }
   }
 }

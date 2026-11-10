@@ -708,7 +708,8 @@
   "pricingPage": {
     "catalogTabs": {
       "models": "模型",
-      "vendors": "廠商"
+      "vendors": "廠商",
+      "paused": "暫停中"
     }
   },
   "listPage": {
@@ -2197,5 +2198,116 @@
       "label": "分組"
     },
     "mainLabel": "主導覽"
+  },
+  "modelSupply": {
+    "tab": "供應",
+    "column": "供應",
+    "count_other": "{{count}} 個供應",
+    "channel": "渠道",
+    "model": "模型",
+    "upstream": "上游模型",
+    "priority": "優先級",
+    "weight": "權重",
+    "stateLabel": "狀態",
+    "enabled": "啟用此供應",
+    "actions": "供應操作",
+    "edit": "編輯",
+    "save": "儲存",
+    "delete": "刪除供應",
+    "deleteTitle": "刪除供應",
+    "deleteConfirm": "不再把 {{model}} 傳給 {{channel}}？渠道本身不受影響。",
+    "deleted": "已刪除供應",
+    "moveUp": "移到更高一檔",
+    "moveDown": "移到更低一檔",
+    "pauseFor": "暫停",
+    "paused": "已暫停 {{time}}",
+    "resume": "立即恢復",
+    "resumeChannel": "恢復整個渠道",
+    "resumeNow": "恢復",
+    "resumed": "已恢復調度",
+    "openChannel": "打開渠道 {{name}}",
+    "channelDeleted": "已刪除的渠道 #{{id}}",
+    "savedRightAway": "此頁的改動會即時儲存。",
+    "empty": "還沒有渠道供應這個模型",
+    "emptyHint": "新增供應，指定由哪個渠道提供、傳給上游時用甚麼模型名稱。",
+    "orderHint": "優先級高的檔先試；只有上面一檔全部不可用時才用下一檔。",
+    "switchOff": "按供應路由尚未開啟。這些供應已儲存，但在開啟 ModelSupplyEnabled 之前，請求仍按各渠道的模型列表路由。",
+    "upstreamRequired": "請填寫傳給該渠道的模型名稱",
+    "priorityInvalid": "優先級須為整數",
+    "weightInvalid": "權重須為 0 或以上的整數",
+    "minutes_other": "{{count}} 分鐘",
+    "hours_other": "{{count}} 小時",
+    "seconds_other": "{{count}} 秒",
+    "status": {
+      "label": "發佈狀態",
+      "help": "草稿：不列出、不可調用；已發佈：列出且可調用；已下架：仍可調用但不再列出。開啟按供應路由後生效。",
+      "draft": "草稿",
+      "published": "已發佈",
+      "retired": "已下架"
+    },
+    "mode": {
+      "label": "同一檔內",
+      "balance": "負載均衡",
+      "failover": "主備",
+      "balanceHint": "同一檔的供應按權重分擔請求。",
+      "failoverHint": "同一檔中權重最高的供應承接全部請求，其餘作為它的後備。",
+      "saved": "供應模式已儲存"
+    },
+    "tier": {
+      "only": "僅一檔",
+      "first": "優先嘗試",
+      "backup_other": "後備 {{count}}",
+      "priority": "優先級 {{priority}}"
+    },
+    "state": {
+      "ok": "可用",
+      "paused": "已暫停",
+      "pausedUntil": "暫停到 {{time}}",
+      "probing": "等待恢復測試",
+      "disabled": "已停用",
+      "channel_off": "渠道已停用",
+      "wholeChannel": "整個渠道"
+    },
+    "pause": {
+      "rule": "規則：{{rule}}",
+      "probeHint": "暫停結束時先發一次測試請求，通過才恢復。"
+    },
+    "rule": {
+      "quota": "額度或餘額耗盡",
+      "credential": "憑證無效",
+      "model_not_found": "上游沒有該模型",
+      "upstream_failure": "上游連續出錯",
+      "manual": "管理員手動暫停"
+    },
+    "add": {
+      "button": "新增供應",
+      "submit": "新增",
+      "done": "已新增供應",
+      "offering": "已列出此模型",
+      "others": "其他渠道",
+      "pickChannel": "選擇渠道",
+      "searchChannel": "搜尋渠道",
+      "noChannel": "找不到渠道",
+      "channelRequired": "請選擇渠道",
+      "hint": "上游模型名稱取自渠道的模型映射。新供應預設作為後備，排在最低一檔之下。"
+    },
+    "channelSupplies": {
+      "title_other": "供應 {{count}} 個公開模型",
+      "readonly": "在模型頁編輯",
+      "none": "還沒有公開模型把這個渠道用作供應。",
+      "open": "打開 {{model}} 的供應"
+    },
+    "pausedPage": {
+      "description": "被暫停規則或管理員暫時移出調度的渠道，或渠道上的某個模型。暫停結束後會自動恢復。",
+      "empty": "目前沒有暫停",
+      "emptyHint": "不足一分鐘的暫停只保存在記憶體中，這裡不會列出。",
+      "scope": "暫停範圍",
+      "rule": "規則",
+      "until": "暫停到",
+      "reason": "上游報錯",
+      "probe": "恢復前先測試",
+      "probes_other": "測試失敗 {{count}} 次",
+      "rulesOff": "暫停規則已關閉：出錯時回到舊的自動停用與冷卻。已列出的暫停仍會按時結束。"
+    }
   }
 }
