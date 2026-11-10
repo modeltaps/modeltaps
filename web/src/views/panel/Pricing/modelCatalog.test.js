@@ -45,6 +45,8 @@ describe('legacy route redirects', () => {
   it('keeps new tabs and falls back to models', () => {
     expect(resolveCatalogTab('models')).toBe('models');
     expect(resolveCatalogTab('vendors')).toBe('vendors');
+    expect(resolveCatalogTab('paused')).toBe('paused');
+    expect(resolveCatalogTab('pending')).toBe('pending');
     expect(resolveCatalogTab(null)).toBe('models');
     expect(resolveCatalogTab('bogus')).toBe('models');
   });

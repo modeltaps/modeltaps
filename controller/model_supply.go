@@ -22,6 +22,8 @@ func respondSupplyError(c *gin.Context, err error) {
 		{model.ErrSupplyChannelNotFound, common.APICodeModelSupplyChannelNotFound},
 		{model.ErrSupplyUpstreamMissing, common.APICodeModelSupplyUpstreamMissing},
 		{model.ErrSupplyExists, common.APICodeModelSupplyExists},
+		{model.ErrPendingNotFound, common.APICodeSupplyPendingNotFound},
+		{model.ErrModelStatus, common.APICodeModelStatusInvalid},
 	}
 	for _, entry := range codes {
 		if errors.Is(err, entry.err) {
@@ -157,4 +159,53 @@ func PreviewModelSupply(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": preview})
+}
+
+// GetPendingUpstreamModels lists new upstream models waiting on channels for an admin: each
+// with the channels it waits on and the public model it most likely belongs to.
+func GetPendingUpstreamModels(c *gin.Context) {
+	pending, err := model.GetPendingUpstreamModels()
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": pending})
+}
+
+// AttachPendingUpstreamModel supplies a public model with a waiting upstream model on its
+// channels, creating the public model first when asked to.
+func AttachPendingUpstreamModel(c *gin.Context) {
+	var req model.PendingAttach
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	result, err := model.AttachPendingUpstreamModel(req)
+	if err != nil {
+		respondSupplyError(c, err)
+		return
+	}
+	for _, supply := range result.Supplies {
+		model.RecordModelCatalogAudit(c.GetInt("id"), model.ModelSupplyActionCreate, supply.Model, nil, supply)
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": result})
+}
+
+// IgnorePendingUpstreamModel stops listing a waiting upstream model on the given channels (all
+// when none are given).
+func IgnorePendingUpstreamModel(c *gin.Context) {
+	var req struct {
+		UpstreamModel string `json:"upstream_model"`
+		ChannelIds    []int  `json:"channel_ids"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	changed, err := model.IgnorePendingUpstreamModel(req.UpstreamModel, req.ChannelIds)
+	if err != nil {
+		respondSupplyError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": gin.H{"channels": changed}})
 }

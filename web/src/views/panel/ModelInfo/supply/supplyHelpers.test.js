@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  pendingTarget,
+  publicModelNames,
   channelGroups,
   countSuppliesByModel,
   defaultNewPriority,
@@ -262,5 +264,27 @@ describe('parseSupplyForm', () => {
 describe('modelSupplyPath', () => {
   it('links to the supplies tab of the model page', () => {
     expect(modelSupplyPath('a/b c')).toBe('/panel/pricing?tab=models&model=a%2Fb%20c&panel=supplies');
+  });
+});
+
+describe('pending upstream models', () => {
+  const rows = [
+    { model: 'claude-opus-5' },
+    { model: 'opus', alias_of: 'claude-opus-5' },
+    { model: 'opus-latest', alias_of: 'opus' },
+    { model: 'auto/coder', kind: 'routing_policy' },
+    { model: 'a-model' }
+  ];
+
+  it('lists public model names only', () => {
+    expect(publicModelNames(rows)).toEqual(['a-model', 'claude-opus-5']);
+  });
+
+  it('tells what attaching to a name does', () => {
+    expect(pendingTarget('claude-opus-5', rows)).toEqual({ kind: 'public', model: 'claude-opus-5' });
+    expect(pendingTarget(' opus-latest ', rows)).toEqual({ kind: 'alias', model: 'opus-latest', canonical: 'claude-opus-5' });
+    expect(pendingTarget('auto/coder', rows)).toEqual({ kind: 'policy', model: 'auto/coder' });
+    expect(pendingTarget('brand-new', rows)).toEqual({ kind: 'new', model: 'brand-new' });
+    expect(pendingTarget('  ', rows).kind).toBe('empty');
   });
 });

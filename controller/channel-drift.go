@@ -33,6 +33,9 @@ func CheckChannelModelDrift(channel *model.Channel) (*model.ModelDriftResult, er
 		return nil, err
 	}
 	result.NewModels = filterIgnoredModels(result.NewModels, newDriftIgnoreMatcher(channel.DriftIgnoreRules))
+	// A model a supply on this channel already sends upstream is configured, whatever the
+	// channel's own model list says.
+	result.NewModels = model.WithoutSuppliedModels(channel.Id, result.NewModels)
 	return result, nil
 }
 
@@ -48,8 +51,10 @@ func filterIgnoredModels(models []string, matcher *driftIgnoreMatcher) []string 
 
 // applyDriftAutoAdd adds the new upstream models to a channel that opted in, clears them
 // from the drift result and fills their prices and metadata. It returns the models added.
+// While supplies route requests the channel's model list no longer serves anything, so new
+// models stay in the result and wait on the models page for an admin instead.
 func applyDriftAutoAdd(ch *model.Channel, result *model.ModelDriftResult) []string {
-	if !ch.DriftAutoAdd || len(result.NewModels) == 0 {
+	if !ch.DriftAutoAdd || config.ModelSupplyEnabled || len(result.NewModels) == 0 {
 		return nil
 	}
 	added := result.NewModels

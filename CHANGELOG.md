@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- New upstream models wait for an admin. The models page has a "New upstream models" tab
+  listing the models the drift check found new on a channel that no supply on that channel uses
+  yet, each with its channels and the public model it most likely belongs to. Attaching adds a
+  supply on the chosen channels, at each channel's priority and weight; a public model that does
+  not exist yet is created as a draft. Ignoring takes the model off the list. API:
+  `GET /api/model_supply/pending`, `POST /api/model_supply/pending/attach`,
+  `POST /api/model_supply/pending/ignore`. While `ModelSupplyEnabled` is on, the channel option
+  that adds new upstream models automatically leaves them on this list instead, and the drift
+  check no longer reports a model a supply on the channel already sends.
 - The supply migration (`POST /api/model_supply/migrate`) recognises a public model listed
   under another name. A channel model without a catalog row that the curated seed lists as an
   alias, or whose name without its `vendor/` prefix is a public model (for example

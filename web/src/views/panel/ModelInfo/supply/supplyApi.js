@@ -30,6 +30,18 @@ export async function listUserGroups() {
   }
 }
 
+// New upstream models waiting on channels for an admin:
+// [{ upstream_model, suggestion: { model, source, exists, status }, channels: [{ channel_id, channel_name, ... }] }].
+export const listPendingModels = () => API.get('/api/model_supply/pending').then(body);
+// Supplies `model` with the upstream model on `channel_ids` (every channel it waits on when
+// empty). With `create`, a model that is not public yet is created first, as a draft.
+export const attachPendingModel = ({ upstream_model, model, channel_ids = [], create = false }) =>
+  API.post('/api/model_supply/pending/attach', { upstream_model, model, channel_ids, create }).then(body);
+export const ignorePendingModel = ({ upstream_model, channel_ids = [] }) =>
+  API.post('/api/model_supply/pending/ignore', { upstream_model, channel_ids }).then(body);
+// Every catalog row (public models, aliases, routing policies), for picking a public model.
+export const listCatalogRows = () => API.get('/api/model_info/catalog').then(body);
+
 export const listPauses = () => API.get('/api/supply_pause/').then(body);
 export const pauseSupply = ({ channel_id, model, seconds, probe = false }) =>
   API.post('/api/supply_pause/', { channel_id, model, seconds, probe }).then(body);
