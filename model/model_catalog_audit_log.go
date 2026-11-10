@@ -12,6 +12,10 @@ const (
 	ModelCatalogActionHide      = "catalog.hide"
 	ModelCatalogActionUnhide    = "catalog.unhide"
 	ModelCatalogActionApplySeed = "catalog.apply_seed"
+	ModelSupplyActionCreate     = "supply.create"
+	ModelSupplyActionUpdate     = "supply.update"
+	ModelSupplyActionDelete     = "supply.delete"
+	ModelSupplyActionMigrate    = "supply.migrate"
 )
 
 // 旧的发布 / 下架动作：不再写入，只供 hidden 迁移回放历史审计。
