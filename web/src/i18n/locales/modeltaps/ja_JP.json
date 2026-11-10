@@ -2822,7 +2822,8 @@
   "home": {
     "hero": {
       "tagline": "すべてのモデルを、ひとつの出口から",
-      "ctaPrimary": "API キーを取得"
+      "ctaPrimary": "API キーを取得",
+      "catchphrase": "ひねれば、すぐ使える"
     }
   }
 }

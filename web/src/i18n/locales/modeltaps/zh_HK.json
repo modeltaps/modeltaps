@@ -2822,7 +2822,8 @@
   "home": {
     "hero": {
       "tagline": "所有模型，一個出口",
-      "ctaPrimary": "取得 API Key"
+      "ctaPrimary": "取得 API Key",
+      "catchphrase": "扭開就用"
     }
   }
 }
