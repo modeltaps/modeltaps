@@ -640,7 +640,9 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
 
       <SupplySwitchNote switches={switches} active={preview?.active} />
 
-      {supplies && supplies.length > 0 && <RequestPreview groups={groups} group={group} onGroupChange={changeGroup} preview={view} failed={Boolean(group) && groupFailed} />}
+      {supplies && supplies.length > 0 && (
+        <RequestPreview groups={groups} group={group} onGroupChange={changeGroup} preview={view} failed={Boolean(group) && groupFailed} />
+      )}
 
       {adding && supplies && (
         <AddSupplyForm
