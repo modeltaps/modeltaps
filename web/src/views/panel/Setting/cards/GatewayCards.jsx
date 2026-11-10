@@ -16,7 +16,7 @@ import { describePauseRule, pauseRulesError, pauseRulesText } from './pauseRules
 
 // ==============================|| PLATFORM SETTINGS — 网关 ||============================== //
 // Retry, error handling, channel auto disable / recover, session affinity, model name matching,
-// native protocols, prompt limits, image proxy and the auto routing billing switch.
+// native protocols, prompt limits, image proxy and the auto routing options.
 
 const gsKey = (k) => `setting_index.operationSettings.generalSettings.${k}`;
 
@@ -442,9 +442,12 @@ export function ImageProxyCard({ ctx }) {
   );
 }
 
-// Policies live on the auto routing page; this card keeps the billing switch for decision calls.
+// Policies live on the auto routing page; this card keeps the billing switch for decision calls
+// and whether organizations may manage their own policies (组织 → 自动路由), with a cap per
+// organization.
 export function AutoRoutingCard({ ctx }) {
   const { t } = useTranslation();
+  const { inputs, setField } = ctx;
   const gs = (k) => t(gsKey(k));
   return (
     <OptionCard
@@ -466,7 +469,22 @@ export function AutoRoutingCard({ ctx }) {
           description={gs('routingDecisionBillingDescription')}
           {...bindSwitch(ctx, 'RoutingDecisionBillingEnabled')}
         />
+        <ToggleRow
+          id="OrganizationRoutingPolicyEnabled"
+          label={gs('orgRoutingPolicy')}
+          description={gs('orgRoutingPolicyDescription')}
+          {...bindSwitch(ctx, 'OrganizationRoutingPolicyEnabled')}
+        />
       </OptionList>
+      <TextRow
+        id="OrganizationRoutingPolicyMaxCount"
+        type="number"
+        label={gs('orgRoutingPolicyMaxCount')}
+        value={inputs.OrganizationRoutingPolicyMaxCount}
+        onChange={(v) => setField('OrganizationRoutingPolicyMaxCount', v)}
+        placeholder="20"
+        description={gs('orgRoutingPolicyMaxCountDescription')}
+      />
     </OptionCard>
   );
 }

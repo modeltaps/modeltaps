@@ -1857,7 +1857,7 @@
         "routingDecisionBilling": "決策呼叫計費",
         "routingDecisionBillingDescription": "自動路由策略的分類呼叫按決策模型價格向呼叫方計費，每個會話一次，單獨記一條日誌。關閉後決策照常進行，但不寫消費日誌。",
         "orgRoutingPolicy": "允許組織管理自己的路由策略",
-        "orgRoutingPolicyDescription": "組織 Owner 和 Admin 的組織設定裏會出現「自動路由」。組織的策略只對本組織的 API Key生效；與平台策略同名時，該組織使用自己的策略。",
+        "orgRoutingPolicyDescription": "組織擁有者和管理員的組織選單裏會出現「自動路由」。組織策略只對該組織的 API Key 生效；與平台策略同名時，在該組織內取代平台策略。",
         "orgRoutingPolicyMaxCount": "每個組織的策略上限",
         "orgRoutingPolicyMaxCountDescription": "一個組織最多能建立多少條路由策略，0 表示不限。"
       }
@@ -2669,7 +2669,7 @@
         },
         "auto-routing": {
           "title": "自動路由",
-          "description": "決策調用怎樣計費；策略在自動路由頁管理。",
+          "description": "決策調用怎樣計費、組織能否管理自己的策略；平台策略在自動路由頁管理。",
           "hint": "策略的增刪改在自動路由頁"
         },
         "log-consume": {
