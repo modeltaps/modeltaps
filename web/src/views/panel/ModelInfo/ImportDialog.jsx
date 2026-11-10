@@ -168,10 +168,7 @@ export default function ImportDialog({ open, onOpenChange, existingModels = [], 
                           {row.isConflict ? (
                             <Badge variant="secondary">{t('modelInfoPage.importExists')}</Badge>
                           ) : (
-                            <Badge
-                              variant="outline"
-                              className="border-transparent bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                            >
+                            <Badge variant="outline">
                               {t('modelInfoPage.importNew')}
                             </Badge>
                           )}
@@ -212,10 +209,7 @@ export default function ImportDialog({ open, onOpenChange, existingModels = [], 
                           {row.isConflict ? (
                             <Badge variant="secondary">{t('modelInfoPage.importExists')}</Badge>
                           ) : (
-                            <Badge
-                              variant="outline"
-                              className="border-transparent bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                            >
+                            <Badge variant="outline">
                               {t('modelInfoPage.importNew')}
                             </Badge>
                           )}

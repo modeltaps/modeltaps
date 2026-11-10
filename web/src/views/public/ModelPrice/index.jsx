@@ -14,7 +14,6 @@ import {
   Columns3,
   Copy,
   Eye,
-  Flame,
   SlidersHorizontal,
   ChevronDown,
   ChevronLeft,
@@ -613,14 +612,7 @@ export default function ModelPrice({ embedded = false, initialModality }) {
     label: group.name,
     badge: (
       <span
-        className={cn(
-          'ml-auto rounded px-1 py-0.5 text-[0.6875rem] font-medium',
-          group.ratio > 1
-            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
-            : group.ratio > 0
-              ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
-              : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-        )}
+        className="ml-auto rounded-sm bg-muted px-1 py-0.5 text-[0.6875rem] font-medium tabular-nums text-muted-foreground"
       >
         {group.ratio > 0 ? `x${group.ratio}` : t('modelpricePage.free')}
       </span>
@@ -849,9 +841,7 @@ export default function ModelPrice({ embedded = false, initialModality }) {
                                   <Copy className="size-4" />
                                 </button>
                                 {getTags(model.modelInfo?.tags).some((tag) => tag.toLowerCase() === 'hot') && (
-                                  <span className="inline-flex items-center gap-0.5 rounded bg-red-500/10 px-1.5 py-0.5 text-[0.6875rem] font-medium text-red-600 dark:text-red-400">
-                                    <Flame className="size-3" /> HOT
-                                  </span>
+                                  <span className="rounded-sm bg-muted px-1.5 py-0.5 text-[0.6875rem] font-medium text-foreground">Hot</span>
                                 )}
                               </div>
                               <div className="flex flex-wrap gap-1">
@@ -898,12 +888,12 @@ export default function ModelPrice({ embedded = false, initialModality }) {
                               {model.priceData.allGroupPrices.map((gp) => (
                                 <div key={gp.groupKey} className="flex items-center gap-1.5">
                                   <span className="min-w-10 text-xs text-muted-foreground">{gp.groupName}:</span>
-                                  <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                                  <span className="text-sm font-medium tabular-nums text-foreground">
                                     {gp.input > 0
                                       ? formatPrice(gp.input, model.type === 'tokens' ? 'tokens' : 'times')
                                       : t('modelpricePage.free')}
                                   </span>
-                                  {gp.input > 0 && <span className="text-xs text-emerald-600 dark:text-emerald-400">(x{gp.ratio})</span>}
+                                  {gp.input > 0 && <span className="text-xs tabular-nums text-muted-foreground">(x{gp.ratio})</span>}
                                 </div>
                               ))}
                             </div>
@@ -915,12 +905,12 @@ export default function ModelPrice({ embedded = false, initialModality }) {
                               {model.priceData.allGroupPrices.map((gp) => (
                                 <div key={gp.groupKey} className="flex items-center gap-1.5">
                                   <span className="min-w-10 text-xs text-muted-foreground">{gp.groupName}:</span>
-                                  <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                                  <span className="text-sm font-medium tabular-nums text-foreground">
                                     {gp.output > 0
                                       ? formatPrice(gp.output, model.type === 'tokens' ? 'tokens' : 'times')
                                       : t('modelpricePage.free')}
                                   </span>
-                                  {gp.output > 0 && <span className="text-xs text-emerald-600 dark:text-emerald-400">(x{gp.ratio})</span>}
+                                  {gp.output > 0 && <span className="text-xs tabular-nums text-muted-foreground">(x{gp.ratio})</span>}
                                 </div>
                               ))}
                             </div>

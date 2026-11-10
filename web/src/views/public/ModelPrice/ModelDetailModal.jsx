@@ -12,7 +12,6 @@ import {
   Tags,
   DollarSign,
   BarChart3,
-  Flame,
   Route,
   Sparkles
 } from 'lucide-react';
@@ -36,11 +35,11 @@ const copyText = (text, label) => {
 
 const TONES = {
   primary: 'bg-muted text-foreground',
-  success: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-  warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  info: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  error: 'bg-red-500/10 text-red-600 dark:text-red-400',
-  secondary: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
+  success: 'bg-muted text-foreground',
+  warning: 'bg-warning/10 text-warning',
+  info: 'bg-muted text-foreground',
+  error: 'bg-destructive/10 text-destructive',
+  secondary: 'bg-muted text-muted-foreground',
   default: 'bg-muted text-muted-foreground'
 };
 const OUTLINE_TONES = {
@@ -115,9 +114,7 @@ export default function ModelDetailModal({ open, onClose, model, provider, model
           </div>
           <div className="flex items-center gap-2">
             {tags.includes('Hot') && (
-              <Pill tone="error" className="font-medium">
-                <Flame className="size-4" /> Hot
-              </Pill>
+              <Pill tone="primary">Hot</Pill>
             )}
             <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground">
               <X className="size-5" />

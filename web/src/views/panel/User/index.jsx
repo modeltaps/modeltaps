@@ -70,14 +70,13 @@ const KEYWORD_DEBOUNCE_MS = 300;
 function roleBadge(t, role) {
   const map = {
     1: ['secondary', t('userPage.cUserRole')],
-    3: ['default', t('userPage.reliableUserRole')],
-    10: ['default', t('userPage.adminUserRole')],
+    3: ['secondary', t('userPage.reliableUserRole')],
+    10: ['outline', t('userPage.adminUserRole')],
     100: ['outline', t('userPage.superAdminRole')]
   };
   const [variant, label] = map[role] || ['destructive', t('userPage.uUserRole')];
-  const cls = role === 10 ? 'bg-orange-500 text-white' : role === 100 ? 'bg-green-600 text-white' : undefined;
   return (
-    <Badge variant={variant} className={cls ? cls + ' whitespace-nowrap' : 'whitespace-nowrap'}>
+    <Badge variant={variant} className="whitespace-nowrap">
       {label}
     </Badge>
   );

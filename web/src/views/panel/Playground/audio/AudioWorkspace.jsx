@@ -51,11 +51,11 @@ const SEG_CLASS = 'rounded-full px-3 py-1.5 text-sm font-medium transition-color
 
 // 示例 chip 的图标与配色，按 SPEECH_EXAMPLES 的 id 取。
 const EXAMPLE_ICONS = {
-  support: { icon: Headset, className: 'text-sky-500' },
-  sales: { icon: Handshake, className: 'text-emerald-500' },
-  podcast: { icon: Podcast, className: 'text-violet-500' },
-  announcement: { icon: Megaphone, className: 'text-amber-500' },
-  meditation: { icon: Leaf, className: 'text-teal-500' }
+  support: { icon: Headset, className: 'text-muted-foreground' },
+  sales: { icon: Handshake, className: 'text-muted-foreground' },
+  podcast: { icon: Podcast, className: 'text-muted-foreground' },
+  announcement: { icon: Megaphone, className: 'text-muted-foreground' },
+  meditation: { icon: Leaf, className: 'text-muted-foreground' }
 };
 
 function Segmented({ items, value, onChange, label }) {

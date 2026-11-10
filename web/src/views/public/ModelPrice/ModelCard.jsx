@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { ArrowDown, Copy, Flame, Route } from 'lucide-react';
+import { ArrowDown, Copy, Route } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import BrandIcon from '@/components/brand/BrandIcon';
@@ -20,11 +20,11 @@ const copyText = (text, label) => {
 
 const TONES = {
   primary: 'bg-muted text-foreground',
-  success: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-  warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  info: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  error: 'bg-red-500/10 text-red-600 dark:text-red-400',
-  secondary: 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
+  success: 'bg-muted text-foreground',
+  warning: 'bg-warning/10 text-warning',
+  info: 'bg-muted text-foreground',
+  error: 'bg-destructive/10 text-destructive',
+  secondary: 'bg-muted text-muted-foreground',
   default: 'bg-muted text-muted-foreground'
 };
 
@@ -111,9 +111,7 @@ export default function ModelCard({ model, provider, modelInfo, price, group, ow
               <Copy className="size-4" />
             </button>
             {hot && (
-              <Pill tone="error" className="font-medium">
-                <Flame className="size-3" /> HOT
-              </Pill>
+              <Pill tone="primary">Hot</Pill>
             )}
             {modelInfo && outputModalities.length === 0 ? (
               <Pill tone="default" className="border border-border/60" title={t('modelpricePage.outputModality')}>
@@ -177,11 +175,11 @@ export default function ModelCard({ model, provider, modelInfo, price, group, ow
             ) : isPriceAvailable ? (
               <>
                 <span className="text-border">·</span>
-                <span className="text-emerald-600 dark:text-emerald-400">
+                <span className="tabular-nums text-foreground">
                   {t('modelpricePage.input')} {formatPrice(price.input, type)}
                 </span>
                 <span className="text-border">·</span>
-                <span className="text-amber-600 dark:text-amber-400">
+                <span className="tabular-nums text-foreground">
                   {t('modelpricePage.output')} {formatPrice(price.output, type)}
                 </span>
               </>

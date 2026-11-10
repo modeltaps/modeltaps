@@ -163,10 +163,10 @@ IoBlock.propTypes = {
 // Always-visible status pill next to the IO section title. `statusKey` is derived from
 // the fetch outcome (see computeIoStatus) and maps to a localized label + tone.
 const IO_STATUS_TONE = {
-  emerald: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-  amber: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+  emerald: 'bg-muted text-foreground',
+  amber: 'bg-warning/10 text-warning',
   muted: 'bg-muted text-muted-foreground',
-  red: 'bg-red-500/15 text-red-600 dark:text-red-400'
+  red: 'bg-destructive/10 text-destructive'
 };
 
 const IO_STATUS_META = {
@@ -294,7 +294,7 @@ function ProviderResponsesChart({ item, t }) {
               {/* Row 1: provider label (name + 200) | timeline | seconds */}
               <div className="flex items-center gap-1.5">
                 <span className="text-sm font-medium text-foreground">{providerName}</span>
-                <span className="shrink-0 rounded bg-emerald-500/15 px-1.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                <span className="shrink-0 rounded-sm bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums text-foreground">
                   200
                 </span>
               </div>
