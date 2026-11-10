@@ -408,8 +408,9 @@ export async function fetchChannelCacheStat(id, start, end) {
 // the channel as loaded (its key is hidden, and an empty key keeps the stored one). Runtime
 // fields the backend maintains are left out.
 export async function updateChannel(channel, patch) {
+  // pause_rules is sent only when a tab changes it: the backend keeps the stored value otherwise.
   // eslint-disable-next-line no-unused-vars
-  const { key_status, model_drift, usage_windows, quota_snapshot, ...rest } = channel;
+  const { key_status, model_drift, usage_windows, quota_snapshot, pause_rules, ...rest } = channel;
   const res = await API.put('/api/channel/', { ...rest, key: '', ...patch, id: channel.id });
   return res.data;
 }

@@ -1961,6 +1961,14 @@
       "thresholdHint": "上游余额低于这个数时通知你",
       "thresholdOff": "不提醒"
     },
+    "pauseRules": {
+      "label": "暂停规则",
+      "hint": "JSON 数组，先于站点规则匹配，第一条命中生效。留空则只用站点规则。",
+      "siteRules": "当前生效的站点规则（{{count}} 条）",
+      "siteOff": "站点已关闭暂停规则，站点规则和渠道规则都不会生效。",
+      "invalidJson": "暂停规则不是有效的 JSON",
+      "notArray": "暂停规则必须是 JSON 数组"
+    },
     "more": "更多",
     "new": {
       "allModels": "全部模型",
