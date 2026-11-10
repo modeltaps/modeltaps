@@ -65,6 +65,36 @@ export function metricsSeries(rows = [], start, end, bucketSec) {
   return [...buckets.values()];
 }
 
+// Totals per channel (same figures as summarizeMetrics), keyed by channel id.
+export function metricsByChannel(rows = []) {
+  const map = new Map();
+  for (const r of rows) {
+    const id = Number(r.channel_id) || 0;
+    map.set(id, addRow(map.get(id) || emptyTotals(), r));
+  }
+  return new Map([...map.entries()].map(([id, acc]) => [id, finish(acc)]));
+}
+
+// Requests per bucket and channel over [start, end) (unix seconds), for a chart with one line
+// per channel. Every bucket is present and carries a count for every id in `channelIds` (0 when
+// the channel had no traffic), so lines stay continuous. Rows of other channels are ignored.
+export function channelSeries(rows = [], channelIds = [], start, end, bucketSec) {
+  const ids = channelIds.map(Number);
+  const wanted = new Set(ids);
+  const first = Math.floor(start / bucketSec) * bucketSec;
+  const buckets = new Map();
+  for (let ts = first; ts < end; ts += bucketSec) {
+    buckets.set(ts, { ts, values: Object.fromEntries(ids.map((id) => [id, 0])) });
+  }
+  for (const r of rows) {
+    const id = Number(r.channel_id);
+    if (!wanted.has(id)) continue;
+    const b = buckets.get(Math.floor(r.bucket_ts / bucketSec) * bucketSec);
+    if (b) b.values[id] += r.request_count || 0;
+  }
+  return [...buckets.values()];
+}
+
 // Prompt cache hit rate (cached read tokens over prompt tokens) and the share of requests that
 // stayed on the channel their session was bound to. Null when there is no traffic.
 export function cacheSummary(stat) {
