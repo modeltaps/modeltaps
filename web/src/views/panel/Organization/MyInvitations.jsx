@@ -110,7 +110,7 @@ export default function MyInvitations() {
       <Card className="p-6">
         <div className="flex items-center gap-2">
           <Building2 className="size-5 text-muted-foreground" />
-          <h3 className="text-base font-semibold">{t('orgPage.myInvitations.joinByLink')}</h3>
+          <h3 className="text-base font-medium">{t('orgPage.myInvitations.joinByLink')}</h3>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">{t('orgPage.myInvitations.joinByLinkHint')}</p>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
@@ -132,7 +132,7 @@ export default function MyInvitations() {
       <Card className="p-6">
         <div className="flex items-center gap-2">
           <Mailbox className="size-5 text-muted-foreground" />
-          <h3 className="text-base font-semibold">{t('orgPage.myInvitations.title')}</h3>
+          <h3 className="text-base font-medium">{t('orgPage.myInvitations.title')}</h3>
         </div>
         {loading ? (
           <div className="flex justify-center p-8">

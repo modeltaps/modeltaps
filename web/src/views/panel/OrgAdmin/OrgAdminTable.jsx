@@ -108,13 +108,13 @@ export default function OrgAdminTable({ rows, searching, openId, onOpen, onToggl
       </div>
 
       {rows.length === 0 ? (
-        <div className="md:hidden rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+        <div className="md:hidden rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
           {searching ? t('logPage.searching') : t('dashboard_index.no_data', { defaultValue: 'No data' })}
         </div>
       ) : (
-        <div className="md:hidden flex flex-col gap-3">
+        <div className="md:hidden flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
           {rows.map((org) => (
-            <div key={org.id} className="rounded-lg border border-border bg-card p-3 shadow-sm">
+            <div key={org.id} className="p-3">
               <button type="button" className="mb-1.5 block w-full text-left" onClick={() => onOpen(org.id)}>
                 <div className="text-sm font-medium">{org.name}</div>
                 <div className="text-xs text-muted-foreground">{org.slug}</div>

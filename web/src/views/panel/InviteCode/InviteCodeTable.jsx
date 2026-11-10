@@ -92,9 +92,9 @@ export default function InviteCodeTable({ items, selected, onSelectAll, onSelect
           </TableBody>
         </Table>
       </div>
-      <div className="md:hidden flex flex-col gap-3">
+      <div className="md:hidden flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
         {items.map((item) => (
-          <div key={item.id} className="rounded-lg border border-border bg-card p-3 shadow-sm">
+          <div key={item.id} className="p-3">
             <div className="mb-1.5 text-sm font-medium">
               <button
                 type="button"

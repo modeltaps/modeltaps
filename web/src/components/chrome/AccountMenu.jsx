@@ -72,7 +72,7 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, onNav
     <button
       type="button"
       aria-label={`${t('nav.account.menu')}: ${name}`}
-      className="flex h-11 w-full min-w-0 items-center gap-2.5 rounded-[10px] px-2 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="flex h-11 w-full min-w-0 items-center gap-2.5 rounded-lg px-2 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <UserAvatar user={user} className="size-7" textClass="text-[11px]" />
       <span className="min-w-0 flex-1 leading-tight">

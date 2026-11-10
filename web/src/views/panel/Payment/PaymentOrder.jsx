@@ -269,7 +269,7 @@ export default function PaymentOrder() {
         </div>
 
         {orderList.length === 0 ? (
-          <div className="md:hidden rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+          <div className="md:hidden rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
             {searching ? '…' : t('common.noData', { defaultValue: 'No data' })}
           </div>
         ) : (

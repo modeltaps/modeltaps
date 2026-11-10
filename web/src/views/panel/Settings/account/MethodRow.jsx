@@ -61,7 +61,7 @@ MethodRow.propTypes = {
 
 // 小节标签:一张卡里的分组名(如「第三方登录」)。
 export function RowGroupLabel({ children }) {
-  return <p className="pb-1 pt-5 text-xs font-medium uppercase tracking-wide text-muted-foreground">{children}</p>;
+  return <p className="pb-1 pt-5 text-xs font-medium text-muted-foreground">{children}</p>;
 }
 
 RowGroupLabel.propTypes = { children: PropTypes.node };

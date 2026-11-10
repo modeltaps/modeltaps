@@ -423,7 +423,7 @@ export default function ModelTable({
         header: t('modelInfoPage.aliasOf'),
         cell: (c) => {
           const row = c.row.original;
-          if (row.alias_of) return <span className="whitespace-nowrap text-sky-600 dark:text-sky-400">→ {row.alias_of}</span>;
+          if (row.alias_of) return <span className="whitespace-nowrap text-muted-foreground">→ {row.alias_of}</span>;
           if (row.alias_count > 0) {
             return (
               <Badge variant="secondary" className="whitespace-nowrap px-1.5 py-0 font-normal">

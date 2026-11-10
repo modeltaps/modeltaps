@@ -70,14 +70,13 @@ const KEYWORD_DEBOUNCE_MS = 300;
 function roleBadge(t, role) {
   const map = {
     1: ['secondary', t('userPage.cUserRole')],
-    3: ['default', t('userPage.reliableUserRole')],
-    10: ['default', t('userPage.adminUserRole')],
+    3: ['secondary', t('userPage.reliableUserRole')],
+    10: ['outline', t('userPage.adminUserRole')],
     100: ['outline', t('userPage.superAdminRole')]
   };
   const [variant, label] = map[role] || ['destructive', t('userPage.uUserRole')];
-  const cls = role === 10 ? 'bg-orange-500 text-white' : role === 100 ? 'bg-green-600 text-white' : undefined;
   return (
-    <Badge variant={variant} className={cls ? cls + ' whitespace-nowrap' : 'whitespace-nowrap'}>
+    <Badge variant={variant} className="whitespace-nowrap">
       {label}
     </Badge>
   );
@@ -92,7 +91,7 @@ function SortHeader({ id, label, order, orderBy, onSort, alignEnd = false }) {
       onClick={() => onSort(id)}
       className={cn(
         'inline-flex items-center gap-1 whitespace-nowrap',
-        active ? 'font-semibold text-foreground' : 'hover:text-foreground',
+        active ? 'font-medium text-foreground' : 'hover:text-foreground',
         alignEnd && 'ml-auto'
       )}
     >
@@ -116,7 +115,7 @@ function UserCell({ user }) {
   const secondary = [user.display_name, user.email].filter(Boolean).join(' · ');
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <span className="flex size-8 flex-none items-center justify-center rounded-full bg-muted text-xs font-semibold uppercase">
+      <span className="flex size-8 flex-none items-center justify-center rounded-full bg-muted text-xs font-medium uppercase">
         {(user.username || '?').slice(0, 2)}
       </span>
       <div className="min-w-0">
@@ -487,7 +486,7 @@ export default function Users() {
       </div>
       <div className="mt-2 flex items-center gap-3 pl-6 text-xs">
         <span className="text-muted-foreground">{t('userPage.balance')}</span>
-        <span className="font-semibold tabular-nums">{renderQuota(u.quota)}</span>
+        <span className="font-medium tabular-nums">{renderQuota(u.quota)}</span>
         <span className="text-muted-foreground">{t('userPage.usedShort')}</span>
         <span className="tabular-nums">{renderSpend(u.used_quota)}</span>
       </div>

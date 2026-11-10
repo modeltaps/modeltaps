@@ -180,7 +180,7 @@ export default function SettingsPage({ label, groups, activeGroupId, className }
                 onClick={() => setQuery('')}
                 aria-current={current ? 'page' : undefined}
                 className={cn(
-                  'flex h-[34px] shrink-0 items-center gap-2.5 whitespace-nowrap rounded-[10px] px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  'flex h-[34px] shrink-0 items-center gap-2.5 whitespace-nowrap rounded-lg px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   current
                     ? 'bg-card font-medium text-foreground shadow-[inset_0_0_0_1px_var(--border)]'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -242,7 +242,7 @@ export default function SettingsPage({ label, groups, activeGroupId, className }
             </section>
           ))}
           {searching && matchCount === 0 && (
-            <p className="rounded-xl border border-dashed border-border px-6 py-10 text-center text-sm text-muted-foreground">
+            <p className="rounded-2xl border border-dashed border-border px-6 py-10 text-center text-sm text-muted-foreground">
               {t('settingsUi.search.empty')}
             </p>
           )}

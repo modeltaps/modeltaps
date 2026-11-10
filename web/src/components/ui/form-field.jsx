@@ -37,7 +37,7 @@ const FormField = React.forwardRef(
             aria-expanded={helpOpen}
             aria-label="Help"
             onClick={() => setHelpOpen((o) => !o)}
-            className="flex size-4 shrink-0 items-center justify-center rounded-full border border-border text-[10px] font-semibold leading-none text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
+            className="flex size-4 shrink-0 items-center justify-center rounded-full border border-border text-[10px] font-medium leading-none text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
           >
             ?
           </button>

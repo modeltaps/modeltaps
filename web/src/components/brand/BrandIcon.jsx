@@ -29,7 +29,7 @@ function LetterPlaceholder({ fallbackText, className }) {
     <span
       aria-hidden="true"
       className={cn(
-        'inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold leading-none text-muted-foreground',
+        'inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-medium leading-none text-muted-foreground',
         className
       )}
     >

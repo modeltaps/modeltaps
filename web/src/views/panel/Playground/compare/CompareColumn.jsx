@@ -42,7 +42,7 @@ export default function CompareColumn({
   return (
     <section
       className={cn(
-        'flex min-h-0 min-w-0 flex-col rounded-xl border bg-card',
+        'flex min-h-0 min-w-0 flex-col rounded-2xl border bg-card',
         highlighted ? 'border-primary ring-1 ring-primary' : 'border-border'
       )}
       data-compare-column={column.id}

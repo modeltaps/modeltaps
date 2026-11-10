@@ -9,15 +9,17 @@ import { cn } from '@/lib/utils';
 import { MODALITY_OPTIONS } from 'constants/Modality';
 import { CAPABILITY_OPTIONS } from 'constants/Capability';
 
+// Modality tags are categories, not states: one quiet neutral chip for all.
+const MODALITY_CHIP = 'bg-muted text-foreground';
 export const MODALITY_COLORS = {
-  text: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-  image: 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
-  audio: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-  music: 'bg-rose-500/15 text-rose-600 dark:text-rose-400',
-  video: 'bg-slate-500/15 text-slate-600 dark:text-slate-400',
-  file: 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
-  speech: 'bg-orange-500/15 text-orange-600 dark:text-orange-400',
-  transcription: 'bg-teal-500/15 text-teal-600 dark:text-teal-400'
+  text: MODALITY_CHIP,
+  image: MODALITY_CHIP,
+  audio: MODALITY_CHIP,
+  music: MODALITY_CHIP,
+  video: MODALITY_CHIP,
+  file: MODALITY_CHIP,
+  speech: MODALITY_CHIP,
+  transcription: MODALITY_CHIP
 };
 
 export const MODALITY_VALUES = Object.values(MODALITY_OPTIONS).map((o) => o.value);

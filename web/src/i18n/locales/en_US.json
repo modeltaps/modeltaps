@@ -1120,7 +1120,7 @@
     "noAccount": "No account yet?",
     "externalNotConfigured": "The sign-in service is not configured yet. Please contact an administrator.",
     "redirectFailed": "Could not reach the sign-in service. Please try again later.",
-    "or": "OR"
+    "or": "or"
   },
   "menu": {
     "login": "Login",

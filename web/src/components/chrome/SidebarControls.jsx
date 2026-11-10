@@ -11,7 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 // the expand / drawer buttons sit left of the page title (SidebarToggle).
 
 const iconButtonClass =
-  'flex size-8 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+  'flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 export function SidebarIconButton({ label, tooltip, side = 'bottom', onClick, className, children }) {
   return (
@@ -73,7 +73,7 @@ export function SidebarSearch({ collapsed = false, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex h-[34px] w-full items-center gap-2.5 rounded-[10px] px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="flex h-[34px] w-full items-center gap-2.5 rounded-lg px-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <Search className="size-4 shrink-0" />
       <span className="flex-1 text-left">{label}</span>

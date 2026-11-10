@@ -46,7 +46,7 @@ export default function CollapsibleFilter({ title, open, onToggle, activeCount =
   };
 
   return (
-    <div className={cn('rounded-lg border border-border bg-card', className)}>
+    <div className={cn('rounded-2xl border border-border bg-card', className)}>
       <button
         type="button"
         onClick={handleToggle}

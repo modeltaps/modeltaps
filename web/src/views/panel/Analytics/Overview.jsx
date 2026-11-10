@@ -119,7 +119,7 @@ export default function Overview() {
       </CollapsibleFilter>
 
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">
+        <h2 className="text-lg font-medium tracking-tight">
           {start} — {end}
         </h2>
         <div className="mt-3 border-t" />

@@ -18,7 +18,7 @@ export default function StatsTabs() {
   const { pathname } = useLocation();
   return (
     <PageTitleExtra>
-      <nav aria-label={t('nav.stats.tabs')} className="flex items-center gap-0.5 rounded-[10px] bg-muted p-0.5">
+      <nav aria-label={t('nav.stats.tabs')} className="flex items-center gap-0.5 rounded-lg bg-muted p-0.5">
         {STATS_TABS.map((tab) => {
           const active = pathname === tab.url || pathname.startsWith(`${tab.url}/`);
           return (
@@ -27,7 +27,7 @@ export default function StatsTabs() {
               to={tab.url}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'flex h-7 items-center rounded-[8px] px-3 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                'flex h-7 items-center rounded-md px-3 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 active ? 'bg-card text-foreground shadow-[0_0_0_1px_var(--border)]' : 'text-muted-foreground hover:text-foreground'
               )}
             >

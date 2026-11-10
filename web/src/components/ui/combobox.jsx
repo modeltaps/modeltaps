@@ -52,7 +52,7 @@ export function Combobox({
         onValueChange?.(o.value);
         setOpen(false);
       }}
-      className="relative flex w-full cursor-pointer select-none items-center rounded-md py-1.5 pl-8 pr-2 text-sm outline-none data-[selected=true]:bg-muted"
+      className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none data-[selected=true]:bg-muted"
     >
       {o.value === value && (
         <span className="absolute left-2 flex size-4 items-center justify-center">

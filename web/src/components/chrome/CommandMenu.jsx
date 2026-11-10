@@ -48,7 +48,7 @@ export default function CommandMenu({ open, setOpen }) {
       onOpenChange={setOpen}
       label={t('command.search', { defaultValue: 'Search' })}
       overlayClassName="fixed inset-0 z-[1300] bg-black/40 backdrop-blur-sm"
-      contentClassName="fixed left-1/2 top-[20%] z-[1301] w-full max-w-lg -translate-x-1/2 overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
+      contentClassName="fixed left-1/2 top-[20%] z-[1301] w-full max-w-lg -translate-x-1/2 overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
     >
       <Command className="flex flex-col">
         <div className="border-b border-border px-3">

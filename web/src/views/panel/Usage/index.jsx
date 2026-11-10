@@ -153,7 +153,7 @@ function StatCard({ label, value, delta, series, gradientId, deltaLabel, deltaUn
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="truncate text-2xl font-semibold tabular-nums">{value}</p>
+          <p className="truncate text-2xl font-medium tabular-nums">{value}</p>
         </div>
         <div className="h-10 w-24 shrink-0">
           <Sparkline data={series} gradientId={gradientId} />
