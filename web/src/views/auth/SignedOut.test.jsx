@@ -52,7 +52,7 @@ describe('SignedOut — 已退出登录', () => {
   });
 
   it('未配置站点 logo 时用内置站点图标', () => {
-    expect(render()).toContain('viewBox="48 32 160 192"');
+    expect(render()).toContain('viewBox="46 24 164 208"');
   });
 
   it('配置了站点 logo 时用该 logo', () => {
