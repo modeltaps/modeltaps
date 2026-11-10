@@ -325,12 +325,18 @@ func UpdateOption(key string, value string) error {
 		Key: key,
 	}
 	// https://gorm.io/docs/update.html#Save-All-Fields
-	DB.FirstOrCreate(&option, Option{Key: key})
+	// A failed write leaves the running value alone: applying it in memory only would look saved
+	// on this node and revert at the next restart or sync.
+	if err := DB.FirstOrCreate(&option, Option{Key: key}).Error; err != nil {
+		return fmt.Errorf("save option %s: %w", key, err)
+	}
 	option.Value = value
 	// Save is a combination function.
 	// If save value does not contain primary key, it will execute Create,
 	// otherwise it will execute Update (with all fields).
-	DB.Save(&option)
+	if err := DB.Save(&option).Error; err != nil {
+		return fmt.Errorf("save option %s: %w", key, err)
+	}
 	// Update OptionMap
 	return config.GlobalOption.Set(key, value)
 }

@@ -49,3 +49,37 @@ func TestShouldRetry_StrictSessionAffinityUnusableChannel(t *testing.T) {
 		t.Fatal("strict affinity kept the session on a channel with no quota")
 	}
 }
+
+// The failure that ends a request is cooled down unless it is the gateway's own error or strict
+// affinity holds the session on its channel.
+func TestShouldCooldownFinalFailure(t *testing.T) {
+	old := config.SessionAffinityStrict
+	t.Cleanup(func() { config.SessionAffinityStrict = old })
+
+	cases := []struct {
+		name     string
+		strict   bool
+		affinity string
+		local    bool
+		want     bool
+	}{
+		{"upstream failure", false, "", false, true},
+		{"local error", false, "", true, false},
+		{"strict affinity holds the session", true, "hit", false, false},
+		{"strict affinity, new binding", true, "bound", false, true},
+		{"prefer affinity hit", false, "hit", false, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			config.SessionAffinityStrict = tc.strict
+			c := newTestContext()
+			c.Set(model.SessionAffinityContextKey, tc.affinity)
+			if got := shouldCooldownFinalFailure(c, apiErr(http.StatusTooManyRequests, tc.local)); got != tc.want {
+				t.Fatalf("shouldCooldownFinalFailure = %v, want %v", got, tc.want)
+			}
+		})
+	}
+	if shouldCooldownFinalFailure(newTestContext(), nil) {
+		t.Fatal("nil error cooled down")
+	}
+}
