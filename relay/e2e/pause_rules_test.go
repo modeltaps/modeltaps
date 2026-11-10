@@ -160,3 +160,23 @@ func TestPauseRulesSwitchOff(t *testing.T) {
 		t.Fatalf("primary got %d requests, want 2 (nothing keeps it out with the rules off)", len(primary.Requests()))
 	}
 }
+
+// A channel's own rule comes before the site-wide ones: here a single 503 pauses the whole
+// channel for 10 minutes, where the site-wide rule waits for the third failure.
+func TestChannelPauseRulesComeFirst(t *testing.T) {
+	const modelName = "pause-channel-rule-model"
+	upstream := NewFakeProvider(t)
+	upstream.SetResponse(FakeResponse{Status: http.StatusServiceUnavailable, JSON: OpenAIErrorJSON("overloaded", "server_error", "")})
+	h := NewHarness(t, HarnessOptions{Model: modelName, FakeBaseURL: upstream.Server.URL})
+	own := `[{"name":"strict-503","status_codes":[503],"action":"pause","seconds":600,"scope":"channel"}]`
+	if err := model.DB.Model(&model.Channel{}).Where("id = ?", h.Channel.Id).Update("pause_rules", own).Error; err != nil {
+		t.Fatal(err)
+	}
+	model.ChannelGroup.Load()
+
+	h.Post("/v1/chat/completions", chatFor(modelName))
+	pauses := storedPauses(t)
+	if len(pauses) != 1 || pauses[0].Rule != "strict-503" || pauses[0].Model != "" || pauses[0].Seconds != 600 {
+		t.Fatalf("pauses = %+v, want the channel's own rule to pause the channel", pauses)
+	}
+}

@@ -74,7 +74,7 @@ func applyPauseRules(ctx context.Context, c *gin.Context, channel *model.Channel
 	now := time.Now().Unix()
 	failure := pauseFailureOf(channel, apiErr, now)
 
-	for _, rule := range model.EffectivePauseRules() {
+	for _, rule := range model.PauseRulesForChannel(channel) {
 		if !rule.Matches(failure) {
 			continue
 		}

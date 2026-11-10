@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 
@@ -263,4 +264,45 @@ func (r *PauseRule) PauseSecondsFor(f PauseFailure, now, resetAt int64) int64 {
 		}
 	}
 	return int64(r.Seconds)
+}
+
+// channelPauseRulesCache keeps parsed channel rules by their JSON text, so a failure does not
+// parse them again.
+var channelPauseRulesCache = struct {
+	sync.Mutex
+	byText map[string][]PauseRule
+}{byText: map[string][]PauseRule{}}
+
+// ChannelPauseRules parses a channel's own rules; invalid or empty text gives none (channel
+// saves reject invalid rules, so that only happens for rows written around the API).
+func ChannelPauseRules(channel *Channel) []PauseRule {
+	if channel == nil || channel.PauseRules == nil || strings.TrimSpace(*channel.PauseRules) == "" {
+		return nil
+	}
+	raw := *channel.PauseRules
+	channelPauseRulesCache.Lock()
+	defer channelPauseRulesCache.Unlock()
+	if rules, ok := channelPauseRulesCache.byText[raw]; ok {
+		return rules
+	}
+	rules, err := ParsePauseRules(raw)
+	if err != nil {
+		rules = nil
+	}
+	if len(channelPauseRulesCache.byText) > 256 {
+		channelPauseRulesCache.byText = map[string][]PauseRule{}
+	}
+	channelPauseRulesCache.byText[raw] = rules
+	return rules
+}
+
+// PauseRulesForChannel is the rule list a failure on channel goes through: the channel's own
+// rules first, then the site-wide rules. A channel that should never fall through to the
+// site-wide rules ends its list with a rule without conditions.
+func PauseRulesForChannel(channel *Channel) []PauseRule {
+	own := ChannelPauseRules(channel)
+	if len(own) == 0 {
+		return EffectivePauseRules()
+	}
+	return append(slices.Clone(own), EffectivePauseRules()...)
 }

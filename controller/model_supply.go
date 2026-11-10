@@ -147,3 +147,14 @@ func MigrateModelSupplies(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": report})
 }
+
+// PreviewModelSupply shows in which order a request for ?model= (optionally from ?group=)
+// would try its supplies, with each supply's state.
+func PreviewModelSupply(c *gin.Context) {
+	preview, err := model.PreviewModelSupply(c.Query("model"), c.Query("group"))
+	if err != nil {
+		respondSupplyError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": preview})
+}

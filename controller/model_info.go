@@ -96,7 +96,16 @@ type publicModelInfo struct {
 func visibleModelInfos(infos []*model.ModelInfo, routable map[string]map[string]bool) []*publicModelInfo {
 	visible := make([]*publicModelInfo, 0, len(infos))
 	for _, info := range infos {
-		if info.Hidden || info.AliasOf != "" {
+		if info.AliasOf != "" {
+			continue
+		}
+		// With supplies routing, the public state is status: only published models are listed.
+		// Otherwise hiding decides, whatever catalog.enforce_hidden says.
+		if config.ModelSupplyEnabled {
+			if info.Kind == "" && info.Status != model.ModelStatusPublished {
+				continue
+			}
+		} else if info.Hidden {
 			continue
 		}
 		// 策略行没有渠道，按策略是否启用决定可见。
