@@ -237,6 +237,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- With `ModelSupplyEnabled` on, the models page still counted a model's channels from the
+  channels' model lists, so a model served only through supplies showed "No channel" and one a
+  channel merely listed looked routable. The admin catalog (`/api/model_info/catalog`) now lists
+  the channels of a model's enabled supplies, with the supply's priority and weight, and says
+  `supply_routing`; the page counts those, shows a model as visible to users only when it is
+  published (its visibility switch follows the status), and points the channels tab to the
+  Supplies tab.
 - Applying the catalog seed on a fresh install changed nothing for aliases, because it only
   marked alias rows that already existed. It now creates the missing alias rows (reported as
   `created_aliases`, replacing `missing_aliases`), so channels that list those upstream names get

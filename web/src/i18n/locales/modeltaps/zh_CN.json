@@ -783,7 +783,10 @@
       "routingHint": "请求按优先级从高到低路由,同优先级按权重分流。",
       "status": "状态",
       "tabPricing": "定价",
-      "tabProfile": "资料"
+      "tabProfile": "资料",
+      "noSupplyHint": "没有启用的供应提供此模型，用户无法调用。",
+      "goSupplies": "去供应页",
+      "channelsFromSupplies": "这些渠道来自模型的供应，在「供应」页修改"
     },
     "stats": {
       "all": "全部",
@@ -796,7 +799,8 @@
       "ok": "可用",
       "nochannel": "无渠道",
       "unpriced": "未定价"
-    }
+    },
+    "visibleFollowsStatus": "按供应路由时，是否对用户可见由模型状态（草稿 / 已发布 / 已下架）决定"
   },
   "brandIconPicker": {
     "mode": {

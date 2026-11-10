@@ -11,6 +11,7 @@ import {
   defaultColumnVisibility,
   PRICE_UNIT_STORAGE_KEY,
   indexChannelsByModel,
+  followsStatus,
   isFullyUsable,
   isVisibleToUsers,
   loadColumnVisibility,
@@ -166,6 +167,12 @@ describe('attaching channel details for the channels column', () => {
     expect(row.bound_channels[1]).toEqual({ id: 77, name: 'tagged', type: 1, status: 1 });
   });
 
+  it('with supply routing, keeps the supply priority and weight and adds nothing from model lists', () => {
+    const rows = [{ model: 'm1', bound_channels: [{ id: 5, name: 'or', type: 20, status: 1, priority: 9, weight: 4 }] }];
+    const [m1] = attachChannelDetails(rows, channels, { supplyRouting: true });
+    expect(m1.bound_channels).toEqual([{ id: 5, name: 'or', type: 20, status: 1, base_url: 'https://or.example', priority: 9, weight: 4 }]);
+  });
+
   it('returns rows untouched when no channel list is loaded', () => {
     const rows = [{ model: 'm1', bound_channels: [{ id: 5, name: 'or', type: 20 }] }];
     expect(attachChannelDetails(rows, [])).toBe(rows);
@@ -173,6 +180,16 @@ describe('attaching channel details for the channels column', () => {
 });
 
 describe('status, visibility and stat chip counts', () => {
+  it('follows the model status instead of hidden while supplies route requests', () => {
+    const base = { catalogId: 1, model: 'm', price: { type: 'tokens' }, bound_channels: [{ id: 1, status: 1 }] };
+    expect(isVisibleToUsers({ ...base, supplyRouting: true, status: 'draft', hidden: false })).toBe(false);
+    expect(isVisibleToUsers({ ...base, supplyRouting: true, status: 'published', hidden: true })).toBe(true);
+    expect(isFullyUsable({ ...base, supplyRouting: true, status: 'retired' })).toBe(false);
+    expect(isFullyUsable({ ...base, supplyRouting: true, status: 'published' })).toBe(true);
+    expect(followsStatus({ ...base, supplyRouting: true, alias_of: 'x' })).toBe(false);
+    expect(isVisibleToUsers({ ...base, status: 'draft', hidden: false })).toBe(true);
+  });
+
   const on = { id: 1, name: 'on', type: 1, status: 1 };
   const off = { id: 2, name: 'off', type: 1, status: 2 };
   const price = { model: 'x', type: 'tokens', input: 1, output: 2 };
