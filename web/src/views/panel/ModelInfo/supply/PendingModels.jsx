@@ -7,7 +7,7 @@ import { Info, Link2, Loader2, RotateCcw, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/sonner';
@@ -62,7 +62,7 @@ function AttachDialog({ item, rows, onClose, onDone }) {
           <DialogTitle>{t('modelSupply.pendingPage.attachTitle', { model: item.upstream_model })}</DialogTitle>
           <DialogDescription>{t('modelSupply.pendingPage.attachDescription')}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <DialogBody className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="pending-public-model">{t('modelSupply.pendingPage.publicModel')}</Label>
             <Input
@@ -100,7 +100,7 @@ function AttachDialog({ item, rows, onClose, onDone }) {
             ))}
             {channelIds.length === 0 && <p className="text-xs text-destructive">{t('modelSupply.pendingPage.noChannel')}</p>}
           </fieldset>
-        </div>
+        </DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             {t('common.cancel')}
@@ -206,7 +206,7 @@ export default function PendingModels() {
                     <td>
                       <span className="flex flex-wrap gap-x-2 gap-y-0.5">
                         {item.channels.map((c) => (
-                          <Link key={c.channel_id} to={`/panel/channel/${c.channel_id}`} className="hover:underline">
+                          <Link key={c.channel_id} to={`/panel/channel/${c.channel_id}`} className="whitespace-nowrap hover:underline">
                             {c.channel_name || `#${c.channel_id}`}
                           </Link>
                         ))}
