@@ -187,6 +187,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   some), also for the CSV export, the histogram and the total spend. Logs of administrator actions
   on the account never match an IP filter, so the filter cannot be used to find out which IP an
   administrator acted from.
+- AWS Bedrock maps `claude-fable-5-2` to its inference profile (`us.` in the US and Canada,
+  `global.` elsewhere), and new Bedrock channels list it among their default models. It has no
+  default price yet, so requests are rejected under the default unpriced-model policy until an
+  administrator sets one.
 
 ### Changed
 

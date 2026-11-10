@@ -38,6 +38,7 @@ var bedrockMap = map[string]string{
 	"claude-sonnet-5-5":          "anthropic.claude-sonnet-5-5",
 	"claude-fable-5":             "anthropic.claude-fable-5",
 	"claude-fable-5-1":           "anthropic.claude-fable-5-1",
+	"claude-fable-5-2":           "anthropic.claude-fable-5-2",
 	"claude-opus-5":              "anthropic.claude-opus-5",
 	"claude-opus-5-5":            "anthropic.claude-opus-5-5",
 }
@@ -103,6 +104,9 @@ var awsModelCanCrossRegionMap = map[string]map[string]string{
 	"anthropic.claude-fable-5":    {"us": "us", "eu": "global", "ap": "global", "*": "global"},
 	// fable-5-1: geo profile in the US only; EU and AP fall back to global.
 	"anthropic.claude-fable-5-1": {"us": "us", "eu": "global", "ap": "global", "*": "global"},
+	// fable-5-2: geo profile in the US only (AWS model card 2026-11-09); EU and AP fall back to
+	// global. ca-central-1 and ca-west-1 are source regions of the US geo profile, so ca maps to us.
+	"anthropic.claude-fable-5-2": {"us": "us", "ca": "us", "eu": "global", "ap": "global", "*": "global"},
 }
 
 var CategoryMap = map[string]Category{}
