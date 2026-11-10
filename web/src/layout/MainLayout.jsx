@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils';
 import useTheme from 'hooks/useTheme';
 import { setDocumentTitlePrefix } from 'utils/documentTitle';
 import { useIsAdmin } from 'utils/common';
-import { trackSettingsReturnPath } from 'utils/adminPlane';
 import { useOrg } from 'contexts/OrgContext';
 import PageHeader from '@/components/chrome/PageHeader';
 import { PageHeaderOverrideContext } from '@/components/chrome/PageHeaderOverride';
@@ -15,24 +14,17 @@ import { SidebarToggle } from '@/components/chrome/SidebarControls';
 import { PageActionsContext } from '@/components/chrome/PageActions';
 import { PageTitleExtraContext } from '@/components/chrome/PageTitleExtra';
 import Sidebar from '@/components/chrome/Sidebar';
-import AdminSidebar from '@/components/chrome/AdminSidebar';
-import SettingsSidebar from '@/components/chrome/SettingsSidebar';
 import CommandMenu from '@/components/chrome/CommandMenu';
-import { findActiveItem, isAdminPath, navLabel } from '@/components/chrome/nav-config';
-import { ACCOUNT_SECTIONS, ORG_SECTIONS, isSettingsPath, parseSettingsPath } from 'views/panel/Settings/sections';
+import { deriveContext, findActiveItem, navLabel } from '@/components/chrome/nav-config';
 import MainRoutes from 'routes/MainRoutes';
 import MobilePushFrame from './MobilePushFrame';
 
 // ==============================|| MAIN LAYOUT (shadcn app chrome) ||============================== //
-// Routes are unchanged (/panel/*): the plane is derived from the current path.
-// Admins on an admin route get the dedicated admin chrome (AdminSidebar);
-// everyone else gets the user chrome. Non-admins on admin routes keep today's
-// behavior (user chrome + AdminGuard 404 in place).
-// /panel/settings/* is a third plane: the whole sidebar becomes the settings nav
-// and the PageHeader shows the current section (no in-page second column).
-// /panel/setting/* (system settings) is part of the admin plane: its themes are
-// the last group of the admin sidebar.
-// Plane order: user settings → admin → user.
+// One sidebar shell for every panel page. Routes are unchanged (/panel/*): the context
+// (personal / org / platform admin) is derived from the path and the active organization
+// (nav-config `deriveContext`). Non-admins on admin routes keep the workbench chrome and the
+// route guard's 404 in place. Settings pages (personal, organization, platform) render inside
+// the shell with an in-page subnav; their titles come from the nav item like any other page.
 
 export default function MainLayout() {
   // Initialize the theme (applies the .dark class on <html> from localStorage).
@@ -41,34 +33,20 @@ export default function MainLayout() {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const isAdmin = useIsAdmin();
-  const { organizations } = useOrg();
-  const settingsPlane = isSettingsPath(pathname);
-  const adminPlane = !settingsPlane && isAdmin && isAdminPath(pathname);
-  const SidebarComponent = settingsPlane ? SettingsSidebar : adminPlane ? AdminSidebar : Sidebar;
-  // 系统设置主题页的页面标题 = 当前主题名(主题项在 navSections 里登记,findActiveItem 可解析)。
+  const { currentOrgId } = useOrg();
+  const context = deriveContext({ pathname, isAdmin, orgId: currentOrgId });
   const activeItem = findActiveItem(pathname);
 
-  // 标签页标题只在管理面带上面名,便于多标签间辨认;品牌名由站点状态那侧写入。
-  const titlePrefix = adminPlane ? t('admin_console.enter') : null;
+  // The tab title names the space only in platform admin, to tell tabs apart; the brand part
+  // is written from the site status (utils/documentTitle composes both).
+  const titlePrefix = context === 'admin' ? t('nav.context.admin') : null;
   useEffect(() => {
     setDocumentTitlePrefix(titlePrefix);
     return () => setDocumentTitlePrefix(null);
   }, [titlePrefix]);
 
-  // 设置面外的每个路径都是潜在来源,「返回」回到原处;刷新/直达时没有来源,回用户面首页。
-  trackSettingsReturnPath(pathname, settingsPlane);
-
-  // 设置面的页面标题 = 当前 section 名;组织分组再带上组织名作副标题。
-  const settingsHeader = useMemo(() => {
-    if (!settingsPlane) return null;
-    const { orgScope, orgId, section } = parseSettingsPath(pathname);
-    const entry = (orgScope ? ORG_SECTIONS : ACCOUNT_SECTIONS).find((item) => item.id === section);
-    if (!entry) return null;
-    const org = orgScope ? organizations.find((o) => o.id === orgId) : null;
-    return { title: t(entry.labelKey, { defaultValue: entry.fallback }), subtitle: org?.name || '' };
-  }, [settingsPlane, pathname, organizations, t]);
-  // 未登记的 /panel/* 落到 MainRoutes 末尾的 '*' 兜底 404。此时不能沿用
-  // findActiveItem 的前缀匹配（/panel/settings/xxx 会误配到「设置」），标题改为「页面不存在」。
+  // Unknown /panel/* paths fall through to the trailing '*' 404 route; title it "page not found"
+  // instead of whatever a prefix match would give.
   const isNotFound = useMemo(() => {
     const matched = matchRoutes(MainRoutes.children, pathname, MainRoutes.path);
     return !matched || matched[matched.length - 1].route.path === '*';
@@ -100,12 +78,10 @@ export default function MainLayout() {
     ? { title: t('common.pageNotFound') }
     : headerOverride
       ? headerOverride
-      : settingsPlane
-        ? settingsHeader
-        : activeItem && {
-            title: navLabel(t, activeItem),
-            subtitle: t(`nav_subtitles.${activeItem.id}`, { defaultValue: '' })
-          };
+      : activeItem && {
+          title: navLabel(t, activeItem),
+          subtitle: t(`nav_subtitles.${activeItem.id}`, { defaultValue: '' })
+        };
 
   return (
     <AuthGuard>
@@ -118,11 +94,12 @@ export default function MainLayout() {
             <aside
               className={cn('hidden shrink-0 border-r border-border transition-[width] duration-200 md:block', collapsed ? 'w-24' : 'w-64')}
             >
-              <SidebarComponent collapsed={collapsed} onToggleCollapse={toggleCollapse} onOpenCommand={openCommand} />
+              <Sidebar context={context} collapsed={collapsed} onToggleCollapse={toggleCollapse} onOpenCommand={openCommand} />
             </aside>
           }
           drawer={
-            <SidebarComponent
+            <Sidebar
+              context={context}
               collapsed={false}
               onItemClick={() => setMobileOpen(false)}
               onToggleCollapse={() => setMobileOpen(false)}

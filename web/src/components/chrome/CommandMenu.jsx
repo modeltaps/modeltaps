@@ -1,20 +1,22 @@
 import { useEffect } from 'react';
 import { Command } from 'cmdk';
 import { useNavigate } from 'react-router';
-import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 
+import { useOrg } from 'contexts/OrgContext';
 import { useIsAdmin, useIsRoot } from 'utils/common';
-import { filterSections, navLabel } from './nav-config';
+import { commandSections, navLabel } from './nav-config';
 
 // ==============================|| CHROME — COMMAND PALETTE (cmdk) ||============================== //
+// Lists the current workbench menu, personal settings and, for admins, platform admin with every
+// admin page, so admin pages are reachable from any context.
 
 export default function CommandMenu({ open, setOpen }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const isAdmin = useIsAdmin();
   const isRoot = useIsRoot();
-  const siteInfo = useSelector((state) => state.siteInfo);
+  const { currentOrgId, orgRole } = useOrg();
 
   useEffect(() => {
     const onKeyDown = (e) => {
@@ -27,12 +29,7 @@ export default function CommandMenu({ open, setOpen }) {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [setOpen]);
 
-  const sections = filterSections({
-    isAdmin,
-    isRoot,
-    invoiceEnabled: Boolean(siteInfo.UserInvoiceMonth),
-    chatEnabled: siteInfo.builtin_chat_enabled !== false
-  });
+  const sections = commandSections({ isAdmin, isRoot, orgId: currentOrgId, orgRole });
 
   const go = (url) => {
     setOpen(false);
@@ -61,17 +58,17 @@ export default function CommandMenu({ open, setOpen }) {
           {sections.map((section) => (
             <Command.Group
               key={section.id}
-              heading={t(section.id)}
-              className="px-1 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground [&_[cmdk-group-items]]:mt-1 [&_[cmdk-group-items]]:space-y-0.5"
+              heading={section.labelKey ? t(section.labelKey) : undefined}
+              className="px-1 py-1 text-xs font-medium text-muted-foreground [&_[cmdk-group-items]]:mt-1 [&_[cmdk-group-items]]:space-y-0.5"
             >
               {section.items.map((item) => {
                 const Icon = item.icon;
                 const label = navLabel(t, item);
                 return (
                   <Command.Item
-                    key={item.id}
-                    value={`${label} ${item.id}`}
-                    onSelect={() => go(item.url)}
+                    key={`${section.id}-${item.id}`}
+                    value={`${section.admin ? `${t('nav.context.admin')} ` : ''}${label} ${item.id}`}
+                    onSelect={() => go(item.href)}
                     className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-sm font-normal text-foreground aria-selected:bg-muted"
                   >
                     <Icon className="size-4 text-muted-foreground" />
