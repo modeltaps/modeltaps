@@ -1,6 +1,8 @@
 package model
 
 import (
+	"time"
+
 	"github.com/modeltaps/modeltaps/common/config"
 
 	"github.com/shopspring/decimal"
@@ -590,8 +592,9 @@ func GetDefaultPrice() []*Price {
 		})
 	}
 
-	// Current models at official list prices, with cache and long-context pricing (price_official.go).
-	for model, official := range officialTokenPrices() {
+	// Current models at official list prices, with cache and long-context pricing (price_official.go),
+	// including announced price changes that have already started (price_schedule.go).
+	for model, official := range officialTokenPricesAt(time.Now()) {
 		prices = append(prices, official.toPrice(model))
 	}
 

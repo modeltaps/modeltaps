@@ -61,6 +61,18 @@ func InitCron() {
 		}
 	}
 
+	// 官方调价按日生效：启动时补一次，之后每小时检查（覆盖任意服务器时区下的 UTC 零点）。
+	applyScheduledPriceChanges()
+	err = scheduler.Manager.AddJob(
+		"apply_scheduled_price_changes",
+		gocron.CronJob("7 * * * *", false),
+		gocron.NewTask(applyScheduledPriceChanges),
+	)
+	if err != nil {
+		logger.SysError("Cron job error: " + err.Error())
+		return
+	}
+
 	// 每小时整点批量重置令牌周期用量（幂等；精确边界由校验路径按配置时区懒重置兜底，
 	// cron 仅负责持久化清扫。改为每小时可覆盖任意配置时区的 0 点边界，TK8a）
 	err = scheduler.Manager.AddJob(
@@ -299,5 +311,16 @@ func autoDeleteLogs() {
 	targetTimestamp := time.Now().AddDate(0, 0, -config.LogAutoDeleteDays).Unix()
 	if _, err := model.DeleteOldLogs("cron", targetTimestamp); errors.Is(err, model.ErrLogCleanupRunning) {
 		logger.SysLog("[cron] A consume log cleanup is already running (maybe started by hand), skipping this run")
+	}
+}
+
+func applyScheduledPriceChanges() {
+	updated, err := model.ApplyScheduledPriceChanges(time.Now())
+	if err != nil {
+		logger.SysError("Failed to apply scheduled price changes: " + err.Error())
+		return
+	}
+	if len(updated) > 0 {
+		logger.SysLog("Applied scheduled price changes: " + strings.Join(updated, ", "))
 	}
 }
