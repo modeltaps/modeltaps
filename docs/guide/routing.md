@@ -79,7 +79,7 @@ Coding agents add their own context to the conversation: Claude Code puts `<syst
 
 ## Setting up a policy (administrators)
 
-Policies are created in the console under **Gateway → Auto routing**. A policy consists of:
+Policies are created under **Platform admin → Gateway → Auto routing**. A policy consists of:
 
 - **Model name** — what clients call, for example `auto/coder`. Letters, digits and `. _ / -` only; it must not collide with an existing model. Once created it shows up in `/v1/models` and can be added to token and organization allow lists like any model. Allow lists are checked against the policy name; the target models do not have to be in the caller's allow list, so you can keep expensive or hidden models reachable only through a policy.
 - **Decision model** — a small, fast chat model that classifies the first message. Any chat model the gateway serves will do; pick one that follows instructions well. It must not itself be a policy.
@@ -105,4 +105,18 @@ The decision model can report its confidence in two ways:
 
 **Check support** next to the setting sends one small test request to the decision model and tells you whether the channel it was routed to returns logprobs.
 
-The decision billing switch is under **Settings → Gateway → Auto routing**.
+The decision billing switch is under **Platform admin → Platform settings → Gateway → Auto routing**.
+
+## Organization policies
+
+A site administrator can let organizations manage their own policies: turn on **Let organizations manage their own routing policies** under **Platform admin → Platform settings → Gateway → Auto routing**, optionally change the number of policies each organization may create (20 by default), and save the card.
+
+Organization owners and admins then find **Auto routing** in the **Organization** group of the sidebar while their organization is selected, next to Members & budgets, Billing and Organization settings. It has the same list, policy panel, Try it and statistics as the platform page. Members do not see it; they only find the organization's policies in `/v1/models` and can call them with an organization API key.
+
+- An organization's policies only apply to its own API keys. Personal keys and other organizations never see them.
+- An organization policy may use the same name as a platform policy. For that organization's keys it replaces the platform policy; switch it off and the platform policy applies again.
+- The decision model, targets and fallback must be models the organization can already call and that the catalog does not hide. If the site hides a target later, requests go to the fallback (reason `target_unavailable`). If the fallback is hidden too, the request fails with model not found.
+- **Try it** and **Check support** call the decision model for real and are charged to the organization. They do not count in the policy statistics. Replaying first messages from the logs is not available to organizations.
+- Creating, changing, switching and deleting a policy is recorded in the organization's audit log.
+
+Site administrators can review every organization's policies by setting **Scope** to **Organizations** on **Platform admin → Gateway → Auto routing**. The list shows the organization of each policy and marks a policy that overrides a platform policy of the same name. These policies are read-only there: an administrator can open one and switch it off, but not edit or delete it.

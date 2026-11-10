@@ -1,8 +1,10 @@
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
+import { TriangleAlert } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Field, InfoRow, InfoRows, Section } from '@/components/objects';
 import StatsPanel from './StatsPanel';
 import TryItPanel from './TryItPanel';
@@ -15,10 +17,16 @@ import { ModelField, NumberField, QuestionField, RoutesField, ScoringField, miss
 
 const pct = (v) => `${Math.round(Number(v || 0) * 100)}%`;
 
-function OverviewBody({ object: policy }) {
+function OverviewBody({ object: policy, ctx }) {
   const { t } = useTranslation();
   return (
     <>
+      {ctx.overridesPlatform && (
+        <Alert variant="warning" className="mt-4">
+          <TriangleAlert />
+          <AlertDescription>{t('routingPolicy.overridesPlatformHint')}</AlertDescription>
+        </Alert>
+      )}
       <Section title={t('routingPolicy.panel.summary')}>
         <InfoRows>
           <InfoRow label={t('routingPolicy.form.decisionModel')} mono>
@@ -41,7 +49,7 @@ function OverviewBody({ object: policy }) {
         </InfoRows>
       </Section>
       <Section title={t('routingPolicy.form.tabStats')}>
-        <StatsPanel policyId={policy.id} fallbackModel={policy.fallback_model} />
+        <StatsPanel policyId={policy.id} fallbackModel={policy.fallback_model} api={ctx.api} />
       </Section>
     </>
   );
@@ -62,7 +70,7 @@ function RoutesBody({ draft, setDraft, ctx }) {
         onChange={set('decision_model')}
         options={ctx.modelOptions}
       />
-      <ScoringField value={draft.scoring} onChange={set('scoring')} decisionModel={(draft.decision_model || '').trim()} />
+      <ScoringField value={draft.scoring} onChange={set('scoring')} decisionModel={(draft.decision_model || '').trim()} api={ctx.api} />
       <QuestionField value={draft.question} onChange={set('question')} />
       <RoutesField form={draft} setForm={setDraft} modelOptions={ctx.modelOptions} />
       <ModelField
@@ -110,7 +118,7 @@ const routesTab = {
 };
 
 function TryBody({ object: policy, ctx }) {
-  return <TryItPanel policy={normalizePolicy(policy)} policyId={policy.id} modelOptions={ctx.modelOptions} />;
+  return <TryItPanel policy={normalizePolicy(policy)} policyId={policy.id} modelOptions={ctx.modelOptions} api={ctx.api} />;
 }
 
 const tryTab = { key: 'try', Body: TryBody };
@@ -191,6 +199,8 @@ const settingsTab = {
 
 export const POLICY_TABS = [overviewTab, routesTab, tryTab, settingsTab];
 export const POLICY_TAB_KEYS = POLICY_TABS.map((x) => x.key);
+// Organization policies reviewed from the platform console are read-only.
+export const REVIEW_TAB_KEYS = ['overview'];
 
 const bodyProps = { object: PropTypes.object, draft: PropTypes.object, setDraft: PropTypes.func, ctx: PropTypes.object };
 OverviewBody.propTypes = bodyProps;

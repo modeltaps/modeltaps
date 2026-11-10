@@ -87,6 +87,7 @@ func setOrgRouter(apiRouter *gin.RouterGroup) {
 			{
 				orgRoutingRoute.GET("/", controller.GetOrgRoutingPolicies)
 				orgRoutingRoute.POST("/", controller.CreateOrgRoutingPolicy)
+				orgRoutingRoute.GET("/models", controller.GetOrgRoutingModels)
 				orgRoutingRoute.POST("/try", middleware.CriticalRateLimit(), relay.OrgTryRoutingPolicyHandler)
 				orgRoutingRoute.POST("/probe", middleware.CriticalRateLimit(), relay.OrgProbeRoutingScoringHandler)
 				orgRoutingRoute.GET("/:policy_id", controller.GetOrgRoutingPolicy)

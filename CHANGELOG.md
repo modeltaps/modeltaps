@@ -97,8 +97,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is capped by `OrganizationRoutingPolicyMaxCount` (default 20), and system admins can list an
   organization's policies with `/api/routing_policy/?organization_id=N`. Logs now carry
   `routing_policy_id`, and session pins are keyed by policy id, so conversations already pinned
-  under a platform policy are classified once more after upgrading. The console tab comes in a
-  later release.
+  under a platform policy are classified once more after upgrading.
+- Organization routing policies in the console: organization owners and admins manage them under
+  Organization, Auto routing in the sidebar (shown while the site option is on), with the same
+  list, policy panel, "Try it" and statistics as the platform page; the model pickers list the
+  models the organization can use (`GET /api/org/:id/routing_policy/models`), and "Try it" says it
+  is billed. Platform settings, Gateway, Auto routing gains the site option and the
+  per-organization cap. The platform Auto routing page gets a Scope filter: Organizations lists
+  every organization's policies (`GET /api/routing_policy/?organization_id=-1`), marks ones that
+  override a platform policy, and opens them read-only so admins can only switch them off. The
+  routing guide covers organization policies in all four languages.
 - Personal quota warning settings: Settings, Preferences has a Quota warnings card where users
   turn the low-balance and used-up emails off, or set their own warning threshold instead of the
   site default (and switch back to it). The site switch still wins: when it is off nobody gets

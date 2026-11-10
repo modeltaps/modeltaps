@@ -685,7 +685,8 @@
     "platform_settings": "整個平台的預設值與開關",
     "personal_settings": "只對你自己的賬號生效",
     "token": "調用介面用的金鑰",
-    "invite_code": "生成、啟用與作廢註冊用的邀請碼"
+    "invite_code": "生成、啟用與作廢註冊用的邀請碼",
+    "org_routing": "本組織 API Key 使用的路由策略；與平台策略同名時取代平台策略"
   },
   "api_compare": "對比",
   "modelInfoPage": {
@@ -1680,7 +1681,8 @@
       "threshold": "閾值",
       "enabled": "啟用",
       "week": "近 7 天",
-      "fallbackRate": "兜底 {{rate}}%"
+      "fallbackRate": "兜底 {{rate}}%",
+      "organization": "組織"
     },
     "form": {
       "name": "模型名",
@@ -1764,7 +1766,8 @@
       "loadSamples": "從日誌裏挑一條真實首條訊息",
       "loadingSamples": "載入中…",
       "noSamples": "還沒有留存了請求體的被路由請求。開啟請求明細記錄後才會有樣本。",
-      "scoring": "評分方式"
+      "scoring": "評分方式",
+      "introBilled": "只跑決策這一步，用的是表單裏目前的策略。不轉發、不寫會話固定記錄，但決策呼叫會計費，記在組織賬上。"
     },
     "reasons": {
       "classified": "已分類",
@@ -1824,7 +1827,17 @@
       "defaults": "建立後即啟用，自動打分、閾值 {{threshold}}，可在「路由」裡修改",
       "created": "策略已建立"
     },
-    "editTitle": "編輯路由策略"
+    "editTitle": "編輯路由策略",
+    "scope": {
+      "label": "範圍",
+      "platform": "平台",
+      "organization": "組織"
+    },
+    "overridesPlatform": "覆蓋平台策略",
+    "organizationsIntro": "各組織在自己的「自動路由」頁管理的策略，只對該組織的 API Key 生效。這裏只能停用。",
+    "organizationsEmpty": "還沒有組織建立路由策略。",
+    "orgIntro": "這裏的策略只對本組織的 API Key 生效。與平台策略同名時，本組織成員會使用這裏的策略。「試一試」會實際呼叫決策模型，費用記在組織賬上。",
+    "overridesPlatformHint": "有同名的平台策略。該組織的 API Key 會使用組織的這條策略，而不是平台的。"
   },
   "logPage": {
     "routing": {
@@ -1842,7 +1855,11 @@
     "operationSettings": {
       "generalSettings": {
         "routingDecisionBilling": "決策呼叫計費",
-        "routingDecisionBillingDescription": "自動路由策略的分類呼叫按決策模型價格向呼叫方計費，每個會話一次，單獨記一條日誌。關閉後決策照常進行，但不寫消費日誌。"
+        "routingDecisionBillingDescription": "自動路由策略的分類呼叫按決策模型價格向呼叫方計費，每個會話一次，單獨記一條日誌。關閉後決策照常進行，但不寫消費日誌。",
+        "orgRoutingPolicy": "允許組織管理自己的路由策略",
+        "orgRoutingPolicyDescription": "組織擁有者和管理員的組織選單裏會出現「自動路由」。組織策略只對該組織的 API Key 生效；與平台策略同名時，在該組織內取代平台策略。",
+        "orgRoutingPolicyMaxCount": "每個組織的策略上限",
+        "orgRoutingPolicyMaxCountDescription": "一個組織最多能建立多少條路由策略，0 表示不限。"
       }
     }
   },
@@ -2652,7 +2669,7 @@
         },
         "auto-routing": {
           "title": "自動路由",
-          "description": "決策調用怎樣計費；策略在自動路由頁管理。",
+          "description": "決策調用怎樣計費、組織能否管理自己的策略；平台策略在自動路由頁管理。",
           "hint": "策略的增刪改在自動路由頁"
         },
         "log-consume": {

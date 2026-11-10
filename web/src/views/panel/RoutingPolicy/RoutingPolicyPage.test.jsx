@@ -6,7 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import i18n from 'i18n/i18n';
 import { API } from 'utils/api';
-import RoutingPolicy from './index';
+import { OrgContext } from 'contexts/OrgContext';
+import RoutingPolicy, { RoutingPolicyList } from './index';
+import { orgRoutingPolicyApi } from './routingPolicyApi';
 
 // The policy list opens a policy's panel from its row (?id=); each tab saves on its own and
 // sends the whole policy with only that tab's fields changed.
@@ -95,5 +97,68 @@ describe('RoutingPolicy page', () => {
     expect(screen.getByText(missing)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: i18n.t('common.cancel') }));
     await waitFor(() => expect(search()).toBe(''));
+  });
+});
+
+const ORG_POLICY = { ...POLICY, id: 8, organization_id: 4, organization_name: 'Acme', overrides_platform: true };
+
+describe('RoutingPolicy page, organization scope', () => {
+  const renderReview = (entry) =>
+    render(
+      h(
+        OrgContext.Provider,
+        { value: { orgEnabled: true } },
+        h(
+          MemoryRouter,
+          { initialEntries: [entry] },
+          h(Routes, null, h(Route, { path: '/panel/routing_policy', element: h('div', null, h(RoutingPolicy), h(Spy)) }))
+        )
+      )
+    );
+
+  beforeEach(() => {
+    API.get.mockImplementation((url, config) => {
+      if (url === '/api/routing_policy/' && config?.params?.organization_id === -1) {
+        return Promise.resolve({ data: { success: true, data: [ORG_POLICY] } });
+      }
+      if (url === '/api/routing_policy/8') return Promise.resolve({ data: { success: true, data: ORG_POLICY } });
+      return Promise.resolve({ data: { success: true, data: [] } });
+    });
+  });
+
+  it('switches to every organization policy and keeps the scope in the URL', async () => {
+    renderReview('/panel/routing_policy');
+    fireEvent.click(await screen.findByRole('radio', { name: i18n.t('routingPolicy.scope.organization') }));
+    expect((await screen.findAllByText('Acme')).length).toBeGreaterThan(0);
+    expect(search()).toBe('?scope=organization');
+    expect(screen.getAllByText(i18n.t('routingPolicy.overridesPlatform')).length).toBeGreaterThan(0);
+  });
+
+  it('opens an organization policy read-only: overview only, the conflict explained', async () => {
+    renderReview('/panel/routing_policy?scope=organization&id=8');
+    await screen.findByText(i18n.t('routingPolicy.overridesPlatformHint'));
+    expect(screen.queryByRole('tab', { name: i18n.t('routingPolicy.panel.tab.routes') })).toBeNull();
+    expect(screen.queryByRole('button', { name: i18n.t('objects.panel.save') })).toBeNull();
+  });
+});
+
+describe('RoutingPolicyList, organization client', () => {
+  it('uses the organization endpoints and bills Try it', async () => {
+    API.get.mockImplementation((url) => {
+      if (url === '/api/org/5/routing_policy/') return Promise.resolve({ data: { success: true, data: [POLICY] } });
+      if (url === '/api/org/5/routing_policy/3') return Promise.resolve({ data: { success: true, data: POLICY } });
+      return Promise.resolve({ data: { success: true, data: [] } });
+    });
+    const api = orgRoutingPolicyApi(5);
+    render(
+      h(
+        MemoryRouter,
+        { initialEntries: ['/org?id=3&tab=try'] },
+        h(Routes, null, h(Route, { path: '/org', element: h(RoutingPolicyList, { api }) }))
+      )
+    );
+    await screen.findByText(i18n.t('routingPolicy.tryIt.introBilled'));
+    expect(API.get).toHaveBeenCalledWith('/api/org/5/routing_policy/models');
+    expect(API.get).toHaveBeenCalledWith('/api/org/5/routing_policy/3');
   });
 });

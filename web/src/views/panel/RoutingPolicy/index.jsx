@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import PropTypes from 'prop-types';
+import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { useOrg } from 'contexts/OrgContext';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { PanelRight, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { PanelRight, Plus, RotateCcw, Trash2, TriangleAlert } from 'lucide-react';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import DataCards from '@/components/ui/data-cards';
@@ -15,23 +18,49 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFoo
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import PageActions from '@/components/chrome/PageActions';
-import { ROW_OPENS, rowOpenProps, RowControl, useObjectRoute } from '@/components/objects';
+import { ROW_OPENS, rowOpenProps, RowControl, Segmented, useObjectRoute } from '@/components/objects';
 import { showError, showSuccess } from 'utils/common';
 import RoutingPolicyPanel from './RoutingPolicyPanel';
 import NewRoutingPolicySheet from './NewRoutingPolicySheet';
 import { POLICY_TAB_KEYS } from './policyTabs';
-import {
-  deleteRoutingPolicy,
-  getRoutingPolicyStats,
-  listCatalogModelNames,
-  listRoutingPolicies,
-  setRoutingPolicyEnabled
-} from './routingPolicyApi';
+import { organizationReviewApi, platformRoutingPolicyApi } from './routingPolicyApi';
 
-// 自动路由策略列表：策略不多，一次取全量，不分页。点一行在右侧打开策略面板（?id=，Tab 各自保存），
-// 新建用右侧面板（?new=1），只填必需项。
+const SCOPES = ['platform', 'organization'];
+
+// Platform console: the platform's own policies, or (范围 = 组织) every organization's policies for
+// review. The scope is kept in the URL (?scope=organization).
 export default function RoutingPolicy() {
   const { t } = useTranslation();
+  const { orgEnabled: organizationsEnabled } = useOrg();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const scope = organizationsEnabled && searchParams.get('scope') === 'organization' ? 'organization' : 'platform';
+  // Switching scope closes the open panel: ids are not shared between the two lists.
+  const setScope = (next) => setSearchParams(next === 'organization' ? { scope: next } : {});
+  const filter = organizationsEnabled && (
+    <Segmented
+      label={t('routingPolicy.scope.label')}
+      value={scope}
+      onChange={setScope}
+      options={SCOPES.map((value) => ({ value, label: t(`routingPolicy.scope.${value}`) }))}
+    />
+  );
+  return (
+    <RoutingPolicyList
+      key={scope}
+      api={scope === 'organization' ? organizationReviewApi : platformRoutingPolicyApi}
+      filter={filter}
+      intro={scope === 'organization' ? t('routingPolicy.organizationsIntro') : null}
+    />
+  );
+}
+
+// 自动路由策略列表：策略不多，一次取全量，不分页。点一行在右侧打开策略面板（?id=，Tab 各自保存），
+// 新建用右侧面板（?new=1），只填必需项。Shared by the platform console and an organization's
+// 自动路由 page: `api` is the scoped client (routingPolicyApi.js). With a review client the list
+// shows every organization's policies, read-only except the enable switch.
+export function RoutingPolicyList({ api, filter = null, intro = null }) {
+  const { t } = useTranslation();
+  const review = Boolean(api.review);
   const route = useObjectRoute(POLICY_TAB_KEYS);
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -43,14 +72,14 @@ export default function RoutingPolicy() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const { success, message, data } = await listRoutingPolicies();
+      const { success, message, data } = await api.list();
       if (success) {
         const list = data || [];
         setPolicies(list);
         const entries = await Promise.all(
           list.map(async (p) => {
             try {
-              const res = await getRoutingPolicyStats(p.id, 7);
+              const res = await api.getStats(p.id, 7);
               return [p.id, res.success ? res.data : null];
             } catch (e) {
               return [p.id, null];
@@ -64,7 +93,7 @@ export default function RoutingPolicy() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [api]);
 
   useEffect(() => {
     refresh();
@@ -72,14 +101,15 @@ export default function RoutingPolicy() {
 
   // 目录模型名只取一次，供决策 / 目标 / 兜底三处下拉建议。
   useEffect(() => {
-    listCatalogModelNames()
+    api
+      .listModels()
       .then(setModelOptions)
       .catch(() => {});
-  }, []);
+  }, [api]);
 
   const toggleEnabled = async (policy, enabled) => {
     try {
-      const { success, message } = await setRoutingPolicyEnabled(policy.id, enabled);
+      const { success, message } = await api.setEnabled(policy.id, enabled);
       if (success) {
         setPolicies((prev) => prev.map((p) => (p.id === policy.id ? { ...p, enabled } : p)));
         return true;
@@ -96,7 +126,7 @@ export default function RoutingPolicy() {
     setPendingDelete(null);
     if (!policy) return;
     try {
-      const { success, message } = await deleteRoutingPolicy(policy.id);
+      const { success, message } = await api.remove(policy.id);
       if (success) {
         showSuccess(t('userPage.operationSuccess'));
         if (policy.id === route.openId) route.close();
@@ -111,6 +141,15 @@ export default function RoutingPolicy() {
 
   const columns = useMemo(
     () => [
+      ...(review
+        ? [
+            {
+              accessorKey: 'organization_name',
+              header: t('routingPolicy.columns.organization'),
+              cell: (c) => c.getValue() || `#${c.row.original.organization_id}`
+            }
+          ]
+        : []),
       {
         accessorKey: 'name',
         header: t('routingPolicy.columns.name'),
@@ -118,7 +157,19 @@ export default function RoutingPolicy() {
           const p = c.row.original;
           return (
             <div className="min-w-0">
-              <div className="font-mono text-sm">{p.name}</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-sm">{p.name}</span>
+                {p.overrides_platform && (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 border-amber-500/40 font-normal"
+                    title={t('routingPolicy.overridesPlatformHint')}
+                  >
+                    <TriangleAlert className="size-3 text-amber-500" />
+                    {t('routingPolicy.overridesPlatform')}
+                  </Badge>
+                )}
+              </div>
               {p.display_name && p.display_name !== p.name && (
                 <div className="truncate text-xs text-muted-foreground">{p.display_name}</div>
               )}
@@ -199,7 +250,7 @@ export default function RoutingPolicy() {
               <RowActions
                 actions={[
                   { label: t('objects.open'), icon: PanelRight, onClick: () => route.open(p.id) },
-                  { label: t('common.delete'), icon: Trash2, destructive: true, onClick: () => setPendingDelete(p) }
+                  ...(review ? [] : [{ label: t('common.delete'), icon: Trash2, destructive: true, onClick: () => setPendingDelete(p) }])
                 ]}
               />
             </RowControl>
@@ -208,10 +259,13 @@ export default function RoutingPolicy() {
       }
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, weekStats, route.openId]
+    [t, weekStats, route.openId, review]
   );
 
+  const openPolicy = policies.find((p) => p.id === route.openId);
+
   const table = useTable({ features: appTableFeatures, data: policies, columns });
+  const emptyText = review ? t('routingPolicy.organizationsEmpty') : t('routingPolicy.empty');
 
   return (
     <div className="space-y-6">
@@ -226,8 +280,15 @@ export default function RoutingPolicy() {
             <TooltipContent>{t('userPage.refresh')}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        <ResponsiveToolbarButton primary icon={Plus} label={t('routingPolicy.create')} onClick={route.openNew} />
+        {!review && <ResponsiveToolbarButton primary icon={Plus} label={t('routingPolicy.create')} onClick={route.openNew} />}
       </PageActions>
+
+      {(filter || intro) && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {filter}
+          {intro && <p className="text-sm text-muted-foreground">{intro}</p>}
+        </div>
+      )}
 
       <Card>
         <div className="hidden overflow-x-auto md:block">
@@ -247,7 +308,7 @@ export default function RoutingPolicy() {
               {table.getRowModel().rows.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan={columns.length} className="py-10 text-center text-sm text-muted-foreground">
-                    {loading ? t('common.loading', { defaultValue: 'Loading…' }) : t('routingPolicy.empty')}
+                    {loading ? t('common.loading', { defaultValue: 'Loading…' }) : emptyText}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -274,7 +335,7 @@ export default function RoutingPolicy() {
           className="md:hidden"
           primaryColumnId="name"
           actionColumnIds={['action']}
-          empty={t('routingPolicy.empty')}
+          empty={emptyText}
           searching={loading}
           onRowClick={(p) => route.open(p.id)}
         />
@@ -283,6 +344,8 @@ export default function RoutingPolicy() {
       {route.openId > 0 && (
         <RoutingPolicyPanel
           key={route.openId}
+          api={api}
+          listed={openPolicy}
           policyId={route.openId}
           tab={route.tab}
           onTabChange={route.setTab}
@@ -294,8 +357,9 @@ export default function RoutingPolicy() {
         />
       )}
 
-      {route.isNew && (
+      {route.isNew && !review && (
         <NewRoutingPolicySheet
+          api={api}
           modelOptions={modelOptions}
           onClose={route.close}
           onCreated={(policy) => {
@@ -328,3 +392,9 @@ export default function RoutingPolicy() {
     </div>
   );
 }
+
+RoutingPolicyList.propTypes = {
+  api: PropTypes.object.isRequired,
+  filter: PropTypes.node,
+  intro: PropTypes.node
+};

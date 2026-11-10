@@ -43,13 +43,19 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { openNotice } = useNotice();
-  const { currentOrgId, orgRole, orgDetail } = useOrg();
+  const { currentOrgId, orgRole, orgDetail, orgRoutingPolicyEnabled } = useOrg();
   const siteInfo = useSelector((state) => state.siteInfo);
   const user = useSelector((state) => state.account.user);
   const isRoot = useIsRoot();
   const footerRef = useRef(null);
 
-  const sections = navSectionsFor({ context, orgRole, orgId: currentOrgId, isRoot });
+  const sections = navSectionsFor({
+    context,
+    orgRole,
+    orgId: currentOrgId,
+    isRoot,
+    features: { orgRoutingPolicy: orgRoutingPolicyEnabled }
+  });
   const activeId = findActiveItem(pathname)?.id;
   const brand = brandWordmark(siteInfo?.system_name);
 

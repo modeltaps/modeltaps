@@ -306,6 +306,13 @@ func GetRoutingPoliciesByOrganization(organizationId int) ([]*RoutingPolicy, err
 	return policies, err
 }
 
+// GetAllOrganizationRoutingPolicies returns every organization's policies, by organization then id.
+func GetAllOrganizationRoutingPolicies() ([]*RoutingPolicy, error) {
+	var policies []*RoutingPolicy
+	err := DB.Where("organization_id > ?", 0).Order("organization_id asc, id asc").Find(&policies).Error
+	return policies, err
+}
+
 func GetRoutingPolicyById(id int) (*RoutingPolicy, error) {
 	policy := &RoutingPolicy{}
 	err := DB.First(policy, "id = ?", id).Error
@@ -438,6 +445,30 @@ func checkOrganizationRoutingModel(group, field, name string) error {
 		return routingPolicyModelUnavailable(field, name)
 	}
 	return nil
+}
+
+// OrganizationRoutingModels lists the models an organization policy may use, for the console's
+// model pickers: routable in the organization's group, visible in the catalog, not an alias and not
+// a policy. Sorted by name.
+func OrganizationRoutingModels(organizationId int) ([]string, error) {
+	group, err := organizationRoutingGroup(organizationId)
+	if err != nil {
+		return nil, err
+	}
+	models, err := ChannelGroup.GetGroupModels(group)
+	if err != nil {
+		return []string{}, nil
+	}
+	isPolicy := IsRoutingPolicyModelFor(organizationId)
+	usable := make([]string, 0, len(models))
+	for _, name := range models {
+		if strings.Contains(name, "*") || isPolicy(name) || !IsCatalogVisible(name) {
+			continue
+		}
+		usable = append(usable, name)
+	}
+	sort.Strings(usable)
+	return usable, nil
 }
 
 // OrganizationRoutingTargetUsable reports whether an organization policy may send a request to the

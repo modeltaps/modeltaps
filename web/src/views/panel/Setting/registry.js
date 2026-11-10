@@ -122,7 +122,11 @@ export const PLATFORM_GROUPS = [
       ]),
       card('prompt-limits', 'form', ['MaxPromptTokens']),
       card('image-proxy', 'form', ['ChatImageRequestProxy', 'CFWorkerImageUrl', 'CFWorkerImageKey']),
-      card('auto-routing', 'form', ['RoutingDecisionBillingEnabled'])
+      card('auto-routing', 'form', [
+        'RoutingDecisionBillingEnabled',
+        'OrganizationRoutingPolicyEnabled',
+        'OrganizationRoutingPolicyMaxCount'
+      ])
     ]
   },
   {

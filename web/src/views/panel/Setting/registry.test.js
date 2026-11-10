@@ -178,6 +178,16 @@ describe('platform settings registry', () => {
   });
 });
 
+describe('auto routing options', () => {
+  it('the gateway auto routing card saves the organization policy switch and cap', () => {
+    expect(cardById('auto-routing')).toMatchObject({
+      groupId: 'gateway',
+      kind: 'form',
+      keys: ['RoutingDecisionBillingEnabled', 'OrganizationRoutingPolicyEnabled', 'OrganizationRoutingPolicyMaxCount']
+    });
+  });
+});
+
 describe('model supply options', () => {
   it('pause rules are a gateway form card with their own switch', () => {
     expect(cardById('supply-pause-rules')).toMatchObject({ groupId: 'gateway', kind: 'form', keys: ['PauseRulesEnabled', 'PauseRules'] });

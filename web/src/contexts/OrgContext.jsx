@@ -12,6 +12,8 @@ import { UserContext } from 'contexts/UserContext';
 
 export const OrgContext = createContext({
   orgEnabled: false,
+  // Organizations may manage their own routing policies (site option, from /api/status).
+  orgRoutingPolicyEnabled: false,
   organizations: [],
   orgsLoaded: false,
   currentOrgId: null,
@@ -43,6 +45,7 @@ const OrgProvider = ({ children }) => {
   const siteInfo = useSelector((state) => state.siteInfo);
   const { isUserLoaded } = useContext(UserContext);
   const orgEnabled = siteInfo?.organization_enabled === true;
+  const orgRoutingPolicyEnabled = orgEnabled && siteInfo?.organization_routing_policy_enabled === true;
   // SET_SITE_INFO 写入 isLoading:false;加载完成前 organization_enabled 不可信
   const siteInfoLoaded = siteInfo?.isLoading === false;
   const userId = account?.user?.id;
@@ -146,6 +149,7 @@ const OrgProvider = ({ children }) => {
   const value = useMemo(
     () => ({
       orgEnabled,
+      orgRoutingPolicyEnabled,
       organizations,
       orgsLoaded: isUserLoaded && siteInfoLoaded && (!orgEnabled || !userId || orgsFetched),
       currentOrgId: currentOrg ? currentOrgId : null,
@@ -158,6 +162,7 @@ const OrgProvider = ({ children }) => {
     }),
     [
       orgEnabled,
+      orgRoutingPolicyEnabled,
       organizations,
       isUserLoaded,
       siteInfoLoaded,

@@ -17,7 +17,7 @@ export default function CommandMenu({ open, setOpen }) {
   const { t } = useTranslation();
   const isAdmin = useIsAdmin();
   const isRoot = useIsRoot();
-  const { currentOrgId, orgRole } = useOrg();
+  const { currentOrgId, orgRole, orgRoutingPolicyEnabled } = useOrg();
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -35,7 +35,13 @@ export default function CommandMenu({ open, setOpen }) {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [setOpen]);
 
-  const sections = commandSections({ isAdmin, isRoot, orgId: currentOrgId, orgRole });
+  const sections = commandSections({
+    isAdmin,
+    isRoot,
+    orgId: currentOrgId,
+    orgRole,
+    features: { orgRoutingPolicy: orgRoutingPolicyEnabled }
+  });
 
   const go = (url) => {
     setOpen(false);

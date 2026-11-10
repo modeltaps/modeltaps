@@ -686,7 +686,8 @@
     "platform_settings": "Platform-wide defaults and switches",
     "personal_settings": "Applies to your own account only",
     "token": "Keys for calling the API",
-    "invite_code": "Create, enable and revoke registration invite codes"
+    "invite_code": "Create, enable and revoke registration invite codes",
+    "org_routing": "Routing policies for this organization’s API keys; a policy can replace a platform policy of the same name"
   },
   "api_compare": "Compare",
   "modelInfoPage": {
@@ -1753,7 +1754,8 @@
       "threshold": "Threshold",
       "enabled": "Enabled",
       "week": "Last 7 days",
-      "fallbackRate": "{{rate}}% fallback"
+      "fallbackRate": "{{rate}}% fallback",
+      "organization": "Organization"
     },
     "form": {
       "name": "Model name",
@@ -1837,7 +1839,8 @@
       "loadSamples": "Pick a real first message from the logs",
       "loadingSamples": "Loading…",
       "noSamples": "No routed requests with a stored request body yet. Turn on request detail logging to collect samples.",
-      "scoring": "Scoring"
+      "scoring": "Scoring",
+      "introBilled": "Run the decision step only, with the policy as it is in this form. Nothing is forwarded or pinned, but the decision call is charged to the organization."
     },
     "reasons": {
       "classified": "Classified",
@@ -1897,7 +1900,17 @@
       "defaults": "Created enabled with automatic scoring and a {{threshold}} threshold; change these in Routes",
       "created": "Policy created"
     },
-    "editTitle": "Edit routing policy"
+    "editTitle": "Edit routing policy",
+    "scope": {
+      "label": "Scope",
+      "platform": "Platform",
+      "organization": "Organizations"
+    },
+    "overridesPlatform": "Overrides a platform policy",
+    "organizationsIntro": "Policies organizations manage on their own Auto routing page. They only apply to that organization's API keys; you can only switch one off here.",
+    "organizationsEmpty": "No organization has a routing policy yet.",
+    "orgIntro": "Policies here only apply to this organization's API keys. A policy with the same name as a platform policy replaces it for your members. \"Try it\" calls the decision model and is charged to the organization.",
+    "overridesPlatformHint": "A platform policy has the same name. This organization's API keys use the organization's policy instead of the platform's."
   },
   "logPage": {
     "routing": {
@@ -1915,7 +1928,11 @@
     "operationSettings": {
       "generalSettings": {
         "routingDecisionBilling": "Charge the decision call",
-        "routingDecisionBillingDescription": "Bill the classification call of an auto routing policy to the caller at the decision model's price, once per session, as its own log entry. When off the decision still runs but leaves no consume log."
+        "routingDecisionBillingDescription": "Bill the classification call of an auto routing policy to the caller at the decision model's price, once per session, as its own log entry. When off the decision still runs but leaves no consume log.",
+        "orgRoutingPolicy": "Let organizations manage their own routing policies",
+        "orgRoutingPolicyDescription": "Organization owners and admins get Auto routing in their organization menu. Their policies only apply to that organization's API keys; a policy with a platform policy's name replaces it for that organization.",
+        "orgRoutingPolicyMaxCount": "Policies per organization",
+        "orgRoutingPolicyMaxCountDescription": "The most routing policies one organization can create. 0 means no limit."
       }
     }
   },
@@ -2744,7 +2761,7 @@
         },
         "auto-routing": {
           "title": "Auto routing",
-          "description": "How decision calls are billed; policies are managed on the auto routing page.",
+          "description": "How decision calls are billed and whether organizations manage their own policies; platform policies are managed on the auto routing page.",
           "hint": "Add and edit policies on the auto routing page"
         },
         "log-consume": {
