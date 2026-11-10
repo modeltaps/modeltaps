@@ -11,9 +11,9 @@
 
     <!-- Icons -->
     <!-- PNG, not SVG: Chromium rasterizes vector icons with 4-sample MSAA, which looks jagged at 16 px -->
-    <link rel="icon" href="/brand/favicon-16.png?v=10" sizes="16x16" type="image/png" data-theme-icon="16" />
-    <link rel="icon" href="/brand/favicon-32.png?v=10" sizes="32x32" type="image/png" data-theme-icon="32" />
-    <link rel="icon" href="/brand/favicon-48.png?v=10" sizes="48x48" type="image/png" data-theme-icon="48" />
+    <link rel="icon" href="/brand/favicon-16.png?v=11" sizes="16x16" type="image/png" data-theme-icon="16" />
+    <link rel="icon" href="/brand/favicon-32.png?v=11" sizes="32x32" type="image/png" data-theme-icon="32" />
+    <link rel="icon" href="/brand/favicon-48.png?v=11" sizes="48x48" type="image/png" data-theme-icon="48" />
     <script>
       // Black mark on light browser chrome, white mark on dark.
       (function () {
@@ -21,15 +21,15 @@
         function apply() {
           document.querySelectorAll('link[data-theme-icon]').forEach(function (l) {
             var s = l.getAttribute('data-theme-icon');
-            l.href = '/brand/favicon-' + s + (q.matches ? '-white' : '') + '.png?v=10';
+            l.href = '/brand/favicon-' + s + (q.matches ? '-white' : '') + '.png?v=11';
           });
         }
         apply();
         q.addEventListener('change', apply);
       })();
     </script>
-    <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png?v=10" />
-    <link rel="manifest" href="/manifest.webmanifest?v=10" />
+    <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png?v=11" />
+    <link rel="manifest" href="/manifest.webmanifest?v=11" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />

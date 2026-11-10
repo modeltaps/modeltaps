@@ -174,10 +174,10 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
             <Link
               to={DASHBOARD_URL}
               onClick={onItemClick}
-              className="flex min-w-0 flex-1 items-center gap-2 text-foreground transition-opacity hover:opacity-90"
+              className="flex min-w-0 flex-1 items-center gap-2.5 text-foreground transition-opacity hover:opacity-90"
             >
-              <LogoMark size={16} />
-              <span className="truncate text-[15px] font-semibold leading-none tracking-tight">{brand}</span>
+              <LogoMark size={20} />
+              <span className="truncate text-[17px] font-semibold leading-none tracking-tight">{brand}</span>
             </Link>
             {onToggleCollapse && <CollapseButton onClick={onToggleCollapse} />}
           </div>

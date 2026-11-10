@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubTrigger,
@@ -49,7 +50,8 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, onNav
   const { logout } = useLogin();
 
   const name = accountDisplayName(user);
-  // Secondary line: the email when it differs from the shown name, else @username.
+  // Shown under the name at the top of the menu (the sidebar row itself is one line): the email
+  // when it differs from the shown name, else @username.
   const secondary = user?.email && user.email !== name ? user.email : user?.display_name && user?.username ? `@${user.username}` : '';
   const currentLang = i18n.language || i18nList[0].lng;
   const currentLangName = i18nList.find((item) => item.lng === currentLang)?.name || currentLang;
@@ -66,19 +68,16 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, onNav
       aria-label={`${t('nav.account.menu')}: ${name}`}
       className="flex size-9 items-center justify-center rounded-full transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <UserAvatar user={user} className="size-7" textClass="text-[11px]" />
+      <UserAvatar user={user} className="size-6" textClass="text-[10px]" />
     </button>
   ) : (
     <button
       type="button"
       aria-label={`${t('nav.account.menu')}: ${name}`}
-      className="flex h-11 w-full min-w-0 items-center gap-2.5 rounded-lg px-2 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="flex h-9 w-full min-w-0 items-center gap-2 rounded-lg px-2 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <UserAvatar user={user} className="size-7" textClass="text-[11px]" />
-      <span className="min-w-0 flex-1 leading-tight">
-        <span className="block truncate text-[13px] font-medium text-foreground">{name}</span>
-        {secondary && <span className="block truncate text-xs text-muted-foreground">{secondary}</span>}
-      </span>
+      <UserAvatar user={user} className="size-6" textClass="text-[10px]" />
+      <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">{name}</span>
     </button>
   );
 
@@ -101,6 +100,11 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, onNav
         matchTriggerWidth={!collapsed}
         className={cn(collapsed && 'w-56')}
       >
+        <DropdownMenuLabel className="font-normal">
+          <span className="block truncate text-[13px] font-medium text-foreground">{name}</span>
+          {secondary && <span className="block truncate">{secondary}</span>}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
         <DropdownMenuItem onClick={openSettings}>
           <Settings />
           <span className="flex-1">{t('nav.account.settings')}</span>
