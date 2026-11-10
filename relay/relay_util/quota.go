@@ -128,6 +128,8 @@ type Quota struct {
 	// 请求 / 上游 / 响应声明的模型名与渠道类型,用于判断上游是否换了模型(CHAN-9)。
 	requestedModel, upstreamModel, responseModel string
 	channelType                                  int
+	// supplyId is the model supply the request went through, 0 when channels' model lists route.
+	supplyId int
 	// retryAttempts 成功前失败过的上游尝试,非空时写入日志 metadata.retry_attempts。
 	retryAttempts []RelayAttempt
 
@@ -495,6 +497,8 @@ type ConsumeSnapshot struct {
 	UpstreamModel  string
 	ResponseModel  string
 	ChannelType    int
+	// SupplyId is the model supply the request went through (0 without supplies).
+	SupplyId int
 
 	// RetryAttempts 成功前失败过的上游尝试（重试链），为空表示首个渠道即成功。
 	RetryAttempts []RelayAttempt
@@ -522,6 +526,7 @@ func NewConsumeSnapshot(c *gin.Context) ConsumeSnapshot {
 		SessionAffinity: c.GetString(model.SessionAffinityContextKey),
 		RequestedModel:  c.GetString("original_model"),
 		UpstreamModel:   c.GetString("new_model"),
+		SupplyId:        c.GetInt(model.SupplyIdContextKey),
 		ResponseModel:   c.GetString(config.GinUpstreamResponseModelKey),
 		ChannelType:     c.GetInt("channel_type"),
 		RetryAttempts:   RelayAttempts(c),
@@ -552,6 +557,7 @@ func (q *Quota) ConsumeWithSnapshot(snap ConsumeSnapshot, usage *types.Usage, is
 	q.sessionAffinity = snap.SessionAffinity
 	q.requestedModel, q.upstreamModel, q.responseModel, q.channelType = snap.RequestedModel, snap.UpstreamModel, snap.ResponseModel, snap.ChannelType
 	q.retryAttempts = snap.RetryAttempts
+	q.supplyId = snap.SupplyId
 	ctx := snap.Ctx
 	defer func() {
 		if r := recover(); r != nil {

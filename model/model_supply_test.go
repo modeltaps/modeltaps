@@ -160,3 +160,64 @@ func TestMigrateChannelsToSuppliesApply(t *testing.T) {
 		t.Fatalf("second run changed things: %+v", again)
 	}
 }
+
+// Switching ModelSupplyEnabled through the settings rebuilds the routing table from the other
+// source at once.
+func TestModelSupplySwitchReloadsRoutingTable(t *testing.T) {
+	useSupplyTestDB(t)
+	registerOptions()
+	oldEnabled := config.ModelSupplyEnabled
+	ChannelGroup.RLock()
+	oldRule, oldChannels, oldMatch, oldGroups, oldTypes, oldSupplies := ChannelGroup.Rule, ChannelGroup.Channels,
+		ChannelGroup.Match, ChannelGroup.ModelGroup, ChannelGroup.ModelChannelType, ChannelGroup.Supplies
+	ChannelGroup.RUnlock()
+	t.Cleanup(func() {
+		config.ModelSupplyEnabled = oldEnabled
+		ChannelGroup.Lock()
+		ChannelGroup.Rule, ChannelGroup.Channels, ChannelGroup.Match = oldRule, oldChannels, oldMatch
+		ChannelGroup.ModelGroup, ChannelGroup.ModelChannelType, ChannelGroup.Supplies = oldGroups, oldTypes, oldSupplies
+		ChannelGroup.Unlock()
+	})
+	config.ModelSupplyEnabled = false
+
+	weight := uint(1)
+	channel := &Channel{Name: "c", Status: config.ChannelStatusEnabled, Group: "default", Weight: &weight, Models: "listed"}
+	if err := DB.Create(channel).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := DB.Create(&ModelInfo{Model: "supplied", Status: ModelStatusPublished}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := DB.Create(&ModelSupply{Model: "supplied", ChannelId: channel.Id, UpstreamModel: "vendor/supplied", Enabled: true}).Error; err != nil {
+		t.Fatal(err)
+	}
+	ChannelGroup.Load()
+
+	routes := func(name string) bool {
+		ChannelGroup.RLock()
+		defer ChannelGroup.RUnlock()
+		_, ok := ChannelGroup.Rule["default"][name]
+		return ok
+	}
+	if !routes("listed") || routes("supplied") {
+		t.Fatal("with the switch off the channel model list should route")
+	}
+	if err := config.GlobalOption.Set("ModelSupplyEnabled", "true"); err != nil {
+		t.Fatal(err)
+	}
+	if routes("listed") || !routes("supplied") {
+		t.Fatal("switching on did not rebuild the routing table from supplies")
+	}
+	if supply, ok := ChannelGroup.SupplyFor("supplied", channel.Id); !ok || supply.UpstreamModel != "vendor/supplied" {
+		t.Fatalf("SupplyFor = %+v, %v", supply, ok)
+	}
+	if err := config.GlobalOption.Set("ModelSupplyEnabled", "false"); err != nil {
+		t.Fatal(err)
+	}
+	if !routes("listed") || routes("supplied") {
+		t.Fatal("switching off did not go back to the channel model lists")
+	}
+	if _, ok := ChannelGroup.SupplyFor("supplied", channel.Id); ok {
+		t.Fatal("supplies still loaded after switching off")
+	}
+}

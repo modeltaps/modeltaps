@@ -131,7 +131,8 @@ func resolveCatalogModel(c *gin.Context, modelName string, catalogExempt bool) (
 		logger.LogInfo(c.Request.Context(), fmt.Sprintf("model_alias_rewrite requested=%s canonical=%s", modelName, canonical))
 	}
 
-	if config.CatalogEnforceHidden() && model.IsModelHidden(canonical) {
+	// With supplies, status always applies: catalog.enforce_hidden only rolls back hiding.
+	if (config.ModelSupplyEnabled || config.CatalogEnforceHidden()) && model.IsModelHidden(canonical) {
 		logger.LogError(c.Request.Context(), fmt.Sprintf(
 			"model_hidden user=%d requested=%s canonical=%s", c.GetInt("id"), modelName, canonical))
 		return canonical, fmt.Errorf("%w: %s", errModelNotFoundSentinel, canonical)
@@ -351,16 +352,23 @@ func getProvider(c *gin.Context, modelName string, catalogExempt bool) (provider
 	// 写 cooldown 的一方必须用它，否则 IsInCooldown 查不到。
 	c.Set("routing_model", actualModelName)
 
-	newModelName, fail = upstreamModelName(provider, modelName, actualModelName)
-	if fail != nil {
-		return
-	}
-
 	BillingOriginalModel := false
-
-	if strings.HasPrefix(newModelName, "+") {
-		newModelName = newModelName[1:]
-		BillingOriginalModel = true
+	if supply, ok := model.ChannelGroup.SupplyFor(actualModelName, channel.Id); ok {
+		// The supply names the upstream model; model_mapping and its "+" prefix do not apply,
+		// and billing goes by the public model (see relayBase.getModelName).
+		newModelName = supply.UpstreamModel
+		c.Set(model.SupplyIdContextKey, supply.Id)
+	} else {
+		// A retry may land here after an attempt through a supply; that attempt's id must go.
+		c.Set(model.SupplyIdContextKey, 0)
+		newModelName, fail = upstreamModelName(provider, modelName, actualModelName)
+		if fail != nil {
+			return
+		}
+		if strings.HasPrefix(newModelName, "+") {
+			newModelName = newModelName[1:]
+			BillingOriginalModel = true
+		}
 	}
 
 	c.Set("new_model", newModelName)

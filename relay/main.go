@@ -450,6 +450,7 @@ func applyPreMappingBeforeRequest(c *gin.Context) {
 		c.Set("routing_model", nil)
 		c.Set("new_model", nil)
 		c.Set("billing_original_model", nil)
+		c.Set(model.SupplyIdContextKey, nil)
 	}()
 
 	provider, _, err := GetProvider(c, modelName)

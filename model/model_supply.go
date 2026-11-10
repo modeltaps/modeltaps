@@ -11,6 +11,9 @@ import (
 const (
 	ModelSupplySourceManual   = "manual"
 	ModelSupplySourceMigrated = "migrated"
+
+	// SupplyIdContextKey holds the id of the supply a request was sent through.
+	SupplyIdContextKey = "supply_id"
 )
 
 // ModelSupply says that a channel supplies a public model, and under which upstream name. While

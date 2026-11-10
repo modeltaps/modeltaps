@@ -20,8 +20,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   policies whose models have no supply, and per-group routing differences. Catalog rows gain
   `status` (draft, published, retired) and `supply_mode` (balance, failover); hiding a model keeps
   `status` in step until the migration runs, and saves that leave the two fields out keep them.
-  The `ModelSupplyEnabled` setting is added but has no effect until requests are routed through
-  supplies in a later release.
+- Routing through model supplies, behind the new `ModelSupplyEnabled` setting (off by default;
+  turn it on after running the migration). While it is on, the channels' model lists and model
+  mappings no longer route: each public model reaches the channels that supply it, in tiers by
+  the supplies' priority (highest first), and within a tier `balance` models split by supply
+  weight while `failover` models take the heaviest supply. The supply names the upstream model,
+  so `model_mapping` and its `+` prefix no longer apply, and requests are billed by the public
+  model's price rather than the upstream name's. `status` decides what clients see: published
+  models are listed and callable, retired ones stay callable but are no longer listed, drafts
+  answer model not found, and aliases keep working without being listed. The request log
+  records the supply in `metadata.supply_id`. Switching the setting rebuilds routing at once,
+  in both directions.
 - Organization routing policies (backend): with the new site option
   `OrganizationRoutingPolicyEnabled` (off by default), organization owners and admins manage
   routing policies that only their organization's API keys can use, through
