@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/modeltaps/modeltaps/model"
+	"github.com/modeltaps/modeltaps/relay"
 	"github.com/modeltaps/modeltaps/router"
 
 	"github.com/gin-gonic/gin"
@@ -74,6 +75,9 @@ func NewHarness(t *testing.T, opts HarnessOptions) *Harness {
 
 	setupTestConfig(t)
 	setupTestDB(t)
+	// Failed attempts write pauses and send notices in the background; let that finish before
+	// the cleanups above swap the database and settings back (cleanups run last-in first-out).
+	t.Cleanup(relay.WaitRelayErrorHandling)
 	setupPricing(t, opts.Prices)
 	seedUserGroup(t, opts.Group, opts.GroupRatio)
 

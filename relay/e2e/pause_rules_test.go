@@ -70,6 +70,8 @@ func TestQuotaPausesChannelAndFailsOver(t *testing.T) {
 		{Name: "backup", BaseURL: backup.Server.URL, Priority: 0},
 	}})
 	setAndRestore(t, &config.RetryTimes, 2)
+	// Notices are limited per kind and hour across the process; this test counts its own.
+	setAndRestore(t, &config.NotifyKindLimitPerHour, 0)
 	pausedBefore := pauseNotices.count("paused")
 
 	for i := 0; i < 3; i++ {
