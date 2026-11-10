@@ -34,7 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   returns the created ids.
 - Model supplies, backend groundwork (no change to request handling yet). A new `model_supplies`
   table records which channel supplies a public model, under which upstream name, with its own
-  priority, weight and on/off switch; admins manage them through `/api/model_supply`. Root can
+  priority, weight and on/off switch; admins manage them through `/api/model_supply`, whose list
+  shows each supply's channel name, status, type and tag. Root can
   run `POST /api/model_supply/migrate`, a dry run unless the body says `{"dry_run": false}`, which
   turns the channels' model lists and model mappings into supplies and reports what changes: new
   catalog rows, status changes, prices copied from upstream names and conflicts between them,

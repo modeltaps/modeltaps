@@ -32,10 +32,11 @@ func respondSupplyError(c *gin.Context, err error) {
 	common.APIRespondWithError(c, http.StatusOK, err)
 }
 
-// GetModelSupplies lists supplies, optionally for one model (?model=) or one channel (?channel_id=).
+// GetModelSupplies lists supplies, optionally for one model (?model=) or one channel
+// (?channel_id=), each with its channel's name, status, type and tag.
 func GetModelSupplies(c *gin.Context) {
 	channelId, _ := strconv.Atoi(c.Query("channel_id"))
-	supplies, err := model.GetModelSupplies(c.Query("model"), channelId)
+	supplies, err := model.GetModelSupplyViews(c.Query("model"), channelId)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
