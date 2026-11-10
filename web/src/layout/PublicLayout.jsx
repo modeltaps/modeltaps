@@ -45,10 +45,7 @@ export default function PublicLayout() {
             </>
           ) : (
             <>
-              <Button asChild variant="ghost" size="sm" className="ml-1 hidden sm:inline-flex">
-                <Link to="/register">{t('home.cta.signup')}</Link>
-              </Button>
-              <Button asChild size="sm">
+              <Button asChild size="sm" className="ml-1">
                 <Link to="/login">{t('home.cta.login')}</Link>
               </Button>
             </>
