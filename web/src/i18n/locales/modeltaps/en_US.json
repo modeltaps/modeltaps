@@ -2059,7 +2059,8 @@
       "testModelHint": "Used by connection tests and scheduled checks; empty uses the first model",
       "threshold": "Balance alert (USD)",
       "thresholdHint": "Notifies you when the upstream balance drops below this",
-      "thresholdOff": "Off"
+      "thresholdOff": "Off",
+      "autoAddHint": "When the daily model check finds models newly offered upstream, add them to this channel (with prices and metadata) instead of only reporting them. Once routing by supply is on, new models are not added to the channel; they wait under New upstream models in the model catalog. Models matching the ignore rules are skipped."
     },
     "pauseRules": {
       "label": "Pause rules",
