@@ -71,3 +71,64 @@ export function channelDot(channel, dismissed = new Set()) {
   if (channel.status !== 1) return 'off';
   return openIssues([channel], dismissed).length ? 'warn' : 'live';
 }
+
+// Host of a base URL for search; the raw value when it does not parse.
+function hostText(url) {
+  if (!url) return '';
+  try {
+    return new URL(url).host;
+  } catch {
+    return String(url);
+  }
+}
+
+// Whether a channel matches a search query: name, models, tag, the visible suffix of its masked
+// key and the host of its base URL, case-insensitive. An empty query matches everything.
+export function channelMatches(channel, query) {
+  const q = String(query || '')
+    .trim()
+    .toLowerCase();
+  if (!q) return true;
+  const keys = (channel.key_status?.masked || []).map((m) => String(m).split('*').pop());
+  const fields = [channel.name, channel.tag, hostText(channel.base_url), ...splitList(channel.models), ...keys];
+  return fields.some((f) => f && String(f).toLowerCase().includes(q));
+}
+
+// Status filter values: enabled (1), manual (2, disabled by hand), auto (3, disabled by the
+// system).
+export const STATUS_FILTERS = { enabled: 1, manual: 2, auto: 3 };
+// Tag filter value for channels without a tag.
+export const NO_TAG = '\u0000';
+
+// Channels passing the status and tag filters. `status` is a STATUS_FILTERS key or empty;
+// `tag` a tag name, NO_TAG, or empty.
+export function filterChannels(channels = [], { status, tag } = {}) {
+  return channels.filter((c) => {
+    if (status && STATUS_FILTERS[status] !== c.status) return false;
+    if (tag === NO_TAG) return !c.tag;
+    if (tag) return c.tag === tag;
+    return true;
+  });
+}
+
+// Count per status filter (plus `all`) over channels that pass the tag filter, so each number
+// equals the rows shown after picking that status.
+export function statusCounts(channels = [], tag) {
+  const pool = filterChannels(channels, { tag });
+  const counts = { all: pool.length };
+  for (const [key, value] of Object.entries(STATUS_FILTERS)) counts[key] = pool.filter((c) => c.status === value).length;
+  return counts;
+}
+
+// Tags present among channels, sorted, and whether any channel has no tag.
+export function tagOptions(channels = []) {
+  const tags = Array.from(new Set(channels.map((c) => c.tag).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  return { tags, hasUntagged: channels.some((c) => !c.tag) };
+}
+
+// Header checkbox state for the visible rows: none, some or all of them selected.
+export function selectionState(visibleIds = [], selected = new Set()) {
+  const n = visibleIds.filter((id) => selected.has(id)).length;
+  if (!n) return 'none';
+  return n === visibleIds.length ? 'all' : 'some';
+}

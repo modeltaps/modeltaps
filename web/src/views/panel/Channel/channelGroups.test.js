@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
-import { channelDot, channelIssues, groupChannelsByType, hasLowBalance, openIssues, splitList } from './channelGroups';
+import {
+  NO_TAG,
+  channelDot,
+  channelIssues,
+  channelMatches,
+  filterChannels,
+  groupChannelsByType,
+  hasLowBalance,
+  openIssues,
+  selectionState,
+  splitList,
+  statusCounts,
+  tagOptions
+} from './channelGroups';
 
 const ch = (id, type, extra = {}) => ({ id, type, status: 1, priority: 0, weight: 1, ...extra });
 
@@ -68,5 +81,46 @@ describe('splitList', () => {
   it('trims and de-duplicates', () => {
     expect(splitList(' a, b,,a\nc ')).toEqual(['a', 'b', 'c']);
     expect(splitList(null)).toEqual([]);
+  });
+});
+
+describe('search and filters', () => {
+  const list = [
+    ch(1, 1, { name: 'openai-main', models: 'gpt-4.1,o3', tag: 'prod', key_status: { masked: ['sk-p****x9Qk'] } }),
+    ch(2, 1, { name: 'openai-backup', status: 2, base_url: 'https://proxy.example.com/v1', models: 'gpt-4.1' }),
+    ch(3, 1, { name: 'relay', status: 3, tag: 'prod', models: 'o4-mini' })
+  ];
+
+  it('matches name, model, tag, key suffix and host', () => {
+    const ids = (q) => list.filter((c) => channelMatches(c, q)).map((c) => c.id);
+    expect(ids('')).toEqual([1, 2, 3]);
+    expect(ids('BACKUP')).toEqual([2]);
+    expect(ids('o4-mini')).toEqual([3]);
+    expect(ids('prod')).toEqual([1, 3]);
+    expect(ids('x9qk')).toEqual([1]);
+    expect(ids('proxy.example')).toEqual([2]);
+    expect(ids('sk-p')).toEqual([]);
+  });
+
+  it('filters by status and tag', () => {
+    expect(filterChannels(list, { status: 'manual' }).map((c) => c.id)).toEqual([2]);
+    expect(filterChannels(list, { tag: 'prod' }).map((c) => c.id)).toEqual([1, 3]);
+    expect(filterChannels(list, { tag: NO_TAG }).map((c) => c.id)).toEqual([2]);
+    expect(filterChannels(list, { status: 'auto', tag: 'prod' }).map((c) => c.id)).toEqual([3]);
+  });
+
+  it('counts statuses within the tag filter and lists tags', () => {
+    expect(statusCounts(list)).toEqual({ all: 3, enabled: 1, manual: 1, auto: 1 });
+    expect(statusCounts(list, 'prod')).toEqual({ all: 2, enabled: 1, manual: 0, auto: 1 });
+    expect(tagOptions(list)).toEqual({ tags: ['prod'], hasUntagged: true });
+  });
+});
+
+describe('selectionState', () => {
+  it('reports none, some or all of the visible rows', () => {
+    expect(selectionState([1, 2], new Set())).toBe('none');
+    expect(selectionState([1, 2], new Set([2, 9]))).toBe('some');
+    expect(selectionState([1, 2], new Set([1, 2]))).toBe('all');
+    expect(selectionState([], new Set([1]))).toBe('none');
   });
 });
