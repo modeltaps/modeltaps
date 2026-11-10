@@ -783,7 +783,10 @@
       "routingHint": "リクエストは優先度の高い順にルーティングされ、同じ優先度では重みで分配されます。",
       "status": "ステータス",
       "tabPricing": "価格",
-      "tabProfile": "プロフィール"
+      "tabProfile": "プロフィール",
+      "noSupplyHint": "有効な供給がないため、ユーザーはこのモデルを呼び出せません。",
+      "goSupplies": "供給タブへ",
+      "channelsFromSupplies": "これらのチャネルはモデルの供給から来ています。「供給」タブで変更してください"
     },
     "stats": {
       "all": "すべて",
@@ -796,7 +799,8 @@
       "ok": "利用可能",
       "nochannel": "チャネルなし",
       "unpriced": "未設定"
-    }
+    },
+    "visibleFollowsStatus": "供給によるルーティング中は、ユーザーへの表示はモデルの状態（下書き・公開・提供終了）で決まります"
   },
   "brandIconPicker": {
     "mode": {

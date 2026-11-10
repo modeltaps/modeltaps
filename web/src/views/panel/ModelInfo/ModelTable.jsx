@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
 import { ValueFormatter, copy, timestamp2string } from 'utils/common';
 import { statusLabel } from '../Channel/channelApi';
-import { enabledChannels, isVisibleToUsers, modelStatus } from '../Pricing/modelCatalog';
+import { enabledChannels, followsStatus, isVisibleToUsers, modelStatus } from '../Pricing/modelCatalog';
 import {
   MODE_LABEL_KEYS,
   CapabilityBadges,
@@ -332,10 +332,16 @@ export default function ModelTable({
   const renderVisibleSwitch = (row) => (
     <Switch
       checked={isVisibleToUsers(row)}
-      disabled={!(row.catalogId > 0)}
+      disabled={!(row.catalogId > 0) || followsStatus(row)}
       onCheckedChange={(next) => onToggleHidden?.(row, !next)}
       aria-label={t('modelsPage.visibleToUsers')}
-      title={row.catalogId > 0 ? t('modelsPage.visibleToUsers') : t('modelsPage.visibleNeedsCatalog')}
+      title={
+        followsStatus(row)
+          ? t('modelsPage.visibleFollowsStatus')
+          : row.catalogId > 0
+            ? t('modelsPage.visibleToUsers')
+            : t('modelsPage.visibleNeedsCatalog')
+      }
     />
   );
 

@@ -784,7 +784,10 @@
       "routingHint": "Requests route by priority from high to low; equal priority splits by weight.",
       "status": "Status",
       "tabPricing": "Pricing",
-      "tabProfile": "Profile"
+      "tabProfile": "Profile",
+      "noSupplyHint": "No enabled supply provides this model, so users cannot call it.",
+      "goSupplies": "Go to Supplies",
+      "channelsFromSupplies": "These channels come from the model's supplies; edit them on the Supplies tab"
     },
     "stats": {
       "all": "All",
@@ -797,7 +800,8 @@
       "ok": "Usable",
       "nochannel": "No channel",
       "unpriced": "Unpriced"
-    }
+    },
+    "visibleFollowsStatus": "Visibility follows the model's status (draft, published, retired) while supplies route requests"
   },
   "brandIconPicker": {
     "mode": {

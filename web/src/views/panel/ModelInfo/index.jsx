@@ -193,6 +193,7 @@ export default function ModelInfo() {
   const [modelList, setModelList] = useState([]);
   const [channelsByModel, setChannelsByModel] = useState({});
   const [channelList, setChannelList] = useState([]);
+  const [supplyRouting, setSupplyRouting] = useState(false);
   const [supplyCounts, setSupplyCounts] = useState({});
   const supplySwitches = useSupplySwitches();
   const [vendors, setVendors] = useState({});
@@ -253,7 +254,11 @@ export default function ModelInfo() {
             setPrices(priceRows);
             setModelList(models);
             setChannelList(channels);
-            setChannelsByModel(indexChannelsByModel(channels));
+            // While supplies route requests, a model without a catalog row has no supply and so
+            // no channel, whatever the channels' model lists say.
+            const bySupplies = cres.data.success && cres.data.supply_routing === true;
+            setSupplyRouting(bySupplies);
+            setChannelsByModel(bySupplies ? {} : indexChannelsByModel(channels));
           },
           onError: (error) => console.error(error),
           onFinally: () => setLoading(false)
@@ -356,10 +361,12 @@ export default function ModelInfo() {
 
   const rows = useMemo(
     () =>
-      attachChannelDetails(mergeCatalogRows({ catalog: modelInfos, prices, modelList, channelsByModel }), channelList).map((row) =>
-        isPublicModelRow(row) ? { ...row, supplyCounts: supplyCounts[row.model] || { total: 0, usable: 0 } } : row
-      ),
-    [modelInfos, prices, modelList, channelsByModel, channelList, supplyCounts]
+      attachChannelDetails(mergeCatalogRows({ catalog: modelInfos, prices, modelList, channelsByModel }), channelList, {
+        supplyRouting
+      })
+        .map((row) => (supplyRouting ? { ...row, supplyRouting } : row))
+        .map((row) => (isPublicModelRow(row) ? { ...row, supplyCounts: supplyCounts[row.model] || { total: 0, usable: 0 } } : row)),
+    [modelInfos, prices, modelList, channelsByModel, channelList, supplyCounts, supplyRouting]
   );
 
   // 本地过滤条件(搜索框 + 分面 + 「只看完整可用」)。
@@ -802,6 +809,7 @@ export default function ModelInfo() {
           channels={channelList}
           supplyCount={editRow ? supplyCounts[editRow.model]?.total || 0 : undefined}
           switches={supplySwitches}
+          supplyRouting={supplyRouting}
           onSaved={onSaved}
           onSupplyChanged={handleRefresh}
         />

@@ -115,7 +115,8 @@ Section.propTypes = { title: PropTypes.node, children: PropTypes.node };
 
 // 「渠道与分组」Tab:提供此模型的渠道(状态 / 优先级·权重 / 分组,点行进渠道编辑)、可用分组、别名指向;
 // 没有渠道时引导去渠道页绑定。渠道关联只读,在渠道页维护。
-function ChannelsPanel({ row }) {
+// While supplies route requests the channels are the model's supplies, kept on the Supplies tab.
+function ChannelsPanel({ row, supplyRouting = false, onGoSupplies }) {
   const { t } = useTranslation();
   const channels = row.bound_channels || [];
   const groups = modelGroups(row);
@@ -126,10 +127,23 @@ function ChannelsPanel({ row }) {
         {enabledChannels(row).length === 0 && (
           <div className="space-y-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
             <p className="text-warning">{t('modelInfoPage.noChannel')}</p>
-            <p className="text-muted-foreground">{t('modelsPage.sheet.noChannelHint')}</p>
-            <Button asChild size="sm" variant="outline">
-              <Link to="/panel/channel">{t('modelsPage.sheet.goChannels')}</Link>
-            </Button>
+            {supplyRouting ? (
+              <>
+                <p className="text-muted-foreground">{t('modelsPage.sheet.noSupplyHint')}</p>
+                {onGoSupplies && (
+                  <Button size="sm" variant="outline" onClick={onGoSupplies}>
+                    {t('modelsPage.sheet.goSupplies')}
+                  </Button>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-muted-foreground">{t('modelsPage.sheet.noChannelHint')}</p>
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/panel/channel">{t('modelsPage.sheet.goChannels')}</Link>
+                </Button>
+              </>
+            )}
           </div>
         )}
         {channels.length > 0 && (
@@ -215,7 +229,7 @@ function ChannelsPanel({ row }) {
   );
 }
 
-ChannelsPanel.propTypes = { row: PropTypes.object.isRequired };
+ChannelsPanel.propTypes = { row: PropTypes.object.isRequired, supplyRouting: PropTypes.bool, onGoSupplies: PropTypes.func };
 
 function ModalityPicker({ value, onChange }) {
   const { t } = useTranslation();
@@ -294,6 +308,7 @@ export default function ModelInfoSheet({
   channels = [],
   supplyCount,
   switches = null,
+  supplyRouting = false,
   onSaved,
   onSupplyChanged
 }) {
@@ -716,7 +731,7 @@ export default function ModelInfoSheet({
 
           {row && (
             <div role="tabpanel" hidden={tab !== 'channels'}>
-              <ChannelsPanel row={row} />
+              <ChannelsPanel row={row} supplyRouting={supplyRouting} onGoSupplies={isPublic ? () => setTab('supplies') : undefined} />
             </div>
           )}
 
@@ -734,7 +749,11 @@ export default function ModelInfoSheet({
           )}
         </SheetBody>
         <SheetFooter>
-          {tab === 'channels' && <span className="mr-auto text-xs text-muted-foreground">{t('modelsPage.sheet.channelsReadonly')}</span>}
+          {tab === 'channels' && (
+            <span className="mr-auto text-xs text-muted-foreground">
+              {t(supplyRouting ? 'modelsPage.sheet.channelsFromSupplies' : 'modelsPage.sheet.channelsReadonly')}
+            </span>
+          )}
           {tab === 'supplies' ? (
             <>
               <span className="mr-auto text-xs text-muted-foreground">{t('modelSupply.savedRightAway')}</span>
@@ -771,6 +790,7 @@ ModelInfoSheet.propTypes = {
   channels: PropTypes.array,
   supplyCount: PropTypes.number,
   switches: PropTypes.object,
+  supplyRouting: PropTypes.bool,
   onSaved: PropTypes.func,
   onSupplyChanged: PropTypes.func
 };

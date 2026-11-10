@@ -221,6 +221,17 @@ describe('ModelInfoSheet — 绑定渠道', () => {
     expect(screen.getByText(i18n.t('modelsPage.sheet.channelsReadonly'))).toBeTruthy();
   });
 
+  it('按供应路由时:无可用供应引导去供应页,底部说明渠道来自供应', async () => {
+    open({ row: withChannels([{ id: 9, name: 'openai-main', type: 1, status: 2 }]), initialTab: 'channels', supplyRouting: true });
+    await waitFor(() => expect(document.getElementById('modelinfo-name').value).toBe('GPT A'));
+    expect(noChannel()).toBeNull();
+    expect(screen.getByText(i18n.t('modelsPage.sheet.noSupplyHint'))).toBeTruthy();
+    expect(screen.getByText(i18n.t('modelsPage.sheet.channelsFromSupplies'))).toBeTruthy();
+    expect(screen.queryByText(i18n.t('modelsPage.sheet.channelsReadonly'))).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: i18n.t('modelsPage.sheet.goSupplies') }));
+    await waitFor(() => expect(screen.getByRole('tab', { selected: true }).textContent).toContain(i18n.t('modelSupply.tab')));
+  });
+
   it('没有状态的后端摘要渠道视为启用', async () => {
     open({ row: ROW });
     await waitFor(() => expect(document.getElementById('modelinfo-name').value).toBe('GPT A'));

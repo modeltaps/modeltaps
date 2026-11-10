@@ -164,7 +164,10 @@ function pickChannelDetail(channel) {
 
 // 用完整渠道列表按 id 补全各行 bound_channels 的状态 / base_url / 优先级 / 权重,
 // 并在末尾追加仍配置了该模型的非启用渠道(仅用于置灰展示,不影响 state 判定)。
-export function attachChannelDetails(rows = [], channels = []) {
+// While supplies route requests (`supplyRouting`), bound_channels come from the supplies and
+// already include disabled channels; a channel's own model list says nothing, so nothing is
+// appended from it, and the supply's priority / weight win over the channel's.
+export function attachChannelDetails(rows = [], channels = [], { supplyRouting = false } = {}) {
   if (!channels.length) return rows;
   const byId = new Map();
   const inactiveByModel = {};
@@ -172,7 +175,7 @@ export function attachChannelDetails(rows = [], channels = []) {
     if (!channel?.id) return;
     const detail = pickChannelDetail(channel);
     byId.set(channel.id, detail);
-    if (channel.status === CHANNEL_STATUS_ENABLED) return;
+    if (supplyRouting || channel.status === CHANNEL_STATUS_ENABLED) return;
     String(channel.models || '')
       .split(',')
       .map((name) => name.trim())
@@ -198,7 +201,14 @@ export function modelStatus(row) {
   return 'ok';
 }
 
-export const isVisibleToUsers = (row) => !(row?.catalogId > 0 && row.hidden);
+// While supplies route requests (`row.supplyRouting`), a public model is listed only when
+// published: its status replaces the hidden flag.
+export const followsStatus = (row) => Boolean(row?.supplyRouting && row.catalogId > 0 && !row.alias_of && !row.kind);
+
+export const isVisibleToUsers = (row) => {
+  if (followsStatus(row)) return row.status === 'published';
+  return !(row?.catalogId > 0 && row.hidden);
+};
 
 // 渠道分组串(逗号分隔)→ 去空数组。
 export const splitChannelGroups = (group) =>

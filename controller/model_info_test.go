@@ -486,3 +486,93 @@ func TestPublicCatalogFollowsStatusWithSupplies(t *testing.T) {
 		t.Fatalf("listed = %v, want the two published models", listed)
 	}
 }
+
+// While supplies route requests, a model's channels are those of its enabled supplies, with the
+// supply's priority and weight, whatever the channels' own model lists say.
+func TestGetModelInfoCatalogBoundChannelsFollowSupplies(t *testing.T) {
+	testDB, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{Logger: gormlogger.Default.LogMode(gormlogger.Silent)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := testDB.AutoMigrate(&model.ModelInfo{}, &model.ModelOwnedBy{}, &model.Channel{}, &model.ModelSupply{}); err != nil {
+		t.Fatal(err)
+	}
+	oldDB, oldInstance, oldEnabled := model.DB, model.ModelOwnedBysInstance, config.ModelSupplyEnabled
+	model.DB = testDB
+	model.ModelOwnedBysInstance = &model.ModelOwnedBys{}
+	config.ModelSupplyEnabled = true
+	t.Cleanup(func() { model.DB, model.ModelOwnedBysInstance, config.ModelSupplyEnabled = oldDB, oldInstance, oldEnabled })
+
+	for _, info := range []*model.ModelInfo{{Model: "gpt-a", Status: model.ModelStatusPublished}, {Model: "gpt-b", Status: model.ModelStatusPublished}} {
+		if err := testDB.Create(info).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, channel := range []*model.Channel{
+		{Id: 1, Name: "lists-a", Type: 1, Status: 1, Group: "default", Models: "gpt-a"},
+		{Id: 2, Name: "off", Type: 14, Status: 1, Group: "default"},
+		{Id: 3, Name: "supplies-b", Type: 1, Status: 1, Group: "default,vip"},
+	} {
+		if err := testDB.Create(channel).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := testDB.Model(&model.Channel{}).Where("id = ?", 2).Update("status", 2).Error; err != nil {
+		t.Fatal(err)
+	}
+	for _, supply := range []*model.ModelSupply{
+		{Model: "gpt-a", ChannelId: 1, UpstreamModel: "gpt-a", Enabled: false},
+		{Model: "gpt-b", ChannelId: 3, UpstreamModel: "up-b", Priority: 5, Weight: 2, Enabled: true},
+		{Model: "gpt-b", ChannelId: 2, UpstreamModel: "up-b", Enabled: true},
+		{Model: "gpt-b", ChannelId: 99, UpstreamModel: "up-b", Enabled: true},
+	} {
+		if err := testDB.Create(supply).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/model_info/catalog", nil)
+	GetModelInfoCatalog(c)
+
+	var resp struct {
+		SupplyRouting bool `json:"supply_routing"`
+		Data          []struct {
+			Model         string         `json:"model"`
+			State         string         `json:"state"`
+			BoundChannels []boundChannel `json:"bound_channels"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode: %v (body=%s)", err, rec.Body.String())
+	}
+	if !resp.SupplyRouting {
+		t.Fatal("supply_routing = false with ModelSupplyEnabled on")
+	}
+	byModel := map[string]int{}
+	for i, item := range resp.Data {
+		byModel[item.Model] = i
+	}
+	a, b := resp.Data[byModel["gpt-a"]], resp.Data[byModel["gpt-b"]]
+	if a.State != modelInfoStateUnrouted || len(a.BoundChannels) != 0 {
+		t.Fatalf("gpt-a has only a disabled supply (a channel listing it does not count): %+v", a)
+	}
+	if b.State != modelInfoStateVisible || len(b.BoundChannels) != 2 {
+		t.Fatalf("gpt-b should list its two supplies' channels (not the deleted one): %+v", b)
+	}
+	for _, ch := range b.BoundChannels {
+		switch ch.Id {
+		case 3:
+			if ch.Status != 1 || ch.Group != "default,vip" || ch.Priority != 5 || ch.Weight != 2 {
+				t.Fatalf("supplied channel = %+v, want the supply's priority and weight", ch)
+			}
+		case 2:
+			if ch.Status != 2 {
+				t.Fatalf("disabled channel = %+v", ch)
+			}
+		default:
+			t.Fatalf("unexpected channel %+v", ch)
+		}
+	}
+}

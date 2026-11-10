@@ -43,10 +43,15 @@ type modelInfoCatalogItem struct {
 }
 
 // boundChannelsByModel 建立「模型名 → 渠道」索引（含禁用渠道，按 status 区分），避免逐行查库。
+// While supplies route requests, a model's channels are those of its enabled supplies, with the
+// supply's priority and weight: the channels' own model lists no longer route anything.
 func boundChannelsByModel() (map[string][]boundChannel, error) {
 	channels, err := model.GetAllChannels()
 	if err != nil {
 		return nil, err
+	}
+	if config.ModelSupplyEnabled {
+		return boundChannelsFromSupplies(channels)
 	}
 	index := make(map[string][]boundChannel)
 	for _, channel := range channels {
@@ -64,6 +69,29 @@ func boundChannelsByModel() (map[string][]boundChannel, error) {
 			}
 			index[name] = append(index[name], summary)
 		}
+	}
+	return index, nil
+}
+
+func boundChannelsFromSupplies(channels []*model.Channel) (map[string][]boundChannel, error) {
+	supplies, err := model.GetModelSupplies("", 0)
+	if err != nil {
+		return nil, err
+	}
+	byId := make(map[int]*model.Channel, len(channels))
+	for _, channel := range channels {
+		byId[channel.Id] = channel
+	}
+	index := make(map[string][]boundChannel)
+	for _, supply := range supplies {
+		channel := byId[supply.ChannelId]
+		if !supply.Enabled || channel == nil {
+			continue
+		}
+		index[supply.Model] = append(index[supply.Model], boundChannel{
+			Id: channel.Id, Name: channel.Name, Type: channel.Type, Status: channel.Status, Group: channel.Group,
+			Priority: supply.Priority, Weight: supply.Weight,
+		})
 	}
 	return index, nil
 }
@@ -187,6 +215,9 @@ func GetModelInfoCatalog(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data":    items,
+		// supply_routing says bound_channels come from supplies (ModelSupplyEnabled), not from the
+		// channels' model lists.
+		"supply_routing": config.ModelSupplyEnabled,
 	})
 }
 
