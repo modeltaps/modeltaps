@@ -3,11 +3,11 @@ import PropTypes from 'prop-types';
 
 import { API } from 'utils/api';
 
-// ==============================|| SETTINGS — ORG SECTION HOST ||============================== //
-// 组织分组内容区的取数外壳:按 URL 中的 orgId 拉一次组织详情,交给当前 section 组件。
-// orgId 变化时先清空 detail,避免上一个组织的资料在新组织表单里闪现。
+// ==============================|| SETTINGS — ORG DETAIL ||============================== //
+// Loads the organization detail of the URL's orgId once for the page. When orgId changes the
+// detail is cleared first, so the previous organization never flashes in the new one's forms.
 
-export default function OrgSectionHost({ orgId, role, component: Component }) {
+export function useOrgDetail(orgId) {
   const [detail, setDetail] = useState(null);
 
   const fetchDetail = useCallback(async () => {
@@ -26,7 +26,13 @@ export default function OrgSectionHost({ orgId, role, component: Component }) {
     fetchDetail();
   }, [fetchDetail]);
 
-  return <Component key={orgId} orgId={orgId} role={role} detail={detail} onRefresh={fetchDetail} />;
+  return { detail, refresh: fetchDetail };
+}
+
+// Renders one org page component with the detail (used by the members page).
+export default function OrgSectionHost({ orgId, role, component: Component }) {
+  const { detail, refresh } = useOrgDetail(orgId);
+  return <Component key={orgId} orgId={orgId} role={role} detail={detail} onRefresh={refresh} />;
 }
 
 OrgSectionHost.propTypes = {

@@ -1,35 +1,86 @@
 import { useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { Navigate, useLocation, useParams } from 'react-router';
+import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 
 import { useOrg } from 'contexts/OrgContext';
-import SettingsLayout from '@/components/chrome/SettingsLayout';
+import useHighlightTarget from 'hooks/useHighlightTarget';
+import SettingsPage from '@/components/settings/SettingsPage';
 import { isOrgAdminRole } from '../Organization';
-import OrgSectionHost from './org/OrgSectionHost';
-import AccountSection from './account';
+import MembersTab from '../Organization/MembersTab';
+import OrgSectionHost, { useOrgDetail } from './org/OrgSectionHost';
+import GeneralSection from './org/GeneralSection';
+import BudgetSection from './org/BudgetSection';
+import DangerSection from './org/DangerSection';
+import useSelfUser from './account/useSelfUser';
+import { accountGroupCards } from './account';
 import {
-  ORG_SECTIONS,
-  ACCOUNT_SECTIONS,
+  ACCOUNT_GROUPS,
   DEFAULT_ACCOUNT_SECTION,
-  orgSectionIds,
-  accountSectionIds,
+  ORG_GROUPS,
+  ORG_MEMBERS_SECTION,
+  accountSettingsUrl,
   orgSettingsUrl,
-  accountSettingsUrl
+  resolveAccountSection,
+  resolveOrgSection
 } from './sections';
 
 // ==============================|| PANEL — SETTINGS (personal / organization) ||============================== //
-// Both render inside the sidebar shell with an in-page subnav of their sections.
-// - Personal settings (`/panel/settings/account/:section`) open from the account menu.
-// - Organization settings (`/panel/settings/org/:orgId/:section`) are the org context's
-//   组织 items. The context switcher picks the organization: opening a deep link to another
-//   organization the user manages switches the active context to it, so the sidebar and the
-//   page always talk about the same organization.
+// Both are a SettingsPage inside the sidebar shell.
+// - Personal settings (`/panel/settings/account/:group`) open from the account menu.
+// - Organization settings (`/panel/settings/org/:orgId/:group`) are the org context's 组织设置;
+//   `/panel/settings/org/:orgId/members` on the same route is the 成员与预算 page. The context
+//   switcher picks the organization: opening a deep link to another organization the user manages
+//   switches the active context to it, so the sidebar and the page talk about the same one.
+
+function AccountSettings({ section }) {
+  const { t } = useTranslation();
+  const siteInfo = useSelector((state) => state.siteInfo);
+  const self = useSelfUser();
+  const cards = accountGroupCards({ siteInfo, self });
+  const groups = ACCOUNT_GROUPS.map((group) => ({
+    id: group.id,
+    icon: group.icon,
+    to: accountSettingsUrl(group.id),
+    label: t(group.labelKey),
+    description: t(`${group.labelKey}Description`, { defaultValue: '' }),
+    cards: cards[group.id]
+  }));
+  return <SettingsPage label={t('settingsUi.personal.label')} groups={groups} activeGroupId={section} className="max-w-6xl" />;
+}
+
+AccountSettings.propTypes = { section: PropTypes.string.isRequired };
+
+function OrgSettings({ orgId, role, section }) {
+  const { t } = useTranslation();
+  const { detail, refresh } = useOrgDetail(orgId);
+  const props = { orgId, role, detail, onRefresh: refresh };
+  const cards = {
+    general: [
+      { id: 'profile', render: () => <GeneralSection {...props} /> },
+      { id: 'team-budget', render: () => <BudgetSection {...props} /> }
+    ],
+    danger: [{ id: 'danger', render: () => <DangerSection {...props} /> }]
+  };
+  const groups = ORG_GROUPS.map((group) => ({
+    id: group.id,
+    icon: group.icon,
+    to: orgSettingsUrl(orgId, group.id),
+    label: t(group.labelKey),
+    description: t(`${group.labelKey}Description`, { defaultValue: '' }),
+    cards: cards[group.id]
+  }));
+  return <SettingsPage key={orgId} label={t('settingsUi.org.label')} groups={groups} activeGroupId={section} className="max-w-6xl" />;
+}
+
+OrgSettings.propTypes = { orgId: PropTypes.number.isRequired, role: PropTypes.string, section: PropTypes.string.isRequired };
 
 export default function Settings() {
-  const { t } = useTranslation();
   const { search } = useLocation();
   const { orgId: orgIdParam, section } = useParams();
   const { organizations, orgsLoaded, currentOrgId, switchOrg } = useOrg();
+  useHighlightTarget();
 
   const orgScope = orgIdParam !== undefined;
   const orgId = orgScope ? Number(orgIdParam) : null;
@@ -47,28 +98,23 @@ export default function Settings() {
   // Wait for the organization list before deciding, so a reload does not bounce an org admin.
   if (!orgsLoaded) return null;
 
-  if (!section && !orgScope) return <Navigate to={`${accountDefault}${search}`} replace />;
-  // Unknown sections, or organizations the user does not manage, fall back to personal settings.
-  if (orgScope && !(managedOrg && orgSectionIds.includes(section))) return <Navigate to={accountDefault} replace />;
-  if (!orgScope && !accountSectionIds.includes(section)) return <Navigate to={accountDefault} replace />;
+  if (!orgScope) {
+    if (!section) return <Navigate to={`${accountDefault}${search}`} replace />;
+    const target = resolveAccountSection(section);
+    if (target) return <Navigate to={target} replace />;
+    return <AccountSettings section={section} />;
+  }
 
-  const sections = orgScope ? ORG_SECTIONS : ACCOUNT_SECTIONS;
-  const active = sections.find(({ id }) => id === section);
-  const items = sections.map((item) => ({
-    id: item.id,
-    label: t(item.labelKey, { defaultValue: item.fallback }),
-    to: orgScope ? orgSettingsUrl(orgId, item.id) : accountSettingsUrl(item.id)
-  }));
-
-  return (
-    <SettingsLayout label={t('nav.subnav.label')} items={items} activeId={section} className="max-w-6xl">
-      <div className="max-w-4xl">
-        {orgScope ? (
-          <OrgSectionHost orgId={orgId} role={managedOrg.role} component={active.component} />
-        ) : (
-          <AccountSection section={section} />
-        )}
+  // Organizations the user does not manage fall back to personal settings.
+  if (!managedOrg) return <Navigate to={accountDefault} replace />;
+  const target = resolveOrgSection(orgId, section);
+  if (target) return <Navigate to={target} replace />;
+  if (section === ORG_MEMBERS_SECTION) {
+    return (
+      <div className="max-w-6xl">
+        <OrgSectionHost orgId={orgId} role={managedOrg.role} component={MembersTab} />
       </div>
-    </SettingsLayout>
-  );
+    );
+  }
+  return <OrgSettings orgId={orgId} role={managedOrg.role} section={section} />;
 }

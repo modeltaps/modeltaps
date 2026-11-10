@@ -684,7 +684,8 @@
     "organization": "组织的余额、用量与审计记录",
     "platform_settings": "整个平台的默认值与开关",
     "personal_settings": "只对你自己的账号生效",
-    "token": "调用接口用的密钥"
+    "token": "调用接口用的密钥",
+    "invite_code": "生成、启用与作废注册用的邀请码"
   },
   "api_compare": "对比",
   "modelInfoPage": {
@@ -923,7 +924,9 @@
     "copyFailedManual": "复制失败，请手动复制：",
     "copyNamedFailed": "复制{{name}}失败，请手动复制：",
     "secretConfigured": "已配置 {{masked}}",
-    "secretKeepHint": "留空则保持原值不变"
+    "secretKeepHint": "留空则保持原值不变",
+    "reload": "重新加载",
+    "reloadHint": "重新加载页面后继续。如果反复出现，请联系管理员。"
   },
   "Log Context": "日志上下文",
   "View Context": "查看上下文",
@@ -2160,7 +2163,8 @@
       "orders": "订单",
       "redemption": "兑换码",
       "platformSettings": "平台设置",
-      "personalSettings": "个人设置"
+      "personalSettings": "个人设置",
+      "inviteCodes": "邀请码"
     },
     "context": {
       "personal": "个人",
@@ -2197,5 +2201,346 @@
       "label": "分组"
     },
     "mainLabel": "主导航"
+  },
+  "settingsUi": {
+    "search": {
+      "placeholder": "搜索设置",
+      "clear": "清除搜索",
+      "title": "搜索「{{query}}」",
+      "empty": "没有匹配的设置",
+      "count": "{{count}} 张卡片"
+    },
+    "unsaved": "有未保存的改动",
+    "undo": "撤销",
+    "leave": {
+      "title": "有未保存的改动",
+      "description": "离开这个页面会丢掉还没保存的改动。",
+      "stay": "留下",
+      "discard": "放弃改动"
+    },
+    "collection": {
+      "add": "添加",
+      "more": "更多操作",
+      "enabled": "启用",
+      "disabled": "已停用",
+      "empty": "还没有条目",
+      "enable": "启用",
+      "disable": "停用",
+      "status": "状态"
+    },
+    "platform": {
+      "label": "平台设置分组",
+      "groups": {
+        "site": {
+          "label": "站点",
+          "description": "站点地址、品牌和对外展示"
+        },
+        "auth": {
+          "label": "登录与注册",
+          "description": "谁能登录、怎么登录、怎么注册"
+        },
+        "billing": {
+          "label": "计费",
+          "description": "额度、计费规则与周期限额"
+        },
+        "payment": {
+          "label": "支付",
+          "description": "收款方式、充值与发票"
+        },
+        "gateway": {
+          "label": "网关",
+          "description": "转发、重试和渠道健康"
+        },
+        "privacy": {
+          "label": "日志与隐私",
+          "description": "记录什么、保存多久、谁能看"
+        },
+        "notify": {
+          "label": "通知与集成",
+          "description": "邮件、机器人和第三方回调"
+        },
+        "orgpolicy": {
+          "label": "组织策略",
+          "description": "组织能做什么，仅 root 可改"
+        }
+      },
+      "cards": {
+        "server-address": {
+          "title": "服务器地址",
+          "description": "回调、邮件链接和文档示例都用这个地址",
+          "hint": "末尾的斜杠会被去掉"
+        },
+        "branding": {
+          "title": "品牌",
+          "description": "站点名称、Logo、页面内容与供应商图标",
+          "hint": "Logo 建议 SVG，高 32px"
+        },
+        "display": {
+          "title": "显示",
+          "description": "额度和用量怎么展示给用户",
+          "hint": "只影响展示，不影响计费"
+        },
+        "external-links": {
+          "title": "外部链接",
+          "description": "充值、聊天和文档的入口",
+          "hint": "留空则不显示"
+        },
+        "version-notice": {
+          "title": "版本公告",
+          "description": "登录后顶部显示的公告；也可以在这里检查新版本",
+          "hint": "支持 Markdown"
+        },
+        "account-system": {
+          "title": "账号体系",
+          "hint": "保存前会再确认一次"
+        },
+        "login-methods": {
+          "title": "登录方式",
+          "description": "本站账号的登录、注册与人机验证",
+          "hint": "至少保留一种可用的登录方式"
+        },
+        "oidc-providers": {
+          "title": "OIDC 提供方"
+        },
+        "admin-login": {
+          "title": "管理员应急登录"
+        },
+        "github-oauth": {
+          "title": "GitHub 登录",
+          "hint": "密钥保存后不再显示"
+        },
+        "wechat-auth": {
+          "title": "微信登录",
+          "hint": "密钥保存后不再显示"
+        },
+        "lark-auth": {
+          "title": "飞书登录",
+          "hint": "密钥保存后不再显示"
+        },
+        "linuxdo-oauth": {
+          "title": "LINUX DO 登录",
+          "hint": "密钥保存后不再显示"
+        },
+        "turnstile": {
+          "title": "人机验证",
+          "hint": "密钥保存后不再显示"
+        },
+        "email-domain": {
+          "title": "邮箱域名限制",
+          "hint": "每行一个域名"
+        },
+        "quota": {
+          "title": "额度",
+          "description": "新用户额度、预扣与余额提醒",
+          "hint": "只影响之后注册的账号"
+        },
+        "billing-rules": {
+          "title": "计费规则",
+          "description": "空回复、近似计费与价格同步",
+          "hint": "改动对新请求立即生效"
+        },
+        "quota-reset": {
+          "title": "周期限额重置",
+          "hint": "影响日、周、月限额的起点"
+        },
+        "invite-reward": {
+          "title": "邀请奖励",
+          "hint": "关闭后不再发放新的奖励"
+        },
+        "payment": {
+          "title": "支付设置",
+          "hint": "汇率只影响人民币网关实付，不影响余额"
+        },
+        "payment-gateways": {
+          "title": "支付网关",
+          "description": "可以同时启用多个，用户在充值页选择"
+        },
+        "invoice": {
+          "title": "月度账单",
+          "description": "生成或更新某个月的账单"
+        },
+        "retry": {
+          "title": "重试",
+          "description": "上游失败时换渠道重试",
+          "hint": "只对可重试的错误生效"
+        },
+        "error-handling": {
+          "title": "错误处理",
+          "description": "返回给调用方的错误信息",
+          "hint": "改动对新请求立即生效"
+        },
+        "channel-auto": {
+          "title": "渠道自动禁用与恢复",
+          "description": "连续失败的渠道先停用，探测成功后恢复",
+          "hint": "停用和恢复都可以通知管理员"
+        },
+        "session-affinity": {
+          "title": "会话亲和",
+          "description": "同一会话尽量落在同一个渠道，保住提示缓存",
+          "hint": "改动对新会话生效"
+        },
+        "model-name-match": {
+          "title": "模型名匹配",
+          "description": "调用方写的模型名和渠道里的名字怎么对上",
+          "hint": "改动对新请求立即生效"
+        },
+        "native-protocol": {
+          "title": "原生协议",
+          "description": "直通上游原生接口与相关参数",
+          "hint": "只对支持的供应商生效"
+        },
+        "prompt-limits": {
+          "title": "提示词限制",
+          "description": "单次请求的输入上限",
+          "hint": "超过上限的请求会被拒绝"
+        },
+        "image-proxy": {
+          "title": "图片代理",
+          "description": "图片请求走代理或本站中转",
+          "hint": "留空则不代理"
+        },
+        "auto-routing": {
+          "title": "自动路由",
+          "description": "决策调用怎么计费；策略在自动路由页管理。",
+          "hint": "策略的增删改在自动路由页"
+        },
+        "log-consume": {
+          "title": "消费日志",
+          "description": "每次请求的用量记录与保留时间",
+          "hint": "用量统计依赖这些记录"
+        },
+        "log-io": {
+          "title": "请求与响应留存",
+          "description": "保存正文便于排查；不含 API 密钥与鉴权头",
+          "hint": "用户和组织可以在自己的设置里改"
+        },
+        "safety": {
+          "title": "内容安全",
+          "hint": "每行一个关键词"
+        },
+        "smtp": {
+          "title": "邮件发送",
+          "description": "验证码、通知和账单邮件都从这里发",
+          "hint": "密码保存后不再显示"
+        },
+        "notifications": {
+          "title": "通知",
+          "hint": "每类通知每小时有上限"
+        },
+        "telegram": {
+          "title": "Telegram 机器人"
+        },
+        "builtin-chat": {
+          "title": "内置聊天",
+          "description": "在控制台里直接打开聊天页",
+          "hint": "改动对所有用户生效"
+        },
+        "chat-links": {
+          "title": "聊天链接"
+        },
+        "mj-notify": {
+          "title": "Midjourney 回调",
+          "description": "任务完成后回调调用方提供的地址",
+          "hint": "关闭后只能轮询任务状态"
+        },
+        "org-policy": {
+          "title": "组织",
+          "hint": "已有组织不受影响"
+        },
+        "supply-pause-rules": {
+          "title": "供应暂停规则",
+          "description": "上游报错时按规则暂停渠道或模型，到点测试通过后恢复",
+          "hint": "关闭后回到旧的自动禁用与冷却"
+        }
+      },
+      "actions": {
+        "manageInviteCodes": "管理邀请码 ›",
+        "openRouting": "打开自动路由 ›",
+        "currentVersion": "当前版本 {{version}}",
+        "check": "检查",
+        "purge": "清理",
+        "purgeDescription": "删除早于所选时间的日志，不能恢复",
+        "invoiceGenDescription": "按所选月份生成账单",
+        "invoiceUpdateDescription": "重新计算所选月份已有的账单"
+      },
+      "chatLinks": {
+        "add": "添加聊天链接",
+        "edit": "编辑聊天链接"
+      },
+      "telegram": {
+        "add": "添加命令"
+      },
+      "pauseRules": {
+        "label": "自定义规则（JSON）",
+        "description": "留空使用内置默认规则；填写后整体替换默认规则，按顺序第一条命中的生效。",
+        "invalidJson": "暂停规则不是合法的 JSON",
+        "notArray": "暂停规则必须是 JSON 数组"
+      }
+    },
+    "personal": {
+      "label": "个人设置分组",
+      "username": "用户名",
+      "groups": {
+        "profile": "资料",
+        "profileDescription": "显示名称与账号信息",
+        "security": "登录与安全",
+        "securityDescription": "登录方式、账号标识、会话与访问令牌",
+        "privacy": "数据与隐私",
+        "privacyDescription": "平台为你保存哪些数据",
+        "preferences": "偏好",
+        "preferencesDescription": "只对你自己生效"
+      },
+      "cards": {
+        "profile": {
+          "title": "资料",
+          "description": "显示名称和头像",
+          "hint": "用户名不能修改"
+        },
+        "logIO": {
+          "description": "开启后可在日志明细里看到完整正文",
+          "hint": "只影响之后的请求"
+        },
+        "appearance": {
+          "title": "外观",
+          "description": "主题与语言，只对你自己生效",
+          "hint": "保存后立即应用",
+          "languageHint": "选择界面语言；默认跟随浏览器。"
+        },
+        "quotaRemind": {
+          "hint": "每天最多提醒一次"
+        },
+        "accessToken": {
+          "title": "访问令牌",
+          "rowHint": "用于调用管理接口，不是调用模型的 API Key",
+          "reset": "重新生成",
+          "confirm": "重新生成后，原来的访问令牌立即失效。"
+        }
+      },
+      "sessions": {
+        "device": "设备",
+        "where": "地址与方式"
+      }
+    },
+    "org": {
+      "label": "组织设置分组",
+      "groups": {
+        "general": "常规",
+        "generalDescription": "组织资料与团队预算",
+        "danger": "危险操作",
+        "dangerDescription": "退出、转让与解散"
+      },
+      "cards": {
+        "profile": {
+          "description": "名称在成员的上下文切换器里显示",
+          "hint": "改动对所有成员生效"
+        },
+        "budget": {
+          "hint": "周期与平台设置一致"
+        },
+        "danger": {
+          "description": "这些操作会影响所有成员"
+        }
+      }
+    }
   }
 }

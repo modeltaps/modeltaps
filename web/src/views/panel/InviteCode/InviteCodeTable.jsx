@@ -44,7 +44,9 @@ export default function InviteCodeTable({ items, selected, onSelectAll, onSelect
               <TableHead className="whitespace-nowrap">{t(tk('headLabels.expiresAt'))}</TableHead>
               <TableHead className="whitespace-nowrap">{t(tk('headLabels.createdTime'))}</TableHead>
               <TableHead className="whitespace-nowrap">{t(tk('headLabels.status'))}</TableHead>
-              <TableHead className="sticky right-0 z-10 w-[1%] whitespace-nowrap bg-card text-right">{t(tk('headLabels.action'))}</TableHead>
+              <TableHead className="sticky right-0 z-10 w-[1%] whitespace-nowrap bg-card text-right">
+                {t(tk('headLabels.action'))}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

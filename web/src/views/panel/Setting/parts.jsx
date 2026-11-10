@@ -1,21 +1,20 @@
-import { useCallback, useContext, useEffect, useState } from 'react';
-import { ChevronRight, Copy, KeyRound, Loader2 } from 'lucide-react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { ChevronRight, Copy, KeyRound } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { API } from 'utils/api';
 import { copy, showError, showSuccess } from 'utils/common';
 import { LoadStatusContext } from 'contexts/StatusContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
 
-// Shared data layer + presentational helpers for the system settings tabs.
-// All option keys map 1:1 to the v1 `/api/option/` API for functional parity.
+// Shared data layer + field helpers for the platform settings cards.
+// All option keys map 1:1 to the `/api/option/` API.
 
 export function useOptionSettings() {
   const { t } = useTranslation();
@@ -26,8 +25,13 @@ export function useOptionSettings() {
   const [secrets, setSecrets] = useState({});
   const [loading, setLoading] = useState(false);
   const loadStatus = useContext(LoadStatusContext);
+  // Latest values for the async save path, which must not depend on a stale render.
+  const latest = useRef({ inputs, origin });
+  latest.current = { inputs, origin };
 
-  const refresh = useCallback(async () => {
+  // Reloads every option. With `keepUnsaved`, unsaved edits survive the reload: after one card
+  // saves, the other cards keep what the user typed in them.
+  const refresh = useCallback(async ({ keepUnsaved = false } = {}) => {
     try {
       const res = await API.get('/api/option/');
       const { success, message, data } = res.data;
@@ -38,7 +42,14 @@ export function useOptionSettings() {
           if (typeof v === 'boolean') v = v.toString();
           next[item.key] = v;
         });
-        setInputs(next);
+        const { inputs: prevInputs, origin: prevOrigin } = latest.current;
+        const merged = { ...next };
+        if (keepUnsaved) {
+          for (const key of Object.keys(prevInputs)) {
+            if (!sameOption(prevInputs[key], prevOrigin[key])) merged[key] = prevInputs[key];
+          }
+        }
+        setInputs(merged);
         setOrigin(next);
         setSecrets(res.data.secrets || {});
       } else {
@@ -54,6 +65,8 @@ export function useOptionSettings() {
   }, [refresh]);
 
   const setField = useCallback((name, value) => setInputs((p) => ({ ...p, [name]: value })), []);
+  // Boolean options are stored as 'true' / 'false' strings.
+  const setBool = useCallback((name, value) => setInputs((p) => ({ ...p, [name]: value ? 'true' : 'false' })), []);
 
   const putOption = useCallback(async (key, value) => {
     const res = await API.put('/api/option/', { key, value });
@@ -62,30 +75,14 @@ export function useOptionSettings() {
     return true;
   }, []);
 
-  const toggle = useCallback(
-    async (key) => {
-      const value = inputs[key] === 'true' ? 'false' : 'true';
-      setLoading(true);
-      try {
-        await putOption(key, value);
-        setInputs((p) => ({ ...p, [key]: value }));
-        setOrigin((p) => ({ ...p, [key]: value }));
-        if (loadStatus) await loadStatus();
-        showSuccess(t('common.setSuccess'));
-      } catch (e) {
-        showError(e.message);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [inputs, putOption, loadStatus, t]
-  );
-
+  // Saves the changed keys of one card. `values` overrides inputs (used by collection cards that
+  // save one item of a JSON option right away).
   const saveKeys = useCallback(
     async (keys, options = {}) => {
-      const { validate, transform } = options;
+      const { validate, transform, values } = options;
+      const current = { ...latest.current.inputs, ...(values || {}) };
       if (validate) {
-        const err = validate(inputs);
+        const err = validate(current);
         if (err) {
           showError(err);
           return false;
@@ -94,15 +91,17 @@ export function useOptionSettings() {
       setLoading(true);
       try {
         for (const key of keys) {
-          let value = inputs[key];
+          let value = current[key];
           if (transform && transform[key]) value = transform[key](value);
           if (key in secrets && !value) continue;
-          if (origin[key] !== value) {
+          if (!sameOption(latest.current.origin[key], value)) {
             await putOption(key, value ?? '');
           }
         }
         if (loadStatus) await loadStatus();
-        await refresh();
+        await refresh({ keepUnsaved: true });
+        // Keys saved from `values` replace any pending edit of them.
+        if (values) setInputs((p) => ({ ...p, ...values }));
         showSuccess(t('common.saveSuccess'));
         return true;
       } catch (e) {
@@ -112,51 +111,62 @@ export function useOptionSettings() {
         setLoading(false);
       }
     },
-    [inputs, origin, secrets, putOption, loadStatus, refresh, t]
+    [secrets, putOption, loadStatus, refresh, t]
+  );
+
+  // Undo: puts a card's keys back to the stored values.
+  const resetKeys = useCallback(
+    (keys) =>
+      setInputs((p) => {
+        const next = { ...p };
+        keys.forEach((key) => {
+          if (key in origin) next[key] = origin[key];
+          else delete next[key];
+        });
+        return next;
+      }),
+    [origin]
   );
 
   // Dirty check for a card's own option keys, so its save button stays disabled
   // until something actually changed. Both sides normalise to string because
   // number inputs turn origin values like 10 into '10'.
-  const isDirty = useCallback((keys) => keys.some((key) => String(inputs[key] ?? '') !== String(origin[key] ?? '')), [inputs, origin]);
+  const isDirty = useCallback((keys) => keys.some((key) => !sameOption(inputs[key], origin[key])), [inputs, origin]);
 
-  return { inputs, secrets, setField, toggle, saveKeys, loading, refresh, isDirty };
+  return { inputs, origin, secrets, setField, setBool, saveKeys, resetKeys, loading, refresh, isDirty };
 }
 
-export function SettingsCard({ title, description, headerAction, children, className, highlight }) {
-  return (
-    <Card className={className} data-highlight={highlight}>
-      <CardHeader>
-        {headerAction ? (
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 space-y-2.5">
-              <CardTitle className="text-lg">{title}</CardTitle>
-              {description && <CardDescription>{description}</CardDescription>}
-            </div>
-            <div className="shrink-0">{headerAction}</div>
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            <CardTitle className="text-lg">{title}</CardTitle>
-            {description && <CardDescription>{description}</CardDescription>}
-          </div>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-4">{children}</CardContent>
-    </Card>
-  );
-}
+const sameOption = (a, b) => String(a ?? '') === String(b ?? '');
 
-export function SettingsSection({ title, description, children, className }) {
-  return (
-    <section className={className ? `space-y-3 ${className}` : 'space-y-3'}>
-      <div className="space-y-2.5">
-        <h4 className="text-sm font-medium leading-none">{title}</h4>
-        {description && <p className="text-xs text-muted-foreground">{description}</p>}
-      </div>
-      {children}
-    </section>
-  );
+// FormCard props for a card saved through the option API: dirty state, Save and Undo bound to
+// the card's own keys. `options` are passed to saveKeys (validate / transform); `beforeSave`
+// may return false (or a promise of false) to stop, e.g. to ask for confirmation first.
+export function useOptionCard(ctx, keys, options = {}) {
+  const [saving, setSaving] = useState(false);
+  const dirty = ctx.isDirty(keys);
+  const save = async () => {
+    setSaving(true);
+    try {
+      return await ctx.saveKeys(keys, options);
+    } finally {
+      setSaving(false);
+    }
+  };
+  return {
+    dirty,
+    saving,
+    save,
+    cardProps: {
+      dirty,
+      saving,
+      disabled: ctx.loading && !saving,
+      onSave: async () => {
+        if (options.beforeSave && (await options.beforeSave()) === false) return;
+        await save();
+      },
+      onReset: () => ctx.resetKeys(keys)
+    }
+  };
 }
 
 export function TextRow({
@@ -254,79 +264,40 @@ export function CollapsibleHelp({ trigger, lines, children, className }) {
   );
 }
 
-export function ToggleRow({ label, description, checked, onCheckedChange, disabled }) {
+// One switch row of an OptionList (the list draws the frame and the lines between rows).
+export function ToggleRow({ id, label, description, checked, onCheckedChange, disabled, children }) {
   return (
-    <div className={`flex ${description ? 'items-start' : 'items-center'} justify-between gap-4 rounded-md border border-border p-3`}>
-      <div className="min-w-0 space-y-2.5">
-        <p className="text-sm font-medium leading-none">{label}</p>
-        {description && <p className="text-xs text-muted-foreground">{description}</p>}
+    <div className="space-y-3 px-4 py-3">
+      <div className={`flex ${description ? 'items-start' : 'items-center'} justify-between gap-4`}>
+        <div className="min-w-0 space-y-1">
+          <Label htmlFor={id} className="text-sm font-medium leading-5">
+            {label}
+          </Label>
+          {description && <div className="text-xs text-muted-foreground">{description}</div>}
+        </div>
+        <Switch id={id} checked={!!checked} onCheckedChange={onCheckedChange} disabled={disabled} />
       </div>
-      <Switch checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />
+      {children}
     </div>
   );
 }
 
-// Imperative enable switch for SettingsCard.headerAction: saves instantly via toggle().
-export function HeaderSwitch({ id, label, checked, onCheckedChange, disabled }) {
-  const { t } = useTranslation();
+// Labelled select bound to one option; the label sits above the control.
+export function SelectRow({ id, label, description, value, onChange, options, disabled, className }) {
   return (
-    <div className="flex items-center gap-2">
-      <Label htmlFor={id} className="font-normal text-muted-foreground">
-        {label ?? t('common.enableToggle')}
-      </Label>
-      <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />
-    </div>
-  );
-}
-
-export function ConfirmAction({ title, description, confirmLabel, onConfirm, disabled, variant = 'destructive', children }) {
-  const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  const handleConfirm = async () => {
-    setBusy(true);
-    try {
-      await onConfirm?.();
-      setOpen(false);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <>
-      <Button variant={variant} disabled={disabled} onClick={() => setOpen(true)}>
-        {children}
-      </Button>
-      <Dialog open={open} onOpenChange={(v) => !busy && setOpen(v)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-            {description && <DialogDescription>{description}</DialogDescription>}
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" disabled={busy} onClick={() => setOpen(false)}>
-              {t('common.cancel')}
-            </Button>
-            <Button variant={variant} disabled={busy} onClick={handleConfirm}>
-              {busy && <Loader2 className="size-4 animate-spin" />}
-              {confirmLabel ?? t('common.confirm')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
-
-export function SaveButton({ onClick, loading, disabled, children }) {
-  return (
-    <div className="flex justify-end pt-1">
-      <Button onClick={onClick} disabled={loading || disabled}>
-        {loading && <Loader2 className="size-4 animate-spin" />}
-        {children}
-      </Button>
-    </div>
+    <FormField id={id} label={label} hint={description} className={className}>
+      <Select value={value} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger id={id}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </FormField>
   );
 }
