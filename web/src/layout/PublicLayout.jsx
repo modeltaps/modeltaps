@@ -26,7 +26,7 @@ export default function PublicLayout() {
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3 sm:px-6">
         <Link to="/" className="flex items-center gap-2 text-foreground">
-          <LogoMark className="h-5 w-auto shrink-0" />
+          <LogoMark size={20} />
           <span className="text-sm font-semibold leading-none">{brandName(siteInfo.system_name)}</span>
         </Link>
         <div className="flex items-center gap-1">

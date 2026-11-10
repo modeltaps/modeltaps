@@ -30,7 +30,7 @@ export default function SignedOut() {
           {siteInfo.logo ? (
             <img src={siteInfo.logo} alt={name} className="size-12 object-contain" />
           ) : (
-            <LogoMark className="h-9 w-auto text-foreground" />
+            <LogoMark size={40} className="text-foreground" />
           )}
           <CardTitle className="text-2xl">{t(stillSignedIn ? 'login.stillSignedInTitle' : 'login.signedOutTitle')}</CardTitle>
         </CardHeader>
