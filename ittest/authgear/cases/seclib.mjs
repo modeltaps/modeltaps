@@ -53,7 +53,7 @@ async function rootLogin() {
   if (rootCookie) return rootCookie;
   const r = await fetch(MODELTAPS + '/api/user/login', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'root', password: env.MODELTAPS_ROOT_PASSWORD }),
+    body: JSON.stringify({ username: env.MODELTAPS_ROOT_USERNAME || 'admin', password: env.MODELTAPS_ROOT_PASSWORD }),
   });
   rootCookie = (r.headers.getSetCookie() || []).map((c) => c.split(';')[0]).join('; ');
   const body = await r.json();

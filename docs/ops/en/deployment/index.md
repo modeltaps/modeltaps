@@ -313,19 +313,23 @@ Besides the container image, the delivery package includes a `modeltaps` executa
    ./modeltaps --port 3000 --log-dir ./logs
    ```
 
-3. **Open the application**: browse to `http://localhost:3000` and sign in. The initial account is `root`; its initial password depends on the configuration at first startup:
+3. **Open the application**: browse to `http://localhost:3000` and sign in. The initial account is the super admin (role root, called root below) with username `admin`; its initial password depends on the configuration at first startup:
 
    - `ROOT_PASSWORD` is set (8–64 characters): that value becomes the initial root password. The program fails to start if the length is out of range.
    - `ROOT_PASSWORD` is not set: the program generates a 16-character strong random password with `crypto/rand` and prints it **exactly once, in the first-run log**, in the form:
 
      ```text
-     no user exists, create a root user for you: username is root, initial root password: <random password>
+     no user exists, created the super admin account: username is admin, initial password: <random password>
      ```
 
-   Local development convention: set `ROOT_PASSWORD=root` together with `ROOT_PASSWORD_ALLOW_INSECURE=true` so you can sign in with `root/root` after the first startup. That switch is for local development only and must never be enabled in production.
+   Local development convention: set `ROOT_PASSWORD=admin` together with `ROOT_PASSWORD_ALLOW_INSECURE=true` so you can sign in with `admin/admin` after the first startup. That switch is for local development only and must never be enabled in production.
 
    ::: warning Initial password
    This only applies when the database has no users yet. Change the root password immediately after your first sign-in and clean up the startup log containing the initial password (see [Tightening directory permissions](#tightening-directory-permissions)).
+   :::
+
+   ::: info Upgrading from earlier versions
+   Earlier versions seeded the first account with username `root` and display name `Root User`. Upgrading leaves existing accounts alone: `root` keeps signing in as before, and `/login/admin` keeps working because it checks the role, not the username. Rename the account under User Management if you want to.
    :::
 
 Runtime behaviour and configuration keys are the same as for the container deployment: you can inject settings through `.env` / environment variables, or point at a configuration file with `--config ./config.yaml` (see [CLI Options](./cli.md)). In production, tighten directory and file permissions as described in [Bare-metal (manual) deployment](#bare-metal-manual-deployment).
@@ -362,7 +366,7 @@ Both the log directory and the data directory hold sensitive content on disk, an
 On first startup (when the database has no users yet), if `ROOT_PASSWORD` is not set, the program generates a 16-character random password and **prints it once in plaintext**:
 
 ```text
-no user exists, create a root user for you: username is root, initial root password: <random password>
+no user exists, created the super admin account: username is admin, initial password: <random password>
 ```
 
 This line is written to two places:
@@ -444,7 +448,7 @@ After changing the root password, the initial one is still stored in plaintext i
 
 ```bash
 # 1. check whether the line exists in the logs
-sudo grep -l "initial root password" /data/modeltaps/logs/*.log
+sudo grep -l -E "initial (root )?password" /data/modeltaps/logs/*.log
 
 # 2. delete the log files containing it (including rotated history files)
 sudo rm -f /data/modeltaps/logs/modeltaps.log /data/modeltaps/logs/modeltaps-*.log
@@ -454,7 +458,7 @@ The container's standard output is stored separately in Docker's own log file, w
 
 ```bash
 # check
-docker logs modeltaps 2>&1 | grep "initial root password"
+docker logs modeltaps 2>&1 | grep -E "initial (root )?password"
 # clean: recreate the container (data lives in the mounted volume and is not lost)
 docker rm -f modeltaps && docker run -d ...   # recreate with your original start command
 ```

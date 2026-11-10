@@ -33,6 +33,8 @@ export COMPOSE_PROJECT_NAME
 # 同挂 localhost 也不会互相覆盖。这里仍把两边分到不同主机名，只是为了让「哪一边的
 # 请求」在抓包与日志里一眼可分；改成 localhost 也能跑通。
 : "${MODELTAPS_HOST:=127.0.0.1}"
+# 首次启动种下的超级管理员用户名；out/ 里沿用旧库（种的是 root）时改成 ROOT_USERNAME=root。
+: "${ROOT_USERNAME:=admin}"
 : "${ROOT_PASSWORD:=modeltaps-root-pw}"
 
 : "${OIDC_SLUG:=authgear}"

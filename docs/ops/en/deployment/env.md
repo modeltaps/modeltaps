@@ -97,12 +97,12 @@ LOGS_FILENAME="modeltaps.log"
 23. `AUTO_PRICE_UPDATES_INTERVAL`: the automatic price update interval in minutes. Only effective when `AUTO_PRICE_UPDATES_MODE` is `add` or `overwrite`; the system periodically fetches price configuration from the price update server and applies it. Defaults to 1440.
 24. `UPDATE_PRICE_SERVICE`: the price update service URL. When set, price data is pulled from this address. Empty by default, which disables the external price service (in that case use `AUTO_PRICE_UPDATES_MODE=system` so prices are initialized from the built-in table).
 25. `USER_INVOICE_MONTH`: whether to enable monthly user invoices. When enabled, the system generates each user's previous-month summary invoice in the early hours of the 1st of every month. This can be resource-intensive with large volumes of data, so enable it with care. Defaults to `false`.
-26. `ROOT_PASSWORD`: the initial password of the root account. Only takes effect when the database has no users yet (that is, on first startup). It must be 8–64 characters long, otherwise the program fails to start.
+26. `ROOT_PASSWORD`: the initial password of the super admin account seeded on first startup (username `admin`, role root). Only takes effect when the database has no users yet (that is, on first startup). It must be 8–64 characters long, otherwise the program fails to start.
     - When unset, the program generates a 16-character strong random password and prints it exactly once in the first-run log.
     - Change the root password immediately after your first sign-in and clean up the startup log containing the initial password.
     - The variable **only takes effect when the database is first created**; changing or removing it afterwards does not affect the existing root password, so it is not a break-glass mechanism. Read [Administrator break-glass access](./index.md#administrator-break-glass-access) before turning password login off.
 27. `ROOT_PASSWORD_ALLOW_INSECURE`: whether to skip the 8–64 character length check on `ROOT_PASSWORD`. Accepts `true` / `false`, defaults to `false`. **For local development only; never enable it in production.**
-    - Local development convention: `ROOT_PASSWORD=root` plus `ROOT_PASSWORD_ALLOW_INSECURE=true`, so you can sign in with `root/root` after the first startup.
+    - Local development convention: `ROOT_PASSWORD=admin` plus `ROOT_PASSWORD_ALLOW_INSECURE=true`, so you can sign in with `admin/admin` after the first startup. Databases created before this change seeded `root` instead; keep signing in with that account.
     - When enabled, a warning line is printed to the startup log. The switch has no effect when `ROOT_PASSWORD` is unset: the 16-character random password branch still applies.
 
 ## Additional configuration keys

@@ -97,12 +97,12 @@ LOGS_FILENAME="modeltaps.log"
 23. `AUTO_PRICE_UPDATES_INTERVAL` ：价格自动更新时间，单位分钟，仅`AUTO_PRICE_UPDATES_MODE`为`add`、`overwrite`时生效，系统将按照此时间周期性从价格更新服务器获取价格配置并更新系统价格。默认值：1440
 24. `UPDATE_PRICE_SERVICE` ：价格更新服务地址，设置之后将从该地址拉取价格数据更新价格。默认为空，为空时不启用外部价格服务（此时 `AUTO_PRICE_UPDATES_MODE` 请使用 `system`，即以程序内置价格表初始化）。
 25. `USER_INVOICE_MONTH`：是否开启用户月度账单功能，开启后系统每月 1 日凌晨生成用户上一月度的数据汇总账单；数据量较大时资源消耗较高，请谨慎开启，默认 `false`。
-26. `ROOT_PASSWORD` ：root 账号的初始密码，仅在数据库中还没有任何用户（即首次启动）时生效，长度需为 8–64 位，超出范围程序会启动失败。
+26. `ROOT_PASSWORD` ：首次启动种下的超级管理员账号（用户名 `admin`，角色为 root）的初始密码，仅在数据库中还没有任何用户（即首次启动）时生效，长度需为 8–64 位，超出范围程序会启动失败。
     - 不设置时，程序会生成 16 位强随机密码，并仅在首次启动日志中打印一次。
     - 请在首次登录后立即修改 root 密码，并清理含有初始密码的启动日志。
     - 该变量**仅首次建库生效**，之后修改或删除都不影响已存在的 root 密码，不能当作逃生手段；关闭密码登录前请先读[管理员逃生口](./index.md#管理员逃生口)。
 27. `ROOT_PASSWORD_ALLOW_INSECURE`：是否跳过 `ROOT_PASSWORD` 的 8–64 位长度校验，可选值 `true` / `false`，默认 `false`。**仅限本地开发环境，生产环境严禁开启。**
-    - 本地开发约定：`ROOT_PASSWORD=root` + `ROOT_PASSWORD_ALLOW_INSECURE=true`，首次启动后即可用 `root/root` 登录。
+    - 本地开发约定：`ROOT_PASSWORD=admin` + `ROOT_PASSWORD_ALLOW_INSECURE=true`，首次启动后即可用 `admin/admin` 登录。在此之前建的库种的是 `root`，继续用原来的账号登录。
     - 开启后启动日志会打印一行警告；未设置 `ROOT_PASSWORD` 时该开关不生效，仍走 16 位随机密码分支。
 
 ## 更多配置项
