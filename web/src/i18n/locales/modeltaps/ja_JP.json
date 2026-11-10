@@ -2814,42 +2814,7 @@
   "home": {
     "hero": {
       "tagline": "すべてのモデルを、ひとつの出口から",
-      "subline": "OpenAI・Anthropic・Gemini の 3 つのプロトコルを 1 つのアドレスで話すセルフホスト型 AI ゲートウェイ。ツールを向けるだけで任意のモデルが使え、キーとログは自分のサーバーに残ります。",
-      "ctaPrimary": "API キーを取得",
-      "ctaSecondary": "モデルを見る",
-      "toolsAria": "ツールを接続",
-      "copied": "コピーしました",
-      "protocolNote": "{{protocol}} プロトコルで接続",
-      "logTitle": "ゲートウェイのログ"
-    },
-    "facts": {
-      "protocols": {
-        "label": "/v1 · /claude · /gemini",
-        "title": "3 つのネイティブプロトコル",
-        "desc": "OpenAI・Anthropic・Gemini 互換エンドポイントが同時に動きます。Claude Code、Codex CLI、Cursor は接続先を変えるだけです。"
-      },
-      "sources": {
-        "label": "cloud · 自前のキー",
-        "title": "モデルの出どころは自分で決める",
-        "desc": "プラットフォームが支払う 20 社以上のクラウドプロバイダーに加え、組織自身の OpenRouter やベンダーのキーをチャネルとして登録できます。メンバーに平文は見えません。"
-      },
-      "ledger": {
-        "label": "logs · pricing",
-        "title": "1 回ごとに帳尻が合う",
-        "desc": "価格とモデルカタログは毎日同期され、上流での追加・削除には印が付きます。呼び出しごとにモデル、トークン、レイテンシ、メンバーを記録します。"
-      }
-    },
-    "control": {
-      "title": "メンバーごとに予算を",
-      "subtitle": "各 API キーは持ち主のメンバーの予算から引き落とされ、呼び出しはすべてそのメンバーの名義で記録されます。",
-      "mock": {
-        "title": "今期の利用額",
-        "period": "11月1日〜30日",
-        "teamBudget": "組織の期間予算"
-      }
-    },
-    "finalCta": {
-      "title": "API キー 1 つで、すべてのモデルへ"
+      "ctaPrimary": "API キーを取得"
     }
   }
 }
