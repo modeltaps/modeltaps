@@ -70,7 +70,10 @@ const NOTIFY_KINDS = [
   'price_change',
   'model_drift',
   'model_consistency',
-  'credential'
+  'credential',
+  'supply_paused',
+  'supply_resumed',
+  'supply_failover'
 ];
 
 export function NotificationsCard({ ctx }) {

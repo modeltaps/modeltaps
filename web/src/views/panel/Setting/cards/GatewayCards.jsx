@@ -5,6 +5,7 @@ import { verifyJSON } from 'utils/common';
 import { FieldSection, OptionList } from '@/components/settings/cards';
 import { SelectRow, TextRow, ToggleRow } from '../parts';
 import OptionCard, { bindSwitch, cardText } from './OptionCard';
+import { pauseRulesError } from './pauseRules';
 
 // ==============================|| PLATFORM SETTINGS — 网关 ||============================== //
 // Retry, error handling, channel auto disable / recover, session affinity, model name matching,
@@ -135,6 +136,47 @@ export function ChannelAutoCard({ ctx }) {
         onChange={(v) => setField('DisableChannelKeywords', v)}
         placeholder={t('setting_index.operationSettings.disableChannelKeywordsSettings.info')}
         multiline
+      />
+    </OptionCard>
+  );
+}
+
+// Rules that pause a channel or model on upstream errors. An empty value means the built-in
+// defaults; a custom list replaces them as a whole (first matching rule wins). The backend
+// validates the rules and refuses invalid ones with its own message.
+const PAUSE_RULES_EXAMPLE = `[
+  {
+    "name": "quota",
+    "status_codes": [402],
+    "keywords": ["credit balance is too low"],
+    "action": "pause",
+    "seconds": 1800,
+    "scope": "channel",
+    "probe": true,
+    "notify": true,
+    "category": "quota"
+  }
+]`;
+
+export function SupplyPauseRulesCard({ ctx }) {
+  const { t } = useTranslation();
+  const { inputs, setField } = ctx;
+  const pr = (k) => t(`settingsUi.platform.pauseRules.${k}`);
+  const error = pauseRulesError(inputs.PauseRules);
+  const validate = (i) => (pauseRulesError(i.PauseRules) ? pr(pauseRulesError(i.PauseRules)) : null);
+
+  return (
+    <OptionCard ctx={ctx} id="supply-pause-rules" enableKey="PauseRulesEnabled" options={{ validate }}>
+      <TextRow
+        id="PauseRules"
+        label={pr('label')}
+        value={inputs.PauseRules}
+        onChange={(v) => setField('PauseRules', v)}
+        placeholder={PAUSE_RULES_EXAMPLE}
+        description={pr('description')}
+        error={error ? pr(error) : ''}
+        multiline
+        rows={10}
       />
     </OptionCard>
   );

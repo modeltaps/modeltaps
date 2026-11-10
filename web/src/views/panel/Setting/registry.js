@@ -108,6 +108,7 @@ export const PLATFORM_GROUPS = [
         'ChannelTestIntervalMinutes',
         'ChannelCredentialRefreshMinutes'
       ]),
+      card('supply-pause-rules', 'form', ['PauseRulesEnabled', 'PauseRules']),
       card('session-affinity', 'form', ['SessionAffinityEnabled', 'SessionAffinityStrict', 'SessionAffinityTTLSeconds']),
       card('model-name-match', 'form', ['ModelNameCaseInsensitiveEnabled', 'UnifiedRequestResponseModelEnabled']),
       card('native-protocol', 'form', [

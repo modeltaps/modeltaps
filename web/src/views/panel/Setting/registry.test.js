@@ -4,6 +4,7 @@ import en from 'i18n/locales/modeltaps/en_US.json';
 import ja from 'i18n/locales/modeltaps/ja_JP.json';
 import zhCN from 'i18n/locales/modeltaps/zh_CN.json';
 import zhHK from 'i18n/locales/modeltaps/zh_HK.json';
+import { pauseRulesError } from './cards/pauseRules';
 import { INVITE_CODE_URL, PLATFORM_GROUPS, cardById, cardKeys, resolveSettingsTarget, visibleGroups } from './registry';
 
 // Every option key the platform settings pages could save before the regrouping (the theme
@@ -174,6 +175,20 @@ describe('platform settings registry', () => {
       }
       for (const card of allCards) expect(platform.cards[card.id]?.title, card.id).toBeTruthy();
     }
+  });
+});
+
+describe('model supply options', () => {
+  it('pause rules are a gateway form card with their own switch', () => {
+    expect(cardById('supply-pause-rules')).toMatchObject({ groupId: 'gateway', kind: 'form', keys: ['PauseRulesEnabled', 'PauseRules'] });
+  });
+
+  it('pause rules must be empty or a JSON array', () => {
+    expect(pauseRulesError('')).toBeNull();
+    expect(pauseRulesError('  ')).toBeNull();
+    expect(pauseRulesError('[{"name":"quota","status_codes":[402]}]')).toBeNull();
+    expect(pauseRulesError('{"name":"quota"}')).toBe('notArray');
+    expect(pauseRulesError('[{')).toBe('invalidJson');
   });
 });
 

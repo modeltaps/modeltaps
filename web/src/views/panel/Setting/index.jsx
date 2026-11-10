@@ -31,7 +31,8 @@ import {
   NativeProtocolCard,
   PromptLimitsCard,
   RetryCard,
-  SessionAffinityCard
+  SessionAffinityCard,
+  SupplyPauseRulesCard
 } from './cards/GatewayCards';
 import { LogConsumeCard, LogIOCard, SafetyCard } from './cards/PrivacyCards';
 import { BuiltinChatCard, ChatLinksCard, MjNotifyCard, NotificationsCard, SmtpCard, TelegramCard } from './cards/NotifyCards';
@@ -69,6 +70,7 @@ const CARD_COMPONENTS = {
   retry: RetryCard,
   'error-handling': ErrorHandlingCard,
   'channel-auto': ChannelAutoCard,
+  'supply-pause-rules': SupplyPauseRulesCard,
   'session-affinity': SessionAffinityCard,
   'model-name-match': ModelNameMatchCard,
   'native-protocol': NativeProtocolCard,

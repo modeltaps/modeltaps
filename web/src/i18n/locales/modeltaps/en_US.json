@@ -2529,6 +2529,11 @@
         "org-policy": {
           "title": "Organizations",
           "hint": "Existing organizations are not affected"
+        },
+        "supply-pause-rules": {
+          "title": "Supply pause rules",
+          "description": "Pause a channel or model on upstream errors by rule; it comes back after a passing test",
+          "hint": "When off, the older auto disable and cooldown apply"
         }
       },
       "actions": {
@@ -2547,6 +2552,12 @@
       },
       "telegram": {
         "add": "Add command"
+      },
+      "pauseRules": {
+        "label": "Custom rules (JSON)",
+        "description": "Leave empty for the built-in rules; a custom list replaces them as a whole, and the first matching rule wins.",
+        "invalidJson": "The pause rules are not valid JSON",
+        "notArray": "The pause rules must be a JSON array"
       }
     },
     "personal": {

@@ -2444,6 +2444,11 @@
         "org-policy": {
           "title": "组织",
           "hint": "已有组织不受影响"
+        },
+        "supply-pause-rules": {
+          "title": "供应暂停规则",
+          "description": "上游报错时按规则暂停渠道或模型，到点测试通过后恢复",
+          "hint": "关闭后回到旧的自动禁用与冷却"
         }
       },
       "actions": {
@@ -2462,6 +2467,12 @@
       },
       "telegram": {
         "add": "添加命令"
+      },
+      "pauseRules": {
+        "label": "自定义规则（JSON）",
+        "description": "留空使用内置默认规则；填写后整体替换默认规则，按顺序第一条命中的生效。",
+        "invalidJson": "暂停规则不是合法的 JSON",
+        "notArray": "暂停规则必须是 JSON 数组"
       }
     },
     "personal": {

@@ -182,7 +182,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   moves to Notifications & integrations and the provider icon library into Branding. Old group
   and section links (`relay`, `integrations`, `organization`, `?tab=`, `?highlight=` of a card
   that moved) redirect to the new place, and the command palette lists the groups and, while
-  typing, every card.
+  typing, every card. Gateway gets a supply pause rules card (on/off switch and custom rules
+  as JSON), and the notification switches cover paused, resumed and failed-over supplies.
 - Invite codes have their own page under Finance in platform admin (`/panel/invite_code`); the
   settings keep the "registration requires an invite code" switch with a link to it.
 - Personal access tokens move into Sign-in & security, and the organization team budget joins
