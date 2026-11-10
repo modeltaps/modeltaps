@@ -13,12 +13,18 @@ import { API } from 'utils/api';
 import { showError, copy, trims } from 'utils/common';
 import { PAGE_SIZE_OPTIONS, getPageSize, savePageSize } from 'constants';
 import { createRequestGuard, runGuardedFetch } from 'hooks/paginatedListGuard';
+import PageActions from '@/components/chrome/PageActions';
+import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import InviteCodeTable from './InviteCodeTable';
 import InviteCodeSheet from './InviteCodeSheet';
 
 const tk = (k) => `setting_index.inviteCodeSettings.${k}`;
 
-export default function InviteCodeSettings() {
+// ==============================|| PANEL — INVITE CODES (admin) ||============================== //
+// Registration invite codes: list, filters, batch delete and the create / edit sheet. Whether
+// registration needs a code is the 注册需要邀请码 switch in platform settings (登录与注册).
+
+export default function InviteCode() {
   const { t } = useTranslation();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(() => getPageSize('inviteCode'));
@@ -154,11 +160,9 @@ export default function InviteCodeSettings() {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex items-center justify-end">
-          <Button onClick={openCreate}>
-            <Plus className="size-4" /> {t(tk('createButton'))}
-          </Button>
-        </div>
+        <PageActions>
+          <ResponsiveToolbarButton primary icon={Plus} label={t(tk('createButton'))} onClick={openCreate} />
+        </PageActions>
 
         <Alert variant="info">
           <Info />
@@ -181,7 +185,12 @@ export default function InviteCodeSettings() {
               }}
             >
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input className="pl-9" placeholder={t(tk('searchPlaceholder'))} value={keywordInput} onChange={(e) => setKeywordInput(e.target.value)} />
+              <Input
+                className="pl-9"
+                placeholder={t(tk('searchPlaceholder'))}
+                value={keywordInput}
+                onChange={(e) => setKeywordInput(e.target.value)}
+              />
             </form>
             <div className="flex items-center gap-2">
               <Select
@@ -287,7 +296,9 @@ export default function InviteCodeSettings() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{t('common.delete')}</DialogTitle>
-              <DialogDescription>{t('common.deleteConfirm', { title: t(tk('batchDeleteTitle'), { count: selected.length }) })}</DialogDescription>
+              <DialogDescription>
+                {t('common.deleteConfirm', { title: t(tk('batchDeleteTitle'), { count: selected.length }) })}
+              </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={() => setBatchConfirm(false)}>
