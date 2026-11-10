@@ -7,7 +7,17 @@ export default defineConfig({
   title: "Modeltaps Docs",
   description:
     "Modeltaps is a unified multi-protocol AI gateway compatible with the OpenAI, Claude and Gemini APIs, with organizations, budgets and usage analytics.",
-  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }]],
+  // PNG favicons (Chromium rasterizes small vector icons with 4-sample MSAA, which looks jagged);
+  // the script swaps in the white mark when the browser is in dark mode.
+  head: [
+    ['link', { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon-16.png', 'data-theme-icon': '16' }],
+    ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png', 'data-theme-icon': '32' }],
+    [
+      'script',
+      {},
+      "(function(){var q=matchMedia('(prefers-color-scheme: dark)');function a(){document.querySelectorAll('link[data-theme-icon]').forEach(function(l){l.href='/favicon-'+l.getAttribute('data-theme-icon')+(q.matches?'-white':'')+'.png'})}a();q.addEventListener('change',a)})()"
+    ]
+  ],
   lastUpdated: true,
   // Operations docs are not published with the docs site yet
   srcExclude: ['ops/**'],
@@ -120,7 +130,7 @@ export default defineConfig({
         }
       }
     },
-    logo: { light: '/brand-mark.svg', dark: '/brand-mark-white.svg', alt: 'Modeltaps Logo' }
+    logo: { light: '/brand-mark-40.png', dark: '/brand-mark-40-white.png', alt: 'Modeltaps Logo' }
     // https://vitepress.dev/reference/default-theme-config
     // nav, sidebar, UI strings and footer come from each locale's themeConfig in locales.mts
   }

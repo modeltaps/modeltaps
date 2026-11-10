@@ -1,28 +1,21 @@
 // ==============================|| CHROME — LOGO MARK (Modeltaps mark, currentColor) ||============================== //
-// The brand mark: a solid drop with an off-centre round hole, one even-odd path.
+// The brand mark: a solid drop with an off-centre round hole.
 //
-// It ships in three optical sizes drawn on whole-pixel grids (12, 16 and 20 px tall). On each grid the
-// body's left, right and bottom edges and the hole's four extremes sit on integer coordinates, so at 1x
-// the outline has no half-covered pixel columns or rows and the hole stays a clean 3–4 px opening. A
-// single path scaled down from a large master lands between pixels and renders blurry and jagged.
+// It is drawn in optical sizes on whole-pixel grids (12, 16 and 20 px tall): on each grid the body's
+// left, right and bottom edges and the hole's four extremes sit on integer coordinates.
 //
-// Pass `size` (the rendered height in px). A size that is a whole multiple of a grid uses that grid
-// (20, 40, 60 → 20; 16, 32, 48 → 16; 12, 24 → 12); any other size falls back to the 20 grid scaled. The element gets explicit width and height,
-// so do not size it with h-* / w-* classes; keep it on a whole-pixel offset. Without `size` the mark
-// fills whatever box the className gives it (illustrations).
-// public/brand/favicon.* use the 16 grid; the larger PWA / og assets use the 20 grid.
+// UI sizes (12, 16, 20, 40) render as a pre-rendered bitmap used as a CSS mask over currentColor,
+// with 1x / 2x / 3x files in public/brand/mark/. Chromium's GPU rasterizer draws vector paths with
+// 4-sample MSAA (5 coverage levels), so an inline SVG this small looks visibly jagged on 1x screens next
+// to smooth text; the PNGs are rendered with full analytic coverage. Pass `size` (rendered height in
+// px) instead of h-* / w-* classes and keep the mark on a whole-pixel offset.
+//
+// Without a supported `size` it falls back to the 20 grid as inline SVG filling the className's box
+// (large illustrations, where MSAA steps are not visible).
 
 const GRIDS = {
-  12: {
-    w: 10,
-    h: 12,
-    d: 'M4.175 0.373A1.1 1.1 0 0 1 5.825 0.373L8.752 3.695A5 5 0 1 1 1.248 3.695ZM8 7.5a1.5 1.5 0 1 0 -3 0a1.5 1.5 0 1 0 3 0Z'
-  },
-  16: {
-    w: 12,
-    h: 16,
-    d: 'M4.906 0.598A1.3 1.3 0 0 1 7.094 0.598L11.049 6.759A6 6 0 1 1 0.951 6.759ZM9 11.5a1.5 1.5 0 1 0 -3 0a1.5 1.5 0 1 0 3 0Z'
-  },
+  12: { w: 10, h: 12 },
+  16: { w: 12, h: 16 },
   20: {
     w: 16,
     h: 20,
@@ -30,23 +23,35 @@ const GRIDS = {
   }
 };
 
-function gridFor(size) {
-  const h = [20, 16, 12].find((n) => size && size % n === 0) || 20;
-  return GRIDS[h];
-}
+// rendered height -> grid it is drawn on
+const RASTER = { 12: 12, 16: 16, 20: 20, 40: 20 };
 
 export function LogoMark({ size, className }) {
-  const g = gridFor(size);
-  const dims = size ? { width: (g.w * size) / g.h, height: size } : {};
+  const grid = RASTER[size];
+  if (grid) {
+    const g = GRIDS[grid];
+    const base = `/brand/mark/${size}`;
+    const mask = `image-set(url(${base}.png) 1x, url(${base}@2x.png) 2x, url(${base}@3x.png) 3x)`;
+    return (
+      <span
+        aria-hidden="true"
+        className={['inline-block shrink-0 bg-current', className].filter(Boolean).join(' ')}
+        style={{
+          width: (g.w * size) / g.h,
+          height: size,
+          maskImage: mask,
+          WebkitMaskImage: mask,
+          maskSize: '100% 100%',
+          WebkitMaskSize: '100% 100%',
+          maskRepeat: 'no-repeat',
+          WebkitMaskRepeat: 'no-repeat'
+        }}
+      />
+    );
+  }
+  const g = GRIDS[20];
   return (
-    <svg
-      viewBox={`0 0 ${g.w} ${g.h}`}
-      fill="currentColor"
-      {...dims}
-      className={['shrink-0', className].filter(Boolean).join(' ')}
-      role="img"
-      aria-hidden="true"
-    >
+    <svg viewBox={`0 0 ${g.w} ${g.h}`} fill="currentColor" className={className} role="img" aria-hidden="true">
       <path fillRule="evenodd" d={g.d} />
     </svg>
   );
