@@ -1,4 +1,6 @@
 import PropTypes from 'prop-types';
+import { Link } from 'react-router';
+import { ChevronLeft } from 'lucide-react';
 
 // ==============================|| CHROME — PAGE HEADER (in-body title) ||============================== //
 // Centralized page title + optional subtitle rendered at the top of <main>,
@@ -13,13 +15,22 @@ import PropTypes from 'prop-types';
 // `leading` sits left of the title, centered on the title line (sidebar
 // expand / mobile menu buttons).
 
-export default function PageHeader({ title, subtitle, leading, actionsRef, titleExtraRef }) {
+export default function PageHeader({ title, subtitle, back, leading, actionsRef, titleExtraRef }) {
   return (
     <div className="mb-6 flex flex-wrap items-start gap-x-4 gap-y-3">
       <div className="flex min-w-0 grow basis-48 flex-wrap items-center gap-x-3 gap-y-2">
         <div className="flex min-w-0 items-start gap-2">
           {leading}
           <div className="min-w-0">
+            {back && (
+              <Link
+                to={back.to}
+                className="mb-1 inline-flex items-center gap-1 rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <ChevronLeft className="size-4" />
+                {back.label}
+              </Link>
+            )}
             <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
             {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
           </div>
@@ -34,6 +45,7 @@ export default function PageHeader({ title, subtitle, leading, actionsRef, title
 PageHeader.propTypes = {
   title: PropTypes.node,
   subtitle: PropTypes.node,
+  back: PropTypes.shape({ label: PropTypes.string, to: PropTypes.string }),
   leading: PropTypes.node,
   actionsRef: PropTypes.oneOfType([PropTypes.func, PropTypes.object]),
   titleExtraRef: PropTypes.oneOfType([PropTypes.func, PropTypes.object])

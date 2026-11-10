@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Channels are organized by provider. The channel page lists the providers that have channels
+  on the left (with a dot when one needs attention and the channel count) and a search box that
+  finds channels across providers by name, model, tag, key suffix or host. The selected provider
+  shows what needs attention (auto-disabled channels, missing keys, low balance, upstream model
+  drift), one traffic chart with a line per channel over 24 hours, 7 days or 30 days, and the
+  channel table with priority and weight, requests, success rate, average latency, balance or
+  subscription usage and an enable switch. The table filters by status and tag, selects rows for
+  batch enable, disable, test, group, priority and weight changes and delete, and offers
+  tag-wide actions when a tag is picked.
+- Clicking a channel opens a side panel whose tabs save on their own: models (per-model
+  requests, success rate, latency and first token time; model list and mapping), connection
+  (base URL, proxy, masked key and replacement, OAuth account, subscription windows), groups
+  and routing (groups, and the channel's place next to the other channels of the same provider:
+  backup, share or first, with the priority and weight that saves), request rewriting, monitoring
+  (test model, balance alert, drift) and advanced fields. `/panel/channel/<id>` opens the panel
+  directly; older `?view=settings`, `?tab=config` and `?channel_id=` links land on it.
+- New channels are created in a side sheet: provider, name, allowed models (all by default, or a
+  list with `*` prefix wildcards), blocked models (removed from the list and added to the drift
+  ignore rules so they are not added back), model mapping, the provider's auth method and key
+  with a link to where the provider issues keys, groups and usage. Test checks the connection
+  before saving; Save and test creates the channel and then tests it. Several keys, one per
+  line, create one channel each. `/panel/channel/new` opens the sheet. `POST /api/channel/` now
+  returns the created ids.
 - Model supplies, backend groundwork (no change to request handling yet). A new `model_supplies`
   table records which channel supplies a public model, under which upstream name, with its own
   priority, weight and on/off switch; admins manage them through `/api/model_supply`. Root can
@@ -110,6 +133,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Saving a channel no longer resets its last test time, response time and creation time; the
+  form does not carry them, and the full-row update wrote them back as zero.
 - Channels that list a wildcard model such as `gpt-4o*` now send the requested model upstream
   (`gpt-4o-mini`) instead of the literal pattern. The pattern was also the name billing looked
   up, so with the default unpriced-model policy these requests were rejected with "has no

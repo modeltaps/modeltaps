@@ -96,7 +96,9 @@ const MainRoutes = {
       element: <Token />
     },
     {
-      path: 'channel',
+      // One page: `/panel/channel/:id` opens that channel's panel, `/panel/channel/new` the new
+      // channel sheet, over the provider page.
+      path: 'channel/:id?',
       element: (
         <AdminGuard>
           <Channel />

@@ -21,7 +21,7 @@ function Sheet({ open, onOpenChange, children }) {
   return (
     <div className="fixed inset-0 z-[1300]">
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/30"
         onClick={() => onOpenChange?.(false)}
         aria-hidden="true"
       />

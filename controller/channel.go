@@ -118,12 +118,16 @@ func AddChannel(c *gin.Context) {
 	}
 	// 保存后异步为渠道模型补齐元信息与价格（OpenRouter 自带列表优先，其余走 models.dev），免去手动同步。
 	AutoSyncChannelCatalog(channel.Type, channel.Models, "channel add")
+	ids := make([]int, 0, len(channels))
 	for i := range channels {
 		model.TriggerChannelBrandIconFetch(&channels[i])
+		ids = append(ids, channels[i].Id)
 	}
+	// ids lets the admin UI open the new channel's page (one id per key line in batch mode).
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
+		"data":    gin.H{"ids": ids},
 	})
 }
 

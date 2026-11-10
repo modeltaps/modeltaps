@@ -46,9 +46,9 @@ const SOURCE_LABEL_KEYS = {
 const MAX_CHIP_ICONS = 2;
 const CHANNEL_STATUS_ENABLED = 1;
 
-// 渠道页按渠道名筛选并通过 channel_id 直接打开该渠道的编辑抽屉。
+// The channel's own page.
 export function channelEditPath(channel) {
-  return `/panel/channel?name=${encodeURIComponent(channel.name || '')}&channel_id=${channel.id}`;
+  return `/panel/channel/${channel.id}`;
 }
 
 // 单个渠道的提示内容:渠道名、类型名称、状态,以及有值时的优先级 / 权重。

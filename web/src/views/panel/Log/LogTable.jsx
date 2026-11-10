@@ -166,7 +166,7 @@ export default function LogTable({
         cell: (i) =>
           i.channel_id ? (
             <Link
-              to={i.channel?.name ? `/panel/channel?name=${encodeURIComponent(i.channel.name)}` : '/panel/channel'}
+              to={`/panel/channel/${i.channel_id}`}
               onClick={(e) => e.stopPropagation()}
               className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground hover:underline"
             >

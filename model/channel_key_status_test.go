@@ -100,6 +100,24 @@ func TestUpdateRawKeepsKeyWhenBlank(t *testing.T) {
 	}
 }
 
+// A form save (overwrite mode) carries no runtime fields; it must not reset them.
+func TestUpdateRawKeepsRuntimeFields(t *testing.T) {
+	setupChannelKeyTestDB(t)
+	seed := Channel{Id: 1, Name: "a", Key: "k", Models: "m", CreatedTime: 1700000000, TestTime: 1700000100, ResponseTime: 1840, Balance: 12.5}
+	if err := DB.Create(&seed).Error; err != nil {
+		t.Fatal(err)
+	}
+	ch := Channel{Id: 1, Name: "renamed", Models: "m"}
+	if err := ch.UpdateRaw(true); err != nil {
+		t.Fatal(err)
+	}
+	var got Channel
+	DB.First(&got, 1)
+	if got.Name != "renamed" || got.CreatedTime != 1700000000 || got.TestTime != 1700000100 || got.ResponseTime != 1840 || got.Balance != 12.5 {
+		t.Errorf("runtime fields changed: %+v", got)
+	}
+}
+
 func seedTagChannels(t *testing.T) {
 	t.Helper()
 	setupChannelKeyTestDB(t)
