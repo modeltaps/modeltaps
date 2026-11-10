@@ -678,7 +678,13 @@
     "api_compare": "多個對話模型並排，同一條輸入同時發出",
     "pricing": "模型目錄、價格、渠道與廠商",
     "routing_policy": "虛擬模型：按每個會話的首條訊息選擇實際應答的模型",
-    "channel": "按供應商分組；一個渠道是連到該供應商的一組憑證和地址"
+    "channel": "按供應商分組；一個渠道是連到該供應商的一組憑證和地址",
+    "org_members": "邀請成員、設定每人的預算與模型範圍",
+    "org_settings": "組織的資料、留存策略與危險操作",
+    "organization": "組織的餘額、用量與審計記錄",
+    "platform_settings": "整個平台的預設值與開關",
+    "personal_settings": "只對你自己的賬號生效",
+    "token": "調用介面用的金鑰"
   },
   "api_compare": "對比",
   "modelInfoPage": {
@@ -2121,5 +2127,75 @@
       "priorityTitle": "標籤 {{tag}} 的優先級",
       "priorityHint": "給帶這個標籤的所有渠道設定同一優先級"
     }
+  },
+  "nav": {
+    "sections": {
+      "develop": "開發",
+      "organization": "組織",
+      "gateway": "閘道",
+      "people": "用戶",
+      "finance": "財務",
+      "settings": "設定"
+    },
+    "items": {
+      "dashboard": "儀表板",
+      "usage": "用量",
+      "log": "日誌",
+      "token": "API Key",
+      "models": "模型",
+      "playground": "演練場",
+      "docs": "文件",
+      "orgOverview": "組織概覽",
+      "orgMembers": "成員與預算",
+      "billing": "賬單",
+      "orgSettings": "組織設定",
+      "health": "運行狀況",
+      "stats": "統計",
+      "channels": "渠道",
+      "catalog": "模型目錄",
+      "routing": "自動路由",
+      "users": "用戶",
+      "userGroups": "用戶分組",
+      "orgs": "組織",
+      "orders": "訂單",
+      "redemption": "兌換碼",
+      "platformSettings": "平台設定",
+      "personalSettings": "個人設定"
+    },
+    "context": {
+      "personal": "個人",
+      "admin": "平台管理",
+      "switch": "切換空間",
+      "personalMark": "個",
+      "adminMark": "管",
+      "organizations": "組織",
+      "adminRole": "管理員",
+      "current": "目前"
+    },
+    "account": {
+      "menu": "賬號選單",
+      "settings": "個人設定",
+      "appearance": "外觀",
+      "language": "語言",
+      "docs": "文件與說明",
+      "logout": "登出"
+    },
+    "balance": {
+      "personal": "餘額",
+      "pool": "組織餘額",
+      "mine": "我的餘額"
+    },
+    "stats": {
+      "tabs": "統計檢視",
+      "platform": "平台",
+      "byUser": "按用戶"
+    },
+    "playground": {
+      "modality": "模態"
+    },
+    "subnav": {
+      "label": "分組"
+    },
+    "mainLabel": "主導覽"
   }
 }

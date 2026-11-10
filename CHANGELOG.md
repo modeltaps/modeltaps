@@ -151,6 +151,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Every panel page uses one sidebar. Under the brand, a one-line switcher shows the current space
+  (personal, the active organization, or platform admin for administrators) and switches between
+  them; platform admin is no longer a separate sidebar with a back row, and the user menu and the
+  workbench no longer carry their own admin entries. The workbench menu is dashboard, usage and
+  logs, then a Develop group (API keys, models, playground, docs) and, for organization owners and
+  admins, an Organization group (members and budgets, billing, organization settings). The five
+  API consoles are one Playground item with a modality switch on the page; analytics and per-user
+  statistics are one Statistics item with a tab switch. The seven platform settings themes,
+  personal settings and organization settings each get a section list on the left of the page
+  instead of sidebar entries. The bottom of the sidebar shows the balance, the account row (with
+  personal settings, appearance, language, docs and log out) and notifications. URLs are unchanged.
 - New brand mark: a solid, rounded drop with an off-centre round hole replaces the stroked
   lowercase m. The mark is square-ish and filled, so it holds its weight next to the wordmark in
   the sidebar and header and stays legible as a 16 px favicon. The favicon, PWA icons, Open Graph

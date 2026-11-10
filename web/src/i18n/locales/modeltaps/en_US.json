@@ -679,7 +679,13 @@
     "api_compare": "Run several chat models side by side on the same input",
     "pricing": "Model catalog, prices, channels and vendors",
     "routing_policy": "Virtual models that pick a target model from the first message of each session",
-    "channel": "Grouped by provider; a channel is one set of credentials and an address for that provider"
+    "channel": "Grouped by provider; a channel is one set of credentials and an address for that provider",
+    "org_members": "Invite members and set each member’s budget and model scope",
+    "org_settings": "Organization profile, retention and danger zone",
+    "organization": "Organization balance, usage and audit log",
+    "platform_settings": "Platform-wide defaults and switches",
+    "personal_settings": "Applies to your own account only",
+    "token": "Keys for calling the API"
   },
   "api_compare": "Compare",
   "modelInfoPage": {
@@ -2205,5 +2211,75 @@
       "priorityTitle": "Priority of tag {{tag}}",
       "priorityHint": "Sets the same priority on every channel with this tag, across providers"
     }
+  },
+  "nav": {
+    "sections": {
+      "develop": "Develop",
+      "organization": "Organization",
+      "gateway": "Gateway",
+      "people": "Users",
+      "finance": "Finance",
+      "settings": "Settings"
+    },
+    "items": {
+      "dashboard": "Dashboard",
+      "usage": "Usage",
+      "log": "Logs",
+      "token": "API Keys",
+      "models": "Models",
+      "playground": "Playground",
+      "docs": "Docs",
+      "orgOverview": "Organization overview",
+      "orgMembers": "Members & budgets",
+      "billing": "Billing",
+      "orgSettings": "Organization settings",
+      "health": "System health",
+      "stats": "Statistics",
+      "channels": "Channels",
+      "catalog": "Model catalog",
+      "routing": "Auto routing",
+      "users": "Users",
+      "userGroups": "User groups",
+      "orgs": "Organizations",
+      "orders": "Orders",
+      "redemption": "Redemption codes",
+      "platformSettings": "Platform settings",
+      "personalSettings": "Personal settings"
+    },
+    "context": {
+      "personal": "Personal",
+      "admin": "Platform admin",
+      "switch": "Switch space",
+      "personalMark": "P",
+      "adminMark": "A",
+      "organizations": "Organizations",
+      "adminRole": "Admin",
+      "current": "Current"
+    },
+    "account": {
+      "menu": "Account menu",
+      "settings": "Personal settings",
+      "appearance": "Appearance",
+      "language": "Language",
+      "docs": "Docs & help",
+      "logout": "Log out"
+    },
+    "balance": {
+      "personal": "Balance",
+      "pool": "Organization balance",
+      "mine": "My balance"
+    },
+    "stats": {
+      "tabs": "Statistics view",
+      "platform": "Platform",
+      "byUser": "By user"
+    },
+    "playground": {
+      "modality": "Modality"
+    },
+    "subnav": {
+      "label": "Sections"
+    },
+    "mainLabel": "Main navigation"
   }
 }

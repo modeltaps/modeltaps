@@ -1,4 +1,7 @@
 import { Navigate, useParams, useSearchParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
+
+import SettingsLayout from '@/components/chrome/SettingsLayout';
 
 import { useIsAdmin, useIsRoot } from 'utils/common';
 import useHighlightTarget from 'hooks/useHighlightTarget';
@@ -13,8 +16,8 @@ import IntegrationsTheme from './themes/IntegrationsTheme';
 import OrganizationTheme from './themes/OrganizationTheme';
 
 // ==============================|| PANEL — SYSTEM SETTINGS (admin) ||============================== //
-// Seven theme pages, one per `/panel/setting/:section` route, each a single column
-// of cards (no in-page sub-nav — the admin sidebar is the only vertical nav).
+// Seven theme pages, one per `/panel/setting/:section` route, each a single column of
+// cards. The sidebar has one 平台设置 item; the themes are this page's in-page subnav.
 // Every option key maps 1:1 to the `/api/option/` API for functional parity.
 // The 13 legacy section ids and the older `?tab=` values redirect to their theme
 // with `?highlight=<card>` so old deep links land on the same card.
@@ -29,7 +32,7 @@ const THEME_COMPONENTS = {
   organization: OrganizationTheme
 };
 
-// 主题清单(id / 顺序 / 标签 / root 限定)来自 `./themeMeta`,管理侧边栏共用同一份。
+// Theme list (id / order / label / root-only) comes from `./themeMeta`.
 export const THEMES = THEME_META.map((theme) => ({ ...theme, Component: THEME_COMPONENTS[theme.id] }));
 
 const DEFAULT_THEME = THEMES[0].id;
@@ -67,6 +70,7 @@ const resolveLegacyTarget = (section, highlight) => {
 };
 
 export default function Setting() {
+  const { t } = useTranslation();
   const isAdmin = useIsAdmin();
   const isRoot = useIsRoot();
   const ctx = useOptionSettings();
@@ -95,10 +99,17 @@ export default function Setting() {
   }
 
   const Active = themes.find(({ id }) => id === section).Component;
+  const items = themes.map((theme) => ({
+    id: theme.id,
+    label: t(theme.labelKey, { defaultValue: theme.fallback }),
+    to: `/panel/setting/${theme.id}`
+  }));
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <Active ctx={ctx} />
-    </div>
+    <SettingsLayout label={t('nav.subnav.label')} items={items} activeId={section} className="max-w-7xl">
+      <div className="max-w-5xl">
+        <Active ctx={ctx} />
+      </div>
+    </SettingsLayout>
   );
 }

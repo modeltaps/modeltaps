@@ -678,7 +678,13 @@
     "api_compare": "複数のチャットモデルを並べ、同じ入力を同時に送信",
     "pricing": "モデルカタログ・価格・チャネル・ベンダー",
     "routing_policy": "各セッションの最初のメッセージから実際に応答するモデルを選ぶ仮想モデル",
-    "channel": "プロバイダーごとにまとめています。チャネルはプロバイダーに接続する認証情報とアドレスの組です"
+    "channel": "プロバイダーごとにまとめています。チャネルはプロバイダーに接続する認証情報とアドレスの組です",
+    "org_members": "メンバーを招待し、各メンバーの予算とモデル範囲を設定",
+    "org_settings": "組織のプロフィール、保存ポリシー、危険な操作",
+    "organization": "組織の残高、使用量、監査ログ",
+    "platform_settings": "プラットフォーム全体の既定値とスイッチ",
+    "personal_settings": "自分のアカウントにのみ適用",
+    "token": "API を呼び出すためのキー"
   },
   "api_compare": "比較",
   "modelInfoPage": {
@@ -2121,5 +2127,75 @@
       "priorityTitle": "タグ {{tag}} の優先度",
       "priorityHint": "このタグのすべてのチャネルに同じ優先度を設定します"
     }
+  },
+  "nav": {
+    "sections": {
+      "develop": "開発",
+      "organization": "組織",
+      "gateway": "ゲートウェイ",
+      "people": "ユーザー",
+      "finance": "財務",
+      "settings": "設定"
+    },
+    "items": {
+      "dashboard": "ダッシュボード",
+      "usage": "使用量",
+      "log": "ログ",
+      "token": "API キー",
+      "models": "モデル",
+      "playground": "プレイグラウンド",
+      "docs": "ドキュメント",
+      "orgOverview": "組織の概要",
+      "orgMembers": "メンバーと予算",
+      "billing": "請求",
+      "orgSettings": "組織の設定",
+      "health": "稼働状況",
+      "stats": "統計",
+      "channels": "チャネル",
+      "catalog": "モデルカタログ",
+      "routing": "自動ルーティング",
+      "users": "ユーザー",
+      "userGroups": "ユーザーグループ",
+      "orgs": "組織",
+      "orders": "注文",
+      "redemption": "引き換えコード",
+      "platformSettings": "プラットフォーム設定",
+      "personalSettings": "個人設定"
+    },
+    "context": {
+      "personal": "個人",
+      "admin": "プラットフォーム管理",
+      "switch": "スペースを切り替え",
+      "personalMark": "個",
+      "adminMark": "管",
+      "organizations": "組織",
+      "adminRole": "管理者",
+      "current": "現在"
+    },
+    "account": {
+      "menu": "アカウントメニュー",
+      "settings": "個人設定",
+      "appearance": "外観",
+      "language": "言語",
+      "docs": "ドキュメントとヘルプ",
+      "logout": "ログアウト"
+    },
+    "balance": {
+      "personal": "残高",
+      "pool": "組織の残高",
+      "mine": "自分の残高"
+    },
+    "stats": {
+      "tabs": "統計ビュー",
+      "platform": "プラットフォーム",
+      "byUser": "ユーザー別"
+    },
+    "playground": {
+      "modality": "モダリティ"
+    },
+    "subnav": {
+      "label": "セクション"
+    },
+    "mainLabel": "メインナビゲーション"
   }
 }

@@ -1,10 +1,9 @@
 import { Globe, LogIn, CreditCard, Route, ShieldCheck, Plug, Landmark } from 'lucide-react';
 
 // ==============================|| SYSTEM SETTINGS — THEME METADATA ||============================== //
-// The seven system-settings themes as plain metadata (no page components), so the
-// admin sidebar can list them without pulling the settings page into its chunk.
-// `Setting/index.jsx` attaches the page component for each id; the sidebar reads
-// `icon` / `labelKey` from here. Single source of truth for ids and order.
+// The seven system-settings themes as plain metadata (no page components).
+// `Setting/index.jsx` attaches the page component for each id and lists them in its
+// in-page subnav. Single source of truth for ids and order.
 
 export const THEME_META = [
   { id: 'site', icon: Globe, labelKey: 'setting_index.sectionNav.site', fallback: 'Site' },
