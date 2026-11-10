@@ -154,6 +154,12 @@ func initMemoryCache() {
 }
 
 func initSync() {
+	// Stored pauses: load them, keep them in step with other nodes, and end them when due.
+	if err := model.ReloadPauses(); err != nil {
+		logger.SysError("load supply pauses failed: " + err.Error())
+	}
+	go model.StartPauseSync(15 * time.Second)
+	go controller.StartPauseRecovery(15 * time.Second)
 	go controller.AutomaticallyUpdateChannels(viper.GetInt("channel.update_frequency"))
 	go controller.AutomaticallyTestChannels(viper.GetInt("channel.test_frequency"))
 	model.StartChannelMetricsFlusher()

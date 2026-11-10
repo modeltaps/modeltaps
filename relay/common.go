@@ -1010,7 +1010,20 @@ func quarantineModelNotFound(ctx context.Context, c *gin.Context, channel *model
 // 生产路径不等待它；测试在还原全局配置前 Wait()，避免与后台 goroutine 读取配置项形成数据竞争。
 var relayErrorNotifyWG sync.WaitGroup
 
+// WaitRelayErrorHandling waits for the background work failed attempts start (disable checks,
+// pause writes, notices). Tests call it before checking that work.
+func WaitRelayErrorHandling() {
+	relayErrorNotifyWG.Wait()
+}
+
 func notifyChannelRelayError(ctx context.Context, c *gin.Context, channel *model.Channel, apiErr *types.OpenAIErrorWithStatusCode) {
+	if config.PauseRulesEnabled {
+		c.Set(lastFailurePausedKey, applyPauseRules(ctx, c, channel, apiErr))
+		if apiErr != nil && apiErr.StatusCode == http.StatusTooManyRequests {
+			c.Set("upstream_seen_429", true)
+		}
+		return
+	}
 	// 必须在启动 goroutine 前同步从 c 取值：handler 返回后 c 会被 gin 回收复用，在 goroutine 里读 c 是数据竞争。
 	modelName := relayErrorModelName(c)
 	relayErrorNotifyWG.Add(1)

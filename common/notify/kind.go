@@ -22,12 +22,16 @@ const (
 	KindModelDrift       = "model_drift"
 	KindModelConsistency = "model_consistency"
 	KindCredential       = "credential"
+	KindSupplyPaused     = "supply_paused"
+	KindSupplyResumed    = "supply_resumed"
+	KindSupplyFailover   = "supply_failover"
 )
 
 // Kinds lists every notice kind, in the order the settings page shows them.
 var Kinds = []string{
 	KindChannelDisabled, KindChannelEnabled, KindChannelTest, KindLowBalance,
 	KindPriceChange, KindModelDrift, KindModelConsistency, KindCredential,
+	KindSupplyPaused, KindSupplyResumed, KindSupplyFailover,
 }
 
 // KindEnabled reports whether notices of this kind are sent.

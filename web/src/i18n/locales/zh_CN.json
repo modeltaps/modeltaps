@@ -2926,7 +2926,10 @@
         "price_change": "上游价格变动",
         "model_drift": "上游模型列表变化",
         "model_consistency": "模型元信息问题",
-        "credential": "渠道凭证问题"
+        "credential": "渠道凭证问题",
+        "supply_paused": "渠道或模型被暂停",
+        "supply_resumed": "暂停的渠道或模型已恢复",
+        "supply_failover": "请求切换到备用渠道"
       },
       "limit": {
         "label": "每类每小时最多条数",

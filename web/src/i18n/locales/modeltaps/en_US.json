@@ -1602,6 +1602,7 @@
     "model_supply_channel_not_found": "The channel does not exist",
     "model_supply_upstream_missing": "Enter the model name the channel should receive",
     "model_supply_exists": "This channel already supplies this model",
+    "supply_pause_seconds_invalid": "Enter how many seconds to pause, more than 0",
     "model_identifier_exists": "A model with this identifier already exists",
     "model_referenced_by_aliases": "This model is still used by aliases: {{aliases}}",
     "model_alias_self": "A model cannot be an alias of itself",

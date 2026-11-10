@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Pause rules for failing channels, on by default (`PauseRulesEnabled`). When a request fails,
+  the first matching rule decides what happens to the channel: an exhausted quota or balance
+  (402, `insufficient_quota`, `billing_not_active`, "credit balance is too low" and similar)
+  pauses the whole channel for 30 minutes, a rejected key or disabled account for an hour; a
+  rate limit cools the model down until the upstream's reset time, or for `RetryCooldownSeconds`;
+  a missing model is paused for `ModelNotFoundCooldownSeconds`; `RetryCooldownPerStatus` still
+  applies; and a 5xx pauses the model for 2 minutes on the third failure within a minute. The
+  request that hit the failure still moves to the next channel. Pauses of a minute or more are
+  stored and shared between nodes, and when one ends with a recovery test, the channel resumes
+  only if a test request passes; otherwise the pause doubles, up to 6 hours. A balance refresh
+  that finds money ends a quota pause early (refreshing a channel's balance by hand after a
+  top-up resumes it at once), and the scheduled balance refresh now pauses a channel with an
+  empty balance instead of disabling it. Admins get the new "channel or model paused", "paused
+  channel or model resumed" and "request switched to a backup channel" notices (the last at most
+  once an hour per model and channel). Rules can be replaced as JSON in `PauseRules`, and
+  `/api/supply_pause` lists, adds and removes pauses. With `PauseRulesEnabled` off, failures are
+  handled as before (automatic disabling, per-status cooldowns, model-not-found quarantine).
 - Channels are organized by provider. The channel page lists the providers that have channels
   on the left (with a dot when one needs attention and the channel count) and a search box that
   finds channels across providers by name, model, tag, key suffix or host. The selected provider

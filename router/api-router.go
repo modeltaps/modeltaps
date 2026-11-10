@@ -227,6 +227,14 @@ func SetApiRouter(router *gin.Engine) {
 			modelInfoRoute.DELETE("/:id", controller.DeleteModelInfo)
 		}
 
+		supplyPauseRoute := apiRouter.Group("/supply_pause")
+		supplyPauseRoute.Use(middleware.AdminAuth())
+		{
+			supplyPauseRoute.GET("/", controller.GetSupplyPauses)
+			supplyPauseRoute.POST("/", controller.CreateSupplyPause)
+			supplyPauseRoute.DELETE("/:id", controller.DeleteSupplyPause)
+		}
+
 		modelSupplyRoute := apiRouter.Group("/model_supply")
 		modelSupplyRoute.Use(middleware.AdminAuth())
 		{

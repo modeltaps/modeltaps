@@ -3,6 +3,7 @@ package relay
 import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/controller"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/metrics"
@@ -71,6 +72,7 @@ func Relay(c *gin.Context) {
 	}
 
 	channel := relay.getProvider().GetChannel()
+	firstChannel := channel
 	notifyChannelRelayError(c.Request.Context(), c, channel, apiErr)
 	relay_util.RecordRelayAttempt(c, channel.Id, apiErr)
 
@@ -173,6 +175,9 @@ func Relay(c *gin.Context) {
 			logger.LogInfo(c.Request.Context(), fmt.Sprintf("retry_success model=%s channel_id=%d attempt=%d/%d total_channels=%d",
 				modelName, channel.Id, attemptCount, actualRetryTimes, c.GetInt("total_channels_at_start")))
 			metrics.RecordProvider(c, 200)
+			if config.PauseRulesEnabled {
+				controller.NotifySupplyFailover(modelName, firstChannel, channel)
+			}
 			return
 		}
 
@@ -192,7 +197,8 @@ func Relay(c *gin.Context) {
 		}
 	}
 
-	if pendingCooldown && shouldCooldownFinalFailure(c, apiErr) {
+	// With pause rules on, this only records whether the rules paused the last channel.
+	if pendingCooldown && (config.PauseRulesEnabled || shouldCooldownFinalFailure(c, apiErr)) {
 		relay_util.MarkLastRelayAttemptCooldown(c, shouldCooldowns(c, channel, apiErr))
 	}
 
@@ -347,6 +353,11 @@ func shouldCooldownFinalFailure(c *gin.Context, apiErr *types.OpenAIErrorWithSta
 }
 
 func shouldCooldowns(c *gin.Context, channel *model.Channel, apiErr *types.OpenAIErrorWithStatusCode) bool {
+	if config.PauseRulesEnabled {
+		// The pause rules already ran for this failure in notifyChannelRelayError.
+		skipChannel(c, channel.Id)
+		return c.GetBool(lastFailurePausedKey)
+	}
 	modelName := RoutingModelName(c)
 	channelId := channel.Id
 	statusCode := apiErr.StatusCode
@@ -398,15 +409,19 @@ func shouldCooldowns(c *gin.Context, channel *model.Channel, apiErr *types.OpenA
 			channelId, modelName, statusCode, reason))
 	}
 
+	skipChannel(c, channelId)
+
+	return duration > 0
+}
+
+// skipChannel keeps the rest of this request away from a channel that failed it.
+func skipChannel(c *gin.Context, channelId int) {
 	skipChannelIds, ok := utils.GetGinValue[[]int](c, "skip_channel_ids")
 	if !ok {
 		skipChannelIds = make([]int, 0)
 	}
-
 	skipChannelIds = append(skipChannelIds, channelId)
 	c.Set("skip_channel_ids", skipChannelIds)
-
-	return duration > 0
 }
 
 // applies pre-mapping before setRequest to ensure modifications take effect

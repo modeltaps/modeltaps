@@ -176,6 +176,11 @@ func UpdateChannelBalance(c *gin.Context) {
 		})
 		return
 	}
+	// A manual refresh after a top-up ends the channel's quota pauses at once. An empty
+	// balance here only reports; the scheduled refresh pauses.
+	if balance > 0 {
+		handleBalanceForPauses(channel, balance)
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -201,8 +206,9 @@ func updateAllChannelsBalance() error {
 			}
 			continue
 		}
-		// err is nil & balance <= 0 means quota is used up
-		if balance <= 0 {
+		// With pause rules on, an empty balance pauses the channel and money ends the pause;
+		// otherwise an empty balance disables it as before.
+		if !handleBalanceForPauses(channel, balance) && balance <= 0 {
 			DisableChannel(channel.Id, channel.Name, "", "Insufficient balance", true)
 		}
 		time.Sleep(config.RequestInterval)

@@ -50,25 +50,48 @@ func TestRoutingModelName_PrecedenceAndFallback(t *testing.T) {
 // 否则 balancer 的 IsInCooldown 查不到，配了 model_mapping 的渠道冷却完全失效。
 func TestShouldCooldowns_RoutingModelKey(t *testing.T) {
 	prev := config.RetryCooldownSeconds
-	config.RetryCooldownSeconds = 60
-	defer func() { config.RetryCooldownSeconds = prev }()
+	prevRules := config.PauseRulesEnabled
+	defer func() {
+		config.RetryCooldownSeconds = prev
+		config.PauseRulesEnabled = prevRules
+	}()
 
 	const channelId = 9400
-	defer clearCooldown(channelId, rmRouting)
-	defer clearCooldown(channelId, rmMapped)
-
-	c := newMappedContext()
 	channel := &model.Channel{Id: channelId, Name: "ch", Type: config.ChannelTypeOpenAI}
+	check := func(t *testing.T) {
+		t.Helper()
+		if !model.ChannelGroup.IsInCooldown(channelId, rmRouting) {
+			t.Fatalf("expected cooldown keyed by routing model %q", rmRouting)
+		}
+		if model.ChannelGroup.IsInCooldown(channelId, rmMapped) {
+			t.Fatalf("cooldown must not be keyed by mapped model %q", rmMapped)
+		}
+	}
 
-	if !shouldCooldowns(c, channel, apiErr(http.StatusTooManyRequests, false)) {
-		t.Fatal("expected cooldown to be applied for 429")
-	}
-	if !model.ChannelGroup.IsInCooldown(channelId, rmRouting) {
-		t.Fatalf("expected cooldown keyed by routing model %q", rmRouting)
-	}
-	if model.ChannelGroup.IsInCooldown(channelId, rmMapped) {
-		t.Fatalf("cooldown must not be keyed by mapped model %q", rmMapped)
-	}
+	t.Run("pause rules off", func(t *testing.T) {
+		defer clearCooldown(channelId, rmRouting)
+		defer clearCooldown(channelId, rmMapped)
+		config.PauseRulesEnabled = false
+		config.RetryCooldownSeconds = 60
+		if !shouldCooldowns(newMappedContext(), channel, apiErr(http.StatusTooManyRequests, false)) {
+			t.Fatal("expected cooldown to be applied for 429")
+		}
+		check(t)
+	})
+
+	t.Run("pause rules on", func(t *testing.T) {
+		defer clearCooldown(channelId, rmRouting)
+		defer clearCooldown(channelId, rmMapped)
+		config.PauseRulesEnabled = true
+		// Under a minute, so the rule cools down in memory and nothing is written.
+		config.RetryCooldownSeconds = 30
+		c := newMappedContext()
+		notifyChannelRelayError(c.Request.Context(), c, channel, apiErr(http.StatusTooManyRequests, false))
+		if !shouldCooldowns(c, channel, apiErr(http.StatusTooManyRequests, false)) {
+			t.Fatal("expected the rules to report the cooldown")
+		}
+		check(t)
+	})
 }
 
 // withRuleFixture 装配一个 group "g" 下配置了 rmRouting 的渠道集合，并在用例结束后还原。
