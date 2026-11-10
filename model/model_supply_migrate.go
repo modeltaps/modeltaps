@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"slices"
 	"sort"
 	"strings"
@@ -21,7 +22,11 @@ type SupplyMigrationReport struct {
 	SuppliesExisting int            `json:"supplies_existing"`
 	Supplies         []*ModelSupply `json:"supplies"`
 	// NewModels are names channels list without a catalog row; they get a published row.
-	NewModels     []string             `json:"new_models"`
+	NewModels []string `json:"new_models"`
+	// NewAliases are names channels list without a catalog row that the seed or the name without
+	// its "vendor/" prefix identifies as a public model: that model is supplied instead, and the
+	// name becomes its alias so requests for it keep working.
+	NewAliases    []SupplyNewAlias     `json:"new_aliases"`
 	StatusChanges []SupplyStatusChange `json:"status_changes"`
 	// PriceCopies give a public model the price of the upstream name it was billed by.
 	PriceCopies    []SupplyPriceCopy     `json:"price_copies"`
@@ -38,6 +43,13 @@ type SupplyMigrationReport struct {
 	SkippedEntries      []SupplyEntryNote   `json:"skipped_entries"`
 	PolicyGaps          []SupplyPolicyGap   `json:"policy_gaps"`
 	RoutingDifferences  []SupplyRoutingDiff `json:"routing_differences"`
+}
+
+type SupplyNewAlias struct {
+	Alias string `json:"alias"`
+	Model string `json:"model"`
+	// Source is how the model was found: "seed" or "bare" (see CanonicalSourceSeed).
+	Source string `json:"source"`
 }
 
 type SupplyStatusChange struct {
@@ -109,10 +121,13 @@ type supplyMigrationInput struct {
 	prices   []*Price
 	existing []*ModelSupply
 	policies []*RoutingPolicy
+	// seed is the curated catalog seed; nil when it does not load.
+	seed *CatalogSeed
 }
 
 type supplyMigrationPlan struct {
 	newInfos      []*ModelInfo
+	newAliases    []*ModelInfo
 	statusUpdates map[int]string
 	priceCopies   []*Price
 	supplies      []*ModelSupply
@@ -218,6 +233,33 @@ func planSupplyMigration(in supplyMigrationInput) (*supplyMigrationPlan, *Supply
 	}
 	prices := newPriceIndex(in.prices)
 
+	// A name with a catalog row resolves through the catalog only: a non-alias row is a public
+	// model of its own (catalog sync creates rows such as "xai/grok-4"), and turning it into an
+	// alias is the seed's job. A name without a row may still be a public model under another
+	// name, which the seed or the name without its vendor prefix tells; it becomes an alias.
+	resolver := newCanonicalResolver(in.infos, in.seed)
+	newAliases := map[string]SupplyNewAlias{}
+	publicName := func(name string, record bool) string {
+		if byModel[name] != nil {
+			return resolveCanonicalIn(byModel, name)
+		}
+		if alias, ok := newAliases[name]; ok {
+			return alias.Model
+		}
+		match := resolver.Resolve(name)
+		if match.Source == CanonicalSourceNone || match.Canonical == name {
+			return name
+		}
+		canonical := resolveCanonicalIn(byModel, match.Canonical)
+		if info := byModel[canonical]; canonical == name || (info != nil && info.Kind != "") {
+			return name
+		}
+		if record {
+			newAliases[name] = SupplyNewAlias{Alias: name, Model: canonical, Source: match.Source}
+		}
+		return canonical
+	}
+
 	channels := slices.Clone(in.channels)
 	sort.Slice(channels, func(i, j int) bool { return channels[i].Id < channels[j].Id })
 
@@ -228,7 +270,7 @@ func planSupplyMigration(in supplyMigrationInput) (*supplyMigrationPlan, *Supply
 
 	planned := map[supplyKey]*plannedSupply{}
 	consider := func(channel *Channel, entry, name, upstream string, plus bool, rank int) {
-		canonical := resolveCanonicalIn(byModel, name)
+		canonical := publicName(name, true)
 		if info := byModel[canonical]; info != nil && info.Kind != "" {
 			report.SkippedEntries = append(report.SkippedEntries, SupplyEntryNote{channel.Id, entry, "names a routing policy, not a model"})
 			return
@@ -332,6 +374,17 @@ func planSupplyMigration(in supplyMigrationInput) (*supplyMigrationPlan, *Supply
 	report.Supplies = plan.supplies
 	report.SuppliesPlanned = len(plan.supplies)
 	report.SuppliesExisting = len(in.existing)
+
+	// The catalog after the migration: new aliases resolve to their public model.
+	after := maps.Clone(byModel)
+	aliasNames := slices.Sorted(maps.Keys(newAliases))
+	for _, name := range aliasNames {
+		alias := newAliases[name]
+		row := &ModelInfo{Model: name, Name: name, AliasOf: alias.Model, Source: ModelInfoSourceMigrated}
+		plan.newAliases = append(plan.newAliases, row)
+		report.NewAliases = append(report.NewAliases, alias)
+		after[name] = row
+	}
 
 	// Every supply, existing or planned, grouped by public model in a stable order.
 	all := slices.Clone(in.existing)
@@ -441,7 +494,7 @@ func planSupplyMigration(in supplyMigrationInput) (*supplyMigrationPlan, *Supply
 			if name == "" {
 				return
 			}
-			canonical := resolveCanonicalIn(byModel, name)
+			canonical := publicName(name, false)
 			if len(byPublic[canonical]) == 0 {
 				report.PolicyGaps = append(report.PolicyGaps, SupplyPolicyGap{policy.Name, role, canonical})
 			}
@@ -453,7 +506,7 @@ func planSupplyMigration(in supplyMigrationInput) (*supplyMigrationPlan, *Supply
 		}
 	}
 
-	report.RoutingDifferences = compareSupplyRouting(channels, byModel, all)
+	report.RoutingDifferences = compareSupplyRouting(channels, after, all)
 	return plan, report
 }
 
@@ -632,6 +685,9 @@ func MigrateChannelsToSupplies(dryRun bool) (*SupplyMigrationReport, error) {
 	if in.policies, err = GetRoutingPolicies(); err != nil {
 		return nil, err
 	}
+	if seed, err := LoadCatalogSeed(); err == nil {
+		in.seed = seed
+	}
 
 	plan, report := planSupplyMigration(in)
 	report.DryRun = dryRun
@@ -641,6 +697,11 @@ func MigrateChannelsToSupplies(dryRun bool) (*SupplyMigrationReport, error) {
 
 	err = DB.Transaction(func(tx *gorm.DB) error {
 		for _, info := range plan.newInfos {
+			if err := tx.Create(info).Error; err != nil {
+				return err
+			}
+		}
+		for _, info := range plan.newAliases {
 			if err := tx.Create(info).Error; err != nil {
 				return err
 			}

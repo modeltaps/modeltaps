@@ -24,3 +24,42 @@ func TestMappingTargetFor(t *testing.T) {
 		}
 	}
 }
+
+// Billing an upstream alias without its own price uses the canonical model's price; an alias with
+// its own price, a non-alias and an alias whose canonical is unpriced are unchanged.
+func TestGetBillingPriceFallsBackToCanonical(t *testing.T) {
+	setupModelInfoTestDB(t)
+	for _, info := range []*ModelInfo{
+		{Model: "claude-opus-5"},
+		{Model: "anthropic/claude-opus-5", AliasOf: "claude-opus-5"},
+		{Model: "vendor/opus-own-price", AliasOf: "claude-opus-5"},
+		{Model: "gpt-unpriced"},
+		{Model: "openai/gpt-unpriced", AliasOf: "gpt-unpriced"},
+	} {
+		if err := DB.Create(info).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	oldPricing := PricingInstance
+	PricingInstance = &Pricing{Prices: map[string]*Price{
+		"claude-opus-5":         {Model: "claude-opus-5", Type: TokensPriceType, Input: 5, Output: 25},
+		"vendor/opus-own-price": {Model: "vendor/opus-own-price", Type: TokensPriceType, Input: 1, Output: 2},
+	}}
+	t.Cleanup(func() { PricingInstance = oldPricing })
+
+	if got := PricingInstance.GetBillingPrice("anthropic/claude-opus-5"); got.Unconfigured || got.Input != 5 || got.Output != 25 {
+		t.Fatalf("alias without price = %+v, want the canonical price", got)
+	}
+	if got := PricingInstance.GetBillingPrice("vendor/opus-own-price"); got.Input != 1 {
+		t.Fatalf("alias with its own price = %+v", got)
+	}
+	for _, name := range []string{"openai/gpt-unpriced", "not-in-catalog"} {
+		if got := PricingInstance.GetBillingPrice(name); !got.Unconfigured {
+			t.Fatalf("%s = %+v, want unconfigured", name, got)
+		}
+	}
+	// Display lookups keep their old behaviour.
+	if got := PricingInstance.GetPrice("anthropic/claude-opus-5"); !got.Unconfigured {
+		t.Fatalf("GetPrice must not fall back: %+v", got)
+	}
+}

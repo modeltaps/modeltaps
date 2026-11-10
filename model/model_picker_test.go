@@ -191,3 +191,36 @@ func TestModelChannelCounts(t *testing.T) {
 		t.Errorf("counts = %v", counts)
 	}
 }
+
+// Each picker row carries the canonical name to publish it under, so the picker can write the
+// canonical name into models and map it back to the upstream name.
+func TestBuildModelPickerCanonical(t *testing.T) {
+	setupModelInfoTestDB(t)
+	for _, info := range []*ModelInfo{
+		{Model: "claude-opus-5-5"},
+		{Model: "anthropic/claude-opus-5-5", AliasOf: "claude-opus-5-5"},
+		{Model: "acme-chat-7"},
+	} {
+		if err := DB.Create(info).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	result, err := BuildModelPicker([]string{"anthropic/claude-opus-5-5", "acme/ACME-chat-7", "openai/gpt-6-astra", "claude-opus-5-5", "acme/unknown-1"}, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := pickerByModel(result)
+	want := map[string]CanonicalMatch{
+		"anthropic/claude-opus-5-5": {"claude-opus-5-5", CanonicalSourceAlias},
+		"acme/ACME-chat-7":          {"acme-chat-7", CanonicalSourceBare},
+		// Listed as an alias in the built-in seed even before apply_seed creates the row.
+		"openai/gpt-6-astra": {"gpt-6-astra", CanonicalSourceSeed},
+		"claude-opus-5-5":    {"claude-opus-5-5", CanonicalSourceNone},
+		"acme/unknown-1":     {"acme/unknown-1", CanonicalSourceNone},
+	}
+	for name, match := range want {
+		if got[name].CanonicalMatch != match {
+			t.Errorf("%s: canonical = %+v, want %+v", name, got[name].CanonicalMatch, match)
+		}
+	}
+}

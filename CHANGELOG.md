@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The supply migration (`POST /api/model_supply/migrate`) recognises a public model listed
+  under another name. A channel model without a catalog row that the curated seed lists as an
+  alias, or whose name without its `vendor/` prefix is a public model (for example
+  `anthropic/claude-opus-5` for `claude-opus-5`), is supplied under that public model, and the
+  listed name becomes its alias so requests for it keep working. The report lists these in
+  `new_aliases`. Names that have a catalog row of their own, such as the vendor-prefixed rows
+  catalog sync creates, are left as they are.
+- The channel model picker list (`provider_models_list?detail=1`) returns, for each upstream
+  model, the canonical name to publish it under (`canonical`) and how it was found
+  (`canonical_source`: a catalog alias, a seed alias, or the name without its `vendor/` prefix;
+  empty when there is none).
 - Console endpoints for the model supply pages. `GET /api/model_supply/preview?model=&group=`
   shows in which order a request for a public model would try its supplies, tier by tier, with
   each supply's state (available, paused until, waiting for its recovery test, cooling down,
@@ -217,6 +228,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Applying the catalog seed on a fresh install changed nothing for aliases, because it only
+  marked alias rows that already existed. It now creates the missing alias rows (reported as
+  `created_aliases`, replacing `missing_aliases`), so channels that list those upstream names get
+  the canonical name and mapping in the same run.
+- A request billed under an upstream alias that has no price of its own (the usual case after a
+  channel maps `claude-opus-5` to `anthropic/claude-opus-5`) was rejected as unpriced. Billing now
+  falls back to the canonical model's price, as the catalog already promised for aliases; an alias
+  with its own price keeps it.
 - Saving a channel no longer resets its last test time, response time and creation time; the
   form does not carry them, and the full-row update wrote them back as zero.
 - Channels that list a wildcard model such as `gpt-4o*` now send the requested model upstream
