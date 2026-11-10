@@ -9,22 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Channel pages: every channel has its own page at `/panel/channel/<id>`, laid out as one
-  document. The header carries the name, status and `#id · provider · host`; a row of figures
-  shows the gateway spend, upstream balance or subscription windows, requests and success rate
-  over 24 hours or 7 days, and prompt cache hit and session affinity rates. Below are sections
-  that read first and edit in place: models (each with its requests, success rate, latency,
-  first token time and output speed), traffic (hourly chart, last test), key and quota (the
-  OpenRouter quota snapshot, low balance alert, key replacement), routing and forwarding
-  (groups, priority, weight, base URL, proxy, test model) and model drift (check, dismiss, rules).
-  Request rewriting, compatibility options and plugins stay in the full form under All settings,
-  which keeps its section nav, unsaved-changes save bar and leave warning. New channels are
-  created at `/panel/channel/new`; a single new channel opens its page after saving.
-  `POST /api/channel/` now returns the created ids.
-- The channel list links names to the channel page, folds the enable switch into the status
-  column (auto-disabled channels say so next to it) and keeps only the gateway spend; the
-  upstream balance moved to the channel page. Links from the model catalog and logs, and old
-  `?channel_id=` links, open the channel page.
+- Channels are organized by provider. The channel page lists the providers that have channels
+  on the left (with a dot when one needs attention and the channel count) and a search box that
+  finds channels across providers by name, model, tag, key suffix or host. The selected provider
+  shows what needs attention (auto-disabled channels, missing keys, low balance, upstream model
+  drift), one traffic chart with a line per channel over 24 hours, 7 days or 30 days, and the
+  channel table with priority and weight, requests, success rate, average latency, balance or
+  subscription usage and an enable switch. The table filters by status and tag, selects rows for
+  batch enable, disable, test, group, priority and weight changes and delete, and offers
+  tag-wide actions when a tag is picked.
+- Clicking a channel opens a side panel whose tabs save on their own: models (per-model
+  requests, success rate, latency and first token time; model list and mapping), connection
+  (base URL, proxy, masked key and replacement, OAuth account, subscription windows), groups
+  and routing (groups, and the channel's place next to the other channels of the same provider:
+  backup, share or first, with the priority and weight that saves), request rewriting, monitoring
+  (test model, balance alert, drift) and advanced fields. `/panel/channel/<id>` opens the panel
+  directly; older `?view=settings`, `?tab=config` and `?channel_id=` links land on it.
+- New channels are created in a side sheet: provider, name, allowed models (all by default, or a
+  list with `*` prefix wildcards), blocked models (removed from the list and added to the drift
+  ignore rules so they are not added back), model mapping, the provider's auth method and key
+  with a link to where the provider issues keys, groups and usage. Test checks the connection
+  before saving; Save and test creates the channel and then tests it. Several keys, one per
+  line, create one channel each. `/panel/channel/new` opens the sheet. `POST /api/channel/` now
+  returns the created ids.
 - Organization routing policies (backend): with the new site option
   `OrganizationRoutingPolicyEnabled` (off by default), organization owners and admins manage
   routing policies that only their organization's API keys can use, through
