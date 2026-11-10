@@ -49,15 +49,16 @@ export function ModelStatusPill({ status, className }) {
 
 ModelStatusPill.propTypes = { status: PropTypes.string, className: PropTypes.string };
 
-const STATE_TONES = { ok: 'ok', paused: 'warn', probing: 'warn', disabled: 'off', channel_off: 'bad' };
+const STATE_TONES = { ok: 'ok', paused: 'warn', probing: 'warn', cooling: 'warn', disabled: 'off', channel_off: 'bad' };
 
-// State of one supply (see supplyState). Pauses show until when, and the rule and upstream
-// error on hover.
+// State of one supply (see supplyState and previewEntryState). Pauses and cool-downs show until
+// when; pauses show the rule and upstream error on hover.
 export function SupplyStateLabel({ state }) {
   const { t } = useTranslation();
   const { kind, pause } = state;
   let text = t(`modelSupply.state.${kind}`);
   if (kind === 'paused') text = t('modelSupply.state.pausedUntil', { time: formatUntil(pause.until) });
+  if (kind === 'cooling' && state.until) text = t('modelSupply.state.coolingUntil', { time: formatUntil(state.until) });
   const label = (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[13px]">
       <StateDot tone={STATE_TONES[kind]} />
@@ -65,6 +66,7 @@ export function SupplyStateLabel({ state }) {
       {pause && !pause.model && <span className="text-muted-foreground">· {t('modelSupply.state.wholeChannel')}</span>}
     </span>
   );
+  if (kind === 'cooling') return <TooltipLabel label={label} lines={[t('modelSupply.state.coolingHint')]} />;
   if (!pause) return label;
   return (
     <TooltipProvider delayDuration={150}>
@@ -83,6 +85,25 @@ export function SupplyStateLabel({ state }) {
 }
 
 SupplyStateLabel.propTypes = { state: PropTypes.object.isRequired };
+
+function TooltipLabel({ label, lines }) {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="cursor-default">{label}</span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs space-y-1 text-xs">
+          {lines.map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+TooltipLabel.propTypes = { label: PropTypes.node.isRequired, lines: PropTypes.arrayOf(PropTypes.string).isRequired };
 
 const KNOWN_RULES = ['quota', 'credential', 'model_not_found', 'upstream_failure', 'manual'];
 
@@ -110,10 +131,12 @@ export function useSupplySwitches() {
   return isRoot ? switches : null;
 }
 
-// Shown while supplies are configured but do not route yet.
-export function SupplySwitchNote({ switches, className }) {
+// Shown while supplies are configured but do not route yet: `active` comes from the preview
+// (any admin), the switches from the options (root only).
+export function SupplySwitchNote({ switches, active, className }) {
   const { t } = useTranslation();
-  if (!switches || switches.supplyEnabled) return null;
+  const off = active === undefined ? switches && !switches.supplyEnabled : !active;
+  if (!off) return null;
   return (
     <p className={cn('flex items-start gap-2 rounded-[10px] bg-muted px-3 py-2 text-[13px] text-muted-foreground', className)}>
       <Info className="mt-0.5 size-3.5 shrink-0" />
@@ -122,4 +145,4 @@ export function SupplySwitchNote({ switches, className }) {
   );
 }
 
-SupplySwitchNote.propTypes = { switches: PropTypes.object, className: PropTypes.string };
+SupplySwitchNote.propTypes = { switches: PropTypes.object, active: PropTypes.bool, className: PropTypes.string };

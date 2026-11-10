@@ -2271,7 +2271,10 @@
       "probing": "等待恢復測試",
       "disabled": "已停用",
       "channel_off": "渠道已停用",
-      "wholeChannel": "整個渠道"
+      "wholeChannel": "整個渠道",
+      "cooling": "冷卻中",
+      "coolingUntil": "冷卻到 {{time}}",
+      "coolingHint": "出錯（如普通限流）後的短暫冷卻，只記在記憶體中，且只反映回應本頁的那台伺服器。"
     },
     "pause": {
       "rule": "規則：{{rule}}",
@@ -2313,6 +2316,20 @@
       "probe": "恢復前先測試",
       "probes_other": "測試失敗 {{count}} 次",
       "rulesOff": "暫停規則已關閉：出錯時回到舊的自動停用與冷卻。已列出的暫停仍會按時結束。"
+    },
+    "channelGroups": "分組：{{groups}}",
+    "preview": {
+      "label": "請求預覽",
+      "group": "請求所屬分組",
+      "anyGroup": "任意分組",
+      "first": "下一個請求會發往 {{channel}}",
+      "split_other": "下一個請求會按佔比發往 {{count}} 個供應之一",
+      "none": "現在沒有可接請求的供應",
+      "outside_other": "{{count}} 個供應不在分組 {{group}} 中",
+      "outsideRow": "不在分組 {{group}} 中",
+      "notActive": "按供應路由開啟後才生效",
+      "next": "下一個",
+      "servingTier": "正在接請求"
     }
   },
   "settingsUi": {

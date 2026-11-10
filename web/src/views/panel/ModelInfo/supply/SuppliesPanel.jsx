@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Combobox } from '@/components/ui/combobox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/sonner';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -21,19 +22,30 @@ import {
 } from '@/components/ui/dropdown-menu';
 import ProviderIcon from '@/components/brand/ProviderIcon';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
-import { createSupply, deleteSupply, listPauses, listSupplies, pauseSupply, resumePause, updateSupply } from './supplyApi';
+import {
+  createSupply,
+  deleteSupply,
+  listPauses,
+  listUserGroups,
+  pauseSupply,
+  previewSupplies,
+  resumePause,
+  updateSupply
+} from './supplyApi';
 import {
   PAUSE_DURATIONS,
   SUPPLY_MODES,
+  channelGroups,
   defaultNewPriority,
-  groupTiers,
   moveSupply,
   normalizeSupplyMode,
   parseSupplyForm,
+  previewEntryState,
+  previewOutcome,
+  previewShares,
+  previewSupplyList,
   supplyCandidates,
-  supplyState,
   supplyUpdateBody,
-  tierShares,
   upstreamFor
 } from './supplyHelpers';
 import { SupplyStateLabel, SupplySwitchNote, durationLabel } from './supplyParts';
@@ -213,10 +225,74 @@ AddSupplyForm.propTypes = {
   onAdded: PropTypes.func.isRequired
 };
 
-function SupplyRow({ supply, state, share, canMoveUp, canMoveDown, busy, onAction }) {
+const groupLabel = (g) => (g.name && g.name !== g.symbol ? `${g.name} (${g.symbol})` : g.symbol);
+
+// Which supply a request from a user group would try first, from the preview API. An empty
+// group previews a request from any group.
+function RequestPreview({ groups, group, onGroupChange, preview }) {
+  const { t } = useTranslation();
+  let summary = null;
+  if (preview) {
+    const outcome = previewOutcome(preview);
+    if (outcome.kind === 'first') {
+      const { supply } = outcome;
+      summary = t('modelSupply.preview.first', { channel: supply.channel_name || `#${supply.channel_id}` });
+    } else if (outcome.kind === 'split') {
+      summary = t('modelSupply.preview.split', { count: outcome.count });
+    } else {
+      summary = t('modelSupply.preview.none');
+    }
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[10px] bg-muted/40 px-3 py-2" data-testid="request-preview">
+      <span className="text-[13px] text-muted-foreground">{t('modelSupply.preview.label')}</span>
+      {groups.length > 0 && (
+        <div className="w-48">
+          <Select value={group} onValueChange={onGroupChange}>
+            <SelectTrigger className="h-8 rounded-lg text-[13px]" aria-label={t('modelSupply.preview.group')}>
+              <SelectValue placeholder={t('modelSupply.preview.anyGroup')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">{t('modelSupply.preview.anyGroup')}</SelectItem>
+              {groups.map((g) => (
+                <SelectItem key={g.symbol} value={g.symbol}>
+                  {groupLabel(g)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      <p className="min-w-0 flex-1 text-[13px]" aria-live="polite">
+        {preview ? (
+          <>
+            {summary}
+            {group && preview.outside_group > 0 && (
+              <span className="text-muted-foreground"> · {t('modelSupply.preview.outside', { count: preview.outside_group, group })}</span>
+            )}
+            {preview.active === false && <span className="text-muted-foreground"> · {t('modelSupply.preview.notActive')}</span>}
+          </>
+        ) : (
+          <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+        )}
+      </p>
+    </div>
+  );
+}
+
+RequestPreview.propTypes = {
+  groups: PropTypes.array.isRequired,
+  group: PropTypes.string.isRequired,
+  onGroupChange: PropTypes.func.isRequired,
+  preview: PropTypes.object
+};
+
+function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMoveDown, busy, onAction }) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState(null);
   const offline = state.kind === 'channel_off' || state.kind === 'disabled';
+  const groups = channelGroups(supply);
+  const groupsText = groups.length > 0 ? t('modelSupply.channelGroups', { groups: groups.join(', ') }) : '';
 
   const save = async () => {
     const parsed = parseSupplyForm(editing);
@@ -234,6 +310,11 @@ function SupplyRow({ supply, state, share, canMoveUp, canMoveDown, busy, onActio
           <span className={cn('truncate', offline && 'text-muted-foreground')} title={supply.channel_name}>
             {supply.channel_name || t('modelSupply.channelDeleted', { id: supply.channel_id })}
           </span>
+          {next && (
+            <span className="shrink-0 rounded-md bg-muted px-1.5 text-xs leading-5 text-muted-foreground">
+              {t('modelSupply.preview.next')}
+            </span>
+          )}
           {supply.channel_name && (
             <Link
               to={`/panel/channel/${supply.channel_id}`}
@@ -244,8 +325,10 @@ function SupplyRow({ supply, state, share, canMoveUp, canMoveDown, busy, onActio
             </Link>
           )}
         </div>
-        <p className="truncate text-xs text-muted-foreground">
-          {[channelTypeName(supply.channel_type), supply.channel_tag].filter(Boolean).join(' · ')}
+        <p className="truncate text-xs text-muted-foreground" title={groupsText || undefined}>
+          {outsideGroup
+            ? t('modelSupply.preview.outsideRow', { group: outsideGroup })
+            : [channelTypeName(supply.channel_type), supply.channel_tag, groupsText].filter(Boolean).join(' · ')}
         </p>
       </div>
     </div>
@@ -293,7 +376,13 @@ function SupplyRow({ supply, state, share, canMoveUp, canMoveDown, busy, onActio
 
   const pauses = state.pauses || [];
   return (
-    <tr data-testid="supply-row" className="[&>td]:h-12 [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0">
+    <tr
+      data-testid="supply-row"
+      className={cn(
+        '[&>td]:h-12 [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0',
+        outsideGroup && '[&>td:not(:last-child)]:opacity-50'
+      )}
+    >
       <td>{channelCell}</td>
       <td className="max-w-0 truncate font-mono text-[13px] text-muted-foreground" title={supply.upstream_model}>
         {supply.upstream_model}
@@ -376,6 +465,8 @@ SupplyRow.propTypes = {
   supply: PropTypes.object.isRequired,
   state: PropTypes.object.isRequired,
   share: PropTypes.number,
+  next: PropTypes.bool,
+  outsideGroup: PropTypes.string,
   canMoveUp: PropTypes.bool,
   canMoveDown: PropTypes.bool,
   busy: PropTypes.bool,
@@ -386,39 +477,76 @@ SupplyRow.propTypes = {
 // Every change is saved right away; the supply mode switch saves the model row.
 export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, channels = [], switches = null, onChanged }) {
   const { t } = useTranslation();
-  const [supplies, setSupplies] = useState(null);
+  // `preview` is every supply in order with its state; `groupPreview` the same for a request
+  // from `group` only. Both come from the preview API.
+  const [preview, setPreview] = useState(null);
+  const [groupPreview, setGroupPreview] = useState(null);
   const [pauses, setPauses] = useState([]);
-  const [now, setNow] = useState(0);
+  const [groups, setGroups] = useState([]);
+  const [group, setGroup] = useState('');
   const [adding, setAdding] = useState(false);
   const [busyId, setBusyId] = useState(0);
   const [modeSaving, setModeSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const mode = normalizeSupplyMode(supplyMode);
 
+  const requestId = useRef(0);
   const load = useCallback(async () => {
+    const id = ++requestId.current;
     try {
-      const [s, p] = await Promise.all([listSupplies({ model }), listPauses()]);
-      setSupplies(s.success ? s.data || [] : []);
+      const [s, p, g] = await Promise.all([
+        previewSupplies({ model }),
+        listPauses(),
+        group ? previewSupplies({ model, group }).catch(() => null) : null
+      ]);
+      if (id !== requestId.current) return;
+      setPreview(s.success ? s.data || { tiers: [] } : { tiers: [] });
       setPauses(p.success ? p.data || [] : []);
-      setNow(Math.floor(Date.now() / 1000));
+      setGroupPreview(g?.success ? g.data : null);
       if (!s.success) toast.error(s.message);
+      else if (g && !g.success) toast.error(g.message);
     } catch {
-      setSupplies([]);
+      if (id === requestId.current) setPreview({ tiers: [] });
     }
+  }, [model, group]);
+
+  useEffect(() => {
+    setPreview(null);
+    setGroupPreview(null);
+    setGroup('');
+    setAdding(false);
   }, [model]);
 
   useEffect(() => {
-    setSupplies(null);
-    setAdding(false);
+    listUserGroups().then(setGroups);
+  }, []);
+
+  // The mode changes the shares, so the preview is read again with it.
+  useEffect(() => {
     load();
-  }, [load]);
+  }, [load, mode]);
+
+  const changeGroup = (next) => {
+    setGroupPreview(null);
+    setGroup(next);
+  };
 
   const reload = async () => {
     await load();
     onChanged?.();
   };
 
-  const tiers = useMemo(() => groupTiers(supplies || []), [supplies]);
+  const supplies = useMemo(() => (preview ? previewSupplyList(preview) : null), [preview]);
+  const tiers = preview?.tiers || [];
+  // What a request from the chosen group (or any group) does: its shares, its first choice and
+  // the supplies it leaves out.
+  const view = group ? groupPreview : preview;
+  const serving = useMemo(() => previewShares(view), [view]);
+  const showShares = Object.keys(serving.shares).length > 1;
+  const inGroup = useMemo(
+    () => (group && groupPreview ? new Set(previewSupplyList(groupPreview).map((s) => s.id)) : null),
+    [group, groupPreview]
+  );
 
   const run = async (id, fn) => {
     setBusyId(id);
@@ -504,7 +632,9 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
       </div>
       <p className="-mt-2 text-xs text-muted-foreground">{t(`modelSupply.mode.${mode}Hint`)}</p>
 
-      <SupplySwitchNote switches={switches} />
+      <SupplySwitchNote switches={switches} active={preview?.active} />
+
+      {supplies && supplies.length > 0 && <RequestPreview groups={groups} group={group} onGroupChange={changeGroup} preview={view} />}
 
       {adding && supplies && (
         <AddSupplyForm
@@ -551,35 +681,36 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
                 </th>
               </tr>
             </thead>
-            {tiers.map((tier, index) => {
-              const shares = tierShares(tier, mode);
-              return (
-                <tbody key={tier.priority}>
-                  <tr>
-                    <td colSpan={5} className="border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
-                      <span className="text-foreground">{tierLabel(index)}</span>
-                      <span className="ml-2 tabular-nums">{t('modelSupply.tier.priority', { priority: tier.priority })}</span>
-                    </td>
-                  </tr>
-                  {tier.supplies.map((supply) => {
-                    const up = moveSupply(supplies, supply.id, 'up').length > 0;
-                    const down = moveSupply(supplies, supply.id, 'down').length > 0;
-                    return (
-                      <SupplyRow
-                        key={supply.id}
-                        supply={supply}
-                        state={supplyState(supply, pauses, now)}
-                        share={tier.supplies.length > 1 ? (shares[supply.id] ?? 0) : undefined}
-                        canMoveUp={up}
-                        canMoveDown={down}
-                        busy={busyId === supply.id}
-                        onAction={onAction}
-                      />
-                    );
-                  })}
-                </tbody>
-              );
-            })}
+            {tiers.map((tier, index) => (
+              <tbody key={tier.priority}>
+                <tr>
+                  <td colSpan={5} className="border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
+                    <span className="text-foreground">{tierLabel(index)}</span>
+                    <span className="ml-2 tabular-nums">{t('modelSupply.tier.priority', { priority: tier.priority })}</span>
+                    {view && serving.priority === tier.priority && <span> · {t('modelSupply.preview.servingTier')}</span>}
+                  </td>
+                </tr>
+                {tier.supplies.map((supply) => {
+                  const up = moveSupply(supplies, supply.id, 'up').length > 0;
+                  const down = moveSupply(supplies, supply.id, 'down').length > 0;
+                  const outside = inGroup && !inGroup.has(supply.id);
+                  return (
+                    <SupplyRow
+                      key={supply.id}
+                      supply={supply}
+                      state={previewEntryState(supply, pauses)}
+                      share={showShares && !outside ? serving.shares[supply.id] : undefined}
+                      next={Boolean(view?.first_choice) && view.first_choice === supply.id}
+                      outsideGroup={outside ? group : undefined}
+                      canMoveUp={up}
+                      canMoveDown={down}
+                      busy={busyId === supply.id}
+                      onAction={onAction}
+                    />
+                  );
+                })}
+              </tbody>
+            ))}
           </table>
         </div>
       )}

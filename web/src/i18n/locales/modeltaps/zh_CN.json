@@ -2271,7 +2271,10 @@
       "probing": "等待恢复测试",
       "disabled": "已停用",
       "channel_off": "渠道已停用",
-      "wholeChannel": "整个渠道"
+      "wholeChannel": "整个渠道",
+      "cooling": "冷却中",
+      "coolingUntil": "冷却到 {{time}}",
+      "coolingHint": "出错（如普通限流）后的短暂冷却，只记在内存里，且只反映响应本页的那台服务器。"
     },
     "pause": {
       "rule": "规则：{{rule}}",
@@ -2313,6 +2316,20 @@
       "probe": "恢复前先测试",
       "probes_other": "测试失败 {{count}} 次",
       "rulesOff": "暂停规则已关闭：出错时回到旧的自动禁用与冷却。已列出的暂停仍会按时结束。"
+    },
+    "channelGroups": "分组：{{groups}}",
+    "preview": {
+      "label": "请求预览",
+      "group": "请求所属分组",
+      "anyGroup": "任意分组",
+      "first": "下一个请求会发往 {{channel}}",
+      "split_other": "下一个请求会按占比发往 {{count}} 个供应之一",
+      "none": "现在没有可接请求的供应",
+      "outside_other": "{{count}} 个供应不在分组 {{group}} 中",
+      "outsideRow": "不在分组 {{group}} 中",
+      "notActive": "按供应路由开启后才生效",
+      "next": "下一个",
+      "servingTier": "正在接请求"
     }
   },
   "settingsUi": {

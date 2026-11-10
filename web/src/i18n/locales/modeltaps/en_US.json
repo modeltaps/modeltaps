@@ -2360,7 +2360,10 @@
       "probing": "Waiting for recovery test",
       "disabled": "Off",
       "channel_off": "Channel disabled",
-      "wholeChannel": "whole channel"
+      "wholeChannel": "whole channel",
+      "cooling": "Cooling down",
+      "coolingUntil": "Cooling down until {{time}}",
+      "coolingHint": "A short cool-down after an error such as a rate limit. It is kept in memory on the server that answered this page only."
     },
     "pause": {
       "rule": "Rule: {{rule}}",
@@ -2404,6 +2407,22 @@
       "probes_one": "{{count}} failed test",
       "probes_other": "{{count}} failed tests",
       "rulesOff": "Pause rules are off: failures go back to the old auto-disable and cool-down. Pauses already listed still end on time."
+    },
+    "channelGroups": "Groups: {{groups}}",
+    "preview": {
+      "label": "Request preview",
+      "group": "Group of the request",
+      "anyGroup": "Any group",
+      "first": "The next request goes to {{channel}}",
+      "split_one": "The next request goes to one of {{count}} supply, picked by share",
+      "split_other": "The next request goes to one of {{count}} supplies, picked by share",
+      "none": "No supply can take a request right now",
+      "outside_one": "{{count}} supply is not in group {{group}}",
+      "outside_other": "{{count}} supplies are not in group {{group}}",
+      "outsideRow": "Not in group {{group}}",
+      "notActive": "not in effect until supply routing is on",
+      "next": "Next",
+      "servingTier": "takes requests now"
     }
   },
   "settingsUi": {
