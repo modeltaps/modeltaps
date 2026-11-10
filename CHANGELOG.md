@@ -106,6 +106,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Saving a channel no longer resets its last test time, response time and creation time; the
   form does not carry them, and the full-row update wrote them back as zero.
+- Channels that list a wildcard model such as `gpt-4o*` now send the requested model upstream
+  (`gpt-4o-mini`) instead of the literal pattern. The pattern was also the name billing looked
+  up, so with the default unpriced-model policy these requests were rejected with "has no
+  configured price" before reaching the provider. A channel's model mapping may name the
+  requested model or the pattern; the requested model's entry wins.
+- The channel that failed last in a request is now cooled down as well, when retries are turned
+  off or the retry budget runs out before the channels do. A rate-limited primary was otherwise
+  picked again by the next request. Sessions held on their channel by strict session affinity
+  are left where they are.
+- A provider error that is not retried is counted once in the `provider_requests_total` metric
+  instead of twice.
+- Saving a setting now reports a database error instead of applying the value in memory only,
+  where it looked saved until the next restart or sync.
+- A request whose channel turns out to be out of quota or credit now moves to the next channel
+  instead of failing. Some providers report an empty balance as a 400 (for example "Your credit
+  balance is too low"), which ended the request on every channel type except Anthropic, even
+  though the channel was then disabled. Any error that matches the automatic disable rules
+  (exhausted quota or balance, rejected key, disabled account, a disable keyword) now retries on
+  another channel whatever its status code and whether or not automatic disabling is on, and also
+  when strict session affinity binds the session to that channel. A malformed request still
+  returns its 400 without retrying.
+- The scheduled recovery check now sends the "Channel re-enabled" notice when it puts an
+  automatically disabled channel back into rotation; the notice type was listed in the
+  notification settings but never sent. With several nodes running the check, only the node that
+  re-enables the channel sends it. A recovery also clears the disable notice's de-duplication
+  window, so a channel that fails again within five minutes is reported again.
 - Claude models on Vertex AI channels now work. Requests were sent to Google's publisher path, so
   Claude models were not found there; Claude now uses the Anthropic publisher, and model IDs with
   a date (`claude-sonnet-4-5-20250929`) are converted to Vertex's `name@date` form while models

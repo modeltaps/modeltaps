@@ -351,7 +351,7 @@ func getProvider(c *gin.Context, modelName string, catalogExempt bool) (provider
 	// 写 cooldown 的一方必须用它，否则 IsInCooldown 查不到。
 	c.Set("routing_model", actualModelName)
 
-	newModelName, fail = provider.ModelMappingHandler(actualModelName) // 使用匹配到的模型名称进行映射
+	newModelName, fail = upstreamModelName(provider, modelName, actualModelName)
 	if fail != nil {
 		return
 	}
@@ -369,6 +369,27 @@ func getProvider(c *gin.Context, modelName string, catalogExempt bool) (provider
 	c.Set(config.GinUpstreamResponseModelKey, "")
 
 	return
+}
+
+// upstreamModelName returns the model name sent upstream for a request. An exact match maps
+// through the channel's model_mapping as before. A channel listing a wildcard such as "gpt-3.5*"
+// matches through the pattern itself, so its mapping may name the request ("gpt-3.5-turbo") or
+// the pattern, in that order; with neither entry the requested name goes upstream instead of the
+// literal pattern. The provider keeps the requested name as its original model either way.
+func upstreamModelName(provider providersBase.ProviderInterface, requested, matched string) (string, error) {
+	if matched == requested || !strings.HasSuffix(matched, "*") {
+		return provider.ModelMappingHandler(matched)
+	}
+	mapped, err := provider.ModelMappingHandler(requested)
+	if err != nil || mapped != requested {
+		return mapped, err
+	}
+	mapped, err = provider.ModelMappingHandler(matched)
+	provider.SetOriginalModel(requested)
+	if err != nil || mapped != matched {
+		return mapped, err
+	}
+	return requested, nil
 }
 
 func fetchChannel(c *gin.Context, modelName string) (channel *model.Channel, fail error) {
@@ -780,6 +801,12 @@ func responseCache(c *gin.Context, response string, isStream bool) {
 
 }
 
+// strictAffinityHolds reports whether strict session affinity keeps this request on the channel
+// its session is bound to.
+func strictAffinityHolds(c *gin.Context) bool {
+	return config.SessionAffinityStrict && c.GetString(model.SessionAffinityContextKey) == "hit"
+}
+
 func shouldRetry(c *gin.Context, apiErr *types.OpenAIErrorWithStatusCode, channelType int) bool {
 	channelId := c.GetInt("specific_channel_id")
 	ignore := c.GetBool("specific_channel_id_ignore")
@@ -795,8 +822,17 @@ func shouldRetry(c *gin.Context, apiErr *types.OpenAIErrorWithStatusCode, channe
 		return false
 	}
 
+	// An error saying this channel can no longer serve (exhausted quota or balance, rejected
+	// credential, a disable keyword) moves the request to another channel whatever its status
+	// code: some providers report an empty balance as a 400, which would otherwise end the
+	// request here. Strict session affinity gives way too, since the bound channel is unusable
+	// and staying on it cannot keep the session's cache.
+	if controller.IsChannelUnusableError(channelType, apiErr) {
+		return true
+	}
+
 	// 严格会话亲和：会话绑定的渠道失败时不换渠道，换渠道会丢掉上游缓存（及 Codex 的会话状态）。
-	if config.SessionAffinityStrict && c.GetString(model.SessionAffinityContextKey) == "hit" {
+	if strictAffinityHolds(c) {
 		return false
 	}
 
