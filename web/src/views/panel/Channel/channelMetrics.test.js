@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { cacheSummary, metricsByModel, metricsSeries, summarizeMetrics } from './channelMetrics';
+import { cacheSummary, channelSeries, metricsByChannel, metricsByModel, metricsSeries, summarizeMetrics } from './channelMetrics';
 
 const rows = [
   {
@@ -98,5 +98,29 @@ describe('cacheSummary', () => {
   it('handles a channel without traffic', () => {
     expect(cacheSummary(undefined).hitRate).toBeNull();
     expect(cacheSummary({ request_count: 0, prompt_tokens: 0 }).hitRate).toBeNull();
+  });
+});
+
+describe('per-channel helpers', () => {
+  const multi = [
+    { bucket_ts: 0, channel_id: 1, request_count: 4, success_count: 3, latency_ms_sum: 300 },
+    { bucket_ts: 1800, channel_id: 1, request_count: 2, success_count: 2, latency_ms_sum: 200 },
+    { bucket_ts: 3600, channel_id: 2, request_count: 5, success_count: 5, latency_ms_sum: 500 },
+    { bucket_ts: 3600, channel_id: 9, request_count: 99, success_count: 99, latency_ms_sum: 0 }
+  ];
+
+  it('channelSeries buckets requests per channel with zeros filled in', () => {
+    expect(channelSeries(multi, [1, 2], 0, 7200, 3600)).toEqual([
+      { ts: 0, values: { 1: 6, 2: 0 } },
+      { ts: 3600, values: { 1: 0, 2: 5 } }
+    ]);
+  });
+
+  it('metricsByChannel sums per channel', () => {
+    const m = metricsByChannel(multi);
+    expect(m.get(1).requests).toBe(6);
+    expect(m.get(1).successRate).toBeCloseTo(5 / 6);
+    expect(m.get(1).avgLatencyMs).toBe(100);
+    expect(m.get(2).requests).toBe(5);
   });
 });
