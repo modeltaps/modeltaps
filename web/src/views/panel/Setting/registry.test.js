@@ -4,7 +4,7 @@ import en from 'i18n/locales/modeltaps/en_US.json';
 import ja from 'i18n/locales/modeltaps/ja_JP.json';
 import zhCN from 'i18n/locales/modeltaps/zh_CN.json';
 import zhHK from 'i18n/locales/modeltaps/zh_HK.json';
-import { pauseRulesError } from './cards/pauseRules';
+import { describePauseRule, pauseRulesError, pauseRulesText } from './cards/pauseRules';
 import { INVITE_CODE_URL, PLATFORM_GROUPS, cardById, cardKeys, resolveSettingsTarget, visibleGroups } from './registry';
 
 // Every option key the platform settings pages could save before the regrouping (the theme
@@ -189,6 +189,43 @@ describe('model supply options', () => {
     expect(pauseRulesError('[{"name":"quota","status_codes":[402]}]')).toBeNull();
     expect(pauseRulesError('{"name":"quota"}')).toBe('notArray');
     expect(pauseRulesError('[{')).toBe('invalidJson');
+  });
+
+  it('the built-in rules fill the editor as a valid list', () => {
+    const text = pauseRulesText([{ name: 'quota', status_codes: [402], action: 'pause', seconds: 1800 }]);
+    expect(pauseRulesError(text)).toBeNull();
+    expect(JSON.parse(text)[0].name).toBe('quota');
+    expect(pauseRulesText(null)).toBe('[]');
+  });
+
+  it('describes a rule as its conditions and its action', () => {
+    expect(
+      describePauseRule({
+        status_codes: [402],
+        keywords: ['a', 'b'],
+        error_codes: ['c'],
+        action: 'pause',
+        seconds: 1800,
+        scope: 'channel',
+        probe: true,
+        notify: true
+      })
+    ).toEqual({
+      when: [
+        ['status', { codes: '402' }],
+        ['patterns', { count: 3 }]
+      ],
+      then: [['pause_channel', { seconds: 1800 }], ['probe'], ['notify']]
+    });
+    expect(describePauseRule({ status_codes: [429], rate_limit_reset: true, action: 'pause', scope: 'model' })).toEqual({
+      when: [['status', { codes: '429' }], ['rateLimitReset']],
+      then: [['pauseUntilReset_model']]
+    });
+    expect(describePauseRule({ times: 3, window_seconds: 60, action: 'retry' })).toEqual({
+      when: [['anyError'], ['times', { count: 3, seconds: 60 }]],
+      then: [['retry']]
+    });
+    expect(describePauseRule({ per_status_config: true, action: 'pause', scope: 'model' }).then).toEqual([['pauseConfigured_model']]);
   });
 });
 

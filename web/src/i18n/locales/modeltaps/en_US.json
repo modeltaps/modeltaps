@@ -2478,7 +2478,10 @@
       "probing": "Waiting for recovery test",
       "disabled": "Off",
       "channel_off": "Channel disabled",
-      "wholeChannel": "whole channel"
+      "wholeChannel": "whole channel",
+      "cooling": "Cooling down",
+      "coolingUntil": "Cooling down until {{time}}",
+      "coolingHint": "A short cool-down after an error such as a rate limit. It is kept in memory on the server that answered this page only."
     },
     "pause": {
       "rule": "Rule: {{rule}}",
@@ -2522,6 +2525,23 @@
       "probes_one": "{{count}} failed test",
       "probes_other": "{{count}} failed tests",
       "rulesOff": "Pause rules are off: failures go back to the old auto-disable and cool-down. Pauses already listed still end on time."
+    },
+    "channelGroups": "Groups: {{groups}}",
+    "preview": {
+      "label": "Request preview",
+      "group": "Group of the request",
+      "anyGroup": "Any group",
+      "first": "The next request goes to {{channel}}",
+      "split_one": "The next request goes to one of {{count}} supply, picked by share",
+      "split_other": "The next request goes to one of {{count}} supplies, picked by share",
+      "none": "No supply can take a request right now",
+      "outside_one": "{{count}} supply is not in group {{group}}",
+      "outside_other": "{{count}} supplies are not in group {{group}}",
+      "outsideRow": "Not in group {{group}}",
+      "notActive": "not in effect until supply routing is on",
+      "next": "Next",
+      "servingTier": "takes requests now",
+      "failed": "Couldn't load the preview for this group"
     }
   },
   "settingsUi": {
@@ -2797,7 +2817,34 @@
         "label": "Custom rules (JSON)",
         "description": "Leave empty for the built-in rules; a custom list replaces them as a whole, and the first matching rule wins.",
         "invalidJson": "The pause rules are not valid JSON",
-        "notArray": "The pause rules must be a JSON array"
+        "notArray": "The pause rules must be a JSON array",
+        "builtIn": "Built-in rules in effect",
+        "useDefaults": "Start from defaults",
+        "useDefaultsHint": "Start from defaults copies these rules into the editor to change them; nothing is saved until you save the card.",
+        "showBuiltIn": "Show the built-in rules",
+        "replaceWithDefaults": "Replace with defaults",
+        "replaceHint": "Replaces the editor text with the built-in rules; Undo brings back the saved rules.",
+        "summary": {
+          "status": "HTTP {{codes}}",
+          "patterns_one": "{{count}} error pattern",
+          "patterns_other": "{{count}} error patterns",
+          "unusable": "credentials rejected or account unusable",
+          "modelNotFound": "model not found upstream",
+          "rateLimitReset": "upstream gives a reset time",
+          "perStatus": "status has a per-status cool-down",
+          "anyError": "any error",
+          "times_one": "{{count}} time within {{duration}}",
+          "times_other": "{{count}} times within {{duration}}",
+          "retry": "try the next supply",
+          "pause_channel": "pause the channel for {{duration}}",
+          "pause_model": "pause the model for {{duration}}",
+          "pauseUntilReset_channel": "pause the channel until the reset time",
+          "pauseUntilReset_model": "pause the model until the reset time",
+          "pauseConfigured_channel": "pause the channel for the configured time",
+          "pauseConfigured_model": "pause the model for the configured time",
+          "probe": "test before resuming",
+          "notify": "notify"
+        }
       }
     },
     "personal": {
@@ -2864,6 +2911,47 @@
           "description": "These actions affect every member"
         }
       }
+    }
+  },
+  "home": {
+    "hero": {
+      "tagline": "Every model. One tap.",
+      "subline": "A self-hosted gateway that speaks OpenAI, Anthropic and Gemini on one address. Point your tools at it, use any model, and keep keys and logs on your own server.",
+      "ctaPrimary": "Get API key",
+      "ctaSecondary": "Browse models",
+      "toolsAria": "Connect a tool",
+      "copied": "Copied",
+      "protocolNote": "Speaks the {{protocol}} protocol",
+      "logTitle": "Gateway log"
+    },
+    "facts": {
+      "protocols": {
+        "label": "/v1 · /claude · /gemini",
+        "title": "Three native protocols",
+        "desc": "OpenAI, Anthropic and Gemini compatible endpoints run side by side. Claude Code, Codex CLI and Cursor need nothing but a new base URL."
+      },
+      "sources": {
+        "label": "cloud · your keys",
+        "title": "Your models, your keys",
+        "desc": "Use 20+ cloud providers paid for by the platform, or add your organization's own OpenRouter or vendor key as a channel. Members never see the plaintext."
+      },
+      "ledger": {
+        "label": "logs · pricing",
+        "title": "Every call adds up",
+        "desc": "Model catalogs and prices sync daily, upstream changes get flagged, and every call records model, tokens, latency and member."
+      }
+    },
+    "control": {
+      "title": "Give every member a budget",
+      "subtitle": "Each API key spends against its member's budget, and every call is recorded under their name.",
+      "mock": {
+        "title": "Spend this period",
+        "period": "Nov 1–30",
+        "teamBudget": "Organization period budget"
+      }
+    },
+    "finalCta": {
+      "title": "One API key. Every model."
     }
   }
 }

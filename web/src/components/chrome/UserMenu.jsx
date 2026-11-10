@@ -38,7 +38,7 @@ export default function UserMenu() {
           aria-label={displayName}
           className="rounded-full transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <UserAvatar user={user} className="size-9" textClass="text-sm" />
+          <UserAvatar user={user} className="size-7" textClass="text-[11px]" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-56">

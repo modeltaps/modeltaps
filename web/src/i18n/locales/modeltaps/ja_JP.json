@@ -2391,7 +2391,10 @@
       "probing": "復帰テスト待ち",
       "disabled": "オフ",
       "channel_off": "チャネル無効",
-      "wholeChannel": "チャネル全体"
+      "wholeChannel": "チャネル全体",
+      "cooling": "クールダウン中",
+      "coolingUntil": "{{time}} までクールダウン",
+      "coolingHint": "レート制限などのエラー後の短いクールダウンです。メモリ上にのみあり、このページに応答したサーバーの状態だけを示します。"
     },
     "pause": {
       "rule": "ルール：{{rule}}",
@@ -2433,6 +2436,21 @@
       "probe": "再開前にテスト",
       "probes_other": "テスト失敗 {{count}} 回",
       "rulesOff": "一時停止ルールはオフです。エラー時は従来の自動無効化とクールダウンに戻ります。表示中の一時停止は予定どおり終了します。"
+    },
+    "channelGroups": "グループ：{{groups}}",
+    "preview": {
+      "label": "リクエストのプレビュー",
+      "group": "リクエストのグループ",
+      "anyGroup": "すべてのグループ",
+      "first": "次のリクエストは {{channel}} に送られます",
+      "split_other": "次のリクエストは割合に応じて {{count}} 件の供給のいずれかに送られます",
+      "none": "今リクエストを受けられる供給はありません",
+      "outside_other": "{{count}} 件の供給はグループ {{group}} に含まれません",
+      "outsideRow": "グループ {{group}} に含まれません",
+      "notActive": "供給によるルーティングをオンにすると有効になります",
+      "next": "次",
+      "servingTier": "現在リクエストを処理中",
+      "failed": "このグループのプレビューを読み込めませんでした"
     }
   },
   "settingsUi": {
@@ -2707,7 +2725,32 @@
         "label": "カスタムルール（JSON）",
         "description": "空欄なら組み込みのルールを使います。入力するとルール全体が置き換わり、上から順に最初に一致したルールが適用されます。",
         "invalidJson": "一時停止ルールが正しい JSON ではありません",
-        "notArray": "一時停止ルールは JSON 配列にしてください"
+        "notArray": "一時停止ルールは JSON 配列にしてください",
+        "builtIn": "組み込みルールを使用中",
+        "useDefaults": "デフォルトから始める",
+        "useDefaultsHint": "「デフォルトから始める」でこれらのルールをエディタにコピーして編集できます。カードを保存するまで反映されません。",
+        "showBuiltIn": "組み込みルールを表示",
+        "replaceWithDefaults": "デフォルトに置き換える",
+        "replaceHint": "エディタの内容を組み込みルールに置き換えます。元に戻すと保存済みのルールに戻ります。",
+        "summary": {
+          "status": "HTTP {{codes}}",
+          "patterns_other": "エラーパターン {{count}} 件",
+          "unusable": "認証情報の拒否またはアカウント利用不可",
+          "modelNotFound": "上流にモデルがない",
+          "rateLimitReset": "上流がリセット時刻を返した",
+          "perStatus": "ステータス別クールダウンが設定されている",
+          "anyError": "すべてのエラー",
+          "times_other": "{{duration}} 以内に {{count}} 回",
+          "retry": "次の供給を試す",
+          "pause_channel": "チャネルを {{duration}} 一時停止",
+          "pause_model": "このモデルを {{duration}} 一時停止",
+          "pauseUntilReset_channel": "リセット時刻までチャネルを一時停止",
+          "pauseUntilReset_model": "リセット時刻までこのモデルを一時停止",
+          "pauseConfigured_channel": "設定された時間だけチャネルを一時停止",
+          "pauseConfigured_model": "設定された時間だけこのモデルを一時停止",
+          "probe": "復帰前にテスト",
+          "notify": "通知"
+        }
       }
     },
     "personal": {
@@ -2774,6 +2817,47 @@
           "description": "これらの操作はすべてのメンバーに影響します"
         }
       }
+    }
+  },
+  "home": {
+    "hero": {
+      "tagline": "すべてのモデルを、ひとつの出口から",
+      "subline": "OpenAI・Anthropic・Gemini の 3 つのプロトコルを 1 つのアドレスで話すセルフホスト型 AI ゲートウェイ。ツールを向けるだけで任意のモデルが使え、キーとログは自分のサーバーに残ります。",
+      "ctaPrimary": "API キーを取得",
+      "ctaSecondary": "モデルを見る",
+      "toolsAria": "ツールを接続",
+      "copied": "コピーしました",
+      "protocolNote": "{{protocol}} プロトコルで接続",
+      "logTitle": "ゲートウェイのログ"
+    },
+    "facts": {
+      "protocols": {
+        "label": "/v1 · /claude · /gemini",
+        "title": "3 つのネイティブプロトコル",
+        "desc": "OpenAI・Anthropic・Gemini 互換エンドポイントが同時に動きます。Claude Code、Codex CLI、Cursor は接続先を変えるだけです。"
+      },
+      "sources": {
+        "label": "cloud · 自前のキー",
+        "title": "モデルの出どころは自分で決める",
+        "desc": "プラットフォームが支払う 20 社以上のクラウドプロバイダーに加え、組織自身の OpenRouter やベンダーのキーをチャネルとして登録できます。メンバーに平文は見えません。"
+      },
+      "ledger": {
+        "label": "logs · pricing",
+        "title": "1 回ごとに帳尻が合う",
+        "desc": "価格とモデルカタログは毎日同期され、上流での追加・削除には印が付きます。呼び出しごとにモデル、トークン、レイテンシ、メンバーを記録します。"
+      }
+    },
+    "control": {
+      "title": "メンバーごとに予算を",
+      "subtitle": "各 API キーは持ち主のメンバーの予算から引き落とされ、呼び出しはすべてそのメンバーの名義で記録されます。",
+      "mock": {
+        "title": "今期の利用額",
+        "period": "11月1日〜30日",
+        "teamBudget": "組織の期間予算"
+      }
+    },
+    "finalCta": {
+      "title": "API キー 1 つで、すべてのモデルへ"
     }
   }
 }

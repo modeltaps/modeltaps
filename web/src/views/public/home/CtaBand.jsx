@@ -1,45 +1,32 @@
 import { Link } from 'react-router';
-import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { brandName } from 'utils/brand';
 
-// ==============================|| PUBLIC HOME — FINAL CTA BAND ||============================== //
-// Closing conversion tile: a neutral solid dark card with dual CTAs. Primary → /panel/token
-// (AuthGuard bounces guests to /login, matching Hero's token-page rule); secondary → /price.
+// ==============================|| PUBLIC HOME — CLOSING ROW ||============================== //
+// One line and the same two actions as the hero. Primary → /panel/token (AuthGuard bounces guests to
+// /login), secondary → /price.
 
 export default function CtaBand() {
   const { t } = useTranslation();
-  const siteInfo = useSelector((state) => state.siteInfo);
-  const brand = brandName(siteInfo.system_name);
 
   return (
-    <section>
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-        <div className="relative overflow-hidden rounded-3xl bg-primary px-6 py-16 text-center shadow-lg sm:px-10 sm:py-20 dark:bg-popover">
-          <h2 className="text-balance text-3xl font-semibold leading-snug text-white sm:text-4xl">{t('home.finalCta.title')}</h2>
-          <p className="mx-auto mt-4 max-w-xl text-pretty text-base leading-relaxed text-white/90 sm:text-lg">
-            {t('home.finalCta.subtitle', { brand })}
-          </p>
-
-          <div className="mt-8 flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row">
-            <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90 sm:w-48 dark:text-primary-foreground">
-              <Link to="/panel/token">
-                {t('home.finalCta.primary')}
-                <ArrowRight />
-              </Link>
-            </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="border-white/40 bg-white/15 text-white hover:bg-white/25 hover:text-white sm:w-48"
-            >
-              <Link to="/price">{t('home.finalCta.secondary')}</Link>
-            </Button>
-          </div>
+    <section className="border-b border-border">
+      <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-8 px-4 py-20 sm:px-6 md:flex-row md:items-center lg:py-24">
+        <h2 className="max-w-[20ch] text-balance break-keep text-3xl font-semibold leading-tight sm:text-4xl">
+          {t('home.finalCta.title')}
+        </h2>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button asChild size="lg" className="h-12 px-6">
+            <Link to="/panel/token">
+              {t('home.finalCta.primary')}
+              <ArrowRight />
+            </Link>
+          </Button>
+          <Button asChild size="lg" variant="ghost" className="h-12 px-5 text-muted-foreground hover:text-foreground">
+            <Link to="/price">{t('home.finalCta.secondary')}</Link>
+          </Button>
         </div>
       </div>
     </section>

@@ -2391,7 +2391,10 @@
       "probing": "等待恢復測試",
       "disabled": "已停用",
       "channel_off": "渠道已停用",
-      "wholeChannel": "整個渠道"
+      "wholeChannel": "整個渠道",
+      "cooling": "冷卻中",
+      "coolingUntil": "冷卻到 {{time}}",
+      "coolingHint": "出錯（如普通限流）後的短暫冷卻，只記在記憶體中，且只反映回應本頁的那台伺服器。"
     },
     "pause": {
       "rule": "規則：{{rule}}",
@@ -2433,6 +2436,21 @@
       "probe": "恢復前先測試",
       "probes_other": "測試失敗 {{count}} 次",
       "rulesOff": "暫停規則已關閉：出錯時回到舊的自動停用與冷卻。已列出的暫停仍會按時結束。"
+    },
+    "channelGroups": "分組：{{groups}}",
+    "preview": {
+      "label": "請求預覽",
+      "group": "請求所屬分組",
+      "anyGroup": "任意分組",
+      "first": "下一個請求會發往 {{channel}}",
+      "split_other": "下一個請求會按佔比發往 {{count}} 個供應之一",
+      "none": "現在沒有可接請求的供應",
+      "outside_other": "{{count}} 個供應不在分組 {{group}} 中",
+      "outsideRow": "不在分組 {{group}} 中",
+      "notActive": "按供應路由開啟後才生效",
+      "next": "下一個",
+      "servingTier": "正在接請求",
+      "failed": "無法讀取該分組的預覽"
     }
   },
   "settingsUi": {
@@ -2707,7 +2725,32 @@
         "label": "自訂規則（JSON）",
         "description": "留空使用內置預設規則；填寫後整體取代預設規則，按順序第一條命中的生效。",
         "invalidJson": "暫停規則不是有效的 JSON",
-        "notArray": "暫停規則必須是 JSON 陣列"
+        "notArray": "暫停規則必須是 JSON 陣列",
+        "builtIn": "正在使用內建規則",
+        "useDefaults": "從預設規則開始",
+        "useDefaultsHint": "「從預設規則開始」會把這些規則填入編輯框以便修改；儲存卡片前不會生效。",
+        "showBuiltIn": "查看內建規則",
+        "replaceWithDefaults": "替換為預設規則",
+        "replaceHint": "用內建規則替換編輯框內容；復原可恢復已儲存的規則。",
+        "summary": {
+          "status": "HTTP {{codes}}",
+          "patterns_other": "{{count}} 個錯誤特徵",
+          "unusable": "憑證被拒或帳戶不可用",
+          "modelNotFound": "上游沒有該模型",
+          "rateLimitReset": "上游給出了重置時間",
+          "perStatus": "該狀態碼設定了單獨冷卻",
+          "anyError": "任何錯誤",
+          "times_other": "{{duration}} 內 {{count}} 次",
+          "retry": "改試下一條供應",
+          "pause_channel": "暫停渠道 {{duration}}",
+          "pause_model": "暫停該模型 {{duration}}",
+          "pauseUntilReset_channel": "暫停渠道到重置時間",
+          "pauseUntilReset_model": "暫停該模型到重置時間",
+          "pauseConfigured_channel": "按設定的時長暫停渠道",
+          "pauseConfigured_model": "按設定的時長暫停該模型",
+          "probe": "恢復前先測試",
+          "notify": "發通知"
+        }
       }
     },
     "personal": {
@@ -2774,6 +2817,47 @@
           "description": "這些操作會影響所有成員"
         }
       }
+    }
+  },
+  "home": {
+    "hero": {
+      "tagline": "所有模型，一個出口",
+      "subline": "自己部署的 AI 閘道，一個地址同時講 OpenAI、Anthropic、Gemini 三種協定。工具指過來就能用任意模型，key 和日誌都留在你自己的伺服器上。",
+      "ctaPrimary": "取得 API Key",
+      "ctaSecondary": "瀏覽模型",
+      "toolsAria": "接入工具",
+      "copied": "已複製",
+      "protocolNote": "走 {{protocol}} 協定",
+      "logTitle": "閘道日誌"
+    },
+    "facts": {
+      "protocols": {
+        "label": "/v1 · /claude · /gemini",
+        "title": "三套原生協定",
+        "desc": "OpenAI、Anthropic、Gemini 相容介面同時在線，Claude Code、Codex CLI、Cursor 只需改接入地址。"
+      },
+      "sources": {
+        "label": "cloud · 自帶 key",
+        "title": "模型從哪來，你說了算",
+        "desc": "平台代付 20+ 家雲端供應商，也可以把組織自己的 OpenRouter 或廠商 key 錄成渠道，成員看不到明文。"
+      },
+      "ledger": {
+        "label": "logs · pricing",
+        "title": "每一筆都對得上",
+        "desc": "價格與模型目錄每日同步，上游增刪模型會被標出來，每筆呼叫都記下模型、Token、時延和成員。"
+      }
+    },
+    "control": {
+      "title": "給每位成員一份預算",
+      "subtitle": "每把 API Key 按所屬成員的預算扣費，每筆呼叫都記在對應成員名下。",
+      "mock": {
+        "title": "本期用量",
+        "period": "11 月 1 日 – 30 日",
+        "teamBudget": "組織週期預算"
+      }
+    },
+    "finalCta": {
+      "title": "一把 API Key，接入所有模型"
     }
   }
 }
