@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { ArrowLeftRight, Copy, DollarSign, Lock, MoreHorizontal, Network, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, Copy, DollarSign, Layers, Lock, MoreHorizontal, Network, Pencil, Trash2 } from 'lucide-react';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import DataCards from '@/components/ui/data-cards';
@@ -35,6 +35,8 @@ import {
   VendorIcon,
   safeJsonArray
 } from './modelInfoHelpers';
+import { ModelStatusPill } from './supply/supplyParts';
+import { isPublicModelRow, normalizeSupplyMode } from './supply/supplyHelpers';
 
 // 同步来源 → 文案 key;空值(历史数据)显示「未知」。
 const SOURCE_LABEL_KEYS = {
@@ -101,6 +103,31 @@ export function ChannelsCell({ channels, onOpen }) {
 }
 
 ChannelsCell.propTypes = { channels: PropTypes.array, onOpen: PropTypes.func };
+
+// Public status, supply mode and number of supplies of a public model; opens the Supplies tab.
+// Aliases and routing policies have no supplies of their own.
+export function SupplyCell({ row, onOpen }) {
+  const { t } = useTranslation();
+  if (!isPublicModelRow(row)) return <span className="text-muted-foreground">—</span>;
+  const counts = row.supplyCounts || { total: 0, usable: 0 };
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="flex flex-col items-start rounded-md text-left leading-5 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <ModelStatusPill status={row.status} />
+      <span className="whitespace-nowrap text-xs text-muted-foreground">
+        {t(`modelSupply.mode.${normalizeSupplyMode(row.supply_mode)}`)} ·{' '}
+        <span className={counts.total > 0 && counts.usable === 0 ? 'text-warning' : undefined}>
+          {t('modelSupply.count', { count: counts.total })}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+SupplyCell.propTypes = { row: PropTypes.object.isRequired, onOpen: PropTypes.func };
 
 function VendorCell({ vendor }) {
   const { t } = useTranslation();
@@ -247,6 +274,12 @@ function RowActionsCell({ row, onOpen, onDeleteCatalog, onDeletePrice }) {
             <Network className="size-4" />
             {t('modelsPage.channelsTab')}
           </DropdownMenuItem>
+          {isPublicModelRow(row) && (
+            <DropdownMenuItem onClick={() => onOpen(row, 'supplies')}>
+              <Layers className="size-4" />
+              {t('modelSupply.tab')}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={() => copy(row.model, t('modelInfoPage.model'))}>
             <Copy className="size-4" />
             {t('modelsPage.copyName')}
@@ -342,6 +375,11 @@ export default function ModelTable({
         id: 'channels',
         header: t('modelInfoPage.channels'),
         cell: (c) => <ChannelsCell channels={c.row.original.bound_channels} onOpen={() => onOpen(c.row.original, 'channels')} />
+      },
+      {
+        id: 'supply',
+        header: t('modelSupply.column'),
+        cell: (c) => <SupplyCell row={c.row.original} onOpen={() => onOpen(c.row.original, 'supplies')} />
       },
       {
         id: 'price',
@@ -494,7 +532,17 @@ export default function ModelTable({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} data-state={selectedKeys?.has(row.original.key) ? 'selected' : undefined}>
+              <TableRow
+                key={row.id}
+                data-state={selectedKeys?.has(row.original.key) ? 'selected' : undefined}
+                className="cursor-pointer"
+                onClick={(e) => {
+                  // Clicks on controls in the row, and on menus rendered in a portal, keep their own meaning.
+                  if (!e.currentTarget.contains(e.target)) return;
+                  if (e.target.closest('button, a, input, label, [role="switch"], [role="checkbox"], [role="menuitem"]')) return;
+                  onOpen(row.original, 'profile');
+                }}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id} className={`py-1.5 ${cell.column.columnDef.meta?.className ?? ''}`}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

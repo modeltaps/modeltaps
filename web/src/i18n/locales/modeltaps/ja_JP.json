@@ -709,7 +709,8 @@
   "pricingPage": {
     "catalogTabs": {
       "models": "モデル",
-      "vendors": "ベンダー"
+      "vendors": "ベンダー",
+      "paused": "一時停止中"
     }
   },
   "listPage": {
@@ -2202,6 +2203,117 @@
       "label": "セクション"
     },
     "mainLabel": "メインナビゲーション"
+  },
+  "modelSupply": {
+    "tab": "供給",
+    "column": "供給",
+    "count_other": "{{count}} 件の供給",
+    "channel": "チャネル",
+    "model": "モデル",
+    "upstream": "上流モデル",
+    "priority": "優先度",
+    "weight": "重み",
+    "stateLabel": "状態",
+    "enabled": "この供給を使う",
+    "actions": "供給の操作",
+    "edit": "編集",
+    "save": "保存",
+    "delete": "供給を削除",
+    "deleteTitle": "供給を削除",
+    "deleteConfirm": "{{model}} を {{channel}} に送るのをやめますか？チャネル自体は変更されません。",
+    "deleted": "供給を削除しました",
+    "moveUp": "一つ上の段へ",
+    "moveDown": "一つ下の段へ",
+    "pauseFor": "一時停止",
+    "paused": "{{time}} 一時停止しました",
+    "resume": "今すぐ再開",
+    "resumeChannel": "チャネル全体を再開",
+    "resumeNow": "再開",
+    "resumed": "振り分けに戻しました",
+    "openChannel": "チャネル {{name}} を開く",
+    "channelDeleted": "削除済みチャネル #{{id}}",
+    "savedRightAway": "このタブの変更はすぐに保存されます。",
+    "empty": "このモデルを供給するチャネルはまだありません",
+    "emptyHint": "供給を追加して、どのチャネルがどの上流モデル名で提供するかを決めます。",
+    "orderHint": "優先度の高い段から試します。下の段は、上の段の供給がすべて使えないときだけ使われます。",
+    "switchOff": "供給によるルーティングはオフです。供給は保存されていますが、ModelSupplyEnabled をオンにするまでリクエストは各チャネルのモデル一覧に従います。",
+    "upstreamRequired": "このチャネルに送るモデル名を入力してください",
+    "priorityInvalid": "優先度は整数で入力してください",
+    "weightInvalid": "重みは 0 以上の整数で入力してください",
+    "minutes_other": "{{count}} 分",
+    "hours_other": "{{count}} 時間",
+    "seconds_other": "{{count}} 秒",
+    "status": {
+      "label": "公開状態",
+      "help": "下書き：一覧に出ず呼び出せません。公開中：一覧に出て呼び出せます。提供終了：呼び出せますが一覧には出ません。供給によるルーティングをオンにすると有効になります。",
+      "draft": "下書き",
+      "published": "公開中",
+      "retired": "提供終了"
+    },
+    "mode": {
+      "label": "同じ段の中では",
+      "balance": "負荷分散",
+      "failover": "フェイルオーバー",
+      "balanceHint": "同じ段の供給で、重みに応じてリクエストを分けます。",
+      "failoverHint": "同じ段で重みが最も高い供給がすべてのリクエストを受け、残りは予備になります。",
+      "saved": "供給モードを保存しました"
+    },
+    "tier": {
+      "only": "1 段のみ",
+      "first": "最初に試す",
+      "backup_other": "予備 {{count}}",
+      "priority": "優先度 {{priority}}"
+    },
+    "state": {
+      "ok": "利用可能",
+      "paused": "一時停止中",
+      "pausedUntil": "{{time}} まで一時停止",
+      "probing": "復帰テスト待ち",
+      "disabled": "オフ",
+      "channel_off": "チャネル無効",
+      "wholeChannel": "チャネル全体"
+    },
+    "pause": {
+      "rule": "ルール：{{rule}}",
+      "probeHint": "一時停止が終わるとテストリクエストを送り、成功した場合のみ再開します。"
+    },
+    "rule": {
+      "quota": "クォータまたは残高切れ",
+      "credential": "認証情報が無効",
+      "model_not_found": "上流にモデルがない",
+      "upstream_failure": "上流エラーの連続",
+      "manual": "管理者による一時停止"
+    },
+    "add": {
+      "button": "供給を追加",
+      "submit": "追加",
+      "done": "供給を追加しました",
+      "offering": "このモデルを登録済み",
+      "others": "その他のチャネル",
+      "pickChannel": "チャネルを選択",
+      "searchChannel": "チャネルを検索",
+      "noChannel": "チャネルが見つかりません",
+      "channelRequired": "チャネルを選択してください",
+      "hint": "上流モデル名はチャネルのモデルマッピングから取ります。新しい供給は最も低い段の下に予備として入ります。"
+    },
+    "channelSupplies": {
+      "title_other": "{{count}} 件の公開モデルを供給",
+      "readonly": "モデルページで編集",
+      "none": "このチャネルを供給に使っている公開モデルはまだありません。",
+      "open": "{{model}} の供給を開く"
+    },
+    "pausedPage": {
+      "description": "一時停止ルールまたは管理者によって振り分けから外されたチャネル、またはチャネル上のモデルです。一時停止が終わると自動で戻ります。",
+      "empty": "一時停止中のものはありません",
+      "emptyHint": "1 分未満の一時停止はメモリ内だけに保持され、ここには表示されません。",
+      "scope": "対象",
+      "rule": "ルール",
+      "until": "再開予定",
+      "reason": "上流のエラー",
+      "probe": "再開前にテスト",
+      "probes_other": "テスト失敗 {{count}} 回",
+      "rulesOff": "一時停止ルールはオフです。エラー時は従来の自動無効化とクールダウンに戻ります。表示中の一時停止は予定どおり終了します。"
+    }
   },
   "settingsUi": {
     "search": {
