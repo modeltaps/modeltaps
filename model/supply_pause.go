@@ -223,3 +223,22 @@ func ResumeChannelPausesInCategory(channelId int, category string) ([]*SupplyPau
 	}
 	return resumed, nil
 }
+
+// ActivePauseFor returns the stored pause that keeps channelId from serving modelName, the
+// whole-channel pause first, or nil.
+func ActivePauseFor(channelId int, modelName string) *SupplyPause {
+	now := time.Now().Unix()
+	pauseIndex.RLock()
+	defer pauseIndex.RUnlock()
+	models := pauseIndex.byChannel[channelId]
+	if models == nil {
+		return nil
+	}
+	if p := models[""]; pauseActive(p, now) {
+		return p
+	}
+	if p := models[modelName]; modelName != "" && pauseActive(p, now) {
+		return p
+	}
+	return nil
+}

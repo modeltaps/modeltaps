@@ -177,3 +177,93 @@ func TestModelSupplyListIncludesChannelFields(t *testing.T) {
 		}
 	}
 }
+
+func callGet(t *testing.T, handler gin.HandlerFunc, target string) (*httptest.ResponseRecorder, map[string]any) {
+	t.Helper()
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, target, nil)
+	handler(c)
+	var resp map[string]any
+	_ = json.Unmarshal(w.Body.Bytes(), &resp)
+	return w, resp
+}
+
+func TestGetPauseRulesHandler(t *testing.T) {
+	setupSupplyHandlerDB(t)
+	if err := model.SetCustomPauseRules(""); err != nil {
+		t.Fatal(err)
+	}
+	own := `[{"name":"teapot","status_codes":[503],"action":"pause","seconds":600}]`
+	weight := uint(1)
+	channel := &model.Channel{Name: "c", Weight: &weight, PauseRules: &own}
+	if err := model.DB.Create(channel).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	_, resp := callGet(t, GetPauseRules, "/api/supply_pause/rules")
+	data, _ := resp["data"].(map[string]any)
+	rules, _ := data["rules"].([]any)
+	defaults, _ := data["defaults"].([]any)
+	if data["enabled"] != config.PauseRulesEnabled || data["custom"] != false || len(rules) != 7 || len(defaults) != 7 {
+		t.Fatalf("rules response = %v", resp)
+	}
+	if _, ok := data["channel_rules"]; ok {
+		t.Fatal("channel_rules returned without a channel_id")
+	}
+	first, _ := rules[0].(map[string]any)
+	if first["name"] != "quota" || first["seconds"] != float64(1800) || first["scope"] != "channel" {
+		t.Fatalf("first rule = %v", first)
+	}
+
+	_, resp = callGet(t, GetPauseRules, "/api/supply_pause/rules?channel_id="+itoa(channel.Id))
+	data, _ = resp["data"].(map[string]any)
+	channelRules, _ := data["channel_rules"].([]any)
+	if len(channelRules) != 1 {
+		t.Fatalf("channel_rules = %v", data["channel_rules"])
+	}
+	if w, resp := callGet(t, GetPauseRules, "/api/supply_pause/rules?channel_id=999"); w.Code != http.StatusBadRequest || resp["code"] != "model_supply_channel_not_found" {
+		t.Fatalf("unknown channel: %d %v", w.Code, resp)
+	}
+}
+
+func TestPreviewModelSupplyHandler(t *testing.T) {
+	setupSupplyHandlerDB(t)
+	if w, resp := callGet(t, PreviewModelSupply, "/api/model_supply/preview?model=missing"); w.Code != http.StatusBadRequest || resp["code"] != "model_supply_model_not_found" {
+		t.Fatalf("unknown model: %d %v", w.Code, resp)
+	}
+	if err := model.DB.Create(&model.ModelInfo{Model: "m", Status: model.ModelStatusDraft}).Error; err != nil {
+		t.Fatal(err)
+	}
+	_, resp := callGet(t, PreviewModelSupply, "/api/model_supply/preview?model=m&group=default")
+	data, _ := resp["data"].(map[string]any)
+	if resp["success"] != true || data["model"] != "m" || data["status"] != "draft" || data["mode"] != "balance" {
+		t.Fatalf("preview = %v", resp)
+	}
+	if tiers, _ := data["tiers"].([]any); tiers == nil || len(tiers) != 0 {
+		t.Fatalf("tiers = %v, want an empty list for a model without supplies", data["tiers"])
+	}
+}
+
+// A channel save with pause rules that do not parse is refused before anything is written.
+func TestAddChannelRejectsInvalidPauseRules(t *testing.T) {
+	setupSupplyHandlerDB(t)
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/api/channel/", strings.NewReader(
+		`{"name":"c","type":1,"key":"sk","models":"m","group":"default","pause_rules":"[{\"name\":\"x\",\"action\":\"explode\"}]"}`))
+	c.Request.Header.Set("Content-Type", "application/json")
+	AddChannel(c)
+	var resp map[string]any
+	_ = json.Unmarshal(w.Body.Bytes(), &resp)
+	if w.Code != http.StatusBadRequest || resp["code"] != "supply_pause_rules_invalid" {
+		t.Fatalf("status %d, response %v", w.Code, resp)
+	}
+	var count int64
+	model.DB.Model(&model.Channel{}).Count(&count)
+	if count != 0 {
+		t.Fatalf("%d channels written", count)
+	}
+}

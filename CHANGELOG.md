@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Console endpoints for the model supply pages. `GET /api/model_supply/preview?model=&group=`
+  shows in which order a request for a public model would try its supplies, tier by tier, with
+  each supply's state (available, paused until, waiting for its recovery test, cooling down,
+  disabled, channel disabled), its share of the tier's traffic, and which supply takes the next
+  request when that is certain; it also works before `ModelSupplyEnabled` is on and says so.
+  `GET /api/supply_pause/rules` returns the pause rules in effect and the built-in defaults, and
+  a channel's own rules with `channel_id`. Channels can carry their own pause rules
+  (`pause_rules`), tried before the site-wide ones; invalid rules are refused on save, and
+  saving a channel without the field keeps them. The supply list also returns each channel's
+  groups. With `ModelSupplyEnabled` on, the public model list (`/api/model_info/`, used by the
+  pricing page) shows published models only.
 - Pause rules for failing channels, on by default (`PauseRulesEnabled`). When a request fails,
   the first matching rule decides what happens to the channel: an exhausted quota or balance
   (402, `insufficient_quota`, `billing_not_active`, "credit balance is too low" and similar)

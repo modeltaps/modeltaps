@@ -245,6 +245,7 @@ const (
 	APICodeModelSupplyUpstreamMissing   = "model_supply_upstream_missing"
 	APICodeModelSupplyExists            = "model_supply_exists"
 	APICodeSupplyPauseSecondsInvalid    = "supply_pause_seconds_invalid"
+	APICodeSupplyPauseRulesInvalid      = "supply_pause_rules_invalid"
 	APICodeModelIdentifierExists        = "model_identifier_exists"
 	APICodeModelReferencedByAliases     = "model_referenced_by_aliases"
 	APICodeModelAliasSelf               = "model_alias_self"

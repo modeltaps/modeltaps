@@ -1542,6 +1542,7 @@
     "model_supply_upstream_missing": "このチャネルに送るモデル名を入力してください",
     "model_supply_exists": "このチャネルはすでにこのモデルを供給しています",
     "supply_pause_seconds_invalid": "一時停止する秒数を 0 より大きい値で入力してください",
+    "supply_pause_rules_invalid": "一時停止ルールが無効です：{{message}}",
     "model_identifier_exists": "この識別子のモデルは既に存在します",
     "model_referenced_by_aliases": "このモデルはまだエイリアスから参照されています：{{aliases}}",
     "model_alias_self": "モデルを自分自身のエイリアスにすることはできません",

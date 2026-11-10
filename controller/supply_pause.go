@@ -143,10 +143,10 @@ func StartPauseRecovery(interval time.Duration) {
 	}
 }
 
-// quotaPauseRule is the first rule of the quota category, used when a balance refresh finds an
-// empty balance; the built-in quota rule when custom rules have none.
-func quotaPauseRule() model.PauseRule {
-	for _, rule := range model.EffectivePauseRules() {
+// quotaPauseRule is the first rule of the quota category for channel, used when a balance
+// refresh finds an empty balance; the built-in quota rule when no rule has that category.
+func quotaPauseRule(channel *model.Channel) model.PauseRule {
+	for _, rule := range model.PauseRulesForChannel(channel) {
 		if rule.Category == model.PauseCategoryQuota && rule.Action == model.PauseActionPause && rule.Seconds > 0 && !rule.Disabled {
 			return rule
 		}
@@ -173,7 +173,7 @@ func handleBalanceForPauses(channel *model.Channel, balance float64) bool {
 		}
 		return true
 	}
-	rule := quotaPauseRule()
+	rule := quotaPauseRule(channel)
 	now := time.Now().Unix()
 	pause := &model.SupplyPause{
 		ChannelId: channel.Id, Until: now + int64(rule.Seconds), Seconds: int64(rule.Seconds),
@@ -256,4 +256,46 @@ func DeleteSupplyPause(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": ""})
+}
+
+// GetPauseRules returns what the rules settings page shows: whether pause rules are on, whether
+// custom rules replace the defaults, the rules in effect, the built-in defaults, and with
+// ?channel_id= that channel's own rules (tried before the site-wide ones).
+func GetPauseRules(c *gin.Context) {
+	data := gin.H{
+		"enabled":  config.PauseRulesEnabled,
+		"custom":   strings.TrimSpace(config.PauseRules) != "",
+		"rules":    model.EffectivePauseRules(),
+		"defaults": model.DefaultPauseRules(),
+	}
+	if raw := c.Query("channel_id"); raw != "" {
+		channelId, err := strconv.Atoi(raw)
+		if err != nil {
+			common.APIRespondWithError(c, http.StatusOK, err)
+			return
+		}
+		channel, err := model.GetChannelById(channelId)
+		if err != nil {
+			common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeModelSupplyChannelNotFound, "the channel does not exist", nil)
+			return
+		}
+		rules := model.ChannelPauseRules(channel)
+		if rules == nil {
+			rules = []model.PauseRule{}
+		}
+		data["channel_rules"] = rules
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": data})
+}
+
+// rejectInvalidPauseRules answers a channel save whose own pause rules do not parse.
+func rejectInvalidPauseRules(c *gin.Context, raw *string) bool {
+	if raw == nil || strings.TrimSpace(*raw) == "" {
+		return false
+	}
+	if _, err := model.ParsePauseRules(*raw); err != nil {
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeSupplyPauseRulesInvalid, err.Error(), map[string]any{"message": err.Error()})
+		return true
+	}
+	return false
 }
