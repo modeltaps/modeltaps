@@ -795,6 +795,15 @@ func shouldRetry(c *gin.Context, apiErr *types.OpenAIErrorWithStatusCode, channe
 		return false
 	}
 
+	// An error saying this channel can no longer serve (exhausted quota or balance, rejected
+	// credential, a disable keyword) moves the request to another channel whatever its status
+	// code: some providers report an empty balance as a 400, which would otherwise end the
+	// request here. Strict session affinity gives way too, since the bound channel is unusable
+	// and staying on it cannot keep the session's cache.
+	if controller.IsChannelUnusableError(channelType, apiErr) {
+		return true
+	}
+
 	// 严格会话亲和：会话绑定的渠道失败时不换渠道，换渠道会丢掉上游缓存（及 Codex 的会话状态）。
 	if config.SessionAffinityStrict && c.GetString(model.SessionAffinityContextKey) == "hit" {
 		return false

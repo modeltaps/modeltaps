@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/types"
@@ -538,4 +539,58 @@ func TestRelayErrorModelName(t *testing.T) {
 	if got := relayErrorModelName(c); got != "gpt-4o-2024-08-06" {
 		t.Fatalf("expected new_model to take precedence, got %q", got)
 	}
+}
+
+// An error saying the channel can no longer serve moves the request to another channel even
+// when its status code would not, and whether or not automatic disabling is on.
+func TestShouldRetry_UnusableChannel(t *testing.T) {
+	oldAuto := config.AutomaticDisableChannelEnabled
+	config.AutomaticDisableChannelEnabled = false
+	t.Cleanup(func() { config.AutomaticDisableChannelEnabled = oldAuto })
+	oldKeywords := common.DisableChannelKeywordsInstance.GetKeywords()
+	common.DisableChannelKeywordsInstance.Load(common.GetDefaultDisableChannelKeywords())
+	t.Cleanup(func() { common.DisableChannelKeywordsInstance.Load(oldKeywords) })
+
+	build := func(status int, message, errType, code string) *types.OpenAIErrorWithStatusCode {
+		e := &types.OpenAIErrorWithStatusCode{StatusCode: status}
+		e.OpenAIError.Message = message
+		e.OpenAIError.Type = errType
+		e.OpenAIError.Code = code
+		return e
+	}
+
+	tests := []struct {
+		name string
+		err  *types.OpenAIErrorWithStatusCode
+		want bool
+	}{
+		{"400 credit balance keyword", build(http.StatusBadRequest, "Your credit balance is too low to access the API.", "invalid_request_error", ""), true},
+		{"400 insufficient_quota type", build(http.StatusBadRequest, "quota used up", "insufficient_quota", ""), true},
+		{"400 billing_not_active code", build(http.StatusBadRequest, "billing inactive", "", "billing_not_active"), true},
+		{"400 malformed request still stops", build(http.StatusBadRequest, "messages: field required", "invalid_request_error", ""), false},
+		{"408 with exhausted balance", build(http.StatusRequestTimeout, "your account balance is insufficient", "", ""), true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := shouldRetry(newTestContext(), tt.err, config.ChannelTypeOpenAI); got != tt.want {
+				t.Fatalf("shouldRetry = %v, want %v", got, tt.want)
+			}
+		})
+	}
+
+	t.Run("local error never retries", func(t *testing.T) {
+		e := build(http.StatusBadRequest, "Your credit balance is too low", "", "")
+		e.LocalError = true
+		if shouldRetry(newTestContext(), e, config.ChannelTypeOpenAI) {
+			t.Fatal("local error retried")
+		}
+	})
+
+	t.Run("pinned channel never retries", func(t *testing.T) {
+		c := newTestContext()
+		c.Set("specific_channel_id", 7)
+		if shouldRetry(c, build(http.StatusBadRequest, "Your credit balance is too low", "", ""), config.ChannelTypeOpenAI) {
+			t.Fatal("pinned channel retried")
+		}
+	})
 }

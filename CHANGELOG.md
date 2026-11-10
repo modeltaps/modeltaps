@@ -88,6 +88,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A request whose channel turns out to be out of quota or credit now moves to the next channel
+  instead of failing. Some providers report an empty balance as a 400 (for example "Your credit
+  balance is too low"), which ended the request on every channel type except Anthropic, even
+  though the channel was then disabled. Any error that matches the automatic disable rules
+  (exhausted quota or balance, rejected key, disabled account, a disable keyword) now retries on
+  another channel whatever its status code and whether or not automatic disabling is on, and also
+  when strict session affinity binds the session to that channel. A malformed request still
+  returns its 400 without retrying.
+- The scheduled recovery check now sends the "Channel re-enabled" notice when it puts an
+  automatically disabled channel back into rotation; the notice type was listed in the
+  notification settings but never sent. With several nodes running the check, only the node that
+  re-enables the channel sends it. A recovery also clears the disable notice's de-duplication
+  window, so a channel that fails again within five minutes is reported again.
 - Claude models on Vertex AI channels now work. Requests were sent to Google's publisher path, so
   Claude models were not found there; Claude now uses the Anthropic publisher, and model IDs with
   a date (`claude-sonnet-4-5-20250929`) are converted to Vertex's `name@date` form while models

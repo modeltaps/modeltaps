@@ -33,3 +33,19 @@ func TestShouldRetry_StrictSessionAffinity(t *testing.T) {
 		}
 	}
 }
+
+// Strict affinity keeps a session on its bound channel through ordinary failures, but not
+// when the channel itself is unusable: staying on it cannot keep the session's cache.
+func TestShouldRetry_StrictSessionAffinityUnusableChannel(t *testing.T) {
+	old := config.SessionAffinityStrict
+	config.SessionAffinityStrict = true
+	t.Cleanup(func() { config.SessionAffinityStrict = old })
+
+	c := newTestContext()
+	c.Set(model.SessionAffinityContextKey, "hit")
+	e := apiErr(http.StatusTooManyRequests, false)
+	e.OpenAIError.Type = "insufficient_quota"
+	if !shouldRetry(c, e, config.ChannelTypeOpenAI) {
+		t.Fatal("strict affinity kept the session on a channel with no quota")
+	}
+}
