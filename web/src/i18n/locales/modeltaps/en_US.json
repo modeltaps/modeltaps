@@ -829,7 +829,12 @@
       "visible": "Visible",
       "missing": "Missing: {{items}}",
       "legend": "Ready: channel · price · visible"
-    }
+    },
+    "vendorInUse": "In use",
+    "vendorUnused": "Unused",
+    "vendorModels": "{{count}} models",
+    "vendorNoChannel": "{{count}} without channel",
+    "viewVendorModels": "View models"
   },
   "brandIconPicker": {
     "mode": {

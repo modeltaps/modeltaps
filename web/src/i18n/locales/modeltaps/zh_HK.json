@@ -828,7 +828,12 @@
       "visible": "可見",
       "missing": "缺少：{{items}}",
       "legend": "就緒：渠道 · 定價 · 可見"
-    }
+    },
+    "vendorInUse": "在用",
+    "vendorUnused": "未使用",
+    "vendorModels": "{{count}} 個模型",
+    "vendorNoChannel": "{{count}} 無渠道",
+    "viewVendorModels": "查看模型"
   },
   "brandIconPicker": {
     "mode": {

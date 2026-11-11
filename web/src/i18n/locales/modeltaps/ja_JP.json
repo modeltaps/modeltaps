@@ -828,7 +828,12 @@
       "visible": "公開",
       "missing": "不足：{{items}}",
       "legend": "準備状況：チャネル · 価格 · 公開"
-    }
+    },
+    "vendorInUse": "使用中",
+    "vendorUnused": "未使用",
+    "vendorModels": "{{count}} モデル",
+    "vendorNoChannel": "{{count}} チャネルなし",
+    "viewVendorModels": "モデルを見る"
   },
   "brandIconPicker": {
     "mode": {
