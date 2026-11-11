@@ -1,46 +1,19 @@
-import { useState, useEffect, useContext, useMemo, useRef } from 'react';
-import PropTypes from 'prop-types';
+import { useState, useEffect, useContext, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import {
-  Plus,
-  RotateCcw,
-  KeyRound,
-  Columns3,
-  Check,
-  Minus,
-  Search,
-  ListFilter,
-  Link2,
-  Sparkles,
-  X,
-  BookmarkPlus,
-  Power,
-  PowerOff,
-  Trash2,
-  ArrowDownUp,
-  ListChecks
-} from 'lucide-react';
+import { Plus, RotateCcw, KeyRound, Search, Link2, Power, PowerOff, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/components/ui/sonner';
-import { FilterBar, FilterSheet, filterStateToParams, paramsToFilterState, isEntryActive, optionLabel } from '@/components/filter-bar';
+import { FilterSheet, describeEntry, filterStateToParams, paramsToFilterState, isEntryActive } from '@/components/filter-bar';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import PageActions from '@/components/chrome/PageActions';
-import { useContentMinWidth } from '@/components/chrome/ContentWidth';
 import { cn } from '@/lib/utils';
 import { API } from 'utils/api';
 import { showError, useIsReliable, useIsAdmin } from 'utils/common';
@@ -48,11 +21,23 @@ import { UserContext } from 'contexts/UserContext';
 import { useOrg } from 'contexts/OrgContext';
 import { isOrgAdminRole } from '@/components/chrome/nav-config';
 import usePaginatedList from 'hooks/usePaginatedList';
-import useElementWidth from 'hooks/useElementWidth';
-import { BatchBar, ListFooter } from '@/components/list-page';
-import { Segmented, useObjectRoute } from '@/components/objects';
+import {
+  BatchBar,
+  ColumnPicker,
+  ConditionBar,
+  ListFooter,
+  ListSkeleton,
+  PhoneListToolbar,
+  PresetChips,
+  StatusSegments,
+  useColumnVisibility,
+  useFilterPresets,
+  useListLayout,
+  useRowSelection
+} from '@/components/list-page';
+import { useObjectRoute } from '@/components/objects';
 import ConnectInfo, { useApiAddresses } from './ConnectInfo';
-import TokenTable, { estimateTableWidth, TokenListSkeleton } from './TokenTable';
+import TokenTable, { estimateTableWidth } from './TokenTable';
 import TokenPanel from './TokenPanel';
 import NewTokenDialog from './NewTokenDialog';
 import { TOKEN_TAB_KEYS } from './tokenTabs';
@@ -87,69 +72,6 @@ const LEGACY_COLUMN_VISIBILITY_STORAGE_KEYS = [
   'token-column-visibility-v3',
   'token-column-visibility-v4'
 ];
-
-const buildDefaultColumnVisibility = () => Object.fromEntries(TOKEN_COLUMNS.map((c) => [c.id, !c.defaultHidden]));
-
-// localStorage persistence; unknown/missing keys fall back to the default.
-const loadColumnVisibility = () => {
-  const defaults = buildDefaultColumnVisibility();
-  try {
-    LEGACY_COLUMN_VISIBILITY_STORAGE_KEYS.forEach((k) => localStorage.removeItem(k));
-    const saved = JSON.parse(localStorage.getItem(COLUMN_VISIBILITY_STORAGE_KEY));
-    if (!saved || typeof saved !== 'object') return defaults;
-    for (const c of TOKEN_COLUMNS) {
-      if (!c.fixed && typeof saved[c.id] === 'boolean') defaults[c.id] = saved[c.id];
-    }
-  } catch {
-    /* corrupted storage -> defaults */
-  }
-  return defaults;
-};
-
-// Menu row with a checkbox glyph. A plain DropdownMenuItem closes the menu on
-// click, which breaks multi-toggle; the glyph is a span (not the Checkbox
-// component) to avoid nesting a button inside a button.
-function ColumnToggleItem({ checked, indeterminate = false, label, onToggle }) {
-  return (
-    <button
-      type="button"
-      role="menuitemcheckbox"
-      aria-checked={indeterminate ? 'mixed' : checked}
-      onClick={onToggle}
-      className="flex w-full cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors hover:bg-muted focus:bg-muted"
-    >
-      <span
-        className={cn(
-          'flex size-4 shrink-0 items-center justify-center rounded-sm border border-input',
-          (checked || indeterminate) && 'border-primary bg-primary text-primary-foreground'
-        )}
-      >
-        {indeterminate ? <Minus className="size-3.5" /> : checked ? <Check className="size-3.5" /> : null}
-      </span>
-      <span className="truncate">{label}</span>
-    </button>
-  );
-}
-
-ColumnToggleItem.propTypes = {
-  checked: PropTypes.bool,
-  indeterminate: PropTypes.bool,
-  label: PropTypes.node,
-  onToggle: PropTypes.func.isRequired
-};
-
-// ↑/↓/Home/End roving focus for the column menu items.
-const focusColumnMenuItem = (root, key) => {
-  const items = Array.from(root?.querySelectorAll('[role="menuitemcheckbox"]') ?? []);
-  if (!items.length) return;
-  const idx = items.indexOf(document.activeElement);
-  let next;
-  if (key === 'Home') next = 0;
-  else if (key === 'End') next = items.length - 1;
-  else if (key === 'ArrowDown') next = idx < 0 ? 0 : (idx + 1) % items.length;
-  else next = idx < 0 ? items.length - 1 : (idx - 1 + items.length) % items.length;
-  items[next].focus();
-};
 
 // List segments (?status=). Counts come back with the list as status_counts.
 const STATUS_SEGMENTS = ['all', 'enabled', 'disabled', 'invalid'];
@@ -230,11 +152,6 @@ const BUILTIN_PRESETS = [
   { id: 'budget', labelKey: 'apiKey.list.presetBudget', status: 'all', conditions: { budget_min: { value: '80' } } },
   { id: 'nolimit', labelKey: 'apiKey.list.presetNoLimit', status: 'enabled', conditions: { limit: one('none') } }
 ];
-// The list shows the full table whenever its natural width fits the list area; the page first
-// asks the shell to collapse the sidebar to make room. Only when even that is not enough does it
-// switch to the phone list. `fits` is the table's natural width plus the card border.
-export const listLayout = (areaWidth, tableWidth) => (areaWidth > 0 && areaWidth < tableWidth + 2 ? 'list' : 'table');
-
 // Sort choices of the narrow layout, which has no table headers to click.
 const SORT_OPTIONS = [
   { id: 'id', dir: 'desc', labelKey: 'apiKey.list.sortNewest' },
@@ -244,14 +161,6 @@ const SORT_OPTIONS = [
 ];
 
 const PRESET_STORAGE_KEY = 'token-filter-presets-v1';
-const loadSavedPresets = () => {
-  try {
-    const saved = JSON.parse(localStorage.getItem(PRESET_STORAGE_KEY));
-    return Array.isArray(saved) ? saved.filter((p) => p && typeof p.name === 'string' && p.conditions) : [];
-  } catch {
-    return [];
-  }
-};
 
 // 管理员搜索字段:仅站点管理员、非组织上下文时注册进 FilterBar;标量值直接落同名参数,
 // 触发任一字段即切到 /api/token/admin/search(见 fetchData 的 isAdminSearch 分支)。
@@ -369,39 +278,19 @@ export default function Token() {
     deps: [filterState, filterFields, keyword, status, isAdminSearch, adminSearchParams, currentOrgId]
   });
 
-  const [columnVisibility, setColumnVisibility] = useState(loadColumnVisibility);
-  const columnMenuRef = useRef(null);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(COLUMN_VISIBILITY_STORAGE_KEY, JSON.stringify(columnVisibility));
-    } catch {
-      /* storage unavailable -> keep in-memory only */
-    }
-  }, [columnVisibility]);
-
-  // Columns the current user may toggle; reliable-only columns appear only for
-  // reliable users, org-only columns only in an organization context (matching
-  // which columns TokenTable actually renders).
-  const menuColumns = useMemo(
-    () => TOKEN_COLUMNS.filter((c) => !c.fixed && (!c.reliableOnly || userIsReliable) && (!c.orgOnly || isOrgContext)),
+  // Columns the current user may see: reliable-only columns only for reliable users, org-only
+  // columns only in an organization (matching which columns TokenTable renders).
+  const visibleColumnIds = useMemo(
+    () => TOKEN_COLUMNS.filter((c) => (!c.reliableOnly || userIsReliable) && (!c.orgOnly || isOrgContext)).map((c) => c.id),
     [userIsReliable, isOrgContext]
   );
-  const allMenuColumnsVisible = menuColumns.every((c) => columnVisibility[c.id]);
-  const someMenuColumnsVisible = menuColumns.some((c) => columnVisibility[c.id]);
-  const visibleMenuColumnCount = menuColumns.filter((c) => columnVisibility[c.id]).length;
-  const resetColumns = () => setColumnVisibility(buildDefaultColumnVisibility());
-
-  const toggleColumn = (id) => setColumnVisibility((v) => ({ ...v, [id]: !v[id] }));
-
-  const toggleAllColumns = () =>
-    setColumnVisibility((v) => {
-      const next = { ...v };
-      menuColumns.forEach((c) => {
-        next[c.id] = !allMenuColumnsVisible;
-      });
-      return next;
-    });
+  const columns = useColumnVisibility({
+    storageKey: COLUMN_VISIBILITY_STORAGE_KEY,
+    legacyKeys: LEGACY_COLUMN_VISIBILITY_STORAGE_KEYS,
+    columns: TOKEN_COLUMNS,
+    available: visibleColumnIds
+  });
+  const columnVisibility = columns.visibility;
 
   const userGroupOptions = useMemo(
     () =>
@@ -439,46 +328,18 @@ export default function Token() {
     return () => clearTimeout(timer);
   }, [searchText, keyword, setPage]);
 
-  // Bulk selection (ids on the current page). It is cleared whenever the rows can change under it:
-  // another page, page size, search, segment, conditions or organization.
-  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  // Bulk selection, cleared whenever the rows can change under it.
+  const selection = useRowSelection(tokens, [page, rowsPerPage, keyword, status, filterState, currentOrgId]);
+  const { selectedIds } = selection;
   const [batchBusy, setBatchBusy] = useState(false);
   const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
-  useEffect(() => {
-    setSelectedIds(new Set());
-  }, [page, rowsPerPage, keyword, status, filterState, currentOrgId]);
-  const toggleSelect = (id) =>
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  const toggleSelectAll = (all) => setSelectedIds(all ? new Set(tokens.map((x) => x.id)) : new Set());
 
-  const [pageRef, pageWidth] = useElementWidth();
-  // The table's natural width: measured while the table shows, estimated from the column set
-  // otherwise (and after the columns change, until it is measured again).
-  const [measuredTableWidth, setMeasuredTableWidth] = useState(null);
-  const visibleColumnIds = useMemo(
-    () => TOKEN_COLUMNS.filter((c) => (!c.reliableOnly || userIsReliable) && (!c.orgOnly || isOrgContext)).map((c) => c.id),
-    [userIsReliable, isOrgContext]
-  );
-  useEffect(() => {
-    setMeasuredTableWidth(null);
-  }, [columnVisibility, visibleColumnIds]);
-  const tableWidth = measuredTableWidth ?? estimateTableWidth(visibleColumnIds, columnVisibility);
-  // Ask the shell for this much content width; it collapses the sidebar when that helps.
-  useContentMinWidth(tableWidth + 2);
-  const layout = listLayout(pageWidth, tableWidth);
-  const narrow = layout === 'list';
-  // Narrow layout: checkboxes only in select mode; conditions in a bottom sheet.
-  const [selectMode, setSelectMode] = useState(false);
+  // Full table while it fits (the sidebar collapses first), phone list otherwise.
+  const { pageRef, layout, narrow, onNaturalWidth } = useListLayout({
+    estimate: estimateTableWidth(visibleColumnIds, columnVisibility),
+    resetKey: JSON.stringify([columnVisibility, visibleColumnIds])
+  });
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
-  const exitSelectMode = () => {
-    setSelectMode(false);
-    setSelectedIds(new Set());
-  };
 
   const changeStatus = (next) => {
     setPage(0);
@@ -486,50 +347,7 @@ export default function Token() {
   };
 
   // Presets. Admin search fields are never part of one: they switch the list to another endpoint.
-  const [savedPresets, setSavedPresets] = useState(loadSavedPresets);
-  useEffect(() => {
-    try {
-      localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(savedPresets));
-    } catch {
-      /* storage unavailable -> keep in-memory only */
-    }
-  }, [savedPresets]);
   const conditionFields = filterFields.filter((f) => !ADMIN_FILTER_PARAM_KEYS.includes(f.key));
-  const currentConditions = Object.fromEntries(
-    conditionFields.filter((f) => isEntryActive(f, filterState[f.key])).map((f) => [f.key, filterState[f.key]])
-  );
-  const hasCurrentConditions = status !== 'all' || Object.keys(currentConditions).length > 0;
-  // A readable name for a combination, e.g. "Disabled · Expiry: Expire within 14 days".
-  const describePreset = (preset) =>
-    [
-      preset.status !== 'all' ? t(`apiKey.list.status_${preset.status}`) : null,
-      ...conditionFields
-        .filter((f) => preset.conditions[f.key])
-        .map((f) => {
-          const entry = preset.conditions[f.key];
-          if (f.type === 'number') return `${t(f.labelKey)} ≥ ${entry.value}`;
-          const v = entry.values?.[0];
-          const opt = (f.options || []).find((o) => String(o.value) === String(v));
-          return `${t(f.labelKey)}: ${opt ? optionLabel(t, opt) : v}`;
-        })
-    ]
-      .filter(Boolean)
-      .join(' · ');
-  // One active condition as text ("Expiry: Never expire", "Spent at least ≥ 10").
-  const describeEntry = (f, entry) => {
-    if (f.type === 'number' || f.type === 'text') return `${t(f.labelKey)} ≥ ${entry.value}`;
-    const v = entry.values?.[0];
-    const opt = (f.options || []).find((o) => String(o.value) === String(v));
-    return `${t(f.labelKey)}: ${opt ? optionLabel(t, opt) : v}`;
-  };
-  const activeConditionFields = filterFields.filter((f) => isEntryActive(f, filterState[f.key]));
-  const removeCondition = (key) =>
-    handleFilterChange((prev) => {
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
-
   const applyPreset = (preset) => {
     setPage(0);
     setStatus(preset.status || 'all');
@@ -538,12 +356,24 @@ export default function Token() {
       return { ...next, ...preset.conditions };
     });
   };
-  const saveCurrentPreset = () => {
-    const preset = { id: `saved-${Date.now()}`, status, conditions: currentConditions };
-    preset.name = describePreset(preset);
-    setSavedPresets((list) => [...list.filter((p) => p.name !== preset.name), preset]);
-  };
-  const removePreset = (id) => setSavedPresets((list) => list.filter((p) => p.id !== id));
+  const presets = useFilterPresets({
+    storageKey: PRESET_STORAGE_KEY,
+    builtin: BUILTIN_PRESETS,
+    fields: conditionFields,
+    state: filterState,
+    status,
+    statusLabel: (value) => t(`apiKey.list.status_${value}`),
+    apply: applyPreset
+  });
+  const activeConditionFields = filterFields.filter((f) => isEntryActive(f, filterState[f.key]));
+  const removeCondition = (key) =>
+    handleFilterChange((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  const statusOptions = STATUS_SEGMENTS.map((value) => ({ value, label: t(`apiKey.list.status_${value}`) }));
+  const searchBox = { value: searchText, onChange: setSearchText, placeholder: t('token_index.searchTokenName') };
 
   // 级联筛选受控回调:任何改动即时应用并回到第一页;清空同理。
   const handleFilterChange = (next) => {
@@ -632,7 +462,7 @@ export default function Token() {
     } finally {
       setBatchBusy(false);
       setBatchDeleteOpen(false);
-      setSelectedIds(new Set());
+      selection.clear();
       setReloadKey((k) => k + 1);
       handleRefresh();
     }
@@ -671,46 +501,6 @@ export default function Token() {
 
   const apiAddresses = useApiAddresses();
 
-  // Preset menu items, shared by the condition bar's Presets menu.
-  const presetMenuItems = (
-    <>
-      <DropdownMenuLabel>{t('apiKey.list.presetsBuiltin')}</DropdownMenuLabel>
-      {BUILTIN_PRESETS.map((p) => (
-        <DropdownMenuItem key={p.id} onClick={() => applyPreset(p)} className="flex-col items-start gap-0">
-          <span>{t(p.labelKey)}</span>
-          <span className="text-xs text-muted-foreground">{describePreset(p)}</span>
-        </DropdownMenuItem>
-      ))}
-      {savedPresets.length > 0 && (
-        <>
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel>{t('apiKey.list.presetsSaved')}</DropdownMenuLabel>
-          {savedPresets.map((p) => (
-            <div key={p.id} className="group/preset flex items-center gap-1">
-              <DropdownMenuItem onClick={() => applyPreset(p)} className="min-w-0 flex-1">
-                <span className="truncate">{p.name}</span>
-              </DropdownMenuItem>
-              <button
-                type="button"
-                aria-label={t('apiKey.list.presetRemove')}
-                title={t('apiKey.list.presetRemove')}
-                onClick={() => removePreset(p.id)}
-                className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground focus-visible:opacity-100 group-hover/preset:opacity-100"
-              >
-                <X className="size-3.5" />
-              </button>
-            </div>
-          ))}
-        </>
-      )}
-      <DropdownMenuSeparator />
-      <DropdownMenuItem disabled={!hasCurrentConditions} onClick={saveCurrentPreset}>
-        <BookmarkPlus className="size-4" />
-        {t('apiKey.list.presetSave')}
-      </DropdownMenuItem>
-    </>
-  );
-
   // Batch action buttons, in the bar above the table or pinned to the bottom on phones.
   const batchActions = (
     <>
@@ -731,7 +521,7 @@ export default function Token() {
 
   return (
     <>
-      <div ref={pageRef} className={cn('space-y-3', narrow && selectMode && 'pb-20')}>
+      <div ref={pageRef} className={cn('space-y-3', narrow && selection.selectMode && 'pb-20')}>
         {/* Title row: refresh, the Connect popover (where to send requests), then create. */}
         <PageActions>
           <TooltipProvider delayDuration={150}>
@@ -762,127 +552,34 @@ export default function Token() {
         <div className="space-y-2">
           {narrow ? (
             <>
-              {/* Phone list: segments are chips that scroll sideways instead of wrapping; one row with search and the
-                  filter, sort and select buttons; active conditions as removable chips. */}
-              <div
-                role="radiogroup"
-                aria-label={t('apiKey.list.segments')}
-                className="-mx-4 flex gap-1.5 overflow-x-auto px-4 no-scrollbar"
-              >
-                {STATUS_SEGMENTS.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    role="radio"
-                    aria-checked={status === value}
-                    onClick={() => changeStatus(value)}
-                    className={cn(
-                      'inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[13px] transition-colors',
-                      status === value
-                        ? 'border-foreground bg-foreground text-background'
-                        : 'border-input bg-field text-foreground hover:bg-muted'
-                    )}
-                  >
-                    {t(`apiKey.list.status_${value}`)}
-                    {statusCounts && (
-                      <span className={cn('tabular-nums', status === value ? 'text-background/70' : 'text-muted-foreground')}>
-                        {statusCounts[value] ?? 0}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="relative min-w-0 flex-1">
-                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={searchText}
-                    onChange={(e) => setSearchText(e.target.value)}
-                    placeholder={t('token_index.searchTokenName')}
-                    aria-label={t('token_index.searchTokenName')}
-                    className="h-8 pl-8"
-                  />
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="relative size-8 shrink-0"
-                  aria-label={t('apiKey.list.filter')}
-                  onClick={() => setFilterSheetOpen(true)}
-                >
-                  <ListFilter className="size-4" />
-                  {activeConditionFields.length > 0 && (
-                    <span className="absolute -right-1 -top-1 flex min-w-[16px] items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-medium leading-4 text-background">
-                      {activeConditionFields.length}
-                    </span>
-                  )}
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" className="size-8 shrink-0" aria-label={t('apiKey.list.sort')}>
-                      <ArrowDownUp className="size-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-44">
-                    <DropdownMenuLabel>{t('apiKey.list.sort')}</DropdownMenuLabel>
-                    {SORT_OPTIONS.map((o) => (
-                      <DropdownMenuItem key={o.labelKey} onClick={() => setSort(o.id, o.dir)} className="justify-between">
-                        {t(o.labelKey)}
-                        {orderBy === o.id && order === o.dir && <Check className="size-4" />}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Button
-                  variant={selectMode ? 'secondary' : 'outline'}
-                  size="icon"
-                  className="size-8 shrink-0"
-                  aria-label={t('apiKey.list.selectMode')}
-                  aria-pressed={selectMode}
-                  onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
-                >
-                  <ListChecks className="size-4" />
-                </Button>
-              </div>
-              {activeConditionFields.length > 0 && (
-                <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 no-scrollbar">
-                  {activeConditionFields.map((f) => (
-                    <button
-                      key={f.key}
-                      type="button"
-                      onClick={() => removeCondition(f.key)}
-                      aria-label={`${t('filterBar.remove')} ${describeEntry(f, filterState[f.key])}`}
-                      className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full border border-input bg-field pl-2.5 pr-1.5 text-xs"
-                    >
-                      {describeEntry(f, filterState[f.key])}
-                      <X className="size-3.5 text-muted-foreground" />
-                    </button>
-                  ))}
-                </div>
-              )}
+              <StatusSegments chips value={status} onChange={changeStatus} options={statusOptions} counts={statusCounts} />
+              <PhoneListToolbar
+                search={searchBox}
+                filter={{ count: activeConditionFields.length, onOpen: () => setFilterSheetOpen(true) }}
+                sort={{
+                  options: SORT_OPTIONS.map((o) => ({
+                    key: o.labelKey,
+                    label: t(o.labelKey),
+                    active: orderBy === o.id && order === o.dir,
+                    onSelect: () => setSort(o.id, o.dir)
+                  }))
+                }}
+                select={{
+                  active: selection.selectMode,
+                  onToggle: () => (selection.selectMode ? selection.exitSelectMode() : selection.enterSelectMode())
+                }}
+                chips={activeConditionFields.map((f) => ({
+                  key: f.key,
+                  label: describeEntry(t, f, filterState[f.key]),
+                  onRemove: () => removeCondition(f.key)
+                }))}
+              />
             </>
           ) : (
             <>
               {/* Toolbar: status segments with counts, name search, column picker. */}
               <div className="flex flex-wrap items-center gap-2">
-                <Segmented
-                  label={t('apiKey.list.segments')}
-                  value={status}
-                  onChange={changeStatus}
-                  options={STATUS_SEGMENTS.map((value) => ({
-                    value,
-                    label: (
-                      <span className="inline-flex items-center gap-1.5">
-                        {t(`apiKey.list.status_${value}`)}
-                        {statusCounts && (
-                          <span className="min-w-[1.25rem] rounded-[5px] bg-foreground/[0.07] px-1 text-[11px] tabular-nums leading-[18px]">
-                            {statusCounts[value] ?? 0}
-                          </span>
-                        )}
-                      </span>
-                    )
-                  }))}
-                />
+                <StatusSegments value={status} onChange={changeStatus} options={statusOptions} counts={statusCounts} />
                 <div className="relative min-w-[12rem] flex-1">
                   <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -893,164 +590,52 @@ export default function Token() {
                     className="h-8 pl-8"
                   />
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 gap-1.5"
-                      onKeyDown={(e) => {
-                        if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && columnMenuRef.current) {
-                          e.preventDefault();
-                          focusColumnMenuItem(columnMenuRef.current, e.key);
-                        }
-                      }}
-                    >
-                      <Columns3 className="size-4" />
-                      {t('apiKey.list.columns')}
-                      <span className="text-xs tabular-nums text-muted-foreground">
-                        {visibleMenuColumnCount}/{menuColumns.length}
-                      </span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    ref={columnMenuRef}
-                    align="end"
-                    className="max-h-96 w-52 overflow-y-auto"
-                    onKeyDown={(e) => {
-                      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Home' || e.key === 'End') {
-                        e.preventDefault();
-                        focusColumnMenuItem(e.currentTarget, e.key);
-                      }
-                    }}
-                  >
-                    <DropdownMenuLabel>{t('token_index.selectColumns')}</DropdownMenuLabel>
-                    <ColumnToggleItem
-                      checked={allMenuColumnsVisible}
-                      indeterminate={!allMenuColumnsVisible && someMenuColumnsVisible}
-                      label={t('token_index.columnSelectAll')}
-                      onToggle={toggleAllColumns}
-                    />
-                    <DropdownMenuSeparator />
-                    {menuColumns.map((c) => (
-                      <ColumnToggleItem
-                        key={c.id}
-                        checked={!!columnVisibility[c.id]}
-                        label={t(c.labelKey)}
-                        onToggle={() => toggleColumn(c.id)}
-                      />
-                    ))}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={resetColumns}>{t('apiKey.list.resetColumns')}</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <ColumnPicker columns={columns} />
               </div>
 
-              {/* Condition bar: "Show keys that" + chips + add condition, always present so the
-                  conditions are discoverable. Selected rows swap it for the bulk actions. */}
-              {selectedIds.size > 0 ? (
+              {/* Condition bar, always present so the conditions are discoverable; selected rows
+                  swap it for the bulk actions. */}
+              {selection.count > 0 ? (
                 <BatchBar
-                  count={selectedIds.size}
-                  onClear={() => setSelectedIds(new Set())}
+                  count={selection.count}
+                  onClear={selection.clear}
                   className="min-h-10 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-1.5"
-                  actions={
-                    <>
-                      <Button size="sm" variant="outline" className="h-7" disabled={batchBusy} onClick={() => runBatch('enable')}>
-                        <Power className="size-3.5" />
-                        {t('apiKey.list.batchEnable')}
-                      </Button>
-                      <Button size="sm" variant="outline" className="h-7" disabled={batchBusy} onClick={() => runBatch('disable')}>
-                        <PowerOff className="size-3.5" />
-                        {t('apiKey.list.batchDisable')}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-destructive"
-                        disabled={batchBusy}
-                        onClick={() => setBatchDeleteOpen(true)}
-                      >
-                        <Trash2 className="size-3.5" />
-                        {t('common.delete')}
-                      </Button>
-                    </>
-                  }
+                  actions={batchActions}
                 />
               ) : (
-                <div className="flex min-h-10 w-full items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5">
-                  <FilterBar
-                    fields={filterFields}
-                    state={filterState}
-                    onChange={handleFilterChange}
-                    onClearAll={handleClearFilters}
-                    triggerVariant="plus"
-                    triggerLabel={t('apiKey.list.addCondition')}
-                    clearAlignEnd
-                    t={t}
-                    leading={
-                      <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
-                        <ListFilter className="size-3.5" />
-                        {t('apiKey.list.showKeysThat')}
-                      </span>
-                    }
-                    className="min-w-0 flex-1"
-                  />
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-7 shrink-0 gap-1.5 px-2 text-[13px]">
-                        <Sparkles className="size-3.5" />
-                        {t('apiKey.list.presets')}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-72">
-                      {presetMenuItems}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                <ConditionBar
+                  fields={filterFields}
+                  state={filterState}
+                  onChange={handleFilterChange}
+                  onClearAll={handleClearFilters}
+                  leadingLabel={t('apiKey.list.showKeysThat')}
+                  presets={presets}
+                />
               )}
             </>
           )}
         </div>
 
-        {narrow && selectMode && (
-          <BatchBar count={Math.max(selectedIds.size, 0) || 0} onClear={exitSelectMode} floating actions={batchActions} />
+        {narrow && selection.selectMode && (
+          <BatchBar count={selection.count} onClear={selection.exitSelectMode} floating actions={batchActions} />
         )}
         {narrow && (
           <FilterSheet
             open={filterSheetOpen}
             onOpenChange={setFilterSheetOpen}
-            title={t('apiKey.list.filter')}
+            title={t('listPage.filter')}
             fields={filterFields}
             state={filterState}
             onChange={handleFilterChange}
             onClearAll={handleClearFilters}
             t={t}
-            top={
-              <div className="space-y-1.5">
-                <div className="text-[11px] font-medium text-muted-foreground">{t('apiKey.list.presets')}</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {[...BUILTIN_PRESETS, ...savedPresets].map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        applyPreset(p);
-                        setFilterSheetOpen(false);
-                      }}
-                      className="h-8 rounded-full border border-input bg-field px-3 text-[13px] hover:bg-muted"
-                    >
-                      {p.labelKey ? t(p.labelKey) : p.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            }
+            top={<PresetChips presets={presets} onPick={() => setFilterSheetOpen(false)} />}
           />
         )}
 
         <Card>
           {!loaded ? (
-            <TokenListSkeleton layout={layout} />
+            <ListSkeleton layout={layout} cells={[64, 192, 32]} />
           ) : tokens.length === 0 && !searching ? (
             <div className="flex flex-col items-center justify-center gap-3 p-12 text-center">
               <KeyRound className="size-10 text-muted-foreground" />
@@ -1077,11 +662,11 @@ export default function Token() {
               onOpen={(item) => route.open(item.id)}
               openId={route.openId}
               selectedIds={selectedIds}
-              onToggleSelect={toggleSelect}
-              onToggleSelectAll={toggleSelectAll}
+              onToggleSelect={selection.toggle}
+              onToggleSelectAll={selection.toggleAll}
               layout={layout}
-              onNaturalWidth={setMeasuredTableWidth}
-              selectMode={selectMode}
+              onNaturalWidth={onNaturalWidth}
+              selectMode={selection.selectMode}
               order={order}
               orderBy={orderBy}
               onSort={handleSort}

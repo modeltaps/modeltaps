@@ -729,7 +729,23 @@
     "firstPage": "最初のページ",
     "prevPage": "前のページ",
     "nextPage": "次のページ",
-    "lastPage": "最後のページ"
+    "lastPage": "最後のページ",
+    "columns": "列",
+    "selectColumns": "列を選択",
+    "columnsSelectAll": "すべて選択",
+    "resetColumns": "デフォルトに戻す",
+    "addCondition": "条件を追加",
+    "presets": "プリセット",
+    "presetsBuiltin": "よく使うビュー",
+    "presetsSaved": "保存済み",
+    "presetSave": "現在の条件を保存",
+    "presetRemove": "プリセットを削除",
+    "filter": "絞り込み",
+    "sort": "並べ替え",
+    "selectAllOnPage": "このページをすべて選択",
+    "selectRow": "{{name}} を選択",
+    "selectMode": "選択",
+    "segments": "状態"
   },
   "pricing": "モデル",
   "modelsPage": {
@@ -940,7 +956,14 @@
       "passwordHint": "8〜64 文字。",
       "defaults": "default グループの一般ユーザーとして作成します",
       "created": "{{username}} を作成しました"
-    }
+    },
+    "roleFilterLabel": "ロール",
+    "roleAdmins": "管理者以上",
+    "showUsersThat": "ユーザーを絞り込む",
+    "sortNewest": "新しい順",
+    "sortBalance": "残高の多い順",
+    "sortUsed": "利用額の多い順",
+    "sortLastLogin": "最近ログインした順"
   },
   "command": {
     "search": "検索"
@@ -2936,14 +2959,10 @@
       "examples": "接続例"
     },
     "list": {
-      "segments": "キーの状態",
       "status_all": "すべて",
       "status_enabled": "有効",
       "status_disabled": "無効",
       "status_invalid": "期限切れ・使い切り",
-      "columns": "列",
-      "resetColumns": "デフォルトに戻す",
-      "addCondition": "条件を追加",
       "showKeysThat": "キーを絞り込む",
       "expiry": "有効期限",
       "expiryNever": "期限なし",
@@ -2953,11 +2972,6 @@
       "activityNever": "未使用",
       "activityIdle": "30 日間未使用",
       "connect": "接続",
-      "presets": "プリセット",
-      "presetsBuiltin": "よく使うビュー",
-      "presetsSaved": "保存済み",
-      "presetSave": "現在の条件を保存",
-      "presetRemove": "プリセットを削除",
       "presetExpiring": "まもなく期限切れ",
       "presetInvalid": "期限切れ・使い切り",
       "presetUnused": "未使用",
@@ -2986,13 +3000,10 @@
       "state_expired": "期限切れ",
       "state_exhausted": "使い切り",
       "stateExpiring": "{{when}}に期限切れ",
-      "filter": "絞り込み",
-      "sort": "並べ替え",
       "sortNewest": "新しい順",
       "sortName": "名前 A–Z",
       "sortUsage": "利用額の多い順",
-      "sortExpiry": "期限の近い順",
-      "selectMode": "キーを選択"
+      "sortExpiry": "期限の近い順"
     },
     "expiry": {
       "never": "期限なし",

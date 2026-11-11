@@ -31,7 +31,16 @@ export function StatusCell({ item, manageUser }) {
       setPending(false);
     }
   };
-  return <Switch checked={enabled} disabled={pending} onCheckedChange={onToggle} aria-label={t('userPage.enableSwitch')} />;
+  return (
+    <Switch
+      size="sm"
+      checked={enabled}
+      disabled={pending}
+      onCheckedChange={onToggle}
+      aria-label={enabled ? t('userPage.statusEnabled') : t('userPage.statusDisabled')}
+      title={enabled ? t('userPage.statusEnabled') : t('userPage.statusDisabled')}
+    />
+  );
 }
 
 // 状态:小圆点 + 文字。

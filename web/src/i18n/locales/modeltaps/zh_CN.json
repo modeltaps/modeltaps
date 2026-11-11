@@ -729,7 +729,23 @@
     "firstPage": "第一页",
     "prevPage": "上一页",
     "nextPage": "下一页",
-    "lastPage": "最后一页"
+    "lastPage": "最后一页",
+    "columns": "列",
+    "selectColumns": "选择列",
+    "columnsSelectAll": "全选",
+    "resetColumns": "恢复默认",
+    "addCondition": "添加条件",
+    "presets": "预设",
+    "presetsBuiltin": "常用视图",
+    "presetsSaved": "已保存",
+    "presetSave": "保存当前条件",
+    "presetRemove": "删除预设",
+    "filter": "筛选",
+    "sort": "排序",
+    "selectAllOnPage": "选择本页全部",
+    "selectRow": "选择 {{name}}",
+    "selectMode": "选择",
+    "segments": "状态"
   },
   "pricing": "模型",
   "modelsPage": {
@@ -940,7 +956,14 @@
       "passwordHint": "8 到 64 个字符。",
       "defaults": "创建为 default 分组的普通用户",
       "created": "已创建 {{username}}"
-    }
+    },
+    "roleFilterLabel": "角色",
+    "roleAdmins": "管理员及以上",
+    "showUsersThat": "筛选用户",
+    "sortNewest": "最新注册",
+    "sortBalance": "余额最高",
+    "sortUsed": "消费最多",
+    "sortLastLogin": "最近登录"
   },
   "command": {
     "search": "搜索"
@@ -2934,14 +2957,10 @@
       "examples": "接入示例"
     },
     "list": {
-      "segments": "Key 状态",
       "status_all": "全部",
       "status_enabled": "已启用",
       "status_disabled": "已停用",
       "status_invalid": "已过期或用尽",
-      "columns": "列",
-      "resetColumns": "恢复默认",
-      "addCondition": "添加条件",
       "showKeysThat": "筛选 Key",
       "expiry": "过期",
       "expiryNever": "永不过期",
@@ -2951,11 +2970,6 @@
       "activityNever": "从未使用",
       "activityIdle": "30 天未使用",
       "connect": "接入",
-      "presets": "预设",
-      "presetsBuiltin": "常用视图",
-      "presetsSaved": "已保存",
-      "presetSave": "保存当前条件",
-      "presetRemove": "删除预设",
       "presetExpiring": "即将过期",
       "presetInvalid": "已过期或用尽",
       "presetUnused": "从未使用",
@@ -2984,13 +2998,10 @@
       "state_expired": "已过期",
       "state_exhausted": "已用尽",
       "stateExpiring": "{{when}}过期",
-      "filter": "筛选",
-      "sort": "排序",
       "sortNewest": "最新创建",
       "sortName": "名称 A–Z",
       "sortUsage": "用量最高",
-      "sortExpiry": "最先过期",
-      "selectMode": "选择 Key"
+      "sortExpiry": "最先过期"
     },
     "expiry": {
       "never": "永不过期",

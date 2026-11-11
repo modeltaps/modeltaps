@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
@@ -24,7 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Skeleton } from '@/components/ui/skeleton';
+import { estimateWidth, useNaturalWidth } from '@/components/list-page';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -37,6 +37,7 @@ import { cn } from '@/lib/utils';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
 import { isPlaygroundToken } from 'utils/playgroundToken';
+import { relativeTime } from 'utils/relativeTime';
 
 // The short form of a key shown next to its name: the prefix and the last four characters.
 export function keySuffix(key) {
@@ -59,24 +60,8 @@ export function statusInfo(t, status) {
   }
 }
 
-// 相对时间（unix 秒）：本地化 Intl.RelativeTimeFormat，就近取最大单位
-const RELATIVE_TIME_UNITS = [
-  ['year', 31536000],
-  ['month', 2592000],
-  ['week', 604800],
-  ['day', 86400],
-  ['hour', 3600],
-  ['minute', 60],
-  ['second', 1]
-];
-export function relativeTime(rtf, tsSec) {
-  const diffSec = tsSec - Math.floor(Date.now() / 1000);
-  const absSec = Math.abs(diffSec);
-  for (const [unit, secs] of RELATIVE_TIME_UNITS) {
-    if (absSec >= secs || unit === 'second') return rtf.format(Math.round(diffSec / secs), unit);
-  }
-  return rtf.format(0, 'second');
-}
+// Re-exported for the callers that imported it from here.
+export { relativeTime };
 
 // 目标时区某 UTC 时刻的偏移分钟数（东为正）：用 Intl 求，勿手写偏移表。
 function tzOffsetMinutes(timeZone, date) {
@@ -387,59 +372,9 @@ const COLUMN_WIDTHS = {
   status: 70,
   actions: 56
 };
-// Loading placeholder shaped like the list it stands for: table rows with the name, usage bar
-// and status columns, or phone rows with a dot and two lines.
-export function TokenListSkeleton({ layout = 'table', rows = 5 }) {
-  const items = Array.from({ length: rows }, (_, i) => i);
-  if (layout === 'list') {
-    return (
-      <ul className="divide-y divide-border" aria-busy="true">
-        {items.map((i) => (
-          <li key={i} className="flex h-14 items-center gap-3 px-4">
-            <Skeleton className="size-2 rounded-full" />
-            <div className="flex-1 space-y-2">
-              <div className="flex justify-between gap-6">
-                <Skeleton className="h-3.5 w-28" />
-                <Skeleton className="h-3.5 w-12" />
-              </div>
-              <div className="flex justify-between gap-6">
-                <Skeleton className="h-3 w-36" />
-                <Skeleton className="h-3 w-8" />
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
-    );
-  }
-  return (
-    <div aria-busy="true">
-      <div className="flex h-10 items-center gap-6 border-b border-border px-4">
-        <Skeleton className="size-4 rounded-sm" />
-        <Skeleton className="h-3 w-16" />
-        <Skeleton className="ml-auto h-3 w-12" />
-      </div>
-      {items.map((i) => (
-        <div key={i} className="flex h-[53px] items-center gap-6 border-b border-border px-4 last:border-0">
-          <Skeleton className="size-4 rounded-sm" />
-          <Skeleton className="h-3.5 w-40" />
-          <Skeleton className="h-3.5 w-16" />
-          <div className="w-48 space-y-1.5">
-            <Skeleton className="h-3.5 w-24" />
-            <Skeleton className="h-1 w-full" />
-          </div>
-          <Skeleton className="ml-auto h-[18px] w-8 rounded-full" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 // Estimated natural width of the table with these columns, used before the table has been
 // measured (for example while the phone list is showing).
-export function estimateTableWidth(columnIds, visibility) {
-  return columnIds.filter((id) => visibility[id] !== false).reduce((sum, id) => sum + (COLUMN_WIDTHS[id] || 120), 0);
-}
+export const estimateTableWidth = (columnIds, visibility) => estimateWidth(columnIds, visibility, COLUMN_WIDTHS);
 
 export default function TokenTable({
   tokens,
@@ -703,16 +638,7 @@ export default function TokenTable({
 
   // The table never drops columns. It reports its natural (max-content) width so the page can
   // collapse the sidebar, or switch to the phone list, when that width does not fit.
-  const tableRef = useRef(null);
-  useLayoutEffect(() => {
-    const el = tableRef.current;
-    if (!el || !onNaturalWidth) return;
-    const prev = el.style.width;
-    el.style.width = 'max-content';
-    const natural = Math.ceil(el.getBoundingClientRect().width);
-    el.style.width = prev;
-    onNaturalWidth(natural);
-  });
+  const tableRef = useNaturalWidth(onNaturalWidth);
 
   const table = useTable({
     features: appTableFeatures,
