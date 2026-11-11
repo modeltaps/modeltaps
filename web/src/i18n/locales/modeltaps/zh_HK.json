@@ -2877,7 +2877,8 @@
     "hero": {
       "tagline": "所有模型，一個出口",
       "ctaPrimary": "取得 API Key",
-      "catchphrase": "扭開就用"
+      "catchphrase": "扭開就用",
+      "dripAria": "一滴 Modeltaps 標誌形狀的水在龍頭下聚起，落到平靜的水面上，漣漪一圈圈散開，依次點亮水面上的各個模型。"
     }
   },
   "apiKey": {
