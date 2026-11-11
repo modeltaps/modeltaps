@@ -62,22 +62,27 @@ import OpenClawConnectDialog from './OpenClawConnectDialog';
 const TOKEN_COLUMNS = [
   { id: 'select', labelKey: 'apiKey.list.selectAll', fixed: true },
   { id: 'name', labelKey: 'token_index.token', fixed: true },
-  { id: 'creator', labelKey: 'org.creator', orgOnly: true, defaultHidden: true },
+  { id: 'creator', labelKey: 'org.creator', orgOnly: true },
   { id: 'group', labelKey: 'token_index.userGroup', defaultHidden: true },
   { id: 'billing_tag', labelKey: 'token_index.billingTag', reliableOnly: true, defaultHidden: true },
-  { id: 'expired_time', labelKey: 'token_index.expiryTime', defaultHidden: true },
+  { id: 'expired_time', labelKey: 'token_index.expiryTime' },
   { id: 'accessed_time', labelKey: 'token_index.lastUsed' },
   { id: 'used_quota', labelKey: 'token_index.usageColumn' },
-  { id: 'created_time', labelKey: 'token_index.createdTime' },
+  { id: 'created_time', labelKey: 'token_index.createdTime', defaultHidden: true },
   { id: 'status', labelKey: 'token_index.status' },
   { id: 'actions', labelKey: 'token_index.actions', fixed: true }
 ];
 
-// v4: like other gateways the default list is name, usage, last used, created and status; creator,
-// group, expiry and billing tag are one click away in the column menu. Older saved states are
-// dropped so the new defaults apply.
-const COLUMN_VISIBILITY_STORAGE_KEY = 'token-column-visibility-v4';
-const LEGACY_COLUMN_VISIBILITY_STORAGE_KEYS = ['token-column-visibility', 'token-column-visibility-v2', 'token-column-visibility-v3'];
+// v5: the default list is name, creator (organizations only), usage, last used, expiry and status;
+// group, billing tag and creation date are one click away in the column menu. Older saved states
+// are dropped so the new defaults apply.
+const COLUMN_VISIBILITY_STORAGE_KEY = 'token-column-visibility-v5';
+const LEGACY_COLUMN_VISIBILITY_STORAGE_KEYS = [
+  'token-column-visibility',
+  'token-column-visibility-v2',
+  'token-column-visibility-v3',
+  'token-column-visibility-v4'
+];
 
 const buildDefaultColumnVisibility = () => Object.fromEntries(TOKEN_COLUMNS.map((c) => [c.id, !c.defaultHidden]));
 
@@ -195,19 +200,7 @@ const CONDITION_FIELDS = [
       { value: 'idle', labelKey: 'apiKey.list.activityIdle' }
     ]
   },
-  { key: 'group', sectionKey: SEC_OTHER, labelKey: 'token_index.userGroup', single: true, paramInclude: 'group', options: [] },
-  {
-    key: 'log_io',
-    sectionKey: SEC_OTHER,
-    labelKey: 'apiKey.list.logIO',
-    single: true,
-    paramInclude: 'log_io',
-    options: [
-      { value: 'on', labelKey: 'apiKey.list.logIOOn' },
-      { value: 'off', labelKey: 'apiKey.list.logIOOff' },
-      { value: 'inherit', labelKey: 'apiKey.list.logIOInherit' }
-    ]
-  }
+  { key: 'group', sectionKey: SEC_OTHER, labelKey: 'token_index.userGroup', single: true, paramInclude: 'group', options: [] }
 ];
 // Organization owners and admins can also narrow the list to one member's keys; the options are
 // filled in from the member list.

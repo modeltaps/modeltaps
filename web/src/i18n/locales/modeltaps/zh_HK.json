@@ -2973,10 +2973,6 @@
       "spentMinHint": "例如 10",
       "budgetMin": "已用限額不少於 (%)",
       "budgetMinHint": "例如 80",
-      "logIO": "完整留存",
-      "logIOOn": "強制開啟",
-      "logIOOff": "強制關閉",
-      "logIOInherit": "跟隨上級",
       "presetBudget": "接近限額",
       "presetNoLimit": "啟用但未設限額"
     }

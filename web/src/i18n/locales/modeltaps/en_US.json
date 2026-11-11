@@ -3070,10 +3070,6 @@
       "spentMinHint": "e.g. 10",
       "budgetMin": "Used at least (% of limit)",
       "budgetMinHint": "e.g. 80",
-      "logIO": "Full logging",
-      "logIOOn": "Forced on",
-      "logIOOff": "Forced off",
-      "logIOInherit": "Inherited",
       "presetBudget": "Near their limit",
       "presetNoLimit": "Enabled without a limit"
     }

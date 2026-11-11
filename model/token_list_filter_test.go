@@ -128,13 +128,12 @@ func TestListOrgTokensCreatedBy(t *testing.T) {
 
 func TestListTokensSpendAndLimitConditions(t *testing.T) {
 	setupTokenListDB(t)
-	on := true
 	unit := int(config.QuotaPerUnit)
 	periodic := Token{Name: "periodic", UnlimitedQuota: true, PeriodUsed: 90 * unit / 100, UsedQuota: 20 * unit}
 	periodic.Setting.Set(TokenSetting{QuotaReset: &QuotaResetSetting{Period: "daily", Limit: unit}})
 	seed := []Token{
 		{Name: "unlimited", UnlimitedQuota: true, UsedQuota: 5 * unit, Group: "vip"},
-		{Name: "total-low", UsedQuota: unit, RemainQuota: 9 * unit, LogIO: &on},
+		{Name: "total-low", UsedQuota: unit, RemainQuota: 9 * unit},
 		{Name: "total-high", UsedQuota: 9 * unit, RemainQuota: unit},
 		periodic,
 	}
@@ -157,8 +156,6 @@ func TestListTokensSpendAndLimitConditions(t *testing.T) {
 		{TokenListFilter{SpentMin: 5}, "[periodic total-high unlimited]"},
 		{TokenListFilter{Group: "vip"}, "[unlimited]"},
 		{TokenListFilter{Group: "_default"}, "[periodic total-high total-low]"},
-		{TokenListFilter{LogIO: "on"}, "[total-low]"},
-		{TokenListFilter{LogIO: "inherit"}, "[periodic total-high unlimited]"},
 		{TokenListFilter{Limit: "none", BudgetMin: 50}, "[]"},
 	}
 	for _, c := range cases {

@@ -2973,10 +2973,6 @@
       "spentMinHint": "例: 10",
       "budgetMin": "上限の使用率が次以上 (%)",
       "budgetMinHint": "例: 80",
-      "logIO": "完全ログ",
-      "logIOOn": "強制オン",
-      "logIOOff": "強制オフ",
-      "logIOInherit": "上位設定に従う",
       "presetBudget": "上限に近い",
       "presetNoLimit": "有効で上限なし"
     }

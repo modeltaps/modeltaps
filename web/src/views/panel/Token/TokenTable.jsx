@@ -405,23 +405,24 @@ function TokenCard({
   );
 }
 
-// Rough rendered widths (px) of each column, used to decide what fits on one line.
+// Typical rendered widths (px) of each column (measured, plus a little room for longer names),
+// used to decide what fits on one line.
 const COLUMN_WIDTHS = {
-  select: 40,
-  name: 260,
-  creator: 110,
-  group: 120,
-  billing_tag: 110,
-  expired_time: 110,
-  accessed_time: 110,
-  used_quota: 230,
-  created_time: 120,
-  status: 80,
+  select: 32,
+  name: 180,
+  creator: 100,
+  group: 110,
+  billing_tag: 100,
+  expired_time: 96,
+  accessed_time: 90,
+  used_quota: 220,
+  created_time: 100,
+  status: 70,
   actions: 56
 };
-// When the table is narrower than its visible columns, these hide first to last; name, usage,
-// status and actions always stay.
-const AUTO_HIDE_ORDER = ['billing_tag', 'creator', 'group', 'expired_time', 'created_time', 'accessed_time'];
+// When the table is narrower than its visible columns, these hide first to last (the default
+// columns last); name, usage, status and actions always stay.
+const AUTO_HIDE_ORDER = ['billing_tag', 'group', 'created_time', 'creator', 'expired_time', 'accessed_time'];
 
 // Columns the user picked minus those that do not fit `width`, hidden in AUTO_HIDE_ORDER.
 export function fitColumns(visibility, columnIds, width) {

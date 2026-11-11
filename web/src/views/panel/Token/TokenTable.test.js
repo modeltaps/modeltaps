@@ -12,11 +12,11 @@ describe('fitColumns', () => {
 
   it('hides columns in priority order as the table narrows', () => {
     const hidden = (w) => ids.filter((id) => fitColumns(all, ids, w)[id] === false);
-    // All nine columns add up to 1126px.
-    expect(hidden(1126)).toEqual([]);
-    expect(hidden(1100)).toEqual(['group']);
-    expect(hidden(950)).toEqual(['group', 'expired_time']);
-    expect(hidden(850)).toEqual(['group', 'expired_time', 'created_time']);
+    // All nine columns add up to 954px.
+    expect(hidden(954)).toEqual([]);
+    expect(hidden(940)).toEqual(['group']);
+    expect(hidden(840)).toEqual(['group', 'created_time']);
+    expect(hidden(700)).toEqual(['group', 'expired_time', 'created_time']);
     expect(hidden(500)).toEqual(['group', 'expired_time', 'accessed_time', 'created_time']);
   });
 

@@ -27,8 +27,6 @@ type TokenListFilter struct {
 	CreatedBy int `form:"created_by"`
 	// Group: the key's group symbol; "_default" picks keys that follow the account's group.
 	Group string `form:"group"`
-	// LogIO: on, off or inherit (the key's full request/response logging override).
-	LogIO string `form:"log_io"`
 	// SpentMin keeps keys whose lifetime spend is at least this many US dollars.
 	SpentMin float64 `form:"spent_min"`
 	// Limit: none (no spending limit at all) or any (a total or periodic limit).
@@ -77,14 +75,6 @@ func applyTokenConditions(db *gorm.DB, f *TokenListFilter, now time.Time) *gorm.
 		db = db.Where(groupCol+" = ?", "")
 	} else if f.Group != "" {
 		db = db.Where(groupCol+" = ?", f.Group)
-	}
-	switch f.LogIO {
-	case "on":
-		db = db.Where("log_io = ?", true)
-	case "off":
-		db = db.Where("log_io = ?", false)
-	case "inherit":
-		db = db.Where("log_io IS NULL")
 	}
 	if f.SpentMin > 0 {
 		db = db.Where("used_quota >= ?", int64(f.SpentMin*config.QuotaPerUnit))
