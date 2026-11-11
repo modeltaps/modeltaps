@@ -17,8 +17,7 @@ describe('personal and organization settings sections', () => {
     expect(resolveOrgSection(3, 'nope')).toBe('/panel/settings/org/3/general');
   });
 
-  it('the 自动路由 page stays only while organizations may manage routing policies', () => {
-    expect(resolveOrgSection(3, 'routing', { routing: true })).toBeNull();
-    expect(resolveOrgSection(3, 'routing')).toBe('/panel/settings/org/3/general');
+  it('the old organization 自动路由 page redirects to the workbench 路由策略 page', () => {
+    expect(resolveOrgSection(3, 'routing')).toBe('/panel/routing');
   });
 });

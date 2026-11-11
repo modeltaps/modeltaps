@@ -687,7 +687,7 @@
     "personal_settings": "Applies to your own account only",
     "token": "Keys for calling the API",
     "invite_code": "Create, enable and revoke registration invite codes",
-    "org_routing": "Routing policies for this organization’s API keys; a policy can replace a platform policy of the same name"
+    "routing": "Policies your API keys can call: managed ones by name, your own as policy/<name>"
   },
   "api_compare": "Compare",
   "modelInfoPage": {
@@ -1685,7 +1685,7 @@
     "model_alias_target_is_alias": "The alias target is itself an alias",
     "model_managed_by_routing_policy": "This model is managed by a routing policy; edit the policy instead",
     "routing_policy_not_found": "Routing policy not found",
-    "routing_policy_name_invalid": "The name may only contain letters, digits and . _ / -, up to 100 characters, and must not start or end with /",
+    "routing_policy_name_invalid": "The name may only contain letters, digits and . _ / -, up to 100 characters, must not start or end with / and must not start with policy/",
     "routing_policy_name_taken": "This name is already used by a model or another policy",
     "routing_policy_model_required": "A model is required for {{field}}",
     "routing_policy_model_is_policy": "{{field}} must be a model, not a routing policy ({{model}})",
@@ -1787,7 +1787,7 @@
       "enabled": "Enabled",
       "week": "Last 7 days",
       "fallbackRate": "{{rate}}% fallback",
-      "organization": "Organization"
+      "owner": "Owner"
     },
     "form": {
       "name": "Model name",
@@ -1847,7 +1847,8 @@
       "tabAdvanced": "Advanced",
       "tabTry": "Try it",
       "enabled": "Enabled",
-      "enabledHint": "Disabled policies are not listed and requests to them get model_not_found."
+      "enabledHint": "Disabled policies are not listed and requests to them get model_not_found.",
+      "nameHintOwn": "Call it with model set to policy/<this name>, e.g. policy/coder."
     },
     "templates": {
       "coding_change_size": "Coding: size of change",
@@ -1872,7 +1873,8 @@
       "loadingSamples": "Loading…",
       "noSamples": "No routed requests with a stored request body yet. Turn on request detail logging to collect samples.",
       "scoring": "Scoring",
-      "introBilled": "Run the decision step only, with the policy as it is in this form. Nothing is forwarded or pinned, but the decision call is charged to the organization."
+      "introBilled": "Run the decision step only, with the policy as it is in this form. Nothing is forwarded or pinned, but the decision call is charged to the organization.",
+      "introBilledPersonal": "Runs only the decision, with the policy as it is in the form. Nothing is forwarded or pinned, but the decision call is charged to your balance."
     },
     "reasons": {
       "classified": "Classified",
@@ -1936,13 +1938,32 @@
     "scope": {
       "label": "Scope",
       "platform": "Platform",
-      "organization": "Organizations"
+      "organization": "Organizations",
+      "personal": "Personal"
     },
     "overridesPlatform": "Overrides a platform policy",
     "organizationsIntro": "Policies organizations manage on their own Auto routing page. They only apply to that organization's API keys; you can only switch one off here.",
-    "organizationsEmpty": "No organization has a routing policy yet.",
-    "orgIntro": "Policies here only apply to this organization's API keys. A policy with the same name as a platform policy replaces it for your members. \"Try it\" calls the decision model and is charged to the organization.",
-    "overridesPlatformHint": "A platform policy has the same name. This organization's API keys use the organization's policy instead of the platform's."
+    "orgIntro": "Policies here only apply to this organization's API keys; call them with model set to policy/<name>. A policy named like a managed one also takes over the bare name for the organization. \"Try it\" calls the decision model and is charged to the organization.",
+    "overridesPlatformHint": "A platform policy has the same name. This organization's API keys use the organization's policy instead of the platform's.",
+    "callName": "model name",
+    "copyCallName": "Copy model name",
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "reviewEmpty": "Nobody has created a routing policy yet.",
+    "personalIntro": "Policies users created for themselves under Routing policies. They only apply to that user's personal API keys. You can only disable them here.",
+    "personalOwnIntro": "Policies here only apply to your personal API keys; call them with model set to policy/<name>. A policy named like a managed one also takes over the bare name for your keys. \"Try it\" calls the decision model and is charged to your balance.",
+    "orgMemberIntro": "Policies your organization's owners and admins created. Your organization API keys can call them as policy/<name>. Only admins can change them.",
+    "types": {
+      "label": "Policy type",
+      "managed": "Managed",
+      "auto": "Auto routing"
+    },
+    "managedIntro": "Policies the platform provides; call them with model set to their name.",
+    "managedEmpty": "The platform has no managed policies you can use yet.",
+    "managedOverridden": "Replaced by your policy",
+    "managedOverriddenHint": "You have an own policy with the same name, so the bare name reaches yours. Rename or disable it to use this managed policy."
   },
   "logPage": {
     "routing": {
@@ -1961,10 +1982,12 @@
       "generalSettings": {
         "routingDecisionBilling": "Charge the decision call",
         "routingDecisionBillingDescription": "Bill the classification call of an auto routing policy to the caller at the decision model's price, once per session, as its own log entry. When off the decision still runs but leaves no consume log.",
-        "orgRoutingPolicy": "Let organizations manage their own routing policies",
-        "orgRoutingPolicyDescription": "Organization owners and admins get Auto routing in their organization menu. Their policies only apply to that organization's API keys; a policy with a platform policy's name replaces it for that organization.",
         "orgRoutingPolicyMaxCount": "Policies per organization",
-        "orgRoutingPolicyMaxCountDescription": "The most routing policies one organization can create. 0 means no limit."
+        "orgRoutingPolicyMaxCountDescription": "The most routing policies one organization can create. 0 means no limit.",
+        "userRoutingPolicy": "Let users and organizations create their own routing policies",
+        "userRoutingPolicyDescription": "Users create personal policies under Routing policies in the workbench, organization owners and admins create organization policies; both are called as policy/<name>. When off, own policies are kept but no longer apply.",
+        "personalRoutingPolicyMaxCount": "Policies per user",
+        "personalRoutingPolicyMaxCountDescription": "How many personal routing policies one user can create. 0 means no limit."
       }
     },
     "otherSettings": {
@@ -2366,7 +2389,8 @@
       "redemption": "Redemption codes",
       "platformSettings": "Platform settings",
       "personalSettings": "Personal settings",
-      "inviteCodes": "Invite codes"
+      "inviteCodes": "Invite codes",
+      "routingPolicies": "Routing policies"
     },
     "context": {
       "personal": "Personal",

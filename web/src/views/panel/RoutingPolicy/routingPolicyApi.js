@@ -1,15 +1,24 @@
 import { API } from 'utils/api';
 
+// Own policies (organization and personal) are called as policy/<name>; platform policies by name.
+export const POLICY_CALL_PREFIX = 'policy/';
+
 // Routing policy endpoints; every call resolves to res.data ({ success, message, code, data }).
 // createRoutingPolicyApi(base) builds the same client for one scope: the platform console uses
-// /api/routing_policy/, an organization's settings use /api/org/:id/routing_policy/. The organization
-// scope has no log sample replay (getSamples is null) and lists its own usable models.
-export function createRoutingPolicyApi(base, { listModels, samples = true, billedTry = false } = {}) {
+// /api/routing_policy/, an organization uses /api/org/:id/routing_policy/ and a user's personal
+// policies /api/user/routing_policy/. Own scopes list their own usable models, bill Try it and call
+// their policies with the policy/ prefix.
+export function createRoutingPolicyApi(base, { listModels, samples = true, billedTry = false, billedTo = 'organization', callPrefix = '', readOnly = false } = {}) {
   return {
-    // review: the platform console's read-only view of organization policies (organizationReviewApi).
+    // review: the platform console's read-only view of organization / personal policies.
     review: false,
-    // billedTry: "Try it" and the probe are charged (organization scope).
+    // readOnly: organization members see the organization's policies but cannot change them.
+    readOnly,
+    // billedTry: "Try it" and the probe are charged (own scopes), to the organization or the user.
     billedTry,
+    billedTo,
+    // callPrefix: what API keys put in front of the policy name.
+    callPrefix,
     list: async (params) => (await API.get(base, params ? { params } : undefined)).data,
     get: async (id) => (await API.get(`${base}${id}`)).data,
     create: async (policy) => (await API.post(base, policy)).data,
@@ -26,8 +35,21 @@ export function createRoutingPolicyApi(base, { listModels, samples = true, bille
     // 探测一个决策模型在当前渠道上能否返回 logprobs；data.supported 为 null 时探测本身失败（data.error）。
     probe: async (decisionModel) => (await API.post(`${base}probe`, { decision_model: decisionModel })).data,
     // 决策 / 目标 / 兜底的下拉建议。
-    listModels: listModels || (async () => [])
+    listModels: listModels || (async () => []),
+    // The platform policies this scope's keys can call (own scopes only).
+    listManaged: async () => (await API.get(`${base}managed`)).data
   };
+}
+
+// The model name API keys use for a policy of a client.
+export function policyCallName(api, policy) {
+  return `${api.callPrefix || ''}${policy?.name || ''}`;
+}
+
+async function listScopedModels(base) {
+  const res = await API.get(`${base}models`);
+  const { success, data } = res.data || {};
+  return success && Array.isArray(data) ? data : [];
 }
 
 // 管理员目录：全部主名模型（去掉别名行与策略行），供决策 / 目标 / 兜底的下拉建议。
@@ -53,19 +75,35 @@ export const organizationReviewApi = {
   getSamples: null
 };
 
-// orgRoutingPolicyApi the client for one organization's policies (Owner / Admin only).
-export function orgRoutingPolicyApi(orgId) {
+// personalReviewApi: every user's personal policies (?scope=personal, rows carry username).
+export const personalReviewApi = {
+  ...platformRoutingPolicyApi,
+  review: true,
+  list: () => platformRoutingPolicyApi.list({ scope: 'personal' }),
+  getSamples: null
+};
+
+// orgRoutingPolicyApi the client for one organization's policies: Owner / Admin manage them,
+// members (readOnly) only see them.
+export function orgRoutingPolicyApi(orgId, { readOnly = false } = {}) {
   const base = `/api/org/${orgId}/routing_policy/`;
   return createRoutingPolicyApi(base, {
     samples: false,
     billedTry: true,
-    listModels: async () => {
-      const res = await API.get(`${base}models`);
-      const { success, data } = res.data || {};
-      return success && Array.isArray(data) ? data : [];
-    }
+    readOnly,
+    callPrefix: POLICY_CALL_PREFIX,
+    listModels: () => listScopedModels(base)
   });
 }
+
+// personalRoutingPolicyApi the client for the signed-in user's own policies.
+const PERSONAL_BASE = '/api/user/routing_policy/';
+export const personalRoutingPolicyApi = createRoutingPolicyApi(PERSONAL_BASE, {
+  billedTry: true,
+  billedTo: 'user',
+  callPrefix: POLICY_CALL_PREFIX,
+  listModels: () => listScopedModels(PERSONAL_BASE)
+});
 
 // 打分方式：auto 先用 logprobs，不支持时改用自报；logprobs 只用概率；self_reported 只用自报。
 export const SCORING_MODES = ['auto', 'logprobs', 'self_reported'];

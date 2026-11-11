@@ -57,7 +57,7 @@ export default function ContextSwitcher({ context, collapsed = false, onNavigate
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const isRoot = useIsRoot();
-  const { orgEnabled, orgRoutingPolicyEnabled, organizations, currentOrg, switchOrg } = useOrg();
+  const { orgEnabled, routingPolicyEnabled, organizations, currentOrg, switchOrg } = useOrg();
   const [createOpen, setCreateOpen] = useState(false);
 
   const roleLabel = (role) => t(`org.roles.${role}`, { defaultValue: role });
@@ -69,7 +69,7 @@ export default function ContextSwitcher({ context, collapsed = false, onNavigate
         : { kind: 'personal', name: t('nav.context.personal') };
 
   const select = (to) => {
-    const target = contextSwitchTarget({ pathname, to, isRoot, features: { orgRoutingPolicy: orgRoutingPolicyEnabled } });
+    const target = contextSwitchTarget({ pathname, to, isRoot, features: { routingPolicy: routingPolicyEnabled } });
     if (to.kind === 'personal') switchOrg(null);
     if (to.kind === 'org') switchOrg(to.orgId);
     if (target) navigate(target);

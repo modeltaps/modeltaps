@@ -601,6 +601,7 @@ func migrationAfter(db *gorm.DB) error {
 		migrateOrgUsageVisibleExplicit(),
 		migrateTokenModelLimitNormalized(),
 		migrateRoutingPolicyScopedNameIndex(),
+		migrateRoutingPolicyUserScope(),
 	})
 	return m.Migrate()
 }
@@ -619,6 +620,36 @@ func migrateRoutingPolicyScopedNameIndex() *gormigrate.Migration {
 				return tx.Migrator().DropIndex(&RoutingPolicy{}, "idx_routing_policies_name")
 			}
 			return nil
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return nil
+		},
+	}
+}
+
+// migrateRoutingPolicyUserScope finishes the move to per-user policies: AutoMigrate has added
+// routing_policies.user_id and the (organization_id, user_id, name) unique index, so the older
+// unique indexes on (organization_id, name) and on name alone (recreated when an older build ran
+// against the database) would stop two users from using the same name. The site option that
+// turned organization policies on (off by default) is replaced by UserRoutingPolicyEnabled, which
+// also covers personal policies and is on by default; the old value is dropped, not carried over.
+func migrateRoutingPolicyUserScope() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202611110001",
+		Migrate: func(tx *gorm.DB) error {
+			if tx.Migrator().HasTable(&RoutingPolicy{}) {
+				for _, index := range []string{"idx_routing_policies_org_name", "idx_routing_policies_name"} {
+					if tx.Migrator().HasIndex(&RoutingPolicy{}, index) {
+						if err := tx.Migrator().DropIndex(&RoutingPolicy{}, index); err != nil {
+							return err
+						}
+					}
+				}
+			}
+			if !tx.Migrator().HasTable(&Option{}) {
+				return nil
+			}
+			return tx.Where(&Option{Key: "OrganizationRoutingPolicyEnabled"}).Delete(&Option{}).Error
 		},
 		Rollback: func(tx *gorm.DB) error {
 			return nil

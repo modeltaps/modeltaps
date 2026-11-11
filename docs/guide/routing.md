@@ -15,6 +15,13 @@ Coding agents such as Claude Code, Codex or Cursor cannot pass routing parameter
 
 Use the policy name in the `model` field. It works on the Chat Completions, Claude Messages and Responses APIs, with streaming and tools, and it appears in `GET /v1/models` like any other model.
 
+There are two kinds of policies, both listed under **Routing policies** in the workbench sidebar:
+
+- **Managed** policies are published by the site administrators. Call them by their name, for example `auto/coder`.
+- Your **own** policies, and those of your organization, are called with the `policy/` prefix, for example `policy/coder`. The prefix only reaches policies of your own key: a personal key reaches your personal policies, an organization key the organization's. A `policy/` name that matches none of them fails with model not found; it never falls through to a managed policy.
+
+An own policy may have the same name as a managed one. Your keys then reach your policy with the bare name too; switch it off and the managed policy applies again.
+
 ```bash
 curl -X POST https://your-modeltaps-domain.com/v1/chat/completions \
   -H "Content-Type: application/json" \
@@ -77,11 +84,11 @@ Coding agents add their own context to the conversation: Claude Code puts `<syst
 - The decision call is billed to you once per session at the decision model's price, as its own log entry marked as a decision call. With automatic scoring, the first session on a channel that does not return logprobs makes two decision calls (one with logprobs, then one self-reported), and both are billed. The site administrator can turn decision billing off.
 - In your logs, the routed request shows the policy, the chosen label, the confidence, the scoring method (with every label's probability when logprobs were used) and the reason; you can filter logs by routing policy.
 
-## Setting up a policy (administrators)
+## Setting up a policy
 
-Policies are created under **Platform admin → Gateway → Auto routing**. A policy consists of:
+Every user creates their own policies under **Routing policies → Auto routing** in the workbench sidebar (with an organization selected, owners and admins manage the organization's policies there). Site administrators publish managed policies under **Platform admin → Gateway → Auto routing**. A policy consists of:
 
-- **Model name** — what clients call, for example `auto/coder`. Letters, digits and `. _ / -` only; it must not collide with an existing model. Once created it shows up in `/v1/models` and can be added to token and organization allow lists like any model. Allow lists are checked against the policy name; the target models do not have to be in the caller's allow list, so you can keep expensive or hidden models reachable only through a policy.
+- **Model name** — what clients call, for example `coder`: `policy/coder` for an own policy, `coder` for a managed one. Letters, digits and `. _ / -` only; it must not start with `policy/` or collide with an existing model. Once created it shows up in `/v1/models` and can be added to token and organization allow lists like any model. Allow lists are checked against the policy name; the target models do not have to be in the caller's allow list, so you can keep expensive or hidden models reachable only through a policy.
 - **Decision model** — a small, fast chat model that classifies the first message. Any chat model the gateway serves will do; pick one that follows instructions well. It must not itself be a policy.
 - **Question and routes** — a one-sentence question and two to sixteen labels, each with a short description and a target model. Describe the request, not the model, and keep labels distinct: overlapping labels split the probability and push requests to the fallback. Three templates (coding change size, support triage, reasoning depth) give a starting point.
 - **Scoring** — how the confidence is measured; see [Scoring](#scoring). Auto is the default.
@@ -107,16 +114,15 @@ The decision model can report its confidence in two ways:
 
 The decision billing switch is under **Platform admin → Platform settings → Gateway → Auto routing**.
 
-## Organization policies
+## Personal and organization policies
 
-A site administrator can let organizations manage their own policies: turn on **Let organizations manage their own routing policies** under **Platform admin → Platform settings → Gateway → Auto routing**, optionally change the number of policies each organization may create (20 by default), and save the card.
+A site administrator turns own policies on or off with **Let users and organizations create their own routing policies** under **Platform admin → Platform settings → Gateway → Auto routing** (on by default). The same card sets how many policies each user (20 by default) and each organization (20 by default) may create.
 
-Organization owners and admins then find **Auto routing** in the **Organization** group of the sidebar while their organization is selected, next to Members & budgets, Billing and Organization settings. It has the same list, policy panel, Try it and statistics as the platform page. Members do not see it; they only find the organization's policies in `/v1/models` and can call them with an organization API key.
+- **Personal policies** are created by any signed-in user and only apply to that user's personal API keys. They also show up in the user's Playground and model lists as `policy/<name>`.
+- **Organization policies** are managed by the organization's owners and admins while the organization is selected. Members see them read-only on the same page and call them with an organization API key.
+- The decision model, targets and fallback must be models the key's account (the user, or the organization) can already call and that the catalog does not hide. If the site hides a target later, requests go to the fallback (reason `target_unavailable`). If the fallback is hidden too, the request fails with model not found.
+- **Try it** and **Check support** call the decision model for real and are charged to your balance (personal) or the organization (organization policies). They do not count in the policy statistics. Replaying first messages from the logs is available for your personal policies, not for organization ones.
+- The **Managed** tab lists the managed policies your key can call and marks those your own policy replaces.
+- Creating, changing, switching and deleting an organization policy is recorded in the organization's audit log.
 
-- An organization's policies only apply to its own API keys. Personal keys and other organizations never see them.
-- An organization policy may use the same name as a platform policy. For that organization's keys it replaces the platform policy; switch it off and the platform policy applies again.
-- The decision model, targets and fallback must be models the organization can already call and that the catalog does not hide. If the site hides a target later, requests go to the fallback (reason `target_unavailable`). If the fallback is hidden too, the request fails with model not found.
-- **Try it** and **Check support** call the decision model for real and are charged to the organization. They do not count in the policy statistics. Replaying first messages from the logs is not available to organizations.
-- Creating, changing, switching and deleting a policy is recorded in the organization's audit log.
-
-Site administrators can review every organization's policies by setting **Scope** to **Organizations** on **Platform admin → Gateway → Auto routing**. The list shows the organization of each policy and marks a policy that overrides a platform policy of the same name. These policies are read-only there: an administrator can open one and switch it off, but not edit or delete it.
+Site administrators can review own policies by setting **Scope** to **Organizations** or **Personal** on **Platform admin → Gateway → Auto routing**. The list shows the owner of each policy and marks a policy that replaces a managed policy of the same name. These policies are read-only there: an administrator can open one and switch it off, but not edit or delete it.

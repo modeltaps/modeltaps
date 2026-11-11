@@ -110,6 +110,24 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.GET("/self/analytics", controller.GetUserUsageAnalytics)
 				selfRoute.GET("/setting", controller.GetUserSetting)
 				selfRoute.PUT("/setting", controller.UpdateUserSetting)
+
+				// The user's personal routing policies, called as policy/<name> with their own keys.
+				userRoutingRoute := selfRoute.Group("/routing_policy")
+				userRoutingRoute.Use(middleware.UserRoutingPolicyEnabled())
+				{
+					userRoutingRoute.GET("/", controller.GetUserRoutingPolicies)
+					userRoutingRoute.POST("/", controller.CreateUserRoutingPolicy)
+					userRoutingRoute.GET("/models", controller.GetUserRoutingModels)
+					userRoutingRoute.GET("/managed", controller.GetUserManagedRoutingPolicies)
+					userRoutingRoute.POST("/try", middleware.CriticalRateLimit(), relay.UserTryRoutingPolicyHandler)
+					userRoutingRoute.POST("/probe", middleware.CriticalRateLimit(), relay.UserProbeRoutingScoringHandler)
+					userRoutingRoute.GET("/:policy_id", controller.GetUserRoutingPolicy)
+					userRoutingRoute.PUT("/:policy_id", controller.UpdateUserRoutingPolicy)
+					userRoutingRoute.PUT("/:policy_id/status", controller.UpdateUserRoutingPolicyStatus)
+					userRoutingRoute.DELETE("/:policy_id", controller.DeleteUserRoutingPolicy)
+					userRoutingRoute.GET("/:policy_id/stats", controller.GetUserRoutingPolicyStats)
+					userRoutingRoute.GET("/:policy_id/samples", relay.UserRoutingPolicySamplesHandler)
+				}
 				selfRoute.POST("/unbind", controller.Unbind)
 				selfRoute.GET("/sessions", controller.GetUserSessions)
 				selfRoute.DELETE("/sessions/:id", controller.RevokeUserSession)

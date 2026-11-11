@@ -67,7 +67,7 @@ export default function NewRoutingPolicySheet({ api, modelOptions, onClose, onCr
       <Field
         label={t('routingPolicy.form.name')}
         htmlFor="rp-new-name"
-        hint={t('routingPolicy.form.nameHint')}
+        hint={t(api.callPrefix ? 'routingPolicy.form.nameHintOwn' : 'routingPolicy.form.nameHint')}
         help={t('routingPolicy.form.nameHelp')}
       >
         <Input

@@ -2,8 +2,9 @@ import { Database, ShieldCheck, SlidersHorizontal, TriangleAlert, User } from 'l
 
 // ==============================|| PANEL — SETTINGS GROUP REGISTRY ||============================== //
 // Groups of the personal and the organization settings pages (both render with SettingsPage), and
-// the old section ids that now redirect. The members page (成员与预算) and the routing policies
-// page (自动路由) share the organization route but are pages of their own, not settings groups.
+// the old section ids that now redirect. The members page (成员与预算) shares the organization route
+// but is a page of its own, not a settings group. The organization's routing policies moved to the
+// workbench (路由策略, /panel/routing); their old section redirects there.
 
 export const ORG_GROUPS = [
   { id: 'general', labelKey: 'settingsUi.org.groups.general', icon: SlidersHorizontal },
@@ -12,7 +13,8 @@ export const ORG_GROUPS = [
 
 export const ORG_MEMBERS_SECTION = 'members';
 export const ORG_ROUTING_SECTION = 'routing';
-const ORG_PAGES = [ORG_MEMBERS_SECTION, ORG_ROUTING_SECTION];
+export const ROUTING_POLICIES_URL = '/panel/routing';
+const ORG_PAGES = [ORG_MEMBERS_SECTION];
 
 export const ACCOUNT_GROUPS = [
   { id: 'profile', labelKey: 'settingsUi.personal.groups.profile', icon: User },
@@ -42,10 +44,9 @@ export function resolveAccountSection(section) {
 }
 
 // Redirect target for an organization section id, or null when it is a group or one of the
-// organization pages. The routing page redirects to the first group while the site does not let
-// organizations manage routing policies (`routing`: OrgContext's orgRoutingPolicyEnabled).
-export function resolveOrgSection(orgId, section, { routing = false } = {}) {
-  if (section === ORG_ROUTING_SECTION && !routing) return orgSettingsUrl(orgId, ORG_GROUPS[0].id);
+// organization pages.
+export function resolveOrgSection(orgId, section) {
+  if (section === ORG_ROUTING_SECTION) return ROUTING_POLICIES_URL;
   if (orgGroupIds.includes(section) || ORG_PAGES.includes(section)) return null;
   const legacy = LEGACY_ORG_SECTIONS[section];
   if (legacy) return `${orgSettingsUrl(orgId, legacy.group)}?highlight=${legacy.highlight}`;

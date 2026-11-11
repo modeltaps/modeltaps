@@ -470,12 +470,21 @@ export function AutoRoutingCard({ ctx }) {
           {...bindSwitch(ctx, 'RoutingDecisionBillingEnabled')}
         />
         <ToggleRow
-          id="OrganizationRoutingPolicyEnabled"
-          label={gs('orgRoutingPolicy')}
-          description={gs('orgRoutingPolicyDescription')}
-          {...bindSwitch(ctx, 'OrganizationRoutingPolicyEnabled')}
+          id="UserRoutingPolicyEnabled"
+          label={gs('userRoutingPolicy')}
+          description={gs('userRoutingPolicyDescription')}
+          {...bindSwitch(ctx, 'UserRoutingPolicyEnabled')}
         />
       </OptionList>
+      <TextRow
+        id="PersonalRoutingPolicyMaxCount"
+        type="number"
+        label={gs('personalRoutingPolicyMaxCount')}
+        value={inputs.PersonalRoutingPolicyMaxCount}
+        onChange={(v) => setField('PersonalRoutingPolicyMaxCount', v)}
+        placeholder="20"
+        description={gs('personalRoutingPolicyMaxCountDescription')}
+      />
       <TextRow
         id="OrganizationRoutingPolicyMaxCount"
         type="number"

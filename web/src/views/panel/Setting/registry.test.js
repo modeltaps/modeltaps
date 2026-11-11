@@ -183,7 +183,7 @@ describe('auto routing options', () => {
     expect(cardById('auto-routing')).toMatchObject({
       groupId: 'gateway',
       kind: 'form',
-      keys: ['RoutingDecisionBillingEnabled', 'OrganizationRoutingPolicyEnabled', 'OrganizationRoutingPolicyMaxCount']
+      keys: ['RoutingDecisionBillingEnabled', 'UserRoutingPolicyEnabled', 'OrganizationRoutingPolicyMaxCount', 'PersonalRoutingPolicyMaxCount']
     });
   });
 });

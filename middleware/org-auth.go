@@ -40,12 +40,12 @@ func OrganizationFeatureEnabled() gin.HandlerFunc {
 	}
 }
 
-// OrgRoutingPolicyEnabled gates the organization console's routing policy endpoints on the
-// OrganizationRoutingPolicyEnabled site option.
-func OrgRoutingPolicyEnabled() gin.HandlerFunc {
+// UserRoutingPolicyEnabled gates the organization and personal routing policy endpoints on the
+// UserRoutingPolicyEnabled site option.
+func UserRoutingPolicyEnabled() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !config.OrganizationRoutingPolicyEnabled {
-			abortOrgRequest(c, http.StatusForbidden, common.APICodeOrgRoutingPolicyDisabled, "Organization routing policies are not enabled")
+		if !config.UserRoutingPolicyEnabled {
+			abortOrgRequest(c, http.StatusForbidden, common.APICodeOrgRoutingPolicyDisabled, "Routing policies are not enabled")
 			return
 		}
 		c.Next()

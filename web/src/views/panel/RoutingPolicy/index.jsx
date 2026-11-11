@@ -23,44 +23,46 @@ import { showError, showSuccess } from 'utils/common';
 import RoutingPolicyPanel from './RoutingPolicyPanel';
 import NewRoutingPolicySheet from './NewRoutingPolicySheet';
 import { POLICY_TAB_KEYS } from './policyTabs';
-import { organizationReviewApi, platformRoutingPolicyApi } from './routingPolicyApi';
+import PolicyCallName from './PolicyCallName';
+import { organizationReviewApi, personalReviewApi, platformRoutingPolicyApi, policyCallName } from './routingPolicyApi';
 
-const SCOPES = ['platform', 'organization'];
+const SCOPE_APIS = { platform: platformRoutingPolicyApi, organization: organizationReviewApi, personal: personalReviewApi };
+const SCOPE_INTROS = { organization: 'routingPolicy.organizationsIntro', personal: 'routingPolicy.personalIntro' };
 
-// Platform console: the platform's own policies, or (范围 = 组织) every organization's policies for
-// review. The scope is kept in the URL (?scope=organization).
+// Platform console: the platform's own policies, or (范围 = 组织 / 个人) every organization's or
+// user's policies for review. The scope is kept in the URL (?scope=organization).
 export default function RoutingPolicy() {
   const { t } = useTranslation();
   const { orgEnabled: organizationsEnabled } = useOrg();
   const [searchParams, setSearchParams] = useSearchParams();
-  const scope = organizationsEnabled && searchParams.get('scope') === 'organization' ? 'organization' : 'platform';
-  // Switching scope closes the open panel: ids are not shared between the two lists.
-  const setScope = (next) => setSearchParams(next === 'organization' ? { scope: next } : {});
-  const filter = organizationsEnabled && (
+  const scopes = organizationsEnabled ? ['platform', 'organization', 'personal'] : ['platform', 'personal'];
+  const requested = searchParams.get('scope');
+  const scope = scopes.includes(requested) ? requested : 'platform';
+  // Switching scope closes the open panel: ids are not shared between the lists.
+  const setScope = (next) => setSearchParams(next === 'platform' ? {} : { scope: next });
+  const filter = (
     <Segmented
       label={t('routingPolicy.scope.label')}
       value={scope}
       onChange={setScope}
-      options={SCOPES.map((value) => ({ value, label: t(`routingPolicy.scope.${value}`) }))}
+      options={scopes.map((value) => ({ value, label: t(`routingPolicy.scope.${value}`) }))}
     />
   );
   return (
-    <RoutingPolicyList
-      key={scope}
-      api={scope === 'organization' ? organizationReviewApi : platformRoutingPolicyApi}
-      filter={filter}
-      intro={scope === 'organization' ? t('routingPolicy.organizationsIntro') : null}
-    />
+    <RoutingPolicyList key={scope} api={SCOPE_APIS[scope]} filter={filter} intro={SCOPE_INTROS[scope] ? t(SCOPE_INTROS[scope]) : null} />
   );
 }
 
 // 自动路由策略列表：策略不多，一次取全量，不分页。点一行在右侧打开策略面板（?id=，Tab 各自保存），
-// 新建用右侧面板（?new=1），只填必需项。Shared by the platform console and an organization's
-// 自动路由 page: `api` is the scoped client (routingPolicyApi.js). With a review client the list
-// shows every organization's policies, read-only except the enable switch.
+// 新建用右侧面板（?new=1），只填必需项。Shared by the platform console and the workbench's 路由策略
+// page (personal and organization policies): `api` is the scoped client (routingPolicyApi.js). With a
+// review client the list shows other scopes' policies, read-only except the enable switch; with a
+// readOnly client (organization members) nothing can be changed.
 export function RoutingPolicyList({ api, filter = null, intro = null }) {
   const { t } = useTranslation();
   const review = Boolean(api.review);
+  const readOnly = Boolean(api.readOnly);
+  const canEdit = !review && !readOnly;
   const route = useObjectRoute(POLICY_TAB_KEYS);
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -76,6 +78,8 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
       if (success) {
         const list = data || [];
         setPolicies(list);
+        // Members cannot read the statistics.
+        if (readOnly) return;
         const entries = await Promise.all(
           list.map(async (p) => {
             try {
@@ -93,7 +97,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, [api, readOnly]);
 
   useEffect(() => {
     refresh();
@@ -101,11 +105,12 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
 
   // 目录模型名只取一次，供决策 / 目标 / 兜底三处下拉建议。
   useEffect(() => {
+    if (!canEdit) return;
     api
       .listModels()
       .then(setModelOptions)
       .catch(() => {});
-  }, [api]);
+  }, [api, canEdit]);
 
   const toggleEnabled = async (policy, enabled) => {
     try {
@@ -144,9 +149,12 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
       ...(review
         ? [
             {
-              accessorKey: 'organization_name',
-              header: t('routingPolicy.columns.organization'),
-              cell: (c) => c.getValue() || `#${c.row.original.organization_id}`
+              id: 'owner',
+              header: t('routingPolicy.columns.owner'),
+              cell: (c) => {
+                const p = c.row.original;
+                return p.user_id ? p.username || `#${p.user_id}` : p.organization_name || `#${p.organization_id}`;
+              }
             }
           ]
         : []),
@@ -158,7 +166,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
           return (
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono text-sm">{p.name}</span>
+                {api.callPrefix ? <PolicyCallName name={policyCallName(api, p)} /> : <span className="font-mono text-sm">{p.name}</span>}
                 {p.overrides_platform && (
                   <Badge
                     variant="outline"
@@ -208,26 +216,37 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
         header: t('routingPolicy.columns.threshold'),
         cell: (c) => `${Math.round(Number(c.getValue() || 0) * 100)}%`
       },
-      {
-        id: 'week',
-        header: t('routingPolicy.columns.week'),
-        cell: (c) => {
-          const s = weekStats[c.row.original.id];
-          if (!s) return <span className="text-muted-foreground">—</span>;
-          if (!s.requests) return <span className="text-muted-foreground">0</span>;
-          const rate = Math.round((s.fallback_requests / s.requests) * 100);
-          return (
-            <span className="tabular-nums">
-              {s.requests} · {t('routingPolicy.columns.fallbackRate', { rate })}
-            </span>
-          );
-        }
-      },
+      ...(readOnly
+        ? []
+        : [
+            {
+              id: 'week',
+              header: t('routingPolicy.columns.week'),
+              cell: (c) => {
+                const s = weekStats[c.row.original.id];
+                if (!s) return <span className="text-muted-foreground">—</span>;
+                if (!s.requests) return <span className="text-muted-foreground">0</span>;
+                const rate = Math.round((s.fallback_requests / s.requests) * 100);
+                return (
+                  <span className="tabular-nums">
+                    {s.requests} · {t('routingPolicy.columns.fallbackRate', { rate })}
+                  </span>
+                );
+              }
+            }
+          ]),
       {
         accessorKey: 'enabled',
         header: t('routingPolicy.columns.enabled'),
         cell: (c) => {
           const p = c.row.original;
+          if (readOnly) {
+            return (
+              <Badge variant="outline" className="font-normal">
+                {p.enabled ? t('routingPolicy.status.enabled') : t('routingPolicy.status.disabled')}
+              </Badge>
+            );
+          }
           return (
             <RowControl>
               <Switch
@@ -250,7 +269,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
               <RowActions
                 actions={[
                   { label: t('objects.open'), icon: PanelRight, onClick: () => route.open(p.id) },
-                  ...(review ? [] : [{ label: t('common.delete'), icon: Trash2, destructive: true, onClick: () => setPendingDelete(p) }])
+                  ...(canEdit ? [{ label: t('common.delete'), icon: Trash2, destructive: true, onClick: () => setPendingDelete(p) }] : [])
                 ]}
               />
             </RowControl>
@@ -259,13 +278,13 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
       }
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, weekStats, route.openId, review]
+    [t, weekStats, route.openId, review, readOnly, canEdit, api]
   );
 
   const openPolicy = policies.find((p) => p.id === route.openId);
 
   const table = useTable({ features: appTableFeatures, data: policies, columns });
-  const emptyText = review ? t('routingPolicy.organizationsEmpty') : t('routingPolicy.empty');
+  const emptyText = review ? t('routingPolicy.reviewEmpty') : t('routingPolicy.empty');
 
   return (
     <div className="space-y-6">
@@ -280,7 +299,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
             <TooltipContent>{t('userPage.refresh')}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        {!review && <ResponsiveToolbarButton primary icon={Plus} label={t('routingPolicy.create')} onClick={route.openNew} />}
+        {canEdit && <ResponsiveToolbarButton primary icon={Plus} label={t('routingPolicy.create')} onClick={route.openNew} />}
       </PageActions>
 
       {(filter || intro) && (
@@ -357,7 +376,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
         />
       )}
 
-      {route.isNew && !review && (
+      {route.isNew && canEdit && (
         <NewRoutingPolicySheet
           api={api}
           modelOptions={modelOptions}
