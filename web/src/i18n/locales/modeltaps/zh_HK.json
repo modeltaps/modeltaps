@@ -2900,7 +2900,6 @@
       "details": "詳情",
       "owner": "所屬用戶",
       "enabled": "啟用",
-      "expiresAt": "指定時間",
       "neverHint": "這把 Key 一直有效，可隨時停用或刪除。",
       "limit": "額度上限",
       "limitHint": "留空不限額。額度只限制這把 Key，實際使用還受帳戶餘額限制。",
@@ -2910,7 +2909,8 @@
       "noBackup": "不用備用分組",
       "groupHint": "請求走這個分組的渠道；分組不可用時改走備用分組。",
       "restrictions": "限制",
-      "availableHint": "按已儲存的設定計算"
+      "availableHint": "按已儲存的設定計算",
+      "expiresOn": "將於 {{date}} 過期"
     },
     "new": {
       "description": "取個名字就能用。分組、模型和 IP 限制建立後在詳情裡改。",
@@ -2988,6 +2988,12 @@
       "sortUsage": "用量最高",
       "sortExpiry": "最先過期",
       "selectMode": "選擇 Key"
+    },
+    "expiry": {
+      "never": "永不過期",
+      "day": "1 天",
+      "week": "1 週",
+      "month": "1 個月"
     }
   }
 }

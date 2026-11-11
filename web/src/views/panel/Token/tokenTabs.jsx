@@ -18,7 +18,7 @@ import { isPlaygroundToken } from 'utils/playgroundToken';
 import { maskSecret } from 'utils/maskSecret';
 import ModelLimitSelector from './ModelLimitSelector';
 import { GroupBadge, nextResetTime, relativeTime, statusInfo } from './TokenTable';
-import { RESET_PERIODS, fromLocalInput, quotaDraft, quotaPatch, toLocalInput } from './tokenData';
+import { EXPIRY_PRESETS, RESET_PERIODS, expiryFromPreset, quotaDraft, quotaPatch } from './tokenData';
 
 // Tabs of the API key panel (see components/objects/ObjectPanel), laid out like a gateway's
 // virtual-key details: Overview is read-only (the key, what it spent, what it can reach); Basics
@@ -197,6 +197,8 @@ function BasicsBody({ draft, setDraft, ctx }) {
   const { t } = useTranslation();
   const set = (patch) => setDraft((d) => ({ ...d, ...patch }));
   const never = draft.expired_time === -1;
+  // Which choice the key was last set with; an existing date matches none of them until changed.
+  const [expiryChoice, setExpiryChoice] = useState(never ? 'never' : null);
   const hasPeriod = Boolean(draft.period);
   const tzNote = t('token_index.quotaResetTimezoneNote', {
     tz: ctx.resetTimezone || 'UTC',
@@ -213,26 +215,19 @@ function BasicsBody({ draft, setDraft, ctx }) {
           <Segmented
             size="mini"
             label={t('token_index.expiryTime')}
-            value={never ? 'never' : 'at'}
-            onChange={(v) => set({ expired_time: v === 'never' ? -1 : Math.floor(Date.now() / 1000) + 30 * 86400 })}
-            options={[
-              { value: 'never', label: t('token_index.neverExpires') },
-              { value: 'at', label: t('apiKey.panel.expiresAt') }
-            ]}
+            value={expiryChoice}
+            onChange={(v) => {
+              setExpiryChoice(v);
+              set({ expired_time: expiryFromPreset(v) });
+            }}
+            options={EXPIRY_PRESETS.map((p) => ({ value: p, label: t(`apiKey.expiry.${p}`) }))}
           />
         }
       >
-        {never ? (
-          <p className="text-sm text-muted-foreground">{t('apiKey.panel.neverHint')}</p>
-        ) : (
-          <Input
-            id="tk-expiry"
-            type="datetime-local"
-            className="w-64"
-            value={toLocalInput(draft.expired_time)}
-            onChange={(e) => e.target.value && set({ expired_time: fromLocalInput(e.target.value) })}
-          />
-        )}
+        {/* The choice counts from now; the line below says exactly when the key stops working. */}
+        <p className="text-sm text-muted-foreground">
+          {never ? t('apiKey.panel.neverHint') : t('apiKey.panel.expiresOn', { date: timestamp2string(draft.expired_time) })}
+        </p>
       </Field>
       <Field
         label={hasPeriod ? t('token_index.quotaPeriodLabel') : t('apiKey.panel.limit')}

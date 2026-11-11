@@ -2900,7 +2900,6 @@
       "details": "詳細",
       "owner": "所有ユーザー",
       "enabled": "有効",
-      "expiresAt": "日時を指定",
       "neverHint": "無効化または削除するまで有効です。",
       "limit": "利用上限",
       "limitHint": "空欄で上限なし。上限はこのキーだけに適用され、アカウント残高の制限も受けます。",
@@ -2910,7 +2909,8 @@
       "noBackup": "予備グループなし",
       "groupHint": "このグループのチャネルを使い、利用できないときは予備グループに切り替えます。",
       "restrictions": "制限",
-      "availableHint": "保存済みの設定で計算"
+      "availableHint": "保存済みの設定で計算",
+      "expiresOn": "{{date}} に期限切れ"
     },
     "new": {
       "description": "名前だけで使えます。グループ、モデル、IP の制限は作成後に詳細で変更できます。",
@@ -2988,6 +2988,12 @@
       "sortUsage": "利用額の多い順",
       "sortExpiry": "期限の近い順",
       "selectMode": "キーを選択"
+    },
+    "expiry": {
+      "never": "期限なし",
+      "day": "1日",
+      "week": "1週間",
+      "month": "1か月"
     }
   }
 }

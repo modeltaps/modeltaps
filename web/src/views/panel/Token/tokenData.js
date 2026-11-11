@@ -78,13 +78,18 @@ export function quotaPatch({ quota, period }, t) {
 
 export const RESET_PERIODS = ['daily', 'weekly', 'monthly'];
 
-// Expiry presets of the create dialog, in days; 0 = never.
-export const EXPIRY_PRESETS = [0, 7, 30, 90, 365];
-export const expiryFromPreset = (days) => (days ? Math.floor(Date.now() / 1000) + days * 86400 : -1);
-
-const pad = (n) => String(n).padStart(2, '0');
-export const toLocalInput = (unix) => {
-  const d = new Date(unix * 1000);
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+// Expiry choices for a key: never, or one day, week or (calendar) month from now.
+export const EXPIRY_PRESETS = ['never', 'day', 'week', 'month'];
+export const expiryFromPreset = (preset, now = new Date()) => {
+  if (preset === 'day') return Math.floor(now.getTime() / 1000) + 86400;
+  if (preset === 'week') return Math.floor(now.getTime() / 1000) + 7 * 86400;
+  if (preset === 'month') {
+    const d = new Date(now.getTime());
+    const day = d.getDate();
+    d.setMonth(d.getMonth() + 1);
+    // Jan 31 + 1 month would roll into March; stay on the last day of the next month instead.
+    if (d.getDate() < day) d.setDate(0);
+    return Math.floor(d.getTime() / 1000);
+  }
+  return -1;
 };
-export const fromLocalInput = (s) => Math.floor(new Date(s).getTime() / 1000);

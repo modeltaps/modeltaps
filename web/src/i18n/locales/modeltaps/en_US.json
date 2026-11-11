@@ -2996,7 +2996,6 @@
       "details": "Details",
       "owner": "Owner",
       "enabled": "Enabled",
-      "expiresAt": "On a date",
       "neverHint": "This key stays valid until you disable or delete it.",
       "limit": "Spending limit",
       "limitHint": "Leave empty for no limit. The limit only caps this key; your account balance still applies.",
@@ -3006,15 +3005,14 @@
       "noBackup": "No backup group",
       "groupHint": "Requests use this group's channels, and the backup group when it is unavailable.",
       "restrictions": "Restrictions",
-      "availableHint": "From the saved settings"
+      "availableHint": "From the saved settings",
+      "expiresOn": "Expires {{date}}"
     },
     "new": {
       "description": "A name is all it needs. Groups, model and IP restrictions can be changed in its details later.",
       "namePlaceholder": "e.g. my-app",
       "limit": "Spending limit",
       "expiry": "Expires",
-      "days_one": "{{count}} day",
-      "days_other": "{{count}} days",
       "create": "Create",
       "later": "Defaults: account group, all models, any IP",
       "createdTitle": "Created “{{name}}”",
@@ -3085,6 +3083,12 @@
       "sortUsage": "Most used",
       "sortExpiry": "Expiring first",
       "selectMode": "Select keys"
+    },
+    "expiry": {
+      "never": "Never",
+      "day": "1 day",
+      "week": "1 week",
+      "month": "1 month"
     }
   }
 }
