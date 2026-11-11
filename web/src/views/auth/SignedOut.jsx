@@ -47,7 +47,7 @@ export default function SignedOut() {
               {t('login.retryLogin')}
             </Button>
           )}
-          <Link to="/" className="text-sm font-medium text-primary-text hover:underline">
+          <Link to="/" reloadDocument className="text-sm font-medium text-primary-text hover:underline">
             {t('login.backHome')}
           </Link>
         </CardContent>

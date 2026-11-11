@@ -47,7 +47,7 @@
   "scripts": {
     "dev": "vite",
     "start": "vite preview",
-    "build": "vite build --outDir build",
+    "build": "vite build --outDir build && node scripts/prerender-home.mjs",
     "i18n": "lobe-i18n",
     "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\"",
     "test": "vitest run",

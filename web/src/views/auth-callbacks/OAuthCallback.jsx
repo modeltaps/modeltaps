@@ -159,7 +159,7 @@ export default function OAuthCallback({ provider }) {
           {terminalAction === 'retry' && (
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Button onClick={() => config.reauth()}>{t('login.retryLogin')}</Button>
-              <Button variant="outline" onClick={() => navigate('/')}>
+              <Button variant="outline" onClick={() => window.location.assign('/')}>
                 {t('login.backHome')}
               </Button>
             </div>
