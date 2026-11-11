@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { Check, Copy, Loader2 } from 'lucide-react';
@@ -13,6 +13,44 @@ import { API } from 'utils/api';
 import { showError } from 'utils/common';
 import { DEFAULT_SETTING, EXPIRY_PRESETS, expiryFromPreset, quotaPatch } from './tokenData';
 
+// A read-only value with an icon copy button inside its box: the whole value is shown (wrapped,
+// never cut off) and a click on it selects all of it. The icon turns into a check for a moment.
+function CopyField({ label, value, onCopy, testId }) {
+  const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return undefined;
+    const id = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(id);
+  }, [copied]);
+  return (
+    <div>
+      <p className="mb-1.5 text-sm font-medium">{label}</p>
+      <div className="flex items-start gap-1 rounded-lg border border-input bg-muted/40 py-1 pl-3 pr-1">
+        <code className="min-w-0 flex-1 select-all break-all py-1.5 font-mono text-[13px] leading-5" data-testid={testId}>
+          {value}
+        </code>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-8 shrink-0 rounded-md text-muted-foreground hover:text-foreground"
+          aria-label={copied ? t('apiKey.new.copied') : t('token_index.copy')}
+          title={copied ? t('apiKey.new.copied') : t('token_index.copy')}
+          onClick={() => {
+            onCopy();
+            setCopied(true);
+          }}
+        >
+          {copied ? <Check className="size-4 text-success" /> : <Copy className="size-4" />}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+CopyField.propTypes = { label: PropTypes.node, value: PropTypes.string, onCopy: PropTypes.func.isRequired, testId: PropTypes.string };
+
 // New API key, in a dialog as most consoles do it: a name, and optionally a spending limit and an
 // expiry. Groups, model and IP restrictions start open (the account's group, every model, any
 // address) and are changed in the key's panel. After creating, the dialog shows the key with copy
@@ -22,7 +60,6 @@ export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, on
   const [form, setForm] = useState({ name: '', quota: '', days: 0 });
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState(null);
-  const [copied, setCopied] = useState(false);
   const name = form.name.trim();
 
   const requestClose = () => {
@@ -60,11 +97,6 @@ export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, on
     }
   };
 
-  const copyKey = () => {
-    onCopy(created.key, t('token_index.token'));
-    setCopied(true);
-  };
-
   return (
     <Dialog open onOpenChange={(o) => !o && requestClose()}>
       <DialogContent className="max-w-md" aria-labelledby="new-token-title">
@@ -76,31 +108,18 @@ export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, on
               </DialogTitle>
               <DialogDescription>{t('apiKey.new.createdHint')}</DialogDescription>
             </DialogHeader>
-            <div className="space-y-3 px-6 pb-6">
-              <div className="flex h-10 items-center gap-1 rounded-lg border border-input bg-background pl-3 pr-1">
-                <code className="min-w-0 flex-1 truncate font-mono text-[13px]" data-testid="new-token-key">
-                  {created.key}
-                </code>
-                <Button size="sm" variant={copied ? 'outline' : 'default'} className="h-8 rounded-md" onClick={copyKey}>
-                  {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-                  {copied ? t('apiKey.new.copied') : t('token_index.copy')}
-                </Button>
-              </div>
-              <button
-                type="button"
-                onClick={() => onCopy(baseUrl, t('token_index.apiAddress'))}
-                className="flex w-full items-center justify-between gap-3 rounded-lg px-1 text-left text-xs text-muted-foreground hover:text-foreground"
-              >
-                <span className="shrink-0">{t('token_index.apiAddress')}</span>
-                <span className="inline-flex min-w-0 items-center gap-1.5 font-mono">
-                  <span className="truncate">{baseUrl}</span>
-                  <Copy className="size-3 shrink-0" />
-                </span>
-              </button>
+            <div className="space-y-4 px-6 pb-6">
+              <CopyField
+                label={t('token_index.token')}
+                value={created.key}
+                onCopy={() => onCopy(created.key, t('token_index.token'))}
+                testId="new-token-key"
+              />
+              <CopyField label={t('token_index.apiAddress')} value={baseUrl} onCopy={() => onCopy(baseUrl, t('token_index.apiAddress'))} />
             </div>
             <DialogFooter>
               {created.id ? (
-                <Button variant="outline" className="rounded-lg" onClick={() => onOpen(created.id)}>
+                <Button variant="ghost" className="rounded-lg text-muted-foreground" onClick={() => onOpen(created.id)}>
                   {t('apiKey.new.openDetails')}
                 </Button>
               ) : null}
