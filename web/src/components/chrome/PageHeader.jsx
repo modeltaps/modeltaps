@@ -17,7 +17,7 @@ import { ChevronLeft } from 'lucide-react';
 
 export default function PageHeader({ title, subtitle, back, leading, actionsRef, titleExtraRef }) {
   return (
-    <div className="mb-6 flex flex-wrap items-start gap-x-4 gap-y-3">
+    <div className="mb-4 flex flex-wrap items-start gap-x-4 gap-y-3">
       <div className="flex min-w-0 grow basis-48 flex-wrap items-center gap-x-3 gap-y-2">
         <div className="flex min-w-0 items-start gap-2">
           {leading}
@@ -32,7 +32,7 @@ export default function PageHeader({ title, subtitle, back, leading, actionsRef,
               </Link>
             )}
             <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-            {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+            {subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>}
           </div>
         </div>
         <div ref={titleExtraRef} className="contents" />

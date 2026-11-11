@@ -56,6 +56,7 @@ const openPanel = (tab) =>
         userGroup: {},
         onToggleStatus: vi.fn(),
         onCopyKey: vi.fn(),
+        onCopyText: vi.fn(),
         onDelete: vi.fn(),
         onShowUsage: vi.fn(),
         onConnectOpenClaw: vi.fn()

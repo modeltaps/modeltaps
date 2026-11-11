@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { Field, InfoRow, InfoRows, Section, Segmented, StatRow, ToggleField } from '@/components/objects';
+import ConnectInfo, { useApiAddresses } from './ConnectInfo';
 import QuotaInput from '@/components/QuotaInput';
 import { API } from 'utils/api';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
@@ -123,6 +124,7 @@ function limitSummary(t, token) {
 
 function OverviewBody({ object: token, ctx }) {
   const { t } = useTranslation();
+  const apiAddresses = useApiAddresses();
   const rtf = new Intl.RelativeTimeFormat((ctx.locale || 'en').replace('_', '-'), { numeric: 'auto' });
   const limit = limitSummary(t, token);
   const info = statusInfo(t, token.status);
@@ -174,6 +176,10 @@ function OverviewBody({ object: token, ctx }) {
             </InfoRow>
           )}
         </InfoRows>
+      </Section>
+      {/* Where this key sends requests, so it can be copied right next to the key itself. */}
+      <Section title={t('apiKey.list.connect')}>
+        <ConnectInfo addresses={apiAddresses} onCopy={ctx.onCopyText} />
       </Section>
       <AvailableModels tokenId={token.id} />
     </>

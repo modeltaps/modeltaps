@@ -9,7 +9,7 @@ import {
   Copy,
   Pencil,
   Trash2,
-  ChevronsUpDown,
+  ArrowUpDown,
   ArrowUp,
   ArrowDown,
   BarChart3,
@@ -24,7 +24,7 @@ import DataCards from '@/components/ui/data-cards';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { RowActions } from '@/components/ui/row-actions';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -151,7 +151,51 @@ export function LimitBar({ ratio }) {
   );
 }
 
-// 构建单个 API Key 的动作列表(表格行 RowActions 与移动端卡片 … 菜单共用),避免逻辑重复。
+// How much a key has spent against its limit: the period counter against a periodic cap, the
+// total spend against a fixed total, or the total spend with no limit at all.
+export function keyUsage(item) {
+  const qr = item.setting?.quota_reset;
+  if (qr?.period && qr.limit > 0) return { used: item.period_used || 0, limit: qr.limit, period: qr.period };
+  const used = item.used_quota || 0;
+  if (item.unlimited_quota) return { used, limit: null, period: null };
+  return { used, limit: used + (item.remain_quota || 0), period: null };
+}
+
+// Usage column: "$used / $limit" with the share used and a thin bar under it. The tooltip adds
+// today's spend, the lifetime spend of a periodic key and the next reset.
+function UsageCell({ item, todayUsage, resetTimezone, resetWeekStart }) {
+  const { t } = useTranslation();
+  const { used, limit, period } = keyUsage(item);
+  const ratio = limit ? used / limit : 0;
+  const pct = Math.min(100, Math.round(ratio * 100));
+  const hints = [];
+  if (todayUsage) hints.push(`${t('token_index.usageToday')}: ${renderQuota(todayUsage[item.name] || 0)}`);
+  if (period) {
+    hints.push(`${t('apiKey.panel.used')}: ${renderQuota(item.used_quota || 0)}`);
+    const next = nextResetTime(period, resetTimezone, resetWeekStart);
+    if (next) hints.push(`${t('token_index.quotaResetNext')}: ${timestamp2string(next)}`);
+  }
+  return (
+    <div className="flex w-48 flex-col gap-1" title={hints.join('\n') || undefined}>
+      <div className="flex items-baseline justify-between gap-2 whitespace-nowrap">
+        <span className="text-[14px] tabular-nums">
+          <SpendAmount quota={used} className="font-medium" />
+          {limit != null ? (
+            <span className="text-muted-foreground"> / {renderQuota(limit)}</span>
+          ) : (
+            <span className="ml-1.5 text-xs text-muted-foreground">{t('token_index.noLimit')}</span>
+          )}
+          {period && <span className="ml-1.5 text-xs text-muted-foreground">{t(`token_index.limitPeriod_${period}`)}</span>}
+        </span>
+        {limit != null && <span className="text-xs tabular-nums text-muted-foreground">{pct}%</span>}
+      </div>
+      <LimitBar ratio={ratio} />
+    </div>
+  );
+}
+
+// Builds one key's actions for the row ⋯ menu (table and mobile card alike). `group` splits the
+// menu into sections: manage, connect, inspect, then the destructive delete.
 export function buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw }) {
   // 按 API Key 名预过滤跳转:用量页用 tokens 参数,日志页用 token_name 参数(与 T50b URL 过滤对齐)
   const goUsage = () => navigate(`/panel/usage?tokens=${encodeURIComponent(item.name)}`);
@@ -159,39 +203,22 @@ export function buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyK
   // 试用区专用 Key 由系统托管:不给复制明文与编辑入口,删除仍保留。
   const isPlayground = isPlaygroundToken(item);
   return [
-    !isPlayground && { key: 'copy', label: t('token_index.copy'), icon: Copy, primary: true, onClick: () => onCopyKey(item) },
-    { key: 'test', label: t('token_index.testCommand'), icon: Terminal, overflow: true, onClick: () => onShowUsage(item) },
-    { key: 'openclaw', label: t('token_index.openclawConnect'), icon: Plug, overflow: true, onClick: () => onConnectOpenClaw(item) },
-    { key: 'usage', label: t('token_index.usage'), icon: BarChart3, overflow: true, disabled: !item.name, onClick: goUsage },
-    { key: 'log', label: t('token_index.viewLog'), icon: FileText, overflow: true, disabled: !item.name, onClick: goLog },
-    !isPlayground && { key: 'edit', label: t('common.edit'), icon: Pencil, primary: true, onClick: () => onEdit(item.id) },
-    { key: 'delete', label: t('common.delete'), icon: Trash2, overflow: true, destructive: true, onClick: () => onDelete(item) }
+    !isPlayground && { key: 'edit', group: 'manage', label: t('common.edit'), icon: Pencil, onClick: () => onEdit(item.id) },
+    !isPlayground && { key: 'copy', group: 'manage', label: t('token_index.copy'), icon: Copy, onClick: () => onCopyKey(item) },
+    { key: 'test', group: 'connect', label: t('token_index.testCommand'), icon: Terminal, onClick: () => onShowUsage(item) },
+    { key: 'openclaw', group: 'connect', label: t('token_index.openclawConnect'), icon: Plug, onClick: () => onConnectOpenClaw(item) },
+    { key: 'usage', group: 'inspect', label: t('token_index.usage'), icon: BarChart3, disabled: !item.name, onClick: goUsage },
+    { key: 'log', group: 'inspect', label: t('token_index.viewLog'), icon: FileText, disabled: !item.name, onClick: goLog },
+    { key: 'delete', group: 'danger', label: t('common.delete'), icon: Trash2, destructive: true, onClick: () => onDelete(item) }
   ];
 }
 
-function TokenRowActions({ item, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw }) {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const actions = buildTokenActions({
-    item,
-    t,
-    navigate,
-    onEdit,
-    onDelete,
-    onCopyKey,
-    onShowUsage,
-    onConnectOpenClaw
-  });
-  return <RowActions actions={actions} />;
-}
-
-// 移动端卡片右上角 … 菜单:把 API Key 全部动作平铺进单个 DropdownMenu(不铺底部操作条)。
-// 带 items 的动作渲染为带标签的分组;destructive 项前置分隔线。
-function TokenCardMenu({ actions, t, onTriggerClick, onTriggerKeyDown }) {
+// The ⋯ menu of a key (table row and mobile card): every action in one dropdown, with a
+// separator wherever the action group changes; actions with `items` render as a labelled group.
+function TokenActionMenu({ actions, t, onTriggerClick, onTriggerKeyDown }) {
   const items = (actions || []).filter(Boolean);
   const renderItem = (a, i) => {
-    const prevDestructive = i > 0 && items[i - 1].destructive;
-    const separator = a.destructive && i > 0 && !prevDestructive ? <DropdownMenuSeparator /> : null;
+    const separator = i > 0 && a.group !== items[i - 1].group ? <DropdownMenuSeparator /> : null;
     if (a.items) {
       return (
         <div key={a.key || a.label}>
@@ -225,7 +252,9 @@ function TokenCardMenu({ actions, t, onTriggerClick, onTriggerKeyDown }) {
           <MoreHorizontal className="size-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">{items.map(renderItem)}</DropdownMenuContent>
+      <DropdownMenuContent align="end" className="min-w-44">
+        {items.map(renderItem)}
+      </DropdownMenuContent>
     </DropdownMenu>
   );
 }
@@ -312,7 +341,7 @@ function TokenCard({
             title={info.label}
             aria-label={info.label}
           />
-          <TokenCardMenu actions={actions} t={t} onTriggerClick={stop} onTriggerKeyDown={stop} />
+          <TokenActionMenu actions={actions} t={t} onTriggerClick={stop} onTriggerKeyDown={stop} />
         </div>
       </div>
       {isPlayground ? (
@@ -386,6 +415,9 @@ export default function TokenTable({
   onConnectOpenClaw,
   onOpen,
   openId,
+  selectedIds = null,
+  onToggleSelect,
+  onToggleSelectAll,
   order,
   orderBy,
   onSort,
@@ -400,7 +432,35 @@ export default function TokenTable({
 
   const columns = useMemo(() => {
     const rtf = new Intl.RelativeTimeFormat(rtfLocale, { numeric: 'auto' });
+    const allSelected = !!selectedIds && tokens.length > 0 && tokens.every((x) => selectedIds.has(x.id));
+    const someSelected = !!selectedIds && tokens.some((x) => selectedIds.has(x.id));
     const cols = [
+      // Row selection for the bulk actions; the header box selects the whole page.
+      ...(selectedIds
+        ? [
+            {
+              id: 'select',
+              header: () => (
+                <Checkbox
+                  checked={allSelected}
+                  indeterminate={!allSelected && someSelected}
+                  onCheckedChange={() => onToggleSelectAll(!allSelected)}
+                  aria-label={t('apiKey.list.selectAll')}
+                />
+              ),
+              meta: { className: 'w-[1%] pr-0' },
+              cell: (c) => (
+                <RowControl>
+                  <Checkbox
+                    checked={selectedIds.has(c.row.original.id)}
+                    onCheckedChange={() => onToggleSelect(c.row.original.id)}
+                    aria-label={t('apiKey.list.selectRow', { name: c.row.original.name })}
+                  />
+                </RowControl>
+              )
+            }
+          ]
+        : []),
       // API Key:合并原「名称」+「密钥」。第一行名称,第二行 mono 掩码 key;hover 显示眼睛/复制
       // (opacity 切换,不额外占列;移动端 max-md 常显以便触屏操作)。排序仍按 name。
       {
@@ -487,12 +547,7 @@ export default function TokenTable({
         header: t('token_index.lastUsed'),
         cell: (c) => {
           const v = c.getValue();
-          if (!v || v <= 0)
-            return (
-              <span className="text-[13px] text-muted-foreground" title={t('token_index.neverUsed')}>
-                —
-              </span>
-            );
+          if (!v || v <= 0) return <span className="text-[13px] text-amber-600 dark:text-amber-500">{t('token_index.neverUsed')}</span>;
           return (
             <span className="text-[13px]" title={timestamp2string(v)}>
               {relativeTime(rtf, v)}
@@ -500,75 +555,19 @@ export default function TokenTable({
           );
         }
       },
-      // 用量:合并原「已用额度」+「今日消费」。第一行累计消费,第二行小字今日(todayUsage 为 null 时不显示)。
+      // Usage: spend against the limit with a progress bar (sorted by total spend).
       {
         accessorKey: 'used_quota',
         header: t('token_index.usageColumn'),
         meta: { sortable: true },
-        cell: (c) => {
-          const item = c.row.original;
-          return (
-            <div className="flex flex-col gap-0.5">
-              <SpendAmount quota={c.getValue()} className="font-mono text-[15px] tabular-nums" />
-              {todayUsage && (
-                <span className="text-[13px] text-muted-foreground">
-                  {t('token_index.usageToday')} <SpendAmount quota={todayUsage[item.name] || 0} />
-                </span>
-              )}
-            </div>
-          );
-        }
-      },
-      // 限额:合并原「剩余额度」+「周期额度重置」,OpenRouter Limit 列风格。三形态,按判断顺序:
-      //   周期(有 quota_reset,unlimited_quota 通常为 true):$limit + 周期 Badge + 进度条(period_used/limit),title 提示下次重置。
-      //   无限制(无 reset 且 unlimited_quota):muted 文本,无进度条。
-      //   总额(非无限):$total + 「总额」Badge + 进度条(used/(used+remain))。排序仍按 remain_quota。
-      {
-        accessorKey: 'remain_quota',
-        header: t('token_index.limitColumn'),
-        meta: { sortable: true },
-        cell: (c) => {
-          const item = c.row.original;
-          const qr = item.setting?.quota_reset;
-          if (qr?.period && qr.limit > 0) {
-            const used = item.period_used || 0;
-            const next = nextResetTime(qr.period, quotaResetTimezone, quotaResetWeekStart);
-            return (
-              <div
-                className="flex min-w-[7rem] flex-col gap-1"
-                title={next ? `${t('token_index.quotaResetNext')}: ${timestamp2string(next)}` : undefined}
-              >
-                <div className="flex items-center justify-between gap-1.5">
-                  <span className="font-mono text-[15px] tabular-nums">{renderQuota(qr.limit)}</span>
-                  <Badge variant="secondary" className="text-[11px]">
-                    {t(`token_index.limitPeriod_${qr.period}`)}
-                  </Badge>
-                </div>
-                <LimitBar ratio={used / qr.limit} />
-              </div>
-            );
-          }
-          if (item.unlimited_quota)
-            return (
-              <div className="flex min-w-[7rem] flex-col gap-1">
-                <span className="text-muted-foreground">{t('token_index.noLimit')}</span>
-                <LimitBar ratio={0} />
-              </div>
-            );
-          const used = item.used_quota || 0;
-          const total = used + (item.remain_quota || 0);
-          return (
-            <div className="flex min-w-[7rem] flex-col gap-1">
-              <div className="flex items-center justify-between gap-1.5">
-                <span className="font-mono text-[15px] tabular-nums">{renderQuota(total)}</span>
-                <Badge variant="outline" className="text-[11px]">
-                  {t('token_index.limitTotal')}
-                </Badge>
-              </div>
-              <LimitBar ratio={total > 0 ? used / total : 0} />
-            </div>
-          );
-        }
+        cell: (c) => (
+          <UsageCell
+            item={c.row.original}
+            todayUsage={todayUsage}
+            resetTimezone={quotaResetTimezone}
+            resetWeekStart={quotaResetWeekStart}
+          />
+        )
       },
       // 创建时间:默认隐藏(通过 columnVisibility),可在列设置中开启。
       {
@@ -588,7 +587,13 @@ export default function TokenTable({
           const isAbnormal = item.status === 3 || item.status === 4;
           return (
             <RowControl className="gap-2">
-              <Switch checked={item.status === 1} onCheckedChange={() => onToggleStatus(item)} title={info.label} aria-label={info.label} />
+              <Switch
+                size="sm"
+                checked={item.status === 1}
+                onCheckedChange={() => onToggleStatus(item)}
+                title={info.label}
+                aria-label={info.label}
+              />
               {isAbnormal && (
                 <Badge variant="destructive" className="text-[11px]">
                   {info.label}
@@ -600,17 +605,22 @@ export default function TokenTable({
       },
       {
         id: 'actions',
-        header: t('token_index.actions'),
+        header: () => <span className="sr-only">{t('token_index.actions')}</span>,
         meta: { className: 'sticky right-0 bg-card z-10 text-right w-[1%]' },
         cell: (c) => (
-          <RowControl>
-            <TokenRowActions
-              item={c.row.original}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onCopyKey={onCopyKey}
-              onShowUsage={onShowUsage}
-              onConnectOpenClaw={onConnectOpenClaw}
+          <RowControl className="justify-end">
+            <TokenActionMenu
+              t={t}
+              actions={buildTokenActions({
+                item: c.row.original,
+                t,
+                navigate,
+                onEdit,
+                onDelete,
+                onCopyKey,
+                onShowUsage,
+                onConnectOpenClaw
+              })}
             />
           </RowControl>
         )
@@ -629,6 +639,11 @@ export default function TokenTable({
     onToggleStatus,
     onShowUsage,
     onConnectOpenClaw,
+    navigate,
+    tokens,
+    selectedIds,
+    onToggleSelect,
+    onToggleSelectAll,
     orgMemberNames,
     todayUsage,
     rtfLocale,
@@ -643,9 +658,11 @@ export default function TokenTable({
     state: { columnVisibility }
   });
 
+  // Sort arrows: the active column shows its direction; others reveal a faint arrow only on hover,
+  // so sortable headers do not look like dropdowns.
   const SortIcon = ({ id }) => {
-    if (orderBy !== id) return <ChevronsUpDown className="size-3.5 opacity-50" />;
-    return order === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />;
+    if (orderBy !== id) return <ArrowUpDown className="size-3 opacity-0 transition-opacity group-hover/sort:opacity-50" />;
+    return order === 'asc' ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />;
   };
 
   return (
@@ -660,7 +677,7 @@ export default function TokenTable({
                     {header.column.columnDef.meta?.sortable && onSort ? (
                       <button
                         type="button"
-                        className="inline-flex items-center gap-1 hover:text-foreground"
+                        className="group/sort inline-flex items-center gap-1 hover:text-foreground"
                         onClick={() => onSort(header.column.id)}
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
@@ -679,7 +696,7 @@ export default function TokenTable({
               <TableRow
                 key={row.id}
                 className={ROW_OPENS}
-                data-state={row.original.id === openId ? 'selected' : undefined}
+                data-state={row.original.id === openId || selectedIds?.has(row.original.id) ? 'selected' : undefined}
                 {...rowOpenProps(() => onOpen(row.original))}
               >
                 {row.getVisibleCells().map((cell) => (

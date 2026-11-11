@@ -4,7 +4,9 @@ import { cn } from '@/lib/utils';
 
 // Lightweight, dependency-free switch (no Radix). Controlled via `checked` +
 // `onCheckedChange`; falls back to `onChange(checked)` for convenience.
-const Switch = React.forwardRef(({ className, checked = false, onCheckedChange, onChange, disabled, ...props }, ref) => {
+// size 'sm' is the compact variant for dense table rows.
+const Switch = React.forwardRef(({ className, checked = false, onCheckedChange, onChange, disabled, size, ...props }, ref) => {
+  const sm = size === 'sm';
   const toggle = () => {
     if (disabled) return;
     onCheckedChange?.(!checked);
@@ -21,7 +23,8 @@ const Switch = React.forwardRef(({ className, checked = false, onCheckedChange, 
       disabled={disabled}
       onClick={toggle}
       className={cn(
-        'peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
+        sm ? 'h-[18px] w-8' : 'h-6 w-11',
+        'peer inline-flex shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
         checked ? 'bg-primary' : 'bg-control-off',
         className
       )}
@@ -29,8 +32,9 @@ const Switch = React.forwardRef(({ className, checked = false, onCheckedChange, 
     >
       <span
         className={cn(
-          'pointer-events-none block h-5 w-5 rounded-full shadow ring-0 transition-transform',
-          checked ? 'translate-x-5 bg-primary-foreground' : 'translate-x-0 bg-white dark:bg-foreground'
+          'pointer-events-none block rounded-full shadow ring-0 transition-transform',
+          sm ? 'size-3.5' : 'h-5 w-5',
+          checked ? cn(sm ? 'translate-x-3.5' : 'translate-x-5', 'bg-primary-foreground') : 'translate-x-0 bg-white dark:bg-foreground'
         )}
       />
     </button>
