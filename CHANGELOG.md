@@ -213,18 +213,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   page you came from where the context switcher is, the picker of the organizations you manage
   (owners and admins) right under it, then General, Members & budgets and Danger zone of that
   organization and Personal settings. The page is titled with the item, and with the
-  organization's name under organization items. Unsaved changes show as a dot in the tree. The
-  collapse button only shows on narrow screens, where the tree collapses by itself and the page
-  title has a button to expand it. Picking an organization there no longer switches the active
-  space. The organization menu no longer has an Organization settings item; Members & budgets
-  stays there as a shortcut into Settings.
+  organization's name under organization items. Unsaved changes show as a dot in the tree.
+  Picking an organization there no longer switches the active space. The organization menu no
+  longer has an Organization settings item; Members & budgets stays there as a shortcut into
+  Settings.
 - The panel has one search, the search palette (⌘K), and every search button opens it. In the
   workbench, platform admin and settings sidebars it is an icon at the end of the brand row (the
   search row under the context switcher is gone), and the platform settings subnav's search box
   is a button for it. On a settings page the palette lists the page's cards under On this page
   and finds them by anything written on them, collection rows included; picking one opens its
   group with the card highlighted. While typing it also lists every group of Settings. The in-
-  page filtering of settings cards is gone.
+  page filtering of settings cards is gone. Every sidebar shows its collapse button only on
+  narrow screens, where the rail collapses by itself and the page title has a button to expand
+  it, and in the phone drawer; wide screens keep the rail expanded.
 - The site announcement no longer opens a dialog on page load. While it is unread, the console
   shows one row above the page title with its first line, a button that opens the full text and
   a close button; reading or closing it hides the row until the announcement changes. The
