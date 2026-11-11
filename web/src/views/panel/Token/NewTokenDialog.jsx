@@ -15,14 +15,19 @@ import { DEFAULT_SETTING, EXPIRY_PRESETS, expiryFromPreset, quotaPatch } from '.
 
 // A read-only value with an icon copy button inside its box: the whole value is shown (wrapped,
 // never cut off) and a click on it selects all of it. The icon turns into a check for a moment.
-function CopyField({ label, value, onCopy, testId }) {
-  const { t } = useTranslation();
+function useCopied() {
   const [copied, setCopied] = useState(false);
   useEffect(() => {
     if (!copied) return undefined;
     const id = setTimeout(() => setCopied(false), 1500);
     return () => clearTimeout(id);
   }, [copied]);
+  return [copied, () => setCopied(true)];
+}
+
+function CopyField({ label, value, onCopy, testId }) {
+  const { t } = useTranslation();
+  const [copied, markCopied] = useCopied();
   return (
     <div>
       <p className="mb-1.5 text-sm font-medium">{label}</p>
@@ -39,7 +44,7 @@ function CopyField({ label, value, onCopy, testId }) {
           title={copied ? t('apiKey.new.copied') : t('token_index.copy')}
           onClick={() => {
             onCopy();
-            setCopied(true);
+            markCopied();
           }}
         >
           {copied ? <Check className="size-4 text-success" /> : <Copy className="size-4" />}
@@ -48,6 +53,33 @@ function CopyField({ label, value, onCopy, testId }) {
     </div>
   );
 }
+
+// The base URL as a secondary line under the key: needed to point a client at this gateway, but
+// also on the list page, so it does not compete with the key.
+function BaseUrlLine({ value, onCopy }) {
+  const { t } = useTranslation();
+  const [copied, markCopied] = useCopied();
+  return (
+    <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+      <span className="shrink-0">{t('token_index.apiAddress')}</span>
+      <code className="min-w-0 select-all truncate font-mono text-foreground/80">{value}</code>
+      <button
+        type="button"
+        className="flex size-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+        aria-label={copied ? t('apiKey.new.copied') : t('token_index.copy')}
+        title={copied ? t('apiKey.new.copied') : t('token_index.copy')}
+        onClick={() => {
+          onCopy();
+          markCopied();
+        }}
+      >
+        {copied ? <Check className="size-3.5 text-success" /> : <Copy className="size-3.5" />}
+      </button>
+    </div>
+  );
+}
+
+BaseUrlLine.propTypes = { value: PropTypes.string.isRequired, onCopy: PropTypes.func.isRequired };
 
 CopyField.propTypes = { label: PropTypes.node, value: PropTypes.string, onCopy: PropTypes.func.isRequired, testId: PropTypes.string };
 
@@ -108,14 +140,14 @@ export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, on
               </DialogTitle>
               <DialogDescription>{t('apiKey.new.createdHint')}</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 px-6 pb-6">
+            <div className="space-y-2.5 px-6 pb-6">
               <CopyField
                 label={t('token_index.token')}
                 value={created.key}
                 onCopy={() => onCopy(created.key, t('token_index.token'))}
                 testId="new-token-key"
               />
-              <CopyField label={t('token_index.apiAddress')} value={baseUrl} onCopy={() => onCopy(baseUrl, t('token_index.apiAddress'))} />
+              {baseUrl && <BaseUrlLine value={baseUrl} onCopy={() => onCopy(baseUrl, t('token_index.apiAddress'))} />}
             </div>
             <DialogFooter>
               {created.id ? (
