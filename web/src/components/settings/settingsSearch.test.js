@@ -6,7 +6,7 @@ import {
   matchesQuery,
   normalizeText,
   reportDirty,
-  searchCards,
+  cardIndex,
   shouldShowSearch,
   staysOnPage
 } from './settingsSearch';
@@ -29,28 +29,50 @@ describe('matchesQuery', () => {
   });
 });
 
-describe('searchCards', () => {
-  const entries = [
-    { cardId: 'smtp', groupId: 'notify', text: '邮件发送 SMTP 服务器 端口' },
-    { cardId: 'telegram', groupId: 'notify', text: 'Telegram 机器人 /start 余额查询' },
-    { cardId: 'retry', groupId: 'gateway', text: '重试 次数 冷却' },
-    // A card that renders nothing (e.g. not applicable to the account system) never matches.
-    { cardId: 'hidden', groupId: 'gateway', text: '' }
+describe('cardIndex', () => {
+  // A stand-in for a rendered card slot: its text, its title element and its anchor.
+  const slot = (text, { title = null, anchor = null } = {}) => ({
+    textContent: text,
+    querySelector: (selector) => {
+      if (selector === 'h3') return title ? { textContent: ` ${title} ` } : null;
+      if (selector === '[data-highlight]') return anchor ? { getAttribute: () => anchor } : null;
+      return null;
+    }
+  });
+  const groups = [
+    { id: 'notify', label: 'Notifications', to: '/s/notify', cards: [{ id: 'smtp' }, { id: 'telegram' }, { id: 'empty' }] },
+    { id: 'general', label: 'General', sectionLabel: 'Organization settings', to: '/o/1/general', cards: [{ id: 'budget' }] }
   ];
+  const slots = {
+    smtp: slot('Mail sending  SMTP host  Port', { title: 'Mail sending', anchor: 'smtp' }),
+    telegram: slot('Telegram bot /start /balance'),
+    empty: slot('   '),
+    budget: slot('Team budget Period', { title: 'Team budget', anchor: 'team-budget' })
+  };
 
-  it('returns matches across groups and counts per group', () => {
-    const { matches, counts } = searchCards(entries, '/start');
-    expect([...matches]).toEqual(['telegram']);
-    expect(counts).toEqual({ notify: 1, gateway: 0 });
+  it('lists every card that renders text, with its title, group, link and text', () => {
+    expect(cardIndex(groups, slots)).toEqual([
+      {
+        id: 'notify:smtp',
+        title: 'Mail sending',
+        group: 'Notifications',
+        to: '/s/notify?highlight=smtp',
+        text: 'mail sending smtp host port'
+      },
+      { id: 'notify:telegram', title: 'Notifications', group: 'Notifications', to: '/s/notify', text: 'telegram bot /start /balance' },
+      {
+        id: 'general:budget',
+        title: 'Team budget',
+        group: 'Organization settings · General',
+        to: '/o/1/general?highlight=team-budget',
+        text: 'team budget period'
+      }
+    ]);
   });
 
-  it('matches collection rows like any other text', () => {
-    expect([...searchCards(entries, '余额').matches]).toEqual(['telegram']);
-    expect(searchCards(entries, 'smtp 端口').counts.notify).toBe(1);
-  });
-
-  it('an empty query matches every non-empty card', () => {
-    expect([...searchCards(entries, '').matches]).toEqual(['smtp', 'telegram', 'retry']);
+  it('copes with cards that have not mounted', () => {
+    expect(cardIndex(groups, {})).toEqual([]);
+    expect(cardIndex(undefined, slots)).toEqual([]);
   });
 });
 

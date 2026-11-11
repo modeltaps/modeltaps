@@ -965,7 +965,8 @@
     "sortLastLogin": "最近登录"
   },
   "command": {
-    "search": "搜索"
+    "search": "搜索",
+    "thisPage": "当前页面"
   },
   "common": {
     "error": "出错了",
@@ -2587,11 +2588,7 @@
   },
   "settingsUi": {
     "search": {
-      "placeholder": "搜索设置",
-      "clear": "清除搜索",
-      "title": "搜索「{{query}}」",
-      "empty": "没有匹配的设置",
-      "count": "{{count}} 张卡片"
+      "placeholder": "搜索设置"
     },
     "unsaved": "有未保存的改动",
     "undo": "撤销",
