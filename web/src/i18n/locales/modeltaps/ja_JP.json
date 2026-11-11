@@ -2877,7 +2877,7 @@
     "hero": {
       "tagline": "すべてのモデルを、ひとつの出口から",
       "ctaPrimary": "API キーを取得",
-      "catchphrase": "ひねれば、すぐ使える",
+      "catchphrase": "OpenAI・Anthropic・Gemini の API に対応。base URL を変えるだけ",
       "dripAria": "Modeltaps のマークの形をしたしずくが蛇口の下にたまり、静かな水面に落ちます。波紋が輪を描いて広がり、水面に並ぶモデルを順に照らします。"
     }
   },

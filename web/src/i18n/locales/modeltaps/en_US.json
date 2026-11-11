@@ -2973,7 +2973,7 @@
     "hero": {
       "tagline": "Every model. One tap.",
       "ctaPrimary": "Get API key",
-      "catchphrase": "Just turn it on.",
+      "catchphrase": "OpenAI, Anthropic and Gemini compatible. Just change the base URL.",
       "dripAria": "A drop shaped like the Modeltaps mark gathers under a tap and falls onto a still surface; the ripple spreads out and lights up the models lying on it, ring by ring."
     }
   },
