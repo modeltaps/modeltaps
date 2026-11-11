@@ -1328,7 +1328,19 @@
       "subtitle": "Users in a group share its price ratio and rate limit",
       "defaults": "Created enabled with ratio 1 and 300 requests per minute; change them in its panel",
       "created": "Created group {{symbol}}"
-    }
+    },
+    "rateLimit": "Rate limit",
+    "publicShort": "Public",
+    "publicYes": "Public",
+    "enableShort": "Enabled",
+    "perMinute": "{{count}}/min",
+    "promotionFrom": "Top-up from {{min}}",
+    "promotionRange": "Top-up {{min}} – {{max}}",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "enableAction": "Enable",
+    "disableAction": "Disable",
+    "emptyTitle": "No user groups yet"
   },
   "suno": {
     "lyrics": "Lyrics",

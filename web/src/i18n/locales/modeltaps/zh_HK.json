@@ -2404,7 +2404,19 @@
       "subtitle": "同一分組的用戶共用價格倍率和速率限制",
       "defaults": "建立後即啟用，倍率 1、每分鐘 300 次請求，可在分組面板裡修改",
       "created": "已建立分組 {{symbol}}"
-    }
+    },
+    "rateLimit": "限速",
+    "publicShort": "公開",
+    "publicYes": "公開",
+    "enableShort": "啟用",
+    "perMinute": "{{count}} 次/分",
+    "promotionFrom": "累計充值 {{min}} 起",
+    "promotionRange": "累計充值 {{min}} – {{max}}",
+    "enabled": "已啟用",
+    "disabled": "已停用",
+    "enableAction": "啟用",
+    "disableAction": "停用",
+    "emptyTitle": "還沒有用戶分組"
   },
   "redemptionPage": {
     "panel": {

@@ -2406,7 +2406,19 @@
       "subtitle": "同じグループのユーザーは価格倍率とレート制限を共有します",
       "defaults": "有効・倍率 1・毎分 300 リクエストで作成します。グループのパネルで変更できます",
       "created": "グループ {{symbol}} を作成しました"
-    }
+    },
+    "rateLimit": "レート制限",
+    "publicShort": "公開",
+    "publicYes": "公開",
+    "enableShort": "有効",
+    "perMinute": "{{count}} 回/分",
+    "promotionFrom": "累計チャージ {{min}} 以上",
+    "promotionRange": "累計チャージ {{min}} – {{max}}",
+    "enabled": "有効",
+    "disabled": "無効",
+    "enableAction": "有効にする",
+    "disableAction": "無効にする",
+    "emptyTitle": "ユーザーグループはまだありません"
   },
   "redemptionPage": {
     "panel": {
