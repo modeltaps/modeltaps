@@ -3115,5 +3115,26 @@
     "expires": "{{time}}に期限切れ",
     "never": "無期限",
     "statusShort": "有効"
+  },
+  "inviteList": {
+    "segments": {
+      "all": "すべて",
+      "usable": "利用可能",
+      "pending": "開始前",
+      "expired": "期限切れ",
+      "exhausted": "使い切り",
+      "disabled": "無効"
+    },
+    "searchShort": "コードまたは名前で検索",
+    "copyCode": "コードをコピー",
+    "enable": "有効にする",
+    "disable": "無効にする",
+    "startsIn": "{{time}}に開始",
+    "expiresIn": "{{time}}に期限切れ",
+    "never": "無期限",
+    "expired": "期限切れ",
+    "usedUp": "使い切り",
+    "createdAgo": "{{time}}に作成",
+    "usage": "使用"
   }
 }

@@ -49,10 +49,16 @@ func GetInviteCodesList(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
+	stateCounts, err := model.GetInviteCodeStateCounts(params.Keyword)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    inviteCodes,
+		"success":      true,
+		"message":      "",
+		"data":         inviteCodes,
+		"state_counts": stateCounts,
 	})
 }
 

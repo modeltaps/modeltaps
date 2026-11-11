@@ -3209,5 +3209,26 @@
     "expires": "Expires {{time}}",
     "never": "Never expires",
     "statusShort": "On"
+  },
+  "inviteList": {
+    "segments": {
+      "all": "All",
+      "usable": "Usable",
+      "pending": "Not started",
+      "expired": "Expired",
+      "exhausted": "Used up",
+      "disabled": "Disabled"
+    },
+    "searchShort": "Search code or name",
+    "copyCode": "Copy code",
+    "enable": "Enable",
+    "disable": "Disable",
+    "startsIn": "Starts {{time}}",
+    "expiresIn": "Expires {{time}}",
+    "never": "Never expires",
+    "expired": "Expired",
+    "usedUp": "Used up",
+    "createdAgo": "Created {{time}}",
+    "usage": "Used"
   }
 }
