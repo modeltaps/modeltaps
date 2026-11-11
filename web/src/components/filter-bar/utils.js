@@ -96,3 +96,12 @@ export function optionLabel(t, opt) {
   if (opt.labelKey) return t(opt.labelKey);
   return opt.label != null ? opt.label : String(opt.value);
 }
+
+// One active condition as readable text: "Expiry: Never expire" for a choice, "Spent ≥ 10" for a
+// number or text. Used by presets and by the phone layout's condition chips.
+export function describeEntry(t, field, entry) {
+  if (field.type === 'number' || field.type === 'text') return `${t(field.labelKey)} ≥ ${entry.value}`;
+  const v = entry.values?.[0];
+  const opt = (field.options || []).find((o) => String(o.value) === String(v));
+  return `${t(field.labelKey)}: ${opt ? optionLabel(t, opt) : v}`;
+}
