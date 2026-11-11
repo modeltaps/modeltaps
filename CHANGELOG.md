@@ -201,9 +201,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on the account never match an IP filter, so the filter cannot be used to find out which IP an
   administrator acted from.
 - AWS Bedrock maps `claude-fable-5-2` to its inference profile (`us.` in the US and Canada,
-  `global.` elsewhere), and new Bedrock channels list it among their default models. It has no
-  default price yet, so requests are rejected under the default unpriced-model policy until an
-  administrator sets one.
+  `global.` elsewhere), and new Bedrock channels list it among their default models. The default
+  prices include `claude-fable-5-2` ($8 / $40 per million tokens, cache writes $10 for 5 minutes
+  and $16 for 1 hour, cache hits $0.20), and new Anthropic channels list it among their default
+  models.
 
 ### Changed
 

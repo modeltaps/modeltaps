@@ -68,6 +68,9 @@ func TestDefaultPriceRatioConversion(t *testing.T) {
 		// $4 / $20, 5m $5, 1h $8, hits $0.20.
 		"claude-opus-5-5": {config.ChannelTypeAnthropic, 2, 10,
 			map[string]float64{config.UsageExtraCachedWrite: 1.25, config.UsageExtraCachedWrite1h: 2, config.UsageExtraCachedRead: 0.05}, nil},
+		// $8 / $40, 5m $10, 1h $16, hits $0.20 (0.025x).
+		"claude-fable-5-2": {config.ChannelTypeAnthropic, 4, 20,
+			map[string]float64{config.UsageExtraCachedWrite: 1.25, config.UsageExtraCachedWrite1h: 2, config.UsageExtraCachedRead: 0.025}, nil},
 		// $10 / $50, hits $0.25 (0.025x).
 		"claude-fable-5-1": {config.ChannelTypeAnthropic, 5, 25,
 			map[string]float64{config.UsageExtraCachedWrite: 1.25, config.UsageExtraCachedWrite1h: 2, config.UsageExtraCachedRead: 0.025}, nil},
