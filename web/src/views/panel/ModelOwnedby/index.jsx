@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Plus } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import PageActions from '@/components/chrome/PageActions';
-import { ListEmptyState, ListFooter, ListPage, ListToolbar } from '@/components/list-page';
+import { ListEmptyState, ListFooter, ListSkeleton, StatusSegments, useListLayout } from '@/components/list-page';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/sonner';
 import { API } from 'utils/api';
@@ -14,13 +16,30 @@ import { showError, useIsAdmin } from 'utils/common';
 import { getPageSize, savePageSize } from 'constants';
 import { createRequestGuard, runGuardedFetch } from 'hooks/paginatedListGuard';
 import { enabledChannels } from '../Pricing/modelCatalog';
-import ModelOwnedbyTable from './ModelOwnedbyTable';
+import ModelOwnedbyTable, { VENDOR_TABLE_ESTIMATE, VendorList } from './ModelOwnedbyTable';
 import ModelOwnedbySheet from './ModelOwnedbySheet';
 
 // ==============================|| PANEL — MODEL OWNEDBY (admin) ||============================== //
-// shadcn/Tailwind port of v1 `views/ModelOwnedby`. Admin-only CRUD over the
-// unchanged `/api/model_ownedby/` API (flat list: id, name, icon).
-// 每行附目录里归属该厂商的模型数与其中无启用渠道的数量(取自 /api/model_info/catalog)。
+// Vendors tab of the model catalog: admin CRUD over `/api/model_ownedby/` (flat list: id, name,
+// slug, icon). Each row carries how many catalog models belong to the vendor and how many of
+// those have no enabled channel (from /api/model_info/catalog).
+
+// Segments: all, vendors with catalog models, and the rest (mostly built-in channel types).
+const SEGMENTS = [
+  { value: 'all', labelKey: 'modelsPage.stats.all' },
+  { value: 'inuse', labelKey: 'modelsPage.vendorInUse' },
+  { value: 'unused', labelKey: 'modelsPage.vendorUnused' }
+];
+const inSegment = (row, segment) => (segment === 'inuse' ? row.model_count > 0 : segment === 'unused' ? !row.model_count : true);
+
+// Local sort; names ascending first, counts descending first.
+const compareRows = ({ key, dir }) => {
+  const sign = dir === 'asc' ? 1 : -1;
+  return (a, b) => {
+    if (key === 'name') return sign * String(a.name || '').localeCompare(String(b.name || ''));
+    return sign * ((a[key] || 0) - (b[key] || 0));
+  };
+};
 
 export default function ModelOwnedby() {
   const { t } = useTranslation();
@@ -28,7 +47,9 @@ export default function ModelOwnedby() {
 
   const [items, setItems] = useState([]);
   const [catalog, setCatalog] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [segment, setSegment] = useState('all');
+  const [sort, setSort] = useState({ key: null, dir: 'desc' });
   const [refreshFlag, setRefreshFlag] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [page, setPage] = useState(0);
@@ -46,7 +67,6 @@ export default function ModelOwnedby() {
   const fetchData = useCallback(
     () =>
       runGuardedFetch(guardRef.current, () => API.get('/api/model_ownedby/'), {
-        onStart: () => setLoading(true),
         onResult: (res) => {
           const { success, message, data } = res.data;
           if (success) {
@@ -56,7 +76,7 @@ export default function ModelOwnedby() {
           }
         },
         onError: (error) => console.error(error),
-        onFinally: () => setLoading(false)
+        onFinally: () => setLoaded(true)
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [refreshFlag]
@@ -84,11 +104,27 @@ export default function ModelOwnedby() {
     return items.map((item) => ({ ...item, model_count: 0, nochannel_count: 0, ...counts[item.id] }));
   }, [items, catalog]);
 
+  const counts = useMemo(
+    () => Object.fromEntries(SEGMENTS.map((s) => [s.value, rows.filter((row) => inSegment(row, s.value)).length])),
+    [rows]
+  );
+
   const filtered = useMemo(() => {
     const k = keyword.trim().toLowerCase();
-    if (!k) return rows;
-    return rows.filter((row) => row.name?.toLowerCase().includes(k) || row.slug?.toLowerCase().includes(k));
-  }, [rows, keyword]);
+    const list = rows.filter(
+      (row) => inSegment(row, segment) && (!k || row.name?.toLowerCase().includes(k) || row.slug?.toLowerCase().includes(k))
+    );
+    return sort.key ? [...list].sort(compareRows(sort)) : list;
+  }, [rows, keyword, segment, sort]);
+
+  // Click a header: first click picks its natural direction, the next flips it.
+  const handleSort = (key) =>
+    setSort((prev) =>
+      prev.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'name' ? 'asc' : 'desc' }
+    );
+
+  // Full table while it fits (the sidebar collapses first), phone list otherwise.
+  const { pageRef, layout, narrow, onNaturalWidth } = useListLayout({ estimate: VENDOR_TABLE_ESTIMATE, resetKey: 'vendors' });
 
   const pageRows = filtered.slice(page * pageSize, page * pageSize + pageSize);
 
@@ -130,28 +166,82 @@ export default function ModelOwnedby() {
 
   if (!isAdmin) return <Navigate to="/panel/dashboard" replace />;
 
+  const changeKeyword = (value) => {
+    setPage(0);
+    setKeyword(value);
+  };
+  const changeSegment = (value) => {
+    setPage(0);
+    setSegment(value);
+  };
+  const segmentOptions = SEGMENTS.map((s) => ({ value: s.value, label: t(s.labelKey) }));
+
+  let body;
+  if (!loaded) {
+    body = <ListSkeleton layout={layout} rows={6} checkbox={false} cells={[64, 64, 32]} />;
+  } else if (items.length === 0) {
+    body = <ListEmptyState title={t('modelOwnedby.title')} />;
+  } else if (filtered.length === 0) {
+    body = (
+      <ListEmptyState
+        variant="noMatch"
+        onClearFilters={() => {
+          changeKeyword('');
+          changeSegment('all');
+        }}
+      />
+    );
+  } else if (narrow) {
+    body = <VendorList items={pageRows} onEdit={openEdit} onDelete={setDeleteTarget} />;
+  } else {
+    body = (
+      <ModelOwnedbyTable
+        items={pageRows}
+        sort={sort}
+        onSort={handleSort}
+        onEdit={openEdit}
+        onDelete={setDeleteTarget}
+        onNaturalWidth={onNaturalWidth}
+      />
+    );
+  }
+
+  const search = (
+    <div className="relative min-w-0 flex-1 sm:max-w-80">
+      <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+      <Input
+        value={keyword}
+        onChange={(e) => changeKeyword(e.target.value)}
+        placeholder={t('modelsPage.searchVendors')}
+        aria-label={t('modelsPage.searchVendors')}
+        className="h-8 pl-8"
+      />
+    </div>
+  );
+
   return (
     <>
-      <div>
-        {/* 厂商页签时页头右侧只保留「添加厂商」。 */}
+      <div ref={pageRef} className="space-y-3">
+        {/* On the vendors tab the title row keeps only "Add vendor". */}
         <PageActions>
           <ResponsiveToolbarButton primary icon={Plus} label={t('modelsPage.addVendor')} onClick={openCreate} />
         </PageActions>
 
-        <ListPage
-          toolbar={
-            <ListToolbar
-              search={{
-                value: keyword,
-                onChange: (value) => {
-                  setPage(0);
-                  setKeyword(value);
-                },
-                placeholder: t('modelsPage.searchVendors')
-              }}
-            />
-          }
-          footer={
+        {narrow ? (
+          <div className="space-y-2">
+            <StatusSegments chips value={segment} onChange={changeSegment} options={segmentOptions} counts={loaded ? counts : null} />
+            <div className="flex">{search}</div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusSegments value={segment} onChange={changeSegment} options={segmentOptions} counts={loaded ? counts : null} />
+            {search}
+          </div>
+        )}
+
+        <Card>
+          {body}
+          <div className="border-t border-border">
             <ListFooter
               total={filtered.length}
               page={page}
@@ -163,16 +253,8 @@ export default function ModelOwnedby() {
                 savePageSize('model_ownedby', n);
               }}
             />
-          }
-        >
-          {!loading && items.length === 0 ? (
-            <ListEmptyState title={t('modelOwnedby.title')} />
-          ) : !loading && filtered.length === 0 ? (
-            <ListEmptyState variant="noMatch" onClearFilters={() => setKeyword('')} />
-          ) : (
-            <ModelOwnedbyTable items={pageRows} onEdit={openEdit} onDelete={setDeleteTarget} />
-          )}
-        </ListPage>
+          </div>
+        </Card>
 
         <ModelOwnedbySheet open={sheetOpen} onOpenChange={setSheetOpen} ownedbyId={editId} onSaved={onSaved} />
 
