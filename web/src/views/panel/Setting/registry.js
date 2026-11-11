@@ -124,8 +124,9 @@ export const PLATFORM_GROUPS = [
       card('image-proxy', 'form', ['ChatImageRequestProxy', 'CFWorkerImageUrl', 'CFWorkerImageKey']),
       card('auto-routing', 'form', [
         'RoutingDecisionBillingEnabled',
-        'OrganizationRoutingPolicyEnabled',
-        'OrganizationRoutingPolicyMaxCount'
+        'UserRoutingPolicyEnabled',
+        'OrganizationRoutingPolicyMaxCount',
+        'PersonalRoutingPolicyMaxCount'
       ])
     ]
   },

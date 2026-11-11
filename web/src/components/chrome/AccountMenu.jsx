@@ -55,7 +55,7 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, conte
   const { pathname } = useLocation();
   const isAdmin = useIsAdmin();
   const isRoot = useIsRoot();
-  const { orgRoutingPolicyEnabled } = useOrg();
+  const { routingPolicyEnabled } = useOrg();
   const { notice, openNotice } = useNotice();
 
   const name = accountDisplayName(user);
@@ -79,7 +79,7 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, conte
       pathname,
       to: { kind: 'admin' },
       isRoot,
-      features: { orgRoutingPolicy: orgRoutingPolicyEnabled }
+      features: { routingPolicy: routingPolicyEnabled }
     });
     if (target) go(target);
   };

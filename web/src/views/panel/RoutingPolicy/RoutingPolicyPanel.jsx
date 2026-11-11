@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ObjectPanel, ObjectTile } from '@/components/objects';
-import { EMPTY_POLICY, normalizePolicy } from './routingPolicyApi';
+import PolicyCallName from './PolicyCallName';
+import { EMPTY_POLICY, normalizePolicy, policyCallName } from './routingPolicyApi';
 import { POLICY_TABS, REVIEW_TAB_KEYS } from './policyTabs';
 
 // Right-side panel of one routing policy: header with the enable switch and Delete, tabs
 // Overview (summary and statistics), Routes, Try it and Settings. `api` is the scoped client; a
-// review client (organization policies in the platform console) only shows Overview and the
-// enable switch. `listed` is the policy's row in the list (organization name, name conflicts).
+// review client (other scopes' policies in the platform console) only shows Overview and the
+// enable switch; a readOnly client (organization members) only shows Overview, without statistics. `listed` is the policy's row in the list (organization name, name conflicts).
 export default function RoutingPolicyPanel({
   api,
   listed = null,
@@ -30,13 +31,14 @@ export default function RoutingPolicyPanel({
   const [policy, setPolicy] = useState(null);
   const [error, setError] = useState('');
   const review = Boolean(api.review);
+  const readOnly = Boolean(api.readOnly);
   const tabs = useMemo(
     () =>
-      POLICY_TABS.filter((x) => !review || REVIEW_TAB_KEYS.includes(x.key)).map((x) => ({
+      POLICY_TABS.filter((x) => !(review || readOnly) || REVIEW_TAB_KEYS.includes(x.key)).map((x) => ({
         ...x,
         label: t(`routingPolicy.panel.tab.${x.key}`)
       })),
-    [t, review]
+    [t, review, readOnly]
   );
 
   const load = useCallback(async () => {
@@ -62,7 +64,11 @@ export default function RoutingPolicyPanel({
   const subtitle = policy
     ? [
         `#${policy.id}`,
-        review ? listed?.organization_name || `#${policy.organization_id}` : null,
+        review
+          ? policy.user_id
+            ? listed?.username || `#${policy.user_id}`
+            : listed?.organization_name || `#${policy.organization_id}`
+          : null,
         policy.display_name,
         t('routingPolicy.panel.routeCount', { count: policy.routes.length })
       ]
@@ -80,14 +86,20 @@ export default function RoutingPolicyPanel({
           <Split />
         </ObjectTile>
       }
-      title={<span className="font-mono">{policy?.name}</span>}
+      title={
+        api.callPrefix && policy ? <PolicyCallName name={policyCallName(api, policy)} /> : <span className="font-mono">{policy?.name}</span>
+      }
       subtitle={subtitle}
       actions={
         policy && (
           <>
-            <span className="text-xs text-muted-foreground">{t('routingPolicy.columns.enabled')}</span>
-            <Switch checked={Boolean(policy.enabled)} aria-label={t('routingPolicy.columns.enabled')} onCheckedChange={toggle} />
-            {!review && (
+            {!readOnly && (
+              <>
+                <span className="text-xs text-muted-foreground">{t('routingPolicy.columns.enabled')}</span>
+                <Switch checked={Boolean(policy.enabled)} aria-label={t('routingPolicy.columns.enabled')} onCheckedChange={toggle} />
+              </>
+            )}
+            {!review && !readOnly && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="size-8 rounded-lg" aria-label={t('objects.more')}>
@@ -114,7 +126,7 @@ export default function RoutingPolicyPanel({
         await load();
         onChanged();
       }}
-      ctx={{ t, modelOptions, api, overridesPlatform: Boolean(review && listed?.overrides_platform) }}
+      ctx={{ t, modelOptions, api, readOnly, overridesPlatform: Boolean(listed?.overrides_platform) }}
       tabsLabel={t('routingPolicy.panel.tabs')}
     />
   );

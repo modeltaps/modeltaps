@@ -54,26 +54,29 @@ describe('navSectionsFor (workbench)', () => {
     }
   });
 
-  it('org owner/admin: 自动路由 while the site lets organizations manage routing policies', () => {
-    const features = { orgRoutingPolicy: true };
-    for (const orgRole of ['owner', 'admin']) {
-      const org = navSectionsFor({ context: 'org', orgRole, orgId: 7, features }).find((s) => s.id === 'organization');
-      expect(org.items.map((i) => i.id)).toEqual(['organization', 'org_members', 'org_routing', 'billing', 'org_settings']);
-      expect(org.items.find((i) => i.id === 'org_routing').href).toBe('/panel/settings/org/7/routing');
+  it('路由策略 is a workbench item in every context while the site allows own policies', () => {
+    const features = { routingPolicy: true };
+    for (const [context, orgRole] of [
+      ['personal', null],
+      ['org', 'owner'],
+      ['org', 'member']
+    ]) {
+      const develop = navSectionsFor({ context, orgRole, orgId: 7, features }).find((s) => s.id === 'develop');
+      expect(develop.items.map((i) => i.id)).toContain('routing');
+      expect(develop.items.find((i) => i.id === 'routing').href).toBe('/panel/routing');
     }
-    const member = navSectionsFor({ context: 'org', orgRole: 'member', orgId: 7, features }).find((s) => s.id === 'organization');
-    expect(member.items.map((i) => i.id)).toEqual(['organization']);
-    expect(findActiveItem('/panel/settings/org/7/routing')?.id).toBe('org_routing');
+    const off = navSectionsFor({ context: 'personal' }).find((s) => s.id === 'develop');
+    expect(off.items.map((i) => i.id)).not.toContain('routing');
+    expect(findActiveItem('/panel/routing')?.id).toBe('routing');
   });
 
-  it('switching organization keeps 自动路由 only where it is available', () => {
-    const pathname = '/panel/settings/org/7/routing';
-    const to = { kind: 'org', orgId: 9, role: 'owner' };
-    expect(contextSwitchTarget({ pathname, to, features: { orgRoutingPolicy: true } })).toBe('/panel/settings/org/9/routing');
-    expect(contextSwitchTarget({ pathname, to })).toBe('/panel/dashboard');
-    expect(contextSwitchTarget({ pathname, to: { kind: 'org', orgId: 9, role: 'member' }, features: { orgRoutingPolicy: true } })).toBe(
-      '/panel/dashboard'
-    );
+  it('switching context stays on 路由策略 while it is available', () => {
+    const pathname = '/panel/routing';
+    const features = { routingPolicy: true };
+    // null: stay on the page.
+    expect(contextSwitchTarget({ pathname, to: { kind: 'org', orgId: 9, role: 'member' }, features })).toBeNull();
+    expect(contextSwitchTarget({ pathname, to: { kind: 'personal' }, features })).toBeNull();
+    expect(contextSwitchTarget({ pathname, to: { kind: 'personal' } })).toBe('/panel/dashboard');
   });
 
   it('org-scoped urls carry the active organization', () => {

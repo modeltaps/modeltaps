@@ -686,7 +686,7 @@
     "personal_settings": "只對你自己的賬號生效",
     "token": "調用介面用的金鑰",
     "invite_code": "生成、啟用與作廢註冊用的邀請碼",
-    "org_routing": "本組織 API Key 使用的路由策略；與平台策略同名時取代平台策略"
+    "routing": "你的 API Key 能呼叫的路由策略：託管策略直接寫名字，自己建立的用 policy/<名字> 呼叫"
   },
   "api_compare": "對比",
   "modelInfoPage": {
@@ -1584,7 +1584,7 @@
     "model_alias_target_is_alias": "別名不能指向另一個別名",
     "model_managed_by_routing_policy": "該模型由自動路由策略維護，請到策略裏修改",
     "routing_policy_not_found": "路由策略不存在",
-    "routing_policy_name_invalid": "名稱只能包含字母、數字和 . _ / -，最多 100 個字元，且不能以 / 開頭或結尾",
+    "routing_policy_name_invalid": "名稱只能包含字母、數字和 . _ / -，最多 100 個字元，不能以 / 開頭或結尾，也不能以 policy/ 開頭",
     "routing_policy_name_taken": "該名稱已被某個模型或另一條策略佔用",
     "routing_policy_model_required": "{{field}} 必須填寫模型",
     "routing_policy_model_is_policy": "{{field}} 必須是模型，不能是路由策略（{{model}}）",
@@ -1691,7 +1691,7 @@
       "enabled": "啟用",
       "week": "近 7 天",
       "fallbackRate": "兜底 {{rate}}%",
-      "organization": "組織"
+      "owner": "擁有者"
     },
     "form": {
       "name": "模型名",
@@ -1751,7 +1751,8 @@
       "tabAdvanced": "進階",
       "tabTry": "試一試",
       "enabled": "啟用",
-      "enabledHint": "停用的策略不進模型列表，請求它會得到 model_not_found。"
+      "enabledHint": "停用的策略不進模型列表，請求它會得到 model_not_found。",
+      "nameHintOwn": "呼叫時 model 寫 policy/<這個名字>，如 policy/coder。"
     },
     "templates": {
       "coding_change_size": "編碼：改動大小",
@@ -1776,7 +1777,8 @@
       "loadingSamples": "載入中…",
       "noSamples": "還沒有留存了請求體的被路由請求。開啟請求明細記錄後才會有樣本。",
       "scoring": "評分方式",
-      "introBilled": "只跑決策這一步，用的是表單裏目前的策略。不轉發、不寫會話固定記錄，但決策呼叫會計費，記在組織賬上。"
+      "introBilled": "只跑決策這一步，用的是表單裏目前的策略。不轉發、不寫會話固定記錄，但決策呼叫會計費，記在組織賬上。",
+      "introBilledPersonal": "只跑決策這一步，用的是表單裏目前的策略。不轉發、不寫會話固定記錄，但決策呼叫會計費，從你的餘額扣除。"
     },
     "reasons": {
       "classified": "已分類",
@@ -1840,13 +1842,32 @@
     "scope": {
       "label": "範圍",
       "platform": "平台",
-      "organization": "組織"
+      "organization": "組織",
+      "personal": "個人"
     },
     "overridesPlatform": "覆蓋平台策略",
     "organizationsIntro": "各組織在自己的「自動路由」頁管理的策略，只對該組織的 API Key 生效。這裏只能停用。",
-    "organizationsEmpty": "還沒有組織建立路由策略。",
-    "orgIntro": "這裏的策略只對本組織的 API Key 生效。與平台策略同名時，本組織成員會使用這裏的策略。「試一試」會實際呼叫決策模型，費用記在組織賬上。",
-    "overridesPlatformHint": "有同名的平台策略。該組織的 API Key 會使用組織的這條策略，而不是平台的。"
+    "orgIntro": "這裏的策略只對本組織的 API Key 生效，呼叫時把 model 設為 policy/<名字>。與託管策略同名時，本組織寫裸名也會使用這裏的策略。「試一試」會實際呼叫決策模型，費用記在組織賬上。",
+    "overridesPlatformHint": "有同名的平台策略。該組織的 API Key 會使用組織的這條策略，而不是平台的。",
+    "callName": "呼叫名稱",
+    "copyCallName": "複製呼叫名稱",
+    "status": {
+      "enabled": "已啟用",
+      "disabled": "已停用"
+    },
+    "reviewEmpty": "還沒有人建立路由策略。",
+    "personalIntro": "各用戶在工作台「路由策略」裏為自己建立的策略，只對本人的個人 API Key 生效。這裏只能停用。",
+    "personalOwnIntro": "這裏的策略只對你的個人 API Key 生效，呼叫時把 model 設為 policy/<名字>。與託管策略同名時，你的 Key 寫裸名也會使用這裏的策略。「試一試」會實際呼叫決策模型，費用從你的餘額扣除。",
+    "orgMemberIntro": "本組織的 Owner / Admin 建立的策略，你的組織 API Key 可以用 policy/<名字> 呼叫。只有管理員能修改。",
+    "types": {
+      "label": "策略類型",
+      "managed": "託管",
+      "auto": "自動路由"
+    },
+    "managedIntro": "平台提供的策略，呼叫時 model 直接寫名字。",
+    "managedEmpty": "平台還沒有可用的託管策略。",
+    "managedOverridden": "已被你的同名策略取代",
+    "managedOverriddenHint": "你有一條同名的自建策略，寫裸名時會使用你自己的。要使用這條託管策略，請把你的策略改名或停用。"
   },
   "logPage": {
     "routing": {
@@ -1865,10 +1886,12 @@
       "generalSettings": {
         "routingDecisionBilling": "決策呼叫計費",
         "routingDecisionBillingDescription": "自動路由策略的分類呼叫按決策模型價格向呼叫方計費，每個會話一次，單獨記一條日誌。關閉後決策照常進行，但不寫消費日誌。",
-        "orgRoutingPolicy": "允許組織管理自己的路由策略",
-        "orgRoutingPolicyDescription": "組織擁有者和管理員的組織選單裏會出現「自動路由」。組織策略只對該組織的 API Key 生效；與平台策略同名時，在該組織內取代平台策略。",
         "orgRoutingPolicyMaxCount": "每個組織的策略上限",
-        "orgRoutingPolicyMaxCountDescription": "一個組織最多能建立多少條路由策略，0 表示不限。"
+        "orgRoutingPolicyMaxCountDescription": "一個組織最多能建立多少條路由策略，0 表示不限。",
+        "userRoutingPolicy": "允許用戶和組織建立自己的路由策略",
+        "userRoutingPolicyDescription": "用戶在工作台「路由策略」裏建立個人策略，組織 Owner / Admin 建立組織策略，都用 policy/<名字> 呼叫。關閉後自建策略保留但不再生效。",
+        "personalRoutingPolicyMaxCount": "每個用戶的策略上限",
+        "personalRoutingPolicyMaxCountDescription": "一個用戶最多能建立多少條個人路由策略，0 表示不限。"
       }
     },
     "otherSettings": {
@@ -2246,7 +2269,8 @@
       "redemption": "兌換碼",
       "platformSettings": "平台設定",
       "personalSettings": "個人設定",
-      "inviteCodes": "邀請碼"
+      "inviteCodes": "邀請碼",
+      "routingPolicies": "路由策略"
     },
     "context": {
       "personal": "個人",
