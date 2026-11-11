@@ -23,6 +23,7 @@ import { SettingsPlaneContext, useSettingsPlaneState } from '@/components/settin
 import MainRoutes from 'routes/MainRoutes';
 import { NoticeBanner } from 'ui-component/notice';
 import { rememberSettingsReturn } from 'utils/settingsReturn';
+import { rememberAdminReturn } from 'utils/adminReturn';
 import { settingsTree } from 'views/panel/Settings/sections';
 import MobilePushFrame from './MobilePushFrame';
 
@@ -52,6 +53,10 @@ export default function MainLayout() {
   useEffect(() => {
     if (!settingsPlane) rememberSettingsReturn(`${pathname}${search}`);
   }, [settingsPlane, pathname, search]);
+  // Platform admin's back row returns to the last workbench page.
+  useEffect(() => {
+    if (!settingsPlane && context !== 'admin') rememberAdminReturn(`${pathname}${search}`);
+  }, [settingsPlane, context, pathname, search]);
   const tree = settingsPlane ? settingsTree({ pathname, organizations, currentOrgId }) : null;
 
   // The tab title names the space only in platform admin, to tell tabs apart; the brand part

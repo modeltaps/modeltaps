@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { Link, useLocation } from 'react-router';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { Settings } from 'lucide-react';
+import { ArrowLeft, Settings } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -11,6 +11,7 @@ import { useOrg } from 'contexts/OrgContext';
 import { useIsRoot } from 'utils/common';
 import { brandWordmark, isDefaultBrand } from 'utils/brand';
 import { formatFullAmount } from 'utils/compactAmount';
+import { adminReturnPath } from 'utils/adminReturn';
 import { DASHBOARD_URL, SETTINGS_ROOT, findActiveItem, isOrgAdminRole, navLabel, navSectionsFor } from './nav-config';
 import { BrandLockup, LogoMark } from './Logo';
 import ContextSwitcher from './ContextSwitcher';
@@ -18,8 +19,8 @@ import AccountMenu from './AccountMenu';
 import { CollapseButton, SidebarIconButton, SidebarSearch, sidebarRow } from './SidebarControls';
 
 // ==============================|| CHROME — SIDEBAR (one shell, three contexts) ||============================== //
-// Every panel page uses this sidebar. Top: brand row, context switcher (personal / org /
-// platform admin), search. Middle: the menu of the current context (nav-config). Bottom:
+// Every panel page uses this sidebar. Top: brand row, context switcher (personal / org; in
+// platform admin a back row to the workbench instead), search. Middle: the menu of the current context (nav-config). Bottom:
 // the account row (its menu carries the balance, 设置 and the platform admin entry) and the
 // settings button, a shortcut to the same 设置 page in every context. Shared by the desktop rail
 // and the mobile drawer; `collapsed` switches the desktop rail to an icon column.
@@ -32,6 +33,50 @@ try {
 }
 
 const { base: rowBase, active: rowActive, idle: rowIdle } = sidebarRow;
+
+// Platform admin has no space switcher: its own menu only, and one row back to the workbench page
+// the user came from (organization context is kept while in platform admin). Same height as the
+// switcher row it replaces.
+export function AdminBackRow({ collapsed, onClick }) {
+  const { t } = useTranslation();
+  const to = adminReturnPath();
+  const label = t('admin_console.back');
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link
+            to={to}
+            onClick={onClick}
+            aria-label={label}
+            className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <ArrowLeft className="size-[1.125rem]" />
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent side="right">{label}</TooltipContent>
+      </Tooltip>
+    );
+  }
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      aria-label={label}
+      className="group flex h-9 w-full items-center gap-2.5 rounded-lg px-2 text-sm font-medium text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <span className="flex size-6 shrink-0 items-center justify-center">
+        <ArrowLeft className="size-[1.125rem] text-muted-foreground group-hover:text-foreground" />
+      </span>
+      <span className="min-w-0 flex-1 truncate">{t('admin_console.workspace')}</span>
+    </Link>
+  );
+}
+
+AdminBackRow.propTypes = {
+  collapsed: PropTypes.bool,
+  onClick: PropTypes.func
+};
 
 export default function Sidebar({ context, collapsed = false, onItemClick, onToggleCollapse, onOpenCommand }) {
   const { t } = useTranslation();
@@ -145,7 +190,11 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
         )}
 
         <div className={cn('flex shrink-0 flex-col pb-1', collapsed ? 'items-center gap-1 px-1' : 'gap-2 px-2')}>
-          <ContextSwitcher context={context} collapsed={collapsed} onNavigate={onItemClick} />
+          {context === 'admin' ? (
+            <AdminBackRow collapsed={collapsed} onClick={onItemClick} />
+          ) : (
+            <ContextSwitcher context={context} collapsed={collapsed} onNavigate={onItemClick} />
+          )}
           <SidebarSearch collapsed={collapsed} onClick={onOpenCommand} />
         </div>
 
