@@ -26,7 +26,7 @@ func setOption(t *testing.T, key, value string) {
 	t.Cleanup(func() { _ = config.GlobalOption.Set(key, old) })
 }
 
-const testHomePage = `<title>__MT_BRAND__</title><link href="__MT_ORIGIN__/"><b>__MT_WORDMARK__</b>` +
+const testHomePage = `<title>__MT_BRAND__</title><link href="__MT_ORIGIN__/"><b class="__MT_WORDMARK_CLASS__">__MT_WORDMARK__</b>` +
 	`<!--mt:docs--><a href="__MT_DOCS_URL__">Docs</a><!--/mt:docs--><i>LANG</i>`
 
 func setupStaticHome() *gin.Engine {
@@ -95,7 +95,7 @@ func TestStaticHomeFillsSiteValues(t *testing.T) {
 		setOption(t, "SystemName", "")
 		setOption(t, "DocsLink", "")
 		body := getHome(r, "/", nil).Body.String()
-		want := `<title>Modeltaps</title><link href="https://gw.example.com/"><b>modeltaps</b><i>en_US</i>`
+		want := `<title>Modeltaps</title><link href="https://gw.example.com/"><b class="brand-wordmark">modeltaps</b><i>en_US</i>`
 		if body != want {
 			t.Fatalf("got %q\nwant %q", body, want)
 		}
@@ -107,7 +107,7 @@ func TestStaticHomeFillsSiteValues(t *testing.T) {
 		body := getHome(r, "/", nil).Body.String()
 		for _, want := range []string{
 			"<title>Acme &lt;AI&gt;</title>",
-			"<b>Acme &lt;AI&gt;</b>",
+			`<b class="font-semibold tracking-[-0.01em]">Acme &lt;AI&gt;</b>`,
 			`<a href="https://docs.example.com/?a=1&amp;b=&#34;2&#34;">Docs</a>`,
 		} {
 			if !strings.Contains(body, want) {

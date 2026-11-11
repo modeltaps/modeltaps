@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Check, Globe, Moon, Sun } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { LogoMark } from '@/components/chrome/Logo';
+import { BrandLockup } from '@/components/chrome/Logo';
 import i18nList from 'i18n/i18nList';
 import Hero from 'views/public/home/Hero';
 import { STATIC_TOKENS } from './tokens';
@@ -64,9 +64,8 @@ export default function StaticHome({ lng }) {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <header className="flex h-14 items-center justify-between gap-2 border-b border-border px-4 sm:px-6">
-        <a href="/" className="flex items-center gap-2 text-foreground">
-          <LogoMark size={20} />
-          <span className="text-sm font-semibold leading-none">{STATIC_TOKENS.wordmark}</span>
+        <a href="/" className="flex items-center">
+          <BrandLockup text={STATIC_TOKENS.wordmark} fontClass={STATIC_TOKENS.wordmarkClass} />
         </a>
         <div className="flex items-center gap-1">
           <LanguageMenu lng={lng} />
@@ -87,8 +86,7 @@ export default function StaticHome({ lng }) {
       </main>
 
       <footer className="flex items-center justify-center gap-1.5 px-4 py-5 text-muted-foreground">
-        <LogoMark size={12} />
-        <span className="text-[0.8125rem] font-medium leading-none">{STATIC_TOKENS.brand}</span>
+        <BrandLockup size={12} text={STATIC_TOKENS.wordmark} fontClass={STATIC_TOKENS.wordmarkClass} />
         <span className="text-[0.8125rem] leading-none">© 2026</span>
         {/* comments cannot be rendered as React nodes; the markup is a constant plus escaped text */}
         <span className="contents" dangerouslySetInnerHTML={{ __html: docsLinkMarkup(t('common.docs')) }} />
