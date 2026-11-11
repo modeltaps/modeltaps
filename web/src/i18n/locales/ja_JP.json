@@ -601,8 +601,8 @@
       "badge": "マルチプロトコル AI ゲートウェイ",
       "ctaPrimary": "API キーを取得",
       "ctaSecondary": "モデルを見る",
-      "subline": "OpenAI・Anthropic・Gemini の 3 つのプロトコルをひとつのアドレスで。ツールは base URL を変えるだけで、どのモデルも使えます。自分で運用し、キーとログは手元に。",
-      "tagline": "すべてのモデルを、ひとつのゲートウェイで。"
+      "subline": "メンバーごとにキーと予算を。OpenAI・Anthropic・Gemini の API でどのモデルも使えます。自分で運用し、キーも自分のもの。",
+      "tagline": "チームのための AI ゲートウェイ。"
     },
     "howItWorks": {
       "step1": {

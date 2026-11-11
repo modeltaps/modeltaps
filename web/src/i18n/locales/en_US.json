@@ -601,8 +601,8 @@
       "badge": "Multi-protocol AI gateway",
       "ctaPrimary": "Get API key",
       "ctaSecondary": "Browse models",
-      "subline": "OpenAI, Anthropic and Gemini APIs behind a single base URL. Point your tools at one address and use any model — self-hosted, with your own keys.",
-      "tagline": "Every model, every protocol. One gateway."
+      "subline": "Give every member a key and a budget. Use any model through OpenAI, Anthropic and Gemini APIs — self-hosted, with your own keys.",
+      "tagline": "The AI gateway for teams."
     },
     "howItWorks": {
       "step1": {
