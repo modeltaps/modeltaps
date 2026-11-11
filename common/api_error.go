@@ -175,6 +175,8 @@ const (
 	APICodeTokenNotFound                    = "token_not_found"
 	APICodeTokenAccessDenied                = "token_access_denied"
 	APICodeTokenNameTooLong                 = "token_name_too_long"
+	APICodeTokenNameTaken                   = "token_name_taken"
+	APICodeTokenNameReserved                = "token_name_reserved"
 	APICodeTokenExpiredCannotEnable         = "token_expired_cannot_enable"
 	APICodeTokenQuotaExhaustedCannotEnable  = "token_quota_exhausted_cannot_enable"
 

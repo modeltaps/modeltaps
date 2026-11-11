@@ -83,6 +83,9 @@ BaseUrlLine.propTypes = { value: PropTypes.string.isRequired, onCopy: PropTypes.
 
 CopyField.propTypes = { label: PropTypes.node, value: PropTypes.string, onCopy: PropTypes.func.isRequired, testId: PropTypes.string };
 
+// Server answers that belong under the name field rather than in a toast.
+const NAME_ERRORS = new Set(['token_name_taken', 'token_name_reserved']);
+
 // New API key, in a dialog as most consoles do it: a name, and optionally a spending limit and an
 // expiry. Groups, model and IP restrictions start open (the account's group, every model, any
 // address) and are changed in the key's panel. After creating, the dialog shows the key with copy
@@ -91,6 +94,7 @@ export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, on
   const { t } = useTranslation();
   const [form, setForm] = useState({ name: '', quota: '', days: 0 });
   const [busy, setBusy] = useState(false);
+  const [nameError, setNameError] = useState('');
   const [created, setCreated] = useState(null);
   const name = form.name.trim();
 
@@ -117,11 +121,12 @@ export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, on
         remain_quota,
         setting: structuredClone(DEFAULT_SETTING)
       });
-      const { success, message, data } = res.data;
+      const { success, message, data, code } = res.data;
       if (success) {
         setCreated({ id: data?.id, key: data?.key ? `sk-${data.key}` : '' });
         onCreated();
-      } else showError(message);
+      } else if (NAME_ERRORS.has(code)) setNameError(message);
+      else showError(message);
     } catch {
       // surfaced globally
     } finally {
@@ -174,7 +179,7 @@ export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, on
               <DialogDescription>{t('apiKey.new.description')}</DialogDescription>
             </DialogHeader>
             <div className="px-6 pb-4">
-              <Field label={t('token_index.name')} htmlFor="nt-name">
+              <Field label={t('token_index.name')} htmlFor="nt-name" error={nameError}>
                 <Input
                   id="nt-name"
                   autoFocus
@@ -182,7 +187,11 @@ export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, on
                   maxLength={30}
                   placeholder={t('apiKey.new.namePlaceholder')}
                   value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  aria-invalid={Boolean(nameError)}
+                  onChange={(e) => {
+                    setNameError('');
+                    setForm((f) => ({ ...f, name: e.target.value }));
+                  }}
                 />
               </Field>
               <div className="grid grid-cols-2 gap-3">

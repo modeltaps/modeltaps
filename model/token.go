@@ -379,6 +379,14 @@ func GetTokenById(id int) (*Token, error) {
 	return &token, err
 }
 
+// TokenNameTaken reports whether another API key of the same owner (a user, or an organization's
+// shadow user) already has this name. exceptId is the key being renamed, 0 when creating.
+func TokenNameTaken(userId int, name string, exceptId int) (bool, error) {
+	var count int64
+	err := DB.Model(&Token{}).Where("user_id = ? AND name = ? AND id <> ?", userId, name, exceptId).Count(&count).Error
+	return count > 0, err
+}
+
 func GetTokenByName(name string, userId int) (*Token, error) {
 	if name == "" {
 		return nil, errors.New("name is empty")

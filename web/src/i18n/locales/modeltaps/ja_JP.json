@@ -1508,6 +1508,8 @@
     "payment_create_failed": "支払いを作成できませんでした。しばらくしてから再試行してください",
     "order_create_failed": "注文を作成できませんでした。しばらくしてから再試行してください",
     "token_name_too_long": "API キーの名前が長すぎます",
+    "token_name_taken": "同じ名前の API キーがすでにあります。別の名前にしてください。",
+    "token_name_reserved": "sys_ で始まる名前はシステム用に予約されています。",
     "token_expired_cannot_enable": "この API キーは有効期限切れのため有効にできません。先に有効期限を変更するか、無期限に設定してください",
     "token_quota_exhausted_cannot_enable": "この API キーはクォータを使い切ったため有効にできません。先に残りクォータを変更するか、無制限に設定してください",
     "org_usage_view_denied": "この組織の設定では他のメンバーの使用量を表示できません",
@@ -2922,6 +2924,10 @@
       "copied": "コピーしました",
       "openDetails": "詳細を開く",
       "done": "完了"
+    },
+    "page": {
+      "protocol": "プロトコル",
+      "examples": "接続例"
     }
   }
 }
