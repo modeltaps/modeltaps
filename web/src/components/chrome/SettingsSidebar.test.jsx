@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { createElement } from 'react';
 import { MemoryRouter } from 'react-router';
+import { Provider } from 'react-redux';
+import { legacy_createStore as createStore } from 'redux';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -8,10 +10,10 @@ import { OrgContext } from 'contexts/OrgContext';
 import { SettingsPlaneContext } from '@/components/settings/SettingsPlane';
 import SettingsSidebar from './SettingsSidebar';
 
-// On 设置 the sidebar is the settings tree, laid out like the workbench sidebar: a first row (back
-// link, search button that opens the palette, collapse button where needed), the organization
-// picker where the context switcher is, then the organization items and 个人设置. Unsaved groups
-// reported by the page get a dot.
+// On 设置 the sidebar is the settings tree, laid out like the workbench and platform admin sidebars:
+// the brand row (brand, search button that opens the palette, collapse button where needed), the
+// back row where the context switcher is, the organization picker under it, then the organization
+// items and 个人设置. Unsaved groups reported by the page get a dot.
 
 afterEach(cleanup);
 
@@ -20,18 +22,25 @@ const orgs = [
   { id: 9, name: 'Globex', role: 'member' }
 ];
 
+// The brand row reads the site name.
+const store = createStore(() => ({ siteInfo: { system_name: 'Modeltaps' } }));
+
 const renderAt = (path, { organizations = orgs, plane = null, showCollapse = false, onOpenCommand = () => {}, collapsed = false } = {}) =>
   render(
     createElement(
-      MemoryRouter,
-      { initialEntries: [path] },
+      Provider,
+      { store },
       createElement(
-        OrgContext.Provider,
-        { value: { organizations, currentOrgId: null } },
+        MemoryRouter,
+        { initialEntries: [path] },
         createElement(
-          SettingsPlaneContext.Provider,
-          { value: plane },
-          createElement(SettingsSidebar, { showCollapse, collapsed, onToggleCollapse: () => {}, onOpenCommand })
+          OrgContext.Provider,
+          { value: { organizations, currentOrgId: null } },
+          createElement(
+            SettingsPlaneContext.Provider,
+            { value: plane },
+            createElement(SettingsSidebar, { showCollapse, collapsed, onToggleCollapse: () => {}, onOpenCommand })
+          )
         )
       )
     )
@@ -64,6 +73,8 @@ describe('SettingsSidebar', () => {
   it('has a back row to the workbench and no footer', () => {
     renderAt('/panel/settings/account/profile');
     expect(screen.getByRole('link', { name: '返回工作台' }).textContent).toContain('工作台');
+    // The same brand row as the workbench comes first.
+    expect(screen.getAllByRole('link')[0].getAttribute('href')).toBe('/panel/dashboard');
     expect(screen.queryByRole('button', { name: /账号菜单/ })).toBeNull();
   });
 

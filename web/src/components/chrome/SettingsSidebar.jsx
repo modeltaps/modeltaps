@@ -1,7 +1,6 @@
 import PropTypes from 'prop-types';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -11,16 +10,18 @@ import { settingsReturnPath } from 'utils/settingsReturn';
 import OrgPicker from 'views/panel/Settings/org/OrgPicker';
 import { ORG_TREE, orgSettingsUrl, parseSettingsPath, settingsTree } from 'views/panel/Settings/sections';
 import { isAdminPath } from './nav-config';
-import { CollapseButton, SidebarSearch, sidebarRow } from './SidebarControls';
+import { BackRow, SidebarSearch, sidebarRow } from './SidebarControls';
+import SidebarBrandRow from './SidebarBrandRow';
 
 // ==============================|| CHROME — SETTINGS SIDEBAR (设置) ||============================== //
-// On 设置 the whole sidebar is the settings tree, laid out like the workbench sidebar so nothing
-// moves between them:
-//   first row  a back row to the page the user came from (工作台, or 平台管理 when they came from
-//              there) where the brand is, then the search button (the panel's search palette)
+// On 设置 the whole sidebar is the settings tree, laid out like the workbench and platform admin
+// sidebars so nothing moves between them:
+//   brand row  the same first row (SidebarBrandRow): brand, search (the panel's search palette)
 //              and the collapse button where it is needed;
-//   switcher   where the workbench has its context switcher: the picker of the organizations the
-//              user manages (owners and admins only; it names the organization part, no heading);
+//   back row   where the workbench has its context switcher: back to the page the user came from
+//              (工作台, or 平台管理 when they came from there), as in platform admin;
+//   picker     right under it, the organizations the user manages (owners and admins only; it
+//              names the organization part, no heading);
 //   menu       常规 / 成员与预算 / 危险操作 of that organization, then 个人设置.
 // The collapse button shows on narrow screens, where the rail collapses by itself and can be
 // expanded from the page title, and in the phone drawer (to close it).
@@ -109,41 +110,16 @@ export default function SettingsSidebar({ collapsed = false, showCollapse = fals
   return (
     <TooltipProvider delayDuration={150}>
       <div className="flex h-full flex-col bg-sidebar">
-        {/* First row: back link, then search and (where needed) collapse. */}
-        {collapsed ? (
-          <div className="flex h-16 shrink-0 items-center justify-center">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  to={backTo}
-                  onClick={onItemClick}
-                  aria-label={backLabel}
-                  className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  <ArrowLeft className="size-[1.125rem]" />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">{backLabel}</TooltipContent>
-            </Tooltip>
-          </div>
-        ) : (
-          <div className="flex h-16 shrink-0 items-center gap-1 pl-2 pr-2">
-            <Link
-              to={backTo}
-              onClick={onItemClick}
-              aria-label={backLabel}
-              className="group flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg px-2 text-sm font-medium text-foreground/85 transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <ArrowLeft className="size-[1.125rem] shrink-0 text-muted-foreground group-hover:text-foreground" />
-              <span className="truncate">{backName}</span>
-            </Link>
-            {onOpenCommand && <SidebarSearch onClick={onOpenCommand} />}
-            {showCollapse && onToggleCollapse && <CollapseButton onClick={onToggleCollapse} />}
-          </div>
-        )}
+        <SidebarBrandRow
+          collapsed={collapsed}
+          onItemClick={onItemClick}
+          onOpenCommand={onOpenCommand}
+          onToggleCollapse={showCollapse ? onToggleCollapse : undefined}
+        />
 
         {/* Where the workbench has its context switcher (same box, same spacing). */}
         <div className={cn('flex shrink-0 flex-col pb-1', collapsed ? 'items-center gap-1 px-1' : 'gap-2 px-2')}>
+          <BackRow to={backTo} name={backName} label={backLabel} collapsed={collapsed} onClick={onItemClick} />
           {tree.org && <OrgPicker orgs={tree.managedOrgs} value={tree.org.id} onChange={openOrg} collapsed={collapsed} />}
           {collapsed && onOpenCommand && <SidebarSearch collapsed onClick={onOpenCommand} />}
         </div>

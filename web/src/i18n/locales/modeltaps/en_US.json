@@ -674,6 +674,7 @@
     }
   },
   "nav_subtitles": {
+    "systemInfo": "Follow and search the server logs",
     "playground": "Run chat, image, speech and side-by-side comparisons against the gateway",
     "api_audio": "Convert between text and speech",
     "api_compare": "Run several chat models side by side on the same input",
@@ -2376,7 +2377,7 @@
       "orgMembers": "Members & budgets",
       "billing": "Billing",
       "orgSettings": "Organization settings",
-      "health": "System health",
+      "systemLogs": "System logs",
       "stats": "Statistics",
       "channels": "Channels",
       "catalog": "Model catalog",

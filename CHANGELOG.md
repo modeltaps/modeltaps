@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The drop on the home page can be played with. A tap on the surface lets a drop fall right
+  there and its ripple names a few of the models it passes; pressing and holding keeps the drop
+  swelling until it is let go, and a bigger drop reaches further. The automatic drip steps aside
+  while someone plays and resumes after five quiet seconds. It is a small inline script on the
+  static home page and does nothing under reduced motion.
 - The home page at `/` is served as static HTML, rendered at build time for each language
   (English, Simplified Chinese, Traditional Chinese, Japanese) without the app bundle, so search
   engines and first-time visitors get the content at once. The server picks the language from
@@ -204,16 +209,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Settings is one place again, as in 0.3.0. Settings in the account menu and a settings button
   next to the account row (it replaces the bell) open it, and the sidebar turns into its tree,
-  laid out like the workbench sidebar: a back row to the page you came from where the brand is,
-  the picker of the organizations you manage (owners and admins) where the context switcher is,
-  then General, Members & budgets and Danger zone of that organization and Personal settings.
-  The page is titled with the item, and with the organization's name under organization items.
-  Unsaved changes show as a dot in the tree. The collapse button only shows on narrow screens,
-  where the tree collapses by itself and the page title has a button to expand it. Picking an
-  organization there no longer switches the active space. The organization menu no longer has an
-  Organization settings item; Members & budgets stays there as a shortcut into Settings.
+  laid out like the workbench and platform admin sidebars: the same brand row, a back row to the
+  page you came from where the context switcher is, the picker of the organizations you manage
+  (owners and admins) right under it, then General, Members & budgets and Danger zone of that
+  organization and Personal settings. The page is titled with the item, and with the
+  organization's name under organization items. Unsaved changes show as a dot in the tree. The
+  collapse button only shows on narrow screens, where the tree collapses by itself and the page
+  title has a button to expand it. Picking an organization there no longer switches the active
+  space. The organization menu no longer has an Organization settings item; Members & budgets
+  stays there as a shortcut into Settings.
 - The panel has one search, the search palette (⌘K), and every search button opens it. In the
-  workbench, platform admin and settings sidebars it is an icon at the end of the first row (the
+  workbench, platform admin and settings sidebars it is an icon at the end of the brand row (the
   search row under the context switcher is gone), and the platform settings subnav's search box
   is a button for it. On a settings page the palette lists the page's cards under On this page
   and finds them by anything written on them, collection rows included; picking one opens its

@@ -673,6 +673,7 @@
     }
   },
   "nav_subtitles": {
+    "systemInfo": "实时查看与检索服务端日志",
     "playground": "对话、图像、语音与多模型对比的在线试运行",
     "api_audio": "在文字与语音之间转换",
     "api_compare": "多个对话模型并排，同一条输入同时发出",
@@ -2279,7 +2280,7 @@
       "orgMembers": "成员与预算",
       "billing": "账单",
       "orgSettings": "组织设置",
-      "health": "运行状况",
+      "systemLogs": "系统日志",
       "stats": "统计",
       "channels": "渠道",
       "catalog": "模型目录",

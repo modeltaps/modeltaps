@@ -673,6 +673,7 @@
     }
   },
   "nav_subtitles": {
+    "systemInfo": "サーバーログをリアルタイムで確認・検索",
     "playground": "チャット・画像・音声・モデル比較をその場で試す",
     "api_audio": "テキストと音声を相互に変換",
     "api_compare": "複数のチャットモデルを並べ、同じ入力を同時に送信",
@@ -2281,7 +2282,7 @@
       "orgMembers": "メンバーと予算",
       "billing": "請求",
       "orgSettings": "組織の設定",
-      "health": "稼働状況",
+      "systemLogs": "システムログ",
       "stats": "統計",
       "channels": "チャネル",
       "catalog": "モデルカタログ",

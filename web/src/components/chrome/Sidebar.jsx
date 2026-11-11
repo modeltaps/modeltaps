@@ -9,18 +9,19 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useOrg } from 'contexts/OrgContext';
 import { useIsRoot } from 'utils/common';
-import { brandWordmark, isDefaultBrand } from 'utils/brand';
 import { formatFullAmount } from 'utils/compactAmount';
-import { DASHBOARD_URL, SETTINGS_ROOT, findActiveItem, isOrgAdminRole, navLabel, navSectionsFor } from './nav-config';
-import { BrandLockup, LogoMark } from './Logo';
+import { adminReturnPath } from 'utils/adminReturn';
+import { SETTINGS_ROOT, findActiveItem, isOrgAdminRole, navLabel, navSectionsFor } from './nav-config';
 import ContextSwitcher from './ContextSwitcher';
 import AccountMenu from './AccountMenu';
-import { CollapseButton, SidebarIconButton, SidebarSearch, sidebarRow } from './SidebarControls';
+import { BackRow, SidebarIconButton, SidebarSearch, sidebarRow } from './SidebarControls';
+import SidebarBrandRow from './SidebarBrandRow';
 
 // ==============================|| CHROME — SIDEBAR (one shell, three contexts) ||============================== //
 // Every panel page uses this sidebar (设置 swaps it for SettingsSidebar, laid out the same way).
-// Top: brand row with the search and collapse buttons at its end, then the context switcher
-// (personal / org / platform admin). Middle: the menu of the current context (nav-config). Bottom:
+// Top: the brand row (SidebarBrandRow, with the search and collapse buttons at its end), then the
+// context switcher (personal / org; in platform admin a back row to the workbench instead).
+// Middle: the menu of the current context (nav-config). Bottom:
 // the account row (its menu carries the balance, 设置 and the platform admin entry) and the
 // settings button, a shortcut to the same 设置 page in every context. Shared by the desktop rail
 // and the mobile drawer; `collapsed` switches the desktop rail to an icon column.
@@ -34,11 +35,31 @@ try {
 
 const { base: rowBase, active: rowActive, idle: rowIdle } = sidebarRow;
 
+// Platform admin has no space switcher: its own menu only, and one row back to the workbench page
+// the user came from (organization context is kept while in platform admin). Same height as the
+// switcher row it replaces.
+export function AdminBackRow({ collapsed, onClick }) {
+  const { t } = useTranslation();
+  return (
+    <BackRow
+      to={adminReturnPath()}
+      name={t('admin_console.workspace')}
+      label={t('admin_console.back')}
+      collapsed={collapsed}
+      onClick={onClick}
+    />
+  );
+}
+
+AdminBackRow.propTypes = {
+  collapsed: PropTypes.bool,
+  onClick: PropTypes.func
+};
+
 export default function Sidebar({ context, collapsed = false, onItemClick, onToggleCollapse, onOpenCommand }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const { currentOrgId, orgRole, orgDetail, routingPolicyEnabled } = useOrg();
-  const siteInfo = useSelector((state) => state.siteInfo);
   const user = useSelector((state) => state.account.user);
   const isRoot = useIsRoot();
   const footerRef = useRef(null);
@@ -51,7 +72,6 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
     features: { routingPolicy: routingPolicyEnabled }
   });
   const activeId = findActiveItem(pathname)?.id;
-  const brand = brandWordmark(siteInfo?.system_name);
 
   // Balance: personal balance; in org context the pool for owners/admins, the member's own
   // balance otherwise (the pool is not visible to members). Hidden in platform admin. It is shown
@@ -125,29 +145,19 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
   return (
     <TooltipProvider delayDuration={150}>
       <div className="flex h-full flex-col bg-sidebar">
-        {/* Brand row; search and collapse sit at its end (the drawer uses collapse to close). */}
-        {collapsed ? (
-          <div className="flex h-16 shrink-0 items-center justify-center">
-            <Link to={DASHBOARD_URL} onClick={onItemClick} aria-label={brand} className="text-foreground hover:opacity-90">
-              <LogoMark size={20} />
-            </Link>
-          </div>
-        ) : (
-          <div className="flex h-16 shrink-0 items-center gap-1 pl-4 pr-2">
-            <Link
-              to={DASHBOARD_URL}
-              onClick={onItemClick}
-              className="flex min-w-0 flex-1 items-center gap-2.5 text-foreground transition-opacity hover:opacity-90"
-            >
-              <BrandLockup text={brand} wordmark={isDefaultBrand(siteInfo?.system_name)} truncate />
-            </Link>
-            <SidebarSearch onClick={onOpenCommand} />
-            {onToggleCollapse && <CollapseButton onClick={onToggleCollapse} />}
-          </div>
-        )}
+        <SidebarBrandRow
+          collapsed={collapsed}
+          onItemClick={onItemClick}
+          onOpenCommand={onOpenCommand}
+          onToggleCollapse={onToggleCollapse}
+        />
 
         <div className={cn('flex shrink-0 flex-col pb-1', collapsed ? 'items-center gap-1 px-1' : 'gap-2 px-2')}>
-          <ContextSwitcher context={context} collapsed={collapsed} onNavigate={onItemClick} />
+          {context === 'admin' ? (
+            <AdminBackRow collapsed={collapsed} onClick={onItemClick} />
+          ) : (
+            <ContextSwitcher context={context} collapsed={collapsed} onNavigate={onItemClick} />
+          )}
           {collapsed && <SidebarSearch collapsed onClick={onOpenCommand} />}
         </div>
 

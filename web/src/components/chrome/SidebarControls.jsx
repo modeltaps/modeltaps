@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { Link } from 'react-router';
-import { Menu, PanelLeft, Search } from 'lucide-react';
+import { ArrowLeft, Menu, PanelLeft, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
@@ -92,6 +92,44 @@ export function SidebarSearch({ collapsed = false, onClick }) {
     </SidebarIconButton>
   );
 }
+
+// A row back to where the user came from (platform admin and 设置 show it where the workbench has
+// its context switcher, at the same height). Collapsed: the arrow only, with the label as tooltip.
+export function BackRow({ to, name, label, collapsed = false, onClick }) {
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link to={to} onClick={onClick} aria-label={label} className={iconButtonClass.replace('size-8', 'size-9')}>
+            <ArrowLeft className="size-[1.125rem]" />
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent side="right">{label}</TooltipContent>
+      </Tooltip>
+    );
+  }
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      aria-label={label}
+      className="group flex h-9 w-full items-center gap-2.5 rounded-lg px-2 text-sm font-medium text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <span className="flex size-6 shrink-0 items-center justify-center">
+        <ArrowLeft className="size-[1.125rem] text-muted-foreground group-hover:text-foreground" />
+      </span>
+      <span className="min-w-0 flex-1 truncate">{name}</span>
+    </Link>
+  );
+}
+
+BackRow.propTypes = {
+  to: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired,
+  collapsed: PropTypes.bool,
+  onClick: PropTypes.func
+};
 
 SidebarSearch.propTypes = { collapsed: PropTypes.bool, onClick: PropTypes.func };
 
