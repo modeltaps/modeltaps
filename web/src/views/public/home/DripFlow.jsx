@@ -1,4 +1,7 @@
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import { attachDripInteraction } from './dripInteraction';
 
 // ==============================|| PUBLIC HOME — DRIP ||============================== //
 // The brand mark is the drop: it gathers at the end of a faint line (the tap, barely drawn), falls onto a still surface, and the ripple
@@ -45,9 +48,14 @@ const SPRAY = [
 
 export default function DripFlow() {
   const { t } = useTranslation();
+  const ref = useRef(null);
+
+  // tap / press-and-hold on the surface (dripInteraction.js); the static home page wires the same
+  // function with an inline script, since it has no app bundle
+  useEffect(() => attachDripInteraction(ref.current), []);
 
   return (
-    <div className="drip" role="img" aria-label={t('home.hero.dripAria')}>
+    <div ref={ref} className="drip" role="img" aria-label={t('home.hero.dripAria')}>
       <style>{DRIP_CSS}</style>
       <svg viewBox="0 0 480 320" fill="none" aria-hidden="true">
         <defs>
@@ -148,11 +156,21 @@ const DRIP_CSS = `
   22%, 100% { opacity: 0.16; transform: scale(1); }
 }
 
+/* interaction (dripInteraction.js): drops released by a tap or a press-and-hold. While they are in
+   flight the CSS loop steps aside; removing .drip-live restarts it from the top. */
+.drip svg { cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.drip-live .drip-drop, .drip-live .drip-spray, .drip-live .drip-ripple { animation: none; opacity: 0; }
+.drip-live .drip-dot { animation: none; }
+.drip-live-ripple { fill: none; stroke: color-mix(in srgb, var(--foreground) 42%, transparent); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+.drip-live-spray { fill: var(--foreground); }
+.drip-name { font: 500 8.5px ui-monospace, SFMono-Regular, Menlo, monospace; fill: var(--muted-foreground); letter-spacing: -0.01em; pointer-events: none; }
+
 /* the hero text rises in after the first drop has started to gather (used by Hero) */
 @keyframes drip-rise { from { opacity: 0; transform: translateY(8px); } }
 
 @media (prefers-reduced-motion: reduce) {
   .drip-drop, .drip-spray, .drip-dot, .drip-ripple { animation: none; }
+  .drip svg { cursor: default; }
   .drip-drop { transform: translate(227px, 120px); opacity: 1; }
   .drip-ripple-first { opacity: 0.5; transform: scale(0.55); }
 }

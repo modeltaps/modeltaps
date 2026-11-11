@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The drop on the home page can be played with. A tap on the surface lets a drop fall right
+  there and its ripple names a few of the models it passes; pressing and holding keeps the drop
+  swelling until it is let go, and a bigger drop reaches further. The automatic drip steps aside
+  while someone plays and resumes after five quiet seconds. It is a small inline script on the
+  static home page and does nothing under reduced motion.
 - The home page at `/` is served as static HTML, rendered at build time for each language
   (English, Simplified Chinese, Traditional Chinese, Japanese) without the app bundle, so search
   engines and first-time visitors get the content at once. The server picks the language from
