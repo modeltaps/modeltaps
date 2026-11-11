@@ -956,7 +956,14 @@
       "passwordHint": "8 到 64 個字元。",
       "defaults": "建立為 default 分組的普通用戶",
       "created": "已建立 {{username}}"
-    }
+    },
+    "roleFilterLabel": "角色",
+    "roleAdmins": "管理員及以上",
+    "showUsersThat": "篩選用戶",
+    "sortNewest": "最新註冊",
+    "sortBalance": "餘額最高",
+    "sortUsed": "消費最多",
+    "sortLastLogin": "最近登入"
   },
   "command": {
     "search": "搜尋"

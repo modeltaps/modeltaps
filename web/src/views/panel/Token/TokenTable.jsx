@@ -37,6 +37,7 @@ import { cn } from '@/lib/utils';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
 import { isPlaygroundToken } from 'utils/playgroundToken';
+import { relativeTime } from 'utils/relativeTime';
 
 // The short form of a key shown next to its name: the prefix and the last four characters.
 export function keySuffix(key) {
@@ -59,24 +60,8 @@ export function statusInfo(t, status) {
   }
 }
 
-// 相对时间（unix 秒）：本地化 Intl.RelativeTimeFormat，就近取最大单位
-const RELATIVE_TIME_UNITS = [
-  ['year', 31536000],
-  ['month', 2592000],
-  ['week', 604800],
-  ['day', 86400],
-  ['hour', 3600],
-  ['minute', 60],
-  ['second', 1]
-];
-export function relativeTime(rtf, tsSec) {
-  const diffSec = tsSec - Math.floor(Date.now() / 1000);
-  const absSec = Math.abs(diffSec);
-  for (const [unit, secs] of RELATIVE_TIME_UNITS) {
-    if (absSec >= secs || unit === 'second') return rtf.format(Math.round(diffSec / secs), unit);
-  }
-  return rtf.format(0, 'second');
-}
+// Re-exported for the callers that imported it from here.
+export { relativeTime };
 
 // 目标时区某 UTC 时刻的偏移分钟数（东为正）：用 Intl 求，勿手写偏移表。
 function tzOffsetMinutes(timeZone, date) {

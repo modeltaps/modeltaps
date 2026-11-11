@@ -956,7 +956,14 @@
       "passwordHint": "8 到 64 个字符。",
       "defaults": "创建为 default 分组的普通用户",
       "created": "已创建 {{username}}"
-    }
+    },
+    "roleFilterLabel": "角色",
+    "roleAdmins": "管理员及以上",
+    "showUsersThat": "筛选用户",
+    "sortNewest": "最新注册",
+    "sortBalance": "余额最高",
+    "sortUsed": "消费最多",
+    "sortLastLogin": "最近登录"
   },
   "command": {
     "search": "搜索"

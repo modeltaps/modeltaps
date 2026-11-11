@@ -956,7 +956,14 @@
       "passwordHint": "8〜64 文字。",
       "defaults": "default グループの一般ユーザーとして作成します",
       "created": "{{username}} を作成しました"
-    }
+    },
+    "roleFilterLabel": "ロール",
+    "roleAdmins": "管理者以上",
+    "showUsersThat": "ユーザーを絞り込む",
+    "sortNewest": "新しい順",
+    "sortBalance": "残高の多い順",
+    "sortUsed": "利用額の多い順",
+    "sortLastLogin": "最近ログインした順"
   },
   "command": {
     "search": "検索"

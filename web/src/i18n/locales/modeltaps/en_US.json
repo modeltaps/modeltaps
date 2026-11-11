@@ -962,7 +962,14 @@
       "passwordHint": "8 to 64 characters.",
       "defaults": "Created as a common user in the default group",
       "created": "Created {{username}}"
-    }
+    },
+    "roleFilterLabel": "Role",
+    "roleAdmins": "Admins and above",
+    "showUsersThat": "Show users that",
+    "sortNewest": "Newest first",
+    "sortBalance": "Highest balance",
+    "sortUsed": "Most spent",
+    "sortLastLogin": "Last signed in"
   },
   "command": {
     "search": "Search"
