@@ -1,12 +1,20 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { PanelRight, Trash2 } from 'lucide-react';
+import { MoreHorizontal, PanelRight, Trash2 } from 'lucide-react';
 
+import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { RowActions } from '@/components/ui/row-actions';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 
-// 启用开关:以行数据为准(操作成功后列表重拉),请求期间禁用防连点。
+// Enable switch: follows the row (the list reloads after a change) and is disabled while the
+// request runs so it cannot be double-clicked.
 export function StatusCell({ item, onToggle }) {
   const { t } = useTranslation();
   const [pending, setPending] = useState(false);
@@ -18,21 +26,45 @@ export function StatusCell({ item, onToggle }) {
       setPending(false);
     }
   };
-  return <Switch checked={!!item.enable} disabled={pending} aria-label={t('userGroup.enable')} onCheckedChange={toggle} />;
+  return <Switch size="sm" checked={!!item.enable} disabled={pending} aria-label={t('userGroup.enable')} onCheckedChange={toggle} />;
 }
 
 StatusCell.propTypes = { item: PropTypes.object.isRequired, onToggle: PropTypes.func.isRequired };
 
-export function ActionsCell({ item, onOpen, onDelete }) {
+// Row menu: open the group, and delete (destructive, last). With `onToggle`, also enable / disable
+// (the phone list, which has no switch).
+export function ActionsCell({ item, onOpen, onDelete, onToggle }) {
   const { t } = useTranslation();
   return (
-    <RowActions
-      actions={[
-        { label: t('objects.open'), icon: PanelRight, onClick: () => onOpen(item.id) },
-        { label: t('common.delete'), icon: Trash2, destructive: true, onClick: () => onDelete(item) }
-      ]}
-    />
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="size-[30px] rounded-lg" aria-label={t('userPage.action')}>
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuItem onClick={() => onOpen(item.id)}>
+          <PanelRight className="size-4" />
+          {t('objects.open')}
+        </DropdownMenuItem>
+        {onToggle && (
+          <DropdownMenuItem onClick={() => onToggle(item)}>
+            {item.enable ? t('userGroup.disableAction') : t('userGroup.enableAction')}
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="text-destructive" onClick={() => onDelete(item)}>
+          <Trash2 className="size-4" />
+          {t('common.delete')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
-ActionsCell.propTypes = { item: PropTypes.object.isRequired, onOpen: PropTypes.func.isRequired, onDelete: PropTypes.func.isRequired };
+ActionsCell.propTypes = {
+  item: PropTypes.object.isRequired,
+  onOpen: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
+  onToggle: PropTypes.func
+};

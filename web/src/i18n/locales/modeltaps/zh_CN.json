@@ -2405,7 +2405,19 @@
       "subtitle": "同一分组的用户共用价格倍率和速率限制",
       "defaults": "创建后即启用，倍率 1、每分钟 300 次请求，可在分组面板里修改",
       "created": "已创建分组 {{symbol}}"
-    }
+    },
+    "rateLimit": "限速",
+    "publicShort": "公开",
+    "publicYes": "公开",
+    "enableShort": "启用",
+    "perMinute": "{{count}} 次/分",
+    "promotionFrom": "累计充值 {{min}} 起",
+    "promotionRange": "累计充值 {{min}} – {{max}}",
+    "enabled": "已启用",
+    "disabled": "已停用",
+    "enableAction": "启用",
+    "disableAction": "停用",
+    "emptyTitle": "还没有用户分组"
   },
   "redemptionPage": {
     "panel": {
