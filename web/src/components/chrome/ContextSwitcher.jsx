@@ -2,7 +2,7 @@ import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Check, ChevronsUpDown, Plus } from 'lucide-react';
+import { Building2, Check, ChevronsUpDown, Plus, ShieldUser, User } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
@@ -17,26 +17,40 @@ import { contextSwitchTarget } from './nav-config';
 // organization's name, or 平台管理. No user identity here; that lives in the account row at the
 // bottom of the sidebar. The popover lists personal, the user's organizations (role muted) and
 // "create organization"; platform admin is entered from the account menu, and while it is open
-// this row names it and the popover leads back to personal or an organization. Markers are neutral outlined squares
-// (个 / the org's first letter / 管), deliberately unlike the round avatar.
+// this row names it and the popover leads back to personal or an organization. Markers are rounded
+// squares, deliberately unlike the round avatar: fixed icons for personal and platform admin (not
+// customizable, so they never repeat the user's avatar), and the organization's uploaded logo or a
+// default building icon.
 
-export const firstLetter = (name) => (Array.from((name || '').trim())[0] || '?').toUpperCase();
+const CONTEXT_ICONS = { personal: User, admin: ShieldUser, org: Building2 };
 
-export function ContextMark({ children, className }) {
+export function ContextMark({ kind, org = null, className }) {
+  if (kind === 'org' && org?.avatar_url) {
+    return (
+      <img
+        src={org.avatar_url}
+        alt=""
+        aria-hidden="true"
+        className={cn('shrink-0 rounded-md border border-border object-cover', className)}
+      />
+    );
+  }
+  const Icon = CONTEXT_ICONS[kind] || User;
   return (
     <span
       aria-hidden="true"
-      className={cn(
-        'flex shrink-0 items-center justify-center rounded-md border border-border bg-card font-medium leading-none text-foreground',
-        className
-      )}
+      className={cn('flex shrink-0 items-center justify-center rounded-md border border-border bg-card text-muted-foreground', className)}
     >
-      {children}
+      <Icon className="size-[62%]" strokeWidth={1.75} />
     </span>
   );
 }
 
-ContextMark.propTypes = { children: PropTypes.node, className: PropTypes.string };
+ContextMark.propTypes = {
+  kind: PropTypes.oneOf(['personal', 'org', 'admin']).isRequired,
+  org: PropTypes.object,
+  className: PropTypes.string
+};
 
 export default function ContextSwitcher({ context, collapsed = false, onNavigate }) {
   const { t } = useTranslation();
@@ -49,10 +63,10 @@ export default function ContextSwitcher({ context, collapsed = false, onNavigate
   const roleLabel = (role) => t(`org.roles.${role}`, { defaultValue: role });
   const current =
     context === 'admin'
-      ? { mark: t('nav.context.adminMark'), name: t('nav.context.admin') }
+      ? { kind: 'admin', name: t('nav.context.admin') }
       : context === 'org' && currentOrg
-        ? { mark: firstLetter(currentOrg.name), name: currentOrg.name }
-        : { mark: t('nav.context.personalMark'), name: t('nav.context.personal') };
+        ? { kind: 'org', org: currentOrg, name: currentOrg.name }
+        : { kind: 'personal', name: t('nav.context.personal') };
 
   const select = (to) => {
     const target = contextSwitchTarget({ pathname, to, isRoot, features: { orgRoutingPolicy: orgRoutingPolicyEnabled } });
@@ -63,14 +77,14 @@ export default function ContextSwitcher({ context, collapsed = false, onNavigate
   };
 
   const hasMenu = orgEnabled || context === 'admin';
-  const markSize = collapsed ? 'size-7 text-[13px]' : 'size-6 text-xs';
+  const markSize = collapsed ? 'size-7' : 'size-6';
   const triggerClass = collapsed
     ? 'flex size-9 items-center justify-center rounded-lg transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
     : 'flex h-9 w-full items-center gap-2.5 rounded-lg px-2 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
   const body = (
     <>
-      <ContextMark className={markSize}>{current.mark}</ContextMark>
+      <ContextMark kind={current.kind} org={current.org} className={markSize} />
       {!collapsed && <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{current.name}</span>}
       {!collapsed && hasMenu && <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />}
     </>
@@ -81,7 +95,7 @@ export default function ContextSwitcher({ context, collapsed = false, onNavigate
   }
 
   const check = <Check className="size-4 shrink-0" />;
-  const rowMark = 'size-[22px] text-[11px]';
+  const rowMark = 'size-[22px]';
 
   const trigger = (
     <DropdownMenuTrigger asChild>
@@ -105,7 +119,7 @@ export default function ContextSwitcher({ context, collapsed = false, onNavigate
         )}
         <DropdownMenuContent align="start" side={collapsed ? 'right' : 'bottom'} matchTriggerWidth={!collapsed} className="min-w-60">
           <DropdownMenuItem onClick={() => select({ kind: 'personal' })}>
-            <ContextMark className={rowMark}>{t('nav.context.personalMark')}</ContextMark>
+            <ContextMark kind="personal" className={rowMark} />
             <span className="flex-1 truncate">{t('nav.context.personal')}</span>
             {context === 'personal' && check}
           </DropdownMenuItem>
@@ -116,7 +130,7 @@ export default function ContextSwitcher({ context, collapsed = false, onNavigate
                 const active = context === 'org' && currentOrg?.id === org.id;
                 return (
                   <DropdownMenuItem key={org.id} onClick={() => select({ kind: 'org', orgId: org.id, role: org.role })}>
-                    <ContextMark className={rowMark}>{firstLetter(org.name)}</ContextMark>
+                    <ContextMark kind="org" org={org} className={rowMark} />
                     <span className="min-w-0 flex-1 truncate">{org.name}</span>
                     {active ? check : <span className="shrink-0 text-xs text-muted-foreground">{roleLabel(org.role)}</span>}
                   </DropdownMenuItem>
