@@ -159,16 +159,76 @@ type InviteCodeSearchParams struct {
 	Status       int    `form:"status"`
 	StartsAtFrom int64  `form:"starts_at_from"`
 	StartsAtTo   int64  `form:"starts_at_to"`
+	// State is the list segment: usable, pending, expired, exhausted or disabled.
+	State string `form:"state"`
+}
+
+// InviteCodeStateCounts are the segment counts for the current keyword. The states do not overlap:
+// disabled wins, then expired, then used up, then not yet started; the rest are usable.
+type InviteCodeStateCounts struct {
+	All       int64 `json:"all"`
+	Usable    int64 `json:"usable"`
+	Pending   int64 `json:"pending"`
+	Expired   int64 `json:"expired"`
+	Exhausted int64 `json:"exhausted"`
+	Disabled  int64 `json:"disabled"`
+}
+
+const (
+	inviteExpiredSQL   = "expires_at > 0 AND expires_at <= ?"
+	inviteExhaustedSQL = "max_uses > 0 AND used_count >= max_uses"
+)
+
+// applyInviteCodeState narrows db to one segment; an unknown value leaves it unfiltered.
+func applyInviteCodeState(db *gorm.DB, state string, now int64) *gorm.DB {
+	live := func(q *gorm.DB) *gorm.DB {
+		return q.Where("status = ?", InviteCodeStatusEnabled).Where("NOT ("+inviteExpiredSQL+")", now)
+	}
+	switch state {
+	case "disabled":
+		return db.Where("status = ?", InviteCodeStatusDisabled)
+	case "expired":
+		return db.Where("status = ?", InviteCodeStatusEnabled).Where(inviteExpiredSQL, now)
+	case "exhausted":
+		return live(db).Where(inviteExhaustedSQL)
+	case "pending":
+		return live(db).Where("NOT (" + inviteExhaustedSQL + ")").Where("starts_at > ?", now)
+	case "usable":
+		return live(db).Where("NOT (" + inviteExhaustedSQL + ")").Where("starts_at <= ?", now)
+	}
+	return db
+}
+
+func inviteCodeKeywordScope(db *gorm.DB, keyword string) *gorm.DB {
+	if keyword = strings.TrimSpace(keyword); keyword != "" {
+		return db.Where("code LIKE ? OR name LIKE ?", "%"+keyword+"%", "%"+keyword+"%")
+	}
+	return db
+}
+
+// GetInviteCodeStateCounts counts each segment for the keyword.
+func GetInviteCodeStateCounts(keyword string) (*InviteCodeStateCounts, error) {
+	now := time.Now().Unix()
+	counts := &InviteCodeStateCounts{}
+	targets := map[string]*int64{
+		"": &counts.All, "usable": &counts.Usable, "pending": &counts.Pending,
+		"expired": &counts.Expired, "exhausted": &counts.Exhausted, "disabled": &counts.Disabled,
+	}
+	for state, target := range targets {
+		q := applyInviteCodeState(inviteCodeKeywordScope(DB.Model(&InviteCode{}), keyword), state, now)
+		if err := q.Count(target).Error; err != nil {
+			return nil, err
+		}
+	}
+	return counts, nil
 }
 
 func GetInviteCodesList(params *InviteCodeSearchParams) (*DataResult[InviteCode], error) {
 	var inviteCodes []*InviteCode
 	db := DB
 
-	// 关键词搜索 - 使用索引优化
-	if keyword := strings.TrimSpace(params.Keyword); keyword != "" {
-		db = db.Where("code LIKE ? OR name LIKE ?", "%"+keyword+"%", "%"+keyword+"%")
-	}
+	db = inviteCodeKeywordScope(db, params.Keyword)
+	db = applyInviteCodeState(db, params.State, time.Now().Unix())
 
 	// 状态过滤 - 使用索引
 	if params.Status > 0 {
