@@ -34,7 +34,7 @@ const Switch = React.forwardRef(({ className, checked = false, onCheckedChange, 
         className={cn(
           'pointer-events-none block rounded-full shadow ring-0 transition-transform',
           sm ? 'size-3.5' : 'h-5 w-5',
-          checked ? cn(sm ? 'translate-x-3.5' : 'translate-x-5', 'bg-primary-foreground') : 'translate-x-0 bg-white dark:bg-foreground'
+          checked ? cn(sm ? 'translate-x-3.5' : 'translate-x-5', 'bg-primary-foreground') : 'translate-x-0 bg-white dark:bg-muted-foreground'
         )}
       />
     </button>

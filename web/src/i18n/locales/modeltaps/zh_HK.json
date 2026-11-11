@@ -3092,5 +3092,26 @@
       "week": "1 週",
       "month": "1 個月"
     }
+  },
+  "redemptionList": {
+    "segments": {
+      "all": "全部",
+      "usable": "可用",
+      "expired": "已過期",
+      "disabled": "已停用",
+      "used": "已兌換"
+    },
+    "searchShort": "搜尋名稱或 ID",
+    "copyCode": "複製兌換碼",
+    "enable": "啟用",
+    "disable": "停用",
+    "batchEnable": "啟用",
+    "batchDisable": "停用",
+    "redeemed": "已兌換",
+    "expiredState": "已過期",
+    "createdAgo": "{{time}}建立",
+    "expires": "{{time}}過期",
+    "never": "永不過期",
+    "statusShort": "啟用"
   }
 }

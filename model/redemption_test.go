@@ -307,3 +307,41 @@ func TestBatchInsertRedemptionsEmpty(t *testing.T) {
 		t.Fatalf("空切片不应落库,实际 %d", got)
 	}
 }
+
+// TestRedemptionStatusSegments checks the status filter and that the segment counts do not
+// overlap: usable, expired, disabled and used add up to all.
+func TestRedemptionStatusSegments(t *testing.T) {
+	setupRedeemTestDB(t)
+	past := int64(1)
+	codes := []*Redemption{
+		{Key: "SEG00000000000000000000000000001", Name: "seg", Status: config.RedemptionCodeStatusEnabled},
+		{Key: "SEG00000000000000000000000000002", Name: "seg", Status: config.RedemptionCodeStatusEnabled, ExpiredTime: past},
+		{Key: "SEG00000000000000000000000000003", Name: "seg", Status: config.RedemptionCodeStatusDisabled},
+		{Key: "SEG00000000000000000000000000004", Name: "seg", Status: config.RedemptionCodeStatusUsed},
+		{Key: "SEG00000000000000000000000000005", Name: "other", Status: config.RedemptionCodeStatusEnabled},
+	}
+	for _, c := range codes {
+		if err := DB.Create(c).Error; err != nil {
+			t.Fatalf("create code: %v", err)
+		}
+	}
+
+	params := &RedemptionListParams{GenericParams: GenericParams{Keyword: "seg", PaginationParams: PaginationParams{Page: 1, Size: 10}}}
+	_, counts, err := GetRedemptionsList(params)
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	want := RedemptionStatusCounts{All: 4, Usable: 1, Expired: 1, Disabled: 1, Used: 1}
+	if *counts != want {
+		t.Fatalf("counts = %+v, want %+v", *counts, want)
+	}
+
+	params.Status = "expired"
+	result, _, err := GetRedemptionsList(params)
+	if err != nil {
+		t.Fatalf("list expired: %v", err)
+	}
+	if len(*result.Data) != 1 || (*result.Data)[0].Key != codes[1].Key {
+		t.Fatalf("expired segment returned %d rows", len(*result.Data))
+	}
+}
