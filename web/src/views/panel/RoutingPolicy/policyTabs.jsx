@@ -48,9 +48,11 @@ function OverviewBody({ object: policy, ctx }) {
           <InfoRow label={t('routingPolicy.form.scoring')}>{t(`routingPolicy.scoring.${policy.scoring || 'auto'}`)}</InfoRow>
         </InfoRows>
       </Section>
-      <Section title={t('routingPolicy.form.tabStats')}>
-        <StatsPanel policyId={policy.id} fallbackModel={policy.fallback_model} api={ctx.api} />
-      </Section>
+      {!ctx.readOnly && (
+        <Section title={t('routingPolicy.form.tabStats')}>
+          <StatsPanel policyId={policy.id} fallbackModel={policy.fallback_model} api={ctx.api} />
+        </Section>
+      )}
     </>
   );
 }
@@ -123,7 +125,7 @@ function TryBody({ object: policy, ctx }) {
 
 const tryTab = { key: 'try', Body: TryBody };
 
-function SettingsBody({ draft, setDraft }) {
+function SettingsBody({ draft, setDraft, ctx }) {
   const { t } = useTranslation();
   const set = (key) => (value) => setDraft((d) => ({ ...d, [key]: value }));
   return (
@@ -131,7 +133,7 @@ function SettingsBody({ draft, setDraft }) {
       <Field
         label={t('routingPolicy.form.name')}
         htmlFor="rp-name"
-        hint={t('routingPolicy.form.nameHint')}
+        hint={t(ctx.api?.callPrefix ? 'routingPolicy.form.nameHintOwn' : 'routingPolicy.form.nameHint')}
         help={t('routingPolicy.form.nameHelp')}
       >
         <Input id="rp-name" className="font-mono text-[13px]" value={draft.name} onChange={(e) => set('name')(e.target.value)} />
@@ -199,7 +201,7 @@ const settingsTab = {
 
 export const POLICY_TABS = [overviewTab, routesTab, tryTab, settingsTab];
 export const POLICY_TAB_KEYS = POLICY_TABS.map((x) => x.key);
-// Organization policies reviewed from the platform console are read-only.
+// Policies reviewed from the platform console and organization policies seen by members are read-only.
 export const REVIEW_TAB_KEYS = ['overview'];
 
 const bodyProps = { object: PropTypes.object, draft: PropTypes.object, setDraft: PropTypes.func, ctx: PropTypes.object };

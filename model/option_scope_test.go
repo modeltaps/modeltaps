@@ -75,7 +75,7 @@ var intentionallyAddedStatusKeys = []string{
 	"oidc_display_name",
 	"organization_enabled",
 	// Intentional (ROUTE-11): the organization console shows its routing tab only when this is on.
-	"organization_routing_policy_enabled",
+	"user_routing_policy_enabled",
 	"log_io_enabled",
 	"max_log_lookback_days",
 	"quota_reset_timezone",

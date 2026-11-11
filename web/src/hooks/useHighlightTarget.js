@@ -7,6 +7,8 @@ import { useSearchParams } from 'react-router';
 // view (block: center) and draws a temporary ring that fades out (~3s). Tolerates
 // asynchronously rendered targets (data fetch / tab switch) via a MutationObserver with
 // a bounded wait. No parameter → zero side effects.
+// Only a target outside `[hidden]` counts: a settings page keeps its inactive groups mounted but
+// hidden, and two groups can use the same anchor (the personal and the organization `log-io`).
 
 const HIGHLIGHT_CLASS = 'highlight-target-active';
 const FADE_MS = 3000; // keep in sync with the highlight-target-fade animation in tailwind.css
@@ -25,7 +27,9 @@ export default function useHighlightTarget() {
     let removeTimer;
 
     const findEl = () =>
-      Array.from(document.querySelectorAll('[data-highlight]')).find((node) => node.getAttribute('data-highlight') === anchor);
+      Array.from(document.querySelectorAll('[data-highlight]')).find(
+        (node) => node.getAttribute('data-highlight') === anchor && !node.closest('[hidden]')
+      );
 
     const activate = (el) => {
       if (cancelled) return;
@@ -51,7 +55,8 @@ export default function useHighlightTarget() {
       if (waitTimer) clearTimeout(waitTimer);
       activate(el);
     });
-    observer.observe(document.body, { childList: true, subtree: true });
+    // `hidden` toggles too: a mounted target in a hidden group shows up without a DOM insert.
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
     waitTimer = setTimeout(() => observer && observer.disconnect(), WAIT_TIMEOUT_MS);
 
     return () => {

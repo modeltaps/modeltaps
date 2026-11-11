@@ -680,13 +680,11 @@
     "routing_policy": "虚拟模型：按每个会话的首条消息选择实际应答的模型",
     "channel": "按供应商分组；一个渠道是连到该供应商的一组凭据和地址",
     "org_members": "邀请成员、设置每人的预算与模型范围",
-    "org_settings": "组织的资料、留存策略与危险操作",
     "organization": "组织的余额、用量与审计记录",
     "platform_settings": "整个平台的默认值与开关",
-    "personal_settings": "只对你自己的账号生效",
     "token": "调用接口用的密钥",
     "invite_code": "生成、启用与作废注册用的邀请码",
-    "org_routing": "本组织 API Key 使用的路由策略；与平台策略同名时替换平台策略"
+    "routing": "你的 API Key 能调用的路由策略：托管策略直接写名字，自己建的用 policy/<名字> 调用"
   },
   "api_compare": "对比",
   "modelInfoPage": {
@@ -729,7 +727,23 @@
     "firstPage": "第一页",
     "prevPage": "上一页",
     "nextPage": "下一页",
-    "lastPage": "最后一页"
+    "lastPage": "最后一页",
+    "columns": "列",
+    "selectColumns": "选择列",
+    "columnsSelectAll": "全选",
+    "resetColumns": "恢复默认",
+    "addCondition": "添加条件",
+    "presets": "预设",
+    "presetsBuiltin": "常用视图",
+    "presetsSaved": "已保存",
+    "presetSave": "保存当前条件",
+    "presetRemove": "删除预设",
+    "filter": "筛选",
+    "sort": "排序",
+    "selectAllOnPage": "选择本页全部",
+    "selectRow": "选择 {{name}}",
+    "selectMode": "选择",
+    "segments": "状态"
   },
   "pricing": "模型",
   "modelsPage": {
@@ -940,7 +954,14 @@
       "passwordHint": "8 到 64 个字符。",
       "defaults": "创建为 default 分组的普通用户",
       "created": "已创建 {{username}}"
-    }
+    },
+    "roleFilterLabel": "角色",
+    "roleAdmins": "管理员及以上",
+    "showUsersThat": "筛选用户",
+    "sortNewest": "最新注册",
+    "sortBalance": "余额最高",
+    "sortUsed": "消费最多",
+    "sortLastLogin": "最近登录"
   },
   "command": {
     "search": "搜索"
@@ -1584,7 +1605,7 @@
     "model_alias_target_is_alias": "别名不能指向另一个别名",
     "model_managed_by_routing_policy": "该模型由自动路由策略维护，请到策略里修改",
     "routing_policy_not_found": "路由策略不存在",
-    "routing_policy_name_invalid": "名称只能包含字母、数字和 . _ / -，最多 100 个字符，且不能以 / 开头或结尾",
+    "routing_policy_name_invalid": "名称只能包含字母、数字和 . _ / -，最多 100 个字符，不能以 / 开头或结尾，也不能以 policy/ 开头",
     "routing_policy_name_taken": "该名称已被某个模型或另一条策略占用",
     "routing_policy_model_required": "{{field}} 必须填写模型",
     "routing_policy_model_is_policy": "{{field}} 必须是模型，不能是路由策略（{{model}}）",
@@ -1700,7 +1721,7 @@
       "enabled": "启用",
       "week": "近 7 天",
       "fallbackRate": "兜底 {{rate}}%",
-      "organization": "组织"
+      "owner": "所有者"
     },
     "form": {
       "name": "模型名",
@@ -1760,7 +1781,8 @@
       "tabAdvanced": "高级",
       "tabTry": "试一试",
       "enabled": "启用",
-      "enabledHint": "停用的策略不进模型列表，请求它会得到 model_not_found。"
+      "enabledHint": "停用的策略不进模型列表，请求它会得到 model_not_found。",
+      "nameHintOwn": "调用时 model 写 policy/<这个名字>，如 policy/coder。"
     },
     "templates": {
       "coding_change_size": "编码：改动大小",
@@ -1785,7 +1807,8 @@
       "loadingSamples": "加载中…",
       "noSamples": "还没有留存了请求体的被路由请求。开启请求明细记录后才会有样本。",
       "scoring": "打分方式",
-      "introBilled": "只跑决策这一步，用的是表单里当前的策略。不转发、不写会话固定记录，但决策调用会计费，记在组织账上。"
+      "introBilled": "只跑决策这一步，用的是表单里当前的策略。不转发、不写会话固定记录，但决策调用会计费，记在组织账上。",
+      "introBilledPersonal": "只跑决策这一步，用的是表单里当前的策略。不转发、不写会话固定记录，但决策调用会计费，从你的余额扣。"
     },
     "reasons": {
       "classified": "已分类",
@@ -1849,13 +1872,32 @@
     "scope": {
       "label": "范围",
       "platform": "平台",
-      "organization": "组织"
+      "organization": "组织",
+      "personal": "个人"
     },
     "overridesPlatform": "覆盖平台策略",
     "organizationsIntro": "各组织在自己的「自动路由」页管理的策略，只对该组织的 API Key 生效。这里只能停用。",
-    "organizationsEmpty": "还没有组织建路由策略。",
-    "orgIntro": "这里的策略只对本组织的 API Key 生效。与平台策略同名时，本组织成员会用这里的策略。「试一试」会真实调用决策模型，费用记在组织账上。",
-    "overridesPlatformHint": "有同名的平台策略。该组织的 API Key 会用组织的这条策略，而不是平台的。"
+    "orgIntro": "这里的策略只对本组织的 API Key 生效，调用时把 model 设为 policy/<名字>。与托管策略同名时，本组织写裸名也会用这里的策略。「试一试」会真实调用决策模型，费用记在组织账上。",
+    "overridesPlatformHint": "有同名的平台策略。该组织的 API Key 会用组织的这条策略，而不是平台的。",
+    "callName": "调用名",
+    "copyCallName": "复制调用名",
+    "status": {
+      "enabled": "已启用",
+      "disabled": "已停用"
+    },
+    "reviewEmpty": "还没有人建路由策略。",
+    "personalIntro": "各用户在工作台「路由策略」里给自己建的策略，只对本人的个人 API Key 生效。这里只能停用。",
+    "personalOwnIntro": "这里的策略只对你的个人 API Key 生效，调用时把 model 设为 policy/<名字>。与托管策略同名时，你的 Key 写裸名也会用这里的策略。「试一试」会真实调用决策模型，费用从你的余额扣。",
+    "orgMemberIntro": "本组织的 Owner / Admin 建的策略，你的组织 API Key 可以用 policy/<名字> 调用。只有管理员能修改。",
+    "types": {
+      "label": "策略类型",
+      "managed": "托管",
+      "auto": "自动路由"
+    },
+    "managedIntro": "平台提供的策略，调用时 model 直接写名字。",
+    "managedEmpty": "平台还没有可用的托管策略。",
+    "managedOverridden": "已被你的同名策略替换",
+    "managedOverriddenHint": "你有一条同名的自建策略，写裸名时会用你自己的。要用这条托管策略，把你的策略改名或停用。"
   },
   "logPage": {
     "routing": {
@@ -1874,10 +1916,12 @@
       "generalSettings": {
         "routingDecisionBilling": "决策调用计费",
         "routingDecisionBillingDescription": "自动路由策略的分类调用按决策模型价格向调用方计费，每个会话一次，单独记一条日志。关闭后决策照常进行，但不写消费日志。",
-        "orgRoutingPolicy": "允许组织管理自己的路由策略",
-        "orgRoutingPolicyDescription": "组织所有者和管理员的组织菜单里会出现「自动路由」。组织策略只对该组织的 API Key 生效；与平台策略同名时，在该组织内替换平台策略。",
         "orgRoutingPolicyMaxCount": "每个组织的策略上限",
-        "orgRoutingPolicyMaxCountDescription": "一个组织最多能建多少条路由策略，0 表示不限。"
+        "orgRoutingPolicyMaxCountDescription": "一个组织最多能建多少条路由策略，0 表示不限。",
+        "userRoutingPolicy": "允许用户和组织建自己的路由策略",
+        "userRoutingPolicyDescription": "用户在工作台「路由策略」里建个人策略，组织 Owner / Admin 建组织策略，都用 policy/<名字> 调用。关闭后自建策略保留但不再生效。",
+        "personalRoutingPolicyMaxCount": "每个用户的策略上限",
+        "personalRoutingPolicyMaxCountDescription": "一个用户最多能建多少条个人路由策略，0 表示不限。"
       }
     },
     "otherSettings": {
@@ -2256,6 +2300,8 @@
       "platformSettings": "平台设置",
       "personalSettings": "个人设置",
       "inviteCodes": "邀请码",
+      "settings": "设置",
+      "routingPolicies": "路由策略",
       "orgModelAccess": "模型访问"
     },
     "context": {
@@ -2271,7 +2317,8 @@
       "appearance": "外观",
       "language": "语言",
       "docs": "文档与帮助",
-      "logout": "退出登录"
+      "logout": "退出登录",
+      "settings": "设置"
     },
     "balance": {
       "personal": "余额",
@@ -2822,7 +2869,6 @@
       }
     },
     "personal": {
-      "label": "个人设置分组",
       "username": "用户名",
       "groups": {
         "profile": "资料",
@@ -2866,7 +2912,6 @@
       }
     },
     "org": {
-      "label": "组织设置分组",
       "groups": {
         "general": "常规",
         "generalDescription": "组织资料与团队预算",
@@ -2885,6 +2930,12 @@
           "description": "这些操作会影响所有成员"
         }
       }
+    },
+    "sections": {
+      "label": "设置分组",
+      "org": "组织设置",
+      "personal": "个人设置",
+      "backToAdmin": "返回平台管理"
     }
   },
   "home": {
@@ -2945,14 +2996,10 @@
       "examples": "接入示例"
     },
     "list": {
-      "segments": "Key 状态",
       "status_all": "全部",
       "status_enabled": "已启用",
       "status_disabled": "已停用",
       "status_invalid": "已过期或用尽",
-      "columns": "列",
-      "resetColumns": "恢复默认",
-      "addCondition": "添加条件",
       "showKeysThat": "筛选 Key",
       "expiry": "过期",
       "expiryNever": "永不过期",
@@ -2962,11 +3009,6 @@
       "activityNever": "从未使用",
       "activityIdle": "30 天未使用",
       "connect": "接入",
-      "presets": "预设",
-      "presetsBuiltin": "常用视图",
-      "presetsSaved": "已保存",
-      "presetSave": "保存当前条件",
-      "presetRemove": "删除预设",
       "presetExpiring": "即将过期",
       "presetInvalid": "已过期或用尽",
       "presetUnused": "从未使用",
@@ -2995,13 +3037,10 @@
       "state_expired": "已过期",
       "state_exhausted": "已用尽",
       "stateExpiring": "{{when}}过期",
-      "filter": "筛选",
-      "sort": "排序",
       "sortNewest": "最新创建",
       "sortName": "名称 A–Z",
       "sortUsage": "用量最高",
-      "sortExpiry": "最先过期",
-      "selectMode": "选择 Key"
+      "sortExpiry": "最先过期"
     },
     "expiry": {
       "never": "永不过期",

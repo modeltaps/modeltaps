@@ -24,9 +24,9 @@ import (
 // swapped (small → big), so the upstream model name shows which policy ran.
 func newOrgRoutingFixture(t *testing.T, h *Harness) (tokenKey string, org *model.Organization, policy *model.RoutingPolicy) {
 	t.Helper()
-	prev := config.OrganizationRoutingPolicyEnabled
-	config.OrganizationRoutingPolicyEnabled = true
-	t.Cleanup(func() { config.OrganizationRoutingPolicyEnabled = prev })
+	prev := config.UserRoutingPolicyEnabled
+	config.UserRoutingPolicyEnabled = true
+	t.Cleanup(func() { config.UserRoutingPolicyEnabled = prev })
 
 	tokenKey, shadowUserId, _ := orgTokenFixture(t, h, "default", nil, 0)
 	org = &model.Organization{}

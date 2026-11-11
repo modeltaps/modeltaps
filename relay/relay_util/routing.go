@@ -50,7 +50,9 @@ type RoutingLabelProbability struct {
 // RoutingDecision 一次请求的路由决策。
 type RoutingDecision struct {
 	Policy string
-	// PolicyId tells policies with the same name apart (an organization may override a platform policy).
+	// Requested is the model name the request used for the policy (policy/<name> or the bare name).
+	Requested string
+	// PolicyId tells policies with the same name apart (an own policy may override a platform policy).
 	PolicyId    int
 	Label       string
 	TargetModel string

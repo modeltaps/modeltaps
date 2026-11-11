@@ -12,6 +12,7 @@ export {
   paramsToFilterState,
   toSearchParams,
   emptyEnumEntry,
-  optionLabel
+  optionLabel,
+  describeEntry
 } from './utils';
 export { default as FilterSheet } from './FilterSheet';

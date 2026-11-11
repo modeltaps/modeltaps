@@ -32,13 +32,13 @@ func setupOrgRoutingControllerTest(t *testing.T) *gin.Engine {
 		&model.RoutingPolicy{}, &model.ModelInfo{}); err != nil {
 		t.Fatal(err)
 	}
-	prevDB, prevRule, prevEnabled := model.DB, model.ChannelGroup.Rule, config.OrganizationRoutingPolicyEnabled
+	prevDB, prevRule, prevEnabled := model.DB, model.ChannelGroup.Rule, config.UserRoutingPolicyEnabled
 	model.DB = testDB
 	model.ChannelGroup.Rule = map[string]map[string][][]int{"default": {"decider": {{1}}, "cheap-model": {{1}}, "big-model": {{1}}}}
-	config.OrganizationRoutingPolicyEnabled = true
+	config.UserRoutingPolicyEnabled = true
 	model.ResetRoutingPolicyCache()
 	t.Cleanup(func() {
-		model.DB, model.ChannelGroup.Rule, config.OrganizationRoutingPolicyEnabled = prevDB, prevRule, prevEnabled
+		model.DB, model.ChannelGroup.Rule, config.UserRoutingPolicyEnabled = prevDB, prevRule, prevEnabled
 		model.ResetRoutingPolicyCache()
 	})
 	orgs := map[string]*model.Organization{}
@@ -58,7 +58,7 @@ func setupOrgRoutingControllerTest(t *testing.T) *gin.Engine {
 		c.Set("id", 1)
 		c.Set(middleware.OrgContextKey, orgs[c.Param("id")])
 		c.Next()
-	}, middleware.OrgRoutingPolicyEnabled())
+	}, middleware.UserRoutingPolicyEnabled())
 	group.GET("/", GetOrgRoutingPolicies)
 	group.POST("/", CreateOrgRoutingPolicy)
 	group.GET("/:policy_id", GetOrgRoutingPolicy)
@@ -155,7 +155,7 @@ func TestOrgRoutingPolicyEndpoints(t *testing.T) {
 	}
 
 	// With the site option off the endpoints are closed.
-	config.OrganizationRoutingPolicyEnabled = false
+	config.UserRoutingPolicyEnabled = false
 	if code, resp := orgRoutingCall(t, r, http.MethodGet, "/api/org/1/routing_policy/", nil); code != http.StatusForbidden || resp["code"] != "org_routing_policy_disabled" {
 		t.Fatalf("option off: want 403 org_routing_policy_disabled, got %d %v", code, resp)
 	}

@@ -23,14 +23,14 @@ func setupOrgRoutingTestDB(t *testing.T) {
 	oldInfoLoaded := modelInfoCache.loaded
 	modelInfoCache.loaded = false
 	modelInfoCache.Unlock()
-	prevRule, prevEnabled, prevMax := ChannelGroup.Rule, config.OrganizationRoutingPolicyEnabled, config.OrganizationRoutingPolicyMaxCount
+	prevRule, prevEnabled, prevMax := ChannelGroup.Rule, config.UserRoutingPolicyEnabled, config.OrganizationRoutingPolicyMaxCount
 	ChannelGroup.Rule = map[string]map[string][][]int{
 		"default": {"cheap-model": {{1}}, "big-model": {{1}}, "decider": {{1}}, "secret-model": {{1}}},
 	}
-	config.OrganizationRoutingPolicyEnabled = true
+	config.UserRoutingPolicyEnabled = true
 	t.Cleanup(func() {
 		ChannelGroup.Rule = prevRule
-		config.OrganizationRoutingPolicyEnabled, config.OrganizationRoutingPolicyMaxCount = prevEnabled, prevMax
+		config.UserRoutingPolicyEnabled, config.OrganizationRoutingPolicyMaxCount = prevEnabled, prevMax
 		ResetRoutingPolicyCache()
 		modelInfoCache.Lock()
 		modelInfoCache.loaded = oldInfoLoaded
@@ -121,22 +121,22 @@ func TestResolveRoutingPolicyScopes(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		if got := ResolveRoutingPolicy(acme.Id, "auto/coder"); got == nil || got.Id != own.Id {
+		if got := ResolveRoutingPolicy(OrganizationRoutingScope(acme.Id), "auto/coder"); got == nil || got.Id != own.Id {
 			t.Fatalf("loaded=%v: acme should get its own policy, got %+v", loaded, got)
 		}
-		if got := ResolveRoutingPolicy(globex.Id, "auto/coder"); got == nil || got.Id != platform.Id {
+		if got := ResolveRoutingPolicy(OrganizationRoutingScope(globex.Id), "auto/coder"); got == nil || got.Id != platform.Id {
 			t.Fatalf("loaded=%v: globex should get the platform policy, got %+v", loaded, got)
 		}
-		if got := ResolveRoutingPolicy(0, "auto/coder"); got == nil || got.Id != platform.Id {
+		if got := ResolveRoutingPolicy(PlatformRoutingScope, "auto/coder"); got == nil || got.Id != platform.Id {
 			t.Fatalf("loaded=%v: personal keys get the platform policy, got %+v", loaded, got)
 		}
-		if got := ResolveRoutingPolicy(globex.Id, "auto/acme"); got != nil {
+		if got := ResolveRoutingPolicy(OrganizationRoutingScope(globex.Id), "auto/acme"); got != nil {
 			t.Fatalf("loaded=%v: another organization's policy must not resolve, got %+v", loaded, got)
 		}
-		if got := policyNames(EnabledRoutingPoliciesFor(acme.Id)); len(got) != 2 || got[0] != "auto/acme" || got[1] != "auto/coder" {
+		if got := policyNames(EnabledRoutingPoliciesFor(OrganizationRoutingScope(acme.Id))); len(got) != 2 || got[0] != "auto/acme" || got[1] != "auto/coder" {
 			t.Fatalf("loaded=%v: acme lists its own policies once each, got %v", loaded, got)
 		}
-		if got := policyNames(EnabledRoutingPoliciesFor(globex.Id)); len(got) != 1 || got[0] != "auto/coder" {
+		if got := policyNames(EnabledRoutingPoliciesFor(OrganizationRoutingScope(globex.Id))); len(got) != 1 || got[0] != "auto/coder" {
 			t.Fatalf("loaded=%v: globex lists the platform policy only, got %v", loaded, got)
 		}
 	}
@@ -145,16 +145,16 @@ func TestResolveRoutingPolicyScopes(t *testing.T) {
 	if _, err := SetRoutingPolicyEnabled(own.Id, false); err != nil {
 		t.Fatal(err)
 	}
-	if got := ResolveRoutingPolicy(acme.Id, "auto/coder"); got == nil || got.Id != platform.Id {
+	if got := ResolveRoutingPolicy(OrganizationRoutingScope(acme.Id), "auto/coder"); got == nil || got.Id != platform.Id {
 		t.Fatalf("disabled own policy should fall through to the platform one, got %+v", got)
 	}
 
 	// With the site option off, organization policies are not resolved at all.
-	config.OrganizationRoutingPolicyEnabled = false
-	if got := ResolveRoutingPolicy(acme.Id, "auto/acme"); got != nil {
+	config.UserRoutingPolicyEnabled = false
+	if got := ResolveRoutingPolicy(OrganizationRoutingScope(acme.Id), "auto/acme"); got != nil {
 		t.Fatalf("organization policies must not resolve while the option is off, got %+v", got)
 	}
-	if got := policyNames(EnabledRoutingPoliciesFor(acme.Id)); len(got) != 1 || got[0] != "auto/coder" {
+	if got := policyNames(EnabledRoutingPoliciesFor(OrganizationRoutingScope(acme.Id))); len(got) != 1 || got[0] != "auto/coder" {
 		t.Fatalf("listing falls back to platform policies while the option is off, got %v", got)
 	}
 }
@@ -199,7 +199,7 @@ func TestOrganizationRoutingPolicyModels(t *testing.T) {
 	if err := nested.Insert(); err == nil || apiCode(t, err) != common.APICodeRoutingPolicyModelIsPolicy {
 		t.Fatalf("nesting must be refused, got %v", err)
 	}
-	if OrganizationRoutingTargetUsable("secret-model") || !OrganizationRoutingTargetUsable("cheap-model") {
+	if RoutingTargetUsable("secret-model") || !RoutingTargetUsable("cheap-model") {
 		t.Fatal("usable check should follow the catalog's hidden flag")
 	}
 }
@@ -336,7 +336,7 @@ func TestOrganizationRoutingModels(t *testing.T) {
 	if err := DB.Create(&ModelInfo{Model: "secret-model", Hidden: true}).Error; err != nil {
 		t.Fatal(err)
 	}
-	got, err := OrganizationRoutingModels(acme.Id)
+	got, err := ScopedRoutingModels(OrganizationRoutingScope(acme.Id))
 	if err != nil {
 		t.Fatal(err)
 	}

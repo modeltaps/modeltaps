@@ -11,19 +11,18 @@ import { useOrg } from 'contexts/OrgContext';
 import { useIsRoot } from 'utils/common';
 import { brandWordmark, isDefaultBrand } from 'utils/brand';
 import { formatFullAmount } from 'utils/compactAmount';
-import { DASHBOARD_URL, PERSONAL_SETTINGS_URL, findActiveItem, isOrgAdminRole, navLabel, navSectionsFor } from './nav-config';
+import { DASHBOARD_URL, SETTINGS_ROOT, findActiveItem, isOrgAdminRole, navLabel, navSectionsFor } from './nav-config';
 import { BrandLockup, LogoMark } from './Logo';
 import ContextSwitcher from './ContextSwitcher';
 import AccountMenu from './AccountMenu';
-import { CollapseButton, SidebarIconButton, SidebarSearch } from './SidebarControls';
+import { CollapseButton, SidebarIconButton, SidebarSearch, sidebarRow } from './SidebarControls';
 
 // ==============================|| CHROME — SIDEBAR (one shell, three contexts) ||============================== //
 // Every panel page uses this sidebar. Top: brand row, context switcher (personal / org /
 // platform admin), search. Middle: the menu of the current context (nav-config). Bottom:
-// the account row (its menu carries the balance and the platform admin entry) and the settings
-// button, one click to the personal settings in every context (organization and platform
-// settings are menu items of their own contexts). Shared by the desktop rail and the mobile
-// drawer; `collapsed` switches the desktop rail to an icon column.
+// the account row (its menu carries the balance, 设置 and the platform admin entry) and the
+// settings button, a shortcut to the same 设置 page in every context. Shared by the desktop rail
+// and the mobile drawer; `collapsed` switches the desktop rail to an icon column.
 
 // One-time cleanup of the retired collapsible-group state.
 try {
@@ -32,16 +31,12 @@ try {
   // ignore storage errors (e.g. storage disabled)
 }
 
-const rowBase =
-  'group flex w-full items-center rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
-// Active: a subtle raised surface with a hairline, no fill colour or indicator bar.
-const rowActive = 'bg-sidebar-accent font-medium text-foreground shadow-[inset_0_0_0_1px_var(--border)]';
-const rowIdle = 'text-foreground/85 hover:bg-sidebar-accent/70 hover:text-foreground';
+const { base: rowBase, active: rowActive, idle: rowIdle } = sidebarRow;
 
 export default function Sidebar({ context, collapsed = false, onItemClick, onToggleCollapse, onOpenCommand }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
-  const { currentOrgId, orgRole, orgDetail, orgRoutingPolicyEnabled } = useOrg();
+  const { currentOrgId, orgRole, orgDetail, routingPolicyEnabled } = useOrg();
   const siteInfo = useSelector((state) => state.siteInfo);
   const user = useSelector((state) => state.account.user);
   const isRoot = useIsRoot();
@@ -52,7 +47,7 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
     orgRole,
     orgId: currentOrgId,
     isRoot,
-    features: { orgRoutingPolicy: orgRoutingPolicyEnabled }
+    features: { routingPolicy: routingPolicyEnabled }
   });
   const activeId = findActiveItem(pathname)?.id;
   const brand = brandWordmark(siteInfo?.system_name);
@@ -116,10 +111,9 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
 
   const settingsButton = (
     <SidebarIconButton
-      label={t('nav.items.personalSettings')}
+      label={t('nav.items.settings')}
       side={collapsed ? 'right' : 'top'}
-      to={PERSONAL_SETTINGS_URL}
-      active={activeId === 'personal_settings'}
+      to={SETTINGS_ROOT}
       onClick={onItemClick}
       className="size-9"
     >

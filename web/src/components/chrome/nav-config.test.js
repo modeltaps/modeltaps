@@ -8,8 +8,8 @@ import {
   findActiveItem,
   firstAdminUrl,
   isAdminPath,
-  navSectionsFor,
-  PERSONAL_SETTINGS_URL
+  isSettingsPath,
+  navSectionsFor
 } from './nav-config';
 
 const idsOf = (sections) => sections.map((s) => ({ id: s.id, items: s.items.map((i) => i.id) }));
@@ -44,44 +44,44 @@ describe('navSectionsFor (workbench)', () => {
     ]);
   });
 
-  it('org owner/admin: members & budget, billing and org settings', () => {
+  it('org owner/admin: members & budget and billing; organization settings are in 设置, not the menu', () => {
     for (const orgRole of ['owner', 'admin']) {
       expect(idsOf(navSectionsFor({ context: 'org', orgRole, orgId: 7 }))).toEqual([
         MAIN,
         DEVELOP,
-        { id: 'organization', items: ['organization', 'org_members', 'org_models', 'billing', 'org_settings'] }
+        { id: 'organization', items: ['organization', 'org_members', 'org_models', 'billing'] }
       ]);
     }
   });
 
-  it('org owner/admin: 自动路由 while the site lets organizations manage routing policies', () => {
-    const features = { orgRoutingPolicy: true };
-    for (const orgRole of ['owner', 'admin']) {
-      const org = navSectionsFor({ context: 'org', orgRole, orgId: 7, features }).find((s) => s.id === 'organization');
-      expect(org.items.map((i) => i.id)).toEqual(['organization', 'org_members', 'org_models', 'org_routing', 'billing', 'org_settings']);
-      expect(org.items.find((i) => i.id === 'org_routing').href).toBe('/panel/settings/org/7/routing');
+  it('路由策略 is a workbench item in every context while the site allows own policies', () => {
+    const features = { routingPolicy: true };
+    for (const [context, orgRole] of [
+      ['personal', null],
+      ['org', 'owner'],
+      ['org', 'member']
+    ]) {
+      const develop = navSectionsFor({ context, orgRole, orgId: 7, features }).find((s) => s.id === 'develop');
+      expect(develop.items.map((i) => i.id)).toContain('routing');
+      expect(develop.items.find((i) => i.id === 'routing').href).toBe('/panel/routing');
     }
-    const member = navSectionsFor({ context: 'org', orgRole: 'member', orgId: 7, features }).find((s) => s.id === 'organization');
-    expect(member.items.map((i) => i.id)).toEqual(['organization']);
-    expect(findActiveItem('/panel/settings/org/7/routing')?.id).toBe('org_routing');
-    // Not ".../models": the server treats paths ending in /models as a mistyped relay URL.
-    expect(findActiveItem('/panel/settings/org/7/model-access')?.id).toBe('org_models');
+    const off = navSectionsFor({ context: 'personal' }).find((s) => s.id === 'develop');
+    expect(off.items.map((i) => i.id)).not.toContain('routing');
+    expect(findActiveItem('/panel/routing')?.id).toBe('routing');
   });
 
-  it('switching organization keeps 自动路由 only where it is available', () => {
-    const pathname = '/panel/settings/org/7/routing';
-    const to = { kind: 'org', orgId: 9, role: 'owner' };
-    expect(contextSwitchTarget({ pathname, to, features: { orgRoutingPolicy: true } })).toBe('/panel/settings/org/9/routing');
-    expect(contextSwitchTarget({ pathname, to })).toBe('/panel/dashboard');
-    expect(contextSwitchTarget({ pathname, to: { kind: 'org', orgId: 9, role: 'member' }, features: { orgRoutingPolicy: true } })).toBe(
-      '/panel/dashboard'
-    );
+  it('switching context stays on 路由策略 while it is available', () => {
+    const pathname = '/panel/routing';
+    const features = { routingPolicy: true };
+    // null: stay on the page.
+    expect(contextSwitchTarget({ pathname, to: { kind: 'org', orgId: 9, role: 'member' }, features })).toBeNull();
+    expect(contextSwitchTarget({ pathname, to: { kind: 'personal' }, features })).toBeNull();
+    expect(contextSwitchTarget({ pathname, to: { kind: 'personal' } })).toBe('/panel/dashboard');
   });
 
   it('org-scoped urls carry the active organization', () => {
     const org = navSectionsFor({ context: 'org', orgRole: 'owner', orgId: 7 }).find((s) => s.id === 'organization');
     expect(org.items.find((i) => i.id === 'org_members').href).toBe('/panel/settings/org/7/members');
-    expect(org.items.find((i) => i.id === 'org_settings').href).toBe('/panel/settings/org/7/general');
   });
 
   it('workbench menus never contain admin pages', () => {
@@ -137,10 +137,10 @@ describe('findActiveItem', () => {
   it('settings pages: personal vs organization', () => {
     expect(findActiveItem('/panel/settings')?.id).toBe('personal_settings');
     expect(findActiveItem('/panel/settings/account/security')?.id).toBe('personal_settings');
-    // The sidebar's settings button links here and is marked active on these pages.
-    expect(findActiveItem(PERSONAL_SETTINGS_URL)?.id).toBe('personal_settings');
     expect(findActiveItem('/panel/settings/org/3/general')?.id).toBe('org_settings');
     expect(findActiveItem('/panel/settings/org/3/members')?.id).toBe('org_members');
+    // Not ".../models": the server treats paths ending in /models as a mistyped relay URL.
+    expect(findActiveItem('/panel/settings/org/3/model-access')?.id).toBe('org_models');
     expect(findActiveItem('/panel/settings/org/3/danger')?.id).toBe('org_settings');
     // The old budget section redirects to the 常规 group of the organization settings.
     expect(findActiveItem('/panel/settings/org/3/budget')?.id).toBe('org_settings');
@@ -210,7 +210,24 @@ describe('commandSections', () => {
   it('non-admins get no platform admin entries', () => {
     const ids = commandSections({ isAdmin: false }).flatMap((s) => s.items.map((i) => i.id));
     expect(ids).toContain('personal_settings');
+    expect(ids).not.toContain('org_settings');
     expect(ids).not.toContain('channel');
+  });
+
+  it('both parts of 设置: organization settings for owners and admins of the active organization', () => {
+    const items = (orgRole) => commandSections({ orgId: 7, orgRole }).find((s) => s.id === 'account').items;
+    expect(items('owner').map((i) => [i.id, i.href])).toEqual([
+      ['org_settings', '/panel/settings/org/7/general'],
+      ['personal_settings', '/panel/settings']
+    ]);
+    expect(items('member').map((i) => i.id)).toEqual(['personal_settings']);
+  });
+
+  it('设置 pages are recognised by path', () => {
+    for (const p of ['/panel/settings', '/panel/settings/account/profile', '/panel/settings/org/3/members'])
+      expect(isSettingsPath(p)).toBe(true);
+    for (const p of ['/panel/setting', '/panel/setting/site', '/panel/settingsx', '/panel/dashboard'])
+      expect(isSettingsPath(p)).toBe(false);
   });
 
   it('admins can reach every admin page they may see', () => {

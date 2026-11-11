@@ -7,6 +7,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import i18n from 'i18n/i18n';
 import SettingsPage from './SettingsPage';
 import { CollectionCard, FormCard } from './cards';
+import { SettingsPlaneContext } from './SettingsPlane';
 
 // The shared settings page: groups stay mounted (edits survive a switch), search matches what the
 // cards render across groups, form cards report unsaved edits as a dot on their group.
@@ -86,5 +87,58 @@ describe('SettingsPage', () => {
     const save = screen.getAllByRole('button', { name: 'Save' }).find((b) => !b.disabled);
     act(() => fireEvent.click(save));
     expect(link('beta').textContent).not.toContain('Unsaved changes');
+  });
+});
+
+describe('SettingsPage on 设置 (its subnav lives in the settings sidebar)', () => {
+  const renderInPlane = (plane, active) =>
+    render(
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(
+          SettingsPlaneContext.Provider,
+          { value: plane },
+          createElement(SettingsPage, { label: 'Groups', groups, activeGroupId: active })
+        )
+      )
+    );
+  const planeWith = (query, published) => ({ query, setQuery: () => {}, publish: (status) => published.push(status) });
+
+  it('shows only the cards of the active group and reports unsaved groups to the sidebar', () => {
+    const published = [];
+    renderInPlane(planeWith('', published), 'beta');
+    expect(screen.queryByRole('navigation')).toBeNull();
+    expect(screen.queryByRole('searchbox')).toBeNull();
+    expect(visible('Mail sending')).toBe(true);
+    expect(visible('Card alpha')).toBe(false);
+    expect(published.at(-1)).toEqual({ searchable: true, dirtyGroups: [], counts: null });
+
+    fireEvent.change(screen.getByLabelText('Mail sending field'), { target: { value: 'b' } });
+    expect(published.at(-1)).toEqual({ searchable: true, dirtyGroups: ['beta'], counts: null });
+  });
+
+  it("searches with the sidebar's query and reports the matches per group", () => {
+    const published = [];
+    renderInPlane(planeWith('webhook', published), 'alpha');
+    expect(visible('Bots')).toBe(true);
+    expect(visible('Card alpha')).toBe(false);
+    expect(published.at(-1).counts).toEqual({ alpha: 0, beta: 1, gamma: 0, delta: 0 });
+  });
+
+  it('names the part of a group in search results', () => {
+    const parted = groups.map((g, i) => ({ ...g, sectionLabel: i < 2 ? 'Organization settings' : 'Personal settings' }));
+    render(
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(
+          SettingsPlaneContext.Provider,
+          { value: planeWith('card delta', []) },
+          createElement(SettingsPage, { label: 'Groups', groups: parted, activeGroupId: 'alpha' })
+        )
+      )
+    );
+    expect(screen.getByText('Personal settings · Group delta')).toBeTruthy();
   });
 });

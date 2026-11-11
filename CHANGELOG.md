@@ -216,13 +216,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The bell at the bottom of the sidebar is replaced by a settings button that opens the personal
-  settings in one click, in every space; the account menu no longer lists personal settings. The
-  site announcement no longer opens a dialog on page load. While it is unread, the console shows
-  one row above the page title with its first line, a button that opens the full text and a close
-  button; reading or closing it hides the row until the announcement changes. The account menu
-  has an Announcement item while the site has one, and an empty announcement shows nothing. The
-  announcement is shown in the console only, no longer on the login page.
+- Settings is one place again, as in 0.3.0. Settings in the account menu and a settings button
+  next to the account row (it replaces the bell) open it, and the sidebar turns into its tree: a
+  back row to the page you came from, Organization settings for owners and admins (a picker of
+  the organizations they manage, then General, Members & budgets and Danger zone), then Personal
+  settings. The page is titled with the item, and with the organization's name under
+  organization items. The settings search and the unsaved-changes dots are in the tree. Picking
+  an organization there no longer switches the active space. The organization menu no longer has
+  an Organization settings item; Members & budgets stays there as a shortcut into Settings.
+- The site announcement no longer opens a dialog on page load. While it is unread, the console
+  shows one row above the page title with its first line, a button that opens the full text and
+  a close button; reading or closing it hides the row until the announcement changes. The
+  account menu has an Announcement item while the site has one, and an empty announcement shows
+  nothing. The announcement is shown in the console only, no longer on the login page.
 - The wordmark next to the logo is set in a rounded face (a nine-letter subset of Fredoka
   SemiBold, SIL OFL 1.1, inlined into the stylesheet) at a size that lines up with the mark. The
   header, sidebar, footer and static home page share one lockup. A custom site name keeps the UI
@@ -238,12 +244,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   them; platform admin is no longer a separate sidebar with a back row, and the user menu and the
   workbench no longer carry their own admin entries. The workbench menu is dashboard, usage and
   logs, then a Develop group (API keys, models, playground, docs) and, for organization owners and
-  admins, an Organization group (members and budgets, billing, organization settings). The five
-  API consoles are one Playground item with a modality switch on the page; analytics and per-user
-  statistics are one Statistics item with a tab switch. The platform settings groups,
-  personal settings and organization settings each get a section list on the left of the page
-  instead of sidebar entries. The bottom of the sidebar shows the balance, the account row (with
-  personal settings, appearance, language, docs and log out) and notifications. URLs are unchanged.
+  admins, an Organization group (members and budgets, billing). The five API consoles are one
+  Playground item with a modality switch on the page; analytics and per-user statistics are one
+  Statistics item with a tab switch. The platform settings groups get a section list on the left
+  of the page instead of sidebar entries. The bottom of the sidebar shows the account row (its
+  menu has the balance, settings, appearance, language, platform admin, docs and log out) and the
+  settings button. URLs are unchanged.
 - New brand mark: a solid, rounded drop with an off-centre round hole replaces the stroked
   lowercase m. The mark is square-ish and filled, so it holds its weight next to the wordmark in
   the sidebar and header and stays legible as a 16 px favicon. The favicon, PWA icons, Open Graph
