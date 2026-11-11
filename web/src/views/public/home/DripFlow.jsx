@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 // ==============================|| PUBLIC HOME — DRIP ||============================== //
-// The brand mark is the drop: it gathers under the tap, falls onto a still surface, and the ripple
+// The brand mark is the drop: it gathers at the end of a faint line (the tap, barely drawn), falls onto a still surface, and the ripple
 // wakes the models lying on it, ring by ring. One beat every 4.2 s.
 //
 // Everything moves on CSS keyframes alone, so the prerendered static home page (no app bundle)
@@ -53,11 +53,11 @@ export default function DripFlow() {
         <defs>
           <linearGradient id="drip-stem" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="currentColor" stopOpacity="0" />
-            <stop offset="1" stopColor="currentColor" stopOpacity="0.45" />
+            <stop offset="1" stopColor="currentColor" stopOpacity="0.2" />
           </linearGradient>
         </defs>
-        <rect className="drip-stem" x="239.4" y="-40" width="1.2" height="56" fill="url(#drip-stem)" />
-        <rect className="drip-nozzle" x="236" y="14" width="8" height="5" rx="2" />
+        {/* the tap is only hinted at: a hairline that fades in towards the point where the drop forms */}
+        <rect className="drip-stem" x="239.6" y="-28" width="0.8" height="46" fill="url(#drip-stem)" />
 
         {DOTS.map((d) => (
           <circle
@@ -105,7 +105,6 @@ export default function DripFlow() {
 const DRIP_CSS = `
 .drip { --drip-ease: cubic-bezier(0.22, 1, 0.36, 1); position: relative; width: 100%; aspect-ratio: 480 / 320; color: var(--foreground); }
 .drip svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.drip-nozzle { fill: color-mix(in srgb, var(--foreground) 55%, transparent); }
 .drip-mark { fill: var(--foreground); fill-rule: evenodd; }
 
 .drip-drop { transform-box: fill-box; transform-origin: 50% 100%; animation: drip-fall ${BEAT}s infinite; }

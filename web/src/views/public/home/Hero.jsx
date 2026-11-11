@@ -31,7 +31,7 @@ export default function Hero() {
         >
           {t('home.hero.tagline')}
         </h1>
-        <p className={`mt-4 text-base text-muted-foreground sm:text-lg ${RISE}`} style={{ animationDelay: '1000ms' }}>
+        <p className={`mt-4 max-w-xl text-balance text-base text-muted-foreground sm:text-lg ${RISE}`} style={{ animationDelay: '1000ms' }}>
           {t('home.hero.catchphrase')}
         </p>
         {/* A plain link with no login state, so the prerendered static home works unchanged: the
