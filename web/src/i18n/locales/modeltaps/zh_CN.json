@@ -2986,7 +2986,7 @@
     "hero": {
       "tagline": "所有模型，一个出口",
       "ctaPrimary": "获取 API Key",
-      "catchphrase": "兼容 OpenAI、Anthropic、Gemini 协议，只需更换 base URL",
+      "catchphrase": "三种主流接口全兼容，现有工具开箱即用",
       "dripAria": "一滴 Modeltaps 标志形状的水在龙头下聚起，落到平静的水面上，涟漪一圈圈散开，依次点亮水面上的各个模型。"
     }
   },
