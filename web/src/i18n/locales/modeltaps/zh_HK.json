@@ -304,7 +304,7 @@
         "title": "相關連結",
         "models": "模型廣場",
         "modelsDesc": "查看全部可用模型與分組價格。",
-        "keys": "API Key",
+        "keys": "API Keys",
         "keysDesc": "建立與管理調用所需的金鑰。",
         "docs": "開發文檔",
         "docsDesc": "接入指南與完整介面說明。"
@@ -2220,7 +2220,7 @@
       "dashboard": "儀表板",
       "usage": "用量",
       "log": "日誌",
-      "token": "API Key",
+      "token": "API Keys",
       "models": "模型",
       "playground": "演練場",
       "docs": "文件",
