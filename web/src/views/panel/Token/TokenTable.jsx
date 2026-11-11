@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
@@ -38,6 +38,12 @@ import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
 import { isPlaygroundToken } from 'utils/playgroundToken';
 import { maskSecret } from 'utils/maskSecret';
+
+// The short form of a key shown next to its name: the prefix and the last four characters.
+export function keySuffix(key) {
+  const k = key || '';
+  return k.length > 4 ? `sk-…${k.slice(-4)}` : `sk-${k}`;
+}
 
 export function statusInfo(t, status) {
   switch (status) {
@@ -399,6 +405,54 @@ function TokenCard({
   );
 }
 
+// Rough rendered widths (px) of each column, used to decide what fits on one line.
+const COLUMN_WIDTHS = {
+  select: 40,
+  name: 260,
+  creator: 110,
+  group: 120,
+  billing_tag: 110,
+  expired_time: 110,
+  accessed_time: 110,
+  used_quota: 230,
+  created_time: 120,
+  status: 80,
+  actions: 56
+};
+// When the table is narrower than its visible columns, these hide first to last; name, usage,
+// status and actions always stay.
+const AUTO_HIDE_ORDER = ['billing_tag', 'creator', 'group', 'expired_time', 'created_time', 'accessed_time'];
+
+// Columns the user picked minus those that do not fit `width`, hidden in AUTO_HIDE_ORDER.
+export function fitColumns(visibility, columnIds, width) {
+  const result = { ...visibility };
+  if (!width) return result;
+  const shown = (id) => result[id] !== false;
+  let total = columnIds.filter(shown).reduce((sum, id) => sum + (COLUMN_WIDTHS[id] || 120), 0);
+  for (const id of AUTO_HIDE_ORDER) {
+    if (total <= width) break;
+    if (columnIds.includes(id) && shown(id)) {
+      result[id] = false;
+      total -= COLUMN_WIDTHS[id] || 120;
+    }
+  }
+  return result;
+}
+
+// Width of an element, kept current as it resizes.
+function useElementWidth() {
+  const ref = useRef(null);
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(([entry]) => setWidth(Math.round(entry.contentRect.width)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, width];
+}
+
 export default function TokenTable({
   tokens,
   todayUsage = null,
@@ -461,37 +515,39 @@ export default function TokenTable({
             }
           ]
         : []),
-      // API Key:合并原「名称」+「密钥」。第一行名称,第二行 mono 掩码 key;hover 显示眼睛/复制
-      // (opacity 切换,不额外占列;移动端 max-md 常显以便触屏操作)。排序仍按 name。
+      // API Key: one line, the name followed by the key's last characters ("sk-…Rc6g") so a key can
+      // be told apart without a second row; copy appears on hover (always on touch screens). The
+      // full key is shown in the key's panel. Sorting is by name.
       {
         accessorKey: 'name',
         header: t('token_index.token'),
         meta: { sortable: true },
         cell: (c) => {
           const item = c.row.original;
-          const shown = revealed.has(item.id);
-          const k = item.key || '';
-          const masked = maskSecret(`sk-${k}`);
-          // 试用区专用 Key:不显示掩码与眼睛/复制,仅标注由系统托管。
+          // Keys the playground manages show a badge instead of the suffix and copy button.
           return (
-            <div className="group/token flex flex-col gap-0.5">
-              <span className="font-medium text-[15px]">{item.name}</span>
+            <div className="group/token flex min-w-0 items-center gap-2 whitespace-nowrap">
+              <span className="truncate font-medium">{item.name}</span>
               {isPlaygroundToken(item) ? (
-                <Badge variant="secondary" className="w-fit text-[11px]">
+                <Badge variant="secondary" className="shrink-0 text-[11px]">
                   {t('token_index.playgroundManaged')}
                 </Badge>
               ) : (
-                <div className="flex items-center gap-1">
-                  <code className="font-mono text-[13px] text-muted-foreground">{shown ? `sk-${item.key}` : masked}</code>
-                  <RowControl className="opacity-0 transition-opacity focus-within:opacity-100 group-hover/token:opacity-100 max-md:opacity-100">
-                    <Button variant="ghost" size="icon" className="size-6" onClick={() => onToggleReveal(item.id)} aria-label="reveal">
-                      {shown ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-                    </Button>
-                    <Button variant="ghost" size="icon" className="size-6" onClick={() => onCopyKey(item)} aria-label="copy">
+                <>
+                  <code className="shrink-0 font-mono text-xs text-muted-foreground">{keySuffix(item.key)}</code>
+                  <RowControl className="-ml-1 shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover/token:opacity-100 max-md:opacity-100">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-6"
+                      onClick={() => onCopyKey(item)}
+                      aria-label={t('token_index.copy')}
+                      title={t('token_index.copy')}
+                    >
                       <Copy className="size-3.5" />
                     </Button>
                   </RowControl>
-                </div>
+                </>
               )}
             </div>
           );
@@ -574,7 +630,11 @@ export default function TokenTable({
         accessorKey: 'created_time',
         header: t('token_index.createdTime'),
         meta: { sortable: true },
-        cell: (c) => timestamp2string(c.getValue())
+        cell: (c) => (
+          <span className="text-[13px]" title={timestamp2string(c.getValue())}>
+            {timestamp2string(c.getValue()).slice(0, 10)}
+          </span>
+        )
       },
       // 状态:紧邻操作列左侧。启停开关 + 过期/耗尽异常态 Badge。
       {
@@ -651,11 +711,23 @@ export default function TokenTable({
     quotaResetWeekStart
   ]);
 
+  // Every cell stays on one line; columns that do not fit the table's width are hidden by priority.
+  const [wrapRef, wrapWidth] = useElementWidth();
+  const fittedVisibility = useMemo(
+    () =>
+      fitColumns(
+        columnVisibility,
+        columns.map((c) => c.id || c.accessorKey),
+        wrapWidth
+      ),
+    [columnVisibility, columns, wrapWidth]
+  );
+
   const table = useTable({
     features: appTableFeatures,
     data: tokens,
     columns,
-    state: { columnVisibility }
+    state: { columnVisibility: fittedVisibility }
   });
 
   // Sort arrows: the active column shows its direction; others reveal a faint arrow only on hover,
@@ -667,7 +739,7 @@ export default function TokenTable({
 
   return (
     <>
-      <div className="hidden md:block">
+      <div ref={wrapRef} className="hidden md:block">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
@@ -700,7 +772,7 @@ export default function TokenTable({
                 {...rowOpenProps(() => onOpen(row.original))}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
+                  <TableCell key={cell.id} className={cn('whitespace-nowrap', cell.column.columnDef.meta?.className)}>
                     {flexRender(cell.column.columnDef.cell ?? cell.getValue, cell.getContext())}
                   </TableCell>
                 ))}
