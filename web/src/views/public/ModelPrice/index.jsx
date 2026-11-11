@@ -42,6 +42,7 @@ import { MODALITY_OPTIONS } from 'constants/Modality';
 import ModelCard from './ModelCard';
 import ModelDetailModal from './ModelDetailModal';
 import { buildModelFilterFields, buildModalityOptions, buildCapabilityOptions, CONTEXT_BUCKETS, PRICE_BUCKETS } from './modelFilterFields';
+import PageSizeSelect from '@/components/ui/page-size-select';
 
 // 模态 Tab 的动词文案兜底值（i18n 缺 key 时使用），与 modelpricePage.modalityTab 对应。
 const MODALITY_TAB_FALLBACK = {
@@ -963,20 +964,15 @@ export default function ModelPrice({ embedded = false, initialModality }) {
               >
                 <ChevronRight className="size-4" />
               </Button>
-              <select
-                className="h-9 rounded-lg border border-input bg-background px-2 text-sm"
+              <PageSizeSelect
                 value={pageSize}
-                onChange={(e) => {
-                  setPageSize(parseInt(e.target.value, 10));
+                options={pageSizeOptions}
+                onChange={(size) => {
+                  setPageSize(size);
                   setPage(1);
                 }}
-              >
-                {pageSizeOptions.map((size) => (
-                  <option key={size} value={size}>
-                    {size} / Page
-                  </option>
-                ))}
-              </select>
+                format={(size) => t('pagination.perPage', { count: size })}
+              />
             </div>
           </>
         ) : (

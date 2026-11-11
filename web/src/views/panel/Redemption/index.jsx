@@ -19,6 +19,7 @@ import { useObjectRoute } from '@/components/objects';
 import RedemptionTable from './RedemptionTable';
 import RedemptionPanel from './RedemptionPanel';
 import NewRedemptionSheet from './NewRedemptionSheet';
+import PageSizeSelect from '@/components/ui/page-size-select';
 
 // FilterBar 字段:单个名称文本 chip(后端 keyword 单值,按兑换码名称模糊匹配)。
 const REDEMPTION_FILTER_FIELDS = [
@@ -285,17 +286,12 @@ export default function Redemption() {
           <div className="flex items-center justify-between gap-4 border-t border-border px-4 py-3 text-sm">
             <span className="text-muted-foreground">{listCount}</span>
             <div className="flex items-center gap-2">
-              <select
-                className="h-9 rounded-lg border border-input bg-background px-2 text-sm"
+              <PageSizeSelect
                 value={rowsPerPage}
-                onChange={(e) => onRowsPerPageChange(parseInt(e.target.value, 10))}
-              >
-                {PAGE_SIZE_OPTIONS.map((n) => (
-                  <option key={n} value={n}>
-                    {n} / page
-                  </option>
-                ))}
-              </select>
+                options={PAGE_SIZE_OPTIONS}
+                onChange={(n) => onRowsPerPageChange(n)}
+                format={(n) => t('pagination.perPage', { count: n })}
+              />
               <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
                 ‹
               </Button>

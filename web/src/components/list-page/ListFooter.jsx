@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-r
 
 import { Button } from '@/components/ui/button';
 import { PAGE_SIZE_OPTIONS } from 'constants';
+import PageSizeSelect from '@/components/ui/page-size-select';
 
 // ==============================|| LIST PAGE — FOOTER PAGINATION ||============================== //
 // 全后台统一分页页脚(以 panel/components/Pagination 为基础):「已选 N / 共 N 条 · 每页 N 条 · 首/上/第 x / y 页/下/末」。
@@ -30,7 +31,7 @@ export default function ListFooter({
       type="button"
       variant="ghost"
       size="icon"
-      className={`size-8 ${extra}`}
+      className={`size-7 ${extra}`}
       aria-label={label}
       disabled={disabled}
       onClick={() => onPageChange(target)}
@@ -40,27 +41,17 @@ export default function ListFooter({
   );
 
   return (
-    <div className="flex h-12 items-center gap-4 px-3 text-xs text-muted-foreground">
+    <div className="flex h-10 items-center gap-4 px-3 text-xs text-muted-foreground">
       <span className="tabular-nums">
         {selectedCount > 0 && <>{t('listPage.selectedOf', { count: selectedCount })} / </>}
         {t('pagination.total', { count: total })}
       </span>
       <span className="flex-1" />
       {onPageSizeChange && (
-        <label className="hidden items-center gap-2 sm:flex">
+        <div className="hidden items-center gap-2 sm:flex">
           <span>{t('pagination.rows')}</span>
-          <select
-            value={pageSize}
-            onChange={(e) => onPageSizeChange(parseInt(e.target.value, 10))}
-            className="h-7 rounded-sm border border-input bg-background px-1.5 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {pageSizeOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-        </label>
+          <PageSizeSelect value={pageSize} options={pageSizeOptions} onChange={onPageSizeChange} label={t('pagination.rows')} />
+        </div>
       )}
       <div className="flex items-center gap-1">
         {navBtn(t('listPage.firstPage'), 0, atFirst, ChevronsLeft, 'hidden sm:inline-flex')}

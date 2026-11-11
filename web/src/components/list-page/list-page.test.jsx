@@ -182,7 +182,8 @@ describe('ListFooter', () => {
     expect(btn('prevPage').disabled).toBe(true);
     expect(btn('nextPage').disabled).toBe(true);
     expect(screen.getByText(new RegExp(t('listPage.selectedOf', { count: 2 })))).toBeTruthy();
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: '50' } });
+    fireEvent.click(screen.getByRole('button', { name: t('pagination.rows') }));
+    fireEvent.click(screen.getByRole('menuitem', { name: '50' }));
     expect(onPageSizeChange).toHaveBeenCalledWith(50);
   });
 });
