@@ -202,6 +202,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The bell at the bottom of the sidebar is replaced by a settings button that opens the personal
+  settings in one click, in every space; the account menu no longer lists personal settings. The
+  site announcement no longer opens a dialog on page load. While it is unread, the console shows
+  one row above the page title with its first line, a button that opens the full text and a close
+  button; reading or closing it hides the row until the announcement changes. The account menu
+  has an Announcement item while the site has one, and an empty announcement shows nothing. The
+  announcement is shown in the console only, no longer on the login page.
 - The wordmark next to the logo is set in a rounded face (a nine-letter subset of Fredoka
   SemiBold, SIL OFL 1.1, inlined into the stylesheet) at a size that lines up with the mark. The
   header, sidebar, footer and static home page share one lockup. A custom site name keeps the UI

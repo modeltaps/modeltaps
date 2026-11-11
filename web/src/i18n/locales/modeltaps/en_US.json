@@ -988,7 +988,8 @@
     "expandSidebar": "Expand sidebar"
   },
   "notice": {
-    "announcement": "Announcement"
+    "announcement": "Announcement",
+    "view": "View"
   },
   "channelForm": {
     "label": {
@@ -1942,6 +1943,13 @@
         "orgRoutingPolicyMaxCount": "Policies per organization",
         "orgRoutingPolicyMaxCountDescription": "The most routing policies one organization can create. 0 means no limit."
       }
+    },
+    "otherSettings": {
+      "generalSettings": {
+        "noticeLabel": "Announcement",
+        "noticePlaceholder": "Enter the announcement here. Markdown and HTML are supported.",
+        "noticeDescription": "Shown to signed-in users as a banner at the top of the console until they read or close it, and again whenever the text changes. Leave empty for no announcement."
+      }
     }
   },
   "modelpricePage": {
@@ -2349,7 +2357,6 @@
     },
     "account": {
       "menu": "Account menu",
-      "settings": "Personal settings",
       "appearance": "Appearance",
       "language": "Language",
       "docs": "Docs & help",

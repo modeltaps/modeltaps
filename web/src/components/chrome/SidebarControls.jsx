@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types';
+import { Link } from 'react-router';
 import { Menu, PanelLeft, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -13,13 +14,25 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 const iconButtonClass =
   'flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
-export function SidebarIconButton({ label, tooltip, side = 'bottom', onClick, className, children }) {
+// The page an icon link points to is open: the same raised surface as an active menu row.
+const iconButtonActiveClass = 'bg-sidebar-accent text-foreground shadow-[inset_0_0_0_1px_var(--border)]';
+
+// An icon with a tooltip. With `to` it is a link to a page (and `active` marks that page as the
+// current one); without, a button.
+export function SidebarIconButton({ label, tooltip, side = 'bottom', onClick, to, active = false, className, children }) {
+  const classes = cn(iconButtonClass, active && iconButtonActiveClass, className);
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button type="button" aria-label={label} onClick={onClick} className={cn(iconButtonClass, className)}>
-          {children}
-        </button>
+        {to ? (
+          <Link to={to} aria-label={label} aria-current={active ? 'page' : undefined} onClick={onClick} className={classes}>
+            {children}
+          </Link>
+        ) : (
+          <button type="button" aria-label={label} onClick={onClick} className={classes}>
+            {children}
+          </button>
+        )}
       </TooltipTrigger>
       <TooltipContent side={side}>{tooltip ?? label}</TooltipContent>
     </Tooltip>
@@ -31,6 +44,8 @@ SidebarIconButton.propTypes = {
   tooltip: PropTypes.node,
   side: PropTypes.string,
   onClick: PropTypes.func,
+  to: PropTypes.string,
+  active: PropTypes.bool,
   className: PropTypes.string,
   children: PropTypes.node
 };

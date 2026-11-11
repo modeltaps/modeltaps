@@ -17,6 +17,7 @@ import Sidebar from '@/components/chrome/Sidebar';
 import CommandMenu from '@/components/chrome/CommandMenu';
 import { deriveContext, findActiveItem, navLabel } from '@/components/chrome/nav-config';
 import MainRoutes from 'routes/MainRoutes';
+import { NoticeBanner } from 'ui-component/notice';
 import MobilePushFrame from './MobilePushFrame';
 
 // ==============================|| MAIN LAYOUT (shadcn app chrome) ||============================== //
@@ -109,6 +110,8 @@ export default function MainLayout() {
         >
           {/* Content column (pushed right while the mobile drawer is open) */}
           <main className="flex-1 overflow-y-auto px-4 pb-4 pt-4 sm:px-6 sm:pb-6">
+            {/* Unread site announcement: one row above the page title, gone once read or closed. */}
+            <NoticeBanner className="mb-4" />
             {pageHeader ? (
               <PageHeader
                 title={pageHeader.title}

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { Link, useLocation } from 'react-router';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { Bell } from 'lucide-react';
+import { Settings } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -11,8 +11,7 @@ import { useOrg } from 'contexts/OrgContext';
 import { useIsRoot } from 'utils/common';
 import { brandWordmark, isDefaultBrand } from 'utils/brand';
 import { formatFullAmount } from 'utils/compactAmount';
-import { useNotice } from 'ui-component/notice';
-import { DASHBOARD_URL, findActiveItem, isOrgAdminRole, navLabel, navSectionsFor } from './nav-config';
+import { DASHBOARD_URL, PERSONAL_SETTINGS_URL, findActiveItem, isOrgAdminRole, navLabel, navSectionsFor } from './nav-config';
 import { BrandLockup, LogoMark } from './Logo';
 import ContextSwitcher from './ContextSwitcher';
 import AccountMenu from './AccountMenu';
@@ -21,9 +20,10 @@ import { CollapseButton, SidebarIconButton, SidebarSearch } from './SidebarContr
 // ==============================|| CHROME — SIDEBAR (one shell, three contexts) ||============================== //
 // Every panel page uses this sidebar. Top: brand row, context switcher (personal / org /
 // platform admin), search. Middle: the menu of the current context (nav-config). Bottom:
-// the account row (its menu carries the balance and the platform admin entry) and the bell.
-// Shared by the desktop rail and the mobile drawer; `collapsed` switches the desktop rail to
-// an icon column.
+// the account row (its menu carries the balance and the platform admin entry) and the settings
+// button, one click to the personal settings in every context (organization and platform
+// settings are menu items of their own contexts). Shared by the desktop rail and the mobile
+// drawer; `collapsed` switches the desktop rail to an icon column.
 
 // One-time cleanup of the retired collapsible-group state.
 try {
@@ -41,7 +41,6 @@ const rowIdle = 'text-foreground/85 hover:bg-sidebar-accent/70 hover:text-foregr
 export default function Sidebar({ context, collapsed = false, onItemClick, onToggleCollapse, onOpenCommand }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
-  const { openNotice } = useNotice();
   const { currentOrgId, orgRole, orgDetail, orgRoutingPolicyEnabled } = useOrg();
   const siteInfo = useSelector((state) => state.siteInfo);
   const user = useSelector((state) => state.account.user);
@@ -115,18 +114,16 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
     );
   };
 
-  const noticeLabel = t('notice.title', { defaultValue: 'Notifications' });
-  const bell = (
+  const settingsButton = (
     <SidebarIconButton
-      label={noticeLabel}
+      label={t('nav.items.personalSettings')}
       side={collapsed ? 'right' : 'top'}
-      onClick={() => {
-        onItemClick?.();
-        openNotice();
-      }}
+      to={PERSONAL_SETTINGS_URL}
+      active={activeId === 'personal_settings'}
+      onClick={onItemClick}
       className="size-9"
     >
-      <Bell className="size-[1.125rem]" />
+      <Settings className="size-[1.125rem]" />
     </SidebarIconButton>
   );
 
@@ -177,12 +174,12 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
           {collapsed ? (
             <>
               <AccountMenu collapsed context={context} balance={balance} onNavigate={onItemClick} />
-              {bell}
+              {settingsButton}
             </>
           ) : (
             <div ref={footerRef} className="flex items-center gap-1">
               <AccountMenu anchorRef={footerRef} context={context} balance={balance} onNavigate={onItemClick} />
-              {bell}
+              {settingsButton}
             </div>
           )}
         </div>
