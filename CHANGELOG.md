@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The home page at `/` is served as static HTML, rendered at build time for each language
+  (English, Simplified Chinese, Traditional Chinese, Japanese) without the app bundle, so search
+  engines and first-time visitors get the content at once. The server picks the language from
+  `?lang=`, the `appLanguage` cookie (set whenever a language is chosen) or `Accept-Language`,
+  fills in the site name and docs link, and adds canonical and `hreflang` links. The header no
+  longer reflects the login state: it always offers "Console", and the panel sends visitors who
+  are not signed in through login and back to the page they opened. A custom `HomePageContent`
+  or footer still uses the app-rendered home page.
 - New upstream models wait for an admin. The models page has a "New upstream models" tab
   listing the models the drift check found new on a channel that no supply on that channel uses
   yet, each with its channels and the public model it most likely belongs to. Attaching adds a

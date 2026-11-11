@@ -33,7 +33,7 @@ export async function syncUserSettingFromServer() {
       applyTheme(data.theme);
     }
     if (SUPPORTED_LANGUAGES.includes(data.language) && data.language !== i18n.language) {
-      localStorage.setItem(LANGUAGE_STORAGE_KEY, data.language);
+      rememberLanguage(data.language);
       i18n.changeLanguage(data.language);
     }
   } catch {
@@ -47,11 +47,18 @@ export function saveUserSetting(partial) {
   LoginCheckAPI.put('/api/user/setting', partial).catch(() => {});
 }
 
+// The static home page is rendered by the server before any script runs, so the chosen language is
+// also kept in a cookie (same name as the localStorage key) for the server to read.
+function rememberLanguage(lng) {
+  localStorage.setItem(LANGUAGE_STORAGE_KEY, lng);
+  document.cookie = `${LANGUAGE_STORAGE_KEY}=${lng}; path=/; max-age=31536000; samesite=lax`;
+}
+
 // A language the user picked explicitly: remembered in this browser and, when signed in, saved to
 // the account so it follows the user to other devices. Until then the browser language is used.
 export function setAppLanguage(lng) {
   if (!SUPPORTED_LANGUAGES.includes(lng)) return;
-  localStorage.setItem(LANGUAGE_STORAGE_KEY, lng);
+  rememberLanguage(lng);
   i18n.changeLanguage(lng);
   saveUserSetting({ language: lng });
 }

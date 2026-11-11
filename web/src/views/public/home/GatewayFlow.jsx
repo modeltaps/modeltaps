@@ -199,4 +199,12 @@ const GF_CSS = `
 .gf-still .gf-ring, .gf-still .gf-drop { animation: none; opacity: 1; transform: none; }
 .gf-still .gf-ripple { display: none; }
 .gf-still .gf-layer { transform: none; transition: none; }
+
+/* The prerendered static home has no script to set gf-still, so the same rules follow the media query. */
+@media (prefers-reduced-motion: reduce) {
+  .gf .gf-line { animation: none; stroke-dashoffset: 0; }
+  .gf .gf-ring, .gf .gf-drop { animation: none; opacity: 1; transform: none; }
+  .gf .gf-ripple, .gf .gf-particles { display: none; }
+  .gf .gf-layer { transform: none; transition: none; }
+}
 `;

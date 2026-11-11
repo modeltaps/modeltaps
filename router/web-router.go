@@ -33,12 +33,16 @@ func SetWebRouter(router *gin.Engine, buildFS embed.FS, indexPage []byte) {
 		controller.LlmsTxt(c)
 	})
 
-	router.Use(static.Serve("/", embedFS))
-
 	spaIndex := func(c *gin.Context) {
 		c.Header("Cache-Control", "no-cache")
 		c.Data(http.StatusOK, "text/html; charset=utf-8", indexPage)
 	}
+
+	// `/` is the prerendered static home page; registered before static.Serve, which would answer
+	// `/` with the app's index.html.
+	registerStaticHome(router, loadHomePages(buildFS), spaIndex)
+
+	router.Use(static.Serve("/", embedFS))
 
 	RegisterLoginDirect(router, spaIndex)
 
