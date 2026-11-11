@@ -202,6 +202,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The wordmark next to the logo is set in a rounded face (a nine-letter subset of Fredoka
+  SemiBold, SIL OFL 1.1, inlined into the stylesheet) at a size that lines up with the mark. The
+  header, sidebar, footer and static home page share one lockup. A custom site name keeps the UI
+  font at the same size.
+- The home page animation is now a drop: the mark gathers under a tap, falls onto a still
+  surface and the ripple lights up the models on it ring by ring. It runs on CSS alone, so the
+  static home page animates without the app bundle, and it holds still under reduced motion.
+- The line under the home page headline now states what the gateway does: it is compatible with
+  the OpenAI, Anthropic and Gemini protocols and only the base URL changes. The tap above the
+  drop is drawn as a faint hairline.
 - Every panel page uses one sidebar. Under the brand, a one-line switcher shows the current space
   (personal, the active organization, or platform admin for administrators) and switches between
   them; platform admin is no longer a separate sidebar with a back row, and the user menu and the

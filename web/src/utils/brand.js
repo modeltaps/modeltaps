@@ -14,3 +14,9 @@ export function brandWordmark(siteInfoSystemName) {
   const name = brandName(siteInfoSystemName);
   return name === DEFAULT_BRAND ? name.toLowerCase() : name;
 }
+
+// The bundled wordmark face only has the letters of the default brand, so a custom name is set in
+// the UI font instead of mixing the two letter by letter.
+export function isDefaultBrand(siteInfoSystemName) {
+  return brandName(siteInfoSystemName) === DEFAULT_BRAND;
+}

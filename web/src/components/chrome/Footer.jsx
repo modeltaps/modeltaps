@@ -1,8 +1,8 @@
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 
-import { LogoMark } from './Logo';
-import { brandWordmark } from 'utils/brand';
+import { BrandLockup } from './Logo';
+import { brandWordmark, isDefaultBrand } from 'utils/brand';
 import { sanitizeHtml } from 'utils/sanitize';
 
 // ==============================|| CHROME — FOOTER ||============================== //
@@ -25,8 +25,7 @@ export default function Footer() {
 
   return (
     <footer className="flex items-center justify-center gap-1.5 px-4 py-5 text-muted-foreground">
-      <LogoMark size={12} />
-      <span className="text-[0.8125rem] font-medium leading-none">{brandWordmark(siteInfo.system_name)}</span>
+      <BrandLockup size={12} text={brandWordmark(siteInfo.system_name)} wordmark={isDefaultBrand(siteInfo.system_name)} />
       <span className="text-[0.8125rem] leading-none">© 2026</span>
       {siteInfo.docs_link && (
         <a

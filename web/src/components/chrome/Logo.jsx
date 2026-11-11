@@ -56,3 +56,30 @@ export function LogoMark({ size, className }) {
     </svg>
   );
 }
+
+// ==============================|| CHROME — BRAND LOCKUP (mark + wordmark) ||============================== //
+// The mark and the site name as one unit, so the header, sidebar, footer and static home page share
+// the same proportions. The default brand is set in the bundled wordmark face (.brand-wordmark,
+// styles/tailwind.css), sized so its x-height sits level with the drop's round body; a custom site
+// name keeps the UI font at the same size.
+//
+//   text      the name to show (brandWordmark(system_name))
+//   wordmark  true for the default brand (isDefaultBrand(system_name))
+//   fontClass overrides the font class; the static home page passes a server-filled token here
+//   size      mark height: 20 (header, sidebar) or 12 (footer)
+
+const LOCKUP = {
+  20: { gap: 'gap-[9px]', text: 'text-[21px]' },
+  12: { gap: 'gap-1.5', text: 'text-[13px]' }
+};
+
+export function BrandLockup({ text, wordmark = false, fontClass, size = 20, truncate = false, className }) {
+  const l = LOCKUP[size] || LOCKUP[20];
+  const font = fontClass ?? (wordmark ? 'brand-wordmark' : 'font-semibold tracking-[-0.01em]');
+  return (
+    <span className={['inline-flex min-w-0 items-center', l.gap, className].filter(Boolean).join(' ')}>
+      <LogoMark size={size} />
+      <span className={['leading-none', l.text, font, truncate && 'truncate'].filter(Boolean).join(' ')}>{text}</span>
+    </span>
+  );
+}

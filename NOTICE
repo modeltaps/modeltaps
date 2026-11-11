@@ -29,3 +29,12 @@ Portions of this software — in particular the web frontend (web/) and
 substantial backend components — are derived from these upstream projects.
 The frontend (web/) is periodically synced one-way from the done-hub
 upstream; the backend is fully forked and is never synced from upstream.
+
+Bundled fonts:
+
+  - Fredoka — SIL Open Font License, Version 1.1
+    Copyright 2016 The Fredoka Project Authors
+    https://github.com/hafontia/Fredoka-One
+    A subset of Fredoka SemiBold is used for the wordmark
+    (web/src/assets/fonts/modeltaps-wordmark.woff2); the license text is in
+    web/src/assets/fonts/LICENSE-Fredoka.txt.

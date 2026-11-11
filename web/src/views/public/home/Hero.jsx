@@ -5,14 +5,14 @@ import { ArrowRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { brandName } from 'utils/brand';
-import GatewayFlow from './GatewayFlow';
+import DripFlow from './DripFlow';
 
 // ==============================|| PUBLIC HOME — HERO ||============================== //
-// The whole landing page for now: the gateway flow on top as the poster, then the slogan, a short
+// The whole landing page for now: the drip on top as the poster, then the slogan, a short
 // catchphrase and one action, centred between the header and the footer. No feature list on purpose.
-// The text rises in once the flow has drawn itself (gf-rise lives in GatewayFlow's scoped styles).
+// The text rises in while the first drop gathers (drip-rise lives in DripFlow's scoped styles).
 
-const RISE = 'motion-safe:animate-[gf-rise_700ms_cubic-bezier(0.22,1,0.36,1)_both]';
+const RISE = 'motion-safe:animate-[drip-rise_700ms_cubic-bezier(0.22,1,0.36,1)_both]';
 
 export default function Hero() {
   const { t } = useTranslation();
@@ -22,7 +22,7 @@ export default function Hero() {
     <section className="flex min-h-[calc(100svh-7.5rem)] items-center">
       <div className="mx-auto flex w-full max-w-5xl flex-col items-center px-4 py-12 text-center sm:px-6">
         <div className="w-full max-w-2xl">
-          <GatewayFlow />
+          <DripFlow />
         </div>
 
         <h1
@@ -31,7 +31,7 @@ export default function Hero() {
         >
           {t('home.hero.tagline')}
         </h1>
-        <p className={`mt-4 text-base text-muted-foreground sm:text-lg ${RISE}`} style={{ animationDelay: '1000ms' }}>
+        <p className={`mt-4 max-w-xl text-balance text-base text-muted-foreground sm:text-lg ${RISE}`} style={{ animationDelay: '1000ms' }}>
           {t('home.hero.catchphrase')}
         </p>
         {/* A plain link with no login state, so the prerendered static home works unchanged: the

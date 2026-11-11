@@ -22,6 +22,7 @@ import (
 const (
 	homeTokenBrand    = "__MT_BRAND__"
 	homeTokenWordmark = "__MT_WORDMARK__"
+	homeTokenFont     = "__MT_WORDMARK_CLASS__"
 	homeTokenOrigin   = "__MT_ORIGIN__"
 	homeTokenDocsURL  = "__MT_DOCS_URL__"
 	homeDocsStart     = "<!--mt:docs-->"
@@ -85,9 +86,10 @@ func fillHomePage(page, origin string) string {
 		brand = defaultBrand
 	}
 	// the default brand is written lowercase next to the mark (utils/brand.js brandWordmark)
-	wordmark := brand
+	// the bundled wordmark face only has the default brand's letters (components/chrome/Logo.jsx BrandLockup)
+	wordmark, font := brand, "font-semibold tracking-[-0.01em]"
 	if brand == defaultBrand {
-		wordmark = strings.ToLower(brand)
+		wordmark, font = strings.ToLower(brand), "brand-wordmark"
 	}
 	// the docs link sits between markers; without a configured link the whole link goes
 	docsURL := strings.TrimSpace(config.GlobalOption.Get("DocsLink"))
@@ -102,6 +104,7 @@ func fillHomePage(page, origin string) string {
 	return strings.NewReplacer(
 		homeTokenBrand, html.EscapeString(brand),
 		homeTokenWordmark, html.EscapeString(wordmark),
+		homeTokenFont, font,
 		homeTokenOrigin, html.EscapeString(origin),
 		homeTokenDocsURL, html.EscapeString(docsURL),
 	).Replace(page)

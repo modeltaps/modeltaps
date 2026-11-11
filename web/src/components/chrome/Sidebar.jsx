@@ -9,11 +9,11 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useOrg } from 'contexts/OrgContext';
 import { useIsRoot } from 'utils/common';
-import { brandWordmark } from 'utils/brand';
+import { brandWordmark, isDefaultBrand } from 'utils/brand';
 import { formatFullAmount } from 'utils/compactAmount';
 import { useNotice } from 'ui-component/notice';
 import { DASHBOARD_URL, findActiveItem, isOrgAdminRole, navLabel, navSectionsFor } from './nav-config';
-import { LogoMark } from './Logo';
+import { BrandLockup, LogoMark } from './Logo';
 import ContextSwitcher from './ContextSwitcher';
 import AccountMenu from './AccountMenu';
 import { CollapseButton, SidebarIconButton, SidebarSearch } from './SidebarControls';
@@ -147,11 +147,7 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
               onClick={onItemClick}
               className="flex min-w-0 flex-1 items-center gap-2.5 text-foreground transition-opacity hover:opacity-90"
             >
-              <LogoMark size={20} />
-              {/* Wordmark in Inter (already bundled): the system face at this size read small and tight. */}
-              <span className="truncate font-['Inter_Variable',sans-serif] text-xl font-semibold leading-none tracking-[-0.015em]">
-                {brand}
-              </span>
+              <BrandLockup text={brand} wordmark={isDefaultBrand(siteInfo?.system_name)} truncate />
             </Link>
             {onToggleCollapse && <CollapseButton onClick={onToggleCollapse} />}
           </div>
