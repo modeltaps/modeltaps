@@ -384,6 +384,26 @@ func GetOrgRoutingModels(c *gin.Context) {
 	respondScopedRoutingModels(c, scope)
 }
 
+func respondManagedRoutingPolicies(c *gin.Context, scope model.RoutingScope) {
+	policies, err := model.ManagedRoutingPoliciesFor(scope)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusInternalServerError, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": policies})
+}
+
+// GetOrgManagedRoutingPolicies lists the platform policies the organization's keys can call.
+func GetOrgManagedRoutingPolicies(c *gin.Context) {
+	_, scope := orgRoutingScope(c)
+	respondManagedRoutingPolicies(c, scope)
+}
+
+// GetUserManagedRoutingPolicies lists the platform policies the user's personal keys can call.
+func GetUserManagedRoutingPolicies(c *gin.Context) {
+	respondManagedRoutingPolicies(c, personalRoutingScope(c))
+}
+
 // Personal console: every signed-in user manages their own policies.
 
 func personalRoutingScope(c *gin.Context) model.RoutingScope {

@@ -118,6 +118,7 @@ func SetApiRouter(router *gin.Engine) {
 					userRoutingRoute.GET("/", controller.GetUserRoutingPolicies)
 					userRoutingRoute.POST("/", controller.CreateUserRoutingPolicy)
 					userRoutingRoute.GET("/models", controller.GetUserRoutingModels)
+					userRoutingRoute.GET("/managed", controller.GetUserManagedRoutingPolicies)
 					userRoutingRoute.POST("/try", middleware.CriticalRateLimit(), relay.UserTryRoutingPolicyHandler)
 					userRoutingRoute.POST("/probe", middleware.CriticalRateLimit(), relay.UserProbeRoutingScoringHandler)
 					userRoutingRoute.GET("/:policy_id", controller.GetUserRoutingPolicy)

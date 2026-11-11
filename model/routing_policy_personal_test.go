@@ -187,3 +187,84 @@ func TestModelAllowlistPermitsPolicyCall(t *testing.T) {
 		t.Fatal("policy/<name> does not allow a bare platform name")
 	}
 }
+
+// The managed list shows the enabled platform policies the user can reach and marks the ones their
+// own policy overrides.
+func TestManagedRoutingPoliciesFor(t *testing.T) {
+	setupOrgRoutingTestDB(t)
+	alice := createRoutingTestUser(t, "alice")
+	coder := orgPolicy(0, "auto/coder")
+	off := orgPolicy(0, "auto/off")
+	off.Enabled = false
+	unreachable := orgPolicy(0, "auto/far")
+	for _, p := range []*RoutingPolicy{coder, off, unreachable} {
+		if err := p.Insert(); err != nil {
+			t.Fatalf("insert %s: %v", p.Name, err)
+		}
+	}
+	// The fallback leaves the group after the policy was saved.
+	ChannelGroup.Rule["other"] = map[string][][]int{"far-model": {{1}}}
+	DB.Model(&RoutingPolicy{}).Where("id = ?", unreachable.Id).Update("fallback_model", "far-model")
+	if err := personalPolicy(alice.Id, "auto/coder").Insert(); err != nil {
+		t.Fatal(err)
+	}
+	if err := ReloadRoutingPolicyCache(); err != nil {
+		t.Fatal(err)
+	}
+	got, err := ManagedRoutingPoliciesFor(PersonalRoutingScope(alice.Id))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].Name != "auto/coder" || !got[0].Overridden {
+		t.Fatalf("want auto/coder (overridden), got %+v", got)
+	}
+}
+
+// Upgrading from organization-scoped names: the older unique indexes go so two users can share a
+// name, and the old site option (off by default) is dropped so the new one starts on.
+func TestMigrateRoutingPolicyUserScope(t *testing.T) {
+	testDB := setupRoutingPolicyTestDB(t)
+	if err := testDB.AutoMigrate(&Option{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := testDB.Migrator().DropTable(&RoutingPolicy{}); err != nil {
+		t.Fatal(err)
+	}
+	// The table as the organization policies release created it, plus the name index an older
+	// build recreates.
+	for _, stmt := range []string{
+		"CREATE TABLE routing_policies (id integer PRIMARY KEY AUTOINCREMENT, organization_id integer NOT NULL DEFAULT 0, name varchar(100) NOT NULL, decision_model varchar(255) NOT NULL, fallback_model varchar(255) NOT NULL)",
+		"CREATE UNIQUE INDEX idx_routing_policies_org_name ON routing_policies(organization_id, name)",
+		"CREATE UNIQUE INDEX idx_routing_policies_name ON routing_policies(name)",
+		"INSERT INTO routing_policies (organization_id, name, decision_model, fallback_model) VALUES (0, 'auto/coder', 'd', 'f')",
+		"INSERT INTO options (key, value) VALUES ('OrganizationRoutingPolicyEnabled', 'false')",
+	} {
+		if err := testDB.Exec(stmt).Error; err != nil {
+			t.Fatalf("%s: %v", stmt, err)
+		}
+	}
+	if err := testDB.AutoMigrate(&RoutingPolicy{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := migrateRoutingPolicyUserScope().Migrate(testDB); err != nil {
+		t.Fatal(err)
+	}
+	for _, index := range []string{"idx_routing_policies_org_name", "idx_routing_policies_name"} {
+		if testDB.Migrator().HasIndex(&RoutingPolicy{}, index) {
+			t.Fatalf("%s should be gone", index)
+		}
+	}
+	for _, user := range []int{4, 5} {
+		if err := testDB.Exec("INSERT INTO routing_policies (organization_id, user_id, name, decision_model, fallback_model) VALUES (0, ?, 'auto/coder', 'd', 'f')", user).Error; err != nil {
+			t.Fatalf("user %d may reuse the name after the upgrade: %v", user, err)
+		}
+	}
+	if err := testDB.Exec("INSERT INTO routing_policies (organization_id, user_id, name, decision_model, fallback_model) VALUES (0, 4, 'auto/coder', 'd', 'f')").Error; err == nil {
+		t.Fatal("names stay unique within one user")
+	}
+	var count int64
+	testDB.Model(&Option{}).Where(&Option{Key: "OrganizationRoutingPolicyEnabled"}).Count(&count)
+	if count != 0 {
+		t.Fatal("the old option should be dropped")
+	}
+}

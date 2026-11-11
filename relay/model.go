@@ -589,12 +589,56 @@ func mergeTTSVoices(primary, extra []types.TTSVoice) []types.TTSVoice {
 
 func AvailableModel(c *gin.Context) {
 	groupName := c.GetString("group")
+	models := getAvailableModels(groupName)
+	// A signed-in user also sees their personal policies (policy/<name>), which their own keys and
+	// the Playground key can call.
+	if userId := c.GetInt("id"); userId > 0 && config.UserRoutingPolicyEnabled {
+		appendOwnRoutingPolicyAvailableModels(models, model.PersonalRoutingScope(userId), groupName)
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    getAvailableModels(groupName),
+		"data":    models,
 	})
+}
+
+// appendOwnRoutingPolicyAvailableModels adds the scope's enabled own policies under their call
+// names, priced like their fallback model and listed for groupName when the fallback routes there.
+func appendOwnRoutingPolicyAvailableModels(availableModels map[string]*AvailableModelResponse, scope model.RoutingScope, groupName string) {
+	if groupName == "" {
+		return
+	}
+	for _, policy := range model.EnabledRoutingPoliciesFor(scope) {
+		if !policy.IsOwnPolicy() {
+			continue
+		}
+		name := policy.CallName()
+		if _, exists := availableModels[name]; exists {
+			continue
+		}
+		canonical, _ := model.ResolveCanonicalModel(policy.FallbackModel)
+		if _, err := model.ChannelGroup.GetMatchedModelName(groupName, canonical); err != nil {
+			continue
+		}
+		price := model.PricingInstance.GetPrice(policy.FallbackModel)
+		if price.Unconfigured {
+			if mapped := model.ChannelGroup.ResolveMappedPrice(policy.FallbackModel); mapped != nil {
+				price = mapped
+			}
+		}
+		vendor := resolveModelVendor(policy.FallbackModel, price.ChannelType)
+		availableModels[name] = &AvailableModelResponse{
+			Kind:      model.ModelInfoKindRoutingPolicy,
+			Routing:   routingSummaryOf(policy),
+			Groups:    []string{groupName},
+			OwnedBy:   vendor.Name,
+			Vendor:    vendor,
+			Endpoints: []string{model.ModelEndpointChat, model.ModelEndpointResponses},
+			Aliases:   []string{},
+			Price:     price,
+		}
+	}
 }
 
 func GetAvailableModels(groupName string) map[string]*AvailableModelResponse {

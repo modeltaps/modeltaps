@@ -57,6 +57,7 @@ func setOrgRouter(apiRouter *gin.RouterGroup) {
 			orgMemberRoutingRoute.Use(middleware.UserRoutingPolicyEnabled())
 			{
 				orgMemberRoutingRoute.GET("/", controller.GetOrgRoutingPolicies)
+				orgMemberRoutingRoute.GET("/managed", controller.GetOrgManagedRoutingPolicies)
 				orgMemberRoutingRoute.GET("/:policy_id", controller.GetOrgRoutingPolicy)
 			}
 		}

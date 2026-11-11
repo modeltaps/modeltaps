@@ -922,3 +922,57 @@ func RoutingPolicyModelsFor(scope RoutingScope, existing []string, routable func
 	}
 	return added
 }
+
+// ManagedRoutingPolicy is a platform policy as users see it in their console: what it is called,
+// where it routes and whether their own policy of the same name takes its place. The decision
+// question stays with the admins.
+type ManagedRoutingPolicy struct {
+	Name          string         `json:"name"`
+	DisplayName   string         `json:"display_name"`
+	Description   string         `json:"description"`
+	DecisionModel string         `json:"decision_model"`
+	Routes        []RoutingRoute `json:"routes"`
+	FallbackModel string         `json:"fallback_model"`
+	Threshold     float64        `json:"threshold"`
+	// Overridden the scope has an enabled policy of the same name, which the bare name now reaches.
+	Overridden bool `json:"overridden"`
+}
+
+// ManagedRoutingPoliciesFor lists the enabled platform policies the scope's API keys can call: listed
+// in the catalog and with a fallback model the scope's group can route (the same rule as the model
+// list).
+func ManagedRoutingPoliciesFor(scope RoutingScope) ([]ManagedRoutingPolicy, error) {
+	group, err := scopeRoutingGroup(scope)
+	if err != nil {
+		return nil, err
+	}
+	own := map[string]bool{}
+	if ownPoliciesActive(scope) {
+		for _, policy := range enabledSorted(scopedRoutingPolicies(scope)) {
+			own[policy.Name] = true
+		}
+	}
+	managed := make([]ManagedRoutingPolicy, 0)
+	for _, policy := range EnabledRoutingPolicies() {
+		if !IsCatalogVisible(policy.Name) {
+			continue
+		}
+		canonical, _ := ResolveCanonicalModel(policy.FallbackModel)
+		if _, err := ChannelGroup.GetMatchedModelName(group, canonical); err != nil {
+			continue
+		}
+		routes := make([]RoutingRoute, len(policy.Routes))
+		copy(routes, policy.Routes)
+		managed = append(managed, ManagedRoutingPolicy{
+			Name:          policy.Name,
+			DisplayName:   policy.DisplayName,
+			Description:   policy.Description,
+			DecisionModel: policy.DecisionModel,
+			Routes:        routes,
+			FallbackModel: policy.FallbackModel,
+			Threshold:     policy.Threshold,
+			Overridden:    own[policy.Name],
+		})
+	}
+	return managed, nil
+}
