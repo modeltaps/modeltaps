@@ -4,8 +4,8 @@ layout: home
 
 hero:
   name: "Modeltaps"
-  text: "Every model, every protocol. One gateway."
-  tagline: OpenAI, Anthropic and Gemini APIs behind a single base URL. Point your tools at one address and use any model — self-hosted, with your own keys.
+  text: "The AI gateway for teams."
+  tagline: Give every member a key and a budget. Use any model through OpenAI, Anthropic and Gemini APIs — self-hosted, with your own keys.
   image:
     light: /hero-gateway-light.svg
     dark: /hero-gateway-dark.svg
