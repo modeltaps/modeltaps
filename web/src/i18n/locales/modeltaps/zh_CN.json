@@ -2256,7 +2256,34 @@
       "priorityTitle": "标签 {{tag}} 的优先级",
       "priorityHint": "给带这个标签的所有渠道设置同一优先级"
     },
-    "optional": "可选"
+    "optional": "可选",
+    "columns": {
+      "requests": "请求",
+      "requestsIn": "请求 {{range}}"
+    },
+    "switcher": {
+      "count": "{{count}} 个渠道"
+    },
+    "preset": {
+      "attention": "需要处理",
+      "lowBalance": "余额不足",
+      "autoDisabled": "自动停用"
+    },
+    "condition": {
+      "showThat": "筛选渠道",
+      "issue": "需要处理",
+      "issueAny": "任一问题",
+      "issueLowBalance": "余额不足",
+      "issueKeyMissing": "缺少密钥",
+      "issueDrift": "模型有变化",
+      "tag": "标签",
+      "group": "分组",
+      "model": "模型",
+      "modelHint": "模型名包含…"
+    },
+    "list": {
+      "meta": "优先级 {{priority}} · {{requests}} 请求 · {{latency}}"
+    }
   },
   "nav": {
     "sections": {

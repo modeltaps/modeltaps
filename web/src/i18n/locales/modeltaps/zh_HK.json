@@ -2256,7 +2256,34 @@
       "priorityTitle": "標籤 {{tag}} 的優先級",
       "priorityHint": "給帶這個標籤的所有渠道設定同一優先級"
     },
-    "optional": "可選"
+    "optional": "可選",
+    "columns": {
+      "requests": "請求",
+      "requestsIn": "請求 {{range}}"
+    },
+    "switcher": {
+      "count": "{{count}} 個渠道"
+    },
+    "preset": {
+      "attention": "需要處理",
+      "lowBalance": "餘額不足",
+      "autoDisabled": "自動停用"
+    },
+    "condition": {
+      "showThat": "篩選渠道",
+      "issue": "需要處理",
+      "issueAny": "任一問題",
+      "issueLowBalance": "餘額不足",
+      "issueKeyMissing": "缺少密鑰",
+      "issueDrift": "模型有變化",
+      "tag": "標籤",
+      "group": "分組",
+      "model": "模型",
+      "modelHint": "模型名包含…"
+    },
+    "list": {
+      "meta": "優先級 {{priority}} · {{requests}} 請求 · {{latency}}"
+    }
   },
   "nav": {
     "sections": {

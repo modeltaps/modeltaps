@@ -100,24 +100,48 @@ export const STATUS_FILTERS = { enabled: 1, manual: 2, auto: 3 };
 // Tag filter value for channels without a tag.
 export const NO_TAG = '\u0000';
 
-// Channels passing the status and tag filters. `status` is a STATUS_FILTERS key or empty;
-// `tag` a tag name, NO_TAG, or empty.
-export function filterChannels(channels = [], { status, tag } = {}) {
+// Issue condition values: any open issue, or one kind of it.
+export const ISSUE_FILTERS = ['any', 'lowBalance', 'keyMissing', 'drift'];
+
+// Whether a channel has an open issue of the given condition value.
+function matchesIssue(channel, issue, dismissed) {
+  const open = openIssues([channel], dismissed);
+  if (issue === 'any') return open.length > 0;
+  if (issue === 'drift') return open.some((i) => i.kind === 'driftNew' || i.kind === 'driftMissing');
+  return open.some((i) => i.kind === issue);
+}
+
+// Channels passing the filters: `status` (a STATUS_FILTERS key), `tag` (a tag name or NO_TAG),
+// `group` (one of the channel's groups), `model` (part of a model name) and `issue` (an
+// ISSUE_FILTERS value). Empty values do not filter.
+export function filterChannels(channels = [], { status, tag, group, model, issue } = {}, dismissed = new Set()) {
+  const m = String(model || '')
+    .trim()
+    .toLowerCase();
   return channels.filter((c) => {
     if (status && STATUS_FILTERS[status] !== c.status) return false;
-    if (tag === NO_TAG) return !c.tag;
-    if (tag) return c.tag === tag;
+    if (tag === NO_TAG && c.tag) return false;
+    if (tag && tag !== NO_TAG && c.tag !== tag) return false;
+    if (group && !splitList(c.group).includes(group)) return false;
+    if (m && !splitList(c.models).some((x) => x.toLowerCase().includes(m))) return false;
+    if (issue && !matchesIssue(c, issue, dismissed)) return false;
     return true;
   });
 }
 
-// Count per status filter (plus `all`) over channels that pass the tag filter, so each number
+// Count per status filter (plus `all`) over channels that pass every other filter, so each number
 // equals the rows shown after picking that status.
-export function statusCounts(channels = [], tag) {
-  const pool = filterChannels(channels, { tag });
+export function statusCounts(channels = [], conditions, dismissed = new Set()) {
+  const rest = typeof conditions === 'string' || conditions == null ? { tag: conditions } : { ...conditions, status: '' };
+  const pool = filterChannels(channels, rest, dismissed);
   const counts = { all: pool.length };
   for (const [key, value] of Object.entries(STATUS_FILTERS)) counts[key] = pool.filter((c) => c.status === value).length;
   return counts;
+}
+
+// Groups present among channels, sorted.
+export function groupOptions(channels = []) {
+  return Array.from(new Set(channels.flatMap((c) => splitList(c.group)))).sort((a, b) => a.localeCompare(b));
 }
 
 // Tags present among channels, sorted, and whether any channel has no tag.

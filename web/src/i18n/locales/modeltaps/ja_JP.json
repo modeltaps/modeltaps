@@ -2258,7 +2258,34 @@
       "priorityTitle": "タグ {{tag}} の優先度",
       "priorityHint": "このタグのすべてのチャネルに同じ優先度を設定します"
     },
-    "optional": "任意"
+    "optional": "任意",
+    "columns": {
+      "requests": "リクエスト",
+      "requestsIn": "リクエスト {{range}}"
+    },
+    "switcher": {
+      "count": "{{count}} チャネル"
+    },
+    "preset": {
+      "attention": "要対応",
+      "lowBalance": "残高不足",
+      "autoDisabled": "自動停止"
+    },
+    "condition": {
+      "showThat": "チャネルを絞り込む",
+      "issue": "要対応",
+      "issueAny": "いずれかの問題",
+      "issueLowBalance": "残高不足",
+      "issueKeyMissing": "キー未設定",
+      "issueDrift": "モデルに変化",
+      "tag": "タグ",
+      "group": "グループ",
+      "model": "モデル",
+      "modelHint": "モデル名に含む…"
+    },
+    "list": {
+      "meta": "優先度 {{priority}} · {{requests}} リクエスト · {{latency}}"
+    }
   },
   "nav": {
     "sections": {
