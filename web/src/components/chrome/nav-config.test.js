@@ -8,8 +8,8 @@ import {
   findActiveItem,
   firstAdminUrl,
   isAdminPath,
-  navSectionsFor,
-  PERSONAL_SETTINGS_URL
+  isSettingsPath,
+  navSectionsFor
 } from './nav-config';
 
 const idsOf = (sections) => sections.map((s) => ({ id: s.id, items: s.items.map((i) => i.id) }));
@@ -44,12 +44,12 @@ describe('navSectionsFor (workbench)', () => {
     ]);
   });
 
-  it('org owner/admin: members & budget, billing and org settings', () => {
+  it('org owner/admin: members & budget and billing; organization settings are in 设置, not the menu', () => {
     for (const orgRole of ['owner', 'admin']) {
       expect(idsOf(navSectionsFor({ context: 'org', orgRole, orgId: 7 }))).toEqual([
         MAIN,
         DEVELOP,
-        { id: 'organization', items: ['organization', 'org_members', 'billing', 'org_settings'] }
+        { id: 'organization', items: ['organization', 'org_members', 'billing'] }
       ]);
     }
   });
@@ -58,7 +58,7 @@ describe('navSectionsFor (workbench)', () => {
     const features = { orgRoutingPolicy: true };
     for (const orgRole of ['owner', 'admin']) {
       const org = navSectionsFor({ context: 'org', orgRole, orgId: 7, features }).find((s) => s.id === 'organization');
-      expect(org.items.map((i) => i.id)).toEqual(['organization', 'org_members', 'org_routing', 'billing', 'org_settings']);
+      expect(org.items.map((i) => i.id)).toEqual(['organization', 'org_members', 'org_routing', 'billing']);
       expect(org.items.find((i) => i.id === 'org_routing').href).toBe('/panel/settings/org/7/routing');
     }
     const member = navSectionsFor({ context: 'org', orgRole: 'member', orgId: 7, features }).find((s) => s.id === 'organization');
@@ -79,7 +79,6 @@ describe('navSectionsFor (workbench)', () => {
   it('org-scoped urls carry the active organization', () => {
     const org = navSectionsFor({ context: 'org', orgRole: 'owner', orgId: 7 }).find((s) => s.id === 'organization');
     expect(org.items.find((i) => i.id === 'org_members').href).toBe('/panel/settings/org/7/members');
-    expect(org.items.find((i) => i.id === 'org_settings').href).toBe('/panel/settings/org/7/general');
   });
 
   it('workbench menus never contain admin pages', () => {
@@ -135,8 +134,6 @@ describe('findActiveItem', () => {
   it('settings pages: personal vs organization', () => {
     expect(findActiveItem('/panel/settings')?.id).toBe('personal_settings');
     expect(findActiveItem('/panel/settings/account/security')?.id).toBe('personal_settings');
-    // The sidebar's settings button links here and is marked active on these pages.
-    expect(findActiveItem(PERSONAL_SETTINGS_URL)?.id).toBe('personal_settings');
     expect(findActiveItem('/panel/settings/org/3/general')?.id).toBe('org_settings');
     expect(findActiveItem('/panel/settings/org/3/members')?.id).toBe('org_members');
     expect(findActiveItem('/panel/settings/org/3/danger')?.id).toBe('org_settings');
@@ -208,7 +205,24 @@ describe('commandSections', () => {
   it('non-admins get no platform admin entries', () => {
     const ids = commandSections({ isAdmin: false }).flatMap((s) => s.items.map((i) => i.id));
     expect(ids).toContain('personal_settings');
+    expect(ids).not.toContain('org_settings');
     expect(ids).not.toContain('channel');
+  });
+
+  it('both parts of 设置: organization settings for owners and admins of the active organization', () => {
+    const items = (orgRole) => commandSections({ orgId: 7, orgRole }).find((s) => s.id === 'account').items;
+    expect(items('owner').map((i) => [i.id, i.href])).toEqual([
+      ['org_settings', '/panel/settings/org/7/general'],
+      ['personal_settings', '/panel/settings']
+    ]);
+    expect(items('member').map((i) => i.id)).toEqual(['personal_settings']);
+  });
+
+  it('设置 pages are recognised by path', () => {
+    for (const p of ['/panel/settings', '/panel/settings/account/profile', '/panel/settings/org/3/members'])
+      expect(isSettingsPath(p)).toBe(true);
+    for (const p of ['/panel/setting', '/panel/setting/site', '/panel/settingsx', '/panel/dashboard'])
+      expect(isSettingsPath(p)).toBe(false);
   });
 
   it('admins can reach every admin page they may see', () => {

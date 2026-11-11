@@ -680,10 +680,8 @@
     "routing_policy": "虛擬模型：按每個會話的首條訊息選擇實際應答的模型",
     "channel": "按供應商分組；一個渠道是連到該供應商的一組憑證和地址",
     "org_members": "邀請成員、設定每人的預算與模型範圍",
-    "org_settings": "組織的資料、留存策略與危險操作",
     "organization": "組織的餘額、用量與審計記錄",
     "platform_settings": "整個平台的預設值與開關",
-    "personal_settings": "只對你自己的賬號生效",
     "token": "調用介面用的金鑰",
     "invite_code": "生成、啟用與作廢註冊用的邀請碼",
     "org_routing": "本組織 API Key 使用的路由策略；與平台策略同名時取代平台策略"
@@ -2246,7 +2244,8 @@
       "redemption": "兌換碼",
       "platformSettings": "平台設定",
       "personalSettings": "個人設定",
-      "inviteCodes": "邀請碼"
+      "inviteCodes": "邀請碼",
+      "settings": "設定"
     },
     "context": {
       "personal": "個人",
@@ -2261,7 +2260,8 @@
       "appearance": "外觀",
       "language": "語言",
       "docs": "文件與說明",
-      "logout": "登出"
+      "logout": "登出",
+      "settings": "設定"
     },
     "balance": {
       "personal": "餘額",
@@ -2811,7 +2811,6 @@
       }
     },
     "personal": {
-      "label": "個人設定分組",
       "username": "用戶名",
       "groups": {
         "profile": "資料",
@@ -2855,7 +2854,6 @@
       }
     },
     "org": {
-      "label": "組織設定分組",
       "groups": {
         "general": "一般",
         "generalDescription": "組織資料與團隊預算",
@@ -2874,6 +2872,12 @@
           "description": "這些操作會影響所有成員"
         }
       }
+    },
+    "sections": {
+      "label": "設定分組",
+      "org": "組織設定",
+      "personal": "個人設定",
+      "backToAdmin": "返回平台管理"
     }
   },
   "home": {

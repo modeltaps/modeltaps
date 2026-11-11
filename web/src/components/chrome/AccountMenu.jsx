@@ -2,7 +2,21 @@ import PropTypes from 'prop-types';
 import { useLocation, useNavigate } from 'react-router';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { ArrowUpRight, BookOpen, Check, Globe, LogOut, Megaphone, Monitor, Moon, Palette, ShieldUser, Sun, Wallet } from 'lucide-react';
+import {
+  ArrowUpRight,
+  BookOpen,
+  Check,
+  Globe,
+  LogOut,
+  Megaphone,
+  Monitor,
+  Moon,
+  Palette,
+  Settings,
+  ShieldUser,
+  Sun,
+  Wallet
+} from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import {
@@ -27,16 +41,16 @@ import i18nList from 'i18n/i18nList';
 import { useIsAdmin, useIsRoot } from 'utils/common';
 import { useOrg } from 'contexts/OrgContext';
 import { useNotice } from 'ui-component/notice';
-import { contextSwitchTarget } from './nav-config';
+import { SETTINGS_ROOT, contextSwitchTarget } from './nav-config';
 import UserAvatar, { accountDisplayName } from './avatar';
 
 // ==============================|| CHROME — ACCOUNT MENU ||============================== //
 // The account row at the bottom of the sidebar is the only place that shows who is signed in
 // (avatar and name; the email sits at the top of its menu). Its menu: the balance (links to
-// billing), appearance, language, platform admin (admins only), the site announcement (while the
-// site has one), docs & help (when the site has a docs link) and log out. Personal settings are
-// not in the menu: the settings button next to the account row opens them. In the collapsed rail
-// the row shrinks to the avatar and the menu opens to the right.
+// billing), 设置 (organization and personal settings; the settings button next to the account row
+// is a shortcut to the same page), appearance, language, platform admin (admins only), the site
+// announcement (while the site has one), docs & help (when the site has a docs link) and log out.
+// In the collapsed rail the row shrinks to the avatar and the menu opens to the right.
 
 const THEME_OPTIONS = [
   { value: 'system', Icon: Monitor, labelKey: 'theme.auto' },
@@ -136,6 +150,10 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, conte
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => go(SETTINGS_ROOT)}>
+          <Settings />
+          <span className="flex-1">{t('nav.account.settings')}</span>
+        </DropdownMenuItem>
         {/* Appearance: an inline segmented switch, so the menu stays open while trying themes. */}
         <div className="flex items-center gap-2 px-2 py-1.5 text-sm [&>svg]:size-4 [&>svg]:shrink-0">
           <Palette />

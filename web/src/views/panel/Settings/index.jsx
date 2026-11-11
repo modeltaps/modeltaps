@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Navigate, useLocation, useParams } from 'react-router';
 import { useSelector } from 'react-redux';
@@ -25,100 +24,102 @@ import {
   accountSettingsUrl,
   orgSettingsUrl,
   resolveAccountSection,
-  resolveOrgSection
+  resolveOrgSection,
+  settingsLanding,
+  settingsOrg
 } from './sections';
 
-// ==============================|| PANEL — SETTINGS (personal / organization) ||============================== //
-// Both are a SettingsPage inside the sidebar shell.
-// - Personal settings (`/panel/settings/account/:group`) open from the account menu.
-// - Organization settings (`/panel/settings/org/:orgId/:group`) are the org context's 组织设置;
-//   `/panel/settings/org/:orgId/members` on the same route is the 成员与预算 page and
-//   `/panel/settings/org/:orgId/routing` the organization's 自动路由 page. The context
-//   switcher picks the organization: opening a deep link to another organization the user manages
-//   switches the active context to it, so the sidebar and the page talk about the same one.
+// ==============================|| PANEL — SETTINGS (设置: organization + personal) ||============================== //
+// 设置 opens from the account menu and the settings button next to the account row (no menu item
+// for either part). The sidebar becomes its tree (chrome/SettingsSidebar, built from
+// sections.js): 组织设置 first for owners and admins of an organization, headed by a picker of
+// the organizations they manage, then 个人设置. This page renders the content of the active item:
+// the groups of both parts are one SettingsPage (unsaved edits survive switching between them;
+// its search, dots and counts show in the sidebar), and 成员与预算 (`.../members`) and 自动路由
+// (`.../routing`) are pages of their own. The organization is the one in the URL and stays
+// decoupled from the active context of the workbench. Platform settings are part of 平台管理.
 
-function AccountSettings({ section }) {
+function SettingsHub({ section, orgId, managedOrgs }) {
   const { t } = useTranslation();
   const siteInfo = useSelector((state) => state.siteInfo);
+  const { currentOrgId } = useOrg();
   const self = useSelfUser();
-  const cards = accountGroupCards({ siteInfo, self });
-  const groups = ACCOUNT_GROUPS.map((group) => ({
+
+  const org = settingsOrg(managedOrgs, { orgId, currentOrgId });
+  const { detail, refresh } = useOrgDetail(org?.id ?? null);
+
+  const groupOf = (group, sectionLabel, to, cards) => ({
     id: group.id,
     icon: group.icon,
-    to: accountSettingsUrl(group.id),
+    to,
     label: t(group.labelKey),
+    sectionLabel,
     description: t(`${group.labelKey}Description`, { defaultValue: '' }),
-    cards: cards[group.id]
-  }));
-  return <SettingsPage label={t('settingsUi.personal.label')} groups={groups} activeGroupId={section} className="max-w-6xl" />;
+    cards
+  });
+
+  const groups = [];
+  if (org) {
+    // Keyed by organization, so picking another one remounts its forms instead of carrying edits over.
+    const props = { orgId: org.id, role: org.role, detail, onRefresh: refresh };
+    const orgCards = {
+      general: [
+        { id: 'org-profile', render: () => <GeneralSection key={org.id} {...props} /> },
+        { id: 'team-budget', render: () => <BudgetSection key={org.id} {...props} /> }
+      ],
+      danger: [{ id: 'danger', render: () => <DangerSection key={org.id} {...props} /> }]
+    };
+    const orgLabel = t('settingsUi.sections.org');
+    for (const group of ORG_GROUPS) groups.push(groupOf(group, orgLabel, orgSettingsUrl(org.id, group.id), orgCards[group.id]));
+  }
+  const accountCards = accountGroupCards({ siteInfo, self });
+  const personalLabel = t('settingsUi.sections.personal');
+  for (const group of ACCOUNT_GROUPS) groups.push(groupOf(group, personalLabel, accountSettingsUrl(group.id), accountCards[group.id]));
+
+  return <SettingsPage label={t('settingsUi.sections.label')} groups={groups} activeGroupId={section} className="max-w-4xl" />;
 }
 
-AccountSettings.propTypes = { section: PropTypes.string.isRequired };
-
-function OrgSettings({ orgId, role, section }) {
-  const { t } = useTranslation();
-  const { detail, refresh } = useOrgDetail(orgId);
-  const props = { orgId, role, detail, onRefresh: refresh };
-  const cards = {
-    general: [
-      { id: 'profile', render: () => <GeneralSection {...props} /> },
-      { id: 'team-budget', render: () => <BudgetSection {...props} /> }
-    ],
-    danger: [{ id: 'danger', render: () => <DangerSection {...props} /> }]
-  };
-  const groups = ORG_GROUPS.map((group) => ({
-    id: group.id,
-    icon: group.icon,
-    to: orgSettingsUrl(orgId, group.id),
-    label: t(group.labelKey),
-    description: t(`${group.labelKey}Description`, { defaultValue: '' }),
-    cards: cards[group.id]
-  }));
-  return <SettingsPage key={orgId} label={t('settingsUi.org.label')} groups={groups} activeGroupId={section} className="max-w-6xl" />;
-}
-
-OrgSettings.propTypes = { orgId: PropTypes.number.isRequired, role: PropTypes.string, section: PropTypes.string.isRequired };
+SettingsHub.propTypes = {
+  section: PropTypes.string.isRequired,
+  orgId: PropTypes.number,
+  managedOrgs: PropTypes.arrayOf(PropTypes.object).isRequired
+};
 
 export default function Settings() {
   const { search } = useLocation();
   const { orgId: orgIdParam, section } = useParams();
-  const { organizations, orgsLoaded, currentOrgId, switchOrg, orgRoutingPolicyEnabled } = useOrg();
+  const { organizations, orgsLoaded, currentOrgId, orgRoutingPolicyEnabled } = useOrg();
   useHighlightTarget();
 
   const orgScope = orgIdParam !== undefined;
   const orgId = orgScope ? Number(orgIdParam) : null;
-  const managedOrg = orgScope ? organizations.find((org) => org.id === orgId && isOrgAdminRole(org.role)) || null : null;
+  const managedOrgs = organizations.filter((org) => isOrgAdminRole(org.role));
+  const managedOrg = orgScope ? managedOrgs.find((org) => org.id === orgId) || null : null;
   const accountDefault = accountSettingsUrl(DEFAULT_ACCOUNT_SECTION);
-
-  // Follow the URL's organization once per deep link (not on every context change, so that
-  // switching context from this page is not undone before the switcher navigates away).
-  const isManaged = Boolean(managedOrg);
-  useEffect(() => {
-    if (isManaged && orgId !== currentOrgId) switchOrg(orgId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgId, isManaged]);
 
   // Wait for the organization list before deciding, so a reload does not bounce an org admin.
   if (!orgsLoaded) return null;
 
   if (!orgScope) {
-    if (!section) return <Navigate to={`${accountDefault}${search}`} replace />;
+    // `/panel/settings` opens the first item of the tree (with a query, the personal settings, as
+    // older links expect).
+    if (!section) return <Navigate to={search ? `${accountDefault}${search}` : settingsLanding({ organizations, currentOrgId })} replace />;
     const target = resolveAccountSection(section);
     if (target) return <Navigate to={target} replace />;
-    return <AccountSettings section={section} />;
+    return <SettingsHub section={section} orgId={null} managedOrgs={managedOrgs} />;
   }
 
-  // Organizations the user does not manage fall back to personal settings.
-  if (!managedOrg) return <Navigate to={accountDefault} replace />;
+  // Organizations the user does not manage fall back to the first item of the tree.
+  if (!managedOrg) return <Navigate to={settingsLanding({ organizations, currentOrgId })} replace />;
   const target = resolveOrgSection(orgId, section, { routing: orgRoutingPolicyEnabled });
   if (target) return <Navigate to={target} replace />;
   if (section === ORG_MEMBERS_SECTION) {
     return (
       <div className="max-w-6xl">
-        <OrgSectionHost orgId={orgId} role={managedOrg.role} component={MembersTab} />
+        <OrgSectionHost key={orgId} orgId={orgId} role={managedOrg.role} component={MembersTab} />
       </div>
     );
   }
-  if (section === ORG_ROUTING_SECTION) return <RoutingPage orgId={orgId} />;
-  return <OrgSettings orgId={orgId} role={managedOrg.role} section={section} />;
+  if (section === ORG_ROUTING_SECTION) return <RoutingPage key={orgId} orgId={orgId} />;
+  return <SettingsHub section={section} orgId={orgId} managedOrgs={managedOrgs} />;
 }
