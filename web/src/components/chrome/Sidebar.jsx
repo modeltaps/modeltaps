@@ -19,7 +19,8 @@ import SidebarBrandRow from './SidebarBrandRow';
 
 // ==============================|| CHROME — SIDEBAR (one shell, three contexts) ||============================== //
 // Every panel page uses this sidebar (设置 swaps it for SettingsSidebar, laid out the same way).
-// Top: the brand row (SidebarBrandRow, with the search and collapse buttons at its end), then the
+// Top: the brand row (SidebarBrandRow, with the search button and, on narrow screens and in the
+// phone drawer, the collapse button at its end), then the
 // context switcher (personal / org; in platform admin a back row to the workbench instead).
 // Middle: the menu of the current context (nav-config). Bottom:
 // the account row (its menu carries the balance, 设置 and the platform admin entry) and the
@@ -56,7 +57,7 @@ AdminBackRow.propTypes = {
   onClick: PropTypes.func
 };
 
-export default function Sidebar({ context, collapsed = false, onItemClick, onToggleCollapse, onOpenCommand }) {
+export default function Sidebar({ context, collapsed = false, showCollapse = false, onItemClick, onToggleCollapse, onOpenCommand }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const { currentOrgId, orgRole, orgDetail, routingPolicyEnabled } = useOrg();
@@ -149,7 +150,7 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
           collapsed={collapsed}
           onItemClick={onItemClick}
           onOpenCommand={onOpenCommand}
-          onToggleCollapse={onToggleCollapse}
+          onToggleCollapse={showCollapse ? onToggleCollapse : undefined}
         />
 
         <div className={cn('flex shrink-0 flex-col pb-1', collapsed ? 'items-center gap-1 px-1' : 'gap-2 px-2')}>
@@ -197,6 +198,9 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
 Sidebar.propTypes = {
   context: PropTypes.oneOf(['personal', 'org', 'admin']).isRequired,
   collapsed: PropTypes.bool,
+  // Show the collapse button: on narrow screens, where the rail collapses by itself, and in the
+  // phone drawer (to close it). Wide screens keep the rail expanded.
+  showCollapse: PropTypes.bool,
   onItemClick: PropTypes.func,
   onToggleCollapse: PropTypes.func,
   onOpenCommand: PropTypes.func

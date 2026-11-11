@@ -78,6 +78,8 @@ export default function MainLayout() {
   // The rail collapses to icons on its own below the lg breakpoint (1024px), and also as soon as
   // the expanded rail would squeeze a page below the width it asked for (useContentMinWidth, e.g.
   // a table's natural width). The user's own toggle wins until that automatic choice changes.
+  // Only then can it be toggled: the expand button sits left of the page title and the sidebars
+  // show their collapse button (showCollapse); otherwise the rail stays expanded.
   const belowLg = useMediaQuery('(max-width: 1023px)');
   const [contentMinWidth, setContentMinWidth] = useState(null);
   const [viewportWidth, setViewportWidth] = useState(() => (typeof window === 'undefined' ? 1440 : window.innerWidth));
@@ -158,8 +160,8 @@ export default function MainLayout() {
                     collapsed ? 'w-24' : 'w-64'
                   )}
                 >
-                  {/* The settings tree shows its collapse button only where the rail collapses by
-                    itself (narrow screens); the main sidebar always has one. */}
+                  {/* Every sidebar shows its collapse button only where the rail collapses by
+                    itself (narrow screens); wide screens keep it expanded. */}
                   <SidebarView
                     context={context}
                     collapsed={collapsed}
