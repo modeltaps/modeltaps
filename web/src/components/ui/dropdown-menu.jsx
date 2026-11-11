@@ -4,6 +4,7 @@ import { Slot } from '@radix-ui/react-slot';
 import { Check, ChevronRight } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { computeFloatingStyle } from '@/components/ui/floating';
 
 // Lightweight, dependency-free dropdown menu (no Radix popper). The content is
 // rendered through a portal with fixed positioning anchored to the trigger so it
@@ -90,36 +91,21 @@ const DropdownMenuContent = React.forwardRef(
         const trigger = anchorRef?.current || triggerRef.current;
         const content = contentRef.current;
         if (!trigger || !content) return;
-        const r = trigger.getBoundingClientRect();
-        const w = matchTriggerWidth ? Math.max(content.offsetWidth, r.width) : content.offsetWidth;
-        const h = content.offsetHeight;
-        const margin = 4;
-
-        let top;
-        let left;
-        if (side === 'right') {
-          left = r.right + sideOffset;
-          if (left + w > window.innerWidth - margin && r.left - sideOffset - w >= margin) {
-            left = r.left - sideOffset - w;
-          }
-          top = align === 'end' ? r.bottom - h : r.top;
-        } else if (side === 'top') {
-          top = r.top - sideOffset - h;
-          if (top < margin && r.bottom + sideOffset + h <= window.innerHeight - margin) {
-            top = r.bottom + sideOffset;
-          }
-          left = align === 'end' ? r.right - w : r.left;
-        } else {
-          top = r.bottom + sideOffset;
-          if (top + h > window.innerHeight - margin && r.top - sideOffset - h >= margin) {
-            top = r.top - sideOffset - h;
-          }
-          left = align === 'end' ? r.right - w : r.left;
-        }
-        top = Math.min(Math.max(top, margin), Math.max(window.innerHeight - h - margin, margin));
-        left = Math.min(Math.max(left, margin), Math.max(window.innerWidth - w - margin, margin));
-
-        setStyle({ position: 'fixed', top, left, ...(matchTriggerWidth ? { minWidth: r.width } : null) });
+        // Shared with every floating panel: flips to the side with room and caps the height to it,
+        // so a long menu scrolls instead of running off a short window.
+        setStyle(
+          computeFloatingStyle({
+            anchor: trigger.getBoundingClientRect(),
+            width: content.offsetWidth,
+            height: content.scrollHeight,
+            side,
+            align,
+            offset: sideOffset,
+            matchWidth: matchTriggerWidth,
+            clamp: true,
+            viewport: window
+          })
+        );
       };
       update();
       window.addEventListener('scroll', update, true);
@@ -144,7 +130,7 @@ const DropdownMenuContent = React.forwardRef(
         role="menu"
         style={style ?? { position: 'fixed', top: 0, left: 0, visibility: 'hidden' }}
         className={cn(
-          'z-[1300] min-w-[10rem] overflow-hidden rounded-lg border border-border bg-card p-1 text-card-foreground shadow-md',
+          'z-[1300] min-w-[10rem] overflow-y-auto rounded-lg border border-border bg-card p-1 text-card-foreground shadow-md',
           className
         )}
         {...props}

@@ -43,6 +43,7 @@ export default function TokenPanel({
   resetWeekStart,
   onToggleStatus,
   onCopyKey,
+  onCopyText,
   onDelete,
   onShowUsage,
   onConnectOpenClaw
@@ -164,7 +165,8 @@ export default function TokenPanel({
         resetWeekStart,
         locale: i18n.language,
         loadModels,
-        onCopyKey
+        onCopyKey,
+        onCopyText
       }}
       tabsLabel={t('apiKey.panel.tabs')}
     />
@@ -188,6 +190,7 @@ TokenPanel.propTypes = {
   resetWeekStart: PropTypes.string,
   onToggleStatus: PropTypes.func.isRequired,
   onCopyKey: PropTypes.func.isRequired,
+  onCopyText: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onShowUsage: PropTypes.func.isRequired,
   onConnectOpenClaw: PropTypes.func.isRequired

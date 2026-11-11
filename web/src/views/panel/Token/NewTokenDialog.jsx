@@ -92,7 +92,7 @@ const NAME_ERRORS = new Set(['token_name_taken', 'token_name_reserved']);
 // and the base URL, then closes or opens the key's panel.
 export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, onCopy }) {
   const { t } = useTranslation();
-  const [form, setForm] = useState({ name: '', quota: '', days: 0 });
+  const [form, setForm] = useState({ name: '', quota: '', expiry: 'never' });
   const [busy, setBusy] = useState(false);
   const [nameError, setNameError] = useState('');
   const [created, setCreated] = useState(null);
@@ -114,7 +114,7 @@ export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, on
       const { unlimited_quota, remain_quota } = quota;
       const res = await API.post('/api/token/', {
         name,
-        expired_time: expiryFromPreset(form.days),
+        expired_time: expiryFromPreset(form.expiry),
         group: '',
         backup_group: '',
         unlimited_quota,
@@ -205,16 +205,14 @@ export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, on
                   />
                 </Field>
                 <Field label={t('apiKey.new.expiry')} htmlFor="nt-expiry" className="[&+&]:border-t-0">
-                  <Select value={String(form.days)} onValueChange={(v) => setForm((f) => ({ ...f, days: Number(v) }))}>
+                  <Select value={form.expiry} onValueChange={(v) => setForm((f) => ({ ...f, expiry: v }))}>
                     <SelectTrigger id="nt-expiry">
-                      <span className="truncate">
-                        {form.days ? t('apiKey.new.days', { count: form.days }) : t('token_index.neverExpires')}
-                      </span>
+                      <span className="truncate">{t(`apiKey.expiry.${form.expiry}`)}</span>
                     </SelectTrigger>
                     <SelectContent>
-                      {EXPIRY_PRESETS.map((d) => (
-                        <SelectItem key={d} value={String(d)}>
-                          {d ? t('apiKey.new.days', { count: d }) : t('token_index.neverExpires')}
+                      {EXPIRY_PRESETS.map((p) => (
+                        <SelectItem key={p} value={p}>
+                          {t(`apiKey.expiry.${p}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>

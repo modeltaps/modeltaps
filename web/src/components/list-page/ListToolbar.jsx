@@ -22,7 +22,7 @@ export default function ListToolbar({ search, filters, viewControls, className }
             onChange={(e) => search.onChange(e.target.value)}
             placeholder={search.placeholder ?? t('listPage.searchPlaceholder')}
             aria-label={search.placeholder ?? t('listPage.searchPlaceholder')}
-            className="flex h-9 w-full rounded-lg border border-input bg-background pl-8 pr-8 text-sm placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden"
+            className="flex h-9 w-full rounded-lg border border-input bg-field pl-8 pr-8 text-sm placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden"
           />
           {search.value && (
             <button

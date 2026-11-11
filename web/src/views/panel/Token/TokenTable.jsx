@@ -1,30 +1,30 @@
-import { useMemo } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
 import {
-  Eye,
-  EyeOff,
   Copy,
   Pencil,
   Trash2,
-  ChevronsUpDown,
+  ArrowUpDown,
   ArrowUp,
   ArrowDown,
   BarChart3,
   FileText,
   Terminal,
   Plug,
+  Power,
+  PowerOff,
   MoreHorizontal
 } from 'lucide-react';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import DataCards from '@/components/ui/data-cards';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { RowActions } from '@/components/ui/row-actions';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -37,7 +37,12 @@ import { cn } from '@/lib/utils';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
 import { isPlaygroundToken } from 'utils/playgroundToken';
-import { maskSecret } from 'utils/maskSecret';
+
+// The short form of a key shown next to its name: the prefix and the last four characters.
+export function keySuffix(key) {
+  const k = key || '';
+  return k.length > 4 ? `sk-…${k.slice(-4)}` : `sk-${k}`;
+}
 
 export function statusInfo(t, status) {
   switch (status) {
@@ -151,47 +156,182 @@ export function LimitBar({ ratio }) {
   );
 }
 
-// 构建单个 API Key 的动作列表(表格行 RowActions 与移动端卡片 … 菜单共用),避免逻辑重复。
-export function buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw }) {
+// How much a key has spent against its limit: the period counter against a periodic cap, the
+// total spend against a fixed total, or the total spend with no limit at all.
+export function keyUsage(item) {
+  const qr = item.setting?.quota_reset;
+  if (qr?.period && qr.limit > 0) return { used: item.period_used || 0, limit: qr.limit, period: qr.period };
+  const used = item.used_quota || 0;
+  if (item.unlimited_quota) return { used, limit: null, period: null };
+  return { used, limit: used + (item.remain_quota || 0), period: null };
+}
+
+// Usage column: "$used / $limit" with the share used and a thin bar under it. The tooltip adds
+// today's spend, the lifetime spend of a periodic key and the next reset.
+function UsageCell({ item, todayUsage, resetTimezone, resetWeekStart }) {
+  const { t } = useTranslation();
+  const { used, limit, period } = keyUsage(item);
+  const ratio = limit ? used / limit : 0;
+  const pct = Math.min(100, Math.round(ratio * 100));
+  const hints = [];
+  if (todayUsage) hints.push(`${t('token_index.usageToday')}: ${renderQuota(todayUsage[item.name] || 0)}`);
+  if (period) {
+    hints.push(`${t('apiKey.panel.used')}: ${renderQuota(item.used_quota || 0)}`);
+    const next = nextResetTime(period, resetTimezone, resetWeekStart);
+    if (next) hints.push(`${t('token_index.quotaResetNext')}: ${timestamp2string(next)}`);
+  }
+  return (
+    <div className="flex w-48 flex-col gap-1" title={hints.join('\n') || undefined}>
+      <div className="flex items-baseline justify-between gap-2 whitespace-nowrap">
+        <span className="text-[14px] tabular-nums">
+          <SpendAmount quota={used} className="font-medium" />
+          {limit != null ? (
+            <span className="text-muted-foreground"> / {renderQuota(limit)}</span>
+          ) : (
+            <span className="ml-1.5 text-xs text-muted-foreground">{t('token_index.noLimit')}</span>
+          )}
+          {period && <span className="ml-1.5 text-xs text-muted-foreground">{t(`token_index.limitPeriod_${period}`)}</span>}
+        </span>
+        {limit != null && <span className="text-xs tabular-nums text-muted-foreground">{pct}%</span>}
+      </div>
+      <LimitBar ratio={ratio} />
+    </div>
+  );
+}
+
+// Builds one key's actions for the row ⋯ menu (table and mobile card alike). `group` splits the
+// menu into sections: manage, connect, inspect, then the destructive delete.
+export function buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw, onToggleStatus }) {
   // 按 API Key 名预过滤跳转:用量页用 tokens 参数,日志页用 token_name 参数(与 T50b URL 过滤对齐)
   const goUsage = () => navigate(`/panel/usage?tokens=${encodeURIComponent(item.name)}`);
   const goLog = () => navigate(`/panel/log?token_name=${encodeURIComponent(item.name)}`);
   // 试用区专用 Key 由系统托管:不给复制明文与编辑入口,删除仍保留。
   const isPlayground = isPlaygroundToken(item);
   return [
-    !isPlayground && { key: 'copy', label: t('token_index.copy'), icon: Copy, primary: true, onClick: () => onCopyKey(item) },
-    { key: 'test', label: t('token_index.testCommand'), icon: Terminal, overflow: true, onClick: () => onShowUsage(item) },
-    { key: 'openclaw', label: t('token_index.openclawConnect'), icon: Plug, overflow: true, onClick: () => onConnectOpenClaw(item) },
-    { key: 'usage', label: t('token_index.usage'), icon: BarChart3, overflow: true, disabled: !item.name, onClick: goUsage },
-    { key: 'log', label: t('token_index.viewLog'), icon: FileText, overflow: true, disabled: !item.name, onClick: goLog },
-    !isPlayground && { key: 'edit', label: t('common.edit'), icon: Pencil, primary: true, onClick: () => onEdit(item.id) },
-    { key: 'delete', label: t('common.delete'), icon: Trash2, overflow: true, destructive: true, onClick: () => onDelete(item) }
+    !isPlayground && { key: 'edit', group: 'manage', label: t('common.edit'), icon: Pencil, onClick: () => onEdit(item.id) },
+    !isPlayground && { key: 'copy', group: 'manage', label: t('token_index.copy'), icon: Copy, onClick: () => onCopyKey(item) },
+    // Enable / disable appears in the menu where the row has no switch (medium and narrow layouts).
+    onToggleStatus && {
+      key: 'toggle',
+      group: 'manage',
+      label: item.status === 1 ? t('apiKey.list.batchDisable') : t('apiKey.list.batchEnable'),
+      icon: item.status === 1 ? PowerOff : Power,
+      onClick: () => onToggleStatus(item)
+    },
+    { key: 'test', group: 'connect', label: t('token_index.testCommand'), icon: Terminal, onClick: () => onShowUsage(item) },
+    { key: 'openclaw', group: 'connect', label: t('token_index.openclawConnect'), icon: Plug, onClick: () => onConnectOpenClaw(item) },
+    { key: 'usage', group: 'inspect', label: t('token_index.usage'), icon: BarChart3, disabled: !item.name, onClick: goUsage },
+    { key: 'log', group: 'inspect', label: t('token_index.viewLog'), icon: FileText, disabled: !item.name, onClick: goLog },
+    { key: 'delete', group: 'danger', label: t('common.delete'), icon: Trash2, destructive: true, onClick: () => onDelete(item) }
   ];
 }
 
-function TokenRowActions({ item, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw }) {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const actions = buildTokenActions({
-    item,
-    t,
-    navigate,
-    onEdit,
-    onDelete,
-    onCopyKey,
-    onShowUsage,
-    onConnectOpenClaw
-  });
-  return <RowActions actions={actions} />;
+// One status label in place of the switch and expiry columns (medium and narrow layouts):
+// disabled, expired, used up, expiring within a week (with when), or enabled.
+const SOON_SECONDS = 7 * 86400;
+export function keyState(item, nowSec = Math.floor(Date.now() / 1000)) {
+  if (item.status === 2) return { key: 'disabled', tone: 'muted' };
+  if (item.status === 4) return { key: 'exhausted', tone: 'danger' };
+  if (item.status === 3 || (item.expired_time !== -1 && item.expired_time <= nowSec)) return { key: 'expired', tone: 'danger' };
+  if (item.expired_time !== -1 && item.expired_time - nowSec <= SOON_SECONDS) return { key: 'expiring', tone: 'warn' };
+  return { key: 'enabled', tone: 'ok' };
 }
 
-// 移动端卡片右上角 … 菜单:把 API Key 全部动作平铺进单个 DropdownMenu(不铺底部操作条)。
-// 带 items 的动作渲染为带标签的分组;destructive 项前置分隔线。
-function TokenCardMenu({ actions, t, onTriggerClick, onTriggerKeyDown }) {
+const TONE_DOT = { ok: 'bg-success', warn: 'bg-amber-500', danger: 'bg-destructive', muted: 'bg-muted-foreground/40' };
+
+export function KeyStatus({ item, rtf, dotOnly = false }) {
+  const { t } = useTranslation();
+  const state = keyState(item);
+  const label =
+    state.key === 'expiring'
+      ? t('apiKey.list.stateExpiring', { when: relativeTime(rtf, item.expired_time) })
+      : t(`apiKey.list.state_${state.key}`);
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[13px]" title={label}>
+      <span className={cn('size-1.5 shrink-0 rounded-full', TONE_DOT[state.tone])} aria-hidden="true" />
+      {dotOnly ? (
+        <span className="sr-only">{label}</span>
+      ) : (
+        <span className={cn(state.tone === 'muted' && 'text-muted-foreground')}>{label}</span>
+      )}
+    </span>
+  );
+}
+
+// Phone list: one 56px row per key. The status dot leads; the first line is the name with the
+// spend (against the limit) on the right; the second line is the key suffix with the state or last
+// use, and the share of the limit used. A tap opens the key; the ⋯ menu at the end holds the same
+// actions as the table row, plus enable / disable.
+function KeyListRow({ item, rtf, selectMode, selected, onToggleSelect, onOpen, active, actions }) {
+  const { t } = useTranslation();
+  const { used, limit } = keyUsage(item);
+  const state = keyState(item);
+  const pct = limit ? Math.min(100, Math.round((used / limit) * 100)) : null;
+  const stateLabel =
+    state.key === 'enabled'
+      ? null
+      : state.key === 'expiring'
+        ? t('apiKey.list.stateExpiring', { when: relativeTime(rtf, item.expired_time) })
+        : t(`apiKey.list.state_${state.key}`);
+  const lastUse = item.accessed_time > 0 ? relativeTime(rtf, item.accessed_time) : t('token_index.neverUsed');
+  return (
+    <li
+      className={cn('flex h-14 items-center gap-3 px-4', ROW_OPENS, (active || selected) && 'bg-muted/60')}
+      {...rowOpenProps(() => (selectMode ? onToggleSelect(item.id) : onOpen(item)))}
+    >
+      {selectMode ? (
+        <RowControl>
+          <Checkbox
+            checked={selected}
+            onCheckedChange={() => onToggleSelect(item.id)}
+            aria-label={t('apiKey.list.selectRow', { name: item.name })}
+          />
+        </RowControl>
+      ) : (
+        <span
+          className={cn('size-2 shrink-0 rounded-full', TONE_DOT[state.tone])}
+          title={stateLabel || t('apiKey.list.state_enabled')}
+          aria-hidden="true"
+        />
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-3">
+          <span className="min-w-0 truncate text-sm font-medium">{item.name}</span>
+          <span className="ml-auto shrink-0 text-sm tabular-nums">
+            <SpendAmount quota={used} />
+            {limit ? <span className="text-muted-foreground"> / {renderQuota(limit)}</span> : null}
+          </span>
+        </div>
+        <div className="mt-0.5 flex items-baseline gap-3 text-xs text-muted-foreground">
+          <span className="min-w-0 truncate">
+            {!isPlaygroundToken(item) && <span className="font-mono">{keySuffix(item.key)}</span>}
+            {!isPlaygroundToken(item) && ' · '}
+            <span
+              className={cn(state.tone === 'danger' && 'text-destructive', state.tone === 'warn' && 'text-amber-600 dark:text-amber-500')}
+            >
+              {stateLabel || lastUse}
+            </span>
+          </span>
+          <span className={cn('ml-auto shrink-0 tabular-nums', pct >= 80 && 'text-destructive')}>
+            {pct == null ? t('token_index.noLimit') : `${pct}%`}
+          </span>
+        </div>
+      </div>
+      {!selectMode && (
+        <RowControl className="-mr-2 shrink-0">
+          <TokenActionMenu t={t} actions={actions} />
+        </RowControl>
+      )}
+    </li>
+  );
+}
+
+// The ⋯ menu of a key (table row and mobile card): every action in one dropdown, with a
+// separator wherever the action group changes; actions with `items` render as a labelled group.
+function TokenActionMenu({ actions, t, onTriggerClick, onTriggerKeyDown }) {
   const items = (actions || []).filter(Boolean);
   const renderItem = (a, i) => {
-    const prevDestructive = i > 0 && items[i - 1].destructive;
-    const separator = a.destructive && i > 0 && !prevDestructive ? <DropdownMenuSeparator /> : null;
+    const separator = i > 0 && a.group !== items[i - 1].group ? <DropdownMenuSeparator /> : null;
     if (a.items) {
       return (
         <div key={a.key || a.label}>
@@ -225,149 +365,80 @@ function TokenCardMenu({ actions, t, onTriggerClick, onTriggerKeyDown }) {
           <MoreHorizontal className="size-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">{items.map(renderItem)}</DropdownMenuContent>
+      <DropdownMenuContent align="end" className="min-w-44">
+        {items.map(renderItem)}
+      </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
-// 移动端(<md)精简卡片:名称+状态开关+…菜单 / 掩码 key+眼睛复制 / 紧凑 meta 行(用量·今日·最近使用),
-// 仅限额(周期或总额)时追加限额 Badge + 细进度条,未限额不渲染任何限额元素。
-// 分组/过期/创建时间/计费标签/creator 不在此呈现(后续 TC3 详情 Sheet 承接)。
-function TokenCard({
-  item,
-  t,
-  rtf,
-  revealed,
-  todayUsage,
-  quotaResetTimezone,
-  quotaResetWeekStart,
-  onToggleReveal,
-  onCopyKey,
-  onToggleStatus,
-  actions
-}) {
-  const shown = revealed.has(item.id);
-  const k = item.key || '';
-  const masked = maskSecret(`sk-${k}`);
-  const info = statusInfo(t, item.status);
-  const isAbnormal = item.status === 3 || item.status === 4;
-  const accessed = item.accessed_time;
-  const isPlayground = isPlaygroundToken(item);
-
-  const qr = item.setting?.quota_reset;
-  let limitEl = null;
-  if (qr?.period && qr.limit > 0) {
-    const used = item.period_used || 0;
-    const next = nextResetTime(qr.period, quotaResetTimezone, quotaResetWeekStart);
-    limitEl = (
-      <div className="flex flex-col gap-1" title={next ? `${t('token_index.quotaResetNext')}: ${timestamp2string(next)}` : undefined}>
-        <div className="flex items-center justify-between gap-1.5">
-          <span className="font-mono text-[13px] tabular-nums">{renderQuota(qr.limit)}</span>
-          <Badge variant="secondary" className="text-[11px]">
-            {t(`token_index.limitPeriod_${qr.period}`)}
-          </Badge>
-        </div>
-        <LimitBar ratio={used / qr.limit} />
-      </div>
-    );
-  } else if (!item.unlimited_quota) {
-    const used = item.used_quota || 0;
-    const total = used + (item.remain_quota || 0);
-    limitEl = (
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between gap-1.5">
-          <span className="font-mono text-[13px] tabular-nums">{renderQuota(total)}</span>
-          <Badge variant="outline" className="text-[11px]">
-            {t('token_index.limitTotal')}
-          </Badge>
-        </div>
-        <LimitBar ratio={total > 0 ? used / total : 0} />
-      </div>
+// Typical rendered widths (px) of each column (measured, plus a little room for longer names),
+// used to decide what fits on one line.
+const COLUMN_WIDTHS = {
+  select: 32,
+  name: 180,
+  creator: 100,
+  group: 110,
+  billing_tag: 100,
+  expired_time: 96,
+  accessed_time: 90,
+  used_quota: 220,
+  created_time: 100,
+  status: 70,
+  actions: 56
+};
+// Loading placeholder shaped like the list it stands for: table rows with the name, usage bar
+// and status columns, or phone rows with a dot and two lines.
+export function TokenListSkeleton({ layout = 'table', rows = 5 }) {
+  const items = Array.from({ length: rows }, (_, i) => i);
+  if (layout === 'list') {
+    return (
+      <ul className="divide-y divide-border" aria-busy="true">
+        {items.map((i) => (
+          <li key={i} className="flex h-14 items-center gap-3 px-4">
+            <Skeleton className="size-2 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <div className="flex justify-between gap-6">
+                <Skeleton className="h-3.5 w-28" />
+                <Skeleton className="h-3.5 w-12" />
+              </div>
+              <div className="flex justify-between gap-6">
+                <Skeleton className="h-3 w-36" />
+                <Skeleton className="h-3 w-8" />
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
     );
   }
-
-  // 卡片主体点击打开详情 Sheet;卡片上的开关/眼睛/复制/… 菜单等交互元素需拦住冒泡(含键盘
-  // Space/Enter),避免误触发 DataCards 的 onRowClick。
-  const stop = (e) => e.stopPropagation();
-
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-start justify-between gap-2">
-        <span className="min-w-0 flex-1 truncate font-medium">{item.name}</span>
-        <div className="flex shrink-0 items-center gap-1.5">
-          {isAbnormal && (
-            <Badge variant="destructive" className="text-[11px]">
-              {info.label}
-            </Badge>
-          )}
-          {/* Switch/菜单为原生 button:onClick 覆盖内部 toggle,故在此直接 stop+切换;onKeyDown 拦
-              键盘冒泡,均为防止误触发整卡片的 onRowClick。 */}
-          <Switch
-            checked={item.status === 1}
-            onClick={(e) => {
-              stop(e);
-              onToggleStatus(item);
-            }}
-            onKeyDown={stop}
-            title={info.label}
-            aria-label={info.label}
-          />
-          <TokenCardMenu actions={actions} t={t} onTriggerClick={stop} onTriggerKeyDown={stop} />
-        </div>
+    <div aria-busy="true">
+      <div className="flex h-10 items-center gap-6 border-b border-border px-4">
+        <Skeleton className="size-4 rounded-sm" />
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="ml-auto h-3 w-12" />
       </div>
-      {isPlayground ? (
-        <Badge variant="secondary" className="w-fit text-[11px]">
-          {t('token_index.playgroundManaged')}
-        </Badge>
-      ) : (
-        <div className="flex items-center gap-1">
-          <code className="min-w-0 flex-1 truncate font-mono text-[13px] text-muted-foreground">{shown ? `sk-${item.key}` : masked}</code>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-6"
-            onClick={(e) => {
-              stop(e);
-              onToggleReveal(item.id);
-            }}
-            onKeyDown={stop}
-            aria-label="reveal"
-          >
-            {shown ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-6"
-            onClick={(e) => {
-              stop(e);
-              onCopyKey(item);
-            }}
-            onKeyDown={stop}
-            aria-label="copy"
-          >
-            <Copy className="size-3.5" />
-          </Button>
+      {items.map((i) => (
+        <div key={i} className="flex h-[53px] items-center gap-6 border-b border-border px-4 last:border-0">
+          <Skeleton className="size-4 rounded-sm" />
+          <Skeleton className="h-3.5 w-40" />
+          <Skeleton className="h-3.5 w-16" />
+          <div className="w-48 space-y-1.5">
+            <Skeleton className="h-3.5 w-24" />
+            <Skeleton className="h-1 w-full" />
+          </div>
+          <Skeleton className="ml-auto h-[18px] w-8 rounded-full" />
         </div>
-      )}
-      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
-        <SpendAmount quota={item.used_quota} />
-        {todayUsage && (
-          <>
-            <span>·</span>
-            <span className="inline-flex items-center gap-1">
-              {t('token_index.usageToday')} <SpendAmount quota={todayUsage[item.name] || 0} />
-            </span>
-          </>
-        )}
-        <span>·</span>
-        <span title={accessed > 0 ? timestamp2string(accessed) : t('token_index.neverUsed')}>
-          {accessed > 0 ? relativeTime(rtf, accessed) : '—'}
-        </span>
-      </div>
-      {limitEl}
+      ))}
     </div>
   );
+}
+
+// Estimated natural width of the table with these columns, used before the table has been
+// measured (for example while the phone list is showing).
+export function estimateTableWidth(columnIds, visibility) {
+  return columnIds.filter((id) => visibility[id] !== false).reduce((sum, id) => sum + (COLUMN_WIDTHS[id] || 120), 0);
 }
 
 export default function TokenTable({
@@ -376,8 +447,6 @@ export default function TokenTable({
   orgMemberNames = null,
   userGroup,
   userIsReliable,
-  revealed,
-  onToggleReveal,
   onCopyKey,
   onEdit,
   onDelete,
@@ -386,6 +455,12 @@ export default function TokenTable({
   onConnectOpenClaw,
   onOpen,
   openId,
+  selectedIds = null,
+  onToggleSelect,
+  onToggleSelectAll,
+  layout = 'table',
+  onNaturalWidth,
+  selectMode = false,
   order,
   orderBy,
   onSort,
@@ -396,42 +471,75 @@ export default function TokenTable({
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const rtfLocale = (i18n.language || 'zh_CN').replace('_', '-');
-  const cardRtf = useMemo(() => new Intl.RelativeTimeFormat(rtfLocale, { numeric: 'auto' }), [rtfLocale]);
+  // Medium and narrow layouts use the short relative time ("3h ago").
+  const listRtf = useMemo(() => new Intl.RelativeTimeFormat(rtfLocale, { numeric: 'auto', style: 'narrow' }), [rtfLocale]);
 
   const columns = useMemo(() => {
     const rtf = new Intl.RelativeTimeFormat(rtfLocale, { numeric: 'auto' });
+    const allSelected = !!selectedIds && tokens.length > 0 && tokens.every((x) => selectedIds.has(x.id));
+    const someSelected = !!selectedIds && tokens.some((x) => selectedIds.has(x.id));
     const cols = [
-      // API Key:合并原「名称」+「密钥」。第一行名称,第二行 mono 掩码 key;hover 显示眼睛/复制
-      // (opacity 切换,不额外占列;移动端 max-md 常显以便触屏操作)。排序仍按 name。
+      // Row selection for the bulk actions; the header box selects the whole page.
+      ...(selectedIds
+        ? [
+            {
+              id: 'select',
+              header: () => (
+                <Checkbox
+                  checked={allSelected}
+                  indeterminate={!allSelected && someSelected}
+                  onCheckedChange={() => onToggleSelectAll(!allSelected)}
+                  aria-label={t('apiKey.list.selectAll')}
+                />
+              ),
+              meta: { className: 'w-[1%] pr-0' },
+              // A block-level flex wrapper: an inline one sits on the text baseline, a few px above
+              // the vertical center of the row.
+              cell: (c) => (
+                <RowControl className="flex">
+                  <Checkbox
+                    checked={selectedIds.has(c.row.original.id)}
+                    onCheckedChange={() => onToggleSelect(c.row.original.id)}
+                    aria-label={t('apiKey.list.selectRow', { name: c.row.original.name })}
+                  />
+                </RowControl>
+              )
+            }
+          ]
+        : []),
+      // API Key: one line, the name followed by the key's last characters ("sk-…Rc6g") so a key can
+      // be told apart without a second row; copy appears on hover (always on touch screens). The
+      // full key is shown in the key's panel. Sorting is by name.
       {
         accessorKey: 'name',
         header: t('token_index.token'),
         meta: { sortable: true },
         cell: (c) => {
           const item = c.row.original;
-          const shown = revealed.has(item.id);
-          const k = item.key || '';
-          const masked = maskSecret(`sk-${k}`);
-          // 试用区专用 Key:不显示掩码与眼睛/复制,仅标注由系统托管。
+          // Keys the playground manages show a badge instead of the suffix and copy button.
           return (
-            <div className="group/token flex flex-col gap-0.5">
-              <span className="font-medium text-[15px]">{item.name}</span>
+            <div className="group/token flex min-w-0 items-center gap-2 whitespace-nowrap">
+              <span className="truncate font-medium">{item.name}</span>
               {isPlaygroundToken(item) ? (
-                <Badge variant="secondary" className="w-fit text-[11px]">
+                <Badge variant="secondary" className="shrink-0 text-[11px]">
                   {t('token_index.playgroundManaged')}
                 </Badge>
               ) : (
-                <div className="flex items-center gap-1">
-                  <code className="font-mono text-[13px] text-muted-foreground">{shown ? `sk-${item.key}` : masked}</code>
-                  <RowControl className="opacity-0 transition-opacity focus-within:opacity-100 group-hover/token:opacity-100 max-md:opacity-100">
-                    <Button variant="ghost" size="icon" className="size-6" onClick={() => onToggleReveal(item.id)} aria-label="reveal">
-                      {shown ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-                    </Button>
-                    <Button variant="ghost" size="icon" className="size-6" onClick={() => onCopyKey(item)} aria-label="copy">
+                <>
+                  <code className="shrink-0 font-mono text-xs text-muted-foreground">{keySuffix(item.key)}</code>
+                  <RowControl className="-ml-1 shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover/token:opacity-100 max-md:opacity-100">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-6"
+                      onClick={() => onCopyKey(item)}
+                      aria-label={t('token_index.copy')}
+                      title={t('token_index.copy')}
+                    >
                       <Copy className="size-3.5" />
                     </Button>
                   </RowControl>
-                </div>
+                </>
               )}
             </div>
           );
@@ -487,12 +595,7 @@ export default function TokenTable({
         header: t('token_index.lastUsed'),
         cell: (c) => {
           const v = c.getValue();
-          if (!v || v <= 0)
-            return (
-              <span className="text-[13px] text-muted-foreground" title={t('token_index.neverUsed')}>
-                —
-              </span>
-            );
+          if (!v || v <= 0) return <span className="text-[13px] text-amber-600 dark:text-amber-500">{t('token_index.neverUsed')}</span>;
           return (
             <span className="text-[13px]" title={timestamp2string(v)}>
               {relativeTime(rtf, v)}
@@ -500,82 +603,30 @@ export default function TokenTable({
           );
         }
       },
-      // 用量:合并原「已用额度」+「今日消费」。第一行累计消费,第二行小字今日(todayUsage 为 null 时不显示)。
+      // Usage: spend against the limit with a progress bar (sorted by total spend).
       {
         accessorKey: 'used_quota',
         header: t('token_index.usageColumn'),
         meta: { sortable: true },
-        cell: (c) => {
-          const item = c.row.original;
-          return (
-            <div className="flex flex-col gap-0.5">
-              <SpendAmount quota={c.getValue()} className="font-mono text-[15px] tabular-nums" />
-              {todayUsage && (
-                <span className="text-[13px] text-muted-foreground">
-                  {t('token_index.usageToday')} <SpendAmount quota={todayUsage[item.name] || 0} />
-                </span>
-              )}
-            </div>
-          );
-        }
-      },
-      // 限额:合并原「剩余额度」+「周期额度重置」,OpenRouter Limit 列风格。三形态,按判断顺序:
-      //   周期(有 quota_reset,unlimited_quota 通常为 true):$limit + 周期 Badge + 进度条(period_used/limit),title 提示下次重置。
-      //   无限制(无 reset 且 unlimited_quota):muted 文本,无进度条。
-      //   总额(非无限):$total + 「总额」Badge + 进度条(used/(used+remain))。排序仍按 remain_quota。
-      {
-        accessorKey: 'remain_quota',
-        header: t('token_index.limitColumn'),
-        meta: { sortable: true },
-        cell: (c) => {
-          const item = c.row.original;
-          const qr = item.setting?.quota_reset;
-          if (qr?.period && qr.limit > 0) {
-            const used = item.period_used || 0;
-            const next = nextResetTime(qr.period, quotaResetTimezone, quotaResetWeekStart);
-            return (
-              <div
-                className="flex min-w-[7rem] flex-col gap-1"
-                title={next ? `${t('token_index.quotaResetNext')}: ${timestamp2string(next)}` : undefined}
-              >
-                <div className="flex items-center justify-between gap-1.5">
-                  <span className="font-mono text-[15px] tabular-nums">{renderQuota(qr.limit)}</span>
-                  <Badge variant="secondary" className="text-[11px]">
-                    {t(`token_index.limitPeriod_${qr.period}`)}
-                  </Badge>
-                </div>
-                <LimitBar ratio={used / qr.limit} />
-              </div>
-            );
-          }
-          if (item.unlimited_quota)
-            return (
-              <div className="flex min-w-[7rem] flex-col gap-1">
-                <span className="text-muted-foreground">{t('token_index.noLimit')}</span>
-                <LimitBar ratio={0} />
-              </div>
-            );
-          const used = item.used_quota || 0;
-          const total = used + (item.remain_quota || 0);
-          return (
-            <div className="flex min-w-[7rem] flex-col gap-1">
-              <div className="flex items-center justify-between gap-1.5">
-                <span className="font-mono text-[15px] tabular-nums">{renderQuota(total)}</span>
-                <Badge variant="outline" className="text-[11px]">
-                  {t('token_index.limitTotal')}
-                </Badge>
-              </div>
-              <LimitBar ratio={total > 0 ? used / total : 0} />
-            </div>
-          );
-        }
+        cell: (c) => (
+          <UsageCell
+            item={c.row.original}
+            todayUsage={todayUsage}
+            resetTimezone={quotaResetTimezone}
+            resetWeekStart={quotaResetWeekStart}
+          />
+        )
       },
       // 创建时间:默认隐藏(通过 columnVisibility),可在列设置中开启。
       {
         accessorKey: 'created_time',
         header: t('token_index.createdTime'),
         meta: { sortable: true },
-        cell: (c) => timestamp2string(c.getValue())
+        cell: (c) => (
+          <span className="text-[13px]" title={timestamp2string(c.getValue())}>
+            {timestamp2string(c.getValue()).slice(0, 10)}
+          </span>
+        )
       },
       // 状态:紧邻操作列左侧。启停开关 + 过期/耗尽异常态 Badge。
       {
@@ -587,8 +638,14 @@ export default function TokenTable({
           const info = statusInfo(t, item.status);
           const isAbnormal = item.status === 3 || item.status === 4;
           return (
-            <RowControl className="gap-2">
-              <Switch checked={item.status === 1} onCheckedChange={() => onToggleStatus(item)} title={info.label} aria-label={info.label} />
+            <RowControl className="flex gap-2">
+              <Switch
+                size="sm"
+                checked={item.status === 1}
+                onCheckedChange={() => onToggleStatus(item)}
+                title={info.label}
+                aria-label={info.label}
+              />
               {isAbnormal && (
                 <Badge variant="destructive" className="text-[11px]">
                   {info.label}
@@ -600,17 +657,22 @@ export default function TokenTable({
       },
       {
         id: 'actions',
-        header: t('token_index.actions'),
+        header: () => <span className="sr-only">{t('token_index.actions')}</span>,
         meta: { className: 'sticky right-0 bg-card z-10 text-right w-[1%]' },
         cell: (c) => (
-          <RowControl>
-            <TokenRowActions
-              item={c.row.original}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onCopyKey={onCopyKey}
-              onShowUsage={onShowUsage}
-              onConnectOpenClaw={onConnectOpenClaw}
+          <RowControl className="justify-end">
+            <TokenActionMenu
+              t={t}
+              actions={buildTokenActions({
+                item: c.row.original,
+                t,
+                navigate,
+                onEdit,
+                onDelete,
+                onCopyKey,
+                onShowUsage,
+                onConnectOpenClaw
+              })}
             />
           </RowControl>
         )
@@ -621,20 +683,36 @@ export default function TokenTable({
     t,
     userGroup,
     userIsReliable,
-    revealed,
-    onToggleReveal,
     onCopyKey,
     onEdit,
     onDelete,
     onToggleStatus,
     onShowUsage,
     onConnectOpenClaw,
+    navigate,
+    tokens,
+    selectedIds,
+    onToggleSelect,
+    onToggleSelectAll,
     orgMemberNames,
     todayUsage,
     rtfLocale,
     quotaResetTimezone,
     quotaResetWeekStart
   ]);
+
+  // The table never drops columns. It reports its natural (max-content) width so the page can
+  // collapse the sidebar, or switch to the phone list, when that width does not fit.
+  const tableRef = useRef(null);
+  useLayoutEffect(() => {
+    const el = tableRef.current;
+    if (!el || !onNaturalWidth) return;
+    const prev = el.style.width;
+    el.style.width = 'max-content';
+    const natural = Math.ceil(el.getBoundingClientRect().width);
+    el.style.width = prev;
+    onNaturalWidth(natural);
+  });
 
   const table = useTable({
     features: appTableFeatures,
@@ -643,84 +721,75 @@ export default function TokenTable({
     state: { columnVisibility }
   });
 
+  // Sort arrows: the active column shows its direction; others reveal a faint arrow only on hover,
+  // so sortable headers do not look like dropdowns.
   const SortIcon = ({ id }) => {
-    if (orderBy !== id) return <ChevronsUpDown className="size-3.5 opacity-50" />;
-    return order === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />;
+    if (orderBy !== id) return <ArrowUpDown className="size-3 opacity-0 transition-opacity group-hover/sort:opacity-50" />;
+    return order === 'asc' ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />;
   };
 
-  return (
-    <>
-      <div className="hidden md:block">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id} className="hover:bg-transparent">
-                {hg.headers.map((header) => (
-                  <TableHead key={header.id} className={`whitespace-nowrap ${header.column.columnDef.meta?.className ?? ''}`}>
-                    {header.column.columnDef.meta?.sortable && onSort ? (
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 hover:text-foreground"
-                        onClick={() => onSort(header.column.id)}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        <SortIcon id={header.column.id} />
-                      </button>
-                    ) : (
-                      flexRender(header.column.columnDef.header, header.getContext())
-                    )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                className={ROW_OPENS}
-                data-state={row.original.id === openId ? 'selected' : undefined}
-                {...rowOpenProps(() => onOpen(row.original))}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
-                    {flexRender(cell.column.columnDef.cell ?? cell.getValue, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <DataCards
-        table={table}
-        className="md:hidden"
-        onRowClick={onOpen}
-        renderCard={(item) => (
-          <TokenCard
+  if (layout === 'list') {
+    return (
+      <ul className="divide-y divide-border">
+        {tokens.map((item) => (
+          <KeyListRow
+            key={item.id}
             item={item}
-            t={t}
-            rtf={cardRtf}
-            revealed={revealed}
-            todayUsage={todayUsage}
-            quotaResetTimezone={quotaResetTimezone}
-            quotaResetWeekStart={quotaResetWeekStart}
-            onToggleReveal={onToggleReveal}
-            onCopyKey={onCopyKey}
-            onToggleStatus={onToggleStatus}
-            actions={buildTokenActions({
-              item,
-              t,
-              navigate,
-              onEdit,
-              onDelete,
-              onCopyKey,
-              onShowUsage,
-              onConnectOpenClaw
-            })}
+            rtf={listRtf}
+            selectMode={selectMode}
+            selected={!!selectedIds?.has(item.id)}
+            onToggleSelect={onToggleSelect}
+            onOpen={onOpen}
+            active={item.id === openId}
+            actions={buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw, onToggleStatus })}
           />
-        )}
-      />
-    </>
+        ))}
+      </ul>
+    );
+  }
+
+  return (
+    <div>
+      <Table ref={tableRef}>
+        <TableHeader>
+          {table.getHeaderGroups().map((hg) => (
+            <TableRow key={hg.id} className="hover:bg-transparent">
+              {hg.headers.map((header) => (
+                <TableHead key={header.id} className={`whitespace-nowrap ${header.column.columnDef.meta?.className ?? ''}`}>
+                  {header.column.columnDef.meta?.sortable && onSort ? (
+                    <button
+                      type="button"
+                      className="group/sort inline-flex items-center gap-1 hover:text-foreground"
+                      onClick={() => onSort(header.column.id)}
+                    >
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      <SortIcon id={header.column.id} />
+                    </button>
+                  ) : (
+                    flexRender(header.column.columnDef.header, header.getContext())
+                  )}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows.map((row) => (
+            <TableRow
+              key={row.id}
+              className={ROW_OPENS}
+              data-state={row.original.id === openId || selectedIds?.has(row.original.id) ? 'selected' : undefined}
+              {...rowOpenProps(() => onOpen(row.original))}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id} className={cn('whitespace-nowrap', cell.column.columnDef.meta?.className)}>
+                  {flexRender(cell.column.columnDef.cell ?? cell.getValue, cell.getContext())}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

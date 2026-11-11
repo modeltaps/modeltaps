@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import { Check, ChevronDown, SlidersHorizontal } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { FloatingPanel } from '@/components/ui/floating';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import DateRangeCalendar from '@/components/ui/date-range-calendar';
@@ -126,6 +127,8 @@ export default function TimeRangeSelect({ value, preset, minTimestamp = 0, onApp
   const [startTime, setStartTime] = useState(DEFAULT_START_TIME);
   const [endTime, setEndTime] = useState(DEFAULT_END_TIME);
   const rootRef = useRef(null);
+  const triggerRef = useRef(null);
+  const panelRef = useRef(null);
 
   const close = () => {
     setOpen(false);
@@ -135,7 +138,8 @@ export default function TimeRangeSelect({ value, preset, minTimestamp = 0, onApp
   useEffect(() => {
     if (!open) return undefined;
     const onDown = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) close();
+      if (rootRef.current?.contains(e.target) || panelRef.current?.contains(e.target)) return;
+      close();
     };
     const onKey = (e) => {
       if (e.key === 'Escape') close();
@@ -207,80 +211,83 @@ export default function TimeRangeSelect({ value, preset, minTimestamp = 0, onApp
   return (
     <div ref={rootRef} className="relative inline-flex">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => (open ? close() : setOpen(true))}
         aria-label={t('logPage.timeRange')}
         aria-expanded={open}
-        className="inline-flex h-9 max-w-[300px] items-center gap-2 rounded-md border border-input bg-background px-2.5 text-sm text-foreground transition-colors hover:bg-muted"
+        className="inline-flex h-9 max-w-[300px] items-center gap-2 rounded-md border border-input bg-field px-2.5 text-sm text-foreground transition-colors hover:bg-muted"
       >
         <span className={cn(badgeCls, 'min-w-[30px]')}>{isPreset ? badge : <SlidersHorizontal className="size-3" />}</span>
         <span className="truncate">{triggerText}</span>
         <ChevronDown className="size-4 shrink-0 opacity-60" />
       </button>
-      {open && (
-        <div
-          className={cn(
-            'absolute right-0 top-full z-50 mt-1 max-w-[calc(100vw-1rem)] rounded-md border border-border bg-card text-card-foreground shadow-md',
-            mode === 'custom' ? 'w-[440px]' : 'w-72'
-          )}
-        >
-          {mode === 'menu' ? (
-            <div className="max-h-[70vh] overflow-y-auto p-1">
-              <div className="flex flex-col">{RELATIVE_PRESETS.map(renderRow)}</div>
-              <div className="my-1 h-px bg-border" />
-              <div className="grid grid-cols-2 gap-0.5">{CALENDAR_PRESETS.map(renderRow)}</div>
-              <div className="my-1 h-px bg-border" />
-              <button type="button" onClick={openCustom} className={rowCls}>
-                <span className={cn(badgeCls, 'py-1')}>
-                  <SlidersHorizontal className="size-3" />
-                </span>
-                <span className="flex-1 truncate">{t('logPage.timeRangeMenu.custom')}</span>
-                {preset === 'custom' && <Check className="size-4 shrink-0 text-foreground" />}
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3 p-3">
-              <DateRangeCalendar
-                draft={draft}
-                onDraftChange={setDraft}
-                initialMonth={initialMonth}
-                locale={locale}
-                minIso={minIso}
-                prevLabel={t('logPage.timeRangeMenu.prevMonth')}
-                nextLabel={t('logPage.timeRangeMenu.nextMonth')}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="log-tr-start" className="text-xs text-muted-foreground">
-                    {t('tableToolBar.startTime')}
-                  </label>
-                  <Input id="log-tr-start" type="time" className="h-8" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="log-tr-end" className="text-xs text-muted-foreground">
-                    {t('tableToolBar.endTime')}
-                  </label>
-                  <Input id="log-tr-end" type="time" className="h-8" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-                </div>
+      <FloatingPanel
+        ref={panelRef}
+        open={open}
+        anchorRef={triggerRef}
+        align="end"
+        className={cn(
+          'max-w-[calc(100vw-1rem)] rounded-md border border-border bg-card text-card-foreground shadow-md',
+          mode === 'custom' ? 'w-[440px]' : 'w-72'
+        )}
+      >
+        {mode === 'menu' ? (
+          <div className="max-h-[70vh] overflow-y-auto p-1">
+            <div className="flex flex-col">{RELATIVE_PRESETS.map(renderRow)}</div>
+            <div className="my-1 h-px bg-border" />
+            <div className="grid grid-cols-2 gap-0.5">{CALENDAR_PRESETS.map(renderRow)}</div>
+            <div className="my-1 h-px bg-border" />
+            <button type="button" onClick={openCustom} className={rowCls}>
+              <span className={cn(badgeCls, 'py-1')}>
+                <SlidersHorizontal className="size-3" />
+              </span>
+              <span className="flex-1 truncate">{t('logPage.timeRangeMenu.custom')}</span>
+              {preset === 'custom' && <Check className="size-4 shrink-0 text-foreground" />}
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 p-3">
+            <DateRangeCalendar
+              draft={draft}
+              onDraftChange={setDraft}
+              initialMonth={initialMonth}
+              locale={locale}
+              minIso={minIso}
+              prevLabel={t('logPage.timeRangeMenu.prevMonth')}
+              nextLabel={t('logPage.timeRangeMenu.nextMonth')}
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1">
+                <label htmlFor="log-tr-start" className="text-xs text-muted-foreground">
+                  {t('tableToolBar.startTime')}
+                </label>
+                <Input id="log-tr-start" type="time" className="h-8" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
               </div>
-              {invalidRange && <p className="text-xs text-destructive">{t('logPage.timeRangeMenu.invalidRange')}</p>}
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-xs tabular-nums text-muted-foreground">
-                  {draft.start ? `${draft.start} – ${draft.end ?? '…'}` : t('logPage.timeRangeMenu.pickDates')}
-                </span>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => setMode('menu')}>
-                    {t('logPage.timeRangeMenu.cancel')}
-                  </Button>
-                  <Button size="sm" onClick={applyCustom} disabled={!draft.start || invalidRange}>
-                    {t('logPage.timeRangeMenu.apply')}
-                  </Button>
-                </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="log-tr-end" className="text-xs text-muted-foreground">
+                  {t('tableToolBar.endTime')}
+                </label>
+                <Input id="log-tr-end" type="time" className="h-8" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
               </div>
             </div>
-          )}
-        </div>
-      )}
+            {invalidRange && <p className="text-xs text-destructive">{t('logPage.timeRangeMenu.invalidRange')}</p>}
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate text-xs tabular-nums text-muted-foreground">
+                {draft.start ? `${draft.start} – ${draft.end ?? '…'}` : t('logPage.timeRangeMenu.pickDates')}
+              </span>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setMode('menu')}>
+                  {t('logPage.timeRangeMenu.cancel')}
+                </Button>
+                <Button size="sm" onClick={applyCustom} disabled={!draft.start || invalidRange}>
+                  {t('logPage.timeRangeMenu.apply')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </FloatingPanel>
     </div>
   );
 }

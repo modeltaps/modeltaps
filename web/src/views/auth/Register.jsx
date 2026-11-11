@@ -178,7 +178,7 @@ export default function Register() {
           <>
             <FormField label={t('login.email')} htmlFor="email" error={errors.email?.message}>
               {/* v1-style end adornment: full-width field with the send-code button embedded, so the input keeps room at 375px */}
-              <div className="flex h-9 w-full items-center rounded-lg border border-input bg-background pl-3 pr-1 focus-within:border-primary">
+              <div className="flex h-9 w-full items-center rounded-lg border border-input bg-field pl-3 pr-1 focus-within:border-primary">
                 <input
                   id="email"
                   type="text"

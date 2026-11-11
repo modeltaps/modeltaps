@@ -17,6 +17,7 @@ import PageActions from '@/components/chrome/PageActions';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import InviteCodeTable from './InviteCodeTable';
 import InviteCodeSheet from './InviteCodeSheet';
+import PageSizeSelect from '@/components/ui/page-size-select';
 
 const tk = (k) => `setting_index.inviteCodeSettings.${k}`;
 
@@ -244,22 +245,16 @@ export default function InviteCode() {
           <div className="flex items-center justify-between gap-4 border-t border-border p-4 text-sm">
             <span className="text-muted-foreground">{listCount}</span>
             <div className="flex items-center gap-2">
-              <select
-                className="h-9 rounded-lg border border-input bg-background px-2 text-sm"
+              <PageSizeSelect
                 value={rowsPerPage}
-                onChange={(e) => {
-                  const n = parseInt(e.target.value, 10);
+                options={PAGE_SIZE_OPTIONS}
+                onChange={(n) => {
                   setRowsPerPage(n);
                   setPage(0);
                   savePageSize('inviteCode', n);
                 }}
-              >
-                {PAGE_SIZE_OPTIONS.map((n) => (
-                  <option key={n} value={n}>
-                    {n} / page
-                  </option>
-                ))}
-              </select>
+                format={(n) => t('pagination.perPage', { count: n })}
+              />
               <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
                 ‹
               </Button>

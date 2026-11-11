@@ -191,7 +191,7 @@ export function ChipInput({ id, values, onChange, placeholder, suggestions = [],
       <label
         htmlFor={inputId}
         className={cn(
-          'flex min-h-9 cursor-text flex-wrap items-center gap-1.5 rounded-lg border border-input bg-background px-2 py-1',
+          'flex min-h-9 cursor-text flex-wrap items-center gap-1.5 rounded-lg border border-input bg-field px-2 py-1',
           focused && 'border-foreground/40'
         )}
       >

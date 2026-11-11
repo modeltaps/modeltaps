@@ -16,13 +16,13 @@ import (
 func GetUserTokensList(c *gin.Context) {
 	userId := c.GetInt("id")
 	userRole := c.GetInt("role")
-	var params model.GenericParams
+	var params model.TokenListParams
 	if err := c.ShouldBindQuery(&params); err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
-	tokens, err := model.GetUserTokensList(userId, &params)
+	tokens, statusCounts, err := model.ListUserTokens(userId, &params)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
@@ -48,8 +48,9 @@ func GetUserTokensList(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success":     true,
 		"message":     "",
-		"data":        tokens,
-		"today_usage": todayUsage,
+		"data":          tokens,
+		"today_usage":   todayUsage,
+		"status_counts": statusCounts,
 	})
 }
 

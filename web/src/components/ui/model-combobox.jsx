@@ -1,6 +1,7 @@
 import * as React from 'react';
 import PropTypes from 'prop-types';
 import { cn } from '@/lib/utils';
+import { FloatingPanel } from '@/components/ui/floating';
 
 // Creatable combobox: the text input IS the value (free text allowed). The
 // dropdown offers `options` as filtered suggestions, matched case-insensitively.
@@ -32,12 +33,15 @@ export function ModelCombobox({
   const [open, setOpen] = React.useState(false);
   const [active, setActive] = React.useState(0);
   const rootRef = React.useRef(null);
+  const inputRef = React.useRef(null);
+  const panelRef = React.useRef(null);
   const listboxId = React.useId();
 
   React.useEffect(() => {
     if (!open) return;
     const onDocClick = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+      if (rootRef.current?.contains(e.target) || panelRef.current?.contains(e.target)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
@@ -49,10 +53,7 @@ export function ModelCombobox({
   const hasExact = options.some((o) => o && o.toLowerCase() === ql);
   const showCreate = allowCreate && q !== '' && !hasExact;
 
-  const rows = [
-    ...(showCreate ? [{ type: 'create', value: q }] : []),
-    ...filtered.map((o) => ({ type: 'option', value: o }))
-  ];
+  const rows = [...(showCreate ? [{ type: 'create', value: q }] : []), ...filtered.map((o) => ({ type: 'option', value: o }))];
 
   React.useEffect(() => {
     setActive(0);
@@ -88,6 +89,7 @@ export function ModelCombobox({
   return (
     <div ref={rootRef} className={cn('relative', className)}>
       <input
+        ref={inputRef}
         id={id}
         type="text"
         role="combobox"
@@ -104,37 +106,40 @@ export function ModelCombobox({
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
         className={cn(
-          'flex h-9 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+          'flex h-9 w-full rounded-lg border border-input bg-field px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
           inputClassName
         )}
       />
-      {open && rows.length > 0 && (
-        <div
-          id={listboxId}
-          role="listbox"
-          className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-border bg-card p-1 text-card-foreground shadow-md"
-        >
-          {rows.map((row, i) => (
-            <button
-              key={row.type + ':' + row.value}
-              type="button"
-              // onMouseDown (not onClick) so the commit fires before the input's
-              // blur closes the dropdown.
-              onMouseDown={(e) => {
-                e.preventDefault();
-                commit(row.value);
-              }}
-              onMouseEnter={() => setActive(i)}
-              className={cn(
-                'flex w-full cursor-pointer select-none items-center rounded-md px-2 py-1.5 text-left text-sm outline-none',
-                i === active && 'bg-muted'
-              )}
-            >
-              {row.type === 'create' ? (createLabel ? createLabel(row.value) : `"${row.value}"`) : row.value}
-            </button>
-          ))}
-        </div>
-      )}
+      <FloatingPanel
+        ref={panelRef}
+        open={open && rows.length > 0}
+        anchorRef={inputRef}
+        matchWidth
+        maxHeight={240}
+        id={listboxId}
+        role="listbox"
+        className="rounded-lg border border-border bg-card p-1 text-card-foreground shadow-md"
+      >
+        {rows.map((row, i) => (
+          <button
+            key={row.type + ':' + row.value}
+            type="button"
+            // onMouseDown (not onClick) so the commit fires before the input's
+            // blur closes the dropdown.
+            onMouseDown={(e) => {
+              e.preventDefault();
+              commit(row.value);
+            }}
+            onMouseEnter={() => setActive(i)}
+            className={cn(
+              'flex w-full cursor-pointer select-none items-center rounded-md px-2 py-1.5 text-left text-sm outline-none',
+              i === active && 'bg-muted'
+            )}
+          >
+            {row.type === 'create' ? (createLabel ? createLabel(row.value) : `"${row.value}"`) : row.value}
+          </button>
+        ))}
+      </FloatingPanel>
     </div>
   );
 }

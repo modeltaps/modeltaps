@@ -37,19 +37,19 @@ const optionLabels = () => screen.queryAllByRole('option').map((o) => o.textCont
 
 describe('Combobox', () => {
   it('renders groups in order with a separator between them', () => {
-    const { container } = render(<Combobox value="1" groups={groups} />);
+    render(<Combobox value="1" groups={groups} />);
     fireEvent.click(screen.getByRole('combobox'));
     expect(optionLabels()).toEqual(['OpenAI', 'Azure OpenAI', 'Azure Speech', 'Deepseek']);
-    expect(container.querySelectorAll('[cmdk-group]')).toHaveLength(2);
-    expect(container.querySelectorAll('[cmdk-separator]')).toHaveLength(1);
+    expect(document.querySelectorAll('[cmdk-group]')).toHaveLength(2);
+    expect(document.querySelectorAll('[cmdk-separator]')).toHaveLength(1);
   });
 
   it('searches across every group', () => {
-    const { container } = render(<Combobox value="1" groups={groups} />);
+    render(<Combobox value="1" groups={groups} />);
     fireEvent.click(screen.getByRole('combobox'));
-    fireEvent.change(container.querySelector('[cmdk-input]'), { target: { value: 'azure' } });
+    fireEvent.change(document.querySelector('[cmdk-input]'), { target: { value: 'azure' } });
     expect(optionLabels()).toEqual(['Azure OpenAI', 'Azure Speech']);
-    fireEvent.change(container.querySelector('[cmdk-input]'), { target: { value: 'deep' } });
+    fireEvent.change(document.querySelector('[cmdk-input]'), { target: { value: 'deep' } });
     expect(optionLabels()).toEqual(['Deepseek']);
   });
 
@@ -65,7 +65,7 @@ describe('Combobox', () => {
   });
 
   it('keeps the flat options list working', () => {
-    const { container } = render(
+    render(
       <Combobox
         value="b"
         options={[
@@ -77,6 +77,6 @@ describe('Combobox', () => {
     expect(screen.getByRole('combobox').textContent).toBe('Beta');
     fireEvent.click(screen.getByRole('combobox'));
     expect(optionLabels()).toEqual(['Alpha', 'Beta']);
-    expect(container.querySelector('[cmdk-separator]')).toBeNull();
+    expect(document.querySelector('[cmdk-separator]')).toBeNull();
   });
 });

@@ -261,7 +261,7 @@ export default function Login() {
         hint={codeSentTo ? t('login.codeSent', { email: codeSentTo }) : undefined}
       >
         {/* 发码按钮嵌在验证码框内,与注册页同形,375px 下输入框仍有空间 */}
-        <div className="flex h-9 w-full items-center rounded-lg border border-input bg-background pl-3 pr-1 focus-within:border-primary">
+        <div className="flex h-9 w-full items-center rounded-lg border border-input bg-field pl-3 pr-1 focus-within:border-primary">
           <input
             id="code"
             type="text"

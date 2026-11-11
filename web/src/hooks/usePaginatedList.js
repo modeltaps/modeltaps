@@ -27,6 +27,9 @@ export default function usePaginatedList({
   const [orderBy, setOrderBy] = useState(defaultOrderBy);
   const [listCount, setListCount] = useState(0);
   const [searching, setSearching] = useState(false);
+  // False until the first request has finished (success or not): lists show a skeleton until then
+  // instead of flashing their empty state.
+  const [loaded, setLoaded] = useState(false);
   const [rows, setRows] = useState([]);
   const [refreshFlag, setRefreshFlag] = useState(false);
 
@@ -55,7 +58,10 @@ export default function usePaginatedList({
           }
         },
         onError: (error) => console.error(error),
-        onFinally: () => setSearching(false)
+        onFinally: () => {
+          setSearching(false);
+          setLoaded(true);
+        }
       }),
     [page, rowsPerPage, order, orderBy]
   );
@@ -76,6 +82,14 @@ export default function usePaginatedList({
     }
     if (resetPageOnRefresh) setPage(0);
     refresh();
+  };
+
+  // Sort by `id` in a given direction (for sort menus, where a header toggle does not apply).
+  const setSort = (id, direction) => {
+    if (!id) return;
+    setOrder(direction === 'asc' ? 'asc' : 'desc');
+    setOrderBy(id);
+    if (resetPageOnSort) setPage(0);
   };
 
   const handleSort = (id) => {
@@ -100,11 +114,13 @@ export default function usePaginatedList({
     orderBy,
     listCount,
     searching,
+    loaded,
     rows,
     setRows,
     refresh,
     handleRefresh,
     handleSort,
+    setSort,
     onRowsPerPageChange
   };
 }

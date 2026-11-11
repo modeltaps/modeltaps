@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { ChevronRight, Search } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -32,13 +32,7 @@ export default function FilterMenu({ fields, state, specials = [], activeKey, on
       <div className="p-2">
         <div className="relative">
           <Search className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            autoFocus
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t('filterBar.jumpTo')}
-            className="h-8 pl-8"
-          />
+          <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('filterBar.jumpTo')} className="h-8 pl-8" />
         </div>
       </div>
       <div className="max-h-72 overflow-y-auto px-1 pb-1">
@@ -46,33 +40,40 @@ export default function FilterMenu({ fields, state, specials = [], activeKey, on
           <div className="py-6 text-center text-sm text-muted-foreground">{t('filterBar.empty')}</div>
         ) : (
           <>
-            {visibleFields.map((f) => {
+            {visibleFields.map((f, i) => {
               const active = isEntryActive(f, state[f.key]);
               const count = active ? (f.type === 'number' || f.type === 'text' ? 1 : state[f.key].values.length) : 0;
+              // Optional section headings: a field whose sectionKey differs from the previous one starts a section.
+              const heading =
+                f.sectionKey && f.sectionKey !== visibleFields[i - 1]?.sectionKey ? (
+                  <div className="px-2 pb-1 pt-2 text-[11px] font-medium text-muted-foreground first:pt-0.5">{t(f.sectionKey)}</div>
+                ) : null;
               return (
-                <button
-                  key={f.key}
-                  type="button"
-                  onClick={() => onPick(f)}
-                  onMouseEnter={() => onHover?.(f)}
-                  onMouseLeave={() => onHoverEnd?.()}
-                  aria-haspopup="true"
-                  aria-expanded={activeKey === f.key}
-                  className={cn(
-                    'flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-muted',
-                    activeKey === f.key && 'bg-muted'
-                  )}
-                >
-                  <span className="truncate">{t(f.labelKey)}</span>
-                  <span className="flex items-center gap-1">
-                    {count > 0 && (
-                      <Badge variant="secondary" className="px-1.5">
-                        {count}
-                      </Badge>
+                <Fragment key={f.key}>
+                  {heading}
+                  <button
+                    type="button"
+                    onClick={() => onPick(f)}
+                    onMouseEnter={() => onHover?.(f)}
+                    onMouseLeave={() => onHoverEnd?.()}
+                    aria-haspopup="true"
+                    aria-expanded={activeKey === f.key}
+                    className={cn(
+                      'flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none hover:bg-muted',
+                      activeKey === f.key && 'bg-muted'
                     )}
-                    <ChevronRight className="size-4 text-muted-foreground" />
-                  </span>
-                </button>
+                  >
+                    <span className="truncate">{t(f.labelKey)}</span>
+                    <span className="flex items-center gap-1">
+                      {count > 0 && (
+                        <Badge variant="secondary" className="px-1.5">
+                          {count}
+                        </Badge>
+                      )}
+                      <ChevronRight className="size-4 text-muted-foreground" />
+                    </span>
+                  </button>
+                </Fragment>
               );
             })}
             {visibleSpecials.map((s) => (

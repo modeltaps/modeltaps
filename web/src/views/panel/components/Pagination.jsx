@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-r
 
 import { Button } from '@/components/ui/button';
 import { PAGE_SIZE_OPTIONS } from 'constants';
+import PageSizeSelect from '@/components/ui/page-size-select';
 
 // ==============================|| PANEL — SHARED PAGINATION BAR ||============================== //
 // Server-side pagination control. `page` is zero-based to match the v1 API contract.
@@ -18,17 +19,7 @@ export default function Pagination({ page, rowsPerPage, count, options = PAGE_SI
     <div className="flex flex-col items-center gap-3 border-t border-border px-3 py-2 text-sm sm:flex-row sm:justify-between">
       <div className="flex items-center gap-2">
         <span className="text-muted-foreground">{t('pagination.rows', { defaultValue: 'Rows' })}</span>
-        <select
-          value={rowsPerPage}
-          onChange={(e) => onRowsPerPageChange(parseInt(e.target.value, 10))}
-          className="h-9 rounded-lg border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {options.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
+        <PageSizeSelect value={rowsPerPage} options={options} onChange={(opt) => onRowsPerPageChange(opt)} format={(opt) => opt} />
       </div>
 
       <div className="flex items-center gap-4">

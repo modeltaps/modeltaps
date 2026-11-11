@@ -5,11 +5,13 @@ import { matchRoutes, Outlet, useLocation } from 'react-router';
 import AuthGuard from 'utils/route-guard/AuthGuard';
 import { cn } from '@/lib/utils';
 import useTheme from 'hooks/useTheme';
+import useMediaQuery from 'hooks/useMediaQuery';
 import { setDocumentTitlePrefix } from 'utils/documentTitle';
 import { useIsAdmin } from 'utils/common';
 import { useOrg } from 'contexts/OrgContext';
 import PageHeader from '@/components/chrome/PageHeader';
 import { PageHeaderOverrideContext } from '@/components/chrome/PageHeaderOverride';
+import { ContentMinWidthContext } from '@/components/chrome/ContentWidth';
 import { SidebarToggle } from '@/components/chrome/SidebarControls';
 import { PageActionsContext } from '@/components/chrome/PageActions';
 import { PageTitleExtraContext } from '@/components/chrome/PageTitleExtra';
@@ -53,7 +55,26 @@ export default function MainLayout() {
     return !matched || matched[matched.length - 1].route.path === '*';
   }, [pathname]);
 
-  const [collapsed, setCollapsed] = useState(false);
+  // The rail collapses to icons on its own below the lg breakpoint (1024px), and also as soon as
+  // the expanded rail would squeeze a page below the width it asked for (useContentMinWidth, e.g.
+  // a table's natural width). The user's own toggle wins until that automatic choice changes.
+  const belowLg = useMediaQuery('(max-width: 1023px)');
+  const [contentMinWidth, setContentMinWidth] = useState(null);
+  const [viewportWidth, setViewportWidth] = useState(() => (typeof window === 'undefined' ? 1440 : window.innerWidth));
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  // Content width beside the expanded rail: the viewport minus the w-64 rail, its border and the
+  // main area's horizontal padding (px-6).
+  const roomBesideRail = viewportWidth - 256 - 1 - 48;
+  const autoCollapsed = belowLg || (contentMinWidth != null && roomBesideRail < contentMinWidth);
+  const [collapseOverride, setCollapseOverride] = useState(null);
+  useEffect(() => {
+    setCollapseOverride(null);
+  }, [autoCollapsed]);
+  const collapsed = collapseOverride ?? autoCollapsed;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   // DOM node of the PageHeader action slot; pages portal their primary actions
@@ -66,7 +87,7 @@ export default function MainLayout() {
   // Title set by a detail page through usePageHeader; replaces the nav-derived one.
   const [headerOverride, setHeaderOverride] = useState(null);
 
-  const toggleCollapse = () => setCollapsed((v) => !v);
+  const toggleCollapse = () => setCollapseOverride(!collapsed);
   const openCommand = () => setCommandOpen(true);
   // 抽屉里点搜索:先收起抽屉再开搜索弹窗。
   const openCommandFromDrawer = () => {
@@ -128,7 +149,9 @@ export default function MainLayout() {
             <PageHeaderOverrideContext.Provider value={setHeaderOverride}>
               <PageActionsContext.Provider value={actionsSlot}>
                 <PageTitleExtraContext.Provider value={titleExtraSlot}>
-                  <Outlet />
+                  <ContentMinWidthContext.Provider value={setContentMinWidth}>
+                    <Outlet />
+                  </ContentMinWidthContext.Provider>
                 </PageTitleExtraContext.Provider>
               </PageActionsContext.Provider>
             </PageHeaderOverrideContext.Provider>

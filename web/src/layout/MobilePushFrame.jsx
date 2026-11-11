@@ -29,8 +29,9 @@ export default function MobilePushFrame({ open, onClose, sidebar, drawer, childr
         aria-hidden={!open}
         inert={!open}
         className={cn(
-          'absolute inset-y-0 z-[1200] flex w-[var(--drawer-w)] flex-col border-r border-border bg-card shadow-xl transition-[left] duration-200 ease-out md:hidden',
-          open ? 'left-0' : '-left-[var(--drawer-w)]'
+          'absolute inset-y-0 z-[1200] flex w-[var(--drawer-w)] flex-col border-r border-border bg-card transition-[left] duration-200 ease-out md:hidden',
+          // The shadow only while open: a closed drawer's shadow would bleed in at the left edge.
+          open ? 'left-0 shadow-xl' : '-left-[var(--drawer-w)]'
         )}
       >
         <div className="min-h-0 flex-1">{drawer}</div>

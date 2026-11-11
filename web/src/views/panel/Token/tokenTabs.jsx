@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Copy, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Copy, Eye, EyeOff } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { Field, InfoRow, InfoRows, Section, Segmented, StatRow, ToggleField } from '@/components/objects';
+import ConnectInfo, { useApiAddresses } from './ConnectInfo';
+import { Skeleton } from '@/components/ui/skeleton';
 import QuotaInput from '@/components/QuotaInput';
 import { API } from 'utils/api';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
@@ -16,7 +18,7 @@ import { isPlaygroundToken } from 'utils/playgroundToken';
 import { maskSecret } from 'utils/maskSecret';
 import ModelLimitSelector from './ModelLimitSelector';
 import { GroupBadge, nextResetTime, relativeTime, statusInfo } from './TokenTable';
-import { RESET_PERIODS, fromLocalInput, quotaDraft, quotaPatch, toLocalInput } from './tokenData';
+import { EXPIRY_PRESETS, RESET_PERIODS, expiryFromPreset, quotaDraft, quotaPatch } from './tokenData';
 
 // Tabs of the API key panel (see components/objects/ObjectPanel), laid out like a gateway's
 // virtual-key details: Overview is read-only (the key, what it spent, what it can reach); Basics
@@ -37,7 +39,7 @@ function KeyRow({ token, onCopy }) {
   }
   const full = `sk-${token.key || ''}`;
   return (
-    <div className="flex h-10 items-center gap-1 rounded-lg border border-input bg-background pl-3 pr-1">
+    <div className="flex h-10 items-center gap-1 rounded-lg border border-input bg-field pl-3 pr-1">
       <code className="min-w-0 flex-1 truncate font-mono text-[13px]">{shown ? full : maskSecret(full)}</code>
       <Button
         type="button"
@@ -81,7 +83,11 @@ function AvailableModels({ tokenId }) {
     <Section title={t('token_index.availableModels', { count: models?.length ?? 0 })} extra={t('apiKey.panel.availableHint')}>
       <div className="py-2" data-testid="token-available-models">
         {models === null ? (
-          <Loader2 className="size-4 animate-spin text-muted-foreground" />
+          <div className="flex flex-wrap gap-1.5" aria-busy="true">
+            {[88, 120, 64, 96, 72].map((w) => (
+              <Skeleton key={w} className="h-6 rounded-md" style={{ width: w }} />
+            ))}
+          </div>
         ) : models.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('token_index.availableModelsNone')}</p>
         ) : (
@@ -123,6 +129,7 @@ function limitSummary(t, token) {
 
 function OverviewBody({ object: token, ctx }) {
   const { t } = useTranslation();
+  const apiAddresses = useApiAddresses();
   const rtf = new Intl.RelativeTimeFormat((ctx.locale || 'en').replace('_', '-'), { numeric: 'auto' });
   const limit = limitSummary(t, token);
   const info = statusInfo(t, token.status);
@@ -175,6 +182,10 @@ function OverviewBody({ object: token, ctx }) {
           )}
         </InfoRows>
       </Section>
+      {/* Where this key sends requests, so it can be copied right next to the key itself. */}
+      <Section title={t('apiKey.list.connect')}>
+        <ConnectInfo addresses={apiAddresses} onCopy={ctx.onCopyText} />
+      </Section>
       <AvailableModels tokenId={token.id} />
     </>
   );
@@ -186,6 +197,8 @@ function BasicsBody({ draft, setDraft, ctx }) {
   const { t } = useTranslation();
   const set = (patch) => setDraft((d) => ({ ...d, ...patch }));
   const never = draft.expired_time === -1;
+  // Which choice the key was last set with; an existing date matches none of them until changed.
+  const [expiryChoice, setExpiryChoice] = useState(never ? 'never' : null);
   const hasPeriod = Boolean(draft.period);
   const tzNote = t('token_index.quotaResetTimezoneNote', {
     tz: ctx.resetTimezone || 'UTC',
@@ -202,26 +215,19 @@ function BasicsBody({ draft, setDraft, ctx }) {
           <Segmented
             size="mini"
             label={t('token_index.expiryTime')}
-            value={never ? 'never' : 'at'}
-            onChange={(v) => set({ expired_time: v === 'never' ? -1 : Math.floor(Date.now() / 1000) + 30 * 86400 })}
-            options={[
-              { value: 'never', label: t('token_index.neverExpires') },
-              { value: 'at', label: t('apiKey.panel.expiresAt') }
-            ]}
+            value={expiryChoice}
+            onChange={(v) => {
+              setExpiryChoice(v);
+              set({ expired_time: expiryFromPreset(v) });
+            }}
+            options={EXPIRY_PRESETS.map((p) => ({ value: p, label: t(`apiKey.expiry.${p}`) }))}
           />
         }
       >
-        {never ? (
-          <p className="text-sm text-muted-foreground">{t('apiKey.panel.neverHint')}</p>
-        ) : (
-          <Input
-            id="tk-expiry"
-            type="datetime-local"
-            className="w-64"
-            value={toLocalInput(draft.expired_time)}
-            onChange={(e) => e.target.value && set({ expired_time: fromLocalInput(e.target.value) })}
-          />
-        )}
+        {/* The choice counts from now; the line below says exactly when the key stops working. */}
+        <p className="text-sm text-muted-foreground">
+          {never ? t('apiKey.panel.neverHint') : t('apiKey.panel.expiresOn', { date: timestamp2string(draft.expired_time) })}
+        </p>
       </Field>
       <Field
         label={hasPeriod ? t('token_index.quotaPeriodLabel') : t('apiKey.panel.limit')}

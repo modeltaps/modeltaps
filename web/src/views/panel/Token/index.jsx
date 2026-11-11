@@ -1,63 +1,92 @@
 import { useState, useEffect, useContext, useMemo, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
-import { Link, useSearchParams } from 'react-router';
+import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Plus, RotateCcw, KeyRound, Copy, Columns3, Check, Minus, ChevronRight } from 'lucide-react';
+import {
+  Plus,
+  RotateCcw,
+  KeyRound,
+  Columns3,
+  Check,
+  Minus,
+  Search,
+  ListFilter,
+  Link2,
+  Sparkles,
+  X,
+  BookmarkPlus,
+  Power,
+  PowerOff,
+  Trash2,
+  ArrowDownUp,
+  ListChecks
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/components/ui/sonner';
-import { FilterBar, filterStateToParams, paramsToFilterState, isEntryActive } from '@/components/filter-bar';
+import { FilterBar, FilterSheet, filterStateToParams, paramsToFilterState, isEntryActive, optionLabel } from '@/components/filter-bar';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import PageActions from '@/components/chrome/PageActions';
+import { useContentMinWidth } from '@/components/chrome/ContentWidth';
 import { cn } from '@/lib/utils';
 import { API } from 'utils/api';
 import { showError, useIsReliable, useIsAdmin } from 'utils/common';
-import { resolveServerAddress } from 'utils/serverAddress';
-import { PAGE_SIZE_OPTIONS } from 'constants';
 import { UserContext } from 'contexts/UserContext';
 import { useOrg } from 'contexts/OrgContext';
+import { isOrgAdminRole } from '@/components/chrome/nav-config';
 import usePaginatedList from 'hooks/usePaginatedList';
+import useElementWidth from 'hooks/useElementWidth';
+import { BatchBar, ListFooter } from '@/components/list-page';
 import { Segmented, useObjectRoute } from '@/components/objects';
-import TokenTable from './TokenTable';
+import ConnectInfo, { useApiAddresses } from './ConnectInfo';
+import TokenTable, { estimateTableWidth, TokenListSkeleton } from './TokenTable';
 import TokenPanel from './TokenPanel';
 import NewTokenDialog from './NewTokenDialog';
 import { TOKEN_TAB_KEYS } from './tokenTabs';
 import TokenUsageDialog from './TokenUsageDialog';
 import OpenClawConnectDialog from './OpenClawConnectDialog';
 
-// Column registry for the show/hide menu. Ids match TokenTable column ids.
-// OpenRouter 式高密度列表:API Key(合并名称+密钥)、分组、状态、过期、最后使用、用量
-// (合并已用+今日)、限额(合并剩余额度+周期重置)默认可见;创建时间默认隐藏,可在
-// 菜单中开启。orgOnly 列仅组织上下文存在;reliableOnly 列仅可信用户存在(否则不入表)。
+// Column registry for the show/hide menu. Ids match TokenTable column ids. The name and
+// actions columns are always shown and stay out of the menu (fixed). Usage carries spend, the
+// limit and its bar in one cell; the creation date is hidden by default. orgOnly columns exist
+// only in an organization, reliableOnly columns only for reliable users.
 const TOKEN_COLUMNS = [
-  { id: 'name', labelKey: 'token_index.token' },
+  { id: 'select', labelKey: 'apiKey.list.selectAll', fixed: true },
+  { id: 'name', labelKey: 'token_index.token', fixed: true },
   { id: 'creator', labelKey: 'org.creator', orgOnly: true },
-  { id: 'group', labelKey: 'token_index.userGroup' },
+  { id: 'group', labelKey: 'token_index.userGroup', defaultHidden: true },
   { id: 'billing_tag', labelKey: 'token_index.billingTag', reliableOnly: true, defaultHidden: true },
   { id: 'expired_time', labelKey: 'token_index.expiryTime' },
   { id: 'accessed_time', labelKey: 'token_index.lastUsed' },
   { id: 'used_quota', labelKey: 'token_index.usageColumn' },
-  { id: 'remain_quota', labelKey: 'token_index.limitColumn' },
   { id: 'created_time', labelKey: 'token_index.createdTime', defaultHidden: true },
   { id: 'status', labelKey: 'token_index.status' },
-  { id: 'actions', labelKey: 'token_index.actions' }
+  { id: 'actions', labelKey: 'token_index.actions', fixed: true }
 ];
 
-// v2:列注册表默认值升级(TK1 起过期/最后使用/用量/限额默认可见)。旧键 token-column-visibility
-// 会用陈旧的 false 覆盖新默认列,导致老访客看不到新列,故 v2 不存在时忽略旧键、直接用默认值。
-const COLUMN_VISIBILITY_STORAGE_KEY = 'token-column-visibility-v2';
-const LEGACY_COLUMN_VISIBILITY_STORAGE_KEY = 'token-column-visibility';
+// v5: the default list is name, creator (organizations only), usage, last used, expiry and status;
+// group, billing tag and creation date are one click away in the column menu. Older saved states
+// are dropped so the new defaults apply.
+const COLUMN_VISIBILITY_STORAGE_KEY = 'token-column-visibility-v5';
+const LEGACY_COLUMN_VISIBILITY_STORAGE_KEYS = [
+  'token-column-visibility',
+  'token-column-visibility-v2',
+  'token-column-visibility-v3',
+  'token-column-visibility-v4'
+];
 
 const buildDefaultColumnVisibility = () => Object.fromEntries(TOKEN_COLUMNS.map((c) => [c.id, !c.defaultHidden]));
 
@@ -65,11 +94,11 @@ const buildDefaultColumnVisibility = () => Object.fromEntries(TOKEN_COLUMNS.map(
 const loadColumnVisibility = () => {
   const defaults = buildDefaultColumnVisibility();
   try {
-    localStorage.removeItem(LEGACY_COLUMN_VISIBILITY_STORAGE_KEY);
+    LEGACY_COLUMN_VISIBILITY_STORAGE_KEYS.forEach((k) => localStorage.removeItem(k));
     const saved = JSON.parse(localStorage.getItem(COLUMN_VISIBILITY_STORAGE_KEY));
     if (!saved || typeof saved !== 'object') return defaults;
-    for (const id of Object.keys(defaults)) {
-      if (typeof saved[id] === 'boolean') defaults[id] = saved[id];
+    for (const c of TOKEN_COLUMNS) {
+      if (!c.fixed && typeof saved[c.id] === 'boolean') defaults[c.id] = saved[c.id];
     }
   } catch {
     /* corrupted storage -> defaults */
@@ -122,9 +151,107 @@ const focusColumnMenuItem = (root, key) => {
   items[next].focus();
 };
 
-// FilterBar 字段:单个名称文本 chip(后端 keyword 单值,按 API Key 名称模糊匹配)。
-const TOKEN_FILTER_FIELDS = [{ key: 'keyword', labelKey: 'token_index.name', type: 'text', placeholderKey: 'token_index.searchTokenName' }];
-const TOKEN_FILTER_PARAM_KEYS = ['keyword'];
+// List segments (?status=). Counts come back with the list as status_counts.
+const STATUS_SEGMENTS = ['all', 'enabled', 'disabled', 'invalid'];
+
+// Conditions in the "Show keys that" bar, sent as same-named parameters and shown in sections
+// like the reference gateway's menu: expiry, spend, usage, other. Group options are filled in from
+// the account's groups.
+const SEC_EXPIRY = 'apiKey.list.secExpiry';
+const SEC_SPEND = 'apiKey.list.secSpend';
+const SEC_USAGE = 'apiKey.list.secUsage';
+const SEC_OTHER = 'apiKey.list.secOther';
+const CONDITION_FIELDS = [
+  {
+    key: 'expiry',
+    sectionKey: SEC_EXPIRY,
+    labelKey: 'apiKey.list.expiry',
+    single: true,
+    paramInclude: 'expiry',
+    options: [
+      { value: 'never', labelKey: 'apiKey.list.expiryNever' },
+      { value: 'expired', labelKey: 'apiKey.list.expiryExpired' },
+      { value: 'soon', labelKey: 'apiKey.list.expirySoon' }
+    ]
+  },
+  {
+    key: 'limit',
+    sectionKey: SEC_SPEND,
+    labelKey: 'apiKey.list.limit',
+    single: true,
+    paramInclude: 'limit',
+    options: [
+      { value: 'none', labelKey: 'apiKey.list.limitNone' },
+      { value: 'any', labelKey: 'apiKey.list.limitAny' }
+    ]
+  },
+  { key: 'spent_min', sectionKey: SEC_SPEND, labelKey: 'apiKey.list.spentMin', type: 'number', placeholderKey: 'apiKey.list.spentMinHint' },
+  {
+    key: 'budget_min',
+    sectionKey: SEC_SPEND,
+    labelKey: 'apiKey.list.budgetMin',
+    type: 'number',
+    placeholderKey: 'apiKey.list.budgetMinHint'
+  },
+  {
+    key: 'activity',
+    sectionKey: SEC_USAGE,
+    labelKey: 'apiKey.list.activity',
+    single: true,
+    paramInclude: 'activity',
+    options: [
+      { value: 'never', labelKey: 'apiKey.list.activityNever' },
+      { value: 'idle', labelKey: 'apiKey.list.activityIdle' }
+    ]
+  },
+  { key: 'group', sectionKey: SEC_OTHER, labelKey: 'token_index.userGroup', single: true, paramInclude: 'group', options: [] }
+];
+// Organization owners and admins can also narrow the list to one member's keys; the options are
+// filled in from the member list.
+const CREATOR_FIELD = {
+  key: 'created_by',
+  sectionKey: SEC_OTHER,
+  labelKey: 'org.creator',
+  single: true,
+  paramInclude: 'created_by',
+  options: []
+};
+const TOKEN_FILTER_FIELDS = [...CONDITION_FIELDS, CREATOR_FIELD];
+const TOKEN_FILTER_PARAM_KEYS = ['keyword', 'status', ...CONDITION_FIELDS.map((f) => f.key), 'created_by'];
+
+// Condition presets: a status segment plus conditions, applied in one click. The built-in ones
+// cover the usual clean-up questions; users can save the current combination as their own.
+const one = (value) => ({ op: 'in', values: [value] });
+const BUILTIN_PRESETS = [
+  { id: 'expiring', labelKey: 'apiKey.list.presetExpiring', status: 'all', conditions: { expiry: one('soon') } },
+  { id: 'invalid', labelKey: 'apiKey.list.presetInvalid', status: 'invalid', conditions: {} },
+  { id: 'unused', labelKey: 'apiKey.list.presetUnused', status: 'all', conditions: { activity: one('never') } },
+  { id: 'idle', labelKey: 'apiKey.list.presetIdle', status: 'enabled', conditions: { activity: one('idle') } },
+  { id: 'budget', labelKey: 'apiKey.list.presetBudget', status: 'all', conditions: { budget_min: { value: '80' } } },
+  { id: 'nolimit', labelKey: 'apiKey.list.presetNoLimit', status: 'enabled', conditions: { limit: one('none') } }
+];
+// The list shows the full table whenever its natural width fits the list area; the page first
+// asks the shell to collapse the sidebar to make room. Only when even that is not enough does it
+// switch to the phone list. `fits` is the table's natural width plus the card border.
+export const listLayout = (areaWidth, tableWidth) => (areaWidth > 0 && areaWidth < tableWidth + 2 ? 'list' : 'table');
+
+// Sort choices of the narrow layout, which has no table headers to click.
+const SORT_OPTIONS = [
+  { id: 'id', dir: 'desc', labelKey: 'apiKey.list.sortNewest' },
+  { id: 'name', dir: 'asc', labelKey: 'apiKey.list.sortName' },
+  { id: 'used_quota', dir: 'desc', labelKey: 'apiKey.list.sortUsage' },
+  { id: 'expired_time', dir: 'asc', labelKey: 'apiKey.list.sortExpiry' }
+];
+
+const PRESET_STORAGE_KEY = 'token-filter-presets-v1';
+const loadSavedPresets = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PRESET_STORAGE_KEY));
+    return Array.isArray(saved) ? saved.filter((p) => p && typeof p.name === 'string' && p.conditions) : [];
+  } catch {
+    return [];
+  }
+};
 
 // 管理员搜索字段:仅站点管理员、非组织上下文时注册进 FilterBar;标量值直接落同名参数,
 // 触发任一字段即切到 /api/token/admin/search(见 fetchData 的 isAdminSearch 分支)。
@@ -142,9 +269,13 @@ export default function Token() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [filterState, setFilterState] = useState(() => paramsToFilterState(ALL_FILTER_FIELDS, searchParams));
+  const [keyword, setKeyword] = useState(() => searchParams.get('keyword') || '');
+  const [searchText, setSearchText] = useState(keyword);
+  const [status, setStatus] = useState(() => (STATUS_SEGMENTS.includes(searchParams.get('status')) ? searchParams.get('status') : 'all'));
+  const [statusCounts, setStatusCounts] = useState(null);
+  const [orgMemberNames, setOrgMemberNames] = useState({});
   // 当日(TZ 零点起)按 API Key 名聚合的已用额度映射(token_name -> quota);管理员搜索接口不返回时为 null
   const [todayUsage, setTodayUsage] = useState(null);
-  const [revealed, setRevealed] = useState(new Set());
 
   // The key open in the right-side panel (?id=, &tab=) and the create dialog (?new=1).
   const route = useObjectRoute(TOKEN_TAB_KEYS);
@@ -153,7 +284,6 @@ export default function Token() {
   const [deleting, setDeleting] = useState(false);
   const [usageTarget, setUsageTarget] = useState(null);
   const [openClawTarget, setOpenClawTarget] = useState(null);
-  const [apiType, setApiType] = useState('openai');
 
   const { loadUserGroup } = useContext(UserContext);
   const siteInfo = useSelector((state) => state.siteInfo);
@@ -161,13 +291,28 @@ export default function Token() {
   const userIsReliable = useIsReliable();
   const userIsAdmin = useIsAdmin();
   // 组织上下文:列表/增删改经 orgScope 改写走 /api/org/:id/token*;站点管理员搜索是站点维度功能,隐藏
-  const { currentOrgId } = useOrg();
+  const { currentOrgId, orgRole } = useOrg();
   const isOrgContext = Boolean(currentOrgId);
-  const [orgMemberNames, setOrgMemberNames] = useState({});
+  const canFilterByCreator = isOrgContext && isOrgAdminRole(orgRole);
 
   // 管理员搜索字段仅站点管理员、非组织上下文可见;FilterBar 只展示当前上下文允许的字段。
   const showAdminFilters = userIsAdmin && !isOrgContext;
-  const filterFields = useMemo(() => (showAdminFilters ? ALL_FILTER_FIELDS : TOKEN_FILTER_FIELDS), [showAdminFilters]);
+  const filterFields = useMemo(() => {
+    const creator = canFilterByCreator
+      ? [
+          {
+            ...CREATOR_FIELD,
+            options: Object.entries(orgMemberNames).map(([id, name]) => ({ value: id, label: name }))
+          }
+        ]
+      : [];
+    const groupOptions = [
+      { value: '_default', labelKey: 'token_index.followUser' },
+      ...Object.entries(userGroup || {}).map(([symbol, g]) => ({ value: symbol, label: g.name || symbol }))
+    ];
+    const conditions = CONDITION_FIELDS.map((f) => (f.key === 'group' ? { ...f, options: groupOptions } : f));
+    return [...conditions, ...creator, ...(showAdminFilters ? ADMIN_FILTER_FIELDS : [])];
+  }, [showAdminFilters, canFilterByCreator, orgMemberNames, userGroup]);
   // 从筛选状态提取管理员参数;非管理员/组织上下文一律空,保证不会误走管理员端点。
   const adminSearchParams = useMemo(
     () => (showAdminFilters ? filterStateToParams(ADMIN_FILTER_FIELDS, filterState) : {}),
@@ -184,34 +329,44 @@ export default function Token() {
     orderBy,
     listCount,
     searching,
+    loaded,
     rows: tokens,
     setRows: setTokens,
     handleRefresh,
     handleSort,
+    setSort,
     onRowsPerPageChange
   } = usePaginatedList({
     pageSizeKey: 'token',
     fetcher: async ({ page, rowsPerPage, order, orderBy }) => {
-      const keyword = filterStateToParams(TOKEN_FILTER_FIELDS, filterState).keyword || '';
       const ob = order === 'desc' ? '-' + orderBy : orderBy;
+      // Conditions the current context offers (the creator only for organization owners/admins).
+      const conditions = filterStateToParams(
+        filterFields.filter((f) => !ADMIN_FILTER_PARAM_KEYS.includes(f.key)),
+        filterState
+      );
+      const listParams = { keyword, order: ob, status: status === 'all' ? undefined : status, ...conditions };
       const res = isAdminSearch
         ? await API.get('/api/token/admin/search', {
             params: {
               page: page + 1,
               size: rowsPerPage,
-              keyword,
-              order: ob,
+              ...listParams,
               user_id: adminSearchParams.user_id ? parseInt(adminSearchParams.user_id, 10) : undefined,
               token_id: adminSearchParams.token_id ? parseInt(adminSearchParams.token_id, 10) : undefined,
               key: adminSearchParams.key || undefined
             }
           })
-        : await API.get('/api/token/', { params: { page: page + 1, size: rowsPerPage, keyword, order: ob } });
+        : await API.get('/api/token/', { params: { page: page + 1, size: rowsPerPage, ...listParams } });
       return res.data;
     },
-    onSuccess: (payload) => setTodayUsage(payload.today_usage ?? null),
+    onSuccess: (payload) => {
+      setTodayUsage(payload.today_usage ?? null);
+      // The admin search returns no segment counts; the segments then show without numbers.
+      setStatusCounts(payload.status_counts ?? null);
+    },
     // 筛选/管理员搜索/组织上下文变化时重拉(与迁移前 fetchData 依赖一致;组织上下文经 orgScope 改写 URL)
-    deps: [filterState, isAdminSearch, adminSearchParams, currentOrgId]
+    deps: [filterState, filterFields, keyword, status, isAdminSearch, adminSearchParams, currentOrgId]
   });
 
   const [columnVisibility, setColumnVisibility] = useState(loadColumnVisibility);
@@ -229,11 +384,13 @@ export default function Token() {
   // reliable users, org-only columns only in an organization context (matching
   // which columns TokenTable actually renders).
   const menuColumns = useMemo(
-    () => TOKEN_COLUMNS.filter((c) => (!c.reliableOnly || userIsReliable) && (!c.orgOnly || isOrgContext)),
+    () => TOKEN_COLUMNS.filter((c) => !c.fixed && (!c.reliableOnly || userIsReliable) && (!c.orgOnly || isOrgContext)),
     [userIsReliable, isOrgContext]
   );
   const allMenuColumnsVisible = menuColumns.every((c) => columnVisibility[c.id]);
   const someMenuColumnsVisible = menuColumns.some((c) => columnVisibility[c.id]);
+  const visibleMenuColumnCount = menuColumns.filter((c) => columnVisibility[c.id]).length;
+  const resetColumns = () => setColumnVisibility(buildDefaultColumnVisibility());
 
   const toggleColumn = (id) => setColumnVisibility((v) => ({ ...v, [id]: !v[id] }));
 
@@ -263,11 +420,130 @@ export default function Token() {
         ALL_FILTER_PARAM_KEYS.forEach((k) => params.delete(k));
         const q = filterStateToParams(filterFields, filterState);
         for (const [k, v] of Object.entries(q)) params.set(k, String(v));
+        if (keyword) params.set('keyword', keyword);
+        if (status !== 'all') params.set('status', status);
         return params;
       },
       { replace: true }
     );
-  }, [filterState, filterFields, setSearchParams]);
+  }, [filterState, filterFields, keyword, status, setSearchParams]);
+
+  // The search box applies after a short pause in typing.
+  useEffect(() => {
+    const next = searchText.trim();
+    if (next === keyword) return undefined;
+    const timer = setTimeout(() => {
+      setPage(0);
+      setKeyword(next);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchText, keyword, setPage]);
+
+  // Bulk selection (ids on the current page). It is cleared whenever the rows can change under it:
+  // another page, page size, search, segment, conditions or organization.
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [batchBusy, setBatchBusy] = useState(false);
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [page, rowsPerPage, keyword, status, filterState, currentOrgId]);
+  const toggleSelect = (id) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const toggleSelectAll = (all) => setSelectedIds(all ? new Set(tokens.map((x) => x.id)) : new Set());
+
+  const [pageRef, pageWidth] = useElementWidth();
+  // The table's natural width: measured while the table shows, estimated from the column set
+  // otherwise (and after the columns change, until it is measured again).
+  const [measuredTableWidth, setMeasuredTableWidth] = useState(null);
+  const visibleColumnIds = useMemo(
+    () => TOKEN_COLUMNS.filter((c) => (!c.reliableOnly || userIsReliable) && (!c.orgOnly || isOrgContext)).map((c) => c.id),
+    [userIsReliable, isOrgContext]
+  );
+  useEffect(() => {
+    setMeasuredTableWidth(null);
+  }, [columnVisibility, visibleColumnIds]);
+  const tableWidth = measuredTableWidth ?? estimateTableWidth(visibleColumnIds, columnVisibility);
+  // Ask the shell for this much content width; it collapses the sidebar when that helps.
+  useContentMinWidth(tableWidth + 2);
+  const layout = listLayout(pageWidth, tableWidth);
+  const narrow = layout === 'list';
+  // Narrow layout: checkboxes only in select mode; conditions in a bottom sheet.
+  const [selectMode, setSelectMode] = useState(false);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const changeStatus = (next) => {
+    setPage(0);
+    setStatus(next);
+  };
+
+  // Presets. Admin search fields are never part of one: they switch the list to another endpoint.
+  const [savedPresets, setSavedPresets] = useState(loadSavedPresets);
+  useEffect(() => {
+    try {
+      localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(savedPresets));
+    } catch {
+      /* storage unavailable -> keep in-memory only */
+    }
+  }, [savedPresets]);
+  const conditionFields = filterFields.filter((f) => !ADMIN_FILTER_PARAM_KEYS.includes(f.key));
+  const currentConditions = Object.fromEntries(
+    conditionFields.filter((f) => isEntryActive(f, filterState[f.key])).map((f) => [f.key, filterState[f.key]])
+  );
+  const hasCurrentConditions = status !== 'all' || Object.keys(currentConditions).length > 0;
+  // A readable name for a combination, e.g. "Disabled · Expiry: Expire within 14 days".
+  const describePreset = (preset) =>
+    [
+      preset.status !== 'all' ? t(`apiKey.list.status_${preset.status}`) : null,
+      ...conditionFields
+        .filter((f) => preset.conditions[f.key])
+        .map((f) => {
+          const entry = preset.conditions[f.key];
+          if (f.type === 'number') return `${t(f.labelKey)} ≥ ${entry.value}`;
+          const v = entry.values?.[0];
+          const opt = (f.options || []).find((o) => String(o.value) === String(v));
+          return `${t(f.labelKey)}: ${opt ? optionLabel(t, opt) : v}`;
+        })
+    ]
+      .filter(Boolean)
+      .join(' · ');
+  // One active condition as text ("Expiry: Never expire", "Spent at least ≥ 10").
+  const describeEntry = (f, entry) => {
+    if (f.type === 'number' || f.type === 'text') return `${t(f.labelKey)} ≥ ${entry.value}`;
+    const v = entry.values?.[0];
+    const opt = (f.options || []).find((o) => String(o.value) === String(v));
+    return `${t(f.labelKey)}: ${opt ? optionLabel(t, opt) : v}`;
+  };
+  const activeConditionFields = filterFields.filter((f) => isEntryActive(f, filterState[f.key]));
+  const removeCondition = (key) =>
+    handleFilterChange((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+
+  const applyPreset = (preset) => {
+    setPage(0);
+    setStatus(preset.status || 'all');
+    setFilterState((prev) => {
+      const next = Object.fromEntries(Object.entries(prev).filter(([k]) => ADMIN_FILTER_PARAM_KEYS.includes(k)));
+      return { ...next, ...preset.conditions };
+    });
+  };
+  const saveCurrentPreset = () => {
+    const preset = { id: `saved-${Date.now()}`, status, conditions: currentConditions };
+    preset.name = describePreset(preset);
+    setSavedPresets((list) => [...list.filter((p) => p.name !== preset.name), preset]);
+  };
+  const removePreset = (id) => setSavedPresets((list) => list.filter((p) => p.id !== id));
 
   // 级联筛选受控回调:任何改动即时应用并回到第一页;清空同理。
   const handleFilterChange = (next) => {
@@ -279,9 +555,6 @@ export default function Token() {
     setFilterState({});
   };
 
-  // 已生效的筛选字段(仅用于判断是否渲染标题行下方的 chips 容器,对齐 Log 页)。
-  const activeChipFields = useMemo(() => filterFields.filter((f) => isEntryActive(f, filterState[f.key])), [filterFields, filterState]);
-
   useEffect(() => {
     loadUserGroup();
   }, [loadUserGroup]);
@@ -291,7 +564,7 @@ export default function Token() {
     setPage(0);
   }, [currentOrgId, setPage]);
 
-  // 组织上下文:拉取成员列表,用于 API Key"创建者"列的 user_id -> username 映射
+  // 组织上下文:拉取成员列表,用于 API Key"创建者"列与创建者条件的 user_id -> username 映射
   useEffect(() => {
     if (!isOrgContext) {
       setOrgMemberNames({});
@@ -338,19 +611,38 @@ export default function Token() {
     }
   };
 
+  // Bulk enable / disable / delete. There is no batch endpoint: each key goes through the same
+  // call as its own row (so permissions and the organization scope apply), and failures are counted.
+  const runBatch = async (action) => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setBatchBusy(true);
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) => {
+          if (action === 'delete') return API.delete((isAdminSearch ? '/api/token/admin/' : '/api/token/') + id);
+          const body = { id, status: action === 'enable' ? 1 : 2 };
+          return API.put(isAdminSearch ? '/api/token/admin?status_only=true' : '/api/token/?status_only=true', body);
+        })
+      );
+      const failed = results.filter((r) => r.status !== 'fulfilled' || !r.value.data?.success).length;
+      if (failed > 0) toast.error(t('apiKey.list.batchFailed', { count: failed }));
+      if (failed < ids.length) toast.success(t('common.operationSuccess'));
+      if (action === 'delete' && selectedIds.has(route.openId)) route.close();
+    } finally {
+      setBatchBusy(false);
+      setBatchDeleteOpen(false);
+      setSelectedIds(new Set());
+      setReloadKey((k) => k + 1);
+      handleRefresh();
+    }
+  };
+
   const onToggleStatus = async (item) => {
     const next = item.status === 1 ? 2 : 1;
     const r = await manageToken(item.id, 'status', next);
     if (r?.success) setTokens((prev) => prev.map((x) => (x.id === item.id ? { ...x, status: next } : x)));
   };
-
-  const onToggleReveal = (id) =>
-    setRevealed((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
 
   const copyText = (text, label) => {
     try {
@@ -377,25 +669,70 @@ export default function Token() {
     }
   };
 
-  const resolvedServerAddress = resolveServerAddress(siteInfo.server_address);
-  const apiAddress = {
-    openai: `${resolvedServerAddress}/v1`,
-    gemini: `${resolvedServerAddress}/gemini`,
-    claude: `${resolvedServerAddress}/claude`
-  }[apiType];
-  // The protocol switch appears only when Claude or Gemini endpoints are on.
-  const apiTypes = [
-    { value: 'openai', label: t('token_index.openaiApi') },
-    ...(siteInfo.ClaudeAPIEnabled ? [{ value: 'claude', label: t('token_index.claudeApi') }] : []),
-    ...(siteInfo.GeminiAPIEnabled ? [{ value: 'gemini', label: t('token_index.geminiApi') }] : [])
-  ];
+  const apiAddresses = useApiAddresses();
 
-  const totalPages = Math.max(1, Math.ceil(listCount / rowsPerPage));
+  // Preset menu items, shared by the condition bar's Presets menu.
+  const presetMenuItems = (
+    <>
+      <DropdownMenuLabel>{t('apiKey.list.presetsBuiltin')}</DropdownMenuLabel>
+      {BUILTIN_PRESETS.map((p) => (
+        <DropdownMenuItem key={p.id} onClick={() => applyPreset(p)} className="flex-col items-start gap-0">
+          <span>{t(p.labelKey)}</span>
+          <span className="text-xs text-muted-foreground">{describePreset(p)}</span>
+        </DropdownMenuItem>
+      ))}
+      {savedPresets.length > 0 && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>{t('apiKey.list.presetsSaved')}</DropdownMenuLabel>
+          {savedPresets.map((p) => (
+            <div key={p.id} className="group/preset flex items-center gap-1">
+              <DropdownMenuItem onClick={() => applyPreset(p)} className="min-w-0 flex-1">
+                <span className="truncate">{p.name}</span>
+              </DropdownMenuItem>
+              <button
+                type="button"
+                aria-label={t('apiKey.list.presetRemove')}
+                title={t('apiKey.list.presetRemove')}
+                onClick={() => removePreset(p.id)}
+                className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground focus-visible:opacity-100 group-hover/preset:opacity-100"
+              >
+                <X className="size-3.5" />
+              </button>
+            </div>
+          ))}
+        </>
+      )}
+      <DropdownMenuSeparator />
+      <DropdownMenuItem disabled={!hasCurrentConditions} onClick={saveCurrentPreset}>
+        <BookmarkPlus className="size-4" />
+        {t('apiKey.list.presetSave')}
+      </DropdownMenuItem>
+    </>
+  );
+
+  // Batch action buttons, in the bar above the table or pinned to the bottom on phones.
+  const batchActions = (
+    <>
+      <Button size="sm" variant="outline" className="h-7" disabled={batchBusy} onClick={() => runBatch('enable')}>
+        <Power className="size-3.5" />
+        {t('apiKey.list.batchEnable')}
+      </Button>
+      <Button size="sm" variant="outline" className="h-7" disabled={batchBusy} onClick={() => runBatch('disable')}>
+        <PowerOff className="size-3.5" />
+        {t('apiKey.list.batchDisable')}
+      </Button>
+      <Button size="sm" variant="outline" className="h-7 text-destructive" disabled={batchBusy} onClick={() => setBatchDeleteOpen(true)}>
+        <Trash2 className="size-3.5" />
+        {t('common.delete')}
+      </Button>
+    </>
+  );
 
   return (
     <>
-      <div className="space-y-6">
-        {/* 标题行右侧操作:刷新 → 筛选 → 列设置 → 新建(primary),对齐 Log 页。 */}
+      <div ref={pageRef} className={cn('space-y-3', narrow && selectMode && 'pb-20')}>
+        {/* Title row: refresh, the Connect popover (where to send requests), then create. */}
         <PageActions>
           <TooltipProvider delayDuration={150}>
             <Tooltip>
@@ -407,23 +744,161 @@ export default function Token() {
               <TooltipContent>{t('token_index.refresh')}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <FilterBar
-            fields={filterFields}
-            state={filterState}
-            onChange={handleFilterChange}
-            onClearAll={handleClearFilters}
-            hideChips
-            t={t}
-          />
           <DropdownMenu>
-            <TooltipProvider delayDuration={150}>
-              <Tooltip>
-                <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <Link2 className="size-4" />
+                <span className="max-sm:hidden">{t('apiKey.list.connect')}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80 p-3">
+              <div className="mb-2 text-sm font-medium">{t('token_index.apiAddress')}</div>
+              <ConnectInfo addresses={apiAddresses} onCopy={copyText} />
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <ResponsiveToolbarButton primary icon={Plus} label={t('token_index.createToken')} onClick={openCreate} />
+        </PageActions>
+
+        <div className="space-y-2">
+          {narrow ? (
+            <>
+              {/* Phone list: segments are chips that scroll sideways instead of wrapping; one row with search and the
+                  filter, sort and select buttons; active conditions as removable chips. */}
+              <div
+                role="radiogroup"
+                aria-label={t('apiKey.list.segments')}
+                className="-mx-4 flex gap-1.5 overflow-x-auto px-4 no-scrollbar"
+              >
+                {STATUS_SEGMENTS.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={status === value}
+                    onClick={() => changeStatus(value)}
+                    className={cn(
+                      'inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[13px] transition-colors',
+                      status === value
+                        ? 'border-foreground bg-foreground text-background'
+                        : 'border-input bg-field text-foreground hover:bg-muted'
+                    )}
+                  >
+                    {t(`apiKey.list.status_${value}`)}
+                    {statusCounts && (
+                      <span className={cn('tabular-nums', status === value ? 'text-background/70' : 'text-muted-foreground')}>
+                        {statusCounts[value] ?? 0}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    placeholder={t('token_index.searchTokenName')}
+                    aria-label={t('token_index.searchTokenName')}
+                    className="h-8 pl-8"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="relative size-8 shrink-0"
+                  aria-label={t('apiKey.list.filter')}
+                  onClick={() => setFilterSheetOpen(true)}
+                >
+                  <ListFilter className="size-4" />
+                  {activeConditionFields.length > 0 && (
+                    <span className="absolute -right-1 -top-1 flex min-w-[16px] items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-medium leading-4 text-background">
+                      {activeConditionFields.length}
+                    </span>
+                  )}
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="size-8 shrink-0" aria-label={t('apiKey.list.sort')}>
+                      <ArrowDownUp className="size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuLabel>{t('apiKey.list.sort')}</DropdownMenuLabel>
+                    {SORT_OPTIONS.map((o) => (
+                      <DropdownMenuItem key={o.labelKey} onClick={() => setSort(o.id, o.dir)} className="justify-between">
+                        {t(o.labelKey)}
+                        {orderBy === o.id && order === o.dir && <Check className="size-4" />}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button
+                  variant={selectMode ? 'secondary' : 'outline'}
+                  size="icon"
+                  className="size-8 shrink-0"
+                  aria-label={t('apiKey.list.selectMode')}
+                  aria-pressed={selectMode}
+                  onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+                >
+                  <ListChecks className="size-4" />
+                </Button>
+              </div>
+              {activeConditionFields.length > 0 && (
+                <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 no-scrollbar">
+                  {activeConditionFields.map((f) => (
+                    <button
+                      key={f.key}
+                      type="button"
+                      onClick={() => removeCondition(f.key)}
+                      aria-label={`${t('filterBar.remove')} ${describeEntry(f, filterState[f.key])}`}
+                      className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full border border-input bg-field pl-2.5 pr-1.5 text-xs"
+                    >
+                      {describeEntry(f, filterState[f.key])}
+                      <X className="size-3.5 text-muted-foreground" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Toolbar: status segments with counts, name search, column picker. */}
+              <div className="flex flex-wrap items-center gap-2">
+                <Segmented
+                  label={t('apiKey.list.segments')}
+                  value={status}
+                  onChange={changeStatus}
+                  options={STATUS_SEGMENTS.map((value) => ({
+                    value,
+                    label: (
+                      <span className="inline-flex items-center gap-1.5">
+                        {t(`apiKey.list.status_${value}`)}
+                        {statusCounts && (
+                          <span className="min-w-[1.25rem] rounded-[5px] bg-foreground/[0.07] px-1 text-[11px] tabular-nums leading-[18px]">
+                            {statusCounts[value] ?? 0}
+                          </span>
+                        )}
+                      </span>
+                    )
+                  }))}
+                />
+                <div className="relative min-w-[12rem] flex-1">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    placeholder={t('token_index.searchTokenName')}
+                    aria-label={t('token_index.searchTokenName')}
+                    className="h-8 pl-8"
+                  />
+                </div>
+                <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="outline"
                       size="sm"
-                      aria-label={t('token_index.columnSettings')}
+                      className="h-8 gap-1.5"
                       onKeyDown={(e) => {
                         if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && columnMenuRef.current) {
                           e.preventDefault();
@@ -432,83 +907,151 @@ export default function Token() {
                       }}
                     >
                       <Columns3 className="size-4" />
+                      {t('apiKey.list.columns')}
+                      <span className="text-xs tabular-nums text-muted-foreground">
+                        {visibleMenuColumnCount}/{menuColumns.length}
+                      </span>
                     </Button>
                   </DropdownMenuTrigger>
-                </TooltipTrigger>
-                <TooltipContent>{t('token_index.columnSettings')}</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <DropdownMenuContent
-              ref={columnMenuRef}
-              align="end"
-              className="max-h-80 w-48 overflow-y-auto"
-              onKeyDown={(e) => {
-                if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Home' || e.key === 'End') {
-                  e.preventDefault();
-                  focusColumnMenuItem(e.currentTarget, e.key);
-                }
-              }}
-            >
-              <DropdownMenuLabel>{t('token_index.selectColumns')}</DropdownMenuLabel>
-              <ColumnToggleItem
-                checked={allMenuColumnsVisible}
-                indeterminate={!allMenuColumnsVisible && someMenuColumnsVisible}
-                label={t('token_index.columnSelectAll')}
-                onToggle={toggleAllColumns}
-              />
-              <DropdownMenuSeparator />
-              {menuColumns.map((c) => (
-                <ColumnToggleItem key={c.id} checked={!!columnVisibility[c.id]} label={t(c.labelKey)} onToggle={() => toggleColumn(c.id)} />
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <ResponsiveToolbarButton primary icon={Plus} label={t('token_index.createToken')} onClick={openCreate} />
-        </PageActions>
+                  <DropdownMenuContent
+                    ref={columnMenuRef}
+                    align="end"
+                    className="max-h-96 w-52 overflow-y-auto"
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Home' || e.key === 'End') {
+                        e.preventDefault();
+                        focusColumnMenuItem(e.currentTarget, e.key);
+                      }
+                    }}
+                  >
+                    <DropdownMenuLabel>{t('token_index.selectColumns')}</DropdownMenuLabel>
+                    <ColumnToggleItem
+                      checked={allMenuColumnsVisible}
+                      indeterminate={!allMenuColumnsVisible && someMenuColumnsVisible}
+                      label={t('token_index.columnSelectAll')}
+                      onToggle={toggleAllColumns}
+                    />
+                    <DropdownMenuSeparator />
+                    {menuColumns.map((c) => (
+                      <ColumnToggleItem
+                        key={c.id}
+                        checked={!!columnVisibility[c.id]}
+                        label={t(c.labelKey)}
+                        onToggle={() => toggleColumn(c.id)}
+                      />
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={resetColumns}>{t('apiKey.list.resetColumns')}</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
 
-        {/* 标题行下方:OpenRouter 式全宽 chips 容器;仅在有激活筛选时渲染,无筛选不占空间。 */}
-        {activeChipFields.length > 0 && (
-          <FilterBar
+              {/* Condition bar: "Show keys that" + chips + add condition, always present so the
+                  conditions are discoverable. Selected rows swap it for the bulk actions. */}
+              {selectedIds.size > 0 ? (
+                <BatchBar
+                  count={selectedIds.size}
+                  onClear={() => setSelectedIds(new Set())}
+                  className="min-h-10 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-1.5"
+                  actions={
+                    <>
+                      <Button size="sm" variant="outline" className="h-7" disabled={batchBusy} onClick={() => runBatch('enable')}>
+                        <Power className="size-3.5" />
+                        {t('apiKey.list.batchEnable')}
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7" disabled={batchBusy} onClick={() => runBatch('disable')}>
+                        <PowerOff className="size-3.5" />
+                        {t('apiKey.list.batchDisable')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-destructive"
+                        disabled={batchBusy}
+                        onClick={() => setBatchDeleteOpen(true)}
+                      >
+                        <Trash2 className="size-3.5" />
+                        {t('common.delete')}
+                      </Button>
+                    </>
+                  }
+                />
+              ) : (
+                <div className="flex min-h-10 w-full items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5">
+                  <FilterBar
+                    fields={filterFields}
+                    state={filterState}
+                    onChange={handleFilterChange}
+                    onClearAll={handleClearFilters}
+                    triggerVariant="plus"
+                    triggerLabel={t('apiKey.list.addCondition')}
+                    clearAlignEnd
+                    t={t}
+                    leading={
+                      <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                        <ListFilter className="size-3.5" />
+                        {t('apiKey.list.showKeysThat')}
+                      </span>
+                    }
+                    className="min-w-0 flex-1"
+                  />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-7 shrink-0 gap-1.5 px-2 text-[13px]">
+                        <Sparkles className="size-3.5" />
+                        {t('apiKey.list.presets')}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-72">
+                      {presetMenuItems}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {narrow && selectMode && (
+          <BatchBar count={Math.max(selectedIds.size, 0) || 0} onClear={exitSelectMode} floating actions={batchActions} />
+        )}
+        {narrow && (
+          <FilterSheet
+            open={filterSheetOpen}
+            onOpenChange={setFilterSheetOpen}
+            title={t('apiKey.list.filter')}
             fields={filterFields}
             state={filterState}
             onChange={handleFilterChange}
             onClearAll={handleClearFilters}
-            triggerVariant="plus"
-            clearAlignEnd
             t={t}
-            className="w-full rounded-lg border border-input bg-background px-3 py-2"
+            top={
+              <div className="space-y-1.5">
+                <div className="text-[11px] font-medium text-muted-foreground">{t('apiKey.list.presets')}</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[...BUILTIN_PRESETS, ...savedPresets].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        applyPreset(p);
+                        setFilterSheetOpen(false);
+                      }}
+                      className="h-8 rounded-full border border-input bg-field px-3 text-[13px] hover:bg-muted"
+                    >
+                      {p.labelKey ? t(p.labelKey) : p.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            }
           />
         )}
 
-        {/* Where to send requests: a quiet line above the list, left-aligned with the title. Like
-            other gateways the full setup lives in the API docs; the base URL stays here because a
-            self-hosted address cannot be printed in docs. Protocols are a segmented switch shown
-            only when Claude or Gemini endpoints are on. */}
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-2 text-sm">
-          <span className="text-muted-foreground">{t('token_index.apiAddress')}</span>
-          {apiTypes.length > 1 && (
-            <Segmented size="mini" label={t('apiKey.page.protocol')} value={apiType} onChange={setApiType} options={apiTypes} />
-          )}
-          <code className="min-w-0 select-all truncate font-mono text-[13px]">{apiAddress}</code>
-          <button
-            type="button"
-            onClick={() => copyText(apiAddress, t('token_index.apiAddress'))}
-            className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
-            aria-label={t('token_index.copy')}
-            title={t('token_index.copy')}
-          >
-            <Copy className="size-3.5" />
-          </button>
-          <Link
-            to="/panel/api"
-            className="ml-1 inline-flex items-center gap-0.5 text-muted-foreground transition-colors hover:text-foreground"
-          >
-            {t('apiKey.page.examples')}
-            <ChevronRight className="size-3.5" />
-          </Link>
-        </div>
-
         <Card>
-          {tokens.length === 0 && !searching ? (
+          {!loaded ? (
+            <TokenListSkeleton layout={layout} />
+          ) : tokens.length === 0 && !searching ? (
             <div className="flex flex-col items-center justify-center gap-3 p-12 text-center">
               <KeyRound className="size-10 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
@@ -525,8 +1068,6 @@ export default function Token() {
               orgMemberNames={isOrgContext ? orgMemberNames : null}
               userGroup={userGroup}
               userIsReliable={userIsReliable}
-              revealed={revealed}
-              onToggleReveal={onToggleReveal}
               onCopyKey={onCopyKey}
               onEdit={openEdit}
               onDelete={setDeleteTarget}
@@ -535,6 +1076,12 @@ export default function Token() {
               onConnectOpenClaw={setOpenClawTarget}
               onOpen={(item) => route.open(item.id)}
               openId={route.openId}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
+              onToggleSelectAll={toggleSelectAll}
+              layout={layout}
+              onNaturalWidth={setMeasuredTableWidth}
+              selectMode={selectMode}
               order={order}
               orderBy={orderBy}
               onSort={handleSort}
@@ -544,30 +1091,15 @@ export default function Token() {
             />
           )}
 
-          <div className="flex items-center justify-between gap-4 border-t border-border px-4 py-3 text-sm">
-            <span className="text-muted-foreground">{t('pagination.total', { count: listCount })}</span>
-            <div className="flex items-center gap-2">
-              <select
-                className="h-9 rounded-lg border border-input bg-background px-2 text-sm"
-                value={rowsPerPage}
-                onChange={(e) => onRowsPerPageChange(parseInt(e.target.value, 10))}
-              >
-                {PAGE_SIZE_OPTIONS.map((n) => (
-                  <option key={n} value={n}>
-                    {t('pagination.perPage', { count: n })}
-                  </option>
-                ))}
-              </select>
-              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
-                ‹
-              </Button>
-              <span className="tabular-nums">
-                {page + 1} / {totalPages}
-              </span>
-              <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => setPage((p) => p + 1)}>
-                ›
-              </Button>
-            </div>
+          <div className="border-t border-border">
+            <ListFooter
+              total={listCount}
+              page={page}
+              pageSize={rowsPerPage}
+              selectedCount={selectedIds.size}
+              onPageChange={setPage}
+              onPageSizeChange={onRowsPerPageChange}
+            />
           </div>
         </Card>
 
@@ -591,6 +1123,7 @@ export default function Token() {
             resetWeekStart={siteInfo?.quota_reset_week_start}
             onToggleStatus={onToggleStatus}
             onCopyKey={onCopyKey}
+            onCopyText={copyText}
             onDelete={setDeleteTarget}
             onShowUsage={setUsageTarget}
             onConnectOpenClaw={setOpenClawTarget}
@@ -602,7 +1135,7 @@ export default function Token() {
             onClose={route.close}
             onCreated={handleRefresh}
             onOpen={(id) => route.open(id)}
-            baseUrl={apiAddress}
+            baseUrl={apiAddresses[0]?.url}
             onCopy={copyText}
           />
         )}
@@ -620,6 +1153,23 @@ export default function Token() {
                 {t('token_index.cancel')}
               </Button>
               <Button variant="destructive" onClick={confirmDelete} disabled={deleting}>
+                {t('token_index.delete')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={batchDeleteOpen} onOpenChange={(o) => !o && setBatchDeleteOpen(false)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('common.delete')}</DialogTitle>
+              <DialogDescription>{t('apiKey.list.batchDeleteConfirm', { count: selectedIds.size })}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setBatchDeleteOpen(false)}>
+                {t('token_index.cancel')}
+              </Button>
+              <Button variant="destructive" onClick={() => runBatch('delete')} disabled={batchBusy}>
                 {t('token_index.delete')}
               </Button>
             </DialogFooter>
