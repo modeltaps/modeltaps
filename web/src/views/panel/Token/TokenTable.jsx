@@ -444,8 +444,10 @@ export default function TokenTable({
                 />
               ),
               meta: { className: 'w-[1%] pr-0' },
+              // A block-level flex wrapper: an inline one sits on the text baseline, a few px above
+              // the vertical center of the row.
               cell: (c) => (
-                <RowControl>
+                <RowControl className="flex">
                   <Checkbox
                     checked={selectedIds.has(c.row.original.id)}
                     onCheckedChange={() => onToggleSelect(c.row.original.id)}
@@ -587,7 +589,7 @@ export default function TokenTable({
           const info = statusInfo(t, item.status);
           const isAbnormal = item.status === 3 || item.status === 4;
           return (
-            <RowControl className="gap-2">
+            <RowControl className="flex gap-2">
               <Switch
                 size="sm"
                 checked={item.status === 1}
