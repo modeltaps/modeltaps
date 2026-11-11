@@ -970,7 +970,8 @@
     "sortLastLogin": "Last signed in"
   },
   "command": {
-    "search": "Search"
+    "search": "Search",
+    "thisPage": "On this page"
   },
   "common": {
     "error": "Something went wrong",
@@ -2654,12 +2655,7 @@
   },
   "settingsUi": {
     "search": {
-      "placeholder": "Search settings",
-      "clear": "Clear search",
-      "title": "Search “{{query}}”",
-      "empty": "No matching settings",
-      "count_one": "{{count}} card",
-      "count_other": "{{count}} cards"
+      "placeholder": "Search settings"
     },
     "unsaved": "Unsaved changes",
     "undo": "Undo",

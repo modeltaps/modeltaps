@@ -964,7 +964,8 @@
     "sortLastLogin": "最近登入"
   },
   "command": {
-    "search": "搜尋"
+    "search": "搜尋",
+    "thisPage": "目前頁面"
   },
   "common": {
     "error": "出錯了",
@@ -2559,11 +2560,7 @@
   },
   "settingsUi": {
     "search": {
-      "placeholder": "搜尋設定",
-      "clear": "清除搜尋",
-      "title": "搜尋「{{query}}」",
-      "empty": "沒有符合的設定",
-      "count": "{{count}} 張卡片"
+      "placeholder": "搜尋設定"
     },
     "unsaved": "有未儲存的改動",
     "undo": "復原",

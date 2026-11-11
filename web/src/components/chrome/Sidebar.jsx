@@ -18,8 +18,9 @@ import AccountMenu from './AccountMenu';
 import { CollapseButton, SidebarIconButton, SidebarSearch, sidebarRow } from './SidebarControls';
 
 // ==============================|| CHROME — SIDEBAR (one shell, three contexts) ||============================== //
-// Every panel page uses this sidebar. Top: brand row, context switcher (personal / org /
-// platform admin), search. Middle: the menu of the current context (nav-config). Bottom:
+// Every panel page uses this sidebar (设置 swaps it for SettingsSidebar, laid out the same way).
+// Top: brand row with the search and collapse buttons at its end, then the context switcher
+// (personal / org / platform admin). Middle: the menu of the current context (nav-config). Bottom:
 // the account row (its menu carries the balance, 设置 and the platform admin entry) and the
 // settings button, a shortcut to the same 设置 page in every context. Shared by the desktop rail
 // and the mobile drawer; `collapsed` switches the desktop rail to an icon column.
@@ -124,7 +125,7 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
   return (
     <TooltipProvider delayDuration={150}>
       <div className="flex h-full flex-col bg-sidebar">
-        {/* Brand row; the collapse button sits at its end (the drawer uses it to close). */}
+        {/* Brand row; search and collapse sit at its end (the drawer uses collapse to close). */}
         {collapsed ? (
           <div className="flex h-16 shrink-0 items-center justify-center">
             <Link to={DASHBOARD_URL} onClick={onItemClick} aria-label={brand} className="text-foreground hover:opacity-90">
@@ -140,13 +141,14 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
             >
               <BrandLockup text={brand} wordmark={isDefaultBrand(siteInfo?.system_name)} truncate />
             </Link>
+            <SidebarSearch onClick={onOpenCommand} />
             {onToggleCollapse && <CollapseButton onClick={onToggleCollapse} />}
           </div>
         )}
 
         <div className={cn('flex shrink-0 flex-col pb-1', collapsed ? 'items-center gap-1 px-1' : 'gap-2 px-2')}>
           <ContextSwitcher context={context} collapsed={collapsed} onNavigate={onItemClick} />
-          <SidebarSearch collapsed={collapsed} onClick={onOpenCommand} />
+          {collapsed && <SidebarSearch collapsed onClick={onOpenCommand} />}
         </div>
 
         <nav

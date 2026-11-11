@@ -214,11 +214,31 @@ describe('commandSections', () => {
 
   it('both parts of 设置: organization settings for owners and admins of the active organization', () => {
     const items = (orgRole) => commandSections({ orgId: 7, orgRole }).find((s) => s.id === 'account').items;
-    expect(items('owner').map((i) => [i.id, i.href])).toEqual([
+    const listed = (orgRole) => items(orgRole).filter((i) => !i.searchOnly);
+    expect(listed('owner').map((i) => [i.id, i.href])).toEqual([
       ['org_settings', '/panel/settings/org/7/general'],
       ['personal_settings', '/panel/settings']
     ]);
-    expect(items('member').map((i) => i.id)).toEqual(['personal_settings']);
+    expect(listed('member').map((i) => i.id)).toEqual(['personal_settings']);
+  });
+
+  it('every item of the 设置 tree is searchable (shown while typing)', () => {
+    const typed = (orgId, orgRole) =>
+      commandSections({ orgId, orgRole })
+        .find((s) => s.id === 'account')
+        .items.filter((i) => i.searchOnly)
+        .map((i) => [i.id, i.href, i.prefixKey]);
+    expect(typed(7, 'admin')).toEqual([
+      ['settings_org_general', '/panel/settings/org/7/general', 'settingsUi.sections.org'],
+      ['settings_org_members', '/panel/settings/org/7/members', 'settingsUi.sections.org'],
+      ['settings_org_danger', '/panel/settings/org/7/danger', 'settingsUi.sections.org'],
+      ['settings_personal_profile', '/panel/settings/account/profile', 'settingsUi.sections.personal'],
+      ['settings_personal_security', '/panel/settings/account/security', 'settingsUi.sections.personal'],
+      ['settings_personal_privacy', '/panel/settings/account/privacy', 'settingsUi.sections.personal'],
+      ['settings_personal_preferences', '/panel/settings/account/preferences', 'settingsUi.sections.personal']
+    ]);
+    expect(typed(7, 'member').map(([id]) => id)).not.toContain('settings_org_general');
+    expect(typed(null, null).map(([id]) => id)).toHaveLength(4);
   });
 
   it('设置 pages are recognised by path', () => {

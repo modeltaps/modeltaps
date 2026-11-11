@@ -1,8 +1,9 @@
 // ==============================|| SETTINGS — SEARCH AND DIRTY HELPERS ||============================== //
-// Pure helpers behind SettingsPage: matching a query against the text of a card, counting matches
-// per group, and deriving which groups hold unsaved cards. Kept free of React so they are testable.
+// Pure helpers behind SettingsPage: matching a query against the text of a card, listing a page's
+// cards for the search palette, and deriving which groups hold unsaved cards. Kept free of React
+// so they are testable.
 
-// Groups beyond this count get a search box at the top of the subnav.
+// Pages with this many groups get a search button at the top of their subnav.
 export const SEARCH_MIN_GROUPS = 4;
 
 export const shouldShowSearch = (groups) => (groups?.length || 0) >= SEARCH_MIN_GROUPS;
@@ -24,21 +25,29 @@ export function matchesQuery(text, query) {
   return q.split(' ').every((token) => hay.includes(token));
 }
 
-// entries: [{ cardId, groupId, text }] (text is everything a user can read on the card: title,
-// description, field labels and hints, collection rows). Returns the matching card ids and the
-// number of matches per group.
-export function searchCards(entries, query) {
-  const matches = new Set();
-  const counts = {};
-  for (const { cardId, groupId, text } of entries || []) {
-    if (!counts[groupId]) counts[groupId] = 0;
-    if (!normalizeText(text)) continue;
-    if (matchesQuery(text, query)) {
-      matches.add(cardId);
-      counts[groupId] += 1;
-    }
-  }
-  return { matches, counts };
+// The cards of a settings page as the search palette lists them: title, group (with its part on
+// a page of two parts), the link that opens it (highlighted when the card has an anchor) and all
+// of its text to match against (title, description, field labels and hints, collection rows).
+// `slots` maps card ids to their rendered elements; cards that render nothing are left out.
+export function cardIndex(groups, slots) {
+  return (groups || []).flatMap((group) =>
+    group.cards
+      .map((card) => {
+        const el = slots?.[card.id];
+        const text = normalizeText(el?.textContent);
+        if (!text) return null;
+        const title = (el.querySelector('h3') || el.querySelector('p.font-medium'))?.textContent?.trim() || String(group.label);
+        const anchor = el.querySelector('[data-highlight]')?.getAttribute('data-highlight');
+        return {
+          id: `${group.id}:${card.id}`,
+          title,
+          group: group.sectionLabel ? `${group.sectionLabel} · ${group.label}` : String(group.label),
+          to: anchor ? `${group.to}?highlight=${encodeURIComponent(anchor)}` : group.to,
+          text
+        };
+      })
+      .filter(Boolean)
+  );
 }
 
 // dirty: { [cardId]: groupId } for every card with unsaved changes.

@@ -1,4 +1,5 @@
 import { PLATFORM_GROUPS, cardTitleKey, groupLabelKey, settingsGroupUrl } from 'views/panel/Setting/registry';
+import { ACCOUNT_GROUPS, ORG_TREE, accountSettingsUrl, orgSettingsUrl } from 'views/panel/Settings/sections';
 import {
   Activity,
   BarChart3,
@@ -309,10 +310,22 @@ export function contextSwitchTarget({ pathname, to, isRoot = false, features = {
 export function commandSections({ isAdmin = false, isRoot = false, orgId = null, orgRole = null, features = {} }) {
   const context = orgId ? 'org' : 'personal';
   const workbench = navSectionsFor({ context, orgId, orgRole, isRoot, features });
-  // The two parts of 设置: the active organization's settings (owners and admins) and personal.
+  // The two parts of 设置: the active organization's settings (owners and admins) and personal,
+  // plus every item of their tree while typing.
+  const orgAdminHere = context === 'org' && isOrgAdminRole(orgRole);
+  const treeItem = (part, group, href) => ({
+    id: `settings_${part}_${group.id}`,
+    icon: group.icon,
+    labelKey: group.labelKey,
+    prefixKey: `settingsUi.sections.${part}`,
+    href,
+    searchOnly: true
+  });
   const extras = [
-    ...(context === 'org' && isOrgAdminRole(orgRole) ? [{ ...orgSettingsItem, href: itemUrl(orgSettingsItem, orgId) }] : []),
-    { ...personalSettingsItem, href: personalSettingsItem.url }
+    ...(orgAdminHere ? [{ ...orgSettingsItem, href: itemUrl(orgSettingsItem, orgId) }] : []),
+    { ...personalSettingsItem, href: personalSettingsItem.url },
+    ...(orgAdminHere ? ORG_TREE.map((group) => treeItem('org', group, orgSettingsUrl(orgId, group.id))) : []),
+    ...ACCOUNT_GROUPS.map((group) => treeItem('personal', group, accountSettingsUrl(group.id)))
   ];
   const sections = [...workbench, { id: 'account', items: extras }];
   if (!isAdmin) return sections;
