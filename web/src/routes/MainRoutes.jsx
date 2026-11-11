@@ -16,6 +16,7 @@ const Dashboard = Loadable(lazy(() => import('views/panel/Dashboard')));
 const Analytics = Loadable(lazy(() => import('views/panel/Analytics')));
 const Channel = Loadable(lazy(() => import('views/panel/Channel')));
 const RoutingPolicy = Loadable(lazy(() => import('views/panel/RoutingPolicy')));
+const Routing = Loadable(lazy(() => import('views/panel/Routing')));
 const User = Loadable(lazy(() => import('views/panel/User')));
 const UserGroup = Loadable(lazy(() => import('views/panel/UserGroup')));
 const Setting = Loadable(lazy(() => import('views/panel/Setting')));
@@ -121,6 +122,10 @@ const MainRoutes = {
           <UserGroup />
         </AdminGuard>
       )
+    },
+    {
+      path: 'routing',
+      element: <Routing />
     },
     {
       path: 'routing_policy',

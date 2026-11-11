@@ -36,7 +36,7 @@ const { base: rowBase, active: rowActive, idle: rowIdle } = sidebarRow;
 export default function Sidebar({ context, collapsed = false, onItemClick, onToggleCollapse, onOpenCommand }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
-  const { currentOrgId, orgRole, orgDetail, orgRoutingPolicyEnabled } = useOrg();
+  const { currentOrgId, orgRole, orgDetail, routingPolicyEnabled } = useOrg();
   const siteInfo = useSelector((state) => state.siteInfo);
   const user = useSelector((state) => state.account.user);
   const isRoot = useIsRoot();
@@ -47,7 +47,7 @@ export default function Sidebar({ context, collapsed = false, onItemClick, onTog
     orgRole,
     orgId: currentOrgId,
     isRoot,
-    features: { orgRoutingPolicy: orgRoutingPolicyEnabled }
+    features: { routingPolicy: routingPolicyEnabled }
   });
   const activeId = findActiveItem(pathname)?.id;
   const brand = brandWordmark(siteInfo?.system_name);

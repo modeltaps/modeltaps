@@ -42,7 +42,7 @@ export default function MainLayout() {
   const { t } = useTranslation();
   const { pathname, search } = useLocation();
   const isAdmin = useIsAdmin();
-  const { currentOrgId, organizations, orgRoutingPolicyEnabled } = useOrg();
+  const { currentOrgId, organizations } = useOrg();
   const context = deriveContext({ pathname, isAdmin, orgId: currentOrgId });
   const activeItem = findActiveItem(pathname);
 
@@ -52,7 +52,7 @@ export default function MainLayout() {
   useEffect(() => {
     if (!settingsPlane) rememberSettingsReturn(`${pathname}${search}`);
   }, [settingsPlane, pathname, search]);
-  const tree = settingsPlane ? settingsTree({ pathname, organizations, currentOrgId, routing: orgRoutingPolicyEnabled }) : null;
+  const tree = settingsPlane ? settingsTree({ pathname, organizations, currentOrgId }) : null;
 
   // The tab title names the space only in platform admin, to tell tabs apart; the brand part
   // is written from the site status (utils/documentTitle composes both).

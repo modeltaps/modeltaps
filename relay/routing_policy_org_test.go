@@ -32,10 +32,10 @@ func setupOrgRoutingResolveTest(t *testing.T) (platform, own *model.RoutingPolic
 	stubOrgGuardrail(t, func(shadowUserId, memberUserId int) (*model.OrgMemberGuardrail, error) {
 		return &model.OrgMemberGuardrail{OrganizationId: 7, MemberUserId: memberUserId}, nil
 	})
-	prev := config.OrganizationRoutingPolicyEnabled
-	config.OrganizationRoutingPolicyEnabled = true
+	prev := config.UserRoutingPolicyEnabled
+	config.UserRoutingPolicyEnabled = true
 	t.Cleanup(func() {
-		config.OrganizationRoutingPolicyEnabled = prev
+		config.UserRoutingPolicyEnabled = prev
 		_ = model.ReloadModelInfoCache()
 	})
 	return platform, own, setResult
@@ -71,7 +71,7 @@ func TestRouteRoutingPolicyPrefersOrganizationPolicy(t *testing.T) {
 	}
 
 	// Option off: organization keys fall back to the platform policy.
-	config.OrganizationRoutingPolicyEnabled = false
+	config.UserRoutingPolicyEnabled = false
 	off := newOrgRoutingRequest()
 	if got := resolveRoutingPolicy(off, "auto/t"); got != "cheap-model" {
 		t.Fatalf("option off: want the platform target, got %q", got)
@@ -138,11 +138,11 @@ func TestAppendRoutingPolicyModelsForOrganization(t *testing.T) {
 		t.Fatal(err)
 	}
 	base := []string{"fallback-model"}
-	got := appendRoutingPolicyModels(7, "default", append([]string(nil), base...), nil)
-	if len(got) != 3 || got[1] != "auto/org-only" || got[2] != "auto/t" {
-		t.Fatalf("organization list: want fallback-model, auto/org-only, auto/t; got %v", got)
+	got := appendRoutingPolicyModels(model.OrganizationRoutingScope(7), "default", append([]string(nil), base...), nil)
+	if len(got) != 3 || got[1] != "policy/auto/org-only" || got[2] != "policy/auto/t" {
+		t.Fatalf("organization list: want fallback-model, policy/auto/org-only, policy/auto/t (own overrides platform); got %v", got)
 	}
-	got = appendRoutingPolicyModels(0, "default", append([]string(nil), base...), nil)
+	got = appendRoutingPolicyModels(model.PersonalRoutingScope(1), "default", append([]string(nil), base...), nil)
 	if len(got) != 2 || got[1] != "auto/t" {
 		t.Fatalf("personal list: want fallback-model, auto/t; got %v", got)
 	}

@@ -71,11 +71,11 @@ type RoutingPolicyStats struct {
 
 // routingPolicyLogScope narrows logs to one policy. Names are only unique within a scope, so logs
 // carry routing_policy_id as well; logs written before that field existed have none and belong to
-// the platform policy of that name (organization policies did not exist yet).
+// the platform policy of that name (organization and personal policies did not exist yet).
 func routingPolicyLogScope(db *gorm.DB, policy *RoutingPolicy) *gorm.DB {
 	db = db.Where(metadataTextExpr("routing_policy")+" = ?", policy.Name)
 	idExpr := metadataNumberExpr("routing_policy_id")
-	if policy.IsOrganizationPolicy() {
+	if policy.IsOwnPolicy() {
 		return db.Where(idExpr+" = ?", policy.Id)
 	}
 	return db.Where("("+idExpr+" IS NULL OR "+idExpr+" = ?)", policy.Id)

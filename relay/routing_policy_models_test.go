@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/providers/claude"
 	"github.com/modeltaps/modeltaps/providers/gemini"
@@ -135,5 +136,43 @@ func TestProtocolLists_RoutingPoliciesFollowFallback(t *testing.T) {
 	// Claude 协议入口接受 Gemini / OpenAI 渠道转换，两条策略的兜底都可达。
 	if !ids["auto/claude"] || !ids["auto/gemini"] || ids["auto/off"] {
 		t.Fatalf("Claude 列表应含两条启用策略，实际 %v", ids)
+	}
+}
+
+// A signed-in user's available models include their personal policies as policy/<name>, listed for
+// their group when the fallback routes there; platform policies are not repeated.
+func TestAppendOwnRoutingPolicyAvailableModels(t *testing.T) {
+	defer setupProtocolModelGroup(t)()
+	defer setupRoutingPolicies(t)()
+	prev := config.UserRoutingPolicyEnabled
+	config.UserRoutingPolicyEnabled = true
+	defer func() { config.UserRoutingPolicyEnabled = prev }()
+	routes := []model.RoutingRoute{{Label: "small", TargetModel: "openai-only"}, {Label: "large", TargetModel: "claude-model"}}
+	for _, p := range []*model.RoutingPolicy{
+		{UserId: 7, Name: "mine", Enabled: true, DecisionModel: "openai-only", Routes: routes, FallbackModel: "claude-model", Threshold: 0.5},
+		{UserId: 8, Name: "theirs", Enabled: true, DecisionModel: "openai-only", Routes: routes, FallbackModel: "claude-model", Threshold: 0.5},
+	} {
+		if err := model.DB.Create(p).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := model.ReloadRoutingPolicyCache(); err != nil {
+		t.Fatal(err)
+	}
+
+	listed := map[string]*AvailableModelResponse{}
+	appendOwnRoutingPolicyAvailableModels(listed, model.PersonalRoutingScope(7), "g")
+	if len(listed) != 1 || listed["policy/mine"] == nil {
+		t.Fatalf("want only policy/mine, got %v", listed)
+	}
+	if got := listed["policy/mine"]; got.Kind != model.ModelInfoKindRoutingPolicy || got.Routing == nil || got.Groups[0] != "g" {
+		t.Fatalf("policy/mine should be a routing policy entry for group g: %+v", got)
+	}
+
+	// The fallback does not route in the group: not listed.
+	listed = map[string]*AvailableModelResponse{}
+	appendOwnRoutingPolicyAvailableModels(listed, model.PersonalRoutingScope(7), "openai-grp")
+	if len(listed) != 0 {
+		t.Fatalf("an unroutable fallback hides the policy, got %v", listed)
 	}
 }

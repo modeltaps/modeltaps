@@ -17,7 +17,7 @@ export default function CommandMenu({ open, setOpen }) {
   const { t } = useTranslation();
   const isAdmin = useIsAdmin();
   const isRoot = useIsRoot();
-  const { currentOrgId, orgRole, orgRoutingPolicyEnabled } = useOrg();
+  const { currentOrgId, orgRole, routingPolicyEnabled } = useOrg();
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -40,7 +40,7 @@ export default function CommandMenu({ open, setOpen }) {
     isRoot,
     orgId: currentOrgId,
     orgRole,
-    features: { orgRoutingPolicy: orgRoutingPolicyEnabled }
+    features: { routingPolicy: routingPolicyEnabled }
   });
 
   const go = (url) => {

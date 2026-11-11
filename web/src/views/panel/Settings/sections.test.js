@@ -27,9 +27,8 @@ describe('personal and organization settings sections', () => {
     expect(resolveOrgSection(3, 'nope')).toBe('/panel/settings/org/3/general');
   });
 
-  it('the 自动路由 page stays only while organizations may manage routing policies', () => {
-    expect(resolveOrgSection(3, 'routing', { routing: true })).toBeNull();
-    expect(resolveOrgSection(3, 'routing')).toBe('/panel/settings/org/3/general');
+  it('the old organization 自动路由 page redirects to the workbench 路由策略 page', () => {
+    expect(resolveOrgSection(3, 'routing')).toBe('/panel/routing');
   });
 
   it('every organization group is in the tree, and personal and organization ids never collide', () => {
@@ -76,20 +75,15 @@ describe('the 设置 tree', () => {
     expect(parseSettingsPath('/panel/settings')).toEqual({ orgId: null, section: null });
   });
 
-  it('organization settings come first: general, members & budget, routing (when allowed), danger zone', () => {
-    const tree = settingsTree({ pathname: '/panel/settings/org/9/general', organizations: orgs, routing: true });
+  it('organization settings come first: general, members & budget, danger zone', () => {
+    const tree = settingsTree({ pathname: '/panel/settings/org/9/general', organizations: orgs });
     expect(tree.org.id).toBe(9);
     expect(ids(tree.managedOrgs)).toEqual([4, 9]);
-    expect(ids(tree.orgItems)).toEqual(['general', 'members', 'routing', 'danger']);
+    expect(ids(tree.orgItems)).toEqual(['general', 'members', 'danger']);
     expect(tree.orgItems.find((i) => i.id === 'members').to).toBe('/panel/settings/org/9/members');
     expect(ids(tree.personalItems)).toEqual(['profile', 'security', 'privacy', 'preferences']);
     expect(tree.active.id).toBe('general');
     expect(tree.activeScope).toBe('org');
-    expect(ids(settingsTree({ pathname: '/panel/settings/org/9/general', organizations: orgs }).orgItems)).toEqual([
-      'general',
-      'members',
-      'danger'
-    ]);
   });
 
   it('on a personal item the organization part shows the active (or first) managed organization', () => {

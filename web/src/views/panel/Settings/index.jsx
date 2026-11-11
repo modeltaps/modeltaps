@@ -12,7 +12,6 @@ import OrgSectionHost, { useOrgDetail } from './org/OrgSectionHost';
 import GeneralSection from './org/GeneralSection';
 import BudgetSection from './org/BudgetSection';
 import DangerSection from './org/DangerSection';
-import RoutingPage from './org/RoutingPage';
 import useSelfUser from './account/useSelfUser';
 import { accountGroupCards } from './account';
 import {
@@ -20,7 +19,6 @@ import {
   DEFAULT_ACCOUNT_SECTION,
   ORG_GROUPS,
   ORG_MEMBERS_SECTION,
-  ORG_ROUTING_SECTION,
   accountSettingsUrl,
   orgSettingsUrl,
   resolveAccountSection,
@@ -35,8 +33,8 @@ import {
 // sections.js): 组织设置 first for owners and admins of an organization, headed by a picker of
 // the organizations they manage, then 个人设置. This page renders the content of the active item:
 // the groups of both parts are one SettingsPage (unsaved edits survive switching between them;
-// its search, dots and counts show in the sidebar), and 成员与预算 (`.../members`) and 自动路由
-// (`.../routing`) are pages of their own. The organization is the one in the URL and stays
+// its search, dots and counts show in the sidebar), and 成员与预算 (`.../members`) is a page of its
+// own (`.../routing` redirects to the workbench's 路由策略 page). The organization is the one in the URL and stays
 // decoupled from the active context of the workbench. Platform settings are part of 平台管理.
 
 function SettingsHub({ section, orgId, managedOrgs }) {
@@ -88,7 +86,7 @@ SettingsHub.propTypes = {
 export default function Settings() {
   const { search } = useLocation();
   const { orgId: orgIdParam, section } = useParams();
-  const { organizations, orgsLoaded, currentOrgId, orgRoutingPolicyEnabled } = useOrg();
+  const { organizations, orgsLoaded, currentOrgId } = useOrg();
   useHighlightTarget();
 
   const orgScope = orgIdParam !== undefined;
@@ -111,7 +109,7 @@ export default function Settings() {
 
   // Organizations the user does not manage fall back to the first item of the tree.
   if (!managedOrg) return <Navigate to={settingsLanding({ organizations, currentOrgId })} replace />;
-  const target = resolveOrgSection(orgId, section, { routing: orgRoutingPolicyEnabled });
+  const target = resolveOrgSection(orgId, section);
   if (target) return <Navigate to={target} replace />;
   if (section === ORG_MEMBERS_SECTION) {
     return (
@@ -120,6 +118,5 @@ export default function Settings() {
       </div>
     );
   }
-  if (section === ORG_ROUTING_SECTION) return <RoutingPage key={orgId} orgId={orgId} />;
   return <SettingsHub section={section} orgId={orgId} managedOrgs={managedOrgs} />;
 }

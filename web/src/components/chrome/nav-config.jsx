@@ -38,7 +38,7 @@ import {
 //   match        extra paths (segment prefixes) or RegExps that make the item active
 //   orgAdmin     org context, owner/admin only
 //   root         root admins only
-//   requires     a site feature that must be on (`features` of the context, e.g. orgRoutingPolicy)
+//   requires     a site feature that must be on (`features` of the context, e.g. routingPolicy)
 //   pageIn       contexts where the page works even though the item is not in the menu
 //                (used when switching context to decide whether to stay on the page)
 
@@ -71,6 +71,8 @@ export const workbenchSections = [
     items: [
       { id: 'token', url: url('token'), icon: KeyRound, labelKey: 'nav.items.token' },
       { id: 'model_price', url: url('model_price'), icon: PackageOpen, labelKey: 'nav.items.models' },
+      // Routing policies the context's keys call: personal ones, or the organization's.
+      { id: 'routing', url: url('routing'), icon: Route, labelKey: 'nav.items.routingPolicies', requires: 'routingPolicy' },
       // One item for the five API consoles (`/panel/api/:modality`); the console pages switch
       // modality in-page. `/panel/api` itself (the API overview) is not part of it.
       {
@@ -106,16 +108,6 @@ export const workbenchSections = [
         icon: UsersRound,
         labelKey: 'nav.items.orgMembers',
         orgAdmin: true
-      },
-      // The organization's own routing policies, while the site lets organizations manage them.
-      {
-        id: 'org_routing',
-        url: `/panel/settings/org/${ORG_PARAM}/routing`,
-        match: [/^\/panel\/settings\/org\/[^/]+\/routing(\/|$)/],
-        icon: Route,
-        labelKey: 'nav.items.routing',
-        orgAdmin: true,
-        requires: 'orgRoutingPolicy'
       },
       { id: 'billing', url: url('billing'), icon: ReceiptText, labelKey: 'nav.items.billing', orgAdmin: true, pageIn: ['personal'] }
     ]

@@ -79,28 +79,30 @@ func resolveRoutingPolicy(c *gin.Context, modelName string) string {
 // errRoutingFallbackUnavailable an organization policy's target and fallback are both unusable.
 var errRoutingFallbackUnavailable = fmt.Errorf("%w: the routing policy's models are not available", errModelNotFoundSentinel)
 
-// routeRoutingPolicy resolves a model name that may be a routing policy: the organization's own
-// policy first (for organization API keys), then the platform policy. Requests are never refused
-// over the decision itself; the only error is an organization policy whose target and fallback
-// have both become unusable, which is a configuration problem the caller reports as model not found.
+// routeRoutingPolicy resolves a model name that may be a routing policy: the key's own policy first
+// (the organization's for organization API keys, the user's for personal keys), then the platform
+// policy. Requests are never refused over the decision itself; the only error is an own policy whose
+// target and fallback have both become unusable, which is a configuration problem the caller
+// reports as model not found.
 func routeRoutingPolicy(c *gin.Context, modelName string) (string, error) {
-	if cached, ok := utils.GetGinValue[*RoutingDecision](c, RoutingDecisionContextKey); ok && cached != nil && cached.Policy == modelName {
+	if cached, ok := utils.GetGinValue[*RoutingDecision](c, RoutingDecisionContextKey); ok && cached != nil && cached.Requested == modelName {
 		if cached.TargetModel == "" {
 			return "", errRoutingFallbackUnavailable
 		}
 		return cached.TargetModel, nil
 	}
-	policy := model.ResolveRoutingPolicy(routingOrganizationId(c), modelName)
+	policy := model.ResolveRoutingPolicy(routingScope(c), modelName)
 	if policy == nil {
 		return modelName, nil
 	}
 
 	decision := decideRoute(c, policy)
-	if policy.IsOrganizationPolicy() && !model.OrganizationRoutingTargetUsable(decision.TargetModel) {
-		// The platform hid the model after the policy was saved; an organization policy must not reach it.
+	decision.Requested = modelName
+	if policy.IsOwnPolicy() && !model.RoutingTargetUsable(decision.TargetModel) {
+		// The platform hid the model after the policy was saved; an own policy must not reach it.
 		decision.Label, decision.Reason = "", RoutingReasonTargetUnavailable
 		decision.TargetModel = policy.FallbackModel
-		if !model.OrganizationRoutingTargetUsable(policy.FallbackModel) {
+		if !model.RoutingTargetUsable(policy.FallbackModel) {
 			decision.TargetModel = ""
 		}
 	}
@@ -110,9 +112,9 @@ func routeRoutingPolicy(c *gin.Context, modelName string) (string, error) {
 		logger.LogWarn(c.Request.Context(), "routing_fallback_unavailable policy="+policy.Name+" id="+strconv.Itoa(policy.Id))
 		return "", errRoutingFallbackUnavailable
 	}
-	// 用户请求的是策略名；别名改写已经填过 requested_model 时保留用户原文。
+	// 用户请求的是策略名（policy/<name> 或裸名）；别名改写已经填过 requested_model 时保留用户原文。
 	if c.GetString("requested_model") == "" {
-		c.Set("requested_model", policy.Name)
+		c.Set("requested_model", modelName)
 	}
 	// 响应头在选渠道前写，流式与非流式都能带上。
 	c.Header(relay_util.RoutingRouteHeader, decision.HeaderValue())
@@ -120,26 +122,32 @@ func routeRoutingPolicy(c *gin.Context, modelName string) (string, error) {
 	return decision.TargetModel, nil
 }
 
-// routingOrganizationContextKey caches the organization of the request's API key (0 = none).
-const routingOrganizationContextKey = "routing_organization_id"
+// routingScopeContextKey caches the own policy scope of the request's API key.
+const routingScopeContextKey = "routing_scope"
 
-// routingOrganizationId returns the organization whose policies the request may use: organization API
-// keys charge the shadow account ("id") on behalf of a member ("token_created_by"). Any failure to load
-// the membership means no organization policies; the organization guardrail rejects such requests later.
-func routingOrganizationId(c *gin.Context) int {
-	if cached, ok := c.Get(routingOrganizationContextKey); ok {
-		id, _ := cached.(int)
-		return id
+// routingScope returns whose own policies the request may use. Organization API keys charge the
+// shadow account ("id") on behalf of a member ("token_created_by") and use the organization's
+// policies; any failure to load the membership means no own policies (the organization guardrail
+// rejects such requests later). Personal keys use their user's policies. The platform scope means
+// platform policies only.
+func routingScope(c *gin.Context) model.RoutingScope {
+	if cached, ok := c.Get(routingScopeContextKey); ok {
+		scope, _ := cached.(model.RoutingScope)
+		return scope
 	}
-	organizationId := 0
-	shadowId, memberId := c.GetInt("id"), c.GetInt("token_created_by")
-	if config.OrganizationRoutingPolicyEnabled && memberId > 0 && memberId != shadowId {
-		if guardrail, err := cacheGetOrgMemberGuardrailFn(shadowId, memberId); err == nil && guardrail != nil {
-			organizationId = guardrail.OrganizationId
+	scope := model.PlatformRoutingScope
+	userId, memberId := c.GetInt("id"), c.GetInt("token_created_by")
+	if config.UserRoutingPolicyEnabled && userId > 0 {
+		if memberId > 0 && memberId != userId {
+			if guardrail, err := cacheGetOrgMemberGuardrailFn(userId, memberId); err == nil && guardrail != nil {
+				scope = model.OrganizationRoutingScope(guardrail.OrganizationId)
+			}
+		} else {
+			scope = model.PersonalRoutingScope(userId)
 		}
 	}
-	c.Set(routingOrganizationContextKey, organizationId)
-	return organizationId
+	c.Set(routingScopeContextKey, scope)
+	return scope
 }
 
 // decideRoute 先查会话固定记录，没有再分类；分类结果写回固定记录。

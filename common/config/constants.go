@@ -382,12 +382,16 @@ var UnifiedRequestResponseModelEnabled = false
 // 关闭时决策调用只记录在系统日志，不写消费日志、不扣额度。
 var RoutingDecisionBillingEnabled = true
 
-// OrganizationRoutingPolicyEnabled lets organization owners and admins manage routing policies that
-// only their organization can use. Off by default; when off, organization policies are kept but not resolved.
-var OrganizationRoutingPolicyEnabled = false
+// UserRoutingPolicyEnabled lets users create their own routing policies (called as policy/<name>):
+// personal policies for their own API keys, and organization policies managed by organization owners
+// and admins. On by default; when off, own policies are kept but not resolved.
+var UserRoutingPolicyEnabled = true
 
 // OrganizationRoutingPolicyMaxCount caps the routing policies one organization can create.
 var OrganizationRoutingPolicyMaxCount = 20
+
+// PersonalRoutingPolicyMaxCount caps the personal routing policies one user can create.
+var PersonalRoutingPolicyMaxCount = 20
 
 // FingerprintPassThroughEnabled 让中转响应尽量保留上游的响应指纹：Claude / Bedrock 的
 // 非流式原始字节透传、流式跳过 model 改写，以及上游响应头透传（Bedrock x-amzn-* /

@@ -205,12 +205,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Settings is one place again, as in 0.3.0. Settings in the account menu and a settings button
   next to the account row (it replaces the bell) open it, and the sidebar turns into its tree: a
   back row to the page you came from, Organization settings for owners and admins (a picker of
-  the organizations they manage, then General, Members & budgets, Auto routing while
-  organizations may manage routing policies, and Danger zone), then Personal settings. The page
-  is titled with the item, and with the organization's name under organization items. The
-  settings search and the unsaved-changes dots are in the tree. Picking an organization there no
-  longer switches the active space. The organization menu no longer has an Organization settings
-  item; Members & budgets and Auto routing stay there as shortcuts into Settings.
+  the organizations they manage, then General, Members & budgets and Danger zone), then Personal
+  settings. The page is titled with the item, and with the organization's name under
+  organization items. The settings search and the unsaved-changes dots are in the tree. Picking
+  an organization there no longer switches the active space. The organization menu no longer has
+  an Organization settings item; Members & budgets stays there as a shortcut into Settings.
 - The site announcement no longer opens a dialog on page load. While it is unread, the console
   shows one row above the page title with its first line, a button that opens the full text and
   a close button; reading or closing it hides the row until the announcement changes. The

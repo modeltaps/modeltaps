@@ -51,6 +51,15 @@ func setOrgRouter(apiRouter *gin.RouterGroup) {
 			orgMemberRoute.GET("/logs/detail/:log_id", controller.GetOrgLogDetail)
 			orgMemberRoute.GET("/analytics", controller.GetOrgUsageAnalytics)
 			orgMemberRoute.GET("/analytics/export", controller.ExportOrgUsageAnalytics)
+
+			// Routing policies of this organization: every member can see what they may call.
+			orgMemberRoutingRoute := orgMemberRoute.Group("/routing_policy")
+			orgMemberRoutingRoute.Use(middleware.UserRoutingPolicyEnabled())
+			{
+				orgMemberRoutingRoute.GET("/", controller.GetOrgRoutingPolicies)
+				orgMemberRoutingRoute.GET("/managed", controller.GetOrgManagedRoutingPolicies)
+				orgMemberRoutingRoute.GET("/:policy_id", controller.GetOrgRoutingPolicy)
+			}
 		}
 
 		// 管理可访问(Admin+)
@@ -80,17 +89,15 @@ func setOrgRouter(apiRouter *gin.RouterGroup) {
 			orgAdminRoute.POST("/order", controller.CreateOrgOrder)
 			orgAdminRoute.GET("/order", controller.GetOrgOrdersList)
 
-			// Routing policies of this organization (ROUTE-11). Log sample replay is left out until
+			// Managing the organization's routing policies (ROUTE-11). Log sample replay is left out until
 			// reading members' prompts from the console is tightened (SEC-51).
 			orgRoutingRoute := orgAdminRoute.Group("/routing_policy")
-			orgRoutingRoute.Use(middleware.OrgRoutingPolicyEnabled())
+			orgRoutingRoute.Use(middleware.UserRoutingPolicyEnabled())
 			{
-				orgRoutingRoute.GET("/", controller.GetOrgRoutingPolicies)
 				orgRoutingRoute.POST("/", controller.CreateOrgRoutingPolicy)
 				orgRoutingRoute.GET("/models", controller.GetOrgRoutingModels)
 				orgRoutingRoute.POST("/try", middleware.CriticalRateLimit(), relay.OrgTryRoutingPolicyHandler)
 				orgRoutingRoute.POST("/probe", middleware.CriticalRateLimit(), relay.OrgProbeRoutingScoringHandler)
-				orgRoutingRoute.GET("/:policy_id", controller.GetOrgRoutingPolicy)
 				orgRoutingRoute.PUT("/:policy_id", controller.UpdateOrgRoutingPolicy)
 				orgRoutingRoute.PUT("/:policy_id/status", controller.UpdateOrgRoutingPolicyStatus)
 				orgRoutingRoute.DELETE("/:policy_id", controller.DeleteOrgRoutingPolicy)

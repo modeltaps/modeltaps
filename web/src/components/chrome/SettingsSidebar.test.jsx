@@ -18,14 +18,14 @@ const orgs = [
   { id: 9, name: 'Globex', role: 'member' }
 ];
 
-const renderAt = (path, { organizations = orgs, plane = null, routing = false } = {}) =>
+const renderAt = (path, { organizations = orgs, plane = null } = {}) =>
   render(
     createElement(
       MemoryRouter,
       { initialEntries: [path] },
       createElement(
         OrgContext.Provider,
-        { value: { organizations, currentOrgId: null, orgRoutingPolicyEnabled: routing } },
+        { value: { organizations, currentOrgId: null } },
         createElement(SettingsPlaneContext.Provider, { value: plane }, createElement(SettingsSidebar))
       )
     )
@@ -38,11 +38,11 @@ const linkNames = (group) =>
 
 describe('SettingsSidebar', () => {
   it('lists organization settings first, with the picker, then personal settings', () => {
-    renderAt('/panel/settings/org/4/members', { routing: true });
+    renderAt('/panel/settings/org/4/members');
     const [org, personal] = screen.getAllByRole('group');
     expect(org.getAttribute('aria-label')).toBe('组织设置');
     expect(within(org).getByRole('button', { name: '选择组织' }).textContent).toContain('Acme');
-    expect(linkNames(org)).toEqual(['常规', '成员与预算', '自动路由', '危险操作']);
+    expect(linkNames(org)).toEqual(['常规', '成员与预算', '危险操作']);
     expect(personal.getAttribute('aria-label')).toBe('个人设置');
     expect(linkNames(personal)).toEqual(['资料', '登录与安全', '数据与隐私', '偏好']);
     expect(within(org).getByRole('link', { name: '成员与预算' }).getAttribute('aria-current')).toBe('page');

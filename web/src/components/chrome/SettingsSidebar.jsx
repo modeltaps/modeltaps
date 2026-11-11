@@ -18,7 +18,7 @@ import { CollapseButton, sidebarRow } from './SidebarControls';
 // On 设置 the whole sidebar is the settings tree. Top: a back row to the page the user came from
 // (工作台, or 平台管理 when they came from there) and the collapse button. Then the settings search
 // (while the page has enough groups), 组织设置 for owners and admins of an organization (a picker
-// of the organizations they manage, then 常规 / 成员与预算 / 自动路由 / 危险操作) and 个人设置.
+// of the organizations they manage, then 常规 / 成员与预算 / 危险操作) and 个人设置.
 // No footer: balance, account menu and the settings button are back in the workbench.
 
 function TreeItem({ item, label, collapsed, dirty, count, dimmed, onClick }) {
@@ -78,10 +78,10 @@ export default function SettingsSidebar({ collapsed = false, onItemClick, onTogg
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { organizations, currentOrgId, orgRoutingPolicyEnabled } = useOrg();
+  const { organizations, currentOrgId } = useOrg();
   const plane = useSettingsPlane();
 
-  const tree = settingsTree({ pathname, organizations, currentOrgId, routing: orgRoutingPolicyEnabled });
+  const tree = settingsTree({ pathname, organizations, currentOrgId });
   const backTo = settingsReturnPath();
   const backToAdmin = isAdminPath(backTo.split('?')[0]);
   const backName = backToAdmin ? t('nav.context.admin') : t('admin_console.workspace');
@@ -96,7 +96,7 @@ export default function SettingsSidebar({ collapsed = false, onItemClick, onTogg
     onItemClick?.();
   };
 
-  // Picking another organization keeps the item when it exists for it (自动路由 may not).
+  // Picking another organization keeps the current item.
   const { section } = parseSettingsPath(pathname);
   const openOrg = (orgId) => {
     const keep = tree.orgItems.some((item) => item.active) ? section : ORG_TREE[0].id;

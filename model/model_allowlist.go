@@ -23,6 +23,9 @@ func ModelAllowlistPermits(allowlist []string, modelName string) bool {
 	canonical, _ := ResolveCanonicalModel(requested)
 	name := strings.ToLower(requested)
 	canonicalLower := strings.ToLower(canonical)
+	// An own routing policy is listed as policy/<name> but was allowed by its bare name before the
+	// prefix existed; both entries permit it.
+	bare, isPolicyCall := strings.CutPrefix(name, strings.ToLower(RoutingPolicyCallPrefix))
 	for _, raw := range allowlist {
 		entry := strings.TrimSpace(raw)
 		if entry == "" {
@@ -35,7 +38,7 @@ func ModelAllowlistPermits(allowlist []string, modelName string) bool {
 			}
 			continue
 		}
-		if item == name || item == canonicalLower {
+		if item == name || item == canonicalLower || (isPolicyCall && item == bare) {
 			return true
 		}
 		if itemCanonical, _ := ResolveCanonicalModel(entry); strings.ToLower(itemCanonical) == canonicalLower {

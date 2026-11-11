@@ -684,7 +684,7 @@
     "platform_settings": "プラットフォーム全体の既定値とスイッチ",
     "token": "API を呼び出すためのキー",
     "invite_code": "登録用の招待コードの作成、有効化、無効化",
-    "org_routing": "この組織の API キーで使うルーティングポリシー。同じ名前のプラットフォームのポリシーを置き換えます"
+    "routing": "API キーで呼び出せるポリシー：マネージドは名前で、自分のものは policy/<名前> で呼び出します"
   },
   "api_compare": "比較",
   "modelInfoPage": {
@@ -727,7 +727,23 @@
     "firstPage": "最初のページ",
     "prevPage": "前のページ",
     "nextPage": "次のページ",
-    "lastPage": "最後のページ"
+    "lastPage": "最後のページ",
+    "columns": "列",
+    "selectColumns": "列を選択",
+    "columnsSelectAll": "すべて選択",
+    "resetColumns": "デフォルトに戻す",
+    "addCondition": "条件を追加",
+    "presets": "プリセット",
+    "presetsBuiltin": "よく使うビュー",
+    "presetsSaved": "保存済み",
+    "presetSave": "現在の条件を保存",
+    "presetRemove": "プリセットを削除",
+    "filter": "絞り込み",
+    "sort": "並べ替え",
+    "selectAllOnPage": "このページをすべて選択",
+    "selectRow": "{{name}} を選択",
+    "selectMode": "選択",
+    "segments": "状態"
   },
   "pricing": "モデル",
   "modelsPage": {
@@ -938,7 +954,14 @@
       "passwordHint": "8〜64 文字。",
       "defaults": "default グループの一般ユーザーとして作成します",
       "created": "{{username}} を作成しました"
-    }
+    },
+    "roleFilterLabel": "ロール",
+    "roleAdmins": "管理者以上",
+    "showUsersThat": "ユーザーを絞り込む",
+    "sortNewest": "新しい順",
+    "sortBalance": "残高の多い順",
+    "sortUsed": "利用額の多い順",
+    "sortLastLogin": "最近ログインした順"
   },
   "command": {
     "search": "検索"
@@ -1582,7 +1605,7 @@
     "model_alias_target_is_alias": "エイリアス先に別のエイリアスは指定できません",
     "model_managed_by_routing_policy": "このモデルは自動ルーティングポリシーが管理しています。ポリシー側で編集してください",
     "routing_policy_not_found": "ルーティングポリシーが見つかりません",
-    "routing_policy_name_invalid": "名前に使えるのは英数字と . _ / - のみで、最大 100 文字、先頭と末尾に / は使えません",
+    "routing_policy_name_invalid": "名前に使えるのは英数字と . _ / - のみで、最大 100 文字、先頭と末尾に / は使えず、policy/ で始めることもできません",
     "routing_policy_name_taken": "この名前はすでにモデルまたは別のポリシーで使われています",
     "routing_policy_model_required": "{{field}} にはモデルを指定してください",
     "routing_policy_model_is_policy": "{{field}} にはルーティングポリシーではなくモデルを指定してください（{{model}}）",
@@ -1689,7 +1712,7 @@
       "enabled": "有効",
       "week": "直近 7 日",
       "fallbackRate": "フォールバック {{rate}}%",
-      "organization": "組織"
+      "owner": "所有者"
     },
     "form": {
       "name": "モデル名",
@@ -1749,7 +1772,8 @@
       "tabAdvanced": "詳細",
       "tabTry": "試す",
       "enabled": "有効",
-      "enabledHint": "無効なポリシーはモデル一覧に出ず、リクエストは model_not_found になります。"
+      "enabledHint": "無効なポリシーはモデル一覧に出ず、リクエストは model_not_found になります。",
+      "nameHintOwn": "model に policy/<この名前>（例: policy/coder）を指定して呼び出します。"
     },
     "templates": {
       "coding_change_size": "コーディング: 変更の大きさ",
@@ -1774,7 +1798,8 @@
       "loadingSamples": "読み込み中…",
       "noSamples": "リクエスト本文が保存されたルーティング済みリクエストはまだありません。リクエスト詳細の記録を有効にするとサンプルが集まります。",
       "scoring": "スコアリング",
-      "introBilled": "このフォームの現在のポリシーで判定ステップだけを実行します。転送もセッション固定も行いませんが、判定の呼び出しは組織に課金されます。"
+      "introBilled": "このフォームの現在のポリシーで判定ステップだけを実行します。転送もセッション固定も行いませんが、判定の呼び出しは組織に課金されます。",
+      "introBilledPersonal": "決定だけを、フォームの現在のポリシーで実行します。転送もセッション固定もしませんが、決定の呼び出しは課金され、残高から差し引かれます。"
     },
     "reasons": {
       "classified": "分類済み",
@@ -1838,13 +1863,32 @@
     "scope": {
       "label": "範囲",
       "platform": "プラットフォーム",
-      "organization": "組織"
+      "organization": "組織",
+      "personal": "個人"
     },
     "overridesPlatform": "プラットフォームのポリシーを上書き",
     "organizationsIntro": "各組織が自分の「自動ルーティング」ページで管理しているポリシーです。その組織の API キーにだけ適用されます。ここでは無効化のみできます。",
-    "organizationsEmpty": "ルーティングポリシーを作成した組織はまだありません。",
-    "orgIntro": "ここのポリシーはこの組織の API キーにだけ適用されます。プラットフォームのポリシーと同じ名前なら、メンバーにはこちらが使われます。「試す」は決定モデルを実際に呼び出し、費用は組織に計上されます。",
-    "overridesPlatformHint": "同じ名前のプラットフォームのポリシーがあります。この組織の API キーでは、プラットフォームではなく組織のポリシーが使われます。"
+    "orgIntro": "ここのポリシーはこの組織の API キーにだけ適用されます。model を policy/<名前> にして呼び出します。マネージドポリシーと同じ名前なら、組織内では名前だけの指定もこちらになります。「試す」は決定モデルを実際に呼び出し、費用は組織に計上されます。",
+    "overridesPlatformHint": "同じ名前のプラットフォームのポリシーがあります。この組織の API キーでは、プラットフォームではなく組織のポリシーが使われます。",
+    "callName": "モデル名",
+    "copyCallName": "モデル名をコピー",
+    "status": {
+      "enabled": "有効",
+      "disabled": "無効"
+    },
+    "reviewEmpty": "まだ誰もルーティングポリシーを作成していません。",
+    "personalIntro": "各ユーザーがワークベンチの「ルーティングポリシー」で自分用に作成したポリシーです。本人の個人 API キーにだけ適用されます。ここでは無効化のみできます。",
+    "personalOwnIntro": "ここのポリシーはあなたの個人 API キーにだけ適用されます。model を policy/<名前> にして呼び出します。マネージドポリシーと同じ名前なら、あなたのキーでは名前だけの指定もこちらになります。「試す」は決定モデルを実際に呼び出し、残高から差し引かれます。",
+    "orgMemberIntro": "この組織のオーナー / 管理者が作成したポリシーです。組織の API キーから policy/<名前> で呼び出せます。変更できるのは管理者だけです。",
+    "types": {
+      "label": "ポリシーの種類",
+      "managed": "マネージド",
+      "auto": "自動ルーティング"
+    },
+    "managedIntro": "プラットフォームが提供するポリシーです。model に名前をそのまま指定します。",
+    "managedEmpty": "利用できるマネージドポリシーはまだありません。",
+    "managedOverridden": "自分のポリシーで置き換え済み",
+    "managedOverriddenHint": "同じ名前の自作ポリシーがあるため、名前だけの指定では自分のものが使われます。このマネージドポリシーを使うには、自分のポリシーの名前を変えるか無効にしてください。"
   },
   "logPage": {
     "routing": {
@@ -1863,10 +1907,12 @@
       "generalSettings": {
         "routingDecisionBilling": "判定呼び出しを課金する",
         "routingDecisionBillingDescription": "自動ルーティングポリシーの分類呼び出しを判定モデルの価格で呼び出し元に課金します。セッションごとに 1 回、独立したログとして記録します。オフでも判定は実行されますが消費ログは残りません。",
-        "orgRoutingPolicy": "組織が自分のルーティングポリシーを管理できるようにする",
-        "orgRoutingPolicyDescription": "組織のオーナーと管理者の組織メニューに「自動ルーティング」が表示されます。組織のポリシーはその組織の API キーにだけ適用され、プラットフォームのポリシーと同じ名前ならその組織内で置き換えます。",
         "orgRoutingPolicyMaxCount": "組織ごとのポリシー上限",
-        "orgRoutingPolicyMaxCountDescription": "1 つの組織が作成できるルーティングポリシーの最大数です。0 は無制限です。"
+        "orgRoutingPolicyMaxCountDescription": "1 つの組織が作成できるルーティングポリシーの最大数です。0 は無制限です。",
+        "userRoutingPolicy": "ユーザーと組織が自分のルーティングポリシーを作成できるようにする",
+        "userRoutingPolicyDescription": "ユーザーはワークベンチの「ルーティングポリシー」で個人ポリシーを、組織のオーナー / 管理者は組織ポリシーを作成し、どちらも policy/<名前> で呼び出します。オフにすると自作ポリシーは残りますが適用されません。",
+        "personalRoutingPolicyMaxCount": "ユーザーごとのポリシー上限",
+        "personalRoutingPolicyMaxCountDescription": "1 人のユーザーが作成できる個人ルーティングポリシーの数。0 は無制限です。"
       }
     },
     "otherSettings": {
@@ -2247,7 +2293,8 @@
       "platformSettings": "プラットフォーム設定",
       "personalSettings": "個人設定",
       "inviteCodes": "招待コード",
-      "settings": "設定"
+      "settings": "設定",
+      "routingPolicies": "ルーティングポリシー"
     },
     "context": {
       "personal": "個人",
@@ -2940,14 +2987,10 @@
       "examples": "接続例"
     },
     "list": {
-      "segments": "キーの状態",
       "status_all": "すべて",
       "status_enabled": "有効",
       "status_disabled": "無効",
       "status_invalid": "期限切れ・使い切り",
-      "columns": "列",
-      "resetColumns": "デフォルトに戻す",
-      "addCondition": "条件を追加",
       "showKeysThat": "キーを絞り込む",
       "expiry": "有効期限",
       "expiryNever": "期限なし",
@@ -2957,11 +3000,6 @@
       "activityNever": "未使用",
       "activityIdle": "30 日間未使用",
       "connect": "接続",
-      "presets": "プリセット",
-      "presetsBuiltin": "よく使うビュー",
-      "presetsSaved": "保存済み",
-      "presetSave": "現在の条件を保存",
-      "presetRemove": "プリセットを削除",
       "presetExpiring": "まもなく期限切れ",
       "presetInvalid": "期限切れ・使い切り",
       "presetUnused": "未使用",
@@ -2990,13 +3028,10 @@
       "state_expired": "期限切れ",
       "state_exhausted": "使い切り",
       "stateExpiring": "{{when}}に期限切れ",
-      "filter": "絞り込み",
-      "sort": "並べ替え",
       "sortNewest": "新しい順",
       "sortName": "名前 A–Z",
       "sortUsage": "利用額の多い順",
-      "sortExpiry": "期限の近い順",
-      "selectMode": "キーを選択"
+      "sortExpiry": "期限の近い順"
     },
     "expiry": {
       "never": "期限なし",
