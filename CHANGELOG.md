@@ -238,8 +238,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The home page animation is now a drop: the mark gathers under a tap, falls onto a still
   surface and the ripple lights up the models on it ring by ring. It runs on CSS alone, so the
   static home page animates without the app bundle, and it holds still under reduced motion.
-- The line under the home page headline now states what the gateway does: it is compatible with
-  the OpenAI, Anthropic and Gemini protocols and only the base URL changes. The tap above the
+- The line under the home page headline now states what the gateway does. In English it names
+  the OpenAI, Anthropic and Gemini protocols and says only the base URL changes; the Chinese and
+  Japanese lines say all three mainstream APIs are supported and existing tools work as they are,
+  without the developer term "base URL". The tap above the
   drop is drawn as a faint hairline.
 - Every panel page uses one sidebar. Under the brand, a one-line switcher shows the current space
   (personal, the active organization, or platform admin for administrators) and switches between
