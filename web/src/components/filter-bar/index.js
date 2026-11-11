@@ -14,3 +14,4 @@ export {
   emptyEnumEntry,
   optionLabel
 } from './utils';
+export { default as FilterSheet } from './FilterSheet';

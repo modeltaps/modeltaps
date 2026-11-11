@@ -1,11 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
 import {
-  Eye,
-  EyeOff,
   Copy,
   Pencil,
   Trash2,
@@ -16,11 +14,12 @@ import {
   FileText,
   Terminal,
   Plug,
+  Power,
+  PowerOff,
   MoreHorizontal
 } from 'lucide-react';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import DataCards from '@/components/ui/data-cards';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -37,7 +36,7 @@ import { cn } from '@/lib/utils';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
 import { isPlaygroundToken } from 'utils/playgroundToken';
-import { maskSecret } from 'utils/maskSecret';
+import useElementWidth from 'hooks/useElementWidth';
 
 // The short form of a key shown next to its name: the prefix and the last four characters.
 export function keySuffix(key) {
@@ -169,7 +168,7 @@ export function keyUsage(item) {
 
 // Usage column: "$used / $limit" with the share used and a thin bar under it. The tooltip adds
 // today's spend, the lifetime spend of a periodic key and the next reset.
-function UsageCell({ item, todayUsage, resetTimezone, resetWeekStart }) {
+function UsageCell({ item, compact = false, todayUsage, resetTimezone, resetWeekStart }) {
   const { t } = useTranslation();
   const { used, limit, period } = keyUsage(item);
   const ratio = limit ? used / limit : 0;
@@ -182,7 +181,7 @@ function UsageCell({ item, todayUsage, resetTimezone, resetWeekStart }) {
     if (next) hints.push(`${t('token_index.quotaResetNext')}: ${timestamp2string(next)}`);
   }
   return (
-    <div className="flex w-48 flex-col gap-1" title={hints.join('\n') || undefined}>
+    <div className={cn('flex flex-col gap-1', compact ? 'w-36' : 'w-48')} title={hints.join('\n') || undefined}>
       <div className="flex items-baseline justify-between gap-2 whitespace-nowrap">
         <span className="text-[14px] tabular-nums">
           <SpendAmount quota={used} className="font-medium" />
@@ -202,7 +201,7 @@ function UsageCell({ item, todayUsage, resetTimezone, resetWeekStart }) {
 
 // Builds one key's actions for the row ⋯ menu (table and mobile card alike). `group` splits the
 // menu into sections: manage, connect, inspect, then the destructive delete.
-export function buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw }) {
+export function buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw, onToggleStatus }) {
   // 按 API Key 名预过滤跳转:用量页用 tokens 参数,日志页用 token_name 参数(与 T50b URL 过滤对齐)
   const goUsage = () => navigate(`/panel/usage?tokens=${encodeURIComponent(item.name)}`);
   const goLog = () => navigate(`/panel/log?token_name=${encodeURIComponent(item.name)}`);
@@ -211,12 +210,100 @@ export function buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyK
   return [
     !isPlayground && { key: 'edit', group: 'manage', label: t('common.edit'), icon: Pencil, onClick: () => onEdit(item.id) },
     !isPlayground && { key: 'copy', group: 'manage', label: t('token_index.copy'), icon: Copy, onClick: () => onCopyKey(item) },
+    // Enable / disable appears in the menu where the row has no switch (medium and narrow layouts).
+    onToggleStatus && {
+      key: 'toggle',
+      group: 'manage',
+      label: item.status === 1 ? t('apiKey.list.batchDisable') : t('apiKey.list.batchEnable'),
+      icon: item.status === 1 ? PowerOff : Power,
+      onClick: () => onToggleStatus(item)
+    },
     { key: 'test', group: 'connect', label: t('token_index.testCommand'), icon: Terminal, onClick: () => onShowUsage(item) },
     { key: 'openclaw', group: 'connect', label: t('token_index.openclawConnect'), icon: Plug, onClick: () => onConnectOpenClaw(item) },
     { key: 'usage', group: 'inspect', label: t('token_index.usage'), icon: BarChart3, disabled: !item.name, onClick: goUsage },
     { key: 'log', group: 'inspect', label: t('token_index.viewLog'), icon: FileText, disabled: !item.name, onClick: goLog },
     { key: 'delete', group: 'danger', label: t('common.delete'), icon: Trash2, destructive: true, onClick: () => onDelete(item) }
   ];
+}
+
+// One status label in place of the switch and expiry columns (medium and narrow layouts):
+// disabled, expired, used up, expiring within a week (with when), or enabled.
+const SOON_SECONDS = 7 * 86400;
+export function keyState(item, nowSec = Math.floor(Date.now() / 1000)) {
+  if (item.status === 2) return { key: 'disabled', tone: 'muted' };
+  if (item.status === 4) return { key: 'exhausted', tone: 'danger' };
+  if (item.status === 3 || (item.expired_time !== -1 && item.expired_time <= nowSec)) return { key: 'expired', tone: 'danger' };
+  if (item.expired_time !== -1 && item.expired_time - nowSec <= SOON_SECONDS) return { key: 'expiring', tone: 'warn' };
+  return { key: 'enabled', tone: 'ok' };
+}
+
+const TONE_DOT = { ok: 'bg-success', warn: 'bg-amber-500', danger: 'bg-destructive', muted: 'bg-muted-foreground/40' };
+
+export function KeyStatus({ item, rtf, dotOnly = false }) {
+  const { t } = useTranslation();
+  const state = keyState(item);
+  const label =
+    state.key === 'expiring'
+      ? t('apiKey.list.stateExpiring', { when: relativeTime(rtf, item.expired_time) })
+      : t(`apiKey.list.state_${state.key}`);
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[13px]" title={label}>
+      <span className={cn('size-1.5 shrink-0 rounded-full', TONE_DOT[state.tone])} aria-hidden="true" />
+      {dotOnly ? (
+        <span className="sr-only">{label}</span>
+      ) : (
+        <span className={cn(state.tone === 'muted' && 'text-muted-foreground')}>{label}</span>
+      )}
+    </span>
+  );
+}
+
+// Phone layout: one list item per key. First line name, key suffix and status; second line the
+// usage bar with spend against the limit and when it was last used. Tapping opens the key.
+function KeyListRow({ item, rtf, selectMode, selected, onToggleSelect, onOpen, active, actions }) {
+  const { t } = useTranslation();
+  const { used, limit } = keyUsage(item);
+  return (
+    <li
+      className={cn('flex items-center gap-3 px-3 py-2.5', ROW_OPENS, (active || selected) && 'bg-muted/60')}
+      {...rowOpenProps(() => (selectMode ? onToggleSelect(item.id) : onOpen(item)))}
+    >
+      {selectMode && (
+        <RowControl>
+          <Checkbox
+            checked={selected}
+            onCheckedChange={() => onToggleSelect(item.id)}
+            aria-label={t('apiKey.list.selectRow', { name: item.name })}
+          />
+        </RowControl>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="truncate font-medium">{item.name}</span>
+          {!isPlaygroundToken(item) && <code className="shrink-0 font-mono text-xs text-muted-foreground">{keySuffix(item.key)}</code>}
+          <span className="ml-auto shrink-0">
+            <KeyStatus item={item} rtf={rtf} />
+          </span>
+        </div>
+        <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="w-16 shrink-0">
+            <LimitBar ratio={limit ? used / limit : 0} />
+          </div>
+          <span className="truncate tabular-nums">
+            <SpendAmount quota={used} className="text-foreground" />
+            {limit ? ` / ${renderQuota(limit)}` : ` · ${t('token_index.noLimit')}`}
+            {' · '}
+            {item.accessed_time > 0 ? relativeTime(rtf, item.accessed_time) : t('token_index.neverUsed')}
+          </span>
+        </div>
+      </div>
+      {!selectMode && (
+        <RowControl>
+          <TokenActionMenu t={t} actions={actions} />
+        </RowControl>
+      )}
+    </li>
+  );
 }
 
 // The ⋯ menu of a key (table row and mobile card): every action in one dropdown, with a
@@ -265,146 +352,6 @@ function TokenActionMenu({ actions, t, onTriggerClick, onTriggerKeyDown }) {
   );
 }
 
-// 移动端(<md)精简卡片:名称+状态开关+…菜单 / 掩码 key+眼睛复制 / 紧凑 meta 行(用量·今日·最近使用),
-// 仅限额(周期或总额)时追加限额 Badge + 细进度条,未限额不渲染任何限额元素。
-// 分组/过期/创建时间/计费标签/creator 不在此呈现(后续 TC3 详情 Sheet 承接)。
-function TokenCard({
-  item,
-  t,
-  rtf,
-  revealed,
-  todayUsage,
-  quotaResetTimezone,
-  quotaResetWeekStart,
-  onToggleReveal,
-  onCopyKey,
-  onToggleStatus,
-  actions
-}) {
-  const shown = revealed.has(item.id);
-  const k = item.key || '';
-  const masked = maskSecret(`sk-${k}`);
-  const info = statusInfo(t, item.status);
-  const isAbnormal = item.status === 3 || item.status === 4;
-  const accessed = item.accessed_time;
-  const isPlayground = isPlaygroundToken(item);
-
-  const qr = item.setting?.quota_reset;
-  let limitEl = null;
-  if (qr?.period && qr.limit > 0) {
-    const used = item.period_used || 0;
-    const next = nextResetTime(qr.period, quotaResetTimezone, quotaResetWeekStart);
-    limitEl = (
-      <div className="flex flex-col gap-1" title={next ? `${t('token_index.quotaResetNext')}: ${timestamp2string(next)}` : undefined}>
-        <div className="flex items-center justify-between gap-1.5">
-          <span className="font-mono text-[13px] tabular-nums">{renderQuota(qr.limit)}</span>
-          <Badge variant="secondary" className="text-[11px]">
-            {t(`token_index.limitPeriod_${qr.period}`)}
-          </Badge>
-        </div>
-        <LimitBar ratio={used / qr.limit} />
-      </div>
-    );
-  } else if (!item.unlimited_quota) {
-    const used = item.used_quota || 0;
-    const total = used + (item.remain_quota || 0);
-    limitEl = (
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between gap-1.5">
-          <span className="font-mono text-[13px] tabular-nums">{renderQuota(total)}</span>
-          <Badge variant="outline" className="text-[11px]">
-            {t('token_index.limitTotal')}
-          </Badge>
-        </div>
-        <LimitBar ratio={total > 0 ? used / total : 0} />
-      </div>
-    );
-  }
-
-  // 卡片主体点击打开详情 Sheet;卡片上的开关/眼睛/复制/… 菜单等交互元素需拦住冒泡(含键盘
-  // Space/Enter),避免误触发 DataCards 的 onRowClick。
-  const stop = (e) => e.stopPropagation();
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-start justify-between gap-2">
-        <span className="min-w-0 flex-1 truncate font-medium">{item.name}</span>
-        <div className="flex shrink-0 items-center gap-1.5">
-          {isAbnormal && (
-            <Badge variant="destructive" className="text-[11px]">
-              {info.label}
-            </Badge>
-          )}
-          {/* Switch/菜单为原生 button:onClick 覆盖内部 toggle,故在此直接 stop+切换;onKeyDown 拦
-              键盘冒泡,均为防止误触发整卡片的 onRowClick。 */}
-          <Switch
-            checked={item.status === 1}
-            onClick={(e) => {
-              stop(e);
-              onToggleStatus(item);
-            }}
-            onKeyDown={stop}
-            title={info.label}
-            aria-label={info.label}
-          />
-          <TokenActionMenu actions={actions} t={t} onTriggerClick={stop} onTriggerKeyDown={stop} />
-        </div>
-      </div>
-      {isPlayground ? (
-        <Badge variant="secondary" className="w-fit text-[11px]">
-          {t('token_index.playgroundManaged')}
-        </Badge>
-      ) : (
-        <div className="flex items-center gap-1">
-          <code className="min-w-0 flex-1 truncate font-mono text-[13px] text-muted-foreground">{shown ? `sk-${item.key}` : masked}</code>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-6"
-            onClick={(e) => {
-              stop(e);
-              onToggleReveal(item.id);
-            }}
-            onKeyDown={stop}
-            aria-label="reveal"
-          >
-            {shown ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-6"
-            onClick={(e) => {
-              stop(e);
-              onCopyKey(item);
-            }}
-            onKeyDown={stop}
-            aria-label="copy"
-          >
-            <Copy className="size-3.5" />
-          </Button>
-        </div>
-      )}
-      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
-        <SpendAmount quota={item.used_quota} />
-        {todayUsage && (
-          <>
-            <span>·</span>
-            <span className="inline-flex items-center gap-1">
-              {t('token_index.usageToday')} <SpendAmount quota={todayUsage[item.name] || 0} />
-            </span>
-          </>
-        )}
-        <span>·</span>
-        <span title={accessed > 0 ? timestamp2string(accessed) : t('token_index.neverUsed')}>
-          {accessed > 0 ? relativeTime(rtf, accessed) : '—'}
-        </span>
-      </div>
-      {limitEl}
-    </div>
-  );
-}
-
 // Typical rendered widths (px) of each column (measured, plus a little room for longer names),
 // used to decide what fits on one line.
 const COLUMN_WIDTHS = {
@@ -422,37 +369,31 @@ const COLUMN_WIDTHS = {
 };
 // When the table is narrower than its visible columns, these hide first to last (the default
 // columns last); name, usage, status and actions always stay.
+// The medium layout keeps name, usage, last used, status and actions; the status label already
+// tells about expiry, and the rest is in the key's panel.
+const MEDIUM_HIDDEN = { creator: false, group: false, billing_tag: false, expired_time: false, created_time: false };
 const AUTO_HIDE_ORDER = ['billing_tag', 'group', 'created_time', 'creator', 'expired_time', 'accessed_time'];
 
 // Columns the user picked minus those that do not fit `width`, hidden in AUTO_HIDE_ORDER.
-export function fitColumns(visibility, columnIds, width) {
+export function fitColumns(visibility, columnIds, width, widths = COLUMN_WIDTHS) {
   const result = { ...visibility };
   if (!width) return result;
   const shown = (id) => result[id] !== false;
-  let total = columnIds.filter(shown).reduce((sum, id) => sum + (COLUMN_WIDTHS[id] || 120), 0);
+  const w = (id) => widths[id] || COLUMN_WIDTHS[id] || 120;
+  let total = columnIds.filter(shown).reduce((sum, id) => sum + w(id), 0);
   for (const id of AUTO_HIDE_ORDER) {
     if (total <= width) break;
     if (columnIds.includes(id) && shown(id)) {
       result[id] = false;
-      total -= COLUMN_WIDTHS[id] || 120;
+      total -= w(id);
     }
   }
   return result;
 }
 
-// Width of an element, kept current as it resizes.
-function useElementWidth() {
-  const ref = useRef(null);
-  const [width, setWidth] = useState(0);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof ResizeObserver === 'undefined') return undefined;
-    const ro = new ResizeObserver(([entry]) => setWidth(Math.round(entry.contentRect.width)));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  return [ref, width];
-}
+// The medium layout's cells are narrower: compact usage, a status label instead of a switch,
+// short relative times.
+const COMPACT_COLUMN_WIDTHS = { ...COLUMN_WIDTHS, name: 160, used_quota: 180, status: 90, accessed_time: 70 };
 
 export default function TokenTable({
   tokens,
@@ -460,8 +401,6 @@ export default function TokenTable({
   orgMemberNames = null,
   userGroup,
   userIsReliable,
-  revealed,
-  onToggleReveal,
   onCopyKey,
   onEdit,
   onDelete,
@@ -473,6 +412,8 @@ export default function TokenTable({
   selectedIds = null,
   onToggleSelect,
   onToggleSelectAll,
+  layout = 'wide',
+  selectMode = false,
   order,
   orderBy,
   onSort,
@@ -483,10 +424,12 @@ export default function TokenTable({
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const rtfLocale = (i18n.language || 'zh_CN').replace('_', '-');
-  const cardRtf = useMemo(() => new Intl.RelativeTimeFormat(rtfLocale, { numeric: 'auto' }), [rtfLocale]);
+  const compact = layout !== 'wide';
+  // Medium and narrow layouts use the short relative time ("3h ago").
+  const listRtf = useMemo(() => new Intl.RelativeTimeFormat(rtfLocale, { numeric: 'auto', style: 'narrow' }), [rtfLocale]);
 
   const columns = useMemo(() => {
-    const rtf = new Intl.RelativeTimeFormat(rtfLocale, { numeric: 'auto' });
+    const rtf = new Intl.RelativeTimeFormat(rtfLocale, { numeric: 'auto', style: compact ? 'narrow' : 'long' });
     const allSelected = !!selectedIds && tokens.length > 0 && tokens.every((x) => selectedIds.has(x.id));
     const someSelected = !!selectedIds && tokens.some((x) => selectedIds.has(x.id));
     const cols = [
@@ -620,6 +563,7 @@ export default function TokenTable({
         cell: (c) => (
           <UsageCell
             item={c.row.original}
+            compact={compact}
             todayUsage={todayUsage}
             resetTimezone={quotaResetTimezone}
             resetWeekStart={quotaResetWeekStart}
@@ -644,6 +588,7 @@ export default function TokenTable({
         meta: { sortable: true },
         cell: (c) => {
           const item = c.row.original;
+          if (compact) return <KeyStatus item={item} rtf={rtf} />;
           const info = statusInfo(t, item.status);
           const isAbnormal = item.status === 3 || item.status === 4;
           return (
@@ -680,7 +625,8 @@ export default function TokenTable({
                 onDelete,
                 onCopyKey,
                 onShowUsage,
-                onConnectOpenClaw
+                onConnectOpenClaw,
+                onToggleStatus: compact ? onToggleStatus : undefined
               })}
             />
           </RowControl>
@@ -692,8 +638,6 @@ export default function TokenTable({
     t,
     userGroup,
     userIsReliable,
-    revealed,
-    onToggleReveal,
     onCopyKey,
     onEdit,
     onDelete,
@@ -708,6 +652,7 @@ export default function TokenTable({
     orgMemberNames,
     todayUsage,
     rtfLocale,
+    compact,
     quotaResetTimezone,
     quotaResetWeekStart
   ]);
@@ -717,11 +662,12 @@ export default function TokenTable({
   const fittedVisibility = useMemo(
     () =>
       fitColumns(
-        columnVisibility,
+        compact ? { ...columnVisibility, ...MEDIUM_HIDDEN } : columnVisibility,
         columns.map((c) => c.id || c.accessorKey),
-        wrapWidth
+        wrapWidth,
+        compact ? COMPACT_COLUMN_WIDTHS : COLUMN_WIDTHS
       ),
-    [columnVisibility, columns, wrapWidth]
+    [columnVisibility, columns, wrapWidth, compact]
   );
 
   const table = useTable({
@@ -738,79 +684,68 @@ export default function TokenTable({
     return order === 'asc' ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />;
   };
 
-  return (
-    <>
-      <div ref={wrapRef} className="hidden md:block">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id} className="hover:bg-transparent">
-                {hg.headers.map((header) => (
-                  <TableHead key={header.id} className={`whitespace-nowrap ${header.column.columnDef.meta?.className ?? ''}`}>
-                    {header.column.columnDef.meta?.sortable && onSort ? (
-                      <button
-                        type="button"
-                        className="group/sort inline-flex items-center gap-1 hover:text-foreground"
-                        onClick={() => onSort(header.column.id)}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        <SortIcon id={header.column.id} />
-                      </button>
-                    ) : (
-                      flexRender(header.column.columnDef.header, header.getContext())
-                    )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                className={ROW_OPENS}
-                data-state={row.original.id === openId || selectedIds?.has(row.original.id) ? 'selected' : undefined}
-                {...rowOpenProps(() => onOpen(row.original))}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className={cn('whitespace-nowrap', cell.column.columnDef.meta?.className)}>
-                    {flexRender(cell.column.columnDef.cell ?? cell.getValue, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <DataCards
-        table={table}
-        className="md:hidden"
-        onRowClick={onOpen}
-        renderCard={(item) => (
-          <TokenCard
+  if (layout === 'narrow') {
+    return (
+      <ul className="divide-y divide-border">
+        {tokens.map((item) => (
+          <KeyListRow
+            key={item.id}
             item={item}
-            t={t}
-            rtf={cardRtf}
-            revealed={revealed}
-            todayUsage={todayUsage}
-            quotaResetTimezone={quotaResetTimezone}
-            quotaResetWeekStart={quotaResetWeekStart}
-            onToggleReveal={onToggleReveal}
-            onCopyKey={onCopyKey}
-            onToggleStatus={onToggleStatus}
-            actions={buildTokenActions({
-              item,
-              t,
-              navigate,
-              onEdit,
-              onDelete,
-              onCopyKey,
-              onShowUsage,
-              onConnectOpenClaw
-            })}
+            rtf={listRtf}
+            selectMode={selectMode}
+            selected={!!selectedIds?.has(item.id)}
+            onToggleSelect={onToggleSelect}
+            onOpen={onOpen}
+            active={item.id === openId}
+            actions={buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw, onToggleStatus })}
           />
-        )}
-      />
-    </>
+        ))}
+      </ul>
+    );
+  }
+
+  return (
+    <div ref={wrapRef}>
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((hg) => (
+            <TableRow key={hg.id} className="hover:bg-transparent">
+              {hg.headers.map((header) => (
+                <TableHead key={header.id} className={`whitespace-nowrap ${header.column.columnDef.meta?.className ?? ''}`}>
+                  {header.column.columnDef.meta?.sortable && onSort ? (
+                    <button
+                      type="button"
+                      className="group/sort inline-flex items-center gap-1 hover:text-foreground"
+                      onClick={() => onSort(header.column.id)}
+                    >
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      <SortIcon id={header.column.id} />
+                    </button>
+                  ) : (
+                    flexRender(header.column.columnDef.header, header.getContext())
+                  )}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows.map((row) => (
+            <TableRow
+              key={row.id}
+              className={ROW_OPENS}
+              data-state={row.original.id === openId || selectedIds?.has(row.original.id) ? 'selected' : undefined}
+              {...rowOpenProps(() => onOpen(row.original))}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id} className={cn('whitespace-nowrap', cell.column.columnDef.meta?.className)}>
+                  {flexRender(cell.column.columnDef.cell ?? cell.getValue, cell.getContext())}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

@@ -34,7 +34,7 @@ export function ObjectSheet({
         aria-modal="true"
         aria-labelledby={titleId}
         className={cn(
-          'absolute inset-y-2 right-2 flex w-[calc(100%-1rem)] flex-col rounded-2xl border border-border bg-popover shadow-2xl',
+          'absolute inset-y-2 right-2 flex w-[calc(100%-1rem)] flex-col rounded-2xl border border-border bg-popover shadow-2xl max-sm:inset-0 max-sm:w-full max-sm:rounded-none max-sm:border-0',
           WIDTH[size]
         )}
       >

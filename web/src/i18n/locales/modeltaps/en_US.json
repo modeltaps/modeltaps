@@ -3071,7 +3071,19 @@
       "budgetMin": "Used at least (% of limit)",
       "budgetMinHint": "e.g. 80",
       "presetBudget": "Near their limit",
-      "presetNoLimit": "Enabled without a limit"
+      "presetNoLimit": "Enabled without a limit",
+      "state_enabled": "Enabled",
+      "state_disabled": "Disabled",
+      "state_expired": "Expired",
+      "state_exhausted": "Used up",
+      "stateExpiring": "Expires {{when}}",
+      "filter": "Filter",
+      "sort": "Sort",
+      "sortNewest": "Newest first",
+      "sortName": "Name A–Z",
+      "sortUsage": "Most used",
+      "sortExpiry": "Expiring first",
+      "selectMode": "Select keys"
     }
   }
 }

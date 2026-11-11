@@ -18,7 +18,9 @@ import {
   BookmarkPlus,
   Power,
   PowerOff,
-  Trash2
+  Trash2,
+  ArrowDownUp,
+  ListChecks
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -35,7 +37,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/components/ui/sonner';
-import { FilterBar, filterStateToParams, paramsToFilterState, isEntryActive, optionLabel } from '@/components/filter-bar';
+import { FilterBar, FilterSheet, filterStateToParams, paramsToFilterState, isEntryActive, optionLabel } from '@/components/filter-bar';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import PageActions from '@/components/chrome/PageActions';
 import { cn } from '@/lib/utils';
@@ -45,6 +47,7 @@ import { UserContext } from 'contexts/UserContext';
 import { useOrg } from 'contexts/OrgContext';
 import { isOrgAdminRole } from '@/components/chrome/nav-config';
 import usePaginatedList from 'hooks/usePaginatedList';
+import useElementWidth from 'hooks/useElementWidth';
 import { BatchBar, ListFooter } from '@/components/list-page';
 import { Segmented, useObjectRoute } from '@/components/objects';
 import ConnectInfo, { useApiAddresses } from './ConnectInfo';
@@ -226,6 +229,21 @@ const BUILTIN_PRESETS = [
   { id: 'budget', labelKey: 'apiKey.list.presetBudget', status: 'all', conditions: { budget_min: { value: '80' } } },
   { id: 'nolimit', labelKey: 'apiKey.list.presetNoLimit', status: 'enabled', conditions: { limit: one('none') } }
 ];
+// Layout by the width of the list area (not the viewport, so an open panel or sidebar counts):
+// wide shows the full table, medium a table with merged status and fewer columns, narrow a
+// two-line list with the toolbar folded into sheets and menus.
+const MEDIUM_MIN_WIDTH = 900;
+const NARROW_MAX_WIDTH = 600;
+export const listLayout = (width) => (width < NARROW_MAX_WIDTH ? 'narrow' : width < MEDIUM_MIN_WIDTH ? 'medium' : 'wide');
+
+// Sort choices of the narrow layout, which has no table headers to click.
+const SORT_OPTIONS = [
+  { id: 'id', dir: 'desc', labelKey: 'apiKey.list.sortNewest' },
+  { id: 'name', dir: 'asc', labelKey: 'apiKey.list.sortName' },
+  { id: 'used_quota', dir: 'desc', labelKey: 'apiKey.list.sortUsage' },
+  { id: 'expired_time', dir: 'asc', labelKey: 'apiKey.list.sortExpiry' }
+];
+
 const PRESET_STORAGE_KEY = 'token-filter-presets-v1';
 const loadSavedPresets = () => {
   try {
@@ -259,7 +277,6 @@ export default function Token() {
   const [orgMemberNames, setOrgMemberNames] = useState({});
   // 当日(TZ 零点起)按 API Key 名聚合的已用额度映射(token_name -> quota);管理员搜索接口不返回时为 null
   const [todayUsage, setTodayUsage] = useState(null);
-  const [revealed, setRevealed] = useState(new Set());
 
   // The key open in the right-side panel (?id=, &tab=) and the create dialog (?new=1).
   const route = useObjectRoute(TOKEN_TAB_KEYS);
@@ -317,6 +334,7 @@ export default function Token() {
     setRows: setTokens,
     handleRefresh,
     handleSort,
+    setSort,
     onRowsPerPageChange
   } = usePaginatedList({
     pageSizeKey: 'token',
@@ -438,6 +456,17 @@ export default function Token() {
     });
   const toggleSelectAll = (all) => setSelectedIds(all ? new Set(tokens.map((x) => x.id)) : new Set());
 
+  const [pageRef, pageWidth] = useElementWidth();
+  const layout = listLayout(pageWidth || (typeof window === 'undefined' ? 1280 : window.innerWidth));
+  const narrow = layout === 'narrow';
+  // Narrow layout: checkboxes only in select mode; conditions in a bottom sheet.
+  const [selectMode, setSelectMode] = useState(false);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
   const changeStatus = (next) => {
     setPage(0);
     setStatus(next);
@@ -473,6 +502,21 @@ export default function Token() {
     ]
       .filter(Boolean)
       .join(' · ');
+  // One active condition as text ("Expiry: Never expire", "Spent at least ≥ 10").
+  const describeEntry = (f, entry) => {
+    if (f.type === 'number' || f.type === 'text') return `${t(f.labelKey)} ≥ ${entry.value}`;
+    const v = entry.values?.[0];
+    const opt = (f.options || []).find((o) => String(o.value) === String(v));
+    return `${t(f.labelKey)}: ${opt ? optionLabel(t, opt) : v}`;
+  };
+  const activeConditionFields = filterFields.filter((f) => isEntryActive(f, filterState[f.key]));
+  const removeCondition = (key) =>
+    handleFilterChange((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+
   const applyPreset = (preset) => {
     setPage(0);
     setStatus(preset.status || 'all');
@@ -587,14 +631,6 @@ export default function Token() {
     if (r?.success) setTokens((prev) => prev.map((x) => (x.id === item.id ? { ...x, status: next } : x)));
   };
 
-  const onToggleReveal = (id) =>
-    setRevealed((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-
   const copyText = (text, label) => {
     try {
       navigator.clipboard.writeText(text);
@@ -622,9 +658,67 @@ export default function Token() {
 
   const apiAddresses = useApiAddresses();
 
+  // Preset menu items, shared by the condition bar's Presets menu.
+  const presetMenuItems = (
+    <>
+      <DropdownMenuLabel>{t('apiKey.list.presetsBuiltin')}</DropdownMenuLabel>
+      {BUILTIN_PRESETS.map((p) => (
+        <DropdownMenuItem key={p.id} onClick={() => applyPreset(p)} className="flex-col items-start gap-0">
+          <span>{t(p.labelKey)}</span>
+          <span className="text-xs text-muted-foreground">{describePreset(p)}</span>
+        </DropdownMenuItem>
+      ))}
+      {savedPresets.length > 0 && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>{t('apiKey.list.presetsSaved')}</DropdownMenuLabel>
+          {savedPresets.map((p) => (
+            <div key={p.id} className="group/preset flex items-center gap-1">
+              <DropdownMenuItem onClick={() => applyPreset(p)} className="min-w-0 flex-1">
+                <span className="truncate">{p.name}</span>
+              </DropdownMenuItem>
+              <button
+                type="button"
+                aria-label={t('apiKey.list.presetRemove')}
+                title={t('apiKey.list.presetRemove')}
+                onClick={() => removePreset(p.id)}
+                className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground focus-visible:opacity-100 group-hover/preset:opacity-100"
+              >
+                <X className="size-3.5" />
+              </button>
+            </div>
+          ))}
+        </>
+      )}
+      <DropdownMenuSeparator />
+      <DropdownMenuItem disabled={!hasCurrentConditions} onClick={saveCurrentPreset}>
+        <BookmarkPlus className="size-4" />
+        {t('apiKey.list.presetSave')}
+      </DropdownMenuItem>
+    </>
+  );
+
+  // Batch action buttons, in the bar above the table or pinned to the bottom on phones.
+  const batchActions = (
+    <>
+      <Button size="sm" variant="outline" className="h-7" disabled={batchBusy} onClick={() => runBatch('enable')}>
+        <Power className="size-3.5" />
+        {t('apiKey.list.batchEnable')}
+      </Button>
+      <Button size="sm" variant="outline" className="h-7" disabled={batchBusy} onClick={() => runBatch('disable')}>
+        <PowerOff className="size-3.5" />
+        {t('apiKey.list.batchDisable')}
+      </Button>
+      <Button size="sm" variant="outline" className="h-7 text-destructive" disabled={batchBusy} onClick={() => setBatchDeleteOpen(true)}>
+        <Trash2 className="size-3.5" />
+        {t('common.delete')}
+      </Button>
+    </>
+  );
+
   return (
     <>
-      <div className="space-y-3">
+      <div ref={pageRef} className={cn('space-y-3', narrow && selectMode && 'pb-20')}>
         {/* Title row: refresh, the Connect popover (where to send requests), then create. */}
         <PageActions>
           <TooltipProvider delayDuration={150}>
@@ -641,7 +735,7 @@ export default function Token() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1.5">
                 <Link2 className="size-4" />
-                {t('apiKey.list.connect')}
+                <span className="max-sm:hidden">{t('apiKey.list.connect')}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80 p-3">
@@ -653,185 +747,285 @@ export default function Token() {
         </PageActions>
 
         <div className="space-y-2">
-          {/* Toolbar: status segments with counts, name search, column picker. */}
-          <div className="flex flex-wrap items-center gap-2">
-            <Segmented
-              label={t('apiKey.list.segments')}
-              value={status}
-              onChange={changeStatus}
-              options={STATUS_SEGMENTS.map((value) => ({
-                value,
-                label: (
-                  <span className="inline-flex items-center gap-1.5">
-                    {t(`apiKey.list.status_${value}`)}
-                    {statusCounts && (
-                      <span className="min-w-[1.25rem] rounded-[5px] bg-foreground/[0.07] px-1 text-[11px] tabular-nums leading-[18px]">
-                        {statusCounts[value] ?? 0}
+          {narrow ? (
+            <>
+              {/* Narrow: segments scroll sideways instead of wrapping; one row with search and the
+                  filter, sort and select buttons; active conditions as removable chips. */}
+              <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <Segmented
+                  label={t('apiKey.list.segments')}
+                  value={status}
+                  onChange={changeStatus}
+                  options={STATUS_SEGMENTS.map((value) => ({
+                    value,
+                    label: (
+                      <span className="inline-flex items-center gap-1.5">
+                        {t(`apiKey.list.status_${value}`)}
+                        {statusCounts && (
+                          <span className="min-w-[1.25rem] rounded-[5px] bg-foreground/[0.07] px-1 text-[11px] tabular-nums leading-[18px]">
+                            {statusCounts[value] ?? 0}
+                          </span>
+                        )}
                       </span>
-                    )}
-                  </span>
-                )
-              }))}
-            />
-            <div className="relative min-w-[12rem] flex-1">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                placeholder={t('token_index.searchTokenName')}
-                aria-label={t('token_index.searchTokenName')}
-                className="h-8 pl-8"
-              />
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+                    )
+                  }))}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    placeholder={t('token_index.searchTokenName')}
+                    aria-label={t('token_index.searchTokenName')}
+                    className="h-8 pl-8"
+                  />
+                </div>
                 <Button
                   variant="outline"
-                  size="sm"
-                  className="h-8 gap-1.5"
-                  onKeyDown={(e) => {
-                    if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && columnMenuRef.current) {
-                      e.preventDefault();
-                      focusColumnMenuItem(columnMenuRef.current, e.key);
-                    }
-                  }}
+                  size="icon"
+                  className="relative size-8 shrink-0"
+                  aria-label={t('apiKey.list.filter')}
+                  onClick={() => setFilterSheetOpen(true)}
                 >
-                  <Columns3 className="size-4" />
-                  {t('apiKey.list.columns')}
-                  <span className="text-xs tabular-nums text-muted-foreground">
-                    {visibleMenuColumnCount}/{menuColumns.length}
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                ref={columnMenuRef}
-                align="end"
-                className="max-h-96 w-52 overflow-y-auto"
-                onKeyDown={(e) => {
-                  if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Home' || e.key === 'End') {
-                    e.preventDefault();
-                    focusColumnMenuItem(e.currentTarget, e.key);
-                  }
-                }}
-              >
-                <DropdownMenuLabel>{t('token_index.selectColumns')}</DropdownMenuLabel>
-                <ColumnToggleItem
-                  checked={allMenuColumnsVisible}
-                  indeterminate={!allMenuColumnsVisible && someMenuColumnsVisible}
-                  label={t('token_index.columnSelectAll')}
-                  onToggle={toggleAllColumns}
-                />
-                <DropdownMenuSeparator />
-                {menuColumns.map((c) => (
-                  <ColumnToggleItem
-                    key={c.id}
-                    checked={!!columnVisibility[c.id]}
-                    label={t(c.labelKey)}
-                    onToggle={() => toggleColumn(c.id)}
-                  />
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={resetColumns}>{t('apiKey.list.resetColumns')}</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          {/* Condition bar: "Show keys that" + chips + add condition, always present so the
-              conditions are discoverable. */}
-          {selectedIds.size > 0 ? (
-            <BatchBar
-              count={selectedIds.size}
-              onClear={() => setSelectedIds(new Set())}
-              className="min-h-10 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-1.5"
-              actions={
-                <>
-                  <Button size="sm" variant="outline" className="h-7" disabled={batchBusy} onClick={() => runBatch('enable')}>
-                    <Power className="size-3.5" />
-                    {t('apiKey.list.batchEnable')}
-                  </Button>
-                  <Button size="sm" variant="outline" className="h-7" disabled={batchBusy} onClick={() => runBatch('disable')}>
-                    <PowerOff className="size-3.5" />
-                    {t('apiKey.list.batchDisable')}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-destructive"
-                    disabled={batchBusy}
-                    onClick={() => setBatchDeleteOpen(true)}
-                  >
-                    <Trash2 className="size-3.5" />
-                    {t('common.delete')}
-                  </Button>
-                </>
-              }
-            />
-          ) : (
-            <div className="flex min-h-10 w-full items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5">
-              <FilterBar
-                fields={filterFields}
-                state={filterState}
-                onChange={handleFilterChange}
-                onClearAll={handleClearFilters}
-                triggerVariant="plus"
-                triggerLabel={t('apiKey.list.addCondition')}
-                clearAlignEnd
-                t={t}
-                leading={
-                  <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
-                    <ListFilter className="size-3.5" />
-                    {t('apiKey.list.showKeysThat')}
-                  </span>
-                }
-                className="min-w-0 flex-1"
-              />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 shrink-0 gap-1.5 px-2 text-[13px]">
-                    <Sparkles className="size-3.5" />
-                    {t('apiKey.list.presets')}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-72">
-                  <DropdownMenuLabel>{t('apiKey.list.presetsBuiltin')}</DropdownMenuLabel>
-                  {BUILTIN_PRESETS.map((p) => (
-                    <DropdownMenuItem key={p.id} onClick={() => applyPreset(p)} className="flex-col items-start gap-0">
-                      <span>{t(p.labelKey)}</span>
-                      <span className="text-xs text-muted-foreground">{describePreset(p)}</span>
-                    </DropdownMenuItem>
-                  ))}
-                  {savedPresets.length > 0 && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuLabel>{t('apiKey.list.presetsSaved')}</DropdownMenuLabel>
-                      {savedPresets.map((p) => (
-                        <div key={p.id} className="group/preset flex items-center gap-1">
-                          <DropdownMenuItem onClick={() => applyPreset(p)} className="min-w-0 flex-1">
-                            <span className="truncate">{p.name}</span>
-                          </DropdownMenuItem>
-                          <button
-                            type="button"
-                            aria-label={t('apiKey.list.presetRemove')}
-                            title={t('apiKey.list.presetRemove')}
-                            onClick={() => removePreset(p.id)}
-                            className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground focus-visible:opacity-100 group-hover/preset:opacity-100"
-                          >
-                            <X className="size-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </>
+                  <ListFilter className="size-4" />
+                  {activeConditionFields.length > 0 && (
+                    <span className="absolute -right-1 -top-1 flex min-w-[16px] items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-medium leading-4 text-background">
+                      {activeConditionFields.length}
+                    </span>
                   )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem disabled={!hasCurrentConditions} onClick={saveCurrentPreset}>
-                    <BookmarkPlus className="size-4" />
-                    {t('apiKey.list.presetSave')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="size-8 shrink-0" aria-label={t('apiKey.list.sort')}>
+                      <ArrowDownUp className="size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuLabel>{t('apiKey.list.sort')}</DropdownMenuLabel>
+                    {SORT_OPTIONS.map((o) => (
+                      <DropdownMenuItem key={o.labelKey} onClick={() => setSort(o.id, o.dir)} className="justify-between">
+                        {t(o.labelKey)}
+                        {orderBy === o.id && order === o.dir && <Check className="size-4" />}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button
+                  variant={selectMode ? 'secondary' : 'outline'}
+                  size="icon"
+                  className="size-8 shrink-0"
+                  aria-label={t('apiKey.list.selectMode')}
+                  aria-pressed={selectMode}
+                  onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+                >
+                  <ListChecks className="size-4" />
+                </Button>
+              </div>
+              {activeConditionFields.length > 0 && (
+                <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {activeConditionFields.map((f) => (
+                    <button
+                      key={f.key}
+                      type="button"
+                      onClick={() => removeCondition(f.key)}
+                      aria-label={`${t('filterBar.remove')} ${describeEntry(f, filterState[f.key])}`}
+                      className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full border border-input bg-background pl-2.5 pr-1.5 text-xs"
+                    >
+                      {describeEntry(f, filterState[f.key])}
+                      <X className="size-3.5 text-muted-foreground" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Toolbar: status segments with counts, name search, column picker. */}
+              <div className="flex flex-wrap items-center gap-2">
+                <Segmented
+                  label={t('apiKey.list.segments')}
+                  value={status}
+                  onChange={changeStatus}
+                  options={STATUS_SEGMENTS.map((value) => ({
+                    value,
+                    label: (
+                      <span className="inline-flex items-center gap-1.5">
+                        {t(`apiKey.list.status_${value}`)}
+                        {statusCounts && (
+                          <span className="min-w-[1.25rem] rounded-[5px] bg-foreground/[0.07] px-1 text-[11px] tabular-nums leading-[18px]">
+                            {statusCounts[value] ?? 0}
+                          </span>
+                        )}
+                      </span>
+                    )
+                  }))}
+                />
+                <div className={cn('relative flex-1', layout === 'medium' ? 'min-w-[9rem]' : 'min-w-[12rem]')}>
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    placeholder={t('token_index.searchTokenName')}
+                    aria-label={t('token_index.searchTokenName')}
+                    className="h-8 pl-8"
+                  />
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1.5"
+                      onKeyDown={(e) => {
+                        if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && columnMenuRef.current) {
+                          e.preventDefault();
+                          focusColumnMenuItem(columnMenuRef.current, e.key);
+                        }
+                      }}
+                    >
+                      <Columns3 className="size-4" />
+                      <span className={cn(layout === 'medium' && 'sr-only')}>{t('apiKey.list.columns')}</span>
+                      <span className="text-xs tabular-nums text-muted-foreground">
+                        {visibleMenuColumnCount}/{menuColumns.length}
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    ref={columnMenuRef}
+                    align="end"
+                    className="max-h-96 w-52 overflow-y-auto"
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Home' || e.key === 'End') {
+                        e.preventDefault();
+                        focusColumnMenuItem(e.currentTarget, e.key);
+                      }
+                    }}
+                  >
+                    <DropdownMenuLabel>{t('token_index.selectColumns')}</DropdownMenuLabel>
+                    <ColumnToggleItem
+                      checked={allMenuColumnsVisible}
+                      indeterminate={!allMenuColumnsVisible && someMenuColumnsVisible}
+                      label={t('token_index.columnSelectAll')}
+                      onToggle={toggleAllColumns}
+                    />
+                    <DropdownMenuSeparator />
+                    {menuColumns.map((c) => (
+                      <ColumnToggleItem
+                        key={c.id}
+                        checked={!!columnVisibility[c.id]}
+                        label={t(c.labelKey)}
+                        onToggle={() => toggleColumn(c.id)}
+                      />
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={resetColumns}>{t('apiKey.list.resetColumns')}</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Condition bar: "Show keys that" + chips + add condition, always present so the
+                  conditions are discoverable. Selected rows swap it for the bulk actions. */}
+              {selectedIds.size > 0 ? (
+                <BatchBar
+                  count={selectedIds.size}
+                  onClear={() => setSelectedIds(new Set())}
+                  className="min-h-10 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-1.5"
+                  actions={
+                    <>
+                      <Button size="sm" variant="outline" className="h-7" disabled={batchBusy} onClick={() => runBatch('enable')}>
+                        <Power className="size-3.5" />
+                        {t('apiKey.list.batchEnable')}
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-7" disabled={batchBusy} onClick={() => runBatch('disable')}>
+                        <PowerOff className="size-3.5" />
+                        {t('apiKey.list.batchDisable')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-destructive"
+                        disabled={batchBusy}
+                        onClick={() => setBatchDeleteOpen(true)}
+                      >
+                        <Trash2 className="size-3.5" />
+                        {t('common.delete')}
+                      </Button>
+                    </>
+                  }
+                />
+              ) : (
+                <div className="flex min-h-10 w-full items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5">
+                  <FilterBar
+                    fields={filterFields}
+                    state={filterState}
+                    onChange={handleFilterChange}
+                    onClearAll={handleClearFilters}
+                    triggerVariant="plus"
+                    triggerLabel={t('apiKey.list.addCondition')}
+                    clearAlignEnd
+                    t={t}
+                    leading={
+                      <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                        <ListFilter className="size-3.5" />
+                        {t('apiKey.list.showKeysThat')}
+                      </span>
+                    }
+                    className="min-w-0 flex-1"
+                  />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-7 shrink-0 gap-1.5 px-2 text-[13px]">
+                        <Sparkles className="size-3.5" />
+                        {t('apiKey.list.presets')}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-72">
+                      {presetMenuItems}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
+            </>
           )}
         </div>
+
+        {narrow && selectMode && (
+          <BatchBar count={Math.max(selectedIds.size, 0) || 0} onClear={exitSelectMode} floating actions={batchActions} />
+        )}
+        {narrow && (
+          <FilterSheet
+            open={filterSheetOpen}
+            onOpenChange={setFilterSheetOpen}
+            title={t('apiKey.list.filter')}
+            fields={filterFields}
+            state={filterState}
+            onChange={handleFilterChange}
+            onClearAll={handleClearFilters}
+            t={t}
+            top={
+              <div className="space-y-1.5">
+                <div className="text-[11px] font-medium text-muted-foreground">{t('apiKey.list.presets')}</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[...BUILTIN_PRESETS, ...savedPresets].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        applyPreset(p);
+                        setFilterSheetOpen(false);
+                      }}
+                      className="h-8 rounded-full border border-input bg-background px-3 text-[13px] hover:bg-muted"
+                    >
+                      {p.labelKey ? t(p.labelKey) : p.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            }
+          />
+        )}
 
         <Card>
           {tokens.length === 0 && !searching ? (
@@ -851,8 +1045,6 @@ export default function Token() {
               orgMemberNames={isOrgContext ? orgMemberNames : null}
               userGroup={userGroup}
               userIsReliable={userIsReliable}
-              revealed={revealed}
-              onToggleReveal={onToggleReveal}
               onCopyKey={onCopyKey}
               onEdit={openEdit}
               onDelete={setDeleteTarget}
@@ -864,6 +1056,8 @@ export default function Token() {
               selectedIds={selectedIds}
               onToggleSelect={toggleSelect}
               onToggleSelectAll={toggleSelectAll}
+              layout={layout}
+              selectMode={selectMode}
               order={order}
               orderBy={orderBy}
               onSort={handleSort}

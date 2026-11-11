@@ -2974,7 +2974,19 @@
       "budgetMin": "已用限额不少于 (%)",
       "budgetMinHint": "例如 80",
       "presetBudget": "接近限额",
-      "presetNoLimit": "启用但未设限额"
+      "presetNoLimit": "启用但未设限额",
+      "state_enabled": "启用",
+      "state_disabled": "已停用",
+      "state_expired": "已过期",
+      "state_exhausted": "已用尽",
+      "stateExpiring": "{{when}}过期",
+      "filter": "筛选",
+      "sort": "排序",
+      "sortNewest": "最新创建",
+      "sortName": "名称 A–Z",
+      "sortUsage": "用量最高",
+      "sortExpiry": "最先过期",
+      "selectMode": "选择 Key"
     }
   }
 }

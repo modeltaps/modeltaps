@@ -2974,7 +2974,19 @@
       "budgetMin": "上限の使用率が次以上 (%)",
       "budgetMinHint": "例: 80",
       "presetBudget": "上限に近い",
-      "presetNoLimit": "有効で上限なし"
+      "presetNoLimit": "有効で上限なし",
+      "state_enabled": "有効",
+      "state_disabled": "無効",
+      "state_expired": "期限切れ",
+      "state_exhausted": "使い切り",
+      "stateExpiring": "{{when}}に期限切れ",
+      "filter": "絞り込み",
+      "sort": "並べ替え",
+      "sortNewest": "新しい順",
+      "sortName": "名前 A–Z",
+      "sortUsage": "利用額の多い順",
+      "sortExpiry": "期限の近い順",
+      "selectMode": "キーを選択"
     }
   }
 }

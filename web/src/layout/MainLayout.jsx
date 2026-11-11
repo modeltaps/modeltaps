@@ -5,6 +5,7 @@ import { matchRoutes, Outlet, useLocation } from 'react-router';
 import AuthGuard from 'utils/route-guard/AuthGuard';
 import { cn } from '@/lib/utils';
 import useTheme from 'hooks/useTheme';
+import useMediaQuery from 'hooks/useMediaQuery';
 import { setDocumentTitlePrefix } from 'utils/documentTitle';
 import { useIsAdmin } from 'utils/common';
 import { useOrg } from 'contexts/OrgContext';
@@ -52,7 +53,14 @@ export default function MainLayout() {
     return !matched || matched[matched.length - 1].route.path === '*';
   }, [pathname]);
 
-  const [collapsed, setCollapsed] = useState(false);
+  // Below the lg breakpoint (1024px) the rail starts collapsed to icons so content keeps its
+  // width; the user's own toggle wins until the window crosses the breakpoint again.
+  const belowLg = useMediaQuery('(max-width: 1023px)');
+  const [collapseOverride, setCollapseOverride] = useState(null);
+  useEffect(() => {
+    setCollapseOverride(null);
+  }, [belowLg]);
+  const collapsed = collapseOverride ?? belowLg;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   // DOM node of the PageHeader action slot; pages portal their primary actions
@@ -65,7 +73,7 @@ export default function MainLayout() {
   // Title set by a detail page through usePageHeader; replaces the nav-derived one.
   const [headerOverride, setHeaderOverride] = useState(null);
 
-  const toggleCollapse = () => setCollapsed((v) => !v);
+  const toggleCollapse = () => setCollapseOverride(!collapsed);
   const openCommand = () => setCommandOpen(true);
   // 抽屉里点搜索:先收起抽屉再开搜索弹窗。
   const openCommandFromDrawer = () => {

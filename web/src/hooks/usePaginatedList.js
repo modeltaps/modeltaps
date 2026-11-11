@@ -78,6 +78,14 @@ export default function usePaginatedList({
     refresh();
   };
 
+  // Sort by `id` in a given direction (for sort menus, where a header toggle does not apply).
+  const setSort = (id, direction) => {
+    if (!id) return;
+    setOrder(direction === 'asc' ? 'asc' : 'desc');
+    setOrderBy(id);
+    if (resetPageOnSort) setPage(0);
+  };
+
   const handleSort = (id) => {
     if (!id) return;
     const isAsc = orderBy === id && order === 'asc';
@@ -105,6 +113,7 @@ export default function usePaginatedList({
     refresh,
     handleRefresh,
     handleSort,
+    setSort,
     onRowsPerPageChange
   };
 }
