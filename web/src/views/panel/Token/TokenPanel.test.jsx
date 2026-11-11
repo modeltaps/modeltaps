@@ -108,4 +108,16 @@ describe('NewTokenDialog', () => {
     expect(await screen.findByTestId('new-token-key')).toHaveProperty('textContent', 'sk-newkey');
     expect(onCreated).toHaveBeenCalled();
   });
+
+  it('shows a taken name under the name field', async () => {
+    API.post.mockResolvedValueOnce({ data: { success: false, code: 'token_name_taken', message: 'name taken' } });
+    render(
+      createElement(NewTokenDialog, { onClose: vi.fn(), onCreated: vi.fn(), onOpen: vi.fn(), onCopy: vi.fn(), baseUrl: 'http://x/v1' })
+    );
+    fireEvent.change(document.getElementById('nt-name'), { target: { value: 'ci' } });
+    fireEvent.click(screen.getByRole('button', { name: i18n.t('apiKey.new.create') }));
+
+    expect(await screen.findByText('name taken')).toBeTruthy();
+    expect(document.getElementById('nt-name').getAttribute('aria-invalid')).toBe('true');
+  });
 });

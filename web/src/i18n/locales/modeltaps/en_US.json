@@ -1586,6 +1586,8 @@
     "payment_create_failed": "Could not create the payment. Try again later.",
     "order_create_failed": "Could not create the order. Try again later.",
     "token_name_too_long": "The API key name is too long",
+    "token_name_taken": "An API key with this name already exists. Use a different name.",
+    "token_name_reserved": "Names starting with sys_ are reserved for the system.",
     "token_expired_cannot_enable": "This API key has expired and cannot be enabled. Change its expiration time or set it to never expire first.",
     "token_quota_exhausted_cannot_enable": "This API key has used up its quota and cannot be enabled. Change its remaining quota or set it to unlimited first.",
     "org_usage_view_denied": "This organization does not allow viewing other members' usage",
@@ -3019,6 +3021,10 @@
       "copied": "Copied",
       "openDetails": "Open details",
       "done": "Done"
+    },
+    "page": {
+      "protocol": "Protocol",
+      "examples": "API examples"
     }
   }
 }

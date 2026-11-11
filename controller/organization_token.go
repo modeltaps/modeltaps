@@ -118,6 +118,9 @@ func AddOrgToken(c *gin.Context) {
 		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenNameTooLong, "API key name is too long", nil)
 		return
 	}
+	if rejectTokenName(c, token.Name, org.ShadowUserId, 0, false) {
+		return
+	}
 
 	// 分组校验以影子账户(组织)的用户组为准
 	if token.Group != "" {
@@ -222,6 +225,10 @@ func UpdateOrgToken(c *gin.Context) {
 			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
+	}
+
+	if statusOnly == "" && rejectTokenName(c, token.Name, cleanToken.UserId, cleanToken.Id, token.Name == cleanToken.Name) {
+		return
 	}
 
 	if statusOnly != "" {

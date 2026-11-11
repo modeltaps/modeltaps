@@ -1508,6 +1508,8 @@
     "payment_create_failed": "建立付款失敗，請稍後重試",
     "order_create_failed": "建立訂單失敗，請稍後重試",
     "token_name_too_long": "API Key 名稱過長",
+    "token_name_taken": "已有同名 API Key，請換一個名稱。",
+    "token_name_reserved": "以 sys_ 開頭的名稱為系統保留。",
     "token_expired_cannot_enable": "此 API Key 已過期，無法啟用。請先修改過期時間或設為永不過期。",
     "token_quota_exhausted_cannot_enable": "此 API Key 額度已用盡，無法啟用。請先修改剩餘額度或設為無限額度。",
     "org_usage_view_denied": "此組織的設定不允許查看其他成員的用量",
@@ -2922,6 +2924,10 @@
       "copied": "已複製",
       "openDetails": "開啟詳情",
       "done": "完成"
+    },
+    "page": {
+      "protocol": "協議",
+      "examples": "接入範例"
     }
   }
 }

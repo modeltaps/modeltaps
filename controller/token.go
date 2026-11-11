@@ -8,6 +8,7 @@ import (
 	"github.com/modeltaps/modeltaps/model"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -159,6 +160,34 @@ func GetPlaygroundToken(c *gin.Context) {
 	})
 }
 
+// reservedTokenNamePrefix marks names the system gives its own keys (the playground key); users
+// cannot take them.
+const reservedTokenNamePrefix = "sys_"
+
+// rejectTokenName answers the request and returns true when name cannot be stored for an API key
+// of ownerId: it uses the reserved prefix or another key of the same owner already has it. Usage,
+// logs and today's spend group keys by name, so names are unique per owner. Saving a key whose
+// name and owner did not change is always allowed, so keys that already share a name keep working.
+func rejectTokenName(c *gin.Context, name string, ownerId, selfId int, unchanged bool) bool {
+	if unchanged {
+		return false
+	}
+	if strings.HasPrefix(name, reservedTokenNamePrefix) {
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenNameReserved, "API key names starting with sys_ are reserved", nil)
+		return true
+	}
+	taken, err := model.TokenNameTaken(ownerId, name, selfId)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return true
+	}
+	if taken {
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenNameTaken, "An API key with this name already exists", nil)
+		return true
+	}
+	return false
+}
+
 func AddToken(c *gin.Context) {
 	userId := c.GetInt("id")
 	userRole := c.GetInt("role")
@@ -170,6 +199,9 @@ func AddToken(c *gin.Context) {
 	}
 	if len(token.Name) > 30 {
 		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenNameTooLong, "API key name is too long", nil)
+		return
+	}
+	if rejectTokenName(c, token.Name, userId, 0, false) {
 		return
 	}
 
@@ -294,6 +326,10 @@ func UpdateToken(c *gin.Context) {
 			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
+	}
+
+	if statusOnly == "" && rejectTokenName(c, token.Name, cleanToken.UserId, cleanToken.Id, token.Name == cleanToken.Name) {
+		return
 	}
 
 	if statusOnly != "" {
@@ -429,6 +465,10 @@ func UpdateTokenByAdmin(c *gin.Context) {
 			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
+	}
+
+	if statusOnly == "" && rejectTokenName(c, token.Name, targetUserId, cleanToken.Id, token.Name == cleanToken.Name && targetUserId == cleanToken.UserId) {
+		return
 	}
 
 	if statusOnly != "" {
