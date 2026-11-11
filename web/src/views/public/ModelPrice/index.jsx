@@ -22,6 +22,7 @@ import {
 import FilterDropdown from './FilterDropdown';
 
 import { cn } from '@/lib/utils';
+import { FloatingPanel } from '@/components/ui/floating';
 import BrandIcon from '@/components/brand/BrandIcon';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -100,11 +101,12 @@ ModalityTab.propTypes = {
 function DisplayMenu({ sortBy, onSortChange, viewMode, onViewChange, unit, onUnitChange, t }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
+  const panelRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
     const onDocClick = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+      if (!rootRef.current?.contains(e.target) && !panelRef.current?.contains(e.target)) setOpen(false);
     };
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
@@ -135,81 +137,85 @@ function DisplayMenu({ sortBy, onSortChange, viewMode, onViewChange, unit, onUni
         <span>{t('modelpricePage.display')}</span>
         <ChevronDown className="size-4 shrink-0 opacity-50" />
       </button>
-      {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 w-56 space-y-3 rounded-md border border-border bg-card p-2 text-card-foreground shadow-md">
-          {/* 排序：单选列表，当前项打勾。 */}
-          <div>
-            <div className={sectionLabel}>{t('modelpricePage.sortBy')}</div>
-            <div className="space-y-0.5">
-              {sortOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => {
-                    onSortChange(opt.value);
-                    setOpen(false);
-                  }}
-                  className={cn(
-                    'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors hover:bg-muted',
-                    sortBy === opt.value && 'bg-muted font-medium'
-                  )}
-                >
-                  <Check className={cn('size-4 shrink-0', sortBy === opt.value ? 'opacity-100' : 'opacity-0')} />
-                  <span className="truncate">{opt.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          {/* 视图：卡片 / 表格 两段式切换（不关闭 popover）。 */}
-          <div>
-            <div className={sectionLabel}>{t('modelpricePage.viewMode')}</div>
-            <div className="inline-flex w-full overflow-hidden rounded-md border border-border">
+      <FloatingPanel
+        ref={panelRef}
+        open={open}
+        anchorRef={rootRef}
+        align="end"
+        className="w-56 space-y-3 rounded-md border border-border bg-card p-2 text-card-foreground shadow-md"
+      >
+        {/* 排序：单选列表，当前项打勾。 */}
+        <div>
+          <div className={sectionLabel}>{t('modelpricePage.sortBy')}</div>
+          <div className="space-y-0.5">
+            {sortOptions.map((opt) => (
               <button
+                key={opt.value}
                 type="button"
-                onClick={() => onViewChange('card')}
+                onClick={() => {
+                  onSortChange(opt.value);
+                  setOpen(false);
+                }}
                 className={cn(
-                  'flex flex-1 items-center justify-center gap-1.5 py-1.5 text-sm font-medium',
-                  viewMode === 'card' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted'
+                  'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors hover:bg-muted',
+                  sortBy === opt.value && 'bg-muted font-medium'
                 )}
               >
-                <LayoutGrid className="size-4" />
-                {t('modelpricePage.viewCard')}
+                <Check className={cn('size-4 shrink-0', sortBy === opt.value ? 'opacity-100' : 'opacity-0')} />
+                <span className="truncate">{opt.label}</span>
               </button>
-              <button
-                type="button"
-                onClick={() => onViewChange('list')}
-                className={cn(
-                  'flex flex-1 items-center justify-center gap-1.5 border-l border-border py-1.5 text-sm font-medium',
-                  viewMode === 'list' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted'
-                )}
-              >
-                <List className="size-4" />
-                {t('modelpricePage.viewList')}
-              </button>
-            </div>
-          </div>
-          {/* 单位：K / M 两段式切换（不关闭 popover）。 */}
-          <div>
-            <div className={sectionLabel}>{t('modelpricePage.unit')}</div>
-            <div className="inline-flex w-full overflow-hidden rounded-md border border-border">
-              {['K', 'M'].map((u) => (
-                <button
-                  key={u}
-                  type="button"
-                  onClick={() => onUnitChange(u)}
-                  className={cn(
-                    'flex-1 py-1.5 text-sm font-medium',
-                    unit === u ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted',
-                    u === 'M' && 'border-l border-border'
-                  )}
-                >
-                  {u}
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
-      )}
+        {/* 视图：卡片 / 表格 两段式切换（不关闭 popover）。 */}
+        <div>
+          <div className={sectionLabel}>{t('modelpricePage.viewMode')}</div>
+          <div className="inline-flex w-full overflow-hidden rounded-md border border-border">
+            <button
+              type="button"
+              onClick={() => onViewChange('card')}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-1.5 py-1.5 text-sm font-medium',
+                viewMode === 'card' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted'
+              )}
+            >
+              <LayoutGrid className="size-4" />
+              {t('modelpricePage.viewCard')}
+            </button>
+            <button
+              type="button"
+              onClick={() => onViewChange('list')}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-1.5 border-l border-border py-1.5 text-sm font-medium',
+                viewMode === 'list' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted'
+              )}
+            >
+              <List className="size-4" />
+              {t('modelpricePage.viewList')}
+            </button>
+          </div>
+        </div>
+        {/* 单位：K / M 两段式切换（不关闭 popover）。 */}
+        <div>
+          <div className={sectionLabel}>{t('modelpricePage.unit')}</div>
+          <div className="inline-flex w-full overflow-hidden rounded-md border border-border">
+            {['K', 'M'].map((u) => (
+              <button
+                key={u}
+                type="button"
+                onClick={() => onUnitChange(u)}
+                className={cn(
+                  'flex-1 py-1.5 text-sm font-medium',
+                  unit === u ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted',
+                  u === 'M' && 'border-l border-border'
+                )}
+              >
+                {u}
+              </button>
+            ))}
+          </div>
+        </div>
+      </FloatingPanel>
     </div>
   );
 }

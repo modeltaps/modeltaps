@@ -3,6 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { ChevronLeft, Filter, Plus } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { FloatingPanel } from '@/components/ui/floating';
 import FilterChip from './FilterChip';
 import FilterMenu from './FilterMenu';
 import ValuePanel from './ValuePanel';
@@ -40,6 +41,7 @@ export default function FilterBar({
   // flyout 放置:menuAlign 一级菜单贴左/右缘;flyoutSide 二级面板右展/左翻/覆盖。
   const [placement, setPlacement] = useState({ menuAlign: 'left', flyoutSide: 'right' });
   const rootRef = useRef(null);
+  const panelRef = useRef(null);
   const hoverTimer = useRef(null);
   // 镜像最新 state:供外点/Esc 监听(闭包按 open 订阅、易过期)与 pruneEmpty 的“是否需清理”判定读取最新值。
   const stateRef = useRef(state);
@@ -48,7 +50,8 @@ export default function FilterBar({
   useEffect(() => {
     if (!open) return undefined;
     const onDown = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) closeMenu();
+      if (rootRef.current?.contains(e.target) || panelRef.current?.contains(e.target)) return;
+      closeMenu();
     };
     const onKey = (e) => {
       if (e.key === 'Escape') closeMenu();
@@ -194,60 +197,66 @@ export default function FilterBar({
             </span>
           )}
         </button>
-        {open && (
-          <div className={cn('absolute top-full z-50 mt-1', placement.menuAlign === 'right' ? 'right-0' : 'left-0')}>
-            <div className="relative flex items-start">
-              {/* 一级分类列表 —— 常驻,展开 flyout 不改变其位置/宽度(flyout 为绝对定位)。 */}
-              <div className="rounded-md border border-border bg-card text-card-foreground shadow-md">
-                <FilterMenu
-                  fields={fields}
-                  state={state}
-                  specials={specials}
-                  activeKey={activeKey}
-                  onPick={openField}
-                  onHover={scheduleOpen}
-                  onHoverEnd={clearHoverTimer}
-                  onSpecial={(s) => {
-                    closeMenu();
-                    onSpecial?.(s);
-                  }}
+        {/* Floats above the page (never clipped by a card or dialog); the flyout keeps its own
+            left/right placement, so the panel is not height-capped (the list scrolls inside). */}
+        <FloatingPanel
+          ref={panelRef}
+          open={open}
+          anchorRef={rootRef}
+          align={placement.menuAlign === 'right' ? 'end' : 'start'}
+          clamp={false}
+        >
+          <div className="relative flex items-start">
+            {/* 一级分类列表 —— 常驻,展开 flyout 不改变其位置/宽度(flyout 为绝对定位)。 */}
+            <div className="rounded-md border border-border bg-card text-card-foreground shadow-md">
+              <FilterMenu
+                fields={fields}
+                state={state}
+                specials={specials}
+                activeKey={activeKey}
+                onPick={openField}
+                onHover={scheduleOpen}
+                onHoverEnd={clearHoverTimer}
+                onSpecial={(s) => {
+                  closeMenu();
+                  onSpecial?.(s);
+                }}
+                t={t}
+              />
+            </div>
+            {activeField && (
+              <div
+                onMouseEnter={clearHoverTimer}
+                className={cn(
+                  'absolute top-0 z-10 rounded-md border border-border bg-card text-card-foreground shadow-md',
+                  placement.flyoutSide === 'right' && 'left-full ml-1',
+                  placement.flyoutSide === 'left' && 'right-full mr-1',
+                  placement.flyoutSide === 'overlay' && 'right-0'
+                )}
+              >
+                {/* 极窄视口下 flyout 覆盖在一级列表之上,保留返回入口回到列表。 */}
+                {placement.flyoutSide === 'overlay' && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveKey(null)}
+                    className="flex w-full items-center gap-1 border-b border-border px-2 py-1.5 text-left text-sm font-medium hover:bg-muted"
+                  >
+                    <ChevronLeft className="size-4" />
+                    <span className="truncate">{t(activeField.labelKey)}</span>
+                  </button>
+                )}
+                <ValuePanel
+                  key={activeField.key}
+                  field={activeField}
+                  entry={state[activeKey]}
+                  onChange={(e) => setEntry(activeKey, e)}
+                  onConfirm={closeMenu}
                   t={t}
                 />
               </div>
-              {activeField && (
-                <div
-                  onMouseEnter={clearHoverTimer}
-                  className={cn(
-                    'absolute top-0 z-10 rounded-md border border-border bg-card text-card-foreground shadow-md',
-                    placement.flyoutSide === 'right' && 'left-full ml-1',
-                    placement.flyoutSide === 'left' && 'right-full mr-1',
-                    placement.flyoutSide === 'overlay' && 'right-0'
-                  )}
-                >
-                  {/* 极窄视口下 flyout 覆盖在一级列表之上,保留返回入口回到列表。 */}
-                  {placement.flyoutSide === 'overlay' && (
-                    <button
-                      type="button"
-                      onClick={() => setActiveKey(null)}
-                      className="flex w-full items-center gap-1 border-b border-border px-2 py-1.5 text-left text-sm font-medium hover:bg-muted"
-                    >
-                      <ChevronLeft className="size-4" />
-                      <span className="truncate">{t(activeField.labelKey)}</span>
-                    </button>
-                  )}
-                  <ValuePanel
-                    key={activeField.key}
-                    field={activeField}
-                    entry={state[activeKey]}
-                    onChange={(e) => setEntry(activeKey, e)}
-                    onConfirm={closeMenu}
-                    t={t}
-                  />
-                </div>
-              )}
-            </div>
+            )}
           </div>
-        )}
+        </FloatingPanel>
       </div>
       {!hideChips && count > 0 && onClearAll && (
         <button

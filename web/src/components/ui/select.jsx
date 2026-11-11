@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Check, ChevronDown } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { FloatingPanel } from '@/components/ui/floating';
 
 // Dependency-free Select (no Radix). Compound API mirrors shadcn:
 // <Select value onValueChange><SelectTrigger><SelectValue/></SelectTrigger>
@@ -11,12 +12,16 @@ const SelectContext = React.createContext(null);
 function Select({ value, onValueChange, children }) {
   const [open, setOpen] = React.useState(false);
   const rootRef = React.useRef(null);
+  const triggerRef = React.useRef(null);
+  const contentRef = React.useRef(null);
   const [labels, setLabels] = React.useState({});
 
   React.useEffect(() => {
     if (!open) return;
     const onDocClick = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+      // The options render in a floating panel outside the root, so clicks there count as inside.
+      if (rootRef.current?.contains(e.target) || contentRef.current?.contains(e.target)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
@@ -27,7 +32,7 @@ function Select({ value, onValueChange, children }) {
   }, []);
 
   return (
-    <SelectContext.Provider value={{ value, onValueChange, open, setOpen, labels, registerLabel }}>
+    <SelectContext.Provider value={{ value, onValueChange, open, setOpen, labels, registerLabel, triggerRef, contentRef }}>
       <div ref={rootRef} className="relative">
         {children}
       </div>
@@ -37,9 +42,14 @@ function Select({ value, onValueChange, children }) {
 
 const SelectTrigger = React.forwardRef(({ className, children, ...props }, ref) => {
   const ctx = React.useContext(SelectContext);
+  const setRefs = (node) => {
+    ctx.triggerRef.current = node;
+    if (typeof ref === 'function') ref(node);
+    else if (ref) ref.current = node;
+  };
   return (
     <button
-      ref={ref}
+      ref={setRefs}
       type="button"
       aria-haspopup="listbox"
       aria-expanded={ctx.open}
@@ -60,28 +70,31 @@ SelectTrigger.displayName = 'SelectTrigger';
 function SelectValue({ placeholder, className, children }) {
   const ctx = React.useContext(SelectContext);
   const hasValue = ctx.value !== undefined && ctx.value !== '';
-  const resolved = hasValue ? ctx.labels[ctx.value] ?? ctx.value : '';
+  const resolved = hasValue ? (ctx.labels[ctx.value] ?? ctx.value) : '';
   const display = children != null && hasValue ? children : resolved;
   return <span className={cn('truncate', !display && 'text-muted-foreground', className)}>{display || placeholder}</span>;
 }
 
 function SelectContent({ className, children }) {
   const ctx = React.useContext(SelectContext);
-  // Stay mounted when closed (hidden via CSS) so SelectItem label registration
-  // always runs and SelectValue can resolve translated labels on first render.
-  // `hidden` (display:none) also keeps the option buttons out of the tab order.
+  // Stays mounted when closed (hidden) so SelectItem label registration always runs and
+  // SelectValue can resolve translated labels on first render. It floats above the page, so a
+  // dialog or card with overflow hidden cannot clip it, and fits the window by flipping above the
+  // trigger or scrolling.
   return (
-    <div
-      className={cn(
-        'absolute z-50 mt-1 max-h-72 w-full min-w-[8rem] overflow-y-auto rounded-lg border border-border bg-card p-1 text-card-foreground shadow-md',
-        !ctx.open && 'hidden',
-        className
-      )}
+    <FloatingPanel
+      ref={ctx.contentRef}
+      open={ctx.open}
+      keepMounted
+      anchorRef={ctx.triggerRef}
+      matchWidth
+      maxHeight={288}
+      className={cn('min-w-[8rem] rounded-lg border border-border bg-card p-1 text-card-foreground shadow-md', className)}
       role="listbox"
       aria-hidden={!ctx.open}
     >
       {children}
-    </div>
+    </FloatingPanel>
   );
 }
 

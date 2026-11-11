@@ -3,6 +3,7 @@ import { Command } from 'cmdk';
 import { Check, ChevronsUpDown } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { FloatingPanel } from '@/components/ui/floating';
 
 // Searchable single-select (combobox). Dependency-light: cmdk drives filtering +
 // keyboard nav, wrapped in the same popover shell / styling as ui/select so it
@@ -30,12 +31,16 @@ export function Combobox({
 }) {
   const [open, setOpen] = React.useState(false);
   const rootRef = React.useRef(null);
+  const triggerRef = React.useRef(null);
+  const panelRef = React.useRef(null);
   const listId = React.useId();
 
   React.useEffect(() => {
     if (!open) return;
     const onDocClick = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+      // The list floats outside the root (see FloatingPanel), so clicks in it count as inside.
+      if (rootRef.current?.contains(e.target) || panelRef.current?.contains(e.target)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
@@ -68,6 +73,7 @@ export function Combobox({
   return (
     <div ref={rootRef} className="relative">
       <button
+        ref={triggerRef}
         id={id}
         type="button"
         role="combobox"
@@ -88,7 +94,7 @@ export function Combobox({
         <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
       </button>
 
-      {open && (
+      <FloatingPanel ref={panelRef} open={open} anchorRef={triggerRef} matchWidth clamp={false}>
         <Command
           onKeyDown={(e) => {
             // Close only the dropdown; preventDefault keeps a surrounding Sheet / Dialog open.
@@ -98,7 +104,7 @@ export function Combobox({
             }
           }}
           className={cn(
-            'absolute z-50 mt-1 w-full min-w-[8rem] overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-md',
+            'min-w-[8rem] overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-md',
             contentClassName
           )}
         >
@@ -126,7 +132,7 @@ export function Combobox({
               : options.map(renderItem)}
           </Command.List>
         </Command>
-      )}
+      </FloatingPanel>
     </div>
   );
 }

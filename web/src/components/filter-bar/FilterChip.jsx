@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { FloatingPanel } from '@/components/ui/floating';
 import ValuePanel from './ValuePanel';
 import { OP_IN, OP_NOT_IN, optionLabel } from './utils';
 
@@ -13,11 +14,13 @@ import { OP_IN, OP_NOT_IN, optionLabel } from './utils';
 export default function FilterChip({ field, entry, onChange, onRemove, t }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
+  const panelRef = useRef(null);
 
   useEffect(() => {
     if (!open) return undefined;
     const onDown = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+      if (rootRef.current?.contains(e.target) || panelRef.current?.contains(e.target)) return;
+      setOpen(false);
     };
     const onKey = (e) => {
       if (e.key === 'Escape') setOpen(false);
@@ -95,11 +98,14 @@ export default function FilterChip({ field, entry, onChange, onRemove, t }) {
           <X className="size-3.5" />
         </button>
       </div>
-      {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 rounded-md border border-border bg-card text-card-foreground shadow-md">
-          <ValuePanel field={field} entry={entry} onChange={onChange} onConfirm={() => setOpen(false)} t={t} />
-        </div>
-      )}
+      <FloatingPanel
+        ref={panelRef}
+        open={open}
+        anchorRef={rootRef}
+        className="rounded-md border border-border bg-card text-card-foreground shadow-md"
+      >
+        <ValuePanel field={field} entry={entry} onChange={onChange} onConfirm={() => setOpen(false)} t={t} />
+      </FloatingPanel>
     </div>
   );
 }
