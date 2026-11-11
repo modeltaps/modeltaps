@@ -51,7 +51,7 @@ export default function ProviderLane({ groups, selected, onSelect, dismissed, on
   return (
     <aside
       aria-label={t('channels.lane.label')}
-      className="flex flex-col rounded-2xl bg-[color-mix(in_srgb,var(--muted)_70%,var(--background))] p-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-140px)]"
+      className="flex flex-col rounded-2xl bg-[color-mix(in_srgb,var(--muted)_70%,var(--background))] p-3 sticky top-4 max-h-[calc(100vh-140px)]"
     >
       <div className="relative mb-3">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -92,7 +92,7 @@ export default function ProviderLane({ groups, selected, onSelect, dismissed, on
         {query ? t('channels.search.results') : t('channels.lane.label')}
       </div>
       {query && groups.length === 0 && <p className="px-1.5 py-3 text-[13px] text-muted-foreground">{t('channels.search.none')}</p>}
-      <div className="flex max-h-64 flex-col gap-1 overflow-y-auto lg:max-h-none">
+      <div className="flex min-h-0 flex-col gap-1 overflow-y-auto">
         {groups.map((g) => {
           const on = g.type === selected;
           const warn = openIssues(g.channels, dismissed).length > 0;

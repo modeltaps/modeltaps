@@ -2352,7 +2352,34 @@
       "priorityTitle": "Priority of tag {{tag}}",
       "priorityHint": "Sets the same priority on every channel with this tag, across providers"
     },
-    "optional": "optional"
+    "optional": "optional",
+    "columns": {
+      "requests": "Requests",
+      "requestsIn": "Requests {{range}}"
+    },
+    "switcher": {
+      "count": "{{count}} channels"
+    },
+    "preset": {
+      "attention": "Needs attention",
+      "lowBalance": "Low balance",
+      "autoDisabled": "Auto-disabled"
+    },
+    "condition": {
+      "showThat": "Show channels that",
+      "issue": "Needs attention",
+      "issueAny": "Any issue",
+      "issueLowBalance": "Low balance",
+      "issueKeyMissing": "Missing key",
+      "issueDrift": "Models changed",
+      "tag": "Tag",
+      "group": "Group",
+      "model": "Model",
+      "modelHint": "Model name contains…"
+    },
+    "list": {
+      "meta": "Priority {{priority}} · {{requests}} requests · {{latency}}"
+    }
   },
   "nav": {
     "sections": {
