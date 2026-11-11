@@ -30,7 +30,7 @@ func getOrgTokenForOperator(c *gin.Context, tokenId int) (*model.Token, error) {
 // GetOrgTokensList 组织令牌列表:Member 仅自己创建的,Owner/Admin 全部
 func GetOrgTokensList(c *gin.Context) {
 	org, role := getOrgFromContext(c)
-	var params model.GenericParams
+	var params model.TokenListParams
 	if err := c.ShouldBindQuery(&params); err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
@@ -40,7 +40,7 @@ func GetOrgTokensList(c *gin.Context) {
 	if role == model.OrgRoleMember {
 		createdBy = c.GetInt("id")
 	}
-	tokens, err := model.GetOrgTokensList(org.ShadowUserId, createdBy, &params)
+	tokens, statusCounts, err := model.ListOrgTokens(org.ShadowUserId, createdBy, &params)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
@@ -56,9 +56,10 @@ func GetOrgTokensList(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    tokens,
+		"success":       true,
+		"message":       "",
+		"data":          tokens,
+		"status_counts": statusCounts,
 	})
 }
 

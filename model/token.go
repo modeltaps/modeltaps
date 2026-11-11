@@ -194,6 +194,7 @@ func GetUserTokenGroupSymbols(userId int) ([]string, error) {
 // AdminSearchTokensParams 管理员搜索令牌的参数
 type AdminSearchTokensParams struct {
 	GenericParams
+	TokenListFilter
 	UserId  int    `form:"user_id"`
 	TokenId int    `form:"token_id"`
 	Key     string `form:"key"`
@@ -230,6 +231,11 @@ func GetTokensListByAdmin(params *AdminSearchTokensParams) (*DataResult[TokenWit
 	if params.Keyword != "" {
 		db = db.Where("name LIKE ?", params.Keyword+"%")
 	}
+	db, err := applyTokenLimitConditions(applyTokenConditions(db, &params.TokenListFilter, time.Now()), &params.TokenListFilter)
+	if err != nil {
+		return nil, err
+	}
+	db = applyTokenStatus(db, params.Status)
 
 	result, err := PaginateAndOrder(db, &params.PaginationParams, &tokens, allowedTokenOrderFields)
 	if err != nil {
