@@ -43,8 +43,12 @@ import {
 //                (used when switching context to decide whether to stay on the page)
 
 export const DASHBOARD_URL = '/panel/dashboard';
-// Where the sidebar's settings button lands (the page itself is a hidden nav item, below).
-export const PERSONAL_SETTINGS_URL = '/panel/settings/account/profile';
+// 设置 (`/panel/settings/*`): its own sidebar (SettingsSidebar) with 组织设置 first, headed by a
+// picker of the organizations the user manages, then 个人设置. The account menu's 设置 and the
+// settings button next to the account row open SETTINGS_ROOT, which lands on the first item.
+// Platform settings belong to 平台管理.
+export const SETTINGS_ROOT = '/panel/settings';
+export const isSettingsPath = (pathname) => pathname === SETTINGS_ROOT || pathname.startsWith(`${SETTINGS_ROOT}/`);
 export const ORG_PARAM = ':orgId';
 
 const url = (id) => `/panel/${id}`;
@@ -105,15 +109,7 @@ export const workbenchSections = [
         labelKey: 'nav.items.orgMembers',
         orgAdmin: true
       },
-      { id: 'billing', url: url('billing'), icon: ReceiptText, labelKey: 'nav.items.billing', orgAdmin: true, pageIn: ['personal'] },
-      {
-        id: 'org_settings',
-        url: `/panel/settings/org/${ORG_PARAM}/general`,
-        match: [/^\/panel\/settings\/org\/[^/]+\/(general|danger|budget)(\/|$)/],
-        icon: Settings,
-        labelKey: 'nav.items.orgSettings',
-        orgAdmin: true
-      }
+      { id: 'billing', url: url('billing'), icon: ReceiptText, labelKey: 'nav.items.billing', orgAdmin: true, pageIn: ['personal'] }
     ]
   }
 ];
@@ -166,18 +162,26 @@ export const adminSections = [
   }
 ];
 
-// Pages without a menu item that still need a title: personal settings open from the settings
-// button at the bottom of the sidebar and render inside the workbench.
-export const hiddenNavItems = [
-  {
-    id: 'personal_settings',
-    url: url('settings'),
-    match: [url('settings/account')],
-    icon: Settings,
-    labelKey: 'nav.items.personalSettings',
-    pageIn: ['personal', 'org']
-  }
-];
+// Pages without a menu item: the two parts of 设置 (opened from the account menu and the
+// settings button, never from the menu). They match settings paths for the command palette and
+// for context switching; 设置 itself is titled from its own tree (settings-tree.js).
+const orgSettingsItem = {
+  id: 'org_settings',
+  url: `/panel/settings/org/${ORG_PARAM}/general`,
+  match: [/^\/panel\/settings\/org\/[^/]+\/(general|danger|budget)(\/|$)/],
+  icon: Settings,
+  labelKey: 'nav.items.orgSettings',
+  orgAdmin: true
+};
+const personalSettingsItem = {
+  id: 'personal_settings',
+  url: url('settings'),
+  match: [url('settings/account')],
+  icon: Settings,
+  labelKey: 'nav.items.personalSettings',
+  pageIn: ['personal', 'org']
+};
+export const hiddenNavItems = [orgSettingsItem, personalSettingsItem];
 
 // Legacy admin routes that redirect into admin pages; they keep the admin chrome during the
 // redirect so the sidebar does not flash the workbench.
@@ -303,8 +307,13 @@ export function contextSwitchTarget({ pathname, to, isRoot = false, features = {
 // Command palette: the current workbench plus, for admins, every platform admin page under one
 // heading (with an entry for platform admin itself).
 export function commandSections({ isAdmin = false, isRoot = false, orgId = null, orgRole = null, features = {} }) {
-  const workbench = navSectionsFor({ context: orgId ? 'org' : 'personal', orgId, orgRole, isRoot, features });
-  const extras = [{ ...hiddenNavItems[0], href: hiddenNavItems[0].url }];
+  const context = orgId ? 'org' : 'personal';
+  const workbench = navSectionsFor({ context, orgId, orgRole, isRoot, features });
+  // The two parts of 设置: the active organization's settings (owners and admins) and personal.
+  const extras = [
+    ...(context === 'org' && isOrgAdminRole(orgRole) ? [{ ...orgSettingsItem, href: itemUrl(orgSettingsItem, orgId) }] : []),
+    { ...personalSettingsItem, href: personalSettingsItem.url }
+  ];
   const sections = [...workbench, { id: 'account', items: extras }];
   if (!isAdmin) return sections;
   const admin = navSectionsFor({ context: 'admin', isRoot }).flatMap((section) => section.items);

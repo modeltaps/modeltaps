@@ -681,10 +681,8 @@
     "routing_policy": "Virtual models that pick a target model from the first message of each session",
     "channel": "Grouped by provider; a channel is one set of credentials and an address for that provider",
     "org_members": "Invite members and set each member’s budget and model scope",
-    "org_settings": "Organization profile, retention and danger zone",
     "organization": "Organization balance, usage and audit log",
     "platform_settings": "Platform-wide defaults and switches",
-    "personal_settings": "Applies to your own account only",
     "token": "Keys for calling the API",
     "invite_code": "Create, enable and revoke registration invite codes",
     "routing": "Policies your API keys can call: managed ones by name, your own as policy/<name>"
@@ -2390,6 +2388,7 @@
       "platformSettings": "Platform settings",
       "personalSettings": "Personal settings",
       "inviteCodes": "Invite codes",
+      "settings": "Settings",
       "routingPolicies": "Routing policies"
     },
     "context": {
@@ -2405,7 +2404,8 @@
       "appearance": "Appearance",
       "language": "Language",
       "docs": "Docs & help",
-      "logout": "Log out"
+      "logout": "Log out",
+      "settings": "Settings"
     },
     "balance": {
       "personal": "Balance",
@@ -2956,7 +2956,6 @@
       }
     },
     "personal": {
-      "label": "Personal settings groups",
       "username": "Username",
       "groups": {
         "profile": "Profile",
@@ -3000,7 +2999,6 @@
       }
     },
     "org": {
-      "label": "Organization settings groups",
       "groups": {
         "general": "General",
         "generalDescription": "Organization profile and team budget",
@@ -3019,6 +3017,12 @@
           "description": "These actions affect every member"
         }
       }
+    },
+    "sections": {
+      "label": "Settings groups",
+      "org": "Organization settings",
+      "personal": "Personal settings",
+      "backToAdmin": "Back to platform admin"
     }
   },
   "home": {

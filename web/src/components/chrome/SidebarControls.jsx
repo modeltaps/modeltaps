@@ -11,6 +11,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 // row sits under the context switcher. When the rail is collapsed (desktop) or hidden (mobile),
 // the expand / drawer buttons sit left of the page title (SidebarToggle).
 
+// Menu rows of the sidebars (the workbench / admin menu and the 设置 tree). Active: a subtle
+// raised surface with a hairline, no fill colour or indicator bar.
+export const sidebarRow = {
+  base: 'group flex w-full items-center rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+  active: 'bg-sidebar-accent font-medium text-foreground shadow-[inset_0_0_0_1px_var(--border)]',
+  idle: 'text-foreground/85 hover:bg-sidebar-accent/70 hover:text-foreground'
+};
+
 const iconButtonClass =
   'flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 

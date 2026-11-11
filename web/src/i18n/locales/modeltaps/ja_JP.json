@@ -680,10 +680,8 @@
     "routing_policy": "各セッションの最初のメッセージから実際に応答するモデルを選ぶ仮想モデル",
     "channel": "プロバイダーごとにまとめています。チャネルはプロバイダーに接続する認証情報とアドレスの組です",
     "org_members": "メンバーを招待し、各メンバーの予算とモデル範囲を設定",
-    "org_settings": "組織のプロフィール、保存ポリシー、危険な操作",
     "organization": "組織の残高、使用量、監査ログ",
     "platform_settings": "プラットフォーム全体の既定値とスイッチ",
-    "personal_settings": "自分のアカウントにのみ適用",
     "token": "API を呼び出すためのキー",
     "invite_code": "登録用の招待コードの作成、有効化、無効化",
     "routing": "API キーで呼び出せるポリシー：マネージドは名前で、自分のものは policy/<名前> で呼び出します"
@@ -2295,6 +2293,7 @@
       "platformSettings": "プラットフォーム設定",
       "personalSettings": "個人設定",
       "inviteCodes": "招待コード",
+      "settings": "設定",
       "routingPolicies": "ルーティングポリシー"
     },
     "context": {
@@ -2310,7 +2309,8 @@
       "appearance": "外観",
       "language": "言語",
       "docs": "ドキュメントとヘルプ",
-      "logout": "ログアウト"
+      "logout": "ログアウト",
+      "settings": "設定"
     },
     "balance": {
       "personal": "残高",
@@ -2860,7 +2860,6 @@
       }
     },
     "personal": {
-      "label": "個人設定のグループ",
       "username": "ユーザー名",
       "groups": {
         "profile": "プロフィール",
@@ -2904,7 +2903,6 @@
       }
     },
     "org": {
-      "label": "組織設定のグループ",
       "groups": {
         "general": "一般",
         "generalDescription": "組織のプロフィールとチーム予算",
@@ -2923,6 +2921,12 @@
           "description": "これらの操作はすべてのメンバーに影響します"
         }
       }
+    },
+    "sections": {
+      "label": "設定のグループ",
+      "org": "組織の設定",
+      "personal": "個人設定",
+      "backToAdmin": "プラットフォーム管理に戻る"
     }
   },
   "home": {

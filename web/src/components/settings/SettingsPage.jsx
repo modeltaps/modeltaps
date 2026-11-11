@@ -9,8 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { dirtyGroupIds, hasDirtyCards, reportDirty, searchCards, shouldShowSearch, staysOnPage } from './settingsSearch';
+import { useSettingsPlane } from './SettingsPlane';
 
 // ==============================|| SETTINGS — ONE SETTINGS PAGE ||============================== //
+// On 设置 (personal and organization settings) the subnav, the search box and the unsaved dots
+// live in the settings sidebar instead (SettingsPlane): the page then shows only the cards and
+// reports its state to the sidebar.
 // Platform, organization and personal settings share this page: a sticky subnav of groups on the
 // left (a scrolling row below md), the cards of the active group on the right. Every group stays
 // mounted (inactive ones are hidden), so unsaved edits survive a group switch, the subnav can mark
@@ -116,7 +120,10 @@ LeaveGuard.propTypes = { when: PropTypes.bool, paths: PropTypes.arrayOf(PropType
 
 export default function SettingsPage({ label, groups, activeGroupId, className }) {
   const { t } = useTranslation();
-  const [query, setQuery] = useState('');
+  const plane = useSettingsPlane();
+  const [ownQuery, setOwnQuery] = useState('');
+  const query = plane ? plane.query : ownQuery;
+  const setQuery = plane ? plane.setQuery : setOwnQuery;
   const [dirty, setDirty] = useState({});
   const [result, setResult] = useState({ matches: new Set(), counts: {} });
   const slots = useRef({});
@@ -137,13 +144,23 @@ export default function SettingsPage({ label, groups, activeGroupId, className }
   }, [query, searching]);
 
   // A group switch (link click or deep link) ends the search.
-  useEffect(() => setQuery(''), [activeGroupId]);
+  useEffect(() => setQuery(''), [activeGroupId, setQuery]);
 
   const matchCount = result.matches.size;
 
+  // On 设置, report what the sidebar shows: the search box, unsaved dots and match counts.
+  const publish = plane?.publish;
+  const searchable = shouldShowSearch(groups);
+  const dirtyKey = [...dirtyGroups].sort().join(',');
+  const countsKey = searching ? JSON.stringify(result.counts) : '';
+  useEffect(() => {
+    publish?.({ searchable, dirtyGroups: dirtyKey ? dirtyKey.split(',') : [], counts: countsKey ? JSON.parse(countsKey) : null });
+  }, [publish, searchable, dirtyKey, countsKey]);
+  useEffect(() => () => publish?.(null), [publish]);
+
   return (
-    <div className={cn('md:grid md:grid-cols-[13rem_minmax(0,1fr)] md:items-start md:gap-8', className)}>
-      <nav aria-label={label} className="mb-5 md:sticky md:top-0 md:mb-0 md:space-y-3">
+    <div className={cn(!plane && 'md:grid md:grid-cols-[13rem_minmax(0,1fr)] md:items-start md:gap-8', className)}>
+      <nav hidden={Boolean(plane)} aria-label={label} className="mb-5 md:sticky md:top-0 md:mb-0 md:space-y-3">
         {shouldShowSearch(groups) && (
           <div className="relative mb-2 md:mb-0">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -204,7 +221,7 @@ export default function SettingsPage({ label, groups, activeGroupId, className }
       </nav>
 
       <div className="min-w-0 max-w-4xl">
-        <div className="mb-5 space-y-1">
+        <div className={cn('mb-5 space-y-1', plane && !searching && 'hidden')}>
           {searching ? (
             <>
               <h2 className="text-base font-semibold">{t('settingsUi.search.title', { query: query.trim() })}</h2>
@@ -229,7 +246,7 @@ export default function SettingsPage({ label, groups, activeGroupId, className }
                 <CardSlot
                   key={card.id}
                   card={card}
-                  group={group.label}
+                  group={group.sectionLabel ? `${group.sectionLabel} · ${group.label}` : group.label}
                   groupId={group.id}
                   hidden={searching && !result.matches.has(card.id)}
                   showGroup={searching}
@@ -261,6 +278,8 @@ SettingsPage.propTypes = {
       id: PropTypes.string.isRequired,
       to: PropTypes.string.isRequired,
       label: PropTypes.node.isRequired,
+      // Named with the group in search results, when groups of two parts share a page.
+      sectionLabel: PropTypes.string,
       description: PropTypes.node,
       icon: PropTypes.elementType,
       badge: PropTypes.node,
