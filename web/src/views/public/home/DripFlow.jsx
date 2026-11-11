@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 // ==============================|| PUBLIC HOME — DRIP ||============================== //
 // The brand mark is the drop: it gathers at the end of a faint line (the tap, barely drawn), falls onto a still surface, and the ripple
-// wakes the models lying on it, ring by ring. One beat every 4.2 s.
+// wakes the models lying on it, ring by ring. One beat every 5 s.
 //
 // Everything moves on CSS keyframes alone, so the prerendered static home page (no app bundle)
 // animates the same as the app. The dot field is computed once here; reduced motion shows the drop
@@ -11,9 +11,9 @@ import { useTranslation } from 'react-i18next';
 // the mark on its 20 px grid (16 x 20), from components/chrome/Logo.jsx
 const MARK_D = 'M6.613 0.683A1.75 1.75 0 0 1 9.387 0.683L14.341 7.122A8 8 0 1 1 1.659 7.122ZM12 13a2 2 0 1 0 -4 0a2 2 0 1 0 4 0Z';
 
-const BEAT = 4.2; // s
-const IMPACT = 0.52; // share of the beat when the drop lands
-const SPREAD = 0.38; // share of the beat the ripple takes to reach the widest ring
+const BEAT = 5; // s
+const IMPACT = 0.58; // share of the beat when the drop lands
+const SPREAD = 0.34; // share of the beat the ripple takes to reach the widest ring
 const SURFACE_Y = 236;
 const RX_MAX = 236;
 const RINGS = [34, 68, 104, 142, 182, 224];
@@ -107,32 +107,37 @@ const DRIP_CSS = `
 .drip svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .drip-mark { fill: var(--foreground); fill-rule: evenodd; }
 
-.drip-drop { transform-box: fill-box; transform-origin: 50% 100%; animation: drip-fall ${BEAT}s infinite; }
+/* The drop grows from the end of the tap: the scale origin is its top, so a small bead appears at
+   the tip and swells downward, stretches a neck, lets go and falls. Positions keep its bottom on the
+   surface (y 231) when it lands and flattens. */
+.drip-drop { transform-box: fill-box; transform-origin: 50% 0%; animation: drip-fall ${BEAT}s infinite; }
 @keyframes drip-fall {
-  0%   { transform: translate(227px, 18px) scale(0.15, 0.15); opacity: 0; animation-timing-function: var(--drip-ease); }
-  14%  { transform: translate(227px, 20px) scale(0.62, 0.66); opacity: 1; }
-  30%  { transform: translate(227px, 22px) scale(1, 1.04); animation-timing-function: ease-in-out; }
-  37%  { transform: translate(227px, 24px) scale(0.94, 1.12); animation-timing-function: cubic-bezier(0.55, 0, 0.9, 0.5); }
-  50%  { transform: translate(227px, 199px) scale(0.9, 1.16); opacity: 1; animation-timing-function: ease-out; }
-  52%  { transform: translate(227px, 205px) scale(1.5, 0.25); opacity: 1; }
-  55%  { transform: translate(227px, 206px) scale(1.7, 0.1); opacity: 0; }
-  100% { transform: translate(227px, 206px) scale(1.7, 0.1); opacity: 0; }
+  0%   { transform: translate(227px, 18px) scale(0.1, 0.08); opacity: 0; animation-timing-function: ease-out; }
+  5%   { transform: translate(227px, 18px) scale(0.16, 0.14); opacity: 1; animation-timing-function: linear; }
+  24%  { transform: translate(227px, 18px) scale(0.48, 0.45); animation-timing-function: linear; }
+  38%  { transform: translate(227px, 18px) scale(0.82, 0.8); animation-timing-function: ease-in-out; }
+  45%  { transform: translate(227px, 18px) scale(1, 1.02); animation-timing-function: ease-in-out; }
+  49%  { transform: translate(227px, 20px) scale(0.93, 1.13); animation-timing-function: cubic-bezier(0.55, 0, 0.9, 0.5); }
+  ${(IMPACT * 100 - 1).toFixed(1)}% { transform: translate(227px, 194px) scale(0.9, 1.16); opacity: 1; animation-timing-function: ease-out; }
+  ${(IMPACT * 100).toFixed(1)}% { transform: translate(227px, 223px) scale(1.5, 0.25); opacity: 1; }
+  ${(IMPACT * 100 + 3).toFixed(1)}% { transform: translate(227px, 228px) scale(1.7, 0.1); opacity: 0; }
+  100% { transform: translate(227px, 228px) scale(1.7, 0.1); opacity: 0; }
 }
 
 .drip-spray { fill: var(--foreground); opacity: 0; animation: drip-spray ${BEAT}s infinite; }
 @keyframes drip-spray {
-  0%, 51% { opacity: 0; transform: translate(0, 0); }
-  52% { opacity: 1; transform: translate(0, 0); animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1); }
-  58% { opacity: 1; transform: translate(var(--drip-dx), -16px); animation-timing-function: ease-in; }
-  64% { opacity: 0; transform: translate(calc(var(--drip-dx) * 1.5), 2px); }
+  0%, ${(IMPACT * 100 - 0.5).toFixed(1)}% { opacity: 0; transform: translate(0, 0); }
+  ${(IMPACT * 100).toFixed(1)}% { opacity: 1; transform: translate(0, 0); animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1); }
+  ${(IMPACT * 100 + 6).toFixed(1)}% { opacity: 1; transform: translate(var(--drip-dx), -16px); animation-timing-function: ease-in; }
+  ${(IMPACT * 100 + 12).toFixed(1)}% { opacity: 0; transform: translate(calc(var(--drip-dx) * 1.5), 2px); }
   100% { opacity: 0; }
 }
 
 .drip-ripple { fill: none; stroke: color-mix(in srgb, var(--foreground) 42%, transparent); stroke-width: 1px; vector-effect: non-scaling-stroke; transform-box: fill-box; transform-origin: center; opacity: 0; animation: drip-ripple ${BEAT}s linear infinite; }
 @keyframes drip-ripple {
-  0%, 51.9% { transform: scale(0.02); opacity: 0; }
-  52% { transform: scale(0.02); opacity: 0.8; }
-  90%, 100% { transform: scale(1); opacity: 0; }
+  0%, ${(IMPACT * 100 - 0.1).toFixed(1)}% { transform: scale(0.02); opacity: 0; }
+  ${(IMPACT * 100).toFixed(1)}% { transform: scale(0.02); opacity: 0.8; }
+  ${((IMPACT + SPREAD) * 100).toFixed(1)}%, 100% { transform: scale(1); opacity: 0; }
 }
 
 .drip-dot { fill: var(--foreground); opacity: 0.16; transform-box: fill-box; transform-origin: center; animation: drip-wake ${BEAT}s linear infinite backwards; }
