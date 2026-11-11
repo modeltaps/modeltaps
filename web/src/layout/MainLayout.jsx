@@ -137,13 +137,22 @@ export default function MainLayout() {
                   collapsed ? 'w-24' : 'w-64'
                 )}
               >
-                <SidebarView context={context} collapsed={collapsed} onToggleCollapse={toggleCollapse} onOpenCommand={openCommand} />
+                {/* The settings tree shows its collapse button only where the rail collapses by
+                    itself (narrow screens); the main sidebar always has one. */}
+                <SidebarView
+                  context={context}
+                  collapsed={collapsed}
+                  showCollapse={autoCollapsed}
+                  onToggleCollapse={toggleCollapse}
+                  onOpenCommand={openCommand}
+                />
               </aside>
             }
             drawer={
               <SidebarView
                 context={context}
                 collapsed={false}
+                showCollapse
                 onItemClick={() => setMobileOpen(false)}
                 onToggleCollapse={() => setMobileOpen(false)}
                 onOpenCommand={openCommandFromDrawer}
