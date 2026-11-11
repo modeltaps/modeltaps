@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -12,13 +13,16 @@ import { settingsReturnPath } from 'utils/settingsReturn';
 import OrgPicker from 'views/panel/Settings/org/OrgPicker';
 import { ORG_TREE, orgSettingsUrl, parseSettingsPath, settingsTree } from 'views/panel/Settings/sections';
 import { isAdminPath } from './nav-config';
-import { CollapseButton, sidebarRow } from './SidebarControls';
+import { CollapseButton, SidebarIconButton, sidebarRow } from './SidebarControls';
 
 // ==============================|| CHROME — SETTINGS SIDEBAR (设置) ||============================== //
-// On 设置 the whole sidebar is the settings tree. Top: a back row to the page the user came from
-// (工作台, or 平台管理 when they came from there) and the collapse button. Then the settings search
-// (while the page has enough groups), 组织设置 for owners and admins of an organization (a picker
-// of the organizations they manage, then 常规 / 成员与预算 / 危险操作) and 个人设置.
+// On 设置 the whole sidebar is the settings tree. Top row: a back row to the page the user came
+// from (工作台, or 平台管理 when they came from there) and, at its end, a search button (while the
+// page has enough groups to search) that turns the row into the settings search box. Then the
+// organization part for owners and admins of an organization: a picker of the organizations they
+// manage (it names the part, so there is no heading) and 常规 / 成员与预算 / 危险操作; then 个人设置.
+// The collapse button shows only where it is needed: on narrow screens, where the rail collapses
+// by itself and can be expanded from the page title, and in the phone drawer (to close it).
 // No footer: balance, account menu and the settings button are back in the workbench.
 
 function TreeItem({ item, label, collapsed, dirty, count, dimmed, onClick }) {
@@ -74,7 +78,7 @@ TreeItem.propTypes = {
   onClick: PropTypes.func
 };
 
-export default function SettingsSidebar({ collapsed = false, onItemClick, onToggleCollapse }) {
+export default function SettingsSidebar({ collapsed = false, showCollapse = false, onItemClick, onToggleCollapse }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -91,6 +95,15 @@ export default function SettingsSidebar({ collapsed = false, onItemClick, onTogg
   const searching = query.trim() !== '';
   const unsaved = t('settingsUi.unsaved');
   const clearSearch = () => plane?.setQuery('');
+  // The search box replaces the back row while it is open or holds a query.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const canSearch = !collapsed && Boolean(plane?.searchable);
+  const searchShown = canSearch && (searchOpen || searching);
+  const closeSearch = () => {
+    clearSearch();
+    setSearchOpen(false);
+  };
+  const searchLabel = t('settingsUi.search.placeholder');
   const onPick = () => {
     clearSearch();
     onItemClick?.();
@@ -125,7 +138,7 @@ export default function SettingsSidebar({ collapsed = false, onItemClick, onTogg
   return (
     <TooltipProvider delayDuration={150}>
       <div className="flex h-full flex-col bg-sidebar">
-        {/* Back row; the collapse button sits at its end (the drawer uses it to close). */}
+        {/* Top row: back link (or the search box), search button, collapse button where needed. */}
         {collapsed ? (
           <div className="flex h-16 shrink-0 items-center justify-center">
             <Tooltip>
@@ -143,42 +156,49 @@ export default function SettingsSidebar({ collapsed = false, onItemClick, onTogg
             </Tooltip>
           </div>
         ) : (
-          <div className="flex h-16 shrink-0 items-center gap-1 pl-2 pr-2">
-            <Link
-              to={backTo}
-              onClick={onItemClick}
-              aria-label={backLabel}
-              className="group flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg px-2 text-sm font-medium text-foreground/85 transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <ArrowLeft className="size-[1.125rem] shrink-0 text-muted-foreground group-hover:text-foreground" />
-              <span className="truncate">{backName}</span>
-            </Link>
-            {onToggleCollapse && <CollapseButton onClick={onToggleCollapse} />}
-          </div>
-        )}
-
-        {!collapsed && plane?.searchable && (
-          <div className="relative shrink-0 px-2 pb-1">
-            <Search className="pointer-events-none absolute left-5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              value={query}
-              onChange={(e) => plane.setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Escape' && clearSearch()}
-              placeholder={t('settingsUi.search.placeholder')}
-              aria-label={t('settingsUi.search.placeholder')}
-              className="h-[34px] bg-background pl-9 [&::-webkit-search-cancel-button]:hidden"
-            />
-            {searching && (
-              <button
-                type="button"
-                onClick={clearSearch}
-                aria-label={t('settingsUi.search.clear')}
-                className="absolute right-4 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
-              >
-                <X className="size-3.5" />
-              </button>
+          <div className="flex h-16 shrink-0 items-center gap-1 px-2">
+            {searchShown ? (
+              <div className="relative min-w-0 flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="search"
+                  autoFocus
+                  value={query}
+                  onChange={(e) => plane.setQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Escape' && closeSearch()}
+                  onBlur={() => !searching && setSearchOpen(false)}
+                  placeholder={searchLabel}
+                  aria-label={searchLabel}
+                  className="h-9 bg-background pl-9 pr-9 [&::-webkit-search-cancel-button]:hidden"
+                />
+                <button
+                  type="button"
+                  onClick={closeSearch}
+                  aria-label={t('settingsUi.search.clear')}
+                  className="absolute right-1.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link
+                  to={backTo}
+                  onClick={onItemClick}
+                  aria-label={backLabel}
+                  className="group flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg px-2 text-sm font-medium text-foreground/85 transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <ArrowLeft className="size-[1.125rem] shrink-0 text-muted-foreground group-hover:text-foreground" />
+                  <span className="truncate">{backName}</span>
+                </Link>
+                {canSearch && (
+                  <SidebarIconButton label={searchLabel} onClick={() => setSearchOpen(true)} className="size-9">
+                    <Search className="size-[1.125rem]" />
+                  </SidebarIconButton>
+                )}
+              </>
             )}
+            {showCollapse && onToggleCollapse && <CollapseButton onClick={onToggleCollapse} />}
           </div>
         )}
 
@@ -189,7 +209,6 @@ export default function SettingsSidebar({ collapsed = false, onItemClick, onTogg
         >
           {tree.org && (
             <div role="group" aria-label={t('settingsUi.sections.org')} className="space-y-0.5">
-              {heading(t('settingsUi.sections.org'))}
               {!collapsed && (
                 <div className="pb-1">
                   <OrgPicker orgs={tree.managedOrgs} value={tree.org.id} onChange={openOrg} />
@@ -214,6 +233,8 @@ export default function SettingsSidebar({ collapsed = false, onItemClick, onTogg
 
 SettingsSidebar.propTypes = {
   collapsed: PropTypes.bool,
+  // Show the collapse button (narrow screens and the phone drawer).
+  showCollapse: PropTypes.bool,
   onItemClick: PropTypes.func,
   onToggleCollapse: PropTypes.func
 };
