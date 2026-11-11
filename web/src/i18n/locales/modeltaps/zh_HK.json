@@ -815,7 +815,13 @@
       "nochannel": "無渠道",
       "unpriced": "未定價"
     },
-    "visibleFollowsStatus": "按供應路由時，是否對用戶可見由模型狀態（草稿 / 已發佈 / 已下架）決定"
+    "visibleFollowsStatus": "按供應路由時，是否對用戶可見由模型狀態（草稿 / 已發佈 / 已下架）決定",
+    "showModelsThat": "篩選模型",
+    "showToUsers": "對用戶顯示",
+    "hideFromUsers": "對用戶隱藏",
+    "searchShort": "搜尋模型",
+    "presetPerCall": "按次計費",
+    "presetUnlabeled": "未標註"
   },
   "brandIconPicker": {
     "mode": {

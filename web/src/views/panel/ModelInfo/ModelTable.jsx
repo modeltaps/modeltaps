@@ -1,12 +1,11 @@
-import { Fragment, useMemo } from 'react';
+import { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { ArrowLeftRight, Copy, DollarSign, Layers, Lock, MoreHorizontal, Network, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeftRight, Copy, DollarSign, Eye, EyeOff, Layers, Lock, MoreHorizontal, Network, Pencil, Trash2 } from 'lucide-react';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import DataCards from '@/components/ui/data-cards';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -20,6 +19,8 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import ProviderIcon from '@/components/brand/ProviderIcon';
+import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
+import { estimateWidth, useNaturalWidth } from '@/components/list-page';
 import { cn } from '@/lib/utils';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
 import { ValueFormatter, copy, timestamp2string } from 'utils/common';
@@ -104,8 +105,8 @@ export function ChannelsCell({ channels, onOpen }) {
 
 ChannelsCell.propTypes = { channels: PropTypes.array, onOpen: PropTypes.func };
 
-// Public status, supply mode and number of supplies of a public model; opens the Supplies tab.
-// Aliases and routing policies have no supplies of their own.
+// Public status and number of supplies of a public model on one line (the supply mode is in the
+// tooltip); opens the Supplies tab. Aliases and routing policies have no supplies of their own.
 export function SupplyCell({ row, onOpen }) {
   const { t } = useTranslation();
   if (!isPublicModelRow(row)) return <span className="text-muted-foreground">—</span>;
@@ -114,14 +115,12 @@ export function SupplyCell({ row, onOpen }) {
     <button
       type="button"
       onClick={onOpen}
-      className="flex flex-col items-start rounded-md text-left leading-5 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      title={t(`modelSupply.mode.${normalizeSupplyMode(row.supply_mode)}`)}
+      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md text-left hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <ModelStatusPill status={row.status} />
-      <span className="whitespace-nowrap text-xs text-muted-foreground">
-        {t(`modelSupply.mode.${normalizeSupplyMode(row.supply_mode)}`)} ·{' '}
-        <span className={counts.total > 0 && counts.usable === 0 ? 'text-warning' : undefined}>
-          {t('modelSupply.count', { count: counts.total })}
-        </span>
+      <span className={cn('text-xs text-muted-foreground', counts.total > 0 && counts.usable === 0 && 'text-warning')}>
+        · {t('modelSupply.count', { count: counts.total })}
       </span>
     </button>
   );
@@ -142,7 +141,8 @@ function VendorCell({ vendor }) {
 
 VendorCell.propTypes = { vendor: PropTypes.object };
 
-// 价格:按量为「入 / 出」两行 + 单位(K/M 即时换算),按次为单次价格;无价格显示「—」。
+// Price on one line: per token "input / output" in the chosen unit (the header names it), per call
+// the single price; a dash without a price.
 export function PriceCell({ price, unit, hideUnit = false }) {
   const { t } = useTranslation();
   if (!price) return <span className="text-muted-foreground">—</span>;
@@ -150,7 +150,7 @@ export function PriceCell({ price, unit, hideUnit = false }) {
   const lock = price.locked && <Lock className="size-3 shrink-0 text-warning" aria-label={t('pricing_edit.locked')} />;
   if (price.type !== 'tokens') {
     return (
-      <span className="flex items-center gap-1 whitespace-nowrap tabular-nums">
+      <span className="inline-flex items-center gap-1 whitespace-nowrap tabular-nums">
         {ValueFormatter(price.input, true, false)}
         <span className="text-xs text-muted-foreground">/ {t('modelpricePage.times')}</span>
         {lock}
@@ -158,18 +158,14 @@ export function PriceCell({ price, unit, hideUnit = false }) {
     );
   }
   return (
-    <span className="flex items-center gap-1.5 whitespace-nowrap text-xs tabular-nums">
-      <span className="flex flex-col leading-4">
-        <span>
-          <span className="mr-1 text-muted-foreground">{t('modelsPage.priceIn')}</span>
-          {ValueFormatter(price.input, true, isM)}
-        </span>
-        <span>
-          <span className="mr-1 text-muted-foreground">{t('modelsPage.priceOut')}</span>
-          {ValueFormatter(price.output, true, isM)}
-        </span>
-      </span>
-      {!hideUnit && <span className="text-muted-foreground">/ 1{unit}</span>}
+    <span
+      className="inline-flex items-center gap-1 whitespace-nowrap tabular-nums"
+      title={`${t('modelsPage.priceIn')} ${ValueFormatter(price.input, true, isM)} · ${t('modelsPage.priceOut')} ${ValueFormatter(price.output, true, isM)}`}
+    >
+      {ValueFormatter(price.input, true, isM)}
+      <span className="text-muted-foreground">/</span>
+      {ValueFormatter(price.output, true, isM)}
+      {!hideUnit && <span className="text-xs text-muted-foreground">· 1{unit}</span>}
       {lock}
     </span>
   );
@@ -177,37 +173,36 @@ export function PriceCell({ price, unit, hideUnit = false }) {
 
 PriceCell.propTypes = { price: PropTypes.object, unit: PropTypes.string, hideUnit: PropTypes.bool };
 
-// 厂商图标 + 主名(点击复制)两行:次行为 未入目录 / 别名指向 / 显示名 · N 别名 · 标签。
+// Second part of the model cell: not in the catalog / alias target / display name · aliases · tags.
+function modelSubtitle(t, row) {
+  if (!row.catalogId) return <span className="text-warning">{t('modelInfoPage.notInCatalog')}</span>;
+  if (row.alias_of) return <span className="text-info">{t('modelsPage.aliasTo', { model: row.alias_of })}</span>;
+  const parts = [row.name && row.name !== row.model ? row.name : null];
+  if (row.alias_count > 0) parts.push(t('modelInfoPage.aliasCount', { count: row.alias_count }));
+  parts.push(...safeJsonArray(row.tags));
+  return parts.filter(Boolean).join(' · ') || null;
+}
+
+// One line: vendor icon, the model name in mono (click copies it), then the subtitle, muted.
 function ModelCell({ row, vendor }) {
   const { t } = useTranslation();
-  let sub;
-  if (!row.catalogId) {
-    sub = <span className="text-warning">{t('modelInfoPage.notInCatalog')}</span>;
-  } else if (row.alias_of) {
-    sub = <span className="text-info">{t('modelsPage.aliasTo', { model: row.alias_of })}</span>;
-  } else {
-    const parts = [row.name && row.name !== row.model ? row.name : null];
-    if (row.alias_count > 0) parts.push(t('modelInfoPage.aliasCount', { count: row.alias_count }));
-    parts.push(...safeJsonArray(row.tags));
-    sub = parts.filter(Boolean).join(' · ');
-  }
+  const sub = modelSubtitle(t, row);
   return (
-    <div className="flex min-w-0 max-w-[20rem] items-center gap-2">
+    <div className="flex min-w-0 max-w-[18rem] items-center gap-2 whitespace-nowrap">
       <VendorIcon vendor={vendor} model={row.model} />
-      <div className="flex min-w-0 flex-col">
-        <span className="flex min-w-0 items-center gap-1">
-          <button
-            type="button"
-            className="truncate font-mono text-[13px] font-medium hover:underline"
-            title={row.model}
-            onClick={() => copy(row.model, t('modelInfoPage.model'))}
-          >
-            {row.model}
-          </button>
-          {row.locked && <Lock className="size-3 shrink-0 text-warning" aria-label={t('modelInfoPage.locked')} />}
-        </span>
-        {sub && <span className="truncate text-xs text-muted-foreground">{sub}</span>}
-      </div>
+      {/* The name keeps its width (up to a cap); the subtitle takes what is left and truncates. */}
+      <RowControl className="min-w-0 max-w-[15rem] shrink-0">
+        <button
+          type="button"
+          className="max-w-full truncate font-mono text-[13px] font-medium hover:underline"
+          title={row.model}
+          onClick={() => copy(row.model, t('modelInfoPage.model'))}
+        >
+          {row.model}
+        </button>
+      </RowControl>
+      {row.locked && <Lock className="size-3 shrink-0 text-warning" aria-label={t('modelInfoPage.locked')} />}
+      {sub && <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{sub}</span>}
     </div>
   );
 }
@@ -243,63 +238,63 @@ export function PriceHeader({ unit, onUnitChange }) {
 
 PriceHeader.propTypes = { unit: PropTypes.string, onUnitChange: PropTypes.func };
 
-// 行尾操作:「定价」图标 + ⋯ 菜单(编辑 / 复制名称 / 删除价格 / 删除目录)。
-function RowActionsCell({ row, onOpen, onDeleteCatalog, onDeletePrice }) {
+// Row menu: price, profile, channels, supplies, copy the name; with `onToggleHidden` (the phone
+// list, which has no switch) also show / hide; then the deletes, destructive and last.
+export function RowActionsCell({ row, onOpen, onDeleteCatalog, onDeletePrice, onToggleHidden }) {
   const { t } = useTranslation();
+  const canToggle = onToggleHidden && row.catalogId > 0 && !followsStatus(row);
+  const visible = isVisibleToUsers(row);
   return (
-    <span className="flex items-center justify-end gap-0.5">
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="size-7"
-        aria-label={t('modelsPage.setPrice')}
-        title={t('modelsPage.setPrice')}
-        onClick={() => onOpen(row, 'pricing')}
-      >
-        <DollarSign className="size-3.5" />
-      </Button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button type="button" variant="ghost" size="icon" className="size-7" aria-label={t('modelsPage.moreActions')}>
-            <MoreHorizontal className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuItem onClick={() => onOpen(row, 'profile')}>
-            <Pencil className="size-4" />
-            {t('modelsPage.editProfile')}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" variant="ghost" size="icon" className="size-[30px] rounded-lg" aria-label={t('modelsPage.moreActions')}>
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuItem onClick={() => onOpen(row, 'pricing')}>
+          <DollarSign className="size-4" />
+          {t('modelsPage.setPrice')}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onOpen(row, 'profile')}>
+          <Pencil className="size-4" />
+          {t('modelsPage.editProfile')}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onOpen(row, 'channels')}>
+          <Network className="size-4" />
+          {t('modelsPage.channelsTab')}
+        </DropdownMenuItem>
+        {isPublicModelRow(row) && (
+          <DropdownMenuItem onClick={() => onOpen(row, 'supplies')}>
+            <Layers className="size-4" />
+            {t('modelSupply.tab')}
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onOpen(row, 'channels')}>
-            <Network className="size-4" />
-            {t('modelsPage.channelsTab')}
+        )}
+        {canToggle && (
+          <DropdownMenuItem onClick={() => onToggleHidden(row, visible)}>
+            {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            {visible ? t('modelsPage.hideFromUsers') : t('modelsPage.showToUsers')}
           </DropdownMenuItem>
-          {isPublicModelRow(row) && (
-            <DropdownMenuItem onClick={() => onOpen(row, 'supplies')}>
-              <Layers className="size-4" />
-              {t('modelSupply.tab')}
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuItem onClick={() => copy(row.model, t('modelInfoPage.model'))}>
-            <Copy className="size-4" />
-            {t('modelsPage.copyName')}
+        )}
+        <DropdownMenuItem onClick={() => copy(row.model, t('modelInfoPage.model'))}>
+          <Copy className="size-4" />
+          {t('modelsPage.copyName')}
+        </DropdownMenuItem>
+        {(row.price || row.catalogId > 0) && <DropdownMenuSeparator />}
+        {row.price && (
+          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDeletePrice(row)}>
+            <Trash2 className="size-4" />
+            {t('modelInfoPage.deletePrice')}
           </DropdownMenuItem>
-          {(row.price || row.catalogId > 0) && <DropdownMenuSeparator />}
-          {row.price && (
-            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDeletePrice(row)}>
-              <Trash2 className="size-4" />
-              {t('modelInfoPage.deletePrice')}
-            </DropdownMenuItem>
-          )}
-          {row.catalogId > 0 && (
-            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDeleteCatalog(row)}>
-              <Trash2 className="size-4" />
-              {t('modelInfoPage.deleteCatalog')}
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </span>
+        )}
+        {row.catalogId > 0 && (
+          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDeleteCatalog(row)}>
+            <Trash2 className="size-4" />
+            {t('modelInfoPage.deleteCatalog')}
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -307,8 +302,43 @@ RowActionsCell.propTypes = {
   row: PropTypes.object.isRequired,
   onOpen: PropTypes.func.isRequired,
   onDeleteCatalog: PropTypes.func.isRequired,
-  onDeletePrice: PropTypes.func.isRequired
+  onDeletePrice: PropTypes.func.isRequired,
+  onToggleHidden: PropTypes.func
 };
+
+// Typical column widths, for the layout estimate before the table has been measured.
+const COLUMN_WIDTHS = {
+  select: 40,
+  model: 288,
+  endpoints: 180,
+  channels: 120,
+  supply: 150,
+  price: 120,
+  state: 96,
+  visible: 96,
+  vendor: 140,
+  actions: 52
+};
+export const estimateModelTableWidth = (columnIds, visibility) => estimateWidth(columnIds, visibility, COLUMN_WIDTHS);
+
+function VisibleSwitch({ row, onToggleHidden }) {
+  const { t } = useTranslation();
+  let title = t('modelsPage.visibleToUsers');
+  if (followsStatus(row)) title = t('modelsPage.visibleFollowsStatus');
+  else if (!(row.catalogId > 0)) title = t('modelsPage.visibleNeedsCatalog');
+  return (
+    <Switch
+      size="sm"
+      checked={isVisibleToUsers(row)}
+      disabled={!(row.catalogId > 0) || followsStatus(row)}
+      onCheckedChange={(next) => onToggleHidden?.(row, !next)}
+      aria-label={t('modelsPage.visibleToUsers')}
+      title={title}
+    />
+  );
+}
+
+VisibleSwitch.propTypes = { row: PropTypes.object.isRequired, onToggleHidden: PropTypes.func };
 
 export default function ModelTable({
   items,
@@ -322,28 +352,13 @@ export default function ModelTable({
   onToggleHidden,
   onOpen,
   onDeleteCatalog,
-  onDeletePrice
+  onDeletePrice,
+  onNaturalWidth
 }) {
   const { t } = useTranslation();
 
   const allSelected = items.length > 0 && items.every((item) => selectedKeys?.has(item.key));
   const someSelected = items.some((item) => selectedKeys?.has(item.key));
-
-  const renderVisibleSwitch = (row) => (
-    <Switch
-      checked={isVisibleToUsers(row)}
-      disabled={!(row.catalogId > 0) || followsStatus(row)}
-      onCheckedChange={(next) => onToggleHidden?.(row, !next)}
-      aria-label={t('modelsPage.visibleToUsers')}
-      title={
-        followsStatus(row)
-          ? t('modelsPage.visibleFollowsStatus')
-          : row.catalogId > 0
-            ? t('modelsPage.visibleToUsers')
-            : t('modelsPage.visibleNeedsCatalog')
-      }
-    />
-  );
 
   const columns = useMemo(
     () => [
@@ -357,13 +372,15 @@ export default function ModelTable({
             aria-label={t('modelInfoPage.selectAll')}
           />
         ),
-        meta: { className: 'w-[1%]' },
+        meta: { className: 'w-[1%] pr-0' },
         cell: (c) => (
-          <Checkbox
-            checked={!!selectedKeys?.has(c.row.original.key)}
-            onCheckedChange={() => onToggleSelect?.(c.row.original.key)}
-            aria-label={c.row.original.model}
-          />
+          <RowControl className="flex">
+            <Checkbox
+              checked={!!selectedKeys?.has(c.row.original.key)}
+              onCheckedChange={() => onToggleSelect?.(c.row.original.key)}
+              aria-label={c.row.original.model}
+            />
+          </RowControl>
         )
       },
       {
@@ -374,39 +391,65 @@ export default function ModelTable({
       {
         id: 'endpoints',
         header: t('modelInfoPage.endpoints'),
-        cell: (c) => <EndpointBadges json={c.row.original.endpoints} />,
-        meta: { cardFull: true }
+        cell: (c) => (
+          <span className="flex flex-nowrap">
+            <EndpointBadges json={c.row.original.endpoints} />
+          </span>
+        )
       },
       {
         id: 'channels',
         header: t('modelInfoPage.channels'),
-        cell: (c) => <ChannelsCell channels={c.row.original.bound_channels} onOpen={() => onOpen(c.row.original, 'channels')} />
+        cell: (c) => (
+          <RowControl>
+            <ChannelsCell channels={c.row.original.bound_channels} onOpen={() => onOpen(c.row.original, 'channels')} />
+          </RowControl>
+        )
       },
       {
         id: 'supply',
         header: t('modelSupply.column'),
-        cell: (c) => <SupplyCell row={c.row.original} onOpen={() => onOpen(c.row.original, 'supplies')} />
+        cell: (c) => (
+          <RowControl>
+            <SupplyCell row={c.row.original} onOpen={() => onOpen(c.row.original, 'supplies')} />
+          </RowControl>
+        )
       },
       {
         id: 'price',
         header: () => <PriceHeader unit={unit} onUnitChange={onUnitChange} />,
+        meta: { className: 'text-right' },
         cell: (c) => <PriceCell price={c.row.original.price} unit={unit} hideUnit />
       },
       {
         id: 'state',
         header: t('modelInfoPage.state'),
-        meta: { className: 'w-24' },
         cell: (c) => <ModelStatusBadge status={modelStatus(c.row.original)} />
       },
       {
         id: 'visible',
         header: t('modelsPage.visibleToUsers'),
-        meta: { className: 'w-28 min-w-28 whitespace-nowrap text-center' },
-        cell: (c) => <span className="flex justify-center">{renderVisibleSwitch(c.row.original)}</span>
+        cell: (c) => (
+          <RowControl className="flex">
+            <VisibleSwitch row={c.row.original} onToggleHidden={onToggleHidden} />
+          </RowControl>
+        )
       },
       { id: 'vendor', header: t('modelInfoPage.vendor'), cell: (c) => <VendorCell vendor={vendors[c.row.original.vendor_id]} /> },
-      { id: 'context_length', header: t('modelInfoPage.contextLength'), accessorKey: 'context_length', cell: numberCell },
-      { id: 'max_tokens', header: t('modelInfoPage.maxTokens'), accessorKey: 'max_tokens', cell: numberCell },
+      {
+        id: 'context_length',
+        header: t('modelInfoPage.contextLength'),
+        accessorKey: 'context_length',
+        meta: { className: 'text-right' },
+        cell: numberCell
+      },
+      {
+        id: 'max_tokens',
+        header: t('modelInfoPage.maxTokens'),
+        accessorKey: 'max_tokens',
+        meta: { className: 'text-right' },
+        cell: numberCell
+      },
       {
         id: 'modalities',
         header: t('modelInfoPage.modalities'),
@@ -429,32 +472,36 @@ export default function ModelTable({
         header: t('modelInfoPage.aliasOf'),
         cell: (c) => {
           const row = c.row.original;
-          if (row.alias_of) return <span className="whitespace-nowrap text-muted-foreground">→ {row.alias_of}</span>;
+          if (row.alias_of) return <span className="text-muted-foreground">→ {row.alias_of}</span>;
           if (row.alias_count > 0) {
             return (
-              <Badge variant="secondary" className="whitespace-nowrap px-1.5 py-0 font-normal">
+              <Badge variant="secondary" className="px-1.5 py-0 font-normal">
                 {t('modelInfoPage.aliasCount', { count: row.alias_count })}
               </Badge>
             );
           }
-          return <span className="text-muted-foreground">-</span>;
+          return <span className="text-muted-foreground">—</span>;
         }
       },
       {
         id: 'source',
         header: t('modelInfoPage.source'),
-        cell: (c) => (c.row.original.catalogId ? t(SOURCE_LABEL_KEYS[c.row.original.source] || 'modelInfoPage.sourceUnknown') : '-')
+        cell: (c) => (c.row.original.catalogId ? t(SOURCE_LABEL_KEYS[c.row.original.source] || 'modelInfoPage.sourceUnknown') : '—')
       },
       {
         id: 'synced_at',
         header: t('modelInfoPage.syncedAt'),
-        cell: (c) => <span className="tabular-nums">{c.row.original.synced_at ? timestamp2string(c.row.original.synced_at) : '-'}</span>
+        cell: (c) => <span className="tabular-nums">{c.row.original.synced_at ? timestamp2string(c.row.original.synced_at) : '—'}</span>
       },
       {
         id: 'actions',
         header: () => <span className="sr-only">{t('common.actions')}</span>,
         meta: { className: 'sticky right-0 bg-card z-10 text-right w-[1%]' },
-        cell: (c) => <RowActionsCell row={c.row.original} onOpen={onOpen} onDeleteCatalog={onDeleteCatalog} onDeletePrice={onDeletePrice} />
+        cell: (c) => (
+          <RowControl className="justify-end">
+            <RowActionsCell row={c.row.original} onOpen={onOpen} onDeleteCatalog={onDeleteCatalog} onDeletePrice={onDeletePrice} />
+          </RowControl>
+        )
       }
     ],
     [
@@ -474,6 +521,7 @@ export default function ModelTable({
     ]
   );
 
+  const tableRef = useNaturalWidth(onNaturalWidth);
   const table = useTable({
     features: appTableFeatures,
     data: items,
@@ -482,84 +530,37 @@ export default function ModelTable({
     state: { columnVisibility }
   });
 
-  // 窄屏卡片:左上选择框 + 模型名,右上操作;其余可见列按「标签 | 值」单列纵向排列。
-  const cardCell = {
-    price: (row) => <PriceCell price={row.price} unit={unit} hideUnit />,
-    visible: (row) => renderVisibleSwitch(row)
-  };
-  const renderCard = (original) => {
-    const row = table.getRow(original.key);
-    const fields = row.getVisibleCells().filter((c) => !['select', 'model', 'actions'].includes(c.column.id));
-    return (
-      <>
-        <div className="flex items-center gap-2">
-          <Checkbox
-            checked={!!selectedKeys?.has(original.key)}
-            onCheckedChange={() => onToggleSelect?.(original.key)}
-            aria-label={original.model}
-          />
-          <div className="min-w-0 flex-1">
-            <ModelCell row={original} vendor={vendors[original.vendor_id]} />
-          </div>
-          <RowActionsCell row={original} onOpen={onOpen} onDeleteCatalog={onDeleteCatalog} onDeletePrice={onDeletePrice} />
-        </div>
-        {fields.length > 0 && (
-          <dl className="mt-2 grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 pl-6">
-            {fields.map((cell) => (
-              <Fragment key={cell.id}>
-                <dt className="text-xs font-medium text-muted-foreground">{flexRender(cell.column.columnDef.header, cell.getContext())}</dt>
-                <dd className="flex min-w-0 flex-wrap items-center gap-1 text-sm">
-                  {cardCell[cell.column.id]
-                    ? cardCell[cell.column.id](original)
-                    : flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </dd>
-              </Fragment>
-            ))}
-          </dl>
-        )}
-      </>
-    );
-  };
-
   return (
     <TooltipProvider delayDuration={150}>
-      <div className="hidden md:block">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id} className="hover:bg-transparent">
-                {hg.headers.map((header) => (
-                  <TableHead key={header.id} className={`h-9 ${header.column.columnDef.meta?.className ?? ''}`}>
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={selectedKeys?.has(row.original.key) ? 'selected' : undefined}
-                className="cursor-pointer"
-                onClick={(e) => {
-                  // Clicks on controls in the row, and on menus rendered in a portal, keep their own meaning.
-                  if (!e.currentTarget.contains(e.target)) return;
-                  if (e.target.closest('button, a, input, label, [role="switch"], [role="checkbox"], [role="menuitem"]')) return;
-                  onOpen(row.original, 'profile');
-                }}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className={`py-1.5 ${cell.column.columnDef.meta?.className ?? ''}`}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <DataCards table={table} className="md:hidden" renderCard={renderCard} />
+      <Table ref={tableRef}>
+        <TableHeader>
+          {table.getHeaderGroups().map((hg) => (
+            <TableRow key={hg.id} className="hover:bg-transparent">
+              {hg.headers.map((header) => (
+                <TableHead key={header.id} className={cn('whitespace-nowrap', header.column.columnDef.meta?.className)}>
+                  {flexRender(header.column.columnDef.header, header.getContext())}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows.map((row) => (
+            <TableRow
+              key={row.id}
+              className={ROW_OPENS}
+              data-state={selectedKeys?.has(row.original.key) ? 'selected' : undefined}
+              {...rowOpenProps(() => onOpen(row.original, 'profile'))}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id} className={cn('whitespace-nowrap', cell.column.columnDef.meta?.className)}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </TooltipProvider>
   );
 }
@@ -573,6 +574,93 @@ ModelTable.propTypes = {
   selectedKeys: PropTypes.instanceOf(Set),
   onToggleSelect: PropTypes.func,
   onToggleAll: PropTypes.func,
+  onToggleHidden: PropTypes.func,
+  onOpen: PropTypes.func.isRequired,
+  onDeleteCatalog: PropTypes.func.isRequired,
+  onDeletePrice: PropTypes.func.isRequired,
+  onNaturalWidth: PropTypes.func
+};
+
+const STATE_DOT = { ok: 'bg-success', nochannel: 'bg-warning', unpriced: 'bg-warning' };
+
+// Phone list: one 56px row per model. The state dot leads (a checkbox in select mode); the first
+// line is the model name with the price on the right, the second the subtitle (display name,
+// aliases, tags) with the state on the right. A tap opens the model; ⋯ holds the row actions,
+// including show / hide since there is no switch.
+export function ModelList({
+  items,
+  unit = 'M',
+  selectMode,
+  selectedKeys,
+  onToggleSelect,
+  onToggleHidden,
+  onOpen,
+  onDeleteCatalog,
+  onDeletePrice
+}) {
+  const { t } = useTranslation();
+  return (
+    <ul className="divide-y divide-border">
+      {items.map((row) => {
+        const selected = selectedKeys.has(row.key);
+        const status = modelStatus(row);
+        const sub = modelSubtitle(t, row);
+        return (
+          <li
+            key={row.key}
+            className={cn('flex h-14 items-center gap-3 px-4', ROW_OPENS, selected && 'bg-muted/60')}
+            {...rowOpenProps(() => (selectMode ? onToggleSelect(row.key) : onOpen(row, 'profile')))}
+          >
+            {selectMode ? (
+              <RowControl>
+                <Checkbox checked={selected} onCheckedChange={() => onToggleSelect(row.key)} aria-label={row.model} />
+              </RowControl>
+            ) : (
+              <span className={cn('size-2 shrink-0 rounded-full', STATE_DOT[status])} aria-hidden="true" />
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-3">
+                <span
+                  className={cn('min-w-0 truncate font-mono text-[13px] font-medium', !isVisibleToUsers(row) && 'text-muted-foreground')}
+                >
+                  {row.model}
+                </span>
+                <span className="ml-auto shrink-0 text-[13px]">
+                  <PriceCell price={row.price} unit={unit} hideUnit />
+                </span>
+              </div>
+              <div className="mt-0.5 flex items-baseline gap-3 text-xs text-muted-foreground">
+                <span className="min-w-0 truncate">{sub}</span>
+                <span className="ml-auto shrink-0">
+                  {t(`modelsPage.status.${status}`)}
+                  {!isVisibleToUsers(row) && ` · ${t('modelsPage.stats.hidden')}`}
+                </span>
+              </div>
+            </div>
+            {!selectMode && (
+              <RowControl className="-mr-2 shrink-0">
+                <RowActionsCell
+                  row={row}
+                  onOpen={onOpen}
+                  onDeleteCatalog={onDeleteCatalog}
+                  onDeletePrice={onDeletePrice}
+                  onToggleHidden={onToggleHidden}
+                />
+              </RowControl>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+ModelList.propTypes = {
+  items: PropTypes.array.isRequired,
+  unit: PropTypes.string,
+  selectMode: PropTypes.bool,
+  selectedKeys: PropTypes.instanceOf(Set).isRequired,
+  onToggleSelect: PropTypes.func.isRequired,
   onToggleHidden: PropTypes.func,
   onOpen: PropTypes.func.isRequired,
   onDeleteCatalog: PropTypes.func.isRequired,

@@ -816,7 +816,13 @@
       "nochannel": "No channel",
       "unpriced": "Unpriced"
     },
-    "visibleFollowsStatus": "Visibility follows the model's status (draft, published, retired) while supplies route requests"
+    "visibleFollowsStatus": "Visibility follows the model's status (draft, published, retired) while supplies route requests",
+    "showModelsThat": "Show models that",
+    "showToUsers": "Show to users",
+    "hideFromUsers": "Hide from users",
+    "searchShort": "Search models",
+    "presetPerCall": "Per-call pricing",
+    "presetUnlabeled": "Unlabeled"
   },
   "brandIconPicker": {
     "mode": {
