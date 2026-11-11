@@ -99,7 +99,7 @@ func TestOrgMemberGuardrailWhitelistFallback(t *testing.T) {
 	}
 
 	// 成员配置自身白名单 → 成员级优先
-	if _, err := UpdateOrgMemberLimits(org, ownerId, nil, []string{"claude-3*"}); err != nil {
+	if _, err := UpdateOrgMemberLimits(org, ownerId, nil, []string{"claude-3*"}, 0); err != nil {
 		t.Fatalf("更新成员限制失败: %v", err)
 	}
 	g, err = CacheGetOrgMemberGuardrail(org.ShadowUserId, ownerId)
@@ -115,18 +115,18 @@ func TestUpdateOrgMemberLimitsValidationAndReset(t *testing.T) {
 	setupOrgTestDB(t)
 	org, ownerId := createGuardrailFixture(t)
 
-	if _, err := UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "daily", Limit: 0}, nil); err == nil {
+	if _, err := UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "daily", Limit: 0}, nil, 0); err == nil {
 		t.Fatal("limit<=0 应被拒绝")
 	}
-	if _, err := UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "yearly", Limit: 100}, nil); err == nil {
+	if _, err := UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "yearly", Limit: 100}, nil, 0); err == nil {
 		t.Fatal("非法周期应被拒绝")
 	}
-	if _, err := UpdateOrgMemberLimits(org, ownerId+999, &QuotaResetSetting{Period: "daily", Limit: 100}, nil); err == nil {
+	if _, err := UpdateOrgMemberLimits(org, ownerId+999, &QuotaResetSetting{Period: "daily", Limit: 100}, nil, 0); err == nil {
 		t.Fatal("非成员应被拒绝")
 	}
 
 	// 配置预算并产生用量
-	member, err := UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "daily", Limit: 100}, nil)
+	member, err := UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "daily", Limit: 100}, nil, 0)
 	if err != nil {
 		t.Fatalf("配置预算失败: %v", err)
 	}
@@ -135,7 +135,7 @@ func TestUpdateOrgMemberLimitsValidationAndReset(t *testing.T) {
 	}
 
 	// 同周期更新(改 limit 不改 period)→ 保留计数
-	member, err = UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "daily", Limit: 200}, nil)
+	member, err = UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "daily", Limit: 200}, nil, 0)
 	if err != nil {
 		t.Fatalf("更新预算失败: %v", err)
 	}
@@ -144,7 +144,7 @@ func TestUpdateOrgMemberLimitsValidationAndReset(t *testing.T) {
 	}
 
 	// 周期变化 → 清零重新计数
-	member, err = UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "weekly", Limit: 200}, nil)
+	member, err = UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "weekly", Limit: 200}, nil, 0)
 	if err != nil {
 		t.Fatalf("更新预算失败: %v", err)
 	}
@@ -156,7 +156,7 @@ func TestUpdateOrgMemberLimitsValidationAndReset(t *testing.T) {
 func TestAccrueOrgMemberBudgetUsed(t *testing.T) {
 	setupOrgTestDB(t)
 	org, ownerId := createGuardrailFixture(t)
-	member, err := UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "daily", Limit: 100}, nil)
+	member, err := UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "daily", Limit: 100}, nil, 0)
 	if err != nil {
 		t.Fatalf("配置预算失败: %v", err)
 	}
@@ -201,7 +201,7 @@ func TestAccrueOrgMemberBudgetUsed(t *testing.T) {
 	}
 
 	// 未配置预算时 noop
-	plain, err := UpdateOrgMemberLimits(org, ownerId, nil, nil)
+	plain, err := UpdateOrgMemberLimits(org, ownerId, nil, nil, 0)
 	if err != nil {
 		t.Fatalf("清除预算失败: %v", err)
 	}
@@ -217,7 +217,7 @@ func TestAccrueOrgMemberBudgetUsed(t *testing.T) {
 func TestResetOrgMemberBudget(t *testing.T) {
 	setupOrgTestDB(t)
 	org, ownerId := createGuardrailFixture(t)
-	member, err := UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "daily", Limit: 100}, nil)
+	member, err := UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "daily", Limit: 100}, nil, 0)
 	if err != nil {
 		t.Fatalf("配置预算失败: %v", err)
 	}
@@ -258,7 +258,7 @@ func TestAccrueOrgMemberBudgetUsedConcurrent(t *testing.T) {
 	setupOrgBillingTestDB(t) // 单连接共享内存库,确保并发用例命中同一份数据
 	org, ownerId := createGuardrailFixture(t)
 	// limit 取足够大,只测累计准确性而非超限闸门
-	member, err := UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "monthly", Limit: 1_000_000}, nil)
+	member, err := UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "monthly", Limit: 1_000_000}, nil, 0)
 	if err != nil {
 		t.Fatalf("配置预算失败: %v", err)
 	}
@@ -291,7 +291,7 @@ func TestAccrueOrgMemberBudgetUsedConcurrent(t *testing.T) {
 func TestReserveOrgMemberBudget(t *testing.T) {
 	setupOrgTestDB(t)
 	org, ownerId := createGuardrailFixture(t)
-	member, err := UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "daily", Limit: 100}, nil)
+	member, err := UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "daily", Limit: 100}, nil, 0)
 	if err != nil {
 		t.Fatalf("配置预算失败: %v", err)
 	}
@@ -364,7 +364,7 @@ func TestReserveOrgMemberBudgetConcurrent(t *testing.T) {
 	const workers = 50
 	const wantSucceed = limit / amount // 10
 
-	member, err := UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "monthly", Limit: limit}, nil)
+	member, err := UpdateOrgMemberLimits(org, ownerId, &QuotaResetSetting{Period: "monthly", Limit: limit}, nil, 0)
 	if err != nil {
 		t.Fatalf("配置预算失败: %v", err)
 	}

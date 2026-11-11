@@ -42,6 +42,9 @@ func setOrgRouter(apiRouter *gin.RouterGroup) {
 			orgMemberRoute.PUT("/token", controller.UpdateOrgToken)
 			orgMemberRoute.DELETE("/token/:token_id", controller.DeleteOrgToken)
 
+			// Model access (ORG-15): read-only view of the approved models, default, member layer and lists
+			orgMemberRoute.GET("/model_access", controller.GetOrgModelAccess)
+
 			// 组织日志与用量(T6):Member 受可见性策略约束(开关关闭时仅可见自己)
 			orgMemberRoute.GET("/logs", controller.GetOrgLogs)
 			orgMemberRoute.GET("/logs/stat", controller.GetOrgLogsStat)
@@ -67,6 +70,12 @@ func setOrgRouter(apiRouter *gin.RouterGroup) {
 			// 成员预算与模型白名单(T5)
 			orgAdminRoute.GET("/members/:user_id/limits", controller.GetOrgMemberLimits)
 			orgAdminRoute.PUT("/members/:user_id/limits", controller.UpdateOrgMemberLimits)
+
+			// Model access (ORG-15): organization default and named lists
+			orgAdminRoute.PUT("/model_access/default", controller.UpdateOrgModelAccessDefault)
+			orgAdminRoute.POST("/model_access/lists", controller.CreateOrgModelAccessList)
+			orgAdminRoute.PUT("/model_access/lists/:list_id", controller.UpdateOrgModelAccessList)
+			orgAdminRoute.DELETE("/model_access/lists/:list_id", controller.DeleteOrgModelAccessList)
 			orgAdminRoute.POST("/invitations", controller.CreateOrgInvitation)
 			orgAdminRoute.GET("/invitations", controller.GetOrgInvitations)
 			orgAdminRoute.DELETE("/invitations/:invitation_id", controller.RevokeOrgInvitation)

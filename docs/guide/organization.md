@@ -102,7 +102,22 @@ A member row's actions let you change their role. Removing a member requires a s
 Click the budget value on a member row (or **Budget and allowlist** in the actions) to open the settings panel:
 
 - **Periodic budget**: choose **No budget limit**, or set a daily / weekly / monthly cap. Once set, the panel shows the member's usage for the current period, and the list presents it as **used / cap · period**, highlighted in red when exceeded.
-- **Model allowlist**: select the models this member may call. **Leaving it empty means the organization default applies, that is, no extra restriction.**
+- **Model access**: **Organization default** (the member follows the organization default), a **named list**, or **Custom** models picked for this member. Whatever you choose stays inside the organization's approved models; see [Model access](#model-access).
+
+### Model access
+
+Open **Model access** in the organization group of the sidebar. A request is allowed only when every layer below lets the model through; a layer left empty inherits the one above it.
+
+1. **Approved models**: set by the platform administrator for the organization, shown read-only. Everything else in the organization stays inside this list. Empty means every model on the platform.
+2. **Organization default**: what members can use unless their own model access says otherwise.
+3. **Member**: set in the member's budget and access panel (above). It replaces the organization default for that member.
+4. **API key**: set on the key's **Access** tab. A key can only narrow what its creator may use.
+
+Lists are allowlists only. Saving a layer that goes beyond the layer above it is refused and names the entries outside the range; when a layer above is narrowed later, entries below it that it no longer covers stop working and are shown as not in effect.
+
+**Named lists** are reusable lists (for example "Production agents" or "Reasoning only") that you attach to the organization default, to members and to API keys. Editing a list applies to everything it is attached to; deleting it makes each attachment fall back to the layer above. A **restricted** list can only be attached to API keys by owners and admins.
+
+**New model releases**: an entry ending in `*` is a prefix rule. `claude-fable-*` allows `claude-fable-5-1` today and `claude-fable-5-2` the day it is released, with no edit. Listing exact model names instead means each new release has to be added by hand; platform administrators see the recent releases that the approved models do not cover yet and can approve them in one click.
 
 ### Organization periodic budget
 
@@ -117,7 +132,7 @@ Besides capping each member individually, admins can set one combined cap for th
 
 Once you switch to the organization context, the **API Keys** page manages organization API keys: members can only see and manage the API keys they created, while owners and admins can see every API key in the organization. Organization API keys are created exactly as personal ones are — see [API keys and quota](/guide/tokens).
 
-Organization API keys draw on the organization quota pool and are subject to your member budget and model allowlist.
+Organization API keys draw on the organization quota pool and are subject to your member budget and [model access](#model-access).
 
 ::: warning API keys follow membership
 When a member is removed or leaves the organization, their organization API keys are disabled; when an organization is deleted, its API keys stop working too.

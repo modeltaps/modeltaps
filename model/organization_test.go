@@ -29,7 +29,7 @@ func setupOrgTestDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("打开内存数据库失败: %v", err)
 	}
-	err = testDB.AutoMigrate(&User{}, &Token{}, &Log{}, &LogDetail{}, &Organization{}, &OrganizationMember{}, &OrganizationInvitation{}, &OrganizationAuditLog{})
+	err = testDB.AutoMigrate(&User{}, &Token{}, &Log{}, &LogDetail{}, &Organization{}, &OrganizationMember{}, &ModelAccessList{}, &OrganizationInvitation{}, &OrganizationAuditLog{})
 	if err != nil {
 		t.Fatalf("迁移测试表失败: %v", err)
 	}
@@ -553,10 +553,10 @@ func TestOrganizationMemberManagement(t *testing.T) {
 	}
 
 	// 预算可见性(T21c):Admin+ 可见全员预算;Member 仅见自己的
-	if _, err := UpdateOrgMemberLimits(org, admin.Id, &QuotaResetSetting{Period: TokenQuotaResetPeriodMonthly, Limit: 300}, nil); err != nil {
+	if _, err := UpdateOrgMemberLimits(org, admin.Id, &QuotaResetSetting{Period: TokenQuotaResetPeriodMonthly, Limit: 300}, nil, 0); err != nil {
 		t.Fatalf("设置 admin 预算失败: %v", err)
 	}
-	if _, err := UpdateOrgMemberLimits(org, bob.Id, &QuotaResetSetting{Period: TokenQuotaResetPeriodMonthly, Limit: 500}, nil); err != nil {
+	if _, err := UpdateOrgMemberLimits(org, bob.Id, &QuotaResetSetting{Period: TokenQuotaResetPeriodMonthly, Limit: 500}, nil, 0); err != nil {
 		t.Fatalf("设置 bob 预算失败: %v", err)
 	}
 	adminView, err := GetOrganizationMembersList(org.Id, admin.Id, true, &PaginationParams{})

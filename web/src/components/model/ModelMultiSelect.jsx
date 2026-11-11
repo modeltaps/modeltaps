@@ -59,6 +59,7 @@ export default function ModelMultiSelect({
   loading = false,
   notice,
   allowCreate = true,
+  canCreateValue,
   advanced,
   disabled = false,
   placeholder,
@@ -82,7 +83,11 @@ export default function ModelMultiSelect({
   const summary = useMemo(() => groupSelected(all, value), [all, value]);
 
   const typed = query.trim();
-  const canCreate = allowCreate && typed !== '' && !all.some((o) => o.id.toLowerCase() === typed.toLowerCase());
+  const canCreate =
+    allowCreate &&
+    typed !== '' &&
+    !all.some((o) => o.id.toLowerCase() === typed.toLowerCase()) &&
+    (!canCreateValue || canCreateValue(typed));
 
   // Flat list of keyboard stops: the create row, then each group header and its rows.
   const stops = useMemo(() => {
@@ -390,6 +395,8 @@ ModelMultiSelect.propTypes = {
   loading: PropTypes.bool,
   notice: PropTypes.node,
   allowCreate: PropTypes.bool,
+  // Optional check of a typed value before it can be added (e.g. only "prefix*" patterns).
+  canCreateValue: PropTypes.func,
   advanced: PropTypes.shape({ label: PropTypes.node, onClick: PropTypes.func.isRequired }),
   disabled: PropTypes.bool,
   placeholder: PropTypes.string,

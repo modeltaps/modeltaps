@@ -45,8 +45,14 @@ export default function OrgPanel({ orgId, tab, onTabChange, onClose, onChanged, 
   }, [load, reloadKey]);
 
   const save = async (patch, { tab: key }) => {
-    const url = key === 'balance' ? `/api/organization/${orgId}/quota` : `/api/organization/${orgId}/max_members`;
-    const res = await API.put(url, patch);
+    const urls = { balance: 'quota', members: 'max_members', models: 'approved_models' };
+    const res = await API.put(`/api/organization/${orgId}/${urls[key]}`, patch);
+    const conflicts = res.data.data?.conflicts;
+    if (!res.data.success && conflicts?.length) {
+      // Lower lists of the organization that still use models outside the new approved models.
+      const lines = conflicts.map((c) => `${t(`modelAccess.conflict.${c.kind}`, { name: c.name })}: ${c.entries.join(', ')}`);
+      return { ...res.data, message: `${res.data.message} — ${lines.join('; ')}` };
+    }
     return { ...res.data, toast: res.data.success ? t('common.operationSuccess') : undefined };
   };
 

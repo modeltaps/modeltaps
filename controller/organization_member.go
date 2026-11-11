@@ -73,7 +73,7 @@ func CreateOrgMemberAccount(c *gin.Context) {
 	}
 	// 可选:初始周期预算
 	if req.Budget != nil {
-		if _, err := model.UpdateOrgMemberLimits(org, user.Id, req.Budget, nil); err != nil {
+		if _, err := model.UpdateOrgMemberLimits(org, user.Id, req.Budget, nil, 0); err != nil {
 			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}

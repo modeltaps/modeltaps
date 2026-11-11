@@ -459,10 +459,16 @@ func OrganizationRoutingModels(organizationId int) ([]string, error) {
 	if err != nil {
 		return []string{}, nil
 	}
+	// Targets stay inside the platform's approved models of the organization (ORG-15).
+	var approved []string
+	var org Organization
+	if err := DB.Select("id", "approved_models").Where("id = ?", organizationId).First(&org).Error; err == nil {
+		approved = []string(org.ApprovedModels)
+	}
 	isPolicy := IsRoutingPolicyModelFor(organizationId)
 	usable := make([]string, 0, len(models))
 	for _, name := range models {
-		if strings.Contains(name, "*") || isPolicy(name) || !IsCatalogVisible(name) {
+		if strings.Contains(name, "*") || isPolicy(name) || !IsCatalogVisible(name) || !ModelAllowlistPermits(approved, name) {
 			continue
 		}
 		usable = append(usable, name)

@@ -25,7 +25,7 @@ func setupOrgMemberAccountTestDB(t *testing.T) {
 		t.Fatalf("打开内存数据库失败: %v", err)
 	}
 	if err := testDB.AutoMigrate(&model.User{}, &model.Organization{},
-		&model.OrganizationMember{}, &model.OrganizationAuditLog{}, &model.Log{}); err != nil {
+		&model.OrganizationMember{}, &model.ModelAccessList{}, &model.OrganizationAuditLog{}, &model.Log{}); err != nil {
 		t.Fatalf("迁移测试表失败: %v", err)
 	}
 	oldDB := model.DB

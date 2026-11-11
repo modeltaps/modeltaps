@@ -273,6 +273,17 @@ const (
 	APICodeRoutingPolicyCountExceeded    = "routing_policy_count_exceeded"
 	APICodeOrgRoutingPolicyDisabled      = "org_routing_policy_disabled"
 
+	// Model access lists (ORG-15).
+	APICodeModelAccessListNotFound      = "model_access_list_not_found"
+	APICodeModelAccessListNameInvalid   = "model_access_list_name_invalid"
+	APICodeModelAccessListNameDuplicate = "model_access_list_name_duplicate"
+	APICodeModelAccessListEmpty         = "model_access_list_empty"
+	APICodeModelAccessListRestricted    = "model_access_list_restricted"
+	APICodeModelAccessNotCovered        = "model_access_not_covered"
+	APICodeModelAccessTooMany           = "model_access_too_many"
+	APICodeModelAccessCeilingInUse      = "model_access_ceiling_in_use"
+	APICodeModelAccessPersonalToken     = "model_access_personal_token"
+
 	// Orders, payment methods and invoices.
 	APICodePaymentNotFound      = "payment_not_found"
 	APICodeInvalidTimeFormat    = "invalid_time_format"

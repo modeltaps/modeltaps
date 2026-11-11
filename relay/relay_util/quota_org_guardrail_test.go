@@ -301,3 +301,41 @@ func TestReleaseOrgMemberRealtimeBudget(t *testing.T) {
 		t.Fatal("个人令牌不应触达 Redis")
 	}
 }
+
+// ORG-15: the approved models are checked against the model actually called (the routing target),
+// the key's named list against the requested name, and the routing decision call is exempt from
+// the approved models.
+func TestCheckOrgMemberGuardrailsModelAccess(t *testing.T) {
+	orig := cacheGetOrgMemberGuardrailFn
+	defer func() { cacheGetOrgMemberGuardrailFn = orig }()
+	cacheGetOrgMemberGuardrailFn = func(shadowUserId int, memberUserId int) (*model.OrgMemberGuardrail, error) {
+		return &model.OrgMemberGuardrail{
+			ApprovedModels: []string{"gpt-*"},
+			AccessLists:    map[int][]string{3: {"gpt-4o"}},
+		}, nil
+	}
+	cases := []struct {
+		name string
+		q    *Quota
+		ok   bool
+	}{
+		{"approved", &Quota{userId: 100, createdBy: 5, modelName: "gpt-5"}, true},
+		{"not approved", &Quota{userId: 100, createdBy: 5, modelName: "claude-x"}, false},
+		{"routing target not approved", &Quota{userId: 100, createdBy: 5, modelName: "claude-x", routingPolicy: "auto"}, false},
+		{"decision call exempt", &Quota{userId: 100, createdBy: 5, modelName: "claude-x", routingPolicy: "auto", routingDecisionCall: true}, true},
+		{"key list allows", &Quota{userId: 100, createdBy: 5, modelName: "gpt-4o", tokenAccessListId: 3}, true},
+		{"key list refuses", &Quota{userId: 100, createdBy: 5, modelName: "gpt-5", tokenAccessListId: 3}, false},
+		{"deleted key list falls back", &Quota{userId: 100, createdBy: 5, modelName: "gpt-5", tokenAccessListId: 9}, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			errResp := tc.q.checkOrgMemberGuardrails()
+			if tc.ok && errResp != nil {
+				t.Fatalf("want allowed, got %+v", errResp)
+			}
+			if !tc.ok && (errResp == nil || errResp.StatusCode != http.StatusForbidden) {
+				t.Fatalf("want 403, got %+v", errResp)
+			}
+		})
+	}
+}

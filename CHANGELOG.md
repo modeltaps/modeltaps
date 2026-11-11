@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Model access for organizations. Platform administrators set the approved models of each
+  organization (organization panel → Approved models), and organization admins manage the
+  organization default and reusable named lists under Organization → Model access. A request
+  passes only when every layer allows the model: approved models → organization default or the
+  member's own access → the API key. Each layer must stay inside the one above it (saving is
+  refused and names the entries outside); a layer narrowed later makes entries below it stop
+  working at once. Named lists can be attached to the default, members and keys; restricted
+  lists can only be attached to keys by owners and admins. Entries ending in `*` are prefix
+  rules, so `claude-fable-*` also allows releases that come later, and the approved-models tab
+  lists recent releases not covered yet. The organization default, which had no editor so far,
+  can now be set. API: `GET|PUT /api/organization/:id/approved_models`,
+  `GET /api/org/:id/model_access`, `PUT /api/org/:id/model_access/default`,
+  `POST|PUT|DELETE /api/org/:id/model_access/lists[/:list_id]`; member limits take
+  `model_access_list_id`, and key model limits take `access_list_id`.
 - The home page at `/` is served as static HTML, rendered at build time for each language
   (English, Simplified Chinese, Traditional Chinese, Japanese) without the app bundle, so search
   engines and first-time visitors get the content at once. The server picks the language from

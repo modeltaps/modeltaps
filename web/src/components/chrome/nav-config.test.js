@@ -49,7 +49,7 @@ describe('navSectionsFor (workbench)', () => {
       expect(idsOf(navSectionsFor({ context: 'org', orgRole, orgId: 7 }))).toEqual([
         MAIN,
         DEVELOP,
-        { id: 'organization', items: ['organization', 'org_members', 'billing', 'org_settings'] }
+        { id: 'organization', items: ['organization', 'org_members', 'org_models', 'billing', 'org_settings'] }
       ]);
     }
   });
@@ -58,12 +58,14 @@ describe('navSectionsFor (workbench)', () => {
     const features = { orgRoutingPolicy: true };
     for (const orgRole of ['owner', 'admin']) {
       const org = navSectionsFor({ context: 'org', orgRole, orgId: 7, features }).find((s) => s.id === 'organization');
-      expect(org.items.map((i) => i.id)).toEqual(['organization', 'org_members', 'org_routing', 'billing', 'org_settings']);
+      expect(org.items.map((i) => i.id)).toEqual(['organization', 'org_members', 'org_models', 'org_routing', 'billing', 'org_settings']);
       expect(org.items.find((i) => i.id === 'org_routing').href).toBe('/panel/settings/org/7/routing');
     }
     const member = navSectionsFor({ context: 'org', orgRole: 'member', orgId: 7, features }).find((s) => s.id === 'organization');
     expect(member.items.map((i) => i.id)).toEqual(['organization']);
     expect(findActiveItem('/panel/settings/org/7/routing')?.id).toBe('org_routing');
+    // Not ".../models": the server treats paths ending in /models as a mistyped relay URL.
+    expect(findActiveItem('/panel/settings/org/7/model-access')?.id).toBe('org_models');
   });
 
   it('switching organization keeps 自动路由 only where it is available', () => {

@@ -14,6 +14,7 @@ import GeneralSection from './org/GeneralSection';
 import BudgetSection from './org/BudgetSection';
 import DangerSection from './org/DangerSection';
 import RoutingPage from './org/RoutingPage';
+import ModelAccessPage from './org/ModelAccessPage';
 import useSelfUser from './account/useSelfUser';
 import { accountGroupCards } from './account';
 import {
@@ -21,6 +22,7 @@ import {
   DEFAULT_ACCOUNT_SECTION,
   ORG_GROUPS,
   ORG_MEMBERS_SECTION,
+  ORG_MODELS_SECTION,
   ORG_ROUTING_SECTION,
   accountSettingsUrl,
   orgSettingsUrl,
@@ -120,5 +122,6 @@ export default function Settings() {
     );
   }
   if (section === ORG_ROUTING_SECTION) return <RoutingPage orgId={orgId} />;
+  if (section === ORG_MODELS_SECTION) return <ModelAccessPage key={orgId} orgId={orgId} />;
   return <OrgSettings orgId={orgId} role={managedOrg.role} section={section} />;
 }

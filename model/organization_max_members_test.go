@@ -138,7 +138,8 @@ func TestMigrateOrgMaxMembersNullable(t *testing.T) {
 		deleted_at datetime,
 		setting json,
 		budget_used bigint NOT NULL DEFAULT 0,
-		budget_start bigint NOT NULL DEFAULT 0
+		budget_start bigint NOT NULL DEFAULT 0,
+		approved_models json
 	)`).Error; err != nil {
 		t.Fatal(err)
 	}

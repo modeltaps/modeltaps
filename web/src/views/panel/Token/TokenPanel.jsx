@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ObjectPanel, ObjectTile } from '@/components/objects';
 import { API } from 'utils/api';
+import { useOrg } from 'contexts/OrgContext';
 import { isPlaygroundToken } from 'utils/playgroundToken';
 import { maskSecret } from 'utils/maskSecret';
 import { toLimitModels } from './ModelLimitSelector';
@@ -85,6 +86,20 @@ export default function TokenPanel({
       return cached;
     };
   }, []);
+
+  // Organization keys: the model access of the key's creator (ORG-15), fetched once per creator.
+  const { currentOrgId } = useOrg();
+  const loadModelAccess = useMemo(() => {
+    if (!currentOrgId || adminMode) return undefined;
+    const cache = {};
+    return (userId) => {
+      const key = userId || 0;
+      cache[key] ||= API.get(`/api/org/${currentOrgId}/model_access`, { params: userId ? { user_id: userId } : {} })
+        .then((res) => (res.data.success ? res.data.data : { scope: null, lists: [] }))
+        .catch(() => ({ scope: null, lists: [] }));
+      return cache[key];
+    };
+  }, [currentOrgId, adminMode]);
 
   const menu = token
     ? buildTokenActions({ item: token, t, navigate, onEdit: () => {}, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw }).filter(
@@ -165,6 +180,7 @@ export default function TokenPanel({
         resetWeekStart,
         locale: i18n.language,
         loadModels,
+        loadModelAccess,
         onCopyKey,
         onCopyText
       }}

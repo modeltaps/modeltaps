@@ -12,7 +12,8 @@ export const ORG_GROUPS = [
 
 export const ORG_MEMBERS_SECTION = 'members';
 export const ORG_ROUTING_SECTION = 'routing';
-const ORG_PAGES = [ORG_MEMBERS_SECTION, ORG_ROUTING_SECTION];
+export const ORG_MODELS_SECTION = 'model-access';
+const ORG_PAGES = [ORG_MEMBERS_SECTION, ORG_MODELS_SECTION, ORG_ROUTING_SECTION];
 
 export const ACCOUNT_GROUPS = [
   { id: 'profile', labelKey: 'settingsUi.personal.groups.profile', icon: User },

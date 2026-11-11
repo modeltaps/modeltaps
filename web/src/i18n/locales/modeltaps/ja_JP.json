@@ -1618,7 +1618,16 @@
     "routing_policy_count_exceeded": "この組織のルーティングポリシーは上限の {{max}} 件に達しています",
     "org_routing_policy_disabled": "このサイトでは組織のルーティングポリシーが有効になっていません",
     "supply_pause_rules_invalid": "一時停止ルールが無効です：{{message}}",
-    "model_supply_pending_not_found": "この上流モデルは指定したチャネルで保留中ではありません"
+    "model_supply_pending_not_found": "この上流モデルは指定したチャネルで保留中ではありません",
+    "model_access_list_not_found": "モデルアクセスリストが存在しません",
+    "model_access_list_name_invalid": "リスト名は必須で 100 文字以内、説明は 500 文字以内です",
+    "model_access_list_name_duplicate": "同じ名前のリストがすでにあります",
+    "model_access_list_empty": "名前付きリストには 1 つ以上のモデルが必要です",
+    "model_access_list_restricted": "制限付きリストを割り当てられるのは組織のオーナーと管理者だけです",
+    "model_access_not_covered": "許可範囲外です: {{models}}",
+    "model_access_too_many": "項目が多すぎます（最大 {{max}} 件）",
+    "model_access_ceiling_in_use": "組織内のリストが新しい承認範囲外のモデルをまだ使っています",
+    "model_access_personal_token": "名前付きアクセスリストは組織の API Key でのみ使えます"
   },
   "channelOAuth": {
     "tip": {
@@ -2248,7 +2257,8 @@
       "redemption": "引き換えコード",
       "platformSettings": "プラットフォーム設定",
       "personalSettings": "個人設定",
-      "inviteCodes": "招待コード"
+      "inviteCodes": "招待コード",
+      "orgModelAccess": "モデルアクセス"
     },
     "context": {
       "personal": "個人",
@@ -2311,7 +2321,8 @@
       "tab": {
         "overview": "概要",
         "balance": "残高",
-        "members": "メンバー"
+        "members": "メンバー",
+        "models": "承認済みモデル"
       },
       "details": "詳細",
       "slug": "スラッグ",
@@ -2999,6 +3010,70 @@
       "day": "1日",
       "week": "1週間",
       "month": "1か月"
+    }
+  },
+  "modelAccess": {
+    "mode": {
+      "label": "モデルアクセス",
+      "inherit": "継承",
+      "list": "名前付きリスト",
+      "custom": "カスタム",
+      "followOrg": "組織のデフォルトに従う",
+      "noLimit": "制限なし",
+      "noExtra": "追加の制限なし"
+    },
+    "noLists": "名前付きリストはまだありません。「組織 → モデルアクセス」で作成できます。",
+    "pickList": "リストを選択",
+    "modelCount": "{{count}} 件",
+    "patternHint": "* で終わるプレフィックス（例: claude-fable-*）を入力すると、今後リリースされるバージョンも含めてシリーズ全体を許可します。",
+    "outside": "無効（上位の許可範囲外）: {{models}}",
+    "keyHint": "Key は作成者が使える範囲をさらに絞ることだけができます。",
+    "memberLayer": "作成者が使えるモデル: {{models}}",
+    "orgDefaultList": "組織のデフォルトに従う: リスト「{{name}}」",
+    "orgDefaultModels": "組織のデフォルトに従う: {{models}}",
+    "orgDefaultApproved": "組織の承認済みモデルすべて",
+    "orgDefaultNone": "制限なし: すべてのモデルを利用可能",
+    "approved": {
+      "title": "承認済みモデル",
+      "description": "プラットフォームが設定します。組織内のすべてのリストはこの範囲内に収まります。",
+      "none": "制限なし: プラットフォームのすべてのモデルを利用できます。",
+      "adminHint": "この組織が使える上限です。空欄なら制限なし。* で終わるプレフィックスは新しいリリースも自動で含みます。具体的なモデル名は 1 つずつ承認が必要です。",
+      "newTitle": "未承認の新しいモデル",
+      "newHint": "直近 {{days}} 日以内にリリースされ、上のリストに含まれないモデルです。",
+      "approveAll": "すべて承認"
+    },
+    "default": {
+      "title": "組織のデフォルト",
+      "description": "メンバーに個別のモデル制限がない場合に使えるモデルです。",
+      "hint": "個別にモデル制限を設定したメンバーには影響しません。"
+    },
+    "lists": {
+      "title": "名前付きリスト",
+      "intro": "組織のデフォルト、メンバー、API Key に割り当てられる再利用可能なリストです。リストの変更は割り当て先すべてに即時反映されます。",
+      "new": "新しいリスト",
+      "empty": "リストはまだありません。",
+      "newTitle": "新しいリスト",
+      "editTitle": "リストを編集",
+      "sheetHint": "組織の承認済み範囲内のモデルのみ追加できます。",
+      "name": "名前",
+      "description": "説明",
+      "models": "モデル",
+      "restricted": "制限付き",
+      "restrictedHint": "API Key に割り当てられるのは組織のオーナーと管理者だけです。",
+      "restrictedBadge": "制限付き",
+      "nameRequired": "名前を入力してください",
+      "modelsRequired": "モデルを 1 つ以上追加してください",
+      "unused": "未割り当て",
+      "usedByDefault": "組織のデフォルト",
+      "usedByMembers": "メンバー {{count}} 人",
+      "usedByKeys": "Key {{count}} 個",
+      "deleteTitle": "「{{name}}」を削除しますか？",
+      "deleteBody": "割り当て先: {{usage}}。削除すると各割り当て先は上位の設定に戻ります。"
+    },
+    "conflict": {
+      "org_default": "組織のデフォルト",
+      "member": "メンバー {{name}}",
+      "list": "リスト {{name}}"
     }
   }
 }

@@ -52,7 +52,7 @@ func setupQuotaTestDB(t *testing.T) {
 	}
 	sqlDB.SetMaxOpenConns(1)
 	if err := testDB.AutoMigrate(&model.User{}, &model.Token{}, &model.Log{}, &model.LogDetail{},
-		&model.Channel{}, &model.OrganizationMember{}); err != nil {
+		&model.Channel{}, &model.OrganizationMember{}, &model.ModelAccessList{}); err != nil {
 		t.Fatalf("迁移测试表失败: %v", err)
 	}
 	oldDB := model.DB

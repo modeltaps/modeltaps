@@ -27,6 +27,8 @@ var orgMemberGuardrailCacheTTL = time.Minute
 type OrgMemberSetting struct {
 	Budget         *QuotaResetSetting `json:"budget,omitempty"`          // 周期预算;nil 或 limit<=0 表示不限
 	ModelWhitelist []string           `json:"model_whitelist,omitempty"` // 空=回退组织级缺省
+	// ModelAccessListId is the named list attached to the member (ORG-15); it wins over ModelWhitelist
+	ModelAccessListId int `json:"model_access_list_id,omitempty"`
 }
 
 // OrgMemberGuardrail relay 执行点使用的成员限制视图(已合并组织级白名单缺省)
@@ -37,7 +39,13 @@ type OrgMemberGuardrail struct {
 	Budget         *QuotaResetSetting
 	BudgetUsed     int
 	BudgetStart    int64
+	// ModelWhitelist is the member layer: the member's own (list or inline), else the organization default
 	ModelWhitelist []string
+	// ApprovedModels of the organization (ORG-15); empty = no limit. Checked against the model actually called
+	ApprovedModels []string
+	// AccessLists maps every named list of the organization to its models, for lists attached to keys;
+	// list changes invalidate the guardrails of all members
+	AccessLists map[int][]string
 	// OrgBudget 组织级周期预算配置(T1)。此处只带配置不带计数:组织预算的判定完全由
 	// ReserveOrganizationBudget 的原子预留承担,避免每次累计都要失效全体成员的守护缓存
 	OrgBudget *QuotaResetSetting
@@ -70,13 +78,45 @@ func (g *OrgMemberGuardrail) ModelAllowed(modelName string) bool {
 	return ModelAllowlistPermits(g.ModelWhitelist, modelName)
 }
 
-func buildOrgMemberGuardrail(org *Organization, member *OrganizationMember) *OrgMemberGuardrail {
+// ApprovedAllows matches the approved models (empty = no limit).
+func (g *OrgMemberGuardrail) ApprovedAllows(modelName string) bool {
+	return ModelAllowlistPermits(g.ApprovedModels, modelName)
+}
+
+// TokenListAllows matches the named list attached to a key; no list (or a deleted one) adds no limit.
+func (g *OrgMemberGuardrail) TokenListAllows(listId int, modelName string) bool {
+	if listId <= 0 {
+		return true
+	}
+	models, ok := g.AccessLists[listId]
+	if !ok {
+		return true
+	}
+	return ModelAllowlistPermits(models, modelName)
+}
+
+// FilterModels applies the key list, the member layer and the approved models to a model list (the
+// model list endpoints and a key's available models).
+// isRoutingPolicy marks routing policy names: the approved models apply to the target a policy calls,
+// not to the policy name.
+func (g *OrgMemberGuardrail) FilterModels(models []string, tokenListId int, isRoutingPolicy func(string) bool) []string {
+	out := make([]string, 0, len(models))
+	for _, name := range models {
+		if !g.ModelAllowed(name) || !g.TokenListAllows(tokenListId, name) {
+			continue
+		}
+		if !g.ApprovedAllows(name) && (isRoutingPolicy == nil || !isRoutingPolicy(name)) {
+			continue
+		}
+		out = append(out, name)
+	}
+	return out
+}
+
+func buildOrgMemberGuardrail(org *Organization, member *OrganizationMember, lists map[int][]string) *OrgMemberGuardrail {
 	setting := member.Setting.Data()
 	orgSetting := org.Setting.Data()
-	whitelist := setting.ModelWhitelist
-	if len(whitelist) == 0 {
-		whitelist = orgSetting.ModelWhitelist
-	}
+	whitelist := memberAllowlist(org, member, lists)
 	return &OrgMemberGuardrail{
 		OrganizationId: org.Id,
 		MemberId:       member.Id,
@@ -85,6 +125,8 @@ func buildOrgMemberGuardrail(org *Organization, member *OrganizationMember) *Org
 		BudgetUsed:     member.BudgetUsed,
 		BudgetStart:    member.BudgetStart,
 		ModelWhitelist: whitelist,
+		ApprovedModels: []string(org.ApprovedModels),
+		AccessLists:    lists,
 		OrgBudget:      orgSetting.Budget,
 	}
 }
@@ -106,14 +148,18 @@ func invalidateOrgGuardrailCacheAllMembers(org *Organization) {
 
 func getOrgMemberGuardrailFromDB(shadowUserId int, memberUserId int) (*OrgMemberGuardrail, error) {
 	var org Organization
-	if err := DB.Select("id", "setting").Where("shadow_user_id = ?", shadowUserId).First(&org).Error; err != nil {
+	if err := DB.Select("id", "setting", "approved_models").Where("shadow_user_id = ?", shadowUserId).First(&org).Error; err != nil {
 		return nil, err
 	}
 	member, err := GetOrganizationMember(org.Id, memberUserId)
 	if err != nil {
 		return nil, err
 	}
-	return buildOrgMemberGuardrail(&org, member), nil
+	lists, err := orgModelAccessListMap(org.Id)
+	if err != nil {
+		return nil, err
+	}
+	return buildOrgMemberGuardrail(&org, member, lists), nil
 }
 
 // CacheGetOrgMemberGuardrail relay 热路径入口;预算累计/配置更新会主动失效缓存
@@ -154,7 +200,8 @@ func invalidateOrgMemberGuardrailCacheByOrg(organizationId int, memberUserId int
 
 // UpdateOrgMemberLimits 更新成员预算与模型白名单(Owner/Admin 调用)。
 // BudgetUsed/BudgetStart 由服务端维护:预算周期变化时清零重新计数(与令牌周期计数同语义)。
-func UpdateOrgMemberLimits(org *Organization, targetUserId int, budget *QuotaResetSetting, whitelist []string) (*OrganizationMember, error) {
+// Model access is either a named list (listId) or the inline whitelist, inside the approved models (ORG-15).
+func UpdateOrgMemberLimits(org *Organization, targetUserId int, budget *QuotaResetSetting, whitelist []string, listId int) (*OrganizationMember, error) {
 	if budget != nil {
 		if budget.Limit <= 0 {
 			return nil, common.NewAPIError(common.APICodeOrgBudgetInvalid, "budget must be greater than 0", nil)
@@ -164,6 +211,10 @@ func UpdateOrgMemberLimits(org *Organization, targetUserId int, budget *QuotaRes
 		default:
 			return nil, common.NewAPIError(common.APICodeOrgBudgetPeriodInvalid, "budget period must be daily, weekly or monthly", nil)
 		}
+	}
+	whitelist, err := ValidateMemberModelAccess(org, listId, whitelist)
+	if err != nil {
+		return nil, err
 	}
 	member, err := GetOrganizationMember(org.Id, targetUserId)
 	if err != nil {
@@ -179,6 +230,7 @@ func UpdateOrgMemberLimits(org *Organization, targetUserId int, budget *QuotaRes
 	}
 	setting.Budget = budget
 	setting.ModelWhitelist = whitelist
+	setting.ModelAccessListId = listId
 	member.Setting.Set(setting)
 	member.UpdatedTime = utils.GetTimestamp()
 	selectCols := []string{"setting", "updated_time"}

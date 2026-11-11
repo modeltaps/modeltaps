@@ -1618,7 +1618,16 @@
     "routing_policy_count_exceeded": "本组织的路由策略已达上限 {{max}} 条",
     "org_routing_policy_disabled": "本站未开启组织路由策略",
     "supply_pause_rules_invalid": "暂停规则无效：{{message}}",
-    "model_supply_pending_not_found": "这个上游模型不在这些渠道的待处理列表里"
+    "model_supply_pending_not_found": "这个上游模型不在这些渠道的待处理列表里",
+    "model_access_list_not_found": "模型访问列表不存在",
+    "model_access_list_name_invalid": "列表名称必填且不超过 100 个字符，说明不超过 500 个字符",
+    "model_access_list_name_duplicate": "已有同名列表",
+    "model_access_list_empty": "命名列表至少需要一个模型",
+    "model_access_list_restricted": "只有组织 Owner 和管理员能挂载受限列表",
+    "model_access_not_covered": "超出允许范围：{{models}}",
+    "model_access_too_many": "条目过多（最多 {{max}} 条）",
+    "model_access_ceiling_in_use": "组织内仍有列表使用新的批准范围之外的模型",
+    "model_access_personal_token": "命名访问列表只能用于组织 API Key"
   },
   "channelOAuth": {
     "tip": {
@@ -2246,7 +2255,8 @@
       "redemption": "兑换码",
       "platformSettings": "平台设置",
       "personalSettings": "个人设置",
-      "inviteCodes": "邀请码"
+      "inviteCodes": "邀请码",
+      "orgModelAccess": "模型访问"
     },
     "context": {
       "personal": "个人",
@@ -2309,7 +2319,8 @@
       "tab": {
         "overview": "概览",
         "balance": "余额",
-        "members": "成员"
+        "members": "成员",
+        "models": "批准的模型"
       },
       "details": "详情",
       "slug": "标识",
@@ -2997,6 +3008,70 @@
       "day": "1 天",
       "week": "1 周",
       "month": "1 个月"
+    }
+  },
+  "modelAccess": {
+    "mode": {
+      "label": "模型访问",
+      "inherit": "继承",
+      "list": "命名列表",
+      "custom": "自定义",
+      "followOrg": "跟随组织缺省",
+      "noLimit": "不限制",
+      "noExtra": "不额外限制"
+    },
+    "noLists": "还没有命名列表，可在「组织 → 模型访问」里创建。",
+    "pickList": "选择列表",
+    "modelCount": "{{count}} 条",
+    "patternHint": "输入以 * 结尾的前缀（如 claude-fable-*）即可放行整个系列，以后发布的新版本也自动包含。",
+    "outside": "未生效（超出上层允许范围）：{{models}}",
+    "keyHint": "Key 只能在创建者可用的范围内再收窄。",
+    "memberLayer": "创建者可用：{{models}}",
+    "orgDefaultList": "跟随组织缺省：列表「{{name}}」",
+    "orgDefaultModels": "跟随组织缺省：{{models}}",
+    "orgDefaultApproved": "组织全部已批准的模型",
+    "orgDefaultNone": "不限制，全部模型可用",
+    "approved": {
+      "title": "批准的模型",
+      "description": "由平台设置。组织内所有列表都只能在这些模型之内。",
+      "none": "未限制：平台上的全部模型都可用。",
+      "adminHint": "这个组织最多能用的模型，留空为不限制。以 * 结尾的前缀规则会自动包含新发布的版本；写具体模型名则需要逐个批准。",
+      "newTitle": "尚未批准的新模型",
+      "newHint": "最近 {{days}} 天发布、且不在上面列表范围内的模型。",
+      "approveAll": "全部批准"
+    },
+    "default": {
+      "title": "组织缺省",
+      "description": "成员没有单独设置模型限制时可用的模型。",
+      "hint": "已单独设置模型限制的成员不受影响。"
+    },
+    "lists": {
+      "title": "命名列表",
+      "intro": "可复用的列表，能挂到组织缺省、成员和 API Key 上；修改列表会立即对所有挂载处生效。",
+      "new": "新建列表",
+      "empty": "还没有列表。",
+      "newTitle": "新建列表",
+      "editTitle": "编辑列表",
+      "sheetHint": "只能添加组织已批准范围内的模型。",
+      "name": "名称",
+      "description": "说明",
+      "models": "模型",
+      "restricted": "受限",
+      "restrictedHint": "只有组织 Owner 和管理员能把它挂到 API Key 上。",
+      "restrictedBadge": "受限",
+      "nameRequired": "请填写名称",
+      "modelsRequired": "至少添加一个模型",
+      "unused": "未挂载",
+      "usedByDefault": "组织缺省",
+      "usedByMembers": "{{count}} 个成员",
+      "usedByKeys": "{{count}} 个 Key",
+      "deleteTitle": "删除「{{name}}」？",
+      "deleteBody": "挂载于：{{usage}}。删除后各挂载处回落到上一层。"
+    },
+    "conflict": {
+      "org_default": "组织缺省",
+      "member": "成员 {{name}}",
+      "list": "列表 {{name}}"
     }
   }
 }
