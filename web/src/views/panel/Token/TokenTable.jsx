@@ -259,8 +259,9 @@ export function KeyStatus({ item, rtf, dotOnly = false }) {
 
 // Phone list: one 56px row per key. The status dot leads; the first line is the name with the
 // spend (against the limit) on the right; the second line is the key suffix with the state or last
-// use, and the share of the limit used. A tap opens the key, whose panel holds every action.
-function KeyListRow({ item, rtf, selectMode, selected, onToggleSelect, onOpen, active }) {
+// use, and the share of the limit used. A tap opens the key; the ⋯ menu at the end holds the same
+// actions as the table row, plus enable / disable.
+function KeyListRow({ item, rtf, selectMode, selected, onToggleSelect, onOpen, active, actions }) {
   const { t } = useTranslation();
   const { used, limit } = keyUsage(item);
   const state = keyState(item);
@@ -315,6 +316,11 @@ function KeyListRow({ item, rtf, selectMode, selected, onToggleSelect, onOpen, a
           </span>
         </div>
       </div>
+      {!selectMode && (
+        <RowControl className="-mr-2 shrink-0">
+          <TokenActionMenu t={t} actions={actions} />
+        </RowControl>
+      )}
     </li>
   );
 }
@@ -684,6 +690,7 @@ export default function TokenTable({
             onToggleSelect={onToggleSelect}
             onOpen={onOpen}
             active={item.id === openId}
+            actions={buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw, onToggleStatus })}
           />
         ))}
       </ul>
