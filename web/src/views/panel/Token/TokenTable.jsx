@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
@@ -36,7 +36,6 @@ import { cn } from '@/lib/utils';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
 import { isPlaygroundToken } from 'utils/playgroundToken';
-import useElementWidth from 'hooks/useElementWidth';
 
 // The short form of a key shown next to its name: the prefix and the last four characters.
 export function keySuffix(key) {
@@ -168,7 +167,7 @@ export function keyUsage(item) {
 
 // Usage column: "$used / $limit" with the share used and a thin bar under it. The tooltip adds
 // today's spend, the lifetime spend of a periodic key and the next reset.
-function UsageCell({ item, compact = false, todayUsage, resetTimezone, resetWeekStart }) {
+function UsageCell({ item, todayUsage, resetTimezone, resetWeekStart }) {
   const { t } = useTranslation();
   const { used, limit, period } = keyUsage(item);
   const ratio = limit ? used / limit : 0;
@@ -181,7 +180,7 @@ function UsageCell({ item, compact = false, todayUsage, resetTimezone, resetWeek
     if (next) hints.push(`${t('token_index.quotaResetNext')}: ${timestamp2string(next)}`);
   }
   return (
-    <div className={cn('flex flex-col gap-1', compact ? 'w-36' : 'w-48')} title={hints.join('\n') || undefined}>
+    <div className="flex w-48 flex-col gap-1" title={hints.join('\n') || undefined}>
       <div className="flex items-baseline justify-between gap-2 whitespace-nowrap">
         <span className="text-[14px] tabular-nums">
           <SpendAmount quota={used} className="font-medium" />
@@ -258,17 +257,27 @@ export function KeyStatus({ item, rtf, dotOnly = false }) {
   );
 }
 
-// Phone layout: one list item per key. First line name, key suffix and status; second line the
-// usage bar with spend against the limit and when it was last used. Tapping opens the key.
-function KeyListRow({ item, rtf, selectMode, selected, onToggleSelect, onOpen, active, actions }) {
+// Phone list: one 56px row per key. The status dot leads; the first line is the name with the
+// spend (against the limit) on the right; the second line is the key suffix with the state or last
+// use, and the share of the limit used. A tap opens the key, whose panel holds every action.
+function KeyListRow({ item, rtf, selectMode, selected, onToggleSelect, onOpen, active }) {
   const { t } = useTranslation();
   const { used, limit } = keyUsage(item);
+  const state = keyState(item);
+  const pct = limit ? Math.min(100, Math.round((used / limit) * 100)) : null;
+  const stateLabel =
+    state.key === 'enabled'
+      ? null
+      : state.key === 'expiring'
+        ? t('apiKey.list.stateExpiring', { when: relativeTime(rtf, item.expired_time) })
+        : t(`apiKey.list.state_${state.key}`);
+  const lastUse = item.accessed_time > 0 ? relativeTime(rtf, item.accessed_time) : t('token_index.neverUsed');
   return (
     <li
-      className={cn('flex items-center gap-3 px-3 py-2.5', ROW_OPENS, (active || selected) && 'bg-muted/60')}
+      className={cn('flex h-14 items-center gap-3 px-4', ROW_OPENS, (active || selected) && 'bg-muted/60')}
       {...rowOpenProps(() => (selectMode ? onToggleSelect(item.id) : onOpen(item)))}
     >
-      {selectMode && (
+      {selectMode ? (
         <RowControl>
           <Checkbox
             checked={selected}
@@ -276,32 +285,36 @@ function KeyListRow({ item, rtf, selectMode, selected, onToggleSelect, onOpen, a
             aria-label={t('apiKey.list.selectRow', { name: item.name })}
           />
         </RowControl>
+      ) : (
+        <span
+          className={cn('size-2 shrink-0 rounded-full', TONE_DOT[state.tone])}
+          title={stateLabel || t('apiKey.list.state_enabled')}
+          aria-hidden="true"
+        />
       )}
       <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="truncate font-medium">{item.name}</span>
-          {!isPlaygroundToken(item) && <code className="shrink-0 font-mono text-xs text-muted-foreground">{keySuffix(item.key)}</code>}
-          <span className="ml-auto shrink-0">
-            <KeyStatus item={item} rtf={rtf} />
+        <div className="flex items-baseline gap-3">
+          <span className="min-w-0 truncate text-sm font-medium">{item.name}</span>
+          <span className="ml-auto shrink-0 text-sm tabular-nums">
+            <SpendAmount quota={used} />
+            {limit ? <span className="text-muted-foreground"> / {renderQuota(limit)}</span> : null}
           </span>
         </div>
-        <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
-          <div className="w-16 shrink-0">
-            <LimitBar ratio={limit ? used / limit : 0} />
-          </div>
-          <span className="truncate tabular-nums">
-            <SpendAmount quota={used} className="text-foreground" />
-            {limit ? ` / ${renderQuota(limit)}` : ` · ${t('token_index.noLimit')}`}
-            {' · '}
-            {item.accessed_time > 0 ? relativeTime(rtf, item.accessed_time) : t('token_index.neverUsed')}
+        <div className="mt-0.5 flex items-baseline gap-3 text-xs text-muted-foreground">
+          <span className="min-w-0 truncate">
+            {!isPlaygroundToken(item) && <span className="font-mono">{keySuffix(item.key)}</span>}
+            {!isPlaygroundToken(item) && ' · '}
+            <span
+              className={cn(state.tone === 'danger' && 'text-destructive', state.tone === 'warn' && 'text-amber-600 dark:text-amber-500')}
+            >
+              {stateLabel || lastUse}
+            </span>
+          </span>
+          <span className={cn('ml-auto shrink-0 tabular-nums', pct >= 80 && 'text-destructive')}>
+            {pct == null ? t('token_index.noLimit') : `${pct}%`}
           </span>
         </div>
       </div>
-      {!selectMode && (
-        <RowControl>
-          <TokenActionMenu t={t} actions={actions} />
-        </RowControl>
-      )}
     </li>
   );
 }
@@ -367,33 +380,11 @@ const COLUMN_WIDTHS = {
   status: 70,
   actions: 56
 };
-// When the table is narrower than its visible columns, these hide first to last (the default
-// columns last); name, usage, status and actions always stay.
-// The medium layout keeps name, usage, last used, status and actions; the status label already
-// tells about expiry, and the rest is in the key's panel.
-const MEDIUM_HIDDEN = { creator: false, group: false, billing_tag: false, expired_time: false, created_time: false };
-const AUTO_HIDE_ORDER = ['billing_tag', 'group', 'created_time', 'creator', 'expired_time', 'accessed_time'];
-
-// Columns the user picked minus those that do not fit `width`, hidden in AUTO_HIDE_ORDER.
-export function fitColumns(visibility, columnIds, width, widths = COLUMN_WIDTHS) {
-  const result = { ...visibility };
-  if (!width) return result;
-  const shown = (id) => result[id] !== false;
-  const w = (id) => widths[id] || COLUMN_WIDTHS[id] || 120;
-  let total = columnIds.filter(shown).reduce((sum, id) => sum + w(id), 0);
-  for (const id of AUTO_HIDE_ORDER) {
-    if (total <= width) break;
-    if (columnIds.includes(id) && shown(id)) {
-      result[id] = false;
-      total -= w(id);
-    }
-  }
-  return result;
+// Estimated natural width of the table with these columns, used before the table has been
+// measured (for example while the phone list is showing).
+export function estimateTableWidth(columnIds, visibility) {
+  return columnIds.filter((id) => visibility[id] !== false).reduce((sum, id) => sum + (COLUMN_WIDTHS[id] || 120), 0);
 }
-
-// The medium layout's cells are narrower: compact usage, a status label instead of a switch,
-// short relative times.
-const COMPACT_COLUMN_WIDTHS = { ...COLUMN_WIDTHS, name: 160, used_quota: 180, status: 90, accessed_time: 70 };
 
 export default function TokenTable({
   tokens,
@@ -412,7 +403,8 @@ export default function TokenTable({
   selectedIds = null,
   onToggleSelect,
   onToggleSelectAll,
-  layout = 'wide',
+  layout = 'table',
+  onNaturalWidth,
   selectMode = false,
   order,
   orderBy,
@@ -424,12 +416,11 @@ export default function TokenTable({
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const rtfLocale = (i18n.language || 'zh_CN').replace('_', '-');
-  const compact = layout !== 'wide';
   // Medium and narrow layouts use the short relative time ("3h ago").
   const listRtf = useMemo(() => new Intl.RelativeTimeFormat(rtfLocale, { numeric: 'auto', style: 'narrow' }), [rtfLocale]);
 
   const columns = useMemo(() => {
-    const rtf = new Intl.RelativeTimeFormat(rtfLocale, { numeric: 'auto', style: compact ? 'narrow' : 'long' });
+    const rtf = new Intl.RelativeTimeFormat(rtfLocale, { numeric: 'auto' });
     const allSelected = !!selectedIds && tokens.length > 0 && tokens.every((x) => selectedIds.has(x.id));
     const someSelected = !!selectedIds && tokens.some((x) => selectedIds.has(x.id));
     const cols = [
@@ -563,7 +554,6 @@ export default function TokenTable({
         cell: (c) => (
           <UsageCell
             item={c.row.original}
-            compact={compact}
             todayUsage={todayUsage}
             resetTimezone={quotaResetTimezone}
             resetWeekStart={quotaResetWeekStart}
@@ -588,7 +578,6 @@ export default function TokenTable({
         meta: { sortable: true },
         cell: (c) => {
           const item = c.row.original;
-          if (compact) return <KeyStatus item={item} rtf={rtf} />;
           const info = statusInfo(t, item.status);
           const isAbnormal = item.status === 3 || item.status === 4;
           return (
@@ -625,8 +614,7 @@ export default function TokenTable({
                 onDelete,
                 onCopyKey,
                 onShowUsage,
-                onConnectOpenClaw,
-                onToggleStatus: compact ? onToggleStatus : undefined
+                onConnectOpenClaw
               })}
             />
           </RowControl>
@@ -652,29 +640,28 @@ export default function TokenTable({
     orgMemberNames,
     todayUsage,
     rtfLocale,
-    compact,
     quotaResetTimezone,
     quotaResetWeekStart
   ]);
 
-  // Every cell stays on one line; columns that do not fit the table's width are hidden by priority.
-  const [wrapRef, wrapWidth] = useElementWidth();
-  const fittedVisibility = useMemo(
-    () =>
-      fitColumns(
-        compact ? { ...columnVisibility, ...MEDIUM_HIDDEN } : columnVisibility,
-        columns.map((c) => c.id || c.accessorKey),
-        wrapWidth,
-        compact ? COMPACT_COLUMN_WIDTHS : COLUMN_WIDTHS
-      ),
-    [columnVisibility, columns, wrapWidth, compact]
-  );
+  // The table never drops columns. It reports its natural (max-content) width so the page can
+  // collapse the sidebar, or switch to the phone list, when that width does not fit.
+  const tableRef = useRef(null);
+  useLayoutEffect(() => {
+    const el = tableRef.current;
+    if (!el || !onNaturalWidth) return;
+    const prev = el.style.width;
+    el.style.width = 'max-content';
+    const natural = Math.ceil(el.getBoundingClientRect().width);
+    el.style.width = prev;
+    onNaturalWidth(natural);
+  });
 
   const table = useTable({
     features: appTableFeatures,
     data: tokens,
     columns,
-    state: { columnVisibility: fittedVisibility }
+    state: { columnVisibility }
   });
 
   // Sort arrows: the active column shows its direction; others reveal a faint arrow only on hover,
@@ -684,7 +671,7 @@ export default function TokenTable({
     return order === 'asc' ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />;
   };
 
-  if (layout === 'narrow') {
+  if (layout === 'list') {
     return (
       <ul className="divide-y divide-border">
         {tokens.map((item) => (
@@ -697,7 +684,6 @@ export default function TokenTable({
             onToggleSelect={onToggleSelect}
             onOpen={onOpen}
             active={item.id === openId}
-            actions={buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw, onToggleStatus })}
           />
         ))}
       </ul>
@@ -705,8 +691,8 @@ export default function TokenTable({
   }
 
   return (
-    <div ref={wrapRef}>
-      <Table>
+    <div>
+      <Table ref={tableRef}>
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (
             <TableRow key={hg.id} className="hover:bg-transparent">

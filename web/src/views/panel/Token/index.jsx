@@ -40,6 +40,7 @@ import { toast } from '@/components/ui/sonner';
 import { FilterBar, FilterSheet, filterStateToParams, paramsToFilterState, isEntryActive, optionLabel } from '@/components/filter-bar';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import PageActions from '@/components/chrome/PageActions';
+import { useContentMinWidth } from '@/components/chrome/ContentWidth';
 import { cn } from '@/lib/utils';
 import { API } from 'utils/api';
 import { showError, useIsReliable, useIsAdmin } from 'utils/common';
@@ -51,7 +52,7 @@ import useElementWidth from 'hooks/useElementWidth';
 import { BatchBar, ListFooter } from '@/components/list-page';
 import { Segmented, useObjectRoute } from '@/components/objects';
 import ConnectInfo, { useApiAddresses } from './ConnectInfo';
-import TokenTable from './TokenTable';
+import TokenTable, { estimateTableWidth } from './TokenTable';
 import TokenPanel from './TokenPanel';
 import NewTokenDialog from './NewTokenDialog';
 import { TOKEN_TAB_KEYS } from './tokenTabs';
@@ -229,12 +230,10 @@ const BUILTIN_PRESETS = [
   { id: 'budget', labelKey: 'apiKey.list.presetBudget', status: 'all', conditions: { budget_min: { value: '80' } } },
   { id: 'nolimit', labelKey: 'apiKey.list.presetNoLimit', status: 'enabled', conditions: { limit: one('none') } }
 ];
-// Layout by the width of the list area (not the viewport, so an open panel or sidebar counts):
-// wide shows the full table, medium a table with merged status and fewer columns, narrow a
-// two-line list with the toolbar folded into sheets and menus.
-const MEDIUM_MIN_WIDTH = 900;
-const NARROW_MAX_WIDTH = 600;
-export const listLayout = (width) => (width < NARROW_MAX_WIDTH ? 'narrow' : width < MEDIUM_MIN_WIDTH ? 'medium' : 'wide');
+// The list shows the full table whenever its natural width fits the list area; the page first
+// asks the shell to collapse the sidebar to make room. Only when even that is not enough does it
+// switch to the phone list. `fits` is the table's natural width plus the card border.
+export const listLayout = (areaWidth, tableWidth) => (areaWidth > 0 && areaWidth < tableWidth + 2 ? 'list' : 'table');
 
 // Sort choices of the narrow layout, which has no table headers to click.
 const SORT_OPTIONS = [
@@ -457,8 +456,21 @@ export default function Token() {
   const toggleSelectAll = (all) => setSelectedIds(all ? new Set(tokens.map((x) => x.id)) : new Set());
 
   const [pageRef, pageWidth] = useElementWidth();
-  const layout = listLayout(pageWidth || (typeof window === 'undefined' ? 1280 : window.innerWidth));
-  const narrow = layout === 'narrow';
+  // The table's natural width: measured while the table shows, estimated from the column set
+  // otherwise (and after the columns change, until it is measured again).
+  const [measuredTableWidth, setMeasuredTableWidth] = useState(null);
+  const visibleColumnIds = useMemo(
+    () => TOKEN_COLUMNS.filter((c) => (!c.reliableOnly || userIsReliable) && (!c.orgOnly || isOrgContext)).map((c) => c.id),
+    [userIsReliable, isOrgContext]
+  );
+  useEffect(() => {
+    setMeasuredTableWidth(null);
+  }, [columnVisibility, visibleColumnIds]);
+  const tableWidth = measuredTableWidth ?? estimateTableWidth(visibleColumnIds, columnVisibility);
+  // Ask the shell for this much content width; it collapses the sidebar when that helps.
+  useContentMinWidth(tableWidth + 2);
+  const layout = listLayout(pageWidth, tableWidth);
+  const narrow = layout === 'list';
   // Narrow layout: checkboxes only in select mode; conditions in a bottom sheet.
   const [selectMode, setSelectMode] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -749,27 +761,35 @@ export default function Token() {
         <div className="space-y-2">
           {narrow ? (
             <>
-              {/* Narrow: segments scroll sideways instead of wrapping; one row with search and the
+              {/* Phone list: segments are chips that scroll sideways instead of wrapping; one row with search and the
                   filter, sort and select buttons; active conditions as removable chips. */}
-              <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <Segmented
-                  label={t('apiKey.list.segments')}
-                  value={status}
-                  onChange={changeStatus}
-                  options={STATUS_SEGMENTS.map((value) => ({
-                    value,
-                    label: (
-                      <span className="inline-flex items-center gap-1.5">
-                        {t(`apiKey.list.status_${value}`)}
-                        {statusCounts && (
-                          <span className="min-w-[1.25rem] rounded-[5px] bg-foreground/[0.07] px-1 text-[11px] tabular-nums leading-[18px]">
-                            {statusCounts[value] ?? 0}
-                          </span>
-                        )}
+              <div
+                role="radiogroup"
+                aria-label={t('apiKey.list.segments')}
+                className="-mx-4 flex gap-1.5 overflow-x-auto px-4 no-scrollbar"
+              >
+                {STATUS_SEGMENTS.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={status === value}
+                    onClick={() => changeStatus(value)}
+                    className={cn(
+                      'inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[13px] transition-colors',
+                      status === value
+                        ? 'border-foreground bg-foreground text-background'
+                        : 'border-input bg-background text-foreground hover:bg-muted'
+                    )}
+                  >
+                    {t(`apiKey.list.status_${value}`)}
+                    {statusCounts && (
+                      <span className={cn('tabular-nums', status === value ? 'text-background/70' : 'text-muted-foreground')}>
+                        {statusCounts[value] ?? 0}
                       </span>
-                    )
-                  }))}
-                />
+                    )}
+                  </button>
+                ))}
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative min-w-0 flex-1">
@@ -824,7 +844,7 @@ export default function Token() {
                 </Button>
               </div>
               {activeConditionFields.length > 0 && (
-                <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 no-scrollbar">
                   {activeConditionFields.map((f) => (
                     <button
                       key={f.key}
@@ -862,7 +882,7 @@ export default function Token() {
                     )
                   }))}
                 />
-                <div className={cn('relative flex-1', layout === 'medium' ? 'min-w-[9rem]' : 'min-w-[12rem]')}>
+                <div className="relative min-w-[12rem] flex-1">
                   <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     value={searchText}
@@ -886,7 +906,7 @@ export default function Token() {
                       }}
                     >
                       <Columns3 className="size-4" />
-                      <span className={cn(layout === 'medium' && 'sr-only')}>{t('apiKey.list.columns')}</span>
+                      {t('apiKey.list.columns')}
                       <span className="text-xs tabular-nums text-muted-foreground">
                         {visibleMenuColumnCount}/{menuColumns.length}
                       </span>
@@ -1057,6 +1077,7 @@ export default function Token() {
               onToggleSelect={toggleSelect}
               onToggleSelectAll={toggleSelectAll}
               layout={layout}
+              onNaturalWidth={setMeasuredTableWidth}
               selectMode={selectMode}
               order={order}
               orderBy={orderBy}

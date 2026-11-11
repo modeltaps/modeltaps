@@ -201,3 +201,13 @@
   border-radius: var(--radius);
   animation: highlight-target-fade 3s ease-out forwards;
 }
+
+/* Horizontal chip rows that scroll sideways on phones without showing a scrollbar. Important
+   because the global, unlayered `* { scrollbar-width: thin }` rule outranks the utilities layer. */
+@utility no-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
