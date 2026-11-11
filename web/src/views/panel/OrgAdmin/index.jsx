@@ -1,28 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Search } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/components/ui/sonner';
 import PageActions from '@/components/chrome/PageActions';
-import { FilterBar, filterStateToParams, paramsToFilterState } from '@/components/filter-bar';
+import { ListEmptyState, ListFooter, ListSkeleton, useListLayout } from '@/components/list-page';
 import { useObjectRoute } from '@/components/objects';
 import { API } from 'utils/api';
 import { showError } from 'utils/common';
-import { PAGE_SIZE_OPTIONS } from 'constants';
 import usePaginatedList from 'hooks/usePaginatedList';
-import OrgAdminTable from './OrgAdminTable';
+import OrgAdminTable, { ORG_TABLE_ESTIMATE, OrgAdminCards } from './OrgAdminTable';
 import OrgPanel from './OrgPanel';
 import { ORG_TAB_KEYS } from './orgTabs';
-import PageSizeSelect from '@/components/ui/page-size-select';
 
-// FilterBar 字段:单个关键字文本(后端 keyword 单值,按组织名称/slug 模糊匹配)。
-const ORG_FILTER_FIELDS = [{ key: 'keyword', labelKey: 'filterBar.keyword', type: 'text', placeholderKey: 'orgAdmin.searchPlaceholder' }];
-const ORG_FILTER_PARAM_KEYS = ['keyword'];
+const KEYWORD_DEBOUNCE_MS = 300;
 
 // ==============================|| PANEL — ORG ADMIN (site admin) ||============================== //
 // Site-level organization list (spec §3.8 / a8): list + enable/disable + dissolve; a row opens
@@ -32,9 +29,10 @@ const ORG_FILTER_PARAM_KEYS = ['keyword'];
 // other admin pages and non-admins get the in-place 404.
 
 export default function OrgAdmin() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [filterState, setFilterState] = useState(() => paramsToFilterState(ORG_FILTER_FIELDS, searchParams));
+  const [keywordInput, setKeywordInput] = useState(() => searchParams.get('keyword') || '');
+  const [keyword, setKeyword] = useState(() => (searchParams.get('keyword') || '').trim());
 
   const route = useObjectRoute(ORG_TAB_KEYS);
   const [dissolveTarget, setDissolveTarget] = useState(null);
@@ -42,52 +40,50 @@ export default function OrgAdmin() {
   // Bumped after a list action so an open organization panel reloads.
   const [reloadKey, setReloadKey] = useState(0);
 
-  // 分页列表状态 + 守卫化 fetch 生命周期(UX-13);本页无排序,fetcher 忽略 order/orderBy。
-  const { page, setPage, rowsPerPage, listCount, searching, rows, setRows, refresh, onRowsPerPageChange } = usePaginatedList({
+  // Paginated list (no sorting on this page).
+  const { page, setPage, rowsPerPage, listCount, searching, loaded, rows, setRows, refresh, onRowsPerPageChange } = usePaginatedList({
     pageSizeKey: 'org_admin',
     fetcher: async ({ page, rowsPerPage }) => {
-      const keyword = filterStateToParams(ORG_FILTER_FIELDS, filterState).keyword || '';
-      const res = await API.get('/api/organization/', {
-        params: { page: page + 1, size: rowsPerPage, keyword }
-      });
+      const res = await API.get('/api/organization/', { params: { page: page + 1, size: rowsPerPage, keyword } });
       return res.data;
     },
-    deps: [filterState]
+    deps: [keyword]
   });
 
-  // 已应用筛选同步到 URL(replace,刷新可恢复;先清空筛选键再按当前 state 重写)。
+  // The search box applies after a short pause in typing.
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      const next = keywordInput.trim();
+      if (next === keyword) return;
+      setPage(0);
+      setKeyword(next);
+    }, KEYWORD_DEBOUNCE_MS);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keywordInput]);
+
+  // The search lives in the URL (replace), so a reload restores it.
   useEffect(() => {
     setSearchParams(
       (prev) => {
         const params = new URLSearchParams(prev);
-        ORG_FILTER_PARAM_KEYS.forEach((k) => params.delete(k));
-        const q = filterStateToParams(ORG_FILTER_FIELDS, filterState);
-        for (const [k, v] of Object.entries(q)) params.set(k, String(v));
+        params.delete('keyword');
+        if (keyword) params.set('keyword', keyword);
         return params;
       },
       { replace: true }
     );
-  }, [filterState, setSearchParams]);
+  }, [keyword, setSearchParams]);
 
-  // 后端变更后原地重载(保留当前筛选),供额度调整/解散对话框复用。
+  // Reload in place after a change (keeps the search), for the balance and dissolve dialogs.
   const handleRefresh = () => refresh();
 
-  // 级联筛选受控回调:任何改动即时应用并回到第一页;清空同理。
-  const handleFilterChange = (next) => {
-    setPage(0);
-    setFilterState(next);
-  };
-  const handleClearFilters = () => {
-    setPage(0);
-    setFilterState({});
-  };
-
-  // 刷新/清除:清空筛选并回到第一页后重新拉取(对齐 Log 刷新语义)。
-  const handleReset = () => {
-    setPage(0);
-    setFilterState({});
-    refresh();
-  };
+  // Full table while it fits (the sidebar collapses first), phone cards otherwise.
+  const { pageRef, narrow, onNaturalWidth } = useListLayout({ estimate: ORG_TABLE_ESTIMATE, resetKey: 'orgs' });
+  const rtf = useMemo(
+    () => new Intl.RelativeTimeFormat((i18n.language || 'zh_CN').replace('_', '-'), { numeric: 'auto' }),
+    [i18n.language]
+  );
 
   const onToggleStatus = async (org) => {
     const next = org.status === 1 ? 2 : 1;
@@ -125,64 +121,84 @@ export default function OrgAdmin() {
     }
   };
 
-  const totalPages = Math.max(1, Math.ceil(listCount / rowsPerPage));
+  let body;
+  if (!loaded) {
+    body = narrow ? (
+      <ListSkeleton layout="list" rows={3} />
+    ) : (
+      <ListSkeleton layout="table" rows={3} checkbox={false} cells={[80, 64, 64, 32]} />
+    );
+  } else if (!searching && rows.length === 0) {
+    body = keyword ? (
+      <ListEmptyState
+        variant="noMatch"
+        onClearFilters={() => {
+          setKeywordInput('');
+          setKeyword('');
+        }}
+      />
+    ) : (
+      <ListEmptyState title={t('dashboard_index.no_data', { defaultValue: 'No data' })} />
+    );
+  } else if (narrow) {
+    body = <OrgAdminCards rows={rows} onOpen={route.open} onToggleStatus={onToggleStatus} onDissolve={setDissolveTarget} />;
+  } else {
+    body = (
+      <OrgAdminTable
+        rows={rows}
+        rtf={rtf}
+        openId={route.openId}
+        onOpen={route.open}
+        onToggleStatus={onToggleStatus}
+        onDissolve={setDissolveTarget}
+        onNaturalWidth={onNaturalWidth}
+      />
+    );
+  }
+
+  const footer = (
+    <ListFooter total={listCount} page={page} pageSize={rowsPerPage} onPageChange={setPage} onPageSizeChange={onRowsPerPageChange} />
+  );
 
   return (
     <>
-      <div className="space-y-6">
-        {/* 标题行右侧操作:刷新 → 筛选,对齐 Log 页 PageActions 结构(本页无时间维度)。 */}
+      <div ref={pageRef} className="space-y-3">
+        {/* Title row: refresh (icon). */}
         <PageActions>
           <TooltipProvider delayDuration={150}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="sm" onClick={handleReset} aria-label={t('logPage.refreshButton')}>
-                  <RotateCcw className="size-4" />
+                <Button variant="outline" size="sm" onClick={handleRefresh} aria-label={t('logPage.refreshButton')}>
+                  <RotateCcw className={searching ? 'size-4 animate-spin' : 'size-4'} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{t('logPage.refreshButton')}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <FilterBar
-            fields={ORG_FILTER_FIELDS}
-            state={filterState}
-            onChange={handleFilterChange}
-            onClearAll={handleClearFilters}
-            hideChips
-            t={t}
-          />
         </PageActions>
 
-        <Card>
-          <OrgAdminTable
-            rows={rows}
-            searching={searching}
-            openId={route.openId}
-            onOpen={route.open}
-            onToggleStatus={onToggleStatus}
-            onDissolve={setDissolveTarget}
+        <div className="relative max-w-80">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={keywordInput}
+            onChange={(e) => setKeywordInput(e.target.value)}
+            placeholder={t('orgAdmin.searchPlaceholder')}
+            aria-label={t('orgAdmin.searchPlaceholder')}
+            className="h-8 pl-8"
           />
+        </div>
 
-          <div className="flex items-center justify-between gap-4 border-t border-border px-4 py-3 text-sm">
-            <span className="text-muted-foreground">{t('pagination.total', { count: listCount })}</span>
-            <div className="flex items-center gap-2">
-              <PageSizeSelect
-                value={rowsPerPage}
-                options={PAGE_SIZE_OPTIONS}
-                onChange={(n) => onRowsPerPageChange(n)}
-                format={(n) => t('pagination.perPage', { count: n })}
-              />
-              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
-                ‹
-              </Button>
-              <span className="tabular-nums">
-                {page + 1} / {totalPages}
-              </span>
-              <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => setPage((p) => p + 1)}>
-                ›
-              </Button>
-            </div>
-          </div>
-        </Card>
+        {narrow ? (
+          <>
+            {body}
+            <Card>{footer}</Card>
+          </>
+        ) : (
+          <Card>
+            {body}
+            <div className="border-t border-border">{footer}</div>
+          </Card>
+        )}
 
         {route.openId > 0 && (
           <OrgPanel
