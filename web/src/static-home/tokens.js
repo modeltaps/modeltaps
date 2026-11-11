@@ -5,6 +5,8 @@ export const STATIC_TOKENS = {
   brand: '__MT_BRAND__',
   // site name next to the logo mark (the default brand is lowercased there)
   wordmark: '__MT_WORDMARK__',
+  // font classes for the wordmark: the bundled face for the default brand, the UI font otherwise
+  wordmarkClass: '__MT_WORDMARK_CLASS__',
   // absolute site origin for canonical / hreflang links
   origin: '__MT_ORIGIN__',
   // docs link URL; the server drops everything between the docs markers when none is configured
