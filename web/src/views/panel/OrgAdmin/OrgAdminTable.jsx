@@ -2,7 +2,6 @@ import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { Ban, Check, MoreHorizontal, PanelRight, Trash2, Users, Wallet } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -13,9 +12,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { RowActions, RowActionsSurfaceContext } from '@/components/ui/row-actions';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
-import { useNaturalWidth } from '@/components/list-page';
+import { StateDot, useNaturalWidth } from '@/components/list-page';
+import { cn } from '@/lib/utils';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
 import { relativeTime } from 'utils/relativeTime';
 
@@ -174,77 +173,53 @@ OrgAdminTable.propTypes = {
   onNaturalWidth: PropTypes.func
 };
 
-// Phone cards: kept as they were until the shared phone-card layout lands.
-export function OrgAdminCards({ rows, onOpen, onToggleStatus, onDissolve }) {
+// Phone cards, one per organization (same layout as the other phone cards). Top: name and slug,
+// the row menu on the right (it holds enable / disable, so the card carries one control).
+// Middle: the pool balance, large. Bottom: state, members, owner and age.
+export function OrgAdminCards({ rows, rtf, openId, onOpen, onToggleStatus, onDissolve }) {
   const { t } = useTranslation();
-  const rowActions = (org) => [
-    { label: t('objects.open'), icon: PanelRight, onClick: () => onOpen(org.id) },
-    { label: t('orgAdmin.adjustQuota'), icon: Wallet, onClick: () => onOpen(org.id, 'balance') },
-    { label: t('orgAdmin.maxMembers'), icon: Users, onClick: () => onOpen(org.id, 'members') },
-    { label: t('orgAdmin.dissolve'), icon: Trash2, destructive: true, onClick: () => onDissolve(org) }
-  ];
   return (
-    <div className="flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
-      {rows.map((org) => (
-        <div key={org.id} className="p-3">
-          <button type="button" className="mb-1.5 block w-full text-left" onClick={() => onOpen(org.id)}>
-            <div className="text-sm font-medium">{org.name}</div>
-            <div className="text-xs text-muted-foreground">{org.slug}</div>
-          </button>
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-            <div className="flex items-baseline gap-1.5">
-              <dt className="shrink-0 text-xs font-medium text-muted-foreground">ID</dt>
-              <dd className="min-w-0 flex-1 truncate text-sm font-mono tabular-nums">{org.id}</dd>
+    <ul className="space-y-2">
+      {rows.map((org) => {
+        const enabled = org.status === ENABLED;
+        return (
+          <li
+            key={org.id}
+            className={cn(
+              'rounded-xl border border-border bg-card px-4 py-3 transition-colors',
+              ROW_OPENS,
+              org.id === openId && 'border-primary/40 bg-muted/40'
+            )}
+            {...rowOpenProps(() => onOpen(org.id))}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex min-w-0 flex-1 items-baseline gap-2">
+                <span className={cn('truncate text-sm font-medium', !enabled && 'text-muted-foreground')}>{org.name}</span>
+                {org.slug && <code className="shrink-0 font-mono text-xs text-muted-foreground">{org.slug}</code>}
+              </div>
+              <RowControl className="-my-1.5 -mr-2 shrink-0">
+                <OrgActions org={org} onOpen={onOpen} onToggleStatus={onToggleStatus} onDissolve={onDissolve} />
+              </RowControl>
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t('orgAdmin.columns.owner')}</dt>
-              <dd className="flex min-w-0 flex-1 flex-wrap gap-1 text-sm">
-                {org.owner_id ? <Badge variant="outline">#{org.owner_id}</Badge> : '-'}
-              </dd>
+            <div className={cn('mt-1 font-mono text-xl font-medium tabular-nums', !enabled && 'text-muted-foreground')}>
+              {renderQuota(org.quota, 2)}
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t('orgAdmin.columns.members')}</dt>
-              <dd className="min-w-0 flex-1 truncate text-sm">
-                <MemberCount org={org} />
-              </dd>
+            <div className="mt-1 truncate text-xs text-muted-foreground">
+              <StateDot tone={enabled ? 'live' : 'off'} />
+              {enabled ? t('common.enable') : t('common.disable')} · <MemberCount org={org} /> · {ownerLabel(org)} ·{' '}
+              {relativeTime(rtf, org.created_time)}
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t('orgAdmin.columns.quota')}</dt>
-              <dd className="min-w-0 flex-1 truncate text-sm font-mono tabular-nums">{renderQuota(org.quota, 2)}</dd>
-            </div>
-            <div className="flex items-baseline gap-1.5">
-              <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t('orgAdmin.columns.usedQuota')}</dt>
-              <dd className="min-w-0 flex-1 truncate text-sm font-mono tabular-nums">
-                <SpendAmount quota={org.used_quota} />
-              </dd>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t('orgAdmin.columns.status')}</dt>
-              <dd className="flex min-w-0 flex-1 items-center gap-2 text-sm">
-                <Switch checked={org.status === 1} onCheckedChange={() => onToggleStatus(org)} />
-                <Badge variant={org.status === 1 ? 'default' : 'secondary'}>
-                  {org.status === 1 ? t('common.enable') : t('common.disable')}
-                </Badge>
-              </dd>
-            </div>
-            <div className="flex items-baseline gap-1.5">
-              <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t('orgAdmin.columns.createdTime')}</dt>
-              <dd className="min-w-0 flex-1 truncate text-sm">{timestamp2string(org.created_time)}</dd>
-            </div>
-          </dl>
-          <div className="mt-2 flex flex-wrap items-center justify-end gap-1 border-t border-border pt-2">
-            <RowActionsSurfaceContext.Provider value="card">
-              <RowActions actions={rowActions(org)} />
-            </RowActionsSurfaceContext.Provider>
-          </div>
-        </div>
-      ))}
-    </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
 OrgAdminCards.propTypes = {
   rows: PropTypes.array.isRequired,
+  rtf: PropTypes.object.isRequired,
+  openId: PropTypes.number,
   onOpen: PropTypes.func.isRequired,
   onToggleStatus: PropTypes.func.isRequired,
   onDissolve: PropTypes.func.isRequired

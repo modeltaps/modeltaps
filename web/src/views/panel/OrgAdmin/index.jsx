@@ -141,7 +141,16 @@ export default function OrgAdmin() {
       <ListEmptyState title={t('dashboard_index.no_data', { defaultValue: 'No data' })} />
     );
   } else if (narrow) {
-    body = <OrgAdminCards rows={rows} onOpen={route.open} onToggleStatus={onToggleStatus} onDissolve={setDissolveTarget} />;
+    body = (
+      <OrgAdminCards
+        rows={rows}
+        rtf={rtf}
+        openId={route.openId}
+        onOpen={route.open}
+        onToggleStatus={onToggleStatus}
+        onDissolve={setDissolveTarget}
+      />
+    );
   } else {
     body = (
       <OrgAdminTable
