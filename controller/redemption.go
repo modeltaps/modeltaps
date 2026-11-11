@@ -11,21 +11,22 @@ import (
 )
 
 func GetRedemptionsList(c *gin.Context) {
-	var params model.GenericParams
+	var params model.RedemptionListParams
 	if err := c.ShouldBindQuery(&params); err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 
-	redemptions, err := model.GetRedemptionsList(&params)
+	redemptions, statusCounts, err := model.GetRedemptionsList(&params)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    redemptions,
+		"success":       true,
+		"message":       "",
+		"data":          redemptions,
+		"status_counts": statusCounts,
 	})
 }
 

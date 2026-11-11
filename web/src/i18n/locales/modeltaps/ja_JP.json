@@ -3094,5 +3094,26 @@
       "week": "1週間",
       "month": "1か月"
     }
+  },
+  "redemptionList": {
+    "segments": {
+      "all": "すべて",
+      "usable": "利用可能",
+      "expired": "期限切れ",
+      "disabled": "無効",
+      "used": "引き換え済み"
+    },
+    "searchShort": "名前または ID で検索",
+    "copyCode": "コードをコピー",
+    "enable": "有効にする",
+    "disable": "無効にする",
+    "batchEnable": "有効にする",
+    "batchDisable": "無効にする",
+    "redeemed": "引き換え済み",
+    "expiredState": "期限切れ",
+    "createdAgo": "{{time}}に作成",
+    "expires": "{{time}}に期限切れ",
+    "never": "無期限",
+    "statusShort": "有効"
   }
 }

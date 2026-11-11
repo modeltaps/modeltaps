@@ -3188,5 +3188,26 @@
       "week": "1 week",
       "month": "1 month"
     }
+  },
+  "redemptionList": {
+    "segments": {
+      "all": "All",
+      "usable": "Usable",
+      "expired": "Expired",
+      "disabled": "Disabled",
+      "used": "Redeemed"
+    },
+    "searchShort": "Search name or ID",
+    "copyCode": "Copy code",
+    "enable": "Enable",
+    "disable": "Disable",
+    "batchEnable": "Enable",
+    "batchDisable": "Disable",
+    "redeemed": "Redeemed",
+    "expiredState": "Expired",
+    "createdAgo": "Created {{time}}",
+    "expires": "Expires {{time}}",
+    "never": "Never expires",
+    "statusShort": "On"
   }
 }
