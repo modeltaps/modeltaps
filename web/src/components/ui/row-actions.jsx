@@ -34,6 +34,8 @@ export const RowActionsSurfaceContext = createContext('table');
 //   destructive?: boolean, // red styling (e.g. delete)
 //   primary?: boolean,     // pin inline in every tier when others collapse
 //   overflow?: boolean,    // always collapse into … (table surface only)
+//   menuOnly?: boolean,    // only on the 'menu' surface (e.g. enable / disable, which a table
+//                          // row already offers as a switch)
 //   items?: Array<{ key?, label, icon?, onClick, disabled? }> // menu action:
 //     // renders as a dropdown button inline / on a card, and as a labelled
 //     // group inside the … menu (this custom dropdown has no Radix submenu).
@@ -47,6 +49,8 @@ export const RowActionsSurfaceContext = createContext('table');
 //     `normal` actions (declaration order) are promoted to inline icon buttons up
 //     to maxInlineLg (primary counts toward it), the remainder plus any `overflow`
 //     item stay in …, and the … trigger hides (lg:hidden) when it would be empty.
+// Menu surface: one ghost … button holding every action. Phone cards put it at the top right
+//   (DataCards menuColumnId) so the card carries a single control.
 // Card surface: mirrors the table's "few inline + rest under …" rule so the
 //   action row stays on a single line at any width. Inline shows the `primary`
 //   actions as outline icon+label buttons (or the leading 2 when none are
@@ -55,8 +59,56 @@ export const RowActionsSurfaceContext = createContext('table');
 export function RowActions({ actions, maxInline = 3, maxInlineLg = 6 }) {
   const { t } = useTranslation();
   const surface = useContext(RowActionsSurfaceContext);
-  const items = (actions || []).filter(Boolean);
+  const items = (actions || []).filter(Boolean).filter((a) => surface === 'menu' || !a.menuOnly);
   if (items.length === 0) return null;
+
+  // Labelled menu item (shared by the card and menu surfaces): destructive items sit in red
+  // behind a separator, menu actions become labelled groups.
+  const renderLabelledItem = (a, i, list) => {
+    const prevDestructive = i > 0 && list[i - 1].destructive;
+    const separator = a.destructive && i > 0 && !prevDestructive ? <DropdownMenuSeparator /> : null;
+    if (a.items) {
+      return (
+        <div key={a.key || a.label}>
+          {separator}
+          <DropdownMenuLabel>{a.label}</DropdownMenuLabel>
+          {a.items.map((it) => {
+            const ItIcon = it.icon;
+            return (
+              <DropdownMenuItem key={it.key || it.label} disabled={it.disabled} onClick={it.onClick}>
+                {ItIcon ? <ItIcon /> : null} {it.label}
+              </DropdownMenuItem>
+            );
+          })}
+        </div>
+      );
+    }
+    const Icon = a.icon;
+    return (
+      <div key={a.key || a.label}>
+        {separator}
+        <DropdownMenuItem disabled={a.disabled} className={a.destructive ? 'text-destructive' : undefined} onClick={a.onClick}>
+          <Icon /> {a.label}
+        </DropdownMenuItem>
+      </div>
+    );
+  };
+
+  // --- Menu surface: a single … holding every action. ---
+  if (surface === 'menu') {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="size-[30px] rounded-lg" aria-label={t('common.actions')}>
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-40">
+          {items.map((a, i) => renderLabelledItem(a, i, items))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
 
   // --- Card surface: inline the primary actions, collapse the rest into …. ---
   if (surface === 'card') {
@@ -64,36 +116,6 @@ export function RowActions({ actions, maxInline = 3, maxInlineLg = 6 }) {
     const inlineItems = hasPrimary ? items.filter((a) => a.primary) : items.slice(0, 2);
     const inlineSet = new Set(inlineItems);
     const menuItems = items.filter((a) => !inlineSet.has(a));
-
-    const renderCardMenuItem = (a, i) => {
-      const prevDestructive = i > 0 && menuItems[i - 1].destructive;
-      const separator = a.destructive && i > 0 && !prevDestructive ? <DropdownMenuSeparator /> : null;
-      if (a.items) {
-        return (
-          <div key={a.key || a.label}>
-            {separator}
-            <DropdownMenuLabel>{a.label}</DropdownMenuLabel>
-            {a.items.map((it) => {
-              const ItIcon = it.icon;
-              return (
-                <DropdownMenuItem key={it.key || it.label} disabled={it.disabled} onClick={it.onClick}>
-                  {ItIcon ? <ItIcon /> : null} {it.label}
-                </DropdownMenuItem>
-              );
-            })}
-          </div>
-        );
-      }
-      const Icon = a.icon;
-      return (
-        <div key={a.key || a.label}>
-          {separator}
-          <DropdownMenuItem disabled={a.disabled} className={a.destructive ? 'text-destructive' : undefined} onClick={a.onClick}>
-            <Icon /> {a.label}
-          </DropdownMenuItem>
-        </div>
-      );
-    };
 
     return (
       <div className="flex flex-nowrap items-center gap-1.5">
@@ -140,7 +162,7 @@ export function RowActions({ actions, maxInline = 3, maxInlineLg = 6 }) {
                 <MoreHorizontal />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">{menuItems.map(renderCardMenuItem)}</DropdownMenuContent>
+            <DropdownMenuContent align="end">{menuItems.map((a, i) => renderLabelledItem(a, i, menuItems))}</DropdownMenuContent>
           </DropdownMenu>
         )}
       </div>

@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
-
+import { StateDot } from '@/components/list-page';
 import { timestamp2string } from 'utils/common';
 import { relativeTime } from 'utils/relativeTime';
 
@@ -206,8 +206,26 @@ InviteCodeTable.propTypes = {
   actions: PropTypes.object.isRequired
 };
 
-// Phone cards, one per code. Top: the code and its name, the switch on the right. Middle: usage,
-// large. Bottom: validity · created, with the row menu. In select mode a checkbox leads.
+// The state line on a phone card: a dot, then the state in words where validity does not already
+// say it (expired and not-started codes read from their validity alone).
+function StateLine({ item, rtf }) {
+  const { t } = useTranslation();
+  const state = inviteState(item);
+  const label = state === 'expired' || state === 'pending' ? null : t(`inviteList.segments.${state}`);
+  return (
+    <>
+      <StateDot tone={state === 'usable' ? 'live' : state === 'expired' ? 'warn' : 'off'} />
+      {label && <>{label} · </>}
+      <Validity item={item} rtf={rtf} />
+    </>
+  );
+}
+
+StateLine.propTypes = { item: PropTypes.object.isRequired, rtf: PropTypes.object.isRequired };
+
+// Phone cards, one per code. Top: the code and its name, the row menu on the right (it holds
+// enable / disable, so the card carries one control). Middle: usage, large. Bottom: state,
+// validity and created. In select mode a checkbox leads.
 export function InviteCodeCards({ items, rtf, selectMode, selectedIds, onToggleSelect, actions }) {
   const { t } = useTranslation();
   return (
@@ -219,7 +237,7 @@ export function InviteCodeCards({ items, rtf, selectMode, selectedIds, onToggleS
           <li
             key={item.id}
             className={cn(
-              'rounded-xl border border-border bg-card px-4 pb-2 pt-3 transition-colors',
+              'rounded-xl border border-border bg-card px-4 py-3 transition-colors',
               ROW_OPENS,
               selected && 'border-primary/40 bg-muted/40'
             )}
@@ -239,19 +257,16 @@ export function InviteCodeCards({ items, rtf, selectMode, selectedIds, onToggleS
                 <code className={cn('shrink-0 font-mono text-sm font-medium', !live && 'text-muted-foreground')}>{item.code}</code>
                 {item.name && <span className="truncate text-xs text-muted-foreground">{item.name}</span>}
               </div>
-              <StatusSwitch item={item} onToggleStatus={actions.onToggleStatus} />
+              <RowControl className="-my-1.5 -mr-2 shrink-0">
+                <CodeActions item={item} {...actions} />
+              </RowControl>
             </div>
             <div className="mt-1 flex items-baseline gap-2">
               <Usage item={item} className={cn('text-xl font-medium', !live && 'text-muted-foreground')} />
               <span className="text-xs text-muted-foreground">{t('inviteList.usage')}</span>
             </div>
-            <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="min-w-0 flex-1 truncate">
-                <Validity item={item} rtf={rtf} /> · {t('inviteList.createdAgo', { time: relativeTime(rtf, item.created_time) })}
-              </span>
-              <RowControl className="-mr-2 shrink-0">
-                <CodeActions item={item} {...actions} />
-              </RowControl>
+            <div className="mt-1 truncate text-xs text-muted-foreground">
+              <StateLine item={item} rtf={rtf} /> · {t('inviteList.createdAgo', { time: relativeTime(rtf, item.created_time) })}
             </div>
           </li>
         );

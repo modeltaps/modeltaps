@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
-
+import { StateDot } from '@/components/list-page';
 import { renderQuota, timestamp2string } from 'utils/common';
 import { relativeTime } from 'utils/relativeTime';
 
@@ -328,8 +328,26 @@ RedemptionTable.propTypes = {
   actions: PropTypes.object.isRequired
 };
 
-// Phone cards, one per code. Top: name and code tail, the switch on the right. Middle: the amount,
-// large. Bottom: scope · expiry · created, with the row menu. In select mode a checkbox leads.
+// The state line on a phone card: a dot, the state in words (expired codes read from their expiry
+// alone), the scope, expiry and created.
+function StateLine({ item, rtf }) {
+  const { t } = useTranslation();
+  const state = codeState(item);
+  return (
+    <>
+      <StateDot tone={state === 'usable' ? 'live' : state === 'expired' ? 'warn' : 'off'} />
+      {state !== 'expired' && <>{t(`redemptionList.segments.${state}`)} · </>}
+      {t(`redemptionPage.scopes.${item.scope || 'any'}`)} · <Expiry item={item} rtf={rtf} /> ·{' '}
+      {t('redemptionList.createdAgo', { time: relativeTime(rtf, item.created_time) })}
+    </>
+  );
+}
+
+StateLine.propTypes = { item: PropTypes.object.isRequired, rtf: PropTypes.object.isRequired };
+
+// Phone cards, one per code. Top: name and code tail, the row menu on the right (it holds
+// enable / disable, so the card carries one control). Middle: the amount, large. Bottom: state,
+// scope, expiry and created. In select mode a checkbox leads.
 export function RedemptionCards({ redemptions, rtf, selectMode, selectedIds, onToggleSelect, openId, actions }) {
   const { t } = useTranslation();
   return (
@@ -337,12 +355,11 @@ export function RedemptionCards({ redemptions, rtf, selectMode, selectedIds, onT
       {redemptions.map((item) => {
         const selected = selectedIds.has(item.id);
         const state = codeState(item);
-        const scope = item.scope || 'any';
         return (
           <li
             key={item.id}
             className={cn(
-              'rounded-xl border border-border bg-card px-4 pb-2 pt-3 transition-colors',
+              'rounded-xl border border-border bg-card px-4 py-3 transition-colors',
               ROW_OPENS,
               (selected || item.id === openId) && 'border-primary/40 bg-muted/40'
             )}
@@ -362,19 +379,15 @@ export function RedemptionCards({ redemptions, rtf, selectMode, selectedIds, onT
                 <span className={cn('truncate text-sm font-medium', state !== 'usable' && 'text-muted-foreground')}>{item.name}</span>
                 <code className="shrink-0 font-mono text-xs text-muted-foreground">{keyTail(item.key)}</code>
               </div>
-              <StatusSwitch item={item} onToggleStatus={actions.onToggleStatus} />
+              <RowControl className="-my-1.5 -mr-2 shrink-0">
+                <CodeActions item={item} {...actions} />
+              </RowControl>
             </div>
             <div className={cn('mt-1 font-mono text-xl font-medium tabular-nums', state !== 'usable' && 'text-muted-foreground')}>
               {renderQuota(item.quota)}
             </div>
-            <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="min-w-0 flex-1 truncate">
-                {t(`redemptionPage.scopes.${scope}`)} · <Expiry item={item} rtf={rtf} /> ·{' '}
-                {t('redemptionList.createdAgo', { time: relativeTime(rtf, item.created_time) })}
-              </span>
-              <RowControl className="-mr-2 shrink-0">
-                <CodeActions item={item} {...actions} />
-              </RowControl>
+            <div className="mt-1 truncate text-xs text-muted-foreground">
+              <StateLine item={item} rtf={rtf} />
             </div>
           </li>
         );
