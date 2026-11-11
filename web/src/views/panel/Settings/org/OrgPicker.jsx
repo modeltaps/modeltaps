@@ -1,18 +1,28 @@
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Building2, Check, ChevronsUpDown } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { ContextMark } from '@/components/chrome/ContextSwitcher';
+import { sidebarRow } from '@/components/chrome/SidebarControls';
 
 // ==============================|| SETTINGS — ORGANIZATION PICKER ||============================== //
-// The organization picker of the settings sidebar, in the place and the look of the workbench's
-// context switcher (same row, mark and chevrons): the organizations the user manages, with their
-// role; in the collapsed rail only the organization's mark, opening to the right. Picking one only
+// The organization picker of the settings sidebar, right under its back row: the organizations the
+// user manages, with their role. It reads like a row of the tree below it: the same plain icon (the
+// organization's logo when it has one), the same size and the same columns for icon and text, so
+// the icons line up; in the collapsed rail only the icon, opening to the right. Picking one only
 // changes which organization the settings show (the URL); the active context of the workbench
 // stays as it is.
+
+function OrgIcon({ org, className }) {
+  if (org?.avatar_url) {
+    return <img src={org.avatar_url} alt="" aria-hidden="true" className={cn('shrink-0 rounded-[4px] object-cover', className)} />;
+  }
+  return <Building2 aria-hidden="true" className={cn('shrink-0 text-muted-foreground', className)} />;
+}
+
+OrgIcon.propTypes = { org: PropTypes.object, className: PropTypes.string };
 
 export default function OrgPicker({ orgs, value, onChange, collapsed = false }) {
   const { t } = useTranslation();
@@ -24,12 +34,9 @@ export default function OrgPicker({ orgs, value, onChange, collapsed = false }) 
       <button
         type="button"
         aria-label={collapsed && current ? `${label}: ${current.name}` : label}
-        className={cn(
-          'flex items-center rounded-lg transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          collapsed ? 'size-9 justify-center' : 'h-9 w-full gap-2.5 px-2 text-left'
-        )}
+        className={cn(sidebarRow.base, sidebarRow.idle, collapsed ? 'size-9 w-9 justify-center' : 'h-9 gap-2.5 px-3 text-left')}
       >
-        <ContextMark kind="org" org={current} className={collapsed ? 'size-7' : 'size-6'} />
+        <OrgIcon org={current} className={collapsed ? 'size-5' : 'size-4'} />
         {!collapsed && (
           <>
             <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{current ? current.name : label}</span>
@@ -68,6 +75,6 @@ OrgPicker.propTypes = {
   orgs: PropTypes.arrayOf(PropTypes.shape({ id: PropTypes.number.isRequired, name: PropTypes.string, role: PropTypes.string })).isRequired,
   value: PropTypes.number,
   onChange: PropTypes.func.isRequired,
-  // The collapsed rail: only the mark, the list opens to the right.
+  // The collapsed rail: only the icon, the list opens to the right.
   collapsed: PropTypes.bool
 };

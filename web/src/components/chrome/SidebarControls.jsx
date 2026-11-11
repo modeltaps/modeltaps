@@ -94,7 +94,8 @@ export function SidebarSearch({ collapsed = false, onClick }) {
 }
 
 // A row back to where the user came from (platform admin and 设置 show it where the workbench has
-// its context switcher, at the same height). Collapsed: the arrow only, with the label as tooltip.
+// its context switcher, at the same height). Its arrow and text use the columns of the menu rows
+// below, so they line up. Collapsed: the arrow only, with the label as tooltip.
 export function BackRow({ to, name, label, collapsed = false, onClick }) {
   if (collapsed) {
     return (
@@ -109,15 +110,8 @@ export function BackRow({ to, name, label, collapsed = false, onClick }) {
     );
   }
   return (
-    <Link
-      to={to}
-      onClick={onClick}
-      aria-label={label}
-      className="group flex h-9 w-full items-center gap-2.5 rounded-lg px-2 text-sm font-medium text-foreground/85 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <span className="flex size-6 shrink-0 items-center justify-center">
-        <ArrowLeft className="size-[1.125rem] text-muted-foreground group-hover:text-foreground" />
-      </span>
+    <Link to={to} onClick={onClick} aria-label={label} className={cn(sidebarRow.base, sidebarRow.idle, 'h-9 gap-2.5 px-3 font-medium')}>
+      <ArrowLeft className="size-4 shrink-0 text-muted-foreground group-hover:text-foreground" />
       <span className="min-w-0 flex-1 truncate">{name}</span>
     </Link>
   );
