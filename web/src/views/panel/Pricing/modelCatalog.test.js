@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  COLUMN_STORAGE_KEY,
   STATUS_FILTERS,
   attachChannelDetails,
   LEGACY_CATALOG_REDIRECTS,
@@ -14,14 +13,12 @@ import {
   followsStatus,
   isFullyUsable,
   isVisibleToUsers,
-  loadColumnVisibility,
   loadPriceUnit,
   matchesStatusFilter,
   mergeCatalogRows,
   modelStatus,
   orphanModelNames,
   resolveCatalogTab,
-  saveColumnVisibility,
   savePriceUnit
 } from './modelCatalog';
 
@@ -58,36 +55,23 @@ describe('legacy route redirects', () => {
   });
 });
 
-describe('column visibility persistence', () => {
+describe('column defaults', () => {
   it('shows the default columns and hides the optional ones', () => {
     const v = defaultColumnVisibility();
-    ['model', 'endpoints', 'channels', 'price', 'state', 'visible'].forEach((id) => expect(v[id]).toBe(true));
-    ['vendor', 'context_length', 'max_tokens', 'modalities', 'tags', 'capabilities', 'mode', 'alias_of', 'source', 'synced_at'].forEach(
-      (id) => expect(v[id]).toBe(false)
-    );
-  });
-
-  it('round-trips a saved selection', () => {
-    const storage = memoryStorage();
-    saveColumnVisibility({ ...defaultColumnVisibility(), tags: true, vendor: true, price: false }, storage);
-    const loaded = loadColumnVisibility(storage);
-    expect(loaded.tags).toBe(true);
-    expect(loaded.vendor).toBe(true);
-    expect(loaded.price).toBe(false);
-    expect(loaded.endpoints).toBe(true);
-  });
-
-  it('never hides the fixed model, state and visibility columns', () => {
-    const storage = memoryStorage({ [COLUMN_STORAGE_KEY]: JSON.stringify({ model: false, state: false, visible: false }) });
-    const loaded = loadColumnVisibility(storage);
-    expect(loaded.model).toBe(true);
-    expect(loaded.state).toBe(true);
-    expect(loaded.visible).toBe(true);
-  });
-
-  it('falls back to defaults on corrupted or missing storage', () => {
-    expect(loadColumnVisibility(memoryStorage({ [COLUMN_STORAGE_KEY]: '{oops' }))).toEqual(defaultColumnVisibility());
-    expect(loadColumnVisibility(undefined)).toEqual(defaultColumnVisibility());
+    ['model', 'endpoints', 'supply', 'price', 'state', 'visible'].forEach((id) => expect(v[id]).toBe(true));
+    [
+      'channels',
+      'vendor',
+      'context_length',
+      'max_tokens',
+      'modalities',
+      'tags',
+      'capabilities',
+      'mode',
+      'alias_of',
+      'source',
+      'synced_at'
+    ].forEach((id) => expect(v[id]).toBe(false));
   });
 });
 

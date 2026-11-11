@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import BrandIcon from '@/components/brand/BrandIcon';
 import ModelIcon from '@/components/brand/ModelIcon';
 import { resolveBrandFromText } from '@/components/brand/brandIcons';
-import { cn } from '@/lib/utils';
+import { Dot } from '@/components/objects';
 import { MODALITY_OPTIONS } from 'constants/Modality';
 import { CAPABILITY_OPTIONS } from 'constants/Capability';
 
@@ -167,24 +167,17 @@ export const MODEL_STATUS_LABEL_KEYS = {
   unpriced: 'modelsPage.status.unpriced'
 };
 
-const MODEL_STATUS_COLORS = {
-  ok: 'bg-success/15 text-success',
-  nochannel: 'bg-warning/15 text-warning',
-  unpriced: 'bg-warning/15 text-warning'
-};
-
-const MODEL_STATUS_DOTS = { ok: 'bg-success', nochannel: 'bg-warning', unpriced: 'bg-warning' };
+// Model state as a quiet dot and label: most rows in a fresh catalog have no channel yet, so a
+// filled badge per row would flood the table.
+const MODEL_STATUS_DOTS = { ok: 'live', nochannel: 'warn', unpriced: 'warn' };
 
 export function ModelStatusBadge({ status }) {
   const { t } = useTranslation();
   return (
-    <Badge
-      variant="outline"
-      className={cn('gap-1.5 whitespace-nowrap border-transparent px-1.5 py-0 font-normal', MODEL_STATUS_COLORS[status])}
-    >
-      <span className={cn('size-1.5 rounded-full', MODEL_STATUS_DOTS[status])} />
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[13px]">
+      <Dot tone={MODEL_STATUS_DOTS[status] || 'live'} />
       {t(MODEL_STATUS_LABEL_KEYS[status] || MODEL_STATUS_LABEL_KEYS.ok)}
-    </Badge>
+    </span>
   );
 }
 

@@ -815,7 +815,20 @@
       "nochannel": "チャネルなし",
       "unpriced": "未設定"
     },
-    "visibleFollowsStatus": "供給によるルーティング中は、ユーザーへの表示はモデルの状態（下書き・公開・提供終了）で決まります"
+    "visibleFollowsStatus": "供給によるルーティング中は、ユーザーへの表示はモデルの状態（下書き・公開・提供終了）で決まります",
+    "showModelsThat": "モデルを絞り込む",
+    "showToUsers": "ユーザーに表示",
+    "hideFromUsers": "ユーザーから隠す",
+    "searchShort": "モデルを検索",
+    "presetPerCall": "回数課金",
+    "presetUnlabeled": "未ラベル",
+    "readiness": {
+      "channel": "チャネル",
+      "price": "価格",
+      "visible": "公開",
+      "missing": "不足：{{items}}",
+      "legend": "準備状況：チャネル · 価格 · 公開"
+    }
   },
   "brandIconPicker": {
     "mode": {

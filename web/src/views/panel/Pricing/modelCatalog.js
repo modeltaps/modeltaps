@@ -19,11 +19,14 @@ export const LEGACY_CATALOG_REDIRECTS = {
   model_ownedby: '/panel/pricing?tab=vendors'
 };
 
-// 列注册表:fixed 列恒显示且不进「列」菜单;defaultHidden 列默认不显示。
+// Column registry for the shared column picker: fixed columns always show and stay out of the
+// menu; defaultHidden columns start hidden. Channels are one click away: the state column already
+// says when a model has none.
 export const MODEL_COLUMNS = [
+  { id: 'select', fixed: true },
   { id: 'model', labelKey: 'modelInfoPage.model', fixed: true },
   { id: 'endpoints', labelKey: 'modelInfoPage.endpoints' },
-  { id: 'channels', labelKey: 'modelInfoPage.channels' },
+  { id: 'channels', labelKey: 'modelInfoPage.channels', defaultHidden: true },
   { id: 'supply', labelKey: 'modelSupply.column' },
   { id: 'price', labelKey: 'modelInfoPage.price' },
   { id: 'state', labelKey: 'modelInfoPage.state', fixed: true },
@@ -37,40 +40,17 @@ export const MODEL_COLUMNS = [
   { id: 'mode', labelKey: 'modelInfoPage.mode', defaultHidden: true },
   { id: 'alias_of', labelKey: 'modelInfoPage.aliasOf', defaultHidden: true },
   { id: 'source', labelKey: 'modelInfoPage.source', defaultHidden: true },
-  { id: 'synced_at', labelKey: 'modelInfoPage.syncedAt', defaultHidden: true }
+  { id: 'synced_at', labelKey: 'modelInfoPage.syncedAt', defaultHidden: true },
+  { id: 'actions', fixed: true }
 ];
 
-export const TOGGLEABLE_COLUMNS = MODEL_COLUMNS.filter((c) => !c.fixed);
-
-export const COLUMN_STORAGE_KEY = 'model-catalog-columns';
+// The column picker's storage key (v2: channels became optional); the old key is cleaned up.
+export const COLUMN_STORAGE_KEY = 'model-catalog-columns-v2';
+export const LEGACY_COLUMN_STORAGE_KEYS = ['model-catalog-columns'];
 
 const CHANNEL_STATUS_ENABLED = 1;
 
 export const defaultColumnVisibility = () => Object.fromEntries(MODEL_COLUMNS.map((c) => [c.id, !!c.fixed || !c.defaultHidden]));
-
-// 未知 / 缺失键回落默认值;fixed 列不受存储影响;存储损坏或不可用时整体回落默认。
-export function loadColumnVisibility(storage = globalThis.localStorage) {
-  const visibility = defaultColumnVisibility();
-  try {
-    const saved = JSON.parse(storage?.getItem(COLUMN_STORAGE_KEY));
-    if (!saved || typeof saved !== 'object') return visibility;
-    for (const column of TOGGLEABLE_COLUMNS) {
-      if (typeof saved[column.id] === 'boolean') visibility[column.id] = saved[column.id];
-    }
-  } catch {
-    /* corrupted storage -> defaults */
-  }
-  return visibility;
-}
-
-export function saveColumnVisibility(visibility, storage = globalThis.localStorage) {
-  try {
-    const toSave = Object.fromEntries(TOGGLEABLE_COLUMNS.map((c) => [c.id, !!visibility[c.id]]));
-    storage?.setItem(COLUMN_STORAGE_KEY, JSON.stringify(toSave));
-  } catch {
-    /* storage unavailable -> keep in-memory only */
-  }
-}
 
 export const PRICE_UNIT_STORAGE_KEY = 'model-catalog-price-unit';
 
