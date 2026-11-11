@@ -87,7 +87,7 @@ export default function FilterSheet({ open, onOpenChange, title, fields, state, 
                             onClick={() => toggleValue(f, value)}
                             className={cn(
                               'h-8 rounded-full border px-3 text-[13px] transition-colors',
-                              on ? 'border-primary bg-primary text-primary-foreground' : 'border-input bg-background hover:bg-muted'
+                              on ? 'border-primary bg-primary text-primary-foreground' : 'border-input bg-field hover:bg-muted'
                             )}
                           >
                             {optionLabel(t, o)}

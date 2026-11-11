@@ -128,7 +128,7 @@ function DisplayMenu({ sortBy, onSortChange, viewMode, onViewChange, unit, onUni
           'inline-flex h-9 items-center gap-1.5 rounded-md border px-2.5 text-[0.8125rem] font-medium transition-colors',
           open
             ? 'border-foreground/40 bg-muted text-foreground shadow-sm'
-            : 'border-input bg-background text-foreground hover:border-foreground/30'
+            : 'border-input bg-field text-foreground hover:border-foreground/30'
         )}
       >
         <SlidersHorizontal className="size-4 shrink-0" />
@@ -683,7 +683,7 @@ export default function ModelPrice({ embedded = false, initialModality }) {
                 'inline-flex h-9 items-center gap-1.5 rounded-md border px-2.5 text-[0.8125rem] font-medium transition-colors',
                 onlyShowAvailable
                   ? 'border-foreground/40 bg-muted text-foreground shadow-sm'
-                  : 'border-input bg-background text-foreground hover:border-foreground/30'
+                  : 'border-input bg-field text-foreground hover:border-foreground/30'
               )}
             >
               {onlyShowAvailable ? <Check className="size-3.5" /> : <Filter className="size-3.5" />}
@@ -777,7 +777,7 @@ export default function ModelPrice({ embedded = false, initialModality }) {
             triggerVariant="plus"
             clearAlignEnd
             t={t}
-            className="w-full rounded-lg border border-input bg-background px-3 py-2"
+            className="w-full rounded-lg border border-input bg-field px-3 py-2"
           />
         )}
       </div>

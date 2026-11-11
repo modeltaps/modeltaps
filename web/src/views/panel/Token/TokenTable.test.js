@@ -1,6 +1,9 @@
+// @vitest-environment jsdom
+import { createElement } from 'react';
+import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { estimateTableWidth, keySuffix, keyState } from './TokenTable';
+import { estimateTableWidth, keySuffix, keyState, TokenListSkeleton } from './TokenTable';
 import { listLayout } from './index';
 
 describe('estimateTableWidth', () => {
@@ -38,5 +41,16 @@ describe('listLayout', () => {
     expect(listLayout(752, 750)).toBe('table');
     expect(listLayout(751, 750)).toBe('list');
     expect(listLayout(343, 750)).toBe('list');
+  });
+});
+
+describe('TokenListSkeleton', () => {
+  it('draws placeholder rows shaped like the table or the phone list', () => {
+    const table = render(createElement(TokenListSkeleton, { layout: 'table', rows: 3 }));
+    expect(table.container.querySelector('[aria-busy="true"]')).toBeTruthy();
+    expect(table.container.querySelectorAll('.h-\\[53px\\]').length).toBe(3);
+    table.unmount();
+    const list = render(createElement(TokenListSkeleton, { layout: 'list', rows: 4 }));
+    expect(list.container.querySelectorAll('li').length).toBe(4);
   });
 });

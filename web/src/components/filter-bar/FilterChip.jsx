@@ -66,7 +66,7 @@ export default function FilterChip({ field, entry, onChange, onRemove, t }) {
 
   return (
     <div ref={rootRef} className="relative inline-flex">
-      <div className="inline-flex h-8 items-stretch overflow-hidden rounded-md border border-input bg-background text-sm">
+      <div className="inline-flex h-8 items-stretch overflow-hidden rounded-md border border-input bg-field text-sm">
         <span className="flex items-center px-2 font-medium text-foreground">{t(field.labelKey)}</span>
         <button
           type="button"

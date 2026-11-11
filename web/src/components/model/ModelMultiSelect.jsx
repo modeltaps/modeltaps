@@ -177,7 +177,7 @@ export default function ModelMultiSelect({
         aria-haspopup="listbox"
         disabled={disabled}
         onClick={() => (open ? setOpen(false) : openWith())}
-        className="flex h-9 w-full items-center gap-2 rounded-lg border border-input bg-background px-3 text-sm transition-colors hover:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex h-9 w-full items-center gap-2 rounded-lg border border-input bg-field px-3 text-sm transition-colors hover:bg-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
       >
         {summary.length > 0 && (
           <span className="flex shrink-0 items-center">

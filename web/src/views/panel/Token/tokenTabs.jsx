@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Copy, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Copy, Eye, EyeOff } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { Field, InfoRow, InfoRows, Section, Segmented, StatRow, ToggleField } from '@/components/objects';
 import ConnectInfo, { useApiAddresses } from './ConnectInfo';
+import { Skeleton } from '@/components/ui/skeleton';
 import QuotaInput from '@/components/QuotaInput';
 import { API } from 'utils/api';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
@@ -38,7 +39,7 @@ function KeyRow({ token, onCopy }) {
   }
   const full = `sk-${token.key || ''}`;
   return (
-    <div className="flex h-10 items-center gap-1 rounded-lg border border-input bg-background pl-3 pr-1">
+    <div className="flex h-10 items-center gap-1 rounded-lg border border-input bg-field pl-3 pr-1">
       <code className="min-w-0 flex-1 truncate font-mono text-[13px]">{shown ? full : maskSecret(full)}</code>
       <Button
         type="button"
@@ -82,7 +83,11 @@ function AvailableModels({ tokenId }) {
     <Section title={t('token_index.availableModels', { count: models?.length ?? 0 })} extra={t('apiKey.panel.availableHint')}>
       <div className="py-2" data-testid="token-available-models">
         {models === null ? (
-          <Loader2 className="size-4 animate-spin text-muted-foreground" />
+          <div className="flex flex-wrap gap-1.5" aria-busy="true">
+            {[88, 120, 64, 96, 72].map((w) => (
+              <Skeleton key={w} className="h-6 rounded-md" style={{ width: w }} />
+            ))}
+          </div>
         ) : models.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('token_index.availableModelsNone')}</p>
         ) : (

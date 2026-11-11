@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -147,8 +148,25 @@ export default function ObjectPanel({
       {error ? (
         <p className="py-16 text-center text-sm text-muted-foreground">{error}</p>
       ) : !object ? (
-        <div className="flex h-48 items-center justify-center text-muted-foreground">
-          <Loader2 className="size-5 animate-spin" />
+        // Shaped like a panel body: the tab bar, a field and a few label / value rows.
+        <div className="space-y-6 pt-1" aria-busy="true">
+          <div className="flex gap-2">
+            {[56, 48, 48, 56].map((w, i) => (
+              <Skeleton key={i} className="h-7 rounded-md" style={{ width: w }} />
+            ))}
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-10 w-full rounded-lg" />
+          </div>
+          <div className="space-y-4">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex items-center justify-between gap-6">
+                <Skeleton className="h-3.5 w-20" />
+                <Skeleton className="h-3.5 w-32" />
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
         <ObjectTabs tabs={tabs} current={current.key} onSelect={switchTab} dirty={dirty} label={tabsLabel}>

@@ -38,6 +38,7 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
+  --color-field: var(--field);
   --color-control: var(--control);
   --color-control-thumb: var(--control-thumb);
   --color-control-off: var(--control-off);
@@ -87,6 +88,11 @@
   --accent-foreground: #29292c;
   --border: #e0e0e3;
   --input: #e0e0e3;
+  /* Field: the surface of anything you type into or click (inputs, selects, outline buttons,
+     chips). White on the grey page so it reads as interactive; inside a card, dialog or menu it
+     steps to a faint grey (see .bg-card below) so it does not melt into the white surface. */
+  --field: #ffffff;
+  --field-on-surface: #f7f7f8;
   /* Interactive controls. --control is the track of segmented controls and tab lists,
      --control-thumb the selected segment on it, --control-off the off track of a switch and
      the border of an empty checkbox. They sit a clear step away from cards and sheets in
@@ -138,6 +144,8 @@
   --accent-foreground: #f7f7f8;
   --border: #2c2c30;
   --input: #38383d;
+  --field: #18181b;
+  --field-on-surface: #1c1c1f;
   --control: #27272b;
   --control-thumb: #3d3d43;
   --control-off: #4d4d54;
@@ -228,4 +236,12 @@
   &::-webkit-scrollbar {
     display: none;
   }
+}
+
+/* Surface roles: canvas (--background) is the passive page; surfaces (cards, dialogs, sheets,
+   menus) are raised; fields sit on either. A field inside a surface uses the field-on-surface step
+   so inputs and buttons stay distinct from the white (or dark) card they sit on. */
+.bg-card,
+.bg-popover {
+  --color-field: var(--field-on-surface);
 }

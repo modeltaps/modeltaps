@@ -55,7 +55,7 @@ export function ProviderGrid({ value, onPick }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t('providerPicker.search')}
-          className="h-9 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          className="h-9 w-full rounded-lg border border-input bg-field pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
         />
       </div>
 

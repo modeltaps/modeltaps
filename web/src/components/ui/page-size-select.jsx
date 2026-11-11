@@ -15,7 +15,7 @@ export default function PageSizeSelect({ value, options, onChange, format = (n) 
           type="button"
           aria-label={label}
           className={cn(
-            'inline-flex h-7 items-center gap-1 rounded-md border border-input bg-background pl-2 pr-1.5 text-xs tabular-nums text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            'inline-flex h-7 items-center gap-1 rounded-md border border-input bg-field pl-2 pr-1.5 text-xs tabular-nums text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             className
           )}
         >

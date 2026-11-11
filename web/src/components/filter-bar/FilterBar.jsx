@@ -181,7 +181,7 @@ export default function FilterBar({
               : triggerVariant === 'plus'
                 ? 'flex size-7 items-center justify-center rounded-md border border-dashed border-input text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
                 : cn(
-                    'relative flex size-9 items-center justify-center rounded-full border border-input bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                    'relative flex size-9 items-center justify-center rounded-full border border-input bg-field text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
                     count > 0 && 'border-foreground/40 text-foreground'
                   )
           )}

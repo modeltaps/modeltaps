@@ -60,7 +60,7 @@ export default function FilterDropdown({
           'inline-flex h-9 items-center gap-1.5 rounded-md border px-2.5 text-[0.8125rem] font-medium transition-colors',
           active
             ? 'border-foreground/40 bg-muted text-foreground shadow-sm'
-            : 'border-input bg-background text-foreground hover:border-foreground/30'
+            : 'border-input bg-field text-foreground hover:border-foreground/30'
         )}
       >
         {Icon && <Icon className="size-4 shrink-0" />}

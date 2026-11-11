@@ -52,7 +52,7 @@ import useElementWidth from 'hooks/useElementWidth';
 import { BatchBar, ListFooter } from '@/components/list-page';
 import { Segmented, useObjectRoute } from '@/components/objects';
 import ConnectInfo, { useApiAddresses } from './ConnectInfo';
-import TokenTable, { estimateTableWidth } from './TokenTable';
+import TokenTable, { estimateTableWidth, TokenListSkeleton } from './TokenTable';
 import TokenPanel from './TokenPanel';
 import NewTokenDialog from './NewTokenDialog';
 import { TOKEN_TAB_KEYS } from './tokenTabs';
@@ -329,6 +329,7 @@ export default function Token() {
     orderBy,
     listCount,
     searching,
+    loaded,
     rows: tokens,
     setRows: setTokens,
     handleRefresh,
@@ -779,7 +780,7 @@ export default function Token() {
                       'inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[13px] transition-colors',
                       status === value
                         ? 'border-foreground bg-foreground text-background'
-                        : 'border-input bg-background text-foreground hover:bg-muted'
+                        : 'border-input bg-field text-foreground hover:bg-muted'
                     )}
                   >
                     {t(`apiKey.list.status_${value}`)}
@@ -851,7 +852,7 @@ export default function Token() {
                       type="button"
                       onClick={() => removeCondition(f.key)}
                       aria-label={`${t('filterBar.remove')} ${describeEntry(f, filterState[f.key])}`}
-                      className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full border border-input bg-background pl-2.5 pr-1.5 text-xs"
+                      className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full border border-input bg-field pl-2.5 pr-1.5 text-xs"
                     >
                       {describeEntry(f, filterState[f.key])}
                       <X className="size-3.5 text-muted-foreground" />
@@ -1036,7 +1037,7 @@ export default function Token() {
                         applyPreset(p);
                         setFilterSheetOpen(false);
                       }}
-                      className="h-8 rounded-full border border-input bg-background px-3 text-[13px] hover:bg-muted"
+                      className="h-8 rounded-full border border-input bg-field px-3 text-[13px] hover:bg-muted"
                     >
                       {p.labelKey ? t(p.labelKey) : p.name}
                     </button>
@@ -1048,7 +1049,9 @@ export default function Token() {
         )}
 
         <Card>
-          {tokens.length === 0 && !searching ? (
+          {!loaded ? (
+            <TokenListSkeleton layout={layout} />
+          ) : tokens.length === 0 && !searching ? (
             <div className="flex flex-col items-center justify-center gap-3 p-12 text-center">
               <KeyRound className="size-10 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
