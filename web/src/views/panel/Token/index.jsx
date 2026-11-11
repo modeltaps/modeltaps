@@ -1,13 +1,12 @@
 import { useState, useEffect, useContext, useMemo, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
-import { useSearchParams } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Plus, RotateCcw, KeyRound, Copy, Columns3, Check, Minus } from 'lucide-react';
+import { Plus, RotateCcw, KeyRound, Copy, Columns3, Check, Minus, ChevronRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -21,7 +20,6 @@ import { toast } from '@/components/ui/sonner';
 import { FilterBar, filterStateToParams, paramsToFilterState, isEntryActive } from '@/components/filter-bar';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import PageActions from '@/components/chrome/PageActions';
-import PageTitleExtra from '@/components/chrome/PageTitleExtra';
 import { cn } from '@/lib/utils';
 import { API } from 'utils/api';
 import { showError, useIsReliable, useIsAdmin } from 'utils/common';
@@ -30,7 +28,7 @@ import { PAGE_SIZE_OPTIONS } from 'constants';
 import { UserContext } from 'contexts/UserContext';
 import { useOrg } from 'contexts/OrgContext';
 import usePaginatedList from 'hooks/usePaginatedList';
-import { useObjectRoute } from '@/components/objects';
+import { Segmented, useObjectRoute } from '@/components/objects';
 import TokenTable from './TokenTable';
 import TokenPanel from './TokenPanel';
 import NewTokenDialog from './NewTokenDialog';
@@ -385,41 +383,18 @@ export default function Token() {
     gemini: `${resolvedServerAddress}/gemini`,
     claude: `${resolvedServerAddress}/claude`
   }[apiType];
-  // 仅当有额外供应商(Gemini/Claude)可选时才显示切换器,否则只剩 openai 无需下拉。
-  const hasExtraApiProviders = Boolean(siteInfo.GeminiAPIEnabled || siteInfo.ClaudeAPIEnabled);
+  // The protocol switch appears only when Claude or Gemini endpoints are on.
+  const apiTypes = [
+    { value: 'openai', label: t('token_index.openaiApi') },
+    ...(siteInfo.ClaudeAPIEnabled ? [{ value: 'claude', label: t('token_index.claudeApi') }] : []),
+    ...(siteInfo.GeminiAPIEnabled ? [{ value: 'gemini', label: t('token_index.geminiApi') }] : [])
+  ];
 
   const totalPages = Math.max(1, Math.ceil(listCount / rowsPerPage));
 
   return (
     <>
       <div className="space-y-6">
-        {/* Base URL 组内联到标题右侧、左对齐贴标题(供应商切换 + Base URL 复制);URL 变长仅向右
-            截断,不移动左边缘。窄屏随标题行 flex-wrap 降级换行。 */}
-        <PageTitleExtra>
-          <div className="flex min-w-0 items-center gap-2">
-            {hasExtraApiProviders && (
-              <Select value={apiType} onValueChange={setApiType}>
-                <SelectTrigger className="h-9 w-[120px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="openai">{t('token_index.openaiApi')}</SelectItem>
-                  {siteInfo.ClaudeAPIEnabled && <SelectItem value="claude">{t('token_index.claudeApi')}</SelectItem>}
-                  {siteInfo.GeminiAPIEnabled && <SelectItem value="gemini">{t('token_index.geminiApi')}</SelectItem>}
-                </SelectContent>
-              </Select>
-            )}
-            <button
-              type="button"
-              onClick={() => copyText(apiAddress, t('token_index.apiAddress'))}
-              className="inline-flex h-9 min-w-0 max-w-full items-center gap-1.5 rounded-md border border-input bg-muted/50 px-2.5 text-sm transition-colors hover:bg-muted"
-            >
-              <span className="shrink-0 text-muted-foreground">{t('token_index.apiAddress')}</span>
-              <span className="truncate font-medium">{apiAddress}</span>
-              <Copy className="size-3.5 shrink-0" />
-            </button>
-          </div>
-        </PageTitleExtra>
         {/* 标题行右侧操作:刷新 → 筛选 → 列设置 → 新建(primary),对齐 Log 页。 */}
         <PageActions>
           <TooltipProvider delayDuration={150}>
@@ -503,6 +478,34 @@ export default function Token() {
             className="w-full rounded-lg border border-input bg-background px-3 py-2"
           />
         )}
+
+        {/* Where to send requests: a quiet line above the list, left-aligned with the title. Like
+            other gateways the full setup lives in the API docs; the base URL stays here because a
+            self-hosted address cannot be printed in docs. Protocols are a segmented switch shown
+            only when Claude or Gemini endpoints are on. */}
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-2 text-sm">
+          <span className="text-muted-foreground">{t('token_index.apiAddress')}</span>
+          {apiTypes.length > 1 && (
+            <Segmented size="mini" label={t('apiKey.page.protocol')} value={apiType} onChange={setApiType} options={apiTypes} />
+          )}
+          <code className="min-w-0 select-all truncate font-mono text-[13px]">{apiAddress}</code>
+          <button
+            type="button"
+            onClick={() => copyText(apiAddress, t('token_index.apiAddress'))}
+            className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
+            aria-label={t('token_index.copy')}
+            title={t('token_index.copy')}
+          >
+            <Copy className="size-3.5" />
+          </button>
+          <Link
+            to="/panel/api"
+            className="ml-1 inline-flex items-center gap-0.5 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {t('apiKey.page.examples')}
+            <ChevronRight className="size-3.5" />
+          </Link>
+        </div>
 
         <Card>
           {tokens.length === 0 && !searching ? (
