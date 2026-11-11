@@ -13,11 +13,11 @@ import CreateOrgDialog from '../org/CreateOrgDialog';
 import { contextSwitchTarget } from './nav-config';
 
 // ==============================|| CHROME — CONTEXT SWITCHER ||============================== //
-// One line under the brand row that only says which space the user is in: 个人, the active
-// organization's name, or 平台管理. No user identity here; that lives in the account row at the
-// bottom of the sidebar. The popover lists personal, the user's organizations (role muted) and
-// "create organization"; platform admin is entered from the account menu, and while it is open
-// this row names it and the popover leads back to personal or an organization. Markers are rounded
+// One line under the brand row that only says which workbench space the user is in: 个人 or the
+// active organization's name. No user identity here; that lives in the account row at the bottom
+// of the sidebar. The popover lists personal, the user's organizations (role muted) and "create
+// organization". Platform admin is entered from the account menu and does not show this row: its
+// sidebar has a back row to the workbench instead (Sidebar `AdminBackRow`). Markers are rounded
 // squares, deliberately unlike the round avatar: fixed icons for personal and platform admin (not
 // customizable, so they never repeat the user's avatar), and the organization's uploaded logo or a
 // default building icon.
@@ -62,11 +62,9 @@ export default function ContextSwitcher({ context, collapsed = false, onNavigate
 
   const roleLabel = (role) => t(`org.roles.${role}`, { defaultValue: role });
   const current =
-    context === 'admin'
-      ? { kind: 'admin', name: t('nav.context.admin') }
-      : context === 'org' && currentOrg
-        ? { kind: 'org', org: currentOrg, name: currentOrg.name }
-        : { kind: 'personal', name: t('nav.context.personal') };
+    context === 'org' && currentOrg
+      ? { kind: 'org', org: currentOrg, name: currentOrg.name }
+      : { kind: 'personal', name: t('nav.context.personal') };
 
   const select = (to) => {
     const target = contextSwitchTarget({ pathname, to, isRoot, features: { routingPolicy: routingPolicyEnabled } });
@@ -76,7 +74,7 @@ export default function ContextSwitcher({ context, collapsed = false, onNavigate
     onNavigate?.();
   };
 
-  const hasMenu = orgEnabled || context === 'admin';
+  const hasMenu = orgEnabled;
   const markSize = collapsed ? 'size-7' : 'size-6';
   const triggerClass = collapsed
     ? 'flex size-9 items-center justify-center rounded-lg transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
@@ -152,7 +150,7 @@ export default function ContextSwitcher({ context, collapsed = false, onNavigate
 }
 
 ContextSwitcher.propTypes = {
-  context: PropTypes.oneOf(['personal', 'org', 'admin']).isRequired,
+  context: PropTypes.oneOf(['personal', 'org']).isRequired,
   collapsed: PropTypes.bool,
   onNavigate: PropTypes.func
 };

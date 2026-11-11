@@ -1,6 +1,5 @@
 import { PLATFORM_GROUPS, cardTitleKey, groupLabelKey, settingsGroupUrl } from 'views/panel/Setting/registry';
 import {
-  Activity,
   BarChart3,
   BookOpen,
   Boxes,
@@ -14,6 +13,7 @@ import {
   Play,
   ReceiptText,
   Route,
+  ScrollText,
   Settings,
   ShieldUser,
   SlidersHorizontal,
@@ -120,9 +120,10 @@ export const adminSections = [
   {
     id: 'admin_main',
     items: [
-      { id: 'systemInfo', url: url('system_info'), icon: Activity, labelKey: 'nav.items.health', root: true },
+      // 统计 comes first: entering platform admin lands on the first visible item.
       // Analytics and per-user stats share one item; the pages switch with in-page tabs.
-      { id: 'analytics', url: url('analytics'), match: [url('multi_user_stats')], icon: BarChart3, labelKey: 'nav.items.stats' }
+      { id: 'analytics', url: url('analytics'), match: [url('multi_user_stats')], icon: BarChart3, labelKey: 'nav.items.stats' },
+      { id: 'systemInfo', url: url('system_info'), icon: ScrollText, labelKey: 'nav.items.systemLogs', root: true }
     ]
   },
   {
