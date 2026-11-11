@@ -27,6 +27,7 @@ import { ValueFormatter, copy, timestamp2string } from 'utils/common';
 import { statusLabel } from '../Channel/channelApi';
 import { enabledChannels, followsStatus, isVisibleToUsers, modelStatus } from '../Pricing/modelCatalog';
 import {
+  ENDPOINT_LABEL_KEYS,
   MODE_LABEL_KEYS,
   CapabilityBadges,
   EndpointBadges,
@@ -581,14 +582,108 @@ ModelTable.propTypes = {
   onNaturalWidth: PropTypes.func
 };
 
-const STATE_DOT = { ok: 'bg-success', nochannel: 'bg-warning', unpriced: 'bg-warning' };
+// A long name is cut in the middle so both the family and the variant stay readable
+// ("meta-llama/llama-pr…guard-2-86m"): the head truncates, the tail always shows.
+const NAME_TAIL = 8;
+export function MiddleTruncate({ text, className }) {
+  const cut = text.length > NAME_TAIL + 4;
+  return (
+    <span className={cn('flex min-w-0', className)} title={text}>
+      <span className="truncate">{cut ? text.slice(0, -NAME_TAIL) : text}</span>
+      {cut && <span className="shrink-0">{text.slice(-NAME_TAIL)}</span>}
+    </span>
+  );
+}
 
-// Phone list: one 56px row per model. The state dot leads (a checkbox in select mode); the first
-// line is the model name with the price on the right, the second the subtitle (display name,
-// aliases, tags) with the state on the right. A tap opens the model; ⋯ holds the row actions,
-// including show / hide since there is no switch.
+MiddleTruncate.propTypes = { text: PropTypes.string.isRequired, className: PropTypes.string };
+
+// What a model needs before users can call it: an enabled channel, a price, and visibility.
+export const readinessOf = (row) => [
+  { key: 'channel', ok: enabledChannels(row).length > 0 },
+  { key: 'price', ok: !!row.price },
+  { key: 'visible', ok: isVisibleToUsers(row) }
+];
+
+// Three short bars, lit when that part is ready; the label names what is missing.
+export function Readiness({ row, className }) {
+  const { t } = useTranslation();
+  const parts = readinessOf(row);
+  const missing = parts.filter((p) => !p.ok).map((p) => t(`modelsPage.readiness.${p.key}`));
+  const label = missing.length === 0 ? t('modelsPage.stats.usable') : t('modelsPage.readiness.missing', { items: missing.join('、') });
+  return (
+    <span role="img" aria-label={label} title={label} className={cn('inline-flex shrink-0 items-center gap-0.5', className)}>
+      {parts.map((p) => (
+        <span key={p.key} className={cn('h-3 w-1 rounded-full', p.ok ? 'bg-success' : 'bg-muted-foreground/25')} />
+      ))}
+    </span>
+  );
+}
+
+Readiness.propTypes = { row: PropTypes.object.isRequired, className: PropTypes.string };
+
+// Legend for the bars, under the phone list.
+export function ReadinessLegend() {
+  const { t } = useTranslation();
+  return (
+    <p className="flex items-center gap-2 text-xs text-muted-foreground">
+      <span className="inline-flex items-center gap-0.5" aria-hidden="true">
+        {[0, 1, 2].map((i) => (
+          <span key={i} className="h-3 w-1 rounded-full bg-success" />
+        ))}
+      </span>
+      {t('modelsPage.readiness.legend')}
+    </p>
+  );
+}
+
+// Input over output, mono and right-aligned; a per-call price shows once with its unit.
+function StackedPrice({ price, unit }) {
+  const { t } = useTranslation();
+  if (!price) return <span className="text-[13px] text-muted-foreground">—</span>;
+  const isM = unit === 'M';
+  if (price.type !== 'tokens') {
+    return (
+      <span className="flex flex-col items-end font-mono text-[13px] leading-5 tabular-nums">
+        {ValueFormatter(price.input, true, false)}
+        <span className="text-xs leading-4 text-muted-foreground">/ {t('modelpricePage.times')}</span>
+      </span>
+    );
+  }
+  return (
+    <span
+      className="flex flex-col items-end font-mono tabular-nums"
+      title={`${t('modelsPage.priceIn')} · ${t('modelsPage.priceOut')} / 1${unit}`}
+    >
+      <span className="text-[13px] leading-5">{ValueFormatter(price.input, true, isM)}</span>
+      <span className="text-xs leading-4 text-muted-foreground">{ValueFormatter(price.output, true, isM)}</span>
+    </span>
+  );
+}
+
+StackedPrice.propTypes = { price: PropTypes.object, unit: PropTypes.string };
+
+// Second line of a phone row: vendor · first endpoint · supplies (public models), or the alias
+// target / "not in catalog" when that says more.
+function phoneMeta(t, row, vendor) {
+  if (!row.catalogId) return t('modelInfoPage.notInCatalog');
+  if (row.alias_of) return t('modelsPage.aliasTo', { model: row.alias_of });
+  const endpoints = safeJsonArray(row.endpoints);
+  const parts = [vendor?.name];
+  if (endpoints.length > 0) {
+    const first = ENDPOINT_LABEL_KEYS[endpoints[0]] ? t(ENDPOINT_LABEL_KEYS[endpoints[0]]) : endpoints[0];
+    parts.push(endpoints.length > 1 ? `${first} +${endpoints.length - 1}` : first);
+  }
+  if (isPublicModelRow(row)) parts.push(t('modelSupply.count', { count: row.supplyCounts?.total || 0 }));
+  return parts.filter(Boolean).join(' · ');
+}
+
+// Phone list: one 60px row per model. The vendor tile leads (a checkbox in select mode); then the
+// name over vendor · endpoint · supplies; on the right the readiness bars and the price, input
+// over output. A tap opens the model; ⋯ holds the row actions, including show / hide since there
+// is no switch.
 export function ModelList({
   items,
+  vendors = {},
   unit = 'M',
   selectMode,
   selectedKeys,
@@ -603,42 +698,42 @@ export function ModelList({
     <ul className="divide-y divide-border">
       {items.map((row) => {
         const selected = selectedKeys.has(row.key);
-        const status = modelStatus(row);
-        const sub = modelSubtitle(t, row);
+        const vendor = vendors[row.vendor_id];
         return (
           <li
             key={row.key}
-            className={cn('flex h-14 items-center gap-3 px-4', ROW_OPENS, selected && 'bg-muted/60')}
+            className={cn('flex h-15 items-center gap-3 pl-3 pr-1', ROW_OPENS, selected && 'bg-muted/60')}
             {...rowOpenProps(() => (selectMode ? onToggleSelect(row.key) : onOpen(row, 'profile')))}
           >
             {selectMode ? (
-              <RowControl>
+              <RowControl className="flex size-7 shrink-0 items-center justify-center">
                 <Checkbox checked={selected} onCheckedChange={() => onToggleSelect(row.key)} aria-label={row.model} />
               </RowControl>
             ) : (
-              <span className={cn('size-2 shrink-0 rounded-full', STATE_DOT[status])} aria-hidden="true" />
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-border bg-field">
+                <VendorIcon vendor={vendor} model={row.model} />
+              </span>
             )}
             <div className="min-w-0 flex-1">
-              <div className="flex items-baseline gap-3">
-                <span
-                  className={cn('min-w-0 truncate font-mono text-[13px] font-medium', !isVisibleToUsers(row) && 'text-muted-foreground')}
-                >
-                  {row.model}
-                </span>
-                <span className="ml-auto shrink-0 text-[13px]">
-                  <PriceCell price={row.price} unit={unit} hideUnit />
-                </span>
+              <div className="flex items-center gap-1">
+                <MiddleTruncate
+                  text={row.model}
+                  className={cn('text-sm font-medium leading-5', !isVisibleToUsers(row) && 'text-muted-foreground')}
+                />
+                {row.locked && <Lock className="size-3 shrink-0 text-warning" aria-label={t('modelInfoPage.locked')} />}
               </div>
-              <div className="mt-0.5 flex items-baseline gap-3 text-xs text-muted-foreground">
-                <span className="min-w-0 truncate">{sub}</span>
-                <span className="ml-auto shrink-0">
-                  {t(`modelsPage.status.${status}`)}
-                  {!isVisibleToUsers(row) && ` · ${t('modelsPage.stats.hidden')}`}
-                </span>
-              </div>
+              <div className="truncate text-xs leading-4 text-muted-foreground">{phoneMeta(t, row, vendor)}</div>
             </div>
-            {!selectMode && (
-              <RowControl className="-mr-2 shrink-0">
+            <span className="flex shrink-0 items-center gap-2">
+              <Readiness row={row} />
+              <span className="min-w-10 text-right">
+                <StackedPrice price={row.price} unit={unit} />
+              </span>
+            </span>
+            {selectMode ? (
+              <span className="size-[30px] shrink-0" />
+            ) : (
+              <RowControl className="shrink-0">
                 <RowActionsCell
                   row={row}
                   onOpen={onOpen}
@@ -657,6 +752,7 @@ export function ModelList({
 
 ModelList.propTypes = {
   items: PropTypes.array.isRequired,
+  vendors: PropTypes.object,
   unit: PropTypes.string,
   selectMode: PropTypes.bool,
   selectedKeys: PropTypes.instanceOf(Set).isRequired,

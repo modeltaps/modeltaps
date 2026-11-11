@@ -70,7 +70,7 @@ import {
   mergeCatalogRows,
   savePriceUnit
 } from '../Pricing/modelCatalog';
-import ModelTable, { ModelList, estimateModelTableWidth } from './ModelTable';
+import ModelTable, { ModelList, ReadinessLegend, estimateModelTableWidth } from './ModelTable';
 import ModelInfoSheet from './ModelInfoSheet';
 import ImportDialog from './ImportDialog';
 import { ENDPOINT_LABEL_KEYS, ENDPOINT_VALUES, isUnlabeled, safeJsonArray } from './modelInfoHelpers';
@@ -724,6 +724,7 @@ export default function ModelInfo() {
     body = (
       <ModelList
         items={pageRows}
+        vendors={vendors}
         unit={unit}
         selectMode={selectMode}
         selectedKeys={selectedKeys}
@@ -880,6 +881,7 @@ export default function ModelInfo() {
             />
           </div>
         </Card>
+        {narrow && loaded && filtered.length > 0 && <ReadinessLegend />}
       </div>
 
       {narrow && selectMode && <BatchBar count={selectedKeys.size} onClear={exitSelectMode} floating actions={phoneBatchActions} />}

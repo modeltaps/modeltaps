@@ -821,7 +821,14 @@
     "hideFromUsers": "對用戶隱藏",
     "searchShort": "搜尋模型",
     "presetPerCall": "按次計費",
-    "presetUnlabeled": "未標註"
+    "presetUnlabeled": "未標註",
+    "readiness": {
+      "channel": "渠道",
+      "price": "定價",
+      "visible": "可見",
+      "missing": "缺少：{{items}}",
+      "legend": "就緒：渠道 · 定價 · 可見"
+    }
   },
   "brandIconPicker": {
     "mode": {

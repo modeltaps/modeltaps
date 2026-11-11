@@ -822,7 +822,14 @@
     "hideFromUsers": "Hide from users",
     "searchShort": "Search models",
     "presetPerCall": "Per-call pricing",
-    "presetUnlabeled": "Unlabeled"
+    "presetUnlabeled": "Unlabeled",
+    "readiness": {
+      "channel": "Channel",
+      "price": "Price",
+      "visible": "Visible",
+      "missing": "Missing: {{items}}",
+      "legend": "Ready: channel · price · visible"
+    }
   },
   "brandIconPicker": {
     "mode": {
