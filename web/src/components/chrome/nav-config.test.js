@@ -8,7 +8,8 @@ import {
   findActiveItem,
   firstAdminUrl,
   isAdminPath,
-  navSectionsFor
+  navSectionsFor,
+  PERSONAL_SETTINGS_URL
 } from './nav-config';
 
 const idsOf = (sections) => sections.map((s) => ({ id: s.id, items: s.items.map((i) => i.id) }));
@@ -134,6 +135,8 @@ describe('findActiveItem', () => {
   it('settings pages: personal vs organization', () => {
     expect(findActiveItem('/panel/settings')?.id).toBe('personal_settings');
     expect(findActiveItem('/panel/settings/account/security')?.id).toBe('personal_settings');
+    // The sidebar's settings button links here and is marked active on these pages.
+    expect(findActiveItem(PERSONAL_SETTINGS_URL)?.id).toBe('personal_settings');
     expect(findActiveItem('/panel/settings/org/3/general')?.id).toBe('org_settings');
     expect(findActiveItem('/panel/settings/org/3/members')?.id).toBe('org_members');
     expect(findActiveItem('/panel/settings/org/3/danger')?.id).toBe('org_settings');

@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import { useLocation, useNavigate } from 'react-router';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { ArrowUpRight, BookOpen, Check, Globe, LogOut, Monitor, Moon, Palette, Settings, ShieldUser, Sun, Wallet } from 'lucide-react';
+import { ArrowUpRight, BookOpen, Check, Globe, LogOut, Megaphone, Monitor, Moon, Palette, ShieldUser, Sun, Wallet } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import {
@@ -26,23 +26,23 @@ import { setAppLanguage } from 'utils/userSetting';
 import i18nList from 'i18n/i18nList';
 import { useIsAdmin, useIsRoot } from 'utils/common';
 import { useOrg } from 'contexts/OrgContext';
+import { useNotice } from 'ui-component/notice';
 import { contextSwitchTarget } from './nav-config';
 import UserAvatar, { accountDisplayName } from './avatar';
 
 // ==============================|| CHROME — ACCOUNT MENU ||============================== //
 // The account row at the bottom of the sidebar is the only place that shows who is signed in
 // (avatar and name; the email sits at the top of its menu). Its menu: the balance (links to
-// billing), personal settings, appearance, language, platform admin (admins only), docs & help
-// (when the site has a docs link) and log out. In the collapsed rail the row shrinks to the avatar
-// and the menu opens to the right.
+// billing), appearance, language, platform admin (admins only), the site announcement (while the
+// site has one), docs & help (when the site has a docs link) and log out. Personal settings are
+// not in the menu: the settings button next to the account row opens them. In the collapsed rail
+// the row shrinks to the avatar and the menu opens to the right.
 
 const THEME_OPTIONS = [
   { value: 'system', Icon: Monitor, labelKey: 'theme.auto' },
   { value: 'light', Icon: Sun, labelKey: 'theme.light' },
   { value: 'dark', Icon: Moon, labelKey: 'theme.dark' }
 ];
-
-export const PERSONAL_SETTINGS_URL = '/panel/settings/account/profile';
 
 export default function AccountMenu({ collapsed = false, anchorRef = null, context = 'personal', balance = null, onNavigate }) {
   const { t } = useTranslation();
@@ -56,6 +56,7 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, conte
   const isAdmin = useIsAdmin();
   const isRoot = useIsRoot();
   const { orgRoutingPolicyEnabled } = useOrg();
+  const { notice, openNotice } = useNotice();
 
   const name = accountDisplayName(user);
   // Shown under the name at the top of the menu (the sidebar row itself is one line): the email
@@ -69,7 +70,10 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, conte
     navigate(to);
     onNavigate?.();
   };
-  const openSettings = () => go(PERSONAL_SETTINGS_URL);
+  const showNotice = () => {
+    openNotice();
+    onNavigate?.();
+  };
   const openAdmin = () => {
     const target = contextSwitchTarget({
       pathname,
@@ -132,10 +136,6 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, conte
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={openSettings}>
-          <Settings />
-          <span className="flex-1">{t('nav.account.settings')}</span>
-        </DropdownMenuItem>
         {/* Appearance: an inline segmented switch, so the menu stays open while trying themes. */}
         <div className="flex items-center gap-2 px-2 py-1.5 text-sm [&>svg]:size-4 [&>svg]:shrink-0">
           <Palette />
@@ -187,6 +187,13 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, conte
           </>
         )}
         <DropdownMenuSeparator />
+        {/* The site announcement, to read it again after its banner is gone. */}
+        {notice && (
+          <DropdownMenuItem onClick={showNotice}>
+            <Megaphone />
+            <span className="flex-1">{t('notice.announcement')}</span>
+          </DropdownMenuItem>
+        )}
         {docsLink && (
           <DropdownMenuItem onClick={() => window.open(docsLink, '_blank', 'noopener,noreferrer')}>
             <BookOpen />

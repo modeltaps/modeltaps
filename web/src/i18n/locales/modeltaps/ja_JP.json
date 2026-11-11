@@ -967,7 +967,8 @@
     "expandSidebar": "サイドバーを展開"
   },
   "notice": {
-    "announcement": "お知らせ"
+    "announcement": "お知らせ",
+    "view": "表示"
   },
   "channelForm": {
     "label": {
@@ -1869,6 +1870,13 @@
         "orgRoutingPolicyMaxCount": "組織ごとのポリシー上限",
         "orgRoutingPolicyMaxCountDescription": "1 つの組織が作成できるルーティングポリシーの最大数です。0 は無制限です。"
       }
+    },
+    "otherSettings": {
+      "generalSettings": {
+        "noticeLabel": "お知らせ",
+        "noticePlaceholder": "お知らせの内容を入力してください。Markdown と HTML を使用できます。",
+        "noticeDescription": "保存すると、コンソール上部にバナーとして表示されます。ユーザーが確認するか閉じると表示されなくなり、内容が変わると再び表示されます。空欄にするとお知らせは表示されません。"
+      }
     }
   },
   "modelpricePage": {
@@ -2252,7 +2260,6 @@
     },
     "account": {
       "menu": "アカウントメニュー",
-      "settings": "個人設定",
       "appearance": "外観",
       "language": "言語",
       "docs": "ドキュメントとヘルプ",

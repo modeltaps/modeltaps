@@ -43,6 +43,8 @@ import {
 //                (used when switching context to decide whether to stay on the page)
 
 export const DASHBOARD_URL = '/panel/dashboard';
+// Where the sidebar's settings button lands (the page itself is a hidden nav item, below).
+export const PERSONAL_SETTINGS_URL = '/panel/settings/account/profile';
 export const ORG_PARAM = ':orgId';
 
 const url = (id) => `/panel/${id}`;
@@ -172,8 +174,8 @@ export const adminSections = [
   }
 ];
 
-// Pages without a menu item that still need a title: personal settings open from the account
-// menu and render inside the workbench.
+// Pages without a menu item that still need a title: personal settings open from the settings
+// button at the bottom of the sidebar and render inside the workbench.
 export const hiddenNavItems = [
   {
     id: 'personal_settings',

@@ -2,54 +2,67 @@ import PropTypes from 'prop-types';
 import { useMemo, useState, useEffect, useContext, useCallback, createContext } from 'react';
 
 import { API } from 'utils/api';
+import { NOTICE_STORAGE_KEY, resolveNotice } from './noticeState';
+
+// The site announcement (the admin's `Notice` setting). It is fetched once per page load.
+// An announcement the user has not read yet shows as a banner at the top of the panel
+// (NoticeBanner); the dialog with the full text (NoticeDialogs) only opens on request, from the
+// banner or from the account menu. Reading it there or dismissing the banner stores the text, so
+// the banner stays away until the announcement changes.
 
 export const NoticeContext = createContext(undefined);
 
+const readStored = () => {
+  try {
+    return localStorage.getItem(NOTICE_STORAGE_KEY);
+  } catch {
+    return null; // storage disabled
+  }
+};
+
+const writeStored = (value) => {
+  try {
+    if (value == null) localStorage.removeItem(NOTICE_STORAGE_KEY);
+    else localStorage.setItem(NOTICE_STORAGE_KEY, value);
+  } catch {
+    // storage disabled: the banner comes back on the next page load
+  }
+};
+
 export function NoticeProvider({ children }) {
   const [notice, setNotice] = useState(null);
+  const [unread, setUnread] = useState(false);
   const [isOpen, setOpen] = useState(false);
 
-  const openNotice = () => setOpen(true);
-  const closeNotice = () => setOpen(false);
-
-  const checkNotice = useCallback(async () => {
-    if (typeof window !== 'undefined') {
-      // 确保代码只在客户端执行
-      try {
-        const noticeMsg = await getNotice();
-        const oldNotice = localStorage.getItem('notice');
-
-        const processAndSetNotice = async (content) => {
-          setNotice(content);
-          if (content !== oldNotice) {
-            setOpen(true);
-            localStorage.setItem('notice', content || '');
-          }
-        };
-
-        if (noticeMsg !== oldNotice && noticeMsg) {
-          await processAndSetNotice(noticeMsg);
-        } else if (oldNotice) {
-          await processAndSetNotice(oldNotice);
-        }
-      } catch (error) {
-        console.error('Failed to fetch notice:', error);
-      }
-    }
+  useEffect(() => {
+    let cancelled = false;
+    fetchNotice().then((fetched) => {
+      if (cancelled) return;
+      const next = resolveNotice(fetched, readStored());
+      if (next.forgetRead) writeStored(null);
+      setNotice(next.notice);
+      setUnread(next.unread);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  useEffect(() => {
-    checkNotice();
-  }, [checkNotice]);
+  const dismissNotice = useCallback(() => {
+    setUnread(false);
+    if (notice) writeStored(notice);
+  }, [notice]);
+
+  const openNotice = useCallback(() => {
+    setOpen(true);
+    dismissNotice();
+  }, [dismissNotice]);
+
+  const closeNotice = useCallback(() => setOpen(false), []);
 
   const memoizedValue = useMemo(
-    () => ({
-      notice,
-      isOpen,
-      openNotice,
-      closeNotice
-    }),
-    [notice, isOpen]
+    () => ({ notice, unread, isOpen, openNotice, closeNotice, dismissNotice }),
+    [notice, unread, isOpen, openNotice, closeNotice, dismissNotice]
   );
 
   return <NoticeContext.Provider value={memoizedValue}>{children}</NoticeContext.Provider>;
@@ -69,19 +82,14 @@ export function useNotice() {
   return context;
 }
 
-async function getNotice() {
+// The announcement text ('' when the site has none), or null when it could not be loaded.
+async function fetchNotice() {
   try {
     const res = await API.get('/api/notice');
     const { success, data } = res.data;
-
-    if (!success) {
-      return null;
-    }
-
-    return data;
+    return success && typeof data === 'string' ? data : null;
   } catch (error) {
     console.error('Error fetching notice:', error);
-
     return null;
   }
 }

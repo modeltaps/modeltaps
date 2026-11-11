@@ -967,7 +967,8 @@
     "expandSidebar": "展开侧栏"
   },
   "notice": {
-    "announcement": "公告"
+    "announcement": "公告",
+    "view": "查看"
   },
   "channelForm": {
     "label": {
@@ -1869,6 +1870,11 @@
         "orgRoutingPolicyMaxCount": "每个组织的策略上限",
         "orgRoutingPolicyMaxCountDescription": "一个组织最多能建多少条路由策略，0 表示不限。"
       }
+    },
+    "otherSettings": {
+      "generalSettings": {
+        "noticeDescription": "保存后在控制台页面顶部以横幅展示，用户查看或关闭后不再出现；内容变化后会再次展示。留空表示没有公告。"
+      }
     }
   },
   "modelpricePage": {
@@ -2252,7 +2258,6 @@
     },
     "account": {
       "menu": "账号菜单",
-      "settings": "个人设置",
       "appearance": "外观",
       "language": "语言",
       "docs": "文档与帮助",
