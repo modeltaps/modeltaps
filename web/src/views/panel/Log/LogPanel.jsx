@@ -29,8 +29,8 @@ import { buildLogFilterFields, LOG_FILTER_PARAM_KEYS } from './logFilterFields';
 import LogIdLookup from './LogIdLookup';
 import TimeRangeSelect, { detectPreset } from '@/components/TimeRangeSelect';
 import LogHistogram from './LogHistogram';
-import LogTable from './LogTable';
-import LogPagination from './LogPagination';
+import LogTable, { estimateLogTableWidth } from './LogTable';
+import { ListFooter, useListLayout } from '@/components/list-page';
 import LogDetailDialog from './LogDetailDialog';
 import { exportLogs } from './logExport';
 
@@ -54,40 +54,44 @@ const buildTimeRangeFromParams = (searchParams) => {
   return base;
 };
 
-// Column registry for the show/hide menu. Ids match LogTable column ids; v1
-// (135c469) had the same 13 columns all visible by default. adminOnly columns
-// never appear in the menu for regular users (they are not rendered either).
-// orgOnly columns only exist in an organization context; hideInOrg columns are
-// site-internal info excluded from the org view (aligned with the org CSV export).
+// Column registry for the show/hide menu. Ids match LogTable column ids. adminOnly columns
+// never appear in the menu for regular users (they are not rendered either). orgOnly columns
+// only exist in an organization context; hideInOrg columns are site-internal info excluded from
+// the org view (aligned with the org CSV export). defaultHidden columns are one click away in
+// the column menu: by default the table shows what a request cost and how it went.
 const LOG_COLUMNS = [
   { id: 'created_at', labelKey: 'logPage.timeLabel' },
   { id: 'channel_id', labelKey: 'logPage.channelLabel', adminOnly: true },
   { id: 'user_id', labelKey: 'logPage.userLabel', adminOnly: true },
   { id: 'member', labelKey: 'logPage.memberLabel', orgOnly: true },
-  { id: 'group', labelKey: 'logPage.groupLabel' },
+  { id: 'group', defaultHidden: true, labelKey: 'logPage.groupLabel' },
   { id: 'token_name', labelKey: 'logPage.tokenLabel' },
-  { id: 'app', labelKey: 'logPage.appLabel' },
-  { id: 'type', labelKey: 'logPage.typeLabel' },
+  { id: 'app', defaultHidden: true, labelKey: 'logPage.appLabel' },
+  { id: 'type', defaultHidden: true, labelKey: 'logPage.typeLabel' },
   { id: 'model_name', labelKey: 'logPage.modelLabel' },
-  { id: 'relay_mode', labelKey: 'logPage.relayMode.columnLabel' },
-  { id: 'finish_reason', labelKey: 'logPage.finishReason.columnLabel' },
+  { id: 'relay_mode', defaultHidden: true, labelKey: 'logPage.relayMode.columnLabel' },
+  { id: 'finish_reason', defaultHidden: true, labelKey: 'logPage.finishReason.columnLabel' },
   { id: 'duration', labelKey: 'logPage.durationLabel' },
-  { id: 'throughput', labelKey: 'logPage.throughputLabel' },
+  { id: 'throughput', defaultHidden: true, labelKey: 'logPage.throughputLabel' },
   { id: 'prompt_tokens', labelKey: 'logPage.inputLabel' },
   { id: 'completion_tokens', labelKey: 'logPage.outputLabel' },
   { id: 'quota', labelKey: 'logPage.quotaLabel' },
-  { id: 'source_ip', labelKey: 'logPage.sourceIp', hideInOrg: true }
+  { id: 'source_ip', labelKey: 'logPage.sourceIp', hideInOrg: true, defaultHidden: true }
 ];
 
-const COLUMN_VISIBILITY_STORAGE_KEY = 'log-column-visibility';
+// v2: fewer columns by default; the old key is dropped.
+const COLUMN_VISIBILITY_STORAGE_KEY = 'log-column-visibility-v2';
+const LEGACY_COLUMN_VISIBILITY_KEYS = ['log-column-visibility'];
+const LOG_COLUMN_IDS = LOG_COLUMNS.map((c) => c.id);
 
-const buildDefaultColumnVisibility = () => Object.fromEntries(LOG_COLUMNS.map((c) => [c.id, true]));
+const buildDefaultColumnVisibility = () => Object.fromEntries(LOG_COLUMNS.map((c) => [c.id, !c.defaultHidden]));
 
 // localStorage persistence is an addition over v1 (which kept the selection in
 // memory only); unknown/missing keys fall back to the visible default.
 const loadColumnVisibility = () => {
   const defaults = buildDefaultColumnVisibility();
   try {
+    LEGACY_COLUMN_VISIBILITY_KEYS.forEach((k) => localStorage.removeItem(k));
     const saved = JSON.parse(localStorage.getItem(COLUMN_VISIBILITY_STORAGE_KEY));
     if (!saved || typeof saved !== 'object') return defaults;
     for (const id of Object.keys(defaults)) {
@@ -256,10 +260,20 @@ export default function Log() {
     });
 
   // 组织上下文隐藏 source_ip(站点内部信息),其余沿用用户保存的列偏好。
-  const effectiveColumnVisibility = useMemo(
-    () => (isOrgContext ? { ...columnVisibility, source_ip: false } : columnVisibility),
-    [isOrgContext, columnVisibility]
-  );
+  const effectiveColumnVisibility = useMemo(() => {
+    const v = isOrgContext ? { ...columnVisibility, source_ip: false } : { ...columnVisibility };
+    // Columns that do not exist in this context take no width.
+    LOG_COLUMNS.forEach((c) => {
+      if ((c.adminOnly && !effectiveAdmin) || (c.orgOnly && !isOrgContext)) v[c.id] = false;
+    });
+    return v;
+  }, [isOrgContext, effectiveAdmin, columnVisibility]);
+
+  // Full table while it fits (the sidebar collapses first), phone list otherwise.
+  const { pageRef, layout, onNaturalWidth } = useListLayout({
+    estimate: estimateLogTableWidth(LOG_COLUMN_IDS, effectiveColumnVisibility),
+    resetKey: JSON.stringify(effectiveColumnVisibility)
+  });
 
   // 组装筛选查询对象:log_type 按请求结果取 '2'(成功)/ '5'(失败) + 时间范围 + 级联筛选参数(enum 多值数组 / number 标量)。
   // 上下文裁剪已由 filterFields 保证(org 只含 member,admin 才含 channel/username/source_ip)。
@@ -489,7 +503,7 @@ export default function Log() {
   }, [exporting, buildFilterQuery, order, orderBy, effectiveAdmin, t]);
 
   return (
-    <div className="space-y-4">
+    <div ref={pageRef} className="space-y-3">
       {/* 标题行右侧操作:刷新 → 筛选 → 时间范围 → 列选择 → 更多(导出),对齐 OpenRouter。 */}
       <PageActions>
         <TooltipProvider delayDuration={150}>
@@ -640,14 +654,16 @@ export default function Log() {
             onRowDetail={setDetailItem}
             searching={searching}
             columnVisibility={effectiveColumnVisibility}
+            layout={layout}
+            onNaturalWidth={onNaturalWidth}
           />
-          <div className="border-t border-border px-4">
-            <LogPagination
+          <div className="border-t border-border">
+            <ListFooter
+              total={listCount}
               page={page}
-              rowsPerPage={rowsPerPage}
-              count={listCount}
+              pageSize={rowsPerPage}
               onPageChange={setPage}
-              onRowsPerPageChange={(size) => {
+              onPageSizeChange={(size) => {
                 setPage(0);
                 setRowsPerPage(size);
                 savePageSize('log', size);

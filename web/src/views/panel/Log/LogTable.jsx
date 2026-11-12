@@ -2,43 +2,54 @@ import PropTypes from 'prop-types';
 import { useMemo } from 'react';
 import { useTable, flexRender } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { AlertTriangle, ArrowDown, ArrowUp, ChevronsUpDown, HelpCircle } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, HelpCircle } from 'lucide-react';
 import { Link } from 'react-router';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import DataCards from '@/components/ui/data-cards';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ModelIcon from '@/components/brand/ModelIcon';
 import ProviderIcon from '@/components/brand/ProviderIcon';
 import AppFavicon from './AppFavicon';
 import { cn } from '@/lib/utils';
+import { ROW_OPENS, rowOpenProps } from '@/components/objects';
+import { useNaturalWidth } from '@/components/list-page';
 import { SpendAmount, timestamp2string, timestamp2stringCompact } from 'utils/common';
-import {
-  badgeClass,
-  calculateOriginalQuota,
-  deriveDuration,
-  finishReasonMeta,
-  logTypeMeta,
-  relayModeMeta,
-  requestTimeColor,
-  requestTsColor
-} from './logHelpers';
+import { badgeClass, calculateOriginalQuota, deriveDuration, finishReasonMeta, logTypeMeta, relayModeMeta } from './logHelpers';
 
 const Badge = ({ color, children }) => <span className={badgeClass(color)}>{children}</span>;
 Badge.propTypes = { color: PropTypes.string, children: PropTypes.node };
 
-// 字段超链接:保留 Badge 外观,hover 加下划线/前景色;onClick stopPropagation 防止触发整行详情;
-// 用 react-router Link 保持 cmd/ctrl+click 新标签能力。
-const LinkBadge = ({ to, color, children }) => (
-  <Link
-    to={to}
-    onClick={(e) => e.stopPropagation()}
-    className={cn(badgeClass(color), 'transition-colors hover:text-foreground hover:underline')}
-  >
+// A plain text link (user, key, group): underline on hover; stopPropagation so it does not open
+// the row's detail; a react-router Link keeps cmd/ctrl+click for a new tab.
+const TextLink = ({ to, children }) => (
+  <Link to={to} onClick={(e) => e.stopPropagation()} className="whitespace-nowrap underline-offset-2 hover:underline">
     {children}
   </Link>
 );
-LinkBadge.propTypes = { to: PropTypes.string, color: PropTypes.string, children: PropTypes.node };
+TextLink.propTypes = { to: PropTypes.string, children: PropTypes.node };
+
+// Typical column widths, for the layout estimate before the table has been measured.
+const COLUMN_WIDTHS = {
+  created_at: 104,
+  channel_id: 160,
+  user_id: 110,
+  member: 120,
+  group: 96,
+  token_name: 130,
+  app: 120,
+  type: 72,
+  model_name: 210,
+  relay_mode: 80,
+  finish_reason: 90,
+  duration: 110,
+  throughput: 96,
+  prompt_tokens: 80,
+  completion_tokens: 80,
+  quota: 90,
+  source_ip: 120
+};
+export const estimateLogTableWidth = (columnIds, visibility) =>
+  columnIds.filter((id) => visibility[id] !== false).reduce((sum, id) => sum + (COLUMN_WIDTHS[id] || 100), 0);
 
 function QuotaCell({ item }) {
   if (item.type !== 2)
@@ -61,16 +72,15 @@ function QuotaCell({ item }) {
 }
 QuotaCell.propTypes = { item: PropTypes.object };
 
+// Duration as text: total, then the time to first token muted.
 function DurationCell({ item }) {
-  const { requestTime, requestTimeStr, firstTimeStr, requestTs, requestTsStr } = deriveDuration(item);
+  const { requestTimeStr, firstTimeStr } = deriveDuration(item);
+  if (item.request_time === 0) return <span className="text-muted-foreground">—</span>;
   return (
-    <div className="flex items-center justify-end gap-1 whitespace-nowrap tabular-nums">
-      <Badge color={requestTimeColor(requestTime)}>
-        {item.request_time === 0 ? '—' : requestTimeStr}
-        {firstTimeStr ? ` / ${firstTimeStr}` : ''}
-      </Badge>
-      {requestTsStr && <Badge color={requestTsColor(requestTs)}>{requestTsStr}</Badge>}
-    </div>
+    <span className="whitespace-nowrap tabular-nums">
+      {requestTimeStr}
+      {firstTimeStr && <span className="text-muted-foreground"> / {firstTimeStr}</span>}
+    </span>
   );
 }
 DurationCell.propTypes = { item: PropTypes.object };
@@ -110,12 +120,7 @@ TimeCell.propTypes = { ts: PropTypes.number };
 // 绝不渲染成 "undefined tok" 或 " tok"。
 function TokenCell({ value }) {
   if (value === null || value === undefined || value === '') return '';
-  return (
-    <span className="whitespace-nowrap font-mono tabular-nums">
-      {value}
-      <span className="text-muted-foreground"> tok</span>
-    </span>
-  );
+  return <span className="whitespace-nowrap font-mono tabular-nums">{Number(value).toLocaleString()}</span>;
 }
 TokenCell.propTypes = { value: PropTypes.oneOfType([PropTypes.number, PropTypes.string]) };
 
@@ -146,7 +151,9 @@ export default function LogTable({
   onRowDetail,
   searching,
   columnVisibility,
-  emptyInfo
+  emptyInfo,
+  layout = 'table',
+  onNaturalWidth
 }) {
   const columns = useMemo(() => {
     const cols = [
@@ -183,14 +190,7 @@ export default function LogTable({
       cols.push({
         id: 'user_id',
         header: t('logPage.userLabel'),
-        cell: (i) =>
-          i.username ? (
-            <LinkBadge to={`/panel/user?keyword=${encodeURIComponent(i.username)}`} color="default">
-              {i.username}
-            </LinkBadge>
-          ) : (
-            ''
-          )
+        cell: (i) => (i.username ? <TextLink to={`/panel/user?keyword=${encodeURIComponent(i.username)}`}>{i.username}</TextLink> : '')
       });
     }
     if (isOrgContext) {
@@ -198,7 +198,7 @@ export default function LogTable({
       cols.push({
         id: 'member',
         header: t('logPage.memberLabel'),
-        cell: (i) => (i.username ? <Badge color="default">{i.username}</Badge> : '')
+        cell: (i) => (i.username ? <span className="whitespace-nowrap">{i.username}</span> : '')
       });
     }
     cols.push({
@@ -209,26 +209,13 @@ export default function LogTable({
         const name = userGroup?.[m.group_name || m.backup_group_name]?.name;
         if (!name) return '';
         // 分组页暂不支持按名称过滤,仅 admin 渲染为跳转链接;非 admin 保持纯 Badge。
-        return userIsAdmin ? (
-          <LinkBadge to="/panel/user_group" color="default">
-            {name}
-          </LinkBadge>
-        ) : (
-          <Badge color="default">{name}</Badge>
-        );
+        return userIsAdmin ? <TextLink to="/panel/user_group">{name}</TextLink> : <span className="whitespace-nowrap">{name}</span>;
       }
     });
     cols.push({
       id: 'token_name',
       header: t('logPage.tokenLabel'),
-      cell: (i) =>
-        i.token_name ? (
-          <LinkBadge to={`/panel/token?keyword=${encodeURIComponent(i.token_name)}`} color="default">
-            {i.token_name}
-          </LinkBadge>
-        ) : (
-          ''
-        )
+      cell: (i) => (i.token_name ? <TextLink to={`/panel/token?keyword=${encodeURIComponent(i.token_name)}`}>{i.token_name}</TextLink> : '')
     });
     cols.push({
       id: 'app',
@@ -266,11 +253,9 @@ export default function LogTable({
       header: t('logPage.modelLabel'),
       cell: (i) =>
         i.model_name ? (
-          <span className="inline-flex items-center gap-1">
-            <Badge color="primary">
-              <ModelIcon model={i.model_name} className="mr-1" />
-              {i.model_name}
-            </Badge>
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <ModelIcon model={i.model_name} />
+            <span className="font-mono text-[13px]">{i.model_name}</span>
             {i.metadata?.response_model_mismatch && (
               <TooltipProvider delayDuration={150}>
                 <Tooltip>
@@ -365,77 +350,125 @@ export default function LogTable({
     manualSorting: true,
     state: { columnVisibility: columnVisibility ?? {} }
   });
+  const tableRef = useNaturalWidth(layout === 'table' ? onNaturalWidth : null);
 
-  const SortIcon = ({ id }) => {
-    if (orderBy !== id) return <ChevronsUpDown className="size-3.5 opacity-50" />;
-    return order === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />;
+  // Sort arrows: the active column shows its direction; others show a faint arrow on hover only.
+  const sortIcon = (id) => {
+    if (orderBy !== id) return <ArrowUpDown className="size-3 opacity-0 transition-opacity group-hover/sort:opacity-50" />;
+    return order === 'asc' ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />;
   };
-  SortIcon.propTypes = { id: PropTypes.string };
+  const emptyText = searching ? t('logPage.searching') : emptyInfo || t('logPage.searchLogsInfo', { defaultValue: 'No logs found' });
+
+  if (layout === 'list') {
+    if (!data?.length) return <p className="px-4 py-10 text-center text-sm text-muted-foreground">{emptyText}</p>;
+    return <LogList t={t} data={data} isOrgContext={isOrgContext} onRowDetail={canViewLogIO ? onRowDetail : undefined} />;
+  }
 
   return (
-    <>
-      <div className="hidden md:block">
-        <Table className="min-w-[800px]">
-          <TableHeader>
-            {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id}>
-                {hg.headers.map((h) => {
-                  const sortable = h.column.columnDef.meta?.sortable;
-                  return (
-                    <TableHead key={h.id} className={cn('h-[29px] py-0', h.column.columnDef.meta?.className)}>
-                      {sortable ? (
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1 hover:text-foreground"
-                          onClick={() => onSort(h.column.id)}
-                        >
-                          {flexRender(h.column.columnDef.header, h.getContext())}
-                          <SortIcon id={h.column.id} />
-                        </button>
-                      ) : (
-                        flexRender(h.column.columnDef.header, h.getContext())
+    <Table ref={tableRef}>
+      <TableHeader>
+        {table.getHeaderGroups().map((hg) => (
+          <TableRow key={hg.id} className="hover:bg-transparent">
+            {hg.headers.map((h) => {
+              const sortable = h.column.columnDef.meta?.sortable;
+              return (
+                <TableHead key={h.id} className={cn('whitespace-nowrap', h.column.columnDef.meta?.className)}>
+                  {sortable ? (
+                    <button
+                      type="button"
+                      className={cn(
+                        'group/sort inline-flex items-center gap-1 hover:text-foreground',
+                        orderBy === h.column.id && 'text-foreground'
                       )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={table.getVisibleLeafColumns().length || 1} className="h-24 text-center text-sm text-muted-foreground">
-                  {searching ? t('logPage.searching') : emptyInfo || t('logPage.searchLogsInfo', { defaultValue: 'No logs found' })}
+                      onClick={() => onSort(h.column.id)}
+                    >
+                      {flexRender(h.column.columnDef.header, h.getContext())}
+                      {sortIcon(h.column.id)}
+                    </button>
+                  ) : (
+                    flexRender(h.column.columnDef.header, h.getContext())
+                  )}
+                </TableHead>
+              );
+            })}
+          </TableRow>
+        ))}
+      </TableHeader>
+      <TableBody>
+        {table.getRowModel().rows.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={table.getVisibleLeafColumns().length || 1} className="h-24 text-center text-sm text-muted-foreground">
+              {emptyText}
+            </TableCell>
+          </TableRow>
+        ) : (
+          table.getRowModel().rows.map((row) => (
+            <TableRow
+              key={row.id}
+              className={cn(canViewLogIO && ROW_OPENS)}
+              {...(canViewLogIO ? rowOpenProps(() => onRowDetail(row.original)) : {})}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id} className={cn('whitespace-nowrap', cell.column.columnDef.meta?.className)}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
-              </TableRow>
-            ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className={cn(canViewLogIO && 'cursor-pointer hover:bg-muted/50')}
-                  onClick={canViewLogIO ? () => onRowDetail(row.original) : undefined}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className={cn('py-1.5', cell.column.columnDef.meta?.className)}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      <DataCards
-        table={table}
-        className="md:hidden"
-        onRowClick={canViewLogIO ? onRowDetail : undefined}
-        empty={emptyInfo || t('logPage.searchLogsInfo', { defaultValue: 'No logs found' })}
-        searching={searching}
-      />
-    </>
+              ))}
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
   );
 }
+
+// Phone list: one 56px row per request. Model (with its icon) and cost on the first line; time,
+// duration, tokens and the key (the member in an organization) on the second. A tap opens the
+// detail.
+function LogList({ t, data, isOrgContext, onRowDetail }) {
+  return (
+    <ul className="divide-y divide-border">
+      {data.map((i) => {
+        const { requestTimeStr } = deriveDuration(i);
+        const who = isOrgContext ? i.username : i.token_name;
+        const tokens =
+          i.prompt_tokens || i.completion_tokens
+            ? `${(i.prompt_tokens || 0).toLocaleString()} → ${(i.completion_tokens || 0).toLocaleString()}`
+            : null;
+        return (
+          <li
+            key={i.id}
+            className={cn('flex h-14 items-center gap-3 px-4', onRowDetail && ROW_OPENS)}
+            {...(onRowDetail ? rowOpenProps(() => onRowDetail(i)) : {})}
+          >
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-border bg-field">
+              <ModelIcon model={i.model_name} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-3">
+                <span className="min-w-0 truncate font-mono text-[13px] font-medium">
+                  {i.model_name || (logTypeMeta(i.type) ? t(logTypeMeta(i.type).labelKey) : '—')}
+                </span>
+                <span className="ml-auto shrink-0 text-[13px]">
+                  <QuotaCell item={i} />
+                </span>
+              </div>
+              <div className="mt-0.5 truncate text-xs tabular-nums text-muted-foreground">
+                {[timestamp2stringCompact(i.created_at), i.request_time ? requestTimeStr : null, tokens, who].filter(Boolean).join(' · ')}
+              </div>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+LogList.propTypes = {
+  t: PropTypes.func.isRequired,
+  data: PropTypes.array.isRequired,
+  isOrgContext: PropTypes.bool,
+  onRowDetail: PropTypes.func
+};
 
 LogTable.propTypes = {
   t: PropTypes.func.isRequired,
@@ -450,5 +483,7 @@ LogTable.propTypes = {
   onRowDetail: PropTypes.func.isRequired,
   searching: PropTypes.bool,
   columnVisibility: PropTypes.object,
-  emptyInfo: PropTypes.node
+  emptyInfo: PropTypes.node,
+  layout: PropTypes.oneOf(['table', 'list']),
+  onNaturalWidth: PropTypes.func
 };
