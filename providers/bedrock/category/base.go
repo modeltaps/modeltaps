@@ -101,9 +101,11 @@ var awsModelCanCrossRegionMap = map[string]map[string]string{
 	"anthropic.claude-sonnet-5": {"us": "us", "eu": "global", "ap": "global", "*": "global"},
 	// sonnet-5-5: no geo profile anywhere (geo inference id N/A), always global.
 	"anthropic.claude-sonnet-5-5": {"*": "global"},
-	"anthropic.claude-fable-5":    {"us": "us", "eu": "global", "ap": "global", "*": "global"},
-	// fable-5-1: geo profile in the US only; EU and AP fall back to global.
-	"anthropic.claude-fable-5-1": {"us": "us", "eu": "global", "ap": "global", "*": "global"},
+	// fable-5 and fable-5-1: geo profile in the US only; EU and AP fall back to global. The
+	// model cards list ca-central-1 and ca-west-1 as source regions of the US geo profile, so ca
+	// maps to us (AWS model cards, checked 2026-11-13).
+	"anthropic.claude-fable-5":   {"us": "us", "ca": "us", "eu": "global", "ap": "global", "*": "global"},
+	"anthropic.claude-fable-5-1": {"us": "us", "ca": "us", "eu": "global", "ap": "global", "*": "global"},
 	// fable-5-2: geo profile in the US only (AWS model card 2026-11-09); EU and AP fall back to
 	// global. ca-central-1 and ca-west-1 are source regions of the US geo profile, so ca maps to us.
 	"anthropic.claude-fable-5-2": {"us": "us", "ca": "us", "eu": "global", "ap": "global", "*": "global"},
