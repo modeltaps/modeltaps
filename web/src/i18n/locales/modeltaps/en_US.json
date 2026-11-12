@@ -2052,6 +2052,11 @@
     "advanced": {
       "costRatio": "Cost ratio",
       "costRatioHint": "What the upstream charges relative to the list price, used to warn about groups sold below cost; empty means unknown",
+      "cancelOnDisconnect": "Stop upstream when the client disconnects",
+      "cancelOnDisconnectAuto": "Automatic ({{state}})",
+      "cancelOnDisconnectOn": "On",
+      "cancelOnDisconnectOff": "Off",
+      "cancelOnDisconnectHint": "When a client stops a streamed reply, close the upstream connection so the upstream stops generating and bills only the output produced so far; the output tokens are then counted locally. Automatic is on for official APIs and subscription accounts and off for other upstreams. Turn it off for a relay that keeps billing the full reply after a disconnect.",
       "danger": "Danger zone",
       "dangerHint": "Copy creates a new channel with the same key and settings; delete cannot be undone",
       "name": "Name"

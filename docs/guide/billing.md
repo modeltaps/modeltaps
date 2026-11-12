@@ -72,6 +72,7 @@ When a request starts, the system pre-deducts some quota based on the input toke
 
 - if the balance or API key quota is insufficient, the request is rejected before it is sent;
 - if quota runs out during a streaming request, the connection is interrupted;
+- if you stop a streamed reply midway, the reply is usually cut off upstream as well and only the output generated so far is billed; that output is counted from the text already streamed, and the log record is marked as stopped by the client;
 - the cost shown in the logs is the final settled amount.
 
 ## Reviewing billing details

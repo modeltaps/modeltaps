@@ -1062,6 +1062,11 @@
       "upstreamModel": "Model sent upstream",
       "responseModel": "Model in the response",
       "mismatchValue": "{{model}} (does not match the request)"
+    },
+    "clientCancel": {
+      "label": "Client stopped",
+      "cancelled": "The client disconnected; the upstream stream was closed",
+      "estimated": "Output tokens counted locally from the text streamed so far"
     }
   },
   "login": {

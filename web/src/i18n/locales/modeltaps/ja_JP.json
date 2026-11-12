@@ -1967,6 +1967,11 @@
     "advanced": {
       "costRatio": "コスト倍率",
       "costRatioHint": "定価に対する上流の実際の課金倍率。原価割れのグループの警告に使います。空欄は不明",
+      "cancelOnDisconnect": "クライアント切断時に上流を停止",
+      "cancelOnDisconnectAuto": "自動（{{state}}）",
+      "cancelOnDisconnectOn": "オン",
+      "cancelOnDisconnectOff": "オフ",
+      "cancelOnDisconnectHint": "クライアントがストリーミング応答を途中で止めたとき、上流との接続を閉じて生成を止め、それまでに生成された出力だけが課金されるようにします。このとき出力トークンはローカルで推定します。自動では公式 API とサブスクリプションアカウントはオン、その他の上流はオフです。切断後も応答全体を課金する中継サービスではオフにしてください。",
       "danger": "危険な操作",
       "dangerHint": "複製すると同じキーと設定で新しいチャネルを作成します。削除は元に戻せません",
       "name": "名前"

@@ -750,6 +750,11 @@ const PRE_COST_OPTIONS = [
   { value: 2, labelKey: 'channel_edit.preCostNoImage' },
   { value: 3, labelKey: 'channel_edit.preCostNone' }
 ];
+// cancel_on_disconnect is three-state: null follows the channel type, true / false override it.
+const CANCEL_ON_DISCONNECT_OPTIONS = ['auto', 'on', 'off'];
+const cancelOnDisconnectDraft = (v) => (v === true ? 'on' : v === false ? 'off' : 'auto');
+const cancelOnDisconnectValue = (d) => (d === 'auto' ? null : d === 'on');
+
 const FLAGS = [
   'only_chat',
   'compatible_response',
@@ -844,6 +849,28 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
           onChange={(v) => setDraft({ ...draft, [f]: v })}
         />
       ))}
+      <Field label={t('channels.advanced.cancelOnDisconnect')} hint={t('channels.advanced.cancelOnDisconnectHint')}>
+        <Select value={draft.cancel_on_disconnect} onValueChange={(v) => setDraft({ ...draft, cancel_on_disconnect: v })}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {CANCEL_ON_DISCONNECT_OPTIONS.map((o) => (
+              <SelectItem key={o} value={o}>
+                {o === 'auto'
+                  ? t('channels.advanced.cancelOnDisconnectAuto', {
+                      state: t(
+                        channel.cancel_on_disconnect_auto
+                          ? 'channels.advanced.cancelOnDisconnectOn'
+                          : 'channels.advanced.cancelOnDisconnectOff'
+                      )
+                    })
+                  : t(o === 'on' ? 'channels.advanced.cancelOnDisconnectOn' : 'channels.advanced.cancelOnDisconnectOff')}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Field>
       {hasPlugin && (
         <Field label={t('channel_edit.pluginConfig')}>
           <PluginForm type={channel.type} value={draft.plugin} onChange={(v) => setDraft({ ...draft, plugin: v })} />
@@ -892,7 +919,8 @@ const advancedTab = {
     disabled_stream: Array.isArray(c.disabled_stream) ? c.disabled_stream.join(',') : '',
     need2response_models: c.need2response_models || '',
     plugin: c.plugin && typeof c.plugin === 'object' ? c.plugin : {},
-    ...Object.fromEntries(FLAGS.map((f) => [f, !!c[f]]))
+    ...Object.fromEntries(FLAGS.map((f) => [f, !!c[f]])),
+    cancel_on_disconnect: cancelOnDisconnectDraft(c.cancel_on_disconnect)
   }),
   patch: (d, c, { t }) => {
     if (!d.name.trim()) return { error: t('channel_edit.requiredName') };
@@ -903,7 +931,8 @@ const advancedTab = {
       pre_cost: d.pre_cost,
       disabled_stream: splitList(d.disabled_stream),
       need2response_models: d.need2response_models.trim(),
-      ...Object.fromEntries(FLAGS.map((f) => [f, d[f]]))
+      ...Object.fromEntries(FLAGS.map((f) => [f, d[f]])),
+      cancel_on_disconnect: cancelOnDisconnectValue(d.cancel_on_disconnect)
     };
     if (!typeLabels(c.type).hasOther) patch.other = d.other.trim();
     const plugins = pluginConfig[String(c.type)];

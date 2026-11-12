@@ -371,6 +371,14 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 		meta["session_affinity"] = q.sessionAffinity
 	}
 
+	// 客户端断开即停(CHAN-24,additive):上游流因客户端断开被关闭；输出 token 为本地估算时另打标。
+	if q.clientCancelled {
+		meta["client_cancelled"] = true
+	}
+	if q.usageEstimated {
+		meta["usage_estimated"] = true
+	}
+
 	// 重试链(CHAN-5,additive):成功前失败过的尝试,按顺序记录渠道、状态码与是否被冷却。
 	if len(q.retryAttempts) > 0 {
 		meta["retry_attempts"] = q.retryAttempts

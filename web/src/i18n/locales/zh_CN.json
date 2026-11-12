@@ -1621,6 +1621,11 @@
       "upstreamModel": "发给上游的模型",
       "responseModel": "响应声明的模型",
       "mismatchValue": "{{model}}（与请求不符）"
+    },
+    "clientCancel": {
+      "label": "客户端停止",
+      "cancelled": "客户端已断开，上游流已关闭",
+      "estimated": "输出 token 按已转发的文本本地估算"
     }
   },
   "redemptionPage": {

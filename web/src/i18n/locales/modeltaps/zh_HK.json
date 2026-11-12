@@ -1965,6 +1965,11 @@
     "advanced": {
       "costRatio": "成本倍率",
       "costRatioHint": "上游實際收費相對標價的倍率，用來提示虧本的分組；留空表示未知",
+      "cancelOnDisconnect": "客戶端斷開時停止上游",
+      "cancelOnDisconnectAuto": "自動（{{state}}）",
+      "cancelOnDisconnectOn": "開啟",
+      "cancelOnDisconnectOff": "關閉",
+      "cancelOnDisconnectHint": "客戶端中途停止串流回覆時，關閉到上游的連線，讓上游停止生成、只按已生成的輸出計費；此時輸出 token 由本地估算。自動：官方介面和訂閱帳戶開啟，其他上游關閉。若中轉站在斷開後仍按完整回覆扣費，請關閉。",
       "danger": "危險操作",
       "dangerHint": "複製會用同一密鑰和設定新建一個渠道；刪除不能撤銷",
       "name": "名稱"

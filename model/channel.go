@@ -57,6 +57,11 @@ type Channel struct {
 	// service_tier priority / fast / ultrafast, Claude speed fast and inference_geo us).
 	// Off by default: the gateway drops them so a client cannot raise the upstream price.
 	AllowServiceTier bool `json:"allow_service_tier" form:"allow_service_tier" gorm:"default:false"`
+	// CancelOnDisconnect closes the upstream stream when the client disconnects, so the upstream
+	// stops generating (and billing) output nobody reads. Nil means automatic: see
+	// CancelOnDisconnectDefault. Upstreams that keep billing the full output after a disconnect
+	// must keep this off, or the gateway loses the final usage and undercharges.
+	CancelOnDisconnect *bool `json:"cancel_on_disconnect" form:"cancel_on_disconnect" gorm:"default:null"`
 
 	DisabledStream *datatypes.JSONSlice[string] `json:"disabled_stream,omitempty" gorm:"type:json"`
 
@@ -86,6 +91,9 @@ type Channel struct {
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 
 	KeyStatus *ChannelKeyStatus `json:"key_status,omitempty" gorm:"-"`
+	// CancelOnDisconnectAuto is the automatic value of CancelOnDisconnect for the stored type and
+	// base URL, so the console can show what "automatic" means for this channel.
+	CancelOnDisconnectAuto bool `json:"cancel_on_disconnect_auto" gorm:"-"`
 }
 
 // ChannelKeyStatus 是渠道 key 的安全投影：是否已配置、条数、每条的回显（utils.MaskSecret），不含完整 key。

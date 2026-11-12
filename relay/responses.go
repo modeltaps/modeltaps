@@ -224,7 +224,10 @@ func (r *relayResponses) chatToResponseStreamClient(stream requester.StreamReade
 				// 尝试写入数据，如果客户端断开也继续处理
 				select {
 				case <-r.c.Request.Context().Done():
-					// 客户端已断开，不执行任何操作，直接跳过
+					// 客户端已断开：不再写入；渠道开启断开即停时直接结束，defer 关闭上游流
+					if stopOnClientDisconnect(r.c) {
+						return
+					}
 				default:
 					// 客户端正常，发送数据
 					converter.ProcessStreamData(data)
