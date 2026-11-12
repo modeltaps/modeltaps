@@ -174,7 +174,7 @@ export function Segmented({ options, value, onChange, label, size = 'md', role =
           onClick={() => onChange(o.value)}
           className={cn(
             'shrink-0 whitespace-nowrap rounded-[7px] px-3 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            size === 'mini' ? 'h-6 px-2.5 text-xs' : size === 'wide' ? 'h-8 flex-1' : 'h-7',
+            size === 'mini' ? 'h-6 rounded-md px-2.5 text-xs' : size === 'wide' ? 'h-8 flex-1' : 'h-7',
             value === o.value ? 'bg-control-thumb text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
           )}
         >

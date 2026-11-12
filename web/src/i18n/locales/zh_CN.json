@@ -396,7 +396,7 @@
       "members": "成员",
       "preferences": "偏好",
       "privacy": "数据与隐私",
-      "profile": "资料",
+      "profile": "个人信息",
       "security": "登录与安全",
       "tokens": "访问令牌"
     },
@@ -747,7 +747,7 @@
       "unlimited": "不限"
     },
     "settings": {
-      "profile": "组织资料",
+      "profile": "组织信息",
       "name": "组织名称",
       "nameRequired": "组织名称不能为空",
       "avatarUrl": "头像 URL",

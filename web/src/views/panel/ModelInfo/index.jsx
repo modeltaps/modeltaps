@@ -439,7 +439,7 @@ export default function ModelInfo() {
 
   const toggleHidden = useCallback((item, next) => hide([item.catalogId], next), [hide]);
 
-  // 新建与行编辑共用一个抽屉(资料 / 定价 / 渠道与分组),行内入口决定默认 Tab。
+  // 新建与行编辑共用一个抽屉(信息 / 定价 / 渠道与分组),行内入口决定默认 Tab。
   const openCreate = () => {
     setEditRow(null);
     setSheetTab('profile');

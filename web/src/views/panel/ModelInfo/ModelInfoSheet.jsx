@@ -293,7 +293,7 @@ function TagInput({ value, onChange }) {
   );
 }
 
-// 模型抽屉:资料 / 定价 / 渠道与分组三个 Tab,一处编辑目录信息与价格。row 为模型表的合并行(null = 工具栏新建);
+// 模型抽屉:信息 / 定价 / 渠道与分组三个 Tab,一处编辑目录信息与价格。row 为模型表的合并行(null = 工具栏新建);
 // 目录无行的模型按新建处理,无价格的模型价格节为空表单。保存时分别调用目录与价格接口,只写有改动的部分。
 // 各 Tab 面板常驻 DOM(非当前 Tab 隐藏),切换 Tab 不丢未保存的输入。
 export default function ModelInfoSheet({
