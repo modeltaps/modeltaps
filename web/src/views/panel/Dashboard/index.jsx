@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { BarChart3, Boxes, DollarSign, Gauge, Network, PiggyBank, Send, Wallet } from 'lucide-react';
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { API } from 'utils/api';
 import { calculateQuota, renderNumber, showError } from 'utils/common';
@@ -11,14 +9,12 @@ import { getLastSevenDays, getLastNDays } from 'utils/chart';
 import { useOrg } from 'contexts/OrgContext';
 import { createRequestGuard, runGuardedFetch } from 'hooks/paginatedListGuard';
 import OrgUsagePanel from './OrgUsagePanel';
-import StatCard from './StatCard';
+import StatCard, { MetricStrip } from './StatCard';
 import UsageChart from './UsageChart';
-import ActivityTable from './ActivityTable';
 import SupportModels from './SupportModels';
-import ModelUsagePieChart from './ModelUsagePieChart';
+import TopModelsCard from './TopModelsCard';
 import ModelBarChart from './ModelBarChart';
 import QuickStartCard from './QuickStartCard';
-import InviteCard from '@/components/InviteCard';
 import StatusPanel from './StatusPanel';
 
 // ==============================|| DASHBOARD (shadcn) ||============================== //
@@ -200,10 +196,6 @@ export default function Dashboard() {
   const weekCost = compactCurrency(weekQuota);
   const weekSavedCost = compactCurrency(weekSaved);
 
-  const seriesRequests = grouped.map((d) => d.requests);
-  const seriesQuota = grouped.map((d) => d.quota);
-  const seriesTokens = grouped.map((d) => d.tokens);
-
   const chartData = trendGrouped.map((d) => ({
     label: d.date.slice(5),
     requests: d.requests,
@@ -211,91 +203,64 @@ export default function Dashboard() {
     tokens: d.tokens
   }));
 
-  const tableRows = grouped
-    .map((d) => ({
-      date: d.date,
-      requests: d.requests,
-      amount: d.quota,
-      tokens: d.tokensLabel,
-      duration: d.duration
-    }))
-    .reverse();
-
   if (currentOrgId) {
     return <OrgUsagePanel />;
   }
 
+  // Four headline figures (2 x 2 on phones), the rest on one quiet strip; the trend chart leads
+  // the page, then cost by model with the top models beside it. The daily table lives on the
+  // usage page and the invite reward on the billing page.
   const dashboardContent = (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <SupportModels />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         <StatCard
           label={t('dashboard_index.today_requests')}
           value={renderNumber(today.requests)}
-          icon={Send}
           loading={loading}
-          series={seriesRequests}
-          seriesColor="#60A5FA"
           trend={yesterday ? computeTrend(today.requests, yesterday.requests) : null}
         />
         <StatCard
           label={t('dashboard_index.today_consumption')}
           value={todayCost.text}
           valueTitle={todayCost.title}
-          icon={DollarSign}
-          accent
           loading={loading}
-          series={seriesQuota}
-          seriesColor="#FBBF24"
           trend={yesterday ? computeTrend(today.quota, yesterday.quota) : null}
         />
         <StatCard
           label={t('dashboard_index.today_tokens')}
           value={renderNumber(today.tokens)}
-          icon={Boxes}
           loading={loading}
-          series={seriesTokens}
-          seriesColor="#F87171"
           trend={yesterday ? computeTrend(today.tokens, yesterday.tokens) : null}
         />
-        <StatCard label={t('dashboard_index.RPM')} value={renderNumber(rate.rpm)} icon={BarChart3} loading={loading} />
-        <StatCard label={t('dashboard_index.TPM')} value={renderNumber(rate.tpm)} icon={Network} loading={loading} />
-        <StatCard
-          label={t('dashboard_index.week_total_consumption')}
-          value={weekCost.text}
-          valueTitle={weekCost.title}
-          icon={Wallet}
-          loading={loading}
-        />
-        <StatCard
-          label={t('dashboard_index.week_savings')}
-          value={weekSavedCost.text}
-          valueTitle={weekSavedCost.title}
-          hint={t('dashboard_index.week_savings_hint')}
-          icon={PiggyBank}
-          loading={loading}
-        />
-        <StatCard
-          label={t('dashboard_index.cache_hit_rate')}
-          value={cacheHitRate}
-          hint={t('dashboard_index.cache_hit_rate_hint')}
-          icon={Gauge}
-          loading={loading}
-        />
+        <StatCard label={t('dashboard_index.week_total_consumption')} value={weekCost.text} valueTitle={weekCost.title} loading={loading} />
       </div>
+
+      <MetricStrip
+        loading={loading}
+        items={[
+          { label: t('dashboard_index.RPM'), value: renderNumber(rate.rpm) },
+          { label: t('dashboard_index.TPM'), value: renderNumber(rate.tpm) },
+          {
+            label: t('dashboard_index.week_savings'),
+            value: weekSavedCost.text,
+            valueTitle: weekSavedCost.title,
+            hint: t('dashboard_index.week_savings_hint')
+          },
+          { label: t('dashboard_index.cache_hit_rate'), value: cacheHitRate, hint: t('dashboard_index.cache_hit_rate_hint') }
+        ]}
+      />
 
       <UsageChart data={chartData} loading={loading || trendLoading} range={range} onRangeChange={handleRangeChange} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
           <ModelBarChart data={modelBar.rows} series={modelBar.series} total={modelBar.total} loading={loading} />
-          <ActivityTable rows={tableRows} loading={loading} />
         </div>
-        <div className="space-y-6">
-          <ModelUsagePieChart data={modelUsage} loading={loading} />
+        <div className="space-y-4">
+          <TopModelsCard data={modelUsage} loading={loading} />
           {siteInfo.builtin_chat_enabled !== false && <QuickStartCard />}
-          {siteInfo.invite_reward_enabled !== false && <InviteCard />}
         </div>
       </div>
     </div>
