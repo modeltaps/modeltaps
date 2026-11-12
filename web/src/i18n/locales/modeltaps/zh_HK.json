@@ -2371,7 +2371,13 @@
       "sharesWith": "與 {{names}} 分擔",
       "nameSep": "、",
       "sharedTag": "分擔",
-      "groupWhy": "這 {{count}} 個渠道在同一位置，共同提供 {{models}} 個模型，這些模型按權重分擔"
+      "groupWhy": "這 {{count}} 個渠道在同一位置，共同提供 {{models}} 個模型，這些模型按權重分擔",
+      "noCommonModel": "這兩個渠道沒有共同提供的模型，不能分擔，已排在它後面",
+      "dropHint": {
+        "before": "插到這裏",
+        "after": "插到這裏",
+        "join": "併入這一組分擔"
+      }
     },
     "newMenu": {
       "inUse": "已接入"
