@@ -13,6 +13,25 @@ export function splitList(value) {
   );
 }
 
+// A channel group of "*" means every user group, including groups created later.
+export const ALL_GROUPS = '*';
+
+// Whether a group list (array) means every user group.
+export const isAllGroups = (groups = []) => groups.includes(ALL_GROUPS);
+
+// Whether a channel serves `group`: it lists the group or is open to all groups.
+export function channelInGroup(channel, group) {
+  const groups = splitList(channel?.group);
+  return isAllGroups(groups) || groups.includes(group);
+}
+
+// Whether two group lists share a group; a list open to all groups shares every group.
+export function groupsOverlap(a = [], b = []) {
+  if (!a.length || !b.length) return false;
+  if (isAllGroups(a) || isAllGroups(b)) return true;
+  return a.some((g) => b.includes(g));
+}
+
 // Rows of one provider: highest priority first, then highest weight, then oldest.
 export function sortChannels(channels = []) {
   return [...channels].sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0) || (b.weight ?? 1) - (a.weight ?? 1) || a.id - b.id);
@@ -122,7 +141,7 @@ export function filterChannels(channels = [], { status, tag, group, model, issue
     if (status && STATUS_FILTERS[status] !== c.status) return false;
     if (tag === NO_TAG && c.tag) return false;
     if (tag && tag !== NO_TAG && c.tag !== tag) return false;
-    if (group && !splitList(c.group).includes(group)) return false;
+    if (group && !channelInGroup(c, group)) return false;
     if (m && !splitList(c.models).some((x) => x.toLowerCase().includes(m))) return false;
     if (issue && !matchesIssue(c, issue, dismissed)) return false;
     return true;
@@ -139,9 +158,12 @@ export function statusCounts(channels = [], conditions, dismissed = new Set()) {
   return counts;
 }
 
-// Groups present among channels, sorted.
+// Groups named by channels, sorted. "All groups" is not a group to filter by: those channels
+// match every group filter.
 export function groupOptions(channels = []) {
-  return Array.from(new Set(channels.flatMap((c) => splitList(c.group)))).sort((a, b) => a.localeCompare(b));
+  return Array.from(new Set(channels.flatMap((c) => splitList(c.group))))
+    .filter((g) => g !== ALL_GROUPS)
+    .sort((a, b) => a.localeCompare(b));
 }
 
 // Tags present among channels, sorted, and whether any channel has no tag.

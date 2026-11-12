@@ -2015,6 +2015,8 @@
     "groupRatio": "倍率 {{ratio}}×",
     "groups": "分組",
     "groupsHint": "用戶的令牌只會用到同分組的渠道，可以多選",
+    "allGroups": "全部分組",
+    "allGroupsDesc": "包括以後新建的分組",
     "issue": {
       "autoDisabled": "請求失敗後已被自動停用",
       "dismiss": "忽略",

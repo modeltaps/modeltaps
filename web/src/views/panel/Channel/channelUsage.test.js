@@ -55,3 +55,11 @@ describe('usageOf / usageNumbers', () => {
     expect(usageNumbers('only', { priority: 2, weight: 4 }, [])).toEqual({ priority: 2, weight: 4 });
   });
 });
+
+describe('usagePeers with all groups', () => {
+  it('treats a channel open to all groups as sharing every group', () => {
+    expect(usagePeers({ id: 9, type: 1, groups: ['*'] }, all).map((c) => c.id)).toEqual([5, 1, 2]);
+    const withAll = [...all, { id: 6, type: 1, status: 1, group: '*', priority: 0, weight: 1 }];
+    expect(usagePeers({ id: 9, type: 1, group: 'vip' }, withAll).map((c) => c.id)).toEqual([2, 6]);
+  });
+});

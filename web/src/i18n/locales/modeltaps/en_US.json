@@ -2106,6 +2106,8 @@
     "groupRatio": "Ratio {{ratio}}×",
     "groups": "Groups",
     "groupsHint": "Tokens only use channels of their own groups; select one or more",
+    "allGroups": "All groups",
+    "allGroupsDesc": "Includes groups created later",
     "issue": {
       "autoDisabled": "Disabled automatically after failed requests",
       "dismiss": "Dismiss",

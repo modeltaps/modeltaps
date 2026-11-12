@@ -2017,6 +2017,8 @@
     "groupRatio": "倍率 {{ratio}}×",
     "groups": "グループ",
     "groupsHint": "トークンは同じグループのチャネルだけを使います。複数選択できます",
+    "allGroups": "すべてのグループ",
+    "allGroupsDesc": "今後作成するグループも含みます",
     "issue": {
       "autoDisabled": "リクエスト失敗のため自動で無効化されました",
       "dismiss": "閉じる",
