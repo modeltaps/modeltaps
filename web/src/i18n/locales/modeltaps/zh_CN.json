@@ -2304,6 +2304,33 @@
     },
     "list": {
       "meta": "优先级 {{priority}} · {{requests}} 请求 · {{latency}}"
+    },
+    "upstream": {
+      "title": "上游模型",
+      "hint": "这个渠道在上游能用的全部模型，来自最近一次模型检查。要不要对外提供、由谁提供，在模型页的「供应」里决定。",
+      "check": "立即检查",
+      "checkFailed": "检查失败",
+      "empty": "还没有读到上游的模型清单，点「立即检查」读取。",
+      "unsupported": "这个供应商不提供模型清单接口。",
+      "search": "搜索模型",
+      "noMatch": "没有符合条件的模型",
+      "name": "上游模型",
+      "publicModel": "对应的公开模型",
+      "state": "状态",
+      "filter": {
+        "all": "全部",
+        "in_use": "在用",
+        "available": "可用",
+        "not_in_catalog": "不在目录",
+        "unknown": "没认出来"
+      },
+      "states": {
+        "in_use": "在用",
+        "off": "供应已关闭",
+        "available": "可用，未添加",
+        "not_in_catalog": "不在目录",
+        "unknown": "没认出来"
+      }
     }
   },
   "nav": {

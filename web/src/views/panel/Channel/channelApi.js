@@ -247,6 +247,16 @@ export async function checkChannelDrift(id) {
   return res.data;
 }
 
+// Everything the channel's upstream listed at the last model check, with the public model each
+// name belongs to and whether the channel supplies it (GET /api/channel/:id/upstream_models).
+// Returns `{ checked_at, models, counts }`; throws on failure.
+export async function fetchChannelUpstreamModels(id) {
+  const res = await API.get(`/api/channel/${id}/upstream_models`);
+  const { success, message, data } = res.data;
+  if (!success) throw new Error(message);
+  return { checked_at: data?.checked_at || 0, models: data?.models || [], counts: data?.counts || {} };
+}
+
 // Clears the "new upstream models" badge for one channel (MODEL-3
 // `POST /api/channel/dismiss_new_models`, AdminAuth). Keeps the upstream
 // snapshot so the same batch is not reported again. Returns raw

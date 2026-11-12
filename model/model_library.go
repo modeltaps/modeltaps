@@ -312,6 +312,21 @@ func LibraryPublicNames(upstream string) []string {
 	return names
 }
 
+// LibraryKnowsModel reports whether the library has a model under this name: its bare canonical
+// id or a spelling the lab itself uses.
+func LibraryKnowsModel(name string) bool {
+	idx := modelLibraryIndex
+	idx.ensure()
+	idx.RLock()
+	defer idx.RUnlock()
+	key := strings.ToLower(strings.TrimSpace(name))
+	if _, ok := idx.byModel[key]; ok {
+		return true
+	}
+	_, ok := idx.byLabHost[key]
+	return ok
+}
+
 // channelTypeLibraryProviders lists, per channel type, the models.dev providers whose spelling
 // the channel sends as is. Channel types whose provider code translates names itself (Bedrock
 // adds the anthropic. and region prefixes) or whose names are per-account (Azure deployments)

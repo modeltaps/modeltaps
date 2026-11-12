@@ -2304,6 +2304,33 @@
     },
     "list": {
       "meta": "優先級 {{priority}} · {{requests}} 請求 · {{latency}}"
+    },
+    "upstream": {
+      "title": "上游模型",
+      "hint": "這個渠道在上游能用的全部模型，來自最近一次模型檢查。要不要對外提供、由誰提供，在模型頁的「供應」裡決定。",
+      "check": "立即檢查",
+      "checkFailed": "檢查失敗",
+      "empty": "還沒有讀到上游的模型清單，點「立即檢查」讀取。",
+      "unsupported": "這個供應商不提供模型清單介面。",
+      "search": "搜尋模型",
+      "noMatch": "沒有符合條件的模型",
+      "name": "上游模型",
+      "publicModel": "對應的公開模型",
+      "state": "狀態",
+      "filter": {
+        "all": "全部",
+        "in_use": "使用中",
+        "available": "可用",
+        "not_in_catalog": "不在目錄",
+        "unknown": "未能識別"
+      },
+      "states": {
+        "in_use": "使用中",
+        "off": "供應已關閉",
+        "available": "可用，未新增",
+        "not_in_catalog": "不在目錄",
+        "unknown": "未能識別"
+      }
     }
   },
   "nav": {

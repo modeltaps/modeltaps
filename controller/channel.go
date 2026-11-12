@@ -51,6 +51,27 @@ func GetChannel(c *gin.Context) {
 	})
 }
 
+// GetChannelUpstreamModels lists what the channel's upstream returned at the last model check,
+// with the public model each name belongs to and whether this channel supplies it.
+func GetChannelUpstreamModels(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, invalidChannelIDError())
+		return
+	}
+	channel, err := model.GetChannelById(id)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, channelLookupError(err))
+		return
+	}
+	list, err := model.GetChannelUpstreamModels(channel)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": list})
+}
+
 func AddChannel(c *gin.Context) {
 	channel := model.Channel{}
 	err := c.ShouldBindJSON(&channel)

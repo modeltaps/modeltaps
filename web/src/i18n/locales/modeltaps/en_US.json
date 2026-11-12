@@ -2413,6 +2413,33 @@
     },
     "list": {
       "meta": "Priority {{priority}} · {{requests}} requests · {{latency}}"
+    },
+    "upstream": {
+      "title": "Upstream models",
+      "hint": "Every model this channel can use upstream, from the last model check. Whether a model is public and who supplies it is decided under Supplies on the models page.",
+      "check": "Check now",
+      "checkFailed": "Check failed",
+      "empty": "The upstream model list has not been read yet. Use \"Check now\" to read it.",
+      "unsupported": "This provider has no model list endpoint.",
+      "search": "Search models",
+      "noMatch": "No models match",
+      "name": "Upstream model",
+      "publicModel": "Public model",
+      "state": "State",
+      "filter": {
+        "all": "All",
+        "in_use": "In use",
+        "available": "Available",
+        "not_in_catalog": "Not in catalog",
+        "unknown": "Not recognized"
+      },
+      "states": {
+        "in_use": "In use",
+        "off": "Supply switched off",
+        "available": "Available, not added",
+        "not_in_catalog": "Not in catalog",
+        "unknown": "Not recognized"
+      }
     }
   },
   "nav": {
