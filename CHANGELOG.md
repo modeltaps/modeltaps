@@ -273,6 +273,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The providers page header is one toolbar row: search, a provider dropdown, status, an
+  "N need attention" filter, conditions, the time range and columns. Attention items (low
+  balance, auto-disabled, missing key, model changes) are tags on their channel's row with the
+  action and a dismiss button, and "Refresh model lists" / "Test all" moved into the ⋯ menu. In
+  the call order, channels are numbered by the group that really shares traffic (channels of one
+  position that serve the same models), the number cell spans the group, and dragging a row onto
+  the middle of another joins its group while dropping on its top edge inserts it before.
 - The providers page is more compact: provider cards became filter chips next to the search, and
   the traffic chart is replaced by a small request line in each channel's row, with the range
   switch in the list toolbar. Every row shows its position number (the line joining a position

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, DollarSign, FlaskConical, Layers, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, DollarSign, FlaskConical, Layers, MoreHorizontal, Play, Plus, RefreshCw, Trash2 } from 'lucide-react';
 
 import { API } from 'utils/api';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import {
 import useChannelActions from './useChannelActions';
 import BatchModal from './BatchModal';
 import ProviderStrip from './ProviderStrip';
+import { useProviderName } from './channelParts';
 import NewChannelMenu from './NewChannelMenu';
 import ProviderPane, { CHANNEL_COLUMNS, RANGES } from './ProviderPane';
 import ChannelPanel from './ChannelPanel';
@@ -29,7 +30,17 @@ import { ISSUE_FILTERS, NO_TAG, STATUS_FILTERS, channelMatches, groupChannelsByT
 import useBatchActions from './useBatchActions';
 import { checkChannelDrift, fetchAllChannels, fetchChannelMetrics, fetchGroupOptions, fetchModels, manageChannel } from './channelApi';
 import { fetchAllocation, saveAllocation } from '../Allocation/allocationApi';
-import { moveBefore, moveStep, orderFromPolicy, orderInfo, orderToTiers, setWeight, shareWithAbove, stopSharing } from './channelOrder';
+import {
+  joinPosition,
+  moveBefore,
+  moveStep,
+  orderFromPolicy,
+  orderInfo,
+  orderToTiers,
+  setWeight,
+  shareWithAbove,
+  stopSharing
+} from './channelOrder';
 
 const DISMISSED_KEY = 'channels.dismissedIssues';
 
@@ -58,6 +69,7 @@ function panelTabFrom(params) {
 // the new channel sheet for ?type.
 export default function Channel() {
   const { t } = useTranslation();
+  const providerName = useProviderName();
   const navigate = useNavigate();
   const { id: idParam } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -148,7 +160,8 @@ export default function Channel() {
         share: (id) => saveOrder(shareWithAbove(order.groups, id)),
         unshare: (id) => saveOrder(stopSharing(order.groups, id)),
         weight: (id, w) => saveOrder(setWeight(order.groups, id, w)),
-        drop: (id, beforeId) => saveOrder(moveBefore(order.groups, id, beforeId))
+        drop: (id, beforeId) => saveOrder(moveBefore(order.groups, id, beforeId)),
+        join: (id, targetId) => saveOrder(joinPosition(order.groups, id, targetId))
       }
     : null;
 
@@ -359,6 +372,17 @@ export default function Channel() {
   };
   const maintenance = [
     {
+      icon: RefreshCw,
+      label: t(selectedType ? 'channels.pane.refreshModelsOf' : 'channels.pane.refreshModels', { name: providerName(selectedType) }),
+      run: refreshModels
+    },
+    {
+      icon: Play,
+      label: t(selectedType ? 'channels.pane.testAllOf' : 'channels.pane.testAll', { name: providerName(selectedType) }),
+      run: testAllOfProvider
+    },
+    'sep',
+    {
       icon: Layers,
       label: t('channel_index.batchProcessing'),
       run: () => {
@@ -479,59 +503,48 @@ export default function Channel() {
     );
   } else {
     body = (
-      <div className="space-y-4">
-        <ProviderStrip
-          groups={visibleGroups}
-          selected={selectedType}
-          onSelect={selectType}
+      <div>
+        <ProviderPane
+          key={`${selectedType}|${query}`}
+          filters={filters}
+          onFiltersChange={setFilters}
+          batch={batch}
+          tagActions={tagActions}
+          batchBusy={batchBusy}
+          type={selectedType}
+          channels={selectedChannels}
+          metrics={metrics}
+          rangeKey={rangeKey}
+          onRangeChange={setRangeKey}
           dismissed={dismissed}
-          query={query}
-          onQueryChange={setQuery}
+          onDismissIssue={dismissIssue}
+          onIssueAction={issueAction}
+          issueBusy={issueBusy}
+          created={created && (!selectedType || created.type === selectedType) ? created : null}
+          onAdjustCreated={() => created && openChannel(created.ids[0], 'routing')}
+          onDismissCreated={() => {
+            setCreated(null);
+            setHighlightIds(new Set());
+          }}
+          highlightIds={highlightIds}
+          onOpen={(id) => openChannel(id)}
+          layout={layout}
+          columns={columns}
+          actions={actions}
+          testingIds={testingIds}
+          order={order}
+          orderActions={query.trim() ? null : orderActions}
+          leading={
+            <ProviderStrip
+              groups={visibleGroups}
+              selected={selectedType}
+              onSelect={selectType}
+              dismissed={dismissed}
+              query={query}
+              onQueryChange={setQuery}
+            />
+          }
         />
-        {!visibleGroups.length && query.trim() ? (
-          <ListEmptyState
-            variant="noMatch"
-            title={t('channels.search.emptyTitle')}
-            description={t('channels.search.emptyDescription', { query })}
-            onClearFilters={() => setQuery('')}
-          />
-        ) : (
-          <ProviderPane
-            key={`${selectedType}|${query}`}
-            filters={filters}
-            onFiltersChange={setFilters}
-            batch={batch}
-            tagActions={tagActions}
-            batchBusy={batchBusy}
-            type={selectedType}
-            channels={selectedChannels}
-            metrics={metrics}
-            rangeKey={rangeKey}
-            onRangeChange={setRangeKey}
-            dismissed={dismissed}
-            onDismissIssue={dismissIssue}
-            onIssueAction={issueAction}
-            issueBusy={issueBusy}
-            created={created && (!selectedType || created.type === selectedType) ? created : null}
-            onAdjustCreated={() => created && openChannel(created.ids[0], 'routing')}
-            onDismissCreated={() => {
-              setCreated(null);
-              setHighlightIds(new Set());
-            }}
-            highlightIds={highlightIds}
-            onOpen={(id) => openChannel(id)}
-            layout={layout}
-            columns={columns}
-            onRefreshModels={refreshModels}
-            onTestAll={testAllOfProvider}
-            refreshingModels={refreshingModels}
-            testingAll={testingAll}
-            actions={actions}
-            testingIds={testingIds}
-            order={order}
-            orderActions={query.trim() ? null : orderActions}
-          />
-        )}
       </div>
     );
   }

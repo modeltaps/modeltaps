@@ -2163,7 +2163,9 @@
       "summary_other": "{{count}} 個渠道 · {{range}} {{requests}} 次請求",
       "testAll": "全部測試",
       "testDone_other": "{{count}} 個渠道全部測試通過",
-      "testPartial": "{{count}} 個渠道中 {{failed}} 個測試失敗"
+      "testPartial": "{{count}} 個渠道中 {{failed}} 個測試失敗",
+      "refreshModelsOf": "重新整理 {{name}} 的模型清單",
+      "testAllOf": "測試 {{name}} 的全部渠道"
     },
     "panel": {
       "enabled": "啟用",
@@ -2284,7 +2286,8 @@
       "results": "有符合的供應商",
       "none": "沒有符合項",
       "emptyTitle": "沒有符合的渠道",
-      "emptyDescription": "沒有任何供應商的渠道符合「{{query}}」"
+      "emptyDescription": "沒有任何供應商的渠道符合「{{query}}」",
+      "short": "搜尋渠道"
     },
     "tagActions": {
       "label": "標籤 {{tag}}",
@@ -2352,7 +2355,8 @@
       "allMeta": "{{count}} 個渠道",
       "allTitle": "全部渠道",
       "meta": "{{count}} 個渠道 · {{requests}} 次請求",
-      "metaOff": "{{count}} 個渠道（{{enabled}} 個啟用） · {{requests}} 次請求"
+      "metaOff": "{{count}} 個渠道（{{enabled}} 個啟用） · {{requests}} 次請求",
+      "allProviders": "全部供應商"
     },
     "order": {
       "column": "順序",
@@ -2365,12 +2369,22 @@
       "drag": "拖動調整順序",
       "positionShort": "第 {{n}} 位",
       "sharesWith": "與 {{names}} 分擔",
-      "nameSep": "、"
+      "nameSep": "、",
+      "sharedTag": "分擔"
     },
     "newMenu": {
       "inUse": "已接入"
     },
-    "orderHint": "從上往下試，前一個不可用才用下一個；序號相同的提供相同模型時按權重分擔。只試能提供這個模型的渠道。"
+    "orderHint": "從上往下試，前一個不可用才用下一個；同一個序號的渠道提供相同的模型，按權重分擔。",
+    "attention_other": "{{count}} 個需要處理",
+    "issueTag": {
+      "autoDisabled": "已自動禁用",
+      "keyMissing": "缺少密鑰",
+      "lowBalance": "餘額低",
+      "driftNew_other": "{{count}} 個新模型",
+      "driftMissing_other": "{{count}} 個模型下架",
+      "refresh": "重新整理"
+    }
   },
   "nav": {
     "sections": {
