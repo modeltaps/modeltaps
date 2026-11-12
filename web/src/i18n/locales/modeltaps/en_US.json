@@ -3485,5 +3485,11 @@
       "sessionsHint": "Devices signed in to this account; sign out any you don't recognize",
       "identifiersHint": "Any of these signs in to this account; the email is also for recovery and notices"
     }
+  },
+  "authPages": {
+    "haveAccount": "Already have an account?",
+    "remembered": "Remembered it?",
+    "resetTitle": "Reset your password",
+    "resetHint": "We will send a reset link to this email"
   }
 }

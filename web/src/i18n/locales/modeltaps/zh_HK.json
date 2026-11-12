@@ -3388,5 +3388,14 @@
       "sessionsHint": "已登入本帳戶的裝置，不認識的就登出",
       "identifiersHint": "用其中任一項登入，進的都是這個帳戶；電郵也用於找回和通知"
     }
+  },
+  "authPages": {
+    "haveAccount": "已有帳戶？",
+    "remembered": "想起來了？",
+    "resetTitle": "找回密碼",
+    "resetHint": "我們會把重設連結發到這個電郵"
+  },
+  "login": {
+    "forgetPassword": "忘記密碼？"
   }
 }
