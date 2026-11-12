@@ -267,11 +267,7 @@ func ChannelGroupLosses(channel *Channel) []GroupLoss {
 	}
 	cost := *channel.CostRatio
 	var losses []GroupLoss
-	for _, symbol := range strings.Split(channel.Group, ",") {
-		symbol = strings.TrimSpace(symbol)
-		if symbol == "" {
-			continue
-		}
+	for _, symbol := range ExpandChannelGroup(channel.Group) {
 		group := GlobalUserGroupRatio.GetBySymbol(symbol)
 		if group == nil {
 			continue

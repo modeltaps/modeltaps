@@ -968,8 +968,11 @@ func (cc *ChannelsChooser) Load() {
 	var channels []*Channel
 	DB.Where("status = ?", config.ChannelStatusEnabled).Find(&channels)
 
+	// Read the groups from the database: at startup this runs before the user group cache loads.
+	allGroups := userGroupSymbolsFromDB()
+
 	if config.ModelSupplyEnabled {
-		cc.loadFromSupplies(channels)
+		cc.loadFromSupplies(channels, allGroups)
 		return
 	}
 
@@ -998,14 +1001,10 @@ func (cc *ChannelsChooser) Load() {
 		}
 
 		// 处理groups和models
-		groups := strings.Split(channel.Group, ",")
+		groups := expandChannelGroup(channel.Group, allGroups)
 		models := strings.Split(channel.Models, ",")
 
 		for _, group := range groups {
-			group = strings.TrimSpace(group)
-			if group == "" {
-				continue
-			}
 
 			for _, model := range models {
 				model = strings.TrimSpace(model)
@@ -1095,7 +1094,7 @@ func supplyModeOf(modelName string) string {
 // loadFromSupplies builds the routing table from enabled supplies on enabled channels: each
 // supply puts its channel in the tier given by the supply's priority, for every group of the
 // channel. There is no wildcard matching; supplies name models exactly.
-func (cc *ChannelsChooser) loadFromSupplies(channels []*Channel) {
+func (cc *ChannelsChooser) loadFromSupplies(channels []*Channel, allGroups []string) {
 	var supplies []*ModelSupply
 	if err := DB.Where("enabled = ?", true).Find(&supplies).Error; err != nil {
 		logger.SysError("load model supplies failed: " + err.Error())
@@ -1128,11 +1127,7 @@ func (cc *ChannelsChooser) loadFromSupplies(channels []*Channel) {
 		if _, ok := newModelChannelType[supply.Model]; !ok {
 			newModelChannelType[supply.Model] = channel.Type
 		}
-		for _, group := range strings.Split(channel.Group, ",") {
-			group = strings.TrimSpace(group)
-			if group == "" {
-				continue
-			}
+		for _, group := range expandChannelGroup(channel.Group, allGroups) {
 			if tiers[group] == nil {
 				tiers[group] = make(map[string]map[int64][]int)
 			}

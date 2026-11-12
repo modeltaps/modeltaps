@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Channels open to all user groups: a channel whose group is `*` serves every enabled user group,
+  including groups created later, without editing the channel. Creating, deleting, enabling or
+  disabling a user group rebuilds the routing table; the channel list's group filter, the loss
+  warning, the supply migration report and batch "add group" all treat `*` as every group, and
+  saving a channel trims and de-duplicates its group list (`vip,*` is stored as `*`).
 - New channels attach themselves to public models: while supplies route requests, a channel
   created from the new channel sheet gets a supply for every model it lists that is a public
   model in the catalog, at the priority and weight chosen under "Usage", and the confirmation
