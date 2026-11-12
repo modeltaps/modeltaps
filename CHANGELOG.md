@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A model library: the daily models.dev sync now keeps every model it knows, one per model
+  (deduplicated by `canonical_model_id`), together with how each platform names it (Vertex's
+  `claude-fable-5-2@default`, Bedrock's `us.anthropic.…`, OpenRouter's `anthropic/…`). The
+  library is not public. It lets the channel side recognise platform names: the model picker and
+  the new-upstream-models page suggest `claude-fable-5-2` for `claude-fable-5-2@default`, and
+  adding a supply fills the upstream name from the channel's mapping, the names the channel
+  lists, or its platform's spelling (Vertex, OpenRouter, Vercel, Groq). Bedrock and Azure keep
+  the public name because their channels translate names themselves.
 - The drop on the home page can be played with. A tap on the surface lets a drop fall right
   there and its ripple names a few of the models it passes; pressing and holding keeps the drop
   swelling until it is let go, and a bigger drop reaches further. The automatic drip steps aside
@@ -208,6 +216,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The models.dev sync no longer adds models to the public catalog. It refreshes the metadata of
+  models already there; new models go to the model library.
 - Settings is one place again, as in 0.3.0. Settings in the account menu and a settings button
   next to the account row (it replaces the bell) open it, and the sidebar turns into its tree,
   laid out like the workbench and platform admin sidebars: the same brand row, a back row to the
@@ -291,6 +301,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Models synced from models.dev no longer take the hosting platform as their vendor: Claude,
+  Grok or Llama served on Vertex showed as Google Gemini, and Grok or Phi on Azure as OpenAI. The
+  vendor now comes from the lab named in the model's canonical id and stays unknown when there
+  is none; the next sync corrects rows written the old way.
 - With `ModelSupplyEnabled` on, the models page still counted a model's channels from the
   channels' model lists, so a model served only through supplies showed "No channel" and one a
   channel merely listed looked routable. The admin catalog (`/api/model_info/catalog`) now lists

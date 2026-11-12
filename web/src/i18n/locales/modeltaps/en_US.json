@@ -2641,7 +2641,8 @@
       "searchChannel": "Search channels",
       "noChannel": "No channel found",
       "channelRequired": "Choose a channel",
-      "hint": "The upstream name comes from the channel's model mapping. A new supply joins as a backup below the lowest tier."
+      "hint": "The upstream name is filled in for the channel: its model mapping, a name the channel already lists, or how the channel's platform names the model (such as Vertex's @default). A new supply joins as a backup below the lowest tier.",
+      "fromLibrary": "Filled in with how this platform names the model"
     },
     "channelSupplies": {
       "title_one": "Supplies {{count}} public model",

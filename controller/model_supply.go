@@ -209,3 +209,15 @@ func IgnorePendingUpstreamModel(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": gin.H{"channels": changed}})
 }
+
+// SuggestModelSupplyUpstream tells the add-supply form how a channel names a public model
+// upstream (GET /api/model_supply/upstream_suggestion?model=&channel_id=).
+func SuggestModelSupplyUpstream(c *gin.Context) {
+	channelId, _ := strconv.Atoi(c.Query("channel_id"))
+	channel, err := model.GetChannelById(channelId)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": model.SuggestSupplyUpstream(c.Query("model"), channel)})
+}

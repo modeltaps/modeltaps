@@ -260,6 +260,7 @@ func SetApiRouter(router *gin.Engine) {
 			modelSupplyRoute.GET("/", controller.GetModelSupplies)
 			modelSupplyRoute.GET("/preview", controller.PreviewModelSupply)
 			modelSupplyRoute.GET("/pending", controller.GetPendingUpstreamModels)
+			modelSupplyRoute.GET("/upstream_suggestion", controller.SuggestModelSupplyUpstream)
 			modelSupplyRoute.POST("/pending/attach", controller.AttachPendingUpstreamModel)
 			modelSupplyRoute.POST("/pending/ignore", controller.IgnorePendingUpstreamModel)
 			modelSupplyRoute.POST("/", controller.CreateModelSupply)

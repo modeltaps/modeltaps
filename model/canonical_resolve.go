@@ -8,7 +8,10 @@ const (
 	CanonicalSourceAlias = "alias" // the catalog row for the upstream name has alias_of set
 	CanonicalSourceSeed  = "seed"  // the curated seed lists the upstream name as an alias
 	CanonicalSourceBare  = "bare"  // the name without its "vendor/" prefix is a canonical name or alias
-	CanonicalSourceNone  = ""
+	// CanonicalSourceLibrary: the model library knows the name as a platform's spelling of a model
+	// ("claude-fable-5-2@default" on Vertex).
+	CanonicalSourceLibrary = "library"
+	CanonicalSourceNone    = ""
 )
 
 // CanonicalMatch is the canonical name suggested for an upstream model name.
@@ -106,6 +109,9 @@ func (r *CanonicalResolver) Resolve(upstream string) CanonicalMatch {
 	if canonical, ok := r.seedAliases[upstream]; ok {
 		return CanonicalMatch{Canonical: canonical, Source: CanonicalSourceSeed}
 	}
+	if public := r.libraryPublicName(upstream); public != "" && public != upstream {
+		return CanonicalMatch{Canonical: public, Source: CanonicalSourceLibrary}
+	}
 	if !strings.Contains(upstream, "/") {
 		return none
 	}
@@ -128,4 +134,23 @@ func (r *CanonicalResolver) Resolve(upstream string) CanonicalMatch {
 		return CanonicalMatch{Canonical: info.Model, Source: CanonicalSourceBare}
 	}
 	return none
+}
+
+// libraryPublicName maps a platform spelling to the public name through the model library. Of the
+// names the lab itself uses for the model, one that is already in the catalog wins (following
+// alias_of), so a catalog that says "claude-opus-4-5" is not moved to the dated canonical id.
+func (r *CanonicalResolver) libraryPublicName(upstream string) string {
+	names := LibraryPublicNames(upstream)
+	if len(names) == 0 {
+		return ""
+	}
+	for _, name := range names {
+		if info := r.byModel[name]; info != nil {
+			if canonical, ok := r.canonicalOf(info); ok {
+				return canonical
+			}
+			return name
+		}
+	}
+	return names[0]
 }
