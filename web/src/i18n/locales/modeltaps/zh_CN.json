@@ -3196,5 +3196,47 @@
   },
   "settingsUnits": {
     "seconds": "秒"
+  },
+  "orgList": {
+    "allActions": "全部动作",
+    "actorId": "操作者 ID",
+    "createdAt": "创建于 {{time}}",
+    "noAudit": "暂无审计记录",
+    "makeAdmin": "设为管理员",
+    "makeMember": "设为成员",
+    "more": "更多操作",
+    "joined": "{{time}}加入",
+    "actions": {
+      "org_create": "创建组织",
+      "org_update": "更新组织资料",
+      "org_update_budget": "更新组织预算",
+      "org_update_setting": "更新组织设置",
+      "org_dissolve": "解散组织",
+      "org_transfer_ownership": "转让所有权",
+      "org_admin_enable": "站点管理员启用组织",
+      "org_admin_disable": "站点管理员禁用组织",
+      "org_admin_dissolve": "站点管理员解散组织",
+      "org_admin_max_members": "站点管理员调整成员上限",
+      "org_invitation_create": "发出邀请",
+      "org_invitation_accept": "接受邀请",
+      "org_invitation_reject": "拒绝邀请",
+      "org_invitation_revoke": "撤销邀请",
+      "org_member_account_create": "新建成员账号",
+      "org_member_leave": "成员退出",
+      "org_member_limits_update": "调整成员限额",
+      "org_member_remove": "移除成员",
+      "org_member_role_update": "变更成员角色",
+      "quota_transfer": "个人额度转入",
+      "billing_topup": "兑换码充值",
+      "billing_order_create": "创建充值订单",
+      "billing_admin_adjust": "站点管理员调整余额",
+      "token_create": "创建 API 密钥",
+      "token_update": "更新 API 密钥",
+      "token_delete": "删除 API 密钥",
+      "routing_policy_create": "创建路由策略",
+      "routing_policy_update": "更新路由策略",
+      "routing_policy_delete": "删除路由策略",
+      "routing_policy_status": "启停路由策略"
+    }
   }
 }
