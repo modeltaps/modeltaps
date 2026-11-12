@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Channels open to all user groups: a channel whose group is `*` serves every enabled user group,
+  including groups created later, without editing the channel. Creating, deleting, enabling or
+  disabling a user group rebuilds the routing table; the channel list's group filter, the loss
+  warning, the supply migration report and batch "add group" all treat `*` as every group, and
+  saving a channel trims and de-duplicates its group list (`vip,*` is stored as `*`).
 - Upstream models in the channel panel: the Models tab lists every model the upstream returned
   at the last model check, with the public model each name belongs to and whether the channel
   supplies it (in use, supply switched off, available, not in the catalog, not recognized). The

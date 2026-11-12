@@ -202,10 +202,11 @@ func GetChannelsList(params *SearchChannelsParams) (*DataResult[Channel], error)
 
 	if params.Group != "" {
 		groupKey := quotePostgresField("group")
-		db = db.Where("( "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" = ?)",
-			"%,"+params.Group+",%", params.Group+",%", "%,"+params.Group, params.Group)
-		tagDB = tagDB.Where("( "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" = ?)",
-			"%,"+params.Group+",%", params.Group+",%", "%,"+params.Group, params.Group)
+		// A channel open to all groups matches every group filter.
+		db = db.Where("( "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" = ? OR "+groupKey+" = ?)",
+			"%,"+params.Group+",%", params.Group+",%", "%,"+params.Group, params.Group, ChannelGroupAll)
+		tagDB = tagDB.Where("( "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" = ? OR "+groupKey+" = ?)",
+			"%,"+params.Group+",%", params.Group+",%", "%,"+params.Group, params.Group, ChannelGroupAll)
 	}
 
 	if params.Models != "" {
@@ -344,6 +345,9 @@ func BatchDeleteChannel(ids []int) (int64, error) {
 }
 
 func BatchInsertChannels(channels []Channel) error {
+	for i := range channels {
+		channels[i].Group = NormalizeChannelGroup(channels[i].Group)
+	}
 	err := DB.Omit("UsedQuota").Create(&channels).Error
 	if err != nil {
 		return err
@@ -411,6 +415,10 @@ func BatchAddUserGroupToChannels(params *BatchChannelsParams) (int64, error) {
 	}
 
 	for _, channel := range channels {
+		// A channel open to all groups already includes the group.
+		if ChannelGroupIsAll(channel.Group) {
+			continue
+		}
 		// 获取当前渠道的用户分组列表
 		currentGroups := strings.Split(channel.Group, ",")
 
@@ -425,6 +433,14 @@ func BatchAddUserGroupToChannels(params *BatchChannelsParams) (int64, error) {
 
 		// 检查要添加的分组是否已存在
 		newGroup := strings.TrimSpace(params.Value)
+		if newGroup == ChannelGroupAll {
+			// Adding "all groups" replaces the list instead of joining it.
+			if err = DB.Model(&Channel{}).Where("id = ?", channel.Id).Update("group", ChannelGroupAll).Error; err != nil {
+				return count, err
+			}
+			count++
+			continue
+		}
 		if newGroup != "" && !uniqueGroups[newGroup] {
 			// 分组不存在，添加到渠道
 			uniqueGroups[newGroup] = true
@@ -590,6 +606,7 @@ func (channel *Channel) GetCustomParameter() string {
 }
 
 func (channel *Channel) Insert() error {
+	channel.Group = NormalizeChannelGroup(channel.Group)
 	err := DB.Omit("UsedQuota").Create(channel).Error
 	if err == nil {
 		ChannelGroup.Load()
@@ -612,6 +629,10 @@ func (channel *Channel) Update(overwrite bool) error {
 
 func (channel *Channel) UpdateRaw(overwrite bool) error {
 	var err error
+	// An empty group is left out of a partial update, so only normalize a value that is there.
+	if channel.Group != "" {
+		channel.Group = NormalizeChannelGroup(channel.Group)
+	}
 
 	if overwrite {
 		// 运行时字段由刷新 / 检测任务维护，表单保存不得用过期值覆盖。
