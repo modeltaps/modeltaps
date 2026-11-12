@@ -34,11 +34,11 @@ describe('resolveNoModels', () => {
 
 // 没有转写模型时写明原因：管理员知道去接入渠道或勾选 audio.transcription，普通用户有替代路径时引去对话页。
 describe('resolveTranscriptionNoModels', () => {
-  it('管理员去渠道管理，说明里点出 audio.transcription', () => {
+  it('管理员去供应商页，说明里点出 audio.transcription', () => {
     const { actionHref, descriptionKey, actionKey } = resolveTranscriptionNoModels({ isAdmin: true, hasAudioChat: true });
     expect(actionHref).toBe(NO_MODELS_ROUTES.admin);
     expect(i18n.t(descriptionKey)).toContain('audio.transcription');
-    expect(i18n.t(actionKey)).toBe('去渠道管理');
+    expect(i18n.t(actionKey)).toBe('去供应商页');
   });
 
   it('普通用户有能听懂音频的对话模型时引去对话页', () => {
