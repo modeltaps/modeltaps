@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
@@ -23,10 +23,20 @@ import { ConsoleContext } from './shared/ConsoleContext';
 // title moves between modalities (each keeps its own route).
 function ModalitySwitch({ activeId }) {
   const { t } = useTranslation();
+  // On narrow screens the switch scrolls sideways: keep the current modality in view (the strip
+  // scrolls, never the page).
+  const stripRef = useRef(null);
+  useEffect(() => {
+    const strip = stripRef.current;
+    const link = strip?.querySelector('[aria-current="page"]');
+    if (!strip || !link || strip.scrollWidth <= strip.clientWidth) return;
+    strip.scrollTo({ left: Math.max(0, link.offsetLeft - (strip.clientWidth - link.offsetWidth) / 2) });
+  }, [activeId]);
   return (
     <nav
+      ref={stripRef}
       aria-label={t('nav.playground.modality')}
-      className="flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg bg-control p-0.5"
+      className="no-scrollbar relative flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg bg-control p-0.5"
     >
       {MODALITIES.map((entry) => {
         const active = entry.id === activeId;
