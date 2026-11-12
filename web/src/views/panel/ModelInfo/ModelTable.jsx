@@ -30,7 +30,7 @@ import {
   ENDPOINT_LABEL_KEYS,
   MODE_LABEL_KEYS,
   CapabilityBadges,
-  EndpointBadges,
+  EndpointIcons,
   ModalityBadges,
   ModelStatusBadge,
   TagBadges,
@@ -311,7 +311,7 @@ RowActionsCell.propTypes = {
 const COLUMN_WIDTHS = {
   select: 40,
   model: 288,
-  endpoints: 180,
+  endpoints: 150,
   channels: 120,
   supply: 150,
   price: 120,
@@ -394,7 +394,7 @@ export default function ModelTable({
         header: t('modelInfoPage.endpoints'),
         cell: (c) => (
           <span className="flex flex-nowrap">
-            <EndpointBadges json={c.row.original.endpoints} />
+            <EndpointIcons json={c.row.original.endpoints} />
           </span>
         )
       },

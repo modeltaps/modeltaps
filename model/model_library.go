@@ -352,10 +352,31 @@ func LibraryUpstreamFor(channelType int, publicModel string) string {
 }
 
 // SyncModelLibrary rebuilds the library from already downloaded models.dev data.
-func SyncModelLibrary(data map[string]catalogProvider) (int, error) {
+func SyncModelLibrary(data map[string]catalogProvider) ([]*ModelLibraryEntry, error) {
 	entries, hosts := BuildModelLibrary(data, time.Now().Unix())
 	if err := ReplaceModelLibrary(entries, hosts); err != nil {
-		return 0, err
+		return nil, err
 	}
-	return len(entries), nil
+	return entries, nil
+}
+
+// catalogRefreshInfos merges what the sync knows about each model name: the library row first,
+// then the per-provider models.dev entry for names the library does not have.
+func catalogRefreshInfos(entries []*ModelLibraryEntry, providerInfos []*ModelInfo) []*ModelInfo {
+	out := make([]*ModelInfo, 0, len(entries)+len(providerInfos))
+	seen := map[string]bool{}
+	for _, e := range entries {
+		key := strings.ToLower(e.Model)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, libraryModelInfo(e))
+	}
+	for _, info := range providerInfos {
+		if !seen[strings.ToLower(info.Model)] {
+			out = append(out, info)
+		}
+	}
+	return out
 }

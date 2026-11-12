@@ -197,6 +197,9 @@ func BuildModelPicker(models []string, familyRequests map[string]int64, channelC
 		if item.VendorID == 0 {
 			item.VendorID = VendorIDFromModelName(name)
 		}
+		if item.VendorID == 0 {
+			item.VendorID = VendorIDFromNameRules(name)
+		}
 		if PricingInstance != nil {
 			if price := PricingInstance.GetPrice(name); price != nil && !price.Unconfigured && price.Type == TokensPriceType {
 				item.InputPrice = tokenPricePerMillion(price.Input)

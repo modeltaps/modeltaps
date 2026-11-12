@@ -1257,6 +1257,7 @@
     "endpointOptions": {
       "chat": "對話",
       "responses": "Responses",
+      "realtime": "即時",
       "images": "圖像",
       "audioSpeech": "語音合成",
       "audioTranscription": "語音轉寫",
