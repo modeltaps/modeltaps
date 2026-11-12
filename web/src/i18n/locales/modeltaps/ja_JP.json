@@ -3136,5 +3136,9 @@
     "usedUp": "使い切り",
     "createdAgo": "{{time}}に作成",
     "usage": "使用"
+  },
+  "ledgerList": {
+    "description": "内容",
+    "amount": "金額"
   }
 }

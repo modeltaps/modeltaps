@@ -1,126 +1,97 @@
 import PropTypes from 'prop-types';
-import { useMemo } from 'react';
-import { useTable, flexRender } from '@tanstack/react-table';
-import { appTableFeatures } from 'components/ui/table-features';
-import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import DataCards from '@/components/ui/data-cards';
+import { ROW_OPENS, rowOpenProps } from '@/components/objects';
+import { useNaturalWidth } from '@/components/list-page';
 import { calculateQuota, renderNumber } from 'utils/common';
 
 // ==============================|| PANEL — MONTHLY INVOICE TABLE ||============================== //
-// shadcn/Tailwind port of views/Invoice/component/TableRow. Server-side sorting.
+// One row per month (server-side sorting); a row opens that month's statement. Phones get 56px
+// rows: the month and amount, then requests and tokens.
 
-export default function InvoiceTable({ t, data, order, orderBy, onSort, onView, searching }) {
-  const columns = useMemo(
-    () =>
-      [
-        { id: 'date', sortable: true, header: t('invoice_index.date'), cell: (i) => (i.date ? i.date.substring(0, 7) : '') },
-        { id: 'quota', sortable: true, header: t('invoice_index.quota'), cell: (i) => `$${calculateQuota(i.quota, 6)}` },
-        {
-          id: 'tokens',
-          header: t('invoice_index.tokens'),
-          cell: (i) => `${renderNumber(i.prompt_tokens)} / ${renderNumber(i.completion_tokens)}`
-        },
-        { id: 'request_count', sortable: true, header: t('invoice_index.requestCount'), cell: (i) => i.request_count },
-        {
-          id: 'request_time',
-          sortable: true,
-          header: t('invoice_index.requestTime'),
-          cell: (i) => `${(i.request_time / 1000).toFixed(3)}s`
-        },
-        {
-          id: 'option',
-          className: 'sticky right-0 bg-card z-10 text-right w-[1%]',
-          header: t('invoice_index.option'),
-          cell: (i) => (
-            <Button variant="outline" size="sm" onClick={() => onView(i.date)}>
-              {t('invoice_index.viewInvoice')}
-            </Button>
-          )
-        }
-      ].map((c) => ({
-        id: c.id,
-        header: () => c.header,
-        cell: ({ row }) => c.cell(row.original),
-        meta: { sortable: c.sortable, className: c.className }
-      })),
-    [t, onView]
+export const INVOICE_TABLE_ESTIMATE = 560;
+
+const month = (i) => (i.date ? i.date.substring(0, 7) : '');
+const amount = (i) => `$${Number(calculateQuota(i.quota, 6)).toFixed(2)}`;
+
+export default function InvoiceTable({ t, data, order, orderBy, onSort, onView, searching, layout = 'table', onNaturalWidth }) {
+  const tableRef = useNaturalWidth(layout === 'table' ? onNaturalWidth : null);
+  const rows = data || [];
+
+  if (rows.length === 0) {
+    return (
+      <p className="px-4 py-10 text-center text-sm text-muted-foreground">{searching ? t('logPage.searching') : t('common.noData')}</p>
+    );
+  }
+
+  if (layout === 'list') {
+    return (
+      <ul className="divide-y divide-border">
+        {rows.map((i) => (
+          <li key={i.date} className={cn('flex h-14 items-center gap-3 px-4', ROW_OPENS)} {...rowOpenProps(() => onView(i.date))}>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-3">
+                <span className="text-sm font-medium tabular-nums">{month(i)}</span>
+                <span className="ml-auto shrink-0 font-mono text-sm tabular-nums">{amount(i)}</span>
+              </div>
+              <div className="mt-0.5 truncate text-xs tabular-nums text-muted-foreground">
+                {t('invoice_index.requestCount')} {renderNumber(i.request_count)} · {renderNumber(i.prompt_tokens)} →{' '}
+                {renderNumber(i.completion_tokens)}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  // Sort arrows: the active column shows its direction; others show a faint arrow on hover only.
+  const head = (id, label, className) => (
+    <TableHead className={cn('whitespace-nowrap', className)}>
+      <button
+        type="button"
+        className={cn('group/sort inline-flex items-center gap-1 hover:text-foreground', orderBy === id && 'text-foreground')}
+        onClick={() => onSort(id)}
+      >
+        {label}
+        {orderBy !== id ? (
+          <ArrowUpDown className="size-3 opacity-0 transition-opacity group-hover/sort:opacity-50" />
+        ) : order === 'asc' ? (
+          <ArrowUp className="size-3" />
+        ) : (
+          <ArrowDown className="size-3" />
+        )}
+      </button>
+    </TableHead>
   );
 
-  const table = useTable({
-    features: appTableFeatures,
-    data: data || [],
-    columns,
-    manualSorting: true
-  });
-
-  const SortIcon = ({ id }) => {
-    if (orderBy !== id) return <ChevronsUpDown className="size-3.5 opacity-50" />;
-    return order === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />;
-  };
-  SortIcon.propTypes = { id: PropTypes.string };
-
   return (
-    <>
-      <div className="hidden md:block">
-        <Table className="min-w-[800px]">
-          <TableHeader>
-            {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id}>
-                {hg.headers.map((h) => {
-                  const sortable = h.column.columnDef.meta?.sortable;
-                  return (
-                    <TableHead key={h.id} className={h.column.columnDef.meta?.className}>
-                      {sortable ? (
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1 hover:text-foreground"
-                          onClick={() => onSort(h.column.id)}
-                        >
-                          {flexRender(h.column.columnDef.header, h.getContext())}
-                          <SortIcon id={h.column.id} />
-                        </button>
-                      ) : (
-                        flexRender(h.column.columnDef.header, h.getContext())
-                      )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-sm text-muted-foreground">
-                  {searching ? t('logPage.searching') : t('common.noData')}
-                </TableCell>
-              </TableRow>
-            ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      <DataCards
-        table={table}
-        className="md:hidden"
-        primaryColumnId="date"
-        actionColumnIds={['option']}
-        empty={t('common.noData')}
-        searching={searching}
-      />
-    </>
+    <Table ref={tableRef}>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          {head('date', t('invoice_index.date'))}
+          {head('quota', t('invoice_index.quota'), 'text-right')}
+          <TableHead className="whitespace-nowrap text-right">{t('invoice_index.tokens')}</TableHead>
+          {head('request_count', t('invoice_index.requestCount'), 'text-right')}
+          {head('request_time', t('invoice_index.requestTime'), 'text-right')}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((i) => (
+          <TableRow key={i.date} className={ROW_OPENS} {...rowOpenProps(() => onView(i.date))}>
+            <TableCell className="whitespace-nowrap font-medium tabular-nums">{month(i)}</TableCell>
+            <TableCell className="whitespace-nowrap text-right font-mono tabular-nums">{amount(i)}</TableCell>
+            <TableCell className="whitespace-nowrap text-right tabular-nums">
+              {renderNumber(i.prompt_tokens)} / {renderNumber(i.completion_tokens)}
+            </TableCell>
+            <TableCell className="whitespace-nowrap text-right tabular-nums">{renderNumber(i.request_count)}</TableCell>
+            <TableCell className="whitespace-nowrap text-right tabular-nums">{(i.request_time / 1000).toFixed(1)}s</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -131,5 +102,7 @@ InvoiceTable.propTypes = {
   orderBy: PropTypes.string,
   onSort: PropTypes.func.isRequired,
   onView: PropTypes.func.isRequired,
-  searching: PropTypes.bool
+  searching: PropTypes.bool,
+  layout: PropTypes.oneOf(['table', 'list']),
+  onNaturalWidth: PropTypes.func
 };

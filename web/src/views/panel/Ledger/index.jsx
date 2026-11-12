@@ -5,15 +5,17 @@ import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router';
 import dayjs from 'dayjs';
 
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ROW_OPENS, rowOpenProps } from '@/components/objects';
+import { ListFooter, useListLayout, useNaturalWidth } from '@/components/list-page';
+import { cn } from '@/lib/utils';
 import { API } from 'utils/api';
-import { showError, useIsAdmin } from 'utils/common';
+import { calculateQuota, showError, timestamp2string, timestamp2stringCompact, useIsAdmin } from 'utils/common';
 import { getPageSize, savePageSize } from 'constants';
 import { useOrg } from 'contexts/OrgContext';
-import LogTable from '../Log/LogTable';
-import LogPagination from '../Log/LogPagination';
 import LogDetailDialog from '../Log/LogDetailDialog';
-import { BILLING_LOG_TYPES } from '../Log/logHelpers';
+import { BILLING_LOG_TYPES, logTypeMeta } from '../Log/logHelpers';
 
 // ==============================|| PANEL — LEDGER (账户流水) ||============================== //
 // 账务记录专页:从 Log 的「账务记录」视图抽出(类型 1/3/4),只读复用 Log 子组件。
@@ -24,26 +26,25 @@ import { BILLING_LOG_TYPES } from '../Log/logHelpers';
 // 账务类型(充值/管理/系统);'0' 是「全部」哨兵,不参与逐类查询。
 const BILLING_TYPE_VALUES = BILLING_LOG_TYPES.map((o) => o.value).filter((v) => v !== '0');
 
-// LogTable 列 id 全集;账务页固定精简列(时间/类型/额度/详情,+admin 用户列),
-// 其余与 API 请求相关的列一律隐藏。
-const ALL_COLUMN_IDS = [
-  'created_at',
-  'channel_id',
-  'user_id',
-  'member',
-  'group',
-  'token_name',
-  'type',
-  'model_name',
-  'duration',
-  'prompt_tokens',
-  'completion_tokens',
-  'quota',
-  'source_ip',
-  'detail'
-];
-const BILLING_COLUMN_IDS = new Set(['created_at', 'user_id', 'type', 'quota', 'detail']);
-const BILLING_COLUMN_VISIBILITY = Object.fromEntries(ALL_COLUMN_IDS.map((id) => [id, BILLING_COLUMN_IDS.has(id)]));
+// Ledger columns, listed explicitly (time, type, description, amount; plus the user for a site
+// admin), so columns added to the request log never leak in here.
+const LEDGER_TABLE_ESTIMATE = 640;
+
+// Signed amount in one format: "+$10.00" in, "−$2.00" out, two decimals. Points mode shows the
+// raw quota with its sign.
+export function signedAmount(quota) {
+  const q = Number(quota) || 0;
+  const sign = q < 0 ? '−' : '+';
+  if (localStorage.getItem('display_in_currency') !== 'true') return sign + Math.abs(q).toLocaleString();
+  return sign + '$' + Math.abs(Number(calculateQuota(q, 6))).toFixed(2);
+}
+
+function TypeLabel({ t, type }) {
+  const meta = logTypeMeta(type);
+  return <span className="whitespace-nowrap text-muted-foreground">{meta ? t(meta.labelKey) : '—'}</span>;
+}
+
+TypeLabel.propTypes = { t: PropTypes.func.isRequired, type: PropTypes.number };
 
 // 固定时间窗口:当天零点 ~ now+1h 缓冲(对齐旧账户流水默认档位「今天」)。
 const buildDefaultTimeRange = () => ({
@@ -63,8 +64,9 @@ export default function Ledger({ reloadToken = 0 }) {
 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(() => getPageSize('ledger'));
-  const [order, setOrder] = useState('desc');
-  const [orderBy, setOrderBy] = useState('created_at');
+  // Newest first; the ledger has no sorting of its own.
+  const order = 'desc';
+  const orderBy = 'created_at';
 
   const [logs, setLogs] = useState([]);
   const [listCount, setListCount] = useState(0);
@@ -117,54 +119,124 @@ export default function Ledger({ reloadToken = 0 }) {
     fetchData(page, rowsPerPage, order, orderBy);
   }, [isOrgContext, page, rowsPerPage, order, orderBy, fetchData, reloadToken]);
 
-  const handleSort = (id) => {
-    if (!id) return;
-    const isAsc = orderBy === id && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(id);
-  };
-
   // 组织上下文不提供账户流水,直访重定向回日志页(hooks 已在上方全部声明)。
   if (isOrgContext) return <Navigate to="/panel/log" replace />;
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardContent className="p-0">
-          <LogTable
-            t={t}
-            data={logs}
-            userIsAdmin={userIsAdmin}
-            isOrgContext={false}
-            userGroup={userGroup}
-            order={order}
-            orderBy={orderBy}
-            onSort={handleSort}
-            onRowDetail={setDetailItem}
-            searching={searching}
-            columnVisibility={BILLING_COLUMN_VISIBILITY}
-            emptyInfo={t('logPage.ledgerEmptyInfo')}
-          />
-          <div className="border-t border-border px-4">
-            <LogPagination
-              page={page}
-              rowsPerPage={rowsPerPage}
-              count={listCount}
-              onPageChange={setPage}
-              onRowsPerPageChange={(size) => {
-                setPage(0);
-                setRowsPerPage(size);
-                savePageSize('ledger', size);
-              }}
-            />
-          </div>
-        </CardContent>
-      </Card>
+    <LedgerView
+      t={t}
+      logs={logs}
+      searching={searching}
+      userIsAdmin={userIsAdmin}
+      page={page}
+      rowsPerPage={rowsPerPage}
+      listCount={listCount}
+      onPageChange={setPage}
+      onRowsPerPageChange={(size) => {
+        setPage(0);
+        setRowsPerPage(size);
+        savePageSize('ledger', size);
+      }}
+      onOpen={setDetailItem}
+      detail={detailItem && <LogDetailDialog item={detailItem} userGroup={userGroup} t={t} onClose={() => setDetailItem(null)} />}
+    />
+  );
+}
 
-      {detailItem && <LogDetailDialog item={detailItem} userGroup={userGroup} t={t} onClose={() => setDetailItem(null)} />}
+// The ledger itself: a four-column table while it fits, 56px rows on phones (description and
+// amount, then type and time). A row opens the entry's detail.
+function LedgerView({ t, logs, searching, userIsAdmin, page, rowsPerPage, listCount, onPageChange, onRowsPerPageChange, onOpen, detail }) {
+  const { pageRef, narrow, onNaturalWidth } = useListLayout({ estimate: LEDGER_TABLE_ESTIMATE, resetKey: 'ledger' });
+  const tableRef = useNaturalWidth(narrow ? null : onNaturalWidth);
+  const empty = <p className="px-4 py-10 text-center text-sm text-muted-foreground">{searching ? '…' : t('logPage.ledgerEmptyInfo')}</p>;
+  const amountClass = (q) => cn('whitespace-nowrap font-mono tabular-nums', Number(q) < 0 && 'text-muted-foreground');
+
+  let body;
+  if (logs.length === 0) body = empty;
+  else if (narrow) {
+    body = (
+      <ul className="divide-y divide-border">
+        {logs.map((i) => (
+          <li key={i.id} className={cn('flex h-14 items-center gap-3 px-4', ROW_OPENS)} {...rowOpenProps(() => onOpen(i))}>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-3">
+                <span className="min-w-0 truncate text-sm">{i.content || '—'}</span>
+                <span className={cn('ml-auto shrink-0 text-sm', amountClass(i.quota))}>{signedAmount(i.quota)}</span>
+              </div>
+              <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                <TypeLabel t={t} type={i.type} /> · {timestamp2stringCompact(i.created_at)}
+                {userIsAdmin && i.username ? ` · ${i.username}` : ''}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  } else {
+    body = (
+      <Table ref={tableRef}>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="whitespace-nowrap">{t('logPage.timeLabel')}</TableHead>
+            <TableHead className="whitespace-nowrap">{t('logPage.typeLabel')}</TableHead>
+            <TableHead className="w-full whitespace-nowrap">{t('ledgerList.description')}</TableHead>
+            {userIsAdmin && <TableHead className="whitespace-nowrap">{t('logPage.userLabel')}</TableHead>}
+            <TableHead className="whitespace-nowrap text-right">{t('ledgerList.amount')}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {logs.map((i) => (
+            <TableRow key={i.id} className={ROW_OPENS} {...rowOpenProps(() => onOpen(i))}>
+              <TableCell className="whitespace-nowrap" title={timestamp2string(i.created_at)}>
+                {timestamp2stringCompact(i.created_at)}
+              </TableCell>
+              <TableCell>
+                <TypeLabel t={t} type={i.type} />
+              </TableCell>
+              <TableCell className="max-w-0">
+                <span className="block truncate">{i.content || '—'}</span>
+              </TableCell>
+              {userIsAdmin && <TableCell className="whitespace-nowrap">{i.username || '—'}</TableCell>}
+              <TableCell className={cn('text-right', amountClass(i.quota))}>{signedAmount(i.quota)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  }
+
+  return (
+    <div ref={pageRef}>
+      <Card>
+        {body}
+        <div className="border-t border-border">
+          <ListFooter
+            total={listCount}
+            page={page}
+            pageSize={rowsPerPage}
+            onPageChange={onPageChange}
+            onPageSizeChange={onRowsPerPageChange}
+          />
+        </div>
+      </Card>
+      {detail}
     </div>
   );
 }
+
+LedgerView.propTypes = {
+  t: PropTypes.func.isRequired,
+  logs: PropTypes.array.isRequired,
+  searching: PropTypes.bool,
+  userIsAdmin: PropTypes.bool,
+  page: PropTypes.number.isRequired,
+  rowsPerPage: PropTypes.number.isRequired,
+  listCount: PropTypes.number.isRequired,
+  onPageChange: PropTypes.func.isRequired,
+  onRowsPerPageChange: PropTypes.func.isRequired,
+  onOpen: PropTypes.func.isRequired,
+  detail: PropTypes.node
+};
 
 Ledger.propTypes = {
   reloadToken: PropTypes.number

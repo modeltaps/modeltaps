@@ -3134,5 +3134,9 @@
     "usedUp": "已用完",
     "createdAgo": "{{time}}创建",
     "usage": "已用"
+  },
+  "ledgerList": {
+    "description": "说明",
+    "amount": "金额"
   }
 }
