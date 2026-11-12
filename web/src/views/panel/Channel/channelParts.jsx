@@ -10,6 +10,7 @@ import ProviderIcon from '@/components/brand/ProviderIcon';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
 import { useProviderLabel } from './ProviderPicker';
 import { consoleUrl } from './providerDefaults';
+import { ALL_GROUPS, isAllGroups } from './channelGroups';
 
 // Channel-specific building blocks shared by the provider page, the channel panel and the new
 // channel sheet: provider names and tiles, the key link, group and usage option lists and chip
@@ -57,25 +58,31 @@ export function KeyLink({ type }) {
 
 KeyLink.propTypes = { type: PropTypes.number };
 
-// Multi-select list of user groups. At least one group stays selected.
+// Multi-select list of user groups, led by "All groups" (stored as "*", which also covers groups
+// created later). While all groups is on the single groups are locked; turning it off selects
+// every current group so nothing narrows until one is unticked. At least one row stays selected.
 export function GroupOptions({ groups, value, onChange }) {
   const { t } = useTranslation();
   const list = groups.length ? groups : [{ symbol: 'default' }];
+  const all = isAllGroups(value);
   const known = new Set(list.map((g) => g.symbol));
   // Groups the channel carries that no longer exist still show, so they can be removed.
-  const rows = [...list, ...value.filter((g) => !known.has(g)).map((symbol) => ({ symbol, missing: true }))];
+  const rows = [...list, ...value.filter((g) => g !== ALL_GROUPS && !known.has(g)).map((symbol) => ({ symbol, missing: true }))];
   const toggle = (g) => {
     if (value.includes(g)) {
       if (value.length > 1) onChange(value.filter((x) => x !== g));
     } else onChange([...value, g]);
   };
+  const toggleAll = () => onChange(all ? list.map((g) => g.symbol) : [ALL_GROUPS]);
   return (
     <OptionList label={t('channels.groups')}>
+      <OptionRow selected={all} title={t('channels.allGroups')} description={t('channels.allGroupsDesc')} onClick={toggleAll} />
       {rows.map((g) => (
         <OptionRow
           key={g.symbol}
           mono
-          selected={value.includes(g.symbol)}
+          disabled={all}
+          selected={!all && value.includes(g.symbol)}
           title={g.symbol}
           description={g.missing ? t('channels.groupMissing') : g.description || g.name || ''}
           meta={g.ratio != null ? t('channels.groupRatio', { ratio: Number(g.ratio).toFixed(1) }) : ''}
@@ -84,6 +91,12 @@ export function GroupOptions({ groups, value, onChange }) {
       ))}
     </OptionList>
   );
+}
+
+// A channel's groups for display: "All groups" for "*", the symbols otherwise.
+export function useGroupLabel() {
+  const { t } = useTranslation();
+  return (groups, sep = ', ') => (isAllGroups(groups) ? t('channels.allGroups') : groups.join(sep));
 }
 
 GroupOptions.propTypes = { groups: PropTypes.array.isRequired, value: PropTypes.array.isRequired, onChange: PropTypes.func.isRequired };

@@ -2015,6 +2015,8 @@
     "groupRatio": "倍率 {{ratio}}×",
     "groups": "分组",
     "groupsHint": "用户的令牌只会用到同分组的渠道，可以多选",
+    "allGroups": "全部分组",
+    "allGroupsDesc": "包括以后新建的分组",
     "issue": {
       "autoDisabled": "请求失败后已被自动禁用",
       "dismiss": "忽略",

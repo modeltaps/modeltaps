@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- "All groups" for channels in the admin UI: new channels no longer ask for groups and serve every
+  user group, including groups created later. The group list under Groups & routing and the batch
+  "Groups" dialog start with "All groups", which locks the single groups while it is on; turning
+  it off selects every current group. Channels open to all groups match any group filter, count
+  as peers of every channel of the same provider under "Usage", and show as "All groups" on the
+  model's channels tab. Existing channels keep their groups.
 - Channels open to all user groups: a channel whose group is `*` serves every enabled user group,
   including groups created later, without editing the channel. Creating, deleting, enabling or
   disabling a user group rebuilds the routing table; the channel list's group filter, the loss

@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { statusLabel } from '../Channel/channelApi';
 import { PriceFields, buildPricePayload, priceFormValues, usePriceUnits } from '../Pricing/PricingSheet';
 import { enabledChannels, modelGroups, modelStatus, splitChannelGroups } from '../Pricing/modelCatalog';
+import { useGroupLabel } from '../Channel/channelParts';
 import { ChannelGlyph, channelEditPath } from './ModelTable';
 import SuppliesPanel from './supply/SuppliesPanel';
 import { ModelStatusPill } from './supply/supplyParts';
@@ -118,6 +119,7 @@ Section.propTypes = { title: PropTypes.node, children: PropTypes.node };
 // While supplies route requests the channels are the model's supplies, kept on the Supplies tab.
 function ChannelsPanel({ row, supplyRouting = false, onGoSupplies }) {
   const { t } = useTranslation();
+  const groupLabel = useGroupLabel();
   const channels = row.bound_channels || [];
   const groups = modelGroups(row);
   return (
@@ -184,7 +186,7 @@ function ChannelsPanel({ row, supplyRouting = false, onGoSupplies }) {
                       <td className="whitespace-nowrap py-2 pr-2 tabular-nums">
                         {channel.priority ?? '—'} / {channel.weight ?? '—'}
                       </td>
-                      <td className="py-2 pr-2 text-muted-foreground">{splitChannelGroups(channel.group).join(', ') || '—'}</td>
+                      <td className="py-2 pr-2 text-muted-foreground">{groupLabel(splitChannelGroups(channel.group)) || '—'}</td>
                       <td className="py-2 text-right">
                         <Link
                           to={channelEditPath(channel)}
@@ -210,7 +212,7 @@ function ChannelsPanel({ row, supplyRouting = false, onGoSupplies }) {
           <div className="flex flex-wrap gap-1.5">
             {groups.map((group) => (
               <Badge key={group} variant="secondary" className="font-normal">
-                {group}
+                {groupLabel([group])}
               </Badge>
             ))}
           </div>
@@ -516,7 +518,9 @@ export default function ModelInfoSheet({
               {isPublic && <ModelStatusPill status={values.status || row.status} />}
               <span>
                 {t('modelsPage.channelCount', { count: enabledChannels(row).length })} ·{' '}
-                {t('modelsPage.sheet.groupCount', { count: modelGroups(row).length })}
+                {modelGroups(row)[0] === '*'
+                  ? t('channels.allGroups')
+                  : t('modelsPage.sheet.groupCount', { count: modelGroups(row).length })}
               </span>
             </SheetDescription>
           ) : (

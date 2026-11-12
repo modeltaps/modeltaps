@@ -533,13 +533,7 @@ export default function Channel() {
       )}
 
       {isNew && !loading && (
-        <NewChannelSheet
-          initialType={typeParam || selectedType || 1}
-          allChannels={channels}
-          groups={groups}
-          onClose={closeOverlay}
-          onCreated={onCreated}
-        />
+        <NewChannelSheet initialType={typeParam || selectedType || 1} allChannels={channels} onClose={closeOverlay} onCreated={onCreated} />
       )}
 
       {dialogs}
