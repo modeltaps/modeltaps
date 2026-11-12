@@ -3231,5 +3231,9 @@
     "usedUp": "Used up",
     "createdAgo": "Created {{time}}",
     "usage": "Used"
+  },
+  "ledgerList": {
+    "description": "Description",
+    "amount": "Amount"
   }
 }
