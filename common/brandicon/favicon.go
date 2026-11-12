@@ -36,7 +36,7 @@ func FetchFavicon(ctx context.Context, domain string) ([]byte, string, error) {
 
 	base := &url.URL{Scheme: "https", Host: domain, Path: "/"}
 	var candidates []string
-	if res, err := fetchFunc(ctx, base.String(), safefetch.Options{Accept: "text/html"}); err == nil {
+	if res, err := fetchFunc(ctx, base.String(), safefetch.Options{Accept: "text/html", Truncate: true}); err == nil {
 		candidates = iconLinks(res.FinalURL, res.Body)
 	}
 	candidates = append(candidates,
