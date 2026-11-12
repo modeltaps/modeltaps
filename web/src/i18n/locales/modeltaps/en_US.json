@@ -3277,5 +3277,15 @@
     "viewUsage": "View usage",
     "topModels": "Top models",
     "requests": "requests"
+  },
+  "settingsFields": {
+    "statusCode": "Status code",
+    "seconds": "Seconds",
+    "addStatus": "Add status code",
+    "remove": "Remove",
+    "invalidJson": "The saved value is not valid JSON; edit it as text below."
+  },
+  "settingsUnits": {
+    "seconds": "s"
   }
 }

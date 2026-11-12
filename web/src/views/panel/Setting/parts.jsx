@@ -169,9 +169,25 @@ export function useOptionCard(ctx, keys, options = {}) {
   };
 }
 
+// A unit written into a label ("重试间隔(秒)", "Cooldown (s)", "测试间隔（分钟）") moves into the input
+// as a suffix, so the label reads as a name. A bare "s" needs a space before the bracket so plural
+// forms like "model(s)" are left alone.
+const UNIT_RE = /^(.*?)\s*[(（]\s*(秒|分钟|分鐘|小时|小時|天|毫秒|分|時間|日|%|s|ms|sec|seconds|minutes|hours|days|MB|KB)\s*[)）]\s*$/;
+
+export function splitLabelUnit(label) {
+  if (typeof label !== 'string') return { name: label, unit: null };
+  const m = label.match(UNIT_RE);
+  if (!m || !m[1]) return { name: label, unit: null };
+  if (m[2] === 's' && !/\s[(（]\s*s\s*[)）]\s*$/.test(label)) return { name: label, unit: null };
+  return { name: m[1], unit: m[2] };
+}
+
 export function TextRow({
   id,
-  label,
+  label: rawLabel,
+  // The card title already names the field (a one-field card): keep the label for screen readers only.
+  labelHidden = false,
+  unit: unitProp,
   value,
   onChange,
   placeholder,
@@ -187,11 +203,16 @@ export function TextRow({
   secret
 }) {
   const { t } = useTranslation();
+  const { name: label, unit: labelUnit } = splitLabelUnit(rawLabel);
+  const unit = multiline ? null : (unitProp ?? labelUnit);
   // `secret` is the backend mask of a secret option ('' when unset, undefined for ordinary
   // fields): show it above the empty input so the stored value can be checked.
   const secretSet = Boolean(secret);
   const adornment =
     endAdornment ??
+    (unit ? (
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{unit}</span>
+    ) : null) ??
     (copyable && !multiline ? (
       <Button
         type="button"
@@ -204,7 +225,7 @@ export function TextRow({
       </Button>
     ) : null);
   return (
-    <FormField id={id} label={label} hint={secretSet ? t('common.secretKeepHint') : description} error={error}>
+    <FormField id={id} label={labelHidden ? undefined : label} hint={secretSet ? t('common.secretKeepHint') : description} error={error}>
       {secretSet && (
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <KeyRound className="size-3.5" />
@@ -231,6 +252,7 @@ export function TextRow({
             placeholder={secretSet ? '••••••••' : placeholder}
             disabled={disabled}
             readOnly={readOnly}
+            aria-label={labelHidden ? label : undefined}
             className={adornment ? 'pr-12' : undefined}
           />
         )}

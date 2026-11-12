@@ -3181,5 +3181,15 @@
     "viewUsage": "查看用量",
     "topModels": "Top 模型",
     "requests": "次"
+  },
+  "settingsFields": {
+    "statusCode": "狀態碼",
+    "seconds": "秒數",
+    "addStatus": "新增狀態碼",
+    "remove": "刪除",
+    "invalidJson": "已儲存的值不是合法 JSON，請在下方按文字修改。"
+  },
+  "settingsUnits": {
+    "seconds": "秒"
   }
 }
