@@ -71,6 +71,9 @@ type catalogModel struct {
 	StructuredOutput bool              `json:"structured_output"`
 	OpenWeights      *bool             `json:"open_weights"`
 	ReleaseDate      string            `json:"release_date"`
+	// CanonicalModelID is the lab-qualified id ("anthropic/claude-fable-5-2") that models.dev gives
+	// every hosted copy of a model; its prefix names the vendor whatever platform hosts the copy.
+	CanonicalModelID string `json:"canonical_model_id"`
 }
 
 type catalogProvider struct {
@@ -169,20 +172,36 @@ func catalogCapabilities(m catalogModel) string {
 	return ModelCapabilitiesJSON(caps)
 }
 
-// catalogProviderToVendorSlug 把 models.dev 的 provider id 映射到厂商 slug。
-// azure / google-vertex 只是承载渠道，模型厂商仍是 openai / google。
+// catalogProviderToVendorSlug maps the models.dev providers that are the labs themselves to vendor
+// slugs. Hosting platforms (azure, google-vertex, groq, bedrock …) are left out on purpose: they
+// serve other labs' models, so the platform says nothing about who made the model.
 var catalogProviderToVendorSlug = map[string]string{
-	"openai":        "openai",
-	"azure":         "openai",
-	"anthropic":     "anthropic",
-	"alibaba":       "qwen",
-	"google":        "google",
-	"google-vertex": "google",
-	"deepseek":      "deepseek",
-	"moonshotai":    "moonshotai",
-	"mistral":       "mistralai",
-	"groq":          "groq",
-	"cohere":        "cohere",
+	"openai":     "openai",
+	"anthropic":  "anthropic",
+	"alibaba":    "qwen",
+	"google":     "google",
+	"deepseek":   "deepseek",
+	"moonshotai": "moonshotai",
+	"mistral":    "mistralai",
+	"cohere":     "cohere",
+	"xai":        "x-ai",
+	"zhipuai":    "z-ai",
+	"minimax":    "minimax",
+}
+
+// catalogVendorID resolves the vendor of one models.dev entry: the canonical id prefix first, then
+// the provider when it is the lab itself, then a "vendor/" prefix on the entry id. It returns 0
+// (unknown) rather than guessing from a hosting platform.
+func catalogVendorID(provider, id string, m catalogModel) int {
+	if vid := VendorIDFromModelName(m.CanonicalModelID); vid != 0 {
+		return vid
+	}
+	if slug := catalogProviderToVendorSlug[provider]; slug != "" {
+		if vid := ModelOwnedBysInstance.GetIdBySlug(slug); vid != 0 {
+			return vid
+		}
+	}
+	return VendorIDFromModelName(id)
 }
 
 // catalogModelInfo 把一条 models.dev 模型转为以 modelName 为键的目录元信息。
@@ -203,21 +222,50 @@ func catalogModelInfo(modelName string, vendorID int, m catalogModel) *ModelInfo
 }
 
 // BuildCatalogModelInfos 纯函数：把 models.dev 数据转为 []*ModelInfo（仅已映射的 provider）。
-// 厂商按 provider 映射到厂商 slug 再查 model_owned_by；接口能力按模态推导。
+// The vendor comes from catalogVendorID; endpoints are derived from the modalities. When several
+// providers list the same id, the lab's own entry wins, then one with a known vendor, so the
+// result does not depend on map order.
 func BuildCatalogModelInfos(data map[string]catalogProvider) []*ModelInfo {
-	var infos []*ModelInfo
-	for providerID, prov := range data {
-		if _, ok := catalogProviderToChannelType[providerID]; !ok {
-			continue
+	type pick struct {
+		info      *ModelInfo
+		firstHand bool
+	}
+	picked := map[string]pick{}
+	var order []string
+	providers := make([]string, 0, len(data))
+	for providerID := range data {
+		if _, ok := catalogProviderToChannelType[providerID]; ok {
+			providers = append(providers, providerID)
 		}
-		vendorID := ModelOwnedBysInstance.GetIdBySlug(catalogProviderToVendorSlug[providerID])
-		for modelID, m := range prov.Models {
+	}
+	sort.Strings(providers)
+	for _, providerID := range providers {
+		_, firstHand := catalogProviderToVendorSlug[providerID]
+		models := data[providerID].Models
+		names := make([]string, 0, len(models))
+		for name := range models {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		for _, name := range names {
+			m := models[name]
 			id := m.Id
 			if id == "" {
-				id = modelID
+				id = name
 			}
-			infos = append(infos, catalogModelInfo(id, vendorID, m))
+			info := catalogModelInfo(id, catalogVendorID(providerID, id, m), m)
+			cur, seen := picked[id]
+			if !seen {
+				order = append(order, id)
+			} else if cur.firstHand && !firstHand || cur.firstHand == firstHand && (cur.info.VendorID != 0 || info.VendorID == 0) {
+				continue
+			}
+			picked[id] = pick{info: info, firstHand: firstHand}
 		}
+	}
+	infos := make([]*ModelInfo, 0, len(order))
+	for _, id := range order {
+		infos = append(infos, picked[id].info)
 	}
 	return infos
 }
@@ -323,19 +371,12 @@ func (idx *catalogIndex) match(name string) (catalogEntry, bool) {
 	return catalogEntry{}, false
 }
 
-// catalogEntryVendorID 渠道模型名自带厂商前缀优先，其次 provider 映射 / provider id 本身，再次条目 id 的前缀。
+// catalogEntryVendorID 渠道模型名自带厂商前缀优先，其次按 catalogVendorID 判定匹配到的条目。
 func catalogEntryVendorID(modelName string, e catalogEntry) int {
 	if id := VendorIDFromModelName(modelName); id != 0 {
 		return id
 	}
-	slug := catalogProviderToVendorSlug[e.Provider]
-	if slug == "" {
-		slug = e.Provider
-	}
-	if id := ModelOwnedBysInstance.GetIdBySlug(slug); id != 0 {
-		return id
-	}
-	return VendorIDFromModelName(e.ID)
+	return catalogVendorID(e.Provider, e.ID, e.Model)
 }
 
 // BuildChannelCatalogEntries 纯函数：按渠道模型名在 models.dev 全量里匹配，产出以渠道模型名为键的
