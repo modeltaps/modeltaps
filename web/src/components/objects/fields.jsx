@@ -194,18 +194,18 @@ Segmented.propTypes = {
   role: PropTypes.string
 };
 
-// A titled group inside a tab: a plain heading (sentence case, weight 500) and its rows. The
-// first section of a tab sits flush with the tab bar.
+// A titled group inside a tab: a bordered card with a tinted header band, so each group reads as
+// its own block when a tab holds many of them. The first section sits close to the tab bar.
 export function Section({ title, extra, children, className }) {
   return (
-    <section className={cn('pt-4 first:pt-3', className)}>
+    <section className={cn('mt-4 overflow-hidden rounded-lg border border-border first:mt-3', className)}>
       {(title || extra) && (
-        <div className="mb-1 flex items-baseline justify-between gap-3">
-          {title && <h3 className="text-sm font-medium">{title}</h3>}
+        <div className="flex items-baseline justify-between gap-3 border-b border-border bg-muted/50 px-4 py-2.5">
+          {title && <h3 className="text-sm font-semibold">{title}</h3>}
           {extra && <span className="text-xs text-muted-foreground">{extra}</span>}
         </div>
       )}
-      {children}
+      <div className="px-4 py-1">{children}</div>
     </section>
   );
 }
