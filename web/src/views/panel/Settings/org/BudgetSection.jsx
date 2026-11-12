@@ -9,6 +9,7 @@ import QuotaInput from '@/components/QuotaInput';
 import { API } from 'utils/api';
 import { renderSpend, showError, showSuccess } from 'utils/common';
 import { useOrg } from 'contexts/OrgContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // ==============================|| SETTINGS — ORG BUDGET ||============================== //
 // Team budget card: budget / budget_used are returned to Admin+ only; an empty period sentinel
@@ -82,12 +83,17 @@ export default function BudgetSection({ orgId, role, detail, onRefresh }) {
   };
 
   if (!isAdmin) return null;
+  if (!baseline) return <Skeleton className="h-[180px] rounded-2xl" aria-busy="true" />;
 
   return (
     <FormCard
       title={t('orgPage.settings.teamBudget')}
-      description={t('orgPage.settings.teamBudgetHint')}
-      hint={t('settingsUi.org.cards.budget.hint')}
+      description={t('settingsUi.org.cards.budget.description')}
+      hint={
+        budgetPeriod === '__none'
+          ? t('settingsUi.org.cards.budget.noLimitHint')
+          : t('settingsUi.org.cards.budget.resetsHint', { period: t(`orgPage.limits.period_${budgetPeriod}`) })
+      }
       highlight="team-budget"
       dirty={budgetDirty}
       saving={savingBudget}
