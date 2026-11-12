@@ -28,6 +28,7 @@ import { LEGACY_SECTION_TAB, PANEL_TABS } from './panelTabs';
 import { ISSUE_FILTERS, NO_TAG, STATUS_FILTERS, channelMatches, groupChannelsByType } from './channelGroups';
 import useBatchActions from './useBatchActions';
 import { checkChannelDrift, fetchAllChannels, fetchChannelMetrics, fetchGroupOptions, fetchModels, manageChannel } from './channelApi';
+import { fetchAllocation } from '../Allocation/allocationApi';
 
 const DISMISSED_KEY = 'channels.dismissedIssues';
 
@@ -68,6 +69,8 @@ export default function Channel() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [groups, setGroups] = useState([]);
+  // While supplies route requests the allocation policy orders channels, not their own numbers.
+  const [supplyRouting, setSupplyRouting] = useState(false);
   const [rangeKey, setRangeKey] = useState('24h');
   const [metrics, setMetrics] = useState({ loading: true, rows: [], start: 0, end: 0 });
   const [dismissed, setDismissed] = useState(loadDismissed);
@@ -93,6 +96,9 @@ export default function Channel() {
   useEffect(() => {
     reload();
     fetchGroupOptions().then(setGroups);
+    fetchAllocation()
+      .then((res) => setSupplyRouting(Boolean(res.success && res.data?.supply_routing)))
+      .catch(() => setSupplyRouting(false));
   }, [reload]);
 
   // Search (?q=) across every provider, and the table filters (?status=, ?tag= / ?untagged=1).
@@ -525,6 +531,7 @@ export default function Channel() {
           }}
           allChannels={channels}
           groups={groups}
+          supplyRouting={supplyRouting}
           metricsRows={metrics.rows}
           rangeKey={rangeKey}
           actions={actions}
@@ -533,7 +540,13 @@ export default function Channel() {
       )}
 
       {isNew && !loading && (
-        <NewChannelSheet initialType={typeParam || selectedType || 1} allChannels={channels} onClose={closeOverlay} onCreated={onCreated} />
+        <NewChannelSheet
+          initialType={typeParam || selectedType || 1}
+          allChannels={channels}
+          supplyRouting={supplyRouting}
+          onClose={closeOverlay}
+          onCreated={onCreated}
+        />
       )}
 
       {dialogs}

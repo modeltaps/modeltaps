@@ -109,6 +109,9 @@ type ModelSupplyView struct {
 	// and weight equal them follows the channel (see SyncSuppliesWithChannel).
 	ChannelPriority int64 `json:"channel_priority"`
 	ChannelWeight   int64 `json:"channel_weight"`
+	// FollowsPolicy is true when the priority and weight above come from the allocation policy
+	// rather than from the supply row.
+	FollowsPolicy bool `json:"follows_policy"`
 }
 
 // GetModelSupplyViews lists supplies like GetModelSupplies, each with its channel's name,
@@ -117,6 +120,21 @@ func GetModelSupplyViews(modelName string, channelId int) ([]*ModelSupplyView, e
 	supplies, err := GetModelSupplies(modelName, channelId)
 	if err != nil {
 		return nil, err
+	}
+	// Show the numbers supplies route with: the policy's for models that follow it.
+	policyNumbers := map[int]supplyNumbers{}
+	if config.ModelSupplyEnabled && len(supplies) > 0 {
+		names := map[string]bool{}
+		for _, s := range supplies {
+			names[s.Model] = true
+		}
+		list := make([]string, 0, len(names))
+		for name := range names {
+			list = append(list, name)
+		}
+		if policyNumbers, err = allocatedNumbers(list); err != nil {
+			return nil, err
+		}
 	}
 	ids := make([]int, 0, len(supplies))
 	seen := map[int]bool{}
@@ -139,6 +157,11 @@ func GetModelSupplyViews(modelName string, channelId int) ([]*ModelSupplyView, e
 	views := make([]*ModelSupplyView, 0, len(supplies))
 	for _, s := range supplies {
 		view := &ModelSupplyView{ModelSupply: s}
+		if n, ok := policyNumbers[s.Id]; ok {
+			copied := *s
+			copied.Priority, copied.Weight = n.Priority, n.Weight
+			view.ModelSupply, view.FollowsPolicy = &copied, true
+		}
 		if ch := byId[s.ChannelId]; ch != nil {
 			view.ChannelName, view.ChannelStatus, view.ChannelType, view.ChannelTag = ch.Name, ch.Status, ch.Type, ch.Tag
 			view.ChannelGroup = ch.Group
@@ -191,6 +214,9 @@ func UpdateModelSupply(supply *ModelSupply) error {
 	upstream := strings.TrimSpace(supply.UpstreamModel)
 	if upstream == "" {
 		return ErrSupplyUpstreamMissing
+	}
+	if err := takeManualOnRenumber(current.Model, supply); err != nil {
+		return err
 	}
 	err = DB.Model(current).Select("upstream_model", "priority", "weight", "enabled", "note").Updates(&ModelSupply{
 		UpstreamModel: upstream,

@@ -51,6 +51,7 @@ import {
   upstreamFor
 } from './supplyHelpers';
 import { SupplyStateLabel, SupplySwitchNote, durationLabel } from './supplyParts';
+import { setModelAllocation } from '../../Allocation/allocationApi';
 
 const channelTypeName = (type) => CHANNEL_OPTIONS[type]?.text || `#${type}`;
 
@@ -331,7 +332,8 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
   };
 
   // Its own priority or weight: a change to the channel's numbers will not move this supply.
-  const own = !followsChannel(supply);
+  // Supplies on the allocation policy take the policy's numbers, so this does not apply.
+  const own = !supply.follows_policy && !followsChannel(supply);
 
   const channelCell = (
     <div className="flex min-w-0 items-center gap-2">
@@ -522,7 +524,7 @@ SupplyRow.propTypes = {
 
 // "Supplies" tab of the model panel: which channels serve this public model, in priority tiers.
 // Every change is saved right away; the supply mode switch saves the model row.
-export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, channels = [], switches = null, onChanged }) {
+export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyModeChange, channels = [], switches = null, onChanged }) {
   const { t } = useTranslation();
   // `preview` is every supply in order with its state; `groupPreview` the same for a request
   // from `group` only. Both come from the preview API.
@@ -535,6 +537,7 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
   const [adding, setAdding] = useState(false);
   const [busyId, setBusyId] = useState(0);
   const [modeSaving, setModeSaving] = useState(false);
+  const [allocationSaving, setAllocationSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const mode = normalizeSupplyMode(supplyMode);
 
@@ -616,15 +619,27 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
     }
   };
 
+  // Renumbering a supply of a model on the allocation policy makes the model manual (the server
+  // keeps the other supplies where the policy put them).
+  const noteManual = (ok) => {
+    if (ok && allocation === 'policy') toast.success(t('modelSupply.allocation.becameManual'));
+    return ok;
+  };
+
   const onAction = async (kind, supply, arg) => {
     switch (kind) {
-      case 'update':
-        return run(supply.id, () => updateSupply(supplyUpdateBody(supply, arg)));
+      case 'update': {
+        const renumber = arg && (arg.priority !== undefined || arg.weight !== undefined);
+        const ok = await run(supply.id, () => updateSupply(supplyUpdateBody(supply, arg)));
+        return renumber ? noteManual(ok) : ok;
+      }
       case 'move': {
         const changes = moveSupply(supplies, supply.id, arg);
         const byId = new Map(supplies.map((s) => [s.id, s]));
-        return run(supply.id, () =>
-          Promise.all(changes.map((c) => updateSupply(supplyUpdateBody(byId.get(c.id), { priority: c.priority }))))
+        return noteManual(
+          await run(supply.id, () =>
+            Promise.all(changes.map((c) => updateSupply(supplyUpdateBody(byId.get(c.id), { priority: c.priority }))))
+          )
         );
       }
       case 'pause': {
@@ -652,6 +667,22 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
     if (ok) toast.success(t('modelSupply.deleted'));
   };
 
+  const allocation = preview?.allocation || '';
+  const changeAllocation = async (next) => {
+    if (!catalogId) return;
+    setAllocationSaving(true);
+    try {
+      const res = await setModelAllocation({ ids: [catalogId], allocation: next });
+      if (!res.success) return toast.error(res.message);
+      toast.success(t(next === 'manual' ? 'modelSupply.allocation.nowManual' : 'modelSupply.allocation.nowPolicy'));
+      await reload();
+    } catch {
+      /* shown by the API client */
+    } finally {
+      setAllocationSaving(false);
+    }
+  };
+
   const changeMode = async (next) => {
     setModeSaving(true);
     try {
@@ -669,9 +700,42 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
 
   return (
     <div className="space-y-4">
+      {allocation && (
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-[13px] text-muted-foreground">{t('modelSupply.allocation.label')}</span>
+          <span className="text-[13px]">
+            {t(allocation === 'manual' ? 'modelSupply.allocation.manual' : 'modelSupply.allocation.policy')}
+          </span>
+          <Link to="/panel/allocation" className="text-[13px] text-info underline-offset-2 hover:underline">
+            {t('modelSupply.allocation.open')}
+          </Link>
+          <span className="flex-1" />
+          {catalogId > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-[10px]"
+              disabled={allocationSaving}
+              onClick={() => changeAllocation(allocation === 'manual' ? 'policy' : 'manual')}
+            >
+              {allocationSaving && <Loader2 className="size-4 animate-spin" />}
+              {t(allocation === 'manual' ? 'modelSupply.allocation.toPolicy' : 'modelSupply.allocation.toManual')}
+            </Button>
+          )}
+        </div>
+      )}
+      {allocation && (
+        <p className="-mt-2 text-xs text-muted-foreground">
+          {t(allocation === 'manual' ? 'modelSupply.allocation.manualHint' : 'modelSupply.allocation.policyHint')}
+        </p>
+      )}
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-[13px] text-muted-foreground">{t('modelSupply.mode.label')}</span>
-        <ModeSwitch value={mode} onChange={changeMode} disabled={modeSaving || !onSupplyModeChange} />
+        {allocation !== 'policy' && (
+          <>
+            <span className="text-[13px] text-muted-foreground">{t('modelSupply.mode.label')}</span>
+            <ModeSwitch value={mode} onChange={changeMode} disabled={modeSaving || !onSupplyModeChange} />
+          </>
+        )}
         <span className="flex-1" />
         {!adding && (
           <Button variant="outline" size="sm" className="rounded-[10px]" onClick={() => setAdding(true)} disabled={supplies === null}>
@@ -680,13 +744,15 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
           </Button>
         )}
       </div>
-      <p className="-mt-2 text-xs text-muted-foreground">
-        {mode === 'default'
-          ? t('modelSupply.mode.defaultHint', {
-              mode: t(`modelSupply.mode.${preview?.default_mode === 'failover' ? 'failover' : 'balance'}`)
-            })
-          : t(`modelSupply.mode.${mode}Hint`)}
-      </p>
+      {allocation !== 'policy' && (
+        <p className="-mt-2 text-xs text-muted-foreground">
+          {mode === 'default'
+            ? t('modelSupply.mode.defaultHint', {
+                mode: t(`modelSupply.mode.${preview?.default_mode === 'failover' ? 'failover' : 'balance'}`)
+              })
+            : t(`modelSupply.mode.${mode}Hint`)}
+        </p>
+      )}
 
       <SupplySwitchNote switches={switches} active={preview?.active} />
 
@@ -799,6 +865,7 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
 
 SuppliesPanel.propTypes = {
   model: PropTypes.string.isRequired,
+  catalogId: PropTypes.number,
   supplyMode: PropTypes.string,
   onSupplyModeChange: PropTypes.func,
   channels: PropTypes.array,

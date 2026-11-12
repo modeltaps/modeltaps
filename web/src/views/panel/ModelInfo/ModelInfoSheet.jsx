@@ -743,6 +743,7 @@ export default function ModelInfoSheet({
             <div role="tabpanel">
               <SuppliesPanel
                 model={row.model}
+                catalogId={row.catalogId}
                 supplyMode={values.supply_mode || row.supply_mode}
                 onSupplyModeChange={stored ? changeSupplyMode : undefined}
                 channels={channels}

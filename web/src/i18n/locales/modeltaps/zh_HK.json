@@ -678,6 +678,7 @@
     "api_audio": "在文字與語音之間轉換",
     "api_compare": "多個對話模型並排，同一條輸入同時發出",
     "pricing": "模型目錄、價格、渠道與廠商",
+    "allocation": "每個模型的請求先給哪個供應商、不可用時再給誰；模型預設按這裏的順序，不用單獨設定",
     "routing_policy": "虛擬模型：按每個會話的首條訊息選擇實際應答的模型",
     "channel": "每個供應商下可以有多個渠道；一個渠道是連到該供應商的一組憑證和地址",
     "org_members": "邀請成員、設定每人的預算與模型範圍",
@@ -2166,6 +2167,7 @@
         "models": "模型",
         "connection": "連線",
         "routing": "分組與路由",
+        "routingGroups": "分組與標籤",
         "rewrite": "請求改寫",
         "monitor": "監控",
         "advanced": "進階"
@@ -2232,7 +2234,9 @@
       "peerExisting": "同組已有 {{name}}",
       "peerNote": "同組還有 {{name}} 提供這些模型",
       "priority": "優先級",
-      "weight": "權重"
+      "weight": "權重",
+      "byPolicy": "這個渠道先用還是後用，由分配策略決定。",
+      "openPolicy": "開啟分配策略"
     },
     "batch": {
       "label": "已選渠道",
@@ -2339,6 +2343,38 @@
       }
     }
   },
+  "allocation": {
+    "unknownProvider": "未知供應商",
+    "channelGone": "渠道 #{{id}}",
+    "gone": "已不存在，儲存時可移出",
+    "channelOff": "渠道已停用",
+    "channels": "{{total}} 個渠道，{{enabled}} 個啟用",
+    "weightOf": "{{name}} 的權重",
+    "entryActions": "{{name}} 的操作",
+    "moveUp": "移到上一檔",
+    "moveDown": "移到下一檔",
+    "ownTier": "單獨成一檔",
+    "byChannel": "按渠道拆開",
+    "mergeChannels": "合併回供應商",
+    "remove": "移出排位",
+    "saved": "已儲存，路由已按新順序生效",
+    "tier": "第 {{n}} 檔",
+    "tierFirst": "先用",
+    "tierNext": "上一檔都不可用時用",
+    "tierShared": "按權重分擔",
+    "tierUp": "第 {{n}} 檔上移",
+    "tierDown": "第 {{n}} 檔下移",
+    "revert": "撤銷",
+    "save": "儲存",
+    "notActive": "現在仍按渠道的模型清單路由，開啟「按供應路由」後這裏的順序才生效。",
+    "summary": "{{policy}} 個模型按這個順序，{{manual}} 個單獨設定。",
+    "openModels": "前往模型目錄",
+    "empty": "還沒有渠道。",
+    "unlisted": "未排位",
+    "unlistedHint": "排在所有檔之後，平分流量",
+    "place": "加入排位",
+    "footnote": "每個模型只在能提供它的供應商之間排；百分比是同一檔的供應商都能提供某個模型時的分擔比例。同一供應商的多個渠道平分它的權重，渠道停用或暫停時自動跳過。"
+  },
   "nav": {
     "sections": {
       "develop": "開發",
@@ -2364,6 +2400,7 @@
       "stats": "統計",
       "channels": "供應商",
       "catalog": "模型目錄",
+      "allocation": "分配策略",
       "routing": "自動路由",
       "users": "用戶",
       "userGroups": "用戶分組",
@@ -2670,6 +2707,20 @@
       "attachButton": "掛接",
       "attached_other": "已掛到 {{model}}，共 {{count}} 個渠道",
       "skipped_other": "{{count}} 個渠道已有 {{model}} 的供應（上游名不同），這個模型在那些渠道上仍待處理。"
+    },
+    "allocation": {
+      "label": "排位",
+      "policy": "按分配策略",
+      "manual": "單獨設定",
+      "manualShort": "單獨設定",
+      "open": "查看分配策略",
+      "toManual": "單獨設定",
+      "toPolicy": "恢復按分配策略",
+      "policyHint": "順序和權重來自分配策略；在這裏調整順序或權重，會把這個模型改為單獨設定。",
+      "manualHint": "這個模型的排位不隨分配策略變化。",
+      "becameManual": "這個模型已改為單獨設定",
+      "nowManual": "已改為單獨設定，目前排位保持不變",
+      "nowPolicy": "已恢復按分配策略"
     }
   },
   "settingsUi": {

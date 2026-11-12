@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Allocation policy: a new Allocation page under Gateway orders providers once for every model
+  while supplies route requests. Tiers are tried first to last; providers in one tier share it by
+  weight, and the channels of a provider share its weight equally unless a channel is placed on
+  its own. Providers that are not placed are tried after every tier. Models follow the policy
+  without any setup; a model can be set by hand on its Supplies tab (or by renumbering one of its
+  supplies there) and restored to the policy later. The first time supplies route requests the
+  policy is built from the channels' current priorities and weights, and models whose routing it
+  cannot reproduce are set by hand, so no traffic moves. While supplies route requests the
+  channel panel no longer edits a channel's priority or weight, and the new channel sheet no
+  longer asks for usage. `GET` / `PUT /api/allocation_policy` and
+  `POST /api/model_supply/allocation` expose the same.
 - A default supply mode and batch actions for supplies, so models do not have to be set up one
   by one. Platform settings → Gateway has "Default supply mode" (balance or failover). A model's
   mode switch gains "Follow default", which new models use; a model can still pick its own mode.
@@ -349,6 +360,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The supply request preview counted channels open to all user groups as outside the chosen group.
 - Changing a channel's priority or weight reaches its supplies again. With supplies routing
   requests, edits on the channel (its panel, the batch actions on the providers page and the
   tag-wide setters) only changed the default for new supplies. Supplies that still have the
