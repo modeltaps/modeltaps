@@ -59,6 +59,14 @@ export function hostOf(url) {
   }
 }
 
+// Host a channel sends to when it is not the type's own address (a relay or a self-hosted
+// endpoint), empty otherwise: shown next to the provider name so relays of one type differ.
+export function relayHost(channel) {
+  const host = hostOf(String(channel?.base_url || '').trim());
+  if (!host) return '';
+  return host.toLowerCase() === hostOf(DEFAULT_BASE_URLS[channel.type] || '').toLowerCase() ? '' : host;
+}
+
 // Label / prompt entries of the form config for one type (type entries win over defaults).
 export function typeLabels(type) {
   const cfg = typeConfig[type] || {};

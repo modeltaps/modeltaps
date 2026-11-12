@@ -2504,6 +2504,18 @@
       "driftMissing_one": "{{count}} model gone",
       "driftMissing_other": "{{count}} models gone",
       "refresh": "Refresh"
+    },
+    "head": {
+      "order": "Lower numbers are tried first; channels with the same number share traffic",
+      "share": "Weight and traffic share within the group",
+      "shareNone": "Shares with no other channel",
+      "priorityWeight": "Higher priority is tried first; equal priority splits by weight",
+      "requests": "Requests",
+      "requestsHint": "Requests and trend over {{range}}",
+      "success": "Share of requests that succeeded",
+      "latency": "Average time of successful requests",
+      "balance": "Upstream balance; subscriptions show usage this period",
+      "enabled": "Off: receives no requests"
     }
   },
   "nav": {

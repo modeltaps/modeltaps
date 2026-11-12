@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   DropdownMenu,
@@ -41,6 +42,7 @@ import { Dot, ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 import { FilterBar, FilterSheet, describeEntry, isEntryActive } from '@/components/filter-bar';
 import { ColumnPicker, PhoneListToolbar, PresetChips, StatusSegments, useFilterPresets } from '@/components/list-page';
 import { ProviderTile, useProviderName } from './channelParts';
+import { relayHost } from './providerDefaults';
 
 export const RANGES = [
   { key: '24h', seconds: 24 * 3600, bucket: 3600 },
@@ -146,6 +148,21 @@ export const CHANNEL_COLUMNS = [
 // Fixed widths of the channel table's columns (padding included); the name takes the rest. With
 // the name's minimum they set the table's minimum width: a narrower pane scrolls the table
 // sideways inside its card, and a long name or tag is cut off instead of widening the table.
+// Column header with a short explanation on hover (dotted underline marks it).
+function HeadLabel({ label, hint }) {
+  if (!hint) return label;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="cursor-help underline decoration-muted-foreground/50 decoration-dotted underline-offset-4">{label}</span>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-60 whitespace-normal text-xs font-normal">{hint}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+HeadLabel.propTypes = { label: PropTypes.node, hint: PropTypes.node };
+
 // Requests per bucket as a small line, for the requests column.
 function Sparkline({ values }) {
   const w = 72;
@@ -168,7 +185,7 @@ const COLUMN_WIDTHS = {
   select: 60,
   order: 64,
   priority: 112,
-  requests: 136,
+  requests: 152,
   success: 80,
   latency: 80,
   balance: 104,
@@ -501,288 +518,323 @@ export default function ProviderPane({
   const col = (id) => <col key={id} style={{ width: COLUMN_WIDTHS[id] }} />;
   const table = (
     <div className="overflow-x-auto rounded-2xl border border-border bg-card">
-      <table className="w-full table-fixed border-collapse text-sm" style={{ minWidth: minTableWidth }}>
-        <colgroup>
-          {col('select')}
-          {order && col('order')}
-          <col />
-          {fixedColumns.filter((id) => id !== 'select' && id !== 'actions' && id !== 'order').map(col)}
-          {col('actions')}
-        </colgroup>
-        <thead>
-          <tr className="whitespace-nowrap text-left text-xs text-muted-foreground [&>th]:h-10 [&>th]:border-b [&>th]:border-border [&>th]:truncate [&>th]:px-3 [&>th]:font-medium">
-            <th className="!pr-0">
-              <Checkbox
-                checked={headState === 'all'}
-                indeterminate={headState === 'some'}
-                disabled={!rows.length}
-                aria-label={t('channels.batch.selectAll')}
-                onCheckedChange={toggleAll}
-              />
-            </th>
-            {order && (
-              <th className="text-center" title={t('channels.orderHint')}>
-                {t('channels.order.column')}
+      <TooltipProvider delayDuration={200}>
+        <table className="w-full table-fixed border-collapse text-sm" style={{ minWidth: minTableWidth }}>
+          <colgroup>
+            {col('select')}
+            {order && col('order')}
+            <col />
+            {fixedColumns.filter((id) => id !== 'select' && id !== 'actions' && id !== 'order').map(col)}
+            {col('actions')}
+          </colgroup>
+          <thead>
+            <tr className="whitespace-nowrap text-left text-xs text-muted-foreground [&>th]:h-10 [&>th]:border-b [&>th]:border-border [&>th]:truncate [&>th]:px-3 [&>th]:font-medium">
+              <th className="!pr-0">
+                <Checkbox
+                  checked={headState === 'all'}
+                  indeterminate={headState === 'some'}
+                  disabled={!rows.length}
+                  aria-label={t('channels.batch.selectAll')}
+                  onCheckedChange={toggleAll}
+                />
               </th>
-            )}
-            <th>{t('channels.table.name')}</th>
-            {show('priority') && (
-              <th className="text-right">{order ? t('channels.order.shareColumn') : t('channels.table.priorityWeight')}</th>
-            )}
-            {show('requests') && (
-              <th className="text-right">{t('channels.columns.requestsIn', { range: t(`channels.range.short.${range.key}`) })}</th>
-            )}
-            {show('success') && <th className="text-right">{t('channels.table.successRate')}</th>}
-            {show('latency') && <th className="text-right">{t('channels.table.avgLatency')}</th>}
-            {show('balance') && <th className="text-right">{t('channels.table.balance')}</th>}
-            {show('enabled') && <th>{t('channels.table.enabled')}</th>}
-            <th>
-              <span className="sr-only">{t('channels.table.actions')}</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan={10}>{emptyRow}</td>
-            </tr>
-          )}
-          {rows.map((c) => {
-            const m = perChannel.get(c.id);
-            const off = c.status !== 1;
-            const isNew = highlightIds.has(c.id);
-            const place = order?.info.get(c.id);
-            return (
-              <tr
-                key={c.id}
-                onClick={() => onOpen(c.id)}
-                {...(place && orderActions
-                  ? {
-                      onDragOver: (e) => {
-                        if (!dragId || dragId === c.id) return;
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = 'move';
-                        // Top third: before this row; bottom third: after it; middle: share its position.
-                        const box = e.currentTarget.getBoundingClientRect();
-                        const y = (e.clientY - box.top) / box.height;
-                        const mode = y < 0.3 ? 'before' : y > 0.7 ? 'after' : 'join';
-                        if (drop?.id !== c.id || drop.mode !== mode) setDrop({ id: c.id, mode });
-                      },
-                      onDrop: (e) => {
-                        e.preventDefault();
-                        if (dragId && drop && dragId !== c.id) {
-                          if (drop.mode === 'join') orderActions.join(dragId, c.id);
-                          else if (drop.mode === 'after') orderActions.after(dragId, c.id);
-                          else orderActions.drop(dragId, c.id);
-                        }
-                        endDrag();
-                      }
-                    }
-                  : {})}
-                className={cn(
-                  drop?.id === c.id && drop.mode === 'before' && 'shadow-[inset_0_3px_0_var(--info)]',
-                  drop?.id === c.id && drop.mode === 'after' && 'shadow-[inset_0_-3px_0_var(--info)]',
-                  drop?.id === c.id && drop.mode === 'join' && '!bg-info/[0.12] shadow-[inset_0_0_0_2px_var(--info)]',
-                  dragId === c.id && 'opacity-40',
-                  place && place.clusterSize > 1 && 'bg-muted/40',
-                  'cursor-pointer whitespace-nowrap transition-colors hover:bg-foreground/[0.04] [&>td]:h-[52px] [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0',
-                  off && '[&>td:not(.keep)]:text-muted-foreground',
-                  isNew && 'bg-info/[0.06]',
-                  selectedIds.has(c.id) && 'bg-accent/50'
-                )}
-              >
-                <td className="keep !pr-0" onClick={(e) => e.stopPropagation()}>
-                  <span className="flex items-center gap-1">
-                    <Checkbox
-                      checked={selectedIds.has(c.id)}
-                      aria-label={t('channels.batch.selectRow', { name: c.name })}
-                      onCheckedChange={() => toggleRow(c.id)}
-                    />
-                    {place && orderActions && (
-                      <span
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.effectAllowed = 'move';
-                          e.dataTransfer.setData('text/plain', String(c.id));
-                          // The whole row follows the pointer, not just the handle.
-                          const row = e.currentTarget.closest('tr');
-                          if (row) {
-                            const box = row.getBoundingClientRect();
-                            e.dataTransfer.setDragImage(row, e.clientX - box.left, e.clientY - box.top);
-                          }
-                          setDragId(c.id);
-                        }}
-                        onDragEnd={endDrag}
-                        className="-m-1 flex cursor-grab rounded p-1 text-muted-foreground/50 hover:bg-muted hover:text-foreground active:cursor-grabbing"
-                        title={t('channels.order.drag')}
-                      >
-                        <GripVertical className="size-4" />
-                      </span>
-                    )}
-                  </span>
-                </td>
-                {order && spans.get(c.id) !== 0 && (
-                  <td
-                    rowSpan={spans.get(c.id) || 1}
-                    className="keep !px-1 text-center align-middle"
-                    title={
-                      place && place.clusterSize > 1
-                        ? t('channels.order.groupWhy', { count: place.clusterSize, models: place.sharedModels })
-                        : undefined
-                    }
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <span className="inline-flex items-center gap-0.5">
-                      <span className="w-5">
-                        <span className="block text-[13px] font-medium tabular-nums">{place ? place.number : ''}</span>
-                        {place && place.clusterSize > 1 && spans.get(c.id) > 1 && (
-                          <span className="block text-[11px] leading-tight text-muted-foreground">{t('channels.order.sharedTag')}</span>
-                        )}
-                      </span>
-                      {place && orderActions && (
-                        // Moves the whole position (the group) one step.
-                        <span className="flex flex-col">
-                          <button
-                            type="button"
-                            disabled={place.index === 0}
-                            aria-label={t('channels.order.up')}
-                            title={t('channels.order.up')}
-                            onClick={() => orderActions.step(c.id, 'up')}
-                            className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-25"
-                          >
-                            <ChevronUp className="size-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            disabled={place.index === order.groups.length - 1}
-                            aria-label={t('channels.order.down')}
-                            title={t('channels.order.down')}
-                            onClick={() => orderActions.step(c.id, 'down')}
-                            className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-25"
-                          >
-                            <ChevronDown className="size-3.5" />
-                          </button>
-                        </span>
-                      )}
-                    </span>
-                  </td>
-                )}
-                <td>
-                  <span className="flex min-w-0 items-center gap-2.5">
-                    {!type && <ProviderTile type={c.type} />}
-                    <span className="min-w-0 flex-1">
-                      <span className="flex min-w-0 items-center gap-2">
-                        <Dot tone={channelDot(c, dismissed)} />
-                        <span className="min-w-[6rem] shrink truncate font-mono text-[13px]" title={c.name}>
-                          {c.name}
-                        </span>
-                        {c.tag && (
-                          // The tag gives way before the name does.
-                          <span
-                            className="inline-block h-[22px] min-w-0 shrink-[4] truncate rounded-full bg-muted px-2 text-xs leading-[22px] text-muted-foreground"
-                            title={c.tag}
-                          >
-                            {c.tag}
-                          </span>
-                        )}
-                        {(issuesById.get(c.id) || []).map((i) => (
-                          <IssueTag key={i.key} issue={i} onAction={onIssueAction} onDismiss={onDismissIssue} busy={issueBusy(i)} />
-                        ))}
-                        {drop?.id === c.id && (
-                          <span className="inline-flex h-[22px] shrink-0 items-center rounded-full bg-info px-2 text-xs text-info-foreground">
-                            {t(`channels.order.dropHint.${drop.mode}`)}
-                          </span>
-                        )}
-                        {isNew && (
-                          <span className="inline-flex h-[22px] shrink-0 items-center rounded-full bg-info/10 px-2 text-xs text-info">
-                            {t('channels.table.new')}
-                          </span>
-                        )}
-                      </span>
-                      {(() => {
-                        // Second line: the provider (in the all-providers list) and who it shares with.
-                        const sub = [
-                          !type ? providerName(c.type) : '',
-                          place?.peers?.length
-                            ? t('channels.order.sharesWith', {
-                                names: place.peers.map((id) => order.names.get(id) || `#${id}`).join(t('channels.order.nameSep'))
-                              })
-                            : ''
-                        ].filter(Boolean);
-                        return sub.length > 0 ? (
-                          <span className="block truncate text-xs text-muted-foreground">{sub.join(' · ')}</span>
-                        ) : null;
-                      })()}
-                    </span>
-                  </span>
-                </td>
-                {show('priority') &&
-                  (order ? (
-                    <td className="keep text-right" onClick={(e) => e.stopPropagation()}>
-                      {place && place.share !== null && place.share !== undefined && (
-                        <span className="inline-flex items-center gap-2">
-                          {orderActions ? (
-                            <WeightInput id={c.id} name={c.name} value={place.weight} onSave={orderActions.weight} />
-                          ) : (
-                            <span className="tabular-nums">{place.weight}</span>
-                          )}
-                          <span className="w-9 text-right text-xs tabular-nums text-muted-foreground">{place.share}%</span>
-                        </span>
-                      )}
-                    </td>
+              {order && (
+                <th className="text-center">
+                  <HeadLabel label={t('channels.order.column')} hint={t('channels.head.order')} />
+                </th>
+              )}
+              <th>{t('channels.table.name')}</th>
+              {show('priority') && (
+                <th className="text-right">
+                  {order ? (
+                    <HeadLabel label={t('channels.order.shareColumn')} hint={t('channels.head.share')} />
                   ) : (
-                    <td className="text-right tabular-nums">
-                      {c.priority ?? 0} · {c.weight ?? 1}
-                    </td>
-                  ))}
-                {show('requests') && (
-                  <td className="tabular-nums">
-                    <span className="flex items-center justify-end gap-2">
-                      <Sparkline values={series.get(c.id) || []} />
-                      <span className="min-w-[2.5rem] text-right">{m?.requests ? m.requests.toLocaleString() : <Muted>0</Muted>}</span>
-                    </span>
-                  </td>
-                )}
-                {show('success') && (
-                  <td className="text-right tabular-nums">
-                    {m?.requests ? <span className={cn(m.successRate < 0.95 && 'text-destructive')}>{pct(m.successRate)}</span> : <Muted />}
-                  </td>
-                )}
-                {show('latency') && (
-                  <td className="text-right tabular-nums">{m?.avgLatencyMs != null ? sec(m.avgLatencyMs) : <Muted />}</td>
-                )}
-                {show('balance') && (
-                  <td className="text-right tabular-nums">
-                    <BalanceText channel={c} />
-                  </td>
-                )}
-                {show('enabled') && (
-                  <td className="keep" onClick={(e) => e.stopPropagation()}>
-                    <span className="flex">
-                      <Switch
-                        size="sm"
-                        checked={c.status === 1}
-                        aria-label={t('channels.table.enable', { name: c.name })}
-                        onCheckedChange={() => actions.onToggleStatus(c)}
-                      />
-                    </span>
-                  </td>
-                )}
-                <td className="keep !px-2 text-right" onClick={(e) => e.stopPropagation()}>
-                  <ChannelMenu
-                    channel={c}
-                    actions={actions}
-                    testing={testingIds.has(c.id)}
-                    withToggle={!show('enabled')}
-                    order={order}
-                    orderActions={orderActions}
+                    <HeadLabel label={t('channels.table.priorityWeight')} hint={t('channels.head.priorityWeight')} />
+                  )}
+                </th>
+              )}
+              {show('requests') && (
+                <th className="!pl-6">
+                  <HeadLabel
+                    label={t('channels.head.requests')}
+                    hint={t('channels.head.requestsHint', { range: t(`channels.range.${range.key}`) })}
                   />
-                </td>
+                </th>
+              )}
+              {show('success') && (
+                <th className="text-right">
+                  <HeadLabel label={t('channels.table.successRate')} hint={t('channels.head.success')} />
+                </th>
+              )}
+              {show('latency') && (
+                <th className="text-right">
+                  <HeadLabel label={t('channels.table.avgLatency')} hint={t('channels.head.latency')} />
+                </th>
+              )}
+              {show('balance') && (
+                <th className="text-right">
+                  <HeadLabel label={t('channels.table.balance')} hint={t('channels.head.balance')} />
+                </th>
+              )}
+              {show('enabled') && (
+                <th>
+                  <HeadLabel label={t('channels.table.enabled')} hint={t('channels.head.enabled')} />
+                </th>
+              )}
+              <th>
+                <span className="sr-only">{t('channels.table.actions')}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={10}>{emptyRow}</td>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            )}
+            {rows.map((c) => {
+              const m = perChannel.get(c.id);
+              const off = c.status !== 1;
+              const isNew = highlightIds.has(c.id);
+              const place = order?.info.get(c.id);
+              return (
+                <tr
+                  key={c.id}
+                  onClick={() => onOpen(c.id)}
+                  {...(place && orderActions
+                    ? {
+                        onDragOver: (e) => {
+                          if (!dragId || dragId === c.id) return;
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'move';
+                          // Top third: before this row; bottom third: after it; middle: share its position.
+                          const box = e.currentTarget.getBoundingClientRect();
+                          const y = (e.clientY - box.top) / box.height;
+                          const mode = y < 0.3 ? 'before' : y > 0.7 ? 'after' : 'join';
+                          if (drop?.id !== c.id || drop.mode !== mode) setDrop({ id: c.id, mode });
+                        },
+                        onDrop: (e) => {
+                          e.preventDefault();
+                          if (dragId && drop && dragId !== c.id) {
+                            if (drop.mode === 'join') orderActions.join(dragId, c.id);
+                            else if (drop.mode === 'after') orderActions.after(dragId, c.id);
+                            else orderActions.drop(dragId, c.id);
+                          }
+                          endDrag();
+                        }
+                      }
+                    : {})}
+                  className={cn(
+                    drop?.id === c.id && drop.mode === 'before' && 'shadow-[inset_0_3px_0_var(--info)]',
+                    drop?.id === c.id && drop.mode === 'after' && 'shadow-[inset_0_-3px_0_var(--info)]',
+                    drop?.id === c.id && drop.mode === 'join' && '!bg-info/[0.12] shadow-[inset_0_0_0_2px_var(--info)]',
+                    dragId === c.id && 'opacity-40',
+                    place && place.clusterSize > 1 && 'bg-muted/40',
+                    'cursor-pointer whitespace-nowrap transition-colors hover:bg-foreground/[0.04] [&>td]:h-[52px] [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0',
+                    off && '[&>td:not(.keep)]:text-muted-foreground',
+                    isNew && 'bg-info/[0.06]',
+                    selectedIds.has(c.id) && 'bg-accent/50'
+                  )}
+                >
+                  <td className="keep !pr-0" onClick={(e) => e.stopPropagation()}>
+                    <span className="flex items-center gap-1">
+                      <Checkbox
+                        checked={selectedIds.has(c.id)}
+                        aria-label={t('channels.batch.selectRow', { name: c.name })}
+                        onCheckedChange={() => toggleRow(c.id)}
+                      />
+                      {place && orderActions && (
+                        <span
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.effectAllowed = 'move';
+                            e.dataTransfer.setData('text/plain', String(c.id));
+                            // The whole row follows the pointer, not just the handle.
+                            const row = e.currentTarget.closest('tr');
+                            if (row) {
+                              const box = row.getBoundingClientRect();
+                              e.dataTransfer.setDragImage(row, e.clientX - box.left, e.clientY - box.top);
+                            }
+                            setDragId(c.id);
+                          }}
+                          onDragEnd={endDrag}
+                          className="-m-1 flex cursor-grab rounded p-1 text-muted-foreground/50 hover:bg-muted hover:text-foreground active:cursor-grabbing"
+                          title={t('channels.order.drag')}
+                        >
+                          <GripVertical className="size-4" />
+                        </span>
+                      )}
+                    </span>
+                  </td>
+                  {order && spans.get(c.id) !== 0 && (
+                    <td
+                      rowSpan={spans.get(c.id) || 1}
+                      className="keep !px-1 text-center align-middle"
+                      title={
+                        place && place.clusterSize > 1
+                          ? t('channels.order.groupWhy', { count: place.clusterSize, models: place.sharedModels })
+                          : undefined
+                      }
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span className="inline-flex items-center gap-0.5">
+                        <span className="w-5">
+                          <span className="block text-[13px] font-medium tabular-nums">{place ? place.number : ''}</span>
+                          {place && place.clusterSize > 1 && spans.get(c.id) > 1 && (
+                            <span className="block text-[11px] leading-tight text-muted-foreground">{t('channels.order.sharedTag')}</span>
+                          )}
+                        </span>
+                        {place && orderActions && (
+                          // Moves the whole position (the group) one step.
+                          <span className="flex flex-col">
+                            <button
+                              type="button"
+                              disabled={place.index === 0}
+                              aria-label={t('channels.order.up')}
+                              title={t('channels.order.up')}
+                              onClick={() => orderActions.step(c.id, 'up')}
+                              className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-25"
+                            >
+                              <ChevronUp className="size-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={place.index === order.groups.length - 1}
+                              aria-label={t('channels.order.down')}
+                              title={t('channels.order.down')}
+                              onClick={() => orderActions.step(c.id, 'down')}
+                              className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-25"
+                            >
+                              <ChevronDown className="size-3.5" />
+                            </button>
+                          </span>
+                        )}
+                      </span>
+                    </td>
+                  )}
+                  <td>
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      {!type && <ProviderTile type={c.type} />}
+                      <span className="min-w-0 flex-1">
+                        <span className="flex min-w-0 items-center gap-2">
+                          <Dot tone={channelDot(c, dismissed)} />
+                          <span className="min-w-[6rem] shrink truncate font-mono text-[13px]" title={c.name}>
+                            {c.name}
+                          </span>
+                          {c.tag && (
+                            // The tag gives way before the name does.
+                            <span
+                              className="inline-block h-[22px] min-w-0 shrink-[4] truncate rounded-full bg-muted px-2 text-xs leading-[22px] text-muted-foreground"
+                              title={c.tag}
+                            >
+                              {c.tag}
+                            </span>
+                          )}
+                          {(issuesById.get(c.id) || []).map((i) => (
+                            <IssueTag key={i.key} issue={i} onAction={onIssueAction} onDismiss={onDismissIssue} busy={issueBusy(i)} />
+                          ))}
+                          {drop?.id === c.id && (
+                            <span className="inline-flex h-[22px] shrink-0 items-center rounded-full bg-info px-2 text-xs text-info-foreground">
+                              {t(`channels.order.dropHint.${drop.mode}`)}
+                            </span>
+                          )}
+                          {isNew && (
+                            <span className="inline-flex h-[22px] shrink-0 items-center rounded-full bg-info/10 px-2 text-xs text-info">
+                              {t('channels.table.new')}
+                            </span>
+                          )}
+                        </span>
+                        {(() => {
+                          // Second line: the provider (in the all-providers list) and who it shares with.
+                          const sub = [
+                            [!type ? providerName(c.type) : '', relayHost(c)].filter(Boolean).join(' · '),
+                            place?.peers?.length
+                              ? t('channels.order.sharesWith', {
+                                  names: place.peers.map((id) => order.names.get(id) || `#${id}`).join(t('channels.order.nameSep'))
+                                })
+                              : ''
+                          ].filter(Boolean);
+                          return sub.length > 0 ? (
+                            <span className="block truncate text-xs text-muted-foreground">{sub.join(' · ')}</span>
+                          ) : null;
+                        })()}
+                      </span>
+                    </span>
+                  </td>
+                  {show('priority') &&
+                    (order ? (
+                      <td className="keep text-right" onClick={(e) => e.stopPropagation()}>
+                        {place && place.share !== null && place.share !== undefined && (
+                          <span className="inline-flex items-center gap-2">
+                            {orderActions ? (
+                              <WeightInput id={c.id} name={c.name} value={place.weight} onSave={orderActions.weight} />
+                            ) : (
+                              <span className="tabular-nums">{place.weight}</span>
+                            )}
+                            <span className="w-9 text-right text-xs tabular-nums text-muted-foreground">{place.share}%</span>
+                          </span>
+                        )}
+                        {!(place && place.share !== null && place.share !== undefined) && <Muted title={t('channels.head.shareNone')} />}
+                      </td>
+                    ) : (
+                      <td className="text-right tabular-nums">
+                        {c.priority ?? 0} · {c.weight ?? 1}
+                      </td>
+                    ))}
+                  {show('requests') && (
+                    <td className="!pl-6 tabular-nums">
+                      {/* Count first, then its trend over the range. */}
+                      <span className="flex items-center gap-2.5">
+                        <span className="w-10 shrink-0 text-right">{m?.requests ? m.requests.toLocaleString() : <Muted>0</Muted>}</span>
+                        <Sparkline values={series.get(c.id) || []} />
+                      </span>
+                    </td>
+                  )}
+                  {show('success') && (
+                    <td className="text-right tabular-nums">
+                      {m?.requests ? (
+                        <span className={cn(m.successRate < 0.95 && 'text-destructive')}>{pct(m.successRate)}</span>
+                      ) : (
+                        <Muted />
+                      )}
+                    </td>
+                  )}
+                  {show('latency') && (
+                    <td className="text-right tabular-nums">{m?.avgLatencyMs != null ? sec(m.avgLatencyMs) : <Muted />}</td>
+                  )}
+                  {show('balance') && (
+                    <td className="text-right tabular-nums">
+                      <BalanceText channel={c} />
+                    </td>
+                  )}
+                  {show('enabled') && (
+                    <td className="keep" onClick={(e) => e.stopPropagation()}>
+                      <span className="flex">
+                        <Switch
+                          size="sm"
+                          checked={c.status === 1}
+                          aria-label={t('channels.table.enable', { name: c.name })}
+                          onCheckedChange={() => actions.onToggleStatus(c)}
+                        />
+                      </span>
+                    </td>
+                  )}
+                  <td className="keep !px-2 text-right" onClick={(e) => e.stopPropagation()}>
+                    <ChannelMenu
+                      channel={c}
+                      actions={actions}
+                      testing={testingIds.has(c.id)}
+                      withToggle={!show('enabled')}
+                      order={order}
+                      orderActions={orderActions}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </TooltipProvider>
     </div>
   );
 

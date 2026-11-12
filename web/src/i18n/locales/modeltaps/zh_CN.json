@@ -2391,6 +2391,18 @@
       "driftNew_other": "{{count}} 个新模型",
       "driftMissing_other": "{{count}} 个模型下架",
       "refresh": "刷新"
+    },
+    "head": {
+      "order": "先用数字小的；同号渠道一起分担流量",
+      "share": "同组渠道的权重和流量占比",
+      "shareNone": "不与其他渠道分担",
+      "priorityWeight": "优先级高的先用，同优先级按权重分流",
+      "requests": "请求数",
+      "requestsHint": "{{range}}内的请求数和走势",
+      "success": "成功请求占比",
+      "latency": "成功请求的平均耗时",
+      "balance": "上游余额；订阅类显示本期用量",
+      "enabled": "关闭后不再接收请求"
     }
   },
   "nav": {
