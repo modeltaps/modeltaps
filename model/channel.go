@@ -616,10 +616,17 @@ func (channel *Channel) Insert() error {
 }
 
 func (channel *Channel) Update(overwrite bool) error {
+	// The numbers before the change, so supplies that follow the channel can move with it.
+	before, _ := channelNumbers(DB.Where("id = ?", channel.Id))
 
 	err := channel.UpdateRaw(overwrite)
 
 	if err == nil {
+		if old, ok := before[channel.Id]; ok {
+			if _, syncErr := SyncSuppliesWithChannel(channel.Id, old[0], channel.GetPriority(), old[1], channel.GetWeight()); syncErr != nil {
+				logger.SysError("failed to sync supplies of channel " + channel.Name + ": " + syncErr.Error())
+			}
+		}
 		ChannelGroup.Load()
 		ChannelGroup.ClearChannelCooldowns(channel.Id)
 	}

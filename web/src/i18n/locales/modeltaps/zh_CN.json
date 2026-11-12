@@ -2214,6 +2214,7 @@
     "unknownProvider": "类型 {{type}}",
     "usage": {
       "label": "使用方式",
+      "syncHint": "改这里会同步到这个渠道的所有供应；在模型页单独设置过优先级或权重的供应不变。",
       "only": "唯一提供方",
       "onlyDesc": "同组里没有别的渠道提供这些模型",
       "backup": "作为备用",
@@ -2510,6 +2511,9 @@
     "deleteConfirm": "不再把 {{model}} 发给 {{channel}}？渠道本身不受影响。",
     "deleted": "已删除供应",
     "moveUp": "移到更高一档",
+    "ownNumbers": "单独设置",
+    "ownNumbersTip": "这条供应的优先级或权重和渠道的不一样，渠道改动时不会跟着变",
+    "followChannel": "恢复跟随渠道",
     "moveDown": "移到更低一档",
     "pauseFor": "暂停",
     "paused": "已暂停 {{time}}",

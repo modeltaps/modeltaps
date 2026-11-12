@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { ArrowDown, ArrowUp, ArrowUpRight, Loader2, MoreHorizontal, Pause, Pencil, Play, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpRight, Link2, Loader2, MoreHorizontal, Pause, Pencil, Play, Plus, Trash2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,7 @@ import {
   SUPPLY_MODES,
   channelGroups,
   defaultNewPriority,
+  followsChannel,
   moveSupply,
   normalizeSupplyMode,
   parseSupplyForm,
@@ -329,6 +330,9 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
     if (await onAction('update', supply, parsed)) setEditing(null);
   };
 
+  // Its own priority or weight: a change to the channel's numbers will not move this supply.
+  const own = !followsChannel(supply);
+
   const channelCell = (
     <div className="flex min-w-0 items-center gap-2">
       <span className={cn('inline-flex shrink-0', state.kind === 'channel_off' && 'opacity-40 grayscale')}>
@@ -355,6 +359,12 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
           )}
         </div>
         <p className="truncate text-xs text-muted-foreground" title={groupsText || undefined}>
+          {own && !outsideGroup && (
+            <span className="text-foreground" title={t('modelSupply.ownNumbersTip')}>
+              {t('modelSupply.ownNumbers')}
+              {' · '}
+            </span>
+          )}
           {outsideGroup
             ? t('modelSupply.preview.outsideRow', { group: outsideGroup })
             : [channelTypeName(supply.channel_type), supply.channel_tag, groupsText].filter(Boolean).join(' · ')}
@@ -458,6 +468,14 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
                 <ArrowDown className="size-4" />
                 {t('modelSupply.moveDown')}
               </DropdownMenuItem>
+              {own && (
+                <DropdownMenuItem
+                  onClick={() => onAction('update', supply, { priority: supply.channel_priority, weight: supply.channel_weight })}
+                >
+                  <Link2 className="size-4" />
+                  {t('modelSupply.followChannel')}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               {pauses.length > 0 ? (
                 pauses.map((p) => (

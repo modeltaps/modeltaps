@@ -41,6 +41,16 @@ const channelModels = (channel) =>
     .map((name) => name.trim())
     .filter(Boolean);
 
+// A supply follows its channel while it has the channel's priority and weight: changing the
+// channel then moves the supply too. A supply with its own numbers stays where it is. Supplies
+// of a deleted channel (no channel numbers) count as following.
+export function followsChannel(supply) {
+  if (!supply || supply.channel_priority === undefined || supply.channel_weight === undefined || !supply.channel_name) return true;
+  return (
+    (Number(supply.priority) || 0) === Number(supply.channel_priority) && (Number(supply.weight) || 1) === Number(supply.channel_weight)
+  );
+}
+
 // The model name a channel should receive for a public model: the channel's model mapping
 // when it has an entry (without the leading "+" that only changes billing), else the name itself.
 export function upstreamFor(channel, model) {
