@@ -2165,7 +2165,9 @@
       "summary_other": "{{count}} チャネル · {{range}}で {{requests}} リクエスト",
       "testAll": "すべてテスト",
       "testDone_other": "{{count}} チャネルすべてテストに成功しました",
-      "testPartial": "{{count}} チャネル中 {{failed}} 件のテストに失敗しました"
+      "testPartial": "{{count}} チャネル中 {{failed}} 件のテストに失敗しました",
+      "refreshModelsOf": "{{name}} のモデル一覧を更新",
+      "testAllOf": "{{name}} の全チャネルをテスト"
     },
     "panel": {
       "enabled": "有効",
@@ -2286,7 +2288,8 @@
       "results": "一致するプロバイダー",
       "none": "一致するものはありません",
       "emptyTitle": "一致するチャネルはありません",
-      "emptyDescription": "「{{query}}」に一致するチャネルはありません"
+      "emptyDescription": "「{{query}}」に一致するチャネルはありません",
+      "short": "チャネルを検索"
     },
     "tagActions": {
       "label": "タグ {{tag}}",
@@ -2354,7 +2357,8 @@
       "allMeta": "チャネル {{count}} 件",
       "allTitle": "すべてのチャネル",
       "meta": "チャネル {{count}} 件 · {{requests}} リクエスト",
-      "metaOff": "チャネル {{count}} 件（有効 {{enabled}} 件） · {{requests}} リクエスト"
+      "metaOff": "チャネル {{count}} 件（有効 {{enabled}} 件） · {{requests}} リクエスト",
+      "allProviders": "すべてのプロバイダー"
     },
     "order": {
       "column": "順序",
@@ -2367,12 +2371,23 @@
       "drag": "ドラッグして並べ替え",
       "positionShort": "{{n}} 番目",
       "sharesWith": "{{names}} と分担",
-      "nameSep": "、"
+      "nameSep": "、",
+      "sharedTag": "分担",
+      "groupWhy": "この {{count}} 件のチャネルは同じ位置にあり、共通する {{models}} 件のモデルを重みで分担します"
     },
     "newMenu": {
       "inUse": "接続済み"
     },
-    "orderHint": "上から順に試し、前が使えないときだけ次を使います。番号が同じチャネルは、共通のモデルについて重みで分担します。"
+    "orderHint": "上から順に試し、前が使えないときだけ次を使います。同じ番号のチャネルは同じモデルを提供し、重みで分担します。",
+    "attention_other": "{{count}} 件の対応が必要",
+    "issueTag": {
+      "autoDisabled": "自動無効化",
+      "keyMissing": "キーなし",
+      "lowBalance": "残高不足",
+      "driftNew_other": "新しいモデル {{count}} 件",
+      "driftMissing_other": "終了したモデル {{count}} 件",
+      "refresh": "更新"
+    }
   },
   "nav": {
     "sections": {

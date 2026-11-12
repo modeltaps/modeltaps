@@ -2267,7 +2267,9 @@
       "testAll": "Test all",
       "testDone_one": "The channel passed the test",
       "testDone_other": "All {{count}} channels passed the test",
-      "testPartial": "{{failed}} of {{count}} channels failed the test"
+      "testPartial": "{{failed}} of {{count}} channels failed the test",
+      "refreshModelsOf": "Refresh {{name}} model lists",
+      "testAllOf": "Test all {{name}} channels"
     },
     "panel": {
       "enabled": "Enabled",
@@ -2394,7 +2396,8 @@
       "results": "Providers with matches",
       "none": "Nothing matches",
       "emptyTitle": "No matching channels",
-      "emptyDescription": "No channel of any provider matches \"{{query}}\""
+      "emptyDescription": "No channel of any provider matches \"{{query}}\"",
+      "short": "Search channels"
     },
     "tagActions": {
       "label": "Tag {{tag}}",
@@ -2462,7 +2465,8 @@
       "allMeta": "{{count}} channels",
       "allTitle": "All channels",
       "meta": "{{count}} channels · {{requests}} requests",
-      "metaOff": "{{count}} channels ({{enabled}} enabled) · {{requests}} requests"
+      "metaOff": "{{count}} channels ({{enabled}} enabled) · {{requests}} requests",
+      "allProviders": "All providers"
     },
     "order": {
       "column": "Order",
@@ -2475,12 +2479,26 @@
       "drag": "Drag to reorder",
       "positionShort": "#{{n}}",
       "sharesWith": "shares with {{names}}",
-      "nameSep": ", "
+      "nameSep": ", ",
+      "sharedTag": "shared",
+      "groupWhy": "These {{count}} channels are in one position and offer {{models}} models in common, which they share by weight"
     },
     "newMenu": {
       "inUse": "In use"
     },
-    "orderHint": "Tried top to bottom; the next is used only when the one before is unavailable. Channels with the same number share traffic by weight for the models they have in common."
+    "orderHint": "Tried top to bottom; the next is used only when the one before is unavailable. Channels with the same number serve the same models and share traffic by weight.",
+    "attention_one": "{{count}} needs attention",
+    "attention_other": "{{count}} need attention",
+    "issueTag": {
+      "autoDisabled": "Auto-disabled",
+      "keyMissing": "No key",
+      "lowBalance": "Low balance",
+      "driftNew_one": "{{count}} new model",
+      "driftNew_other": "{{count}} new models",
+      "driftMissing_one": "{{count}} model gone",
+      "driftMissing_other": "{{count}} models gone",
+      "refresh": "Refresh"
+    }
   },
   "nav": {
     "sections": {

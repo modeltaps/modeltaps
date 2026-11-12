@@ -127,29 +127,70 @@ export function setWeight(groups, id, weight) {
   return next;
 }
 
-// Per channel: { position (1-based), first, last (of a shared position), size, share }. share is
-// the percentage within the channels of its position that serve a model in common with it, null
-// when it shares none of its models there (its weight then changes nothing).
+// Per channel, how it is shown: { number, rank, clusterSize, clusterFirst, index, size, weight,
+// share, peers }. Channels of one position only compete for the models they have in common, so a
+// position falls apart into clusters of channels linked by a common model; each cluster gets the
+// next number (a lone channel is a cluster of one). `rank` sorts rows: cluster first, then the
+// channel's place in its position. share is the percentage inside the cluster, null for a
+// cluster of one; peers are the other channels of the cluster.
 export function orderInfo(groups = [], providers = []) {
   const info = new Map();
+  let number = 0;
+  let rank = 0;
   groups.forEach((g, gi) => {
     const tier = g.ids.map((id) => ({ channel_id: id, weight: g.weights[id] || 1 }));
-    const split = g.ids.length > 1 ? tierSplit(tier, providers, [tier]) : null;
-    g.ids.forEach((id, i) => {
-      info.set(id, {
-        position: gi + 1,
-        index: gi,
-        size: g.ids.length,
-        first: i === 0,
-        last: i === g.ids.length - 1,
-        weight: g.weights[id] || 1,
-        share: split ? split[i].share : null,
-        // Channels of the same position it really shares traffic with (a model in common).
-        peers: split && split[i].share !== null ? split[i].peers.map((k) => g.ids[k]) : []
-      });
+    const split = g.ids.length > 1 ? tierSplit(tier, providers, [tier]) : g.ids.map(() => ({ group: 0, share: null, peers: [] }));
+    const numberOf = new Map();
+    const members = new Map();
+    split.forEach((s, i) => {
+      if (!members.has(s.group)) members.set(s.group, []);
+      members.get(s.group).push(i);
     });
+    for (const [key, list] of members) {
+      number += 1;
+      numberOf.set(key, number);
+      // Models offered by at least two channels of the cluster: why they share.
+      const seen = new Map();
+      for (const i of list) for (const m of channelModels(providers, g.ids[i])) seen.set(m, (seen.get(m) || 0) + 1);
+      const sharedModels = [...seen.values()].filter((n) => n > 1).length;
+      list.forEach((i, k) => {
+        const id = g.ids[i];
+        info.set(id, {
+          number,
+          rank: rank++,
+          clusterSize: list.length,
+          clusterFirst: k === 0,
+          index: gi,
+          size: g.ids.length,
+          weight: g.weights[id] || 1,
+          share: split[i].share,
+          sharedModels,
+          peers: split[i].share !== null ? split[i].peers.map((x) => g.ids[x]) : []
+        });
+      });
+    }
   });
   return info;
+}
+
+function channelModels(providers, id) {
+  for (const p of providers) {
+    const c = p.channels.find((x) => x.id === id);
+    if (c) return c.models || [];
+  }
+  return [];
+}
+
+// Moves a channel into the position of `targetId`, sharing it (weight 1).
+export function joinPosition(groups, id, targetId) {
+  if (id === targetId) return groups;
+  const next = clone(groups);
+  const item = takeOut(next, id);
+  const at = indexOf(next, targetId);
+  if (!item || at < 0) return groups;
+  next[at].ids.push(id);
+  next[at].weights[id] = 1;
+  return next;
 }
 
 export const sameOrder = (a, b) => JSON.stringify(orderToTiers(a)) === JSON.stringify(orderToTiers(b));

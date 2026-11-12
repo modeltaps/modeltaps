@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   canMoveStep,
+  joinPosition,
   moveBefore,
   moveStep,
   orderFromPolicy,
@@ -75,9 +76,16 @@ describe('order edits', () => {
     let groups = shareWithAbove(shareWithAbove(base, 2), 3); // 1, 2 (Vercel) and 3 (Venice) together
     groups = setWeight(groups, 1, 3);
     const info = orderInfo(groups, providers);
-    expect(info.get(1)).toMatchObject({ position: 1, first: true, share: 75 });
-    expect(info.get(2)).toMatchObject({ position: 1, share: 25 });
-    expect(info.get(3)).toMatchObject({ position: 1, last: true, share: null });
-    expect(info.get(4).position).toBe(2);
+    // Vercel's two keys share (cluster 1); Venice serves other models: a number of its own.
+    expect(info.get(1)).toMatchObject({ number: 1, clusterFirst: true, clusterSize: 2, share: 75, peers: [2], sharedModels: 2 });
+    expect(info.get(2)).toMatchObject({ number: 1, clusterFirst: false, share: 25 });
+    expect(info.get(3)).toMatchObject({ number: 2, clusterSize: 1, share: null, peers: [] });
+    expect(info.get(4).number).toBe(3);
+    expect(info.get(1).rank < info.get(2).rank && info.get(2).rank < info.get(3).rank).toBe(true);
+  });
+
+  it('joins a channel into another position', () => {
+    expect(joinPosition(base, 4, 1).map((g) => g.ids)).toEqual([[1, 4], [2], [3], [5], [9]]);
+    expect(joinPosition(base, 1, 1)).toBe(base);
   });
 });

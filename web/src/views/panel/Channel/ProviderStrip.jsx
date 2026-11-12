@@ -3,15 +3,15 @@ import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
 import { Dot } from '@/components/objects';
 import { openIssues } from './channelGroups';
-import { ProviderTile, useProviderName } from './channelParts';
+import { useProviderName } from './channelParts';
+import { Combobox } from '@/components/ui/combobox';
+import ProviderIcon from '@/components/brand/ProviderIcon';
 
-// Search and provider filters above the channel list: one chip per provider with its channel
-// count (and a dot when one of its channels needs attention); a chip filters the list to that
-// provider, "All" clears it. The search covers every channel; `/` focuses it. Traffic is shown per
-// channel in the list itself.
+// Search and provider filter, the first items of the channel list's toolbar. The provider
+// dropdown lists each provider with its channel count (and a dot when one of its channels needs
+// attention); picking one filters the list. The search covers every channel; `/` focuses it.
 export default function ProviderStrip({ groups, selected, onSelect, dismissed, query, onQueryChange }) {
   const { t } = useTranslation();
   const providerName = useProviderName();
@@ -53,66 +53,51 @@ export default function ProviderStrip({ groups, selected, onSelect, dismissed, q
   );
   const total = chips.reduce((sum, c) => sum + c.channels.length, 0);
 
-  const chip = (key, active, onClick, label, children) => (
-    <button
-      key={key}
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      aria-label={label}
-      className={cn(
-        'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        active ? 'border-foreground bg-foreground text-background' : 'border-border bg-field hover:border-foreground/30'
-      )}
-    >
-      {children}
-    </button>
+  const options = useMemo(
+    () => [
+      { value: '0', label: t('channels.strip.allProviders'), hint: String(total) },
+      ...chips.map((c) => ({
+        value: String(c.type),
+        label: providerName(c.type),
+        icon: <ProviderIcon type={c.type} className="size-4" />,
+        hint: (
+          <span className="inline-flex items-center gap-1.5">
+            {c.attention && <Dot tone="warn" />}
+            {c.enabled === c.channels.length ? c.channels.length : `${c.enabled}/${c.channels.length}`}
+          </span>
+        )
+      }))
+    ],
+    [chips, providerName, t, total]
   );
-  const count = (n, active) => <span className={cn('tabular-nums', active ? 'opacity-70' : 'text-muted-foreground')}>{n}</span>;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="relative w-64 shrink-0">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+    <>
+      <div className="relative w-36 shrink-0">
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <input
           ref={inputRef}
           type="search"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={t('channels.search.placeholder')}
+          placeholder={t('channels.search.short')}
           aria-label={t('channels.search.placeholder')}
-          className="h-8 w-full rounded-lg border border-input bg-field pl-9 pr-3 text-[13px] outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          title={t('channels.search.placeholder')}
+          className="h-8 w-full rounded-lg border border-input bg-field pl-8 pr-3 text-[13px] outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
         />
       </div>
-      <div className="flex min-w-0 flex-wrap gap-1.5" role="group" aria-label={t('channels.lane.label')}>
-        {chip(
-          'all',
-          !selected,
-          () => onSelect(0),
-          t('channels.strip.all'),
-          <>
-            {t('channels.strip.all')}
-            {count(total, !selected)}
-          </>
-        )}
-        {chips.map((c) => {
-          const active = selected === c.type;
-          const name = providerName(c.type);
-          return chip(
-            c.type,
-            active,
-            () => onSelect(c.type),
-            name,
-            <>
-              <ProviderTile type={c.type} />
-              {name}
-              {count(c.enabled === c.channels.length ? c.channels.length : `${c.enabled}/${c.channels.length}`, active)}
-              {c.attention && <Dot tone="warn" />}
-            </>
-          );
-        })}
+      <div className="w-36 shrink-0">
+        <Combobox
+          value={String(selected || 0)}
+          onValueChange={(v) => onSelect(Number(v))}
+          options={options}
+          className="h-8 text-[13px]"
+          contentClassName="min-w-[14rem]"
+          searchPlaceholder={t('providerPicker.search')}
+          emptyText={t('providerPicker.empty')}
+        />
       </div>
-    </div>
+    </>
   );
 }
 

@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
   ArrowDown,
-  ArrowLeft,
   ArrowUp,
   Copy,
   GripVertical,
@@ -14,10 +13,8 @@ import {
   Info,
   Loader2,
   MoreHorizontal,
-  Play,
   Power,
   PowerOff,
-  RefreshCw,
   Trash2,
   X
 } from 'lucide-react';
@@ -26,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,9 +35,9 @@ import { channelSeries, formatBalance, metricsByChannel } from './channelMetrics
 import { NO_TAG, channelDot, filterChannels, groupOptions, openIssues, selectionState, statusCounts, tagOptions } from './channelGroups';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ChannelBatchBar, TagActionsMenu } from './ChannelToolbar';
-import { Dot, ROW_OPENS, RowControl, Segmented, rowOpenProps } from '@/components/objects';
-import { FilterSheet, describeEntry, isEntryActive } from '@/components/filter-bar';
-import { ColumnPicker, ConditionBar, PhoneListToolbar, PresetChips, StatusSegments, useFilterPresets } from '@/components/list-page';
+import { Dot, ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
+import { FilterBar, FilterSheet, describeEntry, isEntryActive } from '@/components/filter-bar';
+import { ColumnPicker, PhoneListToolbar, PresetChips, StatusSegments, useFilterPresets } from '@/components/list-page';
 import { ProviderTile, useProviderName } from './channelParts';
 
 export const RANGES = [
@@ -75,51 +73,60 @@ export function BalanceText({ channel }) {
 
 BalanceText.propTypes = { channel: PropTypes.object.isRequired };
 
-// Attention row: what is wrong, one action, dismiss.
-function IssueRow({ issue, onAction, onDismiss, busy }) {
+// What needs doing on a channel, as a tag on its row: what is wrong and the one action, the
+// action runs on click; × dismisses it for this session.
+function IssueTag({ issue, onAction, onDismiss, busy }) {
   const { t } = useTranslation();
-  const c = issue.channel;
-  const text = {
-    autoDisabled: t('channels.issue.autoDisabled'),
-    keyMissing: t('channels.issue.keyMissing'),
-    lowBalance: t('channels.issue.lowBalance', {
-      balance: formatBalance(c.type, c.balance),
-      threshold: formatBalance(c.type, c.balance_threshold)
-    }),
-    driftNew: t('channels.issue.driftNew', { count: issue.count }),
-    driftMissing: t('channels.issue.driftMissing', { count: issue.count })
+  const label = {
+    autoDisabled: t('channels.issueTag.autoDisabled'),
+    keyMissing: t('channels.issueTag.keyMissing'),
+    lowBalance: t('channels.issueTag.lowBalance'),
+    driftNew: t('channels.issueTag.driftNew', { count: issue.count }),
+    driftMissing: t('channels.issueTag.driftMissing', { count: issue.count })
   }[issue.kind];
   const action = {
     autoDisabled: t('channels.issue.enable'),
     keyMissing: t('channels.issue.setKey'),
-    lowBalance: t('channels.issue.refreshBalance'),
+    lowBalance: t('channels.issueTag.refresh'),
     driftNew: t('channels.issue.view'),
     driftMissing: t('channels.issue.view')
   }[issue.kind];
   return (
-    <div className="flex items-center gap-3 py-2.5 pl-4 pr-2.5 text-[13px] [&+&]:border-t [&+&]:border-warning/30">
-      <AlertTriangle className="size-4 shrink-0 text-warning" />
-      <span className="min-w-0 flex-1">
-        <b className="font-mono font-medium">{c.name}</b> · {text}
-      </span>
-      <Button variant="outline" size="sm" className="h-[30px] rounded-lg bg-card" disabled={busy} onClick={() => onAction(issue)}>
-        {busy && <Loader2 className="size-3.5 animate-spin" />}
-        {action}
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-[30px] rounded-lg"
-        aria-label={t('channels.issue.dismiss')}
-        onClick={() => onDismiss(issue)}
+    // Gives way before the channel name: it shrinks down to its icon when the row is narrow.
+    <span
+      title={`${label} · ${action}`}
+      className="inline-flex h-[22px] min-w-[44px] shrink-[8] items-center overflow-hidden rounded-full border border-warning/40 bg-warning/10 text-xs text-warning"
+    >
+      <button
+        type="button"
+        disabled={busy}
+        onClick={(e) => {
+          e.stopPropagation();
+          onAction(issue);
+        }}
+        className="inline-flex h-full min-w-0 items-center gap-1 pl-2 pr-1.5 hover:bg-warning/15 disabled:opacity-60"
       >
-        <X className="size-4" />
-      </Button>
-    </div>
+        {busy ? <Loader2 className="size-3 shrink-0 animate-spin" /> : <AlertTriangle className="size-3 shrink-0" />}
+        <span className="truncate">
+          {label} · <span className="underline-offset-2 hover:underline">{action}</span>
+        </span>
+      </button>
+      <button
+        type="button"
+        aria-label={t('channels.issue.dismiss')}
+        onClick={(e) => {
+          e.stopPropagation();
+          onDismiss(issue);
+        }}
+        className="inline-flex h-full shrink-0 items-center pl-0.5 pr-1.5 hover:bg-warning/15"
+      >
+        <X className="size-3" />
+      </button>
+    </span>
   );
 }
 
-IssueRow.propTypes = { issue: PropTypes.object.isRequired, onAction: PropTypes.func, onDismiss: PropTypes.func, busy: PropTypes.bool };
+IssueTag.propTypes = { issue: PropTypes.object.isRequired, onAction: PropTypes.func, onDismiss: PropTypes.func, busy: PropTypes.bool };
 
 // Table columns: selection, name and the row menu are fixed; the rest are in the column picker.
 export const CHANNEL_COLUMNS = [
@@ -156,8 +163,8 @@ function Sparkline({ values }) {
 Sparkline.propTypes = { values: PropTypes.arrayOf(PropTypes.number).isRequired };
 
 const COLUMN_WIDTHS = {
-  select: 44,
-  order: 52,
+  select: 60,
+  order: 64,
   priority: 112,
   requests: 136,
   success: 80,
@@ -314,10 +321,6 @@ export default function ProviderPane({
   onDismissCreated,
   highlightIds,
   onOpen,
-  onRefreshModels,
-  onTestAll,
-  refreshingModels,
-  testingAll,
   actions,
   testingIds,
   filters,
@@ -326,17 +329,16 @@ export default function ProviderPane({
   tagActions,
   batchBusy,
   layout = 'split',
-  onBack,
   columns,
   order = null,
-  orderActions = null
+  orderActions = null,
+  leading = null
 }) {
   const { t } = useTranslation();
   const providerName = useProviderName();
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const range = RANGES.find((r) => r.key === rangeKey) || RANGES[0];
-  const rangeLabel = t(`channels.range.${range.key}`);
   const phone = layout === 'list';
 
   const ids = useMemo(() => channels.map((c) => c.id), [channels]);
@@ -349,19 +351,44 @@ export default function ProviderPane({
       for (const id of ids) out.get(id).push(p.values[id] || 0);
     return out;
   }, [metrics.rows, ids, metrics.start, metrics.end, range.bucket]);
-  const total = useMemo(() => channels.reduce((a, c) => a + (perChannel.get(c.id)?.requests || 0), 0), [channels, perChannel]);
   const issues = openIssues(channels, dismissed);
+  const issuesById = useMemo(() => {
+    const out = new Map();
+    for (const i of issues) out.set(i.channel.id, [...(out.get(i.channel.id) || []), i]);
+    return out;
+  }, [issues]);
   const name = type ? providerName(type) : t('channels.strip.allTitle');
   // With a call order the rows follow it; otherwise they keep the page's order.
   const rows = useMemo(() => {
     const list = filterChannels(channels, filters, dismissed);
     if (!order) return list;
-    const at = (c) => order.groups.findIndex((g) => g.ids.includes(c.id));
-    const inGroup = (c) => order.groups[at(c)]?.ids.indexOf(c.id) ?? 0;
-    return [...list].sort((a, b) => at(a) - at(b) || inGroup(a) - inGroup(b));
+    const rank = (c) => order.info.get(c.id)?.rank ?? Number.MAX_SAFE_INTEGER;
+    return [...list].sort((a, b) => rank(a) - rank(b));
   }, [channels, filters, dismissed, order]);
+  // Order cell of each shown row: the first row of a run of one cluster spans the run.
+  const spans = useMemo(() => {
+    const out = new Map();
+    if (!order) return out;
+    let lead = null;
+    for (const c of rows) {
+      const n = order.info.get(c.id)?.number;
+      if (lead && n !== undefined && order.info.get(lead)?.number === n) {
+        out.set(lead, out.get(lead) + 1);
+        out.set(c.id, 0);
+      } else {
+        lead = c.id;
+        out.set(c.id, 1);
+      }
+    }
+    return out;
+  }, [rows, order]);
   const [dragId, setDragId] = useState(0);
-  const [dropId, setDropId] = useState(0);
+  // Where a dragged row would land: before the row (`before`) or in its position (`join`).
+  const [drop, setDrop] = useState(null);
+  const endDrag = () => {
+    setDragId(0);
+    setDrop(null);
+  };
   const counts = useMemo(() => statusCounts(channels, filters, dismissed), [channels, filters, dismissed]);
   const { tags, hasUntagged } = useMemo(() => tagOptions(channels), [channels]);
   const groups = useMemo(() => groupOptions(channels), [channels]);
@@ -491,7 +518,11 @@ export default function ProviderPane({
                 onCheckedChange={toggleAll}
               />
             </th>
-            {order && <th className="text-center">{t('channels.order.column')}</th>}
+            {order && (
+              <th className="text-center" title={t('channels.orderHint')}>
+                {t('channels.order.column')}
+              </th>
+            )}
             <th>{t('channels.table.name')}</th>
             {show('priority') && (
               <th className="text-right">{order ? t('channels.order.shareColumn') : t('channels.table.priorityWeight')}</th>
@@ -526,21 +557,27 @@ export default function ProviderPane({
                 {...(place && orderActions
                   ? {
                       onDragOver: (e) => {
-                        if (!dragId) return;
+                        if (!dragId || dragId === c.id) return;
                         e.preventDefault();
-                        setDropId(c.id);
+                        const box = e.currentTarget.getBoundingClientRect();
+                        const mode = e.clientY - box.top < box.height / 3 ? 'before' : 'join';
+                        if (drop?.id !== c.id || drop.mode !== mode) setDrop({ id: c.id, mode });
                       },
                       onDrop: (e) => {
                         e.preventDefault();
-                        if (dragId && dragId !== c.id) orderActions.drop(dragId, c.id);
-                        setDragId(0);
-                        setDropId(0);
+                        if (dragId && drop && dragId !== c.id) {
+                          if (drop.mode === 'join') orderActions.join(dragId, c.id);
+                          else orderActions.drop(dragId, c.id);
+                        }
+                        endDrag();
                       }
                     }
                   : {})}
                 className={cn(
-                  dropId === c.id && dragId !== c.id && 'shadow-[inset_0_2px_0_var(--info)]',
+                  drop?.id === c.id && drop.mode === 'before' && 'shadow-[inset_0_2px_0_var(--info)]',
+                  drop?.id === c.id && drop.mode === 'join' && 'bg-info/[0.08] shadow-[inset_0_0_0_1px_var(--info)]',
                   dragId === c.id && 'opacity-50',
+                  place && place.clusterSize > 1 && 'bg-muted/40',
                   'cursor-pointer whitespace-nowrap transition-colors hover:bg-foreground/[0.04] [&>td]:h-[52px] [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0',
                   off && '[&>td:not(.keep)]:text-muted-foreground',
                   isNew && 'bg-info/[0.06]',
@@ -548,38 +585,43 @@ export default function ProviderPane({
                 )}
               >
                 <td className="keep !pr-0" onClick={(e) => e.stopPropagation()}>
-                  <span className="flex">
+                  <span className="flex items-center gap-1">
                     <Checkbox
                       checked={selectedIds.has(c.id)}
                       aria-label={t('channels.batch.selectRow', { name: c.name })}
                       onCheckedChange={() => toggleRow(c.id)}
                     />
+                    {place && orderActions && (
+                      <span
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.effectAllowed = 'move';
+                          setDragId(c.id);
+                        }}
+                        onDragEnd={endDrag}
+                        className="cursor-grab text-muted-foreground/40 hover:text-muted-foreground"
+                        title={t('channels.order.drag')}
+                      >
+                        <GripVertical className="size-4" />
+                      </span>
+                    )}
                   </span>
                 </td>
-                {order && (
-                  <td className="keep relative !px-1" onClick={(e) => e.stopPropagation()}>
-                    <span className="flex items-center justify-center gap-0.5">
-                      {orderActions && (
-                        <span
-                          draggable
-                          onDragStart={(e) => {
-                            e.dataTransfer.effectAllowed = 'move';
-                            setDragId(c.id);
-                          }}
-                          onDragEnd={() => {
-                            setDragId(0);
-                            setDropId(0);
-                          }}
-                          className="cursor-grab text-muted-foreground/50 hover:text-muted-foreground"
-                          title={t('channels.order.drag')}
-                        >
-                          <GripVertical className="size-4" />
-                        </span>
-                      )}
-                      <span className="w-5 text-center text-[13px] font-medium tabular-nums text-muted-foreground">
-                        {place ? place.position : ''}
-                      </span>
-                    </span>
+                {order && spans.get(c.id) !== 0 && (
+                  <td
+                    rowSpan={spans.get(c.id) || 1}
+                    className="keep !px-1 text-center align-middle"
+                    title={
+                      place && place.clusterSize > 1
+                        ? t('channels.order.groupWhy', { count: place.clusterSize, models: place.sharedModels })
+                        : undefined
+                    }
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span className="block text-[13px] font-medium tabular-nums">{place ? place.number : ''}</span>
+                    {place && place.clusterSize > 1 && spans.get(c.id) > 1 && (
+                      <span className="block text-[11px] leading-tight text-muted-foreground">{t('channels.order.sharedTag')}</span>
+                    )}
                   </td>
                 )}
                 <td>
@@ -588,7 +630,7 @@ export default function ProviderPane({
                     <span className="min-w-0 flex-1">
                       <span className="flex min-w-0 items-center gap-2">
                         <Dot tone={channelDot(c, dismissed)} />
-                        <span className="truncate font-mono text-[13px]" title={c.name}>
+                        <span className="min-w-[6rem] shrink truncate font-mono text-[13px]" title={c.name}>
                           {c.name}
                         </span>
                         {c.tag && (
@@ -600,6 +642,9 @@ export default function ProviderPane({
                             {c.tag}
                           </span>
                         )}
+                        {(issuesById.get(c.id) || []).map((i) => (
+                          <IssueTag key={i.key} issue={i} onAction={onIssueAction} onDismiss={onDismissIssue} busy={issueBusy(i)} />
+                        ))}
                         {isNew && (
                           <span className="inline-flex h-[22px] shrink-0 items-center rounded-full bg-info/10 px-2 text-xs text-info">
                             {t('channels.table.new')}
@@ -770,36 +815,8 @@ export default function ProviderPane({
 
   return (
     <section aria-label={name} className={cn('min-w-0', phone && selectMode && 'pb-20')}>
-      {onBack && (
-        <Button variant="ghost" size="sm" className="-ml-2 mb-3 rounded-lg" onClick={onBack}>
-          <ArrowLeft />
-          {t('channels.lane.label')}
-        </Button>
-      )}
-      <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <div className="flex items-center gap-3">
-          {type > 0 && <ProviderTile type={type} size="lg" />}
-          <div>
-            <h2 className="text-[17px] font-medium">{name}</h2>
-            <p className="text-[13px] text-muted-foreground">
-              {t('channels.pane.summary', { count: channels.length, range: rangeLabel, requests: total.toLocaleString() })}
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" className="rounded-lg" disabled={refreshingModels} onClick={onRefreshModels}>
-            {refreshingModels ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-            {t('channels.pane.refreshModels')}
-          </Button>
-          <Button variant="outline" size="sm" className="rounded-lg" disabled={testingAll} onClick={onTestAll}>
-            {testingAll ? <Loader2 className="animate-spin" /> : <Play />}
-            {t('channels.pane.testAll')}
-          </Button>
-        </div>
-      </div>
-
       {created && (
-        <div className="mt-4 flex items-center gap-3 rounded-2xl border border-info/30 bg-[color-mix(in_srgb,var(--info)_7%,var(--card))] py-2.5 pl-4 pr-2.5 text-[13px]">
+        <div className="mb-3 flex items-center gap-3 rounded-2xl border border-info/30 bg-[color-mix(in_srgb,var(--info)_7%,var(--card))] py-2.5 pl-4 pr-2.5 text-[13px]">
           <Info className="size-4 shrink-0 text-info" />
           <span className="min-w-0 flex-1">
             {t('channels.created.prefix')} <b className="font-mono font-medium">{created.name}</b>
@@ -815,21 +832,10 @@ export default function ProviderPane({
         </div>
       )}
 
-      {issues.length > 0 && (
-        <div className="mt-4 overflow-hidden rounded-2xl border border-warning/30 bg-[color-mix(in_srgb,var(--warning)_7%,var(--card))]">
-          {issues.map((i) => (
-            <IssueRow key={i.key} issue={i} onAction={onIssueAction} onDismiss={onDismissIssue} busy={issueBusy(i)} />
-          ))}
-        </div>
-      )}
-
-      <div className="mb-2 mt-5 flex items-center justify-between gap-4">
-        <h3 className="shrink-0 text-sm font-medium">{t('channels.table.title')}</h3>
-        {!phone && <span className="text-xs text-muted-foreground">{t(order ? 'channels.orderHint' : 'channels.table.hint')}</span>}
-      </div>
-      <div className="mb-2 space-y-2">
+      <div className="mb-3 space-y-2">
         {phone ? (
           <>
+            <div className="flex flex-wrap items-center gap-2">{leading}</div>
             <StatusSegments chips value={segment} onChange={setSegment} options={segmentOptions} counts={counts} />
             <PhoneListToolbar
               filter={{ count: activeFields.length, onOpen: () => setFilterSheetOpen(true) }}
@@ -844,7 +850,33 @@ export default function ProviderPane({
         ) : (
           <>
             <div className="flex flex-wrap items-center gap-2">
+              {leading}
               <StatusSegments value={segment} onChange={setSegment} options={segmentOptions} counts={counts} />
+              {issues.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  aria-pressed={filters.issue === 'any'}
+                  className={cn(
+                    'h-8 rounded-lg border-warning/40 text-[13px] text-warning hover:text-warning',
+                    filters.issue === 'any' && 'bg-warning/10'
+                  )}
+                  onClick={() => onFiltersChange({ ...filters, issue: filters.issue === 'any' ? '' : 'any' })}
+                >
+                  <AlertTriangle className="size-3.5" />
+                  {t('channels.attention', { count: issues.length })}
+                </Button>
+              )}
+              <FilterBar
+                fields={fields}
+                state={state}
+                onChange={onStateChange}
+                onClearAll={clearConditions}
+                triggerVariant="plus"
+                triggerLabel={t('listPage.addCondition')}
+                t={t}
+                className="min-w-0"
+              />
               <span className="flex-1" />
               {realTag && (
                 <TagActionsMenu
@@ -854,25 +886,22 @@ export default function ProviderPane({
                   onTagGone={() => onFiltersChange({ ...filters, tag: '' })}
                 />
               )}
-              <Segmented
-                label={t('channels.range.label')}
-                value={range.key}
-                onChange={onRangeChange}
-                options={RANGES.map((r) => ({ value: r.key, label: t(`channels.range.${r.key}`) }))}
-              />
+              <Select value={range.key} onValueChange={onRangeChange}>
+                <SelectTrigger className="h-8 w-[92px] rounded-lg text-[13px]" aria-label={t('channels.range.label')}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RANGES.map((r) => (
+                    <SelectItem key={r.key} value={r.key}>
+                      {t(`channels.range.${r.key}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <ColumnPicker columns={columns} />
             </div>
-            {selectedRows.length > 0 ? (
+            {selectedRows.length > 0 && (
               <ChannelBatchBar selected={selectedRows} onClear={() => setSelectedIds(new Set())} batch={batch} busy={batchBusy} />
-            ) : (
-              <ConditionBar
-                fields={fields}
-                state={state}
-                onChange={onStateChange}
-                onClearAll={clearConditions}
-                leadingLabel={t('channels.condition.showThat')}
-                presets={presets}
-              />
             )}
           </>
         )}
@@ -899,6 +928,7 @@ export default function ProviderPane({
 
 ProviderPane.propTypes = {
   type: PropTypes.number.isRequired,
+  leading: PropTypes.node,
   order: PropTypes.object,
   orderActions: PropTypes.object,
   channels: PropTypes.array.isRequired,
@@ -914,10 +944,6 @@ ProviderPane.propTypes = {
   onDismissCreated: PropTypes.func,
   highlightIds: PropTypes.instanceOf(Set).isRequired,
   onOpen: PropTypes.func.isRequired,
-  onRefreshModels: PropTypes.func.isRequired,
-  onTestAll: PropTypes.func.isRequired,
-  refreshingModels: PropTypes.bool,
-  testingAll: PropTypes.bool,
   actions: PropTypes.object.isRequired,
   testingIds: PropTypes.instanceOf(Set).isRequired,
   filters: PropTypes.object.isRequired,
@@ -926,6 +952,5 @@ ProviderPane.propTypes = {
   tagActions: PropTypes.object.isRequired,
   batchBusy: PropTypes.bool,
   layout: PropTypes.oneOf(['split', 'stacked', 'list']),
-  onBack: PropTypes.func,
   columns: PropTypes.object.isRequired
 };
