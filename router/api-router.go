@@ -236,6 +236,8 @@ func SetApiRouter(router *gin.Engine) {
 		modelInfoRoute.Use(middleware.AdminAuth())
 		{
 			modelInfoRoute.GET("/catalog", controller.GetModelInfoCatalog)
+			modelInfoRoute.GET("/library", controller.GetModelLibrary)
+			modelInfoRoute.POST("/library/add", controller.AddModelsFromLibrary)
 			modelInfoRoute.POST("/check_consistency", controller.CheckModelInfoConsistency)
 			modelInfoRoute.POST("/hide", controller.HideModelInfo)
 			modelInfoRoute.POST("/apply_seed", controller.ApplyModelInfoSeed)

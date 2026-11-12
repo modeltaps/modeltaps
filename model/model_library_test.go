@@ -187,3 +187,142 @@ func TestExistingModelInfosKeepsOnlyCatalogRows(t *testing.T) {
 		t.Errorf("got %+v", got)
 	}
 }
+
+func TestAddLibraryModels(t *testing.T) {
+	data := setupModelLibraryTestDB(t)
+	if err := DB.AutoMigrate(&ModelSupply{}, &Price{}); err != nil {
+		t.Fatal(err)
+	}
+	oldPricing := PricingInstance
+	PricingInstance = &Pricing{Prices: map[string]*Price{}}
+	t.Cleanup(func() { PricingInstance = oldPricing })
+	if _, err := SyncModelLibrary(data); err != nil {
+		t.Fatal(err)
+	}
+	vertex := &Channel{Name: "vertex", Type: config.ChannelTypeVertexAI, Status: config.ChannelStatusEnabled, Models: "claude-fable-5-2@default"}
+	off := &Channel{Name: "off", Type: config.ChannelTypeAnthropic, Status: config.ChannelStatusManuallyDisabled, Models: "claude-fable-5-2"}
+	for _, ch := range []*Channel{vertex, off} {
+		if err := DB.Create(ch).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := DB.Create(&ModelInfo{Model: "gpt-5.6-sol", Status: ModelStatusDraft}).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	items, err := ListLibraryItems()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, it := range items {
+		switch it.Model {
+		case "claude-fable-5-2":
+			if len(it.Channels) != 1 || it.Channels[0].Id != vertex.Id || it.Channels[0].UpstreamModel != "claude-fable-5-2@default" {
+				t.Errorf("fable channels = %+v, want only the enabled vertex channel", it.Channels)
+			}
+		case "gpt-5.6-sol":
+			if !it.InCatalog {
+				t.Error("gpt-5.6-sol is in the catalog")
+			}
+		}
+	}
+
+	res, err := AddLibraryModels(LibraryAddRequest{
+		Canonicals: []string{"anthropic/claude-fable-5-2", "openai/gpt-5.6-sol"}, Status: ModelStatusPublished, Supplies: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Added) != 1 || res.Added[0] != "claude-fable-5-2" || len(res.Skipped) != 1 || res.Supplies != 1 || res.Priced != 1 {
+		t.Fatalf("result = %+v", res)
+	}
+	info, _ := GetModelInfoByModel("claude-fable-5-2")
+	if info == nil || info.Status != ModelStatusPublished || info.Hidden || info.Source != ModelInfoSourceLibrary ||
+		info.VendorID != config.ChannelTypeAnthropic || info.ContextLength != 1000000 {
+		t.Errorf("catalog row = %+v", info)
+	}
+	var supply ModelSupply
+	if err := DB.Where("model = ?", "claude-fable-5-2").First(&supply).Error; err != nil {
+		t.Fatal(err)
+	}
+	if supply.ChannelId != vertex.Id || supply.UpstreamModel != "claude-fable-5-2@default" || supply.Source != ModelSupplySourceLibrary {
+		t.Errorf("supply = %+v", supply)
+	}
+	var price Price
+	if err := DB.Where("model = ?", "claude-fable-5-2").First(&price).Error; err != nil {
+		t.Fatal(err)
+	}
+	if !floatEqM(price.Input, 4) || !floatEqM(price.Output, 20) {
+		t.Errorf("price in/out = %g/%g, want 4/20 ($8/$40 per 1M)", price.Input, price.Output)
+	}
+	if _, err := AddLibraryModels(LibraryAddRequest{Canonicals: []string{"x"}, Status: "weird"}); err == nil {
+		t.Error("an unknown status is refused")
+	}
+}
+
+func TestStaleCatalogRows(t *testing.T) {
+	setupModelLibraryTestDB(t)
+	if err := DB.AutoMigrate(&ModelSupply{}); err != nil {
+		t.Fatal(err)
+	}
+	mapping := `{"mapped-key":"x"}`
+	if err := DB.Create(&Channel{Name: "c", Models: "listed", ModelMapping: &mapping}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := DB.Create(&ModelSupply{Model: "supplied", ChannelId: 1, UpstreamModel: "supplied", Enabled: true}).Error; err != nil {
+		t.Fatal(err)
+	}
+	draft := func(m string) ModelInfo {
+		return ModelInfo{Model: m, Source: ModelInfoSourceModelsDev, Status: ModelStatusDraft}
+	}
+	rows := []ModelInfo{
+		draft("stale-1"), draft("claude-fable-5-2@default"),
+		draft("listed"), draft("mapped-key"), draft("supplied"), draft("alias-target"),
+		{Model: "an-alias", Source: ModelInfoSourceModelsDev, Status: ModelStatusDraft, AliasOf: "alias-target"},
+		{Model: "published", Source: ModelInfoSourceModelsDev, Status: ModelStatusPublished},
+		{Model: "manual", Source: ModelInfoSourceManual, Status: ModelStatusDraft},
+		{Model: "locked", Source: ModelInfoSourceModelsDev, Status: ModelStatusDraft, Locked: true},
+	}
+	for i := range rows {
+		if err := DB.Create(&rows[i]).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := cleanupSyncedCatalogDrafts().Migrate(DB); err != nil {
+		t.Fatal(err)
+	}
+	var left []string
+	DB.Model(&ModelInfo{}).Order("model").Pluck("model", &left)
+	want := []string{"alias-target", "an-alias", "listed", "locked", "manual", "mapped-key", "published", "supplied"}
+	if len(left) != len(want) {
+		t.Fatalf("left = %v, want %v", left, want)
+	}
+	for i := range want {
+		if left[i] != want[i] {
+			t.Fatalf("left = %v, want %v", left, want)
+		}
+	}
+}
+
+func TestVendorIDFromNameRules(t *testing.T) {
+	setupCatalogVendors(t)
+	cases := map[string]int{
+		"claude-fable-5-2":              config.ChannelTypeAnthropic,
+		"us.anthropic.claude-fable-5-2": config.ChannelTypeAnthropic,
+		"grok-4-20-reasoning":           config.ChannelTypeXAI,
+		"gpt-5-codex":                   config.ChannelTypeOpenAI,
+		"o3-mini":                       config.ChannelTypeOpenAI,
+		"glm-5.2":                       config.ChannelTypeZhipu,
+		"llama-3.3-70b-instruct":        config.ChannelTypeLLAMA,
+		"codestral-2501":                config.ChannelTypeMistral,
+		"cohere-command-a":              config.ChannelTypeCohere,
+		"some-relay/deepseek-v4-pro":    config.ChannelTypeDeepseek,
+		"phi-4":                         0,
+		"omega-1":                       0,
+	}
+	for name, want := range cases {
+		if got := VendorIDFromNameRules(name); got != want {
+			t.Errorf("VendorIDFromNameRules(%q) = %d, want %d", name, got, want)
+		}
+	}
+}

@@ -10,6 +10,7 @@ import {
   defaultColumnVisibility,
   PRICE_UNIT_STORAGE_KEY,
   indexChannelsByModel,
+  channelModelNames,
   followsStatus,
   isFullyUsable,
   isVisibleToUsers,
@@ -107,6 +108,25 @@ describe('merging prices with the catalog by model name', () => {
     expect(channelOnly).toMatchObject({ catalogId: 0, state: 'visible', price: null });
     expect(channelOnly.bound_channels).toEqual([{ id: 5, name: 'or', type: 20 }]);
     expect(rows.filter((r) => r.model === 'gpt-4o')).toHaveLength(1);
+  });
+
+  it('with listedModels, leaves out price-only models and keeps the ones a channel lists', () => {
+    const channels = [
+      { id: 5, name: 'or', type: 20, status: 1, models: 'channel-only, gpt-4o' },
+      { id: 6, name: 'off', type: 20, status: 2, models: 'disabled-only' }
+    ];
+    const rows = mergeCatalogRows({
+      catalog,
+      prices: [...prices, { model: 'disabled-only', input: 1, output: 1 }],
+      modelList: ['channel-only', 'gpt-4o'],
+      channelsByModel: indexChannelsByModel(channels),
+      listedModels: channelModelNames(channels)
+    });
+    const names = rows.map((r) => r.model);
+    expect(names).not.toContain('priced-only');
+    expect(names).toContain('channel-only');
+    expect(rows.find((r) => r.model === 'disabled-only')).toMatchObject({ catalogId: 0, state: 'unrouted' });
+    expect(rows.find((r) => r.model === 'disabled-only').price.input).toBe(1);
   });
 
   it('lists only models without a catalog row as orphans', () => {

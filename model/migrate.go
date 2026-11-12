@@ -602,6 +602,7 @@ func migrationAfter(db *gorm.DB) error {
 		migrateTokenModelLimitNormalized(),
 		migrateRoutingPolicyScopedNameIndex(),
 		migrateRoutingPolicyUserScope(),
+		cleanupSyncedCatalogDrafts(),
 	})
 	return m.Migrate()
 }

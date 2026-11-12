@@ -9,6 +9,7 @@ import {
   Eye,
   EyeOff,
   Info,
+  Library,
   MoreHorizontal,
   Plus,
   RefreshCw,
@@ -68,11 +69,13 @@ import {
   loadPriceUnit,
   matchesStatusFilter,
   mergeCatalogRows,
+  channelModelNames,
   savePriceUnit
 } from '../Pricing/modelCatalog';
 import ModelTable, { ModelList, ReadinessLegend, estimateModelTableWidth } from './ModelTable';
 import ModelInfoSheet from './ModelInfoSheet';
 import ImportDialog from './ImportDialog';
+import LibrarySheet from './LibrarySheet';
 import { ENDPOINT_LABEL_KEYS, ENDPOINT_VALUES, isUnlabeled, safeJsonArray } from './modelInfoHelpers';
 import { listSupplies } from './supply/supplyApi';
 import { useSupplySwitches, SupplySwitchNote } from './supply/supplyParts';
@@ -225,6 +228,7 @@ export default function ModelInfo() {
   const [editRow, setEditRow] = useState(null);
   const [batchDelete, setBatchDelete] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [priceSheet, setPriceSheet] = useState(CLOSED_PRICE_SHEET);
@@ -364,9 +368,13 @@ export default function ModelInfo() {
 
   const rows = useMemo(
     () =>
-      attachChannelDetails(mergeCatalogRows({ catalog: modelInfos, prices, modelList, channelsByModel }), channelList, {
-        supplyRouting
-      })
+      attachChannelDetails(
+        mergeCatalogRows({ catalog: modelInfos, prices, modelList, channelsByModel, listedModels: channelModelNames(channelList) }),
+        channelList,
+        {
+          supplyRouting
+        }
+      )
         .map((row) => (supplyRouting ? { ...row, supplyRouting } : row))
         .map((row) => (isPublicModelRow(row) ? { ...row, supplyCounts: supplyCounts[row.model] || { total: 0, usable: 0 } } : row)),
     [modelInfos, prices, modelList, channelsByModel, channelList, supplyCounts, supplyRouting]
@@ -712,9 +720,14 @@ export default function ModelInfo() {
         title={t('modelsPage.emptyTitle')}
         description={t('modelsPage.emptyDescription')}
         action={
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="size-4" /> {t('modelInfoPage.create')}
-          </Button>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button size="sm" onClick={() => setLibraryOpen(true)}>
+              <Library className="size-4" /> {t('modelLibrary.open')}
+            </Button>
+            <Button size="sm" variant="outline" onClick={openCreate}>
+              <Plus className="size-4" /> {t('modelInfoPage.create')}
+            </Button>
+          </div>
         }
       />
     );
@@ -805,6 +818,10 @@ export default function ModelInfo() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <Button variant="outline" size="sm" onClick={() => setLibraryOpen(true)} aria-label={t('modelLibrary.open')}>
+          <Library className="size-4" />
+          <span>{t('modelLibrary.open')}</span>
+        </Button>
         <Button size="sm" onClick={openCreate} aria-label={t('modelInfoPage.create')}>
           <Plus className="size-4" />
           <span>{t('modelInfoPage.create')}</span>
@@ -931,6 +948,7 @@ export default function ModelInfo() {
           onSupplyChanged={handleRefresh}
         />
 
+        <LibrarySheet open={libraryOpen} onOpenChange={setLibraryOpen} vendors={vendors} onAdded={handleRefresh} />
         <ImportDialog
           open={importOpen}
           onOpenChange={setImportOpen}

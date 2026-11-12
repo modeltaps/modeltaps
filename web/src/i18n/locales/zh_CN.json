@@ -146,6 +146,7 @@
     "endpointOptions": {
       "chat": "对话",
       "responses": "Responses",
+      "realtime": "实时",
       "images": "图像",
       "audioSpeech": "语音合成",
       "audioTranscription": "语音转写",

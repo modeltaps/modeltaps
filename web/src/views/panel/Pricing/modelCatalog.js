@@ -87,11 +87,27 @@ export function indexChannelsByModel(channels = []) {
   return index;
 }
 
+// Names any channel lists, enabled or not: the models the catalog page shows even without a
+// catalog row.
+export function channelModelNames(channels = []) {
+  const names = new Set();
+  channels.forEach((channel) => {
+    String(channel?.models || '')
+      .split(',')
+      .map((name) => name.trim())
+      .filter(Boolean)
+      .forEach((name) => names.add(name));
+  });
+  return names;
+}
+
 // 目录行、价格行与渠道可提供的模型名按模型名合并为一张表:
 // - 目录行保留全部字段(含后端计算的 state / bound_channels),附上同名价格;
-// - 价格表或渠道模型中存在、但目录无行的模型也出现,状态按渠道判断(有渠道 = visible,否则 unrouted);
+// - 目录无行、但有渠道列出的模型也出现(附上同名价格),状态按渠道判断(有启用渠道 = visible,否则 unrouted);
+// - 只有价格、没有目录行也没有渠道列出的模型不出现:它们在模型库里,要用时从库里添加;
+//   不传 listedModels 时(旧调用方)沿用价格表 + modelList 的名字;
 // - key 为模型名(唯一),catalogId 为目录行 id(无目录行为 0)。
-export function mergeCatalogRows({ catalog = [], prices = [], modelList = [], channelsByModel = {} } = {}) {
+export function mergeCatalogRows({ catalog = [], prices = [], modelList = [], channelsByModel = {}, listedModels } = {}) {
   const priceByModel = {};
   prices.forEach((price) => {
     if (price?.model) priceByModel[price.model] = price;
@@ -115,7 +131,8 @@ export function mergeCatalogRows({ catalog = [], prices = [], modelList = [], ch
     };
   });
 
-  const orphanNames = [...prices.map((p) => p?.model), ...modelList].filter((name) => name && !seen.has(name));
+  const candidates = listedModels ? [...listedModels] : [...prices.map((p) => p?.model), ...modelList];
+  const orphanNames = candidates.filter((name) => name && !seen.has(name));
   [...new Set(orphanNames)].sort().forEach((name) => {
     const channels = channelsByModel[name] || [];
     rows.push({

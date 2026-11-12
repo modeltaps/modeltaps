@@ -205,7 +205,10 @@ func catalogVendorID(provider, id string, m catalogModel) int {
 			return vid
 		}
 	}
-	return VendorIDFromModelName(id)
+	if vid := VendorIDFromModelName(id); vid != 0 {
+		return vid
+	}
+	return VendorIDFromNameRules(id)
 }
 
 // catalogModelInfo 把一条 models.dev 模型转为以 modelName 为键的目录元信息。
@@ -583,13 +586,14 @@ func syncCatalogPricing(url string, auto bool) (*CatalogSyncResult, error) {
 	if err := writeSyncedPrices(prices, "models.dev", auto); err != nil {
 		return nil, err
 	}
-	if n, err := SyncModelLibrary(data); err != nil {
+	entries, err := SyncModelLibrary(data)
+	if err != nil {
 		logger.SysError("model library sync failed: " + err.Error())
 	} else {
-		logger.SysLog(fmt.Sprintf("Model library synced from models.dev: %d models", n))
+		logger.SysLog(fmt.Sprintf("Model library synced from models.dev: %d models", len(entries)))
 	}
 	// The public catalog only holds models an admin added: refresh those, create none.
-	if infos, err := existingModelInfos(BuildCatalogModelInfos(data)); err != nil {
+	if infos, err := existingModelInfos(catalogRefreshInfos(entries, BuildCatalogModelInfos(data))); err != nil {
 		logger.SysError("catalog model info lookup failed: " + err.Error())
 	} else if err := UpsertModelInfos(infos, ModelInfoSourceModelsDev); err != nil {
 		logger.SysError("catalog model info upsert failed: " + err.Error())

@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add models from the model library: the models page has an "Add from library" button next to
+  "Create". It lists every library model with filters for vendor, endpoint, release window,
+  open weights and "a channel can supply it"; pick models or every match, add them as drafts or
+  published, and optionally supply them from the channels that list them. Each added model
+  takes its metadata from the library and the lab's list price when it has no price yet; the
+  daily sync keeps added models up to date from the library.
+- Endpoints show as small icons with their name on hover instead of text badges, in the models
+  table and the library.
+- Models without a vendor prefix or canonical id get a vendor from their name (`claude-` →
+  Anthropic, `grok-` → xAI, `glm-` → Zhipu, …).
 - A model library: the daily models.dev sync now keeps every model it knows, one per model
   (deduplicated by `canonical_model_id`), together with how each platform names it (Vertex's
   `claude-fable-5-2@default`, Bedrock's `us.anthropic.…`, OpenRouter's `anthropic/…`). The
@@ -216,6 +226,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The models page lists catalog models and models a channel lists; models that only have a price
+  no longer appear. Their prices stay, and adding the model from the library keeps its price.
+- On upgrade, synced draft models nothing uses are removed from the catalog (kept: anything not
+  a models.dev draft, locked rows, aliases and their targets, models with a supply, and names a
+  channel lists or maps). They stay in the model library.
 - The models.dev sync no longer adds models to the public catalog. It refreshes the metadata of
   models already there; new models go to the model library.
 - Settings is one place again, as in 0.3.0. Settings in the account menu and a settings button

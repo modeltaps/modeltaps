@@ -1257,6 +1257,7 @@
     "endpointOptions": {
       "chat": "Chat",
       "responses": "Responses",
+      "realtime": "Realtime",
       "images": "Images",
       "audioSpeech": "Speech",
       "audioTranscription": "Transcription",
