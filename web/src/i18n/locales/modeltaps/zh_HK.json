@@ -3044,7 +3044,7 @@
       "cards": {
         "profile": {
           "title": "資料",
-          "description": "顯示名稱和頭像",
+          "description": "顯示名稱",
           "hint": "用戶名不能修改"
         },
         "logIO": {
@@ -3053,9 +3053,9 @@
         },
         "appearance": {
           "title": "外觀",
-          "description": "主題與語言，只對你自己生效",
-          "hint": "儲存後立即套用",
-          "languageHint": "選擇介面語言；預設跟隨瀏覽器。"
+          "description": "主題與語言，選擇後立即生效，只對你自己生效",
+          "languageHint": "預設跟隨瀏覽器",
+          "themeHint": "跟隨系統時隨裝置的深淺色切換"
         },
         "quotaRemind": {
           "hint": "每天最多提醒一次"
@@ -3069,7 +3069,9 @@
       },
       "sessions": {
         "device": "裝置",
-        "where": "地址與方式"
+        "where": "地址與方式",
+        "showAll": "顯示全部 {{count}} 個",
+        "showFewer": "收起"
       }
     },
     "org": {
@@ -3365,5 +3367,11 @@
   },
   "topupCard": {
     "inputPlaceholder": "輸入兌換碼"
+  },
+  "settingsPage": {
+    "security": {
+      "sessionsHint": "已登入本帳戶的裝置，不認識的就登出",
+      "identifiersHint": "用其中任一項登入，進的都是這個帳戶；電郵也用於找回和通知"
+    }
   }
 }

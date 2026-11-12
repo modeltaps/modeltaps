@@ -3142,7 +3142,7 @@
       "cards": {
         "profile": {
           "title": "Profile",
-          "description": "Display name and avatar",
+          "description": "Display name",
           "hint": "The username cannot be changed"
         },
         "logIO": {
@@ -3151,9 +3151,9 @@
         },
         "appearance": {
           "title": "Appearance",
-          "description": "Theme and language, just for you",
-          "hint": "Applied as soon as you save",
-          "languageHint": "Pick the interface language; it follows the browser by default."
+          "description": "Theme and language take effect as you pick them, for you only",
+          "languageHint": "Follows the browser by default",
+          "themeHint": "System follows your device's light or dark setting"
         },
         "quotaRemind": {
           "hint": "At most one reminder a day"
@@ -3167,7 +3167,9 @@
       },
       "sessions": {
         "device": "Device",
-        "where": "Address & method"
+        "where": "Address & method",
+        "showAll": "Show all {{count}}",
+        "showFewer": "Show fewer"
       }
     },
     "org": {
@@ -3462,5 +3464,11 @@
   },
   "topupCard": {
     "inputPlaceholder": "Enter a redemption code"
+  },
+  "settingsPage": {
+    "security": {
+      "sessionsHint": "Devices signed in to this account; sign out any you don't recognize",
+      "identifiersHint": "Any of these signs in to this account; the email is also for recovery and notices"
+    }
   }
 }
