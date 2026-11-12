@@ -2630,8 +2630,25 @@
       "published": "Published",
       "retired": "Retired"
     },
+    "batch": {
+      "menu": "Supplies",
+      "modeLabel": "Within a tier",
+      "add": "Add a source…",
+      "remove": "Remove a source…",
+      "addTitle": "Add a source to {{count}} models",
+      "removeTitle": "Remove a source from {{count}} models",
+      "addHint": "The channel becomes a supply of these models: the upstream name is filled in automatically, and priority and weight follow the channel. Models it already supplies are skipped.",
+      "removeHint": "Deletes the channel's supplies of these models. The channel itself is not changed.",
+      "pick": "Choose a channel",
+      "confirmAdd": "Add",
+      "confirmRemove": "Remove",
+      "done": "{{changed}} changed, {{skipped}} skipped",
+      "modeDone": "Mode updated for {{count}} models"
+    },
     "mode": {
       "label": "Within a tier",
+      "default": "Follow default",
+      "defaultHint": "Follows the default mode in platform settings, currently \"{{mode}}\".",
       "balance": "Balance",
       "failover": "Failover",
       "balanceHint": "Requests are split across the supplies of a tier by weight.",
@@ -2989,6 +3006,11 @@
         "org-policy": {
           "title": "Organizations",
           "hint": "Existing organizations are not affected"
+        },
+        "supply-mode": {
+          "title": "Default supply mode",
+          "description": "How supplies in one tier share requests for models without a mode of their own",
+          "hint": "A single model can pick another mode under Supplies on the models page"
         },
         "supply-pause-rules": {
           "title": "Supply pause rules",

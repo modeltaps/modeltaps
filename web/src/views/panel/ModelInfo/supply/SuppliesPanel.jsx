@@ -54,7 +54,7 @@ import { SupplyStateLabel, SupplySwitchNote, durationLabel } from './supplyParts
 
 const channelTypeName = (type) => CHANNEL_OPTIONS[type]?.text || `#${type}`;
 
-// Two-option switch for the supply mode, saved as soon as it changes.
+// Switch for the supply mode (follow the default, balance, failover), saved as soon as it changes.
 function ModeSwitch({ value, onChange, disabled }) {
   const { t } = useTranslation();
   return (
@@ -680,7 +680,13 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
           </Button>
         )}
       </div>
-      <p className="-mt-2 text-xs text-muted-foreground">{t(`modelSupply.mode.${mode}Hint`)}</p>
+      <p className="-mt-2 text-xs text-muted-foreground">
+        {mode === 'default'
+          ? t('modelSupply.mode.defaultHint', {
+              mode: t(`modelSupply.mode.${preview?.default_mode === 'failover' ? 'failover' : 'balance'}`)
+            })
+          : t(`modelSupply.mode.${mode}Hint`)}
+      </p>
 
       <SupplySwitchNote switches={switches} active={preview?.active} />
 

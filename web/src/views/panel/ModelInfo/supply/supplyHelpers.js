@@ -3,7 +3,8 @@
 // easy to test.
 
 export const MODEL_STATUSES = ['draft', 'published', 'retired'];
-export const SUPPLY_MODES = ['balance', 'failover'];
+// 'default' follows the site-wide default mode; the other two are the model's own choice.
+export const SUPPLY_MODES = ['default', 'balance', 'failover'];
 
 // Manual pause lengths offered on a supply row, in seconds.
 export const PAUSE_DURATIONS = [1800, 3600, 6 * 3600, 24 * 3600];
@@ -21,7 +22,7 @@ export function normalizeModelStatus(status) {
 }
 
 export function normalizeSupplyMode(mode) {
-  return SUPPLY_MODES.includes(mode) ? mode : 'balance';
+  return SUPPLY_MODES.includes(mode) ? mode : 'default';
 }
 
 function parseMapping(raw) {

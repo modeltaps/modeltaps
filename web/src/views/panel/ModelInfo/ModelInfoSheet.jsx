@@ -64,7 +64,7 @@ const ORIGIN = {
   endpoints: '',
   alias_of: '',
   status: 'draft',
-  supply_mode: 'balance',
+  supply_mode: 'default',
   locked: false
 };
 
