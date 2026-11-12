@@ -508,7 +508,8 @@ export default function ModelInfoSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent onClose={() => onOpenChange(false)}>
+      {/* A tabbed sheet: wide enough for the five columns of the supplies table. */}
+      <SheetContent className="max-w-3xl" onClose={() => onOpenChange(false)}>
         <SheetHeader>
           <SheetTitle>{editId ? t('modelInfoPage.editTitle') : t('modelInfoPage.createTitle')}</SheetTitle>
           {row ? (

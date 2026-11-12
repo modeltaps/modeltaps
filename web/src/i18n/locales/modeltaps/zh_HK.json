@@ -2541,6 +2541,10 @@
       "published": "已發佈",
       "retired": "已下架"
     },
+    "available": {
+      "title": "還能提供這個模型的渠道",
+      "hint": "已列出此模型、尚未加入供應；新增後優先級和權重跟隨渠道"
+    },
     "batch": {
       "menu": "供應",
       "modeLabel": "同一檔內",

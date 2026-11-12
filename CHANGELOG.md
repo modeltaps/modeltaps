@@ -256,6 +256,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The model panel is wider (tabbed sheets use the wide size), so the Supplies table no longer
+  cuts off channel and upstream model names. Below the table, "Channels that can also supply
+  this model" lists enabled channels that list the model and are not a supply yet; "Add" makes
+  one a supply with the suggested upstream name and the channel's priority and weight.
 - The admin page that lists upstream connections is now called **Providers** in the sidebar and
   page title (it was **Channels**). The entries inside a provider are still channels; links that
   point to the page say "Providers" as well. Nothing else on the page changed.
