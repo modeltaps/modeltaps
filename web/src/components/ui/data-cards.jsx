@@ -14,6 +14,7 @@ import { RowActionsSurfaceContext } from '@/components/ui/row-actions';
 // menuColumnId:该列(通常是 RowActions)渲染在标题行右上角,以 'menu' 形态只显示一个 ⋯,
 // 卡片只保留这一个控件(开关等放进菜单,状态用 meta.cardCell 渲染成圆点 + 文字)。
 // 列的 meta.cardCell 可为卡片单独提供渲染函数,替代表格用的 cell。
+// switchColumnId:该列(启用开关)放在标题行右上角、⋯ 的左边;开关本身就表示启用状态,卡片不再写文字。
 // 使用方均嵌在外层 Card/CardContent 内,行不再带独立圆角/边框/阴影,避免"卡中卡"双边框。
 // 根元素默认带 data-datacards 标记:窄屏(<md)下让外层 Card 通过 has-[[data-datacards]]
 // 变体去掉边框/圆角/阴影/背景,列表贴边呈现;md+ 无影响。仪表盘等不希望去框的场景传
@@ -26,6 +27,7 @@ export default function DataCards({
   actionColumnIds = DEFAULT_ACTION_IDS,
   primaryColumnId,
   menuColumnId,
+  switchColumnId,
   empty,
   searching,
   onRowClick,
@@ -59,10 +61,15 @@ export default function DataCards({
       {rows.map((row) => {
         const cells = row.getVisibleCells();
         const menuCell = menuColumnId ? cells.find((c) => c.column.id === menuColumnId) : null;
+        const switchCell = menuCell && switchColumnId ? cells.find((c) => c.column.id === switchColumnId) : null;
         const actionCells = cells.filter((c) => actionColumnIds.includes(c.column.id) && c.column.id !== menuColumnId);
         const primaryCell = primaryColumnId ? cells.find((c) => c.column.id === primaryColumnId) : null;
         const bodyCells = cells.filter(
-          (c) => !actionColumnIds.includes(c.column.id) && c.column.id !== primaryColumnId && c.column.id !== menuColumnId
+          (c) =>
+            !actionColumnIds.includes(c.column.id) &&
+            c.column.id !== primaryColumnId &&
+            c.column.id !== menuColumnId &&
+            (!switchCell || c.column.id !== switchColumnId)
         );
         return (
           <div
@@ -89,9 +96,10 @@ export default function DataCards({
                 {menuCell ? (
                   <div className="mb-1.5 flex items-start gap-3">
                     <div className="min-w-0 flex-1 text-sm font-medium">{primaryCell && renderCell(primaryCell)}</div>
-                    <RowActionsSurfaceContext.Provider value="menu">
-                      <div className="-my-1.5 -mr-2 shrink-0">{renderCell(menuCell)}</div>
-                    </RowActionsSurfaceContext.Provider>
+                    <div className="-my-1.5 -mr-2 flex shrink-0 items-center gap-1">
+                      {switchCell && renderCardCell(switchCell)}
+                      <RowActionsSurfaceContext.Provider value="menu">{renderCell(menuCell)}</RowActionsSurfaceContext.Provider>
+                    </div>
                   </div>
                 ) : (
                   primaryCell && <div className="mb-1.5 text-sm font-medium">{renderCell(primaryCell)}</div>
@@ -146,6 +154,7 @@ DataCards.propTypes = {
   actionColumnIds: PropTypes.arrayOf(PropTypes.string),
   primaryColumnId: PropTypes.string,
   menuColumnId: PropTypes.string,
+  switchColumnId: PropTypes.string,
   empty: PropTypes.node,
   searching: PropTypes.bool,
   onRowClick: PropTypes.func,

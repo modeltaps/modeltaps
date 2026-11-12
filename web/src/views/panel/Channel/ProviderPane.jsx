@@ -570,9 +570,19 @@ export default function ProviderPane({
                 </div>
               </div>
               {!selectMode && (
-                <RowControl className="-mr-2 shrink-0">
-                  <ChannelMenu channel={c} actions={actions} testing={testingIds.has(c.id)} withToggle />
-                </RowControl>
+                <div className="-mr-2 flex shrink-0 items-center gap-1">
+                  <RowControl className="flex">
+                    <Switch
+                      size="sm"
+                      checked={c.status === 1}
+                      aria-label={t('channels.table.enable', { name: c.name })}
+                      onCheckedChange={() => actions.onToggleStatus(c)}
+                    />
+                  </RowControl>
+                  <RowControl>
+                    <ChannelMenu channel={c} actions={actions} testing={testingIds.has(c.id)} />
+                  </RowControl>
+                </div>
               )}
             </li>
           );

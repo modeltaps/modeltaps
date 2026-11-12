@@ -267,7 +267,7 @@ export function UserList({ users, rtf, selectMode, selectedIds, onToggleSelect, 
             className={cn('flex h-14 items-center gap-3 px-4', ROW_OPENS, (selected || u.id === openId) && 'bg-muted/60')}
             {...rowOpenProps(() => (selectMode ? onToggleSelect(u.id) : onOpen(u.id)))}
           >
-            {selectMode ? (
+            {selectMode && (
               <RowControl>
                 <Checkbox
                   checked={selected}
@@ -275,16 +275,10 @@ export function UserList({ users, rtf, selectMode, selectedIds, onToggleSelect, 
                   aria-label={t('listPage.selectRow', { name: u.username })}
                 />
               </RowControl>
-            ) : (
-              <span
-                className={cn('size-2 shrink-0 rounded-full', enabled ? 'bg-success' : 'bg-muted-foreground/40')}
-                title={enabled ? t('userPage.statusEnabled') : t('userPage.statusDisabled')}
-                aria-hidden="true"
-              />
             )}
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-3">
-                <span className="min-w-0 truncate text-sm font-medium">{u.username}</span>
+                <span className={cn('min-w-0 truncate text-sm font-medium', !enabled && 'text-muted-foreground')}>{u.username}</span>
                 <span className="ml-auto shrink-0 text-sm tabular-nums">{renderQuota(u.quota)}</span>
               </div>
               <div className="mt-0.5 flex items-baseline gap-3 text-xs text-muted-foreground">
@@ -297,9 +291,14 @@ export function UserList({ users, rtf, selectMode, selectedIds, onToggleSelect, 
               </div>
             </div>
             {!selectMode && (
-              <RowControl className="-mr-2 shrink-0">
-                <ActionsCell item={u} manageUser={manageUser} onOpen={onOpen} />
-              </RowControl>
+              <div className="-mr-2 flex shrink-0 items-center gap-1">
+                <RowControl className="flex">
+                  <StatusCell item={u} manageUser={manageUser} />
+                </RowControl>
+                <RowControl>
+                  <ActionsCell item={u} manageUser={manageUser} onOpen={onOpen} />
+                </RowControl>
+              </div>
             )}
           </li>
         );

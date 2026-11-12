@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useOrg } from 'contexts/OrgContext';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { Ban, Check, PanelRight, Plus, RotateCcw, Trash2, TriangleAlert } from 'lucide-react';
+import { PanelRight, Plus, RotateCcw, Trash2, TriangleAlert } from 'lucide-react';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import DataCards from '@/components/ui/data-cards';
@@ -14,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { RowActions } from '@/components/ui/row-actions';
-import { StateDot } from '@/components/list-page';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
@@ -239,28 +238,15 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
       {
         accessorKey: 'enabled',
         header: t('routingPolicy.columns.enabled'),
-        // Phone cards show the state as a dot and words; enable / disable sits in the row menu.
-        meta: {
-          cardCell: (c) => (
-            <span className="text-muted-foreground">
-              <StateDot tone={c.getValue() ? 'live' : 'off'} />
-              {c.getValue() ? t('routingPolicy.status.enabled') : t('routingPolicy.status.disabled')}
-            </span>
-          )
-        },
+        // On phone cards this switch sits next to the row menu (DataCards switchColumnId).
         cell: (c) => {
           const p = c.row.original;
-          if (readOnly) {
-            return (
-              <Badge variant="outline" className="font-normal">
-                {p.enabled ? t('routingPolicy.status.enabled') : t('routingPolicy.status.disabled')}
-              </Badge>
-            );
-          }
           return (
-            <RowControl>
+            <RowControl className="flex">
               <Switch
+                size="sm"
                 checked={Boolean(p.enabled)}
+                disabled={readOnly}
                 aria-label={t('routingPolicy.columns.enabled')}
                 onCheckedChange={(v) => toggleEnabled(p, v)}
               />
@@ -279,16 +265,6 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
               <RowActions
                 actions={[
                   { label: t('objects.open'), icon: PanelRight, onClick: () => route.open(p.id) },
-                  ...(readOnly
-                    ? []
-                    : [
-                        {
-                          label: p.enabled ? t('routingPolicy.disable') : t('routingPolicy.enable'),
-                          icon: p.enabled ? Ban : Check,
-                          menuOnly: true,
-                          onClick: () => toggleEnabled(p, !p.enabled)
-                        }
-                      ]),
                   ...(canEdit ? [{ label: t('common.delete'), icon: Trash2, destructive: true, onClick: () => setPendingDelete(p) }] : [])
                 ]}
               />
@@ -374,6 +350,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
           className="md:hidden"
           primaryColumnId="name"
           menuColumnId="action"
+          switchColumnId="enabled"
           actionColumnIds={['action']}
           empty={emptyText}
           searching={loading}
