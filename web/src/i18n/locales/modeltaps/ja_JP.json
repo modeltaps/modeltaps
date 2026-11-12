@@ -3303,5 +3303,18 @@
   },
   "priceList": {
     "groupHint": "価格はグループによって異なります。API キーのグループは API キー管理で切り替えます"
+  },
+  "orderList": {
+    "segments": {
+      "all": "すべて",
+      "success": "成功",
+      "pending": "支払い待ち",
+      "failed": "失敗",
+      "closed": "終了"
+    },
+    "paid": "支払額"
+  },
+  "topupCard": {
+    "inputPlaceholder": "引き換えコードを入力"
   }
 }

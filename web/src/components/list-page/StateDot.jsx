@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 
 import { cn } from '@/lib/utils';
 
-const TONES = { live: 'bg-success', warn: 'bg-warning', off: 'bg-muted-foreground/60' };
+const TONES = { live: 'bg-success', warn: 'bg-warning', bad: 'bg-destructive', off: 'bg-muted-foreground/60' };
 
 // Small status dot that leads the meta line of a phone card. Phone cards carry one control (the
 // row menu, top right), so a row's on / off state reads from this dot and the words after it.

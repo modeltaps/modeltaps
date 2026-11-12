@@ -1,44 +1,69 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowDown, ArrowUp, RotateCcw } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
 import { timestamp2string } from 'utils/common';
-import { getPageSize, savePageSize, PAGE_SIZE_OPTIONS } from 'constants';
+import { relativeTime } from 'utils/relativeTime';
+import { getPageSize, savePageSize } from 'constants';
 import { createRequestGuard, runGuardedFetch } from 'hooks/paginatedListGuard';
 import PageActions from '@/components/chrome/PageActions';
 import TimeRangeSelect, { detectPreset } from '@/components/TimeRangeSelect';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { FilterBar, filterStateToParams, isEntryActive, paramsToFilterState } from '@/components/filter-bar';
+import {
+  ColumnPicker,
+  ListEmptyState,
+  ListFooter,
+  ListSkeleton,
+  StateDot,
+  StatusSegments,
+  useColumnVisibility,
+  useListLayout
+} from '@/components/list-page';
 
 import { ROW_OPENS, rowOpenProps, useObjectRoute } from '@/components/objects';
 import { ORDER_STATUS, fetchOrders } from './paymentApi';
 import OrderPanel from './OrderPanel';
 
-// FilterBar 字段:文本(gateway_id/user_id/trade_no/gateway_no)+ status 单选 enum;
-// 时间范围由共享 TimeRangeSelect 承担(与 Log 一致,时间不入 chip)。后端均为单值标量参数。
+// ==============================|| PAYMENT — ORDER LIST (ADMIN) ||============================== //
+// Status segments (with counts from the list response) over one-line rows: when (relative, the full
+// time on hover), who, the order number, the amount, what was paid and the status. The rest
+// (gateway, gateway order no, fee, discount, rate, credited quota) is in the column picker. On
+// phones the rows are 56px. A row opens the read-only order panel (?trade=<order no>).
+
+// FilterBar 字段：文本(gateway_id/user_id/trade_no/gateway_no)；状态由上方分段承担，时间由共享
+// TimeRangeSelect 承担（与 Log 一致，时间不入 chip）。后端均为单值标量参数。
 const ORDER_FILTER_FIELDS = [
   { key: 'gateway_id', labelKey: 'orderlogPage.gatewayIdLabel', type: 'text', placeholderKey: 'orderlogPage.placeholder.gatewayId' },
   { key: 'user_id', labelKey: 'orderlogPage.userIdLabel', type: 'text', placeholderKey: 'orderlogPage.placeholder.userId' },
   { key: 'trade_no', labelKey: 'orderlogPage.tradeNoLabel', type: 'text', placeholderKey: 'orderlogPage.placeholder.tradeNo' },
-  { key: 'gateway_no', labelKey: 'orderlogPage.gatewayNoLabel', type: 'text', placeholderKey: 'orderlogPage.placeholder.gatewayNo' },
-  {
-    key: 'status',
-    labelKey: 'orderlogPage.statusLabel',
-    type: 'enum',
-    single: true,
-    supportsExclude: false,
-    paramInclude: 'status',
-    options: Object.values(ORDER_STATUS).map((o) => ({ value: o.value, labelKey: o.labelKey }))
-  }
+  { key: 'gateway_no', labelKey: 'orderlogPage.gatewayNoLabel', type: 'text', placeholderKey: 'orderlogPage.placeholder.gatewayNo' }
 ];
-const ORDER_FILTER_PARAM_KEYS = ['gateway_id', 'user_id', 'trade_no', 'gateway_no', 'status'];
+const ORDER_FILTER_PARAM_KEYS = ['gateway_id', 'user_id', 'trade_no', 'gateway_no'];
+
+const SEGMENTS = ['all', 'success', 'pending', 'failed', 'closed'];
+const STATUS_TONE = { success: 'live', pending: 'warn', failed: 'bad', closed: 'off' };
+
+export const ORDER_COLUMNS = [
+  { id: 'created_at', labelKey: 'orderlogPage.tableHeaders.created_at', fixed: true },
+  { id: 'user', labelKey: 'orderlogPage.tableHeaders.user_id' },
+  { id: 'trade_no', labelKey: 'orderlogPage.tableHeaders.trade_no' },
+  { id: 'gateway', labelKey: 'orderlogPage.tableHeaders.gateway_id', defaultHidden: true },
+  { id: 'gateway_no', labelKey: 'orderlogPage.tableHeaders.gateway_no', defaultHidden: true },
+  { id: 'amount', labelKey: 'orderlogPage.tableHeaders.amount' },
+  { id: 'fee', labelKey: 'orderlogPage.tableHeaders.fee', defaultHidden: true },
+  { id: 'discount', labelKey: 'orderlogPage.tableHeaders.discount', defaultHidden: true },
+  { id: 'order_amount', labelKey: 'orderList.paid' },
+  { id: 'exchange_rate', labelKey: 'orderlogPage.tableHeaders.exchange_rate', defaultHidden: true },
+  { id: 'quota', labelKey: 'orderlogPage.tableHeaders.quota', defaultHidden: true },
+  { id: 'status', labelKey: 'orderlogPage.tableHeaders.status', fixed: true }
+];
 
 const buildDefaultTimeRange = () => ({ start_timestamp: 0, end_timestamp: dayjs().unix() + 3600 });
 
@@ -51,76 +76,100 @@ const buildTimeRangeFromParams = (searchParams) => {
   return base;
 };
 
-function statusBadge(status, t) {
+function OrderStatus({ status, t }) {
   const opt = ORDER_STATUS[status];
-  return <Badge variant={opt?.variant || 'secondary'}>{opt ? t(opt.labelKey) : t('common.unknown')}</Badge>;
+  return (
+    <span className="whitespace-nowrap">
+      <StateDot tone={STATUS_TONE[status] || 'off'} />
+      {opt ? t(opt.labelKey) : t('common.unknown')}
+    </span>
+  );
 }
 
-// 支付订单列表:点一行在右侧打开订单面板(?trade=<交易号>,只读)。
+const money = (value, currency) => `${Number(value || 0).toFixed(2)} ${currency || ''}`.trim();
+
 export default function PaymentOrder() {
   const { t, i18n } = useTranslation();
   const route = useObjectRoute([], { param: 'trade' });
+  const { narrow } = useListLayout();
+  const columns = useColumnVisibility({ storageKey: 'payment-order-columns-v1', columns: ORDER_COLUMNS });
+  const rtf = useMemo(
+    () => new Intl.RelativeTimeFormat((i18n.language || 'zh_CN').replace('_', '-'), { numeric: 'auto' }),
+    [i18n.language]
+  );
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(() => getPageSize('paymentOrder'));
   const [order, setOrder] = useState('desc');
-  const [orderBy, setOrderBy] = useState('created_at');
   const [listCount, setListCount] = useState(0);
   const [orderList, setOrderList] = useState([]);
+  const [statusCounts, setStatusCounts] = useState(null);
   const [searching, setSearching] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [refreshFlag, setRefreshFlag] = useState(false);
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const [status, setStatus] = useState(() => (SEGMENTS.includes(searchParams.get('status')) ? searchParams.get('status') : 'all'));
   const [filterState, setFilterState] = useState(() => paramsToFilterState(ORDER_FILTER_FIELDS, searchParams));
   const [timeRange, setTimeRange] = useState(() => buildTimeRangeFromParams(searchParams));
   // 时间范围档位(触发器徽标显示用);默认区间为「不限起点」,反推不到日历档位时按自定义呈现。
   const [timePreset, setTimePreset] = useState(() => detectPreset(buildTimeRangeFromParams(searchParams)));
 
-  // reqId 守卫(UX-13):快速切页/切筛选/切时间范围时丢弃过期响应;paymentApi.js 结构保留,不迁 usePaginatedList。
+  // reqId 守卫(UX-13):快速切页/切筛选/切时间范围时丢弃过期响应。
   const guardRef = useRef(null);
   if (!guardRef.current) guardRef.current = createRequestGuard();
 
   const fetchData = useCallback(() => {
     const keyword = {
       ...filterStateToParams(ORDER_FILTER_FIELDS, filterState),
+      status: status === 'all' ? '' : status,
       start_timestamp: timeRange.start_timestamp,
       end_timestamp: timeRange.end_timestamp
     };
-    return runGuardedFetch(guardRef.current, () => fetchOrders(page, rowsPerPage, keyword, order, orderBy), {
+    return runGuardedFetch(guardRef.current, () => fetchOrders(page, rowsPerPage, keyword, order, 'created_at'), {
       onStart: () => setSearching(true),
       onResult: (data) => {
         if (data) {
           setListCount(data.total_count);
           setOrderList(data.data || []);
+          if (data.status_counts) {
+            const counts = { ...data.status_counts };
+            counts.all = Object.values(data.status_counts).reduce((a, b) => a + b, 0);
+            setStatusCounts(counts);
+          }
         }
       },
-      onFinally: () => setSearching(false)
+      onFinally: () => {
+        setSearching(false);
+        setLoaded(true);
+      }
     });
-  }, [page, rowsPerPage, filterState, timeRange, order, orderBy]);
+  }, [page, rowsPerPage, filterState, status, timeRange, order]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData, refreshFlag]);
 
-  // 已应用筛选(文本 + status + 时间)同步到 URL(replace,刷新可恢复)。
+  // 已应用筛选(文本 + 状态 + 时间)同步到 URL(replace,刷新可恢复)。
   useEffect(() => {
     setSearchParams(
       (prev) => {
         const params = new URLSearchParams(prev);
-        ORDER_FILTER_PARAM_KEYS.forEach((k) => params.delete(k));
+        [...ORDER_FILTER_PARAM_KEYS, 'status'].forEach((k) => params.delete(k));
         const q = filterStateToParams(ORDER_FILTER_FIELDS, filterState);
         for (const [k, v] of Object.entries(q)) params.set(k, String(v));
+        if (status !== 'all') params.set('status', status);
         params.set('start_timestamp', String(timeRange.start_timestamp));
         params.set('end_timestamp', String(timeRange.end_timestamp));
         return params;
       },
       { replace: true }
     );
-  }, [filterState, timeRange, setSearchParams]);
+  }, [filterState, status, timeRange, setSearchParams]);
 
   const doRefresh = () => {
     setOrder('desc');
-    setOrderBy('created_at');
     setFilterState({});
+    setStatus('all');
     setTimeRange(buildDefaultTimeRange());
     setTimePreset(detectPreset(buildDefaultTimeRange()));
     setPage(0);
@@ -135,43 +184,136 @@ export default function PaymentOrder() {
     setPage(0);
     setFilterState({});
   };
-  // 时间范围档位应用:范围原子写入(联动列表/URL),记录档位供触发器显示。
   const handleApplyRange = (range, presetId) => {
     setPage(0);
     setTimePreset(presetId);
     setTimeRange(range);
   };
-
-  // 已生效的筛选字段(仅用于判断是否渲染下方 chips 容器),对齐 Log 页。
-  const activeChipFields = useMemo(() => ORDER_FILTER_FIELDS.filter((f) => isEntryActive(f, filterState[f.key])), [filterState]);
-
-  const onSortClick = (colId) => {
-    const isAsc = orderBy === colId && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(colId);
+  const changeStatus = (next) => {
     setPage(0);
+    setStatus(next);
   };
 
-  const totalPages = Math.max(1, Math.ceil(listCount / rowsPerPage));
+  const activeChipFields = useMemo(() => ORDER_FILTER_FIELDS.filter((f) => isEntryActive(f, filterState[f.key])), [filterState]);
+  const segmentOptions = SEGMENTS.map((value) => ({ value, label: t(`orderList.segments.${value}`) }));
+  const visible = ORDER_COLUMNS.filter((c) => c.fixed || columns.visibility[c.id]);
+  const when = (row) => (
+    <span title={timestamp2string(row.created_at)} className="whitespace-nowrap">
+      {relativeTime(rtf, row.created_at)}
+    </span>
+  );
+  const user = (row) => row.username || `#${row.user_id}`;
 
-  const sortableCols = ['created_at', 'gateway_id', 'user_id', 'status'];
-  const headers = [
-    { id: 'created_at', label: t('orderlogPage.tableHeaders.created_at') },
-    { id: 'gateway_id', label: t('orderlogPage.tableHeaders.gateway_id') },
-    { id: 'user_id', label: t('orderlogPage.tableHeaders.user_id') },
-    { id: 'trade_no', label: t('orderlogPage.tableHeaders.trade_no') },
-    { id: 'gateway_no', label: t('orderlogPage.tableHeaders.gateway_no') },
-    { id: 'amount', label: t('orderlogPage.tableHeaders.amount') },
-    { id: 'fee', label: t('orderlogPage.tableHeaders.fee') },
-    { id: 'discount', label: t('orderlogPage.tableHeaders.discount') },
-    { id: 'order_amount', label: t('orderlogPage.tableHeaders.order_amount') },
-    { id: 'exchange_rate', label: t('orderlogPage.tableHeaders.exchange_rate') },
-    { id: 'quota', label: t('orderlogPage.tableHeaders.quota') },
-    { id: 'status', label: t('orderlogPage.tableHeaders.status') }
-  ];
+  const SortIcon = order === 'desc' ? ArrowDown : ArrowUp;
+  const head = {
+    created_at: (
+      <button
+        type="button"
+        className="inline-flex items-center gap-1"
+        onClick={() => {
+          setOrder((o) => (o === 'desc' ? 'asc' : 'desc'));
+          setPage(0);
+        }}
+      >
+        {t('orderlogPage.tableHeaders.created_at')}
+        <SortIcon className="size-3.5" />
+      </button>
+    )
+  };
+  const cell = {
+    created_at: (row) => <TableCell className="text-muted-foreground">{when(row)}</TableCell>,
+    user: (row) => <TableCell className="max-w-40 truncate">{user(row)}</TableCell>,
+    trade_no: (row) => <TableCell className="font-mono text-xs">{row.trade_no}</TableCell>,
+    gateway: (row) => <TableCell className="whitespace-nowrap">{row.gateway_name || `#${row.gateway_id}`}</TableCell>,
+    gateway_no: (row) => <TableCell className="font-mono text-xs text-muted-foreground">{row.gateway_no || '—'}</TableCell>,
+    amount: (row) => <TableCell className="text-right tabular-nums">${row.amount}</TableCell>,
+    fee: (row) => <TableCell className="text-right tabular-nums text-muted-foreground">${Number(row.fee || 0).toFixed(2)}</TableCell>,
+    discount: (row) => (
+      <TableCell className="text-right tabular-nums text-muted-foreground">
+        {row.discount > 0 ? money(row.discount, row.order_currency) : '—'}
+      </TableCell>
+    ),
+    order_amount: (row) => (
+      <TableCell className="whitespace-nowrap text-right tabular-nums">{money(row.order_amount, row.order_currency)}</TableCell>
+    ),
+    // 历史订单未记录汇率(0)时显示 —,避免误导
+    exchange_rate: (row) => (
+      <TableCell className="text-right tabular-nums text-muted-foreground">{row.exchange_rate > 0 ? row.exchange_rate : '—'}</TableCell>
+    ),
+    quota: (row) => (
+      <TableCell className="text-right tabular-nums text-muted-foreground">{Number(row.quota || 0).toLocaleString()}</TableCell>
+    ),
+    status: (row) => (
+      <TableCell>
+        <OrderStatus status={row.status} t={t} />
+      </TableCell>
+    )
+  };
+  const RIGHT = new Set(['amount', 'fee', 'discount', 'order_amount', 'exchange_rate', 'quota']);
+
+  let body;
+  if (!loaded) {
+    body = narrow ? <ListSkeleton layout="list" rows={6} /> : <ListSkeleton cells={[96, 160, 64, 80, 64]} checkbox={false} />;
+  } else if (orderList.length === 0) {
+    body = <ListEmptyState title={t('common.noData', { defaultValue: 'No data' })} />;
+  } else if (narrow) {
+    // Phone rows (56px): order number and amount on top; user · time and the status below.
+    body = (
+      <ul className="divide-y divide-border">
+        {orderList.map((row) => (
+          <li
+            key={row.id}
+            className={cn('flex h-14 flex-col justify-center px-4', ROW_OPENS, row.trade_no === route.openId && 'bg-muted/60')}
+            {...rowOpenProps(() => route.open(row.trade_no))}
+          >
+            <div className="flex items-baseline gap-3">
+              <span className="min-w-0 truncate font-mono text-xs">{row.trade_no}</span>
+              <span className="ml-auto shrink-0 text-sm font-medium tabular-nums">${row.amount}</span>
+            </div>
+            <div className="mt-0.5 flex items-baseline gap-3 text-xs text-muted-foreground">
+              <span className="min-w-0 truncate">
+                {user(row)} · {relativeTime(rtf, row.created_at)}
+              </span>
+              <span className="ml-auto shrink-0">
+                <OrderStatus status={row.status} t={t} />
+              </span>
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  } else {
+    body = (
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            {visible.map((c) => (
+              <TableHead key={c.id} className={cn('whitespace-nowrap', RIGHT.has(c.id) && 'text-right')}>
+                {head[c.id] || t(c.labelKey)}
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {orderList.map((row) => (
+            <TableRow
+              key={row.id}
+              className={ROW_OPENS}
+              data-state={row.trade_no === route.openId ? 'selected' : undefined}
+              {...rowOpenProps(() => route.open(row.trade_no))}
+            >
+              {visible.map((c) => (
+                <Fragment key={c.id}>{cell[c.id](row)}</Fragment>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* 标题行右侧操作:刷新 → 筛选 → 时间范围,对齐 Log / Ledger 的 PageActions 结构。 */}
       <PageActions>
         <TooltipProvider delayDuration={150}>
@@ -195,7 +337,14 @@ export default function PaymentOrder() {
         <TimeRangeSelect value={timeRange} preset={timePreset} onApply={handleApplyRange} t={t} locale={i18n.language} />
       </PageActions>
 
-      {/* 标题行下方:全宽 chips 容器(chips/「+」/Clear);仅在有筛选条件时渲染。 */}
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <StatusSegments chips={narrow} value={status} onChange={changeStatus} options={segmentOptions} counts={statusCounts} />
+        </div>
+        {!narrow && <ColumnPicker columns={columns} />}
+      </div>
+
+      {/* 全宽 chips 容器(chips/「+」/Clear);仅在有筛选条件时渲染。 */}
       {activeChipFields.length > 0 && (
         <FilterBar
           fields={ORDER_FILTER_FIELDS}
@@ -209,131 +358,20 @@ export default function PaymentOrder() {
         />
       )}
 
-      <Card>
-        <div className="hidden md:block">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {headers.map((h) => {
-                  const canSort = sortableCols.includes(h.id);
-                  return (
-                    <TableHead
-                      key={h.id}
-                      onClick={canSort ? () => onSortClick(h.id) : undefined}
-                      className={`whitespace-nowrap ${canSort ? 'cursor-pointer select-none' : ''}`}
-                    >
-                      {h.label}
-                      {orderBy === h.id ? (order === 'desc' ? ' ↓' : ' ↑') : ''}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orderList.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={headers.length} className="h-24 text-center text-muted-foreground">
-                    {searching ? '…' : t('common.noData', { defaultValue: 'No data' })}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                orderList.map((row, index) => (
-                  <TableRow
-                    key={`${row.id}_${index}`}
-                    className={ROW_OPENS}
-                    data-state={row.trade_no === route.openId ? 'selected' : undefined}
-                    {...rowOpenProps(() => route.open(row.trade_no))}
-                  >
-                    <TableCell className="whitespace-nowrap text-sm">{timestamp2string(row.created_at)}</TableCell>
-                    <TableCell>{row.gateway_id}</TableCell>
-                    <TableCell>{row.user_id}</TableCell>
-                    <TableCell className="font-mono text-xs">{row.trade_no}</TableCell>
-                    <TableCell className="font-mono text-xs">{row.gateway_no}</TableCell>
-                    <TableCell>${row.amount}</TableCell>
-                    <TableCell>${row.fee}</TableCell>
-                    <TableCell>
-                      {row.discount} {row.order_currency}
-                    </TableCell>
-                    <TableCell>
-                      {row.order_amount} {row.order_currency}
-                    </TableCell>
-                    {/* 历史订单未记录汇率(0)时显示 -,避免误导 */}
-                    <TableCell>{row.exchange_rate > 0 ? row.exchange_rate : '-'}</TableCell>
-                    <TableCell>{row.quota}</TableCell>
-                    <TableCell>{statusBadge(row.status, t)}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        {orderList.length === 0 ? (
-          <div className="md:hidden rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-            {searching ? '…' : t('common.noData', { defaultValue: 'No data' })}
-          </div>
-        ) : (
-          <div className="flex flex-col divide-y divide-border md:hidden">
-            {orderList.map((row, index) => (
-              <button
-                key={`${row.id}_${index}`}
-                type="button"
-                onClick={() => route.open(row.trade_no)}
-                className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50"
-              >
-                <span className="min-w-0">
-                  <span className="block truncate font-mono text-xs">{row.trade_no}</span>
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    {timestamp2string(row.created_at)} · {t('orderlogPage.tableHeaders.user_id')} {row.user_id}
-                  </span>
-                </span>
-                <span className="flex shrink-0 flex-col items-end gap-1">
-                  <span className="text-sm tabular-nums">${row.amount}</span>
-                  {statusBadge(row.status, t)}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-center justify-between gap-4 border-t border-border px-4 py-3 text-sm">
-          <span className="text-muted-foreground">{listCount} total</span>
-          <div className="flex items-center gap-3">
-            <Select
-              value={String(rowsPerPage)}
-              onValueChange={(v) => {
-                setRowsPerPage(Number(v));
-                savePageSize('paymentOrder', Number(v));
-                setPage(0);
-              }}
-            >
-              <SelectTrigger className="h-8 w-24">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PAGE_SIZE_OPTIONS.map((s) => (
-                  <SelectItem key={s} value={String(s)}>
-                    {s} / page
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span className="text-muted-foreground">
-              {page + 1} / {totalPages}
-            </span>
-            <Button variant="outline" size="icon" className="size-8" disabled={page <= 0} onClick={() => setPage((p) => p - 1)}>
-              <ChevronLeft className="size-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-8"
-              disabled={page + 1 >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              <ChevronRight className="size-4" />
-            </Button>
-          </div>
+      <Card className="overflow-hidden">
+        {body}
+        <div className={cn('border-t border-border', searching && loaded && 'opacity-60')}>
+          <ListFooter
+            total={listCount}
+            page={page}
+            pageSize={rowsPerPage}
+            onPageChange={setPage}
+            onPageSizeChange={(n) => {
+              setRowsPerPage(n);
+              savePageSize('paymentOrder', n);
+              setPage(0);
+            }}
+          />
         </div>
       </Card>
 

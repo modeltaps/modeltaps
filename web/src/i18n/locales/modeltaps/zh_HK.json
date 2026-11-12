@@ -3301,5 +3301,18 @@
   },
   "priceList": {
     "groupHint": "不同分組價格不同。API Key 的分組在 API Key 管理中切換"
+  },
+  "orderList": {
+    "segments": {
+      "all": "全部",
+      "success": "成功",
+      "pending": "待支付",
+      "failed": "失敗",
+      "closed": "已關閉"
+    },
+    "paid": "實付"
+  },
+  "topupCard": {
+    "inputPlaceholder": "輸入兌換碼"
   }
 }
