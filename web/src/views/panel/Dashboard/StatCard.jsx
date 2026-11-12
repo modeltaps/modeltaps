@@ -38,7 +38,8 @@ export default function StatCard({ label, value, valueTitle, hint, loading = fal
             {value}
           </span>
         )}
-        <span className="min-h-4">
+        {/* One line of context; a longer one is cut and shown in full on hover. */}
+        <span className="min-h-4 truncate leading-4" title={hint}>
           {!loading && trend && trend.direction !== 'flat' && <Trend trend={trend} />}
           {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
         </span>
@@ -48,7 +49,7 @@ export default function StatCard({ label, value, valueTitle, hint, loading = fal
 }
 
 StatCard.propTypes = {
-  label: PropTypes.string.isRequired,
+  label: PropTypes.node.isRequired,
   value: PropTypes.node,
   valueTitle: PropTypes.string,
   hint: PropTypes.string,
