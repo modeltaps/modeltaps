@@ -169,7 +169,7 @@ export default function AccountMenu({ collapsed = false, anchorRef = null, conte
                 title={t(labelKey)}
                 onClick={() => setTheme(value)}
                 className={cn(
-                  'flex h-6 w-7 items-center justify-center rounded-[5px] transition-colors',
+                  'flex h-6 w-7 items-center justify-center rounded-sm transition-colors',
                   theme === value ? 'bg-control-thumb text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
                 )}
               >

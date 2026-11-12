@@ -47,7 +47,7 @@ export default function BudgetSection({ orgId, role, detail, onRefresh }) {
     (!sameValue(budgetPeriod, baseline.budgetPeriod) || (budgetPeriod !== '__none' && !sameValue(budgetLimit, baseline.budgetLimit)));
 
   // 组织预算单独提交:name/avatar_url 为后端必填且会被覆写,回填服务端当前值,
-  // 避免与资料卡未保存的草稿相互污染。limit<=0 即后端语义的「清除限制」。
+  // 避免与个人信息卡未保存的草稿相互污染。limit<=0 即后端语义的「清除限制」。
   const saveBudget = async () => {
     const hasPeriod = budgetPeriod !== '__none';
     const limit = Math.trunc(Number(budgetLimit) || 0);

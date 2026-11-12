@@ -66,7 +66,7 @@ function ModeSwitch({ value, onChange, disabled }) {
           disabled={disabled}
           onClick={() => value !== mode && onChange(mode)}
           className={cn(
-            'h-7 rounded-lg px-3 text-[13px] font-medium transition-colors disabled:opacity-50',
+            'h-7 rounded-md px-3 text-[13px] font-medium transition-colors disabled:opacity-50',
             value === mode ? 'bg-control-thumb text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
           )}
         >

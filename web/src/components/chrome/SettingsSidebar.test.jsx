@@ -65,7 +65,7 @@ describe('SettingsSidebar', () => {
     expect(linkNames(org)).toEqual(['常规', '成员与预算', '危险操作']);
     expect(personal.getAttribute('aria-label')).toBe('个人设置');
     expect(personal.textContent).toContain('个人设置');
-    expect(linkNames(personal)).toEqual(['资料', '登录与安全', '数据与隐私', '偏好']);
+    expect(linkNames(personal)).toEqual(['个人信息', '登录与安全', '数据与隐私', '偏好']);
     expect(within(org).getByRole('link', { name: '成员与预算' }).getAttribute('aria-current')).toBe('page');
     expect(within(org).getByRole('link', { name: '成员与预算' }).getAttribute('href')).toBe('/panel/settings/org/4/members');
   });
@@ -87,7 +87,7 @@ describe('SettingsSidebar', () => {
     const plane = { publish: () => {}, dirtyGroups: ['general'] };
     renderAt('/panel/settings/org/4/general', { plane });
     expect(screen.getByRole('link', { name: /常规/ }).textContent).toContain('有未保存的改动');
-    expect(screen.getByRole('link', { name: /资料/ }).textContent).not.toContain('有未保存的改动');
+    expect(screen.getByRole('link', { name: /个人信息/ }).textContent).not.toContain('有未保存的改动');
   });
 
   it('search is a button in the first row that opens the search palette', () => {

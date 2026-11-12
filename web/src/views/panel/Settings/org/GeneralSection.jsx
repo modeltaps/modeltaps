@@ -58,7 +58,7 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
     setBaseline(next);
   }, [org]);
 
-  // 未取到组织资料前一律视为无改动
+  // 未取到组织信息前一律视为无改动
   const profileDirty =
     !!baseline &&
     (!sameValue(name.trim(), baseline.name.trim()) ||
