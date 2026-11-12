@@ -273,6 +273,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The providers page is more compact: provider cards became filter chips next to the search, and
+  the traffic chart is replaced by a small request line in each channel's row, with the range
+  switch in the list toolbar. Every row shows its position number (the line joining a position
+  is gone), and a channel that shares traffic names the channels it shares with.
 - The providers page is one channel list. Provider cards at the top keep each provider's traffic in
   view and filter the list; below them every channel is listed in call order while supplies route
   requests: tried top to bottom, reordered by dragging or from the row menu, and a channel can share

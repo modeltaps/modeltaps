@@ -2363,12 +2363,14 @@
       "unshare": "不再分担",
       "weightOf": "{{name}} 的权重",
       "drag": "拖动调整顺序",
-      "positionShort": "第 {{n}} 位"
+      "positionShort": "第 {{n}} 位",
+      "sharesWith": "与 {{names}} 分担",
+      "nameSep": "、"
     },
     "newMenu": {
       "inUse": "已接入"
     },
-    "orderHint": "从上往下试，前一个不可用才用下一个；蓝线连起来的渠道按权重分担。只试能提供这个模型的渠道。"
+    "orderHint": "从上往下试，前一个不可用才用下一个；序号相同的提供相同模型时按权重分担。只试能提供这个模型的渠道。"
   },
   "nav": {
     "sections": {
