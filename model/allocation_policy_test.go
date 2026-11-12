@@ -454,3 +454,31 @@ func TestUpdateModelInfoKeepsAllocation(t *testing.T) {
 		t.Fatalf("after saving: allocation %q, description %q", got.Allocation, got.Description)
 	}
 }
+
+// The overview lists, for each channel, the public models it has an enabled supply for.
+func TestAllocationOverviewListsChannelModels(t *testing.T) {
+	useAllocationTestDB(t)
+	vercel := makeAllocationChannel(t, testChannel{"vercel", 62, "", 0, 1})
+	venice := makeAllocationChannel(t, testChannel{"venice", 1, "https://api.venice.ai", 0, 1})
+	makePublicModel(t, "b")
+	makePublicModel(t, "a")
+	makeSupply(t, "b", vercel, 0, 1)
+	makeSupply(t, "a", vercel, 0, 1)
+	off := makeSupply(t, "a", venice, 0, 1)
+	if err := DB.Model(off).Update("enabled", false).Error; err != nil {
+		t.Fatal(err)
+	}
+	overview, err := GetAllocationOverview()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string][]string{}
+	for _, p := range overview.Providers {
+		for _, c := range p.Channels {
+			got[c.Name] = c.Models
+		}
+	}
+	if !slices.Equal(got["vercel"], []string{"a", "b"}) || got["venice"] == nil || len(got["venice"]) != 0 {
+		t.Fatalf("channel models = %v", got)
+	}
+}

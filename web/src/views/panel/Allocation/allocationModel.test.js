@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addProvider,
   canMoveEntry,
+  entryModels,
   mergeChannels,
   missingEntry,
   moveEntry,
@@ -12,6 +13,7 @@ import {
   splitOut,
   splitProvider,
   tierShares,
+  tierSplit,
   unlistedProviders
 } from './allocationModel';
 
@@ -72,5 +74,53 @@ describe('allocation tiers', () => {
   it('spots entries whose provider or channel is gone', () => {
     expect(missingEntry({ provider: 'gone' }, providers)).toBe(true);
     expect(missingEntry({ channel_id: 4 }, providers)).toBe(false);
+  });
+});
+
+describe('tierSplit', () => {
+  const anthropic = {
+    key: '14:',
+    type: 14,
+    channels: [
+      { id: 3, models: ['claude'] },
+      { id: 4, models: ['claude'] }
+    ]
+  };
+  const openai = {
+    key: '1:',
+    type: 1,
+    channels: [
+      { id: 1, models: ['gpt', 'gpt-mini'] },
+      { id: 2, models: ['gpt'] }
+    ]
+  };
+  const deepseek = { key: '28:', type: 28, channels: [{ id: 5, models: ['deepseek'] }] };
+  const list = [anthropic, openai, deepseek];
+
+  it('splits only between entries that serve a model in common', () => {
+    const tier = [
+      { channel_id: 3, weight: 2 },
+      { channel_id: 4, weight: 1 },
+      { channel_id: 1, weight: 3 },
+      { channel_id: 2, weight: 1 },
+      { provider: '28:', weight: 5 }
+    ];
+    const split = tierSplit(tier, list, [tier]);
+    expect(split.map((s) => s.share)).toEqual([67, 33, 75, 25, null]);
+    expect(split[0].peers).toEqual([1]);
+    expect(split[2].peers).toEqual([3]);
+  });
+
+  it('counts a provider entry only for its channels without an entry of their own', () => {
+    const tiers = [
+      [
+        { provider: '1:', weight: 1 },
+        { provider: '14:', weight: 1 }
+      ],
+      [{ channel_id: 1, weight: 1 }]
+    ];
+    // Channel 1 is placed in the second tier, so the OpenAI entry only serves "gpt" through channel 2.
+    expect(entryModels(tiers[0][0], list, tiers)).toEqual(new Set(['gpt']));
+    expect(tierSplit(tiers[0], list, tiers).map((s) => s.share)).toEqual([null, null]);
   });
 });

@@ -45,7 +45,7 @@ import {
   setWeight,
   splitOut,
   splitProvider,
-  tierShares,
+  tierSplit,
   unlistedProviders
 } from './allocationModel';
 
@@ -63,9 +63,23 @@ function useProviderTitle() {
   };
 }
 
-function EntryRow({ entry, share, shared, providers, actions }) {
+// Name of an entry as its row shows it: the channel's name, or the provider's.
+function useEntryName(providers) {
   const { t } = useTranslation();
   const title = useProviderTitle();
+  return (entry) => {
+    if (missingEntry(entry, providers)) return entry.channel_id ? t('allocation.channelGone', { id: entry.channel_id }) : entry.provider;
+    if (entry.channel_id) return providerOfChannel(providers, entry.channel_id).channels.find((c) => c.id === entry.channel_id).name;
+    return title(providers.find((p) => p.key === entry.provider));
+  };
+}
+
+// `share` is the entry's percentage among the entries of its tier it shares models with, null
+// when it shares none (its weight then changes nothing); `peers` are their names.
+function EntryRow({ entry, share, peers, inSharedTier, providers, actions }) {
+  const { t } = useTranslation();
+  const title = useProviderTitle();
+  const shared = share !== null && share !== undefined;
   const provider = entry.channel_id ? providerOfChannel(providers, entry.channel_id) : providers.find((p) => p.key === entry.provider);
   const channel = entry.channel_id ? provider?.channels.find((c) => c.id === entry.channel_id) : null;
   const missing = missingEntry(entry, providers);
@@ -83,6 +97,7 @@ function EntryRow({ entry, share, shared, providers, actions }) {
     name = title(provider);
     detail = t('allocation.channels', { total: provider.channels.length, enabled });
   }
+  if (shared && peers.length > 0) detail = `${detail} · ${t('allocation.sharesWith', { names: peers.join(t('allocation.nameSep')) })}`;
 
   return (
     <div data-testid="allocation-entry" className="flex min-h-12 items-center gap-3 px-3 py-2 [&+&]:border-t [&+&]:border-border">
@@ -120,7 +135,7 @@ function EntryRow({ entry, share, shared, providers, actions }) {
             <ArrowDown className="size-4" />
             {t('allocation.moveDown')}
           </DropdownMenuItem>
-          {shared && (
+          {inSharedTier && (
             <DropdownMenuItem onClick={actions.splitOut}>
               <Split className="size-4" />
               {t('allocation.ownTier')}
@@ -152,7 +167,8 @@ function EntryRow({ entry, share, shared, providers, actions }) {
 EntryRow.propTypes = {
   entry: PropTypes.object.isRequired,
   share: PropTypes.number,
-  shared: PropTypes.bool,
+  peers: PropTypes.arrayOf(PropTypes.string),
+  inSharedTier: PropTypes.bool,
   providers: PropTypes.array.isRequired,
   actions: PropTypes.object.isRequired
 };
@@ -181,6 +197,7 @@ export default function Allocation() {
 
   const providers = useMemo(() => data?.providers || [], [data]);
   const unlisted = useMemo(() => unlistedProviders(providers, tiers), [providers, tiers]);
+  const entryName = useEntryName(providers);
   const dirty = data && !sameTiers(tiers, data.tiers || []);
 
   const save = async () => {
@@ -247,8 +264,8 @@ export default function Allocation() {
       )}
 
       {tiers.map((tier, ti) => {
-        const shares = tierShares(tier);
-        const shared = tier.length > 1;
+        const split = tierSplit(tier, providers, tiers);
+        const shared = split.some((s) => s.share !== null);
         return (
           <section key={tier.map(entryKey).join('|')} data-testid="allocation-tier" className="rounded-[10px] border border-border">
             <header className="flex items-center gap-2 border-b border-border bg-muted/40 px-3 py-1.5">
@@ -256,6 +273,7 @@ export default function Allocation() {
               <span className="text-xs text-muted-foreground">
                 {tierHint(ti)}
                 {shared && ` · ${t('allocation.tierShared')}`}
+                {!shared && tier.length > 1 && ` · ${t('allocation.tierSeparate')}`}
               </span>
               <span className="flex-1" />
               <Button
@@ -285,8 +303,9 @@ export default function Allocation() {
                 <EntryRow
                   key={entryKey(entry)}
                   entry={entry}
-                  share={shares[ei]}
-                  shared={shared}
+                  share={split[ei].share}
+                  peers={split[ei].peers.map((i) => entryName(tier[i]))}
+                  inSharedTier={tier.length > 1}
                   providers={providers}
                   actions={{
                     canUp: canMoveEntry(tiers, ti, 'up'),

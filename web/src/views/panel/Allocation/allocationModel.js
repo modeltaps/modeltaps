@@ -132,3 +132,44 @@ export function providerOfChannel(providers = [], channelId) {
 }
 
 export const sameTiers = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// Public models an entry serves: its channel's, or for a provider entry those of its channels
+// that have no entry of their own.
+export function entryModels(entry, providers = [], tiers = []) {
+  if (entry.channel_id) {
+    const owner = providerOfChannel(providers, entry.channel_id);
+    return new Set(owner?.channels.find((c) => c.id === entry.channel_id)?.models || []);
+  }
+  const placed = new Set(
+    tiers
+      .flat()
+      .filter((e) => e.channel_id)
+      .map((e) => e.channel_id)
+  );
+  const provider = providers.find((p) => p.key === entry.provider);
+  return new Set((provider?.channels || []).filter((c) => !placed.has(c.id)).flatMap((c) => c.models || []));
+}
+
+// How a tier really splits traffic. Entries only share for models they have in common, so the
+// tier falls apart into groups of entries linked by a common model. Each entry gets its group
+// (index of its first member) and its share in percent inside the group; an entry that shares
+// no model with another one in the tier gets share null: its weight changes nothing.
+export function tierSplit(tier = [], providers = [], tiers = []) {
+  const models = tier.map((entry) => entryModels(entry, providers, tiers));
+  const parent = tier.map((_, i) => i);
+  const find = (i) => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  for (let i = 0; i < tier.length; i++)
+    for (let j = i + 1; j < tier.length; j++) {
+      if ([...models[i]].some((m) => models[j].has(m))) parent[find(j)] = find(i);
+    }
+  const members = {};
+  tier.forEach((_, i) => (members[find(i)] ||= []).push(i));
+  const out = tier.map(() => ({ group: 0, share: null, peers: [] }));
+  for (const list of Object.values(members)) {
+    const shares = list.length > 1 ? tierShares(list.map((i) => tier[i])) : null;
+    list.forEach((i, k) => {
+      out[i] = { group: list[0], share: shares ? shares[k] : null, peers: list.filter((x) => x !== i) };
+    });
+  }
+  return out;
+}
