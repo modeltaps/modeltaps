@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Adding models from the model library now finds the channels that can supply a model even when
+  models.dev does not know their spelling. Upstream names are compared word by word after taking
+  off platform decoration (vendor and region prefixes, "@default", "-v1:0", "." versus "-"). Under
+  each selected model the sheet lists the channels as exact, platform spelling or to confirm, with
+  the sure ones ticked; variants such as "-mini" or "-thinking" are not matched, and ":free" tiers
+  are offered unticked. Confirming or unticking a channel is remembered for that channel only.
 - Allocation policy: a new Allocation page under Gateway orders providers once for every model
   while supplies route requests. Tiers are tried first to last; providers in one tier share it by
   weight, and the channels of a provider share its weight equally unless a channel is placed on

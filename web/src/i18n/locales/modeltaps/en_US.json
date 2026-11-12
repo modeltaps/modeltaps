@@ -3378,12 +3378,21 @@
     "deprecated": "deprecated",
     "showMore": "Show {{count}} more",
     "selected": "{{count}} selected",
-    "createSupplies": "Supply from channels that list it",
+    "createSupplies": "Create supplies from the matched channels",
     "status": "Status",
     "asDraft": "As draft",
     "asPublished": "Published",
     "add": "Add {{count}}",
-    "added": "Added {{count}} models, {{supplies}} supplies"
+    "added": "Added {{count}} models, {{supplies}} supplies",
+    "unsureCount_one": "+{{count}} to confirm",
+    "unsureCount_other": "+{{count}} to confirm",
+    "excludedBefore": "rejected before",
+    "match": {
+      "exact": "Exact",
+      "platform": "Platform spelling",
+      "pending": "Confirm",
+      "variant": "Variant"
+    }
   },
   "ledgerList": {
     "description": "Description",
