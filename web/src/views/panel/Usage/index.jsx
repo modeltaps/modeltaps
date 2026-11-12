@@ -5,7 +5,7 @@ import { useSearchParams } from 'react-router';
 import { useSelector } from 'react-redux';
 import dayjs from 'dayjs';
 import { Download } from 'lucide-react';
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +13,6 @@ import TimeRangeSelect, { computeRange } from '@/components/TimeRangeSelect';
 import PageActions from '@/components/chrome/PageActions';
 import { FilterBar, isEntryActive, OP_IN } from '@/components/filter-bar';
 import { cn } from '@/lib/utils';
-import { SERIES_COLORS } from '@/views/panel/Analytics/chartUtils';
 import { API } from 'utils/api';
 import { useOrg } from 'contexts/OrgContext';
 import { calculateQuota, formatSpendAmount, showInfo } from 'utils/common';
@@ -66,7 +65,15 @@ function abbreviateNumber(num) {
   const sign = n < 0 ? '-' : '';
   const fmt = (v, suffix) => {
     const decimals = v >= 100 ? 0 : v >= 10 ? 1 : 2;
-    return sign + v.toFixed(decimals).replace(/\.?0+$/, '') + suffix;
+    // Trim trailing zeros of the decimals only ("1.50" → "1.5", "2.00" → "2"); "160" stays "160".
+    return (
+      sign +
+      v
+        .toFixed(decimals)
+        .replace(/(\.\d*?)0+$/, '$1')
+        .replace(/\.$/, '') +
+      suffix
+    );
   };
   if (abs >= 1e9) return fmt(abs / 1e9, 'B');
   if (abs >= 1e6) return fmt(abs / 1e6, 'M');
@@ -74,15 +81,17 @@ function abbreviateNumber(num) {
   return sign + Math.round(abs).toLocaleString();
 }
 
-// Compact spend for the KPI card ("$3K" style): converts raw quota to currency and
-// abbreviates ≥ $1000; smaller amounts keep adaptive precision. Points mode abbreviates raw.
+// Spend in one format across the page: ≥ $1000 abbreviated ("$3.2K"), two decimals otherwise,
+// "<$0.01" for amounts that would round to zero. Points mode abbreviates the raw quota.
 function formatSpendCompact(quota) {
   const displayInCurrency = localStorage.getItem('display_in_currency') === 'true';
   if (!displayInCurrency) return abbreviateNumber(quota);
   const amount = Number(calculateQuota(quota, 6));
   const abs = Math.abs(amount);
-  if (abs >= 1000) return (amount < 0 ? '-$' : '$') + abbreviateNumber(abs);
-  return formatSpendAmount(amount);
+  const sign = amount < 0 ? '-' : '';
+  if (abs >= 1000) return sign + '$' + abbreviateNumber(abs);
+  if (abs > 0 && abs < 0.01) return sign + '<$0.01';
+  return sign + '$' + abs.toFixed(2);
 }
 
 // Axis/tooltip spend formatter for the daily-spend bar chart: mirrors formatSpendCompact's
@@ -94,36 +103,9 @@ function formatSpendAxis(v) {
   return formatSpendAmount(num);
 }
 
-// Minimal trend sparkline (no axes/grid/tooltip); sized by its parent container
-function Sparkline({ data, gradientId }) {
-  if (!Array.isArray(data) || data.length < 2) return null;
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={data} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
-        <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.3} />
-            <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <Area
-          type="monotone"
-          dataKey="v"
-          stroke="var(--primary)"
-          strokeWidth={1.5}
-          fill={`url(#${gradientId})`}
-          dot={false}
-          isAnimationActive={false}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
-  );
-}
-
-Sparkline.propTypes = {
-  data: PropTypes.array,
-  gradientId: PropTypes.string.isRequired
-};
+// Chart colours: the accent leads, the second series of a stacked chart is a quiet neutral.
+const ACCENT = 'var(--primary)';
+const QUIET = 'var(--muted-foreground)';
 
 // vs previous-period delta indicator; hidden when delta is null/non-finite.
 // `unit` (default '%') and `decimals` let cards render percentage-point deltas (pp).
@@ -145,24 +127,22 @@ DeltaBadge.propTypes = {
   decimals: PropTypes.number
 };
 
-// KPI card (OpenRouter Activity style): label on top, abbreviated big value, top-right
-// sparkline, and a bottom row with the colored ↑↓ delta + muted "vs prev period".
-function StatCard({ label, value, delta, series, gradientId, deltaLabel, deltaUnit, deltaDecimals }) {
+// KPI card: the label, the figure, and the change against the previous period of the same
+// length ("↑12% 较上一周期"); without a previous period to compare, that line is left out.
+function StatCard({ label, value, delta, deltaLabel, deltaUnit, deltaDecimals }) {
+  const hasDelta = delta !== null && delta !== undefined && Number.isFinite(delta);
   return (
-    <Card className="p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="truncate text-2xl font-medium tabular-nums">{value}</p>
-        </div>
-        <div className="h-10 w-24 shrink-0">
-          <Sparkline data={series} gradientId={gradientId} />
-        </div>
-      </div>
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <DeltaBadge delta={delta} unit={deltaUnit} decimals={deltaDecimals} />
-        <span className="text-xs text-muted-foreground">{deltaLabel}</span>
-      </div>
+    <Card className="p-4 sm:p-5">
+      <p className="text-[13px] text-muted-foreground">{label}</p>
+      <p className="mt-1 truncate text-2xl font-medium tabular-nums">{value}</p>
+      <p className="mt-1 flex min-h-4 items-center gap-1.5 text-xs text-muted-foreground">
+        {hasDelta && (
+          <>
+            <DeltaBadge delta={delta} unit={deltaUnit} decimals={deltaDecimals} />
+            {deltaLabel}
+          </>
+        )}
+      </p>
     </Card>
   );
 }
@@ -171,23 +151,17 @@ StatCard.propTypes = {
   label: PropTypes.string.isRequired,
   value: PropTypes.node,
   delta: PropTypes.number,
-  series: PropTypes.array,
-  gradientId: PropTypes.string.isRequired,
   deltaLabel: PropTypes.string,
   deltaUnit: PropTypes.string,
   deltaDecimals: PropTypes.number
 };
 
-// Fixed 5-color palette for the leading dot in Top breakdown rows (OpenRouter style)
-const TOP_DOT_COLORS = ['bg-sky-500', 'bg-slate-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500'];
-
-// Top-5 breakdown card (OpenRouter "Top API Keys / Top Apps" style): rank number +
-// colored dot + name, with the row's token volume ("898M" + muted "tok") on the right.
+// Top-5 breakdown: rank, name and spend (the list is ranked by spend), the tokens muted after
+// it, and a thin bar for each row's share of the leader.
 function TopBreakdownCard({ t, title, rows, nameOf }) {
   if (rows.length === 0) return null;
-
   const visibleRows = rows.slice(0, 5);
-
+  const max = Math.max(...visibleRows.map((r) => Number(r.quota || 0)), 1);
   return (
     <Card>
       <CardHeader>
@@ -196,15 +170,20 @@ function TopBreakdownCard({ t, title, rows, nameOf }) {
       <CardContent className="space-y-3">
         {visibleRows.map((row, idx) => {
           const tokens = Number(row.prompt_tokens || 0) + Number(row.completion_tokens || 0);
+          const share = Number(row.quota || 0) / max;
           return (
-            <div key={idx} className="flex items-center gap-3 text-sm">
-              <span className="w-4 shrink-0 text-right text-xs tabular-nums text-muted-foreground">{idx + 1}</span>
-              <span className={cn('size-2 shrink-0 rounded-full', TOP_DOT_COLORS[idx % TOP_DOT_COLORS.length])} />
-              <span className="min-w-0 flex-1 truncate font-medium">{nameOf(row) || '-'}</span>
-              <span className="shrink-0 tabular-nums">
-                {abbreviateNumber(tokens)}
-                <span className="ml-1 text-xs text-muted-foreground">{t('usagePage.tokSuffix')}</span>
-              </span>
+            <div key={idx} className="text-sm">
+              <div className="flex items-baseline gap-3">
+                <span className="w-4 shrink-0 text-right text-xs tabular-nums text-muted-foreground">{idx + 1}</span>
+                <span className="min-w-0 flex-1 truncate font-medium">{nameOf(row) || '-'}</span>
+                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                  {abbreviateNumber(tokens)} {t('usagePage.tokSuffix')}
+                </span>
+                <span className="w-16 shrink-0 text-right tabular-nums">{formatSpendCompact(row.quota)}</span>
+              </div>
+              <div className="ml-7 mt-1.5 h-1 rounded-full bg-muted">
+                <div className="h-1 rounded-full bg-primary/70" style={{ width: `${Math.max(share * 100, 2)}%` }} />
+              </div>
             </div>
           );
         })}
@@ -229,17 +208,19 @@ const barTooltipStyle = {
 // names, and a single value formatter shared by the Y axis and tooltip so figures match the
 // card's unit ($ or K/M/B abbreviations). Stacks multiple series; renders the shared empty
 // state when there is no data.
-function BarChartCard({ t, title, data, hasData, series, formatValue }) {
+function BarChartCard({ t, title, data, hasData, series, formatValue, height = 256, className }) {
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         {!hasData ? (
-          <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">{t('usagePage.empty')}</div>
+          <div className="flex items-center justify-center text-sm text-muted-foreground" style={{ height }}>
+            {t('usagePage.empty')}
+          </div>
         ) : (
-          <ResponsiveContainer width="100%" height={256}>
+          <ResponsiveContainer width="100%" height={height}>
             <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis
@@ -269,6 +250,7 @@ function BarChartCard({ t, title, data, hasData, series, formatValue }) {
                   dataKey={s.key}
                   stackId="a"
                   fill={s.color}
+                  fillOpacity={s.opacity ?? 1}
                   radius={i === series.length - 1 ? [4, 4, 0, 0] : 0}
                 />
               ))}
@@ -285,8 +267,12 @@ BarChartCard.propTypes = {
   title: PropTypes.string.isRequired,
   data: PropTypes.array.isRequired,
   hasData: PropTypes.bool,
-  series: PropTypes.arrayOf(PropTypes.shape({ key: PropTypes.string, name: PropTypes.string, color: PropTypes.string })).isRequired,
-  formatValue: PropTypes.func.isRequired
+  series: PropTypes.arrayOf(
+    PropTypes.shape({ key: PropTypes.string, name: PropTypes.string, color: PropTypes.string, opacity: PropTypes.number })
+  ).isRequired,
+  formatValue: PropTypes.func.isRequired,
+  height: PropTypes.number,
+  className: PropTypes.string
 };
 
 export default function Usage() {
@@ -612,19 +598,6 @@ export default function Usage() {
     return [...rowsByDim.app].filter((r) => r.app_name).sort((a, b) => Number(b.quota || 0) - Number(a.quota || 0));
   }, [selectedApps, rowsByDim.app]);
 
-  // 7-day sparkline series for each hero metric (last 7 daily points)
-  const sparkSeries = useMemo(() => {
-    const last7 = chartData.slice(-7);
-    return {
-      quota: last7.map((d) => ({ v: d.quota })),
-      tokens: last7.map((d) => ({ v: d.tokens })),
-      promptTokens: last7.map((d) => ({ v: d.promptTokens })),
-      completionTokens: last7.map((d) => ({ v: d.completionTokens })),
-      requests: last7.map((d) => ({ v: d.requests })),
-      cacheHit: last7.map((d) => ({ v: d.cacheHit }))
-    };
-  }, [chartData]);
-
   // vs previous-period delta percentages (null when no prior data or prior total is 0)
   const deltas = useMemo(() => {
     const calc = (cur, prev) => (prev > 0 ? ((cur - prev) / prev) * 100 : null);
@@ -716,29 +689,23 @@ export default function Usage() {
         />
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
         <StatCard
           label={t('usagePage.metricSpend')}
           value={loading ? '-' : formatSpendCompact(totals.quota)}
           delta={loading ? null : deltas.quota}
-          series={loading ? [] : sparkSeries.quota}
-          gradientId="rf-spark-quota"
           deltaLabel={t('usagePage.vsPrevPeriod')}
         />
         <StatCard
           label={t('usagePage.metricRequests')}
           value={loading ? '-' : abbreviateNumber(totals.requests)}
           delta={loading ? null : deltas.requests}
-          series={loading ? [] : sparkSeries.requests}
-          gradientId="rf-spark-requests"
           deltaLabel={t('usagePage.vsPrevPeriod')}
         />
         <StatCard
           label={t('usagePage.metricTokenVolume')}
           value={loading ? '-' : abbreviateNumber(totals.tokens)}
           delta={loading ? null : deltas.tokens}
-          series={loading ? [] : sparkSeries.tokens}
-          gradientId="rf-spark-tokens"
           deltaLabel={t('usagePage.vsPrevPeriod')}
         />
         <StatCard
@@ -747,8 +714,6 @@ export default function Usage() {
           delta={loading ? null : cacheHit.delta}
           deltaUnit="pp"
           deltaDecimals={1}
-          series={loading ? [] : sparkSeries.cacheHit}
-          gradientId="rf-spark-cache-hit"
           deltaLabel={t('usagePage.vsPrevPeriod')}
         />
       </div>
@@ -761,9 +726,7 @@ export default function Usage() {
           {topTokens.length > 0 && (
             <TopBreakdownCard t={t} title={t('usagePage.topApiKeys')} rows={topTokens} nameOf={(r) => r.token_name} />
           )}
-          {topApps.length > 0 && (
-            <TopBreakdownCard t={t} title={t('usagePage.topApps')} rows={topApps} nameOf={(r) => r.app_name} />
-          )}
+          {topApps.length > 0 && <TopBreakdownCard t={t} title={t('usagePage.topApps')} rows={topApps} nameOf={(r) => r.app_name} />}
         </div>
       )}
 
@@ -792,45 +755,52 @@ export default function Usage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="space-y-4">
+          {/* Spend leads at full width; requests, tokens and cache follow smaller, one accent each. */}
           <BarChartCard
             t={t}
             title={t('usagePage.chartSpendTitle')}
             data={chartData}
             hasData={hasChartData}
             formatValue={formatSpendAxis}
-            series={[{ key: 'quota', name: t('usagePage.metricSpend'), color: SERIES_COLORS[0] }]}
+            height={280}
+            series={[{ key: 'quota', name: t('usagePage.metricSpend'), color: ACCENT }]}
           />
-          <BarChartCard
-            t={t}
-            title={t('usagePage.chartRequestsTitle')}
-            data={chartData}
-            hasData={hasChartData}
-            formatValue={abbreviateNumber}
-            series={[{ key: 'requests', name: t('usagePage.metricRequests'), color: SERIES_COLORS[3] }]}
-          />
-          <BarChartCard
-            t={t}
-            title={t('usagePage.chartTokensTitle')}
-            data={chartData}
-            hasData={hasChartData}
-            formatValue={abbreviateNumber}
-            series={[
-              { key: 'promptTokens', name: t('usagePage.chartInputTokens'), color: SERIES_COLORS[0] },
-              { key: 'completionTokens', name: t('usagePage.chartOutputTokens'), color: SERIES_COLORS[1] }
-            ]}
-          />
-          <BarChartCard
-            t={t}
-            title={t('usagePage.chartCacheTitle')}
-            data={chartData}
-            hasData={hasChartData}
-            formatValue={abbreviateNumber}
-            series={[
-              { key: 'cachedTokens', name: t('usagePage.chartCached'), color: SERIES_COLORS[1] },
-              { key: 'uncachedTokens', name: t('usagePage.chartUncached'), color: SERIES_COLORS[2] }
-            ]}
-          />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <BarChartCard
+              t={t}
+              title={t('usagePage.chartRequestsTitle')}
+              data={chartData}
+              hasData={hasChartData}
+              formatValue={abbreviateNumber}
+              height={180}
+              series={[{ key: 'requests', name: t('usagePage.metricRequests'), color: ACCENT }]}
+            />
+            <BarChartCard
+              t={t}
+              title={t('usagePage.chartTokensTitle')}
+              data={chartData}
+              hasData={hasChartData}
+              formatValue={abbreviateNumber}
+              height={180}
+              series={[
+                { key: 'promptTokens', name: t('usagePage.chartInputTokens'), color: ACCENT },
+                { key: 'completionTokens', name: t('usagePage.chartOutputTokens'), color: QUIET, opacity: 0.4 }
+              ]}
+            />
+            <BarChartCard
+              t={t}
+              title={t('usagePage.chartCacheTitle')}
+              data={chartData}
+              hasData={hasChartData}
+              formatValue={abbreviateNumber}
+              height={180}
+              series={[
+                { key: 'cachedTokens', name: t('usagePage.chartCached'), color: ACCENT },
+                { key: 'uncachedTokens', name: t('usagePage.chartUncached'), color: QUIET, opacity: 0.4 }
+              ]}
+            />
+          </div>
         </div>
       )}
     </div>

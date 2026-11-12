@@ -3171,5 +3171,9 @@
     "asPublished": "发布",
     "add": "添加 {{count}} 个",
     "added": "已添加 {{count}} 个模型，建了 {{supplies}} 条供应"
+  },
+  "ledgerList": {
+    "description": "说明",
+    "amount": "金额"
   }
 }

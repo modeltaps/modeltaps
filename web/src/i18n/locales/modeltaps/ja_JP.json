@@ -3173,5 +3173,9 @@
     "asPublished": "公開",
     "add": "{{count}} 件を追加",
     "added": "{{count}} モデルを追加し、{{supplies}} 件の供給を作成しました"
+  },
+  "ledgerList": {
+    "description": "内容",
+    "amount": "金額"
   }
 }

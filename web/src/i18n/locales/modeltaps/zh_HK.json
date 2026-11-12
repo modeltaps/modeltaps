@@ -3171,5 +3171,9 @@
     "asPublished": "發佈",
     "add": "添加 {{count}} 個",
     "added": "已添加 {{count}} 個模型，建立了 {{supplies}} 條供應"
+  },
+  "ledgerList": {
+    "description": "說明",
+    "amount": "金額"
   }
 }
