@@ -13,8 +13,8 @@ import { API } from 'utils/api';
 import { showError, useIsAdmin } from 'utils/common';
 import { FilterBar, filterStateToParams, isEntryActive, paramsToFilterState } from '@/components/filter-bar';
 import { getPageSize, savePageSize } from 'constants';
-import MidjourneyTable from './MidjourneyTable';
-import LogPagination from '../Log/LogPagination';
+import { ColumnPicker, ListFooter, useColumnVisibility, useListLayout } from '@/components/list-page';
+import MidjourneyTable, { MJ_COLUMNS, estimateMjTableWidth } from './MidjourneyTable';
 
 // ==============================|| PANEL — MIDJOURNEY RECORDS ||============================== //
 // shadcn/Tailwind port of views/Midjourney. Server-side pagination + FilterBar chips + time range.
@@ -148,6 +148,18 @@ export default function Midjourney() {
     setTimeRange(range);
   };
 
+  // Columns the user may toggle (admin-only ones only for admins); the table reports its width so
+  // the sidebar collapses first and a phone list takes over only when it still does not fit.
+  const columnState = useColumnVisibility({
+    storageKey: 'midjourney-column-visibility-v1',
+    columns: MJ_COLUMNS,
+    available: MJ_COLUMNS.filter((c) => !c.adminOnly || userIsAdmin).map((c) => c.id)
+  });
+  const { pageRef, layout, onNaturalWidth } = useListLayout({
+    estimate: estimateMjTableWidth(columnState.visibility),
+    resetKey: JSON.stringify(columnState.visibility)
+  });
+
   const handleSort = (id) => {
     if (!id) return;
     const isAsc = orderBy === id && order === 'asc';
@@ -156,7 +168,7 @@ export default function Midjourney() {
   };
 
   return (
-    <div className="space-y-4">
+    <div ref={pageRef} className="space-y-3">
       {/* 标题行右侧操作:刷新 → 筛选 → 时间范围,对齐 Log。 */}
       <PageActions>
         <TooltipProvider delayDuration={150}>
@@ -178,6 +190,7 @@ export default function Midjourney() {
           t={t}
         />
         <TimeRangeSelect value={timeRange} preset={timePreset} onApply={handleApplyRange} t={t} locale={i18n.language} />
+        {layout === 'table' && <ColumnPicker columns={columnState} />}
       </PageActions>
 
       {/* 标题行下方:OpenRouter 式全宽输入框容器(chips/「+」/Clear);仅在有筛选条件时渲染。 */}
@@ -204,14 +217,17 @@ export default function Midjourney() {
             orderBy={orderBy}
             onSort={handleSort}
             searching={searching}
+            columnVisibility={columnState.visibility}
+            layout={layout}
+            onNaturalWidth={onNaturalWidth}
           />
-          <div className="border-t border-border px-4">
-            <LogPagination
+          <div className="border-t border-border">
+            <ListFooter
+              total={listCount}
               page={page}
-              rowsPerPage={rowsPerPage}
-              count={listCount}
+              pageSize={rowsPerPage}
               onPageChange={setPage}
-              onRowsPerPageChange={(size) => {
+              onPageSizeChange={(size) => {
                 setPage(0);
                 setRowsPerPage(size);
                 savePageSize('midjourney', size);
