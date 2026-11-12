@@ -1965,6 +1965,11 @@
     "advanced": {
       "costRatio": "成本倍率",
       "costRatioHint": "上游实际收费相对标价的倍率，用来提示亏本的分组；留空表示未知",
+      "cancelOnDisconnect": "客户端断开时停止上游",
+      "cancelOnDisconnectAuto": "自动（{{state}}）",
+      "cancelOnDisconnectOn": "开启",
+      "cancelOnDisconnectOff": "关闭",
+      "cancelOnDisconnectHint": "客户端中途停止流式回复时，关闭到上游的连接，让上游停止生成、只按已生成的输出计费；此时输出 token 由本地估算。自动：官方接口和订阅账号开启，其他上游关闭。若中转站在断开后仍按完整回复扣费，请关闭。",
       "danger": "危险操作",
       "dangerHint": "复制会用同一密钥和设置新建一个渠道；删除不能撤销",
       "name": "名称"
