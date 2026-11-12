@@ -366,6 +366,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The allocation page worked out percentages over a whole tier, so channels that never serve the
+  same model looked like they split traffic. Shares are now worked out only between entries of a
+  tier that serve a model in common; an entry that shares none shows no weight, and each row names
+  the entries it shares with. `GET /api/allocation_policy` lists each channel's supplied models.
 - The supply request preview counted channels open to all user groups as outside the chosen group.
 - Changing a channel's priority or weight reaches its supplies again. With supplies routing
   requests, edits on the channel (its panel, the batch actions on the providers page and the

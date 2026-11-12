@@ -802,6 +802,9 @@ type AllocationProviderChannel struct {
 	Name   string `json:"name"`
 	Status int    `json:"status"`
 	Tag    string `json:"tag"`
+	// Models are the public models the channel has an enabled supply for, sorted. Entries of a
+	// tier only share traffic for the models they have in common.
+	Models []string `json:"models"`
 }
 
 // AllocationOverview is what the allocation page shows.
@@ -839,6 +842,14 @@ func GetAllocationOverview() (*AllocationOverview, error) {
 	if err := DB.Select("id", "name", "type", "base_url", "status", "tag").Order("id").Find(&channels).Error; err != nil {
 		return nil, err
 	}
+	var supplies []*ModelSupply
+	if err := DB.Select("model", "channel_id").Where("enabled = ?", true).Order("model").Find(&supplies).Error; err != nil {
+		return nil, err
+	}
+	modelsByChannel := map[int][]string{}
+	for _, s := range supplies {
+		modelsByChannel[s.ChannelId] = append(modelsByChannel[s.ChannelId], s.Model)
+	}
 	byKey := map[string]*AllocationProvider{}
 	for _, ch := range channels {
 		key := ProviderKeyOf(ch)
@@ -848,7 +859,11 @@ func GetAllocationOverview() (*AllocationOverview, error) {
 			byKey[key] = provider
 			overview.Providers = append(overview.Providers, provider)
 		}
-		provider.Channels = append(provider.Channels, AllocationProviderChannel{Id: ch.Id, Name: ch.Name, Status: ch.Status, Tag: ch.Tag})
+		models := modelsByChannel[ch.Id]
+		if models == nil {
+			models = []string{}
+		}
+		provider.Channels = append(provider.Channels, AllocationProviderChannel{Id: ch.Id, Name: ch.Name, Status: ch.Status, Tag: ch.Tag, Models: models})
 	}
 	public := DB.Model(&ModelInfo{}).Where("alias_of = ? AND kind = ?", "", "")
 	if err := public.Session(&gorm.Session{}).Where("allocation = ?", AllocationManual).Count(&overview.ManualModels).Error; err != nil {

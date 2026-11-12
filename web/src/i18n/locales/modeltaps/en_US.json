@@ -2488,7 +2488,10 @@
     "unlisted": "Not placed",
     "unlistedHint": "Tried after every tier, sharing equally",
     "place": "Place",
-    "footnote": "Each model is ordered among the providers that offer it; the percentages are the split when every provider of a tier offers the model. Channels of one provider share its weight equally and are skipped while disabled or paused."
+    "footnote": "Each model is ordered among the providers that offer it. Percentages are worked out only between providers of a tier that offer the same models; a provider that overlaps with none shows no weight. Channels of one provider share its weight equally and are skipped while disabled or paused.",
+    "sharesWith": "shares with {{names}}",
+    "nameSep": ", ",
+    "tierSeparate": "each serves different models, nothing is shared"
   },
   "nav": {
     "sections": {
