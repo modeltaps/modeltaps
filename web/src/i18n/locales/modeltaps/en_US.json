@@ -1805,6 +1805,8 @@
   },
   "routing_policy": "Auto routing",
   "routingPolicy": {
+    "enable": "Enable",
+    "disable": "Disable",
     "create": "New policy",
     "createTitle": "New routing policy",
     "empty": "No routing policies yet. A policy is a model name clients can call; the first message of each session decides which real model answers.",

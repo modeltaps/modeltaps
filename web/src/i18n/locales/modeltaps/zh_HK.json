@@ -1720,6 +1720,8 @@
   },
   "routing_policy": "自動路由",
   "routingPolicy": {
+    "enable": "啟用",
+    "disable": "停用",
     "create": "新建策略",
     "createTitle": "新建路由策略",
     "empty": "還沒有路由策略。策略是一個客戶端可呼叫的模型名，由每個會話的首條訊息決定實際由哪個模型應答。",

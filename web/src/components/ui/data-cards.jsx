@@ -11,6 +11,9 @@ import { RowActionsSurfaceContext } from '@/components/ui/row-actions';
 //    底部操作区通过 RowActionsSurfaceContext='card' 让 RowActions 把动作铺成带文字按钮。
 // 2. 自定义模式(传入 renderCard):整行内容(含操作区)由调用方通过 renderCard(row.original) 渲染,
 //    DataCards 仅负责行内边距、行间分隔线、empty/searching 态与 onRowClick 的键盘可达性。
+// menuColumnId:该列(通常是 RowActions)渲染在标题行右上角,以 'menu' 形态只显示一个 ⋯,
+// 卡片只保留这一个控件(开关等放进菜单,状态用 meta.cardCell 渲染成圆点 + 文字)。
+// 列的 meta.cardCell 可为卡片单独提供渲染函数,替代表格用的 cell。
 // 使用方均嵌在外层 Card/CardContent 内,行不再带独立圆角/边框/阴影,避免"卡中卡"双边框。
 // 根元素默认带 data-datacards 标记:窄屏(<md)下让外层 Card 通过 has-[[data-datacards]]
 // 变体去掉边框/圆角/阴影/背景,列表贴边呈现;md+ 无影响。仪表盘等不希望去框的场景传
@@ -22,6 +25,7 @@ export default function DataCards({
   className,
   actionColumnIds = DEFAULT_ACTION_IDS,
   primaryColumnId,
+  menuColumnId,
   empty,
   searching,
   onRowClick,
@@ -39,6 +43,8 @@ export default function DataCards({
   });
 
   const renderCell = (cell) => flexRender(cell.column.columnDef.cell ?? cell.getValue, cell.getContext());
+  const renderCardCell = (cell) =>
+    flexRender(cell.column.columnDef.meta?.cardCell ?? cell.column.columnDef.cell ?? cell.getValue, cell.getContext());
 
   if (rows.length === 0) {
     return (
@@ -52,9 +58,12 @@ export default function DataCards({
     <div className={cn('flex flex-col divide-y divide-border', className)} {...containerMarker}>
       {rows.map((row) => {
         const cells = row.getVisibleCells();
-        const actionCells = cells.filter((c) => actionColumnIds.includes(c.column.id));
+        const menuCell = menuColumnId ? cells.find((c) => c.column.id === menuColumnId) : null;
+        const actionCells = cells.filter((c) => actionColumnIds.includes(c.column.id) && c.column.id !== menuColumnId);
         const primaryCell = primaryColumnId ? cells.find((c) => c.column.id === primaryColumnId) : null;
-        const bodyCells = cells.filter((c) => !actionColumnIds.includes(c.column.id) && c.column.id !== primaryColumnId);
+        const bodyCells = cells.filter(
+          (c) => !actionColumnIds.includes(c.column.id) && c.column.id !== primaryColumnId && c.column.id !== menuColumnId
+        );
         return (
           <div
             key={row.id}
@@ -77,7 +86,16 @@ export default function DataCards({
               renderCard(row.original)
             ) : (
               <>
-                {primaryCell && <div className="mb-1.5 text-sm font-medium">{renderCell(primaryCell)}</div>}
+                {menuCell ? (
+                  <div className="mb-1.5 flex items-start gap-3">
+                    <div className="min-w-0 flex-1 text-sm font-medium">{primaryCell && renderCell(primaryCell)}</div>
+                    <RowActionsSurfaceContext.Provider value="menu">
+                      <div className="-my-1.5 -mr-2 shrink-0">{renderCell(menuCell)}</div>
+                    </RowActionsSurfaceContext.Provider>
+                  </div>
+                ) : (
+                  primaryCell && <div className="mb-1.5 text-sm font-medium">{renderCell(primaryCell)}</div>
+                )}
                 <dl className="grid grid-cols-[auto_1fr_auto_1fr] gap-x-3 gap-y-1.5">
                   {bodyCells.map((cell) => {
                     const full = cell.column.columnDef.meta?.cardFull;
@@ -98,7 +116,7 @@ export default function DataCards({
                           )}
                           title={title}
                         >
-                          {renderCell(cell)}
+                          {renderCardCell(cell)}
                         </dd>
                       </div>
                     );
@@ -127,6 +145,7 @@ DataCards.propTypes = {
   className: PropTypes.string,
   actionColumnIds: PropTypes.arrayOf(PropTypes.string),
   primaryColumnId: PropTypes.string,
+  menuColumnId: PropTypes.string,
   empty: PropTypes.node,
   searching: PropTypes.bool,
   onRowClick: PropTypes.func,

@@ -1720,6 +1720,8 @@
   },
   "routing_policy": "自动路由",
   "routingPolicy": {
+    "enable": "启用",
+    "disable": "停用",
     "create": "新建策略",
     "createTitle": "新建路由策略",
     "empty": "还没有路由策略。策略是一个客户端可调用的模型名，由每个会话的首条消息决定实际由哪个模型应答。",
