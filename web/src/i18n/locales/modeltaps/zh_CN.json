@@ -3373,5 +3373,14 @@
       "sessionsHint": "已登录本账号的设备，不认识的就登出",
       "identifiersHint": "用其中任一项登录，进的都是这个账号；邮箱也用于找回和通知"
     }
+  },
+  "authPages": {
+    "haveAccount": "已有账号？",
+    "remembered": "想起来了？",
+    "resetTitle": "找回密码",
+    "resetHint": "我们会把重置链接发到这个邮箱"
+  },
+  "login": {
+    "forgetPassword": "忘记密码？"
   }
 }
