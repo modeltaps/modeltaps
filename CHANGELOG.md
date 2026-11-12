@@ -226,6 +226,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The admin page that lists upstream connections is now called **Providers** in the sidebar and
+  page title (it was **Channels**). The entries inside a provider are still channels; links that
+  point to the page say "Providers" as well. Nothing else on the page changed.
 - The models page lists catalog models and models a channel lists; models that only have a price
   no longer appear. Their prices stay, and adding the model from the library keeps its price.
 - On upgrade, synced draft models nothing uses are removed from the catalog (kept: anything not
