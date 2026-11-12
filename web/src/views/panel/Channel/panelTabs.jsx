@@ -33,6 +33,7 @@ import pluginConfig from './pluginConfig';
 import PriceSyncDialog from './PriceSyncDialog';
 import ModelSelectorModal from './ModelSelectorModal';
 import ChannelSupplies from '../ModelInfo/supply/ChannelSupplies';
+import UpstreamModels from './UpstreamModels';
 
 // Tabs of the channel panel (see components/objects/ObjectPanel). Each tab edits a part of the
 // channel on its own: `make(channel)` builds the tab's draft, `patch(draft, channel, ctx)` turns
@@ -298,6 +299,8 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
       <Field className="mt-2" label={configText(t, labels.label.model_mapping)} optional hint={t('channels.models.mappingHint')}>
         <ModelMappingInput key={ctx.version} value={draft.mapping} models={models} onChange={(v) => setDraft({ ...draft, mapping: v })} />
       </Field>
+
+      <UpstreamModels key={channel.id} channelId={channel.id} canCheck={Boolean(labels.canFetchModels)} />
 
       <ChannelSupplies channelId={channel.id} />
 

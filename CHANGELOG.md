@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Upstream models in the channel panel: the Models tab lists every model the upstream returned
+  at the last model check, with the public model each name belongs to and whether the channel
+  supplies it (in use, supply switched off, available, not in the catalog, not recognized). The
+  list can be filtered by state, searched and refreshed with "Check now"; rows link to the
+  model's supplies. `GET /api/channel/:id/upstream_models` returns the same data.
 - Add models from the model library: the models page has an "Add from library" button next to
   "Create". It lists every library model with filters for vendor, endpoint, release window,
   open weights and "a channel can supply it"; pick models or every match, add them as drafts or
