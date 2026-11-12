@@ -1,80 +1,83 @@
-import { Line, LineChart, ResponsiveContainer } from 'recharts';
-import { Minus, TrendingDown, TrendingUp } from 'lucide-react';
+import PropTypes from 'prop-types';
+import { useTranslation } from 'react-i18next';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 // ==============================|| DASHBOARD — STAT CARD ||============================== //
-// A single metric tile. `accent` highlights the key metric in the primary color;
-// every other card stays monochrome. Numbers use a mono-feeling tabular font.
-// Optional `series` (7-day values) renders a mini sparkline and `trend`
-// ({ direction, percent }) renders a today-vs-yesterday badge; cards without
-// them keep the plain number-only look.
+// A metric tile: the label, the figure, and the change against yesterday ("↑12% 较昨天") when
+// there is a yesterday to compare with. No icons or sparklines; the trend chart below carries
+// the shape of the week.
 
-function TrendBadge({ trend }) {
+function Trend({ trend }) {
+  const { t } = useTranslation();
   const { direction, percent } = trend;
-  const cfg =
-    {
-      up: { Icon: TrendingUp, cls: 'text-emerald-500' },
-      down: { Icon: TrendingDown, cls: 'text-red-500' },
-      flat: { Icon: Minus, cls: 'text-muted-foreground' }
-    }[direction] || { Icon: Minus, cls: 'text-muted-foreground' };
-  const { Icon: TIcon, cls } = cfg;
+  const arrow = direction === 'up' ? '↑' : direction === 'down' ? '↓' : '';
   return (
-    <span className={cn('flex items-center gap-0.5 rounded-md bg-muted/60 px-1.5 py-0.5 text-xs font-medium tabular-nums', cls)}>
-      <TIcon className="size-3.5" />
-      {percent}%
+    <span className="text-xs text-muted-foreground">
+      <span className={cn('font-medium tabular-nums', direction === 'up' && 'text-emerald-600', direction === 'down' && 'text-red-600')}>
+        {arrow}
+        {percent}%
+      </span>{' '}
+      {t('dashboardList.vsYesterday')}
     </span>
   );
 }
 
-export default function StatCard({ label, value, valueTitle, hint, icon: Icon, accent = false, loading = false, series, trend, seriesColor }) {
-  const hasSeries = Array.isArray(series) && series.length > 0;
-  const chartData = hasSeries ? series.map((v, i) => ({ i, v: Number(v) || 0 })) : [];
+Trend.propTypes = { trend: PropTypes.shape({ direction: PropTypes.string, percent: PropTypes.number }).isRequired };
 
+export default function StatCard({ label, value, valueTitle, hint, loading = false, trend }) {
   return (
-    <Card className={cn(accent && 'border-foreground/30')}>
-      <CardContent className="flex flex-col gap-2 p-5">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground">{label}</span>
-          {Icon && <Icon className={cn('size-4', accent ? 'text-foreground' : 'text-muted-foreground')} />}
-        </div>
+    <Card>
+      <CardContent className="flex flex-col gap-1 p-4 sm:p-5">
+        <span className="text-[13px] text-muted-foreground">{label}</span>
         {loading ? (
-          <div className="h-9 w-24 animate-pulse rounded-md bg-muted" />
+          <div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
         ) : (
-          <div className="flex min-w-0 items-end justify-between gap-2">
-            <span
-              title={valueTitle}
-              className={cn(
-                'min-w-0 truncate font-mono font-medium leading-none tabular-nums',
-                String(value ?? '').length > 7 ? 'text-2xl' : 'text-3xl',
-                'text-foreground'
-              )}
-            >
-              {value}
-            </span>
-            {trend && <TrendBadge trend={trend} />}
-          </div>
+          <span title={valueTitle} className="min-w-0 truncate text-2xl font-medium tabular-nums text-foreground">
+            {value}
+          </span>
         )}
-        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
-        {!loading && hasSeries && (
-          <div className="-mb-1 mt-1 h-10 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 4, right: 2, left: 2, bottom: 0 }}>
-                <Line
-                  type="monotone"
-                  dataKey="v"
-                  stroke={seriesColor || 'var(--primary)'}
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  dot={false}
-                  isAnimationActive={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+        <span className="min-h-4">
+          {!loading && trend && trend.direction !== 'flat' && <Trend trend={trend} />}
+          {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+        </span>
       </CardContent>
     </Card>
   );
 }
+
+StatCard.propTypes = {
+  label: PropTypes.string.isRequired,
+  value: PropTypes.node,
+  valueTitle: PropTypes.string,
+  hint: PropTypes.string,
+  loading: PropTypes.bool,
+  trend: PropTypes.shape({ direction: PropTypes.string, percent: PropTypes.number })
+};
+
+// Secondary metrics on one quiet strip (rate, throughput, savings, cache hit): label over value,
+// two per row on phones, four in a row otherwise.
+export function MetricStrip({ items, loading = false }) {
+  return (
+    <Card>
+      <CardContent className="grid grid-cols-2 gap-x-4 gap-y-3 p-4 sm:grid-cols-4">
+        {items.map((m) => (
+          <div key={m.label} className="min-w-0" title={m.hint}>
+            <div className="truncate text-xs text-muted-foreground">{m.label}</div>
+            <div className="mt-0.5 truncate text-sm font-medium tabular-nums" title={m.valueTitle}>
+              {loading ? '—' : m.value}
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+MetricStrip.propTypes = {
+  items: PropTypes.arrayOf(
+    PropTypes.shape({ label: PropTypes.string.isRequired, value: PropTypes.node, valueTitle: PropTypes.string, hint: PropTypes.string })
+  ).isRequired,
+  loading: PropTypes.bool
+};

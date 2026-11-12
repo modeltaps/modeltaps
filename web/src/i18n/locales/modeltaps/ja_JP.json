@@ -3177,5 +3177,11 @@
   "ledgerList": {
     "description": "内容",
     "amount": "金額"
+  },
+  "dashboardList": {
+    "vsYesterday": "前日比",
+    "viewUsage": "使用量を見る",
+    "topModels": "上位モデル",
+    "requests": "回"
   }
 }
