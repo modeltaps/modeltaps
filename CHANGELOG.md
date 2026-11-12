@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- New channels attach themselves to public models: while supplies route requests, a channel
+  created from the new channel sheet gets a supply for every model it lists that is a public
+  model in the catalog, at the priority and weight chosen under "Usage", and the confirmation
+  says how many. The daily model check does the same for new upstream models on channels with
+  "Add new upstream models" on; names that match no public model still wait under New upstream
+  models.
 - Upstream models in the channel panel: the Models tab lists every model the upstream returned
   at the last model check, with the public model each name belongs to and whether the channel
   supplies it (in use, supply switched off, available, not in the catalog, not recognized). The

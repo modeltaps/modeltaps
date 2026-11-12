@@ -3,6 +3,8 @@ package controller
 import (
 	"errors"
 	"github.com/modeltaps/modeltaps/common"
+	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/model"
 	"net/http"
@@ -143,16 +145,34 @@ func AddChannel(c *gin.Context) {
 	// 保存后异步为渠道模型补齐元信息与价格（OpenRouter 自带列表优先，其余走 models.dev），免去手动同步。
 	AutoSyncChannelCatalog(channel.Type, channel.Models, "channel add")
 	ids := make([]int, 0, len(channels))
+	supplied := 0
 	for i := range channels {
 		model.TriggerChannelBrandIconFetch(&channels[i])
 		ids = append(ids, channels[i].Id)
+		supplied += autoSupplyNewChannel(&channels[i])
 	}
-	// ids lets the admin UI open the new channel's page (one id per key line in batch mode).
+	// ids lets the admin UI open the new channel's page (one id per key line in batch mode);
+	// supplies is how many public models the new channels were attached to.
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    gin.H{"ids": ids},
+		"data":    gin.H{"ids": ids, "supplies": supplied},
 	})
+}
+
+// autoSupplyNewChannel attaches a new channel to the public models it lists while supplies
+// route requests, so it serves them without a visit to each model's page. It returns how many
+// supplies it created; a failure is logged and leaves the channel as it is.
+func autoSupplyNewChannel(channel *model.Channel) int {
+	if !config.ModelSupplyEnabled {
+		return 0
+	}
+	supplies, err := model.AutoSupplyChannel(channel, model.SplitChannelModels(channel.Models))
+	if err != nil {
+		logger.SysError("auto supply failed for channel " + channel.Name + ": " + err.Error())
+		return 0
+	}
+	return len(supplies)
 }
 
 func DeleteChannel(c *gin.Context) {

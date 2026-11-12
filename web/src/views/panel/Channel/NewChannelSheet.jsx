@@ -262,8 +262,11 @@ export default function NewChannelSheet({ initialType, allChannels, groups, onCl
           .filter(Boolean)
           .join(t('channels.created.comma')),
         t('channels.created.groups', { groups: d.groups.join(t('channels.created.listSep')) }),
-        usage.top && usageKey !== 'custom' ? t('channels.created.relative', { usage: usageLabel, name: usage.top.name }) : usageLabel
-      ].join(' · ');
+        usage.top && usageKey !== 'custom' ? t('channels.created.relative', { usage: usageLabel, name: usage.top.name }) : usageLabel,
+        res.supplies ? t('channels.created.supplied', { count: res.supplies }) : ''
+      ]
+        .filter(Boolean)
+        .join(' · ');
       onCreated({ ids: res.ids, type: d.type, name: body.name, summary });
     } catch (e) {
       toast.error(e.message);

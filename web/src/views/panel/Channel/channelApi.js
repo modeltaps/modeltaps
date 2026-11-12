@@ -468,9 +468,10 @@ export async function fetchGroupOptions() {
   }
 }
 
-// Creates channels (one per key line). Resolves to { success, message, ids }.
+// Creates channels (one per key line). Resolves to { success, message, ids, supplies }; supplies
+// is how many public models the new channels were attached to (0 unless supplies route requests).
 export async function createChannel(body) {
   const res = await API.post('/api/channel/', body);
   const { success, message, data } = res.data || {};
-  return { success: !!success, message, ids: data?.ids || [] };
+  return { success: !!success, message, ids: data?.ids || [], supplies: data?.supplies || 0 };
 }
