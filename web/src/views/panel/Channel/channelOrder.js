@@ -143,7 +143,9 @@ export function orderInfo(groups = [], providers = []) {
         first: i === 0,
         last: i === g.ids.length - 1,
         weight: g.weights[id] || 1,
-        share: split ? split[i].share : null
+        share: split ? split[i].share : null,
+        // Channels of the same position it really shares traffic with (a model in common).
+        peers: split && split[i].share !== null ? split[i].peers.map((k) => g.ids[k]) : []
       });
     });
   });

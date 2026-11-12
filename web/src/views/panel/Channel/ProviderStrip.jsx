@@ -5,36 +5,14 @@ import { Search } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Dot } from '@/components/objects';
-import { channelSeries, metricsByChannel } from './channelMetrics';
 import { openIssues } from './channelGroups';
 import { ProviderTile, useProviderName } from './channelParts';
 
-// Requests over the range as a small line, one point per bucket.
-function Sparkline({ values }) {
-  const w = 160;
-  const h = 26;
-  const max = Math.max(1, ...values);
-  const d = values
-    .map((v, i) => `${i ? 'L' : 'M'}${((i / Math.max(1, values.length - 1)) * w).toFixed(1)},${(h - 2 - (v / max) * (h - 4)).toFixed(1)}`)
-    .join('');
-  return (
-    <svg
-      viewBox={`0 0 ${w} ${h}`}
-      preserveAspectRatio="none"
-      className="mt-2 block h-[26px] w-full text-muted-foreground"
-      aria-hidden="true"
-    >
-      {values.length > 1 && <path d={d} fill="none" stroke="currentColor" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />}
-    </svg>
-  );
-}
-
-Sparkline.propTypes = { values: PropTypes.arrayOf(PropTypes.number).isRequired };
-
-// Row of provider cards above the channel list: every provider keeps its own traffic in view
-// (channels, requests in the range and a small line), and a card filters the list to that
-// provider. "All" clears it. The search covers every channel; `/` focuses it.
-export default function ProviderStrip({ groups, selected, onSelect, dismissed, metrics, bucket, query, onQueryChange, rangeLabel }) {
+// Search and provider filters above the channel list: one chip per provider with its channel
+// count (and a dot when one of its channels needs attention); a chip filters the list to that
+// provider, "All" clears it. The search covers every channel; `/` focuses it. Traffic is shown per
+// channel in the list itself.
+export default function ProviderStrip({ groups, selected, onSelect, dismissed, query, onQueryChange }) {
   const { t } = useTranslation();
   const providerName = useProviderName();
   const inputRef = useRef(null);
@@ -64,42 +42,37 @@ export default function ProviderStrip({ groups, selected, onSelect, dismissed, m
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  const perChannel = useMemo(() => metricsByChannel(metrics.rows), [metrics.rows]);
-  const cards = useMemo(
+  const chips = useMemo(
     () =>
-      groups.map((g) => {
-        const ids = g.channels.map((c) => c.id);
-        const points = metrics.end ? channelSeries(metrics.rows, ids, metrics.start, metrics.end, bucket) : [];
-        return {
-          ...g,
-          requests: ids.reduce((sum, id) => sum + (perChannel.get(id)?.requests || 0), 0),
-          values: points.map((p) => Object.values(p.values).reduce((a, b) => a + b, 0)),
-          enabled: g.channels.filter((c) => c.status === 1).length,
-          attention: openIssues(g.channels, dismissed).length > 0
-        };
-      }),
-    [groups, metrics, bucket, perChannel, dismissed]
+      groups.map((g) => ({
+        ...g,
+        enabled: g.channels.filter((c) => c.status === 1).length,
+        attention: openIssues(g.channels, dismissed).length > 0
+      })),
+    [groups, dismissed]
   );
-  const total = cards.reduce((sum, c) => sum + c.channels.length, 0);
+  const total = chips.reduce((sum, c) => sum + c.channels.length, 0);
 
-  const card = (key, active, onClick, children) => (
+  const chip = (key, active, onClick, label, children) => (
     <button
       key={key}
       type="button"
       onClick={onClick}
       aria-pressed={active}
+      aria-label={label}
       className={cn(
-        'w-52 shrink-0 rounded-xl border bg-card px-3 pb-2 pt-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        active ? 'border-foreground/60 ring-1 ring-foreground/60' : 'border-border hover:border-foreground/25'
+        'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        active ? 'border-foreground bg-foreground text-background' : 'border-border bg-field hover:border-foreground/30'
       )}
     >
       {children}
     </button>
   );
+  const count = (n, active) => <span className={cn('tabular-nums', active ? 'opacity-70' : 'text-muted-foreground')}>{n}</span>;
 
   return (
-    <div className="space-y-3">
-      <div className="relative max-w-sm">
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="relative w-64 shrink-0">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <input
           ref={inputRef}
@@ -108,42 +81,36 @@ export default function ProviderStrip({ groups, selected, onSelect, dismissed, m
           onChange={(e) => setText(e.target.value)}
           placeholder={t('channels.search.placeholder')}
           aria-label={t('channels.search.placeholder')}
-          className="h-9 w-full rounded-lg border border-input bg-field pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          className="h-8 w-full rounded-lg border border-input bg-field pl-9 pr-3 text-[13px] outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
         />
       </div>
-      <div className="-mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1" role="group" aria-label={t('channels.lane.label')}>
-        {card(
+      <div className="flex min-w-0 flex-wrap gap-1.5" role="group" aria-label={t('channels.lane.label')}>
+        {chip(
           'all',
           !selected,
           () => onSelect(0),
+          t('channels.strip.all'),
           <>
-            <span className="text-sm font-medium">{t('channels.strip.all')}</span>
-            <span className="block text-xs text-muted-foreground">{t('channels.strip.allMeta', { count: total })}</span>
+            {t('channels.strip.all')}
+            {count(total, !selected)}
           </>
         )}
-        {cards.map((c) =>
-          card(
+        {chips.map((c) => {
+          const active = selected === c.type;
+          const name = providerName(c.type);
+          return chip(
             c.type,
-            selected === c.type,
+            active,
             () => onSelect(c.type),
+            name,
             <>
-              <span className="flex min-w-0 items-center gap-2">
-                <ProviderTile type={c.type} />
-                <span className="truncate text-sm font-medium">{providerName(c.type)}</span>
-                {c.attention && <Dot tone="warn" />}
-              </span>
-              <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                {t(c.enabled === c.channels.length ? 'channels.strip.meta' : 'channels.strip.metaOff', {
-                  count: c.channels.length,
-                  enabled: c.enabled,
-                  requests: c.requests.toLocaleString(),
-                  range: rangeLabel
-                })}
-              </span>
-              <Sparkline values={c.values} />
+              <ProviderTile type={c.type} />
+              {name}
+              {count(c.enabled === c.channels.length ? c.channels.length : `${c.enabled}/${c.channels.length}`, active)}
+              {c.attention && <Dot tone="warn" />}
             </>
-          )
-        )}
+          );
+        })}
       </div>
     </div>
   );
@@ -154,9 +121,6 @@ ProviderStrip.propTypes = {
   selected: PropTypes.number,
   onSelect: PropTypes.func.isRequired,
   dismissed: PropTypes.instanceOf(Set).isRequired,
-  metrics: PropTypes.object.isRequired,
-  bucket: PropTypes.number.isRequired,
   query: PropTypes.string,
-  onQueryChange: PropTypes.func.isRequired,
-  rangeLabel: PropTypes.string
+  onQueryChange: PropTypes.func.isRequired
 };

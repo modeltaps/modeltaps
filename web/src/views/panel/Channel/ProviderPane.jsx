@@ -41,7 +41,6 @@ import { Dot, ROW_OPENS, RowControl, Segmented, rowOpenProps } from '@/component
 import { FilterSheet, describeEntry, isEntryActive } from '@/components/filter-bar';
 import { ColumnPicker, ConditionBar, PhoneListToolbar, PresetChips, StatusSegments, useFilterPresets } from '@/components/list-page';
 import { ProviderTile, useProviderName } from './channelParts';
-import TrafficChart from './TrafficChart';
 
 export const RANGES = [
   { key: '24h', seconds: 24 * 3600, bucket: 3600 },
@@ -138,13 +137,31 @@ export const CHANNEL_COLUMNS = [
 // Fixed widths of the channel table's columns (padding included); the name takes the rest. With
 // the name's minimum they set the table's minimum width: a narrower pane scrolls the table
 // sideways inside its card, and a long name or tag is cut off instead of widening the table.
+// Requests per bucket as a small line, for the requests column.
+function Sparkline({ values }) {
+  const w = 72;
+  const h = 20;
+  if (values.length < 2) return <span className="inline-block w-[72px]" />;
+  const max = Math.max(1, ...values);
+  const d = values
+    .map((v, i) => `${i ? 'L' : 'M'}${((i / (values.length - 1)) * w).toFixed(1)},${(h - 2 - (v / max) * (h - 4)).toFixed(1)}`)
+    .join('');
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="shrink-0 text-muted-foreground" aria-hidden="true">
+      <path d={d} fill="none" stroke="currentColor" strokeWidth="1.25" />
+    </svg>
+  );
+}
+
+Sparkline.propTypes = { values: PropTypes.arrayOf(PropTypes.number).isRequired };
+
 const COLUMN_WIDTHS = {
   select: 44,
-  order: 56,
+  order: 52,
   priority: 112,
-  requests: 112,
+  requests: 136,
   success: 80,
-  latency: 88,
+  latency: 80,
   balance: 104,
   enabled: 64,
   actions: 52
@@ -316,7 +333,6 @@ export default function ProviderPane({
 }) {
   const { t } = useTranslation();
   const providerName = useProviderName();
-  const [hoverId, setHoverId] = useState(null);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const range = RANGES.find((r) => r.key === rangeKey) || RANGES[0];
@@ -325,18 +341,14 @@ export default function ProviderPane({
 
   const ids = useMemo(() => channels.map((c) => c.id), [channels]);
   const perChannel = useMemo(() => metricsByChannel(metrics.rows), [metrics.rows]);
-  const points = useMemo(
-    () => (metrics.end ? channelSeries(metrics.rows, ids, metrics.start, metrics.end, range.bucket) : []),
-    [metrics.rows, ids, metrics.start, metrics.end, range.bucket]
-  );
-  // Lines only for channels that had traffic in the range, busiest first.
-  const charted = useMemo(
-    () =>
-      channels
-        .filter((c) => (perChannel.get(c.id)?.requests || 0) > 0)
-        .sort((a, b) => (perChannel.get(b.id)?.requests || 0) - (perChannel.get(a.id)?.requests || 0)),
-    [channels, perChannel]
-  );
+  // Requests per bucket of each channel, for the line in the requests column.
+  const series = useMemo(() => {
+    const out = new Map(ids.map((id) => [id, []]));
+    if (!metrics.end) return out;
+    for (const p of channelSeries(metrics.rows, ids, metrics.start, metrics.end, range.bucket))
+      for (const id of ids) out.get(id).push(p.values[id] || 0);
+    return out;
+  }, [metrics.rows, ids, metrics.start, metrics.end, range.bucket]);
   const total = useMemo(() => channels.reduce((a, c) => a + (perChannel.get(c.id)?.requests || 0), 0), [channels, perChannel]);
   const issues = openIssues(channels, dismissed);
   const name = type ? providerName(type) : t('channels.strip.allTitle');
@@ -444,21 +456,6 @@ export default function ProviderPane({
   const show = (id) => visible[id] !== false;
   const segmentOptions = STATUS_KEYS.map((k) => ({ value: k, label: t(`channels.filter.${k}`) }));
 
-  const chart = (
-    <div className="rounded-2xl border border-border bg-card px-4 pb-2 pt-4">
-      <div className="flex items-center justify-between gap-4 px-1 pb-2">
-        <h3 className="text-sm font-medium">{t('channels.chart.title')}</h3>
-        <Segmented
-          label={t('channels.range.label')}
-          value={range.key}
-          onChange={onRangeChange}
-          options={RANGES.map((r) => ({ value: r.key, label: t(`channels.range.${r.key}`) }))}
-        />
-      </div>
-      <TrafficChart points={points} channels={charted} leadId={hoverId} bucket={range.bucket} loading={metrics.loading} />
-    </div>
-  );
-
   const emptyRow = (
     <div className="flex h-24 items-center justify-center gap-1 text-sm text-muted-foreground">
       {t('channels.filter.empty')}
@@ -475,11 +472,7 @@ export default function ProviderPane({
   const col = (id) => <col key={id} style={{ width: COLUMN_WIDTHS[id] }} />;
   const table = (
     <div className="overflow-x-auto rounded-2xl border border-border bg-card">
-      <table
-        className="w-full table-fixed border-collapse text-sm"
-        style={{ minWidth: minTableWidth }}
-        onMouseLeave={() => setHoverId(null)}
-      >
+      <table className="w-full table-fixed border-collapse text-sm" style={{ minWidth: minTableWidth }}>
         <colgroup>
           {col('select')}
           {order && col('order')}
@@ -530,7 +523,6 @@ export default function ProviderPane({
               <tr
                 key={c.id}
                 onClick={() => onOpen(c.id)}
-                onMouseEnter={() => setHoverId(c.id)}
                 {...(place && orderActions
                   ? {
                       onDragOver: (e) => {
@@ -566,17 +558,6 @@ export default function ProviderPane({
                 </td>
                 {order && (
                   <td className="keep relative !px-1" onClick={(e) => e.stopPropagation()}>
-                    {place && place.size > 1 && (
-                      // A shared position: a line joins its channels.
-                      <span
-                        aria-hidden="true"
-                        className={cn(
-                          'absolute left-1.5 w-0.5 bg-info',
-                          place.first ? 'top-1/2' : 'top-0',
-                          place.last ? 'bottom-1/2' : 'bottom-0'
-                        )}
-                      />
-                    )}
                     <span className="flex items-center justify-center gap-0.5">
                       {orderActions && (
                         <span
@@ -596,32 +577,50 @@ export default function ProviderPane({
                         </span>
                       )}
                       <span className="w-5 text-center text-[13px] font-medium tabular-nums text-muted-foreground">
-                        {place && place.first ? place.position : ''}
+                        {place ? place.position : ''}
                       </span>
                     </span>
                   </td>
                 )}
                 <td>
-                  <span className="flex min-w-0 items-center gap-2">
+                  <span className="flex min-w-0 items-center gap-2.5">
                     {!type && <ProviderTile type={c.type} />}
-                    <Dot tone={channelDot(c, dismissed)} />
-                    <span className="truncate font-mono text-[13px]" title={c.name}>
-                      {c.name}
+                    <span className="min-w-0 flex-1">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Dot tone={channelDot(c, dismissed)} />
+                        <span className="truncate font-mono text-[13px]" title={c.name}>
+                          {c.name}
+                        </span>
+                        {c.tag && (
+                          // The tag gives way before the name does.
+                          <span
+                            className="inline-block h-[22px] min-w-0 shrink-[4] truncate rounded-full bg-muted px-2 text-xs leading-[22px] text-muted-foreground"
+                            title={c.tag}
+                          >
+                            {c.tag}
+                          </span>
+                        )}
+                        {isNew && (
+                          <span className="inline-flex h-[22px] shrink-0 items-center rounded-full bg-info/10 px-2 text-xs text-info">
+                            {t('channels.table.new')}
+                          </span>
+                        )}
+                      </span>
+                      {(() => {
+                        // Second line: the provider (in the all-providers list) and who it shares with.
+                        const sub = [
+                          !type ? providerName(c.type) : '',
+                          place?.peers?.length
+                            ? t('channels.order.sharesWith', {
+                                names: place.peers.map((id) => order.names.get(id) || `#${id}`).join(t('channels.order.nameSep'))
+                              })
+                            : ''
+                        ].filter(Boolean);
+                        return sub.length > 0 ? (
+                          <span className="block truncate text-xs text-muted-foreground">{sub.join(' · ')}</span>
+                        ) : null;
+                      })()}
                     </span>
-                    {c.tag && (
-                      // The tag gives way before the name does.
-                      <span
-                        className="inline-block h-[22px] min-w-0 shrink-[4] truncate rounded-full bg-muted px-2 text-xs leading-[22px] text-muted-foreground"
-                        title={c.tag}
-                      >
-                        {c.tag}
-                      </span>
-                    )}
-                    {isNew && (
-                      <span className="inline-flex h-[22px] shrink-0 items-center rounded-full bg-info/10 px-2 text-xs text-info">
-                        {t('channels.table.new')}
-                      </span>
-                    )}
                   </span>
                 </td>
                 {show('priority') &&
@@ -644,7 +643,12 @@ export default function ProviderPane({
                     </td>
                   ))}
                 {show('requests') && (
-                  <td className="text-right tabular-nums">{m?.requests ? m.requests.toLocaleString() : <Muted>0</Muted>}</td>
+                  <td className="tabular-nums">
+                    <span className="flex items-center justify-end gap-2">
+                      <Sparkline values={series.get(c.id) || []} />
+                      <span className="min-w-[2.5rem] text-right">{m?.requests ? m.requests.toLocaleString() : <Muted>0</Muted>}</span>
+                    </span>
+                  </td>
                 )}
                 {show('success') && (
                   <td className="text-right tabular-nums">
@@ -850,6 +854,12 @@ export default function ProviderPane({
                   onTagGone={() => onFiltersChange({ ...filters, tag: '' })}
                 />
               )}
+              <Segmented
+                label={t('channels.range.label')}
+                value={range.key}
+                onChange={onRangeChange}
+                options={RANGES.map((r) => ({ value: r.key, label: t(`channels.range.${r.key}`) }))}
+              />
               <ColumnPicker columns={columns} />
             </div>
             {selectedRows.length > 0 ? (
@@ -868,9 +878,6 @@ export default function ProviderPane({
         )}
       </div>
       {phone ? list : table}
-      {/* The cards above already show each provider's traffic; the chart with a line per channel
-          follows the list. */}
-      <div className="mt-6">{chart}</div>
 
       {phone && selectMode && <ChannelBatchBar floating selected={selectedRows} onClear={exitSelectMode} batch={batch} busy={batchBusy} />}
       {phone && (

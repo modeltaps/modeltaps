@@ -117,8 +117,15 @@ export default function Channel() {
   );
   const groupsShown = orderGroups || policyOrder;
   const order = useMemo(
-    () => (groupsShown ? { groups: groupsShown, info: orderInfo(groupsShown, allocation?.providers || []) } : null),
-    [groupsShown, allocation]
+    () =>
+      groupsShown
+        ? {
+            groups: groupsShown,
+            info: orderInfo(groupsShown, allocation?.providers || []),
+            names: new Map(channels.map((c) => [c.id, c.name]))
+          }
+        : null,
+    [groupsShown, allocation, channels]
   );
   const saveOrder = async (next) => {
     setOrderGroups(next);
@@ -472,17 +479,14 @@ export default function Channel() {
     );
   } else {
     body = (
-      <div className="space-y-5">
+      <div className="space-y-4">
         <ProviderStrip
           groups={visibleGroups}
           selected={selectedType}
           onSelect={selectType}
           dismissed={dismissed}
-          metrics={metrics}
-          bucket={range.bucket}
           query={query}
           onQueryChange={setQuery}
-          rangeLabel={t(`channels.range.${range.key}`)}
         />
         {!visibleGroups.length && query.trim() ? (
           <ListEmptyState

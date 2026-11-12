@@ -2473,12 +2473,14 @@
       "unshare": "Stop sharing",
       "weightOf": "Weight of {{name}}",
       "drag": "Drag to reorder",
-      "positionShort": "#{{n}}"
+      "positionShort": "#{{n}}",
+      "sharesWith": "shares with {{names}}",
+      "nameSep": ", "
     },
     "newMenu": {
       "inUse": "In use"
     },
-    "orderHint": "Tried top to bottom; the next one is used only when the one before is unavailable. Channels joined by a line share traffic by weight. Only channels that offer the model are tried."
+    "orderHint": "Tried top to bottom; the next is used only when the one before is unavailable. Channels with the same number share traffic by weight for the models they have in common."
   },
   "nav": {
     "sections": {
