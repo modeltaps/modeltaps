@@ -3046,7 +3046,7 @@
       "cards": {
         "profile": {
           "title": "プロフィール",
-          "description": "表示名とアバター",
+          "description": "表示名",
           "hint": "ユーザー名は変更できません"
         },
         "logIO": {
@@ -3055,9 +3055,9 @@
         },
         "appearance": {
           "title": "外観",
-          "description": "テーマと言語（自分にだけ適用）",
-          "hint": "保存するとすぐに反映されます",
-          "languageHint": "表示言語を選びます。既定ではブラウザーに従います。"
+          "description": "テーマと言語は選ぶとすぐ反映され、あなたにだけ適用されます",
+          "languageHint": "既定はブラウザーに従います",
+          "themeHint": "システムに合わせると端末のライト/ダーク設定に従います"
         },
         "quotaRemind": {
           "hint": "通知は 1 日 1 回まで"
@@ -3071,7 +3071,9 @@
       },
       "sessions": {
         "device": "デバイス",
-        "where": "アドレスと方法"
+        "where": "アドレスと方法",
+        "showAll": "すべて表示（{{count}} 件）",
+        "showFewer": "折りたたむ"
       }
     },
     "org": {
@@ -3376,5 +3378,11 @@
   },
   "topupCard": {
     "inputPlaceholder": "引き換えコードを入力"
+  },
+  "settingsPage": {
+    "security": {
+      "sessionsHint": "このアカウントにログイン中の端末。心当たりがなければログアウト",
+      "identifiersHint": "どれでログインしても同じアカウントです。メールは復旧と通知にも使います"
+    }
   }
 }

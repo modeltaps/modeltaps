@@ -28,11 +28,7 @@ export default function AccessTokenCard() {
   };
 
   return (
-    <ActionCard
-      title={t('settingsUi.personal.cards.accessToken.title')}
-      description={t('profilePage.tokenNotice')}
-      highlight="access-token"
-    >
+    <ActionCard title={t('settingsUi.personal.cards.accessToken.title')} highlight="access-token">
       <ActionRow
         icon={KeyRound}
         title={t('settingsUi.personal.cards.accessToken.title')}

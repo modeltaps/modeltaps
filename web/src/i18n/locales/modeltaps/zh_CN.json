@@ -3044,7 +3044,7 @@
       "cards": {
         "profile": {
           "title": "个人信息",
-          "description": "显示名称和头像",
+          "description": "显示名称",
           "hint": "用户名不能修改"
         },
         "logIO": {
@@ -3053,9 +3053,9 @@
         },
         "appearance": {
           "title": "外观",
-          "description": "主题与语言，只对你自己生效",
-          "hint": "保存后立即应用",
-          "languageHint": "选择界面语言；默认跟随浏览器。"
+          "description": "主题与语言，选择后立即生效，只对你自己生效",
+          "languageHint": "默认跟随浏览器",
+          "themeHint": "跟随系统时随设备的深浅色切换"
         },
         "quotaRemind": {
           "hint": "每天最多提醒一次"
@@ -3069,7 +3069,9 @@
       },
       "sessions": {
         "device": "设备",
-        "where": "地址与方式"
+        "where": "地址与方式",
+        "showAll": "显示全部 {{count}} 个",
+        "showFewer": "收起"
       }
     },
     "org": {
@@ -3374,5 +3376,11 @@
   },
   "topupCard": {
     "inputPlaceholder": "输入兑换码"
+  },
+  "settingsPage": {
+    "security": {
+      "sessionsHint": "已登录本账号的设备，不认识的就登出",
+      "identifiersHint": "用其中任一项登录，进的都是这个账号；邮箱也用于找回和通知"
+    }
   }
 }
