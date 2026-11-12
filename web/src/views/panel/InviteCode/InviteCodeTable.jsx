@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Ban, Check, Copy, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { Copy, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -15,7 +15,6 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
-import { StateDot } from '@/components/list-page';
 import { timestamp2string } from 'utils/common';
 import { relativeTime } from 'utils/relativeTime';
 
@@ -78,8 +77,8 @@ function StatusSwitch({ item, onToggleStatus }) {
 
 StatusSwitch.propTypes = { item: PropTypes.object.isRequired, onToggleStatus: PropTypes.func.isRequired };
 
-// Row menu: edit, copy the code, enable / disable, then delete (last).
-function CodeActions({ item, onEdit, onCopy, onToggleStatus, onDelete }) {
+// Row menu: edit, copy the code, then delete (last). Enable / disable is the switch next to it.
+function CodeActions({ item, onEdit, onCopy, onDelete }) {
   const { t } = useTranslation();
   return (
     <DropdownMenu>
@@ -97,10 +96,6 @@ function CodeActions({ item, onEdit, onCopy, onToggleStatus, onDelete }) {
           <Copy className="size-4" />
           {t('inviteList.copyCode')}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onToggleStatus(item)}>
-          {item.status === ENABLED ? <Ban className="size-4" /> : <Check className="size-4" />}
-          {item.status === ENABLED ? t('inviteList.disable') : t('inviteList.enable')}
-        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(item)}>
           <Trash2 className="size-4" />
@@ -115,7 +110,6 @@ CodeActions.propTypes = {
   item: PropTypes.object.isRequired,
   onEdit: PropTypes.func.isRequired,
   onCopy: PropTypes.func.isRequired,
-  onToggleStatus: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired
 };
 
@@ -206,16 +200,13 @@ InviteCodeTable.propTypes = {
   actions: PropTypes.object.isRequired
 };
 
-// The state line on a phone card: a dot, then the state in words where validity does not already
-// say it (expired and not-started codes read from their validity alone).
+// The state line on a phone card. On / off is the switch, so only states the switch cannot show
+// get words: used up, and validity (not started, expired, expires in…).
 function StateLine({ item, rtf }) {
   const { t } = useTranslation();
-  const state = inviteState(item);
-  const label = state === 'expired' || state === 'pending' ? null : t(`inviteList.segments.${state}`);
   return (
     <>
-      <StateDot tone={state === 'usable' ? 'live' : state === 'expired' ? 'warn' : 'off'} />
-      {label && <>{label} · </>}
+      {inviteState(item) === 'exhausted' && <span className="text-warning">{t('inviteList.usedUp')} · </span>}
       <Validity item={item} rtf={rtf} />
     </>
   );
@@ -257,9 +248,12 @@ export function InviteCodeCards({ items, rtf, selectMode, selectedIds, onToggleS
                 <code className={cn('shrink-0 font-mono text-sm font-medium', !live && 'text-muted-foreground')}>{item.code}</code>
                 {item.name && <span className="truncate text-xs text-muted-foreground">{item.name}</span>}
               </div>
-              <RowControl className="-my-1.5 -mr-2 shrink-0">
-                <CodeActions item={item} {...actions} />
-              </RowControl>
+              <div className="-my-1.5 -mr-2 flex shrink-0 items-center gap-1">
+                <StatusSwitch item={item} onToggleStatus={actions.onToggleStatus} />
+                <RowControl>
+                  <CodeActions item={item} {...actions} />
+                </RowControl>
+              </div>
             </div>
             <div className="mt-1 flex items-baseline gap-2">
               <Usage item={item} className={cn('text-xl font-medium', !live && 'text-muted-foreground')} />

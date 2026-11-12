@@ -92,7 +92,9 @@ describe('RoutingPolicy page', () => {
     const create = await screen.findByRole('button', { name: i18n.t('objects.new.create') });
     expect(create.disabled).toBe(true);
     const missing = i18n.t('objects.new.missing', {
-      items: ['name', 'decisionModel', 'routes', 'fallbackModel'].map((k) => i18n.t(`routingPolicy.form.${k}`)).join(i18n.t('objects.new.listSep'))
+      items: ['name', 'decisionModel', 'routes', 'fallbackModel']
+        .map((k) => i18n.t(`routingPolicy.form.${k}`))
+        .join(i18n.t('objects.new.listSep'))
     });
     expect(screen.getByText(missing)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: i18n.t('common.cancel') }));

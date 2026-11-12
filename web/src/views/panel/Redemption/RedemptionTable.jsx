@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { ArrowDown, ArrowUp, ArrowUpDown, Ban, Check, Copy, Download, MoreHorizontal, PanelRight, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Copy, Download, MoreHorizontal, PanelRight, Trash2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -18,7 +18,6 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
-import { StateDot } from '@/components/list-page';
 import { renderQuota, timestamp2string } from 'utils/common';
 import { relativeTime } from 'utils/relativeTime';
 
@@ -86,8 +85,9 @@ export function StatusSwitch({ item, onToggleStatus }) {
 
 StatusSwitch.propTypes = { item: PropTypes.object.isRequired, onToggleStatus: PropTypes.func.isRequired };
 
-// Row menu: open, copy the code, export its batch, enable / disable, then delete (last).
-export function CodeActions({ item, onOpen, onCopyKey, onExportBatch, onToggleStatus, onDelete }) {
+// Row menu: open, copy the code, export its batch, then delete (last). Enable / disable is the
+// switch next to it.
+export function CodeActions({ item, onOpen, onCopyKey, onExportBatch, onDelete }) {
   const { t } = useTranslation();
   return (
     <DropdownMenu>
@@ -109,12 +109,6 @@ export function CodeActions({ item, onOpen, onCopyKey, onExportBatch, onToggleSt
           <Download className="size-4" />
           {t('redemptionPage.exportBatch')}
         </DropdownMenuItem>
-        {item.status !== USED && (
-          <DropdownMenuItem onClick={() => onToggleStatus(item)}>
-            {item.status === ENABLED ? <Ban className="size-4" /> : <Check className="size-4" />}
-            {item.status === ENABLED ? t('redemptionList.disable') : t('redemptionList.enable')}
-          </DropdownMenuItem>
-        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(item)}>
           <Trash2 className="size-4" />
@@ -130,7 +124,6 @@ CodeActions.propTypes = {
   onOpen: PropTypes.func.isRequired,
   onCopyKey: PropTypes.func.isRequired,
   onExportBatch: PropTypes.func.isRequired,
-  onToggleStatus: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired
 };
 
@@ -328,15 +321,12 @@ RedemptionTable.propTypes = {
   actions: PropTypes.object.isRequired
 };
 
-// The state line on a phone card: a dot, the state in words (expired codes read from their expiry
-// alone), the scope, expiry and created.
+// The state line on a phone card. On / off is the switch (a redeemed code says so in its place),
+// so the line carries scope, expiry (tinted once expired) and age.
 function StateLine({ item, rtf }) {
   const { t } = useTranslation();
-  const state = codeState(item);
   return (
     <>
-      <StateDot tone={state === 'usable' ? 'live' : state === 'expired' ? 'warn' : 'off'} />
-      {state !== 'expired' && <>{t(`redemptionList.segments.${state}`)} · </>}
       {t(`redemptionPage.scopes.${item.scope || 'any'}`)} · <Expiry item={item} rtf={rtf} /> ·{' '}
       {t('redemptionList.createdAgo', { time: relativeTime(rtf, item.created_time) })}
     </>
@@ -379,9 +369,12 @@ export function RedemptionCards({ redemptions, rtf, selectMode, selectedIds, onT
                 <span className={cn('truncate text-sm font-medium', state !== 'usable' && 'text-muted-foreground')}>{item.name}</span>
                 <code className="shrink-0 font-mono text-xs text-muted-foreground">{keyTail(item.key)}</code>
               </div>
-              <RowControl className="-my-1.5 -mr-2 shrink-0">
-                <CodeActions item={item} {...actions} />
-              </RowControl>
+              <div className="-my-1.5 -mr-2 flex shrink-0 items-center gap-1">
+                <StatusSwitch item={item} onToggleStatus={actions.onToggleStatus} />
+                <RowControl>
+                  <CodeActions item={item} {...actions} />
+                </RowControl>
+              </div>
             </div>
             <div className={cn('mt-1 font-mono text-xl font-medium tabular-nums', state !== 'usable' && 'text-muted-foreground')}>
               {renderQuota(item.quota)}

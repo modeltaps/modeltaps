@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Ban, Check, MoreHorizontal, PanelRight, Trash2, Users, Wallet } from 'lucide-react';
+import { MoreHorizontal, PanelRight, Trash2, Users, Wallet } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
-import { StateDot, useNaturalWidth } from '@/components/list-page';
+import { useNaturalWidth } from '@/components/list-page';
 import { cn } from '@/lib/utils';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
 import { relativeTime } from 'utils/relativeTime';
@@ -48,9 +48,9 @@ export function ownerLabel(org) {
   return org.owner_id ? `#${org.owner_id}` : '—';
 }
 
-// Row menu: open, adjust the pool balance, the member limit, enable / disable, then dissolve
-// (destructive, last).
-export function OrgActions({ org, onOpen, onToggleStatus, onDissolve }) {
+// Row menu: open, adjust the pool balance, the member limit, then dissolve (destructive, last).
+// Enable / disable is the switch next to it.
+export function OrgActions({ org, onOpen, onDissolve }) {
   const { t } = useTranslation();
   return (
     <DropdownMenu>
@@ -72,10 +72,6 @@ export function OrgActions({ org, onOpen, onToggleStatus, onDissolve }) {
           <Users className="size-4" />
           {t('orgAdmin.maxMembers')}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onToggleStatus(org)}>
-          {org.status === ENABLED ? <Ban className="size-4" /> : <Check className="size-4" />}
-          {org.status === ENABLED ? t('common.disable') : t('common.enable')}
-        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDissolve(org)}>
           <Trash2 className="size-4" />
@@ -89,9 +85,24 @@ export function OrgActions({ org, onOpen, onToggleStatus, onDissolve }) {
 OrgActions.propTypes = {
   org: PropTypes.object.isRequired,
   onOpen: PropTypes.func.isRequired,
-  onToggleStatus: PropTypes.func.isRequired,
   onDissolve: PropTypes.func.isRequired
 };
+
+function OrgSwitch({ org, onToggleStatus }) {
+  const { t } = useTranslation();
+  return (
+    <RowControl className="flex">
+      <Switch
+        size="sm"
+        checked={org.status === ENABLED}
+        aria-label={t('orgAdmin.columns.status')}
+        onCheckedChange={() => onToggleStatus(org)}
+      />
+    </RowControl>
+  );
+}
+
+OrgSwitch.propTypes = { org: PropTypes.object.isRequired, onToggleStatus: PropTypes.func.isRequired };
 
 // Organizations table: one line per organization (name, slug in mono), owner, members, pool
 // balance and spend right-aligned, age in words, then the status switch and the row menu last.
@@ -142,18 +153,11 @@ export default function OrgAdminTable({ rows, rtf, openId, onOpen, onToggleStatu
               <span title={timestamp2string(org.created_time)}>{relativeTime(rtf, org.created_time)}</span>
             </TableCell>
             <TableCell>
-              <RowControl className="flex">
-                <Switch
-                  size="sm"
-                  checked={org.status === ENABLED}
-                  aria-label={t('orgAdmin.columns.status')}
-                  onCheckedChange={() => onToggleStatus(org)}
-                />
-              </RowControl>
+              <OrgSwitch org={org} onToggleStatus={onToggleStatus} />
             </TableCell>
             <TableCell className="sticky right-0 z-10 bg-card text-right">
               <RowControl className="justify-end">
-                <OrgActions org={org} onOpen={onOpen} onToggleStatus={onToggleStatus} onDissolve={onDissolve} />
+                <OrgActions org={org} onOpen={onOpen} onDissolve={onDissolve} />
               </RowControl>
             </TableCell>
           </TableRow>
@@ -174,10 +178,9 @@ OrgAdminTable.propTypes = {
 };
 
 // Phone cards, one per organization (same layout as the other phone cards). Top: name and slug,
-// the row menu on the right (it holds enable / disable, so the card carries one control).
-// Middle: the pool balance, large. Bottom: state, members, owner and age.
+// then the switch and the row menu on the right. Middle: the pool balance, large. Bottom:
+// members, owner and age.
 export function OrgAdminCards({ rows, rtf, openId, onOpen, onToggleStatus, onDissolve }) {
-  const { t } = useTranslation();
   return (
     <ul className="space-y-2">
       {rows.map((org) => {
@@ -197,17 +200,18 @@ export function OrgAdminCards({ rows, rtf, openId, onOpen, onToggleStatus, onDis
                 <span className={cn('truncate text-sm font-medium', !enabled && 'text-muted-foreground')}>{org.name}</span>
                 {org.slug && <code className="shrink-0 font-mono text-xs text-muted-foreground">{org.slug}</code>}
               </div>
-              <RowControl className="-my-1.5 -mr-2 shrink-0">
-                <OrgActions org={org} onOpen={onOpen} onToggleStatus={onToggleStatus} onDissolve={onDissolve} />
-              </RowControl>
+              <div className="-my-1.5 -mr-2 flex shrink-0 items-center gap-1">
+                <OrgSwitch org={org} onToggleStatus={onToggleStatus} />
+                <RowControl>
+                  <OrgActions org={org} onOpen={onOpen} onDissolve={onDissolve} />
+                </RowControl>
+              </div>
             </div>
             <div className={cn('mt-1 font-mono text-xl font-medium tabular-nums', !enabled && 'text-muted-foreground')}>
               {renderQuota(org.quota, 2)}
             </div>
             <div className="mt-1 truncate text-xs text-muted-foreground">
-              <StateDot tone={enabled ? 'live' : 'off'} />
-              {enabled ? t('common.enable') : t('common.disable')} · <MemberCount org={org} /> · {ownerLabel(org)} ·{' '}
-              {relativeTime(rtf, org.created_time)}
+              <MemberCount org={org} /> · {ownerLabel(org)} · {relativeTime(rtf, org.created_time)}
             </div>
           </li>
         );
