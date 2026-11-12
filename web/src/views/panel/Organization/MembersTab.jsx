@@ -2,23 +2,43 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { Ban, Link2, Plus, RefreshCw, Search, SlidersHorizontal, UserMinus, UserPlus } from 'lucide-react';
+import {
+  Ban,
+  Link2,
+  MoreHorizontal,
+  Plus,
+  RefreshCw,
+  Search,
+  ShieldUser,
+  SlidersHorizontal,
+  User,
+  UserMinus,
+  UserPlus,
+  Users
+} from 'lucide-react';
+
+import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectTrigger, SelectContent, SelectItem } from '@/components/ui/select';
-import { RowActions, RowActionsSurfaceContext } from '@/components/ui/row-actions';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { EmptyState } from '@/components/ui/empty-state';
+import { ListEmptyState, ListFooter, ListSkeleton } from '@/components/list-page';
 import { API } from 'utils/api';
 import { copy, renderSpend, showError, showSuccess, timestamp2string } from 'utils/common';
-import { PAGE_SIZE_OPTIONS, getPageSize, savePageSize } from 'constants';
+import { relativeTime } from 'utils/relativeTime';
+import { getPageSize, savePageSize } from 'constants';
 import { createRequestGuard, runGuardedFetch } from 'hooks/paginatedListGuard';
-import Pagination from '../components/Pagination';
 import MemberLimitsSheet from './MemberLimitsSheet';
 import InvitationSheet from './InvitationSheet';
 import CreateMemberSheet from './CreateMemberSheet';
@@ -33,8 +53,26 @@ export const inviteLink = (token) => `${window.location.origin}/panel/organizati
 
 const ROLE_WEIGHT = { owner: 3, admin: 2, member: 1 };
 
+// A row's ⋯ menu.
+function MoreMenu({ label, children }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" variant="ghost" size="icon" className="size-8" aria-label={label} title={label}>
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        {children}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+MoreMenu.propTypes = { label: PropTypes.string.isRequired, children: PropTypes.node };
+
 export default function MembersTab({ orgId, role }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const account = useSelector((state) => state.account);
   const myUserId = account?.user?.id;
   const myWeight = ROLE_WEIGHT[role] || 0;
@@ -47,6 +85,7 @@ export default function MembersTab({ orgId, role }) {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(() => getPageSize('org_members'));
   const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [removeTarget, setRemoveTarget] = useState(null);
   const [removing, setRemoving] = useState(false);
   const [limitsTarget, setLimitsTarget] = useState(null);
@@ -56,6 +95,7 @@ export default function MembersTab({ orgId, role }) {
   const [invPage, setInvPage] = useState(0);
   const [invRowsPerPage, setInvRowsPerPage] = useState(() => getPageSize('org_invitations'));
   const [invLoading, setInvLoading] = useState(false);
+  const [invLoaded, setInvLoaded] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -82,7 +122,10 @@ export default function MembersTab({ orgId, role }) {
             }
           },
           onError: (error) => console.error(error),
-          onFinally: () => setLoading(false)
+          onFinally: () => {
+            setLoading(false);
+            setLoaded(true);
+          }
         }
       ),
     [orgId, page, rowsPerPage]
@@ -113,7 +156,10 @@ export default function MembersTab({ orgId, role }) {
           }
         },
         onError: (error) => console.error(error),
-        onFinally: () => setInvLoading(false)
+        onFinally: () => {
+          setInvLoading(false);
+          setInvLoaded(true);
+        }
       }
     );
   }, [orgId, invPage, invRowsPerPage, isAdmin]);
@@ -209,52 +255,145 @@ export default function MembersTab({ orgId, role }) {
 
   const showInvitations = isAdmin && seg === 'invitations';
 
+  const rtf = new Intl.RelativeTimeFormat((i18n.language || 'zh_CN').replace('_', '-'), { numeric: 'auto' });
+  const when = (ts) => (
+    <span title={timestamp2string(ts)} className="whitespace-nowrap">
+      {relativeTime(rtf, ts)}
+    </span>
+  );
+  const memberName = (m) => m.display_name || m.username || `#${m.user_id}`;
+  const meTag = (m) =>
+    m.user_id === myUserId && <span className="shrink-0 text-xs text-muted-foreground">({t('orgPage.members.me')})</span>;
+  const roleText = (r) => <span className="whitespace-nowrap text-muted-foreground">{t(`org.roles.${r}`)}</span>;
+  const usage = (inv) => `${inv.used_count} / ${inv.max_uses === 0 ? t('orgPage.invitations.unlimited') : inv.max_uses}`;
+  const expiry = (inv) => (inv.expired_time > 0 ? when(inv.expired_time) : t('orgPage.myInvitations.never'));
+  const invitee = (inv) =>
+    inv.invitee_id > 0 ? (
+      <span className="min-w-0 truncate font-medium">{inv.email || `#${inv.invitee_id}`}</span>
+    ) : (
+      <span className="inline-flex min-w-0 items-center gap-1.5 font-medium">
+        <Link2 className="size-3.5 shrink-0 text-muted-foreground" />
+        <span className="truncate">{t('orgPage.invitations.typeLink')}</span>
+      </span>
+    );
+
+  const memberMenu = (m, withRole) =>
+    canManage(m) && (
+      <MoreMenu label={t('orgList.more')}>
+        <DropdownMenuItem onClick={() => setLimitsTarget(m)}>
+          <SlidersHorizontal className="size-4" />
+          {t('orgPage.members.limits')}
+        </DropdownMenuItem>
+        {withRole && m.role !== 'owner' && (
+          <DropdownMenuItem onClick={() => changeRole(m, m.role === 'admin' ? 'member' : 'admin')}>
+            {m.role === 'admin' ? <User className="size-4" /> : <ShieldUser className="size-4" />}
+            {t(m.role === 'admin' ? 'orgList.makeMember' : 'orgList.makeAdmin')}
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setRemoveTarget(m)}>
+          <UserMinus className="size-4" />
+          {t('orgPage.members.remove')}
+        </DropdownMenuItem>
+      </MoreMenu>
+    );
+
+  const invitationMenu = (inv) => (
+    <MoreMenu label={t('orgList.more')}>
+      {inv.invitee_id === 0 && (
+        <DropdownMenuItem onClick={() => copy(inviteLink(inv.token), t('orgPage.invitations.copyLink'))}>
+          <Link2 className="size-4" />
+          {t('orgPage.invitations.copyLink')}
+        </DropdownMenuItem>
+      )}
+      <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => revoke(inv)}>
+        <Ban className="size-4" />
+        {t('orgPage.invitations.revoke')}
+      </DropdownMenuItem>
+    </MoreMenu>
+  );
+
+  const skeleton = (
+    <>
+      <div className="hidden md:block">
+        <ListSkeleton cells={[80, 128, 64, 32]} checkbox={false} />
+      </div>
+      <div className="md:hidden">
+        <ListSkeleton layout="list" />
+      </div>
+    </>
+  );
+
+  const footer = (total, current, size, onPage, onSize) => (
+    <div className="border-t border-border">
+      <ListFooter total={total} page={current} pageSize={size} onPageChange={onPage} onPageSizeChange={onSize} />
+    </div>
+  );
+
   return (
-    <Card>
-      <div className="flex flex-col gap-2 border-b border-border p-3 sm:flex-row sm:items-center sm:justify-between">
+    <Card className="overflow-hidden">
+      <div className="flex flex-col gap-2 border-b border-border p-3 sm:flex-row sm:items-center">
         {/* 子分段「成员(N) / 邀请(M)」:Member 角色只见成员列表,不渲染分段控件 */}
-        {isAdmin ? (
+        {isAdmin && (
           <Tabs value={seg} onValueChange={setSeg}>
             <TabsList>
               <TabsTrigger value="members">
-                {t('orgPage.tabs.members')} ({count})
+                {t('orgPage.tabs.members')} <span className="ml-1 tabular-nums text-muted-foreground">{count}</span>
               </TabsTrigger>
               <TabsTrigger value="invitations">
-                {t('orgPage.members.pendingInvitations')} ({invCount})
+                {t('orgPage.members.pendingInvitations')} <span className="ml-1 tabular-nums text-muted-foreground">{invCount}</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
-        ) : (
-          <div />
         )}
-        <div className="flex items-center gap-2">
+        {/* On phones the buttons drop their labels so the row fits beside the search box. */}
+        <div className="flex min-w-0 items-center gap-2 sm:ml-auto">
           {!showInvitations && (
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <div className="relative min-w-0 flex-1 sm:w-56 sm:flex-none">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t('orgPage.members.search')}
-                className="h-9 w-56 pl-8"
+                aria-label={t('orgPage.members.search')}
+                className="h-8 pl-8"
               />
             </div>
           )}
           <Button
             variant="outline"
-            size="sm"
+            size="icon"
+            className={cn('size-8 shrink-0', showInvitations && 'ml-auto sm:ml-0')}
+            aria-label={t('orgPage.refresh')}
+            title={t('orgPage.refresh')}
             onClick={showInvitations ? fetchInvitations : fetchData}
             disabled={showInvitations ? invLoading : loading}
           >
             <RefreshCw className="size-4" />
           </Button>
           {isAdmin && (
-            <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
-              <UserPlus className="size-4" /> {t('orgPage.members.createAccount')}
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 shrink-0 px-2 sm:px-3"
+              aria-label={t('orgPage.members.createAccount')}
+              title={t('orgPage.members.createAccount')}
+              onClick={() => setCreateOpen(true)}
+            >
+              <UserPlus className="size-4" />
+              <span className="hidden sm:inline">{t('orgPage.members.createAccount')}</span>
             </Button>
           )}
           {isAdmin && (
-            <Button size="sm" onClick={() => setSheetOpen(true)}>
-              <Plus className="size-4" /> {t('orgPage.members.invite')}
+            <Button
+              size="sm"
+              className="h-8 shrink-0 px-2 sm:px-3"
+              aria-label={t('orgPage.members.invite')}
+              title={t('orgPage.members.invite')}
+              onClick={() => setSheetOpen(true)}
+            >
+              <Plus className="size-4" />
+              <span className="hidden sm:inline">{t('orgPage.members.invite')}</span>
             </Button>
           )}
         </div>
@@ -262,253 +401,151 @@ export default function MembersTab({ orgId, role }) {
 
       {showInvitations ? (
         <>
-          <div className="hidden md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('orgPage.invitations.invitee')}</TableHead>
-                  <TableHead>{t('orgPage.members.role')}</TableHead>
-                  <TableHead>{t('orgPage.invitations.status')}</TableHead>
-                  <TableHead>{t('orgPage.invitations.usage')}</TableHead>
-                  <TableHead>{t('orgPage.invitations.expiryTime')}</TableHead>
-                  <TableHead className="w-[1%] text-right">{t('orgPage.members.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invitations.map((inv) => (
-                  <TableRow key={inv.id}>
-                    <TableCell>
-                      {inv.invitee_id > 0 ? (
-                        <span className="font-medium">{inv.email || `#${inv.invitee_id}`}</span>
-                      ) : (
-                        <Badge variant="outline" className="gap-1">
-                          <Link2 className="size-3" /> {t('orgPage.invitations.typeLink')}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>{t(`org.roles.${inv.role}`)}</TableCell>
-                    <TableCell>
-                      <Badge variant="default">{t(`orgPage.invitations.status_${inv.status}`)}</Badge>
-                    </TableCell>
-                    <TableCell className="tabular-nums text-muted-foreground">
-                      {inv.used_count} / {inv.max_uses === 0 ? t('orgPage.invitations.unlimited') : inv.max_uses}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {inv.expired_time > 0 ? timestamp2string(inv.expired_time) : t('orgPage.myInvitations.never')}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        {inv.invitee_id === 0 && (
-                          <Button variant="ghost" size="sm" onClick={() => copy(inviteLink(inv.token), t('orgPage.invitations.copyLink'))}>
-                            <Link2 className="size-4" /> {t('orgPage.invitations.copyLink')}
-                          </Button>
-                        )}
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => revoke(inv)}>
-                          <Ban className="size-4" /> {t('orgPage.invitations.revoke')}
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <div className="md:hidden flex flex-col divide-y divide-border">
-            {invitations.map((inv) => (
-              <div key={inv.id} className="p-3">
-                <div className="mb-1.5 text-sm font-medium">
-                  {inv.invitee_id > 0 ? (
-                    <span className="font-medium">{inv.email || `#${inv.invitee_id}`}</span>
-                  ) : (
-                    <Badge variant="outline" className="gap-1">
-                      <Link2 className="size-3" /> {t('orgPage.invitations.typeLink')}
-                    </Badge>
-                  )}
-                </div>
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                  <div className="flex items-baseline gap-1.5">
-                    <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t('orgPage.members.role')}</dt>
-                    <dd className="min-w-0 flex-1 truncate text-sm">{t(`org.roles.${inv.role}`)}</dd>
-                  </div>
-                  <div className="flex items-baseline gap-1.5">
-                    <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t('orgPage.invitations.status')}</dt>
-                    <dd className="flex min-w-0 flex-1 flex-wrap gap-1 text-sm">
-                      <Badge variant="default">{t(`orgPage.invitations.status_${inv.status}`)}</Badge>
-                    </dd>
-                  </div>
-                  <div className="flex items-baseline gap-1.5">
-                    <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t('orgPage.invitations.usage')}</dt>
-                    <dd className="min-w-0 flex-1 truncate text-sm tabular-nums text-muted-foreground">
-                      {inv.used_count} / {inv.max_uses === 0 ? t('orgPage.invitations.unlimited') : inv.max_uses}
-                    </dd>
-                  </div>
-                  <div className="flex items-baseline gap-1.5">
-                    <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t('orgPage.invitations.expiryTime')}</dt>
-                    <dd className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-                      {inv.expired_time > 0 ? timestamp2string(inv.expired_time) : t('orgPage.myInvitations.never')}
-                    </dd>
-                  </div>
-                </dl>
-                <div className="mt-2 flex flex-wrap items-center justify-end gap-1 border-t border-border pt-2">
-                  {inv.invitee_id === 0 && (
-                    <Button variant="ghost" size="sm" onClick={() => copy(inviteLink(inv.token), t('orgPage.invitations.copyLink'))}>
-                      <Link2 className="size-4" /> {t('orgPage.invitations.copyLink')}
-                    </Button>
-                  )}
-                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => revoke(inv)}>
-                    <Ban className="size-4" /> {t('orgPage.invitations.revoke')}
-                  </Button>
-                </div>
+          {!invLoaded ? (
+            skeleton
+          ) : invitations.length === 0 ? (
+            <ListEmptyState icon={Link2} title={t('orgPage.members.noInvitations')} />
+          ) : (
+            <>
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('orgPage.invitations.invitee')}</TableHead>
+                      <TableHead>{t('orgPage.members.role')}</TableHead>
+                      <TableHead>{t('orgPage.invitations.usage')}</TableHead>
+                      <TableHead>{t('orgPage.invitations.expiryTime')}</TableHead>
+                      <TableHead className="w-12" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {invitations.map((inv) => (
+                      <TableRow key={inv.id}>
+                        <TableCell className="max-w-64">
+                          <div className="flex min-w-0">{invitee(inv)}</div>
+                        </TableCell>
+                        <TableCell>{roleText(inv.role)}</TableCell>
+                        <TableCell className="tabular-nums text-muted-foreground">{usage(inv)}</TableCell>
+                        <TableCell className="text-muted-foreground">{expiry(inv)}</TableCell>
+                        <TableCell className="py-0 text-right">{invitationMenu(inv)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-            ))}
-          </div>
-          {!invLoading && invitations.length === 0 && <EmptyState icon={Link2} title={t('orgPage.members.noInvitations')} />}
-          <Pagination
-            page={invPage}
-            rowsPerPage={invRowsPerPage}
-            count={invCount}
-            options={PAGE_SIZE_OPTIONS}
-            onPageChange={setInvPage}
-            onRowsPerPageChange={(n) => {
-              setInvRowsPerPage(n);
-              setInvPage(0);
-              savePageSize('org_invitations', n);
-            }}
-          />
+              <ul className="divide-y divide-border md:hidden">
+                {invitations.map((inv) => (
+                  <li key={inv.id} className="flex h-14 items-center gap-3 px-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex min-w-0 items-baseline gap-3 text-sm">
+                        <span className="flex min-w-0">{invitee(inv)}</span>
+                        <span className="ml-auto shrink-0 text-xs">{roleText(inv.role)}</span>
+                      </div>
+                      <div className="mt-0.5 flex items-baseline gap-3 text-xs text-muted-foreground">
+                        <span className="tabular-nums">{usage(inv)}</span>
+                        <span className="ml-auto shrink-0">{expiry(inv)}</span>
+                      </div>
+                    </div>
+                    <div className="-mr-2 shrink-0">{invitationMenu(inv)}</div>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {footer(invCount, invPage, invRowsPerPage, setInvPage, (n) => {
+            setInvRowsPerPage(n);
+            setInvPage(0);
+            savePageSize('org_invitations', n);
+          })}
         </>
       ) : (
         <>
-          <div className="hidden md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('orgPage.members.user')}</TableHead>
-                  <TableHead>{t('orgPage.members.role')}</TableHead>
-                  {isAdmin && <TableHead>{t('orgPage.members.budget')}</TableHead>}
-                  <TableHead>{t('orgPage.members.joinedAt')}</TableHead>
-                  {isAdmin && <TableHead className="w-[1%] text-right">{t('orgPage.members.actions')}</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredMembers.map((m) => (
-                  <TableRow key={m.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{m.display_name || m.username || `#${m.user_id}`}</span>
-                        {m.username && m.display_name && <span className="text-xs text-muted-foreground">@{m.username}</span>}
-                        {m.user_id === myUserId && (
-                          <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-                            {t('orgPage.members.me')}
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {canManage(m) && m.role !== 'owner' ? (
-                        <Select value={m.role} onValueChange={(v) => changeRole(m, v)}>
-                          <SelectTrigger className="h-8 w-32">
-                            <span className="truncate">{t(`org.roles.${m.role}`)}</span>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin">{t('org.roles.admin')}</SelectItem>
-                            <SelectItem value="member">{t('org.roles.member')}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Badge variant={m.role === 'owner' ? 'default' : 'secondary'}>{t(`org.roles.${m.role}`)}</Badge>
-                      )}
-                    </TableCell>
-                    {isAdmin && <TableCell>{renderBudget(m)}</TableCell>}
-                    <TableCell className="text-muted-foreground">{timestamp2string(m.created_time)}</TableCell>
-                    {isAdmin && (
-                      <TableCell className="text-right">
-                        {canManage(m) && (
-                          <RowActions
-                            actions={[
-                              { label: t('orgPage.members.limits'), icon: SlidersHorizontal, onClick: () => setLimitsTarget(m) },
-                              { label: t('orgPage.members.remove'), icon: UserMinus, destructive: true, onClick: () => setRemoveTarget(m) }
-                            ]}
-                          />
-                        )}
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <div className="md:hidden flex flex-col divide-y divide-border">
-            {filteredMembers.map((m) => (
-              <div key={m.id} className="p-3">
-                <div className="mb-1.5 text-sm font-medium">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{m.display_name || m.username || `#${m.user_id}`}</span>
-                    {m.username && m.display_name && <span className="text-xs text-muted-foreground">@{m.username}</span>}
-                    {m.user_id === myUserId && (
-                      <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-                        {t('orgPage.members.me')}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t('orgPage.members.role')}</dt>
-                    <dd className="flex min-w-0 flex-1 flex-wrap gap-1 text-sm">
-                      {canManage(m) && m.role !== 'owner' ? (
-                        <Select value={m.role} onValueChange={(v) => changeRole(m, v)}>
-                          <SelectTrigger className="h-8 w-32">
-                            <span className="truncate">{t(`org.roles.${m.role}`)}</span>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin">{t('org.roles.admin')}</SelectItem>
-                            <SelectItem value="member">{t('org.roles.member')}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Badge variant={m.role === 'owner' ? 'default' : 'secondary'}>{t(`org.roles.${m.role}`)}</Badge>
-                      )}
-                    </dd>
-                  </div>
-                  {isAdmin && (
-                    <div className="col-span-2 flex items-baseline gap-1.5">
-                      <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t('orgPage.members.budget')}</dt>
-                      <dd className="flex min-w-0 flex-1 flex-wrap gap-1 text-sm">{renderBudget(m)}</dd>
-                    </div>
-                  )}
-                  <div className="flex items-baseline gap-1.5">
-                    <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t('orgPage.members.joinedAt')}</dt>
-                    <dd className="min-w-0 flex-1 truncate text-sm text-muted-foreground">{timestamp2string(m.created_time)}</dd>
-                  </div>
-                </dl>
-                {isAdmin && canManage(m) && (
-                  <div className="mt-2 flex flex-wrap items-center justify-end gap-1 border-t border-border pt-2">
-                    <RowActionsSurfaceContext.Provider value="card">
-                      <RowActions
-                        actions={[
-                          { label: t('orgPage.members.limits'), icon: SlidersHorizontal, onClick: () => setLimitsTarget(m) },
-                          { label: t('orgPage.members.remove'), icon: UserMinus, destructive: true, onClick: () => setRemoveTarget(m) }
-                        ]}
-                      />
-                    </RowActionsSurfaceContext.Provider>
-                  </div>
-                )}
+          {!loaded ? (
+            skeleton
+          ) : filteredMembers.length === 0 ? (
+            <ListEmptyState
+              variant={q ? 'noMatch' : 'empty'}
+              icon={Users}
+              title={q ? undefined : t('orgPage.members.noMembers')}
+              onClearFilters={q ? () => setSearch('') : undefined}
+            />
+          ) : (
+            <>
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('orgPage.members.user')}</TableHead>
+                      <TableHead>{t('orgPage.members.role')}</TableHead>
+                      {isAdmin && <TableHead>{t('orgPage.members.budget')}</TableHead>}
+                      <TableHead>{t('orgPage.members.joinedAt')}</TableHead>
+                      {isAdmin && <TableHead className="w-12" />}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredMembers.map((m) => (
+                      <TableRow key={m.id}>
+                        <TableCell className="max-w-72">
+                          <div className="flex min-w-0 items-baseline gap-2">
+                            <span className="truncate font-medium">{memberName(m)}</span>
+                            {m.username && m.display_name && <span className="truncate text-xs text-muted-foreground">@{m.username}</span>}
+                            {meTag(m)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-0">
+                          {canManage(m) && m.role !== 'owner' ? (
+                            <Select value={m.role} onValueChange={(v) => changeRole(m, v)}>
+                              <SelectTrigger className="h-8 w-28" aria-label={t('orgPage.members.role')}>
+                                <span className="truncate">{t(`org.roles.${m.role}`)}</span>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">{t('org.roles.admin')}</SelectItem>
+                                <SelectItem value="member">{t('org.roles.member')}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            // Lines up with the text inside the role selects above and below.
+                            <span className="pl-3">{roleText(m.role)}</span>
+                          )}
+                        </TableCell>
+                        {isAdmin && <TableCell className="whitespace-nowrap">{renderBudget(m)}</TableCell>}
+                        <TableCell className="text-muted-foreground">{when(m.created_time)}</TableCell>
+                        {isAdmin && <TableCell className="py-0 text-right">{memberMenu(m, false)}</TableCell>}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-            ))}
-          </div>
-          {!loading && filteredMembers.length === 0 && <EmptyState icon={Search} title={t('orgPage.members.noMembers')} />}
-          <Pagination
-            page={page}
-            rowsPerPage={rowsPerPage}
-            count={count}
-            options={PAGE_SIZE_OPTIONS}
-            onPageChange={setPage}
-            onRowsPerPageChange={(n) => {
-              setRowsPerPage(n);
-              setPage(0);
-              savePageSize('org_members', n);
-            }}
-          />
+              {/* Phone rows: name and role on top, @username · joined and the budget below; the
+                  role change moves into the ⋯ menu. */}
+              <ul className="divide-y divide-border md:hidden">
+                {filteredMembers.map((m) => (
+                  <li key={m.id} className="flex h-14 items-center gap-3 px-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex min-w-0 items-baseline gap-2 text-sm">
+                        <span className="min-w-0 truncate font-medium">{memberName(m)}</span>
+                        {meTag(m)}
+                        <span className="ml-auto shrink-0 pl-1 text-xs">{roleText(m.role)}</span>
+                      </div>
+                      <div className="mt-0.5 flex items-baseline gap-3 text-xs text-muted-foreground">
+                        <span className="min-w-0 truncate">
+                          {m.username && m.display_name && `@${m.username} · `}
+                          {when(m.created_time)}
+                        </span>
+                        {isAdmin && <span className="ml-auto min-w-0 shrink truncate text-right">{renderBudget(m)}</span>}
+                      </div>
+                    </div>
+                    {isAdmin && <div className="-mr-2 flex size-8 shrink-0 items-center justify-center">{memberMenu(m, true)}</div>}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {footer(count, page, rowsPerPage, setPage, (n) => {
+            setRowsPerPage(n);
+            setPage(0);
+            savePageSize('org_members', n);
+          })}
         </>
       )}
 

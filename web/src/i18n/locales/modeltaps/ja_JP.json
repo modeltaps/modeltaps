@@ -3222,5 +3222,47 @@
   },
   "settingsUnits": {
     "seconds": "秒"
+  },
+  "orgList": {
+    "allActions": "すべての操作",
+    "actorId": "操作者 ID",
+    "createdAt": "{{time}}に作成",
+    "noAudit": "監査ログはまだありません",
+    "makeAdmin": "管理者にする",
+    "makeMember": "メンバーにする",
+    "more": "その他の操作",
+    "joined": "{{time}}に参加",
+    "actions": {
+      "org_create": "組織を作成",
+      "org_update": "プロフィールを更新",
+      "org_update_budget": "予算を更新",
+      "org_update_setting": "設定を更新",
+      "org_dissolve": "組織を解散",
+      "org_transfer_ownership": "所有権を移譲",
+      "org_admin_enable": "サイト管理者が有効化",
+      "org_admin_disable": "サイト管理者が無効化",
+      "org_admin_dissolve": "サイト管理者が解散",
+      "org_admin_max_members": "サイト管理者がメンバー上限を変更",
+      "org_invitation_create": "招待を送信",
+      "org_invitation_accept": "招待を承諾",
+      "org_invitation_reject": "招待を辞退",
+      "org_invitation_revoke": "招待を取り消し",
+      "org_member_account_create": "メンバーアカウントを作成",
+      "org_member_leave": "メンバーが退出",
+      "org_member_limits_update": "メンバー制限を更新",
+      "org_member_remove": "メンバーを削除",
+      "org_member_role_update": "メンバーのロールを変更",
+      "quota_transfer": "個人クォータを移動",
+      "billing_topup": "コードでチャージ",
+      "billing_order_create": "チャージ注文を作成",
+      "billing_admin_adjust": "サイト管理者が残高を調整",
+      "token_create": "API キーを作成",
+      "token_update": "API キーを更新",
+      "token_delete": "API キーを削除",
+      "routing_policy_create": "ルーティングポリシーを作成",
+      "routing_policy_update": "ルーティングポリシーを更新",
+      "routing_policy_delete": "ルーティングポリシーを削除",
+      "routing_policy_status": "ルーティングポリシーを切り替え"
+    }
   }
 }

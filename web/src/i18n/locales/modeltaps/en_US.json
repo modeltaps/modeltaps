@@ -3316,5 +3316,47 @@
   },
   "settingsUnits": {
     "seconds": "s"
+  },
+  "orgList": {
+    "allActions": "All actions",
+    "actorId": "Actor ID",
+    "createdAt": "Created {{time}}",
+    "noAudit": "No audit entries yet",
+    "makeAdmin": "Make admin",
+    "makeMember": "Make member",
+    "more": "More actions",
+    "joined": "Joined {{time}}",
+    "actions": {
+      "org_create": "Created the organization",
+      "org_update": "Updated the profile",
+      "org_update_budget": "Updated the budget",
+      "org_update_setting": "Updated settings",
+      "org_dissolve": "Dissolved the organization",
+      "org_transfer_ownership": "Transferred ownership",
+      "org_admin_enable": "Enabled by site admin",
+      "org_admin_disable": "Disabled by site admin",
+      "org_admin_dissolve": "Dissolved by site admin",
+      "org_admin_max_members": "Member limit set by site admin",
+      "org_invitation_create": "Sent an invitation",
+      "org_invitation_accept": "Accepted an invitation",
+      "org_invitation_reject": "Declined an invitation",
+      "org_invitation_revoke": "Revoked an invitation",
+      "org_member_account_create": "Created a member account",
+      "org_member_leave": "Member left",
+      "org_member_limits_update": "Updated member limits",
+      "org_member_remove": "Removed a member",
+      "org_member_role_update": "Changed a member role",
+      "quota_transfer": "Transferred personal quota",
+      "billing_topup": "Topped up with a code",
+      "billing_order_create": "Created a top-up order",
+      "billing_admin_adjust": "Balance adjusted by site admin",
+      "token_create": "Created an API key",
+      "token_update": "Updated an API key",
+      "token_delete": "Deleted an API key",
+      "routing_policy_create": "Created a routing policy",
+      "routing_policy_update": "Updated a routing policy",
+      "routing_policy_delete": "Deleted a routing policy",
+      "routing_policy_status": "Toggled a routing policy"
+    }
   }
 }
