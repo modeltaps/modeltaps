@@ -12,6 +12,16 @@
       "color": true,
       "scale": 1
     },
+    "aionlabs": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "alephalpha": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
     "alibaba": {
       "mono": true,
       "color": true,
@@ -22,12 +32,22 @@
       "color": true,
       "scale": 1
     },
+    "antgroup": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
     "anthropic": {
       "mono": true,
       "color": false,
       "scale": 1.12
     },
     "antigravity": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "arcee": {
       "mono": true,
       "color": true,
       "scale": 1
@@ -45,6 +65,11 @@
     "azureai": {
       "mono": true,
       "color": true,
+      "scale": 1
+    },
+    "baai": {
+      "mono": true,
+      "color": false,
       "scale": 1
     },
     "baichuan": {
@@ -152,6 +177,11 @@
       "color": false,
       "scale": 1
     },
+    "essentialai": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
     "fireworks": {
       "mono": true,
       "color": true,
@@ -217,6 +247,11 @@
       "color": true,
       "scale": 1
     },
+    "ibm": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
     "ideogram": {
       "mono": true,
       "color": false,
@@ -225,6 +260,16 @@
     "iflytekcloud": {
       "mono": true,
       "color": true,
+      "scale": 1
+    },
+    "inception": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
+    "inference": {
+      "mono": true,
+      "color": false,
       "scale": 1
     },
     "inflection": {
@@ -272,6 +317,11 @@
       "color": false,
       "scale": 1
     },
+    "longcat": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
     "luma": {
       "mono": true,
       "color": true,
@@ -312,6 +362,11 @@
       "color": false,
       "scale": 1
     },
+    "morph": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
     "nousresearch": {
       "mono": true,
       "color": false,
@@ -347,6 +402,11 @@
       "color": true,
       "scale": 1
     },
+    "perceptron": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
     "perplexity": {
       "mono": true,
       "color": true,
@@ -355,6 +415,11 @@
     "pika": {
       "mono": true,
       "color": false,
+      "scale": 1
+    },
+    "poolside": {
+      "mono": true,
+      "color": true,
       "scale": 1
     },
     "ppio": {
@@ -377,6 +442,11 @@
       "color": false,
       "scale": 1
     },
+    "relace": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
     "replicate": {
       "mono": true,
       "color": false,
@@ -385,6 +455,11 @@
     "runway": {
       "mono": true,
       "color": false,
+      "scale": 1
+    },
+    "sakana": {
+      "mono": true,
+      "color": true,
       "scale": 1
     },
     "sambanova": {
@@ -518,12 +593,15 @@
     "01-ai": "yi",
     "01ai": "yi",
     "360ai": "ai360",
+    "aion-labs": "aionlabs",
+    "aleph-alpha": "alephalpha",
     "ali": "qwen",
     "aliyun": "alibabacloud",
     "amazon": "aws",
     "amazon-bedrock": "bedrock",
     "amazonwebservices": "aws",
     "anthropic-claude": "claude",
+    "arcee-ai": "arcee",
     "ark": "volcengine",
     "azure-openai": "azure",
     "baichuan-ai": "baichuan",
@@ -533,6 +611,7 @@
     "bytedance-seed": "doubao",
     "cloudflare-ai": "cloudflare",
     "dashscope": "qwen",
+    "databricks": "dbrx",
     "deepseek-ai": "deepseek",
     "ernie": "wenxin",
     "fireworks-ai": "fireworks",
@@ -546,19 +625,24 @@
     "hf": "huggingface",
     "hugging-face": "huggingface",
     "iflytek": "spark",
+    "inclusionai": "antgroup",
+    "inference-net": "inference",
     "jina-ai": "jina",
     "kuaishou": "kling",
     "lingyi": "yi",
     "lingyiwanwu": "yi",
     "llama": "meta",
+    "meituan": "longcat",
     "meta-llama": "meta",
     "microsoftazure": "azure",
     "mimo": "xiaomimimo",
     "mistralai": "mistral",
     "moonshotai": "moonshot",
     "nvidia-nim": "nvidia",
+    "paddlepaddle": "baidu",
     "perplexity-ai": "perplexity",
     "recraftai": "recraft",
+    "rekaai": "reka",
     "siliconflow": "siliconcloud",
     "stability-ai": "stability",
     "stabilityai": "stability",
@@ -569,6 +653,7 @@
     "tongyi": "qwen",
     "vertex": "vertexai",
     "volcano": "volcengine",
+    "voyageai": "voyage",
     "workers-ai": "workersai",
     "x": "xai",
     "x-ai": "xai",
@@ -634,7 +719,7 @@
     "51": "recraft",
     "52": "replicate",
     "53": "kling",
-    "54": "azure",
+    "54": "dbrx",
     "55": "azure",
     "56": "xai",
     "57": "geminicli",
@@ -747,6 +832,7 @@
     "amazonaws.com": "aws",
     "anthropic.com": "claude",
     "azure.com": "azure",
+    "azuredatabricks.net": "dbrx",
     "baichuan-ai.com": "baichuan",
     "baidubce.com": "wenxin",
     "bfl.ai": "bfl",
@@ -758,6 +844,7 @@
     "coze.cn": "coze",
     "coze.com": "coze",
     "dashscope.aliyuncs.com": "qwen",
+    "databricks.com": "dbrx",
     "deepseek.com": "deepseek",
     "fireworks.ai": "fireworks",
     "generativelanguage.googleapis.com": "gemini",

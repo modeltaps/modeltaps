@@ -35,7 +35,6 @@ const CHANNEL_BRAND_BY_TYPE = {
   3: 'microsoftazure',
   55: 'microsoftazure',
   24: 'microsoftazure',
-  54: 'microsoftazure',
   14: 'anthropic',
   58: 'anthropic',
   11: 'google',
