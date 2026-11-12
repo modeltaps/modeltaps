@@ -216,7 +216,7 @@ func GetUsersList(params *SearchUserParams) (*DataResult[UserListItem], error) {
 		if common.UsingPostgreSQL {
 			groupCol = `"group"`
 		}
-		db = db.Where("id = ? or username LIKE ? or email LIKE ? or display_name LIKE ? or "+groupCol+" LIKE ? or linuxdo_username LIKE ?", utils.String2Int(params.Keyword), params.Keyword+"%", params.Keyword+"%", params.Keyword+"%", params.Keyword+"%", params.Keyword+"%")
+		db = db.Where(caseInsensitiveLike("id = ? or username LIKE ? or email LIKE ? or display_name LIKE ? or "+groupCol+" LIKE ? or linuxdo_username LIKE ?"), utils.String2Int(params.Keyword), params.Keyword+"%", params.Keyword+"%", params.Keyword+"%", params.Keyword+"%", params.Keyword+"%")
 	}
 
 	result, err := PaginateAndOrder[User](db, &params.PaginationParams, &users, allowedUserOrderFields)

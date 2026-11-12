@@ -459,7 +459,7 @@ func GetOrganizationsAdminList(params *GenericParams) (*DataResult[OrganizationA
 	var orgs []*Organization
 	db := DB.Model(&Organization{})
 	if params.Keyword != "" {
-		db = db.Where("name LIKE ? OR slug LIKE ?", params.Keyword+"%", params.Keyword+"%")
+		db = db.Where(caseInsensitiveLike("name LIKE ? OR slug LIKE ?"), params.Keyword+"%", params.Keyword+"%")
 	}
 	pageResult, err := PaginateAndOrder[Organization](db, &params.PaginationParams, &orgs, allowedOrgAdminOrderFields)
 	if err != nil {

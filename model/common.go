@@ -211,6 +211,17 @@ func quotePostgresField(field string) string {
 	return fmt.Sprintf("`%s`", field)
 }
 
+// caseInsensitiveLike makes the LIKE operators in a search condition ignore case on every database.
+// SQLite LIKE ignores ASCII case and MySQL's default collations ignore case, but PostgreSQL LIKE is
+// case-sensitive, so the same search found fewer rows there. Only use it for user-facing searches,
+// not for matching identifiers such as token keys or group names.
+func caseInsensitiveLike(cond string) string {
+	if !common.UsingPostgreSQL {
+		return cond
+	}
+	return strings.ReplaceAll(cond, " LIKE ", " ILIKE ")
+}
+
 func assembleSumSelectStr(selectStr string) string {
 	sumSelectStr := "%s(sum(%s),0)"
 	nullfunc := "ifnull"

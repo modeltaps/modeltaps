@@ -118,7 +118,7 @@ func GetUserTokensList(userId int, params *GenericParams) (*DataResult[Token], e
 	db := DB.Where("user_id = ?", userId)
 
 	if params.Keyword != "" {
-		db = db.Where("name LIKE ?", params.Keyword+"%")
+		db = db.Where(caseInsensitiveLike("name LIKE ?"), params.Keyword+"%")
 	}
 
 	return PaginateAndOrder(db, &params.PaginationParams, &tokens, allowedTokenOrderFields)
@@ -229,7 +229,7 @@ func GetTokensListByAdmin(params *AdminSearchTokensParams) (*DataResult[TokenWit
 	}
 
 	if params.Keyword != "" {
-		db = db.Where("name LIKE ?", params.Keyword+"%")
+		db = db.Where(caseInsensitiveLike("name LIKE ?"), params.Keyword+"%")
 	}
 	db, err := applyTokenLimitConditions(applyTokenConditions(db, &params.TokenListFilter, time.Now()), &params.TokenListFilter)
 	if err != nil {

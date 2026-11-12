@@ -69,7 +69,7 @@ func GetPanymentList(params *SearchPaymentParams) (*DataResult[Payment], error) 
 	}
 
 	if params.Name != "" {
-		db = db.Where("name LIKE ?", params.Name+"%")
+		db = db.Where(caseInsensitiveLike("name LIKE ?"), params.Name+"%")
 	}
 
 	if params.UUID != "" {

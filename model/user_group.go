@@ -38,7 +38,7 @@ func GetUserGroupsList(params *SearchUserGroupParams) (*DataResult[UserGroup], e
 	db := DB
 
 	if params.Name != "" {
-		db = db.Where("name LIKE ?", params.Name+"%")
+		db = db.Where(caseInsensitiveLike("name LIKE ?"), params.Name+"%")
 	}
 
 	if params.Enable != nil {
