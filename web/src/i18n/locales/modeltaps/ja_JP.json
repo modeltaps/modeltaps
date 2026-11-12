@@ -685,7 +685,7 @@
     "platform_settings": "プラットフォーム全体の既定値とスイッチ",
     "token": "API を呼び出すためのキー",
     "invite_code": "登録用の招待コードの作成、有効化、無効化",
-    "routing": "API キーで呼び出せるポリシー：マネージドは名前で、自分のものは policy/<名前> で呼び出します"
+    "routing": "API キーで呼び出せるルーティングポリシー"
   },
   "api_compare": "比較",
   "modelInfoPage": {
@@ -1910,7 +1910,12 @@
     "managedIntro": "プラットフォームが提供するポリシーです。model に名前をそのまま指定します。",
     "managedEmpty": "利用できるマネージドポリシーはまだありません。",
     "managedOverridden": "自分のポリシーで置き換え済み",
-    "managedOverriddenHint": "同じ名前の自作ポリシーがあるため、名前だけの指定では自分のものが使われます。このマネージドポリシーを使うには、自分のポリシーの名前を変えるか無効にしてください。"
+    "managedOverriddenHint": "同じ名前の自作ポリシーがあるため、名前だけの指定では自分のものが使われます。このマネージドポリシーを使うには、自分のポリシーの名前を変えるか無効にしてください。",
+    "introShort": {
+      "personal": "個人の API キーでのみ有効。model に policy/<名前> を指定",
+      "org": "この組織の API キーでのみ有効。model に policy/<名前> を指定",
+      "orgMember": "組織の管理者が作成したポリシー。policy/<名前> で呼び出します"
+    }
   },
   "logPage": {
     "routing": {
@@ -3295,5 +3300,8 @@
       "routing_policy_delete": "ルーティングポリシーを削除",
       "routing_policy_status": "ルーティングポリシーを切り替え"
     }
+  },
+  "priceList": {
+    "groupHint": "価格はグループによって異なります。API キーのグループは API キー管理で切り替えます"
   }
 }

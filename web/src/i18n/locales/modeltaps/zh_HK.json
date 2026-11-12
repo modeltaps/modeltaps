@@ -685,7 +685,7 @@
     "platform_settings": "整個平台的預設值與開關",
     "token": "調用介面用的金鑰",
     "invite_code": "生成、啟用與作廢註冊用的邀請碼",
-    "routing": "你的 API Key 能呼叫的路由策略：託管策略直接寫名字，自己建立的用 policy/<名字> 呼叫"
+    "routing": "API Key 可呼叫的路由策略"
   },
   "api_compare": "對比",
   "modelInfoPage": {
@@ -1910,7 +1910,12 @@
     "managedIntro": "平台提供的策略，呼叫時 model 直接寫名字。",
     "managedEmpty": "平台還沒有可用的託管策略。",
     "managedOverridden": "已被你的同名策略取代",
-    "managedOverriddenHint": "你有一條同名的自建策略，寫裸名時會使用你自己的。要使用這條託管策略，請把你的策略改名或停用。"
+    "managedOverriddenHint": "你有一條同名的自建策略，寫裸名時會使用你自己的。要使用這條託管策略，請把你的策略改名或停用。",
+    "introShort": {
+      "personal": "只對你的個人 API Key 生效，呼叫時 model 寫 policy/<名字>",
+      "org": "只對本組織的 API Key 生效，呼叫時 model 寫 policy/<名字>",
+      "orgMember": "本組織管理員建立的策略，用 policy/<名字> 呼叫"
+    }
   },
   "logPage": {
     "routing": {
@@ -3293,5 +3298,8 @@
       "routing_policy_delete": "刪除路由策略",
       "routing_policy_status": "啟停路由策略"
     }
+  },
+  "priceList": {
+    "groupHint": "不同分組價格不同。API Key 的分組在 API Key 管理中切換"
   }
 }

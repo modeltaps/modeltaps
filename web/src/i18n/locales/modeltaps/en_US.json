@@ -686,7 +686,7 @@
     "platform_settings": "Platform-wide defaults and switches",
     "token": "Keys for calling the API",
     "invite_code": "Create, enable and revoke registration invite codes",
-    "routing": "Policies your API keys can call: managed ones by name, your own as policy/<name>"
+    "routing": "Routing policies your API keys can call"
   },
   "api_compare": "Compare",
   "modelInfoPage": {
@@ -1995,7 +1995,12 @@
     "managedIntro": "Policies the platform provides; call them with model set to their name.",
     "managedEmpty": "The platform has no managed policies you can use yet.",
     "managedOverridden": "Replaced by your policy",
-    "managedOverriddenHint": "You have an own policy with the same name, so the bare name reaches yours. Rename or disable it to use this managed policy."
+    "managedOverriddenHint": "You have an own policy with the same name, so the bare name reaches yours. Rename or disable it to use this managed policy.",
+    "introShort": {
+      "personal": "For your personal API keys only; call them as policy/<name>",
+      "org": "For this organization's API keys only; call them as policy/<name>",
+      "orgMember": "Policies your organization's admins made; call them as policy/<name>"
+    }
   },
   "logPage": {
     "routing": {
@@ -3390,5 +3395,8 @@
       "routing_policy_delete": "Deleted a routing policy",
       "routing_policy_status": "Toggled a routing policy"
     }
+  },
+  "priceList": {
+    "groupHint": "Prices depend on the group. Change an API key's group under API Keys"
   }
 }
