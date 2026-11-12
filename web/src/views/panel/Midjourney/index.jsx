@@ -14,7 +14,7 @@ import { showError, useIsAdmin } from 'utils/common';
 import { FilterBar, filterStateToParams, isEntryActive, paramsToFilterState } from '@/components/filter-bar';
 import { getPageSize, savePageSize } from 'constants';
 import { ColumnPicker, ListFooter, useColumnVisibility, useListLayout } from '@/components/list-page';
-import MidjourneyTable, { MJ_COLUMNS, estimateMjTableWidth } from './MidjourneyTable';
+import MidjourneyTable, { MJ_COLUMNS } from './MidjourneyTable';
 
 // ==============================|| PANEL — MIDJOURNEY RECORDS ||============================== //
 // shadcn/Tailwind port of views/Midjourney. Server-side pagination + FilterBar chips + time range.
@@ -155,10 +155,7 @@ export default function Midjourney() {
     columns: MJ_COLUMNS,
     available: MJ_COLUMNS.filter((c) => !c.adminOnly || userIsAdmin).map((c) => c.id)
   });
-  const { pageRef, layout, onNaturalWidth } = useListLayout({
-    estimate: estimateMjTableWidth(columnState.visibility),
-    resetKey: JSON.stringify(columnState.visibility)
-  });
+  const { layout } = useListLayout();
 
   const handleSort = (id) => {
     if (!id) return;
@@ -168,7 +165,7 @@ export default function Midjourney() {
   };
 
   return (
-    <div ref={pageRef} className="space-y-3">
+    <div className="space-y-3">
       {/* 标题行右侧操作:刷新 → 筛选 → 时间范围,对齐 Log。 */}
       <PageActions>
         <TooltipProvider delayDuration={150}>
@@ -219,7 +216,6 @@ export default function Midjourney() {
             searching={searching}
             columnVisibility={columnState.visibility}
             layout={layout}
-            onNaturalWidth={onNaturalWidth}
           />
           <div className="border-t border-border">
             <ListFooter

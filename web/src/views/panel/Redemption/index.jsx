@@ -28,7 +28,7 @@ import { API } from 'utils/api';
 import { showError, downloadTextAsFile } from 'utils/common';
 import usePaginatedList from 'hooks/usePaginatedList';
 import { useObjectRoute } from '@/components/objects';
-import RedemptionTable, { REDEMPTION_COLUMNS, RedemptionCards, estimateRedemptionTableWidth } from './RedemptionTable';
+import RedemptionTable, { REDEMPTION_COLUMNS, RedemptionCards } from './RedemptionTable';
 import RedemptionPanel from './RedemptionPanel';
 import NewRedemptionSheet from './NewRedemptionSheet';
 
@@ -119,10 +119,7 @@ export default function Redemption() {
   const columns = useColumnVisibility({ storageKey: 'redemption-column-visibility-v1', columns: REDEMPTION_COLUMNS });
   const selection = useRowSelection(redemptions, [page, rowsPerPage, keyword, status]);
   // Full table while it fits (the sidebar collapses first), phone cards otherwise.
-  const { pageRef, narrow, onNaturalWidth } = useListLayout({
-    estimate: estimateRedemptionTableWidth(columns.visibility),
-    resetKey: JSON.stringify(columns.visibility)
-  });
+  const { narrow } = useListLayout();
   const rtf = useMemo(
     () => new Intl.RelativeTimeFormat((i18n.language || 'zh_CN').replace('_', '-'), { numeric: 'auto' }),
     [i18n.language]
@@ -308,7 +305,6 @@ export default function Redemption() {
         selectedIds={selection.selectedIds}
         onToggleSelect={selection.toggle}
         onToggleSelectAll={selection.toggleAll}
-        onNaturalWidth={onNaturalWidth}
         actions={actions}
       />
     );
@@ -327,7 +323,7 @@ export default function Redemption() {
 
   return (
     <>
-      <div ref={pageRef} className={cn('space-y-3', narrow && selection.selectMode && 'pb-20')}>
+      <div className={cn('space-y-3', narrow && selection.selectMode && 'pb-20')}>
         {/* Title row: refresh (icon), then create. */}
         <PageActions>
           <TooltipProvider delayDuration={150}>

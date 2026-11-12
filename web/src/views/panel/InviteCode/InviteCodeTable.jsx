@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
-import { useNaturalWidth } from '@/components/list-page';
+
 import { timestamp2string } from 'utils/common';
 import { relativeTime } from 'utils/relativeTime';
 
@@ -23,7 +23,6 @@ const tk = (k) => `setting_index.inviteCodeSettings.${k}`;
 const ENABLED = 1;
 
 // Typical table width before it has been measured.
-export const INVITE_TABLE_ESTIMATE = 760;
 
 // The segment a code is in (same order as the backend): disabled, expired, used up, not started,
 // usable.
@@ -122,13 +121,12 @@ CodeActions.propTypes = {
 
 // Invite codes table: one line per code (the code in mono, then its name), usage, validity,
 // created, then the switch and the row menu last. A row opens the code for editing.
-export default function InviteCodeTable({ items, rtf, selectedIds, onToggleSelect, onToggleSelectAll, onNaturalWidth, actions }) {
+export default function InviteCodeTable({ items, rtf, selectedIds, onToggleSelect, onToggleSelectAll, actions }) {
   const { t } = useTranslation();
   const allSelected = items.length > 0 && items.every((i) => selectedIds.has(i.id));
   const someSelected = items.some((i) => selectedIds.has(i.id));
-  const tableRef = useNaturalWidth(onNaturalWidth);
   return (
-    <Table ref={tableRef}>
+    <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           <TableHead className="w-[1%] pr-0">
@@ -205,7 +203,6 @@ InviteCodeTable.propTypes = {
   selectedIds: PropTypes.instanceOf(Set).isRequired,
   onToggleSelect: PropTypes.func.isRequired,
   onToggleSelectAll: PropTypes.func.isRequired,
-  onNaturalWidth: PropTypes.func,
   actions: PropTypes.object.isRequired
 };
 

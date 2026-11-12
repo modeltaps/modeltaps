@@ -2285,9 +2285,6 @@
       "requests": "请求",
       "requestsIn": "请求 {{range}}"
     },
-    "switcher": {
-      "count": "{{count}} 个渠道"
-    },
     "preset": {
       "attention": "需要处理",
       "lowBalance": "余额不足",

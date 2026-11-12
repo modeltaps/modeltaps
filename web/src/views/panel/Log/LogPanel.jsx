@@ -29,7 +29,7 @@ import { buildLogFilterFields, LOG_FILTER_PARAM_KEYS } from './logFilterFields';
 import LogIdLookup from './LogIdLookup';
 import TimeRangeSelect, { detectPreset } from '@/components/TimeRangeSelect';
 import LogHistogram from './LogHistogram';
-import LogTable, { estimateLogTableWidth } from './LogTable';
+import LogTable from './LogTable';
 import { ListFooter, useListLayout } from '@/components/list-page';
 import LogDetailDialog from './LogDetailDialog';
 import { exportLogs } from './logExport';
@@ -82,7 +82,6 @@ const LOG_COLUMNS = [
 // v2: fewer columns by default; the old key is dropped.
 const COLUMN_VISIBILITY_STORAGE_KEY = 'log-column-visibility-v2';
 const LEGACY_COLUMN_VISIBILITY_KEYS = ['log-column-visibility'];
-const LOG_COLUMN_IDS = LOG_COLUMNS.map((c) => c.id);
 
 const buildDefaultColumnVisibility = () => Object.fromEntries(LOG_COLUMNS.map((c) => [c.id, !c.defaultHidden]));
 
@@ -270,10 +269,7 @@ export default function Log() {
   }, [isOrgContext, effectiveAdmin, columnVisibility]);
 
   // Full table while it fits (the sidebar collapses first), phone list otherwise.
-  const { pageRef, layout, onNaturalWidth } = useListLayout({
-    estimate: estimateLogTableWidth(LOG_COLUMN_IDS, effectiveColumnVisibility),
-    resetKey: JSON.stringify(effectiveColumnVisibility)
-  });
+  const { layout } = useListLayout();
 
   // 组装筛选查询对象:log_type 按请求结果取 '2'(成功)/ '5'(失败) + 时间范围 + 级联筛选参数(enum 多值数组 / number 标量)。
   // 上下文裁剪已由 filterFields 保证(org 只含 member,admin 才含 channel/username/source_ip)。
@@ -503,7 +499,7 @@ export default function Log() {
   }, [exporting, buildFilterQuery, order, orderBy, effectiveAdmin, t]);
 
   return (
-    <div ref={pageRef} className="space-y-3">
+    <div className="space-y-3">
       {/* 标题行右侧操作:刷新 → 筛选 → 时间范围 → 列选择 → 更多(导出),对齐 OpenRouter。 */}
       <PageActions>
         <TooltipProvider delayDuration={150}>
@@ -655,7 +651,6 @@ export default function Log() {
             searching={searching}
             columnVisibility={effectiveColumnVisibility}
             layout={layout}
-            onNaturalWidth={onNaturalWidth}
           />
           <div className="border-t border-border">
             <ListFooter

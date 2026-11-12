@@ -2287,9 +2287,6 @@
       "requests": "リクエスト",
       "requestsIn": "リクエスト {{range}}"
     },
-    "switcher": {
-      "count": "{{count}} チャネル"
-    },
     "preset": {
       "attention": "要対応",
       "lowBalance": "残高不足",

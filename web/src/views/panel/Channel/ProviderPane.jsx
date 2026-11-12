@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
+  ArrowLeft,
   Copy,
   FlaskConical,
   Info,
@@ -32,16 +33,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ChannelBatchBar, TagActionsMenu } from './ChannelToolbar';
 import { Dot, ROW_OPENS, RowControl, Segmented, rowOpenProps } from '@/components/objects';
 import { FilterSheet, describeEntry, isEntryActive } from '@/components/filter-bar';
-import {
-  ColumnPicker,
-  ConditionBar,
-  PhoneListToolbar,
-  PresetChips,
-  StatusSegments,
-  estimateWidth,
-  useFilterPresets,
-  useNaturalWidth
-} from '@/components/list-page';
+import { ColumnPicker, ConditionBar, PhoneListToolbar, PresetChips, StatusSegments, useFilterPresets } from '@/components/list-page';
 import { ProviderTile, useProviderName } from './channelParts';
 import TrafficChart from './TrafficChart';
 
@@ -136,24 +128,12 @@ export const CHANNEL_COLUMNS = [
   { id: 'enabled', labelKey: 'channels.table.enabled' },
   { id: 'actions', fixed: true }
 ];
-// Typical widths (px), the estimate before the table has been measured.
-const COLUMN_WIDTHS = {
-  select: 44,
-  name: 220,
-  priority: 72,
-  requests: 80,
-  success: 72,
-  latency: 80,
-  balance: 88,
-  enabled: 60,
-  actions: 52
-};
-export const estimateChannelTableWidth = (visibility) =>
-  estimateWidth(
-    CHANNEL_COLUMNS.map((c) => c.id),
-    visibility,
-    COLUMN_WIDTHS
-  );
+
+// Fixed widths of the channel table's columns (padding included); the name takes the rest. With
+// the name's minimum they set the table's minimum width: a narrower pane scrolls the table
+// sideways inside its card, and a long name or tag is cut off instead of widening the table.
+const COLUMN_WIDTHS = { select: 44, priority: 104, requests: 112, success: 80, latency: 88, balance: 104, enabled: 64, actions: 52 };
+const NAME_MIN_WIDTH = 200;
 
 const STATUS_KEYS = ['all', 'enabled', 'manual', 'auto'];
 const one = (value) => ({ op: 'in', values: [value] });
@@ -252,9 +232,8 @@ export default function ProviderPane({
   tagActions,
   batchBusy,
   layout = 'split',
-  switcher = null,
-  columns,
-  onNaturalWidth
+  onBack,
+  columns
 }) {
   const { t } = useTranslation();
   const providerName = useProviderName();
@@ -375,7 +354,6 @@ export default function ProviderPane({
 
   const visible = columns.visibility;
   const show = (id) => visible[id] !== false;
-  const tableRef = useNaturalWidth(phone ? null : onNaturalWidth);
   const segmentOptions = STATUS_KEYS.map((k) => ({ value: k, label: t(`channels.filter.${k}`) }));
 
   const chart = (
@@ -402,12 +380,25 @@ export default function ProviderPane({
     </div>
   );
 
+  const fixedColumns = Object.keys(COLUMN_WIDTHS).filter((id) => id === 'select' || id === 'actions' || show(id));
+  const minTableWidth = NAME_MIN_WIDTH + fixedColumns.reduce((sum, id) => sum + COLUMN_WIDTHS[id], 0);
+  const col = (id) => <col key={id} style={{ width: COLUMN_WIDTHS[id] }} />;
   const table = (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card">
-      <table ref={tableRef} className="w-full border-collapse text-sm" onMouseLeave={() => setHoverId(null)}>
+    <div className="overflow-x-auto rounded-2xl border border-border bg-card">
+      <table
+        className="w-full table-fixed border-collapse text-sm"
+        style={{ minWidth: minTableWidth }}
+        onMouseLeave={() => setHoverId(null)}
+      >
+        <colgroup>
+          {col('select')}
+          <col />
+          {fixedColumns.filter((id) => id !== 'select' && id !== 'actions').map(col)}
+          {col('actions')}
+        </colgroup>
         <thead>
-          <tr className="whitespace-nowrap text-left text-xs text-muted-foreground [&>th]:h-10 [&>th]:border-b [&>th]:border-border [&>th]:px-3 [&>th]:font-medium">
-            <th className="w-11 !pr-0">
+          <tr className="whitespace-nowrap text-left text-xs text-muted-foreground [&>th]:h-10 [&>th]:border-b [&>th]:border-border [&>th]:truncate [&>th]:px-3 [&>th]:font-medium">
+            <th className="!pr-0">
               <Checkbox
                 checked={headState === 'all'}
                 indeterminate={headState === 'some'}
@@ -425,7 +416,7 @@ export default function ProviderPane({
             {show('latency') && <th className="text-right">{t('channels.table.avgLatency')}</th>}
             {show('balance') && <th className="text-right">{t('channels.table.balance')}</th>}
             {show('enabled') && <th>{t('channels.table.enabled')}</th>}
-            <th className="w-[1%]">
+            <th>
               <span className="sr-only">{t('channels.table.actions')}</span>
             </th>
           </tr>
@@ -461,7 +452,7 @@ export default function ProviderPane({
                     />
                   </span>
                 </td>
-                <td className="max-w-80">
+                <td>
                   <span className="flex min-w-0 items-center gap-2">
                     <Dot tone={channelDot(c, dismissed)} />
                     <span className="truncate font-mono text-[13px]" title={c.name}>
@@ -592,23 +583,22 @@ export default function ProviderPane({
 
   return (
     <section aria-label={name} className={cn('min-w-0', phone && selectMode && 'pb-20')}>
-      {switcher && <div className="mb-3">{switcher}</div>}
+      {onBack && (
+        <Button variant="ghost" size="sm" className="-ml-2 mb-3 rounded-lg" onClick={onBack}>
+          <ArrowLeft />
+          {t('channels.lane.label')}
+        </Button>
+      )}
       <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        {switcher ? (
-          <p className="text-[13px] text-muted-foreground">
-            {t('channels.pane.summary', { count: channels.length, range: rangeLabel, requests: total.toLocaleString() })}
-          </p>
-        ) : (
-          <div className="flex items-center gap-3">
-            <ProviderTile type={type} size="lg" />
-            <div>
-              <h2 className="text-[17px] font-medium">{name}</h2>
-              <p className="text-[13px] text-muted-foreground">
-                {t('channels.pane.summary', { count: channels.length, range: rangeLabel, requests: total.toLocaleString() })}
-              </p>
-            </div>
+        <div className="flex items-center gap-3">
+          <ProviderTile type={type} size="lg" />
+          <div>
+            <h2 className="text-[17px] font-medium">{name}</h2>
+            <p className="text-[13px] text-muted-foreground">
+              {t('channels.pane.summary', { count: channels.length, range: rangeLabel, requests: total.toLocaleString() })}
+            </p>
           </div>
-        )}
+        </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" className="rounded-lg" disabled={refreshingModels} onClick={onRefreshModels}>
             {refreshingModels ? <Loader2 className="animate-spin" /> : <RefreshCw />}
@@ -744,7 +734,6 @@ ProviderPane.propTypes = {
   tagActions: PropTypes.object.isRequired,
   batchBusy: PropTypes.bool,
   layout: PropTypes.oneOf(['split', 'stacked', 'list']),
-  switcher: PropTypes.node,
-  columns: PropTypes.object.isRequired,
-  onNaturalWidth: PropTypes.func
+  onBack: PropTypes.func,
+  columns: PropTypes.object.isRequired
 };
