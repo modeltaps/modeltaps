@@ -72,7 +72,13 @@ export function typeLabels(type) {
   };
 }
 
-// Where the provider's console is, for the "get a key" link; empty when unknown.
+// The provider's website, for the channel menu; empty when unknown.
 export function consoleUrl(type) {
   return CHANNEL_OPTIONS[type]?.url || '';
+}
+
+// The page where the provider's keys are created, for the "get a key" link; empty when the
+// provider has no such page (login-based or self-hosted types).
+export function keyPageUrl(type) {
+  return CHANNEL_OPTIONS[type]?.keyUrl || '';
 }
