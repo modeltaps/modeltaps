@@ -273,6 +273,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The providers page is one channel list. Provider cards at the top keep each provider's traffic in
+  view and filter the list; below them every channel is listed in call order while supplies route
+  requests: tried top to bottom, reordered by dragging or from the row menu, and a channel can share
+  the position above it by weight (shares are shown only between channels that serve the same
+  models). New channels go last. "New channel" opens a searchable list of providers first. The
+  separate Allocation page is gone (its address now opens the providers page), and channels the
+  order does not place are tried one at a time after it, oldest first, instead of sharing one
+  last tier.
 - The admin page that lists upstream connections is now called **Providers** in the sidebar and
   page title (it was **Channels**). The entries inside a provider are still channels; links that
   point to the page say "Providers" as well. Nothing else on the page changed.

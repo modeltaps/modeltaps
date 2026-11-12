@@ -156,7 +156,7 @@ func TestAllocationPlanAllocate(t *testing.T) {
 		13: {Priority: 2, Weight: 3},
 		14: {Priority: 2, Weight: 1},
 		12: {Priority: 1, Weight: 1}, // its own entry, second tier
-		15: {Priority: 0, Weight: 1}, // not listed: below every tier
+		15: {Priority: -5, Weight: 1}, // not placed: below every tier, a position of its own
 	}
 	for id, n := range want {
 		if got[id] != n {
@@ -172,7 +172,7 @@ func TestAllocationPlanAllocate(t *testing.T) {
 		13: {Priority: 2, Weight: 3},
 		14: {Priority: 2, Weight: 2},
 		12: {Priority: 1, Weight: 2},
-		15: {Priority: 0, Weight: 2},
+		15: {Priority: -5, Weight: 2},
 	}
 	for id, n := range want {
 		if got[id] != n {
@@ -480,5 +480,19 @@ func TestAllocationOverviewListsChannelModels(t *testing.T) {
 	}
 	if !slices.Equal(got["vercel"], []string{"a", "b"}) || got["venice"] == nil || len(got["venice"]) != 0 {
 		t.Fatalf("channel models = %v", got)
+	}
+}
+
+// Channels the policy does not place are tried after every tier, one at a time, oldest first.
+func TestUnplacedChannelsEachTakeAPosition(t *testing.T) {
+	channels := map[int]*Channel{
+		1: {Id: 1, Type: 62, Status: config.ChannelStatusEnabled},
+		7: {Id: 7, Type: 1, Status: config.ChannelStatusEnabled},
+		9: {Id: 9, Type: 1, Status: config.ChannelStatusEnabled},
+	}
+	plan := newAllocationPlan([][]AllocationEntry{{{ChannelId: 1, Weight: 1}}})
+	got := plan.allocate([]*ModelSupply{{Id: 1, ChannelId: 1, Enabled: true}, {Id: 2, ChannelId: 9, Enabled: true}, {Id: 3, ChannelId: 7, Enabled: true}}, channels)
+	if !(got[1].Priority > got[3].Priority && got[3].Priority > got[2].Priority) {
+		t.Fatalf("priorities = %+v, want placed > #7 > #9", got)
 	}
 }

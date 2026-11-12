@@ -679,7 +679,6 @@
     "api_audio": "在文字与语音之间转换",
     "api_compare": "多个对话模型并排，同一条输入同时发出",
     "pricing": "模型目录、价格、渠道与厂商",
-    "allocation": "每个模型的请求先给哪个供应商、不可用时再给谁；模型默认按这里的顺序，不用单独配置",
     "routing_policy": "虚拟模型：按每个会话的首条消息选择实际应答的模型",
     "channel": "每个供应商下可以有多个渠道；一个渠道是连到该供应商的一组凭据和地址",
     "org_members": "邀请成员、设置每人的预算与模型范围",
@@ -2241,8 +2240,8 @@
       "peerNote": "同组还有 {{name}} 提供这些模型",
       "priority": "优先级",
       "weight": "权重",
-      "byPolicy": "这个渠道先用还是后用，由分配策略决定。",
-      "openPolicy": "打开分配策略"
+      "byPolicy": "这个渠道先用还是后用，在供应商页的渠道列表里排。",
+      "openPolicy": "去调整顺序"
     },
     "batch": {
       "label": "已选渠道",
@@ -2347,42 +2346,29 @@
         "not_in_catalog": "不在目录",
         "unknown": "没认出来"
       }
-    }
-  },
-  "allocation": {
-    "unknownProvider": "未知供应商",
-    "channelGone": "渠道 #{{id}}",
-    "gone": "已不存在，保存时可移出",
-    "channelOff": "渠道已停用",
-    "channels": "{{total}} 个渠道，{{enabled}} 个启用",
-    "weightOf": "{{name}} 的权重",
-    "entryActions": "{{name}} 的操作",
-    "moveUp": "移到上一档",
-    "moveDown": "移到下一档",
-    "ownTier": "单独成一档",
-    "byChannel": "按渠道拆开",
-    "mergeChannels": "合并回供应商",
-    "remove": "移出排位",
-    "saved": "已保存，路由已按新顺序生效",
-    "tier": "第 {{n}} 档",
-    "tierFirst": "先用",
-    "tierNext": "上一档都不可用时用",
-    "tierShared": "按权重分担",
-    "tierUp": "第 {{n}} 档上移",
-    "tierDown": "第 {{n}} 档下移",
-    "revert": "撤销",
-    "save": "保存",
-    "notActive": "现在还是按渠道的模型列表路由，打开「按供应路由」后这里的顺序才生效。",
-    "summary": "{{policy}} 个模型按这个顺序，{{manual}} 个单独设置。",
-    "openModels": "去模型目录",
-    "empty": "还没有渠道。",
-    "unlisted": "未排位",
-    "unlistedHint": "排在所有档之后，平分流量",
-    "place": "加入排位",
-    "footnote": "每个模型只在能提供它的供应商之间排；百分比只在同一档里提供相同模型的供应商之间计算，不和别人重叠的不显示权重。同一供应商的多个渠道平分它的权重，渠道停用或暂停时自动跳过。",
-    "sharesWith": "与 {{names}} 分担",
-    "nameSep": "、",
-    "tierSeparate": "各自提供不同的模型，不分担"
+    },
+    "strip": {
+      "all": "全部",
+      "allMeta": "{{count}} 个渠道",
+      "allTitle": "全部渠道",
+      "meta": "{{count}} 个渠道 · {{requests}} 次请求",
+      "metaOff": "{{count}} 个渠道（{{enabled}} 个启用） · {{requests}} 次请求"
+    },
+    "order": {
+      "column": "顺序",
+      "shareColumn": "分担",
+      "up": "往前移",
+      "down": "往后移",
+      "share": "与上一位分担",
+      "unshare": "不再分担",
+      "weightOf": "{{name}} 的权重",
+      "drag": "拖动调整顺序",
+      "positionShort": "第 {{n}} 位"
+    },
+    "newMenu": {
+      "inUse": "已接入"
+    },
+    "orderHint": "从上往下试，前一个不可用才用下一个；蓝线连起来的渠道按权重分担。只试能提供这个模型的渠道。"
   },
   "nav": {
     "sections": {
@@ -2409,7 +2395,6 @@
       "stats": "统计",
       "channels": "供应商",
       "catalog": "模型目录",
-      "allocation": "分配策略",
       "routing": "自动路由",
       "users": "用户",
       "userGroups": "用户分组",
@@ -2718,18 +2703,18 @@
       "skipped_other": "{{count}} 个渠道已有 {{model}} 的供应（上游名不同），这个模型在那些渠道上仍待处理。"
     },
     "allocation": {
-      "label": "排位",
-      "policy": "按分配策略",
+      "label": "顺序",
+      "policy": "按供应商页的调用顺序",
       "manual": "单独设置",
       "manualShort": "单独设置",
-      "open": "查看分配策略",
+      "open": "去调整顺序",
       "toManual": "单独设置",
-      "toPolicy": "恢复按分配策略",
-      "policyHint": "顺序和权重来自分配策略；在这里调整顺序或权重，会把这个模型改为单独设置。",
-      "manualHint": "这个模型的排位不随分配策略变化。",
+      "toPolicy": "恢复按调用顺序",
+      "policyHint": "顺序和权重来自供应商页的调用顺序；在这里调整顺序或权重，会把这个模型改为单独设置。",
+      "manualHint": "这个模型的顺序不随调用顺序变化。",
       "becameManual": "这个模型已改为单独设置",
       "nowManual": "已改为单独设置，当前排位保持不变",
-      "nowPolicy": "已恢复按分配策略"
+      "nowPolicy": "已恢复按调用顺序"
     }
   },
   "settingsUi": {

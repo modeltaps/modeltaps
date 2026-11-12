@@ -706,7 +706,7 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
           <span className="text-[13px]">
             {t(allocation === 'manual' ? 'modelSupply.allocation.manual' : 'modelSupply.allocation.policy')}
           </span>
-          <Link to="/panel/allocation" className="text-[13px] text-info underline-offset-2 hover:underline">
+          <Link to="/panel/channel" className="text-[13px] text-info underline-offset-2 hover:underline">
             {t('modelSupply.allocation.open')}
           </Link>
           <span className="flex-1" />
