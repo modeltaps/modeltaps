@@ -2393,6 +2393,18 @@
       "driftNew_other": "新しいモデル {{count}} 件",
       "driftMissing_other": "終了したモデル {{count}} 件",
       "refresh": "更新"
+    },
+    "head": {
+      "order": "番号の小さい順に使用。同じ番号は分担",
+      "share": "グループ内の重みとトラフィック比率",
+      "shareNone": "他のチャネルと分担しません",
+      "priorityWeight": "優先度の高い順に使用。同じ優先度は重みで分配",
+      "requests": "リクエスト数",
+      "requestsHint": "{{range}}のリクエスト数と推移",
+      "success": "成功したリクエストの割合",
+      "latency": "成功したリクエストの平均所要時間",
+      "balance": "上流の残高。サブスクリプションは今期の使用量",
+      "enabled": "オフにするとリクエストを受けません"
     }
   },
   "nav": {
