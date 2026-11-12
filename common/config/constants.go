@@ -304,6 +304,16 @@ var PauseRulesEnabled = true
 // PauseRules holds custom pause rules as JSON; empty means the built-in defaults.
 var PauseRules = ""
 
+// ModelLibraryRulesEnabled runs the library inclusion rules after each model library sync.
+var ModelLibraryRulesEnabled = true
+
+// ModelLibraryRulesApply makes the inclusion rules change the catalog. Off, they only notify
+// admins of what they would do (a dry run).
+var ModelLibraryRulesApply = false
+
+// ModelLibraryRules holds custom inclusion rules as JSON; empty means the built-in defaults.
+var ModelLibraryRules = ""
+
 // ChannelMetricsEnabled 按「渠道 × 模型 × 小时」聚合成功率、首字延迟与输出速度（内存累计，每分钟落库）。
 var ChannelMetricsEnabled = true
 

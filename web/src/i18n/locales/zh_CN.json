@@ -2930,7 +2930,8 @@
         "credential": "渠道凭证问题",
         "supply_paused": "渠道或模型被暂停",
         "supply_resumed": "暂停的渠道或模型已恢复",
-        "supply_failover": "请求切换到备用渠道"
+        "supply_failover": "请求切换到备用渠道",
+        "model_library": "收录规则添加、下架或将要改动模型"
       },
       "limit": {
         "label": "每类每小时最多条数",

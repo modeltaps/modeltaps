@@ -711,7 +711,8 @@
       "models": "模型",
       "vendors": "厂商",
       "paused": "暂停中",
-      "pending": "新上游模型"
+      "pending": "新上游模型",
+      "rules": "收录规则"
     }
   },
   "listPage": {
@@ -3175,5 +3176,56 @@
   "ledgerList": {
     "description": "说明",
     "amount": "金额"
+  },
+  "libraryRules": {
+    "intro": "每天同步模型库后，按这些规则决定哪些新模型加入目录、哪些目录里的模型下架。规则从上往下匹配，第一条条件全部满足的规则生效；每个模型只判定一次，你删掉的模型不会被加回来，你改过的模型不会被下架。",
+    "enabled": "每次同步后运行规则",
+    "apply": "执行规则",
+    "applyOn": "规则会改动目录，并通知你做了什么。",
+    "applyOff": "演练：规则不改动任何东西，只通知你将会做什么。",
+    "name": "名称",
+    "namePlaceholder": "规则名称",
+    "action": "动作",
+    "actions": {
+      "publish": "发布",
+      "draft": "加为草稿",
+      "ignore": "不收录",
+      "retire": "下架"
+    },
+    "labs": "厂商（models.dev 前缀）",
+    "patterns": "模型名匹配",
+    "days": "发布天数以内",
+    "anyTime": "不限",
+    "endpoints": "接口（任一）",
+    "supplied": "有渠道能供应",
+    "deprecated": "已弃用",
+    "openWeights": "开源",
+    "tri": {
+      "any": "不限",
+      "yes": "是",
+      "no": "否"
+    },
+    "up": "上移",
+    "down": "下移",
+    "remove": "删除规则",
+    "add": "添加规则",
+    "preview": "预览",
+    "runNow": "立即运行",
+    "saveFirst": "请先保存规则",
+    "reset": "恢复默认",
+    "save": "保存",
+    "saved": "收录规则已保存",
+    "noRules": "没有规则：不会自动添加或下架任何模型。",
+    "orderHint": "每个模型从上往下过规则；不填的条件表示不限。",
+    "previewTitle": "按当前规则现在会做什么",
+    "previewEmpty": "没有要做的：命中的模型都已处理过。",
+    "ranApply": "已添加 {{added}} 个，下架 {{retired}} 个",
+    "ranDry": "演练：报告了 {{count}} 项新变化",
+    "defaultNames": {
+      "retireDeprecated": "下架已弃用的模型",
+      "previews": "预览版加为草稿",
+      "publishMain": "主流厂商的新模型直接发布",
+      "otherSupplied": "其余有渠道能供应的加为草稿"
+    }
   }
 }

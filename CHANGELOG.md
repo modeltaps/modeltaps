@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Inclusion rules for the model library (models page, "Inclusion rules" tab). After each daily
+  sync, rules tried in order decide which library models join the catalog (published or as
+  drafts) and which catalog models are retired; conditions cover labs, model id patterns, release
+  window, endpoints, open weights, deprecation and whether a channel can supply the model. Each
+  model is decided once, so a model an admin removed is not added back, and rows an admin edited
+  or locked are never retired. Rules start as a dry run that only notifies admins (new
+  notification kind `model_library`); "Apply the rules" lets them change the catalog. A preview
+  shows what the rules would do now. The defaults retire deprecated models, add supplied previews
+  as drafts, publish supplied models from the main labs released in the last 60 days and add other
+  supplied models as drafts.
 - Add models from the model library: the models page has an "Add from library" button next to
   "Create". It lists every library model with filters for vendor, endpoint, release window,
   open weights and "a channel can supply it"; pick models or every match, add them as drafts or
