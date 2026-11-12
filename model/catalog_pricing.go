@@ -74,6 +74,10 @@ type catalogModel struct {
 	// CanonicalModelID is the lab-qualified id ("anthropic/claude-fable-5-2") that models.dev gives
 	// every hosted copy of a model; its prefix names the vendor whatever platform hosts the copy.
 	CanonicalModelID string `json:"canonical_model_id"`
+	Family           string `json:"family"`
+	Knowledge        string `json:"knowledge"`
+	// Status is "deprecated" (or another lifecycle word) when models.dev marks the entry.
+	Status string `json:"status"`
 }
 
 type catalogProvider struct {
@@ -579,7 +583,15 @@ func syncCatalogPricing(url string, auto bool) (*CatalogSyncResult, error) {
 	if err := writeSyncedPrices(prices, "models.dev", auto); err != nil {
 		return nil, err
 	}
-	if err := UpsertModelInfos(BuildCatalogModelInfos(data), ModelInfoSourceModelsDev); err != nil {
+	if n, err := SyncModelLibrary(data); err != nil {
+		logger.SysError("model library sync failed: " + err.Error())
+	} else {
+		logger.SysLog(fmt.Sprintf("Model library synced from models.dev: %d models", n))
+	}
+	// The public catalog only holds models an admin added: refresh those, create none.
+	if infos, err := existingModelInfos(BuildCatalogModelInfos(data)); err != nil {
+		logger.SysError("catalog model info lookup failed: " + err.Error())
+	} else if err := UpsertModelInfos(infos, ModelInfoSourceModelsDev); err != nil {
 		logger.SysError("catalog model info upsert failed: " + err.Error())
 	}
 	result := &CatalogSyncResult{Synced: len(prices)}
@@ -606,4 +618,26 @@ func isChannelInfoSource(source string) bool {
 
 func isChannelPriceSource(channelType int) bool {
 	return channelType == config.ChannelTypeOpenRouter || channelType == config.ChannelTypeVercelAIGateway
+}
+
+// existingModelInfos keeps the infos whose model already has a catalog row.
+func existingModelInfos(infos []*ModelInfo) ([]*ModelInfo, error) {
+	if len(infos) == 0 {
+		return infos, nil
+	}
+	var names []string
+	if err := DB.Model(&ModelInfo{}).Pluck("model", &names).Error; err != nil {
+		return nil, err
+	}
+	have := make(map[string]bool, len(names))
+	for _, n := range names {
+		have[n] = true
+	}
+	kept := make([]*ModelInfo, 0, len(infos))
+	for _, info := range infos {
+		if have[info.Model] {
+			kept = append(kept, info)
+		}
+	}
+	return kept, nil
 }

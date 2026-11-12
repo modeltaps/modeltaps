@@ -2552,7 +2552,8 @@
       "searchChannel": "搜索渠道",
       "noChannel": "没有找到渠道",
       "channelRequired": "请选择渠道",
-      "hint": "上游模型名取自渠道的模型映射。新供应默认作为备用，排在最低一档之下。"
+      "hint": "上游模型名按渠道自动填写：先看模型映射，再看渠道已列出的名字，最后按该平台的写法（如 Vertex 的 @default）。新供应默认作为备用，排在最低一档之下。",
+      "fromLibrary": "已按该平台的写法填写"
     },
     "channelSupplies": {
       "title_other": "供应 {{count}} 个公开模型",

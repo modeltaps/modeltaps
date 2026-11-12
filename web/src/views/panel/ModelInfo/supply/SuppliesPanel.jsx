@@ -30,6 +30,7 @@ import {
   pauseSupply,
   previewSupplies,
   resumePause,
+  suggestUpstream,
   updateSupply
 } from './supplyApi';
 import {
@@ -111,6 +112,26 @@ function AddSupplyForm({ model, channels, supplies, onCancel, onAdded }) {
     weight: '1'
   }));
   const [saving, setSaving] = useState(false);
+  const [upstreamSource, setUpstreamSource] = useState('');
+
+  // The backend knows more than the channel's mapping (the channel's own list and how its
+  // platform names the model), so ask it whenever the channel changes.
+  useEffect(() => {
+    if (!channelId) return undefined;
+    let cancelled = false;
+    suggestUpstream({ model, channel_id: Number(channelId) })
+      .then(({ success, data }) => {
+        if (cancelled || !success || !data?.upstream_model) return;
+        setForm((f) => ({ ...f, upstream_model: data.upstream_model }));
+        setUpstreamSource(data.source || '');
+      })
+      .catch(() => {
+        /* keep the mapping-based guess */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [channelId, model]);
 
   const toOption = (c) => ({
     value: String(c.id),
@@ -125,6 +146,7 @@ function AddSupplyForm({ model, channels, supplies, onCancel, onAdded }) {
 
   const pickChannel = (value) => {
     setChannelId(value);
+    setUpstreamSource('');
     const channel = channels.find((c) => String(c.id) === value);
     if (channel) setForm((f) => ({ ...f, upstream_model: upstreamFor(channel, model) }));
   };
@@ -171,9 +193,13 @@ function AddSupplyForm({ model, channels, supplies, onCancel, onAdded }) {
           <Input
             id="supply-upstream"
             value={form.upstream_model}
-            onChange={(e) => setForm({ ...form, upstream_model: e.target.value })}
+            onChange={(e) => {
+              setForm({ ...form, upstream_model: e.target.value });
+              setUpstreamSource('');
+            }}
             className="rounded-[10px] font-mono"
           />
+          {upstreamSource === 'library' && <p className="text-xs text-muted-foreground">{t('modelSupply.add.fromLibrary')}</p>}
         </div>
       </div>
       <div className="flex flex-wrap items-end gap-3">

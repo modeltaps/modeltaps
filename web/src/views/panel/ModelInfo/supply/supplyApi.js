@@ -10,6 +10,11 @@ export const createSupply = (supply) => API.post('/api/model_supply/', supply).t
 export const updateSupply = (supply) => API.put('/api/model_supply/', supply).then(body);
 export const deleteSupply = (id) => API.delete(`/api/model_supply/${id}`).then(body);
 
+// How the channel names the public model upstream: { upstream_model, source }, where source is
+// "mapping", "channel", "library" (the platform's spelling, e.g. Vertex's @default) or "".
+export const suggestUpstream = ({ model, channel_id }) =>
+  API.get('/api/model_supply/upstream_suggestion', { params: { model, channel_id } }).then(body);
+
 // The order a request for the model would try its supplies in, with each supply's state and
 // share; `group` limits it to supplies whose channel serves that user group.
 export const previewSupplies = ({ model, group = '' }) =>
