@@ -341,6 +341,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Changing a channel's priority or weight reaches its supplies again. With supplies routing
+  requests, edits on the channel (its panel, the batch actions on the providers page and the
+  tag-wide setters) only changed the default for new supplies. Supplies that still have the
+  channel's priority or weight now move with it; a supply given its own numbers on the models
+  page is marked "Own setting", stays where it is and can be set to follow the channel again.
 - Models synced from models.dev no longer take the hosting platform as their vendor: Claude,
   Grok or Llama served on Vertex showed as Google Gemini, and Grok or Phi on Azure as OpenAI. The
   vendor now comes from the lab named in the model's canonical id and stays unknown when there

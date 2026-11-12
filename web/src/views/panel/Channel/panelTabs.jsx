@@ -538,7 +538,11 @@ function RoutingBody({ object: channel, draft, setDraft, ctx }) {
       <Field label={t('channels.groups')} extra={t('channels.groupsHint')}>
         <GroupOptions groups={ctx.groups} value={draft.groups} onChange={(groups) => setDraft({ ...draft, groups })} />
       </Field>
-      <Field label={t('channels.usage.label')} extra={usage.top ? t('channels.usage.peerNote', { name: usage.top.name }) : null}>
+      <Field
+        label={t('channels.usage.label')}
+        extra={usage.top ? t('channels.usage.peerNote', { name: usage.top.name }) : null}
+        hint={t('channels.usage.syncHint')}
+      >
         <UsageOptions
           usage={usage}
           value={value}

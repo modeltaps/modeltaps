@@ -2214,6 +2214,7 @@
     "unknownProvider": "類型 {{type}}",
     "usage": {
       "label": "使用方式",
+      "syncHint": "在這裡的變更會同步到這個渠道的所有供應；在模型頁單獨設定過優先級或權重的供應不變。",
       "only": "唯一提供方",
       "onlyDesc": "同組裏沒有別的渠道提供這些模型",
       "backup": "作為備用",
@@ -2510,6 +2511,9 @@
     "deleteConfirm": "不再把 {{model}} 傳給 {{channel}}？渠道本身不受影響。",
     "deleted": "已刪除供應",
     "moveUp": "移到更高一檔",
+    "ownNumbers": "單獨設定",
+    "ownNumbersTip": "這條供應的優先級或權重與渠道不同，渠道變更時不會跟著變",
+    "followChannel": "恢復跟隨渠道",
     "moveDown": "移到更低一檔",
     "pauseFor": "暫停",
     "paused": "已暫停 {{time}}",

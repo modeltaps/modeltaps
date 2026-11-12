@@ -2318,6 +2318,7 @@
     "unknownProvider": "Type {{type}}",
     "usage": {
       "label": "Usage",
+      "syncHint": "A change here also applies to every supply of this channel, except supplies given their own priority or weight on the models page.",
       "only": "Only provider",
       "onlyDesc": "No other channel in these groups serves this provider",
       "backup": "Backup",
@@ -2596,6 +2597,9 @@
     "deleteConfirm": "Stop sending {{model}} to {{channel}}? The channel itself is not changed.",
     "deleted": "Supply deleted",
     "moveUp": "Move to a higher tier",
+    "ownNumbers": "Own setting",
+    "ownNumbersTip": "This supply has a priority or weight of its own and does not move when the channel changes",
+    "followChannel": "Follow the channel again",
     "moveDown": "Move to a lower tier",
     "pauseFor": "Pause for",
     "paused": "Paused for {{time}}",
