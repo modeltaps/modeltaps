@@ -339,6 +339,7 @@ func DeleteChannelTag(channelId int) error {
 func BatchDeleteChannel(ids []int) (int64, error) {
 	result := DB.Where("id IN ?", ids).Delete(&Channel{})
 	if result.Error == nil && result.RowsAffected > 0 {
+		deleteChannelAliases(ids)
 		ChannelGroup.Load()
 	}
 	return result.RowsAffected, result.Error
@@ -822,6 +823,7 @@ func (channel *Channel) UpdateBalanceAlertedTime(ts int64) error {
 func (channel *Channel) Delete() error {
 	err := DB.Delete(channel).Error
 	if err == nil {
+		deleteChannelAliases([]int{channel.Id})
 		ChannelGroup.Load()
 	}
 	return err

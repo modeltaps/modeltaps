@@ -3283,12 +3283,21 @@
     "deprecated": "非推奨",
     "showMore": "さらに {{count}} 件表示",
     "selected": "{{count}} 件選択中",
-    "createSupplies": "掲載しているチャネルから供給を作成",
+    "createSupplies": "一致したチャネルに供給を作成",
     "status": "ステータス",
     "asDraft": "下書き",
     "asPublished": "公開",
     "add": "{{count}} 件を追加",
-    "added": "{{count}} モデルを追加し、{{supplies}} 件の供給を作成しました"
+    "added": "{{count}} モデルを追加し、{{supplies}} 件の供給を作成しました",
+    "unsureCount_one": "+{{count}} 要確認",
+    "unsureCount_other": "+{{count}} 要確認",
+    "excludedBefore": "以前に除外",
+    "match": {
+      "exact": "完全一致",
+      "platform": "プラットフォーム表記",
+      "pending": "要確認",
+      "variant": "派生モデル"
+    }
   },
   "ledgerList": {
     "description": "内容",

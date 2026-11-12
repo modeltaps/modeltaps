@@ -3281,12 +3281,21 @@
     "deprecated": "已弃用",
     "showMore": "再显示 {{count}} 个",
     "selected": "已选 {{count}} 个",
-    "createSupplies": "为已列出它的渠道建供应",
+    "createSupplies": "为匹配到的渠道建供应",
     "status": "状态",
     "asDraft": "草稿",
     "asPublished": "发布",
     "add": "添加 {{count}} 个",
-    "added": "已添加 {{count}} 个模型，建了 {{supplies}} 条供应"
+    "added": "已添加 {{count}} 个模型，建了 {{supplies}} 条供应",
+    "unsureCount_one": "+{{count}} 待确认",
+    "unsureCount_other": "+{{count}} 待确认",
+    "excludedBefore": "之前取消过",
+    "match": {
+      "exact": "精确",
+      "platform": "平台写法",
+      "pending": "待确认",
+      "variant": "变体"
+    }
   },
   "ledgerList": {
     "description": "说明",
