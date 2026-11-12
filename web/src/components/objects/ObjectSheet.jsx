@@ -6,9 +6,14 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Sheet } from '@/components/ui/sheet';
 
-// Widths of the right-side sheets: an object's panel (lg), a new-object sheet with many fields
-// (md) and a short one (sm).
-const WIDTH = { lg: 'max-w-[720px]', md: 'max-w-[640px]', sm: 'max-w-[480px]' };
+// Widths of the right-side sheets, as a share of the window: an object's panel (lg) takes half
+// the window but never less than 640px so its tabs fit; a new-object sheet with many fields (md)
+// and a short one (sm) take three quarters, up to 672px and 480px. All leave a 0.5rem margin.
+const WIDTH = {
+  lg: 'w-[max(50%,640px)]',
+  md: 'w-3/4 max-w-[672px]',
+  sm: 'w-3/4 max-w-[480px]'
+};
 
 // Right-side sheet floating over the page: a header (icon, title, one-line subtitle, actions,
 // close), a scrolling body and an optional footer. Escape and a click outside call `onClose`,
@@ -34,7 +39,7 @@ export function ObjectSheet({
         aria-modal="true"
         aria-labelledby={titleId}
         className={cn(
-          'absolute inset-y-2 right-2 flex w-[calc(100%-1rem)] flex-col rounded-2xl border border-border bg-popover shadow-2xl max-sm:inset-0 max-sm:w-full max-sm:rounded-none max-sm:border-0',
+          'absolute inset-y-2 right-2 flex max-w-[calc(100%-1rem)] flex-col rounded-2xl border border-border bg-popover shadow-2xl max-sm:inset-0 max-sm:w-full max-sm:max-w-none max-sm:rounded-none max-sm:border-0',
           WIDTH[size]
         )}
       >

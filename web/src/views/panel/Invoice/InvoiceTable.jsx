@@ -4,20 +4,17 @@ import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ROW_OPENS, rowOpenProps } from '@/components/objects';
-import { useNaturalWidth } from '@/components/list-page';
+
 import { calculateQuota, renderNumber } from 'utils/common';
 
 // ==============================|| PANEL — MONTHLY INVOICE TABLE ||============================== //
 // One row per month (server-side sorting); a row opens that month's statement. Phones get 56px
 // rows: the month and amount, then requests and tokens.
 
-export const INVOICE_TABLE_ESTIMATE = 560;
-
 const month = (i) => (i.date ? i.date.substring(0, 7) : '');
 const amount = (i) => `$${Number(calculateQuota(i.quota, 6)).toFixed(2)}`;
 
-export default function InvoiceTable({ t, data, order, orderBy, onSort, onView, searching, layout = 'table', onNaturalWidth }) {
-  const tableRef = useNaturalWidth(layout === 'table' ? onNaturalWidth : null);
+export default function InvoiceTable({ t, data, order, orderBy, onSort, onView, searching, layout = 'table' }) {
   const rows = data || [];
 
   if (rows.length === 0) {
@@ -68,7 +65,7 @@ export default function InvoiceTable({ t, data, order, orderBy, onSort, onView, 
   );
 
   return (
-    <Table ref={tableRef}>
+    <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           {head('date', t('invoice_index.date'))}
@@ -103,6 +100,5 @@ InvoiceTable.propTypes = {
   onSort: PropTypes.func.isRequired,
   onView: PropTypes.func.isRequired,
   searching: PropTypes.bool,
-  layout: PropTypes.oneOf(['table', 'list']),
-  onNaturalWidth: PropTypes.func
+  layout: PropTypes.oneOf(['table', 'list'])
 };

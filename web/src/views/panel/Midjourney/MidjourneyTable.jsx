@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { estimateWidth, useNaturalWidth } from '@/components/list-page';
 import { cn } from '@/lib/utils';
 import { copy, renderQuota, timestamp2string, timestamp2stringCompact } from 'utils/common';
 import { ACTION_TYPE, CODE_TYPE, STATUS_TYPE, deriveRequestTime } from './mjHelpers';
@@ -34,23 +33,6 @@ export const MJ_COLUMNS = [
   { id: 'prompt_en', labelKey: 'midjourneyPage.promptEn', defaultHidden: true },
   { id: 'quota', labelKey: 'logPage.quotaLabel', defaultHidden: true }
 ];
-const COLUMN_IDS = MJ_COLUMNS.map((c) => c.id);
-const COLUMN_WIDTHS = {
-  mj_id: 160,
-  submit_time: 104,
-  channel_id: 64,
-  user_id: 64,
-  action: 72,
-  prompt: 260,
-  status: 200,
-  progress: 64,
-  time: 72,
-  image_url: 120,
-  code: 80,
-  prompt_en: 200,
-  quota: 90
-};
-export const estimateMjTableWidth = (visibility) => estimateWidth(COLUMN_IDS, visibility, COLUMN_WIDTHS);
 
 // Status as text; a failure is tinted with its reason after it.
 function MjStatus({ t, item, withReason = true }) {
@@ -142,18 +124,7 @@ function ImageCell({ t, item }) {
 }
 ImageCell.propTypes = { t: PropTypes.func, item: PropTypes.object };
 
-export default function MidjourneyTable({
-  t,
-  data,
-  userIsAdmin,
-  order,
-  orderBy,
-  onSort,
-  searching,
-  columnVisibility,
-  layout = 'table',
-  onNaturalWidth
-}) {
+export default function MidjourneyTable({ t, data, userIsAdmin, order, orderBy, onSort, searching, columnVisibility, layout = 'table' }) {
   const columns = useMemo(() => {
     const cells = {
       mj_id: (i) => <span className="font-mono text-xs">{i.mj_id}</span>,
@@ -185,7 +156,6 @@ export default function MidjourneyTable({
   }, [t, userIsAdmin]);
 
   const table = useTable({ features: appTableFeatures, data: data || [], columns, manualSorting: true, state: { columnVisibility } });
-  const tableRef = useNaturalWidth(layout === 'table' ? onNaturalWidth : null);
   const rows = data || [];
 
   if (rows.length === 0) {
@@ -228,7 +198,7 @@ export default function MidjourneyTable({
   };
 
   return (
-    <Table ref={tableRef}>
+    <Table>
       <TableHeader>
         {table.getHeaderGroups().map((hg) => (
           <TableRow key={hg.id} className="hover:bg-transparent">
@@ -278,6 +248,5 @@ MidjourneyTable.propTypes = {
   onSort: PropTypes.func.isRequired,
   searching: PropTypes.bool,
   columnVisibility: PropTypes.object,
-  layout: PropTypes.oneOf(['table', 'list']),
-  onNaturalWidth: PropTypes.func
+  layout: PropTypes.oneOf(['table', 'list'])
 };

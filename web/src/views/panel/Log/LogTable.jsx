@@ -12,7 +12,7 @@ import ProviderIcon from '@/components/brand/ProviderIcon';
 import AppFavicon from './AppFavicon';
 import { cn } from '@/lib/utils';
 import { ROW_OPENS, rowOpenProps } from '@/components/objects';
-import { useNaturalWidth } from '@/components/list-page';
+
 import { SpendAmount, timestamp2string, timestamp2stringCompact } from 'utils/common';
 import { badgeClass, calculateOriginalQuota, deriveDuration, finishReasonMeta, logTypeMeta, relayModeMeta } from './logHelpers';
 
@@ -27,29 +27,6 @@ const TextLink = ({ to, children }) => (
   </Link>
 );
 TextLink.propTypes = { to: PropTypes.string, children: PropTypes.node };
-
-// Typical column widths, for the layout estimate before the table has been measured.
-const COLUMN_WIDTHS = {
-  created_at: 104,
-  channel_id: 160,
-  user_id: 110,
-  member: 120,
-  group: 96,
-  token_name: 130,
-  app: 120,
-  type: 72,
-  model_name: 210,
-  relay_mode: 80,
-  finish_reason: 90,
-  duration: 110,
-  throughput: 96,
-  prompt_tokens: 80,
-  completion_tokens: 80,
-  quota: 90,
-  source_ip: 120
-};
-export const estimateLogTableWidth = (columnIds, visibility) =>
-  columnIds.filter((id) => visibility[id] !== false).reduce((sum, id) => sum + (COLUMN_WIDTHS[id] || 100), 0);
 
 function QuotaCell({ item }) {
   if (item.type !== 2)
@@ -152,8 +129,7 @@ export default function LogTable({
   searching,
   columnVisibility,
   emptyInfo,
-  layout = 'table',
-  onNaturalWidth
+  layout = 'table'
 }) {
   const columns = useMemo(() => {
     const cols = [
@@ -350,7 +326,6 @@ export default function LogTable({
     manualSorting: true,
     state: { columnVisibility: columnVisibility ?? {} }
   });
-  const tableRef = useNaturalWidth(layout === 'table' ? onNaturalWidth : null);
 
   // Sort arrows: the active column shows its direction; others show a faint arrow on hover only.
   const sortIcon = (id) => {
@@ -365,7 +340,7 @@ export default function LogTable({
   }
 
   return (
-    <Table ref={tableRef}>
+    <Table>
       <TableHeader>
         {table.getHeaderGroups().map((hg) => (
           <TableRow key={hg.id} className="hover:bg-transparent">
@@ -484,6 +459,5 @@ LogTable.propTypes = {
   searching: PropTypes.bool,
   columnVisibility: PropTypes.object,
   emptyInfo: PropTypes.node,
-  layout: PropTypes.oneOf(['table', 'list']),
-  onNaturalWidth: PropTypes.func
+  layout: PropTypes.oneOf(['table', 'list'])
 };

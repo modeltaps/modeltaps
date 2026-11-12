@@ -8,7 +8,7 @@ import { API } from 'utils/api';
 import { showError } from 'utils/common';
 import { getPageSize, savePageSize } from 'constants';
 import { ListFooter, useListLayout } from '@/components/list-page';
-import InvoiceTable, { INVOICE_TABLE_ESTIMATE } from './InvoiceTable';
+import InvoiceTable from './InvoiceTable';
 import InvoiceDetailSheet from './InvoiceDetailSheet';
 
 // ==============================|| PANEL — MONTHLY BILLING (INVOICE) ||============================== //
@@ -64,14 +64,14 @@ export default function Invoice({ reloadToken = 0 }) {
   };
 
   // Full table while it fits (the sidebar collapses first), 56px rows on phones.
-  const { pageRef, layout, onNaturalWidth } = useListLayout({ estimate: INVOICE_TABLE_ESTIMATE, resetKey: 'invoice' });
+  const { layout } = useListLayout();
 
   const handleView = (date) => {
     if (date) setDetailDate(date.substring(0, 7));
   };
 
   return (
-    <div ref={pageRef} className="space-y-3">
+    <div className="space-y-3">
       <Alert variant="info">{t('invoice_index.alert')}</Alert>
 
       <Card>
@@ -85,7 +85,6 @@ export default function Invoice({ reloadToken = 0 }) {
             onView={handleView}
             searching={searching}
             layout={layout}
-            onNaturalWidth={onNaturalWidth}
           />
           <div className="border-t border-border">
             <ListFooter

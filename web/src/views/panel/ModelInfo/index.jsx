@@ -72,7 +72,7 @@ import {
   channelModelNames,
   savePriceUnit
 } from '../Pricing/modelCatalog';
-import ModelTable, { ModelList, ReadinessLegend, estimateModelTableWidth } from './ModelTable';
+import ModelTable, { ModelList, ReadinessLegend } from './ModelTable';
 import ModelInfoSheet from './ModelInfoSheet';
 import ImportDialog from './ImportDialog';
 import LibrarySheet from './LibrarySheet';
@@ -145,7 +145,6 @@ const BUILTIN_PRESETS = [
   { id: 'percall', labelKey: 'modelsPage.presetPerCall', status: 'all', conditions: { billing: { op: 'in', values: ['times'] } } }
 ];
 const PRESET_STORAGE_KEY = 'model-filter-presets-v1';
-const COLUMN_IDS = MODEL_COLUMNS.map((c) => c.id);
 
 export function filterCatalogRows(rows, { keyword = '', params = {}, aliasesByTarget = {} }) {
   const k = keyword.trim().toLowerCase();
@@ -218,10 +217,7 @@ export default function ModelInfo() {
   });
   const columnVisibility = columnState.visibility;
   // Full table while it fits (the sidebar collapses first), phone list otherwise.
-  const { pageRef, layout, narrow, onNaturalWidth } = useListLayout({
-    estimate: estimateModelTableWidth(COLUMN_IDS, columnVisibility),
-    resetKey: JSON.stringify(columnVisibility)
-  });
+  const { layout, narrow } = useListLayout();
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetTab, setSheetTab] = useState('profile');
@@ -763,7 +759,6 @@ export default function ModelInfo() {
         onOpen={openSheet}
         onDeleteCatalog={setDeleteTarget}
         onDeletePrice={setDeletePriceTarget}
-        onNaturalWidth={onNaturalWidth}
       />
     );
   }
@@ -828,7 +823,7 @@ export default function ModelInfo() {
         </Button>
       </PageActions>
 
-      <div ref={pageRef} className={cn('space-y-3', narrow && selectMode && 'pb-20')}>
+      <div className={cn('space-y-3', narrow && selectMode && 'pb-20')}>
         <div className="space-y-2">
           {narrow ? (
             <>

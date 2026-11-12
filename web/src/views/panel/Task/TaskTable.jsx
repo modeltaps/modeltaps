@@ -6,7 +6,6 @@ import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ROW_OPENS, rowOpenProps } from '@/components/objects';
-import { estimateWidth, useNaturalWidth } from '@/components/list-page';
 import { cn } from '@/lib/utils';
 import { renderQuota, timestamp2string, timestamp2stringCompact } from 'utils/common';
 import { deriveTaskDuration, statusMeta } from './taskHelpers';
@@ -27,21 +26,6 @@ export const TASK_COLUMNS = [
   { id: 'time', labelKey: 'taskPage.time' },
   { id: 'quota', labelKey: 'logPage.quotaLabel' }
 ];
-const COLUMN_IDS = TASK_COLUMNS.map((c) => c.id);
-const COLUMN_WIDTHS = {
-  task_id: 140,
-  submit_time: 104,
-  finish_time: 104,
-  channel_id: 64,
-  user_id: 64,
-  platform: 72,
-  action: 140,
-  status: 220,
-  progress: 64,
-  time: 80,
-  quota: 90
-};
-export const estimateTaskTableWidth = (visibility) => estimateWidth(COLUMN_IDS, visibility, COLUMN_WIDTHS);
 
 // A time that has not happened yet (an unfinished task) is a dash, not 1970.
 const Time = ({ ts }) =>
@@ -81,8 +65,7 @@ export default function TaskTable({
   onRowDetail,
   searching,
   columnVisibility,
-  layout = 'table',
-  onNaturalWidth
+  layout = 'table'
 }) {
   const columns = useMemo(() => {
     const cells = {
@@ -109,7 +92,6 @@ export default function TaskTable({
   }, [t, userIsAdmin]);
 
   const table = useTable({ features: appTableFeatures, data: data || [], columns, manualSorting: true, state: { columnVisibility } });
-  const tableRef = useNaturalWidth(layout === 'table' ? onNaturalWidth : null);
   const rows = data || [];
 
   if (rows.length === 0) {
@@ -150,7 +132,7 @@ export default function TaskTable({
   };
 
   return (
-    <Table ref={tableRef}>
+    <Table>
       <TableHeader>
         {table.getHeaderGroups().map((hg) => (
           <TableRow key={hg.id} className="hover:bg-transparent">
@@ -201,6 +183,5 @@ TaskTable.propTypes = {
   onRowDetail: PropTypes.func.isRequired,
   searching: PropTypes.bool,
   columnVisibility: PropTypes.object,
-  layout: PropTypes.oneOf(['table', 'list']),
-  onNaturalWidth: PropTypes.func
+  layout: PropTypes.oneOf(['table', 'list'])
 };

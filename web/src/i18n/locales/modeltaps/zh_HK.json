@@ -2285,9 +2285,6 @@
       "requests": "請求",
       "requestsIn": "請求 {{range}}"
     },
-    "switcher": {
-      "count": "{{count}} 個渠道"
-    },
     "preset": {
       "attention": "需要處理",
       "lowBalance": "餘額不足",

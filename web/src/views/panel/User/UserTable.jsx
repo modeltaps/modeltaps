@@ -10,26 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
-import { estimateWidth, useNaturalWidth } from '@/components/list-page';
+
 import { renderNumber, renderQuota, renderSpend, timestamp2string } from 'utils/common';
 import { relativeTime } from 'utils/relativeTime';
 import { ActionsCell, StatusCell } from './UserRowCells';
-
-// Typical rendered widths (px) per column, the estimate used before the table has been measured.
-const COLUMN_WIDTHS = {
-  select: 32,
-  user: 220,
-  role: 96,
-  group: 96,
-  org: 120,
-  quota: 96,
-  used_quota: 96,
-  request_count: 72,
-  last_login_time: 96,
-  status: 64,
-  actions: 56
-};
-export const estimateUserTableWidth = (columnIds, visibility) => estimateWidth(columnIds, visibility, COLUMN_WIDTHS);
 
 export function roleBadge(t, role) {
   const map = {
@@ -99,8 +83,7 @@ export default function UserTable({
   order,
   orderBy,
   onSort,
-  manageUser,
-  onNaturalWidth
+  manageUser
 }) {
   const { t, i18n } = useTranslation();
   const rtfLocale = (i18n.language || 'zh_CN').replace('_', '-');
@@ -188,8 +171,6 @@ export default function UserTable({
       }
     ];
   }, [t, rtfLocale, users, selectedIds, onToggleSelect, onToggleSelectAll, onOpen, manageUser]);
-
-  const tableRef = useNaturalWidth(onNaturalWidth);
   const table = useTable({
     features: appTableFeatures,
     data: users,
@@ -205,7 +186,7 @@ export default function UserTable({
   };
 
   return (
-    <Table ref={tableRef}>
+    <Table>
       <TableHeader>
         {table.getHeaderGroups().map((hg) => (
           <TableRow key={hg.id} className="hover:bg-transparent">
@@ -266,8 +247,7 @@ UserTable.propTypes = {
   order: PropTypes.string,
   orderBy: PropTypes.string,
   onSort: PropTypes.func.isRequired,
-  manageUser: PropTypes.func.isRequired,
-  onNaturalWidth: PropTypes.func
+  manageUser: PropTypes.func.isRequired
 };
 
 // Phone list: one 56px row per user. The status dot leads; the first line is the username with

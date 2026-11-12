@@ -24,7 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { estimateWidth, useNaturalWidth } from '@/components/list-page';
+
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -357,24 +357,8 @@ function TokenActionMenu({ actions, t, onTriggerClick, onTriggerKeyDown }) {
   );
 }
 
-// Typical rendered widths (px) of each column (measured, plus a little room for longer names),
-// used to decide what fits on one line.
-const COLUMN_WIDTHS = {
-  select: 32,
-  name: 180,
-  creator: 100,
-  group: 110,
-  billing_tag: 100,
-  expired_time: 96,
-  accessed_time: 90,
-  used_quota: 220,
-  created_time: 100,
-  status: 70,
-  actions: 56
-};
 // Estimated natural width of the table with these columns, used before the table has been
 // measured (for example while the phone list is showing).
-export const estimateTableWidth = (columnIds, visibility) => estimateWidth(columnIds, visibility, COLUMN_WIDTHS);
 
 export default function TokenTable({
   tokens,
@@ -394,7 +378,6 @@ export default function TokenTable({
   onToggleSelect,
   onToggleSelectAll,
   layout = 'table',
-  onNaturalWidth,
   selectMode = false,
   order,
   orderBy,
@@ -636,9 +619,7 @@ export default function TokenTable({
     quotaResetWeekStart
   ]);
 
-  // The table never drops columns. It reports its natural (max-content) width so the page can
-  // collapse the sidebar, or switch to the phone list, when that width does not fit.
-  const tableRef = useNaturalWidth(onNaturalWidth);
+  // The table never drops columns: when it is wider than the page it scrolls sideways.
 
   const table = useTable({
     features: appTableFeatures,
@@ -676,7 +657,7 @@ export default function TokenTable({
 
   return (
     <div>
-      <Table ref={tableRef}>
+      <Table>
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (
             <TableRow key={hg.id} className="hover:bg-transparent">

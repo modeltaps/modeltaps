@@ -16,7 +16,7 @@ import { showError, useIsAdmin } from 'utils/common';
 import { getPageSize, savePageSize } from 'constants';
 import { createRequestGuard, runGuardedFetch } from 'hooks/paginatedListGuard';
 import { enabledChannels } from '../Pricing/modelCatalog';
-import ModelOwnedbyTable, { VENDOR_TABLE_ESTIMATE, VendorList } from './ModelOwnedbyTable';
+import ModelOwnedbyTable, { VendorList } from './ModelOwnedbyTable';
 import ModelOwnedbySheet from './ModelOwnedbySheet';
 
 // ==============================|| PANEL — MODEL OWNEDBY (admin) ||============================== //
@@ -124,7 +124,7 @@ export default function ModelOwnedby() {
     );
 
   // Full table while it fits (the sidebar collapses first), phone list otherwise.
-  const { pageRef, layout, narrow, onNaturalWidth } = useListLayout({ estimate: VENDOR_TABLE_ESTIMATE, resetKey: 'vendors' });
+  const { layout, narrow } = useListLayout();
 
   const pageRows = filtered.slice(page * pageSize, page * pageSize + pageSize);
 
@@ -194,16 +194,7 @@ export default function ModelOwnedby() {
   } else if (narrow) {
     body = <VendorList items={pageRows} onEdit={openEdit} onDelete={setDeleteTarget} />;
   } else {
-    body = (
-      <ModelOwnedbyTable
-        items={pageRows}
-        sort={sort}
-        onSort={handleSort}
-        onEdit={openEdit}
-        onDelete={setDeleteTarget}
-        onNaturalWidth={onNaturalWidth}
-      />
-    );
+    body = <ModelOwnedbyTable items={pageRows} sort={sort} onSort={handleSort} onEdit={openEdit} onDelete={setDeleteTarget} />;
   }
 
   const search = (
@@ -221,7 +212,7 @@ export default function ModelOwnedby() {
 
   return (
     <>
-      <div ref={pageRef} className="space-y-3">
+      <div className="space-y-3">
         {/* On the vendors tab the title row keeps only "Add vendor". */}
         <PageActions>
           <ResponsiveToolbarButton primary icon={Plus} label={t('modelsPage.addVendor')} onClick={openCreate} />

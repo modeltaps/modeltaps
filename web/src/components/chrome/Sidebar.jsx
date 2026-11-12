@@ -34,7 +34,7 @@ try {
   // ignore storage errors (e.g. storage disabled)
 }
 
-const { base: rowBase, active: rowActive, idle: rowIdle } = sidebarRow;
+const { base: rowBase, active: rowActive, idle: rowIdle, collapsed: rowCollapsed, divider } = sidebarRow;
 
 // Platform admin has no space switcher: its own menu only, and one row back to the workbench page
 // the user came from (organization context is kept while in platform admin). Same height as the
@@ -107,10 +107,12 @@ export default function Sidebar({ context, collapsed = false, showCollapse = fal
               to={item.href}
               onClick={onItemClick}
               aria-current={active ? 'page' : undefined}
-              className={cn(rowBase, 'min-h-[52px] flex-col justify-center gap-1 px-1 py-1.5 text-center', active ? rowActive : rowIdle)}
+              aria-label={label}
+              className={cn(rowBase, rowCollapsed, active ? rowActive : rowIdle)}
             >
-              <Icon className={cn('size-5 shrink-0', active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground')} />
-              <span className="w-full truncate text-[11px] font-normal leading-tight">{label}</span>
+              <Icon
+                className={cn('size-[1.125rem] shrink-0', active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground')}
+              />
             </Link>
           </TooltipTrigger>
           <TooltipContent side="right">{label}</TooltipContent>
@@ -164,11 +166,11 @@ export default function Sidebar({ context, collapsed = false, showCollapse = fal
 
         <nav
           aria-label={t('nav.mainLabel')}
-          className={cn('flex-1 overflow-y-auto py-3', collapsed ? 'px-1' : 'px-2')}
-          style={collapsed ? { scrollbarGutter: 'stable both-edges' } : undefined}
+          className={cn('flex-1 overflow-y-auto py-3', collapsed ? 'px-0 [scrollbar-width:none]' : 'px-2')}
         >
           {sections.map((section, idx) => (
-            <div key={section.id} className={cn('space-y-0.5', idx > 0 && (collapsed ? 'mt-2 border-t border-border/60 pt-2' : 'mt-6'))}>
+            <div key={section.id} className={cn(collapsed ? 'space-y-1' : 'space-y-0.5', idx > 0 && !collapsed && 'mt-6')}>
+              {idx > 0 && collapsed && <div className={divider} aria-hidden="true" />}
               {!collapsed && section.labelKey && (
                 <p className="px-3 pb-1.5 text-[13px] font-medium text-muted-foreground">{t(section.labelKey)}</p>
               )}

@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
-import { estimateWidth, useNaturalWidth } from '@/components/list-page';
+
 import { renderQuota, timestamp2string } from 'utils/common';
 import { relativeTime } from 'utils/relativeTime';
 
@@ -50,20 +50,6 @@ export const REDEMPTION_COLUMNS = [
   { id: 'status', labelKey: 'redemptionPage.headLabels.status' },
   { id: 'actions', fixed: true }
 ];
-const COLUMN_IDS = REDEMPTION_COLUMNS.map((c) => c.id);
-const COLUMN_WIDTHS = {
-  select: 40,
-  id: 56,
-  name: 220,
-  quota: 96,
-  scope: 80,
-  created_time: 112,
-  redeemed_time: 112,
-  expired_time: 112,
-  status: 64,
-  actions: 52
-};
-export const estimateRedemptionTableWidth = (visibility) => estimateWidth(COLUMN_IDS, visibility, COLUMN_WIDTHS);
 
 // Expiry in words: never, "in 7 days", or expired (tinted).
 function Expiry({ item, rtf }) {
@@ -168,7 +154,6 @@ export default function RedemptionTable({
   selectedIds,
   onToggleSelect,
   onToggleSelectAll,
-  onNaturalWidth,
   actions
 }) {
   const { t } = useTranslation();
@@ -264,8 +249,6 @@ export default function RedemptionTable({
     ],
     [t, rtf, selectedIds, allSelected, someSelected, onToggleSelect, onToggleSelectAll, actions]
   );
-
-  const tableRef = useNaturalWidth(onNaturalWidth);
   const table = useTable({
     features: appTableFeatures,
     data: redemptions,
@@ -281,7 +264,7 @@ export default function RedemptionTable({
   };
 
   return (
-    <Table ref={tableRef}>
+    <Table>
       <TableHeader>
         {table.getHeaderGroups().map((hg) => (
           <TableRow key={hg.id} className="hover:bg-transparent">
@@ -342,7 +325,6 @@ RedemptionTable.propTypes = {
   selectedIds: PropTypes.instanceOf(Set).isRequired,
   onToggleSelect: PropTypes.func.isRequired,
   onToggleSelectAll: PropTypes.func.isRequired,
-  onNaturalWidth: PropTypes.func,
   actions: PropTypes.object.isRequired
 };
 

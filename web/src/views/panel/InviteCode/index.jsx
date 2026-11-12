@@ -25,7 +25,7 @@ import { showError, copy } from 'utils/common';
 import usePaginatedList from 'hooks/usePaginatedList';
 import PageActions from '@/components/chrome/PageActions';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
-import InviteCodeTable, { INVITE_TABLE_ESTIMATE, InviteCodeCards } from './InviteCodeTable';
+import InviteCodeTable, { InviteCodeCards } from './InviteCodeTable';
 import InviteCodeSheet from './InviteCodeSheet';
 
 const tk = (k) => `setting_index.inviteCodeSettings.${k}`;
@@ -115,7 +115,7 @@ export default function InviteCode() {
 
   const selection = useRowSelection(inviteCodes, [page, rowsPerPage, keyword, state]);
   // Full table while it fits (the sidebar collapses first), phone cards otherwise.
-  const { pageRef, narrow, onNaturalWidth } = useListLayout({ estimate: INVITE_TABLE_ESTIMATE, resetKey: 'invite' });
+  const { narrow } = useListLayout();
   const rtf = useMemo(
     () => new Intl.RelativeTimeFormat((i18n.language || 'zh_CN').replace('_', '-'), { numeric: 'auto' }),
     [i18n.language]
@@ -262,7 +262,6 @@ export default function InviteCode() {
         selectedIds={selection.selectedIds}
         onToggleSelect={selection.toggle}
         onToggleSelectAll={selection.toggleAll}
-        onNaturalWidth={onNaturalWidth}
         actions={actions}
       />
     );
@@ -281,7 +280,7 @@ export default function InviteCode() {
 
   return (
     <>
-      <div ref={pageRef} className={cn('space-y-3', narrow && selection.selectMode && 'pb-20')}>
+      <div className={cn('space-y-3', narrow && selection.selectMode && 'pb-20')}>
         {/* Title row: refresh (icon), then create. */}
         <PageActions>
           <TooltipProvider delayDuration={150}>

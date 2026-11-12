@@ -6,7 +6,7 @@ import { appTableFeatures } from 'components/ui/table-features';
 
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ListFooter, useListLayout, useNaturalWidth } from '@/components/list-page';
+import { ListFooter, useListLayout } from '@/components/list-page';
 import { cn } from '@/lib/utils';
 import { API } from 'utils/api';
 import { renderQuota, showError, timestamp2string, timestamp2stringCompact } from 'utils/common';
@@ -20,7 +20,6 @@ import { getPageSize, savePageSize } from 'constants';
 
 // Status as quiet text; only a failed payment is tinted.
 const STATUS_CLASSES = { pending: 'text-muted-foreground', success: '', failed: 'text-destructive', closed: 'text-muted-foreground' };
-const ORDERS_TABLE_ESTIMATE = 720;
 
 function StatusText({ t, status }) {
   return (
@@ -113,8 +112,7 @@ export default function OrdersTab({ payment = [], reloadToken = 0 }) {
   });
 
   // Full table while it fits (the sidebar collapses first), 56px rows on phones.
-  const { pageRef, narrow, onNaturalWidth } = useListLayout({ estimate: ORDERS_TABLE_ESTIMATE, resetKey: 'orders' });
-  const tableRef = useNaturalWidth(narrow ? null : onNaturalWidth);
+  const { narrow } = useListLayout();
   const amount = (o) => `${o.order_amount} ${o.order_currency || ''}`.trim();
 
   let body;
@@ -143,7 +141,7 @@ export default function OrdersTab({ payment = [], reloadToken = 0 }) {
     );
   } else {
     body = (
-      <Table ref={tableRef}>
+      <Table>
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (
             <TableRow key={hg.id} className="hover:bg-transparent">
@@ -171,7 +169,7 @@ export default function OrdersTab({ payment = [], reloadToken = 0 }) {
   }
 
   return (
-    <div ref={pageRef}>
+    <div>
       <Card>
         {body}
         <div className="border-t border-border">

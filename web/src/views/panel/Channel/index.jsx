@@ -6,10 +6,9 @@ import { AlertTriangle, DollarSign, FlaskConical, Layers, MoreHorizontal, Plus, 
 import { API } from 'utils/api';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
-import { ListEmptyState, ListSkeleton, useColumnVisibility } from '@/components/list-page';
+import { ListEmptyState, ListSkeleton, PHONE_QUERY, useColumnVisibility } from '@/components/list-page';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useContentMinWidth } from '@/components/chrome/ContentWidth';
-import useElementWidth from 'hooks/useElementWidth';
+import useMediaQuery from 'hooks/useMediaQuery';
 import PageActions from '@/components/chrome/PageActions';
 import {
   DropdownMenu,
@@ -22,8 +21,7 @@ import { COMMON_CHANNEL_TYPES } from 'constants/ChannelConstants';
 import useChannelActions from './useChannelActions';
 import BatchModal from './BatchModal';
 import ProviderLane from './ProviderLane';
-import ProviderPane, { CHANNEL_COLUMNS, RANGES, estimateChannelTableWidth } from './ProviderPane';
-import ProviderSwitcher from './ProviderSwitcher';
+import ProviderPane, { CHANNEL_COLUMNS, RANGES } from './ProviderPane';
 import ChannelPanel from './ChannelPanel';
 import NewChannelSheet from './NewChannelSheet';
 import { LEGACY_SECTION_TAB, PANEL_TABS } from './panelTabs';
@@ -32,15 +30,6 @@ import useBatchActions from './useBatchActions';
 import { checkChannelDrift, fetchAllChannels, fetchChannelMetrics, fetchGroupOptions, fetchModels, manageChannel } from './channelApi';
 
 const DISMISSED_KEY = 'channels.dismissedIssues';
-
-// The provider lane is a 300px column with a 24px gap beside the channel table.
-const LANE_WIDTH = 300 + 24;
-// split: lane beside the table; stacked: the lane folds into a switcher above a full-width
-// table; list: the phone list. `area` is the page width, `table` the table's natural width.
-export const channelLayout = (area, table) => {
-  if (!area || area >= LANE_WIDTH + table + 2) return 'split';
-  return area >= table + 2 ? 'stacked' : 'list';
-};
 
 function loadDismissed() {
   try {
@@ -203,18 +192,13 @@ export default function Channel() {
   const setFilters = ({ status = '', tag = '', group = '', model = '', issue = '' }) =>
     updateParams({ status, tag: tag && tag !== NO_TAG ? tag : '', untagged: tag === NO_TAG ? '1' : '', group, model, issue });
 
-  // Make room before folding anything: the shell collapses the sidebar while the lane and the
-  // table's natural width do not fit; then the lane folds into a switcher; then the phone list.
   const columns = useColumnVisibility({ storageKey: 'channel-column-visibility-v1', columns: CHANNEL_COLUMNS });
-  const [pageRef, pageWidth] = useElementWidth();
-  const [measuredTable, setMeasuredTable] = useState(null);
-  const columnsKey = JSON.stringify(columns.visibility);
-  useEffect(() => {
-    setMeasuredTable(null);
-  }, [columnsKey]);
-  const tableWidth = measuredTable ?? estimateChannelTableWidth(columns.visibility);
-  useContentMinWidth(LANE_WIDTH + tableWidth + 2);
-  const layout = channelLayout(pageWidth, tableWidth);
+  // Laid out as the providers page of the reference gateway: from the md breakpoint up the
+  // provider lane always sits beside the provider's channels (a table wider than its column
+  // scrolls sideways); on a phone the lane is a page of its own and picking a provider opens its
+  // channels with a back row to the lane.
+  const phone = useMediaQuery(PHONE_QUERY);
+  const layout = phone ? 'list' : 'split';
 
   const {
     handlers: actions,
@@ -410,8 +394,8 @@ export default function Channel() {
   if (loading) {
     // Shaped like the page: the provider lane beside a header, the chart and the channel table.
     body = (
-      <div className="grid items-start gap-6 lg:grid-cols-[300px_minmax(0,1fr)]" aria-busy="true">
-        <div className="hidden space-y-2 rounded-2xl bg-muted/60 p-3 lg:block">
+      <div className="grid items-start gap-6 md:grid-cols-[300px_minmax(0,1fr)]" aria-busy="true">
+        <div className="hidden space-y-2 rounded-2xl bg-muted/60 p-3 md:block">
           <Skeleton className="h-9 w-full rounded-lg" />
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-10 w-full rounded-lg" />
@@ -454,20 +438,23 @@ export default function Channel() {
       />
     );
   } else {
+    // Phone: the lane until a provider is picked (in the link or by opening one of its channels).
+    const showLane = !phone || !(typeParam || openRow);
+    const showPane = !phone || !showLane;
     const laneProps = {
       groups: visibleGroups,
-      selected: selectedType,
+      // On the phone's lane page nothing is picked yet, so no row is marked.
+      selected: phone ? 0 : selectedType,
       onSelect: selectType,
       dismissed,
       onNewOther: openNewOther,
       query,
       onQueryChange: setQuery
     };
-    const split = layout === 'split';
     body = (
-      <div className={split ? 'grid items-start gap-6 grid-cols-[300px_minmax(0,1fr)]' : 'space-y-4'}>
-        {split ? <ProviderLane {...laneProps} /> : !selected && <ProviderSwitcher {...laneProps} />}
-        {!selected && query.trim() && (
+      <div className={phone ? 'space-y-4' : 'grid items-start gap-6 grid-cols-[300px_minmax(0,1fr)]'}>
+        {showLane && <ProviderLane {...laneProps} />}
+        {showPane && !selected && query.trim() && (
           <ListEmptyState
             variant="noMatch"
             title={t('channels.search.emptyTitle')}
@@ -475,7 +462,7 @@ export default function Channel() {
             onClearFilters={() => setQuery('')}
           />
         )}
-        {selected && (
+        {showPane && selected && (
           <ProviderPane
             key={`${selectedType}|${query}`}
             filters={filters}
@@ -501,9 +488,8 @@ export default function Channel() {
             highlightIds={highlightIds}
             onOpen={(id) => openChannel(id)}
             layout={layout}
-            switcher={split ? null : <ProviderSwitcher {...laneProps} />}
+            onBack={phone ? () => navigate(query ? `/panel/channel?q=${encodeURIComponent(query)}` : '/panel/channel') : undefined}
             columns={columns}
-            onNaturalWidth={setMeasuredTable}
             onRefreshModels={refreshModels}
             onTestAll={testAllOfProvider}
             refreshingModels={refreshingModels}
@@ -519,7 +505,7 @@ export default function Channel() {
   return (
     <>
       {pageActions}
-      <div ref={pageRef}>{body}</div>
+      {body}
 
       {openId > 0 && (
         <ChannelPanel

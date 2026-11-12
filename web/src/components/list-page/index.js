@@ -13,4 +13,4 @@ export { default as StatusSegments } from './StatusSegments';
 export { default as PhoneListToolbar } from './PhoneListToolbar';
 export { default as ListSkeleton } from './ListSkeleton';
 export { default as useRowSelection } from './useRowSelection';
-export { estimateWidth, listLayout, useListLayout, useNaturalWidth } from './useListLayout';
+export { PHONE_QUERY, useListLayout } from './useListLayout';

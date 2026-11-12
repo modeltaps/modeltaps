@@ -8,7 +8,7 @@ import dayjs from 'dayjs';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ROW_OPENS, rowOpenProps } from '@/components/objects';
-import { ListFooter, useListLayout, useNaturalWidth } from '@/components/list-page';
+import { ListFooter, useListLayout } from '@/components/list-page';
 import { cn } from '@/lib/utils';
 import { API } from 'utils/api';
 import { calculateQuota, showError, timestamp2string, timestamp2stringCompact, useIsAdmin } from 'utils/common';
@@ -28,7 +28,6 @@ const BILLING_TYPE_VALUES = BILLING_LOG_TYPES.map((o) => o.value).filter((v) => 
 
 // Ledger columns, listed explicitly (time, type, description, amount; plus the user for a site
 // admin), so columns added to the request log never leak in here.
-const LEDGER_TABLE_ESTIMATE = 640;
 
 // Signed amount in one format: "+$10.00" in, "−$2.00" out, two decimals. Points mode shows the
 // raw quota with its sign.
@@ -146,8 +145,7 @@ export default function Ledger({ reloadToken = 0 }) {
 // The ledger itself: a four-column table while it fits, 56px rows on phones (description and
 // amount, then type and time). A row opens the entry's detail.
 function LedgerView({ t, logs, searching, userIsAdmin, page, rowsPerPage, listCount, onPageChange, onRowsPerPageChange, onOpen, detail }) {
-  const { pageRef, narrow, onNaturalWidth } = useListLayout({ estimate: LEDGER_TABLE_ESTIMATE, resetKey: 'ledger' });
-  const tableRef = useNaturalWidth(narrow ? null : onNaturalWidth);
+  const { narrow } = useListLayout();
   const empty = <p className="px-4 py-10 text-center text-sm text-muted-foreground">{searching ? '…' : t('logPage.ledgerEmptyInfo')}</p>;
   const amountClass = (q) => cn('whitespace-nowrap font-mono tabular-nums', Number(q) < 0 && 'text-muted-foreground');
 
@@ -174,7 +172,7 @@ function LedgerView({ t, logs, searching, userIsAdmin, page, rowsPerPage, listCo
     );
   } else {
     body = (
-      <Table ref={tableRef}>
+      <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <TableHead className="whitespace-nowrap">{t('logPage.timeLabel')}</TableHead>
@@ -206,7 +204,7 @@ function LedgerView({ t, logs, searching, userIsAdmin, page, rowsPerPage, listCo
   }
 
   return (
-    <div ref={pageRef}>
+    <div>
       <Card>
         {body}
         <div className="border-t border-border">

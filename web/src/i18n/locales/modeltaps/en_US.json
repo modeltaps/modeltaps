@@ -2394,9 +2394,6 @@
       "requests": "Requests",
       "requestsIn": "Requests {{range}}"
     },
-    "switcher": {
-      "count": "{{count}} channels"
-    },
     "preset": {
       "attention": "Needs attention",
       "lowBalance": "Low balance",
