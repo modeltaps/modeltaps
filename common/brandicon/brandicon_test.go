@@ -423,3 +423,15 @@ func TestPruneVersionsAndRegistry(t *testing.T) {
 		}
 	}
 }
+
+func TestOwnerDomain(t *testing.T) {
+	if domain, ok := OwnerDomain(" Writer "); !ok || domain != "writer.com" {
+		t.Fatalf("OwnerDomain(writer) = %q, %v", domain, ok)
+	}
+	if _, ok := OwnerDomain("openai"); ok {
+		t.Fatal("labs with a mark have no owner domain")
+	}
+	if len(OwnerDomains()) != len(GetManifest().OwnerDomains) {
+		t.Fatal("OwnerDomains must list every entry")
+	}
+}

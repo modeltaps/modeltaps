@@ -199,3 +199,19 @@ func TestRefreshBrandIconNowBypassesTTL(t *testing.T) {
 		t.Errorf("rejected refreshes must not fetch, calls=%d", f.callCount())
 	}
 }
+
+func TestBrandIconOwnerDomainFetch(t *testing.T) {
+	f := setupBrandIconCacheTest(t)
+	TriggerOwnedByBrandIconFetch(&ModelOwnedBy{Name: "Writer", Slug: "writer"})
+	select {
+	case <-f.done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("fetch not triggered")
+	}
+	f.mu.Lock()
+	calls := append([]string(nil), f.calls...)
+	f.mu.Unlock()
+	if len(calls) != 1 || calls[0] != "writer.com" {
+		t.Fatalf("lab without a mark should fetch its domain, calls=%v", calls)
+	}
+}

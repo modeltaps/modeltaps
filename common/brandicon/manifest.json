@@ -885,5 +885,12 @@
     "xf-yun.com": "spark",
     "xiaomimimo.com": "xiaomimimo",
     "z.ai": "zhipu"
+  },
+  "ownerDomains": {
+    "mixedbread": "mixedbread.com",
+    "sarvam": "sarvam.ai",
+    "swiss-ai": "swiss-ai.org",
+    "thinkingmachines": "thinkingmachines.ai",
+    "writer": "writer.com"
   }
 }

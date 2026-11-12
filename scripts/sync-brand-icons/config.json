@@ -123,5 +123,9 @@
     "hunyuan.cloud.tencent.com": "hunyuan", "xiaomimimo.com": "xiaomimimo",
     "vercel.sh": "vercel", "vercel.com": "vercel", "azuredatabricks.net": "dbrx",
     "databricks.com": "dbrx"
+  },
+  "ownerDomains": {
+    "mixedbread": "mixedbread.com", "sarvam": "sarvam.ai", "swiss-ai": "swiss-ai.org",
+    "thinkingmachines": "thinkingmachines.ai", "writer": "writer.com"
   }
 }
