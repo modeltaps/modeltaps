@@ -3183,5 +3183,15 @@
     "viewUsage": "使用量を見る",
     "topModels": "上位モデル",
     "requests": "回"
+  },
+  "settingsFields": {
+    "statusCode": "ステータスコード",
+    "seconds": "秒数",
+    "addStatus": "ステータスコードを追加",
+    "remove": "削除",
+    "invalidJson": "保存済みの値が正しい JSON ではありません。下のテキストで編集してください。"
+  },
+  "settingsUnits": {
+    "seconds": "秒"
   }
 }
