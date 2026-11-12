@@ -680,7 +680,6 @@
     "api_audio": "Convert between text and speech",
     "api_compare": "Run several chat models side by side on the same input",
     "pricing": "Model catalog, prices, channels and vendors",
-    "allocation": "Which provider gets a model's requests first and which ones take over; models follow this order unless set by hand",
     "routing_policy": "Virtual models that pick a target model from the first message of each session",
     "channel": "Each provider can have several channels; a channel is one set of credentials and an address for that provider",
     "org_members": "Invite members and set each member’s budget and model scope",
@@ -2345,8 +2344,8 @@
       "peerNote": "{{name}} serves these models in the same groups too",
       "priority": "Priority",
       "weight": "Weight",
-      "byPolicy": "Whether this channel is tried first or later is set in the allocation policy.",
-      "openPolicy": "Open the allocation policy"
+      "byPolicy": "Whether this channel is tried first or later is set by its place in the channel list on the providers page.",
+      "openPolicy": "Change the order"
     },
     "batch": {
       "label": "Selected channels",
@@ -2457,42 +2456,29 @@
         "not_in_catalog": "Not in catalog",
         "unknown": "Not recognized"
       }
-    }
-  },
-  "allocation": {
-    "unknownProvider": "Unknown provider",
-    "channelGone": "Channel #{{id}}",
-    "gone": "No longer exists; remove it before saving",
-    "channelOff": "Channel disabled",
-    "channels": "{{total}} channels, {{enabled}} enabled",
-    "weightOf": "Weight of {{name}}",
-    "entryActions": "Actions for {{name}}",
-    "moveUp": "Move to the tier above",
-    "moveDown": "Move to the tier below",
-    "ownTier": "Put in a tier of its own",
-    "byChannel": "Split into channels",
-    "mergeChannels": "Merge back into the provider",
-    "remove": "Remove from the order",
-    "saved": "Saved; requests now follow the new order",
-    "tier": "Tier {{n}}",
-    "tierFirst": "Tried first",
-    "tierNext": "Used when every tier above is unavailable",
-    "tierShared": "shared by weight",
-    "tierUp": "Move tier {{n}} up",
-    "tierDown": "Move tier {{n}} down",
-    "revert": "Revert",
-    "save": "Save",
-    "notActive": "Requests still follow the channels' model lists; this order takes effect once routing by supplies is on.",
-    "summary": "{{policy}} models follow this order, {{manual}} are set by hand.",
-    "openModels": "Open the model catalog",
-    "empty": "There are no channels yet.",
-    "unlisted": "Not placed",
-    "unlistedHint": "Tried after every tier, sharing equally",
-    "place": "Place",
-    "footnote": "Each model is ordered among the providers that offer it. Percentages are worked out only between providers of a tier that offer the same models; a provider that overlaps with none shows no weight. Channels of one provider share its weight equally and are skipped while disabled or paused.",
-    "sharesWith": "shares with {{names}}",
-    "nameSep": ", ",
-    "tierSeparate": "each serves different models, nothing is shared"
+    },
+    "strip": {
+      "all": "All",
+      "allMeta": "{{count}} channels",
+      "allTitle": "All channels",
+      "meta": "{{count}} channels · {{requests}} requests",
+      "metaOff": "{{count}} channels ({{enabled}} enabled) · {{requests}} requests"
+    },
+    "order": {
+      "column": "Order",
+      "shareColumn": "Share",
+      "up": "Move earlier",
+      "down": "Move later",
+      "share": "Share with the one above",
+      "unshare": "Stop sharing",
+      "weightOf": "Weight of {{name}}",
+      "drag": "Drag to reorder",
+      "positionShort": "#{{n}}"
+    },
+    "newMenu": {
+      "inUse": "In use"
+    },
+    "orderHint": "Tried top to bottom; the next one is used only when the one before is unavailable. Channels joined by a line share traffic by weight. Only channels that offer the model are tried."
   },
   "nav": {
     "sections": {
@@ -2519,7 +2505,6 @@
       "stats": "Statistics",
       "channels": "Providers",
       "catalog": "Model catalog",
-      "allocation": "Allocation",
       "routing": "Auto routing",
       "users": "Users",
       "userGroups": "User groups",
@@ -2815,17 +2800,17 @@
     },
     "allocation": {
       "label": "Order",
-      "policy": "Allocation policy",
+      "policy": "Call order on the providers page",
       "manual": "Set by hand",
       "manualShort": "set by hand",
-      "open": "View the allocation policy",
+      "open": "Change the order",
       "toManual": "Set by hand",
-      "toPolicy": "Follow the allocation policy",
-      "policyHint": "The order and weights come from the allocation policy; changing them here sets this model by hand.",
-      "manualHint": "This model keeps its own order when the allocation policy changes.",
+      "toPolicy": "Follow the call order",
+      "policyHint": "The order and weights come from the call order on the providers page; changing them here sets this model by hand.",
+      "manualHint": "This model keeps its own order when the call order changes.",
       "becameManual": "This model is now set by hand",
       "nowManual": "Set by hand; the current order is kept",
-      "nowPolicy": "This model follows the allocation policy again"
+      "nowPolicy": "This model follows the call order again"
     }
   },
   "settingsUi": {

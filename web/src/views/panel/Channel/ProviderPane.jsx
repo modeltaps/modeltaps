@@ -3,8 +3,13 @@ import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
+  ArrowDown,
   ArrowLeft,
+  ArrowUp,
   Copy,
+  GripVertical,
+  Link2,
+  Unlink,
   FlaskConical,
   Info,
   Loader2,
@@ -19,6 +24,7 @@ import {
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import {
   DropdownMenu,
@@ -132,7 +138,17 @@ export const CHANNEL_COLUMNS = [
 // Fixed widths of the channel table's columns (padding included); the name takes the rest. With
 // the name's minimum they set the table's minimum width: a narrower pane scrolls the table
 // sideways inside its card, and a long name or tag is cut off instead of widening the table.
-const COLUMN_WIDTHS = { select: 44, priority: 104, requests: 112, success: 80, latency: 88, balance: 104, enabled: 64, actions: 52 };
+const COLUMN_WIDTHS = {
+  select: 44,
+  order: 56,
+  priority: 112,
+  requests: 112,
+  success: 80,
+  latency: 88,
+  balance: 104,
+  enabled: 64,
+  actions: 52
+};
 const NAME_MIN_WIDTH = 200;
 
 const STATUS_KEYS = ['all', 'enabled', 'manual', 'auto'];
@@ -162,8 +178,9 @@ const fromState = (state) => ({
 
 // One channel's row menu (table and phone list): test, copy, delete, plus enable / disable where
 // the row has no switch.
-function ChannelMenu({ channel, actions, testing, withToggle = false }) {
+function ChannelMenu({ channel, actions, testing, withToggle = false, order = null, orderActions = null }) {
   const { t } = useTranslation();
+  const place = order?.info.get(channel.id);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -171,7 +188,31 @@ function ChannelMenu({ channel, actions, testing, withToggle = false }) {
           {testing ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
+      <DropdownMenuContent align="end" className="w-48">
+        {place && orderActions && (
+          <>
+            <DropdownMenuItem disabled={place.index === 0} onClick={() => orderActions.step(channel.id, 'up')}>
+              <ArrowUp className="size-4" />
+              {t('channels.order.up')}
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={place.index === order.groups.length - 1} onClick={() => orderActions.step(channel.id, 'down')}>
+              <ArrowDown className="size-4" />
+              {t('channels.order.down')}
+            </DropdownMenuItem>
+            {place.size > 1 ? (
+              <DropdownMenuItem onClick={() => orderActions.unshare(channel.id)}>
+                <Unlink className="size-4" />
+                {t('channels.order.unshare')}
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem disabled={place.index === 0} onClick={() => orderActions.share(channel.id)}>
+                <Link2 className="size-4" />
+                {t('channels.order.share')}
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+          </>
+        )}
         {withToggle && (
           <DropdownMenuItem onClick={() => actions.onToggleStatus(channel)}>
             {channel.status === 1 ? <PowerOff className="size-4" /> : <Power className="size-4" />}
@@ -200,7 +241,43 @@ ChannelMenu.propTypes = {
   channel: PropTypes.object.isRequired,
   actions: PropTypes.object.isRequired,
   testing: PropTypes.bool,
-  withToggle: PropTypes.bool
+  withToggle: PropTypes.bool,
+  order: PropTypes.object,
+  orderActions: PropTypes.object
+};
+
+// Weight of a channel in a shared position, saved when the field loses focus or on Enter.
+function WeightInput({ id, name, value, onSave }) {
+  const { t } = useTranslation();
+  const [text, setText] = useState(String(value));
+  const [synced, setSynced] = useState(value);
+  if (value !== synced) {
+    setSynced(value);
+    setText(String(value));
+  }
+  const commit = () => {
+    const n = Math.max(1, Math.round(Number(text)) || 1);
+    setText(String(n));
+    if (n !== value) onSave(id, n);
+  };
+  return (
+    <Input
+      aria-label={t('channels.order.weightOf', { name })}
+      inputMode="numeric"
+      value={text}
+      onChange={(e) => setText(e.target.value.replace(/\D/g, ''))}
+      onBlur={commit}
+      onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+      className="h-7 w-12 rounded-md px-2 text-right tabular-nums"
+    />
+  );
+}
+
+WeightInput.propTypes = {
+  id: PropTypes.number.isRequired,
+  name: PropTypes.string,
+  value: PropTypes.number.isRequired,
+  onSave: PropTypes.func.isRequired
 };
 
 // The selected provider: header with totals and actions, attention list, one traffic chart with
@@ -233,7 +310,9 @@ export default function ProviderPane({
   batchBusy,
   layout = 'split',
   onBack,
-  columns
+  columns,
+  order = null,
+  orderActions = null
 }) {
   const { t } = useTranslation();
   const providerName = useProviderName();
@@ -260,8 +339,17 @@ export default function ProviderPane({
   );
   const total = useMemo(() => channels.reduce((a, c) => a + (perChannel.get(c.id)?.requests || 0), 0), [channels, perChannel]);
   const issues = openIssues(channels, dismissed);
-  const name = providerName(type);
-  const rows = useMemo(() => filterChannels(channels, filters, dismissed), [channels, filters, dismissed]);
+  const name = type ? providerName(type) : t('channels.strip.allTitle');
+  // With a call order the rows follow it; otherwise they keep the page's order.
+  const rows = useMemo(() => {
+    const list = filterChannels(channels, filters, dismissed);
+    if (!order) return list;
+    const at = (c) => order.groups.findIndex((g) => g.ids.includes(c.id));
+    const inGroup = (c) => order.groups[at(c)]?.ids.indexOf(c.id) ?? 0;
+    return [...list].sort((a, b) => at(a) - at(b) || inGroup(a) - inGroup(b));
+  }, [channels, filters, dismissed, order]);
+  const [dragId, setDragId] = useState(0);
+  const [dropId, setDropId] = useState(0);
   const counts = useMemo(() => statusCounts(channels, filters, dismissed), [channels, filters, dismissed]);
   const { tags, hasUntagged } = useMemo(() => tagOptions(channels), [channels]);
   const groups = useMemo(() => groupOptions(channels), [channels]);
@@ -380,7 +468,9 @@ export default function ProviderPane({
     </div>
   );
 
-  const fixedColumns = Object.keys(COLUMN_WIDTHS).filter((id) => id === 'select' || id === 'actions' || show(id));
+  const fixedColumns = Object.keys(COLUMN_WIDTHS).filter(
+    (id) => id === 'select' || id === 'actions' || (id === 'order' ? Boolean(order) : show(id))
+  );
   const minTableWidth = NAME_MIN_WIDTH + fixedColumns.reduce((sum, id) => sum + COLUMN_WIDTHS[id], 0);
   const col = (id) => <col key={id} style={{ width: COLUMN_WIDTHS[id] }} />;
   const table = (
@@ -392,8 +482,9 @@ export default function ProviderPane({
       >
         <colgroup>
           {col('select')}
+          {order && col('order')}
           <col />
-          {fixedColumns.filter((id) => id !== 'select' && id !== 'actions').map(col)}
+          {fixedColumns.filter((id) => id !== 'select' && id !== 'actions' && id !== 'order').map(col)}
           {col('actions')}
         </colgroup>
         <thead>
@@ -407,8 +498,11 @@ export default function ProviderPane({
                 onCheckedChange={toggleAll}
               />
             </th>
+            {order && <th className="text-center">{t('channels.order.column')}</th>}
             <th>{t('channels.table.name')}</th>
-            {show('priority') && <th className="text-right">{t('channels.table.priorityWeight')}</th>}
+            {show('priority') && (
+              <th className="text-right">{order ? t('channels.order.shareColumn') : t('channels.table.priorityWeight')}</th>
+            )}
             {show('requests') && (
               <th className="text-right">{t('channels.columns.requestsIn', { range: t(`channels.range.short.${range.key}`) })}</th>
             )}
@@ -424,19 +518,37 @@ export default function ProviderPane({
         <tbody>
           {rows.length === 0 && (
             <tr>
-              <td colSpan={9}>{emptyRow}</td>
+              <td colSpan={10}>{emptyRow}</td>
             </tr>
           )}
           {rows.map((c) => {
             const m = perChannel.get(c.id);
             const off = c.status !== 1;
             const isNew = highlightIds.has(c.id);
+            const place = order?.info.get(c.id);
             return (
               <tr
                 key={c.id}
                 onClick={() => onOpen(c.id)}
                 onMouseEnter={() => setHoverId(c.id)}
+                {...(place && orderActions
+                  ? {
+                      onDragOver: (e) => {
+                        if (!dragId) return;
+                        e.preventDefault();
+                        setDropId(c.id);
+                      },
+                      onDrop: (e) => {
+                        e.preventDefault();
+                        if (dragId && dragId !== c.id) orderActions.drop(dragId, c.id);
+                        setDragId(0);
+                        setDropId(0);
+                      }
+                    }
+                  : {})}
                 className={cn(
+                  dropId === c.id && dragId !== c.id && 'shadow-[inset_0_2px_0_var(--info)]',
+                  dragId === c.id && 'opacity-50',
                   'cursor-pointer whitespace-nowrap transition-colors hover:bg-foreground/[0.04] [&>td]:h-[52px] [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0',
                   off && '[&>td:not(.keep)]:text-muted-foreground',
                   isNew && 'bg-info/[0.06]',
@@ -452,8 +564,46 @@ export default function ProviderPane({
                     />
                   </span>
                 </td>
+                {order && (
+                  <td className="keep relative !px-1" onClick={(e) => e.stopPropagation()}>
+                    {place && place.size > 1 && (
+                      // A shared position: a line joins its channels.
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          'absolute left-1.5 w-0.5 bg-info',
+                          place.first ? 'top-1/2' : 'top-0',
+                          place.last ? 'bottom-1/2' : 'bottom-0'
+                        )}
+                      />
+                    )}
+                    <span className="flex items-center justify-center gap-0.5">
+                      {orderActions && (
+                        <span
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.effectAllowed = 'move';
+                            setDragId(c.id);
+                          }}
+                          onDragEnd={() => {
+                            setDragId(0);
+                            setDropId(0);
+                          }}
+                          className="cursor-grab text-muted-foreground/50 hover:text-muted-foreground"
+                          title={t('channels.order.drag')}
+                        >
+                          <GripVertical className="size-4" />
+                        </span>
+                      )}
+                      <span className="w-5 text-center text-[13px] font-medium tabular-nums text-muted-foreground">
+                        {place && place.first ? place.position : ''}
+                      </span>
+                    </span>
+                  </td>
+                )}
                 <td>
                   <span className="flex min-w-0 items-center gap-2">
+                    {!type && <ProviderTile type={c.type} />}
                     <Dot tone={channelDot(c, dismissed)} />
                     <span className="truncate font-mono text-[13px]" title={c.name}>
                       {c.name}
@@ -474,11 +624,25 @@ export default function ProviderPane({
                     )}
                   </span>
                 </td>
-                {show('priority') && (
-                  <td className="text-right tabular-nums">
-                    {c.priority ?? 0} · {c.weight ?? 1}
-                  </td>
-                )}
+                {show('priority') &&
+                  (order ? (
+                    <td className="keep text-right" onClick={(e) => e.stopPropagation()}>
+                      {place && place.share !== null && place.share !== undefined && (
+                        <span className="inline-flex items-center gap-2">
+                          {orderActions ? (
+                            <WeightInput id={c.id} name={c.name} value={place.weight} onSave={orderActions.weight} />
+                          ) : (
+                            <span className="tabular-nums">{place.weight}</span>
+                          )}
+                          <span className="w-9 text-right text-xs tabular-nums text-muted-foreground">{place.share}%</span>
+                        </span>
+                      )}
+                    </td>
+                  ) : (
+                    <td className="text-right tabular-nums">
+                      {c.priority ?? 0} · {c.weight ?? 1}
+                    </td>
+                  ))}
                 {show('requests') && (
                   <td className="text-right tabular-nums">{m?.requests ? m.requests.toLocaleString() : <Muted>0</Muted>}</td>
                 )}
@@ -508,7 +672,14 @@ export default function ProviderPane({
                   </td>
                 )}
                 <td className="keep !px-2 text-right" onClick={(e) => e.stopPropagation()}>
-                  <ChannelMenu channel={c} actions={actions} testing={testingIds.has(c.id)} withToggle={!show('enabled')} />
+                  <ChannelMenu
+                    channel={c}
+                    actions={actions}
+                    testing={testingIds.has(c.id)}
+                    withToggle={!show('enabled')}
+                    order={order}
+                    orderActions={orderActions}
+                  />
                 </td>
               </tr>
             );
@@ -559,7 +730,9 @@ export default function ProviderPane({
                 <div className="mt-0.5 flex items-baseline gap-3 text-xs text-muted-foreground">
                   <span className="min-w-0 truncate tabular-nums">
                     {t('channels.list.meta', {
-                      priority: `${c.priority ?? 0} · ${c.weight ?? 1}`,
+                      priority: order?.info.get(c.id)
+                        ? t('channels.order.positionShort', { n: order.info.get(c.id).position })
+                        : `${c.priority ?? 0} · ${c.weight ?? 1}`,
                       requests: (m?.requests || 0).toLocaleString(),
                       latency: m?.avgLatencyMs != null ? sec(m.avgLatencyMs) : '—'
                     })}
@@ -580,7 +753,7 @@ export default function ProviderPane({
                     />
                   </RowControl>
                   <RowControl>
-                    <ChannelMenu channel={c} actions={actions} testing={testingIds.has(c.id)} />
+                    <ChannelMenu channel={c} actions={actions} testing={testingIds.has(c.id)} order={order} orderActions={orderActions} />
                   </RowControl>
                 </div>
               )}
@@ -601,7 +774,7 @@ export default function ProviderPane({
       )}
       <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div className="flex items-center gap-3">
-          <ProviderTile type={type} size="lg" />
+          {type > 0 && <ProviderTile type={type} size="lg" />}
           <div>
             <h2 className="text-[17px] font-medium">{name}</h2>
             <p className="text-[13px] text-muted-foreground">
@@ -646,11 +819,9 @@ export default function ProviderPane({
         </div>
       )}
 
-      {!phone && <div className="mt-4">{chart}</div>}
-
-      <div className="mb-2 mt-6 flex items-center justify-between">
-        <h3 className="text-sm font-medium">{t('channels.table.title')}</h3>
-        {!phone && <span className="text-xs text-muted-foreground">{t('channels.table.hint')}</span>}
+      <div className="mb-2 mt-5 flex items-center justify-between gap-4">
+        <h3 className="shrink-0 text-sm font-medium">{t('channels.table.title')}</h3>
+        {!phone && <span className="text-xs text-muted-foreground">{t(order ? 'channels.orderHint' : 'channels.table.hint')}</span>}
       </div>
       <div className="mb-2 space-y-2">
         {phone ? (
@@ -697,7 +868,9 @@ export default function ProviderPane({
         )}
       </div>
       {phone ? list : table}
-      {phone && <div className="mt-6">{chart}</div>}
+      {/* The cards above already show each provider's traffic; the chart with a line per channel
+          follows the list. */}
+      <div className="mt-6">{chart}</div>
 
       {phone && selectMode && <ChannelBatchBar floating selected={selectedRows} onClear={exitSelectMode} batch={batch} busy={batchBusy} />}
       {phone && (
@@ -719,6 +892,8 @@ export default function ProviderPane({
 
 ProviderPane.propTypes = {
   type: PropTypes.number.isRequired,
+  order: PropTypes.object,
+  orderActions: PropTypes.object,
   channels: PropTypes.array.isRequired,
   metrics: PropTypes.object.isRequired,
   rangeKey: PropTypes.string.isRequired,

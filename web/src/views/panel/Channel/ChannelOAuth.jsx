@@ -288,7 +288,10 @@ function OAuthPanelShell({ status, onCancel, primary, children }) {
       <DialogBody className="space-y-5">{children}</DialogBody>
       <DialogFooter className="sm:items-center">
         {status && (
-          <p className="flex items-center justify-center gap-2 whitespace-nowrap text-sm text-muted-foreground sm:mr-auto" aria-live="polite">
+          <p
+            className="flex items-center justify-center gap-2 whitespace-nowrap text-sm text-muted-foreground sm:mr-auto"
+            aria-live="polite"
+          >
             {status}
           </p>
         )}

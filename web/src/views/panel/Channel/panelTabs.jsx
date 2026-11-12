@@ -543,7 +543,7 @@ function RoutingBody({ object: channel, draft, setDraft, ctx }) {
         <Field label={t('channels.usage.label')}>
           <p className="text-sm text-muted-foreground">
             {t('channels.usage.byPolicy')}{' '}
-            <Link to="/panel/allocation" className="text-info underline-offset-2 hover:underline">
+            <Link to="/panel/channel" className="text-info underline-offset-2 hover:underline">
               {t('channels.usage.openPolicy')}
             </Link>
           </p>

@@ -131,9 +131,9 @@ func newAllocationPlan(tiers [][]AllocationEntry) *allocationPlan {
 	return plan
 }
 
-// slotOf finds where a channel sits: its own entry first, then its provider's. A provider the
-// policy does not list goes below every tier with weight 1, so new providers are a last resort
-// until they are placed.
+// slotOf finds where a channel sits: its own entry first, then its provider's. A channel the
+// policy does not place goes below every tier, each in a position of its own in the order the
+// channels were created, so a new channel is tried last until it is moved.
 func (p *allocationPlan) slotOf(channel *Channel) entrySlot {
 	if slot, ok := p.byChannel[channel.Id]; ok {
 		return slot
@@ -142,7 +142,7 @@ func (p *allocationPlan) slotOf(channel *Channel) entrySlot {
 	if slot, ok := p.byProvid[key]; ok {
 		return slot
 	}
-	return entrySlot{tier: p.tiers, key: "u" + key, weight: 1}
+	return entrySlot{tier: p.tiers + channel.Id, key: fmt.Sprintf("u%d", channel.Id), weight: 1}
 }
 
 // allocate computes the numbers of one model's supplies. A provider entry's weight is split
