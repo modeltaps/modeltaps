@@ -5,15 +5,15 @@ import { useTranslation } from 'react-i18next';
 import { useOrg } from 'contexts/OrgContext';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { PanelRight, Plus, RotateCcw, Trash2, TriangleAlert } from 'lucide-react';
+import { MoreHorizontal, PanelRight, Plus, RotateCcw, Trash2, TriangleAlert } from 'lucide-react';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import DataCards from '@/components/ui/data-cards';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { RowActions } from '@/components/ui/row-actions';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
@@ -58,7 +58,7 @@ export default function RoutingPolicy() {
 // page (personal and organization policies): `api` is the scoped client (routingPolicyApi.js). With a
 // review client the list shows other scopes' policies, read-only except the enable switch; with a
 // readOnly client (organization members) nothing can be changed.
-export function RoutingPolicyList({ api, filter = null, intro = null }) {
+export function RoutingPolicyList({ api, filter = null, intro = null, introDetail = null }) {
   const { t } = useTranslation();
   const review = Boolean(api.review);
   const readOnly = Boolean(api.readOnly);
@@ -166,7 +166,11 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
           return (
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                {api.callPrefix ? <PolicyCallName name={policyCallName(api, p)} /> : <span className="font-mono text-sm">{p.name}</span>}
+                {api.callPrefix ? (
+                  <PolicyCallName name={policyCallName(api, p)} hoverCopy />
+                ) : (
+                  <span className="font-mono text-sm">{p.name}</span>
+                )}
                 {p.overrides_platform && (
                   <Badge
                     variant="outline"
@@ -301,7 +305,12 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
       {(filter || intro) && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {filter}
-          {intro && <p className="text-sm text-muted-foreground">{intro}</p>}
+          {/* One line; the full explanation (overrides, who pays for 试一试) is the tooltip. */}
+          {intro && (
+            <p className="text-sm text-muted-foreground" title={introDetail || undefined}>
+              {intro}
+            </p>
+          )}
         </div>
       )}
 
@@ -330,7 +339,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    className={ROW_OPENS}
+                    className={`group ${ROW_OPENS}`}
                     data-state={row.original.id === route.openId ? 'selected' : undefined}
                     {...rowOpenProps(() => route.open(row.original.id))}
                   >
@@ -345,17 +354,74 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
             </TableBody>
           </Table>
         </div>
-        <DataCards
-          table={table}
-          className="md:hidden"
-          primaryColumnId="name"
-          menuColumnId="action"
-          switchColumnId="enabled"
-          actionColumnIds={['action']}
-          empty={emptyText}
-          searching={loading}
-          onRowClick={(p) => route.open(p.id)}
-        />
+        {/* Phone rows (56px): the call name with the switch and ⋯ on the right; below, the display
+            name (or owner when reviewing), the routes as label → target and the fallback. */}
+        <div className="md:hidden">
+          {table.getRowModel().rows.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+              {loading ? t('common.loading', { defaultValue: 'Loading…' }) : emptyText}
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {table.getRowModel().rows.map((row) => {
+                const p = row.original;
+                const cell = (id) => {
+                  const c = row.getVisibleCells().find((x) => x.column.id === id);
+                  return c ? flexRender(c.column.columnDef.cell, c.getContext()) : null;
+                };
+                const owner = review ? (p.user_id ? p.username || `#${p.user_id}` : p.organization_name || `#${p.organization_id}`) : null;
+                const secondary = [
+                  owner || (p.display_name && p.display_name !== p.name ? p.display_name : null),
+                  (p.routes || []).map((r) => `${r.label} → ${r.target_model}`).join(' · '),
+                  `${t('routingPolicy.columns.fallback')} ${p.fallback_model}`
+                ]
+                  .filter(Boolean)
+                  .join(' · ');
+                return (
+                  <li
+                    key={row.id}
+                    className={`flex h-14 items-center gap-3 px-4 ${ROW_OPENS} ${p.id === route.openId ? 'bg-muted/60' : ''}`}
+                    {...rowOpenProps(() => route.open(p.id))}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <span className="truncate font-mono text-sm font-medium">{api.callPrefix ? policyCallName(api, p) : p.name}</span>
+                        {p.overrides_platform && (
+                          <TriangleAlert className="size-3.5 shrink-0 text-amber-500" aria-label={t('routingPolicy.overridesPlatform')} />
+                        )}
+                      </div>
+                      <div className="mt-0.5 truncate text-xs text-muted-foreground">{secondary}</div>
+                    </div>
+                    <div className="-mr-2 flex shrink-0 items-center gap-1">
+                      {cell('enabled')}
+                      <RowControl>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="size-8" aria-label={t('userPage.action')}>
+                              <MoreHorizontal className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem onClick={() => route.open(p.id)}>
+                              <PanelRight className="size-4" />
+                              {t('objects.open')}
+                            </DropdownMenuItem>
+                            {canEdit && (
+                              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setPendingDelete(p)}>
+                                <Trash2 className="size-4" />
+                                {t('common.delete')}
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </RowControl>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       </Card>
 
       {route.openId > 0 && (
@@ -413,5 +479,6 @@ export function RoutingPolicyList({ api, filter = null, intro = null }) {
 RoutingPolicyList.propTypes = {
   api: PropTypes.object.isRequired,
   filter: PropTypes.node,
-  intro: PropTypes.node
+  intro: PropTypes.node,
+  introDetail: PropTypes.string
 };

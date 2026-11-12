@@ -2,23 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import {
-  Search,
-  X,
-  LayoutGrid,
-  List,
-  Users,
-  Filter,
-  Check,
-  Minus,
-  Columns3,
-  Copy,
-  Eye,
-  SlidersHorizontal,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight
-} from 'lucide-react';
+import { Search, X, LayoutGrid, List, Users, Check, Minus, Columns3, Copy, SlidersHorizontal, ChevronDown } from 'lucide-react';
 import FilterDropdown from './FilterDropdown';
 
 import { cn } from '@/lib/utils';
@@ -43,7 +27,9 @@ import { MODALITY_OPTIONS } from 'constants/Modality';
 import ModelCard from './ModelCard';
 import ModelDetailModal from './ModelDetailModal';
 import { buildModelFilterFields, buildModalityOptions, buildCapabilityOptions, CONTEXT_BUCKETS, PRICE_BUCKETS } from './modelFilterFields';
-import PageSizeSelect from '@/components/ui/page-size-select';
+import { Switch } from '@/components/ui/switch';
+import { ListEmptyState, ListFooter, useListLayout } from '@/components/list-page';
+import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 
 // 模态 Tab 的动词文案兜底值（i18n 缺 key 时使用），与 modelpricePage.modalityTab 对应。
 const MODALITY_TAB_FALLBACK = {
@@ -98,7 +84,7 @@ ModalityTab.propTypes = {
 
 // 「显示」合并 popover：把「怎么看」类控件（排序 / 视图 / 单位）收进一个触发按钮。
 // 逻辑与状态完全复用上层，仅做 UI 重组。选择排序后关闭；视图/单位切换保持打开便于连续调整。
-function DisplayMenu({ sortBy, onSortChange, viewMode, onViewChange, unit, onUnitChange, t }) {
+function DisplayMenu({ sortBy, onSortChange, viewMode, onViewChange, unit, onUnitChange, onlyAvailable, onOnlyAvailableChange, t }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const panelRef = useRef(null);
@@ -126,6 +112,8 @@ function DisplayMenu({ sortBy, onSortChange, viewMode, onViewChange, unit, onUni
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
+        aria-label={t('modelpricePage.display')}
+        aria-expanded={open}
         className={cn(
           'inline-flex h-9 items-center gap-1.5 rounded-md border px-2.5 text-[0.8125rem] font-medium transition-colors',
           open
@@ -134,8 +122,9 @@ function DisplayMenu({ sortBy, onSortChange, viewMode, onViewChange, unit, onUni
         )}
       >
         <SlidersHorizontal className="size-4 shrink-0" />
-        <span>{t('modelpricePage.display')}</span>
-        <ChevronDown className="size-4 shrink-0 opacity-50" />
+        {/* Icon only on phones, where the toolbar is one row. */}
+        <span className="hidden sm:inline">{t('modelpricePage.display')}</span>
+        <ChevronDown className="hidden size-4 shrink-0 opacity-50 sm:block" />
       </button>
       <FloatingPanel
         ref={panelRef}
@@ -144,6 +133,11 @@ function DisplayMenu({ sortBy, onSortChange, viewMode, onViewChange, unit, onUni
         align="end"
         className="w-56 space-y-3 rounded-md border border-border bg-card p-2 text-card-foreground shadow-md"
       >
+        {/* Only the models the selected group can call (on by default). */}
+        <label className="flex cursor-pointer items-center justify-between gap-2 px-1 text-sm">
+          {t('modelpricePage.onlyAvailable')}
+          <Switch checked={onlyAvailable} onCheckedChange={onOnlyAvailableChange} />
+        </label>
         {/* 排序：单选列表，当前项打勾。 */}
         <div>
           <div className={sectionLabel}>{t('modelpricePage.sortBy')}</div>
@@ -227,20 +221,21 @@ DisplayMenu.propTypes = {
   onViewChange: PropTypes.func,
   unit: PropTypes.string,
   onUnitChange: PropTypes.func,
+  onlyAvailable: PropTypes.bool,
+  onOnlyAvailableChange: PropTypes.func,
   t: PropTypes.func
 };
 
 // 表格视图列注册表（对齐 Log 页的「列」勾选菜单）。id 用于列显隐判断。
+// One price column for the selected group ("input / output"); the billing type only shows when a
+// model is not billed per token, and the whole row opens the details.
 const MODEL_PRICE_COLUMNS = [
   { id: 'model', labelKey: 'modelpricePage.modelName' },
-  { id: 'type', labelKey: 'modelpricePage.type' },
   { id: 'provider', labelKey: 'modelpricePage.provider' },
-  { id: 'input', labelKey: 'modelpricePage.inputPrice' },
-  { id: 'output', labelKey: 'modelpricePage.outputPrice' },
-  { id: 'action', labelKey: 'common.action' }
+  { id: 'price', labelKey: 'modelpricePage.price' }
 ];
 
-const COLUMN_VISIBILITY_STORAGE_KEY = 'modelprice-column-visibility';
+const COLUMN_VISIBILITY_STORAGE_KEY = 'modelprice-column-visibility-v2';
 
 const buildDefaultColumnVisibility = () => Object.fromEntries(MODEL_PRICE_COLUMNS.map((c) => [c.id, true]));
 
@@ -311,6 +306,7 @@ const matchEnumEntry = (entry, test) => {
 // 注意：模态 Tab 的语义是「输出模态」（模型能产出什么），与漏斗里的输入/输出模态筛选相互独立。
 export default function ModelPrice({ embedded = false, initialModality }) {
   const { t } = useTranslation();
+  const { narrow } = useListLayout();
   const ownedby = useSelector((state) => state.siteInfo?.ownedby);
 
   const [availableModels, setAvailableModels] = useState({});
@@ -595,8 +591,6 @@ export default function ModelPrice({ embedded = false, initialModality }) {
     return owner?.icon;
   };
 
-  const getTags = (tagsJson) => parseJson(tagsJson);
-
   const renderProviderIcon = (name) => <BrandIcon icon={getIconByName(name)} ownedBy={name} fallbackText={name} className="size-4" />;
 
   // 漏斗筛选候选项（不含「全部」；多选语义下空 = 不约束）。供应商带厂商 icon。
@@ -642,22 +636,60 @@ export default function ModelPrice({ embedded = false, initialModality }) {
     setFilterState({});
   };
 
-  const totalPages = Math.max(1, Math.ceil(filteredModels.length / pageSize));
+  const footer = (
+    <ListFooter
+      total={filteredModels.length}
+      page={page - 1}
+      pageSize={pageSize}
+      pageSizeOptions={pageSizeOptions}
+      onPageChange={(p) => setPage(p + 1)}
+      onPageSizeChange={(size) => {
+        setPageSize(size);
+        setPage(1);
+      }}
+    />
+  );
+
+  // The selected group's price as "input / output"; per-call models say so after the figure.
+  const priceText = (row) => {
+    if (row.routing) return t('modelpricePage.routing.billedByTarget', { model: row.routing.fallback_model });
+    const { input, output } = row.price;
+    if (typeof input !== 'number') return input;
+    if (row.type !== 'tokens')
+      return `${input > 0 ? ValueFormatter(input, true, false) : t('modelpricePage.free')} · ${t('modelpricePage.times')}`;
+    if (input <= 0 && output <= 0) return t('modelpricePage.free');
+    return `${ValueFormatter(input, true, unit === 'M')} / ${ValueFormatter(output, true, unit === 'M')}`;
+  };
+  const groupRatio = userGroupMap[selectedGroup]?.ratio;
+  const priceHeader = `${t('modelpricePage.price')} / 1${unit}`;
+  const copyButton = (name) => (
+    <RowControl>
+      <button
+        type="button"
+        onClick={() => copyText(name, t('modelpricePage.modelName'))}
+        aria-label={t('modelpricePage.copyModelId')}
+        className="text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+      >
+        <Copy className="size-3.5" />
+      </button>
+    </RowControl>
+  );
 
   return (
-    <div className={cn('space-y-6', !embedded && 'p-6')}>
-      <div className="space-y-4">
-        {/* 行1 标题行：左 = 单行标题（副标题下移到计数行）；右 = 页面级工具簇（搜索 · 分组 · 只显示可用 · 漏斗 · 显示 · 列）。
-            工具簇与标题垂直居中，避免右簇贴顶留下空带；embedded 无标题时工具簇占满整行。 */}
+    <div className={cn('space-y-4', !embedded && 'p-6')}>
+      <div className="space-y-3">
+        {/* One toolbar row: search, the group (its price multiplier in the menu), filters, the display
+            menu (availability, sort, view, unit) and, for the table, the column picker. On phones the
+            buttons drop their labels so the row still fits. */}
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           {!embedded && <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight">{t('modelpricePage.availableModels')}</h1>}
-          {/* 右侧工具簇：紧邻搜索框，顺序 搜索 → 分组 → 只显示可用 → 漏斗 → 显示（排序/视图/单位）→ 列（仅表格视图）。 */}
-          <div className={cn('flex flex-wrap items-center gap-2', embedded ? 'w-full' : 'lg:ml-auto lg:justify-end')}>
-            <div className={cn('relative', embedded ? 'min-w-48 flex-1' : 'w-full sm:w-60')}>
+          <div className={cn('flex items-center gap-2', embedded ? 'w-full' : 'lg:ml-auto lg:justify-end')}>
+            <div className={cn('relative min-w-0 flex-1', !embedded && 'sm:w-60 sm:flex-none')}>
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="pl-9 pr-9"
                 placeholder={t('modelpricePage.search')}
+                aria-label={t('modelpricePage.search')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -665,62 +697,53 @@ export default function ModelPrice({ embedded = false, initialModality }) {
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
+                  aria-label={t('modelpricePage.clearFilters')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   <X className="size-4" />
                 </button>
               )}
             </div>
-            {/* 分组选择器（一等公民，含 ratio 倍率 badge）。 */}
-            <FilterDropdown
-              icon={Users}
-              label={t('modelpricePage.group')}
-              value={selectedGroup}
-              options={groupOptions}
-              onSelect={setSelectedGroup}
-              active
-            />
-            {/* 只显示可用（一等公民）。 */}
-            <button
-              type="button"
-              onClick={() => setOnlyShowAvailable((prev) => !prev)}
-              title={onlyShowAvailable ? t('modelpricePage.showAll') : t('modelpricePage.onlyAvailable')}
-              className={cn(
-                'inline-flex h-9 items-center gap-1.5 rounded-md border px-2.5 text-[0.8125rem] font-medium transition-colors',
-                onlyShowAvailable
-                  ? 'border-foreground/40 bg-muted text-foreground shadow-sm'
-                  : 'border-input bg-field text-foreground hover:border-foreground/30'
-              )}
-            >
-              {onlyShowAvailable ? <Check className="size-3.5" /> : <Filter className="size-3.5" />}
-              {t('modelpricePage.onlyAvailable')}
-            </button>
-            {/* 漏斗筛选（带计数徽标）。 */}
-            <FilterBar
-              fields={filterFields}
-              state={filterState}
-              onChange={handleFilterChange}
-              onClearAll={handleClearFilters}
-              hideChips
-              t={t}
-            />
-            {/* 显示：合并「排序 / 视图 / 单位」三组「怎么看」类控件。 */}
-            <DisplayMenu
-              sortBy={sortBy}
-              onSortChange={setSortBy}
-              viewMode={viewMode}
-              onViewChange={setViewMode}
-              unit={unit}
-              onUnitChange={setUnit}
-              t={t}
-            />
-            {/* 列显示：仅表格视图有意义，卡片视图下不渲染。选择持久化到 localStorage。 */}
-            {viewMode === 'list' && (
+            <div className="shrink-0" title={t('priceList.groupHint')}>
+              <FilterDropdown
+                icon={Users}
+                label={t('modelpricePage.group')}
+                value={selectedGroup}
+                options={groupOptions}
+                onSelect={setSelectedGroup}
+                active
+              />
+            </div>
+            <div className="shrink-0">
+              <FilterBar
+                fields={filterFields}
+                state={filterState}
+                onChange={handleFilterChange}
+                onClearAll={handleClearFilters}
+                hideChips
+                t={t}
+              />
+            </div>
+            <div className="shrink-0">
+              <DisplayMenu
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                viewMode={viewMode}
+                onViewChange={setViewMode}
+                unit={unit}
+                onUnitChange={setUnit}
+                onlyAvailable={onlyShowAvailable}
+                onOnlyAvailableChange={setOnlyShowAvailable}
+                t={t}
+              />
+            </div>
+            {/* 列显示：仅表格视图有意义，卡片视图与手机行下不渲染。选择持久化到 localStorage。 */}
+            {viewMode === 'list' && !narrow && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className="h-9 gap-1.5 px-2.5 text-[0.8125rem] font-medium"
+                    className="h-9 shrink-0 gap-1.5 px-2.5 text-[0.8125rem] font-medium"
                     aria-label={t('modelpricePage.selectColumns')}
                   >
                     <Columns3 className="size-4 shrink-0" />
@@ -750,9 +773,9 @@ export default function ModelPrice({ embedded = false, initialModality }) {
           </div>
         </div>
 
-        {/* 行2 模态 Tabs：范围导航（非筛选），窄屏可横滑；右侧不放控件。 */}
+        {/* 模态 Tabs：范围导航（非筛选），窄屏可横滑；右侧不放控件。 */}
         <div className="border-b border-border">
-          <div className="flex items-center gap-1 overflow-x-auto">
+          <div className="no-scrollbar flex items-center gap-1 overflow-x-auto">
             <ModalityTab active={selectedModality === 'all'} onClick={() => setSelectedModality('all')} count={modalityCounts.all}>
               {t('modelpricePage.allModality')}
             </ModalityTab>
@@ -773,7 +796,7 @@ export default function ModelPrice({ embedded = false, initialModality }) {
           </div>
         </div>
 
-        {/* 行3 chips 行：仅漏斗筛选活跃时出现，独立成行（chips + 「+」追加 + 右侧「清除全部」）。 */}
+        {/* chips 行：仅漏斗筛选活跃时出现，独立成行（chips + 「+」追加 + 右侧「清除全部」）。 */}
         {activeChipFields.length > 0 && (
           <FilterBar
             fields={filterFields}
@@ -788,209 +811,117 @@ export default function ModelPrice({ embedded = false, initialModality }) {
         )}
       </div>
 
-      <div>
-        {/* 计数行：兼作原标题副标题的落脚点（标题行压为单行）。 */}
-        <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-          {!embedded && <p className="text-sm text-muted-foreground">{t('modelpricePage.modelPricing')}</p>}
-          <p className="text-sm text-muted-foreground">{t('modelpricePage.totalModels', { count: filteredModels.length })}</p>
-          <p className="text-xs text-muted-foreground/80">{t('modelpricePage.priceNote')}</p>
-        </div>
-
-        {filteredModels.length > 0 ? (
-          <>
-            {viewMode === 'card' ? (
-              <div className="flex flex-col gap-3">
-                {paginatedModels.map((model) => (
-                  <ModelCard
-                    key={model.model}
-                    model={model.model}
-                    provider={model.provider}
-                    modelInfo={model.modelInfo}
-                    price={model.price}
-                    group={model.group}
-                    ownedbyIcon={getIconByName(model.provider)}
-                    unit={unit}
-                    type={model.type}
-                    formatPrice={formatPrice}
-                    onViewDetail={() => handleViewDetail(model)}
-                    routing={model.routing}
-                  />
-                ))}
-              </div>
-            ) : (
-              <Card className="overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      {columnVisibility.model && <TableHead>{t('modelpricePage.modelName')}</TableHead>}
-                      {columnVisibility.type && <TableHead className="text-center">{t('modelpricePage.type')}</TableHead>}
-                      {columnVisibility.provider && <TableHead>{t('modelpricePage.provider')}</TableHead>}
-                      {columnVisibility.input && <TableHead>{t('modelpricePage.inputPrice')}</TableHead>}
-                      {columnVisibility.output && <TableHead>{t('modelpricePage.outputPrice')}</TableHead>}
-                      {columnVisibility.action && <TableHead className="text-center">{t('common.action')}</TableHead>}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedModels.map((model) => (
-                      <TableRow key={model.model}>
-                        {columnVisibility.model && (
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-sm font-medium">{model.model}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => copyText(model.model, t('modelpricePage.modelName'))}
-                                  className="text-muted-foreground opacity-60 hover:opacity-100"
-                                >
-                                  <Copy className="size-4" />
-                                </button>
-                                {getTags(model.modelInfo?.tags).some((tag) => tag.toLowerCase() === 'hot') && (
-                                  <span className="rounded-sm bg-muted px-1.5 py-0.5 text-[0.6875rem] font-medium text-foreground">
-                                    Hot
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {getTags(model.modelInfo?.tags).map(
-                                  (tag) =>
-                                    tag.toLowerCase() !== 'hot' && (
-                                      <span
-                                        key={tag}
-                                        className="rounded bg-muted px-1.5 py-0.5 text-[0.6875rem] font-medium text-muted-foreground"
-                                      >
-                                        {tag}
-                                      </span>
-                                    )
-                                )}
-                              </div>
-                            </div>
-                          </TableCell>
-                        )}
-                        {columnVisibility.type && (
-                          <TableCell className="text-center">
-                            <span className="inline-flex items-center rounded bg-muted px-2 py-1 text-xs font-medium text-foreground">
-                              {model.type === 'tokens' ? t('modelpricePage.tokens') : t('modelpricePage.times')}
-                            </span>
-                          </TableCell>
-                        )}
-                        {columnVisibility.provider && (
-                          <TableCell>
-                            <div className="flex items-center gap-1.5">
-                              {renderProviderIcon(model.provider)}
-                              <span className="text-sm">{model.provider}</span>
-                            </div>
-                          </TableCell>
-                        )}
-                        {columnVisibility.input && model.routing && (
-                          <TableCell colSpan={columnVisibility.output ? 2 : 1}>
-                            <span className="text-xs text-muted-foreground">
-                              {t('modelpricePage.routing.billedByTarget', { model: model.routing.fallback_model })}
-                            </span>
-                          </TableCell>
-                        )}
-                        {columnVisibility.input && !model.routing && (
-                          <TableCell>
-                            <div className="flex flex-col gap-0.5">
-                              {model.priceData.allGroupPrices.map((gp) => (
-                                <div key={gp.groupKey} className="flex items-center gap-1.5">
-                                  <span className="min-w-10 text-xs text-muted-foreground">{gp.groupName}:</span>
-                                  <span className="text-sm font-medium tabular-nums text-foreground">
-                                    {gp.input > 0
-                                      ? formatPrice(gp.input, model.type === 'tokens' ? 'tokens' : 'times')
-                                      : t('modelpricePage.free')}
-                                  </span>
-                                  {gp.input > 0 && <span className="text-xs tabular-nums text-muted-foreground">(x{gp.ratio})</span>}
-                                </div>
-                              ))}
-                            </div>
-                          </TableCell>
-                        )}
-                        {columnVisibility.output && !model.routing && (
-                          <TableCell>
-                            <div className="flex flex-col gap-0.5">
-                              {model.priceData.allGroupPrices.map((gp) => (
-                                <div key={gp.groupKey} className="flex items-center gap-1.5">
-                                  <span className="min-w-10 text-xs text-muted-foreground">{gp.groupName}:</span>
-                                  <span className="text-sm font-medium tabular-nums text-foreground">
-                                    {gp.output > 0
-                                      ? formatPrice(gp.output, model.type === 'tokens' ? 'tokens' : 'times')
-                                      : t('modelpricePage.free')}
-                                  </span>
-                                  {gp.output > 0 && <span className="text-xs tabular-nums text-muted-foreground">(x{gp.ratio})</span>}
-                                </div>
-                              ))}
-                            </div>
-                          </TableCell>
-                        )}
-                        {columnVisibility.output && !columnVisibility.input && model.routing && (
-                          <TableCell>
-                            <span className="text-xs text-muted-foreground">
-                              {t('modelpricePage.routing.billedByTarget', { model: model.routing.fallback_model })}
-                            </span>
-                          </TableCell>
-                        )}
-                        {columnVisibility.action && (
-                          <TableCell className="text-center">
-                            <Button variant="ghost" size="icon" className="size-8" onClick={() => handleViewDetail(model)}>
-                              <Eye className="size-[18px]" />
-                            </Button>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Card>
-            )}
-
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => {
-                  setPage((p) => Math.max(1, p - 1));
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-              >
-                <ChevronLeft className="size-4" />
-              </Button>
-              <span className="text-sm tabular-nums">
-                {page} / {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => {
-                  setPage((p) => Math.min(totalPages, p + 1));
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-              >
-                <ChevronRight className="size-4" />
-              </Button>
-              <PageSizeSelect
-                value={pageSize}
-                options={pageSizeOptions}
-                onChange={(size) => {
-                  setPageSize(size);
-                  setPage(1);
-                }}
-                format={(size) => t('pagination.perPage', { count: size })}
-              />
+      {filteredModels.length > 0 ? (
+        viewMode === 'card' ? (
+          <div className="space-y-3">
+            <div className="flex flex-col gap-3">
+              {paginatedModels.map((model) => (
+                <ModelCard
+                  key={model.model}
+                  model={model.model}
+                  provider={model.provider}
+                  modelInfo={model.modelInfo}
+                  price={model.price}
+                  group={model.group}
+                  ownedbyIcon={getIconByName(model.provider)}
+                  unit={unit}
+                  type={model.type}
+                  formatPrice={formatPrice}
+                  onViewDetail={() => handleViewDetail(model)}
+                  routing={model.routing}
+                />
+              ))}
             </div>
-          </>
+            <Card className="overflow-hidden">{footer}</Card>
+          </div>
         ) : (
-          <Card className="p-16 text-center">
-            <div className="flex flex-col items-center gap-2">
-              <Search className="size-16 text-muted-foreground" />
-              <p className="text-lg font-medium text-muted-foreground">{t('modelpricePage.noModelsFound')}</p>
-              <p className="text-sm text-muted-foreground">{t('modelpricePage.noModelsFoundTip')}</p>
-            </div>
+          <Card className="overflow-hidden">
+            {narrow ? (
+              // Phone rows: the name and price on top, the vendor below; the row opens the details.
+              <ul className="divide-y divide-border">
+                {paginatedModels.map((model) => (
+                  <li
+                    key={model.model}
+                    className={cn('flex h-14 flex-col justify-center px-4', ROW_OPENS)}
+                    {...rowOpenProps(() => handleViewDetail(model))}
+                  >
+                    <div className="flex items-baseline gap-3 text-sm">
+                      <span className="min-w-0 truncate font-medium">{model.model}</span>
+                      {/* A routed model shows its fallback in short; the full note is the tooltip. */}
+                      <span
+                        className={cn('ml-auto shrink-0 tabular-nums', model.routing && 'text-muted-foreground')}
+                        title={model.routing ? priceText(model) : undefined}
+                      >
+                        {model.routing ? `→ ${model.routing.fallback_model}` : priceText(model)}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                      {renderProviderIcon(model.provider)}
+                      <span className="truncate">{model.provider}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    {columnVisibility.model && <TableHead>{t('modelpricePage.modelName')}</TableHead>}
+                    {columnVisibility.provider && <TableHead>{t('modelpricePage.provider')}</TableHead>}
+                    {columnVisibility.price && (
+                      <TableHead className="text-right" title={groupRatio != null ? `x${groupRatio}` : undefined}>
+                        {priceHeader}
+                      </TableHead>
+                    )}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedModels.map((model) => (
+                    <TableRow key={model.model} className={cn('group', ROW_OPENS)} {...rowOpenProps(() => handleViewDetail(model))}>
+                      {columnVisibility.model && (
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            <span className="truncate font-medium">{model.model}</span>
+                            {copyButton(model.model)}
+                          </div>
+                        </TableCell>
+                      )}
+                      {columnVisibility.provider && (
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            {renderProviderIcon(model.provider)}
+                            <span>{model.provider}</span>
+                          </div>
+                        </TableCell>
+                      )}
+                      {columnVisibility.price && (
+                        <TableCell
+                          className={cn(
+                            'whitespace-nowrap text-right tabular-nums',
+                            (model.routing || typeof model.price.input !== 'number') && 'text-muted-foreground'
+                          )}
+                        >
+                          {priceText(model)}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            <div className="border-t border-border">{footer}</div>
           </Card>
-        )}
-      </div>
+        )
+      ) : (
+        <Card>
+          <ListEmptyState
+            variant="noMatch"
+            title={t('modelpricePage.noModelsFound')}
+            description={t('modelpricePage.noModelsFoundTip')}
+            onClearFilters={handleClearFilters}
+          />
+        </Card>
+      )}
 
       <ModelDetailModal
         open={detailModalOpen}
