@@ -447,6 +447,11 @@
       "color": true,
       "scale": 1
     },
+    "vercel": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
     "vertexai": {
       "mono": true,
       "color": true,
@@ -636,7 +641,8 @@
     "58": "claude",
     "59": "codex",
     "60": "antigravity",
-    "61": "vertexai"
+    "61": "vertexai",
+    "62": "vercel"
   },
   "modelPrefixes": {
     "360gpt": "ai360",
@@ -785,6 +791,8 @@
     "tencentcloudapi.com": "hunyuan",
     "together.ai": "together",
     "together.xyz": "together",
+    "vercel.com": "vercel",
+    "vercel.sh": "vercel",
     "volces.com": "volcengine",
     "x.ai": "xai",
     "xf-yun.com": "spark",

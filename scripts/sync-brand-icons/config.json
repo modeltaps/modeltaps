@@ -14,7 +14,7 @@
     "nvidia", "ollama", "openai", "openrouter", "palm", "perplexity", "pika", "ppio", "qwen",
     "recraft", "reka", "replicate", "runway", "sambanova", "siliconcloud", "sora", "spark",
     "stability", "stepfun", "suno", "tencent", "tencentcloud", "tii", "together", "upstage",
-    "vertexai", "vidu", "vllm", "volcengine", "voyage", "wenxin", "workersai", "xai",
+    "vercel", "vertexai", "vidu", "vllm", "volcengine", "voyage", "wenxin", "workersai", "xai",
     "xiaomimimo", "yi", "zeroone", "zhipu"
   ],
   "scale": {
@@ -70,7 +70,7 @@
     "44": "ideogram", "45": "siliconcloud", "46": "flux", "47": "jina", "49": "github",
     "51": "recraft", "52": "replicate", "53": "kling", "54": "azure", "55": "azure",
     "56": "xai", "57": "geminicli", "58": "claude", "59": "codex", "60": "antigravity",
-    "61": "vertexai"
+    "61": "vertexai", "62": "vercel"
   },
   "modelPrefixes": {
     "gpt": "openai", "o1": "openai", "o3": "openai", "o4": "openai", "chatgpt": "openai",
@@ -115,6 +115,7 @@
     "together.xyz": "together", "together.ai": "together", "fireworks.ai": "fireworks",
     "perplexity.ai": "perplexity", "ai21.com": "ai21", "ideogram.ai": "ideogram",
     "bfl.ai": "bfl", "suno.com": "suno", "ollama.com": "ollama", "360.cn": "ai360",
-    "hunyuan.cloud.tencent.com": "hunyuan", "xiaomimimo.com": "xiaomimimo"
+    "hunyuan.cloud.tencent.com": "hunyuan", "xiaomimimo.com": "xiaomimimo",
+    "vercel.sh": "vercel", "vercel.com": "vercel"
   }
 }
