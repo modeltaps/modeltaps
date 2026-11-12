@@ -3081,9 +3081,9 @@
   },
   "home": {
     "hero": {
-      "tagline": "Every model. One tap.",
+      "tagline": "The AI gateway for teams.",
       "ctaPrimary": "Get API key",
-      "catchphrase": "OpenAI, Anthropic and Gemini compatible. Just change the base URL.",
+      "catchphrase": "Give every member a key and a budget. Works with OpenAI, Anthropic and Gemini APIs.",
       "dripAria": "A drop shaped like the Modeltaps mark gathers under a tap and falls onto a still surface; the ripple spreads out and lights up the models lying on it, ring by ring."
     }
   },

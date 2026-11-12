@@ -2984,9 +2984,9 @@
   },
   "home": {
     "hero": {
-      "tagline": "所有模型，一个出口",
+      "tagline": "为团队打造的 AI 网关",
       "ctaPrimary": "获取 API Key",
-      "catchphrase": "三种主流接口全兼容，现有工具开箱即用",
+      "catchphrase": "每位成员一把 key、一份预算，三种主流接口全兼容",
       "dripAria": "一滴 Modeltaps 标志形状的水在龙头下聚起，落到平静的水面上，涟漪一圈圈散开，依次点亮水面上的各个模型。"
     }
   },
