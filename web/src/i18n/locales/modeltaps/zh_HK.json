@@ -311,7 +311,8 @@
       }
     },
     "loadFailed": "可用模型列表載入失敗，頁面顯示的可用性可能不準確。",
-    "retry": "重試"
+    "retry": "重試",
+    "modalities": "文件類型"
   },
   "playground": {
     "curlHint": "sk-YOUR_TOKEN 為佔位符",

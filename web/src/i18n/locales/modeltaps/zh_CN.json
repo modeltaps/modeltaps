@@ -311,7 +311,8 @@
       }
     },
     "loadFailed": "可用模型列表加载失败，页面展示的可用性可能不准确。",
-    "retry": "重试"
+    "retry": "重试",
+    "modalities": "文档类型"
   },
   "playground": {
     "curlHint": "sk-YOUR_TOKEN 为占位符",

@@ -311,7 +311,8 @@
       }
     },
     "loadFailed": "利用可能なモデル一覧の読み込みに失敗しました。表示されている可用性は正確でない可能性があります。",
-    "retry": "再試行"
+    "retry": "再試行",
+    "modalities": "ドキュメント"
   },
   "playground": {
     "curlHint": "sk-YOUR_TOKEN はプレースホルダーです",
