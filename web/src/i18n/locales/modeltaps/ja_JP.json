@@ -2372,7 +2372,8 @@
       "positionShort": "{{n}} 番目",
       "sharesWith": "{{names}} と分担",
       "nameSep": "、",
-      "sharedTag": "分担"
+      "sharedTag": "分担",
+      "groupWhy": "この {{count}} 件のチャネルは同じ位置にあり、共通する {{models}} 件のモデルを重みで分担します"
     },
     "newMenu": {
       "inUse": "接続済み"

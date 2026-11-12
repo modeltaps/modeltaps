@@ -149,6 +149,10 @@ export function orderInfo(groups = [], providers = []) {
     for (const [key, list] of members) {
       number += 1;
       numberOf.set(key, number);
+      // Models offered by at least two channels of the cluster: why they share.
+      const seen = new Map();
+      for (const i of list) for (const m of channelModels(providers, g.ids[i])) seen.set(m, (seen.get(m) || 0) + 1);
+      const sharedModels = [...seen.values()].filter((n) => n > 1).length;
       list.forEach((i, k) => {
         const id = g.ids[i];
         info.set(id, {
@@ -160,12 +164,21 @@ export function orderInfo(groups = [], providers = []) {
           size: g.ids.length,
           weight: g.weights[id] || 1,
           share: split[i].share,
+          sharedModels,
           peers: split[i].share !== null ? split[i].peers.map((x) => g.ids[x]) : []
         });
       });
     }
   });
   return info;
+}
+
+function channelModels(providers, id) {
+  for (const p of providers) {
+    const c = p.channels.find((x) => x.id === id);
+    if (c) return c.models || [];
+  }
+  return [];
 }
 
 // Moves a channel into the position of `targetId`, sharing it (weight 1).

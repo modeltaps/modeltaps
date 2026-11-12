@@ -92,7 +92,11 @@ function IssueTag({ issue, onAction, onDismiss, busy }) {
     driftMissing: t('channels.issue.view')
   }[issue.kind];
   return (
-    <span className="inline-flex h-[22px] shrink-0 items-center overflow-hidden rounded-full border border-warning/40 bg-warning/10 text-xs text-warning">
+    // Gives way before the channel name: it shrinks down to its icon when the row is narrow.
+    <span
+      title={`${label} · ${action}`}
+      className="inline-flex h-[22px] min-w-[44px] shrink-[8] items-center overflow-hidden rounded-full border border-warning/40 bg-warning/10 text-xs text-warning"
+    >
       <button
         type="button"
         disabled={busy}
@@ -100,10 +104,12 @@ function IssueTag({ issue, onAction, onDismiss, busy }) {
           e.stopPropagation();
           onAction(issue);
         }}
-        className="inline-flex h-full items-center gap-1 pl-2 pr-1.5 hover:bg-warning/15 disabled:opacity-60"
+        className="inline-flex h-full min-w-0 items-center gap-1 pl-2 pr-1.5 hover:bg-warning/15 disabled:opacity-60"
       >
-        {busy ? <Loader2 className="size-3 animate-spin" /> : <AlertTriangle className="size-3" />}
-        {label} · <span className="underline-offset-2 hover:underline">{action}</span>
+        {busy ? <Loader2 className="size-3 shrink-0 animate-spin" /> : <AlertTriangle className="size-3 shrink-0" />}
+        <span className="truncate">
+          {label} · <span className="underline-offset-2 hover:underline">{action}</span>
+        </span>
       </button>
       <button
         type="button"
@@ -112,7 +118,7 @@ function IssueTag({ issue, onAction, onDismiss, busy }) {
           e.stopPropagation();
           onDismiss(issue);
         }}
-        className="inline-flex h-full items-center pl-0.5 pr-1.5 hover:bg-warning/15"
+        className="inline-flex h-full shrink-0 items-center pl-0.5 pr-1.5 hover:bg-warning/15"
       >
         <X className="size-3" />
       </button>
@@ -604,7 +610,12 @@ export default function ProviderPane({
                 {order && spans.get(c.id) !== 0 && (
                   <td
                     rowSpan={spans.get(c.id) || 1}
-                    className="keep border-r border-border !px-1 text-center align-middle"
+                    className="keep !px-1 text-center align-middle"
+                    title={
+                      place && place.clusterSize > 1
+                        ? t('channels.order.groupWhy', { count: place.clusterSize, models: place.sharedModels })
+                        : undefined
+                    }
                     onClick={(e) => e.stopPropagation()}
                   >
                     <span className="block text-[13px] font-medium tabular-nums">{place ? place.number : ''}</span>
@@ -619,7 +630,7 @@ export default function ProviderPane({
                     <span className="min-w-0 flex-1">
                       <span className="flex min-w-0 items-center gap-2">
                         <Dot tone={channelDot(c, dismissed)} />
-                        <span className="truncate font-mono text-[13px]" title={c.name}>
+                        <span className="min-w-[6rem] shrink truncate font-mono text-[13px]" title={c.name}>
                           {c.name}
                         </span>
                         {c.tag && (

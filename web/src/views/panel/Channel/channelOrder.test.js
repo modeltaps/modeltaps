@@ -77,7 +77,7 @@ describe('order edits', () => {
     groups = setWeight(groups, 1, 3);
     const info = orderInfo(groups, providers);
     // Vercel's two keys share (cluster 1); Venice serves other models: a number of its own.
-    expect(info.get(1)).toMatchObject({ number: 1, clusterFirst: true, clusterSize: 2, share: 75, peers: [2] });
+    expect(info.get(1)).toMatchObject({ number: 1, clusterFirst: true, clusterSize: 2, share: 75, peers: [2], sharedModels: 2 });
     expect(info.get(2)).toMatchObject({ number: 1, clusterFirst: false, share: 25 });
     expect(info.get(3)).toMatchObject({ number: 2, clusterSize: 1, share: null, peers: [] });
     expect(info.get(4).number).toBe(3);

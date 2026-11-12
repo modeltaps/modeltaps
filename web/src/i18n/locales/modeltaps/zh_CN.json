@@ -2370,7 +2370,8 @@
       "positionShort": "第 {{n}} 位",
       "sharesWith": "与 {{names}} 分担",
       "nameSep": "、",
-      "sharedTag": "分担"
+      "sharedTag": "分担",
+      "groupWhy": "这 {{count}} 个渠道在同一位置，共同提供 {{models}} 个模型，这些模型按权重分担"
     },
     "newMenu": {
       "inUse": "已接入"

@@ -2480,7 +2480,8 @@
       "positionShort": "#{{n}}",
       "sharesWith": "shares with {{names}}",
       "nameSep": ", ",
-      "sharedTag": "shared"
+      "sharedTag": "shared",
+      "groupWhy": "These {{count}} channels are in one position and offer {{models}} models in common, which they share by weight"
     },
     "newMenu": {
       "inUse": "In use"
