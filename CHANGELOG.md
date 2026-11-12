@@ -273,6 +273,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Channels that send to an address other than their type's own (relays such as an OpenAI-compatible
+  gateway) show that host next to the provider name in the providers list, so two relays of the
+  same type can be told apart.
 - Call order: every position is now a group of channels that really share traffic. Saving splits
   a position whose channels offer no model in common into consecutive positions (routing is the
   same), so numbers, arrows and dragging all work on these groups. Each position has up / down

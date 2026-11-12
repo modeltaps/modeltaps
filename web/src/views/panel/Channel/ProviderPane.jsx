@@ -41,6 +41,7 @@ import { Dot, ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 import { FilterBar, FilterSheet, describeEntry, isEntryActive } from '@/components/filter-bar';
 import { ColumnPicker, PhoneListToolbar, PresetChips, StatusSegments, useFilterPresets } from '@/components/list-page';
 import { ProviderTile, useProviderName } from './channelParts';
+import { relayHost } from './providerDefaults';
 
 export const RANGES = [
   { key: '24h', seconds: 24 * 3600, bucket: 3600 },
@@ -702,7 +703,7 @@ export default function ProviderPane({
                       {(() => {
                         // Second line: the provider (in the all-providers list) and who it shares with.
                         const sub = [
-                          !type ? providerName(c.type) : '',
+                          [!type ? providerName(c.type) : '', relayHost(c)].filter(Boolean).join(' · '),
                           place?.peers?.length
                             ? t('channels.order.sharesWith', {
                                 names: place.peers.map((id) => order.names.get(id) || `#${id}`).join(t('channels.order.nameSep'))
