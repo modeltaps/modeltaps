@@ -24,6 +24,8 @@ func respondSupplyError(c *gin.Context, err error) {
 		{model.ErrSupplyExists, common.APICodeModelSupplyExists},
 		{model.ErrPendingNotFound, common.APICodeSupplyPendingNotFound},
 		{model.ErrModelStatus, common.APICodeModelStatusInvalid},
+		{model.ErrModelSupplyMode, common.APICodeModelSupplyModeInvalid},
+		{model.ErrSupplyBatchAction, common.APICodeInvalidParams},
 	}
 	for _, entry := range codes {
 		if errors.Is(err, entry.err) {
@@ -220,4 +222,39 @@ func SuggestModelSupplyUpstream(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": model.SuggestSupplyUpstream(c.Query("model"), channel)})
+}
+
+// SetModelSupplyMode sets the supply mode (balance, failover or default) of several public
+// models at once. Body: {"ids": [catalog ids], "mode": "..."}.
+func SetModelSupplyMode(c *gin.Context) {
+	var req struct {
+		Ids  []int  `json:"ids"`
+		Mode string `json:"mode"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || len(req.Ids) == 0 {
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeInvalidParams, "ids is required", nil)
+		return
+	}
+	affected, err := model.SetModelSupplyMode(req.Ids, req.Mode)
+	if err != nil {
+		respondSupplyError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": gin.H{"affected": affected}})
+}
+
+// BatchModelSupplies adds or removes one channel as a supply of several public models.
+// Body: {"action": "add"|"remove", "channel_id": 1, "models": ["..."]}.
+func BatchModelSupplies(c *gin.Context) {
+	var req model.SupplyBatch
+	if err := c.ShouldBindJSON(&req); err != nil || len(req.Models) == 0 {
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeInvalidParams, "models is required", nil)
+		return
+	}
+	result, err := model.ApplySupplyBatch(req)
+	if err != nil {
+		respondSupplyError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": result})
 }

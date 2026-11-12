@@ -1083,12 +1083,13 @@ func (cc *ChannelsChooser) Load() {
 	logger.SysLog("channels Load success")
 }
 
-// supplyModeOf returns the catalog's supply mode for a public model, balance when unset.
+// supplyModeOf returns the supply mode a public model routes with: its own, or the site default
+// when it follows the default.
 func supplyModeOf(modelName string) string {
-	if info := lookupModelInfo(modelName); info != nil && info.SupplyMode != "" {
-		return info.SupplyMode
+	if info := lookupModelInfo(modelName); info != nil {
+		return EffectiveSupplyMode(info.SupplyMode)
 	}
-	return SupplyModeBalance
+	return EffectiveSupplyMode("")
 }
 
 // loadFromSupplies builds the routing table from enabled supplies on enabled channels: each

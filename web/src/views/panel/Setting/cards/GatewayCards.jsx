@@ -379,6 +379,25 @@ export function SupplyPauseRulesCard({ ctx }) {
   );
 }
 
+// How a model that follows the default picks a supply within one priority tier.
+export function SupplyModeCard({ ctx }) {
+  const { t } = useTranslation();
+  const { inputs, setField } = ctx;
+  const value = inputs.SupplyModeDefault === 'failover' ? 'failover' : 'balance';
+  return (
+    <OptionCard ctx={ctx} id="supply-mode">
+      <SelectRow
+        id="SupplyModeDefault"
+        label={t('modelSupply.mode.label')}
+        description={t(`modelSupply.mode.${value}Hint`)}
+        value={value}
+        onChange={(v) => setField('SupplyModeDefault', v)}
+        options={['balance', 'failover'].map((mode) => ({ value: mode, label: t(`modelSupply.mode.${mode}`) }))}
+      />
+    </OptionCard>
+  );
+}
+
 export function SessionAffinityCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, setField } = ctx;

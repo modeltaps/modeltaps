@@ -69,3 +69,10 @@ export async function fetchSupplySwitches() {
     return null;
   }
 }
+
+// Sets the supply mode ('default', 'balance' or 'failover') of several public models by catalog id.
+export const setSupplyModes = ({ ids, mode }) => API.post('/api/model_supply/mode', { ids, mode }).then(body);
+
+// Adds ('add') or removes ('remove') one channel as a supply of several public models.
+export const batchSupplies = ({ action, channel_id, models }) =>
+  API.post('/api/model_supply/batch', { action, channel_id, models }).then(body);

@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A default supply mode and batch actions for supplies, so models do not have to be set up one
+  by one. Platform settings → Gateway has "Default supply mode" (balance or failover). A model's
+  mode switch gains "Follow default", which new models use; a model can still pick its own mode.
+  On the models page, the batch bar has a "Supplies" menu: set the mode of the selected models,
+  or add / remove one channel as a source of all of them (the upstream name is filled in and
+  priority and weight follow the channel). APIs: `POST /api/model_supply/mode` and
+  `POST /api/model_supply/batch`. Existing models on "balance" move to "Follow default" once;
+  the default starts as balance, so routing does not change.
 - "All groups" for channels in the admin UI: new channels no longer ask for groups and serve every
   user group, including groups created later. The group list under Groups & routing and the batch
   "Groups" dialog start with "All groups", which locks the single groups while it is on; turning

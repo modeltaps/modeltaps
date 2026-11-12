@@ -2543,8 +2543,25 @@
       "published": "已發佈",
       "retired": "已下架"
     },
+    "batch": {
+      "menu": "供應",
+      "modeLabel": "同一檔內",
+      "add": "新增來源…",
+      "remove": "移除來源…",
+      "addTitle": "為 {{count}} 個模型新增來源",
+      "removeTitle": "從 {{count}} 個模型移除來源",
+      "addHint": "所選渠道會成為這些模型的供應：上游模型名自動填寫，優先級和權重跟隨渠道。已由它供應的模型會略過。",
+      "removeHint": "刪除所選渠道對這些模型的供應。渠道本身不受影響。",
+      "pick": "選擇渠道",
+      "confirmAdd": "新增",
+      "confirmRemove": "移除",
+      "done": "已處理 {{changed}} 個，略過 {{skipped}} 個",
+      "modeDone": "已更新 {{count}} 個模型的模式"
+    },
     "mode": {
       "label": "同一檔內",
+      "default": "跟隨預設",
+      "defaultHint": "跟隨平台設定裡的預設模式，現在是「{{mode}}」。",
       "balance": "負載均衡",
       "failover": "主備",
       "balanceHint": "同一檔的供應按權重分擔請求。",
@@ -2895,6 +2912,11 @@
         "org-policy": {
           "title": "組織",
           "hint": "已有組織不受影響"
+        },
+        "supply-mode": {
+          "title": "預設供應模式",
+          "description": "沒有單獨設定的模型，同一檔裡的供應如何分擔請求",
+          "hint": "在模型的「供應」頁籤裡可以為單個模型另選"
         },
         "supply-pause-rules": {
           "title": "供應暫停規則",

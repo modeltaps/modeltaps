@@ -399,7 +399,7 @@ func planSupplyMigration(in supplyMigrationInput) (*supplyMigrationPlan, *Supply
 		info := byModel[name]
 		if info == nil {
 			plan.newInfos = append(plan.newInfos, &ModelInfo{
-				Model: name, Name: name, Status: ModelStatusPublished, SupplyMode: SupplyModeBalance,
+				Model: name, Name: name, Status: ModelStatusPublished, SupplyMode: SupplyModeDefault,
 				Source: ModelInfoSourceMigrated,
 			})
 			report.NewModels = append(report.NewModels, name)

@@ -47,7 +47,11 @@ type SupplyPreview struct {
 	RequestedModel string `json:"requested_model,omitempty"`
 	Group          string `json:"group,omitempty"`
 	Status         string `json:"status"`
-	Mode           string `json:"mode"`
+	// Mode is the mode requests are routed with; OwnMode is what the model stores (balance,
+	// failover, or default to follow DefaultMode, the site default).
+	Mode        string `json:"mode"`
+	OwnMode     string `json:"own_mode"`
+	DefaultMode string `json:"default_mode"`
 	// Active says supplies route requests now (ModelSupplyEnabled); when false the preview
 	// shows what the supply configuration will do once switched on.
 	Active bool                 `json:"active"`
@@ -98,11 +102,12 @@ func PreviewModelSupply(name, group string) (*SupplyPreview, error) {
 	}
 
 	preview := &SupplyPreview{
-		Model: canonical, Group: group, Status: info.Status, Mode: info.SupplyMode,
+		Model: canonical, Group: group, Status: info.Status, Mode: EffectiveSupplyMode(info.SupplyMode),
+		OwnMode: info.SupplyMode, DefaultMode: EffectiveSupplyMode(""),
 		Active: config.ModelSupplyEnabled, Tiers: []*SupplyPreviewTier{},
 	}
-	if preview.Mode == "" {
-		preview.Mode = SupplyModeBalance
+	if !IsValidSupplyMode(preview.OwnMode) {
+		preview.OwnMode = SupplyModeDefault
 	}
 	if isAlias {
 		preview.RequestedModel = name
