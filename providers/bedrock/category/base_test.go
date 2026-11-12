@@ -10,6 +10,14 @@ func TestGetModelNameRegionPrefix(t *testing.T) {
 		{"claude-opus-5-5", "us-east-1", "us.anthropic.claude-opus-5-5"},
 		{"claude-opus-5-5", "eu-west-1", "eu.anthropic.claude-opus-5-5"},
 		{"claude-opus-5-5", "ap-northeast-1", "global.anthropic.claude-opus-5-5"},
+		// fable-5 and fable-5-1: US geo profile (also for Canada), global elsewhere.
+		{"claude-fable-5", "us-east-1", "us.anthropic.claude-fable-5"},
+		{"claude-fable-5", "ca-central-1", "us.anthropic.claude-fable-5"},
+		{"claude-fable-5", "ca-west-1", "us.anthropic.claude-fable-5"},
+		{"claude-fable-5", "eu-central-1", "global.anthropic.claude-fable-5"},
+		{"claude-fable-5-1", "us-east-1", "us.anthropic.claude-fable-5-1"},
+		{"claude-fable-5-1", "ca-central-1", "us.anthropic.claude-fable-5-1"},
+		{"claude-fable-5-1", "ca-west-1", "us.anthropic.claude-fable-5-1"},
 		{"claude-fable-5-1", "eu-central-1", "global.anthropic.claude-fable-5-1"},
 		// fable-5-2: US geo profile (also for Canada), global elsewhere.
 		{"claude-fable-5-2", "us-east-1", "us.anthropic.claude-fable-5-2"},
