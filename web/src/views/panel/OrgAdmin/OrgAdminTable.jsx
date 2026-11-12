@@ -13,7 +13,6 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
-import { useNaturalWidth } from '@/components/list-page';
 import { cn } from '@/lib/utils';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
 import { relativeTime } from 'utils/relativeTime';
@@ -24,8 +23,6 @@ import { relativeTime } from 'utils/relativeTime';
 
 const ENABLED = 1;
 
-// Typical table width before it has been measured.
-export const ORG_TABLE_ESTIMATE = 820;
 // MemberCount 成员数 / 生效上限:max_members 为 null 时跟随站点默认(标注「默认」),0 为不限制。
 function MemberCount({ org }) {
   const { t } = useTranslation();
@@ -106,11 +103,10 @@ OrgSwitch.propTypes = { org: PropTypes.object.isRequired, onToggleStatus: PropTy
 
 // Organizations table: one line per organization (name, slug in mono), owner, members, pool
 // balance and spend right-aligned, age in words, then the status switch and the row menu last.
-export default function OrgAdminTable({ rows, rtf, openId, onOpen, onToggleStatus, onDissolve, onNaturalWidth }) {
+export default function OrgAdminTable({ rows, rtf, openId, onOpen, onToggleStatus, onDissolve }) {
   const { t } = useTranslation();
-  const tableRef = useNaturalWidth(onNaturalWidth);
   return (
-    <Table ref={tableRef}>
+    <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           <TableHead className="whitespace-nowrap">{t('orgAdmin.columns.name')}</TableHead>
@@ -173,8 +169,7 @@ OrgAdminTable.propTypes = {
   openId: PropTypes.number,
   onOpen: PropTypes.func.isRequired,
   onToggleStatus: PropTypes.func.isRequired,
-  onDissolve: PropTypes.func.isRequired,
-  onNaturalWidth: PropTypes.func
+  onDissolve: PropTypes.func.isRequired
 };
 
 // Phone cards, one per organization (same layout as the other phone cards). Top: name and slug,

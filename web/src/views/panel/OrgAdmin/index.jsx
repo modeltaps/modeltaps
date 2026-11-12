@@ -15,7 +15,7 @@ import { useObjectRoute } from '@/components/objects';
 import { API } from 'utils/api';
 import { showError } from 'utils/common';
 import usePaginatedList from 'hooks/usePaginatedList';
-import OrgAdminTable, { ORG_TABLE_ESTIMATE, OrgAdminCards } from './OrgAdminTable';
+import OrgAdminTable, { OrgAdminCards } from './OrgAdminTable';
 import OrgPanel from './OrgPanel';
 import { ORG_TAB_KEYS } from './orgTabs';
 
@@ -79,7 +79,7 @@ export default function OrgAdmin() {
   const handleRefresh = () => refresh();
 
   // Full table while it fits (the sidebar collapses first), phone cards otherwise.
-  const { pageRef, narrow, onNaturalWidth } = useListLayout({ estimate: ORG_TABLE_ESTIMATE, resetKey: 'orgs' });
+  const { narrow } = useListLayout();
   const rtf = useMemo(
     () => new Intl.RelativeTimeFormat((i18n.language || 'zh_CN').replace('_', '-'), { numeric: 'auto' }),
     [i18n.language]
@@ -160,7 +160,6 @@ export default function OrgAdmin() {
         onOpen={route.open}
         onToggleStatus={onToggleStatus}
         onDissolve={setDissolveTarget}
-        onNaturalWidth={onNaturalWidth}
       />
     );
   }
@@ -171,7 +170,7 @@ export default function OrgAdmin() {
 
   return (
     <>
-      <div ref={pageRef} className="space-y-3">
+      <div className="space-y-3">
         {/* Title row: refresh (icon). */}
         <PageActions>
           <TooltipProvider delayDuration={150}>
