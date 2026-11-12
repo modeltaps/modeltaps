@@ -3185,7 +3185,9 @@
           "hint": "Changes apply to every member"
         },
         "budget": {
-          "hint": "The period follows the platform settings"
+          "description": "Spending cap for all members per period; once used up, the organization's requests are refused",
+          "noLimitHint": "With no budget, only each member's own budget applies",
+          "resetsHint": "{{period}} reset; time zone and week start follow the platform settings"
         },
         "danger": {
           "description": "These actions affect every member"

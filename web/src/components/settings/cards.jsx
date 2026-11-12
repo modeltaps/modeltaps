@@ -34,7 +34,7 @@ function CardHeading({ title, description, aside }) {
   return (
     <div className="space-y-1">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h3 className="text-[15px] font-medium leading-6">{title}</h3>
+        {title && <h3 className="text-[15px] font-medium leading-6">{title}</h3>}
         {aside && <div className="flex flex-wrap items-center gap-2">{aside}</div>}
       </div>
       {description && <div className="max-w-3xl text-sm text-muted-foreground">{description}</div>}
@@ -156,7 +156,7 @@ export function ActionCard({ title, description, highlight, aside, children, cla
 }
 
 ActionCard.propTypes = {
-  title: PropTypes.node.isRequired,
+  title: PropTypes.node,
   description: PropTypes.node,
   highlight: PropTypes.string,
   aside: PropTypes.node,
@@ -198,8 +198,10 @@ export function ActionRow({
       children
     ) : (
       <Button
-        variant={destructive ? 'destructive' : 'outline'}
+        // Destructive actions are red text on an outline: a row of them should not shout.
+        variant="outline"
         size="sm"
+        className={destructive ? 'border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive' : undefined}
         disabled={disabled}
         onClick={() => {
           if (!confirm) return onAction?.();
