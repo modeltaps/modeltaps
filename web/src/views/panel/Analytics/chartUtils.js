@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { calculateQuota } from 'utils/common';
 
 // ==============================|| ANALYTICS — DATA TRANSFORMS ||============================== //
@@ -94,8 +93,3 @@ export function buildOrdersData(data, dates) {
   }
   return { rows, total };
 }
-
-export const defaultRange = () => ({
-  start: dayjs().subtract(6, 'day').startOf('day'),
-  end: dayjs().endOf('day')
-});
