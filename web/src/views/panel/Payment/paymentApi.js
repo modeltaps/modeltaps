@@ -85,7 +85,8 @@ export async function fetchOrders(page, rowsPerPage, keyword, order, orderBy) {
     delete params._timestamp;
     const res = await API.get('/api/payment/order', { params });
     const { success, message, data } = res.data;
-    if (success) return data;
+    // status_counts: orders per status under the other filters (for the status segments).
+    if (success) return { ...data, status_counts: res.data.status_counts || null };
     toast.error(message);
   } catch (error) {
     console.error(error);
