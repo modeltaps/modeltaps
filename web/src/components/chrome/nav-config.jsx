@@ -4,6 +4,7 @@ import {
   BarChart3,
   BookOpen,
   Boxes,
+  ListOrdered,
   Building2,
   FileText,
   MailPlus,
@@ -133,6 +134,7 @@ export const adminSections = [
     items: [
       { id: 'channel', url: url('channel'), icon: Network, labelKey: 'nav.items.channels' },
       { id: 'pricing', url: url('pricing'), icon: Boxes, labelKey: 'nav.items.catalog' },
+      { id: 'allocation', url: url('allocation'), icon: ListOrdered, labelKey: 'nav.items.allocation' },
       { id: 'routing_policy', url: url('routing_policy'), icon: Route, labelKey: 'nav.items.routing' }
     ]
   },

@@ -29,6 +29,7 @@ export default function ChannelPanel({
   onChanged,
   allChannels,
   groups,
+  supplyRouting = false,
   metricsRows,
   rangeKey,
   actions,
@@ -38,7 +39,16 @@ export default function ChannelPanel({
   const providerName = useProviderName();
   const [channel, setChannel] = useState(null);
   const [error, setError] = useState('');
-  const tabs = useMemo(() => PANEL_TABS.map((x) => ({ ...x, label: t(`channels.panel.tab.${x.key}`) })), [t]);
+  // With supplies routing, the routing tab keeps only groups and the tag: the order lives in the
+  // allocation policy.
+  const tabs = useMemo(
+    () =>
+      PANEL_TABS.map((x) => ({
+        ...x,
+        label: t(`channels.panel.tab.${x.key === 'routing' && supplyRouting ? 'routingGroups' : x.key}`)
+      })),
+    [t, supplyRouting]
+  );
 
   const load = useCallback(async () => {
     try {
@@ -81,6 +91,7 @@ export default function ChannelPanel({
     t,
     allChannels,
     groups,
+    supplyRouting,
     metricsRows,
     rangeKey,
     actions,
@@ -182,6 +193,7 @@ ChannelPanel.propTypes = {
   onChanged: PropTypes.func.isRequired,
   allChannels: PropTypes.array.isRequired,
   groups: PropTypes.array.isRequired,
+  supplyRouting: PropTypes.bool,
   metricsRows: PropTypes.array.isRequired,
   rangeKey: PropTypes.string.isRequired,
   actions: PropTypes.object.isRequired,

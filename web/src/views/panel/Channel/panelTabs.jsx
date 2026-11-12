@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { CloudDownload, Copy, Eraser, KeyRound, Loader2, Plus, RefreshCw, Trash2, X, AlertTriangle } from 'lucide-react';
@@ -538,19 +539,30 @@ function RoutingBody({ object: channel, draft, setDraft, ctx }) {
       <Field label={t('channels.groups')} extra={t('channels.groupsHint')}>
         <GroupOptions groups={ctx.groups} value={draft.groups} onChange={(groups) => setDraft({ ...draft, groups })} />
       </Field>
-      <Field
-        label={t('channels.usage.label')}
-        extra={usage.top ? t('channels.usage.peerNote', { name: usage.top.name }) : null}
-        hint={t('channels.usage.syncHint')}
-      >
-        <UsageOptions
-          usage={usage}
-          value={value}
-          onChange={(key) => setDraft({ ...draft, usage: key })}
-          custom={draft.custom}
-          onCustomChange={(custom) => setDraft({ ...draft, custom })}
-        />
-      </Field>
+      {ctx.supplyRouting ? (
+        <Field label={t('channels.usage.label')}>
+          <p className="text-sm text-muted-foreground">
+            {t('channels.usage.byPolicy')}{' '}
+            <Link to="/panel/allocation" className="text-info underline-offset-2 hover:underline">
+              {t('channels.usage.openPolicy')}
+            </Link>
+          </p>
+        </Field>
+      ) : (
+        <Field
+          label={t('channels.usage.label')}
+          extra={usage.top ? t('channels.usage.peerNote', { name: usage.top.name }) : null}
+          hint={t('channels.usage.syncHint')}
+        >
+          <UsageOptions
+            usage={usage}
+            value={value}
+            onChange={(key) => setDraft({ ...draft, usage: key })}
+            custom={draft.custom}
+            onCustomChange={(custom) => setDraft({ ...draft, custom })}
+          />
+        </Field>
+      )}
       <Field label={t('channels.tag')} htmlFor="cp-tag" optional hint={t('channels.tagHint')}>
         <Input id="cp-tag" value={draft.tag} maxLength={32} onChange={(e) => setDraft({ ...draft, tag: e.target.value })} />
       </Field>
@@ -569,8 +581,10 @@ const routingTab = {
       tag: c.tag || ''
     };
   },
-  patch: (d, c, { t, allChannels }) => {
+  patch: (d, c, { t, allChannels, supplyRouting }) => {
     if (!d.groups.length) return { error: t('channel_edit.requiredGroup') };
+    // The allocation policy orders channels while supplies route: leave the numbers alone.
+    if (supplyRouting) return { group: d.groups.join(','), tag: d.tag.trim() };
     const peers = usagePeers({ ...c, groups: d.groups }, allChannels);
     const keys = usageOptions(c, peers).options.map((o) => o.key);
     const nums = usageNumbers(keys.includes(d.usage) ? d.usage : 'custom', c, peers, d.custom);

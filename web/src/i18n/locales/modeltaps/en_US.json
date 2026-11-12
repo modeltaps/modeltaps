@@ -679,6 +679,7 @@
     "api_audio": "Convert between text and speech",
     "api_compare": "Run several chat models side by side on the same input",
     "pricing": "Model catalog, prices, channels and vendors",
+    "allocation": "Which provider gets a model's requests first and which ones take over; models follow this order unless set by hand",
     "routing_policy": "Virtual models that pick a target model from the first message of each session",
     "channel": "Each provider can have several channels; a channel is one set of credentials and an address for that provider",
     "org_members": "Invite members and set each member’s budget and model scope",
@@ -2275,6 +2276,7 @@
         "models": "Models",
         "connection": "Connection",
         "routing": "Groups & routing",
+        "routingGroups": "Groups & tag",
         "rewrite": "Request rewriting",
         "monitor": "Monitoring",
         "advanced": "Advanced"
@@ -2341,7 +2343,9 @@
       "peerExisting": "{{name}} is already in these groups",
       "peerNote": "{{name}} serves these models in the same groups too",
       "priority": "Priority",
-      "weight": "Weight"
+      "weight": "Weight",
+      "byPolicy": "Whether this channel is tried first or later is set in the allocation policy.",
+      "openPolicy": "Open the allocation policy"
     },
     "batch": {
       "label": "Selected channels",
@@ -2454,6 +2458,38 @@
       }
     }
   },
+  "allocation": {
+    "unknownProvider": "Unknown provider",
+    "channelGone": "Channel #{{id}}",
+    "gone": "No longer exists; remove it before saving",
+    "channelOff": "Channel disabled",
+    "channels": "{{total}} channels, {{enabled}} enabled",
+    "weightOf": "Weight of {{name}}",
+    "entryActions": "Actions for {{name}}",
+    "moveUp": "Move to the tier above",
+    "moveDown": "Move to the tier below",
+    "ownTier": "Put in a tier of its own",
+    "byChannel": "Split into channels",
+    "mergeChannels": "Merge back into the provider",
+    "remove": "Remove from the order",
+    "saved": "Saved; requests now follow the new order",
+    "tier": "Tier {{n}}",
+    "tierFirst": "Tried first",
+    "tierNext": "Used when every tier above is unavailable",
+    "tierShared": "shared by weight",
+    "tierUp": "Move tier {{n}} up",
+    "tierDown": "Move tier {{n}} down",
+    "revert": "Revert",
+    "save": "Save",
+    "notActive": "Requests still follow the channels' model lists; this order takes effect once routing by supplies is on.",
+    "summary": "{{policy}} models follow this order, {{manual}} are set by hand.",
+    "openModels": "Open the model catalog",
+    "empty": "There are no channels yet.",
+    "unlisted": "Not placed",
+    "unlistedHint": "Tried after every tier, sharing equally",
+    "place": "Place",
+    "footnote": "Each model is ordered among the providers that offer it; the percentages are the split when every provider of a tier offers the model. Channels of one provider share its weight equally and are skipped while disabled or paused."
+  },
   "nav": {
     "sections": {
       "develop": "Develop",
@@ -2479,6 +2515,7 @@
       "stats": "Statistics",
       "channels": "Providers",
       "catalog": "Model catalog",
+      "allocation": "Allocation",
       "routing": "Auto routing",
       "users": "Users",
       "userGroups": "User groups",
@@ -2771,6 +2808,20 @@
       "attached_other": "Attached to {{model}} on {{count}} channels",
       "skipped_one": "{{count}} channel already supplies {{model}} under another upstream name, so the model still waits there.",
       "skipped_other": "{{count}} channels already supply {{model}} under another upstream name, so the model still waits there."
+    },
+    "allocation": {
+      "label": "Order",
+      "policy": "Allocation policy",
+      "manual": "Set by hand",
+      "manualShort": "set by hand",
+      "open": "View the allocation policy",
+      "toManual": "Set by hand",
+      "toPolicy": "Follow the allocation policy",
+      "policyHint": "The order and weights come from the allocation policy; changing them here sets this model by hand.",
+      "manualHint": "This model keeps its own order when the allocation policy changes.",
+      "becameManual": "This model is now set by hand",
+      "nowManual": "Set by hand; the current order is kept",
+      "nowPolicy": "This model follows the allocation policy again"
     }
   },
   "settingsUi": {

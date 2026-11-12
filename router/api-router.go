@@ -267,11 +267,19 @@ func SetApiRouter(router *gin.Engine) {
 			modelSupplyRoute.POST("/pending/ignore", controller.IgnorePendingUpstreamModel)
 			modelSupplyRoute.POST("/batch", controller.BatchModelSupplies)
 			modelSupplyRoute.POST("/mode", controller.SetModelSupplyMode)
+			modelSupplyRoute.POST("/allocation", controller.SetModelAllocation)
 			modelSupplyRoute.POST("/", controller.CreateModelSupply)
 			modelSupplyRoute.PUT("/", controller.UpdateModelSupply)
 			modelSupplyRoute.DELETE("/:id", controller.DeleteModelSupply)
 			// Rewrites how every model is routed once ModelSupplyEnabled is on: root only.
 			modelSupplyRoute.POST("/migrate", middleware.RootAuth(), controller.MigrateModelSupplies)
+		}
+
+		allocationRoute := apiRouter.Group("/allocation_policy")
+		allocationRoute.Use(middleware.AdminAuth())
+		{
+			allocationRoute.GET("/", controller.GetAllocationPolicy)
+			allocationRoute.PUT("/", controller.UpdateAllocationPolicy)
 		}
 
 		userGroup := apiRouter.Group("/user_group")

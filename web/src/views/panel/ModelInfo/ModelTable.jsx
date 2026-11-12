@@ -123,6 +123,10 @@ export function SupplyCell({ row, onOpen }) {
       <span className={cn('text-xs text-muted-foreground', counts.total > 0 && counts.usable === 0 && 'text-warning')}>
         · {t('modelSupply.count', { count: counts.total })}
       </span>
+      {/* Models on the allocation policy need no mark; one set by hand does. */}
+      {row.supplyRouting && row.allocation === 'manual' && (
+        <span className="text-xs text-foreground">· {t('modelSupply.allocation.manualShort')}</span>
+      )}
     </button>
   );
 }

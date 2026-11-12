@@ -30,6 +30,7 @@ const Payment = Loadable(lazy(() => import('views/panel/Payment')));
 const Redemption = Loadable(lazy(() => import('views/panel/Redemption')));
 const InviteCode = Loadable(lazy(() => import('views/panel/InviteCode')));
 const Pricing = Loadable(lazy(() => import('views/panel/Pricing')));
+const Allocation = Loadable(lazy(() => import('views/panel/Allocation')));
 const Usage = Loadable(lazy(() => import('views/panel/Usage')));
 const OrgAdmin = Loadable(lazy(() => import('views/panel/OrgAdmin')));
 const Organization = Loadable(lazy(() => import('views/panel/Organization')));
@@ -197,6 +198,14 @@ const MainRoutes = {
       element: (
         <AdminGuard>
           <Pricing />
+        </AdminGuard>
+      )
+    },
+    {
+      path: 'allocation',
+      element: (
+        <AdminGuard>
+          <Allocation />
         </AdminGuard>
       )
     },

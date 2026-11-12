@@ -1086,7 +1086,16 @@ func (cc *ChannelsChooser) Load() {
 // supplyModeOf returns the supply mode a public model routes with: its own, or the site default
 // when it follows the default.
 func supplyModeOf(modelName string) string {
-	if info := lookupModelInfo(modelName); info != nil {
+	return routingSupplyMode(lookupModelInfo(modelName), currentAllocationActive())
+}
+
+// routingSupplyMode is the mode a model routes with. Under an allocation policy a tier with
+// several supplies always shares traffic by weight, so the mode only applies to manual models.
+func routingSupplyMode(info *ModelInfo, allocationActive bool) string {
+	if allocationActive && followsPolicy(info) {
+		return SupplyModeBalance
+	}
+	if info != nil {
 		return EffectiveSupplyMode(info.SupplyMode)
 	}
 	return EffectiveSupplyMode("")
@@ -1101,6 +1110,7 @@ func (cc *ChannelsChooser) loadFromSupplies(channels []*Channel, allGroups []str
 		logger.SysError("load model supplies failed: " + err.Error())
 		return
 	}
+	supplies = cc.allocateLoaded(supplies, channels)
 
 	newChannels := make(map[int]*ChannelChoice, len(channels))
 	for _, channel := range channels {

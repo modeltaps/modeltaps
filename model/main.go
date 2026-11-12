@@ -279,6 +279,10 @@ func InitDB() (err error) {
 		if err != nil {
 			return err
 		}
+		err = db.AutoMigrate(&AllocationPolicy{})
+		if err != nil {
+			return err
+		}
 		err = db.AutoMigrate(&SupplyPause{})
 		if err != nil {
 			return err

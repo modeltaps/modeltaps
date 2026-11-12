@@ -151,6 +151,9 @@ type ModelInfo struct {
 	// SupplyMode picks a supply within one priority tier: balance chooses by weight at random,
 	// failover takes the highest weight. Tiers are always tried in order.
 	SupplyMode string `json:"supply_mode" gorm:"type:varchar(16);default:'default'"`
+	// Allocation is empty while the model takes its supplies' priority and weight from the
+	// allocation policy, AllocationManual when they keep their own numbers.
+	Allocation string `json:"allocation" gorm:"type:varchar(16);default:''"`
 	// Kind 行的种类：空 = 普通模型；ModelInfoKindRoutingPolicy = 自动路由策略的目录行，
 	// 由 routing_policies 联动维护，后台目录接口不允许直接增删改。
 	Kind string `json:"kind" gorm:"type:varchar(32);default:''"`
@@ -254,7 +257,8 @@ func CreateModelInfo(modelInfo *ModelInfo) error {
 
 // UpdateModelInfo 用于后台手工编辑：synced_at / supported_voices 由同步流程维护，这里不覆盖。
 func UpdateModelInfo(modelInfo *ModelInfo) error {
-	err := DB.Omit("id", "created_at", "synced_at", "supported_voices").Save(modelInfo).Error
+	// allocation is changed only through SetModelAllocation, so a full save never resets it.
+	err := DB.Omit("id", "created_at", "synced_at", "supported_voices", "allocation").Save(modelInfo).Error
 	if err != nil {
 		return err
 	}
