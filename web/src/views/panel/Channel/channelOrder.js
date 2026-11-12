@@ -194,3 +194,37 @@ export function joinPosition(groups, id, targetId) {
 }
 
 export const sameOrder = (a, b) => JSON.stringify(orderToTiers(a)) === JSON.stringify(orderToTiers(b));
+
+// Splits every position into the clusters of channels that share a model, each cluster a position
+// of its own right where it was. Channels of one position that share no model never compete for a
+// request, so this changes no routing; it makes every position a group that really shares.
+export function normalizeOrder(groups = [], providers = []) {
+  const out = [];
+  for (const g of groups) {
+    if (g.ids.length < 2) {
+      out.push(g);
+      continue;
+    }
+    const tier = g.ids.map((id) => ({ channel_id: id, weight: g.weights[id] || 1 }));
+    const split = tierSplit(tier, providers, [tier]);
+    const clusters = new Map();
+    split.forEach((s, i) => {
+      if (!clusters.has(s.group)) clusters.set(s.group, { ids: [], weights: {} });
+      const c = clusters.get(s.group);
+      c.ids.push(g.ids[i]);
+      c.weights[g.ids[i]] = g.weights[g.ids[i]] || 1;
+    });
+    out.push(...clusters.values());
+  }
+  return out;
+}
+
+// Moves a channel to its own position right after `afterId`'s position.
+export function moveAfter(groups, id, afterId) {
+  if (id === afterId) return groups;
+  const at = groups.findIndex((g) => g.ids.includes(afterId));
+  const next = groups[at + 1]?.ids.find((x) => x !== id);
+  if (next !== undefined && !groups[at + 1].ids.includes(id)) return moveBefore(groups, id, next);
+  if (next !== undefined) return moveBefore(groups, id, groups[at + 2]?.ids[0] ?? null);
+  return moveBefore(groups, id, groups[at + 2]?.ids[0] ?? null);
+}

@@ -32,7 +32,9 @@ import { checkChannelDrift, fetchAllChannels, fetchChannelMetrics, fetchGroupOpt
 import { fetchAllocation, saveAllocation } from '../Allocation/allocationApi';
 import {
   joinPosition,
+  moveAfter,
   moveBefore,
+  normalizeOrder,
   moveStep,
   orderFromPolicy,
   orderInfo,
@@ -124,7 +126,10 @@ export default function Channel() {
 
   // The order shown: the policy expanded into channels, every channel placed (new ones last).
   const policyOrder = useMemo(
-    () => (allocation ? orderFromPolicy(allocation.tiers || [], allocation.providers || [], channels) : null),
+    () =>
+      allocation
+        ? normalizeOrder(orderFromPolicy(allocation.tiers || [], allocation.providers || [], channels), allocation.providers || [])
+        : null,
     [allocation, channels]
   );
   const groupsShown = orderGroups || policyOrder;
@@ -139,7 +144,9 @@ export default function Channel() {
         : null,
     [groupsShown, allocation, channels]
   );
-  const saveOrder = async (next) => {
+  const saveOrder = async (raw) => {
+    // Every position is a group that really shares: one that would share nothing falls apart.
+    const next = normalizeOrder(raw, allocation?.providers || []);
     setOrderGroups(next);
     try {
       const res = await saveAllocation(orderToTiers(next));
@@ -157,11 +164,23 @@ export default function Channel() {
   const orderActions = order
     ? {
         step: (id, dir) => saveOrder(moveStep(order.groups, id, dir)),
-        share: (id) => saveOrder(shareWithAbove(order.groups, id)),
+        share: (id) => {
+          const next = normalizeOrder(shareWithAbove(order.groups, id), allocation?.providers || []);
+          const gi = order.groups.findIndex((g) => g.ids.includes(id));
+          const above = order.groups[gi - 1]?.ids[0];
+          if (!next.some((g) => g.ids.includes(id) && g.ids.includes(above))) toast.info(t('channels.order.noCommonModel'));
+          saveOrder(next);
+        },
         unshare: (id) => saveOrder(stopSharing(order.groups, id)),
         weight: (id, w) => saveOrder(setWeight(order.groups, id, w)),
         drop: (id, beforeId) => saveOrder(moveBefore(order.groups, id, beforeId)),
-        join: (id, targetId) => saveOrder(joinPosition(order.groups, id, targetId))
+        after: (id, afterId) => saveOrder(moveAfter(order.groups, id, afterId)),
+        join: (id, targetId) => {
+          const next = normalizeOrder(joinPosition(order.groups, id, targetId), allocation?.providers || []);
+          // No model in common: the channel lands right after instead of sharing.
+          if (!next.some((g) => g.ids.includes(id) && g.ids.includes(targetId))) toast.info(t('channels.order.noCommonModel'));
+          saveOrder(next);
+        }
       }
     : null;
 

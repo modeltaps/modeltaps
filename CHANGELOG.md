@@ -273,6 +273,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Call order: every position is now a group of channels that really share traffic. Saving splits
+  a position whose channels offer no model in common into consecutive positions (routing is the
+  same), so numbers, arrows and dragging all work on these groups. Each position has up / down
+  arrows next to its number. Dragging a row shows the whole row; dropping on its top or bottom
+  edge inserts before or after it and in the middle joins its group, with a line or a "share with
+  this group" hint showing where it will land. Joining a group that offers no model in common
+  places the channel right after it and says so.
 - The providers page header is one toolbar row: search, a provider dropdown, status, an
   "N need attention" filter, conditions, the time range and columns. Attention items (low
   balance, auto-disabled, missing key, model changes) are tags on their channel's row with the

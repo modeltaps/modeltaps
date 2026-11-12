@@ -2481,7 +2481,13 @@
       "sharesWith": "shares with {{names}}",
       "nameSep": ", ",
       "sharedTag": "shared",
-      "groupWhy": "These {{count}} channels are in one position and offer {{models}} models in common, which they share by weight"
+      "groupWhy": "These {{count}} channels are in one position and offer {{models}} models in common, which they share by weight",
+      "noCommonModel": "These channels offer no model in common, so they cannot share; it now comes right after",
+      "dropHint": {
+        "before": "Move here",
+        "after": "Move here",
+        "join": "Share with this group"
+      }
     },
     "newMenu": {
       "inUse": "In use"

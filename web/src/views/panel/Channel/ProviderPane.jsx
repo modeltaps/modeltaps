@@ -5,6 +5,8 @@ import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
+  ChevronDown,
+  ChevronUp,
   Copy,
   GripVertical,
   Link2,
@@ -559,14 +561,18 @@ export default function ProviderPane({
                       onDragOver: (e) => {
                         if (!dragId || dragId === c.id) return;
                         e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        // Top third: before this row; bottom third: after it; middle: share its position.
                         const box = e.currentTarget.getBoundingClientRect();
-                        const mode = e.clientY - box.top < box.height / 3 ? 'before' : 'join';
+                        const y = (e.clientY - box.top) / box.height;
+                        const mode = y < 0.3 ? 'before' : y > 0.7 ? 'after' : 'join';
                         if (drop?.id !== c.id || drop.mode !== mode) setDrop({ id: c.id, mode });
                       },
                       onDrop: (e) => {
                         e.preventDefault();
                         if (dragId && drop && dragId !== c.id) {
                           if (drop.mode === 'join') orderActions.join(dragId, c.id);
+                          else if (drop.mode === 'after') orderActions.after(dragId, c.id);
                           else orderActions.drop(dragId, c.id);
                         }
                         endDrag();
@@ -574,9 +580,10 @@ export default function ProviderPane({
                     }
                   : {})}
                 className={cn(
-                  drop?.id === c.id && drop.mode === 'before' && 'shadow-[inset_0_2px_0_var(--info)]',
-                  drop?.id === c.id && drop.mode === 'join' && 'bg-info/[0.08] shadow-[inset_0_0_0_1px_var(--info)]',
-                  dragId === c.id && 'opacity-50',
+                  drop?.id === c.id && drop.mode === 'before' && 'shadow-[inset_0_3px_0_var(--info)]',
+                  drop?.id === c.id && drop.mode === 'after' && 'shadow-[inset_0_-3px_0_var(--info)]',
+                  drop?.id === c.id && drop.mode === 'join' && '!bg-info/[0.12] shadow-[inset_0_0_0_2px_var(--info)]',
+                  dragId === c.id && 'opacity-40',
                   place && place.clusterSize > 1 && 'bg-muted/40',
                   'cursor-pointer whitespace-nowrap transition-colors hover:bg-foreground/[0.04] [&>td]:h-[52px] [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0',
                   off && '[&>td:not(.keep)]:text-muted-foreground',
@@ -596,10 +603,17 @@ export default function ProviderPane({
                         draggable
                         onDragStart={(e) => {
                           e.dataTransfer.effectAllowed = 'move';
+                          e.dataTransfer.setData('text/plain', String(c.id));
+                          // The whole row follows the pointer, not just the handle.
+                          const row = e.currentTarget.closest('tr');
+                          if (row) {
+                            const box = row.getBoundingClientRect();
+                            e.dataTransfer.setDragImage(row, e.clientX - box.left, e.clientY - box.top);
+                          }
                           setDragId(c.id);
                         }}
                         onDragEnd={endDrag}
-                        className="cursor-grab text-muted-foreground/40 hover:text-muted-foreground"
+                        className="-m-1 flex cursor-grab rounded p-1 text-muted-foreground/50 hover:bg-muted hover:text-foreground active:cursor-grabbing"
                         title={t('channels.order.drag')}
                       >
                         <GripVertical className="size-4" />
@@ -618,10 +632,39 @@ export default function ProviderPane({
                     }
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <span className="block text-[13px] font-medium tabular-nums">{place ? place.number : ''}</span>
-                    {place && place.clusterSize > 1 && spans.get(c.id) > 1 && (
-                      <span className="block text-[11px] leading-tight text-muted-foreground">{t('channels.order.sharedTag')}</span>
-                    )}
+                    <span className="inline-flex items-center gap-0.5">
+                      <span className="w-5">
+                        <span className="block text-[13px] font-medium tabular-nums">{place ? place.number : ''}</span>
+                        {place && place.clusterSize > 1 && spans.get(c.id) > 1 && (
+                          <span className="block text-[11px] leading-tight text-muted-foreground">{t('channels.order.sharedTag')}</span>
+                        )}
+                      </span>
+                      {place && orderActions && (
+                        // Moves the whole position (the group) one step.
+                        <span className="flex flex-col">
+                          <button
+                            type="button"
+                            disabled={place.index === 0}
+                            aria-label={t('channels.order.up')}
+                            title={t('channels.order.up')}
+                            onClick={() => orderActions.step(c.id, 'up')}
+                            className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-25"
+                          >
+                            <ChevronUp className="size-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={place.index === order.groups.length - 1}
+                            aria-label={t('channels.order.down')}
+                            title={t('channels.order.down')}
+                            onClick={() => orderActions.step(c.id, 'down')}
+                            className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-25"
+                          >
+                            <ChevronDown className="size-3.5" />
+                          </button>
+                        </span>
+                      )}
+                    </span>
                   </td>
                 )}
                 <td>
@@ -645,6 +688,11 @@ export default function ProviderPane({
                         {(issuesById.get(c.id) || []).map((i) => (
                           <IssueTag key={i.key} issue={i} onAction={onIssueAction} onDismiss={onDismissIssue} busy={issueBusy(i)} />
                         ))}
+                        {drop?.id === c.id && (
+                          <span className="inline-flex h-[22px] shrink-0 items-center rounded-full bg-info px-2 text-xs text-info-foreground">
+                            {t(`channels.order.dropHint.${drop.mode}`)}
+                          </span>
+                        )}
                         {isNew && (
                           <span className="inline-flex h-[22px] shrink-0 items-center rounded-full bg-info/10 px-2 text-xs text-info">
                             {t('channels.table.new')}

@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
   canMoveStep,
   joinPosition,
+  moveAfter,
   moveBefore,
+  normalizeOrder,
   moveStep,
   orderFromPolicy,
   orderInfo,
@@ -87,5 +89,27 @@ describe('order edits', () => {
   it('joins a channel into another position', () => {
     expect(joinPosition(base, 4, 1).map((g) => g.ids)).toEqual([[1, 4], [2], [3], [5], [9]]);
     expect(joinPosition(base, 1, 1)).toBe(base);
+  });
+});
+
+describe('normalizeOrder', () => {
+  it('splits a position into the groups that really share and keeps their place', () => {
+    const groups = [
+      { ids: [1, 3, 2], weights: { 1: 3, 3: 1, 2: 1 } },
+      { ids: [4], weights: { 4: 1 } }
+    ];
+    // 1 and 2 (Vercel) share models, 3 (Venice) serves others.
+    expect(normalizeOrder(groups, providers)).toEqual([
+      { ids: [1, 2], weights: { 1: 3, 2: 1 } },
+      { ids: [3], weights: { 3: 1 } },
+      { ids: [4], weights: { 4: 1 } }
+    ]);
+  });
+
+  it('moves a channel after another position', () => {
+    const base = orderFromPolicy([], providers, channels); // 1, 2, 3, 4, 5, 9
+    expect(moveAfter(base, 1, 3).map((g) => g.ids)).toEqual([[2], [3], [1], [4], [5], [9]]);
+    expect(moveAfter(base, 9, 1).map((g) => g.ids)).toEqual([[1], [9], [2], [3], [4], [5]]);
+    expect(moveAfter(base, 2, 1)).toEqual(base);
   });
 });
