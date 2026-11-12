@@ -312,7 +312,8 @@
       }
     },
     "loadFailed": "Failed to load the available model list, so the availability shown here may be wrong.",
-    "retry": "Retry"
+    "retry": "Retry",
+    "modalities": "Docs"
   },
   "playground": {
     "curlHint": "sk-YOUR_TOKEN is a placeholder",
