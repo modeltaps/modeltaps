@@ -402,6 +402,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `claude-fable-5-1` through the `us.` inference profile, as they already did for
   `claude-fable-5-2`, instead of falling back to `global.`. Both Canadian regions are source
   regions of the US profile, so requests stay inside the US and Canada.
+- The same applies to `claude-sonnet-4-6`, `claude-sonnet-5`, `claude-opus-5` and `claude-opus-5-5`:
+  Canadian Bedrock channels now use the `us.` profile instead of `global.`. EU Bedrock channels
+  call `claude-sonnet-5` through the `eu.` profile, which AWS added after the model launched,
+  instead of `global.`, so requests stay in the EU.
 - The allocation page worked out percentages over a whole tier, so channels that never serve the
   same model looked like they split traffic. Shares are now worked out only between entries of a
   tier that serve a model in common; an entry that shares none shows no weight, and each row names

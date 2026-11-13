@@ -25,6 +25,23 @@ func TestGetModelNameRegionPrefix(t *testing.T) {
 		{"claude-fable-5-2", "ca-west-1", "us.anthropic.claude-fable-5-2"},
 		{"claude-fable-5-2", "eu-central-1", "global.anthropic.claude-fable-5-2"},
 		{"claude-fable-5-2", "ap-northeast-1", "global.anthropic.claude-fable-5-2"},
+		// sonnet-4-6, opus-5 and opus-5-5: US geo profile also for Canada, EU geo profile in the EU.
+		{"claude-sonnet-4-6", "ca-central-1", "us.anthropic.claude-sonnet-4-6"},
+		{"claude-sonnet-4-6", "ca-west-1", "us.anthropic.claude-sonnet-4-6"},
+		{"claude-sonnet-4-6", "eu-west-1", "eu.anthropic.claude-sonnet-4-6"},
+		{"claude-opus-5", "ca-central-1", "us.anthropic.claude-opus-5"},
+		{"claude-opus-5", "ca-west-1", "us.anthropic.claude-opus-5"},
+		{"claude-opus-5", "eu-central-1", "eu.anthropic.claude-opus-5"},
+		{"claude-opus-5-5", "ca-central-1", "us.anthropic.claude-opus-5-5"},
+		{"claude-opus-5-5", "ca-west-1", "us.anthropic.claude-opus-5-5"},
+		// sonnet-5: geo profiles in the US (also Canada) and the EU, global in AP and elsewhere.
+		{"claude-sonnet-5", "us-east-1", "us.anthropic.claude-sonnet-5"},
+		{"claude-sonnet-5", "ca-central-1", "us.anthropic.claude-sonnet-5"},
+		{"claude-sonnet-5", "ca-west-1", "us.anthropic.claude-sonnet-5"},
+		{"claude-sonnet-5", "eu-central-1", "eu.anthropic.claude-sonnet-5"},
+		{"claude-sonnet-5", "eu-west-2", "eu.anthropic.claude-sonnet-5"},
+		{"claude-sonnet-5", "ap-southeast-1", "global.anthropic.claude-sonnet-5"},
+		{"claude-sonnet-5", "sa-east-1", "global.anthropic.claude-sonnet-5"},
 		// "*" fallback for roots without an entry.
 		{"claude-haiku-4-5-20251001", "sa-east-1", "global.anthropic.claude-haiku-4-5-20251001-v1:0"},
 		{"claude-sonnet-5-5", "us-east-1", "global.anthropic.claude-sonnet-5-5"},

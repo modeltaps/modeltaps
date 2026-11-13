@@ -68,6 +68,8 @@ var regionPrefixes = []string{"global.", "us.", "eu.", "apac.", "au.", "jp."}
 // destinations include Canada), so models with a us. geo profile there map "ca" to "us" to keep
 // data residency instead of falling back to "*" -> global. Not every model supports geo in ca:
 // sonnet-4-5, haiku-4-5 and opus-4-5 do not in ca-west-1, so they have no "ca" key and use "*".
+// The model cards of sonnet-4-6, opus-5 and opus-5-5 list both Canadian regions as source regions
+// of the US profile (checked 2026-11-14), so they carry "ca" too.
 var awsModelCanCrossRegionMap = map[string]map[string]string{
 	"anthropic.claude-3-sonnet-20240229-v1:0": {"us": "us", "eu": "eu", "ap": "apac"},
 	"anthropic.claude-3-opus-20240229-v1:0":   {"us": "us"},
@@ -84,7 +86,7 @@ var awsModelCanCrossRegionMap = map[string]map[string]string{
 	// 4.5 generation onwards: global. is available in every commercial region, so all of them
 	// carry the "*" fallback.
 	"anthropic.claude-sonnet-4-5-20250929-v1:0": {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
-	"anthropic.claude-sonnet-4-6":               {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
+	"anthropic.claude-sonnet-4-6":               {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
 	"anthropic.claude-haiku-4-5-20251001-v1:0":  {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
 	// haiku-5-5: no in-region access, so every region needs a profile. Geo ids are us./eu./au./jp.,
 	// and the us. profile lists ca-central-1 and ca-west-1 as source regions (AWS model card
@@ -94,11 +96,12 @@ var awsModelCanCrossRegionMap = map[string]map[string]string{
 	"anthropic.claude-opus-4-6-v1":            {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
 	"anthropic.claude-opus-4-7":               {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
 	"anthropic.claude-opus-4-8":               {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
-	"anthropic.claude-opus-5":                 {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
+	"anthropic.claude-opus-5":                 {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
 	// opus-5-5 has the widest geo coverage (us/eu/au/jp); AP still maps to global. as above.
-	"anthropic.claude-opus-5-5": {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
-	// sonnet-5: no geo profile in the EU, global only (AWS model card 2026-06-30).
-	"anthropic.claude-sonnet-5": {"us": "us", "eu": "global", "ap": "global", "*": "global"},
+	"anthropic.claude-opus-5-5": {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
+	// sonnet-5: the card first listed no EU geo profile (2026-06-30); it now lists eu. with the
+	// EU regions as sources (checked 2026-11-14), so EU keeps data residency instead of global.
+	"anthropic.claude-sonnet-5": {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
 	// sonnet-5-5: no geo profile anywhere (geo inference id N/A), always global.
 	"anthropic.claude-sonnet-5-5": {"*": "global"},
 	// fable-5 and fable-5-1: geo profile in the US only; EU and AP fall back to global. The
