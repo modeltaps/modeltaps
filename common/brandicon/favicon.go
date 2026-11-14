@@ -3,6 +3,7 @@ package brandicon
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"net/url"
 	"strings"
@@ -35,7 +36,7 @@ func FetchFavicon(ctx context.Context, domain string) ([]byte, string, error) {
 
 	base := &url.URL{Scheme: "https", Host: domain, Path: "/"}
 	var candidates []string
-	if res, err := fetchFunc(ctx, base.String(), safefetch.Options{Accept: "text/html"}); err == nil {
+	if res, err := fetchFunc(ctx, base.String(), safefetch.Options{Accept: "text/html", Truncate: true}); err == nil {
 		candidates = iconLinks(res.FinalURL, res.Body)
 	}
 	candidates = append(candidates,
@@ -58,6 +59,11 @@ func FetchFavicon(ctx context.Context, domain string) ([]byte, string, error) {
 		switch mime {
 		case "":
 			continue
+		case safefetch.MimePNG:
+			if tinyPNG(res.Body) {
+				continue
+			}
+			return res.Body, mime, nil
 		case safefetch.MimeSVG:
 			clean, err := safefetch.SanitizeSVG(res.Body)
 			if err != nil {
@@ -69,6 +75,21 @@ func FetchFavicon(ctx context.Context, domain string) ([]byte, string, error) {
 		}
 	}
 	return nil, "", ErrFaviconNotFound
+}
+
+// faviconMinSide is the smallest PNG edge accepted as a site icon. Some image services answer
+// non-browser clients with a 1x1 placeholder, which would otherwise be cached as the icon.
+const faviconMinSide = 16
+
+// tinyPNG reports whether a PNG declares an edge below faviconMinSide in its IHDR chunk. Data
+// too short to carry one is left to the other checks.
+func tinyPNG(b []byte) bool {
+	if len(b) < 24 || string(b[12:16]) != "IHDR" {
+		return false
+	}
+	width := binary.BigEndian.Uint32(b[16:20])
+	height := binary.BigEndian.Uint32(b[20:24])
+	return width < faviconMinSide || height < faviconMinSide
 }
 
 // iconLinks 从 HTML 中提取图标链接，apple-touch-icon 优先，其次 icon；只保留 http(s)。

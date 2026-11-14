@@ -37,6 +37,9 @@ type Options struct {
 	Timeout      time.Duration
 	MaxRedirects int
 	Accept       string
+	// Truncate returns the first MaxBytes of a larger body instead of ErrTooLarge, for callers
+	// that only need the start of a document (the <head> of a page).
+	Truncate bool
 }
 
 // Result 是一次成功抓取（2xx）的结果。
@@ -83,7 +86,7 @@ func Fetch(ctx context.Context, rawURL string, opts Options) (*Result, error) {
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return nil, fmt.Errorf("safefetch: unexpected status %d", resp.StatusCode)
 	}
-	if resp.ContentLength > opts.MaxBytes {
+	if resp.ContentLength > opts.MaxBytes && !opts.Truncate {
 		return nil, ErrTooLarge
 	}
 	body, err := io.ReadAll(io.LimitReader(resp.Body, opts.MaxBytes+1))
@@ -91,7 +94,10 @@ func Fetch(ctx context.Context, rawURL string, opts Options) (*Result, error) {
 		return nil, err
 	}
 	if int64(len(body)) > opts.MaxBytes {
-		return nil, ErrTooLarge
+		if !opts.Truncate {
+			return nil, ErrTooLarge
+		}
+		body = body[:opts.MaxBytes]
 	}
 	return &Result{FinalURL: resp.Request.URL, ContentType: resp.Header.Get("Content-Type"), Body: body}, nil
 }

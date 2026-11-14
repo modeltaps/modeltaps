@@ -9,7 +9,7 @@ import { OptionList, OptionRow } from '@/components/objects';
 import ProviderIcon from '@/components/brand/ProviderIcon';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
 import { useProviderLabel } from './ProviderPicker';
-import { consoleUrl } from './providerDefaults';
+import { keyPageUrl } from './providerDefaults';
 import { ALL_GROUPS, isAllGroups } from './channelGroups';
 
 // Channel-specific building blocks shared by the provider page, the channel panel and the new
@@ -37,11 +37,11 @@ export function ProviderTile({ type, size = 'sm' }) {
 
 ProviderTile.propTypes = { type: PropTypes.number, size: PropTypes.oneOf(['sm', 'lg']) };
 
-// "Get a key" link to the provider's console, when one is known.
+// "Get a key" link to the provider's key page, when one is known.
 export function KeyLink({ type }) {
   const { t } = useTranslation();
   const providerName = useProviderName();
-  const url = consoleUrl(type);
+  const url = keyPageUrl(type);
   if (!url) return null;
   return (
     <a

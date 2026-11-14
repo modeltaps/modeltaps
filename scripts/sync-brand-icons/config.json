@@ -3,18 +3,20 @@
   "version": "1.95.1",
   "integrity": "sha512-Hw7EPPgVnC4NZLXBfTNJG6hyQgqECfUPC11VVXodPSr1aebKcFxDZlSpxhWwYNdCc6bhxps/x5TtXoPmfKH2ag==",
   "icons": [
-    "ai21", "ai360", "alibaba", "alibabacloud", "anthropic", "antigravity", "aws", "azure",
-    "azureai", "baichuan", "baidu", "baiducloud", "bailian", "bedrock", "bfl", "bytedance",
-    "cerebras", "chatglm", "claude", "cloudflare", "codex", "cohere", "coze", "dalle", "dbrx",
-    "deepinfra", "deepmind", "deepseek", "doubao", "elevenlabs", "fireworks", "flux", "gemini",
+    "ai21", "ai360", "aionlabs", "alephalpha", "alibaba", "alibabacloud", "antgroup",
+    "anthropic", "antigravity", "arcee", "aws", "azure", "azureai", "baai", "baichuan", "baidu",
+    "baiducloud", "bailian", "bedrock", "bfl", "bytedance", "cerebras", "chatglm", "claude",
+    "cloudflare", "codex", "cohere", "coze", "dalle", "dbrx", "deepinfra", "deepmind",
+    "deepseek", "doubao", "elevenlabs", "essentialai", "fireworks", "flux", "gemini",
     "geminicli", "gemma", "github", "githubcopilot", "google", "grok", "groq", "hailuo",
-    "huggingface", "hunyuan", "ideogram", "iflytekcloud", "inflection", "internlm", "jimeng",
-    "jina", "kimi", "kling", "liquid", "llava", "lmstudio", "luma", "meta", "microsoft",
-    "midjourney", "minimax", "mistral", "modelscope", "moonshot", "novita", "nousresearch",
-    "nvidia", "ollama", "openai", "openrouter", "palm", "perplexity", "pika", "ppio", "qwen",
-    "recraft", "reka", "replicate", "runway", "sambanova", "siliconcloud", "sora", "spark",
+    "huggingface", "hunyuan", "ibm", "ideogram", "iflytekcloud", "inception", "inference",
+    "inflection", "internlm", "jimeng", "jina", "kimi", "kling", "liquid", "llava", "lmstudio",
+    "longcat", "luma", "meta", "microsoft", "midjourney", "minimax", "mistral", "modelscope",
+    "moonshot", "morph", "nousresearch", "novita", "nvidia", "ollama", "openai", "openrouter",
+    "palm", "perceptron", "perplexity", "pika", "poolside", "ppio", "qwen", "recraft", "reka",
+    "relace", "replicate", "runway", "sakana", "sambanova", "siliconcloud", "sora", "spark",
     "stability", "stepfun", "suno", "tencent", "tencentcloud", "tii", "together", "upstage",
-    "vertexai", "vidu", "vllm", "volcengine", "voyage", "wenxin", "workersai", "xai",
+    "vercel", "vertexai", "vidu", "vllm", "volcengine", "voyage", "wenxin", "workersai", "xai",
     "xiaomimimo", "yi", "zeroone", "zhipu"
   ],
   "scale": {
@@ -58,7 +60,10 @@
     "tencent-hunyuan": "hunyuan", "腾讯混元": "hunyuan",
     "togetherai": "together", "together-ai": "together",
     "volcano": "volcengine", "ark": "volcengine", "火山引擎": "volcengine",
-    "x": "xai", "x-ai": "xai"
+    "x": "xai", "x-ai": "xai",
+    "voyageai": "voyage", "inclusionai": "antgroup", "aion-labs": "aionlabs", "arcee-ai": "arcee",
+    "meituan": "longcat", "rekaai": "reka", "aleph-alpha": "alephalpha",
+    "inference-net": "inference", "paddlepaddle": "baidu", "databricks": "dbrx"
   },
   "channelTypes": {
     "1": "openai", "3": "azure", "11": "palm", "14": "claude", "15": "wenxin", "16": "zhipu",
@@ -68,9 +73,9 @@
     "34": "midjourney", "35": "cloudflare", "36": "cohere", "37": "stability", "38": "coze",
     "39": "ollama", "40": "hunyuan", "41": "suno", "42": "vertexai", "43": "meta",
     "44": "ideogram", "45": "siliconcloud", "46": "flux", "47": "jina", "49": "github",
-    "51": "recraft", "52": "replicate", "53": "kling", "54": "azure", "55": "azure",
+    "51": "recraft", "52": "replicate", "53": "kling", "54": "dbrx", "55": "azure",
     "56": "xai", "57": "geminicli", "58": "claude", "59": "codex", "60": "antigravity",
-    "61": "vertexai"
+    "61": "vertexai", "62": "vercel"
   },
   "modelPrefixes": {
     "gpt": "openai", "o1": "openai", "o3": "openai", "o4": "openai", "chatgpt": "openai",
@@ -115,6 +120,12 @@
     "together.xyz": "together", "together.ai": "together", "fireworks.ai": "fireworks",
     "perplexity.ai": "perplexity", "ai21.com": "ai21", "ideogram.ai": "ideogram",
     "bfl.ai": "bfl", "suno.com": "suno", "ollama.com": "ollama", "360.cn": "ai360",
-    "hunyuan.cloud.tencent.com": "hunyuan", "xiaomimimo.com": "xiaomimimo"
+    "hunyuan.cloud.tencent.com": "hunyuan", "xiaomimimo.com": "xiaomimimo",
+    "vercel.sh": "vercel", "vercel.com": "vercel", "azuredatabricks.net": "dbrx",
+    "databricks.com": "dbrx"
+  },
+  "ownerDomains": {
+    "mixedbread": "mixedbread.com", "sarvam": "sarvam.ai", "swiss-ai": "swiss-ai.org",
+    "thinkingmachines": "thinkingmachines.ai", "writer": "writer.com"
   }
 }
