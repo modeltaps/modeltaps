@@ -5,7 +5,7 @@ import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
 import { ArrowLeftRight, Copy, DollarSign, Eye, EyeOff, Layers, Lock, MoreHorizontal, Network, Pencil, Trash2 } from 'lucide-react';
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { GROW_COLUMN, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
 import { ValueFormatter, copy, timestamp2string } from 'utils/common';
 import { statusLabel } from '../Channel/channelApi';
-import { enabledChannels, followsStatus, isVisibleToUsers, modelStatus } from '../Pricing/modelCatalog';
+import { enabledChannels, isVisibleToUsers, modelStatus } from '../Pricing/modelCatalog';
 import {
   ENDPOINT_LABEL_KEYS,
   MODE_LABEL_KEYS,
@@ -119,9 +119,11 @@ export function SupplyCell({ row, onOpen }) {
       title={t(`modelSupply.mode.${normalizeSupplyMode(row.supply_mode)}`)}
       className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md text-left hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <ModelStatusPill status={row.status} />
+      {/* Enabled / disabled is the switch column; only "retired" needs saying here. */}
+      {row.status === 'retired' && <ModelStatusPill status={row.status} />}
       <span className={cn('text-xs text-muted-foreground', counts.total > 0 && counts.usable === 0 && 'text-warning')}>
-        · {t('modelSupply.count', { count: counts.total })}
+        {row.status === 'retired' && '· '}
+        {t('modelSupply.count', { count: counts.total })}
       </span>
       {/* Models on the allocation policy need no mark; one set by hand does. */}
       {row.supplyRouting && row.allocation === 'manual' && (
@@ -193,10 +195,11 @@ function ModelCell({ row, vendor }) {
   const { t } = useTranslation();
   const sub = modelSubtitle(t, row);
   return (
-    <div className="flex min-w-0 max-w-[18rem] items-center gap-2 whitespace-nowrap">
+    <div className="flex min-w-0 items-center gap-2 whitespace-nowrap">
       <VendorIcon vendor={vendor} model={row.model} />
-      {/* The name keeps its width (up to a cap); the subtitle takes what is left and truncates. */}
-      <RowControl className="min-w-0 max-w-[15rem] shrink-0">
+      {/* The column takes the table's spare width. The subtitle gives way first; the name only
+          truncates once the subtitle is gone. */}
+      <RowControl className="min-w-0 shrink">
         <button
           type="button"
           className="max-w-full truncate font-mono text-[13px] font-medium hover:underline"
@@ -207,7 +210,7 @@ function ModelCell({ row, vendor }) {
         </button>
       </RowControl>
       {row.locked && <Lock className="size-3 shrink-0 text-warning" aria-label={t('modelInfoPage.locked')} />}
-      {sub && <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{sub}</span>}
+      {sub && <span className="min-w-0 flex-1 shrink-[1000] truncate text-xs text-muted-foreground">{sub}</span>}
     </div>
   );
 }
@@ -247,7 +250,7 @@ PriceHeader.propTypes = { unit: PropTypes.string, onUnitChange: PropTypes.func }
 // list, which has no switch) also show / hide; then the deletes, destructive and last.
 export function RowActionsCell({ row, onOpen, onDeleteCatalog, onDeletePrice, onToggleHidden }) {
   const { t } = useTranslation();
-  const canToggle = onToggleHidden && row.catalogId > 0 && !followsStatus(row);
+  const canToggle = onToggleHidden && row.catalogId > 0;
   const visible = isVisibleToUsers(row);
   return (
     <DropdownMenu>
@@ -313,14 +316,14 @@ RowActionsCell.propTypes = {
 
 function VisibleSwitch({ row, onToggleHidden }) {
   const { t } = useTranslation();
-  let title = t('modelsPage.visibleToUsers');
-  if (followsStatus(row)) title = t('modelsPage.visibleFollowsStatus');
-  else if (!(row.catalogId > 0)) title = t('modelsPage.visibleNeedsCatalog');
+  // The backend keeps the hidden flag and the status (draft / published) in step, so the switch
+  // works whether or not supplies route requests.
+  const title = row.catalogId > 0 ? t('modelsPage.visibleFollowsStatus') : t('modelsPage.visibleNeedsCatalog');
   return (
     <Switch
       size="sm"
       checked={isVisibleToUsers(row)}
-      disabled={!(row.catalogId > 0) || followsStatus(row)}
+      disabled={!(row.catalogId > 0)}
       onCheckedChange={(next) => onToggleHidden?.(row, !next)}
       aria-label={t('modelsPage.visibleToUsers')}
       title={title}
@@ -375,6 +378,8 @@ export default function ModelTable({
       {
         id: 'model',
         header: t('modelInfoPage.model'),
+        // Takes whatever the other columns leave; they size to their content.
+        meta: { className: GROW_COLUMN },
         cell: (c) => <ModelCell row={c.row.original} vendor={vendors[c.row.original.vendor_id]} />
       },
       {

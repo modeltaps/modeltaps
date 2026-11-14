@@ -21,6 +21,7 @@ import {
   orphanModelNames,
   resolveCatalogTab,
   savePriceUnit,
+  sortCatalogRows,
   suppliedUpstreamKeys
 } from './modelCatalog';
 
@@ -311,5 +312,18 @@ describe('channel-listed names a supply already sends', () => {
 
   it('keeps every name without supplies', () => {
     expect([...channelModelNames([{ id: 1, models: 'a,b' }])]).toEqual(['a', 'b']);
+  });
+});
+
+describe('sortCatalogRows', () => {
+  const channel = { id: 1, status: 1 };
+  it('puts enabled models first, then models a channel serves, then by name', () => {
+    const rows = [
+      { model: 'b-no-channel', catalogId: 1, hidden: true, bound_channels: [] },
+      { model: 'z-enabled', catalogId: 2, hidden: false, bound_channels: [channel] },
+      { model: 'a-disabled', catalogId: 3, hidden: true, bound_channels: [channel] },
+      { model: 'c-disabled', catalogId: 4, hidden: true, bound_channels: [channel] }
+    ];
+    expect(sortCatalogRows(rows).map((r) => r.model)).toEqual(['z-enabled', 'a-disabled', 'c-disabled', 'b-no-channel']);
   });
 });

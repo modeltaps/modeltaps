@@ -753,8 +753,8 @@
     "aliasTo": "别名 → {{model}}",
     "batchDeleteConfirm": "确定删除选中的 {{count}} 项?此操作不可撤销。",
     "batchDeleteFailed": "{{count}} 项删除失败",
-    "batchHide": "批量隐藏",
-    "batchShow": "批量显示",
+    "batchHide": "批量停用",
+    "batchShow": "批量启用",
     "billing": "计费方式",
     "billingNone": "未定价",
     "billingTimes": "按次",
@@ -767,7 +767,7 @@
     "export": "导出 JSON",
     "labeling": "标注",
     "moreActions": "更多操作",
-    "onlyUsable": "只看完整可用",
+    "onlyUsable": "只看可调用",
     "priceHeader": "价格 / 1{{unit}} tokens",
     "priceUnitToggle": "点击切换为每 1{{unit}} tokens 计价",
     "priceIn": "输入",
@@ -779,11 +779,11 @@
     "syncGroup": "上游同步",
     "unbound": "未绑定",
     "vendorModelCount": "模型数",
-    "visibility": "可见性",
-    "visibleNeedsCatalog": "需先建目录条目才能控制可见性",
-    "visibleNo": "隐藏",
-    "visibleToUsers": "对用户可见",
-    "visibleYes": "可见",
+    "visibility": "启用状态",
+    "visibleNeedsCatalog": "先建目录条目才能启用",
+    "visibleNo": "未启用",
+    "visibleToUsers": "启用",
+    "visibleYes": "已启用",
     "sheet": {
       "availableGroups": "可用分组",
       "channelsReadonly": "渠道与分组为只读,需在供应商页修改",
@@ -804,30 +804,30 @@
     },
     "stats": {
       "all": "全部",
-      "usable": "完整可用",
+      "usable": "可调用",
       "nochannel": "无渠道",
       "unpriced": "未定价",
-      "hidden": "已隐藏"
+      "hidden": "未启用"
     },
     "status": {
       "ok": "可用",
       "nochannel": "无渠道",
       "unpriced": "未定价",
-      "unpublished": "未发布"
+      "unpublished": "未启用"
     },
-    "visibleFollowsStatus": "按供应路由时，是否对用户可见由模型状态（草稿 / 已发布 / 已下架）决定",
+    "visibleFollowsStatus": "启用后用户能看到并调用这个模型；停用后不再列出、不可调用",
     "showModelsThat": "筛选模型",
-    "showToUsers": "对用户显示",
-    "hideFromUsers": "对用户隐藏",
+    "showToUsers": "启用",
+    "hideFromUsers": "停用",
     "searchShort": "搜索模型",
     "presetPerCall": "按次计费",
     "presetUnlabeled": "未标注",
     "readiness": {
       "channel": "渠道",
       "price": "定价",
-      "visible": "可见",
+      "visible": "启用",
       "missing": "缺少：{{items}}",
-      "legend": "就绪：渠道 · 定价 · 可见"
+      "legend": "就绪：渠道 · 定价 · 启用"
     },
     "vendorInUse": "在用",
     "vendorUnused": "未使用",
@@ -1610,7 +1610,7 @@
     "model_mode_invalid": "模型类型无效",
     "model_capabilities_invalid": "模型能力无效",
     "model_endpoints_invalid": "模型端点无效",
-    "model_status_invalid": "模型状态无效，可选草稿、已发布或已下架",
+    "model_status_invalid": "模型状态无效，可选未启用、已启用或已下架",
     "model_supply_mode_invalid": "供应模式无效，可选负载均衡或主备",
     "model_supply_model_not_found": "公开模型不存在",
     "model_supply_model_not_public": "只能给公开模型添加供应，不能给别名或自动路由策略添加",
@@ -2637,10 +2637,10 @@
     "hours_other": "{{count}} 小时",
     "seconds_other": "{{count}} 秒",
     "status": {
-      "label": "发布状态",
-      "help": "草稿：不列出、不可调用；已发布：列出且可调用；已下架：仍可调用但不再列出。开启按供应路由后生效。",
-      "draft": "草稿",
-      "published": "已发布",
+      "label": "状态",
+      "help": "未启用：不列出、不可调用；已启用：列出且可调用；已下架：仍可调用但不再列出。开启按供应路由后生效。",
+      "draft": "未启用",
+      "published": "已启用",
       "retired": "已下架"
     },
     "available": {
@@ -2767,7 +2767,7 @@
       "attachTitle": "挂接 {{model}}",
       "attachDescription": "每个选中的渠道都会新增一条该公开模型的供应，发给上游的就是这个名字，优先级和权重沿用渠道自己的设置，之后可在模型的「供应」页调整。",
       "publicModel": "公开模型",
-      "willCreate": "{{model}} 还不是公开模型，会新建为草稿：设好价格后在它的页面上发布。",
+      "willCreate": "{{model}} 还不是公开模型，会先新建为未启用：设好价格后在它的页面上启用。",
       "isAlias": "{{model}} 是 {{canonical}} 的别名，供应会记在 {{canonical}} 下。",
       "isPolicy": "{{model}} 是路由策略，不是公开模型。",
       "noChannel": "至少选一个渠道",
@@ -3355,8 +3355,8 @@
     "selected": "已选 {{count}} 个",
     "createSupplies": "为匹配到的渠道建供应",
     "status": "状态",
-    "asDraft": "草稿",
-    "asPublished": "发布",
+    "asDraft": "先不启用",
+    "asPublished": "直接启用",
     "add": "添加 {{count}} 个",
     "added": "已添加 {{count}} 个模型，建了 {{supplies}} 条供应",
     "unsureCount_one": "+{{count}} 待确认",
@@ -3473,8 +3473,8 @@
     "namePlaceholder": "规则名称",
     "action": "动作",
     "actions": {
-      "publish": "发布",
-      "draft": "加为草稿",
+      "publish": "启用",
+      "draft": "加入但不启用",
       "ignore": "不收录",
       "retire": "下架"
     },
@@ -3509,9 +3509,9 @@
     "ranDry": "演练：报告了 {{count}} 项新变化",
     "defaultNames": {
       "retireDeprecated": "下架已弃用的模型",
-      "previews": "预览版加为草稿",
-      "publishMain": "主流厂商的新模型直接发布",
-      "otherSupplied": "其余有渠道能供应的加为草稿"
+      "previews": "预览版加入但不启用",
+      "publishMain": "主流厂商的新模型直接启用",
+      "otherSupplied": "其余有渠道能供应的加入但不启用"
     }
   },
   "modelAccess": {
@@ -3612,5 +3612,10 @@
       "title": "还没有组织",
       "description": "用户创建组织后会显示在这里。组织共享额度池，管理员可以给成员分配预算和可用模型。"
     }
+  },
+  "longList": {
+    "search": "搜索",
+    "noMatch": "没有匹配的模型",
+    "showMore_other": "显示其余 {{count}} 个"
   }
 }

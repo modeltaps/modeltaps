@@ -73,8 +73,9 @@ import {
   matchesStatusFilter,
   mergeCatalogRows,
   channelModelNames,
-  suppliedUpstreamKeys,
-  savePriceUnit
+  savePriceUnit,
+  sortCatalogRows,
+  suppliedUpstreamKeys
 } from '../Pricing/modelCatalog';
 import ModelTable, { ModelList, ReadinessLegend } from './ModelTable';
 import ModelInfoSheet from './ModelInfoSheet';
@@ -390,7 +391,10 @@ export default function ModelInfo() {
   const stats = useMemo(() => catalogStats(rows), [rows]);
   const unlabeledCount = useMemo(() => modelInfos.filter(isUnlabeled).length, [modelInfos]);
 
-  const filtered = useMemo(() => filterCatalogRows(rows, { keyword, params, aliasesByTarget }), [rows, keyword, params, aliasesByTarget]);
+  const filtered = useMemo(
+    () => sortCatalogRows(filterCatalogRows(rows, { keyword, params, aliasesByTarget })),
+    [rows, keyword, params, aliasesByTarget]
+  );
 
   const lastPage = Math.max(0, Math.ceil(filtered.length / rowsPerPage) - 1);
   const currentPage = Math.min(page, lastPage);
