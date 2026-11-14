@@ -2,7 +2,21 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { CloudDownload, Copy, Eraser, KeyRound, Loader2, Plus, RefreshCw, Trash2, X, AlertTriangle } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  CloudDownload,
+  Copy,
+  Eraser,
+  KeyRound,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Trash2,
+  X,
+  AlertTriangle
+} from 'lucide-react';
 
 import { timestamp2string } from 'utils/common';
 import { configText } from 'i18n/configText';
@@ -25,7 +39,7 @@ import {
   previewChannelPricing,
   refreshChannelPrices
 } from './channelApi';
-import { priceDetails, priceIndex, priceSummary, upstreamNameOf } from './channelPrices';
+import { priceIndex, priceSummary, sortByTokenPrice, upstreamNameOf } from './channelPrices';
 import { buildModelSuggestions, fetchPriceList } from './modelSuggestions';
 import { splitList } from './channelGroups';
 import { usageNumbers, usageOf, usageOptions, usagePeers } from './channelUsage';
@@ -98,37 +112,69 @@ function ToolButton({ busy, icon: Icon, children, ...props }) {
 
 ToolButton.propTypes = { busy: PropTypes.bool, icon: PropTypes.elementType, children: PropTypes.node, disabled: PropTypes.bool };
 
-// What the upstream charges for one listed model. The tooltip lists every price it states.
-function UpstreamPriceCell({ price }) {
+// What the upstream charges for one listed model, as the Input and Output cells. A model not
+// priced per token (per image, per second, per request, free, other, or no price) gets one cell
+// across both.
+function UpstreamPriceCells({ price }) {
   const { t } = useTranslation();
   const summary = priceSummary(price);
-  if (!summary) {
+  if (summary?.kind === 'tokens') {
     return (
+      <>
+        <td className="text-right tabular-nums">{summary.input}</td>
+        <td className="text-right tabular-nums">{summary.output}</td>
+      </>
+    );
+  }
+  let content;
+  if (!summary)
+    content = (
       <span className="text-muted-foreground" title={t('channels.models.priceMissing')}>
         —
       </span>
     );
-  }
-  if (summary.kind === 'other') {
-    return (
+  else if (summary.kind === 'other')
+    content = (
       <span className="text-muted-foreground" title={t('channels.models.priceOtherHint')}>
         {t('channels.models.priceOther')}
       </span>
     );
-  }
-  const text =
-    summary.kind === 'tokens'
-      ? summary.text
-      : summary.kind === 'free'
-        ? t('channels.models.priceFree')
-        : t(`channels.models.price_${summary.kind}`, { price: summary.value });
-  const details = priceDetails(price)
-    .map(([key, value]) => `${t(`channels.models.priceKey.${key}`)} ${value}`)
-    .join('\n');
-  return <span title={details || undefined}>{text}</span>;
+  else if (summary.kind === 'free') content = t('channels.models.priceFree');
+  else content = t(`channels.models.price_${summary.kind}`, { price: summary.value });
+  return (
+    <td colSpan={2} className="text-right tabular-nums">
+      {content}
+    </td>
+  );
 }
 
-UpstreamPriceCell.propTypes = { price: PropTypes.object };
+UpstreamPriceCells.propTypes = { price: PropTypes.object };
+
+// Header of a sortable price column: a click sorts ascending, then descending, then back to the
+// list's own order.
+function SortHeader({ label, active, dir, onClick, title }) {
+  const Icon = !active ? ArrowUpDown : dir === 'asc' ? ArrowUp : ArrowDown;
+  return (
+    <th className="text-right" aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'} title={title}>
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn('inline-flex items-center gap-1 hover:text-foreground', active && 'text-foreground')}
+      >
+        {label}
+        <Icon className={cn('size-3', !active && 'opacity-50')} />
+      </button>
+    </th>
+  );
+}
+
+SortHeader.propTypes = {
+  label: PropTypes.node.isRequired,
+  active: PropTypes.bool,
+  dir: PropTypes.oneOf(['asc', 'desc']),
+  onClick: PropTypes.func.isRequired,
+  title: PropTypes.string
+};
 
 // ---------- Models ----------
 
@@ -187,8 +233,10 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
     for (const r of rows) if (r.signal) out[r.signal] += 1;
     return out;
   }, [rows]);
-  const shown = useMemo(() => (only ? rows.filter((r) => r.signal === only) : rows), [rows, only]);
-  const list = useLongList(shown, { text: modelRowText });
+  const filtered = useMemo(() => (only ? rows.filter((r) => r.signal === only) : rows), [rows, only]);
+  // Sorting by an upstream price is asked for from the column header; otherwise the channel's order.
+  const [sort, setSort] = useState(null);
+  const nextSort = (key) => setSort((cur) => (cur?.key !== key ? { key, dir: 'asc' } : cur.dir === 'asc' ? { key, dir: 'desc' } : null));
   // The mapping column only earns its width when some model is mapped.
   const hasMapping = models.some((name) => mapping[name]);
   const [adding, setAdding] = useState(false);
@@ -212,6 +260,12 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   }, [channel.id]);
   const pricesByModel = useMemo(() => priceIndex(upstreamPrices?.prices), [upstreamPrices]);
   const showPrices = Boolean(upstreamPrices?.supported);
+  const shown = useMemo(() => {
+    if (!sort || !showPrices) return filtered;
+    const mapping = parseMapping(draft.mapping) || {};
+    return sortByTokenPrice(filtered, sort.key, sort.dir, (r) => pricesByModel.get(upstreamNameOf(r.name, mapping)));
+  }, [filtered, sort, showPrices, pricesByModel, draft.mapping]);
+  const list = useLongList(shown, { text: modelRowText });
 
   useEffect(() => {
     if (adding && prices === null) fetchPriceList().then(setPrices);
@@ -376,25 +430,29 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
               <colgroup>
                 <col />
                 {hasMapping && <col className="w-[28%]" />}
-                {showPrices && <col className="w-[7rem]" />}
+                {showPrices && <col className="w-[5.5rem]" />}
+                {showPrices && <col className="w-[5.5rem]" />}
                 <col className="w-9" />
               </colgroup>
               <thead>
                 <tr className="text-left text-xs text-muted-foreground [&>th]:h-9 [&>th]:whitespace-nowrap [&>th]:border-b [&>th]:border-border [&>th]:px-3 [&>th]:font-medium">
                   <th>{t('channels.models.model')}</th>
                   {hasMapping && <th>{t('channels.models.mappedTo')}</th>}
-                  {showPrices && (
-                    <th
-                      className="text-right"
-                      title={
-                        upstreamPrices.synced_at
-                          ? t('channels.models.upstreamPriceHint', { time: timestamp2string(upstreamPrices.synced_at) })
-                          : t('channels.models.upstreamPriceNever')
-                      }
-                    >
-                      {t('channels.models.upstreamPrice')}
-                    </th>
-                  )}
+                  {showPrices &&
+                    ['input', 'output'].map((key) => (
+                      <SortHeader
+                        key={key}
+                        label={t(`channels.models.upstreamPrice_${key}`)}
+                        active={sort?.key === key}
+                        dir={sort?.dir}
+                        onClick={() => nextSort(key)}
+                        title={
+                          upstreamPrices.synced_at
+                            ? t('channels.models.upstreamPriceHint', { time: timestamp2string(upstreamPrices.synced_at) })
+                            : t('channels.models.upstreamPriceNever')
+                        }
+                      />
+                    ))}
                   <th />
                 </tr>
               </thead>
@@ -415,11 +473,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                         {mapping[name] || '—'}
                       </td>
                     )}
-                    {showPrices && (
-                      <td className="text-right tabular-nums">
-                        <UpstreamPriceCell price={pricesByModel.get(upstreamNameOf(name, mapping))} />
-                      </td>
-                    )}
+                    {showPrices && <UpstreamPriceCells price={pricesByModel.get(upstreamNameOf(name, mapping))} />}
                     <td className="!px-1 text-right">
                       <button
                         type="button"
