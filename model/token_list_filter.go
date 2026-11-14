@@ -191,7 +191,7 @@ func listTokens(base *gorm.DB, params *TokenListParams) (*DataResult[Token], Tok
 func ListUserTokens(userId int, params *TokenListParams) (*DataResult[Token], TokenStatusCounts, error) {
 	db := DB.Model(&Token{}).Where("user_id = ?", userId)
 	if params.Keyword != "" {
-		db = db.Where("name LIKE ?", params.Keyword+"%")
+		db = db.Where(caseInsensitiveLike("name LIKE ?"), params.Keyword+"%")
 	}
 	return listTokens(db, params)
 }
@@ -208,7 +208,7 @@ func ListOrgTokens(shadowUserId int, onlyCreatedBy int, params *TokenListParams)
 		db = db.Where("created_by = ?", createdBy)
 	}
 	if params.Keyword != "" {
-		db = db.Where("name LIKE ?", params.Keyword+"%")
+		db = db.Where(caseInsensitiveLike("name LIKE ?"), params.Keyword+"%")
 	}
 	return listTokens(db, params)
 }
