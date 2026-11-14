@@ -20,6 +20,7 @@ const (
 	APICodeChannelNoTestModel            = "channel_no_test_model"
 	APICodeInvalidChannelID              = "invalid_channel_id"
 	APICodeChannelNotFound               = "channel_not_found"
+	APICodeChannelPricesUnsupported      = "channel_prices_unsupported"
 	APICodeChannelDriftRuleInvalid       = "channel_drift_rule_invalid"
 	APICodeChannelKeyRequired            = "channel_key_required"
 	APICodeChannelProviderNotFound       = "channel_provider_not_found"

@@ -228,3 +228,43 @@ func buildOpenRouterModelInfos(resp *modelPricingResponse) []*model.ModelInfo {
 	}
 	return infos
 }
+
+// GetChannelPrices implements base.ChannelPriceListInterface: the prices OpenRouter lists for
+// every model, in USD, for the channel's own price list.
+func (p *OpenRouterProvider) GetChannelPrices() ([]*model.ChannelPrice, error) {
+	resp, err := p.fetchOpenRouterModels()
+	if err != nil {
+		return nil, err
+	}
+	return buildOpenRouterChannelPrices(resp), nil
+}
+
+// buildOpenRouterChannelPrices keeps every listed model that states a price, token prices
+// converted to USD per million tokens. A model priced "0" throughout is free and kept; one with
+// no price fields at all is skipped, so it does not look free.
+func buildOpenRouterChannelPrices(resp *modelPricingResponse) []*model.ChannelPrice {
+	if resp == nil {
+		return nil
+	}
+	out := make([]*model.ChannelPrice, 0, len(resp.Data))
+	for _, m := range resp.Data {
+		if m.Id == "" {
+			continue
+		}
+		price := &model.ChannelPrice{
+			Model:      m.Id,
+			Input:      model.USDPerMillionTokens(parseUSD(m.Pricing.Prompt)),
+			Output:     model.USDPerMillionTokens(parseUSD(m.Pricing.Completion)),
+			CacheRead:  model.USDPerMillionTokens(parseUSD(m.Pricing.InputCacheRead)),
+			CacheWrite: model.USDPerMillionTokens(parseUSD(m.Pricing.InputCacheWrite)),
+			Image:      parseUSD(m.Pricing.Image),
+			Request:    parseUSD(m.Pricing.Request),
+		}
+		pr := m.Pricing
+		if pr.Prompt == "" && pr.Completion == "" && pr.Request == "" && pr.Image == "" && pr.InputCacheRead == "" && pr.InputCacheWrite == "" {
+			continue
+		}
+		out = append(out, price)
+	}
+	return out
+}

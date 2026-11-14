@@ -1415,6 +1415,7 @@
     "channel_no_test_model": "该渠道没有可测试的模型，请设置测试模型或添加对话模型。",
     "invalid_channel_id": "渠道 ID 无效",
     "channel_not_found": "渠道不存在",
+    "channel_prices_unsupported": "这个供应商不提供价格表",
     "channel_key_required": "请先填写密钥",
     "channel_provider_not_found": "不支持该渠道类型",
     "channel_model_list_unsupported": "该渠道类型不支持获取模型列表",
@@ -2077,7 +2078,26 @@
         "attached_other": "新接入 {{count}} 个公开模型",
         "updated_other": "{{count}} 个供应改用新的上游名",
         "removed_other": "撤下 {{count}} 个供应"
-      }
+      },
+      "upstreamPrice": "上游价 $/M",
+      "upstreamPriceHint": "每百万 token 的输入 / 输出价（美元），来自上游价格表，{{time}} 读取",
+      "upstreamPriceNever": "每百万 token 的输入 / 输出价（美元）。还没从上游读过，点「同步价格」读取",
+      "priceMissing": "上游没有给出这个模型的价格",
+      "priceFree": "免费",
+      "price_image": "{{price}} / 张",
+      "price_request": "{{price}} / 次",
+      "priceKey": {
+        "input": "输入",
+        "output": "输出",
+        "cache_read": "缓存读取",
+        "cache_write": "缓存写入",
+        "image": "每张",
+        "request": "每次",
+        "video_second": "视频每秒（最低）"
+      },
+      "price_video": "{{price}} / 秒起",
+      "priceOther": "其他计价",
+      "priceOtherHint": "上游按语音秒数、实时会话或视频 token 等方式计价，这里不显示具体数字"
     },
     "monitor": {
       "checkNow": "立即检查模型列表",

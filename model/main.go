@@ -279,6 +279,10 @@ func InitDB() (err error) {
 		if err != nil {
 			return err
 		}
+		err = db.AutoMigrate(&ChannelPrice{})
+		if err != nil {
+			return err
+		}
 		err = db.AutoMigrate(&ChannelModelAlias{})
 		if err != nil {
 			return err

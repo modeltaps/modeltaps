@@ -16,7 +16,15 @@ import ProviderIcon from '@/components/brand/ProviderIcon';
 import { BrandIconRefreshButton } from '@/components/brand/BrandIconPicker';
 import { iconCacheHost } from '@/components/brand/brandIconManifest';
 import { formatBalance, metricsByModel } from './channelMetrics';
-import { applyChannelPricing, fetchUpstreamModelList, fetchUpstreamModelPicker, previewChannelPricing } from './channelApi';
+import {
+  applyChannelPricing,
+  fetchChannelPrices,
+  fetchUpstreamModelList,
+  fetchUpstreamModelPicker,
+  previewChannelPricing,
+  refreshChannelPrices
+} from './channelApi';
+import { priceDetails, priceIndex, priceSummary, upstreamNameOf } from './channelPrices';
 import { buildModelSuggestions, fetchPriceList } from './modelSuggestions';
 import { splitList } from './channelGroups';
 import { usageNumbers, usageOf, usageOptions, usagePeers } from './channelUsage';
@@ -89,6 +97,38 @@ function ToolButton({ busy, icon: Icon, children, ...props }) {
 
 ToolButton.propTypes = { busy: PropTypes.bool, icon: PropTypes.elementType, children: PropTypes.node, disabled: PropTypes.bool };
 
+// What the upstream charges for one listed model. The tooltip lists every price it states.
+function UpstreamPriceCell({ price }) {
+  const { t } = useTranslation();
+  const summary = priceSummary(price);
+  if (!summary) {
+    return (
+      <span className="text-muted-foreground" title={t('channels.models.priceMissing')}>
+        —
+      </span>
+    );
+  }
+  if (summary.kind === 'other') {
+    return (
+      <span className="text-muted-foreground" title={t('channels.models.priceOtherHint')}>
+        {t('channels.models.priceOther')}
+      </span>
+    );
+  }
+  const text =
+    summary.kind === 'tokens'
+      ? summary.text
+      : summary.kind === 'free'
+        ? t('channels.models.priceFree')
+        : t(`channels.models.price_${summary.kind}`, { price: summary.value });
+  const details = priceDetails(price)
+    .map(([key, value]) => `${t(`channels.models.priceKey.${key}`)} ${value}`)
+    .join('\n');
+  return <span title={details || undefined}>{text}</span>;
+}
+
+UpstreamPriceCell.propTypes = { price: PropTypes.object };
+
 // ---------- Models ----------
 
 // Search text of a row in the channel's model list.
@@ -120,6 +160,20 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   const [pricePreview, setPricePreview] = useState(null);
   const [applying, setApplying] = useState(false);
   const [selector, setSelector] = useState(null);
+  // The upstream's own price list for this channel; only providers that publish prices have one.
+  const [upstreamPrices, setUpstreamPrices] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetchChannelPrices(channel.id)
+      .then((data) => alive && setUpstreamPrices(data))
+      .catch(() => alive && setUpstreamPrices(null));
+    return () => {
+      alive = false;
+    };
+  }, [channel.id]);
+  const pricesByModel = useMemo(() => priceIndex(upstreamPrices?.prices), [upstreamPrices]);
+  const showPrices = Boolean(upstreamPrices?.supported);
 
   useEffect(() => {
     if (adding && prices === null) fetchPriceList().then(setPrices);
@@ -177,6 +231,10 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   });
   const syncPrices = () =>
     run('price', async () => {
+      // The button reads the upstream price list, so the channel's own copy is refreshed too.
+      refreshChannelPrices(channel.id)
+        .then(setUpstreamPrices)
+        .catch(() => {});
       const preview = await previewChannelPricing(priceChannel());
       setPricePreview(preview);
       if (preview.unmatched.length) {
@@ -254,6 +312,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
               <colgroup>
                 <col />
                 {hasMapping && <col className="w-[28%]" />}
+                {showPrices && <col className="w-[7rem]" />}
                 <col className="w-[4.5rem]" />
                 <col className="w-[4.5rem]" />
                 <col className="w-[4.5rem]" />
@@ -264,6 +323,18 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                 <tr className="text-left text-xs text-muted-foreground [&>th]:h-9 [&>th]:whitespace-nowrap [&>th]:border-b [&>th]:border-border [&>th]:px-3 [&>th]:font-medium">
                   <th>{t('channels.models.model')}</th>
                   {hasMapping && <th>{t('channels.models.mappedTo')}</th>}
+                  {showPrices && (
+                    <th
+                      className="text-right"
+                      title={
+                        upstreamPrices.synced_at
+                          ? t('channels.models.upstreamPriceHint', { time: timestamp2string(upstreamPrices.synced_at) })
+                          : t('channels.models.upstreamPriceNever')
+                      }
+                    >
+                      {t('channels.models.upstreamPrice')}
+                    </th>
+                  )}
                   <th className="text-right">{t('channels.table.requests', { range: t(`channels.range.short.${ctx.rangeKey}`) })}</th>
                   <th className="text-right">{t('channels.table.successRate')}</th>
                   <th className="text-right">{t('channels.table.avgLatency')}</th>
@@ -283,6 +354,11 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                     {hasMapping && (
                       <td className="font-mono text-muted-foreground" title={mapping[name] || ''}>
                         {mapping[name] || '—'}
+                      </td>
+                    )}
+                    {showPrices && (
+                      <td className="text-right tabular-nums">
+                        <UpstreamPriceCell price={pricesByModel.get(upstreamNameOf(name, mapping))} />
                       </td>
                     )}
                     <td className="text-right tabular-nums">

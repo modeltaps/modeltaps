@@ -34,6 +34,42 @@ type modelPricing struct {
 	InputCacheRead  string `json:"input_cache_read"`
 	InputCacheWrite string `json:"input_cache_write"`
 	Image           string `json:"image"`
+	Request         string `json:"request"`
+	// VideoDuration lists video models' price per second, one entry per resolution.
+	VideoDuration []videoSecondPrice `json:"video_duration_pricing"`
+	// fields counts every key the gateway sent, including the kinds read nowhere above (speech
+	// seconds, realtime sessions, video tokens), so a model priced only that way is told apart
+	// from one with no price.
+	fields int
+}
+
+func (p *modelPricing) UnmarshalJSON(data []byte) error {
+	type plain modelPricing
+	var parsed plain
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return err
+	}
+	var keys map[string]json.RawMessage
+	_ = json.Unmarshal(data, &keys)
+	*p = modelPricing(parsed)
+	p.fields = len(keys)
+	return nil
+}
+
+type videoSecondPrice struct {
+	Resolution    string `json:"resolution"`
+	CostPerSecond string `json:"cost_per_second"`
+}
+
+// lowestVideoSecond is the cheapest per-second price a video model lists, 0 when it lists none.
+func lowestVideoSecond(prices []videoSecondPrice) float64 {
+	lowest := 0.0
+	for _, p := range prices {
+		if v := parseUSD(p.CostPerSecond); v > 0 && (lowest == 0 || v < lowest) {
+			lowest = v
+		}
+	}
+	return lowest
 }
 
 type modelListResponse struct {
@@ -220,4 +256,51 @@ func buildModelInfos(resp *modelListResponse) []*model.ModelInfo {
 		})
 	}
 	return infos
+}
+
+// GetChannelPrices implements base.ChannelPriceListInterface: the prices the gateway lists for
+// every model, in USD, for the channel's own price list.
+func (p *VercelProvider) GetChannelPrices() ([]*model.ChannelPrice, error) {
+	resp, err := p.fetchModels()
+	if err != nil {
+		return nil, err
+	}
+	return buildChannelPrices(resp), nil
+}
+
+// buildChannelPrices keeps every listed model that states a price, token prices converted to USD
+// per million tokens; image models keep their per-image price and video models the lowest
+// per-second price. A model with no price fields at all is skipped, so it does not look free.
+// Tiered prices (input_tiers and the like) keep the base tier.
+func buildChannelPrices(resp *modelListResponse) []*model.ChannelPrice {
+	if resp == nil {
+		return nil
+	}
+	out := make([]*model.ChannelPrice, 0, len(resp.Data))
+	for _, m := range resp.Data {
+		if m.Id == "" {
+			continue
+		}
+		pr := m.Pricing
+		price := &model.ChannelPrice{
+			Model:       m.Id,
+			Input:       model.USDPerMillionTokens(parseUSD(pr.Input)),
+			Output:      model.USDPerMillionTokens(parseUSD(pr.Output)),
+			CacheRead:   model.USDPerMillionTokens(parseUSD(pr.InputCacheRead)),
+			CacheWrite:  model.USDPerMillionTokens(parseUSD(pr.InputCacheWrite)),
+			Image:       parseUSD(pr.Image),
+			Request:     parseUSD(pr.Request),
+			VideoSecond: lowestVideoSecond(pr.VideoDuration),
+		}
+		read := pr.Input != "" || pr.Output != "" || pr.Image != "" || pr.InputCacheRead != "" || pr.InputCacheWrite != "" ||
+			pr.Request != "" || len(pr.VideoDuration) > 0
+		if !read {
+			if pr.fields == 0 {
+				continue
+			}
+			price.Other = true
+		}
+		out = append(out, price)
+	}
+	return out
 }

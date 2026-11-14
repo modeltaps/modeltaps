@@ -20,6 +20,8 @@ type modelPricing struct {
 	Request        string `json:"request"`
 	Image          string `json:"image"`
 	InputCacheRead string `json:"input_cache_read"`
+	// InputCacheWrite is only listed for models that charge for cache writes.
+	InputCacheWrite string `json:"input_cache_write"`
 }
 
 type modelArchitecture struct {

@@ -1505,6 +1505,7 @@
     "channel_no_test_model": "This channel has no model to test. Set a test model or add a chat model.",
     "invalid_channel_id": "Invalid channel ID",
     "channel_not_found": "Channel not found",
+    "channel_prices_unsupported": "This provider does not publish its prices",
     "channel_key_required": "Enter a key first",
     "channel_provider_not_found": "This channel type is not supported",
     "channel_model_list_unsupported": "This channel type cannot fetch a model list",
@@ -2176,7 +2177,26 @@
         "updated_other": "{{count}} supplies use their new upstream names",
         "removed_one": "{{count}} supply withdrawn",
         "removed_other": "{{count}} supplies withdrawn"
-      }
+      },
+      "upstreamPrice": "Upstream $/M",
+      "upstreamPriceHint": "Input / output per million tokens, USD, from the upstream's price list. Read {{time}}.",
+      "upstreamPriceNever": "Input / output per million tokens, USD. Not read from the upstream yet: Sync prices reads it.",
+      "priceMissing": "The upstream gives no price for this model",
+      "priceFree": "Free",
+      "price_image": "{{price}} / image",
+      "price_request": "{{price}} / request",
+      "priceKey": {
+        "input": "Input",
+        "output": "Output",
+        "cache_read": "Cache read",
+        "cache_write": "Cache write",
+        "image": "Per image",
+        "request": "Per request",
+        "video_second": "Video per second (lowest)"
+      },
+      "price_video": "from {{price}} / s",
+      "priceOther": "Other",
+      "priceOtherHint": "The upstream charges by speech seconds, realtime sessions, video tokens or similar; no single figure is shown here"
     },
     "monitor": {
       "checkNow": "Check model list now",
