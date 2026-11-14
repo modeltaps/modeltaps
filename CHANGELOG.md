@@ -607,6 +607,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Canadian Bedrock channels now use the `us.` profile instead of `global.`. EU Bedrock channels
   call `claude-sonnet-5` through the `eu.` profile, which AWS added after the model launched,
   instead of `global.`, so requests stay in the EU.
+- Bedrock channels in `ca-central-1` now call `claude-sonnet-4-5`, `claude-haiku-4-5` and
+  `claude-opus-4-5` through the `us.` profile instead of `global.`. For these three models only
+  `ca-central-1` is a source region of the US profile, so `ca-west-1` stays on `global.`.
 - The allocation page worked out percentages over a whole tier, so channels that never serve the
   same model looked like they split traffic. Shares are now worked out only between entries of a
   tier that serve a model in common; an entry that shares none shows no weight, and each row names
