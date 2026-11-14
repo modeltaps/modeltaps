@@ -2097,7 +2097,13 @@
       },
       "price_video": "{{price}} / 秒起",
       "priceOther": "其他計價",
-      "priceOtherHint": "上游按語音秒數、即時會話或影片 token 等方式計價，這裡不顯示具體數字"
+      "priceOtherHint": "上游按語音秒數、即時會話或影片 token 等方式計價，這裡不顯示具體數字",
+      "signal": {
+        "failing": "{{range}}成功率 {{rate}}（{{requests}} 次裡失敗 {{failures}} 次）",
+        "label": "{{range}}流量",
+        "idleFilter": "無請求",
+        "failingFilter": "失敗多"
+      }
     },
     "monitor": {
       "checkNow": "立即檢查模型列表",
@@ -2215,7 +2221,8 @@
         "routingGroups": "分組與標籤",
         "rewrite": "請求改寫",
         "monitor": "監控",
-        "advanced": "進階"
+        "advanced": "進階",
+        "performance": "表現"
       },
       "tabs": "渠道設定",
       "discard": "撤銷",
@@ -2452,6 +2459,17 @@
     },
     "switcher": {
       "count": "{{count}} 個渠道"
+    },
+    "performance": {
+      "intro": "這個渠道處理請求的情況，唯讀",
+      "none": "{{range}}內沒有請求",
+      "requests": "請求",
+      "speed": "輸出速度",
+      "cacheHit": "快取命中率",
+      "model": "上游模型",
+      "modelHint": "按發往上游的模型名統計（映射或供應改名之後）",
+      "chartRequests": "請求 {{count}}",
+      "chartFailures": "失敗 {{count}}"
     }
   },
   "nav": {

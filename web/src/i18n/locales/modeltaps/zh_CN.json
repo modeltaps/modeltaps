@@ -2097,7 +2097,13 @@
       },
       "price_video": "{{price}} / 秒起",
       "priceOther": "其他计价",
-      "priceOtherHint": "上游按语音秒数、实时会话或视频 token 等方式计价，这里不显示具体数字"
+      "priceOtherHint": "上游按语音秒数、实时会话或视频 token 等方式计价，这里不显示具体数字",
+      "signal": {
+        "failing": "{{range}}成功率 {{rate}}（{{requests}} 次里失败 {{failures}} 次）",
+        "label": "{{range}}流量",
+        "idleFilter": "无请求",
+        "failingFilter": "失败多"
+      }
     },
     "monitor": {
       "checkNow": "立即检查模型列表",
@@ -2215,7 +2221,8 @@
         "routingGroups": "分组与标签",
         "rewrite": "请求改写",
         "monitor": "监控",
-        "advanced": "高级"
+        "advanced": "高级",
+        "performance": "表现"
       },
       "tabs": "渠道设置",
       "discard": "撤销",
@@ -2452,6 +2459,17 @@
     },
     "switcher": {
       "count": "{{count}} 个渠道"
+    },
+    "performance": {
+      "intro": "这个渠道处理请求的情况，只读",
+      "none": "{{range}}内没有请求",
+      "requests": "请求",
+      "speed": "输出速度",
+      "cacheHit": "缓存命中率",
+      "model": "上游模型",
+      "modelHint": "按发往上游的模型名统计（映射或供应改名之后）",
+      "chartRequests": "请求 {{count}}",
+      "chartFailures": "失败 {{count}}"
     }
   },
   "nav": {

@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { cacheSummary, channelSeries, metricsByChannel, metricsByModel, metricsSeries, summarizeMetrics } from './channelMetrics';
+import {
+  cacheSummary,
+  channelSeries,
+  metricsByChannel,
+  metricsByModel,
+  metricsSeries,
+  modelSignal,
+  summarizeMetrics
+} from './channelMetrics';
 
 const rows = [
   {
@@ -122,5 +130,24 @@ describe('per-channel helpers', () => {
     expect(m.get(1).successRate).toBeCloseTo(5 / 6);
     expect(m.get(1).avgLatencyMs).toBe(100);
     expect(m.get(2).requests).toBe(5);
+  });
+});
+
+describe('modelSignal', () => {
+  it('flags nothing when the channel had no traffic', () => {
+    expect(modelSignal(undefined, false)).toBe(null);
+  });
+  it('flags a model without requests as idle', () => {
+    expect(modelSignal(undefined, true)).toBe('idle');
+    expect(modelSignal({ requests: 0, successRate: null }, true)).toBe('idle');
+  });
+  it('flags a model whose requests mostly fail', () => {
+    expect(modelSignal({ requests: 10, successRate: 0.5 }, true)).toBe('failing');
+  });
+  it('needs enough requests before calling a model failing', () => {
+    expect(modelSignal({ requests: 4, successRate: 0 }, true)).toBe(null);
+  });
+  it('leaves a healthy model alone', () => {
+    expect(modelSignal({ requests: 10, successRate: 0.8 }, true)).toBe(null);
   });
 });

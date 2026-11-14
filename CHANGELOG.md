@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Channel Performance tab. The channel panel has a read-only Performance tab, next to Models,
+  with its own time range (24 hours / 7 days / 30 days): requests, success rate, average latency,
+  time to first token, output speed and prompt cache hit rate, a chart of requests and failures,
+  and the same figures per upstream model.
 - Upstream prices per channel. For providers whose upstream publishes a price list (OpenRouter,
   Vercel AI Gateway), each channel now keeps what its upstream charges per model, apart from the
   catalog price users pay, and the channel's Models tab shows it as an "Upstream $/M" column:
@@ -316,6 +320,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The channel's Models tab is for maintaining the list: the request, success rate, latency and
+  time to first token columns moved to the Performance tab, and rows keep the channel's own order
+  instead of moving by traffic. A model whose requests mostly failed in the list's time range is
+  marked after its name, and "No requests" / "Mostly failing" filters above the table show the
+  models to clean up or check. Traffic is now matched by the name sent upstream, so mapped models
+  no longer show as unused.
 - The model panel is wider (tabbed sheets use the wide size), so the Supplies table no longer
   cuts off channel and upstream model names. Below the table, "Channels that can also supply
   this model" lists enabled channels that list the model and are not a supply yet; "Add" makes

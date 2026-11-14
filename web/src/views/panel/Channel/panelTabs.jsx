@@ -11,11 +11,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/components/ui/sonner';
 import ProviderIcon from '@/components/brand/ProviderIcon';
 import { BrandIconRefreshButton } from '@/components/brand/BrandIconPicker';
 import { iconCacheHost } from '@/components/brand/brandIconManifest';
-import { formatBalance, metricsByModel } from './channelMetrics';
+import { formatBalance, metricsByModel, modelSignal } from './channelMetrics';
 import {
   applyChannelPricing,
   fetchChannelPrices,
@@ -43,13 +44,13 @@ import PriceSyncDialog from './PriceSyncDialog';
 import ModelSelectorModal from './ModelSelectorModal';
 import ChannelSupplies from '../ModelInfo/supply/ChannelSupplies';
 import UpstreamModels from './UpstreamModels';
+import { performanceTab } from './PerformanceTab';
 
 // Tabs of the channel panel (see components/objects/ObjectPanel). Each tab edits a part of the
 // channel on its own: `make(channel)` builds the tab's draft, `patch(draft, channel, ctx)` turns
 // it into the fields to save (or `{ error }`), and `Body` renders the draft.
 
 const pct = (v) => (v === null || v === undefined ? '—' : `${(v * 100).toFixed(1)}%`);
-const sec = (v) => (v === null || v === undefined ? '—' : `${(v / 1000).toFixed(2)} s`);
 const trimSlash = (s) => (s.endsWith('/') ? s.slice(0, -1) : s);
 
 function prettyJson(raw) {
@@ -131,6 +132,29 @@ UpstreamPriceCell.propTypes = { price: PropTypes.object };
 
 // ---------- Models ----------
 
+// Flag after a model's name when most of its requests in the range failed. The tooltip gives
+// the numbers.
+function ModelSignal({ signal, m, range }) {
+  const { t } = useTranslation();
+  // Unused models are not marked row by row: on a large upstream list most of them are.
+  if (signal !== 'failing') return null;
+  const text = t('channels.models.signal.failing', { range, rate: pct(m.successRate), failures: m.failures, requests: m.requests });
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span role="img" aria-label={text} className="inline-flex shrink-0 text-warning">
+            <AlertTriangle className="size-3.5" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="text-xs">{text}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+ModelSignal.propTypes = { signal: PropTypes.oneOf(['idle', 'failing']), m: PropTypes.object, range: PropTypes.string.isRequired };
+
 // Search text of a row in the channel's model list.
 const modelRowText = (row) => row.name;
 
@@ -139,18 +163,32 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   const labels = typeLabels(channel.type);
   const models = splitList(draft.models);
   const mapping = parseMapping(draft.mapping) || {};
+  // Traffic only flags models here (unused or failing); the numbers live on the Performance
+  // tab. Metrics are keyed by the name sent upstream, so a mapped model is looked up by its target.
   const perModel = useMemo(
     () => new Map(metricsByModel((ctx.metricsRows || []).filter((r) => Number(r.channel_id) === channel.id)).map((m) => [m.model, m])),
     [ctx.metricsRows, channel.id]
   );
+  const hasTraffic = useMemo(() => [...perModel.values()].some((m) => m.requests > 0), [perModel]);
+  // The list keeps the channel's own order, so rows do not move while it is edited.
   const rows = useMemo(
     () =>
-      models
-        .map((name, i) => ({ name, i, m: perModel.get(name) }))
-        .sort((a, b) => (b.m?.requests || 0) - (a.m?.requests || 0) || a.i - b.i),
-    [models, perModel]
+      splitList(draft.models).map((name) => {
+        const m = perModel.get(upstreamNameOf(name, parseMapping(draft.mapping) || {}));
+        return { name, m, signal: modelSignal(m, hasTraffic) };
+      }),
+    [draft.models, draft.mapping, perModel, hasTraffic]
   );
-  const list = useLongList(rows, { text: modelRowText });
+  const range = t(`channels.range.short.${ctx.rangeKey}`);
+  // Showing only unused or only failing models, for cleaning up and checking; '' shows all.
+  const [only, setOnly] = useState('');
+  const signalCounts = useMemo(() => {
+    const out = { idle: 0, failing: 0 };
+    for (const r of rows) if (r.signal) out[r.signal] += 1;
+    return out;
+  }, [rows]);
+  const shown = useMemo(() => (only ? rows.filter((r) => r.signal === only) : rows), [rows, only]);
+  const list = useLongList(shown, { text: modelRowText });
   // The mapping column only earns its width when some model is mapped.
   const hasMapping = models.some((name) => mapping[name]);
   const [adding, setAdding] = useState(false);
@@ -305,18 +343,40 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
         </p>
       ) : (
         <>
+          {(signalCounts.idle > 0 || signalCounts.failing > 0) && (
+            <div className="flex flex-wrap items-center gap-1.5 pb-2 text-[13px]">
+              <span className="text-muted-foreground">{t('channels.models.signal.label', { range })}</span>
+              {['idle', 'failing'].map(
+                (key) =>
+                  signalCounts[key] > 0 && (
+                    <button
+                      key={key}
+                      type="button"
+                      aria-pressed={only === key}
+                      onClick={() => setOnly(only === key ? '' : key)}
+                      className={cn(
+                        'inline-flex h-[26px] items-center gap-1 rounded-full border px-2.5 text-xs',
+                        only === key
+                          ? 'border-foreground/30 bg-muted text-foreground'
+                          : 'border-border bg-field text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      {key === 'failing' && <AlertTriangle className="size-3 text-warning" />}
+                      {t(`channels.models.signal.${key}Filter`)}
+                      <span className="tabular-nums">{signalCounts[key]}</span>
+                    </button>
+                  )
+              )}
+            </div>
+          )}
           <LongListSearch list={list} className="pb-2" />
           <div className="overflow-hidden rounded-lg border border-border">
-            {/* Fixed widths for the numbers, so the model name gets the rest of the panel. */}
+            {/* Fixed widths for the narrow columns, so the model name gets the rest of the panel. */}
             <table className="w-full table-fixed border-collapse text-[13px]">
               <colgroup>
                 <col />
                 {hasMapping && <col className="w-[28%]" />}
                 {showPrices && <col className="w-[7rem]" />}
-                <col className="w-[4.5rem]" />
-                <col className="w-[4.5rem]" />
-                <col className="w-[4.5rem]" />
-                <col className="w-[4rem]" />
                 <col className="w-9" />
               </colgroup>
               <thead>
@@ -335,21 +395,20 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                       {t('channels.models.upstreamPrice')}
                     </th>
                   )}
-                  <th className="text-right">{t('channels.table.requests', { range: t(`channels.range.short.${ctx.rangeKey}`) })}</th>
-                  <th className="text-right">{t('channels.table.successRate')}</th>
-                  <th className="text-right">{t('channels.table.avgLatency')}</th>
-                  <th className="text-right">{t('channels.models.ttft')}</th>
                   <th />
                 </tr>
               </thead>
               <tbody>
-                {list.visible.map(({ name, m }) => (
+                {list.visible.map(({ name, m, signal }) => (
                   <tr
                     key={name}
                     className="[&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0"
                   >
-                    <td className="font-mono" title={name}>
-                      {name}
+                    <td title={name}>
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="min-w-0 truncate font-mono">{name}</span>
+                        <ModelSignal signal={signal} m={m} range={range} />
+                      </span>
                     </td>
                     {hasMapping && (
                       <td className="font-mono text-muted-foreground" title={mapping[name] || ''}>
@@ -361,12 +420,6 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                         <UpstreamPriceCell price={pricesByModel.get(upstreamNameOf(name, mapping))} />
                       </td>
                     )}
-                    <td className="text-right tabular-nums">
-                      {m?.requests ? m.requests.toLocaleString() : <span className="text-muted-foreground">0</span>}
-                    </td>
-                    <td className="text-right tabular-nums">{m?.requests ? pct(m.successRate) : '—'}</td>
-                    <td className="text-right tabular-nums">{m?.requests ? sec(m.avgLatencyMs) : '—'}</td>
-                    <td className="text-right tabular-nums">{m?.avgTtftMs != null ? sec(m.avgTtftMs) : '—'}</td>
                     <td className="!px-1 text-right">
                       <button
                         type="button"
@@ -1065,7 +1118,7 @@ const advancedTab = {
   Body: AdvancedBody
 };
 
-export const PANEL_TABS = [connectionTab, modelsTab, routingTab, rewriteTab, monitorTab, advancedTab];
+export const PANEL_TABS = [connectionTab, modelsTab, performanceTab, routingTab, rewriteTab, monitorTab, advancedTab];
 // Tab a channel opens on when the URL names none; it is left out of the URL.
 export const DEFAULT_PANEL_TAB = PANEL_TABS[0].key;
 
