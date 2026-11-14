@@ -16,7 +16,8 @@ import {
   RotateCcw,
   Search,
   Trash2,
-  Upload
+  Upload,
+  Boxes
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -39,6 +40,7 @@ import {
   ColumnPicker,
   ConditionBar,
   ListEmptyState,
+  PageEmptyState,
   ListFooter,
   ListSkeleton,
   PhoneListToolbar,
@@ -71,7 +73,9 @@ import {
   matchesStatusFilter,
   mergeCatalogRows,
   channelModelNames,
-  savePriceUnit
+  savePriceUnit,
+  sortCatalogRows,
+  suppliedUpstreamKeys
 } from '../Pricing/modelCatalog';
 import ModelTable, { ModelList, ReadinessLegend } from './ModelTable';
 import ModelInfoSheet from './ModelInfoSheet';
@@ -194,6 +198,9 @@ export default function ModelInfo() {
   const [channelList, setChannelList] = useState([]);
   const [supplyRouting, setSupplyRouting] = useState(false);
   const [supplyCounts, setSupplyCounts] = useState({});
+  // (channel, upstream name) pairs supplies send: those channel-listed names are not models of
+  // their own while supplies route requests.
+  const [suppliedUpstreams, setSuppliedUpstreams] = useState(null);
   const supplySwitches = useSupplySwitches();
   const [vendors, setVendors] = useState({});
   const [ownedby, setOwnedby] = useState([]);
@@ -259,6 +266,7 @@ export default function ModelInfo() {
           onStart: () => setLoading(true),
           onResult: ({ cres, catalog, priceRows, models, channels, supplies }) => {
             setSupplyCounts(supplies?.success ? countSuppliesByModel(supplies.data || []) : {});
+            setSuppliedUpstreams(supplies?.success ? suppliedUpstreamKeys(supplies.data || []) : null);
             if (!cres.data.success) showError(cres.data.message);
             setModelInfos(catalog);
             setPrices(priceRows);
@@ -366,7 +374,7 @@ export default function ModelInfo() {
   const rows = useMemo(
     () =>
       attachChannelDetails(
-        mergeCatalogRows({ catalog: modelInfos, prices, modelList, channelsByModel, listedModels: channelModelNames(channelList) }),
+        mergeCatalogRows({ catalog: modelInfos, prices, modelList, channelsByModel, listedModels: channelModelNames(channelList, supplyRouting ? suppliedUpstreams : null) }),
         channelList,
         {
           supplyRouting
@@ -374,7 +382,7 @@ export default function ModelInfo() {
       )
         .map((row) => (supplyRouting ? { ...row, supplyRouting } : row))
         .map((row) => (isPublicModelRow(row) ? { ...row, supplyCounts: supplyCounts[row.model] || { total: 0, usable: 0 } } : row)),
-    [modelInfos, prices, modelList, channelsByModel, channelList, supplyCounts, supplyRouting]
+    [modelInfos, prices, modelList, channelsByModel, channelList, supplyCounts, supplyRouting, suppliedUpstreams]
   );
 
   // Local filtering: search box, segment and conditions.
@@ -383,7 +391,10 @@ export default function ModelInfo() {
   const stats = useMemo(() => catalogStats(rows), [rows]);
   const unlabeledCount = useMemo(() => modelInfos.filter(isUnlabeled).length, [modelInfos]);
 
-  const filtered = useMemo(() => filterCatalogRows(rows, { keyword, params, aliasesByTarget }), [rows, keyword, params, aliasesByTarget]);
+  const filtered = useMemo(
+    () => sortCatalogRows(filterCatalogRows(rows, { keyword, params, aliasesByTarget })),
+    [rows, keyword, params, aliasesByTarget]
+  );
 
   const lastPage = Math.max(0, Math.ceil(filtered.length / rowsPerPage) - 1);
   const currentPage = Math.min(page, lastPage);
@@ -715,26 +726,11 @@ export default function ModelInfo() {
     </>
   );
 
+  // Nothing in the catalog yet: the whole page becomes the first-run empty state.
+  const blank = loaded && rows.length === 0;
   let body;
   if (!loaded) {
     body = <ListSkeleton layout={layout} cells={[120, 80, 96, 64, 32]} />;
-  } else if (rows.length === 0) {
-    body = (
-      <ListEmptyState
-        title={t('modelsPage.emptyTitle')}
-        description={t('modelsPage.emptyDescription')}
-        action={
-          <div className="flex flex-wrap justify-center gap-2">
-            <Button size="sm" onClick={() => setLibraryOpen(true)}>
-              <Library className="size-4" /> {t('modelLibrary.open')}
-            </Button>
-            <Button size="sm" variant="outline" onClick={openCreate}>
-              <Plus className="size-4" /> {t('modelInfoPage.create')}
-            </Button>
-          </div>
-        }
-      />
-    );
   } else if (filtered.length === 0) {
     body = <ListEmptyState variant="noMatch" onClearFilters={clearEverything} />;
   } else if (narrow) {
@@ -831,79 +827,96 @@ export default function ModelInfo() {
         </Button>
       </PageActions>
 
-      <div className={cn('space-y-3', narrow && selectMode && 'pb-20')}>
-        <div className="space-y-2">
-          {narrow ? (
+      {blank ? (
+        <PageEmptyState
+          icon={Boxes}
+          title={t('pageEmpty.models.title')}
+          description={t('pageEmpty.models.description')}
+          action={
             <>
-              <StatusSegments chips value={status} onChange={changeStatus} options={segmentOptions} counts={loaded ? stats : null} />
-              <PhoneListToolbar
-                search={{ value: keyword, onChange: handleKeywordChange, placeholder: t('modelsPage.searchShort') }}
-                filter={{ count: activeConditionFields.length, onOpen: () => setFilterSheetOpen(true) }}
-                select={{ active: selectMode, onToggle: () => (selectMode ? exitSelectMode() : setSelectMode(true)) }}
-                chips={activeConditionFields.map((f) => ({
-                  key: f.key,
-                  label: describeEntry(t, f, filterState[f.key]),
-                  onRemove: () => removeCondition(f.key)
-                }))}
-              />
+              <Button variant="outline" onClick={openCreate}>
+                {t('modelInfoPage.create')}
+              </Button>
+              <Button onClick={() => setLibraryOpen(true)}>{t('modelLibrary.open')}</Button>
             </>
-          ) : (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                <StatusSegments value={status} onChange={changeStatus} options={segmentOptions} counts={loaded ? stats : null} />
-                <div className="relative min-w-[12rem] flex-1">
-                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={keyword}
-                    onChange={(e) => handleKeywordChange(e.target.value)}
-                    placeholder={t('modelsPage.searchPlaceholder')}
-                    aria-label={t('modelsPage.searchShort')}
-                    className="h-8 pl-8"
+          }
+        />
+      ) : (
+        <>
+          <div className={cn('space-y-3', narrow && selectMode && 'pb-20')}>
+            <div className="space-y-2">
+              {narrow ? (
+                <>
+                  <StatusSegments chips value={status} onChange={changeStatus} options={segmentOptions} counts={loaded ? stats : null} />
+                  <PhoneListToolbar
+                    search={{ value: keyword, onChange: handleKeywordChange, placeholder: t('modelsPage.searchShort') }}
+                    filter={{ count: activeConditionFields.length, onOpen: () => setFilterSheetOpen(true) }}
+                    select={{ active: selectMode, onToggle: () => (selectMode ? exitSelectMode() : setSelectMode(true)) }}
+                    chips={activeConditionFields.map((f) => ({
+                      key: f.key,
+                      label: describeEntry(t, f, filterState[f.key]),
+                      onRemove: () => removeCondition(f.key)
+                    }))}
                   />
-                </div>
-                <ColumnPicker columns={columnState} />
-              </div>
-              {selectedKeys.size > 0 ? (
-                <BatchBar
-                  count={selectedKeys.size}
-                  onClear={() => setSelectedKeys(new Set())}
-                  className="min-h-10 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-1.5"
-                  actions={batchActions}
-                />
+                </>
               ) : (
-                <ConditionBar
-                  fields={filterFields}
-                  state={filterState}
-                  onChange={handleFilterChange}
-                  onClearAll={handleClearFilters}
-                  leadingLabel={t('modelsPage.showModelsThat')}
-                  presets={presets}
-                />
+                <>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusSegments value={status} onChange={changeStatus} options={segmentOptions} counts={loaded ? stats : null} />
+                    <div className="relative min-w-[12rem] flex-1">
+                      <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        value={keyword}
+                        onChange={(e) => handleKeywordChange(e.target.value)}
+                        placeholder={t('modelsPage.searchPlaceholder')}
+                        aria-label={t('modelsPage.searchShort')}
+                        className="h-8 pl-8"
+                      />
+                    </div>
+                    <ColumnPicker columns={columnState} />
+                  </div>
+                  {selectedKeys.size > 0 ? (
+                    <BatchBar
+                      count={selectedKeys.size}
+                      onClear={() => setSelectedKeys(new Set())}
+                      className="min-h-10 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-1.5"
+                      actions={batchActions}
+                    />
+                  ) : (
+                    <ConditionBar
+                      fields={filterFields}
+                      state={filterState}
+                      onChange={handleFilterChange}
+                      onClearAll={handleClearFilters}
+                      leadingLabel={t('modelsPage.showModelsThat')}
+                      presets={presets}
+                    />
+                  )}
+                </>
               )}
-            </>
-          )}
-        </div>
+            </div>
 
-        <Card>
-          {body}
-          <div className="border-t border-border">
-            <ListFooter
-              total={filtered.length}
-              page={currentPage}
-              pageSize={rowsPerPage}
-              selectedCount={selectedKeys.size}
-              onPageChange={setPage}
-              onPageSizeChange={(n) => {
-                setRowsPerPage(n);
-                setPage(0);
-                savePageSize('model_info', n);
-              }}
-            />
+            <Card>
+              {body}
+              <div className="border-t border-border">
+                <ListFooter
+                  total={filtered.length}
+                  page={currentPage}
+                  pageSize={rowsPerPage}
+                  selectedCount={selectedKeys.size}
+                  onPageChange={setPage}
+                  onPageSizeChange={(n) => {
+                    setRowsPerPage(n);
+                    setPage(0);
+                    savePageSize('model_info', n);
+                  }}
+                />
+              </div>
+            </Card>
+            {narrow && loaded && filtered.length > 0 && <ReadinessLegend />}
           </div>
-        </Card>
-        {narrow && loaded && filtered.length > 0 && <ReadinessLegend />}
-      </div>
-
+        </>
+      )}
       {narrow && selectMode && <BatchBar count={selectedKeys.size} onClear={exitSelectMode} floating actions={phoneBatchActions} />}
       {narrow && (
         <FilterSheet

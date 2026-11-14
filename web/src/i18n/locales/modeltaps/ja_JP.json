@@ -9,9 +9,7 @@
     "searchPlaceholder": "チャネル名またはタグで検索",
     "openModels": "モデルを表示",
     "enabledColumn": "有効",
-    "batchStatusFailed": "{{count}} 件のチャネルで失敗しました",
-    "emptyTitle": "チャネルがまだありません",
-    "emptyDescription": "上流プロバイダーのキーを追加すると、モデルを呼び出せます。"
+    "batchStatusFailed": "{{count}} 件のチャネルで失敗しました"
   },
   "channelDetail": {
     "back": "チャネル",
@@ -746,7 +744,8 @@
     "selectAllOnPage": "このページをすべて選択",
     "selectRow": "{{name}} を選択",
     "selectMode": "選択",
-    "segments": "状態"
+    "segments": "状態",
+    "readDocs": "ドキュメントを読む"
   },
   "pricing": "モデル",
   "modelsPage": {
@@ -754,8 +753,8 @@
     "aliasTo": "エイリアス → {{model}}",
     "batchDeleteConfirm": "選択した {{count}} 件を削除しますか?この操作は元に戻せません。",
     "batchDeleteFailed": "{{count}} 件の削除に失敗しました",
-    "batchHide": "一括非表示",
-    "batchShow": "一括表示",
+    "batchHide": "一括無効化",
+    "batchShow": "一括有効化",
     "billing": "課金方式",
     "billingNone": "未設定",
     "billingTimes": "回数課金",
@@ -765,12 +764,10 @@
     "columnsShort": "列",
     "copyName": "モデル名をコピー",
     "editProfile": "プロフィールを編集",
-    "emptyDescription": "チャネルで設定したモデルは自動的にここに表示されます。カタログ項目を手動で作成することもできます。",
-    "emptyTitle": "モデルがまだありません",
     "export": "JSON をエクスポート",
     "labeling": "ラベル",
     "moreActions": "その他の操作",
-    "onlyUsable": "完全に利用可能のみ",
+    "onlyUsable": "呼び出し可能のみ",
     "priceHeader": "価格 / 1{{unit}} tokens",
     "priceUnitToggle": "クリックで 1{{unit}} tokens あたりの表示に切り替え",
     "priceIn": "入力",
@@ -782,11 +779,11 @@
     "syncGroup": "アップストリーム同期",
     "unbound": "未割当",
     "vendorModelCount": "モデル数",
-    "visibility": "表示状態",
-    "visibleNeedsCatalog": "表示を制御するには先にカタログ項目を作成してください",
-    "visibleNo": "非表示",
-    "visibleToUsers": "ユーザーに表示",
-    "visibleYes": "表示",
+    "visibility": "有効",
+    "visibleNeedsCatalog": "有効にするには先にカタログ項目を作成してください",
+    "visibleNo": "無効",
+    "visibleToUsers": "有効",
+    "visibleYes": "有効",
     "sheet": {
       "availableGroups": "利用可能なグループ",
       "channelsReadonly": "チャネルとグループは読み取り専用です。プロバイダーページで編集してください",
@@ -807,30 +804,30 @@
     },
     "stats": {
       "all": "すべて",
-      "usable": "完全に利用可能",
+      "usable": "呼び出し可能",
       "nochannel": "チャネルなし",
       "unpriced": "未設定",
-      "hidden": "非表示"
+      "hidden": "無効"
     },
     "status": {
       "ok": "利用可能",
       "nochannel": "チャネルなし",
       "unpriced": "未設定",
-      "unpublished": "未公開"
+      "unpublished": "無効"
     },
-    "visibleFollowsStatus": "供給によるルーティング中は、ユーザーへの表示はモデルの状態（下書き・公開・提供終了）で決まります",
+    "visibleFollowsStatus": "有効にすると一覧に出て呼び出せます。無効にすると一覧に出ず呼び出せません",
     "showModelsThat": "モデルを絞り込む",
-    "showToUsers": "ユーザーに表示",
-    "hideFromUsers": "ユーザーから隠す",
+    "showToUsers": "有効にする",
+    "hideFromUsers": "無効にする",
     "searchShort": "モデルを検索",
     "presetPerCall": "回数課金",
     "presetUnlabeled": "未ラベル",
     "readiness": {
       "channel": "チャネル",
       "price": "価格",
-      "visible": "公開",
+      "visible": "有効",
       "missing": "不足：{{items}}",
-      "legend": "準備状況：チャネル · 価格 · 公開"
+      "legend": "準備状況：チャネル · 価格 · 有効"
     },
     "vendorInUse": "使用中",
     "vendorUnused": "未使用",
@@ -1614,7 +1611,7 @@
     "model_mode_invalid": "モデルタイプが無効です",
     "model_capabilities_invalid": "モデルの機能が無効です",
     "model_endpoints_invalid": "モデルのエンドポイントが無効です",
-    "model_status_invalid": "モデルの状態が無効です。下書き・公開・提供終了のいずれかを指定してください",
+    "model_status_invalid": "モデルの状態が無効です。無効・有効・提供終了のいずれかを指定してください",
     "model_supply_mode_invalid": "供給モードが無効です。負荷分散またはフェイルオーバーを指定してください",
     "model_supply_model_not_found": "公開モデルが存在しません",
     "model_supply_model_not_public": "供給は公開モデルにのみ追加できます。エイリアスや自動ルーティングポリシーには追加できません",
@@ -2662,10 +2659,10 @@
     "hours_other": "{{count}} 時間",
     "seconds_other": "{{count}} 秒",
     "status": {
-      "label": "公開状態",
-      "help": "下書き：一覧に出ず呼び出せません。公開中：一覧に出て呼び出せます。提供終了：呼び出せますが一覧には出ません。供給によるルーティングをオンにすると有効になります。",
-      "draft": "下書き",
-      "published": "公開中",
+      "label": "状態",
+      "help": "無効：一覧に出ず呼び出せません。有効：一覧に出て呼び出せます。提供終了：呼び出せますが一覧には出ません。供給によるルーティングをオンにすると有効になります。",
+      "draft": "無効",
+      "published": "有効",
       "retired": "提供終了"
     },
     "available": {
@@ -2792,7 +2789,7 @@
       "attachTitle": "{{model}} を割り当て",
       "attachDescription": "選択した各チャネルに、この上流名を送る公開モデルの供給が追加されます。優先度と重みはチャネルの設定を使い、あとでモデルの「供給」タブで変更できます。",
       "publicModel": "公開モデル",
-      "willCreate": "{{model}} はまだ公開モデルではありません。下書きとして作成されるので、価格を設定してからモデルのページで公開してください。",
+      "willCreate": "{{model}} はまだ公開モデルではありません。無効の状態で作成されるので、価格を設定してからモデルのページで有効にしてください。",
       "isAlias": "{{model}} は {{canonical}} の別名です。供給は {{canonical}} に追加されます。",
       "isPolicy": "{{model}} はルーティングポリシーで、公開モデルではありません。",
       "noChannel": "チャネルを 1 つ以上選択してください",
@@ -3380,8 +3377,8 @@
     "selected": "{{count}} 件選択中",
     "createSupplies": "一致したチャネルに供給を作成",
     "status": "ステータス",
-    "asDraft": "下書き",
-    "asPublished": "公開",
+    "asDraft": "無効で追加",
+    "asPublished": "有効で追加",
     "add": "{{count}} 件を追加",
     "added": "{{count}} モデルを追加し、{{supplies}} 件の供給を作成しました",
     "unsureCount_one": "+{{count}} 要確認",
@@ -3495,8 +3492,8 @@
     "namePlaceholder": "ルール名",
     "action": "アクション",
     "actions": {
-      "publish": "公開",
-      "draft": "下書きとして追加",
+      "publish": "有効にする",
+      "draft": "無効で追加",
       "ignore": "取り込まない",
       "retire": "廃止"
     },
@@ -3531,9 +3528,9 @@
     "ranDry": "ドライラン：{{count}} 件の新しい変更を報告しました",
     "defaultNames": {
       "retireDeprecated": "非推奨のモデルを廃止",
-      "previews": "プレビュー版は下書きとして追加",
-      "publishMain": "主要ラボの新しいモデルは公開",
-      "otherSupplied": "供給できるその他のモデルは下書きとして追加"
+      "previews": "プレビュー版は無効で追加",
+      "publishMain": "主要ラボの新しいモデルは有効にする",
+      "otherSupplied": "供給できるその他のモデルは無効で追加"
     }
   },
   "modelAccess": {
@@ -3599,5 +3596,45 @@
       "member": "メンバー {{name}}",
       "list": "リスト {{name}}"
     }
+  },
+  "pageEmpty": {
+    "tokens": {
+      "title": "API キーはまだありません",
+      "description": "クライアントは API キーでゲートウェイを呼び出します。キーごとにクォータ、有効期限、利用可能なモデルを設定でき、いつでも無効化できます。"
+    },
+    "providers": {
+      "title": "プロバイダーはまだありません",
+      "description": "上流のプロバイダーとそのキーを追加すると、ゲートウェイがリクエストを転送できるようになります。同じプロバイダーに複数のチャネルを追加して、相互のバックアップや負荷分散に使えます。"
+    },
+    "models": {
+      "title": "モデルカタログは空です",
+      "description": "チャネルに設定したモデルは自動的にここに表示されます。モデルライブラリからまとめて追加したり、手動でエントリを作成して価格やラベルを設定したりすることもできます。"
+    },
+    "routing": {
+      "title": "ルーティングポリシーはまだありません",
+      "description": "ルーティングポリシーは呼び出し可能なモデル名です。ゲートウェイはセッションの最初のメッセージからタスクを判断し、適切なモデルに応答させます。",
+      "memberDescription": "組織の管理者はまだルーティングポリシーを作成していません。作成されるとここに表示され、そのまま呼び出せます。"
+    },
+    "redemption": {
+      "title": "引き換えコードはまだありません",
+      "description": "コードをまとめて生成して配布できます。引き換えるとクレジットがアカウントに直接チャージされ、キャンペーン、オフライン販売、補償などに使えます。"
+    },
+    "inviteCodes": {
+      "title": "招待コードはまだありません",
+      "description": "招待制の登録を有効にすると、有効な招待コードを持つ人だけが登録できます。コードごとに使用回数と有効期限を制限できます。"
+    },
+    "userGroups": {
+      "title": "ユーザーグループはまだありません",
+      "description": "ユーザーグループは、ユーザーが使えるチャネルと課金倍率を決めます。自動昇格ルールやレート制限も設定できます。"
+    },
+    "orgs": {
+      "title": "組織はまだありません",
+      "description": "ユーザーが組織を作成するとここに表示されます。組織はクレジットプールを共有し、管理者はメンバーに予算と利用可能なモデルを割り当てます。"
+    }
+  },
+  "longList": {
+    "search": "検索",
+    "noMatch": "一致するモデルはありません",
+    "showMore_other": "残り {{count}} 件を表示"
   }
 }

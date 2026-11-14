@@ -9,9 +9,7 @@
     "searchPlaceholder": "Search channel name or tag",
     "openModels": "View models",
     "enabledColumn": "On",
-    "batchStatusFailed": "{{count}} channel(s) failed",
-    "emptyTitle": "No channels yet",
-    "emptyDescription": "Add an upstream provider key so models can be called."
+    "batchStatusFailed": "{{count}} channel(s) failed"
   },
   "channelDetail": {
     "back": "Channels",
@@ -747,7 +745,8 @@
     "selectAllOnPage": "Select all on this page",
     "selectRow": "Select {{name}}",
     "selectMode": "Select",
-    "segments": "Status"
+    "segments": "Status",
+    "readDocs": "Read the docs"
   },
   "pricing": "Models",
   "modelsPage": {
@@ -755,8 +754,8 @@
     "aliasTo": "Alias → {{model}}",
     "batchDeleteConfirm": "Delete the {{count}} selected items? This cannot be undone.",
     "batchDeleteFailed": "{{count}} items failed to delete",
-    "batchHide": "Hide selected",
-    "batchShow": "Show selected",
+    "batchHide": "Disable selected",
+    "batchShow": "Enable selected",
     "billing": "Billing",
     "billingNone": "Unpriced",
     "billingTimes": "Per request",
@@ -766,12 +765,10 @@
     "columnsShort": "Columns",
     "copyName": "Copy model name",
     "editProfile": "Edit profile",
-    "emptyDescription": "Models configured in channels show up here automatically; you can also create catalog entries manually.",
-    "emptyTitle": "No models yet",
     "export": "Export JSON",
     "labeling": "Labels",
     "moreActions": "More actions",
-    "onlyUsable": "Fully usable only",
+    "onlyUsable": "Callable only",
     "priceHeader": "Price / 1{{unit}} tokens",
     "priceUnitToggle": "Click to show prices per 1{{unit}} tokens",
     "priceIn": "Input",
@@ -783,11 +780,11 @@
     "syncGroup": "Upstream sync",
     "unbound": "Unbound",
     "vendorModelCount": "Models",
-    "visibility": "Visibility",
-    "visibleNeedsCatalog": "Create a catalog entry first to control visibility",
-    "visibleNo": "Hidden",
-    "visibleToUsers": "Visible to users",
-    "visibleYes": "Visible",
+    "visibility": "Enabled",
+    "visibleNeedsCatalog": "Create a catalog entry first to enable it",
+    "visibleNo": "Disabled",
+    "visibleToUsers": "Enabled",
+    "visibleYes": "Enabled",
     "sheet": {
       "availableGroups": "Available groups",
       "channelsReadonly": "Channels and groups are read-only; edit them on the Providers page",
@@ -808,30 +805,30 @@
     },
     "stats": {
       "all": "All",
-      "usable": "Fully usable",
+      "usable": "Callable",
       "nochannel": "No channel",
       "unpriced": "Unpriced",
-      "hidden": "Hidden"
+      "hidden": "Disabled"
     },
     "status": {
       "ok": "Usable",
       "nochannel": "No channel",
       "unpriced": "Unpriced",
-      "unpublished": "Unpublished"
+      "unpublished": "Disabled"
     },
-    "visibleFollowsStatus": "Visibility follows the model's status (draft, published, retired) while supplies route requests",
+    "visibleFollowsStatus": "Enabled models are listed and callable; disabled ones are neither",
     "showModelsThat": "Show models that",
-    "showToUsers": "Show to users",
-    "hideFromUsers": "Hide from users",
+    "showToUsers": "Enable",
+    "hideFromUsers": "Disable",
     "searchShort": "Search models",
     "presetPerCall": "Per-call pricing",
     "presetUnlabeled": "Unlabeled",
     "readiness": {
       "channel": "Channel",
       "price": "Price",
-      "visible": "Visible",
+      "visible": "Enabled",
       "missing": "Missing: {{items}}",
-      "legend": "Ready: channel · price · visible"
+      "legend": "Ready: channel · price · enabled"
     },
     "vendorInUse": "In use",
     "vendorUnused": "Unused",
@@ -1704,7 +1701,7 @@
     "model_mode_invalid": "Unknown model type",
     "model_capabilities_invalid": "Unknown model capability",
     "model_endpoints_invalid": "Unknown model endpoint",
-    "model_status_invalid": "Unknown model status; use draft, published or retired",
+    "model_status_invalid": "Unknown model status; use disabled, enabled or retired",
     "model_supply_mode_invalid": "Unknown supply mode; use balance or failover",
     "model_supply_model_not_found": "The public model does not exist",
     "model_supply_model_not_public": "Supplies can only be added to public models, not to aliases or routing policies",
@@ -2756,9 +2753,9 @@
     "seconds_other": "{{count}} seconds",
     "status": {
       "label": "Status",
-      "help": "Draft: not listed and not callable. Published: listed and callable. Retired: callable but no longer listed. Applies once supply routing is on.",
-      "draft": "Draft",
-      "published": "Published",
+      "help": "Disabled: not listed and not callable. Enabled: listed and callable. Retired: callable but no longer listed. Applies once supply routing is on.",
+      "draft": "Disabled",
+      "published": "Enabled",
       "retired": "Retired"
     },
     "available": {
@@ -2890,7 +2887,7 @@
       "attachTitle": "Attach {{model}}",
       "attachDescription": "Each selected channel gets a supply of the public model that sends this upstream name, at the channel's priority and weight. You can change them on the model's Supplies tab.",
       "publicModel": "Public model",
-      "willCreate": "{{model}} is not a public model yet. It is created as a draft: give it a price and publish it on its page.",
+      "willCreate": "{{model}} is not a public model yet. It is created disabled: give it a price and enable it on its page.",
       "isAlias": "{{model}} is an alias of {{canonical}}; the supplies go to {{canonical}}.",
       "isPolicy": "{{model}} is a routing policy, not a public model.",
       "noChannel": "Select at least one channel",
@@ -3482,8 +3479,8 @@
     "selected": "{{count}} selected",
     "createSupplies": "Create supplies from the matched channels",
     "status": "Status",
-    "asDraft": "As draft",
-    "asPublished": "Published",
+    "asDraft": "Disabled",
+    "asPublished": "Enabled",
     "add": "Add {{count}}",
     "added": "Added {{count}} models, {{supplies}} supplies",
     "unsureCount_one": "+{{count}} to confirm",
@@ -3597,8 +3594,8 @@
     "namePlaceholder": "Rule name",
     "action": "Action",
     "actions": {
-      "publish": "Publish",
-      "draft": "Add as draft",
+      "publish": "Enable",
+      "draft": "Add disabled",
       "ignore": "Leave out",
       "retire": "Retire"
     },
@@ -3633,9 +3630,9 @@
     "ranDry": "Dry run: {{count}} new changes reported",
     "defaultNames": {
       "retireDeprecated": "Retire deprecated models",
-      "previews": "Previews as drafts",
-      "publishMain": "Publish new models from the main labs",
-      "otherSupplied": "Other supplied models as drafts"
+      "previews": "Previews added disabled",
+      "publishMain": "Enable new models from the main labs",
+      "otherSupplied": "Other supplied models added disabled"
     }
   },
   "modelAccess": {
@@ -3704,5 +3701,46 @@
       "member": "Member {{name}}",
       "list": "List {{name}}"
     }
+  },
+  "pageEmpty": {
+    "tokens": {
+      "title": "No API keys yet",
+      "description": "Clients call the gateway with an API key. Each key can have its own quota, expiry and allowed models, and can be disabled at any time."
+    },
+    "providers": {
+      "title": "No providers yet",
+      "description": "Add an upstream provider and its key so the gateway can forward requests. A provider can have several channels that back each other up and share the traffic."
+    },
+    "models": {
+      "title": "The model catalog is empty",
+      "description": "Models configured in your channels appear here automatically. You can also add them in bulk from the model library, or create entries by hand to set prices and labels."
+    },
+    "routing": {
+      "title": "No routing policies yet",
+      "description": "A routing policy is a model name clients can call. The gateway judges each session from its first message and hands it to a suitable model.",
+      "memberDescription": "Your organization admins have not created a routing policy yet. Once they do, it appears here and you can call it directly."
+    },
+    "redemption": {
+      "title": "No redemption codes yet",
+      "description": "Generate codes in bulk and hand them out. Redeeming one adds credit straight to the account, which suits promotions, offline sales and compensation."
+    },
+    "inviteCodes": {
+      "title": "No invite codes yet",
+      "description": "With invite-only registration, only people holding a valid code can sign up. Each code can limit how many times and until when it can be used."
+    },
+    "userGroups": {
+      "title": "No user groups yet",
+      "description": "A user group decides which channels its users can reach and at what rate they are billed. It can also carry auto-promotion rules and rate limits."
+    },
+    "orgs": {
+      "title": "No organizations yet",
+      "description": "Organizations appear here once users create them. An organization shares a credit pool, and its admins assign budgets and models to members."
+    }
+  },
+  "longList": {
+    "search": "Search",
+    "noMatch": "No matching models",
+    "showMore_one": "Show {{count}} more",
+    "showMore_other": "Show {{count}} more"
   }
 }

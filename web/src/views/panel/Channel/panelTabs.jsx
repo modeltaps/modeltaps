@@ -30,7 +30,7 @@ import { splitList } from './channelGroups';
 import { usageNumbers, usageOf, usageOptions, usagePeers } from './channelUsage';
 import { applyMappingToModels, normalizeKeyInput } from './newChannel';
 import { BASE_URL_REQUIRED, DEFAULT_BASE_URLS, OAUTH_TYPES, typeLabels } from './providerDefaults';
-import { Field, ToggleField } from '@/components/objects';
+import { Field, LongListMore, LongListSearch, ToggleField, useLongList } from '@/components/objects';
 import { GroupOptions, KeyLink, UsageOptions } from './channelParts';
 import ChannelOAuth from './ChannelOAuth';
 import ModelListInput from './ModelListInput';
@@ -131,6 +131,9 @@ UpstreamPriceCell.propTypes = { price: PropTypes.object };
 
 // ---------- Models ----------
 
+// Search text of a row in the channel's model list.
+const modelRowText = (row) => row.name;
+
 function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   const { t } = useTranslation();
   const labels = typeLabels(channel.type);
@@ -147,6 +150,9 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
         .sort((a, b) => (b.m?.requests || 0) - (a.m?.requests || 0) || a.i - b.i),
     [models, perModel]
   );
+  const list = useLongList(rows, { text: modelRowText });
+  // The mapping column only earns its width when some model is mapped.
+  const hasMapping = models.some((name) => mapping[name]);
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState('');
   const [prices, setPrices] = useState(null);
@@ -298,79 +304,86 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
           {t('channels.models.none')}
         </p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border">
-          <table className="w-full table-fixed border-collapse text-[13px]">
-            <colgroup>
-              <col />
-              <col className={showPrices ? 'w-[14%]' : 'w-[18%]'} />
-              {showPrices && <col className="w-[17%]" />}
-              <col className={showPrices ? 'w-[13%]' : 'w-[16%]'} />
-              <col className={showPrices ? 'w-[10%]' : 'w-[11%]'} />
-              <col className={showPrices ? 'w-[10%]' : 'w-[12%]'} />
-              <col className={showPrices ? 'w-[10%]' : 'w-[11%]'} />
-              <col className="w-9" />
-            </colgroup>
-            <thead>
-              <tr className="text-left text-xs text-muted-foreground [&>th]:h-9 [&>th]:whitespace-nowrap [&>th]:border-b [&>th]:border-border [&>th]:px-3 [&>th]:font-medium">
-                <th>{t('channels.models.model')}</th>
-                <th>{t('channels.models.mappedTo')}</th>
-                {showPrices && (
-                  <th
-                    className="text-right"
-                    title={
-                      upstreamPrices.synced_at
-                        ? t('channels.models.upstreamPriceHint', { time: timestamp2string(upstreamPrices.synced_at) })
-                        : t('channels.models.upstreamPriceNever')
-                    }
-                  >
-                    {t('channels.models.upstreamPrice')}
-                  </th>
-                )}
-                <th className="text-right">{t('channels.table.requests', { range: t(`channels.range.short.${ctx.rangeKey}`) })}</th>
-                <th className="text-right">{t('channels.table.successRate')}</th>
-                <th className="text-right">{t('channels.table.avgLatency')}</th>
-                <th className="text-right">{t('channels.models.ttft')}</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(({ name, m }) => (
-                <tr
-                  key={name}
-                  className="[&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0"
-                >
-                  <td className="font-mono" title={name}>
-                    {name}
-                  </td>
-                  <td className="font-mono text-muted-foreground" title={mapping[name] || ''}>
-                    {mapping[name] || '—'}
-                  </td>
+        <>
+          <LongListSearch list={list} className="pb-2" />
+          <div className="overflow-hidden rounded-lg border border-border">
+            {/* Fixed widths for the numbers, so the model name gets the rest of the panel. */}
+            <table className="w-full table-fixed border-collapse text-[13px]">
+              <colgroup>
+                <col />
+                {hasMapping && <col className="w-[28%]" />}
+                {showPrices && <col className="w-[7rem]" />}
+                <col className="w-[4.5rem]" />
+                <col className="w-[4.5rem]" />
+                <col className="w-[4.5rem]" />
+                <col className="w-[4rem]" />
+                <col className="w-9" />
+              </colgroup>
+              <thead>
+                <tr className="text-left text-xs text-muted-foreground [&>th]:h-9 [&>th]:whitespace-nowrap [&>th]:border-b [&>th]:border-border [&>th]:px-3 [&>th]:font-medium">
+                  <th>{t('channels.models.model')}</th>
+                  {hasMapping && <th>{t('channels.models.mappedTo')}</th>}
                   {showPrices && (
-                    <td className="text-right tabular-nums">
-                      <UpstreamPriceCell price={pricesByModel.get(upstreamNameOf(name, mapping))} />
-                    </td>
-                  )}
-                  <td className="text-right tabular-nums">
-                    {m?.requests ? m.requests.toLocaleString() : <span className="text-muted-foreground">0</span>}
-                  </td>
-                  <td className="text-right tabular-nums">{m?.requests ? pct(m.successRate) : '—'}</td>
-                  <td className="text-right tabular-nums">{m?.requests ? sec(m.avgLatencyMs) : '—'}</td>
-                  <td className="text-right tabular-nums">{m?.avgTtftMs != null ? sec(m.avgTtftMs) : '—'}</td>
-                  <td className="!px-1 text-right">
-                    <button
-                      type="button"
-                      aria-label={t('channels.models.remove', { model: name })}
-                      onClick={() => remove(name)}
-                      className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                    <th
+                      className="text-right"
+                      title={
+                        upstreamPrices.synced_at
+                          ? t('channels.models.upstreamPriceHint', { time: timestamp2string(upstreamPrices.synced_at) })
+                          : t('channels.models.upstreamPriceNever')
+                      }
                     >
-                      <X className="size-3.5" />
-                    </button>
-                  </td>
+                      {t('channels.models.upstreamPrice')}
+                    </th>
+                  )}
+                  <th className="text-right">{t('channels.table.requests', { range: t(`channels.range.short.${ctx.rangeKey}`) })}</th>
+                  <th className="text-right">{t('channels.table.successRate')}</th>
+                  <th className="text-right">{t('channels.table.avgLatency')}</th>
+                  <th className="text-right">{t('channels.models.ttft')}</th>
+                  <th />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {list.visible.map(({ name, m }) => (
+                  <tr
+                    key={name}
+                    className="[&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0"
+                  >
+                    <td className="font-mono" title={name}>
+                      {name}
+                    </td>
+                    {hasMapping && (
+                      <td className="font-mono text-muted-foreground" title={mapping[name] || ''}>
+                        {mapping[name] || '—'}
+                      </td>
+                    )}
+                    {showPrices && (
+                      <td className="text-right tabular-nums">
+                        <UpstreamPriceCell price={pricesByModel.get(upstreamNameOf(name, mapping))} />
+                      </td>
+                    )}
+                    <td className="text-right tabular-nums">
+                      {m?.requests ? m.requests.toLocaleString() : <span className="text-muted-foreground">0</span>}
+                    </td>
+                    <td className="text-right tabular-nums">{m?.requests ? pct(m.successRate) : '—'}</td>
+                    <td className="text-right tabular-nums">{m?.requests ? sec(m.avgLatencyMs) : '—'}</td>
+                    <td className="text-right tabular-nums">{m?.avgTtftMs != null ? sec(m.avgTtftMs) : '—'}</td>
+                    <td className="!px-1 text-right">
+                      <button
+                        type="button"
+                        aria-label={t('channels.models.remove', { model: name })}
+                        onClick={() => remove(name)}
+                        className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <LongListMore list={list} />
+          </div>
+        </>
       )}
 
       <Field className="mt-2" label={configText(t, labels.label.model_mapping)} optional hint={t('channels.models.mappingHint')}>

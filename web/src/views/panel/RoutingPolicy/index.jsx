@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useOrg } from 'contexts/OrgContext';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { MoreHorizontal, PanelRight, Plus, RotateCcw, Trash2, TriangleAlert } from 'lucide-react';
+import { MoreHorizontal, PanelRight, Plus, RotateCcw, Route, Trash2, TriangleAlert } from 'lucide-react';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import PageActions from '@/components/chrome/PageActions';
 import { ROW_OPENS, rowOpenProps, RowControl, Segmented, useObjectRoute } from '@/components/objects';
+import { PageEmptyState } from '@/components/list-page';
 import { showError, showSuccess } from 'utils/common';
 import RoutingPolicyPanel from './RoutingPolicyPanel';
 import NewRoutingPolicySheet from './NewRoutingPolicySheet';
@@ -66,6 +67,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
   const route = useObjectRoute(POLICY_TAB_KEYS);
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [modelOptions, setModelOptions] = useState([]);
   const [pendingDelete, setPendingDelete] = useState(null);
   // 近 7 天概览（请求数 / 兜底率），按策略逐个取；策略很少，并行几次请求可以接受。
@@ -96,6 +98,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
       // surfaced globally
     } finally {
       setLoading(false);
+      setLoaded(true);
     }
   }, [api, readOnly]);
 
@@ -285,6 +288,11 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
 
   const table = useTable({ features: appTableFeatures, data: policies, columns });
   const emptyText = review ? t('routingPolicy.reviewEmpty') : t('routingPolicy.empty');
+  // No policy in this scope yet: the list becomes the first-run empty state (the scope switch stays).
+  const blank = loaded && !loading && policies.length === 0;
+  let blankDescription = t('pageEmpty.routing.description');
+  if (review) blankDescription = t('routingPolicy.reviewEmpty');
+  else if (readOnly) blankDescription = t('pageEmpty.routing.memberDescription');
 
   return (
     <div className="space-y-6">
@@ -314,116 +322,136 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
         </div>
       )}
 
-      <Card>
-        <div className="hidden overflow-x-auto md:block">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((hg) => (
-                <TableRow key={hg.id} className="hover:bg-transparent">
-                  {hg.headers.map((h) => (
-                    <TableHead key={h.id} className={`whitespace-nowrap ${h.column.columnDef.meta?.className ?? ''}`}>
-                      {flexRender(h.column.columnDef.header, h.getContext())}
-                    </TableHead>
+      {blank ? (
+        <PageEmptyState
+          icon={Route}
+          title={t('pageEmpty.routing.title')}
+          description={blankDescription}
+          docsPath="/guide/routing"
+          action={canEdit && <Button onClick={route.openNew}>{t('routingPolicy.create')}</Button>}
+        />
+      ) : (
+        <>
+          <Card>
+            <div className="hidden overflow-x-auto md:block">
+              <Table>
+                <TableHeader>
+                  {table.getHeaderGroups().map((hg) => (
+                    <TableRow key={hg.id} className="hover:bg-transparent">
+                      {hg.headers.map((h) => (
+                        <TableHead key={h.id} className={`whitespace-nowrap ${h.column.columnDef.meta?.className ?? ''}`}>
+                          {flexRender(h.column.columnDef.header, h.getContext())}
+                        </TableHead>
+                      ))}
+                    </TableRow>
                   ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.length === 0 ? (
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={columns.length} className="py-10 text-center text-sm text-muted-foreground">
-                    {loading ? t('common.loading', { defaultValue: 'Loading…' }) : emptyText}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    className={`group ${ROW_OPENS}`}
-                    data-state={row.original.id === route.openId ? 'selected' : undefined}
-                    {...rowOpenProps(() => route.open(row.original.id))}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
-                        {flexRender(cell.column.columnDef.cell ?? cell.getValue, cell.getContext())}
+                </TableHeader>
+                <TableBody>
+                  {table.getRowModel().rows.length === 0 ? (
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell colSpan={columns.length} className="py-10 text-center text-sm text-muted-foreground">
+                        {loading ? t('common.loading', { defaultValue: 'Loading…' }) : emptyText}
                       </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-        {/* Phone rows (56px): the call name with the switch and ⋯ on the right; below, the display
-            name (or owner when reviewing), the routes as label → target and the fallback. */}
-        <div className="md:hidden">
-          {table.getRowModel().rows.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-              {loading ? t('common.loading', { defaultValue: 'Loading…' }) : emptyText}
-            </p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {table.getRowModel().rows.map((row) => {
-                const p = row.original;
-                const cell = (id) => {
-                  const c = row.getVisibleCells().find((x) => x.column.id === id);
-                  return c ? flexRender(c.column.columnDef.cell, c.getContext()) : null;
-                };
-                const owner = review ? (p.user_id ? p.username || `#${p.user_id}` : p.organization_name || `#${p.organization_id}`) : null;
-                const secondary = [
-                  owner || (p.display_name && p.display_name !== p.name ? p.display_name : null),
-                  (p.routes || []).map((r) => `${r.label} → ${r.target_model}`).join(' · '),
-                  `${t('routingPolicy.columns.fallback')} ${p.fallback_model}`
-                ]
-                  .filter(Boolean)
-                  .join(' · ');
-                return (
-                  <li
-                    key={row.id}
-                    className={`flex h-14 items-center gap-3 px-4 ${ROW_OPENS} ${p.id === route.openId ? 'bg-muted/60' : ''}`}
-                    {...rowOpenProps(() => route.open(p.id))}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        <span className="truncate font-mono text-sm font-medium">{api.callPrefix ? policyCallName(api, p) : p.name}</span>
-                        {p.overrides_platform && (
-                          <TriangleAlert className="size-3.5 shrink-0 text-amber-500" aria-label={t('routingPolicy.overridesPlatform')} />
-                        )}
-                      </div>
-                      <div className="mt-0.5 truncate text-xs text-muted-foreground">{secondary}</div>
-                    </div>
-                    <div className="-mr-2 flex shrink-0 items-center gap-1">
-                      {cell('enabled')}
-                      <RowControl>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-8" aria-label={t('userPage.action')}>
-                              <MoreHorizontal className="size-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-40">
-                            <DropdownMenuItem onClick={() => route.open(p.id)}>
-                              <PanelRight className="size-4" />
-                              {t('objects.open')}
-                            </DropdownMenuItem>
-                            {canEdit && (
-                              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setPendingDelete(p)}>
-                                <Trash2 className="size-4" />
-                                {t('common.delete')}
-                              </DropdownMenuItem>
+                    </TableRow>
+                  ) : (
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow
+                        key={row.id}
+                        className={`group ${ROW_OPENS}`}
+                        data-state={row.original.id === route.openId ? 'selected' : undefined}
+                        {...rowOpenProps(() => route.open(row.original.id))}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
+                            {flexRender(cell.column.columnDef.cell ?? cell.getValue, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            {/* Phone rows (56px): the call name with the switch and ⋯ on the right; below, the display
+              name (or owner when reviewing), the routes as label → target and the fallback. */}
+            <div className="md:hidden">
+              {table.getRowModel().rows.length === 0 ? (
+                <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  {loading ? t('common.loading', { defaultValue: 'Loading…' }) : emptyText}
+                </p>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {table.getRowModel().rows.map((row) => {
+                    const p = row.original;
+                    const cell = (id) => {
+                      const c = row.getVisibleCells().find((x) => x.column.id === id);
+                      return c ? flexRender(c.column.columnDef.cell, c.getContext()) : null;
+                    };
+                    const owner = review
+                      ? p.user_id
+                        ? p.username || `#${p.user_id}`
+                        : p.organization_name || `#${p.organization_id}`
+                      : null;
+                    const secondary = [
+                      owner || (p.display_name && p.display_name !== p.name ? p.display_name : null),
+                      (p.routes || []).map((r) => `${r.label} → ${r.target_model}`).join(' · '),
+                      `${t('routingPolicy.columns.fallback')} ${p.fallback_model}`
+                    ]
+                      .filter(Boolean)
+                      .join(' · ');
+                    return (
+                      <li
+                        key={row.id}
+                        className={`flex h-14 items-center gap-3 px-4 ${ROW_OPENS} ${p.id === route.openId ? 'bg-muted/60' : ''}`}
+                        {...rowOpenProps(() => route.open(p.id))}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex min-w-0 items-center gap-1.5">
+                            <span className="truncate font-mono text-sm font-medium">
+                              {api.callPrefix ? policyCallName(api, p) : p.name}
+                            </span>
+                            {p.overrides_platform && (
+                              <TriangleAlert
+                                className="size-3.5 shrink-0 text-amber-500"
+                                aria-label={t('routingPolicy.overridesPlatform')}
+                              />
                             )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </RowControl>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-      </Card>
-
+                          </div>
+                          <div className="mt-0.5 truncate text-xs text-muted-foreground">{secondary}</div>
+                        </div>
+                        <div className="-mr-2 flex shrink-0 items-center gap-1">
+                          {cell('enabled')}
+                          <RowControl>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="size-8" aria-label={t('userPage.action')}>
+                                  <MoreHorizontal className="size-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem onClick={() => route.open(p.id)}>
+                                  <PanelRight className="size-4" />
+                                  {t('objects.open')}
+                                </DropdownMenuItem>
+                                {canEdit && (
+                                  <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setPendingDelete(p)}>
+                                    <Trash2 className="size-4" />
+                                    {t('common.delete')}
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </RowControl>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </Card>
+        </>
+      )}
       {route.openId > 0 && (
         <RoutingPolicyPanel
           key={route.openId}
