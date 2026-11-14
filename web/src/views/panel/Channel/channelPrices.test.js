@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { amount, priceDetails, priceIndex, priceSummary, upstreamNameOf, usd } from './channelPrices';
+import { amount, priceIndex, priceSummary, sortByTokenPrice, tokenPrice, upstreamNameOf, usd } from './channelPrices';
 
 describe('upstreamNameOf', () => {
   it('uses the mapping target without the billing "+"', () => {
@@ -21,7 +21,7 @@ describe('usd', () => {
 
 describe('priceSummary', () => {
   it('reads token, per-image, per-request and free prices', () => {
-    expect(priceSummary({ input: 3, output: 15 })).toEqual({ kind: 'tokens', text: '3 / 15' });
+    expect(priceSummary({ input: 3, output: 15 })).toEqual({ kind: 'tokens', input: '3', output: '15' });
     expect(priceSummary({ image: 0.04 })).toEqual({ kind: 'image', value: '$0.04' });
     expect(priceSummary({ request: 0.01 })).toEqual({ kind: 'request', value: '$0.01' });
     expect(priceSummary({ video_second: 0.05 })).toEqual({ kind: 'video', value: '$0.05' });
@@ -31,18 +31,32 @@ describe('priceSummary', () => {
   });
 });
 
-describe('priceDetails', () => {
-  it('lists only the prices the upstream states', () => {
-    expect(priceDetails({ input: 3, output: 15, cache_read: 0.3 })).toEqual([
-      ['input', '$3'],
-      ['output', '$15'],
-      ['cache_read', '$0.3']
-    ]);
-  });
-});
-
 describe('priceIndex', () => {
   it('looks prices up by upstream model name', () => {
     expect(priceIndex([{ model: 'a', input: 1 }]).get('a').input).toBe(1);
+  });
+});
+
+describe('tokenPrice', () => {
+  it('reads input or output of a model priced per token', () => {
+    expect(tokenPrice({ input: 3, output: 15 }, 'input')).toBe(3);
+    expect(tokenPrice({ input: 0.1, output: 0 }, 'output')).toBe(0);
+  });
+  it('is null for other pricing or no price', () => {
+    expect(tokenPrice({ image: 0.04 }, 'input')).toBeNull();
+    expect(tokenPrice(undefined, 'output')).toBeNull();
+  });
+});
+
+describe('sortByTokenPrice', () => {
+  const prices = { a: { input: 3, output: 15 }, b: { image: 0.04 }, c: { input: 1, output: 20 }, d: { input: 3, output: 1 }, e: null };
+  const priceOf = (r) => prices[r];
+  const rows = ['a', 'b', 'c', 'd', 'e'];
+  it('sorts ascending with unpriced rows last in their order', () => {
+    expect(sortByTokenPrice(rows, 'input', 'asc', priceOf)).toEqual(['c', 'a', 'd', 'b', 'e']);
+  });
+  it('sorts descending, ties keeping their order', () => {
+    expect(sortByTokenPrice(rows, 'input', 'desc', priceOf)).toEqual(['a', 'd', 'c', 'b', 'e']);
+    expect(sortByTokenPrice(rows, 'output', 'desc', priceOf)).toEqual(['c', 'a', 'd', 'b', 'e']);
   });
 });

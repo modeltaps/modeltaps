@@ -21,12 +21,13 @@ export function amount(value) {
 
 export const usd = (value) => `$${amount(value)}`;
 
-// The short form the table shows: a token pair (bare numbers; the column header carries "$/M"),
-// a per-image or per-request price, or free.
+// The short form the table shows: input and output per million tokens (bare numbers; the column
+// headers carry "$/M"), or for a model not priced per token one text for both columns: a
+// per-image, per-second or per-request price, free, or other.
 export function priceSummary(price) {
   if (!price) return null;
   const { input = 0, output = 0, image = 0, request = 0, video_second: videoSecond = 0 } = price;
-  if (input || output) return { kind: 'tokens', text: `${amount(input)} / ${amount(output)}` };
+  if (input || output) return { kind: 'tokens', input: amount(input), output: amount(output) };
   if (image) return { kind: 'image', value: usd(image) };
   if (videoSecond) return { kind: 'video', value: usd(videoSecond) };
   if (price.other) return { kind: 'other' };
@@ -34,10 +35,23 @@ export function priceSummary(price) {
   return { kind: 'free' };
 }
 
-// Every price the upstream states for the model, for the cell's tooltip: [key, formatted value].
-export function priceDetails(price) {
-  if (!price) return [];
-  return ['input', 'output', 'cache_read', 'cache_write', 'image', 'video_second', 'request']
-    .filter((key) => Number(price[key]) > 0)
-    .map((key) => [key, usd(price[key])]);
+// The input or output price per million tokens, for sorting; null when the model is not priced
+// per token (or has no price).
+export function tokenPrice(price, key) {
+  if (!price || !(Number(price.input) || Number(price.output))) return null;
+  return Number(price[key]) || 0;
+}
+
+// `rows` ordered by a token price (`key` 'input' | 'output', `dir` 'asc' | 'desc'); rows without
+// one follow, in their original order. Ties keep the original order too. `priceOf(row)` gives the
+// row's price entry.
+export function sortByTokenPrice(rows, key, dir, priceOf) {
+  const sign = dir === 'desc' ? -1 : 1;
+  return rows
+    .map((row, i) => ({ row, i, v: tokenPrice(priceOf(row), key) }))
+    .sort((a, b) => {
+      if (a.v === null || b.v === null) return (a.v === null) - (b.v === null) || a.i - b.i;
+      return sign * (a.v - b.v) || a.i - b.i;
+    })
+    .map((x) => x.row);
 }
