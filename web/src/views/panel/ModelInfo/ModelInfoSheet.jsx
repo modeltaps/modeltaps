@@ -299,6 +299,7 @@ export default function ModelInfoSheet({
   open,
   onOpenChange,
   row = null,
+  liveRow = null,
   initialTab = 'profile',
   existingModels = [],
   prices = [],
@@ -315,6 +316,10 @@ export default function ModelInfoSheet({
   const editId = row?.catalogId || 0;
   const hasPrice = !!row?.price;
   const isPublic = isPublicModelRow(row);
+  // The list's current state of the row, for what the sheet only shows (header, channel counts):
+  // `row` is the snapshot the form was loaded from and stays put so unsaved edits survive a
+  // refresh of the list, for example after a supply is added.
+  const shown = liveRow || row;
   const [tab, setTab] = useState(initialTab);
 
   useEffect(() => {
@@ -510,14 +515,14 @@ export default function ModelInfoSheet({
           <SheetTitle>{editId ? t('modelInfoPage.editTitle') : t('modelInfoPage.createTitle')}</SheetTitle>
           {row ? (
             <SheetDescription className="flex flex-wrap items-center gap-2">
-              <span className="font-mono text-foreground">{row.model}</span>
-              <ModelStatusBadge status={modelStatus(row)} />
-              {isPublic && <ModelStatusPill status={values.status || row.status} />}
+              <span className="font-mono text-foreground">{shown.model}</span>
+              <ModelStatusBadge status={modelStatus(shown)} />
+              {isPublic && <ModelStatusPill status={values.status || shown.status} />}
               <span>
-                {t('modelsPage.channelCount', { count: enabledChannels(row).length })} ·{' '}
-                {modelGroups(row)[0] === '*'
+                {t('modelsPage.channelCount', { count: enabledChannels(shown).length })} ·{' '}
+                {modelGroups(shown)[0] === '*'
                   ? t('channels.allGroups')
-                  : t('modelsPage.sheet.groupCount', { count: modelGroups(row).length })}
+                  : t('modelsPage.sheet.groupCount', { count: modelGroups(shown).length })}
               </span>
             </SheetDescription>
           ) : (
@@ -529,7 +534,7 @@ export default function ModelInfoSheet({
               <TabsTrigger value="pricing">{t('modelsPage.sheet.tabPricing')}</TabsTrigger>
               {row && (
                 <TabsTrigger value="channels">
-                  {t('modelsPage.channelsTab')} ({(row.bound_channels || []).length})
+                  {t('modelsPage.channelsTab')} ({(shown.bound_channels || []).length})
                 </TabsTrigger>
               )}
               {isPublic && (
@@ -628,9 +633,18 @@ export default function ModelInfoSheet({
                 </FormField>
               )}
 
-              <FormField row label={t('modelInfoPage.hidden')} help={t('modelInfoPage.hiddenTip')} controlClassName="w-auto">
-                <Switch checked={!!values.hidden} onCheckedChange={(v) => setField('hidden', v)} />
-              </FormField>
+              {/* While supplies route requests the publish state decides who sees a model and the
+                  hidden flag is not read: the switch is shown only to clear a value left from before. */}
+              {(!supplyRouting || values.hidden) && (
+                <FormField
+                  row
+                  label={t('modelInfoPage.hidden')}
+                  help={t(supplyRouting ? 'modelInfoPage.hiddenIgnored' : 'modelInfoPage.hiddenTip')}
+                  controlClassName="w-auto"
+                >
+                  <Switch checked={!!values.hidden} onCheckedChange={(v) => setField('hidden', v)} />
+                </FormField>
+              )}
 
               <FormField row label={t('modelInfoPage.locked')} help={t('modelInfoPage.lockedTip')} controlClassName="w-auto">
                 <Switch checked={!!values.locked} onCheckedChange={(v) => setField('locked', v)} />
@@ -732,7 +746,7 @@ export default function ModelInfoSheet({
 
           {row && (
             <div role="tabpanel" hidden={tab !== 'channels'}>
-              <ChannelsPanel row={row} supplyRouting={supplyRouting} onGoSupplies={isPublic ? () => setTab('supplies') : undefined} />
+              <ChannelsPanel row={shown} supplyRouting={supplyRouting} onGoSupplies={isPublic ? () => setTab('supplies') : undefined} />
             </div>
           )}
 
@@ -784,6 +798,7 @@ ModelInfoSheet.propTypes = {
   open: PropTypes.bool,
   onOpenChange: PropTypes.func.isRequired,
   row: PropTypes.object,
+  liveRow: PropTypes.object,
   initialTab: PropTypes.oneOf(SHEET_TABS),
   existingModels: PropTypes.array,
   prices: PropTypes.array,

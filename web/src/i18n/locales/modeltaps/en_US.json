@@ -3446,7 +3446,8 @@
       "platform": "Platform spelling",
       "pending": "Confirm",
       "variant": "Variant"
-    }
+    },
+    "notSynced": "The model library is empty. Close this, choose Sync → Sync from models.dev at the top right of the page, then add models."
   },
   "ledgerList": {
     "description": "Description",

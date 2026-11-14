@@ -1256,6 +1256,7 @@
     "hiddenYes": "已隱藏",
     "hiddenNo": "未隱藏",
     "hiddenTip": "有啟用渠道可路由的模型預設可見；隱藏後不出現在公開模型清單且不可呼叫。",
+    "hiddenIgnored": "按供應路由時由「發布狀態」決定誰能看到這個模型，這個開關不起作用，可以關掉",
     "state": "狀態",
     "endpoints": "介面能力",
     "endpointsTip": "宣告該模型可以被哪些介面呼叫；留空表示未設定。",
@@ -1875,7 +1876,7 @@
   },
   "pricing_edit": {
     "channelType": "供應商",
-    "channelTypeErr": "供應商類型錯誤",
+    "channelTypeErr": "請選擇廠商",
     "channelTypeErr2": "所屬供應商類型錯誤",
     "delInfoTip": "確定刪除 {{name}} 嗎？",
     "delMultipleInfoTip": "確定刪除所選的 {{count}} 個價格嗎？",

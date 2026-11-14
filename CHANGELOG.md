@@ -284,6 +284,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Model catalog: while supplies route requests the model sheet no longer offers the Hidden switch,
+  which the publish state replaces (it stays only to clear a value left from before); the pricing
+  tab calls the owner field "Vendor" like the profile tab instead of "Provider"; the sheet header
+  and channel counts follow the list, so adding a supply no longer leaves "no channel" on screen;
+  the supplies table drops the computed priority of models on the call order; the library sheet tells an
+  empty library to be synced first instead of saying no model matches the filters.
+- New channel sheet: an emptied model list no longer says it serves "these 0 models", the key
+  hint is not repeated under masked keys, and a failed test after creation shows the upstream
+  reason once instead of "test failed: test failed: ...". Copy confirmations read "已复制…" in
+  Chinese.
+
 - The channel menu names its checks apart: "Test several models" (connection and latency),
   "Capability check" (real requests that verify vision, tool calls and more) and "Compare upstream
   models", each with a line saying what it does. The Advanced tab shows the "other" field only

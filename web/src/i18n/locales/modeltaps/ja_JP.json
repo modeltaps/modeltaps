@@ -3345,7 +3345,8 @@
       "platform": "プラットフォーム表記",
       "pending": "要確認",
       "variant": "派生モデル"
-    }
+    },
+    "notSynced": "モデルライブラリはまだ空です。ここを閉じ、ページ右上の「同期 → models.dev から同期」で取得してから追加してください。"
   },
   "ledgerList": {
     "description": "内容",

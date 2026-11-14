@@ -159,7 +159,7 @@ export function PriceFields({ control, type, ownedby = [], units, children }) {
         />
       </FormField>
 
-      <FormField id="pricing-channel-type" label={t('pricing_edit.channelType')} required>
+      <FormField id="pricing-channel-type" label={t('modelInfoPage.vendor')} required>
         <Controller
           control={control}
           name="channel_type"
