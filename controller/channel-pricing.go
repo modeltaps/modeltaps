@@ -129,16 +129,24 @@ func modelInfoSourceFor(channelType int) string {
 // SyncAllChannelsOwnPricing 遍历所有自带价格表的渠道（OpenRouter、Vercel AI Gateway），
 // 拉取真实价格去重后 upsert；元数据按来源分别落库。
 // 无需 gin.Context（provider 在 nil context 下仅做 GET /v1/models），供启动与 cron 调用。
+//
+// These lists use platform spellings ("anthropic/claude-opus-5"). Catalog rows are written under
+// the public names only (model.PublicNameInfos). Prices are written under the spellings, which
+// requests without supply routing are billed by, and copied to the public names
+// (model.PublicNamePrices) unless another source already priced them.
 func SyncAllChannelsOwnPricing() (int, error) {
 	channels, err := model.GetAllChannels()
 	if err != nil {
 		return 0, err
 	}
 
-	deduped := make(map[string]*model.Price)
-	infoDedup := make(map[string]map[string]*model.ModelInfo) // source -> model -> info
+	priceGroups := make([][]*model.Price, len(ownPricingChannelTypes))
+	seenPrice := make(map[string]bool)
+	infoGroups := make([][]*model.ModelInfo, len(ownPricingChannelTypes))
 	// 按类型优先级遍历，先到先得：后面的类型不覆盖已有价格。
-	for _, t := range ownPricingChannelTypes {
+	for i, t := range ownPricingChannelTypes {
+		infoByModel := make(map[string]*model.ModelInfo)
+		var infoOrder []string
 		for _, ch := range channels {
 			if ch.Type != t.channelType {
 				continue
@@ -157,57 +165,58 @@ func SyncAllChannelsOwnPricing() (int, error) {
 					ch.Name, len(unconvertible)))
 			}
 			for _, p := range prices {
-				if _, exists := deduped[p.Model]; !exists {
-					deduped[p.Model] = p
+				if !seenPrice[p.Model] {
+					seenPrice[p.Model] = true
+					priceGroups[i] = append(priceGroups[i], p)
 				}
 			}
 			if infoProvider, ok := provider.(providersBase.ModelInfoListInterface); ok {
 				if infos, err := infoProvider.GetModelInfoList(); err == nil {
-					if infoDedup[t.infoSource] == nil {
-						infoDedup[t.infoSource] = make(map[string]*model.ModelInfo)
-					}
 					for _, info := range infos {
-						infoDedup[t.infoSource][info.Model] = info
+						if _, ok := infoByModel[info.Model]; !ok {
+							infoOrder = append(infoOrder, info.Model)
+						}
+						infoByModel[info.Model] = info
 					}
 				}
 			}
 		}
+		for _, name := range infoOrder {
+			infoGroups[i] = append(infoGroups[i], infoByModel[name])
+		}
 	}
 
-	if len(deduped) == 0 {
+	var list []*model.Price
+	for _, group := range priceGroups {
+		list = append(list, group...)
+	}
+	if len(list) == 0 {
 		return 0, nil
 	}
+	synced := len(list)
 
-	list := make([]*model.Price, 0, len(deduped))
-	for _, p := range deduped {
-		list = append(list, p)
+	resolver, err := model.NewCanonicalResolver()
+	if err != nil {
+		return 0, err
 	}
+	list = append(list, model.KeepChannelPricedOrMissing(model.PublicNamePrices(resolver, priceGroups))...)
 	// 启动、每日定时与保存渠道都走这里：已有价格的变动按 PriceSyncAutoApply 处理并通知。
 	if _, err := model.PricingInstance.ApplyAutoPriceSync(list, "channel price lists"); err != nil {
 		return 0, err
 	}
 
 	// 元数据同样先到先得：OpenRouter 已写过的模型，Vercel 不再覆盖。
-	seenInfo := make(map[string]bool)
-	for _, t := range ownPricingChannelTypes {
-		byModel := infoDedup[t.infoSource]
-		if len(byModel) == 0 {
+	for i, infos := range model.PublicNameInfos(resolver, infoGroups) {
+		if len(infos) == 0 {
 			continue
 		}
-		infos := make([]*model.ModelInfo, 0, len(byModel))
-		for name, info := range byModel {
-			if seenInfo[name] {
-				continue
-			}
-			seenInfo[name] = true
-			infos = append(infos, info)
-		}
-		if err := model.UpsertModelInfos(infos, t.infoSource); err != nil {
-			logger.SysError(t.infoSource + " model info upsert failed: " + err.Error())
+		source := ownPricingChannelTypes[i].infoSource
+		if err := model.UpsertModelInfos(infos, source); err != nil {
+			logger.SysError(source + " model info upsert failed: " + err.Error())
 		}
 	}
 
-	return len(list), nil
+	return synced, nil
 }
 
 // channelPriceSyncRequest 是渠道表单提交的渠道，外加价格同步选项：
@@ -288,8 +297,10 @@ func SyncChannelPricing(c *gin.Context) {
 	}
 
 	synced := len(prices)
+	written := prices
 	if req.SyncModels != nil {
 		synced, err = model.PricingInstance.UpsertSelectedPrices(prices, req.SyncModels)
+		written = model.SelectPrices(prices, req.SyncModels)
 	} else {
 		err = model.PricingInstance.UpsertPrices(prices)
 	}
@@ -298,13 +309,26 @@ func SyncChannelPricing(c *gin.Context) {
 		return
 	}
 
+	// The list uses platform spellings: the prices written under them are copied to the public
+	// names, and catalog rows are written under the public names only (best-effort, like the
+	// metadata below).
+	resolver, err := model.NewCanonicalResolver()
+	if err != nil {
+		logger.SysError("channel price sync: load catalog failed: " + err.Error())
+	} else if copies := model.KeepChannelPricedOrMissing(model.PublicNamePrices(resolver, [][]*model.Price{written})); len(copies) > 0 {
+		if err := model.PricingInstance.UpsertPrices(copies); err != nil {
+			logger.SysError("channel price sync: public name prices failed: " + err.Error())
+		}
+	}
+
 	// 顺带同步模型元信息（名称/上下文/模态），使模型详情有内容（best-effort，不阻断价格同步）
-	if infoProvider, ok := provider.(providersBase.ModelInfoListInterface); ok {
+	if infoProvider, ok := provider.(providersBase.ModelInfoListInterface); ok && resolver != nil {
 		if infos, err := infoProvider.GetModelInfoList(); err == nil {
 			source := modelInfoSourceFor(channel.Type)
 			if source == "" {
 				source = model.ModelInfoSourceOpenRouter
 			}
+			infos = model.PublicNameInfos(resolver, [][]*model.ModelInfo{infos})[0]
 			if err := model.UpsertModelInfos(infos, source); err != nil {
 				logger.SysError("channel model info upsert failed: " + err.Error())
 			}
