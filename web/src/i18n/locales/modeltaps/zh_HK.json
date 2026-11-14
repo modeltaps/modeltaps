@@ -2095,7 +2095,7 @@
         "failingFilter": "失敗多"
       },
       "public": "公開名",
-      "notOffered": "未對應",
+      "notOffered": "無對應",
       "supplyOff": "供應已停用",
       "context": "上下文",
       "orderHint": "預設按常用程度排：近 30 天本站請求多的系列在前，沒有用量時主流系列在前，同系列最新版本在前。點表頭按名稱排",
@@ -2120,7 +2120,7 @@
       "checkHint": "讀取上游目前的模型清單，標出已下架和尚未加入的模型",
       "state": {
         "offered": "已對應",
-        "unoffered": "未對應",
+        "unoffered": "無對應",
         "gone": "上游已下架",
         "unlisted": "上游有、未加入"
       },
