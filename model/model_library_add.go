@@ -206,7 +206,7 @@ func libraryModelInfo(e *ModelLibraryEntry) *ModelInfo {
 		OutputModalities: e.OutputModalities,
 		Capabilities:     e.Capabilities,
 		Endpoints:        e.Endpoints,
-		VendorID:         e.VendorID,
+		VendorID:         libraryVendorID(e),
 		OpenWeights:      e.OpenWeights,
 		ReleasedAt:       e.ReleasedAt,
 	}
@@ -350,4 +350,13 @@ func jsonUnmarshalStrings(raw string, out *[]string) error {
 		return nil
 	}
 	return json.Unmarshal([]byte(raw), out)
+}
+
+// libraryVendorID is the vendor of a library entry: the one stored at sync time, else the lab
+// prefix of its canonical id, so a vendor added after the sync is picked up.
+func libraryVendorID(e *ModelLibraryEntry) int {
+	if e.VendorID != 0 {
+		return e.VendorID
+	}
+	return VendorIDFromModelName(e.Canonical)
 }

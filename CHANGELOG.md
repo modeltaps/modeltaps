@@ -504,6 +504,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Catalog models get the vendor that made them. 188 of the 511 models the dev Vercel channel
+  added had no vendor: the vendor table lacked most labs (NVIDIA, Microsoft, ByteDance,
+  ElevenLabs, Voyage AI...), Vercel's prefixes did not match the slugs ("spacexai", "bfl",
+  "klingai"), and the Vercel sync cleared the vendor the model library had filled in. The table
+  now has 37 more labs, the former Flux, Recraft, Kling and other rows have slugs, defaults that
+  named a product or misspelled the company are corrected where an admin did not rename them
+  (Spark is iFlytek, Flux is Black Forest Labs), and a model's vendor comes from its prefix, else
+  the model library's lab, else the name rules. 20 models from labs not yet in the table stay
+  without a vendor. `owned_by` in `/v1/models` no longer falls back to the type of the channel
+  serving a model: a model nothing names a maker for is "Unknown" instead of, say, "groq".
 - Fast and reasoning tiers of a model are no longer read as the model itself. Platforms file
   "openai/gpt-5.5-fast" or "deepseek-v3.2-thinking" under the base model, so a channel that
   listed both showed the tier as unmatched, "duplicate of gpt-5.5", although it is sold at a

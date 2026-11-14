@@ -308,12 +308,12 @@ func ListClaudeModelsByToken(c *gin.Context) {
 func ListModelsForAdmin(c *gin.Context) {
 	prices := model.PricingInstance.GetAllPrices()
 	var openAIModels []OpenAIModels
-	for modelId, price := range prices {
+	for modelId := range prices {
 		openAIModels = append(openAIModels, OpenAIModels{
 			Id:      modelId,
 			Object:  "model",
 			Created: getModelCreated(modelId),
-			OwnedBy: getModelOwnedBy(modelId, price.ChannelType),
+			OwnedBy: getModelOwnedBy(modelId),
 		})
 	}
 	// 根据 OwnedBy 排序
@@ -389,10 +389,10 @@ func getModelCreated(modelName string) int {
 	return defaultModelCreated
 }
 
-// getModelOwnedBy 解析模型的 owned_by：优先 vendor slug（稳定机器口径，厂商展示名可改写），
-// slug 缺失时回退厂商展示名，厂商整体推不出时沿用 UnknownOwnedBy。回退链见 resolveModelVendor。
-func getModelOwnedBy(modelName string, channelType int) (ownedBy *string) {
-	vendor := resolveModelVendor(modelName, channelType)
+// getModelOwnedBy is the owned_by of a model: its vendor slug (a stable machine value; the display
+// name can be edited), else the vendor name, else UnknownOwnedBy. See resolveModelVendor.
+func getModelOwnedBy(modelName string) (ownedBy *string) {
+	vendor := resolveModelVendor(modelName)
 	owner := vendor.Slug
 	if owner == "" {
 		owner = vendor.Name
@@ -400,12 +400,12 @@ func getModelOwnedBy(modelName string, channelType int) (ownedBy *string) {
 	return &owner
 }
 
-// resolveModelVendor 解析模型厂商，逐级回退：
-// model_info.vendor_id → 别名指向主名的 vendor → 价格表 channel_type → 代表渠道 channel_type → 未知。
-// 未知厂商返回 id 0、名称 UnknownOwnedBy 与默认图标。
-func resolveModelVendor(modelName string, channelType int) *ModelVendor {
-	candidates := []int{model.ResolveVendorID(modelName), channelType, model.ChannelGroup.GetModelChannelType(modelName)}
-	for _, vendorID := range candidates {
+// resolveModelVendor is who made the model: the catalog's vendor (an alias follows its canonical
+// model), else what the name itself says (a "vendor/" prefix, the model library, the name rules).
+// The channel serving the model is not its maker, so an unknown model stays unknown (id 0,
+// UnknownOwnedBy, the default icon) rather than taking the platform's name.
+func resolveModelVendor(modelName string) *ModelVendor {
+	for _, vendorID := range []int{model.ResolveVendorID(modelName), model.GuessVendorID(modelName)} {
 		if name := ownedByName(vendorID); name != "" {
 			return &ModelVendor{
 				Id:   vendorID,
@@ -419,7 +419,6 @@ func resolveModelVendor(modelName string, channelType int) *ModelVendor {
 	return &ModelVendor{Name: model.UnknownOwnedBy, Icon: model.DefaultModelIcon}
 }
 
-// ownedByName 取厂商名；0 / 未登记的厂商返回空串，交给下一级回退。
 func ownedByName(vendorID int) string {
 	if vendorID == 0 {
 		return ""
@@ -438,7 +437,7 @@ func getOpenAIModelWithName(modelName string) *OpenAIModels {
 		Id:      modelName,
 		Object:  "model",
 		Created: getModelCreated(modelName),
-		OwnedBy: getModelOwnedBy(modelName, price.ChannelType),
+		OwnedBy: getModelOwnedBy(modelName),
 	}
 
 	// 有 model_info 才暴露 architecture；模态为空时用空切片，避免序列化成 null
@@ -643,7 +642,7 @@ func appendOwnRoutingPolicyAvailableModels(availableModels map[string]*Available
 				price = mapped
 			}
 		}
-		vendor := resolveModelVendor(policy.FallbackModel, price.ChannelType)
+		vendor := resolveModelVendor(policy.FallbackModel)
 		availableModels[name] = &AvailableModelResponse{
 			Kind:      model.ModelInfoKindRoutingPolicy,
 			Routing:   routingSummaryOf(policy),
@@ -696,9 +695,7 @@ func getAvailableModels(groupName string) map[string]*AvailableModelResponse {
 					price = mapped
 				}
 			}
-			// 价格表推不出供应商（未配置价格）时，resolveModelVendor 会继续回退到实际服务
-			// 该模型的渠道 Type，避免新建渠道后模型清一色显示「未知」。
-			vendor := resolveModelVendor(modelName, price.ChannelType)
+			vendor := resolveModelVendor(modelName)
 			endpoints := model.ModelEndpoints(modelName)
 			availableModels[modelName] = &AvailableModelResponse{
 				Groups:     groups,
@@ -744,7 +741,7 @@ func appendRoutingPolicyAvailableModels(availableModels map[string]*AvailableMod
 				price = mapped
 			}
 		}
-		vendor := resolveModelVendor(policy.FallbackModel, price.ChannelType)
+		vendor := resolveModelVendor(policy.FallbackModel)
 		availableModels[policy.Name] = &AvailableModelResponse{
 			Kind:      model.ModelInfoKindRoutingPolicy,
 			Routing:   routingSummaryOf(policy),

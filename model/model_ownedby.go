@@ -164,6 +164,7 @@ func NewModelOwnedBys() {
 	logger.SysLog("Checking for ModelOwned updates")
 	modelOwnedBies := GetDefaultModelOwnedBy()
 	ModelOwnedBysInstance.SyncModelOwnedBy(modelOwnedBies)
+	ModelOwnedBysInstance.SyncLabVendors(labVendors)
 	logger.SysLog("ModelOwnedBys initialized")
 }
 
@@ -254,6 +255,15 @@ func (m *ModelOwnedBys) SyncModelOwnedBy(modelOwnedBies []*ModelOwnedBy) {
 			newModelOwnedBy = append(newModelOwnedBy, modelOwnedBy)
 			continue
 		}
+		// A default name an admin never changed follows the corrected default.
+		if old, ok := renamedDefaultVendors[existing.Id]; ok && existing.Name == old && modelOwnedBy.Name != old {
+			if err := DB.Model(&ModelOwnedBy{}).Where("id = ?", existing.Id).
+				Update("name", modelOwnedBy.Name).Error; err != nil {
+				logger.SysError("Failed to rename ModelOwnedBy:" + err.Error())
+			} else {
+				changed = true
+			}
+		}
 		// 存量行只回填缺失的 slug，管理员改过的名称 / 图标 / slug 一律不动。
 		if existing.Slug == "" && modelOwnedBy.Slug != "" {
 			if err := DB.Model(&ModelOwnedBy{}).Where("id = ?", existing.Id).
@@ -302,6 +312,106 @@ var defaultVendorSlugs = map[int]string{
 	config.ChannelTypeBaichuan:  "baichuan",
 	config.ChannelTypeHunyuan:   "tencent",
 	config.ChannelTypeLingyi:    "01-ai",
+	// Vendors whose models other platforms list under these prefixes.
+	config.ChannelTypeXunfei:      "iflytek",
+	config.ChannelTypeMidjourney:  "midjourney",
+	config.ChannelTypeStabilityAI: "stability-ai",
+	config.ChannelTypeSuno:        "suno",
+	config.ChannelTypeIdeogram:    "ideogram",
+	config.ChannelTypeFlux:        "black-forest-labs",
+	config.ChannelTypeJina:        "jina",
+	config.ChannelTypeRecraft:     "recraft",
+	config.ChannelTypeKling:       "kling",
+}
+
+// renamedDefaultVendors holds the former default names of vendors whose default name was
+// corrected (a product or misspelling instead of the company); rows still carrying the old name
+// are renamed, a name an admin chose is kept.
+var renamedDefaultVendors = map[int]string{
+	config.ChannelTypeXunfei:   "Spark",
+	config.ChannelTypeDeepseek: "Deepseek",
+	config.ChannelTypeFlux:     "Flux",
+	config.ChannelTypeRecraft:  "RecraftAI",
+}
+
+// labVendors are model makers with no channel type of their own, keyed by the slug models.dev
+// and the platforms (Vercel AI Gateway, OpenRouter) use as the model id prefix. Platforms that only
+// serve other labs' models are not vendors and are left out.
+var labVendors = []*ModelOwnedBy{
+	{Name: "NVIDIA", Slug: "nvidia"},
+	{Name: "Microsoft", Slug: "microsoft"},
+	{Name: "Amazon", Slug: "amazon"},
+	{Name: "ByteDance", Slug: "bytedance"},
+	{Name: "Xiaomi", Slug: "xiaomi"},
+	{Name: "Meituan", Slug: "meituan"},
+	{Name: "StepFun", Slug: "stepfun"},
+	{Name: "inclusionAI", Slug: "inclusionai"},
+	{Name: "Perplexity", Slug: "perplexity"},
+	{Name: "ElevenLabs", Slug: "elevenlabs"},
+	{Name: "Voyage AI", Slug: "voyageai"},
+	{Name: "Fish Audio", Slug: "fish-audio"},
+	{Name: "Inception", Slug: "inception"},
+	{Name: "Liquid AI", Slug: "liquid"},
+	{Name: "Sakana AI", Slug: "sakana"},
+	{Name: "Thinking Machines", Slug: "thinkingmachines"},
+	{Name: "Reflection AI", Slug: "reflection"},
+	{Name: "Topaz Labs", Slug: "topaz"},
+	{Name: "HeyGen", Slug: "heygen"},
+	{Name: "Mixedbread", Slug: "mixedbread"},
+	{Name: "Morph", Slug: "morph"},
+	{Name: "Parallel", Slug: "parallel"},
+	{Name: "Inference.net", Slug: "inference-net"},
+	{Name: "Baseten", Slug: "baseten"},
+	{Name: "Fireworks AI", Slug: "fireworks"},
+	{Name: "IBM", Slug: "ibm"},
+	{Name: "AI21 Labs", Slug: "ai21"},
+	{Name: "Upstage", Slug: "upstage"},
+	{Name: "Writer", Slug: "writer"},
+	{Name: "Nous Research", Slug: "nousresearch"},
+	{Name: "Arcee AI", Slug: "arcee-ai"},
+	{Name: "Reka", Slug: "rekaai"},
+	{Name: "Poolside", Slug: "poolside"},
+	{Name: "Aleph Alpha", Slug: "aleph-alpha"},
+	{Name: "Sarvam AI", Slug: "sarvam"},
+	{Name: "BAAI", Slug: "baai"},
+	{Name: "OpenBMB", Slug: "openbmb"},
+}
+
+// SyncLabVendors creates the vendors a deployment does not have yet. A vendor is found by slug,
+// else by name (case-insensitive), whose missing slug is then filled; nothing an admin set is
+// changed. New rows take the next free id.
+func (m *ModelOwnedBys) SyncLabVendors(vendors []*ModelOwnedBy) {
+	m.RLock()
+	byName := map[string]*ModelOwnedBy{}
+	for _, v := range m.ModelOwnedBy {
+		byName[strings.ToLower(strings.TrimSpace(v.Name))] = v
+	}
+	m.RUnlock()
+	changed := false
+	for _, v := range vendors {
+		if m.GetIdBySlug(string(v.Slug)) != 0 {
+			continue
+		}
+		if existing := byName[strings.ToLower(v.Name)]; existing != nil {
+			if existing.Slug == "" {
+				if err := DB.Model(&ModelOwnedBy{}).Where("id = ?", existing.Id).Update("slug", v.Slug).Error; err != nil {
+					logger.SysError("Failed to backfill ModelOwnedBy slug:" + err.Error())
+				} else {
+					changed = true
+				}
+			}
+			continue
+		}
+		row := &ModelOwnedBy{Name: v.Name, Slug: v.Slug}
+		if err := DB.Create(row).Error; err != nil {
+			logger.SysError("Failed to create ModelOwnedBy " + v.Name + ": " + err.Error())
+			continue
+		}
+		changed = true
+	}
+	if changed {
+		m.Load()
+	}
 }
 
 func GetDefaultModelOwnedBy() []*ModelOwnedBy {
@@ -312,13 +422,13 @@ func GetDefaultModelOwnedBy() []*ModelOwnedBy {
 		{Id: config.ChannelTypeBaidu, Name: "Baidu", Icon: "brand:wenxin"},
 		{Id: config.ChannelTypeZhipu, Name: "Zhipu", Icon: "brand:zhipu"},
 		{Id: config.ChannelTypeAli, Name: "Qwen", Icon: "brand:qwen"},
-		{Id: config.ChannelTypeXunfei, Name: "Spark", Icon: "brand:spark"},
+		{Id: config.ChannelTypeXunfei, Name: "iFlytek", Icon: "brand:spark"},
 		{Id: config.ChannelType360, Name: "360", Icon: "brand:ai360"},
 		{Id: config.ChannelTypeTencent, Name: "Tencent", Icon: "brand:hunyuan"},
 		{Id: config.ChannelTypeGemini, Name: "Google Gemini", Icon: "brand:gemini"},
 		{Id: config.ChannelTypeBaichuan, Name: "Baichuan", Icon: "brand:baichuan"},
 		{Id: config.ChannelTypeMiniMax, Name: "MiniMax", Icon: "brand:minimax"},
-		{Id: config.ChannelTypeDeepseek, Name: "Deepseek", Icon: "brand:deepseek"},
+		{Id: config.ChannelTypeDeepseek, Name: "DeepSeek", Icon: "brand:deepseek"},
 		{Id: config.ChannelTypeMoonshot, Name: "Moonshot", Icon: "brand:moonshot"},
 		{Id: config.ChannelTypeMistral, Name: "Mistral", Icon: "brand:mistral"},
 		{Id: config.ChannelTypeGroq, Name: "Groq", Icon: "brand:groq"},
@@ -334,10 +444,10 @@ func GetDefaultModelOwnedBy() []*ModelOwnedBy {
 		{Id: config.ChannelTypeLLAMA, Name: "Meta", Icon: "brand:meta"},
 		{Id: config.ChannelTypeIdeogram, Name: "Ideogram", Icon: "brand:ideogram"},
 		{Id: config.ChannelTypeSiliconflow, Name: "Siliconflow", Icon: "brand:siliconcloud"},
-		{Id: config.ChannelTypeFlux, Name: "Flux", Icon: "brand:flux"},
+		{Id: config.ChannelTypeFlux, Name: "Black Forest Labs", Icon: "brand:flux"},
 		{Id: config.ChannelTypeJina, Name: "Jina", Icon: "brand:jina"},
 		{Id: config.ChannelTypeRerank, Name: "Rerank", Icon: ""},
-		{Id: config.ChannelTypeRecraft, Name: "RecraftAI", Icon: "brand:recraft"},
+		{Id: config.ChannelTypeRecraft, Name: "Recraft", Icon: "brand:recraft"},
 		{Id: config.ChannelTypeKling, Name: "Kling", Icon: "brand:kling"},
 		{Id: config.ChannelTypeOpenRouter, Name: "OpenRouter", Icon: "brand:openrouter"},
 		{Id: config.ChannelTypeXAI, Name: "xAI", Icon: "brand:xai"},

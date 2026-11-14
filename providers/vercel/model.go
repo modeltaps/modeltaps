@@ -248,8 +248,8 @@ func buildModelInfos(resp *modelListResponse) []*model.ModelInfo {
 			InputModalities:  modalitiesJSON(input),
 			OutputModalities: modalitiesJSON(output),
 			Capabilities:     capabilitiesJSON(m.Tags),
-			// 模型名形如 "anthropic/claude-sonnet-4"，前缀即厂商 slug。
-			VendorID:    model.VendorIDFromModelName(m.Id),
+			// The id is "vendor/model"; GuessVendorID maps the prefix, else asks the model library.
+			VendorID:    model.GuessVendorID(m.Id),
 			Endpoints:   model.ModelEndpointsFromModalities(m.Id, input, output),
 			OpenWeights: &openWeights,
 			ReleasedAt:  releasedAt,

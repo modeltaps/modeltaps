@@ -219,7 +219,7 @@ func buildOpenRouterModelInfos(resp *modelPricingResponse) []*model.ModelInfo {
 			Capabilities:     capabilitiesJSON(m.SupportedParameters),
 			SupportedVoices:  modalitiesJSON(m.SupportedVoices),
 			// OpenRouter 模型名形如 "google/gemini-2.5-pro"，前缀即厂商 slug。
-			VendorID:    model.VendorIDFromModelName(m.Id),
+			VendorID:    model.GuessVendorID(m.Id),
 			Endpoints:   model.ModelEndpointsFromModalities(m.Id, m.Architecture.InputModalities, m.Architecture.OutputModalities),
 			OpenWeights: &openWeights,
 			ReleasedAt:  m.Created,

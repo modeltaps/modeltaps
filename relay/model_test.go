@@ -895,8 +895,8 @@ func TestTokenLimitAliasEquivalence(t *testing.T) {
 	}
 }
 
-// 厂商解析链：model_info.vendor_id → 别名主名 vendor → 价格表 channel_type → 代表渠道 → 未知。
-// owned_by 取 vendor slug（稳定机器口径），厂商整体推不出时才是 UnknownOwnedBy。
+// Vendor chain: the catalog's vendor_id, the canonical model's for an alias, then what the name
+// says (prefix, library, name rules). The channel serving a model is never taken as its maker.
 func TestGetModelOwnedByFallbackChain(t *testing.T) {
 	defer setupVendorOwnedBys(t, []*model.ModelInfo{
 		{Model: "claude-model", VendorID: config.ChannelTypeAnthropic},
@@ -905,20 +905,20 @@ func TestGetModelOwnedByFallbackChain(t *testing.T) {
 	defer setupProtocolModelGroup(t)()
 
 	cases := []struct {
-		name        string
-		modelName   string
-		channelType int
-		want        string
+		name      string
+		modelName string
+		want      string
 	}{
-		{"vendor_id 优先于渠道类型", "claude-model", config.ChannelTypeOpenAI, "anthropic"},
-		{"别名随主名", "alias-model", 0, "anthropic"},
-		{"无目录行回退价格表 channel_type", "openai-only", config.ChannelTypeOpenAI, "openai"},
-		{"价格表未配置回退代表渠道", "gemini-model", 0, "google"},
-		{"都推不出为未知", "nobody-serves-this", 0, model.UnknownOwnedBy},
+		{"catalog vendor_id", "claude-model", "anthropic"},
+		{"alias follows its canonical model", "alias-model", "anthropic"},
+		{"name rules", "gemini-model", "google"},
+		{"vendor prefix", "openai/some-model", "openai"},
+		{"served by an OpenAI channel but made by nobody known", "openai-only", model.UnknownOwnedBy},
+		{"nothing says", "nobody-serves-this", model.UnknownOwnedBy},
 	}
 	for _, c := range cases {
-		if got := *getModelOwnedBy(c.modelName, c.channelType); got != c.want {
-			t.Errorf("%s: getModelOwnedBy(%q,%d) = %q, want %q", c.name, c.modelName, c.channelType, got, c.want)
+		if got := *getModelOwnedBy(c.modelName); got != c.want {
+			t.Errorf("%s: getModelOwnedBy(%q) = %q, want %q", c.name, c.modelName, got, c.want)
 		}
 	}
 }

@@ -347,6 +347,29 @@ func LibraryPublicNames(upstream string) []string {
 	return names
 }
 
+// LibraryCanonicalOf returns the library's canonical id ("xai/grok-4.3") for a platform
+// spelling, a lab's own id or a bare model name; "" when the library does not know the name.
+func LibraryCanonicalOf(name string) string {
+	idx := modelLibraryIndex
+	idx.ensure()
+	idx.RLock()
+	defer idx.RUnlock()
+	key := strings.ToLower(strings.TrimSpace(name))
+	if c, ok := idx.byHost[key]; ok {
+		return c
+	}
+	if c, ok := idx.byLabHost[key]; ok {
+		return c
+	}
+	if c, ok := idx.byModel[key]; ok {
+		return c
+	}
+	if c, ok := idx.byModel[strings.ToLower(bareModelID(key))]; ok {
+		return c
+	}
+	return ""
+}
+
 // LibraryKnowsModel reports whether the library has a model under this name: its bare canonical
 // id or a spelling the lab itself uses.
 func LibraryKnowsModel(name string) bool {

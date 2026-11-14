@@ -278,3 +278,57 @@ func TestNormalizeVendorIcon(t *testing.T) {
 		}
 	}
 }
+
+func TestSyncLabVendors(t *testing.T) {
+	setupModelOwnedByTestDB(t)
+	ModelOwnedBysInstance.SyncModelOwnedBy(GetDefaultModelOwnedBy())
+	// An admin already added NVIDIA by hand, without a slug.
+	if err := DB.Create(&ModelOwnedBy{Name: "Nvidia", Icon: "custom.svg"}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := ModelOwnedBysInstance.Load(); err != nil {
+		t.Fatal(err)
+	}
+	ModelOwnedBysInstance.SyncLabVendors(labVendors)
+	ModelOwnedBysInstance.SyncLabVendors(labVendors) // a second run adds nothing
+
+	var nvidia []ModelOwnedBy
+	if err := DB.Where("lower(name) = ?", "nvidia").Find(&nvidia).Error; err != nil {
+		t.Fatal(err)
+	}
+	if len(nvidia) != 1 || nvidia[0].Slug != "nvidia" || nvidia[0].Icon != "custom.svg" {
+		t.Errorf("the admin's NVIDIA row should get the slug and nothing else: %+v", nvidia)
+	}
+	var count int64
+	DB.Model(&ModelOwnedBy{}).Where("slug = ?", "elevenlabs").Count(&count)
+	if count != 1 {
+		t.Errorf("ElevenLabs rows = %d, want 1", count)
+	}
+	id := ModelOwnedBysInstance.GetIdBySlug("elevenlabs")
+	if id == 0 || id == config.ChannelTypeOpenAI {
+		t.Errorf("ElevenLabs id = %d", id)
+	}
+}
+
+func TestGuessVendorID(t *testing.T) {
+	setupModelOwnedByTestDB(t)
+	ModelOwnedBysInstance.SyncModelOwnedBy(GetDefaultModelOwnedBy())
+	ModelOwnedBysInstance.SyncLabVendors(labVendors)
+	bfl := ModelOwnedBysInstance.GetIdBySlug("black-forest-labs")
+	cases := map[string]int{
+		"spacexai/grok-4.3":           config.ChannelTypeXAI,
+		"bfl/flux-2-pro":              bfl,
+		"prodia/flux-fast-schnell":    bfl, // a host's prefix is not the maker; the name says BFL
+		"nvidia/nemotron-3-super":     ModelOwnedBysInstance.GetIdBySlug("nvidia"),
+		"stealth/glyph-cluster":       0,
+		"some-relay/claude-fable-5-2": config.ChannelTypeAnthropic,
+	}
+	for name, want := range cases {
+		if got := GuessVendorID(name); got != want {
+			t.Errorf("GuessVendorID(%q) = %d, want %d", name, got, want)
+		}
+	}
+	if bfl != config.ChannelTypeFlux {
+		t.Errorf("black-forest-labs should be the former Flux vendor, got %d", bfl)
+	}
+}

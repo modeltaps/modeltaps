@@ -701,6 +701,35 @@ var vendorPrefixAliases = map[string]string{
 	"tencent":     "tencent",
 	"01-ai":       "01-ai",
 	"deepseek-ai": "deepseek",
+	// Vercel AI Gateway prefixes and models.dev lab ids that differ from the vendor slug.
+	"spacexai":          "x-ai",
+	"voyage":            "voyageai",
+	"bfl":               "black-forest-labs",
+	"klingai":           "kling",
+	"bytedance-seed":    "bytedance",
+	"stability":         "stability-ai",
+	"stabilityai":       "stability-ai",
+	"jinaai":            "jina",
+	"inclusion-ai":      "inclusionai",
+	"liquidai":          "liquid",
+	"sakana-ai":         "sakana",
+	"amazon-nova":       "amazon",
+	"thinking-machines": "thinkingmachines",
+}
+
+// GuessVendorID returns who made the model an upstream lists under this id, 0 when nothing says:
+// the "vendor/" prefix first (the platform's own statement), then the lab of the model library
+// entry the id is a spelling of, then the name rules. The hosting platform is never the answer.
+func GuessVendorID(upstream string) int {
+	if id := VendorIDFromModelName(upstream); id != 0 {
+		return id
+	}
+	if canonical := LibraryCanonicalOf(upstream); canonical != "" {
+		if id := VendorIDFromModelName(canonical); id != 0 {
+			return id
+		}
+	}
+	return VendorIDFromNameRules(upstream)
 }
 
 // VendorIDFromModelName matches the vendor by a "vendor/model" prefix (OpenRouter-style ids and
