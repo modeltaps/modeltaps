@@ -2154,21 +2154,19 @@
       "count_one": "{{count}} model",
       "count_other": "{{count}} models",
       "doneAdding": "Done",
-      "fetch": "Fetch from upstream",
       "fetched_one": "Added {{count}} model from the upstream; save to keep it",
       "fetched_other": "Added {{count}} models from the upstream; save to keep them",
       "mappedTo": "Mapped to",
-      "mappingHint": "Points a requested model name at another upstream name, such as a deployment name",
+      "mappingHint": "Renames on this channel only: sends a requested model name upstream as another name. Use it only when the upstream wants its own names, such as deployment names. Matching models to the catalog is automatic and needs nothing here.",
       "mappingInvalid": "The model mapping is not valid JSON",
       "model": "Model",
       "none": "No models yet; add some or fetch them from the upstream",
-      "prune": "Remove stale",
       "pruned_one": "Removed {{count}} model the upstream no longer lists; save to apply",
       "pruned_other": "Removed {{count}} models the upstream no longer lists; save to apply",
       "remove": "Remove {{model}}",
       "syncPrices": "Sync prices",
       "ttft": "First token",
-      "supplyNote": "When you save, changes to the model list and mapping reach the supplies made from this channel: models you add are supplied to the public models of the same name, a new mapping changes the name sent upstream, and removed models have their supplies withdrawn. Supplies added by hand, or whose upstream name was changed on the model page, stay as they are.",
+      "supplyNote": "On save, changes to the model list carry over to the supplies made from this channel: added models are attached to their public models and removed models have their supplies withdrawn. Supplies added by hand, or whose upstream name was changed on the model page, are left alone.",
       "saved": {
         "summary": "Saved: {{changes}}",
         "attached_one": "now supplies {{count}} more public model",
@@ -2216,7 +2214,40 @@
           "pdf": "PDF"
         }
       },
-      "offeredAs": "as"
+      "offeredAs": "as",
+      "check": "Check again",
+      "checkHint": "Read the upstream model list now and mark models it dropped or that are not added yet",
+      "state": {
+        "offered": "Offered",
+        "unoffered": "Not offered",
+        "gone": "Gone upstream",
+        "unlisted": "Upstream, not added"
+      },
+      "unoffered": {
+        "not_in_catalog": "not in the catalog",
+        "no_supply": "the catalog has {{model}}; this channel does not supply it",
+        "wildcard": "wildcards are not offered",
+        "off": "the {{model}} supply is off",
+        "duplicate": "same model as {{other}} ({{model}}); a channel supplies a model under one name",
+        "duplicateShort": "duplicates {{other}}"
+      },
+      "addToCatalog": "Add to catalog",
+      "attach": "Supply",
+      "openSupply": "Open model",
+      "addedToCatalog": "Added {{model}} to the catalog as a draft; it is offered once it has a price and is published on the model page",
+      "attached": "Now supplying {{model}}",
+      "removeGone": "Remove all {{count}}",
+      "addUnlisted": "Add all {{count}}",
+      "addOne": "Add {{model}}",
+      "unlistedState": {
+        "in_use": "Offered as {{model}}",
+        "off": "Offered as {{model}} (supply off)",
+        "available": "Offered as {{model}} once added",
+        "not_in_catalog": "Not in the catalog",
+        "unknown": "Not recognized"
+      },
+      "addMapping": "Add a model mapping",
+      "addAsOwn": "Add as its own model"
     },
     "monitor": {
       "checkNow": "Check model list now",
@@ -2494,33 +2525,6 @@
     },
     "list": {
       "meta": "Priority {{priority}} · {{requests}} requests · {{latency}}"
-    },
-    "upstream": {
-      "title": "Upstream models",
-      "hint": "Every model this channel can use upstream, from the last model check. Whether a model is public and who supplies it is decided under Supplies on the models page.",
-      "check": "Check now",
-      "checkFailed": "Check failed",
-      "empty": "The upstream model list has not been read yet. Use \"Check now\" to read it.",
-      "unsupported": "This provider has no model list endpoint.",
-      "search": "Search models",
-      "noMatch": "No models match",
-      "name": "Upstream model",
-      "publicModel": "Public model",
-      "state": "State",
-      "filter": {
-        "all": "All",
-        "in_use": "In use",
-        "available": "Available",
-        "not_in_catalog": "Not in catalog",
-        "unknown": "Not recognized"
-      },
-      "states": {
-        "in_use": "In use",
-        "off": "Supply switched off",
-        "available": "Available, not added",
-        "not_in_catalog": "Not in catalog",
-        "unknown": "Not recognized"
-      }
     },
     "strip": {
       "all": "All",
@@ -2864,10 +2868,7 @@
     },
     "channelSupplies": {
       "title_one": "Supplies {{count}} public model",
-      "title_other": "Supplies {{count}} public models",
-      "readonly": "Edited on the model page",
-      "none": "No public model uses this channel as a supply yet.",
-      "open": "Open the supplies of {{model}}"
+      "title_other": "Supplies {{count}} public models"
     },
     "pausedPage": {
       "description": "Channels, or models on a channel, that a pause rule or an admin has taken out of rotation. They come back on their own when the pause ends.",
