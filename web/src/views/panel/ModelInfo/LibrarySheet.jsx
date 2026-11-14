@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { Loader2, Search } from 'lucide-react';
@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetBo
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/sonner';
@@ -27,13 +28,20 @@ function LabIcon({ vendor, lab }) {
 LabIcon.propTypes = { vendor: PropTypes.object, lab: PropTypes.string };
 const DAY = 86400;
 
+// A channel offer is one channel that can (maybe) supply a library model under an upstream name.
+// match is exact / platform / pending / variant; default says whether it starts selected.
+export const offerKey = (c) => `${c.id}\u0000${c.upstream_model}`;
+export const isOffer = (c) => c.match !== 'variant';
+export const selectedByDefault = (c) => !!c.default && !c.excluded;
+export const defaultPicks = (channels) => new Set((channels || []).filter(selectedByDefault).map(offerKey));
+
 // Pure filter over library items; exported for tests.
 export function filterLibrary(items, f, now = Math.floor(Date.now() / 1000)) {
   const kw = f.keyword.trim().toLowerCase();
   return items.filter((it) => {
     if (f.hideAdded && it.in_catalog) return false;
     if (f.hideDeprecated && it.deprecated) return false;
-    if (f.suppliedOnly && !(it.channels || []).length) return false;
+    if (f.suppliedOnly && !(it.channels || []).some(isOffer)) return false;
     if (f.openOnly && it.open_weights !== true) return false;
     if (f.lab && it.lab !== f.lab) return false;
     if (f.endpoint && !safeJsonArray(it.endpoints).includes(f.endpoint)) return false;
@@ -76,6 +84,9 @@ export default function LibrarySheet({ open, onOpenChange, vendors, onAdded }) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState(DEFAULT_LIBRARY_FILTER);
   const [selected, setSelected] = useState(() => new Set());
+  // Picked channel offers per selected model (canonical → Set of offerKey), seeded from the
+  // offers selected by default when the model is first selected.
+  const [picks, setPicks] = useState(() => new Map());
   const [limit, setLimit] = useState(PAGE);
   const [status, setStatus] = useState('draft');
   const [supplies, setSupplies] = useState(true);
@@ -121,23 +132,47 @@ export default function LibrarySheet({ open, onOpenChange, vendors, onAdded }) {
     setLimit(PAGE);
   };
 
-  const toggle = (canonical, on) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (on) next.add(canonical);
-      else next.delete(canonical);
+  const seedPicks = (list) =>
+    setPicks((prev) => {
+      const next = new Map(prev);
+      list.forEach((it) => {
+        if (!next.has(it.canonical)) next.set(it.canonical, defaultPicks(it.channels));
+      });
       return next;
     });
 
-  const toggleAll = (on) =>
+  const toggle = (item, on) => {
+    if (on) seedPicks([item]);
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(item.canonical);
+      else next.delete(item.canonical);
+      return next;
+    });
+  };
+
+  const toggleAll = (on) => {
+    if (on) seedPicks(selectable);
     setSelected((prev) => {
       const next = new Set(prev);
       selectable.forEach((it) => (on ? next.add(it.canonical) : next.delete(it.canonical)));
       return next;
     });
+  };
+
+  const togglePick = (canonical, key, on) =>
+    setPicks((prev) => {
+      const next = new Map(prev);
+      const set = new Set(next.get(canonical) || []);
+      if (on) set.add(key);
+      else set.delete(key);
+      next.set(canonical, set);
+      return next;
+    });
 
   const close = () => {
     setSelected(new Set());
+    setPicks(new Map());
     setFilter(DEFAULT_LIBRARY_FILTER);
     onOpenChange(false);
   };
@@ -146,7 +181,15 @@ export default function LibrarySheet({ open, onOpenChange, vendors, onAdded }) {
     if (selected.size === 0) return;
     setAdding(true);
     try {
-      const res = await API.post('/api/model_info/library/add', { canonicals: [...selected], status, supplies });
+      const channels = {};
+      items.forEach((it) => {
+        if (!selected.has(it.canonical)) return;
+        const chosen = picks.get(it.canonical) || defaultPicks(it.channels);
+        channels[it.canonical] = (it.channels || [])
+          .filter((c) => chosen.has(offerKey(c)))
+          .map((c) => ({ id: c.id, upstream_model: c.upstream_model }));
+      });
+      const res = await API.post('/api/model_info/library/add', { canonicals: [...selected], status, supplies, channels });
       const { success, message, data } = res.data || {};
       if (!success) return toast.error(message);
       toast.success(t('modelLibrary.added', { count: data.added.length, supplies: data.supplies }));
@@ -268,49 +311,97 @@ export default function LibrarySheet({ open, onOpenChange, vendors, onAdded }) {
                 {shown.map((it) => {
                   const checked = selected.has(it.canonical);
                   const channels = it.channels || [];
+                  const sure = channels.filter(selectedByDefault).length;
+                  const unsure = channels.filter((c) => isOffer(c) && !selectedByDefault(c)).length;
+                  const chosen = picks.get(it.canonical);
                   return (
-                    <tr
-                      key={it.canonical}
-                      className={`border-b border-border/60 ${it.in_catalog ? 'opacity-50' : 'cursor-pointer hover:bg-muted/40'}`}
-                      onClick={() => !it.in_catalog && toggle(it.canonical, !checked)}
-                    >
-                      <td className="w-14 py-2 pl-6" onClick={(e) => e.stopPropagation()}>
-                        <Checkbox
-                          checked={it.in_catalog || checked}
-                          disabled={it.in_catalog}
-                          onCheckedChange={(v) => toggle(it.canonical, v)}
-                          aria-label={it.model}
-                        />
-                      </td>
-                      <td className="max-w-[16rem] py-2">
-                        <div className="truncate font-medium">{it.name || it.model}</div>
-                        <div className="truncate font-mono text-xs text-muted-foreground">
-                          {it.model}
-                          {it.in_catalog && ` · ${t('modelLibrary.inCatalog')}`}
-                          {it.deprecated && ` · ${t('modelLibrary.deprecated')}`}
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap py-2">
-                        <span className="inline-flex items-center gap-2">
-                          <LabIcon vendor={vendors[it.vendor_id]} lab={it.lab} />
-                          {vendors[it.vendor_id]?.name || it.lab}
-                        </span>
-                      </td>
-                      <td className="py-2 text-right tabular-nums">{formatContext(it.context_length)}</td>
-                      <td className="py-2 pl-4">
-                        <EndpointIcons json={it.endpoints} />
-                      </td>
-                      <td className="whitespace-nowrap py-2 tabular-nums text-muted-foreground">{formatDate(it.released_at)}</td>
-                      <td className="whitespace-nowrap py-2 text-right tabular-nums">
-                        {formatPrice(it.input_price)} / {formatPrice(it.output_price)}
-                      </td>
-                      <td
-                        className="whitespace-nowrap py-2 pr-6 text-right tabular-nums"
-                        title={channels.map((c) => `${c.name} → ${c.upstream_model}`).join('\n')}
+                    <Fragment key={it.canonical}>
+                      <tr
+                        className={`${checked && channels.length && supplies ? '' : 'border-b border-border/60'} ${it.in_catalog ? 'opacity-50' : 'cursor-pointer hover:bg-muted/40'}`}
+                        onClick={() => !it.in_catalog && toggle(it, !checked)}
                       >
-                        {channels.length || <span className="text-muted-foreground">-</span>}
-                      </td>
-                    </tr>
+                        <td className="w-14 py-2 pl-6" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={it.in_catalog || checked}
+                            disabled={it.in_catalog}
+                            onCheckedChange={(v) => toggle(it, v)}
+                            aria-label={it.model}
+                          />
+                        </td>
+                        <td className="max-w-[16rem] py-2">
+                          <div className="truncate font-medium">{it.name || it.model}</div>
+                          <div className="truncate font-mono text-xs text-muted-foreground">
+                            {it.model}
+                            {it.in_catalog && ` · ${t('modelLibrary.inCatalog')}`}
+                            {it.deprecated && ` · ${t('modelLibrary.deprecated')}`}
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap py-2">
+                          <span className="inline-flex items-center gap-2">
+                            <LabIcon vendor={vendors[it.vendor_id]} lab={it.lab} />
+                            {vendors[it.vendor_id]?.name || it.lab}
+                          </span>
+                        </td>
+                        <td className="py-2 text-right tabular-nums">{formatContext(it.context_length)}</td>
+                        <td className="py-2 pl-4">
+                          <EndpointIcons json={it.endpoints} />
+                        </td>
+                        <td className="whitespace-nowrap py-2 tabular-nums text-muted-foreground">{formatDate(it.released_at)}</td>
+                        <td className="whitespace-nowrap py-2 text-right tabular-nums">
+                          {formatPrice(it.input_price)} / {formatPrice(it.output_price)}
+                        </td>
+                        <td
+                          className="whitespace-nowrap py-2 pr-6 text-right tabular-nums"
+                          title={channels.map((c) => `${c.name} → ${c.upstream_model}`).join('\n')}
+                        >
+                          {sure || (unsure ? '' : <span className="text-muted-foreground">-</span>)}
+                          {unsure > 0 && (
+                            <span className="ml-1 text-muted-foreground">{t('modelLibrary.unsureCount', { count: unsure })}</span>
+                          )}
+                        </td>
+                      </tr>
+                      {checked && supplies && channels.length > 0 && (
+                        <tr className="border-b border-border/60 bg-muted/30">
+                          <td />
+                          <td colSpan={7} className="py-2 pr-6">
+                            <ul className="space-y-1">
+                              {channels.map((c) => {
+                                const key = offerKey(c);
+                                return (
+                                  <li key={key}>
+                                    <label className="flex cursor-pointer items-center gap-2">
+                                      <Checkbox
+                                        checked={chosen ? chosen.has(key) : selectedByDefault(c)}
+                                        onCheckedChange={(v) => togglePick(it.canonical, key, v)}
+                                        aria-label={`${c.name} ${c.upstream_model}`}
+                                      />
+                                      <span className="min-w-[8rem] truncate">{c.name}</span>
+                                      <span className="truncate font-mono text-xs text-muted-foreground">{c.upstream_model}</span>
+                                      <Badge
+                                        variant={c.match === 'pending' ? 'outline' : 'secondary'}
+                                        className="shrink-0 px-1.5 py-0 font-normal"
+                                      >
+                                        {t(`modelLibrary.match.${c.match}`)}
+                                      </Badge>
+                                      {(c.extra?.length > 0 || c.excluded) && (
+                                        <span className="truncate text-xs text-muted-foreground">
+                                          {[
+                                            ...(c.extra || []).map((x) => `+${x.replace(/^:/, '')}`),
+                                            c.excluded ? t('modelLibrary.excludedBefore') : ''
+                                          ]
+                                            .filter(Boolean)
+                                            .join(' · ')}
+                                        </span>
+                                      )}
+                                    </label>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   );
                 })}
               </tbody>

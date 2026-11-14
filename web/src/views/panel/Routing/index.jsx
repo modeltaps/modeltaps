@@ -45,7 +45,20 @@ export default function Routing() {
   if (type === 'managed') {
     return <ManagedPolicies key={currentOrgId || 'personal'} api={api} filter={filter} />;
   }
-  let intro = t('routingPolicy.personalOwnIntro');
-  if (currentOrgId) intro = isOrgAdmin ? t('routingPolicy.orgIntro') : t('routingPolicy.orgMemberIntro');
-  return <RoutingPolicyList key={`${currentOrgId || 'personal'}-${isOrgAdmin}`} api={api} filter={filter} intro={intro} />;
+  // A short line under the switch; the full text stays as its tooltip.
+  let scope = 'personal';
+  let detail = t('routingPolicy.personalOwnIntro');
+  if (currentOrgId) {
+    scope = isOrgAdmin ? 'org' : 'orgMember';
+    detail = isOrgAdmin ? t('routingPolicy.orgIntro') : t('routingPolicy.orgMemberIntro');
+  }
+  return (
+    <RoutingPolicyList
+      key={`${currentOrgId || 'personal'}-${isOrgAdmin}`}
+      api={api}
+      filter={filter}
+      intro={t(`routingPolicy.introShort.${scope}`)}
+      introDetail={detail}
+    />
+  );
 }

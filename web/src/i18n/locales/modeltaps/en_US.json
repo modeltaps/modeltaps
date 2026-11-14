@@ -312,7 +312,8 @@
       }
     },
     "loadFailed": "Failed to load the available model list, so the availability shown here may be wrong.",
-    "retry": "Retry"
+    "retry": "Retry",
+    "modalities": "Docs"
   },
   "playground": {
     "curlHint": "sk-YOUR_TOKEN is a placeholder",
@@ -686,7 +687,7 @@
     "platform_settings": "Platform-wide defaults and switches",
     "token": "Keys for calling the API",
     "invite_code": "Create, enable and revoke registration invite codes",
-    "routing": "Policies your API keys can call: managed ones by name, your own as policy/<name>"
+    "routing": "Routing policies your API keys can call"
   },
   "api_compare": "Compare",
   "modelInfoPage": {
@@ -1395,7 +1396,7 @@
     "retryFailed": "Retry failed ({{count}})"
   },
   "channelCheck": {
-    "title": "Channel check",
+    "title": "Capability check",
     "fetchUpstream": "Fetch upstream models",
     "fetchFailed": "Failed to fetch upstream models",
     "hint": "Each model is checked with up to {{requests}} real requests to the upstream (arithmetic challenge, image input, JSON schema, tool calling, relay hint), which spend the channel's quota. Two models are checked at a time. Deep research, image and video models are not selected by default.",
@@ -1805,6 +1806,8 @@
   },
   "routing_policy": "Auto routing",
   "routingPolicy": {
+    "enable": "Enable",
+    "disable": "Disable",
     "create": "New policy",
     "createTitle": "New routing policy",
     "empty": "No routing policies yet. A policy is a model name clients can call; the first message of each session decides which real model answers.",
@@ -1993,7 +1996,12 @@
     "managedIntro": "Policies the platform provides; call them with model set to their name.",
     "managedEmpty": "The platform has no managed policies you can use yet.",
     "managedOverridden": "Replaced by your policy",
-    "managedOverriddenHint": "You have an own policy with the same name, so the bare name reaches yours. Rename or disable it to use this managed policy."
+    "managedOverriddenHint": "You have an own policy with the same name, so the bare name reaches yours. Rename or disable it to use this managed policy.",
+    "introShort": {
+      "personal": "For your personal API keys only; call them as policy/<name>",
+      "org": "For this organization's API keys only; call them as policy/<name>",
+      "orgMember": "Policies your organization's admins made; call them as policy/<name>"
+    }
   },
   "logPage": {
     "routing": {
@@ -2059,7 +2067,9 @@
       "cancelOnDisconnectHint": "When a client stops a streamed reply, close the upstream connection so the upstream stops generating and bills only the output produced so far; the output tokens are then counted locally. Automatic is on for official APIs and subscription accounts and off for other upstreams. Turn it off for a relay that keeps billing the full reply after a disconnect.",
       "danger": "Danger zone",
       "dangerHint": "Copy creates a new channel with the same key and settings; delete cannot be undone",
-      "name": "Name"
+      "name": "Name",
+      "otherUnused": "This provider does not read this field; you can clear it",
+      "n2rPlaceholder": "model-name\n-model-not-converted"
     },
     "chart": {
       "aria": "Requests per channel",
@@ -2096,6 +2106,8 @@
       "listSep": ", ",
       "models_one": "{{count}} model",
       "models_other": "{{count}} models",
+      "supplied_one": "supplies {{count}} public model",
+      "supplied_other": "supplies {{count}} public models",
       "prefix": "Created",
       "relative": "{{usage}} (relative to {{name}})"
     },
@@ -2104,6 +2116,8 @@
     "groupRatio": "Ratio {{ratio}}×",
     "groups": "Groups",
     "groupsHint": "Tokens only use channels of their own groups; select one or more",
+    "allGroups": "All groups",
+    "allGroupsDesc": "Includes groups created later",
     "issue": {
       "autoDisabled": "Disabled automatically after failed requests",
       "dismiss": "Dismiss",
@@ -2116,7 +2130,8 @@
       "lowBalance": "Balance {{balance}} is below {{threshold}}",
       "refreshBalance": "Refresh balance",
       "setKey": "Set key",
-      "view": "View"
+      "view": "View",
+      "title": "Needs attention"
     },
     "lane": {
       "allOff": "All channels disabled",
@@ -2143,7 +2158,17 @@
       "pruned_other": "Removed {{count}} models the upstream no longer lists; save to apply",
       "remove": "Remove {{model}}",
       "syncPrices": "Sync prices",
-      "ttft": "First token"
+      "ttft": "First token",
+      "supplyNote": "When you save, changes to the model list and mapping reach the supplies made from this channel: models you add are supplied to the public models of the same name, a new mapping changes the name sent upstream, and removed models have their supplies withdrawn. Supplies added by hand, or whose upstream name was changed on the model page, stay as they are.",
+      "saved": {
+        "summary": "Saved: {{changes}}",
+        "attached_one": "now supplies {{count}} more public model",
+        "attached_other": "now supplies {{count}} more public models",
+        "updated_one": "{{count}} supply uses its new upstream name",
+        "updated_other": "{{count}} supplies use their new upstream names",
+        "removed_one": "{{count}} supply withdrawn",
+        "removed_other": "{{count}} supplies withdrawn"
+      }
     },
     "monitor": {
       "checkNow": "Check model list now",
@@ -2155,7 +2180,7 @@
       "threshold": "Balance alert (USD)",
       "thresholdHint": "Notifies you when the upstream balance drops below this",
       "thresholdOff": "Off",
-      "autoAddHint": "When the daily model check finds models newly offered upstream, add them to this channel (with prices and metadata) instead of only reporting them. Once routing by supply is on, new models are not added to the channel; they wait under New upstream models in the model catalog. Models matching the ignore rules are skipped."
+      "autoAddHint": "When the daily model check finds models newly offered upstream, add them to this channel (with prices and metadata) instead of only reporting them. Once routing by supply is on, new models are not added to the channel's model list: a model that belongs to a public model in the catalog gets a supply from this channel right away, and the rest wait under New upstream models in the model catalog. Models matching the ignore rules are skipped."
     },
     "pauseRules": {
       "label": "Pause rules",
@@ -2255,7 +2280,9 @@
       "testAll": "Test all",
       "testDone_one": "The channel passed the test",
       "testDone_other": "All {{count}} channels passed the test",
-      "testPartial": "{{failed}} of {{count}} channels failed the test"
+      "testPartial": "{{failed}} of {{count}} channels failed the test",
+      "refreshModelsOf": "Refresh {{name}} model lists",
+      "testAllOf": "Test all {{name}} channels"
     },
     "panel": {
       "enabled": "Enabled",
@@ -2264,6 +2291,7 @@
         "models": "Models",
         "connection": "Connection",
         "routing": "Groups & routing",
+        "routingGroups": "Groups & tag",
         "rewrite": "Request rewriting",
         "monitor": "Monitoring",
         "advanced": "Advanced"
@@ -2314,6 +2342,7 @@
     "unknownProvider": "Type {{type}}",
     "usage": {
       "label": "Usage",
+      "syncHint": "A change here also applies to every supply of this channel, except supplies given their own priority or weight on the models page.",
       "only": "Only provider",
       "onlyDesc": "No other channel in these groups serves this provider",
       "backup": "Backup",
@@ -2329,7 +2358,9 @@
       "peerExisting": "{{name}} is already in these groups",
       "peerNote": "{{name}} serves these models in the same groups too",
       "priority": "Priority",
-      "weight": "Weight"
+      "weight": "Weight",
+      "byPolicy": "Whether this channel is tried first or later is set by its place in the channel list on the providers page.",
+      "openPolicy": "Change the order"
     },
     "batch": {
       "label": "Selected channels",
@@ -2378,7 +2409,8 @@
       "results": "Providers with matches",
       "none": "Nothing matches",
       "emptyTitle": "No matching channels",
-      "emptyDescription": "No channel of any provider matches \"{{query}}\""
+      "emptyDescription": "No channel of any provider matches \"{{query}}\"",
+      "short": "Search channels"
     },
     "tagActions": {
       "label": "Tag {{tag}}",
@@ -2440,6 +2472,71 @@
         "not_in_catalog": "Not in catalog",
         "unknown": "Not recognized"
       }
+    },
+    "strip": {
+      "all": "All",
+      "allMeta": "{{count}} channels",
+      "allTitle": "All channels",
+      "meta": "{{count}} channels · {{requests}} requests",
+      "metaOff": "{{count}} channels ({{enabled}} enabled) · {{requests}} requests",
+      "allProviders": "All providers"
+    },
+    "order": {
+      "column": "Order",
+      "shareColumn": "Share",
+      "up": "Move earlier",
+      "down": "Move later",
+      "share": "Share with the one above",
+      "unshare": "Stop sharing",
+      "weightOf": "Weight of {{name}}",
+      "drag": "Drag to reorder",
+      "positionShort": "#{{n}}",
+      "sharesWith": "shares with {{names}}",
+      "nameSep": ", ",
+      "sharedTag": "shared",
+      "groupWhy": "These {{count}} channels are in one position and offer {{models}} models in common, which they share by weight",
+      "noCommonModel": "These channels offer no model in common, so they cannot share; it now comes right after",
+      "dropHint": {
+        "before": "Move here",
+        "after": "Move here",
+        "join": "Share with this group"
+      }
+    },
+    "newMenu": {
+      "inUse": "In use"
+    },
+    "orderHint": "Tried top to bottom; the next is used only when the one before is unavailable. Channels with the same number serve the same models and share traffic by weight.",
+    "attention_one": "{{count}} needs attention",
+    "attention_other": "{{count}} need attention",
+    "issueTag": {
+      "autoDisabled": "Auto-disabled",
+      "keyMissing": "No key",
+      "lowBalance": "Low balance",
+      "driftNew_one": "{{count}} new model",
+      "driftNew_other": "{{count}} new models",
+      "driftMissing_one": "{{count}} model gone",
+      "driftMissing_other": "{{count}} models gone",
+      "refresh": "Refresh"
+    },
+    "head": {
+      "order": "Lower numbers are tried first; channels with the same number share traffic",
+      "share": "Weight and traffic share within the group",
+      "shareNone": "Shares with no other channel",
+      "priorityWeight": "Higher priority is tried first; equal priority splits by weight",
+      "requests": "Requests",
+      "requestsHint": "Requests and trend over {{range}}",
+      "success": "Share of requests that succeeded",
+      "latency": "Average time of successful requests",
+      "balance": "Upstream balance; subscriptions show usage this period",
+      "enabled": "Off: receives no requests"
+    },
+    "menu": {
+      "multiTest": "Test several models",
+      "multiTestHint": "Connection and latency, model by model",
+      "check": "Capability check",
+      "checkHint": "Real requests verify vision, tool calls and more; uses quota",
+      "drift": "Compare upstream models",
+      "driftHint": "See which models the upstream added or removed"
     }
   },
   "nav": {
@@ -2592,6 +2689,9 @@
     "deleteConfirm": "Stop sending {{model}} to {{channel}}? The channel itself is not changed.",
     "deleted": "Supply deleted",
     "moveUp": "Move to a higher tier",
+    "ownNumbers": "Own setting",
+    "ownNumbersTip": "This supply has a priority or weight of its own and does not move when the channel changes",
+    "followChannel": "Follow the channel again",
     "moveDown": "Move to a lower tier",
     "pauseFor": "Pause for",
     "paused": "Paused for {{time}}",
@@ -2622,8 +2722,25 @@
       "published": "Published",
       "retired": "Retired"
     },
+    "batch": {
+      "menu": "Supplies",
+      "modeLabel": "Within a tier",
+      "add": "Add a source…",
+      "remove": "Remove a source…",
+      "addTitle": "Add a source to {{count}} models",
+      "removeTitle": "Remove a source from {{count}} models",
+      "addHint": "The channel becomes a supply of these models: the upstream name is filled in automatically, and priority and weight follow the channel. Models it already supplies are skipped.",
+      "removeHint": "Deletes the channel's supplies of these models. The channel itself is not changed.",
+      "pick": "Choose a channel",
+      "confirmAdd": "Add",
+      "confirmRemove": "Remove",
+      "done": "{{changed}} changed, {{skipped}} skipped",
+      "modeDone": "Mode updated for {{count}} models"
+    },
     "mode": {
       "label": "Within a tier",
+      "default": "Follow default",
+      "defaultHint": "Follows the default mode in platform settings, currently \"{{mode}}\".",
       "balance": "Balance",
       "failover": "Failover",
       "balanceHint": "Requests are split across the supplies of a tier by weight.",
@@ -2739,6 +2856,20 @@
       "attached_other": "Attached to {{model}} on {{count}} channels",
       "skipped_one": "{{count}} channel already supplies {{model}} under another upstream name, so the model still waits there.",
       "skipped_other": "{{count}} channels already supply {{model}} under another upstream name, so the model still waits there."
+    },
+    "allocation": {
+      "label": "Order",
+      "policy": "Call order on the providers page",
+      "manual": "Set by hand",
+      "manualShort": "set by hand",
+      "open": "Change the order",
+      "toManual": "Set by hand",
+      "toPolicy": "Follow the call order",
+      "policyHint": "The order and weights come from the call order on the providers page; changing them here sets this model by hand.",
+      "manualHint": "This model keeps its own order when the call order changes.",
+      "becameManual": "This model is now set by hand",
+      "nowManual": "Set by hand; the current order is kept",
+      "nowPolicy": "This model follows the call order again"
     }
   },
   "settingsUi": {
@@ -2982,6 +3113,11 @@
           "title": "Organizations",
           "hint": "Existing organizations are not affected"
         },
+        "supply-mode": {
+          "title": "Default supply mode",
+          "description": "How supplies in one tier share requests for models without a mode of their own",
+          "hint": "A single model can pick another mode under Supplies on the models page"
+        },
         "supply-pause-rules": {
           "title": "Supply pause rules",
           "description": "Pause a channel or model on upstream errors by rule; it comes back after a passing test",
@@ -3054,7 +3190,7 @@
       "cards": {
         "profile": {
           "title": "Profile",
-          "description": "Display name and avatar",
+          "description": "Display name",
           "hint": "The username cannot be changed"
         },
         "logIO": {
@@ -3063,9 +3199,9 @@
         },
         "appearance": {
           "title": "Appearance",
-          "description": "Theme and language, just for you",
-          "hint": "Applied as soon as you save",
-          "languageHint": "Pick the interface language; it follows the browser by default."
+          "description": "Theme and language take effect as you pick them, for you only",
+          "languageHint": "Follows the browser by default",
+          "themeHint": "System follows your device's light or dark setting"
         },
         "quotaRemind": {
           "hint": "At most one reminder a day"
@@ -3079,7 +3215,9 @@
       },
       "sessions": {
         "device": "Device",
-        "where": "Address & method"
+        "where": "Address & method",
+        "showAll": "Show all {{count}}",
+        "showFewer": "Show fewer"
       }
     },
     "org": {
@@ -3095,7 +3233,9 @@
           "hint": "Changes apply to every member"
         },
         "budget": {
-          "hint": "The period follows the platform settings"
+          "description": "Spending cap for all members per period; once used up, the organization's requests are refused",
+          "noLimitHint": "With no budget, only each member's own budget applies",
+          "resetsHint": "{{period}} reset; time zone and week start follow the platform settings"
         },
         "danger": {
           "description": "These actions affect every member"
@@ -3290,12 +3430,21 @@
     "deprecated": "deprecated",
     "showMore": "Show {{count}} more",
     "selected": "{{count}} selected",
-    "createSupplies": "Supply from channels that list it",
+    "createSupplies": "Create supplies from the matched channels",
     "status": "Status",
     "asDraft": "As draft",
     "asPublished": "Published",
     "add": "Add {{count}}",
-    "added": "Added {{count}} models, {{supplies}} supplies"
+    "added": "Added {{count}} models, {{supplies}} supplies",
+    "unsureCount_one": "+{{count}} to confirm",
+    "unsureCount_other": "+{{count}} to confirm",
+    "excludedBefore": "rejected before",
+    "match": {
+      "exact": "Exact",
+      "platform": "Platform spelling",
+      "pending": "Confirm",
+      "variant": "Variant"
+    }
   },
   "ledgerList": {
     "description": "Description",
@@ -3358,5 +3507,33 @@
       "routing_policy_delete": "Deleted a routing policy",
       "routing_policy_status": "Toggled a routing policy"
     }
+  },
+  "priceList": {
+    "groupHint": "Prices depend on the group. Change an API key's group under API Keys"
+  },
+  "orderList": {
+    "segments": {
+      "all": "All",
+      "success": "Paid",
+      "pending": "Pending",
+      "failed": "Failed",
+      "closed": "Closed"
+    },
+    "paid": "Paid"
+  },
+  "topupCard": {
+    "inputPlaceholder": "Enter a redemption code"
+  },
+  "settingsPage": {
+    "security": {
+      "sessionsHint": "Devices signed in to this account; sign out any you don't recognize",
+      "identifiersHint": "Any of these signs in to this account; the email is also for recovery and notices"
+    }
+  },
+  "authPages": {
+    "haveAccount": "Already have an account?",
+    "remembered": "Remembered it?",
+    "resetTitle": "Reset your password",
+    "resetHint": "We will send a reset link to this email"
   }
 }

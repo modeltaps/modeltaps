@@ -44,10 +44,7 @@ export default function ModelMappingInput({ value, onChange, models = [] }) {
   // 候选来源（路线 A）：右边「上游真实模型」用渠道 models 列表；左边「请求模型/别名」
   // 再叠加已存在的映射 key。combobox 仍允许手敲列表外的值（上游有但未加进 models 时）。
   const toOptions = models;
-  const fromOptions = useMemo(
-    () => Array.from(new Set([...models, ...rows.map((r) => r.from).filter(Boolean)])),
-    [models, rows]
-  );
+  const fromOptions = useMemo(() => Array.from(new Set([...models, ...rows.map((r) => r.from).filter(Boolean)])), [models, rows]);
   const createLabel = (v) => t('channel_edit.mappingCreate', { value: v });
 
   // 大小写不敏感去重：仅 UI 提示。运行时仍精确匹配，但请求模型名若只差大小写
@@ -112,9 +109,7 @@ export default function ModelMappingInput({ value, onChange, models = [] }) {
                     <HelpCircle className="size-3.5" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-xs whitespace-normal text-xs">
-                  {t('channel_edit.mappingBillIncomingTip')}
-                </TooltipContent>
+                <TooltipContent className="max-w-xs whitespace-normal text-xs">{t('channel_edit.mappingBillIncomingTip')}</TooltipContent>
               </Tooltip>
             </div>
             <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => removeRow(index)}>
@@ -122,11 +117,7 @@ export default function ModelMappingInput({ value, onChange, models = [] }) {
             </Button>
           </div>
         ))}
-        {dupKeys.size > 0 && (
-          <p className="text-xs text-destructive">
-            {t('channel_edit.mappingDupKey')}
-          </p>
-        )}
+        {dupKeys.size > 0 && <p className="text-xs text-destructive">{t('channel_edit.mappingDupKey')}</p>}
         <Button type="button" variant="outline" size="sm" onClick={addRow}>
           <Plus className="size-4" />
           {t('channel_edit.add')}

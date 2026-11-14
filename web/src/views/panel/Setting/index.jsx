@@ -32,6 +32,7 @@ import {
   PromptLimitsCard,
   RetryCard,
   SessionAffinityCard,
+  SupplyModeCard,
   SupplyPauseRulesCard
 } from './cards/GatewayCards';
 import { LogConsumeCard, LogIOCard, SafetyCard } from './cards/PrivacyCards';
@@ -70,6 +71,7 @@ const CARD_COMPONENTS = {
   retry: RetryCard,
   'error-handling': ErrorHandlingCard,
   'channel-auto': ChannelAutoCard,
+  'supply-mode': SupplyModeCard,
   'supply-pause-rules': SupplyPauseRulesCard,
   'session-affinity': SessionAffinityCard,
   'model-name-match': ModelNameMatchCard,

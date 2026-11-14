@@ -79,4 +79,11 @@ describe('Combobox', () => {
     expect(optionLabels()).toEqual(['Alpha', 'Beta']);
     expect(document.querySelector('[cmdk-separator]')).toBeNull();
   });
+
+  it('opens with the typed key as the query when typing on the trigger', () => {
+    render(<Combobox value="1" groups={groups} />);
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'd' });
+    expect(document.querySelector('[cmdk-input]').value).toBe('d');
+    expect(optionLabels()).toEqual(['Deepseek']);
+  });
 });

@@ -249,3 +249,43 @@ func TestCreditPendingOrderRollsBackWhenQuotaUpdateFails(t *testing.T) {
 	}
 	assertCreditState(t, order.TradeNo, order.UserId, OrderStatusSuccess, "GW-PAID-1", 1000+order.Quota)
 }
+
+// The list fills in usernames and gateway names; the status counts ignore the status filter.
+func TestOrderListNamesAndStatusCounts(t *testing.T) {
+	setupOrderTestDB(t)
+	if err := DB.AutoMigrate(&User{}, &Payment{}); err != nil {
+		t.Fatalf("migrate: %v", err)
+	}
+	if err := DB.Create(&User{Id: 42, Username: "buyer", Password: "x"}).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	if err := DB.Create(&Payment{ID: 7, Name: "Stripe", UUID: "gw-7"}).Error; err != nil {
+		t.Fatalf("create gateway: %v", err)
+	}
+	for i, status := range []OrderStatus{OrderStatusSuccess, OrderStatusSuccess, OrderStatusPending} {
+		o := newTestOrder()
+		o.TradeNo = "CAP-TRADE-L" + string(rune('A'+i))
+		o.Status = status
+		if err := o.Insert(); err != nil {
+			t.Fatalf("insert: %v", err)
+		}
+	}
+
+	params := &SearchOrderParams{Status: string(OrderStatusPending)}
+	list, err := GetOrderList(params)
+	if err != nil || list.TotalCount != 1 {
+		t.Fatalf("list: err=%v total=%d", err, list.TotalCount)
+	}
+	got := (*list.Data)[0]
+	if got.Username != "buyer" || got.GatewayName != "Stripe" {
+		t.Fatalf("names = %q / %q", got.Username, got.GatewayName)
+	}
+
+	counts, err := CountOrdersByStatus(params)
+	if err != nil {
+		t.Fatalf("counts: %v", err)
+	}
+	if counts["success"] != 2 || counts["pending"] != 1 {
+		t.Fatalf("counts = %v", counts)
+	}
+}

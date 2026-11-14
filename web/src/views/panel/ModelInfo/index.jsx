@@ -54,6 +54,7 @@ import { downloadTextAsFile, showError } from 'utils/common';
 import { getPageSize, savePageSize } from 'constants';
 import { createRequestGuard, runGuardedFetch } from 'hooks/paginatedListGuard';
 import PricingSheet from '../Pricing/PricingSheet';
+import SupplyBatchMenu from './supply/SupplyBatchMenu';
 import CheckUpdatesDialog from '../Pricing/CheckUpdatesDialog';
 import {
   COLUMN_STORAGE_KEY,
@@ -634,6 +635,13 @@ export default function ModelInfo() {
         <DollarSign className="size-3.5" />
         {t('modelInfoPage.setPrice')}
       </Button>
+      <SupplyBatchMenu
+        rows={selectedRows}
+        onDone={() => {
+          setSelectedKeys(new Set());
+          handleRefresh();
+        }}
+      />
       <Button
         size="sm"
         variant="outline"

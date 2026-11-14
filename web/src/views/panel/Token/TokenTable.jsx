@@ -247,13 +247,14 @@ export function KeyStatus({ item, rtf, dotOnly = false }) {
 // spend (against the limit) on the right; the second line is the key suffix with the state or last
 // use, and the share of the limit used. A tap opens the key; the ⋯ menu at the end holds the same
 // actions as the table row, plus enable / disable.
-function KeyListRow({ item, rtf, selectMode, selected, onToggleSelect, onOpen, active, actions }) {
+function KeyListRow({ item, rtf, selectMode, selected, onToggleSelect, onToggleStatus, onOpen, active, actions }) {
   const { t } = useTranslation();
   const { used, limit } = keyUsage(item);
   const state = keyState(item);
   const pct = limit ? Math.min(100, Math.round((used / limit) * 100)) : null;
+  // On / off is the switch, so the words only cover what a switch cannot show.
   const stateLabel =
-    state.key === 'enabled'
+    state.key === 'enabled' || state.key === 'disabled'
       ? null
       : state.key === 'expiring'
         ? t('apiKey.list.stateExpiring', { when: relativeTime(rtf, item.expired_time) })
@@ -272,16 +273,10 @@ function KeyListRow({ item, rtf, selectMode, selected, onToggleSelect, onOpen, a
             aria-label={t('apiKey.list.selectRow', { name: item.name })}
           />
         </RowControl>
-      ) : (
-        <span
-          className={cn('size-2 shrink-0 rounded-full', TONE_DOT[state.tone])}
-          title={stateLabel || t('apiKey.list.state_enabled')}
-          aria-hidden="true"
-        />
-      )}
+      ) : null}
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-3">
-          <span className="min-w-0 truncate text-sm font-medium">{item.name}</span>
+          <span className={cn('min-w-0 truncate text-sm font-medium', item.status !== 1 && 'text-muted-foreground')}>{item.name}</span>
           <span className="ml-auto shrink-0 text-sm tabular-nums">
             <SpendAmount quota={used} />
             {limit ? <span className="text-muted-foreground"> / {renderQuota(limit)}</span> : null}
@@ -303,9 +298,19 @@ function KeyListRow({ item, rtf, selectMode, selected, onToggleSelect, onOpen, a
         </div>
       </div>
       {!selectMode && (
-        <RowControl className="-mr-2 shrink-0">
-          <TokenActionMenu t={t} actions={actions} />
-        </RowControl>
+        <div className="-mr-2 flex shrink-0 items-center gap-1">
+          <RowControl className="flex">
+            <Switch
+              size="sm"
+              checked={item.status === 1}
+              aria-label={t('token_index.status')}
+              onCheckedChange={() => onToggleStatus(item)}
+            />
+          </RowControl>
+          <RowControl>
+            <TokenActionMenu t={t} actions={actions} />
+          </RowControl>
+        </div>
       )}
     </li>
   );
@@ -646,9 +651,10 @@ export default function TokenTable({
             selectMode={selectMode}
             selected={!!selectedIds?.has(item.id)}
             onToggleSelect={onToggleSelect}
+            onToggleStatus={onToggleStatus}
             onOpen={onOpen}
             active={item.id === openId}
-            actions={buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw, onToggleStatus })}
+            actions={buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw })}
           />
         ))}
       </ul>

@@ -75,6 +75,8 @@ func (c *UserGroup) Create() error {
 	err := DB.Create(c).Error
 	if err == nil {
 		GlobalUserGroupRatio.Load()
+		// Channels whose group is ChannelGroupAll cover the new set of groups.
+		ChannelGroup.Load()
 	}
 	return err
 }
@@ -93,6 +95,8 @@ func (c *UserGroup) Delete() error {
 
 	if err == nil {
 		GlobalUserGroupRatio.Load()
+		// Channels whose group is ChannelGroupAll cover the new set of groups.
+		ChannelGroup.Load()
 	}
 	return err
 }
@@ -101,6 +105,8 @@ func ChangeUserGroupEnable(id int, enable bool) error {
 	err := DB.Model(&UserGroup{}).Where("id = ?", id).Update("enable", enable).Error
 	if err == nil {
 		GlobalUserGroupRatio.Load()
+		// Channels whose group is ChannelGroupAll cover the new set of groups.
+		ChannelGroup.Load()
 	}
 	return err
 }

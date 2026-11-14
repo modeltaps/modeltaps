@@ -33,33 +33,26 @@ export default function PluginForm({ type, value, onChange }) {
                   <span className="text-sm">{configText(t, param.name)}</span>
                   <p className="text-xs text-muted-foreground">{configText(t, param.description)}</p>
                 </div>
-                <Switch
-                  checked={!!plugin[pluginId]?.[paramId]}
-                  onCheckedChange={(c) => setParam(pluginId, paramId, c)}
-                />
+                <Switch checked={!!plugin[pluginId]?.[paramId]} onCheckedChange={(c) => setParam(pluginId, paramId, c)} />
               </div>
             ) : param.type === 'select' ? (
               <FormField key={paramId} row label={configText(t, param.name)} help={configText(t, param.description)}>
-                <Select
-                  value={plugin[pluginId]?.[paramId] ?? param.default ?? ''}
-                  onValueChange={(v) => setParam(pluginId, paramId, v)}
-                >
+                <Select value={plugin[pluginId]?.[paramId] ?? param.default ?? ''} onValueChange={(v) => setParam(pluginId, paramId, v)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {(param.options || []).map((o) => (
-                      <SelectItem key={o.value} value={o.value}>{configText(t, o.label)}</SelectItem>
+                      <SelectItem key={o.value} value={o.value}>
+                        {configText(t, o.label)}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </FormField>
             ) : (
               <FormField key={paramId} label={configText(t, param.name)} help={configText(t, param.description)}>
-                <Input
-                  value={plugin[pluginId]?.[paramId] ?? ''}
-                  onChange={(e) => setParam(pluginId, paramId, e.target.value)}
-                />
+                <Input value={plugin[pluginId]?.[paramId] ?? ''} onChange={(e) => setParam(pluginId, paramId, e.target.value)} />
               </FormField>
             )
           )}

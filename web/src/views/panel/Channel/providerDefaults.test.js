@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
-import { OAUTH_TYPES, keyPageUrl } from './providerDefaults';
+import { OAUTH_TYPES, keyPageUrl, relayHost } from './providerDefaults';
 
 // Types without a key page of their own: a custom endpoint, or services reached through a
 // proxy or a workspace whose address the user brings.
@@ -22,5 +22,14 @@ describe('keyPageUrl', () => {
   it('is empty for login-based and custom types', () => {
     expect(keyPageUrl(58)).toBe('');
     expect(keyPageUrl(8)).toBe('');
+  });
+});
+
+describe('relayHost', () => {
+  it('shows the host only when it is not the type’s own address', () => {
+    expect(relayHost({ type: 1, base_url: 'https://api.venice.ai/api/v1' })).toBe('api.venice.ai');
+    expect(relayHost({ type: 1, base_url: 'https://api.openai.com' })).toBe('');
+    expect(relayHost({ type: 1, base_url: '' })).toBe('');
+    expect(relayHost({ type: 62 })).toBe('');
   });
 });

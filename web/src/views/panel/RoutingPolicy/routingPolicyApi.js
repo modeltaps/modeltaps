@@ -8,7 +8,10 @@ export const POLICY_CALL_PREFIX = 'policy/';
 // /api/routing_policy/, an organization uses /api/org/:id/routing_policy/ and a user's personal
 // policies /api/user/routing_policy/. Own scopes list their own usable models, bill Try it and call
 // their policies with the policy/ prefix.
-export function createRoutingPolicyApi(base, { listModels, samples = true, billedTry = false, billedTo = 'organization', callPrefix = '', readOnly = false } = {}) {
+export function createRoutingPolicyApi(
+  base,
+  { listModels, samples = true, billedTry = false, billedTo = 'organization', callPrefix = '', readOnly = false } = {}
+) {
   return {
     // review: the platform console's read-only view of organization / personal policies.
     review: false,

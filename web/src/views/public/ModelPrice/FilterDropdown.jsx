@@ -65,8 +65,18 @@ export default function FilterDropdown({
             : 'border-input bg-field text-foreground hover:border-foreground/30'
         )}
       >
-        {Icon && <Icon className="size-4 shrink-0" />}
-        <span className="truncate max-w-[200px]">{active && selectedOption ? `${label}: ${selectedOption.label}` : label}</span>
+        {Icon && <Icon className="hidden size-4 shrink-0 sm:block" />}
+        {/* On phones the selected value alone, so the toolbar keeps room for the search box. */}
+        <span className="max-w-24 truncate sm:max-w-[200px]">
+          {active && selectedOption ? (
+            <>
+              <span className="hidden sm:inline">{label}: </span>
+              {selectedOption.label}
+            </>
+          ) : (
+            label
+          )}
+        </span>
         <ChevronDown className="size-4 shrink-0 opacity-50" />
       </button>
       <FloatingPanel

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, DollarSign, FlaskConical, Layers, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, DollarSign, FlaskConical, Layers, MoreHorizontal, Play, Plus, RefreshCw, Trash2 } from 'lucide-react';
 
 import { API } from 'utils/api';
 import { Button } from '@/components/ui/button';
@@ -17,17 +17,32 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { COMMON_CHANNEL_TYPES } from 'constants/ChannelConstants';
 import useChannelActions from './useChannelActions';
 import BatchModal from './BatchModal';
-import ProviderLane from './ProviderLane';
+import ProviderStrip from './ProviderStrip';
+import { useProviderName } from './channelParts';
+import NewChannelMenu from './NewChannelMenu';
 import ProviderPane, { CHANNEL_COLUMNS, RANGES } from './ProviderPane';
 import ChannelPanel from './ChannelPanel';
 import NewChannelSheet from './NewChannelSheet';
 import { LEGACY_SECTION_TAB, PANEL_TABS } from './panelTabs';
-import { ISSUE_FILTERS, NO_TAG, STATUS_FILTERS, channelMatches, groupChannelsByType } from './channelGroups';
+import { ISSUE_FILTERS, NO_TAG, STATUS_FILTERS, channelMatches, groupChannelsByType, openIssues } from './channelGroups';
 import useBatchActions from './useBatchActions';
 import { checkChannelDrift, fetchAllChannels, fetchChannelMetrics, fetchGroupOptions, fetchModels, manageChannel } from './channelApi';
+import { fetchAllocation, saveAllocation } from '../Allocation/allocationApi';
+import {
+  joinPosition,
+  moveAfter,
+  moveBefore,
+  normalizeOrder,
+  moveStep,
+  orderFromPolicy,
+  orderInfo,
+  orderToTiers,
+  setWeight,
+  shareWithAbove,
+  stopSharing
+} from './channelOrder';
 
 const DISMISSED_KEY = 'channels.dismissedIssues';
 
@@ -49,12 +64,14 @@ function panelTabFrom(params) {
   return 'models';
 }
 
-// /panel/channel: providers on the left (channels grouped by type), the selected provider on
-// the right (attention list, traffic chart, channel table). /panel/channel/:id opens that
-// channel's panel over its provider; /panel/channel/new opens the new channel sheet. The
-// selected provider is ?type=<id>.
+// /panel/channel: a row of provider cards (each with its traffic) above one channel list. While
+// supplies route requests the list is the call order (tried top to bottom, a shared position
+// splits traffic by weight), saved as the platform allocation policy. A card filters the list to
+// one provider (?type=<id>); /panel/channel/:id opens a channel's panel, /panel/channel/new
+// the new channel sheet for ?type.
 export default function Channel() {
   const { t } = useTranslation();
+  const providerName = useProviderName();
   const navigate = useNavigate();
   const { id: idParam } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -68,6 +85,11 @@ export default function Channel() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [groups, setGroups] = useState([]);
+  // While supplies route requests the allocation policy orders channels, not their own numbers.
+  const [supplyRouting, setSupplyRouting] = useState(false);
+  // { tiers, providers } of the allocation policy, read while supplies route requests.
+  const [allocation, setAllocation] = useState(null);
+  const [orderGroups, setOrderGroups] = useState(null);
   const [rangeKey, setRangeKey] = useState('24h');
   const [metrics, setMetrics] = useState({ loading: true, rows: [], start: 0, end: 0 });
   const [dismissed, setDismissed] = useState(loadDismissed);
@@ -93,7 +115,74 @@ export default function Channel() {
   useEffect(() => {
     reload();
     fetchGroupOptions().then(setGroups);
+    fetchAllocation()
+      .then((res) => {
+        const on = Boolean(res.success && res.data?.supply_routing);
+        setSupplyRouting(on);
+        setAllocation(on ? res.data : null);
+      })
+      .catch(() => setSupplyRouting(false));
   }, [reload]);
+
+  // The order shown: the policy expanded into channels, every channel placed (new ones last).
+  const policyOrder = useMemo(
+    () =>
+      allocation
+        ? normalizeOrder(orderFromPolicy(allocation.tiers || [], allocation.providers || [], channels), allocation.providers || [])
+        : null,
+    [allocation, channels]
+  );
+  const groupsShown = orderGroups || policyOrder;
+  const order = useMemo(
+    () =>
+      groupsShown
+        ? {
+            groups: groupsShown,
+            info: orderInfo(groupsShown, allocation?.providers || []),
+            names: new Map(channels.map((c) => [c.id, c.name]))
+          }
+        : null,
+    [groupsShown, allocation, channels]
+  );
+  const saveOrder = async (raw) => {
+    // Every position is a group that really shares: one that would share nothing falls apart.
+    const next = normalizeOrder(raw, allocation?.providers || []);
+    setOrderGroups(next);
+    try {
+      const res = await saveAllocation(orderToTiers(next));
+      if (!res.success) {
+        toast.error(res.message);
+        setOrderGroups(null);
+        return;
+      }
+      setAllocation(res.data);
+      setOrderGroups(null);
+    } catch {
+      setOrderGroups(null);
+    }
+  };
+  const orderActions = order
+    ? {
+        step: (id, dir) => saveOrder(moveStep(order.groups, id, dir)),
+        share: (id) => {
+          const next = normalizeOrder(shareWithAbove(order.groups, id), allocation?.providers || []);
+          const gi = order.groups.findIndex((g) => g.ids.includes(id));
+          const above = order.groups[gi - 1]?.ids[0];
+          if (!next.some((g) => g.ids.includes(id) && g.ids.includes(above))) toast.info(t('channels.order.noCommonModel'));
+          saveOrder(next);
+        },
+        unshare: (id) => saveOrder(stopSharing(order.groups, id)),
+        weight: (id, w) => saveOrder(setWeight(order.groups, id, w)),
+        drop: (id, beforeId) => saveOrder(moveBefore(order.groups, id, beforeId)),
+        after: (id, afterId) => saveOrder(moveAfter(order.groups, id, afterId)),
+        join: (id, targetId) => {
+          const next = normalizeOrder(joinPosition(order.groups, id, targetId), allocation?.providers || []);
+          // No model in common: the channel lands right after instead of sharing.
+          if (!next.some((g) => g.ids.includes(id) && g.ids.includes(targetId))) toast.info(t('channels.order.noCommonModel'));
+          saveOrder(next);
+        }
+      }
+    : null;
 
   // Search (?q=) across every provider, and the table filters (?status=, ?tag= / ?untagged=1).
   const query = searchParams.get('q') || '';
@@ -117,19 +206,16 @@ export default function Channel() {
         : providerGroups,
     [providerGroups, query]
   );
-  const openRow = openId ? channels.find((c) => c.id === openId) : null;
-  const selectedType =
-    (typeParam && visibleGroups.some((g) => g.type === typeParam) && typeParam) ||
-    (openRow && visibleGroups.some((g) => g.type === openRow.type) && openRow.type) ||
-    visibleGroups[0]?.type ||
-    (query.trim() ? 0 : typeParam) ||
-    0;
-  const selected = visibleGroups.find((g) => g.type === selectedType);
-  const selectedChannels = useMemo(() => selected?.channels || [], [selected]);
+  // 0 = every provider; a card picks one (?type=).
+  const selectedType = typeParam && visibleGroups.some((g) => g.type === typeParam) ? typeParam : 0;
+  const selected = selectedType ? visibleGroups.find((g) => g.type === selectedType) : null;
+  const visibleChannels = useMemo(() => visibleGroups.flatMap((g) => g.channels), [visibleGroups]);
+  const selectedChannels = useMemo(() => (selected ? selected.channels : visibleChannels), [selected, visibleChannels]);
   const range = RANGES.find((r) => r.key === rangeKey) || RANGES[0];
 
-  // Metrics of the selected provider's channels for the range (hourly rows per channel × model).
-  const metricIds = selectedChannels.map((c) => c.id).join(',');
+  // Metrics of every channel for the range (hourly rows per channel × model): the cards show
+  // each provider's traffic, the list and chart the selected ones.
+  const metricIds = channels.map((c) => c.id).join(',');
   useEffect(() => {
     if (!metricIds) {
       setMetrics({ loading: false, rows: [], start: 0, end: 0 });
@@ -168,11 +254,12 @@ export default function Channel() {
     navigate(withType(`/panel/channel/${id}`, selectedType, { tab: nextTab && nextTab !== 'models' ? nextTab : '' }));
   const closeOverlay = () => navigate(withType('/panel/channel'));
   const openNew = (type = selectedType) => navigate(withType('/panel/channel/new', type || 1));
-  const openNewOther = () => {
-    const present = new Set(providerGroups.map((g) => g.type));
-    openNew(COMMON_CHANNEL_TYPES.find((x) => !present.has(x)) || 1);
+  const selectType = (type) => {
+    const p = {};
+    if (type) p.type = String(type);
+    if (query) p.q = query;
+    setSearchParams(p);
   };
-  const selectType = (type) => setSearchParams(query ? { type: String(type), q: query } : { type: String(type) });
   const updateParams = useCallback(
     (patch) =>
       setSearchParams(
@@ -193,10 +280,7 @@ export default function Channel() {
     updateParams({ status, tag: tag && tag !== NO_TAG ? tag : '', untagged: tag === NO_TAG ? '1' : '', group, model, issue });
 
   const columns = useColumnVisibility({ storageKey: 'channel-column-visibility-v1', columns: CHANNEL_COLUMNS });
-  // Laid out as the providers page of the reference gateway: from the md breakpoint up the
-  // provider lane always sits beside the provider's channels (a table wider than its column
-  // scrolls sideways); on a phone the lane is a page of its own and picking a provider opens its
-  // channels with a back row to the lane.
+  // Phones get the compact channel list instead of the table.
   const phone = useMediaQuery(PHONE_QUERY);
   const layout = phone ? 'list' : 'split';
 
@@ -307,6 +391,17 @@ export default function Channel() {
   };
   const maintenance = [
     {
+      icon: RefreshCw,
+      label: t(selectedType ? 'channels.pane.refreshModelsOf' : 'channels.pane.refreshModels', { name: providerName(selectedType) }),
+      run: refreshModels
+    },
+    {
+      icon: Play,
+      label: t(selectedType ? 'channels.pane.testAllOf' : 'channels.pane.testAll', { name: providerName(selectedType) }),
+      run: testAllOfProvider
+    },
+    'sep',
+    {
       icon: Layers,
       label: t('channel_index.batchProcessing'),
       run: () => {
@@ -352,7 +447,7 @@ export default function Channel() {
   const onCreated = ({ ids, type, name, summary }) => {
     setCreated({ ids, type, name, summary });
     setHighlightIds(new Set(ids));
-    navigate(withType('/panel/channel', type));
+    navigate(withType('/panel/channel', selectedType ? type : 0));
     reload();
   };
 
@@ -383,36 +478,24 @@ export default function Channel() {
           )}
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button className="rounded-lg" onClick={() => openNew()}>
-        <Plus />
-        {t('channels.newChannel')}
-      </Button>
+      <NewChannelMenu onPick={(type) => openNew(type)} present={providerGroups.map((g) => g.type)} />
     </PageActions>
   );
 
   let body;
   if (loading) {
-    // Shaped like the page: the provider lane beside a header, the chart and the channel table.
+    // Shaped like the page: the provider cards, the chart and the channel table.
     body = (
-      <div className="grid items-start gap-6 md:grid-cols-[300px_minmax(0,1fr)]" aria-busy="true">
-        <div className="hidden space-y-2 rounded-2xl bg-muted/60 p-3 md:block">
-          <Skeleton className="h-9 w-full rounded-lg" />
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-10 w-full rounded-lg" />
+      <div className="space-y-5" aria-busy="true">
+        <Skeleton className="h-9 w-80 rounded-lg" />
+        <div className="flex gap-2.5">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-[84px] w-52 rounded-xl" />
           ))}
         </div>
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <Skeleton className="size-10 rounded-xl" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="h-3 w-48" />
-            </div>
-          </div>
-          <Skeleton className="h-56 w-full rounded-2xl" />
-          <div className="overflow-hidden rounded-2xl border border-border bg-card">
-            <ListSkeleton rows={3} cells={[72, 80, 72, 88, 32]} />
-          </div>
+        <Skeleton className="h-56 w-full rounded-2xl" />
+        <div className="overflow-hidden rounded-2xl border border-border bg-card">
+          <ListSkeleton rows={3} cells={[72, 80, 72, 88, 32]} />
         </div>
       </div>
     );
@@ -438,66 +521,49 @@ export default function Channel() {
       />
     );
   } else {
-    // Phone: the lane until a provider is picked (in the link or by opening one of its channels).
-    const showLane = !phone || !(typeParam || openRow);
-    const showPane = !phone || !showLane;
-    const laneProps = {
-      groups: visibleGroups,
-      // On the phone's lane page nothing is picked yet, so no row is marked.
-      selected: phone ? 0 : selectedType,
-      onSelect: selectType,
-      dismissed,
-      onNewOther: openNewOther,
-      query,
-      onQueryChange: setQuery
-    };
     body = (
-      <div className={phone ? 'space-y-4' : 'grid items-start gap-6 grid-cols-[300px_minmax(0,1fr)]'}>
-        {showLane && <ProviderLane {...laneProps} />}
-        {showPane && !selected && query.trim() && (
-          <ListEmptyState
-            variant="noMatch"
-            title={t('channels.search.emptyTitle')}
-            description={t('channels.search.emptyDescription', { query })}
-            onClearFilters={() => setQuery('')}
-          />
-        )}
-        {showPane && selected && (
-          <ProviderPane
-            key={`${selectedType}|${query}`}
-            filters={filters}
-            onFiltersChange={setFilters}
-            batch={batch}
-            tagActions={tagActions}
-            batchBusy={batchBusy}
-            type={selectedType}
-            channels={selectedChannels}
-            metrics={metrics}
-            rangeKey={rangeKey}
-            onRangeChange={setRangeKey}
-            dismissed={dismissed}
-            onDismissIssue={dismissIssue}
-            onIssueAction={issueAction}
-            issueBusy={issueBusy}
-            created={created && created.type === selectedType ? created : null}
-            onAdjustCreated={() => created && openChannel(created.ids[0], 'routing')}
-            onDismissCreated={() => {
-              setCreated(null);
-              setHighlightIds(new Set());
-            }}
-            highlightIds={highlightIds}
-            onOpen={(id) => openChannel(id)}
-            layout={layout}
-            onBack={phone ? () => navigate(query ? `/panel/channel?q=${encodeURIComponent(query)}` : '/panel/channel') : undefined}
-            columns={columns}
-            onRefreshModels={refreshModels}
-            onTestAll={testAllOfProvider}
-            refreshingModels={refreshingModels}
-            testingAll={testingAll}
-            actions={actions}
-            testingIds={testingIds}
-          />
-        )}
+      <div>
+        <ProviderPane
+          key={`${selectedType}|${query}`}
+          filters={filters}
+          onFiltersChange={setFilters}
+          batch={batch}
+          tagActions={tagActions}
+          batchBusy={batchBusy}
+          type={selectedType}
+          channels={selectedChannels}
+          metrics={metrics}
+          rangeKey={rangeKey}
+          onRangeChange={setRangeKey}
+          dismissed={dismissed}
+          onDismissIssue={dismissIssue}
+          onIssueAction={issueAction}
+          issueBusy={issueBusy}
+          created={created && (!selectedType || created.type === selectedType) ? created : null}
+          onAdjustCreated={() => created && openChannel(created.ids[0], 'routing')}
+          onDismissCreated={() => {
+            setCreated(null);
+            setHighlightIds(new Set());
+          }}
+          highlightIds={highlightIds}
+          onOpen={(id) => openChannel(id)}
+          layout={layout}
+          columns={columns}
+          actions={actions}
+          testingIds={testingIds}
+          order={order}
+          orderActions={query.trim() ? null : orderActions}
+          leading={
+            <ProviderStrip
+              groups={visibleGroups}
+              selected={selectedType}
+              onSelect={selectType}
+              dismissed={dismissed}
+              query={query}
+              onQueryChange={setQuery}
+            />
+          }
+        />
       </div>
     );
   }
@@ -525,10 +591,17 @@ export default function Channel() {
           }}
           allChannels={channels}
           groups={groups}
+          supplyRouting={supplyRouting}
           metricsRows={metrics.rows}
           rangeKey={rangeKey}
           actions={actions}
           busyIds={{ testing: testingIds, drift: driftCheckingIds, dismissing: dismissingIds, refreshing: refreshingIds }}
+          issues={openIssues(
+            channels.filter((c) => c.id === openId),
+            dismissed
+          )}
+          onIssueAction={issueAction}
+          issueBusy={issueBusy}
         />
       )}
 
@@ -536,7 +609,7 @@ export default function Channel() {
         <NewChannelSheet
           initialType={typeParam || selectedType || 1}
           allChannels={channels}
-          groups={groups}
+          supplyRouting={supplyRouting}
           onClose={closeOverlay}
           onCreated={onCreated}
         />

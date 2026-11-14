@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useReportDirty } from './SettingsPage';
+import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 
 // ==============================|| SETTINGS — THE THREE CARD KINDS ||============================== //
 // FormCard        a group of related options. Everything in it, switches and the header switch
@@ -33,7 +34,7 @@ function CardHeading({ title, description, aside }) {
   return (
     <div className="space-y-1">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h3 className="text-[15px] font-medium leading-6">{title}</h3>
+        {title && <h3 className="text-[15px] font-medium leading-6">{title}</h3>}
         {aside && <div className="flex flex-wrap items-center gap-2">{aside}</div>}
       </div>
       {description && <div className="max-w-3xl text-sm text-muted-foreground">{description}</div>}
@@ -155,7 +156,7 @@ export function ActionCard({ title, description, highlight, aside, children, cla
 }
 
 ActionCard.propTypes = {
-  title: PropTypes.node.isRequired,
+  title: PropTypes.node,
   description: PropTypes.node,
   highlight: PropTypes.string,
   aside: PropTypes.node,
@@ -197,8 +198,10 @@ export function ActionRow({
       children
     ) : (
       <Button
-        variant={destructive ? 'destructive' : 'outline'}
+        // Destructive actions are red text on an outline: a row of them should not shout.
+        variant="outline"
         size="sm"
+        className={destructive ? 'border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive' : undefined}
         disabled={disabled}
         onClick={() => {
           if (!confirm) return onAction?.();
@@ -281,6 +284,36 @@ export function StatusDot({ on, onLabel, offLabel }) {
 StatusDot.propTypes = { on: PropTypes.bool, onLabel: PropTypes.node, offLabel: PropTypes.node };
 
 // columns: [{ key, header, cell(row), className }]; menu(row) → [{ label, icon, onClick, destructive, separator }]
+// A collection row's ⋯ menu.
+function RowMenu({ items }) {
+  const { t } = useTranslation();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="size-8" aria-label={t('settingsUi.collection.more')}>
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {items.map((item, i) => [
+          item.separator && i > 0 ? <DropdownMenuSeparator key={`sep-${item.label}`} /> : null,
+          <DropdownMenuItem
+            key={item.label}
+            className={item.destructive ? 'text-destructive' : undefined}
+            disabled={item.disabled}
+            onClick={item.onClick}
+          >
+            {item.icon && <item.icon />}
+            {item.label}
+          </DropdownMenuItem>
+        ])}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+RowMenu.propTypes = { items: PropTypes.array.isRequired };
+
 export function CollectionCard({
   title,
   description,
@@ -296,9 +329,11 @@ export function CollectionCard({
   loading = false,
   empty,
   footer,
+  phoneRow,
   className
 }) {
   const { t } = useTranslation();
+  const emptyNote = loading ? <Loader2 className="mx-auto size-4 animate-spin" /> : (empty ?? t('settingsUi.collection.empty'));
   return (
     <section data-highlight={highlight} className={cn(shellClass, className)}>
       <div className="space-y-4 px-6 pb-6 pt-5">
@@ -319,7 +354,38 @@ export function CollectionCard({
             )
           }
         />
-        <div className="overflow-x-auto rounded-lg border border-border">
+        {/* phoneRow(row) => { primary, secondary }: below md the rows are a 56px list (two lines and
+            the ⋯ menu) instead of a table that would scroll sideways. */}
+        {phoneRow && (
+          <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border md:hidden">
+            {rows.length === 0 ? (
+              <li className="py-8 text-center text-sm text-muted-foreground">{emptyNote}</li>
+            ) : (
+              rows.map((row) => {
+                const items = menu ? menu(row).filter(Boolean) : [];
+                const { primary, secondary } = phoneRow(row);
+                return (
+                  <li
+                    key={rowKey(row)}
+                    className={cn('flex h-14 items-center gap-3 px-3', onRowClick && ROW_OPENS)}
+                    {...(onRowClick ? rowOpenProps(() => onRowClick(row)) : {})}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm">{primary}</div>
+                      {secondary && <div className="mt-0.5 truncate text-xs text-muted-foreground">{secondary}</div>}
+                    </div>
+                    {items.length > 0 && (
+                      <RowControl className="-mr-1 shrink-0">
+                        <RowMenu items={items} />
+                      </RowControl>
+                    )}
+                  </li>
+                );
+              })
+            )}
+          </ul>
+        )}
+        <div className={cn('overflow-x-auto rounded-lg border border-border', phoneRow && 'hidden md:block')}>
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -335,7 +401,7 @@ export function CollectionCard({
               {rows.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan={columns.length + (menu ? 1 : 0)} className="py-8 text-center text-sm text-muted-foreground">
-                    {loading ? <Loader2 className="mx-auto size-4 animate-spin" /> : (empty ?? t('settingsUi.collection.empty'))}
+                    {emptyNote}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -354,29 +420,7 @@ export function CollectionCard({
                       ))}
                       {menu && (
                         <TableCell className="w-10 py-1.5 text-right" onClick={(e) => e.stopPropagation()}>
-                          {items.length > 0 && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="size-8" aria-label={t('settingsUi.collection.more')}>
-                                  <MoreHorizontal className="size-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                {items.map((item, i) => [
-                                  item.separator && i > 0 ? <DropdownMenuSeparator key={`sep-${item.label}`} /> : null,
-                                  <DropdownMenuItem
-                                    key={item.label}
-                                    className={item.destructive ? 'text-destructive' : undefined}
-                                    disabled={item.disabled}
-                                    onClick={item.onClick}
-                                  >
-                                    {item.icon && <item.icon />}
-                                    {item.label}
-                                  </DropdownMenuItem>
-                                ])}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )}
+                          {items.length > 0 && <RowMenu items={items} />}
                         </TableCell>
                       )}
                     </TableRow>
@@ -409,6 +453,7 @@ CollectionCard.propTypes = {
   loading: PropTypes.bool,
   empty: PropTypes.node,
   footer: PropTypes.node,
+  phoneRow: PropTypes.func,
   className: PropTypes.string
 };
 

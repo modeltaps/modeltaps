@@ -3,7 +3,8 @@
 // easy to test.
 
 export const MODEL_STATUSES = ['draft', 'published', 'retired'];
-export const SUPPLY_MODES = ['balance', 'failover'];
+// 'default' follows the site-wide default mode; the other two are the model's own choice.
+export const SUPPLY_MODES = ['default', 'balance', 'failover'];
 
 // Manual pause lengths offered on a supply row, in seconds.
 export const PAUSE_DURATIONS = [1800, 3600, 6 * 3600, 24 * 3600];
@@ -21,7 +22,7 @@ export function normalizeModelStatus(status) {
 }
 
 export function normalizeSupplyMode(mode) {
-  return SUPPLY_MODES.includes(mode) ? mode : 'balance';
+  return SUPPLY_MODES.includes(mode) ? mode : 'default';
 }
 
 function parseMapping(raw) {
@@ -40,6 +41,16 @@ const channelModels = (channel) =>
     .split(',')
     .map((name) => name.trim())
     .filter(Boolean);
+
+// A supply follows its channel while it has the channel's priority and weight: changing the
+// channel then moves the supply too. A supply with its own numbers stays where it is. Supplies
+// of a deleted channel (no channel numbers) count as following.
+export function followsChannel(supply) {
+  if (!supply || supply.channel_priority === undefined || supply.channel_weight === undefined || !supply.channel_name) return true;
+  return (
+    (Number(supply.priority) || 0) === Number(supply.channel_priority) && (Number(supply.weight) || 1) === Number(supply.channel_weight)
+  );
+}
 
 // The model name a channel should receive for a public model: the channel's model mapping
 // when it has an entry (without the leading "+" that only changes billing), else the name itself.

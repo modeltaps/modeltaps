@@ -85,7 +85,7 @@ const defaultConfig = {
     balance_threshold: 'channelForm.prompt.balance_threshold'
   },
   modelGroup: 'OpenAI'
-}
+};
 
 // inputLabel.provider_models_list shows the "fetch models" button. Only set it for types whose
 // backend provider implements GetModelList against an endpoint that exists upstream (see
@@ -248,7 +248,10 @@ const typeConfig = {
   },
   22: {
     prompt: {
-      key: ['channelForm.prompt.keyFormatExample', { format: 'APIKey-AppId', example: 'fastgpt-0sp2gtvfdgyi4k30jwlgwf1i-64f335d84283f05518e9e041' }]
+      key: [
+        'channelForm.prompt.keyFormatExample',
+        { format: 'APIKey-AppId', example: 'fastgpt-0sp2gtvfdgyi4k30jwlgwf1i-64f335d84283f05518e9e041' }
+      ]
     }
   },
   23: {
@@ -470,8 +473,7 @@ const typeConfig = {
     },
     prompt: {
       models: 'channelForm.prompt.cozeModels',
-      model_mapping:
-        'channelForm.prompt.cozeMapping'
+      model_mapping: 'channelForm.prompt.cozeMapping'
     },
     modelGroup: 'Coze'
   },
@@ -565,7 +567,10 @@ const typeConfig = {
       provider_models_list: ['channelForm.fetchModelsFrom', { source: 'GitHub' }]
     },
     prompt: {
-      key: ['channelForm.prompt.keySeeUrl', { url: 'https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens' }],
+      key: [
+        'channelForm.prompt.keySeeUrl',
+        { url: 'https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens' }
+      ],
       base_url: 'https://models.inference.ai.azure.com'
     },
     modelGroup: 'Github'
@@ -708,6 +713,6 @@ const typeConfig = {
     },
     modelGroup: 'Vercel AI Gateway'
   }
-}
+};
 
-export { defaultConfig, typeConfig }
+export { defaultConfig, typeConfig };
