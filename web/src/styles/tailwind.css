@@ -120,6 +120,19 @@
   --code-string: #15803d;
   --code-number: #0550ae;
   --code-attr: #0550ae;
+
+  /* Chart series. Surfaces and --primary are monochrome, so charts get their own hues:
+     mid-tone on the white card, ordered so neighbouring series stay far apart in hue. */
+  --chart-1: #3478f6;
+  --chart-2: #18a57b;
+  --chart-3: #e8890c;
+  --chart-4: #8b5cf6;
+  --chart-5: #e5487f;
+  --chart-6: #0ea5c6;
+  --chart-7: #d9553a;
+  --chart-8: #7a8699;
+  --chart-9: #8fa31c;
+  --chart-10: #b55bd0;
 }
 
 /* Dark theme. No pure black: the three surface layers separate by lightness. */
@@ -168,6 +181,18 @@
   --code-string: #7ee787;
   --code-number: #79c0ff;
   --code-attr: #79c0ff;
+
+  /* Chart series, lifted for the dark card; same hue order as the light theme. */
+  --chart-1: #5b9bff;
+  --chart-2: #35c995;
+  --chart-3: #f5a43a;
+  --chart-4: #a585ff;
+  --chart-5: #f2709f;
+  --chart-6: #38c3e0;
+  --chart-7: #f07a5f;
+  --chart-8: #98a3b5;
+  --chart-9: #b2c63f;
+  --chart-10: #cf82e6;
 }
 
 /* Global scrollbar theming. Adapts to light/dark via design tokens so native

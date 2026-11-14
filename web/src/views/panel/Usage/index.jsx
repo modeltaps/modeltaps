@@ -104,7 +104,7 @@ function formatSpendAxis(v) {
 }
 
 // Chart colours: the accent leads, the second series of a stacked chart is a quiet neutral.
-const ACCENT = 'var(--primary)';
+const ACCENT = 'var(--chart-1)';
 const QUIET = 'var(--muted-foreground)';
 
 // vs previous-period delta indicator; hidden when delta is null/non-finite.
