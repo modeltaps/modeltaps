@@ -34,7 +34,25 @@ See the [documentation site](docs/guide/quickstart.md) for configuration.
 
 ## Development servers
 
-The backend listens on `port` from `config.yaml` (default `3000`, or `--port`):
+One command starts the backend and the frontend together, both reloading on change
+([air](https://github.com/air-verse/air) is used for the backend when it is installed):
+
+```bash
+make dev    # http://localhost:3010, backend on 3050, Ctrl-C stops both
+```
+
+The backend runs inside `.dev/` (database, logs; git-ignored). An `env.sh` there is sourced before
+start, e.g. `export ROOT_PASSWORD=...`; without one, the initial super admin password is printed in
+the log on first start. Settings go in a git-ignored `.dev.env` in the repository root:
+
+```bash
+DEV_DATA_DIR=/path/to/local-data   # default .dev
+DEV_PORT=3010                      # frontend
+DEV_BACKEND_PORT=3050              # backend
+```
+
+To run the two halves yourself, the backend listens on `port` from `config.yaml` (default `3000`,
+or `--port`):
 
 ```bash
 go run .
