@@ -75,6 +75,9 @@ type OpenAIResponsesRequest struct {
 	TopLogProbs        any              `json:"top_logprobs,omitempty"` // The number of top log probabilities to return for each token in the response.
 	TopP               *float64         `json:"top_p,omitempty"`
 	Truncation         string           `json:"truncation,omitempty"`
+	// See ChatCompletionRequest.PromptCacheKey.
+	PromptCacheKey       string `json:"prompt_cache_key,omitempty"`
+	PromptCacheRetention string `json:"prompt_cache_retention,omitempty"`
 
 	ConvertChat bool `json:"-"`
 }
@@ -103,6 +106,9 @@ func (r *OpenAIResponsesRequest) ToChatCompletionRequest() (*ChatCompletionReque
 		// ResponseFormat:    r.Text,
 		ToolChoice: r.ToolChoice,
 		TopP:       r.TopP,
+
+		PromptCacheKey:       r.PromptCacheKey,
+		PromptCacheRetention: r.PromptCacheRetention,
 	}
 
 	if r.Text != nil && r.Text.Format != nil {
