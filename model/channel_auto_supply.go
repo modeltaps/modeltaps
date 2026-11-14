@@ -152,8 +152,9 @@ func followsChannelList(s *ModelSupply) bool {
 // supplies while supplies route requests. Names the edit added are attached as AutoSupplyChannel
 // does. A supply made from the list follows it while it still sends what the old list and mapping
 // gave it: when the mapping now names another upstream model, the supply sends that one; when
-// the name left the list and no other listed name belongs to the same public model, the supply is
-// removed, so adding the name back attaches it again. A supply whose upstream name was changed on
+// the name left the list, no other listed name belongs to the same public model and no listed name
+// is mapped to the upstream name the supply sends, the supply is removed, so adding the name back
+// attaches it again. A supply whose upstream name was changed on
 // the model page, or that was added by hand, is left alone.
 func SyncChannelSupplies(before, after *Channel) (ChannelSupplySync, error) {
 	var out ChannelSupplySync
@@ -184,8 +185,10 @@ func SyncChannelSupplies(before, after *Channel) (ChannelSupplySync, error) {
 	}
 	kept := map[string]bool{}
 	stillServed := map[string]bool{} // public models some name in the new list belongs to
+	sent := map[string]bool{}        // upstream names the new list and mapping send
 	for _, name := range newNames {
 		kept[name] = true
+		sent[upstreamOf(newMapping, name)] = true
 		if model := publicOf(name); model != "" {
 			stillServed[model] = true
 		}
@@ -206,7 +209,12 @@ func SyncChannelSupplies(before, after *Channel) (ChannelSupplySync, error) {
 	}
 	seen := map[int]bool{}
 	for _, name := range oldNames {
+		// A renamed name ({"my-qwen": "alibaba/qwen-3-14b"}) belongs to the public model its
+		// mapping target does.
 		model := publicOf(name)
+		if model == "" {
+			model = publicOf(upstreamOf(oldMapping, name))
+		}
 		supply := byModel[model]
 		if model == "" || supply == nil || seen[supply.Id] || !followsChannelList(supply) {
 			continue
@@ -220,7 +228,9 @@ func SyncChannelSupplies(before, after *Channel) (ChannelSupplySync, error) {
 				changes = append(changes, change{supply, up})
 				seen[supply.Id] = true
 			}
-		case !stillServed[model]:
+		case !stillServed[model] && !sent[supply.UpstreamModel]:
+			// A listed name that the mapping now sends as this supply's upstream name (a rename
+			// such as {"my-qwen": "alibaba/qwen-3-14b"}) keeps the supply as it is.
 			changes = append(changes, change{supply, ""})
 			seen[supply.Id] = true
 		}

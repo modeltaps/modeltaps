@@ -87,3 +87,43 @@ func TestSyncChannelSupplies(t *testing.T) {
 		t.Fatalf("no change = %+v, %v", got, err)
 	}
 }
+
+// A mapping that renames a listed name keeps the supply the name made: the list now shows the
+// request name, but the channel is still sent the same upstream name.
+func TestSyncChannelSuppliesMappingRename(t *testing.T) {
+	usePreviewTestDB(t)
+	if err := DB.Create(&ModelInfo{Model: "qwen-3-14b", Status: ModelStatusPublished}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := DB.Create(&ModelInfo{Model: "alibaba/qwen-3-14b", AliasOf: "qwen-3-14b"}).Error; err != nil {
+		t.Fatal(err)
+	}
+	before := Channel{Name: "c", Status: config.ChannelStatusEnabled, Group: "default", Models: "alibaba/qwen-3-14b"}
+	if err := DB.Create(&before).Error; err != nil {
+		t.Fatal(err)
+	}
+	supply := &ModelSupply{Model: "qwen-3-14b", ChannelId: before.Id, UpstreamModel: "alibaba/qwen-3-14b",
+		Enabled: true, Source: ModelSupplySourceChannel}
+	if err := DB.Create(supply).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	mapping := `{"my-qwen":"alibaba/qwen-3-14b"}`
+	after := before
+	after.Models, after.ModelMapping = "my-qwen", &mapping
+	got, err := SyncChannelSupplies(&before, &after)
+	if err != nil || got != (ChannelSupplySync{}) {
+		t.Fatalf("rename = %+v, %v; want no change", got, err)
+	}
+	if state := channelSupplyState(t, before.Id); state != "qwen-3-14b<-alibaba/qwen-3-14b(channel)" {
+		t.Fatalf("supplies %s", state)
+	}
+
+	// Dropping the renamed name as well removes the supply.
+	gone := after
+	gone.Models, gone.ModelMapping = "", nil
+	got, err = SyncChannelSupplies(&after, &gone)
+	if err != nil || got != (ChannelSupplySync{Removed: 1}) {
+		t.Fatalf("drop = %+v, %v; want 1 removed", got, err)
+	}
+}
