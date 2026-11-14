@@ -66,10 +66,12 @@ var regionPrefixes = []string{"global.", "us.", "eu.", "apac.", "au.", "jp."}
 //
 // "ca": AWS counts ca-central-1 / ca-west-1 as source regions of the US geo (the us. profile's
 // destinations include Canada), so models with a us. geo profile there map "ca" to "us" to keep
-// data residency instead of falling back to "*" -> global. Not every model supports geo in ca:
-// sonnet-4-5, haiku-4-5 and opus-4-5 do not in ca-west-1, so they have no "ca" key and use "*".
-// The model cards of sonnet-4-6, opus-5 and opus-5-5 list both Canadian regions as source regions
-// of the US profile (checked 2026-11-14), so they carry "ca" too.
+// data residency instead of falling back to "*" -> global. Not every model supports geo in both:
+// the sonnet-4-5, haiku-4-5 and opus-4-5 cards list only ca-central-1 as a source region of the
+// US profile (checked 2026-11-15), ca-west-1 is global only. A key may therefore also be a full
+// region name, which wins over the region root: those three map "ca-central-1" to "us" and leave
+// ca-west-1 on "*". The model cards of sonnet-4-6, opus-5 and opus-5-5 list both Canadian regions
+// as source regions of the US profile (checked 2026-11-14), so they carry the "ca" root key.
 var awsModelCanCrossRegionMap = map[string]map[string]string{
 	"anthropic.claude-3-sonnet-20240229-v1:0": {"us": "us", "eu": "eu", "ap": "apac"},
 	"anthropic.claude-3-opus-20240229-v1:0":   {"us": "us"},
@@ -85,14 +87,14 @@ var awsModelCanCrossRegionMap = map[string]map[string]string{
 	"anthropic.claude-opus-4-1-20250805-v1:0":   {"us": "us"},
 	// 4.5 generation onwards: global. is available in every commercial region, so all of them
 	// carry the "*" fallback.
-	"anthropic.claude-sonnet-4-5-20250929-v1:0": {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
+	"anthropic.claude-sonnet-4-5-20250929-v1:0": {"us": "us", "ca-central-1": "us", "eu": "eu", "ap": "global", "*": "global"},
 	"anthropic.claude-sonnet-4-6":               {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
-	"anthropic.claude-haiku-4-5-20251001-v1:0":  {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
+	"anthropic.claude-haiku-4-5-20251001-v1:0":  {"us": "us", "ca-central-1": "us", "eu": "eu", "ap": "global", "*": "global"},
 	// haiku-5-5: no in-region access, so every region needs a profile. Geo ids are us./eu./au./jp.,
 	// and the us. profile lists ca-central-1 and ca-west-1 as source regions (AWS model card
 	// 2026-10-14).
 	"anthropic.claude-haiku-5-5":              {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
-	"anthropic.claude-opus-4-5-20251101-v1:0": {"us": "us", "eu": "eu", "ap": "global", "*": "global"},
+	"anthropic.claude-opus-4-5-20251101-v1:0": {"us": "us", "ca-central-1": "us", "eu": "eu", "ap": "global", "*": "global"},
 	"anthropic.claude-opus-4-6-v1":            {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
 	"anthropic.claude-opus-4-7":               {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
 	"anthropic.claude-opus-4-8":               {"us": "us", "ca": "us", "eu": "eu", "ap": "global", "*": "global"},
@@ -181,9 +183,13 @@ func autoCrossRegionPrefix(awsModelID, region string) string {
 		return ""
 	}
 
-	profilePrefix, ok := profileMap[regionRoot]
+	// A full region name (ca-central-1) is more specific than its root and wins; then the root
+	// (ca); then "*" for any region without an entry.
+	profilePrefix, ok := profileMap[region]
 	if !ok {
-		// "*" applies to any region root without its own entry.
+		profilePrefix, ok = profileMap[regionRoot]
+	}
+	if !ok {
 		profilePrefix, ok = profileMap["*"]
 		if !ok {
 			return ""

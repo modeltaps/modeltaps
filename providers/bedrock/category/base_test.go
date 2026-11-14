@@ -47,7 +47,16 @@ func TestGetModelNameRegionPrefix(t *testing.T) {
 		{"claude-sonnet-5-5", "us-east-1", "global.anthropic.claude-sonnet-5-5"},
 		// Canada uses the US geo profile where the model supports it there.
 		{"claude-opus-4-7", "ca-central-1", "us.anthropic.claude-opus-4-7"},
+		// sonnet-4-5, haiku-4-5 and opus-4-5: only ca-central-1 is a source region of the US geo
+		// profile, ca-west-1 has global only.
+		{"claude-sonnet-4-5-20250929", "ca-central-1", "us.anthropic.claude-sonnet-4-5-20250929-v1:0"},
+		{"claude-sonnet-4-5-20250929", "ca-west-1", "global.anthropic.claude-sonnet-4-5-20250929-v1:0"},
+		{"claude-sonnet-4-5-20250929", "us-east-1", "us.anthropic.claude-sonnet-4-5-20250929-v1:0"},
+		{"claude-haiku-4-5-20251001", "ca-central-1", "us.anthropic.claude-haiku-4-5-20251001-v1:0"},
+		{"claude-haiku-4-5-20251001", "ca-west-1", "global.anthropic.claude-haiku-4-5-20251001-v1:0"},
+		{"claude-opus-4-5-20251101", "ca-central-1", "us.anthropic.claude-opus-4-5-20251101-v1:0"},
 		{"claude-opus-4-5-20251101", "ca-west-1", "global.anthropic.claude-opus-4-5-20251101-v1:0"},
+		{"claude-opus-4-5-20251101", "eu-west-1", "eu.anthropic.claude-opus-4-5-20251101-v1:0"},
 		// haiku-5-5 always needs a profile: geo in us/ca/eu, global elsewhere.
 		{"claude-haiku-5-5", "us-east-1", "us.anthropic.claude-haiku-5-5"},
 		{"claude-haiku-5-5", "ca-central-1", "us.anthropic.claude-haiku-5-5"},
