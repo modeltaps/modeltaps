@@ -28,6 +28,10 @@ const (
 	GinUpstreamRequestIdKey = "upstream_request_id"
 	// GinUpstreamResponseModelKey 上游在响应里声明的模型名（统一模型名改写之前），见 base.ObserveUpstreamModel。
 	GinUpstreamResponseModelKey = "upstream_response_model"
+	// GinSupplyRenamesModelKey is set per attempt: true when the request goes through a supply
+	// whose upstream model name differs from the public model name. Responses then carry the
+	// public name the client asked for, whatever the unified-response-model switches say.
+	GinSupplyRenamesModelKey = "supply_renames_model"
 	// GinCancelOnDisconnectKey is set per attempt from the selected channel: true makes the
 	// stream loops close the upstream stream as soon as the client disconnects.
 	GinCancelOnDisconnectKey = "cancel_on_disconnect"

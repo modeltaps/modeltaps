@@ -327,7 +327,8 @@ func (p *BaseProvider) GetResponseModelName(requestModel string) string {
 // 仅在确实发生替换时记录一条日志，并用 context 标志位保证每个请求只记一次
 // （流式场景下替换函数会被每个 chunk 调用）。
 // 开关来源：全局 UnifiedRequestResponseModelEnabled 优先，其次是渠道级配置
-// （relay 层 GetProvider 写入 context 的 channel_unified_request_response_model）。
+// （relay 层 GetProvider 写入 context 的 channel_unified_request_response_model），
+// 最后是改名的 supply（上游名与公开名不同，见 config.GinSupplyRenamesModelKey），此时恒用公开名。
 func resolveUnifiedModel(ctx *gin.Context, upstreamModel string) (originalModel string, ok bool) {
 	source := unifiedModelSource(ctx)
 	if source == "" {
@@ -355,7 +356,7 @@ func resolveUnifiedModel(ctx *gin.Context, upstreamModel string) (originalModel 
 	return originalModelStr, true
 }
 
-// unifiedModelSource 返回生效的开关来源（"global" / "channel"），均未开启时返回空串。
+// unifiedModelSource 返回生效的开关来源（"global" / "channel" / "supply"），均未开启时返回空串。
 func unifiedModelSource(ctx *gin.Context) string {
 	if ctx == nil {
 		return ""
@@ -365,6 +366,9 @@ func unifiedModelSource(ctx *gin.Context) string {
 	}
 	if ctx.GetBool("channel_unified_request_response_model") {
 		return "channel"
+	}
+	if ctx.GetBool(config.GinSupplyRenamesModelKey) {
+		return "supply"
 	}
 	return ""
 }

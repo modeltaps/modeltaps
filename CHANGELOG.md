@@ -463,6 +463,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Responses served through a supply whose upstream name differs from the public model now carry
+  the public name the client asked for. A call to `claude-opus-5` through a Vercel AI Gateway
+  supply (`anthropic/claude-opus-5`) answered with `"model": "anthropic/claude-opus-5"`; chat
+  completions, Responses and Claude Messages, streamed or not, now return `claude-opus-5` without
+  the "unify response model" switch. Supplies that keep the public name behave as before.
 - On a fresh deployment, channels saved before the first daily catalog sync no longer put models
   into the catalog under guessed names (`claude-fable-5.2` instead of models.dev's
   `claude-fable-5-2`). Public names come from the model library, which only that sync filled;
