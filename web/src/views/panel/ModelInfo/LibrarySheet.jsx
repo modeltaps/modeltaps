@@ -13,9 +13,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/components/ui/sonner';
 import { API } from 'utils/api';
 
-import { ENDPOINT_LABEL_KEYS, ENDPOINT_VALUES, EndpointIcons, safeJsonArray } from './modelInfoHelpers';
+import BrandIcon from '@/components/brand/BrandIcon';
+import { ENDPOINT_LABEL_KEYS, ENDPOINT_VALUES, EndpointIcons, VendorIcon, safeJsonArray } from './modelInfoHelpers';
 
 const PAGE = 150;
+
+// Mark of a library lab: the catalog vendor's icon when the lab is linked to one, else the
+// lab name matched against the built-in marks (or its site icon), else a letter.
+function LabIcon({ vendor, lab }) {
+  if (vendor) return <VendorIcon vendor={vendor} />;
+  return <BrandIcon ownedBy={lab} fallbackText={lab} className="size-4" />;
+}
+
+LabIcon.propTypes = { vendor: PropTypes.object, lab: PropTypes.string };
 const DAY = 86400;
 
 // A channel offer is one channel that can (maybe) supply a library model under an upstream name.
@@ -105,10 +115,11 @@ export default function LibrarySheet({ open, onOpenChange, vendors, onAdded }) {
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([lab]) => lab);
   }, [items]);
 
-  const labLabel = (lab) => {
+  const labVendor = (lab) => {
     const item = items.find((it) => it.lab === lab && it.vendor_id);
-    return (item && vendors[item.vendor_id]?.name) || lab;
+    return item ? vendors[item.vendor_id] : undefined;
   };
+  const labLabel = (lab) => labVendor(lab)?.name || lab;
 
   const filtered = useMemo(() => filterLibrary(items, filter), [items, filter]);
   const shown = filtered.slice(0, limit);
@@ -218,7 +229,10 @@ export default function LibrarySheet({ open, onOpenChange, vendors, onAdded }) {
                 <SelectItem value="all">{t('modelLibrary.allVendors')}</SelectItem>
                 {labs.map((lab) => (
                   <SelectItem key={lab} value={lab}>
-                    {labLabel(lab)}
+                    <span className="flex min-w-0 items-center gap-2">
+                      <LabIcon vendor={labVendor(lab)} lab={lab} />
+                      <span className="truncate">{labLabel(lab)}</span>
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -322,7 +336,12 @@ export default function LibrarySheet({ open, onOpenChange, vendors, onAdded }) {
                             {it.deprecated && ` · ${t('modelLibrary.deprecated')}`}
                           </div>
                         </td>
-                        <td className="whitespace-nowrap py-2">{vendors[it.vendor_id]?.name || it.lab}</td>
+                        <td className="whitespace-nowrap py-2">
+                          <span className="inline-flex items-center gap-2">
+                            <LabIcon vendor={vendors[it.vendor_id]} lab={it.lab} />
+                            {vendors[it.vendor_id]?.name || it.lab}
+                          </span>
+                        </td>
                         <td className="py-2 text-right tabular-nums">{formatContext(it.context_length)}</td>
                         <td className="py-2 pl-4">
                           <EndpointIcons json={it.endpoints} />

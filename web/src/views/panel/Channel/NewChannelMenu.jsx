@@ -5,6 +5,7 @@ import { Command } from 'cmdk';
 import { ChevronDown, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { CommandSearch, SEARCH_PANEL_MAX_HEIGHT, typeaheadKey } from '@/components/ui/combobox';
 import { FloatingPanel } from '@/components/ui/floating';
 import ProviderIcon from '@/components/brand/ProviderIcon';
 import { channelTypeSections } from 'constants/ChannelConstants';
@@ -16,6 +17,7 @@ export default function NewChannelMenu({ onPick, present = [] }) {
   const { t } = useTranslation();
   const labelOf = useProviderLabel();
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const triggerRef = useRef(null);
   const panelRef = useRef(null);
 
@@ -53,29 +55,47 @@ export default function NewChannelMenu({ onPick, present = [] }) {
 
   return (
     <>
-      <Button ref={triggerRef} className="rounded-lg" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      <Button
+        ref={triggerRef}
+        className="rounded-lg"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => {
+          setQuery('');
+          setOpen((o) => !o);
+        }}
+        onKeyDown={(e) => {
+          const key = open ? null : typeaheadKey(e);
+          if (!key) return;
+          e.preventDefault();
+          setQuery(key);
+          setOpen(true);
+        }}
+      >
         <Plus />
         {t('channels.newChannel')}
         <ChevronDown className="opacity-70" />
       </Button>
-      <FloatingPanel ref={panelRef} open={open} anchorRef={triggerRef} align="end" clamp={false}>
+      <FloatingPanel
+        ref={panelRef}
+        open={open}
+        anchorRef={triggerRef}
+        align="end"
+        maxHeight={SEARCH_PANEL_MAX_HEIGHT}
+        className="flex flex-col overflow-hidden"
+      >
         <Command
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
               e.preventDefault();
               setOpen(false);
+              triggerRef.current?.focus();
             }
           }}
-          className="w-80 overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-lg"
+          className="flex min-h-0 w-80 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-lg"
         >
-          <div className="border-b border-border px-3">
-            <Command.Input
-              autoFocus
-              placeholder={t('providerPicker.search')}
-              className="h-10 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            />
-          </div>
-          <Command.List className="max-h-[360px] overflow-y-auto p-1">
+          <CommandSearch value={query} onValueChange={setQuery} placeholder={t('providerPicker.search')} className="gap-2.5 px-3" />
+          <Command.List className="min-h-0 flex-1 overflow-y-auto p-1">
             <Command.Empty className="px-2 py-4 text-center text-sm text-muted-foreground">{t('providerPicker.empty')}</Command.Empty>
             {sections.map((s) => (
               <Fragment key={s.key}>

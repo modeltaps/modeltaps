@@ -26,7 +26,11 @@ type channelPriceSyncProvider interface {
 // ① OpenRouter 渠道先重拉一次自带的价格与元信息（channel_pricing.auto_sync，默认开）；
 // ② 其余仍缺价格或目录行的模型再从 models.dev 全量匹配补齐（catalog_pricing.auto_sync，默认开）。
 // best-effort，失败仅日志，不阻断保存。
-func AutoSyncChannelCatalog(channelType int, models string, reason string) {
+//
+// supplyAfter names, per channel, the listed models to attach once the sync is done: a model
+// that had no catalog row when the channel was saved only becomes a public model here, after the
+// save already tried to attach it (see supplyAfterCatalogSync).
+func AutoSyncChannelCatalog(channelType int, models string, reason string, supplyAfter ...ChannelSupplyNames) {
 	syncOpenRouter := ChannelTypeHasOwnPricing(channelType) && viper.GetBool("channel_pricing.auto_sync")
 	syncCatalog := viper.GetBool("catalog_pricing.auto_sync")
 	if !syncOpenRouter && !syncCatalog {
@@ -38,6 +42,7 @@ func AutoSyncChannelCatalog(channelType int, models string, reason string) {
 				logger.SysError(fmt.Sprintf("AutoSyncChannelCatalog panic: %v\n%s", r, debug.Stack()))
 			}
 		}()
+		defer supplyAfterCatalogSync(supplyAfter, reason)
 		if syncOpenRouter {
 			n, err := SyncAllChannelsOwnPricing()
 			if err != nil {
@@ -61,6 +66,40 @@ func AutoSyncChannelCatalog(channelType int, models string, reason string) {
 		logger.SysLog(fmt.Sprintf("auto sync models.dev catalog (%s) done: %d prices, unconvertible %v, unmatched %v",
 			reason, result.Synced, result.Unconvertible, result.Unmatched))
 	}()
+}
+
+// ChannelSupplyNames is a channel and the names on its model list to attach to public models.
+type ChannelSupplyNames struct {
+	ChannelId int
+	Names     []string
+}
+
+// supplyAfterCatalogSync attaches channels to the public models among the given names while
+// supplies route requests, once the catalog sync has created the rows those names needed. Names
+// already supplied on the channel are skipped (see model.AutoSupplyChannel); the channel is read
+// back so supplies take its stored mapping, priority and weight.
+func supplyAfterCatalogSync(targets []ChannelSupplyNames, reason string) {
+	if !config.ModelSupplyEnabled {
+		return
+	}
+	for _, target := range targets {
+		if target.ChannelId == 0 || len(target.Names) == 0 {
+			continue
+		}
+		channel, err := model.GetChannelById(target.ChannelId)
+		if err != nil {
+			logger.SysError(fmt.Sprintf("supply after catalog sync (%s) failed for channel #%d: %v", reason, target.ChannelId, err))
+			continue
+		}
+		created, err := model.AutoSupplyChannel(channel, target.Names)
+		if err != nil {
+			logger.SysError(fmt.Sprintf("supply after catalog sync (%s) failed for channel %s: %v", reason, channel.Name, err))
+			continue
+		}
+		if len(created) > 0 {
+			logger.SysLog(fmt.Sprintf("supply after catalog sync (%s): channel %s now supplies %d models", reason, channel.Name, len(created)))
+		}
+	}
 }
 
 // ownPricingChannelTypes 列出「上游 API 自带价格与元数据」的渠道类型及其元数据来源标记。

@@ -26,7 +26,7 @@ import ProviderPane, { CHANNEL_COLUMNS, RANGES } from './ProviderPane';
 import ChannelPanel from './ChannelPanel';
 import NewChannelSheet from './NewChannelSheet';
 import { DEFAULT_PANEL_TAB, LEGACY_SECTION_TAB, PANEL_TABS } from './panelTabs';
-import { ISSUE_FILTERS, NO_TAG, STATUS_FILTERS, channelMatches, groupChannelsByType } from './channelGroups';
+import { ISSUE_FILTERS, NO_TAG, STATUS_FILTERS, channelMatches, groupChannelsByType, openIssues } from './channelGroups';
 import useBatchActions from './useBatchActions';
 import { checkChannelDrift, fetchAllChannels, fetchChannelMetrics, fetchGroupOptions, fetchModels, manageChannel } from './channelApi';
 import { fetchAllocation, saveAllocation } from '../Allocation/allocationApi';
@@ -596,6 +596,12 @@ export default function Channel() {
           rangeKey={rangeKey}
           actions={actions}
           busyIds={{ testing: testingIds, drift: driftCheckingIds, dismissing: dismissingIds, refreshing: refreshingIds }}
+          issues={openIssues(
+            channels.filter((c) => c.id === openId),
+            dismissed
+          )}
+          onIssueAction={issueAction}
+          issueBusy={issueBusy}
         />
       )}
 

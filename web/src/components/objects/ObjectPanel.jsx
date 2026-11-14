@@ -115,6 +115,7 @@ export default function ObjectPanel({
   ctx,
   tabsLabel,
   scope,
+  notice,
   children
 }) {
   const { t } = useTranslation();
@@ -170,9 +171,12 @@ export default function ObjectPanel({
           </div>
         </div>
       ) : (
-        <ObjectTabs tabs={tabs} current={current.key} onSelect={switchTab} dirty={dirty} label={tabsLabel}>
-          {ready && <Body key={version} object={object} draft={draft} setDraft={setDraft} ctx={{ ...ctx, version }} />}
-        </ObjectTabs>
+        <>
+          {notice}
+          <ObjectTabs tabs={tabs} current={current.key} onSelect={switchTab} dirty={dirty} label={tabsLabel}>
+            {ready && <Body key={version} object={object} draft={draft} setDraft={setDraft} ctx={{ ...ctx, version }} />}
+          </ObjectTabs>
+        </>
       )}
       {children}
     </ObjectSheet>
@@ -199,5 +203,7 @@ ObjectPanel.propTypes = {
   ctx: PropTypes.object,
   tabsLabel: PropTypes.string,
   scope: PropTypes.node,
+  // Shown above the tabs once the object has loaded, e.g. what needs doing on it.
+  notice: PropTypes.node,
   children: PropTypes.node
 };

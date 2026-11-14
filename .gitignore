@@ -26,3 +26,6 @@ _output
 .wrangler/
 # Commit convention toolchain dependencies at the repo root (commitlint + husky)
 /node_modules/
+# Local development (make dev)
+/.dev/
+.dev.env

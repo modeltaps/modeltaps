@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Command } from 'cmdk';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, Search } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { FloatingPanel } from '@/components/ui/floating';
@@ -16,6 +16,49 @@ import { FloatingPanel } from '@/components/ui/floating';
 // groups (optional, replaces options): [{ key: string, heading?: node, options: [...] }]. Groups
 // render in order with a separator between them; cmdk filters every group while searching and
 // hides the separators and any group left without a match.
+
+// Tallest a searchable dropdown grows before its list scrolls; below that it takes the room
+// the window has (FloatingPanel caps it), with the search box pinned above the list.
+export const SEARCH_PANEL_MAX_HEIGHT = 560;
+
+// A printable key pressed on a closed trigger opens the dropdown with that key as the query,
+// so typing on a focused trigger searches straight away.
+export function typeaheadKey(e) {
+  if (e.ctrlKey || e.metaKey || e.altKey || e.nativeEvent?.isComposing) return null;
+  return e.key.length === 1 && e.key !== ' ' ? e.key : null;
+}
+
+// Search box for a cmdk dropdown: a leading search icon sized and spaced like the item icons,
+// so the placeholder lines up with the item labels below. Focuses itself once the panel is
+// shown: FloatingPanel renders the first frame hidden to measure it, which makes autoFocus miss.
+export function CommandSearch({ value, onValueChange, placeholder, className }) {
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    let frame;
+    let tries = 0;
+    const focus = () => {
+      const el = ref.current;
+      if (!el) return;
+      el.focus({ preventScroll: true });
+      if (document.activeElement !== el && tries++ < 10) frame = requestAnimationFrame(focus);
+    };
+    focus();
+    return () => cancelAnimationFrame(frame);
+  }, []);
+  return (
+    <div className={cn('flex items-center gap-2 border-b border-border px-3', className)}>
+      <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+      <Command.Input
+        ref={ref}
+        value={value}
+        onValueChange={onValueChange}
+        placeholder={placeholder}
+        className="h-10 w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+      />
+    </div>
+  );
+}
+
 export function Combobox({
   value,
   onValueChange,
@@ -30,6 +73,7 @@ export function Combobox({
   disabled
 }) {
   const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState('');
   const rootRef = React.useRef(null);
   const triggerRef = React.useRef(null);
   const panelRef = React.useRef(null);
@@ -81,7 +125,17 @@ export function Combobox({
         aria-controls={listId}
         aria-haspopup="listbox"
         disabled={disabled}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          setQuery('');
+          setOpen((o) => !o);
+        }}
+        onKeyDown={(e) => {
+          const key = open ? null : typeaheadKey(e);
+          if (!key) return;
+          e.preventDefault();
+          setQuery(key);
+          setOpen(true);
+        }}
         className={cn(
           'flex h-9 w-full items-center justify-between rounded-lg border border-input bg-field px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
           className
@@ -94,28 +148,30 @@ export function Combobox({
         <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
       </button>
 
-      <FloatingPanel ref={panelRef} open={open} anchorRef={triggerRef} matchWidth clamp={false}>
+      <FloatingPanel
+        ref={panelRef}
+        open={open}
+        anchorRef={triggerRef}
+        matchWidth
+        maxHeight={SEARCH_PANEL_MAX_HEIGHT}
+        className="flex flex-col overflow-hidden"
+      >
         <Command
           onKeyDown={(e) => {
             // Close only the dropdown; preventDefault keeps a surrounding Sheet / Dialog open.
             if (e.key === 'Escape') {
               e.preventDefault();
               setOpen(false);
+              triggerRef.current?.focus();
             }
           }}
           className={cn(
-            'min-w-[8rem] overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-md',
+            'flex min-h-0 min-w-[8rem] flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-md',
             contentClassName
           )}
         >
-          <div className="border-b border-border px-2">
-            <Command.Input
-              autoFocus
-              placeholder={searchPlaceholder}
-              className="h-9 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            />
-          </div>
-          <Command.List id={listId} className="max-h-60 overflow-y-auto p-1">
+          <CommandSearch value={query} onValueChange={setQuery} placeholder={searchPlaceholder} />
+          <Command.List id={listId} className="min-h-0 flex-1 overflow-y-auto p-1">
             {emptyText && <Command.Empty className="px-2 py-3 text-center text-sm text-muted-foreground">{emptyText}</Command.Empty>}
             {groups
               ? groups.map((g, i) => (

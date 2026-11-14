@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- While supplies route requests, saving a channel now carries edits of its model list and mapping
+  to the supplies made from that list (when the channel was added, by the drift check or by the
+  migration): models the edit added are supplied to the public models of the same name, a new
+  mapping changes the name a supply sends upstream, and a model taken off the list has its supply
+  withdrawn (adding it back supplies it again). Supplies added by hand or from the model library,
+  and supplies whose upstream name was changed on the model page, stay as they are. The save
+  message says what changed.
+- The channel panel lists what needs attention on the channel (auto-disabled, no key, low balance,
+  models added or removed upstream) above its tabs, each with its action, so the reason no longer
+  hides behind the icon of a narrow row.
+
 - Adding models from the model library now finds the channels that can supply a model even when
   models.dev does not know their spelling. Upstream names are compared word by word after taking
   off platform decoration (vendor and region prefixes, "@default", "-v1:0", "." versus "-"). Under
@@ -273,6 +284,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The channel menu names its checks apart: "Test several models" (connection and latency),
+  "Capability check" (real requests that verify vision, tool calls and more) and "Compare upstream
+  models", each with a line saying what it does. The Advanced tab shows the "other" field only
+  when a provider that does not read it still holds a value, the no-streaming example uses the
+  channel's own models, and the Responses conversion example shows the syntax instead of OpenAI
+  model names.
+
 - Providers list columns: "Requests" (was "Requests in 24 h") shows the count first and its trend
   line after it, left-aligned and set apart from the share column; channels that share with no
   other show "—" for share. Column headers explain themselves on hover in one short line.
@@ -397,6 +415,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `gpt-5.5-pro` default price includes the long-context tier (over 272K input tokens: $60 / $270).
 
 ### Fixed
+
+- While supplies route requests, a new channel now supplies the models it lists even when they
+  had no catalog row yet. Their rows are created by the catalog sync that runs after the save, and
+  the save tried to attach them before that, so on a fresh catalog a new channel ended up with no
+  supplies and its models showed "no channel". The channel is now attached once the sync is done;
+  the same goes for models an edit adds.
 
 - AWS Bedrock channels in Canada (`ca-central-1`, `ca-west-1`) now call `claude-fable-5` and
   `claude-fable-5-1` through the `us.` inference profile, as they already did for

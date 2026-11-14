@@ -1,7 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Copy, ExternalLink, FlaskConical, Gauge, ListChecks, Loader2, MoreHorizontal, Play, RefreshCw, Trash2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  Copy,
+  ExternalLink,
+  FlaskConical,
+  Gauge,
+  ListChecks,
+  Loader2,
+  MoreHorizontal,
+  Play,
+  RefreshCw,
+  Trash2
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -15,6 +27,7 @@ import {
 import { ObjectPanel } from '@/components/objects';
 import { fetchChannel, updateChannel } from './channelApi';
 import { ProviderTile, useProviderName } from './channelParts';
+import { formatBalance } from './channelMetrics';
 import { DEFAULT_BASE_URLS, consoleUrl, hostOf } from './providerDefaults';
 import { PANEL_TABS } from './panelTabs';
 
@@ -33,7 +46,10 @@ export default function ChannelPanel({
   metricsRows,
   rangeKey,
   actions,
-  busyIds
+  busyIds,
+  issues = [],
+  onIssueAction,
+  issueBusy
 }) {
   const { t } = useTranslation();
   const providerName = useProviderName();
@@ -105,6 +121,48 @@ export default function ChannelPanel({
   const webUrl = channel ? consoleUrl(channel.type) : '';
   const testing = busyIds.testing.has(channelId);
 
+  // What needs doing on this channel, the same items as the tags on its list row, spelled out.
+  const issueText = (issue) => {
+    const c = issue.channel;
+    if (issue.kind === 'lowBalance')
+      return t('channels.issue.lowBalance', {
+        balance: formatBalance(c.type, c.balance),
+        threshold: formatBalance(c.type, c.balance_threshold)
+      });
+    if (issue.kind === 'driftNew' || issue.kind === 'driftMissing') return t(`channels.issue.${issue.kind}`, { count: issue.count });
+    return t(`channels.issue.${issue.kind}`);
+  };
+  const issueActionText = {
+    autoDisabled: 'enable',
+    keyMissing: 'setKey',
+    lowBalance: 'refreshBalance',
+    driftNew: 'view',
+    driftMissing: 'view'
+  };
+  const notice = issues.length ? (
+    <ul
+      className="mb-3 space-y-1 rounded-[10px] border border-warning/40 bg-warning/10 px-3 py-2 text-[13px]"
+      aria-label={t('channels.issue.title')}
+    >
+      {issues.map((issue) => (
+        <li key={issue.key} className="flex items-center gap-2">
+          <AlertTriangle className="size-3.5 shrink-0 text-warning" />
+          <span className="min-w-0 flex-1">{issueText(issue)}</span>
+          {onIssueAction && (
+            <button
+              type="button"
+              disabled={issueBusy?.(issue)}
+              onClick={() => onIssueAction(issue)}
+              className="shrink-0 font-medium text-info underline-offset-2 hover:underline disabled:opacity-60"
+            >
+              {t(`channels.issue.${issueActionText[issue.kind]}`)}
+            </button>
+          )}
+        </li>
+      ))}
+    </ul>
+  ) : null;
+
   return (
     <ObjectPanel
       titleId="channel-panel-title"
@@ -134,22 +192,31 @@ export default function ChannelPanel({
                   <MoreHorizontal className="size-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem onClick={() => actions.onMultiTest(channel)}>
-                  <Gauge className="size-4" />
-                  {t('channelTest.action')}
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuItem className="items-start" onClick={() => actions.onMultiTest(channel)}>
+                  <Gauge className="mt-0.5 size-4" />
+                  <span className="flex flex-col">
+                    {t('channels.menu.multiTest')}
+                    <span className="text-xs text-muted-foreground">{t('channels.menu.multiTestHint')}</span>
+                  </span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => actions.onCheck(channel)}>
-                  <ListChecks className="size-4" />
-                  {t('channel_row.check')}
+                <DropdownMenuItem className="items-start" onClick={() => actions.onCheck(channel)}>
+                  <FlaskConical className="mt-0.5 size-4" />
+                  <span className="flex flex-col">
+                    {t('channels.menu.check')}
+                    <span className="text-xs text-muted-foreground">{t('channels.menu.checkHint')}</span>
+                  </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => actions.onRefreshBalance(channel)}>
                   <RefreshCw className="size-4" />
                   {t('channels.conn.refreshBalance')}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => actions.onCheckDrift(channel)}>
-                  <FlaskConical className="size-4" />
-                  {t('channels.monitor.checkNow')}
+                <DropdownMenuItem className="items-start" onClick={() => actions.onCheckDrift(channel)}>
+                  <ListChecks className="mt-0.5 size-4" />
+                  <span className="flex flex-col">
+                    {t('channels.menu.drift')}
+                    <span className="text-xs text-muted-foreground">{t('channels.menu.driftHint')}</span>
+                  </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem disabled={!webUrl} onClick={() => webUrl && window.open(webUrl, '_blank', 'noopener,noreferrer')}>
                   <ExternalLink className="size-4" />
@@ -173,7 +240,20 @@ export default function ChannelPanel({
       tab={tab}
       onTabChange={onTabChange}
       onClose={onClose}
-      onSave={(patch) => updateChannel(channel, patch)}
+      onSave={async (patch) => {
+        const res = await updateChannel(channel, patch);
+        // While supplies route requests, edits of the model list and mapping reach the supplies
+        // made from it: say what changed.
+        if (!res?.success) return res;
+        const parts = [
+          res.supplies && t('channels.models.saved.attached', { count: res.supplies }),
+          res.supplies_updated && t('channels.models.saved.updated', { count: res.supplies_updated }),
+          res.supplies_removed && t('channels.models.saved.removed', { count: res.supplies_removed })
+        ].filter(Boolean);
+        return parts.length
+          ? { ...res, toast: t('channels.models.saved.summary', { changes: parts.join(t('channels.created.comma')) }) }
+          : res;
+      }}
       onSaved={async () => {
         await load();
         onChanged();
@@ -181,6 +261,7 @@ export default function ChannelPanel({
       ctx={ctx}
       tabsLabel={t('channels.panel.tabs')}
       scope={t('channels.panel.scope')}
+      notice={notice}
     />
   );
 }
@@ -197,5 +278,8 @@ ChannelPanel.propTypes = {
   metricsRows: PropTypes.array.isRequired,
   rangeKey: PropTypes.string.isRequired,
   actions: PropTypes.object.isRequired,
-  busyIds: PropTypes.object.isRequired
+  busyIds: PropTypes.object.isRequired,
+  issues: PropTypes.array,
+  onIssueAction: PropTypes.func,
+  issueBusy: PropTypes.func
 };

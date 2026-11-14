@@ -133,6 +133,12 @@ func TriggerOwnedByBrandIconFetch(owned *ModelOwnedBy) {
 			return
 		}
 	}
+	for _, key := range []string{slug, owned.Name} {
+		if domain, ok := brandicon.OwnerDomain(key); ok {
+			EnqueueBrandIconFetch(domain)
+			return
+		}
+	}
 	for _, candidate := range []string{slug, owned.Name} {
 		if _, ok := brandicon.RegistrableDomain(candidate); ok {
 			if _, known := brandicon.DomainKey(candidate); !known {
@@ -166,4 +172,13 @@ func RefreshBrandIconNow(domain string) (string, error) {
 	defer func() { <-brandIconSem }()
 	refreshBrandIcon(domain)
 	return domain, nil
+}
+
+// EnqueueOwnerDomainIcons fetches the site icons of the labs that have no mark (the manifest's
+// ownerDomains), so the model library shows them without a vendor having been saved first.
+// Fresh cache entries are skipped.
+func EnqueueOwnerDomainIcons() {
+	for _, domain := range brandicon.OwnerDomains() {
+		EnqueueBrandIconFetch(domain)
+	}
 }

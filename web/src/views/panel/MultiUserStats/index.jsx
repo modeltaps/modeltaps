@@ -227,7 +227,7 @@ export default function MultiUserStats() {
                       tickFormatter={(v) => '$' + v}
                     />
                     <Tooltip content={<StatTooltip />} cursor={{ fill: 'var(--muted)', opacity: 0.3 }} />
-                    <Bar dataKey="quota" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="quota" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>

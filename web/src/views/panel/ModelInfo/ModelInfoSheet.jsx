@@ -105,9 +105,9 @@ async function callApi(request) {
 
 function Section({ title, children }) {
   return (
-    <section className="space-y-4">
-      <h3 className="border-b border-border pb-1.5 text-sm font-medium">{title}</h3>
-      {children}
+    <section className="overflow-hidden rounded-lg border border-border">
+      <h3 className="border-b border-border bg-muted/50 px-4 py-2.5 text-sm font-semibold">{title}</h3>
+      <div className="space-y-4 p-4">{children}</div>
     </section>
   );
 }
@@ -123,9 +123,8 @@ function ChannelsPanel({ row, supplyRouting = false, onGoSupplies }) {
   const channels = row.bound_channels || [];
   const groups = modelGroups(row);
   return (
-    <div className="space-y-6">
-      <section className="space-y-2">
-        <h3 className="text-sm font-medium">{t('modelsPage.sheet.providingChannels', { count: channels.length })}</h3>
+    <div className="space-y-5">
+      <Section title={t('modelsPage.sheet.providingChannels', { count: channels.length })}>
         {enabledChannels(row).length === 0 && (
           <div className="space-y-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
             <p className="text-warning">{t('modelInfoPage.noChannel')}</p>
@@ -204,10 +203,9 @@ function ChannelsPanel({ row, supplyRouting = false, onGoSupplies }) {
           </div>
         )}
         {channels.length > 0 && <p className="text-xs text-muted-foreground">{t('modelsPage.sheet.routingHint')}</p>}
-      </section>
+      </Section>
 
-      <section className="space-y-2">
-        <h3 className="text-sm font-medium">{t('modelsPage.sheet.availableGroups')}</h3>
+      <Section title={t('modelsPage.sheet.availableGroups')}>
         {groups.length > 0 ? (
           <div className="flex flex-wrap gap-1.5">
             {groups.map((group) => (
@@ -219,13 +217,12 @@ function ChannelsPanel({ row, supplyRouting = false, onGoSupplies }) {
         ) : (
           <p className="text-sm text-muted-foreground">—</p>
         )}
-      </section>
+      </Section>
 
       {row.alias_of && (
-        <section className="space-y-2">
-          <h3 className="text-sm font-medium">{t('modelInfoPage.aliasOf')}</h3>
+        <Section title={t('modelInfoPage.aliasOf')}>
           <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{row.alias_of}</code>
-        </section>
+        </Section>
       )}
     </div>
   );
@@ -545,7 +542,7 @@ export default function ModelInfoSheet({
           </Tabs>
         </SheetHeader>
         <SheetBody>
-          <div role="tabpanel" hidden={tab !== 'profile'} className="space-y-8">
+          <div role="tabpanel" hidden={tab !== 'profile'} className="space-y-5">
             <Section title={t('modelInfoPage.sectionBasic')}>
               <FormField id="modelinfo-model" label={t('modelInfoPage.model')} required error={errors.model}>
                 <Input
@@ -726,7 +723,7 @@ export default function ModelInfoSheet({
             )}
           </div>
 
-          <div role="tabpanel" hidden={tab !== 'pricing'} className="space-y-8">
+          <div role="tabpanel" hidden={tab !== 'pricing'} className="space-y-5">
             <Section title={t('modelInfoPage.sectionPrice')}>
               {!hasPrice && <p className="text-sm text-muted-foreground">{t('modelInfoPage.priceEmptyTip')}</p>}
               <PriceFields control={control} type={priceType} ownedby={ownedby} units={units} />

@@ -201,7 +201,7 @@ func applyInviteCodeState(db *gorm.DB, state string, now int64) *gorm.DB {
 
 func inviteCodeKeywordScope(db *gorm.DB, keyword string) *gorm.DB {
 	if keyword = strings.TrimSpace(keyword); keyword != "" {
-		return db.Where("code LIKE ? OR name LIKE ?", "%"+keyword+"%", "%"+keyword+"%")
+		return db.Where(caseInsensitiveLike("code LIKE ? OR name LIKE ?"), "%"+keyword+"%", "%"+keyword+"%")
 	}
 	return db
 }

@@ -1306,7 +1306,7 @@
     "retryFailed": "重试失败项（{{count}}）"
   },
   "channelCheck": {
-    "title": "渠道检测",
+    "title": "能力检测",
     "fetchUpstream": "获取上游模型",
     "fetchFailed": "获取上游模型失败",
     "hint": "每个模型最多向上游发送 {{requests}} 次真实请求（算术校验、识图、JSON Schema、工具调用、中转线索），会消耗渠道额度，每次同时检测 2 个模型。深度研究、图像和视频模型默认不勾选。",
@@ -1980,7 +1980,9 @@
       "cancelOnDisconnectHint": "客户端中途停止流式回复时，关闭到上游的连接，让上游停止生成、只按已生成的输出计费；此时输出 token 由本地估算。自动：官方接口和订阅账号开启，其他上游关闭。若中转站在断开后仍按完整回复扣费，请关闭。",
       "danger": "危险操作",
       "dangerHint": "复制会用同一密钥和设置新建一个渠道；删除不能撤销",
-      "name": "名称"
+      "name": "名称",
+      "otherUnused": "这个供应商不读取这个字段，可以清空",
+      "n2rPlaceholder": "模型名\n-不转换的模型名"
     },
     "chart": {
       "aria": "各渠道请求量",
@@ -2035,7 +2037,8 @@
       "lowBalance": "余额 {{balance}} 低于 {{threshold}}",
       "refreshBalance": "刷新余额",
       "setKey": "去处理",
-      "view": "查看"
+      "view": "查看",
+      "title": "需要处理"
     },
     "lane": {
       "allOff": "全部停用",
@@ -2059,7 +2062,14 @@
       "pruned_other": "移除了 {{count}} 个上游已不存在的模型，保存后生效",
       "remove": "移除 {{model}}",
       "syncPrices": "同步价格",
-      "ttft": "首字"
+      "ttft": "首字",
+      "supplyNote": "保存后，模型列表和映射的改动会同步到由这个渠道生成的供应：新加的模型自动接入同名的公开模型，改映射会更新发给上游的名字，移除的模型会撤下供应。手动添加或在模型页改过上游名的供应保持不变。",
+      "saved": {
+        "summary": "已保存，{{changes}}",
+        "attached_other": "新接入 {{count}} 个公开模型",
+        "updated_other": "{{count}} 个供应改用新的上游名",
+        "removed_other": "撤下 {{count}} 个供应"
+      }
     },
     "monitor": {
       "checkNow": "立即检查模型列表",
@@ -2403,6 +2413,14 @@
       "latency": "成功请求的平均耗时",
       "balance": "上游余额；订阅类显示本期用量",
       "enabled": "关闭后不再接收请求"
+    },
+    "menu": {
+      "multiTest": "测试多个模型",
+      "multiTestHint": "逐个模型测连通和延迟",
+      "check": "能力检测",
+      "checkHint": "用真实请求校验识图、工具调用等，消耗额度",
+      "drift": "对比上游模型",
+      "driftHint": "看上游新增或下架了哪些模型"
     }
   },
   "nav": {
@@ -2567,6 +2585,8 @@
     "channel": "渠道",
     "model": "模型",
     "upstream": "上游模型",
+    "upstreamSame": "同名",
+    "upstreamSameTip": "以 {{name}} 发给上游，与公开名相同",
     "priority": "优先级",
     "weight": "权重",
     "stateLabel": "状态",
