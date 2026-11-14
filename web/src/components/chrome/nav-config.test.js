@@ -233,6 +233,7 @@ describe('commandSections', () => {
     expect(typed(7, 'admin')).toEqual([
       ['settings_org_general', '/panel/settings/org/7/general', 'settingsUi.sections.org'],
       ['settings_org_members', '/panel/settings/org/7/members', 'settingsUi.sections.org'],
+      ['settings_org_model-access', '/panel/settings/org/7/model-access', 'settingsUi.sections.org'],
       ['settings_org_danger', '/panel/settings/org/7/danger', 'settingsUi.sections.org'],
       ['settings_personal_profile', '/panel/settings/account/profile', 'settingsUi.sections.personal'],
       ['settings_personal_security', '/panel/settings/account/security', 'settingsUi.sections.personal'],
