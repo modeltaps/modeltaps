@@ -2,7 +2,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { CloudDownload, Copy, Eraser, KeyRound, Loader2, Plus, RefreshCw, Trash2, X, AlertTriangle } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  CloudDownload,
+  Copy,
+  KeyRound,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Trash2,
+  X,
+  AlertTriangle
+} from 'lucide-react';
 
 import { timestamp2string } from 'utils/common';
 import { configText } from 'i18n/configText';
@@ -11,20 +24,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/components/ui/sonner';
 import ProviderIcon from '@/components/brand/ProviderIcon';
 import { BrandIconRefreshButton } from '@/components/brand/BrandIconPicker';
 import { iconCacheHost } from '@/components/brand/brandIconManifest';
-import { formatBalance, metricsByModel } from './channelMetrics';
+import { formatBalance, metricsByModel, modelSignal } from './channelMetrics';
 import {
   applyChannelPricing,
+  fetchChannelModelDetails,
   fetchChannelPrices,
-  fetchUpstreamModelList,
+  fetchChannelUpstreamModels,
   fetchUpstreamModelPicker,
   previewChannelPricing,
   refreshChannelPrices
 } from './channelApi';
-import { priceDetails, priceIndex, priceSummary, upstreamNameOf } from './channelPrices';
+import { amount, priceIndex, priceSummary, sortByTokenPrice, upstreamNameOf } from './channelPrices';
+import { lossOf, orderByRank, sortByName } from './channelModelDetails';
+import { STATE_FILTERS, isGone, matchesState, offerOf, snapshotOf, stateCounts, unlistedOf } from './channelModelStates';
+import { CAPABILITY_FILTERS, formatContext } from './modelPicker';
 import { buildModelSuggestions, fetchPriceList } from './modelSuggestions';
 import { splitList } from './channelGroups';
 import { usageNumbers, usageOf, usageOptions, usagePeers } from './channelUsage';
@@ -41,16 +59,16 @@ import PluginForm from './PluginForm';
 import pluginConfig from './pluginConfig';
 import PriceSyncDialog from './PriceSyncDialog';
 import ModelSelectorModal from './ModelSelectorModal';
-import ChannelSupplies from '../ModelInfo/supply/ChannelSupplies';
-import UpstreamModels from './UpstreamModels';
 import BalanceAlertField from './BalanceAlertField';
+import { attachPendingModel } from '../ModelInfo/supply/supplyApi';
+import { modelSupplyPath } from '../ModelInfo/supply/supplyHelpers';
+import { performanceTab } from './PerformanceTab';
 
 // Tabs of the channel panel (see components/objects/ObjectPanel). Each tab edits a part of the
 // channel on its own: `make(channel)` builds the tab's draft, `patch(draft, channel, ctx)` turns
 // it into the fields to save (or `{ error }`), and `Body` renders the draft.
 
 const pct = (v) => (v === null || v === undefined ? '—' : `${(v * 100).toFixed(1)}%`);
-const sec = (v) => (v === null || v === undefined ? '—' : `${(v / 1000).toFixed(2)} s`);
 const trimSlash = (s) => (s.endsWith('/') ? s.slice(0, -1) : s);
 
 function prettyJson(raw) {
@@ -98,39 +116,258 @@ function ToolButton({ busy, icon: Icon, children, ...props }) {
 
 ToolButton.propTypes = { busy: PropTypes.bool, icon: PropTypes.elementType, children: PropTypes.node, disabled: PropTypes.bool };
 
-// What the upstream charges for one listed model. The tooltip lists every price it states.
-function UpstreamPriceCell({ price }) {
+// What the upstream charges for one listed model, as the Input and Output cells. A model not
+// priced per token (per image, per second, per request, free, other, or no price) gets one cell
+// across both.
+function UpstreamPriceCells({ price, publics }) {
   const { t } = useTranslation();
   const summary = priceSummary(price);
-  if (!summary) {
-    return (
+  if (summary?.kind === 'tokens') {
+    return ['input', 'output'].map((key) => {
+      const loss = lossOf(price, publics, key);
+      return (
+        <td key={key} className="text-right tabular-nums">
+          {loss ? (
+            <LossMark
+              text={t(`channels.models.loss_${key}`, { model: loss.model, sell: amount(loss.sell), cost: amount(loss.cost) })}
+              value={summary[key]}
+            />
+          ) : (
+            summary[key]
+          )}
+        </td>
+      );
+    });
+  }
+  let content;
+  if (!summary)
+    content = (
       <span className="text-muted-foreground" title={t('channels.models.priceMissing')}>
         —
       </span>
     );
-  }
-  if (summary.kind === 'other') {
-    return (
+  else if (summary.kind === 'other')
+    content = (
       <span className="text-muted-foreground" title={t('channels.models.priceOtherHint')}>
         {t('channels.models.priceOther')}
       </span>
     );
-  }
-  const text =
-    summary.kind === 'tokens'
-      ? summary.text
-      : summary.kind === 'free'
-        ? t('channels.models.priceFree')
-        : t(`channels.models.price_${summary.kind}`, { price: summary.value });
-  const details = priceDetails(price)
-    .map(([key, value]) => `${t(`channels.models.priceKey.${key}`)} ${value}`)
-    .join('\n');
-  return <span title={details || undefined}>{text}</span>;
+  else if (summary.kind === 'free') content = t('channels.models.priceFree');
+  else content = t(`channels.models.price_${summary.kind}`, { price: summary.value });
+  return (
+    <td colSpan={2} className="text-right tabular-nums">
+      {content}
+    </td>
+  );
 }
 
-UpstreamPriceCell.propTypes = { price: PropTypes.object };
+UpstreamPriceCells.propTypes = { price: PropTypes.object, publics: PropTypes.array };
+
+// A price the upstream charges above what a public model it serves sells for.
+function LossMark({ text, value }) {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex items-center gap-1 text-warning" aria-label={text}>
+            <AlertTriangle className="size-3" />
+            {value}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-64 whitespace-normal text-xs">{text}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+LossMark.propTypes = { text: PropTypes.string.isRequired, value: PropTypes.node };
+
+// Small action at the end of a model's second line.
+function LineAction({ busy, onClick, children }) {
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={onClick}
+      className="inline-flex shrink-0 items-center gap-1 rounded px-1 text-xs text-foreground underline-offset-2 hover:underline disabled:opacity-50"
+    >
+      {busy && <Loader2 className="size-3 animate-spin" />}
+      {children}
+    </button>
+  );
+}
+
+LineAction.propTypes = { busy: PropTypes.bool, onClick: PropTypes.func, children: PropTypes.node };
+
+// Second line of a model's name while supplies route requests: the public model it is offered
+// as (+N more), or why it is not offered with the step that offers it.
+function PublicLine({ publics, offer, busy, onAttach }) {
+  const { t } = useTranslation();
+  if (!publics) return null;
+  if (offer && !offer.offered) {
+    const first = publics[0];
+    const vars = { model: first?.model || offer.sameAs || offer.suggested, other: offer.suppliedBy };
+    const reason = `${t('channels.models.notOffered')} · ${t(`channels.models.unoffered.${offer.reason}`, vars)}`;
+    // The line gives the reason alone (it implies "not offered"), a duplicate's in short; the
+    // tooltip says it in full.
+    const line = t(`channels.models.unoffered.${offer.reason === 'duplicate' ? 'duplicateShort' : offer.reason}`, vars);
+    return (
+      <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+        <span className="min-w-0 truncate" title={reason}>
+          {line}
+        </span>
+        {offer.reason === 'duplicate' && offer.suggested && (
+          <LineAction busy={busy} onClick={() => onAttach(offer.suggested, true)}>
+            {t('channels.models.addAsOwn', { model: offer.suggested })}
+          </LineAction>
+        )}
+        {offer.reason === 'not_in_catalog' && offer.suggested && (
+          <LineAction busy={busy} onClick={() => onAttach(offer.suggested, true)}>
+            {t('channels.models.addToCatalog')}
+          </LineAction>
+        )}
+        {offer.reason === 'no_supply' && (
+          <LineAction busy={busy} onClick={() => onAttach(offer.suggested, false)}>
+            {t('channels.models.attach', { model: offer.suggested })}
+          </LineAction>
+        )}
+        {offer.reason === 'off' && first && (
+          <Link to={modelSupplyPath(first.model)} className="shrink-0 px-1 text-foreground underline-offset-2 hover:underline">
+            {t('channels.models.openSupply')}
+          </Link>
+        )}
+      </span>
+    );
+  }
+  if (!publics.length) return <span className="block truncate text-xs text-muted-foreground">{t('channels.models.notOffered')}</span>;
+  const first = publics[0];
+  return (
+    <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+      <span className="shrink-0">{t('channels.models.offeredAs')}</span>
+      <Link
+        to={modelSupplyPath(first.model)}
+        className={cn('min-w-0 truncate font-mono hover:text-foreground hover:underline', !first.enabled && 'line-through')}
+      >
+        {first.model}
+      </Link>
+      {publics.length > 1 && <span className="shrink-0">+{publics.length - 1}</span>}
+    </span>
+  );
+}
+
+PublicLine.propTypes = { publics: PropTypes.array, offer: PropTypes.object, busy: PropTypes.bool, onAttach: PropTypes.func };
+
+// One filter chip above the model table: a click shows only its rows, a second click shows all.
+function FilterChip({ active, onClick, icon, label, count }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        'inline-flex h-[26px] items-center gap-1 rounded-full border px-2.5 text-xs',
+        active ? 'border-foreground/30 bg-muted text-foreground' : 'border-border bg-field text-muted-foreground hover:text-foreground'
+      )}
+    >
+      {icon}
+      {label}
+      <span className="tabular-nums">{count}</span>
+    </button>
+  );
+}
+
+FilterChip.propTypes = {
+  active: PropTypes.bool,
+  onClick: PropTypes.func,
+  icon: PropTypes.node,
+  label: PropTypes.string,
+  count: PropTypes.number
+};
+
+const MODALITIES = ['image', 'audio', 'video', 'file', 'pdf'];
+
+// Tooltip text of a model's name: release date, context, what it can do and why it is where it
+// is in the usual order.
+function modelHint(t, name, d) {
+  if (!d) return name;
+  const lines = [name];
+  if (d.public?.length) {
+    lines.push(
+      `${t('channels.models.public')}: ${d.public.map((p) => (p.enabled ? p.model : `${p.model} (${t('channels.models.supplyOff')})`)).join(', ')}`
+    );
+  }
+  const facts = [];
+  if (d.released_at) facts.push(t('channels.models.hint.released', { date: new Date(d.released_at * 1000).toISOString().slice(0, 10) }));
+  if (d.context_length) facts.push(t('channels.models.hint.context', { context: formatContext(d.context_length) }));
+  if (facts.length) lines.push(facts.join(' · '));
+  const caps = (d.capabilities || []).map((c) => (CAPABILITY_FILTERS.includes(c) ? t(`channel_edit.picker.cap_${c}`) : c));
+  const inputs = (d.input_modalities || []).filter((m) => m !== 'text');
+  const modality = (m) => (MODALITIES.includes(m) ? t(`channels.models.hint.modality.${m}`) : m);
+  if (inputs.length) caps.push(...inputs.map((m) => t('channels.models.hint.input', { modality: modality(m) })));
+  if (caps.length) lines.push(caps.join(t('channels.created.comma')));
+  lines.push(
+    d.family_requests
+      ? t('channels.models.hint.rankUsed', { rank: d.rank, family: d.family, count: d.family_requests })
+      : t('channels.models.hint.rankFallback', { rank: d.rank, family: d.family })
+  );
+  return lines.join('\n');
+}
+
+// Header of a sortable column: a click sorts ascending, then descending, then back to the usual
+// order.
+function SortHeader({ label, active, dir, onClick, title, align = 'right' }) {
+  const Icon = !active ? ArrowUpDown : dir === 'asc' ? ArrowUp : ArrowDown;
+  return (
+    <th
+      className={align === 'right' ? 'text-right' : undefined}
+      aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+      title={title}
+    >
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn('inline-flex items-center gap-1 hover:text-foreground', active && 'text-foreground')}
+      >
+        {label}
+        <Icon className={cn('size-3', !active && 'opacity-50')} />
+      </button>
+    </th>
+  );
+}
+
+SortHeader.propTypes = {
+  label: PropTypes.node.isRequired,
+  active: PropTypes.bool,
+  dir: PropTypes.oneOf(['asc', 'desc']),
+  onClick: PropTypes.func.isRequired,
+  title: PropTypes.string,
+  align: PropTypes.oneOf(['left', 'right'])
+};
 
 // ---------- Models ----------
+
+// Flag after a model's name when most of its requests in the range failed. The tooltip gives
+// the numbers.
+function ModelSignal({ signal, m, range }) {
+  const { t } = useTranslation();
+  // Unused models are not marked row by row: on a large upstream list most of them are.
+  if (signal !== 'failing') return null;
+  const text = t('channels.models.signal.failing', { range, rate: pct(m.successRate), failures: m.failures, requests: m.requests });
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span role="img" aria-label={text} className="inline-flex shrink-0 text-warning">
+            <AlertTriangle className="size-3.5" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="text-xs">{text}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+ModelSignal.propTypes = { signal: PropTypes.oneOf(['idle', 'failing']), m: PropTypes.object, range: PropTypes.string.isRequired };
 
 // Search text of a row in the channel's model list.
 const modelRowText = (row) => row.name;
@@ -138,20 +375,88 @@ const modelRowText = (row) => row.name;
 function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   const { t } = useTranslation();
   const labels = typeLabels(channel.type);
-  const models = splitList(draft.models);
-  const mapping = parseMapping(draft.mapping) || {};
+  const models = useMemo(() => splitList(draft.models), [draft.models]);
+  // The mapping is edited on the Advanced tab; this tab reads the saved one.
+  const mapping = useMemo(() => parseMapping(channel.model_mapping) || {}, [channel.model_mapping]);
+  // Traffic only flags models here (unused or failing); the numbers live on the Performance
+  // tab. Metrics are keyed by the name sent upstream, so a mapped model is looked up by its target.
   const perModel = useMemo(
     () => new Map(metricsByModel((ctx.metricsRows || []).filter((r) => Number(r.channel_id) === channel.id)).map((m) => [m.model, m])),
     [ctx.metricsRows, channel.id]
   );
+  const hasTraffic = useMemo(() => [...perModel.values()].some((m) => m.requests > 0), [perModel]);
+  // Details of the list as edited (catalog metadata, the usual order, public models and why a
+  // model is not offered), read again shortly after the list changes or a model is offered.
+  const [details, setDetails] = useState(null);
+  const [detailsStamp, setDetailsStamp] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    const timer = setTimeout(() => {
+      fetchChannelModelDetails(channel.id, splitList(draft.models), mapping)
+        .then((list) => alive && setDetails(new Map(list.map((d) => [d.model, d]))))
+        .catch(() => alive && setDetails((cur) => cur || new Map()));
+    }, 300);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [channel.id, draft.models, mapping, detailsStamp]);
+  const detailOf = (name) => details?.get(name);
+
+  // What the upstream listed at the last model check, read again after each check.
+  const checkedAt = channel.model_drift?.checked_at || 0;
+  const [upstreamList, setUpstreamList] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    fetchChannelUpstreamModels(channel.id)
+      .then((data) => alive && setUpstreamList(data))
+      .catch(() => alive && setUpstreamList(null));
+    return () => {
+      alive = false;
+    };
+  }, [channel.id, checkedAt]);
+  const snapshot = useMemo(() => snapshotOf(upstreamList), [upstreamList]);
+  const unlisted = useMemo(() => unlistedOf(upstreamList, models, mapping), [upstreamList, models, mapping]);
+
+  // The channel's own order; the table shows the usual order below (most used families first).
   const rows = useMemo(
     () =>
-      models
-        .map((name, i) => ({ name, i, m: perModel.get(name) }))
-        .sort((a, b) => (b.m?.requests || 0) - (a.m?.requests || 0) || a.i - b.i),
-    [models, perModel]
+      splitList(draft.models).map((name) => {
+        const m = perModel.get(upstreamNameOf(name, mapping));
+        return {
+          name,
+          m,
+          signal: modelSignal(m, hasTraffic),
+          offer: ctx.supplyRouting ? offerOf(details?.get(name)) : null,
+          gone: isGone(name, mapping, snapshot)
+        };
+      }),
+    [draft.models, mapping, perModel, hasTraffic, ctx.supplyRouting, details, snapshot]
   );
-  const list = useLongList(rows, { text: modelRowText });
+  const range = t(`channels.range.short.${ctx.rangeKey}`);
+  // Showing only the rows of one filter (a state, or unused / failing traffic); '' shows all.
+  const [picked, setOnly] = useState('');
+  const counts = useMemo(() => stateCounts(rows, unlisted), [rows, unlisted]);
+  // Offered / not offered only mean something while supplies route requests; gone and unlisted
+  // need an upstream list.
+  const stateKeys = STATE_FILTERS.filter((key) =>
+    key === 'offered' || key === 'unoffered' ? ctx.supplyRouting && details : key === 'gone' ? snapshot : counts.unlisted > 0
+  );
+  // A filter whose chip went away (the last unlisted model was added) shows everything again.
+  const only = STATE_FILTERS.includes(picked) && !stateKeys.includes(picked) ? '' : picked;
+  const signalCounts = useMemo(() => {
+    const out = { idle: 0, failing: 0 };
+    for (const r of rows) if (r.signal) out[r.signal] += 1;
+    return out;
+  }, [rows]);
+  const filtered = useMemo(
+    () => (!only ? rows : STATE_FILTERS.includes(only) ? rows.filter((r) => matchesState(r, only)) : rows.filter((r) => r.signal === only)),
+    [rows, only]
+  );
+  // Sorting by name or an upstream price is asked for from the column header; otherwise the usual
+  // order from the model details.
+  const [sort, setSort] = useState(null);
+  const nextSort = (key) => setSort((cur) => (cur?.key !== key ? { key, dir: 'asc' } : cur.dir === 'asc' ? { key, dir: 'desc' } : null));
   // The mapping column only earns its width when some model is mapped.
   const hasMapping = models.some((name) => mapping[name]);
   const [adding, setAdding] = useState(false);
@@ -174,7 +479,17 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
     };
   }, [channel.id]);
   const pricesByModel = useMemo(() => priceIndex(upstreamPrices?.prices), [upstreamPrices]);
+
   const showPrices = Boolean(upstreamPrices?.supported);
+  const shown = useMemo(() => {
+    if (sort?.key === 'name') return sortByName(filtered, sort.dir);
+    if (sort && showPrices) {
+      return sortByTokenPrice(filtered, sort.key, sort.dir, (r) => pricesByModel.get(upstreamNameOf(r.name, mapping)));
+    }
+    return orderByRank(filtered, (r) => details?.get(r.name));
+  }, [filtered, sort, showPrices, pricesByModel, mapping, details]);
+  const showPublic = Boolean(ctx.supplyRouting);
+  const list = useLongList(shown, { text: modelRowText });
 
   useEffect(() => {
     if (adding && prices === null) fetchPriceList().then(setPrices);
@@ -204,23 +519,30 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
     }
   };
 
-  const fetchFromUpstream = () =>
-    run('fetch', async () => {
-      const list = await fetchUpstreamModelList(body);
-      const merged = Array.from(new Set([...models, ...list]));
-      setDraft({ ...draft, models: merged.join(',') });
-      toast.success(t('channels.models.fetched', { count: merged.length - models.length }));
+  // Offers a listed model: as the public model it belongs to, or (create) as a new draft catalog
+  // model, which is listed once it has a price and is published on the model page.
+  const attach = (name, publicModel, create) =>
+    run(`attach:${name}`, async () => {
+      const { success, message } = await attachPendingModel({
+        upstream_model: upstreamNameOf(name, mapping),
+        model: publicModel,
+        channel_ids: [channel.id],
+        create
+      });
+      if (!success) throw new Error(message);
+      toast.success(t(create ? 'channels.models.addedToCatalog' : 'channels.models.attached', { model: publicModel }));
+      setDetailsStamp((n) => n + 1);
     });
-
-  const pruneStale = () =>
-    run('prune', async () => {
-      const list = new Set(await fetchUpstreamModelList(body));
-      const aliases = new Set(Object.keys(mapping));
-      const stale = models.filter((m) => !list.has(m) && !aliases.has(m) && !m.endsWith('*'));
-      if (!stale.length) return toast.success(t('channel_edit.pruneNone'));
-      setDraft({ ...draft, models: models.filter((m) => !stale.includes(m)).join(',') });
-      toast.success(t('channels.models.pruned', { count: stale.length }));
-    });
+  const addNames = (names) => {
+    setDraft({ ...draft, models: Array.from(new Set([...models, ...names])).join(',') });
+    toast.success(t('channels.models.fetched', { count: names.length }));
+  };
+  const removeGone = () => {
+    const gone = new Set(rows.filter((r) => r.gone).map((r) => r.name));
+    setDraft({ ...draft, models: models.filter((m) => !gone.has(m)).join(',') });
+    toast.success(t('channels.models.pruned', { count: gone.size }));
+    setOnly('');
+  };
 
   const priceChannel = () => ({
     id: channel.id,
@@ -263,17 +585,19 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
         <span className="text-[13px] text-muted-foreground">
           {t('channels.models.count', { count: models.length })}
           {channel.drift_auto_add ? ` · ${t('channels.models.autoAdd')}` : ''}
+          {labels.canFetchModels &&
+            ` · ${checkedAt ? t('channelDetail.driftCheckedAt', { time: timestamp2string(checkedAt) }) : t('channelDetail.driftNever')}`}
         </span>
         <span className="flex-1" />
         {labels.canFetchModels && (
-          <>
-            <ToolButton icon={RefreshCw} busy={busy === 'fetch'} onClick={fetchFromUpstream}>
-              {t('channels.models.fetch')}
-            </ToolButton>
-            <ToolButton icon={Eraser} busy={busy === 'prune'} onClick={pruneStale} title={t('channel_edit.pruneStaleTip')}>
-              {t('channels.models.prune')}
-            </ToolButton>
-          </>
+          <ToolButton
+            icon={RefreshCw}
+            busy={Boolean(ctx.busy?.drift)}
+            onClick={() => ctx.actions?.onCheckDrift(channel)}
+            title={t('channels.models.checkHint')}
+          >
+            {t('channels.models.check')}
+          </ToolButton>
         )}
         {(channel.type === 20 || channel.type === 62) && (
           <ToolButton icon={CloudDownload} busy={busy === 'price'} onClick={syncPrices}>
@@ -306,96 +630,179 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
         </p>
       ) : (
         <>
+          {(stateKeys.length > 0 || signalCounts.idle > 0 || signalCounts.failing > 0) && (
+            <div className="flex flex-wrap items-center gap-1.5 pb-2 text-[13px]">
+              {stateKeys.map((key) => (
+                <FilterChip
+                  key={key}
+                  active={only === key}
+                  onClick={() => setOnly(only === key ? '' : key)}
+                  icon={key === 'gone' && counts.gone > 0 ? <AlertTriangle className="size-3 text-warning" /> : null}
+                  label={t(`channels.models.state.${key}`)}
+                  count={counts[key]}
+                />
+              ))}
+              {(signalCounts.idle > 0 || signalCounts.failing > 0) && (
+                <>
+                  {stateKeys.length > 0 && <span className="mx-1 h-4 w-px bg-border" />}
+                  <span className="text-muted-foreground">{t('channels.models.signal.label', { range })}</span>
+                  {['idle', 'failing'].map(
+                    (key) =>
+                      signalCounts[key] > 0 && (
+                        <FilterChip
+                          key={key}
+                          active={only === key}
+                          onClick={() => setOnly(only === key ? '' : key)}
+                          icon={key === 'failing' ? <AlertTriangle className="size-3 text-warning" /> : null}
+                          label={t(`channels.models.signal.${key}Filter`)}
+                          count={signalCounts[key]}
+                        />
+                      )
+                  )}
+                </>
+              )}
+              {only === 'gone' && counts.gone > 0 && (
+                <Button variant="outline" size="sm" className="ml-auto h-[26px] rounded-lg bg-card text-xs" onClick={removeGone}>
+                  {t('channels.models.removeGone', { count: counts.gone })}
+                </Button>
+              )}
+              {only === 'unlisted' && counts.unlisted > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto h-[26px] rounded-lg bg-card text-xs"
+                  onClick={() => addNames(unlisted.map((u) => u.name))}
+                >
+                  {t('channels.models.addUnlisted', { count: unlisted.length })}
+                </Button>
+              )}
+            </div>
+          )}
           <LongListSearch list={list} className="pb-2" />
           <div className="overflow-hidden rounded-lg border border-border">
-            {/* Fixed widths for the numbers, so the model name gets the rest of the panel. */}
+            {/* Fixed widths for the narrow columns, so the model name gets the rest of the panel. */}
             <table className="w-full table-fixed border-collapse text-[13px]">
               <colgroup>
                 <col />
-                {hasMapping && <col className="w-[28%]" />}
-                {showPrices && <col className="w-[7rem]" />}
+                {hasMapping && <col className="w-[22%]" />}
                 <col className="w-[4.5rem]" />
-                <col className="w-[4.5rem]" />
-                <col className="w-[4.5rem]" />
-                <col className="w-[4rem]" />
+                {showPrices && <col className="w-[5.5rem]" />}
+                {showPrices && <col className="w-[5.5rem]" />}
                 <col className="w-9" />
               </colgroup>
               <thead>
                 <tr className="text-left text-xs text-muted-foreground [&>th]:h-9 [&>th]:whitespace-nowrap [&>th]:border-b [&>th]:border-border [&>th]:px-3 [&>th]:font-medium">
-                  <th>{t('channels.models.model')}</th>
+                  <SortHeader
+                    align="left"
+                    label={t('channels.models.model')}
+                    active={sort?.key === 'name'}
+                    dir={sort?.dir}
+                    onClick={() => nextSort('name')}
+                    title={t('channels.models.orderHint')}
+                  />
                   {hasMapping && <th>{t('channels.models.mappedTo')}</th>}
-                  {showPrices && (
-                    <th
-                      className="text-right"
-                      title={
-                        upstreamPrices.synced_at
-                          ? t('channels.models.upstreamPriceHint', { time: timestamp2string(upstreamPrices.synced_at) })
-                          : t('channels.models.upstreamPriceNever')
-                      }
-                    >
-                      {t('channels.models.upstreamPrice')}
-                    </th>
-                  )}
-                  <th className="text-right">{t('channels.table.requests', { range: t(`channels.range.short.${ctx.rangeKey}`) })}</th>
-                  <th className="text-right">{t('channels.table.successRate')}</th>
-                  <th className="text-right">{t('channels.table.avgLatency')}</th>
-                  <th className="text-right">{t('channels.models.ttft')}</th>
+                  <th className="text-right">{t('channels.models.context')}</th>
+                  {showPrices &&
+                    ['input', 'output'].map((key) => (
+                      <SortHeader
+                        key={key}
+                        label={t(`channels.models.upstreamPrice_${key}`)}
+                        active={sort?.key === key}
+                        dir={sort?.dir}
+                        onClick={() => nextSort(key)}
+                        title={
+                          upstreamPrices.synced_at
+                            ? t('channels.models.upstreamPriceHint', { time: timestamp2string(upstreamPrices.synced_at) })
+                            : t('channels.models.upstreamPriceNever')
+                        }
+                      />
+                    ))}
                   <th />
                 </tr>
               </thead>
               <tbody>
-                {list.visible.map(({ name, m }) => (
-                  <tr
-                    key={name}
-                    className="[&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0"
-                  >
-                    <td className="font-mono" title={name}>
-                      {name}
-                    </td>
-                    {hasMapping && (
-                      <td className="font-mono text-muted-foreground" title={mapping[name] || ''}>
-                        {mapping[name] || '—'}
+                {only !== 'unlisted' &&
+                  list.visible.map(({ name, m, signal, offer, gone }) => (
+                    <tr
+                      key={name}
+                      className="[&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0"
+                    >
+                      <td title={modelHint(t, name, detailOf(name))}>
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <span className="min-w-0 truncate font-mono">{name}</span>
+                          <ModelSignal signal={signal} m={m} range={range} />
+                          {gone && (
+                            <span className="shrink-0 rounded bg-warning/10 px-1.5 text-[11px] leading-[18px] text-warning">
+                              {t('channels.models.state.gone')}
+                            </span>
+                          )}
+                        </span>
+                        {showPublic && (
+                          <PublicLine
+                            publics={detailOf(name)?.public}
+                            offer={offer}
+                            busy={busy === `attach:${name}`}
+                            onAttach={(publicModel, create) => attach(name, publicModel, create)}
+                          />
+                        )}
                       </td>
-                    )}
-                    {showPrices && (
-                      <td className="text-right tabular-nums">
-                        <UpstreamPriceCell price={pricesByModel.get(upstreamNameOf(name, mapping))} />
+                      {hasMapping && (
+                        <td className="font-mono text-muted-foreground" title={mapping[name] || ''}>
+                          {mapping[name] || '—'}
+                        </td>
+                      )}
+                      <td className="text-right tabular-nums text-muted-foreground">
+                        {formatContext(detailOf(name)?.context_length) || '—'}
                       </td>
-                    )}
-                    <td className="text-right tabular-nums">
-                      {m?.requests ? m.requests.toLocaleString() : <span className="text-muted-foreground">0</span>}
-                    </td>
-                    <td className="text-right tabular-nums">{m?.requests ? pct(m.successRate) : '—'}</td>
-                    <td className="text-right tabular-nums">{m?.requests ? sec(m.avgLatencyMs) : '—'}</td>
-                    <td className="text-right tabular-nums">{m?.avgTtftMs != null ? sec(m.avgTtftMs) : '—'}</td>
-                    <td className="!px-1 text-right">
-                      <button
-                        type="button"
-                        aria-label={t('channels.models.remove', { model: name })}
-                        onClick={() => remove(name)}
-                        className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                      >
-                        <X className="size-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      {showPrices && (
+                        <UpstreamPriceCells price={pricesByModel.get(upstreamNameOf(name, mapping))} publics={detailOf(name)?.public} />
+                      )}
+                      <td className="!px-1 text-right">
+                        <button
+                          type="button"
+                          aria-label={t('channels.models.remove', { model: name })}
+                          onClick={() => remove(name)}
+                          className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                {only === 'unlisted' &&
+                  unlisted.map((u) => (
+                    <tr
+                      key={u.name}
+                      data-testid="unlisted-model"
+                      className="[&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0"
+                    >
+                      <td colSpan={hasMapping ? 3 : 2}>
+                        <span className="block min-w-0 truncate font-mono">{u.name}</span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {t(`channels.models.unlistedState.${u.state}`, { model: u.public_model, defaultValue: u.state })}
+                        </span>
+                      </td>
+                      {showPrices && <UpstreamPriceCells price={pricesByModel.get(u.name)} publics={[]} />}
+                      <td className="!px-1 text-right">
+                        <button
+                          type="button"
+                          aria-label={t('channels.models.addOne', { model: u.name })}
+                          onClick={() => addNames([u.name])}
+                          className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          <Plus className="size-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
-            <LongListMore list={list} />
+            {only !== 'unlisted' && <LongListMore list={list} />}
           </div>
         </>
       )}
 
-      <Field className="mt-2" label={configText(t, labels.label.model_mapping)} optional hint={t('channels.models.mappingHint')}>
-        <ModelMappingInput key={ctx.version} value={draft.mapping} models={models} onChange={(v) => setDraft({ ...draft, mapping: v })} />
-      </Field>
-
       {ctx.supplyRouting && <p className="mt-2 text-xs text-muted-foreground">{t('channels.models.supplyNote')}</p>}
-
-      <UpstreamModels key={channel.id} channelId={channel.id} canCheck={Boolean(labels.canFetchModels)} />
-
-      <ChannelSupplies channelId={channel.id} />
 
       <ModelSelectorModal
         open={!!selector}
@@ -414,19 +821,11 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
 
 const modelsTab = {
   key: 'models',
-  make: (c) => {
-    const mapping = parseMapping(c.model_mapping);
-    return { models: splitList(c.models).join(','), mapping: mapping && Object.keys(mapping).length ? JSON.stringify(mapping) : '' };
-  },
+  make: (c) => ({ models: splitList(c.models).join(',') }),
   patch: (d, c, { t }) => {
     const models = splitList(d.models);
     if (!models.length) return { error: t('channel_edit.requiredModels') };
-    const mapping = parseMapping(d.mapping);
-    if (mapping === null) return { error: t('channels.models.mappingInvalid') };
-    return {
-      models: applyMappingToModels(models, mapping).join(','),
-      model_mapping: Object.keys(mapping).length ? JSON.stringify(mapping) : ''
-    };
+    return { models: applyMappingToModels(models, parseMapping(c.model_mapping) || {}).join(',') };
   },
   Body: ModelsBody
 };
@@ -877,6 +1276,9 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
   const labels = typeLabels(channel.type);
   const hasPlugin = Boolean(pluginConfig[String(channel.type)]);
   const [iconKey, setIconKey] = useState(0);
+  // The model mapping is rarely needed (an upstream that wants its own deployment names), so it
+  // stays folded away until it has entries or is opened.
+  const [mappingOpen, setMappingOpen] = useState(false);
   const set = (k) => (e) => setDraft({ ...draft, [k]: e?.target ? e.target.value : e });
   return (
     <>
@@ -919,6 +1321,25 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
           </Select>
         </Field>
       </div>
+      {draft.mapping || mappingOpen ? (
+        <Field label={configText(t, labels.label.model_mapping)} optional hint={t('channels.models.mappingHint')}>
+          <ModelMappingInput
+            key={ctx.version}
+            value={draft.mapping}
+            models={splitList(channel.models)}
+            onChange={(v) => setDraft({ ...draft, mapping: v })}
+          />
+        </Field>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setMappingOpen(true)}
+          className="inline-flex items-center gap-1 self-start text-[13px] text-muted-foreground hover:text-foreground"
+        >
+          <Plus className="size-3.5" />
+          {t('channels.models.addMapping')}
+        </button>
+      )}
       <Field
         label={configText(t, labels.label.disabled_stream)}
         htmlFor="cp-nostream"
@@ -1028,11 +1449,17 @@ const advancedTab = {
     disabled_stream: Array.isArray(c.disabled_stream) ? c.disabled_stream.join(',') : '',
     need2response_models: c.need2response_models || '',
     plugin: c.plugin && typeof c.plugin === 'object' ? c.plugin : {},
+    mapping: (() => {
+      const mapping = parseMapping(c.model_mapping);
+      return mapping && Object.keys(mapping).length ? JSON.stringify(mapping) : '';
+    })(),
     ...Object.fromEntries(FLAGS.map((f) => [f, !!c[f]])),
     cancel_on_disconnect: cancelOnDisconnectDraft(c.cancel_on_disconnect)
   }),
   patch: (d, c, { t }) => {
     if (!d.name.trim()) return { error: t('channel_edit.requiredName') };
+    const mapping = parseMapping(d.mapping);
+    if (mapping === null) return { error: t('channels.models.mappingInvalid') };
     const patch = {
       name: d.name.trim(),
       remark: d.remark.trim(),
@@ -1043,6 +1470,15 @@ const advancedTab = {
       ...Object.fromEntries(FLAGS.map((f) => [f, d[f]])),
       cancel_on_disconnect: cancelOnDisconnectValue(d.cancel_on_disconnect)
     };
+    // A changed mapping rewrites the model list the same way the models tab used to: mapped
+    // upstream names are listed by their request names. The list is sent only then, so saving
+    // this tab otherwise leaves the models and their supplies alone.
+    const mappingJson = Object.keys(mapping).length ? JSON.stringify(mapping) : '';
+    const before = parseMapping(c.model_mapping) || {};
+    if (mappingJson !== (Object.keys(before).length ? JSON.stringify(before) : '')) {
+      patch.model_mapping = mappingJson;
+      patch.models = applyMappingToModels(splitList(c.models), mapping).join(',');
+    }
     if (!typeLabels(c.type).hasOther) patch.other = d.other.trim();
     const plugins = pluginConfig[String(c.type)];
     if (plugins) {
@@ -1061,7 +1497,7 @@ const advancedTab = {
   Body: AdvancedBody
 };
 
-export const PANEL_TABS = [connectionTab, modelsTab, routingTab, rewriteTab, monitorTab, advancedTab];
+export const PANEL_TABS = [connectionTab, modelsTab, performanceTab, routingTab, rewriteTab, monitorTab, advancedTab];
 // Tab a channel opens on when the URL names none; it is left out of the URL.
 export const DEFAULT_PANEL_TAB = PANEL_TABS[0].key;
 

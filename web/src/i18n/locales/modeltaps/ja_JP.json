@@ -2062,44 +2062,95 @@
       "autoAdd": "上流の新しいモデルは自動で追加",
       "count_other": "{{count}} モデル",
       "doneAdding": "完了",
-      "fetch": "上流から取得",
       "fetched_other": "上流から {{count}} モデルを追加しました。保存すると反映されます",
       "mappedTo": "マッピング先",
-      "mappingHint": "リクエストのモデル名を上流の別の名前（デプロイ名など）に対応付けます",
+      "mappingHint": "チャネル単位の名前変更：リクエストのモデル名を上流に送る別の名前に置き換えます。上流が独自名（デプロイ名など）を求める場合だけ使います。モデルカタログとの対応は自動で、ここでの設定は不要です。",
       "mappingInvalid": "モデルマッピングが正しい JSON ではありません",
       "model": "モデル",
       "none": "まだモデルがありません。追加するか上流から取得してください",
-      "prune": "古いものを削除",
       "pruned_other": "上流にない {{count}} モデルを削除しました。保存すると反映されます",
       "remove": "{{model}} を削除",
       "syncPrices": "価格を同期",
       "ttft": "最初のトークン",
-      "supplyNote": "保存すると、モデル一覧とマッピングの変更はこのチャネルから作られた供給に反映されます。追加したモデルは同名の公開モデルに自動で供給され、マッピングを変えると上流に送る名前が更新され、削除したモデルの供給は取り下げられます。手動で追加した供給や、モデルページで上流名を変えた供給はそのままです。",
+      "supplyNote": "保存すると、モデル一覧の変更はこのチャネルから作られた供給に反映されます。追加したモデルは対応する公開モデルに自動で接続され、削除したモデルの供給は取り下げられます。手動で追加した供給や、モデルページで上流名を変更した供給はそのままです。",
       "saved": {
         "summary": "保存しました：{{changes}}",
         "attached_other": "{{count}} 個の公開モデルを新たに供給",
         "updated_other": "{{count}} 件の供給が新しい上流名を使用",
         "removed_other": "{{count}} 件の供給を取り下げ"
       },
-      "upstreamPrice": "上流価格 $/M",
-      "upstreamPriceHint": "100 万トークンあたりの入力 / 出力価格（USD）。上流の価格表から {{time}} に取得",
-      "upstreamPriceNever": "100 万トークンあたりの入力 / 出力価格（USD）。まだ上流から取得していません。「価格を同期」で取得します",
+      "upstreamPrice_input": "入力 $/M",
+      "upstreamPrice_output": "出力 $/M",
+      "upstreamPriceHint": "100 万トークンあたりの価格（USD）。上流の価格表から {{time}} に取得。クリックで並べ替え",
+      "upstreamPriceNever": "100 万トークンあたりの価格（USD）。まだ上流から取得していません。「価格を同期」で取得します",
       "priceMissing": "上流がこのモデルの価格を公開していません",
       "priceFree": "無料",
       "price_image": "{{price}} / 枚",
       "price_request": "{{price}} / 回",
-      "priceKey": {
-        "input": "入力",
-        "output": "出力",
-        "cache_read": "キャッシュ読み取り",
-        "cache_write": "キャッシュ書き込み",
-        "image": "1 枚あたり",
-        "request": "1 回あたり",
-        "video_second": "動画 1 秒あたり（最安）"
-      },
       "price_video": "{{price}} / 秒〜",
       "priceOther": "その他の課金",
-      "priceOtherHint": "上流は音声の秒数、リアルタイムセッション、動画トークンなどで課金します。ここでは金額を表示しません"
+      "priceOtherHint": "上流は音声の秒数、リアルタイムセッション、動画トークンなどで課金します。ここでは金額を表示しません",
+      "signal": {
+        "failing": "{{range}}の成功率 {{rate}}（{{requests}} 件中 {{failures}} 件失敗）",
+        "label": "{{range}}のトラフィック",
+        "idleFilter": "リクエストなし",
+        "failingFilter": "失敗が多い"
+      },
+      "public": "公開モデル",
+      "notOffered": "未提供",
+      "supplyOff": "供給停止中",
+      "context": "コンテキスト",
+      "orderHint": "既定はよく使う順：直近 30 日に本サイトでリクエストが多いシリーズが先、利用がなければ主要シリーズが先、同じシリーズは最新版が先。クリックで名前順",
+      "loss_input": "{{model}} の入力販売価格 ${{sell}}/M が上流の ${{cost}}/M を下回っています（基本価格、グループ倍率は未計算）",
+      "loss_output": "{{model}} の出力販売価格 ${{sell}}/M が上流の ${{cost}}/M を下回っています（基本価格、グループ倍率は未計算）",
+      "hint": {
+        "released": "{{date}} リリース",
+        "context": "コンテキスト {{context}}",
+        "input": "{{modality}}入力",
+        "rankUsed": "利用順位 #{{rank}}：直近 30 日に本サイトで {{family}} シリーズへ {{count}} 件",
+        "rankFallback": "利用順位 #{{rank}}：直近 30 日に本サイトで {{family}} シリーズの利用なし、主要度順",
+        "modality": {
+          "image": "画像",
+          "audio": "音声",
+          "video": "動画",
+          "file": "ファイル",
+          "pdf": "PDF"
+        }
+      },
+      "offeredAs": "公開名：",
+      "check": "再チェック",
+      "checkHint": "上流の現在のモデル一覧を読み込み、提供終了と未追加のモデルを示します",
+      "state": {
+        "offered": "公開中",
+        "unoffered": "非公開",
+        "gone": "上流で提供終了",
+        "unlisted": "上流にあり・未追加"
+      },
+      "unoffered": {
+        "not_in_catalog": "カタログにありません",
+        "no_supply": "カタログに {{model}} があります。このチャネルは未接続です",
+        "wildcard": "ワイルドカードは公開されません",
+        "off": "{{model}} の供給は停止中",
+        "duplicate": "{{other}} と同じ {{model}} に属します。1 つのチャネルは 1 つの名前でしか提供できません",
+        "duplicateShort": "{{other}} と重複"
+      },
+      "addToCatalog": "カタログに追加",
+      "attach": "接続",
+      "openSupply": "モデルページへ",
+      "addedToCatalog": "{{model}} をカタログに追加しました（下書き）。モデルページで価格を設定して公開すると提供されます",
+      "attached": "{{model}} に接続しました",
+      "removeGone": "{{count}} 件をすべて削除",
+      "addUnlisted": "{{count}} 件をすべて追加",
+      "addOne": "{{model}} を追加",
+      "unlistedState": {
+        "in_use": "公開名：{{model}}",
+        "off": "公開名：{{model}}（供給停止中）",
+        "available": "追加すると公開：{{model}}",
+        "not_in_catalog": "カタログにありません",
+        "unknown": "不明"
+      },
+      "addMapping": "モデルマッピングを追加",
+      "addAsOwn": "別モデルとしてカタログに追加"
     },
     "monitor": {
       "checkNow": "今すぐモデル一覧を確認",
@@ -2244,7 +2295,8 @@
         "routingGroups": "グループとタグ",
         "rewrite": "リクエストの書き換え",
         "monitor": "監視",
-        "advanced": "詳細設定"
+        "advanced": "詳細設定",
+        "performance": "パフォーマンス"
       },
       "tabs": "チャネル設定",
       "discard": "破棄",
@@ -2390,33 +2442,6 @@
     "list": {
       "meta": "優先度 {{priority}} · {{requests}} リクエスト · {{latency}}"
     },
-    "upstream": {
-      "title": "上流モデル",
-      "hint": "このチャネルが上流で使えるすべてのモデルです（直近のモデルチェック時点）。公開するか、どこから供給するかは、モデルページの「供給」で決めます。",
-      "check": "今すぐチェック",
-      "checkFailed": "チェックに失敗しました",
-      "empty": "上流のモデル一覧はまだ取得していません。「今すぐチェック」で取得します。",
-      "unsupported": "このプロバイダーにはモデル一覧のエンドポイントがありません。",
-      "search": "モデルを検索",
-      "noMatch": "条件に合うモデルはありません",
-      "name": "上流モデル",
-      "publicModel": "対応する公開モデル",
-      "state": "状態",
-      "filter": {
-        "all": "すべて",
-        "in_use": "使用中",
-        "available": "利用可能",
-        "not_in_catalog": "カタログ外",
-        "unknown": "未認識"
-      },
-      "states": {
-        "in_use": "使用中",
-        "off": "供給オフ",
-        "available": "利用可能・未追加",
-        "not_in_catalog": "カタログ外",
-        "unknown": "未認識"
-      }
-    },
     "strip": {
       "all": "すべて",
       "allMeta": "チャネル {{count}} 件",
@@ -2481,6 +2506,17 @@
     },
     "switcher": {
       "count": "{{count}} チャネル"
+    },
+    "performance": {
+      "intro": "このチャネルのリクエスト処理状況（閲覧のみ）",
+      "none": "{{range}}のリクエストはありません",
+      "requests": "リクエスト",
+      "speed": "出力速度",
+      "cacheHit": "キャッシュヒット率",
+      "model": "上流モデル",
+      "modelHint": "上流に送ったモデル名で集計（マッピングや供給の名前変更後）",
+      "chartRequests": "リクエスト {{count}}",
+      "chartFailures": "失敗 {{count}}"
     }
   },
   "nav": {
@@ -2764,10 +2800,7 @@
       "fromLibrary": "このプラットフォームでの表記で入力しました"
     },
     "channelSupplies": {
-      "title_other": "{{count}} 件の公開モデルを供給",
-      "readonly": "モデルページで編集",
-      "none": "このチャネルを供給に使っている公開モデルはまだありません。",
-      "open": "{{model}} の供給を開く"
+      "title_other": "{{count}} 件の公開モデルを供給"
     },
     "pausedPage": {
       "description": "一時停止ルールまたは管理者によって振り分けから外されたチャネル、またはチャネル上のモデルです。一時停止が終わると自動で戻ります。",

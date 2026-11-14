@@ -6,6 +6,7 @@ import (
 	"github.com/modeltaps/modeltaps/providers"
 	providersBase "github.com/modeltaps/modeltaps/providers/base"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -104,4 +105,41 @@ func removeDuplicates(slice []string) []string {
 		}
 	}
 	return list
+}
+
+// channelModelDetailsLimit bounds the list one request may describe.
+const channelModelDetailsLimit = 5000
+
+// GetChannelModelDetails describes a channel's model list (the one being edited, so it may not
+// be saved yet) for the channel panel: catalog metadata, the usual order and the public models
+// each serves. It never calls the upstream.
+func GetChannelModelDetails(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, invalidChannelIDError())
+		return
+	}
+	var body struct {
+		Models  []string          `json:"models"`
+		Mapping map[string]string `json:"mapping"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	models := make([]string, 0, len(body.Models))
+	for _, m := range removeDuplicates(body.Models) {
+		if m = strings.TrimSpace(m); m != "" {
+			models = append(models, m)
+		}
+	}
+	if len(models) > channelModelDetailsLimit {
+		models = models[:channelModelDetailsLimit]
+	}
+	details, err := model.BuildChannelModelDetails(id, models, body.Mapping)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": details})
 }

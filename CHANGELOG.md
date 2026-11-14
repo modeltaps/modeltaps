@@ -9,12 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Channel Performance tab. The channel panel has a read-only Performance tab, next to Models,
+  with its own time range (24 hours / 7 days / 30 days): requests, success rate, average latency,
+  time to first token, output speed and prompt cache hit rate, a chart of requests and failures,
+  and the same figures per upstream model.
 - Upstream prices per channel. For providers whose upstream publishes a price list (OpenRouter,
   Vercel AI Gateway), each channel now keeps what its upstream charges per model, apart from the
-  catalog price users pay, and the channel's Models tab shows it as an "Upstream $/M" column:
-  input / output per million tokens, per image, per second of video (lowest resolution), per
-  request, free, or "Other" for models priced by speech seconds, realtime sessions or video
-  tokens; the tooltip lists cache read and write prices too. The list is read at startup, when a
+  catalog price users pay, and the channel's Models tab shows it in "Input $/M" and "Output $/M"
+  columns (per million tokens; click a header to sort by it, again to reverse, a third time for
+  the channel's own order). A model not priced per token shows one value across both: per image,
+  per second of video (lowest resolution), per request, free, or "Other" for models priced by
+  speech seconds, realtime sessions or video tokens. The list is read at startup, when a
   channel is saved, by the daily price sync and by the tab's "Sync prices" button. API:
   `GET /api/channel/:id/prices`, `POST /api/channel/:id/prices/refresh`.
 - Model access for organizations. Platform administrators set the approved models of each
@@ -327,6 +332,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or no notifier can send, linking to the notification or SMTP settings. DeepSeek and SiliconFlow
   thresholds are labelled and reported in CNY, the currency their balance comes in. The model
   check says when the provider has no model list. API: `GET /api/channel/capabilities`.
+- The channel's Models tab lists the most used models first: families with the most requests on
+  this site in the last 30 days, then mainstream families (Claude, GPT, Gemini, then DeepSeek,
+  Qwen, Grok...), the latest version first inside a family, the order the model picker already
+  uses. Clicking the Model header sorts by name. A Context column shows each model's context
+  window; while supplies route requests a second line under the name shows the public model it is
+  offered as, or "Not offered"; an upstream input or output price above what that public model
+  sells for (base price, before group ratios) is marked with a warning. The name's tooltip adds
+  the release date, capabilities and why the model ranks where it does. API:
+  `POST /api/channel/:id/model_details`.
+- The channel's Models tab is for maintaining the list: the request, success rate, latency and
+  time to first token columns moved to the Performance tab, and rows keep the channel's own order
+  instead of moving by traffic. A model whose requests mostly failed in the list's time range is
+  marked after its name, and "No requests" / "Mostly failing" filters above the table show the
+  models to clean up or check. Traffic is now matched by the name sent upstream, so mapped models
+  no longer show as unused.
 - The model panel is wider (tabbed sheets use the wide size), so the Supplies table no longer
   cuts off channel and upstream model names. Below the table, "Channels that can also supply
   this model" lists enabled channels that list the model and are not a supply yet; "Add" makes
@@ -474,6 +494,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Responses served through a supply whose upstream name differs from the public model now carry
+  the public name the client asked for. A call to `claude-opus-5` through a Vercel AI Gateway
+  supply (`anthropic/claude-opus-5`) answered with `"model": "anthropic/claude-opus-5"`; chat
+  completions, Responses and Claude Messages, streamed or not, now return `claude-opus-5` without
+  the "unify response model" switch. Supplies that keep the public name behave as before.
 - On a fresh deployment, channels saved before the first daily catalog sync no longer put models
   into the catalog under guessed names (`claude-fable-5.2` instead of models.dev's
   `claude-fable-5-2`). Public names come from the model library, which only that sync filled;

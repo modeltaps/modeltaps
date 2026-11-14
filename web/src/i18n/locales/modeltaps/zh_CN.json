@@ -2060,44 +2060,95 @@
       "autoAdd": "上游新增自动加入",
       "count_other": "{{count}} 个模型",
       "doneAdding": "完成",
-      "fetch": "从上游拉取",
       "fetched_other": "从上游加入 {{count}} 个模型，保存后生效",
       "mappedTo": "映射到",
-      "mappingHint": "把请求里的模型名指向上游的另一个名字，例如部署名",
+      "mappingHint": "渠道级改名：把请求里的模型名换成发给上游的另一个名字，只在上游要求自定义名字（如部署名）时用。和模型目录的对应是自动的，不需要在这里配。",
       "mappingInvalid": "模型映射不是有效的 JSON",
       "model": "模型",
       "none": "还没有模型，添加或从上游拉取",
-      "prune": "清理失效",
       "pruned_other": "移除了 {{count}} 个上游已不存在的模型，保存后生效",
       "remove": "移除 {{model}}",
       "syncPrices": "同步价格",
       "ttft": "首字",
-      "supplyNote": "保存后，模型列表和映射的改动会同步到由这个渠道生成的供应：新加的模型自动接入同名的公开模型，改映射会更新发给上游的名字，移除的模型会撤下供应。手动添加或在模型页改过上游名的供应保持不变。",
+      "supplyNote": "保存后，模型列表的改动会同步到由这个渠道生成的供应：新加的模型自动接入对应的公开模型，移除的模型会撤下供应。手动添加或在模型页改过上游名的供应保持不变。",
       "saved": {
         "summary": "已保存，{{changes}}",
         "attached_other": "新接入 {{count}} 个公开模型",
         "updated_other": "{{count}} 个供应改用新的上游名",
         "removed_other": "撤下 {{count}} 个供应"
       },
-      "upstreamPrice": "上游价 $/M",
-      "upstreamPriceHint": "每百万 token 的输入 / 输出价（美元），来自上游价格表，{{time}} 读取",
-      "upstreamPriceNever": "每百万 token 的输入 / 输出价（美元）。还没从上游读过，点「同步价格」读取",
+      "upstreamPrice_input": "输入 $/M",
+      "upstreamPrice_output": "输出 $/M",
+      "upstreamPriceHint": "每百万 token 的价格（美元），来自上游价格表，{{time}} 读取。点表头排序",
+      "upstreamPriceNever": "每百万 token 的价格（美元）。还没从上游读过，点「同步价格」读取",
       "priceMissing": "上游没有给出这个模型的价格",
       "priceFree": "免费",
       "price_image": "{{price}} / 张",
       "price_request": "{{price}} / 次",
-      "priceKey": {
-        "input": "输入",
-        "output": "输出",
-        "cache_read": "缓存读取",
-        "cache_write": "缓存写入",
-        "image": "每张",
-        "request": "每次",
-        "video_second": "视频每秒（最低）"
-      },
       "price_video": "{{price}} / 秒起",
       "priceOther": "其他计价",
-      "priceOtherHint": "上游按语音秒数、实时会话或视频 token 等方式计价，这里不显示具体数字"
+      "priceOtherHint": "上游按语音秒数、实时会话或视频 token 等方式计价，这里不显示具体数字",
+      "signal": {
+        "failing": "{{range}}成功率 {{rate}}（{{requests}} 次里失败 {{failures}} 次）",
+        "label": "{{range}}流量",
+        "idleFilter": "无请求",
+        "failingFilter": "失败多"
+      },
+      "public": "对外模型",
+      "notOffered": "未对外",
+      "supplyOff": "供应已停用",
+      "context": "上下文",
+      "orderHint": "默认按常用程度排：近 30 天本站请求多的系列在前，没有用量时主流系列在前，同系列最新版本在前。点表头按名称排",
+      "loss_input": "{{model}} 的输入售价 ${{sell}}/M 低于上游 ${{cost}}/M（按基础售价，未计分组倍率）",
+      "loss_output": "{{model}} 的输出售价 ${{sell}}/M 低于上游 ${{cost}}/M（按基础售价，未计分组倍率）",
+      "hint": {
+        "released": "发布于 {{date}}",
+        "context": "上下文 {{context}}",
+        "input": "{{modality}}输入",
+        "rankUsed": "常用排名 #{{rank}}：近 30 天本站 {{family}} 系列 {{count}} 次请求",
+        "rankFallback": "常用排名 #{{rank}}：近 30 天本站没有 {{family}} 系列的请求，按主流程度排",
+        "modality": {
+          "image": "图片",
+          "audio": "音频",
+          "video": "视频",
+          "file": "文件",
+          "pdf": "PDF"
+        }
+      },
+      "offeredAs": "对外：",
+      "check": "重新检查",
+      "checkHint": "读取上游当前的模型清单，标出已下架和还没加入的模型",
+      "state": {
+        "offered": "对外提供",
+        "unoffered": "未对外",
+        "gone": "上游已下架",
+        "unlisted": "上游有、未加入"
+      },
+      "unoffered": {
+        "not_in_catalog": "目录里没有",
+        "no_supply": "目录里有 {{model}}，这个渠道还没接入",
+        "wildcard": "通配符不对外",
+        "off": "{{model}} 的供应已停用",
+        "duplicate": "和 {{other}} 同属 {{model}}，一个渠道只能用一个名字提供它",
+        "duplicateShort": "与 {{other}} 重复"
+      },
+      "addToCatalog": "加入目录",
+      "attach": "接入",
+      "openSupply": "去模型页",
+      "addedToCatalog": "已把 {{model}} 加入目录（草稿），在模型页设好价格并发布后对外",
+      "attached": "已接入 {{model}}",
+      "removeGone": "全部移除 {{count}} 个",
+      "addUnlisted": "全部加入 {{count}} 个",
+      "addOne": "加入 {{model}}",
+      "unlistedState": {
+        "in_use": "对外：{{model}}",
+        "off": "对外：{{model}}（供应已停用）",
+        "available": "加入后对外：{{model}}",
+        "not_in_catalog": "目录里没有",
+        "unknown": "没认出来"
+      },
+      "addMapping": "添加模型映射",
+      "addAsOwn": "单独加入目录"
     },
     "monitor": {
       "checkNow": "立即检查模型列表",
@@ -2242,7 +2293,8 @@
         "routingGroups": "分组与标签",
         "rewrite": "请求改写",
         "monitor": "监控",
-        "advanced": "高级"
+        "advanced": "高级",
+        "performance": "表现"
       },
       "tabs": "渠道设置",
       "discard": "撤销",
@@ -2388,33 +2440,6 @@
     "list": {
       "meta": "优先级 {{priority}} · {{requests}} 请求 · {{latency}}"
     },
-    "upstream": {
-      "title": "上游模型",
-      "hint": "这个渠道在上游能用的全部模型，来自最近一次模型检查。要不要对外提供、由谁提供，在模型页的「供应」里决定。",
-      "check": "立即检查",
-      "checkFailed": "检查失败",
-      "empty": "还没有读到上游的模型清单，点「立即检查」读取。",
-      "unsupported": "这个供应商不提供模型清单接口。",
-      "search": "搜索模型",
-      "noMatch": "没有符合条件的模型",
-      "name": "上游模型",
-      "publicModel": "对应的公开模型",
-      "state": "状态",
-      "filter": {
-        "all": "全部",
-        "in_use": "在用",
-        "available": "可用",
-        "not_in_catalog": "不在目录",
-        "unknown": "没认出来"
-      },
-      "states": {
-        "in_use": "在用",
-        "off": "供应已关闭",
-        "available": "可用，未添加",
-        "not_in_catalog": "不在目录",
-        "unknown": "没认出来"
-      }
-    },
     "strip": {
       "all": "全部",
       "allMeta": "{{count}} 个渠道",
@@ -2479,6 +2504,17 @@
     },
     "switcher": {
       "count": "{{count}} 个渠道"
+    },
+    "performance": {
+      "intro": "这个渠道处理请求的情况，只读",
+      "none": "{{range}}内没有请求",
+      "requests": "请求",
+      "speed": "输出速度",
+      "cacheHit": "缓存命中率",
+      "model": "上游模型",
+      "modelHint": "按发往上游的模型名统计（映射或供应改名之后）",
+      "chartRequests": "请求 {{count}}",
+      "chartFailures": "失败 {{count}}"
     }
   },
   "nav": {
@@ -2762,10 +2798,7 @@
       "fromLibrary": "已按该平台的写法填写"
     },
     "channelSupplies": {
-      "title_other": "供应 {{count}} 个公开模型",
-      "readonly": "在模型页编辑",
-      "none": "还没有公开模型把这个渠道用作供应。",
-      "open": "打开 {{model}} 的供应"
+      "title_other": "供应 {{count}} 个公开模型"
     },
     "pausedPage": {
       "description": "被暂停规则或管理员暂时移出调度的渠道，或渠道上的某个模型。暂停结束后会自动恢复。",

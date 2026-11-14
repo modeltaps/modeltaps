@@ -244,6 +244,11 @@ type ChatCompletionRequest struct {
 	Verbosity           string                        `json:"verbosity,omitempty"`    // 用于控制输出的详细程度
 	Store               *bool                         `json:"store,omitempty"`        // ChatGPT 是否存储对话（Codex 要求设置为 false）
 	Instructions        *string                       `json:"instructions,omitempty"` // Codex CLI 系统提示词
+	// PromptCacheKey and PromptCacheRetention steer OpenAI prompt caching: requests that share a
+	// key are routed to the same cache, so long shared prefixes hit it. Without the key many
+	// upstreams (OpenAI through aggregator gateways) never report a cache hit.
+	PromptCacheKey       string `json:"prompt_cache_key,omitempty"`
+	PromptCacheRetention string `json:"prompt_cache_retention,omitempty"`
 
 	Reasoning *ChatReasoning `json:"reasoning,omitempty"`
 
@@ -608,6 +613,9 @@ func (c *ChatCompletionRequest) ToResponsesRequest() *OpenAIResponsesRequest {
 		Temperature:       c.Temperature,
 		ToolChoice:        c.ToolChoice,
 		TopP:              c.TopP,
+
+		PromptCacheKey:       c.PromptCacheKey,
+		PromptCacheRetention: c.PromptCacheRetention,
 	}
 
 	if c.ResponseFormat != nil {

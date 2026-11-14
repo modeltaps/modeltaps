@@ -47,6 +47,22 @@ func TestGetResponseModelNameFromContext_Sources(t *testing.T) {
 	}
 }
 
+// A supply that renames the model always answers with the public name, switches off.
+func TestGetResponseModelNameFromContext_RenamingSupply(t *testing.T) {
+	orig := config.UnifiedRequestResponseModelEnabled
+	t.Cleanup(func() { config.UnifiedRequestResponseModelEnabled = orig })
+	config.UnifiedRequestResponseModelEnabled = false
+
+	c := newUnifiedModelContext("claude-opus-5", false)
+	if got := GetResponseModelNameFromContext(c, "anthropic/claude-opus-5"); got != "anthropic/claude-opus-5" {
+		t.Fatalf("without a renaming supply got %q, want the upstream name", got)
+	}
+	c.Set(config.GinSupplyRenamesModelKey, true)
+	if got := GetResponseModelNameFromContext(c, "anthropic/claude-opus-5"); got != "claude-opus-5" {
+		t.Fatalf("with a renaming supply got %q, want the public name", got)
+	}
+}
+
 func TestGetResponseModelNameFromContext_NilContext(t *testing.T) {
 	orig := config.UnifiedRequestResponseModelEnabled
 	t.Cleanup(func() { config.UnifiedRequestResponseModelEnabled = orig })
