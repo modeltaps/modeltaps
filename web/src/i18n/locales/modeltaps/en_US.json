@@ -2196,7 +2196,13 @@
       },
       "price_video": "from {{price}} / s",
       "priceOther": "Other",
-      "priceOtherHint": "The upstream charges by speech seconds, realtime sessions, video tokens or similar; no single figure is shown here"
+      "priceOtherHint": "The upstream charges by speech seconds, realtime sessions, video tokens or similar; no single figure is shown here",
+      "signal": {
+        "failing": "{{rate}} success in {{range}} ({{failures}} of {{requests}} failed)",
+        "label": "Traffic, {{range}}",
+        "idleFilter": "No requests",
+        "failingFilter": "Mostly failing"
+      }
     },
     "monitor": {
       "checkNow": "Check model list now",
@@ -2322,7 +2328,8 @@
         "routingGroups": "Groups & tag",
         "rewrite": "Request rewriting",
         "monitor": "Monitoring",
-        "advanced": "Advanced"
+        "advanced": "Advanced",
+        "performance": "Performance"
       },
       "tabs": "Channel settings",
       "discard": "Discard",
@@ -2568,6 +2575,17 @@
     },
     "switcher": {
       "count": "{{count}} channels"
+    },
+    "performance": {
+      "intro": "How this channel served requests (read-only)",
+      "none": "No requests in {{range}}",
+      "requests": "Requests",
+      "speed": "Output speed",
+      "cacheHit": "Cache hit rate",
+      "model": "Upstream model",
+      "modelHint": "Counted by the model name sent upstream (after mapping or supply renames)",
+      "chartRequests": "{{count}} requests",
+      "chartFailures": "{{count}} failed"
     }
   },
   "nav": {

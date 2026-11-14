@@ -113,3 +113,19 @@ export function formatBalance(type, balance) {
   const n = Number(balance || 0);
   return CNY_BALANCE_TYPES.has(type) ? `¥${n.toFixed(2)}` : `$${n.toFixed(2)}`;
 }
+
+// Below this success rate, with at least FAILING_MIN_REQUESTS requests, a model is flagged as
+// failing in the channel's model list.
+export const FAILING_SUCCESS_RATE = 0.8;
+export const FAILING_MIN_REQUESTS = 5;
+
+// What the model list flags about one listed model in the range: 'idle' when the channel had
+// traffic but none for this model (a candidate to remove), 'failing' when most of its requests
+// fail, else null. A channel with no traffic at all flags nothing: there is nothing to compare.
+// `m` is the model's entry from metricsByModel (or undefined).
+export function modelSignal(m, channelHasTraffic) {
+  if (!channelHasTraffic) return null;
+  if (!m?.requests) return 'idle';
+  if (m.requests >= FAILING_MIN_REQUESTS && m.successRate !== null && m.successRate < FAILING_SUCCESS_RATE) return 'failing';
+  return null;
+}

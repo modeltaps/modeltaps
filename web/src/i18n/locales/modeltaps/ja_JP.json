@@ -2099,7 +2099,13 @@
       },
       "price_video": "{{price}} / 秒〜",
       "priceOther": "その他の課金",
-      "priceOtherHint": "上流は音声の秒数、リアルタイムセッション、動画トークンなどで課金します。ここでは金額を表示しません"
+      "priceOtherHint": "上流は音声の秒数、リアルタイムセッション、動画トークンなどで課金します。ここでは金額を表示しません",
+      "signal": {
+        "failing": "{{range}}の成功率 {{rate}}（{{requests}} 件中 {{failures}} 件失敗）",
+        "label": "{{range}}のトラフィック",
+        "idleFilter": "リクエストなし",
+        "failingFilter": "失敗が多い"
+      }
     },
     "monitor": {
       "checkNow": "今すぐモデル一覧を確認",
@@ -2217,7 +2223,8 @@
         "routingGroups": "グループとタグ",
         "rewrite": "リクエストの書き換え",
         "monitor": "監視",
-        "advanced": "詳細設定"
+        "advanced": "詳細設定",
+        "performance": "パフォーマンス"
       },
       "tabs": "チャネル設定",
       "discard": "破棄",
@@ -2454,6 +2461,17 @@
     },
     "switcher": {
       "count": "{{count}} チャネル"
+    },
+    "performance": {
+      "intro": "このチャネルのリクエスト処理状況（閲覧のみ）",
+      "none": "{{range}}のリクエストはありません",
+      "requests": "リクエスト",
+      "speed": "出力速度",
+      "cacheHit": "キャッシュヒット率",
+      "model": "上流モデル",
+      "modelHint": "上流に送ったモデル名で集計（マッピングや供給の名前変更後）",
+      "chartRequests": "リクエスト {{count}}",
+      "chartFailures": "失敗 {{count}}"
     }
   },
   "nav": {
