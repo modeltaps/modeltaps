@@ -74,7 +74,8 @@ import {
   mergeCatalogRows,
   channelModelNames,
   savePriceUnit,
-  sortCatalogRows
+  sortCatalogRows,
+  suppliedUpstreamKeys
 } from '../Pricing/modelCatalog';
 import ModelTable, { ModelList, ReadinessLegend } from './ModelTable';
 import ModelInfoSheet from './ModelInfoSheet';
@@ -197,6 +198,9 @@ export default function ModelInfo() {
   const [channelList, setChannelList] = useState([]);
   const [supplyRouting, setSupplyRouting] = useState(false);
   const [supplyCounts, setSupplyCounts] = useState({});
+  // (channel, upstream name) pairs supplies send: those channel-listed names are not models of
+  // their own while supplies route requests.
+  const [suppliedUpstreams, setSuppliedUpstreams] = useState(null);
   const supplySwitches = useSupplySwitches();
   const [vendors, setVendors] = useState({});
   const [ownedby, setOwnedby] = useState([]);
@@ -262,6 +266,7 @@ export default function ModelInfo() {
           onStart: () => setLoading(true),
           onResult: ({ cres, catalog, priceRows, models, channels, supplies }) => {
             setSupplyCounts(supplies?.success ? countSuppliesByModel(supplies.data || []) : {});
+            setSuppliedUpstreams(supplies?.success ? suppliedUpstreamKeys(supplies.data || []) : null);
             if (!cres.data.success) showError(cres.data.message);
             setModelInfos(catalog);
             setPrices(priceRows);
@@ -369,7 +374,7 @@ export default function ModelInfo() {
   const rows = useMemo(
     () =>
       attachChannelDetails(
-        mergeCatalogRows({ catalog: modelInfos, prices, modelList, channelsByModel, listedModels: channelModelNames(channelList) }),
+        mergeCatalogRows({ catalog: modelInfos, prices, modelList, channelsByModel, listedModels: channelModelNames(channelList, supplyRouting ? suppliedUpstreams : null) }),
         channelList,
         {
           supplyRouting
@@ -377,7 +382,7 @@ export default function ModelInfo() {
       )
         .map((row) => (supplyRouting ? { ...row, supplyRouting } : row))
         .map((row) => (isPublicModelRow(row) ? { ...row, supplyCounts: supplyCounts[row.model] || { total: 0, usable: 0 } } : row)),
-    [modelInfos, prices, modelList, channelsByModel, channelList, supplyCounts, supplyRouting]
+    [modelInfos, prices, modelList, channelsByModel, channelList, supplyCounts, supplyRouting, suppliedUpstreams]
   );
 
   // Local filtering: search box, segment and conditions.

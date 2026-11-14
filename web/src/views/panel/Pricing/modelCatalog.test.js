@@ -21,7 +21,8 @@ import {
   orphanModelNames,
   resolveCatalogTab,
   savePriceUnit,
-  sortCatalogRows
+  sortCatalogRows,
+  suppliedUpstreamKeys
 } from './modelCatalog';
 
 const memoryStorage = (initial = {}) => {
@@ -294,6 +295,23 @@ describe('catalog export', () => {
     expect(out.data[0].price).toEqual({ type: 'tokens', channel_type: 1, input: 1, output: 2 });
     expect(out.data[1]).toEqual({ model: 'orphan', model_info: null, price: null });
     expect(JSON.stringify(out)).not.toContain('secret-channel');
+  });
+});
+
+describe('channel-listed names a supply already sends', () => {
+  it('leaves out a platform spelling supplied on the same channel', () => {
+    const channels = [
+      { id: 1, models: 'anthropic/claude-opus-5,foo/unmatched' },
+      { id: 2, models: 'anthropic/claude-opus-5' }
+    ];
+    const supplied = suppliedUpstreamKeys([{ model: 'claude-opus-5', channel_id: 1, upstream_model: 'anthropic/claude-opus-5' }]);
+    // Channel 2 lists the name without a supply: it still shows.
+    expect([...channelModelNames(channels, supplied)].sort()).toEqual(['anthropic/claude-opus-5', 'foo/unmatched']);
+    expect([...channelModelNames([channels[0]], supplied)]).toEqual(['foo/unmatched']);
+  });
+
+  it('keeps every name without supplies', () => {
+    expect([...channelModelNames([{ id: 1, models: 'a,b' }])]).toEqual(['a', 'b']);
   });
 });
 
