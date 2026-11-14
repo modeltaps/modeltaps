@@ -112,7 +112,7 @@ export default function UsageChart({ data, loading = false, range = '7d', onRang
                 tickFormatter={active.axis}
               />
               <Tooltip content={<ChartTooltip format={active.format} />} cursor={{ fill: 'var(--muted)', opacity: 0.3 }} />
-              <Bar dataKey={active.key} fill="var(--primary)" radius={[4, 4, 0, 0]} maxBarSize={48} />
+              <Bar dataKey={active.key} fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={48} />
             </BarChart>
           </ResponsiveContainer>
         )}
