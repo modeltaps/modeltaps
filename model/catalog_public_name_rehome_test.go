@@ -131,6 +131,7 @@ func TestRehomeSyncedDrafts(t *testing.T) {
 		{Model: "fable-published", Status: ModelStatusPublished, Source: ModelInfoSourceVercel},
 		{Model: "fable-locked", Status: ModelStatusDraft, Source: ModelInfoSourceVercel, Locked: true},
 		{Model: "fable-manual", Status: ModelStatusDraft, Source: ModelInfoSourceManual},
+		{Model: "fable-fast", Status: ModelStatusDraft, Source: ModelInfoSourceVercel},
 		{Model: "claude-opus-4-5", Status: ModelStatusDraft, Source: ModelInfoSourceVercel},
 	} {
 		if err := DB.Create(info).Error; err != nil {
@@ -139,7 +140,10 @@ func TestRehomeSyncedDrafts(t *testing.T) {
 	}
 	for _, s := range []*ModelSupply{
 		{Model: "claude-fable-5.2", ChannelId: 1, UpstreamModel: "anthropic/claude-fable-5.2", Enabled: true},
-		{Model: "claude-fable-5.2", ChannelId: 2, UpstreamModel: "anthropic/claude-fable-5.2-fast", Enabled: true},
+		{Model: "claude-fable-5.2", ChannelId: 2, UpstreamModel: "anthropic/claude-fable-5.2", Enabled: true},
+		// The fast tier is filed under the base model upstream, but it is sold apart: it joins the
+		// fast tier's own row, not claude-fable-5-2.
+		{Model: "fable-fast", ChannelId: 3, UpstreamModel: "anthropic/claude-fable-5.2-fast", Enabled: true},
 		{Model: "vendor/thing-1", ChannelId: 1, UpstreamModel: "vendor/thing-1", Enabled: true},
 		{Model: "gpt-9", ChannelId: 1, UpstreamModel: "openai/gpt-9", Enabled: true},
 		// Channel 2 already supplies gpt-9-sol: its supply of the draft is a duplicate.
@@ -176,7 +180,7 @@ func TestRehomeSyncedDrafts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := PlatformRowMigration{Renamed: 2, Merged: 1, SuppliesMoved: 4, SuppliesMerged: 1, PricesCopied: 1, AliasesMoved: 1, PausesMoved: 1}
+	want := PlatformRowMigration{Renamed: 2, Merged: 2, SuppliesMoved: 5, SuppliesMerged: 1, PricesCopied: 1, AliasesMoved: 1, PausesMoved: 1}
 	if out != want {
 		t.Errorf("counts = %+v, want %+v", out, want)
 	}
@@ -185,8 +189,8 @@ func TestRehomeSyncedDrafts(t *testing.T) {
 	if got := catalogSummary(t); got != wantCatalog {
 		t.Errorf("catalog\n got %s\nwant %s", got, wantCatalog)
 	}
-	wantSupplies := "claude-fable-5-2@1<-anthropic/claude-fable-5.2,claude-fable-5-2@2<-anthropic/claude-fable-5.2-fast," +
-		"claude-opus-4-5@1<-anthropic/claude-opus-4.5," +
+	wantSupplies := "claude-fable-5-2@1<-anthropic/claude-fable-5.2,claude-fable-5-2@2<-anthropic/claude-fable-5.2," +
+		"claude-fable-5.2-fast@3<-anthropic/claude-fable-5.2-fast,claude-opus-4-5@1<-anthropic/claude-opus-4.5," +
 		"fable-locked@3<-anthropic/claude-fable-5.2,fable-manual@3<-anthropic/claude-fable-5.2," +
 		"fable-published@3<-anthropic/claude-fable-5.2," +
 		"gpt-9-sol@1<-openai/gpt-9,gpt-9-sol@2<-gpt-9-sol," +

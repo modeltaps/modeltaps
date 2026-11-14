@@ -504,6 +504,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fast and reasoning tiers of a model are no longer read as the model itself. Platforms file
+  "openai/gpt-5.5-fast" or "deepseek-v3.2-thinking" under the base model, so a channel that
+  listed both showed the tier as unmatched, "duplicate of gpt-5.5", although it is sold at a
+  higher price. A platform spelling that adds a variant word (fast, ultrafast, lightning,
+  thinking, mini...) to the model it is filed under is now its own model: on the dev Vercel
+  channel 32 such models now point to their own catalog rows and can be attached. The channel
+  Models tab filter reads "Matched / Unmatched" instead of "Public / Not public", since it says
+  whether a listed model matches a catalog model.
 - Opening or reloading the panel while the backend restarts no longer signs the user out. The
   sign-in check used to take any failed `/api/user/self` (a 502 from the dev proxy, a refused
   connection) as "signed out" and sent the user to the login page with a still valid session; it

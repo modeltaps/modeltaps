@@ -2194,7 +2194,7 @@
         "failingFilter": "Mostly failing"
       },
       "public": "Public name",
-      "notOffered": "Not public",
+      "notOffered": "Unmatched",
       "supplyOff": "supply off",
       "context": "Context",
       "orderHint": "Most used first: families with the most requests on this site in the last 30 days, then mainstream families, the latest version first. Click to sort by name.",
@@ -2218,8 +2218,8 @@
       "check": "Check again",
       "checkHint": "Read the upstream model list now and mark models it dropped or that are not added yet",
       "state": {
-        "offered": "Public",
-        "unoffered": "Not public",
+        "offered": "Matched",
+        "unoffered": "Unmatched",
         "gone": "Gone upstream",
         "unlisted": "Upstream, not added"
       },

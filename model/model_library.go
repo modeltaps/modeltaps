@@ -266,6 +266,9 @@ func (idx *libraryIndex) ensure() {
 	// A host id that two models claim is ambiguous and left out.
 	ambiguous := map[string]bool{}
 	for _, h := range hosts {
+		if hostAddsVariant(h.Canonical, h.HostModel) {
+			continue
+		}
 		key := strings.ToLower(h.HostModel)
 		pk := h.Provider + "\x00" + h.Canonical
 		if _, ok := byProviderModel[pk]; !ok {
@@ -288,6 +291,38 @@ func (idx *libraryIndex) ensure() {
 	idx.byHost, idx.byLabHost, idx.labNames = byHost, byLabHost, labNames
 	idx.byProviderModel, idx.byModel, idx.loaded = byProviderModel, byModel, true
 	idx.Unlock()
+}
+
+// sameModelWords are variant words a platform may add to a model's name without making it
+// another model: "-latest" and "-preview" name the same release.
+var sameModelWords = map[string]bool{"latest": true, "preview": true, "exp": true, "experimental": true}
+
+// hostAddsVariant reports whether a platform's id adds a variant word to the canonical id it is
+// filed under. models.dev and the platforms themselves file a faster or reasoning tier under the
+// base model ("openai/gpt-5.5-fast", "deepseek-v3.2-thinking" under the plain release): it runs the
+// same weights, but it is sold at another price, so it is a public model of its own and must not
+// be read as a spelling of the base model.
+func hostAddsVariant(canonical, host string) bool {
+	_, bare := splitCanonical(canonical)
+	base := parseModelName(bare, genericNamingRules)
+	up := parseModelName(host, genericNamingRules)
+	have := map[string]int{}
+	for _, w := range base.words {
+		have[w]++
+	}
+	for _, w := range up.words {
+		if have[w] > 0 {
+			have[w]--
+			continue
+		}
+		if isVariantWord(w) && !sameModelWords[w] {
+			return true
+		}
+	}
+	if up.modifier != "" && up.modifier != base.modifier && genericNamingRules.Modifiers[up.modifier] == ModifierVariant {
+		return true
+	}
+	return false
 }
 
 // LibraryPublicNames returns the public names a platform spelling may stand for

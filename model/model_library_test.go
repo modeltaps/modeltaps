@@ -326,3 +326,44 @@ func TestVendorIDFromNameRules(t *testing.T) {
 		}
 	}
 }
+
+func TestHostAddsVariant(t *testing.T) {
+	cases := []struct {
+		canonical, host string
+		want            bool
+	}{
+		{"openai/gpt-5.5", "openai/gpt-5.5-fast", true},
+		{"anthropic/claude-opus-5-5", "anthropic/claude-opus-5.5-fast", true},
+		{"deepseek/deepseek-v4.1-flash", "deepseek-ai/DeepSeek-V4.1-Flash-Fast", true},
+		{"deepseek/deepseek-v3.2", "deepseek/deepseek-v3.2-thinking", true},
+		{"minimax/minimax-m2.1", "minimax/minimax-m2.1-lightning", true},
+		{"anthropic/claude-fable-5-2", "claude-fable-5-2@default", false},
+		{"anthropic/claude-fable-5-2", "anthropic/claude-fable-5.2", false},
+		{"openai/gpt-6-astra-fast", "openai/gpt-6-astra-fast", false},
+		{"cohere/rerank-v4.0-fast", "cohere/rerank-v4-fast", false},
+		{"google/gemini-3-pro", "google/gemini-3-pro-preview", false},
+	}
+	for _, c := range cases {
+		if got := hostAddsVariant(c.canonical, c.host); got != c.want {
+			t.Errorf("hostAddsVariant(%q, %q) = %v, want %v", c.canonical, c.host, got, c.want)
+		}
+	}
+}
+
+func TestLibraryIndexSkipsVariantSpellings(t *testing.T) {
+	setupModelLibraryTestDB(t)
+	hosts := []*ModelLibraryHost{
+		{Canonical: "openai/gpt-5.5", Provider: "vercel", HostModel: "openai/gpt-5.5-fast"},
+		{Canonical: "openai/gpt-5.5", Provider: "vercel", HostModel: "openai/gpt-5.5"},
+	}
+	entries := []*ModelLibraryEntry{{Canonical: "openai/gpt-5.5", Model: "gpt-5.5", Lab: "openai"}}
+	if err := ReplaceModelLibrary(entries, hosts); err != nil {
+		t.Fatal(err)
+	}
+	if got := LibraryPublicNames("openai/gpt-5.5-fast"); got != nil {
+		t.Errorf("the fast tier is not a spelling of gpt-5.5, got %v", got)
+	}
+	if got := LibraryUpstreamFor(config.ChannelTypeVercelAIGateway, "gpt-5.5"); got != "openai/gpt-5.5" {
+		t.Errorf("vercel upstream for gpt-5.5 = %q", got)
+	}
+}
