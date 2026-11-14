@@ -187,6 +187,7 @@ func TestHideModelInfoWritesAudit(t *testing.T) {
 	for _, row := range []*model.ModelInfo{
 		{Id: 1, Model: "gpt-5"},
 		{Id: 2, Model: "gemini-2.5-pro", Hidden: true},
+		{Id: 3, Model: "claude-fable-5"},
 	} {
 		if err := model.DB.Create(row).Error; err != nil {
 			t.Fatalf("建行失败: %v", err)
@@ -218,7 +219,7 @@ func TestHideModelInfoWritesAudit(t *testing.T) {
 	if entry.ActorId != 42 || entry.Model != "gpt-5" || entry.Action != model.ModelCatalogActionHide {
 		t.Fatalf("审计内容不符: %+v", entry)
 	}
-	if entry.Before != `{"hidden":false}` || entry.After != `{"hidden":true}` {
+	if entry.Before != `{"hidden":false,"status":"draft"}` || entry.After != `{"hidden":true,"status":"draft"}` {
 		t.Fatalf("审计应记录改前改后: before=%s after=%s", entry.Before, entry.After)
 	}
 
@@ -227,8 +228,18 @@ func TestHideModelInfoWritesAudit(t *testing.T) {
 	if err := model.DB.Order("id asc").Find(&logs).Error; err != nil {
 		t.Fatalf("读取审计失败: %v", err)
 	}
-	if len(logs) != 2 || logs[1].Action != model.ModelCatalogActionUnhide || logs[1].After != `{"hidden":false}` {
+	if len(logs) != 2 || logs[1].Action != model.ModelCatalogActionUnhide || logs[1].After != `{"hidden":false,"status":"published"}` {
 		t.Fatalf("取消隐藏应留痕, got %+v", logs)
+	}
+
+	// Enabling a draft that was never hidden still publishes it, so it is recorded too.
+	hide(`{"ids":[3],"hidden":false}`)
+	logs = nil
+	if err := model.DB.Order("id asc").Find(&logs).Error; err != nil {
+		t.Fatalf("读取审计失败: %v", err)
+	}
+	if len(logs) != 3 || logs[2].Model != "claude-fable-5" || logs[2].Before != `{"hidden":false,"status":"draft"}` {
+		t.Fatalf("enabling a draft should be audited, got %+v", logs)
 	}
 }
 

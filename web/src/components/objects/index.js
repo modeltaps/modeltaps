@@ -26,3 +26,4 @@ export const rowOpenProps = (onOpen) => ({
 // Wraps controls inside a clickable row (a switch, a row menu) so using them does not open the
 // row.
 export { default as RowControl } from './RowControl';
+export { LONG_LIST_LIMIT, LongListMore, LongListSearch, useLongList } from './LongList';

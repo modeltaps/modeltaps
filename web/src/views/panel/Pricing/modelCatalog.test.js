@@ -20,7 +20,8 @@ import {
   modelStatus,
   orphanModelNames,
   resolveCatalogTab,
-  savePriceUnit
+  savePriceUnit,
+  sortCatalogRows
 } from './modelCatalog';
 
 const memoryStorage = (initial = {}) => {
@@ -293,5 +294,18 @@ describe('catalog export', () => {
     expect(out.data[0].price).toEqual({ type: 'tokens', channel_type: 1, input: 1, output: 2 });
     expect(out.data[1]).toEqual({ model: 'orphan', model_info: null, price: null });
     expect(JSON.stringify(out)).not.toContain('secret-channel');
+  });
+});
+
+describe('sortCatalogRows', () => {
+  const channel = { id: 1, status: 1 };
+  it('puts enabled models first, then models a channel serves, then by name', () => {
+    const rows = [
+      { model: 'b-no-channel', catalogId: 1, hidden: true, bound_channels: [] },
+      { model: 'z-enabled', catalogId: 2, hidden: false, bound_channels: [channel] },
+      { model: 'a-disabled', catalogId: 3, hidden: true, bound_channels: [channel] },
+      { model: 'c-disabled', catalogId: 4, hidden: true, bound_channels: [channel] }
+    ];
+    expect(sortCatalogRows(rows).map((r) => r.model)).toEqual(['z-enabled', 'a-disabled', 'c-disabled', 'b-no-channel']);
   });
 });

@@ -755,8 +755,8 @@
     "aliasTo": "Alias → {{model}}",
     "batchDeleteConfirm": "Delete the {{count}} selected items? This cannot be undone.",
     "batchDeleteFailed": "{{count}} items failed to delete",
-    "batchHide": "Hide selected",
-    "batchShow": "Show selected",
+    "batchHide": "Disable selected",
+    "batchShow": "Enable selected",
     "billing": "Billing",
     "billingNone": "Unpriced",
     "billingTimes": "Per request",
@@ -771,7 +771,7 @@
     "export": "Export JSON",
     "labeling": "Labels",
     "moreActions": "More actions",
-    "onlyUsable": "Fully usable only",
+    "onlyUsable": "Callable only",
     "priceHeader": "Price / 1{{unit}} tokens",
     "priceUnitToggle": "Click to show prices per 1{{unit}} tokens",
     "priceIn": "Input",
@@ -783,11 +783,11 @@
     "syncGroup": "Upstream sync",
     "unbound": "Unbound",
     "vendorModelCount": "Models",
-    "visibility": "Visibility",
-    "visibleNeedsCatalog": "Create a catalog entry first to control visibility",
-    "visibleNo": "Hidden",
-    "visibleToUsers": "Visible to users",
-    "visibleYes": "Visible",
+    "visibility": "Enabled",
+    "visibleNeedsCatalog": "Create a catalog entry first to enable it",
+    "visibleNo": "Disabled",
+    "visibleToUsers": "Enabled",
+    "visibleYes": "Enabled",
     "sheet": {
       "availableGroups": "Available groups",
       "channelsReadonly": "Channels and groups are read-only; edit them on the Providers page",
@@ -808,30 +808,30 @@
     },
     "stats": {
       "all": "All",
-      "usable": "Fully usable",
+      "usable": "Callable",
       "nochannel": "No channel",
       "unpriced": "Unpriced",
-      "hidden": "Hidden"
+      "hidden": "Disabled"
     },
     "status": {
       "ok": "Usable",
       "nochannel": "No channel",
       "unpriced": "Unpriced",
-      "unpublished": "Unpublished"
+      "unpublished": "Disabled"
     },
-    "visibleFollowsStatus": "Visibility follows the model's status (draft, published, retired) while supplies route requests",
+    "visibleFollowsStatus": "Enabled models are listed and callable; disabled ones are neither",
     "showModelsThat": "Show models that",
-    "showToUsers": "Show to users",
-    "hideFromUsers": "Hide from users",
+    "showToUsers": "Enable",
+    "hideFromUsers": "Disable",
     "searchShort": "Search models",
     "presetPerCall": "Per-call pricing",
     "presetUnlabeled": "Unlabeled",
     "readiness": {
       "channel": "Channel",
       "price": "Price",
-      "visible": "Visible",
+      "visible": "Enabled",
       "missing": "Missing: {{items}}",
-      "legend": "Ready: channel · price · visible"
+      "legend": "Ready: channel · price · enabled"
     },
     "vendorInUse": "In use",
     "vendorUnused": "Unused",
@@ -1703,7 +1703,7 @@
     "model_mode_invalid": "Unknown model type",
     "model_capabilities_invalid": "Unknown model capability",
     "model_endpoints_invalid": "Unknown model endpoint",
-    "model_status_invalid": "Unknown model status; use draft, published or retired",
+    "model_status_invalid": "Unknown model status; use disabled, enabled or retired",
     "model_supply_mode_invalid": "Unknown supply mode; use balance or failover",
     "model_supply_model_not_found": "The public model does not exist",
     "model_supply_model_not_public": "Supplies can only be added to public models, not to aliases or routing policies",
@@ -2736,9 +2736,9 @@
     "seconds_other": "{{count}} seconds",
     "status": {
       "label": "Status",
-      "help": "Draft: not listed and not callable. Published: listed and callable. Retired: callable but no longer listed. Applies once supply routing is on.",
-      "draft": "Draft",
-      "published": "Published",
+      "help": "Disabled: not listed and not callable. Enabled: listed and callable. Retired: callable but no longer listed. Applies once supply routing is on.",
+      "draft": "Disabled",
+      "published": "Enabled",
       "retired": "Retired"
     },
     "available": {
@@ -2870,7 +2870,7 @@
       "attachTitle": "Attach {{model}}",
       "attachDescription": "Each selected channel gets a supply of the public model that sends this upstream name, at the channel's priority and weight. You can change them on the model's Supplies tab.",
       "publicModel": "Public model",
-      "willCreate": "{{model}} is not a public model yet. It is created as a draft: give it a price and publish it on its page.",
+      "willCreate": "{{model}} is not a public model yet. It is created disabled: give it a price and enable it on its page.",
       "isAlias": "{{model}} is an alias of {{canonical}}; the supplies go to {{canonical}}.",
       "isPolicy": "{{model}} is a routing policy, not a public model.",
       "noChannel": "Select at least one channel",
@@ -3462,8 +3462,8 @@
     "selected": "{{count}} selected",
     "createSupplies": "Create supplies from the matched channels",
     "status": "Status",
-    "asDraft": "As draft",
-    "asPublished": "Published",
+    "asDraft": "Disabled",
+    "asPublished": "Enabled",
     "add": "Add {{count}}",
     "added": "Added {{count}} models, {{supplies}} supplies",
     "unsureCount_one": "+{{count}} to confirm",
@@ -3577,8 +3577,8 @@
     "namePlaceholder": "Rule name",
     "action": "Action",
     "actions": {
-      "publish": "Publish",
-      "draft": "Add as draft",
+      "publish": "Enable",
+      "draft": "Add disabled",
       "ignore": "Leave out",
       "retire": "Retire"
     },
@@ -3613,9 +3613,9 @@
     "ranDry": "Dry run: {{count}} new changes reported",
     "defaultNames": {
       "retireDeprecated": "Retire deprecated models",
-      "previews": "Previews as drafts",
-      "publishMain": "Publish new models from the main labs",
-      "otherSupplied": "Other supplied models as drafts"
+      "previews": "Previews added disabled",
+      "publishMain": "Enable new models from the main labs",
+      "otherSupplied": "Other supplied models added disabled"
     }
   },
   "modelAccess": {
@@ -3684,5 +3684,11 @@
       "member": "Member {{name}}",
       "list": "List {{name}}"
     }
+  },
+  "longList": {
+    "search": "Search",
+    "noMatch": "No matching models",
+    "showMore_one": "Show {{count}} more",
+    "showMore_other": "Show {{count}} more"
   }
 }

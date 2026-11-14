@@ -754,8 +754,8 @@
     "aliasTo": "別名 → {{model}}",
     "batchDeleteConfirm": "確定刪除選中的 {{count}} 項?此操作不可撤銷。",
     "batchDeleteFailed": "{{count}} 項刪除失敗",
-    "batchHide": "批量隱藏",
-    "batchShow": "批量顯示",
+    "batchHide": "批量停用",
+    "batchShow": "批量啟用",
     "billing": "計費方式",
     "billingNone": "未定價",
     "billingTimes": "按次",
@@ -770,7 +770,7 @@
     "export": "導出 JSON",
     "labeling": "標註",
     "moreActions": "更多操作",
-    "onlyUsable": "只看完整可用",
+    "onlyUsable": "只看可調用",
     "priceHeader": "價格 / 1{{unit}} tokens",
     "priceUnitToggle": "點擊切換為每 1{{unit}} tokens 計價",
     "priceIn": "輸入",
@@ -782,11 +782,11 @@
     "syncGroup": "上游同步",
     "unbound": "未綁定",
     "vendorModelCount": "模型數",
-    "visibility": "可見性",
-    "visibleNeedsCatalog": "需先建目錄條目才能控制可見性",
-    "visibleNo": "隱藏",
-    "visibleToUsers": "對用戶可見",
-    "visibleYes": "可見",
+    "visibility": "啟用狀態",
+    "visibleNeedsCatalog": "先建目錄條目才能啟用",
+    "visibleNo": "未啟用",
+    "visibleToUsers": "啟用",
+    "visibleYes": "已啟用",
     "sheet": {
       "availableGroups": "可用分組",
       "channelsReadonly": "渠道與分組為只讀,需在供應商頁修改",
@@ -807,30 +807,30 @@
     },
     "stats": {
       "all": "全部",
-      "usable": "完整可用",
+      "usable": "可調用",
       "nochannel": "無渠道",
       "unpriced": "未定價",
-      "hidden": "已隱藏"
+      "hidden": "未啟用"
     },
     "status": {
       "ok": "可用",
       "nochannel": "無渠道",
       "unpriced": "未定價",
-      "unpublished": "未發布"
+      "unpublished": "未啟用"
     },
-    "visibleFollowsStatus": "按供應路由時，是否對用戶可見由模型狀態（草稿 / 已發佈 / 已下架）決定",
+    "visibleFollowsStatus": "啟用後用戶能看到並調用這個模型；停用後不再列出、不可調用",
     "showModelsThat": "篩選模型",
-    "showToUsers": "對用戶顯示",
-    "hideFromUsers": "對用戶隱藏",
+    "showToUsers": "啟用",
+    "hideFromUsers": "停用",
     "searchShort": "搜尋模型",
     "presetPerCall": "按次計費",
     "presetUnlabeled": "未標註",
     "readiness": {
       "channel": "渠道",
       "price": "定價",
-      "visible": "可見",
+      "visible": "啟用",
       "missing": "缺少：{{items}}",
-      "legend": "就緒：渠道 · 定價 · 可見"
+      "legend": "就緒：渠道 · 定價 · 啟用"
     },
     "vendorInUse": "在用",
     "vendorUnused": "未使用",
@@ -1613,7 +1613,7 @@
     "model_mode_invalid": "模型類型無效",
     "model_capabilities_invalid": "模型能力無效",
     "model_endpoints_invalid": "模型端點無效",
-    "model_status_invalid": "模型狀態無效，可選草稿、已發佈或已下架",
+    "model_status_invalid": "模型狀態無效，可選未啟用、已啟用或已下架",
     "model_supply_mode_invalid": "供應模式無效，可選負載均衡或主備",
     "model_supply_model_not_found": "公開模型不存在",
     "model_supply_model_not_public": "只能為公開模型新增供應，不能為別名或自動路由策略新增",
@@ -2640,10 +2640,10 @@
     "hours_other": "{{count}} 小時",
     "seconds_other": "{{count}} 秒",
     "status": {
-      "label": "發佈狀態",
-      "help": "草稿：不列出、不可調用；已發佈：列出且可調用；已下架：仍可調用但不再列出。開啟按供應路由後生效。",
-      "draft": "草稿",
-      "published": "已發佈",
+      "label": "狀態",
+      "help": "未啟用：不列出、不可調用；已啟用：列出且可調用；已下架：仍可調用但不再列出。開啟按供應路由後生效。",
+      "draft": "未啟用",
+      "published": "已啟用",
       "retired": "已下架"
     },
     "available": {
@@ -2770,7 +2770,7 @@
       "attachTitle": "掛接 {{model}}",
       "attachDescription": "每個選中的渠道都會新增一條該公開模型的供應，發給上游的就是這個名字，優先級和權重沿用渠道自己的設定，之後可在模型的「供應」頁調整。",
       "publicModel": "公開模型",
-      "willCreate": "{{model}} 還不是公開模型，會新建為草稿：設好價格後在它的頁面上發佈。",
+      "willCreate": "{{model}} 還不是公開模型，會先新建為未啟用：設好價格後在它的頁面上啟用。",
       "isAlias": "{{model}} 是 {{canonical}} 的別名，供應會記在 {{canonical}} 下。",
       "isPolicy": "{{model}} 是路由策略，不是公開模型。",
       "noChannel": "至少選一個渠道",
@@ -3358,8 +3358,8 @@
     "selected": "已選 {{count}} 個",
     "createSupplies": "為匹配到的渠道建供應",
     "status": "狀態",
-    "asDraft": "草稿",
-    "asPublished": "發佈",
+    "asDraft": "先不啟用",
+    "asPublished": "直接啟用",
     "add": "添加 {{count}} 個",
     "added": "已添加 {{count}} 個模型，建立了 {{supplies}} 條供應",
     "unsureCount_one": "+{{count}} 待確認",
@@ -3476,8 +3476,8 @@
     "namePlaceholder": "規則名稱",
     "action": "動作",
     "actions": {
-      "publish": "發佈",
-      "draft": "加為草稿",
+      "publish": "啟用",
+      "draft": "加入但不啟用",
       "ignore": "不收錄",
       "retire": "下架"
     },
@@ -3512,9 +3512,9 @@
     "ranDry": "演練：報告了 {{count}} 項新變化",
     "defaultNames": {
       "retireDeprecated": "下架已棄用的模型",
-      "previews": "預覽版加為草稿",
-      "publishMain": "主流廠商的新模型直接發佈",
-      "otherSupplied": "其餘有渠道能供應的加為草稿"
+      "previews": "預覽版加入但不啟用",
+      "publishMain": "主流廠商的新模型直接啟用",
+      "otherSupplied": "其餘有渠道能供應的加入但不啟用"
     }
   },
   "modelAccess": {
@@ -3580,5 +3580,10 @@
       "member": "成員 {{name}}",
       "list": "清單 {{name}}"
     }
+  },
+  "longList": {
+    "search": "搜尋",
+    "noMatch": "沒有匹配的模型",
+    "showMore_other": "顯示其餘 {{count}} 個"
   }
 }
