@@ -25,7 +25,7 @@ import NewChannelMenu from './NewChannelMenu';
 import ProviderPane, { CHANNEL_COLUMNS, RANGES } from './ProviderPane';
 import ChannelPanel from './ChannelPanel';
 import NewChannelSheet from './NewChannelSheet';
-import { LEGACY_SECTION_TAB, PANEL_TABS } from './panelTabs';
+import { DEFAULT_PANEL_TAB, LEGACY_SECTION_TAB, PANEL_TABS } from './panelTabs';
 import { ISSUE_FILTERS, NO_TAG, STATUS_FILTERS, channelMatches, groupChannelsByType, openIssues } from './channelGroups';
 import useBatchActions from './useBatchActions';
 import { checkChannelDrift, fetchAllChannels, fetchChannelMetrics, fetchGroupOptions, fetchModels, manageChannel } from './channelApi';
@@ -61,7 +61,7 @@ function panelTabFrom(params) {
   if (PANEL_TABS.some((x) => x.key === tab)) return tab;
   if (tab === 'config') return 'connection';
   if (params.get('view') === 'settings') return LEGACY_SECTION_TAB[params.get('section')] || 'connection';
-  return 'models';
+  return DEFAULT_PANEL_TAB;
 }
 
 // /panel/channel: a row of provider cards (each with its traffic) above one channel list. While
@@ -251,7 +251,7 @@ export default function Channel() {
     return `${path}${q ? `?${q}` : ''}`;
   };
   const openChannel = (id, nextTab) =>
-    navigate(withType(`/panel/channel/${id}`, selectedType, { tab: nextTab && nextTab !== 'models' ? nextTab : '' }));
+    navigate(withType(`/panel/channel/${id}`, selectedType, { tab: nextTab && nextTab !== DEFAULT_PANEL_TAB ? nextTab : '' }));
   const closeOverlay = () => navigate(withType('/panel/channel'));
   const openNew = (type = selectedType) => navigate(withType('/panel/channel/new', type || 1));
   const selectType = (type) => {
@@ -581,7 +581,7 @@ export default function Channel() {
           onTabChange={(next) => {
             const p = new URLSearchParams(searchParams);
             ['view', 'section'].forEach((k) => p.delete(k));
-            next === 'models' ? p.delete('tab') : p.set('tab', next);
+            next === DEFAULT_PANEL_TAB ? p.delete('tab') : p.set('tab', next);
             setSearchParams(p, { replace: true });
           }}
           onClose={closeOverlay}

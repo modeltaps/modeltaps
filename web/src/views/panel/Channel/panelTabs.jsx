@@ -976,7 +976,9 @@ const advancedTab = {
   Body: AdvancedBody
 };
 
-export const PANEL_TABS = [modelsTab, connectionTab, routingTab, rewriteTab, monitorTab, advancedTab];
+export const PANEL_TABS = [connectionTab, modelsTab, routingTab, rewriteTab, monitorTab, advancedTab];
+// Tab a channel opens on when the URL names none; it is left out of the URL.
+export const DEFAULT_PANEL_TAB = PANEL_TABS[0].key;
 
 // Old deep links named the sections of the former settings form.
 export const LEGACY_SECTION_TAB = { basic: 'connection', model: 'models', request: 'rewrite', advanced: 'advanced', plugin: 'advanced' };
