@@ -504,6 +504,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The vendor table lists model makers only. It started as a copy of the channel types, so it
+  held platforms that serve other labs' models (OpenRouter, Groq, Cloudflare AI, Siliconflow,
+  Ollama, Coze) and a model kind (Rerank); an upgrade removes those rows unless an admin renamed
+  them or catalog models still point at them (the log names the ones kept). Google PaLM is merged
+  into Google and the second Tencent row into the one with the `tencent` slug, their models moved
+  along; Google Gemini and Hunyuan are renamed Google and Tencent where the name was unchanged.
 - Catalog models get the vendor that made them. 188 of the 511 models the dev Vercel channel
   added had no vendor: the vendor table lacked most labs (NVIDIA, Microsoft, ByteDance,
   ElevenLabs, Voyage AI...), Vercel's prefixes did not match the slugs ("spacexai", "bfl",

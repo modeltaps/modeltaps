@@ -613,6 +613,7 @@ func postMigrations() []*gormigrate.Migration {
 		migrateSupplyModeFollowDefault(),
 		migratePlatformSpellingDrafts(),
 		migrateAttachRenamedPublicModels(),
+		migrateVendorCleanup(),
 	}
 }
 

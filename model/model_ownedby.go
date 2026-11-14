@@ -292,8 +292,7 @@ func (m *ModelOwnedBys) SyncModelOwnedBy(modelOwnedBies []*ModelOwnedBy) {
 }
 
 // defaultVendorSlugs 主流厂商的小写 slug，取值与 OpenRouter 模型名前缀 / models.dev 的
-// provider id 对齐，便于同步时按元数据定位厂商。聚合型渠道（OpenRouter、Siliconflow 等）
-// 与没有稳定公开标识的厂商不给 slug；Google PaLM 与 Gemini 同属 google，只给 Gemini。
+// provider id 对齐，便于同步时按元数据定位厂商。没有稳定公开标识的厂商不给 slug。
 var defaultVendorSlugs = map[int]string{
 	config.ChannelTypeOpenAI:    "openai",
 	config.ChannelTypeAnthropic: "anthropic",
@@ -307,7 +306,6 @@ var defaultVendorSlugs = map[int]string{
 	config.ChannelTypeMistral:   "mistralai",
 	config.ChannelTypeBaidu:     "baidu",
 	config.ChannelTypeCohere:    "cohere",
-	config.ChannelTypeGroq:      "groq",
 	config.ChannelTypeMiniMax:   "minimax",
 	config.ChannelTypeBaichuan:  "baichuan",
 	config.ChannelTypeHunyuan:   "tencent",
@@ -332,6 +330,8 @@ var renamedDefaultVendors = map[int]string{
 	config.ChannelTypeDeepseek: "Deepseek",
 	config.ChannelTypeFlux:     "Flux",
 	config.ChannelTypeRecraft:  "RecraftAI",
+	config.ChannelTypeGemini:   "Google Gemini",
+	config.ChannelTypeHunyuan:  "Hunyuan",
 }
 
 // labVendors are model makers with no channel type of their own, keyed by the slug models.dev
@@ -417,39 +417,30 @@ func (m *ModelOwnedBys) SyncLabVendors(vendors []*ModelOwnedBy) {
 func GetDefaultModelOwnedBy() []*ModelOwnedBy {
 	owners := []*ModelOwnedBy{
 		{Id: config.ChannelTypeOpenAI, Name: "OpenAI", Icon: "brand:openai"},
-		{Id: config.ChannelTypePaLM, Name: "Google PaLM", Icon: "brand:gemini"},
 		{Id: config.ChannelTypeAnthropic, Name: "Anthropic", Icon: "brand:claude"},
 		{Id: config.ChannelTypeBaidu, Name: "Baidu", Icon: "brand:wenxin"},
 		{Id: config.ChannelTypeZhipu, Name: "Zhipu", Icon: "brand:zhipu"},
 		{Id: config.ChannelTypeAli, Name: "Qwen", Icon: "brand:qwen"},
 		{Id: config.ChannelTypeXunfei, Name: "iFlytek", Icon: "brand:spark"},
 		{Id: config.ChannelType360, Name: "360", Icon: "brand:ai360"},
-		{Id: config.ChannelTypeTencent, Name: "Tencent", Icon: "brand:hunyuan"},
-		{Id: config.ChannelTypeGemini, Name: "Google Gemini", Icon: "brand:gemini"},
+		{Id: config.ChannelTypeGemini, Name: "Google", Icon: "brand:gemini"},
 		{Id: config.ChannelTypeBaichuan, Name: "Baichuan", Icon: "brand:baichuan"},
 		{Id: config.ChannelTypeMiniMax, Name: "MiniMax", Icon: "brand:minimax"},
 		{Id: config.ChannelTypeDeepseek, Name: "DeepSeek", Icon: "brand:deepseek"},
 		{Id: config.ChannelTypeMoonshot, Name: "Moonshot", Icon: "brand:moonshot"},
 		{Id: config.ChannelTypeMistral, Name: "Mistral", Icon: "brand:mistral"},
-		{Id: config.ChannelTypeGroq, Name: "Groq", Icon: "brand:groq"},
 		{Id: config.ChannelTypeLingyi, Name: "Yi", Icon: "brand:yi"},
 		{Id: config.ChannelTypeMidjourney, Name: "Midjourney", Icon: "brand:midjourney"},
-		{Id: config.ChannelTypeCloudflareAI, Name: "Cloudflare AI", Icon: "brand:cloudflare"},
 		{Id: config.ChannelTypeCohere, Name: "Cohere", Icon: "brand:cohere"},
 		{Id: config.ChannelTypeStabilityAI, Name: "Stability AI", Icon: "brand:stability"},
-		{Id: config.ChannelTypeCoze, Name: "Coze", Icon: "brand:coze"},
-		{Id: config.ChannelTypeOllama, Name: "Ollama", Icon: "brand:ollama"},
-		{Id: config.ChannelTypeHunyuan, Name: "Hunyuan", Icon: "brand:hunyuan"},
+		{Id: config.ChannelTypeHunyuan, Name: "Tencent", Icon: "brand:hunyuan"},
 		{Id: config.ChannelTypeSuno, Name: "Suno", Icon: "brand:suno"},
 		{Id: config.ChannelTypeLLAMA, Name: "Meta", Icon: "brand:meta"},
 		{Id: config.ChannelTypeIdeogram, Name: "Ideogram", Icon: "brand:ideogram"},
-		{Id: config.ChannelTypeSiliconflow, Name: "Siliconflow", Icon: "brand:siliconcloud"},
 		{Id: config.ChannelTypeFlux, Name: "Black Forest Labs", Icon: "brand:flux"},
 		{Id: config.ChannelTypeJina, Name: "Jina", Icon: "brand:jina"},
-		{Id: config.ChannelTypeRerank, Name: "Rerank", Icon: ""},
 		{Id: config.ChannelTypeRecraft, Name: "Recraft", Icon: "brand:recraft"},
 		{Id: config.ChannelTypeKling, Name: "Kling", Icon: "brand:kling"},
-		{Id: config.ChannelTypeOpenRouter, Name: "OpenRouter", Icon: "brand:openrouter"},
 		{Id: config.ChannelTypeXAI, Name: "xAI", Icon: "brand:xai"},
 	}
 
