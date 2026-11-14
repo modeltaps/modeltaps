@@ -628,6 +628,7 @@ func syncCatalogPricing(url string, auto bool) (*CatalogSyncResult, error) {
 		logger.SysError("model library sync failed: " + err.Error())
 	} else {
 		logger.SysLog(fmt.Sprintf("Model library synced from models.dev: %d models", len(entries)))
+		rehomeSyncedDraftsAfterLibrarySync()
 		runLibraryRulesAfterSync()
 	}
 	// The public catalog only holds models an admin added: refresh those, create none.
