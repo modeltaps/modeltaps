@@ -2094,8 +2094,8 @@
         "idleFilter": "無請求",
         "failingFilter": "失敗多"
       },
-      "public": "對外模型",
-      "notOffered": "未對外",
+      "public": "公開名",
+      "notOffered": "未公開",
       "supplyOff": "供應已停用",
       "context": "上下文",
       "orderHint": "預設按常用程度排：近 30 天本站請求多的系列在前，沒有用量時主流系列在前，同系列最新版本在前。點表頭按名稱排",
@@ -2115,19 +2115,19 @@
           "pdf": "PDF"
         }
       },
-      "offeredAs": "對外：",
+      "offeredAs": "公開名：",
       "check": "重新檢查",
       "checkHint": "讀取上游目前的模型清單，標出已下架和尚未加入的模型",
       "state": {
-        "offered": "對外提供",
-        "unoffered": "未對外",
+        "offered": "已公開",
+        "unoffered": "未公開",
         "gone": "上游已下架",
         "unlisted": "上游有、未加入"
       },
       "unoffered": {
         "not_in_catalog": "目錄裏沒有",
         "no_supply": "目錄裏有 {{model}}，這個渠道尚未接入",
-        "wildcard": "萬用字元不對外",
+        "wildcard": "萬用字元不會公開",
         "off": "{{model}} 的供應已停用",
         "duplicate": "和 {{other}} 同屬 {{model}}，一個渠道只能用一個名字提供它",
         "duplicateShort": "與 {{other}} 重複"
@@ -2135,20 +2135,35 @@
       "addToCatalog": "加入目錄",
       "attach": "接入",
       "openSupply": "去模型頁",
-      "addedToCatalog": "已把 {{model}} 加入目錄（草稿），在模型頁設好價格並發佈後對外",
+      "addedToCatalog": "已把 {{model}} 加入目錄（草稿），在模型頁設好價格並發佈後公開",
       "attached": "已接入 {{model}}",
       "removeGone": "全部移除 {{count}} 個",
       "addUnlisted": "全部加入 {{count}} 個",
       "addOne": "加入 {{model}}",
       "unlistedState": {
-        "in_use": "對外：{{model}}",
-        "off": "對外：{{model}}（供應已停用）",
-        "available": "加入後對外：{{model}}",
+        "in_use": "公開名：{{model}}",
+        "off": "公開名：{{model}}（供應已停用）",
+        "available": "加入後公開為 {{model}}",
         "not_in_catalog": "目錄裏沒有",
         "unknown": "認不出來"
       },
       "addMapping": "新增模型映射",
-      "addAsOwn": "單獨加入目錄"
+      "addAsOwn": "單獨加入目錄",
+      "removeHint": "從這個渠道移除（儲存後生效）",
+      "undoRemove": "撤銷移除 {{model}}",
+      "removedHint": "{{model}} 已移除，儲存後生效",
+      "removedLine": "已移除，儲存後生效",
+      "removedNote": "已移除 {{count}} 個模型，儲存後生效",
+      "undoAll": "全部撤銷",
+      "kind": {
+        "image": "圖像",
+        "video": "影片",
+        "speech": "語音合成",
+        "transcription": "語音辨識",
+        "embedding": "向量",
+        "rerank": "重排",
+        "audio": "音訊"
+      }
     },
     "monitor": {
       "checkNow": "立即檢查模型列表",
@@ -2294,7 +2309,7 @@
         "rewrite": "請求改寫",
         "monitor": "監控",
         "advanced": "進階",
-        "performance": "表現"
+        "performance": "統計"
       },
       "tabs": "渠道設定",
       "discard": "撤銷",
@@ -3696,6 +3711,9 @@
   "longList": {
     "search": "搜尋",
     "noMatch": "沒有匹配的模型",
-    "showMore_other": "顯示其餘 {{count}} 個"
+    "pager": "分頁",
+    "range": "第 {{from}}–{{to}} 個，共 {{total}} 個",
+    "previous": "上一頁",
+    "next": "下一頁"
   }
 }

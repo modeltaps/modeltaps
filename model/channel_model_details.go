@@ -29,6 +29,9 @@ type ChannelModelDetail struct {
 	// FamilyRequests is the site's requests to the model's family in that window.
 	FamilyRequests int64                `json:"family_requests"`
 	Public         []ChannelModelPublic `json:"public"`
+	// Kind is the model's kind (ModelKind*), "" for a chat model: from the upstream's own list,
+	// else the catalog's output modalities, else the name.
+	Kind string `json:"kind"`
 	// Unoffered says why a listed model serves no public model while supplies route requests
 	// (one of the ChannelModelUnoffered* values); empty when it serves one.
 	Unoffered string `json:"unoffered,omitempty"`
@@ -49,7 +52,7 @@ const (
 	// The public model it matches is already supplied by this channel under another upstream name
 	// (a channel supplies a model once), as "openai/gpt-5.5-fast" next to "openai/gpt-5.5".
 	ChannelModelDuplicate = "duplicate"
-	ChannelModelWildcard     = "wildcard"       // "claude-*" style entries are never supplied
+	ChannelModelWildcard  = "wildcard" // "claude-*" style entries are never supplied
 )
 
 // tokenSellPrice is the base sell price of a public model per million tokens; nil when it has no
@@ -76,6 +79,18 @@ func BuildChannelModelDetails(channelID int, models []string, mapping map[string
 	picker, err := BuildModelPicker(models, familyRequests, map[string]int{})
 	if err != nil {
 		return nil, err
+	}
+
+	// Model kinds the upstream's own list stated, kept with the channel's prices.
+	upstreamKinds := map[string]string{}
+	if channelID > 0 {
+		var kinds []ChannelPrice
+		if err := DB.Select("model", "kind").Where("channel_id = ? AND kind <> ''", channelID).Find(&kinds).Error; err != nil {
+			return nil, err
+		}
+		for _, k := range kinds {
+			upstreamKinds[k.Model] = k.Kind
+		}
 	}
 
 	bySupply := map[string][]*ModelSupply{}
@@ -122,6 +137,11 @@ func BuildChannelModelDetails(channelID int, models []string, mapping map[string
 			FamilyRequests:  familyRequests[item.Family],
 			Public:          []ChannelModelPublic{},
 		}
+		upstreamName := strings.TrimPrefix(strings.TrimSpace(mapping[item.Model]), "+")
+		if upstreamName == "" {
+			upstreamName = item.Model
+		}
+		detail.Kind = ResolveModelKind(upstreamKinds[upstreamName], item.OutputModalities, upstreamName)
 		if config.ModelSupplyEnabled {
 			upstream := strings.TrimPrefix(strings.TrimSpace(mapping[item.Model]), "+")
 			if upstream == "" {

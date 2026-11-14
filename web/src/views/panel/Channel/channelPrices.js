@@ -21,13 +21,21 @@ export function amount(value) {
 
 export const usd = (value) => `$${amount(value)}`;
 
-// The short form the table shows: input and output per million tokens (bare numbers; the column
+// A per-million-token price for the table: two decimals (0.75, 30.00, 0.40) so the decimal
+// points line up; a price under a cent keeps its significant digits instead (0.0001).
+export function tokenAmount(value) {
+  const n = Number(value) || 0;
+  if (n !== 0 && Math.abs(n) < 0.01) return amount(n);
+  return n.toFixed(2);
+}
+
+// The short form the table shows: input and output per million tokens (two decimals; the column
 // headers carry "$/M"), or for a model not priced per token one text for both columns: a
 // per-image, per-second or per-request price, free, or other.
 export function priceSummary(price) {
   if (!price) return null;
   const { input = 0, output = 0, image = 0, request = 0, video_second: videoSecond = 0 } = price;
-  if (input || output) return { kind: 'tokens', input: amount(input), output: amount(output) };
+  if (input || output) return { kind: 'tokens', input: tokenAmount(input), output: tokenAmount(output) };
   if (image) return { kind: 'image', value: usd(image) };
   if (videoSecond) return { kind: 'video', value: usd(videoSecond) };
   if (price.other) return { kind: 'other' };

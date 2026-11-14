@@ -28,8 +28,11 @@ type ChannelPrice struct {
 	VideoSecond float64 `json:"video_second,omitempty"`
 	// Other marks a model the upstream prices only in a way not kept here (per second of speech,
 	// per realtime session, per video token): it has a price, just not one of the above.
-	Other    bool  `json:"other,omitempty"`
-	SyncedAt int64 `json:"-"`
+	Other bool `json:"other,omitempty"`
+	// Kind is the model kind the upstream's own list states (ModelKind*; "" for a language model
+	// or when the list does not say). The channel panel tags non-chat models with it.
+	Kind     string `json:"kind,omitempty" gorm:"type:varchar(16);default:''"`
+	SyncedAt int64  `json:"-"`
 }
 
 // USDPerMillionTokens converts a per-token USD price, the unit upstream price lists use, to USD

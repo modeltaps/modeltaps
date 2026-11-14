@@ -2096,8 +2096,8 @@
         "idleFilter": "リクエストなし",
         "failingFilter": "失敗が多い"
       },
-      "public": "公開モデル",
-      "notOffered": "未提供",
+      "public": "公開名",
+      "notOffered": "未公開",
       "supplyOff": "供給停止中",
       "context": "コンテキスト",
       "orderHint": "既定はよく使う順：直近 30 日に本サイトでリクエストが多いシリーズが先、利用がなければ主要シリーズが先、同じシリーズは最新版が先。クリックで名前順",
@@ -2122,7 +2122,7 @@
       "checkHint": "上流の現在のモデル一覧を読み込み、提供終了と未追加のモデルを示します",
       "state": {
         "offered": "公開中",
-        "unoffered": "非公開",
+        "unoffered": "未公開",
         "gone": "上流で提供終了",
         "unlisted": "上流にあり・未追加"
       },
@@ -2137,7 +2137,7 @@
       "addToCatalog": "カタログに追加",
       "attach": "接続",
       "openSupply": "モデルページへ",
-      "addedToCatalog": "{{model}} をカタログに追加しました（下書き）。モデルページで価格を設定して公開すると提供されます",
+      "addedToCatalog": "{{model}} を下書きとしてカタログに追加しました。モデルページで価格を設定して公開すると公開されます",
       "attached": "{{model}} に接続しました",
       "removeGone": "{{count}} 件をすべて削除",
       "addUnlisted": "{{count}} 件をすべて追加",
@@ -2145,12 +2145,27 @@
       "unlistedState": {
         "in_use": "公開名：{{model}}",
         "off": "公開名：{{model}}（供給停止中）",
-        "available": "追加すると公開：{{model}}",
+        "available": "追加すると {{model}} として公開",
         "not_in_catalog": "カタログにありません",
         "unknown": "不明"
       },
       "addMapping": "モデルマッピングを追加",
-      "addAsOwn": "別モデルとしてカタログに追加"
+      "addAsOwn": "別モデルとしてカタログに追加",
+      "removeHint": "このチャネルから削除（保存後に反映）",
+      "undoRemove": "{{model}} の削除を取り消す",
+      "removedHint": "{{model}} は保存すると削除されます",
+      "removedLine": "保存すると削除されます",
+      "removedNote": "{{count}} 件のモデルを削除しました。保存後に反映されます",
+      "undoAll": "すべて取り消す",
+      "kind": {
+        "image": "画像",
+        "video": "動画",
+        "speech": "音声合成",
+        "transcription": "音声認識",
+        "embedding": "埋め込み",
+        "rerank": "リランク",
+        "audio": "音声"
+      }
     },
     "monitor": {
       "checkNow": "今すぐモデル一覧を確認",
@@ -2296,7 +2311,7 @@
         "rewrite": "リクエストの書き換え",
         "monitor": "監視",
         "advanced": "詳細設定",
-        "performance": "パフォーマンス"
+        "performance": "統計"
       },
       "tabs": "チャネル設定",
       "discard": "破棄",
@@ -3695,6 +3710,9 @@
   "longList": {
     "search": "検索",
     "noMatch": "一致するモデルはありません",
-    "showMore_other": "残り {{count}} 件を表示"
+    "pager": "ページ",
+    "range": "{{total}} 件中 {{from}}–{{to}} 件",
+    "previous": "前のページ",
+    "next": "次のページ"
   }
 }

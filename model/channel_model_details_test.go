@@ -11,7 +11,7 @@ import (
 func setupChannelModelDetailsDB(t *testing.T) {
 	t.Helper()
 	setupModelInfoTestDB(t)
-	if err := DB.AutoMigrate(&Statistics{}, &ModelSupply{}, &ModelLibraryEntry{}, &ModelLibraryHost{}); err != nil {
+	if err := DB.AutoMigrate(&Statistics{}, &ModelSupply{}, &ModelLibraryEntry{}, &ModelLibraryHost{}, &ChannelPrice{}); err != nil {
 		t.Fatal(err)
 	}
 	old := config.ModelSupplyEnabled
@@ -165,5 +165,26 @@ func TestBuildChannelModelDetailsUnoffered(t *testing.T) {
 	d := details[0]
 	if got := [4]string{d.Unoffered, d.Suggested, d.SameAs, d.SuppliedBy}; got != [4]string{ChannelModelDuplicate, "GPT-5", "gpt-5", "openai/gpt-5"} {
 		t.Errorf("duplicate = %v", got)
+	}
+}
+
+// A model's kind comes from the upstream's own list (stored with the channel's prices) when it
+// states one, else from the name; a chat model has none. Mapped models use the name sent upstream.
+func TestBuildChannelModelDetailsKind(t *testing.T) {
+	setupChannelModelDetailsDB(t)
+	config.ModelSupplyEnabled = false
+	if err := DB.Create(&ChannelPrice{ChannelId: 9, Model: "acme/renderer-1", Kind: ModelKindImage}).Error; err != nil {
+		t.Fatal(err)
+	}
+	details, err := BuildChannelModelDetails(9, []string{"acme/renderer-1", "openai/tts-1", "voice", "openai/gpt-5"},
+		map[string]string{"voice": "elevenlabs/eleven-v3"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{"acme/renderer-1": ModelKindImage, "openai/tts-1": ModelKindSpeech, "voice": ModelKindSpeech, "openai/gpt-5": ""}
+	for _, d := range details {
+		if d.Kind != want[d.Model] {
+			t.Errorf("%s kind = %q, want %q", d.Model, d.Kind, want[d.Model])
+		}
 	}
 }

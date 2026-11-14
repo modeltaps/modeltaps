@@ -259,6 +259,7 @@ func buildOpenRouterChannelPrices(resp *modelPricingResponse) []*model.ChannelPr
 			CacheWrite: model.USDPerMillionTokens(parseUSD(m.Pricing.InputCacheWrite)),
 			Image:      parseUSD(m.Pricing.Image),
 			Request:    parseUSD(m.Pricing.Request),
+			Kind:       model.ModelKindFromOutputModalities(m.Architecture.OutputModalities),
 		}
 		pr := m.Pricing
 		if pr.Prompt == "" && pr.Completion == "" && pr.Request == "" && pr.Image == "" && pr.InputCacheRead == "" && pr.InputCacheWrite == "" {

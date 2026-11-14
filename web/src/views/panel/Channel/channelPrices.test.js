@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { amount, priceIndex, priceSummary, sortByTokenPrice, tokenPrice, upstreamNameOf, usd } from './channelPrices';
+import { amount, priceIndex, priceSummary, sortByTokenPrice, tokenAmount, tokenPrice, upstreamNameOf, usd } from './channelPrices';
+
+describe('tokenAmount', () => {
+  it('keeps two decimals so the column lines up', () => {
+    expect(tokenAmount(0.75)).toBe('0.75');
+    expect(tokenAmount(30)).toBe('30.00');
+    expect(tokenAmount(0.4)).toBe('0.40');
+    expect(tokenAmount(0)).toBe('0.00');
+  });
+  it('keeps the digits of a price under a cent', () => {
+    expect(tokenAmount(0.0001)).toBe('0.0001');
+  });
+});
 
 describe('upstreamNameOf', () => {
   it('uses the mapping target without the billing "+"', () => {
@@ -21,7 +33,7 @@ describe('usd', () => {
 
 describe('priceSummary', () => {
   it('reads token, per-image, per-request and free prices', () => {
-    expect(priceSummary({ input: 3, output: 15 })).toEqual({ kind: 'tokens', input: '3', output: '15' });
+    expect(priceSummary({ input: 3, output: 15 })).toEqual({ kind: 'tokens', input: '3.00', output: '15.00' });
     expect(priceSummary({ image: 0.04 })).toEqual({ kind: 'image', value: '$0.04' });
     expect(priceSummary({ request: 0.01 })).toEqual({ kind: 'request', value: '$0.01' });
     expect(priceSummary({ video_second: 0.05 })).toEqual({ kind: 'video', value: '$0.05' });

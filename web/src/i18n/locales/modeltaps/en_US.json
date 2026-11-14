@@ -2193,8 +2193,8 @@
         "idleFilter": "No requests",
         "failingFilter": "Mostly failing"
       },
-      "public": "Offered as",
-      "notOffered": "Not offered",
+      "public": "Public name",
+      "notOffered": "Not public",
       "supplyOff": "supply off",
       "context": "Context",
       "orderHint": "Most used first: families with the most requests on this site in the last 30 days, then mainstream families, the latest version first. Click to sort by name.",
@@ -2214,19 +2214,19 @@
           "pdf": "PDF"
         }
       },
-      "offeredAs": "as",
+      "offeredAs": "Public:",
       "check": "Check again",
       "checkHint": "Read the upstream model list now and mark models it dropped or that are not added yet",
       "state": {
-        "offered": "Offered",
-        "unoffered": "Not offered",
+        "offered": "Public",
+        "unoffered": "Not public",
         "gone": "Gone upstream",
         "unlisted": "Upstream, not added"
       },
       "unoffered": {
         "not_in_catalog": "not in the catalog",
         "no_supply": "the catalog has {{model}}; this channel does not supply it",
-        "wildcard": "wildcards are not offered",
+        "wildcard": "wildcards are never public",
         "off": "the {{model}} supply is off",
         "duplicate": "same model as {{other}} ({{model}}); a channel supplies a model under one name",
         "duplicateShort": "duplicates {{other}}"
@@ -2234,20 +2234,36 @@
       "addToCatalog": "Add to catalog",
       "attach": "Supply",
       "openSupply": "Open model",
-      "addedToCatalog": "Added {{model}} to the catalog as a draft; it is offered once it has a price and is published on the model page",
+      "addedToCatalog": "Added {{model}} to the catalog as a draft; it becomes public once it has a price and is published on the model page",
       "attached": "Now supplying {{model}}",
       "removeGone": "Remove all {{count}}",
       "addUnlisted": "Add all {{count}}",
       "addOne": "Add {{model}}",
       "unlistedState": {
-        "in_use": "Offered as {{model}}",
-        "off": "Offered as {{model}} (supply off)",
-        "available": "Offered as {{model}} once added",
+        "in_use": "Public: {{model}}",
+        "off": "Public: {{model}} (supply off)",
+        "available": "Public as {{model}} once added",
         "not_in_catalog": "Not in the catalog",
         "unknown": "Not recognized"
       },
       "addMapping": "Add a model mapping",
-      "addAsOwn": "Add as its own model"
+      "addAsOwn": "Add as its own model",
+      "removeHint": "Remove from this channel (takes effect when saved)",
+      "undoRemove": "Undo removing {{model}}",
+      "removedHint": "{{model}} is removed when you save",
+      "removedLine": "Removed when you save",
+      "removedNote_one": "{{count}} model removed, takes effect when saved",
+      "removedNote_other": "{{count}} models removed, takes effect when saved",
+      "undoAll": "Undo all",
+      "kind": {
+        "image": "Image",
+        "video": "Video",
+        "speech": "Speech",
+        "transcription": "Transcription",
+        "embedding": "Embedding",
+        "rerank": "Rerank",
+        "audio": "Audio"
+      }
     },
     "monitor": {
       "checkNow": "Check model list now",
@@ -2401,7 +2417,7 @@
         "rewrite": "Request rewriting",
         "monitor": "Monitoring",
         "advanced": "Advanced",
-        "performance": "Performance"
+        "performance": "Stats"
       },
       "tabs": "Channel settings",
       "discard": "Discard",
@@ -3800,7 +3816,9 @@
   "longList": {
     "search": "Search",
     "noMatch": "No matching models",
-    "showMore_one": "Show {{count}} more",
-    "showMore_other": "Show {{count}} more"
+    "pager": "Pages",
+    "range": "{{from}}–{{to}} of {{total}}",
+    "previous": "Previous page",
+    "next": "Next page"
   }
 }

@@ -321,6 +321,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Channel Models tab polish. The public model under each name reads "Public: gpt-5" ("Not
+  public" when there is none) instead of "offered as", in all four languages; the Performance tab
+  is renamed Stats. Upstream prices show two decimals (0.75, 30.00) so the columns line up. The
+  remove button is a trash icon shown on row hover; a removed model stays in the table struck
+  through, with an undo, until the tab is saved, and "Undo all" puts every one back. Long lists in
+  object panels page 50 rows at a time ("1–50 of 511") instead of showing the first 20 and then
+  everything at once. Non-chat models carry a type tag (image, video, speech, transcription,
+  embedding, rerank, audio): taken from the upstream's own list where it states one (Vercel AI
+  Gateway's model type and OpenRouter's output modalities, stored with the channel's prices),
+  else from the catalog's output modalities, else from the model name.
 - Channel balances are refreshed every 60 minutes by default (`CHANNEL_UPDATE_FREQUENCY`,
   `channel.update_frequency`; it used to be off), so low-balance alerts fire without a manual
   refresh. As with a manual refresh, a channel whose balance reaches 0 is disabled, or paused when

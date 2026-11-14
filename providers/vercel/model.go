@@ -291,6 +291,7 @@ func buildChannelPrices(resp *modelListResponse) []*model.ChannelPrice {
 			Image:       parseUSD(pr.Image),
 			Request:     parseUSD(pr.Request),
 			VideoSecond: lowestVideoSecond(pr.VideoDuration),
+			Kind:        model.ModelKindFromUpstreamType(m.Type),
 		}
 		read := pr.Input != "" || pr.Output != "" || pr.Image != "" || pr.InputCacheRead != "" || pr.InputCacheWrite != "" ||
 			pr.Request != "" || len(pr.VideoDuration) > 0

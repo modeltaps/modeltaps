@@ -13,6 +13,7 @@ import {
   Plus,
   RefreshCw,
   Trash2,
+  Undo2,
   X,
   AlertTriangle
 } from 'lucide-react';
@@ -389,10 +390,15 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   // model is not offered), read again shortly after the list changes or a model is offered.
   const [details, setDetails] = useState(null);
   const [detailsStamp, setDetailsStamp] = useState(0);
+  // Models removed from the draft stay in the table, struck through with an undo, until the tab
+  // is saved (saving remounts the tab and clears this). A model added back drops out of it.
+  const [removedNames, setRemovedNames] = useState([]);
+  const removed = useMemo(() => removedNames.filter((n) => !models.includes(n)), [removedNames, models]);
+  const removedKey = removed.join(',');
   useEffect(() => {
     let alive = true;
     const timer = setTimeout(() => {
-      fetchChannelModelDetails(channel.id, splitList(draft.models), mapping)
+      fetchChannelModelDetails(channel.id, [...splitList(draft.models), ...splitList(removedKey)], mapping)
         .then((list) => alive && setDetails(new Map(list.map((d) => [d.model, d]))))
         .catch(() => alive && setDetails((cur) => cur || new Map()));
     }, 300);
@@ -400,7 +406,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
       alive = false;
       clearTimeout(timer);
     };
-  }, [channel.id, draft.models, mapping, detailsStamp]);
+  }, [channel.id, draft.models, removedKey, mapping, detailsStamp]);
   const detailOf = (name) => details?.get(name);
 
   // What the upstream listed at the last model check, read again after each check.
@@ -433,6 +439,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
       }),
     [draft.models, mapping, perModel, hasTraffic, ctx.supplyRouting, details, snapshot]
   );
+  const removedRows = useMemo(() => removed.map((name) => ({ name, removed: true })), [removed]);
   const range = t(`channels.range.short.${ctx.rangeKey}`);
   // Showing only the rows of one filter (a state, or unused / failing traffic); '' shows all.
   const [picked, setOnly] = useState('');
@@ -449,9 +456,15 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
     for (const r of rows) if (r.signal) out[r.signal] += 1;
     return out;
   }, [rows]);
+  // Removed rows show only in the unfiltered list, where they were.
   const filtered = useMemo(
-    () => (!only ? rows : STATE_FILTERS.includes(only) ? rows.filter((r) => matchesState(r, only)) : rows.filter((r) => r.signal === only)),
-    [rows, only]
+    () =>
+      !only
+        ? [...rows, ...removedRows]
+        : STATE_FILTERS.includes(only)
+          ? rows.filter((r) => matchesState(r, only))
+          : rows.filter((r) => r.signal === only),
+    [rows, removedRows, only]
   );
   // Sorting by name or an upstream price is asked for from the column header; otherwise the usual
   // order from the model details.
@@ -489,7 +502,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
     return orderByRank(filtered, (r) => details?.get(r.name));
   }, [filtered, sort, showPrices, pricesByModel, mapping, details]);
   const showPublic = Boolean(ctx.supplyRouting);
-  const list = useLongList(shown, { text: modelRowText });
+  const list = useLongList(shown, { text: modelRowText, resetKey: `${only}|${sort?.key || ''}|${sort?.dir || ''}` });
 
   useEffect(() => {
     if (adding && prices === null) fetchPriceList().then(setPrices);
@@ -540,6 +553,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   const removeGone = () => {
     const gone = new Set(rows.filter((r) => r.gone).map((r) => r.name));
     setDraft({ ...draft, models: models.filter((m) => !gone.has(m)).join(',') });
+    setRemovedNames((cur) => Array.from(new Set([...cur, ...gone])));
     toast.success(t('channels.models.pruned', { count: gone.size }));
     setOnly('');
   };
@@ -577,7 +591,20 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
     }
   };
 
-  const remove = (name) => setDraft({ ...draft, models: models.filter((m) => m !== name).join(',') });
+  const remove = (name) => {
+    setDraft({ ...draft, models: models.filter((m) => m !== name).join(',') });
+    setRemovedNames((cur) => (cur.includes(name) ? cur : [...cur, name]));
+  };
+  // Puts models back where the saved list had them, so undoing every removal leaves the tab
+  // unchanged; models added in this draft keep their place after the saved ones.
+  const restore = (names) => {
+    const keep = new Set([...models, ...names]);
+    const saved = splitList(channel.models);
+    const savedSet = new Set(saved);
+    const next = [...saved.filter((m) => keep.has(m)), ...[...models, ...names].filter((m) => !savedSet.has(m))];
+    setDraft({ ...draft, models: Array.from(new Set(next)).join(',') });
+    setRemovedNames((cur) => cur.filter((n) => !names.includes(n)));
+  };
 
   return (
     <>
@@ -678,6 +705,14 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
               )}
             </div>
           )}
+          {removed.length > 0 && (
+            <p className="flex items-center gap-2 pb-2 text-[13px] text-muted-foreground">
+              <span>{t('channels.models.removedNote', { count: removed.length })}</span>
+              <button type="button" onClick={() => restore(removed)} className="font-medium text-info hover:underline">
+                {t('channels.models.undoAll')}
+              </button>
+            </p>
+          )}
           <LongListSearch list={list} className="pb-2" />
           <div className="overflow-hidden rounded-lg border border-border">
             {/* Fixed widths for the narrow columns, so the model name gets the rest of the panel. */}
@@ -722,14 +757,22 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
               </thead>
               <tbody>
                 {only !== 'unlisted' &&
-                  list.visible.map(({ name, m, signal, offer, gone }) => (
+                  list.visible.map(({ name, m, signal, offer, gone, removed: isRemoved }) => (
                     <tr
                       key={name}
-                      className="[&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0"
+                      className={cn(
+                        'group [&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0',
+                        isRemoved && '[&>td:not(:last-child)]:opacity-50'
+                      )}
                     >
-                      <td title={modelHint(t, name, detailOf(name))}>
+                      <td title={isRemoved ? t('channels.models.removedHint', { model: name }) : modelHint(t, name, detailOf(name))}>
                         <span className="flex min-w-0 items-center gap-1.5">
-                          <span className="min-w-0 truncate font-mono">{name}</span>
+                          <span className={cn('min-w-0 truncate font-mono', isRemoved && 'line-through')}>{name}</span>
+                          {detailOf(name)?.kind && (
+                            <span className="shrink-0 rounded bg-muted px-1.5 text-[11px] leading-[18px] text-muted-foreground">
+                              {t(`channels.models.kind.${detailOf(name).kind}`, { defaultValue: detailOf(name).kind })}
+                            </span>
+                          )}
                           <ModelSignal signal={signal} m={m} range={range} />
                           {gone && (
                             <span className="shrink-0 rounded bg-warning/10 px-1.5 text-[11px] leading-[18px] text-warning">
@@ -737,7 +780,8 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                             </span>
                           )}
                         </span>
-                        {showPublic && (
+                        {isRemoved && <span className="block truncate text-xs">{t('channels.models.removedLine')}</span>}
+                        {showPublic && !isRemoved && (
                           <PublicLine
                             publics={detailOf(name)?.public}
                             offer={offer}
@@ -758,14 +802,28 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                         <UpstreamPriceCells price={pricesByModel.get(upstreamNameOf(name, mapping))} publics={detailOf(name)?.public} />
                       )}
                       <td className="!px-1 text-right">
-                        <button
-                          type="button"
-                          aria-label={t('channels.models.remove', { model: name })}
-                          onClick={() => remove(name)}
-                          className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                        >
-                          <X className="size-3.5" />
-                        </button>
+                        {isRemoved ? (
+                          <button
+                            type="button"
+                            aria-label={t('channels.models.undoRemove', { model: name })}
+                            title={t('channels.models.undoRemove', { model: name })}
+                            onClick={() => restore([name])}
+                            className="inline-flex size-6 items-center justify-center rounded-md text-info hover:bg-muted"
+                          >
+                            <Undo2 className="size-3.5" />
+                          </button>
+                        ) : (
+                          // Shown on row hover (and keyboard focus) on wide screens, always on touch.
+                          <button
+                            type="button"
+                            aria-label={t('channels.models.remove', { model: name })}
+                            title={t('channels.models.removeHint')}
+                            onClick={() => remove(name)}
+                            className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
