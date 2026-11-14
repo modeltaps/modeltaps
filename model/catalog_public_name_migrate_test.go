@@ -174,3 +174,49 @@ func TestMigratePlatformSpellingRowsSkipsAliasTargets(t *testing.T) {
 		t.Errorf("supplies %s", got)
 	}
 }
+
+func TestAttachRenamedPublicModels(t *testing.T) {
+	useSupplyTestDB(t)
+	for _, info := range []*ModelInfo{
+		{Model: "claude-opus-5", Status: ModelStatusDraft, Source: ModelInfoSourceVercel},
+		{Model: "gpt-4.1-mini", Status: ModelStatusDraft, Source: ModelInfoSourceVercel},
+	} {
+		if err := DB.Create(info).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	listed := "anthropic/claude-opus-5,openai/gpt-4.1-mini,unknown/not-in-catalog"
+	for _, ch := range []*Channel{
+		// Supplied from its list before: the missing public model is attached.
+		{Id: 1, Name: "vercel", Models: listed},
+		// Never auto-supplied (no supplies made from its list): left alone.
+		{Id: 2, Name: "manual", Models: listed},
+	} {
+		if err := DB.Create(ch).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, s := range []*ModelSupply{
+		{Model: "gpt-4.1-mini", ChannelId: 1, UpstreamModel: "openai/gpt-4.1-mini", Enabled: true, Source: ModelSupplySourceChannel},
+		{Model: "gpt-4.1-mini", ChannelId: 2, UpstreamModel: "openai/gpt-4.1-mini", Enabled: true, Source: ModelSupplySourceManual},
+	} {
+		if err := DB.Create(s).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	attached, err := attachRenamedPublicModels(DB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if attached != 1 {
+		t.Fatalf("attached = %d, want 1", attached)
+	}
+	want := "claude-opus-5@1<-anthropic/claude-opus-5,gpt-4.1-mini@1<-openai/gpt-4.1-mini,gpt-4.1-mini@2<-openai/gpt-4.1-mini"
+	if got := supplySummary(t); got != want {
+		t.Fatalf("supplies = %s\nwant %s", got, want)
+	}
+	// Running it again changes nothing.
+	if again, err := attachRenamedPublicModels(DB); err != nil || again != 0 {
+		t.Fatalf("second run attached %d, err %v", again, err)
+	}
+}
