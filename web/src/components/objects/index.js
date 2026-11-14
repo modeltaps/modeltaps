@@ -3,6 +3,7 @@
 export { default as ObjectPanel, ObjectTabs, SaveBar } from './ObjectPanel';
 export { ObjectSheet, SheetBar, ObjectTile } from './ObjectSheet';
 export { default as NewObjectSheet } from './NewObjectSheet';
+export { default as EditableTitle } from './EditableTitle';
 export { default as useTabDrafts } from './useTabDrafts';
 export { default as useObjectRoute } from './useObjectRoute';
 export { Dot, Field, InfoRow, InfoRows, OptionList, OptionRow, Section, Segmented, StatRow, ToggleField } from './fields';

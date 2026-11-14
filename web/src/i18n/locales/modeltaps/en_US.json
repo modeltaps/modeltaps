@@ -2064,7 +2064,8 @@
     "action": {
       "copy": "Copy",
       "delete": "Delete",
-      "test": "Test"
+      "test": "Test",
+      "rename": "Rename"
     },
     "advanced": {
       "costRatio": "Cost ratio",
@@ -2424,7 +2425,9 @@
       "save": "Save",
       "saved": "Saved",
       "switchConfirm": "This tab has unsaved changes. Switch anyway?",
-      "unsaved": "Unsaved changes"
+      "unsaved": "Unsaved changes",
+      "renamed": "Renamed",
+      "renameFailed": "Could not rename"
     },
     "range": {
       "24h": "24 hours",

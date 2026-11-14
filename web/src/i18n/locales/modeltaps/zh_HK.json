@@ -1977,7 +1977,8 @@
     "action": {
       "copy": "複製",
       "delete": "刪除",
-      "test": "測試"
+      "test": "測試",
+      "rename": "重新命名"
     },
     "advanced": {
       "costRatio": "成本倍率",
@@ -2316,7 +2317,9 @@
       "save": "儲存",
       "saved": "已儲存",
       "switchConfirm": "這個分頁有未儲存的改動，確定切換嗎？",
-      "unsaved": "有未儲存的改動"
+      "unsaved": "有未儲存的改動",
+      "renamed": "已重新命名",
+      "renameFailed": "重新命名失敗"
     },
     "range": {
       "24h": "24 小時",

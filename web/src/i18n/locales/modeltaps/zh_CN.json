@@ -1977,7 +1977,8 @@
     "action": {
       "copy": "复制",
       "delete": "删除",
-      "test": "测试"
+      "test": "测试",
+      "rename": "重命名"
     },
     "advanced": {
       "costRatio": "成本倍率",
@@ -2316,7 +2317,9 @@
       "save": "保存",
       "saved": "已保存",
       "switchConfirm": "这个 Tab 有未保存的改动，确定切换吗？",
-      "unsaved": "有未保存的改动"
+      "unsaved": "有未保存的改动",
+      "renamed": "已重命名",
+      "renameFailed": "重命名失败"
     },
     "range": {
       "24h": "24 小时",

@@ -1979,7 +1979,8 @@
     "action": {
       "copy": "複製",
       "delete": "削除",
-      "test": "テスト"
+      "test": "テスト",
+      "rename": "名前を変更"
     },
     "advanced": {
       "costRatio": "コスト倍率",
@@ -2318,7 +2319,9 @@
       "save": "保存",
       "saved": "保存しました",
       "switchConfirm": "このタブには未保存の変更があります。切り替えますか？",
-      "unsaved": "未保存の変更があります"
+      "unsaved": "未保存の変更があります",
+      "renamed": "名前を変更しました",
+      "renameFailed": "名前を変更できませんでした"
     },
     "range": {
       "24h": "24 時間",

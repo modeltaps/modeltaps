@@ -10,6 +10,7 @@ import {
   ListChecks,
   Loader2,
   MoreHorizontal,
+  Pencil,
   Play,
   RefreshCw,
   Trash2
@@ -24,7 +25,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { ObjectPanel } from '@/components/objects';
+import { toast } from '@/components/ui/sonner';
+import { EditableTitle, ObjectPanel } from '@/components/objects';
 import { fetchChannel, updateChannel } from './channelApi';
 import { ProviderTile, useProviderName } from './channelParts';
 import { formatBalance } from './channelMetrics';
@@ -55,6 +57,7 @@ export default function ChannelPanel({
   const providerName = useProviderName();
   const [channel, setChannel] = useState(null);
   const [error, setError] = useState('');
+  const [renaming, setRenaming] = useState(false);
   // With supplies routing, the routing tab keeps only groups and the tag: the order lives in the
   // allocation policy.
   const tabs = useMemo(
@@ -81,6 +84,7 @@ export default function ChannelPanel({
   useEffect(() => {
     setChannel(null);
     setError('');
+    setRenaming(false);
     load();
   }, [load]);
 
@@ -117,6 +121,24 @@ export default function ChannelPanel({
       dismissing: busyIds.dismissing.has(channelId)
     }
   };
+  // Renaming from the title or the menu saves the name alone, apart from the tabs' drafts.
+  const rename = async (name) => {
+    try {
+      const res = await updateChannel(channel, { name });
+      if (!res?.success) {
+        toast.error(res?.message || t('channels.panel.renameFailed'));
+        return false;
+      }
+      toast.success(t('channels.panel.renamed'));
+      await load();
+      onChanged();
+      return true;
+    } catch (e) {
+      toast.error(e.message);
+      return false;
+    }
+  };
+
   const host = channel ? hostOf(channel.base_url || DEFAULT_BASE_URLS[channel.type] || '') : '';
   const webUrl = channel ? consoleUrl(channel.type) : '';
   const testing = busyIds.testing.has(channelId);
@@ -170,7 +192,17 @@ export default function ChannelPanel({
       error={error}
       errorTitle={t('channelDetail.notFound')}
       icon={channel && <ProviderTile type={channel.type} size="lg" />}
-      title={channel?.name}
+      title={
+        channel && (
+          <EditableTitle
+            value={channel.name}
+            editing={renaming}
+            onEditingChange={setRenaming}
+            onSave={rename}
+            label={t('channels.action.rename')}
+          />
+        )
+      }
       subtitle={channel && [`#${channel.id}`, providerName(channel.type), host].filter(Boolean).join(' · ')}
       subtitleMono
       actions={
@@ -193,6 +225,11 @@ export default function ChannelPanel({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuItem onClick={() => setRenaming(true)}>
+                  <Pencil className="size-4" />
+                  {t('channels.action.rename')}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem className="items-start" onClick={() => actions.onMultiTest(channel)}>
                   <Gauge className="mt-0.5 size-4" />
                   <span className="flex flex-col">
