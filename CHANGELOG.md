@@ -455,6 +455,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- On a fresh deployment, channels saved before the first daily catalog sync no longer put models
+  into the catalog under guessed names (`claude-fable-5.2` instead of models.dev's
+  `claude-fable-5-2`). Public names come from the model library, which only that sync filled;
+  the guessed rows stayed, and once the library was filled the same model was added again next to
+  them. While the library is empty it is now downloaded at startup (with
+  `catalog_pricing.auto_sync` on) and before a channel save syncs its models (with
+  `catalog_pricing.auto_sync` or `channel_pricing.auto_sync` on).
+  After every library sync, synced drafts whose supplies all point at another public name move
+  there, with their supplies, channel match decisions and pauses; published, locked and edited
+  rows are left as they are.
 - Models synced from OpenRouter or Vercel AI Gateway channels, and the models.dev lookup that
   runs when a channel is saved, now go into the catalog under their public names
   (`claude-opus-5`, `gpt-4.1-mini`) instead of the platform spelling (`anthropic/claude-opus-5`).

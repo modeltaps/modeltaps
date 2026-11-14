@@ -43,6 +43,10 @@ func AutoSyncChannelCatalog(channelType int, models string, reason string, suppl
 			}
 		}()
 		defer supplyAfterCatalogSync(supplyAfter, reason)
+		// Public names come from the model library: fill it first when it is still empty (a
+		// fresh deployment before the first catalog sync), so the syncs below do not create rows
+		// under fallback names. Without it they carry on with the fallback.
+		_ = model.EnsureModelLibrary(viper.GetString("catalog_pricing.url"))
 		if syncOpenRouter {
 			n, err := SyncAllChannelsOwnPricing()
 			if err != nil {

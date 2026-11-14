@@ -31,6 +31,8 @@ type PlatformRowMigration struct {
 	SuppliesMoved  int // supplies moved to the public name
 	SuppliesMerged int // supplies deleted because the channel already supplied the public name
 	PricesCopied   int // prices copied to a public name that had none
+	AliasesMoved   int // channel alias decisions moved to the public name
+	PausesMoved    int // supply pauses moved to the public name
 	Skipped        int // rows left alone because the public name is an alias or a policy row
 }
 
@@ -74,20 +76,37 @@ func migratePlatformSpellingRows(tx *gorm.DB) (PlatformRowMigration, error) {
 	}
 	resolver := newCanonicalResolver(resolverRows, seed)
 
-	type move struct {
-		info     *ModelInfo
-		spelling publicSpelling
-	}
-	var moves []move
+	var moves []draftMove
 	for _, info := range drafts {
 		public := resolver.PublicName(info.Model)
 		if public == "" || public == info.Model {
 			continue
 		}
-		moves = append(moves, move{info, publicSpelling{public: public, raw: info.Model, rank: platformRowSourceRank[info.Source]}})
+		moves = append(moves, draftMove{info, publicSpelling{public: public, raw: info.Model, rank: platformRowSourceRank[info.Source]}})
 	}
 	if len(moves) == 0 {
 		return out, nil
+	}
+	err := moveDraftRows(tx, moves, &out)
+	return out, err
+}
+
+// draftMove is a synced draft and the public name it moves to.
+type draftMove struct {
+	info     *ModelInfo
+	spelling publicSpelling
+}
+
+// moveDraftRows moves synced drafts to their public names. When the public name has no row, the
+// draft is renamed; when it has one, the draft is deleted. Either way its supplies, channel alias
+// decisions and pauses follow (see moveSupplies), and its price is copied to the public name when
+// that has none. A draft whose public name is an alias or a policy row is skipped. Each draft is
+// read again here and skipped unless it is still the same synced draft, so a row an admin edited
+// after the moves were planned is left alone.
+func moveDraftRows(tx *gorm.DB, moves []draftMove, out *PlatformRowMigration) error {
+	var rows []*ModelInfo
+	if err := tx.Find(&rows).Error; err != nil {
+		return err
 	}
 	// The preferred spelling of each public name goes first, so it is the one renamed and the
 	// others are merged into it.
@@ -99,9 +118,11 @@ func migratePlatformSpellingRows(tx *gorm.DB) (PlatformRowMigration, error) {
 		return preferredSpelling(a, b)
 	})
 
+	byID := make(map[int]*ModelInfo, len(rows))
 	byModel := make(map[string]*ModelInfo, len(rows))
 	byLower := make(map[string]*ModelInfo, len(rows))
 	for _, info := range rows {
+		byID[info.Id] = info
 		byModel[info.Model] = info
 		if info.AliasOf == "" && info.Kind == "" {
 			if _, ok := byLower[strings.ToLower(info.Model)]; !ok {
@@ -118,43 +139,117 @@ func migratePlatformSpellingRows(tx *gorm.DB) (PlatformRowMigration, error) {
 	}
 
 	for _, m := range moves {
+		current := byID[m.info.Id]
+		if current == nil || current.Model != m.info.Model || !isSyncedPlatformDraft(current) {
+			continue
+		}
 		target := byModel[m.spelling.public]
 		if target == nil {
 			target = byLower[strings.ToLower(m.spelling.public)]
+		}
+		if target == current {
+			continue
 		}
 		if target != nil && (target.AliasOf != "" || target.Kind != "") {
 			out.Skipped++
 			continue
 		}
-		old := m.info.Model
+		old := current.Model
 		public := m.spelling.public
 		if target != nil {
 			public = target.Model
 		}
-		if err := moveSupplies(tx, old, public, &out); err != nil {
-			return out, err
+		if err := moveSupplies(tx, old, public, out); err != nil {
+			return err
 		}
-		if err := copyPrice(tx, old, public, &out); err != nil {
-			return out, err
+		if err := moveChannelAliases(tx, old, public, out); err != nil {
+			return err
+		}
+		if err := movePauses(tx, old, public, out); err != nil {
+			return err
+		}
+		if err := copyPrice(tx, old, public, out); err != nil {
+			return err
 		}
 		if target != nil {
-			if err := tx.Delete(&ModelInfo{}, m.info.Id).Error; err != nil {
-				return out, err
+			if err := tx.Delete(&ModelInfo{}, current.Id).Error; err != nil {
+				return err
 			}
 			forget(old)
+			delete(byID, current.Id)
 			out.Merged++
 			continue
 		}
-		if err := tx.Model(&ModelInfo{}).Where("id = ?", m.info.Id).Update("model", public).Error; err != nil {
-			return out, err
+		if err := tx.Model(&ModelInfo{}).Where("id = ?", current.Id).Update("model", public).Error; err != nil {
+			return err
 		}
 		forget(old)
-		m.info.Model = public
-		byModel[public] = m.info
-		byLower[strings.ToLower(public)] = m.info
+		current.Model = public
+		byModel[public] = current
+		byLower[strings.ToLower(public)] = current
 		out.Renamed++
 	}
-	return out, nil
+	return nil
+}
+
+// moveChannelAliases points the channel alias decisions made about model from at model to. A
+// decision the channel already made about to for the same upstream name wins.
+func moveChannelAliases(tx *gorm.DB, from, to string, out *PlatformRowMigration) error {
+	if !tx.Migrator().HasTable(&ChannelModelAlias{}) {
+		return nil
+	}
+	var rows []*ChannelModelAlias
+	if err := tx.Where("model = ?", from).Find(&rows).Error; err != nil {
+		return err
+	}
+	for _, r := range rows {
+		var taken int64
+		if err := tx.Model(&ChannelModelAlias{}).
+			Where("channel_id = ? AND upstream_model = ? AND model = ?", r.ChannelId, r.UpstreamModel, to).
+			Count(&taken).Error; err != nil {
+			return err
+		}
+		if taken > 0 {
+			if err := tx.Delete(&ChannelModelAlias{}, r.Id).Error; err != nil {
+				return err
+			}
+			continue
+		}
+		if err := tx.Model(&ChannelModelAlias{}).Where("id = ?", r.Id).Update("model", to).Error; err != nil {
+			return err
+		}
+		out.AliasesMoved++
+	}
+	return nil
+}
+
+// movePauses moves the pauses of model from on a channel to model to, the name requests for the
+// model are routed by from now on. A pause the channel already has for to wins.
+func movePauses(tx *gorm.DB, from, to string, out *PlatformRowMigration) error {
+	if from == "" || !tx.Migrator().HasTable(&SupplyPause{}) {
+		return nil
+	}
+	var pauses []*SupplyPause
+	if err := tx.Where("model = ?", from).Find(&pauses).Error; err != nil {
+		return err
+	}
+	for _, p := range pauses {
+		var taken int64
+		if err := tx.Model(&SupplyPause{}).Where("channel_id = ? AND model = ?", p.ChannelId, to).Count(&taken).Error; err != nil {
+			return err
+		}
+		if taken > 0 {
+			if err := tx.Delete(&SupplyPause{}, p.Id).Error; err != nil {
+				return err
+			}
+			continue
+		}
+		if err := tx.Model(&SupplyPause{}).Where("id = ?", p.Id).Update("model", to).Error; err != nil {
+			return err
+		}
+		out.PausesMoved++
+	}
+	return nil
 }
 
 // moveSupplies moves the supplies of model from to model to. A channel supplies a model once, so

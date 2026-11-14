@@ -112,8 +112,18 @@ func main() {
 	}
 	// Bifrost 式急切同步：启动时立即拉一次「自带价格」渠道(OpenRouter)的真实价格，
 	// 不必等每日 cron。受 channel_pricing.auto_sync 开关控制(默认开)。
-	if viper.GetBool("channel_pricing.auto_sync") {
+	// The model library is filled first when it is still empty (catalog_pricing.auto_sync), so
+	// the price lists name catalog rows by their public names rather than fallback names.
+	ensureLibrary := viper.GetBool("catalog_pricing.auto_sync")
+	syncOwnPricing := viper.GetBool("channel_pricing.auto_sync")
+	if ensureLibrary || syncOwnPricing {
 		go func() {
+			if ensureLibrary {
+				_ = model.EnsureModelLibrary(viper.GetString("catalog_pricing.url"))
+			}
+			if !syncOwnPricing {
+				return
+			}
 			n, err := controller.SyncAllChannelsOwnPricing()
 			if err != nil {
 				logger.SysError("startup OpenRouter pricing sync failed: " + err.Error())
