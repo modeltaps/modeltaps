@@ -426,7 +426,8 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
     >
       <td>{channelCell}</td>
       <td className="max-w-0 truncate font-mono text-[13px] text-muted-foreground" title={supply.upstream_model}>
-        {supply.upstream_model}
+        {/* Same name as the model: nothing to say, like the channel panel's list. */}
+        {supply.upstream_model === supply.model ? '—' : supply.upstream_model}
       </td>
       <td className="whitespace-nowrap text-right tabular-nums">
         {supply.weight || 1}
@@ -788,10 +789,10 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
         <div className="overflow-x-auto rounded-[10px] border border-border">
           <table className="w-full min-w-[480px] table-fixed border-collapse text-[13px]">
             <colgroup>
-              <col className="w-[30%]" />
+              <col className="w-[38%]" />
               <col />
               <col className="w-[4.5rem]" />
-              <col className="w-[26%]" />
+              <col className="w-[22%]" />
               <col className="w-[5.5rem]" />
             </colgroup>
             <thead>
@@ -810,7 +811,11 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
                 <tr>
                   <td colSpan={5} className="border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
                     <span className="text-foreground">{tierLabel(index)}</span>
-                    <span className="ml-2 tabular-nums">{t('modelSupply.tier.priority', { priority: tier.priority })}</span>
+                    {/* On the allocation policy the numbers are computed from the call order and mean
+                        nothing on their own; a manual model shows the priority it was given. */}
+                    {allocation !== 'policy' && (
+                      <span className="ml-2 tabular-nums">{t('modelSupply.tier.priority', { priority: tier.priority })}</span>
+                    )}
                     {view && serving.priority === tier.priority && <span> · {t('modelSupply.preview.servingTier')}</span>}
                   </td>
                 </tr>

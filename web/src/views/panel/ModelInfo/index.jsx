@@ -938,6 +938,7 @@ export default function ModelInfo() {
           open={sheetOpen}
           onOpenChange={setSheetOpen}
           row={editRow}
+          liveRow={editRow ? rows.find((r) => r.model === editRow.model) || editRow : null}
           initialTab={sheetTab}
           existingModels={existingModels}
           prices={prices}

@@ -990,8 +990,8 @@
   "common": {
     "error": "出错了",
     "close": "关闭",
-    "copySucceeded": "复制成功！",
-    "copyNamedSuccess": "复制{{name}}成功！",
+    "copySucceeded": "已复制",
+    "copyNamedSuccess": "已复制{{name}}",
     "copyFailedManual": "复制失败，请手动复制：",
     "copyNamedFailed": "复制{{name}}失败，请手动复制：",
     "secretConfigured": "已配置 {{masked}}",
@@ -3341,7 +3341,8 @@
       "platform": "平台写法",
       "pending": "待确认",
       "variant": "变体"
-    }
+    },
+    "notSynced": "模型库还是空的。关掉这里，在页面右上角点「同步 → 从 models.dev 同步」拉取后再来添加。"
   },
   "ledgerList": {
     "description": "说明",
