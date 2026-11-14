@@ -2587,6 +2587,8 @@
     "channel": "チャネル",
     "model": "モデル",
     "upstream": "上流モデル",
+    "upstreamSame": "同名",
+    "upstreamSameTip": "{{name}} として上流に送信（公開名と同じ）",
     "priority": "優先度",
     "weight": "重み",
     "stateLabel": "状態",

@@ -22,7 +22,7 @@ func GetTelegramMenusList(params *GenericParams) (*DataResult[TelegramMenu], err
 	var menus []*TelegramMenu
 	db := DB
 	if params.Keyword != "" {
-		db = db.Where("id = ? or command LIKE ?", utils.String2Int(params.Keyword), params.Keyword+"%")
+		db = db.Where(caseInsensitiveLike("id = ? or command LIKE ?"), utils.String2Int(params.Keyword), params.Keyword+"%")
 	}
 
 	return PaginateAndOrder[TelegramMenu](db, &params.PaginationParams, &menus, allowedTelegramMenusOrderFields)

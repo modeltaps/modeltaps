@@ -124,7 +124,7 @@ export default function SettingsSidebar({ collapsed = false, showCollapse = fals
 
         <nav
           aria-label={t('settingsUi.sections.label')}
-          className={cn('flex-1 overflow-y-auto py-3', collapsed ? 'px-0 [scrollbar-width:none]' : 'px-2')}
+          className={cn('flex-1 overflow-y-auto pb-3 pt-1', collapsed ? 'px-0 [scrollbar-width:none]' : 'px-2')}
         >
           {tree.org && (
             <div role="group" aria-label={t('settingsUi.sections.org')} className={collapsed ? 'space-y-1' : 'space-y-0.5'}>

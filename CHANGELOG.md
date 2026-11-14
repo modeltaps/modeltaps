@@ -288,8 +288,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which the publish state replaces (it stays only to clear a value left from before); the pricing
   tab calls the owner field "Vendor" like the profile tab instead of "Provider"; the sheet header
   and channel counts follow the list, so adding a supply no longer leaves "no channel" on screen;
-  the supplies table gives the channel more room, shows "—" for an upstream name equal to the
-  model and drops the computed priority of models on the call order; the library sheet tells an
+  the supplies table drops the computed priority of models on the call order; the library sheet tells an
   empty library to be synced first instead of saying no model matches the filters.
 - New channel sheet: an emptied model list no longer says it serves "these 0 models", the key
   hint is not repeated under masked keys, and a failed test after creation shows the upstream
