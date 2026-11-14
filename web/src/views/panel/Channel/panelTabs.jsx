@@ -8,7 +8,6 @@ import {
   ArrowUpDown,
   CloudDownload,
   Copy,
-  Eraser,
   KeyRound,
   Loader2,
   Plus,
@@ -35,13 +34,14 @@ import {
   applyChannelPricing,
   fetchChannelModelDetails,
   fetchChannelPrices,
-  fetchUpstreamModelList,
+  fetchChannelUpstreamModels,
   fetchUpstreamModelPicker,
   previewChannelPricing,
   refreshChannelPrices
 } from './channelApi';
 import { amount, priceIndex, priceSummary, sortByTokenPrice, upstreamNameOf } from './channelPrices';
 import { lossOf, orderByRank, sortByName } from './channelModelDetails';
+import { STATE_FILTERS, isGone, matchesState, offerOf, snapshotOf, stateCounts, unlistedOf } from './channelModelStates';
 import { CAPABILITY_FILTERS, formatContext } from './modelPicker';
 import { buildModelSuggestions, fetchPriceList } from './modelSuggestions';
 import { splitList } from './channelGroups';
@@ -59,8 +59,8 @@ import PluginForm from './PluginForm';
 import pluginConfig from './pluginConfig';
 import PriceSyncDialog from './PriceSyncDialog';
 import ModelSelectorModal from './ModelSelectorModal';
-import ChannelSupplies from '../ModelInfo/supply/ChannelSupplies';
-import UpstreamModels from './UpstreamModels';
+import { attachPendingModel } from '../ModelInfo/supply/supplyApi';
+import { modelSupplyPath } from '../ModelInfo/supply/supplyHelpers';
 import { performanceTab } from './PerformanceTab';
 
 // Tabs of the channel panel (see components/objects/ObjectPanel). Each tab edits a part of the
@@ -181,23 +181,107 @@ function LossMark({ text, value }) {
 
 LossMark.propTypes = { text: PropTypes.string.isRequired, value: PropTypes.node };
 
+// Small action at the end of a model's second line.
+function LineAction({ busy, onClick, children }) {
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={onClick}
+      className="inline-flex shrink-0 items-center gap-1 rounded px-1 text-xs text-foreground underline-offset-2 hover:underline disabled:opacity-50"
+    >
+      {busy && <Loader2 className="size-3 animate-spin" />}
+      {children}
+    </button>
+  );
+}
+
+LineAction.propTypes = { busy: PropTypes.bool, onClick: PropTypes.func, children: PropTypes.node };
+
 // Second line of a model's name while supplies route requests: the public model it is offered
-// as (+N more), or "not offered".
-function PublicLine({ publics }) {
+// as (+N more), or why it is not offered with the step that offers it.
+function PublicLine({ publics, offer, busy, onAttach }) {
   const { t } = useTranslation();
   if (!publics) return null;
+  if (offer && !offer.offered) {
+    const first = publics[0];
+    const vars = { model: first?.model || offer.sameAs || offer.suggested, other: offer.suppliedBy };
+    const reason = `${t('channels.models.notOffered')} · ${t(`channels.models.unoffered.${offer.reason}`, vars)}`;
+    // The line gives the reason alone (it implies "not offered"), a duplicate's in short; the
+    // tooltip says it in full.
+    const line = t(`channels.models.unoffered.${offer.reason === 'duplicate' ? 'duplicateShort' : offer.reason}`, vars);
+    return (
+      <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+        <span className="min-w-0 truncate" title={reason}>
+          {line}
+        </span>
+        {offer.reason === 'duplicate' && offer.suggested && (
+          <LineAction busy={busy} onClick={() => onAttach(offer.suggested, true)}>
+            {t('channels.models.addAsOwn', { model: offer.suggested })}
+          </LineAction>
+        )}
+        {offer.reason === 'not_in_catalog' && offer.suggested && (
+          <LineAction busy={busy} onClick={() => onAttach(offer.suggested, true)}>
+            {t('channels.models.addToCatalog')}
+          </LineAction>
+        )}
+        {offer.reason === 'no_supply' && (
+          <LineAction busy={busy} onClick={() => onAttach(offer.suggested, false)}>
+            {t('channels.models.attach', { model: offer.suggested })}
+          </LineAction>
+        )}
+        {offer.reason === 'off' && first && (
+          <Link to={modelSupplyPath(first.model)} className="shrink-0 px-1 text-foreground underline-offset-2 hover:underline">
+            {t('channels.models.openSupply')}
+          </Link>
+        )}
+      </span>
+    );
+  }
   if (!publics.length) return <span className="block truncate text-xs text-muted-foreground">{t('channels.models.notOffered')}</span>;
   const first = publics[0];
   return (
     <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
       <span className="shrink-0">{t('channels.models.offeredAs')}</span>
-      <span className={cn('min-w-0 truncate font-mono', !first.enabled && 'line-through')}>{first.model}</span>
+      <Link
+        to={modelSupplyPath(first.model)}
+        className={cn('min-w-0 truncate font-mono hover:text-foreground hover:underline', !first.enabled && 'line-through')}
+      >
+        {first.model}
+      </Link>
       {publics.length > 1 && <span className="shrink-0">+{publics.length - 1}</span>}
     </span>
   );
 }
 
-PublicLine.propTypes = { publics: PropTypes.array };
+PublicLine.propTypes = { publics: PropTypes.array, offer: PropTypes.object, busy: PropTypes.bool, onAttach: PropTypes.func };
+
+// One filter chip above the model table: a click shows only its rows, a second click shows all.
+function FilterChip({ active, onClick, icon, label, count }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        'inline-flex h-[26px] items-center gap-1 rounded-full border px-2.5 text-xs',
+        active ? 'border-foreground/30 bg-muted text-foreground' : 'border-border bg-field text-muted-foreground hover:text-foreground'
+      )}
+    >
+      {icon}
+      {label}
+      <span className="tabular-nums">{count}</span>
+    </button>
+  );
+}
+
+FilterChip.propTypes = {
+  active: PropTypes.bool,
+  onClick: PropTypes.func,
+  icon: PropTypes.node,
+  label: PropTypes.string,
+  count: PropTypes.number
+};
 
 const MODALITIES = ['image', 'audio', 'video', 'file', 'pdf'];
 
@@ -290,8 +374,9 @@ const modelRowText = (row) => row.name;
 function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   const { t } = useTranslation();
   const labels = typeLabels(channel.type);
-  const models = splitList(draft.models);
-  const mapping = parseMapping(draft.mapping) || {};
+  const models = useMemo(() => splitList(draft.models), [draft.models]);
+  // The mapping is edited on the Advanced tab; this tab reads the saved one.
+  const mapping = useMemo(() => parseMapping(channel.model_mapping) || {}, [channel.model_mapping]);
   // Traffic only flags models here (unused or failing); the numbers live on the Performance
   // tab. Metrics are keyed by the name sent upstream, so a mapped model is looked up by its target.
   const perModel = useMemo(
@@ -299,24 +384,74 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
     [ctx.metricsRows, channel.id]
   );
   const hasTraffic = useMemo(() => [...perModel.values()].some((m) => m.requests > 0), [perModel]);
+  // Details of the list as edited (catalog metadata, the usual order, public models and why a
+  // model is not offered), read again shortly after the list changes or a model is offered.
+  const [details, setDetails] = useState(null);
+  const [detailsStamp, setDetailsStamp] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    const timer = setTimeout(() => {
+      fetchChannelModelDetails(channel.id, splitList(draft.models), mapping)
+        .then((list) => alive && setDetails(new Map(list.map((d) => [d.model, d]))))
+        .catch(() => alive && setDetails((cur) => cur || new Map()));
+    }, 300);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [channel.id, draft.models, mapping, detailsStamp]);
+  const detailOf = (name) => details?.get(name);
+
+  // What the upstream listed at the last model check, read again after each check.
+  const checkedAt = channel.model_drift?.checked_at || 0;
+  const [upstreamList, setUpstreamList] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    fetchChannelUpstreamModels(channel.id)
+      .then((data) => alive && setUpstreamList(data))
+      .catch(() => alive && setUpstreamList(null));
+    return () => {
+      alive = false;
+    };
+  }, [channel.id, checkedAt]);
+  const snapshot = useMemo(() => snapshotOf(upstreamList), [upstreamList]);
+  const unlisted = useMemo(() => unlistedOf(upstreamList, models, mapping), [upstreamList, models, mapping]);
+
   // The channel's own order; the table shows the usual order below (most used families first).
   const rows = useMemo(
     () =>
       splitList(draft.models).map((name) => {
-        const m = perModel.get(upstreamNameOf(name, parseMapping(draft.mapping) || {}));
-        return { name, m, signal: modelSignal(m, hasTraffic) };
+        const m = perModel.get(upstreamNameOf(name, mapping));
+        return {
+          name,
+          m,
+          signal: modelSignal(m, hasTraffic),
+          offer: ctx.supplyRouting ? offerOf(details?.get(name)) : null,
+          gone: isGone(name, mapping, snapshot)
+        };
       }),
-    [draft.models, draft.mapping, perModel, hasTraffic]
+    [draft.models, mapping, perModel, hasTraffic, ctx.supplyRouting, details, snapshot]
   );
   const range = t(`channels.range.short.${ctx.rangeKey}`);
-  // Showing only unused or only failing models, for cleaning up and checking; '' shows all.
-  const [only, setOnly] = useState('');
+  // Showing only the rows of one filter (a state, or unused / failing traffic); '' shows all.
+  const [picked, setOnly] = useState('');
+  const counts = useMemo(() => stateCounts(rows, unlisted), [rows, unlisted]);
+  // Offered / not offered only mean something while supplies route requests; gone and unlisted
+  // need an upstream list.
+  const stateKeys = STATE_FILTERS.filter((key) =>
+    key === 'offered' || key === 'unoffered' ? ctx.supplyRouting && details : key === 'gone' ? snapshot : counts.unlisted > 0
+  );
+  // A filter whose chip went away (the last unlisted model was added) shows everything again.
+  const only = STATE_FILTERS.includes(picked) && !stateKeys.includes(picked) ? '' : picked;
   const signalCounts = useMemo(() => {
     const out = { idle: 0, failing: 0 };
     for (const r of rows) if (r.signal) out[r.signal] += 1;
     return out;
   }, [rows]);
-  const filtered = useMemo(() => (only ? rows.filter((r) => r.signal === only) : rows), [rows, only]);
+  const filtered = useMemo(
+    () => (!only ? rows : STATE_FILTERS.includes(only) ? rows.filter((r) => matchesState(r, only)) : rows.filter((r) => r.signal === only)),
+    [rows, only]
+  );
   // Sorting by name or an upstream price is asked for from the column header; otherwise the usual
   // order from the model details.
   const [sort, setSort] = useState(null);
@@ -344,31 +479,14 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   }, [channel.id]);
   const pricesByModel = useMemo(() => priceIndex(upstreamPrices?.prices), [upstreamPrices]);
 
-  // Details of the list as edited (catalog metadata, the usual order, public models), read again
-  // shortly after the list or the mapping changes.
-  const [details, setDetails] = useState(null);
-  useEffect(() => {
-    let alive = true;
-    const timer = setTimeout(() => {
-      fetchChannelModelDetails(channel.id, splitList(draft.models), parseMapping(draft.mapping) || {})
-        .then((list) => alive && setDetails(new Map(list.map((d) => [d.model, d]))))
-        .catch(() => alive && setDetails((cur) => cur || new Map()));
-    }, 300);
-    return () => {
-      alive = false;
-      clearTimeout(timer);
-    };
-  }, [channel.id, draft.models, draft.mapping]);
-  const detailOf = (name) => details?.get(name);
   const showPrices = Boolean(upstreamPrices?.supported);
   const shown = useMemo(() => {
     if (sort?.key === 'name') return sortByName(filtered, sort.dir);
     if (sort && showPrices) {
-      const mapping = parseMapping(draft.mapping) || {};
       return sortByTokenPrice(filtered, sort.key, sort.dir, (r) => pricesByModel.get(upstreamNameOf(r.name, mapping)));
     }
     return orderByRank(filtered, (r) => details?.get(r.name));
-  }, [filtered, sort, showPrices, pricesByModel, draft.mapping, details]);
+  }, [filtered, sort, showPrices, pricesByModel, mapping, details]);
   const showPublic = Boolean(ctx.supplyRouting);
   const list = useLongList(shown, { text: modelRowText });
 
@@ -400,23 +518,30 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
     }
   };
 
-  const fetchFromUpstream = () =>
-    run('fetch', async () => {
-      const list = await fetchUpstreamModelList(body);
-      const merged = Array.from(new Set([...models, ...list]));
-      setDraft({ ...draft, models: merged.join(',') });
-      toast.success(t('channels.models.fetched', { count: merged.length - models.length }));
+  // Offers a listed model: as the public model it belongs to, or (create) as a new draft catalog
+  // model, which is listed once it has a price and is published on the model page.
+  const attach = (name, publicModel, create) =>
+    run(`attach:${name}`, async () => {
+      const { success, message } = await attachPendingModel({
+        upstream_model: upstreamNameOf(name, mapping),
+        model: publicModel,
+        channel_ids: [channel.id],
+        create
+      });
+      if (!success) throw new Error(message);
+      toast.success(t(create ? 'channels.models.addedToCatalog' : 'channels.models.attached', { model: publicModel }));
+      setDetailsStamp((n) => n + 1);
     });
-
-  const pruneStale = () =>
-    run('prune', async () => {
-      const list = new Set(await fetchUpstreamModelList(body));
-      const aliases = new Set(Object.keys(mapping));
-      const stale = models.filter((m) => !list.has(m) && !aliases.has(m) && !m.endsWith('*'));
-      if (!stale.length) return toast.success(t('channel_edit.pruneNone'));
-      setDraft({ ...draft, models: models.filter((m) => !stale.includes(m)).join(',') });
-      toast.success(t('channels.models.pruned', { count: stale.length }));
-    });
+  const addNames = (names) => {
+    setDraft({ ...draft, models: Array.from(new Set([...models, ...names])).join(',') });
+    toast.success(t('channels.models.fetched', { count: names.length }));
+  };
+  const removeGone = () => {
+    const gone = new Set(rows.filter((r) => r.gone).map((r) => r.name));
+    setDraft({ ...draft, models: models.filter((m) => !gone.has(m)).join(',') });
+    toast.success(t('channels.models.pruned', { count: gone.size }));
+    setOnly('');
+  };
 
   const priceChannel = () => ({
     id: channel.id,
@@ -459,17 +584,19 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
         <span className="text-[13px] text-muted-foreground">
           {t('channels.models.count', { count: models.length })}
           {channel.drift_auto_add ? ` · ${t('channels.models.autoAdd')}` : ''}
+          {labels.canFetchModels &&
+            ` · ${checkedAt ? t('channelDetail.driftCheckedAt', { time: timestamp2string(checkedAt) }) : t('channelDetail.driftNever')}`}
         </span>
         <span className="flex-1" />
         {labels.canFetchModels && (
-          <>
-            <ToolButton icon={RefreshCw} busy={busy === 'fetch'} onClick={fetchFromUpstream}>
-              {t('channels.models.fetch')}
-            </ToolButton>
-            <ToolButton icon={Eraser} busy={busy === 'prune'} onClick={pruneStale} title={t('channel_edit.pruneStaleTip')}>
-              {t('channels.models.prune')}
-            </ToolButton>
-          </>
+          <ToolButton
+            icon={RefreshCw}
+            busy={Boolean(ctx.busy?.drift)}
+            onClick={() => ctx.actions?.onCheckDrift(channel)}
+            title={t('channels.models.checkHint')}
+          >
+            {t('channels.models.check')}
+          </ToolButton>
         )}
         {(channel.type === 20 || channel.type === 62) && (
           <ToolButton icon={CloudDownload} busy={busy === 'price'} onClick={syncPrices}>
@@ -502,29 +629,51 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
         </p>
       ) : (
         <>
-          {(signalCounts.idle > 0 || signalCounts.failing > 0) && (
+          {(stateKeys.length > 0 || signalCounts.idle > 0 || signalCounts.failing > 0) && (
             <div className="flex flex-wrap items-center gap-1.5 pb-2 text-[13px]">
-              <span className="text-muted-foreground">{t('channels.models.signal.label', { range })}</span>
-              {['idle', 'failing'].map(
-                (key) =>
-                  signalCounts[key] > 0 && (
-                    <button
-                      key={key}
-                      type="button"
-                      aria-pressed={only === key}
-                      onClick={() => setOnly(only === key ? '' : key)}
-                      className={cn(
-                        'inline-flex h-[26px] items-center gap-1 rounded-full border px-2.5 text-xs',
-                        only === key
-                          ? 'border-foreground/30 bg-muted text-foreground'
-                          : 'border-border bg-field text-muted-foreground hover:text-foreground'
-                      )}
-                    >
-                      {key === 'failing' && <AlertTriangle className="size-3 text-warning" />}
-                      {t(`channels.models.signal.${key}Filter`)}
-                      <span className="tabular-nums">{signalCounts[key]}</span>
-                    </button>
-                  )
+              {stateKeys.map((key) => (
+                <FilterChip
+                  key={key}
+                  active={only === key}
+                  onClick={() => setOnly(only === key ? '' : key)}
+                  icon={key === 'gone' && counts.gone > 0 ? <AlertTriangle className="size-3 text-warning" /> : null}
+                  label={t(`channels.models.state.${key}`)}
+                  count={counts[key]}
+                />
+              ))}
+              {(signalCounts.idle > 0 || signalCounts.failing > 0) && (
+                <>
+                  {stateKeys.length > 0 && <span className="mx-1 h-4 w-px bg-border" />}
+                  <span className="text-muted-foreground">{t('channels.models.signal.label', { range })}</span>
+                  {['idle', 'failing'].map(
+                    (key) =>
+                      signalCounts[key] > 0 && (
+                        <FilterChip
+                          key={key}
+                          active={only === key}
+                          onClick={() => setOnly(only === key ? '' : key)}
+                          icon={key === 'failing' ? <AlertTriangle className="size-3 text-warning" /> : null}
+                          label={t(`channels.models.signal.${key}Filter`)}
+                          count={signalCounts[key]}
+                        />
+                      )
+                  )}
+                </>
+              )}
+              {only === 'gone' && counts.gone > 0 && (
+                <Button variant="outline" size="sm" className="ml-auto h-[26px] rounded-lg bg-card text-xs" onClick={removeGone}>
+                  {t('channels.models.removeGone', { count: counts.gone })}
+                </Button>
+              )}
+              {only === 'unlisted' && counts.unlisted > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto h-[26px] rounded-lg bg-card text-xs"
+                  onClick={() => addNames(unlisted.map((u) => u.name))}
+                >
+                  {t('channels.models.addUnlisted', { count: unlisted.length })}
+                </Button>
               )}
             </div>
           )}
@@ -571,57 +720,88 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                 </tr>
               </thead>
               <tbody>
-                {list.visible.map(({ name, m, signal }) => (
-                  <tr
-                    key={name}
-                    className="[&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0"
-                  >
-                    <td title={modelHint(t, name, detailOf(name))}>
-                      <span className="flex min-w-0 items-center gap-1.5">
-                        <span className="min-w-0 truncate font-mono">{name}</span>
-                        <ModelSignal signal={signal} m={m} range={range} />
-                      </span>
-                      {showPublic && <PublicLine publics={detailOf(name)?.public} />}
-                    </td>
-                    {hasMapping && (
-                      <td className="font-mono text-muted-foreground" title={mapping[name] || ''}>
-                        {mapping[name] || '—'}
+                {only !== 'unlisted' &&
+                  list.visible.map(({ name, m, signal, offer, gone }) => (
+                    <tr
+                      key={name}
+                      className="[&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0"
+                    >
+                      <td title={modelHint(t, name, detailOf(name))}>
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <span className="min-w-0 truncate font-mono">{name}</span>
+                          <ModelSignal signal={signal} m={m} range={range} />
+                          {gone && (
+                            <span className="shrink-0 rounded bg-warning/10 px-1.5 text-[11px] leading-[18px] text-warning">
+                              {t('channels.models.state.gone')}
+                            </span>
+                          )}
+                        </span>
+                        {showPublic && (
+                          <PublicLine
+                            publics={detailOf(name)?.public}
+                            offer={offer}
+                            busy={busy === `attach:${name}`}
+                            onAttach={(publicModel, create) => attach(name, publicModel, create)}
+                          />
+                        )}
                       </td>
-                    )}
-                    <td className="text-right tabular-nums text-muted-foreground">
-                      {formatContext(detailOf(name)?.context_length) || '—'}
-                    </td>
-                    {showPrices && (
-                      <UpstreamPriceCells price={pricesByModel.get(upstreamNameOf(name, mapping))} publics={detailOf(name)?.public} />
-                    )}
-                    <td className="!px-1 text-right">
-                      <button
-                        type="button"
-                        aria-label={t('channels.models.remove', { model: name })}
-                        onClick={() => remove(name)}
-                        className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                      >
-                        <X className="size-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      {hasMapping && (
+                        <td className="font-mono text-muted-foreground" title={mapping[name] || ''}>
+                          {mapping[name] || '—'}
+                        </td>
+                      )}
+                      <td className="text-right tabular-nums text-muted-foreground">
+                        {formatContext(detailOf(name)?.context_length) || '—'}
+                      </td>
+                      {showPrices && (
+                        <UpstreamPriceCells price={pricesByModel.get(upstreamNameOf(name, mapping))} publics={detailOf(name)?.public} />
+                      )}
+                      <td className="!px-1 text-right">
+                        <button
+                          type="button"
+                          aria-label={t('channels.models.remove', { model: name })}
+                          onClick={() => remove(name)}
+                          className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                {only === 'unlisted' &&
+                  unlisted.map((u) => (
+                    <tr
+                      key={u.name}
+                      data-testid="unlisted-model"
+                      className="[&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0"
+                    >
+                      <td colSpan={hasMapping ? 3 : 2}>
+                        <span className="block min-w-0 truncate font-mono">{u.name}</span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {t(`channels.models.unlistedState.${u.state}`, { model: u.public_model, defaultValue: u.state })}
+                        </span>
+                      </td>
+                      {showPrices && <UpstreamPriceCells price={pricesByModel.get(u.name)} publics={[]} />}
+                      <td className="!px-1 text-right">
+                        <button
+                          type="button"
+                          aria-label={t('channels.models.addOne', { model: u.name })}
+                          onClick={() => addNames([u.name])}
+                          className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          <Plus className="size-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
-            <LongListMore list={list} />
+            {only !== 'unlisted' && <LongListMore list={list} />}
           </div>
         </>
       )}
 
-      <Field className="mt-2" label={configText(t, labels.label.model_mapping)} optional hint={t('channels.models.mappingHint')}>
-        <ModelMappingInput key={ctx.version} value={draft.mapping} models={models} onChange={(v) => setDraft({ ...draft, mapping: v })} />
-      </Field>
-
       {ctx.supplyRouting && <p className="mt-2 text-xs text-muted-foreground">{t('channels.models.supplyNote')}</p>}
-
-      <UpstreamModels key={channel.id} channelId={channel.id} canCheck={Boolean(labels.canFetchModels)} />
-
-      <ChannelSupplies channelId={channel.id} />
 
       <ModelSelectorModal
         open={!!selector}
@@ -640,19 +820,11 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
 
 const modelsTab = {
   key: 'models',
-  make: (c) => {
-    const mapping = parseMapping(c.model_mapping);
-    return { models: splitList(c.models).join(','), mapping: mapping && Object.keys(mapping).length ? JSON.stringify(mapping) : '' };
-  },
+  make: (c) => ({ models: splitList(c.models).join(',') }),
   patch: (d, c, { t }) => {
     const models = splitList(d.models);
     if (!models.length) return { error: t('channel_edit.requiredModels') };
-    const mapping = parseMapping(d.mapping);
-    if (mapping === null) return { error: t('channels.models.mappingInvalid') };
-    return {
-      models: applyMappingToModels(models, mapping).join(','),
-      model_mapping: Object.keys(mapping).length ? JSON.stringify(mapping) : ''
-    };
+    return { models: applyMappingToModels(models, parseMapping(c.model_mapping) || {}).join(',') };
   },
   Body: ModelsBody
 };
@@ -1108,6 +1280,9 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
   const labels = typeLabels(channel.type);
   const hasPlugin = Boolean(pluginConfig[String(channel.type)]);
   const [iconKey, setIconKey] = useState(0);
+  // The model mapping is rarely needed (an upstream that wants its own deployment names), so it
+  // stays folded away until it has entries or is opened.
+  const [mappingOpen, setMappingOpen] = useState(false);
   const set = (k) => (e) => setDraft({ ...draft, [k]: e?.target ? e.target.value : e });
   return (
     <>
@@ -1150,6 +1325,25 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
           </Select>
         </Field>
       </div>
+      {draft.mapping || mappingOpen ? (
+        <Field label={configText(t, labels.label.model_mapping)} optional hint={t('channels.models.mappingHint')}>
+          <ModelMappingInput
+            key={ctx.version}
+            value={draft.mapping}
+            models={splitList(channel.models)}
+            onChange={(v) => setDraft({ ...draft, mapping: v })}
+          />
+        </Field>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setMappingOpen(true)}
+          className="inline-flex items-center gap-1 self-start text-[13px] text-muted-foreground hover:text-foreground"
+        >
+          <Plus className="size-3.5" />
+          {t('channels.models.addMapping')}
+        </button>
+      )}
       <Field
         label={configText(t, labels.label.disabled_stream)}
         htmlFor="cp-nostream"
@@ -1259,11 +1453,17 @@ const advancedTab = {
     disabled_stream: Array.isArray(c.disabled_stream) ? c.disabled_stream.join(',') : '',
     need2response_models: c.need2response_models || '',
     plugin: c.plugin && typeof c.plugin === 'object' ? c.plugin : {},
+    mapping: (() => {
+      const mapping = parseMapping(c.model_mapping);
+      return mapping && Object.keys(mapping).length ? JSON.stringify(mapping) : '';
+    })(),
     ...Object.fromEntries(FLAGS.map((f) => [f, !!c[f]])),
     cancel_on_disconnect: cancelOnDisconnectDraft(c.cancel_on_disconnect)
   }),
   patch: (d, c, { t }) => {
     if (!d.name.trim()) return { error: t('channel_edit.requiredName') };
+    const mapping = parseMapping(d.mapping);
+    if (mapping === null) return { error: t('channels.models.mappingInvalid') };
     const patch = {
       name: d.name.trim(),
       remark: d.remark.trim(),
@@ -1274,6 +1474,15 @@ const advancedTab = {
       ...Object.fromEntries(FLAGS.map((f) => [f, d[f]])),
       cancel_on_disconnect: cancelOnDisconnectValue(d.cancel_on_disconnect)
     };
+    // A changed mapping rewrites the model list the same way the models tab used to: mapped
+    // upstream names are listed by their request names. The list is sent only then, so saving
+    // this tab otherwise leaves the models and their supplies alone.
+    const mappingJson = Object.keys(mapping).length ? JSON.stringify(mapping) : '';
+    const before = parseMapping(c.model_mapping) || {};
+    if (mappingJson !== (Object.keys(before).length ? JSON.stringify(before) : '')) {
+      patch.model_mapping = mappingJson;
+      patch.models = applyMappingToModels(splitList(c.models), mapping).join(',');
+    }
     if (!typeLabels(c.type).hasOther) patch.other = d.other.trim();
     const plugins = pluginConfig[String(c.type)];
     if (plugins) {

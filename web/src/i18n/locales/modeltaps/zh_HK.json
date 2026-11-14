@@ -2060,19 +2060,17 @@
       "autoAdd": "上游新增自動加入",
       "count_other": "{{count}} 個模型",
       "doneAdding": "完成",
-      "fetch": "從上游拉取",
       "fetched_other": "從上游加入 {{count}} 個模型，儲存後生效",
       "mappedTo": "映射到",
-      "mappingHint": "把請求裏的模型名指向上游的另一個名字，例如部署名",
+      "mappingHint": "渠道級改名：把請求裏的模型名換成發給上游的另一個名字，只在上游要求自訂名字（如部署名）時用。和模型目錄的對應是自動的，不需要在這裏設定。",
       "mappingInvalid": "模型映射不是有效的 JSON",
       "model": "模型",
       "none": "還沒有模型，新增或從上游拉取",
-      "prune": "清理失效",
       "pruned_other": "移除了 {{count}} 個上游已不存在的模型，儲存後生效",
       "remove": "移除 {{model}}",
       "syncPrices": "同步價格",
       "ttft": "首字",
-      "supplyNote": "儲存後，模型列表和映射的改動會同步到由這個渠道生成的供應：新加的模型自動接入同名的公開模型，改映射會更新發給上游的名字，移除的模型會撤下供應。手動新增或在模型頁改過上游名的供應保持不變。",
+      "supplyNote": "儲存後，模型列表的改動會同步到由這個渠道產生的供應：新加的模型自動接入對應的公開模型，移除的模型會撤下供應。手動新增或在模型頁改過上游名的供應保持不變。",
       "saved": {
         "summary": "已儲存，{{changes}}",
         "attached_other": "新接入 {{count}} 個公開模型",
@@ -2117,7 +2115,40 @@
           "pdf": "PDF"
         }
       },
-      "offeredAs": "對外："
+      "offeredAs": "對外：",
+      "check": "重新檢查",
+      "checkHint": "讀取上游目前的模型清單，標出已下架和尚未加入的模型",
+      "state": {
+        "offered": "對外提供",
+        "unoffered": "未對外",
+        "gone": "上游已下架",
+        "unlisted": "上游有、未加入"
+      },
+      "unoffered": {
+        "not_in_catalog": "目錄裏沒有",
+        "no_supply": "目錄裏有 {{model}}，這個渠道尚未接入",
+        "wildcard": "萬用字元不對外",
+        "off": "{{model}} 的供應已停用",
+        "duplicate": "和 {{other}} 同屬 {{model}}，一個渠道只能用一個名字提供它",
+        "duplicateShort": "與 {{other}} 重複"
+      },
+      "addToCatalog": "加入目錄",
+      "attach": "接入",
+      "openSupply": "去模型頁",
+      "addedToCatalog": "已把 {{model}} 加入目錄（草稿），在模型頁設好價格並發佈後對外",
+      "attached": "已接入 {{model}}",
+      "removeGone": "全部移除 {{count}} 個",
+      "addUnlisted": "全部加入 {{count}} 個",
+      "addOne": "加入 {{model}}",
+      "unlistedState": {
+        "in_use": "對外：{{model}}",
+        "off": "對外：{{model}}（供應已停用）",
+        "available": "加入後對外：{{model}}",
+        "not_in_catalog": "目錄裏沒有",
+        "unknown": "認不出來"
+      },
+      "addMapping": "新增模型映射",
+      "addAsOwn": "單獨加入目錄"
     },
     "monitor": {
       "checkNow": "立即檢查模型列表",
@@ -2381,33 +2412,6 @@
     },
     "list": {
       "meta": "優先級 {{priority}} · {{requests}} 請求 · {{latency}}"
-    },
-    "upstream": {
-      "title": "上游模型",
-      "hint": "這個渠道在上游能用的全部模型，來自最近一次模型檢查。要不要對外提供、由誰提供，在模型頁的「供應」裡決定。",
-      "check": "立即檢查",
-      "checkFailed": "檢查失敗",
-      "empty": "還沒有讀到上游的模型清單，點「立即檢查」讀取。",
-      "unsupported": "這個供應商不提供模型清單介面。",
-      "search": "搜尋模型",
-      "noMatch": "沒有符合條件的模型",
-      "name": "上游模型",
-      "publicModel": "對應的公開模型",
-      "state": "狀態",
-      "filter": {
-        "all": "全部",
-        "in_use": "使用中",
-        "available": "可用",
-        "not_in_catalog": "不在目錄",
-        "unknown": "未能識別"
-      },
-      "states": {
-        "in_use": "使用中",
-        "off": "供應已關閉",
-        "available": "可用，未新增",
-        "not_in_catalog": "不在目錄",
-        "unknown": "未能識別"
-      }
     },
     "strip": {
       "all": "全部",
@@ -2767,10 +2771,7 @@
       "fromLibrary": "已按該平台的寫法填寫"
     },
     "channelSupplies": {
-      "title_other": "供應 {{count}} 個公開模型",
-      "readonly": "在模型頁編輯",
-      "none": "還沒有公開模型把這個渠道用作供應。",
-      "open": "打開 {{model}} 的供應"
+      "title_other": "供應 {{count}} 個公開模型"
     },
     "pausedPage": {
       "description": "被暫停規則或管理員暫時移出調度的渠道，或渠道上的某個模型。暫停結束後會自動恢復。",
