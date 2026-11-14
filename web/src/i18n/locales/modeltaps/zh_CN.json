@@ -2157,10 +2157,37 @@
       "ignoreHint": "每行一个：模型名、通配符（如 *-preview）或 re: 开头的正则；匹配的模型在上游新增或下架时不提示，也不会自动加入",
       "testModel": "测试模型",
       "testModelHint": "测试连接和定时检查用它；留空就用模型列表第一个",
-      "threshold": "余额提醒（USD）",
       "thresholdHint": "上游余额低于这个数时通知你",
       "thresholdOff": "不提醒",
-      "autoAddHint": "每日模型检测发现上游新提供的模型时，直接加入本渠道（并补齐价格与元信息），而不只是提醒。开启按供应路由后，新模型不再加入渠道的模型列表：属于模型目录里某个公开模型的，直接给它加一条本渠道的供应；其余列在模型目录的「新上游模型」里等你处理。匹配忽略规则的模型跳过。"
+      "autoAddHint": "每日模型检测发现上游新提供的模型时，直接加入本渠道（并补齐价格与元信息），而不只是提醒。开启按供应路由后，新模型不再加入渠道的模型列表：属于模型目录里某个公开模型的，直接给它加一条本渠道的供应；其余列在模型目录的「新上游模型」里等你处理。匹配忽略规则的模型跳过。",
+      "thresholdIn": "余额提醒（{{currency}}）",
+      "thresholdSupport": {
+        "none": "这个供应商不提供余额接口，没法按余额提醒。",
+        "official": "官方 OpenAI 接口不提供余额；接入地址换成中转站后通常可以。",
+        "usage": "订阅类渠道没有余额，按用量窗口计，用量在渠道列表的「余额 / 用量」列。"
+      },
+      "noticeEvery": "每 {{minutes}} 分钟查一次余额",
+      "noticeTo": "提醒发到：{{targets}}",
+      "targetSep": "、",
+      "targetNotReady": "{{name}}（未配好）",
+      "target": {
+        "Email": "邮件",
+        "WeCom": "企业微信",
+        "DingTalk": "钉钉",
+        "Lark": "飞书",
+        "PushDeer": "PushDeer",
+        "Telegram": "Telegram"
+      },
+      "problem": {
+        "noRefresh": "余额自动刷新已关闭（配置 channel.update_frequency 为 0），只有手动刷新余额时才会检查。",
+        "kindOff": "「渠道余额不足」提醒在通知设置里关掉了。",
+        "noTarget": "没有能发出去的通知方式：邮件要配好 SMTP（收件人默认是超管邮箱），Telegram、企业微信等在配置文件的 notify 里配。"
+      },
+      "driftUnsupported": "这个供应商不提供模型清单接口，没法和上游对比。",
+      "problemLink": {
+        "kindOff": "通知设置",
+        "noTarget": "SMTP 设置"
+      }
     },
     "pauseRules": {
       "label": "暂停规则",

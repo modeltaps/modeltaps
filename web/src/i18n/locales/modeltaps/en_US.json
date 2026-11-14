@@ -2256,10 +2256,37 @@
       "ignoreHint": "One per line: a name, a glob such as *-preview, or re: followed by a regular expression; matching models are never reported or added",
       "testModel": "Test model",
       "testModelHint": "Used by connection tests and scheduled checks; empty uses the first model",
-      "threshold": "Balance alert (USD)",
       "thresholdHint": "Notifies you when the upstream balance drops below this",
       "thresholdOff": "Off",
-      "autoAddHint": "When the daily model check finds models newly offered upstream, add them to this channel (with prices and metadata) instead of only reporting them. Once routing by supply is on, new models are not added to the channel's model list: a model that belongs to a public model in the catalog gets a supply from this channel right away, and the rest wait under New upstream models in the model catalog. Models matching the ignore rules are skipped."
+      "autoAddHint": "When the daily model check finds models newly offered upstream, add them to this channel (with prices and metadata) instead of only reporting them. Once routing by supply is on, new models are not added to the channel's model list: a model that belongs to a public model in the catalog gets a supply from this channel right away, and the rest wait under New upstream models in the model catalog. Models matching the ignore rules are skipped.",
+      "thresholdIn": "Low-balance alert ({{currency}})",
+      "thresholdSupport": {
+        "none": "This provider has no balance endpoint, so there is no balance to alert on.",
+        "official": "The official OpenAI API reports no balance; a relay address usually does.",
+        "usage": "Subscription channels have no balance but usage windows; see the Balance / usage column of the channel list."
+      },
+      "noticeEvery": "Balance checked every {{minutes}} min",
+      "noticeTo": "alerts go to {{targets}}",
+      "targetSep": ", ",
+      "targetNotReady": "{{name}} (not set up)",
+      "target": {
+        "Email": "Email",
+        "WeCom": "WeCom",
+        "DingTalk": "DingTalk",
+        "Lark": "Lark",
+        "PushDeer": "PushDeer",
+        "Telegram": "Telegram"
+      },
+      "problem": {
+        "noRefresh": "Automatic balance refresh is off (channel.update_frequency is 0); the balance is only checked when refreshed by hand.",
+        "kindOff": "Low channel balance notices are turned off in the notification settings.",
+        "noTarget": "No notifier can send: email needs SMTP (sent to the root admin's address by default); Telegram, WeCom and others are set under notify in the config file."
+      },
+      "driftUnsupported": "This provider has no model list endpoint, so it cannot be compared with its upstream.",
+      "problemLink": {
+        "kindOff": "Notification settings",
+        "noTarget": "SMTP settings"
+      }
     },
     "pauseRules": {
       "label": "Pause rules",

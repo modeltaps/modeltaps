@@ -183,6 +183,13 @@ type BalanceInterface interface {
 	Balance() (float64, error)
 }
 
+// BalanceCapability says whether a provider's Balance can be called at all. Many providers embed
+// the OpenAI provider and so have a Balance method that only answers "not supported"; the ones
+// with a balance endpoint of their own say so here.
+type BalanceCapability interface {
+	CanQueryBalance() bool
+}
+
 // type ProviderResponseHandler interface {
 // 	// 响应处理函数
 // 	ResponseHandler(resp *http.Response) (OpenAIResponse any, errWithCode *types.OpenAIErrorWithStatusCode)

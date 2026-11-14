@@ -44,3 +44,8 @@ func (p *DeepseekProvider) Balance() (float64, error) {
 	p.Channel.UpdateBalance(balance)
 	return balance, nil
 }
+
+// CanQueryBalance implements base.BalanceCapability: this provider has a balance endpoint.
+func (p *DeepseekProvider) CanQueryBalance() bool {
+	return true
+}

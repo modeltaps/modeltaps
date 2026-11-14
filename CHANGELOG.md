@@ -321,6 +321,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Channel balances are refreshed every 60 minutes by default (`CHANNEL_UPDATE_FREQUENCY`,
+  `channel.update_frequency`; it used to be off), so low-balance alerts fire without a manual
+  refresh. As with a manual refresh, a channel whose balance reaches 0 is disabled, or paused when
+  pause rules are on. Set it to 0 to keep the old behaviour.
+- The channel monitoring tab only offers what the provider supports. The low-balance alert is
+  turned off with the reason for providers without a balance endpoint, the official OpenAI API
+  and subscription channels; for the rest it shows how often the balance is checked, which
+  notifiers the alert goes to, and warns when refresh is off, low-balance notices are turned off
+  or no notifier can send, linking to the notification or SMTP settings. DeepSeek and SiliconFlow
+  thresholds are labelled and reported in CNY, the currency their balance comes in. The model
+  check says when the provider has no model list. API: `GET /api/channel/capabilities`.
 - The channel's Models tab lists the most used models first: families with the most requests on
   this site in the last 30 days, then mainstream families (Claude, GPT, Gemini, then DeepSeek,
   Qwen, Grok...), the latest version first inside a family, the order the model picker already

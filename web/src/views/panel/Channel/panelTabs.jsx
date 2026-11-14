@@ -59,6 +59,7 @@ import PluginForm from './PluginForm';
 import pluginConfig from './pluginConfig';
 import PriceSyncDialog from './PriceSyncDialog';
 import ModelSelectorModal from './ModelSelectorModal';
+import BalanceAlertField from './BalanceAlertField';
 import { attachPendingModel } from '../ModelInfo/supply/supplyApi';
 import { modelSupplyPath } from '../ModelInfo/supply/supplyHelpers';
 import { performanceTab } from './PerformanceTab';
@@ -1139,6 +1140,8 @@ function MonitorBody({ object: channel, draft, setDraft, ctx }) {
   const missing = drift?.missing_models || [];
   const added = drift?.new_models || [];
   const firstModel = splitList(channel.models)[0] || '';
+  // Providers without a model list endpoint cannot be compared with their upstream.
+  const canCheckModels = Boolean(typeLabels(channel.type).canFetchModels);
   return (
     <>
       <Field label={t('channels.monitor.testModel')} htmlFor="cp-test-model" optional hint={t('channels.monitor.testModelHint')}>
@@ -1150,34 +1153,27 @@ function MonitorBody({ object: channel, draft, setDraft, ctx }) {
           onChange={(e) => setDraft({ ...draft, test_model: e.target.value })}
         />
       </Field>
-      <Field label={t('channels.monitor.threshold')} htmlFor="cp-threshold" optional hint={t('channels.monitor.thresholdHint')}>
-        <Input
-          id="cp-threshold"
-          type="number"
-          min="0"
-          step="0.01"
-          className="w-40 tabular-nums"
-          value={draft.balance_threshold}
-          placeholder={t('channels.monitor.thresholdOff')}
-          onChange={(e) => setDraft({ ...draft, balance_threshold: e.target.value })}
-        />
-      </Field>
+      <BalanceAlertField channel={channel} value={draft.balance_threshold} onChange={(v) => setDraft({ ...draft, balance_threshold: v })} />
       <Field
         label={t('channels.monitor.drift')}
         extra={
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 text-xs text-info hover:underline disabled:opacity-50"
-            disabled={ctx.busy.drift}
-            onClick={() => ctx.actions.onCheckDrift(channel)}
-          >
-            {ctx.busy.drift ? <Loader2 className="size-3 animate-spin" /> : <RefreshCw className="size-3" />}
-            {t('channels.monitor.checkNow')}
-          </button>
+          canCheckModels && (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 text-xs text-info hover:underline disabled:opacity-50"
+              disabled={ctx.busy.drift}
+              onClick={() => ctx.actions.onCheckDrift(channel)}
+            >
+              {ctx.busy.drift ? <Loader2 className="size-3 animate-spin" /> : <RefreshCw className="size-3" />}
+              {t('channels.monitor.checkNow')}
+            </button>
+          )
         }
       >
         <div className="space-y-1 text-[13px]">
-          {!drift?.checked_at ? (
+          {!canCheckModels ? (
+            <p className="text-muted-foreground">{t('channels.monitor.driftUnsupported')}</p>
+          ) : !drift?.checked_at ? (
             <p className="text-muted-foreground">{t('channelDetail.driftNever')}</p>
           ) : (
             <p>

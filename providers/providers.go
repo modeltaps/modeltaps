@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"sort"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/providers/ali"
@@ -126,4 +127,14 @@ func GetProvider(channel *model.Channel, c *gin.Context) base.ProviderInterface 
 	provider.SetContext(c)
 
 	return provider
+}
+
+// ChannelTypes lists every channel type that has a provider of its own, in ascending order.
+func ChannelTypes() []int {
+	types := make([]int, 0, len(providerFactories))
+	for t := range providerFactories {
+		types = append(types, t)
+	}
+	sort.Ints(types)
+	return types
 }

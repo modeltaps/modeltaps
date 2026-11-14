@@ -46,3 +46,8 @@ func (p *SiliconflowProvider) Balance() (float64, error) {
 	p.Channel.UpdateBalance(balance)
 	return balance, nil
 }
+
+// CanQueryBalance implements base.BalanceCapability: this provider has a balance endpoint.
+func (p *SiliconflowProvider) CanQueryBalance() bool {
+	return true
+}

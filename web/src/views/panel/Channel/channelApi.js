@@ -257,6 +257,25 @@ export async function fetchChannelUpstreamModels(id) {
   return { checked_at: data?.checked_at || 0, models: data?.models || [], counts: data?.counts || {} };
 }
 
+// Which channel types report a balance or usage windows, and where low-balance notices go
+// (GET /api/channel/capabilities). Fetched once per page load; a failure is retried next time.
+let capabilitiesRequest = null;
+export function fetchChannelCapabilities() {
+  if (!capabilitiesRequest) {
+    capabilitiesRequest = API.get('/api/channel/capabilities')
+      .then((res) => {
+        const { success, message, data } = res.data;
+        if (!success) throw new Error(message);
+        return data;
+      })
+      .catch((e) => {
+        capabilitiesRequest = null;
+        throw e;
+      });
+  }
+  return capabilitiesRequest;
+}
+
 // Clears the "new upstream models" badge for one channel (MODEL-3
 // `POST /api/channel/dismiss_new_models`, AdminAuth). Keeps the upstream
 // snapshot so the same batch is not reported again. Returns raw

@@ -48,3 +48,16 @@ func (e *Email) Send(_ context.Context, title, message string) error {
 
 	return emailClient.Send(to, title, string(body))
 }
+
+// Recipient is the address notices go to: the configured one, else the root user's email.
+func (e *Email) Recipient() string {
+	if e.To != "" {
+		return e.To
+	}
+	return config.RootUserEmail
+}
+
+// Ready reports whether a notice can be sent: SMTP is set up and there is a recipient.
+func (e *Email) Ready() bool {
+	return config.SMTPServer != "" && config.SMTPAccount != "" && config.SMTPToken != "" && e.Recipient() != ""
+}
