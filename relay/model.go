@@ -69,7 +69,23 @@ func filterModelsByOrgGuardrail(c *gin.Context, models []string) ([]string, erro
 		logger.SysError(fmt.Sprintf("failed to load org member guardrail for model list (shadow=%d, member=%d): %s", userId, createdBy, err.Error()))
 		return nil, errOrgGuardrailUnavailable
 	}
-	return model.FilterModelsByAllowlist(guardrail.ModelWhitelist, models), nil
+	organizationId := guardrail.OrganizationId
+	return guardrail.FilterModels(models, tokenAccessListIdFromContext(c), func(name string) bool {
+		return model.ResolveRoutingPolicy(model.OrganizationRoutingScope(organizationId), name) != nil
+	}), nil
+}
+
+// tokenAccessListIdFromContext returns the named list attached to the key (ORG-15), 0 when none.
+func tokenAccessListIdFromContext(c *gin.Context) int {
+	value, ok := c.Get("token_setting")
+	if !ok {
+		return 0
+	}
+	setting, _ := value.(*model.TokenSetting)
+	if setting == nil {
+		return 0
+	}
+	return setting.Limits.LimitModelSetting.AccessListId
 }
 
 // filterModelsByTokenScope 依次套用令牌模型限制与组织成员白名单，三个列表接口共用。

@@ -17,6 +17,7 @@ import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
 import { isPlaygroundToken } from 'utils/playgroundToken';
 import { maskSecret } from 'utils/maskSecret';
 import ModelLimitSelector from './ModelLimitSelector';
+import ModelAccessField, { accessPayload, accessValueFrom } from '@/components/model/ModelAccessField';
 import { GroupBadge, nextResetTime, relativeTime, statusInfo } from './TokenTable';
 import { EXPIRY_PRESETS, RESET_PERIODS, expiryFromPreset, quotaDraft, quotaPatch } from './tokenData';
 
@@ -302,18 +303,25 @@ GroupSelect.propTypes = {
   exclude: PropTypes.string
 };
 
-function AccessBody({ draft, setDraft, ctx }) {
+function AccessBody({ object, draft, setDraft, ctx }) {
   const { t } = useTranslation();
   const set = (patch) => setDraft((d) => ({ ...d, ...patch }));
   const [models, setModels] = useState([]);
-  const { loadModels } = ctx;
+  const [modelAccess, setModelAccess] = useState(null);
+  const { loadModels, loadModelAccess } = ctx;
+  const creatorId = object?.created_by;
   useEffect(() => {
     let alive = true;
     loadModels().then((m) => alive && setModels(m));
+    if (loadModelAccess) loadModelAccess(creatorId).then((a) => alive && setModelAccess(a));
     return () => {
       alive = false;
     };
-  }, [loadModels]);
+  }, [loadModels, loadModelAccess, creatorId]);
+  // Organization keys (ORG-15): inside the approved models and the creator's member layer.
+  const orgAccess = Boolean(loadModelAccess);
+  const scope = modelAccess?.scope;
+  const parents = [scope?.approved_models, scope?.effective_member].filter((l) => l?.length);
   return (
     <>
       <Section title={t('apiKey.panel.routing')}>
@@ -352,14 +360,40 @@ function AccessBody({ draft, setDraft, ctx }) {
         )}
       </Section>
       <Section title={t('apiKey.panel.restrictions')}>
-        <ToggleField
-          id="tk-limit-models"
-          label={t('token_index.limits_models_switch')}
-          hint={t('token_index.limits_info')}
-          checked={draft.limitModels}
-          onChange={(c) => set({ limitModels: c, models: c ? draft.models : [] })}
-        />
-        {draft.limitModels && (
+        {orgAccess && (
+          <Field label={t('token_index.limits_models_switch')} hint={t('modelAccess.keyHint')}>
+            {modelAccess ? (
+              <ModelAccessField
+                id="token-model-limit"
+                value={draft.access}
+                onChange={(access) => set({ access })}
+                lists={modelAccess.lists || []}
+                models={models}
+                parents={parents}
+                inheritLabel={t('modelAccess.mode.noExtra')}
+                inheritHint={
+                  scope?.effective_member?.length
+                    ? t('modelAccess.memberLayer', { models: scope.effective_member.join(', ') })
+                    : scope?.approved_models?.length
+                      ? t('modelAccess.orgDefaultApproved')
+                      : t('modelAccess.orgDefaultNone')
+                }
+              />
+            ) : (
+              <div className="h-9 w-full animate-pulse rounded-lg bg-muted" aria-hidden="true" />
+            )}
+          </Field>
+        )}
+        {!orgAccess && (
+          <ToggleField
+            id="tk-limit-models"
+            label={t('token_index.limits_models_switch')}
+            hint={t('token_index.limits_info')}
+            checked={draft.limitModels}
+            onChange={(c) => set({ limitModels: c, models: c ? draft.models : [] })}
+          />
+        )}
+        {!orgAccess && draft.limitModels && (
           <div className="pb-3">
             <ModelLimitSelector
               id="token-model-limit"
@@ -397,6 +431,12 @@ function AccessBody({ draft, setDraft, ctx }) {
 
 AccessBody.propTypes = bodyProps;
 
+// Organization key model limit: a named list, inline models, or nothing beyond the member layer.
+function orgLimitPatch(access) {
+  const { listId, models } = accessPayload(access);
+  return { enabled: models.length > 0, models, access_list_id: listId };
+}
+
 const accessTab = {
   key: 'access',
   make: (tk) => {
@@ -408,17 +448,20 @@ const accessTab = {
       billing_tag: tk.setting.billing_tag || '',
       limitModels: lm.enabled === true,
       models: lm.models || [],
+      access: accessValueFrom(lm.access_list_id || 0, lm.enabled ? lm.models || [] : []),
       limitIp: ip.enabled === true,
       whitelist: (ip.whitelist || []).join('\n')
     };
   },
-  patch: (d) => ({
+  patch: (d, tk, ctx) => ({
     group: d.group,
     backup_group: d.backup_group,
     setting: {
       billing_tag: d.billing_tag || null,
       limits: {
-        limit_model_setting: { enabled: d.limitModels, models: d.limitModels ? d.models : [] },
+        limit_model_setting: ctx?.loadModelAccess
+          ? orgLimitPatch(d.access)
+          : { enabled: d.limitModels, models: d.limitModels ? d.models : [] },
         limits_ip_setting: {
           enabled: d.limitIp,
           whitelist: d.limitIp

@@ -89,6 +89,9 @@ func normalizeLimitModelSetting(s LimitModelSetting) LimitModelSetting {
 			models = append(models, m)
 		}
 	}
+	if s.AccessListId > 0 {
+		return LimitModelSetting{Models: []string{}, AccessListId: s.AccessListId}
+	}
 	return LimitModelSetting{Enabled: len(models) > 0, Models: models}
 }
 
@@ -115,7 +118,10 @@ func TokenAvailableModels(token *Token) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		models = FilterModelsByAllowlist(guardrail.ModelWhitelist, models)
+		organizationId := guardrail.OrganizationId
+		models = guardrail.FilterModels(models, setting.Limits.LimitModelSetting.AccessListId, func(name string) bool {
+			return ResolveRoutingPolicy(OrganizationRoutingScope(organizationId), name) != nil
+		})
 	}
 	if config.CatalogEnforceHidden() {
 		visible := make([]string, 0, len(models))
@@ -127,4 +133,58 @@ func TokenAvailableModels(token *Token) ([]string, error) {
 		models = visible
 	}
 	return models, nil
+}
+
+// NormalizeModelAllowlist drops blank and duplicate entries (case-insensitive, keeping the first
+// spelling) and never returns nil.
+func NormalizeModelAllowlist(entries []string) []string {
+	out := make([]string, 0, len(entries))
+	seen := make(map[string]bool, len(entries))
+	for _, raw := range entries {
+		entry := strings.TrimSpace(raw)
+		key := strings.ToLower(entry)
+		if entry == "" || seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, entry)
+	}
+	return out
+}
+
+// ModelAllowlistCovers reports whether the layer above (parent) covers one entry of a lower layer (ORG-15):
+//   - an empty parent does not restrict and covers everything;
+//   - a model name is covered when a request for it would pass: ModelAllowlistPermits(parent, entry);
+//   - a prefix "x*" needs a parent prefix "y*" with x starting with y (case-insensitive); model names
+//     never cover a prefix.
+func ModelAllowlistCovers(parent []string, entry string) bool {
+	if len(NormalizeModelAllowlist(parent)) == 0 {
+		return true
+	}
+	item := strings.ToLower(strings.TrimSpace(entry))
+	if item == "" {
+		return true
+	}
+	prefix, isPrefix := strings.CutSuffix(item, "*")
+	if !isPrefix {
+		return ModelAllowlistPermits(parent, entry)
+	}
+	for _, raw := range parent {
+		p := strings.ToLower(strings.TrimSpace(raw))
+		if parentPrefix, ok := strings.CutSuffix(p, "*"); ok && strings.HasPrefix(prefix, parentPrefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// UncoveredModelAllowlistEntries returns the entries of child that parent does not cover.
+func UncoveredModelAllowlistEntries(parent []string, child []string) []string {
+	var out []string
+	for _, entry := range NormalizeModelAllowlist(child) {
+		if !ModelAllowlistCovers(parent, entry) {
+			out = append(out, entry)
+		}
+	}
+	return out
 }

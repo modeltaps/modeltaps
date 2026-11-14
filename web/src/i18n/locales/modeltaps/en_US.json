@@ -1751,7 +1751,16 @@
     "routing_policy_count_exceeded": "This organization already has the maximum of {{max}} routing policies",
     "org_routing_policy_disabled": "Organization routing policies are not enabled on this site",
     "supply_pause_rules_invalid": "The pause rules are not valid: {{message}}",
-    "model_supply_pending_not_found": "This upstream model is not waiting on those channels."
+    "model_supply_pending_not_found": "This upstream model is not waiting on those channels.",
+    "model_access_list_not_found": "The model access list does not exist",
+    "model_access_list_name_invalid": "The list name is required and at most 100 characters; the description at most 500",
+    "model_access_list_name_duplicate": "A list with this name already exists",
+    "model_access_list_empty": "A named list needs at least one model",
+    "model_access_list_restricted": "Only organization owners and admins can attach a restricted list",
+    "model_access_not_covered": "Outside the allowed range: {{models}}",
+    "model_access_too_many": "Too many entries (at most {{max}})",
+    "model_access_ceiling_in_use": "Some lists of the organization still use models outside the new approved models",
+    "model_access_personal_token": "Named access lists are only available to organization API keys"
   },
   "channelOAuth": {
     "tip": {
@@ -2578,7 +2587,9 @@
       "personalSettings": "Personal settings",
       "inviteCodes": "Invite codes",
       "settings": "Settings",
-      "routingPolicies": "Routing policies"
+      "routingPolicies": "Routing policies",
+      "health": "System health",
+      "orgModelAccess": "Model access"
     },
     "context": {
       "personal": "Personal",
@@ -2642,7 +2653,8 @@
       "tab": {
         "overview": "Overview",
         "balance": "Balance",
-        "members": "Members"
+        "members": "Members",
+        "models": "Approved models"
       },
       "details": "Details",
       "slug": "Slug",
@@ -2884,7 +2896,12 @@
   },
   "settingsUi": {
     "search": {
-      "placeholder": "Search settings"
+      "placeholder": "Search settings",
+      "clear": "Clear search",
+      "title": "Search “{{query}}”",
+      "empty": "No matching settings",
+      "count_one": "{{count}} card",
+      "count_other": "{{count}} cards"
     },
     "unsaved": "Unsaved changes",
     "undo": "Undo",
@@ -3598,6 +3615,73 @@
       "previews": "Previews as drafts",
       "publishMain": "Publish new models from the main labs",
       "otherSupplied": "Other supplied models as drafts"
+    }
+  },
+  "modelAccess": {
+    "mode": {
+      "label": "Model access",
+      "inherit": "Inherit",
+      "list": "Named list",
+      "custom": "Custom",
+      "followOrg": "Organization default",
+      "noLimit": "No limit",
+      "noExtra": "No extra limit"
+    },
+    "noLists": "No named lists yet. Create one under Organization → Model access.",
+    "pickList": "Choose a list",
+    "modelCount_one": "{{count}} entry",
+    "modelCount_other": "{{count}} entries",
+    "patternHint": "Type a prefix ending in * (for example claude-fable-*) to allow a whole family, including releases that come later.",
+    "outside": "Not in effect (outside the allowed range above): {{models}}",
+    "keyHint": "Keys can only narrow what the key's creator may use.",
+    "memberLayer": "The creator may use: {{models}}",
+    "orgDefaultList": "Follows the organization default: list “{{name}}”",
+    "orgDefaultModels": "Follows the organization default: {{models}}",
+    "orgDefaultApproved": "Every approved model of the organization",
+    "orgDefaultNone": "No limit: every model is available",
+    "approved": {
+      "title": "Approved models",
+      "description": "Set by the platform. Every list of the organization stays inside these models.",
+      "none": "Not limited: every model on the platform is available.",
+      "adminHint": "The most this organization can use. Leave empty for no limit. Prefix rules ending in * follow new releases automatically; exact names need approving one by one.",
+      "newTitle": "New models not approved yet",
+      "newHint": "Released in the last {{days}} days and not covered by the list above.",
+      "approveAll": "Approve all"
+    },
+    "default": {
+      "title": "Organization default",
+      "description": "What members can use unless their own limits say otherwise.",
+      "hint": "Members with their own model limits are not affected."
+    },
+    "lists": {
+      "title": "Named lists",
+      "intro": "Reusable lists you can attach to the default, to members and to API keys. Editing a list applies everywhere it is attached.",
+      "new": "New list",
+      "empty": "No lists yet.",
+      "newTitle": "New list",
+      "editTitle": "Edit list",
+      "sheetHint": "Only models inside the organization's approved models can be added.",
+      "name": "Name",
+      "description": "Description",
+      "models": "Models",
+      "restricted": "Restricted",
+      "restrictedHint": "Only owners and admins can attach it to API keys.",
+      "restrictedBadge": "Restricted",
+      "nameRequired": "Enter a name",
+      "modelsRequired": "Add at least one model",
+      "unused": "Not attached",
+      "usedByDefault": "Organization default",
+      "usedByMembers_one": "{{count}} member",
+      "usedByMembers_other": "{{count}} members",
+      "usedByKeys_one": "{{count}} key",
+      "usedByKeys_other": "{{count}} keys",
+      "deleteTitle": "Delete “{{name}}”?",
+      "deleteBody": "Attached to: {{usage}}. Each place it is attached falls back to the layer above."
+    },
+    "conflict": {
+      "org_default": "Organization default",
+      "member": "Member {{name}}",
+      "list": "List {{name}}"
     }
   }
 }

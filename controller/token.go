@@ -222,7 +222,7 @@ func AddToken(c *gin.Context) {
 	}
 
 	setting := token.Setting.Data()
-	err = validateTokenSetting(&setting)
+	err = validatePersonalTokenSetting(&setting)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
@@ -292,7 +292,7 @@ func UpdateToken(c *gin.Context) {
 	}
 
 	newSetting := token.Setting.Data()
-	err = validateTokenSetting(&newSetting)
+	err = validatePersonalTokenSetting(&newSetting)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
@@ -426,6 +426,8 @@ func UpdateTokenByAdmin(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
+	// Named access lists belong to organizations (ORG-15); the site console cannot change the attachment
+	newSetting.Limits.LimitModelSetting.AccessListId = cleanToken.Setting.Data().Limits.LimitModelSetting.AccessListId
 
 	if token.Status == config.TokenStatusEnabled {
 		if cleanToken.Status == config.TokenStatusExpired && cleanToken.ExpiredTime <= utils.GetTimestamp() && cleanToken.ExpiredTime != -1 {
@@ -550,6 +552,14 @@ func validateTokenGroup(tokenGroup string, userId int) error {
 	}
 
 	return nil
+}
+
+// validatePersonalTokenSetting: named access lists belong to organizations, personal keys cannot use them.
+func validatePersonalTokenSetting(setting *model.TokenSetting) error {
+	if setting != nil && setting.Limits.LimitModelSetting.AccessListId > 0 {
+		return common.NewAPIError(common.APICodeModelAccessPersonalToken, "named access lists are only available to organization API keys", nil)
+	}
+	return validateTokenSetting(setting)
 }
 
 func validateTokenSetting(setting *model.TokenSetting) error {

@@ -16,6 +16,8 @@ import (
 type OrgMemberLimitsRequest struct {
 	Budget         *model.QuotaResetSetting `json:"budget"`          // nil=不限预算;period: daily/weekly/monthly,limit>0
 	ModelWhitelist []string                 `json:"model_whitelist"` // 空=回退组织级缺省
+	// ModelAccessListId attaches a named list of the organization (ORG-15); non-zero ignores ModelWhitelist
+	ModelAccessListId int `json:"model_access_list_id"`
 }
 
 // GetOrgMemberLimits 查询成员预算与模型白名单(Admin+)
@@ -36,10 +38,11 @@ func GetOrgMemberLimits(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data": gin.H{
-			"budget":          setting.Budget,
-			"budget_used":     member.BudgetUsed,
-			"budget_start":    member.BudgetStart,
-			"model_whitelist": setting.ModelWhitelist,
+			"budget":               setting.Budget,
+			"budget_used":          member.BudgetUsed,
+			"budget_start":         member.BudgetStart,
+			"model_whitelist":      setting.ModelWhitelist,
+			"model_access_list_id": setting.ModelAccessListId,
 		},
 	})
 }
@@ -68,7 +71,7 @@ func UpdateOrgMemberLimits(c *gin.Context) {
 		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgMemberRoleHigherModify, "you cannot configure members with a higher role than yours", nil)
 		return
 	}
-	member, err := model.UpdateOrgMemberLimits(org, targetUserId, req.Budget, req.ModelWhitelist)
+	member, err := model.UpdateOrgMemberLimits(org, targetUserId, req.Budget, req.ModelWhitelist, req.ModelAccessListId)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
@@ -79,15 +82,16 @@ func UpdateOrgMemberLimits(c *gin.Context) {
 		budgetDesc = fmt.Sprintf("%s/%d", setting.Budget.Period, setting.Budget.Limit)
 	}
 	model.RecordOrgAudit(org.Id, operatorId, "org.member_limits_update",
-		fmt.Sprintf("Updated limits for user %d: budget=%s, model allowlist=%v", targetUserId, budgetDesc, setting.ModelWhitelist))
+		fmt.Sprintf("Updated limits for user %d: budget=%s, model allowlist=%v, access list=%d", targetUserId, budgetDesc, setting.ModelWhitelist, setting.ModelAccessListId))
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
 		"data": gin.H{
-			"budget":          setting.Budget,
-			"budget_used":     member.BudgetUsed,
-			"budget_start":    member.BudgetStart,
-			"model_whitelist": setting.ModelWhitelist,
+			"budget":               setting.Budget,
+			"budget_used":          member.BudgetUsed,
+			"budget_start":         member.BudgetStart,
+			"model_whitelist":      setting.ModelWhitelist,
+			"model_access_list_id": setting.ModelAccessListId,
 		},
 	})
 }

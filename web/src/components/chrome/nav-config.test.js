@@ -49,7 +49,7 @@ describe('navSectionsFor (workbench)', () => {
       expect(idsOf(navSectionsFor({ context: 'org', orgRole, orgId: 7 }))).toEqual([
         MAIN,
         DEVELOP,
-        { id: 'organization', items: ['organization', 'org_members', 'billing'] }
+        { id: 'organization', items: ['organization', 'org_members', 'org_models', 'billing'] }
       ]);
     }
   });
@@ -139,6 +139,8 @@ describe('findActiveItem', () => {
     expect(findActiveItem('/panel/settings/account/security')?.id).toBe('personal_settings');
     expect(findActiveItem('/panel/settings/org/3/general')?.id).toBe('org_settings');
     expect(findActiveItem('/panel/settings/org/3/members')?.id).toBe('org_members');
+    // Not ".../models": the server treats paths ending in /models as a mistyped relay URL.
+    expect(findActiveItem('/panel/settings/org/3/model-access')?.id).toBe('org_models');
     expect(findActiveItem('/panel/settings/org/3/danger')?.id).toBe('org_settings');
     // The old budget section redirects to the 常规 group of the organization settings.
     expect(findActiveItem('/panel/settings/org/3/budget')?.id).toBe('org_settings');
@@ -231,6 +233,7 @@ describe('commandSections', () => {
     expect(typed(7, 'admin')).toEqual([
       ['settings_org_general', '/panel/settings/org/7/general', 'settingsUi.sections.org'],
       ['settings_org_members', '/panel/settings/org/7/members', 'settingsUi.sections.org'],
+      ['settings_org_model-access', '/panel/settings/org/7/model-access', 'settingsUi.sections.org'],
       ['settings_org_danger', '/panel/settings/org/7/danger', 'settingsUi.sections.org'],
       ['settings_personal_profile', '/panel/settings/account/profile', 'settingsUi.sections.personal'],
       ['settings_personal_security', '/panel/settings/account/security', 'settingsUi.sections.personal'],

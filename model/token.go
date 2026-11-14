@@ -106,6 +106,9 @@ type LimitsConfig struct {
 type LimitModelSetting struct {
 	Enabled bool     `json:"enabled"`
 	Models  []string `json:"models"`
+	// AccessListId attaches a named list to an organization key (ORG-15) instead of inline Models; the
+	// organization guardrail checks it at request time
+	AccessListId int `json:"access_list_id,omitempty"`
 }
 
 type LimitsIPSetting struct {

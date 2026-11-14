@@ -113,6 +113,19 @@ func (q *Quota) checkOrgMemberGuardrails() *types.OpenAIErrorWithStatusCode {
 			fmt.Errorf("model %s is not allowed by the organization member model whitelist", allowedName),
 			"org_model_not_allowed", http.StatusForbidden)
 	}
+	// The key's named list (ORG-15), matched against the requested name like the inline key limit
+	if !guardrail.TokenListAllows(q.tokenAccessListId, allowedName) {
+		return common.ErrorWrapperLocal(
+			fmt.Errorf("model %s is not allowed by the access list of this API key", allowedName),
+			"org_model_not_allowed", http.StatusForbidden)
+	}
+	// The approved models apply to the model actually called: with auto routing, the chosen target.
+	// The decision call is an internal step of the chosen policy and is not checked by its model.
+	if !q.routingDecisionCall && !guardrail.ApprovedAllows(q.modelName) {
+		return common.ErrorWrapperLocal(
+			fmt.Errorf("model %s is not approved for this organization", q.modelName),
+			"org_model_not_allowed", http.StatusForbidden)
+	}
 	if guardrail.BudgetExceeded(time.Now()) {
 		return common.ErrorWrapperLocal(
 			errors.New("organization member budget exceeded for current period"),

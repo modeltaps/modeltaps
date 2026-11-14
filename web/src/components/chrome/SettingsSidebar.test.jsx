@@ -62,7 +62,7 @@ describe('SettingsSidebar', () => {
     const picker = screen.getByRole('button', { name: '选择组织' });
     expect(picker.textContent).toContain('Acme');
     expect(screen.getByRole('navigation').contains(picker)).toBe(false);
-    expect(linkNames(org)).toEqual(['常规', '成员与预算', '危险操作']);
+    expect(linkNames(org)).toEqual(['常规', '成员与预算', '模型访问', '危险操作']);
     expect(personal.getAttribute('aria-label')).toBe('个人设置');
     expect(personal.textContent).toContain('个人设置');
     expect(linkNames(personal)).toEqual(['个人信息', '登录与安全', '数据与隐私', '偏好']);

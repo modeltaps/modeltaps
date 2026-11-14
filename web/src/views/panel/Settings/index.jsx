@@ -12,6 +12,7 @@ import OrgSectionHost, { useOrgDetail } from './org/OrgSectionHost';
 import GeneralSection from './org/GeneralSection';
 import BudgetSection from './org/BudgetSection';
 import DangerSection from './org/DangerSection';
+import ModelAccessPage from './org/ModelAccessPage';
 import useSelfUser from './account/useSelfUser';
 import { accountGroupCards } from './account';
 import {
@@ -19,6 +20,7 @@ import {
   DEFAULT_ACCOUNT_SECTION,
   ORG_GROUPS,
   ORG_MEMBERS_SECTION,
+  ORG_MODELS_SECTION,
   accountSettingsUrl,
   orgSettingsUrl,
   resolveAccountSection,
@@ -115,6 +117,13 @@ export default function Settings() {
     return (
       <div className="max-w-6xl">
         <OrgSectionHost key={orgId} orgId={orgId} role={managedOrg.role} component={MembersTab} />
+      </div>
+    );
+  }
+  if (section === ORG_MODELS_SECTION) {
+    return (
+      <div className="max-w-6xl">
+        <ModelAccessPage key={orgId} orgId={orgId} />
       </div>
     );
   }

@@ -12,6 +12,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/redis"
 	"github.com/modeltaps/modeltaps/common/utils"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -28,6 +29,8 @@ type OrganizationSetting struct {
 	UsageVisibleToMembers *bool `json:"usage_visible_to_members,omitempty"`
 	// ModelWhitelist 组织级模型白名单缺省(空=不限制)
 	ModelWhitelist []string `json:"model_whitelist,omitempty"`
+	// ModelAccessListId is the named list attached as the organization default (ORG-15); it wins over ModelWhitelist
+	ModelAccessListId int `json:"model_access_list_id,omitempty"`
 	// LogIODefault 组织令牌「完整请求/响应留存」继承默认;nil 时取站点默认 config.OrganizationLogIODefault
 	LogIODefault *bool `json:"log_io_default,omitempty"`
 	// Budget 组织级周期预算(T1):跨全体成员合计上限;nil 或 limit<=0 表示不限
@@ -49,6 +52,10 @@ type Organization struct {
 	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`
 
 	Setting database.JSONType[OrganizationSetting] `json:"setting" gorm:"type:json"`
+
+	// ApprovedModels are the platform's approved models for the organization (ORG-15, site admins only;
+	// empty = no limit). Kept out of the setting JSON organization admins write and out of the profile JSON.
+	ApprovedModels datatypes.JSONSlice[string] `json:"-" gorm:"type:json"`
 
 	// 组织级周期预算计数(T1,沿用 SEC-4 成员预算的「专用列 + 单条原子 UPDATE」模式,不放 JSON)。
 	// 不随组织资料对外序列化:仅 GetOrganization 对 Owner/Admin 显式返回
@@ -396,6 +403,8 @@ type OrganizationAdminInfo struct {
 	MemberCount int64  `json:"member_count"`
 	// EffectiveMaxMembers 生效的成员上限(0=不限制),max_members 为 null 时即站点默认值
 	EffectiveMaxMembers int `json:"effective_max_members"`
+	// ApprovedModels of the organization (ORG-15), only in the detail of one organization
+	ApprovedModels []string `json:"approved_models,omitempty"`
 }
 
 // fillOrganizationAdminInfos 批量补全组织池余额、成员数与 Owner
@@ -509,6 +518,7 @@ func GetOrganizationAdminInfo(id int) (*OrganizationAdminInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	infos[0].ApprovedModels = nonNil(org.ApprovedModels)
 	return infos[0], nil
 }
 

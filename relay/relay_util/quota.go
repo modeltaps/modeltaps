@@ -90,7 +90,9 @@ type Quota struct {
 	// routingPolicy 请求走了自动路由时的策略名；组织成员白名单按它判定而非目标模型（设计上目标不再二次校验）。
 	// routingDecision 是本次请求的决策（写进目标模型那条日志的 metadata）；
 	// routingDecisionCall 标记本 Quota 计的是决策调用本身。
-	routingPolicy       string
+	routingPolicy string
+	// tokenAccessListId is the named list attached to the organization key (ORG-15), 0 when none
+	tokenAccessListId   int
 	routingDecision     *RoutingDecision
 	routingDecisionCall bool
 	// routingPolicyId identifies the policy of a decision call (names repeat across organizations);
@@ -157,16 +159,17 @@ func NewQuota(c *gin.Context, modelName string, promptTokens int) *Quota {
 	isBackupGroup := c.GetBool("is_backupGroup")
 
 	quota := &Quota{
-		modelName:      modelName,
-		promptTokens:   promptTokens,
-		userId:         c.GetInt("id"),
-		createdBy:      c.GetInt("token_created_by"),
-		channelId:      c.GetInt("channel_id"),
-		tokenId:        c.GetInt("token_id"),
-		unlimitedQuota: c.GetBool("token_unlimited_quota"),
-		HandelStatus:   false,
-		isBackupGroup:  isBackupGroup, // 记录是否使用备用分组
-		routingPolicy:  c.GetString("routing_policy"),
+		modelName:         modelName,
+		promptTokens:      promptTokens,
+		userId:            c.GetInt("id"),
+		createdBy:         c.GetInt("token_created_by"),
+		channelId:         c.GetInt("channel_id"),
+		tokenId:           c.GetInt("token_id"),
+		unlimitedQuota:    c.GetBool("token_unlimited_quota"),
+		HandelStatus:      false,
+		isBackupGroup:     isBackupGroup, // 记录是否使用备用分组
+		routingPolicy:     c.GetString("routing_policy"),
+		tokenAccessListId: tokenAccessListIdFrom(c),
 	}
 	quota.requestedOutputTokens = requestedMaxOutputTokens(c)
 	quota.routingDecision = RoutingDecisionFromContext(c)
@@ -600,4 +603,17 @@ func (q *Quota) metricModelName() string {
 		return q.upstreamModel
 	}
 	return q.modelName
+}
+
+// tokenAccessListIdFrom reads the named list id from the key setting the auth middleware stored.
+func tokenAccessListIdFrom(c *gin.Context) int {
+	value, ok := c.Get("token_setting")
+	if !ok {
+		return 0
+	}
+	setting, _ := value.(*model.TokenSetting)
+	if setting == nil {
+		return 0
+	}
+	return setting.Limits.LimitModelSetting.AccessListId
 }

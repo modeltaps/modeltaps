@@ -1,4 +1,4 @@
-import { Database, ShieldCheck, SlidersHorizontal, TriangleAlert, User, UsersRound } from 'lucide-react';
+import { Database, ListChecks, ShieldCheck, SlidersHorizontal, TriangleAlert, User, UsersRound } from 'lucide-react';
 
 // ==============================|| PANEL — SETTINGS GROUP REGISTRY ||============================== //
 // Groups of the personal and the organization settings pages (both render with SettingsPage), and
@@ -13,8 +13,9 @@ export const ORG_GROUPS = [
 
 export const ORG_MEMBERS_SECTION = 'members';
 export const ORG_ROUTING_SECTION = 'routing';
+export const ORG_MODELS_SECTION = 'model-access';
 export const ROUTING_POLICIES_URL = '/panel/routing';
-const ORG_PAGES = [ORG_MEMBERS_SECTION];
+const ORG_PAGES = [ORG_MEMBERS_SECTION, ORG_MODELS_SECTION];
 
 export const ACCOUNT_GROUPS = [
   { id: 'profile', labelKey: 'settingsUi.personal.groups.profile', icon: User },
@@ -44,6 +45,7 @@ export const accountSettingsUrl = (section) => `/panel/settings/account/${sectio
 export const ORG_TREE = [
   { id: 'general', labelKey: 'settingsUi.org.groups.general', icon: SlidersHorizontal },
   { id: ORG_MEMBERS_SECTION, labelKey: 'nav.items.orgMembers', icon: UsersRound },
+  { id: ORG_MODELS_SECTION, labelKey: 'nav.items.orgModelAccess', icon: ListChecks },
   { id: 'danger', labelKey: 'settingsUi.org.groups.danger', icon: TriangleAlert }
 ];
 

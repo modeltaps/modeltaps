@@ -142,6 +142,11 @@ func AddOrgToken(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
+	_, operatorRole := getOrgFromContext(c)
+	if err := model.ValidateOrgTokenModelAccess(org, userId, operatorRole, &setting.Limits.LimitModelSetting); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
 
 	// 非可信用户不能设置 BillingTag
 	if userRole < config.RoleReliableUser {
@@ -246,6 +251,17 @@ func UpdateOrgToken(c *gin.Context) {
 
 		// 处理 BillingTag: 非可信用户保持原值不变
 		oldSetting := cleanToken.Setting.Data()
+
+		// The model limit must stay inside the approved models and the creator's member layer (ORG-15).
+		// Only checked when the limit changed, so after a layer above is narrowed other edits (name, quota)
+		// still save; entries outside are refused at request time and shown as not in effect.
+		if model.LimitModelSettingChanged(oldSetting.Limits.LimitModelSetting, newSetting.Limits.LimitModelSetting) {
+			_, operatorRole := getOrgFromContext(c)
+			if err := model.ValidateOrgTokenModelAccess(org, cleanToken.CreatedBy, operatorRole, &newSetting.Limits.LimitModelSetting); err != nil {
+				common.APIRespondWithError(c, http.StatusOK, err)
+				return
+			}
+		}
 		if userRole < config.RoleReliableUser {
 			newSetting.BillingTag = oldSetting.BillingTag
 		}

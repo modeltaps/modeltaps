@@ -10,17 +10,21 @@ import { Select, SelectTrigger, SelectContent, SelectItem } from '@/components/u
 import QuotaInput from '@/components/QuotaInput';
 import { API } from 'utils/api';
 import { renderSpend, showError, showSuccess } from 'utils/common';
-import ModelLimitSelector, { toLimitModels } from '../Token/ModelLimitSelector';
+import ModelAccessField, { accessPayload, accessValueFrom } from '@/components/model/ModelAccessField';
+import { toLimitModels } from '../Token/ModelLimitSelector';
 
 // ==============================|| ORGANIZATION — MEMBER BUDGET & MODEL WHITELIST (T5) ||============================== //
 // Sheet editor for org_members.setting: periodic budget (daily/weekly/monthly,
-// UTC boundaries) + model whitelist (empty = org default / unrestricted).
+// UTC boundaries) + model access (ORG-15): follow the org default, a named list, or an inline list,
+// all inside the platform's approved models for the organization.
 
 export default function MemberLimitsSheet({ open, onOpenChange, orgId, member, onSaved }) {
   const { t } = useTranslation();
   const [period, setPeriod] = useState('__none');
   const [limit, setLimit] = useState('');
-  const [whitelist, setWhitelist] = useState([]);
+  const [access, setAccess] = useState(accessValueFrom(0, []));
+  const [scope, setScope] = useState(null);
+  const [lists, setLists] = useState([]);
   const [budgetUsed, setBudgetUsed] = useState(0);
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -33,26 +37,34 @@ export default function MemberLimitsSheet({ open, onOpenChange, orgId, member, o
     setLimitError('');
     setPeriod('__none');
     setLimit('');
-    setWhitelist([]);
+    setAccess(accessValueFrom(0, []));
+    setScope(null);
+    setLists([]);
     setBudgetUsed(0);
     setModels([]);
     setLoading(true);
-    Promise.all([API.get(`/api/org/${orgId}/members/${member.user_id}/limits`), API.get('/api/available_model')])
-      .then(([limitsRes, modelsRes]) => {
+    Promise.all([
+      API.get(`/api/org/${orgId}/members/${member.user_id}/limits`),
+      API.get('/api/available_model'),
+      API.get(`/api/org/${orgId}/model_access`, { params: { user_id: member.user_id } })
+    ])
+      .then(([limitsRes, modelsRes, accessRes]) => {
         const { success, message, data } = limitsRes.data;
         if (!success) {
           showError(message || t('usagePage.loadFailed'));
           onOpenChange(false);
           return;
         }
-        if (!modelsRes.data.success) {
-          showError(modelsRes.data.message || t('usagePage.loadFailed'));
+        if (!modelsRes.data.success || !accessRes.data.success) {
+          showError(modelsRes.data.message || accessRes.data.message || t('usagePage.loadFailed'));
           onOpenChange(false);
           return;
         }
+        setScope(accessRes.data.data.scope);
+        setLists(accessRes.data.data.lists || []);
         setPeriod(data?.budget?.period || '__none');
         setLimit(data?.budget?.limit ?? '');
-        setWhitelist(data?.model_whitelist || []);
+        setAccess(accessValueFrom(data?.model_access_list_id || 0, data?.model_whitelist || []));
         setBudgetUsed(data?.budget_used || 0);
         const d = modelsRes.data.data;
         setModels(toLimitModels(d));
@@ -76,9 +88,11 @@ export default function MemberLimitsSheet({ open, onOpenChange, orgId, member, o
     }
     setSaving(true);
     try {
+      const { listId, models: whitelist } = accessPayload(access);
       const res = await API.put(`/api/org/${orgId}/members/${member.user_id}/limits`, {
         budget,
-        model_whitelist: whitelist
+        model_whitelist: whitelist,
+        model_access_list_id: listId
       });
       const { success, message } = res.data;
       if (success) {
@@ -144,12 +158,17 @@ export default function MemberLimitsSheet({ open, onOpenChange, orgId, member, o
                   />
                 </FormField>
               )}
-              <FormField
-                className="border-t border-border pt-4"
-                label={t('orgPage.limits.whitelist')}
-                hint={t('orgPage.limits.whitelistHint')}
-              >
-                <ModelLimitSelector id="member-model-limit" models={models} value={whitelist} onChange={setWhitelist} />
+              <FormField className="border-t border-border pt-4" label={t('orgPage.limits.whitelist')}>
+                <ModelAccessField
+                  id="member-model-limit"
+                  value={access}
+                  onChange={setAccess}
+                  lists={lists}
+                  models={models}
+                  parents={scope?.approved_models?.length ? [scope.approved_models] : []}
+                  inheritLabel={t('modelAccess.mode.followOrg')}
+                  inheritHint={describeOrgDefault(t, scope, lists)}
+                />
               </FormField>
             </>
           )}
@@ -166,6 +185,17 @@ export default function MemberLimitsSheet({ open, onOpenChange, orgId, member, o
       </SheetContent>
     </Sheet>
   );
+}
+
+// One line on what "follow the organization default" means right now.
+export function describeOrgDefault(t, scope, lists) {
+  if (!scope) return '';
+  if (scope.default_list_id > 0) {
+    const list = lists.find((l) => l.id === scope.default_list_id);
+    return t('modelAccess.orgDefaultList', { name: list?.name || `#${scope.default_list_id}` });
+  }
+  if (scope.default_models?.length) return t('modelAccess.orgDefaultModels', { models: scope.default_models.join(', ') });
+  return scope.approved_models?.length ? t('modelAccess.orgDefaultApproved') : t('modelAccess.orgDefaultNone');
 }
 
 MemberLimitsSheet.propTypes = {

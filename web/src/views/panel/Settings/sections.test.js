@@ -79,7 +79,7 @@ describe('the 设置 tree', () => {
     const tree = settingsTree({ pathname: '/panel/settings/org/9/general', organizations: orgs });
     expect(tree.org.id).toBe(9);
     expect(ids(tree.managedOrgs)).toEqual([4, 9]);
-    expect(ids(tree.orgItems)).toEqual(['general', 'members', 'danger']);
+    expect(ids(tree.orgItems)).toEqual(['general', 'members', 'model-access', 'danger']);
     expect(tree.orgItems.find((i) => i.id === 'members').to).toBe('/panel/settings/org/9/members');
     expect(ids(tree.personalItems)).toEqual(['profile', 'security', 'privacy', 'preferences']);
     expect(tree.active.id).toBe('general');

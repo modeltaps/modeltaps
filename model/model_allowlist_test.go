@@ -217,7 +217,7 @@ func TestTokenAvailableModels(t *testing.T) {
 	if err := DB.Model(&User{}).Where("id = ?", org.ShadowUserId).Update("group", "default").Error; err != nil {
 		t.Fatal(err)
 	}
-	if _, err := UpdateOrgMemberLimits(org, owner.Id, nil, []string{"gpt-*"}); err != nil {
+	if _, err := UpdateOrgMemberLimits(org, owner.Id, nil, []string{"gpt-*"}, 0); err != nil {
 		t.Fatal(err)
 	}
 	orgToken := &Token{UserId: org.ShadowUserId, CreatedBy: owner.Id}

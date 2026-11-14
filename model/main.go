@@ -295,6 +295,10 @@ func InitDB() (err error) {
 		if err != nil {
 			return err
 		}
+		err = db.AutoMigrate(&ModelAccessList{})
+		if err != nil {
+			return err
+		}
 
 		err = DB.AutoMigrate(&WebAuthnCredential{})
 		if err != nil {

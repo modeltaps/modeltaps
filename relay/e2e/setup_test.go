@@ -82,7 +82,7 @@ func setupTestDB(t *testing.T) {
 		&model.User{}, &model.Token{}, &model.Channel{}, &model.UserGroup{},
 		&model.Price{}, &model.ModelInfo{}, &model.Log{}, &model.LogDetail{}, &model.ChannelMetric{},
 		// 组织令牌场景（影子账户记账 / 成员守护）需要组织侧两张表
-		&model.Organization{}, &model.OrganizationMember{},
+		&model.Organization{}, &model.OrganizationMember{}, &model.ModelAccessList{},
 		// 自动路由场景
 		&model.RoutingPolicy{},
 		// model supplies

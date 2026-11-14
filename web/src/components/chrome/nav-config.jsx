@@ -9,6 +9,7 @@ import {
   MailPlus,
   KeyRound,
   LayoutDashboard,
+  ListChecks,
   Network,
   PackageOpen,
   Play,
@@ -108,6 +109,15 @@ export const workbenchSections = [
         match: [/^\/panel\/settings\/org\/[^/]+\/members(\/|$)/],
         icon: UsersRound,
         labelKey: 'nav.items.orgMembers',
+        orgAdmin: true
+      },
+      // Model access (ORG-15): approved models, the organization default and named lists.
+      {
+        id: 'org_models',
+        url: `/panel/settings/org/${ORG_PARAM}/model-access`,
+        match: [/^\/panel\/settings\/org\/[^/]+\/model-access(\/|$)/],
+        icon: ListChecks,
+        labelKey: 'nav.items.orgModelAccess',
         orgAdmin: true
       },
       { id: 'billing', url: url('billing'), icon: ReceiptText, labelKey: 'nav.items.billing', orgAdmin: true, pageIn: ['personal'] }

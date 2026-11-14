@@ -1,11 +1,18 @@
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 
+import { useEffect, useMemo, useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import QuotaInput from '@/components/QuotaInput';
 import { Field, InfoRow, InfoRows, Section, Segmented, StatRow } from '@/components/objects';
 import { SpendAmount, renderQuota, timestamp2string } from 'utils/common';
+import { API } from 'utils/api';
+import { allowlistPermits } from 'utils/modelAllowlist';
+import ModelLimitSelector, { toLimitModels } from 'views/panel/Token/ModelLimitSelector';
 
 // Tabs of the organization panel (see components/objects/ObjectPanel). Overview is read-only;
 // Balance applies one adjustment of the pool and Members sets the member limit, each through its
@@ -143,10 +150,78 @@ const membersTab = {
   Body: MembersBody
 };
 
-export const ORG_TABS = [overviewTab, balanceTab, membersTab];
+// Models released within this many days that the approved models do not cover are listed as new,
+// so a release can be reviewed (or picked up by a prefix rule) the week it ships.
+const NEW_MODEL_DAYS = 45;
+
+function ApprovedModelsBody({ draft, setDraft }) {
+  const { t } = useTranslation();
+  const [models, setModels] = useState([]);
+  const [since] = useState(() => Date.now() / 1000 - NEW_MODEL_DAYS * 86400);
+  useEffect(() => {
+    let alive = true;
+    API.get('/api/available_model')
+      .then((res) => alive && setModels(res.data.success ? toLimitModels(res.data.data) : []))
+      .catch(() => alive && setModels([]));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const fresh = useMemo(() => {
+    if (draft.models.length === 0) return [];
+    return models
+      .filter((m) => m.released_at && m.released_at >= since && !allowlistPermits(draft.models, m.id))
+      .sort((a, b) => b.released_at - a.released_at)
+      .map((m) => m.id);
+  }, [models, draft.models, since]);
+  return (
+    <>
+      <Field label={t('modelAccess.approved.title')} hint={t('modelAccess.approved.adminHint')}>
+        <ModelLimitSelector
+          id="org-approved-models"
+          models={models}
+          value={draft.models}
+          onChange={(ids) => setDraft((d) => ({ ...d, models: ids }))}
+        />
+        <p className="mt-1.5 text-xs text-muted-foreground">
+          {draft.models.length ? t('modelAccess.patternHint') : t('modelAccess.approved.none')}
+        </p>
+      </Field>
+      {fresh.length > 0 && (
+        <Field label={t('modelAccess.approved.newTitle')} hint={t('modelAccess.approved.newHint', { days: NEW_MODEL_DAYS })}>
+          <div className="flex flex-wrap items-center gap-1">
+            {fresh.map((id) => (
+              <Badge key={id} variant="secondary" className="font-mono text-[12px] font-normal">
+                {id}
+              </Badge>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-1 h-7 rounded-lg"
+              onClick={() => setDraft((d) => ({ ...d, models: [...d.models, ...fresh] }))}
+            >
+              {t('modelAccess.approved.approveAll')}
+            </Button>
+          </div>
+        </Field>
+      )}
+    </>
+  );
+}
+
+const approvedTab = {
+  key: 'models',
+  make: (org) => ({ models: org.approved_models || [] }),
+  patch: (d) => ({ models: d.models }),
+  Body: ApprovedModelsBody
+};
+
+export const ORG_TABS = [overviewTab, balanceTab, membersTab, approvedTab];
 export const ORG_TAB_KEYS = ORG_TABS.map((x) => x.key);
 
 const bodyProps = { object: PropTypes.object, draft: PropTypes.object, setDraft: PropTypes.func, ctx: PropTypes.object };
 OverviewBody.propTypes = bodyProps;
 BalanceBody.propTypes = bodyProps;
 MembersBody.propTypes = bodyProps;
+ApprovedModelsBody.propTypes = bodyProps;

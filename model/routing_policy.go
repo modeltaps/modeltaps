@@ -527,10 +527,18 @@ func ScopedRoutingModels(scope RoutingScope) ([]string, error) {
 	if err != nil {
 		return []string{}, nil
 	}
+	// Targets of an organization's policies stay inside its approved models (ORG-15).
+	var approved []string
+	if scope.OrganizationId > 0 {
+		var org Organization
+		if err := DB.Select("id", "approved_models").Where("id = ?", scope.OrganizationId).First(&org).Error; err == nil {
+			approved = []string(org.ApprovedModels)
+		}
+	}
 	isPolicy := IsRoutingPolicyModelFor(scope)
 	usable := make([]string, 0, len(models))
 	for _, name := range models {
-		if strings.Contains(name, "*") || isPolicy(name) || !IsCatalogVisible(name) {
+		if strings.Contains(name, "*") || isPolicy(name) || !IsCatalogVisible(name) || !ModelAllowlistPermits(approved, name) {
 			continue
 		}
 		usable = append(usable, name)
