@@ -672,7 +672,6 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
               {(signalCounts.idle > 0 || signalCounts.failing > 0) && (
                 <>
                   {stateKeys.length > 0 && <span className="mx-1 h-4 w-px bg-border" />}
-                  <span className="text-muted-foreground">{t('channels.models.signal.label', { range })}</span>
                   {['idle', 'failing'].map(
                     (key) =>
                       signalCounts[key] > 0 && (
@@ -681,7 +680,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                           active={only === key}
                           onClick={() => setOnly(only === key ? '' : key)}
                           icon={key === 'failing' ? <AlertTriangle className="size-3 text-warning" /> : null}
-                          label={t(`channels.models.signal.${key}Filter`)}
+                          label={t(`channels.models.signal.${key}Filter`, { range })}
                           count={signalCounts[key]}
                         />
                       )

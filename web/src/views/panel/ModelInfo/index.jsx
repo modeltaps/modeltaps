@@ -210,7 +210,7 @@ export default function ModelInfo() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filterState, setFilterState] = useState(() => paramsToFilterState(MODELINFO_FILTER_FIELDS, searchParams));
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(() => getPageSize('model_info'));
+  const [rowsPerPage, setRowsPerPage] = useState(() => getPageSize('model_info', 50));
   const [keyword, setKeyword] = useState(() => searchParams.get('keyword') || '');
   const [status, setStatus] = useState(() => readStatus(searchParams));
   const [selectedKeys, setSelectedKeys] = useState(() => new Set());

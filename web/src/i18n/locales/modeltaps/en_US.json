@@ -2189,12 +2189,11 @@
       "priceOtherHint": "The upstream charges by speech seconds, realtime sessions, video tokens or similar; no single figure is shown here",
       "signal": {
         "failing": "{{rate}} success in {{range}} ({{failures}} of {{requests}} failed)",
-        "label": "Traffic, {{range}}",
-        "idleFilter": "No requests",
-        "failingFilter": "Mostly failing"
+        "idleFilter": "Idle, {{range}}",
+        "failingFilter": "Mostly failing, {{range}}"
       },
       "public": "Public name",
-      "notOffered": "Unmatched",
+      "notOffered": "Not linked",
       "supplyOff": "supply off",
       "context": "Context",
       "orderHint": "Most used first: families with the most requests on this site in the last 30 days, then mainstream families, the latest version first. Click to sort by name.",
@@ -2218,8 +2217,8 @@
       "check": "Check again",
       "checkHint": "Read the upstream model list now and mark models it dropped or that are not added yet",
       "state": {
-        "offered": "Matched",
-        "unoffered": "Unmatched",
+        "offered": "Linked",
+        "unoffered": "Not linked",
         "gone": "Gone upstream",
         "unlisted": "Upstream, not added"
       },

@@ -2090,12 +2090,11 @@
       "priceOtherHint": "上游按語音秒數、即時會話或影片 token 等方式計價，這裡不顯示具體數字",
       "signal": {
         "failing": "{{range}}成功率 {{rate}}（{{requests}} 次裡失敗 {{failures}} 次）",
-        "label": "{{range}}流量",
-        "idleFilter": "無請求",
-        "failingFilter": "失敗多"
+        "idleFilter": "近 {{range}}閒置",
+        "failingFilter": "近 {{range}}失敗較多"
       },
       "public": "公開名",
-      "notOffered": "無對應",
+      "notOffered": "未關聯",
       "supplyOff": "供應已停用",
       "context": "上下文",
       "orderHint": "預設按常用程度排：近 30 天本站請求多的系列在前，沒有用量時主流系列在前，同系列最新版本在前。點表頭按名稱排",
@@ -2119,8 +2118,8 @@
       "check": "重新檢查",
       "checkHint": "讀取上游目前的模型清單，標出已下架和尚未加入的模型",
       "state": {
-        "offered": "已對應",
-        "unoffered": "無對應",
+        "offered": "已關聯",
+        "unoffered": "未關聯",
         "gone": "上游已下架",
         "unlisted": "上游有、未加入"
       },

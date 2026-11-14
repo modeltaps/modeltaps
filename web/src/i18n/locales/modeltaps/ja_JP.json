@@ -2092,12 +2092,11 @@
       "priceOtherHint": "上流は音声の秒数、リアルタイムセッション、動画トークンなどで課金します。ここでは金額を表示しません",
       "signal": {
         "failing": "{{range}}の成功率 {{rate}}（{{requests}} 件中 {{failures}} 件失敗）",
-        "label": "{{range}}のトラフィック",
-        "idleFilter": "リクエストなし",
-        "failingFilter": "失敗が多い"
+        "idleFilter": "直近 {{range}}未使用",
+        "failingFilter": "直近 {{range}}失敗多め"
       },
       "public": "公開名",
-      "notOffered": "対応なし",
+      "notOffered": "未紐付け",
       "supplyOff": "供給停止中",
       "context": "コンテキスト",
       "orderHint": "既定はよく使う順：直近 30 日に本サイトでリクエストが多いシリーズが先、利用がなければ主要シリーズが先、同じシリーズは最新版が先。クリックで名前順",
@@ -2121,8 +2120,8 @@
       "check": "再チェック",
       "checkHint": "上流の現在のモデル一覧を読み込み、提供終了と未追加のモデルを示します",
       "state": {
-        "offered": "対応済み",
-        "unoffered": "対応なし",
+        "offered": "紐付け済み",
+        "unoffered": "未紐付け",
         "gone": "上流で提供終了",
         "unlisted": "上流にあり・未追加"
       },
