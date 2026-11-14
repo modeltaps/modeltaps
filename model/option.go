@@ -182,6 +182,17 @@ func registerOptions() {
 		config.PauseRules = value
 		return nil
 	}, "", config.ScopeAdmin)
+	config.GlobalOption.RegisterBool("ModelLibraryRulesEnabled", &config.ModelLibraryRulesEnabled, config.ScopeAdmin)
+	config.GlobalOption.RegisterBool("ModelLibraryRulesApply", &config.ModelLibraryRulesApply, config.ScopeAdmin)
+	config.GlobalOption.RegisterCustom("ModelLibraryRules", func() string {
+		return config.ModelLibraryRules
+	}, func(value string) error {
+		if err := SetCustomLibraryRules(value); err != nil {
+			return err
+		}
+		config.ModelLibraryRules = value
+		return nil
+	}, "", config.ScopeAdmin)
 	config.GlobalOption.RegisterCustom("ModelSupplyEnabled", func() string {
 		return strconv.FormatBool(config.ModelSupplyEnabled)
 	}, func(value string) error {

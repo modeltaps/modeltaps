@@ -249,7 +249,8 @@ export default function NewChannelSheet({ initialType, allChannels, supplyRoutin
       const failed = [];
       for (const id of res.ids) {
         const r = await manageChannel(id, 'test');
-        if (!r?.success) failed.push(r?.message || `#${id}`);
+        // The upstream reason alone: the message repeats "test failed" around it.
+        if (!r?.success) failed.push(r?.params?.reason || r?.message || `#${id}`);
       }
       if (failed.length) toast.warning(t('channels.new.testFailed', { count: failed.length, message: failed[0] }));
       else toast.success(t('channels.new.created', { name: body.name, count: res.ids.length }));
@@ -411,7 +412,9 @@ export default function NewChannelSheet({ initialType, allChannels, supplyRoutin
     ? t('channels.new.allowAllHint')
     : d.allowMode === 'wildcard'
       ? t('channels.new.allowWildcardHint')
-      : t('channels.new.allowSomeHint', { count: d.allow.length });
+      : d.allow.length
+        ? t('channels.new.allowSomeHint', { count: d.allow.length })
+        : null;
 
   return (
     <ObjectSheet
@@ -546,7 +549,10 @@ export default function NewChannelSheet({ initialType, allChannels, supplyRoutin
               ? t('channels.new.partsHint')
               : kind === 'json'
                 ? t('channels.new.jsonHint')
-                : t('channels.new.keyHint')
+                : // Once the keys are masked the box says so itself.
+                  d.keyEditing || !keys.length
+                  ? t('channels.new.keyHint')
+                  : null
         }
       >
         {credential}

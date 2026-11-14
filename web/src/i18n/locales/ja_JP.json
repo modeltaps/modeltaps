@@ -1256,6 +1256,7 @@
     "hiddenYes": "非表示",
     "hiddenNo": "表示中",
     "hiddenTip": "有効なチャネルでルーティング可能なモデルは既定で表示されます。非表示にすると公開モデル一覧から外れ、呼び出せなくなります。",
+    "hiddenIgnored": "供給によるルーティング中は「公開状態」でモデルの表示が決まり、このスイッチは使われません。オフにして構いません",
     "state": "状態",
     "endpoints": "エンドポイント",
     "endpointsTip": "このモデルを呼び出せるエンドポイントを宣言します。空欄は未設定です。",
@@ -1875,7 +1876,7 @@
   },
   "pricing_edit": {
     "channelType": "プロバイダー",
-    "channelTypeErr": "プロバイダータイプエラー",
+    "channelTypeErr": "ベンダーを選択してください",
     "channelTypeErr2": "プロバイダータイプが間違っています",
     "delInfoTip": "本当に {{name}} を削除してもよろしいですか?",
     "delMultipleInfoTip": "選択した{{count}}つの価格を削除しますか？",
@@ -3015,7 +3016,8 @@
         "credential": "チャネル認証情報の問題",
         "supply_paused": "チャネルまたはモデルの一時停止",
         "supply_resumed": "一時停止したチャネルまたはモデルの再開",
-        "supply_failover": "リクエストのバックアップチャネルへの切り替え"
+        "supply_failover": "リクエストのバックアップチャネルへの切り替え",
+        "model_library": "取り込みルールによるモデルの追加・廃止（予定を含む）"
       },
       "limit": {
         "label": "種類ごとの 1 時間あたり上限",

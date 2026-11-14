@@ -285,7 +285,10 @@ export default function LibrarySheet({ open, onOpenChange, vendors, onAdded }) {
               <Loader2 className="size-5 animate-spin" />
             </div>
           ) : filtered.length === 0 ? (
-            <p className="py-16 text-center text-sm text-muted-foreground">{t('modelLibrary.empty')}</p>
+            // An empty library has not been synced yet; otherwise the filters hide everything.
+            <p className="px-6 py-16 text-center text-sm text-muted-foreground">
+              {t(items.length === 0 ? 'modelLibrary.notSynced' : 'modelLibrary.empty')}
+            </p>
           ) : (
             <table className="w-full text-[13px]">
               <thead className="sticky top-0 z-10 bg-card text-left text-xs text-muted-foreground">

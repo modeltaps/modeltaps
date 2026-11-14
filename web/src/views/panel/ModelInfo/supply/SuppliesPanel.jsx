@@ -824,7 +824,11 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
                 <tr>
                   <td colSpan={5} className="border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
                     <span className="text-foreground">{tierLabel(index)}</span>
-                    <span className="ml-2 tabular-nums">{t('modelSupply.tier.priority', { priority: tier.priority })}</span>
+                    {/* On the allocation policy the numbers are computed from the call order and mean
+                        nothing on their own; a manual model shows the priority it was given. */}
+                    {allocation !== 'policy' && (
+                      <span className="ml-2 tabular-nums">{t('modelSupply.tier.priority', { priority: tier.priority })}</span>
+                    )}
                     {view && serving.priority === tier.priority && <span> · {t('modelSupply.preview.servingTier')}</span>}
                   </td>
                 </tr>

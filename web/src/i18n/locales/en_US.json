@@ -1256,6 +1256,7 @@
     "hiddenYes": "Hidden",
     "hiddenNo": "Not hidden",
     "hiddenTip": "Models routable by an enabled channel are visible by default; hidden models leave the public model list and cannot be called.",
+    "hiddenIgnored": "While supplies route requests, the publish state decides who sees this model and this switch is not read; you can turn it off",
     "state": "State",
     "endpoints": "Endpoints",
     "endpointsTip": "Declares which endpoints can serve this model; empty means unset.",
@@ -1875,7 +1876,7 @@
   },
   "pricing_edit": {
     "channelType": "Provider",
-    "channelTypeErr": "Provider type error",
+    "channelTypeErr": "Choose a vendor",
     "channelTypeErr2": "The provider type is wrong",
     "delInfoTip": "Are you sure you want to delete {{name}}?",
     "delMultipleInfoTip": "Are you sure you want to delete the selected {{count}} prices?",
@@ -3015,7 +3016,8 @@
         "credential": "Channel credential problems",
         "supply_paused": "Channel or model paused",
         "supply_resumed": "Paused channel or model resumed",
-        "supply_failover": "Request switched to a backup channel"
+        "supply_failover": "Request switched to a backup channel",
+        "model_library": "Inclusion rules added, retired or would change models"
       },
       "limit": {
         "label": "Notices per kind per hour",

@@ -271,7 +271,7 @@ func InitDB() (err error) {
 		if err != nil {
 			return err
 		}
-		err = db.AutoMigrate(&ModelLibraryEntry{}, &ModelLibraryHost{})
+		err = db.AutoMigrate(&ModelLibraryEntry{}, &ModelLibraryHost{}, &ModelLibraryDecision{})
 		if err != nil {
 			return err
 		}
