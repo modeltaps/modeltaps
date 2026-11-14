@@ -192,15 +192,18 @@ export function attachChannelDetails(rows = [], channels = [], { supplyRouting =
 export const enabledChannels = (row) =>
   (row?.bound_channels || []).filter((c) => (c?.status ?? CHANNEL_STATUS_ENABLED) === CHANNEL_STATUS_ENABLED);
 
-export function modelStatus(row) {
-  if (enabledChannels(row).length === 0) return 'nochannel';
-  if (!row?.price) return 'unpriced';
-  return 'ok';
-}
-
 // While supplies route requests (`row.supplyRouting`), a public model is listed only when
 // published: its status replaces the hidden flag.
 export const followsStatus = (row) => Boolean(row?.supplyRouting && row.catalogId > 0 && !row.alias_of && !row.kind);
+
+// A draft cannot be called while supplies route requests, so a priced draft with channels is
+// "unpublished", not "ok".
+export function modelStatus(row) {
+  if (enabledChannels(row).length === 0) return 'nochannel';
+  if (!row?.price) return 'unpriced';
+  if (followsStatus(row) && row.status === 'draft') return 'unpublished';
+  return 'ok';
+}
 
 export const isVisibleToUsers = (row) => {
   if (followsStatus(row)) return row.status === 'published';
