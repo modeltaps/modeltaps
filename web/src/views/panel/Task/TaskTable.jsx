@@ -2,158 +2,174 @@ import PropTypes from 'prop-types';
 import { useMemo } from 'react';
 import { useTable, flexRender } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { ArrowDown, ArrowUp, ChevronsUpDown, Eye } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import DataCards from '@/components/ui/data-cards';
+import { ROW_OPENS, rowOpenProps } from '@/components/objects';
 import { cn } from '@/lib/utils';
-import { copy, timestamp2string } from 'utils/common';
-import { badgeClass, deriveTaskDuration, statusMeta } from './taskHelpers';
+import { renderQuota, timestamp2string, timestamp2stringCompact } from 'utils/common';
+import { deriveTaskDuration, statusMeta } from './taskHelpers';
 
-const Badge = ({ color, children }) => <span className={badgeClass(color)}>{children}</span>;
-Badge.propTypes = { color: PropTypes.string, children: PropTypes.node };
+// Columns for the shared column picker. By default a task shows when it was sent, what it was,
+// how it went (status with the failure reason) and what it cost; ids, channel, user and the
+// finish time are one click away.
+export const TASK_COLUMNS = [
+  { id: 'task_id', labelKey: 'taskPage.task', defaultHidden: true },
+  { id: 'submit_time', labelKey: 'taskPage.subTime', fixed: true },
+  { id: 'finish_time', labelKey: 'taskPage.finishTime', defaultHidden: true },
+  { id: 'channel_id', labelKey: 'taskPage.channel', defaultHidden: true, adminOnly: true },
+  { id: 'user_id', labelKey: 'taskPage.user', defaultHidden: true, adminOnly: true },
+  { id: 'platform', labelKey: 'taskPage.platform' },
+  { id: 'action', labelKey: 'taskPage.type' },
+  { id: 'status', labelKey: 'userPage.status', fixed: true },
+  { id: 'progress', labelKey: 'taskPage.progress' },
+  { id: 'time', labelKey: 'taskPage.time' },
+  { id: 'quota', labelKey: 'logPage.quotaLabel' }
+];
 
-function FailReason({ text }) {
-  if (!text) return '';
-  const truncated = text.length > 30 ? `${text.substring(0, 30)}...` : text;
+// A time that has not happened yet (an unfinished task) is a dash, not 1970.
+const Time = ({ ts }) =>
+  ts > 0 ? <span title={timestamp2string(ts)}>{timestamp2stringCompact(ts)}</span> : <span className="text-muted-foreground">—</span>;
+Time.propTypes = { ts: PropTypes.number };
+
+// Status as text (a failure is tinted, with its reason after it, truncated).
+export function TaskStatus({ t, item, withReason = true }) {
+  const meta = statusMeta(item.status);
+  const failed = item.status === 'FAILURE';
+  const label = meta ? t(meta.labelKey) : t('taskPage.statusType.unknown');
   return (
-    <button type="button" title={text} className="text-left hover:text-foreground" onClick={() => copy(text, '')}>
-      {truncated}
-    </button>
+    <span className={cn('inline-flex min-w-0 max-w-72 items-baseline gap-1.5 whitespace-nowrap', failed && 'text-destructive')}>
+      <span className={cn(!failed && item.status !== 'SUCCESS' && 'text-muted-foreground')}>{label}</span>
+      {withReason && failed && item.fail_reason && (
+        <span className="truncate text-xs text-muted-foreground" title={item.fail_reason}>
+          {item.fail_reason}
+        </span>
+      )}
+    </span>
   );
 }
-FailReason.propTypes = { text: PropTypes.string };
+TaskStatus.propTypes = { t: PropTypes.func.isRequired, item: PropTypes.object.isRequired, withReason: PropTypes.bool };
 
-function DurationCell({ item }) {
-  const { requestTime, requestTimeStr } = deriveTaskDuration(item);
-  if (!requestTimeStr) return '';
-  return <Badge color={requestTime > 60 ? 'error' : 'success'}>{requestTimeStr}</Badge>;
-}
-DurationCell.propTypes = { item: PropTypes.object };
+const durationText = (item) => {
+  const { requestTime } = deriveTaskDuration(item);
+  return requestTime > 0 ? `${requestTime.toFixed(1)}s` : '';
+};
 
-export default function TaskTable({ t, data, userIsAdmin, order, orderBy, onSort, onRowDetail, searching }) {
+export default function TaskTable({
+  t,
+  data,
+  userIsAdmin,
+  order,
+  orderBy,
+  onSort,
+  onRowDetail,
+  searching,
+  columnVisibility,
+  layout = 'table'
+}) {
   const columns = useMemo(() => {
-    const cols = [
-      { id: 'task_id', header: t('taskPage.task'), cell: (i) => <span className="whitespace-nowrap">{i.task_id}</span> },
-      { id: 'submit_time', sortable: true, header: t('taskPage.subTime'), cell: (i) => timestamp2string(i.submit_time) },
-      { id: 'finish_time', sortable: true, header: t('taskPage.finishTime'), cell: (i) => timestamp2string(i.finish_time) }
-    ];
-    if (userIsAdmin) {
-      cols.push({ id: 'channel_id', sortable: true, header: t('taskPage.channel'), cell: (i) => i.channel_id || '' });
-      cols.push({ id: 'user_id', sortable: true, header: t('taskPage.user'), cell: (i) => i.user_id || '' });
-    }
-    cols.push({ id: 'platform', sortable: true, header: t('taskPage.platform'), cell: (i) => <Badge color="success">{i.platform}</Badge> });
-    cols.push({ id: 'action', header: t('taskPage.type'), cell: (i) => <Badge color="success">{i.action}</Badge> });
-    cols.push({ id: 'time', header: t('taskPage.time'), cell: (i) => <DurationCell item={i} /> });
-    cols.push({ id: 'progress', header: t('taskPage.progress'), cell: (i) => `${i.progress ?? 0}%` });
-    cols.push({
-      id: 'status',
-      sortable: true,
-      header: t('taskPage.status'),
-      cell: (i) => {
-        const meta = statusMeta(i.status);
-        return meta ? (
-          <Badge color={meta.color}>{t(meta.labelKey)}</Badge>
-        ) : (
-          <Badge color="error">{t('taskPage.statusType.unknown')}</Badge>
-        );
-      }
-    });
-    cols.push({ id: 'fail_reason', header: t('taskPage.fail'), cell: (i) => <FailReason text={i.fail_reason} /> });
-    cols.push({
-      id: 'detail',
-      className: 'sticky right-0 bg-card z-10 text-right w-[1%]',
-      header: t('logPage.detailLabel'),
-      cell: (i) => (
-        <Button variant="ghost" size="icon" aria-label={t('logPage.detailLabel')} onClick={() => onRowDetail(i)}>
-          <Eye className="size-4" />
-        </Button>
-      )
-    });
-    return cols.map((c) => ({
+    const cells = {
+      task_id: (i) => <span className="font-mono text-xs">{i.task_id}</span>,
+      submit_time: (i) => <Time ts={i.submit_time} />,
+      finish_time: (i) => <Time ts={i.finish_time} />,
+      channel_id: (i) => i.channel_id || '',
+      user_id: (i) => i.user_id || '',
+      platform: (i) => i.platform,
+      action: (i) => <span className="font-mono text-xs">{i.action}</span>,
+      status: (i) => <TaskStatus t={t} item={i} />,
+      progress: (i) => <span className="tabular-nums">{i.progress ?? 0}%</span>,
+      time: (i) => <span className="tabular-nums">{durationText(i) || <span className="text-muted-foreground">—</span>}</span>,
+      quota: (i) => <span className="font-mono tabular-nums">{i.quota ? renderQuota(i.quota) : '—'}</span>
+    };
+    const sortable = new Set(['submit_time', 'finish_time', 'channel_id', 'user_id', 'platform', 'status']);
+    const right = new Set(['progress', 'time', 'quota']);
+    return TASK_COLUMNS.filter((c) => !c.adminOnly || userIsAdmin).map((c) => ({
       id: c.id,
-      header: () => c.header,
-      cell: ({ row }) => c.cell(row.original),
-      meta: { sortable: c.sortable, className: c.className }
+      header: () => t(c.labelKey),
+      cell: ({ row }) => cells[c.id](row.original),
+      meta: { sortable: sortable.has(c.id), className: right.has(c.id) ? 'text-right' : undefined }
     }));
-  }, [t, userIsAdmin, onRowDetail]);
+  }, [t, userIsAdmin]);
 
-  const table = useTable({
-    features: appTableFeatures,
-    data: data || [],
-    columns,
-    manualSorting: true
-  });
+  const table = useTable({ features: appTableFeatures, data: data || [], columns, manualSorting: true, state: { columnVisibility } });
+  const rows = data || [];
 
-  const SortIcon = ({ id }) => {
-    if (orderBy !== id) return <ChevronsUpDown className="size-3.5 opacity-50" />;
-    return order === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />;
+  if (rows.length === 0) {
+    return (
+      <p className="px-4 py-10 text-center text-sm text-muted-foreground">{searching ? t('logPage.searching') : t('common.noData')}</p>
+    );
+  }
+
+  if (layout === 'list') {
+    // Phone row: the task type and its status, then time, duration and platform.
+    return (
+      <ul className="divide-y divide-border">
+        {rows.map((i) => (
+          <li key={i.id} className={cn('flex h-14 items-center gap-3 px-4', ROW_OPENS)} {...rowOpenProps(() => onRowDetail(i))}>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-3">
+                <span className="min-w-0 truncate font-mono text-[13px] font-medium">{i.action}</span>
+                <span className="ml-auto shrink-0 text-[13px]">
+                  <TaskStatus t={t} item={i} withReason={false} />
+                </span>
+              </div>
+              <div className="mt-0.5 truncate text-xs tabular-nums text-muted-foreground">
+                {[i.submit_time > 0 ? timestamp2stringCompact(i.submit_time) : null, durationText(i), i.platform]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  // Sort arrows: the active column shows its direction; others show a faint arrow on hover only.
+  const sortIcon = (id) => {
+    if (orderBy !== id) return <ArrowUpDown className="size-3 opacity-0 transition-opacity group-hover/sort:opacity-50" />;
+    return order === 'asc' ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />;
   };
-  SortIcon.propTypes = { id: PropTypes.string };
 
   return (
-    <>
-      <div className="hidden md:block">
-        <Table className="min-w-[800px]">
-          <TableHeader>
-            {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id}>
-                {hg.headers.map((h) => {
-                  const sortable = h.column.columnDef.meta?.sortable;
-                  return (
-                    <TableHead key={h.id} className={h.column.columnDef.meta?.className}>
-                      {sortable ? (
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1 hover:text-foreground"
-                          onClick={() => onSort(h.column.id)}
-                        >
-                          {flexRender(h.column.columnDef.header, h.getContext())}
-                          <SortIcon id={h.column.id} />
-                        </button>
-                      ) : (
-                        flexRender(h.column.columnDef.header, h.getContext())
-                      )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
+    <Table>
+      <TableHeader>
+        {table.getHeaderGroups().map((hg) => (
+          <TableRow key={hg.id} className="hover:bg-transparent">
+            {hg.headers.map((h) => (
+              <TableHead key={h.id} className={cn('whitespace-nowrap', h.column.columnDef.meta?.className)}>
+                {h.column.columnDef.meta?.sortable ? (
+                  <button
+                    type="button"
+                    className={cn(
+                      'group/sort inline-flex items-center gap-1 hover:text-foreground',
+                      orderBy === h.column.id && 'text-foreground'
+                    )}
+                    onClick={() => onSort(h.column.id)}
+                  >
+                    {flexRender(h.column.columnDef.header, h.getContext())}
+                    {sortIcon(h.column.id)}
+                  </button>
+                ) : (
+                  flexRender(h.column.columnDef.header, h.getContext())
+                )}
+              </TableHead>
             ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-sm text-muted-foreground">
-                  {searching ? t('logPage.searching') : t('common.noData')}
-                </TableCell>
-              </TableRow>
-            ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className={cn(cell.column.id === 'detail' && 'text-right', cell.column.columnDef.meta?.className)}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      <DataCards
-        table={table}
-        className="md:hidden"
-        primaryColumnId="task_id"
-        actionColumnIds={['detail']}
-        empty={t('common.noData')}
-        searching={searching}
-      />
-    </>
+          </TableRow>
+        ))}
+      </TableHeader>
+      <TableBody>
+        {table.getRowModel().rows.map((row) => (
+          <TableRow key={row.id} className={ROW_OPENS} {...rowOpenProps(() => onRowDetail(row.original))}>
+            {row.getVisibleCells().map((cell) => (
+              <TableCell key={cell.id} className={cn('whitespace-nowrap', cell.column.columnDef.meta?.className)}>
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -165,5 +181,7 @@ TaskTable.propTypes = {
   orderBy: PropTypes.string,
   onSort: PropTypes.func.isRequired,
   onRowDetail: PropTypes.func.isRequired,
-  searching: PropTypes.bool
+  searching: PropTypes.bool,
+  columnVisibility: PropTypes.object,
+  layout: PropTypes.oneOf(['table', 'list'])
 };

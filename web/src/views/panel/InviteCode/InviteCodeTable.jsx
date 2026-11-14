@@ -1,159 +1,279 @@
-import { Infinity as InfinityIcon, Copy, Pencil, Trash2 } from 'lucide-react';
+import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
+import { Copy, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RowActions, RowActionsSurfaceContext } from '@/components/ui/row-actions';
+import { Switch } from '@/components/ui/switch';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 import { timestamp2string } from 'utils/common';
+import { relativeTime } from 'utils/relativeTime';
 
 const tk = (k) => `setting_index.inviteCodeSettings.${k}`;
+const ENABLED = 1;
 
-export default function InviteCodeTable({ items, selected, onSelectAll, onSelectOne, onCopy, onEdit, onDelete, onToggleStatus }) {
+// Typical table width before it has been measured.
+
+// The segment a code is in (same order as the backend): disabled, expired, used up, not started,
+// usable.
+export function inviteState(item, now = Math.floor(Date.now() / 1000)) {
+  if (item.status !== ENABLED) return 'disabled';
+  if (item.expires_at > 0 && item.expires_at <= now) return 'expired';
+  if (item.max_uses > 0 && item.used_count >= item.max_uses) return 'exhausted';
+  if (item.starts_at > now) return 'pending';
+  return 'usable';
+}
+
+// "3 / 50", or "3 / ∞" without a limit.
+export const usageText = (item) => `${item.used_count} / ${item.max_uses === 0 ? '∞' : item.max_uses}`;
+
+// Validity in words: when it starts (if later), when it expires, or that it has expired.
+function Validity({ item, rtf }) {
   const { t } = useTranslation();
-  const allChecked = items.length > 0 && selected.length === items.length;
-  const someChecked = selected.length > 0 && selected.length < items.length;
+  const state = inviteState(item);
+  if (state === 'expired') return <span className="text-warning">{t('inviteList.expired')}</span>;
+  if (state === 'pending')
+    return <span title={timestamp2string(item.starts_at)}>{t('inviteList.startsIn', { time: relativeTime(rtf, item.starts_at) })}</span>;
+  if (!item.expires_at) return <span className="text-muted-foreground">{t('inviteList.never')}</span>;
+  return <span title={timestamp2string(item.expires_at)}>{t('inviteList.expiresIn', { time: relativeTime(rtf, item.expires_at) })}</span>;
+}
 
-  const fmt = (ts, fallback) => (ts ? timestamp2string(ts) : fallback);
+Validity.propTypes = { item: PropTypes.object.isRequired, rtf: PropTypes.object.isRequired };
 
-  const renderActions = (item) => (
-    <RowActions
-      actions={[
-        { label: t('common.edit'), icon: Pencil, onClick: () => onEdit(item) },
-        { label: t(tk('copyTip')), icon: Copy, onClick: () => onCopy(item) },
-        { label: t('common.delete'), icon: Trash2, destructive: true, onClick: () => onDelete(item) }
-      ]}
-    />
+function Usage({ item, className }) {
+  const { t } = useTranslation();
+  const full = inviteState(item) === 'exhausted';
+  return (
+    <span className={cn('font-mono tabular-nums', full && 'text-warning', className)} title={full ? t('inviteList.usedUp') : undefined}>
+      {usageText(item)}
+    </span>
   );
+}
 
+Usage.propTypes = { item: PropTypes.object.isRequired, className: PropTypes.string };
+
+function StatusSwitch({ item, onToggleStatus }) {
+  const { t } = useTranslation();
+  return (
+    <RowControl className="flex">
+      <Switch
+        size="sm"
+        checked={item.status === ENABLED}
+        aria-label={t(tk('headLabels.status'))}
+        onCheckedChange={() => onToggleStatus(item)}
+      />
+    </RowControl>
+  );
+}
+
+StatusSwitch.propTypes = { item: PropTypes.object.isRequired, onToggleStatus: PropTypes.func.isRequired };
+
+// Row menu: edit, copy the code, then delete (last). Enable / disable is the switch next to it.
+function CodeActions({ item, onEdit, onCopy, onDelete }) {
+  const { t } = useTranslation();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="size-[30px] rounded-lg" aria-label={t(tk('headLabels.action'))}>
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuItem onClick={() => onEdit(item)}>
+          <Pencil className="size-4" />
+          {t('common.edit')}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onCopy(item)}>
+          <Copy className="size-4" />
+          {t('inviteList.copyCode')}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(item)}>
+          <Trash2 className="size-4" />
+          {t('common.delete')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+CodeActions.propTypes = {
+  item: PropTypes.object.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onCopy: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired
+};
+
+// Invite codes table: one line per code (the code in mono, then its name), usage, validity,
+// created, then the switch and the row menu last. A row opens the code for editing.
+export default function InviteCodeTable({ items, rtf, selectedIds, onToggleSelect, onToggleSelectAll, actions }) {
+  const { t } = useTranslation();
+  const allSelected = items.length > 0 && items.every((i) => selectedIds.has(i.id));
+  const someSelected = items.some((i) => selectedIds.has(i.id));
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          <TableHead className="w-[1%] pr-0">
+            <Checkbox
+              checked={allSelected}
+              indeterminate={!allSelected && someSelected}
+              onCheckedChange={() => onToggleSelectAll(!allSelected)}
+              aria-label={t('listPage.selectAllOnPage')}
+            />
+          </TableHead>
+          <TableHead className="whitespace-nowrap">{t(tk('headLabels.code'))}</TableHead>
+          <TableHead className="whitespace-nowrap text-right">{t(tk('headLabels.usage'))}</TableHead>
+          <TableHead className="whitespace-nowrap">{t(tk('headLabels.expiresAt'))}</TableHead>
+          <TableHead className="whitespace-nowrap">{t(tk('headLabels.createdTime'))}</TableHead>
+          <TableHead className="whitespace-nowrap">{t(tk('headLabels.status'))}</TableHead>
+          <TableHead className="sticky right-0 z-10 w-[1%] bg-card">
+            <span className="sr-only">{t(tk('headLabels.action'))}</span>
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {items.map((item) => {
+          const live = inviteState(item) === 'usable';
+          return (
+            <TableRow
+              key={item.id}
+              className={ROW_OPENS}
+              data-state={selectedIds.has(item.id) ? 'selected' : undefined}
+              {...rowOpenProps(() => actions.onEdit(item))}
+            >
+              <TableCell className="pr-0">
+                <RowControl className="flex">
+                  <Checkbox
+                    checked={selectedIds.has(item.id)}
+                    onCheckedChange={() => onToggleSelect(item.id)}
+                    aria-label={t('listPage.selectRow', { name: item.code })}
+                  />
+                </RowControl>
+              </TableCell>
+              <TableCell className="max-w-80 whitespace-nowrap">
+                <span className="flex min-w-0 items-center gap-2">
+                  <code className={cn('shrink-0 font-mono text-[13px] font-medium', !live && 'text-muted-foreground')}>{item.code}</code>
+                  {item.name && <span className="truncate text-xs text-muted-foreground">{item.name}</span>}
+                </span>
+              </TableCell>
+              <TableCell className="whitespace-nowrap text-right">
+                <Usage item={item} />
+              </TableCell>
+              <TableCell className="whitespace-nowrap">
+                <Validity item={item} rtf={rtf} />
+              </TableCell>
+              <TableCell className="whitespace-nowrap">
+                <span title={timestamp2string(item.created_time)}>{relativeTime(rtf, item.created_time)}</span>
+              </TableCell>
+              <TableCell>
+                <StatusSwitch item={item} onToggleStatus={actions.onToggleStatus} />
+              </TableCell>
+              <TableCell className="sticky right-0 z-10 bg-card text-right">
+                <RowControl className="justify-end">
+                  <CodeActions item={item} {...actions} />
+                </RowControl>
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+}
+
+InviteCodeTable.propTypes = {
+  items: PropTypes.array.isRequired,
+  rtf: PropTypes.object.isRequired,
+  selectedIds: PropTypes.instanceOf(Set).isRequired,
+  onToggleSelect: PropTypes.func.isRequired,
+  onToggleSelectAll: PropTypes.func.isRequired,
+  actions: PropTypes.object.isRequired
+};
+
+// The state line on a phone card. On / off is the switch, so only states the switch cannot show
+// get words: used up, and validity (not started, expired, expires in…).
+function StateLine({ item, rtf }) {
+  const { t } = useTranslation();
   return (
     <>
-      <div className="hidden md:block">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-10">
-                <Checkbox checked={allChecked} indeterminate={someChecked} onCheckedChange={onSelectAll} aria-label="select all" />
-              </TableHead>
-              <TableHead className="whitespace-nowrap">{t(tk('headLabels.id'))}</TableHead>
-              <TableHead className="whitespace-nowrap">{t(tk('headLabels.code'))}</TableHead>
-              <TableHead className="whitespace-nowrap">{t(tk('headLabels.name'))}</TableHead>
-              <TableHead className="whitespace-nowrap">{t(tk('headLabels.usage'))}</TableHead>
-              <TableHead className="whitespace-nowrap">{t(tk('headLabels.startsAt'))}</TableHead>
-              <TableHead className="whitespace-nowrap">{t(tk('headLabels.expiresAt'))}</TableHead>
-              <TableHead className="whitespace-nowrap">{t(tk('headLabels.createdTime'))}</TableHead>
-              <TableHead className="whitespace-nowrap">{t(tk('headLabels.status'))}</TableHead>
-              <TableHead className="sticky right-0 z-10 w-[1%] whitespace-nowrap bg-card text-right">
-                {t(tk('headLabels.action'))}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>
-                  <Checkbox
-                    checked={selected.includes(item.id)}
-                    onCheckedChange={() => onSelectOne(item.id)}
-                    aria-label={`select ${item.id}`}
-                  />
-                </TableCell>
-                <TableCell className="whitespace-nowrap tabular-nums">{item.id}</TableCell>
-                <TableCell className="whitespace-nowrap">
-                  <button
-                    type="button"
-                    onClick={() => onCopy(item)}
-                    className="rounded bg-muted px-2 py-0.5 font-mono text-xs hover:bg-muted/70 hover:text-foreground"
-                  >
-                    {item.code}
-                  </button>
-                </TableCell>
-                <TableCell className="whitespace-nowrap">{item.name || '-'}</TableCell>
-                <TableCell className="whitespace-nowrap tabular-nums">
-                  <span className="inline-flex items-center gap-1">
-                    {item.used_count} / {item.max_uses === 0 ? <InfinityIcon className="size-4 text-muted-foreground" /> : item.max_uses}
-                  </span>
-                </TableCell>
-                <TableCell className="whitespace-nowrap">{fmt(item.starts_at, t(tk('immediate')))}</TableCell>
-                <TableCell className="whitespace-nowrap">{fmt(item.expires_at, t(tk('never')))}</TableCell>
-                <TableCell className="whitespace-nowrap">{fmt(item.created_time, '-')}</TableCell>
-                <TableCell className="whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    <Switch checked={item.status === 1} onCheckedChange={() => onToggleStatus(item)} />
-                    <Badge variant={item.status === 1 ? 'default' : 'secondary'}>
-                      {item.status === 1 ? t(tk('statusEnabled')) : t(tk('statusDisabled'))}
-                    </Badge>
-                  </div>
-                </TableCell>
-                <TableCell className="sticky right-0 z-10 bg-card">{renderActions(item)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="md:hidden flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
-        {items.map((item) => (
-          <div key={item.id} className="p-3">
-            <div className="mb-1.5 text-sm font-medium">
-              <button
-                type="button"
-                onClick={() => onCopy(item)}
-                className="rounded bg-muted px-2 py-0.5 font-mono text-xs hover:bg-muted/70 hover:text-foreground"
-              >
-                {item.code}
-              </button>
-            </div>
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-              <div className="flex items-baseline gap-1.5">
-                <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t(tk('headLabels.id'))}</dt>
-                <dd className="min-w-0 flex-1 truncate text-sm tabular-nums">{item.id}</dd>
-              </div>
-              <div className="flex items-baseline gap-1.5">
-                <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t(tk('headLabels.name'))}</dt>
-                <dd className="min-w-0 flex-1 truncate text-sm" title={item.name || undefined}>
-                  {item.name || '-'}
-                </dd>
-              </div>
-              <div className="flex items-baseline gap-1.5">
-                <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t(tk('headLabels.usage'))}</dt>
-                <dd className="flex min-w-0 flex-1 items-center gap-1 text-sm tabular-nums">
-                  {item.used_count} / {item.max_uses === 0 ? <InfinityIcon className="size-4 text-muted-foreground" /> : item.max_uses}
-                </dd>
-              </div>
-              <div className="flex items-baseline gap-1.5">
-                <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t(tk('headLabels.startsAt'))}</dt>
-                <dd className="min-w-0 flex-1 truncate text-sm">{fmt(item.starts_at, t(tk('immediate')))}</dd>
-              </div>
-              <div className="flex items-baseline gap-1.5">
-                <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t(tk('headLabels.expiresAt'))}</dt>
-                <dd className="min-w-0 flex-1 truncate text-sm">{fmt(item.expires_at, t(tk('never')))}</dd>
-              </div>
-              <div className="flex items-baseline gap-1.5">
-                <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t(tk('headLabels.createdTime'))}</dt>
-                <dd className="min-w-0 flex-1 truncate text-sm">{fmt(item.created_time, '-')}</dd>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <dt className="shrink-0 text-xs font-medium text-muted-foreground">{t(tk('headLabels.status'))}</dt>
-                <dd className="flex min-w-0 flex-1 items-center gap-2 text-sm">
-                  <Switch checked={item.status === 1} onCheckedChange={() => onToggleStatus(item)} />
-                  <Badge variant={item.status === 1 ? 'default' : 'secondary'}>
-                    {item.status === 1 ? t(tk('statusEnabled')) : t(tk('statusDisabled'))}
-                  </Badge>
-                </dd>
-              </div>
-            </dl>
-            <div className="mt-2 flex flex-wrap items-center justify-end gap-1 border-t border-border pt-2">
-              <Checkbox
-                checked={selected.includes(item.id)}
-                onCheckedChange={() => onSelectOne(item.id)}
-                aria-label={`select ${item.id}`}
-              />
-              <RowActionsSurfaceContext.Provider value="card">{renderActions(item)}</RowActionsSurfaceContext.Provider>
-            </div>
-          </div>
-        ))}
-      </div>
+      {inviteState(item) === 'exhausted' && <span className="text-warning">{t('inviteList.usedUp')} · </span>}
+      <Validity item={item} rtf={rtf} />
     </>
   );
 }
+
+StateLine.propTypes = { item: PropTypes.object.isRequired, rtf: PropTypes.object.isRequired };
+
+// Phone cards, one per code. Top: the code and its name, the row menu on the right (it holds
+// enable / disable, so the card carries one control). Middle: usage, large. Bottom: state,
+// validity and created. In select mode a checkbox leads.
+export function InviteCodeCards({ items, rtf, selectMode, selectedIds, onToggleSelect, actions }) {
+  const { t } = useTranslation();
+  return (
+    <ul className="space-y-2">
+      {items.map((item) => {
+        const selected = selectedIds.has(item.id);
+        const live = inviteState(item) === 'usable';
+        return (
+          <li
+            key={item.id}
+            className={cn(
+              'rounded-xl border border-border bg-card px-4 py-3 transition-colors',
+              ROW_OPENS,
+              selected && 'border-primary/40 bg-muted/40'
+            )}
+            {...rowOpenProps(() => (selectMode ? onToggleSelect(item.id) : actions.onEdit(item)))}
+          >
+            <div className="flex items-center gap-3">
+              {selectMode && (
+                <RowControl className="flex">
+                  <Checkbox
+                    checked={selected}
+                    onCheckedChange={() => onToggleSelect(item.id)}
+                    aria-label={t('listPage.selectRow', { name: item.code })}
+                  />
+                </RowControl>
+              )}
+              <div className="flex min-w-0 flex-1 items-baseline gap-2">
+                <code className={cn('shrink-0 font-mono text-sm font-medium', !live && 'text-muted-foreground')}>{item.code}</code>
+                {item.name && <span className="truncate text-xs text-muted-foreground">{item.name}</span>}
+              </div>
+              <div className="-my-1.5 -mr-2 flex shrink-0 items-center gap-1">
+                <StatusSwitch item={item} onToggleStatus={actions.onToggleStatus} />
+                <RowControl>
+                  <CodeActions item={item} {...actions} />
+                </RowControl>
+              </div>
+            </div>
+            <div className="mt-1 flex items-baseline gap-2">
+              <Usage item={item} className={cn('text-xl font-medium', !live && 'text-muted-foreground')} />
+              <span className="text-xs text-muted-foreground">{t('inviteList.usage')}</span>
+            </div>
+            <div className="mt-1 truncate text-xs text-muted-foreground">
+              <StateLine item={item} rtf={rtf} /> · {t('inviteList.createdAgo', { time: relativeTime(rtf, item.created_time) })}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+InviteCodeCards.propTypes = {
+  items: PropTypes.array.isRequired,
+  rtf: PropTypes.object.isRequired,
+  selectMode: PropTypes.bool,
+  selectedIds: PropTypes.instanceOf(Set).isRequired,
+  onToggleSelect: PropTypes.func.isRequired,
+  actions: PropTypes.object.isRequired
+};

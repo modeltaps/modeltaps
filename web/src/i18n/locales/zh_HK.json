@@ -601,8 +601,8 @@
       "badge": "多協議 AI 網關",
       "ctaPrimary": "取得 API Key",
       "ctaSecondary": "瀏覽模型",
-      "subline": "OpenAI、Anthropic、Gemini 三種協議共用同一個地址，工具只需改 base URL 便可使用任何模型。自行部署，key 與日誌都保留在自己手上。",
-      "tagline": "一個網關，接通所有模型"
+      "subline": "每位成員一把 key、一份預算。透過 OpenAI、Anthropic、Gemini 三種協議使用任何模型，自行部署，用自己的 key。",
+      "tagline": "為團隊打造的 AI 網關"
     },
     "howItWorks": {
       "step1": {
@@ -1062,6 +1062,11 @@
       "upstreamModel": "發給上游的模型",
       "responseModel": "回應聲明的模型",
       "mismatchValue": "{{model}}（與請求不符）"
+    },
+    "clientCancel": {
+      "label": "客戶端停止",
+      "cancelled": "客戶端已斷開，上游串流已關閉",
+      "estimated": "輸出 token 按已轉發的文本本地估算"
     }
   },
   "login": {
@@ -1251,12 +1256,14 @@
     "hiddenYes": "已隱藏",
     "hiddenNo": "未隱藏",
     "hiddenTip": "有啟用渠道可路由的模型預設可見；隱藏後不出現在公開模型清單且不可呼叫。",
+    "hiddenIgnored": "按供應路由時由「發布狀態」決定誰能看到這個模型，這個開關不起作用，可以關掉",
     "state": "狀態",
     "endpoints": "介面能力",
     "endpointsTip": "宣告該模型可以被哪些介面呼叫；留空表示未設定。",
     "endpointOptions": {
       "chat": "對話",
       "responses": "Responses",
+      "realtime": "即時",
       "images": "圖像",
       "audioSpeech": "語音合成",
       "audioTranscription": "語音轉寫",
@@ -1869,7 +1876,7 @@
   },
   "pricing_edit": {
     "channelType": "供應商",
-    "channelTypeErr": "供應商類型錯誤",
+    "channelTypeErr": "請選擇廠商",
     "channelTypeErr2": "所屬供應商類型錯誤",
     "delInfoTip": "確定刪除 {{name}} 嗎？",
     "delMultipleInfoTip": "確定刪除所選的 {{count}} 個價格嗎？",
@@ -3009,7 +3016,8 @@
         "credential": "渠道憑證問題",
         "supply_paused": "渠道或模型被暫停",
         "supply_resumed": "暫停的渠道或模型已恢復",
-        "supply_failover": "請求切換到備用渠道"
+        "supply_failover": "請求切換到備用渠道",
+        "model_library": "收錄規則添加、下架或將要改動模型"
       },
       "limit": {
         "label": "每類每小時最多條數",

@@ -9,6 +9,7 @@ import QuotaInput from '@/components/QuotaInput';
 import { API } from 'utils/api';
 import { renderSpend, showError, showSuccess } from 'utils/common';
 import { useOrg } from 'contexts/OrgContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // ==============================|| SETTINGS — ORG BUDGET ||============================== //
 // Team budget card: budget / budget_used are returned to Admin+ only; an empty period sentinel
@@ -47,7 +48,7 @@ export default function BudgetSection({ orgId, role, detail, onRefresh }) {
     (!sameValue(budgetPeriod, baseline.budgetPeriod) || (budgetPeriod !== '__none' && !sameValue(budgetLimit, baseline.budgetLimit)));
 
   // 组织预算单独提交:name/avatar_url 为后端必填且会被覆写,回填服务端当前值,
-  // 避免与资料卡未保存的草稿相互污染。limit<=0 即后端语义的「清除限制」。
+  // 避免与个人信息卡未保存的草稿相互污染。limit<=0 即后端语义的「清除限制」。
   const saveBudget = async () => {
     const hasPeriod = budgetPeriod !== '__none';
     const limit = Math.trunc(Number(budgetLimit) || 0);
@@ -82,12 +83,17 @@ export default function BudgetSection({ orgId, role, detail, onRefresh }) {
   };
 
   if (!isAdmin) return null;
+  if (!baseline) return <Skeleton className="h-[180px] rounded-2xl" aria-busy="true" />;
 
   return (
     <FormCard
       title={t('orgPage.settings.teamBudget')}
-      description={t('orgPage.settings.teamBudgetHint')}
-      hint={t('settingsUi.org.cards.budget.hint')}
+      description={t('settingsUi.org.cards.budget.description')}
+      hint={
+        budgetPeriod === '__none'
+          ? t('settingsUi.org.cards.budget.noLimitHint')
+          : t('settingsUi.org.cards.budget.resetsHint', { period: t(`orgPage.limits.period_${budgetPeriod}`) })
+      }
       highlight="team-budget"
       dirty={budgetDirty}
       saving={savingBudget}

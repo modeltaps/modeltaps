@@ -575,7 +575,14 @@ func migrationAfter(db *gorm.DB) error {
 		logger.SysLog("replica database, skipping post-migration steps")
 		return nil
 	}
-	m := gormigrate.New(db, gormigrate.DefaultOptions, []*gormigrate.Migration{
+	m := gormigrate.New(db, gormigrate.DefaultOptions, postMigrations())
+	return m.Migrate()
+}
+
+// postMigrations lists the one-time migrations run after AutoMigrate, in order. gormigrate
+// refuses to start when two of them share an ID, so a new one takes an ID no other has.
+func postMigrations() []*gormigrate.Migration {
+	return []*gormigrate.Migration{
 		addStatistics(),
 		changeChannelApiVersion(),
 		initUserGroup(),
@@ -602,8 +609,9 @@ func migrationAfter(db *gorm.DB) error {
 		migrateTokenModelLimitNormalized(),
 		migrateRoutingPolicyScopedNameIndex(),
 		migrateRoutingPolicyUserScope(),
-	})
-	return m.Migrate()
+		cleanupSyncedCatalogDrafts(),
+		migrateSupplyModeFollowDefault(),
+	}
 }
 
 // migrateRoutingPolicyScopedNameIndex drops the old global unique index on routing_policies.name.
@@ -1796,6 +1804,26 @@ func migrateTokenModelLimitNormalized() *gormigrate.Migration {
 		},
 		Rollback: func(tx *gorm.DB) error {
 			return nil
+		},
+	}
+}
+
+// migrateSupplyModeFollowDefault makes existing models follow the site default supply mode.
+// "balance" was the column default and the only mode a model had without an admin choosing it,
+// and the site default starts as balance, so routing does not change; models set to failover
+// keep it.
+func migrateSupplyModeFollowDefault() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202611120002",
+		Migrate: func(tx *gorm.DB) error {
+			if !tx.Migrator().HasColumn(&ModelInfo{}, "supply_mode") {
+				return nil
+			}
+			return tx.Model(&ModelInfo{}).Where("supply_mode = ? OR supply_mode = ? OR supply_mode IS NULL", SupplyModeBalance, "").
+				Update("supply_mode", SupplyModeDefault).Error
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return tx.Model(&ModelInfo{}).Where("supply_mode = ?", SupplyModeDefault).Update("supply_mode", SupplyModeBalance).Error
 		},
 	}
 }

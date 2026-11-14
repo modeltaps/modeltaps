@@ -1,27 +1,28 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router';
-import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import {
   ChevronDown,
-  Columns3,
   DollarSign,
   Download,
   DownloadCloud,
   Eye,
   EyeOff,
   Info,
+  Library,
   MoreHorizontal,
   Plus,
   RefreshCw,
   RotateCcw,
+  Search,
   Trash2,
   Upload
 } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Switch } from '@/components/ui/switch';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -32,42 +33,59 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/sonner';
-import { filterStateToParams, paramsToFilterState } from '@/components/filter-bar';
-import { BatchBar, ListEmptyState, ListFooter, ListPage, ListToolbar, StatChip } from '@/components/list-page';
+import { FilterSheet, describeEntry, filterStateToParams, isEntryActive, paramsToFilterState } from '@/components/filter-bar';
+import {
+  BatchBar,
+  ColumnPicker,
+  ConditionBar,
+  ListEmptyState,
+  ListFooter,
+  ListSkeleton,
+  PhoneListToolbar,
+  PresetChips,
+  StatusSegments,
+  useColumnVisibility,
+  useFilterPresets,
+  useListLayout
+} from '@/components/list-page';
 import PageActions from '@/components/chrome/PageActions';
 import { API } from 'utils/api';
 import { downloadTextAsFile, showError } from 'utils/common';
 import { getPageSize, savePageSize } from 'constants';
 import { createRequestGuard, runGuardedFetch } from 'hooks/paginatedListGuard';
 import PricingSheet from '../Pricing/PricingSheet';
+import SupplyBatchMenu from './supply/SupplyBatchMenu';
 import CheckUpdatesDialog from '../Pricing/CheckUpdatesDialog';
 import {
+  COLUMN_STORAGE_KEY,
+  LEGACY_COLUMN_STORAGE_KEYS,
+  MODEL_COLUMNS,
   STATUS_FILTERS,
-  TOGGLEABLE_COLUMNS,
   attachChannelDetails,
   billingType,
   buildCatalogExport,
   catalogStats,
   indexChannelsByModel,
-  isFullyUsable,
   isVisibleToUsers,
-  loadColumnVisibility,
   loadPriceUnit,
   matchesStatusFilter,
   mergeCatalogRows,
-  saveColumnVisibility,
+  channelModelNames,
   savePriceUnit
 } from '../Pricing/modelCatalog';
-import ModelTable from './ModelTable';
+import ModelTable, { ModelList, ReadinessLegend } from './ModelTable';
 import ModelInfoSheet from './ModelInfoSheet';
 import ImportDialog from './ImportDialog';
+import LibrarySheet from './LibrarySheet';
 import { ENDPOINT_LABEL_KEYS, ENDPOINT_VALUES, isUnlabeled, safeJsonArray } from './modelInfoHelpers';
 import { listSupplies } from './supply/supplyApi';
 import { useSupplySwitches, SupplySwitchNote } from './supply/supplyParts';
 import { MODEL_STATUSES, countSuppliesByModel, isPublicModelRow, normalizeModelStatus } from './supply/supplyHelpers';
 
-// 工具栏分面:厂商 / 状态 / 可见性 / 计费方式 / 接口 + 「仅看未标注」。全部为前端本地过滤,
-// 单选枚举的 paramInclude 即字段键,刷新可由 URL 恢复;状态分面与页头统计 chip 共用取值。
+// Conditions in the "Show models that" bar: vendor, public status, visibility, billing, endpoint
+// and "unlabeled". All filter locally; each single-choice field's URL key is its field key, so a
+// reload restores them. The catalog state (usable / no channel / unpriced / hidden) is the
+// segment row above, not a condition.
 const singleEnum = (key, labelKey, options) => ({
   key,
   labelKey,
@@ -78,18 +96,11 @@ const singleEnum = (key, labelKey, options) => ({
   options
 });
 
-const STAT_TONES = { usable: 'success', nochannel: 'warning', unpriced: 'warning', hidden: 'default' };
-
 const buildFilterFields = (vendors) => [
   singleEnum('vendor_id', 'modelInfoPage.vendor', [
     ...Object.values(vendors).map((v) => ({ value: String(v.id), label: v.name })),
     { value: '0', labelKey: 'modelInfoPage.vendorUnknown' }
   ]),
-  singleEnum(
-    'status',
-    'modelInfoPage.state',
-    STATUS_FILTERS.map((s) => ({ value: s, labelKey: `modelsPage.stats.${s}` }))
-  ),
   singleEnum(
     'publish',
     'modelSupply.status.label',
@@ -112,18 +123,34 @@ const buildFilterFields = (vendors) => [
   singleEnum('labels', 'modelsPage.labeling', [{ value: 'unlabeled', labelKey: 'modelInfoPage.onlyUnlabeled' }])
 ];
 
-const MODELINFO_FILTER_PARAM_KEYS = ['vendor_id', 'status', 'publish', 'visible', 'billing', 'endpoint', 'labels'];
-// 参数映射只依赖 key/type/single/paramInclude,与动态厂商选项无关,URL 解析用静态描述即可。
+const MODELINFO_FILTER_PARAM_KEYS = ['vendor_id', 'publish', 'visible', 'billing', 'endpoint', 'labels'];
+// Parameter mapping depends only on key / type / single / paramInclude, not on the vendor
+// options, so URL parsing can use the static description.
 const MODELINFO_FILTER_FIELDS = buildFilterFields({});
 
-// 单选分面的 filterState 项(与 FilterBar 写入的形状一致)。
+// A single-choice condition entry (the shape the condition bar writes).
 const enumFilterEntry = (key, value) => paramsToFilterState(MODELINFO_FILTER_FIELDS, new URLSearchParams({ [key]: value }))[key];
 
-export function filterCatalogRows(rows, { keyword = '', params = {}, onlyUsable = false, aliasesByTarget = {} }) {
+// Segments (?status=): all, then the catalog states. They overlap (an unpriced model can also
+// have no channel), as the counts do.
+const STATUS_SEGMENTS = ['all', ...STATUS_FILTERS];
+const readStatus = (searchParams) => {
+  if (searchParams.get('usable') === '1') return 'usable';
+  const s = searchParams.get('status');
+  return STATUS_SEGMENTS.includes(s) ? s : 'all';
+};
+
+// Built-in presets.
+const BUILTIN_PRESETS = [
+  { id: 'unlabeled', labelKey: 'modelsPage.presetUnlabeled', status: 'all', conditions: { labels: { op: 'in', values: ['unlabeled'] } } },
+  { id: 'percall', labelKey: 'modelsPage.presetPerCall', status: 'all', conditions: { billing: { op: 'in', values: ['times'] } } }
+];
+const PRESET_STORAGE_KEY = 'model-filter-presets-v1';
+
+export function filterCatalogRows(rows, { keyword = '', params = {}, aliasesByTarget = {} }) {
   const k = keyword.trim().toLowerCase();
   return rows.filter((row) => {
-    if (onlyUsable && !isFullyUsable(row)) return false;
-    if (params.status && !matchesStatusFilter(row, params.status)) return false;
+    if (params.status && params.status !== 'all' && !matchesStatusFilter(row, params.status)) return false;
     if (params.vendor_id && String(row.vendor_id || 0) !== params.vendor_id) return false;
     if (params.publish && !(isPublicModelRow(row) && normalizeModelStatus(row.status) === params.publish)) return false;
     if (params.visible && String(isVisibleToUsers(row)) !== params.visible) return false;
@@ -158,34 +185,6 @@ async function fetchAllChannels() {
   return all;
 }
 
-function ColumnMenu({ visibility, onChange }) {
-  const { t } = useTranslation();
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" aria-label={t('modelInfoPage.columns')}>
-          <Columns3 className="size-4" />
-          <span className="hidden sm:inline">{t('modelsPage.columnsShort')}</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="max-h-[60vh] w-48 overflow-y-auto">
-        <DropdownMenuLabel>{t('modelInfoPage.columns')}</DropdownMenuLabel>
-        {TOGGLEABLE_COLUMNS.map((column) => (
-          <label key={column.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted">
-            <Checkbox
-              checked={!!visibility[column.id]}
-              onCheckedChange={(checked) => onChange({ ...visibility, [column.id]: !!checked })}
-            />
-            {t(column.labelKey)}
-          </label>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-ColumnMenu.propTypes = { visibility: PropTypes.object.isRequired, onChange: PropTypes.func.isRequired };
-
 export default function ModelInfo() {
   const { t } = useTranslation();
   const [modelInfos, setModelInfos] = useState([]);
@@ -200,22 +199,33 @@ export default function ModelInfo() {
   const [ownedby, setOwnedby] = useState([]);
   const [refreshFlag, setRefreshFlag] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [filterState, setFilterState] = useState(() => paramsToFilterState(MODELINFO_FILTER_FIELDS, searchParams));
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(() => getPageSize('model_info'));
   const [keyword, setKeyword] = useState(() => searchParams.get('keyword') || '');
-  const [onlyUsable, setOnlyUsable] = useState(() => searchParams.get('usable') === '1');
+  const [status, setStatus] = useState(() => readStatus(searchParams));
   const [selectedKeys, setSelectedKeys] = useState(() => new Set());
+  const [selectMode, setSelectMode] = useState(false);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [hiding, setHiding] = useState(false);
   const [unit, setUnit] = useState(() => loadPriceUnit());
-  const [columnVisibility, setColumnVisibility] = useState(() => loadColumnVisibility());
+  const columnState = useColumnVisibility({
+    storageKey: COLUMN_STORAGE_KEY,
+    legacyKeys: LEGACY_COLUMN_STORAGE_KEYS,
+    columns: MODEL_COLUMNS
+  });
+  const columnVisibility = columnState.visibility;
+  // Full table while it fits (the sidebar collapses first), phone list otherwise.
+  const { layout, narrow } = useListLayout();
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetTab, setSheetTab] = useState('profile');
   const [editRow, setEditRow] = useState(null);
   const [batchDelete, setBatchDelete] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [priceSheet, setPriceSheet] = useState(CLOSED_PRICE_SHEET);
@@ -261,7 +271,10 @@ export default function ModelInfo() {
             setChannelsByModel(bySupplies ? {} : indexChannelsByModel(channels));
           },
           onError: (error) => console.error(error),
-          onFinally: () => setLoading(false)
+          onFinally: () => {
+            setLoading(false);
+            setLoaded(true);
+          }
         }
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -295,16 +308,16 @@ export default function ModelInfo() {
     setSearchParams(
       (prev) => {
         const params = new URLSearchParams(prev);
-        [...MODELINFO_FILTER_PARAM_KEYS, 'keyword', 'usable'].forEach((k) => params.delete(k));
+        [...MODELINFO_FILTER_PARAM_KEYS, 'status', 'keyword', 'usable'].forEach((k) => params.delete(k));
         const q = filterStateToParams(MODELINFO_FILTER_FIELDS, filterState);
         for (const [k, v] of Object.entries(q)) params.set(k, String(v));
         if (keyword) params.set('keyword', keyword);
-        if (onlyUsable) params.set('usable', '1');
+        if (status !== 'all') params.set('status', status);
         return params;
       },
       { replace: true }
     );
-  }, [filterState, keyword, onlyUsable, setSearchParams]);
+  }, [filterState, keyword, status, setSearchParams]);
 
   const handleRefresh = () => setRefreshFlag((f) => !f);
 
@@ -319,24 +332,15 @@ export default function ModelInfo() {
   const handleClearFilters = () => {
     setPage(0);
     setFilterState({});
+  };
+  const clearEverything = () => {
+    handleClearFilters();
     setKeyword('');
-    setOnlyUsable(false);
+    setStatus('all');
   };
-
-  // 页头统计 chip:点击等价于设置「状态」分面(「全部」清除该分面)。
-  const applyStatusChip = (value) => {
+  const changeStatus = (next) => {
     setPage(0);
-    setFilterState((prev) => {
-      const next = { ...prev };
-      if (value) next.status = enumFilterEntry('status', value);
-      else delete next.status;
-      return next;
-    });
-  };
-
-  const handleColumnVisibilityChange = (next) => {
-    setColumnVisibility(next);
-    saveColumnVisibility(next);
+    setStatus(next);
   };
 
   const handleUnitChange = useCallback((next) => {
@@ -344,7 +348,7 @@ export default function ModelInfo() {
     savePriceUnit(next);
   }, []);
 
-  // 厂商选项随 /api/model_ownedby/ 变化;字段定义交给 FilterBar 展示。
+  // Vendor options follow /api/model_ownedby/.
   const filterFields = useMemo(() => buildFilterFields(vendors), [vendors]);
 
   const existingModels = useMemo(() => modelInfos.map((info) => info.model), [modelInfos]);
@@ -361,24 +365,25 @@ export default function ModelInfo() {
 
   const rows = useMemo(
     () =>
-      attachChannelDetails(mergeCatalogRows({ catalog: modelInfos, prices, modelList, channelsByModel }), channelList, {
-        supplyRouting
-      })
+      attachChannelDetails(
+        mergeCatalogRows({ catalog: modelInfos, prices, modelList, channelsByModel, listedModels: channelModelNames(channelList) }),
+        channelList,
+        {
+          supplyRouting
+        }
+      )
         .map((row) => (supplyRouting ? { ...row, supplyRouting } : row))
         .map((row) => (isPublicModelRow(row) ? { ...row, supplyCounts: supplyCounts[row.model] || { total: 0, usable: 0 } } : row)),
     [modelInfos, prices, modelList, channelsByModel, channelList, supplyCounts, supplyRouting]
   );
 
-  // 本地过滤条件(搜索框 + 分面 + 「只看完整可用」)。
-  const params = useMemo(() => filterStateToParams(MODELINFO_FILTER_FIELDS, filterState), [filterState]);
+  // Local filtering: search box, segment and conditions.
+  const params = useMemo(() => ({ ...filterStateToParams(MODELINFO_FILTER_FIELDS, filterState), status }), [filterState, status]);
 
   const stats = useMemo(() => catalogStats(rows), [rows]);
   const unlabeledCount = useMemo(() => modelInfos.filter(isUnlabeled).length, [modelInfos]);
 
-  const filtered = useMemo(
-    () => filterCatalogRows(rows, { keyword, params, onlyUsable, aliasesByTarget }),
-    [rows, keyword, params, onlyUsable, aliasesByTarget]
-  );
+  const filtered = useMemo(() => filterCatalogRows(rows, { keyword, params, aliasesByTarget }), [rows, keyword, params, aliasesByTarget]);
 
   const lastPage = Math.max(0, Math.ceil(filtered.length / rowsPerPage) - 1);
   const currentPage = Math.min(page, lastPage);
@@ -439,7 +444,7 @@ export default function ModelInfo() {
 
   const toggleHidden = useCallback((item, next) => hide([item.catalogId], next), [hide]);
 
-  // 新建与行编辑共用一个抽屉(资料 / 定价 / 渠道与分组),行内入口决定默认 Tab。
+  // 新建与行编辑共用一个抽屉(信息 / 定价 / 渠道与分组),行内入口决定默认 Tab。
   const openCreate = () => {
     setEditRow(null);
     setSheetTab('profile');
@@ -577,33 +582,176 @@ export default function ModelInfo() {
     }
   };
 
-  const statChips = [
-    { id: 'all', label: t('modelsPage.stats.all'), count: stats.all, active: !params.status, onClick: () => applyStatusChip(null) },
-    ...STATUS_FILTERS.map((s) => ({
-      id: s,
-      label: t(`modelsPage.stats.${s}`),
-      count: stats[s],
-      tone: STAT_TONES[s],
-      active: params.status === s,
-      onClick: () => applyStatusChip(s)
-    }))
-  ];
+  const presets = useFilterPresets({
+    storageKey: PRESET_STORAGE_KEY,
+    builtin: BUILTIN_PRESETS,
+    fields: filterFields,
+    state: filterState,
+    status,
+    statusLabel: (value) => t(value === 'all' ? 'modelsPage.stats.all' : `modelsPage.stats.${value}`),
+    apply: (preset) => {
+      setPage(0);
+      setStatus(preset.status || 'all');
+      setFilterState({ ...preset.conditions });
+    }
+  });
+  const activeConditionFields = filterFields.filter((f) => isEntryActive(f, filterState[f.key]));
+  const removeCondition = (key) =>
+    handleFilterChange((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+
+  const segmentOptions = STATUS_SEGMENTS.map((value) => ({ value, label: t(`modelsPage.stats.${value}`) }));
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedKeys(new Set());
+  };
+
+  const batchActions = (
+    <>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7"
+        disabled={hiding || selectedCatalogIds.length === 0}
+        onClick={() => hide(selectedCatalogIds, false)}
+      >
+        <Eye className="size-3.5" />
+        {t('modelsPage.batchShow')}
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7"
+        disabled={hiding || selectedCatalogIds.length === 0}
+        onClick={() => hide(selectedCatalogIds, true)}
+      >
+        <EyeOff className="size-3.5" />
+        {t('modelsPage.batchHide')}
+      </Button>
+      <Button size="sm" variant="outline" className="h-7" disabled={selectedKeys.size === 0} onClick={openBatchPrice}>
+        <DollarSign className="size-3.5" />
+        {t('modelInfoPage.setPrice')}
+      </Button>
+      <SupplyBatchMenu
+        rows={selectedRows}
+        onDone={() => {
+          setSelectedKeys(new Set());
+          handleRefresh();
+        }}
+      />
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 text-destructive"
+        disabled={selectedPricedModels.length === 0}
+        onClick={() => setBatchDelete('price')}
+      >
+        <Trash2 className="size-3.5" />
+        {t('modelInfoPage.deletePrice')}
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 text-destructive"
+        disabled={selectedCatalogIds.length === 0}
+        onClick={() => setBatchDelete('catalog')}
+      >
+        <Trash2 className="size-3.5" />
+        {t('modelInfoPage.deleteCatalog')}
+      </Button>
+    </>
+  );
+
+  // The floating bar on phones has room for one action; the rest sit under ⋯.
+  const phoneBatchActions = (
+    <>
+      <Button size="sm" variant="outline" className="h-8" disabled={selectedKeys.size === 0} onClick={openBatchPrice}>
+        <DollarSign className="size-3.5" />
+        {t('modelInfoPage.setPrice')}
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="icon"
+            variant="outline"
+            className="size-8"
+            disabled={selectedKeys.size === 0}
+            aria-label={t('modelsPage.moreActions')}
+          >
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuItem disabled={hiding || selectedCatalogIds.length === 0} onClick={() => hide(selectedCatalogIds, false)}>
+            <Eye className="size-4" />
+            {t('modelsPage.batchShow')}
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled={hiding || selectedCatalogIds.length === 0} onClick={() => hide(selectedCatalogIds, true)}>
+            <EyeOff className="size-4" />
+            {t('modelsPage.batchHide')}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            disabled={selectedPricedModels.length === 0}
+            onClick={() => setBatchDelete('price')}
+          >
+            <Trash2 className="size-4" />
+            {t('modelInfoPage.deletePrice')}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-destructive focus:text-destructive"
+            disabled={selectedCatalogIds.length === 0}
+            onClick={() => setBatchDelete('catalog')}
+          >
+            <Trash2 className="size-4" />
+            {t('modelInfoPage.deleteCatalog')}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  );
 
   let body;
-  if (!loading && rows.length === 0) {
+  if (!loaded) {
+    body = <ListSkeleton layout={layout} cells={[120, 80, 96, 64, 32]} />;
+  } else if (rows.length === 0) {
     body = (
       <ListEmptyState
         title={t('modelsPage.emptyTitle')}
         description={t('modelsPage.emptyDescription')}
         action={
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="size-4" /> {t('modelInfoPage.create')}
-          </Button>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button size="sm" onClick={() => setLibraryOpen(true)}>
+              <Library className="size-4" /> {t('modelLibrary.open')}
+            </Button>
+            <Button size="sm" variant="outline" onClick={openCreate}>
+              <Plus className="size-4" /> {t('modelInfoPage.create')}
+            </Button>
+          </div>
         }
       />
     );
-  } else if (!loading && filtered.length === 0) {
-    body = <ListEmptyState variant="noMatch" onClearFilters={handleClearFilters} />;
+  } else if (filtered.length === 0) {
+    body = <ListEmptyState variant="noMatch" onClearFilters={clearEverything} />;
+  } else if (narrow) {
+    body = (
+      <ModelList
+        items={pageRows}
+        vendors={vendors}
+        unit={unit}
+        selectMode={selectMode}
+        selectedKeys={selectedKeys}
+        onToggleSelect={toggleSelect}
+        onToggleHidden={toggleHidden}
+        onOpen={openSheet}
+        onDeleteCatalog={setDeleteTarget}
+        onDeletePrice={setDeletePriceTarget}
+      />
+    );
   } else {
     body = (
       <ModelTable
@@ -673,114 +821,103 @@ export default function ModelInfo() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <Button variant="outline" size="sm" onClick={() => setLibraryOpen(true)} aria-label={t('modelLibrary.open')}>
+          <Library className="size-4" />
+          <span>{t('modelLibrary.open')}</span>
+        </Button>
         <Button size="sm" onClick={openCreate} aria-label={t('modelInfoPage.create')}>
           <Plus className="size-4" />
           <span>{t('modelInfoPage.create')}</span>
         </Button>
       </PageActions>
 
-      <ListPage
-        className="max-md:[&>[data-slot=list-page-footer]]:static"
-        header={
-          <div className="flex flex-wrap items-center gap-1">
-            {statChips.map(({ id, ...chip }) => (
-              <StatChip key={id} {...chip} />
-            ))}
-          </div>
-        }
-        toolbar={
-          <ListToolbar
-            className="max-sm:[&>div:first-child]:w-auto max-sm:[&>div:first-child]:min-w-0 max-sm:[&>div:first-child]:flex-1 max-sm:[&>div:last-child]:w-full max-sm:[&>div:last-child]:flex-wrap max-sm:[&>div:last-child]:justify-end"
-            search={{ value: keyword, onChange: handleKeywordChange, placeholder: t('modelsPage.searchPlaceholder') }}
-            filters={{ fields: filterFields, state: filterState, onChange: handleFilterChange, onClearAll: handleClearFilters }}
-            viewControls={
-              <>
-                <label className="flex items-center gap-2 whitespace-nowrap text-sm max-sm:basis-full">
-                  <Switch
-                    checked={onlyUsable}
-                    onCheckedChange={(v) => {
-                      setPage(0);
-                      setOnlyUsable(v);
-                    }}
-                    aria-label={t('modelsPage.onlyUsable')}
+      <div className={cn('space-y-3', narrow && selectMode && 'pb-20')}>
+        <div className="space-y-2">
+          {narrow ? (
+            <>
+              <StatusSegments chips value={status} onChange={changeStatus} options={segmentOptions} counts={loaded ? stats : null} />
+              <PhoneListToolbar
+                search={{ value: keyword, onChange: handleKeywordChange, placeholder: t('modelsPage.searchShort') }}
+                filter={{ count: activeConditionFields.length, onOpen: () => setFilterSheetOpen(true) }}
+                select={{ active: selectMode, onToggle: () => (selectMode ? exitSelectMode() : setSelectMode(true)) }}
+                chips={activeConditionFields.map((f) => ({
+                  key: f.key,
+                  label: describeEntry(t, f, filterState[f.key]),
+                  onRemove: () => removeCondition(f.key)
+                }))}
+              />
+            </>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusSegments value={status} onChange={changeStatus} options={segmentOptions} counts={loaded ? stats : null} />
+                <div className="relative min-w-[12rem] flex-1">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={keyword}
+                    onChange={(e) => handleKeywordChange(e.target.value)}
+                    placeholder={t('modelsPage.searchPlaceholder')}
+                    aria-label={t('modelsPage.searchShort')}
+                    className="h-8 pl-8"
                   />
-                  {t('modelsPage.onlyUsable')}
-                </label>
-                <ColumnMenu visibility={columnVisibility} onChange={handleColumnVisibilityChange} />
-              </>
-            }
-          />
-        }
-        selectedCount={selectedKeys.size}
-        batchBar={
-          <BatchBar
-            count={selectedKeys.size}
-            onClear={() => setSelectedKeys(new Set())}
-            actions={
-              <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={hiding || selectedCatalogIds.length === 0}
-                  onClick={() => hide(selectedCatalogIds, false)}
-                >
-                  <Eye className="size-4" />
-                  {t('modelsPage.batchShow')}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={hiding || selectedCatalogIds.length === 0}
-                  onClick={() => hide(selectedCatalogIds, true)}
-                >
-                  <EyeOff className="size-4" />
-                  {t('modelsPage.batchHide')}
-                </Button>
-                <Button size="sm" variant="outline" onClick={openBatchPrice}>
-                  <DollarSign className="size-4" />
-                  {t('modelInfoPage.setPrice')}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-destructive"
-                  disabled={selectedPricedModels.length === 0}
-                  onClick={() => setBatchDelete('price')}
-                >
-                  <Trash2 className="size-4" />
-                  {t('modelInfoPage.deletePrice')}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-destructive"
-                  disabled={selectedCatalogIds.length === 0}
-                  onClick={() => setBatchDelete('catalog')}
-                >
-                  <Trash2 className="size-4" />
-                  {t('modelInfoPage.deleteCatalog')}
-                </Button>
-              </>
-            }
-          />
-        }
-        footer={
-          <ListFooter
-            total={filtered.length}
-            page={currentPage}
-            pageSize={rowsPerPage}
-            selectedCount={selectedKeys.size}
-            onPageChange={setPage}
-            onPageSizeChange={(n) => {
-              setRowsPerPage(n);
-              setPage(0);
-              savePageSize('model_info', n);
-            }}
-          />
-        }
-      >
-        {body}
-      </ListPage>
+                </div>
+                <ColumnPicker columns={columnState} />
+              </div>
+              {selectedKeys.size > 0 ? (
+                <BatchBar
+                  count={selectedKeys.size}
+                  onClear={() => setSelectedKeys(new Set())}
+                  className="min-h-10 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-1.5"
+                  actions={batchActions}
+                />
+              ) : (
+                <ConditionBar
+                  fields={filterFields}
+                  state={filterState}
+                  onChange={handleFilterChange}
+                  onClearAll={handleClearFilters}
+                  leadingLabel={t('modelsPage.showModelsThat')}
+                  presets={presets}
+                />
+              )}
+            </>
+          )}
+        </div>
+
+        <Card>
+          {body}
+          <div className="border-t border-border">
+            <ListFooter
+              total={filtered.length}
+              page={currentPage}
+              pageSize={rowsPerPage}
+              selectedCount={selectedKeys.size}
+              onPageChange={setPage}
+              onPageSizeChange={(n) => {
+                setRowsPerPage(n);
+                setPage(0);
+                savePageSize('model_info', n);
+              }}
+            />
+          </div>
+        </Card>
+        {narrow && loaded && filtered.length > 0 && <ReadinessLegend />}
+      </div>
+
+      {narrow && selectMode && <BatchBar count={selectedKeys.size} onClear={exitSelectMode} floating actions={phoneBatchActions} />}
+      {narrow && (
+        <FilterSheet
+          open={filterSheetOpen}
+          onOpenChange={setFilterSheetOpen}
+          title={t('listPage.filter')}
+          fields={filterFields}
+          state={filterState}
+          onChange={handleFilterChange}
+          onClearAll={handleClearFilters}
+          t={t}
+          top={<PresetChips presets={presets} onPick={() => setFilterSheetOpen(false)} />}
+        />
+      )}
 
       {params.publish && <SupplySwitchNote switches={supplySwitches} className="mt-2" />}
 
@@ -801,6 +938,7 @@ export default function ModelInfo() {
           open={sheetOpen}
           onOpenChange={setSheetOpen}
           row={editRow}
+          liveRow={editRow ? rows.find((r) => r.model === editRow.model) || editRow : null}
           initialTab={sheetTab}
           existingModels={existingModels}
           prices={prices}
@@ -814,6 +952,7 @@ export default function ModelInfo() {
           onSupplyChanged={handleRefresh}
         />
 
+        <LibrarySheet open={libraryOpen} onOpenChange={setLibraryOpen} vendors={vendors} onAdded={handleRefresh} />
         <ImportDialog
           open={importOpen}
           onOpenChange={setImportOpen}

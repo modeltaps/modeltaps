@@ -163,6 +163,10 @@ func officialTokenPrices() map[string]officialTokenPrice {
 		// https://platform.claude.com/docs/en/about-claude/pricing
 		// Model IDs from https://platform.claude.com/docs/en/about-claude/models/overview and
 		// https://platform.claude.com/docs/en/about-claude/model-deprecations.
+		// claude-fable-5-2: $8 / $40, 5m cache writes $10, 1h $16, hits $0.20 (0.025x), batch $4 / $20;
+		// 1M context at the standard price (no long-context tier). Checked 2026-11-12 against Anthropic's
+		// published model documentation (the pricing page itself was not opened).
+		"claude-fable-5-2":           claudePrice(8, 10, 16, 0.2, 40),
 		"claude-fable-5-1":           claudePrice(10, 12.5, 20, 0.25, 50),
 		"claude-fable-5":             claudePrice(10, 12.5, 20, 1, 50),
 		"claude-opus-5-5":            claudePrice(4, 5, 8, 0.2, 20),

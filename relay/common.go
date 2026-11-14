@@ -332,6 +332,7 @@ func getProvider(c *gin.Context, modelName string, catalogExempt bool) (provider
 	c.Set("is_backupGroup", isBackupGroup)
 	c.Set("channel_id", channel.Id)
 	c.Set("channel_type", channel.Type)
+	c.Set(config.GinCancelOnDisconnectKey, channel.CancelsOnDisconnect())
 
 	// 重新设置分组倍率
 	groupRatio := model.GlobalUserGroupRatio.GetBySymbol(usedGroup)
@@ -632,6 +633,19 @@ func responseJsonClient(c *gin.Context, data interface{}) *types.OpenAIErrorWith
 
 type StreamEndHandler func() string
 
+// stopOnClientDisconnect is called once the client has gone away. On channels that cancel on
+// disconnect it marks the request and tells the stream loop to return: the deferred
+// stream.Close then closes the upstream connection, so the upstream stops generating and bills
+// only what it produced. The output tokens are counted from the text accumulated so far (see
+// relay/main.go). Other channels keep reading to the end for the upstream's final usage.
+func stopOnClientDisconnect(c *gin.Context) bool {
+	if !c.GetBool(config.GinCancelOnDisconnectKey) {
+		return false
+	}
+	c.Set(config.GinClientCancelledKey, true)
+	return true
+}
+
 func responseStreamClient(c *gin.Context, stream requester.StreamReaderInterface[string], endHandler StreamEndHandler) (firstResponseTime time.Time, errWithOP *types.OpenAIErrorWithStatusCode) {
 	applyUpstreamRequestIdHeader(c)
 	requester.SetEventStreamHeaders(c)
@@ -695,6 +709,9 @@ func responseStreamClient(c *gin.Context, stream requester.StreamReaderInterface
 			case <-ctxDone:
 				clientDisconnected = true
 				ctxDone = nil // 置 nil 后此 case 不再命中，避免 CPU 空转
+				if stopOnClientDisconnect(c) {
+					return
+				}
 			}
 		}
 	}()
@@ -757,6 +774,9 @@ func responseGeneralStreamClient(c *gin.Context, stream requester.StreamReaderIn
 			case <-ctxDone:
 				clientDisconnected = true
 				ctxDone = nil // 置 nil 后此 case 不再命中，避免 CPU 空转
+				if stopOnClientDisconnect(c) {
+					return
+				}
 			}
 		}
 	}()

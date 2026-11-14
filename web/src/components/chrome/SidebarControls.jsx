@@ -1,14 +1,14 @@
 import PropTypes from 'prop-types';
 import { Link } from 'react-router';
-import { Menu, PanelLeft, Search } from 'lucide-react';
+import { ArrowLeft, Menu, PanelLeft, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // ==============================|| CHROME — SIDEBAR CONTROLS ||============================== //
-// The panel has no top bar: the collapse button sits on the sidebar's brand row and the search
-// row sits under the context switcher. When the rail is collapsed (desktop) or hidden (mobile),
+// The panel has no top bar: the search and collapse buttons sit at the end of the sidebar's first
+// row (brand row, or the back row on 设置). When the rail is collapsed (desktop) or hidden (mobile),
 // the expand / drawer buttons sit left of the page title (SidebarToggle).
 
 // Menu rows of the sidebars (the workbench / admin menu and the 设置 tree). Active: a subtle
@@ -16,7 +16,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 export const sidebarRow = {
   base: 'group flex w-full items-center rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
   active: 'bg-sidebar-accent font-medium text-foreground shadow-[inset_0_0_0_1px_var(--border)]',
-  idle: 'text-foreground/85 hover:bg-sidebar-accent/70 hover:text-foreground'
+  idle: 'text-foreground/85 hover:bg-sidebar-accent/70 hover:text-foreground',
+  // Collapsed rail: a 36px square icon button centred in the column, its name in a tooltip.
+  collapsed: 'mx-auto size-9 w-9 justify-center',
+  // Collapsed rail: a short centred rule between menu sections instead of their headings.
+  divider: 'mx-auto my-2 h-px w-5 bg-border'
 };
 
 const iconButtonClass =
@@ -69,41 +73,61 @@ export function CollapseButton({ onClick }) {
 
 CollapseButton.propTypes = { onClick: PropTypes.func };
 
-// Search: a full row under the context switcher, an icon in the collapsed rail.
+// Search: an icon that opens the panel's search palette (CommandMenu). It sits at the end of the
+// sidebar's top row (after the brand or the back row) and under the switcher in the collapsed rail.
 export function SidebarSearch({ collapsed = false, onClick }) {
   const { t } = useTranslation();
   const label = t('common.search', { defaultValue: 'Search' });
   const kbd = <kbd className="rounded border border-border bg-sidebar px-1 font-mono text-[0.6875rem] text-muted-foreground">⌘K</kbd>;
+  return (
+    <SidebarIconButton
+      label={label}
+      side={collapsed ? 'right' : 'bottom'}
+      onClick={onClick}
+      tooltip={
+        <span className="flex items-center gap-2">
+          {label}
+          {kbd}
+        </span>
+      }
+      className="size-9"
+    >
+      <Search className="size-[1.125rem]" />
+    </SidebarIconButton>
+  );
+}
+
+// A row back to where the user came from (platform admin and 设置 show it where the workbench has
+// its context switcher, at the same height). Its arrow and text use the columns of the menu rows
+// below, so they line up. Collapsed: the arrow only, with the label as tooltip.
+export function BackRow({ to, name, label, collapsed = false, onClick }) {
   if (collapsed) {
     return (
-      <SidebarIconButton
-        label={label}
-        side="right"
-        onClick={onClick}
-        tooltip={
-          <span className="flex items-center gap-2">
-            {label}
-            {kbd}
-          </span>
-        }
-        className="size-9"
-      >
-        <Search className="size-[1.125rem]" />
-      </SidebarIconButton>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link to={to} onClick={onClick} aria-label={label} className={iconButtonClass.replace('size-8', 'size-9')}>
+            <ArrowLeft className="size-[1.125rem]" />
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent side="right">{label}</TooltipContent>
+      </Tooltip>
     );
   }
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex h-[34px] w-full items-center gap-2.5 rounded-lg border border-border bg-field px-3 text-sm text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      <Search className="size-4 shrink-0" />
-      <span className="flex-1 text-left">{label}</span>
-      {kbd}
-    </button>
+    <Link to={to} onClick={onClick} aria-label={label} className={cn(sidebarRow.base, sidebarRow.idle, 'h-9 gap-2.5 px-3 font-medium')}>
+      <ArrowLeft className="size-4 shrink-0 text-muted-foreground group-hover:text-foreground" />
+      <span className="min-w-0 flex-1 truncate">{name}</span>
+    </Link>
   );
 }
+
+BackRow.propTypes = {
+  to: PropTypes.string.isRequired,
+  name: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired,
+  collapsed: PropTypes.bool,
+  onClick: PropTypes.func
+};
 
 SidebarSearch.propTypes = { collapsed: PropTypes.bool, onClick: PropTypes.func };
 

@@ -4,8 +4,8 @@ layout: home
 
 hero:
   name: "Modeltaps"
-  text: "一个网关，接入所有模型"
-  tagline: OpenAI、Anthropic、Gemini 三种协议走同一个地址，工具只改 base URL 就能用任意模型。自己部署，key 和日志都在自己手里。
+  text: "为团队打造的 AI 网关"
+  tagline: 每位成员一把 key、一份预算。通过 OpenAI、Anthropic、Gemini 三种协议调用任意模型，自己部署，用自己的 key。
   image:
     light: /hero-gateway-light.svg
     dark: /hero-gateway-dark.svg

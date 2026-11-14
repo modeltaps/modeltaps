@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { matchRoutes, Outlet, useLocation } from 'react-router';
 
@@ -11,18 +11,19 @@ import { useIsAdmin } from 'utils/common';
 import { useOrg } from 'contexts/OrgContext';
 import PageHeader from '@/components/chrome/PageHeader';
 import { PageHeaderOverrideContext } from '@/components/chrome/PageHeaderOverride';
-import { ContentMinWidthContext } from '@/components/chrome/ContentWidth';
 import { SidebarToggle } from '@/components/chrome/SidebarControls';
 import { PageActionsContext } from '@/components/chrome/PageActions';
 import { PageTitleExtraContext } from '@/components/chrome/PageTitleExtra';
 import Sidebar from '@/components/chrome/Sidebar';
 import SettingsSidebar from '@/components/chrome/SettingsSidebar';
 import CommandMenu from '@/components/chrome/CommandMenu';
+import { SearchContext } from '@/components/chrome/SearchContext';
 import { deriveContext, findActiveItem, isSettingsPath, navLabel } from '@/components/chrome/nav-config';
 import { SettingsPlaneContext, useSettingsPlaneState } from '@/components/settings/SettingsPlane';
 import MainRoutes from 'routes/MainRoutes';
 import { NoticeBanner } from 'ui-component/notice';
 import { rememberSettingsReturn } from 'utils/settingsReturn';
+import { rememberAdminReturn } from 'utils/adminReturn';
 import { settingsTree } from 'views/panel/Settings/sections';
 import MobilePushFrame from './MobilePushFrame';
 
@@ -52,6 +53,10 @@ export default function MainLayout() {
   useEffect(() => {
     if (!settingsPlane) rememberSettingsReturn(`${pathname}${search}`);
   }, [settingsPlane, pathname, search]);
+  // Platform admin's back row returns to the last workbench page.
+  useEffect(() => {
+    if (!settingsPlane && context !== 'admin') rememberAdminReturn(`${pathname}${search}`);
+  }, [settingsPlane, context, pathname, search]);
   const tree = settingsPlane ? settingsTree({ pathname, organizations, currentOrgId }) : null;
 
   // The tab title names the space only in platform admin, to tell tabs apart; the brand part
@@ -69,21 +74,12 @@ export default function MainLayout() {
     return !matched || matched[matched.length - 1].route.path === '*';
   }, [pathname]);
 
-  // The rail collapses to icons on its own below the lg breakpoint (1024px), and also as soon as
-  // the expanded rail would squeeze a page below the width it asked for (useContentMinWidth, e.g.
-  // a table's natural width). The user's own toggle wins until that automatic choice changes.
-  const belowLg = useMediaQuery('(max-width: 1023px)');
-  const [contentMinWidth, setContentMinWidth] = useState(null);
-  const [viewportWidth, setViewportWidth] = useState(() => (typeof window === 'undefined' ? 1440 : window.innerWidth));
-  useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-  // Content width beside the expanded rail: the viewport minus the w-64 rail, its border and the
-  // main area's horizontal padding (px-6).
-  const roomBesideRail = viewportWidth - 256 - 1 - 48;
-  const autoCollapsed = belowLg || (contentMinWidth != null && roomBesideRail < contentMinWidth);
+  // The rail collapses to icons on its own below the lg breakpoint (1024px), by the window width
+  // alone; a page wider than the room left scrolls sideways instead. The user's own toggle wins
+  // until that automatic choice changes. Only then can it be toggled: the expand button sits left
+  // of the page title and the sidebars show their collapse button (showCollapse); otherwise the
+  // rail stays expanded.
+  const autoCollapsed = useMediaQuery('(max-width: 1023px)');
   const [collapseOverride, setCollapseOverride] = useState(null);
   useEffect(() => {
     setCollapseOverride(null);
@@ -103,6 +99,20 @@ export default function MainLayout() {
 
   const toggleCollapse = () => setCollapseOverride(!collapsed);
   const openCommand = () => setCommandOpen(true);
+  // One search for the whole panel: every search button opens the palette, and a settings page
+  // lists its cards there (read when the palette opens).
+  const pageIndex = useRef(null);
+  // Created once, so pages that register their index do not re-register on every render.
+  const [searchApi] = useState(() => ({
+    openSearch: () => setCommandOpen(true),
+    registerPageIndex: (fn) => {
+      pageIndex.current = fn;
+      return () => {
+        if (pageIndex.current === fn) pageIndex.current = null;
+      };
+    }
+  }));
+  const getPageEntries = useCallback(() => pageIndex.current?.() ?? [], []);
   // 抽屉里点搜索:先收起抽屉再开搜索弹窗。
   const openCommandFromDrawer = () => {
     setMobileOpen(false);
@@ -124,64 +134,73 @@ export default function MainLayout() {
 
   return (
     <AuthGuard>
-      <SettingsPlaneContext.Provider value={settingsPlane ? planeState : null}>
-        <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
-          <MobilePushFrame
-            open={mobileOpen}
-            onClose={() => setMobileOpen(false)}
-            sidebar={
-              /* Desktop rail (full height) */
-              <aside
-                className={cn(
-                  'hidden shrink-0 border-r border-border transition-[width] duration-200 md:block',
-                  collapsed ? 'w-24' : 'w-64'
-                )}
-              >
-                <SidebarView context={context} collapsed={collapsed} onToggleCollapse={toggleCollapse} onOpenCommand={openCommand} />
-              </aside>
-            }
-            drawer={
-              <SidebarView
-                context={context}
-                collapsed={false}
-                onItemClick={() => setMobileOpen(false)}
-                onToggleCollapse={() => setMobileOpen(false)}
-                onOpenCommand={openCommandFromDrawer}
-              />
-            }
-          >
-            {/* Content column (pushed right while the mobile drawer is open) */}
-            <main className="flex-1 overflow-y-auto px-4 pb-4 pt-4 sm:px-6 sm:pb-6">
-              {/* Unread site announcement: one row above the page title, gone once read or closed. */}
-              <NoticeBanner className="mb-4" />
-              {pageHeader ? (
-                <PageHeader
-                  title={pageHeader.title}
-                  subtitle={pageHeader.subtitle}
-                  back={pageHeader.back}
-                  leading={toggle}
-                  actionsRef={setActionsSlot}
-                  titleExtraRef={setTitleExtraSlot}
+      <SearchContext.Provider value={searchApi}>
+        <SettingsPlaneContext.Provider value={settingsPlane ? planeState : null}>
+          <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground">
+            <MobilePushFrame
+              open={mobileOpen}
+              onClose={() => setMobileOpen(false)}
+              sidebar={
+                /* Desktop rail (full height) */
+                <aside
+                  className={cn(
+                    'hidden shrink-0 border-r border-border transition-[width] duration-200 md:block',
+                    collapsed ? 'w-14' : 'w-64'
+                  )}
+                >
+                  {/* Every sidebar shows its collapse button only where the rail collapses by
+                    itself (narrow screens); wide screens keep it expanded. */}
+                  <SidebarView
+                    context={context}
+                    collapsed={collapsed}
+                    showCollapse={autoCollapsed}
+                    onToggleCollapse={toggleCollapse}
+                    onOpenCommand={openCommand}
+                  />
+                </aside>
+              }
+              drawer={
+                <SidebarView
+                  context={context}
+                  collapsed={false}
+                  showCollapse
+                  onItemClick={() => setMobileOpen(false)}
+                  onToggleCollapse={() => setMobileOpen(false)}
+                  onOpenCommand={openCommandFromDrawer}
                 />
-              ) : (
-                /* 当前页没有标题时按钮单独占一行,电脑端侧栏展开时整行隐藏 */
-                <div className={cn('mb-4 flex', !collapsed && 'md:hidden')}>{toggle}</div>
-              )}
-              <PageHeaderOverrideContext.Provider value={setHeaderOverride}>
-                <PageActionsContext.Provider value={actionsSlot}>
-                  <PageTitleExtraContext.Provider value={titleExtraSlot}>
-                    <ContentMinWidthContext.Provider value={setContentMinWidth}>
+              }
+            >
+              {/* Content column (pushed right while the mobile drawer is open) */}
+              <main className="flex-1 overflow-y-auto px-4 pb-4 pt-4 sm:px-6 sm:pb-6">
+                {/* Unread site announcement: one row above the page title, gone once read or closed. */}
+                <NoticeBanner className="mb-4" />
+                {pageHeader ? (
+                  <PageHeader
+                    title={pageHeader.title}
+                    subtitle={pageHeader.subtitle}
+                    back={pageHeader.back}
+                    leading={toggle}
+                    actionsRef={setActionsSlot}
+                    titleExtraRef={setTitleExtraSlot}
+                  />
+                ) : (
+                  /* 当前页没有标题时按钮单独占一行,电脑端侧栏展开时整行隐藏 */
+                  <div className={cn('mb-4 flex', !collapsed && 'md:hidden')}>{toggle}</div>
+                )}
+                <PageHeaderOverrideContext.Provider value={setHeaderOverride}>
+                  <PageActionsContext.Provider value={actionsSlot}>
+                    <PageTitleExtraContext.Provider value={titleExtraSlot}>
                       <Outlet />
-                    </ContentMinWidthContext.Provider>
-                  </PageTitleExtraContext.Provider>
-                </PageActionsContext.Provider>
-              </PageHeaderOverrideContext.Provider>
-            </main>
-          </MobilePushFrame>
+                    </PageTitleExtraContext.Provider>
+                  </PageActionsContext.Provider>
+                </PageHeaderOverrideContext.Provider>
+              </main>
+            </MobilePushFrame>
 
-          <CommandMenu open={commandOpen} setOpen={setCommandOpen} />
-        </div>
-      </SettingsPlaneContext.Provider>
+            <CommandMenu open={commandOpen} setOpen={setCommandOpen} getPageEntries={getPageEntries} />
+          </div>
+        </SettingsPlaneContext.Provider>
+      </SearchContext.Provider>
     </AuthGuard>
   );
 }

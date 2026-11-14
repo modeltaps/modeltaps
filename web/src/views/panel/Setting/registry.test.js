@@ -193,6 +193,10 @@ describe('model supply options', () => {
     expect(cardById('supply-pause-rules')).toMatchObject({ groupId: 'gateway', kind: 'form', keys: ['PauseRulesEnabled', 'PauseRules'] });
   });
 
+  it('the default supply mode is a gateway form card', () => {
+    expect(cardById('supply-mode')).toMatchObject({ groupId: 'gateway', kind: 'form', keys: ['SupplyModeDefault'] });
+  });
+
   it('pause rules must be empty or a JSON array', () => {
     expect(pauseRulesError('')).toBeNull();
     expect(pauseRulesError('  ')).toBeNull();

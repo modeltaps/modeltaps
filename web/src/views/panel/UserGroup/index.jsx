@@ -1,35 +1,67 @@
 import { useMemo, useState } from 'react';
+import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
 import { Plus, RotateCcw } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import DataCards from '@/components/ui/data-cards';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ROW_OPENS, RowControl, rowOpenProps, useObjectRoute } from '@/components/objects';
+import { ColumnPicker, ListEmptyState, ListFooter, ListSkeleton, useColumnVisibility, useListLayout } from '@/components/list-page';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import PageActions from '@/components/chrome/PageActions';
 import { API } from 'utils/api';
 import { showError, showSuccess } from 'utils/common';
-import { PAGE_SIZE_OPTIONS } from 'constants';
 import usePaginatedList from 'hooks/usePaginatedList';
 import UserGroupPanel from './UserGroupPanel';
 import NewUserGroupSheet from './NewUserGroupSheet';
 import { StatusCell, ActionsCell } from './UserGroupRowCells';
-import Pagination from '../components/Pagination';
 
-const boolBadge = (t, v) => (
-  <Badge variant="outline" className={v ? 'border-border text-foreground' : 'border-destructive text-destructive'}>
-    {v ? t('common.yes') : t('common.no')}
-  </Badge>
-);
+// Columns: name (with the symbol) and the row menu are fixed; the id is one click away.
+const GROUP_COLUMNS = [
+  { id: 'id', labelKey: 'userGroup.id', defaultHidden: true },
+  { id: 'name', fixed: true },
+  { id: 'ratio', labelKey: 'userGroup.ratio' },
+  { id: 'api_rate', labelKey: 'userGroup.rateLimit' },
+  { id: 'public', labelKey: 'userGroup.publicShort' },
+  { id: 'promotion', labelKey: 'userGroup.promotion' },
+  { id: 'enable', labelKey: 'userGroup.enableShort' },
+  { id: 'action', fixed: true }
+];
 
-// 用户分组列表:点一行在右侧打开分组面板(?id=,整张保存),新建用右侧面板(?new=1),只填标识和名称。
+const money = (v) => `$${Number(v || 0).toLocaleString()}`;
+
+// Auto-promotion as one condition: users whose cumulative top-up falls in [min, max) move into this
+// group; max 0 means no upper bound. A muted dash while promotion is off.
+export function promotionText(t, group) {
+  if (!group.promotion) return null;
+  if (!group.max) return t('userGroup.promotionFrom', { min: money(group.min) });
+  return t('userGroup.promotionRange', { min: money(group.min), max: money(group.max) });
+}
+
+function Dash() {
+  return <span className="text-muted-foreground">—</span>;
+}
+
+// One line: the display name, then the symbol in mono after it.
+function NameCell({ group }) {
+  return (
+    <span className="flex min-w-0 items-center gap-2 whitespace-nowrap">
+      <span className="truncate font-medium">{group.name || group.symbol}</span>
+      <code className="shrink-0 font-mono text-xs text-muted-foreground">{group.symbol}</code>
+    </span>
+  );
+}
+
+NameCell.propTypes = { group: PropTypes.object.isRequired };
+
+// User groups: a row opens the group panel (?id=, saved as a whole); the new group sheet (?new=1)
+// asks only for the symbol and the name.
 export default function UserGroup() {
   const { t } = useTranslation();
   const route = useObjectRoute(['settings']);
@@ -37,13 +69,14 @@ export default function UserGroup() {
   // Bumped after a list action so an open group panel reloads.
   const [reloadKey, setReloadKey] = useState(0);
 
-  // 分页列表状态 + 守卫化 fetch 生命周期(UX-13);本页固定 order=-id,无表头排序。
+  // Paginated list (fixed order -id; no header sorting on this page).
   const {
     page,
     setPage,
     rowsPerPage,
     listCount,
     searching,
+    loaded,
     rows: groups,
     refresh,
     onRowsPerPageChange
@@ -83,32 +116,43 @@ export default function UserGroup() {
     if (item) manageUserGroup(item.id, 'delete');
   };
 
+  const columnState = useColumnVisibility({ storageKey: 'user-group-column-visibility-v1', columns: GROUP_COLUMNS });
+  // Full table while it fits (the sidebar collapses first), phone list otherwise.
+  const { narrow } = useListLayout();
+
   const columns = useMemo(
     () => [
-      { accessorKey: 'id', header: t('userGroup.id') },
-      { accessorKey: 'symbol', header: t('userGroup.symbol') },
-      { accessorKey: 'name', header: t('userGroup.name') },
-      { accessorKey: 'ratio', header: t('userGroup.ratio') },
-      { accessorKey: 'api_rate', header: t('userGroup.apiRate') },
-      { accessorKey: 'public', header: t('userGroup.public'), cell: (c) => boolBadge(t, c.getValue()) },
-      { accessorKey: 'promotion', header: t('userGroup.promotion'), cell: (c) => boolBadge(t, c.getValue()) },
-      { accessorKey: 'min', header: t('userGroup.min') + '($)' },
-      { accessorKey: 'max', header: t('userGroup.max') + '($)' },
+      { id: 'id', header: t('userGroup.id'), cell: (c) => <span className="tabular-nums text-muted-foreground">{c.row.original.id}</span> },
+      { id: 'name', header: t('userGroup.name'), meta: { className: 'max-w-72' }, cell: (c) => <NameCell group={c.row.original} /> },
+      {
+        id: 'ratio',
+        header: t('userGroup.ratio'),
+        meta: { className: 'text-right' },
+        cell: (c) => <span className="tabular-nums">×{c.row.original.ratio}</span>
+      },
+      {
+        id: 'api_rate',
+        header: t('userGroup.rateLimit'),
+        meta: { className: 'text-right' },
+        cell: (c) => <span className="tabular-nums">{t('userGroup.perMinute', { count: c.row.original.api_rate })}</span>
+      },
+      { id: 'public', header: t('userGroup.publicShort'), cell: (c) => (c.row.original.public ? t('userGroup.publicYes') : <Dash />) },
+      { id: 'promotion', header: t('userGroup.promotion'), cell: (c) => promotionText(t, c.row.original) || <Dash /> },
       {
         id: 'enable',
-        header: t('userGroup.enable'),
+        header: t('userGroup.enableShort'),
         cell: (c) => (
-          <RowControl>
+          <RowControl className="flex">
             <StatusCell item={c.row.original} onToggle={toggle} />
           </RowControl>
         )
       },
       {
         id: 'action',
-        header: t('userPage.action'),
+        header: () => <span className="sr-only">{t('userPage.action')}</span>,
         meta: { className: 'sticky right-0 bg-card z-10 text-right w-[1%]' },
         cell: (c) => (
-          <RowControl>
+          <RowControl className="justify-end">
             <ActionsCell item={c.row.original} onOpen={(id) => route.open(id)} onDelete={setPendingDelete} />
           </RowControl>
         )
@@ -117,16 +161,99 @@ export default function UserGroup() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [t, route.openId]
   );
+  const table = useTable({ features: appTableFeatures, data: groups, columns, state: { columnVisibility: columnState.visibility } });
 
-  const table = useTable({
-    features: appTableFeatures,
-    data: groups,
-    columns
-  });
+  let body;
+  if (!loaded) {
+    body = <ListSkeleton layout={narrow ? 'list' : 'table'} rows={3} checkbox={false} cells={[48, 72, 120, 32]} />;
+  } else if (!searching && groups.length === 0) {
+    body = (
+      <ListEmptyState
+        title={t('userGroup.emptyTitle')}
+        action={
+          <Button size="sm" onClick={route.openNew}>
+            <Plus className="size-4" /> {t('userGroup.create')}
+          </Button>
+        }
+      />
+    );
+  } else if (narrow) {
+    // Phone list: one 56px row per group. Name and symbol with the ratio on the right, then
+    // public · auto-promotion · rate limit; the switch and the row menu at the end.
+    body = (
+      <ul className="divide-y divide-border">
+        {groups.map((g) => {
+          const promo = promotionText(t, g);
+          return (
+            <li
+              key={g.id}
+              className={cn('flex h-14 items-center gap-3 px-4', ROW_OPENS, g.id === route.openId && 'bg-muted/60')}
+              {...rowOpenProps(() => route.open(g.id))}
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline gap-2">
+                  <span className={cn('min-w-0 truncate text-sm font-medium', !g.enable && 'text-muted-foreground')}>
+                    {g.name || g.symbol}
+                  </span>
+                  <code className="shrink-0 font-mono text-xs text-muted-foreground">{g.symbol}</code>
+                  <span className="ml-auto shrink-0 text-sm tabular-nums">×{g.ratio}</span>
+                </div>
+                <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                  {[g.public ? t('userGroup.publicYes') : null, promo, t('userGroup.perMinute', { count: g.api_rate })]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </div>
+              </div>
+              <div className="-mr-2 flex shrink-0 items-center gap-1">
+                <RowControl className="flex">
+                  <StatusCell item={g} onToggle={toggle} />
+                </RowControl>
+                <RowControl>
+                  <ActionsCell item={g} onOpen={(id) => route.open(id)} onDelete={setPendingDelete} />
+                </RowControl>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  } else {
+    body = (
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((hg) => (
+            <TableRow key={hg.id} className="hover:bg-transparent">
+              {hg.headers.map((h) => (
+                <TableHead key={h.id} className={cn('whitespace-nowrap', h.column.columnDef.meta?.className)}>
+                  {flexRender(h.column.columnDef.header, h.getContext())}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows.map((row) => (
+            <TableRow
+              key={row.id}
+              className={cn(ROW_OPENS, !row.original.enable && 'text-muted-foreground')}
+              data-state={row.original.id === route.openId ? 'selected' : undefined}
+              {...rowOpenProps(() => route.open(row.original.id))}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id} className={cn('whitespace-nowrap', cell.column.columnDef.meta?.className)}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* 标题行右侧操作:刷新(图标) → 新建,对齐 User / ModelInfo 页。 */}
+    <div className="space-y-3">
+      {/* Title row: refresh (icon), then create. */}
       <PageActions>
         <TooltipProvider delayDuration={150}>
           <Tooltip>
@@ -149,63 +276,17 @@ export default function UserGroup() {
         <ResponsiveToolbarButton primary icon={Plus} label={t('userGroup.create')} onClick={route.openNew} />
       </PageActions>
 
-      <Card>
-        <div className="hidden md:block">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((hg) => (
-                <TableRow key={hg.id} className="hover:bg-transparent">
-                  {hg.headers.map((h) => (
-                    <TableHead key={h.id} className={`whitespace-nowrap ${h.column.columnDef.meta?.className ?? ''}`}>
-                      {flexRender(h.column.columnDef.header, h.getContext())}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.length === 0 ? (
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={columns.length} className="py-10 text-center text-sm text-muted-foreground">
-                    {t('common.noData', { defaultValue: 'No data' })}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    className={ROW_OPENS}
-                    data-state={row.original.id === route.openId ? 'selected' : undefined}
-                    {...rowOpenProps(() => route.open(row.original.id))}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
-                        {flexRender(cell.column.columnDef.cell ?? cell.getValue, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+      {!narrow && (
+        <div className="flex justify-end">
+          <ColumnPicker columns={columnState} />
         </div>
-        <DataCards
-          table={table}
-          className="md:hidden"
-          primaryColumnId="name"
-          actionColumnIds={['action']}
-          empty={t('common.noData', { defaultValue: 'No data' })}
-          searching={searching}
-          onRowClick={(g) => route.open(g.id)}
-        />
-        <Pagination
-          page={page}
-          rowsPerPage={rowsPerPage}
-          count={listCount}
-          options={PAGE_SIZE_OPTIONS}
-          onPageChange={setPage}
-          onRowsPerPageChange={onRowsPerPageChange}
-        />
+      )}
+
+      <Card>
+        {body}
+        <div className="border-t border-border">
+          <ListFooter total={listCount} page={page} pageSize={rowsPerPage} onPageChange={setPage} onPageSizeChange={onRowsPerPageChange} />
+        </div>
       </Card>
 
       {route.openId > 0 && (

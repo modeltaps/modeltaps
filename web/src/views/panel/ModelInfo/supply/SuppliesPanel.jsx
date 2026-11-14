@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { ArrowDown, ArrowUp, ArrowUpRight, Loader2, MoreHorizontal, Pause, Pencil, Play, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpRight, Link2, Loader2, MoreHorizontal, Pause, Pencil, Play, Plus, Trash2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ import {
 import ProviderIcon from '@/components/brand/ProviderIcon';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
 import {
+  batchSupplies,
   createSupply,
   deleteSupply,
   listPauses,
@@ -30,6 +31,7 @@ import {
   pauseSupply,
   previewSupplies,
   resumePause,
+  suggestUpstream,
   updateSupply
 } from './supplyApi';
 import {
@@ -37,6 +39,7 @@ import {
   SUPPLY_MODES,
   channelGroups,
   defaultNewPriority,
+  followsChannel,
   moveSupply,
   normalizeSupplyMode,
   parseSupplyForm,
@@ -48,11 +51,12 @@ import {
   supplyUpdateBody,
   upstreamFor
 } from './supplyHelpers';
-import { SupplyStateLabel, SupplySwitchNote, durationLabel } from './supplyParts';
+import { SupplyStateLabel, SupplySwitchNote, UpstreamName, durationLabel } from './supplyParts';
+import { setModelAllocation } from '../../Allocation/allocationApi';
 
 const channelTypeName = (type) => CHANNEL_OPTIONS[type]?.text || `#${type}`;
 
-// Two-option switch for the supply mode, saved as soon as it changes.
+// Switch for the supply mode (follow the default, balance, failover), saved as soon as it changes.
 function ModeSwitch({ value, onChange, disabled }) {
   const { t } = useTranslation();
   return (
@@ -66,7 +70,7 @@ function ModeSwitch({ value, onChange, disabled }) {
           disabled={disabled}
           onClick={() => value !== mode && onChange(mode)}
           className={cn(
-            'h-7 rounded-lg px-3 text-[13px] font-medium transition-colors disabled:opacity-50',
+            'h-7 rounded-md px-3 text-[13px] font-medium transition-colors disabled:opacity-50',
             value === mode ? 'bg-control-thumb text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
           )}
         >
@@ -111,6 +115,26 @@ function AddSupplyForm({ model, channels, supplies, onCancel, onAdded }) {
     weight: '1'
   }));
   const [saving, setSaving] = useState(false);
+  const [upstreamSource, setUpstreamSource] = useState('');
+
+  // The backend knows more than the channel's mapping (the channel's own list and how its
+  // platform names the model), so ask it whenever the channel changes.
+  useEffect(() => {
+    if (!channelId) return undefined;
+    let cancelled = false;
+    suggestUpstream({ model, channel_id: Number(channelId) })
+      .then(({ success, data }) => {
+        if (cancelled || !success || !data?.upstream_model) return;
+        setForm((f) => ({ ...f, upstream_model: data.upstream_model }));
+        setUpstreamSource(data.source || '');
+      })
+      .catch(() => {
+        /* keep the mapping-based guess */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [channelId, model]);
 
   const toOption = (c) => ({
     value: String(c.id),
@@ -125,6 +149,7 @@ function AddSupplyForm({ model, channels, supplies, onCancel, onAdded }) {
 
   const pickChannel = (value) => {
     setChannelId(value);
+    setUpstreamSource('');
     const channel = channels.find((c) => String(c.id) === value);
     if (channel) setForm((f) => ({ ...f, upstream_model: upstreamFor(channel, model) }));
   };
@@ -171,9 +196,13 @@ function AddSupplyForm({ model, channels, supplies, onCancel, onAdded }) {
           <Input
             id="supply-upstream"
             value={form.upstream_model}
-            onChange={(e) => setForm({ ...form, upstream_model: e.target.value })}
+            onChange={(e) => {
+              setForm({ ...form, upstream_model: e.target.value });
+              setUpstreamSource('');
+            }}
             className="rounded-[10px] font-mono"
           />
+          {upstreamSource === 'library' && <p className="text-xs text-muted-foreground">{t('modelSupply.add.fromLibrary')}</p>}
         </div>
       </div>
       <div className="flex flex-wrap items-end gap-3">
@@ -303,6 +332,10 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
     if (await onAction('update', supply, parsed)) setEditing(null);
   };
 
+  // Its own priority or weight: a change to the channel's numbers will not move this supply.
+  // Supplies on the allocation policy take the policy's numbers, so this does not apply.
+  const own = !supply.follows_policy && !followsChannel(supply);
+
   const channelCell = (
     <div className="flex min-w-0 items-center gap-2">
       <span className={cn('inline-flex shrink-0', state.kind === 'channel_off' && 'opacity-40 grayscale')}>
@@ -329,6 +362,12 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
           )}
         </div>
         <p className="truncate text-xs text-muted-foreground" title={groupsText || undefined}>
+          {own && !outsideGroup && (
+            <span className="text-foreground" title={t('modelSupply.ownNumbersTip')}>
+              {t('modelSupply.ownNumbers')}
+              {' · '}
+            </span>
+          )}
           {outsideGroup
             ? t('modelSupply.preview.outsideRow', { group: outsideGroup })
             : [channelTypeName(supply.channel_type), supply.channel_tag, groupsText].filter(Boolean).join(' · ')}
@@ -387,8 +426,8 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
       )}
     >
       <td>{channelCell}</td>
-      <td className="max-w-0 truncate font-mono text-[13px] text-muted-foreground" title={supply.upstream_model}>
-        {supply.upstream_model}
+      <td className="py-1.5">
+        <UpstreamName upstream={supply.upstream_model} model={supply.model} />
       </td>
       <td className="whitespace-nowrap text-right tabular-nums">
         {supply.weight || 1}
@@ -432,6 +471,14 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
                 <ArrowDown className="size-4" />
                 {t('modelSupply.moveDown')}
               </DropdownMenuItem>
+              {own && (
+                <DropdownMenuItem
+                  onClick={() => onAction('update', supply, { priority: supply.channel_priority, weight: supply.channel_weight })}
+                >
+                  <Link2 className="size-4" />
+                  {t('modelSupply.followChannel')}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               {pauses.length > 0 ? (
                 pauses.map((p) => (
@@ -478,7 +525,7 @@ SupplyRow.propTypes = {
 
 // "Supplies" tab of the model panel: which channels serve this public model, in priority tiers.
 // Every change is saved right away; the supply mode switch saves the model row.
-export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, channels = [], switches = null, onChanged }) {
+export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyModeChange, channels = [], switches = null, onChanged }) {
   const { t } = useTranslation();
   // `preview` is every supply in order with its state; `groupPreview` the same for a request
   // from `group` only. Both come from the preview API.
@@ -491,6 +538,7 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
   const [adding, setAdding] = useState(false);
   const [busyId, setBusyId] = useState(0);
   const [modeSaving, setModeSaving] = useState(false);
+  const [allocationSaving, setAllocationSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const mode = normalizeSupplyMode(supplyMode);
 
@@ -554,6 +602,13 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
     [group, groupPreview]
   );
 
+  // Enabled channels that list this model and are not a supply yet: one click adds them with the
+  // suggested upstream name and the channel's own priority and weight.
+  const available = useMemo(
+    () => (supplies ? supplyCandidates(channels, supplies, model).offering.filter((c) => c.status === 1) : []),
+    [channels, supplies, model]
+  );
+
   const run = async (id, fn) => {
     setBusyId(id);
     try {
@@ -572,15 +627,27 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
     }
   };
 
+  // Renumbering a supply of a model on the allocation policy makes the model manual (the server
+  // keeps the other supplies where the policy put them).
+  const noteManual = (ok) => {
+    if (ok && allocation === 'policy') toast.success(t('modelSupply.allocation.becameManual'));
+    return ok;
+  };
+
   const onAction = async (kind, supply, arg) => {
     switch (kind) {
-      case 'update':
-        return run(supply.id, () => updateSupply(supplyUpdateBody(supply, arg)));
+      case 'update': {
+        const renumber = arg && (arg.priority !== undefined || arg.weight !== undefined);
+        const ok = await run(supply.id, () => updateSupply(supplyUpdateBody(supply, arg)));
+        return renumber ? noteManual(ok) : ok;
+      }
       case 'move': {
         const changes = moveSupply(supplies, supply.id, arg);
         const byId = new Map(supplies.map((s) => [s.id, s]));
-        return run(supply.id, () =>
-          Promise.all(changes.map((c) => updateSupply(supplyUpdateBody(byId.get(c.id), { priority: c.priority }))))
+        return noteManual(
+          await run(supply.id, () =>
+            Promise.all(changes.map((c) => updateSupply(supplyUpdateBody(byId.get(c.id), { priority: c.priority }))))
+          )
         );
       }
       case 'pause': {
@@ -601,11 +668,33 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
     }
   };
 
+  const quickAdd = async (channel) => {
+    // Negative ids keep the row spinner apart from supply ids.
+    const ok = await run(-channel.id, () => batchSupplies({ action: 'add', channel_id: channel.id, models: [model] }));
+    if (ok) toast.success(t('modelSupply.add.done'));
+  };
+
   const confirmDelete = async () => {
     const target = deleteTarget;
     setDeleteTarget(null);
     const ok = await run(target.id, () => deleteSupply(target.id));
     if (ok) toast.success(t('modelSupply.deleted'));
+  };
+
+  const allocation = preview?.allocation || '';
+  const changeAllocation = async (next) => {
+    if (!catalogId) return;
+    setAllocationSaving(true);
+    try {
+      const res = await setModelAllocation({ ids: [catalogId], allocation: next });
+      if (!res.success) return toast.error(res.message);
+      toast.success(t(next === 'manual' ? 'modelSupply.allocation.nowManual' : 'modelSupply.allocation.nowPolicy'));
+      await reload();
+    } catch {
+      /* shown by the API client */
+    } finally {
+      setAllocationSaving(false);
+    }
   };
 
   const changeMode = async (next) => {
@@ -625,9 +714,42 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
 
   return (
     <div className="space-y-4">
+      {allocation && (
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-[13px] text-muted-foreground">{t('modelSupply.allocation.label')}</span>
+          <span className="text-[13px]">
+            {t(allocation === 'manual' ? 'modelSupply.allocation.manual' : 'modelSupply.allocation.policy')}
+          </span>
+          <Link to="/panel/channel" className="text-[13px] text-info underline-offset-2 hover:underline">
+            {t('modelSupply.allocation.open')}
+          </Link>
+          <span className="flex-1" />
+          {catalogId > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-[10px]"
+              disabled={allocationSaving}
+              onClick={() => changeAllocation(allocation === 'manual' ? 'policy' : 'manual')}
+            >
+              {allocationSaving && <Loader2 className="size-4 animate-spin" />}
+              {t(allocation === 'manual' ? 'modelSupply.allocation.toPolicy' : 'modelSupply.allocation.toManual')}
+            </Button>
+          )}
+        </div>
+      )}
+      {allocation && (
+        <p className="-mt-2 text-xs text-muted-foreground">
+          {t(allocation === 'manual' ? 'modelSupply.allocation.manualHint' : 'modelSupply.allocation.policyHint')}
+        </p>
+      )}
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-[13px] text-muted-foreground">{t('modelSupply.mode.label')}</span>
-        <ModeSwitch value={mode} onChange={changeMode} disabled={modeSaving || !onSupplyModeChange} />
+        {allocation !== 'policy' && (
+          <>
+            <span className="text-[13px] text-muted-foreground">{t('modelSupply.mode.label')}</span>
+            <ModeSwitch value={mode} onChange={changeMode} disabled={modeSaving || !onSupplyModeChange} />
+          </>
+        )}
         <span className="flex-1" />
         {!adding && (
           <Button variant="outline" size="sm" className="rounded-[10px]" onClick={() => setAdding(true)} disabled={supplies === null}>
@@ -636,7 +758,15 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
           </Button>
         )}
       </div>
-      <p className="-mt-2 text-xs text-muted-foreground">{t(`modelSupply.mode.${mode}Hint`)}</p>
+      {allocation !== 'policy' && (
+        <p className="-mt-2 text-xs text-muted-foreground">
+          {mode === 'default'
+            ? t('modelSupply.mode.defaultHint', {
+                mode: t(`modelSupply.mode.${preview?.default_mode === 'failover' ? 'failover' : 'balance'}`)
+              })
+            : t(`modelSupply.mode.${mode}Hint`)}
+        </p>
+      )}
 
       <SupplySwitchNote switches={switches} active={preview?.active} />
 
@@ -672,10 +802,10 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
         <div className="overflow-x-auto rounded-[10px] border border-border">
           <table className="w-full min-w-[480px] table-fixed border-collapse text-[13px]">
             <colgroup>
-              <col className="w-[30%]" />
+              <col className="w-[28%]" />
               <col />
               <col className="w-[4.5rem]" />
-              <col className="w-[26%]" />
+              <col className="w-[18%]" />
               <col className="w-[5.5rem]" />
             </colgroup>
             <thead>
@@ -694,7 +824,11 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
                 <tr>
                   <td colSpan={5} className="border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
                     <span className="text-foreground">{tierLabel(index)}</span>
-                    <span className="ml-2 tabular-nums">{t('modelSupply.tier.priority', { priority: tier.priority })}</span>
+                    {/* On the allocation policy the numbers are computed from the call order and mean
+                        nothing on their own; a manual model shows the priority it was given. */}
+                    {allocation !== 'policy' && (
+                      <span className="ml-2 tabular-nums">{t('modelSupply.tier.priority', { priority: tier.priority })}</span>
+                    )}
                     {view && serving.priority === tier.priority && <span> · {t('modelSupply.preview.servingTier')}</span>}
                   </td>
                 </tr>
@@ -725,6 +859,36 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
 
       {supplies && supplies.length > 0 && <p className="text-xs text-muted-foreground">{t('modelSupply.orderHint')}</p>}
 
+      {available.length > 0 && (
+        <section className="space-y-2" aria-label={t('modelSupply.available.title')}>
+          <div className="flex items-baseline justify-between gap-3">
+            <h3 className="text-sm font-medium">{t('modelSupply.available.title')}</h3>
+            <span className="text-xs text-muted-foreground">{t('modelSupply.available.hint')}</span>
+          </div>
+          <ul className="divide-y divide-border rounded-[10px] border border-dashed border-border">
+            {available.map((c) => (
+              <li key={c.id} data-testid="supply-available" className="flex items-center gap-2 px-3 py-2">
+                <ProviderIcon type={c.type} name={c.name} baseUrl={c.base_url} className="size-4 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px]" title={c.name}>
+                    {c.name}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {[channelTypeName(c.type), c.tag, t('channels.usage.numbers', { priority: c.priority ?? 0, weight: c.weight || 1 })]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" className="h-[30px] rounded-lg" disabled={busyId === -c.id} onClick={() => quickAdd(c)}>
+                  {busyId === -c.id ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+                  {t('modelSupply.add.submit')}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
@@ -749,6 +913,7 @@ export default function SuppliesPanel({ model, supplyMode, onSupplyModeChange, c
 
 SuppliesPanel.propTypes = {
   model: PropTypes.string.isRequired,
+  catalogId: PropTypes.number,
   supplyMode: PropTypes.string,
   onSupplyModeChange: PropTypes.func,
   channels: PropTypes.array,

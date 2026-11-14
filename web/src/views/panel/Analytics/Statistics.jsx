@@ -1,44 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { Activity, CreditCard, Download, Network, Users, Wallet } from 'lucide-react';
+import { Check, ChevronDown, Download } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import StatCard, { MetricStrip } from '../Dashboard/StatCard';
 import { API } from 'utils/api';
 import { formatSpendAmount, renderQuota, showError, showSuccess } from 'utils/common';
 import { createRequestGuard, runGuardedFetch } from 'hooks/paginatedListGuard';
 
 // ==============================|| ANALYTICS — STATISTICS CARDS ||============================== //
-// shadcn/Tailwind port of views/Analytics/component/Statistics. Same
-// `/api/analytics/statistics` + `/api/analytics/recharge` endpoints; only the UI is new.
+// Same `/api/analytics/statistics` + `/api/analytics/recharge` endpoints. Four stat cards (a label,
+// the figure and one line of context, no icons) and the real-time traffic on a quiet strip below.
+// The recharge card's label is its period menu, which also holds the CSV export.
 
 function csvCell(value) {
   const s = value === null || value === undefined ? '' : String(value);
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
-
-function StatTile({ icon: Icon, title, content, subContent, accent = false, loading = false, filter = null }) {
-  return (
-    <Card className={accent ? 'border-foreground/30' : undefined}>
-      <CardContent className="flex flex-col gap-2 p-5">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-medium text-muted-foreground">{title}</span>
-          {filter}
-          {Icon && <Icon className={accent ? 'size-4 text-foreground' : 'size-4 text-muted-foreground'} />}
-        </div>
-        {loading ? (
-          <div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
-        ) : (
-          <span className="font-mono text-2xl font-medium tabular-nums text-foreground">
-            {content}
-          </span>
-        )}
-        {subContent && <span className="text-xs leading-relaxed text-muted-foreground">{subContent}</span>}
-      </CardContent>
-    </Card>
-  );
 }
 
 export default function Statistics() {
@@ -144,111 +128,89 @@ export default function Statistics() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const cny = (usd) => (siteInfo.PaymentUSDRate ? formatSpendAmount(usd * siteInfo.PaymentUSDRate, '¥') : undefined);
+  const cnyHint = siteInfo.PaymentUSDRate ? t('analytics_index.cnyEstimateNote', { rate: siteInfo.PaymentUSDRate }) : undefined;
+
+  const rechargeLabel = (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="-mx-1 inline-flex items-center gap-1 rounded px-1 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        {t('analytics_index.recharge')} · {t(`analytics_index.timeFilter.${timeFilter}`)}
+        <ChevronDown className="size-3.5" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-40">
+        {timeFilterOptions.map((o) => (
+          <DropdownMenuItem
+            key={o}
+            className="justify-between"
+            onClick={() => {
+              setTimeFilter(o);
+              fetchRecharge(o);
+            }}
+          >
+            {t(`analytics_index.timeFilter.${o}`)}
+            {o === timeFilter && <Check className="size-4" />}
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleExportRecharge} disabled={rechargeLoading}>
+          <Download className="size-4" />
+          {t('analytics_index.rechargeExportButton')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-      <StatTile
-        icon={Wallet}
+    <div className="space-y-3 sm:space-y-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StatCard
+          loading={basicLoading}
+          label={t('analytics_index.totalUserSpending')}
+          value={user.total_used_quota || '0'}
+          hint={`${t('analytics_index.totalUserBalance')} ${user.total_quota || '0'}`}
+        />
+        <StatCard
+          loading={basicLoading}
+          label={t('analytics_index.totalUsers')}
+          value={user.total_user || '0'}
+          hint={`${t('analytics_index.invitationRegistration')} ${user.total_inviter_user || 0}`}
+        />
+        <StatCard
+          loading={basicLoading}
+          label={t('analytics_index.channelCount')}
+          value={channel.total}
+          hint={[
+            `${t('analytics_index.active')} ${channel.active}`,
+            channel.disabled ? `${t('analytics_index.disabled')} ${channel.disabled}` : null,
+            channel.test_disabled ? `${t('analytics_index.testDisabled')} ${channel.test_disabled}` : null
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        />
+        <StatCard
+          loading={rechargeLoading}
+          label={rechargeLabel}
+          value={recharge.total}
+          hint={`${t('analytics_index.redemptionCode')} ${recharge.Redemption} · ${t('analytics_index.order')} ${recharge.Order}`}
+        />
+      </div>
+      <MetricStrip
         loading={basicLoading}
-        title={t('analytics_index.totalUserSpending')}
-        content={user.total_used_quota || '0'}
-        subContent={`${t('analytics_index.totalUserBalance')}：${user.total_quota || '0'}`}
-      />
-      <StatTile
-        icon={Users}
-        loading={basicLoading}
-        title={t('analytics_index.totalUsers')}
-        content={user.total_user || '0'}
-        subContent={
-          <>
-            {t('analytics_index.directRegistration')}：{user.total_direct_user || '0'}
-            <br />
-            {t('analytics_index.invitationRegistration')}：{user.total_inviter_user || '0'}
-          </>
-        }
-      />
-      <StatTile
-        icon={Network}
-        loading={basicLoading}
-        title={t('analytics_index.channelCount')}
-        content={channel.total}
-        subContent={
-          <>
-            {t('analytics_index.active')}：{channel.active} / {t('analytics_index.disabled')}：{channel.disabled}
-            <br />
-            {t('analytics_index.testDisabled')}：{channel.test_disabled}
-          </>
-        }
-      />
-      <StatTile
-        icon={CreditCard}
-        accent
-        loading={rechargeLoading}
-        title={t('analytics_index.rechargeStatistics')}
-        content={recharge.total}
-        subContent={
-          <>
-            {t('analytics_index.redemptionCode')}：{recharge.Redemption}
-            <br />
-            {t('analytics_index.order')}：{recharge.Order} {recharge.OrderContent ? `/ ${recharge.OrderContent}` : ''}
-          </>
-        }
-        filter={
-          <div className="flex items-center gap-1">
-            <Select
-              value={timeFilter}
-              onValueChange={(v) => {
-                setTimeFilter(v);
-                fetchRecharge(v);
-              }}
-            >
-              <SelectTrigger className="h-7 w-24 text-xs">
-                <SelectValue>{t(`analytics_index.timeFilter.${timeFilter}`)}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {timeFilterOptions.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {t(`analytics_index.timeFilter.${o}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-7"
-              onClick={handleExportRecharge}
-              disabled={rechargeLoading}
-              title={t('analytics_index.rechargeExportButton')}
-              aria-label={t('analytics_index.rechargeExportButton')}
-            >
-              <Download className="size-4" />
-            </Button>
-          </div>
-        }
-      />
-      <StatTile
-        icon={Activity}
-        loading={basicLoading}
-        title={t('analytics_index.realTimeTraffic')}
-        content={`${rpmTpm.rpm} RPM`}
-        subContent={
-          <>
-            {t('analytics_index.tpmDescription')}：{rpmTpm.tpm.toLocaleString()}
-            <br />
-            {t('analytics_index.cpmDescription')}：{formatSpendAmount(rpmTpm.cpm)}
-            {siteInfo.PaymentUSDRate ? ` / ${formatSpendAmount(rpmTpm.cpm * siteInfo.PaymentUSDRate, '¥')}` : ''}
-            <br />
-            {t('analytics_index.ppmDescription')}：{formatSpendAmount(rpmTpm.ppm ?? 0)}
-            {siteInfo.PaymentUSDRate ? ` / ${formatSpendAmount((rpmTpm.ppm ?? 0) * siteInfo.PaymentUSDRate, '¥')}` : ''}
-            {siteInfo.PaymentUSDRate ? (
-              <>
-                <br />
-                <span className="text-muted-foreground">{t('analytics_index.cnyEstimateNote', { rate: siteInfo.PaymentUSDRate })}</span>
-              </>
-            ) : null}
-          </>
-        }
+        items={[
+          {
+            label: `RPM · ${t('analytics_index.realTimeTraffic')}`,
+            value: rpmTpm.rpm.toLocaleString(),
+            hint: t('analytics_index.last60SecondsStats')
+          },
+          { label: t('analytics_index.tpmDescription'), value: rpmTpm.tpm.toLocaleString() },
+          { label: t('analytics_index.cpmDescription'), value: formatSpendAmount(rpmTpm.cpm), valueTitle: cny(rpmTpm.cpm), hint: cnyHint },
+          {
+            label: t('analytics_index.ppmDescription'),
+            value: formatSpendAmount(rpmTpm.ppm ?? 0),
+            valueTitle: cny(rpmTpm.ppm ?? 0),
+            hint: cnyHint
+          }
+        ]}
       />
     </div>
   );

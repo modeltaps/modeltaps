@@ -311,7 +311,8 @@
       }
     },
     "loadFailed": "可用模型列表載入失敗，頁面顯示的可用性可能不準確。",
-    "retry": "重試"
+    "retry": "重試",
+    "modalities": "文件類型"
   },
   "playground": {
     "curlHint": "sk-YOUR_TOKEN 為佔位符",
@@ -384,13 +385,13 @@
     },
     "noModels": {
       "title": "暫無可用的{{modality}}模型",
-      "adminDesc": "目前沒有通道提供{{modality}}模型，先到通道管理新增或啟用一個通道再回來。",
-      "adminAction": "前往通道管理",
+      "adminDesc": "目前沒有通道提供{{modality}}模型，先到供應商頁新增或啟用一個通道再回來。",
+      "adminAction": "前往供應商頁",
       "userDesc": "你所在的分組尚未開放{{modality}}模型，可先查看可用模型清單，或聯絡管理員開通。",
       "userAction": "查看可用模型",
       "transcription": {
         "title": "目前站點未接入語音轉文字模型",
-        "adminDesc": "尚未有任何模型聲明語音轉文字（audio.transcription）介面。先到通道管理接入一個提供轉寫模型的通道，或在管理端的模型目錄為已有的轉寫模型勾選 audio.transcription 介面。",
+        "adminDesc": "尚未有任何模型聲明語音轉文字（audio.transcription）介面。先到供應商頁接入一個提供轉寫模型的通道，或在管理端的模型目錄為已有的轉寫模型勾選 audio.transcription 介面。",
         "userDesc": "目前站點尚未接入語音轉文字（轉寫）模型，暫時無法在這裡轉寫音訊。可先查看可用模型清單，或聯絡管理員接入轉寫模型。",
         "userChatDesc": "目前站點尚未接入語音轉文字（轉寫）模型。可改用能聽懂音訊的對話模型：在對話頁上傳音訊，讓模型幫你整理成文字。",
         "userChatAction": "前往對話頁"
@@ -673,18 +674,19 @@
     }
   },
   "nav_subtitles": {
+    "systemInfo": "即時查看與檢索服務端日誌",
     "playground": "對話、圖像、語音與多模型對比的線上試運行",
     "api_audio": "在文字與語音之間轉換",
     "api_compare": "多個對話模型並排，同一條輸入同時發出",
     "pricing": "模型目錄、價格、渠道與廠商",
     "routing_policy": "虛擬模型：按每個會話的首條訊息選擇實際應答的模型",
-    "channel": "按供應商分組；一個渠道是連到該供應商的一組憑證和地址",
+    "channel": "每個供應商下可以有多個渠道；一個渠道是連到該供應商的一組憑證和地址",
     "org_members": "邀請成員、設定每人的預算與模型範圍",
     "organization": "組織的餘額、用量與審計記錄",
     "platform_settings": "整個平台的預設值與開關",
     "token": "調用介面用的金鑰",
     "invite_code": "生成、啟用與作廢註冊用的邀請碼",
-    "routing": "你的 API Key 能呼叫的路由策略：託管策略直接寫名字，自己建立的用 policy/<名字> 呼叫"
+    "routing": "API Key 可呼叫的路由策略"
   },
   "api_compare": "對比",
   "modelInfoPage": {
@@ -710,7 +712,8 @@
       "models": "模型",
       "vendors": "廠商",
       "paused": "暫停中",
-      "pending": "新上游模型"
+      "pending": "新上游模型",
+      "rules": "收錄規則"
     }
   },
   "listPage": {
@@ -786,8 +789,8 @@
     "visibleYes": "可見",
     "sheet": {
       "availableGroups": "可用分組",
-      "channelsReadonly": "渠道與分組為只讀,需在渠道頁修改",
-      "goChannels": "前往渠道頁",
+      "channelsReadonly": "渠道與分組為只讀,需在供應商頁修改",
+      "goChannels": "前往供應商頁",
       "groupCount": "{{count}} 個分組",
       "groups": "分組",
       "noChannelHint": "暫無啟用的渠道提供該模型,用戶將無法調用。",
@@ -814,7 +817,25 @@
       "nochannel": "無渠道",
       "unpriced": "未定價"
     },
-    "visibleFollowsStatus": "按供應路由時，是否對用戶可見由模型狀態（草稿 / 已發佈 / 已下架）決定"
+    "visibleFollowsStatus": "按供應路由時，是否對用戶可見由模型狀態（草稿 / 已發佈 / 已下架）決定",
+    "showModelsThat": "篩選模型",
+    "showToUsers": "對用戶顯示",
+    "hideFromUsers": "對用戶隱藏",
+    "searchShort": "搜尋模型",
+    "presetPerCall": "按次計費",
+    "presetUnlabeled": "未標註",
+    "readiness": {
+      "channel": "渠道",
+      "price": "定價",
+      "visible": "可見",
+      "missing": "缺少：{{items}}",
+      "legend": "就緒：渠道 · 定價 · 可見"
+    },
+    "vendorInUse": "在用",
+    "vendorUnused": "未使用",
+    "vendorModels": "{{count}} 個模型",
+    "vendorNoChannel": "{{count}} 無渠道",
+    "viewVendorModels": "查看模型"
   },
   "brandIconPicker": {
     "mode": {
@@ -964,13 +985,14 @@
     "sortLastLogin": "最近登入"
   },
   "command": {
-    "search": "搜尋"
+    "search": "搜尋",
+    "thisPage": "目前頁面"
   },
   "common": {
     "error": "出錯了",
     "close": "關閉",
-    "copySucceeded": "複製成功！",
-    "copyNamedSuccess": "複製{{name}}成功！",
+    "copySucceeded": "已複製",
+    "copyNamedSuccess": "已複製{{name}}",
     "copyFailedManual": "複製失敗，請手動複製：",
     "copyNamedFailed": "複製{{name}}失敗，請手動複製：",
     "secretConfigured": "已配置 {{masked}}",
@@ -1285,7 +1307,7 @@
     "retryFailed": "重試失敗項目（{{count}}）"
   },
   "channelCheck": {
-    "title": "渠道檢測",
+    "title": "能力檢測",
     "fetchUpstream": "取得上游模型",
     "fetchFailed": "取得上游模型失敗",
     "hint": "每個模型最多向上游發送 {{requests}} 次真實請求（算術校驗、識圖、JSON Schema、工具呼叫、中轉線索），會消耗渠道額度，每次同時檢測 2 個模型。深度研究、圖像和影片模型預設不勾選。",
@@ -1709,6 +1731,8 @@
   },
   "routing_policy": "自動路由",
   "routingPolicy": {
+    "enable": "啟用",
+    "disable": "停用",
     "create": "新建策略",
     "createTitle": "新建路由策略",
     "empty": "還沒有路由策略。策略是一個客戶端可呼叫的模型名，由每個會話的首條訊息決定實際由哪個模型應答。",
@@ -1897,7 +1921,12 @@
     "managedIntro": "平台提供的策略，呼叫時 model 直接寫名字。",
     "managedEmpty": "平台還沒有可用的託管策略。",
     "managedOverridden": "已被你的同名策略取代",
-    "managedOverriddenHint": "你有一條同名的自建策略，寫裸名時會使用你自己的。要使用這條託管策略，請把你的策略改名或停用。"
+    "managedOverriddenHint": "你有一條同名的自建策略，寫裸名時會使用你自己的。要使用這條託管策略，請把你的策略改名或停用。",
+    "introShort": {
+      "personal": "只對你的個人 API Key 生效，呼叫時 model 寫 policy/<名字>",
+      "org": "只對本組織的 API Key 生效，呼叫時 model 寫 policy/<名字>",
+      "orgMember": "本組織管理員建立的策略，用 policy/<名字> 呼叫"
+    }
   },
   "logPage": {
     "routing": {
@@ -1954,9 +1983,16 @@
     "advanced": {
       "costRatio": "成本倍率",
       "costRatioHint": "上游實際收費相對標價的倍率，用來提示虧本的分組；留空表示未知",
+      "cancelOnDisconnect": "客戶端斷開時停止上游",
+      "cancelOnDisconnectAuto": "自動（{{state}}）",
+      "cancelOnDisconnectOn": "開啟",
+      "cancelOnDisconnectOff": "關閉",
+      "cancelOnDisconnectHint": "客戶端中途停止串流回覆時，關閉到上游的連線，讓上游停止生成、只按已生成的輸出計費；此時輸出 token 由本地估算。自動：官方介面和訂閱帳戶開啟，其他上游關閉。若中轉站在斷開後仍按完整回覆扣費，請關閉。",
       "danger": "危險操作",
       "dangerHint": "複製會用同一密鑰和設定新建一個渠道；刪除不能撤銷",
-      "name": "名稱"
+      "name": "名稱",
+      "otherUnused": "這個供應商不讀取這個欄位，可以清空",
+      "n2rPlaceholder": "模型名\n-不轉換的模型名"
     },
     "chart": {
       "aria": "各渠道請求量",
@@ -1990,6 +2026,7 @@
       "groups": "{{groups}} 分組",
       "listSep": "、",
       "models_other": "{{count}} 個模型",
+      "supplied_other": "接入 {{count}} 個公開模型",
       "prefix": "已建立",
       "relative": "{{usage}}（相對 {{name}}）"
     },
@@ -1998,6 +2035,8 @@
     "groupRatio": "倍率 {{ratio}}×",
     "groups": "分組",
     "groupsHint": "用戶的令牌只會用到同分組的渠道，可以多選",
+    "allGroups": "全部分組",
+    "allGroupsDesc": "包括以後新建的分組",
     "issue": {
       "autoDisabled": "請求失敗後已被自動停用",
       "dismiss": "忽略",
@@ -2008,7 +2047,8 @@
       "lowBalance": "餘額 {{balance}} 低於 {{threshold}}",
       "refreshBalance": "重新整理餘額",
       "setKey": "去處理",
-      "view": "查看"
+      "view": "查看",
+      "title": "需要處理"
     },
     "lane": {
       "allOff": "全部停用",
@@ -2032,7 +2072,14 @@
       "pruned_other": "移除了 {{count}} 個上游已不存在的模型，儲存後生效",
       "remove": "移除 {{model}}",
       "syncPrices": "同步價格",
-      "ttft": "首字"
+      "ttft": "首字",
+      "supplyNote": "儲存後，模型列表和映射的改動會同步到由這個渠道生成的供應：新加的模型自動接入同名的公開模型，改映射會更新發給上游的名字，移除的模型會撤下供應。手動新增或在模型頁改過上游名的供應保持不變。",
+      "saved": {
+        "summary": "已儲存，{{changes}}",
+        "attached_other": "新接入 {{count}} 個公開模型",
+        "updated_other": "{{count}} 個供應改用新的上游名",
+        "removed_other": "撤下 {{count}} 個供應"
+      }
     },
     "monitor": {
       "checkNow": "立即檢查模型列表",
@@ -2044,7 +2091,7 @@
       "threshold": "餘額提醒（USD）",
       "thresholdHint": "上游餘額低於這個數時通知你",
       "thresholdOff": "不提醒",
-      "autoAddHint": "每日模型檢測發現上游新提供的模型時，直接加入本渠道（並補齊價格與元資訊），而不只是提醒。開啟按供應路由後，新模型不再加入渠道，而是列在模型目錄的「新上游模型」裡等你處理。符合忽略規則的模型會略過。"
+      "autoAddHint": "每日模型檢測發現上游新提供的模型時，直接加入本渠道（並補齊價格與元資訊），而不只是提醒。開啟按供應路由後，新模型不再加入渠道的模型列表：屬於模型目錄裡某個公開模型的，直接為它加一條本渠道的供應；其餘列在模型目錄的「新上游模型」裡等你處理。符合忽略規則的模型會略過。"
     },
     "pauseRules": {
       "label": "暫停規則",
@@ -2136,7 +2183,9 @@
       "summary_other": "{{count}} 個渠道 · {{range}} {{requests}} 次請求",
       "testAll": "全部測試",
       "testDone_other": "{{count}} 個渠道全部測試通過",
-      "testPartial": "{{count}} 個渠道中 {{failed}} 個測試失敗"
+      "testPartial": "{{count}} 個渠道中 {{failed}} 個測試失敗",
+      "refreshModelsOf": "重新整理 {{name}} 的模型清單",
+      "testAllOf": "測試 {{name}} 的全部渠道"
     },
     "panel": {
       "enabled": "啟用",
@@ -2145,6 +2194,7 @@
         "models": "模型",
         "connection": "連線",
         "routing": "分組與路由",
+        "routingGroups": "分組與標籤",
         "rewrite": "請求改寫",
         "monitor": "監控",
         "advanced": "進階"
@@ -2195,6 +2245,7 @@
     "unknownProvider": "類型 {{type}}",
     "usage": {
       "label": "使用方式",
+      "syncHint": "在這裡的變更會同步到這個渠道的所有供應；在模型頁單獨設定過優先級或權重的供應不變。",
       "only": "唯一提供方",
       "onlyDesc": "同組裏沒有別的渠道提供這些模型",
       "backup": "作為備用",
@@ -2210,7 +2261,9 @@
       "peerExisting": "同組已有 {{name}}",
       "peerNote": "同組還有 {{name}} 提供這些模型",
       "priority": "優先級",
-      "weight": "權重"
+      "weight": "權重",
+      "byPolicy": "這個渠道先用還是後用，在供應商頁的渠道清單裏排。",
+      "openPolicy": "去調整順序"
     },
     "batch": {
       "label": "已選渠道",
@@ -2253,7 +2306,8 @@
       "results": "有符合的供應商",
       "none": "沒有符合項",
       "emptyTitle": "沒有符合的渠道",
-      "emptyDescription": "沒有任何供應商的渠道符合「{{query}}」"
+      "emptyDescription": "沒有任何供應商的渠道符合「{{query}}」",
+      "short": "搜尋渠道"
     },
     "tagActions": {
       "label": "標籤 {{tag}}",
@@ -2264,7 +2318,123 @@
       "priorityTitle": "標籤 {{tag}} 的優先級",
       "priorityHint": "給帶這個標籤的所有渠道設定同一優先級"
     },
-    "optional": "可選"
+    "optional": "可選",
+    "columns": {
+      "requests": "請求",
+      "requestsIn": "請求 {{range}}"
+    },
+    "preset": {
+      "attention": "需要處理",
+      "lowBalance": "餘額不足",
+      "autoDisabled": "自動停用"
+    },
+    "condition": {
+      "showThat": "篩選渠道",
+      "issue": "需要處理",
+      "issueAny": "任一問題",
+      "issueLowBalance": "餘額不足",
+      "issueKeyMissing": "缺少密鑰",
+      "issueDrift": "模型有變化",
+      "tag": "標籤",
+      "group": "分組",
+      "model": "模型",
+      "modelHint": "模型名包含…"
+    },
+    "list": {
+      "meta": "優先級 {{priority}} · {{requests}} 請求 · {{latency}}"
+    },
+    "upstream": {
+      "title": "上游模型",
+      "hint": "這個渠道在上游能用的全部模型，來自最近一次模型檢查。要不要對外提供、由誰提供，在模型頁的「供應」裡決定。",
+      "check": "立即檢查",
+      "checkFailed": "檢查失敗",
+      "empty": "還沒有讀到上游的模型清單，點「立即檢查」讀取。",
+      "unsupported": "這個供應商不提供模型清單介面。",
+      "search": "搜尋模型",
+      "noMatch": "沒有符合條件的模型",
+      "name": "上游模型",
+      "publicModel": "對應的公開模型",
+      "state": "狀態",
+      "filter": {
+        "all": "全部",
+        "in_use": "使用中",
+        "available": "可用",
+        "not_in_catalog": "不在目錄",
+        "unknown": "未能識別"
+      },
+      "states": {
+        "in_use": "使用中",
+        "off": "供應已關閉",
+        "available": "可用，未新增",
+        "not_in_catalog": "不在目錄",
+        "unknown": "未能識別"
+      }
+    },
+    "strip": {
+      "all": "全部",
+      "allMeta": "{{count}} 個渠道",
+      "allTitle": "全部渠道",
+      "meta": "{{count}} 個渠道 · {{requests}} 次請求",
+      "metaOff": "{{count}} 個渠道（{{enabled}} 個啟用） · {{requests}} 次請求",
+      "allProviders": "全部供應商"
+    },
+    "order": {
+      "column": "順序",
+      "shareColumn": "分擔",
+      "up": "往前移",
+      "down": "往後移",
+      "share": "與上一位分擔",
+      "unshare": "不再分擔",
+      "weightOf": "{{name}} 的權重",
+      "drag": "拖動調整順序",
+      "positionShort": "第 {{n}} 位",
+      "sharesWith": "與 {{names}} 分擔",
+      "nameSep": "、",
+      "sharedTag": "分擔",
+      "groupWhy": "這 {{count}} 個渠道在同一位置，共同提供 {{models}} 個模型，這些模型按權重分擔",
+      "noCommonModel": "這兩個渠道沒有共同提供的模型，不能分擔，已排在它後面",
+      "dropHint": {
+        "before": "插到這裏",
+        "after": "插到這裏",
+        "join": "併入這一組分擔"
+      }
+    },
+    "newMenu": {
+      "inUse": "已接入"
+    },
+    "orderHint": "從上往下試，前一個不可用才用下一個；同一個序號的渠道提供相同的模型，按權重分擔。",
+    "attention_other": "{{count}} 個需要處理",
+    "issueTag": {
+      "autoDisabled": "已自動禁用",
+      "keyMissing": "缺少密鑰",
+      "lowBalance": "餘額低",
+      "driftNew_other": "{{count}} 個新模型",
+      "driftMissing_other": "{{count}} 個模型下架",
+      "refresh": "重新整理"
+    },
+    "head": {
+      "order": "先用數字小的；同號渠道一起分擔流量",
+      "share": "同組渠道的權重和流量佔比",
+      "shareNone": "不與其他渠道分擔",
+      "priorityWeight": "優先級高的先用，同優先級按權重分流",
+      "requests": "請求數",
+      "requestsHint": "{{range}}內的請求數和走勢",
+      "success": "成功請求佔比",
+      "latency": "成功請求的平均耗時",
+      "balance": "上游餘額；訂閱類顯示本期用量",
+      "enabled": "關閉後不再接收請求"
+    },
+    "menu": {
+      "multiTest": "測試多個模型",
+      "multiTestHint": "逐個模型測連通和延遲",
+      "check": "能力檢測",
+      "checkHint": "用真實請求校驗識圖、工具呼叫等，消耗額度",
+      "drift": "對比上游模型",
+      "driftHint": "看上游新增或下架了哪些模型"
+    },
+    "switcher": {
+      "count": "{{count}} 個渠道"
+    }
   },
   "nav": {
     "sections": {
@@ -2287,9 +2457,9 @@
       "orgMembers": "成員與預算",
       "billing": "賬單",
       "orgSettings": "組織設定",
-      "health": "運行狀況",
+      "systemLogs": "系統日誌",
       "stats": "統計",
-      "channels": "渠道",
+      "channels": "供應商",
       "catalog": "模型目錄",
       "routing": "自動路由",
       "users": "用戶",
@@ -2302,6 +2472,7 @@
       "inviteCodes": "邀請碼",
       "settings": "設定",
       "routingPolicies": "路由策略",
+      "health": "運行狀況",
       "orgModelAccess": "模型存取"
     },
     "context": {
@@ -2387,7 +2558,19 @@
       "subtitle": "同一分組的用戶共用價格倍率和速率限制",
       "defaults": "建立後即啟用，倍率 1、每分鐘 300 次請求，可在分組面板裡修改",
       "created": "已建立分組 {{symbol}}"
-    }
+    },
+    "rateLimit": "限速",
+    "publicShort": "公開",
+    "publicYes": "公開",
+    "enableShort": "啟用",
+    "perMinute": "{{count}} 次/分",
+    "promotionFrom": "累計充值 {{min}} 起",
+    "promotionRange": "累計充值 {{min}} – {{max}}",
+    "enabled": "已啟用",
+    "disabled": "已停用",
+    "enableAction": "啟用",
+    "disableAction": "停用",
+    "emptyTitle": "還沒有用戶分組"
   },
   "redemptionPage": {
     "panel": {
@@ -2418,6 +2601,8 @@
     "channel": "渠道",
     "model": "模型",
     "upstream": "上游模型",
+    "upstreamSame": "同名",
+    "upstreamSameTip": "以 {{name}} 發給上游，與公開名相同",
     "priority": "優先級",
     "weight": "權重",
     "stateLabel": "狀態",
@@ -2430,6 +2615,9 @@
     "deleteConfirm": "不再把 {{model}} 傳給 {{channel}}？渠道本身不受影響。",
     "deleted": "已刪除供應",
     "moveUp": "移到更高一檔",
+    "ownNumbers": "單獨設定",
+    "ownNumbersTip": "這條供應的優先級或權重與渠道不同，渠道變更時不會跟著變",
+    "followChannel": "恢復跟隨渠道",
     "moveDown": "移到更低一檔",
     "pauseFor": "暫停",
     "paused": "已暫停 {{time}}",
@@ -2457,8 +2645,29 @@
       "published": "已發佈",
       "retired": "已下架"
     },
+    "available": {
+      "title": "還能提供這個模型的渠道",
+      "hint": "已列出此模型、尚未加入供應；新增後優先級和權重跟隨渠道"
+    },
+    "batch": {
+      "menu": "供應",
+      "modeLabel": "同一檔內",
+      "add": "新增來源…",
+      "remove": "移除來源…",
+      "addTitle": "為 {{count}} 個模型新增來源",
+      "removeTitle": "從 {{count}} 個模型移除來源",
+      "addHint": "所選渠道會成為這些模型的供應：上游模型名自動填寫，優先級和權重跟隨渠道。已由它供應的模型會略過。",
+      "removeHint": "刪除所選渠道對這些模型的供應。渠道本身不受影響。",
+      "pick": "選擇渠道",
+      "confirmAdd": "新增",
+      "confirmRemove": "移除",
+      "done": "已處理 {{changed}} 個，略過 {{skipped}} 個",
+      "modeDone": "已更新 {{count}} 個模型的模式"
+    },
     "mode": {
       "label": "同一檔內",
+      "default": "跟隨預設",
+      "defaultHint": "跟隨平台設定裡的預設模式，現在是「{{mode}}」。",
       "balance": "負載均衡",
       "failover": "主備",
       "balanceHint": "同一檔的供應按權重分擔請求。",
@@ -2504,7 +2713,8 @@
       "searchChannel": "搜尋渠道",
       "noChannel": "找不到渠道",
       "channelRequired": "請選擇渠道",
-      "hint": "上游模型名稱取自渠道的模型映射。新供應預設作為後備，排在最低一檔之下。"
+      "hint": "上游模型名按渠道自動填寫：先看模型映射，再看渠道已列出的名字，最後按該平台的寫法（如 Vertex 的 @default）。新供應預設作為備用，排在最低一檔之下。",
+      "fromLibrary": "已按該平台的寫法填寫"
     },
     "channelSupplies": {
       "title_other": "供應 {{count}} 個公開模型",
@@ -2566,6 +2776,20 @@
       "attachButton": "掛接",
       "attached_other": "已掛到 {{model}}，共 {{count}} 個渠道",
       "skipped_other": "{{count}} 個渠道已有 {{model}} 的供應（上游名不同），這個模型在那些渠道上仍待處理。"
+    },
+    "allocation": {
+      "label": "順序",
+      "policy": "按供應商頁的調用順序",
+      "manual": "單獨設定",
+      "manualShort": "單獨設定",
+      "open": "去調整順序",
+      "toManual": "單獨設定",
+      "toPolicy": "恢復按調用順序",
+      "policyHint": "順序和權重來自供應商頁的調用順序；在這裏調整順序或權重，會把這個模型改為單獨設定。",
+      "manualHint": "這個模型的順序不隨調用順序變化。",
+      "becameManual": "這個模型已改為單獨設定",
+      "nowManual": "已改為單獨設定，目前排位保持不變",
+      "nowPolicy": "已恢復按調用順序"
     }
   },
   "settingsUi": {
@@ -2813,6 +3037,11 @@
           "title": "組織",
           "hint": "已有組織不受影響"
         },
+        "supply-mode": {
+          "title": "預設供應模式",
+          "description": "沒有單獨設定的模型，同一檔裡的供應如何分擔請求",
+          "hint": "在模型的「供應」頁籤裡可以為單個模型另選"
+        },
         "supply-pause-rules": {
           "title": "供應暫停規則",
           "description": "上游報錯時按規則暫停渠道或模型，到點測試通過後恢復",
@@ -2883,7 +3112,7 @@
       "cards": {
         "profile": {
           "title": "資料",
-          "description": "顯示名稱和頭像",
+          "description": "顯示名稱",
           "hint": "用戶名不能修改"
         },
         "logIO": {
@@ -2892,9 +3121,10 @@
         },
         "appearance": {
           "title": "外觀",
-          "description": "主題與語言，只對你自己生效",
-          "hint": "儲存後立即套用",
-          "languageHint": "選擇介面語言；預設跟隨瀏覽器。"
+          "description": "主題與語言，選擇後立即生效，只對你自己生效",
+          "languageHint": "預設跟隨瀏覽器",
+          "themeHint": "跟隨系統時隨裝置的深淺色切換",
+          "hint": "儲存後立即套用"
         },
         "quotaRemind": {
           "hint": "每天最多提醒一次"
@@ -2908,7 +3138,9 @@
       },
       "sessions": {
         "device": "裝置",
-        "where": "地址與方式"
+        "where": "地址與方式",
+        "showAll": "顯示全部 {{count}} 個",
+        "showFewer": "收起"
       }
     },
     "org": {
@@ -2924,6 +3156,9 @@
           "hint": "改動對所有成員生效"
         },
         "budget": {
+          "description": "全體成員每個週期的合計消費上限，用盡後組織內請求會被拒絕",
+          "noLimitHint": "不限預算時只受各成員自己的預算約束",
+          "resetsHint": "{{period}}重置，時區與週起始日跟隨平台設定",
           "hint": "週期與平台設定一致"
         },
         "danger": {
@@ -2940,9 +3175,9 @@
   },
   "home": {
     "hero": {
-      "tagline": "所有模型，一個出口",
+      "tagline": "為團隊打造的 AI 網關",
       "ctaPrimary": "取得 API Key",
-      "catchphrase": "相容 OpenAI、Anthropic、Gemini 協定，只需更換 base URL",
+      "catchphrase": "每位成員一把 key、一份預算，三種主流介面全相容",
       "dripAria": "一滴 Modeltaps 標誌形狀的水在龍頭下聚起，落到平靜的水面上，漣漪一圈圈散開，依次點亮水面上的各個模型。"
     }
   },
@@ -3047,6 +3282,238 @@
       "day": "1 天",
       "week": "1 週",
       "month": "1 個月"
+    }
+  },
+  "redemptionList": {
+    "segments": {
+      "all": "全部",
+      "usable": "可用",
+      "expired": "已過期",
+      "disabled": "已停用",
+      "used": "已兌換"
+    },
+    "searchShort": "搜尋名稱或 ID",
+    "copyCode": "複製兌換碼",
+    "enable": "啟用",
+    "disable": "停用",
+    "batchEnable": "啟用",
+    "batchDisable": "停用",
+    "redeemed": "已兌換",
+    "expiredState": "已過期",
+    "createdAgo": "{{time}}建立",
+    "expires": "{{time}}過期",
+    "never": "永不過期",
+    "statusShort": "啟用"
+  },
+  "inviteList": {
+    "segments": {
+      "all": "全部",
+      "usable": "可用",
+      "pending": "未生效",
+      "expired": "已過期",
+      "exhausted": "已用完",
+      "disabled": "已停用"
+    },
+    "searchShort": "搜尋邀請碼或名稱",
+    "copyCode": "複製邀請碼",
+    "enable": "啟用",
+    "disable": "停用",
+    "startsIn": "{{time}}生效",
+    "expiresIn": "{{time}}過期",
+    "never": "永不過期",
+    "expired": "已過期",
+    "usedUp": "已用完",
+    "createdAgo": "{{time}}建立",
+    "usage": "已用"
+  },
+  "modelLibrary": {
+    "open": "從模型庫添加",
+    "title": "從模型庫添加模型",
+    "description": "來自 models.dev 的 {{count}} 個模型，每個模型一行。勾選後加入模型目錄；沒有價格的按官方價填好。",
+    "search": "搜尋模型",
+    "vendor": "廠商",
+    "allVendors": "全部廠商",
+    "endpoint": "介面",
+    "allEndpoints": "全部介面",
+    "released": "發佈",
+    "anyTime": "不限時間",
+    "withinDays_one": "近 {{count}} 天",
+    "withinDays_other": "近 {{count}} 天",
+    "suppliedOnly": "有渠道能供應",
+    "openOnly": "開源",
+    "hideAdded": "隱藏已加入",
+    "hideDeprecated": "隱藏已棄用",
+    "matches_one": "{{count}} 個符合",
+    "matches_other": "{{count}} 個符合",
+    "empty": "沒有符合條件的模型",
+    "selectAll": "全選篩選結果",
+    "model": "模型",
+    "context": "上下文",
+    "price": "每百萬 token（入 / 出）",
+    "channels": "渠道",
+    "inCatalog": "已加入",
+    "deprecated": "已棄用",
+    "showMore": "再顯示 {{count}} 個",
+    "selected": "已選 {{count}} 個",
+    "createSupplies": "為匹配到的渠道建供應",
+    "status": "狀態",
+    "asDraft": "草稿",
+    "asPublished": "發佈",
+    "add": "添加 {{count}} 個",
+    "added": "已添加 {{count}} 個模型，建立了 {{supplies}} 條供應",
+    "unsureCount_one": "+{{count}} 待確認",
+    "unsureCount_other": "+{{count}} 待確認",
+    "excludedBefore": "之前取消過",
+    "match": {
+      "exact": "精確",
+      "platform": "平台寫法",
+      "pending": "待確認",
+      "variant": "變體"
+    },
+    "notSynced": "模型庫還是空的。關掉這裡，在頁面右上角點「同步 → 從 models.dev 同步」拉取後再來新增。"
+  },
+  "ledgerList": {
+    "description": "說明",
+    "amount": "金額"
+  },
+  "dashboardList": {
+    "vsYesterday": "較昨天",
+    "viewUsage": "查看用量",
+    "topModels": "Top 模型",
+    "requests": "次"
+  },
+  "settingsFields": {
+    "statusCode": "狀態碼",
+    "seconds": "秒數",
+    "addStatus": "新增狀態碼",
+    "remove": "刪除",
+    "invalidJson": "已儲存的值不是合法 JSON，請在下方按文字修改。"
+  },
+  "settingsUnits": {
+    "seconds": "秒"
+  },
+  "orgList": {
+    "allActions": "全部動作",
+    "actorId": "操作者 ID",
+    "createdAt": "建立於 {{time}}",
+    "noAudit": "暫無審計記錄",
+    "makeAdmin": "設為管理員",
+    "makeMember": "設為成員",
+    "more": "更多操作",
+    "joined": "{{time}}加入",
+    "actions": {
+      "org_create": "建立組織",
+      "org_update": "更新組織資料",
+      "org_update_budget": "更新組織預算",
+      "org_update_setting": "更新組織設定",
+      "org_dissolve": "解散組織",
+      "org_transfer_ownership": "轉讓擁有權",
+      "org_admin_enable": "站點管理員啟用組織",
+      "org_admin_disable": "站點管理員停用組織",
+      "org_admin_dissolve": "站點管理員解散組織",
+      "org_admin_max_members": "站點管理員調整成員上限",
+      "org_invitation_create": "發出邀請",
+      "org_invitation_accept": "接受邀請",
+      "org_invitation_reject": "拒絕邀請",
+      "org_invitation_revoke": "撤銷邀請",
+      "org_member_account_create": "新建成員帳戶",
+      "org_member_leave": "成員退出",
+      "org_member_limits_update": "調整成員限額",
+      "org_member_remove": "移除成員",
+      "org_member_role_update": "變更成員角色",
+      "quota_transfer": "個人額度轉入",
+      "billing_topup": "兌換碼充值",
+      "billing_order_create": "建立充值訂單",
+      "billing_admin_adjust": "站點管理員調整餘額",
+      "token_create": "建立 API 金鑰",
+      "token_update": "更新 API 金鑰",
+      "token_delete": "刪除 API 金鑰",
+      "routing_policy_create": "建立路由策略",
+      "routing_policy_update": "更新路由策略",
+      "routing_policy_delete": "刪除路由策略",
+      "routing_policy_status": "啟停路由策略"
+    }
+  },
+  "priceList": {
+    "groupHint": "不同分組價格不同。API Key 的分組在 API Key 管理中切換"
+  },
+  "orderList": {
+    "segments": {
+      "all": "全部",
+      "success": "成功",
+      "pending": "待支付",
+      "failed": "失敗",
+      "closed": "已關閉"
+    },
+    "paid": "實付"
+  },
+  "topupCard": {
+    "inputPlaceholder": "輸入兌換碼"
+  },
+  "settingsPage": {
+    "security": {
+      "sessionsHint": "已登入本帳戶的裝置，不認識的就登出",
+      "identifiersHint": "用其中任一項登入，進的都是這個帳戶；電郵也用於找回和通知"
+    }
+  },
+  "authPages": {
+    "haveAccount": "已有帳戶？",
+    "remembered": "想起來了？",
+    "resetTitle": "找回密碼",
+    "resetHint": "我們會把重設連結發到這個電郵"
+  },
+  "login": {
+    "forgetPassword": "忘記密碼？"
+  },
+  "libraryRules": {
+    "intro": "每天同步模型庫後，按這些規則決定哪些新模型加入目錄、哪些目錄裏的模型下架。規則從上往下匹配，第一條條件全部滿足的規則生效；每個模型只判定一次，你刪掉的模型不會被加回來，你改過的模型不會被下架。",
+    "enabled": "每次同步後執行規則",
+    "apply": "套用規則",
+    "applyOn": "規則會改動目錄，並通知你做了甚麼。",
+    "applyOff": "演練：規則不改動任何東西，只通知你將會做甚麼。",
+    "name": "名稱",
+    "namePlaceholder": "規則名稱",
+    "action": "動作",
+    "actions": {
+      "publish": "發佈",
+      "draft": "加為草稿",
+      "ignore": "不收錄",
+      "retire": "下架"
+    },
+    "labs": "廠商（models.dev 前綴）",
+    "patterns": "模型名匹配",
+    "days": "發佈天數以內",
+    "anyTime": "不限",
+    "endpoints": "介面（任一）",
+    "supplied": "有渠道能供應",
+    "deprecated": "已棄用",
+    "openWeights": "開源",
+    "tri": {
+      "any": "不限",
+      "yes": "是",
+      "no": "否"
+    },
+    "up": "上移",
+    "down": "下移",
+    "remove": "刪除規則",
+    "add": "添加規則",
+    "preview": "預覽",
+    "runNow": "立即執行",
+    "saveFirst": "請先儲存規則",
+    "reset": "恢復預設",
+    "save": "儲存",
+    "saved": "收錄規則已儲存",
+    "noRules": "沒有規則：不會自動添加或下架任何模型。",
+    "orderHint": "每個模型從上往下過規則；不填的條件表示不限。",
+    "previewTitle": "按目前規則現在會做甚麼",
+    "previewEmpty": "沒有要做的：命中的模型都已處理過。",
+    "ranApply": "已添加 {{added}} 個，下架 {{retired}} 個",
+    "ranDry": "演練：報告了 {{count}} 項新變化",
+    "defaultNames": {
+      "retireDeprecated": "下架已棄用的模型",
+      "previews": "預覽版加為草稿",
+      "publishMain": "主流廠商的新模型直接發佈",
+      "otherSupplied": "其餘有渠道能供應的加為草稿"
     }
   },
   "modelAccess": {

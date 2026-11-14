@@ -94,7 +94,7 @@ describe('navSectionsFor (workbench)', () => {
 describe('navSectionsFor (platform admin)', () => {
   it('root sees every group', () => {
     expect(idsOf(navSectionsFor({ context: 'admin', isRoot: true }))).toEqual([
-      { id: 'admin_main', items: ['systemInfo', 'analytics'] },
+      { id: 'admin_main', items: ['analytics', 'systemInfo'] },
       { id: 'gateway', items: ['channel', 'pricing', 'routing_policy'] },
       { id: 'people', items: ['user', 'user_group', 'org_admin'] },
       { id: 'finance', items: ['payment', 'redemption', 'invite_code'] },
@@ -102,15 +102,15 @@ describe('navSectionsFor (platform admin)', () => {
     ]);
   });
 
-  it('non-root admins lose 运行状况 and 组织', () => {
+  it('non-root admins lose 系统日志 and 组织', () => {
     const ids = navSectionsFor({ context: 'admin', isRoot: false }).flatMap((s) => s.items.map((i) => i.id));
     expect(ids).not.toContain('systemInfo');
     expect(ids).not.toContain('org_admin');
     expect(ids).toContain('analytics');
   });
 
-  it('first admin page depends on root', () => {
-    expect(firstAdminUrl({ isRoot: true })).toBe('/panel/system_info');
+  it('platform admin lands on 统计 for every admin', () => {
+    expect(firstAdminUrl({ isRoot: true })).toBe('/panel/analytics');
     expect(firstAdminUrl({ isRoot: false })).toBe('/panel/analytics');
   });
 });
@@ -179,7 +179,7 @@ describe('isAdminPath', () => {
 describe('contextSwitchTarget', () => {
   it('entering platform admin lands on its first visible page', () => {
     expect(contextSwitchTarget({ pathname: '/panel/log', to: { kind: 'admin' }, isRoot: false })).toBe('/panel/analytics');
-    expect(contextSwitchTarget({ pathname: '/panel/log', to: { kind: 'admin' }, isRoot: true })).toBe('/panel/system_info');
+    expect(contextSwitchTarget({ pathname: '/panel/log', to: { kind: 'admin' }, isRoot: true })).toBe('/panel/analytics');
   });
 
   it('leaving platform admin goes to the dashboard', () => {
@@ -216,11 +216,31 @@ describe('commandSections', () => {
 
   it('both parts of 设置: organization settings for owners and admins of the active organization', () => {
     const items = (orgRole) => commandSections({ orgId: 7, orgRole }).find((s) => s.id === 'account').items;
-    expect(items('owner').map((i) => [i.id, i.href])).toEqual([
+    const listed = (orgRole) => items(orgRole).filter((i) => !i.searchOnly);
+    expect(listed('owner').map((i) => [i.id, i.href])).toEqual([
       ['org_settings', '/panel/settings/org/7/general'],
       ['personal_settings', '/panel/settings']
     ]);
-    expect(items('member').map((i) => i.id)).toEqual(['personal_settings']);
+    expect(listed('member').map((i) => i.id)).toEqual(['personal_settings']);
+  });
+
+  it('every item of the 设置 tree is searchable (shown while typing)', () => {
+    const typed = (orgId, orgRole) =>
+      commandSections({ orgId, orgRole })
+        .find((s) => s.id === 'account')
+        .items.filter((i) => i.searchOnly)
+        .map((i) => [i.id, i.href, i.prefixKey]);
+    expect(typed(7, 'admin')).toEqual([
+      ['settings_org_general', '/panel/settings/org/7/general', 'settingsUi.sections.org'],
+      ['settings_org_members', '/panel/settings/org/7/members', 'settingsUi.sections.org'],
+      ['settings_org_danger', '/panel/settings/org/7/danger', 'settingsUi.sections.org'],
+      ['settings_personal_profile', '/panel/settings/account/profile', 'settingsUi.sections.personal'],
+      ['settings_personal_security', '/panel/settings/account/security', 'settingsUi.sections.personal'],
+      ['settings_personal_privacy', '/panel/settings/account/privacy', 'settingsUi.sections.personal'],
+      ['settings_personal_preferences', '/panel/settings/account/preferences', 'settingsUi.sections.personal']
+    ]);
+    expect(typed(7, 'member').map(([id]) => id)).not.toContain('settings_org_general');
+    expect(typed(null, null).map(([id]) => id)).toHaveLength(4);
   });
 
   it('设置 pages are recognised by path', () => {

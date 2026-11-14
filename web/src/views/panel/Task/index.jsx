@@ -15,8 +15,8 @@ import { API } from 'utils/api';
 import { showError, useIsAdmin } from 'utils/common';
 import { FilterBar, filterStateToParams, isEntryActive, paramsToFilterState } from '@/components/filter-bar';
 import { getPageSize, savePageSize } from 'constants';
-import Pagination from '../components/Pagination';
-import TaskTable from './TaskTable';
+import { ColumnPicker, ListFooter, useColumnVisibility, useListLayout } from '@/components/list-page';
+import TaskTable, { TASK_COLUMNS } from './TaskTable';
 import TaskDetailSheet from './TaskDetailSheet';
 
 // ==============================|| PANEL — ASYNC TASK VIEWER ||============================== //
@@ -152,6 +152,15 @@ export default function Task({ platform }) {
     setTimeRange(range);
   };
 
+  // Columns the user may toggle (admin-only ones only for admins); the table reports its width so
+  // the sidebar collapses first and a phone list takes over only when it still does not fit.
+  const columnState = useColumnVisibility({
+    storageKey: 'task-column-visibility-v1',
+    columns: TASK_COLUMNS,
+    available: TASK_COLUMNS.filter((c) => !c.adminOnly || userIsAdmin).map((c) => c.id)
+  });
+  const { layout } = useListLayout();
+
   const handleSort = (id) => {
     if (!id) return;
     const isAsc = orderBy === id && order === 'asc';
@@ -160,7 +169,7 @@ export default function Task({ platform }) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* 标题行右侧操作:刷新 → 筛选 → 时间范围,对齐 Log。 */}
       <PageActions>
         <TooltipProvider delayDuration={150}>
@@ -182,6 +191,7 @@ export default function Task({ platform }) {
           t={t}
         />
         <TimeRangeSelect value={timeRange} preset={timePreset} onApply={handleApplyRange} t={t} locale={i18n.language} />
+        {layout === 'table' && <ColumnPicker columns={columnState} />}
       </PageActions>
 
       {/* 标题行下方:OpenRouter 式全宽输入框容器(chips/「+」/Clear);仅在有筛选条件时渲染。 */}
@@ -209,18 +219,22 @@ export default function Task({ platform }) {
             onSort={handleSort}
             onRowDetail={setDetailItem}
             searching={searching}
+            columnVisibility={columnState.visibility}
+            layout={layout}
           />
-          <Pagination
-            page={page}
-            rowsPerPage={rowsPerPage}
-            count={listCount}
-            onPageChange={setPage}
-            onRowsPerPageChange={(size) => {
-              setPage(0);
-              setRowsPerPage(size);
-              savePageSize('task', size);
-            }}
-          />
+          <div className="border-t border-border">
+            <ListFooter
+              total={listCount}
+              page={page}
+              pageSize={rowsPerPage}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPage(0);
+                setRowsPerPage(size);
+                savePageSize('task', size);
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
 

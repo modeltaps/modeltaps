@@ -8,6 +8,8 @@ import (
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/utils"
 
+	"time"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -52,14 +54,61 @@ var allowedRedemptionslOrderFields = map[string]bool{
 	"expired_time":  true,
 }
 
-func GetRedemptionsList(params *GenericParams) (*DataResult[Redemption], error) {
-	var redemptions []*Redemption
-	db := DB
-	if params.Keyword != "" {
-		db = db.Where("id = ? or name LIKE ?", utils.String2Int(params.Keyword), params.Keyword+"%")
-	}
+// RedemptionListParams is the admin list query: keyword, paging and the status segment.
+type RedemptionListParams struct {
+	GenericParams
+	Status string `form:"status"`
+}
 
-	return PaginateAndOrder[Redemption](db, &params.PaginationParams, &redemptions, allowedRedemptionslOrderFields)
+// RedemptionStatusCounts are the segment counts for the current keyword. The four states do not
+// overlap: usable (enabled, not expired), expired (enabled, past its expiry), disabled, used.
+type RedemptionStatusCounts struct {
+	All      int64 `json:"all"`
+	Usable   int64 `json:"usable"`
+	Expired  int64 `json:"expired"`
+	Disabled int64 `json:"disabled"`
+	Used     int64 `json:"used"`
+}
+
+func redemptionKeywordScope(db *gorm.DB, keyword string) *gorm.DB {
+	if keyword == "" {
+		return db
+	}
+	return db.Where(caseInsensitiveLike("id = ? or name LIKE ?"), utils.String2Int(keyword), keyword+"%")
+}
+
+// applyRedemptionStatus narrows db to one segment; an unknown value leaves it unfiltered.
+func applyRedemptionStatus(db *gorm.DB, status string, now int64) *gorm.DB {
+	switch status {
+	case "usable":
+		return db.Where("status = ? AND (expired_time <= 0 OR expired_time > ?)", config.RedemptionCodeStatusEnabled, now)
+	case "expired":
+		return db.Where("status = ? AND expired_time > 0 AND expired_time <= ?", config.RedemptionCodeStatusEnabled, now)
+	case "disabled":
+		return db.Where("status = ?", config.RedemptionCodeStatusDisabled)
+	case "used":
+		return db.Where("status = ?", config.RedemptionCodeStatusUsed)
+	}
+	return db
+}
+
+func GetRedemptionsList(params *RedemptionListParams) (*DataResult[Redemption], *RedemptionStatusCounts, error) {
+	var redemptions []*Redemption
+	now := time.Now().Unix()
+	db := applyRedemptionStatus(redemptionKeywordScope(DB, params.Keyword), params.Status, now)
+	result, err := PaginateAndOrder[Redemption](db, &params.PaginationParams, &redemptions, allowedRedemptionslOrderFields)
+	if err != nil {
+		return nil, nil, err
+	}
+	counts := &RedemptionStatusCounts{}
+	targets := map[string]*int64{"": &counts.All, "usable": &counts.Usable, "expired": &counts.Expired, "disabled": &counts.Disabled, "used": &counts.Used}
+	for status, target := range targets {
+		q := applyRedemptionStatus(redemptionKeywordScope(DB.Model(&Redemption{}), params.Keyword), status, now)
+		if err := q.Count(target).Error; err != nil {
+			return nil, nil, err
+		}
+	}
+	return result, counts, nil
 }
 
 func GetRedemptionById(id int) (*Redemption, error) {

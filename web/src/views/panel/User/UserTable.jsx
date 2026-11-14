@@ -10,26 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
-import { estimateWidth, useNaturalWidth } from '@/components/list-page';
+
 import { renderNumber, renderQuota, renderSpend, timestamp2string } from 'utils/common';
 import { relativeTime } from 'utils/relativeTime';
 import { ActionsCell, StatusCell } from './UserRowCells';
-
-// Typical rendered widths (px) per column, the estimate used before the table has been measured.
-const COLUMN_WIDTHS = {
-  select: 32,
-  user: 220,
-  role: 96,
-  group: 96,
-  org: 120,
-  quota: 96,
-  used_quota: 96,
-  request_count: 72,
-  last_login_time: 96,
-  status: 64,
-  actions: 56
-};
-export const estimateUserTableWidth = (columnIds, visibility) => estimateWidth(columnIds, visibility, COLUMN_WIDTHS);
 
 export function roleBadge(t, role) {
   const map = {
@@ -99,8 +83,7 @@ export default function UserTable({
   order,
   orderBy,
   onSort,
-  manageUser,
-  onNaturalWidth
+  manageUser
 }) {
   const { t, i18n } = useTranslation();
   const rtfLocale = (i18n.language || 'zh_CN').replace('_', '-');
@@ -188,8 +171,6 @@ export default function UserTable({
       }
     ];
   }, [t, rtfLocale, users, selectedIds, onToggleSelect, onToggleSelectAll, onOpen, manageUser]);
-
-  const tableRef = useNaturalWidth(onNaturalWidth);
   const table = useTable({
     features: appTableFeatures,
     data: users,
@@ -205,7 +186,7 @@ export default function UserTable({
   };
 
   return (
-    <Table ref={tableRef}>
+    <Table>
       <TableHeader>
         {table.getHeaderGroups().map((hg) => (
           <TableRow key={hg.id} className="hover:bg-transparent">
@@ -266,8 +247,7 @@ UserTable.propTypes = {
   order: PropTypes.string,
   orderBy: PropTypes.string,
   onSort: PropTypes.func.isRequired,
-  manageUser: PropTypes.func.isRequired,
-  onNaturalWidth: PropTypes.func
+  manageUser: PropTypes.func.isRequired
 };
 
 // Phone list: one 56px row per user. The status dot leads; the first line is the username with
@@ -287,7 +267,7 @@ export function UserList({ users, rtf, selectMode, selectedIds, onToggleSelect, 
             className={cn('flex h-14 items-center gap-3 px-4', ROW_OPENS, (selected || u.id === openId) && 'bg-muted/60')}
             {...rowOpenProps(() => (selectMode ? onToggleSelect(u.id) : onOpen(u.id)))}
           >
-            {selectMode ? (
+            {selectMode && (
               <RowControl>
                 <Checkbox
                   checked={selected}
@@ -295,16 +275,10 @@ export function UserList({ users, rtf, selectMode, selectedIds, onToggleSelect, 
                   aria-label={t('listPage.selectRow', { name: u.username })}
                 />
               </RowControl>
-            ) : (
-              <span
-                className={cn('size-2 shrink-0 rounded-full', enabled ? 'bg-success' : 'bg-muted-foreground/40')}
-                title={enabled ? t('userPage.statusEnabled') : t('userPage.statusDisabled')}
-                aria-hidden="true"
-              />
             )}
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-3">
-                <span className="min-w-0 truncate text-sm font-medium">{u.username}</span>
+                <span className={cn('min-w-0 truncate text-sm font-medium', !enabled && 'text-muted-foreground')}>{u.username}</span>
                 <span className="ml-auto shrink-0 text-sm tabular-nums">{renderQuota(u.quota)}</span>
               </div>
               <div className="mt-0.5 flex items-baseline gap-3 text-xs text-muted-foreground">
@@ -317,9 +291,14 @@ export function UserList({ users, rtf, selectMode, selectedIds, onToggleSelect, 
               </div>
             </div>
             {!selectMode && (
-              <RowControl className="-mr-2 shrink-0">
-                <ActionsCell item={u} manageUser={manageUser} onOpen={onOpen} />
-              </RowControl>
+              <div className="-mr-2 flex shrink-0 items-center gap-1">
+                <RowControl className="flex">
+                  <StatusCell item={u} manageUser={manageUser} />
+                </RowControl>
+                <RowControl>
+                  <ActionsCell item={u} manageUser={manageUser} onOpen={onOpen} />
+                </RowControl>
+              </div>
             )}
           </li>
         );

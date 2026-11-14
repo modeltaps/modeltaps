@@ -49,6 +49,8 @@ const (
 
 	SupplyModeBalance  = "balance"
 	SupplyModeFailover = "failover"
+	// SupplyModeDefault follows the site-wide default (config.SupplyModeDefault).
+	SupplyModeDefault = "default"
 )
 
 // IsValidModelStatus reports whether status is a known public state.
@@ -60,9 +62,21 @@ func IsValidModelStatus(status string) bool {
 	return false
 }
 
-// IsValidSupplyMode reports whether mode is a known supply mode.
+// IsValidSupplyMode reports whether mode is a known supply mode, the site default included.
 func IsValidSupplyMode(mode string) bool {
-	return mode == SupplyModeBalance || mode == SupplyModeFailover
+	return mode == SupplyModeBalance || mode == SupplyModeFailover || mode == SupplyModeDefault
+}
+
+// EffectiveSupplyMode resolves a model's stored supply mode: its own balance or failover, or the
+// site default when it follows the default or has none.
+func EffectiveSupplyMode(mode string) string {
+	if mode == SupplyModeBalance || mode == SupplyModeFailover {
+		return mode
+	}
+	if config.SupplyModeDefault == SupplyModeFailover {
+		return SupplyModeFailover
+	}
+	return SupplyModeBalance
 }
 
 func ModelCapabilitiesJSON(caps []string) string {
@@ -136,7 +150,10 @@ type ModelInfo struct {
 	Status string `json:"status" gorm:"type:varchar(16);default:'draft'"`
 	// SupplyMode picks a supply within one priority tier: balance chooses by weight at random,
 	// failover takes the highest weight. Tiers are always tried in order.
-	SupplyMode string `json:"supply_mode" gorm:"type:varchar(16);default:'balance'"`
+	SupplyMode string `json:"supply_mode" gorm:"type:varchar(16);default:'default'"`
+	// Allocation is empty while the model takes its supplies' priority and weight from the
+	// allocation policy, AllocationManual when they keep their own numbers.
+	Allocation string `json:"allocation" gorm:"type:varchar(16);default:''"`
 	// Kind 行的种类：空 = 普通模型；ModelInfoKindRoutingPolicy = 自动路由策略的目录行，
 	// 由 routing_policies 联动维护，后台目录接口不允许直接增删改。
 	Kind string `json:"kind" gorm:"type:varchar(32);default:''"`
@@ -240,7 +257,8 @@ func CreateModelInfo(modelInfo *ModelInfo) error {
 
 // UpdateModelInfo 用于后台手工编辑：synced_at / supported_voices 由同步流程维护，这里不覆盖。
 func UpdateModelInfo(modelInfo *ModelInfo) error {
-	err := DB.Omit("id", "created_at", "synced_at", "supported_voices").Save(modelInfo).Error
+	// allocation is changed only through SetModelAllocation, so a full save never resets it.
+	err := DB.Omit("id", "created_at", "synced_at", "supported_voices", "allocation").Save(modelInfo).Error
 	if err != nil {
 		return err
 	}
@@ -290,6 +308,12 @@ func UpsertModelInfos(infos []*ModelInfo, source string) error {
 			putInt("context_length", info.ContextLength, existing.ContextLength)
 			putInt("max_tokens", info.MaxTokens, existing.MaxTokens)
 			putInt("vendor_id", info.VendorID, existing.VendorID)
+			// A row last written by the same sync carries that sync's vendor, so an unknown vendor
+			// now clears the old guess (e.g. the hosting platform recorded as the vendor). Rows an
+			// admin edited have source manual and keep their vendor.
+			if info.VendorID == 0 && existing.Source == source && source != ModelInfoSourceManual {
+				updates["vendor_id"] = 0
+			}
 			if info.OpenWeights != nil {
 				updates["open_weights"] = *info.OpenWeights
 			}
@@ -664,13 +688,33 @@ func ResolveVendorID(name string) int {
 	return 0
 }
 
-// VendorIDFromModelName 按 "厂商slug/模型名" 前缀匹配厂商（OpenRouter 风格标识）；
-// 无前缀或 slug 未登记返回 0。OpenRouter 的 latest 别名（~anthropic/...）先去掉开头的 ~。
+// vendorPrefixAliases maps the lab prefixes other catalogs use (models.dev canonical ids, Vertex
+// model garden ids) to the vendor slugs, which follow OpenRouter's naming.
+var vendorPrefixAliases = map[string]string{
+	"alibaba":     "qwen",
+	"mistral":     "mistralai",
+	"meta":        "meta-llama",
+	"xai":         "x-ai",
+	"zhipuai":     "z-ai",
+	"zai":         "z-ai",
+	"zai-org":     "z-ai",
+	"tencent":     "tencent",
+	"01-ai":       "01-ai",
+	"deepseek-ai": "deepseek",
+}
+
+// VendorIDFromModelName matches the vendor by a "vendor/model" prefix (OpenRouter-style ids and
+// models.dev canonical ids). It returns 0 when there is no prefix or the prefix is not a known
+// vendor. A leading ~ (OpenRouter's latest aliases, ~anthropic/...) is ignored.
 func VendorIDFromModelName(modelName string) int {
 	modelName = strings.TrimPrefix(modelName, "~")
 	idx := strings.Index(modelName, "/")
 	if idx <= 0 {
 		return 0
 	}
-	return ModelOwnedBysInstance.GetIdBySlug(modelName[:idx])
+	prefix := strings.ToLower(modelName[:idx])
+	if id := ModelOwnedBysInstance.GetIdBySlug(prefix); id != 0 {
+		return id
+	}
+	return ModelOwnedBysInstance.GetIdBySlug(vendorPrefixAliases[prefix])
 }

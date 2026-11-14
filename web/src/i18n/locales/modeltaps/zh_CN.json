@@ -311,7 +311,8 @@
       }
     },
     "loadFailed": "可用模型列表加载失败，页面展示的可用性可能不准确。",
-    "retry": "重试"
+    "retry": "重试",
+    "modalities": "文档类型"
   },
   "playground": {
     "curlHint": "sk-YOUR_TOKEN 为占位符",
@@ -384,13 +385,13 @@
     },
     "noModels": {
       "title": "暂无可用的{{modality}}模型",
-      "adminDesc": "当前没有渠道提供{{modality}}模型，去渠道管理添加或启用一个渠道后再回来。",
-      "adminAction": "去渠道管理",
+      "adminDesc": "当前没有渠道提供{{modality}}模型，去供应商页添加或启用一个渠道后再回来。",
+      "adminAction": "去供应商页",
       "userDesc": "你所在的分组还没有开放{{modality}}模型，可先看看可用模型列表，或联系管理员开通。",
       "userAction": "查看可用模型",
       "transcription": {
         "title": "当前站点没有接入语音转文字模型",
-        "adminDesc": "还没有任何模型声明语音转文字（audio.transcription）接口。去渠道管理接入一个提供转写模型的渠道，或在管理端的模型目录里给已有转写模型勾选 audio.transcription 接口。",
+        "adminDesc": "还没有任何模型声明语音转文字（audio.transcription）接口。去供应商页接入一个提供转写模型的渠道，或在管理端的模型目录里给已有转写模型勾选 audio.transcription 接口。",
         "userDesc": "当前站点还没有接入语音转文字（转写）模型，暂时无法在这里转写音频。可先看看可用模型列表，或联系管理员接入转写模型。",
         "userChatDesc": "当前站点还没有接入语音转文字（转写）模型。可以改用能听懂音频的对话模型：在对话页上传音频，让模型帮你整理成文字。",
         "userChatAction": "去对话页"
@@ -673,18 +674,19 @@
     }
   },
   "nav_subtitles": {
+    "systemInfo": "实时查看与检索服务端日志",
     "playground": "对话、图像、语音与多模型对比的在线试运行",
     "api_audio": "在文字与语音之间转换",
     "api_compare": "多个对话模型并排，同一条输入同时发出",
     "pricing": "模型目录、价格、渠道与厂商",
     "routing_policy": "虚拟模型：按每个会话的首条消息选择实际应答的模型",
-    "channel": "按供应商分组；一个渠道是连到该供应商的一组凭据和地址",
+    "channel": "每个供应商下可以有多个渠道；一个渠道是连到该供应商的一组凭据和地址",
     "org_members": "邀请成员、设置每人的预算与模型范围",
     "organization": "组织的余额、用量与审计记录",
     "platform_settings": "整个平台的默认值与开关",
     "token": "调用接口用的密钥",
     "invite_code": "生成、启用与作废注册用的邀请码",
-    "routing": "你的 API Key 能调用的路由策略：托管策略直接写名字，自己建的用 policy/<名字> 调用"
+    "routing": "API Key 可调用的路由策略"
   },
   "api_compare": "对比",
   "modelInfoPage": {
@@ -710,7 +712,8 @@
       "models": "模型",
       "vendors": "厂商",
       "paused": "暂停中",
-      "pending": "新上游模型"
+      "pending": "新上游模型",
+      "rules": "收录规则"
     }
   },
   "listPage": {
@@ -761,7 +764,7 @@
     "channelsTab": "渠道与分组",
     "columnsShort": "列",
     "copyName": "复制模型名",
-    "editProfile": "编辑资料",
+    "editProfile": "编辑信息",
     "emptyDescription": "渠道里配置的模型会自动出现在这里;也可以手动新建目录条目。",
     "emptyTitle": "还没有模型",
     "export": "导出 JSON",
@@ -786,8 +789,8 @@
     "visibleYes": "可见",
     "sheet": {
       "availableGroups": "可用分组",
-      "channelsReadonly": "渠道与分组为只读,需在渠道页修改",
-      "goChannels": "前往渠道页",
+      "channelsReadonly": "渠道与分组为只读,需在供应商页修改",
+      "goChannels": "前往供应商页",
       "groupCount": "{{count}} 个分组",
       "groups": "分组",
       "noChannelHint": "暂无启用的渠道提供该模型,用户将无法调用。",
@@ -797,7 +800,7 @@
       "routingHint": "请求按优先级从高到低路由,同优先级按权重分流。",
       "status": "状态",
       "tabPricing": "定价",
-      "tabProfile": "资料",
+      "tabProfile": "信息",
       "noSupplyHint": "没有启用的供应提供此模型，用户无法调用。",
       "goSupplies": "去供应页",
       "channelsFromSupplies": "这些渠道来自模型的供应，在「供应」页修改"
@@ -814,7 +817,25 @@
       "nochannel": "无渠道",
       "unpriced": "未定价"
     },
-    "visibleFollowsStatus": "按供应路由时，是否对用户可见由模型状态（草稿 / 已发布 / 已下架）决定"
+    "visibleFollowsStatus": "按供应路由时，是否对用户可见由模型状态（草稿 / 已发布 / 已下架）决定",
+    "showModelsThat": "筛选模型",
+    "showToUsers": "对用户显示",
+    "hideFromUsers": "对用户隐藏",
+    "searchShort": "搜索模型",
+    "presetPerCall": "按次计费",
+    "presetUnlabeled": "未标注",
+    "readiness": {
+      "channel": "渠道",
+      "price": "定价",
+      "visible": "可见",
+      "missing": "缺少：{{items}}",
+      "legend": "就绪：渠道 · 定价 · 可见"
+    },
+    "vendorInUse": "在用",
+    "vendorUnused": "未使用",
+    "vendorModels": "{{count}} 个模型",
+    "vendorNoChannel": "{{count}} 无渠道",
+    "viewVendorModels": "查看模型"
   },
   "brandIconPicker": {
     "mode": {
@@ -937,7 +958,7 @@
       "tabs": "用户设置",
       "tab": {
         "overview": "概览",
-        "profile": "资料",
+        "profile": "基本信息",
         "access": "额度与分组",
         "security": "安全"
       },
@@ -964,13 +985,14 @@
     "sortLastLogin": "最近登录"
   },
   "command": {
-    "search": "搜索"
+    "search": "搜索",
+    "thisPage": "当前页面"
   },
   "common": {
     "error": "出错了",
     "close": "关闭",
-    "copySucceeded": "复制成功！",
-    "copyNamedSuccess": "复制{{name}}成功！",
+    "copySucceeded": "已复制",
+    "copyNamedSuccess": "已复制{{name}}",
     "copyFailedManual": "复制失败，请手动复制：",
     "copyNamedFailed": "复制{{name}}失败，请手动复制：",
     "secretConfigured": "已配置 {{masked}}",
@@ -1285,7 +1307,7 @@
     "retryFailed": "重试失败项（{{count}}）"
   },
   "channelCheck": {
-    "title": "渠道检测",
+    "title": "能力检测",
     "fetchUpstream": "获取上游模型",
     "fetchFailed": "获取上游模型失败",
     "hint": "每个模型最多向上游发送 {{requests}} 次真实请求（算术校验、识图、JSON Schema、工具调用、中转线索），会消耗渠道额度，每次同时检测 2 个模型。深度研究、图像和视频模型默认不勾选。",
@@ -1709,6 +1731,8 @@
   },
   "routing_policy": "自动路由",
   "routingPolicy": {
+    "enable": "启用",
+    "disable": "停用",
     "create": "新建策略",
     "createTitle": "新建路由策略",
     "empty": "还没有路由策略。策略是一个客户端可调用的模型名，由每个会话的首条消息决定实际由哪个模型应答。",
@@ -1897,7 +1921,12 @@
     "managedIntro": "平台提供的策略，调用时 model 直接写名字。",
     "managedEmpty": "平台还没有可用的托管策略。",
     "managedOverridden": "已被你的同名策略替换",
-    "managedOverriddenHint": "你有一条同名的自建策略，写裸名时会用你自己的。要用这条托管策略，把你的策略改名或停用。"
+    "managedOverriddenHint": "你有一条同名的自建策略，写裸名时会用你自己的。要用这条托管策略，把你的策略改名或停用。",
+    "introShort": {
+      "personal": "只对你的个人 API Key 生效，调用时 model 写 policy/<名字>",
+      "org": "只对本组织的 API Key 生效，调用时 model 写 policy/<名字>",
+      "orgMember": "本组织管理员建的策略，用 policy/<名字> 调用"
+    }
   },
   "logPage": {
     "routing": {
@@ -1954,9 +1983,16 @@
     "advanced": {
       "costRatio": "成本倍率",
       "costRatioHint": "上游实际收费相对标价的倍率，用来提示亏本的分组；留空表示未知",
+      "cancelOnDisconnect": "客户端断开时停止上游",
+      "cancelOnDisconnectAuto": "自动（{{state}}）",
+      "cancelOnDisconnectOn": "开启",
+      "cancelOnDisconnectOff": "关闭",
+      "cancelOnDisconnectHint": "客户端中途停止流式回复时，关闭到上游的连接，让上游停止生成、只按已生成的输出计费；此时输出 token 由本地估算。自动：官方接口和订阅账号开启，其他上游关闭。若中转站在断开后仍按完整回复扣费，请关闭。",
       "danger": "危险操作",
       "dangerHint": "复制会用同一密钥和设置新建一个渠道；删除不能撤销",
-      "name": "名称"
+      "name": "名称",
+      "otherUnused": "这个供应商不读取这个字段，可以清空",
+      "n2rPlaceholder": "模型名\n-不转换的模型名"
     },
     "chart": {
       "aria": "各渠道请求量",
@@ -1990,6 +2026,7 @@
       "groups": "{{groups}} 分组",
       "listSep": "、",
       "models_other": "{{count}} 个模型",
+      "supplied_other": "接入 {{count}} 个公开模型",
       "prefix": "已创建",
       "relative": "{{usage}}（相对 {{name}}）"
     },
@@ -1998,6 +2035,8 @@
     "groupRatio": "倍率 {{ratio}}×",
     "groups": "分组",
     "groupsHint": "用户的令牌只会用到同分组的渠道，可以多选",
+    "allGroups": "全部分组",
+    "allGroupsDesc": "包括以后新建的分组",
     "issue": {
       "autoDisabled": "请求失败后已被自动禁用",
       "dismiss": "忽略",
@@ -2008,7 +2047,8 @@
       "lowBalance": "余额 {{balance}} 低于 {{threshold}}",
       "refreshBalance": "刷新余额",
       "setKey": "去处理",
-      "view": "查看"
+      "view": "查看",
+      "title": "需要处理"
     },
     "lane": {
       "allOff": "全部停用",
@@ -2032,7 +2072,14 @@
       "pruned_other": "移除了 {{count}} 个上游已不存在的模型，保存后生效",
       "remove": "移除 {{model}}",
       "syncPrices": "同步价格",
-      "ttft": "首字"
+      "ttft": "首字",
+      "supplyNote": "保存后，模型列表和映射的改动会同步到由这个渠道生成的供应：新加的模型自动接入同名的公开模型，改映射会更新发给上游的名字，移除的模型会撤下供应。手动添加或在模型页改过上游名的供应保持不变。",
+      "saved": {
+        "summary": "已保存，{{changes}}",
+        "attached_other": "新接入 {{count}} 个公开模型",
+        "updated_other": "{{count}} 个供应改用新的上游名",
+        "removed_other": "撤下 {{count}} 个供应"
+      }
     },
     "monitor": {
       "checkNow": "立即检查模型列表",
@@ -2044,7 +2091,7 @@
       "threshold": "余额提醒（USD）",
       "thresholdHint": "上游余额低于这个数时通知你",
       "thresholdOff": "不提醒",
-      "autoAddHint": "每日模型检测发现上游新提供的模型时，直接加入本渠道（并补齐价格与元信息），而不只是提醒。开启按供应路由后，新模型不再加入渠道，而是列在模型目录的「新上游模型」里等你处理。匹配忽略规则的模型跳过。"
+      "autoAddHint": "每日模型检测发现上游新提供的模型时，直接加入本渠道（并补齐价格与元信息），而不只是提醒。开启按供应路由后，新模型不再加入渠道的模型列表：属于模型目录里某个公开模型的，直接给它加一条本渠道的供应；其余列在模型目录的「新上游模型」里等你处理。匹配忽略规则的模型跳过。"
     },
     "pauseRules": {
       "label": "暂停规则",
@@ -2136,7 +2183,9 @@
       "summary_other": "{{count}} 个渠道 · {{range}} {{requests}} 次请求",
       "testAll": "全部测试",
       "testDone_other": "{{count}} 个渠道全部测试通过",
-      "testPartial": "{{count}} 个渠道中 {{failed}} 个测试失败"
+      "testPartial": "{{count}} 个渠道中 {{failed}} 个测试失败",
+      "refreshModelsOf": "刷新 {{name}} 的模型列表",
+      "testAllOf": "测试 {{name}} 的全部渠道"
     },
     "panel": {
       "enabled": "启用",
@@ -2145,6 +2194,7 @@
         "models": "模型",
         "connection": "连接",
         "routing": "分组与路由",
+        "routingGroups": "分组与标签",
         "rewrite": "请求改写",
         "monitor": "监控",
         "advanced": "高级"
@@ -2195,6 +2245,7 @@
     "unknownProvider": "类型 {{type}}",
     "usage": {
       "label": "使用方式",
+      "syncHint": "改这里会同步到这个渠道的所有供应；在模型页单独设置过优先级或权重的供应不变。",
       "only": "唯一提供方",
       "onlyDesc": "同组里没有别的渠道提供这些模型",
       "backup": "作为备用",
@@ -2210,7 +2261,9 @@
       "peerExisting": "同组已有 {{name}}",
       "peerNote": "同组还有 {{name}} 提供这些模型",
       "priority": "优先级",
-      "weight": "权重"
+      "weight": "权重",
+      "byPolicy": "这个渠道先用还是后用，在供应商页的渠道列表里排。",
+      "openPolicy": "去调整顺序"
     },
     "batch": {
       "label": "已选渠道",
@@ -2253,7 +2306,8 @@
       "results": "有匹配的供应商",
       "none": "没有匹配项",
       "emptyTitle": "没有匹配的渠道",
-      "emptyDescription": "没有任何供应商的渠道匹配「{{query}}」"
+      "emptyDescription": "没有任何供应商的渠道匹配「{{query}}」",
+      "short": "搜索渠道"
     },
     "tagActions": {
       "label": "标签 {{tag}}",
@@ -2264,7 +2318,123 @@
       "priorityTitle": "标签 {{tag}} 的优先级",
       "priorityHint": "给带这个标签的所有渠道设置同一优先级"
     },
-    "optional": "可选"
+    "optional": "可选",
+    "columns": {
+      "requests": "请求",
+      "requestsIn": "请求 {{range}}"
+    },
+    "preset": {
+      "attention": "需要处理",
+      "lowBalance": "余额不足",
+      "autoDisabled": "自动停用"
+    },
+    "condition": {
+      "showThat": "筛选渠道",
+      "issue": "需要处理",
+      "issueAny": "任一问题",
+      "issueLowBalance": "余额不足",
+      "issueKeyMissing": "缺少密钥",
+      "issueDrift": "模型有变化",
+      "tag": "标签",
+      "group": "分组",
+      "model": "模型",
+      "modelHint": "模型名包含…"
+    },
+    "list": {
+      "meta": "优先级 {{priority}} · {{requests}} 请求 · {{latency}}"
+    },
+    "upstream": {
+      "title": "上游模型",
+      "hint": "这个渠道在上游能用的全部模型，来自最近一次模型检查。要不要对外提供、由谁提供，在模型页的「供应」里决定。",
+      "check": "立即检查",
+      "checkFailed": "检查失败",
+      "empty": "还没有读到上游的模型清单，点「立即检查」读取。",
+      "unsupported": "这个供应商不提供模型清单接口。",
+      "search": "搜索模型",
+      "noMatch": "没有符合条件的模型",
+      "name": "上游模型",
+      "publicModel": "对应的公开模型",
+      "state": "状态",
+      "filter": {
+        "all": "全部",
+        "in_use": "在用",
+        "available": "可用",
+        "not_in_catalog": "不在目录",
+        "unknown": "没认出来"
+      },
+      "states": {
+        "in_use": "在用",
+        "off": "供应已关闭",
+        "available": "可用，未添加",
+        "not_in_catalog": "不在目录",
+        "unknown": "没认出来"
+      }
+    },
+    "strip": {
+      "all": "全部",
+      "allMeta": "{{count}} 个渠道",
+      "allTitle": "全部渠道",
+      "meta": "{{count}} 个渠道 · {{requests}} 次请求",
+      "metaOff": "{{count}} 个渠道（{{enabled}} 个启用） · {{requests}} 次请求",
+      "allProviders": "全部供应商"
+    },
+    "order": {
+      "column": "顺序",
+      "shareColumn": "分担",
+      "up": "往前移",
+      "down": "往后移",
+      "share": "与上一位分担",
+      "unshare": "不再分担",
+      "weightOf": "{{name}} 的权重",
+      "drag": "拖动调整顺序",
+      "positionShort": "第 {{n}} 位",
+      "sharesWith": "与 {{names}} 分担",
+      "nameSep": "、",
+      "sharedTag": "分担",
+      "groupWhy": "这 {{count}} 个渠道在同一位置，共同提供 {{models}} 个模型，这些模型按权重分担",
+      "noCommonModel": "这两个渠道没有共同提供的模型，不能分担，已排在它后面",
+      "dropHint": {
+        "before": "插到这里",
+        "after": "插到这里",
+        "join": "并入这一组分担"
+      }
+    },
+    "newMenu": {
+      "inUse": "已接入"
+    },
+    "orderHint": "从上往下试，前一个不可用才用下一个；同一个序号的渠道提供相同的模型，按权重分担。",
+    "attention_other": "{{count}} 个需要处理",
+    "issueTag": {
+      "autoDisabled": "已自动禁用",
+      "keyMissing": "缺少密钥",
+      "lowBalance": "余额低",
+      "driftNew_other": "{{count}} 个新模型",
+      "driftMissing_other": "{{count}} 个模型下架",
+      "refresh": "刷新"
+    },
+    "head": {
+      "order": "先用数字小的；同号渠道一起分担流量",
+      "share": "同组渠道的权重和流量占比",
+      "shareNone": "不与其他渠道分担",
+      "priorityWeight": "优先级高的先用，同优先级按权重分流",
+      "requests": "请求数",
+      "requestsHint": "{{range}}内的请求数和走势",
+      "success": "成功请求占比",
+      "latency": "成功请求的平均耗时",
+      "balance": "上游余额；订阅类显示本期用量",
+      "enabled": "关闭后不再接收请求"
+    },
+    "menu": {
+      "multiTest": "测试多个模型",
+      "multiTestHint": "逐个模型测连通和延迟",
+      "check": "能力检测",
+      "checkHint": "用真实请求校验识图、工具调用等，消耗额度",
+      "drift": "对比上游模型",
+      "driftHint": "看上游新增或下架了哪些模型"
+    },
+    "switcher": {
+      "count": "{{count}} 个渠道"
+    }
   },
   "nav": {
     "sections": {
@@ -2287,9 +2457,9 @@
       "orgMembers": "成员与预算",
       "billing": "账单",
       "orgSettings": "组织设置",
-      "health": "运行状况",
+      "systemLogs": "系统日志",
       "stats": "统计",
-      "channels": "渠道",
+      "channels": "供应商",
       "catalog": "模型目录",
       "routing": "自动路由",
       "users": "用户",
@@ -2302,6 +2472,7 @@
       "inviteCodes": "邀请码",
       "settings": "设置",
       "routingPolicies": "路由策略",
+      "health": "运行状况",
       "orgModelAccess": "模型访问"
     },
     "context": {
@@ -2387,7 +2558,19 @@
       "subtitle": "同一分组的用户共用价格倍率和速率限制",
       "defaults": "创建后即启用，倍率 1、每分钟 300 次请求，可在分组面板里修改",
       "created": "已创建分组 {{symbol}}"
-    }
+    },
+    "rateLimit": "限速",
+    "publicShort": "公开",
+    "publicYes": "公开",
+    "enableShort": "启用",
+    "perMinute": "{{count}} 次/分",
+    "promotionFrom": "累计充值 {{min}} 起",
+    "promotionRange": "累计充值 {{min}} – {{max}}",
+    "enabled": "已启用",
+    "disabled": "已停用",
+    "enableAction": "启用",
+    "disableAction": "停用",
+    "emptyTitle": "还没有用户分组"
   },
   "redemptionPage": {
     "panel": {
@@ -2418,6 +2601,8 @@
     "channel": "渠道",
     "model": "模型",
     "upstream": "上游模型",
+    "upstreamSame": "同名",
+    "upstreamSameTip": "以 {{name}} 发给上游，与公开名相同",
     "priority": "优先级",
     "weight": "权重",
     "stateLabel": "状态",
@@ -2430,6 +2615,9 @@
     "deleteConfirm": "不再把 {{model}} 发给 {{channel}}？渠道本身不受影响。",
     "deleted": "已删除供应",
     "moveUp": "移到更高一档",
+    "ownNumbers": "单独设置",
+    "ownNumbersTip": "这条供应的优先级或权重和渠道的不一样，渠道改动时不会跟着变",
+    "followChannel": "恢复跟随渠道",
     "moveDown": "移到更低一档",
     "pauseFor": "暂停",
     "paused": "已暂停 {{time}}",
@@ -2457,8 +2645,29 @@
       "published": "已发布",
       "retired": "已下架"
     },
+    "available": {
+      "title": "还能提供这个模型的渠道",
+      "hint": "已列出此模型、还没加为供应；添加后优先级和权重跟随渠道"
+    },
+    "batch": {
+      "menu": "供应",
+      "modeLabel": "同一档内",
+      "add": "添加来源…",
+      "remove": "移除来源…",
+      "addTitle": "给 {{count}} 个模型添加来源",
+      "removeTitle": "从 {{count}} 个模型移除来源",
+      "addHint": "所选渠道会成为这些模型的供应：上游模型名自动填写，优先级和权重跟随渠道。已经由它供应的模型跳过。",
+      "removeHint": "删除所选渠道对这些模型的供应。渠道本身不受影响。",
+      "pick": "选择渠道",
+      "confirmAdd": "添加",
+      "confirmRemove": "移除",
+      "done": "已处理 {{changed}} 个，跳过 {{skipped}} 个",
+      "modeDone": "已更新 {{count}} 个模型的模式"
+    },
     "mode": {
       "label": "同一档内",
+      "default": "跟随默认",
+      "defaultHint": "跟随平台设置里的默认模式，现在是「{{mode}}」。",
       "balance": "负载均衡",
       "failover": "主备",
       "balanceHint": "同一档的供应按权重分担请求。",
@@ -2504,7 +2713,8 @@
       "searchChannel": "搜索渠道",
       "noChannel": "没有找到渠道",
       "channelRequired": "请选择渠道",
-      "hint": "上游模型名取自渠道的模型映射。新供应默认作为备用，排在最低一档之下。"
+      "hint": "上游模型名按渠道自动填写：先看模型映射，再看渠道已列出的名字，最后按该平台的写法（如 Vertex 的 @default）。新供应默认作为备用，排在最低一档之下。",
+      "fromLibrary": "已按该平台的写法填写"
     },
     "channelSupplies": {
       "title_other": "供应 {{count}} 个公开模型",
@@ -2566,6 +2776,20 @@
       "attachButton": "挂接",
       "attached_other": "已挂到 {{model}}，共 {{count}} 个渠道",
       "skipped_other": "{{count}} 个渠道已有 {{model}} 的供应（上游名不同），这个模型在那些渠道上仍待处理。"
+    },
+    "allocation": {
+      "label": "顺序",
+      "policy": "按供应商页的调用顺序",
+      "manual": "单独设置",
+      "manualShort": "单独设置",
+      "open": "去调整顺序",
+      "toManual": "单独设置",
+      "toPolicy": "恢复按调用顺序",
+      "policyHint": "顺序和权重来自供应商页的调用顺序；在这里调整顺序或权重，会把这个模型改为单独设置。",
+      "manualHint": "这个模型的顺序不随调用顺序变化。",
+      "becameManual": "这个模型已改为单独设置",
+      "nowManual": "已改为单独设置，当前排位保持不变",
+      "nowPolicy": "已恢复按调用顺序"
     }
   },
   "settingsUi": {
@@ -2813,6 +3037,11 @@
           "title": "组织",
           "hint": "已有组织不受影响"
         },
+        "supply-mode": {
+          "title": "默认供应模式",
+          "description": "没有单独设置的模型，同一档里的供应怎么分担请求",
+          "hint": "在模型的「供应」页签里可以给单个模型另选"
+        },
         "supply-pause-rules": {
           "title": "供应暂停规则",
           "description": "上游报错时按规则暂停渠道或模型，到点测试通过后恢复",
@@ -2871,7 +3100,7 @@
     "personal": {
       "username": "用户名",
       "groups": {
-        "profile": "资料",
+        "profile": "个人信息",
         "profileDescription": "显示名称与账号信息",
         "security": "登录与安全",
         "securityDescription": "登录方式、账号标识、会话与访问令牌",
@@ -2882,8 +3111,8 @@
       },
       "cards": {
         "profile": {
-          "title": "资料",
-          "description": "显示名称和头像",
+          "title": "个人信息",
+          "description": "显示名称",
           "hint": "用户名不能修改"
         },
         "logIO": {
@@ -2892,9 +3121,10 @@
         },
         "appearance": {
           "title": "外观",
-          "description": "主题与语言，只对你自己生效",
-          "hint": "保存后立即应用",
-          "languageHint": "选择界面语言；默认跟随浏览器。"
+          "description": "主题与语言，选择后立即生效，只对你自己生效",
+          "languageHint": "默认跟随浏览器",
+          "themeHint": "跟随系统时随设备的深浅色切换",
+          "hint": "保存后立即应用"
         },
         "quotaRemind": {
           "hint": "每天最多提醒一次"
@@ -2908,13 +3138,15 @@
       },
       "sessions": {
         "device": "设备",
-        "where": "地址与方式"
+        "where": "地址与方式",
+        "showAll": "显示全部 {{count}} 个",
+        "showFewer": "收起"
       }
     },
     "org": {
       "groups": {
         "general": "常规",
-        "generalDescription": "组织资料与团队预算",
+        "generalDescription": "组织信息与团队预算",
         "danger": "危险操作",
         "dangerDescription": "退出、转让与解散"
       },
@@ -2924,6 +3156,9 @@
           "hint": "改动对所有成员生效"
         },
         "budget": {
+          "description": "全体成员每个周期的合计消费上限，用尽后组织内请求会被拒绝",
+          "noLimitHint": "不限预算时只受各成员自己的预算约束",
+          "resetsHint": "{{period}}重置，时区与周起始日跟随平台设置",
           "hint": "周期与平台设置一致"
         },
         "danger": {
@@ -2940,9 +3175,9 @@
   },
   "home": {
     "hero": {
-      "tagline": "所有模型，一个出口",
+      "tagline": "为团队打造的 AI 网关",
       "ctaPrimary": "获取 API Key",
-      "catchphrase": "兼容 OpenAI、Anthropic、Gemini 协议，只需更换 base URL",
+      "catchphrase": "每位成员一把 key、一份预算，三种主流接口全兼容",
       "dripAria": "一滴 Modeltaps 标志形状的水在龙头下聚起，落到平静的水面上，涟漪一圈圈散开，依次点亮水面上的各个模型。"
     }
   },
@@ -3047,6 +3282,238 @@
       "day": "1 天",
       "week": "1 周",
       "month": "1 个月"
+    }
+  },
+  "redemptionList": {
+    "segments": {
+      "all": "全部",
+      "usable": "可用",
+      "expired": "已过期",
+      "disabled": "已禁用",
+      "used": "已兑换"
+    },
+    "searchShort": "搜索名称或 ID",
+    "copyCode": "复制兑换码",
+    "enable": "启用",
+    "disable": "禁用",
+    "batchEnable": "启用",
+    "batchDisable": "禁用",
+    "redeemed": "已兑换",
+    "expiredState": "已过期",
+    "createdAgo": "{{time}}创建",
+    "expires": "{{time}}过期",
+    "never": "永不过期",
+    "statusShort": "启用"
+  },
+  "inviteList": {
+    "segments": {
+      "all": "全部",
+      "usable": "可用",
+      "pending": "未生效",
+      "expired": "已过期",
+      "exhausted": "已用完",
+      "disabled": "已禁用"
+    },
+    "searchShort": "搜索邀请码或名称",
+    "copyCode": "复制邀请码",
+    "enable": "启用",
+    "disable": "禁用",
+    "startsIn": "{{time}}生效",
+    "expiresIn": "{{time}}过期",
+    "never": "永不过期",
+    "expired": "已过期",
+    "usedUp": "已用完",
+    "createdAgo": "{{time}}创建",
+    "usage": "已用"
+  },
+  "modelLibrary": {
+    "open": "从模型库添加",
+    "title": "从模型库添加模型",
+    "description": "来自 models.dev 的 {{count}} 个模型，每个模型一行。勾选后加入模型目录；没有价格的按官方价填好。",
+    "search": "搜索模型",
+    "vendor": "厂商",
+    "allVendors": "全部厂商",
+    "endpoint": "接口",
+    "allEndpoints": "全部接口",
+    "released": "发布",
+    "anyTime": "不限时间",
+    "withinDays_one": "近 {{count}} 天",
+    "withinDays_other": "近 {{count}} 天",
+    "suppliedOnly": "有渠道能供应",
+    "openOnly": "开源",
+    "hideAdded": "隐藏已加入",
+    "hideDeprecated": "隐藏已弃用",
+    "matches_one": "{{count}} 个匹配",
+    "matches_other": "{{count}} 个匹配",
+    "empty": "没有符合条件的模型",
+    "selectAll": "全选筛选结果",
+    "model": "模型",
+    "context": "上下文",
+    "price": "每百万 token（入 / 出）",
+    "channels": "渠道",
+    "inCatalog": "已加入",
+    "deprecated": "已弃用",
+    "showMore": "再显示 {{count}} 个",
+    "selected": "已选 {{count}} 个",
+    "createSupplies": "为匹配到的渠道建供应",
+    "status": "状态",
+    "asDraft": "草稿",
+    "asPublished": "发布",
+    "add": "添加 {{count}} 个",
+    "added": "已添加 {{count}} 个模型，建了 {{supplies}} 条供应",
+    "unsureCount_one": "+{{count}} 待确认",
+    "unsureCount_other": "+{{count}} 待确认",
+    "excludedBefore": "之前取消过",
+    "match": {
+      "exact": "精确",
+      "platform": "平台写法",
+      "pending": "待确认",
+      "variant": "变体"
+    },
+    "notSynced": "模型库还是空的。关掉这里，在页面右上角点「同步 → 从 models.dev 同步」拉取后再来添加。"
+  },
+  "ledgerList": {
+    "description": "说明",
+    "amount": "金额"
+  },
+  "dashboardList": {
+    "vsYesterday": "较昨天",
+    "viewUsage": "查看用量",
+    "topModels": "Top 模型",
+    "requests": "次"
+  },
+  "settingsFields": {
+    "statusCode": "状态码",
+    "seconds": "秒数",
+    "addStatus": "添加状态码",
+    "remove": "删除",
+    "invalidJson": "已保存的值不是合法 JSON，请在下方按文本修改。"
+  },
+  "settingsUnits": {
+    "seconds": "秒"
+  },
+  "orgList": {
+    "allActions": "全部动作",
+    "actorId": "操作者 ID",
+    "createdAt": "创建于 {{time}}",
+    "noAudit": "暂无审计记录",
+    "makeAdmin": "设为管理员",
+    "makeMember": "设为成员",
+    "more": "更多操作",
+    "joined": "{{time}}加入",
+    "actions": {
+      "org_create": "创建组织",
+      "org_update": "更新组织资料",
+      "org_update_budget": "更新组织预算",
+      "org_update_setting": "更新组织设置",
+      "org_dissolve": "解散组织",
+      "org_transfer_ownership": "转让所有权",
+      "org_admin_enable": "站点管理员启用组织",
+      "org_admin_disable": "站点管理员禁用组织",
+      "org_admin_dissolve": "站点管理员解散组织",
+      "org_admin_max_members": "站点管理员调整成员上限",
+      "org_invitation_create": "发出邀请",
+      "org_invitation_accept": "接受邀请",
+      "org_invitation_reject": "拒绝邀请",
+      "org_invitation_revoke": "撤销邀请",
+      "org_member_account_create": "新建成员账号",
+      "org_member_leave": "成员退出",
+      "org_member_limits_update": "调整成员限额",
+      "org_member_remove": "移除成员",
+      "org_member_role_update": "变更成员角色",
+      "quota_transfer": "个人额度转入",
+      "billing_topup": "兑换码充值",
+      "billing_order_create": "创建充值订单",
+      "billing_admin_adjust": "站点管理员调整余额",
+      "token_create": "创建 API 密钥",
+      "token_update": "更新 API 密钥",
+      "token_delete": "删除 API 密钥",
+      "routing_policy_create": "创建路由策略",
+      "routing_policy_update": "更新路由策略",
+      "routing_policy_delete": "删除路由策略",
+      "routing_policy_status": "启停路由策略"
+    }
+  },
+  "priceList": {
+    "groupHint": "不同分组价格不同。API Key 的分组在 API Key 管理里切换"
+  },
+  "orderList": {
+    "segments": {
+      "all": "全部",
+      "success": "成功",
+      "pending": "待支付",
+      "failed": "失败",
+      "closed": "已关闭"
+    },
+    "paid": "实付"
+  },
+  "topupCard": {
+    "inputPlaceholder": "输入兑换码"
+  },
+  "settingsPage": {
+    "security": {
+      "sessionsHint": "已登录本账号的设备，不认识的就登出",
+      "identifiersHint": "用其中任一项登录，进的都是这个账号；邮箱也用于找回和通知"
+    }
+  },
+  "authPages": {
+    "haveAccount": "已有账号？",
+    "remembered": "想起来了？",
+    "resetTitle": "找回密码",
+    "resetHint": "我们会把重置链接发到这个邮箱"
+  },
+  "login": {
+    "forgetPassword": "忘记密码？"
+  },
+  "libraryRules": {
+    "intro": "每天同步模型库后，按这些规则决定哪些新模型加入目录、哪些目录里的模型下架。规则从上往下匹配，第一条条件全部满足的规则生效；每个模型只判定一次，你删掉的模型不会被加回来，你改过的模型不会被下架。",
+    "enabled": "每次同步后运行规则",
+    "apply": "执行规则",
+    "applyOn": "规则会改动目录，并通知你做了什么。",
+    "applyOff": "演练：规则不改动任何东西，只通知你将会做什么。",
+    "name": "名称",
+    "namePlaceholder": "规则名称",
+    "action": "动作",
+    "actions": {
+      "publish": "发布",
+      "draft": "加为草稿",
+      "ignore": "不收录",
+      "retire": "下架"
+    },
+    "labs": "厂商（models.dev 前缀）",
+    "patterns": "模型名匹配",
+    "days": "发布天数以内",
+    "anyTime": "不限",
+    "endpoints": "接口（任一）",
+    "supplied": "有渠道能供应",
+    "deprecated": "已弃用",
+    "openWeights": "开源",
+    "tri": {
+      "any": "不限",
+      "yes": "是",
+      "no": "否"
+    },
+    "up": "上移",
+    "down": "下移",
+    "remove": "删除规则",
+    "add": "添加规则",
+    "preview": "预览",
+    "runNow": "立即运行",
+    "saveFirst": "请先保存规则",
+    "reset": "恢复默认",
+    "save": "保存",
+    "saved": "收录规则已保存",
+    "noRules": "没有规则：不会自动添加或下架任何模型。",
+    "orderHint": "每个模型从上往下过规则；不填的条件表示不限。",
+    "previewTitle": "按当前规则现在会做什么",
+    "previewEmpty": "没有要做的：命中的模型都已处理过。",
+    "ranApply": "已添加 {{added}} 个，下架 {{retired}} 个",
+    "ranDry": "演练：报告了 {{count}} 项新变化",
+    "defaultNames": {
+      "retireDeprecated": "下架已弃用的模型",
+      "previews": "预览版加为草稿",
+      "publishMain": "主流厂商的新模型直接发布",
+      "otherSupplied": "其余有渠道能供应的加为草稿"
     }
   },
   "modelAccess": {

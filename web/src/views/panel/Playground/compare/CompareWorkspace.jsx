@@ -25,10 +25,14 @@ const SYSTEM_FIELDS = CHAT_FIELDS.filter((field) => field.key === 'system');
 const GLOBAL_FIELDS = CHAT_FIELDS.filter((field) => ['temperature', 'maxTokens', 'thinking', 'reasoningEffort'].includes(field.key));
 
 // 2 列直接等分；3–4 列在 ≥1280px 并排，以下每列保底宽度、横向滚动。
+// On phones every column is 85% of the width and the row swipes, snapping to a column, so each
+// one has room to read and the next one peeks in.
+const PHONE_SWIPE =
+  'no-scrollbar grid-flow-col auto-cols-[85%] overflow-x-auto snap-x snap-mandatory [&>*]:snap-start sm:grid-flow-row sm:auto-cols-auto sm:snap-none';
 const GRID_CLASS = {
-  2: 'grid-cols-2',
-  3: 'grid-cols-[repeat(3,minmax(18rem,1fr))] overflow-x-auto xl:grid-cols-3 xl:overflow-visible',
-  4: 'grid-cols-[repeat(4,minmax(18rem,1fr))] overflow-x-auto xl:grid-cols-4 xl:overflow-visible'
+  2: 'sm:grid-cols-2 sm:overflow-visible',
+  3: 'sm:grid-cols-[repeat(3,minmax(18rem,1fr))] xl:grid-cols-3 xl:overflow-visible',
+  4: 'sm:grid-cols-[repeat(4,minmax(18rem,1fr))] xl:grid-cols-4 xl:overflow-visible'
 };
 
 export default function CompareWorkspace({ session, gated, gateMessage, gateActionHref, gateActionLabel, noModels }) {
@@ -111,8 +115,11 @@ export default function CompareWorkspace({ session, gated, gateMessage, gateActi
             className={cn(sync && 'bg-muted')}
             icon={sync ? <Link2 className="size-3.5" /> : <Unlink2 className="size-3.5" />}
             onClick={() => session.setSync(!sync)}
+            aria-label={t(sync ? 'playgroundConsole.compare.syncOn' : 'playgroundConsole.compare.syncOff')}
+            title={t(sync ? 'playgroundConsole.compare.syncOn' : 'playgroundConsole.compare.syncOff')}
           >
-            {t(sync ? 'playgroundConsole.compare.syncOn' : 'playgroundConsole.compare.syncOff')}
+            {/* Icon only on phones, where the label was cut to one character. */}
+            <span className="hidden sm:inline">{t(sync ? 'playgroundConsole.compare.syncOn' : 'playgroundConsole.compare.syncOff')}</span>
           </ChipButton>
         </>
       }
@@ -121,7 +128,7 @@ export default function CompareWorkspace({ session, gated, gateMessage, gateActi
 
   return (
     <ConsolePage className="min-h-0 flex-1" columnClassName="max-w-none h-full" composer={composer}>
-      <div className={cn('grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] gap-3', GRID_CLASS[columns.length])}>
+      <div className={cn('grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] gap-3', PHONE_SWIPE, GRID_CLASS[columns.length])}>
         {columns.map((column, index) => (
           <CompareColumn
             key={column.id}

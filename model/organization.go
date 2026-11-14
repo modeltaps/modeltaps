@@ -396,10 +396,11 @@ func ExcludeShadowUsers(db *gorm.DB) *gorm.DB {
 // OrganizationAdminInfo 站点管理后台视角的组织信息:组织元数据 + 组织池余额(影子账户)+ 成员数 + Owner
 type OrganizationAdminInfo struct {
 	Organization
-	OwnerId     int   `json:"owner_id"`
-	Quota       int   `json:"quota"`
-	UsedQuota   int   `json:"used_quota"`
-	MemberCount int64 `json:"member_count"`
+	OwnerId     int    `json:"owner_id"`
+	OwnerName   string `json:"owner_name"`
+	Quota       int    `json:"quota"`
+	UsedQuota   int    `json:"used_quota"`
+	MemberCount int64  `json:"member_count"`
 	// EffectiveMaxMembers 生效的成员上限(0=不限制),max_members 为 null 时即站点默认值
 	EffectiveMaxMembers int `json:"effective_max_members"`
 	// ApprovedModels of the organization (ORG-15), only in the detail of one organization
@@ -445,14 +446,28 @@ func fillOrganizationAdminInfos(orgs []*Organization) ([]*OrganizationAdminInfo,
 		return nil, err
 	}
 	ownerByOrg := make(map[int]int, len(owners))
+	ownerIds := make([]int, 0, len(owners))
 	for _, m := range owners {
 		ownerByOrg[m.OrganizationId] = m.UserId
+		ownerIds = append(ownerIds, m.UserId)
+	}
+	// Owner usernames, so the list can name the owner instead of showing an id.
+	var ownerUsers []User
+	if len(ownerIds) > 0 {
+		if err := DB.Select("id", "username").Where("id IN ?", ownerIds).Find(&ownerUsers).Error; err != nil {
+			return nil, err
+		}
+	}
+	ownerNameById := make(map[int]string, len(ownerUsers))
+	for _, u := range ownerUsers {
+		ownerNameById[u.Id] = u.Username
 	}
 	for _, org := range orgs {
 		shadow := shadowById[org.ShadowUserId]
 		infos = append(infos, &OrganizationAdminInfo{
 			Organization: *org,
 			OwnerId:      ownerByOrg[org.Id],
+			OwnerName:    ownerNameById[ownerByOrg[org.Id]],
 			Quota:        shadow.Quota,
 			UsedQuota:    shadow.UsedQuota,
 			MemberCount:  countByOrg[org.Id],
@@ -468,7 +483,7 @@ func GetOrganizationsAdminList(params *GenericParams) (*DataResult[OrganizationA
 	var orgs []*Organization
 	db := DB.Model(&Organization{})
 	if params.Keyword != "" {
-		db = db.Where("name LIKE ? OR slug LIKE ?", params.Keyword+"%", params.Keyword+"%")
+		db = db.Where(caseInsensitiveLike("name LIKE ? OR slug LIKE ?"), params.Keyword+"%", params.Keyword+"%")
 	}
 	pageResult, err := PaginateAndOrder[Organization](db, &params.PaginationParams, &orgs, allowedOrgAdminOrderFields)
 	if err != nil {

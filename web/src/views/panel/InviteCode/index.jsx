@@ -1,98 +1,134 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Info, Plus, RefreshCw, Search, Ticket, Trash2 } from 'lucide-react';
+import { Ban, Check, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
 
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/components/ui/sonner';
+import {
+  BatchBar,
+  ListEmptyState,
+  ListFooter,
+  ListSkeleton,
+  PhoneListToolbar,
+  StatusSegments,
+  useListLayout,
+  useRowSelection
+} from '@/components/list-page';
 import { API } from 'utils/api';
-import { showError, copy, trims } from 'utils/common';
-import { PAGE_SIZE_OPTIONS, getPageSize, savePageSize } from 'constants';
-import { createRequestGuard, runGuardedFetch } from 'hooks/paginatedListGuard';
+import { showError, copy } from 'utils/common';
+import usePaginatedList from 'hooks/usePaginatedList';
 import PageActions from '@/components/chrome/PageActions';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
-import InviteCodeTable from './InviteCodeTable';
+import InviteCodeTable, { InviteCodeCards } from './InviteCodeTable';
 import InviteCodeSheet from './InviteCodeSheet';
-import PageSizeSelect from '@/components/ui/page-size-select';
 
 const tk = (k) => `setting_index.inviteCodeSettings.${k}`;
 
+// Segments (?state=), counted by the list response (state_counts). They do not overlap.
+const SEGMENTS = ['all', 'usable', 'pending', 'expired', 'exhausted', 'disabled'];
+const KEYWORD_DEBOUNCE_MS = 300;
+
 // ==============================|| PANEL — INVITE CODES (admin) ||============================== //
-// Registration invite codes: list, filters, batch delete and the create / edit sheet. Whether
-// registration needs a code is the 注册需要邀请码 switch in platform settings (登录与注册).
+// Registration invite codes: segments, search, bulk actions and the create / edit sheet. Whether
+// registration needs a code is a switch in platform settings (sign-in and registration).
 
 export default function InviteCode() {
-  const { t } = useTranslation();
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(() => getPageSize('inviteCode'));
-  const [listCount, setListCount] = useState(0);
-  const [searching, setSearching] = useState(false);
-  const [searchKeyword, setSearchKeyword] = useState('');
-  const [keywordInput, setKeywordInput] = useState('');
-  const [statusFilter, setStatusFilter] = useState('0');
-  const [inviteCodes, setInviteCodes] = useState([]);
-  const [refreshFlag, setRefreshFlag] = useState(false);
+  const { t, i18n } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [keywordInput, setKeywordInput] = useState(() => searchParams.get('keyword') || '');
+  const [keyword, setKeyword] = useState(() => (searchParams.get('keyword') || '').trim());
+  const [state, setState] = useState(() => (SEGMENTS.includes(searchParams.get('state')) ? searchParams.get('state') : 'all'));
+  const [stateCounts, setStateCounts] = useState(null);
 
-  const [selected, setSelected] = useState([]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [batchConfirm, setBatchConfirm] = useState(false);
-  const [batchDeleting, setBatchDeleting] = useState(false);
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
+  const [batchBusy, setBatchBusy] = useState(false);
 
-  // reqId 守卫(UX-13):快速切页/搜索/切状态时丢弃过期响应。
-  const guardRef = useRef(null);
-  if (!guardRef.current) guardRef.current = createRequestGuard();
+  const {
+    page,
+    setPage,
+    rowsPerPage,
+    listCount,
+    searching,
+    loaded,
+    rows: inviteCodes,
+    setRows: setInviteCodes,
+    handleRefresh,
+    onRowsPerPageChange
+  } = usePaginatedList({
+    pageSizeKey: 'inviteCode',
+    fetcher: async ({ page, rowsPerPage }) => {
+      const params = {
+        page: page + 1,
+        size: rowsPerPage,
+        order: '-id',
+        ...(keyword ? { keyword } : {}),
+        ...(state !== 'all' ? { state } : {})
+      };
+      const res = await API.get('/api/invite-code/', { params });
+      return res.data;
+    },
+    onSuccess: (payload) => setStateCounts(payload.state_counts ?? null),
+    deps: [keyword, state]
+  });
 
-  const fetchData = useCallback(() => {
-    const keyword = trims(searchKeyword);
-    const params = { page: page + 1, size: rowsPerPage, order: '-id', keyword };
-    if (statusFilter !== '0') params.status = parseInt(statusFilter, 10);
-    return runGuardedFetch(guardRef.current, () => API.get('/api/invite-code/', { params }), {
-      onStart: () => setSearching(true),
-      onResult: (res) => {
-        const { success, message, data } = res.data;
-        if (success) {
-          setListCount(data.total_count);
-          setInviteCodes(data.data || []);
-          setSelected([]);
-        } else {
-          showError(message);
-        }
-      },
-      onError: (error) => {
-        console.error(error);
-        setInviteCodes([]);
-      },
-      onFinally: () => setSearching(false)
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, rowsPerPage, searchKeyword, statusFilter, refreshFlag]);
-
+  // The search box applies after a short pause in typing.
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    const handle = setTimeout(() => {
+      const next = keywordInput.trim();
+      if (next === keyword) return;
+      setPage(0);
+      setKeyword(next);
+    }, KEYWORD_DEBOUNCE_MS);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keywordInput]);
 
-  const handleRefresh = () => setRefreshFlag((f) => !f);
+  // Search and segment live in the URL (replace), so a reload restores them.
+  useEffect(() => {
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        params.delete('keyword');
+        params.delete('state');
+        if (keyword) params.set('keyword', keyword);
+        if (state !== 'all') params.set('state', state);
+        return params;
+      },
+      { replace: true }
+    );
+  }, [keyword, state, setSearchParams]);
 
-  const onSelectAll = () => {
-    setSelected((prev) => (prev.length === inviteCodes.length ? [] : inviteCodes.map((c) => c.id)));
+  const changeState = (next) => {
+    setPage(0);
+    setState(next);
   };
-  const onSelectOne = (id) => {
-    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  };
+
+  const selection = useRowSelection(inviteCodes, [page, rowsPerPage, keyword, state]);
+  // Full table while it fits (the sidebar collapses first), phone cards otherwise.
+  const { narrow } = useListLayout();
+  const rtf = useMemo(
+    () => new Intl.RelativeTimeFormat((i18n.language || 'zh_CN').replace('_', '-'), { numeric: 'auto' }),
+    [i18n.language]
+  );
 
   const onCopy = (item) => copy(item.code, t(tk('headLabels.code')));
+
+  const setStatus = (id, status) => API.put(`/api/invite-code/${id}`, { status });
 
   const onToggleStatus = async (item) => {
     const next = item.status === 1 ? 2 : 1;
     try {
-      const res = await API.put(`/api/invite-code/${item.id}`, { status: next });
+      const res = await setStatus(item.id, next);
       if (res.data?.success) {
         setInviteCodes((prev) => prev.map((x) => (x.id === item.id ? { ...x, status: next } : x)));
       } else {
@@ -136,137 +172,180 @@ export default function InviteCode() {
     }
   };
 
-  const confirmBatchDelete = async () => {
-    if (selected.length === 0) return;
-    setBatchDeleting(true);
+  // Bulk enable / disable go code by code (failures are counted); delete has a batch endpoint.
+  const runBatch = async (action) => {
+    const ids = [...selection.selectedIds];
+    if (ids.length === 0) return;
+    setBatchBusy(true);
     try {
-      const res = await API.post('/api/invite-code/batch-delete', { ids: selected });
-      if (res.data?.success) {
-        toast.success(t(tk('batchDeleteOk'), { count: selected.length }));
-        setSelected([]);
-        handleRefresh();
+      if (action === 'delete') {
+        const res = await API.post('/api/invite-code/batch-delete', { ids });
+        if (res.data?.success) toast.success(t(tk('batchDeleteOk'), { count: ids.length }));
+        else showError(res.data?.message);
       } else {
-        showError(res.data?.message);
+        const results = await Promise.allSettled(ids.map((id) => setStatus(id, action === 'enable' ? 1 : 2)));
+        const failed = results.filter((r) => r.status !== 'fulfilled' || !r.value.data?.success).length;
+        if (failed > 0) showError(t('userPage.batchFailed', { count: failed }));
+        else toast.success(t('userPage.operationSuccess'));
       }
     } catch (error) {
       showError(error);
     } finally {
-      setBatchDeleting(false);
-      setBatchConfirm(false);
+      setBatchBusy(false);
+      setBatchDeleteOpen(false);
+      selection.exitSelectMode();
+      handleRefresh();
     }
   };
 
-  const totalPages = Math.max(1, Math.ceil(listCount / rowsPerPage));
+  const actions = { onEdit: openEdit, onCopy, onToggleStatus, onDelete: setDeleteTarget };
+
+  const batchActions = (
+    <>
+      <Button size="sm" variant="outline" className="h-7" disabled={batchBusy} onClick={() => runBatch('enable')}>
+        <Check className="size-3.5" />
+        {t('inviteList.enable')}
+      </Button>
+      <Button size="sm" variant="outline" className="h-7" disabled={batchBusy} onClick={() => runBatch('disable')}>
+        <Ban className="size-3.5" />
+        {t('inviteList.disable')}
+      </Button>
+      <Button size="sm" variant="outline" className="h-7 text-destructive" disabled={batchBusy} onClick={() => setBatchDeleteOpen(true)}>
+        <Trash2 className="size-3.5" />
+        {t('common.delete')}
+      </Button>
+    </>
+  );
+
+  const segmentOptions = SEGMENTS.map((value) => ({ value, label: t(`inviteList.segments.${value}`) }));
+  const hasFilters = !!keyword || state !== 'all';
+
+  let body;
+  if (!loaded) {
+    body = narrow ? <ListSkeleton layout="list" rows={4} /> : <ListSkeleton layout="table" cells={[64, 96, 80, 32]} />;
+  } else if (!searching && inviteCodes.length === 0) {
+    body = hasFilters ? (
+      <ListEmptyState
+        variant="noMatch"
+        onClearFilters={() => {
+          setKeywordInput('');
+          setKeyword('');
+          changeState('all');
+        }}
+      />
+    ) : (
+      <ListEmptyState
+        title={t(tk('emptyHint'))}
+        action={
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="size-4" /> {t(tk('createButton'))}
+          </Button>
+        }
+      />
+    );
+  } else if (narrow) {
+    body = (
+      <InviteCodeCards
+        items={inviteCodes}
+        rtf={rtf}
+        selectMode={selection.selectMode}
+        selectedIds={selection.selectedIds}
+        onToggleSelect={selection.toggle}
+        actions={actions}
+      />
+    );
+  } else {
+    body = (
+      <InviteCodeTable
+        items={inviteCodes}
+        rtf={rtf}
+        selectedIds={selection.selectedIds}
+        onToggleSelect={selection.toggle}
+        onToggleSelectAll={selection.toggleAll}
+        actions={actions}
+      />
+    );
+  }
+
+  const footer = (
+    <ListFooter
+      total={listCount}
+      page={page}
+      pageSize={rowsPerPage}
+      selectedCount={selection.count}
+      onPageChange={setPage}
+      onPageSizeChange={onRowsPerPageChange}
+    />
+  );
 
   return (
     <>
-      <div className="space-y-6">
+      <div className={cn('space-y-3', narrow && selection.selectMode && 'pb-20')}>
+        {/* Title row: refresh (icon), then create. */}
         <PageActions>
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" onClick={handleRefresh} aria-label={t(tk('refreshButton'))}>
+                  <RotateCcw className={searching ? 'size-4 animate-spin' : 'size-4'} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t(tk('refreshButton'))}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <ResponsiveToolbarButton primary icon={Plus} label={t(tk('createButton'))} onClick={openCreate} />
         </PageActions>
 
-        <Alert variant="info">
-          <Info />
-          <AlertDescription>
-            <p>{t(tk('usageNote.line1'))}</p>
-            <p>{t(tk('usageNote.line2'))}</p>
-            <p>{t(tk('usageNote.line3'))}</p>
-            <p>{t(tk('usageNote.line4'))}</p>
-          </AlertDescription>
-        </Alert>
+        <p className="text-xs text-muted-foreground">{t(tk('usageNote.line1'))}</p>
 
-        <Card>
-          <div className="flex flex-col gap-2 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
-            <form
-              className="relative w-full flex-1"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setPage(0);
-                setSearchKeyword(keywordInput);
+        {narrow ? (
+          <div className="space-y-2">
+            <StatusSegments chips value={state} onChange={changeState} options={segmentOptions} counts={stateCounts} />
+            <PhoneListToolbar
+              search={{ value: keywordInput, onChange: setKeywordInput, placeholder: t('inviteList.searchShort') }}
+              select={{
+                active: selection.selectMode,
+                onToggle: () => (selection.selectMode ? selection.exitSelectMode() : selection.enterSelectMode())
               }}
-            >
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="pl-9"
-                placeholder={t(tk('searchPlaceholder'))}
-                value={keywordInput}
-                onChange={(e) => setKeywordInput(e.target.value)}
-              />
-            </form>
-            <div className="flex items-center gap-2">
-              <Select
-                value={statusFilter}
-                onValueChange={(v) => {
-                  setStatusFilter(v);
-                  setPage(0);
-                }}
-              >
-                <SelectTrigger className="w-36">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">{t(tk('statusAll'))}</SelectItem>
-                  <SelectItem value="1">{t(tk('statusEnabled'))}</SelectItem>
-                  <SelectItem value="2">{t(tk('statusDisabled'))}</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button variant="destructive" disabled={selected.length === 0} onClick={() => setBatchConfirm(true)}>
-                <Trash2 className="size-4" /> {t(tk('batchDelete'), { count: selected.length })}
-              </Button>
-              <Button variant="outline" onClick={handleRefresh}>
-                <RefreshCw className="size-4" /> {t(tk('refreshButton'))}
-              </Button>
-            </div>
+            />
           </div>
-
-          {inviteCodes.length === 0 && !searching ? (
-            <div className="flex flex-col items-center justify-center gap-3 p-12 text-center">
-              <Ticket className="size-10 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">{t(tk('emptyHint'))}</p>
-              <Button onClick={openCreate}>
-                <Plus className="size-4" /> {t(tk('createButton'))}
-              </Button>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusSegments value={state} onChange={changeState} options={segmentOptions} counts={stateCounts} />
+              <div className="relative min-w-[12rem] flex-1">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={keywordInput}
+                  onChange={(e) => setKeywordInput(e.target.value)}
+                  placeholder={t('inviteList.searchShort')}
+                  aria-label={t('inviteList.searchShort')}
+                  className="h-8 pl-8"
+                />
+              </div>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <InviteCodeTable
-                items={inviteCodes}
-                selected={selected}
-                onSelectAll={onSelectAll}
-                onSelectOne={onSelectOne}
-                onCopy={onCopy}
-                onEdit={openEdit}
-                onDelete={setDeleteTarget}
-                onToggleStatus={onToggleStatus}
+            {selection.count > 0 && (
+              <BatchBar
+                count={selection.count}
+                onClear={selection.clear}
+                className="min-h-10 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-1.5"
+                actions={batchActions}
               />
-            </div>
-          )}
-
-          <div className="flex items-center justify-between gap-4 border-t border-border p-4 text-sm">
-            <span className="text-muted-foreground">{listCount}</span>
-            <div className="flex items-center gap-2">
-              <PageSizeSelect
-                value={rowsPerPage}
-                options={PAGE_SIZE_OPTIONS}
-                onChange={(n) => {
-                  setRowsPerPage(n);
-                  setPage(0);
-                  savePageSize('inviteCode', n);
-                }}
-                format={(n) => t('pagination.perPage', { count: n })}
-              />
-              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
-                ‹
-              </Button>
-              <span className="tabular-nums">
-                {page + 1} / {totalPages}
-              </span>
-              <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => setPage((p) => p + 1)}>
-                ›
-              </Button>
-            </div>
+            )}
           </div>
-        </Card>
+        )}
+
+        {narrow ? (
+          <>
+            {body}
+            <Card>{footer}</Card>
+          </>
+        ) : (
+          <Card>
+            {body}
+            <div className="border-t border-border">{footer}</div>
+          </Card>
+        )}
 
         <InviteCodeSheet open={sheetOpen} onOpenChange={setSheetOpen} editing={editing} onSaved={onSaved} />
 
@@ -287,25 +366,29 @@ export default function InviteCode() {
           </DialogContent>
         </Dialog>
 
-        <Dialog open={batchConfirm} onOpenChange={(o) => !o && setBatchConfirm(false)}>
+        <Dialog open={batchDeleteOpen} onOpenChange={(o) => !o && setBatchDeleteOpen(false)}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{t('common.delete')}</DialogTitle>
               <DialogDescription>
-                {t('common.deleteConfirm', { title: t(tk('batchDeleteTitle'), { count: selected.length }) })}
+                {t('common.deleteConfirm', { title: t(tk('batchDeleteTitle'), { count: selection.count }) })}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setBatchConfirm(false)}>
+              <Button variant="outline" onClick={() => setBatchDeleteOpen(false)}>
                 {t('common.cancel')}
               </Button>
-              <Button variant="destructive" onClick={confirmBatchDelete} disabled={batchDeleting}>
+              <Button variant="destructive" onClick={() => runBatch('delete')} disabled={batchBusy}>
                 {t('common.delete')}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
+
+      {narrow && selection.selectMode && (
+        <BatchBar count={selection.count} onClear={selection.exitSelectMode} floating actions={batchActions} />
+      )}
     </>
   );
 }

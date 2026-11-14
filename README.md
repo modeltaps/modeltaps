@@ -1,8 +1,8 @@
 # Modeltaps
 
-> One endpoint. Every model. Built to flow.
+> The AI gateway for teams.
 
-The unified gateway for every AI model — multi-provider routing, usage analytics, channel control, and battle-tested reliability behind a single OpenAI-compatible API.
+Give every member a key and a budget. Use any model through OpenAI, Anthropic and Gemini APIs — self-hosted, with your own keys.
 
 ## Features
 

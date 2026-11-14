@@ -1,0 +1,23 @@
+# Backend hot reload for `make dev` (scripts/dev.sh): rebuilds on Go changes and restarts the
+# server through scripts/dev-backend.sh.
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/modeltaps-dev ."
+  entrypoint = ["./scripts/dev-backend.sh"]
+  include_ext = ["go", "yaml", "tmpl", "html"]
+  exclude_dir = ["web", "docs", "node_modules", "ittest", ".git", "wt", "dist", "_output", "devenv", "tmp", ".dev"]
+  exclude_regex = ["_test\\.go$"]
+  delay = 800
+  kill_delay = "3s"
+  send_interrupt = true
+  # true would make air delete the entrypoint (scripts/dev-backend.sh) on every rebuild; on a
+  # build error the previous binary keeps running instead
+  stop_on_error = false
+
+[log]
+  time = true
+
+[misc]
+  clean_on_exit = false

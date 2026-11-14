@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  followsChannel,
   pendingTarget,
   publicModelNames,
   channelGroups,
@@ -286,5 +287,21 @@ describe('pending upstream models', () => {
     expect(pendingTarget('auto/coder', rows)).toEqual({ kind: 'policy', model: 'auto/coder' });
     expect(pendingTarget('brand-new', rows)).toEqual({ kind: 'new', model: 'brand-new' });
     expect(pendingTarget('  ', rows).kind).toBe('empty');
+  });
+});
+
+describe('followsChannel', () => {
+  const base = { channel_name: 'c', channel_priority: 10, channel_weight: 3 };
+  it('is true while the supply has the channel numbers', () => {
+    expect(followsChannel({ ...base, priority: 10, weight: 3 })).toBe(true);
+    expect(followsChannel({ ...base, channel_weight: 1, priority: 10, weight: 0 })).toBe(true);
+  });
+  it('is false once priority or weight differs', () => {
+    expect(followsChannel({ ...base, priority: 9, weight: 3 })).toBe(false);
+    expect(followsChannel({ ...base, priority: 10, weight: 1 })).toBe(false);
+  });
+  it('does not flag supplies without channel numbers', () => {
+    expect(followsChannel({ priority: 1, weight: 1 })).toBe(true);
+    expect(followsChannel({ channel_priority: 5, channel_weight: 1, priority: 1, weight: 1 })).toBe(true);
   });
 });

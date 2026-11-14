@@ -271,7 +271,19 @@ func InitDB() (err error) {
 		if err != nil {
 			return err
 		}
+		err = db.AutoMigrate(&ModelLibraryEntry{}, &ModelLibraryHost{}, &ModelLibraryDecision{})
+		if err != nil {
+			return err
+		}
 		err = db.AutoMigrate(&ModelSupply{})
+		if err != nil {
+			return err
+		}
+		err = db.AutoMigrate(&ChannelModelAlias{})
+		if err != nil {
+			return err
+		}
+		err = db.AutoMigrate(&AllocationPolicy{})
 		if err != nil {
 			return err
 		}

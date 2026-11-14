@@ -9,12 +9,16 @@ import { resources } from 'i18n/resources';
 import i18nList from 'i18n/i18nList';
 import StaticHome from './StaticHome';
 import { STATIC_TOKENS } from './tokens';
+import { attachDripInteraction } from 'views/public/home/dripInteraction';
 
 // Build-time entry (vite SSR build, driven by scripts/prerender-home.mjs): renders the static home
 // page for one language and returns the markup plus the strings the document head needs.
 
 export const LANGUAGES = i18nList.map((item) => item.lng);
 export { STATIC_TOKENS };
+
+// inlined into the page by scripts/prerender-home.mjs (the function is self-contained)
+export const DRIP_SCRIPT = `(${attachDripInteraction.toString()})(document.querySelector('.drip'));`;
 
 export function renderHome(lng) {
   const i18n = createInstance();

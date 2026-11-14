@@ -127,6 +127,10 @@ type Quota struct {
 	promptCachingStrategy string
 	// sessionAffinity 会话亲和结果(hit / bound),非空时写入消费日志 metadata。
 	sessionAffinity string
+	// clientCancelled / usageEstimated: the upstream stream was closed because the client
+	// disconnected, and the output tokens were counted locally (see relay/main.go).
+	clientCancelled bool
+	usageEstimated  bool
 	// 请求 / 上游 / 响应声明的模型名与渠道类型,用于判断上游是否换了模型(CHAN-9)。
 	requestedModel, upstreamModel, responseModel string
 	channelType                                  int
@@ -503,6 +507,10 @@ type ConsumeSnapshot struct {
 	// SupplyId is the model supply the request went through (0 without supplies).
 	SupplyId int
 
+	// ClientCancelled / UsageEstimated: see config.GinClientCancelledKey / GinUsageEstimatedKey.
+	ClientCancelled bool
+	UsageEstimated  bool
+
 	// RetryAttempts 成功前失败过的上游尝试（重试链），为空表示首个渠道即成功。
 	RetryAttempts []RelayAttempt
 
@@ -533,6 +541,8 @@ func NewConsumeSnapshot(c *gin.Context) ConsumeSnapshot {
 		ResponseModel:   c.GetString(config.GinUpstreamResponseModelKey),
 		ChannelType:     c.GetInt("channel_type"),
 		RetryAttempts:   RelayAttempts(c),
+		ClientCancelled: c.GetBool(config.GinClientCancelledKey),
+		UsageEstimated:  c.GetBool(config.GinUsageEstimatedKey),
 	}
 }
 
@@ -561,6 +571,7 @@ func (q *Quota) ConsumeWithSnapshot(snap ConsumeSnapshot, usage *types.Usage, is
 	q.requestedModel, q.upstreamModel, q.responseModel, q.channelType = snap.RequestedModel, snap.UpstreamModel, snap.ResponseModel, snap.ChannelType
 	q.retryAttempts = snap.RetryAttempts
 	q.supplyId = snap.SupplyId
+	q.clientCancelled, q.usageEstimated = snap.ClientCancelled, snap.UsageEstimated
 	ctx := snap.Ctx
 	defer func() {
 		if r := recover(); r != nil {

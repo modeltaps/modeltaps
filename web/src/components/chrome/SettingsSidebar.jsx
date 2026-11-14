@@ -1,10 +1,8 @@
 import PropTypes from 'prop-types';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Search, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSettingsPlane } from '@/components/settings/SettingsPlane';
 import { useOrg } from 'contexts/OrgContext';
@@ -12,16 +10,24 @@ import { settingsReturnPath } from 'utils/settingsReturn';
 import OrgPicker from 'views/panel/Settings/org/OrgPicker';
 import { ORG_TREE, orgSettingsUrl, parseSettingsPath, settingsTree } from 'views/panel/Settings/sections';
 import { isAdminPath } from './nav-config';
-import { CollapseButton, sidebarRow } from './SidebarControls';
+import { BackRow, SidebarSearch, sidebarRow } from './SidebarControls';
+import SidebarBrandRow from './SidebarBrandRow';
 
 // ==============================|| CHROME — SETTINGS SIDEBAR (设置) ||============================== //
-// On 设置 the whole sidebar is the settings tree. Top: a back row to the page the user came from
-// (工作台, or 平台管理 when they came from there) and the collapse button. Then the settings search
-// (while the page has enough groups), 组织设置 for owners and admins of an organization (a picker
-// of the organizations they manage, then 常规 / 成员与预算 / 危险操作) and 个人设置.
+// On 设置 the whole sidebar is the settings tree, laid out like the workbench and platform admin
+// sidebars so nothing moves between them:
+//   brand row  the same first row (SidebarBrandRow): brand, search (the panel's search palette)
+//              and the collapse button where it is needed;
+//   back row   where the workbench has its context switcher: back to the page the user came from
+//              (工作台, or 平台管理 when they came from there), as in platform admin;
+//   picker     right under it, the organizations the user manages (owners and admins only; it
+//              names the organization part, no heading);
+//   menu       常规 / 成员与预算 / 危险操作 of that organization, then 个人设置.
+// The collapse button shows on narrow screens, where the rail collapses by itself and can be
+// expanded from the page title, and in the phone drawer (to close it).
 // No footer: balance, account menu and the settings button are back in the workbench.
 
-function TreeItem({ item, label, collapsed, dirty, count, dimmed, onClick }) {
+function TreeItem({ item, label, collapsed, dirty, onClick }) {
   const Icon = item.icon;
   const row = (
     <Link
@@ -30,29 +36,23 @@ function TreeItem({ item, label, collapsed, dirty, count, dimmed, onClick }) {
       aria-current={item.active ? 'page' : undefined}
       className={cn(
         sidebarRow.base,
-        collapsed ? 'min-h-[52px] flex-col justify-center gap-1 px-1 py-1.5 text-center' : 'h-[34px] gap-2.5 px-3',
-        item.active ? sidebarRow.active : sidebarRow.idle,
-        dimmed && 'opacity-40'
+        collapsed ? cn(sidebarRow.collapsed, 'relative') : 'h-[34px] gap-2.5 px-3',
+        item.active ? sidebarRow.active : sidebarRow.idle
       )}
     >
       <Icon
         className={cn(
           'shrink-0',
-          collapsed ? 'size-5' : 'size-4',
+          collapsed ? 'size-[1.125rem]' : 'size-4',
           item.active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
         )}
       />
-      <span className={cn('min-w-0 truncate', collapsed ? 'w-full text-[11px] font-normal leading-tight' : 'flex-1 text-left')}>
-        {label}
-      </span>
-      {!collapsed &&
-        (dirty ? (
-          <span className="size-1.5 shrink-0 rounded-full bg-orange-500" title={dirty}>
-            <span className="sr-only">{dirty}</span>
-          </span>
-        ) : (
-          count != null && <span className="text-xs tabular-nums text-muted-foreground">{count}</span>
-        ))}
+      <span className={collapsed ? 'sr-only' : 'min-w-0 flex-1 truncate text-left'}>{label}</span>
+      {dirty && (
+        <span className={cn('size-1.5 shrink-0 rounded-full bg-orange-500', collapsed && 'absolute right-1 top-1')} title={dirty}>
+          <span className="sr-only">{dirty}</span>
+        </span>
+      )}
     </Link>
   );
   if (!collapsed) return row;
@@ -69,12 +69,10 @@ TreeItem.propTypes = {
   label: PropTypes.string.isRequired,
   collapsed: PropTypes.bool,
   dirty: PropTypes.string,
-  count: PropTypes.number,
-  dimmed: PropTypes.bool,
   onClick: PropTypes.func
 };
 
-export default function SettingsSidebar({ collapsed = false, onItemClick, onToggleCollapse }) {
+export default function SettingsSidebar({ collapsed = false, showCollapse = false, onItemClick, onToggleCollapse, onOpenCommand }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -86,15 +84,7 @@ export default function SettingsSidebar({ collapsed = false, onItemClick, onTogg
   const backToAdmin = isAdminPath(backTo.split('?')[0]);
   const backName = backToAdmin ? t('nav.context.admin') : t('admin_console.workspace');
   const backLabel = backToAdmin ? t('settingsUi.sections.backToAdmin') : t('admin_console.back');
-
-  const query = plane?.query ?? '';
-  const searching = query.trim() !== '';
   const unsaved = t('settingsUi.unsaved');
-  const clearSearch = () => plane?.setQuery('');
-  const onPick = () => {
-    clearSearch();
-    onItemClick?.();
-  };
 
   // Picking another organization keeps the current item.
   const { section } = parseSettingsPath(pathname);
@@ -104,106 +94,50 @@ export default function SettingsSidebar({ collapsed = false, onItemClick, onTogg
     onItemClick?.();
   };
 
-  const renderItem = (item) => {
-    const count = searching && plane?.counts ? plane.counts[item.id] || 0 : null;
-    return (
-      <TreeItem
-        key={item.id}
-        item={item}
-        label={t(item.labelKey)}
-        collapsed={collapsed}
-        dirty={plane?.dirtyGroups.includes(item.id) ? unsaved : undefined}
-        count={count}
-        dimmed={searching && count === 0}
-        onClick={onPick}
-      />
-    );
-  };
-
-  const heading = (text) => !collapsed && <p className="px-3 pb-1.5 text-[13px] font-medium text-muted-foreground">{text}</p>;
+  const renderItem = (item) => (
+    <TreeItem
+      key={item.id}
+      item={item}
+      label={t(item.labelKey)}
+      collapsed={collapsed}
+      dirty={plane?.dirtyGroups.includes(item.id) ? unsaved : undefined}
+      onClick={onItemClick}
+    />
+  );
 
   return (
     <TooltipProvider delayDuration={150}>
       <div className="flex h-full flex-col bg-sidebar">
-        {/* Back row; the collapse button sits at its end (the drawer uses it to close). */}
-        {collapsed ? (
-          <div className="flex h-16 shrink-0 items-center justify-center">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  to={backTo}
-                  onClick={onItemClick}
-                  aria-label={backLabel}
-                  className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  <ArrowLeft className="size-[1.125rem]" />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">{backLabel}</TooltipContent>
-            </Tooltip>
-          </div>
-        ) : (
-          <div className="flex h-16 shrink-0 items-center gap-1 pl-2 pr-2">
-            <Link
-              to={backTo}
-              onClick={onItemClick}
-              aria-label={backLabel}
-              className="group flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg px-2 text-sm font-medium text-foreground/85 transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <ArrowLeft className="size-[1.125rem] shrink-0 text-muted-foreground group-hover:text-foreground" />
-              <span className="truncate">{backName}</span>
-            </Link>
-            {onToggleCollapse && <CollapseButton onClick={onToggleCollapse} />}
-          </div>
-        )}
+        <SidebarBrandRow
+          collapsed={collapsed}
+          onItemClick={onItemClick}
+          onOpenCommand={onOpenCommand}
+          onToggleCollapse={showCollapse ? onToggleCollapse : undefined}
+        />
 
-        {!collapsed && plane?.searchable && (
-          <div className="relative shrink-0 px-2 pb-1">
-            <Search className="pointer-events-none absolute left-5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              value={query}
-              onChange={(e) => plane.setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Escape' && clearSearch()}
-              placeholder={t('settingsUi.search.placeholder')}
-              aria-label={t('settingsUi.search.placeholder')}
-              className="h-[34px] bg-background pl-9 [&::-webkit-search-cancel-button]:hidden"
-            />
-            {searching && (
-              <button
-                type="button"
-                onClick={clearSearch}
-                aria-label={t('settingsUi.search.clear')}
-                className="absolute right-4 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
-              >
-                <X className="size-3.5" />
-              </button>
-            )}
-          </div>
-        )}
+        {/* Where the workbench has its context switcher (same box, same spacing). */}
+        <div className={cn('flex shrink-0 flex-col pb-1', collapsed ? 'items-center gap-1 px-1' : 'gap-2 px-2')}>
+          <BackRow to={backTo} name={backName} label={backLabel} collapsed={collapsed} onClick={onItemClick} />
+          {tree.org && <OrgPicker orgs={tree.managedOrgs} value={tree.org.id} onChange={openOrg} collapsed={collapsed} />}
+          {collapsed && onOpenCommand && <SidebarSearch collapsed onClick={onOpenCommand} />}
+        </div>
 
         <nav
           aria-label={t('settingsUi.sections.label')}
-          className={cn('flex-1 overflow-y-auto py-3', collapsed ? 'px-1' : 'px-2')}
-          style={collapsed ? { scrollbarGutter: 'stable both-edges' } : undefined}
+          className={cn('flex-1 overflow-y-auto pb-3 pt-1', collapsed ? 'px-0 [scrollbar-width:none]' : 'px-2')}
         >
           {tree.org && (
-            <div role="group" aria-label={t('settingsUi.sections.org')} className="space-y-0.5">
-              {heading(t('settingsUi.sections.org'))}
-              {!collapsed && (
-                <div className="pb-1">
-                  <OrgPicker orgs={tree.managedOrgs} value={tree.org.id} onChange={openOrg} />
-                </div>
-              )}
+            <div role="group" aria-label={t('settingsUi.sections.org')} className={collapsed ? 'space-y-1' : 'space-y-0.5'}>
               {tree.orgItems.map(renderItem)}
             </div>
           )}
           <div
             role="group"
             aria-label={t('settingsUi.sections.personal')}
-            className={cn('space-y-0.5', tree.org && (collapsed ? 'mt-2 border-t border-border/60 pt-2' : 'mt-6'))}
+            className={cn(collapsed ? 'space-y-1' : 'space-y-0.5', tree.org && !collapsed && 'mt-6')}
           >
-            {heading(t('settingsUi.sections.personal'))}
+            {tree.org && collapsed && <div className={sidebarRow.divider} aria-hidden="true" />}
+            {!collapsed && <p className="px-3 pb-1.5 text-[13px] font-medium text-muted-foreground">{t('settingsUi.sections.personal')}</p>}
             {tree.personalItems.map(renderItem)}
           </div>
         </nav>
@@ -214,6 +148,10 @@ export default function SettingsSidebar({ collapsed = false, onItemClick, onTogg
 
 SettingsSidebar.propTypes = {
   collapsed: PropTypes.bool,
+  // Show the collapse button (narrow screens and the phone drawer).
+  showCollapse: PropTypes.bool,
   onItemClick: PropTypes.func,
-  onToggleCollapse: PropTypes.func
+  onToggleCollapse: PropTypes.func,
+  // Opens the panel's search palette.
+  onOpenCommand: PropTypes.func
 };

@@ -2,25 +2,25 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import PropTypes from 'prop-types';
 import { Link, UNSAFE_DataRouterContext, useBlocker } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Search, X } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { dirtyGroupIds, hasDirtyCards, reportDirty, searchCards, shouldShowSearch, staysOnPage } from './settingsSearch';
+import { useSearch } from '@/components/chrome/SearchContext';
+import { cardIndex, dirtyGroupIds, hasDirtyCards, reportDirty, shouldShowSearch, staysOnPage } from './settingsSearch';
 import { useSettingsPlane } from './SettingsPlane';
 
 // ==============================|| SETTINGS — ONE SETTINGS PAGE ||============================== //
-// On 设置 (personal and organization settings) the subnav, the search box and the unsaved dots
-// live in the settings sidebar instead (SettingsPlane): the page then shows only the cards and
-// reports its state to the sidebar.
 // Platform, organization and personal settings share this page: a sticky subnav of groups on the
-// left (a scrolling row below md), the cards of the active group on the right. Every group stays
-// mounted (inactive ones are hidden), so unsaved edits survive a group switch, the subnav can mark
-// groups holding unsaved cards with a dot, and the search box can match the text of every card,
-// collection rows included. Leaving the page (another route, closing the tab) with unsaved cards
-// asks first. Each group is its own route, so deep links keep working.
+// left (a scrolling row below md), the cards of the active group on the right. On 设置 (personal
+// and organization settings) the subnav and its unsaved dots live in the settings sidebar instead
+// (SettingsPlane), and the page shows only the cards. Every group stays mounted (inactive ones are
+// hidden), so unsaved edits survive a group switch and the subnav can mark groups holding unsaved
+// cards with a dot. Search is the panel's search palette (SearchContext): the page lists its cards
+// there with everything written on them, collection rows included, and the subnav's search button
+// opens it. Leaving the page (another route, closing the tab) with unsaved cards asks first. Each
+// group is its own route, so deep links keep working.
 
 const CardScopeContext = createContext(null);
 
@@ -39,14 +39,13 @@ export function useReportDirty(dirty) {
   }, [report, dirty]);
 }
 
-function CardSlot({ card, group, groupId, hidden, showGroup, setDirty, slotRef }) {
+function CardSlot({ card, groupId, setDirty, slotRef }) {
   const cardId = card.id;
   // Stable per card, so the cards' report effects do not re-run on every render.
   const report = useCallback((value) => setDirty((prev) => reportDirty(prev, cardId, groupId, value)), [setDirty, cardId, groupId]);
   const scope = useMemo(() => ({ cardId, groupId, report }), [cardId, groupId, report]);
   return (
-    <div hidden={hidden} className="space-y-2 [&:has(>[data-card-slot]:empty)]:hidden">
-      {showGroup && <p className="px-1 text-xs text-muted-foreground">{group}</p>}
+    <div className="space-y-2 [&:has(>[data-card-slot]:empty)]:hidden">
       <div data-card-slot={card.id} ref={slotRef}>
         <CardScopeContext.Provider value={scope}>{card.render()}</CardScopeContext.Provider>
       </div>
@@ -56,10 +55,7 @@ function CardSlot({ card, group, groupId, hidden, showGroup, setDirty, slotRef }
 
 CardSlot.propTypes = {
   card: PropTypes.object.isRequired,
-  group: PropTypes.node,
   groupId: PropTypes.string.isRequired,
-  hidden: PropTypes.bool,
-  showGroup: PropTypes.bool,
   setDirty: PropTypes.func.isRequired,
   slotRef: PropTypes.func
 };
@@ -121,98 +117,81 @@ LeaveGuard.propTypes = { when: PropTypes.bool, paths: PropTypes.arrayOf(PropType
 export default function SettingsPage({ label, groups, activeGroupId, className }) {
   const { t } = useTranslation();
   const plane = useSettingsPlane();
-  const [ownQuery, setOwnQuery] = useState('');
-  const query = plane ? plane.query : ownQuery;
-  const setQuery = plane ? plane.setQuery : setOwnQuery;
+  const search = useSearch();
   const [dirty, setDirty] = useState({});
-  const [result, setResult] = useState({ matches: new Set(), counts: {} });
   const slots = useRef({});
 
-  const searching = query.trim() !== '';
   const active = groups.find((g) => g.id === activeGroupId) || groups[0];
   const dirtyGroups = dirtyGroupIds(dirty);
   const paths = groups.map((g) => g.to);
 
-  // Search reads what the cards actually render (titles, labels, hints, collection rows).
+  // The search palette lists this page's cards, read when it opens (titles, labels, hints, rows).
+  const groupsRef = useRef(groups);
   useLayoutEffect(() => {
-    if (!searching) return;
-    const entries = groups.flatMap((g) =>
-      g.cards.map((card) => ({ cardId: card.id, groupId: g.id, text: slots.current[card.id]?.textContent || '' }))
-    );
-    setResult(searchCards(entries, query));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, searching]);
+    groupsRef.current = groups;
+  });
+  const registerPageIndex = search?.registerPageIndex;
+  useEffect(() => registerPageIndex?.(() => cardIndex(groupsRef.current, slots.current)), [registerPageIndex]);
 
-  // A group switch (link click or deep link) ends the search.
-  useEffect(() => setQuery(''), [activeGroupId, setQuery]);
-
-  const matchCount = result.matches.size;
-
-  // On 设置, report what the sidebar shows: the search box, unsaved dots and match counts.
+  // On 设置, report the groups holding unsaved cards (their dots are in the sidebar tree).
   const publish = plane?.publish;
-  const searchable = shouldShowSearch(groups);
   const dirtyKey = [...dirtyGroups].sort().join(',');
-  const countsKey = searching ? JSON.stringify(result.counts) : '';
   useEffect(() => {
-    publish?.({ searchable, dirtyGroups: dirtyKey ? dirtyKey.split(',') : [], counts: countsKey ? JSON.parse(countsKey) : null });
-  }, [publish, searchable, dirtyKey, countsKey]);
+    publish?.({ dirtyGroups: dirtyKey ? dirtyKey.split(',') : [] });
+  }, [publish, dirtyKey]);
   useEffect(() => () => publish?.(null), [publish]);
+
+  // On phones the group list is a sideways strip: keep the current group in view (scrolling the
+  // strip only, never the page).
+  const stripRef = useRef(null);
+  useEffect(() => {
+    const strip = stripRef.current;
+    const link = strip?.querySelector('[aria-current="page"]');
+    if (!strip || !link || strip.scrollWidth <= strip.clientWidth) return;
+    const left = link.offsetLeft - (strip.clientWidth - link.offsetWidth) / 2;
+    strip.scrollTo({ left: Math.max(0, left), behavior: 'auto' });
+  }, [active.id]);
 
   return (
     <div className={cn(!plane && 'md:grid md:grid-cols-[13rem_minmax(0,1fr)] md:items-start md:gap-8', className)}>
       <nav hidden={Boolean(plane)} aria-label={label} className="mb-5 md:sticky md:top-0 md:mb-0 md:space-y-3">
-        {shouldShowSearch(groups) && (
-          <div className="relative mb-2 md:mb-0">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Escape' && setQuery('')}
-              placeholder={t('settingsUi.search.placeholder')}
-              aria-label={t('settingsUi.search.placeholder')}
-              className="pl-9 [&::-webkit-search-cancel-button]:hidden"
-            />
-            {searching && (
-              <button
-                type="button"
-                onClick={() => setQuery('')}
-                aria-label={t('settingsUi.search.clear')}
-                className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
-              >
-                <X className="size-3.5" />
-              </button>
-            )}
-          </div>
+        {search && shouldShowSearch(groups) && (
+          <button
+            type="button"
+            onClick={search.openSearch}
+            className="mb-2 flex h-9 w-full items-center gap-2.5 rounded-lg border border-border bg-field px-3 text-sm text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:mb-0"
+          >
+            <Search className="size-4 shrink-0" />
+            <span className="flex-1 text-left">{t('settingsUi.search.placeholder')}</span>
+            <kbd className="rounded border border-border px-1 font-mono text-[0.6875rem]">⌘K</kbd>
+          </button>
         )}
-        <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] md:mx-0 md:flex-col md:gap-0.5 md:overflow-visible md:p-0">
+        <div
+          ref={stripRef}
+          className="relative -mx-1 flex gap-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] md:mx-0 md:flex-col md:gap-0.5 md:overflow-visible md:p-0"
+        >
           {groups.map((group) => {
-            const current = !searching && group.id === active.id;
-            const count = result.counts[group.id] || 0;
+            const current = group.id === active.id;
             const Icon = group.icon;
             return (
               <Link
                 key={group.id}
                 to={group.to}
-                onClick={() => setQuery('')}
                 aria-current={current ? 'page' : undefined}
                 className={cn(
                   'flex h-[34px] shrink-0 items-center gap-2.5 whitespace-nowrap rounded-lg px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   current
                     ? 'bg-card font-medium text-foreground shadow-[inset_0_0_0_1px_var(--border)]'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                  searching && count === 0 && 'opacity-40'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 )}
               >
                 {Icon && <Icon className="size-4 shrink-0" />}
                 <span className="truncate">{group.label}</span>
                 {group.badge && <span className="text-[11px] text-muted-foreground">{group.badge}</span>}
-                {dirtyGroups.has(group.id) ? (
+                {dirtyGroups.has(group.id) && (
                   <span className="ml-auto size-1.5 shrink-0 rounded-full bg-orange-500" title={t('settingsUi.unsaved')}>
                     <span className="sr-only">{t('settingsUi.unsaved')}</span>
                   </span>
-                ) : (
-                  searching && <span className="ml-auto text-xs tabular-nums text-muted-foreground">{count}</span>
                 )}
               </Link>
             );
@@ -221,35 +200,21 @@ export default function SettingsPage({ label, groups, activeGroupId, className }
       </nav>
 
       <div className="min-w-0 max-w-4xl">
-        <div className={cn('mb-5 space-y-1', plane && !searching && 'hidden')}>
-          {searching ? (
-            <>
-              <h2 className="text-base font-semibold">{t('settingsUi.search.title', { query: query.trim() })}</h2>
-              <p className="text-sm text-muted-foreground">{t('settingsUi.search.count', { count: matchCount })}</p>
-            </>
-          ) : (
-            <>
-              <h2 className="text-base font-semibold">{active.label}</h2>
-              {active.description && <p className="text-sm text-muted-foreground">{active.description}</p>}
-            </>
-          )}
-        </div>
+        {/* On 设置 the page title already names the group. */}
+        {!plane && (
+          <div className="mb-5 space-y-1">
+            <h2 className="text-base font-semibold">{active.label}</h2>
+            {active.description && <p className="text-sm text-muted-foreground">{active.description}</p>}
+          </div>
+        )}
         <div className="space-y-6">
           {groups.map((group) => (
-            <section
-              key={group.id}
-              hidden={searching ? !(result.counts[group.id] > 0) : group.id !== active.id}
-              aria-label={group.label}
-              className="space-y-6"
-            >
+            <section key={group.id} hidden={group.id !== active.id} aria-label={group.label} className="space-y-6">
               {group.cards.map((card) => (
                 <CardSlot
                   key={card.id}
                   card={card}
-                  group={group.sectionLabel ? `${group.sectionLabel} · ${group.label}` : group.label}
                   groupId={group.id}
-                  hidden={searching && !result.matches.has(card.id)}
-                  showGroup={searching}
                   setDirty={setDirty}
                   slotRef={(el) => {
                     slots.current[card.id] = el;
@@ -258,11 +223,6 @@ export default function SettingsPage({ label, groups, activeGroupId, className }
               ))}
             </section>
           ))}
-          {searching && matchCount === 0 && (
-            <p className="rounded-2xl border border-dashed border-border px-6 py-10 text-center text-sm text-muted-foreground">
-              {t('settingsUi.search.empty')}
-            </p>
-          )}
         </div>
       </div>
 

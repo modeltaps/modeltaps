@@ -73,7 +73,15 @@ export default function TryItPanel({ policy, policyId = 0, modelOptions = [], ap
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-muted-foreground">{t(api.billedTry ? (api.billedTo === 'user' ? 'routingPolicy.tryIt.introBilledPersonal' : 'routingPolicy.tryIt.introBilled') : 'routingPolicy.tryIt.intro')}</p>
+      <p className="text-sm text-muted-foreground">
+        {t(
+          api.billedTry
+            ? api.billedTo === 'user'
+              ? 'routingPolicy.tryIt.introBilledPersonal'
+              : 'routingPolicy.tryIt.introBilled'
+            : 'routingPolicy.tryIt.intro'
+        )}
+      </p>
       <FormField id="rp-try-text" label={t('routingPolicy.tryIt.message')} hint={t('routingPolicy.tryIt.messageHint')}>
         <Textarea
           id="rp-try-text"

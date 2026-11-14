@@ -13,6 +13,8 @@ type OrganizationAuditLog struct {
 	Action         string `json:"action" gorm:"type:varchar(64);not null"`
 	Content        string `json:"content" gorm:"type:varchar(1024);default:''"`
 	CreatedTime    int64  `json:"created_time" gorm:"bigint;index:idx_org_audit_org_time,priority:2"`
+	// ActorName is the actor's username, filled in when listing (not stored).
+	ActorName string `json:"actor_name" gorm:"-"`
 }
 
 // RecordOrgAudit 记录组织审计日志;失败仅写系统日志,不影响主流程
@@ -54,7 +56,32 @@ func GetOrganizationAuditLogs(organizationId int, params *OrgAuditLogsParams) (*
 	if params.EndTimestamp != 0 {
 		db = db.Where("created_time <= ?", params.EndTimestamp)
 	}
-	return PaginateAndOrder[OrganizationAuditLog](db, &params.PaginationParams, &logs, allowedOrgAuditOrderFields)
+	result, err := PaginateAndOrder[OrganizationAuditLog](db, &params.PaginationParams, &logs, allowedOrgAuditOrderFields)
+	if err != nil || result == nil || result.Data == nil {
+		return result, err
+	}
+	fillAuditActorNames(*result.Data)
+	return result, nil
+}
+
+// fillAuditActorNames sets ActorName from the users table; a failed lookup leaves names empty
+// and the list still shows the actor ID.
+func fillAuditActorNames(logs []*OrganizationAuditLog) {
+	seen := make(map[int]bool)
+	ids := make([]int, 0, len(logs))
+	for _, log := range logs {
+		if log.ActorId > 0 && !seen[log.ActorId] {
+			seen[log.ActorId] = true
+			ids = append(ids, log.ActorId)
+		}
+	}
+	names, err := GetUsernamesByIds(ids)
+	if err != nil {
+		return
+	}
+	for _, log := range logs {
+		log.ActorName = names[log.ActorId]
+	}
 }
 
 var allowedOrgAuditOrderFields = map[string]bool{

@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
 import { FormCard, OptionList } from '@/components/settings/cards';
+import { Skeleton } from '@/components/ui/skeleton';
 import { API } from 'utils/api';
 import { showError, showSuccess } from 'utils/common';
 import { useOrg } from 'contexts/OrgContext';
@@ -58,7 +59,7 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
     setBaseline(next);
   }, [org]);
 
-  // 未取到组织资料前一律视为无改动
+  // 未取到组织信息前一律视为无改动
   const profileDirty =
     !!baseline &&
     (!sameValue(name.trim(), baseline.name.trim()) ||
@@ -100,6 +101,8 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
   };
 
   if (!isAdmin) return null;
+  // Until the detail arrives: a skeleton the size of the card, never empty inputs that could be saved.
+  if (!baseline) return <Skeleton className="h-[240px] rounded-2xl" aria-busy="true" />;
 
   const reset = () => {
     if (!baseline) return;
@@ -125,10 +128,27 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
           <Input id="org-settings-name" value={name} maxLength={100} onChange={(e) => setName(e.target.value)} />
         </FormField>
         <FormField id="org-settings-avatar" label={t('orgPage.settings.avatarUrl')}>
-          <Input id="org-settings-avatar" value={avatarUrl} maxLength={500} onChange={(e) => setAvatarUrl(e.target.value)} />
+          {/* A small preview next to the address, so a wrong link shows at once. */}
+          <div className="flex items-center gap-2">
+            <Input id="org-settings-avatar" value={avatarUrl} maxLength={500} onChange={(e) => setAvatarUrl(e.target.value)} />
+            {avatarUrl.trim() && (
+              <img
+                src={avatarUrl.trim()}
+                alt=""
+                className="size-9 shrink-0 rounded-md border border-border object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.visibility = 'hidden';
+                }}
+                onLoad={(e) => {
+                  e.currentTarget.style.visibility = 'visible';
+                }}
+              />
+            )}
+          </div>
         </FormField>
       </div>
-      <OptionList>
+      {/* With retention off site-wide there is one option: no inner frame then. */}
+      <OptionList className={logIoSiteEnabled ? undefined : 'divide-y-0 rounded-none border-0 [&>div]:px-0 [&>div]:py-0'}>
         <ToggleRow
           id="org-usage-visible"
           label={t('orgPage.settings.usageVisible')}

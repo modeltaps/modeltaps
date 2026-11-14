@@ -28,6 +28,15 @@ const (
 	GinUpstreamRequestIdKey = "upstream_request_id"
 	// GinUpstreamResponseModelKey 上游在响应里声明的模型名（统一模型名改写之前），见 base.ObserveUpstreamModel。
 	GinUpstreamResponseModelKey = "upstream_response_model"
+	// GinCancelOnDisconnectKey is set per attempt from the selected channel: true makes the
+	// stream loops close the upstream stream as soon as the client disconnects.
+	GinCancelOnDisconnectKey = "cancel_on_disconnect"
+	// GinClientCancelledKey marks a request whose upstream stream was closed because the client
+	// disconnected; the consume log records it and the output tokens are counted locally.
+	GinClientCancelledKey = "client_cancelled"
+	// GinUsageEstimatedKey marks a request whose output tokens were counted locally from the
+	// streamed text because the upstream's final usage never arrived.
+	GinUsageEstimatedKey = "usage_estimated"
 
 	// GinRawResponseBodyKey 通用的非流式响应字节透传：provider 在确认无需改写响应
 	// （尤其是无模型映射需要改 model）时，把上游原始响应字节暂存到此 key，

@@ -27,7 +27,8 @@ import {
 } from './newChannel';
 import { BASE_URL_REQUIRED, BASE_URL_SHOWN, credentialKind, typeLabels } from './providerDefaults';
 import { Dot, Field, ObjectSheet, Segmented, SheetBar } from '@/components/objects';
-import { ChipInput, GroupOptions, KeyLink, ProviderTile, UsageOptions, useProviderName } from './channelParts';
+import { ChipInput, KeyLink, ProviderTile, UsageOptions, useProviderName } from './channelParts';
+import { ALL_GROUPS } from './channelGroups';
 import { ProviderSelect } from './ProviderPicker';
 import ChannelOAuth from './ChannelOAuth';
 import ModelMappingInput from './ModelMappingInput';
@@ -86,7 +87,8 @@ const fresh = (type, name) => ({
   block: [],
   blockMode: 'model',
   mapping: '',
-  groups: ['default'],
+  // New channels serve every user group; narrow it later under Groups & routing.
+  groups: [ALL_GROUPS],
   usage: null,
   custom: { priority: '0', weight: '1' }
 });
@@ -102,9 +104,10 @@ function parseMapping(raw) {
 
 // New channel sheet: connect to a provider with the fewest fields, defaults for the rest.
 // Provider and name, allowed and blocked models, model mapping, the credential the provider
-// needs (with a link to get it), the address only when required, groups and usage. Test checks
-// the unsaved credential against the provider's model list; save creates, then tests.
-export default function NewChannelSheet({ initialType, allChannels, groups, onClose, onCreated }) {
+// needs (with a link to get it), the address only when required, and usage. New channels serve
+// every user group (narrowed later under Groups & routing). Test checks the unsaved credential
+// against the provider's model list; save creates, then tests.
+export default function NewChannelSheet({ initialType, allChannels, supplyRouting = false, onClose, onCreated }) {
   const { t } = useTranslation();
   const providerName = useProviderName();
   const names = useMemo(() => allChannels.map((c) => c.name), [allChannels]);
@@ -246,7 +249,8 @@ export default function NewChannelSheet({ initialType, allChannels, groups, onCl
       const failed = [];
       for (const id of res.ids) {
         const r = await manageChannel(id, 'test');
-        if (!r?.success) failed.push(r?.message || `#${id}`);
+        // The upstream reason alone: the message repeats "test failed" around it.
+        if (!r?.success) failed.push(r?.params?.reason || r?.message || `#${id}`);
       }
       if (failed.length) toast.warning(t('channels.new.testFailed', { count: failed.length, message: failed[0] }));
       else toast.success(t('channels.new.created', { name: body.name, count: res.ids.length }));
@@ -261,9 +265,15 @@ export default function NewChannelSheet({ initialType, allChannels, groups, onCl
         ]
           .filter(Boolean)
           .join(t('channels.created.comma')),
-        t('channels.created.groups', { groups: d.groups.join(t('channels.created.listSep')) }),
-        usage.top && usageKey !== 'custom' ? t('channels.created.relative', { usage: usageLabel, name: usage.top.name }) : usageLabel
-      ].join(' · ');
+        supplyRouting
+          ? ''
+          : usage.top && usageKey !== 'custom'
+            ? t('channels.created.relative', { usage: usageLabel, name: usage.top.name })
+            : usageLabel,
+        res.supplies ? t('channels.created.supplied', { count: res.supplies }) : ''
+      ]
+        .filter(Boolean)
+        .join(' · ');
       onCreated({ ids: res.ids, type: d.type, name: body.name, summary });
     } catch (e) {
       toast.error(e.message);
@@ -402,7 +412,9 @@ export default function NewChannelSheet({ initialType, allChannels, groups, onCl
     ? t('channels.new.allowAllHint')
     : d.allowMode === 'wildcard'
       ? t('channels.new.allowWildcardHint')
-      : t('channels.new.allowSomeHint', { count: d.allow.length });
+      : d.allow.length
+        ? t('channels.new.allowSomeHint', { count: d.allow.length })
+        : null;
 
   return (
     <ObjectSheet
@@ -537,7 +549,10 @@ export default function NewChannelSheet({ initialType, allChannels, groups, onCl
               ? t('channels.new.partsHint')
               : kind === 'json'
                 ? t('channels.new.jsonHint')
-                : t('channels.new.keyHint')
+                : // Once the keys are masked the box says so itself.
+                  d.keyEditing || !keys.length
+                  ? t('channels.new.keyHint')
+                  : null
         }
       >
         {credential}
@@ -582,27 +597,26 @@ export default function NewChannelSheet({ initialType, allChannels, groups, onCl
         </Field>
       )}
 
-      <Field label={t('channels.groups')} extra={t('channels.groupsHint')}>
-        <GroupOptions groups={groups} value={d.groups} onChange={(g) => set({ groups: g })} />
-      </Field>
-
-      <Field label={t('channels.usage.label')} extra={usage.top ? t('channels.usage.peerExisting', { name: usage.top.name }) : null}>
-        <UsageOptions
-          usage={usage}
-          value={usageKey}
-          onChange={(k) => set({ usage: k })}
-          custom={d.custom}
-          onCustomChange={(custom) => set({ custom })}
-        />
-      </Field>
+      {/* While supplies route requests the allocation policy places the new channel. */}
+      {!supplyRouting && (
+        <Field label={t('channels.usage.label')} extra={usage.top ? t('channels.usage.peerExisting', { name: usage.top.name }) : null}>
+          <UsageOptions
+            usage={usage}
+            value={usageKey}
+            onChange={(k) => set({ usage: k })}
+            custom={d.custom}
+            onCustomChange={(custom) => set({ custom })}
+          />
+        </Field>
+      )}
     </ObjectSheet>
   );
 }
 
 NewChannelSheet.propTypes = {
   initialType: PropTypes.number.isRequired,
+  supplyRouting: PropTypes.bool,
   allChannels: PropTypes.array.isRequired,
-  groups: PropTypes.array.isRequired,
   onClose: PropTypes.func.isRequired,
   onCreated: PropTypes.func.isRequired
 };

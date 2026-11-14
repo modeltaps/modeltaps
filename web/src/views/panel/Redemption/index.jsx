@@ -1,47 +1,57 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Plus, RotateCcw, Ticket, Trash2 } from 'lucide-react';
+import { Ban, Check, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/components/ui/sonner';
-import { FilterBar, filterStateToParams, paramsToFilterState, isEntryActive } from '@/components/filter-bar';
+import {
+  BatchBar,
+  ColumnPicker,
+  ListEmptyState,
+  ListFooter,
+  ListSkeleton,
+  PhoneListToolbar,
+  StatusSegments,
+  useColumnVisibility,
+  useListLayout,
+  useRowSelection
+} from '@/components/list-page';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import PageActions from '@/components/chrome/PageActions';
 import { API } from 'utils/api';
 import { showError, downloadTextAsFile } from 'utils/common';
-import { PAGE_SIZE_OPTIONS } from 'constants';
 import usePaginatedList from 'hooks/usePaginatedList';
 import { useObjectRoute } from '@/components/objects';
-import RedemptionTable from './RedemptionTable';
+import RedemptionTable, { REDEMPTION_COLUMNS, RedemptionCards } from './RedemptionTable';
 import RedemptionPanel from './RedemptionPanel';
 import NewRedemptionSheet from './NewRedemptionSheet';
-import PageSizeSelect from '@/components/ui/page-size-select';
 
-// FilterBar 字段:单个名称文本 chip(后端 keyword 单值,按兑换码名称模糊匹配)。
-const REDEMPTION_FILTER_FIELDS = [
-  { key: 'keyword', labelKey: 'redemptionPage.headLabels.name', type: 'text', placeholderKey: 'redemptionPage.searchPlaceholder' }
-];
-const REDEMPTION_FILTER_PARAM_KEYS = ['keyword'];
+// Segments (?status=), counted by the list response (status_counts). They do not overlap.
+const SEGMENTS = ['all', 'usable', 'expired', 'disabled', 'used'];
+const KEYWORD_DEBOUNCE_MS = 300;
 
 export default function Redemption() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [filterState, setFilterState] = useState(() => paramsToFilterState(REDEMPTION_FILTER_FIELDS, searchParams));
+  const [keywordInput, setKeywordInput] = useState(() => searchParams.get('keyword') || '');
+  const [keyword, setKeyword] = useState(() => (searchParams.get('keyword') || '').trim());
+  const [status, setStatus] = useState(() => (SEGMENTS.includes(searchParams.get('status')) ? searchParams.get('status') : 'all'));
+  const [statusCounts, setStatusCounts] = useState(null);
 
   const route = useObjectRoute(['details']);
   // Bumped after a list action so an open code panel reloads.
   const [reloadKey, setReloadKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [selectedIds, setSelectedIds] = useState([]);
   const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
-  const [batchDeleting, setBatchDeleting] = useState(false);
+  const [batchBusy, setBatchBusy] = useState(false);
 
-  // 分页列表状态 + 守卫化 fetch 生命周期(UX-13);fetcher 保留原有参数构造逻辑。
   const {
     page,
     setPage,
@@ -50,6 +60,7 @@ export default function Redemption() {
     orderBy,
     listCount,
     searching,
+    loaded,
     rows: redemptions,
     setRows: setRedemptions,
     handleRefresh,
@@ -58,44 +69,61 @@ export default function Redemption() {
   } = usePaginatedList({
     pageSizeKey: 'redemption',
     fetcher: async ({ page, rowsPerPage, order, orderBy }) => {
-      const ob = order === 'desc' ? '-' + orderBy : orderBy;
-      const params = { page: page + 1, size: rowsPerPage, order: ob, ...filterStateToParams(REDEMPTION_FILTER_FIELDS, filterState) };
+      const ob = orderBy ? (order === 'desc' ? '-' + orderBy : orderBy) : '-id';
+      const params = {
+        page: page + 1,
+        size: rowsPerPage,
+        order: ob,
+        ...(keyword ? { keyword } : {}),
+        ...(status !== 'all' ? { status } : {})
+      };
       const res = await API.get('/api/redemption/', { params });
       return res.data;
     },
-    deps: [filterState]
+    onSuccess: (payload) => setStatusCounts(payload.status_counts ?? null),
+    deps: [keyword, status]
   });
 
-  // 已应用筛选同步到 URL(replace,刷新可恢复;先清空筛选键再按当前 state 重写)。
+  // The search box applies after a short pause in typing.
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      const next = keywordInput.trim();
+      if (next === keyword) return;
+      setPage(0);
+      setKeyword(next);
+    }, KEYWORD_DEBOUNCE_MS);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keywordInput]);
+
+  // Search and segment live in the URL (replace), so a reload restores them.
   useEffect(() => {
     setSearchParams(
       (prev) => {
         const params = new URLSearchParams(prev);
-        REDEMPTION_FILTER_PARAM_KEYS.forEach((k) => params.delete(k));
-        const q = filterStateToParams(REDEMPTION_FILTER_FIELDS, filterState);
-        for (const [k, v] of Object.entries(q)) params.set(k, String(v));
+        params.delete('keyword');
+        params.delete('status');
+        if (keyword) params.set('keyword', keyword);
+        if (status !== 'all') params.set('status', status);
         return params;
       },
       { replace: true }
     );
-  }, [filterState, setSearchParams]);
+  }, [keyword, status, setSearchParams]);
 
-  // 级联筛选受控回调:任何改动即时应用并回到第一页;清空同理。
-  const handleFilterChange = (next) => {
+  const changeStatus = (next) => {
     setPage(0);
-    setFilterState(next);
-  };
-  const handleClearFilters = () => {
-    setPage(0);
-    setFilterState({});
+    setStatus(next);
   };
 
-  // 已生效的筛选字段(仅用于判断是否渲染标题行下方的 chips 容器,对齐 Log 页)。
-  const activeChipFields = useMemo(() => REDEMPTION_FILTER_FIELDS.filter((f) => isEntryActive(f, filterState[f.key])), [filterState]);
-
-  useEffect(() => {
-    setSelectedIds([]);
-  }, [redemptions]);
+  const columns = useColumnVisibility({ storageKey: 'redemption-column-visibility-v1', columns: REDEMPTION_COLUMNS });
+  const selection = useRowSelection(redemptions, [page, rowsPerPage, keyword, status]);
+  // Full table while it fits (the sidebar collapses first), phone cards otherwise.
+  const { narrow } = useListLayout();
+  const rtf = useMemo(
+    () => new Intl.RelativeTimeFormat((i18n.language || 'zh_CN').replace('_', '-'), { numeric: 'auto' }),
+    [i18n.language]
+  );
 
   const manageRedemption = async (id, action, value) => {
     try {
@@ -131,8 +159,6 @@ export default function Redemption() {
     }
   };
 
-  const openCreate = route.openNew;
-
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -142,17 +168,6 @@ export default function Redemption() {
       setDeleting(false);
       setDeleteTarget(null);
     }
-  };
-
-  const allSelected = redemptions.length > 0 && selectedIds.length === redemptions.length;
-  const someSelected = selectedIds.length > 0 && !allSelected;
-
-  const toggleSelect = (id) => {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  };
-
-  const toggleSelectAll = () => {
-    setSelectedIds((prev) => (prev.length === redemptions.length ? [] : redemptions.map((r) => r.id)));
   };
 
   const exportBatch = async (item) => {
@@ -185,125 +200,194 @@ export default function Redemption() {
     }
   };
 
-  const confirmBatchDelete = async () => {
-    if (!selectedIds.length) return;
-    setBatchDeleting(true);
+  // Bulk enable / disable / delete: there is no batch endpoint, so each code goes on its own and
+  // failures are counted. Redeemed codes are skipped by enable / disable.
+  const runBatch = async (action) => {
+    const ids = [...selection.selectedIds];
+    if (ids.length === 0) return;
+    setBatchBusy(true);
     let ok = 0;
     let fail = 0;
-    for (const id of selectedIds) {
+    for (const id of ids) {
+      const item = redemptions.find((r) => r.id === id);
+      if (action !== 'delete' && item?.status === 3) continue;
       try {
-        const res = await API.delete('/api/redemption/' + id);
+        const res =
+          action === 'delete'
+            ? await API.delete('/api/redemption/' + id)
+            : await API.put('/api/redemption/?status_only=true', { id, status: action === 'enable' ? 1 : 2 });
         if (res.data?.success) ok += 1;
         else fail += 1;
       } catch (error) {
         fail += 1;
       }
     }
-    setBatchDeleting(false);
+    setBatchBusy(false);
     setBatchDeleteOpen(false);
-    if (fail === 0) toast.success(t('redemptionPage.batchDeleteSuccess', { count: ok }));
+    if (fail === 0)
+      toast.success(action === 'delete' ? t('redemptionPage.batchDeleteSuccess', { count: ok }) : t('redemptionPage.successMessage'));
     else toast.error(t('redemptionPage.batchDeletePartial', { success: ok, failed: fail }));
-    setSelectedIds([]);
+    selection.exitSelectMode();
     handleRefresh();
   };
 
-  const totalPages = Math.max(1, Math.ceil(listCount / rowsPerPage));
+  const actions = useMemo(
+    () => ({ onOpen: route.open, onCopyKey, onExportBatch: exportBatch, onToggleStatus, onDelete: setDeleteTarget }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [route.open, redemptions]
+  );
+
+  const batchActions = (
+    <>
+      <Button size="sm" variant="outline" className="h-7" disabled={batchBusy} onClick={() => runBatch('enable')}>
+        <Check className="size-3.5" />
+        {t('redemptionList.batchEnable')}
+      </Button>
+      <Button size="sm" variant="outline" className="h-7" disabled={batchBusy} onClick={() => runBatch('disable')}>
+        <Ban className="size-3.5" />
+        {t('redemptionList.batchDisable')}
+      </Button>
+      <Button size="sm" variant="outline" className="h-7 text-destructive" disabled={batchBusy} onClick={() => setBatchDeleteOpen(true)}>
+        <Trash2 className="size-3.5" />
+        {t('common.delete')}
+      </Button>
+    </>
+  );
+
+  const segmentOptions = SEGMENTS.map((value) => ({ value, label: t(`redemptionList.segments.${value}`) }));
+  const hasFilters = !!keyword || status !== 'all';
+
+  let body;
+  if (!loaded) {
+    body = narrow ? <ListSkeleton layout="list" rows={4} /> : <ListSkeleton layout="table" cells={[96, 64, 80, 80, 32]} />;
+  } else if (!searching && redemptions.length === 0) {
+    body = hasFilters ? (
+      <ListEmptyState
+        variant="noMatch"
+        onClearFilters={() => {
+          setKeywordInput('');
+          setKeyword('');
+          changeStatus('all');
+        }}
+      />
+    ) : (
+      <ListEmptyState
+        title={t('redemptionPage.pageTitle')}
+        action={
+          <Button size="sm" onClick={route.openNew}>
+            <Plus className="size-4" /> {t('redemptionPage.createRedemptionCode')}
+          </Button>
+        }
+      />
+    );
+  } else if (narrow) {
+    body = (
+      <RedemptionCards
+        redemptions={redemptions}
+        rtf={rtf}
+        selectMode={selection.selectMode}
+        selectedIds={selection.selectedIds}
+        onToggleSelect={selection.toggle}
+        openId={route.openId}
+        actions={actions}
+      />
+    );
+  } else {
+    body = (
+      <RedemptionTable
+        redemptions={redemptions}
+        columnVisibility={columns.visibility}
+        rtf={rtf}
+        openId={route.openId}
+        order={order}
+        orderBy={orderBy}
+        onSort={handleSort}
+        selectedIds={selection.selectedIds}
+        onToggleSelect={selection.toggle}
+        onToggleSelectAll={selection.toggleAll}
+        actions={actions}
+      />
+    );
+  }
+
+  const footer = (
+    <ListFooter
+      total={listCount}
+      page={page}
+      pageSize={rowsPerPage}
+      selectedCount={selection.count}
+      onPageChange={setPage}
+      onPageSizeChange={onRowsPerPageChange}
+    />
+  );
 
   return (
     <>
-      <div className="space-y-6">
-        {/* 标题行右侧操作:刷新 → 筛选 → 批量删除 → 新建(primary),对齐 Log 页。 */}
+      <div className={cn('space-y-3', narrow && selection.selectMode && 'pb-20')}>
+        {/* Title row: refresh (icon), then create. */}
         <PageActions>
           <TooltipProvider delayDuration={150}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="outline" size="sm" onClick={handleRefresh} aria-label={t('redemptionPage.refreshButton')}>
-                  <RotateCcw className="size-4" />
+                  <RotateCcw className={searching ? 'size-4 animate-spin' : 'size-4'} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{t('redemptionPage.refreshButton')}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <FilterBar
-            fields={REDEMPTION_FILTER_FIELDS}
-            state={filterState}
-            onChange={handleFilterChange}
-            onClearAll={handleClearFilters}
-            hideChips
-            t={t}
-          />
-          {selectedIds.length > 0 && (
-            <Button variant="destructive" size="sm" onClick={() => setBatchDeleteOpen(true)}>
-              <Trash2 className="size-4" /> {t('redemptionPage.batchDelete')} ({selectedIds.length})
-            </Button>
-          )}
-          <ResponsiveToolbarButton primary icon={Plus} label={t('redemptionPage.createRedemptionCode')} onClick={openCreate} />
+          <ResponsiveToolbarButton primary icon={Plus} label={t('redemptionPage.createRedemptionCode')} onClick={route.openNew} />
         </PageActions>
 
-        {/* 标题行下方:OpenRouter 式全宽 chips 容器;仅在有激活筛选时渲染,无筛选不占空间。 */}
-        {activeChipFields.length > 0 && (
-          <FilterBar
-            fields={REDEMPTION_FILTER_FIELDS}
-            state={filterState}
-            onChange={handleFilterChange}
-            onClearAll={handleClearFilters}
-            triggerVariant="plus"
-            clearAlignEnd
-            t={t}
-            className="w-full rounded-lg border border-input bg-field px-3 py-2"
-          />
+        {narrow ? (
+          <div className="space-y-2">
+            <StatusSegments chips value={status} onChange={changeStatus} options={segmentOptions} counts={statusCounts} />
+            <PhoneListToolbar
+              search={{ value: keywordInput, onChange: setKeywordInput, placeholder: t('redemptionList.searchShort') }}
+              select={{
+                active: selection.selectMode,
+                onToggle: () => (selection.selectMode ? selection.exitSelectMode() : selection.enterSelectMode())
+              }}
+            />
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusSegments value={status} onChange={changeStatus} options={segmentOptions} counts={statusCounts} />
+              <div className="relative min-w-[12rem] flex-1">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={keywordInput}
+                  onChange={(e) => setKeywordInput(e.target.value)}
+                  placeholder={t('redemptionList.searchShort')}
+                  aria-label={t('redemptionList.searchShort')}
+                  className="h-8 pl-8"
+                />
+              </div>
+              <ColumnPicker columns={columns} />
+            </div>
+            {selection.count > 0 && (
+              <BatchBar
+                count={selection.count}
+                onClear={selection.clear}
+                className="min-h-10 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-1.5"
+                actions={batchActions}
+              />
+            )}
+          </div>
         )}
 
-        <Card>
-          {redemptions.length === 0 && !searching ? (
-            <div className="flex flex-col items-center justify-center gap-3 p-12 text-center">
-              <Ticket className="size-10 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">{t('redemptionPage.pageTitle')}</p>
-              <Button onClick={openCreate}>
-                <Plus className="size-4" /> {t('redemptionPage.createRedemptionCode')}
-              </Button>
-            </div>
-          ) : (
-            <RedemptionTable
-              redemptions={redemptions}
-              onCopyKey={onCopyKey}
-              openId={route.openId}
-              onOpen={route.open}
-              onDelete={setDeleteTarget}
-              onToggleStatus={onToggleStatus}
-              onExportBatch={exportBatch}
-              order={order}
-              orderBy={orderBy}
-              onSort={handleSort}
-              selectedIds={selectedIds}
-              onToggleSelect={toggleSelect}
-              onToggleSelectAll={toggleSelectAll}
-              allSelected={allSelected}
-              someSelected={someSelected}
-            />
-          )}
-
-          <div className="flex items-center justify-between gap-4 border-t border-border px-4 py-3 text-sm">
-            <span className="text-muted-foreground">{listCount}</span>
-            <div className="flex items-center gap-2">
-              <PageSizeSelect
-                value={rowsPerPage}
-                options={PAGE_SIZE_OPTIONS}
-                onChange={(n) => onRowsPerPageChange(n)}
-                format={(n) => t('pagination.perPage', { count: n })}
-              />
-              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
-                ‹
-              </Button>
-              <span className="tabular-nums">
-                {page + 1} / {totalPages}
-              </span>
-              <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => setPage((p) => p + 1)}>
-                ›
-              </Button>
-            </div>
-          </div>
-        </Card>
+        {narrow ? (
+          <>
+            {body}
+            <Card>{footer}</Card>
+          </>
+        ) : (
+          <Card>
+            {body}
+            <div className="border-t border-border">{footer}</div>
+          </Card>
+        )}
 
         {route.openId > 0 && (
           <RedemptionPanel
@@ -351,19 +435,23 @@ export default function Redemption() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{t('redemptionPage.batchDelete')}</DialogTitle>
-              <DialogDescription>{t('redemptionPage.batchDeleteConfirm', { count: selectedIds.length })}</DialogDescription>
+              <DialogDescription>{t('redemptionPage.batchDeleteConfirm', { count: selection.count })}</DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={() => setBatchDeleteOpen(false)}>
                 {t('common.cancel')}
               </Button>
-              <Button variant="destructive" onClick={confirmBatchDelete} disabled={batchDeleting}>
+              <Button variant="destructive" onClick={() => runBatch('delete')} disabled={batchBusy}>
                 {t('common.delete')}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
+
+      {narrow && selection.selectMode && (
+        <BatchBar count={selection.count} onClear={selection.exitSelectMode} floating actions={batchActions} />
+      )}
     </>
   );
 }

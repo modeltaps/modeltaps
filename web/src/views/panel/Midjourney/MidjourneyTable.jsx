@@ -2,25 +2,55 @@ import PropTypes from 'prop-types';
 import { useMemo, useState } from 'react';
 import { useTable, flexRender } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { ArrowDown, ArrowUp, ChevronsUpDown, Copy, Download, ExternalLink, MoreHorizontal } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Copy, Download, ExternalLink, MoreHorizontal } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import DataCards from '@/components/ui/data-cards';
-import { copy, timestamp2string } from 'utils/common';
-import { badgeClass } from '../Log/logHelpers';
+import { cn } from '@/lib/utils';
+import { copy, renderQuota, timestamp2string, timestamp2stringCompact } from 'utils/common';
 import { ACTION_TYPE, CODE_TYPE, STATUS_TYPE, deriveRequestTime } from './mjHelpers';
 
-const Badge = ({ color, children }) => <span className={badgeClass(color)}>{children}</span>;
-Badge.propTypes = { color: PropTypes.string, children: PropTypes.node };
+// A type's label as plain text; unknown values say so.
+const typeLabel = (t, types, type) => (types[type] ? t(types[type].labelKey) : t('midjourneyPage.unknown'));
 
-function renderType(t, types, type) {
-  const opt = types[type];
-  if (!opt) return <Badge color="error">{t('midjourneyPage.unknown')}</Badge>;
-  return <Badge color={opt.color}>{t(opt.labelKey)}</Badge>;
+// Columns for the shared column picker. By default a task shows when it was sent, what it did,
+// the prompt, how it went and the result; ids, channel, user, the submission code and the
+// English prompt are one click away. Status shows for everyone (it used to be admin-only).
+export const MJ_COLUMNS = [
+  { id: 'mj_id', labelKey: 'midjourneyPage.taskID', defaultHidden: true },
+  { id: 'submit_time', labelKey: 'midjourneyPage.submitTime', fixed: true },
+  { id: 'channel_id', labelKey: 'midjourneyPage.channel', defaultHidden: true, adminOnly: true },
+  { id: 'user_id', labelKey: 'midjourneyPage.user', defaultHidden: true, adminOnly: true },
+  { id: 'action', labelKey: 'midjourneyPage.type' },
+  { id: 'prompt', labelKey: 'midjourneyPage.prompt', fixed: true },
+  { id: 'status', labelKey: 'midjourneyPage.taskStatus', fixed: true },
+  { id: 'progress', labelKey: 'midjourneyPage.progress' },
+  { id: 'time', labelKey: 'midjourneyPage.timeConsuming' },
+  { id: 'image_url', labelKey: 'midjourneyPage.resultImage' },
+  { id: 'code', labelKey: 'midjourneyPage.submissionResult', defaultHidden: true, adminOnly: true },
+  { id: 'prompt_en', labelKey: 'midjourneyPage.promptEn', defaultHidden: true },
+  { id: 'quota', labelKey: 'logPage.quotaLabel', defaultHidden: true }
+];
+
+// Status as text; a failure is tinted with its reason after it.
+function MjStatus({ t, item, withReason = true }) {
+  const failed = item.status === 'FAILURE';
+  return (
+    <span className={cn('inline-flex min-w-0 max-w-64 items-baseline gap-1.5 whitespace-nowrap', failed && 'text-destructive')}>
+      <span className={cn(!failed && item.status !== 'SUCCESS' && 'text-muted-foreground')}>{typeLabel(t, STATUS_TYPE, item.status)}</span>
+      {withReason && failed && item.fail_reason && (
+        <span className="truncate text-xs text-muted-foreground" title={item.fail_reason}>
+          {item.fail_reason}
+        </span>
+      )}
+    </span>
+  );
 }
+MjStatus.propTypes = { t: PropTypes.func.isRequired, item: PropTypes.object.isRequired, withReason: PropTypes.bool };
+
+const submitSeconds = (i) => (i.submit_time > 0 ? i.submit_time / 1000 : 0);
 
 async function downloadImage(url, filename) {
   const response = await fetch(url);
@@ -35,10 +65,9 @@ async function downloadImage(url, filename) {
 
 function Truncated({ text }) {
   if (!text) return '';
-  const short = text.length > 30 ? `${text.substring(0, 30)}...` : text;
   return (
     <span
-      className="cursor-pointer"
+      className="block max-w-64 cursor-pointer truncate"
       title={text}
       role="button"
       tabIndex={0}
@@ -50,7 +79,7 @@ function Truncated({ text }) {
         }
       }}
     >
-      {short}
+      {text}
     </span>
   );
 }
@@ -58,7 +87,7 @@ Truncated.propTypes = { text: PropTypes.string };
 
 function ImageCell({ t, item }) {
   const [open, setOpen] = useState(false);
-  if (!item.image_url) return t('common.none');
+  if (!item.image_url) return <span className="text-muted-foreground">—</span>;
   return (
     <div className="flex items-center gap-1">
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
@@ -95,126 +124,118 @@ function ImageCell({ t, item }) {
 }
 ImageCell.propTypes = { t: PropTypes.func, item: PropTypes.object };
 
-export default function MidjourneyTable({ t, data, userIsAdmin, order, orderBy, onSort, searching }) {
+export default function MidjourneyTable({ t, data, userIsAdmin, order, orderBy, onSort, searching, columnVisibility, layout = 'table' }) {
   const columns = useMemo(() => {
-    const cols = [
-      {
-        id: 'mj_id',
-        sortable: true,
-        header: t('midjourneyPage.taskID'),
-        cell: (i) => <span className="whitespace-nowrap">{i.mj_id}</span>
+    const cells = {
+      mj_id: (i) => <span className="font-mono text-xs">{i.mj_id}</span>,
+      submit_time: (i) =>
+        submitSeconds(i) ? <span title={timestamp2string(submitSeconds(i))}>{timestamp2stringCompact(submitSeconds(i))}</span> : '—',
+      channel_id: (i) => i.channel_id || '',
+      user_id: (i) => i.user_id || '',
+      action: (i) => typeLabel(t, ACTION_TYPE, i.action),
+      prompt: (i) => <Truncated text={i.prompt} />,
+      status: (i) => <MjStatus t={t} item={i} />,
+      progress: (i) => <span className="tabular-nums">{i.progress}</span>,
+      time: (i) => {
+        const { seconds } = deriveRequestTime(i, t);
+        return seconds > 0 ? <span className="tabular-nums">{seconds.toFixed(1)}s</span> : <span className="text-muted-foreground">—</span>;
       },
-      {
-        id: 'submit_time',
-        sortable: true,
-        header: t('midjourneyPage.submitTime'),
-        cell: (i) => <span className="whitespace-nowrap">{timestamp2string(i.submit_time / 1000)}</span>
-      }
-    ];
-    if (userIsAdmin) {
-      cols.push({ id: 'channel_id', sortable: true, header: t('midjourneyPage.channel'), cell: (i) => i.channel_id || '' });
-      cols.push({ id: 'user_id', sortable: true, header: t('midjourneyPage.user'), cell: (i) => i.user_id || '' });
-    }
-    cols.push({ id: 'action', sortable: true, header: t('midjourneyPage.type'), cell: (i) => renderType(t, ACTION_TYPE, i.action) });
-    if (userIsAdmin) {
-      cols.push({
-        id: 'code',
-        sortable: true,
-        header: t('midjourneyPage.submissionResult'),
-        cell: (i) => renderType(t, CODE_TYPE, i.code)
-      });
-      cols.push({
-        id: 'status',
-        sortable: true,
-        header: t('midjourneyPage.taskStatus'),
-        cell: (i) => renderType(t, STATUS_TYPE, i.status)
-      });
-    }
-    cols.push({ id: 'progress', header: t('midjourneyPage.progress'), cell: (i) => i.progress });
-    cols.push({
-      id: 'time',
-      header: t('midjourneyPage.timeConsuming'),
-      cell: (i) => {
-        const { seconds, str } = deriveRequestTime(i, t);
-        return str ? <Badge color={seconds > 60 ? 'error' : 'success'}>{str}</Badge> : '';
-      }
-    });
-    cols.push({ id: 'image_url', header: t('midjourneyPage.resultImage'), cell: (i) => <ImageCell t={t} item={i} /> });
-    cols.push({ id: 'prompt', header: t('midjourneyPage.prompt'), cell: (i) => <Truncated text={i.prompt} /> });
-    cols.push({ id: 'prompt_en', header: t('midjourneyPage.promptEn'), cell: (i) => <Truncated text={i.prompt_en} /> });
-    cols.push({ id: 'fail_reason', header: t('midjourneyPage.failureReason'), cell: (i) => <Truncated text={i.fail_reason} /> });
-    return cols.map((c) => ({ id: c.id, header: () => c.header, cell: ({ row }) => c.cell(row.original), meta: { sortable: c.sortable } }));
+      image_url: (i) => <ImageCell t={t} item={i} />,
+      code: (i) => typeLabel(t, CODE_TYPE, i.code),
+      prompt_en: (i) => <Truncated text={i.prompt_en} />,
+      quota: (i) => <span className="font-mono tabular-nums">{i.quota ? renderQuota(i.quota) : '—'}</span>
+    };
+    const sortable = new Set(['mj_id', 'submit_time', 'channel_id', 'user_id', 'action', 'status', 'code']);
+    const right = new Set(['progress', 'time', 'quota']);
+    return MJ_COLUMNS.filter((c) => !c.adminOnly || userIsAdmin).map((c) => ({
+      id: c.id,
+      header: () => t(c.labelKey),
+      cell: ({ row }) => cells[c.id](row.original),
+      meta: { sortable: sortable.has(c.id), className: right.has(c.id) ? 'text-right' : undefined }
+    }));
   }, [t, userIsAdmin]);
 
-  const table = useTable({
-    features: appTableFeatures,
-    data: data || [],
-    columns,
-    manualSorting: true
-  });
+  const table = useTable({ features: appTableFeatures, data: data || [], columns, manualSorting: true, state: { columnVisibility } });
+  const rows = data || [];
 
-  const SortIcon = ({ id }) => {
-    if (orderBy !== id) return <ChevronsUpDown className="size-3.5 opacity-50" />;
-    return order === 'asc' ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />;
+  if (rows.length === 0) {
+    return (
+      <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+        {searching ? t('logPage.searching') : t('midjourneyPage.emptyInfo', { defaultValue: 'No records found' })}
+      </p>
+    );
+  }
+
+  if (layout === 'list') {
+    // Phone row: the prompt and the status, then the type, time and progress.
+    return (
+      <ul className="divide-y divide-border">
+        {rows.map((i) => (
+          <li key={i.id} className="flex h-14 items-center gap-3 px-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-3">
+                <span className="min-w-0 truncate text-[13px] font-medium">{i.prompt || '—'}</span>
+                <span className="ml-auto shrink-0 text-[13px]">
+                  <MjStatus t={t} item={i} withReason={false} />
+                </span>
+              </div>
+              <div className="mt-0.5 truncate text-xs tabular-nums text-muted-foreground">
+                {[typeLabel(t, ACTION_TYPE, i.action), submitSeconds(i) ? timestamp2stringCompact(submitSeconds(i)) : null, i.progress]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  // Sort arrows: the active column shows its direction; others show a faint arrow on hover only.
+  const sortIcon = (id) => {
+    if (orderBy !== id) return <ArrowUpDown className="size-3 opacity-0 transition-opacity group-hover/sort:opacity-50" />;
+    return order === 'asc' ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />;
   };
-  SortIcon.propTypes = { id: PropTypes.string };
 
   return (
-    <>
-      <div className="hidden md:block">
-        <Table className="min-w-[800px]">
-          <TableHeader>
-            {table.getHeaderGroups().map((hg) => (
-              <TableRow key={hg.id}>
-                {hg.headers.map((h) => {
-                  const sortable = h.column.columnDef.meta?.sortable;
-                  return (
-                    <TableHead key={h.id}>
-                      {sortable ? (
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1 hover:text-foreground"
-                          onClick={() => onSort(h.column.id)}
-                        >
-                          {flexRender(h.column.columnDef.header, h.getContext())}
-                          <SortIcon id={h.column.id} />
-                        </button>
-                      ) : (
-                        flexRender(h.column.columnDef.header, h.getContext())
-                      )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
+    <Table>
+      <TableHeader>
+        {table.getHeaderGroups().map((hg) => (
+          <TableRow key={hg.id} className="hover:bg-transparent">
+            {hg.headers.map((h) => (
+              <TableHead key={h.id} className={cn('whitespace-nowrap', h.column.columnDef.meta?.className)}>
+                {h.column.columnDef.meta?.sortable ? (
+                  <button
+                    type="button"
+                    className={cn(
+                      'group/sort inline-flex items-center gap-1 hover:text-foreground',
+                      orderBy === h.column.id && 'text-foreground'
+                    )}
+                    onClick={() => onSort(h.column.id)}
+                  >
+                    {flexRender(h.column.columnDef.header, h.getContext())}
+                    {sortIcon(h.column.id)}
+                  </button>
+                ) : (
+                  flexRender(h.column.columnDef.header, h.getContext())
+                )}
+              </TableHead>
             ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center text-sm text-muted-foreground">
-                  {searching ? t('logPage.searching') : t('midjourneyPage.emptyInfo', { defaultValue: 'No records found' })}
-                </TableCell>
-              </TableRow>
-            ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
-                  ))}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      <DataCards
-        table={table}
-        className="md:hidden"
-        primaryColumnId="mj_id"
-        empty={t('midjourneyPage.emptyInfo', { defaultValue: 'No records found' })}
-        searching={searching}
-      />
-    </>
+          </TableRow>
+        ))}
+      </TableHeader>
+      <TableBody>
+        {table.getRowModel().rows.map((row) => (
+          <TableRow key={row.id}>
+            {row.getVisibleCells().map((cell) => (
+              <TableCell key={cell.id} className={cn('whitespace-nowrap', cell.column.columnDef.meta?.className)}>
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -225,5 +246,7 @@ MidjourneyTable.propTypes = {
   order: PropTypes.string,
   orderBy: PropTypes.string,
   onSort: PropTypes.func.isRequired,
-  searching: PropTypes.bool
+  searching: PropTypes.bool,
+  columnVisibility: PropTypes.object,
+  layout: PropTypes.oneOf(['table', 'list'])
 };

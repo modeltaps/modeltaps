@@ -23,6 +23,97 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `GET /api/org/:id/model_access`, `PUT /api/org/:id/model_access/default`,
   `POST|PUT|DELETE /api/org/:id/model_access/lists[/:list_id]`; member limits take
   `model_access_list_id`, and key model limits take `access_list_id`.
+- Inclusion rules for the model library (models page, "Inclusion rules" tab). After each daily
+  sync, rules tried in order decide which library models join the catalog (published or as
+  drafts) and which catalog models are retired; conditions cover labs, model id patterns, release
+  window, endpoints, open weights, deprecation and whether a channel can supply the model. Each
+  model is decided once, so a model an admin removed is not added back, and rows an admin edited
+  or locked are never retired. Rules start as a dry run that only notifies admins (new
+  notification kind `model_library`); "Apply the rules" lets them change the catalog. A preview
+  shows what the rules would do now. The defaults retire deprecated models, add supplied previews
+  as drafts, publish supplied models from the main labs released in the last 60 days and add other
+  supplied models as drafts.
+- While supplies route requests, saving a channel now carries edits of its model list and mapping
+  to the supplies made from that list (when the channel was added, by the drift check or by the
+  migration): models the edit added are supplied to the public models of the same name, a new
+  mapping changes the name a supply sends upstream, and a model taken off the list has its supply
+  withdrawn (adding it back supplies it again). Supplies added by hand or from the model library,
+  and supplies whose upstream name was changed on the model page, stay as they are. The save
+  message says what changed.
+- The channel panel lists what needs attention on the channel (auto-disabled, no key, low balance,
+  models added or removed upstream) above its tabs, each with its action, so the reason no longer
+  hides behind the icon of a narrow row.
+
+- Adding models from the model library now finds the channels that can supply a model even when
+  models.dev does not know their spelling. Upstream names are compared word by word after taking
+  off platform decoration (vendor and region prefixes, "@default", "-v1:0", "." versus "-"). Under
+  each selected model the sheet lists the channels as exact, platform spelling or to confirm, with
+  the sure ones ticked; variants such as "-mini" or "-thinking" are not matched, and ":free" tiers
+  are offered unticked. Confirming or unticking a channel is remembered for that channel only.
+- Allocation policy: a new Allocation page under Gateway orders providers once for every model
+  while supplies route requests. Tiers are tried first to last; providers in one tier share it by
+  weight, and the channels of a provider share its weight equally unless a channel is placed on
+  its own. Providers that are not placed are tried after every tier. Models follow the policy
+  without any setup; a model can be set by hand on its Supplies tab (or by renumbering one of its
+  supplies there) and restored to the policy later. The first time supplies route requests the
+  policy is built from the channels' current priorities and weights, and models whose routing it
+  cannot reproduce are set by hand, so no traffic moves. While supplies route requests the
+  channel panel no longer edits a channel's priority or weight, and the new channel sheet no
+  longer asks for usage. `GET` / `PUT /api/allocation_policy` and
+  `POST /api/model_supply/allocation` expose the same.
+- A default supply mode and batch actions for supplies, so models do not have to be set up one
+  by one. Platform settings → Gateway has "Default supply mode" (balance or failover). A model's
+  mode switch gains "Follow default", which new models use; a model can still pick its own mode.
+  On the models page, the batch bar has a "Supplies" menu: set the mode of the selected models,
+  or add / remove one channel as a source of all of them (the upstream name is filled in and
+  priority and weight follow the channel). APIs: `POST /api/model_supply/mode` and
+  `POST /api/model_supply/batch`. Existing models on "balance" move to "Follow default" once;
+  the default starts as balance, so routing does not change.
+- "All groups" for channels in the admin UI: new channels no longer ask for groups and serve every
+  user group, including groups created later. The group list under Groups & routing and the batch
+  "Groups" dialog start with "All groups", which locks the single groups while it is on; turning
+  it off selects every current group. Channels open to all groups match any group filter, count
+  as peers of every channel of the same provider under "Usage", and show as "All groups" on the
+  model's channels tab. Existing channels keep their groups.
+- Channels open to all user groups: a channel whose group is `*` serves every enabled user group,
+  including groups created later, without editing the channel. Creating, deleting, enabling or
+  disabling a user group rebuilds the routing table; the channel list's group filter, the loss
+  warning, the supply migration report and batch "add group" all treat `*` as every group, and
+  saving a channel trims and de-duplicates its group list (`vip,*` is stored as `*`).
+- New channels attach themselves to public models: while supplies route requests, a channel
+  created from the new channel sheet gets a supply for every model it lists that is a public
+  model in the catalog, at the priority and weight chosen under "Usage", and the confirmation
+  says how many. The daily model check does the same for new upstream models on channels with
+  "Add new upstream models" on; names that match no public model still wait under New upstream
+  models.
+- Upstream models in the channel panel: the Models tab lists every model the upstream returned
+  at the last model check, with the public model each name belongs to and whether the channel
+  supplies it (in use, supply switched off, available, not in the catalog, not recognized). The
+  list can be filtered by state, searched and refreshed with "Check now"; rows link to the
+  model's supplies. `GET /api/channel/:id/upstream_models` returns the same data.
+- Add models from the model library: the models page has an "Add from library" button next to
+  "Create". It lists every library model with filters for vendor, endpoint, release window,
+  open weights and "a channel can supply it"; pick models or every match, add them as drafts or
+  published, and optionally supply them from the channels that list them. Each added model
+  takes its metadata from the library and the lab's list price when it has no price yet; the
+  daily sync keeps added models up to date from the library.
+- Endpoints show as small icons with their name on hover instead of text badges, in the models
+  table and the library.
+- Models without a vendor prefix or canonical id get a vendor from their name (`claude-` →
+  Anthropic, `grok-` → xAI, `glm-` → Zhipu, …).
+- A model library: the daily models.dev sync now keeps every model it knows, one per model
+  (deduplicated by `canonical_model_id`), together with how each platform names it (Vertex's
+  `claude-fable-5-2@default`, Bedrock's `us.anthropic.…`, OpenRouter's `anthropic/…`). The
+  library is not public. It lets the channel side recognise platform names: the model picker and
+  the new-upstream-models page suggest `claude-fable-5-2` for `claude-fable-5-2@default`, and
+  adding a supply fills the upstream name from the channel's mapping, the names the channel
+  lists, or its platform's spelling (Vertex, OpenRouter, Vercel, Groq). Bedrock and Azure keep
+  the public name because their channels translate names themselves.
+- The drop on the home page can be played with. A tap on the surface lets a drop fall right
+  there and its ripple names a few of the models it passes; pressing and holding keeps the drop
+  swelling until it is let go, and a bigger drop reaches further. The automatic drip steps aside
+  while someone plays and resumes after five quiet seconds. It is a small inline script on the
+  static home page and does nothing under reduced motion.
 - The home page at `/` is served as static HTML, rendered at build time for each language
   (English, Simplified Chinese, Traditional Chinese, Japanese) without the app bundle, so search
   engines and first-time visitors get the content at once. The server picks the language from
@@ -210,20 +301,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on the account never match an IP filter, so the filter cannot be used to find out which IP an
   administrator acted from.
 - AWS Bedrock maps `claude-fable-5-2` to its inference profile (`us.` in the US and Canada,
-  `global.` elsewhere), and new Bedrock channels list it among their default models. It has no
-  default price yet, so requests are rejected under the default unpriced-model policy until an
-  administrator sets one.
+  `global.` elsewhere), and new Bedrock channels list it among their default models. The default
+  prices include `claude-fable-5-2` ($8 / $40 per million tokens, cache writes $10 for 5 minutes
+  and $16 for 1 hour, cache hits $0.20), and new Anthropic channels list it among their default
+  models.
 
 ### Changed
 
+- The model panel is wider (tabbed sheets use the wide size), so the Supplies table no longer
+  cuts off channel and upstream model names. Below the table, "Channels that can also supply
+  this model" lists enabled channels that list the model and are not a supply yet; "Add" makes
+  one a supply with the suggested upstream name and the channel's priority and weight.
+- Model catalog: while supplies route requests the model sheet no longer offers the Hidden switch,
+  which the publish state replaces (it stays only to clear a value left from before); the pricing
+  tab calls the owner field "Vendor" like the profile tab instead of "Provider"; the sheet header
+  and channel counts follow the list, so adding a supply no longer leaves "no channel" on screen;
+  the supplies table drops the computed priority of models on the call order; the library sheet tells an
+  empty library to be synced first instead of saying no model matches the filters.
+- New channel sheet: an emptied model list no longer says it serves "these 0 models", the key
+  hint is not repeated under masked keys, and a failed test after creation shows the upstream
+  reason once instead of "test failed: test failed: ...". Copy confirmations read "已复制…" in
+  Chinese.
+
+- The channel menu names its checks apart: "Test several models" (connection and latency),
+  "Capability check" (real requests that verify vision, tool calls and more) and "Compare upstream
+  models", each with a line saying what it does. The Advanced tab shows the "other" field only
+  when a provider that does not read it still holds a value, the no-streaming example uses the
+  channel's own models, and the Responses conversion example shows the syntax instead of OpenAI
+  model names.
+
+- Providers list columns: "Requests" (was "Requests in 24 h") shows the count first and its trend
+  line after it, left-aligned and set apart from the share column; channels that share with no
+  other show "—" for share. Column headers explain themselves on hover in one short line.
+- Channels that send to an address other than their type's own (relays such as an OpenAI-compatible
+  gateway) show that host next to the provider name in the providers list, so two relays of the
+  same type can be told apart.
+- Call order: every position is now a group of channels that really share traffic. Saving splits
+  a position whose channels offer no model in common into consecutive positions (routing is the
+  same), so numbers, arrows and dragging all work on these groups. Each position has up / down
+  arrows next to its number. Dragging a row shows the whole row; dropping on its top or bottom
+  edge inserts before or after it and in the middle joins its group, with a line or a "share with
+  this group" hint showing where it will land. Joining a group that offers no model in common
+  places the channel right after it and says so.
+- The providers page header is one toolbar row: search, a provider dropdown, status, an
+  "N need attention" filter, conditions, the time range and columns. Attention items (low
+  balance, auto-disabled, missing key, model changes) are tags on their channel's row with the
+  action and a dismiss button, and "Refresh model lists" / "Test all" moved into the ⋯ menu. In
+  the call order, channels are numbered by the group that really shares traffic (channels of one
+  position that serve the same models), the number cell spans the group, and dragging a row onto
+  the middle of another joins its group while dropping on its top edge inserts it before.
+- The providers page is more compact: provider cards became filter chips next to the search, and
+  the traffic chart is replaced by a small request line in each channel's row, with the range
+  switch in the list toolbar. Every row shows its position number (the line joining a position
+  is gone), and a channel that shares traffic names the channels it shares with.
+- The providers page is one channel list. Provider cards at the top keep each provider's traffic in
+  view and filter the list; below them every channel is listed in call order while supplies route
+  requests: tried top to bottom, reordered by dragging or from the row menu, and a channel can share
+  the position above it by weight (shares are shown only between channels that serve the same
+  models). New channels go last. "New channel" opens a searchable list of providers first. The
+  separate Allocation page is gone (its address now opens the providers page), and channels the
+  order does not place are tried one at a time after it, oldest first, instead of sharing one
+  last tier.
+- The admin page that lists upstream connections is now called **Providers** in the sidebar and
+  page title (it was **Channels**). The entries inside a provider are still channels; links that
+  point to the page say "Providers" as well. Nothing else on the page changed.
+- The models page lists catalog models and models a channel lists; models that only have a price
+  no longer appear. Their prices stay, and adding the model from the library keeps its price.
+- On upgrade, synced draft models nothing uses are removed from the catalog (kept: anything not
+  a models.dev draft, locked rows, aliases and their targets, models with a supply, and names a
+  channel lists or maps). They stay in the model library.
+- The models.dev sync no longer adds models to the public catalog. It refreshes the metadata of
+  models already there; new models go to the model library.
 - Settings is one place again, as in 0.3.0. Settings in the account menu and a settings button
-  next to the account row (it replaces the bell) open it, and the sidebar turns into its tree: a
-  back row to the page you came from, Organization settings for owners and admins (a picker of
-  the organizations they manage, then General, Members & budgets and Danger zone), then Personal
-  settings. The page is titled with the item, and with the organization's name under
-  organization items. The settings search and the unsaved-changes dots are in the tree. Picking
-  an organization there no longer switches the active space. The organization menu no longer has
-  an Organization settings item; Members & budgets stays there as a shortcut into Settings.
+  next to the account row (it replaces the bell) open it, and the sidebar turns into its tree,
+  laid out like the workbench and platform admin sidebars: the same brand row, a back row to the
+  page you came from where the context switcher is, the picker of the organizations you manage
+  (owners and admins) right under it, then General, Members & budgets and Danger zone of that
+  organization and Personal settings. The page is titled with the item, and with the
+  organization's name under organization items. Unsaved changes show as a dot in the tree.
+  Picking an organization there no longer switches the active space. The organization menu no
+  longer has an Organization settings item; Members & budgets stays there as a shortcut into
+  Settings.
+- The panel has one search, the search palette (⌘K), and every search button opens it. In the
+  workbench, platform admin and settings sidebars it is an icon at the end of the brand row (the
+  search row under the context switcher is gone), and the platform settings subnav's search box
+  is a button for it. On a settings page the palette lists the page's cards under On this page
+  and finds them by anything written on them, collection rows included; picking one opens its
+  group with the card highlighted. While typing it also lists every group of Settings. The in-
+  page filtering of settings cards is gone. Every sidebar shows its collapse button only on
+  narrow screens, where the rail collapses by itself and the page title has a button to expand
+  it, and in the phone drawer; wide screens keep the rail expanded.
 - The site announcement no longer opens a dialog on page load. While it is unread, the console
   shows one row above the page title with its first line, a button that opens the full text and
   a close button; reading or closing it hides the row until the announcement changes. The
@@ -236,8 +403,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The home page animation is now a drop: the mark gathers under a tap, falls onto a still
   surface and the ripple lights up the models on it ring by ring. It runs on CSS alone, so the
   static home page animates without the app bundle, and it holds still under reduced motion.
-- The line under the home page headline now states what the gateway does: it is compatible with
-  the OpenAI, Anthropic and Gemini protocols and only the base URL changes. The tap above the
+- The line under the home page headline now states what the gateway does. In English it names
+  the OpenAI, Anthropic and Gemini protocols and says only the base URL changes; the Chinese and
+  Japanese lines say all three mainstream APIs are supported and existing tools work as they are,
+  without the developer term "base URL". The tap above the
   drop is drawn as a faint hairline.
 - Every panel page uses one sidebar. Under the brand, a one-line switcher shows the current space
   (personal, the active organization, or platform admin for administrators) and switches between
@@ -286,6 +455,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- While supplies route requests, a new channel now supplies the models it lists even when they
+  had no catalog row yet. Their rows are created by the catalog sync that runs after the save, and
+  the save tried to attach them before that, so on a fresh catalog a new channel ended up with no
+  supplies and its models showed "no channel". The channel is now attached once the sync is done;
+  the same goes for models an edit adds.
+
+- AWS Bedrock channels in Canada (`ca-central-1`, `ca-west-1`) now call `claude-fable-5` and
+  `claude-fable-5-1` through the `us.` inference profile, as they already did for
+  `claude-fable-5-2`, instead of falling back to `global.`. Both Canadian regions are source
+  regions of the US profile, so requests stay inside the US and Canada.
+- The same applies to `claude-sonnet-4-6`, `claude-sonnet-5`, `claude-opus-5` and `claude-opus-5-5`:
+  Canadian Bedrock channels now use the `us.` profile instead of `global.`. EU Bedrock channels
+  call `claude-sonnet-5` through the `eu.` profile, which AWS added after the model launched,
+  instead of `global.`, so requests stay in the EU.
+- The allocation page worked out percentages over a whole tier, so channels that never serve the
+  same model looked like they split traffic. Shares are now worked out only between entries of a
+  tier that serve a model in common; an entry that shares none shows no weight, and each row names
+  the entries it shares with. `GET /api/allocation_policy` lists each channel's supplied models.
+- The supply request preview counted channels open to all user groups as outside the chosen group.
+- Changing a channel's priority or weight reaches its supplies again. With supplies routing
+  requests, edits on the channel (its panel, the batch actions on the providers page and the
+  tag-wide setters) only changed the default for new supplies. Supplies that still have the
+  channel's priority or weight now move with it; a supply given its own numbers on the models
+  page is marked "Own setting", stays where it is and can be set to follow the channel again.
+- Models synced from models.dev no longer take the hosting platform as their vendor: Claude,
+  Grok or Llama served on Vertex showed as Google Gemini, and Grok or Phi on Azure as OpenAI. The
+  vendor now comes from the lab named in the model's canonical id and stays unknown when there
+  is none; the next sync corrects rows written the old way.
 - With `ModelSupplyEnabled` on, the models page still counted a model's channels from the
   channels' model lists, so a model served only through supplies showed "No channel" and one a
   channel merely listed looked routable. The admin catalog (`/api/model_info/catalog`) now lists

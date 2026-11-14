@@ -601,8 +601,8 @@
       "badge": "マルチプロトコル AI ゲートウェイ",
       "ctaPrimary": "API キーを取得",
       "ctaSecondary": "モデルを見る",
-      "subline": "OpenAI・Anthropic・Gemini の 3 つのプロトコルをひとつのアドレスで。ツールは base URL を変えるだけで、どのモデルも使えます。自分で運用し、キーとログは手元に。",
-      "tagline": "すべてのモデルを、ひとつのゲートウェイで。"
+      "subline": "メンバーごとにキーと予算を。OpenAI・Anthropic・Gemini の API でどのモデルも使えます。自分で運用し、キーも自分のもの。",
+      "tagline": "チームのための AI ゲートウェイ。"
     },
     "howItWorks": {
       "step1": {
@@ -1062,6 +1062,11 @@
       "upstreamModel": "上流に送ったモデル",
       "responseModel": "応答に示されたモデル",
       "mismatchValue": "{{model}}（リクエストと不一致）"
+    },
+    "clientCancel": {
+      "label": "クライアント停止",
+      "cancelled": "クライアントが切断したため、上流ストリームを閉じました",
+      "estimated": "出力トークンはそれまでに転送したテキストからローカルで推定"
     }
   },
   "login": {
@@ -1251,12 +1256,14 @@
     "hiddenYes": "非表示",
     "hiddenNo": "表示中",
     "hiddenTip": "有効なチャネルでルーティング可能なモデルは既定で表示されます。非表示にすると公開モデル一覧から外れ、呼び出せなくなります。",
+    "hiddenIgnored": "供給によるルーティング中は「公開状態」でモデルの表示が決まり、このスイッチは使われません。オフにして構いません",
     "state": "状態",
     "endpoints": "エンドポイント",
     "endpointsTip": "このモデルを呼び出せるエンドポイントを宣言します。空欄は未設定です。",
     "endpointOptions": {
       "chat": "チャット",
       "responses": "Responses",
+      "realtime": "リアルタイム",
       "images": "画像",
       "audioSpeech": "音声合成",
       "audioTranscription": "文字起こし",
@@ -1869,7 +1876,7 @@
   },
   "pricing_edit": {
     "channelType": "プロバイダー",
-    "channelTypeErr": "プロバイダータイプエラー",
+    "channelTypeErr": "ベンダーを選択してください",
     "channelTypeErr2": "プロバイダータイプが間違っています",
     "delInfoTip": "本当に {{name}} を削除してもよろしいですか?",
     "delMultipleInfoTip": "選択した{{count}}つの価格を削除しますか？",
@@ -3009,7 +3016,8 @@
         "credential": "チャネル認証情報の問題",
         "supply_paused": "チャネルまたはモデルの一時停止",
         "supply_resumed": "一時停止したチャネルまたはモデルの再開",
-        "supply_failover": "リクエストのバックアップチャネルへの切り替え"
+        "supply_failover": "リクエストのバックアップチャネルへの切り替え",
+        "model_library": "取り込みルールによるモデルの追加・廃止（予定を含む）"
       },
       "limit": {
         "label": "種類ごとの 1 時間あたり上限",

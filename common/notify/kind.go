@@ -25,13 +25,15 @@ const (
 	KindSupplyPaused     = "supply_paused"
 	KindSupplyResumed    = "supply_resumed"
 	KindSupplyFailover   = "supply_failover"
+	// KindModelLibrary reports what the library inclusion rules added, retired or would change.
+	KindModelLibrary = "model_library"
 )
 
 // Kinds lists every notice kind, in the order the settings page shows them.
 var Kinds = []string{
 	KindChannelDisabled, KindChannelEnabled, KindChannelTest, KindLowBalance,
 	KindPriceChange, KindModelDrift, KindModelConsistency, KindCredential,
-	KindSupplyPaused, KindSupplyResumed, KindSupplyFailover,
+	KindSupplyPaused, KindSupplyResumed, KindSupplyFailover, KindModelLibrary,
 }
 
 // KindEnabled reports whether notices of this kind are sent.

@@ -15,6 +15,17 @@ const axis = {
   tickLine: false
 };
 
+// Spend on the axis: whole dollars from $1, two decimals from $0.01, two significant digits
+// below that ("$0.00018" rather than a clipped "$0.000135").
+export const axisSpend = (v) => {
+  const n = Number(v) || 0;
+  const abs = Math.abs(n);
+  if (abs === 0) return '$0';
+  if (abs >= 1) return '$' + Number(n.toFixed(abs >= 100 ? 0 : 1));
+  if (abs >= 0.01) return '$' + n.toFixed(2);
+  return '$' + Number(n.toPrecision(2));
+};
+
 const tooltipStyle = {
   contentStyle: {
     background: 'var(--card)',
@@ -32,9 +43,8 @@ export default function ModelBarChart({ data = [], series = [], total = 0, loadi
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base">{t('dashboard_index.week_model_statistics')}</CardTitle>
-        <span className="font-mono text-sm font-medium tabular-nums text-muted-foreground">
-          {t('dashboard_index.total')}: {formatSpendAmount(total)}
-        </span>
+        {/* The week's spend across models (the old label read "total count" next to an amount). */}
+        <span className="text-sm tabular-nums text-muted-foreground">{formatSpendAmount(total)}</span>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -48,7 +58,7 @@ export default function ModelBarChart({ data = [], series = [], total = 0, loadi
             <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis dataKey="label" {...axis} />
-              <YAxis width={56} {...axis} axisLine={false} tickFormatter={(v) => '$' + v} />
+              <YAxis width={64} {...axis} axisLine={false} tickFormatter={axisSpend} />
               <Tooltip cursor={{ fill: 'var(--muted)', opacity: 0.3 }} {...tooltipStyle} />
               {series.length > 1 && <Legend wrapperStyle={{ fontSize: 12 }} />}
               {series.map((name, i) => (

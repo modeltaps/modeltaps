@@ -2,7 +2,7 @@
 // 模型页(「模型」表 + 「厂商」页签)的纯函数:页签解析、旧地址映射、列偏好持久化、
 // 价格与目录按模型名合并。无 React / API 依赖,便于单测。
 
-export const CATALOG_TABS = ['models', 'vendors', 'paused', 'pending'];
+export const CATALOG_TABS = ['models', 'vendors', 'paused', 'pending', 'rules'];
 export const DEFAULT_CATALOG_TAB = 'models';
 
 // 旧页签值(价格 / 目录 / 厂商)→ 新页签。
@@ -19,11 +19,14 @@ export const LEGACY_CATALOG_REDIRECTS = {
   model_ownedby: '/panel/pricing?tab=vendors'
 };
 
-// 列注册表:fixed 列恒显示且不进「列」菜单;defaultHidden 列默认不显示。
+// Column registry for the shared column picker: fixed columns always show and stay out of the
+// menu; defaultHidden columns start hidden. Channels are one click away: the state column already
+// says when a model has none.
 export const MODEL_COLUMNS = [
+  { id: 'select', fixed: true },
   { id: 'model', labelKey: 'modelInfoPage.model', fixed: true },
   { id: 'endpoints', labelKey: 'modelInfoPage.endpoints' },
-  { id: 'channels', labelKey: 'modelInfoPage.channels' },
+  { id: 'channels', labelKey: 'modelInfoPage.channels', defaultHidden: true },
   { id: 'supply', labelKey: 'modelSupply.column' },
   { id: 'price', labelKey: 'modelInfoPage.price' },
   { id: 'state', labelKey: 'modelInfoPage.state', fixed: true },
@@ -37,40 +40,17 @@ export const MODEL_COLUMNS = [
   { id: 'mode', labelKey: 'modelInfoPage.mode', defaultHidden: true },
   { id: 'alias_of', labelKey: 'modelInfoPage.aliasOf', defaultHidden: true },
   { id: 'source', labelKey: 'modelInfoPage.source', defaultHidden: true },
-  { id: 'synced_at', labelKey: 'modelInfoPage.syncedAt', defaultHidden: true }
+  { id: 'synced_at', labelKey: 'modelInfoPage.syncedAt', defaultHidden: true },
+  { id: 'actions', fixed: true }
 ];
 
-export const TOGGLEABLE_COLUMNS = MODEL_COLUMNS.filter((c) => !c.fixed);
-
-export const COLUMN_STORAGE_KEY = 'model-catalog-columns';
+// The column picker's storage key (v2: channels became optional); the old key is cleaned up.
+export const COLUMN_STORAGE_KEY = 'model-catalog-columns-v2';
+export const LEGACY_COLUMN_STORAGE_KEYS = ['model-catalog-columns'];
 
 const CHANNEL_STATUS_ENABLED = 1;
 
 export const defaultColumnVisibility = () => Object.fromEntries(MODEL_COLUMNS.map((c) => [c.id, !!c.fixed || !c.defaultHidden]));
-
-// 未知 / 缺失键回落默认值;fixed 列不受存储影响;存储损坏或不可用时整体回落默认。
-export function loadColumnVisibility(storage = globalThis.localStorage) {
-  const visibility = defaultColumnVisibility();
-  try {
-    const saved = JSON.parse(storage?.getItem(COLUMN_STORAGE_KEY));
-    if (!saved || typeof saved !== 'object') return visibility;
-    for (const column of TOGGLEABLE_COLUMNS) {
-      if (typeof saved[column.id] === 'boolean') visibility[column.id] = saved[column.id];
-    }
-  } catch {
-    /* corrupted storage -> defaults */
-  }
-  return visibility;
-}
-
-export function saveColumnVisibility(visibility, storage = globalThis.localStorage) {
-  try {
-    const toSave = Object.fromEntries(TOGGLEABLE_COLUMNS.map((c) => [c.id, !!visibility[c.id]]));
-    storage?.setItem(COLUMN_STORAGE_KEY, JSON.stringify(toSave));
-  } catch {
-    /* storage unavailable -> keep in-memory only */
-  }
-}
 
 export const PRICE_UNIT_STORAGE_KEY = 'model-catalog-price-unit';
 
@@ -107,11 +87,27 @@ export function indexChannelsByModel(channels = []) {
   return index;
 }
 
+// Names any channel lists, enabled or not: the models the catalog page shows even without a
+// catalog row.
+export function channelModelNames(channels = []) {
+  const names = new Set();
+  channels.forEach((channel) => {
+    String(channel?.models || '')
+      .split(',')
+      .map((name) => name.trim())
+      .filter(Boolean)
+      .forEach((name) => names.add(name));
+  });
+  return names;
+}
+
 // 目录行、价格行与渠道可提供的模型名按模型名合并为一张表:
 // - 目录行保留全部字段(含后端计算的 state / bound_channels),附上同名价格;
-// - 价格表或渠道模型中存在、但目录无行的模型也出现,状态按渠道判断(有渠道 = visible,否则 unrouted);
+// - 目录无行、但有渠道列出的模型也出现(附上同名价格),状态按渠道判断(有启用渠道 = visible,否则 unrouted);
+// - 只有价格、没有目录行也没有渠道列出的模型不出现:它们在模型库里,要用时从库里添加;
+//   不传 listedModels 时(旧调用方)沿用价格表 + modelList 的名字;
 // - key 为模型名(唯一),catalogId 为目录行 id(无目录行为 0)。
-export function mergeCatalogRows({ catalog = [], prices = [], modelList = [], channelsByModel = {} } = {}) {
+export function mergeCatalogRows({ catalog = [], prices = [], modelList = [], channelsByModel = {}, listedModels } = {}) {
   const priceByModel = {};
   prices.forEach((price) => {
     if (price?.model) priceByModel[price.model] = price;
@@ -135,7 +131,8 @@ export function mergeCatalogRows({ catalog = [], prices = [], modelList = [], ch
     };
   });
 
-  const orphanNames = [...prices.map((p) => p?.model), ...modelList].filter((name) => name && !seen.has(name));
+  const candidates = listedModels ? [...listedModels] : [...prices.map((p) => p?.model), ...modelList];
+  const orphanNames = candidates.filter((name) => name && !seen.has(name));
   [...new Set(orphanNames)].sort().forEach((name) => {
     const channels = channelsByModel[name] || [];
     rows.push({
@@ -217,8 +214,12 @@ export const splitChannelGroups = (group) =>
     .map((g) => g.trim())
     .filter(Boolean);
 
-// 可用分组:启用渠道分组的并集,排序去重。
-export const modelGroups = (row) => [...new Set(enabledChannels(row).flatMap((c) => splitChannelGroups(c.group)))].sort();
+// Groups the model is available in: the union of its enabled channels' groups, sorted. A channel
+// open to all groups ("*") makes it ["*"].
+export const modelGroups = (row) => {
+  const groups = [...new Set(enabledChannels(row).flatMap((c) => splitChannelGroups(c.group)))].sort();
+  return groups.includes('*') ? ['*'] : groups;
+};
 
 // 完整可用 = 有启用渠道 + 已定价 + 对用户可见。
 export const isFullyUsable = (row) => modelStatus(row) === 'ok' && isVisibleToUsers(row);

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  COLUMN_STORAGE_KEY,
   STATUS_FILTERS,
   attachChannelDetails,
   LEGACY_CATALOG_REDIRECTS,
@@ -11,17 +10,16 @@ import {
   defaultColumnVisibility,
   PRICE_UNIT_STORAGE_KEY,
   indexChannelsByModel,
+  channelModelNames,
   followsStatus,
   isFullyUsable,
   isVisibleToUsers,
-  loadColumnVisibility,
   loadPriceUnit,
   matchesStatusFilter,
   mergeCatalogRows,
   modelStatus,
   orphanModelNames,
   resolveCatalogTab,
-  saveColumnVisibility,
   savePriceUnit
 } from './modelCatalog';
 
@@ -58,36 +56,23 @@ describe('legacy route redirects', () => {
   });
 });
 
-describe('column visibility persistence', () => {
+describe('column defaults', () => {
   it('shows the default columns and hides the optional ones', () => {
     const v = defaultColumnVisibility();
-    ['model', 'endpoints', 'channels', 'price', 'state', 'visible'].forEach((id) => expect(v[id]).toBe(true));
-    ['vendor', 'context_length', 'max_tokens', 'modalities', 'tags', 'capabilities', 'mode', 'alias_of', 'source', 'synced_at'].forEach(
-      (id) => expect(v[id]).toBe(false)
-    );
-  });
-
-  it('round-trips a saved selection', () => {
-    const storage = memoryStorage();
-    saveColumnVisibility({ ...defaultColumnVisibility(), tags: true, vendor: true, price: false }, storage);
-    const loaded = loadColumnVisibility(storage);
-    expect(loaded.tags).toBe(true);
-    expect(loaded.vendor).toBe(true);
-    expect(loaded.price).toBe(false);
-    expect(loaded.endpoints).toBe(true);
-  });
-
-  it('never hides the fixed model, state and visibility columns', () => {
-    const storage = memoryStorage({ [COLUMN_STORAGE_KEY]: JSON.stringify({ model: false, state: false, visible: false }) });
-    const loaded = loadColumnVisibility(storage);
-    expect(loaded.model).toBe(true);
-    expect(loaded.state).toBe(true);
-    expect(loaded.visible).toBe(true);
-  });
-
-  it('falls back to defaults on corrupted or missing storage', () => {
-    expect(loadColumnVisibility(memoryStorage({ [COLUMN_STORAGE_KEY]: '{oops' }))).toEqual(defaultColumnVisibility());
-    expect(loadColumnVisibility(undefined)).toEqual(defaultColumnVisibility());
+    ['model', 'endpoints', 'supply', 'price', 'state', 'visible'].forEach((id) => expect(v[id]).toBe(true));
+    [
+      'channels',
+      'vendor',
+      'context_length',
+      'max_tokens',
+      'modalities',
+      'tags',
+      'capabilities',
+      'mode',
+      'alias_of',
+      'source',
+      'synced_at'
+    ].forEach((id) => expect(v[id]).toBe(false));
   });
 });
 
@@ -123,6 +108,25 @@ describe('merging prices with the catalog by model name', () => {
     expect(channelOnly).toMatchObject({ catalogId: 0, state: 'visible', price: null });
     expect(channelOnly.bound_channels).toEqual([{ id: 5, name: 'or', type: 20 }]);
     expect(rows.filter((r) => r.model === 'gpt-4o')).toHaveLength(1);
+  });
+
+  it('with listedModels, leaves out price-only models and keeps the ones a channel lists', () => {
+    const channels = [
+      { id: 5, name: 'or', type: 20, status: 1, models: 'channel-only, gpt-4o' },
+      { id: 6, name: 'off', type: 20, status: 2, models: 'disabled-only' }
+    ];
+    const rows = mergeCatalogRows({
+      catalog,
+      prices: [...prices, { model: 'disabled-only', input: 1, output: 1 }],
+      modelList: ['channel-only', 'gpt-4o'],
+      channelsByModel: indexChannelsByModel(channels),
+      listedModels: channelModelNames(channels)
+    });
+    const names = rows.map((r) => r.model);
+    expect(names).not.toContain('priced-only');
+    expect(names).toContain('channel-only');
+    expect(rows.find((r) => r.model === 'disabled-only')).toMatchObject({ catalogId: 0, state: 'unrouted' });
+    expect(rows.find((r) => r.model === 'disabled-only').price.input).toBe(1);
   });
 
   it('lists only models without a catalog row as orphans', () => {

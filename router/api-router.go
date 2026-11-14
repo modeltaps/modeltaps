@@ -236,6 +236,12 @@ func SetApiRouter(router *gin.Engine) {
 		modelInfoRoute.Use(middleware.AdminAuth())
 		{
 			modelInfoRoute.GET("/catalog", controller.GetModelInfoCatalog)
+			modelInfoRoute.GET("/library", controller.GetModelLibrary)
+			modelInfoRoute.POST("/library/add", controller.AddModelsFromLibrary)
+			modelInfoRoute.GET("/library/rules", controller.GetLibraryRules)
+			modelInfoRoute.PUT("/library/rules", controller.UpdateLibraryRules)
+			modelInfoRoute.POST("/library/rules/preview", controller.PreviewLibraryRules)
+			modelInfoRoute.POST("/library/rules/run", controller.RunLibraryRules)
 			modelInfoRoute.POST("/check_consistency", controller.CheckModelInfoConsistency)
 			modelInfoRoute.POST("/hide", controller.HideModelInfo)
 			modelInfoRoute.POST("/apply_seed", controller.ApplyModelInfoSeed)
@@ -260,13 +266,24 @@ func SetApiRouter(router *gin.Engine) {
 			modelSupplyRoute.GET("/", controller.GetModelSupplies)
 			modelSupplyRoute.GET("/preview", controller.PreviewModelSupply)
 			modelSupplyRoute.GET("/pending", controller.GetPendingUpstreamModels)
+			modelSupplyRoute.GET("/upstream_suggestion", controller.SuggestModelSupplyUpstream)
 			modelSupplyRoute.POST("/pending/attach", controller.AttachPendingUpstreamModel)
 			modelSupplyRoute.POST("/pending/ignore", controller.IgnorePendingUpstreamModel)
+			modelSupplyRoute.POST("/batch", controller.BatchModelSupplies)
+			modelSupplyRoute.POST("/mode", controller.SetModelSupplyMode)
+			modelSupplyRoute.POST("/allocation", controller.SetModelAllocation)
 			modelSupplyRoute.POST("/", controller.CreateModelSupply)
 			modelSupplyRoute.PUT("/", controller.UpdateModelSupply)
 			modelSupplyRoute.DELETE("/:id", controller.DeleteModelSupply)
 			// Rewrites how every model is routed once ModelSupplyEnabled is on: root only.
 			modelSupplyRoute.POST("/migrate", middleware.RootAuth(), controller.MigrateModelSupplies)
+		}
+
+		allocationRoute := apiRouter.Group("/allocation_policy")
+		allocationRoute.Use(middleware.AdminAuth())
+		{
+			allocationRoute.GET("/", controller.GetAllocationPolicy)
+			allocationRoute.PUT("/", controller.UpdateAllocationPolicy)
 		}
 
 		userGroup := apiRouter.Group("/user_group")
@@ -292,6 +309,7 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.POST("/dismiss_new_models", controller.DismissNewModels)
 			channelRoute.POST("/sync_pricing", controller.SyncChannelPricing)
 			channelRoute.GET("/:id", controller.GetChannel)
+			channelRoute.GET("/:id/upstream_models", controller.GetChannelUpstreamModels)
 			channelRoute.GET("/test", controller.TestAllChannels)
 			channelRoute.GET("/test/:id", controller.TestChannel)
 			channelRoute.GET("/check/:id", controller.CheckChannel)

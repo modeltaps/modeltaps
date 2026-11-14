@@ -34,7 +34,7 @@ import { useObjectRoute } from '@/components/objects';
 import UserPanel from './UserPanel';
 import NewUserSheet from './NewUserSheet';
 import { USER_TAB_KEYS } from './userTabs';
-import UserTable, { UserList, estimateUserTableWidth } from './UserTable';
+import UserTable, { UserList } from './UserTable';
 
 // Status segments (?status=): all, enabled (1) or disabled (2), counted by /api/user/stats.
 const STATUS_SEGMENTS = [
@@ -114,7 +114,6 @@ const USER_COLUMNS = [
   { id: 'status', labelKey: 'userPage.status' },
   { id: 'actions', fixed: true }
 ];
-const USER_COLUMN_IDS = USER_COLUMNS.map((c) => c.id);
 
 // Sort choices of the phone list, which has no headers to click.
 const SORT_OPTIONS = [
@@ -285,10 +284,7 @@ export default function Users() {
   const columns = useColumnVisibility({ storageKey: 'user-column-visibility-v1', columns: USER_COLUMNS });
   const selection = useRowSelection(users, [page, rowsPerPage, keyword, status, filterState]);
   // Full table while it fits (the sidebar collapses first), phone list otherwise.
-  const { pageRef, layout, narrow, onNaturalWidth } = useListLayout({
-    estimate: estimateUserTableWidth(USER_COLUMN_IDS, columns.visibility),
-    resetKey: JSON.stringify(columns.visibility)
-  });
+  const { layout, narrow } = useListLayout();
 
   const presets = useFilterPresets({
     storageKey: PRESET_STORAGE_KEY,
@@ -425,7 +421,6 @@ export default function Users() {
         orderBy={orderBy}
         onSort={handleSort}
         manageUser={manageUser}
-        onNaturalWidth={onNaturalWidth}
       />
     );
   }
@@ -455,7 +450,7 @@ export default function Users() {
         <ResponsiveToolbarButton primary size="sm" icon={Plus} label={t('userPage.createUser')} onClick={route.openNew} />
       </PageActions>
 
-      <div ref={pageRef} className={cn('space-y-3', narrow && selection.selectMode && 'pb-20')}>
+      <div className={cn('space-y-3', narrow && selection.selectMode && 'pb-20')}>
         <div className="space-y-2">
           {narrow ? (
             <>

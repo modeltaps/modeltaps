@@ -140,12 +140,14 @@
     "hiddenYes": "已隐藏",
     "hiddenNo": "未隐藏",
     "hiddenTip": "有启用渠道可路由的模型默认可见；隐藏后不出现在公开模型列表且不可调用。",
+    "hiddenIgnored": "按供应路由时由「发布状态」决定谁能看到这个模型，这个开关不起作用，可以关掉",
     "state": "状态",
     "endpoints": "接口能力",
     "endpointsTip": "声明该模型可以被哪些接口调用；留空表示未设置。",
     "endpointOptions": {
       "chat": "对话",
       "responses": "Responses",
+      "realtime": "实时",
       "images": "图像",
       "audioSpeech": "语音合成",
       "audioTranscription": "语音转写",
@@ -157,7 +159,8 @@
     "aliasCount": "别名 ×{{count}}",
     "aliasSelfError": "别名不能指向自身",
     "channels": "渠道",
-    "selectAll": "全选本页"
+    "selectAll": "全选本页",
+    "editSuccess": "已更新"
   },
   "dashboard": "仪表盘",
   "analytics": "分析",
@@ -396,7 +399,7 @@
       "members": "成员",
       "preferences": "偏好",
       "privacy": "数据与隐私",
-      "profile": "资料",
+      "profile": "个人信息",
       "security": "登录与安全",
       "tokens": "访问令牌"
     },
@@ -747,7 +750,7 @@
       "unlimited": "不限"
     },
     "settings": {
-      "profile": "组织资料",
+      "profile": "组织信息",
       "name": "组织名称",
       "nameRequired": "组织名称不能为空",
       "avatarUrl": "头像 URL",
@@ -1620,6 +1623,11 @@
       "upstreamModel": "发给上游的模型",
       "responseModel": "响应声明的模型",
       "mismatchValue": "{{model}}（与请求不符）"
+    },
+    "clientCancel": {
+      "label": "客户端停止",
+      "cancelled": "客户端已断开，上游流已关闭",
+      "estimated": "输出 token 按已转发的文本本地估算"
     }
   },
   "redemptionPage": {
@@ -2929,7 +2937,8 @@
         "credential": "渠道凭证问题",
         "supply_paused": "渠道或模型被暂停",
         "supply_resumed": "暂停的渠道或模型已恢复",
-        "supply_failover": "请求切换到备用渠道"
+        "supply_failover": "请求切换到备用渠道",
+        "model_library": "收录规则添加、下架或将要改动模型"
       },
       "limit": {
         "label": "每类每小时最多条数",
@@ -3200,7 +3209,7 @@
   },
   "pricing_edit": {
     "unknown": "未知",
-    "channelTypeErr": "供应商类型错误",
+    "channelTypeErr": "请选择厂商",
     "requiredModels": "模型 不能为空",
     "name": "名称",
     "type": "类型",
@@ -3271,8 +3280,8 @@
     },
     "hero": {
       "badge": "多协议 AI 网关",
-      "tagline": "一个网关，接入所有模型",
-      "subline": "OpenAI、Anthropic、Gemini 三种协议走同一个地址，工具只改 base URL 就能用任意模型。自己部署，key 和日志都在自己手里。",
+      "tagline": "为团队打造的 AI 网关",
+      "subline": "每位成员一把 key、一份预算。通过 OpenAI、Anthropic、Gemini 三种协议调用任意模型，自己部署，用自己的 key。",
       "ctaPrimary": "获取 API Key",
       "ctaSecondary": "浏览模型"
     },

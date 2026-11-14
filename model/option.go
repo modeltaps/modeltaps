@@ -182,6 +182,17 @@ func registerOptions() {
 		config.PauseRules = value
 		return nil
 	}, "", config.ScopeAdmin)
+	config.GlobalOption.RegisterBool("ModelLibraryRulesEnabled", &config.ModelLibraryRulesEnabled, config.ScopeAdmin)
+	config.GlobalOption.RegisterBool("ModelLibraryRulesApply", &config.ModelLibraryRulesApply, config.ScopeAdmin)
+	config.GlobalOption.RegisterCustom("ModelLibraryRules", func() string {
+		return config.ModelLibraryRules
+	}, func(value string) error {
+		if err := SetCustomLibraryRules(value); err != nil {
+			return err
+		}
+		config.ModelLibraryRules = value
+		return nil
+	}, "", config.ScopeAdmin)
 	config.GlobalOption.RegisterCustom("ModelSupplyEnabled", func() string {
 		return strconv.FormatBool(config.ModelSupplyEnabled)
 	}, func(value string) error {
@@ -199,6 +210,15 @@ func registerOptions() {
 		}
 		return nil
 	}, "false", config.ScopeAdmin)
+	config.GlobalOption.RegisterCustom("SupplyModeDefault", func() string {
+		return config.SupplyModeDefault
+	}, func(value string) error {
+		if value != SupplyModeBalance && value != SupplyModeFailover {
+			return fmt.Errorf("invalid SupplyModeDefault %q", value)
+		}
+		config.SupplyModeDefault = value
+		return nil
+	}, SupplyModeBalance, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("ChannelMetricsEnabled", &config.ChannelMetricsEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("ChannelMetricsRetentionDays", &config.ChannelMetricsRetentionDays, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("ChannelCredentialRefreshMinutes", &config.ChannelCredentialRefreshMinutes, config.ScopeAdmin)

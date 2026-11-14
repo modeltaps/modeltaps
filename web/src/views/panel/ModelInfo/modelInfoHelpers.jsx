@@ -1,11 +1,12 @@
 import { useTranslation } from 'react-i18next';
+import { ArrowUpDown, AudioLines, Binary, Image as ImageIcon, MessageSquare, Mic, Volume2, Workflow } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import BrandIcon from '@/components/brand/BrandIcon';
 import ModelIcon from '@/components/brand/ModelIcon';
 import { resolveBrandFromText } from '@/components/brand/brandIcons';
-import { cn } from '@/lib/utils';
+import { Dot } from '@/components/objects';
 import { MODALITY_OPTIONS } from 'constants/Modality';
 import { CAPABILITY_OPTIONS } from 'constants/Capability';
 
@@ -44,11 +45,12 @@ export const CAPABILITY_LABEL_KEYS = {
 };
 
 // 接口能力词表：取值与后端 model_info.endpoints 一致；空串表示未设置。
-export const ENDPOINT_VALUES = ['chat', 'responses', 'images', 'audio.speech', 'audio.transcription', 'embeddings', 'rerank'];
+export const ENDPOINT_VALUES = ['chat', 'responses', 'realtime', 'images', 'audio.speech', 'audio.transcription', 'embeddings', 'rerank'];
 
 export const ENDPOINT_LABEL_KEYS = {
   chat: 'modelInfoPage.endpointOptions.chat',
   responses: 'modelInfoPage.endpointOptions.responses',
+  realtime: 'modelInfoPage.endpointOptions.realtime',
   images: 'modelInfoPage.endpointOptions.images',
   'audio.speech': 'modelInfoPage.endpointOptions.audioSpeech',
   'audio.transcription': 'modelInfoPage.endpointOptions.audioTranscription',
@@ -151,6 +153,46 @@ export function CapabilityBadges({ json, max = 2 }) {
   return <BadgeOverflow items={items} max={max} />;
 }
 
+// One small icon per endpoint, named on hover; the vocabulary's order, unknown values last as text.
+export const ENDPOINT_ICONS = {
+  chat: MessageSquare,
+  responses: Workflow,
+  realtime: AudioLines,
+  images: ImageIcon,
+  'audio.speech': Volume2,
+  'audio.transcription': Mic,
+  embeddings: Binary,
+  rerank: ArrowUpDown
+};
+
+export function EndpointIcons({ json, className }) {
+  const { t } = useTranslation();
+  const list = safeJsonArray(json);
+  if (!list.length) return <span className="text-muted-foreground">-</span>;
+  const ordered = [...ENDPOINT_VALUES.filter((v) => list.includes(v)), ...list.filter((v) => !ENDPOINT_VALUES.includes(v))];
+  return (
+    <TooltipProvider delayDuration={150}>
+      <div className={`flex flex-nowrap items-center gap-1.5 text-muted-foreground ${className || ''}`}>
+        {ordered.map((endpoint) => {
+          const Icon = ENDPOINT_ICONS[endpoint];
+          const label = ENDPOINT_LABEL_KEYS[endpoint] ? t(ENDPOINT_LABEL_KEYS[endpoint]) : endpoint;
+          return (
+            <Tooltip key={endpoint}>
+              <TooltipTrigger asChild>
+                <span role="img" aria-label={label} className="inline-flex cursor-default">
+                  {Icon ? <Icon className="size-3.5" /> : <span className="text-xs">{endpoint}</span>}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>{label}</TooltipContent>
+            </Tooltip>
+          );
+        })}
+      </div>
+    </TooltipProvider>
+  );
+}
+
+// Kept for callers that want text badges.
 export function EndpointBadges({ json, max = 2 }) {
   const { t } = useTranslation();
   const items = safeJsonArray(json).map((endpoint, i) => ({
@@ -167,24 +209,17 @@ export const MODEL_STATUS_LABEL_KEYS = {
   unpriced: 'modelsPage.status.unpriced'
 };
 
-const MODEL_STATUS_COLORS = {
-  ok: 'bg-success/15 text-success',
-  nochannel: 'bg-warning/15 text-warning',
-  unpriced: 'bg-warning/15 text-warning'
-};
-
-const MODEL_STATUS_DOTS = { ok: 'bg-success', nochannel: 'bg-warning', unpriced: 'bg-warning' };
+// Model state as a quiet dot and label: most rows in a fresh catalog have no channel yet, so a
+// filled badge per row would flood the table.
+const MODEL_STATUS_DOTS = { ok: 'live', nochannel: 'warn', unpriced: 'warn' };
 
 export function ModelStatusBadge({ status }) {
   const { t } = useTranslation();
   return (
-    <Badge
-      variant="outline"
-      className={cn('gap-1.5 whitespace-nowrap border-transparent px-1.5 py-0 font-normal', MODEL_STATUS_COLORS[status])}
-    >
-      <span className={cn('size-1.5 rounded-full', MODEL_STATUS_DOTS[status])} />
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[13px]">
+      <Dot tone={MODEL_STATUS_DOTS[status] || 'live'} />
       {t(MODEL_STATUS_LABEL_KEYS[status] || MODEL_STATUS_LABEL_KEYS.ok)}
-    </Badge>
+    </span>
   );
 }
 

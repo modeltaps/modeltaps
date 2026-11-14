@@ -663,6 +663,10 @@ func TestGetOrganizationAuditLogsFilters(t *testing.T) {
 	if err != nil || byActor.TotalCount != 1 || (*byActor.Data)[0].Content != "c" {
 		t.Fatalf("按操作者过滤异常: err=%v result=%+v", err, byActor)
 	}
+	// The actor's username comes with each entry.
+	if name := (*byActor.Data)[0].ActorName; name != other.Username {
+		t.Fatalf("actor_name = %q, want %q", name, other.Username)
+	}
 	// 按动作过滤
 	byAction, err := GetOrganizationAuditLogs(org.Id, &OrgAuditLogsParams{Action: "token.create"})
 	if err != nil || byAction.TotalCount != 1 || (*byAction.Data)[0].Content != "b" {

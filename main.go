@@ -105,6 +105,7 @@ func main() {
 	brandicon.StartSyncLoop(viper.GetString("brand_icon_dir"), 24*time.Hour,
 		func() bool { return config.BrandIconSyncEnabled },
 		func() string { return config.BrandIconRegistry })
+	model.EnqueueOwnerDomainIcons()
 	controller.BrandIconSync = func(ctx context.Context) error {
 		_, _, err := brandicon.Sync(ctx, config.BrandIconRegistry, viper.GetString("brand_icon_dir"))
 		return err

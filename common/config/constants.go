@@ -296,6 +296,10 @@ var ChannelTestIntervalMinutes = 10
 // published models. Off until the supply migration has run.
 var ModelSupplyEnabled = false
 
+// SupplyModeDefault is how a public model that follows the default picks a supply within one
+// priority tier: "balance" (by weight) or "failover" (the heaviest takes every request).
+var SupplyModeDefault = "balance"
+
 // PauseRulesEnabled sends every relay failure through the pause rules (see model.PauseRule):
 // channels or models are paused for a while and resumed automatically, instead of the older
 // automatic disabling, per-status cooldowns and model-not-found quarantine.
@@ -303,6 +307,16 @@ var PauseRulesEnabled = true
 
 // PauseRules holds custom pause rules as JSON; empty means the built-in defaults.
 var PauseRules = ""
+
+// ModelLibraryRulesEnabled runs the library inclusion rules after each model library sync.
+var ModelLibraryRulesEnabled = true
+
+// ModelLibraryRulesApply makes the inclusion rules change the catalog. Off, they only notify
+// admins of what they would do (a dry run).
+var ModelLibraryRulesApply = false
+
+// ModelLibraryRules holds custom inclusion rules as JSON; empty means the built-in defaults.
+var ModelLibraryRules = ""
 
 // ChannelMetricsEnabled 按「渠道 × 模型 × 小时」聚合成功率、首字延迟与输出速度（内存累计，每分钟落库）。
 var ChannelMetricsEnabled = true

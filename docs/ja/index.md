@@ -4,8 +4,8 @@ layout: home
 
 hero:
   name: "Modeltaps"
-  text: "すべてのモデルを、ひとつのゲートウェイで。"
-  tagline: OpenAI・Anthropic・Gemini の 3 つのプロトコルをひとつのアドレスで。ツールは base URL を変えるだけで、どのモデルも使えます。自分で運用し、キーとログは手元に。
+  text: "チームのための AI ゲートウェイ。"
+  tagline: メンバーごとにキーと予算を。OpenAI・Anthropic・Gemini の API でどのモデルも使えます。自分で運用し、キーも自分のもの。
   image:
     light: /hero-gateway-light.svg
     dark: /hero-gateway-dark.svg

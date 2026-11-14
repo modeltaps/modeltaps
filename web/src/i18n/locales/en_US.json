@@ -601,8 +601,8 @@
       "badge": "Multi-protocol AI gateway",
       "ctaPrimary": "Get API key",
       "ctaSecondary": "Browse models",
-      "subline": "OpenAI, Anthropic and Gemini APIs behind a single base URL. Point your tools at one address and use any model — self-hosted, with your own keys.",
-      "tagline": "Every model, every protocol. One gateway."
+      "subline": "Give every member a key and a budget. Use any model through OpenAI, Anthropic and Gemini APIs — self-hosted, with your own keys.",
+      "tagline": "The AI gateway for teams."
     },
     "howItWorks": {
       "step1": {
@@ -1062,6 +1062,11 @@
       "upstreamModel": "Model sent upstream",
       "responseModel": "Model in the response",
       "mismatchValue": "{{model}} (does not match the request)"
+    },
+    "clientCancel": {
+      "label": "Client stopped",
+      "cancelled": "The client disconnected; the upstream stream was closed",
+      "estimated": "Output tokens counted locally from the text streamed so far"
     }
   },
   "login": {
@@ -1251,12 +1256,14 @@
     "hiddenYes": "Hidden",
     "hiddenNo": "Not hidden",
     "hiddenTip": "Models routable by an enabled channel are visible by default; hidden models leave the public model list and cannot be called.",
+    "hiddenIgnored": "While supplies route requests, the publish state decides who sees this model and this switch is not read; you can turn it off",
     "state": "State",
     "endpoints": "Endpoints",
     "endpointsTip": "Declares which endpoints can serve this model; empty means unset.",
     "endpointOptions": {
       "chat": "Chat",
       "responses": "Responses",
+      "realtime": "Realtime",
       "images": "Images",
       "audioSpeech": "Speech",
       "audioTranscription": "Transcription",
@@ -1869,7 +1876,7 @@
   },
   "pricing_edit": {
     "channelType": "Provider",
-    "channelTypeErr": "Provider type error",
+    "channelTypeErr": "Choose a vendor",
     "channelTypeErr2": "The provider type is wrong",
     "delInfoTip": "Are you sure you want to delete {{name}}?",
     "delMultipleInfoTip": "Are you sure you want to delete the selected {{count}} prices?",
@@ -3009,7 +3016,8 @@
         "credential": "Channel credential problems",
         "supply_paused": "Channel or model paused",
         "supply_resumed": "Paused channel or model resumed",
-        "supply_failover": "Request switched to a backup channel"
+        "supply_failover": "Request switched to a backup channel",
+        "model_library": "Inclusion rules added, retired or would change models"
       },
       "limit": {
         "label": "Notices per kind per hour",

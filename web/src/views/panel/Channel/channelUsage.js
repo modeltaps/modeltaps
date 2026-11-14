@@ -1,18 +1,17 @@
-import { splitList } from './channelGroups';
+import { groupsOverlap, splitList } from './channelGroups';
 
 // "Usage" of a channel next to the other channels that serve the same requests: same provider
-// type, sharing at least one group, enabled. Priority decides which tier is tried first (higher
+// type, sharing at least one group (a channel open to all groups shares every group), enabled. Priority decides which tier is tried first (higher
 // first, lower tiers only when every channel above is unavailable) and weight splits traffic
 // inside a tier. The options turn that into words relative to the highest-priority peer.
 
 // Peers of `channel` ({ id?, type, group|groups }) among `all`: enabled channels of the same
 // type sharing a group, highest priority first, then highest weight.
 export function usagePeers(channel, all = []) {
-  const groups = new Set(channel.groups || splitList(channel.group));
+  const groups = channel.groups || splitList(channel.group);
   return all
     .filter(
-      (c) =>
-        c.id !== channel.id && c.status === 1 && Number(c.type) === Number(channel.type) && splitList(c.group).some((g) => groups.has(g))
+      (c) => c.id !== channel.id && c.status === 1 && Number(c.type) === Number(channel.type) && groupsOverlap(groups, splitList(c.group))
     )
     .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0) || (b.weight ?? 1) - (a.weight ?? 1) || a.id - b.id);
 }

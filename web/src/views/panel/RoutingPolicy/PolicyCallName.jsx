@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { copy } from 'utils/common';
 
 // The model name API keys use for a policy (policy/<name> for own policies), with a copy button.
-export default function PolicyCallName({ name, className = '' }) {
+// hoverCopy: on desktop the copy button shows when the surrounding `group` (a row or card) is
+// hovered or focused; touch screens always show it.
+export default function PolicyCallName({ name, className = '', hoverCopy = false }) {
   const { t } = useTranslation();
   return (
     <span className={`inline-flex min-w-0 items-center gap-1 ${className}`}>
@@ -15,7 +17,7 @@ export default function PolicyCallName({ name, className = '' }) {
         type="button"
         variant="ghost"
         size="icon"
-        className="size-6 shrink-0 text-muted-foreground"
+        className={`size-6 shrink-0 text-muted-foreground ${hoverCopy ? 'focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100' : ''}`}
         aria-label={t('routingPolicy.copyCallName')}
         title={t('routingPolicy.copyCallName')}
         onClick={(e) => {
@@ -31,5 +33,6 @@ export default function PolicyCallName({ name, className = '' }) {
 
 PolicyCallName.propTypes = {
   name: PropTypes.string.isRequired,
-  className: PropTypes.string
+  className: PropTypes.string,
+  hoverCopy: PropTypes.bool
 };

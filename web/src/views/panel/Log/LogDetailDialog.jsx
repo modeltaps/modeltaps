@@ -864,6 +864,17 @@ export default function LogDetailDialog({
                     value={t('logPage.responseModel.mismatchValue', { model: metadata.response_model })}
                   />
                 )}
+                {(metadata.client_cancelled || metadata.usage_estimated) && (
+                  <KeyValueRow
+                    label={t('logPage.clientCancel.label')}
+                    value={[
+                      metadata.client_cancelled && t('logPage.clientCancel.cancelled'),
+                      metadata.usage_estimated && t('logPage.clientCancel.estimated')
+                    ]
+                      .filter(Boolean)
+                      .join('; ')}
+                  />
+                )}
                 {metadata.routing_policy && !metadata.routing_decision && (
                   <KeyValueRow
                     label={t('logPage.routing.label')}

@@ -968,8 +968,11 @@ func (cc *ChannelsChooser) Load() {
 	var channels []*Channel
 	DB.Where("status = ?", config.ChannelStatusEnabled).Find(&channels)
 
+	// Read the groups from the database: at startup this runs before the user group cache loads.
+	allGroups := userGroupSymbolsFromDB()
+
 	if config.ModelSupplyEnabled {
-		cc.loadFromSupplies(channels)
+		cc.loadFromSupplies(channels, allGroups)
 		return
 	}
 
@@ -998,14 +1001,10 @@ func (cc *ChannelsChooser) Load() {
 		}
 
 		// 处理groups和models
-		groups := strings.Split(channel.Group, ",")
+		groups := expandChannelGroup(channel.Group, allGroups)
 		models := strings.Split(channel.Models, ",")
 
 		for _, group := range groups {
-			group = strings.TrimSpace(group)
-			if group == "" {
-				continue
-			}
 
 			for _, model := range models {
 				model = strings.TrimSpace(model)
@@ -1084,23 +1083,34 @@ func (cc *ChannelsChooser) Load() {
 	logger.SysLog("channels Load success")
 }
 
-// supplyModeOf returns the catalog's supply mode for a public model, balance when unset.
+// supplyModeOf returns the supply mode a public model routes with: its own, or the site default
+// when it follows the default.
 func supplyModeOf(modelName string) string {
-	if info := lookupModelInfo(modelName); info != nil && info.SupplyMode != "" {
-		return info.SupplyMode
+	return routingSupplyMode(lookupModelInfo(modelName), currentAllocationActive())
+}
+
+// routingSupplyMode is the mode a model routes with. Under an allocation policy a tier with
+// several supplies always shares traffic by weight, so the mode only applies to manual models.
+func routingSupplyMode(info *ModelInfo, allocationActive bool) string {
+	if allocationActive && followsPolicy(info) {
+		return SupplyModeBalance
 	}
-	return SupplyModeBalance
+	if info != nil {
+		return EffectiveSupplyMode(info.SupplyMode)
+	}
+	return EffectiveSupplyMode("")
 }
 
 // loadFromSupplies builds the routing table from enabled supplies on enabled channels: each
 // supply puts its channel in the tier given by the supply's priority, for every group of the
 // channel. There is no wildcard matching; supplies name models exactly.
-func (cc *ChannelsChooser) loadFromSupplies(channels []*Channel) {
+func (cc *ChannelsChooser) loadFromSupplies(channels []*Channel, allGroups []string) {
 	var supplies []*ModelSupply
 	if err := DB.Where("enabled = ?", true).Find(&supplies).Error; err != nil {
 		logger.SysError("load model supplies failed: " + err.Error())
 		return
 	}
+	supplies = cc.allocateLoaded(supplies, channels)
 
 	newChannels := make(map[int]*ChannelChoice, len(channels))
 	for _, channel := range channels {
@@ -1128,11 +1138,7 @@ func (cc *ChannelsChooser) loadFromSupplies(channels []*Channel) {
 		if _, ok := newModelChannelType[supply.Model]; !ok {
 			newModelChannelType[supply.Model] = channel.Type
 		}
-		for _, group := range strings.Split(channel.Group, ",") {
-			group = strings.TrimSpace(group)
-			if group == "" {
-				continue
-			}
+		for _, group := range expandChannelGroup(channel.Group, allGroups) {
 			if tiers[group] == nil {
 				tiers[group] = make(map[string]map[int64][]int)
 			}

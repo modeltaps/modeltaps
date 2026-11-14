@@ -2,6 +2,7 @@ import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { ArrowDownUp, Check, ListChecks, ListFilter, Search, X } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -20,7 +21,8 @@ export default function PhoneListToolbar({ search, filter, sort, select, chips =
   const { t } = useTranslation();
   return (
     <>
-      <div className="flex items-center gap-2">
+      {/* Without a search box the icon buttons sit at the end of the row. */}
+      <div className={cn('flex items-center gap-2', !search && 'justify-end')}>
         {search && (
           <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

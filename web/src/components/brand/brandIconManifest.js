@@ -76,6 +76,11 @@ export function lookupBrandKey(manifest, value) {
   return target && manifest.icons[target] ? target : null;
 }
 
+// Domain whose site icon stands in for a lab the icon package has no mark for; null otherwise.
+export function ownerDomain(manifest, ownedBy) {
+  return manifest?.ownerDomains?.[normalize(ownedBy)] || null;
+}
+
 // Admin-set icon: `brand:{key}` or a bare built-in key. Uploads are rendered by BrandIcon
 // directly; external URLs are ignored (they would break the offline constraint).
 function fromCustomIcon(manifest, icon) {

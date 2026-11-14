@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { API } from 'utils/api';
 import { showError } from 'utils/common';
 import { getPageSize, savePageSize } from 'constants';
-import Pagination from '../components/Pagination';
+import { ListFooter, useListLayout } from '@/components/list-page';
 import InvoiceTable from './InvoiceTable';
 import InvoiceDetailSheet from './InvoiceDetailSheet';
 
@@ -63,12 +63,15 @@ export default function Invoice({ reloadToken = 0 }) {
     setOrderBy(id);
   };
 
+  // Full table while it fits (the sidebar collapses first), 56px rows on phones.
+  const { layout } = useListLayout();
+
   const handleView = (date) => {
     if (date) setDetailDate(date.substring(0, 7));
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <Alert variant="info">{t('invoice_index.alert')}</Alert>
 
       <Card>
@@ -81,18 +84,21 @@ export default function Invoice({ reloadToken = 0 }) {
             onSort={handleSort}
             onView={handleView}
             searching={searching}
+            layout={layout}
           />
-          <Pagination
-            page={page}
-            rowsPerPage={rowsPerPage}
-            count={listCount}
-            onPageChange={setPage}
-            onRowsPerPageChange={(size) => {
-              setPage(0);
-              setRowsPerPage(size);
-              savePageSize('invoice', size);
-            }}
-          />
+          <div className="border-t border-border">
+            <ListFooter
+              total={listCount}
+              page={page}
+              pageSize={rowsPerPage}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPage(0);
+                setRowsPerPage(size);
+                savePageSize('invoice', size);
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
 

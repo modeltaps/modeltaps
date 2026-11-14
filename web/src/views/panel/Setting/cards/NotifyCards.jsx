@@ -73,7 +73,8 @@ const NOTIFY_KINDS = [
   'credential',
   'supply_paused',
   'supply_resumed',
-  'supply_failover'
+  'supply_failover',
+  'model_library'
 ];
 
 export function NotificationsCard({ ctx }) {
