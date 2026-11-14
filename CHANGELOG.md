@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Upstream prices per channel. For providers whose upstream publishes a price list (OpenRouter,
+  Vercel AI Gateway), each channel now keeps what its upstream charges per model, apart from the
+  catalog price users pay, and the channel's Models tab shows it as an "Upstream $/M" column:
+  input / output per million tokens, per image, per second of video (lowest resolution), per
+  request, free, or "Other" for models priced by speech seconds, realtime sessions or video
+  tokens; the tooltip lists cache read and write prices too. The list is read at startup, when a
+  channel is saved, by the daily price sync and by the tab's "Sync prices" button. API:
+  `GET /api/channel/:id/prices`, `POST /api/channel/:id/prices/refresh`.
 - Model access for organizations. Platform administrators set the approved models of each
   organization (organization panel → Approved models), and organization admins manage the
   organization default and reusable named lists under Organization → Model access. A request

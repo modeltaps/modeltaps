@@ -340,6 +340,7 @@ func BatchDeleteChannel(ids []int) (int64, error) {
 	result := DB.Where("id IN ?", ids).Delete(&Channel{})
 	if result.Error == nil && result.RowsAffected > 0 {
 		deleteChannelAliases(ids)
+		deleteChannelPrices(ids)
 		ChannelGroup.Load()
 	}
 	return result.RowsAffected, result.Error
@@ -824,6 +825,7 @@ func (channel *Channel) Delete() error {
 	err := DB.Delete(channel).Error
 	if err == nil {
 		deleteChannelAliases([]int{channel.Id})
+		deleteChannelPrices([]int{channel.Id})
 		ChannelGroup.Load()
 	}
 	return err

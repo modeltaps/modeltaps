@@ -160,6 +160,14 @@ type ModelPriceListInterface interface {
 	GetModelPriceList() ([]*model.Price, error)
 }
 
+// ChannelPriceListInterface is implemented by channel types whose upstream publishes its own
+// prices (OpenRouter, Vercel AI Gateway). It returns them as the upstream states them, in USD,
+// for the channel's own price list.
+type ChannelPriceListInterface interface {
+	ProviderInterface
+	GetChannelPrices() ([]*model.ChannelPrice, error)
+}
+
 // ModelInfoListInterface 由「上游 API 自带模型元数据」的渠道实现（如 OpenRouter），
 // 返回模型元信息（名称/描述/上下文/模态），供同步时一并写入。
 type ModelInfoListInterface interface {

@@ -155,6 +155,10 @@ func SyncAllChannelsOwnPricing() (int, error) {
 			if provider == nil {
 				continue
 			}
+			// The channel's own price list is kept per channel, whatever the catalog keeps.
+			if _, err := refreshChannelPrices(ch, provider); err != nil {
+				logger.SysError("sync upstream price list failed for channel " + ch.Name + ": " + err.Error())
+			}
 			prices, unconvertible, err := getChannelPriceSync(provider)
 			if err != nil {
 				logger.SysError("sync channel pricing failed for channel " + ch.Name + ": " + err.Error())

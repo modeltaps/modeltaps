@@ -475,3 +475,22 @@ export async function createChannel(body) {
   const { success, message, data } = res.data || {};
   return { success: !!success, message, ids: data?.ids || [], supplies: data?.supplies || 0 };
 }
+
+// What the channel's upstream charges per model, as stored at the last price sync
+// (GET /api/channel/:id/prices). `supported` is false for providers that publish no prices.
+// Returns `{ supported, synced_at, prices }`; throws on failure.
+export async function fetchChannelPrices(id) {
+  const res = await API.get(`/api/channel/${id}/prices`);
+  return channelPricesData(res.data);
+}
+
+// Reads the channel's upstream price list now (POST /api/channel/:id/prices/refresh).
+export async function refreshChannelPrices(id) {
+  const res = await API.post(`/api/channel/${id}/prices/refresh`);
+  return channelPricesData(res.data);
+}
+
+function channelPricesData({ success, message, data }) {
+  if (!success) throw new Error(message);
+  return { supported: Boolean(data?.supported), synced_at: data?.synced_at || 0, prices: data?.prices || [] };
+}

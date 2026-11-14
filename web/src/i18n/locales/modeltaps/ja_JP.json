@@ -1418,6 +1418,7 @@
     "channel_no_test_model": "このチャネルにはテストできるモデルがありません。テストモデルを設定するか、チャットモデルを追加してください。",
     "invalid_channel_id": "チャネル ID が無効です",
     "channel_not_found": "チャネルが見つかりません",
+    "channel_prices_unsupported": "このプロバイダーは価格表を公開していません",
     "channel_key_required": "先にキーを入力してください",
     "channel_provider_not_found": "このチャネルタイプはサポートされていません",
     "channel_model_list_unsupported": "このチャネルタイプはモデル一覧を取得できません",
@@ -2082,7 +2083,26 @@
         "attached_other": "{{count}} 個の公開モデルを新たに供給",
         "updated_other": "{{count}} 件の供給が新しい上流名を使用",
         "removed_other": "{{count}} 件の供給を取り下げ"
-      }
+      },
+      "upstreamPrice": "上流価格 $/M",
+      "upstreamPriceHint": "100 万トークンあたりの入力 / 出力価格（USD）。上流の価格表から {{time}} に取得",
+      "upstreamPriceNever": "100 万トークンあたりの入力 / 出力価格（USD）。まだ上流から取得していません。「価格を同期」で取得します",
+      "priceMissing": "上流がこのモデルの価格を公開していません",
+      "priceFree": "無料",
+      "price_image": "{{price}} / 枚",
+      "price_request": "{{price}} / 回",
+      "priceKey": {
+        "input": "入力",
+        "output": "出力",
+        "cache_read": "キャッシュ読み取り",
+        "cache_write": "キャッシュ書き込み",
+        "image": "1 枚あたり",
+        "request": "1 回あたり",
+        "video_second": "動画 1 秒あたり（最安）"
+      },
+      "price_video": "{{price}} / 秒〜",
+      "priceOther": "その他の課金",
+      "priceOtherHint": "上流は音声の秒数、リアルタイムセッション、動画トークンなどで課金します。ここでは金額を表示しません"
     },
     "monitor": {
       "checkNow": "今すぐモデル一覧を確認",
