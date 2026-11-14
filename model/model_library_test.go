@@ -337,6 +337,7 @@ func TestHostAddsVariant(t *testing.T) {
 		{"deepseek/deepseek-v4.1-flash", "deepseek-ai/DeepSeek-V4.1-Flash-Fast", true},
 		{"deepseek/deepseek-v3.2", "deepseek/deepseek-v3.2-thinking", true},
 		{"minimax/minimax-m2.1", "minimax/minimax-m2.1-lightning", true},
+		{"meta/muse-spark-1.2", "meta/muse-spark-1.2-contributor", true},
 		{"anthropic/claude-fable-5-2", "claude-fable-5-2@default", false},
 		{"anthropic/claude-fable-5-2", "anthropic/claude-fable-5.2", false},
 		{"openai/gpt-6-astra-fast", "openai/gpt-6-astra-fast", false},

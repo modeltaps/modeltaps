@@ -89,7 +89,7 @@ func namingRulesFor(channelType int) NamingRules {
 var variantWords = map[string]bool{
 	"mini": true, "nano": true, "micro": true, "small": true, "medium": true, "large": true,
 	"pro": true, "max": true, "plus": true, "ultra": true, "lite": true, "air": true,
-	"flash": true, "turbo": true, "fast": true, "ultrafast": true, "lightning": true, "instant": true, "high": true, "low": true,
+	"flash": true, "turbo": true, "fast": true, "ultrafast": true, "lightning": true, "contributor": true, "instant": true, "high": true, "low": true,
 	"thinking": true, "reasoning": true, "reasoner": true, "think": true, "nothink": true,
 	"instruct": true, "chat": true, "base": true, "vision": true, "vl": true, "omni": true,
 	"audio": true, "realtime": true, "search": true, "online": true, "codex": true, "coder": true,
