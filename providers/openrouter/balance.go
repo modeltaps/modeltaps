@@ -81,3 +81,8 @@ func snapshotFromKeyInfo(info *keyInfo, fetchedAt int64) model.ChannelQuotaSnaps
 	}
 	return snapshot
 }
+
+// CanQueryBalance implements base.BalanceCapability: this provider has a balance endpoint.
+func (p *OpenRouterProvider) CanQueryBalance() bool {
+	return true
+}

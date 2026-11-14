@@ -126,6 +126,8 @@ func defaultConfig() {
 	viper.SetDefault("catalog_pricing.url", "")
 	viper.SetDefault("catalog_pricing.auto_sync", true)
 	viper.SetDefault("channel_pricing.auto_sync", true)
+	// Balances are refreshed hourly so low-balance notices fire without a manual refresh.
+	viper.SetDefault("channel.update_frequency", 60)
 	viper.SetDefault("model_drift.auto_check", true)
 	viper.SetDefault("model_drift.check_interval", "")
 	viper.SetDefault("model_info_consistency.auto_check", false)

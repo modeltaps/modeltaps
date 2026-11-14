@@ -50,3 +50,9 @@ func (p *OpenAIProvider) Balance() (float64, error) {
 	p.Channel.UpdateBalance(balance)
 	return balance, nil
 }
+
+// CanQueryBalance implements base.BalanceCapability: the OpenAI billing endpoints are only tried
+// when the provider turned them on.
+func (p *OpenAIProvider) CanQueryBalance() bool {
+	return p.BalanceAction
+}

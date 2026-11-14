@@ -2106,10 +2106,37 @@
       "ignoreHint": "每行一個：模型名、萬用字元（如 *-preview）或 re: 開頭的正則；符合的模型在上游新增或下架時不提示，也不會自動加入",
       "testModel": "測試模型",
       "testModelHint": "測試連線和定時檢查用它；留空就用模型列表第一個",
-      "threshold": "餘額提醒（USD）",
       "thresholdHint": "上游餘額低於這個數時通知你",
       "thresholdOff": "不提醒",
-      "autoAddHint": "每日模型檢測發現上游新提供的模型時，直接加入本渠道（並補齊價格與元資訊），而不只是提醒。開啟按供應路由後，新模型不再加入渠道的模型列表：屬於模型目錄裡某個公開模型的，直接為它加一條本渠道的供應；其餘列在模型目錄的「新上游模型」裡等你處理。符合忽略規則的模型會略過。"
+      "autoAddHint": "每日模型檢測發現上游新提供的模型時，直接加入本渠道（並補齊價格與元資訊），而不只是提醒。開啟按供應路由後，新模型不再加入渠道的模型列表：屬於模型目錄裡某個公開模型的，直接為它加一條本渠道的供應；其餘列在模型目錄的「新上游模型」裡等你處理。符合忽略規則的模型會略過。",
+      "thresholdIn": "餘額提醒（{{currency}}）",
+      "thresholdSupport": {
+        "none": "這個供應商不提供餘額介面，沒法按餘額提醒。",
+        "official": "官方 OpenAI 介面不提供餘額；接入地址換成中轉站後通常可以。",
+        "usage": "訂閱類渠道沒有餘額，按用量窗口計，用量在渠道列表的「餘額 / 用量」欄。"
+      },
+      "noticeEvery": "每 {{minutes}} 分鐘查一次餘額",
+      "noticeTo": "提醒發到：{{targets}}",
+      "targetSep": "、",
+      "targetNotReady": "{{name}}（未配好）",
+      "target": {
+        "Email": "電郵",
+        "WeCom": "企業微信",
+        "DingTalk": "釘釘",
+        "Lark": "飛書",
+        "PushDeer": "PushDeer",
+        "Telegram": "Telegram"
+      },
+      "problem": {
+        "noRefresh": "餘額自動重新整理已關閉（設定 channel.update_frequency 為 0），只有手動重新整理餘額時才會檢查。",
+        "kindOff": "「渠道餘額不足」提醒在通知設定裡關掉了。",
+        "noTarget": "沒有能發出去的通知方式：電郵要配好 SMTP（收件人預設是超管電郵），Telegram、企業微信等在設定檔的 notify 裡配。"
+      },
+      "driftUnsupported": "這個供應商不提供模型清單介面，沒法和上游對比。",
+      "problemLink": {
+        "kindOff": "通知設定",
+        "noTarget": "SMTP 設定"
+      }
     },
     "pauseRules": {
       "label": "暫停規則",

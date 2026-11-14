@@ -59,7 +59,7 @@ LOGS_FILENAME="modeltaps.log"
    - 例子：`SYNC_FREQUENCY=60`
 7. `NODE_TYPE`：設定之後將指定節點類型，可選值為 `master` 和 `slave`，未設定則預設為 `master`。
    - 例子：`NODE_TYPE=slave`
-8. `CHANNEL_UPDATE_FREQUENCY`：設定之後將定期更新渠道餘額，單位為分鐘，未設定則不進行更新。
+8. `CHANNEL_UPDATE_FREQUENCY`：定期更新渠道餘額的間隔，單位為分鐘，預設 60，設為 0 則不更新。
    - 例子：`CHANNEL_UPDATE_FREQUENCY=1440`
 9. `CHANNEL_TEST_FREQUENCY`：設定之後按該間隔（分鐘）定期測試全部渠道，覆蓋後台「系統設定 → 網關行為 → 渠道自動禁用與恢復」裏的定時測試設定。未設定時按後台設定執行，預設每 10 分鐘只測試被自動禁用的渠道，通過即恢復。
    - 例子：`CHANNEL_TEST_FREQUENCY=1440`

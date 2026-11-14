@@ -128,9 +128,21 @@ func checkLowBalance(channel *model.Channel, balance float64) {
 		return
 	}
 	subject := fmt.Sprintf("Channel %s balance is low", channel.Name)
-	content := fmt.Sprintf("Channel: %s (ID %d)\nBalance: $%.2f\nThreshold: $%.2f\nChecked at: %s",
-		channel.Name, channel.Id, balance, channel.BalanceThreshold, time.Now().Format(time.RFC3339))
+	symbol := balanceCurrencySymbol(channel.Type)
+	content := fmt.Sprintf("Channel: %s (ID %d)\nBalance: %s%.2f\nThreshold: %s%.2f\nChecked at: %s",
+		channel.Name, channel.Id, symbol, balance, symbol, channel.BalanceThreshold, time.Now().Format(time.RFC3339))
 	notify.SendKind(notify.KindLowBalance, subject, content)
+}
+
+// balanceCurrencySymbol is the currency a channel type's balance is reported in. DeepSeek and
+// SiliconFlow report CNY as is (Moonshot converts to USD), and the threshold is compared in the
+// same currency.
+func balanceCurrencySymbol(channelType int) string {
+	switch channelType {
+	case config.ChannelTypeDeepseek, config.ChannelTypeSiliconflow:
+		return "¥"
+	}
+	return "$"
 }
 
 func UpdateChannelBalance(c *gin.Context) {
