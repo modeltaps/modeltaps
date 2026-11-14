@@ -14,11 +14,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// setBrandIconCacheHeaders 覆盖 /api 默认的 NoCache，按图标库版本做强缓存；
+// Cache-Control of the icon SVGs and of the manifest. The manifest is revalidated on every
+// load (a cheap 304 while unchanged): its icon mappings change with a release while the icon
+// package version stays the same, and a day-long cache kept showing the old marks.
+const (
+	brandIconCacheControl     = "public, max-age=86400"
+	brandManifestCacheControl = "public, no-cache"
+)
+
+// setBrandIconCacheHeaders 覆盖 /api 默认的 NoCache，按 manifest 内容的 ETag 做缓存；
 // If-None-Match 命中时返回 true，调用方直接结束。
-func setBrandIconCacheHeaders(c *gin.Context) bool {
+func setBrandIconCacheHeaders(c *gin.Context, cacheControl string) bool {
 	etag := brandicon.ETag()
-	c.Header("Cache-Control", "public, max-age=86400")
+	c.Header("Cache-Control", cacheControl)
 	c.Writer.Header().Del("Pragma")
 	c.Writer.Header().Del("Expires")
 	c.Header("ETag", etag)
@@ -32,7 +40,7 @@ func setBrandIconCacheHeaders(c *gin.Context) bool {
 
 // GetBrandIconManifest GET /api/brand-icon/manifest
 func GetBrandIconManifest(c *gin.Context) {
-	if setBrandIconCacheHeaders(c) {
+	if setBrandIconCacheHeaders(c, brandManifestCacheControl) {
 		return
 	}
 	c.Data(http.StatusOK, "application/json; charset=utf-8", brandicon.ManifestJSON())
@@ -49,7 +57,7 @@ func GetBrandIcon(c *gin.Context) {
 		c.JSON(status, gin.H{"success": false, "message": err.Error()})
 		return
 	}
-	if setBrandIconCacheHeaders(c) {
+	if setBrandIconCacheHeaders(c, brandIconCacheControl) {
 		return
 	}
 	c.Header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox")

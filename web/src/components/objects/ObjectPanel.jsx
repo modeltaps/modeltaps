@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { ObjectSheet, SheetBar } from './ObjectSheet';
 import useTabDrafts from './useTabDrafts';
 
-// Tab bar and tab content of an object panel, in one bordered box. The open tab carries a dot
+// Tab bar and tab content of an object panel, in one bordered box. The first tab's label lines
+// up with the content (px-2 + the tab's px-3 = the content's px-5). The open tab carries a dot
 // while it has unsaved changes. A small object with a single tab shows its content without a
 // tab bar.
 export function ObjectTabs({ tabs, current, onSelect, dirty, label, children }) {
@@ -18,7 +19,7 @@ export function ObjectTabs({ tabs, current, onSelect, dirty, label, children }) 
   }
   return (
     <div className="rounded-2xl border border-border bg-card">
-      <div role="tablist" aria-label={label} className="flex gap-0.5 overflow-x-auto border-b border-border p-1">
+      <div role="tablist" aria-label={label} className="flex gap-0.5 overflow-x-auto border-b border-border px-2 py-1">
         {tabs.map((x) => (
           <button
             key={x.key}
@@ -114,6 +115,7 @@ export default function ObjectPanel({
   ctx,
   tabsLabel,
   scope,
+  notice,
   children
 }) {
   const { t } = useTranslation();
@@ -169,9 +171,12 @@ export default function ObjectPanel({
           </div>
         </div>
       ) : (
-        <ObjectTabs tabs={tabs} current={current.key} onSelect={switchTab} dirty={dirty} label={tabsLabel}>
-          {ready && <Body key={version} object={object} draft={draft} setDraft={setDraft} ctx={{ ...ctx, version }} />}
-        </ObjectTabs>
+        <>
+          {notice}
+          <ObjectTabs tabs={tabs} current={current.key} onSelect={switchTab} dirty={dirty} label={tabsLabel}>
+            {ready && <Body key={version} object={object} draft={draft} setDraft={setDraft} ctx={{ ...ctx, version }} />}
+          </ObjectTabs>
+        </>
       )}
       {children}
     </ObjectSheet>
@@ -198,5 +203,7 @@ ObjectPanel.propTypes = {
   ctx: PropTypes.object,
   tabsLabel: PropTypes.string,
   scope: PropTypes.node,
+  // Shown above the tabs once the object has loaded, e.g. what needs doing on it.
+  notice: PropTypes.node,
   children: PropTypes.node
 };

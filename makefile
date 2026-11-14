@@ -6,6 +6,8 @@ GOBUILD=go build -ldflags "-s -w -X 'github.com/modeltaps/modeltaps/common/confi
 
 all: modeltaps
 
+.PHONY: dev clean
+
 web: $(WEBDIR)/build
 
 $(WEBDIR)/build:
@@ -13,6 +15,10 @@ $(WEBDIR)/build:
 
 modeltaps: web
 	$(GOBUILD) -o $(DISTDIR)/$(NAME)
+
+# Development mode: backend + Vite, both reloading on change (see scripts/dev.sh)
+dev:
+	./scripts/dev.sh
 
 clean:
 	rm -rf $(DISTDIR) && rm -rf $(WEBDIR)/build

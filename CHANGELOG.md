@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- While supplies route requests, saving a channel now carries edits of its model list and mapping
+  to the supplies made from that list (when the channel was added, by the drift check or by the
+  migration): models the edit added are supplied to the public models of the same name, a new
+  mapping changes the name a supply sends upstream, and a model taken off the list has its supply
+  withdrawn (adding it back supplies it again). Supplies added by hand or from the model library,
+  and supplies whose upstream name was changed on the model page, stay as they are. The save
+  message says what changed.
+- The channel panel lists what needs attention on the channel (auto-disabled, no key, low balance,
+  models added or removed upstream) above its tabs, each with its action, so the reason no longer
+  hides behind the icon of a narrow row.
+
+- Adding models from the model library now finds the channels that can supply a model even when
+  models.dev does not know their spelling. Upstream names are compared word by word after taking
+  off platform decoration (vendor and region prefixes, "@default", "-v1:0", "." versus "-"). Under
+  each selected model the sheet lists the channels as exact, platform spelling or to confirm, with
+  the sure ones ticked; variants such as "-mini" or "-thinking" are not matched, and ":free" tiers
+  are offered unticked. Confirming or unticking a channel is remembered for that channel only.
+- Allocation policy: a new Allocation page under Gateway orders providers once for every model
+  while supplies route requests. Tiers are tried first to last; providers in one tier share it by
+  weight, and the channels of a provider share its weight equally unless a channel is placed on
+  its own. Providers that are not placed are tried after every tier. Models follow the policy
+  without any setup; a model can be set by hand on its Supplies tab (or by renumbering one of its
+  supplies there) and restored to the policy later. The first time supplies route requests the
+  policy is built from the channels' current priorities and weights, and models whose routing it
+  cannot reproduce are set by hand, so no traffic moves. While supplies route requests the
+  channel panel no longer edits a channel's priority or weight, and the new channel sheet no
+  longer asks for usage. `GET` / `PUT /api/allocation_policy` and
+  `POST /api/model_supply/allocation` expose the same.
 - A default supply mode and batch actions for supplies, so models do not have to be set up one
   by one. Platform settings → Gateway has "Default supply mode" (balance or failover). A model's
   mode switch gains "Follow default", which new models use; a model can still pick its own mode.
@@ -260,6 +288,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cuts off channel and upstream model names. Below the table, "Channels that can also supply
   this model" lists enabled channels that list the model and are not a supply yet; "Add" makes
   one a supply with the suggested upstream name and the channel's priority and weight.
+- The channel menu names its checks apart: "Test several models" (connection and latency),
+  "Capability check" (real requests that verify vision, tool calls and more) and "Compare upstream
+  models", each with a line saying what it does. The Advanced tab shows the "other" field only
+  when a provider that does not read it still holds a value, the no-streaming example uses the
+  channel's own models, and the Responses conversion example shows the syntax instead of OpenAI
+  model names.
+
+- Providers list columns: "Requests" (was "Requests in 24 h") shows the count first and its trend
+  line after it, left-aligned and set apart from the share column; channels that share with no
+  other show "—" for share. Column headers explain themselves on hover in one short line.
+- Channels that send to an address other than their type's own (relays such as an OpenAI-compatible
+  gateway) show that host next to the provider name in the providers list, so two relays of the
+  same type can be told apart.
+- Call order: every position is now a group of channels that really share traffic. Saving splits
+  a position whose channels offer no model in common into consecutive positions (routing is the
+  same), so numbers, arrows and dragging all work on these groups. Each position has up / down
+  arrows next to its number. Dragging a row shows the whole row; dropping on its top or bottom
+  edge inserts before or after it and in the middle joins its group, with a line or a "share with
+  this group" hint showing where it will land. Joining a group that offers no model in common
+  places the channel right after it and says so.
+- The providers page header is one toolbar row: search, a provider dropdown, status, an
+  "N need attention" filter, conditions, the time range and columns. Attention items (low
+  balance, auto-disabled, missing key, model changes) are tags on their channel's row with the
+  action and a dismiss button, and "Refresh model lists" / "Test all" moved into the ⋯ menu. In
+  the call order, channels are numbered by the group that really shares traffic (channels of one
+  position that serve the same models), the number cell spans the group, and dragging a row onto
+  the middle of another joins its group while dropping on its top edge inserts it before.
+- The providers page is more compact: provider cards became filter chips next to the search, and
+  the traffic chart is replaced by a small request line in each channel's row, with the range
+  switch in the list toolbar. Every row shows its position number (the line joining a position
+  is gone), and a channel that shares traffic names the channels it shares with.
+- The providers page is one channel list. Provider cards at the top keep each provider's traffic in
+  view and filter the list; below them every channel is listed in call order while supplies route
+  requests: tried top to bottom, reordered by dragging or from the row menu, and a channel can share
+  the position above it by weight (shares are shown only between channels that serve the same
+  models). New channels go last. "New channel" opens a searchable list of providers first. The
+  separate Allocation page is gone (its address now opens the providers page), and channels the
+  order does not place are tried one at a time after it, oldest first, instead of sharing one
+  last tier.
 - The admin page that lists upstream connections is now called **Providers** in the sidebar and
   page title (it was **Channels**). The entries inside a provider are still channels; links that
   point to the page say "Providers" as well. Nothing else on the page changed.
@@ -353,6 +420,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- While supplies route requests, a new channel now supplies the models it lists even when they
+  had no catalog row yet. Their rows are created by the catalog sync that runs after the save, and
+  the save tried to attach them before that, so on a fresh catalog a new channel ended up with no
+  supplies and its models showed "no channel". The channel is now attached once the sync is done;
+  the same goes for models an edit adds.
+
+- AWS Bedrock channels in Canada (`ca-central-1`, `ca-west-1`) now call `claude-fable-5` and
+  `claude-fable-5-1` through the `us.` inference profile, as they already did for
+  `claude-fable-5-2`, instead of falling back to `global.`. Both Canadian regions are source
+  regions of the US profile, so requests stay inside the US and Canada.
+- The same applies to `claude-sonnet-4-6`, `claude-sonnet-5`, `claude-opus-5` and `claude-opus-5-5`:
+  Canadian Bedrock channels now use the `us.` profile instead of `global.`. EU Bedrock channels
+  call `claude-sonnet-5` through the `eu.` profile, which AWS added after the model launched,
+  instead of `global.`, so requests stay in the EU.
+- The allocation page worked out percentages over a whole tier, so channels that never serve the
+  same model looked like they split traffic. Shares are now worked out only between entries of a
+  tier that serve a model in common; an entry that shares none shows no weight, and each row names
+  the entries it shares with. `GET /api/allocation_policy` lists each channel's supplied models.
+- The supply request preview counted channels open to all user groups as outside the chosen group.
 - Changing a channel's priority or weight reaches its supplies again. With supplies routing
   requests, edits on the channel (its panel, the batch actions on the providers page and the
   tag-wide setters) only changed the default for new supplies. Supplies that still have the

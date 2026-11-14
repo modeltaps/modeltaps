@@ -54,8 +54,11 @@ type SupplyPreview struct {
 	DefaultMode string `json:"default_mode"`
 	// Active says supplies route requests now (ModelSupplyEnabled); when false the preview
 	// shows what the supply configuration will do once switched on.
-	Active bool                 `json:"active"`
-	Tiers  []*SupplyPreviewTier `json:"tiers"`
+	Active bool `json:"active"`
+	// Allocation is "policy" when the model's supplies take their numbers from the allocation
+	// policy, "manual" when they keep their own, empty when no policy applies.
+	Allocation string               `json:"allocation"`
+	Tiers      []*SupplyPreviewTier `json:"tiers"`
 	// FirstChoice is the supply that takes the next request when that is certain: the only
 	// heaviest available supply of the first reachable tier (failover), or its only available
 	// supply. 0 when the choice is random or nothing is available.
@@ -102,9 +105,15 @@ func PreviewModelSupply(name, group string) (*SupplyPreview, error) {
 	}
 
 	preview := &SupplyPreview{
-		Model: canonical, Group: group, Status: info.Status, Mode: EffectiveSupplyMode(info.SupplyMode),
+		Model: canonical, Group: group, Status: info.Status, Mode: routingSupplyMode(info, allocationInForce()),
 		OwnMode: info.SupplyMode, DefaultMode: EffectiveSupplyMode(""),
 		Active: config.ModelSupplyEnabled, Tiers: []*SupplyPreviewTier{},
+	}
+	if allocationInForce() {
+		preview.Allocation = "policy"
+		if !followsPolicy(info) {
+			preview.Allocation = AllocationManual
+		}
 	}
 	if !IsValidSupplyMode(preview.OwnMode) {
 		preview.OwnMode = SupplyModeDefault
@@ -116,12 +125,8 @@ func PreviewModelSupply(name, group string) (*SupplyPreview, error) {
 	now := time.Now().Unix()
 	byPriority := map[int64]*SupplyPreviewTier{}
 	for _, view := range views {
-		var groups []string
-		for _, g := range strings.Split(view.ChannelGroup, ",") {
-			if g = strings.TrimSpace(g); g != "" {
-				groups = append(groups, g)
-			}
-		}
+		// A channel open to all groups ("*") serves every group.
+		groups := ExpandChannelGroup(view.ChannelGroup)
 		if group != "" && !slices.Contains(groups, group) {
 			preview.OutsideGroup++
 			continue

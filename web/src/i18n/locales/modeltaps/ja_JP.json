@@ -311,7 +311,8 @@
       }
     },
     "loadFailed": "利用可能なモデル一覧の読み込みに失敗しました。表示されている可用性は正確でない可能性があります。",
-    "retry": "再試行"
+    "retry": "再試行",
+    "modalities": "ドキュメント"
   },
   "playground": {
     "curlHint": "sk-YOUR_TOKEN はプレースホルダーです",
@@ -685,7 +686,7 @@
     "platform_settings": "プラットフォーム全体の既定値とスイッチ",
     "token": "API を呼び出すためのキー",
     "invite_code": "登録用の招待コードの作成、有効化、無効化",
-    "routing": "API キーで呼び出せるポリシー：マネージドは名前で、自分のものは policy/<名前> で呼び出します"
+    "routing": "API キーで呼び出せるルーティングポリシー"
   },
   "api_compare": "比較",
   "modelInfoPage": {
@@ -1305,7 +1306,7 @@
     "retryFailed": "失敗分を再テスト（{{count}}）"
   },
   "channelCheck": {
-    "title": "チャネル検査",
+    "title": "機能検査",
     "fetchUpstream": "上流のモデルを取得",
     "fetchFailed": "上流のモデルを取得できませんでした",
     "hint": "各モデルにつき最大 {{requests}} 件の実リクエストを上流に送信し（算術チャレンジ、画像入力、JSON Schema、ツール呼び出し、中継の手がかり）、チャネルのクォータを消費します。同時に検査するのは 2 モデルです。ディープリサーチ・画像・動画モデルは既定で選択されません。",
@@ -1720,6 +1721,8 @@
   },
   "routing_policy": "自動ルーティング",
   "routingPolicy": {
+    "enable": "有効にする",
+    "disable": "無効にする",
     "create": "ポリシーを作成",
     "createTitle": "ルーティングポリシーを作成",
     "empty": "ルーティングポリシーはまだありません。ポリシーはクライアントが呼び出せるモデル名で、各セッションの最初のメッセージがどの実モデルが応答するかを決めます。",
@@ -1908,7 +1911,12 @@
     "managedIntro": "プラットフォームが提供するポリシーです。model に名前をそのまま指定します。",
     "managedEmpty": "利用できるマネージドポリシーはまだありません。",
     "managedOverridden": "自分のポリシーで置き換え済み",
-    "managedOverriddenHint": "同じ名前の自作ポリシーがあるため、名前だけの指定では自分のものが使われます。このマネージドポリシーを使うには、自分のポリシーの名前を変えるか無効にしてください。"
+    "managedOverriddenHint": "同じ名前の自作ポリシーがあるため、名前だけの指定では自分のものが使われます。このマネージドポリシーを使うには、自分のポリシーの名前を変えるか無効にしてください。",
+    "introShort": {
+      "personal": "個人の API キーでのみ有効。model に policy/<名前> を指定",
+      "org": "この組織の API キーでのみ有効。model に policy/<名前> を指定",
+      "orgMember": "組織の管理者が作成したポリシー。policy/<名前> で呼び出します"
+    }
   },
   "logPage": {
     "routing": {
@@ -1974,7 +1982,9 @@
       "cancelOnDisconnectHint": "クライアントがストリーミング応答を途中で止めたとき、上流との接続を閉じて生成を止め、それまでに生成された出力だけが課金されるようにします。このとき出力トークンはローカルで推定します。自動では公式 API とサブスクリプションアカウントはオン、その他の上流はオフです。切断後も応答全体を課金する中継サービスではオフにしてください。",
       "danger": "危険な操作",
       "dangerHint": "複製すると同じキーと設定で新しいチャネルを作成します。削除は元に戻せません",
-      "name": "名前"
+      "name": "名前",
+      "otherUnused": "このプロバイダーはこの項目を使用しません。空にして構いません",
+      "n2rPlaceholder": "モデル名\n-変換しないモデル名"
     },
     "chart": {
       "aria": "チャネルごとのリクエスト数",
@@ -2029,7 +2039,8 @@
       "lowBalance": "残高 {{balance}} が {{threshold}} を下回っています",
       "refreshBalance": "残高を更新",
       "setKey": "キーを設定",
-      "view": "表示"
+      "view": "表示",
+      "title": "対応が必要"
     },
     "lane": {
       "allOff": "すべて無効",
@@ -2053,7 +2064,14 @@
       "pruned_other": "上流にない {{count}} モデルを削除しました。保存すると反映されます",
       "remove": "{{model}} を削除",
       "syncPrices": "価格を同期",
-      "ttft": "最初のトークン"
+      "ttft": "最初のトークン",
+      "supplyNote": "保存すると、モデル一覧とマッピングの変更はこのチャネルから作られた供給に反映されます。追加したモデルは同名の公開モデルに自動で供給され、マッピングを変えると上流に送る名前が更新され、削除したモデルの供給は取り下げられます。手動で追加した供給や、モデルページで上流名を変えた供給はそのままです。",
+      "saved": {
+        "summary": "保存しました：{{changes}}",
+        "attached_other": "{{count}} 個の公開モデルを新たに供給",
+        "updated_other": "{{count}} 件の供給が新しい上流名を使用",
+        "removed_other": "{{count}} 件の供給を取り下げ"
+      }
     },
     "monitor": {
       "checkNow": "今すぐモデル一覧を確認",
@@ -2157,7 +2175,9 @@
       "summary_other": "{{count}} チャネル · {{range}}で {{requests}} リクエスト",
       "testAll": "すべてテスト",
       "testDone_other": "{{count}} チャネルすべてテストに成功しました",
-      "testPartial": "{{count}} チャネル中 {{failed}} 件のテストに失敗しました"
+      "testPartial": "{{count}} チャネル中 {{failed}} 件のテストに失敗しました",
+      "refreshModelsOf": "{{name}} のモデル一覧を更新",
+      "testAllOf": "{{name}} の全チャネルをテスト"
     },
     "panel": {
       "enabled": "有効",
@@ -2166,6 +2186,7 @@
         "models": "モデル",
         "connection": "接続",
         "routing": "グループとルーティング",
+        "routingGroups": "グループとタグ",
         "rewrite": "リクエストの書き換え",
         "monitor": "監視",
         "advanced": "詳細設定"
@@ -2232,7 +2253,9 @@
       "peerExisting": "このグループには {{name}} があります",
       "peerNote": "同じグループで {{name}} もこれらのモデルを提供しています",
       "priority": "優先度",
-      "weight": "重み"
+      "weight": "重み",
+      "byPolicy": "このチャネルを先に使うか後に使うかは、プロバイダーページのチャネル一覧の並びで決まります。",
+      "openPolicy": "順序を変更"
     },
     "batch": {
       "label": "選択したチャネル",
@@ -2275,7 +2298,8 @@
       "results": "一致するプロバイダー",
       "none": "一致するものはありません",
       "emptyTitle": "一致するチャネルはありません",
-      "emptyDescription": "「{{query}}」に一致するチャネルはありません"
+      "emptyDescription": "「{{query}}」に一致するチャネルはありません",
+      "short": "チャネルを検索"
     },
     "tagActions": {
       "label": "タグ {{tag}}",
@@ -2337,6 +2361,68 @@
         "not_in_catalog": "カタログ外",
         "unknown": "未認識"
       }
+    },
+    "strip": {
+      "all": "すべて",
+      "allMeta": "チャネル {{count}} 件",
+      "allTitle": "すべてのチャネル",
+      "meta": "チャネル {{count}} 件 · {{requests}} リクエスト",
+      "metaOff": "チャネル {{count}} 件（有効 {{enabled}} 件） · {{requests}} リクエスト",
+      "allProviders": "すべてのプロバイダー"
+    },
+    "order": {
+      "column": "順序",
+      "shareColumn": "分担",
+      "up": "前へ移動",
+      "down": "後ろへ移動",
+      "share": "一つ上と分担",
+      "unshare": "分担をやめる",
+      "weightOf": "{{name}} の重み",
+      "drag": "ドラッグして並べ替え",
+      "positionShort": "{{n}} 番目",
+      "sharesWith": "{{names}} と分担",
+      "nameSep": "、",
+      "sharedTag": "分担",
+      "groupWhy": "この {{count}} 件のチャネルは同じ位置にあり、共通する {{models}} 件のモデルを重みで分担します",
+      "noCommonModel": "共通するモデルがないため分担できません。すぐ後ろに配置しました",
+      "dropHint": {
+        "before": "ここへ移動",
+        "after": "ここへ移動",
+        "join": "このグループで分担"
+      }
+    },
+    "newMenu": {
+      "inUse": "接続済み"
+    },
+    "orderHint": "上から順に試し、前が使えないときだけ次を使います。同じ番号のチャネルは同じモデルを提供し、重みで分担します。",
+    "attention_other": "{{count}} 件の対応が必要",
+    "issueTag": {
+      "autoDisabled": "自動無効化",
+      "keyMissing": "キーなし",
+      "lowBalance": "残高不足",
+      "driftNew_other": "新しいモデル {{count}} 件",
+      "driftMissing_other": "終了したモデル {{count}} 件",
+      "refresh": "更新"
+    },
+    "head": {
+      "order": "番号の小さい順に使用。同じ番号は分担",
+      "share": "グループ内の重みとトラフィック比率",
+      "shareNone": "他のチャネルと分担しません",
+      "priorityWeight": "優先度の高い順に使用。同じ優先度は重みで分配",
+      "requests": "リクエスト数",
+      "requestsHint": "{{range}}のリクエスト数と推移",
+      "success": "成功したリクエストの割合",
+      "latency": "成功したリクエストの平均所要時間",
+      "balance": "上流の残高。サブスクリプションは今期の使用量",
+      "enabled": "オフにするとリクエストを受けません"
+    },
+    "menu": {
+      "multiTest": "複数モデルをテスト",
+      "multiTestHint": "モデルごとに接続と遅延を確認",
+      "check": "機能検査",
+      "checkHint": "実リクエストで画像認識やツール呼び出しなどを確認（クォータを消費）",
+      "drift": "上流モデルと比較",
+      "driftHint": "上流で追加・廃止されたモデルを確認"
     }
   },
   "nav": {
@@ -2501,6 +2587,8 @@
     "channel": "チャネル",
     "model": "モデル",
     "upstream": "上流モデル",
+    "upstreamSame": "同名",
+    "upstreamSameTip": "{{name}} として上流に送信（公開名と同じ）",
     "priority": "優先度",
     "weight": "重み",
     "stateLabel": "状態",
@@ -2674,6 +2762,20 @@
       "attachButton": "割り当て",
       "attached_other": "{{model}} に割り当てました（{{count}} チャネル）",
       "skipped_other": "{{count}} チャネルはすでに別の上流名で {{model}} を供給しているため、そこでは保留のままです。"
+    },
+    "allocation": {
+      "label": "順序",
+      "policy": "プロバイダーページの呼び出し順序",
+      "manual": "個別設定",
+      "manualShort": "個別設定",
+      "open": "順序を変更",
+      "toManual": "個別に設定",
+      "toPolicy": "呼び出し順序に戻す",
+      "policyHint": "順序と重みはプロバイダーページの呼び出し順序から決まります。ここで変更すると、このモデルは個別設定になります。",
+      "manualHint": "このモデルの順序は呼び出し順序が変わっても変わりません。",
+      "becameManual": "このモデルは個別設定になりました",
+      "nowManual": "個別設定にしました。現在の順序はそのままです",
+      "nowPolicy": "呼び出し順序に戻しました"
     }
   },
   "settingsUi": {
@@ -2992,7 +3094,7 @@
       "cards": {
         "profile": {
           "title": "プロフィール",
-          "description": "表示名とアバター",
+          "description": "表示名",
           "hint": "ユーザー名は変更できません"
         },
         "logIO": {
@@ -3001,9 +3103,9 @@
         },
         "appearance": {
           "title": "外観",
-          "description": "テーマと言語（自分にだけ適用）",
-          "hint": "保存するとすぐに反映されます",
-          "languageHint": "表示言語を選びます。既定ではブラウザーに従います。"
+          "description": "テーマと言語は選ぶとすぐ反映され、あなたにだけ適用されます",
+          "languageHint": "既定はブラウザーに従います",
+          "themeHint": "システムに合わせると端末のライト/ダーク設定に従います"
         },
         "quotaRemind": {
           "hint": "通知は 1 日 1 回まで"
@@ -3017,7 +3119,9 @@
       },
       "sessions": {
         "device": "デバイス",
-        "where": "アドレスと方法"
+        "where": "アドレスと方法",
+        "showAll": "すべて表示（{{count}} 件）",
+        "showFewer": "折りたたむ"
       }
     },
     "org": {
@@ -3033,7 +3137,9 @@
           "hint": "変更はすべてのメンバーに適用されます"
         },
         "budget": {
-          "hint": "期間はプラットフォーム設定に従います"
+          "description": "全メンバーの期間ごとの合計利用上限。使い切ると組織のリクエストは拒否されます",
+          "noLimitHint": "予算なしの場合は各メンバーの予算だけが適用されます",
+          "resetsHint": "{{period}}リセット。タイムゾーンと週の開始日はプラットフォーム設定に従います"
         },
         "danger": {
           "description": "これらの操作はすべてのメンバーに影響します"
@@ -3229,12 +3335,21 @@
     "deprecated": "非推奨",
     "showMore": "さらに {{count}} 件表示",
     "selected": "{{count}} 件選択中",
-    "createSupplies": "掲載しているチャネルから供給を作成",
+    "createSupplies": "一致したチャネルに供給を作成",
     "status": "ステータス",
     "asDraft": "下書き",
     "asPublished": "公開",
     "add": "{{count}} 件を追加",
-    "added": "{{count}} モデルを追加し、{{supplies}} 件の供給を作成しました"
+    "added": "{{count}} モデルを追加し、{{supplies}} 件の供給を作成しました",
+    "unsureCount_one": "+{{count}} 要確認",
+    "unsureCount_other": "+{{count}} 要確認",
+    "excludedBefore": "以前に除外",
+    "match": {
+      "exact": "完全一致",
+      "platform": "プラットフォーム表記",
+      "pending": "要確認",
+      "variant": "派生モデル"
+    }
   },
   "ledgerList": {
     "description": "内容",
@@ -3297,5 +3412,33 @@
       "routing_policy_delete": "ルーティングポリシーを削除",
       "routing_policy_status": "ルーティングポリシーを切り替え"
     }
+  },
+  "priceList": {
+    "groupHint": "価格はグループによって異なります。API キーのグループは API キー管理で切り替えます"
+  },
+  "orderList": {
+    "segments": {
+      "all": "すべて",
+      "success": "成功",
+      "pending": "支払い待ち",
+      "failed": "失敗",
+      "closed": "終了"
+    },
+    "paid": "支払額"
+  },
+  "topupCard": {
+    "inputPlaceholder": "引き換えコードを入力"
+  },
+  "settingsPage": {
+    "security": {
+      "sessionsHint": "このアカウントにログイン中の端末。心当たりがなければログアウト",
+      "identifiersHint": "どれでログインしても同じアカウントです。メールは復旧と通知にも使います"
+    }
+  },
+  "authPages": {
+    "haveAccount": "アカウントをお持ちですか？",
+    "remembered": "思い出しましたか？",
+    "resetTitle": "パスワードの再設定",
+    "resetHint": "このメールアドレスに再設定リンクを送ります"
   }
 }

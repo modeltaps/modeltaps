@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { CloudDownload, Copy, Eraser, KeyRound, Loader2, Plus, RefreshCw, Trash2, X, AlertTriangle } from 'lucide-react';
@@ -300,6 +301,8 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
         <ModelMappingInput key={ctx.version} value={draft.mapping} models={models} onChange={(v) => setDraft({ ...draft, mapping: v })} />
       </Field>
 
+      {ctx.supplyRouting && <p className="mt-2 text-xs text-muted-foreground">{t('channels.models.supplyNote')}</p>}
+
       <UpstreamModels key={channel.id} channelId={channel.id} canCheck={Boolean(labels.canFetchModels)} />
 
       <ChannelSupplies channelId={channel.id} />
@@ -538,19 +541,30 @@ function RoutingBody({ object: channel, draft, setDraft, ctx }) {
       <Field label={t('channels.groups')} extra={t('channels.groupsHint')}>
         <GroupOptions groups={ctx.groups} value={draft.groups} onChange={(groups) => setDraft({ ...draft, groups })} />
       </Field>
-      <Field
-        label={t('channels.usage.label')}
-        extra={usage.top ? t('channels.usage.peerNote', { name: usage.top.name }) : null}
-        hint={t('channels.usage.syncHint')}
-      >
-        <UsageOptions
-          usage={usage}
-          value={value}
-          onChange={(key) => setDraft({ ...draft, usage: key })}
-          custom={draft.custom}
-          onCustomChange={(custom) => setDraft({ ...draft, custom })}
-        />
-      </Field>
+      {ctx.supplyRouting ? (
+        <Field label={t('channels.usage.label')}>
+          <p className="text-sm text-muted-foreground">
+            {t('channels.usage.byPolicy')}{' '}
+            <Link to="/panel/channel" className="text-info underline-offset-2 hover:underline">
+              {t('channels.usage.openPolicy')}
+            </Link>
+          </p>
+        </Field>
+      ) : (
+        <Field
+          label={t('channels.usage.label')}
+          extra={usage.top ? t('channels.usage.peerNote', { name: usage.top.name }) : null}
+          hint={t('channels.usage.syncHint')}
+        >
+          <UsageOptions
+            usage={usage}
+            value={value}
+            onChange={(key) => setDraft({ ...draft, usage: key })}
+            custom={draft.custom}
+            onCustomChange={(custom) => setDraft({ ...draft, custom })}
+          />
+        </Field>
+      )}
       <Field label={t('channels.tag')} htmlFor="cp-tag" optional hint={t('channels.tagHint')}>
         <Input id="cp-tag" value={draft.tag} maxLength={32} onChange={(e) => setDraft({ ...draft, tag: e.target.value })} />
       </Field>
@@ -569,8 +583,10 @@ const routingTab = {
       tag: c.tag || ''
     };
   },
-  patch: (d, c, { t, allChannels }) => {
+  patch: (d, c, { t, allChannels, supplyRouting }) => {
     if (!d.groups.length) return { error: t('channel_edit.requiredGroup') };
+    // The allocation policy orders channels while supplies route: leave the numbers alone.
+    if (supplyRouting) return { group: d.groups.join(','), tag: d.tag.trim() };
     const peers = usagePeers({ ...c, groups: d.groups }, allChannels);
     const keys = usageOptions(c, peers).options.map((o) => o.key);
     const nums = usageNumbers(keys.includes(d.usage) ? d.usage : 'custom', c, peers, d.custom);
@@ -785,8 +801,9 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
       <Field label={configText(t, labels.label.remark)} htmlFor="cp-remark" optional hint={configText(t, labels.prompt.remark)}>
         <Textarea id="cp-remark" rows={2} value={draft.remark} onChange={set('remark')} />
       </Field>
-      {!labels.hasOther && (
-        <Field label={configText(t, labels.label.other)} htmlFor="cp-other-adv" optional>
+      {/* This provider does not read the field: it is shown only to clear a value left from before. */}
+      {!labels.hasOther && String(channel.other || '').trim() !== '' && (
+        <Field label={configText(t, labels.label.other)} htmlFor="cp-other-adv" optional hint={t('channels.advanced.otherUnused')}>
           <Input id="cp-other-adv" className="font-mono text-[13px]" value={draft.other} onChange={set('other')} />
         </Field>
       )}
@@ -827,7 +844,7 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
           id="cp-nostream"
           rows={2}
           className="font-mono text-[13px]"
-          placeholder="gpt-4o, o1-mini"
+          placeholder={splitList(channel.models).slice(0, 2).join(', ')}
           value={draft.disabled_stream}
           onChange={set('disabled_stream')}
         />
@@ -842,7 +859,7 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
           id="cp-n2r"
           rows={3}
           className="font-mono text-[13px]"
-          placeholder={'gpt-5-pro\n-o3-pro'}
+          placeholder={t('channels.advanced.n2rPlaceholder')}
           value={draft.need2response_models}
           onChange={set('need2response_models')}
         />
@@ -959,7 +976,9 @@ const advancedTab = {
   Body: AdvancedBody
 };
 
-export const PANEL_TABS = [modelsTab, connectionTab, routingTab, rewriteTab, monitorTab, advancedTab];
+export const PANEL_TABS = [connectionTab, modelsTab, routingTab, rewriteTab, monitorTab, advancedTab];
+// Tab a channel opens on when the URL names none; it is left out of the URL.
+export const DEFAULT_PANEL_TAB = PANEL_TABS[0].key;
 
 // Old deep links named the sections of the former settings form.
 export const LEGACY_SECTION_TAB = { basic: 'connection', model: 'models', request: 'rewrite', advanced: 'advanced', plugin: 'advanced' };

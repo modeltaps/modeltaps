@@ -196,8 +196,8 @@ func GetChannelsList(params *SearchChannelsParams) (*DataResult[Channel], error)
 
 	if params.Name != "" {
 		like := "%" + params.Name + "%"
-		db = db.Where("name LIKE ? OR tag LIKE ?", like, like)
-		tagDB = tagDB.Where("name LIKE ? OR tag LIKE ?", like, like)
+		db = db.Where(caseInsensitiveLike("name LIKE ? OR tag LIKE ?"), like, like)
+		tagDB = tagDB.Where(caseInsensitiveLike("name LIKE ? OR tag LIKE ?"), like, like)
 	}
 
 	if params.Group != "" {
@@ -210,8 +210,8 @@ func GetChannelsList(params *SearchChannelsParams) (*DataResult[Channel], error)
 	}
 
 	if params.Models != "" {
-		db = db.Where("models LIKE ?", "%"+params.Models+"%")
-		tagDB = tagDB.Where("models LIKE ?", "%"+params.Models+"%")
+		db = db.Where(caseInsensitiveLike("models LIKE ?"), "%"+params.Models+"%")
+		tagDB = tagDB.Where(caseInsensitiveLike("models LIKE ?"), "%"+params.Models+"%")
 	}
 
 	// Match a whole entry of the comma-separated models list, so gemini-2.5-flash does not also hit
@@ -226,8 +226,8 @@ func GetChannelsList(params *SearchChannelsParams) (*DataResult[Channel], error)
 	}
 
 	if params.Other != "" {
-		db = db.Where("other LIKE ?", params.Other+"%")
-		tagDB = tagDB.Where("other LIKE ?", params.Other+"%")
+		db = db.Where(caseInsensitiveLike("other LIKE ?"), params.Other+"%")
+		tagDB = tagDB.Where(caseInsensitiveLike("other LIKE ?"), params.Other+"%")
 	}
 
 	if params.Key != "" {
@@ -236,13 +236,13 @@ func GetChannelsList(params *SearchChannelsParams) (*DataResult[Channel], error)
 	}
 
 	if params.TestModel != "" {
-		db = db.Where("test_model LIKE ?", params.TestModel+"%")
-		tagDB = tagDB.Where("test_model LIKE ?", params.TestModel+"%")
+		db = db.Where(caseInsensitiveLike("test_model LIKE ?"), params.TestModel+"%")
+		tagDB = tagDB.Where(caseInsensitiveLike("test_model LIKE ?"), params.TestModel+"%")
 	}
 
 	if params.BaseURL != "" {
-		db = db.Where("base_url LIKE ?", "%"+params.BaseURL+"%")
-		tagDB = tagDB.Where("base_url LIKE ?", "%"+params.BaseURL+"%")
+		db = db.Where(caseInsensitiveLike("base_url LIKE ?"), "%"+params.BaseURL+"%")
+		tagDB = tagDB.Where(caseInsensitiveLike("base_url LIKE ?"), "%"+params.BaseURL+"%")
 	}
 
 	if params.Tag != "" {
@@ -339,6 +339,7 @@ func DeleteChannelTag(channelId int) error {
 func BatchDeleteChannel(ids []int) (int64, error) {
 	result := DB.Where("id IN ?", ids).Delete(&Channel{})
 	if result.Error == nil && result.RowsAffected > 0 {
+		deleteChannelAliases(ids)
 		ChannelGroup.Load()
 	}
 	return result.RowsAffected, result.Error
@@ -822,6 +823,7 @@ func (channel *Channel) UpdateBalanceAlertedTime(ts int64) error {
 func (channel *Channel) Delete() error {
 	err := DB.Delete(channel).Error
 	if err == nil {
+		deleteChannelAliases([]int{channel.Id})
 		ChannelGroup.Load()
 	}
 	return err

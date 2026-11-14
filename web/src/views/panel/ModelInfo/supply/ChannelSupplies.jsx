@@ -6,7 +6,7 @@ import { ArrowUpRight } from 'lucide-react';
 
 import { listPauses, listSupplies } from './supplyApi';
 import { modelSupplyPath, supplyState } from './supplyHelpers';
-import { SupplyStateLabel } from './supplyParts';
+import { SupplyStateLabel, UpstreamName } from './supplyParts';
 
 // Read-only list of the public models this channel supplies, shown in the channel panel's
 // Models tab. Supplies are edited on the model page; each row links there.
@@ -74,8 +74,8 @@ export default function ChannelSupplies({ channelId }) {
                   <td className="font-mono" title={s.model}>
                     {s.model}
                   </td>
-                  <td className="font-mono text-muted-foreground" title={s.upstream_model}>
-                    {s.upstream_model === s.model ? '—' : s.upstream_model}
+                  <td className="!whitespace-normal">
+                    <UpstreamName upstream={s.upstream_model} model={s.model} />
                   </td>
                   <td className="text-right tabular-nums">{s.priority ?? 0}</td>
                   <td className="text-right tabular-nums">{s.weight || 1}</td>

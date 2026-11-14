@@ -82,7 +82,7 @@ export default function CapabilitySection({ capability, models, baseUrl, apiKey,
   return (
     // 不可用的小节用虚线描边 + 弱化底色区分，不整块降透明度：降透明度会把正文与代码
     // 一起压到对比度不合格。
-    <Card className={cn(!available && 'border-dashed bg-muted/30')}>
+    <Card id={`cap-${capability.id}`} className={cn('scroll-mt-4', !available && 'border-dashed bg-muted/30')}>
       <CardHeader className="gap-1">
         <div className="flex flex-wrap items-center gap-2">
           <CardTitle className="text-base">{t(capability.titleKey)}</CardTitle>
@@ -102,13 +102,14 @@ export default function CapabilitySection({ capability, models, baseUrl, apiKey,
           <code className="font-mono text-sm">{capability.endpoint.path}</code>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Label, picker and count on one line; the picker takes the room left on phones. */}
+        <div className="flex items-center gap-2">
           <span id={labelId} className="text-xs font-medium text-muted-foreground">
             {t('apiCatalogPage.model')}
           </span>
           {/* 没有可用模型时不渲染一个空的禁用下拉，直接说明原因。 */}
           {available ? (
-            <div className="w-full max-w-xs">
+            <div className="min-w-0 flex-1 sm:w-72 sm:flex-none">
               <Select value={selected} onValueChange={setModel}>
                 <SelectTrigger aria-labelledby={labelId}>
                   <SelectValue />
@@ -127,7 +128,9 @@ export default function CapabilitySection({ capability, models, baseUrl, apiKey,
           )}
           {/* 取数失败时模型数恒为 0，报出来等于把故障说成「本站没有」。 */}
           {!loading && !error && (
-            <span className="text-xs text-muted-foreground">{t('apiCatalogPage.modelCount', { count: models.length })}</span>
+            <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+              {t('apiCatalogPage.modelCount', { count: models.length })}
+            </span>
           )}
         </div>
 
@@ -136,7 +139,6 @@ export default function CapabilitySection({ capability, models, baseUrl, apiKey,
         <CodeBlock
           code={code}
           language={hljsLang}
-          wrap
           maxHeightClass="max-h-96"
           copyLabel={t('common.copy')}
           copiedLabel={t('apiCatalogPage.copied')}

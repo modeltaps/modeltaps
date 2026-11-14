@@ -178,8 +178,8 @@ export default function UserGroup() {
       />
     );
   } else if (narrow) {
-    // Phone list: one 56px row per group. Enabled dot, name and symbol, the ratio on the right;
-    // then public · auto-promotion · rate limit.
+    // Phone list: one 56px row per group. Name and symbol with the ratio on the right, then
+    // public · auto-promotion · rate limit; the switch and the row menu at the end.
     body = (
       <ul className="divide-y divide-border">
         {groups.map((g) => {
@@ -190,14 +190,11 @@ export default function UserGroup() {
               className={cn('flex h-14 items-center gap-3 px-4', ROW_OPENS, g.id === route.openId && 'bg-muted/60')}
               {...rowOpenProps(() => route.open(g.id))}
             >
-              <span
-                className={cn('size-2 shrink-0 rounded-full', g.enable ? 'bg-success' : 'bg-muted-foreground/40')}
-                title={g.enable ? t('userGroup.enabled') : t('userGroup.disabled')}
-                aria-hidden="true"
-              />
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="min-w-0 truncate text-sm font-medium">{g.name || g.symbol}</span>
+                  <span className={cn('min-w-0 truncate text-sm font-medium', !g.enable && 'text-muted-foreground')}>
+                    {g.name || g.symbol}
+                  </span>
                   <code className="shrink-0 font-mono text-xs text-muted-foreground">{g.symbol}</code>
                   <span className="ml-auto shrink-0 text-sm tabular-nums">×{g.ratio}</span>
                 </div>
@@ -207,9 +204,14 @@ export default function UserGroup() {
                     .join(' · ')}
                 </div>
               </div>
-              <RowControl className="-mr-2 shrink-0">
-                <ActionsCell item={g} onOpen={(id) => route.open(id)} onDelete={setPendingDelete} onToggle={toggle} />
-              </RowControl>
+              <div className="-mr-2 flex shrink-0 items-center gap-1">
+                <RowControl className="flex">
+                  <StatusCell item={g} onToggle={toggle} />
+                </RowControl>
+                <RowControl>
+                  <ActionsCell item={g} onOpen={(id) => route.open(id)} onDelete={setPendingDelete} />
+                </RowControl>
+              </div>
             </li>
           );
         })}

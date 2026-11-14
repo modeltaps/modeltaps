@@ -93,6 +93,13 @@ for (const [section, table] of Object.entries(mapping)) {
     if (from !== from.toLowerCase()) fail(`${section}.${from}: keys must be lowercase`);
   }
 }
+// Labs with no mark in the package: the site icon of their domain is fetched instead.
+const ownerDomains = cfg.ownerDomains || {};
+for (const [owner, domain] of Object.entries(ownerDomains)) {
+  if (owner !== owner.toLowerCase()) fail(`ownerDomains.${owner}: keys must be lowercase`);
+  if (icons[owner] || cfg.aliases[owner]) fail(`ownerDomains.${owner}: already has a mark`);
+  if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(domain)) fail(`ownerDomains.${owner}: invalid domain ${domain}`);
+}
 for (const alias of Object.keys(cfg.aliases)) {
   if (icons[alias]) fail(`alias ${alias} shadows an icon key`);
 }
@@ -105,6 +112,7 @@ const manifest = {
   channelTypes: Object.fromEntries(Object.keys(cfg.channelTypes).sort((a, b) => a - b).map((k) => [k, cfg.channelTypes[k]])),
   modelPrefixes: sortObj(cfg.modelPrefixes),
   domains: sortObj(cfg.domains),
+  ownerDomains: sortObj(ownerDomains),
 };
 
 rmSync(assetsDir, { recursive: true, force: true });

@@ -219,7 +219,8 @@ export default function Register() {
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        <Link to="/login" className="font-medium text-primary-text hover:underline">
+        {t('authPages.haveAccount')}
+        <Link to="/login" className="ml-1 font-medium text-primary-text hover:underline">
           {t('menu.login')}
         </Link>
       </p>

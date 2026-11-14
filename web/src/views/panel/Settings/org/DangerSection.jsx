@@ -115,7 +115,8 @@ export default function DangerSection({ orgId, role, detail, onRefresh }) {
 
   return (
     <>
-      <ActionCard title={t('orgPage.settings.dangerZone')} description={t('settingsUi.org.cards.danger.description')} highlight="danger">
+      {/* The page title already says 危险操作: the card keeps only the description. */}
+      <ActionCard description={t('settingsUi.org.cards.danger.description')} highlight="danger">
         <ActionRow
           icon={LogOut}
           title={t('orgPage.settings.leave')}

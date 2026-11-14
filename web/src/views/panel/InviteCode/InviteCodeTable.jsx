@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Ban, Check, Copy, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { Copy, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -15,7 +15,6 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
-
 import { timestamp2string } from 'utils/common';
 import { relativeTime } from 'utils/relativeTime';
 
@@ -78,8 +77,8 @@ function StatusSwitch({ item, onToggleStatus }) {
 
 StatusSwitch.propTypes = { item: PropTypes.object.isRequired, onToggleStatus: PropTypes.func.isRequired };
 
-// Row menu: edit, copy the code, enable / disable, then delete (last).
-function CodeActions({ item, onEdit, onCopy, onToggleStatus, onDelete }) {
+// Row menu: edit, copy the code, then delete (last). Enable / disable is the switch next to it.
+function CodeActions({ item, onEdit, onCopy, onDelete }) {
   const { t } = useTranslation();
   return (
     <DropdownMenu>
@@ -97,10 +96,6 @@ function CodeActions({ item, onEdit, onCopy, onToggleStatus, onDelete }) {
           <Copy className="size-4" />
           {t('inviteList.copyCode')}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onToggleStatus(item)}>
-          {item.status === ENABLED ? <Ban className="size-4" /> : <Check className="size-4" />}
-          {item.status === ENABLED ? t('inviteList.disable') : t('inviteList.enable')}
-        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(item)}>
           <Trash2 className="size-4" />
@@ -115,7 +110,6 @@ CodeActions.propTypes = {
   item: PropTypes.object.isRequired,
   onEdit: PropTypes.func.isRequired,
   onCopy: PropTypes.func.isRequired,
-  onToggleStatus: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired
 };
 
@@ -206,8 +200,23 @@ InviteCodeTable.propTypes = {
   actions: PropTypes.object.isRequired
 };
 
-// Phone cards, one per code. Top: the code and its name, the switch on the right. Middle: usage,
-// large. Bottom: validity · created, with the row menu. In select mode a checkbox leads.
+// The state line on a phone card. On / off is the switch, so only states the switch cannot show
+// get words: used up, and validity (not started, expired, expires in…).
+function StateLine({ item, rtf }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {inviteState(item) === 'exhausted' && <span className="text-warning">{t('inviteList.usedUp')} · </span>}
+      <Validity item={item} rtf={rtf} />
+    </>
+  );
+}
+
+StateLine.propTypes = { item: PropTypes.object.isRequired, rtf: PropTypes.object.isRequired };
+
+// Phone cards, one per code. Top: the code and its name, the row menu on the right (it holds
+// enable / disable, so the card carries one control). Middle: usage, large. Bottom: state,
+// validity and created. In select mode a checkbox leads.
 export function InviteCodeCards({ items, rtf, selectMode, selectedIds, onToggleSelect, actions }) {
   const { t } = useTranslation();
   return (
@@ -219,7 +228,7 @@ export function InviteCodeCards({ items, rtf, selectMode, selectedIds, onToggleS
           <li
             key={item.id}
             className={cn(
-              'rounded-xl border border-border bg-card px-4 pb-2 pt-3 transition-colors',
+              'rounded-xl border border-border bg-card px-4 py-3 transition-colors',
               ROW_OPENS,
               selected && 'border-primary/40 bg-muted/40'
             )}
@@ -239,19 +248,19 @@ export function InviteCodeCards({ items, rtf, selectMode, selectedIds, onToggleS
                 <code className={cn('shrink-0 font-mono text-sm font-medium', !live && 'text-muted-foreground')}>{item.code}</code>
                 {item.name && <span className="truncate text-xs text-muted-foreground">{item.name}</span>}
               </div>
-              <StatusSwitch item={item} onToggleStatus={actions.onToggleStatus} />
+              <div className="-my-1.5 -mr-2 flex shrink-0 items-center gap-1">
+                <StatusSwitch item={item} onToggleStatus={actions.onToggleStatus} />
+                <RowControl>
+                  <CodeActions item={item} {...actions} />
+                </RowControl>
+              </div>
             </div>
             <div className="mt-1 flex items-baseline gap-2">
               <Usage item={item} className={cn('text-xl font-medium', !live && 'text-muted-foreground')} />
               <span className="text-xs text-muted-foreground">{t('inviteList.usage')}</span>
             </div>
-            <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="min-w-0 flex-1 truncate">
-                <Validity item={item} rtf={rtf} /> · {t('inviteList.createdAgo', { time: relativeTime(rtf, item.created_time) })}
-              </span>
-              <RowControl className="-mr-2 shrink-0">
-                <CodeActions item={item} {...actions} />
-              </RowControl>
+            <div className="mt-1 truncate text-xs text-muted-foreground">
+              <StateLine item={item} rtf={rtf} /> · {t('inviteList.createdAgo', { time: relativeTime(rtf, item.created_time) })}
             </div>
           </li>
         );

@@ -46,7 +46,7 @@ func setupModelLibraryTestDB(t *testing.T) map[string]catalogProvider {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := testDB.AutoMigrate(&ModelInfo{}, &ModelLibraryEntry{}, &ModelLibraryHost{}, &Channel{}); err != nil {
+	if err := testDB.AutoMigrate(&ModelInfo{}, &ModelLibraryEntry{}, &ModelLibraryHost{}, &Channel{}, &ChannelModelAlias{}); err != nil {
 		t.Fatal(err)
 	}
 	oldDB, oldUsing := DB, common.UsingSQLite

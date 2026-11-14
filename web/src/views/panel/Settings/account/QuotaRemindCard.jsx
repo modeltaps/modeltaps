@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import QuotaInput from 'components/QuotaInput';
 import { API } from 'utils/api';
 import { renderSpend, showError, showSuccess } from 'utils/common';
-import { FormCard, OptionList } from '@/components/settings/cards';
+import { FormCard } from '@/components/settings/cards';
 import { ToggleRow } from '../../Setting/parts';
 
 // ==============================|| SETTINGS — ACCOUNT / QUOTA REMIND CARD ||============================== //
@@ -86,7 +86,8 @@ export default function QuotaRemindCard({ self }) {
       onReset={() => setDraft({ enabled: saved.enabled, threshold: saved.threshold ?? '' })}
     >
       {notice && <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">{notice}</p>}
-      <OptionList>
+      {/* One option: no inner frame, the row sits flush in the card. */}
+      <div className="[&>div]:px-0 [&>div]:py-0">
         <ToggleRow
           id="quota-remind-enabled"
           label={qr('toggle')}
@@ -116,7 +117,7 @@ export default function QuotaRemindCard({ self }) {
             </button>
           )}
         </ToggleRow>
-      </OptionList>
+      </div>
     </FormCard>
   );
 }

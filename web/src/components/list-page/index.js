@@ -14,3 +14,4 @@ export { default as PhoneListToolbar } from './PhoneListToolbar';
 export { default as ListSkeleton } from './ListSkeleton';
 export { default as useRowSelection } from './useRowSelection';
 export { PHONE_QUERY, useListLayout } from './useListLayout';
+export { default as StateDot } from './StateDot';

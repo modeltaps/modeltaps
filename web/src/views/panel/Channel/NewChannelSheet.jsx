@@ -107,7 +107,7 @@ function parseMapping(raw) {
 // needs (with a link to get it), the address only when required, and usage. New channels serve
 // every user group (narrowed later under Groups & routing). Test checks the unsaved credential
 // against the provider's model list; save creates, then tests.
-export default function NewChannelSheet({ initialType, allChannels, onClose, onCreated }) {
+export default function NewChannelSheet({ initialType, allChannels, supplyRouting = false, onClose, onCreated }) {
   const { t } = useTranslation();
   const providerName = useProviderName();
   const names = useMemo(() => allChannels.map((c) => c.name), [allChannels]);
@@ -264,7 +264,11 @@ export default function NewChannelSheet({ initialType, allChannels, onClose, onC
         ]
           .filter(Boolean)
           .join(t('channels.created.comma')),
-        usage.top && usageKey !== 'custom' ? t('channels.created.relative', { usage: usageLabel, name: usage.top.name }) : usageLabel,
+        supplyRouting
+          ? ''
+          : usage.top && usageKey !== 'custom'
+            ? t('channels.created.relative', { usage: usageLabel, name: usage.top.name })
+            : usageLabel,
         res.supplies ? t('channels.created.supplied', { count: res.supplies }) : ''
       ]
         .filter(Boolean)
@@ -587,21 +591,25 @@ export default function NewChannelSheet({ initialType, allChannels, onClose, onC
         </Field>
       )}
 
-      <Field label={t('channels.usage.label')} extra={usage.top ? t('channels.usage.peerExisting', { name: usage.top.name }) : null}>
-        <UsageOptions
-          usage={usage}
-          value={usageKey}
-          onChange={(k) => set({ usage: k })}
-          custom={d.custom}
-          onCustomChange={(custom) => set({ custom })}
-        />
-      </Field>
+      {/* While supplies route requests the allocation policy places the new channel. */}
+      {!supplyRouting && (
+        <Field label={t('channels.usage.label')} extra={usage.top ? t('channels.usage.peerExisting', { name: usage.top.name }) : null}>
+          <UsageOptions
+            usage={usage}
+            value={usageKey}
+            onChange={(k) => set({ usage: k })}
+            custom={d.custom}
+            onCustomChange={(custom) => set({ custom })}
+          />
+        </Field>
+      )}
     </ObjectSheet>
   );
 }
 
 NewChannelSheet.propTypes = {
   initialType: PropTypes.number.isRequired,
+  supplyRouting: PropTypes.bool,
   allChannels: PropTypes.array.isRequired,
   onClose: PropTypes.func.isRequired,
   onCreated: PropTypes.func.isRequired
