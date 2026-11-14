@@ -72,6 +72,21 @@ func TestFetchFaviconFallsBackAndRejectsNonImages(t *testing.T) {
 	}
 }
 
+func TestFetchFaviconSkipsPlaceholderPNG(t *testing.T) {
+	png := func(w, h byte) string {
+		return "\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR\x00\x00\x00" + string([]byte{w}) + "\x00\x00\x00" + string([]byte{h}) + "\x08\x06"
+	}
+	stubFetch(t, map[string]string{
+		"https://foo.com/":          `<link rel="apple-touch-icon" href="/pixel.png"><link rel="icon" href="/real.png">`,
+		"https://foo.com/pixel.png": png(1, 1),
+		"https://foo.com/real.png":  png(32, 32),
+	})
+	data, mime, err := FetchFavicon(context.Background(), "foo.com")
+	if err != nil || mime != safefetch.MimePNG || data[19] != 32 {
+		t.Fatalf("want the 32px icon, got mime=%q err=%v", mime, err)
+	}
+}
+
 // 默认厂商表中带图标的渠道类型（model.GetDefaultModelOwnedBy，除 Rerank）。
 var baselineChannelTypes = []int{
 	1, 11, 14, 15, 16, 17, 18, 19, 20, 23, 25, 26, 27, 28, 29, 30, 31, 33, 34, 35, 36, 37, 38,
@@ -421,5 +436,17 @@ func TestPruneVersionsAndRegistry(t *testing.T) {
 		if _, err := NormalizeRegistry(in); err == nil {
 			t.Errorf("NormalizeRegistry(%q) should fail", in)
 		}
+	}
+}
+
+func TestOwnerDomain(t *testing.T) {
+	if domain, ok := OwnerDomain(" Writer "); !ok || domain != "writer.com" {
+		t.Fatalf("OwnerDomain(writer) = %q, %v", domain, ok)
+	}
+	if _, ok := OwnerDomain("openai"); ok {
+		t.Fatal("labs with a mark have no owner domain")
+	}
+	if len(OwnerDomains()) != len(GetManifest().OwnerDomains) {
+		t.Fatal("OwnerDomains must list every entry")
 	}
 }

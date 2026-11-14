@@ -311,7 +311,8 @@
       }
     },
     "loadFailed": "利用可能なモデル一覧の読み込みに失敗しました。表示されている可用性は正確でない可能性があります。",
-    "retry": "再試行"
+    "retry": "再試行",
+    "modalities": "ドキュメント"
   },
   "playground": {
     "curlHint": "sk-YOUR_TOKEN はプレースホルダーです",
@@ -384,13 +385,13 @@
     },
     "noModels": {
       "title": "利用できる{{modality}}モデルがありません",
-      "adminDesc": "{{modality}}モデルを提供するチャネルがまだありません。チャネル管理で追加または有効化してください。",
-      "adminAction": "チャネル管理へ",
+      "adminDesc": "{{modality}}モデルを提供するチャネルがまだありません。プロバイダーページで追加または有効化してください。",
+      "adminAction": "プロバイダーページへ",
       "userDesc": "あなたのグループでは{{modality}}モデルがまだ開放されていません。利用可能なモデル一覧を確認するか、管理者にお問い合わせください。",
       "userAction": "利用可能なモデルを見る",
       "transcription": {
         "title": "このサイトには音声文字起こしモデルがありません",
-        "adminDesc": "音声文字起こし（audio.transcription）エンドポイントを宣言しているモデルがまだありません。チャネル管理で文字起こしモデルを提供するチャネルを追加するか、管理画面のモデルカタログで既存の文字起こしモデルに audio.transcription エンドポイントを設定してください。",
+        "adminDesc": "音声文字起こし（audio.transcription）エンドポイントを宣言しているモデルがまだありません。プロバイダーページで文字起こしモデルを提供するチャネルを追加するか、管理画面のモデルカタログで既存の文字起こしモデルに audio.transcription エンドポイントを設定してください。",
         "userDesc": "このサイトにはまだ音声文字起こしモデルがないため、ここでは音声を文字起こしできません。利用可能なモデル一覧を確認するか、管理者に文字起こしモデルの追加を依頼してください。",
         "userChatDesc": "このサイトにはまだ音声文字起こしモデルがありません。代わりに音声を理解できるチャットモデルを使えます。チャットページで音声をアップロードし、文字に起こすよう依頼してください。",
         "userChatAction": "チャットへ"
@@ -679,13 +680,13 @@
     "api_compare": "複数のチャットモデルを並べ、同じ入力を同時に送信",
     "pricing": "モデルカタログ・価格・チャネル・ベンダー",
     "routing_policy": "各セッションの最初のメッセージから実際に応答するモデルを選ぶ仮想モデル",
-    "channel": "プロバイダーごとにまとめています。チャネルはプロバイダーに接続する認証情報とアドレスの組です",
+    "channel": "プロバイダーごとに複数のチャネルを登録できます。チャネルはプロバイダーに接続する認証情報とアドレスの組です",
     "org_members": "メンバーを招待し、各メンバーの予算とモデル範囲を設定",
     "organization": "組織の残高、使用量、監査ログ",
     "platform_settings": "プラットフォーム全体の既定値とスイッチ",
     "token": "API を呼び出すためのキー",
     "invite_code": "登録用の招待コードの作成、有効化、無効化",
-    "routing": "API キーで呼び出せるポリシー：マネージドは名前で、自分のものは policy/<名前> で呼び出します"
+    "routing": "API キーで呼び出せるルーティングポリシー"
   },
   "api_compare": "比較",
   "modelInfoPage": {
@@ -788,8 +789,8 @@
     "visibleYes": "表示",
     "sheet": {
       "availableGroups": "利用可能なグループ",
-      "channelsReadonly": "チャネルとグループは読み取り専用です。チャネルページで編集してください",
-      "goChannels": "チャネルページへ",
+      "channelsReadonly": "チャネルとグループは読み取り専用です。プロバイダーページで編集してください",
+      "goChannels": "プロバイダーページへ",
       "groupCount": "{{count}} グループ",
       "groups": "グループ",
       "noChannelHint": "このモデルを提供する有効なチャネルがないため、ユーザーは呼び出せません。",
@@ -1306,7 +1307,7 @@
     "retryFailed": "失敗分を再テスト（{{count}}）"
   },
   "channelCheck": {
-    "title": "チャネル検査",
+    "title": "機能検査",
     "fetchUpstream": "上流のモデルを取得",
     "fetchFailed": "上流のモデルを取得できませんでした",
     "hint": "各モデルにつき最大 {{requests}} 件の実リクエストを上流に送信し（算術チャレンジ、画像入力、JSON Schema、ツール呼び出し、中継の手がかり）、チャネルのクォータを消費します。同時に検査するのは 2 モデルです。ディープリサーチ・画像・動画モデルは既定で選択されません。",
@@ -1721,6 +1722,8 @@
   },
   "routing_policy": "自動ルーティング",
   "routingPolicy": {
+    "enable": "有効にする",
+    "disable": "無効にする",
     "create": "ポリシーを作成",
     "createTitle": "ルーティングポリシーを作成",
     "empty": "ルーティングポリシーはまだありません。ポリシーはクライアントが呼び出せるモデル名で、各セッションの最初のメッセージがどの実モデルが応答するかを決めます。",
@@ -1909,7 +1912,12 @@
     "managedIntro": "プラットフォームが提供するポリシーです。model に名前をそのまま指定します。",
     "managedEmpty": "利用できるマネージドポリシーはまだありません。",
     "managedOverridden": "自分のポリシーで置き換え済み",
-    "managedOverriddenHint": "同じ名前の自作ポリシーがあるため、名前だけの指定では自分のものが使われます。このマネージドポリシーを使うには、自分のポリシーの名前を変えるか無効にしてください。"
+    "managedOverriddenHint": "同じ名前の自作ポリシーがあるため、名前だけの指定では自分のものが使われます。このマネージドポリシーを使うには、自分のポリシーの名前を変えるか無効にしてください。",
+    "introShort": {
+      "personal": "個人の API キーでのみ有効。model に policy/<名前> を指定",
+      "org": "この組織の API キーでのみ有効。model に policy/<名前> を指定",
+      "orgMember": "組織の管理者が作成したポリシー。policy/<名前> で呼び出します"
+    }
   },
   "logPage": {
     "routing": {
@@ -1968,9 +1976,16 @@
     "advanced": {
       "costRatio": "コスト倍率",
       "costRatioHint": "定価に対する上流の実際の課金倍率。原価割れのグループの警告に使います。空欄は不明",
+      "cancelOnDisconnect": "クライアント切断時に上流を停止",
+      "cancelOnDisconnectAuto": "自動（{{state}}）",
+      "cancelOnDisconnectOn": "オン",
+      "cancelOnDisconnectOff": "オフ",
+      "cancelOnDisconnectHint": "クライアントがストリーミング応答を途中で止めたとき、上流との接続を閉じて生成を止め、それまでに生成された出力だけが課金されるようにします。このとき出力トークンはローカルで推定します。自動では公式 API とサブスクリプションアカウントはオン、その他の上流はオフです。切断後も応答全体を課金する中継サービスではオフにしてください。",
       "danger": "危険な操作",
       "dangerHint": "複製すると同じキーと設定で新しいチャネルを作成します。削除は元に戻せません",
-      "name": "名前"
+      "name": "名前",
+      "otherUnused": "このプロバイダーはこの項目を使用しません。空にして構いません",
+      "n2rPlaceholder": "モデル名\n-変換しないモデル名"
     },
     "chart": {
       "aria": "チャネルごとのリクエスト数",
@@ -2004,6 +2019,7 @@
       "groups": "{{groups}} グループ",
       "listSep": "、",
       "models_other": "{{count}} モデル",
+      "supplied_other": "公開モデル {{count}} 件に供給",
       "prefix": "作成済み",
       "relative": "{{usage}}（{{name}} に対して）"
     },
@@ -2012,6 +2028,8 @@
     "groupRatio": "倍率 {{ratio}}×",
     "groups": "グループ",
     "groupsHint": "トークンは同じグループのチャネルだけを使います。複数選択できます",
+    "allGroups": "すべてのグループ",
+    "allGroupsDesc": "今後作成するグループも含みます",
     "issue": {
       "autoDisabled": "リクエスト失敗のため自動で無効化されました",
       "dismiss": "閉じる",
@@ -2022,7 +2040,8 @@
       "lowBalance": "残高 {{balance}} が {{threshold}} を下回っています",
       "refreshBalance": "残高を更新",
       "setKey": "キーを設定",
-      "view": "表示"
+      "view": "表示",
+      "title": "対応が必要"
     },
     "lane": {
       "allOff": "すべて無効",
@@ -2046,7 +2065,14 @@
       "pruned_other": "上流にない {{count}} モデルを削除しました。保存すると反映されます",
       "remove": "{{model}} を削除",
       "syncPrices": "価格を同期",
-      "ttft": "最初のトークン"
+      "ttft": "最初のトークン",
+      "supplyNote": "保存すると、モデル一覧とマッピングの変更はこのチャネルから作られた供給に反映されます。追加したモデルは同名の公開モデルに自動で供給され、マッピングを変えると上流に送る名前が更新され、削除したモデルの供給は取り下げられます。手動で追加した供給や、モデルページで上流名を変えた供給はそのままです。",
+      "saved": {
+        "summary": "保存しました：{{changes}}",
+        "attached_other": "{{count}} 個の公開モデルを新たに供給",
+        "updated_other": "{{count}} 件の供給が新しい上流名を使用",
+        "removed_other": "{{count}} 件の供給を取り下げ"
+      }
     },
     "monitor": {
       "checkNow": "今すぐモデル一覧を確認",
@@ -2058,7 +2084,7 @@
       "threshold": "残高アラート（USD）",
       "thresholdHint": "上流の残高がこの値を下回ると通知します",
       "thresholdOff": "オフ",
-      "autoAddHint": "毎日のモデル検出で上流が新たに提供するモデルを見つけたら、通知するだけでなくこのチャネルに追加します（価格とメタデータも補完）。供給ルーティングを有効にすると、新しいモデルはチャネルに追加されず、モデルカタログの「新しい上流モデル」で対応を待ちます。無視ルールに一致するモデルは除外します。"
+      "autoAddHint": "毎日のモデル検出で上流が新たに提供するモデルを見つけたら、通知するだけでなくこのチャネルに追加します（価格とメタデータも補完）。供給ルーティングを有効にすると、新しいモデルはチャネルのモデル一覧には追加されません。モデルカタログの公開モデルに当たるものには、このチャネルからの供給をすぐに追加し、それ以外はモデルカタログの「新しい上流モデル」で対応を待ちます。無視ルールに一致するモデルは除外します。"
     },
     "pauseRules": {
       "label": "一時停止ルール",
@@ -2150,7 +2176,9 @@
       "summary_other": "{{count}} チャネル · {{range}}で {{requests}} リクエスト",
       "testAll": "すべてテスト",
       "testDone_other": "{{count}} チャネルすべてテストに成功しました",
-      "testPartial": "{{count}} チャネル中 {{failed}} 件のテストに失敗しました"
+      "testPartial": "{{count}} チャネル中 {{failed}} 件のテストに失敗しました",
+      "refreshModelsOf": "{{name}} のモデル一覧を更新",
+      "testAllOf": "{{name}} の全チャネルをテスト"
     },
     "panel": {
       "enabled": "有効",
@@ -2159,6 +2187,7 @@
         "models": "モデル",
         "connection": "接続",
         "routing": "グループとルーティング",
+        "routingGroups": "グループとタグ",
         "rewrite": "リクエストの書き換え",
         "monitor": "監視",
         "advanced": "詳細設定"
@@ -2209,6 +2238,7 @@
     "unknownProvider": "タイプ {{type}}",
     "usage": {
       "label": "使い方",
+      "syncHint": "ここでの変更は、このチャネルのすべての供給にも反映されます。モデルページで優先度や重みを個別に設定した供給は変わりません。",
       "only": "唯一の提供元",
       "onlyDesc": "このグループには同じプロバイダーの他のチャネルがありません",
       "backup": "バックアップ",
@@ -2224,7 +2254,9 @@
       "peerExisting": "このグループには {{name}} があります",
       "peerNote": "同じグループで {{name}} もこれらのモデルを提供しています",
       "priority": "優先度",
-      "weight": "重み"
+      "weight": "重み",
+      "byPolicy": "このチャネルを先に使うか後に使うかは、プロバイダーページのチャネル一覧の並びで決まります。",
+      "openPolicy": "順序を変更"
     },
     "batch": {
       "label": "選択したチャネル",
@@ -2267,7 +2299,8 @@
       "results": "一致するプロバイダー",
       "none": "一致するものはありません",
       "emptyTitle": "一致するチャネルはありません",
-      "emptyDescription": "「{{query}}」に一致するチャネルはありません"
+      "emptyDescription": "「{{query}}」に一致するチャネルはありません",
+      "short": "チャネルを検索"
     },
     "tagActions": {
       "label": "タグ {{tag}}",
@@ -2282,9 +2315,6 @@
     "columns": {
       "requests": "リクエスト",
       "requestsIn": "リクエスト {{range}}"
-    },
-    "switcher": {
-      "count": "{{count}} チャネル"
     },
     "preset": {
       "attention": "要対応",
@@ -2305,6 +2335,98 @@
     },
     "list": {
       "meta": "優先度 {{priority}} · {{requests}} リクエスト · {{latency}}"
+    },
+    "upstream": {
+      "title": "上流モデル",
+      "hint": "このチャネルが上流で使えるすべてのモデルです（直近のモデルチェック時点）。公開するか、どこから供給するかは、モデルページの「供給」で決めます。",
+      "check": "今すぐチェック",
+      "checkFailed": "チェックに失敗しました",
+      "empty": "上流のモデル一覧はまだ取得していません。「今すぐチェック」で取得します。",
+      "unsupported": "このプロバイダーにはモデル一覧のエンドポイントがありません。",
+      "search": "モデルを検索",
+      "noMatch": "条件に合うモデルはありません",
+      "name": "上流モデル",
+      "publicModel": "対応する公開モデル",
+      "state": "状態",
+      "filter": {
+        "all": "すべて",
+        "in_use": "使用中",
+        "available": "利用可能",
+        "not_in_catalog": "カタログ外",
+        "unknown": "未認識"
+      },
+      "states": {
+        "in_use": "使用中",
+        "off": "供給オフ",
+        "available": "利用可能・未追加",
+        "not_in_catalog": "カタログ外",
+        "unknown": "未認識"
+      }
+    },
+    "strip": {
+      "all": "すべて",
+      "allMeta": "チャネル {{count}} 件",
+      "allTitle": "すべてのチャネル",
+      "meta": "チャネル {{count}} 件 · {{requests}} リクエスト",
+      "metaOff": "チャネル {{count}} 件（有効 {{enabled}} 件） · {{requests}} リクエスト",
+      "allProviders": "すべてのプロバイダー"
+    },
+    "order": {
+      "column": "順序",
+      "shareColumn": "分担",
+      "up": "前へ移動",
+      "down": "後ろへ移動",
+      "share": "一つ上と分担",
+      "unshare": "分担をやめる",
+      "weightOf": "{{name}} の重み",
+      "drag": "ドラッグして並べ替え",
+      "positionShort": "{{n}} 番目",
+      "sharesWith": "{{names}} と分担",
+      "nameSep": "、",
+      "sharedTag": "分担",
+      "groupWhy": "この {{count}} 件のチャネルは同じ位置にあり、共通する {{models}} 件のモデルを重みで分担します",
+      "noCommonModel": "共通するモデルがないため分担できません。すぐ後ろに配置しました",
+      "dropHint": {
+        "before": "ここへ移動",
+        "after": "ここへ移動",
+        "join": "このグループで分担"
+      }
+    },
+    "newMenu": {
+      "inUse": "接続済み"
+    },
+    "orderHint": "上から順に試し、前が使えないときだけ次を使います。同じ番号のチャネルは同じモデルを提供し、重みで分担します。",
+    "attention_other": "{{count}} 件の対応が必要",
+    "issueTag": {
+      "autoDisabled": "自動無効化",
+      "keyMissing": "キーなし",
+      "lowBalance": "残高不足",
+      "driftNew_other": "新しいモデル {{count}} 件",
+      "driftMissing_other": "終了したモデル {{count}} 件",
+      "refresh": "更新"
+    },
+    "head": {
+      "order": "番号の小さい順に使用。同じ番号は分担",
+      "share": "グループ内の重みとトラフィック比率",
+      "shareNone": "他のチャネルと分担しません",
+      "priorityWeight": "優先度の高い順に使用。同じ優先度は重みで分配",
+      "requests": "リクエスト数",
+      "requestsHint": "{{range}}のリクエスト数と推移",
+      "success": "成功したリクエストの割合",
+      "latency": "成功したリクエストの平均所要時間",
+      "balance": "上流の残高。サブスクリプションは今期の使用量",
+      "enabled": "オフにするとリクエストを受けません"
+    },
+    "menu": {
+      "multiTest": "複数モデルをテスト",
+      "multiTestHint": "モデルごとに接続と遅延を確認",
+      "check": "機能検査",
+      "checkHint": "実リクエストで画像認識やツール呼び出しなどを確認（クォータを消費）",
+      "drift": "上流モデルと比較",
+      "driftHint": "上流で追加・廃止されたモデルを確認"
+    },
+    "switcher": {
+      "count": "{{count}} チャネル"
     }
   },
   "nav": {
@@ -2330,7 +2452,7 @@
       "orgSettings": "組織の設定",
       "systemLogs": "システムログ",
       "stats": "統計",
-      "channels": "チャネル",
+      "channels": "プロバイダー",
       "catalog": "モデルカタログ",
       "routing": "自動ルーティング",
       "users": "ユーザー",
@@ -2469,6 +2591,8 @@
     "channel": "チャネル",
     "model": "モデル",
     "upstream": "上流モデル",
+    "upstreamSame": "同名",
+    "upstreamSameTip": "{{name}} として上流に送信（公開名と同じ）",
     "priority": "優先度",
     "weight": "重み",
     "stateLabel": "状態",
@@ -2481,6 +2605,9 @@
     "deleteConfirm": "{{model}} を {{channel}} に送るのをやめますか？チャネル自体は変更されません。",
     "deleted": "供給を削除しました",
     "moveUp": "一つ上の段へ",
+    "ownNumbers": "個別設定",
+    "ownNumbersTip": "この供給は優先度または重みが個別に設定されており、チャネルを変更しても変わりません",
+    "followChannel": "チャネルに合わせる",
     "moveDown": "一つ下の段へ",
     "pauseFor": "一時停止",
     "paused": "{{time}} 一時停止しました",
@@ -2508,8 +2635,25 @@
       "published": "公開中",
       "retired": "提供終了"
     },
+    "batch": {
+      "menu": "供給",
+      "modeLabel": "同じ層の中",
+      "add": "供給元を追加…",
+      "remove": "供給元を削除…",
+      "addTitle": "{{count}} 件のモデルに供給元を追加",
+      "removeTitle": "{{count}} 件のモデルから供給元を削除",
+      "addHint": "選んだチャネルがこれらのモデルの供給になります。上流モデル名は自動で入力され、優先度と重みはチャネルに従います。すでに供給しているモデルはスキップします。",
+      "removeHint": "選んだチャネルによるこれらのモデルへの供給を削除します。チャネル自体は変わりません。",
+      "pick": "チャネルを選択",
+      "confirmAdd": "追加",
+      "confirmRemove": "削除",
+      "done": "{{changed}} 件を処理、{{skipped}} 件をスキップ",
+      "modeDone": "{{count}} 件のモデルのモードを更新しました"
+    },
     "mode": {
       "label": "同じ段の中では",
+      "default": "既定に従う",
+      "defaultHint": "プラットフォーム設定の既定モードに従います。現在は「{{mode}}」です。",
       "balance": "負荷分散",
       "failover": "フェイルオーバー",
       "balanceHint": "同じ段の供給で、重みに応じてリクエストを分けます。",
@@ -2618,6 +2762,20 @@
       "attachButton": "割り当て",
       "attached_other": "{{model}} に割り当てました（{{count}} チャネル）",
       "skipped_other": "{{count}} チャネルはすでに別の上流名で {{model}} を供給しているため、そこでは保留のままです。"
+    },
+    "allocation": {
+      "label": "順序",
+      "policy": "プロバイダーページの呼び出し順序",
+      "manual": "個別設定",
+      "manualShort": "個別設定",
+      "open": "順序を変更",
+      "toManual": "個別に設定",
+      "toPolicy": "呼び出し順序に戻す",
+      "policyHint": "順序と重みはプロバイダーページの呼び出し順序から決まります。ここで変更すると、このモデルは個別設定になります。",
+      "manualHint": "このモデルの順序は呼び出し順序が変わっても変わりません。",
+      "becameManual": "このモデルは個別設定になりました",
+      "nowManual": "個別設定にしました。現在の順序はそのままです",
+      "nowPolicy": "呼び出し順序に戻しました"
     }
   },
   "settingsUi": {
@@ -2861,6 +3019,11 @@
           "title": "組織",
           "hint": "既存の組織には影響しません"
         },
+        "supply-mode": {
+          "title": "既定の供給モード",
+          "description": "個別に設定していないモデルで、同じ層の供給がリクエストをどう分担するか",
+          "hint": "モデルページの「供給」タブで、モデルごとに別のモードを選べます"
+        },
         "supply-pause-rules": {
           "title": "供給の一時停止ルール",
           "description": "上流のエラーに応じてチャネルやモデルを一時停止し、テストに通ると再開します",
@@ -2931,7 +3094,7 @@
       "cards": {
         "profile": {
           "title": "プロフィール",
-          "description": "表示名とアバター",
+          "description": "表示名",
           "hint": "ユーザー名は変更できません"
         },
         "logIO": {
@@ -2940,9 +3103,10 @@
         },
         "appearance": {
           "title": "外観",
-          "description": "テーマと言語（自分にだけ適用）",
-          "hint": "保存するとすぐに反映されます",
-          "languageHint": "表示言語を選びます。既定ではブラウザーに従います。"
+          "description": "テーマと言語は選ぶとすぐ反映され、あなたにだけ適用されます",
+          "languageHint": "既定はブラウザーに従います",
+          "themeHint": "システムに合わせると端末のライト/ダーク設定に従います",
+          "hint": "保存するとすぐに反映されます"
         },
         "quotaRemind": {
           "hint": "通知は 1 日 1 回まで"
@@ -2956,7 +3120,9 @@
       },
       "sessions": {
         "device": "デバイス",
-        "where": "アドレスと方法"
+        "where": "アドレスと方法",
+        "showAll": "すべて表示（{{count}} 件）",
+        "showFewer": "折りたたむ"
       }
     },
     "org": {
@@ -2972,6 +3138,9 @@
           "hint": "変更はすべてのメンバーに適用されます"
         },
         "budget": {
+          "description": "全メンバーの期間ごとの合計利用上限。使い切ると組織のリクエストは拒否されます",
+          "noLimitHint": "予算なしの場合は各メンバーの予算だけが適用されます",
+          "resetsHint": "{{period}}リセット。タイムゾーンと週の開始日はプラットフォーム設定に従います",
           "hint": "期間はプラットフォーム設定に従います"
         },
         "danger": {
@@ -3168,16 +3337,112 @@
     "deprecated": "非推奨",
     "showMore": "さらに {{count}} 件表示",
     "selected": "{{count}} 件選択中",
-    "createSupplies": "掲載しているチャネルから供給を作成",
+    "createSupplies": "一致したチャネルに供給を作成",
     "status": "ステータス",
     "asDraft": "下書き",
     "asPublished": "公開",
     "add": "{{count}} 件を追加",
-    "added": "{{count}} モデルを追加し、{{supplies}} 件の供給を作成しました"
+    "added": "{{count}} モデルを追加し、{{supplies}} 件の供給を作成しました",
+    "unsureCount_one": "+{{count}} 要確認",
+    "unsureCount_other": "+{{count}} 要確認",
+    "excludedBefore": "以前に除外",
+    "match": {
+      "exact": "完全一致",
+      "platform": "プラットフォーム表記",
+      "pending": "要確認",
+      "variant": "派生モデル"
+    },
+    "notSynced": "モデルライブラリはまだ空です。ここを閉じ、ページ右上の「同期 → models.dev から同期」で取得してから追加してください。"
   },
   "ledgerList": {
     "description": "内容",
     "amount": "金額"
+  },
+  "dashboardList": {
+    "vsYesterday": "前日比",
+    "viewUsage": "使用量を見る",
+    "topModels": "上位モデル",
+    "requests": "回"
+  },
+  "settingsFields": {
+    "statusCode": "ステータスコード",
+    "seconds": "秒数",
+    "addStatus": "ステータスコードを追加",
+    "remove": "削除",
+    "invalidJson": "保存済みの値が正しい JSON ではありません。下のテキストで編集してください。"
+  },
+  "settingsUnits": {
+    "seconds": "秒"
+  },
+  "orgList": {
+    "allActions": "すべての操作",
+    "actorId": "操作者 ID",
+    "createdAt": "{{time}}に作成",
+    "noAudit": "監査ログはまだありません",
+    "makeAdmin": "管理者にする",
+    "makeMember": "メンバーにする",
+    "more": "その他の操作",
+    "joined": "{{time}}に参加",
+    "actions": {
+      "org_create": "組織を作成",
+      "org_update": "プロフィールを更新",
+      "org_update_budget": "予算を更新",
+      "org_update_setting": "設定を更新",
+      "org_dissolve": "組織を解散",
+      "org_transfer_ownership": "所有権を移譲",
+      "org_admin_enable": "サイト管理者が有効化",
+      "org_admin_disable": "サイト管理者が無効化",
+      "org_admin_dissolve": "サイト管理者が解散",
+      "org_admin_max_members": "サイト管理者がメンバー上限を変更",
+      "org_invitation_create": "招待を送信",
+      "org_invitation_accept": "招待を承諾",
+      "org_invitation_reject": "招待を辞退",
+      "org_invitation_revoke": "招待を取り消し",
+      "org_member_account_create": "メンバーアカウントを作成",
+      "org_member_leave": "メンバーが退出",
+      "org_member_limits_update": "メンバー制限を更新",
+      "org_member_remove": "メンバーを削除",
+      "org_member_role_update": "メンバーのロールを変更",
+      "quota_transfer": "個人クォータを移動",
+      "billing_topup": "コードでチャージ",
+      "billing_order_create": "チャージ注文を作成",
+      "billing_admin_adjust": "サイト管理者が残高を調整",
+      "token_create": "API キーを作成",
+      "token_update": "API キーを更新",
+      "token_delete": "API キーを削除",
+      "routing_policy_create": "ルーティングポリシーを作成",
+      "routing_policy_update": "ルーティングポリシーを更新",
+      "routing_policy_delete": "ルーティングポリシーを削除",
+      "routing_policy_status": "ルーティングポリシーを切り替え"
+    }
+  },
+  "priceList": {
+    "groupHint": "価格はグループによって異なります。API キーのグループは API キー管理で切り替えます"
+  },
+  "orderList": {
+    "segments": {
+      "all": "すべて",
+      "success": "成功",
+      "pending": "支払い待ち",
+      "failed": "失敗",
+      "closed": "終了"
+    },
+    "paid": "支払額"
+  },
+  "topupCard": {
+    "inputPlaceholder": "引き換えコードを入力"
+  },
+  "settingsPage": {
+    "security": {
+      "sessionsHint": "このアカウントにログイン中の端末。心当たりがなければログアウト",
+      "identifiersHint": "どれでログインしても同じアカウントです。メールは復旧と通知にも使います"
+    }
+  },
+  "authPages": {
+    "haveAccount": "アカウントをお持ちですか？",
+    "remembered": "思い出しましたか？",
+    "resetTitle": "パスワードの再設定",
+    "resetHint": "このメールアドレスに再設定リンクを送ります"
   },
   "libraryRules": {
     "intro": "毎日のモデルライブラリ同期の後、これらのルールでどの新しいモデルをカタログに加え、どのカタログのモデルを廃止するかを決めます。ルールは上から順に試し、条件をすべて満たした最初のルールが決めます。各モデルは一度だけ判定されるので、削除したモデルが再追加されることはなく、編集したモデルが廃止されることもありません。",

@@ -36,22 +36,20 @@ function TreeItem({ item, label, collapsed, dirty, onClick }) {
       aria-current={item.active ? 'page' : undefined}
       className={cn(
         sidebarRow.base,
-        collapsed ? 'min-h-[52px] flex-col justify-center gap-1 px-1 py-1.5 text-center' : 'h-[34px] gap-2.5 px-3',
+        collapsed ? cn(sidebarRow.collapsed, 'relative') : 'h-[34px] gap-2.5 px-3',
         item.active ? sidebarRow.active : sidebarRow.idle
       )}
     >
       <Icon
         className={cn(
           'shrink-0',
-          collapsed ? 'size-5' : 'size-4',
+          collapsed ? 'size-[1.125rem]' : 'size-4',
           item.active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'
         )}
       />
-      <span className={cn('min-w-0 truncate', collapsed ? 'w-full text-[11px] font-normal leading-tight' : 'flex-1 text-left')}>
-        {label}
-      </span>
-      {!collapsed && dirty && (
-        <span className="size-1.5 shrink-0 rounded-full bg-orange-500" title={dirty}>
+      <span className={collapsed ? 'sr-only' : 'min-w-0 flex-1 truncate text-left'}>{label}</span>
+      {dirty && (
+        <span className={cn('size-1.5 shrink-0 rounded-full bg-orange-500', collapsed && 'absolute right-1 top-1')} title={dirty}>
           <span className="sr-only">{dirty}</span>
         </span>
       )}
@@ -126,19 +124,19 @@ export default function SettingsSidebar({ collapsed = false, showCollapse = fals
 
         <nav
           aria-label={t('settingsUi.sections.label')}
-          className={cn('flex-1 overflow-y-auto py-3', collapsed ? 'px-1' : 'px-2')}
-          style={collapsed ? { scrollbarGutter: 'stable both-edges' } : undefined}
+          className={cn('flex-1 overflow-y-auto pb-3 pt-1', collapsed ? 'px-0 [scrollbar-width:none]' : 'px-2')}
         >
           {tree.org && (
-            <div role="group" aria-label={t('settingsUi.sections.org')} className="space-y-0.5">
+            <div role="group" aria-label={t('settingsUi.sections.org')} className={collapsed ? 'space-y-1' : 'space-y-0.5'}>
               {tree.orgItems.map(renderItem)}
             </div>
           )}
           <div
             role="group"
             aria-label={t('settingsUi.sections.personal')}
-            className={cn('space-y-0.5', tree.org && (collapsed ? 'mt-2 border-t border-border/60 pt-2' : 'mt-6'))}
+            className={cn(collapsed ? 'space-y-1' : 'space-y-0.5', tree.org && !collapsed && 'mt-6')}
           >
+            {tree.org && collapsed && <div className={sidebarRow.divider} aria-hidden="true" />}
             {!collapsed && <p className="px-3 pb-1.5 text-[13px] font-medium text-muted-foreground">{t('settingsUi.sections.personal')}</p>}
             {tree.personalItems.map(renderItem)}
           </div>

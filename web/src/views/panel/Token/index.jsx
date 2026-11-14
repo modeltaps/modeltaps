@@ -37,7 +37,7 @@ import {
 } from '@/components/list-page';
 import { useObjectRoute } from '@/components/objects';
 import ConnectInfo, { useApiAddresses } from './ConnectInfo';
-import TokenTable, { estimateTableWidth } from './TokenTable';
+import TokenTable from './TokenTable';
 import TokenPanel from './TokenPanel';
 import NewTokenDialog from './NewTokenDialog';
 import { TOKEN_TAB_KEYS } from './tokenTabs';
@@ -335,10 +335,7 @@ export default function Token() {
   const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
 
   // Full table while it fits (the sidebar collapses first), phone list otherwise.
-  const { pageRef, layout, narrow, onNaturalWidth } = useListLayout({
-    estimate: estimateTableWidth(visibleColumnIds, columnVisibility),
-    resetKey: JSON.stringify([columnVisibility, visibleColumnIds])
-  });
+  const { layout, narrow } = useListLayout();
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const changeStatus = (next) => {
@@ -521,7 +518,7 @@ export default function Token() {
 
   return (
     <>
-      <div ref={pageRef} className={cn('space-y-3', narrow && selection.selectMode && 'pb-20')}>
+      <div className={cn('space-y-3', narrow && selection.selectMode && 'pb-20')}>
         {/* Title row: refresh, the Connect popover (where to send requests), then create. */}
         <PageActions>
           <TooltipProvider delayDuration={150}>
@@ -665,7 +662,6 @@ export default function Token() {
               onToggleSelect={selection.toggle}
               onToggleSelectAll={selection.toggleAll}
               layout={layout}
-              onNaturalWidth={onNaturalWidth}
               selectMode={selection.selectMode}
               order={order}
               orderBy={orderBy}

@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/modeltaps/modeltaps/common/config"
+
+	"gorm.io/gorm"
 )
 
 const (
@@ -103,6 +105,13 @@ type ModelSupplyView struct {
 	ChannelTag    string `json:"channel_tag"`
 	// ChannelGroup is the channel's comma-separated user groups.
 	ChannelGroup string `json:"channel_group"`
+	// ChannelPriority and ChannelWeight are the channel's own numbers. A supply whose priority
+	// and weight equal them follows the channel (see SyncSuppliesWithChannel).
+	ChannelPriority int64 `json:"channel_priority"`
+	ChannelWeight   int64 `json:"channel_weight"`
+	// FollowsPolicy is true when the priority and weight above come from the allocation policy
+	// rather than from the supply row.
+	FollowsPolicy bool `json:"follows_policy"`
 }
 
 // GetModelSupplyViews lists supplies like GetModelSupplies, each with its channel's name,
@@ -111,6 +120,21 @@ func GetModelSupplyViews(modelName string, channelId int) ([]*ModelSupplyView, e
 	supplies, err := GetModelSupplies(modelName, channelId)
 	if err != nil {
 		return nil, err
+	}
+	// Show the numbers supplies route with: the policy's for models that follow it.
+	policyNumbers := map[int]supplyNumbers{}
+	if config.ModelSupplyEnabled && len(supplies) > 0 {
+		names := map[string]bool{}
+		for _, s := range supplies {
+			names[s.Model] = true
+		}
+		list := make([]string, 0, len(names))
+		for name := range names {
+			list = append(list, name)
+		}
+		if policyNumbers, err = allocatedNumbers(list); err != nil {
+			return nil, err
+		}
 	}
 	ids := make([]int, 0, len(supplies))
 	seen := map[int]bool{}
@@ -123,7 +147,7 @@ func GetModelSupplyViews(modelName string, channelId int) ([]*ModelSupplyView, e
 	byId := map[int]*Channel{}
 	if len(ids) > 0 {
 		var channels []*Channel
-		if err := DB.Select("id", "name", "status", "type", "tag", "group").Where("id IN ?", ids).Find(&channels).Error; err != nil {
+		if err := DB.Select("id", "name", "status", "type", "tag", "group", "priority", "weight").Where("id IN ?", ids).Find(&channels).Error; err != nil {
 			return nil, err
 		}
 		for _, ch := range channels {
@@ -133,9 +157,15 @@ func GetModelSupplyViews(modelName string, channelId int) ([]*ModelSupplyView, e
 	views := make([]*ModelSupplyView, 0, len(supplies))
 	for _, s := range supplies {
 		view := &ModelSupplyView{ModelSupply: s}
+		if n, ok := policyNumbers[s.Id]; ok {
+			copied := *s
+			copied.Priority, copied.Weight = n.Priority, n.Weight
+			view.ModelSupply, view.FollowsPolicy = &copied, true
+		}
 		if ch := byId[s.ChannelId]; ch != nil {
 			view.ChannelName, view.ChannelStatus, view.ChannelType, view.ChannelTag = ch.Name, ch.Status, ch.Type, ch.Tag
 			view.ChannelGroup = ch.Group
+			view.ChannelPriority, view.ChannelWeight = ch.GetPriority(), ch.GetWeight()
 		}
 		views = append(views, view)
 	}
@@ -185,6 +215,9 @@ func UpdateModelSupply(supply *ModelSupply) error {
 	if upstream == "" {
 		return ErrSupplyUpstreamMissing
 	}
+	if err := takeManualOnRenumber(current.Model, supply); err != nil {
+		return err
+	}
 	err = DB.Model(current).Select("upstream_model", "priority", "weight", "enabled", "note").Updates(&ModelSupply{
 		UpstreamModel: upstream,
 		Priority:      supply.Priority,
@@ -209,6 +242,50 @@ func DeleteModelSupply(id int) error {
 	}
 	reloadSupplies()
 	return nil
+}
+
+// SyncSuppliesWithChannel carries a change of a channel's priority or weight to its supplies.
+// A supply follows the channel while it has the channel's number: a supply still at the old
+// priority moves to the new one, and likewise for the weight. Supplies that were given their own
+// priority or weight on the model page are left alone. It returns how many supplies changed and
+// does not rebuild the routing table; callers that changed the channel do.
+func SyncSuppliesWithChannel(channelId int, oldPriority, newPriority, oldWeight, newWeight int64) (int64, error) {
+	var changed int64
+	if oldPriority != newPriority {
+		result := DB.Model(&ModelSupply{}).Where("channel_id = ? AND priority = ?", channelId, oldPriority).
+			Update("priority", newPriority)
+		if result.Error != nil {
+			return changed, result.Error
+		}
+		changed += result.RowsAffected
+	}
+	if oldWeight != newWeight {
+		// An unset weight counts as 1, like EffectiveWeight.
+		weights := []int64{oldWeight}
+		if oldWeight == 1 {
+			weights = append(weights, 0)
+		}
+		result := DB.Model(&ModelSupply{}).Where("channel_id = ? AND weight IN ?", channelId, weights).
+			Update("weight", newWeight)
+		if result.Error != nil {
+			return changed, result.Error
+		}
+		changed += result.RowsAffected
+	}
+	return changed, nil
+}
+
+// channelNumbers reads the priority and weight of channels before a change, by id.
+func channelNumbers(query *gorm.DB) (map[int][2]int64, error) {
+	var channels []*Channel
+	if err := query.Select("id", "priority", "weight").Find(&channels).Error; err != nil {
+		return nil, err
+	}
+	numbers := make(map[int][2]int64, len(channels))
+	for _, ch := range channels {
+		numbers[ch.Id] = [2]int64{ch.GetPriority(), ch.GetWeight()}
+	}
+	return numbers, nil
 }
 
 // reloadSupplies rebuilds the routing table after a supply change while supplies drive it.

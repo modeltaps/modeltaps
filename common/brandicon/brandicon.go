@@ -37,6 +37,8 @@ type Manifest struct {
 	ChannelTypes  map[string]string `json:"channelTypes"`
 	ModelPrefixes map[string]string `json:"modelPrefixes"`
 	Domains       map[string]string `json:"domains"`
+	// OwnerDomains maps labs that have no mark to the domain whose site icon stands in for it.
+	OwnerDomains map[string]string `json:"ownerDomains"`
 }
 
 var (
@@ -78,6 +80,21 @@ func Resolve(key string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// OwnerDomain returns the domain whose site icon stands in for a lab without a mark.
+func OwnerDomain(owner string) (string, bool) {
+	domain, ok := manifest.OwnerDomains[strings.ToLower(strings.TrimSpace(owner))]
+	return domain, ok
+}
+
+// OwnerDomains returns every domain of the lab table, for fetching their icons ahead of use.
+func OwnerDomains() []string {
+	out := make([]string, 0, len(manifest.OwnerDomains))
+	for _, domain := range manifest.OwnerDomains {
+		out = append(out, domain)
+	}
+	return out
 }
 
 // SVG 返回指定 key 的 SVG。variant 为空时优先彩色、无彩色则回落单色；

@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  ALL_GROUPS,
   NO_TAG,
+  channelInGroup,
   channelDot,
   channelIssues,
   channelMatches,
   filterChannels,
   groupChannelsByType,
+  groupOptions,
+  groupsOverlap,
   hasLowBalance,
   openIssues,
   selectionState,
@@ -122,5 +126,22 @@ describe('selectionState', () => {
     expect(selectionState([1, 2], new Set([2, 9]))).toBe('some');
     expect(selectionState([1, 2], new Set([1, 2]))).toBe('all');
     expect(selectionState([], new Set([1]))).toBe('none');
+  });
+});
+
+describe('all groups', () => {
+  it('matches every group for a channel whose group is *', () => {
+    expect(channelInGroup({ group: ALL_GROUPS }, 'vip')).toBe(true);
+    expect(channelInGroup({ group: 'default,vip' }, 'vip')).toBe(true);
+    expect(channelInGroup({ group: 'default' }, 'vip')).toBe(false);
+    expect(groupsOverlap(['*'], ['team'])).toBe(true);
+    expect(groupsOverlap(['default'], ['team'])).toBe(false);
+    expect(groupsOverlap([], ['*'])).toBe(false);
+  });
+
+  it('keeps all-groups channels under any group filter and leaves * out of the options', () => {
+    const channels = [ch(1, 1, { group: '*' }), ch(2, 1, { group: 'default' }), ch(3, 1, { group: 'vip' })];
+    expect(filterChannels(channels, { group: 'vip' }).map((c) => c.id)).toEqual([1, 3]);
+    expect(groupOptions(channels)).toEqual(['default', 'vip']);
   });
 });

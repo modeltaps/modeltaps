@@ -269,12 +269,21 @@ func ChangeChannelsTagStatus(tag string, status int) error {
 }
 
 func UpdateChannelsTagPriority(tag string, value int) error {
+	before, err := channelNumbers(DB.Where("tag = ?", tag))
+	if err != nil {
+		return err
+	}
 	result := DB.Model(&Channel{}).Where("tag = ?", tag).Update("priority", value)
 	if result.Error != nil {
 		return result.Error
 	}
 
 	if result.RowsAffected > 0 {
+		for id, old := range before {
+			if _, err := SyncSuppliesWithChannel(id, old[0], int64(value), old[1], old[1]); err != nil {
+				return err
+			}
+		}
 		ChannelGroup.Load()
 	}
 	return nil
@@ -282,12 +291,21 @@ func UpdateChannelsTagPriority(tag string, value int) error {
 
 // UpdateChannelsTagWeight 将整组渠道的权重统一设为同一值（权重为逐行字段，需专用入口批量设置）。
 func UpdateChannelsTagWeight(tag string, value uint) error {
+	before, err := channelNumbers(DB.Where("tag = ?", tag))
+	if err != nil {
+		return err
+	}
 	result := DB.Model(&Channel{}).Where("tag = ?", tag).Update("weight", value)
 	if result.Error != nil {
 		return result.Error
 	}
 
 	if result.RowsAffected > 0 {
+		for id, old := range before {
+			if _, err := SyncSuppliesWithChannel(id, old[0], old[0], old[1], int64(value)); err != nil {
+				return err
+			}
+		}
 		ChannelGroup.Load()
 	}
 	return nil

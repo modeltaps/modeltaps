@@ -12,16 +12,7 @@ import { Card } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ROW_OPENS, RowControl, rowOpenProps, useObjectRoute } from '@/components/objects';
-import {
-  ColumnPicker,
-  ListEmptyState,
-  ListFooter,
-  ListSkeleton,
-  estimateWidth,
-  useColumnVisibility,
-  useListLayout,
-  useNaturalWidth
-} from '@/components/list-page';
+import { ColumnPicker, ListEmptyState, ListFooter, ListSkeleton, useColumnVisibility, useListLayout } from '@/components/list-page';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import PageActions from '@/components/chrome/PageActions';
 import { API } from 'utils/api';
@@ -42,8 +33,6 @@ const GROUP_COLUMNS = [
   { id: 'enable', labelKey: 'userGroup.enableShort' },
   { id: 'action', fixed: true }
 ];
-const COLUMN_IDS = GROUP_COLUMNS.map((c) => c.id);
-const COLUMN_WIDTHS = { id: 48, name: 200, ratio: 64, api_rate: 96, public: 64, promotion: 168, enable: 60, action: 52 };
 
 const money = (v) => `$${Number(v || 0).toLocaleString()}`;
 
@@ -129,10 +118,7 @@ export default function UserGroup() {
 
   const columnState = useColumnVisibility({ storageKey: 'user-group-column-visibility-v1', columns: GROUP_COLUMNS });
   // Full table while it fits (the sidebar collapses first), phone list otherwise.
-  const { pageRef, narrow, onNaturalWidth } = useListLayout({
-    estimate: estimateWidth(COLUMN_IDS, columnState.visibility, COLUMN_WIDTHS),
-    resetKey: JSON.stringify(columnState.visibility)
-  });
+  const { narrow } = useListLayout();
 
   const columns = useMemo(
     () => [
@@ -175,8 +161,6 @@ export default function UserGroup() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [t, route.openId]
   );
-
-  const tableRef = useNaturalWidth(narrow ? null : onNaturalWidth);
   const table = useTable({ features: appTableFeatures, data: groups, columns, state: { columnVisibility: columnState.visibility } });
 
   let body;
@@ -194,8 +178,8 @@ export default function UserGroup() {
       />
     );
   } else if (narrow) {
-    // Phone list: one 56px row per group. Enabled dot, name and symbol, the ratio on the right;
-    // then public · auto-promotion · rate limit.
+    // Phone list: one 56px row per group. Name and symbol with the ratio on the right, then
+    // public · auto-promotion · rate limit; the switch and the row menu at the end.
     body = (
       <ul className="divide-y divide-border">
         {groups.map((g) => {
@@ -206,14 +190,11 @@ export default function UserGroup() {
               className={cn('flex h-14 items-center gap-3 px-4', ROW_OPENS, g.id === route.openId && 'bg-muted/60')}
               {...rowOpenProps(() => route.open(g.id))}
             >
-              <span
-                className={cn('size-2 shrink-0 rounded-full', g.enable ? 'bg-success' : 'bg-muted-foreground/40')}
-                title={g.enable ? t('userGroup.enabled') : t('userGroup.disabled')}
-                aria-hidden="true"
-              />
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="min-w-0 truncate text-sm font-medium">{g.name || g.symbol}</span>
+                  <span className={cn('min-w-0 truncate text-sm font-medium', !g.enable && 'text-muted-foreground')}>
+                    {g.name || g.symbol}
+                  </span>
                   <code className="shrink-0 font-mono text-xs text-muted-foreground">{g.symbol}</code>
                   <span className="ml-auto shrink-0 text-sm tabular-nums">×{g.ratio}</span>
                 </div>
@@ -223,9 +204,14 @@ export default function UserGroup() {
                     .join(' · ')}
                 </div>
               </div>
-              <RowControl className="-mr-2 shrink-0">
-                <ActionsCell item={g} onOpen={(id) => route.open(id)} onDelete={setPendingDelete} onToggle={toggle} />
-              </RowControl>
+              <div className="-mr-2 flex shrink-0 items-center gap-1">
+                <RowControl className="flex">
+                  <StatusCell item={g} onToggle={toggle} />
+                </RowControl>
+                <RowControl>
+                  <ActionsCell item={g} onOpen={(id) => route.open(id)} onDelete={setPendingDelete} />
+                </RowControl>
+              </div>
             </li>
           );
         })}
@@ -233,7 +219,7 @@ export default function UserGroup() {
     );
   } else {
     body = (
-      <Table ref={tableRef}>
+      <Table>
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (
             <TableRow key={hg.id} className="hover:bg-transparent">
@@ -266,7 +252,7 @@ export default function UserGroup() {
   }
 
   return (
-    <div ref={pageRef} className="space-y-3">
+    <div className="space-y-3">
       {/* Title row: refresh (icon), then create. */}
       <PageActions>
         <TooltipProvider delayDuration={150}>

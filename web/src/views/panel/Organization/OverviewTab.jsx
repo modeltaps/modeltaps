@@ -2,11 +2,13 @@ import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { ArrowRightLeft, Building2, CalendarClock, Gauge, Loader2, LogOut, Users, Wallet } from 'lucide-react';
+import { ArrowRightLeft, Building2, LogOut } from 'lucide-react';
+
+import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { API } from 'utils/api';
 import { renderBalance, renderSpend, showError, showSuccess, timestamp2string } from 'utils/common';
@@ -20,30 +22,27 @@ import TransferQuotaDialog from './TransferQuotaDialog';
 // S5:成员在此退出组织(Owner 须先转让所有权,转让/解散仍在统一设置页的危险区)。
 // 回落规则同 S4:仅当退出的是当前全局上下文所在组织时才切回个人。
 
-function StatCard({ icon: Icon, label, value, hint, action }) {
+// A stat is a label, a figure and at most one line of context; an action sits at the end of the
+// label row (icon only on phones, where two cards share a row).
+function StatCard({ label, value, hint, action, className }) {
   return (
-    <Card className="flex items-center justify-between gap-3 p-5">
-      <div className="min-w-0 space-y-1">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="truncate text-2xl font-medium tabular-nums">{value}</p>
-        {hint && <p className="truncate text-xs text-muted-foreground">{hint}</p>}
-      </div>
-      <div className="flex shrink-0 flex-col items-end gap-2">
-        <span className="flex size-10 items-center justify-center rounded-md bg-muted text-muted-foreground">
-          <Icon className="size-5" />
-        </span>
+    <Card className={cn('min-w-0 space-y-1 p-4 sm:p-5', className)}>
+      <div className="flex h-7 items-center justify-between gap-2">
+        <p className="truncate text-sm text-muted-foreground">{label}</p>
         {action}
       </div>
+      <p className="truncate text-xl font-medium tabular-nums sm:text-2xl">{value}</p>
+      {hint && <p className="truncate text-xs text-muted-foreground">{hint}</p>}
     </Card>
   );
 }
 
 StatCard.propTypes = {
-  icon: PropTypes.elementType.isRequired,
   label: PropTypes.string.isRequired,
   value: PropTypes.node,
   hint: PropTypes.node,
-  action: PropTypes.node
+  action: PropTypes.node,
+  className: PropTypes.string
 };
 
 export default function OverviewTab({ orgId, detail, isAdmin, role, onRefresh }) {
@@ -77,8 +76,13 @@ export default function OverviewTab({ orgId, detail, isAdmin, role, onRefresh })
 
   if (!detail) {
     return (
-      <div className="flex justify-center p-12">
-        <Loader2 className="size-5 animate-spin text-muted-foreground" />
+      <div className="space-y-6" aria-busy="true">
+        <Skeleton className="h-[88px] rounded-xl" />
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+          <Skeleton className="h-[100px] rounded-xl" />
+          <Skeleton className="h-[100px] rounded-xl" />
+          <Skeleton className="col-span-2 h-[100px] rounded-xl lg:col-span-1" />
+        </div>
       </div>
     );
   }
@@ -92,50 +96,69 @@ export default function OverviewTab({ orgId, detail, isAdmin, role, onRefresh })
 
   return (
     <div className="space-y-6">
-      <Card className="flex items-center gap-4 p-6">
+      <Card className="flex items-center gap-3 p-4 sm:gap-4 sm:p-6">
         {org.avatar_url ? (
-          <img src={org.avatar_url} alt={org.name} className="size-12 rounded-md object-cover" />
+          <img src={org.avatar_url} alt={org.name} className="size-10 shrink-0 rounded-md object-cover sm:size-12" />
         ) : (
-          <span className="flex size-12 items-center justify-center rounded-md bg-muted text-muted-foreground">
-            <Building2 className="size-6" />
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground sm:size-12">
+            <Building2 className="size-5 sm:size-6" />
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-baseline gap-2">
             <h2 className="truncate text-lg font-semibold">{org.name}</h2>
-            <Badge variant={detail.role === 'owner' ? 'default' : 'secondary'}>{t(`org.roles.${detail.role}`)}</Badge>
+            <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">{t(`org.roles.${detail.role}`)}</span>
           </div>
-          <p className="truncate text-sm text-muted-foreground">{org.slug}</p>
+          {/* Slug and creation date are reference data: one quiet line under the name; the slug gives
+              way first so the date stays whole. */}
+          <p className="flex min-w-0 text-sm text-muted-foreground">
+            <span className="truncate">{org.slug}</span>
+            {org.created_time > 0 && (
+              <span className="shrink-0 whitespace-nowrap">
+                {org.slug && <span className="px-1">·</span>}
+                {t('orgList.createdAt', { time: timestamp2string(org.created_time).slice(0, 10) })}
+              </span>
+            )}
+          </p>
         </div>
         <Button
           variant="outline"
           size="sm"
           className="shrink-0"
           disabled={isOwner}
+          aria-label={t('orgPage.settings.leave')}
           title={isOwner ? t('orgPage.settings.leaveOwnerHint') : undefined}
           onClick={() => setLeaveOpen(true)}
         >
-          <LogOut className="size-4" /> {t('orgPage.settings.leave')}
+          <LogOut className="size-4" />
+          <span className="hidden sm:inline">{t('orgPage.settings.leave')}</span>
         </Button>
       </Card>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <StatCard
-          icon={Wallet}
           label={t('orgPage.overview.balance')}
           value={isAdmin && detail.quota != null ? renderBalance(detail.quota) : t('org.balanceHidden')}
           action={
             isAdmin && (
-              <Button size="sm" variant="outline" onClick={() => setTransferOpen(true)}>
-                <ArrowRightLeft className="size-4" /> {t('orgPage.overview.transferQuota')}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="-mr-2 h-7 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
+                aria-label={t('orgPage.overview.transferQuota')}
+                title={t('orgPage.overview.transferQuota')}
+                onClick={() => setTransferOpen(true)}
+              >
+                <ArrowRightLeft className="size-4" />
+                <span className="hidden sm:inline">{t('orgPage.overview.transferQuota')}</span>
               </Button>
             )
           }
         />
-        <StatCard icon={Users} label={t('orgPage.overview.memberCount')} value={detail.member_count} />
+        <StatCard label={t('orgPage.overview.memberCount')} value={detail.member_count} />
         {isAdmin && (
           <StatCard
-            icon={Gauge}
+            className="col-span-2 lg:col-span-1"
             label={t('orgPage.overview.teamBudget')}
             value={hasBudget ? `${renderSpend(detail.budget_used || 0)} / ${renderSpend(budget.limit)}` : t('org.budgetUnlimited')}
             hint={
@@ -150,7 +173,6 @@ export default function OverviewTab({ orgId, detail, isAdmin, role, onRefresh })
             }
           />
         )}
-        <StatCard icon={CalendarClock} label={t('orgPage.overview.createdAt')} value={timestamp2string(org.created_time)} />
       </div>
 
       <TransferQuotaDialog open={transferOpen} onOpenChange={setTransferOpen} orgId={orgId} onTransferred={onRefresh} />

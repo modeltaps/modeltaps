@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Plus, X } from 'lucide-react';
 
 import { API } from 'utils/api';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { durationLabel } from 'views/panel/ModelInfo/supply/supplyParts';
 
 import { verifyJSON } from 'utils/common';
@@ -19,6 +20,117 @@ import { describePauseRule, pauseRulesError, pauseRulesText } from './pauseRules
 // native protocols, prompt limits, image proxy and the auto routing options.
 
 const gsKey = (k) => `setting_index.operationSettings.generalSettings.${k}`;
+
+// {"503": 120, "429": 30} ⇄ [{ code: '503', seconds: '120' }, …]; null when the text is not a
+// JSON object, so the editor can fall back to plain text instead of dropping it.
+export function parseStatusCooldown(text) {
+  if (!text || !String(text).trim()) return [];
+  try {
+    const obj = JSON.parse(text);
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
+    return Object.entries(obj).map(([code, seconds]) => ({ code: String(code), seconds: String(seconds) }));
+  } catch {
+    return null;
+  }
+}
+
+export function serializeStatusCooldown(rows) {
+  const obj = {};
+  rows.forEach(({ code, seconds }) => {
+    const c = String(code).trim();
+    if (!c) return;
+    const n = Number(seconds);
+    obj[c] = Number.isFinite(n) ? n : 0;
+  });
+  return Object.keys(obj).length ? JSON.stringify(obj) : '';
+}
+
+// One row per status code with its cooldown in seconds; add and remove rows. Rows are kept
+// locally while editing (so a half-typed code is not lost) and written back as JSON.
+function StatusCooldownEditor({ id, label, description, value, onChange }) {
+  const { t } = useTranslation();
+  const parsed = parseStatusCooldown(value);
+  const [rows, setRows] = useState(() => parsed || []);
+  const [lastWritten, setLastWritten] = useState(value);
+  // The card was reset or loaded from the server: take the stored value again.
+  if (value !== lastWritten && parsed) {
+    setRows(parsed);
+    setLastWritten(value);
+  }
+  const write = (next) => {
+    setRows(next);
+    const json = serializeStatusCooldown(next);
+    setLastWritten(json);
+    onChange(json);
+  };
+  if (parsed === null && value === lastWritten && rows.length === 0) {
+    return (
+      <div className="space-y-2">
+        <p className="text-xs text-warning">{t('settingsFields.invalidJson')}</p>
+        <TextRow id={id} label={label} value={value} onChange={onChange} description={description} multiline rows={3} />
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      <div>
+        <div className="text-sm font-medium">{label}</div>
+        {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
+      </div>
+      {rows.length > 0 && (
+        <div className="space-y-2">
+          {rows.map((row, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <Input
+                aria-label={t('settingsFields.statusCode')}
+                placeholder="503"
+                inputMode="numeric"
+                value={row.code}
+                onChange={(e) => write(rows.map((r, j) => (j === i ? { ...r, code: e.target.value } : r)))}
+                className="h-9 w-28 font-mono"
+              />
+              <div className="relative w-36">
+                <Input
+                  aria-label={t('settingsFields.seconds')}
+                  placeholder="120"
+                  inputMode="numeric"
+                  value={row.seconds}
+                  onChange={(e) => write(rows.map((r, j) => (j === i ? { ...r, seconds: e.target.value } : r)))}
+                  className="h-9 pr-10 tabular-nums"
+                />
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                  {t('settingsUnits.seconds')}
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8 text-muted-foreground"
+                aria-label={t('settingsFields.remove')}
+                onClick={() => write(rows.filter((_, j) => j !== i))}
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+      <Button type="button" variant="outline" size="sm" onClick={() => setRows([...rows, { code: '', seconds: '' }])}>
+        <Plus className="size-4" />
+        {t('settingsFields.addStatus')}
+      </Button>
+    </div>
+  );
+}
+
+StatusCooldownEditor.propTypes = {
+  id: PropTypes.string.isRequired,
+  label: PropTypes.string,
+  description: PropTypes.string,
+  value: PropTypes.string,
+  onChange: PropTypes.func.isRequired
+};
 
 export function RetryCard({ ctx }) {
   const { t } = useTranslation();
@@ -42,15 +154,12 @@ export function RetryCard({ ctx }) {
         {num('RetryCooldownSeconds', 'retryCooldownSeconds')}
         {num('RetryTimeOut', 'retryTimeOut')}
       </div>
-      <TextRow
+      <StatusCooldownEditor
         id="RetryCooldownPerStatus"
         label={gs('retryCooldownPerStatus.title')}
         value={inputs.RetryCooldownPerStatus}
         onChange={(v) => setField('RetryCooldownPerStatus', v)}
         description={gs('retryCooldownPerStatus.description')}
-        placeholder='{"503": 120}'
-        multiline
-        rows={3}
       />
     </OptionCard>
   );
@@ -266,6 +375,25 @@ export function SupplyPauseRulesCard({ ctx }) {
             </div>
           </details>
         ))}
+    </OptionCard>
+  );
+}
+
+// How a model that follows the default picks a supply within one priority tier.
+export function SupplyModeCard({ ctx }) {
+  const { t } = useTranslation();
+  const { inputs, setField } = ctx;
+  const value = inputs.SupplyModeDefault === 'failover' ? 'failover' : 'balance';
+  return (
+    <OptionCard ctx={ctx} id="supply-mode">
+      <SelectRow
+        id="SupplyModeDefault"
+        label={t('modelSupply.mode.label')}
+        description={t(`modelSupply.mode.${value}Hint`)}
+        value={value}
+        onChange={(v) => setField('SupplyModeDefault', v)}
+        options={['balance', 'failover'].map((mode) => ({ value: mode, label: t(`modelSupply.mode.${mode}`) }))}
+      />
     </OptionCard>
   );
 }

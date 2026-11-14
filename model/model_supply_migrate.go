@@ -186,13 +186,7 @@ func (idx *priceIndex) find(name string) *Price {
 }
 
 func channelGroups(channel *Channel) []string {
-	var groups []string
-	for _, g := range strings.Split(channel.Group, ",") {
-		if g = strings.TrimSpace(g); g != "" {
-			groups = append(groups, g)
-		}
-	}
-	return groups
+	return ExpandChannelGroup(channel.Group)
 }
 
 func channelEntries(channel *Channel) []string {
@@ -405,7 +399,7 @@ func planSupplyMigration(in supplyMigrationInput) (*supplyMigrationPlan, *Supply
 		info := byModel[name]
 		if info == nil {
 			plan.newInfos = append(plan.newInfos, &ModelInfo{
-				Model: name, Name: name, Status: ModelStatusPublished, SupplyMode: SupplyModeBalance,
+				Model: name, Name: name, Status: ModelStatusPublished, SupplyMode: SupplyModeDefault,
 				Source: ModelInfoSourceMigrated,
 			})
 			report.NewModels = append(report.NewModels, name)

@@ -48,8 +48,9 @@ const renderPage = () => render(createElement(MemoryRouter, null, createElement(
 
 // The row menu's "Member limit" opens the organization's panel on its Members tab.
 const openMembersTab = async () => {
-  const buttons = await screen.findAllByRole('button', { name: i18n.t('orgAdmin.maxMembers') });
-  fireEvent.click(buttons[0]);
+  const menus = await screen.findAllByRole('button', { name: i18n.t('orgAdmin.columns.actions') });
+  fireEvent.click(menus[0]);
+  fireEvent.click(await screen.findByRole('menuitem', { name: i18n.t('orgAdmin.maxMembers') }));
   await screen.findByRole('tab', { name: i18n.t('orgAdmin.panel.tab.members'), selected: true });
 };
 

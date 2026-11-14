@@ -1,22 +1,11 @@
-import dayjs from 'dayjs';
 import { calculateQuota } from 'utils/common';
 
 // ==============================|| ANALYTICS — DATA TRANSFORMS ||============================== //
 // Pure helpers that reshape the `/api/analytics/period` payload into recharts-friendly
 // rows. Mirrors the aggregation logic of views/Analytics/component/Overview.
 
-export const SERIES_COLORS = [
-  'var(--primary)',
-  '#22c55e',
-  '#f59e0b',
-  '#06b6d4',
-  '#ec4899',
-  '#64748b',
-  '#ef4444',
-  '#14b8a6',
-  '#eab308',
-  '#3b82f6'
-];
+// Theme tokens (--chart-1..10 in styles/tailwind.css), so series follow light/dark mode.
+export const SERIES_COLORS = Array.from({ length: 10 }, (_, i) => `var(--chart-${i + 1})`);
 
 export function getDates(start, end) {
   const dates = [];
@@ -94,8 +83,3 @@ export function buildOrdersData(data, dates) {
   }
   return { rows, total };
 }
-
-export const defaultRange = () => ({
-  start: dayjs().subtract(6, 'day').startOf('day'),
-  end: dayjs().endOf('day')
-});

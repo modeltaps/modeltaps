@@ -141,6 +141,17 @@ export default function SettingsPage({ label, groups, activeGroupId, className }
   }, [publish, dirtyKey]);
   useEffect(() => () => publish?.(null), [publish]);
 
+  // On phones the group list is a sideways strip: keep the current group in view (scrolling the
+  // strip only, never the page).
+  const stripRef = useRef(null);
+  useEffect(() => {
+    const strip = stripRef.current;
+    const link = strip?.querySelector('[aria-current="page"]');
+    if (!strip || !link || strip.scrollWidth <= strip.clientWidth) return;
+    const left = link.offsetLeft - (strip.clientWidth - link.offsetWidth) / 2;
+    strip.scrollTo({ left: Math.max(0, left), behavior: 'auto' });
+  }, [active.id]);
+
   return (
     <div className={cn(!plane && 'md:grid md:grid-cols-[13rem_minmax(0,1fr)] md:items-start md:gap-8', className)}>
       <nav hidden={Boolean(plane)} aria-label={label} className="mb-5 md:sticky md:top-0 md:mb-0 md:space-y-3">
@@ -155,7 +166,10 @@ export default function SettingsPage({ label, groups, activeGroupId, className }
             <kbd className="rounded border border-border px-1 font-mono text-[0.6875rem]">⌘K</kbd>
           </button>
         )}
-        <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] md:mx-0 md:flex-col md:gap-0.5 md:overflow-visible md:p-0">
+        <div
+          ref={stripRef}
+          className="relative -mx-1 flex gap-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] md:mx-0 md:flex-col md:gap-0.5 md:overflow-visible md:p-0"
+        >
           {groups.map((group) => {
             const current = group.id === active.id;
             const Icon = group.icon;

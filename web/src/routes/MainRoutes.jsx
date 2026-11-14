@@ -201,6 +201,11 @@ const MainRoutes = {
       )
     },
     {
+      // The call order moved onto the providers page.
+      path: 'allocation',
+      element: <Navigate to="/panel/channel" replace />
+    },
+    {
       path: 'system_info',
       element: (
         <RootGuard>

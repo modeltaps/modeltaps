@@ -37,6 +37,9 @@ type Order struct {
 	CreatedAt    int            `json:"created_at"`
 	UpdatedAt    int            `json:"-"`
 	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`
+	// Username and GatewayName are filled in when listing (not stored).
+	Username    string `json:"username" gorm:"-"`
+	GatewayName string `json:"gateway_name" gorm:"-"`
 }
 
 // 查询并关闭未完成的订单
@@ -118,37 +121,83 @@ type SearchOrderParams struct {
 	PaginationParams
 }
 
-func GetOrderList(params *SearchOrderParams) (*DataResult[Order], error) {
-	var orders []*Order
-
-	db := DB.Omit("key")
+// orderListQuery applies the list filters; the status filter is optional so the status counts can
+// share the other conditions.
+func orderListQuery(params *SearchOrderParams, withStatus bool) *gorm.DB {
+	db := DB.Model(&Order{})
 	if params.GatewayId != 0 {
 		db = db.Where("gateway_id = ?", params.GatewayId)
 	}
 	if params.UserId != 0 {
 		db = db.Where("user_id = ?", params.UserId)
 	}
-
 	if params.TradeNo != "" {
 		db = db.Where("trade_no = ?", params.TradeNo)
 	}
-
 	if params.GatewayNo != "" {
 		db = db.Where("gateway_no = ?", params.GatewayNo)
 	}
-
-	if params.Status != "" {
+	if withStatus && params.Status != "" {
 		db = db.Where("status = ?", params.Status)
 	}
-
 	if params.StartTimestamp != 0 {
 		db = db.Where("created_at >= ?", params.StartTimestamp)
 	}
 	if params.EndTimestamp != 0 {
 		db = db.Where("created_at <= ?", params.EndTimestamp)
 	}
+	return db
+}
 
-	return PaginateAndOrder(db, &params.PaginationParams, &orders, allowedOrderFields)
+func GetOrderList(params *SearchOrderParams) (*DataResult[Order], error) {
+	var orders []*Order
+	result, err := PaginateAndOrder(orderListQuery(params, true), &params.PaginationParams, &orders, allowedOrderFields)
+	if err != nil || result == nil || result.Data == nil {
+		return result, err
+	}
+	fillOrderNames(*result.Data)
+	return result, nil
+}
+
+// CountOrdersByStatus counts the orders matching every list filter except the status, by status.
+func CountOrdersByStatus(params *SearchOrderParams) (map[string]int64, error) {
+	var rows []struct {
+		Status string
+		Count  int64
+	}
+	if err := orderListQuery(params, false).Select("status, count(*) as count").Group("status").Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	counts := map[string]int64{}
+	for _, row := range rows {
+		counts[row.Status] = row.Count
+	}
+	return counts, nil
+}
+
+// fillOrderNames sets the username and gateway name of each order; a failed lookup leaves them
+// empty and the list shows the IDs.
+func fillOrderNames(orders []*Order) {
+	userIds := make([]int, 0, len(orders))
+	gatewayIds := make([]int, 0, len(orders))
+	for _, o := range orders {
+		userIds = append(userIds, o.UserId)
+		gatewayIds = append(gatewayIds, o.GatewayId)
+	}
+	names, _ := GetUsernamesByIds(userIds)
+	var gateways []struct {
+		Id   int
+		Name string
+	}
+	DB.Model(&Payment{}).Unscoped().Where("id IN ?", gatewayIds).Select("id, name").Scan(&gateways)
+	gatewayNames := make(map[int]string, len(gateways))
+	for _, g := range gateways {
+		gatewayNames[g.Id] = g.Name
+	}
+	for _, o := range orders {
+		o.Username = names[o.UserId]
+		o.GatewayName = gatewayNames[o.GatewayId]
+	}
 }
 
 type OrderStatistics struct {

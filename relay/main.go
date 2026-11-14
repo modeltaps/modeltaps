@@ -143,6 +143,13 @@ func Relay(c *gin.Context) {
 			break
 		}
 
+		// 客户端已断开：没有人等结果，再换渠道只会白白产生上游费用。
+		if c.Request.Context().Err() != nil {
+			logger.LogInfo(c.Request.Context(), fmt.Sprintf("retry_client_gone model=%s channel_id=%d", modelName, channel.Id))
+			breakReason = "client_gone"
+			break
+		}
+
 		if err := relay.setProvider(relay.getOriginalModel()); err != nil {
 			logger.LogError(c.Request.Context(), fmt.Sprintf("retry_provider_error model=%s channel_id=%d error=\"%s\"",
 				modelName, channel.Id, err.Error()))
@@ -322,6 +329,7 @@ func RelayHandler(relay RelayBaseInterface) (err *types.OpenAIErrorWithStatusCod
 	if usage.CompletionTokens == 0 && usage.TextBuilder.Len() > 0 {
 		usage.CompletionTokens = common.CountTokenText(usage.TextBuilder.String(), relay.getModelName())
 		usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+		relay.getContext().Set(config.GinUsageEstimatedKey, true)
 	}
 
 	// 即使出错，只要有实际输出就记录计费，避免上游已计费但本地无记录。

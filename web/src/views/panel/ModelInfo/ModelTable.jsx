@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import ProviderIcon from '@/components/brand/ProviderIcon';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
-import { estimateWidth, useNaturalWidth } from '@/components/list-page';
+
 import { cn } from '@/lib/utils';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
 import { ValueFormatter, copy, timestamp2string } from 'utils/common';
@@ -123,6 +123,10 @@ export function SupplyCell({ row, onOpen }) {
       <span className={cn('text-xs text-muted-foreground', counts.total > 0 && counts.usable === 0 && 'text-warning')}>
         · {t('modelSupply.count', { count: counts.total })}
       </span>
+      {/* Models on the allocation policy need no mark; one set by hand does. */}
+      {row.supplyRouting && row.allocation === 'manual' && (
+        <span className="text-xs text-foreground">· {t('modelSupply.allocation.manualShort')}</span>
+      )}
     </button>
   );
 }
@@ -307,21 +311,6 @@ RowActionsCell.propTypes = {
   onToggleHidden: PropTypes.func
 };
 
-// Typical column widths, for the layout estimate before the table has been measured.
-const COLUMN_WIDTHS = {
-  select: 40,
-  model: 288,
-  endpoints: 150,
-  channels: 120,
-  supply: 150,
-  price: 120,
-  state: 96,
-  visible: 96,
-  vendor: 140,
-  actions: 52
-};
-export const estimateModelTableWidth = (columnIds, visibility) => estimateWidth(columnIds, visibility, COLUMN_WIDTHS);
-
 function VisibleSwitch({ row, onToggleHidden }) {
   const { t } = useTranslation();
   let title = t('modelsPage.visibleToUsers');
@@ -353,8 +342,7 @@ export default function ModelTable({
   onToggleHidden,
   onOpen,
   onDeleteCatalog,
-  onDeletePrice,
-  onNaturalWidth
+  onDeletePrice
 }) {
   const { t } = useTranslation();
 
@@ -521,8 +509,6 @@ export default function ModelTable({
       onDeletePrice
     ]
   );
-
-  const tableRef = useNaturalWidth(onNaturalWidth);
   const table = useTable({
     features: appTableFeatures,
     data: items,
@@ -533,7 +519,7 @@ export default function ModelTable({
 
   return (
     <TooltipProvider delayDuration={150}>
-      <Table ref={tableRef}>
+      <Table>
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (
             <TableRow key={hg.id} className="hover:bg-transparent">
@@ -578,8 +564,7 @@ ModelTable.propTypes = {
   onToggleHidden: PropTypes.func,
   onOpen: PropTypes.func.isRequired,
   onDeleteCatalog: PropTypes.func.isRequired,
-  onDeletePrice: PropTypes.func.isRequired,
-  onNaturalWidth: PropTypes.func
+  onDeletePrice: PropTypes.func.isRequired
 };
 
 // A long name is cut in the middle so both the family and the variant stay readable

@@ -36,13 +36,20 @@ func (f *fakeBrandIconFetcher) fetch(_ context.Context, domain string) ([]byte, 
 
 func (f *fakeBrandIconFetcher) wait(t *testing.T) {
 	t.Helper()
+	f.waitFor(t, "foo.com")
+}
+
+// waitFor waits for a fetch and for its goroutine to finish saving, so the test's DB swap in
+// cleanup does not race with it.
+func (f *fakeBrandIconFetcher) waitFor(t *testing.T, domain string) {
+	t.Helper()
 	select {
 	case <-f.done:
 	case <-time.After(3 * time.Second):
 		t.Fatal("fetch not triggered")
 	}
 	for i := 0; i < 100; i++ {
-		if _, busy := brandIconInflight.Load("foo.com"); !busy {
+		if _, busy := brandIconInflight.Load(domain); !busy {
 			return
 		}
 		time.Sleep(5 * time.Millisecond)
@@ -197,5 +204,17 @@ func TestRefreshBrandIconNowBypassesTTL(t *testing.T) {
 	}
 	if f.callCount() != 1 {
 		t.Errorf("rejected refreshes must not fetch, calls=%d", f.callCount())
+	}
+}
+
+func TestBrandIconOwnerDomainFetch(t *testing.T) {
+	f := setupBrandIconCacheTest(t)
+	TriggerOwnedByBrandIconFetch(&ModelOwnedBy{Name: "Writer", Slug: "writer"})
+	f.waitFor(t, "writer.com")
+	f.mu.Lock()
+	calls := append([]string(nil), f.calls...)
+	f.mu.Unlock()
+	if len(calls) != 1 || calls[0] != "writer.com" {
+		t.Fatalf("lab without a mark should fetch its domain, calls=%v", calls)
 	}
 }

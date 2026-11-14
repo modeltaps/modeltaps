@@ -136,7 +136,12 @@ function SelectableList({ items, selected, setSelected, primary, secondary, isDi
           const disabled = isDisabled?.(item);
           return (
             <label key={item.id} className={cn('flex items-start gap-2 rounded px-2 py-1.5 hover:bg-accent', disabled && 'opacity-60')}>
-              <Checkbox className="mt-0.5" checked={selected.includes(item.id)} disabled={disabled} onCheckedChange={() => !disabled && toggle(item.id)} />
+              <Checkbox
+                className="mt-0.5"
+                checked={selected.includes(item.id)}
+                disabled={disabled}
+                onCheckedChange={() => !disabled && toggle(item.id)}
+              />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm">{primary(item)}</div>
                 {secondary && <div className="truncate text-xs text-muted-foreground">{secondary(item)}</div>}

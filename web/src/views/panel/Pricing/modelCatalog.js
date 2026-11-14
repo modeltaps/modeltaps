@@ -214,8 +214,12 @@ export const splitChannelGroups = (group) =>
     .map((g) => g.trim())
     .filter(Boolean);
 
-// 可用分组:启用渠道分组的并集,排序去重。
-export const modelGroups = (row) => [...new Set(enabledChannels(row).flatMap((c) => splitChannelGroups(c.group)))].sort();
+// Groups the model is available in: the union of its enabled channels' groups, sorted. A channel
+// open to all groups ("*") makes it ["*"].
+export const modelGroups = (row) => {
+  const groups = [...new Set(enabledChannels(row).flatMap((c) => splitChannelGroups(c.group)))].sort();
+  return groups.includes('*') ? ['*'] : groups;
+};
 
 // 完整可用 = 有启用渠道 + 已定价 + 对用户可见。
 export const isFullyUsable = (row) => modelStatus(row) === 'ok' && isVisibleToUsers(row);

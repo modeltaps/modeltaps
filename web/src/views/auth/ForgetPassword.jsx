@@ -88,12 +88,12 @@ export default function ForgetPassword() {
   }
 
   return (
-    <AuthShell title={t('login.forgetPassword')}>
+    <AuthShell title={t('authPages.resetTitle')}>
       {sendEmail ? (
         <p className="py-5 text-center text-lg font-medium text-foreground">{t('registerForm.restSendEmail')}</p>
       ) : (
         <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <FormField label={t('login.email')} htmlFor="email" error={errors.email?.message}>
+          <FormField label={t('login.email')} htmlFor="email" hint={t('authPages.resetHint')} error={errors.email?.message}>
             <Input id="email" type="text" {...register('email')} />
           </FormField>
 
@@ -106,7 +106,8 @@ export default function ForgetPassword() {
       )}
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        <Link to="/login" className="font-medium text-primary-text hover:underline">
+        {t('authPages.remembered')}
+        <Link to="/login" className="ml-1 font-medium text-primary-text hover:underline">
           {t('menu.login')}
         </Link>
       </p>

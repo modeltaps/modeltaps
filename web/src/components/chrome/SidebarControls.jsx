@@ -16,7 +16,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 export const sidebarRow = {
   base: 'group flex w-full items-center rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
   active: 'bg-sidebar-accent font-medium text-foreground shadow-[inset_0_0_0_1px_var(--border)]',
-  idle: 'text-foreground/85 hover:bg-sidebar-accent/70 hover:text-foreground'
+  idle: 'text-foreground/85 hover:bg-sidebar-accent/70 hover:text-foreground',
+  // Collapsed rail: a 36px square icon button centred in the column, its name in a tooltip.
+  collapsed: 'mx-auto size-9 w-9 justify-center',
+  // Collapsed rail: a short centred rule between menu sections instead of their headings.
+  divider: 'mx-auto my-2 h-px w-5 bg-border'
 };
 
 const iconButtonClass =

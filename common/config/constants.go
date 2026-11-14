@@ -296,6 +296,10 @@ var ChannelTestIntervalMinutes = 10
 // published models. Off until the supply migration has run.
 var ModelSupplyEnabled = false
 
+// SupplyModeDefault is how a public model that follows the default picks a supply within one
+// priority tier: "balance" (by weight) or "failover" (the heaviest takes every request).
+var SupplyModeDefault = "balance"
+
 // PauseRulesEnabled sends every relay failure through the pause rules (see model.PauseRule):
 // channels or models are paused for a while and resumed automatically, instead of the older
 // automatic disabling, per-status cooldowns and model-not-found quarantine.

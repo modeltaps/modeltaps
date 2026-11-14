@@ -17,14 +17,13 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
-import { useNaturalWidth } from '@/components/list-page';
+
 import { VendorIcon } from '../ModelInfo/modelInfoHelpers';
 
 // Deep link to the models tab filtered by vendor (and optionally by catalog state).
 export const vendorModelsPath = (vendorId, status) => `/panel/pricing?tab=models&vendor_id=${vendorId}${status ? `&status=${status}` : ''}`;
 
 // Typical table width before it has been measured.
-export const VENDOR_TABLE_ESTIMATE = 560;
 
 function Dash() {
   return <span className="text-muted-foreground">—</span>;
@@ -82,7 +81,7 @@ VendorActions.propTypes = { item: PropTypes.object.isRequired, onEdit: PropTypes
 
 // Vendors table: one line per vendor (icon, name, slug in mono), the two counts, the row menu.
 // A row opens the vendor; name and counts sort locally.
-export default function ModelOwnedbyTable({ items, sort, onSort, onEdit, onDelete, onNaturalWidth }) {
+export default function ModelOwnedbyTable({ items, sort, onSort, onEdit, onDelete }) {
   const { t } = useTranslation();
 
   const columns = useMemo(
@@ -124,8 +123,6 @@ export default function ModelOwnedbyTable({ items, sort, onSort, onEdit, onDelet
     ],
     [t, onEdit, onDelete]
   );
-
-  const tableRef = useNaturalWidth(onNaturalWidth);
   const table = useTable({ features: appTableFeatures, data: items, columns, getRowId: (row) => String(row.id) });
 
   // Sort arrows: the active column shows its direction; others show a faint arrow on hover only.
@@ -135,7 +132,7 @@ export default function ModelOwnedbyTable({ items, sort, onSort, onEdit, onDelet
   };
 
   return (
-    <Table ref={tableRef}>
+    <Table>
       <TableHeader>
         {table.getHeaderGroups().map((hg) => (
           <TableRow key={hg.id} className="hover:bg-transparent">
@@ -189,8 +186,7 @@ ModelOwnedbyTable.propTypes = {
   sort: PropTypes.shape({ key: PropTypes.string, dir: PropTypes.string }).isRequired,
   onSort: PropTypes.func.isRequired,
   onEdit: PropTypes.func.isRequired,
-  onDelete: PropTypes.func.isRequired,
-  onNaturalWidth: PropTypes.func
+  onDelete: PropTypes.func.isRequired
 };
 
 // Phone list: one 56px row per vendor. The logo tile leads; the name over the slug; on the right

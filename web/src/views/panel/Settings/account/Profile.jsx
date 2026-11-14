@@ -60,7 +60,6 @@ export default function ProfileCard({ self }) {
     <FormCard
       title={t('settingsUi.personal.cards.profile.title')}
       description={t('settingsUi.personal.cards.profile.description')}
-      hint={t('settingsUi.personal.cards.profile.hint')}
       highlight="profile"
       dirty={dirty}
       saving={saving}
@@ -96,7 +95,7 @@ export default function ProfileCard({ self }) {
             placeholder={t('profilePage.inputDisplayNamePlaceholder')}
           />
         </FormField>
-        <FormField label={t('settingsUi.personal.username')} htmlFor="username">
+        <FormField label={t('settingsUi.personal.username')} htmlFor="username" hint={t('settingsUi.personal.cards.profile.hint')}>
           <Input id="username" className="font-mono" value={inputs.username || ''} disabled readOnly />
         </FormField>
       </div>

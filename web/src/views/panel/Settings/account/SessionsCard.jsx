@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Laptop, LogOut, Smartphone } from 'lucide-react';
 
 import { API } from 'utils/api';
 import { showError, showSuccess, timestamp2string } from 'utils/common';
 import { describeUserAgent } from 'utils/userAgent';
+import { relativeTime } from 'utils/relativeTime';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { CollectionCard } from '@/components/settings/cards';
@@ -12,6 +13,10 @@ import { CollectionCard } from '@/components/settings/cards';
 // ==============================|| SETTINGS — LOGIN SESSIONS CARD ||============================== //
 // Devices signed in to this account, most recently active first. The current session is marked
 // 当前设备; any other can be signed out from its row menu, or all others at once from the header.
+// Times are relative (the full time on hover). The five most recent show first, the rest behind
+// 「显示全部」. On phones each session is a 56px row: the device, then where · how · when.
+
+const FIRST = 5;
 
 const tk = (k) => `settingsPage.security.${k}`;
 
@@ -27,7 +32,12 @@ const METHOD_KEYS = {
 };
 
 export default function SessionsCard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const rtf = useMemo(
+    () => new Intl.RelativeTimeFormat((i18n.language || 'zh_CN').replace('_', '-'), { numeric: 'auto' }),
+    [i18n.language]
+  );
+  const [showAll, setShowAll] = useState(false);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -67,6 +77,10 @@ export default function SessionsCard() {
   };
 
   const others = sessions.filter((s) => !s.current);
+  const shown = showAll ? sessions : sessions.slice(0, FIRST);
+  const deviceOf = (session) => describeUserAgent(session.user_agent) || t(tk('unknownDevice'));
+  const whereOf = (session) => `${session.ip || '-'} · ${t(tk(METHOD_KEYS[session.login_method] || 'methodOther'))}`;
+  const whenOf = (session) => (session.current ? t(tk('currentDevice')) : relativeTime(rtf, session.last_seen_time));
 
   return (
     <>
@@ -83,13 +97,26 @@ export default function SessionsCard() {
         }
         loading={loading}
         empty={t('settingsPage.sessions.empty')}
-        rows={sessions}
+        rows={shown}
+        phoneRow={(session) => ({
+          primary: <span className="font-medium">{deviceOf(session)}</span>,
+          secondary: `${whereOf(session)} · ${whenOf(session)}`
+        })}
+        footer={
+          sessions.length > FIRST && (
+            <Button variant="ghost" size="sm" className="-ml-2 text-muted-foreground" onClick={() => setShowAll((v) => !v)}>
+              {showAll
+                ? t('settingsUi.personal.sessions.showFewer')
+                : t('settingsUi.personal.sessions.showAll', { count: sessions.length })}
+            </Button>
+          )
+        }
         columns={[
           {
             key: 'device',
             header: t('settingsUi.personal.sessions.device'),
             cell: (session) => {
-              const device = describeUserAgent(session.user_agent) || t(tk('unknownDevice'));
+              const device = deviceOf(session);
               const Icon = /iOS|Android/.test(device) ? Smartphone : Laptop;
               return (
                 <span className="flex items-center gap-2">
@@ -102,11 +129,7 @@ export default function SessionsCard() {
           {
             key: 'where',
             header: t('settingsUi.personal.sessions.where'),
-            cell: (session) => (
-              <span className="text-muted-foreground">
-                {session.ip || '-'} · {t(tk(METHOD_KEYS[session.login_method] || 'methodOther'))}
-              </span>
-            )
+            cell: (session) => <span className="text-muted-foreground">{whereOf(session)}</span>
           },
           {
             key: 'last',
@@ -115,7 +138,9 @@ export default function SessionsCard() {
               session.current ? (
                 <span className="text-muted-foreground">{t(tk('currentDevice'))}</span>
               ) : (
-                <span className="tabular-nums text-muted-foreground">{timestamp2string(session.last_seen_time)}</span>
+                <span className="whitespace-nowrap text-muted-foreground" title={timestamp2string(session.last_seen_time)}>
+                  {whenOf(session)}
+                </span>
               )
           }
         ]}

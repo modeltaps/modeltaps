@@ -49,13 +49,27 @@ func filterIgnoredModels(models []string, matcher *driftIgnoreMatcher) []string 
 	return kept
 }
 
-// applyDriftAutoAdd adds the new upstream models to a channel that opted in, clears them
-// from the drift result and fills their prices and metadata. It returns the models added.
-// While supplies route requests the channel's model list no longer serves anything, so new
-// models stay in the result and wait on the models page for an admin instead.
+// applyDriftAutoAdd handles the new upstream models of a channel that opted in, clears the ones
+// it handled from the drift result and returns them. Without supplies it adds them to the
+// channel's model list and fills their prices and metadata. While supplies route requests the
+// channel's model list serves nothing, so it adds a supply for each new name that belongs to a
+// public model instead; the rest stay in the result and wait on the models page for an admin.
 func applyDriftAutoAdd(ch *model.Channel, result *model.ModelDriftResult) []string {
-	if !ch.DriftAutoAdd || config.ModelSupplyEnabled || len(result.NewModels) == 0 {
+	if !ch.DriftAutoAdd || len(result.NewModels) == 0 {
 		return nil
+	}
+	if config.ModelSupplyEnabled {
+		supplies, err := model.AutoSupplyChannel(ch, result.NewModels)
+		if err != nil {
+			logger.SysError("model drift auto supply failed for channel " + ch.Name + ": " + err.Error())
+			return nil
+		}
+		added := make([]string, 0, len(supplies))
+		for _, s := range supplies {
+			added = append(added, s.UpstreamModel)
+		}
+		result.NewModels = model.WithoutSuppliedModels(ch.Id, result.NewModels)
+		return added
 	}
 	added := result.NewModels
 	if err := ch.AddDriftModels(added); err != nil {

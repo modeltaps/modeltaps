@@ -74,7 +74,7 @@ func redemptionKeywordScope(db *gorm.DB, keyword string) *gorm.DB {
 	if keyword == "" {
 		return db
 	}
-	return db.Where("id = ? or name LIKE ?", utils.String2Int(keyword), keyword+"%")
+	return db.Where(caseInsensitiveLike("id = ? or name LIKE ?"), utils.String2Int(keyword), keyword+"%")
 }
 
 // applyRedemptionStatus narrows db to one segment; an unknown value leaves it unfiltered.

@@ -28,6 +28,7 @@ export function ServerAddressCard({ ctx }) {
       <TextRow
         id="ServerAddress"
         label={tr('generalSettings.serverAddress')}
+        labelHidden
         value={inputs.ServerAddress}
         onChange={(v) => setField('ServerAddress', v)}
         placeholder={tr('generalSettings.serverAddressPlaceholder')}

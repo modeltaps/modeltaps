@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { Link, useLocation } from 'react-router';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { Settings } from 'lucide-react';
+import { ArrowLeft, Settings } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -12,16 +12,16 @@ import { useIsRoot } from 'utils/common';
 import { formatFullAmount } from 'utils/compactAmount';
 import { adminReturnPath } from 'utils/adminReturn';
 import { SETTINGS_ROOT, findActiveItem, isOrgAdminRole, navLabel, navSectionsFor } from './nav-config';
-import ContextSwitcher from './ContextSwitcher';
+import ContextSwitcher, { ContextMark } from './ContextSwitcher';
 import AccountMenu from './AccountMenu';
-import { BackRow, SidebarIconButton, SidebarSearch, sidebarRow } from './SidebarControls';
+import { SidebarIconButton, SidebarSearch, sidebarRow } from './SidebarControls';
 import SidebarBrandRow from './SidebarBrandRow';
 
 // ==============================|| CHROME — SIDEBAR (one shell, three contexts) ||============================== //
 // Every panel page uses this sidebar (设置 swaps it for SettingsSidebar, laid out the same way).
 // Top: the brand row (SidebarBrandRow, with the search button and, on narrow screens and in the
 // phone drawer, the collapse button at its end), then the
-// context switcher (personal / org; in platform admin a back row to the workbench instead).
+// context switcher (personal / org; in platform admin a 平台管理 row that leads back to the workbench).
 // Middle: the menu of the current context (nav-config). Bottom:
 // the account row (its menu carries the balance, 设置 and the platform admin entry) and the
 // settings button, a shortcut to the same 设置 page in every context. Shared by the desktop rail
@@ -34,21 +34,42 @@ try {
   // ignore storage errors (e.g. storage disabled)
 }
 
-const { base: rowBase, active: rowActive, idle: rowIdle } = sidebarRow;
+const { base: rowBase, active: rowActive, idle: rowIdle, collapsed: rowCollapsed, divider } = sidebarRow;
 
-// Platform admin has no space switcher: its own menu only, and one row back to the workbench page
-// the user came from (organization context is kept while in platform admin). Same height as the
-// switcher row it replaces.
+// Platform admin has no space switcher. Its slot holds the same kind of row as the switcher (the
+// context mark and name, so the sidebar says where the user is), and the whole row leads back to
+// the workbench page the user came from (organization context is kept while in platform admin).
 export function AdminBackRow({ collapsed, onClick }) {
   const { t } = useTranslation();
+  const name = t('nav.context.admin');
+  const label = t('admin_console.back');
+  const to = adminReturnPath();
+  const rowClass =
+    'group flex items-center rounded-lg transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link to={to} onClick={onClick} aria-label={label} className={cn(rowClass, 'size-9 justify-center')}>
+            <ContextMark kind="admin" className="size-7" />
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent side="right">
+          {name} · {label}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+  // gap-1.5 after the 24px mark puts the name on the text column of the menu rows, as in the switcher.
   return (
-    <BackRow
-      to={adminReturnPath()}
-      name={t('admin_console.workspace')}
-      label={t('admin_console.back')}
-      collapsed={collapsed}
-      onClick={onClick}
-    />
+    <Link to={to} onClick={onClick} aria-label={label} className={cn(rowClass, 'h-9 w-full gap-1.5 px-2 text-left')}>
+      <ContextMark kind="admin" className="size-6" />
+      <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{name}</span>
+      <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground transition-colors group-hover:text-foreground">
+        <ArrowLeft className="size-3.5" />
+        {t('admin_console.workspace')}
+      </span>
+    </Link>
   );
 }
 
@@ -107,10 +128,12 @@ export default function Sidebar({ context, collapsed = false, showCollapse = fal
               to={item.href}
               onClick={onItemClick}
               aria-current={active ? 'page' : undefined}
-              className={cn(rowBase, 'min-h-[52px] flex-col justify-center gap-1 px-1 py-1.5 text-center', active ? rowActive : rowIdle)}
+              aria-label={label}
+              className={cn(rowBase, rowCollapsed, active ? rowActive : rowIdle)}
             >
-              <Icon className={cn('size-5 shrink-0', active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground')} />
-              <span className="w-full truncate text-[11px] font-normal leading-tight">{label}</span>
+              <Icon
+                className={cn('size-[1.125rem] shrink-0', active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground')}
+              />
             </Link>
           </TooltipTrigger>
           <TooltipContent side="right">{label}</TooltipContent>
@@ -164,11 +187,11 @@ export default function Sidebar({ context, collapsed = false, showCollapse = fal
 
         <nav
           aria-label={t('nav.mainLabel')}
-          className={cn('flex-1 overflow-y-auto py-3', collapsed ? 'px-1' : 'px-2')}
-          style={collapsed ? { scrollbarGutter: 'stable both-edges' } : undefined}
+          className={cn('flex-1 overflow-y-auto pb-3 pt-1', collapsed ? 'px-0 [scrollbar-width:none]' : 'px-2')}
         >
           {sections.map((section, idx) => (
-            <div key={section.id} className={cn('space-y-0.5', idx > 0 && (collapsed ? 'mt-2 border-t border-border/60 pt-2' : 'mt-6'))}>
+            <div key={section.id} className={cn(collapsed ? 'space-y-1' : 'space-y-0.5', idx > 0 && !collapsed && 'mt-6')}>
+              {idx > 0 && collapsed && <div className={divider} aria-hidden="true" />}
               {!collapsed && section.labelKey && (
                 <p className="px-3 pb-1.5 text-[13px] font-medium text-muted-foreground">{t(section.labelKey)}</p>
               )}

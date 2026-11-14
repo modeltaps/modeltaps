@@ -21,7 +21,8 @@ const manifest = {
   aliases: { glm: 'zhipu', microsoftazure: 'azure', x: 'xai', ghost: 'missing' },
   channelTypes: { 1: 'openai', 3: 'azure', 16: 'zhipu' },
   modelPrefixes: { gpt: 'openai', claude: 'claude', deepseek: 'deepseek', glm: 'zhipu', qwen: 'qwen', q: 'xai' },
-  domains: { 'deepseek.com': 'deepseek', 'aliyuncs.com': 'alibabacloud', 'dashscope.aliyuncs.com': 'qwen' }
+  domains: { 'deepseek.com': 'deepseek', 'aliyuncs.com': 'alibabacloud', 'dashscope.aliyuncs.com': 'qwen' },
+  ownerDomains: { writer: 'writer.com' }
 };
 
 const resolve = (opts) => resolveBrandIconKey(manifest, opts);
@@ -126,6 +127,8 @@ describe('BrandIcon rendering', () => {
       /<img[^>]*src="\/api\/brand-icon\/domain\/api\.example\.org"/
     );
     expect(render(BrandIcon, { domain: 'cursor.com' })).toContain('/api/brand-icon/domain/cursor.com');
+    expect(render(BrandIcon, { ownedBy: 'Writer', fallbackText: 'Writer' })).toContain('/api/brand-icon/domain/writer.com');
+    expect(render(BrandIcon, { ownedBy: 'openai' })).not.toContain('/api/brand-icon/domain/');
     expect(render(BrandIcon, { baseUrl: 'http://10.0.0.1:8080', fallbackText: 'Acme' })).toContain('>A</span>');
     expect(render(BrandIcon, { baseUrl: 'https://api.deepseek.com' })).toContain('/api/brand-icon/deepseek?variant=color');
   });

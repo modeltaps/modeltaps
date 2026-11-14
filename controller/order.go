@@ -356,10 +356,17 @@ func GetOrderList(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
+	// Counts per status for the list's status segments (same filters, any status).
+	statusCounts, err := model.CountOrdersByStatus(&params)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    payments,
+		"success":       true,
+		"message":       "",
+		"data":          payments,
+		"status_counts": statusCounts,
 	})
 }
 

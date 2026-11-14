@@ -53,6 +53,37 @@ const STATE_TONES = { ok: 'ok', paused: 'warn', probing: 'warn', cooling: 'warn'
 
 // State of one supply (see supplyState and previewEntryState). Pauses and cool-downs show until
 // when; pauses show the rule and upstream error on hover.
+// The upstream model of a supply. Most supplies send the public name unchanged, so those read
+// as a quiet "Same name"; a real mapping is shown in full and wraps instead of being cut off.
+export function UpstreamName({ upstream, model, className }) {
+  const { t } = useTranslation();
+  if (!upstream || upstream === model) {
+    return (
+      <span className={cn('text-muted-foreground', className)} title={t('modelSupply.upstreamSameTip', { name: model })}>
+        {t('modelSupply.upstreamSame')}
+      </span>
+    );
+  }
+  // Break after "/" and ":" first (anthropic/ | claude-sonnet-4.5), mid-word only if a part is too long.
+  const parts = upstream.split(/(?<=[/:])/);
+  return (
+    <span className={cn('font-mono text-xs leading-snug [overflow-wrap:anywhere]', className)}>
+      {parts.map((part, i) => (
+        <span key={i}>
+          {i > 0 && <wbr />}
+          {part}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+UpstreamName.propTypes = {
+  upstream: PropTypes.string,
+  model: PropTypes.string,
+  className: PropTypes.string
+};
+
 export function SupplyStateLabel({ state }) {
   const { t } = useTranslation();
   const { kind, pause } = state;

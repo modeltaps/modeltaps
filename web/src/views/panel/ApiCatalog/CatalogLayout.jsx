@@ -109,7 +109,6 @@ function LegacyBody({ entry, baseUrl }) {
           <CodeBlock
             code={current.code}
             language="bash"
-            wrap
             maxHeightClass="max-h-96"
             copyLabel={t('common.copy')}
             copiedLabel={t('apiCatalogPage.copied')}
@@ -146,7 +145,7 @@ export default function CatalogLayout({ entry }) {
       <div className="space-y-2">
         {entry.apiNameKey && <h2 className="text-lg font-medium tracking-tight">{t(entry.apiNameKey)}</h2>}
         <p className="text-sm text-muted-foreground">{t(entry.introKey)}</p>
-        <CapabilityChips sections={sections} loading={loading} error={error} />
+        <CapabilityChips sections={sections} loading={loading} error={error} linkSections />
       </div>
 
       {error && <ModelsError onRetry={reload} />}

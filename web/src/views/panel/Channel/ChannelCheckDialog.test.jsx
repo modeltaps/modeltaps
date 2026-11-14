@@ -179,7 +179,7 @@ describe('ChannelCheckDialog', () => {
   it('renders the dialog in Japanese', async () => {
     await i18n.changeLanguage('ja_JP');
     render(<ChannelCheckDialog open item={item} onClose={() => {}} />);
-    expect(screen.getByText('チャネル検査')).toBeTruthy();
+    expect(screen.getByText('機能検査')).toBeTruthy();
     expect(screen.getByRole('button', { name: /検査を開始/ })).toBeTruthy();
   });
 });

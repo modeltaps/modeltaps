@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { statusLabel } from '../Channel/channelApi';
 import { PriceFields, buildPricePayload, priceFormValues, usePriceUnits } from '../Pricing/PricingSheet';
 import { enabledChannels, modelGroups, modelStatus, splitChannelGroups } from '../Pricing/modelCatalog';
+import { useGroupLabel } from '../Channel/channelParts';
 import { ChannelGlyph, channelEditPath } from './ModelTable';
 import SuppliesPanel from './supply/SuppliesPanel';
 import { ModelStatusPill } from './supply/supplyParts';
@@ -63,7 +64,7 @@ const ORIGIN = {
   endpoints: '',
   alias_of: '',
   status: 'draft',
-  supply_mode: 'balance',
+  supply_mode: 'default',
   locked: false
 };
 
@@ -104,9 +105,9 @@ async function callApi(request) {
 
 function Section({ title, children }) {
   return (
-    <section className="space-y-4">
-      <h3 className="border-b border-border pb-1.5 text-sm font-medium">{title}</h3>
-      {children}
+    <section className="overflow-hidden rounded-lg border border-border">
+      <h3 className="border-b border-border bg-muted/50 px-4 py-2.5 text-sm font-semibold">{title}</h3>
+      <div className="space-y-4 p-4">{children}</div>
     </section>
   );
 }
@@ -118,12 +119,12 @@ Section.propTypes = { title: PropTypes.node, children: PropTypes.node };
 // While supplies route requests the channels are the model's supplies, kept on the Supplies tab.
 function ChannelsPanel({ row, supplyRouting = false, onGoSupplies }) {
   const { t } = useTranslation();
+  const groupLabel = useGroupLabel();
   const channels = row.bound_channels || [];
   const groups = modelGroups(row);
   return (
-    <div className="space-y-6">
-      <section className="space-y-2">
-        <h3 className="text-sm font-medium">{t('modelsPage.sheet.providingChannels', { count: channels.length })}</h3>
+    <div className="space-y-5">
+      <Section title={t('modelsPage.sheet.providingChannels', { count: channels.length })}>
         {enabledChannels(row).length === 0 && (
           <div className="space-y-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
             <p className="text-warning">{t('modelInfoPage.noChannel')}</p>
@@ -184,7 +185,7 @@ function ChannelsPanel({ row, supplyRouting = false, onGoSupplies }) {
                       <td className="whitespace-nowrap py-2 pr-2 tabular-nums">
                         {channel.priority ?? '—'} / {channel.weight ?? '—'}
                       </td>
-                      <td className="py-2 pr-2 text-muted-foreground">{splitChannelGroups(channel.group).join(', ') || '—'}</td>
+                      <td className="py-2 pr-2 text-muted-foreground">{groupLabel(splitChannelGroups(channel.group)) || '—'}</td>
                       <td className="py-2 text-right">
                         <Link
                           to={channelEditPath(channel)}
@@ -202,28 +203,26 @@ function ChannelsPanel({ row, supplyRouting = false, onGoSupplies }) {
           </div>
         )}
         {channels.length > 0 && <p className="text-xs text-muted-foreground">{t('modelsPage.sheet.routingHint')}</p>}
-      </section>
+      </Section>
 
-      <section className="space-y-2">
-        <h3 className="text-sm font-medium">{t('modelsPage.sheet.availableGroups')}</h3>
+      <Section title={t('modelsPage.sheet.availableGroups')}>
         {groups.length > 0 ? (
           <div className="flex flex-wrap gap-1.5">
             {groups.map((group) => (
               <Badge key={group} variant="secondary" className="font-normal">
-                {group}
+                {groupLabel([group])}
               </Badge>
             ))}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">—</p>
         )}
-      </section>
+      </Section>
 
       {row.alias_of && (
-        <section className="space-y-2">
-          <h3 className="text-sm font-medium">{t('modelInfoPage.aliasOf')}</h3>
+        <Section title={t('modelInfoPage.aliasOf')}>
           <code className="rounded bg-muted px-1.5 py-0.5 text-xs">{row.alias_of}</code>
-        </section>
+        </Section>
       )}
     </div>
   );
@@ -300,6 +299,7 @@ export default function ModelInfoSheet({
   open,
   onOpenChange,
   row = null,
+  liveRow = null,
   initialTab = 'profile',
   existingModels = [],
   prices = [],
@@ -316,6 +316,10 @@ export default function ModelInfoSheet({
   const editId = row?.catalogId || 0;
   const hasPrice = !!row?.price;
   const isPublic = isPublicModelRow(row);
+  // The list's current state of the row, for what the sheet only shows (header, channel counts):
+  // `row` is the snapshot the form was loaded from and stays put so unsaved edits survive a
+  // refresh of the list, for example after a supply is added.
+  const shown = liveRow || row;
   const [tab, setTab] = useState(initialTab);
 
   useEffect(() => {
@@ -511,12 +515,14 @@ export default function ModelInfoSheet({
           <SheetTitle>{editId ? t('modelInfoPage.editTitle') : t('modelInfoPage.createTitle')}</SheetTitle>
           {row ? (
             <SheetDescription className="flex flex-wrap items-center gap-2">
-              <span className="font-mono text-foreground">{row.model}</span>
-              <ModelStatusBadge status={modelStatus(row)} />
-              {isPublic && <ModelStatusPill status={values.status || row.status} />}
+              <span className="font-mono text-foreground">{shown.model}</span>
+              <ModelStatusBadge status={modelStatus(shown)} />
+              {isPublic && <ModelStatusPill status={values.status || shown.status} />}
               <span>
-                {t('modelsPage.channelCount', { count: enabledChannels(row).length })} ·{' '}
-                {t('modelsPage.sheet.groupCount', { count: modelGroups(row).length })}
+                {t('modelsPage.channelCount', { count: enabledChannels(shown).length })} ·{' '}
+                {modelGroups(shown)[0] === '*'
+                  ? t('channels.allGroups')
+                  : t('modelsPage.sheet.groupCount', { count: modelGroups(shown).length })}
               </span>
             </SheetDescription>
           ) : (
@@ -528,7 +534,7 @@ export default function ModelInfoSheet({
               <TabsTrigger value="pricing">{t('modelsPage.sheet.tabPricing')}</TabsTrigger>
               {row && (
                 <TabsTrigger value="channels">
-                  {t('modelsPage.channelsTab')} ({(row.bound_channels || []).length})
+                  {t('modelsPage.channelsTab')} ({(shown.bound_channels || []).length})
                 </TabsTrigger>
               )}
               {isPublic && (
@@ -541,7 +547,7 @@ export default function ModelInfoSheet({
           </Tabs>
         </SheetHeader>
         <SheetBody>
-          <div role="tabpanel" hidden={tab !== 'profile'} className="space-y-8">
+          <div role="tabpanel" hidden={tab !== 'profile'} className="space-y-5">
             <Section title={t('modelInfoPage.sectionBasic')}>
               <FormField id="modelinfo-model" label={t('modelInfoPage.model')} required error={errors.model}>
                 <Input
@@ -627,9 +633,18 @@ export default function ModelInfoSheet({
                 </FormField>
               )}
 
-              <FormField row label={t('modelInfoPage.hidden')} help={t('modelInfoPage.hiddenTip')} controlClassName="w-auto">
-                <Switch checked={!!values.hidden} onCheckedChange={(v) => setField('hidden', v)} />
-              </FormField>
+              {/* While supplies route requests the publish state decides who sees a model and the
+                  hidden flag is not read: the switch is shown only to clear a value left from before. */}
+              {(!supplyRouting || values.hidden) && (
+                <FormField
+                  row
+                  label={t('modelInfoPage.hidden')}
+                  help={t(supplyRouting ? 'modelInfoPage.hiddenIgnored' : 'modelInfoPage.hiddenTip')}
+                  controlClassName="w-auto"
+                >
+                  <Switch checked={!!values.hidden} onCheckedChange={(v) => setField('hidden', v)} />
+                </FormField>
+              )}
 
               <FormField row label={t('modelInfoPage.locked')} help={t('modelInfoPage.lockedTip')} controlClassName="w-auto">
                 <Switch checked={!!values.locked} onCheckedChange={(v) => setField('locked', v)} />
@@ -722,7 +737,7 @@ export default function ModelInfoSheet({
             )}
           </div>
 
-          <div role="tabpanel" hidden={tab !== 'pricing'} className="space-y-8">
+          <div role="tabpanel" hidden={tab !== 'pricing'} className="space-y-5">
             <Section title={t('modelInfoPage.sectionPrice')}>
               {!hasPrice && <p className="text-sm text-muted-foreground">{t('modelInfoPage.priceEmptyTip')}</p>}
               <PriceFields control={control} type={priceType} ownedby={ownedby} units={units} />
@@ -731,7 +746,7 @@ export default function ModelInfoSheet({
 
           {row && (
             <div role="tabpanel" hidden={tab !== 'channels'}>
-              <ChannelsPanel row={row} supplyRouting={supplyRouting} onGoSupplies={isPublic ? () => setTab('supplies') : undefined} />
+              <ChannelsPanel row={shown} supplyRouting={supplyRouting} onGoSupplies={isPublic ? () => setTab('supplies') : undefined} />
             </div>
           )}
 
@@ -739,6 +754,7 @@ export default function ModelInfoSheet({
             <div role="tabpanel">
               <SuppliesPanel
                 model={row.model}
+                catalogId={row.catalogId}
                 supplyMode={values.supply_mode || row.supply_mode}
                 onSupplyModeChange={stored ? changeSupplyMode : undefined}
                 channels={channels}
@@ -782,6 +798,7 @@ ModelInfoSheet.propTypes = {
   open: PropTypes.bool,
   onOpenChange: PropTypes.func.isRequired,
   row: PropTypes.object,
+  liveRow: PropTypes.object,
   initialTab: PropTypes.oneOf(SHEET_TABS),
   existingModels: PropTypes.array,
   prices: PropTypes.array,

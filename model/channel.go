@@ -57,6 +57,11 @@ type Channel struct {
 	// service_tier priority / fast / ultrafast, Claude speed fast and inference_geo us).
 	// Off by default: the gateway drops them so a client cannot raise the upstream price.
 	AllowServiceTier bool `json:"allow_service_tier" form:"allow_service_tier" gorm:"default:false"`
+	// CancelOnDisconnect closes the upstream stream when the client disconnects, so the upstream
+	// stops generating (and billing) output nobody reads. Nil means automatic: see
+	// CancelOnDisconnectDefault. Upstreams that keep billing the full output after a disconnect
+	// must keep this off, or the gateway loses the final usage and undercharges.
+	CancelOnDisconnect *bool `json:"cancel_on_disconnect" form:"cancel_on_disconnect" gorm:"default:null"`
 
 	DisabledStream *datatypes.JSONSlice[string] `json:"disabled_stream,omitempty" gorm:"type:json"`
 
@@ -86,6 +91,9 @@ type Channel struct {
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 
 	KeyStatus *ChannelKeyStatus `json:"key_status,omitempty" gorm:"-"`
+	// CancelOnDisconnectAuto is the automatic value of CancelOnDisconnect for the stored type and
+	// base URL, so the console can show what "automatic" means for this channel.
+	CancelOnDisconnectAuto bool `json:"cancel_on_disconnect_auto" gorm:"-"`
 }
 
 // ChannelKeyStatus 是渠道 key 的安全投影：是否已配置、条数、每条的回显（utils.MaskSecret），不含完整 key。
@@ -188,21 +196,22 @@ func GetChannelsList(params *SearchChannelsParams) (*DataResult[Channel], error)
 
 	if params.Name != "" {
 		like := "%" + params.Name + "%"
-		db = db.Where("name LIKE ? OR tag LIKE ?", like, like)
-		tagDB = tagDB.Where("name LIKE ? OR tag LIKE ?", like, like)
+		db = db.Where(caseInsensitiveLike("name LIKE ? OR tag LIKE ?"), like, like)
+		tagDB = tagDB.Where(caseInsensitiveLike("name LIKE ? OR tag LIKE ?"), like, like)
 	}
 
 	if params.Group != "" {
 		groupKey := quotePostgresField("group")
-		db = db.Where("( "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" = ?)",
-			"%,"+params.Group+",%", params.Group+",%", "%,"+params.Group, params.Group)
-		tagDB = tagDB.Where("( "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" = ?)",
-			"%,"+params.Group+",%", params.Group+",%", "%,"+params.Group, params.Group)
+		// A channel open to all groups matches every group filter.
+		db = db.Where("( "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" = ? OR "+groupKey+" = ?)",
+			"%,"+params.Group+",%", params.Group+",%", "%,"+params.Group, params.Group, ChannelGroupAll)
+		tagDB = tagDB.Where("( "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" LIKE ? OR "+groupKey+" = ? OR "+groupKey+" = ?)",
+			"%,"+params.Group+",%", params.Group+",%", "%,"+params.Group, params.Group, ChannelGroupAll)
 	}
 
 	if params.Models != "" {
-		db = db.Where("models LIKE ?", "%"+params.Models+"%")
-		tagDB = tagDB.Where("models LIKE ?", "%"+params.Models+"%")
+		db = db.Where(caseInsensitiveLike("models LIKE ?"), "%"+params.Models+"%")
+		tagDB = tagDB.Where(caseInsensitiveLike("models LIKE ?"), "%"+params.Models+"%")
 	}
 
 	// Match a whole entry of the comma-separated models list, so gemini-2.5-flash does not also hit
@@ -217,8 +226,8 @@ func GetChannelsList(params *SearchChannelsParams) (*DataResult[Channel], error)
 	}
 
 	if params.Other != "" {
-		db = db.Where("other LIKE ?", params.Other+"%")
-		tagDB = tagDB.Where("other LIKE ?", params.Other+"%")
+		db = db.Where(caseInsensitiveLike("other LIKE ?"), params.Other+"%")
+		tagDB = tagDB.Where(caseInsensitiveLike("other LIKE ?"), params.Other+"%")
 	}
 
 	if params.Key != "" {
@@ -227,13 +236,13 @@ func GetChannelsList(params *SearchChannelsParams) (*DataResult[Channel], error)
 	}
 
 	if params.TestModel != "" {
-		db = db.Where("test_model LIKE ?", params.TestModel+"%")
-		tagDB = tagDB.Where("test_model LIKE ?", params.TestModel+"%")
+		db = db.Where(caseInsensitiveLike("test_model LIKE ?"), params.TestModel+"%")
+		tagDB = tagDB.Where(caseInsensitiveLike("test_model LIKE ?"), params.TestModel+"%")
 	}
 
 	if params.BaseURL != "" {
-		db = db.Where("base_url LIKE ?", "%"+params.BaseURL+"%")
-		tagDB = tagDB.Where("base_url LIKE ?", "%"+params.BaseURL+"%")
+		db = db.Where(caseInsensitiveLike("base_url LIKE ?"), "%"+params.BaseURL+"%")
+		tagDB = tagDB.Where(caseInsensitiveLike("base_url LIKE ?"), "%"+params.BaseURL+"%")
 	}
 
 	if params.Tag != "" {
@@ -330,12 +339,16 @@ func DeleteChannelTag(channelId int) error {
 func BatchDeleteChannel(ids []int) (int64, error) {
 	result := DB.Where("id IN ?", ids).Delete(&Channel{})
 	if result.Error == nil && result.RowsAffected > 0 {
+		deleteChannelAliases(ids)
 		ChannelGroup.Load()
 	}
 	return result.RowsAffected, result.Error
 }
 
 func BatchInsertChannels(channels []Channel) error {
+	for i := range channels {
+		channels[i].Group = NormalizeChannelGroup(channels[i].Group)
+	}
 	err := DB.Omit("UsedQuota").Create(&channels).Error
 	if err != nil {
 		return err
@@ -403,6 +416,10 @@ func BatchAddUserGroupToChannels(params *BatchChannelsParams) (int64, error) {
 	}
 
 	for _, channel := range channels {
+		// A channel open to all groups already includes the group.
+		if ChannelGroupIsAll(channel.Group) {
+			continue
+		}
 		// 获取当前渠道的用户分组列表
 		currentGroups := strings.Split(channel.Group, ",")
 
@@ -417,6 +434,14 @@ func BatchAddUserGroupToChannels(params *BatchChannelsParams) (int64, error) {
 
 		// 检查要添加的分组是否已存在
 		newGroup := strings.TrimSpace(params.Value)
+		if newGroup == ChannelGroupAll {
+			// Adding "all groups" replaces the list instead of joining it.
+			if err = DB.Model(&Channel{}).Where("id = ?", channel.Id).Update("group", ChannelGroupAll).Error; err != nil {
+				return count, err
+			}
+			count++
+			continue
+		}
 		if newGroup != "" && !uniqueGroups[newGroup] {
 			// 分组不存在，添加到渠道
 			uniqueGroups[newGroup] = true
@@ -582,6 +607,7 @@ func (channel *Channel) GetCustomParameter() string {
 }
 
 func (channel *Channel) Insert() error {
+	channel.Group = NormalizeChannelGroup(channel.Group)
 	err := DB.Omit("UsedQuota").Create(channel).Error
 	if err == nil {
 		ChannelGroup.Load()
@@ -591,10 +617,17 @@ func (channel *Channel) Insert() error {
 }
 
 func (channel *Channel) Update(overwrite bool) error {
+	// The numbers before the change, so supplies that follow the channel can move with it.
+	before, _ := channelNumbers(DB.Where("id = ?", channel.Id))
 
 	err := channel.UpdateRaw(overwrite)
 
 	if err == nil {
+		if old, ok := before[channel.Id]; ok {
+			if _, syncErr := SyncSuppliesWithChannel(channel.Id, old[0], channel.GetPriority(), old[1], channel.GetWeight()); syncErr != nil {
+				logger.SysError("failed to sync supplies of channel " + channel.Name + ": " + syncErr.Error())
+			}
+		}
 		ChannelGroup.Load()
 		ChannelGroup.ClearChannelCooldowns(channel.Id)
 	}
@@ -604,6 +637,10 @@ func (channel *Channel) Update(overwrite bool) error {
 
 func (channel *Channel) UpdateRaw(overwrite bool) error {
 	var err error
+	// An empty group is left out of a partial update, so only normalize a value that is there.
+	if channel.Group != "" {
+		channel.Group = NormalizeChannelGroup(channel.Group)
+	}
 
 	if overwrite {
 		// 运行时字段由刷新 / 检测任务维护，表单保存不得用过期值覆盖。
@@ -786,6 +823,7 @@ func (channel *Channel) UpdateBalanceAlertedTime(ts int64) error {
 func (channel *Channel) Delete() error {
 	err := DB.Delete(channel).Error
 	if err == nil {
+		deleteChannelAliases([]int{channel.Id})
 		ChannelGroup.Load()
 	}
 	return err

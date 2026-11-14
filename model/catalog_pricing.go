@@ -449,6 +449,22 @@ func SplitChannelModels(csv string) []string {
 	return names
 }
 
+// AddedChannelModels returns the names in the channel model list after that were not in before,
+// in the order of after.
+func AddedChannelModels(before, after string) []string {
+	had := map[string]bool{}
+	for _, name := range SplitChannelModels(before) {
+		had[name] = true
+	}
+	var added []string
+	for _, name := range SplitChannelModels(after) {
+		if !had[name] {
+			added = append(added, name)
+		}
+	}
+	return added
+}
+
 // priceSnapshot 读取价格表里某模型的精确行（不走通配 / 兜底）。
 func (p *Pricing) priceSnapshot(name string) (*Price, bool) {
 	if p == nil {

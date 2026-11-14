@@ -61,10 +61,10 @@ export default function ManagedPolicies({ api, filter }) {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {policies.map((p) => (
-            <Card key={p.name} className="space-y-3 p-4">
+            <Card key={p.name} className="group space-y-3 p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <PolicyCallName name={p.name} />
+                  <PolicyCallName name={p.name} hoverCopy />
                   {p.display_name && p.display_name !== p.name && <div className="text-sm">{p.display_name}</div>}
                 </div>
                 {p.overridden && (
@@ -74,18 +74,22 @@ export default function ManagedPolicies({ api, filter }) {
                 )}
               </div>
               {p.description && <p className="text-sm text-muted-foreground">{p.description}</p>}
-              <div className="flex flex-wrap gap-1">
-                {(p.routes || []).map((r) => (
-                  <Badge key={r.label} variant="outline" className="font-normal" title={r.description || undefined}>
-                    {r.label} → {r.target_model}
-                  </Badge>
-                ))}
-              </div>
+              {/* Routes as one quiet line: label → target. */}
+              {(p.routes || []).length > 0 && (
+                <p className="text-sm">
+                  {(p.routes || []).map((r, i) => (
+                    <span key={r.label} title={r.description || undefined}>
+                      {i > 0 && <span className="text-muted-foreground"> · </span>}
+                      {r.label} <span className="text-muted-foreground">→</span> {r.target_model}
+                    </span>
+                  ))}
+                </p>
+              )}
               <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 <dt>{t('routingPolicy.form.fallbackModel')}</dt>
-                <dd className="truncate font-mono text-foreground">{p.fallback_model}</dd>
+                <dd className="truncate text-foreground">{p.fallback_model}</dd>
                 <dt>{t('routingPolicy.form.decisionModel')}</dt>
-                <dd className="truncate font-mono text-foreground">{p.decision_model}</dd>
+                <dd className="truncate text-foreground">{p.decision_model}</dd>
                 <dt>{t('routingPolicy.form.threshold')}</dt>
                 <dd className="text-foreground">{Math.round(Number(p.threshold || 0) * 100)}%</dd>
               </dl>

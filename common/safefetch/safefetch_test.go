@@ -115,6 +115,10 @@ func TestFetchRejectsOversizedBody(t *testing.T) {
 		if _, err := Fetch(context.Background(), srv.URL+p, Options{}); !errors.Is(err, ErrTooLarge) {
 			t.Errorf("%s: want ErrTooLarge, got %v", p, err)
 		}
+		res, err := Fetch(context.Background(), srv.URL+p, Options{Truncate: true})
+		if err != nil || int64(len(res.Body)) != DefaultMaxBytes {
+			t.Errorf("%s truncated: len=%d err=%v", p, len(res.Body), err)
+		}
 	}
 }
 

@@ -231,7 +231,11 @@ func EvaluateLibraryRules(rules []LibraryRule, now int64) ([]LibraryRuleOutcome,
 	for _, r := range rows {
 		catalog[strings.ToLower(r.Model)] = catalogRuleState{status: r.Status, exempt: r.Locked || r.Source == ModelInfoSourceManual}
 	}
-	offers, err := channelOffers()
+	publicNames := make([]string, 0, len(entries))
+	for _, e := range entries {
+		publicNames = append(publicNames, e.Model)
+	}
+	offers, err := channelOffers(publicNames)
 	if err != nil {
 		return nil, err
 	}

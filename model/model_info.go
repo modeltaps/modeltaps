@@ -49,6 +49,8 @@ const (
 
 	SupplyModeBalance  = "balance"
 	SupplyModeFailover = "failover"
+	// SupplyModeDefault follows the site-wide default (config.SupplyModeDefault).
+	SupplyModeDefault = "default"
 )
 
 // IsValidModelStatus reports whether status is a known public state.
@@ -60,9 +62,21 @@ func IsValidModelStatus(status string) bool {
 	return false
 }
 
-// IsValidSupplyMode reports whether mode is a known supply mode.
+// IsValidSupplyMode reports whether mode is a known supply mode, the site default included.
 func IsValidSupplyMode(mode string) bool {
-	return mode == SupplyModeBalance || mode == SupplyModeFailover
+	return mode == SupplyModeBalance || mode == SupplyModeFailover || mode == SupplyModeDefault
+}
+
+// EffectiveSupplyMode resolves a model's stored supply mode: its own balance or failover, or the
+// site default when it follows the default or has none.
+func EffectiveSupplyMode(mode string) string {
+	if mode == SupplyModeBalance || mode == SupplyModeFailover {
+		return mode
+	}
+	if config.SupplyModeDefault == SupplyModeFailover {
+		return SupplyModeFailover
+	}
+	return SupplyModeBalance
 }
 
 func ModelCapabilitiesJSON(caps []string) string {
@@ -136,7 +150,10 @@ type ModelInfo struct {
 	Status string `json:"status" gorm:"type:varchar(16);default:'draft'"`
 	// SupplyMode picks a supply within one priority tier: balance chooses by weight at random,
 	// failover takes the highest weight. Tiers are always tried in order.
-	SupplyMode string `json:"supply_mode" gorm:"type:varchar(16);default:'balance'"`
+	SupplyMode string `json:"supply_mode" gorm:"type:varchar(16);default:'default'"`
+	// Allocation is empty while the model takes its supplies' priority and weight from the
+	// allocation policy, AllocationManual when they keep their own numbers.
+	Allocation string `json:"allocation" gorm:"type:varchar(16);default:''"`
 	// Kind 行的种类：空 = 普通模型；ModelInfoKindRoutingPolicy = 自动路由策略的目录行，
 	// 由 routing_policies 联动维护，后台目录接口不允许直接增删改。
 	Kind string `json:"kind" gorm:"type:varchar(32);default:''"`
@@ -240,7 +257,8 @@ func CreateModelInfo(modelInfo *ModelInfo) error {
 
 // UpdateModelInfo 用于后台手工编辑：synced_at / supported_voices 由同步流程维护，这里不覆盖。
 func UpdateModelInfo(modelInfo *ModelInfo) error {
-	err := DB.Omit("id", "created_at", "synced_at", "supported_voices").Save(modelInfo).Error
+	// allocation is changed only through SetModelAllocation, so a full save never resets it.
+	err := DB.Omit("id", "created_at", "synced_at", "supported_voices", "allocation").Save(modelInfo).Error
 	if err != nil {
 		return err
 	}

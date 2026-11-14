@@ -11,7 +11,6 @@ import { useIsAdmin } from 'utils/common';
 import { useOrg } from 'contexts/OrgContext';
 import PageHeader from '@/components/chrome/PageHeader';
 import { PageHeaderOverrideContext } from '@/components/chrome/PageHeaderOverride';
-import { ContentMinWidthContext } from '@/components/chrome/ContentWidth';
 import { SidebarToggle } from '@/components/chrome/SidebarControls';
 import { PageActionsContext } from '@/components/chrome/PageActions';
 import { PageTitleExtraContext } from '@/components/chrome/PageTitleExtra';
@@ -75,23 +74,12 @@ export default function MainLayout() {
     return !matched || matched[matched.length - 1].route.path === '*';
   }, [pathname]);
 
-  // The rail collapses to icons on its own below the lg breakpoint (1024px), and also as soon as
-  // the expanded rail would squeeze a page below the width it asked for (useContentMinWidth, e.g.
-  // a table's natural width). The user's own toggle wins until that automatic choice changes.
-  // Only then can it be toggled: the expand button sits left of the page title and the sidebars
-  // show their collapse button (showCollapse); otherwise the rail stays expanded.
-  const belowLg = useMediaQuery('(max-width: 1023px)');
-  const [contentMinWidth, setContentMinWidth] = useState(null);
-  const [viewportWidth, setViewportWidth] = useState(() => (typeof window === 'undefined' ? 1440 : window.innerWidth));
-  useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-  // Content width beside the expanded rail: the viewport minus the w-64 rail, its border and the
-  // main area's horizontal padding (px-6).
-  const roomBesideRail = viewportWidth - 256 - 1 - 48;
-  const autoCollapsed = belowLg || (contentMinWidth != null && roomBesideRail < contentMinWidth);
+  // The rail collapses to icons on its own below the lg breakpoint (1024px), by the window width
+  // alone; a page wider than the room left scrolls sideways instead. The user's own toggle wins
+  // until that automatic choice changes. Only then can it be toggled: the expand button sits left
+  // of the page title and the sidebars show their collapse button (showCollapse); otherwise the
+  // rail stays expanded.
+  const autoCollapsed = useMediaQuery('(max-width: 1023px)');
   const [collapseOverride, setCollapseOverride] = useState(null);
   useEffect(() => {
     setCollapseOverride(null);
@@ -157,7 +145,7 @@ export default function MainLayout() {
                 <aside
                   className={cn(
                     'hidden shrink-0 border-r border-border transition-[width] duration-200 md:block',
-                    collapsed ? 'w-24' : 'w-64'
+                    collapsed ? 'w-14' : 'w-64'
                   )}
                 >
                   {/* Every sidebar shows its collapse button only where the rail collapses by
@@ -202,9 +190,7 @@ export default function MainLayout() {
                 <PageHeaderOverrideContext.Provider value={setHeaderOverride}>
                   <PageActionsContext.Provider value={actionsSlot}>
                     <PageTitleExtraContext.Provider value={titleExtraSlot}>
-                      <ContentMinWidthContext.Provider value={setContentMinWidth}>
-                        <Outlet />
-                      </ContentMinWidthContext.Provider>
+                      <Outlet />
                     </PageTitleExtraContext.Provider>
                   </PageActionsContext.Provider>
                 </PageHeaderOverrideContext.Provider>

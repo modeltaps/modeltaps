@@ -24,7 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { estimateWidth, useNaturalWidth } from '@/components/list-page';
+
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -247,13 +247,14 @@ export function KeyStatus({ item, rtf, dotOnly = false }) {
 // spend (against the limit) on the right; the second line is the key suffix with the state or last
 // use, and the share of the limit used. A tap opens the key; the ⋯ menu at the end holds the same
 // actions as the table row, plus enable / disable.
-function KeyListRow({ item, rtf, selectMode, selected, onToggleSelect, onOpen, active, actions }) {
+function KeyListRow({ item, rtf, selectMode, selected, onToggleSelect, onToggleStatus, onOpen, active, actions }) {
   const { t } = useTranslation();
   const { used, limit } = keyUsage(item);
   const state = keyState(item);
   const pct = limit ? Math.min(100, Math.round((used / limit) * 100)) : null;
+  // On / off is the switch, so the words only cover what a switch cannot show.
   const stateLabel =
-    state.key === 'enabled'
+    state.key === 'enabled' || state.key === 'disabled'
       ? null
       : state.key === 'expiring'
         ? t('apiKey.list.stateExpiring', { when: relativeTime(rtf, item.expired_time) })
@@ -272,16 +273,10 @@ function KeyListRow({ item, rtf, selectMode, selected, onToggleSelect, onOpen, a
             aria-label={t('apiKey.list.selectRow', { name: item.name })}
           />
         </RowControl>
-      ) : (
-        <span
-          className={cn('size-2 shrink-0 rounded-full', TONE_DOT[state.tone])}
-          title={stateLabel || t('apiKey.list.state_enabled')}
-          aria-hidden="true"
-        />
-      )}
+      ) : null}
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-3">
-          <span className="min-w-0 truncate text-sm font-medium">{item.name}</span>
+          <span className={cn('min-w-0 truncate text-sm font-medium', item.status !== 1 && 'text-muted-foreground')}>{item.name}</span>
           <span className="ml-auto shrink-0 text-sm tabular-nums">
             <SpendAmount quota={used} />
             {limit ? <span className="text-muted-foreground"> / {renderQuota(limit)}</span> : null}
@@ -303,9 +298,19 @@ function KeyListRow({ item, rtf, selectMode, selected, onToggleSelect, onOpen, a
         </div>
       </div>
       {!selectMode && (
-        <RowControl className="-mr-2 shrink-0">
-          <TokenActionMenu t={t} actions={actions} />
-        </RowControl>
+        <div className="-mr-2 flex shrink-0 items-center gap-1">
+          <RowControl className="flex">
+            <Switch
+              size="sm"
+              checked={item.status === 1}
+              aria-label={t('token_index.status')}
+              onCheckedChange={() => onToggleStatus(item)}
+            />
+          </RowControl>
+          <RowControl>
+            <TokenActionMenu t={t} actions={actions} />
+          </RowControl>
+        </div>
       )}
     </li>
   );
@@ -357,24 +362,8 @@ function TokenActionMenu({ actions, t, onTriggerClick, onTriggerKeyDown }) {
   );
 }
 
-// Typical rendered widths (px) of each column (measured, plus a little room for longer names),
-// used to decide what fits on one line.
-const COLUMN_WIDTHS = {
-  select: 32,
-  name: 180,
-  creator: 100,
-  group: 110,
-  billing_tag: 100,
-  expired_time: 96,
-  accessed_time: 90,
-  used_quota: 220,
-  created_time: 100,
-  status: 70,
-  actions: 56
-};
 // Estimated natural width of the table with these columns, used before the table has been
 // measured (for example while the phone list is showing).
-export const estimateTableWidth = (columnIds, visibility) => estimateWidth(columnIds, visibility, COLUMN_WIDTHS);
 
 export default function TokenTable({
   tokens,
@@ -394,7 +383,6 @@ export default function TokenTable({
   onToggleSelect,
   onToggleSelectAll,
   layout = 'table',
-  onNaturalWidth,
   selectMode = false,
   order,
   orderBy,
@@ -636,9 +624,7 @@ export default function TokenTable({
     quotaResetWeekStart
   ]);
 
-  // The table never drops columns. It reports its natural (max-content) width so the page can
-  // collapse the sidebar, or switch to the phone list, when that width does not fit.
-  const tableRef = useNaturalWidth(onNaturalWidth);
+  // The table never drops columns: when it is wider than the page it scrolls sideways.
 
   const table = useTable({
     features: appTableFeatures,
@@ -665,9 +651,10 @@ export default function TokenTable({
             selectMode={selectMode}
             selected={!!selectedIds?.has(item.id)}
             onToggleSelect={onToggleSelect}
+            onToggleStatus={onToggleStatus}
             onOpen={onOpen}
             active={item.id === openId}
-            actions={buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw, onToggleStatus })}
+            actions={buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw })}
           />
         ))}
       </ul>
@@ -676,7 +663,7 @@ export default function TokenTable({
 
   return (
     <div>
-      <Table ref={tableRef}>
+      <Table>
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (
             <TableRow key={hg.id} className="hover:bg-transparent">

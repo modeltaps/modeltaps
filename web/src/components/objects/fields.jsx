@@ -107,16 +107,18 @@ OptionList.propTypes = { children: PropTypes.node, label: PropTypes.string };
 
 // One option of an option list: a checkbox or radio mark, a short title, a description and an
 // optional figure on the right.
-export function OptionRow({ kind = 'check', selected, title, description, meta, onClick, mono }) {
+export function OptionRow({ kind = 'check', selected, title, description, meta, onClick, mono, disabled }) {
   return (
     <button
       type="button"
       role={kind === 'radio' ? 'radio' : 'checkbox'}
       aria-checked={selected}
+      disabled={disabled}
       onClick={onClick}
       className={cn(
         'grid min-h-12 w-full grid-cols-[16px_minmax(5rem,auto)_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 text-left transition-colors',
         '[&+&]:border-t [&+&]:border-border hover:bg-foreground/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+        'disabled:pointer-events-none disabled:opacity-50',
         selected && 'bg-accent/55'
       )}
     >
@@ -153,7 +155,8 @@ OptionRow.propTypes = {
   description: PropTypes.node,
   meta: PropTypes.node,
   onClick: PropTypes.func,
-  mono: PropTypes.bool
+  mono: PropTypes.bool,
+  disabled: PropTypes.bool
 };
 
 // Segmented control. `size` mini is for a switch inside a label row; wide stretches the
@@ -194,18 +197,18 @@ Segmented.propTypes = {
   role: PropTypes.string
 };
 
-// A titled group inside a tab: a plain heading (sentence case, weight 500) and its rows. The
-// first section of a tab sits flush with the tab bar.
+// A titled group inside a tab: a bordered card with a tinted header band, so each group reads as
+// its own block when a tab holds many of them. The first section sits close to the tab bar.
 export function Section({ title, extra, children, className }) {
   return (
-    <section className={cn('pt-4 first:pt-3', className)}>
+    <section className={cn('mt-4 overflow-hidden rounded-lg border border-border first:mt-3', className)}>
       {(title || extra) && (
-        <div className="mb-1 flex items-baseline justify-between gap-3">
-          {title && <h3 className="text-sm font-medium">{title}</h3>}
+        <div className="flex items-baseline justify-between gap-3 border-b border-border bg-muted/50 px-4 py-2.5">
+          {title && <h3 className="text-sm font-semibold">{title}</h3>}
           {extra && <span className="text-xs text-muted-foreground">{extra}</span>}
         </div>
       )}
-      {children}
+      <div className="px-4 py-1">{children}</div>
     </section>
   );
 }
