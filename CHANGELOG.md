@@ -416,6 +416,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- While supplies route requests, a new channel now supplies the models it lists even when they
+  had no catalog row yet. Their rows are created by the catalog sync that runs after the save, and
+  the save tried to attach them before that, so on a fresh catalog a new channel ended up with no
+  supplies and its models showed "no channel". The channel is now attached once the sync is done;
+  the same goes for models an edit adds.
+
 - AWS Bedrock channels in Canada (`ca-central-1`, `ca-west-1`) now call `claude-fable-5` and
   `claude-fable-5-1` through the `us.` inference profile, as they already did for
   `claude-fable-5-2`, instead of falling back to `global.`. Both Canadian regions are source
