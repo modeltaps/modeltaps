@@ -138,6 +138,11 @@ func TestCanonicalResolverUsesLibrary(t *testing.T) {
 		"claude-opus-4-5@20251101":      "claude-opus-4-5", // the catalog's name wins over the dated id
 		"gpt-5.6":                       "gpt-5.6",
 	}
+	// A catalog row keeps its name even when a platform spells another id that way.
+	r2 := newCanonicalResolver([]*ModelInfo{{Model: "claude-fable-5-2@default"}}, nil)
+	if m := r2.Resolve("claude-fable-5-2@default"); m.Canonical != "claude-fable-5-2@default" {
+		t.Errorf("a catalog row resolved to %q (%s)", m.Canonical, m.Source)
+	}
 	for upstream, want := range cases {
 		m := r.Resolve(upstream)
 		if m.Canonical != want {
@@ -366,5 +371,25 @@ func TestLibraryIndexSkipsVariantSpellings(t *testing.T) {
 	}
 	if got := LibraryUpstreamFor(config.ChannelTypeVercelAIGateway, "gpt-5.5"); got != "openai/gpt-5.5" {
 		t.Errorf("vercel upstream for gpt-5.5 = %q", got)
+	}
+}
+
+func TestLibraryIndexPrefersUndatedOverSnapshot(t *testing.T) {
+	setupModelLibraryTestDB(t)
+	hosts := []*ModelLibraryHost{
+		{Canonical: "anthropic/claude-sonnet-4-5-20250929", Provider: "vercel", HostModel: "anthropic/claude-sonnet-4.5"},
+		{Canonical: "anthropic/claude-sonnet-4-5", Provider: "openrouter", HostModel: "anthropic/claude-sonnet-4.5"},
+		{Canonical: "anthropic/claude-x-20250101", Provider: "vercel", HostModel: "anthropic/claude-x"},
+		{Canonical: "anthropic/claude-x-20250601", Provider: "openrouter", HostModel: "anthropic/claude-x"},
+	}
+	entries := []*ModelLibraryEntry{{Canonical: "anthropic/claude-sonnet-4-5", Model: "claude-sonnet-4-5", Lab: "anthropic"}}
+	if err := ReplaceModelLibrary(entries, hosts); err != nil {
+		t.Fatal(err)
+	}
+	if got := LibraryPublicNames("anthropic/claude-sonnet-4.5"); len(got) == 0 || got[0] != "claude-sonnet-4-5" {
+		t.Errorf("a snapshot and its undated id are one model, got %v", got)
+	}
+	if got := LibraryPublicNames("anthropic/claude-x"); got != nil {
+		t.Errorf("two different snapshots stay ambiguous, got %v", got)
 	}
 }

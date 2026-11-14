@@ -70,6 +70,7 @@ var AllowChannelType = []int{
 	config.ChannelTypeAntigravity,
 	config.ChannelTypeVertexAIExpress,
 	config.ChannelTypeVercelAIGateway,
+	config.ChannelTypeRequesty,
 }
 
 // nativeClaudeChannelType 是 Claude 协议下优先选择的渠道类型集合：直连 / 一方渠道优先于聚合网关

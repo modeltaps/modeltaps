@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Requesty channels. Requests go to Requesty's OpenAI compatible API (chat completions,
+  responses), and Claude format requests to its Anthropic Messages endpoint as they are, so the
+  client's cache breakpoints reach the model. "Fetch models" lists each model once: the managed
+  name Requesty routes across providers with failover ("claude-opus-5-5"), else one
+  provider-pinned id ("deepinfra/qwen3-32b"), preferring the lab's own host; region and tier
+  variants ("@eu", ":flex") are left out but priced if added by hand. Prices, cache prices and
+  model metadata sync like Vercel AI Gateway's, the maker comes from Requesty's model_lab (its id
+  prefix names the hosting provider), and the balance is read from the management API with a key
+  that has manage permission, entered as `apiKey|manageKey`. Of the 216 models Requesty lists, 136
+  link to catalog models the dev Vercel channel already brought in.
 - Channel Performance tab. The channel panel has a read-only Performance tab, next to Models,
   with its own time range (24 hours / 7 days / 30 days): requests, success rate, average latency,
   time to first token, output speed and prompt cache hit rate, a chart of requests and failures,
@@ -504,6 +514,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- One model no longer gets two catalog rows because platforms spell it differently. A platform
+  spelling that some platforms file under a dated snapshot and others under the undated id
+  ("anthropic/claude-sonnet-4.5") was dropped as ambiguous, so the catalog kept the dotted
+  fallback name next to the official "claude-sonnet-4-5"; it now resolves to the undated id and the
+  draft moves there. A name that is already a catalog row keeps resolving to itself, and the seed
+  lists "claude-haiku-4-5" and "claude-fable-5-1" as aliases of its dotted names.
 - The vendor table lists model makers only. It started as a copy of the channel types, so it
   held platforms that serve other labs' models (OpenRouter, Groq, Cloudflare AI, Siliconflow,
   Ollama, Coze) and a model kind (Rerank); an upgrade removes those rows unless an admin renamed

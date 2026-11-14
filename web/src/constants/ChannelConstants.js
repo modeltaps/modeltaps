@@ -349,6 +349,14 @@ export const CHANNEL_OPTIONS = {
     url: 'https://vercel.com/ai-gateway',
     keyUrl: 'https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai-gateway%2Fapi-keys&title=AI+Gateway+API+Keys'
   },
+  63: {
+    key: 63,
+    text: 'Requesty',
+    value: 63,
+    color: 'default',
+    url: 'https://www.requesty.ai/',
+    keyUrl: 'https://app.requesty.ai/api-keys'
+  },
   8: {
     key: 8,
     text: 'OpenAI compatible',
@@ -370,7 +378,7 @@ export const COMMON_CHANNEL_TYPES = [1, 14, 25, 3, 32, 42, 20, 28, 59, 58, 8];
 export const CHANNEL_TYPE_CATEGORIES = [
   { key: 'vendor', types: [1, 14, 25, 28, 56, 30, 29, 36, 17, 16, 27, 33, 26, 15, 18, 19, 40] },
   { key: 'cloud', types: [3, 55, 32, 42, 61, 54, 35] },
-  { key: 'gateway', types: [20, 62, 45, 31, 49, 52, 38] },
+  { key: 'gateway', types: [20, 62, 63, 45, 31, 49, 52, 38] },
   { key: 'subscription', types: [58, 59, 57, 60] },
   { key: 'selfhosted', types: [8, 39] },
   { key: 'media', types: [34, 41, 53, 37, 51, 24, 47] },

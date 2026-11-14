@@ -712,6 +712,19 @@ const typeConfig = {
       provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Vercel AI Gateway' }]
     },
     modelGroup: 'Vercel AI Gateway'
+  },
+  63: {
+    input: {
+      models: ['claude-opus-5-5', 'gpt-6-sol', 'gemini-4-hydrogen'],
+      test_model: 'gemini-4-hydrogen'
+    },
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Requesty' }]
+    },
+    prompt: {
+      key: 'channelForm.prompt.keyRequesty'
+    },
+    modelGroup: 'Requesty'
   }
 };
 

@@ -599,6 +599,7 @@ const (
 	ChannelTypeAntigravity     = 60
 	ChannelTypeVertexAIExpress = 61
 	ChannelTypeVercelAIGateway = 62
+	ChannelTypeRequesty        = 63
 )
 
 const (

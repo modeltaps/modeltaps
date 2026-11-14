@@ -656,11 +656,12 @@ func syncCatalogPricing(url string, auto bool) (*CatalogSyncResult, error) {
 // isChannelInfoSource / isChannelPriceSource 判断目录行 / 价格是否来自自带价格表的渠道
 // （OpenRouter、Vercel AI Gateway）；这类数据比 models.dev 更贴近实际结算价，不被目录同步覆盖。
 func isChannelInfoSource(source string) bool {
-	return source == ModelInfoSourceOpenRouter || source == ModelInfoSourceVercel
+	return source == ModelInfoSourceOpenRouter || source == ModelInfoSourceVercel || source == ModelInfoSourceRequesty
 }
 
 func isChannelPriceSource(channelType int) bool {
-	return channelType == config.ChannelTypeOpenRouter || channelType == config.ChannelTypeVercelAIGateway
+	return channelType == config.ChannelTypeOpenRouter || channelType == config.ChannelTypeVercelAIGateway ||
+		channelType == config.ChannelTypeRequesty
 }
 
 // existingModelInfos keeps the infos whose model already has a catalog row.

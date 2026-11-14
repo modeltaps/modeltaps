@@ -30,7 +30,8 @@ export const DEFAULT_BASE_URLS = {
   56: 'https://api.x.ai',
   58: 'https://api.anthropic.com',
   59: 'https://chatgpt.com',
-  62: 'https://ai-gateway.vercel.sh'
+  62: 'https://ai-gateway.vercel.sh',
+  63: 'https://router.requesty.ai'
 };
 
 // Types whose base URL must be filled in (the backend has no address for them).

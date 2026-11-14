@@ -1,6 +1,7 @@
 package model
 
 import (
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -280,6 +281,10 @@ func (idx *libraryIndex) ensure() {
 			continue
 		}
 		if cur, ok := byHost[key]; ok && cur != h.Canonical {
+			if same, undated := sameUndatedModel(cur, h.Canonical); same {
+				byHost[key] = undated
+				continue
+			}
 			ambiguous[key] = true
 		}
 		byHost[key] = h.Canonical
@@ -291,6 +296,25 @@ func (idx *libraryIndex) ensure() {
 	idx.byHost, idx.byLabHost, idx.labNames = byHost, byLabHost, labNames
 	idx.byProviderModel, idx.byModel, idx.loaded = byProviderModel, byModel, true
 	idx.Unlock()
+}
+
+var datedSuffix = regexp.MustCompile(`-\d{8}$`)
+
+// sameUndatedModel reports whether two canonical ids name one model, one of them a dated
+// snapshot of the other ("anthropic/claude-sonnet-4-5-20250929" and "anthropic/claude-sonnet-4-5"),
+// and returns the undated id. Platforms file one spelling under either; they are not a conflict.
+func sameUndatedModel(a, b string) (bool, string) {
+	ua, ub := datedSuffix.ReplaceAllString(a, ""), datedSuffix.ReplaceAllString(b, "")
+	if ua != ub {
+		return false, ""
+	}
+	if a == ua {
+		return true, a
+	}
+	if b == ub {
+		return true, b
+	}
+	return false, ""
 }
 
 // sameModelWords are variant words a platform may add to a model's name without making it
@@ -394,6 +418,7 @@ var channelTypeLibraryProviders = map[int][]string{
 	config.ChannelTypeVertexAIExpress: {"google-vertex", "google-vertex-anthropic"},
 	config.ChannelTypeOpenRouter:      {"openrouter"},
 	config.ChannelTypeVercelAIGateway: {"vercel"},
+	config.ChannelTypeRequesty:        {"requesty"},
 	config.ChannelTypeGroq:            {"groq"},
 }
 

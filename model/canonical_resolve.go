@@ -93,6 +93,7 @@ func (r *CanonicalResolver) canonicalOf(info *ModelInfo) (string, bool) {
 // Resolve returns the canonical name for an upstream model name. Rules, first hit wins:
 //  1. the catalog row for the exact name is an alias;
 //  2. the seed lists the exact name as an alias;
+//     (a name that is itself a catalog row or a seed canonical name stops here, unchanged)
 //  3. for a "vendor/model" name, the bare model id (case-insensitive) is a catalog alias, a seed
 //     alias, a seed canonical name or a non-alias catalog row.
 //
@@ -108,6 +109,15 @@ func (r *CanonicalResolver) Resolve(upstream string) CanonicalMatch {
 	}
 	if canonical, ok := r.seedAliases[upstream]; ok {
 		return CanonicalMatch{Canonical: canonical, Source: CanonicalSourceSeed}
+	}
+	// A name that is already a public model (a catalog row or a seed canonical name) is that model,
+	// even when a platform uses the same spelling for another id ("claude-fable-5.1" is listed by
+	// some platforms as their spelling of "claude-fable-5-1").
+	if info := r.byModel[upstream]; info != nil && info.AliasOf == "" {
+		return none
+	}
+	if _, ok := r.seedCanonicals[strings.ToLower(upstream)]; ok && !strings.Contains(upstream, "/") {
+		return none
 	}
 	if public := r.libraryPublicName(upstream); public != "" && public != upstream {
 		return CanonicalMatch{Canonical: public, Source: CanonicalSourceLibrary}

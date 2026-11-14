@@ -1,7 +1,6 @@
 package providers
 
 import (
-	"sort"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/providers/ali"
@@ -38,6 +37,7 @@ import (
 	"github.com/modeltaps/modeltaps/providers/palm"
 	"github.com/modeltaps/modeltaps/providers/recraftAI"
 	"github.com/modeltaps/modeltaps/providers/replicate"
+	"github.com/modeltaps/modeltaps/providers/requesty"
 	"github.com/modeltaps/modeltaps/providers/siliconflow"
 	"github.com/modeltaps/modeltaps/providers/stabilityAI"
 	"github.com/modeltaps/modeltaps/providers/suno"
@@ -48,6 +48,7 @@ import (
 	"github.com/modeltaps/modeltaps/providers/xAI"
 	"github.com/modeltaps/modeltaps/providers/xunfei"
 	"github.com/modeltaps/modeltaps/providers/zhipu"
+	"sort"
 
 	"github.com/gin-gonic/gin"
 )
@@ -106,6 +107,7 @@ func init() {
 		config.ChannelTypeAntigravity:     antigravity.AntigravityProviderFactory{},
 		config.ChannelTypeVertexAIExpress: vertexai_express.VertexAIExpressProviderFactory{},
 		config.ChannelTypeVercelAIGateway: vercel.VercelProviderFactory{},
+		config.ChannelTypeRequesty:        requesty.RequestyProviderFactory{},
 	}
 }
 

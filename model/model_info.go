@@ -22,6 +22,7 @@ const (
 	ModelInfoSourceModelsDev  = "models.dev"
 	ModelInfoSourceOpenRouter = "openrouter"
 	ModelInfoSourceVercel     = "vercel"
+	ModelInfoSourceRequesty   = "requesty"
 	// ModelInfoSourceMigrated marks rows the supply migration created for names channels listed.
 	ModelInfoSourceMigrated = "migrated"
 )
@@ -703,6 +704,7 @@ var vendorPrefixAliases = map[string]string{
 	"deepseek-ai": "deepseek",
 	// Vercel AI Gateway prefixes and models.dev lab ids that differ from the vendor slug.
 	"spacexai":          "x-ai",
+	"moonshot":          "moonshotai",
 	"voyage":            "voyageai",
 	"bfl":               "black-forest-labs",
 	"klingai":           "kling",

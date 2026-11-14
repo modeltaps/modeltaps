@@ -30,7 +30,7 @@ export function ProviderTile({ type, size = 'sm' }) {
         size === 'lg' ? 'size-9 rounded-lg' : 'size-[22px] rounded-md'
       )}
     >
-      <ProviderIcon type={type} className={size === 'lg' ? 'size-5' : 'size-3.5'} />
+      <ProviderIcon type={type} name={CHANNEL_OPTIONS[type]?.text} className={size === 'lg' ? 'size-5' : 'size-3.5'} />
     </span>
   );
 }

@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"github.com/modeltaps/modeltaps/common"
 	"fmt"
+	"github.com/modeltaps/modeltaps/common"
 	"net/http"
 	"runtime/debug"
 	"strings"
@@ -114,6 +114,7 @@ var ownPricingChannelTypes = []struct {
 }{
 	{config.ChannelTypeOpenRouter, model.ModelInfoSourceOpenRouter},
 	{config.ChannelTypeVercelAIGateway, model.ModelInfoSourceVercel},
+	{config.ChannelTypeRequesty, model.ModelInfoSourceRequesty},
 }
 
 // ChannelTypeHasOwnPricing 判断渠道类型是否自带价格表（可自动同步）。

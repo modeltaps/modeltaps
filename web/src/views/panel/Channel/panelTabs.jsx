@@ -626,7 +626,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
             {t('channels.models.check')}
           </ToolButton>
         )}
-        {(channel.type === 20 || channel.type === 62) && (
+        {[20, 62, 63].includes(channel.type) && (
           <ToolButton icon={CloudDownload} busy={busy === 'price'} onClick={syncPrices}>
             {t('channels.models.syncPrices')}
           </ToolButton>
