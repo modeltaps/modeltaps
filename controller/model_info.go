@@ -282,18 +282,22 @@ func HideModelInfo(c *gin.Context) {
 	})
 }
 
-// recordHideAudit 为每个真正改变了隐藏状态的条目写一条审计；状态未变的条目不记。
+// recordHideAudit writes one audit entry per entry whose hidden flag or status actually changed.
+// SetModelInfoHidden moves the status with the flag, so enabling a draft that was never hidden
+// is still a change worth recording.
 func recordHideAudit(actorId int, hidden bool, before []*model.ModelInfo) {
 	action := model.ModelCatalogActionUnhide
+	status := model.ModelStatusPublished
 	if hidden {
 		action = model.ModelCatalogActionHide
+		status = model.ModelStatusDraft
 	}
 	for _, info := range before {
-		if info.Hidden == hidden {
+		if info.Hidden == hidden && info.Status == status {
 			continue
 		}
 		model.RecordModelCatalogAudit(actorId, action, info.Model,
-			gin.H{"hidden": info.Hidden}, gin.H{"hidden": hidden})
+			gin.H{"hidden": info.Hidden, "status": info.Status}, gin.H{"hidden": hidden, "status": status})
 	}
 }
 

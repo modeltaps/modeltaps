@@ -20,11 +20,7 @@ const TableBody = React.forwardRef(({ className, ...props }, ref) => (
 TableBody.displayName = 'TableBody';
 
 const TableRow = React.forwardRef(({ className, ...props }, ref) => (
-  <tr
-    ref={ref}
-    className={cn('border-b border-border transition-colors hover:bg-muted/50', className)}
-    {...props}
-  />
+  <tr ref={ref} className={cn('border-b border-border transition-colors hover:bg-muted/50', className)} {...props} />
 ));
 TableRow.displayName = 'TableRow';
 
@@ -41,11 +37,7 @@ const TableHead = React.forwardRef(({ className, ...props }, ref) => (
 TableHead.displayName = 'TableHead';
 
 const TableCell = React.forwardRef(({ className, ...props }, ref) => (
-  <td
-    ref={ref}
-    className={cn('whitespace-nowrap px-3 py-3 align-middle [&:has([role=checkbox])]:pr-0', className)}
-    {...props}
-  />
+  <td ref={ref} className={cn('whitespace-nowrap px-3 py-3 align-middle [&:has([role=checkbox])]:pr-0', className)} {...props} />
 ));
 TableCell.displayName = 'TableCell';
 
@@ -54,4 +46,9 @@ const TableCaption = React.forwardRef(({ className, ...props }, ref) => (
 ));
 TableCaption.displayName = 'TableCaption';
 
-export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableCaption };
+// Class for the one column that should take a table's spare width (usually the name): the other
+// columns shrink to their content, and this one truncates inside it instead of pushing the table
+// wider. Its content needs `min-w-0` / `truncate` to give way.
+const GROW_COLUMN = 'w-full max-w-0 min-w-[14rem]';
+
+export { GROW_COLUMN, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableCaption };

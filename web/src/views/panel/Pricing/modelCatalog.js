@@ -224,6 +224,17 @@ export const modelGroups = (row) => {
   return groups.includes('*') ? ['*'] : groups;
 };
 
+// Default order of the catalog: enabled models first, then models some channel can serve, then
+// the rest; by name within each group. A gateway that lists hundreds of models then still shows
+// what users can call at the top.
+export function sortCatalogRows(rows = []) {
+  const rank = (row) => (isVisibleToUsers(row) ? 0 : 2) + (enabledChannels(row).length > 0 ? 0 : 1);
+  return rows
+    .map((row) => ({ row, rank: rank(row) }))
+    .sort((a, b) => a.rank - b.rank || String(a.row.model).localeCompare(String(b.row.model)))
+    .map(({ row }) => row);
+}
+
 // 完整可用 = 有启用渠道 + 已定价 + 对用户可见。
 export const isFullyUsable = (row) => modelStatus(row) === 'ok' && isVisibleToUsers(row);
 
