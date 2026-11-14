@@ -95,8 +95,8 @@ func (p *Pricing) DiffPrices(prices []*Price) []PriceChange {
 	return changes
 }
 
-// UpsertSelectedPrices writes only the named models from prices (locked rows are kept).
-func (p *Pricing) UpsertSelectedPrices(prices []*Price, models []string) (int, error) {
+// SelectPrices keeps the prices of the named models.
+func SelectPrices(prices []*Price, models []string) []*Price {
 	want := make(map[string]bool, len(models))
 	for _, m := range models {
 		want[m] = true
@@ -107,6 +107,12 @@ func (p *Pricing) UpsertSelectedPrices(prices []*Price, models []string) (int, e
 			selected = append(selected, price)
 		}
 	}
+	return selected
+}
+
+// UpsertSelectedPrices writes only the named models from prices (locked rows are kept).
+func (p *Pricing) UpsertSelectedPrices(prices []*Price, models []string) (int, error) {
+	selected := SelectPrices(prices, models)
 	if len(selected) == 0 {
 		return 0, nil
 	}

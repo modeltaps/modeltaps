@@ -611,6 +611,7 @@ func postMigrations() []*gormigrate.Migration {
 		migrateRoutingPolicyUserScope(),
 		cleanupSyncedCatalogDrafts(),
 		migrateSupplyModeFollowDefault(),
+		migratePlatformSpellingDrafts(),
 	}
 }
 
