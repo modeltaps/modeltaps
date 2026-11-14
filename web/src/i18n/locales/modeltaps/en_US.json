@@ -816,7 +816,8 @@
     "status": {
       "ok": "Usable",
       "nochannel": "No channel",
-      "unpriced": "Unpriced"
+      "unpriced": "Unpriced",
+      "unpublished": "Unpublished"
     },
     "visibleFollowsStatus": "Visibility follows the model's status (draft, published, retired) while supplies route requests",
     "showModelsThat": "Show models that",

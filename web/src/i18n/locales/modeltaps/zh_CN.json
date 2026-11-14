@@ -815,7 +815,8 @@
     "status": {
       "ok": "可用",
       "nochannel": "无渠道",
-      "unpriced": "未定价"
+      "unpriced": "未定价",
+      "unpublished": "未发布"
     },
     "visibleFollowsStatus": "按供应路由时，是否对用户可见由模型状态（草稿 / 已发布 / 已下架）决定",
     "showModelsThat": "筛选模型",

@@ -202,16 +202,17 @@ export function EndpointBadges({ json, max = 2 }) {
   return <BadgeOverflow items={items} max={max} />;
 }
 
-// 列表状态徽章三态(可用 / 无渠道 / 未定价),取值见 modelCatalog.modelStatus。
+// 列表状态徽章(可用 / 无渠道 / 未定价 / 未发布),取值见 modelCatalog.modelStatus。
 export const MODEL_STATUS_LABEL_KEYS = {
   ok: 'modelsPage.status.ok',
   nochannel: 'modelsPage.status.nochannel',
-  unpriced: 'modelsPage.status.unpriced'
+  unpriced: 'modelsPage.status.unpriced',
+  unpublished: 'modelsPage.status.unpublished'
 };
 
 // Model state as a quiet dot and label: most rows in a fresh catalog have no channel yet, so a
 // filled badge per row would flood the table.
-const MODEL_STATUS_DOTS = { ok: 'live', nochannel: 'warn', unpriced: 'warn' };
+const MODEL_STATUS_DOTS = { ok: 'live', nochannel: 'warn', unpriced: 'warn', unpublished: 'warn' };
 
 export function ModelStatusBadge({ status }) {
   const { t } = useTranslation();

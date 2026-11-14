@@ -465,6 +465,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   not route them, and are also copied to the public name when it has no price or only an
   aggregator's. An upgrade moves the existing synced drafts to their public names, with their
   supplies; published, locked and edited rows are left as they are.
+- Model catalog: while supplies route requests, a priced draft with channels now shows
+  "Unpublished" in the status column instead of "Usable"; drafts cannot be called.
 - While supplies route requests, a new channel now supplies the models it lists even when they
   had no catalog row yet. Their rows are created by the catalog sync that runs after the save, and
   the save tried to attach them before that, so on a fresh catalog a new channel ended up with no

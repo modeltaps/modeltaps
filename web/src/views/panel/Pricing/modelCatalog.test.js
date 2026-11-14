@@ -217,6 +217,17 @@ describe('status, visibility and stat chip counts', () => {
     expect(rows.map(modelStatus)).toEqual(['ok', 'ok', 'unpriced', 'nochannel', 'nochannel', 'ok']);
   });
 
+  it('calls a priced draft with channels unpublished while supplies route requests', () => {
+    const draft = { ...rows[0], supplyRouting: true, status: 'draft' };
+    expect(modelStatus(draft)).toBe('unpublished');
+    expect(modelStatus({ ...draft, status: 'published' })).toBe('ok');
+    expect(modelStatus({ ...draft, status: 'retired' })).toBe('ok');
+    // Missing channels or price still come first; without supply routing the status is not read.
+    expect(modelStatus({ ...draft, bound_channels: [] })).toBe('nochannel');
+    expect(modelStatus({ ...draft, price: null })).toBe('unpriced');
+    expect(modelStatus({ ...rows[0], status: 'draft' })).toBe('ok');
+  });
+
   it('treats only hidden catalog rows as invisible to users', () => {
     expect(rows.map(isVisibleToUsers)).toEqual([true, false, true, true, true, true]);
     expect(isVisibleToUsers({ catalogId: 0, hidden: true })).toBe(true);
