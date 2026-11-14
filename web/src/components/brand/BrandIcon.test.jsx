@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import BrandIcon from './BrandIcon';
 import BrandIconPicker, { brandIconMode } from './BrandIconPicker';
 import ModelIcon from './ModelIcon';
-import { resolveBrandIconKey, setBrandIconManifest } from './brandIconManifest';
+import { brandManifestUrl, resolveBrandIconKey, setBrandIconManifest } from './brandIconManifest';
 
 const manifest = {
   icons: {
@@ -26,6 +26,16 @@ const manifest = {
 };
 
 const resolve = (opts) => resolveBrandIconKey(manifest, opts);
+
+describe('brandManifestUrl', () => {
+  it('tags the manifest URL with the build version so a release skips stale caches', () => {
+    expect(brandManifestUrl('v0.4.0-3-gabc')).toBe('/api/brand-icon/manifest?v=v0.4.0-3-gabc');
+  });
+
+  it('uses the plain URL when the build has no version (dev)', () => {
+    expect(brandManifestUrl('')).toBe('/api/brand-icon/manifest');
+  });
+});
 
 describe('resolveBrandIconKey', () => {
   it('follows custom > alias > channel type > model prefix > base_url domain', () => {

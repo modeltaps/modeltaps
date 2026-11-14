@@ -13,6 +13,14 @@ export function brandIconUrl(key, variant) {
   return `${API_BASE}/api/brand-icon/${encodeURIComponent(key)}${query}`;
 }
 
+// Manifest URL tagged with the frontend build version, so a release always fetches a fresh
+// manifest instead of a copy an older backend let the browser cache. Dev builds have no
+// version and use the plain URL (the backend revalidates the manifest on every load).
+export function brandManifestUrl(version = import.meta.env.VITE_APP_VERSION) {
+  const base = brandIconUrl('manifest');
+  return version ? `${base}?v=${encodeURIComponent(version)}` : base;
+}
+
 export function brandIconUploadUrl(assetId) {
   return `${API_BASE}/api/brand-icon/upload/${encodeURIComponent(assetId)}`;
 }
@@ -44,7 +52,7 @@ export function setBrandIconManifest(manifest) {
 function loadManifest() {
   if (state.status !== 'idle' || typeof fetch !== 'function') return;
   setState({ status: 'loading', manifest: null });
-  fetch(brandIconUrl('manifest'))
+  fetch(brandManifestUrl())
     .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
     .then((manifest) => setState({ status: 'ready', manifest }))
     .catch(() => setState({ status: 'error', manifest: null }));
