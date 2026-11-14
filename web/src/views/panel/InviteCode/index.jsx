@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Ban, Check, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
+import { Ban, Check, MailPlus, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { toast } from '@/components/ui/sonner';
 import {
   BatchBar,
   ListEmptyState,
+  PageEmptyState,
   ListFooter,
   ListSkeleton,
   PhoneListToolbar,
@@ -219,12 +220,15 @@ export default function InviteCode() {
 
   const segmentOptions = SEGMENTS.map((value) => ({ value, label: t(`inviteList.segments.${value}`) }));
   const hasFilters = !!keyword || state !== 'all';
+  // Nothing created yet: the whole page becomes the first-run empty state.
+  const blank = loaded && !searching && inviteCodes.length === 0 && !hasFilters;
 
   let body;
   if (!loaded) {
     body = narrow ? <ListSkeleton layout="list" rows={4} /> : <ListSkeleton layout="table" cells={[64, 96, 80, 32]} />;
   } else if (!searching && inviteCodes.length === 0) {
-    body = hasFilters ? (
+    // Without filters this is the first-run empty state (`blank`), rendered instead of the list.
+    body = (
       <ListEmptyState
         variant="noMatch"
         onClearFilters={() => {
@@ -232,15 +236,6 @@ export default function InviteCode() {
           setKeyword('');
           changeState('all');
         }}
-      />
-    ) : (
-      <ListEmptyState
-        title={t(tk('emptyHint'))}
-        action={
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="size-4" /> {t(tk('createButton'))}
-          </Button>
-        }
       />
     );
   } else if (narrow) {
@@ -296,57 +291,67 @@ export default function InviteCode() {
           <ResponsiveToolbarButton primary icon={Plus} label={t(tk('createButton'))} onClick={openCreate} />
         </PageActions>
 
-        <p className="text-xs text-muted-foreground">{t(tk('usageNote.line1'))}</p>
-
-        {narrow ? (
-          <div className="space-y-2">
-            <StatusSegments chips value={state} onChange={changeState} options={segmentOptions} counts={stateCounts} />
-            <PhoneListToolbar
-              search={{ value: keywordInput, onChange: setKeywordInput, placeholder: t('inviteList.searchShort') }}
-              select={{
-                active: selection.selectMode,
-                onToggle: () => (selection.selectMode ? selection.exitSelectMode() : selection.enterSelectMode())
-              }}
-            />
-          </div>
+        {blank ? (
+          <PageEmptyState
+            icon={MailPlus}
+            title={t('pageEmpty.inviteCodes.title')}
+            description={t('pageEmpty.inviteCodes.description')}
+            action={<Button onClick={openCreate}>{t(tk('createButton'))}</Button>}
+          />
         ) : (
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusSegments value={state} onChange={changeState} options={segmentOptions} counts={stateCounts} />
-              <div className="relative min-w-[12rem] flex-1">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={keywordInput}
-                  onChange={(e) => setKeywordInput(e.target.value)}
-                  placeholder={t('inviteList.searchShort')}
-                  aria-label={t('inviteList.searchShort')}
-                  className="h-8 pl-8"
+          <>
+            <p className="text-xs text-muted-foreground">{t(tk('usageNote.line1'))}</p>
+
+            {narrow ? (
+              <div className="space-y-2">
+                <StatusSegments chips value={state} onChange={changeState} options={segmentOptions} counts={stateCounts} />
+                <PhoneListToolbar
+                  search={{ value: keywordInput, onChange: setKeywordInput, placeholder: t('inviteList.searchShort') }}
+                  select={{
+                    active: selection.selectMode,
+                    onToggle: () => (selection.selectMode ? selection.exitSelectMode() : selection.enterSelectMode())
+                  }}
                 />
               </div>
-            </div>
-            {selection.count > 0 && (
-              <BatchBar
-                count={selection.count}
-                onClear={selection.clear}
-                className="min-h-10 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-1.5"
-                actions={batchActions}
-              />
+            ) : (
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusSegments value={state} onChange={changeState} options={segmentOptions} counts={stateCounts} />
+                  <div className="relative min-w-[12rem] flex-1">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={keywordInput}
+                      onChange={(e) => setKeywordInput(e.target.value)}
+                      placeholder={t('inviteList.searchShort')}
+                      aria-label={t('inviteList.searchShort')}
+                      className="h-8 pl-8"
+                    />
+                  </div>
+                </div>
+                {selection.count > 0 && (
+                  <BatchBar
+                    count={selection.count}
+                    onClear={selection.clear}
+                    className="min-h-10 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-1.5"
+                    actions={batchActions}
+                  />
+                )}
+              </div>
             )}
-          </div>
-        )}
 
-        {narrow ? (
-          <>
-            {body}
-            <Card>{footer}</Card>
+            {narrow ? (
+              <>
+                {body}
+                <Card>{footer}</Card>
+              </>
+            ) : (
+              <Card>
+                {body}
+                <div className="border-t border-border">{footer}</div>
+              </Card>
+            )}
           </>
-        ) : (
-          <Card>
-            {body}
-            <div className="border-t border-border">{footer}</div>
-          </Card>
         )}
-
         <InviteCodeSheet open={sheetOpen} onOpenChange={setSheetOpen} editing={editing} onSaved={onSaved} />
 
         <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>

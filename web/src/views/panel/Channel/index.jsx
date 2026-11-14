@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, DollarSign, FlaskConical, Layers, MoreHorizontal, Play, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { AlertTriangle, DollarSign, FlaskConical, Layers, MoreHorizontal, Network, Play, RefreshCw, Trash2 } from 'lucide-react';
 
 import { API } from 'utils/api';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
-import { ListEmptyState, ListSkeleton, PHONE_QUERY, useColumnVisibility } from '@/components/list-page';
+import { ListSkeleton, PageEmptyState, PHONE_QUERY, useColumnVisibility } from '@/components/list-page';
 import { Skeleton } from '@/components/ui/skeleton';
 import useMediaQuery from 'hooks/useMediaQuery';
 import PageActions from '@/components/chrome/PageActions';
@@ -510,14 +510,11 @@ export default function Channel() {
     );
   } else if (!providerGroups.length) {
     body = (
-      <ListEmptyState
-        title={t('channelPage.emptyTitle')}
-        description={t('channelPage.emptyDescription')}
-        action={
-          <Button size="sm" className="rounded-lg" onClick={() => openNew(1)}>
-            <Plus /> {t('channels.newChannel')}
-          </Button>
-        }
+      <PageEmptyState
+        icon={Network}
+        title={t('pageEmpty.providers.title')}
+        description={t('pageEmpty.providers.description')}
+        action={<Button onClick={() => openNew(1)}>{t('channels.newChannel')}</Button>}
       />
     );
   } else {

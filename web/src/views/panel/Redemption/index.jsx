@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Ban, Check, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
+import { Ban, Check, Plus, RotateCcw, Search, Ticket, Trash2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import {
   BatchBar,
   ColumnPicker,
   ListEmptyState,
+  PageEmptyState,
   ListFooter,
   ListSkeleton,
   PhoneListToolbar,
@@ -256,12 +257,15 @@ export default function Redemption() {
 
   const segmentOptions = SEGMENTS.map((value) => ({ value, label: t(`redemptionList.segments.${value}`) }));
   const hasFilters = !!keyword || status !== 'all';
+  // Nothing created yet: the whole page becomes the first-run empty state.
+  const blank = loaded && !searching && redemptions.length === 0 && !hasFilters;
 
   let body;
   if (!loaded) {
     body = narrow ? <ListSkeleton layout="list" rows={4} /> : <ListSkeleton layout="table" cells={[96, 64, 80, 80, 32]} />;
   } else if (!searching && redemptions.length === 0) {
-    body = hasFilters ? (
+    // Without filters this is the first-run empty state (`blank`), rendered instead of the list.
+    body = (
       <ListEmptyState
         variant="noMatch"
         onClearFilters={() => {
@@ -269,15 +273,6 @@ export default function Redemption() {
           setKeyword('');
           changeStatus('all');
         }}
-      />
-    ) : (
-      <ListEmptyState
-        title={t('redemptionPage.pageTitle')}
-        action={
-          <Button size="sm" onClick={route.openNew}>
-            <Plus className="size-4" /> {t('redemptionPage.createRedemptionCode')}
-          </Button>
-        }
       />
     );
   } else if (narrow) {
@@ -339,56 +334,66 @@ export default function Redemption() {
           <ResponsiveToolbarButton primary icon={Plus} label={t('redemptionPage.createRedemptionCode')} onClick={route.openNew} />
         </PageActions>
 
-        {narrow ? (
-          <div className="space-y-2">
-            <StatusSegments chips value={status} onChange={changeStatus} options={segmentOptions} counts={statusCounts} />
-            <PhoneListToolbar
-              search={{ value: keywordInput, onChange: setKeywordInput, placeholder: t('redemptionList.searchShort') }}
-              select={{
-                active: selection.selectMode,
-                onToggle: () => (selection.selectMode ? selection.exitSelectMode() : selection.enterSelectMode())
-              }}
-            />
-          </div>
+        {blank ? (
+          <PageEmptyState
+            icon={Ticket}
+            title={t('pageEmpty.redemption.title')}
+            description={t('pageEmpty.redemption.description')}
+            action={<Button onClick={route.openNew}>{t('redemptionPage.createRedemptionCode')}</Button>}
+          />
         ) : (
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusSegments value={status} onChange={changeStatus} options={segmentOptions} counts={statusCounts} />
-              <div className="relative min-w-[12rem] flex-1">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={keywordInput}
-                  onChange={(e) => setKeywordInput(e.target.value)}
-                  placeholder={t('redemptionList.searchShort')}
-                  aria-label={t('redemptionList.searchShort')}
-                  className="h-8 pl-8"
+          <>
+            {narrow ? (
+              <div className="space-y-2">
+                <StatusSegments chips value={status} onChange={changeStatus} options={segmentOptions} counts={statusCounts} />
+                <PhoneListToolbar
+                  search={{ value: keywordInput, onChange: setKeywordInput, placeholder: t('redemptionList.searchShort') }}
+                  select={{
+                    active: selection.selectMode,
+                    onToggle: () => (selection.selectMode ? selection.exitSelectMode() : selection.enterSelectMode())
+                  }}
                 />
               </div>
-              <ColumnPicker columns={columns} />
-            </div>
-            {selection.count > 0 && (
-              <BatchBar
-                count={selection.count}
-                onClear={selection.clear}
-                className="min-h-10 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-1.5"
-                actions={batchActions}
-              />
+            ) : (
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusSegments value={status} onChange={changeStatus} options={segmentOptions} counts={statusCounts} />
+                  <div className="relative min-w-[12rem] flex-1">
+                    <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={keywordInput}
+                      onChange={(e) => setKeywordInput(e.target.value)}
+                      placeholder={t('redemptionList.searchShort')}
+                      aria-label={t('redemptionList.searchShort')}
+                      className="h-8 pl-8"
+                    />
+                  </div>
+                  <ColumnPicker columns={columns} />
+                </div>
+                {selection.count > 0 && (
+                  <BatchBar
+                    count={selection.count}
+                    onClear={selection.clear}
+                    className="min-h-10 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-1.5"
+                    actions={batchActions}
+                  />
+                )}
+              </div>
             )}
-          </div>
-        )}
 
-        {narrow ? (
-          <>
-            {body}
-            <Card>{footer}</Card>
+            {narrow ? (
+              <>
+                {body}
+                <Card>{footer}</Card>
+              </>
+            ) : (
+              <Card>
+                {body}
+                <div className="border-t border-border">{footer}</div>
+              </Card>
+            )}
           </>
-        ) : (
-          <Card>
-            {body}
-            <div className="border-t border-border">{footer}</div>
-          </Card>
         )}
-
         {route.openId > 0 && (
           <RedemptionPanel
             key={route.openId}
