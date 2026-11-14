@@ -1306,7 +1306,7 @@
     "retryFailed": "重試失敗項目（{{count}}）"
   },
   "channelCheck": {
-    "title": "渠道檢測",
+    "title": "能力檢測",
     "fetchUpstream": "取得上游模型",
     "fetchFailed": "取得上游模型失敗",
     "hint": "每個模型最多向上游發送 {{requests}} 次真實請求（算術校驗、識圖、JSON Schema、工具呼叫、中轉線索），會消耗渠道額度，每次同時檢測 2 個模型。深度研究、圖像和影片模型預設不勾選。",
@@ -1980,7 +1980,8 @@
       "cancelOnDisconnectHint": "客戶端中途停止串流回覆時，關閉到上游的連線，讓上游停止生成、只按已生成的輸出計費；此時輸出 token 由本地估算。自動：官方介面和訂閱帳戶開啟，其他上游關閉。若中轉站在斷開後仍按完整回覆扣費，請關閉。",
       "danger": "危險操作",
       "dangerHint": "複製會用同一密鑰和設定新建一個渠道；刪除不能撤銷",
-      "name": "名稱"
+      "name": "名稱",
+      "otherUnused": "這個供應商不讀取這個欄位，可以清空"
     },
     "chart": {
       "aria": "各渠道請求量",
@@ -2035,7 +2036,8 @@
       "lowBalance": "餘額 {{balance}} 低於 {{threshold}}",
       "refreshBalance": "重新整理餘額",
       "setKey": "去處理",
-      "view": "查看"
+      "view": "查看",
+      "title": "需要處理"
     },
     "lane": {
       "allOff": "全部停用",
@@ -2059,7 +2061,9 @@
       "pruned_other": "移除了 {{count}} 個上游已不存在的模型，儲存後生效",
       "remove": "移除 {{model}}",
       "syncPrices": "同步價格",
-      "ttft": "首字"
+      "ttft": "首字",
+      "savedSupplied_other": "已儲存，新接入 {{count}} 個公開模型",
+      "supplyNote": "儲存後，新加的模型會自動接入同名的公開模型。移除模型或修改映射不會改動已有的供應，請到模型頁的「供應」裡調整。"
     },
     "monitor": {
       "checkNow": "立即檢查模型列表",
@@ -2403,6 +2407,14 @@
       "latency": "成功請求的平均耗時",
       "balance": "上游餘額；訂閱類顯示本期用量",
       "enabled": "關閉後不再接收請求"
+    },
+    "menu": {
+      "multiTest": "測試多個模型",
+      "multiTestHint": "逐個模型測連通和延遲",
+      "check": "能力檢測",
+      "checkHint": "用真實請求校驗識圖、工具呼叫等，消耗額度",
+      "drift": "對比上游模型",
+      "driftHint": "看上游新增或下架了哪些模型"
     }
   },
   "nav": {

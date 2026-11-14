@@ -1396,7 +1396,7 @@
     "retryFailed": "Retry failed ({{count}})"
   },
   "channelCheck": {
-    "title": "Channel check",
+    "title": "Capability check",
     "fetchUpstream": "Fetch upstream models",
     "fetchFailed": "Failed to fetch upstream models",
     "hint": "Each model is checked with up to {{requests}} real requests to the upstream (arithmetic challenge, image input, JSON schema, tool calling, relay hint), which spend the channel's quota. Two models are checked at a time. Deep research, image and video models are not selected by default.",
@@ -2067,7 +2067,8 @@
       "cancelOnDisconnectHint": "When a client stops a streamed reply, close the upstream connection so the upstream stops generating and bills only the output produced so far; the output tokens are then counted locally. Automatic is on for official APIs and subscription accounts and off for other upstreams. Turn it off for a relay that keeps billing the full reply after a disconnect.",
       "danger": "Danger zone",
       "dangerHint": "Copy creates a new channel with the same key and settings; delete cannot be undone",
-      "name": "Name"
+      "name": "Name",
+      "otherUnused": "This provider does not read this field; you can clear it"
     },
     "chart": {
       "aria": "Requests per channel",
@@ -2128,7 +2129,8 @@
       "lowBalance": "Balance {{balance}} is below {{threshold}}",
       "refreshBalance": "Refresh balance",
       "setKey": "Set key",
-      "view": "View"
+      "view": "View",
+      "title": "Needs attention"
     },
     "lane": {
       "allOff": "All channels disabled",
@@ -2155,7 +2157,10 @@
       "pruned_other": "Removed {{count}} models the upstream no longer lists; save to apply",
       "remove": "Remove {{model}}",
       "syncPrices": "Sync prices",
-      "ttft": "First token"
+      "ttft": "First token",
+      "savedSupplied_one": "Saved; now supplies {{count}} more public model",
+      "savedSupplied_other": "Saved; now supplies {{count}} more public models",
+      "supplyNote": "When you save, models you add are supplied to the public models of the same name. Removing a model or changing the mapping does not change existing supplies; adjust those under Supplies on the model page."
     },
     "monitor": {
       "checkNow": "Check model list now",
@@ -2516,6 +2521,14 @@
       "latency": "Average time of successful requests",
       "balance": "Upstream balance; subscriptions show usage this period",
       "enabled": "Off: receives no requests"
+    },
+    "menu": {
+      "multiTest": "Test several models",
+      "multiTestHint": "Connection and latency, model by model",
+      "check": "Capability check",
+      "checkHint": "Real requests verify vision, tool calls and more; uses quota",
+      "drift": "Compare upstream models",
+      "driftHint": "See which models the upstream added or removed"
     }
   },
   "nav": {
