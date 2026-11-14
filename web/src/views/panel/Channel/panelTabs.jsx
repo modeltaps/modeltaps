@@ -33,13 +33,16 @@ import { iconCacheHost } from '@/components/brand/brandIconManifest';
 import { formatBalance, metricsByModel, modelSignal } from './channelMetrics';
 import {
   applyChannelPricing,
+  fetchChannelModelDetails,
   fetchChannelPrices,
   fetchUpstreamModelList,
   fetchUpstreamModelPicker,
   previewChannelPricing,
   refreshChannelPrices
 } from './channelApi';
-import { priceIndex, priceSummary, sortByTokenPrice, upstreamNameOf } from './channelPrices';
+import { amount, priceIndex, priceSummary, sortByTokenPrice, upstreamNameOf } from './channelPrices';
+import { lossOf, orderByRank, sortByName } from './channelModelDetails';
+import { CAPABILITY_FILTERS, formatContext } from './modelPicker';
 import { buildModelSuggestions, fetchPriceList } from './modelSuggestions';
 import { splitList } from './channelGroups';
 import { usageNumbers, usageOf, usageOptions, usagePeers } from './channelUsage';
@@ -115,16 +118,25 @@ ToolButton.propTypes = { busy: PropTypes.bool, icon: PropTypes.elementType, chil
 // What the upstream charges for one listed model, as the Input and Output cells. A model not
 // priced per token (per image, per second, per request, free, other, or no price) gets one cell
 // across both.
-function UpstreamPriceCells({ price }) {
+function UpstreamPriceCells({ price, publics }) {
   const { t } = useTranslation();
   const summary = priceSummary(price);
   if (summary?.kind === 'tokens') {
-    return (
-      <>
-        <td className="text-right tabular-nums">{summary.input}</td>
-        <td className="text-right tabular-nums">{summary.output}</td>
-      </>
-    );
+    return ['input', 'output'].map((key) => {
+      const loss = lossOf(price, publics, key);
+      return (
+        <td key={key} className="text-right tabular-nums">
+          {loss ? (
+            <LossMark
+              text={t(`channels.models.loss_${key}`, { model: loss.model, sell: amount(loss.sell), cost: amount(loss.cost) })}
+              value={summary[key]}
+            />
+          ) : (
+            summary[key]
+          )}
+        </td>
+      );
+    });
   }
   let content;
   if (!summary)
@@ -148,14 +160,84 @@ function UpstreamPriceCells({ price }) {
   );
 }
 
-UpstreamPriceCells.propTypes = { price: PropTypes.object };
+UpstreamPriceCells.propTypes = { price: PropTypes.object, publics: PropTypes.array };
 
-// Header of a sortable price column: a click sorts ascending, then descending, then back to the
-// list's own order.
-function SortHeader({ label, active, dir, onClick, title }) {
+// A price the upstream charges above what a public model it serves sells for.
+function LossMark({ text, value }) {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex items-center gap-1 text-warning" aria-label={text}>
+            <AlertTriangle className="size-3" />
+            {value}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-64 whitespace-normal text-xs">{text}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+LossMark.propTypes = { text: PropTypes.string.isRequired, value: PropTypes.node };
+
+// Second line of a model's name while supplies route requests: the public model it is offered
+// as (+N more), or "not offered".
+function PublicLine({ publics }) {
+  const { t } = useTranslation();
+  if (!publics) return null;
+  if (!publics.length) return <span className="block truncate text-xs text-muted-foreground">{t('channels.models.notOffered')}</span>;
+  const first = publics[0];
+  return (
+    <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+      <span className="shrink-0">{t('channels.models.offeredAs')}</span>
+      <span className={cn('min-w-0 truncate font-mono', !first.enabled && 'line-through')}>{first.model}</span>
+      {publics.length > 1 && <span className="shrink-0">+{publics.length - 1}</span>}
+    </span>
+  );
+}
+
+PublicLine.propTypes = { publics: PropTypes.array };
+
+const MODALITIES = ['image', 'audio', 'video', 'file', 'pdf'];
+
+// Tooltip text of a model's name: release date, context, what it can do and why it is where it
+// is in the usual order.
+function modelHint(t, name, d) {
+  if (!d) return name;
+  const lines = [name];
+  if (d.public?.length) {
+    lines.push(
+      `${t('channels.models.public')}: ${d.public.map((p) => (p.enabled ? p.model : `${p.model} (${t('channels.models.supplyOff')})`)).join(', ')}`
+    );
+  }
+  const facts = [];
+  if (d.released_at) facts.push(t('channels.models.hint.released', { date: new Date(d.released_at * 1000).toISOString().slice(0, 10) }));
+  if (d.context_length) facts.push(t('channels.models.hint.context', { context: formatContext(d.context_length) }));
+  if (facts.length) lines.push(facts.join(' · '));
+  const caps = (d.capabilities || []).map((c) => (CAPABILITY_FILTERS.includes(c) ? t(`channel_edit.picker.cap_${c}`) : c));
+  const inputs = (d.input_modalities || []).filter((m) => m !== 'text');
+  const modality = (m) => (MODALITIES.includes(m) ? t(`channels.models.hint.modality.${m}`) : m);
+  if (inputs.length) caps.push(...inputs.map((m) => t('channels.models.hint.input', { modality: modality(m) })));
+  if (caps.length) lines.push(caps.join(t('channels.created.comma')));
+  lines.push(
+    d.family_requests
+      ? t('channels.models.hint.rankUsed', { rank: d.rank, family: d.family, count: d.family_requests })
+      : t('channels.models.hint.rankFallback', { rank: d.rank, family: d.family })
+  );
+  return lines.join('\n');
+}
+
+// Header of a sortable column: a click sorts ascending, then descending, then back to the usual
+// order.
+function SortHeader({ label, active, dir, onClick, title, align = 'right' }) {
   const Icon = !active ? ArrowUpDown : dir === 'asc' ? ArrowUp : ArrowDown;
   return (
-    <th className="text-right" aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'} title={title}>
+    <th
+      className={align === 'right' ? 'text-right' : undefined}
+      aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+      title={title}
+    >
       <button
         type="button"
         onClick={onClick}
@@ -173,7 +255,8 @@ SortHeader.propTypes = {
   active: PropTypes.bool,
   dir: PropTypes.oneOf(['asc', 'desc']),
   onClick: PropTypes.func.isRequired,
-  title: PropTypes.string
+  title: PropTypes.string,
+  align: PropTypes.oneOf(['left', 'right'])
 };
 
 // ---------- Models ----------
@@ -216,7 +299,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
     [ctx.metricsRows, channel.id]
   );
   const hasTraffic = useMemo(() => [...perModel.values()].some((m) => m.requests > 0), [perModel]);
-  // The list keeps the channel's own order, so rows do not move while it is edited.
+  // The channel's own order; the table shows the usual order below (most used families first).
   const rows = useMemo(
     () =>
       splitList(draft.models).map((name) => {
@@ -234,7 +317,8 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
     return out;
   }, [rows]);
   const filtered = useMemo(() => (only ? rows.filter((r) => r.signal === only) : rows), [rows, only]);
-  // Sorting by an upstream price is asked for from the column header; otherwise the channel's order.
+  // Sorting by name or an upstream price is asked for from the column header; otherwise the usual
+  // order from the model details.
   const [sort, setSort] = useState(null);
   const nextSort = (key) => setSort((cur) => (cur?.key !== key ? { key, dir: 'asc' } : cur.dir === 'asc' ? { key, dir: 'desc' } : null));
   // The mapping column only earns its width when some model is mapped.
@@ -259,12 +343,33 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
     };
   }, [channel.id]);
   const pricesByModel = useMemo(() => priceIndex(upstreamPrices?.prices), [upstreamPrices]);
+
+  // Details of the list as edited (catalog metadata, the usual order, public models), read again
+  // shortly after the list or the mapping changes.
+  const [details, setDetails] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    const timer = setTimeout(() => {
+      fetchChannelModelDetails(channel.id, splitList(draft.models), parseMapping(draft.mapping) || {})
+        .then((list) => alive && setDetails(new Map(list.map((d) => [d.model, d]))))
+        .catch(() => alive && setDetails((cur) => cur || new Map()));
+    }, 300);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [channel.id, draft.models, draft.mapping]);
+  const detailOf = (name) => details?.get(name);
   const showPrices = Boolean(upstreamPrices?.supported);
   const shown = useMemo(() => {
-    if (!sort || !showPrices) return filtered;
-    const mapping = parseMapping(draft.mapping) || {};
-    return sortByTokenPrice(filtered, sort.key, sort.dir, (r) => pricesByModel.get(upstreamNameOf(r.name, mapping)));
-  }, [filtered, sort, showPrices, pricesByModel, draft.mapping]);
+    if (sort?.key === 'name') return sortByName(filtered, sort.dir);
+    if (sort && showPrices) {
+      const mapping = parseMapping(draft.mapping) || {};
+      return sortByTokenPrice(filtered, sort.key, sort.dir, (r) => pricesByModel.get(upstreamNameOf(r.name, mapping)));
+    }
+    return orderByRank(filtered, (r) => details?.get(r.name));
+  }, [filtered, sort, showPrices, pricesByModel, draft.mapping, details]);
+  const showPublic = Boolean(ctx.supplyRouting);
   const list = useLongList(shown, { text: modelRowText });
 
   useEffect(() => {
@@ -429,15 +534,24 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
             <table className="w-full table-fixed border-collapse text-[13px]">
               <colgroup>
                 <col />
-                {hasMapping && <col className="w-[28%]" />}
+                {hasMapping && <col className="w-[22%]" />}
+                <col className="w-[4.5rem]" />
                 {showPrices && <col className="w-[5.5rem]" />}
                 {showPrices && <col className="w-[5.5rem]" />}
                 <col className="w-9" />
               </colgroup>
               <thead>
                 <tr className="text-left text-xs text-muted-foreground [&>th]:h-9 [&>th]:whitespace-nowrap [&>th]:border-b [&>th]:border-border [&>th]:px-3 [&>th]:font-medium">
-                  <th>{t('channels.models.model')}</th>
+                  <SortHeader
+                    align="left"
+                    label={t('channels.models.model')}
+                    active={sort?.key === 'name'}
+                    dir={sort?.dir}
+                    onClick={() => nextSort('name')}
+                    title={t('channels.models.orderHint')}
+                  />
                   {hasMapping && <th>{t('channels.models.mappedTo')}</th>}
+                  <th className="text-right">{t('channels.models.context')}</th>
                   {showPrices &&
                     ['input', 'output'].map((key) => (
                       <SortHeader
@@ -462,18 +576,24 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                     key={name}
                     className="[&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0"
                   >
-                    <td title={name}>
+                    <td title={modelHint(t, name, detailOf(name))}>
                       <span className="flex min-w-0 items-center gap-1.5">
                         <span className="min-w-0 truncate font-mono">{name}</span>
                         <ModelSignal signal={signal} m={m} range={range} />
                       </span>
+                      {showPublic && <PublicLine publics={detailOf(name)?.public} />}
                     </td>
                     {hasMapping && (
                       <td className="font-mono text-muted-foreground" title={mapping[name] || ''}>
                         {mapping[name] || '—'}
                       </td>
                     )}
-                    {showPrices && <UpstreamPriceCells price={pricesByModel.get(upstreamNameOf(name, mapping))} />}
+                    <td className="text-right tabular-nums text-muted-foreground">
+                      {formatContext(detailOf(name)?.context_length) || '—'}
+                    </td>
+                    {showPrices && (
+                      <UpstreamPriceCells price={pricesByModel.get(upstreamNameOf(name, mapping))} publics={detailOf(name)?.public} />
+                    )}
                     <td className="!px-1 text-right">
                       <button
                         type="button"

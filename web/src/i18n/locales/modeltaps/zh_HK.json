@@ -2095,7 +2095,29 @@
         "label": "{{range}}流量",
         "idleFilter": "無請求",
         "failingFilter": "失敗多"
-      }
+      },
+      "public": "對外模型",
+      "notOffered": "未對外",
+      "supplyOff": "供應已停用",
+      "context": "上下文",
+      "orderHint": "預設按常用程度排：近 30 天本站請求多的系列在前，沒有用量時主流系列在前，同系列最新版本在前。點表頭按名稱排",
+      "loss_input": "{{model}} 的輸入售價 ${{sell}}/M 低於上游 ${{cost}}/M（按基礎售價，未計分組倍率）",
+      "loss_output": "{{model}} 的輸出售價 ${{sell}}/M 低於上游 ${{cost}}/M（按基礎售價，未計分組倍率）",
+      "hint": {
+        "released": "發佈於 {{date}}",
+        "context": "上下文 {{context}}",
+        "input": "{{modality}}輸入",
+        "rankUsed": "常用排名 #{{rank}}：近 30 天本站 {{family}} 系列 {{count}} 次請求",
+        "rankFallback": "常用排名 #{{rank}}：近 30 天本站沒有 {{family}} 系列的請求，按主流程度排",
+        "modality": {
+          "image": "圖片",
+          "audio": "音訊",
+          "video": "影片",
+          "file": "檔案",
+          "pdf": "PDF"
+        }
+      },
+      "offeredAs": "對外："
     },
     "monitor": {
       "checkNow": "立即檢查模型列表",

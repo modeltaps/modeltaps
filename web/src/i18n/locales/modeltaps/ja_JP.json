@@ -2097,7 +2097,29 @@
         "label": "{{range}}のトラフィック",
         "idleFilter": "リクエストなし",
         "failingFilter": "失敗が多い"
-      }
+      },
+      "public": "公開モデル",
+      "notOffered": "未提供",
+      "supplyOff": "供給停止中",
+      "context": "コンテキスト",
+      "orderHint": "既定はよく使う順：直近 30 日に本サイトでリクエストが多いシリーズが先、利用がなければ主要シリーズが先、同じシリーズは最新版が先。クリックで名前順",
+      "loss_input": "{{model}} の入力販売価格 ${{sell}}/M が上流の ${{cost}}/M を下回っています（基本価格、グループ倍率は未計算）",
+      "loss_output": "{{model}} の出力販売価格 ${{sell}}/M が上流の ${{cost}}/M を下回っています（基本価格、グループ倍率は未計算）",
+      "hint": {
+        "released": "{{date}} リリース",
+        "context": "コンテキスト {{context}}",
+        "input": "{{modality}}入力",
+        "rankUsed": "利用順位 #{{rank}}：直近 30 日に本サイトで {{family}} シリーズへ {{count}} 件",
+        "rankFallback": "利用順位 #{{rank}}：直近 30 日に本サイトで {{family}} シリーズの利用なし、主要度順",
+        "modality": {
+          "image": "画像",
+          "audio": "音声",
+          "video": "動画",
+          "file": "ファイル",
+          "pdf": "PDF"
+        }
+      },
+      "offeredAs": "公開名："
     },
     "monitor": {
       "checkNow": "今すぐモデル一覧を確認",

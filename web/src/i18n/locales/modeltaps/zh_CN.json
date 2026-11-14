@@ -2095,7 +2095,29 @@
         "label": "{{range}}流量",
         "idleFilter": "无请求",
         "failingFilter": "失败多"
-      }
+      },
+      "public": "对外模型",
+      "notOffered": "未对外",
+      "supplyOff": "供应已停用",
+      "context": "上下文",
+      "orderHint": "默认按常用程度排：近 30 天本站请求多的系列在前，没有用量时主流系列在前，同系列最新版本在前。点表头按名称排",
+      "loss_input": "{{model}} 的输入售价 ${{sell}}/M 低于上游 ${{cost}}/M（按基础售价，未计分组倍率）",
+      "loss_output": "{{model}} 的输出售价 ${{sell}}/M 低于上游 ${{cost}}/M（按基础售价，未计分组倍率）",
+      "hint": {
+        "released": "发布于 {{date}}",
+        "context": "上下文 {{context}}",
+        "input": "{{modality}}输入",
+        "rankUsed": "常用排名 #{{rank}}：近 30 天本站 {{family}} 系列 {{count}} 次请求",
+        "rankFallback": "常用排名 #{{rank}}：近 30 天本站没有 {{family}} 系列的请求，按主流程度排",
+        "modality": {
+          "image": "图片",
+          "audio": "音频",
+          "video": "视频",
+          "file": "文件",
+          "pdf": "PDF"
+        }
+      },
+      "offeredAs": "对外："
     },
     "monitor": {
       "checkNow": "立即检查模型列表",

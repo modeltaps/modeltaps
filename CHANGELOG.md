@@ -321,6 +321,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The channel's Models tab lists the most used models first: families with the most requests on
+  this site in the last 30 days, then mainstream families (Claude, GPT, Gemini, then DeepSeek,
+  Qwen, Grok...), the latest version first inside a family, the order the model picker already
+  uses. Clicking the Model header sorts by name. A Context column shows each model's context
+  window; while supplies route requests a second line under the name shows the public model it is
+  offered as, or "Not offered"; an upstream input or output price above what that public model
+  sells for (base price, before group ratios) is marked with a warning. The name's tooltip adds
+  the release date, capabilities and why the model ranks where it does. API:
+  `POST /api/channel/:id/model_details`.
 - The channel's Models tab is for maintaining the list: the request, success rate, latency and
   time to first token columns moved to the Performance tab, and rows keep the channel's own order
   instead of moving by traffic. A model whose requests mostly failed in the list's time range is
