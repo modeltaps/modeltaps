@@ -2669,6 +2669,8 @@
     "channel": "Channel",
     "model": "Model",
     "upstream": "Upstream model",
+    "upstreamSame": "Same name",
+    "upstreamSameTip": "Sent upstream as {{name}}, the same as the public name",
     "priority": "Priority",
     "weight": "Weight",
     "stateLabel": "State",
