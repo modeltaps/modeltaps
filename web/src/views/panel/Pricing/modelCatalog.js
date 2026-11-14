@@ -88,17 +88,29 @@ export function indexChannelsByModel(channels = []) {
 }
 
 // Names any channel lists, enabled or not: the models the catalog page shows even without a
-// catalog row.
-export function channelModelNames(channels = []) {
+// catalog row. A name a supply of the same channel already sends upstream is left out
+// (`suppliedUpstreams`, see suppliedUpstreamKeys): it is a platform spelling of a public model,
+// such as "anthropic/claude-opus-5" for claude-opus-5, not a model of its own.
+export function channelModelNames(channels = [], suppliedUpstreams = null) {
   const names = new Set();
   channels.forEach((channel) => {
     String(channel?.models || '')
       .split(',')
       .map((name) => name.trim())
       .filter(Boolean)
+      .filter((name) => !suppliedUpstreams?.has(suppliedUpstreamKey(channel?.id, name)))
       .forEach((name) => names.add(name));
   });
   return names;
+}
+
+const suppliedUpstreamKey = (channelId, upstream) => `${channelId}\u0000${upstream}`;
+
+// Supplies (/api/model_supply/) → the (channel, upstream name) pairs they send.
+export function suppliedUpstreamKeys(supplies = []) {
+  return new Set(
+    supplies.filter((s) => s?.channel_id && s?.upstream_model).map((s) => suppliedUpstreamKey(s.channel_id, s.upstream_model))
+  );
 }
 
 // 目录行、价格行与渠道可提供的模型名按模型名合并为一张表:
