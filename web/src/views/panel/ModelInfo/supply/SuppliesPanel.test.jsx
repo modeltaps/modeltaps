@@ -97,7 +97,11 @@ describe('SuppliesPanel', () => {
     expect(first.textContent).toContain('main');
     expect(first.textContent).toContain(i18n.t('modelSupply.state.wholeChannel'));
     expect(first.textContent).toContain(i18n.t('modelSupply.channelGroups', { groups: 'default, vip' }));
+    // The public name sent unchanged reads as "Same name"; a mapping shows the upstream name.
+    expect(first.textContent).toContain(i18n.t('modelSupply.upstreamSame'));
+    expect(i18n.t('modelSupply.upstreamSame')).not.toBe('modelSupply.upstreamSame');
     expect(second.textContent).toContain('gpt-a-2025');
+    expect(second.textContent).not.toContain(i18n.t('modelSupply.upstreamSame'));
     expect(second.textContent).toContain(i18n.t('modelSupply.state.ok'));
     expect(second.textContent).toContain(i18n.t('modelSupply.preview.next'));
     expect(screen.getByText(i18n.t('modelSupply.tier.first'))).toBeTruthy();

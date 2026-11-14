@@ -2585,6 +2585,8 @@
     "channel": "渠道",
     "model": "模型",
     "upstream": "上游模型",
+    "upstreamSame": "同名",
+    "upstreamSameTip": "以 {{name}} 發給上游，與公開名相同",
     "priority": "優先級",
     "weight": "權重",
     "stateLabel": "狀態",

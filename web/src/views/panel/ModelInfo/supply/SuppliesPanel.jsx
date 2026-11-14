@@ -50,7 +50,7 @@ import {
   supplyUpdateBody,
   upstreamFor
 } from './supplyHelpers';
-import { SupplyStateLabel, SupplySwitchNote, durationLabel } from './supplyParts';
+import { SupplyStateLabel, SupplySwitchNote, UpstreamName, durationLabel } from './supplyParts';
 import { setModelAllocation } from '../../Allocation/allocationApi';
 
 const channelTypeName = (type) => CHANNEL_OPTIONS[type]?.text || `#${type}`;
@@ -425,8 +425,8 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
       )}
     >
       <td>{channelCell}</td>
-      <td className="max-w-0 truncate font-mono text-[13px] text-muted-foreground" title={supply.upstream_model}>
-        {supply.upstream_model}
+      <td className="py-1.5">
+        <UpstreamName upstream={supply.upstream_model} model={supply.model} />
       </td>
       <td className="whitespace-nowrap text-right tabular-nums">
         {supply.weight || 1}
@@ -788,10 +788,10 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
         <div className="overflow-x-auto rounded-[10px] border border-border">
           <table className="w-full min-w-[480px] table-fixed border-collapse text-[13px]">
             <colgroup>
-              <col className="w-[30%]" />
+              <col className="w-[28%]" />
               <col />
               <col className="w-[4.5rem]" />
-              <col className="w-[26%]" />
+              <col className="w-[18%]" />
               <col className="w-[5.5rem]" />
             </colgroup>
             <thead>
