@@ -17,7 +17,8 @@ import { contextSwitchTarget } from './nav-config';
 // active organization's name. No user identity here; that lives in the account row at the bottom
 // of the sidebar. The popover lists personal, the user's organizations (role muted) and "create
 // organization". Platform admin is entered from the account menu and does not show this row: its
-// sidebar has a back row to the workbench instead (Sidebar `AdminBackRow`). Markers are rounded
+// sidebar shows its own row in this slot instead (Sidebar `AdminBackRow`: the admin mark and name,
+// linking back to the workbench). Markers are rounded
 // squares, deliberately unlike the round avatar: fixed icons for personal and platform admin (not
 // customizable, so they never repeat the user's avatar), and the organization's uploaded logo or a
 // default building icon.
