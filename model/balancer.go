@@ -93,6 +93,13 @@ func FilterChannelTypes(channelTypes []int) ChannelsFilterFunc {
 	}
 }
 
+// FilterChannelsNotMatching keeps only the channels the predicate accepts.
+func FilterChannelsNotMatching(accept func(*Channel) bool) ChannelsFilterFunc {
+	return func(_ int, choice *ChannelChoice) bool {
+		return !accept(choice.Channel)
+	}
+}
+
 func FilterOnlyChat() ChannelsFilterFunc {
 	return func(channelId int, choice *ChannelChoice) bool {
 		return choice.Channel.OnlyChat
@@ -822,6 +829,14 @@ func (cc *ChannelsChooser) NextByValidatedModel(group, validatedModelName string
 // ModelSupportsChannelTypes 判断某模型在指定分组下是否存在至少一个类型匹配的渠道（忽略冷却/禁用/过滤等运行时状态）。
 // 用于区分"该协议根本不支持此模型"（配置类，应收敛为 model_not_found）与"渠道暂时不可用"（运行时，应 503）。
 func (cc *ChannelsChooser) ModelSupportsChannelTypes(group, validatedModelName string, channelTypes []int) bool {
+	return cc.ModelHasChannel(group, validatedModelName, func(channel *Channel) bool {
+		return utils.Contains(channel.Type, channelTypes)
+	})
+}
+
+// ModelHasChannel reports whether the model has at least one channel in the group that the
+// predicate accepts, regardless of whether that channel is currently available.
+func (cc *ChannelsChooser) ModelHasChannel(group, validatedModelName string, accept func(*Channel) bool) bool {
 	cc.RLock()
 	defer cc.RUnlock()
 
@@ -840,7 +855,7 @@ func (cc *ChannelsChooser) ModelSupportsChannelTypes(group, validatedModelName s
 			if !ok || choice.Channel == nil {
 				continue
 			}
-			if utils.Contains(choice.Channel.Type, channelTypes) {
+			if accept(choice.Channel) {
 				return true
 			}
 		}

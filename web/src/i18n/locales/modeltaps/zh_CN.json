@@ -1170,6 +1170,27 @@
         "description": "向上游报告的 Codex CLI 版本号（如 0.159.0），用于 version 请求头和默认 User-Agent。上游按版本限制新模型，提示模型不支持时可调高；留空使用内置默认值，格式不正确时也使用默认值"
       }
     },
+    "upstreamProtocol": {
+      "name": "上游协议",
+      "description": "这个渠道调用上游用哪种接口。Claude 模型只有走 Anthropic 协议才能保留提示缓存。",
+      "mode": {
+        "name": "协议",
+        "description": "OpenAI：全部走 OpenAI 兼容接口。Claude 模型走 Anthropic：Claude 模型发到 Messages 接口，其余走 OpenAI。全部走 Anthropic：所有对话模型都发到 Messages 接口。",
+        "openai": "OpenAI（默认）",
+        "anthropicClaude": "Claude 模型走 Anthropic",
+        "anthropic": "全部走 Anthropic"
+      },
+      "messagesPath": {
+        "name": "Messages 接口地址",
+        "description": "默认为：/v1/messages"
+      },
+      "auth": {
+        "name": "鉴权方式",
+        "description": "密钥怎么发给 Messages 接口",
+        "xApiKey": "x-api-key 请求头（默认）",
+        "bearer": "Authorization: Bearer"
+      }
+    },
     "customize": {
       "name": "自定义参数",
       "description": "你可以自定义每个请求的地址，空为默认值，disable为禁用该请求",

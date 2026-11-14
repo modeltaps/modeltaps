@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   prefix names the hosting provider), and the balance is read from the management API with a key
   that has manage permission, entered as `apiKey|manageKey`. Of the 216 models Requesty lists, 136
   link to catalog models the dev Vercel channel already brought in.
+- Upstream protocol for custom channels. A custom (OpenAI-compatible) channel can now declare
+  that its upstream also speaks the Anthropic Messages protocol: "Claude models over Anthropic"
+  sends Claude-family models to the Messages endpoint and every other model to the OpenAI
+  endpoints; "All over Anthropic" sends every chat model there. Requests on any entry follow it:
+  `/claude/v1/messages` is forwarded as is, so the client's `cache_control` breakpoints reach the
+  upstream; `/v1/chat/completions` and `/v1/responses` are converted to Claude by the gateway.
+  The Messages path (default `/v1/messages`) and the auth header (`x-api-key` or
+  `Authorization: Bearer`) are configurable. Set it in the channel's Advanced tab under
+  "Upstream protocol"; channels left on the default keep the OpenAI behaviour.
 - Channel Performance tab. The channel panel has a read-only Performance tab, next to Models,
   with its own time range (24 hours / 7 days / 30 days): requests, success rate, average latency,
   time to first token, output speed and prompt cache hit rate, a chart of requests and failures,
@@ -331,6 +340,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Claude models prefer Claude sources on every entry. A Claude-family model requested over
+  `/v1/chat/completions` or `/v1/responses` now first goes to the Anthropic, Claude Code,
+  Bedrock, Vertex AI and Antigravity channels, and to custom channels that declare the
+  Anthropic protocol, as `/claude/v1/messages` already did; other channels serve it only when
+  none of these is available. A custom channel left on the OpenAI protocol no longer counts as
+  a preferred source for Claude models on `/claude/v1/messages`, because the conversion to
+  OpenAI drops prompt cache breakpoints.
 - Channel Models tab polish. The public model under each name reads "Public: gpt-5" ("Not
   public" when there is none) instead of "offered as", in all four languages; the Performance tab
   is renamed Stats. Upstream prices show two decimals (0.75, 30.00) so the columns line up. The

@@ -55,6 +55,7 @@ func (r *relayChat) setRequest() error {
 	}
 
 	r.setOriginalModel(r.chatRequest.Model)
+	preferClaudeSources(r.c, r.chatRequest.Model)
 
 	otherArg := r.getOtherArg()
 
@@ -100,7 +101,10 @@ func (r *relayChat) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
 		return
 	}
 
-	if r.provider.GetChannel().ShouldUseResponsesForModel(r.modelName) {
+	// A custom channel that speaks Anthropic for this model handles chat itself (converted to
+	// Claude), so it must not be sent to its OpenAI Responses endpoint.
+	if r.provider.GetChannel().ShouldUseResponsesForModel(r.modelName) &&
+		customClaudeProvider(r.provider, r.modelName) == nil {
 		resProvider, ok := r.provider.(providersBase.ResponsesInterface)
 		if ok {
 			return r.compatibleSend(resProvider)

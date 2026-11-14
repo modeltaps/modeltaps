@@ -153,7 +153,8 @@ Midjourney and async task records are not on the catalogue pages — see the **M
 ## About models and groups
 
 - Which models you can call depends on the channel group selected for the API key and on whether the API key has model restrictions enabled. The available list is shown under **Available models** on the **Dashboard**, and can also be queried through the models endpoint of each protocol above.
-- Claude / Gemini protocol requests can only be routed to channels of the matching type. If those two protocols return no models, your current group has no channel of that type — use the OpenAI-compatible API instead.
+- Requests on `/claude/v1/messages` can reach any chat model: when a channel does not speak the Anthropic protocol, the gateway converts the request. Claude models are sent upstream over the Anthropic protocol whenever a channel supports it, whichever endpoint you call, so prompt caching keeps working.
+- Gemini protocol requests can only be routed to Gemini-type channels. If the Gemini protocol returns no models, your current group has no such channel — use the OpenAI-compatible API instead.
 - When a request fails, use the [Usage and logs](/guide/usage) page to locate the exact record by API key and time; the detail view shows the finish reason and the billing breakdown.
 
 ## Related

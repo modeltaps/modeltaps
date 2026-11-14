@@ -76,6 +76,8 @@ var AllowChannelType = []int{
 // nativeClaudeChannelType 是 Claude 协议下优先选择的渠道类型集合：直连 / 一方渠道优先于聚合网关
 // （OpenRouter、Vercel AI Gateway）和 OpenAI 转换渠道。同组同模型同时存在时，Claude 协议请求先落到这些类型。
 // 聚合网关虽然也经 Anthropic 兼容入口原生转发（见 resolveClaudeRoute），但有加价与二次路由，故不列入优先集。
+// Claude-family models use claudeSourcePreferred instead (see preferClaudeSources); this list
+// only applies to the other models requested over the Anthropic protocol.
 var nativeClaudeChannelType = []int{config.ChannelTypeAnthropic, config.ChannelTypeVertexAI, config.ChannelTypeBedrock, config.ChannelTypeCustom, config.ChannelTypeGemini, config.ChannelTypeGeminiCli, config.ChannelTypeClaudeCode, config.ChannelTypeCodex, config.ChannelTypeAntigravity}
 
 type relayClaudeOnly struct {
@@ -104,6 +106,8 @@ func (r *relayClaudeOnly) setRequest() error {
 	r.setOriginalModel(r.claudeRequest.Model)
 	// 设置原始模型到 Context，用于统一请求响应模型功能
 	r.c.Set("original_model", r.claudeRequest.Model)
+	// Claude-family models prefer Claude sources over the type list set in NewRelayClaudeOnly.
+	preferClaudeSources(r.c, r.claudeRequest.Model)
 
 	// 保持原始的流式/非流式状态
 
@@ -134,6 +138,9 @@ const (
 	claudeRouteAntigravity
 	// claudeRouteNative 走 provider 自带的 Claude 协议实现
 	claudeRouteNative
+	// claudeRouteCustomAnthropic sends the request as is to the Messages endpoint of a custom
+	// channel that declares the Anthropic protocol for this model.
+	claudeRouteCustomAnthropic
 	claudeRouteUnsupported
 )
 
@@ -144,6 +151,9 @@ func resolveClaudeRoute(channelType int, modelName string, provider providersBas
 	// Custom / OpenAI 渠道复用同一条 Claude→OpenAI→Claude 转换链。
 	// OpenRouter / Vercel AI Gateway 不在此列：它们有 Anthropic 兼容入口，走下面的原生判定，
 	// 客户端的 cache_control 断点才能原样到达上游（转换链会丢掉）。
+	if channelType == config.ChannelTypeCustom && customClaudeProvider(provider, modelName) != nil {
+		return claudeRouteCustomAnthropic
+	}
 	if channelType == config.ChannelTypeCustom || channelType == config.ChannelTypeOpenAI {
 		return claudeRouteOpenAIConvert
 	}
@@ -182,7 +192,10 @@ func (r *relayClaudeOnly) send() (err *types.OpenAIErrorWithStatusCode, done boo
 
 	channelType := r.provider.GetChannel().Type
 
+	var chatProvider claude.ClaudeChatInterface
 	switch resolveClaudeRoute(channelType, r.modelName, r.provider) {
+	case claudeRouteCustomAnthropic:
+		chatProvider = customClaudeProvider(r.provider, r.modelName)
 	case claudeRouteOpenAIConvert:
 		return r.sendCustomChannelWithClaudeFormat()
 	case claudeRouteVertexAIGemini:
@@ -198,7 +211,9 @@ func (r *relayClaudeOnly) send() (err *types.OpenAIErrorWithStatusCode, done boo
 		return
 	}
 
-	chatProvider := r.provider.(claude.ClaudeChatInterface)
+	if chatProvider == nil {
+		chatProvider = r.provider.(claude.ClaudeChatInterface)
+	}
 
 	r.claudeRequest.Model = r.modelName
 	// 内容审查

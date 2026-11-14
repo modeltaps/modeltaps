@@ -42,6 +42,7 @@ func (r *relayResponses) setRequest() error {
 	}
 
 	r.setOriginalModel(r.responsesRequest.Model)
+	preferClaudeSources(r.c, r.responsesRequest.Model)
 
 	return nil
 }
@@ -72,7 +73,10 @@ func (r *relayResponses) send() (err *types.OpenAIErrorWithStatusCode, done bool
 
 	channel := r.provider.GetChannel()
 	responsesProvider, ok := r.provider.(providersBase.ResponsesInterface)
-	if !ok || channel.CompatibleResponse || !r.provider.GetSupportedResponse() {
+	// A custom channel that speaks Anthropic for this model goes through chat, which converts
+	// the request to Claude for its Messages endpoint.
+	if !ok || channel.CompatibleResponse || !r.provider.GetSupportedResponse() ||
+		customClaudeProvider(r.provider, r.modelName) != nil {
 		// 做一层Chat的兼容
 		chatProvider, ok := r.provider.(providersBase.ChatInterface)
 		if !ok {

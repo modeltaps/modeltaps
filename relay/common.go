@@ -459,7 +459,17 @@ func fetchChannelByModel(c *gin.Context, modelName string) (*model.Channel, erro
 	// 先只在原生渠道类型内选择；仅当该模型在本分组下确有原生渠道、但原生渠道全部不可用（冷却/禁用）时，
 	// 才回退到含转换渠道的全量白名单。仅在设置了 prefer_channel_type（Claude 协议专属入口）且该模型确有
 	// 原生渠道时启用；OpenAI /v1 通用入口与 Gemini 入口均不设置该值，其选择行为不受影响。
-	if preferTypes, ok := utils.GetGinValue[[]int](c, "prefer_channel_type"); ok && len(preferTypes) > 0 &&
+	//
+	// prefer_channel（func(*model.Channel) bool）是按模型算出的优先集（Claude 家族模型在所有入口优先
+	// Claude 一方来源，见 preferClaudeSources），设置时取代 prefer_channel_type。
+	if accept, ok := utils.GetGinValue[func(*model.Channel) bool](c, ginKeyPreferChannel); ok && accept != nil {
+		if model.ChannelGroup.ModelHasChannel(group, modelName, accept) {
+			preferFilters := append(append([]model.ChannelsFilterFunc{}, filters...), model.FilterChannelsNotMatching(accept))
+			if channel, err := model.ChannelGroup.NextByValidatedModel(group, modelName, c, preferFilters...); err == nil {
+				return channel, nil
+			}
+		}
+	} else if preferTypes, ok := utils.GetGinValue[[]int](c, "prefer_channel_type"); ok && len(preferTypes) > 0 &&
 		model.ChannelGroup.ModelSupportsChannelTypes(group, modelName, preferTypes) {
 		preferFilters := append(append([]model.ChannelsFilterFunc{}, filters...), model.FilterChannelTypes(preferTypes))
 		if channel, err := model.ChannelGroup.NextByValidatedModel(group, modelName, c, preferFilters...); err == nil {

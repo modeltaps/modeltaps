@@ -1170,6 +1170,27 @@
         "description": "向上游報告的 Codex CLI 版本號（如 0.159.0），用於 version 請求頭和預設 User-Agent。上游按版本限制新模型，提示模型不支援時可調高；留空使用內置預設值，格式不正確時亦使用預設值"
       }
     },
+    "upstreamProtocol": {
+      "name": "上游協議",
+      "description": "這個渠道呼叫上游用哪種介面。Claude 模型只有走 Anthropic 協議才能保留提示快取。",
+      "mode": {
+        "name": "協議",
+        "description": "OpenAI：全部走 OpenAI 相容介面。Claude 模型走 Anthropic：Claude 模型發到 Messages 介面，其餘走 OpenAI。全部走 Anthropic：所有對話模型都發到 Messages 介面。",
+        "openai": "OpenAI（預設）",
+        "anthropicClaude": "Claude 模型走 Anthropic",
+        "anthropic": "全部走 Anthropic"
+      },
+      "messagesPath": {
+        "name": "Messages 介面地址",
+        "description": "預設為：/v1/messages"
+      },
+      "auth": {
+        "name": "驗證方式",
+        "description": "金鑰怎麼發給 Messages 介面",
+        "xApiKey": "x-api-key 請求標頭（預設）",
+        "bearer": "Authorization: Bearer"
+      }
+    },
     "customize": {
       "name": "自訂參數",
       "description": "你可以自訂每個請求的地址，空為預設值，disable為禁用該請求",

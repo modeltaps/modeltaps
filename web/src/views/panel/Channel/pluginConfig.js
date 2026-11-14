@@ -247,6 +247,41 @@ const pluginConfig = {
   },
 
   8: {
+    upstream_protocol: {
+      name: `${P}.upstreamProtocol.name`,
+      description: `${P}.upstreamProtocol.description`,
+      params: {
+        mode: {
+          name: `${P}.upstreamProtocol.mode.name`,
+          description: `${P}.upstreamProtocol.mode.description`,
+          type: 'select',
+          default: 'openai',
+          required: false,
+          options: [
+            { value: 'openai', label: `${P}.upstreamProtocol.mode.openai` },
+            { value: 'anthropic_claude', label: `${P}.upstreamProtocol.mode.anthropicClaude` },
+            { value: 'anthropic', label: `${P}.upstreamProtocol.mode.anthropic` }
+          ]
+        },
+        messages_path: {
+          name: `${P}.upstreamProtocol.messagesPath.name`,
+          description: `${P}.upstreamProtocol.messagesPath.description`,
+          type: 'string',
+          required: false
+        },
+        auth: {
+          name: `${P}.upstreamProtocol.auth.name`,
+          description: `${P}.upstreamProtocol.auth.description`,
+          type: 'select',
+          default: 'x-api-key',
+          required: false,
+          options: [
+            { value: 'x-api-key', label: `${P}.upstreamProtocol.auth.xApiKey` },
+            { value: 'bearer', label: `${P}.upstreamProtocol.auth.bearer` }
+          ]
+        }
+      }
+    },
     customize: {
       name: `${P}.customize.name`,
       description: `${P}.customize.description`,

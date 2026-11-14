@@ -47,6 +47,12 @@ func (p *OpenAIProvider) CreateChatCompletion(request *types.ChatCompletionReque
 		request.Messages = common.FilterEmptyContentMessages(request.Messages)
 	}
 
+	// A custom channel that speaks Anthropic Messages for this model gets the request converted
+	// to Claude here and sent to its Messages endpoint, so cache breakpoints reach the upstream.
+	if claudeProvider := p.CustomClaudeProvider(request.Model); claudeProvider != nil {
+		return claudeProvider.CreateChatCompletion(request)
+	}
+
 	// Anthropic prompt caching 自动注入（模型命中 + 开关命中时；用户已带 cache_control 时跳过）。
 	InjectAnthropicPromptCaching(p.Channel, request)
 
@@ -139,6 +145,12 @@ func (p *OpenAIProvider) CreateChatCompletionStream(request *types.ChatCompletio
 	// 对于自定义渠道，过滤空content的消息以保持与其他渠道一致的行为
 	if p.Channel.Type == config.ChannelTypeCustom {
 		request.Messages = common.FilterEmptyContentMessages(request.Messages)
+	}
+
+	// A custom channel that speaks Anthropic Messages for this model gets the request converted
+	// to Claude here and sent to its Messages endpoint, so cache breakpoints reach the upstream.
+	if claudeProvider := p.CustomClaudeProvider(request.Model); claudeProvider != nil {
+		return claudeProvider.CreateChatCompletionStream(request)
 	}
 
 	// Anthropic prompt caching 自动注入（模型命中 + 开关命中时；用户已带 cache_control 时跳过）。

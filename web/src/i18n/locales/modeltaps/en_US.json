@@ -1191,6 +1191,27 @@
         "description": "Codex CLI version reported to the upstream (for example 0.159.0), used for the version header and the default User-Agent. The upstream gates new models by version; raise it if a model is reported as unsupported. Leave empty to use the built-in default, which is also used when the value is not a valid version"
       }
     },
+    "upstreamProtocol": {
+      "name": "Upstream protocol",
+      "description": "Which API this channel calls upstream. Claude models keep prompt caching only over the Anthropic protocol.",
+      "mode": {
+        "name": "Protocol",
+        "description": "OpenAI sends everything to the OpenAI-compatible endpoints. Claude models over Anthropic sends Claude models to the Messages endpoint and the rest to OpenAI. All over Anthropic sends every chat model to the Messages endpoint.",
+        "openai": "OpenAI (default)",
+        "anthropicClaude": "Claude models over Anthropic",
+        "anthropic": "All over Anthropic"
+      },
+      "messagesPath": {
+        "name": "Messages path",
+        "description": "Default: /v1/messages"
+      },
+      "auth": {
+        "name": "Authentication",
+        "description": "How the key is sent to the Messages endpoint",
+        "xApiKey": "x-api-key header (default)",
+        "bearer": "Authorization: Bearer"
+      }
+    },
     "customize": {
       "name": "Custom endpoints",
       "description": "Customize the path of each request: leave blank for the default, or enter disable to turn that request off",
