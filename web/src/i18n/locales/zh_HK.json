@@ -3016,7 +3016,8 @@
         "credential": "渠道憑證問題",
         "supply_paused": "渠道或模型被暫停",
         "supply_resumed": "暫停的渠道或模型已恢復",
-        "supply_failover": "請求切換到備用渠道"
+        "supply_failover": "請求切換到備用渠道",
+        "model_library": "收錄規則添加、下架或將要改動模型"
       },
       "limit": {
         "label": "每類每小時最多條數",

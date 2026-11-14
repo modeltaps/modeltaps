@@ -713,7 +713,8 @@
       "models": "Models",
       "vendors": "Vendors",
       "paused": "Paused",
-      "pending": "New upstream models"
+      "pending": "New upstream models",
+      "rules": "Inclusion rules"
     }
   },
   "listPage": {
@@ -2537,6 +2538,9 @@
       "checkHint": "Real requests verify vision, tool calls and more; uses quota",
       "drift": "Compare upstream models",
       "driftHint": "See which models the upstream added or removed"
+    },
+    "switcher": {
+      "count": "{{count}} channels"
     }
   },
   "nav": {
@@ -3203,7 +3207,8 @@
           "title": "Appearance",
           "description": "Theme and language take effect as you pick them, for you only",
           "languageHint": "Follows the browser by default",
-          "themeHint": "System follows your device's light or dark setting"
+          "themeHint": "System follows your device's light or dark setting",
+          "hint": "Applied as soon as you save"
         },
         "quotaRemind": {
           "hint": "At most one reminder a day"
@@ -3237,7 +3242,8 @@
         "budget": {
           "description": "Spending cap for all members per period; once used up, the organization's requests are refused",
           "noLimitHint": "With no budget, only each member's own budget applies",
-          "resetsHint": "{{period}} reset; time zone and week start follow the platform settings"
+          "resetsHint": "{{period}} reset; time zone and week start follow the platform settings",
+          "hint": "The period follows the platform settings"
         },
         "danger": {
           "description": "These actions affect every member"
@@ -3538,5 +3544,56 @@
     "remembered": "Remembered it?",
     "resetTitle": "Reset your password",
     "resetHint": "We will send a reset link to this email"
+  },
+  "libraryRules": {
+    "intro": "After each daily library sync, these rules decide which new models join the catalog and which catalog models are retired. Rules are tried in order and the first one whose conditions all hold decides; each model is decided once, so a model you remove is not added back, and models you edited are never retired.",
+    "enabled": "Run the rules after each sync",
+    "apply": "Apply the rules",
+    "applyOn": "Rules change the catalog and notify you of what they did.",
+    "applyOff": "Dry run: rules change nothing and notify you of what they would do.",
+    "name": "Name",
+    "namePlaceholder": "Rule name",
+    "action": "Action",
+    "actions": {
+      "publish": "Publish",
+      "draft": "Add as draft",
+      "ignore": "Leave out",
+      "retire": "Retire"
+    },
+    "labs": "Labs (models.dev prefixes)",
+    "patterns": "Model id patterns",
+    "days": "Released within days",
+    "anyTime": "Any time",
+    "endpoints": "Endpoints (any of)",
+    "supplied": "A channel can supply it",
+    "deprecated": "Deprecated",
+    "openWeights": "Open weights",
+    "tri": {
+      "any": "Any",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "up": "Move up",
+    "down": "Move down",
+    "remove": "Remove rule",
+    "add": "Add rule",
+    "preview": "Preview",
+    "runNow": "Run now",
+    "saveFirst": "Save the rules first",
+    "reset": "Back to defaults",
+    "save": "Save",
+    "saved": "Inclusion rules saved",
+    "noRules": "No rules: nothing is added or retired automatically.",
+    "orderHint": "A model goes through the rules from the top; leaving out a condition means it matches anything.",
+    "previewTitle": "What the rules would do now",
+    "previewEmpty": "Nothing to do: every match is already handled.",
+    "ranApply": "Added {{added}}, retired {{retired}}",
+    "ranDry": "Dry run: {{count}} new changes reported",
+    "defaultNames": {
+      "retireDeprecated": "Retire deprecated models",
+      "previews": "Previews as drafts",
+      "publishMain": "Publish new models from the main labs",
+      "otherSupplied": "Other supplied models as drafts"
+    }
   }
 }
