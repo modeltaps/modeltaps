@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { RotateCcw, Search } from 'lucide-react';
+import { Building2, RotateCcw, Search } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/components/ui/sonner';
 import PageActions from '@/components/chrome/PageActions';
-import { ListEmptyState, ListFooter, ListSkeleton, useListLayout } from '@/components/list-page';
+import { ListEmptyState, ListFooter, ListSkeleton, PageEmptyState, useListLayout } from '@/components/list-page';
 import { useObjectRoute } from '@/components/objects';
 import { API } from 'utils/api';
 import { showError } from 'utils/common';
@@ -121,6 +121,8 @@ export default function OrgAdmin() {
     }
   };
 
+  // No organization yet: the whole page becomes the first-run empty state.
+  const blank = loaded && !searching && rows.length === 0 && !keyword;
   let body;
   if (!loaded) {
     body = narrow ? (
@@ -129,7 +131,8 @@ export default function OrgAdmin() {
       <ListSkeleton layout="table" rows={3} checkbox={false} cells={[80, 64, 64, 32]} />
     );
   } else if (!searching && rows.length === 0) {
-    body = keyword ? (
+    // Without a keyword this is the first-run empty state (`blank`), rendered instead of the list.
+    body = (
       <ListEmptyState
         variant="noMatch"
         onClearFilters={() => {
@@ -137,8 +140,6 @@ export default function OrgAdmin() {
           setKeyword('');
         }}
       />
-    ) : (
-      <ListEmptyState title={t('dashboard_index.no_data', { defaultValue: 'No data' })} />
     );
   } else if (narrow) {
     body = (
@@ -185,29 +186,39 @@ export default function OrgAdmin() {
           </TooltipProvider>
         </PageActions>
 
-        <div className="relative max-w-80">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={keywordInput}
-            onChange={(e) => setKeywordInput(e.target.value)}
-            placeholder={t('orgAdmin.searchPlaceholder')}
-            aria-label={t('orgAdmin.searchPlaceholder')}
-            className="h-8 pl-8"
+        {blank ? (
+          <PageEmptyState
+            icon={Building2}
+            title={t('pageEmpty.orgs.title')}
+            description={t('pageEmpty.orgs.description')}
+            docsPath="/guide/organization"
           />
-        </div>
-
-        {narrow ? (
-          <>
-            {body}
-            <Card>{footer}</Card>
-          </>
         ) : (
-          <Card>
-            {body}
-            <div className="border-t border-border">{footer}</div>
-          </Card>
-        )}
+          <>
+            <div className="relative max-w-80">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={keywordInput}
+                onChange={(e) => setKeywordInput(e.target.value)}
+                placeholder={t('orgAdmin.searchPlaceholder')}
+                aria-label={t('orgAdmin.searchPlaceholder')}
+                className="h-8 pl-8"
+              />
+            </div>
 
+            {narrow ? (
+              <>
+                {body}
+                <Card>{footer}</Card>
+              </>
+            ) : (
+              <Card>
+                {body}
+                <div className="border-t border-border">{footer}</div>
+              </Card>
+            )}
+          </>
+        )}
         {route.openId > 0 && (
           <OrgPanel
             key={route.openId}

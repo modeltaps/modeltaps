@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { Plus, RotateCcw } from 'lucide-react';
+import { Plus, RotateCcw, Users } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,7 +12,7 @@ import { Card } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ROW_OPENS, RowControl, rowOpenProps, useObjectRoute } from '@/components/objects';
-import { ColumnPicker, ListEmptyState, ListFooter, ListSkeleton, useColumnVisibility, useListLayout } from '@/components/list-page';
+import { ColumnPicker, ListFooter, ListSkeleton, PageEmptyState, useColumnVisibility, useListLayout } from '@/components/list-page';
 import ResponsiveToolbarButton from '@/components/ResponsiveToolbarButton';
 import PageActions from '@/components/chrome/PageActions';
 import { API } from 'utils/api';
@@ -163,20 +163,11 @@ export default function UserGroup() {
   );
   const table = useTable({ features: appTableFeatures, data: groups, columns, state: { columnVisibility: columnState.visibility } });
 
+  // No group yet: the whole page becomes the first-run empty state.
+  const blank = loaded && !searching && groups.length === 0;
   let body;
   if (!loaded) {
     body = <ListSkeleton layout={narrow ? 'list' : 'table'} rows={3} checkbox={false} cells={[48, 72, 120, 32]} />;
-  } else if (!searching && groups.length === 0) {
-    body = (
-      <ListEmptyState
-        title={t('userGroup.emptyTitle')}
-        action={
-          <Button size="sm" onClick={route.openNew}>
-            <Plus className="size-4" /> {t('userGroup.create')}
-          </Button>
-        }
-      />
-    );
   } else if (narrow) {
     // Phone list: one 56px row per group. Name and symbol with the ratio on the right, then
     // public · auto-promotion · rate limit; the switch and the row menu at the end.
@@ -276,19 +267,35 @@ export default function UserGroup() {
         <ResponsiveToolbarButton primary icon={Plus} label={t('userGroup.create')} onClick={route.openNew} />
       </PageActions>
 
-      {!narrow && (
-        <div className="flex justify-end">
-          <ColumnPicker columns={columnState} />
-        </div>
+      {blank ? (
+        <PageEmptyState
+          icon={Users}
+          title={t('pageEmpty.userGroups.title')}
+          description={t('pageEmpty.userGroups.description')}
+          action={<Button onClick={route.openNew}>{t('userGroup.create')}</Button>}
+        />
+      ) : (
+        <>
+          {!narrow && (
+            <div className="flex justify-end">
+              <ColumnPicker columns={columnState} />
+            </div>
+          )}
+
+          <Card>
+            {body}
+            <div className="border-t border-border">
+              <ListFooter
+                total={listCount}
+                page={page}
+                pageSize={rowsPerPage}
+                onPageChange={setPage}
+                onPageSizeChange={onRowsPerPageChange}
+              />
+            </div>
+          </Card>
+        </>
       )}
-
-      <Card>
-        {body}
-        <div className="border-t border-border">
-          <ListFooter total={listCount} page={page} pageSize={rowsPerPage} onPageChange={setPage} onPageSizeChange={onRowsPerPageChange} />
-        </div>
-      </Card>
-
       {route.openId > 0 && (
         <UserGroupPanel
           key={route.openId}

@@ -9,9 +9,7 @@
     "searchPlaceholder": "Search channel name or tag",
     "openModels": "View models",
     "enabledColumn": "On",
-    "batchStatusFailed": "{{count}} channel(s) failed",
-    "emptyTitle": "No channels yet",
-    "emptyDescription": "Add an upstream provider key so models can be called."
+    "batchStatusFailed": "{{count}} channel(s) failed"
   },
   "channelDetail": {
     "back": "Channels",
@@ -747,7 +745,8 @@
     "selectAllOnPage": "Select all on this page",
     "selectRow": "Select {{name}}",
     "selectMode": "Select",
-    "segments": "Status"
+    "segments": "Status",
+    "readDocs": "Read the docs"
   },
   "pricing": "Models",
   "modelsPage": {
@@ -766,8 +765,6 @@
     "columnsShort": "Columns",
     "copyName": "Copy model name",
     "editProfile": "Edit profile",
-    "emptyDescription": "Models configured in channels show up here automatically; you can also create catalog entries manually.",
-    "emptyTitle": "No models yet",
     "export": "Export JSON",
     "labeling": "Labels",
     "moreActions": "More actions",
@@ -3683,6 +3680,41 @@
       "org_default": "Organization default",
       "member": "Member {{name}}",
       "list": "List {{name}}"
+    }
+  },
+  "pageEmpty": {
+    "tokens": {
+      "title": "No API keys yet",
+      "description": "Clients call the gateway with an API key. Each key can have its own quota, expiry and allowed models, and can be disabled at any time."
+    },
+    "providers": {
+      "title": "No providers yet",
+      "description": "Add an upstream provider and its key so the gateway can forward requests. A provider can have several channels that back each other up and share the traffic."
+    },
+    "models": {
+      "title": "The model catalog is empty",
+      "description": "Models configured in your channels appear here automatically. You can also add them in bulk from the model library, or create entries by hand to set prices and labels."
+    },
+    "routing": {
+      "title": "No routing policies yet",
+      "description": "A routing policy is a model name clients can call. The gateway judges each session from its first message and hands it to a suitable model.",
+      "memberDescription": "Your organization admins have not created a routing policy yet. Once they do, it appears here and you can call it directly."
+    },
+    "redemption": {
+      "title": "No redemption codes yet",
+      "description": "Generate codes in bulk and hand them out. Redeeming one adds credit straight to the account, which suits promotions, offline sales and compensation."
+    },
+    "inviteCodes": {
+      "title": "No invite codes yet",
+      "description": "With invite-only registration, only people holding a valid code can sign up. Each code can limit how many times and until when it can be used."
+    },
+    "userGroups": {
+      "title": "No user groups yet",
+      "description": "A user group decides which channels its users can reach and at what rate they are billed. It can also carry auto-promotion rules and rate limits."
+    },
+    "orgs": {
+      "title": "No organizations yet",
+      "description": "Organizations appear here once users create them. An organization shares a credit pool, and its admins assign budgets and models to members."
     }
   },
   "longList": {

@@ -47,10 +47,31 @@ func AutoSupplyChannel(channel *Channel, names []string) ([]*ModelSupply, error)
 	if err != nil {
 		return nil, err
 	}
-	mapping := channelMappingOf(channel)
+	// Names are resolved before the transaction: the resolver may load the model library through
+	// the global connection, which a SQLite transaction would block.
+	candidates := autoSupplyCandidates(resolver, channel, names)
+	var created []*ModelSupply
+	err = DB.Transaction(func(tx *gorm.DB) error {
+		var err error
+		created, err = createAutoSupplies(tx, channel, candidates)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(created) > 0 {
+		reloadSupplies()
+	}
+	return created, nil
+}
 
-	type candidate struct{ model, upstream string }
-	var candidates []candidate
+type autoSupplyCandidate struct{ model, upstream string }
+
+// autoSupplyCandidates gives the public model and upstream name for each listed name that belongs
+// to a public model, ordered so the preferred spelling of each model comes first.
+func autoSupplyCandidates(resolver *CanonicalResolver, channel *Channel, names []string) []autoSupplyCandidate {
+	mapping := channelMappingOf(channel)
+	var candidates []autoSupplyCandidate
 	for _, name := range names {
 		name = strings.TrimSpace(name)
 		if name == "" || strings.HasSuffix(name, "*") {
@@ -64,7 +85,7 @@ func AutoSupplyChannel(channel *Channel, names []string) ([]*ModelSupply, error)
 		if mapped, ok := mapping[name]; ok {
 			upstream = mapped
 		}
-		candidates = append(candidates, candidate{model: info.Model, upstream: upstream})
+		candidates = append(candidates, autoSupplyCandidate{model: info.Model, upstream: upstream})
 	}
 	// A model has one supply per channel. When several listed names belong to the same model, the
 	// one spelled like the model wins, then the shortest, so "gpt-4o" beats "gpt-4o-2024-08-06".
@@ -81,39 +102,34 @@ func AutoSupplyChannel(channel *Channel, names []string) ([]*ModelSupply, error)
 		}
 		return a.upstream < b.upstream
 	})
+	return candidates
+}
 
-	var created []*ModelSupply
-	err = DB.Transaction(func(tx *gorm.DB) error {
-		var existing []*ModelSupply
-		if err := tx.Where("channel_id = ?", channel.Id).Find(&existing).Error; err != nil {
-			return err
-		}
-		supplied := make(map[string]bool, len(existing))
-		for _, s := range existing {
-			supplied[s.Model] = true
-		}
-		for _, c := range candidates {
-			if supplied[c.model] {
-				continue
-			}
-			supplied[c.model] = true
-			supply := &ModelSupply{
-				Model: c.model, ChannelId: channel.Id, UpstreamModel: c.upstream,
-				Priority: channel.GetPriority(), Weight: uint(channel.GetWeight()),
-				Enabled: true, Source: ModelSupplySourceChannel,
-			}
-			if err := tx.Create(supply).Error; err != nil {
-				return err
-			}
-			created = append(created, supply)
-		}
-		return nil
-	})
-	if err != nil {
+// createAutoSupplies creates the supplies of candidates the channel does not supply yet.
+func createAutoSupplies(tx *gorm.DB, channel *Channel, candidates []autoSupplyCandidate) ([]*ModelSupply, error) {
+	var existing []*ModelSupply
+	if err := tx.Where("channel_id = ?", channel.Id).Find(&existing).Error; err != nil {
 		return nil, err
 	}
-	if len(created) > 0 {
-		reloadSupplies()
+	supplied := make(map[string]bool, len(existing))
+	for _, s := range existing {
+		supplied[s.Model] = true
+	}
+	var created []*ModelSupply
+	for _, c := range candidates {
+		if supplied[c.model] {
+			continue
+		}
+		supplied[c.model] = true
+		supply := &ModelSupply{
+			Model: c.model, ChannelId: channel.Id, UpstreamModel: c.upstream,
+			Priority: channel.GetPriority(), Weight: uint(channel.GetWeight()),
+			Enabled: true, Source: ModelSupplySourceChannel,
+		}
+		if err := tx.Create(supply).Error; err != nil {
+			return nil, err
+		}
+		created = append(created, supply)
 	}
 	return created, nil
 }

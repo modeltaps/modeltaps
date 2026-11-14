@@ -9,9 +9,7 @@
     "searchPlaceholder": "搜索渠道名称或标签",
     "openModels": "查看模型",
     "enabledColumn": "启用",
-    "batchStatusFailed": "{{count}} 个渠道操作失败",
-    "emptyTitle": "还没有渠道",
-    "emptyDescription": "添加一个上游供应商的 key，模型才能被调用。"
+    "batchStatusFailed": "{{count}} 个渠道操作失败"
   },
   "channelDetail": {
     "back": "渠道",
@@ -746,7 +744,8 @@
     "selectAllOnPage": "选择本页全部",
     "selectRow": "选择 {{name}}",
     "selectMode": "选择",
-    "segments": "状态"
+    "segments": "状态",
+    "readDocs": "阅读文档"
   },
   "pricing": "模型",
   "modelsPage": {
@@ -765,8 +764,6 @@
     "columnsShort": "列",
     "copyName": "复制模型名",
     "editProfile": "编辑信息",
-    "emptyDescription": "渠道里配置的模型会自动出现在这里;也可以手动新建目录条目。",
-    "emptyTitle": "还没有模型",
     "export": "导出 JSON",
     "labeling": "标注",
     "moreActions": "更多操作",
@@ -3579,6 +3576,41 @@
       "org_default": "组织缺省",
       "member": "成员 {{name}}",
       "list": "列表 {{name}}"
+    }
+  },
+  "pageEmpty": {
+    "tokens": {
+      "title": "还没有 API Key",
+      "description": "客户端用 API Key 调用网关。每个 Key 可以单独设置额度、有效期和可用模型，用完或泄露时随时停用。"
+    },
+    "providers": {
+      "title": "还没有供应商",
+      "description": "添加一个上游供应商和它的密钥，网关才能把请求转发出去。同一个供应商可以添加多个渠道，互为备份、分摊流量。"
+    },
+    "models": {
+      "title": "模型目录还是空的",
+      "description": "渠道里配置的模型会自动出现在这里，也可以从模型库批量添加，或手动新建条目来设置价格和标签。"
+    },
+    "routing": {
+      "title": "还没有路由策略",
+      "description": "路由策略是一个可调用的模型名，网关根据每个会话的首条消息判断任务难度，自动交给合适的模型应答。",
+      "memberDescription": "组织管理员还没有创建路由策略，创建后会在这里显示，你可以直接调用。"
+    },
+    "redemption": {
+      "title": "还没有兑换码",
+      "description": "兑换码可以批量生成并发给用户，兑换后额度直接充入账户，适合活动赠送、线下售卖或补偿发放。"
+    },
+    "inviteCodes": {
+      "title": "还没有邀请码",
+      "description": "开启邀请注册后，只有持有效邀请码的人才能注册。每个码可以限制使用次数和有效期。"
+    },
+    "userGroups": {
+      "title": "还没有用户分组",
+      "description": "用户分组决定用户能用哪些渠道、按什么倍率计费，也可以设置自动升级规则和限速。"
+    },
+    "orgs": {
+      "title": "还没有组织",
+      "description": "用户创建组织后会显示在这里。组织共享额度池，管理员可以给成员分配预算和可用模型。"
     }
   },
   "longList": {

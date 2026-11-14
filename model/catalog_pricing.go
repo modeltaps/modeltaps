@@ -477,15 +477,28 @@ func (p *Pricing) priceSnapshot(name string) (*Price, bool) {
 }
 
 // CatalogMissingModels 返回缺价格或缺目录行的模型名（别名行跳过：别名沿用主名价格与元信息）。
+// A platform spelling counts as covered once the catalog has a row under its public name and a
+// price exists under the spelling or the public name: the sync writes rows under public names only.
 func CatalogMissingModels(names []string) []string {
+	// Without a resolver (catalog read failed) only the listed spellings are checked.
+	resolver, _ := NewCanonicalResolver()
 	var missing []string
 	for _, name := range names {
 		info := lookupModelInfo(name)
 		if info != nil && info.AliasOf != "" {
 			continue
 		}
-		if _, ok := PricingInstance.priceSnapshot(name); ok && info != nil {
+		_, priced := PricingInstance.priceSnapshot(name)
+		if priced && info != nil {
 			continue
+		}
+		if resolver != nil {
+			if public := resolver.PublicName(name); public != name {
+				_, publicPriced := PricingInstance.priceSnapshot(public)
+				if lookupModelInfo(public) != nil && (priced || publicPriced) {
+					continue
+				}
+			}
 		}
 		missing = append(missing, name)
 	}
@@ -513,8 +526,16 @@ func filterChannelSourced(infos []*ModelInfo, prices []*Price) ([]*ModelInfo, []
 
 // syncCatalogChannelModels 把渠道模型名按 models.dev 全量匹配结果 upsert（不覆盖 locked 与渠道来源）。
 // auto 为自动同步（定时、保存渠道），已有价格的变动按 PriceSyncAutoApply 处理。
+// Catalog rows are written under public names (see PublicNameInfos); prices are written under
+// the listed spellings, as before, and copied to the public names (see PublicNamePrices).
 func syncCatalogChannelModels(data map[string]catalogProvider, names []string, auto bool) (*CatalogSyncResult, error) {
 	infos, prices, unconvertible, unmatched := BuildChannelCatalogEntries(data, names)
+	resolver, err := NewCanonicalResolver()
+	if err != nil {
+		return nil, err
+	}
+	infos = PublicNameInfos(resolver, [][]*ModelInfo{infos})[0]
+	prices = append(prices, PublicNamePrices(resolver, [][]*Price{prices})...)
 	infos, prices = filterChannelSourced(infos, prices)
 	if len(prices) > 0 {
 		if err := writeSyncedPrices(prices, "models.dev", auto); err != nil {
