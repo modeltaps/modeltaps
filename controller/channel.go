@@ -265,39 +265,40 @@ func UpdateChannel(c *gin.Context) {
 	// 保存后异步为渠道模型补齐元信息与价格（OpenRouter 自带列表优先，其余走 models.dev），免去手动同步。
 	AutoSyncChannelCatalog(channel.Type, channel.Models, "channel update")
 	model.TriggerChannelBrandIconFetch(&channel)
-	supplied := 0
+	sync := model.ChannelSupplySync{}
 	if getErr == nil && channel.Models != "" {
-		supplied = autoSupplyAddedModels(channel.Id, model.AddedChannelModels(oldChannel.Models, channel.Models))
+		sync = syncChannelSupplies(oldChannel, channel.Id)
 	}
 	channel.HideKey()
-	// supplies is how many public models the models added in this edit were attached to.
+	// supplies counts the public models the edit attached the channel to; supplies_updated and
+	// supplies_removed the supplies made from the model list that followed the edit.
 	c.JSON(http.StatusOK, gin.H{
-		"success":  true,
-		"message":  "",
-		"data":     channel,
-		"supplies": supplied,
+		"success":          true,
+		"message":          "",
+		"data":             channel,
+		"supplies":         sync.Attached,
+		"supplies_updated": sync.Updated,
+		"supplies_removed": sync.Removed,
 	})
 }
 
-// autoSupplyAddedModels attaches the channel to the public models among the names an edit added
-// to its model list, as autoSupplyNewChannel does for a new channel. Only added names are taken:
-// a model the channel listed before and no longer supplies had its supply removed on purpose.
-// The channel is read back so the supplies take its stored priority, weight and mapping.
-func autoSupplyAddedModels(channelId int, added []string) int {
-	if !config.ModelSupplyEnabled || len(added) == 0 {
-		return 0
+// syncChannelSupplies carries an edit of the channel's model list or mapping to its supplies
+// while supplies route requests (see model.SyncChannelSupplies). The channel is read back so the
+// supplies take its stored list, mapping, priority and weight.
+func syncChannelSupplies(before *model.Channel, channelId int) model.ChannelSupplySync {
+	if !config.ModelSupplyEnabled {
+		return model.ChannelSupplySync{}
 	}
 	stored, err := model.GetChannelById(channelId)
 	if err != nil {
-		logger.SysError("auto supply failed for channel #" + strconv.Itoa(channelId) + ": " + err.Error())
-		return 0
+		logger.SysError("supply sync failed for channel #" + strconv.Itoa(channelId) + ": " + err.Error())
+		return model.ChannelSupplySync{}
 	}
-	supplies, err := model.AutoSupplyChannel(stored, added)
+	sync, err := model.SyncChannelSupplies(before, stored)
 	if err != nil {
-		logger.SysError("auto supply failed for channel " + stored.Name + ": " + err.Error())
-		return 0
+		logger.SysError("supply sync failed for channel " + stored.Name + ": " + err.Error())
 	}
-	return len(supplies)
+	return sync
 }
 
 func BatchUpdateChannelsAzureApi(c *gin.Context) {

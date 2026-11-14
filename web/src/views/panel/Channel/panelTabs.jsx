@@ -859,7 +859,7 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
           id="cp-n2r"
           rows={3}
           className="font-mono text-[13px]"
-          placeholder={'gpt-5-pro\n-o3-pro'}
+          placeholder={t('channels.advanced.n2rPlaceholder')}
           value={draft.need2response_models}
           onChange={set('need2response_models')}
         />

@@ -117,3 +117,126 @@ func AutoSupplyChannel(channel *Channel, names []string) ([]*ModelSupply, error)
 	}
 	return created, nil
 }
+
+// ChannelSupplySync counts what SyncChannelSupplies changed.
+type ChannelSupplySync struct {
+	Attached int `json:"attached"`
+	Updated  int `json:"updated"`
+	Removed  int `json:"removed"`
+}
+
+// followsChannelList reports whether a supply was made from a channel's model list (when the
+// channel was added, by the drift check, or by the migration) and so follows later edits of it.
+// Supplies added by hand or from the model library are the admin's own and are left alone.
+func followsChannelList(s *ModelSupply) bool {
+	return s.Source == ModelSupplySourceChannel || s.Source == ModelSupplySourceMigrated
+}
+
+// SyncChannelSupplies carries an edit of a channel's model list or model mapping to its
+// supplies while supplies route requests. Names the edit added are attached as AutoSupplyChannel
+// does. A supply made from the list follows it while it still sends what the old list and mapping
+// gave it: when the mapping now names another upstream model, the supply sends that one; when
+// the name left the list and no other listed name belongs to the same public model, the supply is
+// removed, so adding the name back attaches it again. A supply whose upstream name was changed on
+// the model page, or that was added by hand, is left alone.
+func SyncChannelSupplies(before, after *Channel) (ChannelSupplySync, error) {
+	var out ChannelSupplySync
+	if before == nil || after == nil || after.Id == 0 {
+		return out, nil
+	}
+	oldNames, newNames := SplitChannelModels(before.Models), SplitChannelModels(after.Models)
+	oldMapping, newMapping := channelMappingOf(before), channelMappingOf(after)
+	upstreamOf := func(mapping map[string]string, name string) string {
+		if mapped, ok := mapping[name]; ok {
+			return mapped
+		}
+		return name
+	}
+
+	resolver, err := NewCanonicalResolver()
+	if err != nil {
+		return out, err
+	}
+	publicOf := func(name string) string {
+		if strings.HasSuffix(name, "*") {
+			return ""
+		}
+		if info := resolver.publicModel(resolver.Resolve(name).Canonical); info != nil {
+			return info.Model
+		}
+		return ""
+	}
+	kept := map[string]bool{}
+	stillServed := map[string]bool{} // public models some name in the new list belongs to
+	for _, name := range newNames {
+		kept[name] = true
+		if model := publicOf(name); model != "" {
+			stillServed[model] = true
+		}
+	}
+
+	type change struct {
+		supply   *ModelSupply
+		upstream string // new upstream name; empty removes the supply
+	}
+	var changes []change
+	var existing []*ModelSupply
+	if err := DB.Where("channel_id = ?", after.Id).Find(&existing).Error; err != nil {
+		return out, err
+	}
+	byModel := make(map[string]*ModelSupply, len(existing))
+	for _, s := range existing {
+		byModel[s.Model] = s
+	}
+	seen := map[int]bool{}
+	for _, name := range oldNames {
+		model := publicOf(name)
+		supply := byModel[model]
+		if model == "" || supply == nil || seen[supply.Id] || !followsChannelList(supply) {
+			continue
+		}
+		if supply.UpstreamModel != upstreamOf(oldMapping, name) {
+			continue // changed on the model page, or made from another listed name
+		}
+		switch {
+		case kept[name]:
+			if up := upstreamOf(newMapping, name); up != supply.UpstreamModel {
+				changes = append(changes, change{supply, up})
+				seen[supply.Id] = true
+			}
+		case !stillServed[model]:
+			changes = append(changes, change{supply, ""})
+			seen[supply.Id] = true
+		}
+	}
+
+	if len(changes) > 0 {
+		err = DB.Transaction(func(tx *gorm.DB) error {
+			for _, c := range changes {
+				if c.upstream == "" {
+					if err := tx.Delete(&ModelSupply{}, c.supply.Id).Error; err != nil {
+						return err
+					}
+					out.Removed++
+					continue
+				}
+				if err := tx.Model(&ModelSupply{}).Where("id = ?", c.supply.Id).Update("upstream_model", c.upstream).Error; err != nil {
+					return err
+				}
+				out.Updated++
+			}
+			return nil
+		})
+		if err != nil {
+			return ChannelSupplySync{}, err
+		}
+		reloadSupplies()
+	}
+
+	created, err := AutoSupplyChannel(after, AddedChannelModels(before.Models, after.Models))
+	if err != nil {
+		return out, err
+	}
+	out.Attached = len(created)
+	return out, nil
+}

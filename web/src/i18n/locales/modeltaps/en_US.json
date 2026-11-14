@@ -2068,7 +2068,8 @@
       "danger": "Danger zone",
       "dangerHint": "Copy creates a new channel with the same key and settings; delete cannot be undone",
       "name": "Name",
-      "otherUnused": "This provider does not read this field; you can clear it"
+      "otherUnused": "This provider does not read this field; you can clear it",
+      "n2rPlaceholder": "model-name\n-model-not-converted"
     },
     "chart": {
       "aria": "Requests per channel",
@@ -2158,9 +2159,16 @@
       "remove": "Remove {{model}}",
       "syncPrices": "Sync prices",
       "ttft": "First token",
-      "savedSupplied_one": "Saved; now supplies {{count}} more public model",
-      "savedSupplied_other": "Saved; now supplies {{count}} more public models",
-      "supplyNote": "When you save, models you add are supplied to the public models of the same name. Removing a model or changing the mapping does not change existing supplies; adjust those under Supplies on the model page."
+      "supplyNote": "When you save, changes to the model list and mapping reach the supplies made from this channel: models you add are supplied to the public models of the same name, a new mapping changes the name sent upstream, and removed models have their supplies withdrawn. Supplies added by hand, or whose upstream name was changed on the model page, stay as they are.",
+      "saved": {
+        "summary": "Saved: {{changes}}",
+        "attached_one": "now supplies {{count}} more public model",
+        "attached_other": "now supplies {{count}} more public models",
+        "updated_one": "{{count}} supply uses its new upstream name",
+        "updated_other": "{{count}} supplies use their new upstream names",
+        "removed_one": "{{count}} supply withdrawn",
+        "removed_other": "{{count}} supplies withdrawn"
+      }
     },
     "monitor": {
       "checkNow": "Check model list now",
