@@ -25,8 +25,10 @@ import {
   BatchBar,
   ColumnPicker,
   ConditionBar,
+  ListEmptyState,
   ListFooter,
   ListSkeleton,
+  PageEmptyState,
   PhoneListToolbar,
   PresetChips,
   StatusSegments,
@@ -363,6 +365,9 @@ export default function Token() {
     apply: applyPreset
   });
   const activeConditionFields = filterFields.filter((f) => isEntryActive(f, filterState[f.key]));
+  const hasFilters = !!keyword || status !== 'all' || activeConditionFields.length > 0 || isAdminSearch;
+  // Nothing created yet: the whole page becomes the first-run empty state.
+  const blank = loaded && !searching && tokens.length === 0 && !hasFilters;
   const removeCondition = (key) =>
     handleFilterChange((prev) => {
       const next = { ...prev };
@@ -380,6 +385,13 @@ export default function Token() {
   const handleClearFilters = () => {
     setPage(0);
     setFilterState({});
+  };
+  // "No match" reset: search text, status segment and conditions together.
+  const clearEverything = () => {
+    setSearchText('');
+    setKeyword('');
+    changeStatus('all');
+    handleClearFilters();
   };
 
   useEffect(() => {
@@ -546,144 +558,147 @@ export default function Token() {
           <ResponsiveToolbarButton primary icon={Plus} label={t('token_index.createToken')} onClick={openCreate} />
         </PageActions>
 
-        <div className="space-y-2">
-          {narrow ? (
-            <>
-              <StatusSegments chips value={status} onChange={changeStatus} options={statusOptions} counts={statusCounts} />
-              <PhoneListToolbar
-                search={searchBox}
-                filter={{ count: activeConditionFields.length, onOpen: () => setFilterSheetOpen(true) }}
-                sort={{
-                  options: SORT_OPTIONS.map((o) => ({
-                    key: o.labelKey,
-                    label: t(o.labelKey),
-                    active: orderBy === o.id && order === o.dir,
-                    onSelect: () => setSort(o.id, o.dir)
-                  }))
-                }}
-                select={{
-                  active: selection.selectMode,
-                  onToggle: () => (selection.selectMode ? selection.exitSelectMode() : selection.enterSelectMode())
-                }}
-                chips={activeConditionFields.map((f) => ({
-                  key: f.key,
-                  label: describeEntry(t, f, filterState[f.key]),
-                  onRemove: () => removeCondition(f.key)
-                }))}
-              />
-            </>
-          ) : (
-            <>
-              {/* Toolbar: status segments with counts, name search, column picker. */}
-              <div className="flex flex-wrap items-center gap-2">
-                <StatusSegments value={status} onChange={changeStatus} options={statusOptions} counts={statusCounts} />
-                <div className="relative min-w-[12rem] flex-1">
-                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={searchText}
-                    onChange={(e) => setSearchText(e.target.value)}
-                    placeholder={t('token_index.searchTokenName')}
-                    aria-label={t('token_index.searchTokenName')}
-                    className="h-8 pl-8"
+        {blank ? (
+          <PageEmptyState
+            icon={KeyRound}
+            title={t('pageEmpty.tokens.title')}
+            description={t('pageEmpty.tokens.description')}
+            docsPath="/guide/tokens"
+            action={<Button onClick={openCreate}>{t('token_index.createToken')}</Button>}
+          />
+        ) : (
+          <>
+            <div className="space-y-2">
+              {narrow ? (
+                <>
+                  <StatusSegments chips value={status} onChange={changeStatus} options={statusOptions} counts={statusCounts} />
+                  <PhoneListToolbar
+                    search={searchBox}
+                    filter={{ count: activeConditionFields.length, onOpen: () => setFilterSheetOpen(true) }}
+                    sort={{
+                      options: SORT_OPTIONS.map((o) => ({
+                        key: o.labelKey,
+                        label: t(o.labelKey),
+                        active: orderBy === o.id && order === o.dir,
+                        onSelect: () => setSort(o.id, o.dir)
+                      }))
+                    }}
+                    select={{
+                      active: selection.selectMode,
+                      onToggle: () => (selection.selectMode ? selection.exitSelectMode() : selection.enterSelectMode())
+                    }}
+                    chips={activeConditionFields.map((f) => ({
+                      key: f.key,
+                      label: describeEntry(t, f, filterState[f.key]),
+                      onRemove: () => removeCondition(f.key)
+                    }))}
                   />
-                </div>
-                <ColumnPicker columns={columns} />
-              </div>
-
-              {/* Condition bar, always present so the conditions are discoverable; selected rows
-                  swap it for the bulk actions. */}
-              {selection.count > 0 ? (
-                <BatchBar
-                  count={selection.count}
-                  onClear={selection.clear}
-                  className="min-h-10 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-1.5"
-                  actions={batchActions}
-                />
+                </>
               ) : (
-                <ConditionBar
-                  fields={filterFields}
-                  state={filterState}
-                  onChange={handleFilterChange}
-                  onClearAll={handleClearFilters}
-                  leadingLabel={t('apiKey.list.showKeysThat')}
-                  presets={presets}
+                <>
+                  {/* Toolbar: status segments with counts, name search, column picker. */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusSegments value={status} onChange={changeStatus} options={statusOptions} counts={statusCounts} />
+                    <div className="relative min-w-[12rem] flex-1">
+                      <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        placeholder={t('token_index.searchTokenName')}
+                        aria-label={t('token_index.searchTokenName')}
+                        className="h-8 pl-8"
+                      />
+                    </div>
+                    <ColumnPicker columns={columns} />
+                  </div>
+
+                  {/* Condition bar, always present so the conditions are discoverable; selected rows
+                    swap it for the bulk actions. */}
+                  {selection.count > 0 ? (
+                    <BatchBar
+                      count={selection.count}
+                      onClear={selection.clear}
+                      className="min-h-10 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-1.5"
+                      actions={batchActions}
+                    />
+                  ) : (
+                    <ConditionBar
+                      fields={filterFields}
+                      state={filterState}
+                      onChange={handleFilterChange}
+                      onClearAll={handleClearFilters}
+                      leadingLabel={t('apiKey.list.showKeysThat')}
+                      presets={presets}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+
+            {narrow && selection.selectMode && (
+              <BatchBar count={selection.count} onClear={selection.exitSelectMode} floating actions={batchActions} />
+            )}
+            {narrow && (
+              <FilterSheet
+                open={filterSheetOpen}
+                onOpenChange={setFilterSheetOpen}
+                title={t('listPage.filter')}
+                fields={filterFields}
+                state={filterState}
+                onChange={handleFilterChange}
+                onClearAll={handleClearFilters}
+                t={t}
+                top={<PresetChips presets={presets} onPick={() => setFilterSheetOpen(false)} />}
+              />
+            )}
+
+            <Card>
+              {!loaded ? (
+                <ListSkeleton layout={layout} cells={[64, 192, 32]} />
+              ) : tokens.length === 0 && !searching ? (
+                <ListEmptyState variant="noMatch" onClearFilters={clearEverything} />
+              ) : (
+                <TokenTable
+                  tokens={tokens}
+                  todayUsage={todayUsage}
+                  orgMemberNames={isOrgContext ? orgMemberNames : null}
+                  userGroup={userGroup}
+                  userIsReliable={userIsReliable}
+                  onCopyKey={onCopyKey}
+                  onEdit={openEdit}
+                  onDelete={setDeleteTarget}
+                  onToggleStatus={onToggleStatus}
+                  onShowUsage={setUsageTarget}
+                  onConnectOpenClaw={setOpenClawTarget}
+                  onOpen={(item) => route.open(item.id)}
+                  openId={route.openId}
+                  selectedIds={selectedIds}
+                  onToggleSelect={selection.toggle}
+                  onToggleSelectAll={selection.toggleAll}
+                  layout={layout}
+                  selectMode={selection.selectMode}
+                  order={order}
+                  orderBy={orderBy}
+                  onSort={handleSort}
+                  columnVisibility={columnVisibility}
+                  quotaResetTimezone={siteInfo?.quota_reset_timezone}
+                  quotaResetWeekStart={siteInfo?.quota_reset_week_start}
                 />
               )}
-            </>
-          )}
-        </div>
 
-        {narrow && selection.selectMode && (
-          <BatchBar count={selection.count} onClear={selection.exitSelectMode} floating actions={batchActions} />
+              <div className="border-t border-border">
+                <ListFooter
+                  total={listCount}
+                  page={page}
+                  pageSize={rowsPerPage}
+                  selectedCount={selectedIds.size}
+                  onPageChange={setPage}
+                  onPageSizeChange={onRowsPerPageChange}
+                />
+              </div>
+            </Card>
+          </>
         )}
-        {narrow && (
-          <FilterSheet
-            open={filterSheetOpen}
-            onOpenChange={setFilterSheetOpen}
-            title={t('listPage.filter')}
-            fields={filterFields}
-            state={filterState}
-            onChange={handleFilterChange}
-            onClearAll={handleClearFilters}
-            t={t}
-            top={<PresetChips presets={presets} onPick={() => setFilterSheetOpen(false)} />}
-          />
-        )}
-
-        <Card>
-          {!loaded ? (
-            <ListSkeleton layout={layout} cells={[64, 192, 32]} />
-          ) : tokens.length === 0 && !searching ? (
-            <div className="flex flex-col items-center justify-center gap-3 p-12 text-center">
-              <KeyRound className="size-10 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                {t('token_index.token')} — {t('dashboard_index.no_data', { defaultValue: 'No tokens yet' })}
-              </p>
-              <Button onClick={openCreate}>
-                <Plus className="size-4" /> {t('token_index.createToken')}
-              </Button>
-            </div>
-          ) : (
-            <TokenTable
-              tokens={tokens}
-              todayUsage={todayUsage}
-              orgMemberNames={isOrgContext ? orgMemberNames : null}
-              userGroup={userGroup}
-              userIsReliable={userIsReliable}
-              onCopyKey={onCopyKey}
-              onEdit={openEdit}
-              onDelete={setDeleteTarget}
-              onToggleStatus={onToggleStatus}
-              onShowUsage={setUsageTarget}
-              onConnectOpenClaw={setOpenClawTarget}
-              onOpen={(item) => route.open(item.id)}
-              openId={route.openId}
-              selectedIds={selectedIds}
-              onToggleSelect={selection.toggle}
-              onToggleSelectAll={selection.toggleAll}
-              layout={layout}
-              selectMode={selection.selectMode}
-              order={order}
-              orderBy={orderBy}
-              onSort={handleSort}
-              columnVisibility={columnVisibility}
-              quotaResetTimezone={siteInfo?.quota_reset_timezone}
-              quotaResetWeekStart={siteInfo?.quota_reset_week_start}
-            />
-          )}
-
-          <div className="border-t border-border">
-            <ListFooter
-              total={listCount}
-              page={page}
-              pageSize={rowsPerPage}
-              selectedCount={selectedIds.size}
-              onPageChange={setPage}
-              onPageSizeChange={onRowsPerPageChange}
-            />
-          </div>
-        </Card>
-
         {/* The panel comes first so the dialogs it opens (delete, test command, client setup) stack above it. */}
         {route.openId > 0 && (
           <TokenPanel
