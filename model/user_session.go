@@ -148,7 +148,13 @@ func ValidateUserSession(key string, userId int) (*UserSession, error) {
 	}
 	session, err := cachedUserSession(key)
 	if err != nil {
-		return nil, ErrUserSessionInvalid
+		// Only a missing row ends the session. Any other error (the database locked or briefly
+		// unreachable, e.g. while the server restarts) is returned as is: the caller must not
+		// sign the user out over it.
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrUserSessionInvalid
+		}
+		return nil, fmt.Errorf("check session: %w", err)
 	}
 	if session.UserId != userId {
 		return nil, ErrUserSessionInvalid

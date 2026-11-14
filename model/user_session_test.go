@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -143,4 +144,22 @@ func TestUserSessionRevocation(t *testing.T) {
 		t.Fatal("删除提供方后经它登录的会话应结束")
 	}
 	_ = time.Now()
+}
+
+// A session that cannot be checked (here the table is gone, standing in for a locked or
+// unreachable database) is not reported invalid, so the caller keeps the user signed in; a
+// missing row still is.
+func TestValidateUserSessionCheckFailure(t *testing.T) {
+	setupUserSessionTestDB(t)
+	session := mustCreateSession(t, 1, SessionMethodPassword)
+	if _, err := ValidateUserSession("no-such-key", 1); !errors.Is(err, ErrUserSessionInvalid) {
+		t.Fatalf("missing session: err = %v, want ErrUserSessionInvalid", err)
+	}
+	if err := DB.Migrator().DropTable(&UserSession{}); err != nil {
+		t.Fatal(err)
+	}
+	_, err := ValidateUserSession(session.SessionKey, 1)
+	if err == nil || errors.Is(err, ErrUserSessionInvalid) {
+		t.Fatalf("check failure: err = %v, want an error other than ErrUserSessionInvalid", err)
+	}
 }

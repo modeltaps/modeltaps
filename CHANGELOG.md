@@ -494,6 +494,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Opening or reloading the panel while the backend restarts no longer signs the user out. The
+  sign-in check used to take any failed `/api/user/self` (a 502 from the dev proxy, a refused
+  connection) as "signed out" and sent the user to the login page with a still valid session; it
+  now retries for about 20 seconds and goes to the login page only on an actual 401. On the
+  server, a session that cannot be checked (the database locked or unreachable) is answered with
+  503 instead of being treated as expired, so the session cookie is no longer cleared over it.
 - Responses served through a supply whose upstream name differs from the public model now carry
   the public name the client asked for. A call to `claude-opus-5` through a Vercel AI Gateway
   supply (`anthropic/claude-opus-5`) answered with `"model": "anthropic/claude-opus-5"`; chat

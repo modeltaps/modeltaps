@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"github.com/modeltaps/modeltaps/common"
 	"fmt"
 	"github.com/modeltaps/modeltaps/common/config"
@@ -59,7 +60,14 @@ func authHelper(c *gin.Context, minRole int) {
 		}
 		// cookie 只是会话行的索引：行被删（改密踢出、登出其它设备、封禁）或按空闲 / 绝对期限过期即失效
 		sid, _ := session.Get("sid").(string)
-		if _, err := model.ValidateUserSession(sid, idInt); err != nil {
+		if _, err := model.ValidateUserSession(sid, idInt); err != nil && !errors.Is(err, model.ErrUserSessionInvalid) {
+			// The session could not be checked (it was not found to be invalid): keep the cookie
+			// and answer 503, which the panel retries instead of signing the user out.
+			logger.SysError("failed to check login session: " + err.Error())
+			common.APIRespondWithCode(c, http.StatusServiceUnavailable, common.APICodeUserCheckFailed, "Permission denied: user verification failed", nil)
+			c.Abort()
+			return
+		} else if err != nil {
 			// 401 + 清掉 cookie 会话：前端只在 401 时清本地登录态并回登录页，
 			// 否则被踢的设备会一直带着死 cookie 弹错误。
 			session.Clear()
@@ -112,6 +120,13 @@ func TrySetUserBySession() func(c *gin.Context) {
 		// 会话行已失效的 cookie 按匿名处理，并顺手清掉死 cookie
 		sid, _ := session.Get("sid").(string)
 		if _, err := model.ValidateUserSession(sid, idInt); err != nil {
+			// Only a session found invalid loses its cookie; one that could not be checked is
+			// treated as anonymous for this request alone.
+			if !errors.Is(err, model.ErrUserSessionInvalid) {
+				logger.SysError("failed to check login session: " + err.Error())
+				c.Next()
+				return
+			}
 			session.Clear()
 			if saveErr := session.Save(); saveErr != nil {
 				logger.SysError("Failed to clear expired session: " + saveErr.Error())

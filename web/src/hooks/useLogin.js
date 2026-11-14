@@ -1,4 +1,5 @@
 import { API, LoginCheckAPI } from 'utils/api';
+import { retryWhileUnavailable } from 'utils/serverRetry';
 import { syncUserSettingFromServer } from 'utils/userSetting';
 import { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
@@ -186,7 +187,9 @@ const useLogin = (navPath = '/panel') => {
 
   const loadUser = useCallback(async () => {
     try {
-      const res = await LoginCheckAPI.get('/api/user/self');
+      // While the backend restarts (a deploy, or the dev server reloading after a change) the
+      // check cannot be answered: wait for it instead of taking that as "signed out".
+      const res = await retryWhileUnavailable(() => LoginCheckAPI.get('/api/user/self'));
       const { success, data } = res.data;
       if (success) {
         dispatch({ type: LOGIN, payload: data });
