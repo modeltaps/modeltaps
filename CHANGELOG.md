@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- While supplies route requests, saving a channel now attaches it to the public models among the
+  names the edit added to its model list, as creating a channel already did; a model it listed
+  before keeps whatever supplies it has. The save message says how many models were attached, and
+  the Models tab notes that removals and mapping changes are made under Supplies on the model page.
+- The channel panel lists what needs attention on the channel (auto-disabled, no key, low balance,
+  models added or removed upstream) above its tabs, each with its action, so the reason no longer
+  hides behind the icon of a narrow row.
+
 - Adding models from the model library now finds the channels that can supply a model even when
   models.dev does not know their spelling. Upstream names are compared word by word after taking
   off platform decoration (vendor and region prefixes, "@default", "-v1:0", "." versus "-"). Under
@@ -272,6 +280,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   models.
 
 ### Changed
+
+- The channel menu names its checks apart: "Test several models" (connection and latency),
+  "Capability check" (real requests that verify vision, tool calls and more) and "Compare upstream
+  models", each with a line saying what it does. The Advanced tab shows the "other" field only
+  when a provider that does not read it still holds a value, and the no-streaming example uses the
+  channel's own models.
 
 - Providers list columns: "Requests" (was "Requests in 24 h") shows the count first and its trend
   line after it, left-aligned and set apart from the share column; channels that share with no

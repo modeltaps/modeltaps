@@ -265,12 +265,39 @@ func UpdateChannel(c *gin.Context) {
 	// 保存后异步为渠道模型补齐元信息与价格（OpenRouter 自带列表优先，其余走 models.dev），免去手动同步。
 	AutoSyncChannelCatalog(channel.Type, channel.Models, "channel update")
 	model.TriggerChannelBrandIconFetch(&channel)
+	supplied := 0
+	if getErr == nil && channel.Models != "" {
+		supplied = autoSupplyAddedModels(channel.Id, model.AddedChannelModels(oldChannel.Models, channel.Models))
+	}
 	channel.HideKey()
+	// supplies is how many public models the models added in this edit were attached to.
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    channel,
+		"success":  true,
+		"message":  "",
+		"data":     channel,
+		"supplies": supplied,
 	})
+}
+
+// autoSupplyAddedModels attaches the channel to the public models among the names an edit added
+// to its model list, as autoSupplyNewChannel does for a new channel. Only added names are taken:
+// a model the channel listed before and no longer supplies had its supply removed on purpose.
+// The channel is read back so the supplies take its stored priority, weight and mapping.
+func autoSupplyAddedModels(channelId int, added []string) int {
+	if !config.ModelSupplyEnabled || len(added) == 0 {
+		return 0
+	}
+	stored, err := model.GetChannelById(channelId)
+	if err != nil {
+		logger.SysError("auto supply failed for channel #" + strconv.Itoa(channelId) + ": " + err.Error())
+		return 0
+	}
+	supplies, err := model.AutoSupplyChannel(stored, added)
+	if err != nil {
+		logger.SysError("auto supply failed for channel " + stored.Name + ": " + err.Error())
+		return 0
+	}
+	return len(supplies)
 }
 
 func BatchUpdateChannelsAzureApi(c *gin.Context) {

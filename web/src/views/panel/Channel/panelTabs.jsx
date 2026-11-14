@@ -301,6 +301,8 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
         <ModelMappingInput key={ctx.version} value={draft.mapping} models={models} onChange={(v) => setDraft({ ...draft, mapping: v })} />
       </Field>
 
+      {ctx.supplyRouting && <p className="mt-2 text-xs text-muted-foreground">{t('channels.models.supplyNote')}</p>}
+
       <UpstreamModels key={channel.id} channelId={channel.id} canCheck={Boolean(labels.canFetchModels)} />
 
       <ChannelSupplies channelId={channel.id} />
@@ -799,8 +801,9 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
       <Field label={configText(t, labels.label.remark)} htmlFor="cp-remark" optional hint={configText(t, labels.prompt.remark)}>
         <Textarea id="cp-remark" rows={2} value={draft.remark} onChange={set('remark')} />
       </Field>
-      {!labels.hasOther && (
-        <Field label={configText(t, labels.label.other)} htmlFor="cp-other-adv" optional>
+      {/* This provider does not read the field: it is shown only to clear a value left from before. */}
+      {!labels.hasOther && String(channel.other || '').trim() !== '' && (
+        <Field label={configText(t, labels.label.other)} htmlFor="cp-other-adv" optional hint={t('channels.advanced.otherUnused')}>
           <Input id="cp-other-adv" className="font-mono text-[13px]" value={draft.other} onChange={set('other')} />
         </Field>
       )}
@@ -841,7 +844,7 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
           id="cp-nostream"
           rows={2}
           className="font-mono text-[13px]"
-          placeholder="gpt-4o, o1-mini"
+          placeholder={splitList(channel.models).slice(0, 2).join(', ')}
           value={draft.disabled_stream}
           onChange={set('disabled_stream')}
         />
