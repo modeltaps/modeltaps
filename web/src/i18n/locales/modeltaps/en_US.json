@@ -2728,6 +2728,10 @@
       "published": "Published",
       "retired": "Retired"
     },
+    "available": {
+      "title": "Channels that can also supply this model",
+      "hint": "They list the model and are not a supply yet; once added, priority and weight follow the channel"
+    },
     "batch": {
       "menu": "Supplies",
       "modeLabel": "Within a tier",

@@ -23,6 +23,7 @@ import {
 import ProviderIcon from '@/components/brand/ProviderIcon';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
 import {
+  batchSupplies,
   createSupply,
   deleteSupply,
   listPauses,
@@ -601,6 +602,13 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
     [group, groupPreview]
   );
 
+  // Enabled channels that list this model and are not a supply yet: one click adds them with the
+  // suggested upstream name and the channel's own priority and weight.
+  const available = useMemo(
+    () => (supplies ? supplyCandidates(channels, supplies, model).offering.filter((c) => c.status === 1) : []),
+    [channels, supplies, model]
+  );
+
   const run = async (id, fn) => {
     setBusyId(id);
     try {
@@ -658,6 +666,12 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
       default:
         return false;
     }
+  };
+
+  const quickAdd = async (channel) => {
+    // Negative ids keep the row spinner apart from supply ids.
+    const ok = await run(-channel.id, () => batchSupplies({ action: 'add', channel_id: channel.id, models: [model] }));
+    if (ok) toast.success(t('modelSupply.add.done'));
   };
 
   const confirmDelete = async () => {
@@ -844,6 +858,36 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
       )}
 
       {supplies && supplies.length > 0 && <p className="text-xs text-muted-foreground">{t('modelSupply.orderHint')}</p>}
+
+      {available.length > 0 && (
+        <section className="space-y-2" aria-label={t('modelSupply.available.title')}>
+          <div className="flex items-baseline justify-between gap-3">
+            <h3 className="text-sm font-medium">{t('modelSupply.available.title')}</h3>
+            <span className="text-xs text-muted-foreground">{t('modelSupply.available.hint')}</span>
+          </div>
+          <ul className="divide-y divide-border rounded-[10px] border border-dashed border-border">
+            {available.map((c) => (
+              <li key={c.id} data-testid="supply-available" className="flex items-center gap-2 px-3 py-2">
+                <ProviderIcon type={c.type} name={c.name} baseUrl={c.base_url} className="size-4 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px]" title={c.name}>
+                    {c.name}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {[channelTypeName(c.type), c.tag, t('channels.usage.numbers', { priority: c.priority ?? 0, weight: c.weight || 1 })]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" className="h-[30px] rounded-lg" disabled={busyId === -c.id} onClick={() => quickAdd(c)}>
+                  {busyId === -c.id ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+                  {t('modelSupply.add.submit')}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <DialogContent>

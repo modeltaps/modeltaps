@@ -2633,6 +2633,10 @@
       "published": "已发布",
       "retired": "已下架"
     },
+    "available": {
+      "title": "还能提供这个模型的渠道",
+      "hint": "已列出此模型、还没加为供应；添加后优先级和权重跟随渠道"
+    },
     "batch": {
       "menu": "供应",
       "modeLabel": "同一档内",
