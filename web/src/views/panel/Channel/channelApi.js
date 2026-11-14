@@ -494,3 +494,12 @@ function channelPricesData({ success, message, data }) {
   if (!success) throw new Error(message);
   return { supported: Boolean(data?.supported), synced_at: data?.synced_at || 0, prices: data?.prices || [] };
 }
+
+// Details of a channel's model list, saved or being edited (POST /api/channel/:id/model_details):
+// one entry per model in the usual order, with catalog metadata, `rank`, `family_requests` and
+// the `public` models it serves. Throws on failure.
+export async function fetchChannelModelDetails(id, models, mapping = {}) {
+  const res = await API.post(`/api/channel/${id}/model_details`, { models, mapping });
+  if (!res.data?.success) throw new Error(res.data?.message);
+  return res.data.data || [];
+}

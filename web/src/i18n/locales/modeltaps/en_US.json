@@ -2194,7 +2194,29 @@
         "label": "Traffic, {{range}}",
         "idleFilter": "No requests",
         "failingFilter": "Mostly failing"
-      }
+      },
+      "public": "Offered as",
+      "notOffered": "Not offered",
+      "supplyOff": "supply off",
+      "context": "Context",
+      "orderHint": "Most used first: families with the most requests on this site in the last 30 days, then mainstream families, the latest version first. Click to sort by name.",
+      "loss_input": "{{model}} sells input at ${{sell}}/M, below the upstream ${{cost}}/M (base price, before group ratios)",
+      "loss_output": "{{model}} sells output at ${{sell}}/M, below the upstream ${{cost}}/M (base price, before group ratios)",
+      "hint": {
+        "released": "Released {{date}}",
+        "context": "Context {{context}}",
+        "input": "{{modality}} input",
+        "rankUsed": "Usage rank #{{rank}}: {{count}} requests to the {{family}} family here in the last 30 days",
+        "rankFallback": "Usage rank #{{rank}}: no requests to the {{family}} family here in the last 30 days, ranked as mainstream or not",
+        "modality": {
+          "image": "Image",
+          "audio": "Audio",
+          "video": "Video",
+          "file": "File",
+          "pdf": "PDF"
+        }
+      },
+      "offeredAs": "as"
     },
     "monitor": {
       "checkNow": "Check model list now",

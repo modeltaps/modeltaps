@@ -311,6 +311,7 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.GET("/:id", controller.GetChannel)
 			channelRoute.GET("/:id/upstream_models", controller.GetChannelUpstreamModels)
 			channelRoute.GET("/:id/prices", controller.GetChannelPrices)
+			channelRoute.POST("/:id/model_details", controller.GetChannelModelDetails)
 			channelRoute.POST("/:id/prices/refresh", controller.RefreshChannelPrices)
 			channelRoute.GET("/test", controller.TestAllChannels)
 			channelRoute.GET("/test/:id", controller.TestChannel)
