@@ -242,8 +242,17 @@ export default function ChannelPanel({
       onClose={onClose}
       onSave={async (patch) => {
         const res = await updateChannel(channel, patch);
-        // While supplies route requests, models added in this save are attached on their own.
-        return res?.success && res.supplies ? { ...res, toast: t('channels.models.savedSupplied', { count: res.supplies }) } : res;
+        // While supplies route requests, edits of the model list and mapping reach the supplies
+        // made from it: say what changed.
+        if (!res?.success) return res;
+        const parts = [
+          res.supplies && t('channels.models.saved.attached', { count: res.supplies }),
+          res.supplies_updated && t('channels.models.saved.updated', { count: res.supplies_updated }),
+          res.supplies_removed && t('channels.models.saved.removed', { count: res.supplies_removed })
+        ].filter(Boolean);
+        return parts.length
+          ? { ...res, toast: t('channels.models.saved.summary', { changes: parts.join(t('channels.created.comma')) }) }
+          : res;
       }}
       onSaved={async () => {
         await load();

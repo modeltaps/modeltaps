@@ -1981,7 +1981,8 @@
       "danger": "危险操作",
       "dangerHint": "复制会用同一密钥和设置新建一个渠道；删除不能撤销",
       "name": "名称",
-      "otherUnused": "这个供应商不读取这个字段，可以清空"
+      "otherUnused": "这个供应商不读取这个字段，可以清空",
+      "n2rPlaceholder": "模型名\n-不转换的模型名"
     },
     "chart": {
       "aria": "各渠道请求量",
@@ -2062,8 +2063,13 @@
       "remove": "移除 {{model}}",
       "syncPrices": "同步价格",
       "ttft": "首字",
-      "savedSupplied_other": "已保存，新接入 {{count}} 个公开模型",
-      "supplyNote": "保存后，新加的模型会自动接入同名的公开模型。移除模型或修改映射不会改动已有的供应，请到模型页的「供应」里调整。"
+      "supplyNote": "保存后，模型列表和映射的改动会同步到由这个渠道生成的供应：新加的模型自动接入同名的公开模型，改映射会更新发给上游的名字，移除的模型会撤下供应。手动添加或在模型页改过上游名的供应保持不变。",
+      "saved": {
+        "summary": "已保存，{{changes}}",
+        "attached_other": "新接入 {{count}} 个公开模型",
+        "updated_other": "{{count}} 个供应改用新的上游名",
+        "removed_other": "撤下 {{count}} 个供应"
+      }
     },
     "monitor": {
       "checkNow": "立即检查模型列表",

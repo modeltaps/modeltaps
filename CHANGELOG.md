@@ -9,10 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- While supplies route requests, saving a channel now attaches it to the public models among the
-  names the edit added to its model list, as creating a channel already did; a model it listed
-  before keeps whatever supplies it has. The save message says how many models were attached, and
-  the Models tab notes that removals and mapping changes are made under Supplies on the model page.
+- While supplies route requests, saving a channel now carries edits of its model list and mapping
+  to the supplies made from that list (when the channel was added, by the drift check or by the
+  migration): models the edit added are supplied to the public models of the same name, a new
+  mapping changes the name a supply sends upstream, and a model taken off the list has its supply
+  withdrawn (adding it back supplies it again). Supplies added by hand or from the model library,
+  and supplies whose upstream name was changed on the model page, stay as they are. The save
+  message says what changed.
 - The channel panel lists what needs attention on the channel (auto-disabled, no key, low balance,
   models added or removed upstream) above its tabs, each with its action, so the reason no longer
   hides behind the icon of a narrow row.
@@ -284,8 +287,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The channel menu names its checks apart: "Test several models" (connection and latency),
   "Capability check" (real requests that verify vision, tool calls and more) and "Compare upstream
   models", each with a line saying what it does. The Advanced tab shows the "other" field only
-  when a provider that does not read it still holds a value, and the no-streaming example uses the
-  channel's own models.
+  when a provider that does not read it still holds a value, the no-streaming example uses the
+  channel's own models, and the Responses conversion example shows the syntax instead of OpenAI
+  model names.
 
 - Providers list columns: "Requests" (was "Requests in 24 h") shows the count first and its trend
   line after it, left-aligned and set apart from the share column; channels that share with no

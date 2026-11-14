@@ -1981,7 +1981,8 @@
       "danger": "危險操作",
       "dangerHint": "複製會用同一密鑰和設定新建一個渠道；刪除不能撤銷",
       "name": "名稱",
-      "otherUnused": "這個供應商不讀取這個欄位，可以清空"
+      "otherUnused": "這個供應商不讀取這個欄位，可以清空",
+      "n2rPlaceholder": "模型名\n-不轉換的模型名"
     },
     "chart": {
       "aria": "各渠道請求量",
@@ -2062,8 +2063,13 @@
       "remove": "移除 {{model}}",
       "syncPrices": "同步價格",
       "ttft": "首字",
-      "savedSupplied_other": "已儲存，新接入 {{count}} 個公開模型",
-      "supplyNote": "儲存後，新加的模型會自動接入同名的公開模型。移除模型或修改映射不會改動已有的供應，請到模型頁的「供應」裡調整。"
+      "supplyNote": "儲存後，模型列表和映射的改動會同步到由這個渠道生成的供應：新加的模型自動接入同名的公開模型，改映射會更新發給上游的名字，移除的模型會撤下供應。手動新增或在模型頁改過上游名的供應保持不變。",
+      "saved": {
+        "summary": "已儲存，{{changes}}",
+        "attached_other": "新接入 {{count}} 個公開模型",
+        "updated_other": "{{count}} 個供應改用新的上游名",
+        "removed_other": "撤下 {{count}} 個供應"
+      }
     },
     "monitor": {
       "checkNow": "立即檢查模型列表",
