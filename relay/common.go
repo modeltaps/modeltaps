@@ -359,9 +359,12 @@ func getProvider(c *gin.Context, modelName string, catalogExempt bool) (provider
 		// and billing goes by the public model (see relayBase.getModelName).
 		newModelName = supply.UpstreamModel
 		c.Set(model.SupplyIdContextKey, supply.Id)
+		// The client asked for the public name, so the response must not show the platform spelling.
+		c.Set(config.GinSupplyRenamesModelKey, supply.UpstreamModel != actualModelName)
 	} else {
 		// A retry may land here after an attempt through a supply; that attempt's id must go.
 		c.Set(model.SupplyIdContextKey, 0)
+		c.Set(config.GinSupplyRenamesModelKey, false)
 		newModelName, fail = upstreamModelName(provider, modelName, actualModelName)
 		if fail != nil {
 			return
