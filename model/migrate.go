@@ -612,6 +612,7 @@ func postMigrations() []*gormigrate.Migration {
 		cleanupSyncedCatalogDrafts(),
 		migrateSupplyModeFollowDefault(),
 		migratePlatformSpellingDrafts(),
+		migrateAttachRenamedPublicModels(),
 	}
 }
 

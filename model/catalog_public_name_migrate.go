@@ -230,3 +230,63 @@ func migratePlatformSpellingDrafts() *gormigrate.Migration {
 		},
 	}
 }
+
+// attachRenamedPublicModels attaches each channel to the public models its list names but it
+// does not supply yet. Migration 202611140001 moved the drafts to their public names but only
+// carried supplies that existed; names whose supply had been skipped (their public name had no
+// row when the channel was saved) stayed without one. Only channels that already have supplies
+// made from their list are handled, as those are the ones the save-time attach ran for.
+func attachRenamedPublicModels(tx *gorm.DB) (int, error) {
+	var ids []int
+	if err := tx.Model(&ModelSupply{}).
+		Where("source IN ?", []string{ModelSupplySourceChannel, ModelSupplySourceMigrated}).
+		Distinct().Pluck("channel_id", &ids).Error; err != nil {
+		return 0, err
+	}
+	var infos []*ModelInfo
+	if err := tx.Find(&infos).Error; err != nil {
+		return 0, err
+	}
+	var seed *CatalogSeed
+	if loaded, err := LoadCatalogSeed(); err == nil {
+		seed = loaded
+	}
+	resolver := newCanonicalResolver(infos, seed)
+	attached := 0
+	for _, id := range ids {
+		var channel Channel
+		result := tx.Where("id = ?", id).Limit(1).Find(&channel)
+		if result.Error != nil {
+			return attached, result.Error
+		}
+		if result.RowsAffected == 0 {
+			continue
+		}
+		candidates := autoSupplyCandidates(resolver, &channel, SplitChannelModels(channel.Models))
+		created, err := createAutoSupplies(tx, &channel, candidates)
+		if err != nil {
+			return attached, err
+		}
+		attached += len(created)
+	}
+	return attached, nil
+}
+
+func migrateAttachRenamedPublicModels() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202611140002",
+		Migrate: func(tx *gorm.DB) error {
+			if !tx.Migrator().HasTable(&ModelInfo{}) || !tx.Migrator().HasTable(&ModelSupply{}) || !tx.Migrator().HasTable(&Channel{}) {
+				return nil
+			}
+			attached, err := attachRenamedPublicModels(tx)
+			if err != nil {
+				return err
+			}
+			if attached > 0 {
+				logger.SysLog(fmt.Sprintf("attached channels to %d public models their lists name", attached))
+			}
+			return nil
+		},
+	}
+}
