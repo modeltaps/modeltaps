@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { ObjectSheet, SheetBar } from './ObjectSheet';
 import useTabDrafts from './useTabDrafts';
 
-// Tab bar and tab content of an object panel, in one bordered box. The open tab carries a dot
+// Tab bar and tab content of an object panel, in one bordered box. The first tab's label lines
+// up with the content (px-2 + the tab's px-3 = the content's px-5). The open tab carries a dot
 // while it has unsaved changes. A small object with a single tab shows its content without a
 // tab bar.
 export function ObjectTabs({ tabs, current, onSelect, dirty, label, children }) {
@@ -18,7 +19,7 @@ export function ObjectTabs({ tabs, current, onSelect, dirty, label, children }) 
   }
   return (
     <div className="rounded-2xl border border-border bg-card">
-      <div role="tablist" aria-label={label} className="flex gap-0.5 overflow-x-auto border-b border-border p-1">
+      <div role="tablist" aria-label={label} className="flex gap-0.5 overflow-x-auto border-b border-border px-2 py-1">
         {tabs.map((x) => (
           <button
             key={x.key}
