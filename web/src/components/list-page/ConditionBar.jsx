@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { BookmarkPlus, ListFilter, Sparkles, X } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -140,6 +141,26 @@ export function PresetChips({ presets, onPick }) {
 
 PresetChips.propTypes = { presets: PropTypes.object.isRequired, onPick: PropTypes.func };
 
+// The Presets menu behind a button; `className` sizes the button (h-7 inside the bar).
+export function PresetsButton({ presets, className = 'h-7' }) {
+  const { t } = useTranslation();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className={cn('shrink-0 gap-1.5 px-2 text-[13px]', className)}>
+          <Sparkles className="size-3.5" />
+          {t('listPage.presets')}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-72">
+        <PresetMenuItems presets={presets} />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+PresetsButton.propTypes = { presets: PropTypes.object.isRequired, className: PropTypes.string };
+
 // The condition bar itself. `leadingLabel` names what the list holds ("Show keys that").
 export default function ConditionBar({ fields, state, onChange, onClearAll, leadingLabel, presets }) {
   const { t } = useTranslation();
@@ -162,19 +183,7 @@ export default function ConditionBar({ fields, state, onChange, onClearAll, lead
         }
         className="min-w-0 flex-1"
       />
-      {presets && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-7 shrink-0 gap-1.5 px-2 text-[13px]">
-              <Sparkles className="size-3.5" />
-              {t('listPage.presets')}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-72">
-            <PresetMenuItems presets={presets} />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
+      {presets && <PresetsButton presets={presets} />}
     </div>
   );
 }

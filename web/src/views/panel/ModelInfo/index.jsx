@@ -34,7 +34,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/sonner';
-import { FilterSheet, describeEntry, filterStateToParams, isEntryActive, paramsToFilterState } from '@/components/filter-bar';
+import { FilterBar, FilterSheet, describeEntry, filterStateToParams, isEntryActive, paramsToFilterState } from '@/components/filter-bar';
 import {
   BatchBar,
   ColumnPicker,
@@ -45,6 +45,7 @@ import {
   ListSkeleton,
   PhoneListToolbar,
   PresetChips,
+  PresetsButton,
   StatusSegments,
   useColumnVisibility,
   useFilterPresets,
@@ -138,6 +139,8 @@ const enumFilterEntry = (key, value) => paramsToFilterState(MODELINFO_FILTER_FIE
 // Segments (?status=): all, then the catalog states. They overlap (an unpriced model can also
 // have no channel), as the counts do.
 const STATUS_SEGMENTS = ['all', ...STATUS_FILTERS];
+// Problems a model can have; folded into one "Needs attention" dropdown segment.
+const ISSUE_FILTERS = STATUS_FILTERS.filter((value) => value !== 'usable');
 const readStatus = (searchParams) => {
   if (searchParams.get('usable') === '1') return 'usable';
   const s = searchParams.get('status');
@@ -374,7 +377,13 @@ export default function ModelInfo() {
   const rows = useMemo(
     () =>
       attachChannelDetails(
-        mergeCatalogRows({ catalog: modelInfos, prices, modelList, channelsByModel, listedModels: channelModelNames(channelList, supplyRouting ? suppliedUpstreams : null) }),
+        mergeCatalogRows({
+          catalog: modelInfos,
+          prices,
+          modelList,
+          channelsByModel,
+          listedModels: channelModelNames(channelList, supplyRouting ? suppliedUpstreams : null)
+        }),
         channelList,
         {
           supplyRouting
@@ -615,6 +624,14 @@ export default function ModelInfo() {
     });
 
   const segmentOptions = STATUS_SEGMENTS.map((value) => ({ value, label: t(`modelsPage.stats.${value}`) }));
+  const segmentProps = {
+    value: status,
+    onChange: changeStatus,
+    options: segmentOptions,
+    counts: loaded ? stats : null,
+    more: ISSUE_FILTERS,
+    moreLabel: t('modelsPage.stats.issues')
+  };
   const exitSelectMode = () => {
     setSelectMode(false);
     setSelectedKeys(new Set());
@@ -756,6 +773,7 @@ export default function ModelInfo() {
         unit={unit}
         onUnitChange={handleUnitChange}
         columnVisibility={columnVisibility}
+        columnPicker={<ColumnPicker columns={columnState} />}
         selectedKeys={selectedKeys}
         onToggleSelect={toggleSelect}
         onToggleAll={toggleAll}
@@ -847,7 +865,7 @@ export default function ModelInfo() {
             <div className="space-y-2">
               {narrow ? (
                 <>
-                  <StatusSegments chips value={status} onChange={changeStatus} options={segmentOptions} counts={loaded ? stats : null} />
+                  <StatusSegments chips {...segmentProps} />
                   <PhoneListToolbar
                     search={{ value: keyword, onChange: handleKeywordChange, placeholder: t('modelsPage.searchShort') }}
                     filter={{ count: activeConditionFields.length, onOpen: () => setFilterSheetOpen(true) }}
@@ -862,7 +880,7 @@ export default function ModelInfo() {
               ) : (
                 <>
                   <div className="flex flex-wrap items-center gap-2">
-                    <StatusSegments value={status} onChange={changeStatus} options={segmentOptions} counts={loaded ? stats : null} />
+                    <StatusSegments {...segmentProps} />
                     <div className="relative min-w-[12rem] flex-1">
                       <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
@@ -873,7 +891,17 @@ export default function ModelInfo() {
                         className="h-8 pl-8"
                       />
                     </div>
-                    <ColumnPicker columns={columnState} />
+                    <FilterBar
+                      fields={filterFields}
+                      state={filterState}
+                      onChange={handleFilterChange}
+                      onClearAll={handleClearFilters}
+                      triggerVariant="button"
+                      triggerLabel={t('listPage.filter')}
+                      hideChips
+                      t={t}
+                    />
+                    <PresetsButton presets={presets} className="h-8" />
                   </div>
                   {selectedKeys.size > 0 ? (
                     <BatchBar
@@ -883,14 +911,15 @@ export default function ModelInfo() {
                       actions={batchActions}
                     />
                   ) : (
-                    <ConditionBar
-                      fields={filterFields}
-                      state={filterState}
-                      onChange={handleFilterChange}
-                      onClearAll={handleClearFilters}
-                      leadingLabel={t('modelsPage.showModelsThat')}
-                      presets={presets}
-                    />
+                    activeConditionFields.length > 0 && (
+                      <ConditionBar
+                        fields={filterFields}
+                        state={filterState}
+                        onChange={handleFilterChange}
+                        onClearAll={handleClearFilters}
+                        leadingLabel={t('modelsPage.showModelsThat')}
+                      />
+                    )
                   )}
                 </>
               )}

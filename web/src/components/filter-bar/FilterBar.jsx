@@ -179,19 +179,33 @@ export default function FilterBar({
           aria-label={triggerLabel || t('filterBar.addFilter')}
           aria-expanded={open}
           className={cn(
-            triggerVariant === 'plus' && triggerLabel
-              ? 'flex h-7 items-center gap-1 rounded-md border border-dashed border-input px-2 text-[13px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
-              : triggerVariant === 'plus'
-                ? 'flex size-7 items-center justify-center rounded-md border border-dashed border-input text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
-                : cn(
-                    'relative flex size-9 items-center justify-center rounded-full border border-input bg-field text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-                    count > 0 && 'border-foreground/40 text-foreground'
-                  )
+            triggerVariant === 'button'
+              ? cn(
+                  'flex h-8 items-center gap-1.5 rounded-md border border-input bg-field px-2.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                  count > 0 && 'border-foreground/40 text-foreground'
+                )
+              : triggerVariant === 'plus' && triggerLabel
+                ? 'flex h-7 items-center gap-1 rounded-md border border-dashed border-input px-2 text-[13px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
+                : triggerVariant === 'plus'
+                  ? 'flex size-7 items-center justify-center rounded-md border border-dashed border-input text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
+                  : cn(
+                      'relative flex size-9 items-center justify-center rounded-full border border-input bg-field text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                      count > 0 && 'border-foreground/40 text-foreground'
+                    )
           )}
         >
-          {triggerVariant === 'plus' ? <Plus className={triggerLabel ? 'size-3.5' : 'size-4'} /> : <Filter className="size-4" />}
-          {triggerVariant === 'plus' && triggerLabel}
-          {triggerVariant !== 'plus' && count > 0 && (
+          {triggerVariant === 'plus' ? (
+            <Plus className={triggerLabel ? 'size-3.5' : 'size-4'} />
+          ) : (
+            <Filter className={triggerVariant === 'button' ? 'size-3.5' : 'size-4'} />
+          )}
+          {(triggerVariant === 'plus' || triggerVariant === 'button') && triggerLabel}
+          {triggerVariant === 'button' && count > 0 && (
+            <span className="min-w-[18px] rounded-full bg-foreground px-1 text-center text-[10px] font-medium leading-4 text-background">
+              {count}
+            </span>
+          )}
+          {triggerVariant === 'funnel' && count > 0 && (
             <span className="absolute -right-1 -top-1 flex min-w-[18px] items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-medium leading-4 text-background">
               {count}
             </span>
@@ -285,7 +299,7 @@ FilterBar.propTypes = {
   leading: PropTypes.node,
   className: PropTypes.string,
   hideChips: PropTypes.bool,
-  triggerVariant: PropTypes.oneOf(['funnel', 'plus']),
+  triggerVariant: PropTypes.oneOf(['funnel', 'plus', 'button']),
   // With the plus variant, a text label turns the square button into a dashed "+ label" button.
   triggerLabel: PropTypes.string,
   clearAlignEnd: PropTypes.bool

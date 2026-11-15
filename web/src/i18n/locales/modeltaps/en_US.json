@@ -809,7 +809,8 @@
       "nochannel": "No channel",
       "unpriced": "Unpriced",
       "hidden": "Disabled",
-      "uncataloged": "Not in catalog"
+      "uncataloged": "Not in catalog",
+      "issues": "Needs attention"
     },
     "status": {
       "ok": "Usable",
@@ -2819,6 +2820,7 @@
     "upstream": "Upstream model",
     "upstreamSame": "Same name",
     "upstreamSameTip": "Sent upstream as {{name}}, the same as the public name",
+    "upstreamCopyTip": "Click to copy the full name",
     "upstreamPrice": "Upstream $/M",
     "upstreamPriceTip": "What the channel's upstream charges for this model, in USD per million tokens (input / output), from the channel's price list",
     "noPriceList": "This channel's upstream publishes no price list",
@@ -3855,5 +3857,28 @@
     "category": {
       "inference": "Open model inference"
     }
+  },
+  "upstreamPrice": {
+    "open": "Upstream price details for {{model}}",
+    "title": "{{source}} price",
+    "titlePlain": "Upstream price",
+    "free": "Free: every price the upstream lists for this model is 0",
+    "row_input": "Input",
+    "row_output": "Output",
+    "row_cacheRead": "Cache read",
+    "row_cacheWrite": "Cache write",
+    "row_image": "Per image",
+    "row_request": "Per request",
+    "row_videoSecond": "Video, from",
+    "unit_M": "1M tokens",
+    "unit_image": "image",
+    "unit_request": "request",
+    "unit_second": "second",
+    "sell": "Our base price (in / out, $/M)",
+    "via": "Prices read from {{via}}, not from the platform itself",
+    "syncedAt": "Read {{time}}",
+    "openPage": "Check on {{source}}",
+    "openPricing": "Open {{source}} pricing",
+    "noPage": "No public page to check this price on"
   }
 }
