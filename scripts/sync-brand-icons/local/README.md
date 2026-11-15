@@ -10,3 +10,4 @@ and drop the local file once the package has the brand.
 | `requesty` | Requesty | Traced from the official logo on requesty.ai (`/logo_requesty_dark.png`, `/apple-icon.png`); no SVG is published. Blue `#1877FF`. |
 | `parallel` | Parallel Web Systems | Official site icon, parallel.ai `/icon.svg`; the one-color version drops the white disc. |
 | `openbmb` | OpenBMB | Official site icon, openbmb.cn `/favicon.svg`. |
+| `byteplus` | BytePlus | Official footer mark on byteplus.com (`byteplus_logo_footer.svg`, white); colored with the favicon's blue `#0061FF`. |

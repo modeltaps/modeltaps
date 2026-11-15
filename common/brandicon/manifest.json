@@ -622,6 +622,11 @@
       "color": true,
       "scale": 1
     },
+    "byteplus": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
     "openbmb": {
       "mono": true,
       "color": true,
@@ -796,7 +801,9 @@
     "76": "baseten",
     "77": "stepfun",
     "78": "xiaomimimo",
-    "79": "longcat"
+    "79": "longcat",
+    "80": "volcengine",
+    "81": "byteplus"
   },
   "modelPrefixes": {
     "360gpt": "ai360",
@@ -907,6 +914,8 @@
     "baseten.co": "baseten",
     "bfl.ai": "bfl",
     "bigmodel.cn": "zhipu",
+    "byteplus.com": "byteplus",
+    "bytepluses.com": "byteplus",
     "cerebras.ai": "cerebras",
     "chutes.ai": "chutes",
     "claude.ai": "claude",

@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Volcengine Ark (Doubao) and BytePlus ModelArk channels, under cloud platforms with their
+  official logos (BytePlus's mark, which the icon package lacks, from byteplus.com). Both are
+  presets over Ark's OpenAI compatible API: model names are sent as they are, prefix caching is
+  implicit and its hits are billed from `prompt_tokens_details.cached_tokens`, and the channel's
+  upstream prices come from models.dev. Text embeddings stay off (Ark retired its text
+  `/embeddings`; the multimodal one is not OpenAI shaped). The Ark API key cannot read the
+  balance, so a Volcengine channel takes the account's AccessKey pair after it
+  (`apiKey|AccessKeyID|SecretAccessKey`) and reads `AvailableBalance` (CNY) from the billing API's
+  QueryBalanceAcct, signed with HMAC-SHA256; BytePlus has no balance yet, its billing region being
+  undocumented. On the dev catalog 9 of Volcengine's 16 models and 13 of BytePlus' 14 link to
+  existing public models. A platform spelling with "economy" (a cheaper tier) is no longer read as
+  the model it is filed under.
 - Sixteen more OpenAI compatible platforms, each a channel type with its official logo: Together
   AI, Fireworks AI, DeepInfra, Cerebras, Nebius Token Factory, Novita AI, SambaNova, NVIDIA NIM,
   Hugging Face, Chutes, Baseten, ModelScope and Qiniu under a new "Open model inference" group of

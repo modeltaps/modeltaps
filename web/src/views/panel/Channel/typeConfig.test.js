@@ -13,7 +13,7 @@ describe('typeConfig', () => {
       .filter((id) => typeConfig[id].inputLabel?.provider_models_list)
       .map(Number)
       .sort((a, b) => a - b);
-    expect(withButton).toEqual([1, 3, 8, 14, 17, 20, 25, 28, 29, 30, 31, 36, 39, 45, 49, 55, 56, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79]);
+    expect(withButton).toEqual([1, 3, 8, 14, 17, 20, 25, 28, 29, 30, 31, 36, 39, 45, 49, 55, 56, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81]);
   });
 
   it('picks a test model from the default models', () => {

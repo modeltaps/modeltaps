@@ -1,6 +1,9 @@
 package preset
 
 import (
+	"errors"
+	"strings"
+
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/providers/base"
@@ -13,7 +16,20 @@ type ProviderFactory struct {
 }
 
 func (f ProviderFactory) Create(channel *model.Channel) base.ProviderInterface {
+	// A preset with a balance may take more credentials after the API key ("apiKey|a|b"); the
+	// requests get a copy of the channel that carries the API key alone.
+	var extra []string
+	if f.Preset.Balance != nil && strings.Contains(channel.Key, "|") {
+		parts := strings.Split(strings.TrimSpace(channel.Key), "|")
+		for i := range parts {
+			parts[i] = strings.TrimSpace(parts[i])
+		}
+		clone := *channel
+		clone.Key = parts[0]
+		channel, extra = &clone, parts[1:]
+	}
 	return &Provider{
+		extraKeys: extra,
 		OpenAIProvider: openai.OpenAIProvider{
 			BaseProvider: base.BaseProvider{
 				Config:          f.Preset.config(),
@@ -46,6 +62,8 @@ func (p Preset) config() base.ProviderConfig {
 type Provider struct {
 	openai.OpenAIProvider
 	preset Preset
+	// extraKeys are the credentials after the API key, read by the preset's Balance.
+	extraKeys []string
 }
 
 // GetModelList asks the platform; when it cannot list (no key yet, or no /models), the models
@@ -65,4 +83,22 @@ func (p *Provider) GetModelList() ([]string, error) {
 // the platform.
 func (p *Provider) GetChannelPrices() ([]*model.ChannelPrice, error) {
 	return model.ModelsDevChannelPrices(p.preset.ModelsDev)
+}
+
+// Balance implements base.BalanceInterface for presets with a balance endpoint.
+func (p *Provider) Balance() (float64, error) {
+	if p.preset.Balance == nil {
+		return 0, errors.New(p.preset.Name + " has no balance endpoint")
+	}
+	balance, err := p.preset.Balance(p)
+	if err != nil {
+		return 0, err
+	}
+	p.Channel.UpdateBalance(balance)
+	return balance, nil
+}
+
+// CanQueryBalance implements base.BalanceCapability.
+func (p *Provider) CanQueryBalance() bool {
+	return p.preset.Balance != nil
 }

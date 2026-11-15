@@ -5,7 +5,7 @@
 // Checked against each platform's docs on 2026-11-15: roots, cache reporting (all but Fireworks,
 // NVIDIA, ModelScope, Chutes and Hugging Face put cache hits in prompt_tokens_details.cached_tokens
 // or, for Together and StepFun's international site, at the top level of usage) and balance
-// endpoints (none documented apart from Novita, so no preset reads a balance yet).
+// endpoints (Novita documents one but it is not read yet; Volcengine's billing API is).
 package preset
 
 import (
@@ -29,6 +29,9 @@ type Preset struct {
 	// NoStreamOptions is set for a platform that rejects stream_options in a streamed request;
 	// the others are asked to include usage in the last chunk.
 	NoStreamOptions bool
+	// Balance reads the account balance, for a platform that has an endpoint for it; nil leaves
+	// the channel without one.
+	Balance func(p *Provider) (float64, error)
 }
 
 // Presets lists the platforms, by channel type.
@@ -52,6 +55,15 @@ func init() {
 		{Type: config.ChannelTypeStepFun, Name: "StepFun", Root: "https://api.stepfun.com/v1", ModelsDev: "stepfun"},
 		{Type: config.ChannelTypeXiaomiMiMo, Name: "Xiaomi MiMo", Root: "https://api.xiaomimimo.com/v1", ModelsDev: "xiaomi"},
 		{Type: config.ChannelTypeLongCat, Name: "LongCat", Root: "https://api.longcat.chat/openai/v1", ModelsDev: "longcat"},
+		// Ark serves the model names directly (endpoint ids "ep-..." work too); prefix caching is
+		// implicit and reported in prompt_tokens_details.cached_tokens. Text /embeddings is retired
+		// and /embeddings/multimodal is not OpenAI shaped, so embeddings stay off. The balance
+		// needs the account's AccessKey pair, not the API key.
+		{Type: config.ChannelTypeVolcengine, Name: "Volcengine Ark", Root: "https://ark.cn-beijing.volces.com/api/v3", ModelsDev: "volcengine",
+			Balance: volcengineBilling.balance},
+		// BytePlus ModelArk (Johor; Dublin is https://ark.eu-west.bytepluses.com/api/v3). Its billing
+		// API's region is not documented, so no balance yet.
+		{Type: config.ChannelTypeBytePlus, Name: "BytePlus ModelArk", Root: "https://ark.ap-southeast.bytepluses.com/api/v3", ModelsDev: "byteplus"},
 	} {
 		Presets[p.Type] = p
 		model.SetChannelTypeLibraryProviders(p.Type, p.ModelsDev)

@@ -47,13 +47,15 @@ export const DEFAULT_BASE_URLS = {
   76: 'https://inference.baseten.co/v1',
   77: 'https://api.stepfun.com/v1',
   78: 'https://api.xiaomimimo.com/v1',
-  79: 'https://api.longcat.chat/openai/v1'
+  79: 'https://api.longcat.chat/openai/v1',
+  80: 'https://ark.cn-beijing.volces.com/api/v3',
+  81: 'https://ark.ap-southeast.bytepluses.com/api/v3'
 };
 
 // Types whose upstream publishes a price list kept per channel: the gateways read their own list
-// and also price the catalog, the preset platforms (64-79) are priced from models.dev.
+// and also price the catalog, the preset platforms (64-81) are priced from models.dev.
 export const CATALOG_PRICED_TYPES = new Set([20, 62, 63]);
-const PRESET_TYPES = new Set(Array.from({ length: 16 }, (_, i) => 64 + i));
+const PRESET_TYPES = new Set(Array.from({ length: 18 }, (_, i) => 64 + i));
 
 export function hasUpstreamPriceList(type) {
   return CATALOG_PRICED_TYPES.has(Number(type)) || PRESET_TYPES.has(Number(type));

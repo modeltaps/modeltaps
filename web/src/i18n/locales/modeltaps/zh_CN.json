@@ -1073,6 +1073,7 @@
       "keyFormat": "按照如下格式输入：{{format}}",
       "keyFormatExample": "按照如下格式输入：{{format}}，例如：{{example}}",
       "keyFormatBaidu": "按照如下格式输入：APIKey|SecretKey, 如果开启了OpenAI API，请直接输入APIKEY",
+      "keyVolcengine": "每行一个方舟 API Key。要显示余额，在后面用 | 接账号的 AccessKey（API Key|AccessKeyID|SecretAccessKey）；API Key 本身查不了余额。",
       "keyRequesty": "每行一个密钥。要显示余额，在后面用 | 接一把有管理权限的密钥（调用密钥|管理密钥）；一把密钥同时有调用和管理权限时只填它即可。",
       "keyFormatAws": "按照如下格式输入：Region|AccessKeyID|SecretAccessKey|SessionToken 其中SessionToken可不填；AssumeRole 模式：Region|AccessKeyID|SecretAccessKey|RoleArn（第四段填 arn:aws:iam::账号:role/角色名，运行时自动换取临时凭证并续期）；角色链：Region|AccessKeyID|SecretAccessKey|SessionToken|RoleArn；或 Region|BearerToken",
       "format": "格式：{{format}}",

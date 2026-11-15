@@ -805,6 +805,19 @@ const typeConfig = {
     inputLabel: {
       provider_models_list: ['channelForm.fetchModelsFrom', { source: 'LongCat' }]
     }
+  },
+  80: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Volcengine Ark' }]
+    },
+    prompt: {
+      key: 'channelForm.prompt.keyVolcengine'
+    }
+  },
+  81: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'BytePlus ModelArk' }]
+    }
   }
 };
 

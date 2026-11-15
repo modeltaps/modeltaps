@@ -1094,6 +1094,7 @@
       "keyFormat": "Use the format {{format}}",
       "keyFormatExample": "Use the format {{format}}, e.g. {{example}}",
       "keyFormatBaidu": "Use the format APIKey|SecretKey. If the OpenAI API plugin is enabled, enter the API key directly",
+      "keyVolcengine": "One Ark API key per line. To have the balance shown, add the account's AccessKey after a | (apiKey|AccessKeyID|SecretAccessKey); the API key alone cannot read the balance.",
       "keyRequesty": "One key per line. To have the balance shown, add a key with manage permission after a | (apiKey|manageKey); a single key with manage permission works for both.",
       "keyFormatAws": "Use the format Region|AccessKeyID|SecretAccessKey|SessionToken (SessionToken is optional). AssumeRole mode: Region|AccessKeyID|SecretAccessKey|RoleArn (put arn:aws:iam::ACCOUNT:role/ROLE_NAME in the fourth field; temporary credentials are fetched and renewed automatically). Role chaining: Region|AccessKeyID|SecretAccessKey|SessionToken|RoleArn. Or Region|BearerToken",
       "format": "Format: {{format}}",

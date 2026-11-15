@@ -617,6 +617,8 @@ const (
 	ChannelTypeStepFun     = 77
 	ChannelTypeXiaomiMiMo  = 78
 	ChannelTypeLongCat     = 79
+	ChannelTypeVolcengine  = 80
+	ChannelTypeBytePlus    = 81
 )
 
 const (

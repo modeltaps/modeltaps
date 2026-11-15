@@ -12,7 +12,7 @@ import (
 )
 
 func TestPresetsAreComplete(t *testing.T) {
-	if len(Presets) != 16 {
+	if len(Presets) != 18 {
 		t.Errorf("presets = %d", len(Presets))
 	}
 	for channelType, p := range Presets {

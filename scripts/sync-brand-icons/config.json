@@ -78,7 +78,7 @@
     "51": "recraft", "52": "replicate", "53": "kling", "54": "dbrx", "55": "azure",
     "56": "xai", "57": "geminicli", "58": "claude", "59": "codex", "60": "antigravity",
     "61": "vertexai", "62": "vercel", "63": "requesty",
-    "64": "together", "65": "fireworks", "66": "deepinfra", "67": "cerebras", "68": "nebius", "69": "novita", "70": "sambanova", "71": "nvidia", "72": "modelscope", "73": "qiniu", "74": "huggingface", "75": "chutes", "76": "baseten", "77": "stepfun", "78": "xiaomimimo", "79": "longcat"
+    "64": "together", "65": "fireworks", "66": "deepinfra", "67": "cerebras", "68": "nebius", "69": "novita", "70": "sambanova", "71": "nvidia", "72": "modelscope", "73": "qiniu", "74": "huggingface", "75": "chutes", "76": "baseten", "77": "stepfun", "78": "xiaomimimo", "79": "longcat", "80": "volcengine", "81": "byteplus"
   },
   "modelPrefixes": {
     "gpt": "openai", "o1": "openai", "o3": "openai", "o4": "openai", "chatgpt": "openai",
@@ -124,7 +124,7 @@
     "perplexity.ai": "perplexity", "ai21.com": "ai21", "ideogram.ai": "ideogram",
     "bfl.ai": "bfl", "suno.com": "suno", "ollama.com": "ollama", "360.cn": "ai360",
     "hunyuan.cloud.tencent.com": "hunyuan", "xiaomimimo.com": "xiaomimimo",
-    "vercel.sh": "vercel", "vercel.com": "vercel", "requesty.ai": "requesty",
+    "vercel.sh": "vercel", "vercel.com": "vercel", "requesty.ai": "requesty", "bytepluses.com": "byteplus", "byteplus.com": "byteplus",
     "deepinfra.com": "deepinfra", "cerebras.ai": "cerebras", "nebius.com": "nebius", "novita.ai": "novita", "sambanova.ai": "sambanova", "modelscope.cn": "modelscope", "qnaigc.com": "qiniu", "qiniu.com": "qiniu", "chutes.ai": "chutes", "baseten.co": "baseten", "longcat.chat": "longcat", "azuredatabricks.net": "dbrx",
     "databricks.com": "dbrx"
   },
