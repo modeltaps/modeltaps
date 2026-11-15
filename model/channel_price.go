@@ -32,7 +32,14 @@ type ChannelPrice struct {
 	// Kind is the model kind the upstream's own list states (ModelKind*; "" for a language model
 	// or when the list does not say). The channel panel tags non-chat models with it.
 	Kind     string `json:"kind,omitempty" gorm:"type:varchar(16);default:''"`
-	SyncedAt int64  `json:"-"`
+	SyncedAt int64  `json:"synced_at,omitempty"`
+
+	// Where the price comes from and where to check it, filled in by DescribeChannelPrices for
+	// the console; not stored.
+	Source    string `json:"source,omitempty" gorm:"-"`
+	Via       string `json:"via,omitempty" gorm:"-"`
+	PageURL   string `json:"page_url,omitempty" gorm:"-"`
+	PageExact bool   `json:"page_exact,omitempty" gorm:"-"`
 }
 
 // USDPerMillionTokens converts a per-token USD price, the unit upstream price lists use, to USD

@@ -5,11 +5,12 @@ import { AlertTriangle, Info } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useIsRoot } from 'utils/common';
+import { copy, useIsRoot } from 'utils/common';
 import { fetchSupplySwitches } from './supplyApi';
 import { normalizeModelStatus } from './supplyHelpers';
 import { amount, priceSummary } from '../../Channel/channelPrices';
 import { lossOf } from '../../Channel/channelModelDetails';
+import UpstreamPriceDetails from '../../Channel/UpstreamPriceDetails';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -66,17 +67,25 @@ export function UpstreamName({ upstream, model, className }) {
       </span>
     );
   }
-  // Break after "/" and ":" first (anthropic/ | claude-sonnet-4.5), mid-word only if a part is too long.
-  const parts = upstream.split(/(?<=[/:])/);
+  // A long name reads as a namespace and a model: the namespace ("accounts/fireworks/models/")
+  // is muted on one line, cut short if it has to be; the model under it wraps to two lines at
+  // most. The full name is in the hover title, and a click copies it.
+  const cut = upstream.lastIndexOf('/') + 1;
+  const prefix = upstream.slice(0, cut);
+  const name = upstream.slice(cut);
   return (
-    <span className={cn('font-mono text-xs leading-snug [overflow-wrap:anywhere]', className)}>
-      {parts.map((part, i) => (
-        <span key={i}>
-          {i > 0 && <wbr />}
-          {part}
-        </span>
-      ))}
-    </span>
+    <button
+      type="button"
+      title={`${upstream}\n${t('modelSupply.upstreamCopyTip')}`}
+      onClick={() => copy(upstream)}
+      className={cn(
+        'block w-full min-w-0 cursor-copy rounded-sm text-left font-mono text-xs leading-snug hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        className
+      )}
+    >
+      {prefix && <span className="block truncate text-muted-foreground">{prefix}</span>}
+      <span className="line-clamp-2 [overflow-wrap:anywhere]">{name}</span>
+    </button>
   );
 }
 
@@ -183,7 +192,8 @@ SupplySwitchNote.propTypes = { switches: PropTypes.object, active: PropTypes.boo
 // What the supply's channel charges upstream for the model, from the channel's stored price list:
 // "$3 / $15" per million tokens, a per-image / per-second / per-request price, free, or a dash
 // when the channel has no price list or the list has no entry. A price above the model's own sell
-// price is marked, so a model sold for free on a paid upstream stands out.
+// price is marked, so a model sold for free on a paid upstream stands out. A click opens the
+// price's details with a link to the upstream's page for the model.
 export function UpstreamPriceCell({ supply }) {
   const { t } = useTranslation();
   const price = supply.upstream_price;
@@ -196,48 +206,40 @@ export function UpstreamPriceCell({ supply }) {
       </span>
     );
   }
+  const sell = { input: supply.sell_input_price ?? undefined, output: supply.sell_output_price ?? undefined };
+  const sellers = [{ model: supply.model, enabled: true, input_price: supply.sell_input_price, output_price: supply.sell_output_price }];
+  const losses =
+    summary.kind === 'tokens'
+      ? ['input', 'output']
+          .map((key) => {
+            const loss = lossOf(price, sellers, key);
+            return loss && t(`channels.models.loss_${key}`, { model: loss.model, sell: amount(loss.sell), cost: amount(loss.cost) });
+          })
+          .filter(Boolean)
+      : [];
+  let content;
   if (summary.kind === 'tokens') {
-    const sell = [{ model: supply.model, enabled: true, input_price: supply.sell_input_price, output_price: supply.sell_output_price }];
-    const losses = ['input', 'output']
-      .map((key) => {
-        const loss = lossOf(price, sell, key);
-        return loss && t(`channels.models.loss_${key}`, { model: loss.model, sell: amount(loss.sell), cost: amount(loss.cost) });
-      })
-      .filter(Boolean);
-    const text = (
-      <span className="whitespace-nowrap">
-        ${amount(price.input)}
-        <span className="text-muted-foreground"> / </span>${amount(price.output)}
+    content = (
+      <span className={cn('inline-flex items-center gap-1 whitespace-nowrap', losses.length > 0 && 'text-warning')}>
+        {losses.length > 0 && <AlertTriangle data-testid="supply-price-loss" className="size-3 shrink-0" />}
+        <span>
+          ${amount(price.input)}
+          <span className={losses.length > 0 ? undefined : 'text-muted-foreground'}> / </span>${amount(price.output)}
+        </span>
       </span>
     );
-    if (losses.length === 0) return text;
-    return (
-      <TooltipProvider delayDuration={150}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span data-testid="supply-price-loss" className="inline-flex items-center gap-1 text-warning" aria-label={losses.join(' ')}>
-              <AlertTriangle className="size-3 shrink-0" />
-              {text}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-64 space-y-1 whitespace-normal text-xs">
-            {losses.map((line) => (
-              <p key={line}>{line}</p>
-            ))}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
+  } else if (summary.kind === 'other') {
+    content = <span className="text-muted-foreground">{t('channels.models.priceOther')}</span>;
+  } else if (summary.kind === 'free') {
+    content = <span className="text-success">{t('channels.models.priceFree')}</span>;
+  } else {
+    content = <span className="whitespace-nowrap">{t(`channels.models.price_${summary.kind}`, { price: summary.value })}</span>;
   }
-  if (summary.kind === 'other') {
-    return (
-      <span className="text-muted-foreground" title={t('channels.models.priceOtherHint')}>
-        {t('channels.models.priceOther')}
-      </span>
-    );
-  }
-  if (summary.kind === 'free') return <span className="text-success">{t('channels.models.priceFree')}</span>;
-  return <span className="whitespace-nowrap">{t(`channels.models.price_${summary.kind}`, { price: summary.value })}</span>;
+  return (
+    <UpstreamPriceDetails price={price} upstream={supply.upstream_model || supply.model} sell={sell} losses={losses}>
+      {content}
+    </UpstreamPriceDetails>
+  );
 }
 
 UpstreamPriceCell.propTypes = { supply: PropTypes.object.isRequired };

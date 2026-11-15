@@ -164,7 +164,11 @@ func GetModelSupplyViews(modelName string, channelId int) ([]*ModelSupplyView, e
 			byId[ch.Id] = ch
 		}
 	}
-	prices, priced, err := supplyUpstreamPrices(supplies, ids)
+	channelList := make([]*Channel, 0, len(byId))
+	for _, ch := range byId {
+		channelList = append(channelList, ch)
+	}
+	prices, priced, err := supplyUpstreamPrices(supplies, ids, channelList)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +215,7 @@ type channelPriceKey struct {
 
 // supplyUpstreamPrices reads the stored upstream prices of the supplies' upstream models on
 // their channels, and which of the channels have a price list at all.
-func supplyUpstreamPrices(supplies []*ModelSupply, channelIDs []int) (map[channelPriceKey]*ChannelPrice, map[int]bool, error) {
+func supplyUpstreamPrices(supplies []*ModelSupply, channelIDs []int, channelTypes []*Channel) (map[channelPriceKey]*ChannelPrice, map[int]bool, error) {
 	prices := map[channelPriceKey]*ChannelPrice{}
 	priced := map[int]bool{}
 	if len(supplies) == 0 {
@@ -237,7 +241,12 @@ func supplyUpstreamPrices(supplies []*ModelSupply, channelIDs []int) (map[channe
 	if err := DB.Where("channel_id IN ? AND model IN ?", pricedIDs, names).Find(&rows).Error; err != nil {
 		return nil, nil, err
 	}
+	types := map[int]int{}
+	for _, ch := range channelTypes {
+		types[ch.Id] = ch.Type
+	}
 	for _, row := range rows {
+		DescribeChannelPrices(types[row.ChannelId], row)
 		prices[channelPriceKey{row.ChannelId, row.Model}] = row
 	}
 	return prices, priced, nil

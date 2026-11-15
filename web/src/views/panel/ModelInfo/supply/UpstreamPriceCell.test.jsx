@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { createElement } from 'react';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import i18n from 'i18n/i18n';
-import { UpstreamPriceCell } from './supplyParts';
+import { UpstreamName, UpstreamPriceCell } from './supplyParts';
 
 const supply = (fields) => ({ model: 'm', upstream_priced: true, sell_input_price: 3, sell_output_price: 15, ...fields });
 const show = (fields) => render(createElement(UpstreamPriceCell, { supply: supply(fields) }));
@@ -33,5 +33,38 @@ describe('UpstreamPriceCell', () => {
     cleanup();
     show({ upstream_price: null, upstream_priced: false });
     expect(screen.getByText('—').getAttribute('title')).toBe(i18n.t('modelSupply.noPriceList'));
+  });
+
+  it('opens the details with every price and a link to check it on', () => {
+    show({
+      upstream_model: 'deepseek/deepseek-v3.2',
+      upstream_price: {
+        model: 'deepseek/deepseek-v3.2',
+        input: 0.62,
+        output: 1.85,
+        cache_read: 0.06,
+        source: 'Vercel AI Gateway',
+        page_url: 'https://vercel.com/ai-gateway/models/deepseek-v3.2',
+        page_exact: true
+      },
+      sell_input_price: 0.58,
+      sell_output_price: 1.68
+    });
+    fireEvent.click(screen.getByRole('button', { name: /deepseek\/deepseek-v3.2/ }));
+    expect(screen.getByText('Cache read')).toBeTruthy();
+    const link = screen.getByRole('link', { name: /Vercel AI Gateway/ });
+    expect(link.getAttribute('href')).toBe('https://vercel.com/ai-gateway/models/deepseek-v3.2');
+    expect(screen.getAllByText(/below the upstream|lower than|below/i).length).toBeGreaterThan(0);
+  });
+});
+
+describe('UpstreamName', () => {
+  afterEach(cleanup);
+
+  it('puts the namespace on its own line and keeps the full name in the title', () => {
+    render(createElement(UpstreamName, { upstream: 'accounts/fireworks/models/llama-v3p3-70b-instruct', model: 'llama' }));
+    expect(screen.getByText('accounts/fireworks/models/')).toBeTruthy();
+    expect(screen.getByText('llama-v3p3-70b-instruct')).toBeTruthy();
+    expect(screen.getByRole('button').getAttribute('title')).toContain('accounts/fireworks/models/llama-v3p3-70b-instruct');
   });
 });

@@ -56,6 +56,7 @@ func respondChannelPrices(c *gin.Context, channel *model.Channel) {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
+	model.DescribeChannelPrices(channel.Type, list.Prices...)
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": channelPricesResponse{
 		Supported:        ChannelTypeHasOwnPricing(channel.Type),
 		ChannelPriceList: list,

@@ -42,13 +42,21 @@ import {
 } from './channelApi';
 import { amount, priceIndex, priceSummary, sortByTokenPrice, upstreamNameOf } from './channelPrices';
 import { lossOf, orderByRank, sortByName } from './channelModelDetails';
+import UpstreamPriceDetails from './UpstreamPriceDetails';
 import { STATE_FILTERS, isGone, matchesState, offerOf, snapshotOf, stateCounts, unlistedOf } from './channelModelStates';
 import { CAPABILITY_FILTERS, formatContext } from './modelPicker';
 import { buildModelSuggestions, fetchPriceList } from './modelSuggestions';
 import { splitList } from './channelGroups';
 import { usageNumbers, usageOf, usageOptions, usagePeers } from './channelUsage';
 import { applyMappingToModels, normalizeKeyInput } from './newChannel';
-import { BASE_URL_REQUIRED, CATALOG_PRICED_TYPES, DEFAULT_BASE_URLS, OAUTH_TYPES, hasUpstreamPriceList, typeLabels } from './providerDefaults';
+import {
+  BASE_URL_REQUIRED,
+  CATALOG_PRICED_TYPES,
+  DEFAULT_BASE_URLS,
+  OAUTH_TYPES,
+  hasUpstreamPriceList,
+  typeLabels
+} from './providerDefaults';
 import { Field, LongListMore, LongListSearch, ToggleField, useLongList } from '@/components/objects';
 import { GroupOptions, KeyLink, UsageOptions } from './channelParts';
 import ChannelOAuth from './ChannelOAuth';
@@ -120,22 +128,37 @@ ToolButton.propTypes = { busy: PropTypes.bool, icon: PropTypes.elementType, chil
 
 // What the upstream charges for one listed model, as the Input and Output cells. A model not
 // priced per token (per image, per second, per request, free, other, or no price) gets one cell
-// across both.
+// across both. A click on a price opens its details, with a link to the upstream's page.
 function UpstreamPriceCells({ price, publics }) {
   const { t } = useTranslation();
   const summary = priceSummary(price);
+  const losses =
+    summary?.kind === 'tokens' ? ['input', 'output'].map((key) => ({ key, loss: lossOf(price, publics, key) })).filter((x) => x.loss) : [];
+  const lossLines = losses.map(({ key, loss }) =>
+    t(`channels.models.loss_${key}`, { model: loss.model, sell: amount(loss.sell), cost: amount(loss.cost) })
+  );
+  // The sell price to compare with when the model serves exactly one public model.
+  const only = (publics || []).filter((p) => p.enabled);
+  const sell = only.length === 1 ? { input: only[0].input_price ?? undefined, output: only[0].output_price ?? undefined } : undefined;
+  const details = (content) => (
+    <UpstreamPriceDetails price={price} upstream={price.model} sell={sell} losses={lossLines}>
+      {content}
+    </UpstreamPriceDetails>
+  );
   if (summary?.kind === 'tokens') {
     return ['input', 'output'].map((key) => {
-      const loss = lossOf(price, publics, key);
+      const loss = losses.find((x) => x.key === key)?.loss;
       return (
         <td key={key} className="text-right tabular-nums">
-          {loss ? (
-            <LossMark
-              text={t(`channels.models.loss_${key}`, { model: loss.model, sell: amount(loss.sell), cost: amount(loss.cost) })}
-              value={summary[key]}
-            />
-          ) : (
-            summary[key]
+          {details(
+            loss ? (
+              <LossMark
+                text={t(`channels.models.loss_${key}`, { model: loss.model, sell: amount(loss.sell), cost: amount(loss.cost) })}
+                value={summary[key]}
+              />
+            ) : (
+              summary[key]
+            )
           )}
         </td>
       );
@@ -148,14 +171,9 @@ function UpstreamPriceCells({ price, publics }) {
         —
       </span>
     );
-  else if (summary.kind === 'other')
-    content = (
-      <span className="text-muted-foreground" title={t('channels.models.priceOtherHint')}>
-        {t('channels.models.priceOther')}
-      </span>
-    );
-  else if (summary.kind === 'free') content = t('channels.models.priceFree');
-  else content = t(`channels.models.price_${summary.kind}`, { price: summary.value });
+  else if (summary.kind === 'other') content = details(<span className="text-muted-foreground">{t('channels.models.priceOther')}</span>);
+  else if (summary.kind === 'free') content = details(t('channels.models.priceFree'));
+  else content = details(t(`channels.models.price_${summary.kind}`, { price: summary.value }));
   return (
     <td colSpan={2} className="text-right tabular-nums">
       {content}
