@@ -25,7 +25,7 @@ func setupSupplyHandlerDB(t *testing.T) {
 	sqlDB, _ := testDB.DB()
 	sqlDB.SetMaxOpenConns(1)
 	if err := testDB.AutoMigrate(&model.Channel{}, &model.ModelInfo{}, &model.Price{}, &model.ModelSupply{},
-		&model.RoutingPolicy{}, &model.ModelCatalogAuditLog{}); err != nil {
+		&model.RoutingPolicy{}, &model.ModelCatalogAuditLog{}, &model.ChannelPrice{}); err != nil {
 		t.Fatal(err)
 	}
 	oldDB := model.DB
