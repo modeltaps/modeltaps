@@ -444,6 +444,13 @@ export async function updateChannel(channel, patch) {
   return res.data;
 }
 
+// Per model of one channel in [start, end]: what the upstream reported it charged and what the
+// gateway expected, over the requests whose upstream reported a cost.
+export async function fetchChannelUpstreamCosts(id, start, end) {
+  const res = await API.get('/api/channel/upstream_costs', { params: { channel_id: id, start_timestamp: start, end_timestamp: end } });
+  return res.data?.success ? res.data.data || [] : [];
+}
+
 const PAGE_SIZE = 100;
 
 // Every row of a paginated channel list endpoint, page by page.

@@ -737,6 +737,23 @@ type ResponsesUsage struct {
 	TotalTokens         int                                `json:"total_tokens"`
 	OutputTokensDetails *ResponsesUsageOutputTokensDetails `json:"output_tokens_details"`
 	InputTokensDetails  *ResponsesUsageInputTokensDetails  `json:"input_tokens_details"`
+
+	// UpstreamCost is the upstream's usage.cost in USD (see Usage.UpstreamCost); never serialized.
+	UpstreamCost float64 `json:"-"`
+}
+
+// UnmarshalJSON reads the usage as usual and keeps usage.cost in UpstreamCost.
+func (u *ResponsesUsage) UnmarshalJSON(data []byte) error {
+	type plain ResponsesUsage
+	aux := struct {
+		*plain
+		Cost json.RawMessage `json:"cost"`
+	}{plain: (*plain)(u)}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	u.UpstreamCost = usageCost(aux.Cost)
+	return nil
 }
 
 type ResponsesUsageOutputTokensDetails struct {
@@ -759,6 +776,7 @@ func (u *ResponsesUsage) ToOpenAIUsage() *Usage {
 		PromptTokens:     u.InputTokens,
 		CompletionTokens: u.OutputTokens,
 		TotalTokens:      u.TotalTokens,
+		UpstreamCost:     u.UpstreamCost,
 	}
 
 	if u.OutputTokensDetails != nil {

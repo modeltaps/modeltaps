@@ -2554,6 +2554,16 @@
     "switcher": {
       "count": "{{count}} 个渠道"
     },
+    "upstreamCosts": {
+      "title": "上游实际收费",
+      "hint": "上游为每次请求报告的收费，对比本站按价格表和渠道成本倍率估算的成本。只统计上游返回了收费的请求。",
+      "model": "模型",
+      "expected": "估算",
+      "upstream": "上游收费",
+      "diff": "差额",
+      "total": "合计",
+      "flag": "与估算成本相差 5% 或以上"
+    },
     "performance": {
       "intro": "这个渠道处理请求的情况，只读",
       "none": "{{range}}内没有请求",

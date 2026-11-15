@@ -6,7 +6,8 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LongListMore, LongListSearch, useLongList } from '@/components/objects';
-import { fetchChannelCacheStat, fetchChannelMetrics } from './channelApi';
+import UpstreamCostTable from './UpstreamCostTable';
+import { fetchChannelCacheStat, fetchChannelMetrics, fetchChannelUpstreamCosts } from './channelApi';
 import { cacheSummary, metricsByModel, metricsSeries, summarizeMetrics } from './channelMetrics';
 import { RANGES } from './ProviderPane';
 
@@ -73,8 +74,9 @@ function PerformanceBody({ object: channel, ctx }) {
     const start = end - range.seconds;
     Promise.all([
       fetchChannelMetrics(channel.id, start, end).catch(() => []),
-      fetchChannelCacheStat(channel.id, start, end).catch(() => null)
-    ]).then(([rows, cache]) => alive && setLoaded({ key: range.key, rows, cache, start, end }));
+      fetchChannelCacheStat(channel.id, start, end).catch(() => null),
+      fetchChannelUpstreamCosts(channel.id, start, end).catch(() => [])
+    ]).then(([rows, cache, costs]) => alive && setLoaded({ key: range.key, rows, cache, costs, start, end }));
     return () => {
       alive = false;
     };
@@ -207,6 +209,8 @@ function PerformanceBody({ object: channel, ctx }) {
               <LongListMore list={list} />
             </div>
           </div>
+
+          <UpstreamCostTable rows={data.costs} />
         </>
       )}
     </div>

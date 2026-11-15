@@ -2671,6 +2671,16 @@
     "switcher": {
       "count": "{{count}} channels"
     },
+    "upstreamCosts": {
+      "title": "Upstream charges",
+      "hint": "What the upstream reported it charged for each request, against what this site expected from its price table and the channel's cost ratio. Only requests whose upstream reports a cost are counted.",
+      "model": "Model",
+      "expected": "Expected",
+      "upstream": "Charged",
+      "diff": "Difference",
+      "total": "Total",
+      "flag": "Differs from the expected cost by 5% or more"
+    },
     "performance": {
       "intro": "How this channel served requests (read-only)",
       "none": "No requests in {{range}}",

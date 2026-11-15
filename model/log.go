@@ -39,6 +39,12 @@ type Log struct {
 	// 不为低频查询摊索引维护成本。若某部署确实高频按上游 ID 反查，加回 index 即可。
 	UpstreamRequestId string                             `json:"upstream_request_id" gorm:"type:varchar(128);default:''"`
 	Metadata          datatypes.JSONType[map[string]any] `json:"metadata" gorm:"type:json"`
+	// UpstreamCost is what the upstream reported it charged for the request, in USD; 0 when it
+	// reported nothing. ExpectedCost is the gateway's own estimate of that charge, in USD, from
+	// its price table and the channel's cost ratio; it is only written next to an UpstreamCost,
+	// so the two can be summed and compared (see GetChannelUpstreamCosts). Admin only.
+	UpstreamCost float64 `json:"upstream_cost" gorm:"default:0"`
+	ExpectedCost float64 `json:"expected_cost" gorm:"default:0"`
 
 	Channel *Channel `json:"channel" gorm:"foreignKey:Id;references:ChannelId"`
 
@@ -152,6 +158,12 @@ func RecordLogWithTx(tx *gorm.DB, userId int, logType int, content string) {
 	}
 }
 
+// Metadata keys RecordConsumeLog moves into the upstream_cost and expected_cost columns.
+const (
+	LogMetaUpstreamCost = "_upstream_cost"
+	LogMetaExpectedCost = "_expected_cost"
+)
+
 func RecordConsumeLog(
 	ctx context.Context,
 	userId int,
@@ -205,6 +217,15 @@ func RecordConsumeLog(
 		RequestId:         requestId,
 		UpstreamRequestId: upstreamRequestId,
 	}
+
+	// The two costs travel in the metadata map and are stored as columns; they are removed from
+	// the map, which users can read.
+	if cost, ok := metadata[LogMetaUpstreamCost].(float64); ok && cost > 0 {
+		log.UpstreamCost = cost
+		log.ExpectedCost, _ = metadata[LogMetaExpectedCost].(float64)
+	}
+	delete(metadata, LogMetaUpstreamCost)
+	delete(metadata, LogMetaExpectedCost)
 
 	if metadata != nil {
 		log.Metadata = datatypes.NewJSONType(metadata)
@@ -669,7 +690,7 @@ func GetAllLogsList(params *LogsListParams) ([]*Log, error) {
 func GetUserLogsList(userId int, params *LogsListParams) (*DataResult[Log], error) {
 	var logs []*Log
 
-	tx := DB.Where("user_id = ?", userId).Omit("cost_quota", "upstream_request_id")
+	tx := DB.Where("user_id = ?", userId).Omit("cost_quota", "upstream_request_id", "upstream_cost", "expected_cost")
 
 	if params.LogType != LogTypeUnknown {
 		tx = tx.Where("type = ?", params.LogType)
@@ -711,7 +732,7 @@ func GetUserLogsList(userId int, params *LogsListParams) (*DataResult[Log], erro
 func GetAllUserLogsList(userId int, params *LogsListParams) ([]*Log, error) {
 	var logs []*Log
 
-	tx := DB.Where("user_id = ?", userId).Omit("cost_quota", "upstream_request_id")
+	tx := DB.Where("user_id = ?", userId).Omit("cost_quota", "upstream_request_id", "upstream_cost", "expected_cost")
 
 	if params.LogType != LogTypeUnknown {
 		tx = tx.Where("type = ?", params.LogType)
@@ -773,7 +794,7 @@ func SearchAllLogs(keyword string) (logs []*Log, err error) {
 }
 
 func SearchUserLogs(userId int, keyword string) (logs []*Log, err error) {
-	err = DB.Where("user_id = ? and type = ?", userId, keyword).Order("id desc").Limit(config.MaxRecentItems).Omit("cost_quota", "upstream_request_id").Find(&logs).Error
+	err = DB.Where("user_id = ? and type = ?", userId, keyword).Order("id desc").Limit(config.MaxRecentItems).Omit("cost_quota", "upstream_request_id", "upstream_cost", "expected_cost").Find(&logs).Error
 	return logs, err
 }
 

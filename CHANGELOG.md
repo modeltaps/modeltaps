@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The consume log keeps what the upstream says it charged for a request, next to this site's own
+  estimate of that charge (the price table at the channel's cost ratio, or at the listed price
+  when the channel has none). OpenRouter reports the charge in every response (`usage.cost`), for
+  plain and streamed chat completions and for the Responses API, so no extra request is made; the
+  field is not passed on to the client, and the same field from other upstreams is ignored until
+  its unit is verified. A channel's Performance tab lists both sums per model with the
+  difference, and marks a difference of 5% or more. Requests in Claude format are not covered
+  yet. Nothing is repriced from this.
 - A channel has a management key of its own, apart from the key requests are sent with. It is
   optional, never used for requests and never returned by the API (only its mask), and it reads
   what belongs to the upstream account: with it an OpenRouter channel shows the account's

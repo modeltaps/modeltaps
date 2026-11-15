@@ -255,6 +255,13 @@ func WithUpstreamRequestID(ctx context.Context, c *gin.Context) context.Context 
 	return ctx
 }
 
+// upstreamCostTypes are the channel types whose usage.cost is known to be the amount charged to
+// the account in USD. A cost from any other upstream is ignored: its unit is not verified.
+// OpenRouter: https://openrouter.ai/docs/use-cases/usage-accounting
+var upstreamCostTypes = map[int]bool{
+	config.ChannelTypeOpenRouter: true,
+}
+
 func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 	meta := map[string]any{
 		"group_name":        q.groupName,
@@ -311,6 +318,13 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 		if inRatio, outRatio := q.price.GetLongContextMultiplier(usage.PromptTokens); inRatio != 1 || outRatio != 1 {
 			meta["long_context_input_ratio"] = inRatio
 			meta["long_context_output_ratio"] = outRatio
+		}
+
+		// The upstream's own charge for the request, kept with the gateway's estimate of it.
+		// RecordConsumeLog stores both as columns and takes them out of the metadata.
+		if usage.UpstreamCost > 0 && upstreamCostTypes[q.channelType] {
+			meta[model.LogMetaUpstreamCost] = usage.UpstreamCost
+			meta[model.LogMetaExpectedCost] = q.ExpectedUpstreamCost(usage)
 		}
 
 		// 处理档位(SEC-36,additive):上游回报了非标准档位或推理区域时记录,倍率已计入扣费。

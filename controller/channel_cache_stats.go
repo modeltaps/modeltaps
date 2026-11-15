@@ -58,3 +58,26 @@ func GetChannelCacheStats(c *gin.Context) {
 		"data":    stats,
 	})
 }
+
+// GetChannelUpstreamCosts returns, per channel and model, the cost the upstream reported next
+// to the cost the gateway expected, over the requests whose upstream reported one. Query:
+// start_timestamp / end_timestamp (unix seconds, default the last 24 hours) and an optional
+// channel_id.
+func GetChannelUpstreamCosts(c *gin.Context) {
+	end, _ := strconv.ParseInt(c.Query("end_timestamp"), 10, 64)
+	start, _ := strconv.ParseInt(c.Query("start_timestamp"), 10, 64)
+	if end <= 0 {
+		end = time.Now().Unix()
+	}
+	if start <= 0 {
+		start = end - 24*3600
+	}
+	channelId, _ := strconv.Atoi(c.Query("channel_id"))
+
+	rows, err := model.GetChannelUpstreamCosts(start, end, channelId)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": rows})
+}

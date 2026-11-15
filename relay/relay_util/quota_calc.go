@@ -119,11 +119,27 @@ func (q *Quota) GetCostQuotaByUsage(usage *types.Usage) (costQuota int) {
 	if q.costRatio <= 0 {
 		return 0
 	}
+	return q.costQuotaAt(usage, q.costRatio)
+}
+
+// costQuotaAt prices the usage from the price table at the given ratio, without the group ratio.
+func (q *Quota) costQuotaAt(usage *types.Usage, ratio float64) int {
 	promptTokens, completionTokens := q.getComputeTokensByUsage(usage)
 	inRatio, outRatio := q.price.GetLongContextMultiplier(usage.PromptTokens)
 	tier := usage.TierMultiplier()
 	q.GetExtraBillingData(usage.ExtraBilling)
-	return q.calcQuota(promptTokens, completionTokens, q.price.GetInput()*q.costRatio*inRatio*tier, q.price.GetOutput()*q.costRatio*outRatio*tier, q.costRatio)
+	return q.calcQuota(promptTokens, completionTokens, q.price.GetInput()*ratio*inRatio*tier, q.price.GetOutput()*ratio*outRatio*tier, ratio)
+}
+
+// ExpectedUpstreamCost is the gateway's estimate, in USD, of what the upstream charges for the
+// usage: the price table at the channel's cost ratio, or at 1 (the listed price) when the
+// channel has none. It is logged next to the cost the upstream reports, to show the difference.
+func (q *Quota) ExpectedUpstreamCost(usage *types.Usage) float64 {
+	ratio := q.costRatio
+	if ratio <= 0 {
+		ratio = 1
+	}
+	return float64(q.costQuotaAt(usage, ratio)) / float64(config.QuotaPerUnit)
 }
 
 type ExtraBillingData struct {

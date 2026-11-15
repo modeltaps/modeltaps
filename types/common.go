@@ -39,6 +39,36 @@ type Usage struct {
 	// Neither is serialized; billing reads them through TierMultiplier.
 	ServiceTier  string `json:"-"`
 	InferenceGeo string `json:"-"`
+
+	// UpstreamCost is what the upstream says it charged for this request, in USD, read from a
+	// numeric usage.cost (OpenRouter). 0 when the upstream reports none. It is never serialized,
+	// so a client does not see what the gateway pays; billing does not read it either, it is
+	// only logged next to the gateway's own estimate.
+	UpstreamCost float64 `json:"-"`
+}
+
+// usageCost reads a numeric "cost" of a usage object; anything else (absent, a string, an
+// object) is 0, so an upstream with another idea of the field cannot break parsing the usage.
+func usageCost(raw json.RawMessage) float64 {
+	var cost float64
+	if len(raw) == 0 || json.Unmarshal(raw, &cost) != nil || cost < 0 {
+		return 0
+	}
+	return cost
+}
+
+// UnmarshalJSON reads the usage as usual and keeps usage.cost in UpstreamCost.
+func (u *Usage) UnmarshalJSON(data []byte) error {
+	type plain Usage
+	aux := struct {
+		*plain
+		Cost json.RawMessage `json:"cost"`
+	}{plain: (*plain)(u)}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	u.UpstreamCost = usageCost(aux.Cost)
+	return nil
 }
 
 // TierMultiplier returns the factor the upstream applies to every token price for
