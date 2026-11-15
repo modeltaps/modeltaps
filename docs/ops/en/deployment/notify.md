@@ -7,58 +7,42 @@ lastUpdated: true
 
 # Notifications
 
-Modeltaps sends a notification whenever a channel is disabled.
+Admins get a notice when a channel is disabled or recovers, a balance runs low, prices change,
+models drift, credentials fail and so on. Notices are set up under
+**Settings → Notifications & integrations → Notifications**, in three parts:
 
-## Configuration file
+- **Notice kinds**: each kind can be turned off. Each kind is capped per hour; notices over the
+  cap are dropped, and the first notice of the next hour says how many were.
+- **Channels**: where notices go. Every notice goes to all enabled channels.
+- **Mail server**: the SMTP server behind email channels, sign-up codes and quota warning emails.
 
-Fill in the following fields in `config.yaml`. Leave any notification method you do not need empty.
+## Channels
 
-```yaml
-notify: # Notification settings; every configured method receives its own notification. Remove this section if you do not need notifications.
-  email: # Email notifications (SMTP is configured in Platform admin → Platform settings; enabled by default — disable it below if not needed)
-    disable: false # Whether to disable email notifications
-    smtp_to: "" # Recipient address (optional; falls back to the super administrator's email)
-  dingTalk: # DingTalk bot notifications
-    token: "" # The last segment of the webhook URL
-    secret: "" # Secret (choose either secret or keyWord)
-    keyWord: "" # Keyword (choose either secret or keyWord)
-  lark: # Lark/Feishu bot notifications
-    token: "" # The last segment of the webhook URL
-    secret: "" # Secret (choose either secret or keyWord)
-    keyWord: "" # Keyword (choose either secret or keyWord)
-  pushdeer: # pushdeer notifications
-    url: "https://api2.pushdeer.com" # pushdeer address (optional; required for self-hosted instances)
-    pushkey: "" # pushkey
-  telegram: # Telegram notifications
-    bot_api_key: "" # Telegram bot API key
-    chat_id: "" # Telegram chat_id
-```
+These types are supported, and a type can be added more than once (two different groups, say):
 
-## Environment variables
+| Type | Settings |
+| --- | --- |
+| Email | Recipient; empty sends to the root admin's address. Needs the mail server |
+| WeCom | The group bot's webhook URL |
+| DingTalk | Bot access token (the part after `access_token=` in the webhook URL), and a signing secret or a keyword |
+| Lark | Bot token (the last part of the webhook URL), and a signing secret or a keyword |
+| PushDeer | PushKey; the server address when self-hosted |
+| Telegram | Bot token and chat ID; a proxy when the server cannot reach Telegram directly |
 
-### Email notifications
+While adding or editing a channel, **Send test** sends a test notice with what the form holds,
+saved or not. Webhooks, tokens and secrets are not shown again once saved; leave them empty while
+editing to keep them.
 
-- `NOTIFY_EMAIL_DISABLE` — whether to disable email notifications, `true` or `false`
-- `NOTIFY_EMAIL_SMTP_TO` — recipient address (optional; falls back to the super administrator's email)
+A fresh install starts with one email channel to the root admin's address, so notices arrive as
+soon as the mail server is set up.
 
-### DingTalk notifications
+## Upgrading from the config file
 
-- `NOTIFY_DINGTALK_TOKEN` — the last segment of the webhook URL
-- `NOTIFY_DINGTALK_SECRET` — secret (choose either secret or keyWord)
-- `NOTIFY_DINGTALK_KEYWORD` — keyword (choose either secret or keyWord)
+Older versions set the channels under `notify:` in `config.yaml` (or the `NOTIFY_*` environment
+variables). The first start after the upgrade moves them into the channels in the console; from
+then on they are edited there, and the `notify:` section can be removed.
 
-### Lark/Feishu notifications
-
-- `NOTIFY_LARK_TOKEN` — the last segment of the webhook URL
-- `NOTIFY_LARK_SECRET` — secret (choose either secret or keyWord)
-- `NOTIFY_LARK_KEYWORD` — keyword (choose either secret or keyWord)
-
-### pushdeer notifications
-
-- `NOTIFY_PUSHDEER_URL` — pushdeer address (optional; required for self-hosted instances)
-- `NOTIFY_PUSHDEER_PUSHKEY` — pushdeer pushkey
-
-### Telegram notifications
-
-- `NOTIFY_TELEGRAM_BOT_API_KEY` — Telegram bot API key
-- `NOTIFY_TELEGRAM_CHAT_ID` — Telegram chat_id
+The **Telegram user bot** under Settings → Notifications & integrations → Integrations is
+something else: it lets users link their account, check their balance and top up from Telegram.
+Its key is still set under `tg:` in the config file and has nothing to do with the Telegram
+notification channel.

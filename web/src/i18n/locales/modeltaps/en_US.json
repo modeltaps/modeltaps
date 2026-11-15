@@ -2351,23 +2351,15 @@
       "noticeTo": "alerts go to {{targets}}",
       "targetSep": ", ",
       "targetNotReady": "{{name}} (not set up)",
-      "target": {
-        "Email": "Email",
-        "WeCom": "WeCom",
-        "DingTalk": "DingTalk",
-        "Lark": "Lark",
-        "PushDeer": "PushDeer",
-        "Telegram": "Telegram"
-      },
       "problem": {
         "noRefresh": "Automatic balance refresh is off (channel.update_frequency is 0); the balance is only checked when refreshed by hand.",
         "kindOff": "Low channel balance notices are turned off in the notification settings.",
-        "noTarget": "No notifier can send: email needs SMTP (sent to the root admin's address by default); Telegram, WeCom and others are set under notify in the config file."
+        "noTarget": "No channel can send notices: add a channel; an email channel also needs SMTP."
       },
       "driftUnsupported": "This provider has no model list endpoint, so it cannot be compared with its upstream.",
       "problemLink": {
         "kindOff": "Notification settings",
-        "noTarget": "SMTP settings"
+        "noTarget": "Channels"
       }
     },
     "pauseRules": {
@@ -3147,7 +3139,7 @@
         },
         "notify": {
           "label": "Notifications & integrations",
-          "description": "Mail, bots and callbacks"
+          "description": "Notice kinds, channels, the mail server and outside entries"
         },
         "orgpolicy": {
           "label": "Organization policy",
@@ -3309,16 +3301,19 @@
           "hint": "One keyword per line"
         },
         "smtp": {
-          "title": "Mail sending",
+          "title": "Mail server",
           "description": "Verification codes, notifications and billing emails are sent from here",
           "hint": "The password is not shown again once saved"
         },
         "notifications": {
-          "title": "Notifications",
+          "title": "Notice kinds",
           "hint": "Each kind is capped per hour"
         },
+        "notify-channels": {
+          "title": "Channels"
+        },
         "telegram": {
-          "title": "Telegram bot"
+          "title": "Telegram user bot"
         },
         "builtin-chat": {
           "title": "Built-in chat",
@@ -3363,7 +3358,8 @@
         "edit": "Edit chat link"
       },
       "telegram": {
-        "add": "Add command"
+        "add": "Add command",
+        "description": "Lets users link their account, check their balance, top up and get API keys from Telegram. The bot key is set under tg in the config file and has nothing to do with the Telegram notification channel; reload the menu after changing its commands."
       },
       "pauseRules": {
         "label": "Custom rules (JSON)",
@@ -3401,7 +3397,88 @@
       "tabs": {
         "resilience": "Resilience",
         "allocation": "Allocation",
-        "request": "Requests & protocols"
+        "request": "Requests & protocols",
+        "notices": "Notifications",
+        "integrations": "Integrations"
+      },
+      "notifyChannels": {
+        "add": "Add channel",
+        "description": "Every notice goes to all enabled channels. Which notices are sent and how many per hour is set under Notice kinds above.",
+        "empty": "No channels yet: notices reach nobody",
+        "sheetDescription": "Where notices go",
+        "saved": "Saved",
+        "test": "Send test",
+        "testOk": "Test notice sent: check that it arrived",
+        "notReady": "Cannot send",
+        "notReadyEmail": "SMTP not set up",
+        "columns": {
+          "name": "Name",
+          "where": "Sends to"
+        },
+        "types": {
+          "email": "Email",
+          "wecom": "WeCom",
+          "dingtalk": "DingTalk",
+          "lark": "Lark",
+          "pushdeer": "PushDeer",
+          "telegram": "Telegram"
+        },
+        "form": {
+          "type": "Type",
+          "name": "Name",
+          "nameHint": "Shown in the list; empty uses the type name",
+          "enabled": "Enabled",
+          "secretKeep": "Leave empty to keep",
+          "clear": "Clear",
+          "undoClear": "Undo",
+          "cleared": "Cleared on save",
+          "signedHint": "Set a signing secret or a keyword, matching the bot's security settings",
+          "required": "{{field}} is required"
+        },
+        "fields": {
+          "to": {
+            "label": "Recipient",
+            "placeholder": "ops@example.com",
+            "hint": "Empty sends to the root admin's address, through the SMTP server under Mail server"
+          },
+          "webhook": {
+            "label": "Bot webhook URL",
+            "placeholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…"
+          },
+          "token": {
+            "label": "Bot access token",
+            "hint_dingtalk": "The part after access_token= in the webhook URL",
+            "hint_lark": "The last part of the webhook URL"
+          },
+          "secret": {
+            "label": "Signing secret"
+          },
+          "keyword": {
+            "label": "Keyword",
+            "hint": "Added to notice titles; the bot only accepts messages containing it"
+          },
+          "pushkey": {
+            "label": "PushKey"
+          },
+          "url": {
+            "label": "Self-hosted server",
+            "placeholder": "https://api2.pushdeer.com",
+            "hint": "Leave empty for the official service"
+          },
+          "bot_token": {
+            "label": "Bot token",
+            "hint": "From @BotFather when you create the bot"
+          },
+          "chat_id": {
+            "label": "Chat ID",
+            "hint": "A user, group or channel; add the bot to groups and channels first"
+          },
+          "http_proxy": {
+            "label": "Proxy",
+            "placeholder": "http://127.0.0.1:7890",
+            "hint": "When the server cannot reach Telegram directly"
+          }
+        }
       }
     },
     "personal": {

@@ -35,7 +35,15 @@ import {
   SupplyPauseRulesCard
 } from './cards/GatewayCards';
 import { LogConsumeCard, LogIOCard, SafetyCard } from './cards/PrivacyCards';
-import { BuiltinChatCard, ChatLinksCard, MjNotifyCard, NotificationsCard, SmtpCard, TelegramCard } from './cards/NotifyCards';
+import {
+  BuiltinChatCard,
+  ChatLinksCard,
+  MjNotifyCard,
+  NotificationsCard,
+  NotifyChannelsCard,
+  SmtpCard,
+  TelegramCard
+} from './cards/NotifyCards';
 import { OrgPolicyCard } from './cards/OrgPolicyCards';
 import { workbench } from 'routes/paths';
 
@@ -85,6 +93,7 @@ const CARD_COMPONENTS = {
   safety: SafetyCard,
   smtp: SmtpCard,
   notifications: NotificationsCard,
+  'notify-channels': NotifyChannelsCard,
   telegram: TelegramCard,
   'builtin-chat': BuiltinChatCard,
   'chat-links': ChatLinksCard,

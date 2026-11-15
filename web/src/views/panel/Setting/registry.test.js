@@ -16,7 +16,6 @@ const LEGACY_OPTION_KEYS = [
   'AnalyticsCode',
   'ApproximateTokenEnabled',
   'AutomaticDisableChannelEnabled',
-  'AutomaticDisableChannelNotifyEnabled',
   'AutomaticEnableChannelEnabled',
   'BrandIconFaviconFetchEnabled',
   'BrandIconRegistry',
@@ -174,6 +173,9 @@ describe('platform settings registry', () => {
         expect(platform.groups[group.id]?.description, group.id).toBeTruthy();
       }
       for (const card of allCards) expect(platform.cards[card.id]?.title, card.id).toBeTruthy();
+      for (const group of PLATFORM_GROUPS.filter((g) => g.tabs)) {
+        for (const tab of group.tabs) expect(platform.tabs[tab], tab).toBeTruthy();
+      }
     }
   });
 });
@@ -307,5 +309,11 @@ describe('tabbed groups', () => {
       for (const card of group.cards) expect(group.tabs).toContain(card.tab);
     }
     expect(PLATFORM_GROUPS.find((g) => g.id === 'gateway').tabs).toEqual(['resilience', 'allocation', 'request']);
+    expect(PLATFORM_GROUPS.find((g) => g.id === 'notify').tabs).toEqual(['notices', 'integrations']);
+  });
+
+  it('the Midjourney callback is a gateway request setting, old links follow it', () => {
+    expect(cardById('mj-notify')).toMatchObject({ groupId: 'gateway', tab: 'request' });
+    expect(resolveSettingsTarget({ section: 'notify', highlight: 'mj-notify' })).toBe('/panel/admin/settings/gateway?highlight=mj-notify');
   });
 });

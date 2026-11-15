@@ -185,6 +185,18 @@ func SetApiRouter(router *gin.Engine) {
 			inviteCodeRoute.POST("/batch-delete", controller.BatchDeleteInviteCodes)
 		}
 
+		notifyChannelRoute := apiRouter.Group("/notify_channel")
+		notifyChannelRoute.Use(middleware.RootAuth())
+		{
+			notifyChannelRoute.GET("/", controller.GetNotifyChannels)
+			notifyChannelRoute.GET("/types", controller.GetNotifyChannelTypes)
+			notifyChannelRoute.POST("/", controller.CreateNotifyChannel)
+			notifyChannelRoute.POST("/test", controller.TestNotifyChannel)
+			notifyChannelRoute.PUT("/:id", controller.UpdateNotifyChannel)
+			notifyChannelRoute.PUT("/:id/status", controller.UpdateNotifyChannelStatus)
+			notifyChannelRoute.DELETE("/:id", controller.DeleteNotifyChannel)
+		}
+
 		oidcProviderRoute := apiRouter.Group("/oidc_provider")
 		oidcProviderRoute.Use(middleware.AdminAuth())
 		{

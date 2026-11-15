@@ -251,7 +251,6 @@ var NotifyDisabledKinds = ""
 // NotifyKindLimitPerHour 每类通知每小时最多发送的条数，超出的丢弃并在下一小时第一条里注明数量；0 不限。
 var NotifyKindLimitPerHour = 20
 
-var AutomaticDisableChannelNotifyEnabled = true
 // QuotaRemindEnabled turns quota warning emails on or off. When off, settlement skips the extra
 // read of the user's balance that the warning check needs.
 var QuotaRemindEnabled = true

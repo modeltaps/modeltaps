@@ -138,28 +138,8 @@ tg:
   http_proxy: ""             # 访问 Telegram 的 HTTP/SOCKS5 代理
 
 # ---------- 通知渠道 ----------
-notify:
-  email:
-    disable: false           # 禁用邮件通知
-    smtp_to: ""              # 通知收件邮箱
-  wecom:
-    disable: false           # 禁用企业微信通知
-    webhook: ""             # 企业微信机器人 webhook
-  dingtalk:
-    token: ""               # 钉钉机器人 access token
-    secret: ""              # 钉钉加签 secret
-    keyWord: ""             # 钉钉关键词
-  lark:
-    token: ""               # 飞书机器人 token
-    secret: ""              # 飞书加签 secret
-    keyWord: ""             # 飞书关键词
-  pushdeer:
-    pushkey: ""             # PushDeer pushkey
-    url: ""                 # 自建 PushDeer 地址
-  telegram:
-    bot_api_key: ""         # 通知用 Telegram bot 密钥
-    chat_id: ""             # 通知目标 chat id
-    http_proxy: ""          # 代理地址
+# 通知渠道（邮件、企业微信、钉钉、飞书、PushDeer、Telegram）在后台「设置 → 通知与集成 → 通知」里配置。
+# 旧版本写在这里的 notify: 段会在升级后第一次启动时自动搬进后台，之后可以删掉。
 
 # ---------- 对象存储（图床）----------
 storage:

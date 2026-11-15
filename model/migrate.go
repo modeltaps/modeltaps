@@ -615,6 +615,8 @@ func postMigrations() []*gormigrate.Migration {
 		migratePlatformSpellingDrafts(),
 		migrateAttachRenamedPublicModels(),
 		migrateVendorCleanup(),
+		migrateNotifyChannels(),
+		foldChannelDisableNotifyOption(),
 	}
 }
 

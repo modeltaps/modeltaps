@@ -97,5 +97,5 @@ func SendKind(kind, title, message string) {
 	}
 	//lint:ignore SA1029 reason: 需要使用该类型作为错误处理
 	ctx := context.WithValue(context.Background(), logger.RequestIdKey, "NotifyTask")
-	notifyChannels.Send(ctx, title, message)
+	sendAll(ctx, title, message)
 }

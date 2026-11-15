@@ -160,7 +160,7 @@ The following commonly used keys are read by the code but not covered above. For
 - `DISABLE_TOKEN_ENCODERS`: disable local token encoders and fall back to estimation, defaults to `false`.
 - `TG_HTTP_PROXY`: HTTP/SOCKS5 proxy used to reach Telegram.
 
-### Notifications, storage and search
+### Storage and search
 
-The notification (`NOTIFY_*`), object storage (`STORAGE_*`) and web search (`SEARCH_*`) groups contain many keys. For key names and default values, refer directly to `config.example.yaml` in the root of the delivery package.
+The object storage (`STORAGE_*`) and web search (`SEARCH_*`) groups contain many keys. For key names and default values, refer directly to `config.example.yaml` in the root of the delivery package. Notification channels (`NOTIFY_*`) moved to the console, see [Notifications](./notify.md).
 

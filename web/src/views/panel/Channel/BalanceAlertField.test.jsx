@@ -12,7 +12,12 @@ import BalanceAlertField from './BalanceAlertField';
 
 const caps = (lowBalance = {}) => ({
   types: { balance: [1, 28, 62], usage_windows: [58] },
-  low_balance: { refresh_minutes: 60, kind_on: true, targets: [{ name: 'Email', detail: 'ops@example.com', ready: true }], ...lowBalance }
+  low_balance: {
+    refresh_minutes: 60,
+    kind_on: true,
+    targets: [{ name: '', type: 'email', detail: 'ops@example.com', ready: true }],
+    ...lowBalance
+  }
 });
 
 const renderField = (channel) =>
@@ -37,11 +42,13 @@ describe('BalanceAlertField', () => {
   });
 
   it('labels CNY balances and warns when nothing can send', async () => {
-    fetchChannelCapabilities.mockResolvedValue(caps({ targets: [{ name: 'Email', ready: false }] }));
+    fetchChannelCapabilities.mockResolvedValue(caps({ targets: [{ name: 'Ops mail', type: 'email', ready: false }] }));
     renderField({ type: 28 });
     expect(screen.getByText('Low-balance alert (CNY)')).toBeTruthy();
-    expect(await screen.findByText(/No notifier can send/)).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'SMTP settings' }).getAttribute('href')).toBe('/panel/admin/settings/notify?highlight=smtp');
+    expect(await screen.findByText(/No channel can send notices/)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Channels' }).getAttribute('href')).toBe(
+      '/panel/admin/settings/notify?highlight=notify-channels'
+    );
   });
 
   it('turns the field off for providers without a balance', async () => {

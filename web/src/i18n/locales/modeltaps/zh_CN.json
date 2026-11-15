@@ -2257,23 +2257,15 @@
       "noticeTo": "提醒发到：{{targets}}",
       "targetSep": "、",
       "targetNotReady": "{{name}}（未配好）",
-      "target": {
-        "Email": "邮件",
-        "WeCom": "企业微信",
-        "DingTalk": "钉钉",
-        "Lark": "飞书",
-        "PushDeer": "PushDeer",
-        "Telegram": "Telegram"
-      },
       "problem": {
         "noRefresh": "余额自动刷新已关闭（配置 channel.update_frequency 为 0），只有手动刷新余额时才会检查。",
         "kindOff": "「渠道余额不足」提醒在通知设置里关掉了。",
-        "noTarget": "没有能发出去的通知方式：邮件要配好 SMTP（收件人默认是超管邮箱），Telegram、企业微信等在配置文件的 notify 里配。"
+        "noTarget": "没有能发出去的通知渠道：先添加一个发送渠道；邮件渠道还要配好 SMTP。"
       },
       "driftUnsupported": "这个供应商不提供模型清单接口，没法和上游对比。",
       "problemLink": {
         "kindOff": "通知设置",
-        "noTarget": "SMTP 设置"
+        "noTarget": "发送渠道"
       }
     },
     "pauseRules": {
@@ -3047,7 +3039,7 @@
         },
         "notify": {
           "label": "通知与集成",
-          "description": "邮件、机器人和第三方回调"
+          "description": "通知类型、发送渠道、邮件服务和对外入口"
         },
         "orgpolicy": {
           "label": "组织策略",
@@ -3209,16 +3201,19 @@
           "hint": "每行一个关键词"
         },
         "smtp": {
-          "title": "邮件发送",
+          "title": "邮件服务",
           "description": "验证码、通知和账单邮件都从这里发",
           "hint": "密码保存后不再显示"
         },
         "notifications": {
-          "title": "通知",
+          "title": "通知类型",
           "hint": "每类通知每小时有上限"
         },
+        "notify-channels": {
+          "title": "发送渠道"
+        },
         "telegram": {
-          "title": "Telegram 机器人"
+          "title": "Telegram 用户机器人"
         },
         "builtin-chat": {
           "title": "内置聊天",
@@ -3263,7 +3258,8 @@
         "edit": "编辑聊天链接"
       },
       "telegram": {
-        "add": "添加命令"
+        "add": "添加命令",
+        "description": "用户在 Telegram 里绑定账号、查余额、充值、取 API 密钥。机器人密钥在配置文件的 tg 段里配，和发送渠道里的 Telegram 无关；改了菜单命令要重新载入才生效。"
       },
       "pauseRules": {
         "label": "自定义规则（JSON）",
@@ -3299,7 +3295,88 @@
       "tabs": {
         "resilience": "容错",
         "allocation": "分配",
-        "request": "请求与协议"
+        "request": "请求与协议",
+        "notices": "通知",
+        "integrations": "集成"
+      },
+      "notifyChannels": {
+        "add": "添加渠道",
+        "description": "每条通知同时发到所有已启用的渠道。哪些通知要发、每小时发几条，在上面的「通知类型」里设置。",
+        "empty": "还没有发送渠道，通知不会发给任何人",
+        "sheetDescription": "通知发到哪里",
+        "saved": "已保存",
+        "test": "发送测试",
+        "testOk": "测试通知已发出，去对应的地方看看有没有收到",
+        "notReady": "发不出去",
+        "notReadyEmail": "SMTP 未配置",
+        "columns": {
+          "name": "名称",
+          "where": "发到"
+        },
+        "types": {
+          "email": "邮件",
+          "wecom": "企业微信",
+          "dingtalk": "钉钉",
+          "lark": "飞书",
+          "pushdeer": "PushDeer",
+          "telegram": "Telegram"
+        },
+        "form": {
+          "type": "类型",
+          "name": "名称",
+          "nameHint": "列表里显示的名字，留空则用类型名",
+          "enabled": "启用",
+          "secretKeep": "留空则不修改",
+          "clear": "清除",
+          "undoClear": "撤销",
+          "cleared": "保存后清除",
+          "signedHint": "加签密钥和关键词至少填一个，要和机器人的安全设置一致",
+          "required": "请填写{{field}}"
+        },
+        "fields": {
+          "to": {
+            "label": "收件邮箱",
+            "placeholder": "ops@example.com",
+            "hint": "留空则发给超管的邮箱；用「邮件服务」里的 SMTP 发送"
+          },
+          "webhook": {
+            "label": "机器人 Webhook 地址",
+            "placeholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…"
+          },
+          "token": {
+            "label": "机器人 access token",
+            "hint_dingtalk": "Webhook 地址里 access_token= 后面的部分",
+            "hint_lark": "Webhook 地址最后一段"
+          },
+          "secret": {
+            "label": "加签密钥"
+          },
+          "keyword": {
+            "label": "自定义关键词",
+            "hint": "通知标题里会带上这个词，机器人只收含关键词的消息"
+          },
+          "pushkey": {
+            "label": "PushKey"
+          },
+          "url": {
+            "label": "自建服务地址",
+            "placeholder": "https://api2.pushdeer.com",
+            "hint": "用官方服务就留空"
+          },
+          "bot_token": {
+            "label": "机器人 Token",
+            "hint": "在 @BotFather 创建机器人后拿到"
+          },
+          "chat_id": {
+            "label": "Chat ID",
+            "hint": "个人、群组或频道的 ID；群组和频道要先把机器人拉进去"
+          },
+          "http_proxy": {
+            "label": "代理地址",
+            "placeholder": "http://127.0.0.1:7890",
+            "hint": "服务器连不上 Telegram 时填"
+          }
+        }
       }
     },
     "personal": {

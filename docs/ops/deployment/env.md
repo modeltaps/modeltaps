@@ -175,9 +175,9 @@ LOGS_FILENAME="modeltaps.log"
 - `DISABLE_TOKEN_ENCODERS`：禁用本地 token 编码器（改用估算），默认 `false`。
 - `TG_HTTP_PROXY`：访问 Telegram 的 HTTP/SOCKS5 代理。
 
-### 通知 / 存储 / 搜索
+### 存储 / 搜索
 
-通知（`NOTIFY_*`）、对象存储图床（`STORAGE_*`）、联网搜索（`SEARCH_*`）等分组配置项较多，键名与默认值请直接参考交付包根目录的 `config.example.yaml`。
+对象存储图床（`STORAGE_*`）、联网搜索（`SEARCH_*`）等分组配置项较多，键名与默认值请直接参考交付包根目录的 `config.example.yaml`。通知渠道（`NOTIFY_*`）已移到后台配置，见[消息通知](./notify.md)。
 
 ## 账号体系
 

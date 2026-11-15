@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Eye, EyeOff, Info, RotateCw, Send, Trash2 } from 'lucide-react';
+import { AlertTriangle, Eye, EyeOff, Info, Power, RotateCw, Send, Trash2 } from 'lucide-react';
 
 import { API } from 'utils/api';
 import { showError, showSuccess } from 'utils/common';
@@ -11,12 +11,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { CollectionCard, OptionList, StatusDot } from '@/components/settings/cards';
 import TelegramSheet from '../../Telegram/TelegramSheet';
 import ChatLinkSheet, { parseChatLinks, serializeChatLinks } from '../ChatLinkSheet';
+import NotifyChannelSheet from '../NotifyChannelSheet';
+import { NotifyChannelIcon, channelPayload, channelWhere } from '../notifyChannels';
+import { toast } from '@/components/ui/sonner';
 import { SelectRow, TextRow, ToggleRow } from '../parts';
 import OptionCard, { bindSwitch, cardText } from './OptionCard';
 
 // ==============================|| PLATFORM SETTINGS — 通知与集成 ||============================== //
-// Mail sending (SMTP), admin notifications, the Telegram bot menu, built-in chat and chat links,
-// and the Midjourney callback.
+// Two tabs. 通知: the platform's admin notices — which kinds are sent, the channels they go to
+// and the mail server behind email. 集成: the Telegram user bot, built-in chat and chat links.
+// (The Midjourney callback card lives here but is shown under the gateway's request tab.)
 
 const SMTP_TLS_MODES = ['auto', 'ssl', 'starttls', 'starttls_opportunistic', 'none'];
 
@@ -120,6 +124,157 @@ export function NotificationsCard({ ctx }) {
   );
 }
 
+// Where admin notices go. Every enabled channel gets every notice that passes the kind switches
+// and the hourly limit; a channel that cannot send (email without SMTP, settings that no longer
+// build) is flagged in the list.
+export function NotifyChannelsCard() {
+  const { t } = useTranslation();
+  const nk = (k, opts) => t(`settingsUi.platform.notifyChannels.${k}`, opts);
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [sheet, setSheet] = useState({ open: false, editing: null });
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await API.get('/api/notify_channel/');
+      if (res.data?.success) setRows(res.data.data || []);
+      else showError(res.data?.message);
+    } catch (e) {
+      /* surfaced by the API interceptor */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const call = async (request, okText) => {
+    try {
+      const res = await request();
+      if (!res.data?.success) {
+        showError(res.data?.message);
+        return;
+      }
+      if (okText) toast.success(okText);
+      await load();
+    } catch (e) {
+      /* surfaced by the API interceptor */
+    }
+  };
+
+  const test = async (row) => {
+    try {
+      const res = await API.post('/api/notify_channel/test', channelPayload({ ...row, clear: [] }));
+      if (res.data?.success) toast.success(nk('testOk'));
+      else showError(res.data?.message);
+    } catch (e) {
+      /* the channel's own error is surfaced by the API interceptor */
+    }
+  };
+
+  const remove = () => {
+    const target = deleteTarget;
+    setDeleteTarget(null);
+    if (target) call(() => API.delete(`/api/notify_channel/${target.id}`), t('common.deleteSuccess'));
+  };
+
+  const label = (row) => row.name || nk(`types.${row.type}`);
+
+  return (
+    <>
+      <CollectionCard
+        title={cardText(t, 'notify-channels', 'title')}
+        description={nk('description')}
+        highlight="notify-channels"
+        addLabel={nk('add')}
+        onAdd={() => setSheet({ open: true, editing: null })}
+        loading={loading}
+        empty={nk('empty')}
+        rows={rows}
+        onRowClick={(row) => setSheet({ open: true, editing: row })}
+        columns={[
+          {
+            key: 'name',
+            header: nk('columns.name'),
+            cell: (row) => (
+              <span className="inline-flex items-center gap-2 font-medium">
+                <NotifyChannelIcon type={row.type} />
+                {label(row)}
+              </span>
+            )
+          },
+          {
+            key: 'where',
+            header: nk('columns.where'),
+            className: 'max-w-[18rem]',
+            cell: (row) => {
+              const where = channelWhere(row);
+              return where ? (
+                <span className="block truncate font-mono text-xs text-muted-foreground" title={where}>
+                  {where}
+                </span>
+              ) : (
+                <span className="text-muted-foreground">{nk(`types.${row.type}`)}</span>
+              );
+            }
+          },
+          {
+            key: 'status',
+            header: t('settingsUi.collection.status'),
+            cell: (row) =>
+              row.enabled && !row.ready ? (
+                <span className="inline-flex items-center gap-1.5 text-[13px] text-warning" title={row.problem || ''}>
+                  <AlertTriangle className="size-3.5" />
+                  {row.type === 'email' && !row.problem ? nk('notReadyEmail') : nk('notReady')}
+                </span>
+              ) : (
+                <StatusDot on={!!row.enabled} />
+              )
+          }
+        ]}
+        menu={(row) => [
+          { label: nk('test'), icon: Send, onClick: () => test(row) },
+          {
+            label: row.enabled ? t('settingsUi.collection.disable') : t('settingsUi.collection.enable'),
+            icon: Power,
+            onClick: () => call(() => API.put(`/api/notify_channel/${row.id}/status`, { enabled: !row.enabled }))
+          },
+          { label: t('common.delete'), icon: Trash2, destructive: true, separator: true, onClick: () => setDeleteTarget(row) }
+        ]}
+      />
+      <NotifyChannelSheet
+        open={sheet.open}
+        editing={sheet.editing}
+        onOpenChange={(open) => setSheet((s) => ({ ...s, open }))}
+        onSaved={() => {
+          setSheet({ open: false, editing: null });
+          load();
+        }}
+      />
+      <Dialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('common.delete')}</DialogTitle>
+            <DialogDescription>{t('common.deleteConfirm', { title: deleteTarget ? label(deleteTarget) : '' })}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="destructive" onClick={remove}>
+              {t('common.delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 // The settings card lists the first page of menu commands, newest first.
 const TELEGRAM_PAGE_SIZE = 100;
 
@@ -185,7 +340,7 @@ export function TelegramCard() {
     <>
       <CollectionCard
         title={cardText(t, 'telegram', 'title')}
-        description={tp('infoMessage')}
+        description={t('settingsUi.platform.telegram.description')}
         highlight="telegram"
         addLabel={t('settingsUi.platform.telegram.add')}
         onAdd={() => setSheet({ open: true, id: 0 })}

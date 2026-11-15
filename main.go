@@ -99,7 +99,7 @@ func main() {
 
 	controller.InitMidjourneyTask()
 	task.InitTask()
-	notify.InitNotifier()
+	notify.SetSource(model.NotifyDestinations)
 	cron.InitCron()
 	// 品牌图标同步层：每个节点各自维护本地 data 目录，故不限主节点
 	brandicon.StartSyncLoop(viper.GetString("brand_icon_dir"), 24*time.Hour,

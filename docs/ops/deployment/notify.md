@@ -7,58 +7,34 @@ lastUpdated: true
 
 # 消息通知
 
-当渠道被禁用时，系统会发送通知。
+渠道被禁用或恢复、余额不足、价格变动、模型漂移、凭证出问题等情况，系统会给管理员发通知。
+通知在后台 **设置 → 通知与集成 → 通知** 里配置，分三块：
 
-## 配置文件配置
+- **通知类型**：每类通知可以单独关掉；每类每小时有发送上限，超出的会被丢弃，下一小时的第一条会注明丢了几条。
+- **发送渠道**：通知发到哪里。每条通知同时发到所有已启用的渠道。
+- **邮件服务**：SMTP 服务器。邮件渠道、注册验证码和额度提醒邮件都靠它发。
 
-请在 config.yaml 中填写以下字段内容，无需开启的通知方式保持为空即可。
+## 发送渠道
 
-```yaml
-notify: # 通知设置，配置几个通知方式即会同时发送几次通知；如不需要通知，可删除该配置
-  email: # 邮件通知 (具体 SMTP 配置在后台设置，默认为开启状态，如需关闭请在下面禁用)
-    disable: false # 是否禁用邮件通知
-    smtp_to: "" # 收件人地址 (可空，如果为空则使用超级管理员邮箱)
-  dingTalk: # 钉钉机器人通知
-    token: "" # webhook 地址最后一串字符
-    secret: "" # 密钥 (secret/keyWord 二选一)
-    keyWord: "" # 关键字 (secret/keyWord 二选一)
-  lark: # 飞书机器人通知
-    token: "" # webhook 地址最后一串字符
-    secret: "" # 密钥 (secret/keyWord 二选一)
-    keyWord: "" # 关键字 (secret/keyWord 二选一)
-  pushdeer: # pushdeer 通知
-    url: "https://api2.pushdeer.com" # pushdeer地址 (可空，如果自建需填写)
-    pushkey: "" # pushkey
-  telegram: # Telegram 通知
-    bot_api_key: "" # Telegram bot 的 API 密钥
-    chat_id: "" # Telegram chat_id
-```
+支持以下类型，同一类型可以添加多个（比如发到两个不同的群）：
 
-## 环境变量配置
+| 类型 | 要填的内容 |
+| --- | --- |
+| 邮件 | 收件邮箱，留空则发给超级管理员的邮箱；需要先配好邮件服务 |
+| 企业微信 | 群机器人的 Webhook 地址 |
+| 钉钉 | 机器人 access token（Webhook 地址里 `access_token=` 后面的部分），加签密钥和自定义关键词至少填一个 |
+| 飞书 | 机器人 token（Webhook 地址最后一段），加签密钥和自定义关键词至少填一个 |
+| PushDeer | PushKey；自建服务再填服务地址 |
+| Telegram | 机器人 Token、Chat ID；服务器连不上 Telegram 时填代理地址 |
 
-### email 通知
+添加或编辑渠道时可以点 **发送测试**，用表单里当前填的内容发一条测试通知，不必先保存。
+Webhook、Token、密钥这类内容保存后不会再显示，编辑时留空表示不修改。
 
-- `NOTIFY_EMAIL_DISABLE` 是否禁用邮件通知, `true` 或者 `false`
-- `NOTIFY_EMAIL_SMTP_TO` 收件人地址 (可空，如果为空则使用超级管理员邮箱)
+全新安装时会自动建好一个邮件渠道（发给超级管理员的邮箱），配好邮件服务就能收到通知。
 
-### 钉钉通知
+## 从配置文件升级
 
-- `NOTIFY_DINGTALK_TOKEN` webhook 地址最后一串字符
-- `NOTIFY_DINGTALK_SECRET` 密钥 (secret/keyWord 二选一)
-- `NOTIFY_DINGTALK_KEYWORD` 关键字 (secret/keyWord 二选一)
+旧版本在 `config.yaml` 的 `notify:` 段（或 `NOTIFY_*` 环境变量）里配置通知渠道。
+升级后第一次启动时，这些配置会被自动搬进后台的发送渠道，之后只在后台修改，配置文件里的 `notify:` 段可以删掉。
 
-### 飞书通知
-
-- `NOTIFY_LARK_TOKEN` webhook 地址最后一串字符
-- `NOTIFY_LARK_SECRET` 密钥 (secret/keyWord 二选一)
-- `NOTIFY_LARK_KEYWORD` 关键字 (secret/keyWord 二选一)
-
-### pushdeer 通知
-
-- `NOTIFY_PUSHDEER_URL` pushdeer 地址 (可空，如自建需填写)
-- `NOTIFY_PUSHDEER_PUSHKEY` pushdeer pushkey
-
-### telegram 通知
-
-- `NOTIFY_TELEGRAM_BOT_API_KEY` Telegram bot 的 API 密钥
-- `NOTIFY_TELEGRAM_CHAT_ID` Telegram chat_id
+后台「设置 → 通知与集成 → 集成」里的 **Telegram 用户机器人** 是另一回事：它让用户在 Telegram 里绑定账号、查余额、充值，密钥仍在配置文件的 `tg:` 段里配置，和发送渠道里的 Telegram 无关。

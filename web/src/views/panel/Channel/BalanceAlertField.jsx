@@ -14,7 +14,7 @@ import { balanceCurrency, balanceSupport, noticeProblems } from './balanceAlert'
 // interval lives in the config file, so it has no link.
 const PROBLEM_LINKS = {
   kindOff: `${settingsGroupUrl('notify')}?highlight=notifications`,
-  noTarget: `${settingsGroupUrl('notify')}?highlight=smtp`
+  noTarget: `${settingsGroupUrl('notify')}?highlight=notify-channels`
 };
 
 // The low-balance notice of the monitoring tab. It says when the provider has no balance to
@@ -40,7 +40,7 @@ export default function BalanceAlertField({ channel, value, onChange }) {
   const notice = caps?.low_balance;
   const problems = support === 'balance' ? noticeProblems(notice) : [];
   const targetName = (target) => {
-    const name = t(`channels.monitor.target.${target.name}`, { defaultValue: target.name });
+    const name = target.name || t(`settingsUi.platform.notifyChannels.types.${target.type}`, { defaultValue: target.type });
     const label = target.detail ? `${name} ${target.detail}` : name;
     return target.ready ? label : t('channels.monitor.targetNotReady', { name: label });
   };

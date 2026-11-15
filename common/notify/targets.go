@@ -1,14 +1,14 @@
 package notify
 
-import "sort"
-
-// Target is one place admin notices go: a notifier set up in the config file.
+// Target is one place admin notices go, as the console shows it.
 type Target struct {
-	// Name is the notifier's name: Email, WeCom, DingTalk, Lark, PushDeer or Telegram.
+	// Name is what the admin called the channel; empty means the type's own name.
 	Name string `json:"name"`
-	// Detail says where on that notifier, when it is worth showing (the email recipient).
+	// Type is the channel type: email, wecom, dingtalk, lark, pushdeer or telegram.
+	Type string `json:"type"`
+	// Detail says where on that channel, when it is worth showing (the email recipient).
 	Detail string `json:"detail,omitempty"`
-	// Ready is false when the notifier is on but cannot send (email without SMTP or recipient).
+	// Ready is false when the channel cannot send (email without SMTP or recipient).
 	Ready bool `json:"ready"`
 }
 
@@ -17,19 +17,23 @@ type recipientNotifier interface {
 	Ready() bool
 }
 
-// Targets lists the notifiers notices are sent to, sorted by name.
-func Targets() []Target {
-	out := make([]Target, 0, len(notifyChannels.notifiers))
-	for name, n := range notifyChannels.notifiers {
-		if n == nil {
-			continue
-		}
-		target := Target{Name: name, Ready: true}
-		if r, ok := n.(recipientNotifier); ok {
-			target.Detail, target.Ready = r.Recipient(), r.Ready()
-		}
-		out = append(out, target)
+// TargetOf describes a notifier for the console.
+func TargetOf(name, typ string, n Notifier) Target {
+	target := Target{Name: name, Type: typ, Ready: true}
+	if r, ok := n.(recipientNotifier); ok {
+		target.Detail, target.Ready = r.Recipient(), r.Ready()
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return target
+}
+
+// Targets lists the enabled channels notices are sent to, in the order they were set up.
+func Targets() []Target {
+	list := destinations()
+	out := make([]Target, 0, len(list))
+	for _, d := range list {
+		if d.Notifier != nil {
+			out = append(out, TargetOf(d.Name, d.Type, d.Notifier))
+		}
+	}
 	return out
 }

@@ -207,10 +207,10 @@ func DisableChannel(channelId int, channelName string, modelName string, reason 
 		// 执行禁用操作
 		model.UpdateChannelStatusById(channelId, config.ChannelStatusAutoDisabled)
 
-		// 发送通知：受全局开关控制，并通过 SETNX 在多节点间去重。
+		// 发送通知：受「渠道禁用」通知类型开关控制，并通过 SETNX 在多节点间去重。
 		// reason 可能来自上游 err.Message,可能包含 URL/IP/api_key 等敏感串,
 		// 通知会直达运维收件人,这里强制脱敏。
-		if sendNotify && config.AutomaticDisableChannelNotifyEnabled && shouldSendChannelDisableNotify(channelId) {
+		if sendNotify && notify.KindEnabled(notify.KindChannelDisabled) && shouldSendChannelDisableNotify(channelId) {
 			subject := fmt.Sprintf("Channel \"%s\" (#%d) has been disabled", channelName, channelId)
 			notify.SendKind(notify.KindChannelDisabled, subject, channelDisableNotifyContent(channelId, channelName, modelName, reason))
 		}

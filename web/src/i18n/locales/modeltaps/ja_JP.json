@@ -2253,23 +2253,15 @@
       "noticeTo": "通知先：{{targets}}",
       "targetSep": "、",
       "targetNotReady": "{{name}}（未設定）",
-      "target": {
-        "Email": "メール",
-        "WeCom": "WeCom",
-        "DingTalk": "DingTalk",
-        "Lark": "Lark",
-        "PushDeer": "PushDeer",
-        "Telegram": "Telegram"
-      },
       "problem": {
         "noRefresh": "残高の自動更新がオフです（channel.update_frequency が 0）。手動で更新したときだけ確認します。",
         "kindOff": "「チャネル残高の不足」通知が通知設定でオフになっています。",
-        "noTarget": "送信できる通知先がありません。メールは SMTP の設定が必要です（宛先の既定はルート管理者のメール）。Telegram、WeCom などは設定ファイルの notify で設定します。"
+        "noTarget": "通知を送れる送信先がありません。送信先を追加してください。メールの送信先には SMTP の設定も必要です。"
       },
       "driftUnsupported": "このプロバイダーはモデル一覧 API を提供していないため、上流と比較できません。",
       "problemLink": {
         "kindOff": "通知設定",
-        "noTarget": "SMTP 設定"
+        "noTarget": "送信先"
       }
     },
     "pauseRules": {
@@ -3043,7 +3035,7 @@
         },
         "notify": {
           "label": "通知と連携",
-          "description": "メール、ボットとコールバック"
+          "description": "通知の種類、送信先、メールサーバーと外部の入口"
         },
         "orgpolicy": {
           "label": "組織ポリシー",
@@ -3205,16 +3197,19 @@
           "hint": "1 行に 1 キーワード"
         },
         "smtp": {
-          "title": "メール送信",
+          "title": "メールサーバー",
           "description": "認証コード、通知、請求のメールはここから送られます",
           "hint": "パスワードは保存後に表示されません"
         },
         "notifications": {
-          "title": "通知",
+          "title": "通知の種類",
           "hint": "通知は種類ごとに 1 時間あたりの上限があります"
         },
+        "notify-channels": {
+          "title": "送信先"
+        },
         "telegram": {
-          "title": "Telegram ボット"
+          "title": "Telegram ユーザーボット"
         },
         "builtin-chat": {
           "title": "内蔵チャット",
@@ -3259,7 +3254,8 @@
         "edit": "チャットリンクを編集"
       },
       "telegram": {
-        "add": "コマンドを追加"
+        "add": "コマンドを追加",
+        "description": "ユーザーが Telegram からアカウント連携、残高確認、チャージ、API キーの取得を行えます。ボットのキーは設定ファイルの tg で設定し、送信先の Telegram とは別物です。メニューコマンドを変えたら再読み込みしてください。"
       },
       "pauseRules": {
         "label": "カスタムルール（JSON）",
@@ -3295,7 +3291,88 @@
       "tabs": {
         "resilience": "耐障害性",
         "allocation": "割り当て",
-        "request": "リクエストとプロトコル"
+        "request": "リクエストとプロトコル",
+        "notices": "通知",
+        "integrations": "連携"
+      },
+      "notifyChannels": {
+        "add": "送信先を追加",
+        "description": "通知は有効なすべての送信先に届きます。送る通知と 1 時間あたりの上限は上の「通知の種類」で設定します。",
+        "empty": "送信先がありません。通知は誰にも届きません",
+        "sheetDescription": "通知の送り先",
+        "saved": "保存しました",
+        "test": "テスト送信",
+        "testOk": "テスト通知を送りました。届いたか確認してください",
+        "notReady": "送信できません",
+        "notReadyEmail": "SMTP 未設定",
+        "columns": {
+          "name": "名前",
+          "where": "送信先"
+        },
+        "types": {
+          "email": "メール",
+          "wecom": "WeCom",
+          "dingtalk": "DingTalk",
+          "lark": "Lark",
+          "pushdeer": "PushDeer",
+          "telegram": "Telegram"
+        },
+        "form": {
+          "type": "種類",
+          "name": "名前",
+          "nameHint": "一覧に表示する名前。空欄なら種類名",
+          "enabled": "有効",
+          "secretKeep": "空欄なら変更しません",
+          "clear": "消去",
+          "undoClear": "元に戻す",
+          "cleared": "保存時に消去",
+          "signedHint": "署名シークレットかキーワードのどちらかを、ボットのセキュリティ設定に合わせて入力してください",
+          "required": "{{field}}を入力してください"
+        },
+        "fields": {
+          "to": {
+            "label": "宛先メール",
+            "placeholder": "ops@example.com",
+            "hint": "空欄ならルート管理者のメール宛て。「メールサーバー」の SMTP で送ります"
+          },
+          "webhook": {
+            "label": "ボットの Webhook URL",
+            "placeholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…"
+          },
+          "token": {
+            "label": "ボットの access token",
+            "hint_dingtalk": "Webhook URL の access_token= の後ろの部分",
+            "hint_lark": "Webhook URL の最後の部分"
+          },
+          "secret": {
+            "label": "署名シークレット"
+          },
+          "keyword": {
+            "label": "キーワード",
+            "hint": "通知のタイトルに付きます。ボットはこれを含むメッセージだけ受け付けます"
+          },
+          "pushkey": {
+            "label": "PushKey"
+          },
+          "url": {
+            "label": "セルフホストのサーバー",
+            "placeholder": "https://api2.pushdeer.com",
+            "hint": "公式サービスなら空欄"
+          },
+          "bot_token": {
+            "label": "ボットトークン",
+            "hint": "@BotFather でボットを作ると発行されます"
+          },
+          "chat_id": {
+            "label": "Chat ID",
+            "hint": "ユーザー、グループ、チャンネルの ID。グループとチャンネルには先にボットを追加します"
+          },
+          "http_proxy": {
+            "label": "プロキシ",
+            "placeholder": "http://127.0.0.1:7890",
+            "hint": "サーバーから Telegram に直接つながらないとき"
+          }
+        }
       }
     },
     "personal": {

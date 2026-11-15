@@ -1,64 +1,40 @@
 ---
-title: "訊息通知"
+title: "消息通知"
 layout: doc
 outline: deep
 lastUpdated: true
 ---
 
-# 訊息通知
+# 消息通知
 
-當渠道被禁用時，系統會發送通知。
+渠道被停用或恢復、餘額不足、價格變動、模型漂移、憑證出問題等情況，系統會給管理員發通知。
+通知在後台 **設定 → 通知與整合 → 通知** 裡設定，分三塊：
 
-## 設定檔配置
+- **通知類型**：每類通知可以單獨關掉；每類每小時有發送上限，超出的會被丟棄，下一小時的第一條會註明丟了幾條。
+- **發送渠道**：通知發到哪裡。每條通知同時發到所有已啟用的渠道。
+- **郵件服務**：SMTP 伺服器。電郵渠道、註冊驗證碼和額度提醒郵件都靠它發。
 
-請在 config.yaml 中填寫以下字段內容，無需開啟的通知方式保持為空即可。
+## 發送渠道
 
-```yaml
-notify: # 通知設定，配置幾個通知方式即會同時發送幾次通知；如不需要通知，可刪除該配置
-  email: # 郵件通知 (具體 SMTP 配置在後台設定，預設為開啟狀態，如需關閉請在下面禁用)
-    disable: false # 是否禁用郵件通知
-    smtp_to: "" # 收件人地址 (可空，如果為空則使用超級管理員郵箱)
-  dingTalk: # 釘釘機械人通知
-    token: "" # webhook 地址最後一串字元
-    secret: "" # 密鑰 (secret/keyWord 二選一)
-    keyWord: "" # 關鍵字 (secret/keyWord 二選一)
-  lark: # 飛書機械人通知
-    token: "" # webhook 地址最後一串字元
-    secret: "" # 密鑰 (secret/keyWord 二選一)
-    keyWord: "" # 關鍵字 (secret/keyWord 二選一)
-  pushdeer: # pushdeer 通知
-    url: "https://api2.pushdeer.com" # pushdeer地址 (可空，如果自建需填寫)
-    pushkey: "" # pushkey
-  telegram: # Telegram 通知
-    bot_api_key: "" # Telegram bot 的 API 密鑰
-    chat_id: "" # Telegram chat_id
-```
+支援以下類型，同一類型可以新增多個（比如發到兩個不同的群組）：
 
-## 環境變數配置
+| 類型 | 要填的內容 |
+| --- | --- |
+| 電郵 | 收件電郵，留空則發給超級管理員的電郵；需要先配好郵件服務 |
+| 企業微信 | 群機械人的 Webhook 地址 |
+| 釘釘 | 機械人 access token（Webhook 地址裡 `access_token=` 後面的部分），加簽密鑰和自訂關鍵詞至少填一個 |
+| 飛書 | 機械人 token（Webhook 地址最後一段），加簽密鑰和自訂關鍵詞至少填一個 |
+| PushDeer | PushKey；自建服務再填服務地址 |
+| Telegram | 機械人 Token、Chat ID；伺服器連不上 Telegram 時填代理地址 |
 
-### email 通知
+新增或編輯渠道時可以點 **發送測試**，用表單裡當前填的內容發一條測試通知，不必先儲存。
+Webhook、Token、密鑰這類內容儲存後不會再顯示，編輯時留空表示不修改。
 
-- `NOTIFY_EMAIL_DISABLE` 是否禁用郵件通知, `true` 或者 `false`
-- `NOTIFY_EMAIL_SMTP_TO` 收件人地址 (可空，如果為空則使用超級管理員郵箱)
+全新安裝時會自動建好一個電郵渠道（發給超級管理員的電郵），配好郵件服務就能收到通知。
 
-### 釘釘通知
+## 從設定檔升級
 
-- `NOTIFY_DINGTALK_TOKEN` webhook 地址最後一串字元
-- `NOTIFY_DINGTALK_SECRET` 密鑰 (secret/keyWord 二選一)
-- `NOTIFY_DINGTALK_KEYWORD` 關鍵字 (secret/keyWord 二選一)
+舊版本在 `config.yaml` 的 `notify:` 段（或 `NOTIFY_*` 環境變數）裡設定通知渠道。
+升級後第一次啟動時，這些設定會被自動搬進後台的發送渠道，之後只在後台修改，設定檔裡的 `notify:` 段可以刪掉。
 
-### 飛書通知
-
-- `NOTIFY_LARK_TOKEN` webhook 地址最後一串字元
-- `NOTIFY_LARK_SECRET` 密鑰 (secret/keyWord 二選一)
-- `NOTIFY_LARK_KEYWORD` 關鍵字 (secret/keyWord 二選一)
-
-### pushdeer 通知
-
-- `NOTIFY_PUSHDEER_URL` pushdeer 地址 (可空，如自建需填寫)
-- `NOTIFY_PUSHDEER_PUSHKEY` pushdeer pushkey
-
-### telegram 通知
-
-- `NOTIFY_TELEGRAM_BOT_API_KEY` Telegram bot 的 API 密鑰
-- `NOTIFY_TELEGRAM_CHAT_ID` Telegram chat_id
+後台「設定 → 通知與整合 → 整合」裡的 **Telegram 用戶機械人** 是另一回事：它讓用戶在 Telegram 裡綁定帳號、查餘額、充值，密鑰仍在設定檔的 `tg:` 段裡設定，和發送渠道裡的 Telegram 無關。

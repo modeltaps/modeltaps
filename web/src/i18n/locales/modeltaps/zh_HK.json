@@ -2257,23 +2257,15 @@
       "noticeTo": "提醒發到：{{targets}}",
       "targetSep": "、",
       "targetNotReady": "{{name}}（未配好）",
-      "target": {
-        "Email": "電郵",
-        "WeCom": "企業微信",
-        "DingTalk": "釘釘",
-        "Lark": "飛書",
-        "PushDeer": "PushDeer",
-        "Telegram": "Telegram"
-      },
       "problem": {
         "noRefresh": "餘額自動重新整理已關閉（設定 channel.update_frequency 為 0），只有手動重新整理餘額時才會檢查。",
         "kindOff": "「渠道餘額不足」提醒在通知設定裡關掉了。",
-        "noTarget": "沒有能發出去的通知方式：電郵要配好 SMTP（收件人預設是超管電郵），Telegram、企業微信等在設定檔的 notify 裡配。"
+        "noTarget": "沒有能發出去的通知渠道：先新增一個發送渠道；電郵渠道還要配好 SMTP。"
       },
       "driftUnsupported": "這個供應商不提供模型清單介面，沒法和上游對比。",
       "problemLink": {
         "kindOff": "通知設定",
-        "noTarget": "SMTP 設定"
+        "noTarget": "發送渠道"
       }
     },
     "pauseRules": {
@@ -3047,7 +3039,7 @@
         },
         "notify": {
           "label": "通知與整合",
-          "description": "郵件、機械人和第三方回調"
+          "description": "通知類型、發送渠道、郵件服務和對外入口"
         },
         "orgpolicy": {
           "label": "組織策略",
@@ -3209,16 +3201,19 @@
           "hint": "每行一個關鍵詞"
         },
         "smtp": {
-          "title": "郵件發送",
+          "title": "郵件服務",
           "description": "驗證碼、通知和賬單郵件都從這裏發",
           "hint": "密碼儲存後不再顯示"
         },
         "notifications": {
-          "title": "通知",
+          "title": "通知類型",
           "hint": "每類通知每小時有上限"
         },
+        "notify-channels": {
+          "title": "發送渠道"
+        },
         "telegram": {
-          "title": "Telegram 機械人"
+          "title": "Telegram 用戶機械人"
         },
         "builtin-chat": {
           "title": "內置聊天",
@@ -3263,7 +3258,8 @@
         "edit": "編輯聊天連結"
       },
       "telegram": {
-        "add": "新增命令"
+        "add": "新增命令",
+        "description": "用戶在 Telegram 裡綁定帳號、查餘額、充值、取 API 密鑰。機械人密鑰在設定檔的 tg 段裡配，和發送渠道裡的 Telegram 無關；改了選單命令要重新載入才生效。"
       },
       "pauseRules": {
         "label": "自訂規則（JSON）",
@@ -3299,7 +3295,88 @@
       "tabs": {
         "resilience": "容錯",
         "allocation": "分配",
-        "request": "請求與協定"
+        "request": "請求與協定",
+        "notices": "通知",
+        "integrations": "整合"
+      },
+      "notifyChannels": {
+        "add": "新增渠道",
+        "description": "每條通知同時發到所有已啟用的渠道。哪些通知要發、每小時發幾條，在上面的「通知類型」裡設定。",
+        "empty": "還沒有發送渠道，通知不會發給任何人",
+        "sheetDescription": "通知發到哪裡",
+        "saved": "已儲存",
+        "test": "發送測試",
+        "testOk": "測試通知已發出，去對應的地方看看有沒有收到",
+        "notReady": "發不出去",
+        "notReadyEmail": "SMTP 未設定",
+        "columns": {
+          "name": "名稱",
+          "where": "發到"
+        },
+        "types": {
+          "email": "電郵",
+          "wecom": "企業微信",
+          "dingtalk": "釘釘",
+          "lark": "飛書",
+          "pushdeer": "PushDeer",
+          "telegram": "Telegram"
+        },
+        "form": {
+          "type": "類型",
+          "name": "名稱",
+          "nameHint": "列表裡顯示的名字，留空則用類型名",
+          "enabled": "啟用",
+          "secretKeep": "留空則不修改",
+          "clear": "清除",
+          "undoClear": "撤銷",
+          "cleared": "儲存後清除",
+          "signedHint": "加簽密鑰和關鍵詞至少填一個，要和機械人的安全設定一致",
+          "required": "請填寫{{field}}"
+        },
+        "fields": {
+          "to": {
+            "label": "收件電郵",
+            "placeholder": "ops@example.com",
+            "hint": "留空則發給超管的電郵；用「郵件服務」裡的 SMTP 發送"
+          },
+          "webhook": {
+            "label": "機械人 Webhook 地址",
+            "placeholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…"
+          },
+          "token": {
+            "label": "機械人 access token",
+            "hint_dingtalk": "Webhook 地址裡 access_token= 後面的部分",
+            "hint_lark": "Webhook 地址最後一段"
+          },
+          "secret": {
+            "label": "加簽密鑰"
+          },
+          "keyword": {
+            "label": "自訂關鍵詞",
+            "hint": "通知標題裡會帶上這個詞，機械人只收含關鍵詞的訊息"
+          },
+          "pushkey": {
+            "label": "PushKey"
+          },
+          "url": {
+            "label": "自建服務地址",
+            "placeholder": "https://api2.pushdeer.com",
+            "hint": "用官方服務就留空"
+          },
+          "bot_token": {
+            "label": "機械人 Token",
+            "hint": "在 @BotFather 建立機械人後拿到"
+          },
+          "chat_id": {
+            "label": "Chat ID",
+            "hint": "個人、群組或頻道的 ID；群組和頻道要先把機械人拉進去"
+          },
+          "http_proxy": {
+            "label": "代理地址",
+            "placeholder": "http://127.0.0.1:7890",
+            "hint": "伺服器連不上 Telegram 時填"
+          }
+        }
       }
     },
     "personal": {

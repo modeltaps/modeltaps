@@ -160,7 +160,7 @@ LOGS_FILENAME="modeltaps.log"
 - `DISABLE_TOKEN_ENCODERS`：ローカルのトークンエンコーダーを無効にします（推定値に切り替えます）。既定は `false`。
 - `TG_HTTP_PROXY`：Telegram へアクセスする際の HTTP/SOCKS5 プロキシ。
 
-### 通知 / ストレージ / 検索
+### ストレージ / 検索
 
-通知（`NOTIFY_*`）、オブジェクトストレージによる画像ストレージ（`STORAGE_*`）、Web 検索（`SEARCH_*`）などのグループには設定項目が多数あります。キー名と既定値は、配布パッケージのルートにある `config.example.yaml` を直接参照してください。
+オブジェクトストレージによる画像ストレージ（`STORAGE_*`）、Web 検索（`SEARCH_*`）などのグループには設定項目が多数あります。キー名と既定値は、配布パッケージのルートにある `config.example.yaml` を直接参照してください。通知の送信先（`NOTIFY_*`）は管理画面での設定に移りました。[通知](./notify.md)を参照してください。
 

@@ -1,64 +1,40 @@
 ---
-title: "通知設定"
+title: "通知"
 layout: doc
 outline: deep
 lastUpdated: true
 ---
 
-# 通知設定
+# 通知
 
-チャネルが無効化されると、システムから通知が送信されます。
+チャネルの無効化や復旧、残高不足、価格変更、モデルのドリフト、認証情報の問題などがあると、管理者に通知が届きます。
+通知は管理画面の **設定 → 通知と連携 → 通知** で設定します。内容は次の 3 つです。
 
-## 設定ファイルでの設定
+- **通知の種類**：種類ごとにオフにできます。種類ごとに 1 時間あたりの上限があり、超えた分は破棄され、次の 1 時間の最初の通知に破棄した件数が記されます。
+- **送信先**：通知の送り先です。通知は有効なすべての送信先に届きます。
+- **メールサーバー**：SMTP サーバーです。メールの送信先、登録時の認証コード、残高警告メールに使われます。
 
-config.yaml に以下のフィールドを記入してください。有効にする必要のない通知方式は空のままで構いません。
+## 送信先
 
-```yaml
-notify: # 通知設定。設定した通知方式の数だけ同時に通知が送信されます。通知が不要な場合はこの設定を削除できます
-  email: # メール通知（SMTP の詳細は管理画面で設定します。既定で有効です。無効にする場合は下記で指定してください）
-    disable: false # メール通知を無効にするか
-    smtp_to: "" # 宛先アドレス（空でも可。空の場合はスーパー管理者のメールアドレスを使用します）
-  dingTalk: # DingTalk ボット通知
-    token: "" # webhook URL の末尾の文字列
-    secret: "" # シークレット（secret / keyWord のいずれか一方）
-    keyWord: "" # キーワード（secret / keyWord のいずれか一方）
-  lark: # Lark（Feishu）ボット通知
-    token: "" # webhook URL の末尾の文字列
-    secret: "" # シークレット（secret / keyWord のいずれか一方）
-    keyWord: "" # キーワード（secret / keyWord のいずれか一方）
-  pushdeer: # pushdeer 通知
-    url: "https://api2.pushdeer.com" # pushdeer のアドレス（空でも可。セルフホストの場合は記入してください）
-    pushkey: "" # pushkey
-  telegram: # Telegram 通知
-    bot_api_key: "" # Telegram bot の API キー
-    chat_id: "" # Telegram chat_id
-```
+次の種類に対応しています。同じ種類を複数追加することもできます（別々のグループに送るなど）。
 
-## 環境変数での設定
+| 種類 | 設定する内容 |
+| --- | --- |
+| メール | 宛先。空欄ならルート管理者のメール宛て。メールサーバーの設定が必要です |
+| WeCom | グループボットの Webhook URL |
+| DingTalk | ボットの access token（Webhook URL の `access_token=` の後ろ）と、署名シークレットかキーワードのどちらか |
+| Lark | ボットの token（Webhook URL の最後の部分）と、署名シークレットかキーワードのどちらか |
+| PushDeer | PushKey。セルフホストならサーバーのアドレスも |
+| Telegram | ボットトークンと Chat ID。サーバーから Telegram に直接つながらないならプロキシも |
 
-### メール通知
+送信先の追加・編集中に **テスト送信** を押すと、フォームに入力中の内容でテスト通知を送れます。保存する必要はありません。
+Webhook、トークン、シークレットは保存後に再表示されません。編集時に空欄のままにすると変更されません。
 
-- `NOTIFY_EMAIL_DISABLE` メール通知を無効にするか。`true` または `false`
-- `NOTIFY_EMAIL_SMTP_TO` 宛先アドレス（空でも可。空の場合はスーパー管理者のメールアドレスを使用します）
+新規インストールでは、ルート管理者のメール宛てのメール送信先が 1 つ作られます。メールサーバーを設定すればすぐに通知が届きます。
 
-### DingTalk 通知
+## 設定ファイルからのアップグレード
 
-- `NOTIFY_DINGTALK_TOKEN` webhook URL の末尾の文字列
-- `NOTIFY_DINGTALK_SECRET` シークレット（secret / keyWord のいずれか一方）
-- `NOTIFY_DINGTALK_KEYWORD` キーワード（secret / keyWord のいずれか一方）
+以前のバージョンでは `config.yaml` の `notify:`（または `NOTIFY_*` 環境変数）で送信先を設定していました。
+アップグレード後の最初の起動時に、これらは管理画面の送信先へ自動で移されます。以降は管理画面で編集し、設定ファイルの `notify:` は削除してかまいません。
 
-### Lark（Feishu）通知
-
-- `NOTIFY_LARK_TOKEN` webhook URL の末尾の文字列
-- `NOTIFY_LARK_SECRET` シークレット（secret / keyWord のいずれか一方）
-- `NOTIFY_LARK_KEYWORD` キーワード（secret / keyWord のいずれか一方）
-
-### pushdeer 通知
-
-- `NOTIFY_PUSHDEER_URL` pushdeer のアドレス（空でも可。セルフホストの場合は記入してください）
-- `NOTIFY_PUSHDEER_PUSHKEY` pushdeer の pushkey
-
-### Telegram 通知
-
-- `NOTIFY_TELEGRAM_BOT_API_KEY` Telegram bot の API キー
-- `NOTIFY_TELEGRAM_CHAT_ID` Telegram chat_id
+設定 → 通知と連携 → 連携 にある **Telegram ユーザーボット** は別物です。ユーザーが Telegram からアカウント連携、残高確認、チャージを行うためのもので、キーは引き続き設定ファイルの `tg:` で設定します。送信先の Telegram とは関係ありません。

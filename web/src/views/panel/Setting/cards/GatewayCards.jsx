@@ -205,7 +205,6 @@ export function ChannelAutoCard({ ctx }) {
       <OptionList>
         {row('AutomaticDisableChannelEnabled', 'automaticDisableChannel')}
         {row('AutomaticEnableChannelEnabled', 'automaticEnableChannel')}
-        {row('AutomaticDisableChannelNotifyEnabled', 'automaticDisableChannelNotify')}
       </OptionList>
       <div className="grid gap-5 sm:grid-cols-2">
         <SelectRow

@@ -110,7 +110,6 @@ export const PLATFORM_GROUPS = [
         [
           'AutomaticDisableChannelEnabled',
           'AutomaticEnableChannelEnabled',
-          'AutomaticDisableChannelNotifyEnabled',
           'ChannelDisableThreshold',
           'DisableChannelKeywords',
           'ChannelTestMode',
@@ -144,7 +143,8 @@ export const PLATFORM_GROUPS = [
         'request'
       ),
       card('prompt-limits', 'form', ['MaxPromptTokens'], 'request'),
-      card('image-proxy', 'form', ['ChatImageRequestProxy', 'CFWorkerImageUrl', 'CFWorkerImageKey'], 'request')
+      card('image-proxy', 'form', ['ChatImageRequestProxy', 'CFWorkerImageUrl', 'CFWorkerImageKey'], 'request'),
+      card('mj-notify', 'form', ['MjNotifyEnabled'], 'request')
     ]
   },
   {
@@ -164,13 +164,16 @@ export const PLATFORM_GROUPS = [
   },
   {
     id: 'notify',
+    // 通知: the platform's admin notices, what is sent, where to and the mail server behind
+    // email; 集成: what users reach from outside the console (the Telegram bot, chat entries).
+    tabs: ['notices', 'integrations'],
     cards: [
-      card('smtp', 'form', ['SMTPServer', 'SMTPPort', 'SMTPAccount', 'SMTPFrom', 'SMTPToken', 'SMTPTLSMode']),
-      card('notifications', 'form', ['NotifyDisabledKinds', 'NotifyKindLimitPerHour']),
-      card('telegram', 'collection'),
-      card('builtin-chat', 'form', ['BuiltinChatEnabled']),
-      card('chat-links', 'collection', ['ChatLinks']),
-      card('mj-notify', 'form', ['MjNotifyEnabled'])
+      card('notifications', 'form', ['NotifyDisabledKinds', 'NotifyKindLimitPerHour'], 'notices'),
+      card('notify-channels', 'collection', [], 'notices'),
+      card('smtp', 'form', ['SMTPServer', 'SMTPPort', 'SMTPAccount', 'SMTPFrom', 'SMTPToken', 'SMTPTLSMode'], 'notices'),
+      card('telegram', 'collection', [], 'integrations'),
+      card('builtin-chat', 'form', ['BuiltinChatEnabled'], 'integrations'),
+      card('chat-links', 'collection', ['ChatLinks'], 'integrations')
     ]
   },
   {
