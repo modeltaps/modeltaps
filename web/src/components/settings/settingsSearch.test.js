@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  activeTabOf,
   dirtyGroupIds,
   hasDirtyCards,
   matchesQuery,
@@ -107,5 +108,21 @@ describe('page helpers', () => {
     expect(staysOnPage('/panel/setting/notify/', paths)).toBe(true);
     expect(staysOnPage('/panel/channel', paths)).toBe(false);
     expect(staysOnPage('/panel/settings/org/3/members', ['/panel/settings/org/3/general'])).toBe(false);
+  });
+});
+
+describe('activeTabOf', () => {
+  const group = {
+    tabs: [{ id: 'a' }, { id: 'b' }],
+    cards: [
+      { id: 'x', tab: 'a' },
+      { id: 'y', tab: 'b' }
+    ]
+  };
+  it('prefers the highlighted card, then ?tab=, then the first tab', () => {
+    expect(activeTabOf(group, { tab: 'a', highlight: 'y' })).toBe('b');
+    expect(activeTabOf(group, { tab: 'b' })).toBe('b');
+    expect(activeTabOf(group, { tab: 'nope' })).toBe('a');
+    expect(activeTabOf({ cards: [] }, { tab: 'a' })).toBeNull();
   });
 });

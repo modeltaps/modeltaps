@@ -164,3 +164,46 @@ describe('SettingsPage on 设置 (its subnav lives in the settings sidebar)', ()
     expect(index().find((e) => e.id === 'delta:delta-form').group).toBe('Personal settings · Group delta');
   });
 });
+
+describe('SettingsPage with tabs', () => {
+  const tabbed = [
+    {
+      id: 'net',
+      to: '/s/net',
+      label: 'Net',
+      tabs: [
+        { id: 'one', label: 'Tab one' },
+        { id: 'two', label: 'Tab two' }
+      ],
+      cards: [
+        { id: 'card-a', tab: 'one', render: () => createElement(NameCard, { title: 'Card A' }) },
+        { id: 'card-b', tab: 'two', render: () => createElement(NameCard, { title: 'Card B' }) }
+      ]
+    }
+  ];
+  const renderAt = (entry) =>
+    render(
+      createElement(
+        MemoryRouter,
+        { initialEntries: [entry] },
+        createElement(SettingsPage, { label: 'Groups', groups: tabbed, activeGroupId: 'net', hideNav: true })
+      )
+    );
+
+  it('shows the first tab by default and keeps the others mounted but hidden', () => {
+    renderAt('/s/net');
+    expect(visible('Card A')).toBe(true);
+    expect(visible('Card B')).toBe(false);
+    expect(screen.getByRole('link', { name: 'Tab one' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('link', { name: 'Tab two' }).getAttribute('href')).toBe('/s/net?tab=two');
+  });
+
+  it('picks the tab from ?tab= or from the highlighted card', () => {
+    renderAt('/s/net?tab=two');
+    expect(visible('Card B')).toBe(true);
+    cleanup();
+    renderAt('/s/net?highlight=card-b');
+    expect(visible('Card B')).toBe(true);
+    expect(visible('Card A')).toBe(false);
+  });
+});

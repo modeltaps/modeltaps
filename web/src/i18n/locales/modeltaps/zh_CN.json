@@ -3233,6 +3233,11 @@
           "probe": "恢复前先测试",
           "notify": "发通知"
         }
+      },
+      "tabs": {
+        "resilience": "容错",
+        "allocation": "分配",
+        "request": "请求与协议"
       }
     },
     "personal": {

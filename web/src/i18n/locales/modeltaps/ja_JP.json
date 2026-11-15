@@ -3235,6 +3235,11 @@
           "probe": "復帰前にテスト",
           "notify": "通知"
         }
+      },
+      "tabs": {
+        "resilience": "耐障害性",
+        "allocation": "割り当て",
+        "request": "リクエストとプロトコル"
       }
     },
     "personal": {

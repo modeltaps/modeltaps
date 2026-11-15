@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
-import { Link, UNSAFE_DataRouterContext, useBlocker } from 'react-router';
+import { Link, UNSAFE_DataRouterContext, useBlocker, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 
@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useSearch } from '@/components/chrome/SearchContext';
-import { cardIndex, dirtyGroupIds, hasDirtyCards, reportDirty, shouldShowSearch, staysOnPage } from './settingsSearch';
+import { activeTabOf, cardIndex, dirtyGroupIds, hasDirtyCards, reportDirty, shouldShowSearch, staysOnPage } from './settingsSearch';
 import { useSettingsPlane } from './SettingsPlane';
 
 // ==============================|| SETTINGS — ONE SETTINGS PAGE ||============================== //
@@ -21,7 +21,9 @@ import { useSettingsPlane } from './SettingsPlane';
 // cards with a dot. Search is the panel's search palette (SearchContext): the page lists its cards
 // there with everything written on them, collection rows included, and the subnav's search button
 // opens it. Leaving the page (another route, closing the tab) with unsaved cards asks first. Each
-// group is its own route, so deep links keep working.
+// group is its own route, so deep links keep working. A group with many cards splits them into
+// tabs (`tabs` on the group, `tab` on each card): one tab shows at a time, picked by `?tab=` or by
+// the card a `?highlight=` names; the others stay mounted and hidden like inactive groups.
 
 const CardScopeContext = createContext(null);
 
@@ -40,13 +42,13 @@ export function useReportDirty(dirty) {
   }, [report, dirty]);
 }
 
-function CardSlot({ card, groupId, setDirty, slotRef }) {
+function CardSlot({ card, groupId, setDirty, slotRef, hidden = false }) {
   const cardId = card.id;
   // Stable per card, so the cards' report effects do not re-run on every render.
   const report = useCallback((value) => setDirty((prev) => reportDirty(prev, cardId, groupId, value)), [setDirty, cardId, groupId]);
   const scope = useMemo(() => ({ cardId, groupId, report }), [cardId, groupId, report]);
   return (
-    <div className="space-y-2 [&:has(>[data-card-slot]:empty)]:hidden">
+    <div hidden={hidden} className="space-y-2 [&:has(>[data-card-slot]:empty)]:hidden">
       <div data-card-slot={card.id} ref={slotRef}>
         <CardScopeContext.Provider value={scope}>{card.render()}</CardScopeContext.Provider>
       </div>
@@ -58,8 +60,36 @@ CardSlot.propTypes = {
   card: PropTypes.object.isRequired,
   groupId: PropTypes.string.isRequired,
   setDirty: PropTypes.func.isRequired,
-  slotRef: PropTypes.func
+  slotRef: PropTypes.func,
+  hidden: PropTypes.bool
 };
+
+function GroupTabs({ group, activeTab, dirty }) {
+  const dirtyTabs = new Set(group.cards.filter((card) => dirty[card.id]).map((card) => card.tab));
+  return (
+    <nav aria-label={String(group.label)} className="mb-5 flex w-fit items-center gap-0.5 rounded-lg bg-control p-0.5">
+      {group.tabs.map((tab) => {
+        const current = tab.id === activeTab;
+        return (
+          <Link
+            key={tab.id}
+            to={`${group.to}?tab=${encodeURIComponent(tab.id)}`}
+            aria-current={current ? 'page' : undefined}
+            className={cn(
+              'flex h-7 items-center gap-1.5 rounded-md px-3 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              current ? 'bg-control-thumb text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            {tab.label}
+            {dirtyTabs.has(tab.id) && <span className="size-1.5 shrink-0 rounded-full bg-orange-500" aria-hidden />}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+GroupTabs.propTypes = { group: PropTypes.object.isRequired, activeTab: PropTypes.string, dirty: PropTypes.object.isRequired };
 
 function LeaveDialog({ open, onStay, onLeave }) {
   const { t } = useTranslation();
@@ -126,6 +156,8 @@ export default function SettingsPage({ label, groups, activeGroupId, hideNav = f
   const slots = useRef({});
 
   const active = groups.find((g) => g.id === activeGroupId) || groups[0];
+  const [searchParams] = useSearchParams();
+  const activeTab = activeTabOf(active, { tab: searchParams.get('tab'), highlight: searchParams.get('highlight') });
   const dirtyGroups = dirtyGroupIds(dirty);
   const paths = groups.map((g) => g.to);
 
@@ -213,18 +245,22 @@ export default function SettingsPage({ label, groups, activeGroupId, hideNav = f
         )}
         <div className="space-y-6">
           {groups.map((group) => (
-            <section key={group.id} hidden={group.id !== active.id} aria-label={group.label} className="space-y-6">
-              {group.cards.map((card) => (
-                <CardSlot
-                  key={card.id}
-                  card={card}
-                  groupId={group.id}
-                  setDirty={setDirty}
-                  slotRef={(el) => {
-                    slots.current[card.id] = el;
-                  }}
-                />
-              ))}
+            <section key={group.id} hidden={group.id !== active.id} aria-label={group.label}>
+              {group.tabs?.length > 0 && group.id === active.id && <GroupTabs group={group} activeTab={activeTab} dirty={dirty} />}
+              <div className="space-y-6">
+                {group.cards.map((card) => (
+                  <CardSlot
+                    key={card.id}
+                    card={card}
+                    groupId={group.id}
+                    setDirty={setDirty}
+                    hidden={Boolean(group.tabs?.length) && group.id === active.id && card.tab !== activeTab}
+                    slotRef={(el) => {
+                      slots.current[card.id] = el;
+                    }}
+                  />
+                ))}
+              </div>
             </section>
           ))}
         </div>
@@ -247,7 +283,10 @@ SettingsPage.propTypes = {
       description: PropTypes.node,
       icon: PropTypes.elementType,
       badge: PropTypes.node,
-      cards: PropTypes.arrayOf(PropTypes.shape({ id: PropTypes.string.isRequired, render: PropTypes.func.isRequired })).isRequired
+      tabs: PropTypes.arrayOf(PropTypes.shape({ id: PropTypes.string.isRequired, label: PropTypes.node.isRequired })),
+      cards: PropTypes.arrayOf(
+        PropTypes.shape({ id: PropTypes.string.isRequired, tab: PropTypes.string, render: PropTypes.func.isRequired })
+      ).isRequired
     })
   ).isRequired,
   activeGroupId: PropTypes.string,

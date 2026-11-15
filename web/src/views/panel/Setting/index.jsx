@@ -5,7 +5,7 @@ import SettingsPage from '@/components/settings/SettingsPage';
 import { useIsAdmin, useIsRoot } from 'utils/common';
 import useHighlightTarget from 'hooks/useHighlightTarget';
 import { useOptionSettings } from './parts';
-import { groupDescriptionKey, groupLabelKey, resolveSettingsTarget, settingsGroupUrl, visibleGroups } from './registry';
+import { groupDescriptionKey, groupLabelKey, resolveSettingsTarget, settingsGroupUrl, tabLabelKey, visibleGroups } from './registry';
 import { BrandingCard, DisplayCard, ExternalLinksCard, ServerAddressCard, VersionNoticeCard } from './cards/SiteCards';
 import {
   AccountSystemCard,
@@ -115,9 +115,10 @@ export default function Setting() {
     to: settingsGroupUrl(group.id),
     label: t(groupLabelKey(group.id)),
     description: t(groupDescriptionKey(group.id)),
+    tabs: group.tabs?.map((id) => ({ id, label: t(tabLabelKey(id)) })),
     cards: group.cards.map((card) => {
       const Component = CARD_COMPONENTS[card.id];
-      return { id: card.id, render: () => <Component ctx={ctx} /> };
+      return { id: card.id, tab: card.tab, render: () => <Component ctx={ctx} /> };
     })
   }));
 

@@ -5,12 +5,14 @@
 //
 // kind: 'form' (saved by its footer through `/api/option/`, `keys` are its save scope),
 //       'collection' (items saved one by one) or 'action' (one-off actions only).
+// A group with many cards lists `tabs`; each of its cards names its tab, and the page shows one
+// tab at a time (`?tab=<id>`).
 
 export const SETTINGS_BASE = '/panel/setting';
 
 export const settingsGroupUrl = (groupId) => `${SETTINGS_BASE}/${groupId}`;
 
-const card = (id, kind, keys = []) => ({ id, kind, keys });
+const card = (id, kind, keys = [], tab) => ({ id, kind, keys, ...(tab ? { tab } : {}) });
 
 export const PLATFORM_GROUPS = [
   {
@@ -95,40 +97,53 @@ export const PLATFORM_GROUPS = [
   },
   {
     id: 'gateway',
+    // 容错: what happens when an upstream fails; 分配: which supply serves a request;
+    // 请求与协议: how a request is forwarded.
+    tabs: ['resilience', 'allocation', 'request'],
     cards: [
-      card('retry', 'form', ['RetryTimes', 'RetryCooldownSeconds', 'RetryTimeOut', 'RetryCooldownPerStatus']),
-      card('error-handling', 'form', ['ChannelFailErrorWrapEnabled', 'ChannelFailErrorMessage']),
-      card('channel-auto', 'form', [
-        'AutomaticDisableChannelEnabled',
-        'AutomaticEnableChannelEnabled',
-        'AutomaticDisableChannelNotifyEnabled',
-        'ChannelDisableThreshold',
-        'DisableChannelKeywords',
-        'ChannelTestMode',
-        'ChannelTestIntervalMinutes',
-        'ChannelCredentialRefreshMinutes'
-      ]),
-      card('supply-mode', 'form', ['SupplyModeDefault']),
-      card('supply-pause-rules', 'form', ['PauseRulesEnabled', 'PauseRules']),
-      card('session-affinity', 'form', ['SessionAffinityEnabled', 'SessionAffinityStrict', 'SessionAffinityTTLSeconds']),
-      card('model-name-match', 'form', ['ModelNameCaseInsensitiveEnabled', 'UnifiedRequestResponseModelEnabled']),
-      card('native-protocol', 'form', [
-        'ClaudeAPIEnabled',
-        'GeminiAPIEnabled',
-        'ClaudePromptCachingEnabled',
-        'FingerprintPassThroughEnabled',
-        'ClaudeBudgetTokensPercentage',
-        'ClaudeDefaultMaxTokens',
-        'GeminiOpenThink'
-      ]),
-      card('prompt-limits', 'form', ['MaxPromptTokens']),
-      card('image-proxy', 'form', ['ChatImageRequestProxy', 'CFWorkerImageUrl', 'CFWorkerImageKey']),
-      card('auto-routing', 'form', [
-        'RoutingDecisionBillingEnabled',
-        'UserRoutingPolicyEnabled',
-        'OrganizationRoutingPolicyMaxCount',
-        'PersonalRoutingPolicyMaxCount'
-      ])
+      card('retry', 'form', ['RetryTimes', 'RetryCooldownSeconds', 'RetryTimeOut', 'RetryCooldownPerStatus'], 'resilience'),
+      card('supply-pause-rules', 'form', ['PauseRulesEnabled', 'PauseRules'], 'resilience'),
+      card(
+        'channel-auto',
+        'form',
+        [
+          'AutomaticDisableChannelEnabled',
+          'AutomaticEnableChannelEnabled',
+          'AutomaticDisableChannelNotifyEnabled',
+          'ChannelDisableThreshold',
+          'DisableChannelKeywords',
+          'ChannelTestMode',
+          'ChannelTestIntervalMinutes',
+          'ChannelCredentialRefreshMinutes'
+        ],
+        'resilience'
+      ),
+      card('error-handling', 'form', ['ChannelFailErrorWrapEnabled', 'ChannelFailErrorMessage'], 'resilience'),
+      card('supply-mode', 'form', ['SupplyModeDefault'], 'allocation'),
+      card('session-affinity', 'form', ['SessionAffinityEnabled', 'SessionAffinityStrict', 'SessionAffinityTTLSeconds'], 'allocation'),
+      card(
+        'auto-routing',
+        'form',
+        ['RoutingDecisionBillingEnabled', 'UserRoutingPolicyEnabled', 'OrganizationRoutingPolicyMaxCount', 'PersonalRoutingPolicyMaxCount'],
+        'allocation'
+      ),
+      card('model-name-match', 'form', ['ModelNameCaseInsensitiveEnabled', 'UnifiedRequestResponseModelEnabled'], 'request'),
+      card(
+        'native-protocol',
+        'form',
+        [
+          'ClaudeAPIEnabled',
+          'GeminiAPIEnabled',
+          'ClaudePromptCachingEnabled',
+          'FingerprintPassThroughEnabled',
+          'ClaudeBudgetTokensPercentage',
+          'ClaudeDefaultMaxTokens',
+          'GeminiOpenThink'
+        ],
+        'request'
+      ),
+      card('prompt-limits', 'form', ['MaxPromptTokens'], 'request'),
+      card('image-proxy', 'form', ['ChatImageRequestProxy', 'CFWorkerImageUrl', 'CFWorkerImageKey'], 'request')
     ]
   },
   {
@@ -176,6 +191,7 @@ export const DEFAULT_GROUP = PLATFORM_GROUPS[0].id;
 export const groupLabelKey = (groupId) => `settingsUi.platform.groups.${groupId}.label`;
 export const groupDescriptionKey = (groupId) => `settingsUi.platform.groups.${groupId}.description`;
 export const cardTitleKey = (cardId) => `settingsUi.platform.cards.${cardId}.title`;
+export const tabLabelKey = (tabId) => `settingsUi.platform.tabs.${tabId}`;
 
 const ALL_CARDS = PLATFORM_GROUPS.flatMap((group) => group.cards.map((c) => ({ ...c, groupId: group.id })));
 

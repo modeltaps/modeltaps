@@ -3339,6 +3339,11 @@
           "probe": "test before resuming",
           "notify": "notify"
         }
+      },
+      "tabs": {
+        "resilience": "Resilience",
+        "allocation": "Allocation",
+        "request": "Requests & protocols"
       }
     },
     "personal": {

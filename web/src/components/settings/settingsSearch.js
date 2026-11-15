@@ -69,3 +69,13 @@ export function reportDirty(prev, cardId, groupId, dirty) {
 // Whether a navigation target stays on the settings page: group switches keep the edits, since
 // every group stays mounted. `paths` are the page's own paths (its group links).
 export const staysOnPage = (pathname, paths) => (paths || []).includes(String(pathname || '').replace(/\/+$/, ''));
+
+// The tab of a tabbed group to show: the tab of the card `highlight` names, else `tab` when the
+// group has it, else the first tab. Null for a group without tabs.
+export function activeTabOf(group, { tab, highlight } = {}) {
+  const tabs = group?.tabs || [];
+  if (!tabs.length) return null;
+  const owner = highlight ? group.cards.find((card) => card.id === highlight)?.tab : null;
+  if (owner) return owner;
+  return tabs.some((t) => t.id === tab) ? tab : tabs[0].id;
+}

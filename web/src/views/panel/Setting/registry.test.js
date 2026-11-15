@@ -183,7 +183,12 @@ describe('auto routing options', () => {
     expect(cardById('auto-routing')).toMatchObject({
       groupId: 'gateway',
       kind: 'form',
-      keys: ['RoutingDecisionBillingEnabled', 'UserRoutingPolicyEnabled', 'OrganizationRoutingPolicyMaxCount', 'PersonalRoutingPolicyMaxCount']
+      keys: [
+        'RoutingDecisionBillingEnabled',
+        'UserRoutingPolicyEnabled',
+        'OrganizationRoutingPolicyMaxCount',
+        'PersonalRoutingPolicyMaxCount'
+      ]
     });
   });
 });
@@ -293,5 +298,14 @@ describe('resolveSettingsTarget', () => {
     expect(go({ section: 'orgpolicy' })).toBe('/panel/setting/site');
     expect(go({ section: 'org' })).toBe('/panel/setting/site');
     expect(resolveSettingsTarget({ section: 'org', isRoot: true })).toBe('/panel/setting/orgpolicy?highlight=org-policy');
+  });
+});
+
+describe('tabbed groups', () => {
+  it('every card of a tabbed group names one of its tabs', () => {
+    for (const group of PLATFORM_GROUPS.filter((g) => g.tabs)) {
+      for (const card of group.cards) expect(group.tabs).toContain(card.tab);
+    }
+    expect(PLATFORM_GROUPS.find((g) => g.id === 'gateway').tabs).toEqual(['resilience', 'allocation', 'request']);
   });
 });
