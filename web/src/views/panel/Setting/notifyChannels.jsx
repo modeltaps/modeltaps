@@ -2,36 +2,36 @@ import PropTypes from 'prop-types';
 import { Mail, Webhook } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import BrandIcon from '@/components/brand/BrandIcon';
+import dingtalkLogo from 'assets/images/icons/dingtalk.png';
 import larkLogo from 'assets/images/icons/lark.svg';
+import pushdeerLogo from 'assets/images/icons/pushdeer.png';
 import telegramLogo from 'assets/images/icons/telegram.svg';
+import wecomLogo from 'assets/images/icons/wecom.png';
 import slackLogo from 'assets/images/icons/slack.svg';
 import discordLogo from 'assets/images/icons/discord.svg';
 
 // Notification channel types and their settings, in the order the console offers them. Mirrors
 // notify.Types on the server (common/notify/build.go): `secret` fields are never sent back, only
-// a masked echo; `required` ones must be set. `domain` is the official site whose icon stands
-// for the type; `logo` is its official mark bundled with the console, used when there is one.
+// a masked echo; `required` ones must be set. `logo` is the type's official mark,
+// bundled with the console; `icon` is a plain icon for generic types (email falls back to one).
 export const NOTIFY_CHANNEL_TYPES = [
   { type: 'email', fields: [{ key: 'to' }] },
-  { type: 'wecom', domain: 'work.weixin.qq.com', fields: [{ key: 'webhook', secret: true, required: true }] },
+  { type: 'wecom', logo: wecomLogo, fields: [{ key: 'webhook', secret: true, required: true }] },
   {
     type: 'dingtalk',
-    domain: 'dingtalk.com',
+    logo: dingtalkLogo,
     signed: true,
     fields: [{ key: 'token', secret: true, required: true }, { key: 'secret', secret: true }, { key: 'keyword' }]
   },
   {
     type: 'lark',
-    domain: 'feishu.cn',
     logo: larkLogo,
     signed: true,
     fields: [{ key: 'token', secret: true, required: true }, { key: 'secret', secret: true }, { key: 'keyword' }]
   },
-  { type: 'pushdeer', domain: 'pushdeer.com', fields: [{ key: 'pushkey', secret: true, required: true }, { key: 'url' }] },
+  { type: 'pushdeer', logo: pushdeerLogo, fields: [{ key: 'pushkey', secret: true, required: true }, { key: 'url' }] },
   {
     type: 'telegram',
-    domain: 'telegram.org',
     logo: telegramLogo,
     fields: [{ key: 'bot_token', secret: true, required: true }, { key: 'chat_id', required: true }, { key: 'http_proxy' }]
   },
@@ -119,9 +119,8 @@ export function NotifyChannelIcon({ type, className }) {
     const Icon = meta.icon;
     return <Icon className={cn('size-4 shrink-0 text-muted-foreground', className)} aria-hidden />;
   }
-  if (meta?.logo) return <img src={meta.logo} alt="" aria-hidden className={cn('size-4 shrink-0 rounded-sm', className)} />;
-  if (!meta?.domain) return <Mail className={cn('size-4 shrink-0 text-muted-foreground', className)} aria-hidden />;
-  return <BrandIcon domain={meta.domain} fallbackText={type} className={cn('size-4', className)} />;
+  if (!meta?.logo) return <Mail className={cn('size-4 shrink-0 text-muted-foreground', className)} aria-hidden />;
+  return <img src={meta.logo} alt="" aria-hidden className={cn('size-4 shrink-0 rounded-sm object-contain', className)} />;
 }
 
 NotifyChannelIcon.propTypes = { type: PropTypes.string, className: PropTypes.string };
