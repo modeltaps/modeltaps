@@ -222,6 +222,10 @@ func InitDB() (err error) {
 		if err != nil {
 			return err
 		}
+		err = db.AutoMigrate(&AccountDailyCost{})
+		if err != nil {
+			return err
+		}
 		err = db.AutoMigrate(&TelegramMenu{})
 		if err != nil {
 			return err

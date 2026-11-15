@@ -6,6 +6,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LongListMore, LongListSearch, useLongList } from '@/components/objects';
+import DailyCostTable from './DailyCostTable';
 import UpstreamCostTable from './UpstreamCostTable';
 import { fetchChannelCacheStat, fetchChannelMetrics, fetchChannelUpstreamCosts } from './channelApi';
 import { cacheSummary, metricsByModel, metricsSeries, summarizeMetrics } from './channelMetrics';
@@ -213,6 +214,8 @@ function PerformanceBody({ object: channel, ctx }) {
           <UpstreamCostTable rows={data.costs} />
         </>
       )}
+
+      <DailyCostTable channel={channel} />
     </div>
   );
 }

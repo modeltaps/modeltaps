@@ -98,6 +98,9 @@ const typeConfig = {
   1: {
     inputLabel: {
       provider_models_list: ['channelForm.fetchModelsFrom', { source: 'OpenAI' }]
+    },
+    prompt: {
+      manage_key: 'channelForm.prompt.manageKeyOpenAI'
     }
   },
   8: {
@@ -160,7 +163,10 @@ const typeConfig = {
       ],
       test_model: 'claude-haiku-5-5'
     },
-    modelGroup: 'Anthropic'
+    modelGroup: 'Anthropic',
+    prompt: {
+      manage_key: 'channelForm.prompt.manageKeyAnthropic'
+    }
   },
   15: {
     input: {

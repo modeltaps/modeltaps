@@ -60,8 +60,9 @@ func TestUpstreamCostIsLogged(t *testing.T) {
 		}
 	}
 
-	// The same field from an upstream whose unit is not verified is left alone.
-	if cost, expected, _ := run(t, config.ChannelTypeOpenAI, false); cost != 0 || expected != 0 {
-		t.Errorf("OpenAI channel: upstream cost = %v, expected cost = %v, want none", cost, expected)
+	// The same field from an upstream whose unit is not verified is left alone; the estimate
+	// is logged for every channel.
+	if cost, expected, _ := run(t, config.ChannelTypeOpenAI, false); cost != 0 || math.Abs(expected-wantExpected) > 1e-9 {
+		t.Errorf("OpenAI channel: upstream cost = %v, expected cost = %v, want 0 / %v", cost, expected, wantExpected)
 	}
 }

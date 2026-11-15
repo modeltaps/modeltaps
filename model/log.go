@@ -41,9 +41,9 @@ type Log struct {
 	Metadata          datatypes.JSONType[map[string]any] `json:"metadata" gorm:"type:json"`
 	// UpstreamCost is what the upstream reported it charged for the request, in USD; 0 when it
 	// reported nothing. ExpectedCost is the gateway's own estimate of that charge, in USD, from
-	// its price table and the channel's cost ratio; it is written for the channel types whose
-	// upstream reports a cost, so the two can be summed and compared over the logs that have
-	// both (see GetChannelUpstreamCosts). Admin only.
+	// its price table and the channel's cost ratio; it is written for every request, to be
+	// compared with UpstreamCost over the logs that have one (see GetChannelUpstreamCosts) and
+	// per day with the account's cost report (see GetExpectedDailyCosts). Admin only.
 	UpstreamCost float64 `json:"upstream_cost" gorm:"default:0"`
 	ExpectedCost float64 `json:"expected_cost" gorm:"default:0"`
 

@@ -37,8 +37,9 @@ func TestLogMetaUpstreamCost(t *testing.T) {
 	if _, ok := q.GetLogMeta(usage)[model.LogMetaUpstreamCost]; ok {
 		t.Error("a cost from an unverified upstream was logged")
 	}
-	if _, ok := q.GetLogMeta(usage)[model.LogMetaExpectedCost]; ok {
-		t.Error("an estimate was logged for an upstream that reports no cost")
+	// The estimate is logged all the same: the account's daily report is compared with it.
+	if expected, _ := q.GetLogMeta(usage)[model.LogMetaExpectedCost].(float64); math.Abs(expected-4) > 1e-9 {
+		t.Errorf("expected cost on an OpenAI channel = %v, want 4", expected)
 	}
 	// Nothing reported: no upstream cost, but the estimate stays for a cost that is filled in later.
 	q = &Quota{price: price, groupRatio: 1, channelType: config.ChannelTypeOpenRouter}

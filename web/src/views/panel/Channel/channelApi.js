@@ -451,6 +451,23 @@ export async function fetchChannelUpstreamCosts(id, start, end) {
   return res.data?.success ? res.data.data || [] : [];
 }
 
+// The account's daily bill next to what this site expected, for the last completed UTC days
+// (GET /api/channel/:id/daily_costs). `supported` is false when the upstream has no report.
+export async function fetchChannelDailyCosts(id) {
+  const res = await API.get(`/api/channel/${id}/daily_costs`);
+  const { success, message, data } = res.data;
+  if (!success) throw new Error(message);
+  return data;
+}
+
+// Reads the upstream report now, then returns the same comparison.
+export async function refreshChannelDailyCosts(id) {
+  const res = await API.post(`/api/channel/${id}/daily_costs/refresh`);
+  const { success, message, data } = res.data;
+  if (!success) throw new Error(message);
+  return data;
+}
+
 const PAGE_SIZE = 100;
 
 // Every row of a paginated channel list endpoint, page by page.

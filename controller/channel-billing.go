@@ -225,6 +225,8 @@ func updateAllChannelsBalance() error {
 		}
 		time.Sleep(config.RequestInterval)
 	}
+	// The accounts' daily cost reports ride on the same schedule, each read every few hours.
+	refreshAllAccountDailyCosts(channels)
 	return nil
 }
 

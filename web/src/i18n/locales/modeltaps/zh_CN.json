@@ -1112,7 +1112,9 @@
       "keyFormat": "按照如下格式输入：{{format}}",
       "keyFormatExample": "按照如下格式输入：{{format}}，例如：{{example}}",
       "keyFormatBaidu": "按照如下格式输入：APIKey|SecretKey, 如果开启了OpenAI API，请直接输入APIKEY",
-      "manageKeyOpenRouter": "选填。填 OpenRouter 的管理密钥可显示整个账户的余额；不填只显示上面这把密钥的限额。",
+      "manageKeyOpenAI": "选填。填 OpenAI 的管理员密钥（admin key）可读取组织的每日成本报表，用来对比本站的估算。仅官方接口可用。",
+      "manageKeyAnthropic": "选填。填 Anthropic 的 Admin API 密钥（sk-ant-admin...）可读取组织的每日成本报表，用来对比本站的估算。仅官方接口可用。",
+      "manageKeyOpenRouter": "选填。填 OpenRouter 的管理密钥可显示整个账户的余额，并读取每日成本报表；不填只显示上面这把密钥的限额。",
       "manageKeyRequesty": "选填。填一把有管理权限的 Requesty 密钥可显示组织余额；不填时用上面的密钥尝试。",
       "manageKeyVolcengine": "选填。按 AccessKeyID|SecretAccessKey 填账号的 AccessKey 可显示余额；方舟 API Key 查不了余额。",
       "keyFormatAws": "按照如下格式输入：Region|AccessKeyID|SecretAccessKey|SessionToken 其中SessionToken可不填；AssumeRole 模式：Region|AccessKeyID|SecretAccessKey|RoleArn（第四段填 arn:aws:iam::账号:role/角色名，运行时自动换取临时凭证并续期）；角色链：Region|AccessKeyID|SecretAccessKey|SessionToken|RoleArn；或 Region|BearerToken",
@@ -2591,6 +2593,15 @@
     },
     "switcher": {
       "count": "{{count}} 个渠道"
+    },
+    "dailyCosts": {
+      "title": "按天对账",
+      "hint": "上游每个 UTC 日向这个账户收取的费用，对比本站对所发请求的估算成本。账单是整个账户的：账户在本站之外的用量也算在内。",
+      "shared": "已与同账户的渠道合并计算：{{names}}。",
+      "none": "还没读取过报表。点刷新读取最近 30 天。",
+      "day": "日期（UTC）",
+      "billed": "上游账单",
+      "refresh": "刷新"
     },
     "upstreamCosts": {
       "title": "上游实际收费",

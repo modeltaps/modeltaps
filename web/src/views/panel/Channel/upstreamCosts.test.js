@@ -34,5 +34,6 @@ describe('upstream costs', () => {
     expect(formatDrift(null)).toBe('—');
     expect(formatCost(0.0048)).toBe('$0.0048');
     expect(formatCost(12.345)).toBe('$12.35');
+    expect(formatCost(0)).toBe('$0');
   });
 });

@@ -1106,7 +1106,9 @@
       "keyFormat": "次の形式で入力してください：{{format}}",
       "keyFormatExample": "次の形式で入力してください：{{format}}。例：{{example}}",
       "keyFormatBaidu": "次の形式で入力してください：APIKey|SecretKey。OpenAI API プラグインを有効にしている場合は API キーをそのまま入力してください",
-      "manageKeyOpenRouter": "任意。OpenRouter の管理キーを入力するとアカウント全体の残高を表示します。未入力の場合は上のキーの上限のみ表示します。",
+      "manageKeyOpenAI": "任意。OpenAI の管理者キー（admin key）を入力すると、組織の日次コストレポートを取得して本サイトの見積もりと比較します。公式 API のみ対応。",
+      "manageKeyAnthropic": "任意。Anthropic の Admin API キー（sk-ant-admin...）を入力すると、組織の日次コストレポートを取得して本サイトの見積もりと比較します。公式 API のみ対応。",
+      "manageKeyOpenRouter": "任意。OpenRouter の管理キーを入力するとアカウント全体の残高を表示し、日次コストレポートも取得します。未入力の場合は上のキーの上限のみ表示します。",
       "manageKeyRequesty": "任意。管理権限のある Requesty キーを入力すると組織の残高を表示します。未入力の場合は上のキーで試します。",
       "manageKeyVolcengine": "任意。アカウントの AccessKey を AccessKeyID|SecretAccessKey の形式で入力すると残高を表示します。Ark API Key では残高を取得できません。",
       "keyFormatAws": "次の形式で入力してください：Region|AccessKeyID|SecretAccessKey|SessionToken（SessionToken は省略可）。AssumeRole モード：Region|AccessKeyID|SecretAccessKey|RoleArn（4番目に arn:aws:iam::アカウント:role/ロール名 を指定すると、実行時に一時認証情報を取得して自動更新します）。ロールチェーン：Region|AccessKeyID|SecretAccessKey|SessionToken|RoleArn。または Region|BearerToken",
@@ -2587,6 +2589,15 @@
     },
     "switcher": {
       "count": "{{count}} チャネル"
+    },
+    "dailyCosts": {
+      "title": "日次照合",
+      "hint": "上流が UTC の各日にこのアカウントへ請求した金額と、本サイトが送信したリクエストについて見積もったコストの比較です。請求はアカウント全体のもので、本サイト以外での利用分も含まれます。",
+      "shared": "同じアカウントのチャネルと合算しています：{{names}}。",
+      "none": "レポートはまだ取得していません。更新すると直近 30 日分を取得します。",
+      "day": "日付（UTC）",
+      "billed": "上流の請求",
+      "refresh": "更新"
     },
     "upstreamCosts": {
       "title": "上流の実際の課金",

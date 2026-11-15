@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Daily reconciliation with the upstream's own bill. With a management key on the channel, the
+  account's daily cost report is read on the balance refresh schedule (each account every six
+  hours, or on demand) and stored per UTC day: OpenRouter's activity (`GET /api/v1/activity`,
+  management key), Anthropic's cost report (`GET /v1/organizations/cost_report`, Admin API key,
+  amounts in cents) and OpenAI's organization costs (`GET /v1/organization/costs`, admin key).
+  OpenAI and Anthropic channels take a management key for this; a channel that points at another
+  host is a relay and is never sent the key. The channel's Performance tab lists the last 30
+  completed days with what this site expected, what the upstream billed and the difference,
+  marking 5% or more. The reports are for the whole account, so the expected side sums every
+  channel with the same management key, and use of the account outside this site shows up as a
+  difference. The expected cost is now logged for every request, on every channel type; days
+  before this change have no expected cost to compare.
 - The consume log keeps what the upstream says it charged for a request, next to this site's own
   estimate of that charge (the price table at the channel's cost ratio, or at the listed price
   when the channel has none). OpenRouter reports the charge in every response (`usage.cost`), for

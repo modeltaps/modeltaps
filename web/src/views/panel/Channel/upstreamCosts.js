@@ -41,5 +41,6 @@ export function formatDrift(drift) {
 // Costs of single requests are small: four decimals below a dollar, two from there on.
 export function formatCost(usd) {
   const n = Number(usd || 0);
+  if (n === 0) return '$0';
   return '$' + n.toFixed(n >= 1 ? 2 : 4);
 }

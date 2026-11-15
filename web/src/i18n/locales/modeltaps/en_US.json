@@ -1127,7 +1127,9 @@
       "keyFormat": "Use the format {{format}}",
       "keyFormatExample": "Use the format {{format}}, e.g. {{example}}",
       "keyFormatBaidu": "Use the format APIKey|SecretKey. If the OpenAI API plugin is enabled, enter the API key directly",
-      "manageKeyOpenRouter": "Optional. An OpenRouter management key shows the balance of the whole account; without it only the limit of the key above is shown.",
+      "manageKeyOpenAI": "Optional. An OpenAI admin key reads the organization's daily cost report, to compare with what this site expected. Official API only.",
+      "manageKeyAnthropic": "Optional. An Anthropic Admin API key (sk-ant-admin...) reads the organization's daily cost report, to compare with what this site expected. Official API only.",
+      "manageKeyOpenRouter": "Optional. An OpenRouter management key shows the balance of the whole account and reads its daily cost report; without it only the limit of the key above is shown.",
       "manageKeyRequesty": "Optional. A Requesty key with manage permission shows the organization balance; the key above is tried when this is empty.",
       "manageKeyVolcengine": "Optional. The account's AccessKey as AccessKeyID|SecretAccessKey shows the balance; the Ark API key cannot read it.",
       "keyFormatAws": "Use the format Region|AccessKeyID|SecretAccessKey|SessionToken (SessionToken is optional). AssumeRole mode: Region|AccessKeyID|SecretAccessKey|RoleArn (put arn:aws:iam::ACCOUNT:role/ROLE_NAME in the fourth field; temporary credentials are fetched and renewed automatically). Role chaining: Region|AccessKeyID|SecretAccessKey|SessionToken|RoleArn. Or Region|BearerToken",
@@ -2702,6 +2704,15 @@
     },
     "switcher": {
       "count": "{{count}} channels"
+    },
+    "dailyCosts": {
+      "title": "Daily bill",
+      "hint": "What the upstream billed the account on each UTC day, against what this site expected for the requests it sent. The bill is for the whole account: use outside this site is in it too.",
+      "shared": "Summed with the channels of the same account: {{names}}.",
+      "none": "No report read yet. Refresh to read the last 30 days.",
+      "day": "Day (UTC)",
+      "billed": "Billed",
+      "refresh": "Refresh"
     },
     "upstreamCosts": {
       "title": "Upstream charges",
