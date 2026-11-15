@@ -31,8 +31,11 @@ func (e *Email) Send(_ context.Context, title, message string) error {
 		to = config.RootUserEmail
 	}
 
-	if config.SMTPServer == "" || config.SMTPAccount == "" || config.SMTPToken == "" || to == "" {
-		return errors.New("smtp config is not set, skip send email notifier")
+	if to == "" {
+		return errors.New("no recipient: set one or give the root user an email address")
+	}
+	if !stmp.SystemStmpConfigured() {
+		return errors.New("mail sending is not set up, skip send email notifier")
 	}
 
 	p := parser.NewWithExtensions(parser.CommonExtensions | parser.DefinitionLists | parser.OrderedListStart)
@@ -44,8 +47,11 @@ func (e *Email) Send(_ context.Context, title, message string) error {
 
 	body := markdown.Render(doc, renderer)
 
-	emailClient := stmp.NewStmp(config.SMTPServer, config.SMTPPort, config.SMTPAccount, config.SMTPToken, config.SMTPFrom, config.SMTPTLSMode)
-	emailClient.FromName = config.SMTPFromName
+	emailClient, err := stmp.GetSystemStmp()
+	if err != nil {
+		return err
+	}
+	emailClient.Kind = "notice"
 
 	return emailClient.Send(to, title, string(body))
 }
@@ -60,5 +66,5 @@ func (e *Email) Recipient() string {
 
 // Ready reports whether a notice can be sent: SMTP is set up and there is a recipient.
 func (e *Email) Ready() bool {
-	return config.SMTPServer != "" && config.SMTPAccount != "" && config.SMTPToken != "" && e.Recipient() != ""
+	return stmp.SystemStmpConfigured() && e.Recipient() != ""
 }

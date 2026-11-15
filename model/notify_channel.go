@@ -18,12 +18,14 @@ import (
 // Settings holds the plain settings and Secrets the secret ones (webhooks, tokens), both as JSON
 // objects keyed by the type's field keys (notify.Types). Secrets never leaves the server.
 type NotifyChannel struct {
-	Id          int    `json:"id"`
-	Name        string `json:"name" gorm:"type:varchar(64);default:''"`
-	Type        string `json:"type" gorm:"type:varchar(16);not null"`
-	Settings    string `json:"-" gorm:"type:text"`
-	Secrets     string `json:"-" gorm:"type:text"`
-	Enabled     bool   `json:"enabled" gorm:"default:false"`
+	Id       int    `json:"id"`
+	Name     string `json:"name" gorm:"type:varchar(64);default:''"`
+	Type     string `json:"type" gorm:"type:varchar(16);not null"`
+	Settings string `json:"-" gorm:"type:text"`
+	Secrets  string `json:"-" gorm:"type:text"`
+	Enabled  bool   `json:"enabled" gorm:"default:false"`
+	// Kinds limits the channel to these notice kinds, comma separated; empty takes every kind.
+	Kinds       string `json:"kinds" gorm:"type:varchar(512);default:''"`
 	Sort        int    `json:"sort" gorm:"default:0"`
 	CreatedTime int64  `json:"created_time" gorm:"bigint"`
 	UpdatedTime int64  `json:"updated_time" gorm:"bigint"`
@@ -91,6 +93,32 @@ func (c *NotifyChannel) SetValues(values map[string]string, clear []string) erro
 	return nil
 }
 
+// KindList returns the notice kinds the channel takes; empty means every kind.
+func (c *NotifyChannel) KindList() []string {
+	var out []string
+	for _, k := range strings.Split(c.Kinds, ",") {
+		if k = strings.TrimSpace(k); k != "" {
+			out = append(out, k)
+		}
+	}
+	return out
+}
+
+// SetKinds keeps the known notice kinds of list, in the settings page's order.
+func (c *NotifyChannel) SetKinds(list []string) {
+	want := map[string]bool{}
+	for _, k := range list {
+		want[strings.TrimSpace(k)] = true
+	}
+	var out []string
+	for _, k := range notify.Kinds {
+		if want[k] {
+			out = append(out, k)
+		}
+	}
+	c.Kinds = strings.Join(out, ",")
+}
+
 // Notifier builds the channel's notifier, checking its settings.
 func (c *NotifyChannel) Notifier() (notify.Notifier, error) {
 	return notify.Build(c.Type, c.Values())
@@ -121,7 +149,7 @@ func (c *NotifyChannel) Insert() error {
 
 func (c *NotifyChannel) Update() error {
 	c.UpdatedTime = utils.GetTimestamp()
-	return DB.Model(c).Select("name", "settings", "secrets", "enabled", "sort", "updated_time").Updates(c).Error
+	return DB.Model(c).Select("name", "settings", "secrets", "enabled", "kinds", "sort", "updated_time").Updates(c).Error
 }
 
 func (c *NotifyChannel) UpdateEnabled(enabled bool) error {
@@ -154,7 +182,7 @@ func NotifyDestinations() []notify.Destination {
 			logger.SysError(fmt.Sprintf("notification channel #%d skipped: %s", c.Id, err.Error()))
 			continue
 		}
-		out = append(out, notify.Destination{Name: c.Name, Type: c.Type, Notifier: n})
+		out = append(out, notify.Destination{Name: c.Name, Type: c.Type, Notifier: n, Kinds: c.KindList()})
 	}
 	return out
 }

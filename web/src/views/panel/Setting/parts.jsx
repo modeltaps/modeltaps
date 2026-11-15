@@ -100,8 +100,13 @@ export function useOptionSettings() {
         }
         if (loadStatus) await loadStatus();
         await refresh({ keepUnsaved: true });
-        // Keys saved from `values` replace any pending edit of them.
-        if (values) setInputs((p) => ({ ...p, ...values }));
+        // Keys saved from `values` replace any pending edit of them. A saved secret leaves its
+        // input: the server now holds it and shows only the mask, so the card is no longer dirty.
+        setInputs((p) => {
+          const next = { ...p, ...(values || {}) };
+          for (const key of keys) if (key in secrets) next[key] = '';
+          return next;
+        });
         showSuccess(t('common.saveSuccess'));
         return true;
       } catch (e) {
@@ -140,14 +145,17 @@ const sameOption = (a, b) => String(a ?? '') === String(b ?? '');
 
 // FormCard props for a card saved through the option API: dirty state, Save and Undo bound to
 // the card's own keys. `options` are passed to saveKeys (validate / transform); `beforeSave`
-// may return false (or a promise of false) to stop, e.g. to ask for confirmation first.
+// may return false (or a promise of false) to stop, e.g. to ask for confirmation first;
+// `afterSave` runs after a successful save.
 export function useOptionCard(ctx, keys, options = {}) {
   const [saving, setSaving] = useState(false);
   const dirty = ctx.isDirty(keys);
   const save = async () => {
     setSaving(true);
     try {
-      return await ctx.saveKeys(keys, options);
+      const ok = await ctx.saveKeys(keys, options);
+      if (ok && options.afterSave) await options.afterSave();
+      return ok;
     } finally {
       setSaving(false);
     }

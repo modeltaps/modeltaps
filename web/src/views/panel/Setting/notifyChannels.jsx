@@ -1,10 +1,12 @@
 import PropTypes from 'prop-types';
-import { Mail } from 'lucide-react';
+import { Mail, Webhook } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import BrandIcon from '@/components/brand/BrandIcon';
 import larkLogo from 'assets/images/icons/lark.svg';
 import telegramLogo from 'assets/images/icons/telegram.svg';
+import slackLogo from 'assets/images/icons/slack.svg';
+import discordLogo from 'assets/images/icons/discord.svg';
 
 // Notification channel types and their settings, in the order the console offers them. Mirrors
 // notify.Types on the server (common/notify/build.go): `secret` fields are never sent back, only
@@ -32,8 +34,41 @@ export const NOTIFY_CHANNEL_TYPES = [
     domain: 'telegram.org',
     logo: telegramLogo,
     fields: [{ key: 'bot_token', secret: true, required: true }, { key: 'chat_id', required: true }, { key: 'http_proxy' }]
+  },
+  { type: 'slack', logo: slackLogo, fields: [{ key: 'webhook', secret: true, required: true }] },
+  { type: 'discord', logo: discordLogo, fields: [{ key: 'webhook', secret: true, required: true }] },
+  {
+    type: 'webhook',
+    icon: Webhook,
+    fields: [
+      { key: 'url', secret: true, required: true },
+      { key: 'secret', secret: true }
+    ]
   }
 ];
+
+// Every admin notice kind, in the order the settings page shows them (notify.Kinds on the server).
+export const NOTIFY_KINDS = [
+  'channel_disabled',
+  'channel_enabled',
+  'channel_test',
+  'low_balance',
+  'price_change',
+  'model_drift',
+  'model_consistency',
+  'credential',
+  'supply_paused',
+  'supply_resumed',
+  'supply_failover',
+  'model_library'
+];
+
+// The notice kinds a channel takes: [] means every kind (the stored value is comma separated).
+export const channelKinds = (channel) =>
+  String(channel?.kinds || '')
+    .split(',')
+    .map((k) => k.trim())
+    .filter(Boolean);
 
 export const channelTypeOf = (type) => NOTIFY_CHANNEL_TYPES.find((t) => t.type === type) || null;
 
@@ -61,6 +96,7 @@ export function channelPayload(draft) {
     settings,
     clear_secrets: draft.clear || [],
     enabled: !!draft.enabled,
+    kinds: Array.isArray(draft.kinds) ? draft.kinds : channelKinds(draft),
     sort: Number.parseInt(draft.sort, 10) || 0
   };
 }
@@ -79,6 +115,10 @@ export function channelDraftProblem(draft, stored = {}) {
 
 export function NotifyChannelIcon({ type, className }) {
   const meta = channelTypeOf(type);
+  if (meta?.icon) {
+    const Icon = meta.icon;
+    return <Icon className={cn('size-4 shrink-0 text-muted-foreground', className)} aria-hidden />;
+  }
   if (meta?.logo) return <img src={meta.logo} alt="" aria-hidden className={cn('size-4 shrink-0 rounded-sm', className)} />;
   if (!meta?.domain) return <Mail className={cn('size-4 shrink-0 text-muted-foreground', className)} aria-hidden />;
   return <BrandIcon domain={meta.domain} fallbackText={type} className={cn('size-4', className)} />;

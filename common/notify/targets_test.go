@@ -62,3 +62,26 @@ func TestBuild(t *testing.T) {
 		}
 	}
 }
+
+func TestDestinationWantsKinds(t *testing.T) {
+	all := Destination{}
+	only := Destination{Kinds: []string{KindLowBalance}}
+	if !all.Wants(KindPriceChange) || !only.Wants(KindLowBalance) || only.Wants(KindPriceChange) {
+		t.Fatal("kind filter")
+	}
+	if !only.Wants("") {
+		t.Fatal("a notice without a kind goes everywhere")
+	}
+}
+
+func TestBuildWebhookTypes(t *testing.T) {
+	if _, err := Build(TypeSlack, map[string]string{"webhook": "ftp://x"}); err == nil {
+		t.Fatal("accepted a non-http webhook")
+	}
+	if _, err := Build(TypeWebhook, map[string]string{"url": "https://example.com/hook"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Build(TypeDiscord, map[string]string{}); err == nil {
+		t.Fatal("accepted a missing webhook")
+	}
+}

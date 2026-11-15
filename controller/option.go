@@ -53,6 +53,10 @@ func UpdateOption(c *gin.Context) {
 		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeInvalidParams, "Invalid parameters", nil)
 		return
 	}
+	if smtpOptionKeys[option.Key] && stmp.IsManaged() {
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeSmtpManaged, "Mail sending is set in the deployment (smtp.url) and cannot be changed here", nil)
+		return
+	}
 	switch option.Key {
 	case "AccountSystem":
 		if option.Value == config.AccountSystemExternal {
@@ -100,6 +104,11 @@ func UpdateOption(c *gin.Context) {
 			return
 		}
 
+	case "MailTemplates":
+		if err := stmp.ValidateTemplates(option.Value); err != nil {
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "Invalid mail templates", nil)
+			return
+		}
 	case "SMTPTLSMode":
 		if !stmp.IsValidTLSMode(option.Value) {
 			common.APIRespondWithCode(c, http.StatusOK, common.APICodeOptionSmtpEncryptionInvalid, "Invalid SMTP encryption method", nil)

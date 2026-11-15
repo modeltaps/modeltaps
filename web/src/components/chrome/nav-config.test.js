@@ -117,7 +117,7 @@ describe('navSectionsFor (platform admin)', () => {
       { id: 'gateway', items: ['channel', 'pricing', 'routing_policy', 'setting_gateway'] },
       { id: 'people', items: ['user', 'user_group', 'org_admin', 'setting_auth', 'setting_orgpolicy'] },
       { id: 'finance', items: ['payment', 'redemption', 'invite_code', 'setting_billing', 'setting_payment'] },
-      { id: 'system', items: ['setting_site', 'setting_privacy', 'setting_notify'] }
+      { id: 'system', items: ['setting_site', 'setting_entries', 'setting_privacy', 'setting_mail', 'setting_notify'] }
     ]);
   });
 
@@ -313,7 +313,9 @@ describe('commandSections', () => {
       'setting_billing',
       'setting_payment',
       'setting_site',
+      'setting_entries',
       'setting_privacy',
+      'setting_mail',
       'setting_notify'
     ]);
     expect(admin.items[0].href).toBe('/panel/admin/stats');
@@ -323,7 +325,7 @@ describe('commandSections', () => {
     const items = commandSections({ isAdmin: true, isRoot: false }).find((s) => s.id === 'platform_settings').items;
     expect(items.every((i) => i.searchOnly)).toBe(true);
     const cards = settingsCommandItems({ isRoot: false });
-    expect(cards.find((i) => i.id === 'setting_card_smtp').href).toBe('/panel/admin/settings/notify?highlight=smtp');
+    expect(cards.find((i) => i.id === 'setting_card_smtp').href).toBe('/panel/admin/settings/mail?highlight=smtp');
     expect(cards.some((i) => i.id === 'setting_card_org-policy')).toBe(false);
     expect(settingsCommandItems({ isRoot: true }).some((i) => i.id === 'setting_card_org-policy')).toBe(true);
   });

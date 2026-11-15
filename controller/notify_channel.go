@@ -55,7 +55,9 @@ type NotifyChannelRequest struct {
 	Settings     map[string]string `json:"settings"`
 	ClearSecrets []string          `json:"clear_secrets"`
 	Enabled      bool              `json:"enabled"`
-	Sort         int               `json:"sort"`
+	// Kinds limits the channel to these notice kinds; empty takes every kind.
+	Kinds []string `json:"kinds"`
+	Sort  int      `json:"sort"`
 }
 
 func notifyChannelError(c *gin.Context, status int, message string) {
@@ -67,6 +69,7 @@ func notifyChannelError(c *gin.Context, status int, message string) {
 func (req *NotifyChannelRequest) apply(channel *model.NotifyChannel) error {
 	channel.Name = strings.TrimSpace(req.Name)
 	channel.Enabled, channel.Sort = req.Enabled, req.Sort
+	channel.SetKinds(req.Kinds)
 	if err := channel.SetValues(req.Settings, req.ClearSecrets); err != nil {
 		return err
 	}
@@ -196,7 +199,9 @@ func TestNotifyChannel(c *gin.Context) {
 	defer cancel()
 	title := fmt.Sprintf("%s test notice", config.SystemName)
 	message := "This is a test notice. Admin notices such as disabled channels and low balances will arrive here."
-	if err := n.Send(ctx, title, message); err != nil {
+	err := n.Send(notify.WithKind(ctx, "test"), title, message)
+	notify.Record(notify.Delivery{Kind: "test", Type: channel.Type, Name: channel.Name, Title: title, Err: err})
+	if err != nil {
 		notifyChannelError(c, http.StatusBadGateway, err.Error())
 		return
 	}

@@ -383,6 +383,11 @@ func InitDB() (err error) {
 			return err
 		}
 
+		err = db.AutoMigrate(&MessageLog{})
+		if err != nil {
+			return err
+		}
+
 		// 迁移失败必须终止启动：邮箱唯一约束等 fail-closed 迁移一旦被吞掉，
 		// 进程会带着未建立的约束继续跑，等于约束形同虚设。
 		if err = migrationAfter(DB); err != nil {

@@ -1822,7 +1822,8 @@
     "model_access_personal_token": "Named access lists are only available to organization API keys",
     "smtp_test_recipient_invalid": "Enter a valid recipient address",
     "smtp_test_incomplete": "Fill in the mail server and port first",
-    "smtp_test_failed": "The test email was not sent: {{reason}}"
+    "smtp_test_failed": "The test email was not sent: {{reason}}",
+    "smtp_managed": "Mail sending is set in the deployment (smtp.url) and cannot be changed here"
   },
   "channelOAuth": {
     "tip": {
@@ -2775,8 +2776,10 @@
       "settingPayment": "Payment settings",
       "settingGateway": "Gateway settings",
       "settingPrivacy": "Logs & privacy",
-      "settingNotify": "Notifications & integrations",
-      "settingOrgPolicy": "Organization policy"
+      "settingNotify": "Notifications",
+      "settingOrgPolicy": "Organization policy",
+      "settingEntries": "User entries",
+      "settingMail": "Mail"
     },
     "context": {
       "personal": "Personal",
@@ -3141,12 +3144,20 @@
           "description": "What is recorded, for how long, and who can see it"
         },
         "notify": {
-          "label": "Notifications & integrations",
-          "description": "Notice kinds, channels, the mail server and outside entries"
+          "label": "Notifications",
+          "description": "Admin notices: which kinds, where they go and what was sent"
         },
         "orgpolicy": {
           "label": "Organization policy",
           "description": "What organizations can do; root only"
+        },
+        "entries": {
+          "label": "User entries",
+          "description": "The Telegram bot, built-in chat and chat links users reach"
+        },
+        "mail": {
+          "label": "Mail",
+          "description": "The mail service, user email templates and what was sent"
         }
       },
       "cards": {
@@ -3304,9 +3315,9 @@
           "hint": "One keyword per line"
         },
         "smtp": {
-          "title": "Mail server",
-          "description": "Verification codes, notifications and billing emails are sent from here",
-          "hint": "The password is not shown again once saved"
+          "title": "Mail service",
+          "description": "Login codes, password resets, quota warnings and email notices are all sent through it",
+          "hint": "Passwords are not shown again after saving"
         },
         "notifications": {
           "title": "Notice kinds",
@@ -3344,6 +3355,19 @@
           "title": "Supply pause rules",
           "description": "Pause a channel or model on upstream errors by rule; it comes back after a passing test",
           "hint": "When off, the older auto disable and cooldown apply"
+        },
+        "mail-templates": {
+          "title": "Email templates",
+          "description": "What users receive. Leave a field as it is to keep the default",
+          "hint": "The header and footer are added for you"
+        },
+        "mail-logs": {
+          "title": "Sent emails",
+          "description": "Every email from the last 30 days, including failures"
+        },
+        "notify-logs": {
+          "title": "Sent notices",
+          "description": "Every notice delivery from the last 30 days, per channel"
         }
       },
       "actions": {
@@ -3406,14 +3430,14 @@
       },
       "notifyChannels": {
         "add": "Add channel",
-        "description": "Every notice goes to all enabled channels. Which notices are sent and how many per hour is set under Notice kinds above.",
+        "description": "Every enabled channel gets the notice kinds it takes (all by default). Which kinds are sent at all and how many per hour is set under Notice kinds above.",
         "empty": "No channels yet: notices reach nobody",
         "sheetDescription": "Where notices go",
         "saved": "Saved",
         "test": "Send test",
         "testOk": "Test notice sent: check that it arrived",
         "notReady": "Cannot send",
-        "notReadyEmail": "SMTP not set up",
+        "notReadyEmail": "Mail not set up",
         "columns": {
           "name": "Name",
           "where": "Sends to"
@@ -3424,7 +3448,10 @@
           "dingtalk": "DingTalk",
           "lark": "Lark",
           "pushdeer": "PushDeer",
-          "telegram": "Telegram"
+          "telegram": "Telegram",
+          "slack": "Slack",
+          "discord": "Discord",
+          "webhook": "Webhook"
         },
         "form": {
           "type": "Type",
@@ -3436,17 +3463,28 @@
           "undoClear": "Undo",
           "cleared": "Cleared on save",
           "signedHint": "Set a signing secret or a keyword, matching the bot's security settings",
-          "required": "{{field}} is required"
+          "required": "{{field}} is required",
+          "kinds": "Notices it receives",
+          "kindsAll": "All kinds",
+          "kindsSome": "Only selected kinds",
+          "kindsRequired": "Select at least one kind",
+          "webhookHint": "Each notice is POSTed as JSON: kind, title, message, site, time. With a signing secret, the X-Modeltaps-Signature header carries sha256= and the HMAC-SHA256 of the body."
         },
         "fields": {
           "to": {
             "label": "Recipient",
             "placeholder": "ops@example.com",
-            "hint": "Empty sends to the root admin's address, through the SMTP server under Mail server"
+            "hint": "Empty sends to the root admin's address, through the mail service under Platform admin → Mail"
           },
           "webhook": {
             "label": "Bot webhook URL",
-            "placeholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…"
+            "placeholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…",
+            "label_slack": "Incoming webhook URL",
+            "placeholder_slack": "https://hooks.slack.com/services/…",
+            "hint_slack": "Slack app → Incoming Webhooks → Add New Webhook",
+            "label_discord": "Webhook URL",
+            "placeholder_discord": "https://discord.com/api/webhooks/…",
+            "hint_discord": "Channel settings → Integrations → Webhooks"
           },
           "token": {
             "label": "Bot access token",
@@ -3454,7 +3492,8 @@
             "hint_lark": "The last part of the webhook URL"
           },
           "secret": {
-            "label": "Signing secret"
+            "label": "Signing secret",
+            "hint_webhook": "Optional. Used to sign each request"
           },
           "keyword": {
             "label": "Keyword",
@@ -3466,7 +3505,10 @@
           "url": {
             "label": "Self-hosted server",
             "placeholder": "https://api2.pushdeer.com",
-            "hint": "Leave empty for the official service"
+            "hint": "Leave empty for the official service",
+            "label_webhook": "Webhook URL",
+            "placeholder_webhook": "https://example.com/hooks/modeltaps",
+            "hint_webhook": "Receives a POST for every notice"
           },
           "bot_token": {
             "label": "Bot token",
@@ -3481,7 +3523,9 @@
             "placeholder": "http://127.0.0.1:7890",
             "hint": "When the server cannot reach Telegram directly"
           }
-        }
+        },
+        "kindsSome": "{{count}} kinds",
+        "notReadyRecipient": "No recipient"
       },
       "mail": {
         "pick": "Mail service",
@@ -3519,7 +3563,9 @@
           "fromName": "Sender name",
           "fromNamePlaceholder": "Shown as the sender, e.g. your site name",
           "fromAddress": "Sender address",
-          "fromAddressHint": "Must be on a domain verified with the service"
+          "fromAddressHint": "Must be on a domain verified with the service",
+          "replyTo": "Reply-to address",
+          "replyToHint": "Optional. Empty sends replies to the sender address"
         },
         "docs": {
           "apiKey": "Get an API key",
@@ -3548,7 +3594,66 @@
           "to": "Recipient",
           "send": "Send",
           "sent": "Sent to {{to}}. Check the inbox (and the spam folder)."
+        },
+        "setUp": "Set up mail",
+        "managed": {
+          "title": "Set in the deployment",
+          "description": "Mail sending comes from smtp.url (SMTP_URL) in the config file or environment, so it cannot be changed here. Remove it to manage mail in the console."
+        },
+        "summary": {
+          "ready": "Configured",
+          "from": "From",
+          "replyTo": "replies to",
+          "change": "Change"
         }
+      },
+      "mailTemplates": {
+        "names": {
+          "verification": "Verification code",
+          "password_reset": "Password reset",
+          "quota_warning": "Quota warning"
+        },
+        "customized": "Customized",
+        "subject": "Subject",
+        "body": "Body (HTML)",
+        "bodyHint": "HTML inside the shared mail layout. Variables are replaced when sending",
+        "variables": "Variables",
+        "vars": {
+          "site": "Site name",
+          "code": "Verification code",
+          "minutes": "Minutes the code or link is valid",
+          "user": "User name",
+          "link": "Reset or top-up link",
+          "quota": "Remaining quota",
+          "status": "Running low / used up sentence"
+        },
+        "reset": "Restore default",
+        "preview": "Preview"
+      },
+      "messageLog": {
+        "sent": "Sent",
+        "failed": "Failed",
+        "empty": "Nothing sent in the last 30 days",
+        "emptyFailed": "No failures in the last 30 days",
+        "failedOnly": "Failures only",
+        "refresh": "Refresh",
+        "columns": {
+          "time": "Time",
+          "kind": "Kind",
+          "target": "Sent to",
+          "title": "Subject"
+        },
+        "kinds": {
+          "general": "General",
+          "test": "Test",
+          "verification": "Verification code",
+          "password_reset": "Password reset",
+          "quota_warning": "Quota warning",
+          "notice": "Admin notice"
+        },
+        "pager": "Page {{page}} of {{pages}} · {{total}} in all",
+        "prev": "Previous page",
+        "next": "Next page"
       }
     },
     "personal": {

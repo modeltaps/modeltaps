@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from '@/components/ui/sonner';
 import { CollectionCard, OptionList, StatusDot } from '@/components/settings/cards';
 import { TextRow, ToggleRow } from '../parts';
-import { INVITE_CODE_URL } from '../registry';
+import { INVITE_CODE_URL, settingsGroupUrl } from '../registry';
+import useMailStatus from '../mail/useMailStatus';
 import OidcProviderSheet from '../OidcProviderSheet';
 import OptionCard, { bindSwitch, cardText } from './OptionCard';
 
@@ -163,7 +164,9 @@ export function LoginMethodsCard({ ctx }) {
   const { inputs, origin } = ctx;
   const confirm = useConfirm();
   const sys = (k) => t(sysKey(k));
-  const smtpConfigured = Boolean(inputs.SMTPServer && inputs.SMTPAccount);
+  const { status: mailStatus } = useMailStatus();
+  // The server's answer counts mail set in the deployment too; the form is the fallback.
+  const smtpConfigured = mailStatus ? mailStatus.configured : Boolean(inputs.SMTPServer && inputs.SMTPAccount);
   if (isExternalSaved(ctx)) return null;
 
   // Turning password login off locks ordinary users out of it; ask before saving that.
@@ -185,7 +188,16 @@ export function LoginMethodsCard({ ctx }) {
         {row(
           'EmailCodeLoginEnabled',
           t(tk('emailCodeLogin')),
-          smtpConfigured ? t(tk('emailCodeLoginDesc')) : t(tk('emailCodeLoginNeedsSmtp'))
+          smtpConfigured ? (
+            t(tk('emailCodeLoginDesc'))
+          ) : (
+            <>
+              {t(tk('emailCodeLoginNeedsSmtp'))}{' '}
+              <Link to={`${settingsGroupUrl('mail')}?highlight=smtp`} className="text-info hover:underline">
+                {t('settingsUi.platform.mail.setUp')}
+              </Link>
+            </>
+          )
         )}
         {row('PasskeyLoginEnabled', t(tk('passkeyLogin')), t(tk('passkeyLoginDesc')))}
         {row('RegisterEnabled', sys('configureLoginRegister.registerEnabled'), sys('configureLoginRegister.registerEnabledDescription'))}

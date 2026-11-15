@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Eye, EyeOff, Power, RotateCw, Send, Trash2 } from 'lucide-react';
 
+import { Link } from 'react-router';
+
 import { API } from 'utils/api';
 import { showError, showSuccess } from 'utils/common';
 import { cn } from '@/lib/utils';
@@ -11,31 +13,18 @@ import { CollectionCard, OptionList, StatusDot } from '@/components/settings/car
 import TelegramSheet from '../../Telegram/TelegramSheet';
 import ChatLinkSheet, { parseChatLinks, serializeChatLinks } from '../ChatLinkSheet';
 import NotifyChannelSheet from '../NotifyChannelSheet';
-import { NotifyChannelIcon, channelPayload, channelWhere } from '../notifyChannels';
+import { NOTIFY_KINDS, NotifyChannelIcon, channelKinds, channelPayload, channelWhere } from '../notifyChannels';
 import { toast } from '@/components/ui/sonner';
 import { TextRow, ToggleRow } from '../parts';
 import OptionCard, { bindSwitch, cardText } from './OptionCard';
+import { settingsGroupUrl } from '../registry';
 
 // ==============================|| PLATFORM SETTINGS — 通知与集成 ||============================== //
 // Two tabs. 通知: the platform's admin notices — which kinds are sent, the channels they go to
 // and the mail server behind email (cards/MailCard.jsx). 集成: the Telegram user bot, built-in chat and chat links.
 // (The Midjourney callback card lives here but is shown under the gateway's request tab.)
 
-// One switch per notification kind; stored as the comma-joined list of disabled kinds.
-const NOTIFY_KINDS = [
-  'channel_disabled',
-  'channel_enabled',
-  'channel_test',
-  'low_balance',
-  'price_change',
-  'model_drift',
-  'model_consistency',
-  'credential',
-  'supply_paused',
-  'supply_resumed',
-  'supply_failover',
-  'model_library'
-];
+// One switch per notification kind (NOTIFY_KINDS); stored as the comma-joined list of disabled kinds.
 
 export function NotificationsCard({ ctx }) {
   const { t } = useTranslation();
@@ -160,6 +149,11 @@ export function NotifyChannelsCard() {
               <span className="inline-flex items-center gap-2 font-medium">
                 <NotifyChannelIcon type={row.type} />
                 {label(row)}
+                {channelKinds(row).length > 0 && (
+                  <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground">
+                    {nk('kindsSome', { count: channelKinds(row).length })}
+                  </span>
+                )}
               </span>
             )
           },
@@ -185,7 +179,15 @@ export function NotifyChannelsCard() {
               row.enabled && !row.ready ? (
                 <span className="inline-flex items-center gap-1.5 text-[13px] text-warning" title={row.problem || ''}>
                   <AlertTriangle className="size-3.5" />
-                  {row.type === 'email' && !row.problem ? nk('notReadyEmail') : nk('notReady')}
+                  {row.type === 'email' && !row.problem && !row.detail ? (
+                    nk('notReadyRecipient')
+                  ) : row.type === 'email' && !row.problem ? (
+                    <Link to={settingsGroupUrl('mail')} className="underline-offset-2 hover:underline" onClick={(e) => e.stopPropagation()}>
+                      {nk('notReadyEmail')}
+                    </Link>
+                  ) : (
+                    nk('notReady')
+                  )}
                 </span>
               ) : (
                 <StatusDot on={!!row.enabled} />

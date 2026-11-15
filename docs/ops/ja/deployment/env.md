@@ -160,6 +160,16 @@ LOGS_FILENAME="modeltaps.log"
 - `DISABLE_TOKEN_ENCODERS`：ローカルのトークンエンコーダーを無効にします（推定値に切り替えます）。既定は `false`。
 - `TG_HTTP_PROXY`：Telegram へアクセスする際の HTTP/SOCKS5 プロキシ。
 
+### メール送信
+
+未設定のときは、管理画面の「プラットフォーム管理 → メール」でメール配信サービスを設定します。`SMTP_URL` を設定するとデプロイ設定が優先され、管理画面は読み取り専用になり、テストメールの送信だけができます。
+
+- `SMTP_URL`：`smtps://ユーザー名:パスワード@ホスト:465`（暗黙的 TLS）または `smtp://ユーザー名:パスワード@ホスト:587`。`?tls=starttls` などで暗号化方式を指定できます（`auto`、`ssl`、`starttls`、`starttls_opportunistic`、`none`）。パスワード内の特殊文字は URL エンコードしてください。
+- `SMTP_FROM`：差出人アドレス。`SMTP_URL` を設定した場合は必須です。
+- `SMTP_FROM_NAME` / `SMTP_REPLY_TO`：差出人名と返信先アドレス。任意です。
+
+例（Resend）：`SMTP_URL=smtps://resend:re_xxx@smtp.resend.com:465`、`SMTP_FROM=noreply@example.com`。
+
 ### ストレージ / 検索
 
 オブジェクトストレージによる画像ストレージ（`STORAGE_*`）、Web 検索（`SEARCH_*`）などのグループには設定項目が多数あります。キー名と既定値は、配布パッケージのルートにある `config.example.yaml` を直接参照してください。通知の送信先（`NOTIFY_*`）は管理画面での設定に移りました。[通知](./notify.md)を参照してください。

@@ -204,6 +204,13 @@ var SMTPToken = ""
 // SMTPFromName is the display name shown before SMTPFrom ("Modeltaps <noreply@example.com>").
 var SMTPFromName = ""
 
+// SMTPReplyTo is the optional address replies go to.
+var SMTPReplyTo = ""
+
+// MailTemplates holds the admin's versions of the user emails (common/stmp/mail_templates.go),
+// a JSON object keyed by template id; empty uses the defaults.
+var MailTemplates = ""
+
 // SMTPProvider remembers which mail service preset the admin picked in the console (resend,
 // gmail, custom, ...). Sending only reads the SMTP fields; this is for the settings form.
 var SMTPProvider = ""

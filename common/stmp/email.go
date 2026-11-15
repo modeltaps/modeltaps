@@ -7,7 +7,9 @@ import (
 	"github.com/modeltaps/modeltaps/common/utils"
 	"errors"
 	"fmt"
+	"html"
 	netmail "net/mail"
+	"strconv"
 	"strings"
 
 	"github.com/wneessen/go-mail"
@@ -80,8 +82,23 @@ type StmpConfig struct {
 	From     string
 	// FromName is the optional display name shown before From.
 	FromName string
-	TLSMode  string
+	// ReplyTo is the optional address replies go to instead of From.
+	ReplyTo string
+	TLSMode string
+	// Kind names what the email is for in the send record (verification, test, notice, ...).
+	Kind string
 }
+
+// SendRecord is one email the platform tried to send, as the send record keeps it.
+type SendRecord struct {
+	Kind    string
+	To      string
+	Subject string
+	Err     error
+}
+
+// OnSent, when set, is told about every email after it was sent or failed (the send record).
+var OnSent func(SendRecord)
 
 func NewStmp(host string, port int, username string, password string, from string, tlsMode string) *StmpConfig {
 	if from == "" {
@@ -113,6 +130,14 @@ func (s *StmpConfig) sender() (name, address string, err error) {
 }
 
 func (s *StmpConfig) Send(to, subject, body string) error {
+	err := s.send(to, subject, body)
+	if OnSent != nil {
+		OnSent(SendRecord{Kind: s.Kind, To: to, Subject: subject, Err: err})
+	}
+	return err
+}
+
+func (s *StmpConfig) send(to, subject, body string) error {
 	name, address, err := s.sender()
 	if err != nil {
 		return err
@@ -126,6 +151,11 @@ func (s *StmpConfig) Send(to, subject, body string) error {
 	}
 	if err := message.To(to); err != nil {
 		return fmt.Errorf("invalid recipient: %w", err)
+	}
+	if replyTo := strings.TrimSpace(s.ReplyTo); replyTo != "" {
+		if err := message.ReplyTo(replyTo); err != nil {
+			return fmt.Errorf("invalid reply-to address: %w", err)
+		}
 	}
 	message.Subject(subject)
 	message.SetGenHeader("References", references(address))
@@ -170,19 +200,36 @@ func (s *StmpConfig) Render(to, subject, content string) error {
 	return s.Send(to, subject, body)
 }
 
-// SystemStmpConfigured 判定系统 SMTP 是否配置齐全。供 GetSystemStmp 与 /api/status
-// 共用，避免两处各写一份条件表达式后走偏。不暴露任何 SMTP 具体值。
+// SystemStmpConfigured reports whether the platform can send mail: set in the deployment, or
+// complete in the console. Shared by GetSystemStmp and /api/status; it reveals no setting.
 func SystemStmpConfigured() bool {
+	if IsManaged() {
+		m, err := Managed()
+		return err == nil && m.From != ""
+	}
 	return config.SMTPServer != "" && config.SMTPPort != 0 && config.SMTPAccount != "" && config.SMTPToken != ""
 }
 
+// GetSystemStmp returns the platform's mail client: the deployment's when smtp.url is set, else
+// the console's.
 func GetSystemStmp() (*StmpConfig, error) {
+	if IsManaged() {
+		m, err := Managed()
+		if err != nil {
+			return nil, err
+		}
+		if m.From == "" {
+			return nil, fmt.Errorf("smtp.from is not set")
+		}
+		return m.client(), nil
+	}
 	if !SystemStmpConfigured() {
 		return nil, fmt.Errorf("SMTP is not configured")
 	}
 
 	client := NewStmp(config.SMTPServer, config.SMTPPort, config.SMTPAccount, config.SMTPToken, config.SMTPFrom, config.SMTPTLSMode)
 	client.FromName = config.SMTPFromName
+	client.ReplyTo = config.SMTPReplyTo
 	return client, nil
 }
 
@@ -193,91 +240,42 @@ func SendTestEmail(s *StmpConfig, to string) error {
 	content := `<p style="font-size: 20px"><strong>Mail sending works.</strong></p>
 	<p>This test email was sent from the mail settings of %s. No action is needed.</p>
 	<p style="color: #858585; padding-top: 15px;">Server: %s:%d</p>`
-	return s.Render(to, subject, fmt.Sprintf(content, config.SystemName, s.Host, s.Port))
+	s.Kind = "test"
+	return s.Render(to, subject, fmt.Sprintf(content, html.EscapeString(config.SystemName), html.EscapeString(s.Host), s.Port))
+}
+
+// sendTemplate sends one of the user emails (mail_templates.go) through the platform's client.
+func sendTemplate(id, to string, vars map[string]string) error {
+	client, err := GetSystemStmp()
+	if err != nil {
+		return err
+	}
+	client.Kind = id
+	subject, body := RenderTemplate(id, vars, nil)
+	return client.Send(to, subject, body)
 }
 
 func SendPasswordResetEmail(userName, email, link string) error {
-	stmp, err := GetSystemStmp()
-
-	if err != nil {
-		return err
-	}
-
-	contentTemp := `<p style="font-size: 30px">Hi <strong>%s,</strong></p>
-	<p>
-		You requested a password reset. Click the button below to reset your password.
-	</p>
-	
-	<p style="text-align: center; font-size: 13px;">
-		<a target="__blank" href="%s" class="button" style="color: #ffffff;">Reset password</a>
-	</p>
-	
-	<p style="color: #858585; padding-top: 15px;">
-		If the button does not work, open the link below or copy it into your browser:<br> %s
-	</p>
-	<p style="color: #858585;">The reset link is valid for %d minutes. If you did not request this, please ignore this email.</p>`
-
-	subject := fmt.Sprintf("%s password reset", config.SystemName)
-	content := fmt.Sprintf(contentTemp, userName, link, link, common.VerificationValidMinutes)
-
-	return stmp.Render(email, subject, content)
+	return sendTemplate(TemplatePasswordReset, email, map[string]string{
+		"user": userName, "link": link, "minutes": strconv.Itoa(common.VerificationValidMinutes),
+	})
 }
 
 func SendVerificationCodeEmail(email, code string) error {
-	stmp, err := GetSystemStmp()
-
-	if err != nil {
-		return err
-	}
-
-	contentTemp := `
-	<p>
-		You are verifying your email. Your verification code is:
-	</p>
-	
-	<p style="text-align: center; font-size: 30px; color: #58a6ff;">
-		<strong>%s</strong>
-	</p>
-	
-	<p style="color: #858585; padding-top: 15px;">
-		The verification code is valid for %d minutes. If you did not request this, please ignore this email.
-	</p>`
-
-	subject := fmt.Sprintf("%s email verification", config.SystemName)
-	content := fmt.Sprintf(contentTemp, code, common.VerificationValidMinutes)
-
-	return stmp.Render(email, subject, content)
+	return sendTemplate(TemplateVerification, email, map[string]string{
+		"code": code, "minutes": strconv.Itoa(common.VerificationValidMinutes),
+	})
 }
 
 func SendQuotaWarningCodeEmail(userName, email string, quota int, noMoreQuota bool) error {
-	stmp, err := GetSystemStmp()
-
-	if err != nil {
-		return err
-	}
-
-	contentTemp := `<p style="font-size: 30px">Hi <strong>%s,</strong></p>
-		<p>
-			%s. Your remaining quota is %d. Please top up soon to avoid service interruption.
-		</p>
-		
-		<p style="text-align: center; font-size: 13px;">
-			<a target="__blank" href="%s" class="button" style="color: #ffffff;">Top up</a>
-		</p>
-		
-		<p style="color: #858585; padding-top: 15px;">
-			If the button does not work, open the link below or copy it into your browser:<br> %s
-		</p>`
-
-	subject := "Your quota is running low"
+	status := "Your quota is running low"
 	if noMoreQuota {
-		subject = "Your quota has been used up"
+		status = "Your quota has been used up"
 	}
 	topUpLink := fmt.Sprintf("%s/panel/billing?topup=1", strings.TrimSuffix(config.ServerAddress, "/"))
-
-	content := fmt.Sprintf(contentTemp, userName, subject, quota, topUpLink, topUpLink)
-
-	return stmp.Render(email, subject, content)
+	return sendTemplate(TemplateQuotaWarning, email, map[string]string{
+		"user": userName, "quota": strconv.Itoa(quota), "status": status, "link": topUpLink,
+	})
 }
 
 func DialAndSend(c *mail.Client, messages ...*mail.Msg) error {

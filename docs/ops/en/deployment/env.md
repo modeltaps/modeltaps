@@ -160,6 +160,16 @@ The following commonly used keys are read by the code but not covered above. For
 - `DISABLE_TOKEN_ENCODERS`: disable local token encoders and fall back to estimation, defaults to `false`.
 - `TG_HTTP_PROXY`: HTTP/SOCKS5 proxy used to reach Telegram.
 
+### Mail sending
+
+When unset, the mail service is configured in the console under Platform admin → Mail. When `SMTP_URL` is set the deployment wins: the console turns read-only and can only send a test email.
+
+- `SMTP_URL`: `smtps://user:password@host:465` (implicit TLS) or `smtp://user:password@host:587`; add `?tls=starttls` and so on to choose the encryption (`auto`, `ssl`, `starttls`, `starttls_opportunistic`, `none`). URL-encode special characters in the password.
+- `SMTP_FROM`: sender address, required when `SMTP_URL` is set.
+- `SMTP_FROM_NAME` / `SMTP_REPLY_TO`: sender name and reply-to address, optional.
+
+For example with Resend: `SMTP_URL=smtps://resend:re_xxx@smtp.resend.com:465` and `SMTP_FROM=noreply@example.com`.
+
 ### Storage and search
 
 The object storage (`STORAGE_*`) and web search (`SEARCH_*`) groups contain many keys. For key names and default values, refer directly to `config.example.yaml` in the root of the delivery package. Notification channels (`NOTIFY_*`) moved to the console, see [Notifications](./notify.md).

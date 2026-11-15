@@ -37,11 +37,13 @@ import {
 import { LogConsumeCard, LogIOCard, SafetyCard } from './cards/PrivacyCards';
 import { BuiltinChatCard, ChatLinksCard, MjNotifyCard, NotificationsCard, NotifyChannelsCard, TelegramCard } from './cards/NotifyCards';
 import { SmtpCard } from './cards/MailCard';
+import { MailTemplatesCard } from './cards/MailTemplatesCard';
+import { MailLogsCard, NotifyLogsCard } from './cards/MessageLogCard';
 import { OrgPolicyCard } from './cards/OrgPolicyCards';
 import { workbench } from 'routes/paths';
 
 // ==============================|| PANEL — PLATFORM SETTINGS (admin) ||============================== //
-// One settings page in eight groups (`/panel/admin/settings/:group`), each group a menu item of
+// One settings page in ten groups (`/panel/admin/settings/:group`), each group a menu item of
 // its own (nav-config files them under the sections they configure); the groups and their cards come
 // from `./registry`, this file attaches a component to every card. All option cards share one
 // `useOptionSettings` state, so unsaved edits survive a group switch. Old group ids, the older
@@ -85,6 +87,9 @@ const CARD_COMPONENTS = {
   'log-io': LogIOCard,
   safety: SafetyCard,
   smtp: SmtpCard,
+  'mail-templates': MailTemplatesCard,
+  'mail-logs': MailLogsCard,
+  'notify-logs': NotifyLogsCard,
   notifications: NotificationsCard,
   'notify-channels': NotifyChannelsCard,
   telegram: TelegramCard,

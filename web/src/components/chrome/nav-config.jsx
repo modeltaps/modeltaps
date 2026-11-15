@@ -24,7 +24,9 @@ import {
   Globe,
   Landmark,
   LogIn,
-  Plug,
+  Bell,
+  Mail,
+  MessagesSquare,
   ShieldCheck,
   FileText,
   MailPlus,
@@ -199,8 +201,10 @@ export const adminSections = [
     items: [
       // Bare `/panel/admin/settings` redirects to 站点, so it resolves to that item.
       settingItem('site', Globe, 'nav.items.settingSite', { match: [SETTINGS_BASE] }),
+      settingItem('entries', MessagesSquare, 'nav.items.settingEntries'),
       settingItem('privacy', ShieldCheck, 'nav.items.settingPrivacy'),
-      settingItem('notify', Plug, 'nav.items.settingNotify')
+      settingItem('mail', Mail, 'nav.items.settingMail'),
+      settingItem('notify', Bell, 'nav.items.settingNotify')
     ]
   }
 ];

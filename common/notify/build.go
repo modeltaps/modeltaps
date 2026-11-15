@@ -3,6 +3,7 @@ package notify
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/modeltaps/modeltaps/common/notify/channel"
@@ -16,6 +17,9 @@ const (
 	TypeLark     = "lark"
 	TypePushDeer = "pushdeer"
 	TypeTelegram = "telegram"
+	TypeSlack    = "slack"
+	TypeDiscord  = "discord"
+	TypeWebhook  = "webhook"
 )
 
 // Field is one setting of a channel type. Secret fields are stored apart and never sent back
@@ -37,6 +41,9 @@ var Types = []struct {
 	{TypeLark, []Field{{Key: "token", Secret: true, Required: true}, {Key: "secret", Secret: true}, {Key: "keyword"}}},
 	{TypePushDeer, []Field{{Key: "pushkey", Secret: true, Required: true}, {Key: "url"}}},
 	{TypeTelegram, []Field{{Key: "bot_token", Secret: true, Required: true}, {Key: "chat_id", Required: true}, {Key: "http_proxy"}}},
+	{TypeSlack, []Field{{Key: "webhook", Secret: true, Required: true}}},
+	{TypeDiscord, []Field{{Key: "webhook", Secret: true, Required: true}}},
+	{TypeWebhook, []Field{{Key: "url", Secret: true, Required: true}, {Key: "secret", Secret: true}}},
 }
 
 // FieldsOf returns the settings of a channel type, or nil for an unknown type.
@@ -85,6 +92,31 @@ func Build(typ string, values map[string]string) (Notifier, error) {
 		return channel.NewPushdeer(v("pushkey"), v("url")), nil
 	case TypeTelegram:
 		return channel.NewTelegram(v("bot_token"), v("chat_id"), v("http_proxy")), nil
+	case TypeSlack, TypeDiscord, TypeWebhook:
+		key := "webhook"
+		if typ == TypeWebhook {
+			key = "url"
+		}
+		if err := checkWebhookURL(v(key)); err != nil {
+			return nil, err
+		}
+		switch typ {
+		case TypeSlack:
+			return channel.NewSlack(v("webhook")), nil
+		case TypeDiscord:
+			return channel.NewDiscord(v("webhook")), nil
+		default:
+			return channel.NewWebhook(v("url"), v("secret")), nil
+		}
 	}
 	return nil, fmt.Errorf("unknown notification channel type %q", typ)
+}
+
+// checkWebhookURL accepts only absolute http(s) URLs.
+func checkWebhookURL(raw string) error {
+	u, err := url.Parse(raw)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return errors.New("the webhook URL must start with http:// or https://")
+	}
+	return nil
 }

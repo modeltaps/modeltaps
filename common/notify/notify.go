@@ -3,6 +3,8 @@ package notify
 import (
 	"context"
 	"sync"
+
+	"github.com/modeltaps/modeltaps/common/notify/channel"
 )
 
 // Notifier delivers one notice to one place.
@@ -19,6 +21,39 @@ type Destination struct {
 	// Type is the channel type (TypeEmail, TypeTelegram, ...).
 	Type     string
 	Notifier Notifier
+	// Kinds limits the channel to these notice kinds; empty means every kind.
+	Kinds []string
+}
+
+// Wants reports whether the channel takes notices of this kind. A notice sent without a kind
+// (Send) goes everywhere.
+func (d Destination) Wants(kind string) bool {
+	if kind == "" || len(d.Kinds) == 0 {
+		return true
+	}
+	for _, k := range d.Kinds {
+		if k == kind {
+			return true
+		}
+	}
+	return false
+}
+
+// Delivery is one notice handed to one channel, as the send record keeps it.
+type Delivery struct {
+	Kind  string
+	Type  string
+	Name  string
+	Title string
+	Err   error
+}
+
+// OnDelivered, when set, is told about every delivery after it succeeded or failed.
+var OnDelivered func(Delivery)
+
+// WithKind tells notifiers the kind of the notice they send (the generic webhook passes it on).
+func WithKind(ctx context.Context, kind string) context.Context {
+	return channel.WithKind(ctx, kind)
 }
 
 var (

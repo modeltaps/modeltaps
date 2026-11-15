@@ -1738,7 +1738,8 @@
     "model_access_personal_token": "命名访问列表只能用于组织 API Key",
     "smtp_test_recipient_invalid": "请填写有效的收件地址",
     "smtp_test_incomplete": "请先填写邮件服务器和端口",
-    "smtp_test_failed": "测试邮件没发出去：{{reason}}"
+    "smtp_test_failed": "测试邮件没发出去：{{reason}}",
+    "smtp_managed": "发信设置由部署配置（smtp.url）管理，不能在这里修改"
   },
   "channelOAuth": {
     "tip": {
@@ -2664,8 +2665,10 @@
       "settingPayment": "支付设置",
       "settingGateway": "网关设置",
       "settingPrivacy": "日志与隐私",
-      "settingNotify": "通知与集成",
-      "settingOrgPolicy": "组织策略"
+      "settingNotify": "通知",
+      "settingOrgPolicy": "组织策略",
+      "settingEntries": "用户入口",
+      "settingMail": "邮件"
     },
     "context": {
       "personal": "个人",
@@ -3041,12 +3044,20 @@
           "description": "记录什么、保存多久、谁能看"
         },
         "notify": {
-          "label": "通知与集成",
-          "description": "通知类型、发送渠道、邮件服务和对外入口"
+          "label": "通知",
+          "description": "管理员通知：发哪些、发到哪、发了什么"
         },
         "orgpolicy": {
           "label": "组织策略",
           "description": "组织能做什么，仅 root 可改"
+        },
+        "entries": {
+          "label": "用户入口",
+          "description": "用户能用到的 Telegram 机器人、内置聊天和聊天链接"
+        },
+        "mail": {
+          "label": "邮件",
+          "description": "发信服务、用户邮件模板和发送记录"
         }
       },
       "cards": {
@@ -3204,8 +3215,8 @@
           "hint": "每行一个关键词"
         },
         "smtp": {
-          "title": "邮件服务",
-          "description": "验证码、通知和账单邮件都从这里发",
+          "title": "发信服务",
+          "description": "登录验证码、重置密码、余额提醒和邮件通知都从这里发",
           "hint": "密码保存后不再显示"
         },
         "notifications": {
@@ -3244,6 +3255,19 @@
           "title": "供应暂停规则",
           "description": "上游报错时按规则暂停渠道或模型，到点测试通过后恢复",
           "hint": "关闭后回到旧的自动禁用与冷却"
+        },
+        "mail-templates": {
+          "title": "邮件模板",
+          "description": "用户收到的邮件内容，不改动就用默认",
+          "hint": "页眉页脚由系统统一套上"
+        },
+        "mail-logs": {
+          "title": "邮件发送记录",
+          "description": "最近 30 天发出的每一封邮件，包括失败的"
+        },
+        "notify-logs": {
+          "title": "通知发送记录",
+          "description": "最近 30 天每条通知在各渠道的发送结果"
         }
       },
       "actions": {
@@ -3304,14 +3328,14 @@
       },
       "notifyChannels": {
         "add": "添加渠道",
-        "description": "每条通知同时发到所有已启用的渠道。哪些通知要发、每小时发几条，在上面的「通知类型」里设置。",
+        "description": "每个启用的渠道接收它订阅的通知类型（默认全部）。发不发某类通知、每小时最多几条，在上面的「通知类型」里设置。",
         "empty": "还没有发送渠道，通知不会发给任何人",
         "sheetDescription": "通知发到哪里",
         "saved": "已保存",
         "test": "发送测试",
         "testOk": "测试通知已发出，去对应的地方看看有没有收到",
         "notReady": "发不出去",
-        "notReadyEmail": "SMTP 未配置",
+        "notReadyEmail": "邮件服务未配置",
         "columns": {
           "name": "名称",
           "where": "发到"
@@ -3322,7 +3346,10 @@
           "dingtalk": "钉钉",
           "lark": "飞书",
           "pushdeer": "PushDeer",
-          "telegram": "Telegram"
+          "telegram": "Telegram",
+          "slack": "Slack",
+          "discord": "Discord",
+          "webhook": "Webhook"
         },
         "form": {
           "type": "类型",
@@ -3334,17 +3361,28 @@
           "undoClear": "撤销",
           "cleared": "保存后清除",
           "signedHint": "加签密钥和关键词至少填一个，要和机器人的安全设置一致",
-          "required": "请填写{{field}}"
+          "required": "请填写{{field}}",
+          "kinds": "接收的通知",
+          "kindsAll": "全部类型",
+          "kindsSome": "仅选中的类型",
+          "kindsRequired": "至少选一个类型",
+          "webhookHint": "每条通知以 JSON POST 过去：kind、title、message、site、time。填了签名密钥时，请求头 X-Modeltaps-Signature 带上 sha256= 加正文的 HMAC-SHA256。"
         },
         "fields": {
           "to": {
             "label": "收件邮箱",
             "placeholder": "ops@example.com",
-            "hint": "留空则发给超管的邮箱；用「邮件服务」里的 SMTP 发送"
+            "hint": "留空则发给超管的邮箱；通过「平台管理 → 邮件」里的发信服务发送"
           },
           "webhook": {
             "label": "机器人 Webhook 地址",
-            "placeholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…"
+            "placeholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…",
+            "label_slack": "Incoming Webhook 地址",
+            "placeholder_slack": "https://hooks.slack.com/services/…",
+            "hint_slack": "Slack 应用 → Incoming Webhooks → Add New Webhook",
+            "label_discord": "Webhook 地址",
+            "placeholder_discord": "https://discord.com/api/webhooks/…",
+            "hint_discord": "频道设置 → 整合 → Webhook"
           },
           "token": {
             "label": "机器人 access token",
@@ -3352,7 +3390,8 @@
             "hint_lark": "Webhook 地址最后一段"
           },
           "secret": {
-            "label": "加签密钥"
+            "label": "加签密钥",
+            "hint_webhook": "可选，用来给每个请求签名"
           },
           "keyword": {
             "label": "自定义关键词",
@@ -3364,7 +3403,10 @@
           "url": {
             "label": "自建服务地址",
             "placeholder": "https://api2.pushdeer.com",
-            "hint": "用官方服务就留空"
+            "hint": "用官方服务就留空",
+            "label_webhook": "Webhook 地址",
+            "placeholder_webhook": "https://example.com/hooks/modeltaps",
+            "hint_webhook": "每条通知都会 POST 到这里"
           },
           "bot_token": {
             "label": "机器人 Token",
@@ -3379,13 +3421,15 @@
             "placeholder": "http://127.0.0.1:7890",
             "hint": "服务器连不上 Telegram 时填"
           }
-        }
+        },
+        "kindsSome": "{{count}} 类",
+        "notReadyRecipient": "没有收件人"
       },
       "mail": {
         "pick": "发信服务",
         "empty": "选择你用来发信的服务，只需填它给你的凭据，服务器地址等会自动填好。",
         "groups": {
-          "service": "发信服务",
+          "service": "发信平台",
           "mailbox": "邮箱"
         },
         "custom": "自定义 SMTP",
@@ -3417,7 +3461,9 @@
           "fromName": "发件人名称",
           "fromNamePlaceholder": "收件人看到的发件人，比如站点名",
           "fromAddress": "发件地址",
-          "fromAddressHint": "须使用在该服务里验证过的域名"
+          "fromAddressHint": "须使用在该服务里验证过的域名",
+          "replyTo": "回复地址",
+          "replyToHint": "可选，留空则回复到发件地址"
         },
         "docs": {
           "apiKey": "获取 API Key",
@@ -3446,7 +3492,66 @@
           "to": "收件地址",
           "send": "发送",
           "sent": "已发到 {{to}}，请查看收件箱（也看看垃圾邮件）。"
+        },
+        "setUp": "去设置邮件服务",
+        "managed": {
+          "title": "由部署配置管理",
+          "description": "发信设置来自配置文件或环境变量里的 smtp.url（SMTP_URL），这里不能修改；去掉它即可改回在后台管理。"
+        },
+        "summary": {
+          "ready": "已配置",
+          "from": "发件人",
+          "replyTo": "回复到",
+          "change": "更改"
         }
+      },
+      "mailTemplates": {
+        "names": {
+          "verification": "验证码",
+          "password_reset": "重置密码",
+          "quota_warning": "余额提醒"
+        },
+        "customized": "已自定义",
+        "subject": "主题",
+        "body": "正文（HTML）",
+        "bodyHint": "写在统一邮件外框里的 HTML，发送时替换变量",
+        "variables": "可用变量",
+        "vars": {
+          "site": "站点名称",
+          "code": "验证码",
+          "minutes": "验证码或链接的有效分钟数",
+          "user": "用户名",
+          "link": "重置或充值链接",
+          "quota": "剩余额度",
+          "status": "额度不足 / 已用完的提示语"
+        },
+        "reset": "恢复默认",
+        "preview": "预览"
+      },
+      "messageLog": {
+        "sent": "已发送",
+        "failed": "失败",
+        "empty": "最近 30 天没有发送记录",
+        "emptyFailed": "最近 30 天没有失败",
+        "failedOnly": "只看失败",
+        "refresh": "刷新",
+        "columns": {
+          "time": "时间",
+          "kind": "类型",
+          "target": "发送到",
+          "title": "主题"
+        },
+        "kinds": {
+          "general": "通用",
+          "test": "测试",
+          "verification": "验证码",
+          "password_reset": "重置密码",
+          "quota_warning": "余额提醒",
+          "notice": "管理员通知"
+        },
+        "pager": "第 {{page}} / {{pages}} 页 · 共 {{total}} 条",
+        "prev": "上一页",
+        "next": "下一页"
       }
     },
     "personal": {

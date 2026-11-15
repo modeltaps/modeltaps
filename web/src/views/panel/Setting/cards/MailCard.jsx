@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { CheckCircle2, ExternalLink, Loader2, Send, Server, XCircle } from 'lucide-react';
+import { CheckCircle2, ExternalLink, Loader2, Lock, Pencil, Send, Server, XCircle } from 'lucide-react';
 
 import { API } from 'utils/api';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,8 @@ import { FormField } from '@/components/ui/form-field';
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SelectRow, TextRow } from '../parts';
 import OptionCard from './OptionCard';
+import { cardKeys } from '../registry';
+import useMailStatus from '../mail/useMailStatus';
 import {
   CUSTOM_PROVIDER,
   MAIL_PROVIDERS,
@@ -147,11 +149,98 @@ function TestEmailDialog({ open, onOpenChange, inputs }) {
 
 TestEmailDialog.propTypes = { open: PropTypes.bool, onOpenChange: PropTypes.func.isRequired, inputs: PropTypes.object.isRequired };
 
+// The deployment sets mail (smtp.url): nothing to edit here, only what is used and a test.
+function ManagedMail({ managed, onTest }) {
+  const { t } = useTranslation();
+  const m = (k, o) => t(`settingsUi.platform.mail.${k}`, o);
+  const sender = managed.from ? (managed.from_name ? `${managed.from_name} <${managed.from}>` : managed.from) : '';
+  return (
+    <div className="space-y-3 rounded-lg border border-border p-4">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <ProviderLogo provider={getMailProvider(detectMailProvider({ SMTPServer: managed.server }))} />
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-2 text-sm font-medium">
+            {m('managed.title')}
+            <Lock className="size-3.5 text-muted-foreground" />
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            {managed.server ? `${managed.server} · ${managed.port} · ${TLS_SHORT[managed.tls_mode] || managed.tls_mode}` : '—'}
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={onTest} disabled={!!managed.error}>
+          <Send className="size-4" />
+          {m('test.open')}
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">{m('managed.description')}</p>
+      {sender && (
+        <p className="text-sm">
+          <span className="text-muted-foreground">{m('summary.from')}</span> {sender}
+        </p>
+      )}
+      {managed.error && (
+        <p className="flex items-start gap-1.5 text-sm text-destructive">
+          <XCircle className="mt-0.5 size-4 shrink-0" />
+          {managed.error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+ManagedMail.propTypes = { managed: PropTypes.object.isRequired, onTest: PropTypes.func.isRequired };
+
+// A saved, complete setup folds into one line; "Change" opens the editor again.
+function MailSummary({ provider, inputs, onChange, onTest }) {
+  const { t } = useTranslation();
+  const m = (k, o) => t(`settingsUi.platform.mail.${k}`, o);
+  const name = provider ? m(`providers.${provider.id}`, { defaultValue: provider.name }) : m('custom');
+  const sender = inputs.SMTPFromName ? `${inputs.SMTPFromName} <${inputs.SMTPFrom}>` : inputs.SMTPFrom;
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border p-4">
+      <ProviderLogo provider={provider} />
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-2 text-sm font-medium">
+          {name}
+          <span className="inline-flex items-center gap-1 text-xs font-normal text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="size-3.5" />
+            {m('summary.ready')}
+          </span>
+        </p>
+        <p className="truncate text-xs text-muted-foreground" title={sender}>
+          {m('summary.from')} {sender}
+          {inputs.SMTPReplyTo ? ` · ${m('summary.replyTo')} ${inputs.SMTPReplyTo}` : ''}
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <Button variant="outline" size="sm" onClick={onTest}>
+          <Send className="size-4" />
+          {m('test.open')}
+        </Button>
+        <Button variant="outline" size="sm" onClick={onChange}>
+          <Pencil className="size-4" />
+          {m('summary.change')}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+MailSummary.propTypes = {
+  provider: PropTypes.object,
+  inputs: PropTypes.object.isRequired,
+  onChange: PropTypes.func.isRequired,
+  onTest: PropTypes.func.isRequired
+};
+
 export function SmtpCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, secrets, setField } = ctx;
   const m = (k, o) => t(`settingsUi.platform.mail.${k}`, o);
   const [testOpen, setTestOpen] = useState(false);
+  const [editingFor, setEditingFor] = useState(null);
+  const { status, refresh } = useMailStatus();
+  const managed = status?.managed;
 
   const providerId = detectMailProvider(inputs);
   const provider = getMailProvider(providerId);
@@ -160,6 +249,14 @@ export function SmtpCard({ ctx }) {
   // switching provider a new key is needed (the server reuses the saved one only for its own host).
   const savedSecretFor = (values) => savedSecretApplies(values, ctx.origin, Boolean(secrets?.SMTPToken));
   const missing = missingMailFields(providerId, inputs, savedSecretFor(inputs));
+  const savedProviderId = detectMailProvider(ctx.origin);
+  const savedComplete =
+    Boolean(savedProviderId) && missingMailFields(savedProviderId, ctx.origin, Boolean(secrets?.SMTPToken)).length === 0;
+  const dirty = ctx.isDirty(cardKeys('smtp'));
+  // "Change" opens the editor for the settings as saved; a save replaces them, which folds the
+  // card back into the summary.
+  const editing = editingFor !== null && editingFor === ctx.origin;
+  const collapsed = savedComplete && !editing && !dirty;
 
   const providerName = (p) => m(`providers.${p.id}`, { defaultValue: p.name });
   const patch = (values) => Object.entries(values).forEach(([k, v]) => setField(k, v));
@@ -196,6 +293,11 @@ export function SmtpCard({ ctx }) {
           placeholder: 'noreply@example.com',
           description: provider ? m('fields.fromAddressHint') : undefined
         })}
+      {text('SMTPReplyTo', m('fields.replyTo'), {
+        type: 'email',
+        placeholder: 'support@example.com',
+        description: m('fields.replyToHint')
+      })}
     </div>
   );
 
@@ -237,7 +339,7 @@ export function SmtpCard({ ctx }) {
     </div>
   );
 
-  const actions = providerId && (
+  const actions = providerId && !collapsed && (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <p className="text-xs text-muted-foreground">{missing.length ? m('test.incomplete') : m('test.hint')}</p>
       <Button variant="outline" size="sm" onClick={() => setTestOpen(true)} disabled={missing.length > 0}>
@@ -247,6 +349,15 @@ export function SmtpCard({ ctx }) {
     </div>
   );
 
+  if (managed) {
+    return (
+      <OptionCard ctx={ctx} id="smtp">
+        <ManagedMail managed={managed} onTest={() => setTestOpen(true)} />
+        <TestEmailDialog open={testOpen} onOpenChange={setTestOpen} inputs={inputs} />
+      </OptionCard>
+    );
+  }
+
   return (
     <OptionCard
       ctx={ctx}
@@ -254,60 +365,69 @@ export function SmtpCard({ ctx }) {
       actions={actions}
       options={{
         validate: (current) =>
-          missingMailFields(detectMailProvider(current), current, savedSecretFor(current)).length ? m('incomplete') : null
+          missingMailFields(detectMailProvider(current), current, savedSecretFor(current)).length ? m('incomplete') : null,
+        afterSave: refresh
       }}
     >
-      <div role="radiogroup" aria-label={m('pick')} className="space-y-4">
-        {groups.map((g) => (
-          <div key={g.id} className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">{m(`groups.${g.id}`)}</p>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-              {g.items.map((p) => (
-                <ProviderTile
-                  key={p.id}
-                  provider={p}
-                  label={providerName(p)}
-                  selected={providerId === p.id}
-                  onSelect={() => select(p.id)}
-                />
-              ))}
-              {g.id === 'mailbox' && <ProviderTile label={m('custom')} selected={isCustom} onSelect={() => select(CUSTOM_PROVIDER)} />}
-            </div>
-          </div>
-        ))}
-      </div>
+      {collapsed && (
+        <MailSummary provider={provider} inputs={inputs} onChange={() => setEditingFor(ctx.origin)} onTest={() => setTestOpen(true)} />
+      )}
 
-      {!providerId && <p className="text-sm text-muted-foreground">{m('empty')}</p>}
-
-      {providerId && (
-        <div className="space-y-5 rounded-lg border border-border p-4">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <ProviderLogo provider={provider} />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">{provider ? providerName(provider) : m('custom')}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {provider
-                  ? `${inputs.SMTPServer || provider.servers[0].host} · ${provider.port} · ${TLS_SHORT[provider.tls]}`
-                  : m('customHint')}
-              </p>
-            </div>
-            {provider && (
-              <a
-                href={provider.docs}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-              >
-                {m(`docs.${provider.secret}`)}
-                <ExternalLink className="size-3" />
-              </a>
-            )}
+      {!collapsed && (
+        <>
+          <div role="radiogroup" aria-label={m('pick')} className="space-y-4">
+            {groups.map((g) => (
+              <div key={g.id} className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">{m(`groups.${g.id}`)}</p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                  {g.items.map((p) => (
+                    <ProviderTile
+                      key={p.id}
+                      provider={p}
+                      label={providerName(p)}
+                      selected={providerId === p.id}
+                      onSelect={() => select(p.id)}
+                    />
+                  ))}
+                  {g.id === 'mailbox' && <ProviderTile label={m('custom')} selected={isCustom} onSelect={() => select(CUSTOM_PROVIDER)} />}
+                </div>
+              </div>
+            ))}
           </div>
-          {presetFields}
-          {customFields}
-          {senderFields}
-          {provider?.group === 'mailbox' && <p className="text-xs text-muted-foreground">{m('mailboxNote')}</p>}
-        </div>
+
+          {!providerId && <p className="text-sm text-muted-foreground">{m('empty')}</p>}
+
+          {providerId && (
+            <div className="space-y-5 rounded-lg border border-border p-4">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <ProviderLogo provider={provider} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">{provider ? providerName(provider) : m('custom')}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {provider
+                      ? `${inputs.SMTPServer || provider.servers[0].host} · ${provider.port} · ${TLS_SHORT[provider.tls]}`
+                      : m('customHint')}
+                  </p>
+                </div>
+                {provider && (
+                  <a
+                    href={provider.docs}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    {m(`docs.${provider.secret}`)}
+                    <ExternalLink className="size-3" />
+                  </a>
+                )}
+              </div>
+              {presetFields}
+              {customFields}
+              {senderFields}
+              {provider?.group === 'mailbox' && <p className="text-xs text-muted-foreground">{m('mailboxNote')}</p>}
+            </div>
+          )}
+        </>
       )}
 
       <TestEmailDialog open={testOpen} onOpenChange={setTestOpen} inputs={inputs} />

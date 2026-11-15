@@ -195,6 +195,7 @@ const (
 	APICodeSmtpTestRecipientInvalid          = "smtp_test_recipient_invalid"
 	APICodeSmtpTestIncomplete                = "smtp_test_incomplete"
 	APICodeSmtpTestFailed                    = "smtp_test_failed"
+	APICodeSmtpManaged                       = "smtp_managed"
 	APICodeOptionEmailDomainsRequired        = "option_email_domains_required"
 	APICodeOptionWechatIncomplete            = "option_wechat_incomplete"
 	APICodeOptionTurnstileIncomplete         = "option_turnstile_incomplete"

@@ -163,22 +163,41 @@ export const PLATFORM_GROUPS = [
     ]
   },
   {
-    id: 'notify',
-    // 通知: the platform's admin notices, what is sent, where to and the mail server behind
-    // email; 集成: what users reach from outside the console (the Telegram bot, chat entries).
-    tabs: ['notices', 'integrations'],
+    id: 'entries',
+    // What users reach from outside the console: the Telegram user bot and the chat entries.
     cards: [
-      card('notifications', 'form', ['NotifyDisabledKinds', 'NotifyKindLimitPerHour'], 'notices'),
-      card('notify-channels', 'collection', [], 'notices'),
-      card(
-        'smtp',
-        'form',
-        ['SMTPProvider', 'SMTPServer', 'SMTPPort', 'SMTPAccount', 'SMTPFrom', 'SMTPFromName', 'SMTPToken', 'SMTPTLSMode'],
-        'notices'
-      ),
-      card('telegram', 'collection', [], 'integrations'),
-      card('builtin-chat', 'form', ['BuiltinChatEnabled'], 'integrations'),
-      card('chat-links', 'collection', ['ChatLinks'], 'integrations')
+      card('telegram', 'collection'),
+      card('builtin-chat', 'form', ['BuiltinChatEnabled']),
+      card('chat-links', 'collection', ['ChatLinks'])
+    ]
+  },
+  {
+    id: 'mail',
+    // The one mail setup behind every email: login codes, password resets, quota warnings and
+    // email notices.
+    cards: [
+      card('smtp', 'form', [
+        'SMTPProvider',
+        'SMTPServer',
+        'SMTPPort',
+        'SMTPAccount',
+        'SMTPFrom',
+        'SMTPFromName',
+        'SMTPReplyTo',
+        'SMTPToken',
+        'SMTPTLSMode'
+      ]),
+      card('mail-templates', 'form', ['MailTemplates']),
+      card('mail-logs', 'action')
+    ]
+  },
+  {
+    id: 'notify',
+    // The platform's admin notices: which kinds are sent, the channels they go to, what went out.
+    cards: [
+      card('notifications', 'form', ['NotifyDisabledKinds', 'NotifyKindLimitPerHour']),
+      card('notify-channels', 'collection'),
+      card('notify-logs', 'action')
     ]
   },
   {
@@ -221,7 +240,7 @@ const LEGACY_SECTIONS = {
   organization: { group: 'orgpolicy' },
   general: { group: 'site', highlight: 'server-address' },
   branding: { group: 'site', highlight: 'branding' },
-  email: { group: 'notify', highlight: 'smtp' },
+  email: { group: 'mail', highlight: 'smtp' },
   oauth: { group: 'auth', highlight: 'login-methods' },
   login: { group: 'auth', highlight: 'login-methods' },
   payment: { group: 'payment', highlight: 'payment' },
@@ -230,7 +249,7 @@ const LEGACY_SECTIONS = {
   image: { group: 'gateway', highlight: 'image-proxy' },
   ops: { group: 'gateway', highlight: 'channel-auto' },
   safety: { group: 'privacy', highlight: 'safety' },
-  chat: { group: 'notify', highlight: 'chat-links' },
+  chat: { group: 'entries', highlight: 'chat-links' },
   org: { group: 'orgpolicy', highlight: 'org-policy' }
 };
 

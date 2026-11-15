@@ -1738,7 +1738,8 @@
     "model_access_personal_token": "命名存取清單只能用於組織 API Key",
     "smtp_test_recipient_invalid": "請填寫有效的收件地址",
     "smtp_test_incomplete": "請先填寫郵件伺服器和連接埠",
-    "smtp_test_failed": "測試郵件沒發出去：{{reason}}"
+    "smtp_test_failed": "測試郵件沒發出去：{{reason}}",
+    "smtp_managed": "發信設定由部署設定（smtp.url）管理，不能在這裡修改"
   },
   "channelOAuth": {
     "tip": {
@@ -2664,8 +2665,10 @@
       "settingPayment": "支付設定",
       "settingGateway": "閘道設定",
       "settingPrivacy": "日誌與隱私",
-      "settingNotify": "通知與整合",
-      "settingOrgPolicy": "組織策略"
+      "settingNotify": "通知",
+      "settingOrgPolicy": "組織策略",
+      "settingEntries": "用戶入口",
+      "settingMail": "郵件"
     },
     "context": {
       "personal": "個人",
@@ -3041,12 +3044,20 @@
           "description": "記錄甚麼、保存多久、誰能看"
         },
         "notify": {
-          "label": "通知與整合",
-          "description": "通知類型、發送渠道、郵件服務和對外入口"
+          "label": "通知",
+          "description": "管理員通知：發哪些、發到哪、發了甚麼"
         },
         "orgpolicy": {
           "label": "組織策略",
           "description": "組織能做甚麼，僅 root 可改"
+        },
+        "entries": {
+          "label": "用戶入口",
+          "description": "用戶能用到的 Telegram 機械人、內置聊天和聊天連結"
+        },
+        "mail": {
+          "label": "郵件",
+          "description": "發信服務、用戶郵件範本和發送記錄"
         }
       },
       "cards": {
@@ -3204,8 +3215,8 @@
           "hint": "每行一個關鍵詞"
         },
         "smtp": {
-          "title": "郵件服務",
-          "description": "驗證碼、通知和賬單郵件都從這裏發",
+          "title": "發信服務",
+          "description": "登入驗證碼、重設密碼、餘額提醒和郵件通知都從這裡發",
           "hint": "密碼儲存後不再顯示"
         },
         "notifications": {
@@ -3244,6 +3255,19 @@
           "title": "供應暫停規則",
           "description": "上游報錯時按規則暫停渠道或模型，到點測試通過後恢復",
           "hint": "關閉後回到舊的自動停用與冷卻"
+        },
+        "mail-templates": {
+          "title": "郵件範本",
+          "description": "用戶收到的郵件內容，不改動就用預設",
+          "hint": "頁首頁尾由系統統一套上"
+        },
+        "mail-logs": {
+          "title": "郵件發送記錄",
+          "description": "最近 30 天發出的每一封郵件，包括失敗的"
+        },
+        "notify-logs": {
+          "title": "通知發送記錄",
+          "description": "最近 30 天每條通知在各渠道的發送結果"
         }
       },
       "actions": {
@@ -3304,14 +3328,14 @@
       },
       "notifyChannels": {
         "add": "新增渠道",
-        "description": "每條通知同時發到所有已啟用的渠道。哪些通知要發、每小時發幾條，在上面的「通知類型」裡設定。",
+        "description": "每個啟用的渠道接收它訂閱的通知類型（預設全部）。發不發某類通知、每小時最多幾條，在上面的「通知類型」裡設定。",
         "empty": "還沒有發送渠道，通知不會發給任何人",
         "sheetDescription": "通知發到哪裡",
         "saved": "已儲存",
         "test": "發送測試",
         "testOk": "測試通知已發出，去對應的地方看看有沒有收到",
         "notReady": "發不出去",
-        "notReadyEmail": "SMTP 未設定",
+        "notReadyEmail": "郵件服務未設定",
         "columns": {
           "name": "名稱",
           "where": "發到"
@@ -3322,7 +3346,10 @@
           "dingtalk": "釘釘",
           "lark": "飛書",
           "pushdeer": "PushDeer",
-          "telegram": "Telegram"
+          "telegram": "Telegram",
+          "slack": "Slack",
+          "discord": "Discord",
+          "webhook": "Webhook"
         },
         "form": {
           "type": "類型",
@@ -3334,17 +3361,28 @@
           "undoClear": "撤銷",
           "cleared": "儲存後清除",
           "signedHint": "加簽密鑰和關鍵詞至少填一個，要和機械人的安全設定一致",
-          "required": "請填寫{{field}}"
+          "required": "請填寫{{field}}",
+          "kinds": "接收的通知",
+          "kindsAll": "全部類型",
+          "kindsSome": "僅選中的類型",
+          "kindsRequired": "至少選一個類型",
+          "webhookHint": "每條通知以 JSON POST 過去：kind、title、message、site、time。填了簽名密鑰時，請求頭 X-Modeltaps-Signature 帶上 sha256= 加內文的 HMAC-SHA256。"
         },
         "fields": {
           "to": {
             "label": "收件電郵",
             "placeholder": "ops@example.com",
-            "hint": "留空則發給超管的電郵；用「郵件服務」裡的 SMTP 發送"
+            "hint": "留空則發給超管的電郵；透過「平台管理 → 郵件」裡的發信服務發送"
           },
           "webhook": {
             "label": "機械人 Webhook 地址",
-            "placeholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…"
+            "placeholder": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=…",
+            "label_slack": "Incoming Webhook 地址",
+            "placeholder_slack": "https://hooks.slack.com/services/…",
+            "hint_slack": "Slack 應用 → Incoming Webhooks → Add New Webhook",
+            "label_discord": "Webhook 地址",
+            "placeholder_discord": "https://discord.com/api/webhooks/…",
+            "hint_discord": "頻道設定 → 整合 → Webhook"
           },
           "token": {
             "label": "機械人 access token",
@@ -3352,7 +3390,8 @@
             "hint_lark": "Webhook 地址最後一段"
           },
           "secret": {
-            "label": "加簽密鑰"
+            "label": "加簽密鑰",
+            "hint_webhook": "可選，用來為每個請求簽名"
           },
           "keyword": {
             "label": "自訂關鍵詞",
@@ -3364,7 +3403,10 @@
           "url": {
             "label": "自建服務地址",
             "placeholder": "https://api2.pushdeer.com",
-            "hint": "用官方服務就留空"
+            "hint": "用官方服務就留空",
+            "label_webhook": "Webhook 地址",
+            "placeholder_webhook": "https://example.com/hooks/modeltaps",
+            "hint_webhook": "每條通知都會 POST 到這裡"
           },
           "bot_token": {
             "label": "機械人 Token",
@@ -3379,13 +3421,15 @@
             "placeholder": "http://127.0.0.1:7890",
             "hint": "伺服器連不上 Telegram 時填"
           }
-        }
+        },
+        "kindsSome": "{{count}} 類",
+        "notReadyRecipient": "沒有收件人"
       },
       "mail": {
         "pick": "發信服務",
         "empty": "選擇你用來發信的服務，只需填它給你的憑據，伺服器地址等會自動填好。",
         "groups": {
-          "service": "發信服務",
+          "service": "發信平台",
           "mailbox": "郵箱"
         },
         "custom": "自訂 SMTP",
@@ -3417,7 +3461,9 @@
           "fromName": "寄件人名稱",
           "fromNamePlaceholder": "收件人看到的寄件人，例如站點名",
           "fromAddress": "寄件地址",
-          "fromAddressHint": "須使用在該服務裡驗證過的網域"
+          "fromAddressHint": "須使用在該服務裡驗證過的網域",
+          "replyTo": "回覆地址",
+          "replyToHint": "可選，留空則回覆到寄件地址"
         },
         "docs": {
           "apiKey": "取得 API Key",
@@ -3446,7 +3492,66 @@
           "to": "收件地址",
           "send": "發送",
           "sent": "已發到 {{to}}，請查看收件匣（也看看垃圾郵件）。"
+        },
+        "setUp": "去設定郵件服務",
+        "managed": {
+          "title": "由部署設定管理",
+          "description": "發信設定來自設定檔或環境變數裡的 smtp.url（SMTP_URL），這裡不能修改；去掉它即可改回在後台管理。"
+        },
+        "summary": {
+          "ready": "已設定",
+          "from": "寄件人",
+          "replyTo": "回覆到",
+          "change": "更改"
         }
+      },
+      "mailTemplates": {
+        "names": {
+          "verification": "驗證碼",
+          "password_reset": "重設密碼",
+          "quota_warning": "餘額提醒"
+        },
+        "customized": "已自訂",
+        "subject": "主旨",
+        "body": "內文（HTML）",
+        "bodyHint": "寫在統一郵件外框裡的 HTML，發送時替換變數",
+        "variables": "可用變數",
+        "vars": {
+          "site": "站點名稱",
+          "code": "驗證碼",
+          "minutes": "驗證碼或連結的有效分鐘數",
+          "user": "用戶名",
+          "link": "重設或充值連結",
+          "quota": "剩餘額度",
+          "status": "額度不足 / 已用完的提示語"
+        },
+        "reset": "恢復預設",
+        "preview": "預覽"
+      },
+      "messageLog": {
+        "sent": "已發送",
+        "failed": "失敗",
+        "empty": "最近 30 天沒有發送記錄",
+        "emptyFailed": "最近 30 天沒有失敗",
+        "failedOnly": "只看失敗",
+        "refresh": "重新整理",
+        "columns": {
+          "time": "時間",
+          "kind": "類型",
+          "target": "發送到",
+          "title": "主旨"
+        },
+        "kinds": {
+          "general": "通用",
+          "test": "測試",
+          "verification": "驗證碼",
+          "password_reset": "重設密碼",
+          "quota_warning": "餘額提醒",
+          "notice": "管理員通知"
+        },
+        "pager": "第 {{page}} / {{pages}} 頁 · 共 {{total}} 條",
+        "prev": "上一頁",
+        "next": "下一頁"
       }
     },
     "personal": {

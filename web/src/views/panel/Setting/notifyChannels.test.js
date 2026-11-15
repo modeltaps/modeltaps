@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { channelDraftProblem, channelPayload, channelWhere } from './notifyChannels';
+import { channelDraftProblem, channelKinds, channelPayload, channelWhere } from './notifyChannels';
 
 describe('notification channel drafts', () => {
   it('needs the required fields, a stored secret counts unless it is cleared', () => {
@@ -26,8 +26,15 @@ describe('notification channel drafts', () => {
       settings: { pushkey: 'k', url: '' },
       clear_secrets: [],
       enabled: true,
+      kinds: [],
       sort: 2
     });
+  });
+
+  it('sends the notice kinds a channel takes, from a draft or a stored row', () => {
+    expect(channelPayload({ type: 'slack', kinds: ['low_balance'] }).kinds).toEqual(['low_balance']);
+    expect(channelPayload({ type: 'slack', kinds: 'channel_disabled,low_balance' }).kinds).toEqual(['channel_disabled', 'low_balance']);
+    expect(channelKinds({ kinds: '' })).toEqual([]);
   });
 
   it('shows where a channel sends to', () => {

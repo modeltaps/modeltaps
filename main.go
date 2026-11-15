@@ -12,6 +12,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/notify"
+	"github.com/modeltaps/modeltaps/common/stmp"
 	"github.com/modeltaps/modeltaps/common/redis"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/common/search"
@@ -100,6 +101,8 @@ func main() {
 	controller.InitMidjourneyTask()
 	task.InitTask()
 	notify.SetSource(model.NotifyDestinations)
+	notify.OnDelivered = model.RecordNotice
+	stmp.OnSent = model.RecordSentMail
 	cron.InitCron()
 	// 品牌图标同步层：每个节点各自维护本地 data 目录，故不限主节点
 	brandicon.StartSyncLoop(viper.GetString("brand_icon_dir"), 24*time.Hour,

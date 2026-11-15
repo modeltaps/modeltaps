@@ -139,8 +139,19 @@ const LEGACY_OPTION_KEYS = [
 const allCards = PLATFORM_GROUPS.flatMap((group) => group.cards);
 
 describe('platform settings registry', () => {
-  it('has the eight groups in order', () => {
-    expect(PLATFORM_GROUPS.map((g) => g.id)).toEqual(['site', 'auth', 'billing', 'payment', 'gateway', 'privacy', 'notify', 'orgpolicy']);
+  it('has the groups in order', () => {
+    expect(PLATFORM_GROUPS.map((g) => g.id)).toEqual([
+      'site',
+      'auth',
+      'billing',
+      'payment',
+      'gateway',
+      'privacy',
+      'entries',
+      'mail',
+      'notify',
+      'orgpolicy'
+    ]);
     expect(visibleGroups(false).map((g) => g.id)).not.toContain('orgpolicy');
     expect(visibleGroups(true).map((g) => g.id)).toContain('orgpolicy');
   });
@@ -275,18 +286,18 @@ describe('resolveSettingsTarget', () => {
   });
 
   it('a highlight of a card that moved wins over the section', () => {
-    expect(go({ section: 'site', highlight: 'smtp' })).toBe('/panel/admin/settings/notify?highlight=smtp');
+    expect(go({ section: 'site', highlight: 'smtp' })).toBe('/panel/admin/settings/mail?highlight=smtp');
     expect(go({ section: 'billing', highlight: 'payment-gateways' })).toBe('/panel/admin/settings/payment?highlight=payment-gateways');
     expect(go({ section: 'integrations', highlight: 'brand-icon' })).toBe('/panel/admin/settings/site?highlight=branding');
-    expect(go({ section: 'integrations', highlight: 'telegram' })).toBe('/panel/admin/settings/notify?highlight=telegram');
+    expect(go({ section: 'integrations', highlight: 'telegram' })).toBe('/panel/admin/settings/entries?highlight=telegram');
     expect(go({ highlight: 'log-io' })).toBe('/panel/admin/settings/privacy?highlight=log-io');
   });
 
   it('older section ids and ?tab= values land on their card', () => {
-    expect(go({ section: 'email' })).toBe('/panel/admin/settings/notify?highlight=smtp');
+    expect(go({ section: 'email' })).toBe('/panel/admin/settings/mail?highlight=smtp');
     expect(go({ section: 'ops' })).toBe('/panel/admin/settings/gateway?highlight=channel-auto');
     expect(go({ section: 'gateways' })).toBe('/panel/admin/settings/payment?highlight=payment-gateways');
-    expect(go({ section: 'chat' })).toBe('/panel/admin/settings/notify?highlight=chat-links');
+    expect(go({ section: 'chat' })).toBe('/panel/admin/settings/entries?highlight=chat-links');
     expect(go({ tab: 'other' })).toBe('/panel/admin/settings/site?highlight=branding');
     expect(go({ tab: 'safety' })).toBe('/panel/admin/settings/privacy?highlight=safety');
   });
@@ -309,7 +320,17 @@ describe('tabbed groups', () => {
       for (const card of group.cards) expect(group.tabs).toContain(card.tab);
     }
     expect(PLATFORM_GROUPS.find((g) => g.id === 'gateway').tabs).toEqual(['resilience', 'allocation', 'request']);
-    expect(PLATFORM_GROUPS.find((g) => g.id === 'notify').tabs).toEqual(['notices', 'integrations']);
+    expect(PLATFORM_GROUPS.find((g) => g.id === 'notify').tabs).toBeUndefined();
+  });
+
+  it('mail, notices and user entries are groups of their own', () => {
+    expect(cardById('smtp').groupId).toBe('mail');
+    expect(cardById('mail-templates').groupId).toBe('mail');
+    expect(cardById('notify-logs').groupId).toBe('notify');
+    expect(cardById('telegram').groupId).toBe('entries');
+    expect(resolveSettingsTarget({ section: 'notify', tab: 'integrations', highlight: 'chat-links' })).toBe(
+      '/panel/admin/settings/entries?highlight=chat-links'
+    );
   });
 
   it('the Midjourney callback is a gateway request setting, old links follow it', () => {

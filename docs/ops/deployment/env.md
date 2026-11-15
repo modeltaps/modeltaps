@@ -175,6 +175,16 @@ LOGS_FILENAME="modeltaps.log"
 - `DISABLE_TOKEN_ENCODERS`：禁用本地 token 编码器（改用估算），默认 `false`。
 - `TG_HTTP_PROXY`：访问 Telegram 的 HTTP/SOCKS5 代理。
 
+### 邮件发送
+
+不设置时，发信服务在后台「平台管理 → 邮件」里配置。设置了 `SMTP_URL` 就以部署配置为准，后台改为只读，只能发测试邮件。
+
+- `SMTP_URL`：`smtps://用户名:密码@主机:465`（隐式 TLS）或 `smtp://用户名:密码@主机:587`；可加 `?tls=starttls` 等指定加密方式（`auto`、`ssl`、`starttls`、`starttls_opportunistic`、`none`）。密码里的特殊字符要做 URL 编码。
+- `SMTP_FROM`：发件地址，设置了 `SMTP_URL` 时必填。
+- `SMTP_FROM_NAME` / `SMTP_REPLY_TO`：发件人名称、回复地址，可空。
+
+例如用 Resend：`SMTP_URL=smtps://resend:re_xxx@smtp.resend.com:465`，`SMTP_FROM=noreply@example.com`。
+
 ### 存储 / 搜索
 
 对象存储图床（`STORAGE_*`）、联网搜索（`SEARCH_*`）等分组配置项较多，键名与默认值请直接参考交付包根目录的 `config.example.yaml`。通知渠道（`NOTIFY_*`）已移到后台配置，见[消息通知](./notify.md)。

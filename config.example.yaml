@@ -137,8 +137,17 @@ tg:
   webhook_secret: ""         # webhook 密钥，设置则用 webhook，否则轮询
   http_proxy: ""             # 访问 Telegram 的 HTTP/SOCKS5 代理
 
+# ---------- 邮件发送 ----------
+# 留空则在后台「平台管理 → 邮件」里配置（可选 Resend、SendGrid、Amazon SES、Gmail 等预设）。
+# 填了 url 就以这里为准，后台只读，只能发测试邮件。
+smtp:
+  url: ""                    # smtps://用户名:密码@主机:465 或 smtp://用户名:密码@主机:587?tls=starttls（密码里的特殊字符要做 URL 编码）
+  from: ""                   # 发件地址，必填，例如 noreply@example.com
+  from_name: ""              # 发件人名称，可空
+  reply_to: ""               # 回复地址，可空
+
 # ---------- 通知渠道 ----------
-# 通知渠道（邮件、企业微信、钉钉、飞书、PushDeer、Telegram）在后台「设置 → 通知与集成 → 通知」里配置。
+# 通知渠道（邮件、企业微信、钉钉、飞书、PushDeer、Telegram、Slack、Discord、Webhook）在后台「平台管理 → 通知」里配置。
 # 旧版本写在这里的 notify: 段会在升级后第一次启动时自动搬进后台，之后可以删掉。
 
 # ---------- 对象存储（图床）----------
