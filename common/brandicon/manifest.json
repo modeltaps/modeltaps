@@ -586,6 +586,11 @@
       "mono": true,
       "color": true,
       "scale": 1
+    },
+    "requesty": {
+      "mono": true,
+      "color": true,
+      "scale": 1
     }
   },
   "aliases": {
@@ -727,7 +732,8 @@
     "59": "codex",
     "60": "antigravity",
     "61": "vertexai",
-    "62": "vercel"
+    "62": "vercel",
+    "63": "requesty"
   },
   "modelPrefixes": {
     "360gpt": "ai360",
@@ -870,6 +876,7 @@
     "perplexity.ai": "perplexity",
     "recraft.ai": "recraft",
     "replicate.com": "replicate",
+    "requesty.ai": "requesty",
     "siliconflow.cn": "siliconcloud",
     "siliconflow.com": "siliconcloud",
     "stability.ai": "stability",

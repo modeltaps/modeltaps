@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Regenerates common/brandicon/assets/*.svg and common/brandicon/manifest.json from a pinned
-// @lobehub/icons-static-svg tarball. Uses only Node built-ins.
+// @lobehub/icons-static-svg tarball, plus the official marks in local/ for brands the package does
+// not have (their sources are listed in local/README.md). Uses only Node built-ins.
 //
 // Usage:
 //   node scripts/sync-brand-icons/sync.mjs            # download from registry
@@ -81,6 +82,26 @@ for (const key of [...new Set(cfg.icons)].sort()) {
     out.set(file, data);
   }
   icons[key] = { mono: true, color: Boolean(color), scale: cfg.scale?.[key] ?? 1 };
+}
+
+// Official marks the package does not have: local/<key>.svg, optionally local/<key>-color.svg.
+const localDir = join(here, 'local');
+for (const file of readdirSync(localDir).filter((f) => f.endsWith('.svg')).sort()) {
+  const key = file.replace(/(-color)?\.svg$/, '');
+  if (!/^[a-z0-9]+$/.test(key)) fail(`local/${file}: invalid icon key ${key}`);
+  if (icons[key] && !icons[key].local) fail(`local/${file}: ${key} is already in ${cfg.package}`);
+  const data = readFileSync(join(localDir, file));
+  checkSvg(`local/${file}`, data.toString('utf8'));
+  out.set(file, data);
+  const entry = icons[key] || { mono: false, color: false, scale: cfg.scale?.[key] ?? 1, local: true };
+  if (file.endsWith('-color.svg')) entry.color = true;
+  else entry.mono = true;
+  icons[key] = entry;
+}
+for (const [key, entry] of Object.entries(icons)) {
+  if (!entry.local) continue;
+  if (!entry.mono) fail(`local/${key}.svg missing: a local mark needs its one-color version`);
+  delete entry.local;
 }
 
 const total = [...out.values()].reduce((n, b) => n + b.length, 0);
