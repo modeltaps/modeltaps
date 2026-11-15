@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import useLogin from 'hooks/useLogin';
 import UserAvatar, { accountDisplayName } from './avatar';
+import { settings, workbench } from 'routes/paths';
 
 // ==============================|| CHROME — USER MENU (public header avatar) ||============================== //
 // Avatar menu of the public pages' header: console, API keys, top-up, settings, log out.
@@ -50,19 +51,19 @@ export default function UserMenu() {
           </div>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => navigate('/panel/dashboard')}>
+        <DropdownMenuItem onClick={() => navigate(workbench.dashboard())}>
           <LayoutDashboard />
           {t('home.cta.console')}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate('/panel/token')}>
+        <DropdownMenuItem onClick={() => navigate(workbench.keys())}>
           <KeyRound />
           {t('api_token')}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate('/panel/billing?topup=1')}>
+        <DropdownMenuItem onClick={() => navigate(`${workbench.billing()}?topup=1`)}>
           <CreditCard />
           {t('topup', { defaultValue: 'Top-up' })}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate('/panel/settings/account/profile')}>
+        <DropdownMenuItem onClick={() => navigate(settings.account('profile'))}>
           <Settings />
           {t('userMenu.settings', { defaultValue: 'Settings' })}
         </DropdownMenuItem>

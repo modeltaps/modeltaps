@@ -121,14 +121,14 @@ curl https://your-modeltaps-domain.com/gemini/v1beta/models \
 
 ## 在控制台查看接口目录
 
-侧边栏「API」分组按模态列出各页。`/panel/api` 是总览，每张模态卡片可进入「接口文档」或「控制台」。接口文档页的内容与本页一致，但地址已经换成你实际使用的站点地址：
+侧边栏「API」分组按模态列出各页。`/panel/docs` 是总览，每张模态卡片可进入「接口文档」或「控制台」。接口文档页的内容与本页一致，但地址已经换成你实际使用的站点地址：
 
 | 模态 | 接口文档 | 控制台 | 覆盖的接口 |
 | --- | --- | --- | --- |
-| 对话 | `/panel/api/docs/chat` | `/panel/api/chat` | `/v1/chat/completions`、`/v1/responses`、`/claude/v1/messages`、`/gemini/v1beta/models/{model}:generateContent` |
-| 图像 | `/panel/api/docs/image` | `/panel/api/image` | `/v1/images/generations`、`/v1/images/edits`、`/v1/images/variations`，以及 Recraft、Midjourney 扩展接口 |
-| 语音 | `/panel/api/docs/speech` | `/panel/api/speech` | `/v1/audio/speech`、`/v1/audio/transcriptions`、`/v1/audio/translations`，以及 `/v1/realtime` |
-| 视频 | `/panel/api/docs/video` | —（暂未开放） | Kling 的文生视频 / 图生视频与任务查询，以及 Gemini Veo 长任务接口 |
+| 对话 | `/panel/docs/chat` | `/panel/playground/chat` | `/v1/chat/completions`、`/v1/responses`、`/claude/v1/messages`、`/gemini/v1beta/models/{model}:generateContent` |
+| 图像 | `/panel/docs/image` | `/panel/playground/image` | `/v1/images/generations`、`/v1/images/edits`、`/v1/images/variations`，以及 Recraft、Midjourney 扩展接口 |
+| 语音 | `/panel/docs/speech` | `/panel/playground/speech` | `/v1/audio/speech`、`/v1/audio/transcriptions`、`/v1/audio/translations`，以及 `/v1/realtime` |
+| 视频 | `/panel/docs/video` | —（暂未开放） | Kling 的文生视频 / 图生视频与任务查询，以及 Gemini Veo 长任务接口 |
 
 每个接口文档页都包含「接口端点」「请求示例」「可用模型」与完整文档链接。示例里的密钥是占位符 `sk-YOUR_TOKEN`，替换成你在「API Key」页面创建的 API Key 即可运行。
 
@@ -142,11 +142,11 @@ curl https://your-modeltaps-domain.com/gemini/v1beta/models \
 - 只在个人上下文可用，切换到组织后页面会提示并给出出口（组织额度的试用另行支持）；
 - 某个能力当前没有可用模型时，页面仍可浏览，并说明原因与处理入口，不会发出请求；
 - 管理员可在系统设置里把 `builtin_chat_enabled` 关掉，整站停用控制台；
-- 旧的 Playground 地址（`/playground`、`/panel/playground`）会自动跳转到 `/panel/api/chat`。
+- 旧的 Playground 地址（`/playground`、`/panel/playground`）会自动跳转到 `/panel/playground/chat`。
 
 #### 对比
 
-侧边栏「API」分组里的「对比」（`/panel/api/compare`）把 2–4 个对话模型并排成列：右上「添加列」最多加到 4 列，每列在列头选模型，也可在列头覆盖温度、最大 tokens 与思考深度。底部输入框的「同步输入」开着时一条消息同时发给所有列，关着只发给当前选中的列，每列可单独停止。「查看代码」可在列间切换，给出该列合并覆盖参数后的等效请求。
+侧边栏「API」分组里的「对比」（`/panel/playground/compare`）把 2–4 个对话模型并排成列：右上「添加列」最多加到 4 列，每列在列头选模型，也可在列头覆盖温度、最大 tokens 与思考深度。底部输入框的「同步输入」开着时一条消息同时发给所有列，关着只发给当前选中的列，每列可单独停止。「查看代码」可在列间切换，给出该列合并覆盖参数后的等效请求。
 
 Midjourney 与异步任务的执行记录不在目录页里，请到「日志」页面的「Midjourney」「异步任务」标签查看。
 

@@ -6,6 +6,8 @@ import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ValueFormatter } from 'utils/common';
+import { workbench } from 'routes/paths';
+import { useInScope } from 'routes/useScope';
 
 // ==============================|| API CATALOG — RECOMMENDED MODEL ||============================== //
 // 页面推荐模型卡：名称 / 上下文 / 输入输出价 / 能力标签。
@@ -78,6 +80,7 @@ ModelFacts.propTypes = {
 
 export default function RecommendedModelCard({ model, onOpenPlayground }) {
   const { t } = useTranslation();
+  const inScope = useInScope();
 
   if (!model) return null;
 
@@ -105,7 +108,7 @@ export default function RecommendedModelCard({ model, onOpenPlayground }) {
 
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="outline" size="sm">
-            <Link to="/panel/model_price">
+            <Link to={inScope(workbench.models())}>
               {t('apiCatalogPage.viewModel')}
               <ArrowRight className="size-4" />
             </Link>

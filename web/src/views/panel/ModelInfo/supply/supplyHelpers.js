@@ -1,3 +1,4 @@
+import { admin } from 'routes/paths';
 // Pure helpers for model supplies: which channel serves a public model, in which priority
 // tier, and whether it can take requests right now. No React and no API calls, so they are
 // easy to test.
@@ -253,7 +254,7 @@ export function parseSupplyForm({ upstream_model, priority, weight }) {
 
 // Deep link to a model's supplies on the model page.
 export function modelSupplyPath(model) {
-  return `/panel/pricing?tab=models&model=${encodeURIComponent(model)}&panel=supplies`;
+  return `${admin.models()}?model=${encodeURIComponent(model)}&panel=supplies`;
 }
 
 // Public model names among catalog rows (not aliases, not routing policies), sorted.

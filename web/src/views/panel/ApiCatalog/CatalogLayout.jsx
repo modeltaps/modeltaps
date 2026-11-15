@@ -17,10 +17,11 @@ import ModelsError from './ModelsError';
 import RecommendedModelCard from './RecommendedModelCard';
 import useCatalogModels from './useCatalogModels';
 import { buildCapabilitySections, pickSectionRecommended } from './availability';
+import { useInScope } from 'routes/useScope';
 
 // ==============================|| API CATALOG — SHARED LAYOUT ||============================== //
 // 能力驱动的骨架:页头(API 名 + 一句话 + 能力 chip)→ 逐能力小节(说明 + 端点 + 模型选择器
-// + 多语言示例)→ 推荐模型卡 → 可用模型 → 文档链接。试用已独立成控制台页(`/panel/api/:modality`)。
+// + 多语言示例)→ 推荐模型卡 → 可用模型 → 文档链接。试用已独立成控制台页(`/panel/playground/:modality`)。
 // 页面内容全部来自 catalog/*.js 的数据描述,可用性只看 /api/available_model 的目录字段;
 // 本组件只负责渲染与运行时取值(Base URL 取站点真实地址,密钥用占位符)。
 // 尚未迁移到能力 schema 的模态(图像/语音/视频)走下方的旧版渲染分支,保证页面不报错。
@@ -46,6 +47,7 @@ Section.propTypes = {
 // 端点清单 + 可选的站内跳转链接(如异步任务的日志页 Tab),主端点区与扩展小节共用。
 function EndpointList({ endpoints, link }) {
   const { t } = useTranslation();
+  const inScope = useInScope();
 
   return (
     <>
@@ -59,7 +61,7 @@ function EndpointList({ endpoints, link }) {
         ))}
       </ul>
       {link && (
-        <Link to={link.to} className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
+        <Link to={inScope(link.to)} className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
           {t(link.labelKey)}
           <ArrowRight className="size-4" />
         </Link>

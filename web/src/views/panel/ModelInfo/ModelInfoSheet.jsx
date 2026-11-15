@@ -39,6 +39,7 @@ import {
   modalityText,
   safeJsonArray
 } from './modelInfoHelpers';
+import { admin } from 'routes/paths';
 
 // 厂商下拉的「未知」项:Select 不接受空串值,用哨兵值表示 vendor_id = 0。
 const VENDOR_NONE = 'none';
@@ -141,7 +142,7 @@ function ChannelsPanel({ row, supplyRouting = false, onGoSupplies }) {
               <>
                 <p className="text-muted-foreground">{t('modelsPage.sheet.noChannelHint')}</p>
                 <Button asChild size="sm" variant="outline">
-                  <Link to="/panel/channel">{t('modelsPage.sheet.goChannels')}</Link>
+                  <Link to={admin.providers()}>{t('modelsPage.sheet.goChannels')}</Link>
                 </Button>
               </>
             )}

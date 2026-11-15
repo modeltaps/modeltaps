@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
@@ -38,6 +37,8 @@ import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
 import { isPlaygroundToken } from 'utils/playgroundToken';
 import { relativeTime } from 'utils/relativeTime';
+import { workbench } from 'routes/paths';
+import { useScopedNavigate } from 'routes/useScope';
 
 // The short form of a key shown next to its name: the prefix and the last four characters.
 export function keySuffix(key) {
@@ -184,12 +185,13 @@ function UsageCell({ item, todayUsage, resetTimezone, resetWeekStart }) {
   );
 }
 
-// Builds one key's actions for the row ⋯ menu (table and mobile card alike). `group` splits the
+// Builds one key's actions for the row ⋯ menu (table and mobile card alike). `navigate` takes
+// workbench paths and keeps the current scope (useScopedNavigate). `group` splits the
 // menu into sections: manage, connect, inspect, then the destructive delete.
 export function buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw, onToggleStatus }) {
   // 按 API Key 名预过滤跳转:用量页用 tokens 参数,日志页用 token_name 参数(与 T50b URL 过滤对齐)
-  const goUsage = () => navigate(`/panel/usage?tokens=${encodeURIComponent(item.name)}`);
-  const goLog = () => navigate(`/panel/log?token_name=${encodeURIComponent(item.name)}`);
+  const goUsage = () => navigate(`${workbench.usage()}?tokens=${encodeURIComponent(item.name)}`);
+  const goLog = () => navigate(`${workbench.logs()}?token_name=${encodeURIComponent(item.name)}`);
   // 试用区专用 Key 由系统托管:不给复制明文与编辑入口,删除仍保留。
   const isPlayground = isPlaygroundToken(item);
   return [
@@ -393,7 +395,7 @@ export default function TokenTable({
   quotaResetWeekStart
 }) {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
+  const navigate = useScopedNavigate();
   const rtfLocale = (i18n.language || 'zh_CN').replace('_', '-');
   // Medium and narrow layouts use the short relative time ("3h ago").
   const listRtf = useMemo(() => new Intl.RelativeTimeFormat(rtfLocale, { numeric: 'auto', style: 'narrow' }), [rtfLocale]);

@@ -9,6 +9,7 @@ import LanguageSwitcher from '@/components/auth/LanguageSwitcher';
 import { LogoMark } from '@/components/chrome/Logo';
 import { UserContext } from 'contexts/UserContext';
 import { useTranslation } from 'react-i18next';
+import { PANEL } from 'routes/paths';
 
 // ==============================|| AUTH SHELL ||============================== //
 
@@ -42,7 +43,7 @@ export default function AuthShell({ title, children }) {
   // Mirror v1 AuthWrapper: redirect already-authenticated users to the panel.
   useEffect(() => {
     if (isUserLoaded && account.user) {
-      navigate('/panel');
+      navigate(PANEL);
     }
   }, [account, isUserLoaded, navigate]);
 

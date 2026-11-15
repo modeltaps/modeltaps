@@ -9,10 +9,12 @@ import { findActiveItem } from '@/components/chrome/nav-config';
 import PageTitleExtra from '@/components/chrome/PageTitleExtra';
 import CatalogLayout from './CatalogLayout';
 import { CATALOG, getCatalogEntry, DEFAULT_MODALITY } from './catalog';
+import { workbench } from 'routes/paths';
+import { useInScope } from 'routes/useScope';
 
 // ==============================|| PANEL — API CATALOG (DOCS) ||============================== //
-// `/panel/api/docs/:modality` 的接口文档页:按路由参数渲染对应模态的能力目录;
-// 未登记的模态回落到「对话」。控制台在 `/panel/api/:modality`。
+// `/panel/docs/:modality` 的接口文档页:按路由参数渲染对应模态的能力目录;
+// 未登记的模态回落到「对话」。控制台在 `/panel/playground/:modality`。
 // The sidebar's 文档 item opens chat; the switch next to the page title moves between the
 // modalities (same look as the playground's switch), each on its own route.
 
@@ -25,6 +27,7 @@ const SWITCH = [
 
 function DocsModalitySwitch({ activeId }) {
   const { t } = useTranslation();
+  const inScope = useInScope();
   // On narrow screens the strip scrolls sideways; keep the current one in view.
   const stripRef = useRef(null);
   useEffect(() => {
@@ -44,7 +47,7 @@ function DocsModalitySwitch({ activeId }) {
         return (
           <Link
             key={id}
-            to={`/panel/api/docs/${id}`}
+            to={inScope(workbench.docs(id))}
             aria-current={active ? 'page' : undefined}
             className={cn(
               'flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
@@ -64,11 +67,12 @@ DocsModalitySwitch.propTypes = { activeId: PropTypes.string };
 
 export default function ApiCatalog() {
   const { t } = useTranslation();
+  const inScope = useInScope();
   const { pathname } = useLocation();
   const { modality } = useParams();
   const entry = getCatalogEntry(modality);
 
-  if (!entry) return <Navigate to={`/panel/api/docs/${DEFAULT_MODALITY}`} replace />;
+  if (!entry) return <Navigate to={inScope(workbench.docs(DEFAULT_MODALITY))} replace />;
 
   // 标题优先由 MainLayout 的 PageHeader 提供(导航登记该路径后);未登记时页面自带标题,
   // 避免目录页在侧栏接入前没有标题。

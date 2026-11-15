@@ -43,6 +43,7 @@ import {
   shareWithAbove,
   stopSharing
 } from './channelOrder';
+import { admin } from 'routes/paths';
 
 const DISMISSED_KEY = 'channels.dismissedIssues';
 
@@ -64,10 +65,10 @@ function panelTabFrom(params) {
   return DEFAULT_PANEL_TAB;
 }
 
-// /panel/channel: a row of provider cards (each with its traffic) above one channel list. While
+// /panel/admin/providers: a row of provider cards (each with its traffic) above one channel list. While
 // supplies route requests the list is the call order (tried top to bottom, a shared position
 // splits traffic by weight), saved as the platform allocation policy. A card filters the list to
-// one provider (?type=<id>); /panel/channel/:id opens a channel's panel, /panel/channel/new
+// one provider (?type=<id>); /panel/admin/providers/:id opens a channel's panel, …/new
 // the new channel sheet for ?type.
 export default function Channel() {
   const { t } = useTranslation();
@@ -251,9 +252,9 @@ export default function Channel() {
     return `${path}${q ? `?${q}` : ''}`;
   };
   const openChannel = (id, nextTab) =>
-    navigate(withType(`/panel/channel/${id}`, selectedType, { tab: nextTab && nextTab !== DEFAULT_PANEL_TAB ? nextTab : '' }));
-  const closeOverlay = () => navigate(withType('/panel/channel'));
-  const openNew = (type = selectedType) => navigate(withType('/panel/channel/new', type || 1));
+    navigate(withType(admin.providers(id), selectedType, { tab: nextTab && nextTab !== DEFAULT_PANEL_TAB ? nextTab : '' }));
+  const closeOverlay = () => navigate(withType(admin.providers()));
+  const openNew = (type = selectedType) => navigate(withType(admin.providers('new'), type || 1));
   const selectType = (type) => {
     const p = {};
     if (type) p.type = String(type);
@@ -447,11 +448,11 @@ export default function Channel() {
   const onCreated = ({ ids, type, name, summary }) => {
     setCreated({ ids, type, name, summary });
     setHighlightIds(new Set(ids));
-    navigate(withType('/panel/channel', selectedType ? type : 0));
+    navigate(withType(admin.providers(), selectedType ? type : 0));
     reload();
   };
 
-  if (legacyId) return <Navigate to={`/panel/channel/${legacyId}`} replace />;
+  if (legacyId) return <Navigate to={admin.providers(legacyId)} replace />;
 
   const pageActions = (
     <PageActions>

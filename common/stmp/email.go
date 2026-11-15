@@ -230,7 +230,7 @@ func SendQuotaWarningCodeEmail(userName, email string, quota int, noMoreQuota bo
 	if noMoreQuota {
 		subject = "Your quota has been used up"
 	}
-	topUpLink := fmt.Sprintf("%s/topup", config.ServerAddress)
+	topUpLink := fmt.Sprintf("%s/panel/billing?topup=1", strings.TrimSuffix(config.ServerAddress, "/"))
 
 	content := fmt.Sprintf(contentTemp, userName, subject, quota, topUpLink, topUpLink)
 

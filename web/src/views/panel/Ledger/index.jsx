@@ -16,12 +16,14 @@ import { getPageSize, savePageSize } from 'constants';
 import { useOrg } from 'contexts/OrgContext';
 import LogDetailDialog from '../Log/LogDetailDialog';
 import { BILLING_LOG_TYPES, logTypeMeta } from '../Log/logHelpers';
+import { workbench } from 'routes/paths';
+import { useInScope } from 'routes/useScope';
 
 // ==============================|| PANEL — LEDGER (账户流水) ||============================== //
 // 账务记录专页:从 Log 的「账务记录」视图抽出(类型 1/3/4),只读复用 Log 子组件。
-// 作为账单页「最近记录」的一个 Tab 使用:只有排序与分页,筛选/时间范围/导出去 /panel/log。
+// 作为账单页「最近记录」的一个 Tab 使用:只有排序与分页,筛选/时间范围/导出去日志页。
 // 刷新由宿主通过 reloadToken 递增驱动。
-// 仅个人/站点语义,无组织上下文;组织态直访重定向回 /panel/log。后端零改动。
+// 仅个人/站点语义,无组织上下文;组织态直访重定向回日志页。后端零改动。
 
 // 账务类型(充值/管理/系统);'0' 是「全部」哨兵,不参与逐类查询。
 const BILLING_TYPE_VALUES = BILLING_LOG_TYPES.map((o) => o.value).filter((v) => v !== '0');
@@ -57,8 +59,9 @@ export default function Ledger({ reloadToken = 0 }) {
   const { userGroup } = useSelector((state) => state.account);
 
   // 账户流水仅个人/站点语义;组织上下文不暴露此页(nav hideInOrganization),
-  // 直访亦重定向回 /panel/log(见末尾的早退守卫)。
+  // 直访亦重定向回日志页(见末尾的早退守卫)。
   const { currentOrgId } = useOrg();
+  const inScope = useInScope();
   const isOrgContext = Boolean(currentOrgId);
 
   const [page, setPage] = useState(0);
@@ -119,7 +122,7 @@ export default function Ledger({ reloadToken = 0 }) {
   }, [isOrgContext, page, rowsPerPage, order, orderBy, fetchData, reloadToken]);
 
   // 组织上下文不提供账户流水,直访重定向回日志页(hooks 已在上方全部声明)。
-  if (isOrgContext) return <Navigate to="/panel/log" replace />;
+  if (isOrgContext) return <Navigate to={inScope(workbench.logs())} replace />;
 
   return (
     <LedgerView

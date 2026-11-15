@@ -5,6 +5,8 @@ import { MessageSquareText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useOrg } from 'contexts/OrgContext';
+import { workbench } from 'routes/paths';
+import { useInScope } from 'routes/useScope';
 
 // ==============================|| DASHBOARD — QUICK START ||============================== //
 // 入口只做站内跳转:不再申请试用 Key、也不再拼含 Key 的外链(SEC-18)。组织上下文下站内试用区
@@ -15,6 +17,7 @@ export default function QuickStartCard() {
   const navigate = useNavigate();
   const { currentOrgId } = useOrg();
   const inOrg = Boolean(currentOrgId);
+  const inScope = useInScope();
 
   return (
     <Card>
@@ -23,7 +26,7 @@ export default function QuickStartCard() {
         <p className="text-sm text-muted-foreground">{t(inOrg ? 'dashboard_index.quickStartOrgTip' : 'dashboard_index.quickStartTip')}</p>
       </CardHeader>
       <CardContent>
-        <Button size="sm" onClick={() => navigate(inOrg ? '/panel/api' : '/panel/api/chat#playground')}>
+        <Button size="sm" onClick={() => navigate(inOrg ? inScope(workbench.docs()) : `${workbench.playground()}#playground`)}>
           <MessageSquareText className="size-4" />
           {t(inOrg ? 'dashboard_index.quickStartOrgAction' : 'dashboard_index.quickStartAction')}
         </Button>

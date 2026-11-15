@@ -41,7 +41,7 @@ describe('BalanceAlertField', () => {
     renderField({ type: 28 });
     expect(screen.getByText('Low-balance alert (CNY)')).toBeTruthy();
     expect(await screen.findByText(/No notifier can send/)).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'SMTP settings' }).getAttribute('href')).toBe('/panel/setting/notify?highlight=smtp');
+    expect(screen.getByRole('link', { name: 'SMTP settings' }).getAttribute('href')).toBe('/panel/admin/settings/notify?highlight=smtp');
   });
 
   it('turns the field off for providers without a balance', async () => {

@@ -6,18 +6,12 @@ export const CATALOG_TABS = ['models', 'vendors', 'paused', 'pending', 'rules'];
 export const DEFAULT_CATALOG_TAB = 'models';
 
 // 旧页签值(价格 / 目录 / 厂商)→ 新页签。
-const LEGACY_TAB_MAP = { price: 'models', info: 'models', ownedby: 'vendors' };
+export const LEGACY_CATALOG_TABS = { price: 'models', info: 'models', ownedby: 'vendors' };
 
 export function resolveCatalogTab(requested) {
   if (CATALOG_TABS.includes(requested)) return requested;
-  return LEGACY_TAB_MAP[requested] || DEFAULT_CATALOG_TAB;
+  return LEGACY_CATALOG_TABS[requested] || DEFAULT_CATALOG_TAB;
 }
-
-// 旧独立页面地址 → 模型页新页签(供路由表 Navigate 使用)。
-export const LEGACY_CATALOG_REDIRECTS = {
-  model_info: '/panel/pricing?tab=models',
-  model_ownedby: '/panel/pricing?tab=vendors'
-};
 
 // Column registry for the shared column picker: fixed columns always show and stay out of the
 // menu; defaultHidden columns start hidden. Channels are one click away: the state column already

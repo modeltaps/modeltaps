@@ -5,6 +5,7 @@ import { LOGIN } from 'store/actions';
 import { rewriteOrgUrl } from './orgScope';
 import { apiMessage, localizeApiMessage } from './apiError';
 import { clearChatSession } from 'views/panel/Playground/chat/chatPersistence';
+import { PANEL } from 'routes/paths';
 
 export const API = axios.create({
   // ... 其他代码 ...
@@ -33,7 +34,7 @@ API.interceptors.response.use(
       // 仅在已登录区域(/panel)内会话失效时跳登录页并带回跳目标；
       // 登录页与公开页自身的 401 不跳转，避免跳转循环与匿名浏览被打断。
       const { pathname, search, hash } = window.location;
-      if (pathname.startsWith('/panel')) {
+      if (pathname.startsWith(PANEL)) {
         window.location.href = `/login?redirect=${encodeURIComponent(pathname + search + hash)}`;
       }
     }

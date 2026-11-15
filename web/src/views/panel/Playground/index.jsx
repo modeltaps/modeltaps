@@ -12,17 +12,20 @@ import { resolveServerAddress } from 'utils/serverAddress';
 import useCatalogModels from 'views/panel/ApiCatalog/useCatalogModels';
 import { DEFAULT_MODALITY, MODALITIES, modalityHref, resolveModality } from './modalities';
 import { ConsoleContext } from './shared/ConsoleContext';
+import { workbench } from 'routes/paths';
+import { useOrgSlug } from 'routes/useScope';
 
 // ==============================|| PANEL — API CONSOLE ||============================== //
-// `/panel/api/:modality` 的路由页：按模态注册表选装配层(未登记回落到对话)，把目录取数与
+// `/panel/playground/:modality` 的路由页：按模态注册表选装配层(未登记回落到对话)，把目录取数与
 // 选中模型通过 ConsoleContext 交给各模态。页壳是最简结构(标题 + 右上动作 + 居中主区)，
-// 正式页壳与输入框 chip 由组件任务提供。接口文档在 `/panel/api/docs/:modality`。
+// 正式页壳与输入框 chip 由组件任务提供。接口文档在 `/panel/docs/:modality`。
 // 分层规则见 modalities.js 顶部注释。
 
 // The sidebar has one 演练场 item for every console; this segmented switch next to the page
 // title moves between modalities (each keeps its own route).
 function ModalitySwitch({ activeId }) {
   const { t } = useTranslation();
+  const orgSlug = useOrgSlug();
   // On narrow screens the switch scrolls sideways: keep the current modality in view (the strip
   // scrolls, never the page).
   const stripRef = useRef(null);
@@ -44,7 +47,7 @@ function ModalitySwitch({ activeId }) {
         return (
           <Link
             key={entry.id}
-            to={modalityHref(entry)}
+            to={modalityHref(entry, orgSlug)}
             aria-current={active ? 'page' : undefined}
             className={cn(
               'flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
@@ -64,6 +67,7 @@ ModalitySwitch.propTypes = { activeId: PropTypes.string };
 
 export default function ApiConsole() {
   const { t } = useTranslation();
+  const orgSlug = useOrgSlug();
   const { pathname } = useLocation();
   const { modality } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -109,7 +113,7 @@ export default function ApiConsole() {
     [models, siteInfo?.server_address, loading, error, reload, selectedModel, setSelectedModel]
   );
 
-  if (!entry) return <Navigate to={`/panel/api/${DEFAULT_MODALITY}`} replace />;
+  if (!entry) return <Navigate to={workbench.playground(DEFAULT_MODALITY, orgSlug)} replace />;
 
   const Workspace = entry.workspace;
   const Actions = entry.actions;

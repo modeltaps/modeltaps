@@ -2,13 +2,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { API } from 'utils/api';
-import { readStoredOrgId, setActiveOrgId } from 'utils/orgScope';
+import { clearStoredOrgId, setActiveOrgId } from 'utils/orgScope';
 import { UserContext } from 'contexts/UserContext';
 
 // ==============================|| ORG CONTEXT ||============================== //
-// Holds the user's organization list and the active organization selection.
-// Invisible / zero-impact when organization_enabled is off or the user has no
-// organizations: activeOrgId stays null so the API layer never rewrites paths.
+// Holds the user's organization list and the active organization. The URL decides the active
+// organization: org-scoped routes (`/panel/orgs/:orgSlug/...`, routes/scopes.jsx) select it and
+// personal routes clear it, before their page renders. Invisible / zero-impact when
+// organization_enabled is off or the user has no organizations: activeOrgId stays null so the API
+// layer never rewrites paths.
 
 export const OrgContext = createContext({
   orgEnabled: false,
@@ -27,18 +29,6 @@ export const OrgContext = createContext({
 
 export const useOrg = () => useContext(OrgContext);
 
-// Restore the persisted selection only when the cached siteInfo says the
-// feature is enabled, so a disabled deployment never rewrites requests.
-function initialOrgId() {
-  try {
-    const cached = JSON.parse(localStorage.getItem('siteInfo') || '{}');
-    if (cached.organization_enabled !== true) return null;
-  } catch {
-    return null;
-  }
-  return readStoredOrgId();
-}
-
 // eslint-disable-next-line
 const OrgProvider = ({ children }) => {
   const account = useSelector((state) => state.account);
@@ -55,11 +45,7 @@ const OrgProvider = ({ children }) => {
   // 组织列表是否已给出结论(含"功能关闭 / 未登录"两种确定态),供页面在
   // 依赖列表内容做重定向前等待,避免刷新瞬间按空列表下判断。
   const [orgsFetched, setOrgsFetched] = useState(false);
-  const [currentOrgId, setCurrentOrgIdState] = useState(() => {
-    const id = initialOrgId();
-    setActiveOrgId(id);
-    return id;
-  });
+  const [currentOrgId, setCurrentOrgIdState] = useState(null);
   const [orgDetail, setOrgDetail] = useState(null);
 
   const switchOrg = useCallback((orgId) => {
@@ -91,10 +77,10 @@ const OrgProvider = ({ children }) => {
     return null;
   }, [orgEnabled, userId]);
 
-  // 登出(或功能确认关闭)时回到个人上下文并清空列表。
-  // siteInfo 尚未从服务端加载时不清理,避免刷新瞬间误清持久化的 active_org_id。
+  // 登出(或功能确认关闭)时回到个人上下文并清空列表;登出时一并忘掉最近使用的组织。
   useEffect(() => {
     if ((isUserLoaded && !userId) || (siteInfoLoaded && !orgEnabled && currentOrgId)) {
+      if (isUserLoaded && !userId) clearStoredOrgId();
       switchOrg(null);
       setOrganizations([]);
     }

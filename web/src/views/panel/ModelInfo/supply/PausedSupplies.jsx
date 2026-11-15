@@ -8,6 +8,7 @@ import { toast } from '@/components/ui/sonner';
 import { listPauses, resumePause } from './supplyApi';
 import { modelSupplyPath } from './supplyHelpers';
 import { StateDot, durationLabel, formatUntil, ruleLabel, useSupplySwitches } from './supplyParts';
+import { admin } from 'routes/paths';
 
 // "Paused" tab of the model page: every channel or model on a channel that a pause rule (or an
 // admin) has taken out of rotation, with a button to put it back now.
@@ -96,7 +97,7 @@ export default function PausedSupplies() {
                     className="align-middle [&>td]:h-12 [&>td]:border-b [&>td]:border-border [&>td]:px-4 last:[&>td]:border-b-0"
                   >
                     <td className="whitespace-nowrap">
-                      <Link to={`/panel/channel/${p.channel_id}`} className="hover:underline">
+                      <Link to={admin.providers(p.channel_id)} className="hover:underline">
                         {p.channel_name || `#${p.channel_id}`}
                       </Link>
                     </td>

@@ -21,6 +21,9 @@ import usePaymentMethods from '../Topup/usePaymentMethods';
 import Ledger from '../Ledger';
 import Invoice from '../Invoice';
 import OrdersTab from './OrdersTab';
+import { workbench } from 'routes/paths';
+import { useInScope } from 'routes/useScope';
+import useRouteTab from 'hooks/useRouteTab';
 
 // ==============================|| PANEL — BILLING ||============================== //
 // 布局对齐 OpenRouter Credits:通栏余额横幅 → 充值卡 + 邀请奖励卡(两栏)→ 最近记录 Tab。
@@ -30,16 +33,20 @@ import OrdersTab from './OrdersTab';
 // Tab 只放数据视图,当前 Tab 由 ?tab=ledger|orders|invoice 单向驱动(刷新/深链自动恢复);
 // 页头右上角的刷新是整页动作:重拉余额 + 递增 reloadToken 让当前 Tab 重新拉取
 // (列表无筛选/时间范围/导出)。余额还会在页面重新可见、兑换/充值成功后自动重拉。
-// 深链 ?topup=1(旧 /panel/topup 与 ?tab=topup 都归到它)自动打开充值弹层,无渠道
+// 深链 ?topup=1(旧的充值地址与 ?tab=topup 都归到它)自动打开充值弹层,无渠道
 // 时打开兑换码弹层,打开后把参数从 URL 抹掉(replace,不污染历史)。
 // 组织上下文:Owner/Admin 看组织池横幅 + 同样的入口(资金进池),不显示 Tab 与邀请卡;
-// 成员直访重定向回 /panel/log。
+// 成员直访重定向回日志页。
 
-const DEFAULT_TAB = 'ledger';
+// Tabs are path segments: `billing` (ledger), `billing/orders`, `billing/invoices`.
+const BILLING_TABS = ['ledger', 'orders', 'invoice'];
+const BILLING_SEGMENTS = { invoice: 'invoices' };
+const LEGACY_BILLING_TABS = { topup: { tab: 'ledger', query: { topup: '1' } } };
 
 export default function Billing() {
   const { t } = useTranslation();
   const { currentOrgId, orgRole, orgDetail, refreshOrgDetail } = useOrg();
+  const inScope = useInScope();
   const invoiceEnabled = useSelector((state) => Boolean(state.siteInfo.UserInvoiceMonth));
   // 开关未下发时按开启处理,避免站点信息落后于前端时邀请卡直接消失
   const inviteEnabled = useSelector((state) => state.siteInfo.invite_reward_enabled !== false);
@@ -96,10 +103,17 @@ export default function Billing() {
   const quota = isOrgContext ? orgDetail?.quota : personalQuota;
   const balance = typeof quota === 'number' ? quota / quotaPerUnit : null;
 
-  const requestedTab = searchParams.get('tab');
-  const tab = requestedTab === 'orders' || (requestedTab === 'invoice' && invoiceEnabled) ? requestedTab : DEFAULT_TAB;
-  // 旧深链 ?tab=topup 等价于 ?topup=1
-  const wantTopup = searchParams.get('topup') === '1' || requestedTab === 'topup';
+  const {
+    tab,
+    setTab: handleTabChange,
+    redirecting
+  } = useRouteTab({
+    tabs: invoiceEnabled ? BILLING_TABS : BILLING_TABS.filter((id) => id !== 'invoice'),
+    segments: BILLING_SEGMENTS,
+    legacy: LEGACY_BILLING_TABS
+  });
+  // One-shot action: ?topup=1 opens the top-up dialog (old ?tab=topup links are rewritten to it).
+  const wantTopup = searchParams.get('topup') === '1';
 
   const stripParams = useCallback(
     (keys) => {
@@ -121,29 +135,8 @@ export default function Billing() {
     if (!wantTopup || !paymentLoaded) return;
     if (canOnlineTopup) setTopupOpen(true);
     else setRedemptionOpen(true);
-    stripParams(['topup', 'tab']);
+    stripParams(['topup']);
   }, [wantTopup, paymentLoaded, canOnlineTopup, stripParams]);
-
-  // URL 带非法/开关已关的 tab 时写回实际 Tab(replace,不污染历史)。
-  useEffect(() => {
-    if (isOrgContext || wantTopup || !requestedTab || requestedTab === tab) return;
-    setSearchParams(
-      (prev) => {
-        const params = new URLSearchParams(prev);
-        params.set('tab', tab);
-        return params;
-      },
-      { replace: true }
-    );
-  }, [isOrgContext, wantTopup, requestedTab, tab, setSearchParams]);
-
-  const handleTabChange = (next) => {
-    setSearchParams((prev) => {
-      const params = new URLSearchParams(prev);
-      params.set('tab', next);
-      return params;
-    });
-  };
 
   // 整页刷新:余额 + 当前 Tab 列表。
   const handleRefresh = () => {
@@ -152,7 +145,8 @@ export default function Billing() {
   };
 
   // 组织成员直访重定向回日志页(hooks 已在上方全部声明)。
-  if (isOrgContext && !isOrgAdmin) return <Navigate to="/panel/log" replace />;
+  if (isOrgContext && !isOrgAdmin) return <Navigate to={inScope(workbench.logs())} replace />;
+  if (redirecting) return null;
 
   const balanceBanner = (
     <div className="flex flex-col gap-1 rounded-2xl bg-muted p-6">
@@ -202,7 +196,7 @@ export default function Billing() {
           paymentLoaded && <p className="text-sm text-muted-foreground">{t('billingPage.onlineTopupUnavailable')}</p>
         )}
         <div className="mt-auto flex flex-wrap items-center gap-4 text-sm">
-          <Link to="/panel/usage" className="text-muted-foreground transition-colors hover:text-foreground">
+          <Link to={inScope(workbench.usage())} className="text-muted-foreground transition-colors hover:text-foreground">
             {t('billingPage.viewUsage')} →
           </Link>
           <button
@@ -277,7 +271,7 @@ export default function Billing() {
 
         {tab === 'orders' && <OrdersTab payment={payment} reloadToken={reloadToken} />}
         {tab === 'invoice' && <Invoice reloadToken={reloadToken} />}
-        {tab === DEFAULT_TAB && <Ledger reloadToken={reloadToken} />}
+        {tab === 'ledger' && <Ledger reloadToken={reloadToken} />}
       </div>
       {dialogs}
     </div>

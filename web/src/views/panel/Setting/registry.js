@@ -1,3 +1,4 @@
+import { admin } from 'routes/paths';
 // ==============================|| PLATFORM SETTINGS — GROUP AND CARD REGISTRY ||============================== //
 // The eight platform settings groups and their cards, as plain data: the page (index.jsx) attaches
 // a component to every card id, the command palette lists the groups and cards, and the tests
@@ -8,7 +9,7 @@
 // A group with many cards lists `tabs`; each of its cards names its tab, and the page shows one
 // tab at a time (`?tab=<id>`).
 
-export const SETTINGS_BASE = '/panel/setting';
+export const SETTINGS_BASE = admin.settings();
 
 export const settingsGroupUrl = (groupId) => `${SETTINGS_BASE}/${groupId}`;
 
@@ -232,7 +233,7 @@ const LEGACY_TABS = { other: 'branding' };
 const HIGHLIGHT_ALIASES = { 'brand-icon': 'branding', chat: 'chat-links' };
 
 // The invite code table left the settings for a page of its own.
-export const INVITE_CODE_URL = '/panel/invite_code';
+export const INVITE_CODE_URL = admin.inviteCodes();
 const INVITE_SECTIONS = new Set(['invite']);
 const INVITE_HIGHLIGHTS = new Set(['invite-code']);
 

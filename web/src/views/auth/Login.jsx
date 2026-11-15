@@ -26,6 +26,7 @@ import {
   siteInfoLoaded,
   socialLoginEnabled
 } from 'utils/authAvailability';
+import { PANEL, workbench } from 'routes/paths';
 
 // ==============================|| AUTH — LOGIN ||============================== //
 // 账号体系二选一:
@@ -49,7 +50,7 @@ export default function Login() {
   // Honor an optional ?redirect= target so deep links (e.g. the Hero "Get API key" CTA)
   // return the user to their destination. Restricted to internal /panel paths.
   const redirectParam = searchParams.get('redirect');
-  const redirectTo = redirectParam && redirectParam.startsWith('/panel') ? redirectParam : '/panel/dashboard';
+  const redirectTo = redirectParam && redirectParam.startsWith(PANEL) ? redirectParam : workbench.dashboard();
   const { login, sendLoginCode, loginWithCode } = useLogin(redirectTo);
   const siteInfo = useSelector((state) => state.siteInfo);
 

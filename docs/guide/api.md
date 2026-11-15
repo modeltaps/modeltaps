@@ -121,14 +121,14 @@ curl https://your-modeltaps-domain.com/gemini/v1beta/models \
 
 ## The API catalogue in the console
 
-The **API** group in the sidebar lists one page per modality. `/panel/api` is the overview; each modality card opens either the **API docs** or the **console**. The docs pages cover the same ground as this page, but the addresses are already filled in with your actual site address:
+The **API** group in the sidebar lists one page per modality. `/panel/docs` is the overview; each modality card opens either the **API docs** or the **console**. The docs pages cover the same ground as this page, but the addresses are already filled in with your actual site address:
 
 | Modality | API docs | Console | Endpoints covered |
 | --- | --- | --- | --- |
-| Chat | `/panel/api/docs/chat` | `/panel/api/chat` | `/v1/chat/completions`, `/v1/responses`, `/claude/v1/messages`, `/gemini/v1beta/models/{model}:generateContent` |
-| Image | `/panel/api/docs/image` | `/panel/api/image` | `/v1/images/generations`, `/v1/images/edits`, `/v1/images/variations`, plus the Recraft and Midjourney extensions |
-| Audio | `/panel/api/docs/speech` | `/panel/api/speech` | `/v1/audio/speech`, `/v1/audio/transcriptions`, `/v1/audio/translations`, plus `/v1/realtime` |
-| Video | `/panel/api/docs/video` | — (not yet available) | Kling text-to-video / image-to-video and task lookup, plus the Gemini Veo long-running endpoint |
+| Chat | `/panel/docs/chat` | `/panel/playground/chat` | `/v1/chat/completions`, `/v1/responses`, `/claude/v1/messages`, `/gemini/v1beta/models/{model}:generateContent` |
+| Image | `/panel/docs/image` | `/panel/playground/image` | `/v1/images/generations`, `/v1/images/edits`, `/v1/images/variations`, plus the Recraft and Midjourney extensions |
+| Audio | `/panel/docs/speech` | `/panel/playground/speech` | `/v1/audio/speech`, `/v1/audio/transcriptions`, `/v1/audio/translations`, plus `/v1/realtime` |
+| Video | `/panel/docs/video` | — (not yet available) | Kling text-to-video / image-to-video and task lookup, plus the Gemini Veo long-running endpoint |
 
 Every docs page has **Endpoints**, **Examples**, **Available models** and a link to the full documentation. The key in the examples is the placeholder `sk-YOUR_TOKEN` — replace it with an API key created on the **API Keys** page and the command runs as is.
 
@@ -142,11 +142,11 @@ The model picker is a menu anchored to the model chip, with search, capability f
 - It is only usable in a personal context; after switching to an organization the page explains why and links a way out (organization-quota usage is tracked separately).
 - When a capability has no available model the page stays browsable, explains why and where to fix it, and sends no request.
 - Administrators can turn `builtin_chat_enabled` off in system settings to disable the console site-wide.
-- The old Playground addresses (`/playground`, `/panel/playground`) redirect to `/panel/api/chat`.
+- The old Playground addresses (`/playground`, `/panel/playground`) redirect to `/panel/playground/chat`.
 
 #### Compare
 
-**Compare** in the sidebar's **API** group (`/panel/api/compare`) runs 2–4 chat models side by side as columns: **Add column** at the top right goes up to 4, and each column picks its model — and can override temperature, max tokens and reasoning effort — in its header. With **Sync input** on, one message from the shared composer goes to every column; with it off, only the selected column receives it, and each column can be stopped on its own. **View code** switches between columns and shows each column's equivalent request with its overrides merged in.
+**Compare** in the sidebar's **API** group (`/panel/playground/compare`) runs 2–4 chat models side by side as columns: **Add column** at the top right goes up to 4, and each column picks its model — and can override temperature, max tokens and reasoning effort — in its header. With **Sync input** on, one message from the shared composer goes to every column; with it off, only the selected column receives it, and each column can be stopped on its own. **View code** switches between columns and shows each column's equivalent request with its overrides merged in.
 
 Midjourney and async task records are not on the catalogue pages — see the **Midjourney** and **Async tasks** tabs on the **Logs** page.
 

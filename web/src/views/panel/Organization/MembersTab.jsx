@@ -42,6 +42,7 @@ import { createRequestGuard, runGuardedFetch } from 'hooks/paginatedListGuard';
 import MemberLimitsSheet from './MemberLimitsSheet';
 import InvitationSheet from './InvitationSheet';
 import CreateMemberSheet from './CreateMemberSheet';
+import { inviteLink as invitationLink } from 'routes/paths';
 
 // ==============================|| ORGANIZATION — MEMBERS TAB ||============================== //
 // Member list (Member+). Admin+: sub-segments "members / pending invitations",
@@ -49,7 +50,7 @@ import CreateMemberSheet from './CreateMemberSheet';
 // copy link / revoke pending invitations (T21a, full history lives in audit).
 // Hierarchy mirrors backend: cannot act on self, nor on a higher-weight role.
 
-export const inviteLink = (token) => `${window.location.origin}/panel/organization?invite=${token}`;
+export const inviteLink = (token) => `${window.location.origin}${invitationLink(token)}`;
 
 const ROLE_WEIGHT = { owner: 3, admin: 2, member: 1 };
 

@@ -10,6 +10,7 @@ import { toast } from '@/components/ui/sonner';
 import { InfoRow, InfoRows, ObjectPanel, ObjectTile, Section, StatRow } from '@/components/objects';
 import { timestamp2string } from 'utils/common';
 import { ORDER_STATUS, fetchOrders } from './paymentApi';
+import { admin } from 'routes/paths';
 
 function OrderBody({ object: order }) {
   const { t } = useTranslation();
@@ -117,7 +118,7 @@ export default function OrderPanel({ tradeNo, rows, onClose }) {
               {t('orderlogPage.panel.copyTradeNo')}
             </Button>
             <Button variant="ghost" size="icon" className="size-8 rounded-lg" asChild aria-label={t('orderlogPage.panel.viewUser')}>
-              <Link to={`/panel/user?id=${order.user_id}`} title={t('orderlogPage.panel.viewUser')}>
+              <Link to={`${admin.users()}?id=${order.user_id}`} title={t('orderlogPage.panel.viewUser')}>
                 <UserRound className="size-4" />
               </Link>
             </Button>

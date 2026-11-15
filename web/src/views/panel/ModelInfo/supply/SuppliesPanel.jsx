@@ -53,6 +53,7 @@ import {
 } from './supplyHelpers';
 import { SupplyStateLabel, SupplySwitchNote, UpstreamName, UpstreamPriceCell, durationLabel } from './supplyParts';
 import { setModelAllocation } from '../../Allocation/allocationApi';
+import { admin } from 'routes/paths';
 
 const channelTypeName = (type) => CHANNEL_OPTIONS[type]?.text || `#${type}`;
 
@@ -353,7 +354,7 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
           )}
           {supply.channel_name && (
             <Link
-              to={`/panel/channel/${supply.channel_id}`}
+              to={admin.providers(supply.channel_id)}
               aria-label={t('modelSupply.openChannel', { name: supply.channel_name })}
               className="shrink-0 text-muted-foreground hover:text-foreground"
             >
@@ -723,7 +724,7 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
           <span className="text-[13px]">
             {t(allocation === 'manual' ? 'modelSupply.allocation.manual' : 'modelSupply.allocation.policy')}
           </span>
-          <Link to="/panel/channel" className="text-[13px] text-info underline-offset-2 hover:underline">
+          <Link to={admin.providers()} className="text-[13px] text-info underline-offset-2 hover:underline">
             {t('modelSupply.allocation.open')}
           </Link>
           <span className="flex-1" />

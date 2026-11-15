@@ -445,7 +445,7 @@ func GetRateRealtime(c *gin.Context) {
 		return
 	}
 
-	// 与 /panel/analytics 实时流量同一口径：logs 表最近60秒滑动窗口，仅统计消费日志
+	// 与 /panel/admin/stats 实时流量同一口径：logs 表最近60秒滑动窗口，仅统计消费日志
 	rpmTpmStats, err := model.GetRpmTpmStatistics(id)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)

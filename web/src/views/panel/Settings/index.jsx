@@ -39,13 +39,13 @@ import {
 // own (`.../routing` redirects to the workbench's 路由策略 page). The organization is the one in the URL and stays
 // decoupled from the active context of the workbench. Platform settings are part of 平台管理.
 
-function SettingsHub({ section, orgId, managedOrgs }) {
+function SettingsHub({ section, orgSlug, managedOrgs }) {
   const { t } = useTranslation();
   const siteInfo = useSelector((state) => state.siteInfo);
   const { currentOrgId } = useOrg();
   const self = useSelfUser();
 
-  const org = settingsOrg(managedOrgs, { orgId, currentOrgId });
+  const org = settingsOrg(managedOrgs, { orgSlug, currentOrgId });
   const { detail, refresh } = useOrgDetail(org?.id ?? null);
 
   const groupOf = (group, sectionLabel, to, cards) => ({
@@ -70,7 +70,7 @@ function SettingsHub({ section, orgId, managedOrgs }) {
       danger: [{ id: 'danger', render: () => <DangerSection key={org.id} {...props} /> }]
     };
     const orgLabel = t('settingsUi.sections.org');
-    for (const group of ORG_GROUPS) groups.push(groupOf(group, orgLabel, orgSettingsUrl(org.id, group.id), orgCards[group.id]));
+    for (const group of ORG_GROUPS) groups.push(groupOf(group, orgLabel, orgSettingsUrl(org.slug, group.id), orgCards[group.id]));
   }
   const accountCards = accountGroupCards({ siteInfo, self });
   const personalLabel = t('settingsUi.sections.personal');
@@ -81,20 +81,20 @@ function SettingsHub({ section, orgId, managedOrgs }) {
 
 SettingsHub.propTypes = {
   section: PropTypes.string.isRequired,
-  orgId: PropTypes.number,
+  orgSlug: PropTypes.string,
   managedOrgs: PropTypes.arrayOf(PropTypes.object).isRequired
 };
 
 export default function Settings() {
   const { search } = useLocation();
-  const { orgId: orgIdParam, section } = useParams();
+  const { orgSlug, section } = useParams();
   const { organizations, orgsLoaded, currentOrgId } = useOrg();
   useHighlightTarget();
 
-  const orgScope = orgIdParam !== undefined;
-  const orgId = orgScope ? Number(orgIdParam) : null;
+  const orgScope = orgSlug !== undefined;
   const managedOrgs = organizations.filter((org) => isOrgAdminRole(org.role));
-  const managedOrg = orgScope ? managedOrgs.find((org) => org.id === orgId) || null : null;
+  const managedOrg = orgScope ? managedOrgs.find((org) => org.slug === orgSlug) || null : null;
+  const orgId = managedOrg?.id ?? null;
   const accountDefault = accountSettingsUrl(DEFAULT_ACCOUNT_SECTION);
 
   // Wait for the organization list before deciding, so a reload does not bounce an org admin.
@@ -106,12 +106,12 @@ export default function Settings() {
     if (!section) return <Navigate to={search ? `${accountDefault}${search}` : settingsLanding({ organizations, currentOrgId })} replace />;
     const target = resolveAccountSection(section);
     if (target) return <Navigate to={target} replace />;
-    return <SettingsHub section={section} orgId={null} managedOrgs={managedOrgs} />;
+    return <SettingsHub section={section} orgSlug={null} managedOrgs={managedOrgs} />;
   }
 
   // Organizations the user does not manage fall back to the first item of the tree.
   if (!managedOrg) return <Navigate to={settingsLanding({ organizations, currentOrgId })} replace />;
-  const target = resolveOrgSection(orgId, section);
+  const target = resolveOrgSection(orgSlug, section);
   if (target) return <Navigate to={target} replace />;
   if (section === ORG_MEMBERS_SECTION) {
     return (
@@ -127,5 +127,5 @@ export default function Settings() {
       </div>
     );
   }
-  return <SettingsHub section={section} orgId={orgId} managedOrgs={managedOrgs} />;
+  return <SettingsHub section={section} orgSlug={orgSlug} managedOrgs={managedOrgs} />;
 }

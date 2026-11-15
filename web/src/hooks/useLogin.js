@@ -9,8 +9,9 @@ import { showSuccess } from 'utils/common';
 import { requestLogout, signedOutUrl } from 'utils/logout';
 import { clearChatSession } from 'views/panel/Playground/chat/chatPersistence';
 import { useTranslation } from 'react-i18next';
+import { PANEL } from 'routes/paths';
 
-const useLogin = (navPath = '/panel') => {
+const useLogin = (navPath = PANEL) => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();

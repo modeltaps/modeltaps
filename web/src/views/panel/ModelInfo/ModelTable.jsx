@@ -39,6 +39,7 @@ import {
 } from './modelInfoHelpers';
 import { ModelStatusPill } from './supply/supplyParts';
 import { isPublicModelRow, normalizeSupplyMode } from './supply/supplyHelpers';
+import { admin } from 'routes/paths';
 
 // 同步来源 → 文案 key;空值(历史数据)显示「未知」。
 const SOURCE_LABEL_KEYS = {
@@ -52,7 +53,7 @@ const CHANNEL_STATUS_ENABLED = 1;
 
 // The channel's own page.
 export function channelEditPath(channel) {
-  return `/panel/channel/${channel.id}`;
+  return admin.providers(channel.id);
 }
 
 // 单个渠道的提示内容:渠道名、类型名称、状态,以及有值时的优先级 / 权重。

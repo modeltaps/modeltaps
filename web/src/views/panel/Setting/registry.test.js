@@ -258,35 +258,35 @@ describe('resolveSettingsTarget', () => {
   });
 
   it('bare and unknown paths land on the first group', () => {
-    expect(go({})).toBe('/panel/setting/site');
-    expect(go({ section: 'nope' })).toBe('/panel/setting/site');
+    expect(go({})).toBe('/panel/admin/settings/site');
+    expect(go({ section: 'nope' })).toBe('/panel/admin/settings/site');
   });
 
   it('old group ids redirect to their new groups', () => {
     expect(go({ section: 'site' })).toBeNull();
     expect(go({ section: 'auth' })).toBeNull();
     expect(go({ section: 'billing' })).toBeNull();
-    expect(go({ section: 'relay' })).toBe('/panel/setting/gateway');
+    expect(go({ section: 'relay' })).toBe('/panel/admin/settings/gateway');
     expect(go({ section: 'privacy' })).toBeNull();
-    expect(go({ section: 'integrations' })).toBe('/panel/setting/notify');
-    expect(resolveSettingsTarget({ section: 'organization', isRoot: true })).toBe('/panel/setting/orgpolicy');
+    expect(go({ section: 'integrations' })).toBe('/panel/admin/settings/notify');
+    expect(resolveSettingsTarget({ section: 'organization', isRoot: true })).toBe('/panel/admin/settings/orgpolicy');
   });
 
   it('a highlight of a card that moved wins over the section', () => {
-    expect(go({ section: 'site', highlight: 'smtp' })).toBe('/panel/setting/notify?highlight=smtp');
-    expect(go({ section: 'billing', highlight: 'payment-gateways' })).toBe('/panel/setting/payment?highlight=payment-gateways');
-    expect(go({ section: 'integrations', highlight: 'brand-icon' })).toBe('/panel/setting/site?highlight=branding');
-    expect(go({ section: 'integrations', highlight: 'telegram' })).toBe('/panel/setting/notify?highlight=telegram');
-    expect(go({ highlight: 'log-io' })).toBe('/panel/setting/privacy?highlight=log-io');
+    expect(go({ section: 'site', highlight: 'smtp' })).toBe('/panel/admin/settings/notify?highlight=smtp');
+    expect(go({ section: 'billing', highlight: 'payment-gateways' })).toBe('/panel/admin/settings/payment?highlight=payment-gateways');
+    expect(go({ section: 'integrations', highlight: 'brand-icon' })).toBe('/panel/admin/settings/site?highlight=branding');
+    expect(go({ section: 'integrations', highlight: 'telegram' })).toBe('/panel/admin/settings/notify?highlight=telegram');
+    expect(go({ highlight: 'log-io' })).toBe('/panel/admin/settings/privacy?highlight=log-io');
   });
 
   it('older section ids and ?tab= values land on their card', () => {
-    expect(go({ section: 'email' })).toBe('/panel/setting/notify?highlight=smtp');
-    expect(go({ section: 'ops' })).toBe('/panel/setting/gateway?highlight=channel-auto');
-    expect(go({ section: 'gateways' })).toBe('/panel/setting/payment?highlight=payment-gateways');
-    expect(go({ section: 'chat' })).toBe('/panel/setting/notify?highlight=chat-links');
-    expect(go({ tab: 'other' })).toBe('/panel/setting/site?highlight=branding');
-    expect(go({ tab: 'safety' })).toBe('/panel/setting/privacy?highlight=safety');
+    expect(go({ section: 'email' })).toBe('/panel/admin/settings/notify?highlight=smtp');
+    expect(go({ section: 'ops' })).toBe('/panel/admin/settings/gateway?highlight=channel-auto');
+    expect(go({ section: 'gateways' })).toBe('/panel/admin/settings/payment?highlight=payment-gateways');
+    expect(go({ section: 'chat' })).toBe('/panel/admin/settings/notify?highlight=chat-links');
+    expect(go({ tab: 'other' })).toBe('/panel/admin/settings/site?highlight=branding');
+    expect(go({ tab: 'safety' })).toBe('/panel/admin/settings/privacy?highlight=safety');
   });
 
   it('invite codes moved to their own page', () => {
@@ -295,9 +295,9 @@ describe('resolveSettingsTarget', () => {
   });
 
   it('the root-only group is not reachable for other admins', () => {
-    expect(go({ section: 'orgpolicy' })).toBe('/panel/setting/site');
-    expect(go({ section: 'org' })).toBe('/panel/setting/site');
-    expect(resolveSettingsTarget({ section: 'org', isRoot: true })).toBe('/panel/setting/orgpolicy?highlight=org-policy');
+    expect(go({ section: 'orgpolicy' })).toBe('/panel/admin/settings/site');
+    expect(go({ section: 'org' })).toBe('/panel/admin/settings/site');
+    expect(resolveSettingsTarget({ section: 'org', isRoot: true })).toBe('/panel/admin/settings/orgpolicy?highlight=org-policy');
   });
 });
 

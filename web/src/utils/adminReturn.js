@@ -1,9 +1,10 @@
+import { workbench } from 'routes/paths';
 // Where the back row of 平台管理 leads: the last workbench page (personal or organization, outside
 // 设置) opened in this tab (MainLayout records it), else the dashboard. Kept in sessionStorage so a
 // reload inside platform admin keeps it.
 
 const KEY = 'admin_return_path';
-const FALLBACK = '/panel/dashboard';
+const FALLBACK = workbench.dashboard();
 
 export function rememberAdminReturn(path) {
   try {

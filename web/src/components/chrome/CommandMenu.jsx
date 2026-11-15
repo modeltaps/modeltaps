@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Command, defaultFilter } from 'cmdk';
 import { FileText } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 
 import { useOrg } from 'contexts/OrgContext';
 import { useIsAdmin, useIsRoot } from 'utils/common';
 import { matchesQuery } from '@/components/settings/settingsSearch';
 import { commandSections, navLabel } from './nav-config';
+import { orgSlugOf } from 'routes/paths';
 
 // ==============================|| CHROME — COMMAND PALETTE (cmdk) ||============================== //
 // The panel's one search (every search button opens it; ⌘K too). Lists the current workbench
@@ -30,10 +31,11 @@ export function commandFilter(value, search, keywords) {
 
 export default function CommandMenu({ open, setOpen, getPageEntries }) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { t } = useTranslation();
   const isAdmin = useIsAdmin();
   const isRoot = useIsRoot();
-  const { currentOrgId, orgRole, routingPolicyEnabled } = useOrg();
+  const { currentOrg, orgRole, routingPolicyEnabled } = useOrg();
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -58,7 +60,8 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
   const sections = commandSections({
     isAdmin,
     isRoot,
-    orgId: currentOrgId,
+    // The URL's organization on its pages; the active one elsewhere (设置).
+    orgSlug: orgSlugOf(pathname) ?? currentOrg?.slug ?? null,
     orgRole,
     features: { routingPolicy: routingPolicyEnabled }
   });

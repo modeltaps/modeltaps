@@ -1,11 +1,13 @@
 import { lazy } from 'react';
-import { Navigate, useLocation } from 'react-router';
+import { Navigate, Outlet, useLocation } from 'react-router';
 
 // project imports
 import Loadable from 'ui-component/Loadable';
 import AdminGuard from 'utils/route-guard/AdminGuard';
 import RootGuard from 'utils/route-guard/RootGuard';
-import { LEGACY_CATALOG_REDIRECTS } from 'views/panel/Pricing/modelCatalog';
+import { OrgIndexRedirect, OrgScope, PersonalScope } from './scopes';
+import { legacyRedirects } from './legacyRedirects';
+import { PANEL, admin } from './paths';
 
 const MainLayout = Loadable(lazy(() => import('layout/MainLayout')));
 const NotFoundView = Loadable(lazy(() => import('views/public/Error')));
@@ -33,263 +35,91 @@ const Pricing = Loadable(lazy(() => import('views/panel/Pricing')));
 const Usage = Loadable(lazy(() => import('views/panel/Usage')));
 const OrgAdmin = Loadable(lazy(() => import('views/panel/OrgAdmin')));
 const Organization = Loadable(lazy(() => import('views/panel/Organization')));
+const MyInvitations = Loadable(lazy(() => import('views/panel/Organization/MyInvitations')));
 const Settings = Loadable(lazy(() => import('views/panel/Settings')));
 
-// 旧的 /panel/profile 收口到统一设置页,保留 query / hash。日志详情的
-// `?highlight=log-io` 指向留存开关,单独落到「数据与隐私」。
-const ProfileRedirect = () => {
+// `playground` without a modality opens the chat console, keeping the query (`?model=`).
+const PlaygroundIndex = () => {
   const { search, hash } = useLocation();
-  const section = new URLSearchParams(search).get('highlight') === 'log-io' ? 'privacy' : 'profile';
-  return <Navigate to={`/panel/settings/account/${section}${search}${hash}`} replace />;
-};
-
-// 旧的 Playground 入口收口到 API 控制台(`/panel/api/chat`),保留 query(如 `?model=`)。
-const PlaygroundRedirect = () => {
-  const { search, hash } = useLocation();
-  return <Navigate to={`/panel/api/chat${search}${hash}`} replace />;
+  return <Navigate to={`chat${search}${hash}`} replace />;
 };
 
 // ==============================|| MAIN ROUTING (authenticated panel) ||============================== //
+// The URL scheme (path builders and rules in routes/paths.js):
+//
+//   /panel/<page>                     personal workbench
+//   /panel/orgs/:orgSlug/<page>       an organization's workbench (same pages + overview)
+//   /panel/settings/...               settings hub: personal sections, organizations' settings
+//   /panel/admin/<page>               platform administration (admins only)
+//
+// Workbench pages: dashboard, usage, logs[/tasks|/midjourney], keys, models, routing-policies,
+// playground/:modality, docs[/:modality], billing[/orders|/invoices].
+// Old URLs redirect (routes/legacyRedirects.jsx).
+
+const adminOnly = (element) => <AdminGuard>{element}</AdminGuard>;
+const rootOnly = (element) => <RootGuard>{element}</RootGuard>;
+
+// The pages every workbench scope has.
+const workbenchPages = () => [
+  { path: 'dashboard', element: <Dashboard /> },
+  { path: 'usage', element: <Usage /> },
+  { path: 'logs/:tab?', element: <Log /> },
+  { path: 'keys', element: <Token /> },
+  { path: 'models', element: <ModelPrice embedded /> },
+  { path: 'routing-policies', element: <Routing /> },
+  { path: 'playground', element: <PlaygroundIndex /> },
+  { path: 'playground/:modality', element: <ApiConsole /> },
+  { path: 'docs', element: <ApiCatalogOverview /> },
+  { path: 'docs/:modality', element: <ApiCatalog /> },
+  { path: 'billing/:tab?', element: <Billing /> }
+];
 
 const MainRoutes = {
-  path: '/panel',
+  path: PANEL,
   element: <MainLayout />,
   children: [
     {
-      index: true,
-      element: <Navigate to="dashboard" replace />
+      element: <PersonalScope />,
+      children: [
+        { index: true, element: <Navigate to="dashboard" replace /> },
+        ...workbenchPages(),
+        { path: 'invitations', element: <MyInvitations /> }
+      ]
     },
     {
-      path: 'dashboard',
-      element: <Dashboard />
+      path: 'orgs/:orgSlug',
+      element: <OrgScope />,
+      children: [{ index: true, element: <OrgIndexRedirect /> }, ...workbenchPages(), { path: 'overview', element: <Organization /> }]
     },
+    // Settings hub: it never changes the workbench scope.
+    { path: 'settings', element: <Settings /> },
+    { path: 'settings/:section', element: <Settings /> },
+    { path: 'settings/orgs/:orgSlug/:section', element: <Settings /> },
     {
-      path: 'analytics',
-      element: (
-        <AdminGuard>
-          <Analytics />
-        </AdminGuard>
-      )
+      path: 'admin',
+      element: adminOnly(<Outlet />),
+      children: [
+        { index: true, element: <Navigate to={admin.stats()} replace /> },
+        { path: 'stats', element: <Analytics /> },
+        { path: 'stats/users', element: <MultiUserStats /> },
+        { path: 'system-logs', element: rootOnly(<SystemInfo />) },
+        // One page: `providers/:id` opens that provider's panel, `providers/new` the new provider
+        // sheet, over the providers page.
+        { path: 'providers/:id?', element: <Channel /> },
+        { path: 'models/:tab?', element: <Pricing /> },
+        { path: 'routing', element: <RoutingPolicy /> },
+        { path: 'users', element: <User /> },
+        { path: 'user-groups', element: <UserGroup /> },
+        { path: 'orgs', element: <OrgAdmin /> },
+        { path: 'orders', element: <Payment /> },
+        { path: 'redemption-codes', element: <Redemption /> },
+        { path: 'invite-codes', element: <InviteCode /> },
+        { path: 'settings', element: <Setting /> },
+        { path: 'settings/:section', element: <Setting /> }
+      ]
     },
-    {
-      path: 'usage',
-      element: <Usage />
-    },
-    {
-      path: 'log',
-      element: <Log />
-    },
-    {
-      path: 'billing',
-      element: <Billing />
-    },
-    {
-      // 旧路由:账户流水已并入账单页 Tab
-      path: 'ledger',
-      element: <Navigate to="/panel/billing?tab=ledger" replace />
-    },
-    {
-      // 旧路由:异步任务记录已并入日志页 Tab
-      path: 'task',
-      element: <Navigate to="/panel/log?tab=task" replace />
-    },
-    {
-      path: 'token',
-      element: <Token />
-    },
-    {
-      // One page: `/panel/channel/:id` opens that channel's panel, `/panel/channel/new` the new
-      // channel sheet, over the provider page.
-      path: 'channel/:id?',
-      element: (
-        <AdminGuard>
-          <Channel />
-        </AdminGuard>
-      )
-    },
-    {
-      path: 'user',
-      element: (
-        <AdminGuard>
-          <User />
-        </AdminGuard>
-      )
-    },
-    {
-      path: 'user_group',
-      element: (
-        <AdminGuard>
-          <UserGroup />
-        </AdminGuard>
-      )
-    },
-    {
-      path: 'routing',
-      element: <Routing />
-    },
-    {
-      path: 'routing_policy',
-      element: (
-        <AdminGuard>
-          <RoutingPolicy />
-        </AdminGuard>
-      )
-    },
-    {
-      path: 'setting',
-      element: (
-        <AdminGuard>
-          <Setting />
-        </AdminGuard>
-      )
-    },
-    {
-      path: 'setting/:section',
-      element: (
-        <AdminGuard>
-          <Setting />
-        </AdminGuard>
-      )
-    },
-    {
-      path: 'profile',
-      element: <ProfileRedirect />
-    },
-    {
-      path: 'settings',
-      element: <Settings />
-    },
-    {
-      path: 'settings/account/:section',
-      element: <Settings />
-    },
-    {
-      path: 'settings/org/:orgId/:section',
-      element: <Settings />
-    },
-    {
-      // 旧路由:Playground 已并入 API 控制台
-      path: 'playground',
-      element: <PlaygroundRedirect />
-    },
-    {
-      path: 'playground/:modality',
-      element: <PlaygroundRedirect />
-    },
-    {
-      path: 'api',
-      element: <ApiCatalogOverview />
-    },
-    {
-      path: 'api/docs/:modality',
-      element: <ApiCatalog />
-    },
-    {
-      path: 'api/:modality',
-      element: <ApiConsole />
-    },
-    {
-      path: 'model_price',
-      element: <ModelPrice embedded />
-    },
-    {
-      path: 'pricing',
-      element: (
-        <AdminGuard>
-          <Pricing />
-        </AdminGuard>
-      )
-    },
-    {
-      // The call order moved onto the providers page.
-      path: 'allocation',
-      element: <Navigate to="/panel/channel" replace />
-    },
-    {
-      path: 'system_info',
-      element: (
-        <RootGuard>
-          <SystemInfo />
-        </RootGuard>
-      )
-    },
-    {
-      path: 'multi_user_stats',
-      element: (
-        <AdminGuard>
-          <MultiUserStats />
-        </AdminGuard>
-      )
-    },
-    {
-      // 旧路由:Midjourney 记录已并入日志页 Tab
-      path: 'midjourney',
-      element: <Navigate to="/panel/log?tab=midjourney" replace />
-    },
-    {
-      path: 'payment',
-      element: (
-        <AdminGuard>
-          <Payment />
-        </AdminGuard>
-      )
-    },
-    {
-      path: 'redemption',
-      element: (
-        <AdminGuard>
-          <Redemption />
-        </AdminGuard>
-      )
-    },
-    {
-      path: 'invite_code',
-      element: (
-        <AdminGuard>
-          <InviteCode />
-        </AdminGuard>
-      )
-    },
-    {
-      // Legacy route: the Telegram bot lives in platform settings (通知与集成)
-      path: 'telegram',
-      element: <Navigate to="/panel/setting/notify?highlight=telegram" replace />
-    },
-    {
-      // 旧路由:模型归属 / 模型详情已并入模型页 Tab
-      path: 'model_ownedby',
-      element: <Navigate to={LEGACY_CATALOG_REDIRECTS.model_ownedby} replace />
-    },
-    {
-      path: 'model_info',
-      element: <Navigate to={LEGACY_CATALOG_REDIRECTS.model_info} replace />
-    },
-    {
-      path: 'org_admin',
-      element: (
-        <AdminGuard>
-          <OrgAdmin />
-        </AdminGuard>
-      )
-    },
-    {
-      // 旧路由:月度账单已并入账单页 Tab
-      path: 'invoice',
-      element: <Navigate to="/panel/billing?tab=invoice" replace />
-    },
-    {
-      // 旧路由:充值已改为账单页余额卡上的弹层
-      path: 'topup',
-      element: <Navigate to="/panel/billing?topup=1" replace />
-    },
-    {
-      path: 'organization',
-      element: <Organization />
-    },
-    {
-      path: '*',
-      element: <NotFoundView />
-    }
+    ...legacyRedirects,
+    { path: '*', element: <NotFoundView /> }
   ]
 };
 

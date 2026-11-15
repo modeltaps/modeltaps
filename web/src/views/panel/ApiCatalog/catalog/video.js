@@ -9,6 +9,7 @@
 // 描述,后端还没有 /v1/videos 路由,标 planned;Kling / Veo 私有入口收进页尾 extras 折叠区。
 
 import { curlJson, curlOpenAI, jsClient, pyClient } from './_helpers';
+import { workbench } from 'routes/paths';
 
 const VIDEO_FILE = 'clip.mp4';
 const VIDEO_MIME = 'video/mp4';
@@ -153,7 +154,7 @@ fs.writeFileSync('video.mp4', Buffer.from(await content.arrayBuffer()));`
           }
         ],
         // 任务记录落在日志页的「异步任务」Tab(N1 已合并)。
-        link: { to: '/panel/log?tab=task', labelKey: 'apiCatalogPage.video.extras.tasks' }
+        link: { to: workbench.logs('tasks'), labelKey: 'apiCatalogPage.video.extras.tasks' }
       },
       {
         id: 'veo',

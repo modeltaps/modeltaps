@@ -37,10 +37,11 @@ import {
 import { LogConsumeCard, LogIOCard, SafetyCard } from './cards/PrivacyCards';
 import { BuiltinChatCard, ChatLinksCard, MjNotifyCard, NotificationsCard, SmtpCard, TelegramCard } from './cards/NotifyCards';
 import { OrgPolicyCard } from './cards/OrgPolicyCards';
+import { workbench } from 'routes/paths';
 
 // ==============================|| PANEL — PLATFORM SETTINGS (admin) ||============================== //
-// One settings page in eight groups (`/panel/setting/:group`), each group a menu item of its own
-// (nav-config files them under the sections they configure); the groups and their cards come
+// One settings page in eight groups (`/panel/admin/settings/:group`), each group a menu item of
+// its own (nav-config files them under the sections they configure); the groups and their cards come
 // from `./registry`, this file attaches a component to every card. All option cards share one
 // `useOptionSettings` state, so unsaved edits survive a group switch. Old group ids, the older
 // section ids and `?tab=` values, and highlights of cards that moved redirect to the right group.
@@ -100,7 +101,7 @@ export default function Setting() {
   const [searchParams] = useSearchParams();
   useHighlightTarget();
 
-  if (!isAdmin) return <Navigate to="/panel/dashboard" replace />;
+  if (!isAdmin) return <Navigate to={workbench.dashboard()} replace />;
 
   const target = resolveSettingsTarget({
     section,

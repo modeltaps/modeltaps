@@ -7,6 +7,7 @@ import { BrandLockup } from '@/components/chrome/Logo';
 import i18nList from 'i18n/i18nList';
 import Hero from 'views/public/home/Hero';
 import { STATIC_TOKENS } from './tokens';
+import { workbench } from 'routes/paths';
 
 // ==============================|| STATIC HOME (prerendered) ||============================== //
 // The page the server returns at `/`: rendered to plain HTML at build time, one file per language,
@@ -74,7 +75,7 @@ export default function StaticHome({ lng }) {
             <Sun className="hidden size-5 dark:block" />
           </Button>
           <Button asChild size="sm" className="ml-1">
-            <a href="/panel/dashboard">{t('home.cta.console')}</a>
+            <a href={workbench.dashboard()}>{t('home.cta.console')}</a>
           </Button>
         </div>
       </header>

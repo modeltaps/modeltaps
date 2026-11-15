@@ -3,14 +3,15 @@ import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
 import PageTitleExtra from '@/components/chrome/PageTitleExtra';
+import { admin } from 'routes/paths';
 
 // ==============================|| ANALYTICS — STATS TABS ||============================== //
 // The sidebar's 统计 item covers two pages: platform analytics and per-user statistics. This
 // switch next to the page title moves between them; both keep their own route.
 
 export const STATS_TABS = [
-  { id: 'platform', url: '/panel/analytics', labelKey: 'nav.stats.platform' },
-  { id: 'byUser', url: '/panel/multi_user_stats', labelKey: 'nav.stats.byUser' }
+  { id: 'platform', url: admin.stats(), labelKey: 'nav.stats.platform' },
+  { id: 'byUser', url: admin.statsByUser(), labelKey: 'nav.stats.byUser' }
 ];
 
 export default function StatsTabs() {

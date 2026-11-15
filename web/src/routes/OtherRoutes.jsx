@@ -4,6 +4,7 @@ import { Navigate, useLocation } from 'react-router';
 // project imports
 import Loadable from 'ui-component/Loadable';
 import PublicLayout from 'layout/PublicLayout';
+import { publicPricing, workbench } from 'routes/paths';
 
 // Auth + sandbox pages render standalone (no public chrome wrapper).
 const Sandbox = Loadable(lazy(() => import('views/Sandbox')));
@@ -25,7 +26,12 @@ const ModelPrice = Loadable(lazy(() => import('views/public/ModelPrice')));
 // 公开演练场页已删除：旧书签落到面板内的 API 控制台，保留 query(如 `?model=`)。
 const PlaygroundRedirect = () => {
   const { search, hash } = useLocation();
-  return <Navigate to={`/panel/api/chat${search}${hash}`} replace />;
+  return <Navigate to={`${workbench.playground()}${search}${hash}`} replace />;
+};
+
+const PricingRedirect = () => {
+  const { search, hash } = useLocation();
+  return <Navigate to={`${publicPricing()}${search}${hash}`} replace />;
 };
 
 // ==============================|| PUBLIC ROUTING (shadcn) ||============================== //
@@ -111,8 +117,13 @@ const OtherRoutes = [
         element: <Jump />
       },
       {
-        path: '/price',
+        path: '/pricing',
         element: <ModelPrice />
+      },
+      {
+        // Old public pricing URL.
+        path: '/price',
+        element: <PricingRedirect />
       },
       {
         path: '/playground',
