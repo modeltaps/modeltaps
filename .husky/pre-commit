@@ -1,0 +1,13 @@
+#!/bin/sh
+# Check the Hong Kong (zh-HK) texts before they are committed, so simplified
+# characters and non-Hong-Kong wording are caught here instead of in CI. Runs
+# only when the commit touches a zh-HK surface; it checks the files on disk.
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+if printf '%s\n' "$staged" | grep -Eq '^(docs/hk/|docs/ops/hk/|web/src/i18n/locales/(modeltaps/)?zh_HK\.json$)'; then
+  if ! bash scripts/check-docs-hk.sh; then
+    echo ""
+    echo "Fix the zh-HK wording above (the glossary is in scripts/check-docs-hk.sh), then commit again."
+    exit 1
+  fi
+fi

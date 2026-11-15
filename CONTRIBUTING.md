@@ -7,8 +7,9 @@
   field); `web/`, `docs/` and `ittest/authgear/` form one pnpm workspace with a single lockfile
 - Docker, only for container builds
 
-Run `pnpm install` once in the repository root to install the dependencies and the commitlint git
-hooks.
+Run `pnpm install` once in the repository root to install the dependencies and the git hooks:
+commitlint for commit messages, and a `pre-commit` check of the Hong Kong Chinese texts
+(`scripts/check-docs-hk.sh`) whenever a commit touches them.
 
 ## Build
 
