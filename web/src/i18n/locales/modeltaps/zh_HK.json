@@ -3262,7 +3262,7 @@
       },
       "telegram": {
         "add": "新增命令",
-        "description": "用戶在 Telegram 裡綁定帳號、查餘額、充值、取 API 密鑰。機械人密鑰在設定檔的 tg 段裡配，和發送渠道裡的 Telegram 無關；改了選單命令要重新載入才生效。"
+        "description": "用戶在 Telegram 裡綁定帳戶、查餘額、充值、取 API 密鑰。機械人密鑰在設定檔的 tg 段裡配，和發送渠道裡的 Telegram 無關；改了選單命令要重新載入才生效。"
       },
       "pauseRules": {
         "label": "自訂規則（JSON）",
