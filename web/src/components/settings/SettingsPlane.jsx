@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useMemo, useState } from 'react
 // On 设置 (`/panel/settings/*`) the subnav of the settings page lives in the sidebar
 // (SettingsSidebar) instead of on the page. MainLayout provides this state to both: the page
 // reports which groups hold unsaved cards, and the sidebar tree marks them with a dot. Null
-// everywhere else, so a SettingsPage outside 设置 (platform settings) keeps its own subnav.
+// everywhere else.
 // Search is not part of it: it is the panel's search palette (chrome/SearchContext).
 
 const IDLE = { dirtyGroups: [] };

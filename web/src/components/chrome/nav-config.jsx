@@ -1,10 +1,16 @@
-import { PLATFORM_GROUPS, cardTitleKey, groupLabelKey, settingsGroupUrl } from 'views/panel/Setting/registry';
+import { PLATFORM_GROUPS, SETTINGS_BASE, cardTitleKey, groupDescriptionKey, groupLabelKey, settingsGroupUrl } from 'views/panel/Setting/registry';
 import { ACCOUNT_GROUPS, ORG_TREE, accountSettingsUrl, orgSettingsUrl } from 'views/panel/Settings/sections';
 import {
   BarChart3,
   BookOpen,
   Boxes,
   Building2,
+  CreditCard,
+  Globe,
+  Landmark,
+  LogIn,
+  Plug,
+  ShieldCheck,
   FileText,
   MailPlus,
   KeyRound,
@@ -19,6 +25,7 @@ import {
   Settings,
   ShieldUser,
   SlidersHorizontal,
+  Waypoints,
   Ticket,
   User,
   Users,
@@ -127,6 +134,18 @@ export const workbenchSections = [
 
 // ---------------------------------------------------------------- platform admin
 
+// The platform settings groups are menu items of their own, each filed under the section it
+// configures; every group is a route of the one settings page (`/panel/setting/:group`), whose
+// header shows the group's description.
+const settingItem = (groupId, icon, labelKey, extra = {}) => ({
+  id: `setting_${groupId}`,
+  url: settingsGroupUrl(groupId),
+  icon,
+  labelKey,
+  subtitleKey: groupDescriptionKey(groupId),
+  ...extra
+});
+
 export const adminSections = [
   {
     id: 'admin_main',
@@ -143,7 +162,8 @@ export const adminSections = [
     items: [
       { id: 'channel', url: url('channel'), icon: Network, labelKey: 'nav.items.channels' },
       { id: 'pricing', url: url('pricing'), icon: Boxes, labelKey: 'nav.items.catalog' },
-      { id: 'routing_policy', url: url('routing_policy'), icon: Route, labelKey: 'nav.items.routing' }
+      { id: 'routing_policy', url: url('routing_policy'), icon: Route, labelKey: 'nav.items.routing' },
+      settingItem('gateway', Waypoints, 'nav.items.settingGateway')
     ]
   },
   {
@@ -152,7 +172,9 @@ export const adminSections = [
     items: [
       { id: 'user', url: url('user'), icon: User, labelKey: 'nav.items.users' },
       { id: 'user_group', url: url('user_group'), icon: Users, labelKey: 'nav.items.userGroups' },
-      { id: 'org_admin', url: url('org_admin'), icon: Building2, labelKey: 'nav.items.orgs', root: true }
+      { id: 'org_admin', url: url('org_admin'), icon: Building2, labelKey: 'nav.items.orgs', root: true },
+      settingItem('auth', LogIn, 'nav.items.settingAuth'),
+      settingItem('orgpolicy', Landmark, 'nav.items.settingOrgPolicy', { root: true })
     ]
   },
   {
@@ -161,15 +183,19 @@ export const adminSections = [
     items: [
       { id: 'payment', url: url('payment'), icon: Wallet, labelKey: 'nav.items.orders' },
       { id: 'redemption', url: url('redemption'), icon: Ticket, labelKey: 'nav.items.redemption' },
-      { id: 'invite_code', url: url('invite_code'), icon: MailPlus, labelKey: 'nav.items.inviteCodes' }
+      { id: 'invite_code', url: url('invite_code'), icon: MailPlus, labelKey: 'nav.items.inviteCodes' },
+      settingItem('billing', ReceiptText, 'nav.items.settingBilling'),
+      settingItem('payment', CreditCard, 'nav.items.settingPayment')
     ]
   },
   {
-    id: 'admin_settings',
-    labelKey: 'nav.sections.settings',
+    id: 'system',
+    labelKey: 'nav.sections.system',
     items: [
-      // One item for the platform settings; its groups are an in-page subnav.
-      { id: 'platform_settings', url: url('setting'), icon: SlidersHorizontal, labelKey: 'nav.items.platformSettings' }
+      // Bare `/panel/setting` redirects to 站点, so it resolves to that item.
+      settingItem('site', Globe, 'nav.items.settingSite', { match: [SETTINGS_BASE] }),
+      settingItem('privacy', ShieldCheck, 'nav.items.settingPrivacy'),
+      settingItem('notify', Plug, 'nav.items.settingNotify')
     ]
   }
 ];
@@ -349,18 +375,12 @@ export function commandSections({ isAdmin = false, isRoot = false, orgId = null,
   ];
 }
 
-// Command palette entries for the platform settings: one per group, and one per card that only
-// shows while typing (`searchOnly`), so the palette indexes the cards without listing ~40 of them.
+// Command palette entries for the platform settings cards. They only show while typing
+// (`searchOnly`), so the palette indexes the cards without listing ~40 of them; the groups are
+// admin menu items and already listed.
 export function settingsCommandItems({ isRoot = false } = {}) {
   const groups = PLATFORM_GROUPS.filter((group) => !group.rootOnly || isRoot);
-  const groupItems = groups.map((group) => ({
-    id: `setting_${group.id}`,
-    icon: SlidersHorizontal,
-    labelKey: groupLabelKey(group.id),
-    prefixKey: 'nav.items.platformSettings',
-    href: settingsGroupUrl(group.id)
-  }));
-  const cardItems = groups.flatMap((group) =>
+  return groups.flatMap((group) =>
     group.cards.map((card) => ({
       id: `setting_card_${card.id}`,
       icon: SlidersHorizontal,
@@ -370,7 +390,6 @@ export function settingsCommandItems({ isRoot = false } = {}) {
       href: `${settingsGroupUrl(group.id)}?highlight=${card.id}`
     }))
   );
-  return [...groupItems, ...cardItems];
 }
 
 export function navLabel(t, item) {

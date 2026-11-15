@@ -87,7 +87,7 @@ describe('navSectionsFor (workbench)', () => {
   it('workbench menus never contain admin pages', () => {
     const ids = navSectionsFor({ context: 'org', orgRole: 'owner', orgId: 1, isRoot: true }).flatMap((s) => s.items.map((i) => i.id));
     expect(ids).not.toContain('channel');
-    expect(ids).not.toContain('platform_settings');
+    expect(ids).not.toContain('setting_site');
   });
 });
 
@@ -95,17 +95,18 @@ describe('navSectionsFor (platform admin)', () => {
   it('root sees every group', () => {
     expect(idsOf(navSectionsFor({ context: 'admin', isRoot: true }))).toEqual([
       { id: 'admin_main', items: ['analytics', 'systemInfo'] },
-      { id: 'gateway', items: ['channel', 'pricing', 'routing_policy'] },
-      { id: 'people', items: ['user', 'user_group', 'org_admin'] },
-      { id: 'finance', items: ['payment', 'redemption', 'invite_code'] },
-      { id: 'admin_settings', items: ['platform_settings'] }
+      { id: 'gateway', items: ['channel', 'pricing', 'routing_policy', 'setting_gateway'] },
+      { id: 'people', items: ['user', 'user_group', 'org_admin', 'setting_auth', 'setting_orgpolicy'] },
+      { id: 'finance', items: ['payment', 'redemption', 'invite_code', 'setting_billing', 'setting_payment'] },
+      { id: 'system', items: ['setting_site', 'setting_privacy', 'setting_notify'] }
     ]);
   });
 
-  it('non-root admins lose 系统日志 and 组织', () => {
+  it('non-root admins lose 系统日志, 组织 and 组织策略', () => {
     const ids = navSectionsFor({ context: 'admin', isRoot: false }).flatMap((s) => s.items.map((i) => i.id));
     expect(ids).not.toContain('systemInfo');
     expect(ids).not.toContain('org_admin');
+    expect(ids).not.toContain('setting_orgpolicy');
     expect(ids).toContain('analytics');
   });
 
@@ -128,9 +129,12 @@ describe('findActiveItem', () => {
     expect(findActiveItem('/panel/analytics')?.id).toBe('analytics');
   });
 
-  it('platform settings groups resolve to one item', () => {
-    expect(findActiveItem('/panel/setting')?.id).toBe('platform_settings');
-    expect(findActiveItem('/panel/setting/gateway')?.id).toBe('platform_settings');
+  it('every platform settings group resolves to its own item', () => {
+    expect(findActiveItem('/panel/setting')?.id).toBe('setting_site');
+    expect(findActiveItem('/panel/setting/site')?.id).toBe('setting_site');
+    expect(findActiveItem('/panel/setting/gateway')?.id).toBe('setting_gateway');
+    expect(findActiveItem('/panel/setting/billing')?.id).toBe('setting_billing');
+    expect(isAdminPath('/panel/setting/relay')).toBe(true);
     expect(findActiveItem('/panel/invite_code')?.id).toBe('invite_code');
   });
 
@@ -259,28 +263,28 @@ describe('commandSections', () => {
       'channel',
       'pricing',
       'routing_policy',
+      'setting_gateway',
       'user',
       'user_group',
+      'setting_auth',
       'payment',
       'redemption',
       'invite_code',
-      'platform_settings'
+      'setting_billing',
+      'setting_payment',
+      'setting_site',
+      'setting_privacy',
+      'setting_notify'
     ]);
     expect(admin.items[0].href).toBe('/panel/analytics');
   });
 
-  it('platform settings groups are listed; cards only show while typing', () => {
-    const groupIds = (isRoot) =>
-      commandSections({ isAdmin: true, isRoot })
-        .find((s) => s.id === 'platform_settings')
-        .items.filter((i) => !i.searchOnly)
-        .map((i) => i.href);
-    expect(groupIds(false)).toEqual(
-      ['site', 'auth', 'billing', 'payment', 'gateway', 'privacy', 'notify'].map((g) => `/panel/setting/${g}`)
-    );
-    expect(groupIds(true)).toContain('/panel/setting/orgpolicy');
-    const cards = settingsCommandItems({ isRoot: false }).filter((i) => i.searchOnly);
+  it('platform settings cards only show while typing', () => {
+    const items = commandSections({ isAdmin: true, isRoot: false }).find((s) => s.id === 'platform_settings').items;
+    expect(items.every((i) => i.searchOnly)).toBe(true);
+    const cards = settingsCommandItems({ isRoot: false });
     expect(cards.find((i) => i.id === 'setting_card_smtp').href).toBe('/panel/setting/notify?highlight=smtp');
     expect(cards.some((i) => i.id === 'setting_card_org-policy')).toBe(false);
+    expect(settingsCommandItems({ isRoot: true }).some((i) => i.id === 'setting_card_org-policy')).toBe(true);
   });
 });

@@ -682,7 +682,6 @@
     "channel": "每个供应商下可以有多个渠道；一个渠道是连到该供应商的一组凭据和地址",
     "org_members": "邀请成员、设置每人的预算与模型范围",
     "organization": "组织的余额、用量与审计记录",
-    "platform_settings": "整个平台的默认值与开关",
     "token": "调用接口用的密钥",
     "invite_code": "生成、启用与作废注册用的邀请码",
     "routing": "API Key 可调用的路由策略"
@@ -2574,7 +2573,7 @@
       "gateway": "网关",
       "people": "用户",
       "finance": "财务",
-      "settings": "设置"
+      "system": "系统"
     },
     "items": {
       "dashboard": "仪表盘",
@@ -2604,7 +2603,15 @@
       "settings": "设置",
       "routingPolicies": "路由策略",
       "health": "运行状况",
-      "orgModelAccess": "模型访问"
+      "orgModelAccess": "模型访问",
+      "settingSite": "站点",
+      "settingAuth": "登录与注册",
+      "settingBilling": "计费设置",
+      "settingPayment": "支付设置",
+      "settingGateway": "网关设置",
+      "settingPrivacy": "日志与隐私",
+      "settingNotify": "通知与集成",
+      "settingOrgPolicy": "组织策略"
     },
     "context": {
       "personal": "个人",

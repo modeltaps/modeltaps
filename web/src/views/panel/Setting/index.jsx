@@ -1,6 +1,5 @@
 import { Navigate, useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { CreditCard, Globe, Landmark, LogIn, Plug, ReceiptText, Route, ShieldCheck } from 'lucide-react';
 
 import SettingsPage from '@/components/settings/SettingsPage';
 import { useIsAdmin, useIsRoot } from 'utils/common';
@@ -40,7 +39,8 @@ import { BuiltinChatCard, ChatLinksCard, MjNotifyCard, NotificationsCard, SmtpCa
 import { OrgPolicyCard } from './cards/OrgPolicyCards';
 
 // ==============================|| PANEL — PLATFORM SETTINGS (admin) ||============================== //
-// One settings page in eight groups (`/panel/setting/:group`); the groups and their cards come
+// One settings page in eight groups (`/panel/setting/:group`), each group a menu item of its own
+// (nav-config files them under the sections they configure); the groups and their cards come
 // from `./registry`, this file attaches a component to every card. All option cards share one
 // `useOptionSettings` state, so unsaved edits survive a group switch. Old group ids, the older
 // section ids and `?tab=` values, and highlights of cards that moved redirect to the right group.
@@ -91,17 +91,6 @@ const CARD_COMPONENTS = {
   'org-policy': OrgPolicyCard
 };
 
-const GROUP_ICONS = {
-  site: Globe,
-  auth: LogIn,
-  billing: ReceiptText,
-  payment: CreditCard,
-  gateway: Route,
-  privacy: ShieldCheck,
-  notify: Plug,
-  orgpolicy: Landmark
-};
-
 export default function Setting() {
   const { t } = useTranslation();
   const isAdmin = useIsAdmin();
@@ -124,15 +113,13 @@ export default function Setting() {
   const groups = visibleGroups(isRoot).map((group) => ({
     id: group.id,
     to: settingsGroupUrl(group.id),
-    icon: GROUP_ICONS[group.id],
     label: t(groupLabelKey(group.id)),
     description: t(groupDescriptionKey(group.id)),
-    badge: group.rootOnly ? 'root' : undefined,
     cards: group.cards.map((card) => {
       const Component = CARD_COMPONENTS[card.id];
       return { id: card.id, render: () => <Component ctx={ctx} /> };
     })
   }));
 
-  return <SettingsPage label={t('settingsUi.platform.label')} groups={groups} activeGroupId={section} className="max-w-7xl" />;
+  return <SettingsPage label={t('settingsUi.platform.label')} groups={groups} activeGroupId={section} hideNav />;
 }

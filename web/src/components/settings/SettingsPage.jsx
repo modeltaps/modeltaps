@@ -15,7 +15,8 @@ import { useSettingsPlane } from './SettingsPlane';
 // Platform, organization and personal settings share this page: a sticky subnav of groups on the
 // left (a scrolling row below md), the cards of the active group on the right. On 设置 (personal
 // and organization settings) the subnav and its unsaved dots live in the settings sidebar instead
-// (SettingsPlane), and the page shows only the cards. Every group stays mounted (inactive ones are
+// (SettingsPlane), and the page shows only the cards; platform settings do the same (`hideNav`),
+// their groups being admin menu items. Every group stays mounted (inactive ones are
 // hidden), so unsaved edits survive a group switch and the subnav can mark groups holding unsaved
 // cards with a dot. Search is the panel's search palette (SearchContext): the page lists its cards
 // there with everything written on them, collection rows included, and the subnav's search button
@@ -114,9 +115,12 @@ function LeaveGuard({ when, paths }) {
 
 LeaveGuard.propTypes = { when: PropTypes.bool, paths: PropTypes.arrayOf(PropTypes.string).isRequired };
 
-export default function SettingsPage({ label, groups, activeGroupId, className }) {
+export default function SettingsPage({ label, groups, activeGroupId, hideNav = false, className }) {
   const { t } = useTranslation();
   const plane = useSettingsPlane();
+  // The groups are listed elsewhere (the settings sidebar, or menu items of their own): the page
+  // shows only the cards, and the page header names the group.
+  const navElsewhere = Boolean(plane) || hideNav;
   const search = useSearch();
   const [dirty, setDirty] = useState({});
   const slots = useRef({});
@@ -153,8 +157,8 @@ export default function SettingsPage({ label, groups, activeGroupId, className }
   }, [active.id]);
 
   return (
-    <div className={cn(!plane && 'md:grid md:grid-cols-[13rem_minmax(0,1fr)] md:items-start md:gap-8', className)}>
-      <nav hidden={Boolean(plane)} aria-label={label} className="mb-5 md:sticky md:top-0 md:mb-0 md:space-y-3">
+    <div className={cn(!navElsewhere && 'md:grid md:grid-cols-[13rem_minmax(0,1fr)] md:items-start md:gap-8', className)}>
+      <nav hidden={navElsewhere} aria-label={label} className="mb-5 md:sticky md:top-0 md:mb-0 md:space-y-3">
         {search && shouldShowSearch(groups) && (
           <button
             type="button"
@@ -200,8 +204,8 @@ export default function SettingsPage({ label, groups, activeGroupId, className }
       </nav>
 
       <div className="min-w-0 max-w-4xl">
-        {/* On 设置 the page title already names the group. */}
-        {!plane && (
+        {/* With the groups listed elsewhere the page title already names the group. */}
+        {!navElsewhere && (
           <div className="mb-5 space-y-1">
             <h2 className="text-base font-semibold">{active.label}</h2>
             {active.description && <p className="text-sm text-muted-foreground">{active.description}</p>}
@@ -247,5 +251,6 @@ SettingsPage.propTypes = {
     })
   ).isRequired,
   activeGroupId: PropTypes.string,
+  hideNav: PropTypes.bool,
   className: PropTypes.string
 };

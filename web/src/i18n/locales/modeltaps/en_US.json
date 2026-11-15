@@ -683,7 +683,6 @@
     "channel": "Each provider can have several channels; a channel is one set of credentials and an address for that provider",
     "org_members": "Invite members and set each member’s budget and model scope",
     "organization": "Organization balance, usage and audit log",
-    "platform_settings": "Platform-wide defaults and switches",
     "token": "Keys for calling the API",
     "invite_code": "Create, enable and revoke registration invite codes",
     "routing": "Routing policies your API keys can call"
@@ -2691,7 +2690,7 @@
       "gateway": "Gateway",
       "people": "Users",
       "finance": "Finance",
-      "settings": "Settings"
+      "system": "System"
     },
     "items": {
       "dashboard": "Dashboard",
@@ -2721,7 +2720,15 @@
       "settings": "Settings",
       "routingPolicies": "Routing policies",
       "health": "System health",
-      "orgModelAccess": "Model access"
+      "orgModelAccess": "Model access",
+      "settingSite": "Site",
+      "settingAuth": "Sign-in & sign-up",
+      "settingBilling": "Billing settings",
+      "settingPayment": "Payment settings",
+      "settingGateway": "Gateway settings",
+      "settingPrivacy": "Logs & privacy",
+      "settingNotify": "Notifications & integrations",
+      "settingOrgPolicy": "Organization policy"
     },
     "context": {
       "personal": "Personal",

@@ -682,7 +682,6 @@
     "channel": "プロバイダーごとに複数のチャネルを登録できます。チャネルはプロバイダーに接続する認証情報とアドレスの組です",
     "org_members": "メンバーを招待し、各メンバーの予算とモデル範囲を設定",
     "organization": "組織の残高、使用量、監査ログ",
-    "platform_settings": "プラットフォーム全体の既定値とスイッチ",
     "token": "API を呼び出すためのキー",
     "invite_code": "登録用の招待コードの作成、有効化、無効化",
     "routing": "API キーで呼び出せるルーティングポリシー"
@@ -2576,7 +2575,7 @@
       "gateway": "ゲートウェイ",
       "people": "ユーザー",
       "finance": "財務",
-      "settings": "設定"
+      "system": "システム"
     },
     "items": {
       "dashboard": "ダッシュボード",
@@ -2606,7 +2605,15 @@
       "settings": "設定",
       "routingPolicies": "ルーティングポリシー",
       "health": "稼働状況",
-      "orgModelAccess": "モデルアクセス"
+      "orgModelAccess": "モデルアクセス",
+      "settingSite": "サイト",
+      "settingAuth": "ログインと登録",
+      "settingBilling": "課金設定",
+      "settingPayment": "支払い設定",
+      "settingGateway": "ゲートウェイ設定",
+      "settingPrivacy": "ログとプライバシー",
+      "settingNotify": "通知と連携",
+      "settingOrgPolicy": "組織ポリシー"
     },
     "context": {
       "personal": "個人",

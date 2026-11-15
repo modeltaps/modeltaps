@@ -31,7 +31,7 @@ import MobilePushFrame from './MobilePushFrame';
 // One sidebar shell for every panel page. Routes are unchanged (/panel/*): the context
 // (personal / org / platform admin) is derived from the path and the active organization
 // (nav-config `deriveContext`). Non-admins on admin routes keep the workbench chrome and the
-// route guard's 404 in place. Platform settings render inside the shell with an in-page subnav.
+// route guard's 404 in place. Platform settings groups are admin menu items of their own.
 // 设置 (`/panel/settings/*`, organization and personal settings) swaps the sidebar for its own
 // tree (SettingsSidebar) with a back row to the page the user came from; its pages are titled
 // from that tree (the item, with the organization's name under organization items).
@@ -128,7 +128,7 @@ export default function MainLayout() {
         ? tree.active && { title: t(tree.active.labelKey), subtitle: tree.activeScope === 'org' ? tree.org?.name : '' }
         : activeItem && {
             title: navLabel(t, activeItem),
-            subtitle: t(`nav_subtitles.${activeItem.id}`, { defaultValue: '' })
+            subtitle: t(activeItem.subtitleKey || `nav_subtitles.${activeItem.id}`, { defaultValue: '' })
           };
   const SidebarView = settingsPlane ? SettingsSidebar : Sidebar;
 

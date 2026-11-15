@@ -682,7 +682,6 @@
     "channel": "每個供應商下可以有多個渠道；一個渠道是連到該供應商的一組憑證和地址",
     "org_members": "邀請成員、設定每人的預算與模型範圍",
     "organization": "組織的餘額、用量與審計記錄",
-    "platform_settings": "整個平台的預設值與開關",
     "token": "調用介面用的金鑰",
     "invite_code": "生成、啟用與作廢註冊用的邀請碼",
     "routing": "API Key 可呼叫的路由策略"
@@ -2574,7 +2573,7 @@
       "gateway": "閘道",
       "people": "用戶",
       "finance": "財務",
-      "settings": "設定"
+      "system": "系統"
     },
     "items": {
       "dashboard": "儀表板",
@@ -2604,7 +2603,15 @@
       "settings": "設定",
       "routingPolicies": "路由策略",
       "health": "運行狀況",
-      "orgModelAccess": "模型存取"
+      "orgModelAccess": "模型存取",
+      "settingSite": "站點",
+      "settingAuth": "登入與註冊",
+      "settingBilling": "計費設定",
+      "settingPayment": "支付設定",
+      "settingGateway": "閘道設定",
+      "settingPrivacy": "日誌與隱私",
+      "settingNotify": "通知與整合",
+      "settingOrgPolicy": "組織策略"
     },
     "context": {
       "personal": "個人",
