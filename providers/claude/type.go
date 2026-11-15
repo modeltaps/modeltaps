@@ -174,6 +174,10 @@ type Usage struct {
 	Speed        string `json:"speed,omitempty"`
 	InferenceGeo string `json:"inference_geo,omitempty"`
 	ServiceTier  string `json:"service_tier,omitempty"`
+
+	// UpstreamCost is a numeric usage.cost, in USD, which a router's Anthropic compatible endpoint
+	// may add (see types.Usage.UpstreamCost); 0 when absent. It is never serialized.
+	UpstreamCost float64 `json:"-"`
 }
 
 // CacheCreationUsage 对应 Anthropic usage.cache_creation 嵌套对象。
@@ -269,6 +273,9 @@ func (u *Usage) UnmarshalJSON(data []byte) error {
 	}
 
 	*u = Usage(temp)
+	if cost, ok := raw["cost"].(float64); ok && cost > 0 {
+		u.UpstreamCost = cost
+	}
 	return nil
 }
 

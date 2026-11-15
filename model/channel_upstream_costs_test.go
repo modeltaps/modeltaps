@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -89,5 +90,43 @@ func TestRecordConsumeLogStoresUpstreamCost(t *testing.T) {
 	}
 	if logs[1].UpstreamCost != 0 || logs[1].ExpectedCost != 0 {
 		t.Errorf("a log without an upstream cost has %v / %v", logs[1].UpstreamCost, logs[1].ExpectedCost)
+	}
+}
+
+// A cost that arrives after the log is written fills the log once, and does not replace a cost
+// the response itself carried.
+func TestEnrichLogByRequestId(t *testing.T) {
+	useUpstreamCostTestDB(t)
+	oldEnabled, oldBatch := config.LogConsumeEnabled, config.BatchUpdateEnabled
+	config.LogConsumeEnabled, config.BatchUpdateEnabled = true, false
+	t.Cleanup(func() { config.LogConsumeEnabled, config.BatchUpdateEnabled = oldEnabled, oldBatch })
+
+	if err := EnrichLogByRequestId("req-1", map[string]any{"or_provider": "x"}, 0.5); !errors.Is(err, gorm.ErrRecordNotFound) {
+		t.Fatalf("a missing log: err = %v, want ErrRecordNotFound", err)
+	}
+
+	// The estimate alone, as logged for a response without a cost.
+	RecordConsumeLog(context.Background(), 1, 7, 10, 5, "a", "token", 600, 0, "", 1, false,
+		map[string]any{"request_id": "req-1", LogMetaExpectedCost: 0.4}, "", nil)
+	RecordConsumeLog(context.Background(), 1, 7, 10, 5, "a", "token", 600, 0, "", 1, false,
+		map[string]any{"request_id": "req-2", LogMetaExpectedCost: 0.4, LogMetaUpstreamCost: 0.45}, "", nil)
+
+	if err := EnrichLogByRequestId("req-1", map[string]any{"or_provider": "x"}, 0.5); err != nil {
+		t.Fatal(err)
+	}
+	if err := EnrichLogByRequestId("req-2", nil, 0.9); err != nil {
+		t.Fatal(err)
+	}
+
+	var logs []Log
+	DB.Order("id").Find(&logs)
+	if len(logs) != 2 {
+		t.Fatalf("logs = %d", len(logs))
+	}
+	if logs[0].UpstreamCost != 0.5 || logs[0].ExpectedCost != 0.4 || logs[0].Metadata.Data()["or_provider"] != "x" {
+		t.Errorf("filled log = %v / %v, metadata %v", logs[0].UpstreamCost, logs[0].ExpectedCost, logs[0].Metadata.Data())
+	}
+	if logs[1].UpstreamCost != 0.45 {
+		t.Errorf("the cost from the response was replaced: %v", logs[1].UpstreamCost)
 	}
 }

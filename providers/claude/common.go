@@ -89,6 +89,9 @@ func ClaudeUsageMerge(usage *Usage, mergeUsage *Usage) {
 	if usage.Speed == "" {
 		usage.Speed = mergeUsage.Speed
 	}
+	if usage.UpstreamCost == 0 {
+		usage.UpstreamCost = mergeUsage.UpstreamCost
+	}
 	if usage.InferenceGeo == "" {
 		usage.InferenceGeo = mergeUsage.InferenceGeo
 	}
@@ -133,6 +136,9 @@ func ClaudeUsageToOpenaiUsage(cUsage *Usage, usage *types.Usage) bool {
 	}
 	if cUsage.InferenceGeo != "" {
 		usage.InferenceGeo = cUsage.InferenceGeo
+	}
+	if cUsage.UpstreamCost > 0 {
+		usage.UpstreamCost = cUsage.UpstreamCost
 	}
 
 	return true

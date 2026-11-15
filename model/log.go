@@ -41,8 +41,9 @@ type Log struct {
 	Metadata          datatypes.JSONType[map[string]any] `json:"metadata" gorm:"type:json"`
 	// UpstreamCost is what the upstream reported it charged for the request, in USD; 0 when it
 	// reported nothing. ExpectedCost is the gateway's own estimate of that charge, in USD, from
-	// its price table and the channel's cost ratio; it is only written next to an UpstreamCost,
-	// so the two can be summed and compared (see GetChannelUpstreamCosts). Admin only.
+	// its price table and the channel's cost ratio; it is written for the channel types whose
+	// upstream reports a cost, so the two can be summed and compared over the logs that have
+	// both (see GetChannelUpstreamCosts). Admin only.
 	UpstreamCost float64 `json:"upstream_cost" gorm:"default:0"`
 	ExpectedCost float64 `json:"expected_cost" gorm:"default:0"`
 
@@ -220,10 +221,9 @@ func RecordConsumeLog(
 
 	// The two costs travel in the metadata map and are stored as columns; they are removed from
 	// the map, which users can read.
-	if cost, ok := metadata[LogMetaUpstreamCost].(float64); ok && cost > 0 {
-		log.UpstreamCost = cost
-		log.ExpectedCost, _ = metadata[LogMetaExpectedCost].(float64)
-	}
+	// The estimate may come alone: the upstream cost is then filled in later (EnrichLogByRequestId).
+	log.UpstreamCost, _ = metadata[LogMetaUpstreamCost].(float64)
+	log.ExpectedCost, _ = metadata[LogMetaExpectedCost].(float64)
 	delete(metadata, LogMetaUpstreamCost)
 	delete(metadata, LogMetaExpectedCost)
 
@@ -433,30 +433,6 @@ func requestIdExpr() string {
 	default:
 		return "JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.request_id'))"
 	}
-}
-
-// UpdateLogMetadataByRequestId 按 metadata.request_id 定位消费日志行,把 extra 中的键并入其 metadata
-// (读-改-写,additive,不覆盖既有键)。W9-M6 异步回填 OpenRouter generation 统计专用。
-// 找不到对应行时返回 gorm.ErrRecordNotFound,供调用方按批量落库延迟重试。
-func UpdateLogMetadataByRequestId(requestId string, extra map[string]any) error {
-	if requestId == "" || len(extra) == 0 {
-		return nil
-	}
-
-	var log Log
-	if err := DB.Where(requestIdExpr()+" = ?", requestId).Order("id DESC").First(&log).Error; err != nil {
-		return err
-	}
-
-	meta := log.Metadata.Data()
-	if meta == nil {
-		meta = map[string]any{}
-	}
-	for k, v := range extra {
-		meta[k] = v
-	}
-
-	return DB.Model(&Log{}).Where("id = ?", log.Id).Update("metadata", datatypes.NewJSONType(meta)).Error
 }
 
 // applyLogMetricFilters 统一施加 W8-E 三个新过滤(finish_reason / min_quota / min_tokens),
@@ -1082,4 +1058,37 @@ func GetRpmTpmStatistics(userId int) (*RpmTpmStatistics, error) {
 		CPM: cpm,
 		PPM: ppm,
 	}, nil
+}
+
+// EnrichLogByRequestId merges extra into the metadata of the consume log with the request id
+// and, when upstreamCost is positive and the log has none yet, stores it as the log's upstream
+// cost. It returns gorm.ErrRecordNotFound while the log is not written yet.
+func EnrichLogByRequestId(requestId string, extra map[string]any, upstreamCost float64) error {
+	if requestId == "" || (len(extra) == 0 && upstreamCost <= 0) {
+		return nil
+	}
+
+	var log Log
+	if err := DB.Where(requestIdExpr()+" = ?", requestId).Order("id DESC").First(&log).Error; err != nil {
+		return err
+	}
+
+	updates := map[string]any{}
+	if len(extra) > 0 {
+		meta := log.Metadata.Data()
+		if meta == nil {
+			meta = map[string]any{}
+		}
+		for k, v := range extra {
+			meta[k] = v
+		}
+		updates["metadata"] = datatypes.NewJSONType(meta)
+	}
+	if upstreamCost > 0 && log.UpstreamCost <= 0 {
+		updates["upstream_cost"] = upstreamCost
+	}
+	if len(updates) == 0 {
+		return nil
+	}
+	return DB.Model(&Log{}).Where("id = ?", log.Id).Updates(updates).Error
 }

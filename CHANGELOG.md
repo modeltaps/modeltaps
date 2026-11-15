@@ -15,8 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   plain and streamed chat completions and for the Responses API, so no extra request is made; the
   field is not passed on to the client, and the same field from other upstreams is ignored until
   its unit is verified. A channel's Performance tab lists both sums per model with the
-  difference, and marks a difference of 5% or more. Requests in Claude format are not covered
-  yet. Nothing is repriced from this.
+  difference, and marks a difference of 5% or more. Requests in Claude format are covered too: a
+  cost in the response's usage is used when there is one, and otherwise the generation is looked
+  up by the message id afterwards and its `total_cost` fills the log. Nothing is repriced from
+  this.
 - A channel has a management key of its own, apart from the key requests are sent with. It is
   optional, never used for requests and never returned by the API (only its mask), and it reads
   what belongs to the upstream account: with it an OpenRouter channel shows the account's

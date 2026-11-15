@@ -56,7 +56,7 @@ func enrichLogWithGeneration(baseURL, apiKey, proxyAddr, genID, requestID string
 		if data.GenerationTime > 0 {
 			extra["or_generation_time"] = int(data.GenerationTime)
 		}
-		if len(extra) == 0 {
+		if len(extra) == 0 && data.TotalCost <= 0 {
 			return
 		}
 
@@ -64,7 +64,8 @@ func enrichLogWithGeneration(baseURL, apiKey, proxyAddr, genID, requestID string
 			if d > 0 {
 				time.Sleep(d)
 			}
-			err := model.UpdateLogMetadataByRequestId(requestID, extra)
+			// The cost fills the log's upstream cost when the response itself carried none.
+			err := model.EnrichLogByRequestId(requestID, extra, data.TotalCost)
 			if err == nil {
 				return
 			}
@@ -88,7 +89,7 @@ func fetchGenerationWithRetry(baseURL, apiKey, proxyAddr, genID string) *Generat
 		if err != nil {
 			continue
 		}
-		if data != nil && (data.ProviderName != "" || data.Latency > 0 || data.GenerationTime > 0) {
+		if data != nil && (data.ProviderName != "" || data.Latency > 0 || data.GenerationTime > 0 || data.TotalCost > 0) {
 			return data
 		}
 	}

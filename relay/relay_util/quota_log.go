@@ -322,9 +322,13 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 
 		// The upstream's own charge for the request, kept with the gateway's estimate of it.
 		// RecordConsumeLog stores both as columns and takes them out of the metadata.
-		if usage.UpstreamCost > 0 && upstreamCostTypes[q.channelType] {
-			meta[model.LogMetaUpstreamCost] = usage.UpstreamCost
+		// The estimate is kept even when the response carried no cost: the provider may fill
+		// the upstream cost in afterwards.
+		if upstreamCostTypes[q.channelType] {
 			meta[model.LogMetaExpectedCost] = q.ExpectedUpstreamCost(usage)
+			if usage.UpstreamCost > 0 {
+				meta[model.LogMetaUpstreamCost] = usage.UpstreamCost
+			}
 		}
 
 		// 处理档位(SEC-36,additive):上游回报了非标准档位或推理区域时记录,倍率已计入扣费。

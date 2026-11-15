@@ -67,4 +67,6 @@ type GenerationData struct {
 	ProviderName   string  `json:"provider_name"`
 	Latency        float64 `json:"latency"`
 	GenerationTime float64 `json:"generation_time"`
+	// TotalCost is what the generation cost the account, in USD.
+	TotalCost float64 `json:"total_cost"`
 }

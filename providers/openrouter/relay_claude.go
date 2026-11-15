@@ -1,6 +1,9 @@
 package openrouter
 
 import (
+	"strings"
+	"sync"
+
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/providers/base"
 	"github.com/modeltaps/modeltaps/providers/claude"
@@ -26,8 +29,23 @@ func (p *OpenRouterProvider) claudeProvider() *claude.ClaudeProvider {
 	provider := &claude.ClaudeProvider{BaseProvider: p.BaseProvider, BearerAuth: true}
 	provider.Config = getClaudeConfig()
 	provider.Requester = requester.NewHTTPRequester(p.Channel.GetProxy(), claude.RequestErrorHandle)
+
+	// The message id is the generation id: look the generation up afterwards for the provider
+	// that served it and what it cost. Everything the lookup needs is read here, on the handler's
+	// stack, since a streamed id arrives on the stream goroutine.
+	reqID, baseURL, apiKey, proxy := p.requestID(), p.GetBaseURL(), firstChannelKey(p.Channel.Key), p.Channel.GetProxy()
+	var once sync.Once
+	provider.MessageIDHandler = func(id string) {
+		if !strings.HasPrefix(id, generationIDPrefix) {
+			return
+		}
+		once.Do(func() { enrichLogWithGeneration(baseURL, apiKey, proxy, id, reqID) })
+	}
 	return provider
 }
+
+// generationIDPrefix starts every id GET /api/v1/generation accepts.
+const generationIDPrefix = "gen-"
 
 func (p *OpenRouterProvider) CreateClaudeChat(request *claude.ClaudeRequest) (*claude.ClaudeResponse, *types.OpenAIErrorWithStatusCode) {
 	return p.claudeProvider().CreateClaudeChat(request)

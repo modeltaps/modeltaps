@@ -37,9 +37,16 @@ func TestLogMetaUpstreamCost(t *testing.T) {
 	if _, ok := q.GetLogMeta(usage)[model.LogMetaUpstreamCost]; ok {
 		t.Error("a cost from an unverified upstream was logged")
 	}
-	// Nothing reported, nothing logged.
+	if _, ok := q.GetLogMeta(usage)[model.LogMetaExpectedCost]; ok {
+		t.Error("an estimate was logged for an upstream that reports no cost")
+	}
+	// Nothing reported: no upstream cost, but the estimate stays for a cost that is filled in later.
 	q = &Quota{price: price, groupRatio: 1, channelType: config.ChannelTypeOpenRouter}
-	if _, ok := q.GetLogMeta(&types.Usage{PromptTokens: 10, CompletionTokens: 5})[model.LogMetaUpstreamCost]; ok {
+	meta = q.GetLogMeta(&types.Usage{PromptTokens: 1_000_000, CompletionTokens: 500_000})
+	if _, ok := meta[model.LogMetaUpstreamCost]; ok {
 		t.Error("a request without an upstream cost was logged with one")
+	}
+	if expected, _ := meta[model.LogMetaExpectedCost].(float64); math.Abs(expected-4) > 1e-9 {
+		t.Errorf("expected cost without an upstream cost = %v, want 4", meta[model.LogMetaExpectedCost])
 	}
 }

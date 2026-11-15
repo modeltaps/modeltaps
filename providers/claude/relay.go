@@ -31,6 +31,9 @@ type ClaudeRelayStreamHandler struct {
 	// SkipModelUnify 为 true 时跳过 message_start 中 message.model 的统一改写，
 	// 用于 Bedrock 指纹保真：保留上游 AWS 返回的原始 model 名。
 	SkipModelUnify bool
+
+	// MessageIDHandler is called with message.id of message_start (see ClaudeProvider).
+	MessageIDHandler func(id string)
 }
 
 // claudeUpstreamHeaderExcluded 传输层头，绝不透传（key 全小写）。
@@ -140,6 +143,9 @@ func (p *ClaudeProvider) CreateClaudeChat(request *ClaudeRequest) (*ClaudeRespon
 
 	usage := p.GetUsage()
 	base.ObserveUpstreamModel(p.Context, claudeResponse.Model)
+	if p.MessageIDHandler != nil && claudeResponse.Id != "" {
+		p.MessageIDHandler(claudeResponse.Id)
+	}
 
 	isOk := ClaudeUsageToOpenaiUsage(&claudeResponse.Usage, usage)
 	if !isOk {
@@ -176,6 +182,8 @@ func (p *ClaudeProvider) CreateClaudeChatStream(request *ClaudeRequest) (request
 		ModelName: request.Model,
 		Prefix:    `data: {`,
 		Context:   p.Context,
+
+		MessageIDHandler: p.MessageIDHandler,
 	}
 
 	// 发送请求
@@ -247,6 +255,9 @@ func (h *ClaudeRelayStreamHandler) HandlerStream(rawLine *[]byte, dataChan chan 
 		// 用累积文本估算避免计费归零。StartUsage 保留原值，供 message_delta 的 merge 取大者。
 		h.Usage.CompletionTokens = 0
 		h.Usage.TotalTokens = h.Usage.PromptTokens
+		if h.MessageIDHandler != nil && claudeResponse.Message.Id != "" {
+			h.MessageIDHandler(claudeResponse.Message.Id)
+		}
 
 		// 统一请求响应模型：model 仅出现在 message_start 的 message.model。
 		// 在剥离前缀的纯 JSON 上字节级改写（gjson 读 + sjson 改，仅动 model 一个字段，

@@ -30,6 +30,10 @@ type ClaudeProvider struct {
 	// 聚合网关（OpenRouter、Vercel AI Gateway）的 Anthropic 兼容入口按此约定；OpenRouter
 	// 还会把 x-api-key 当成用户自带的 Anthropic 密钥（BYOK），所以不能两者都发。
 	BearerAuth bool
+	// MessageIDHandler, when set, is called once with the id of the upstream message of a native
+	// Claude request (plain or streamed). A streamed call comes from the stream goroutine, so
+	// the handler must not touch the gin context.
+	MessageIDHandler func(id string)
 }
 
 func getConfig() base.ProviderConfig {
