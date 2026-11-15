@@ -23,6 +23,7 @@ import {
   sortCatalogRows,
   nextReleasedSort,
   formatReleaseDate,
+  releasedAgo,
   catalogGroup,
   catalogGroupCounts,
   suppliedUpstreamKeys
@@ -394,6 +395,18 @@ describe('sortCatalogRows', () => {
     it('formats a release date as a UTC day and leaves unknown blank', () => {
       expect(formatReleaseDate(Date.UTC(2026, 10, 3) / 1000)).toBe('2026-11-03');
       expect(formatReleaseDate(0)).toBe('');
+    });
+
+    it('says how long ago a release was, to the day', () => {
+      const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+      const now = Date.UTC(2026, 10, 15, 12) / 1000;
+      const day = (y, m, d) => Date.UTC(y, m, d) / 1000;
+      expect(releasedAgo(rtf, day(2026, 10, 15), now)).toBe('today');
+      expect(releasedAgo(rtf, day(2026, 10, 14), now)).toBe('yesterday');
+      expect(releasedAgo(rtf, day(2026, 10, 9), now)).toBe('6 days ago');
+      expect(releasedAgo(rtf, day(2026, 9, 28), now)).toBe('2 weeks ago');
+      expect(releasedAgo(rtf, day(2026, 8, 1), now)).toBe('2 months ago');
+      expect(releasedAgo(rtf, day(2024, 10, 1), now)).toBe('2 years ago');
     });
   });
 });

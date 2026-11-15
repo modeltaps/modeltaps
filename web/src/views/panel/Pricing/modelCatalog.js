@@ -20,6 +20,7 @@ export const MODEL_COLUMNS = [
   { id: 'select', fixed: true },
   { id: 'model', labelKey: 'modelInfoPage.model', fixed: true },
   { id: 'model_kind', labelKey: 'modelInfoPage.modelKind' },
+  { id: 'released_at', labelKey: 'modelInfoPage.releasedAt' },
   { id: 'endpoints', labelKey: 'modelInfoPage.endpoints', defaultHidden: true },
   { id: 'channels', labelKey: 'modelInfoPage.channels', defaultHidden: true },
   { id: 'supply', labelKey: 'modelSupply.column' },
@@ -27,7 +28,6 @@ export const MODEL_COLUMNS = [
   { id: 'state', labelKey: 'modelInfoPage.state', fixed: true },
   { id: 'visible', labelKey: 'modelsPage.visibleToUsers', fixed: true },
   { id: 'vendor', labelKey: 'modelInfoPage.vendor', defaultHidden: true },
-  { id: 'released_at', labelKey: 'modelInfoPage.releasedAt' },
   { id: 'context_length', labelKey: 'modelInfoPage.contextLength', defaultHidden: true },
   { id: 'max_tokens', labelKey: 'modelInfoPage.maxTokens', defaultHidden: true },
   { id: 'modalities', labelKey: 'modelInfoPage.modalities', defaultHidden: true },
@@ -263,6 +263,16 @@ export function sortCatalogRows(rows = [], sort = 'default') {
 
 // A release date is a calendar day stored as UTC midnight, so it is shown in UTC.
 export const formatReleaseDate = (ts) => (Number(ts) > 0 ? new Date(ts * 1000).toISOString().slice(0, 10) : '');
+
+// How long ago a release day was, to the day: "today", "6 days ago", "2 months ago".
+export function releasedAgo(rtf, ts, nowSec = Math.floor(Date.now() / 1000)) {
+  const days = Math.floor((nowSec - ts) / 86400);
+  if (days < 1) return rtf.format(0, 'day');
+  if (days < 7) return rtf.format(-days, 'day');
+  if (days < 30) return rtf.format(-Math.floor(days / 7), 'week');
+  if (days < 365) return rtf.format(-Math.floor(days / 30), 'month');
+  return rtf.format(-Math.floor(days / 365), 'year');
+}
 
 // The sort a release-date header click moves to: newest first, oldest first, back to default.
 export const nextReleasedSort = (sort) => (sort === 'released' ? 'released_asc' : sort === 'released_asc' ? 'default' : 'released');

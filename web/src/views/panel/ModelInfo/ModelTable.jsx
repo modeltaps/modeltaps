@@ -40,7 +40,7 @@ import { cn } from '@/lib/utils';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
 import { ValueFormatter, copy, timestamp2string } from 'utils/common';
 import { statusLabel } from '../Channel/channelApi';
-import { catalogGroup, enabledChannels, formatReleaseDate, isVisibleToUsers, modelStatus } from '../Pricing/modelCatalog';
+import { catalogGroup, enabledChannels, formatReleaseDate, isVisibleToUsers, modelStatus, releasedAgo } from '../Pricing/modelCatalog';
 import {
   MODE_LABEL_KEYS,
   CapabilityBadges,
@@ -366,6 +366,21 @@ function GroupHeaderRow({ label, count, colSpan }) {
 
 GroupHeaderRow.propTypes = { label: PropTypes.string.isRequired, count: PropTypes.number, colSpan: PropTypes.number.isRequired };
 
+// The release date as a calendar day; hovering shows how long ago that was ("6 days ago").
+function ReleasedCell({ ts }) {
+  const { i18n } = useTranslation();
+  const date = formatReleaseDate(ts);
+  if (!date) return <span className="text-muted-foreground">—</span>;
+  const rtf = new Intl.RelativeTimeFormat((i18n.language || 'en').replace('_', '-'), { numeric: 'auto' });
+  return (
+    <span className="tabular-nums" title={releasedAgo(rtf, ts)}>
+      {date}
+    </span>
+  );
+}
+
+ReleasedCell.propTypes = { ts: PropTypes.number };
+
 // The release-date header sorts on click: newest first, oldest first, then back to the default order.
 // The arrow shows the active direction; otherwise a faint one appears on hover only.
 function ReleasedHeader({ sort, onSort }) {
@@ -455,6 +470,12 @@ export default function ModelTable({
         cell: (c) => <ModelKindCell row={c.row.original} />
       },
       {
+        id: 'released_at',
+        header: () => <ReleasedHeader sort={sort} onSort={onSortReleased} />,
+        meta: { dim: true },
+        cell: (c) => <ReleasedCell ts={c.row.original.released_at} />
+      },
+      {
         id: 'endpoints',
         header: t('modelInfoPage.endpoints'),
         meta: { dim: true },
@@ -504,14 +525,6 @@ export default function ModelTable({
         )
       },
       { id: 'vendor', header: t('modelInfoPage.vendor'), cell: (c) => <VendorCell vendor={vendors[c.row.original.vendor_id]} /> },
-      {
-        id: 'released_at',
-        header: () => <ReleasedHeader sort={sort} onSort={onSortReleased} />,
-        cell: (c) => {
-          const date = formatReleaseDate(c.row.original.released_at);
-          return <span className={cn('tabular-nums', !date && 'text-muted-foreground')}>{date || '—'}</span>;
-        }
-      },
       {
         id: 'context_length',
         header: t('modelInfoPage.contextLength'),
@@ -764,18 +777,19 @@ function StackedPrice({ price, unit }) {
 
 StackedPrice.propTypes = { price: PropTypes.object, unit: PropTypes.string };
 
-// Second line of a phone row: vendor · type · supplies (public models), or the alias
+// Second line of a phone row: vendor · release date · type · supplies (public models), or the alias
 // target / "not in catalog" when that says more.
 function phoneMeta(t, row, vendor) {
   if (!row.catalogId) return t('modelInfoPage.notInCatalog');
   if (row.alias_of) return t('modelsPage.aliasTo', { model: row.alias_of });
-  const parts = [vendor?.name, modelKindLabel(t, modelKindOf(row))];
+  // The release date goes early: the line truncates at the end on a narrow phone.
+  const parts = [vendor?.name, formatReleaseDate(row.released_at), modelKindLabel(t, modelKindOf(row))];
   if (isPublicModelRow(row)) parts.push(t('modelSupply.count', { count: row.supplyCounts?.total || 0 }));
   return parts.filter(Boolean).join(' · ');
 }
 
 // Phone list: one 60px row per model. The vendor tile leads (a checkbox in select mode); then the
-// name over vendor · type · supplies; on the right the readiness bars and the price, input
+// name over vendor · release date · type · supplies; on the right the readiness bars and the price, input
 // over output. A tap opens the model; ⋯ holds the row actions, including show / hide since there
 // is no switch.
 export function ModelList({
