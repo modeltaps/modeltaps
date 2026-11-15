@@ -17,7 +17,7 @@ describe('toAppLanguage', () => {
 
   it('keeps app codes and leaves unsupported languages for the English fallback', () => {
     expect(toAppLanguage('zh_HK')).toBe('zh_HK');
-    expect(toAppLanguage('fr-FR')).toBe('fr-FR');
+    expect(toAppLanguage('xx-XX')).toBe('xx-XX');
     expect(toAppLanguage('')).toBe('');
   });
 });

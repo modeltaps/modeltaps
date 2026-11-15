@@ -61,7 +61,7 @@ func TestStaticHomeLanguage(t *testing.T) {
 		{"no hints falls back to English", "/", nil, "en_US"},
 		{"Accept-Language", "/", map[string]string{"Accept-Language": "ja,en;q=0.8"}, "ja_JP"},
 		{"Accept-Language quality order", "/", map[string]string{"Accept-Language": "en;q=0.3, zh-TW;q=0.9"}, "zh_HK"},
-		{"unsupported tags skipped", "/", map[string]string{"Accept-Language": "fr-FR, de;q=0.9, zh;q=0.5"}, "zh_CN"},
+		{"unsupported tags skipped", "/", map[string]string{"Accept-Language": "xx-XX, yy;q=0.9, zh;q=0.5"}, "zh_CN"},
 		{"cookie beats Accept-Language", "/", map[string]string{"Accept-Language": "ja", "Cookie": "appLanguage=zh_HK"}, "zh_HK"},
 		{"query beats cookie", "/?lang=zh_CN", map[string]string{"Cookie": "appLanguage=ja_JP"}, "zh_CN"},
 		{"invalid query ignored", "/?lang=xx", map[string]string{"Accept-Language": "ja"}, "ja_JP"},

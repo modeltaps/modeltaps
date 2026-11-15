@@ -1,9 +1,11 @@
 package stmp
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
 	"html"
+	"regexp"
 	"strings"
 
 	"github.com/modeltaps/modeltaps/common/config"
@@ -12,9 +14,11 @@ import (
 
 // The emails the platform sends to users, in each of the console's languages (common/lang).
 //
-// The built-in text keeps one layout per email and the words per language apart: the layout holds
-// [[key]] slots that the words of the recipient's language fill, so the languages cannot drift
-// apart. The admin can rewrite any email in any language in the console (config.MailTemplates,
+// The built-in text keeps one layout per email (below) and the words per language apart: the
+// layout holds [[key]] slots that the words of the recipient's language fill, so the languages
+// cannot drift apart. The words live in locales/<language>.json, flat keys "<template>.<slot>"
+// with "shared.<slot>" for words several emails use; a missing word is looked up along the
+// language's fallbacks and then in English (lang.Chain). A new language is a new file. The admin can rewrite any email in any language in the console (config.MailTemplates,
 // {"<template>": {"<language>": {"subject", "body"}}}); an empty subject or body falls back to the
 // built-in text of that language. Variables are written {{name}}; values are HTML-escaped in the
 // body. The body is wrapped in the shared mail layout (template.go).
@@ -32,46 +36,59 @@ type MailTemplate struct {
 	Body    string `json:"body"`
 }
 
-// words are the built-in texts of one language, by slot.
-type words map[string]string
+//go:embed locales/*.json
+var localeFiles embed.FS
 
-// builtin is an email's built-in layout and its words per language.
+// wordsByLang are the built-in words: language → "<template>.<slot>" → text.
+var wordsByLang = func() map[string]map[string]string {
+	out := map[string]map[string]string{}
+	entries, err := localeFiles.ReadDir("locales")
+	if err != nil {
+		panic(err)
+	}
+	for _, e := range entries {
+		data, err := localeFiles.ReadFile("locales/" + e.Name())
+		if err != nil {
+			panic(err)
+		}
+		words := map[string]string{}
+		if err := json.Unmarshal(data, &words); err != nil {
+			panic(fmt.Sprintf("common/stmp/locales/%s: %v", e.Name(), err))
+		}
+		out[strings.TrimSuffix(e.Name(), ".json")] = words
+	}
+	return out
+}()
+
+// word returns a built-in word of a template in a language, following the language's fallbacks:
+// the template's own word, else the shared one.
+func word(id, slot, lng string) (string, bool) {
+	for _, l := range lang.Chain(lng) {
+		if v, ok := wordsByLang[l][id+"."+slot]; ok {
+			return v, true
+		}
+		if v, ok := wordsByLang[l]["shared."+slot]; ok {
+			return v, true
+		}
+	}
+	return "", false
+}
+
+// builtin is an email's built-in layout.
 type builtin struct {
 	subject string
 	body    string
-	words   map[string]words
 }
 
-// Words several emails share.
-var sharedWords = map[string]words{
-	lang.English: {
-		"greeting": "Hi <strong>{{user}}</strong>,",
-		"fallback": "If the button does not work, open the link below or copy it into your browser:",
-		"top_up":   "Top up",
-	},
-	lang.SimplifiedChinese: {
-		"greeting": "<strong>{{user}}</strong>，你好",
-		"fallback": "如果按钮无法点击，请打开下面的链接，或复制到浏览器中打开：",
-		"top_up":   "去充值",
-	},
-	lang.TraditionalChinese: {
-		"greeting": "<strong>{{user}}</strong>，你好",
-		"fallback": "如果按鈕無法使用，請打開下面的連結，或複製到瀏覽器中打開：",
-		"top_up":   "去充值",
-	},
-	lang.Japanese: {
-		"greeting": "<strong>{{user}}</strong> さん",
-		"fallback": "ボタンが使えない場合は、次のリンクを開くか、ブラウザーに貼り付けてください。",
-		"top_up":   "チャージする",
-	},
-}
+const quotaButtonLayout = `<p style="text-align: center; font-size: 13px;"><a target="__blank" href="{{link}}" class="button" style="color: #ffffff;">[[top_up]]</a></p>
+<p style="color: #858585; padding-top: 15px;">[[fallback]]<br> {{link}}</p>`
 
 const buttonLayout = `<p style="text-align: center; font-size: 13px;"><a target="__blank" href="{{link}}" class="button" style="color: #ffffff;">[[button]]</a></p>
 <p style="color: #858585; padding-top: 15px;">[[fallback]]<br> {{link}}</p>`
 
 const quotaLayout = `<p style="font-size: 30px">[[greeting]]</p>
 <p>[[intro]]</p>
-` + buttonLayout
+` + quotaButtonLayout
 
 var builtins = map[string]builtin{
 	TemplateVerification: {
@@ -79,28 +96,6 @@ var builtins = map[string]builtin{
 		body: `<p>[[intro]]</p>
 <p style="text-align: center; font-size: 30px; color: #58a6ff;"><strong>{{code}}</strong></p>
 <p style="color: #858585; padding-top: 15px;">[[validity]]</p>`,
-		words: map[string]words{
-			lang.English: {
-				"subject":  "{{site}} email verification",
-				"intro":    "You are verifying your email. Your verification code is:",
-				"validity": "The verification code is valid for {{minutes}} minutes. If you did not request this, please ignore this email.",
-			},
-			lang.SimplifiedChinese: {
-				"subject":  "{{site}} 邮箱验证",
-				"intro":    "你正在验证邮箱，验证码是：",
-				"validity": "验证码 {{minutes}} 分钟内有效。如果不是你本人操作，请忽略这封邮件。",
-			},
-			lang.TraditionalChinese: {
-				"subject":  "{{site}} 電郵驗證",
-				"intro":    "你正在驗證電郵，驗證碼是：",
-				"validity": "驗證碼 {{minutes}} 分鐘內有效。如果不是你本人操作，請忽略這封郵件。",
-			},
-			lang.Japanese: {
-				"subject":  "{{site}} メールアドレスの確認",
-				"intro":    "メールアドレスを確認しています。確認コードは次のとおりです。",
-				"validity": "確認コードの有効期限は {{minutes}} 分です。お心当たりがない場合は、このメールを無視してください。",
-			},
-		},
 	},
 	TemplatePasswordReset: {
 		subject: "[[subject]]",
@@ -108,102 +103,28 @@ var builtins = map[string]builtin{
 <p>[[intro]]</p>
 ` + buttonLayout + `
 <p style="color: #858585;">[[validity]]</p>`,
-		words: map[string]words{
-			lang.English: {
-				"subject":  "{{site}} password reset",
-				"intro":    "You requested a password reset. Click the button below to set a new password.",
-				"button":   "Reset password",
-				"validity": "The reset link is valid for {{minutes}} minutes. If you did not request this, please ignore this email.",
-			},
-			lang.SimplifiedChinese: {
-				"subject":  "{{site}} 重置密码",
-				"intro":    "你申请了重置密码，点击下面的按钮设置新密码。",
-				"button":   "重置密码",
-				"validity": "链接 {{minutes}} 分钟内有效。如果不是你本人操作，请忽略这封邮件。",
-			},
-			lang.TraditionalChinese: {
-				"subject":  "{{site}} 重設密碼",
-				"intro":    "你申請了重設密碼，按下面的按鈕設定新密碼。",
-				"button":   "重設密碼",
-				"validity": "連結 {{minutes}} 分鐘內有效。如果不是你本人操作，請忽略這封郵件。",
-			},
-			lang.Japanese: {
-				"subject":  "{{site}} パスワードの再設定",
-				"intro":    "パスワードの再設定が申請されました。下のボタンから新しいパスワードを設定してください。",
-				"button":   "パスワードを再設定",
-				"validity": "リンクの有効期限は {{minutes}} 分です。お心当たりがない場合は、このメールを無視してください。",
-			},
-		},
 	},
 	TemplateQuotaLow: {
 		subject: "[[subject]]",
 		body:    quotaLayout,
-		words: map[string]words{
-			lang.English: {
-				"subject": "Your {{site}} quota is running low",
-				"intro":   "Your quota is running low: {{quota}} left. Please top up soon to avoid service interruption.",
-				"button":  "[[top_up]]",
-			},
-			lang.SimplifiedChinese: {
-				"subject": "你的 {{site}} 额度快用完了",
-				"intro":   "你的额度快用完了，还剩 {{quota}}。请尽快充值，以免服务中断。",
-				"button":  "[[top_up]]",
-			},
-			lang.TraditionalChinese: {
-				"subject": "你的 {{site}} 額度快用完了",
-				"intro":   "你的額度快用完了，還剩 {{quota}}。請盡快充值，以免服務中斷。",
-				"button":  "[[top_up]]",
-			},
-			lang.Japanese: {
-				"subject": "{{site}} の残高が少なくなっています",
-				"intro":   "残高が少なくなっています（残り {{quota}}）。サービスが止まらないよう、早めにチャージしてください。",
-				"button":  "[[top_up]]",
-			},
-		},
 	},
 	TemplateQuotaExhausted: {
 		subject: "[[subject]]",
 		body:    quotaLayout,
-		words: map[string]words{
-			lang.English: {
-				"subject": "Your {{site}} quota has been used up",
-				"intro":   "Your quota has been used up ({{quota}} left), so requests will fail until you top up.",
-				"button":  "[[top_up]]",
-			},
-			lang.SimplifiedChinese: {
-				"subject": "你的 {{site}} 额度已用完",
-				"intro":   "你的额度已经用完（剩余 {{quota}}），充值之前请求会失败。",
-				"button":  "[[top_up]]",
-			},
-			lang.TraditionalChinese: {
-				"subject": "你的 {{site}} 額度已用完",
-				"intro":   "你的額度已經用完（剩餘 {{quota}}），充值之前請求會失敗。",
-				"button":  "[[top_up]]",
-			},
-			lang.Japanese: {
-				"subject": "{{site}} の残高がなくなりました",
-				"intro":   "残高がなくなりました（残り {{quota}}）。チャージするまでリクエストは失敗します。",
-				"button":  "[[top_up]]",
-			},
-		},
 	},
 }
 
-// fillSlots puts the words of lng (English for a slot it lacks) into the [[slots]] of text. A word
-// may itself hold slots (a shared word), so it runs twice.
-func fillSlots(text string, b builtin, lng string) string {
-	pairs := []string{}
-	add := func(set map[string]words) {
-		for _, l := range []string{lng, lang.English} {
-			for k, v := range set[l] {
-				pairs = append(pairs, "[["+k+"]]", v)
-			}
+var slotPattern = regexp.MustCompile(`\[\[([a-z_]+)\]\]`)
+
+// fillSlots puts the words of a template in lng into the [[slots]] of text. A slot without a word
+// in any language stays as it is (TestEveryBuiltinIsComplete catches it).
+func fillSlots(text, id, lng string) string {
+	return slotPattern.ReplaceAllStringFunc(text, func(m string) string {
+		if v, ok := word(id, m[2:len(m)-2], lng); ok {
+			return v
 		}
-	}
-	add(b.words)
-	add(sharedWords)
-	r := strings.NewReplacer(pairs...)
-	return r.Replace(r.Replace(text))
+		return m
+	})
 }
 
 // Builtin returns an email's built-in text in a language.
@@ -212,7 +133,7 @@ func Builtin(id, lng string) MailTemplate {
 	if !ok {
 		return MailTemplate{}
 	}
-	return MailTemplate{Subject: fillSlots(b.subject, b, lng), Body: fillSlots(b.body, b, lng)}
+	return MailTemplate{Subject: fillSlots(b.subject, id, lng), Body: fillSlots(b.body, id, lng)}
 }
 
 // TemplateSpec is a template's built-in text per language and the variables it can use.
@@ -365,18 +286,8 @@ func fill(text string, vars map[string]string, escape bool) string {
 	return strings.NewReplacer(pairs...).Replace(text)
 }
 
-// quotaStatus is the {{status}} of the quota emails. It is not offered any more (each quota state
-// has its own email), but templates written before the split still use it.
-var quotaStatus = map[string]map[string]string{
-	TemplateQuotaLow: {
-		lang.English: "Your quota is running low", lang.SimplifiedChinese: "你的额度快用完了",
-		lang.TraditionalChinese: "你的額度快用完了", lang.Japanese: "残高が少なくなっています",
-	},
-	TemplateQuotaExhausted: {
-		lang.English: "Your quota has been used up", lang.SimplifiedChinese: "你的额度已用完",
-		lang.TraditionalChinese: "你的額度已用完", lang.Japanese: "残高がなくなりました",
-	},
-}
+// The quota emails' {{status}} ("<template>.status" in the locale files) is not offered any more
+// (each quota state has its own email), but templates written before the split still use it.
 
 // RenderTemplate fills a template in a language with vars ({{site}} is added) and returns the
 // subject and the full HTML message. tmpl overrides the stored text when not nil (previews).
@@ -387,8 +298,8 @@ func RenderTemplate(id, lng string, vars map[string]string, tmpl *MailTemplate) 
 		t = effective(id, lng, *tmpl)
 	}
 	all := map[string]string{"site": config.SystemName}
-	if status, ok := quotaStatus[id]; ok {
-		all["status"] = status[lng]
+	if _, quota := wordsByLang[lang.English][id+".status"]; quota {
+		all["status"], _ = word(id, "status", lng)
 	}
 	for k, v := range vars {
 		all[k] = v

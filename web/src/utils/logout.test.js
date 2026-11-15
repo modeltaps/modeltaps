@@ -30,7 +30,7 @@ describe('requestLogout', () => {
     await requestLogout();
     expect(get).toHaveBeenCalledWith('/api/user/logout?ui_locales=ja');
 
-    i18n.language = 'fr_FR';
+    i18n.language = 'xx_XX';
     await requestLogout();
     expect(get).toHaveBeenCalledWith('/api/user/logout');
   });

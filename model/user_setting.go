@@ -5,6 +5,7 @@ import (
 
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/database"
+	"github.com/modeltaps/modeltaps/common/lang"
 )
 
 // UserSetting 用户级偏好设置，存储于 users.setting JSON 列（复用 TokenSetting 的 JSONType 范式）。
@@ -109,13 +110,6 @@ var userSettingThemes = map[string]bool{
 	"dark":   true,
 }
 
-var userSettingLanguages = map[string]bool{
-	"":      true,
-	"zh_CN": true,
-	"zh_HK": true,
-	"en_US": true,
-	"ja_JP": true,
-}
 
 // ApplyUpdate 合并部分更新:仅覆盖非 nil 字段。LogIODefault 哨兵字符串 "inherit" 解码为 nil(重置回跟随站点)。
 func (s *UserSetting) ApplyUpdate(update UserSettingUpdate) error {
@@ -156,7 +150,7 @@ func (s *UserSetting) Validate() error {
 	if !userSettingThemes[s.Theme] {
 		return errors.New("invalid theme setting")
 	}
-	if !userSettingLanguages[s.Language] {
+	if s.Language != "" && !lang.IsSupported(s.Language) {
 		return errors.New("invalid language setting")
 	}
 	if s.QuotaRemindThreshold != nil && *s.QuotaRemindThreshold > maxQuotaRemindThreshold {

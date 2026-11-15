@@ -1,13 +1,9 @@
 import i18n from './i18n';
+import { LANGUAGES } from './languages';
 
-// 界面语言码 → OIDC ui_locales 的 BCP47 标签（OIDC Core 3.1.2.1）。
-// 后端只放行这四个值，其它一律忽略，所以未知语言这里直接返回空串、由调用方省略该参数。
-const BCP47_BY_LNG = {
-  zh_CN: 'zh-CN',
-  zh_HK: 'zh-HK',
-  en_US: 'en',
-  ja_JP: 'ja'
-};
+// 界面语言码 → OIDC ui_locales 的 BCP47 标签（OIDC Core 3.1.2.1），取自 languages.json 的 bcp47；
+// 后端用同一份清单放行，其它一律忽略，所以未知语言这里直接返回空串、由调用方省略该参数。
+const BCP47_BY_LNG = Object.fromEntries(LANGUAGES.map((l) => [l.code, l.bcp47]));
 
 export function toBcp47(lng) {
   return BCP47_BY_LNG[lng] || '';

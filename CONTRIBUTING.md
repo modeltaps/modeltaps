@@ -81,6 +81,25 @@ pnpm install --frozen-lockfile
 (cd docs && pnpm docs:lint:hk && pnpm docs:build)
 ```
 
+## Languages
+
+The console's languages are listed once, in `web/src/i18n/languages.json`; the frontend and the
+server (`common/lang`) both read it. English comes first and is the last fallback for any missing
+text. To add a language:
+
+1. Add an entry to `web/src/i18n/languages.json`: its code (`fr_FR`), its own name, a short label,
+   the BCP47 tag sent to identity providers (`fr`), the lowercase browser tags that mean it
+   (`["fr"]`) and, when a related language reads better than English for missing text, a
+   `fallback`.
+2. Add the console texts: `web/src/i18n/locales/<code>.json` (the upstream namespace) and
+   `web/src/i18n/locales/modeltaps/<code>.json` (our own pages), translated from `en_US.json`.
+3. Add the email texts: `common/stmp/locales/<code>.json`, translated from `en_US.json`. Each email
+   keeps one layout in `common/stmp/mail_templates.go`; the file only holds its words.
+
+No code changes are needed. `go test ./common/...` fails while an email file lacks a key the
+English one has, and `pnpm test` fails while a language has no console files. The documentation
+site has its own language directories under `docs/`.
+
 ## Docker
 
 ```bash

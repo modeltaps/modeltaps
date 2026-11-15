@@ -91,7 +91,7 @@ func TestUserSettingValidate(t *testing.T) {
 	invalid := []UserSetting{
 		{Theme: "blue"},
 		{Theme: "DARK"},
-		{Language: "fr_FR"},
+		{Language: "xx_XX"},
 		{Language: "zh-CN"},
 	}
 	for _, s := range invalid {

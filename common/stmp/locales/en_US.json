@@ -1,0 +1,18 @@
+{
+  "password_reset.button": "Reset password",
+  "password_reset.intro": "You requested a password reset. Click the button below to set a new password.",
+  "password_reset.subject": "{{site}} password reset",
+  "password_reset.validity": "The reset link is valid for {{minutes}} minutes. If you did not request this, please ignore this email.",
+  "quota_exhausted.intro": "Your quota has been used up ({{quota}} left), so requests will fail until you top up.",
+  "quota_exhausted.status": "Your quota has been used up",
+  "quota_exhausted.subject": "Your {{site}} quota has been used up",
+  "quota_low.intro": "Your quota is running low: {{quota}} left. Please top up soon to avoid service interruption.",
+  "quota_low.status": "Your quota is running low",
+  "quota_low.subject": "Your {{site}} quota is running low",
+  "shared.fallback": "If the button does not work, open the link below or copy it into your browser:",
+  "shared.greeting": "Hi <strong>{{user}}</strong>,",
+  "shared.top_up": "Top up",
+  "verification.intro": "You are verifying your email. Your verification code is:",
+  "verification.subject": "{{site}} email verification",
+  "verification.validity": "The verification code is valid for {{minutes}} minutes. If you did not request this, please ignore this email."
+}

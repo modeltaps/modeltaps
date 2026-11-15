@@ -1,24 +1,17 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { resources } from './resources';
+import { SUPPORTED_LANGUAGES, fallbackChains, normalizeLanguage } from './languages';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
-export const SUPPORTED_LANGUAGES = ['en_US', 'zh_CN', 'zh_HK', 'ja_JP'];
+export { SUPPORTED_LANGUAGES };
 export const LANGUAGE_STORAGE_KEY = 'appLanguage';
 
 // Maps a browser language tag (zh-CN, zh-TW, zh-Hant-HK, ja, en-GB, ...) onto the app's language
-// codes. Codes already in app form pass through; anything unsupported is returned unchanged so
-// i18next skips it and falls back to English.
+// codes (languages.json). Anything unsupported is returned unchanged so i18next skips it and falls
+// back to English.
 export function toAppLanguage(tag) {
-  if (!tag) return tag;
-  if (SUPPORTED_LANGUAGES.includes(tag)) return tag;
-  const lower = String(tag).toLowerCase().replace('_', '-');
-  if (lower.startsWith('zh')) {
-    return /hant|-tw|-hk|-mo/.test(lower) ? 'zh_HK' : 'zh_CN';
-  }
-  if (lower.startsWith('ja')) return 'ja_JP';
-  if (lower.startsWith('en')) return 'en_US';
-  return tag;
+  return normalizeLanguage(tag) || tag;
 }
 
 i18n
@@ -27,7 +20,7 @@ i18n
   .init({
     resources,
     supportedLngs: SUPPORTED_LANGUAGES,
-    fallbackLng: 'en_US',
+    fallbackLng: fallbackChains(),
     debug: false,
     // A language the user picked wins; otherwise follow the browser. Detection results are not
     // cached, so only an explicit choice (setAppLanguage) is remembered.

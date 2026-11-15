@@ -163,7 +163,7 @@ func TestLogoutEndSessionURLUILocales(t *testing.T) {
 	}{
 		{"合法", "?ui_locales=zh-HK", "zh-HK"},
 		{"缺省", "", ""},
-		{"非法", "?ui_locales=fr", ""},
+		{"非法", "?ui_locales=xx", ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

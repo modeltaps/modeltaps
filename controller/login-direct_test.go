@@ -81,10 +81,10 @@ func TestAcceptLanguageUILocale(t *testing.T) {
 		"ja-JP":          "ja",
 		"ja":             "ja",
 		" EN-GB ;q=0.8":  "en",
-		"fr-FR,fr;q=0.9": "",
-		"zh":             "",
+		"xx-XX,xx;q=0.9": "",
+		"zh":             "zh-CN", // 与前端一致：裸 zh 按简体中文
 		"":               "",
-		"de,en;q=0.9":    "",
+		"yy,en;q=0.9":    "",
 		"*":              "",
 	}
 	for header, want := range cases {

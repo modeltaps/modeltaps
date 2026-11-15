@@ -62,13 +62,13 @@ func TestRenderTemplateFallsBackAndEscapes(t *testing.T) {
 	}
 
 	config.MailTemplates = "{broken"
-	if subject, _ = RenderTemplate(TemplatePasswordReset, "fr", nil, nil); subject != "Taps password reset" {
+	if subject, _ = RenderTemplate(TemplatePasswordReset, "xx", nil, nil); subject != "Taps password reset" {
 		t.Fatalf("broken value / unsupported language should fall back: %q", subject)
 	}
 	if ValidateTemplates("{broken") == nil || ValidateTemplates("") != nil {
 		t.Fatal("ValidateTemplates")
 	}
-	if ValidateTemplates(`{"verification":{"fr":{"subject":"x"}}}`) == nil || ValidateTemplates(`{"nope":{}}`) == nil {
+	if ValidateTemplates(`{"verification":{"xx":{"subject":"x"}}}`) == nil || ValidateTemplates(`{"nope":{}}`) == nil {
 		t.Fatal("ValidateTemplates accepted an unknown language or template")
 	}
 }
@@ -128,5 +128,33 @@ func TestPreviewUsesSamples(t *testing.T) {
 	}
 	if s, _ := PreviewTemplate("nope", lang.English, MailTemplate{}); s != "" {
 		t.Fatal("unknown template rendered")
+	}
+}
+
+// Every language of the console has a locale file with exactly the English keys: a missing word
+// would quietly fall back, an extra one is a typo.
+func TestLocaleFilesMatchEnglish(t *testing.T) {
+	english := wordsByLang[lang.English]
+	for _, lng := range lang.Supported {
+		words, ok := wordsByLang[lng]
+		if !ok {
+			t.Errorf("common/stmp/locales/%s.json is missing", lng)
+			continue
+		}
+		for k := range english {
+			if strings.TrimSpace(words[k]) == "" {
+				t.Errorf("%s.json lacks %q", lng, k)
+			}
+		}
+		for k := range words {
+			if _, ok := english[k]; !ok {
+				t.Errorf("%s.json has %q, which en_US.json does not", lng, k)
+			}
+		}
+	}
+	for lng := range wordsByLang {
+		if !lang.IsSupported(lng) {
+			t.Errorf("common/stmp/locales/%s.json is not a language in web/src/i18n/languages.json", lng)
+		}
 	}
 }

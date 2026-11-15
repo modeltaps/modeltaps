@@ -9,6 +9,7 @@ import (
 
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/common/lang"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/oidc"
 	"github.com/modeltaps/modeltaps/common/utils"
@@ -20,45 +21,23 @@ import (
 	"gorm.io/gorm"
 )
 
-// oidcAllowedUILocales 允许透传给 IdP 的 ui_locales 取值（OIDC Core 3.1.2.1 的 BCP47 语言标签），
-// 与前端 web/src/i18n/uiLocale.js 的映射结果一一对应。其余取值一律忽略，不拼进跳转 URL。
-var oidcAllowedUILocales = map[string]bool{
-	"zh-CN": true,
-	"zh-HK": true,
-	"en":    true,
-	"ja":    true,
-}
-
-// oidcUILocale 取请求里的 ui_locales，非法或缺省时返回空串（调用方据此不追加该参数）。
+// oidcUILocale 取请求里的 ui_locales：只放行界面语言对应的 BCP47 标签（common/lang 读取的
+// web/src/i18n/languages.json，前端 uiLocale.js 用同一份清单），非法或缺省时返回空串（调用方据此不追加该参数）。
 func oidcUILocale(c *gin.Context) string {
 	locale := c.Query("ui_locales")
-	if oidcAllowedUILocales[locale] {
+	if lang.FromBCP47(locale) != "" {
 		return locale
 	}
 	return ""
 }
 
-// acceptLanguageUILocale 取 Accept-Language 的首个语言标签，按与前端 web/src/i18n/uiLocale.js
-// 相同的规则映射成 BCP47 值再过白名单；无法映射时返回空串（调用方据此不追加该参数）。
+// acceptLanguageUILocale 取 Accept-Language 的首个语言标签，映射成界面语言后再取它的 BCP47 标签；
+// 无法映射时返回空串（调用方据此不追加该参数）。
 // 仅服务端直达 IdP 时使用：那条路径上没有前端，读不到界面语言，只能以浏览器偏好为准。
 func acceptLanguageUILocale(header string) string {
 	tag := strings.SplitN(header, ",", 2)[0]
-	tag = strings.ToLower(strings.TrimSpace(strings.SplitN(tag, ";", 2)[0]))
-	locale := ""
-	switch {
-	case tag == "zh-cn" || strings.HasPrefix(tag, "zh-hans"):
-		locale = "zh-CN"
-	case tag == "zh-hk" || tag == "zh-tw" || strings.HasPrefix(tag, "zh-hant"):
-		locale = "zh-HK"
-	case tag == "en" || strings.HasPrefix(tag, "en-"):
-		locale = "en"
-	case tag == "ja" || strings.HasPrefix(tag, "ja-"):
-		locale = "ja"
-	}
-	if oidcAllowedUILocales[locale] {
-		return locale
-	}
-	return ""
+	tag = strings.TrimSpace(strings.SplitN(tag, ";", 2)[0])
+	return lang.BCP47(lang.Normalize(tag))
 }
 
 // oidcSlugFromContext 取路由上的 :slug；无 slug 路由（/oauth/oidc、/oauth/endpoint）

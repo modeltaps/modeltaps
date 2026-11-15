@@ -1,0 +1,18 @@
+{
+  "password_reset.button": "パスワードを再設定",
+  "password_reset.intro": "パスワードの再設定が申請されました。下のボタンから新しいパスワードを設定してください。",
+  "password_reset.subject": "{{site}} パスワードの再設定",
+  "password_reset.validity": "リンクの有効期限は {{minutes}} 分です。お心当たりがない場合は、このメールを無視してください。",
+  "quota_exhausted.intro": "残高がなくなりました（残り {{quota}}）。チャージするまでリクエストは失敗します。",
+  "quota_exhausted.status": "残高がなくなりました",
+  "quota_exhausted.subject": "{{site}} の残高がなくなりました",
+  "quota_low.intro": "残高が少なくなっています（残り {{quota}}）。サービスが止まらないよう、早めにチャージしてください。",
+  "quota_low.status": "残高が少なくなっています",
+  "quota_low.subject": "{{site}} の残高が少なくなっています",
+  "shared.fallback": "ボタンが使えない場合は、次のリンクを開くか、ブラウザーに貼り付けてください。",
+  "shared.greeting": "<strong>{{user}}</strong> さん",
+  "shared.top_up": "チャージする",
+  "verification.intro": "メールアドレスを確認しています。確認コードは次のとおりです。",
+  "verification.subject": "{{site}} メールアドレスの確認",
+  "verification.validity": "確認コードの有効期限は {{minutes}} 分です。お心当たりがない場合は、このメールを無視してください。"
+}

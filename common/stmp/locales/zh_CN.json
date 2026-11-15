@@ -1,0 +1,18 @@
+{
+  "password_reset.button": "重置密码",
+  "password_reset.intro": "你申请了重置密码，点击下面的按钮设置新密码。",
+  "password_reset.subject": "{{site}} 重置密码",
+  "password_reset.validity": "链接 {{minutes}} 分钟内有效。如果不是你本人操作，请忽略这封邮件。",
+  "quota_exhausted.intro": "你的额度已经用完（剩余 {{quota}}），充值之前请求会失败。",
+  "quota_exhausted.status": "你的额度已用完",
+  "quota_exhausted.subject": "你的 {{site}} 额度已用完",
+  "quota_low.intro": "你的额度快用完了，还剩 {{quota}}。请尽快充值，以免服务中断。",
+  "quota_low.status": "你的额度快用完了",
+  "quota_low.subject": "你的 {{site}} 额度快用完了",
+  "shared.fallback": "如果按钮无法点击，请打开下面的链接，或复制到浏览器中打开：",
+  "shared.greeting": "<strong>{{user}}</strong>，你好",
+  "shared.top_up": "去充值",
+  "verification.intro": "你正在验证邮箱，验证码是：",
+  "verification.subject": "{{site}} 邮箱验证",
+  "verification.validity": "验证码 {{minutes}} 分钟内有效。如果不是你本人操作，请忽略这封邮件。"
+}

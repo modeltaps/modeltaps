@@ -25,7 +25,7 @@ describe('getOIDCEndpoint', () => {
   });
 
   it('语言未知时不带 ui_locales', async () => {
-    i18n.language = 'fr_FR';
+    i18n.language = 'xx_XX';
     await getOIDCEndpoint('keycloak');
     expect(get).toHaveBeenCalledWith('/api/oauth/endpoint/keycloak');
   });

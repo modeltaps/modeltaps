@@ -17,7 +17,7 @@ describe('toBcp47', () => {
   });
 
   it('未知语言返回空串', () => {
-    expect(toBcp47('fr_FR')).toBe('');
+    expect(toBcp47('xx_XX')).toBe('');
     expect(toBcp47('zh-CN')).toBe('');
     expect(toBcp47(undefined)).toBe('');
   });
@@ -37,7 +37,7 @@ describe('uiLocalesQuery', () => {
   });
 
   it('语言未知时不产生查询串', () => {
-    i18n.language = 'fr_FR';
+    i18n.language = 'xx_XX';
     expect(uiLocalesQuery()).toBe('');
   });
 });
