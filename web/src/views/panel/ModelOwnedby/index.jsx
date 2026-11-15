@@ -18,6 +18,7 @@ import { createRequestGuard, runGuardedFetch } from 'hooks/paginatedListGuard';
 import { enabledChannels } from '../Pricing/modelCatalog';
 import ModelOwnedbyTable, { VendorList } from './ModelOwnedbyTable';
 import ModelOwnedbySheet from './ModelOwnedbySheet';
+import { workbench } from 'routes/paths';
 
 // ==============================|| PANEL — MODEL OWNEDBY (admin) ||============================== //
 // Vendors tab of the model catalog: admin CRUD over `/api/model_ownedby/` (flat list: id, name,
@@ -164,7 +165,7 @@ export default function ModelOwnedby() {
     }
   };
 
-  if (!isAdmin) return <Navigate to="/panel/dashboard" replace />;
+  if (!isAdmin) return <Navigate to={workbench.dashboard()} replace />;
 
   const changeKeyword = (value) => {
     setPage(0);

@@ -6,6 +6,7 @@ import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { brandName } from 'utils/brand';
 import DripFlow from './DripFlow';
+import { workbench } from 'routes/paths';
 
 // ==============================|| PUBLIC HOME — HERO ||============================== //
 // The whole landing page for now: the drip on top as the poster, then the slogan, a short
@@ -37,7 +38,7 @@ export default function Hero() {
         {/* A plain link with no login state, so the prerendered static home works unchanged: the
             panel's AuthGuard sends visitors through login and back to the API-key page. */}
         <Button asChild size="lg" className={`mt-8 h-12 px-6 ${RISE}`} style={{ animationDelay: '1100ms' }}>
-          <Link to="/panel/token">
+          <Link to={workbench.keys()}>
             {t('home.hero.ctaPrimary')}
             <ArrowRight />
           </Link>

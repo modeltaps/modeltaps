@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogoMark } from '@/components/chrome/Logo';
 import { UserContext } from 'contexts/UserContext';
 import { brandName } from 'utils/brand';
+import { workbench } from 'routes/paths';
 
 // ==============================|| AUTH — SIGNED OUT ||============================== //
 // 退出登录的落点：公开路由，不经 AuthGuard。IdP 结束会话后也回到这里（后端下发的
@@ -39,7 +40,7 @@ export default function SignedOut() {
             {stillSignedIn ? t('login.stillSignedInDescription') : t('login.signedOutDescription', { name })}
           </p>
           {stillSignedIn ? (
-            <Button className="h-11 w-full font-medium" onClick={() => navigate('/panel/dashboard')}>
+            <Button className="h-11 w-full font-medium" onClick={() => navigate(workbench.dashboard())}>
               {t('login.goConsole')}
             </Button>
           ) : (

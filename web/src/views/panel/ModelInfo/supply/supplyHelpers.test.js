@@ -264,7 +264,7 @@ describe('parseSupplyForm', () => {
 
 describe('modelSupplyPath', () => {
   it('links to the supplies tab of the model page', () => {
-    expect(modelSupplyPath('a/b c')).toBe('/panel/pricing?tab=models&model=a%2Fb%20c&panel=supplies');
+    expect(modelSupplyPath('a/b c')).toBe('/panel/admin/models?model=a%2Fb%20c&panel=supplies');
   });
 });
 

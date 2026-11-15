@@ -1,5 +1,3 @@
-import { useEffect } from 'react';
-import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,13 +7,14 @@ import ModelInfo from '../ModelInfo';
 import PausedSupplies from '../ModelInfo/supply/PausedSupplies';
 import PendingModels from '../ModelInfo/supply/PendingModels';
 import LibraryRules from '../ModelInfo/LibraryRules';
-import { CATALOG_TABS, resolveCatalogTab } from './modelCatalog';
+import useRouteTab from 'hooks/useRouteTab';
+import { CATALOG_TABS, LEGACY_CATALOG_TABS } from './modelCatalog';
 
 // ==============================|| PANEL — MODELS (Tab 容器) ||============================== //
 // 模型页承载四个 Tab:模型表(目录 + 价格 + 渠道合一,../ModelInfo)、厂商(../ModelOwnedby)、
 // 暂停的供应(../ModelInfo/supply/PausedSupplies)与新上游模型(../ModelInfo/supply/PendingModels)。
-// 当前 Tab 由 ?tab=models|vendors|paused|pending|rules 单向驱动(无本地状态,刷新/深链自动恢复);旧值
-// price / info / ownedby 映射到新 Tab 并写回 URL。仅挂载当前 Tab 的组件:PageActions 走 portal,
+// 当前 Tab 由路径单向驱动:`/panel/admin/models`(模型表)与 `/models/vendors|paused|pending|rules`
+// (无本地状态,刷新/深链自动恢复);旧的 `?tab=` 值(含 price / info / ownedby)改写成路径。仅挂载当前 Tab 的组件:PageActions 走 portal,
 // 同时挂载会互相残留。Tab 条渲染在页头下方、各 Tab 内容(统计 chip / 工具栏 / 表格)之上。
 
 const TAB_TRIGGER_CLASS =
@@ -23,35 +22,12 @@ const TAB_TRIGGER_CLASS =
 
 export default function ModelCatalog() {
   const { t } = useTranslation();
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const requestedTab = searchParams.get('tab');
-  const tab = resolveCatalogTab(requestedTab);
-
-  // URL 带旧值或非法 tab 时写回实际 Tab(replace,不污染历史)。
-  useEffect(() => {
-    if (!requestedTab || requestedTab === tab) return;
-    setSearchParams(
-      (prev) => {
-        const params = new URLSearchParams(prev);
-        params.set('tab', tab);
-        return params;
-      },
-      { replace: true }
-    );
-  }, [requestedTab, tab, setSearchParams]);
-
-  const handleTabChange = (next) => {
-    setSearchParams((prev) => {
-      const params = new URLSearchParams(prev);
-      params.set('tab', next);
-      return params;
-    });
-  };
+  const { tab, setTab, redirecting } = useRouteTab({ tabs: CATALOG_TABS, legacy: LEGACY_CATALOG_TABS });
+  if (redirecting) return null;
 
   return (
     <div className="space-y-4">
-      <Tabs value={tab} onValueChange={handleTabChange}>
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex h-auto w-full justify-start gap-5 rounded-none border-b border-border bg-transparent p-0">
           {CATALOG_TABS.map((value) => (
             <TabsTrigger

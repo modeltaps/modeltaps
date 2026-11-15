@@ -8,6 +8,7 @@
 // Suno 等私有兼容入口收进页尾 extras 折叠区,不参与能力可用性。
 
 import { curlOpenAI, curlPost, jsClient, pyClient, shellQuote } from './_helpers';
+import { workbench } from 'routes/paths';
 
 // 实时接口走 WebSocket:把站点地址的 http(s) 换成 ws(s)。
 const wsUrl = (baseUrl, model) => `${String(baseUrl).replace(/^http/, 'ws')}/v1/realtime?model=${model}`;
@@ -222,7 +223,7 @@ socket.on('message', (data) => console.log(data.toString()));`
           { method: 'POST', path: '/suno/fetch', descKey: 'apiCatalogPage.speech.extras.endpoints.sunoFetch' },
           { method: 'GET', path: '/suno/fetch/{id}', descKey: 'apiCatalogPage.speech.extras.endpoints.sunoFetchById' }
         ],
-        link: { to: '/panel/log?tab=task', labelKey: 'apiCatalogPage.speech.extras.tasks' }
+        link: { to: workbench.logs('tasks'), labelKey: 'apiCatalogPage.speech.extras.tasks' }
       }
     ]
   }

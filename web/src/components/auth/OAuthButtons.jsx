@@ -13,6 +13,7 @@ import Github from 'assets/images/icons/github.svg';
 import Wechat from 'assets/images/icons/wechat.svg';
 import Lark from 'assets/images/icons/lark.svg';
 import LinuxDoIcon from 'assets/images/icons/LinuxDoIcon';
+import { workbench } from 'routes/paths';
 
 // ==============================|| AUTH — SOCIAL LOGIN BUTTONS ||============================== //
 // 只渲染第三方账号登录(GitHub / 微信 / 飞书 / LinuxDo),按钮上只出现第三方账号名。
@@ -36,7 +37,7 @@ ProviderButton.propTypes = {
 export default function OAuthButtons({ divider = true }) {
   const { t } = useTranslation();
   const siteInfo = useSelector((state) => state.siteInfo);
-  const { wechatLogin } = useLogin('/panel/dashboard');
+  const { wechatLogin } = useLogin(workbench.dashboard());
   const [openWechat, setOpenWechat] = useState(false);
 
   if (!socialLoginEnabled(siteInfo)) return null;

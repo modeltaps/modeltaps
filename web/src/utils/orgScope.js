@@ -1,10 +1,13 @@
 // ==============================|| ORG SCOPE — active organization + API path rewriting ||============================== //
 // Module-level holder for the active organization id, consumed by the axios
-// request interceptor in utils/api.js. When an organization is active,
+// request interceptor in utils/api.js. The URL decides it (routes/scopes.jsx sets it before an
+// org-scoped page renders). When an organization is active,
 // personal-scope endpoints are rewritten to their /api/org/:id/* equivalents
 // (paths per router/org-router.go). When no organization is active the
 // rewriting is a no-op, so personal context behaves exactly as before.
 
+// The last organization the user worked in; only used to send old org-less links of
+// organization-only pages to an organization. It never selects the scope by itself.
 const STORAGE_KEY = 'active_org_id';
 
 let activeOrgId = null;
@@ -13,18 +16,23 @@ export function getActiveOrgId() {
   return activeOrgId;
 }
 
-// Set (or clear with null) the active org; persisted to localStorage so the
-// selection survives page refreshes.
+// Set (or clear with null) the active org. A selected org is remembered as the last one used;
+// clearing keeps that memory (leaving an org's pages for personal ones is not forgetting it).
 export function setActiveOrgId(id) {
   activeOrgId = Number.isInteger(id) && id > 0 ? id : null;
+  if (!activeOrgId) return;
   try {
-    if (activeOrgId) {
-      localStorage.setItem(STORAGE_KEY, String(activeOrgId));
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
-    }
+    localStorage.setItem(STORAGE_KEY, String(activeOrgId));
   } catch {
     // ignore storage errors (e.g. storage disabled)
+  }
+}
+
+export function clearStoredOrgId() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // ignore storage errors
   }
 }
 

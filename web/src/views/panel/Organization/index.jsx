@@ -11,11 +11,13 @@ import MyInvitations from './MyInvitations';
 import OverviewTab from './OverviewTab';
 import UsageTab from './UsageTab';
 import AuditTab from './AuditTab';
+import { org } from 'routes/paths';
 
 // ==============================|| ORGANIZATION — MANAGEMENT CONSOLE (T9) ||============================== //
-// Personal context (no active org): shows "my invitations" + invite-link redeem.
-// Org context: tabbed console — overview / usage / audit (S5:成员与设置已迁到
-// 统一设置页 `/panel/settings/org/:orgId/...`,旧 `?tab=` 深链在此重定向)。
+// `/panel/orgs/:orgSlug/overview`: the organization's console (an invite link opened here still
+// shows the invitations view). Personal invitations live at `/panel/invitations`.
+// Tabbed console — overview / usage / audit (S5:成员与设置已迁到
+// 统一设置页 `/panel/settings/orgs/:orgSlug/...`,旧 `?tab=` 深链在此重定向)。
 // Admin-only tabs are hidden for members; the backend 403 remains the final guard.
 
 export const isOrgAdminRole = (role) => role === 'owner' || role === 'admin';
@@ -27,7 +29,7 @@ const MOVED_TABS = { settings: 'general', members: 'members' };
 
 export default function Organization() {
   const { t } = useTranslation();
-  const { orgEnabled, currentOrgId, orgRole } = useOrg();
+  const { orgEnabled, currentOrgId, currentOrg, orgRole } = useOrg();
   const [searchParams] = useSearchParams();
   const [tab, setTab] = useState('overview');
   const [detail, setDetail] = useState(null);
@@ -72,11 +74,11 @@ export default function Organization() {
   // 普通成员没有设置页入口,回落到概览。
   const movedSection = MOVED_TABS[searchParams.get('tab')];
   if (movedSection) {
-    if (!isAdmin) return <Navigate to="/panel/organization" replace />;
+    if (!isAdmin) return <Navigate to={org.overview(currentOrg.slug)} replace />;
     const rest = new URLSearchParams(searchParams);
     rest.delete('tab');
     const query = rest.toString();
-    return <Navigate to={`${orgSettingsUrl(currentOrgId, movedSection)}${query ? `?${query}` : ''}`} replace />;
+    return <Navigate to={`${orgSettingsUrl(currentOrg.slug, movedSection)}${query ? `?${query}` : ''}`} replace />;
   }
 
   return (

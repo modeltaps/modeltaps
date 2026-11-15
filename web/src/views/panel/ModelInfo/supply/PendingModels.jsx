@@ -14,6 +14,7 @@ import { toast } from '@/components/ui/sonner';
 import { attachPendingModel, ignorePendingModel, listCatalogRows, listPendingModels } from './supplyApi';
 import { modelSupplyPath, pendingTarget, publicModelNames } from './supplyHelpers';
 import { SupplySwitchNote, useSupplySwitches } from './supplyParts';
+import { admin } from 'routes/paths';
 
 const SOURCES = ['alias', 'seed', 'bare'];
 
@@ -206,7 +207,7 @@ export default function PendingModels() {
                     <td>
                       <span className="flex flex-wrap gap-x-2 gap-y-0.5">
                         {item.channels.map((c) => (
-                          <Link key={c.channel_id} to={`/panel/channel/${c.channel_id}`} className="whitespace-nowrap hover:underline">
+                          <Link key={c.channel_id} to={admin.providers(c.channel_id)} className="whitespace-nowrap hover:underline">
                             {c.channel_name || `#${c.channel_id}`}
                           </Link>
                         ))}

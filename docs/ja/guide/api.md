@@ -121,14 +121,14 @@ curl https://your-modeltaps-domain.com/gemini/v1beta/models \
 
 ## コンソールの API カタログ
 
-サイドバーの「API」グループには、モダリティごとのページが並びます。`/panel/api` は概要ページで、各モダリティのカードから「API ドキュメント」または「コンソール」に進めます。API ドキュメントページの内容は本ページと同じですが、アドレスは実際に利用しているサイトアドレスに置き換わっています。
+サイドバーの「API」グループには、モダリティごとのページが並びます。`/panel/docs` は概要ページで、各モダリティのカードから「API ドキュメント」または「コンソール」に進めます。API ドキュメントページの内容は本ページと同じですが、アドレスは実際に利用しているサイトアドレスに置き換わっています。
 
 | モダリティ | API ドキュメント | コンソール | 対象エンドポイント |
 | --- | --- | --- | --- |
-| チャット | `/panel/api/docs/chat` | `/panel/api/chat` | `/v1/chat/completions`、`/v1/responses`、`/claude/v1/messages`、`/gemini/v1beta/models/{model}:generateContent` |
-| 画像 | `/panel/api/docs/image` | `/panel/api/image` | `/v1/images/generations`、`/v1/images/edits`、`/v1/images/variations`、および Recraft と Midjourney の拡張エンドポイント |
-| 音声 | `/panel/api/docs/speech` | `/panel/api/speech` | `/v1/audio/speech`、`/v1/audio/transcriptions`、`/v1/audio/translations`、および `/v1/realtime` |
-| 動画 | `/panel/api/docs/video` | —（未公開） | Kling のテキスト / 画像からの動画生成とタスク照会、および Gemini Veo の長時間タスク |
+| チャット | `/panel/docs/chat` | `/panel/playground/chat` | `/v1/chat/completions`、`/v1/responses`、`/claude/v1/messages`、`/gemini/v1beta/models/{model}:generateContent` |
+| 画像 | `/panel/docs/image` | `/panel/playground/image` | `/v1/images/generations`、`/v1/images/edits`、`/v1/images/variations`、および Recraft と Midjourney の拡張エンドポイント |
+| 音声 | `/panel/docs/speech` | `/panel/playground/speech` | `/v1/audio/speech`、`/v1/audio/transcriptions`、`/v1/audio/translations`、および `/v1/realtime` |
+| 動画 | `/panel/docs/video` | —（未公開） | Kling のテキスト / 画像からの動画生成とタスク照会、および Gemini Veo の長時間タスク |
 
 各 API ドキュメントページには「エンドポイント」「リクエスト例」「利用可能なモデル」と完全なドキュメントへのリンクがあります。例に含まれるキーはプレースホルダー `sk-YOUR_TOKEN` です。「API キー」ページで作成したキーに置き換えればそのまま実行できます。
 
@@ -142,11 +142,11 @@ curl https://your-modeltaps-domain.com/gemini/v1beta/models \
 - 個人コンテキストでのみ利用でき、組織に切り替えるとページに案内と移動先が表示されます（組織クォータでの試用は別途対応）。
 - その機能に利用可能なモデルがない場合もページは閲覧でき、理由と対応先を表示し、リクエストは送信しません。
 - 管理者はシステム設定で `builtin_chat_enabled` をオフにすると、サイト全体でコンソールを無効にできます。
-- 旧 Playground のアドレス（`/playground`、`/panel/playground`）は `/panel/api/chat` に自動で転送されます。
+- 旧 Playground のアドレス（`/playground`、`/panel/playground`）は `/panel/playground/chat` に自動で転送されます。
 
 #### 比較
 
-サイドバーの「API」グループにある「比較」（`/panel/api/compare`）では、2〜4 個のチャットモデルを列として並べます。右上の「列を追加」で最大 4 列まで増やせ、各列の見出しでモデルを選び、温度・最大 tokens・思考の深さを上書きできます。下部の共有入力バーで「入力を同期」がオンなら 1 つのメッセージを全列に同時送信し、オフなら選択中の列だけに送ります。各列は個別に停止できます。「コードを見る」では列を切り替えて、上書きを反映した各列の等価なリクエストを確認できます。
+サイドバーの「API」グループにある「比較」（`/panel/playground/compare`）では、2〜4 個のチャットモデルを列として並べます。右上の「列を追加」で最大 4 列まで増やせ、各列の見出しでモデルを選び、温度・最大 tokens・思考の深さを上書きできます。下部の共有入力バーで「入力を同期」がオンなら 1 つのメッセージを全列に同時送信し、オフなら選択中の列だけに送ります。各列は個別に停止できます。「コードを見る」では列を切り替えて、上書きを反映した各列の等価なリクエストを確認できます。
 
 Midjourney と非同期タスクの実行記録はカタログページには含まれません。「ログ」ページの「Midjourney」「非同期タスク」タブで確認してください。
 

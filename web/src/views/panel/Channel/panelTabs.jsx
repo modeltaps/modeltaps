@@ -64,6 +64,7 @@ import BalanceAlertField from './BalanceAlertField';
 import { attachPendingModel } from '../ModelInfo/supply/supplyApi';
 import { modelSupplyPath } from '../ModelInfo/supply/supplyHelpers';
 import { performanceTab } from './PerformanceTab';
+import { admin } from 'routes/paths';
 
 // Tabs of the channel panel (see components/objects/ObjectPanel). Each tab edits a part of the
 // channel on its own: `make(channel)` builds the tab's draft, `patch(draft, channel, ctx)` turns
@@ -1146,7 +1147,7 @@ function RoutingBody({ object: channel, draft, setDraft, ctx }) {
         <Field label={t('channels.usage.label')}>
           <p className="text-sm text-muted-foreground">
             {t('channels.usage.byPolicy')}{' '}
-            <Link to="/panel/channel" className="text-info underline-offset-2 hover:underline">
+            <Link to={admin.providers()} className="text-info underline-offset-2 hover:underline">
               {t('channels.usage.openPolicy')}
             </Link>
           </p>

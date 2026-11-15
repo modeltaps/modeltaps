@@ -15,6 +15,8 @@ import { ROW_OPENS, rowOpenProps } from '@/components/objects';
 
 import { SpendAmount, timestamp2string, timestamp2stringCompact } from 'utils/common';
 import { badgeClass, calculateOriginalQuota, deriveDuration, finishReasonMeta, logTypeMeta, relayModeMeta } from './logHelpers';
+import { admin, workbench } from 'routes/paths';
+import { useInScope } from 'routes/useScope';
 
 const Badge = ({ color, children }) => <span className={badgeClass(color)}>{children}</span>;
 Badge.propTypes = { color: PropTypes.string, children: PropTypes.node };
@@ -133,6 +135,7 @@ export default function LogTable({
   layout = 'table'
 }) {
   const hasPicker = !!columnPicker;
+  const inScope = useInScope();
 
   const columns = useMemo(() => {
     const cols = [
@@ -152,7 +155,7 @@ export default function LogTable({
         cell: (i) =>
           i.channel_id ? (
             <Link
-              to={`/panel/channel/${i.channel_id}`}
+              to={admin.providers(i.channel_id)}
               onClick={(e) => e.stopPropagation()}
               className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground hover:underline"
             >
@@ -169,7 +172,7 @@ export default function LogTable({
       cols.push({
         id: 'user_id',
         header: t('logPage.userLabel'),
-        cell: (i) => (i.username ? <TextLink to={`/panel/user?keyword=${encodeURIComponent(i.username)}`}>{i.username}</TextLink> : '')
+        cell: (i) => (i.username ? <TextLink to={`${admin.users()}?keyword=${encodeURIComponent(i.username)}`}>{i.username}</TextLink> : '')
       });
     }
     if (isOrgContext) {
@@ -188,13 +191,13 @@ export default function LogTable({
         const name = userGroup?.[m.group_name || m.backup_group_name]?.name;
         if (!name) return '';
         // 分组页暂不支持按名称过滤,仅 admin 渲染为跳转链接;非 admin 保持纯 Badge。
-        return userIsAdmin ? <TextLink to="/panel/user_group">{name}</TextLink> : <span className="whitespace-nowrap">{name}</span>;
+        return userIsAdmin ? <TextLink to={admin.userGroups()}>{name}</TextLink> : <span className="whitespace-nowrap">{name}</span>;
       }
     });
     cols.push({
       id: 'token_name',
       header: t('logPage.tokenLabel'),
-      cell: (i) => (i.token_name ? <TextLink to={`/panel/token?keyword=${encodeURIComponent(i.token_name)}`}>{i.token_name}</TextLink> : '')
+      cell: (i) => (i.token_name ? <TextLink to={`${inScope(workbench.keys())}?keyword=${encodeURIComponent(i.token_name)}`}>{i.token_name}</TextLink> : '')
     });
     cols.push({
       id: 'app',
@@ -329,7 +332,7 @@ export default function LogTable({
       });
     }
     return defs;
-  }, [t, userIsAdmin, isOrgContext, userGroup, hasPicker]);
+  }, [t, userIsAdmin, isOrgContext, userGroup, hasPicker, inScope]);
 
   const table = useTable({
     features: appTableFeatures,

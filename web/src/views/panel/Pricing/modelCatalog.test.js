@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   STATUS_FILTERS,
   attachChannelDetails,
-  LEGACY_CATALOG_REDIRECTS,
   billingType,
   buildCatalogExport,
   catalogStats,
@@ -52,10 +51,6 @@ describe('legacy route redirects', () => {
     expect(resolveCatalogTab('bogus')).toBe('models');
   });
 
-  it('redirects the standalone legacy pages to the new tabs', () => {
-    expect(LEGACY_CATALOG_REDIRECTS.model_info).toBe('/panel/pricing?tab=models');
-    expect(LEGACY_CATALOG_REDIRECTS.model_ownedby).toBe('/panel/pricing?tab=vendors');
-  });
 });
 
 describe('column defaults', () => {

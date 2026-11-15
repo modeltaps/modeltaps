@@ -15,6 +15,8 @@ import { renderBalance, renderSpend, showError, showSuccess, timestamp2string } 
 import { useOrg } from 'contexts/OrgContext';
 import { nextResetTime } from '../Token/TokenTable';
 import TransferQuotaDialog from './TransferQuotaDialog';
+import { workbench } from 'routes/paths';
+import { useNavigate } from 'react-router';
 
 // ==============================|| ORGANIZATION — OVERVIEW TAB ||============================== //
 // Org profile header + stat cards. Balance card (shadow-account quota) is only
@@ -48,7 +50,8 @@ StatCard.propTypes = {
 export default function OverviewTab({ orgId, detail, isAdmin, role, onRefresh }) {
   const { t } = useTranslation();
   const siteInfo = useSelector((state) => state.siteInfo);
-  const { refreshOrganizations, switchOrg, currentOrgId } = useOrg();
+  const { refreshOrganizations, currentOrgId } = useOrg();
+  const navigate = useNavigate();
   const [transferOpen, setTransferOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -61,7 +64,8 @@ export default function OverviewTab({ orgId, detail, isAdmin, role, onRefresh })
       const { success, message } = res.data;
       if (success) {
         showSuccess(t('orgPage.settings.leaveSuccess'));
-        if (currentOrgId === orgId) switchOrg(null);
+        // Its pages are gone for this user: back to the personal workbench.
+        if (currentOrgId === orgId) navigate(workbench.dashboard());
         refreshOrganizations();
       } else {
         showError(message);

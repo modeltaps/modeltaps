@@ -19,9 +19,10 @@ import {
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 
 import { VendorIcon } from '../ModelInfo/modelInfoHelpers';
+import { admin } from 'routes/paths';
 
 // Deep link to the models tab filtered by vendor (and optionally by catalog state).
-export const vendorModelsPath = (vendorId, status) => `/panel/pricing?tab=models&vendor_id=${vendorId}${status ? `&status=${status}` : ''}`;
+export const vendorModelsPath = (vendorId, status) => `${admin.models()}?vendor_id=${vendorId}${status ? `&status=${status}` : ''}`;
 
 // Typical table width before it has been measured.
 

@@ -15,6 +15,7 @@ import AuthShell from '@/components/auth/AuthShell';
 import useLogin from 'hooks/useLogin';
 import { onWebAuthnClicked, showSuccess } from 'utils/common';
 import { adminLoginEnabled, siteInfoLoaded } from 'utils/authAvailability';
+import { PANEL, workbench } from 'routes/paths';
 
 // ==============================|| AUTH — ADMIN EMERGENCY LOGIN (/login/admin) ||============================== //
 // 只在外部账号体系下存在:身份提供方不可用时 root 用本站的应急密码或通行密钥进后台改配置。
@@ -26,7 +27,7 @@ export default function AdminLogin() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectParam = searchParams.get('redirect');
-  const redirectTo = redirectParam && redirectParam.startsWith('/panel') ? redirectParam : '/panel/dashboard';
+  const redirectTo = redirectParam && redirectParam.startsWith(PANEL) ? redirectParam : workbench.dashboard();
   const { login } = useLogin(redirectTo);
   const siteInfo = useSelector((state) => state.siteInfo);
 

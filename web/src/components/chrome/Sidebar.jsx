@@ -16,6 +16,7 @@ import ContextSwitcher, { ContextMark } from './ContextSwitcher';
 import AccountMenu from './AccountMenu';
 import { SidebarIconButton, SidebarSearch, sidebarRow } from './SidebarControls';
 import SidebarBrandRow from './SidebarBrandRow';
+import { orgSlugOf, workbench } from 'routes/paths';
 
 // ==============================|| CHROME — SIDEBAR (one shell, three contexts) ||============================== //
 // Every panel page uses this sidebar (设置 swaps it for SettingsSidebar, laid out the same way).
@@ -81,7 +82,7 @@ AdminBackRow.propTypes = {
 export default function Sidebar({ context, collapsed = false, showCollapse = false, onItemClick, onToggleCollapse, onOpenCommand }) {
   const { t } = useTranslation();
   const { pathname } = useLocation();
-  const { currentOrgId, orgRole, orgDetail, routingPolicyEnabled } = useOrg();
+  const { currentOrg, orgRole, orgDetail, routingPolicyEnabled } = useOrg();
   const user = useSelector((state) => state.account.user);
   const isRoot = useIsRoot();
   const footerRef = useRef(null);
@@ -89,7 +90,8 @@ export default function Sidebar({ context, collapsed = false, showCollapse = fal
   const sections = navSectionsFor({
     context,
     orgRole,
-    orgId: currentOrgId,
+    // The URL's organization on its pages; the active one elsewhere (设置).
+    orgSlug: orgSlugOf(pathname) ?? currentOrg?.slug ?? null,
     isRoot,
     features: { routingPolicy: routingPolicyEnabled }
   });
@@ -113,7 +115,7 @@ export default function Sidebar({ context, collapsed = false, showCollapse = fal
       : {
           label: showPool ? t('nav.balance.pool') : orgActive ? t('nav.balance.mine') : t('nav.balance.personal'),
           value: balanceAmount === null ? '—' : formatFullAmount(balanceAmount),
-          href: !orgActive || isOrgAdmin ? '/panel/billing' : null
+          href: !orgActive || isOrgAdmin ? workbench.billing(null, orgActive ? currentOrg?.slug : null) : null
         };
 
   const renderItem = (item) => {

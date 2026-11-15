@@ -18,6 +18,8 @@ import { ModelFacts } from './RecommendedModelCard';
 import useCatalogModels from './useCatalogModels';
 import { buildCapabilitySections, capabilityEmptyKey, pickSectionRecommended } from './availability';
 import { CATALOG } from './catalog';
+import { workbench } from 'routes/paths';
+import { useInScope } from 'routes/useScope';
 
 // ==============================|| PANEL — API OVERVIEW ||============================== //
 // /panel/api 的落地页:一段快速开始示例(对话模态的主能力 + 推荐模型)+ 四张模态卡
@@ -67,10 +69,11 @@ Quickstart.propTypes = {
 // 「查看接口」去文档页,「在控制台打开」去控制台页。
 function ModalityCard({ entry, models, siteInfo, showPlayground, loading, error }) {
   const { t } = useTranslation();
+  const inScope = useInScope();
 
   const sections = useMemo(() => buildCapabilitySections(entry.capabilities, models, siteInfo), [entry.capabilities, models, siteInfo]);
   const recommended = useMemo(() => pickSectionRecommended(sections), [sections]);
-  const to = `/panel/api/docs/${entry.key}`;
+  const to = inScope(workbench.docs(entry.key));
 
   return (
     <Card className="flex flex-col">
@@ -100,7 +103,7 @@ function ModalityCard({ entry, models, siteInfo, showPlayground, loading, error 
           </Button>
           {showPlayground && (
             <Button asChild variant="ghost" size="sm">
-              <Link to={`/panel/api/${entry.key}`}>{t('apiCatalogPage.openPlayground')}</Link>
+              <Link to={inScope(workbench.playground(entry.key))}>{t('apiCatalogPage.openPlayground')}</Link>
             </Button>
           )}
         </div>
@@ -121,10 +124,11 @@ ModalityCard.propTypes = {
 // 相关链接:站内两条(模型广场 / API Key)+ 站点文档(未配置文档站时不渲染)。
 function RelatedLinks({ docsHref }) {
   const { t } = useTranslation();
+  const inScope = useInScope();
 
   const items = [
-    { id: 'models', to: '/panel/model_price' },
-    { id: 'keys', to: '/panel/token' },
+    { id: 'models', to: inScope(workbench.models()) },
+    { id: 'keys', to: inScope(workbench.keys()) },
     ...(docsHref ? [{ id: 'docs', href: docsHref }] : [])
   ];
 

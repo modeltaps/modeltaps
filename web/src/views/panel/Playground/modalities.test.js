@@ -5,7 +5,7 @@ import { DEFAULT_MODALITY, MODALITIES, modalityDocsHref, modalityHref, resolveMo
 // 模态注册表的解析与回落:路由段 → 模态,未登记的值交回 null 由路由页回落。
 
 describe('resolveModality', () => {
-  it('缺省(裸 /panel/api)给默认模态', () => {
+  it('缺省(裸 /panel/playground)给默认模态', () => {
     expect(resolveModality(undefined)?.id).toBe(DEFAULT_MODALITY);
     expect(resolveModality('')?.id).toBe(DEFAULT_MODALITY);
   });
@@ -25,7 +25,7 @@ describe('resolveModality', () => {
     expect(compare?.id).toBe('compare');
     expect(compare.multiModel).toBe(true);
     expect(compare.settings).toBeNull();
-    expect(modalityHref(compare)).toBe('/panel/api/compare');
+    expect(modalityHref(compare)).toBe('/panel/playground/compare');
   });
 
   it('未上线的视频可路由,渲染空页面占位', () => {
@@ -37,10 +37,11 @@ describe('resolveModality', () => {
 });
 
 describe('modalityHref', () => {
-  it('控制台与文档各走一套 /panel/api 路径', () => {
-    expect(modalityHref(MODALITIES.find((m) => m.id === 'chat'))).toBe('/panel/api/chat');
-    expect(modalityHref(MODALITIES.find((m) => m.id === 'audio'))).toBe('/panel/api/speech');
-    expect(modalityDocsHref(MODALITIES.find((m) => m.id === 'audio'))).toBe('/panel/api/docs/speech');
+  it('控制台与文档各走一套路径,组织内带组织前缀', () => {
+    expect(modalityHref(MODALITIES.find((m) => m.id === 'chat'))).toBe('/panel/playground/chat');
+    expect(modalityHref(MODALITIES.find((m) => m.id === 'audio'))).toBe('/panel/playground/speech');
+    expect(modalityHref(MODALITIES.find((m) => m.id === 'audio'), 'acme')).toBe('/panel/orgs/acme/playground/speech');
+    expect(modalityDocsHref(MODALITIES.find((m) => m.id === 'audio'))).toBe('/panel/docs/speech');
   });
 });
 

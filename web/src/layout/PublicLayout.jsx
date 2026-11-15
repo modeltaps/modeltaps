@@ -10,6 +10,7 @@ import UserMenu from '@/components/chrome/UserMenu';
 import LanguageSwitcher from '@/components/auth/LanguageSwitcher';
 import Footer from '@/components/chrome/Footer';
 import { brandWordmark, isDefaultBrand } from 'utils/brand';
+import { workbench } from 'routes/paths';
 
 // ==============================|| PUBLIC LAYOUT (shadcn) ||============================== //
 // Header + footer chrome for unauthenticated/public pages (OAuth callbacks,
@@ -36,7 +37,7 @@ export default function PublicLayout() {
           {account.user ? (
             <>
               <Button asChild variant="ghost" size="sm" className="ml-1 hidden sm:inline-flex">
-                <Link to="/panel/dashboard">{t('home.cta.console')}</Link>
+                <Link to={workbench.dashboard()}>{t('home.cta.console')}</Link>
               </Button>
               <div className="ml-1 flex">
                 <UserMenu />

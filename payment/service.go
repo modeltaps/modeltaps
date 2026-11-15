@@ -101,5 +101,5 @@ func (s *PaymentService) getNotifyURL() string {
 
 func (s *PaymentService) getReturnURL() string {
 	serverAdd := strings.TrimSuffix(config.ServerAddress, "/")
-	return fmt.Sprintf("%s/panel/log", serverAdd)
+	return fmt.Sprintf("%s/panel/billing/orders", serverAdd)
 }

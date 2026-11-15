@@ -1,8 +1,9 @@
+import { workbench } from 'routes/paths';
 // Where the back row of 设置 leads: the last page opened outside 设置 in this tab (MainLayout
 // records it), else the dashboard. Kept in sessionStorage so a reload inside 设置 keeps it.
 
 const KEY = 'settings_return_path';
-const FALLBACK = '/panel/dashboard';
+const FALLBACK = workbench.dashboard();
 
 export function rememberSettingsReturn(path) {
   try {

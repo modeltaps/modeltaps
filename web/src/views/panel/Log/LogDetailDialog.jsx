@@ -32,6 +32,7 @@ import { orgSettingsUrl } from '../Settings/sections';
 import { badgeClass, calculatePrice, calculateOriginalQuota, calculateTokens, deriveDuration, finishReasonMeta } from './logHelpers';
 import PromptViewer, { parsePromptMessages } from './PromptViewer';
 import AppFavicon from './AppFavicon';
+import { admin, settings } from 'routes/paths';
 
 // ==============================|| LOG — ROW DETAIL PANEL ||============================== //
 // Wide right-side slide-over (OpenRouter "Generation details" style) for reading log
@@ -577,14 +578,14 @@ CompletionBody.propTypes = { io: PropTypes.object.isRequired, isStream: PropType
 // sees an actionable button; otherwise the request just missed the org / account default.
 // Guide URLs carry `?highlight=log-io` so the target page scrolls to and highlights the
 // matching control (anchor mechanism implemented by the sibling deep-link task).
-function NotEnabledEmpty({ t, siteLogIOEnabled, platformIsAdmin, isOrgContext, orgIsAdmin, orgId, onNavigate }) {
+function NotEnabledEmpty({ t, siteLogIOEnabled, platformIsAdmin, isOrgContext, orgIsAdmin, orgSlug, onNavigate }) {
   let description;
   let showHint = true;
   const actions = [];
   if (!siteLogIOEnabled) {
     if (platformIsAdmin) {
       description = t('logPage.io.emptyNotEnabledSiteAdmin');
-      actions.push({ label: t('logPage.io.gotoSiteSetting'), to: '/panel/setting/privacy?highlight=log-io' });
+      actions.push({ label: t('logPage.io.gotoSiteSetting'), to: `${admin.settings('privacy')}?highlight=log-io` });
     } else {
       description = t('logPage.io.emptyNotEnabledSiteUser');
       showHint = false;
@@ -592,13 +593,13 @@ function NotEnabledEmpty({ t, siteLogIOEnabled, platformIsAdmin, isOrgContext, o
   } else if (isOrgContext) {
     if (orgIsAdmin) {
       description = t('logPage.io.emptyNotEnabledOrgAdmin');
-      actions.push({ label: t('logPage.io.gotoOrgSetting'), to: `${orgSettingsUrl(orgId, 'general')}?highlight=log-io` });
+      actions.push({ label: t('logPage.io.gotoOrgSetting'), to: `${orgSettingsUrl(orgSlug, 'general')}?highlight=log-io` });
     } else {
       description = t('logPage.io.emptyNotEnabledOrgMember');
     }
   } else {
     description = t('logPage.io.emptyNotEnabledPersonal');
-    actions.push({ label: t('logPage.io.gotoProfile'), to: '/panel/settings/account/privacy?highlight=log-io' });
+    actions.push({ label: t('logPage.io.gotoProfile'), to: `${settings.account('privacy')}?highlight=log-io` });
   }
 
   return (
@@ -624,7 +625,7 @@ NotEnabledEmpty.propTypes = {
   platformIsAdmin: PropTypes.bool,
   isOrgContext: PropTypes.bool,
   orgIsAdmin: PropTypes.bool,
-  orgId: PropTypes.number,
+  orgSlug: PropTypes.string,
   onNavigate: PropTypes.func.isRequired
 };
 
@@ -641,7 +642,7 @@ export default function LogDetailDialog({
 }) {
   const logId = item?.id;
   const navigate = useNavigate();
-  const { currentOrgId } = useOrg();
+  const { currentOrg } = useOrg();
   const [io, setIo] = useState({ status: 'idle' });
   const [showUsage, setShowUsage] = useState(false);
   const [showPromptViewer, setShowPromptViewer] = useState(false);
@@ -1048,7 +1049,7 @@ export default function LogDetailDialog({
                     platformIsAdmin={platformIsAdmin}
                     isOrgContext={isOrgContext}
                     orgIsAdmin={orgIsAdmin}
-                    orgId={currentOrgId}
+                    orgSlug={currentOrg?.slug}
                     onNavigate={handleGuideNavigate}
                   />
                 ))}

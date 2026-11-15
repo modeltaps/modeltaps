@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useSelector } from 'react-redux';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { ExternalLink, Loader2 } from 'lucide-react';
 
@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { workbench } from 'routes/paths';
 
 // ==============================|| ORG — CREATE ORGANIZATION DIALOG ||============================== //
 // 后端要求创建者有一条已验证的联系通道(邮箱或手机号,root 免检),这里在提交前先拦一道,
@@ -24,7 +25,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function CreateOrgDialog({ open, onClose }) {
   const { t } = useTranslation();
-  const { refreshOrganizations, switchOrg } = useOrg();
+  const { refreshOrganizations } = useOrg();
+  const navigate = useNavigate();
   const user = useSelector((state) => state.account.user);
   const siteInfo = useSelector((state) => state.siteInfo);
   const [name, setName] = useState('');
@@ -52,7 +54,8 @@ export default function CreateOrgDialog({ open, onClose }) {
       if (success) {
         showSuccess(t('org.createSuccess'));
         await refreshOrganizations();
-        if (data?.id) switchOrg(data.id);
+        // Open the new organization's workbench (the URL selects it).
+        if (data?.slug) navigate(workbench.dashboard(data.slug));
         setName('');
         onClose();
       } else {

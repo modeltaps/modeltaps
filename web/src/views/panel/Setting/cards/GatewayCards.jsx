@@ -14,6 +14,7 @@ import { FieldSection, OptionList } from '@/components/settings/cards';
 import { SelectRow, TextRow, ToggleRow } from '../parts';
 import OptionCard, { bindSwitch, cardText } from './OptionCard';
 import { describePauseRule, pauseRulesError, pauseRulesText } from './pauseRules';
+import { admin } from 'routes/paths';
 
 // ==============================|| PLATFORM SETTINGS — 网关 ||============================== //
 // Retry, error handling, channel auto disable / recover, session affinity, model name matching,
@@ -584,7 +585,7 @@ export function AutoRoutingCard({ ctx }) {
       description={
         <>
           {cardText(t, 'auto-routing', 'description')}{' '}
-          <Link to="/panel/routing_policy" className="text-primary hover:underline">
+          <Link to={admin.routing()} className="text-primary hover:underline">
             {t('settingsUi.platform.actions.openRouting')}
           </Link>
         </>

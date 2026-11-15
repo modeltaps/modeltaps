@@ -15,20 +15,20 @@ import {
 describe('personal and organization settings sections', () => {
   it('account groups stay, the old access token section lands on its card', () => {
     for (const group of ['profile', 'security', 'privacy', 'preferences']) expect(resolveAccountSection(group)).toBeNull();
-    expect(resolveAccountSection('tokens')).toBe('/panel/settings/account/security?highlight=access-token');
-    expect(resolveAccountSection('nope')).toBe('/panel/settings/account/profile');
+    expect(resolveAccountSection('tokens')).toBe('/panel/settings/security?highlight=access-token');
+    expect(resolveAccountSection('nope')).toBe('/panel/settings/profile');
   });
 
   it('organization groups and the members page stay, budget moved into 常规', () => {
-    expect(resolveOrgSection(3, 'general')).toBeNull();
-    expect(resolveOrgSection(3, 'danger')).toBeNull();
-    expect(resolveOrgSection(3, 'members')).toBeNull();
-    expect(resolveOrgSection(3, 'budget')).toBe('/panel/settings/org/3/general?highlight=team-budget');
-    expect(resolveOrgSection(3, 'nope')).toBe('/panel/settings/org/3/general');
+    expect(resolveOrgSection('acme', 'general')).toBeNull();
+    expect(resolveOrgSection('acme', 'danger')).toBeNull();
+    expect(resolveOrgSection('acme', 'members')).toBeNull();
+    expect(resolveOrgSection('acme', 'budget')).toBe('/panel/settings/orgs/acme/general?highlight=team-budget');
+    expect(resolveOrgSection('acme', 'nope')).toBe('/panel/settings/orgs/acme/general');
   });
 
   it('the old organization 自动路由 page redirects to the workbench 路由策略 page', () => {
-    expect(resolveOrgSection(3, 'routing')).toBe('/panel/routing');
+    expect(resolveOrgSection('acme', 'routing')).toBe('/panel/orgs/acme/routing-policies');
   });
 
   it('every organization group is in the tree, and personal and organization ids never collide', () => {
@@ -40,17 +40,17 @@ describe('personal and organization settings sections', () => {
 
 describe('settingsOrg: the organization 设置 lists', () => {
   const managed = [
-    { id: 4, name: 'Acme', role: 'owner' },
-    { id: 9, name: 'Globex', role: 'admin' }
+    { id: 4, slug: 'acme', name: 'Acme', role: 'owner' },
+    { id: 9, slug: 'globex', name: 'Globex', role: 'admin' }
   ];
 
   it('none when the user manages no organization', () => {
-    expect(settingsOrg([], { orgId: 4, currentOrgId: 4 })).toBeNull();
+    expect(settingsOrg([], { orgSlug: 'acme', currentOrgId: 4 })).toBeNull();
     expect(settingsOrg(undefined)).toBeNull();
   });
 
   it("the URL's organization on an organization group", () => {
-    expect(settingsOrg(managed, { orgId: 9, currentOrgId: 4 }).id).toBe(9);
+    expect(settingsOrg(managed, { orgSlug: 'globex', currentOrgId: 4 }).id).toBe(9);
   });
 
   it('on a personal group: the active organization, else the first managed one', () => {
@@ -63,48 +63,48 @@ describe('settingsOrg: the organization 设置 lists', () => {
 
 describe('the 设置 tree', () => {
   const orgs = [
-    { id: 4, name: 'Acme', role: 'owner' },
-    { id: 9, name: 'Globex', role: 'admin' },
-    { id: 12, name: 'Initech', role: 'member' }
+    { id: 4, slug: 'acme', name: 'Acme', role: 'owner' },
+    { id: 9, slug: 'globex', name: 'Globex', role: 'admin' },
+    { id: 12, slug: 'initech', name: 'Initech', role: 'member' }
   ];
   const ids = (items) => items.map((i) => i.id);
 
   it('parses settings paths', () => {
-    expect(parseSettingsPath('/panel/settings/org/9/members')).toEqual({ orgId: 9, section: 'members' });
-    expect(parseSettingsPath('/panel/settings/account/security')).toEqual({ orgId: null, section: 'security' });
-    expect(parseSettingsPath('/panel/settings')).toEqual({ orgId: null, section: null });
+    expect(parseSettingsPath('/panel/settings/orgs/globex/members')).toEqual({ orgSlug: 'globex', section: 'members' });
+    expect(parseSettingsPath('/panel/settings/security')).toEqual({ orgSlug: null, section: 'security' });
+    expect(parseSettingsPath('/panel/settings')).toEqual({ orgSlug: null, section: null });
   });
 
   it('organization settings come first: general, members & budget, danger zone', () => {
-    const tree = settingsTree({ pathname: '/panel/settings/org/9/general', organizations: orgs });
+    const tree = settingsTree({ pathname: '/panel/settings/orgs/globex/general', organizations: orgs });
     expect(tree.org.id).toBe(9);
     expect(ids(tree.managedOrgs)).toEqual([4, 9]);
     expect(ids(tree.orgItems)).toEqual(['general', 'members', 'model-access', 'danger']);
-    expect(tree.orgItems.find((i) => i.id === 'members').to).toBe('/panel/settings/org/9/members');
+    expect(tree.orgItems.find((i) => i.id === 'members').to).toBe('/panel/settings/orgs/globex/members');
     expect(ids(tree.personalItems)).toEqual(['profile', 'security', 'privacy', 'preferences']);
     expect(tree.active.id).toBe('general');
     expect(tree.activeScope).toBe('org');
   });
 
   it('on a personal item the organization part shows the active (or first) managed organization', () => {
-    const tree = settingsTree({ pathname: '/panel/settings/account/privacy', organizations: orgs, currentOrgId: 9 });
+    const tree = settingsTree({ pathname: '/panel/settings/privacy', organizations: orgs, currentOrgId: 9 });
     expect(tree.org.id).toBe(9);
     expect(tree.orgItems.every((i) => !i.active)).toBe(true);
     expect(tree.active.id).toBe('privacy');
     expect(tree.activeScope).toBe('personal');
-    expect(settingsTree({ pathname: '/panel/settings/account/privacy', organizations: orgs, currentOrgId: 12 }).org.id).toBe(4);
+    expect(settingsTree({ pathname: '/panel/settings/privacy', organizations: orgs, currentOrgId: 12 }).org.id).toBe(4);
   });
 
   it('without a managed organization there is only the personal part', () => {
-    const tree = settingsTree({ pathname: '/panel/settings/account/profile', organizations: [orgs[2]] });
+    const tree = settingsTree({ pathname: '/panel/settings/profile', organizations: [orgs[2]] });
     expect(tree.org).toBeNull();
     expect(tree.orgItems).toEqual([]);
   });
 
   it('opens on the first item: organization settings when the user manages one, else personal', () => {
-    expect(settingsLanding({ organizations: orgs, currentOrgId: 9 })).toBe('/panel/settings/org/9/general');
-    expect(settingsLanding({ organizations: orgs })).toBe('/panel/settings/org/4/general');
-    expect(settingsLanding({ organizations: [orgs[2]] })).toBe('/panel/settings/account/profile');
-    expect(settingsLanding()).toBe('/panel/settings/account/profile');
+    expect(settingsLanding({ organizations: orgs, currentOrgId: 9 })).toBe('/panel/settings/orgs/globex/general');
+    expect(settingsLanding({ organizations: orgs })).toBe('/panel/settings/orgs/acme/general');
+    expect(settingsLanding({ organizations: [orgs[2]] })).toBe('/panel/settings/profile');
+    expect(settingsLanding()).toBe('/panel/settings/profile');
   });
 });

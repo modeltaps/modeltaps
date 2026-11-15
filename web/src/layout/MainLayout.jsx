@@ -26,12 +26,13 @@ import { rememberSettingsReturn } from 'utils/settingsReturn';
 import { rememberAdminReturn } from 'utils/adminReturn';
 import { settingsTree } from 'views/panel/Settings/sections';
 import MobilePushFrame from './MobilePushFrame';
+import { orgSlugOf } from 'routes/paths';
 
 // ==============================|| MAIN LAYOUT (shadcn app chrome) ||============================== //
-// One sidebar shell for every panel page. Routes are unchanged (/panel/*): the context
-// (personal / org / platform admin) is derived from the path and the active organization
-// (nav-config `deriveContext`). Non-admins on admin routes keep the workbench chrome and the
-// route guard's 404 in place. Platform settings groups are admin menu items of their own.
+// One sidebar shell for every panel page. The context (personal / org / platform admin) is the
+// URL's (nav-config `deriveContext`, routes/paths.js); an organization slug the user does not
+// belong to is a 404 in the personal chrome. Non-admins on admin routes keep the workbench chrome
+// and the route guard's 404 in place. Platform settings groups are admin menu items of their own.
 // 设置 (`/panel/settings/*`, organization and personal settings) swaps the sidebar for its own
 // tree (SettingsSidebar) with a back row to the page the user came from; its pages are titled
 // from that tree (the item, with the organization's name under organization items).
@@ -43,8 +44,10 @@ export default function MainLayout() {
   const { t } = useTranslation();
   const { pathname, search } = useLocation();
   const isAdmin = useIsAdmin();
-  const { currentOrgId, organizations } = useOrg();
-  const context = deriveContext({ pathname, isAdmin, orgId: currentOrgId });
+  const { currentOrgId, organizations, orgsLoaded } = useOrg();
+  const urlOrgSlug = orgSlugOf(pathname);
+  const unknownOrg = urlOrgSlug !== null && orgsLoaded && !organizations.some((o) => o.slug === urlOrgSlug);
+  const context = unknownOrg ? 'personal' : deriveContext({ pathname, isAdmin, orgId: currentOrgId });
   const activeItem = findActiveItem(pathname);
 
   // 设置 has its own sidebar; remember the last page outside it for its back row.
@@ -70,9 +73,10 @@ export default function MainLayout() {
   // Unknown /panel/* paths fall through to the trailing '*' 404 route; title it "page not found"
   // instead of whatever a prefix match would give.
   const isNotFound = useMemo(() => {
+    if (unknownOrg) return true;
     const matched = matchRoutes(MainRoutes.children, pathname, MainRoutes.path);
     return !matched || matched[matched.length - 1].route.path === '*';
-  }, [pathname]);
+  }, [pathname, unknownOrg]);
 
   // The rail collapses to icons on its own below the lg breakpoint (1024px), by the window width
   // alone; a page wider than the room left scrolls sideways instead. The user's own toggle wins

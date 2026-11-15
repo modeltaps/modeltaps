@@ -8,6 +8,7 @@
 // Recraft / Midjourney 等兼容入口收进页尾 extras 折叠区,不参与能力可用性。
 
 import { curlOpenAI, jsClient, pyClient } from './_helpers';
+import { workbench } from 'routes/paths';
 
 const PROMPT = 'a red panda coding at night';
 const EDIT_PROMPT = 'make the background a snowy forest';
@@ -225,7 +226,7 @@ console.log(response.choices[0].message.content);`
           { method: 'GET', path: '/mj/task/{id}/fetch', descKey: 'apiCatalogPage.image.endpoints.mjFetch' }
         ],
         // 任务记录落在日志页的 Midjourney Tab,这里给一条直达链接。
-        link: { to: '/panel/log?tab=midjourney', labelKey: 'apiCatalogPage.image.extras.midjourneyTasks' }
+        link: { to: workbench.logs('midjourney'), labelKey: 'apiCatalogPage.image.extras.midjourneyTasks' }
       }
     ]
   }

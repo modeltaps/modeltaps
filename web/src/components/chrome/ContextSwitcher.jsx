@@ -58,7 +58,7 @@ export default function ContextSwitcher({ context, collapsed = false, onNavigate
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const isRoot = useIsRoot();
-  const { orgEnabled, routingPolicyEnabled, organizations, currentOrg, switchOrg } = useOrg();
+  const { orgEnabled, routingPolicyEnabled, organizations, currentOrg } = useOrg();
   const [createOpen, setCreateOpen] = useState(false);
 
   const roleLabel = (role) => t(`org.roles.${role}`, { defaultValue: role });
@@ -68,10 +68,8 @@ export default function ContextSwitcher({ context, collapsed = false, onNavigate
       : { kind: 'personal', name: t('nav.context.personal') };
 
   const select = (to) => {
-    const target = contextSwitchTarget({ pathname, to, isRoot, features: { routingPolicy: routingPolicyEnabled } });
-    if (to.kind === 'personal') switchOrg(null);
-    if (to.kind === 'org') switchOrg(to.orgId);
-    if (target) navigate(target);
+    // The URL decides the scope: switching is navigating (routes/scopes.jsx selects the org).
+    navigate(contextSwitchTarget({ pathname, to, isRoot, features: { routingPolicy: routingPolicyEnabled } }));
     onNavigate?.();
   };
 
@@ -129,7 +127,7 @@ export default function ContextSwitcher({ context, collapsed = false, onNavigate
               {organizations.map((org) => {
                 const active = context === 'org' && currentOrg?.id === org.id;
                 return (
-                  <DropdownMenuItem key={org.id} onClick={() => select({ kind: 'org', orgId: org.id, role: org.role })}>
+                  <DropdownMenuItem key={org.id} onClick={() => select({ kind: 'org', orgSlug: org.slug, role: org.role })}>
                     <ContextMark kind="org" org={org} className={rowMark} />
                     <span className="min-w-0 flex-1 truncate">{org.name}</span>
                     {active ? check : <span className="shrink-0 text-xs text-muted-foreground">{roleLabel(org.role)}</span>}

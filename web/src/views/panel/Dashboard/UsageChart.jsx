@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatSpendAmount } from 'utils/common';
+import { workbench } from 'routes/paths';
+import { useInScope } from 'routes/useScope';
 
 // ==============================|| DASHBOARD — USAGE TREND ||============================== //
 // One bar per day (a smoothed area made a single busy day look like a three-day wave), in the
@@ -49,6 +51,7 @@ ChartTooltip.propTypes = { active: PropTypes.bool, payload: PropTypes.array, lab
 
 export default function UsageChart({ data, loading = false, range = '7d', onRangeChange }) {
   const { t } = useTranslation();
+  const inScope = useInScope();
   const [metric, setMetric] = useState('requests');
   const active = METRICS.find((m) => m.key === metric) || METRICS[0];
 
@@ -85,7 +88,7 @@ export default function UsageChart({ data, loading = false, range = '7d', onRang
               {t(`dashboard_index.${m.i18n}`)}
             </Button>
           ))}
-          <Link to="/panel/usage" className="ml-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          <Link to={inScope(workbench.usage())} className="ml-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
             {t('dashboardList.viewUsage')}
             <ArrowRight className="size-3" />
           </Link>

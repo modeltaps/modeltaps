@@ -7,6 +7,8 @@ import { Copy, ChevronRight } from 'lucide-react';
 
 import { Segmented } from '@/components/objects';
 import { resolveServerAddress } from 'utils/serverAddress';
+import { workbench } from 'routes/paths';
+import { useInScope } from 'routes/useScope';
 
 // The base URLs clients send requests to, one per protocol the site serves. OpenAI is always on;
 // Claude and Gemini only when their endpoints are enabled.
@@ -26,6 +28,7 @@ export function useApiAddresses() {
 // and in a key's overview. A self-hosted address cannot be printed in the docs, hence here.
 export default function ConnectInfo({ addresses, onCopy, className }) {
   const { t } = useTranslation();
+  const inScope = useInScope();
   const [apiType, setApiType] = useState(addresses[0]?.value);
   const current = addresses.find((a) => a.value === apiType) || addresses[0];
   if (!current) return null;
@@ -53,7 +56,7 @@ export default function ConnectInfo({ addresses, onCopy, className }) {
         </button>
       </div>
       <Link
-        to="/panel/api"
+        to={inScope(workbench.docs())}
         className="mt-2 inline-flex items-center gap-0.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
       >
         {t('apiKey.page.examples')}

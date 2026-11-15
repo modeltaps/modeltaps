@@ -5,6 +5,7 @@ import { ChatActions, ChatCodeView, ChatProvider, ChatWorkspace } from './chat';
 import { CompareActions, CompareCodeView, CompareProvider, CompareWorkspace } from './compare';
 import { ImageActions, ImageCodeView, ImageProvider, ImageWorkspace } from './image';
 import { VideoWorkspace } from './video';
+import { workbench } from 'routes/paths';
 
 // ==============================|| PLAYGROUND — MODALITY REGISTRY ||============================== //
 // 分层规则(全波共享，verifier 按 import 方向检查)：
@@ -107,6 +108,6 @@ export function resolveModality(segment) {
   return MODALITIES.find((m) => m.path === segment || m.id === segment) || null;
 }
 
-export const modalityHref = (entry) => `/panel/api/${entry.path}`;
+export const modalityHref = (entry, orgSlug = null) => workbench.playground(entry.path, orgSlug);
 
-export const modalityDocsHref = (entry) => `/panel/api/docs/${entry.path}`;
+export const modalityDocsHref = (entry, orgSlug = null) => workbench.docs(entry.path, orgSlug);

@@ -11,10 +11,10 @@ describe('resolveConsoleGate', () => {
   });
 
   it('组织上下文:拦运行,给回个人上下文的去向', () => {
-    expect(resolveConsoleGate({ orgActive: true, chatEnabled: true })).toEqual({
+    expect(resolveConsoleGate({ orgActive: true, orgSlug: 'acme', chatEnabled: true })).toEqual({
       gated: true,
       reason: GATE_ORG,
-      actionHref: '/panel/organization'
+      actionHref: '/panel/orgs/acme/overview'
     });
   });
 
@@ -22,7 +22,7 @@ describe('resolveConsoleGate', () => {
     expect(resolveConsoleGate({ orgActive: false, chatEnabled: false })).toEqual({
       gated: true,
       reason: GATE_CHAT_DISABLED,
-      actionHref: '/panel/api/docs/chat'
+      actionHref: '/panel/docs/chat'
     });
   });
 

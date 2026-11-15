@@ -121,14 +121,14 @@ curl https://your-modeltaps-domain.com/gemini/v1beta/models \
 
 ## 在控制台查看介面目錄
 
-側邊欄「API」分組按模態列出各頁。`/panel/api` 是總覽，每張模態卡片可進入「介面文檔」或「控制台」。介面文檔頁的內容與本頁一致，但地址已經換成你實際使用的站點地址：
+側邊欄「API」分組按模態列出各頁。`/panel/docs` 是總覽，每張模態卡片可進入「介面文檔」或「控制台」。介面文檔頁的內容與本頁一致，但地址已經換成你實際使用的站點地址：
 
 | 模態 | 介面文檔 | 控制台 | 覆蓋的介面 |
 | --- | --- | --- | --- |
-| 對話 | `/panel/api/docs/chat` | `/panel/api/chat` | `/v1/chat/completions`、`/v1/responses`、`/claude/v1/messages`、`/gemini/v1beta/models/{model}:generateContent` |
-| 圖像 | `/panel/api/docs/image` | `/panel/api/image` | `/v1/images/generations`、`/v1/images/edits`、`/v1/images/variations`，以及 Recraft、Midjourney 擴充介面 |
-| 語音 | `/panel/api/docs/speech` | `/panel/api/speech` | `/v1/audio/speech`、`/v1/audio/transcriptions`、`/v1/audio/translations`，以及 `/v1/realtime` |
-| 影片 | `/panel/api/docs/video` | —（暫未開放） | Kling 的文生影片 / 圖生影片與任務查詢，以及 Gemini Veo 長任務介面 |
+| 對話 | `/panel/docs/chat` | `/panel/playground/chat` | `/v1/chat/completions`、`/v1/responses`、`/claude/v1/messages`、`/gemini/v1beta/models/{model}:generateContent` |
+| 圖像 | `/panel/docs/image` | `/panel/playground/image` | `/v1/images/generations`、`/v1/images/edits`、`/v1/images/variations`，以及 Recraft、Midjourney 擴充介面 |
+| 語音 | `/panel/docs/speech` | `/panel/playground/speech` | `/v1/audio/speech`、`/v1/audio/transcriptions`、`/v1/audio/translations`，以及 `/v1/realtime` |
+| 影片 | `/panel/docs/video` | —（暫未開放） | Kling 的文生影片 / 圖生影片與任務查詢，以及 Gemini Veo 長任務介面 |
 
 每個介面文檔頁都包含「介面端點」「請求示例」「可用模型」與完整文檔連結。示例裏的密鑰是佔位符 `sk-YOUR_TOKEN`，替換成你在「API Key」頁面創建的 API Key 即可運行。
 
@@ -142,11 +142,11 @@ curl https://your-modeltaps-domain.com/gemini/v1beta/models \
 - 只在個人上下文可用，切換到組織後頁面會提示並給出出口（組織額度的試用另行支援）；
 - 某個能力當前沒有可用模型時，頁面仍可瀏覽，並說明原因與處理入口，不會發出請求；
 - 管理員可在系統設定裏把 `builtin_chat_enabled` 關掉，整站停用控制台；
-- 舊的 Playground 地址（`/playground`、`/panel/playground`）會自動跳轉到 `/panel/api/chat`。
+- 舊的 Playground 地址（`/playground`、`/panel/playground`）會自動跳轉到 `/panel/playground/chat`。
 
 #### 對比
 
-側邊欄「API」分組裏的「對比」（`/panel/api/compare`）把 2–4 個對話模型並排成欄：右上「新增欄」最多加到 4 欄，每欄在欄頭選模型，也可在欄頭覆寫溫度、最大 tokens 與思考深度。底部輸入框的「同步輸入」開著時一條訊息同時發給所有欄，關著只發給當前選中的欄，每欄可單獨停止。「查看程式碼」可在欄間切換，給出該欄合併覆寫參數後的等效請求。
+側邊欄「API」分組裏的「對比」（`/panel/playground/compare`）把 2–4 個對話模型並排成欄：右上「新增欄」最多加到 4 欄，每欄在欄頭選模型，也可在欄頭覆寫溫度、最大 tokens 與思考深度。底部輸入框的「同步輸入」開著時一條訊息同時發給所有欄，關著只發給當前選中的欄，每欄可單獨停止。「查看程式碼」可在欄間切換，給出該欄合併覆寫參數後的等效請求。
 
 Midjourney 與非同步任務的執行記錄不在目錄頁裏，請到「日誌」頁面的「Midjourney」「非同步任務」標籤查看。
 

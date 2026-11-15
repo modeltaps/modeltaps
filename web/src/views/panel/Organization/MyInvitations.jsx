@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { Building2, Check, Loader2, Mailbox, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { API } from 'utils/api';
 import { showError, showSuccess, timestamp2string } from 'utils/common';
 import { useOrg } from 'contexts/OrgContext';
+import { workbench } from 'routes/paths';
 
 // ==============================|| ORGANIZATION — MY INVITATIONS (personal context) ||============================== //
 // Pending directed invitations for the current user + invite-link redeem box.
@@ -29,7 +30,8 @@ function extractToken(raw) {
 
 export default function MyInvitations() {
   const { t } = useTranslation();
-  const { refreshOrganizations, switchOrg } = useOrg();
+  const { refreshOrganizations } = useOrg();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -56,8 +58,10 @@ export default function MyInvitations() {
 
   const afterJoin = async (organizationId) => {
     if (searchParams.get('invite')) setSearchParams({}, { replace: true });
-    await refreshOrganizations();
-    if (organizationId) switchOrg(organizationId);
+    const list = await refreshOrganizations();
+    // Open the joined organization's workbench (the URL selects it).
+    const joined = list?.find((o) => o.id === organizationId);
+    if (joined) navigate(workbench.dashboard(joined.slug));
   };
 
   const respond = async (invitation, action) => {

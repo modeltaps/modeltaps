@@ -90,7 +90,8 @@ export default function SettingsSidebar({ collapsed = false, showCollapse = fals
   const { section } = parseSettingsPath(pathname);
   const openOrg = (orgId) => {
     const keep = tree.orgItems.some((item) => item.active) ? section : ORG_TREE[0].id;
-    navigate(orgSettingsUrl(orgId, keep));
+    const org = tree.managedOrgs.find((o) => o.id === orgId);
+    if (org) navigate(orgSettingsUrl(org.slug, keep));
     onItemClick?.();
   };
 

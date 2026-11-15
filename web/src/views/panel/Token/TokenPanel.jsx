@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
-import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { KeyRound, MoreHorizontal } from 'lucide-react';
 
@@ -22,6 +21,7 @@ import { toLimitModels } from './ModelLimitSelector';
 import { buildTokenActions } from './TokenTable';
 import { TOKEN_TABS } from './tokenTabs';
 import { fetchToken, saveToken } from './tokenData';
+import { useScopedNavigate } from 'routes/useScope';
 
 // Right-side panel of one API key. Header: the enable switch (applies at once) and a menu with
 // test command, client setup, usage, logs and delete. Tabs: Overview, Basics, Access, Advanced;
@@ -50,7 +50,7 @@ export default function TokenPanel({
   onConnectOpenClaw
 }) {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
+  const navigate = useScopedNavigate();
   const [token, setToken] = useState(null);
   const [error, setError] = useState('');
 

@@ -61,7 +61,7 @@ describe('ChannelsCell', () => {
 
 describe('channelEditPath', () => {
   it('points at the channel page', () => {
-    expect(channelEditPath(CHANNELS[1])).toBe('/panel/channel/2');
+    expect(channelEditPath(CHANNELS[1])).toBe('/panel/admin/providers/2');
   });
 });
 

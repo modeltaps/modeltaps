@@ -141,7 +141,7 @@ When a member is removed or leaves the organization, their organization API keys
 Opening the **Top up** page in the organization context — from the balance row at the bottom of the sidebar — shows a notice at the top that the top-up will go into the organization quota pool:
 
 - owners and admins can top up online or with a redemption code, and everything is credited to the organization pool;
-- ordinary members get no top-up entry point in the sidebar balance row; opening the top-up page directly (`/panel/topup`) only shows a notice that **only owners and admins can top up the organization**.
+- ordinary members get no top-up entry point in the sidebar balance row; opening the top-up page directly (`/panel/orgs/<slug>/billing?topup=1`) only shows a notice that **only owners and admins can top up the organization**.
 
 Redemption codes may be restricted to one kind of account: an **Any** code can be redeemed by both personal accounts and organizations, an **Organization only** code can only be redeemed into the organization quota pool from the organization context, and a **Personal only** code can only be redeemed into a personal account. Redeeming in the wrong context returns *this redemption code can only be used by an organization account* (or *by a personal account*); the code is not consumed and stays usable once you switch to the right context.
 
