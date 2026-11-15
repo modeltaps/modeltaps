@@ -1,8 +1,8 @@
 package types
 
 import (
-	"github.com/modeltaps/modeltaps/common/config"
 	"encoding/json"
+	"github.com/modeltaps/modeltaps/common/config"
 	"strings"
 )
 
@@ -95,6 +95,14 @@ func (u *Usage) GetExtraTokens() map[string]int {
 	if u.CacheReadInputTokens > 0 && u.PromptTokensDetails.CachedReadTokens == 0 {
 		u.PromptTokensDetails.CachedReadTokens = u.CacheReadInputTokens
 	}
+	// Requesty's cache writes, split by TTL when it says; a total without a split counts as 5m.
+	if d := &u.PromptTokensDetails; d.RequestyCachingTokens > 0 && d.CachedWriteTokens == 0 && d.CachedWrite1hTokens == 0 {
+		if det := d.RequestyCachingDetails; det != nil && det.Caching5mTokens+det.Caching1hTokens > 0 {
+			d.CachedWriteTokens, d.CachedWrite1hTokens = det.Caching5mTokens, det.Caching1hTokens
+		} else {
+			d.CachedWriteTokens = d.RequestyCachingTokens
+		}
+	}
 
 	// 输入音频
 	if u.PromptTokensDetails.AudioTokens > 0 && u.ExtraTokens[config.UsageExtraInputAudio] == 0 {
@@ -177,6 +185,16 @@ type PromptTokensDetails struct {
 	// （Responses API 为 input_token_details.cache_write_tokens）。与 Anthropic 的 CachedWriteTokens
 	// 语义解耦：OpenAI 缓存写入单一 TTL、按 1.25x 计费，走 UsageExtraOpenAICacheWrite。
 	OpenAICacheWriteTokens int `json:"cache_write_tokens,omitempty"`
+
+	// Requesty reports the cache writes of models with explicit breakpoints (Claude) in its own
+	// fields: caching_tokens in total, caching_token_details split by TTL. Reads use cached_tokens.
+	RequestyCachingTokens  int                     `json:"caching_tokens,omitempty"`
+	RequestyCachingDetails *RequestyCachingDetails `json:"caching_token_details,omitempty"`
+}
+
+type RequestyCachingDetails struct {
+	Caching5mTokens int `json:"caching_5m_tokens,omitempty"`
+	Caching1hTokens int `json:"caching_1h_tokens,omitempty"`
 }
 
 type CompletionTokensDetails struct {

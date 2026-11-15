@@ -18,7 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   model metadata sync like Vercel AI Gateway's, the maker comes from Requesty's model_lab (its id
   prefix names the hosting provider), and the balance is read from the management API with a key
   that has manage permission, entered as `apiKey|manageKey`. Of the 216 models Requesty lists, 136
-  link to catalog models the dev Vercel channel already brought in.
+  link to catalog models the dev Vercel channel already brought in. Tested with a real key:
+  Requesty keeps the client's `cache_control` on its Messages endpoint (a 22k token prompt is
+  written once and read on the next request, billed at 1.25x and 0.1x), and the cache writes it
+  reports in its own `caching_tokens` field on the OpenAI format are billed as cache writes.
 - Upstream protocol for custom channels. A custom (OpenAI-compatible) channel can now declare
   that its upstream also speaks the Anthropic Messages protocol: "Claude models over Anthropic"
   sends Claude-family models to the Messages endpoint and every other model to the OpenAI

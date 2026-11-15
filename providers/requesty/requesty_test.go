@@ -140,7 +140,7 @@ func TestURLs(t *testing.T) {
 		t.Errorf("chat URL = %q", got)
 	}
 	c := getClaudeConfig(cfg.BaseURL)
-	if got := c.BaseURL + c.ChatCompletions; got != "https://router.requesty.ai/anthropic/v1/messages" {
+	if got := c.BaseURL + c.ChatCompletions; got != "https://router.requesty.ai/v1/messages" {
 		t.Errorf("messages URL = %q", got)
 	}
 }

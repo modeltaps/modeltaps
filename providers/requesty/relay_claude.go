@@ -7,13 +7,14 @@ import (
 	"github.com/modeltaps/modeltaps/types"
 )
 
-// getClaudeConfig is Requesty's Anthropic Messages endpoint. Claude format requests go there as
-// they are instead of through the Claude to OpenAI conversion, which would drop the client's
-// cache breakpoints.
+// getClaudeConfig is Requesty's Anthropic Messages endpoint, /v1/messages on the router (the docs
+// name /anthropic/v1/messages, which answers 404). Claude format requests go there as they are
+// instead of through the Claude to OpenAI conversion, which would drop the client's cache
+// breakpoints.
 func getClaudeConfig(baseURL string) base.ProviderConfig {
 	return base.ProviderConfig{
 		BaseURL:         baseURL,
-		ChatCompletions: "/anthropic/v1/messages",
+		ChatCompletions: "/v1/messages",
 		ModelList:       "/v1/models",
 	}
 }
