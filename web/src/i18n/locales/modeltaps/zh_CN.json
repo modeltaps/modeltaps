@@ -1735,7 +1735,10 @@
     "model_access_not_covered": "超出允许范围：{{models}}",
     "model_access_too_many": "条目过多（最多 {{max}} 条）",
     "model_access_ceiling_in_use": "组织内仍有列表使用新的批准范围之外的模型",
-    "model_access_personal_token": "命名访问列表只能用于组织 API Key"
+    "model_access_personal_token": "命名访问列表只能用于组织 API Key",
+    "smtp_test_recipient_invalid": "请填写有效的收件地址",
+    "smtp_test_incomplete": "请先填写邮件服务器和端口",
+    "smtp_test_failed": "测试邮件没发出去：{{reason}}"
   },
   "channelOAuth": {
     "tip": {
@@ -3376,6 +3379,73 @@
             "placeholder": "http://127.0.0.1:7890",
             "hint": "服务器连不上 Telegram 时填"
           }
+        }
+      },
+      "mail": {
+        "pick": "发信服务",
+        "empty": "选择你用来发信的服务，只需填它给你的凭据，服务器地址等会自动填好。",
+        "groups": {
+          "service": "发信服务",
+          "mailbox": "邮箱"
+        },
+        "custom": "自定义 SMTP",
+        "customHint": "任意 SMTP 服务器，所有字段自己填。",
+        "providers": {
+          "aliyun": "阿里云邮件推送",
+          "qq": "QQ 邮箱",
+          "exmail": "腾讯企业邮",
+          "netease163": "网易 163 邮箱"
+        },
+        "fields": {
+          "region": "地域",
+          "server": "SMTP 服务器",
+          "port": "端口",
+          "username": "用户名",
+          "password": "密码",
+          "tlsMode": "加密方式",
+          "mailbox": "邮箱地址",
+          "smtpUsername": "SMTP 用户名",
+          "accessKey": "Access Key",
+          "smtpLogin": "SMTP 登录名",
+          "apiKey": "API Key",
+          "smtpPassword": "SMTP 密码",
+          "secretKey": "Secret Key",
+          "smtpKey": "SMTP 密钥",
+          "appPassword": "应用专用密码",
+          "authCode": "授权码",
+          "clientPassword": "客户端专用密码",
+          "fromName": "发件人名称",
+          "fromNamePlaceholder": "收件人看到的发件人，比如站点名",
+          "fromAddress": "发件地址",
+          "fromAddressHint": "须使用在该服务里验证过的域名"
+        },
+        "docs": {
+          "apiKey": "获取 API Key",
+          "smtpPassword": "获取 SMTP 凭据",
+          "secretKey": "获取 SMTP Token",
+          "smtpKey": "获取 SMTP 密钥",
+          "appPassword": "创建应用专用密码",
+          "authCode": "获取授权码",
+          "clientPassword": "设置客户端专用密码"
+        },
+        "tlsModes": {
+          "auto": "自动（按端口推断）",
+          "ssl": "SSL/TLS（465）",
+          "starttls": "STARTTLS（强制）",
+          "starttls_opportunistic": "STARTTLS（可选，失败则明文）",
+          "none": "不加密（仅限内网 / 开发环境）"
+        },
+        "mailboxNote": "个人邮箱每日发信量有限，部分邮箱还会把服务器 IP 暴露给收件人；正式使用建议选发信服务。",
+        "incomplete": "请先把发信设置填完整",
+        "test": {
+          "open": "发送测试邮件",
+          "hint": "用上面填的内容发，不必先保存",
+          "incomplete": "填完上面的字段才能发测试邮件",
+          "title": "发送测试邮件",
+          "description": "用表单里当前的设置发一封短邮件，保存与否都可以。",
+          "to": "收件地址",
+          "send": "发送",
+          "sent": "已发到 {{to}}，请查看收件箱（也看看垃圾邮件）。"
         }
       }
     },

@@ -7,6 +7,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/utils"
 	"errors"
 	"fmt"
+	netmail "net/mail"
 	"strings"
 
 	"github.com/wneessen/go-mail"
@@ -77,6 +78,8 @@ type StmpConfig struct {
 	Username string
 	Password string
 	From     string
+	// FromName is the optional display name shown before From.
+	FromName string
 	TLSMode  string
 }
 
@@ -95,12 +98,37 @@ func NewStmp(host string, port int, username string, password string, from strin
 	}
 }
 
+// sender splits the configured sender into display name and address. From may itself be written
+// as "Name <addr>"; FromName, when set, wins over a name written there.
+func (s *StmpConfig) sender() (name, address string, err error) {
+	addr, err := netmail.ParseAddress(strings.TrimSpace(s.From))
+	if err != nil {
+		return "", "", fmt.Errorf("invalid sender address %q: %w", s.From, err)
+	}
+	name = addr.Name
+	if fromName := strings.TrimSpace(s.FromName); fromName != "" {
+		name = fromName
+	}
+	return name, addr.Address, nil
+}
+
 func (s *StmpConfig) Send(to, subject, body string) error {
+	name, address, err := s.sender()
+	if err != nil {
+		return err
+	}
+
 	message := mail.NewMsg()
-	message.From(s.From)
-	message.To(to)
+	// FromFormat encodes only the display name (RFC 2047), so a non-ASCII name such as a
+	// Chinese site name reaches the inbox intact instead of as one mangled encoded word.
+	if err := message.FromFormat(name, address); err != nil {
+		return fmt.Errorf("invalid sender: %w", err)
+	}
+	if err := message.To(to); err != nil {
+		return fmt.Errorf("invalid recipient: %w", err)
+	}
 	message.Subject(subject)
-	message.SetGenHeader("References", s.getReferences())
+	message.SetGenHeader("References", references(address))
 	message.SetBodyString(mail.TypeTextHTML, body)
 	message.SetUserAgent(fmt.Sprintf("Modeltaps %s // https://github.com/modeltaps/modeltaps", config.Version))
 
@@ -128,9 +156,12 @@ func (s *StmpConfig) Send(to, subject, body string) error {
 	return nil
 }
 
-func (s *StmpConfig) getReferences() string {
-	froms := strings.Split(s.From, "@")
-	return fmt.Sprintf("<%s.%s@%s>", froms[0], utils.GetUUID(), froms[1])
+func references(address string) string {
+	local, domain, ok := strings.Cut(address, "@")
+	if !ok {
+		domain = "localhost"
+	}
+	return fmt.Sprintf("<%s.%s@%s>", local, utils.GetUUID(), domain)
 }
 
 func (s *StmpConfig) Render(to, subject, content string) error {
@@ -150,7 +181,19 @@ func GetSystemStmp() (*StmpConfig, error) {
 		return nil, fmt.Errorf("SMTP is not configured")
 	}
 
-	return NewStmp(config.SMTPServer, config.SMTPPort, config.SMTPAccount, config.SMTPToken, config.SMTPFrom, config.SMTPTLSMode), nil
+	client := NewStmp(config.SMTPServer, config.SMTPPort, config.SMTPAccount, config.SMTPToken, config.SMTPFrom, config.SMTPTLSMode)
+	client.FromName = config.SMTPFromName
+	return client, nil
+}
+
+// SendTestEmail sends a short message through the given settings so an admin can check them
+// before (or after) saving.
+func SendTestEmail(s *StmpConfig, to string) error {
+	subject := fmt.Sprintf("%s test email", config.SystemName)
+	content := `<p style="font-size: 20px"><strong>Mail sending works.</strong></p>
+	<p>This test email was sent from the mail settings of %s. No action is needed.</p>
+	<p style="color: #858585; padding-top: 15px;">Server: %s:%d</p>`
+	return s.Render(to, subject, fmt.Sprintf(content, config.SystemName, s.Host, s.Port))
 }
 
 func SendPasswordResetEmail(userName, email, link string) error {

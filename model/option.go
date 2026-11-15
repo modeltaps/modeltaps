@@ -101,6 +101,8 @@ func registerOptions() {
 	config.GlobalOption.RegisterString("SMTPAccount", &config.SMTPAccount, config.ScopeAdmin)
 	config.GlobalOption.RegisterString("SMTPToken", &config.SMTPToken, config.ScopeSecret)
 	config.GlobalOption.RegisterString("SMTPTLSMode", &config.SMTPTLSMode, config.ScopeAdmin)
+	config.GlobalOption.RegisterString("SMTPFromName", &config.SMTPFromName, config.ScopeAdmin)
+	config.GlobalOption.RegisterString("SMTPProvider", &config.SMTPProvider, config.ScopeAdmin)
 	config.GlobalOption.RegisterValue("Notice", config.ScopeAdmin)
 	config.GlobalOption.RegisterValue("About", config.ScopeAdmin)
 	config.GlobalOption.RegisterValue("HomePageContent", config.ScopeAdmin)

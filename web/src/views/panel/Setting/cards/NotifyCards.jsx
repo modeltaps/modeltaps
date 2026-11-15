@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Eye, EyeOff, Info, Power, RotateCw, Send, Trash2 } from 'lucide-react';
+import { AlertTriangle, Eye, EyeOff, Power, RotateCw, Send, Trash2 } from 'lucide-react';
 
 import { API } from 'utils/api';
 import { showError, showSuccess } from 'utils/common';
 import { cn } from '@/lib/utils';
-import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { CollectionCard, OptionList, StatusDot } from '@/components/settings/cards';
@@ -14,56 +13,13 @@ import ChatLinkSheet, { parseChatLinks, serializeChatLinks } from '../ChatLinkSh
 import NotifyChannelSheet from '../NotifyChannelSheet';
 import { NotifyChannelIcon, channelPayload, channelWhere } from '../notifyChannels';
 import { toast } from '@/components/ui/sonner';
-import { SelectRow, TextRow, ToggleRow } from '../parts';
+import { TextRow, ToggleRow } from '../parts';
 import OptionCard, { bindSwitch, cardText } from './OptionCard';
 
 // ==============================|| PLATFORM SETTINGS — 通知与集成 ||============================== //
 // Two tabs. 通知: the platform's admin notices — which kinds are sent, the channels they go to
-// and the mail server behind email. 集成: the Telegram user bot, built-in chat and chat links.
+// and the mail server behind email (cards/MailCard.jsx). 集成: the Telegram user bot, built-in chat and chat links.
 // (The Midjourney callback card lives here but is shown under the gateway's request tab.)
-
-const SMTP_TLS_MODES = ['auto', 'ssl', 'starttls', 'starttls_opportunistic', 'none'];
-
-export function SmtpCard({ ctx }) {
-  const { t } = useTranslation();
-  const { inputs, secrets, setField } = ctx;
-  const sys = (k) => t(`setting_index.systemSettings.configureSMTP.${k}`);
-  const field = (key, name, type = 'text') => (
-    <TextRow
-      id={key}
-      type={type}
-      label={sys(name)}
-      value={inputs[key]}
-      onChange={(v) => setField(key, v)}
-      placeholder={sys(`${name}Placeholder`)}
-      secret={secrets?.[key]}
-    />
-  );
-
-  return (
-    <OptionCard ctx={ctx} id="smtp">
-      <Alert variant="info">
-        <Info />
-        <span>{sys('alert')}</span>
-      </Alert>
-      <div className="grid gap-5 sm:grid-cols-2">
-        {field('SMTPServer', 'smtpServer')}
-        {field('SMTPPort', 'smtpPort')}
-        {field('SMTPAccount', 'smtpAccount')}
-        {field('SMTPFrom', 'smtpFrom')}
-        {field('SMTPToken', 'smtpToken', 'password')}
-        <SelectRow
-          id="SMTPTLSMode"
-          label={sys('smtpTlsMode')}
-          description={sys('smtpTlsModeDescription')}
-          value={SMTP_TLS_MODES.includes(inputs.SMTPTLSMode) ? inputs.SMTPTLSMode : 'auto'}
-          onChange={(v) => setField('SMTPTLSMode', v)}
-          options={SMTP_TLS_MODES.map((mode) => ({ value: mode, label: sys(`smtpTlsModes.${mode}`) }))}
-        />
-      </div>
-    </OptionCard>
-  );
-}
 
 // One switch per notification kind; stored as the comma-joined list of disabled kinds.
 const NOTIFY_KINDS = [

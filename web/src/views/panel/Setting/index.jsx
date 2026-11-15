@@ -35,15 +35,8 @@ import {
   SupplyPauseRulesCard
 } from './cards/GatewayCards';
 import { LogConsumeCard, LogIOCard, SafetyCard } from './cards/PrivacyCards';
-import {
-  BuiltinChatCard,
-  ChatLinksCard,
-  MjNotifyCard,
-  NotificationsCard,
-  NotifyChannelsCard,
-  SmtpCard,
-  TelegramCard
-} from './cards/NotifyCards';
+import { BuiltinChatCard, ChatLinksCard, MjNotifyCard, NotificationsCard, NotifyChannelsCard, TelegramCard } from './cards/NotifyCards';
+import { SmtpCard } from './cards/MailCard';
 import { OrgPolicyCard } from './cards/OrgPolicyCards';
 import { workbench } from 'routes/paths';
 

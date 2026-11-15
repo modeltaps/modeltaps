@@ -1735,7 +1735,10 @@
     "model_access_not_covered": "超出允許範圍：{{models}}",
     "model_access_too_many": "條目過多（最多 {{max}} 條）",
     "model_access_ceiling_in_use": "組織內仍有清單使用新的核准範圍之外的模型",
-    "model_access_personal_token": "命名存取清單只能用於組織 API Key"
+    "model_access_personal_token": "命名存取清單只能用於組織 API Key",
+    "smtp_test_recipient_invalid": "請填寫有效的收件地址",
+    "smtp_test_incomplete": "請先填寫郵件伺服器和連接埠",
+    "smtp_test_failed": "測試郵件沒發出去：{{reason}}"
   },
   "channelOAuth": {
     "tip": {
@@ -3376,6 +3379,73 @@
             "placeholder": "http://127.0.0.1:7890",
             "hint": "伺服器連不上 Telegram 時填"
           }
+        }
+      },
+      "mail": {
+        "pick": "發信服務",
+        "empty": "選擇你用來發信的服務，只需填它給你的憑據，伺服器地址等會自動填好。",
+        "groups": {
+          "service": "發信服務",
+          "mailbox": "郵箱"
+        },
+        "custom": "自訂 SMTP",
+        "customHint": "任意 SMTP 伺服器，所有欄位自己填。",
+        "providers": {
+          "aliyun": "阿里雲郵件推送",
+          "qq": "QQ 郵箱",
+          "exmail": "騰訊企業郵",
+          "netease163": "網易 163 郵箱"
+        },
+        "fields": {
+          "region": "地域",
+          "server": "SMTP 伺服器",
+          "port": "連接埠",
+          "username": "用戶名",
+          "password": "密碼",
+          "tlsMode": "加密方式",
+          "mailbox": "郵箱地址",
+          "smtpUsername": "SMTP 用戶名",
+          "accessKey": "Access Key",
+          "smtpLogin": "SMTP 登入名",
+          "apiKey": "API Key",
+          "smtpPassword": "SMTP 密碼",
+          "secretKey": "Secret Key",
+          "smtpKey": "SMTP 金鑰",
+          "appPassword": "應用程式密碼",
+          "authCode": "授權碼",
+          "clientPassword": "客戶端專用密碼",
+          "fromName": "寄件人名稱",
+          "fromNamePlaceholder": "收件人看到的寄件人，例如站點名",
+          "fromAddress": "寄件地址",
+          "fromAddressHint": "須使用在該服務裡驗證過的網域"
+        },
+        "docs": {
+          "apiKey": "取得 API Key",
+          "smtpPassword": "取得 SMTP 憑據",
+          "secretKey": "取得 SMTP Token",
+          "smtpKey": "取得 SMTP 金鑰",
+          "appPassword": "建立應用程式密碼",
+          "authCode": "取得授權碼",
+          "clientPassword": "設定客戶端專用密碼"
+        },
+        "tlsModes": {
+          "auto": "自動（按連接埠推斷）",
+          "ssl": "SSL/TLS（465）",
+          "starttls": "STARTTLS（強制）",
+          "starttls_opportunistic": "STARTTLS（可選，失敗則明文）",
+          "none": "不加密（僅限內網 / 開發環境）"
+        },
+        "mailboxNote": "個人郵箱每日發信量有限，部分郵箱還會把伺服器 IP 暴露給收件人；正式使用建議選發信服務。",
+        "incomplete": "請先把發信設定填完整",
+        "test": {
+          "open": "發送測試郵件",
+          "hint": "用上面填的內容發，不必先儲存",
+          "incomplete": "填完上面的欄位才能發測試郵件",
+          "title": "發送測試郵件",
+          "description": "用表單裡目前的設定發一封短郵件，儲存與否都可以。",
+          "to": "收件地址",
+          "send": "發送",
+          "sent": "已發到 {{to}}，請查看收件匣（也看看垃圾郵件）。"
         }
       }
     },

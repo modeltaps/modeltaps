@@ -45,6 +45,7 @@ func (e *Email) Send(_ context.Context, title, message string) error {
 	body := markdown.Render(doc, renderer)
 
 	emailClient := stmp.NewStmp(config.SMTPServer, config.SMTPPort, config.SMTPAccount, config.SMTPToken, config.SMTPFrom, config.SMTPTLSMode)
+	emailClient.FromName = config.SMTPFromName
 
 	return emailClient.Send(to, title, string(body))
 }

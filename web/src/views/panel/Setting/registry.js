@@ -170,7 +170,12 @@ export const PLATFORM_GROUPS = [
     cards: [
       card('notifications', 'form', ['NotifyDisabledKinds', 'NotifyKindLimitPerHour'], 'notices'),
       card('notify-channels', 'collection', [], 'notices'),
-      card('smtp', 'form', ['SMTPServer', 'SMTPPort', 'SMTPAccount', 'SMTPFrom', 'SMTPToken', 'SMTPTLSMode'], 'notices'),
+      card(
+        'smtp',
+        'form',
+        ['SMTPProvider', 'SMTPServer', 'SMTPPort', 'SMTPAccount', 'SMTPFrom', 'SMTPFromName', 'SMTPToken', 'SMTPTLSMode'],
+        'notices'
+      ),
       card('telegram', 'collection', [], 'integrations'),
       card('builtin-chat', 'form', ['BuiltinChatEnabled'], 'integrations'),
       card('chat-links', 'collection', ['ChatLinks'], 'integrations')

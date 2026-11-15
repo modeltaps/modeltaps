@@ -201,6 +201,13 @@ var SMTPAccount = ""
 var SMTPFrom = ""
 var SMTPToken = ""
 
+// SMTPFromName is the display name shown before SMTPFrom ("Modeltaps <noreply@example.com>").
+var SMTPFromName = ""
+
+// SMTPProvider remembers which mail service preset the admin picked in the console (resend,
+// gmail, custom, ...). Sending only reads the SMTP fields; this is for the settings form.
+var SMTPProvider = ""
+
 // SMTPTLSMode 连接加密方式：auto|ssl|starttls|starttls_opportunistic|none，
 // auto 维持按端口推断的历史行为。
 var SMTPTLSMode = "auto"

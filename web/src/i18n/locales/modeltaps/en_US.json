@@ -1819,7 +1819,10 @@
     "model_access_not_covered": "Outside the allowed range: {{models}}",
     "model_access_too_many": "Too many entries (at most {{max}})",
     "model_access_ceiling_in_use": "Some lists of the organization still use models outside the new approved models",
-    "model_access_personal_token": "Named access lists are only available to organization API keys"
+    "model_access_personal_token": "Named access lists are only available to organization API keys",
+    "smtp_test_recipient_invalid": "Enter a valid recipient address",
+    "smtp_test_incomplete": "Fill in the mail server and port first",
+    "smtp_test_failed": "The test email was not sent: {{reason}}"
   },
   "channelOAuth": {
     "tip": {
@@ -3478,6 +3481,73 @@
             "placeholder": "http://127.0.0.1:7890",
             "hint": "When the server cannot reach Telegram directly"
           }
+        }
+      },
+      "mail": {
+        "pick": "Mail service",
+        "empty": "Pick the service you send mail with. Only what it hands out is needed; the server settings are filled in for you.",
+        "groups": {
+          "service": "Sending services",
+          "mailbox": "Mailboxes"
+        },
+        "custom": "Custom SMTP",
+        "customHint": "Any SMTP server: fill in every field yourself.",
+        "providers": {
+          "aliyun": "Alibaba Cloud Direct Mail",
+          "qq": "QQ Mail",
+          "exmail": "Tencent Exmail",
+          "netease163": "NetEase 163 Mail"
+        },
+        "fields": {
+          "region": "Region",
+          "server": "SMTP server",
+          "port": "Port",
+          "username": "Username",
+          "password": "Password",
+          "tlsMode": "Encryption",
+          "mailbox": "Mailbox address",
+          "smtpUsername": "SMTP username",
+          "accessKey": "Access key",
+          "smtpLogin": "SMTP login",
+          "apiKey": "API key",
+          "smtpPassword": "SMTP password",
+          "secretKey": "Secret key",
+          "smtpKey": "SMTP key",
+          "appPassword": "App password",
+          "authCode": "Authorization code",
+          "clientPassword": "Client password",
+          "fromName": "Sender name",
+          "fromNamePlaceholder": "Shown as the sender, e.g. your site name",
+          "fromAddress": "Sender address",
+          "fromAddressHint": "Must be on a domain verified with the service"
+        },
+        "docs": {
+          "apiKey": "Get an API key",
+          "smtpPassword": "Get SMTP credentials",
+          "secretKey": "Get an SMTP token",
+          "smtpKey": "Get an SMTP key",
+          "appPassword": "Create an app password",
+          "authCode": "Get an authorization code",
+          "clientPassword": "Set a client password"
+        },
+        "tlsModes": {
+          "auto": "Auto (by port)",
+          "ssl": "SSL/TLS (465)",
+          "starttls": "STARTTLS (required)",
+          "starttls_opportunistic": "STARTTLS (optional, falls back to plain)",
+          "none": "None (local network / development only)"
+        },
+        "mailboxNote": "Personal mailboxes have low daily limits and may show your server IP to recipients. Use a sending service for production.",
+        "incomplete": "Fill in the mail settings first",
+        "test": {
+          "open": "Send test email",
+          "hint": "Uses what is filled in above, no need to save first",
+          "incomplete": "Fill in the fields above to send a test email",
+          "title": "Send a test email",
+          "description": "Sends one short email with the settings in the form, saved or not.",
+          "to": "Recipient",
+          "send": "Send",
+          "sent": "Sent to {{to}}. Check the inbox (and the spam folder)."
         }
       }
     },
