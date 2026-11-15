@@ -1021,6 +1021,45 @@ function ConnectionBody({ object: channel, draft, setDraft, ctx }) {
           )}
         </div>
       </Field>
+      {labels.hasManageKey && (
+        <Field label={t('channels.conn.manageKey')} htmlFor="cp-manage-key" optional hint={configText(t, labels.prompt.manage_key)}>
+          {draft.manageKeyRemove ? (
+            <div className="flex min-h-9 items-center gap-3 rounded-lg border border-border px-3 text-[13px]">
+              <span className="flex-1 text-warning">{t('channels.conn.manageKeyRemoved')}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-[30px] rounded-lg"
+                onClick={() => setDraft({ ...draft, manageKeyRemove: false })}
+              >
+                {t('channels.conn.manageKeyUndo')}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Input
+                id="cp-manage-key"
+                type="password"
+                autoComplete="off"
+                className="font-mono text-[13px]"
+                value={draft.manageKey}
+                placeholder={ks?.manage_masked ? t('channels.conn.manageKeyKeep', { masked: ks.manage_masked }) : ''}
+                onChange={(e) => setDraft({ ...draft, manageKey: e.target.value })}
+              />
+              {ks?.manage_masked && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 shrink-0 rounded-lg"
+                  onClick={() => setDraft({ ...draft, manageKey: '', manageKeyRemove: true })}
+                >
+                  {t('channels.conn.manageKeyRemove')}
+                </Button>
+              )}
+            </div>
+          )}
+        </Field>
+      )}
       <UsageWindows channel={channel} />
       {!channel.usage_windows?.windows?.length && (
         <Field
@@ -1041,8 +1080,16 @@ function ConnectionBody({ object: channel, draft, setDraft, ctx }) {
             {snapshot ? (
               <>
                 {snapshot.limit === null || snapshot.limit === undefined
-                  ? t('channelDetail.unlimited')
+                  ? snapshot.account_balance === null || snapshot.account_balance === undefined
+                    ? t('channelDetail.unlimited')
+                    : t('channelDetail.accountBalance', { amount: usd(snapshot.account_balance) })
                   : `${usd(snapshot.remaining)} / ${usd(snapshot.limit)}`}
+                {snapshot.limit !== null &&
+                  snapshot.limit !== undefined &&
+                  snapshot.account_balance !== null &&
+                  snapshot.account_balance !== undefined && (
+                    <span className="ml-2">{t('channelDetail.accountBalance', { amount: usd(snapshot.account_balance) })}</span>
+                  )}
                 <span className="ml-2 text-xs text-muted-foreground">
                   {t('channelDetail.usageLine', {
                     day: usd(snapshot.usage_daily),
@@ -1070,13 +1117,15 @@ function ConnectionBody({ object: channel, draft, setDraft, ctx }) {
 
 const connectionTab = {
   key: 'connection',
-  make: (c) => ({ base_url: c.base_url || '', proxy: c.proxy || '', other: c.other || '', key: '' }),
+  make: (c) => ({ base_url: c.base_url || '', proxy: c.proxy || '', other: c.other || '', key: '', manageKey: '', manageKeyRemove: false }),
   patch: (d, c, { t }) => {
     const base = trimSlash(d.base_url.trim());
     if (BASE_URL_REQUIRED.has(c.type) && !base) return { error: t('channel_edit.requiredBaseUrl') };
     const key = normalizeKeyInput(d.key);
     if (key.includes('\n')) return { error: t('channels.conn.oneKey') };
-    return { base_url: base, proxy: d.proxy.trim(), other: d.other.trim(), ...(key ? { key } : {}) };
+    // manage_key is sent only when it changes: left out, the backend keeps the stored one.
+    const manageKey = d.manageKeyRemove ? { manage_key: '' } : d.manageKey.trim() ? { manage_key: d.manageKey.trim() } : {};
+    return { base_url: base, proxy: d.proxy.trim(), other: d.other.trim(), ...(key ? { key } : {}), ...manageKey };
   },
   Body: ConnectionBody
 };

@@ -2,7 +2,6 @@ package requesty
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/model"
@@ -20,33 +19,20 @@ import (
 // https://docs.requesty.ai/
 type RequestyProviderFactory struct{}
 
-// The channel key is "apiKey" or "apiKey|manageKey": the second part, when given, is only used to
-// read the balance, so an inference key without manage permission can still be the one requests
-// are sent with.
-func splitKey(key string) (apiKey, manageKey string) {
-	apiKey, manageKey, _ = strings.Cut(strings.TrimSpace(key), "|")
-	return strings.TrimSpace(apiKey), strings.TrimSpace(manageKey)
-}
-
+// Requests are sent with the channel key. The balance is read with the channel's management key
+// when it has one, so an inference key without manage permission can still be the one requests
+// are sent with; without one the channel key is tried.
 func (f RequestyProviderFactory) Create(channel *model.Channel) base.ProviderInterface {
-	apiKey, manageKey := splitKey(channel.Key)
-	ch := channel
-	if apiKey != channel.Key {
-		// The OpenAI and Claude providers read the key from the channel, so they get a copy that
-		// carries the inference key alone. Writes through it (balance, status) go to the same row.
-		clone := *channel
-		clone.Key = apiKey
-		ch = &clone
-	}
+	manageKey := channel.GetManageKey()
 	if manageKey == "" {
-		manageKey = apiKey
+		manageKey = channel.Key
 	}
 	return &RequestyProvider{
 		OpenAIProvider: openai.OpenAIProvider{
 			BaseProvider: base.BaseProvider{
 				Config:    getConfig(),
-				Channel:   ch,
-				Requester: requester.NewHTTPRequester(ch.GetProxy(), RequestErrorHandle),
+				Channel:   channel,
+				Requester: requester.NewHTTPRequester(channel.GetProxy(), RequestErrorHandle),
 			},
 			ReasoningHandler:     true,
 			SupportStreamOptions: true,

@@ -48,6 +48,10 @@ type Channel struct {
 	CostRatio          *float64 `json:"cost_ratio" form:"cost_ratio" gorm:"type:decimal(10,4);default:0"`
 	// UnifiedRequestResponseModel 渠道级「响应模型名统一为请求模型名」开关；全局开关开启时对所有渠道生效。
 	UnifiedRequestResponseModel bool `json:"unified_request_response_model" form:"unified_request_response_model" gorm:"default:false"`
+	// ManageKey is an optional key of the same upstream account with management permission. It is
+	// never used to send requests: providers read the account balance (and later the cost reports)
+	// with it. Nil in an update keeps the stored value; an empty string clears it.
+	ManageKey *string `json:"manage_key,omitempty" gorm:"type:text"`
 	// Remark is a free-text note for admins; it is kept per channel and not shared across a tag.
 	Remark string `json:"remark" form:"remark" gorm:"type:text"`
 	// Need2ResponseModels adjusts which chat models go to the Responses API on this channel
@@ -101,6 +105,8 @@ type ChannelKeyStatus struct {
 	Configured bool     `json:"configured"`
 	Count      int      `json:"count"`
 	Masked     []string `json:"masked"`
+	// ManageMasked is the masked management key; empty when the channel has none.
+	ManageMasked string `json:"manage_masked,omitempty"`
 }
 
 const keyMaskMaxEntries = 10
@@ -125,8 +131,20 @@ func MaskChannelKey(key string) ChannelKeyStatus {
 // HideKey 用掩码状态替换完整 key，供接口返回前调用。
 func (channel *Channel) HideKey() {
 	status := MaskChannelKey(channel.Key)
+	if manageKey := channel.GetManageKey(); manageKey != "" {
+		status.ManageMasked = utils.MaskSecret(manageKey)
+	}
 	channel.KeyStatus = &status
 	channel.Key = ""
+	channel.ManageKey = nil
+}
+
+// GetManageKey returns the channel's management key, or "" when it has none.
+func (channel *Channel) GetManageKey() string {
+	if channel.ManageKey == nil {
+		return ""
+	}
+	return strings.TrimSpace(*channel.ManageKey)
 }
 
 // ModelDriftResult 记录一次「渠道 models vs 上游实时模型列表」对比结果。
@@ -652,6 +670,9 @@ func (channel *Channel) UpdateRaw(overwrite bool) error {
 		if channel.Key == "" {
 			omit = append(omit, "Key")
 		}
+		if channel.ManageKey == nil {
+			omit = append(omit, "ManageKey")
+		}
 		if channel.PauseRules == nil {
 			omit = append(omit, "PauseRules")
 		}
@@ -783,7 +804,10 @@ type ChannelQuotaSnapshot struct {
 	UsageWeekly   float64  `json:"usage_weekly"`
 	UsageMonthly  float64  `json:"usage_monthly"`
 	IsFreeTier    bool     `json:"is_free_tier"`
-	FetchedAt     int64    `json:"fetched_at"`
+	// AccountBalance is what the whole upstream account has left, read with the management key;
+	// nil when the channel has no management key or the upstream has no such figure.
+	AccountBalance *float64 `json:"account_balance,omitempty"`
+	FetchedAt      int64    `json:"fetched_at"`
 }
 
 // UpdateQuotaSnapshot 只更新配额快照列，不触及其它字段。

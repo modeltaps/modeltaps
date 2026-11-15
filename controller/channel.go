@@ -107,6 +107,9 @@ func AddChannel(c *gin.Context) {
 			return
 		}
 		channel.Key = source.Key
+		if channel.ManageKey == nil {
+			channel.ManageKey = source.ManageKey
+		}
 	}
 	channel.CreatedTime = utils.GetTimestamp()
 	keys := strings.Split(channel.Key, "\n")

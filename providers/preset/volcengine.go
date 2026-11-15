@@ -44,11 +44,11 @@ type queryBalanceAcctResponse struct {
 	} `json:"Result"`
 }
 
-// balance reads AvailableBalance (CNY for Volcengine) with the key's AccessKey pair, given as
-// the second and third parts of the channel key.
+// balance reads AvailableBalance (CNY for Volcengine) with the account's AccessKey pair, given as
+// the channel's management key ("AccessKeyID|SecretAccessKey").
 func (b volcBilling) balance(p *Provider) (float64, error) {
 	if len(p.extraKeys) < 2 || p.extraKeys[0] == "" || p.extraKeys[1] == "" {
-		return 0, errors.New("the balance needs the account's AccessKey: enter the key as apiKey|AccessKeyID|SecretAccessKey")
+		return 0, errors.New("the balance needs the account's AccessKey: set the channel's management key to AccessKeyID|SecretAccessKey")
 	}
 	req, err := b.request(p.extraKeys[0], p.extraKeys[1], volcNow().UTC())
 	if err != nil {

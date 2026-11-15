@@ -112,3 +112,86 @@ func TestOpenRouterBalanceWithoutKeyLimit(t *testing.T) {
 		t.Errorf("snapshot = %+v", snap)
 	}
 }
+
+// newAccountBalanceTestProvider serves the key info and the account credits, and records which
+// key asked for the credits.
+func newAccountBalanceTestProvider(t *testing.T, keyBody string, creditsStatus int, creditsBody string) (*OpenRouterProvider, *string) {
+	t.Helper()
+	if requester.HTTPClient == nil {
+		requester.InitHttpClient()
+	}
+	var creditsAuth string
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/api/v1/credits" {
+			creditsAuth = r.Header.Get("Authorization")
+			w.WriteHeader(creditsStatus)
+			_, _ = w.Write([]byte(creditsBody))
+			return
+		}
+		_, _ = w.Write([]byte(keyBody))
+	}))
+	t.Cleanup(upstream.Close)
+	baseURL := upstream.URL + "/api"
+	manageKey := "sk-or-manage"
+	channel := &model.Channel{Type: config.ChannelTypeOpenRouter, Key: "sk-or-test", ManageKey: &manageKey, BaseURL: &baseURL}
+	if err := model.DB.Create(channel).Error; err != nil {
+		t.Fatalf("create channel: %v", err)
+	}
+	return OpenRouterProviderFactory{}.Create(channel).(*OpenRouterProvider), &creditsAuth
+}
+
+const (
+	keyWithoutLimit = `{"data":{"label":"gw","limit":null,"limit_remaining":null,"limit_reset":null,"usage":12}}`
+	keyWithLimit    = `{"data":{"label":"gw","limit":100,"limit_remaining":42.5,"usage":57.5}}`
+)
+
+func TestOpenRouterAccountBalanceWithManageKey(t *testing.T) {
+	setupBalanceTestDB(t)
+	p, creditsAuth := newAccountBalanceTestProvider(t, keyWithoutLimit, http.StatusOK, `{"data":{"total_credits":100.5,"total_usage":25.75}}`)
+
+	balance, err := p.Balance()
+	if err != nil || balance != 74.75 {
+		t.Fatalf("Balance() = %v, %v, want the account balance 74.75", balance, err)
+	}
+	if *creditsAuth != "Bearer sk-or-manage" {
+		t.Errorf("credits were asked with %q, want the management key", *creditsAuth)
+	}
+	var stored model.Channel
+	if err := model.DB.First(&stored, p.Channel.Id).Error; err != nil {
+		t.Fatal(err)
+	}
+	snap := stored.GetQuotaSnapshot()
+	if stored.Balance != 74.75 || snap == nil || snap.AccountBalance == nil || *snap.AccountBalance != 74.75 {
+		t.Errorf("stored balance = %v, snapshot = %+v", stored.Balance, snap)
+	}
+}
+
+func TestOpenRouterBalanceIsTheSmallerOfKeyLimitAndAccount(t *testing.T) {
+	setupBalanceTestDB(t)
+	// The key may still spend 42.5 but the account only holds 10.
+	p, _ := newAccountBalanceTestProvider(t, keyWithLimit, http.StatusOK, `{"data":{"total_credits":110,"total_usage":100}}`)
+	if balance, err := p.Balance(); err != nil || balance != 10 {
+		t.Fatalf("Balance() = %v, %v, want 10", balance, err)
+	}
+	// The account holds plenty: the key limit decides.
+	p, _ = newAccountBalanceTestProvider(t, keyWithLimit, http.StatusOK, `{"data":{"total_credits":1000,"total_usage":100}}`)
+	if balance, err := p.Balance(); err != nil || balance != 42.5 {
+		t.Fatalf("Balance() = %v, %v, want 42.5", balance, err)
+	}
+}
+
+func TestOpenRouterRejectedManageKey(t *testing.T) {
+	setupBalanceTestDB(t)
+	forbidden := `{"error":{"code":403,"message":"Only management keys can perform this operation"}}`
+	// With a key limit the balance still comes from the key.
+	p, _ := newAccountBalanceTestProvider(t, keyWithLimit, http.StatusForbidden, forbidden)
+	if balance, err := p.Balance(); err != nil || balance != 42.5 {
+		t.Fatalf("Balance() = %v, %v, want the key limit 42.5", balance, err)
+	}
+	// Without one there is nothing to show, and the error names the management key.
+	p, _ = newAccountBalanceTestProvider(t, keyWithoutLimit, http.StatusForbidden, forbidden)
+	if _, err := p.Balance(); err == nil || errors.Is(err, ErrNoKeyLimit) {
+		t.Fatalf("Balance() error = %v, want the management key error", err)
+	}
+}

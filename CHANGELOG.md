@@ -9,14 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A channel has a management key of its own, apart from the key requests are sent with. It is
+  optional, never used for requests and never returned by the API (only its mask), and it reads
+  what belongs to the upstream account: with it an OpenRouter channel shows the account's
+  remaining credits (`GET /api/v1/credits`), and its balance is the smaller of the key's remaining
+  limit and the account balance. Requesty and Volcengine channels, which took these credentials
+  after the key (`apiKey|manageKey`, `apiKey|AccessKeyID|SecretAccessKey`), are migrated to the
+  new field on startup. The field appears when creating a channel and on its Connection tab, for
+  the types that use it.
 - Volcengine Ark (Doubao) and BytePlus ModelArk channels, under cloud platforms with their
   official logos (BytePlus's mark, which the icon package lacks, from byteplus.com). Both are
   presets over Ark's OpenAI compatible API: model names are sent as they are, prefix caching is
   implicit and its hits are billed from `prompt_tokens_details.cached_tokens`, and the channel's
   upstream prices come from models.dev. Text embeddings stay off (Ark retired its text
   `/embeddings`; the multimodal one is not OpenAI shaped). The Ark API key cannot read the
-  balance, so a Volcengine channel takes the account's AccessKey pair after it
-  (`apiKey|AccessKeyID|SecretAccessKey`) and reads `AvailableBalance` (CNY) from the billing API's
+  balance, so a Volcengine channel takes the account's AccessKey pair as its management key
+  (`AccessKeyID|SecretAccessKey`) and reads `AvailableBalance` (CNY) from the billing API's
   QueryBalanceAcct, signed with HMAC-SHA256; BytePlus has no balance yet, its billing region being
   undocumented. On the dev catalog 9 of Volcengine's 16 models and 13 of BytePlus' 14 link to
   existing public models. A platform spelling with "economy" (a cheaper tier) is no longer read as
@@ -44,7 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   variants ("@eu", ":flex") are left out but priced if added by hand. Prices, cache prices and
   model metadata sync like Vercel AI Gateway's, the maker comes from Requesty's model_lab (its id
   prefix names the hosting provider), and the balance is read from the management API with a key
-  that has manage permission, entered as `apiKey|manageKey`. Of the 216 models Requesty lists, 136
+  that has manage permission, set as the channel's management key. Of the 216 models Requesty
+  lists, 136
   link to catalog models the dev Vercel channel already brought in. Tested with a real key:
   Requesty keeps the client's `cache_control` on its Messages endpoint (a 22k token prompt is
   written once and read on the next request, billed at 1.25x and 0.1x), and the cache writes it

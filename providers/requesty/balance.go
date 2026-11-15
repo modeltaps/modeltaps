@@ -26,7 +26,7 @@ func (p *RequestyProvider) Balance() (float64, error) {
 	_, errWithCode := p.Requester.SendRequest(req, resp, false)
 	if errWithCode != nil {
 		if errWithCode.StatusCode == http.StatusUnauthorized || errWithCode.StatusCode == http.StatusForbidden {
-			return 0, errors.New("the Requesty balance needs a key with manage permission: enter it as apiKey|manageKey")
+			return 0, errors.New("the Requesty balance needs a key with manage permission: set the channel's management key")
 		}
 		return 0, errors.New(errWithCode.OpenAIError.Message)
 	}

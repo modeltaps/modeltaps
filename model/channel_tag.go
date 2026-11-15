@@ -210,7 +210,7 @@ func UpdateChannelsTag(tag string, channel *Channel) error {
 	//  - remark is a per-channel note, like name, so a tag edit must not overwrite it
 	err = tx.Model(&Channel{}).Where("tag = ?", tag).
 		Select("*").
-		Omit("id", "key", "type", "status", "priority", "weight", "cost_ratio",
+		Omit("id", "key", "manage_key", "type", "status", "priority", "weight", "cost_ratio",
 			"used_quota", "balance", "balance_updated_time",
 			"response_time", "created_time", "test_time", "name", "deleted_at",
 			"model_drift", "remark").

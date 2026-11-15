@@ -78,6 +78,7 @@ const fresh = (type, name) => ({
   nameEdited: false,
   key: '',
   keyEditing: true,
+  manageKey: '',
   base_url: '',
   other: '',
   partsMode: 'apiKey',
@@ -229,6 +230,7 @@ export default function NewChannelSheet({ initialType, allChannels, supplyRoutin
         name: d.name.trim(),
         type: d.type,
         key,
+        ...(labels.hasManageKey && d.manageKey.trim() ? { manage_key: d.manageKey.trim() } : {}),
         base_url: base.endsWith('/') ? base.slice(0, -1) : base,
         other: d.other.trim() || DEFAULT_OTHER[d.type] || '',
         models: models.join(','),
@@ -562,6 +564,19 @@ export default function NewChannelSheet({ initialType, allChannels, supplyRoutin
           </p>
         )}
       </Field>
+
+      {labels.hasManageKey && (
+        <Field label={t('channels.conn.manageKey')} htmlFor="nc-manage-key" optional hint={configText(t, labels.prompt.manage_key)}>
+          <Input
+            id="nc-manage-key"
+            type="password"
+            autoComplete="off"
+            className="font-mono text-[13px]"
+            value={d.manageKey}
+            onChange={(e) => set({ manageKey: e.target.value })}
+          />
+        </Field>
+      )}
 
       {labels.hasOther && (
         <Field label={configText(t, labels.label.other)} htmlFor="nc-other" hint={configText(t, labels.prompt.other)}>

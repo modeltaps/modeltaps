@@ -33,16 +33,14 @@ func TestVolcengineSignature(t *testing.T) {
 }
 
 func TestVolcengineKeyAndBalance(t *testing.T) {
-	channel := &model.Channel{Type: config.ChannelTypeVolcengine, Key: "ark-key | AKX | SKX"}
+	manageKey := " AKX | SKX "
+	channel := &model.Channel{Type: config.ChannelTypeVolcengine, Key: "ark-key", ManageKey: &manageKey}
 	p := ProviderFactory{Preset: Presets[config.ChannelTypeVolcengine]}.Create(channel).(*Provider)
 	if p.Channel.Key != "ark-key" || len(p.extraKeys) != 2 || p.extraKeys[1] != "SKX" {
 		t.Fatalf("key = %q extra = %v", p.Channel.Key, p.extraKeys)
 	}
-	if channel.Key != "ark-key | AKX | SKX" {
-		t.Errorf("the shared channel must not change")
-	}
 	if !p.CanQueryBalance() {
-		t.Error("Volcengine reads a balance")
+		t.Error("Volcengine reads a balance with the management key")
 	}
 
 	var gotAuth string

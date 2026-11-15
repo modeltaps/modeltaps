@@ -102,6 +102,8 @@ export function typeLabels(type) {
     label: { ...defaultConfig.inputLabel, ...(cfg.inputLabel || {}) },
     prompt: { ...defaultConfig.prompt, ...(cfg.prompt || {}) },
     hasOther: Boolean(cfg.inputLabel?.other || cfg.prompt?.other),
+    // The type reads account data (balance) with a management key of its own field.
+    hasManageKey: Boolean(cfg.prompt?.manage_key),
     canFetchModels: Boolean(cfg.inputLabel?.provider_models_list),
     defaultModels: cfg.input?.models || [],
     testModel: cfg.input?.test_model || ''

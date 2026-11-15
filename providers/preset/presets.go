@@ -32,6 +32,8 @@ type Preset struct {
 	// Balance reads the account balance, for a platform that has an endpoint for it; nil leaves
 	// the channel without one.
 	Balance func(p *Provider) (float64, error)
+	// ManageKey says Balance reads the channel's management key (Channel.ManageKey).
+	ManageKey bool
 }
 
 // Presets lists the platforms, by channel type.
@@ -60,7 +62,7 @@ func init() {
 		// and /embeddings/multimodal is not OpenAI shaped, so embeddings stay off. The balance
 		// needs the account's AccessKey pair, not the API key.
 		{Type: config.ChannelTypeVolcengine, Name: "Volcengine Ark", Root: "https://ark.cn-beijing.volces.com/api/v3", ModelsDev: "volcengine",
-			Balance: volcengineBilling.balance},
+			Balance: volcengineBilling.balance, ManageKey: true},
 		// BytePlus ModelArk (Johor; Dublin is https://ark.eu-west.bytepluses.com/api/v3). Its billing
 		// API's region is not documented, so no balance yet.
 		{Type: config.ChannelTypeBytePlus, Name: "BytePlus ModelArk", Root: "https://ark.ap-southeast.bytepluses.com/api/v3", ModelsDev: "byteplus"},

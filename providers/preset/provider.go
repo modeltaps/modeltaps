@@ -16,17 +16,14 @@ type ProviderFactory struct {
 }
 
 func (f ProviderFactory) Create(channel *model.Channel) base.ProviderInterface {
-	// A preset with a balance may take more credentials after the API key ("apiKey|a|b"); the
-	// requests get a copy of the channel that carries the API key alone.
+	// A preset whose balance needs more than the API key reads them from the channel's
+	// management key; several credentials are separated by "|".
 	var extra []string
-	if f.Preset.Balance != nil && strings.Contains(channel.Key, "|") {
-		parts := strings.Split(strings.TrimSpace(channel.Key), "|")
-		for i := range parts {
-			parts[i] = strings.TrimSpace(parts[i])
+	if manageKey := channel.GetManageKey(); f.Preset.ManageKey && manageKey != "" {
+		extra = strings.Split(manageKey, "|")
+		for i := range extra {
+			extra[i] = strings.TrimSpace(extra[i])
 		}
-		clone := *channel
-		clone.Key = parts[0]
-		channel, extra = &clone, parts[1:]
 	}
 	return &Provider{
 		extraKeys: extra,
@@ -62,7 +59,7 @@ func (p Preset) config() base.ProviderConfig {
 type Provider struct {
 	openai.OpenAIProvider
 	preset Preset
-	// extraKeys are the credentials after the API key, read by the preset's Balance.
+	// extraKeys are the parts of the channel's management key, read by the preset's Balance.
 	extraKeys []string
 }
 

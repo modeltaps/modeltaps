@@ -611,6 +611,7 @@ func postMigrations() []*gormigrate.Migration {
 		migrateRoutingPolicyUserScope(),
 		cleanupSyncedCatalogDrafts(),
 		migrateSupplyModeFollowDefault(),
+		splitChannelManageKey(),
 		migratePlatformSpellingDrafts(),
 		migrateAttachRenamedPublicModels(),
 		migrateVendorCleanup(),
@@ -1827,6 +1828,41 @@ func migrateSupplyModeFollowDefault() *gormigrate.Migration {
 		},
 		Rollback: func(tx *gorm.DB) error {
 			return tx.Model(&ModelInfo{}).Where("supply_mode = ?", SupplyModeDefault).Update("supply_mode", SupplyModeBalance).Error
+		},
+	}
+}
+
+// splitChannelManageKey moves the management credentials of Requesty and Volcengine channels out
+// of the key column. They used to be written after the inference key ("apiKey|manageKey",
+// "apiKey|AccessKeyID|SecretAccessKey"); they now have a column of their own (Channel.ManageKey),
+// so the key column holds the inference key alone.
+func splitChannelManageKey() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202611150001",
+		Migrate: func(tx *gorm.DB) error {
+			if !tx.Migrator().HasColumn(&Channel{}, "manage_key") {
+				return nil
+			}
+			var channels []Channel
+			err := tx.Unscoped().Select("id", "key").
+				Where("type IN ? AND "+quotePostgresField("key")+" LIKE ?",
+					[]int{config.ChannelTypeRequesty, config.ChannelTypeVolcengine}, "%|%").
+				Find(&channels).Error
+			if err != nil {
+				return err
+			}
+			for _, channel := range channels {
+				apiKey, manageKey, _ := strings.Cut(strings.TrimSpace(channel.Key), "|")
+				err = tx.Unscoped().Model(&Channel{}).Where("id = ?", channel.Id).
+					Updates(map[string]any{"key": strings.TrimSpace(apiKey), "manage_key": strings.TrimSpace(manageKey)}).Error
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return nil
 		},
 	}
 }

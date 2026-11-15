@@ -634,6 +634,9 @@ const typeConfig = {
   20: {
     inputLabel: {
       provider_models_list: ['channelForm.fetchModelsFrom', { source: 'OpenRouter' }]
+    },
+    prompt: {
+      manage_key: 'channelForm.prompt.manageKeyOpenRouter'
     }
   },
   56: {
@@ -722,7 +725,7 @@ const typeConfig = {
       provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Requesty' }]
     },
     prompt: {
-      key: 'channelForm.prompt.keyRequesty'
+      manage_key: 'channelForm.prompt.manageKeyRequesty'
     },
     modelGroup: 'Requesty'
   },
@@ -811,7 +814,7 @@ const typeConfig = {
       provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Volcengine Ark' }]
     },
     prompt: {
-      key: 'channelForm.prompt.keyVolcengine'
+      manage_key: 'channelForm.prompt.manageKeyVolcengine'
     }
   },
   81: {

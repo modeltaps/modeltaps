@@ -114,13 +114,11 @@ func TestModelInfos(t *testing.T) {
 }
 
 func TestKeyWithManageKey(t *testing.T) {
-	channel := &model.Channel{Type: config.ChannelTypeRequesty, Key: "rq-inference|rq-manage"}
+	manageKey := "rq-manage"
+	channel := &model.Channel{Type: config.ChannelTypeRequesty, Key: "rq-inference", ManageKey: &manageKey}
 	p := RequestyProviderFactory{}.Create(channel).(*RequestyProvider)
 	if p.Channel.Key != "rq-inference" || p.manageKey != "rq-manage" {
 		t.Errorf("key = %q manage = %q", p.Channel.Key, p.manageKey)
-	}
-	if channel.Key != "rq-inference|rq-manage" {
-		t.Errorf("the shared channel must not change, got %q", channel.Key)
 	}
 	if got := p.GetRequestHeaders()["Authorization"]; got != "Bearer rq-inference" {
 		t.Errorf("auth header = %q", got)
@@ -176,7 +174,8 @@ func TestBalance(t *testing.T) {
 	manageBaseURL = upstream.URL
 	t.Cleanup(func() { manageBaseURL = oldURL })
 
-	channel := &model.Channel{Type: config.ChannelTypeRequesty, Key: "rq-inference|rq-manage"}
+	manageKey := "rq-manage"
+	channel := &model.Channel{Type: config.ChannelTypeRequesty, Key: "rq-inference", ManageKey: &manageKey}
 	if err := model.DB.Create(channel).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -194,7 +193,7 @@ func TestBalance(t *testing.T) {
 	}
 	var key model.Channel
 	model.DB.Select("key").First(&key, channel.Id)
-	if key.Key != "rq-inference|rq-manage" {
+	if key.Key != "rq-inference" {
 		t.Errorf("saving the balance must not rewrite the key, got %q", key.Key)
 	}
 
