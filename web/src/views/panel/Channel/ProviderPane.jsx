@@ -921,7 +921,9 @@ export default function ProviderPane({
           <span className="min-w-0 flex-1">
             {t('channels.created.prefix')} <b className="font-mono font-medium">{created.name}</b>
             {t('channels.created.colon')}
-            {created.summary}
+            {[created.summary, created.supplies ? t('channels.created.supplied', { count: created.supplies }) : '']
+              .filter(Boolean)
+              .join(' · ')}
           </span>
           <Button variant="outline" size="sm" className="h-[30px] rounded-lg bg-card" onClick={onAdjustCreated}>
             {t('channels.created.adjust')}

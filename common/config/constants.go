@@ -600,6 +600,23 @@ const (
 	ChannelTypeVertexAIExpress = 61
 	ChannelTypeVercelAIGateway = 62
 	ChannelTypeRequesty        = 63
+	// OpenAI compatible platforms served by the preset provider (providers/preset).
+	ChannelTypeTogether    = 64
+	ChannelTypeFireworks   = 65
+	ChannelTypeDeepInfra   = 66
+	ChannelTypeCerebras    = 67
+	ChannelTypeNebius      = 68
+	ChannelTypeNovita      = 69
+	ChannelTypeSambaNova   = 70
+	ChannelTypeNvidiaNIM   = 71
+	ChannelTypeModelScope  = 72
+	ChannelTypeQiniu       = 73
+	ChannelTypeHuggingFace = 74
+	ChannelTypeChutes      = 75
+	ChannelTypeBaseten     = 76
+	ChannelTypeStepFun     = 77
+	ChannelTypeXiaomiMiMo  = 78
+	ChannelTypeLongCat     = 79
 )
 
 const (

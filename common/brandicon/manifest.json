@@ -122,6 +122,11 @@
       "color": true,
       "scale": 1
     },
+    "chutes": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
     "claude": {
       "mono": true,
       "color": true,
@@ -377,6 +382,11 @@
       "color": true,
       "scale": 1
     },
+    "nebius": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
     "nousresearch": {
       "mono": true,
       "color": false,
@@ -433,6 +443,11 @@
       "scale": 1
     },
     "ppio": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "qiniu": {
       "mono": true,
       "color": true,
       "scale": 1
@@ -765,7 +780,23 @@
     "60": "antigravity",
     "61": "vertexai",
     "62": "vercel",
-    "63": "requesty"
+    "63": "requesty",
+    "64": "together",
+    "65": "fireworks",
+    "66": "deepinfra",
+    "67": "cerebras",
+    "68": "nebius",
+    "69": "novita",
+    "70": "sambanova",
+    "71": "nvidia",
+    "72": "modelscope",
+    "73": "qiniu",
+    "74": "huggingface",
+    "75": "chutes",
+    "76": "baseten",
+    "77": "stepfun",
+    "78": "xiaomimimo",
+    "79": "longcat"
   },
   "modelPrefixes": {
     "360gpt": "ai360",
@@ -873,8 +904,11 @@
     "azuredatabricks.net": "dbrx",
     "baichuan-ai.com": "baichuan",
     "baidubce.com": "wenxin",
+    "baseten.co": "baseten",
     "bfl.ai": "bfl",
     "bigmodel.cn": "zhipu",
+    "cerebras.ai": "cerebras",
+    "chutes.ai": "chutes",
     "claude.ai": "claude",
     "cloudflare.com": "cloudflare",
     "cohere.ai": "cohere",
@@ -883,6 +917,7 @@
     "coze.com": "coze",
     "dashscope.aliyuncs.com": "qwen",
     "databricks.com": "dbrx",
+    "deepinfra.com": "deepinfra",
     "deepseek.com": "deepseek",
     "fireworks.ai": "fireworks",
     "generativelanguage.googleapis.com": "gemini",
@@ -895,20 +930,27 @@
     "jina.ai": "jina",
     "klingai.com": "kling",
     "lingyiwanwu.com": "yi",
+    "longcat.chat": "longcat",
     "minimax.chat": "minimax",
     "minimax.io": "minimax",
     "minimaxi.com": "minimax",
     "mistral.ai": "mistral",
+    "modelscope.cn": "modelscope",
     "moonshot.ai": "moonshot",
     "moonshot.cn": "moonshot",
+    "nebius.com": "nebius",
+    "novita.ai": "novita",
     "nvidia.com": "nvidia",
     "ollama.com": "ollama",
     "openai.com": "openai",
     "openrouter.ai": "openrouter",
     "perplexity.ai": "perplexity",
+    "qiniu.com": "qiniu",
+    "qnaigc.com": "qiniu",
     "recraft.ai": "recraft",
     "replicate.com": "replicate",
     "requesty.ai": "requesty",
+    "sambanova.ai": "sambanova",
     "siliconflow.cn": "siliconcloud",
     "siliconflow.com": "siliconcloud",
     "stability.ai": "stability",

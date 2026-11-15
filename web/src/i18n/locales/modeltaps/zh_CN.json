@@ -2091,6 +2091,7 @@
       "none": "还没有模型，添加或从上游拉取",
       "pruned_other": "移除了 {{count}} 个上游已不存在的模型，保存后生效",
       "remove": "移除 {{model}}",
+      "pricesRefreshed": "已更新上游价格",
       "syncPrices": "同步价格",
       "ttft": "首字",
       "supplyNote": "保存后，模型列表的改动会同步到由这个渠道生成的供应：新加的模型自动接入对应的公开模型，移除的模型会撤下供应。手动添加或在模型页改过上游名的供应保持不变。",
@@ -3739,5 +3740,10 @@
     "range": "第 {{from}}–{{to}} 个，共 {{total}} 个",
     "previous": "上一页",
     "next": "下一页"
+  },
+  "providerPicker": {
+    "category": {
+      "inference": "开源模型推理"
+    }
   }
 }

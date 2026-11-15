@@ -62,3 +62,14 @@ func TestGetExtraTokensRequestyCacheWrite(t *testing.T) {
 		t.Fatalf("TTL split = %v", extra)
 	}
 }
+
+// Together AI reports cache hits at the top level of usage for some models.
+func TestGetExtraTokensTopLevelCachedTokens(t *testing.T) {
+	var u Usage
+	if err := json.Unmarshal([]byte(`{"prompt_tokens":5000,"completion_tokens":20,"cached_tokens":4096}`), &u); err != nil {
+		t.Fatal(err)
+	}
+	if got := u.GetExtraTokens()[config.UsageExtraCache]; got != 4096 {
+		t.Fatalf("top-level cached_tokens should bill as cached input, got %d", got)
+	}
+}

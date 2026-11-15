@@ -31,8 +31,33 @@ export const DEFAULT_BASE_URLS = {
   58: 'https://api.anthropic.com',
   59: 'https://chatgpt.com',
   62: 'https://ai-gateway.vercel.sh',
-  63: 'https://router.requesty.ai'
+  63: 'https://router.requesty.ai',
+  64: 'https://api.together.ai/v1',
+  65: 'https://api.fireworks.ai/inference/v1',
+  66: 'https://api.deepinfra.com/v1/openai',
+  67: 'https://api.cerebras.ai/v1',
+  68: 'https://api.tokenfactory.nebius.com/v1',
+  69: 'https://api.novita.ai/openai/v1',
+  70: 'https://api.sambanova.ai/v1',
+  71: 'https://integrate.api.nvidia.com/v1',
+  72: 'https://api-inference.modelscope.cn/v1',
+  73: 'https://api.qnaigc.com/v1',
+  74: 'https://router.huggingface.co/v1',
+  75: 'https://llm.chutes.ai/v1',
+  76: 'https://inference.baseten.co/v1',
+  77: 'https://api.stepfun.com/v1',
+  78: 'https://api.xiaomimimo.com/v1',
+  79: 'https://api.longcat.chat/openai/v1'
 };
+
+// Types whose upstream publishes a price list kept per channel: the gateways read their own list
+// and also price the catalog, the preset platforms (64-79) are priced from models.dev.
+export const CATALOG_PRICED_TYPES = new Set([20, 62, 63]);
+const PRESET_TYPES = new Set(Array.from({ length: 16 }, (_, i) => 64 + i));
+
+export function hasUpstreamPriceList(type) {
+  return CATALOG_PRICED_TYPES.has(Number(type)) || PRESET_TYPES.has(Number(type));
+}
 
 // Types whose base URL must be filled in (the backend has no address for them).
 export const BASE_URL_REQUIRED = new Set([3, 8]);

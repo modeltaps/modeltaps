@@ -2187,6 +2187,7 @@
       "pruned_one": "Removed {{count}} model the upstream no longer lists; save to apply",
       "pruned_other": "Removed {{count}} models the upstream no longer lists; save to apply",
       "remove": "Remove {{model}}",
+      "pricesRefreshed": "Upstream prices updated",
       "syncPrices": "Sync prices",
       "ttft": "First token",
       "supplyNote": "On save, changes to the model list carry over to the supplies made from this channel: added models are attached to their public models and removed models have their supplies withdrawn. Supplies added by hand, or whose upstream name was changed on the model page, are left alone.",
@@ -3844,5 +3845,10 @@
     "range": "{{from}}–{{to}} of {{total}}",
     "previous": "Previous page",
     "next": "Next page"
+  },
+  "providerPicker": {
+    "category": {
+      "inference": "Open model inference"
+    }
   }
 }

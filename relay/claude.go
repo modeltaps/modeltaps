@@ -14,12 +14,14 @@ import (
 	providersBase "github.com/modeltaps/modeltaps/providers/base"
 	"github.com/modeltaps/modeltaps/providers/claude"
 	"github.com/modeltaps/modeltaps/providers/gemini"
+	"github.com/modeltaps/modeltaps/providers/preset"
 	"github.com/modeltaps/modeltaps/providers/vertexai"
 	"github.com/modeltaps/modeltaps/relay/transformer"
 	"github.com/modeltaps/modeltaps/safty"
 	"github.com/modeltaps/modeltaps/types"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -71,6 +73,16 @@ var AllowChannelType = []int{
 	config.ChannelTypeVertexAIExpress,
 	config.ChannelTypeVercelAIGateway,
 	config.ChannelTypeRequesty,
+}
+
+// The preset platforms serve Claude format requests through the Claude to OpenAI conversion.
+func init() {
+	types := make([]int, 0, len(preset.Presets))
+	for channelType := range preset.Presets {
+		types = append(types, channelType)
+	}
+	sort.Ints(types)
+	AllowChannelType = append(AllowChannelType, types...)
 }
 
 // nativeClaudeChannelType 是 Claude 协议下优先选择的渠道类型集合：直连 / 一方渠道优先于聚合网关

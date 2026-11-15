@@ -19,6 +19,8 @@ type catalogCost struct {
 	Input     *float64 `json:"input"`
 	Output    *float64 `json:"output"`
 	CacheRead *float64 `json:"cache_read"`
+	// CacheWrite is read for channel price lists only (ModelsDevChannelPrices).
+	CacheWrite *float64 `json:"cache_write"`
 }
 
 // 同步时换算不了的价格原因（列入同步结果，不静默写 0）。

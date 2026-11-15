@@ -48,7 +48,7 @@ import { buildModelSuggestions, fetchPriceList } from './modelSuggestions';
 import { splitList } from './channelGroups';
 import { usageNumbers, usageOf, usageOptions, usagePeers } from './channelUsage';
 import { applyMappingToModels, normalizeKeyInput } from './newChannel';
-import { BASE_URL_REQUIRED, DEFAULT_BASE_URLS, OAUTH_TYPES, typeLabels } from './providerDefaults';
+import { BASE_URL_REQUIRED, CATALOG_PRICED_TYPES, DEFAULT_BASE_URLS, OAUTH_TYPES, hasUpstreamPriceList, typeLabels } from './providerDefaults';
 import { Field, LongListMore, LongListSearch, ToggleField, useLongList } from '@/components/objects';
 import { GroupOptions, KeyLink, UsageOptions } from './channelParts';
 import ChannelOAuth from './ChannelOAuth';
@@ -569,6 +569,12 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   const syncPrices = () =>
     run('price', async () => {
       // The button reads the upstream price list, so the channel's own copy is refreshed too.
+      if (!CATALOG_PRICED_TYPES.has(channel.type)) {
+        // Preset platforms only keep the channel's price list; they do not price the catalog.
+        setUpstreamPrices(await refreshChannelPrices(channel.id));
+        toast.success(t('channels.models.pricesRefreshed'));
+        return;
+      }
       refreshChannelPrices(channel.id)
         .then(setUpstreamPrices)
         .catch(() => {});
@@ -626,7 +632,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
             {t('channels.models.check')}
           </ToolButton>
         )}
-        {[20, 62, 63].includes(channel.type) && (
+        {hasUpstreamPriceList(channel.type) && (
           <ToolButton icon={CloudDownload} busy={busy === 'price'} onClick={syncPrices}>
             {t('channels.models.syncPrices')}
           </ToolButton>

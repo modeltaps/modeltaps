@@ -21,6 +21,9 @@ type Usage struct {
 	// PromptCacheHitTokens is DeepSeek's OpenAI-format cache hit count (prompt_tokens includes
 	// it, like cached_tokens). Used only when prompt_tokens_details.cached_tokens is absent.
 	PromptCacheHitTokens int `json:"prompt_cache_hit_tokens,omitempty"`
+	// TopLevelCachedTokens is cache hits reported at the top level of usage, as Together AI and
+	// StepFun's international site do for some models. Used when no other cache field is set.
+	TopLevelCachedTokens int `json:"cached_tokens,omitempty"`
 
 	ExtraTokens  map[string]int          `json:"-"`
 	ExtraBilling map[string]ExtraBilling `json:"-"`
@@ -78,6 +81,10 @@ func (u *Usage) GetExtraTokens() map[string]int {
 	if u.PromptCacheHitTokens > 0 && u.PromptTokensDetails.CachedTokens == 0 &&
 		u.PromptTokensDetails.CachedReadTokens == 0 && u.CacheReadInputTokens == 0 {
 		u.PromptTokensDetails.CachedTokens = u.PromptCacheHitTokens
+	}
+	if u.TopLevelCachedTokens > 0 && u.PromptTokensDetails.CachedTokens == 0 &&
+		u.PromptTokensDetails.CachedReadTokens == 0 && u.CacheReadInputTokens == 0 {
+		u.PromptTokensDetails.CachedTokens = u.TopLevelCachedTokens
 	}
 	if u.PromptTokensDetails.CachedTokens > 0 && u.ExtraTokens[config.UsageExtraCache] == 0 {
 		u.ExtraTokens[config.UsageExtraCache] = u.PromptTokensDetails.CachedTokens

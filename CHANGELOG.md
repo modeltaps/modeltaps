@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sixteen more OpenAI compatible platforms, each a channel type with its official logo: Together
+  AI, Fireworks AI, DeepInfra, Cerebras, Nebius Token Factory, Novita AI, SambaNova, NVIDIA NIM,
+  Hugging Face, Chutes, Baseten, ModelScope and Qiniu under a new "Open model inference" group of
+  the provider picker, and StepFun, Xiaomi MiMo and LongCat with the model vendors. They share one
+  provider driven by a preset table: the API root (checked against each platform's docs), the
+  platform's models.dev id and the endpoints it serves (embeddings only where documented;
+  Responses requests are converted to Chat Completions). "Fetch models" asks the platform and
+  falls back to the models models.dev records for it, and the channel's upstream price list,
+  cache prices included, comes from models.dev, refreshed daily and by "Sync prices"; it does not
+  price the catalog. Platform spellings link to catalog models through the model library, so
+  "accounts/fireworks/models/deepseek-v4p1-flash" is offered as "deepseek-v4.1-flash": on the
+  dev catalog 26 of Together's 33 models, 23 of Fireworks' 27 and 67 of DeepInfra's 79 link to
+  existing public models. Cache hits that Together and StepFun's international site report at the
+  top level of usage (`cached_tokens`) are billed as cached input. No preset reads a balance yet,
+  and none was tried with a real key.
 - Requesty channels. Requests go to Requesty's OpenAI compatible API (chat completions,
   responses), and Claude format requests to its Anthropic Messages endpoint as they are, so the
   client's cache breakpoints reach the model. "Fetch models" lists each model once: the managed

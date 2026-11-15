@@ -145,6 +145,21 @@ func SyncAllChannelsOwnPricing() (int, error) {
 		return 0, err
 	}
 
+	// Channels that keep an upstream price list without feeding the catalog (the preset
+	// platforms, priced from models.dev) refresh their list here too.
+	for _, ch := range channels {
+		if ChannelTypeHasOwnPricing(ch.Type) {
+			continue
+		}
+		provider := providers.GetProvider(ch, nil)
+		if _, ok := provider.(providersBase.ChannelPriceListInterface); !ok {
+			continue
+		}
+		if _, err := refreshChannelPrices(ch, provider); err != nil {
+			logger.SysError("sync upstream price list failed for channel " + ch.Name + ": " + err.Error())
+		}
+	}
+
 	priceGroups := make([][]*model.Price, len(ownPricingChannelTypes))
 	seenPrice := make(map[string]bool)
 	infoGroups := make([][]*model.ModelInfo, len(ownPricingChannelTypes))

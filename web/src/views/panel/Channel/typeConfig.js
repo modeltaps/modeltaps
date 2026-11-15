@@ -725,6 +725,86 @@ const typeConfig = {
       key: 'channelForm.prompt.keyRequesty'
     },
     modelGroup: 'Requesty'
+  },
+  64: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Together AI' }]
+    }
+  },
+  65: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Fireworks AI' }]
+    }
+  },
+  66: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'DeepInfra' }]
+    }
+  },
+  67: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Cerebras' }]
+    }
+  },
+  68: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Nebius Token Factory' }]
+    }
+  },
+  69: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Novita AI' }]
+    }
+  },
+  70: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'SambaNova' }]
+    }
+  },
+  71: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'NVIDIA NIM' }]
+    }
+  },
+  72: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'ModelScope' }]
+    }
+  },
+  73: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Qiniu' }]
+    }
+  },
+  74: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Hugging Face' }]
+    }
+  },
+  75: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Chutes' }]
+    }
+  },
+  76: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Baseten' }]
+    }
+  },
+  77: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'StepFun' }]
+    }
+  },
+  78: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'Xiaomi MiMo' }]
+    }
+  },
+  79: {
+    inputLabel: {
+      provider_models_list: ['channelForm.fetchModelsFrom', { source: 'LongCat' }]
+    }
   }
 };
 

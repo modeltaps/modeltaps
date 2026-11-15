@@ -422,6 +422,12 @@ var channelTypeLibraryProviders = map[int][]string{
 	config.ChannelTypeGroq:            {"groq"},
 }
 
+// SetChannelTypeLibraryProviders records the models.dev providers whose spelling channels of a
+// type send as is; the preset platforms register themselves this way.
+func SetChannelTypeLibraryProviders(channelType int, providers ...string) {
+	channelTypeLibraryProviders[channelType] = providers
+}
+
 // LibraryUpstreamFor returns how a channel of the given type names a public model, from the
 // library's platform spellings; "" when the library has nothing for that platform.
 func LibraryUpstreamFor(channelType int, publicModel string) string {

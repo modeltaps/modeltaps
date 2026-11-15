@@ -357,6 +357,134 @@ export const CHANNEL_OPTIONS = {
     url: 'https://www.requesty.ai/',
     keyUrl: 'https://app.requesty.ai/api-keys'
   },
+  64: {
+    key: 64,
+    text: 'Together AI',
+    value: 64,
+    color: 'default',
+    url: 'https://www.together.ai/',
+    keyUrl: 'https://api.together.ai/settings/api-keys'
+  },
+  65: {
+    key: 65,
+    text: 'Fireworks AI',
+    value: 65,
+    color: 'default',
+    url: 'https://fireworks.ai/',
+    keyUrl: 'https://fireworks.ai/account/api-keys'
+  },
+  66: {
+    key: 66,
+    text: 'DeepInfra',
+    value: 66,
+    color: 'default',
+    url: 'https://deepinfra.com/',
+    keyUrl: 'https://deepinfra.com/dash/api_keys'
+  },
+  67: {
+    key: 67,
+    text: 'Cerebras',
+    value: 67,
+    color: 'default',
+    url: 'https://www.cerebras.ai/',
+    keyUrl: 'https://cloud.cerebras.ai/'
+  },
+  68: {
+    key: 68,
+    text: 'Nebius Token Factory',
+    value: 68,
+    color: 'default',
+    url: 'https://tokenfactory.nebius.com/',
+    keyUrl: 'https://tokenfactory.nebius.com/'
+  },
+  69: {
+    key: 69,
+    text: 'Novita AI',
+    value: 69,
+    color: 'default',
+    url: 'https://novita.ai/',
+    keyUrl: 'https://novita.ai/settings/key-management'
+  },
+  70: {
+    key: 70,
+    text: 'SambaNova',
+    value: 70,
+    color: 'default',
+    url: 'https://cloud.sambanova.ai/',
+    keyUrl: 'https://cloud.sambanova.ai/apis'
+  },
+  71: {
+    key: 71,
+    text: 'NVIDIA NIM',
+    value: 71,
+    color: 'default',
+    url: 'https://build.nvidia.com/',
+    keyUrl: 'https://build.nvidia.com/settings/api-keys'
+  },
+  72: {
+    key: 72,
+    text: 'ModelScope',
+    value: 72,
+    color: 'default',
+    url: 'https://modelscope.cn/',
+    keyUrl: 'https://modelscope.cn/my/myaccesstoken'
+  },
+  73: {
+    key: 73,
+    text: 'Qiniu',
+    value: 73,
+    color: 'default',
+    url: 'https://www.qiniu.com/ai/',
+    keyUrl: 'https://portal.qiniu.com/ai-inference/api-key'
+  },
+  74: {
+    key: 74,
+    text: 'Hugging Face',
+    value: 74,
+    color: 'default',
+    url: 'https://huggingface.co/docs/inference-providers',
+    keyUrl: 'https://huggingface.co/settings/tokens'
+  },
+  75: {
+    key: 75,
+    text: 'Chutes',
+    value: 75,
+    color: 'default',
+    url: 'https://chutes.ai/',
+    keyUrl: 'https://chutes.ai/app/api'
+  },
+  76: {
+    key: 76,
+    text: 'Baseten',
+    value: 76,
+    color: 'default',
+    url: 'https://www.baseten.co/',
+    keyUrl: 'https://app.baseten.co/settings/api_keys'
+  },
+  77: {
+    key: 77,
+    text: 'StepFun',
+    value: 77,
+    color: 'default',
+    url: 'https://platform.stepfun.com/',
+    keyUrl: 'https://platform.stepfun.com/interface-key'
+  },
+  78: {
+    key: 78,
+    text: 'Xiaomi MiMo',
+    value: 78,
+    color: 'default',
+    url: 'https://platform.xiaomimimo.com/',
+    keyUrl: 'https://platform.xiaomimimo.com/'
+  },
+  79: {
+    key: 79,
+    text: 'LongCat',
+    value: 79,
+    color: 'default',
+    url: 'https://longcat.chat/platform/',
+    keyUrl: 'https://longcat.chat/platform/'
+  },
   8: {
     key: 8,
     text: 'OpenAI compatible',
@@ -376,9 +504,10 @@ export const COMMON_CHANNEL_TYPES = [1, 14, 25, 3, 32, 42, 20, 28, 59, 58, 8];
 // CHANNEL_OPTIONS without a category lands in "other" so it is never lost. The common types are
 // shown again in their own section at the top, they are not removed from their category.
 export const CHANNEL_TYPE_CATEGORIES = [
-  { key: 'vendor', types: [1, 14, 25, 28, 56, 30, 29, 36, 17, 16, 27, 33, 26, 15, 18, 19, 40] },
+  { key: 'vendor', types: [1, 14, 25, 28, 56, 30, 29, 36, 17, 16, 27, 77, 78, 79, 33, 26, 15, 18, 19, 40] },
   { key: 'cloud', types: [3, 55, 32, 42, 61, 54, 35] },
   { key: 'gateway', types: [20, 62, 63, 45, 31, 49, 52, 38] },
+  { key: 'inference', types: [64, 65, 66, 67, 68, 69, 70, 71, 74, 75, 76, 72, 73] },
   { key: 'subscription', types: [58, 59, 57, 60] },
   { key: 'selfhosted', types: [8, 39] },
   { key: 'media', types: [34, 41, 53, 37, 51, 24, 47] },

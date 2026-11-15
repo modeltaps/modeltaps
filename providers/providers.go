@@ -35,6 +35,7 @@ import (
 	"github.com/modeltaps/modeltaps/providers/openai"
 	"github.com/modeltaps/modeltaps/providers/openrouter"
 	"github.com/modeltaps/modeltaps/providers/palm"
+	"github.com/modeltaps/modeltaps/providers/preset"
 	"github.com/modeltaps/modeltaps/providers/recraftAI"
 	"github.com/modeltaps/modeltaps/providers/replicate"
 	"github.com/modeltaps/modeltaps/providers/requesty"
@@ -108,6 +109,9 @@ func init() {
 		config.ChannelTypeVertexAIExpress: vertexai_express.VertexAIExpressProviderFactory{},
 		config.ChannelTypeVercelAIGateway: vercel.VercelProviderFactory{},
 		config.ChannelTypeRequesty:        requesty.RequestyProviderFactory{},
+	}
+	for channelType, p := range preset.Presets {
+		providerFactories[channelType] = preset.ProviderFactory{Preset: p}
 	}
 }
 

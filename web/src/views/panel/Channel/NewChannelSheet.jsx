@@ -269,12 +269,12 @@ export default function NewChannelSheet({ initialType, allChannels, supplyRoutin
           ? ''
           : usage.top && usageKey !== 'custom'
             ? t('channels.created.relative', { usage: usageLabel, name: usage.top.name })
-            : usageLabel,
-        res.supplies ? t('channels.created.supplied', { count: res.supplies }) : ''
+            : usageLabel
       ]
         .filter(Boolean)
         .join(' · ');
-      onCreated({ ids: res.ids, type: d.type, name: body.name, summary });
+      // The supply count goes apart: a background catalog sync may attach more right after.
+      onCreated({ ids: res.ids, type: d.type, name: body.name, summary, supplies: res.supplies });
     } catch (e) {
       toast.error(e.message);
     } finally {
