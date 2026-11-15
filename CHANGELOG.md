@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- User emails in every console language. The verification code, password reset and quota emails
+  have built-in text in English, Simplified Chinese, Traditional Chinese and Japanese, and the
+  admin can rewrite each email per language under Settings, Mail. An email goes out in the
+  language the user picked in the console; one sent while the user is on the page (a code, a
+  reset link) otherwise follows the browser. A new site default language (Settings, Site,
+  Language) covers everyone else and the home page. Templates customized before this count as the
+  site default language, and the quota warning is now two emails, running low and used up.
 - Daily reconciliation with the upstream's own bill. With a management key on the channel, the
   account's daily cost report is read on the balance refresh schedule (each account every six
   hours, or on demand) and stored per UTC day: OpenRouter's activity (`GET /api/v1/activity`,

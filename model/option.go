@@ -105,6 +105,7 @@ func registerOptions() {
 	config.GlobalOption.RegisterString("SMTPProvider", &config.SMTPProvider, config.ScopeAdmin)
 	config.GlobalOption.RegisterString("SMTPReplyTo", &config.SMTPReplyTo, config.ScopeAdmin)
 	config.GlobalOption.RegisterString("MailTemplates", &config.MailTemplates, config.ScopeAdmin)
+	config.GlobalOption.RegisterString("DefaultLanguage", &config.DefaultLanguage, config.ScopeAdmin)
 	config.GlobalOption.RegisterValue("Notice", config.ScopeAdmin)
 	config.GlobalOption.RegisterValue("About", config.ScopeAdmin)
 	config.GlobalOption.RegisterValue("HomePageContent", config.ScopeAdmin)

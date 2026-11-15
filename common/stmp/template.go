@@ -1,7 +1,10 @@
 package stmp
 
 import (
+	"strings"
+
 	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/common/lang"
 )
 
 func getLogo() string {
@@ -26,9 +29,11 @@ func getSystemName() string {
 	return config.SystemName
 }
 
-func getDefaultTemplate(content string) string {
+// getDefaultTemplate wraps an email body in the shared layout; lng (a console language) goes into
+// the lang attribute, so mail clients pick the right font and reading direction.
+func getDefaultTemplate(lng, content string) string {
 	return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-	<html xmlns="http://www.w3.org/1999/xhtml">
+	<html xmlns="http://www.w3.org/1999/xhtml" lang="` + strings.ReplaceAll(lang.Pick(lng), "_", "-") + `">
 	  <head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />

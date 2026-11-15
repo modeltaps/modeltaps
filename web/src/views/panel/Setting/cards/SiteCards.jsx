@@ -11,7 +11,8 @@ import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { ActionRow, FieldSection, OptionList } from '@/components/settings/cards';
-import { TextRow, ToggleRow } from '../parts';
+import i18nList from 'i18n/i18nList';
+import { SelectRow, TextRow, ToggleRow } from '../parts';
 import OptionCard, { bindSwitch } from './OptionCard';
 
 // ==============================|| PLATFORM SETTINGS — 站点 ||============================== //
@@ -136,6 +137,25 @@ export function DisplayCard({ ctx }) {
         onChange={(v) => setField('QuotaPerUnit', v)}
         placeholder={gs('quotaPerUnit.placeholder')}
         description={gs('quotaPerUnit.description')}
+      />
+    </OptionCard>
+  );
+}
+
+// The site default language: emails to people whose language is unknown, and the home page for
+// browsers in a language the console does not have.
+export function SiteLanguageCard({ ctx }) {
+  const { t } = useTranslation();
+  const { inputs, setField } = ctx;
+  return (
+    <OptionCard ctx={ctx} id="site-language">
+      <SelectRow
+        id="DefaultLanguage"
+        label={t('settingsUi.platform.defaultLanguage.label')}
+        description={t('settingsUi.platform.defaultLanguage.description')}
+        value={inputs.DefaultLanguage || 'en_US'}
+        onChange={(v) => setField('DefaultLanguage', v)}
+        options={i18nList.map((item) => ({ value: item.lng, label: item.name }))}
       />
     </OptionCard>
   );

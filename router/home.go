@@ -4,11 +4,10 @@ import (
 	"embed"
 	"html"
 	"net/http"
-	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/common/lang"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,12 +28,10 @@ const (
 	homeDocsEnd       = "<!--/mt:docs-->"
 
 	defaultBrand = "Modeltaps"
-	// same name as the app's localStorage key; the app writes it whenever the user picks a language
-	languageCookie = "appLanguage"
 )
 
-// homeLanguages are the app's languages, first is the fallback.
-var homeLanguages = []string{"en_US", "zh_CN", "zh_HK", "ja_JP"}
+// homeLanguages are the app's languages; a visitor without a supported one gets the site default.
+var homeLanguages = lang.Supported
 
 // loadHomePages reads the prerendered pages from the embedded build. A build without them (for
 // example a web build from before the static home existed) returns nil, and `/` keeps serving the app.
@@ -60,17 +57,14 @@ func registerStaticHome(router *gin.Engine, pages map[string]string, fallback gi
 		}
 
 		query := c.Query("lang")
-		lng := normalizeLanguage(query)
+		lng := lang.Normalize(query)
 		if lng != "" {
 			// an explicit choice on the page is remembered like a choice made in the app
 			c.SetSameSite(http.SameSiteLaxMode)
-			c.SetCookie(languageCookie, lng, 365*24*3600, "/", "", false, false)
+			c.SetCookie(lang.Cookie, lng, 365*24*3600, "/", "", false, false)
 		} else {
-			cookie, _ := c.Cookie(languageCookie)
-			lng = normalizeLanguage(cookie)
-		}
-		if lng == "" {
-			lng = negotiateLanguage(c.GetHeader("Accept-Language"))
+			cookie, _ := c.Cookie(lang.Cookie)
+			lng = lang.OfRequest(cookie, c.GetHeader("Accept-Language"))
 		}
 
 		c.Header("Cache-Control", "no-cache")
@@ -121,59 +115,4 @@ func siteOrigin(c *gin.Context) string {
 		scheme = "https"
 	}
 	return scheme + "://" + c.Request.Host
-}
-
-// normalizeLanguage maps an app language code or a browser language tag onto one of homeLanguages,
-// following the app's toAppLanguage (web/src/i18n/i18n.js); "" when it is not supported.
-func normalizeLanguage(tag string) string {
-	lower := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(tag), "_", "-"))
-	switch {
-	case lower == "":
-		return ""
-	case strings.HasPrefix(lower, "zh"):
-		for _, hant := range []string{"hant", "-tw", "-hk", "-mo"} {
-			if strings.Contains(lower, hant) {
-				return "zh_HK"
-			}
-		}
-		return "zh_CN"
-	case strings.HasPrefix(lower, "ja"):
-		return "ja_JP"
-	case strings.HasPrefix(lower, "en"):
-		return "en_US"
-	}
-	return ""
-}
-
-// negotiateLanguage picks the supported language the browser ranks highest in Accept-Language,
-// falling back to English.
-func negotiateLanguage(header string) string {
-	type candidate struct {
-		lng string
-		q   float64
-	}
-	var candidates []candidate
-	for _, part := range strings.Split(header, ",") {
-		fields := strings.Split(part, ";")
-		lng := normalizeLanguage(fields[0])
-		if lng == "" {
-			continue
-		}
-		q := 1.0
-		for _, param := range fields[1:] {
-			if v, ok := strings.CutPrefix(strings.TrimSpace(param), "q="); ok {
-				if parsed, err := strconv.ParseFloat(v, 64); err == nil {
-					q = parsed
-				}
-			}
-		}
-		if q > 0 {
-			candidates = append(candidates, candidate{lng, q})
-		}
-	}
-	if len(candidates) == 0 {
-		return homeLanguages[0]
-	}
-	sort.SliceStable(candidates, func(a, b int) bool { return candidates[a].q > candidates[b].q })
-	return candidates[0].lng
 }

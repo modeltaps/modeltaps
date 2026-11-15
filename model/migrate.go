@@ -617,6 +617,7 @@ func postMigrations() []*gormigrate.Migration {
 		migrateVendorCleanup(),
 		migrateNotifyChannels(),
 		foldChannelDisableNotifyOption(),
+		migrateMailTemplateLanguages(),
 	}
 }
 

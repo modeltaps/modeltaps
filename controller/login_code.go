@@ -85,7 +85,7 @@ func SendLoginCode(c *gin.Context) {
 	}
 	code := common.GenerateVerificationCode(loginCodeLength)
 	common.RegisterVerificationCodeWithKey(email, code, common.LoginCodePurpose)
-	if err := stmp.SendVerificationCodeEmail(email, code); err != nil {
+	if err := stmp.SendVerificationCodeEmail(requestLanguage(c), email, code); err != nil {
 		// 发信失败要让用户知道，否则会一直等；邮箱明文不入日志
 		logger.SysError(fmt.Sprintf("Failed to send login verification code: user_id=%d err=%s", user.Id, err.Error()))
 		common.DeleteKey(email, common.LoginCodePurpose)

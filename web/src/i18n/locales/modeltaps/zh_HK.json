@@ -3076,6 +3076,10 @@
           "description": "額度和用量怎樣展示給用戶",
           "hint": "只影響展示，不影響計費"
         },
+        "site-language": {
+          "title": "語言",
+          "description": "郵件和首頁用的預設語言"
+        },
         "external-links": {
           "title": "外部連結",
           "description": "充值、聊天和文件的入口",
@@ -3509,12 +3513,13 @@
         "names": {
           "verification": "驗證碼",
           "password_reset": "重設密碼",
-          "quota_warning": "餘額提醒"
+          "quota_low": "餘額不足",
+          "quota_exhausted": "額度用完"
         },
         "customized": "已自訂",
         "subject": "主旨",
         "body": "內文（HTML）",
-        "bodyHint": "寫在統一郵件外框裡的 HTML，發送時替換變數",
+        "bodyHint": "寫在統一郵件外框裡的 HTML，發送時替換變數。每種語言分開寫，沒改的語言用內置文案",
         "variables": "可用變數",
         "vars": {
           "site": "站點名稱",
@@ -3522,11 +3527,13 @@
           "minutes": "驗證碼或連結的有效分鐘數",
           "user": "用戶名",
           "link": "重設或充值連結",
-          "quota": "剩餘額度",
-          "status": "額度不足 / 已用完的提示語"
+          "quota": "剩餘額度"
         },
         "reset": "恢復預設",
-        "preview": "預覽"
+        "preview": "預覽",
+        "language": "語言",
+        "siteDefault": "站點預設",
+        "builtin": "內置文案"
       },
       "messageLog": {
         "sent": "已發送",
@@ -3547,11 +3554,17 @@
           "verification": "驗證碼",
           "password_reset": "重設密碼",
           "quota_warning": "餘額提醒",
+          "quota_low": "餘額不足",
+          "quota_exhausted": "額度用完",
           "notice": "管理員通知"
         },
         "pager": "第 {{page}} / {{pages}} 頁 · 共 {{total}} 條",
         "prev": "上一頁",
         "next": "下一頁"
+      },
+      "defaultLanguage": {
+        "label": "預設語言",
+        "description": "不知道用戶用甚麼語言時，郵件用這個語言發；首頁在瀏覽器語言不受支援時也用它"
       }
     },
     "personal": {

@@ -32,6 +32,7 @@ export const PLATFORM_GROUPS = [
         'BrandIconRegistry'
       ]),
       card('display', 'form', ['DisplayInCurrencyEnabled', 'DisplayTokenStatEnabled', 'QuotaPerUnit']),
+      card('site-language', 'form', ['DefaultLanguage']),
       card('external-links', 'form', ['TopUpLink', 'ChatLink', 'DocsLink']),
       card('version-notice', 'form', ['Notice'])
     ]

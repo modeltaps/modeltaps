@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/common/lang"
 	"github.com/modeltaps/modeltaps/common/stmp"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/model"
@@ -104,6 +105,11 @@ func UpdateOption(c *gin.Context) {
 			return
 		}
 
+	case "DefaultLanguage":
+		if option.Value != "" && lang.Normalize(option.Value) != option.Value {
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "Unsupported language", nil)
+			return
+		}
 	case "MailTemplates":
 		if err := stmp.ValidateTemplates(option.Value); err != nil {
 			common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "Invalid mail templates", nil)

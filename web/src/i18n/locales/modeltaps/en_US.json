@@ -3176,6 +3176,10 @@
           "description": "How quota and usage are shown to users",
           "hint": "Affects display only, not billing"
         },
+        "site-language": {
+          "title": "Language",
+          "description": "The default language of emails and the home page"
+        },
         "external-links": {
           "title": "External links",
           "description": "Where top-up, chat and docs links point",
@@ -3611,12 +3615,13 @@
         "names": {
           "verification": "Verification code",
           "password_reset": "Password reset",
-          "quota_warning": "Quota warning"
+          "quota_low": "Quota low",
+          "quota_exhausted": "Quota used up"
         },
         "customized": "Customized",
         "subject": "Subject",
         "body": "Body (HTML)",
-        "bodyHint": "HTML inside the shared mail layout. Variables are replaced when sending",
+        "bodyHint": "HTML inside the shared mail frame; variables are filled when sent. Each language is written separately; the ones you leave alone use the built-in text",
         "variables": "Variables",
         "vars": {
           "site": "Site name",
@@ -3624,11 +3629,13 @@
           "minutes": "Minutes the code or link is valid",
           "user": "User name",
           "link": "Reset or top-up link",
-          "quota": "Remaining quota",
-          "status": "Running low / used up sentence"
+          "quota": "Remaining quota"
         },
         "reset": "Restore default",
-        "preview": "Preview"
+        "preview": "Preview",
+        "language": "Language",
+        "siteDefault": "site default",
+        "builtin": "Built-in text"
       },
       "messageLog": {
         "sent": "Sent",
@@ -3649,11 +3656,17 @@
           "verification": "Verification code",
           "password_reset": "Password reset",
           "quota_warning": "Quota warning",
+          "quota_low": "Quota low",
+          "quota_exhausted": "Quota used up",
           "notice": "Admin notice"
         },
         "pager": "Page {{page}} of {{pages}} · {{total}} in all",
         "prev": "Previous page",
         "next": "Next page"
+      },
+      "defaultLanguage": {
+        "label": "Default language",
+        "description": "Emails go out in it when a user's language is unknown; the home page uses it when the browser's language is not supported"
       }
     },
     "personal": {

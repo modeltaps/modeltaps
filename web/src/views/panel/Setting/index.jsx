@@ -6,7 +6,7 @@ import { useIsAdmin, useIsRoot } from 'utils/common';
 import useHighlightTarget from 'hooks/useHighlightTarget';
 import { useOptionSettings } from './parts';
 import { groupDescriptionKey, groupLabelKey, resolveSettingsTarget, settingsGroupUrl, tabLabelKey, visibleGroups } from './registry';
-import { BrandingCard, DisplayCard, ExternalLinksCard, ServerAddressCard, VersionNoticeCard } from './cards/SiteCards';
+import { BrandingCard, DisplayCard, ExternalLinksCard, ServerAddressCard, SiteLanguageCard, VersionNoticeCard } from './cards/SiteCards';
 import {
   AccountSystemCard,
   AdminLoginCard,
@@ -53,6 +53,7 @@ const CARD_COMPONENTS = {
   'server-address': ServerAddressCard,
   branding: BrandingCard,
   display: DisplayCard,
+  'site-language': SiteLanguageCard,
   'external-links': ExternalLinksCard,
   'version-notice': VersionNoticeCard,
   'account-system': AccountSystemCard,

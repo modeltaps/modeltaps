@@ -195,7 +195,7 @@ func references(address string) string {
 }
 
 func (s *StmpConfig) Render(to, subject, content string) error {
-	body := getDefaultTemplate(content)
+	body := getDefaultTemplate("", content)
 
 	return s.Send(to, subject, body)
 }
@@ -244,37 +244,41 @@ func SendTestEmail(s *StmpConfig, to string) error {
 	return s.Render(to, subject, fmt.Sprintf(content, html.EscapeString(config.SystemName), html.EscapeString(s.Host), s.Port))
 }
 
-// sendTemplate sends one of the user emails (mail_templates.go) through the platform's client.
-func sendTemplate(id, to string, vars map[string]string) error {
+// sendTemplate sends one of the user emails (mail_templates.go) in a language through the
+// platform's client.
+func sendTemplate(id, lng, to string, vars map[string]string) error {
 	client, err := GetSystemStmp()
 	if err != nil {
 		return err
 	}
 	client.Kind = id
-	subject, body := RenderTemplate(id, vars, nil)
+	subject, body := RenderTemplate(id, lng, vars, nil)
 	return client.Send(to, subject, body)
 }
 
-func SendPasswordResetEmail(userName, email, link string) error {
-	return sendTemplate(TemplatePasswordReset, email, map[string]string{
+// SendPasswordResetEmail sends the password reset email in lng (lang.OfRequest, lang.Pick).
+func SendPasswordResetEmail(lng, userName, email, link string) error {
+	return sendTemplate(TemplatePasswordReset, lng, email, map[string]string{
 		"user": userName, "link": link, "minutes": strconv.Itoa(common.VerificationValidMinutes),
 	})
 }
 
-func SendVerificationCodeEmail(email, code string) error {
-	return sendTemplate(TemplateVerification, email, map[string]string{
+// SendVerificationCodeEmail sends a verification code in lng.
+func SendVerificationCodeEmail(lng, email, code string) error {
+	return sendTemplate(TemplateVerification, lng, email, map[string]string{
 		"code": code, "minutes": strconv.Itoa(common.VerificationValidMinutes),
 	})
 }
 
-func SendQuotaWarningCodeEmail(userName, email string, quota int, noMoreQuota bool) error {
-	status := "Your quota is running low"
+// SendQuotaWarningEmail tells a user in lng that their quota is running low, or used up.
+func SendQuotaWarningEmail(lng, userName, email string, quota int, noMoreQuota bool) error {
+	id := TemplateQuotaLow
 	if noMoreQuota {
-		status = "Your quota has been used up"
+		id = TemplateQuotaExhausted
 	}
 	topUpLink := fmt.Sprintf("%s/panel/billing?topup=1", strings.TrimSuffix(config.ServerAddress, "/"))
-	return sendTemplate(TemplateQuotaWarning, email, map[string]string{
-		"user": userName, "quota": strconv.Itoa(quota), "status": status, "link": topUpLink,
+	return sendTemplate(id, lng, email, map[string]string{
+		"user": userName, "quota": strconv.Itoa(quota), "link": topUpLink,
 	})
 }
 

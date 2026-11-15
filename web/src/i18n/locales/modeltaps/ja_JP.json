@@ -3072,6 +3072,10 @@
           "description": "クォータと使用量をユーザーにどう見せるか",
           "hint": "表示だけに影響し、課金には影響しません"
         },
+        "site-language": {
+          "title": "言語",
+          "description": "メールとホームページの既定の言語"
+        },
         "external-links": {
           "title": "外部リンク",
           "description": "チャージ、チャット、ドキュメントへのリンク先",
@@ -3505,12 +3509,13 @@
         "names": {
           "verification": "認証コード",
           "password_reset": "パスワード再設定",
-          "quota_warning": "残高警告"
+          "quota_low": "残高不足",
+          "quota_exhausted": "残高切れ"
         },
         "customized": "カスタマイズ済み",
         "subject": "件名",
         "body": "本文（HTML）",
-        "bodyHint": "共通レイアウトの中に入る HTML。送信時に変数が置き換えられます",
+        "bodyHint": "共通のメール枠に入る HTML です。送信時に変数が置き換わります。言語ごとに書き分け、変更しない言語は組み込みの文面を使います",
         "variables": "変数",
         "vars": {
           "site": "サイト名",
@@ -3518,11 +3523,13 @@
           "minutes": "コードやリンクの有効時間（分）",
           "user": "ユーザー名",
           "link": "再設定またはチャージのリンク",
-          "quota": "残りクォータ",
-          "status": "残り少ない / 使い切った旨の文"
+          "quota": "残りクォータ"
         },
         "reset": "既定に戻す",
-        "preview": "プレビュー"
+        "preview": "プレビュー",
+        "language": "言語",
+        "siteDefault": "サイト既定",
+        "builtin": "組み込みの文面"
       },
       "messageLog": {
         "sent": "送信済み",
@@ -3543,11 +3550,17 @@
           "verification": "認証コード",
           "password_reset": "パスワード再設定",
           "quota_warning": "残高警告",
+          "quota_low": "残高不足",
+          "quota_exhausted": "残高切れ",
           "notice": "管理者通知"
         },
         "pager": "{{page}} / {{pages}} ページ · 全 {{total}} 件",
         "prev": "前のページ",
         "next": "次のページ"
+      },
+      "defaultLanguage": {
+        "label": "既定の言語",
+        "description": "ユーザーの言語がわからないとき、メールはこの言語で送られます。ブラウザーの言語に対応していないときはホームページもこの言語になります"
       }
     },
     "personal": {

@@ -3076,6 +3076,10 @@
           "description": "额度和用量怎么展示给用户",
           "hint": "只影响展示，不影响计费"
         },
+        "site-language": {
+          "title": "语言",
+          "description": "邮件和首页用的默认语言"
+        },
         "external-links": {
           "title": "外部链接",
           "description": "充值、聊天和文档的入口",
@@ -3509,12 +3513,13 @@
         "names": {
           "verification": "验证码",
           "password_reset": "重置密码",
-          "quota_warning": "余额提醒"
+          "quota_low": "余额不足",
+          "quota_exhausted": "额度用完"
         },
         "customized": "已自定义",
         "subject": "主题",
         "body": "正文（HTML）",
-        "bodyHint": "写在统一邮件外框里的 HTML，发送时替换变量",
+        "bodyHint": "写在统一邮件外框里的 HTML，发送时替换变量。每种语言分开写，没改的语言用内置文案",
         "variables": "可用变量",
         "vars": {
           "site": "站点名称",
@@ -3522,11 +3527,13 @@
           "minutes": "验证码或链接的有效分钟数",
           "user": "用户名",
           "link": "重置或充值链接",
-          "quota": "剩余额度",
-          "status": "额度不足 / 已用完的提示语"
+          "quota": "剩余额度"
         },
         "reset": "恢复默认",
-        "preview": "预览"
+        "preview": "预览",
+        "language": "语言",
+        "siteDefault": "站点默认",
+        "builtin": "内置文案"
       },
       "messageLog": {
         "sent": "已发送",
@@ -3547,11 +3554,17 @@
           "verification": "验证码",
           "password_reset": "重置密码",
           "quota_warning": "余额提醒",
+          "quota_low": "余额不足",
+          "quota_exhausted": "额度用完",
           "notice": "管理员通知"
         },
         "pager": "第 {{page}} / {{pages}} 页 · 共 {{total}} 条",
         "prev": "上一页",
         "next": "下一页"
+      },
+      "defaultLanguage": {
+        "label": "默认语言",
+        "description": "不知道用户用什么语言时，邮件用这个语言发；首页在浏览器语言不受支持时也用它"
       }
     },
     "personal": {

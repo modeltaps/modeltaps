@@ -8,6 +8,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/database"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/redis"
+	"github.com/modeltaps/modeltaps/common/lang"
 	"github.com/modeltaps/modeltaps/common/stmp"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"os"
@@ -783,7 +784,9 @@ func sendQuotaWarningEmail(userId int, userQuota int, noMoreQuota bool) {
 		userName = user.Username
 	}
 
-	err := stmp.SendQuotaWarningCodeEmail(userName, string(user.Email), userQuota, noMoreQuota)
+	// No request here (the warning comes with an API call): the language the user picked in the
+	// console, else the site default.
+	err := stmp.SendQuotaWarningEmail(lang.Pick(user.Setting.Data().Language), userName, string(user.Email), userQuota, noMoreQuota)
 
 	if err != nil {
 		logger.SysError("failed to send email" + err.Error())

@@ -6,6 +6,7 @@ import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
+	"github.com/modeltaps/modeltaps/common/lang"
 	"github.com/modeltaps/modeltaps/common/stmp"
 	"github.com/modeltaps/modeltaps/common/telegram"
 	"github.com/modeltaps/modeltaps/model"
@@ -176,7 +177,7 @@ func SendEmailVerification(c *gin.Context) {
 	}
 	code := common.GenerateVerificationCode(6)
 	common.RegisterVerificationCodeWithKey(email, code, common.EmailVerificationPurpose)
-	err := stmp.SendVerificationCodeEmail(email, code)
+	err := stmp.SendVerificationCodeEmail(requestLanguage(c), email, code)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, emailSendFailed(err))
 		return
@@ -227,7 +228,7 @@ func SendPasswordResetEmail(c *gin.Context) {
 	code := common.GenerateVerificationCode(0)
 	common.RegisterVerificationCodeWithKey(email, code, common.PasswordResetPurpose)
 	link := fmt.Sprintf("%s/user/reset?email=%s&token=%s", config.ServerAddress, email, code)
-	err := stmp.SendPasswordResetEmail(userName, email, link)
+	err := stmp.SendPasswordResetEmail(requestLanguage(c), userName, email, link)
 
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, emailSendFailed(err))
@@ -276,4 +277,11 @@ func ResetPassword(c *gin.Context) {
 		"message": "",
 		"data":    password,
 	})
+}
+
+// requestLanguage is the language of emails sent for this request: the language picked in the
+// console (its cookie), else the browser's, else the site default.
+func requestLanguage(c *gin.Context) string {
+	cookie, _ := c.Cookie(lang.Cookie)
+	return lang.OfRequest(cookie, c.GetHeader("Accept-Language"))
 }

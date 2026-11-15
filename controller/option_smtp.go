@@ -7,6 +7,7 @@ import (
 
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/common/lang"
 	"github.com/modeltaps/modeltaps/common/stmp"
 
 	"github.com/gin-gonic/gin"
@@ -120,6 +121,9 @@ func GetMailSettings(c *gin.Context) {
 		"managed":    managed,
 		"configured": stmp.SystemStmpConfigured(),
 		"templates":  stmp.TemplateSpecs,
+		"languages":  lang.Supported,
+		// the site default: emails to people whose language is unknown go out in it
+		"default_language": lang.Default(),
 	}})
 }
 
@@ -127,6 +131,7 @@ func GetMailSettings(c *gin.Context) {
 func PreviewMailTemplate(c *gin.Context) {
 	var req struct {
 		Template string `json:"template"`
+		Language string `json:"language"`
 		Subject  string `json:"subject"`
 		Body     string `json:"body"`
 	}
@@ -134,7 +139,7 @@ func PreviewMailTemplate(c *gin.Context) {
 		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "Invalid parameters", nil)
 		return
 	}
-	subject, body := stmp.PreviewTemplate(req.Template, stmp.MailTemplate{Subject: req.Subject, Body: req.Body})
+	subject, body := stmp.PreviewTemplate(req.Template, req.Language, stmp.MailTemplate{Subject: req.Subject, Body: req.Body})
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": gin.H{"subject": subject, "html": body}})
 }
 
