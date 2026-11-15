@@ -292,6 +292,7 @@ export default function Redemption() {
       <RedemptionTable
         redemptions={redemptions}
         columnVisibility={columns.visibility}
+        columnPicker={<ColumnPicker columns={columns} />}
         rtf={rtf}
         openId={route.openId}
         order={order}
@@ -368,7 +369,6 @@ export default function Redemption() {
                       className="h-8 pl-8"
                     />
                   </div>
-                  <ColumnPicker columns={columns} />
                 </div>
                 {selection.count > 0 && (
                   <BatchBar

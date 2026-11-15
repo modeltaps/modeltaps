@@ -609,7 +609,6 @@ export default function Token() {
                         className="h-8 pl-8"
                       />
                     </div>
-                    <ColumnPicker columns={columns} />
                   </div>
 
                   {/* Condition bar, always present so the conditions are discoverable; selected rows
@@ -681,6 +680,7 @@ export default function Token() {
                   orderBy={orderBy}
                   onSort={handleSort}
                   columnVisibility={columnVisibility}
+                  columnPicker={<ColumnPicker columns={columns} />}
                   quotaResetTimezone={siteInfo?.quota_reset_timezone}
                   quotaResetWeekStart={siteInfo?.quota_reset_week_start}
                 />

@@ -216,7 +216,11 @@ export default function UserGroup() {
             <TableRow key={hg.id} className="hover:bg-transparent">
               {hg.headers.map((h) => (
                 <TableHead key={h.id} className={cn('whitespace-nowrap', h.column.columnDef.meta?.className)}>
-                  {flexRender(h.column.columnDef.header, h.getContext())}
+                  {h.column.id === 'action' ? (
+                    <ColumnPicker columns={columnState} />
+                  ) : (
+                    flexRender(h.column.columnDef.header, h.getContext())
+                  )}
                 </TableHead>
               ))}
             </TableRow>
@@ -276,12 +280,6 @@ export default function UserGroup() {
         />
       ) : (
         <>
-          {!narrow && (
-            <div className="flex justify-end">
-              <ColumnPicker columns={columnState} />
-            </div>
-          )}
-
           <Card>
             {body}
             <div className="border-t border-border">

@@ -254,7 +254,7 @@ export default function PaymentOrder() {
   let body;
   if (!loaded) {
     body = narrow ? <ListSkeleton layout="list" rows={6} /> : <ListSkeleton cells={[96, 160, 64, 80, 64]} checkbox={false} />;
-  } else if (orderList.length === 0) {
+  } else if (orderList.length === 0 && narrow) {
     body = <ListEmptyState title={t('common.noData', { defaultValue: 'No data' })} />;
   } else if (narrow) {
     // Phone rows (56px): order number and amount on top; user · time and the status below.
@@ -292,9 +292,20 @@ export default function PaymentOrder() {
                 {head[c.id] || t(c.labelKey)}
               </TableHead>
             ))}
+            <TableHead className="w-[1%] py-0 pl-0 pr-2 text-right">
+              <ColumnPicker columns={columns} />
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
+          {/* The table keeps its header when empty so the column picker stays reachable. */}
+          {orderList.length === 0 && (
+            <TableRow className="hover:bg-transparent">
+              <TableCell colSpan={visible.length + 1} className="h-24 text-center text-sm text-muted-foreground">
+                {t('common.noData', { defaultValue: 'No data' })}
+              </TableCell>
+            </TableRow>
+          )}
           {orderList.map((row) => (
             <TableRow
               key={row.id}
@@ -305,6 +316,7 @@ export default function PaymentOrder() {
               {visible.map((c) => (
                 <Fragment key={c.id}>{cell[c.id](row)}</Fragment>
               ))}
+              <TableCell />
             </TableRow>
           ))}
         </TableBody>
@@ -341,7 +353,6 @@ export default function PaymentOrder() {
         <div className="min-w-0 flex-1">
           <StatusSegments chips={narrow} value={status} onChange={changeStatus} options={segmentOptions} counts={statusCounts} />
         </div>
-        {!narrow && <ColumnPicker columns={columns} />}
       </div>
 
       {/* 全宽 chips 容器(chips/「+」/Clear);仅在有筛选条件时渲染。 */}

@@ -581,8 +581,8 @@ export default function ProviderPane({
                   <HeadLabel label={t('channels.table.enabled')} hint={t('channels.head.enabled')} />
                 </th>
               )}
-              <th>
-                <span className="sr-only">{t('channels.table.actions')}</span>
+              <th className="!px-2 text-right">
+                <ColumnPicker columns={columns} className="size-[30px] rounded-lg" />
               </th>
             </tr>
           </thead>
@@ -998,7 +998,6 @@ export default function ProviderPane({
                   ))}
                 </SelectContent>
               </Select>
-              <ColumnPicker columns={columns} />
             </div>
             {selectedRows.length > 0 && (
               <ChannelBatchBar selected={selectedRows} onClear={() => setSelectedIds(new Set())} batch={batch} busy={batchBusy} />

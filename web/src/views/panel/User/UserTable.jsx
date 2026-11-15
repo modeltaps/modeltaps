@@ -83,7 +83,8 @@ export default function UserTable({
   order,
   orderBy,
   onSort,
-  manageUser
+  manageUser,
+  columnPicker = null
 }) {
   const { t, i18n } = useTranslation();
   const rtfLocale = (i18n.language || 'zh_CN').replace('_', '-');
@@ -192,7 +193,8 @@ export default function UserTable({
           <TableRow key={hg.id} className="hover:bg-transparent">
             {hg.headers.map((h) => {
               const sortKey = h.column.columnDef.meta?.sortable;
-              const label = flexRender(h.column.columnDef.header, h.getContext());
+              const label =
+                h.column.id === 'actions' && columnPicker ? columnPicker : flexRender(h.column.columnDef.header, h.getContext());
               return (
                 <TableHead key={h.id} className={cn('whitespace-nowrap', h.column.columnDef.meta?.className)}>
                   {sortKey ? (
@@ -237,6 +239,7 @@ export default function UserTable({
 }
 
 UserTable.propTypes = {
+  columnPicker: PropTypes.node,
   users: PropTypes.array.isRequired,
   columnVisibility: PropTypes.object.isRequired,
   selectedIds: PropTypes.object.isRequired,

@@ -191,7 +191,6 @@ export default function Task({ platform }) {
           t={t}
         />
         <TimeRangeSelect value={timeRange} preset={timePreset} onApply={handleApplyRange} t={t} locale={i18n.language} />
-        {layout === 'table' && <ColumnPicker columns={columnState} />}
       </PageActions>
 
       {/* 标题行下方:OpenRouter 式全宽输入框容器(chips/「+」/Clear);仅在有筛选条件时渲染。 */}
@@ -220,6 +219,7 @@ export default function Task({ platform }) {
             onRowDetail={setDetailItem}
             searching={searching}
             columnVisibility={columnState.visibility}
+            columnPicker={<ColumnPicker columns={columnState} />}
             layout={layout}
           />
           <div className="border-t border-border">

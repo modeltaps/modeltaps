@@ -128,9 +128,12 @@ export default function LogTable({
   onRowDetail,
   searching,
   columnVisibility,
+  columnPicker = null,
   emptyInfo,
   layout = 'table'
 }) {
+  const hasPicker = !!columnPicker;
+
   const columns = useMemo(() => {
     const cols = [
       {
@@ -311,13 +314,22 @@ export default function LogTable({
       header: t('logPage.sourceIp'),
       cell: (i) => (i.source_ip ? <span className="font-mono tabular-nums">{i.source_ip}</span> : '')
     });
-    return cols.map((c) => ({
+    const defs = cols.map((c) => ({
       id: c.id,
       header: () => c.header,
       cell: ({ row }) => c.cell(row.original),
       meta: { sortable: c.sortable, className: c.className }
     }));
-  }, [t, userIsAdmin, isOrgContext, userGroup]);
+    if (hasPicker) {
+      defs.push({
+        id: 'column_picker',
+        header: () => null,
+        cell: () => null,
+        meta: { className: 'w-[1%] !py-0 !pl-0 !pr-2 text-right' }
+      });
+    }
+    return defs;
+  }, [t, userIsAdmin, isOrgContext, userGroup, hasPicker]);
 
   const table = useTable({
     features: appTableFeatures,
@@ -357,9 +369,13 @@ export default function LogTable({
                       )}
                       onClick={() => onSort(h.column.id)}
                     >
-                      {flexRender(h.column.columnDef.header, h.getContext())}
+                      {h.column.id === 'column_picker' && columnPicker
+                        ? columnPicker
+                        : flexRender(h.column.columnDef.header, h.getContext())}
                       {sortIcon(h.column.id)}
                     </button>
+                  ) : h.column.id === 'column_picker' && columnPicker ? (
+                    columnPicker
                   ) : (
                     flexRender(h.column.columnDef.header, h.getContext())
                   )}
@@ -458,6 +474,7 @@ LogTable.propTypes = {
   onRowDetail: PropTypes.func.isRequired,
   searching: PropTypes.bool,
   columnVisibility: PropTypes.object,
+  columnPicker: PropTypes.node,
   emptyInfo: PropTypes.node,
   layout: PropTypes.oneOf(['table', 'list'])
 };

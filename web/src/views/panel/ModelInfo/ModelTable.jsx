@@ -345,7 +345,8 @@ export default function ModelTable({
   onToggleHidden,
   onOpen,
   onDeleteCatalog,
-  onDeletePrice
+  onDeletePrice,
+  columnPicker = null
 }) {
   const { t } = useTranslation();
 
@@ -530,7 +531,9 @@ export default function ModelTable({
             <TableRow key={hg.id} className="hover:bg-transparent">
               {hg.headers.map((header) => (
                 <TableHead key={header.id} className={cn('whitespace-nowrap', header.column.columnDef.meta?.className)}>
-                  {flexRender(header.column.columnDef.header, header.getContext())}
+                  {header.column.id === 'actions' && columnPicker
+                    ? columnPicker
+                    : flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               ))}
             </TableRow>
@@ -558,6 +561,7 @@ export default function ModelTable({
 }
 
 ModelTable.propTypes = {
+  columnPicker: PropTypes.node,
   items: PropTypes.array.isRequired,
   vendors: PropTypes.object,
   unit: PropTypes.string,

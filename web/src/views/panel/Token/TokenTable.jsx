@@ -388,6 +388,7 @@ export default function TokenTable({
   orderBy,
   onSort,
   columnVisibility = {},
+  columnPicker = null,
   quotaResetTimezone,
   quotaResetWeekStart
 }) {
@@ -675,9 +676,13 @@ export default function TokenTable({
                       className="group/sort inline-flex items-center gap-1 hover:text-foreground"
                       onClick={() => onSort(header.column.id)}
                     >
-                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.column.id === 'actions' && columnPicker
+                        ? columnPicker
+                        : flexRender(header.column.columnDef.header, header.getContext())}
                       <SortIcon id={header.column.id} />
                     </button>
+                  ) : header.column.id === 'actions' && columnPicker ? (
+                    columnPicker
                   ) : (
                     flexRender(header.column.columnDef.header, header.getContext())
                   )}

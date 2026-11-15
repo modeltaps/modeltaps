@@ -124,7 +124,20 @@ function ImageCell({ t, item }) {
 }
 ImageCell.propTypes = { t: PropTypes.func, item: PropTypes.object };
 
-export default function MidjourneyTable({ t, data, userIsAdmin, order, orderBy, onSort, searching, columnVisibility, layout = 'table' }) {
+export default function MidjourneyTable({
+  t,
+  data,
+  userIsAdmin,
+  order,
+  orderBy,
+  onSort,
+  searching,
+  columnVisibility,
+  columnPicker = null,
+  layout = 'table'
+}) {
+  const hasPicker = !!columnPicker;
+
   const columns = useMemo(() => {
     const cells = {
       mj_id: (i) => <span className="font-mono text-xs">{i.mj_id}</span>,
@@ -147,23 +160,30 @@ export default function MidjourneyTable({ t, data, userIsAdmin, order, orderBy, 
     };
     const sortable = new Set(['mj_id', 'submit_time', 'channel_id', 'user_id', 'action', 'status', 'code']);
     const right = new Set(['progress', 'time', 'quota']);
-    return MJ_COLUMNS.filter((c) => !c.adminOnly || userIsAdmin).map((c) => ({
+    const cols = MJ_COLUMNS.filter((c) => !c.adminOnly || userIsAdmin).map((c) => ({
       id: c.id,
       header: () => t(c.labelKey),
       cell: ({ row }) => cells[c.id](row.original),
       meta: { sortable: sortable.has(c.id), className: right.has(c.id) ? 'text-right' : undefined }
     }));
-  }, [t, userIsAdmin]);
+    if (hasPicker) {
+      cols.push({
+        id: 'column_picker',
+        header: () => null,
+        cell: () => null,
+        meta: { className: 'w-[1%] !py-0 !pl-0 !pr-2 text-right' }
+      });
+    }
+    return cols;
+  }, [t, userIsAdmin, hasPicker]);
 
   const table = useTable({ features: appTableFeatures, data: data || [], columns, manualSorting: true, state: { columnVisibility } });
   const rows = data || [];
 
-  if (rows.length === 0) {
-    return (
-      <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-        {searching ? t('logPage.searching') : t('midjourneyPage.emptyInfo', { defaultValue: 'No records found' })}
-      </p>
-    );
+  // The table keeps its header when empty so the column picker stays reachable.
+  const emptyText = searching ? t('logPage.searching') : t('midjourneyPage.emptyInfo', { defaultValue: 'No records found' });
+  if (rows.length === 0 && layout === 'list') {
+    return <p className="px-4 py-10 text-center text-sm text-muted-foreground">{emptyText}</p>;
   }
 
   if (layout === 'list') {
@@ -213,9 +233,11 @@ export default function MidjourneyTable({ t, data, userIsAdmin, order, orderBy, 
                     )}
                     onClick={() => onSort(h.column.id)}
                   >
-                    {flexRender(h.column.columnDef.header, h.getContext())}
+                    {h.column.id === 'column_picker' && columnPicker ? columnPicker : flexRender(h.column.columnDef.header, h.getContext())}
                     {sortIcon(h.column.id)}
                   </button>
+                ) : h.column.id === 'column_picker' && columnPicker ? (
+                  columnPicker
                 ) : (
                   flexRender(h.column.columnDef.header, h.getContext())
                 )}
@@ -225,6 +247,13 @@ export default function MidjourneyTable({ t, data, userIsAdmin, order, orderBy, 
         ))}
       </TableHeader>
       <TableBody>
+        {rows.length === 0 && (
+          <TableRow className="hover:bg-transparent">
+            <TableCell colSpan={table.getVisibleLeafColumns().length || 1} className="h-24 text-center text-sm text-muted-foreground">
+              {emptyText}
+            </TableCell>
+          </TableRow>
+        )}
         {table.getRowModel().rows.map((row) => (
           <TableRow key={row.id}>
             {row.getVisibleCells().map((cell) => (
@@ -248,5 +277,6 @@ MidjourneyTable.propTypes = {
   onSort: PropTypes.func.isRequired,
   searching: PropTypes.bool,
   columnVisibility: PropTypes.object,
+  columnPicker: PropTypes.node,
   layout: PropTypes.oneOf(['table', 'list'])
 };

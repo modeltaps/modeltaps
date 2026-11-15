@@ -1,25 +1,16 @@
-import PropTypes from 'prop-types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
-import { Check, Columns3, Download, Loader2, Minus, MoreVertical, RotateCcw, Search } from 'lucide-react';
+import { Download, Loader2, MoreVertical, RotateCcw, Search } from 'lucide-react';
 
 import PageActions from '@/components/chrome/PageActions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
 import { API } from 'utils/api';
 import { showError, showSuccess, useIsAdmin } from 'utils/common';
 import { getPageSize, savePageSize } from 'constants';
@@ -30,7 +21,7 @@ import LogIdLookup from './LogIdLookup';
 import TimeRangeSelect, { detectPreset } from '@/components/TimeRangeSelect';
 import LogHistogram from './LogHistogram';
 import LogTable from './LogTable';
-import { ListFooter, useListLayout } from '@/components/list-page';
+import { ColumnPicker, ListFooter, useColumnVisibility, useListLayout } from '@/components/list-page';
 import LogDetailDialog from './LogDetailDialog';
 import { exportLogs } from './logExport';
 
@@ -82,72 +73,6 @@ const LOG_COLUMNS = [
 // v2: fewer columns by default; the old key is dropped.
 const COLUMN_VISIBILITY_STORAGE_KEY = 'log-column-visibility-v2';
 const LEGACY_COLUMN_VISIBILITY_KEYS = ['log-column-visibility'];
-
-const buildDefaultColumnVisibility = () => Object.fromEntries(LOG_COLUMNS.map((c) => [c.id, !c.defaultHidden]));
-
-// localStorage persistence is an addition over v1 (which kept the selection in
-// memory only); unknown/missing keys fall back to the visible default.
-const loadColumnVisibility = () => {
-  const defaults = buildDefaultColumnVisibility();
-  try {
-    LEGACY_COLUMN_VISIBILITY_KEYS.forEach((k) => localStorage.removeItem(k));
-    const saved = JSON.parse(localStorage.getItem(COLUMN_VISIBILITY_STORAGE_KEY));
-    if (!saved || typeof saved !== 'object') return defaults;
-    for (const id of Object.keys(defaults)) {
-      if (typeof saved[id] === 'boolean') defaults[id] = saved[id];
-    }
-  } catch {
-    /* corrupted storage -> defaults */
-  }
-  return defaults;
-};
-
-// Menu row with a checkbox glyph. A plain DropdownMenuItem closes the menu on
-// click, which breaks multi-toggle; the glyph is a span (not the Checkbox
-// component) to avoid nesting a button inside a button.
-function ColumnToggleItem({ checked, indeterminate = false, label, onToggle }) {
-  return (
-    <button
-      type="button"
-      role="menuitemcheckbox"
-      aria-checked={indeterminate ? 'mixed' : checked}
-      onClick={onToggle}
-      className="flex w-full cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors hover:bg-muted focus:bg-muted"
-    >
-      <span
-        className={cn(
-          'flex size-4 shrink-0 items-center justify-center rounded-sm border border-input',
-          (checked || indeterminate) && 'border-primary bg-primary text-primary-foreground'
-        )}
-      >
-        {indeterminate ? <Minus className="size-3.5" /> : checked ? <Check className="size-3.5" /> : null}
-      </span>
-      <span className="truncate">{label}</span>
-    </button>
-  );
-}
-
-ColumnToggleItem.propTypes = {
-  checked: PropTypes.bool,
-  indeterminate: PropTypes.bool,
-  label: PropTypes.node,
-  onToggle: PropTypes.func.isRequired
-};
-
-// ↑/↓/Home/End roving focus for the column menu items. The custom DropdownMenu
-// has no built-in arrow-key navigation; items stay plain buttons so mouse/Tab
-// behavior is unchanged.
-const focusColumnMenuItem = (root, key) => {
-  const items = Array.from(root?.querySelectorAll('[role="menuitemcheckbox"]') ?? []);
-  if (!items.length) return;
-  const idx = items.indexOf(document.activeElement);
-  let next;
-  if (key === 'Home') next = 0;
-  else if (key === 'End') next = items.length - 1;
-  else if (key === 'ArrowDown') next = idx < 0 ? 0 : (idx + 1) % items.length;
-  else next = idx < 0 ? items.length - 1 : (idx - 1 + items.length) % items.length;
-  items[next].focus();
-};
 
 export default function Log() {
   const { t, i18n } = useTranslation();
@@ -212,28 +137,18 @@ export default function Log() {
   const [searching, setSearching] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [detailItem, setDetailItem] = useState(null);
-  const [columnVisibility, setColumnVisibility] = useState(loadColumnVisibility);
   // ID 查找弹窗开关(FilterBar 菜单里的附加入口)。
   const [idLookupOpen, setIdLookupOpen] = useState(false);
-  const columnMenuRef = useRef(null);
 
   // FilterBar 附加入口(非 chip):ID 查找。点击打开弹窗。
   const filterSpecials = useMemo(() => [{ key: 'id_lookup', labelKey: 'logIdLookup.menuLabel', icon: Search }], []);
 
   const dataReqIdRef = useRef(0);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(COLUMN_VISIBILITY_STORAGE_KEY, JSON.stringify(columnVisibility));
-    } catch {
-      /* storage unavailable -> keep in-memory only */
-    }
-  }, [columnVisibility]);
-
   // Columns the current user may toggle; admin-only columns are excluded from
   // the menu (and from the table) for regular users, org-only columns appear
   // only in an organization context (and vice versa for hideInOrg).
-  const menuColumns = useMemo(
+  const availableColumnIds = useMemo(
     () =>
       LOG_COLUMNS.filter(
         (c) =>
@@ -241,22 +156,16 @@ export default function Log() {
           (!c.orgOnly || isOrgContext) &&
           !(c.hideInOrg && isOrgContext) &&
           (!c.logIOOnly || canViewLogIO)
-      ),
+      ).map((c) => c.id),
     [effectiveAdmin, isOrgContext, canViewLogIO]
   );
-  const allMenuColumnsVisible = menuColumns.every((c) => columnVisibility[c.id]);
-  const someMenuColumnsVisible = menuColumns.some((c) => columnVisibility[c.id]);
-
-  const toggleColumn = (id) => setColumnVisibility((v) => ({ ...v, [id]: !v[id] }));
-
-  const toggleAllColumns = () =>
-    setColumnVisibility((v) => {
-      const next = { ...v };
-      menuColumns.forEach((c) => {
-        next[c.id] = !allMenuColumnsVisible;
-      });
-      return next;
-    });
+  const columnState = useColumnVisibility({
+    storageKey: COLUMN_VISIBILITY_STORAGE_KEY,
+    legacyKeys: LEGACY_COLUMN_VISIBILITY_KEYS,
+    columns: LOG_COLUMNS,
+    available: availableColumnIds
+  });
+  const columnVisibility = columnState.visibility;
 
   // 组织上下文隐藏 source_ip(站点内部信息),其余沿用用户保存的列偏好。
   const effectiveColumnVisibility = useMemo(() => {
@@ -545,54 +454,6 @@ export default function Log() {
           t={t}
           locale={i18n.language}
         />
-        {/* 列选择:独立图标按钮,点开列勾选菜单(含 localStorage 持久化)。 */}
-        <DropdownMenu>
-          <TooltipProvider delayDuration={150}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    aria-label={t('logPage.selectColumns')}
-                    onKeyDown={(e) => {
-                      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && columnMenuRef.current) {
-                        e.preventDefault();
-                        focusColumnMenuItem(columnMenuRef.current, e.key);
-                      }
-                    }}
-                  >
-                    <Columns3 className="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-              </TooltipTrigger>
-              <TooltipContent>{t('logPage.selectColumns')}</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <DropdownMenuContent
-            ref={columnMenuRef}
-            align="end"
-            className="max-h-[70vh] w-52 overflow-y-auto"
-            onKeyDown={(e) => {
-              if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Home' || e.key === 'End') {
-                e.preventDefault();
-                focusColumnMenuItem(e.currentTarget, e.key);
-              }
-            }}
-          >
-            <DropdownMenuLabel>{t('logPage.selectColumns')}</DropdownMenuLabel>
-            <ColumnToggleItem
-              checked={allMenuColumnsVisible}
-              indeterminate={!allMenuColumnsVisible && someMenuColumnsVisible}
-              label={t('logPage.columnSelectAll')}
-              onToggle={toggleAllColumns}
-            />
-            <DropdownMenuSeparator />
-            {menuColumns.map((c) => (
-              <ColumnToggleItem key={c.id} checked={!!columnVisibility[c.id]} label={t(c.labelKey)} onToggle={() => toggleColumn(c.id)} />
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
         {/* 更多:导出 CSV。 */}
         <DropdownMenu>
           <TooltipProvider delayDuration={150}>
@@ -650,6 +511,7 @@ export default function Log() {
             onRowDetail={setDetailItem}
             searching={searching}
             columnVisibility={effectiveColumnVisibility}
+            columnPicker={<ColumnPicker columns={columnState} />}
             layout={layout}
           />
           <div className="border-t border-border">

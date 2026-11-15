@@ -5,6 +5,7 @@ import { Check, Columns3, Minus } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -115,32 +116,39 @@ const focusItem = (root, key) => {
   items[next].focus();
 };
 
-// The "Columns n/m" button and its menu; pass the object from useColumnVisibility as `columns`.
-export default function ColumnPicker({ columns }) {
+// The column menu trigger: an icon button that sits in the table's last header cell, right above
+// the row ⋯ menus, so the control lives with the columns it changes. Pass the object from
+// useColumnVisibility as `columns`. The tooltip and accessible name carry the "n/m" count.
+export default function ColumnPicker({ columns, className }) {
   const { t } = useTranslation();
   const menuRef = useRef(null);
   const { visibility, menuColumns, allVisible, someVisible, visibleCount, toggle, toggleAll, reset } = columns;
+  const label = `${t('listPage.selectColumns')} ${visibleCount}/${menuColumns.length}`;
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 gap-1.5"
-          onKeyDown={(e) => {
-            if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && menuRef.current) {
-              e.preventDefault();
-              focusItem(menuRef.current, e.key);
-            }
-          }}
-        >
-          <Columns3 className="size-4" />
-          {t('listPage.columns')}
-          <span className="text-xs tabular-nums text-muted-foreground">
-            {visibleCount}/{menuColumns.length}
-          </span>
-        </Button>
-      </DropdownMenuTrigger>
+      <TooltipProvider delayDuration={150}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={label}
+                className={cn('size-8 text-muted-foreground hover:text-foreground data-[state=open]:bg-muted', className)}
+                onKeyDown={(e) => {
+                  if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && menuRef.current) {
+                    e.preventDefault();
+                    focusItem(menuRef.current, e.key);
+                  }
+                }}
+              >
+                <Columns3 className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>{label}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <DropdownMenuContent
         ref={menuRef}
         align="end"
@@ -152,7 +160,12 @@ export default function ColumnPicker({ columns }) {
           }
         }}
       >
-        <DropdownMenuLabel>{t('listPage.selectColumns')}</DropdownMenuLabel>
+        <DropdownMenuLabel className="flex items-center justify-between">
+          {t('listPage.selectColumns')}
+          <span className="text-xs font-normal tabular-nums text-muted-foreground">
+            {visibleCount}/{menuColumns.length}
+          </span>
+        </DropdownMenuLabel>
         <ColumnToggleItem
           checked={allVisible}
           indeterminate={!allVisible && someVisible}
@@ -170,4 +183,4 @@ export default function ColumnPicker({ columns }) {
   );
 }
 
-ColumnPicker.propTypes = { columns: PropTypes.object.isRequired };
+ColumnPicker.propTypes = { columns: PropTypes.object.isRequired, className: PropTypes.string };

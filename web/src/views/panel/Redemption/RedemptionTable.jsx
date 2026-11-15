@@ -147,7 +147,8 @@ export default function RedemptionTable({
   selectedIds,
   onToggleSelect,
   onToggleSelectAll,
-  actions
+  actions,
+  columnPicker = null
 }) {
   const { t } = useTranslation();
   const allSelected = redemptions.length > 0 && redemptions.every((r) => selectedIds.has(r.id));
@@ -263,7 +264,8 @@ export default function RedemptionTable({
           <TableRow key={hg.id} className="hover:bg-transparent">
             {hg.headers.map((h) => {
               const sortKey = SORTABLE[h.column.id];
-              const label = flexRender(h.column.columnDef.header, h.getContext());
+              const label =
+                h.column.id === 'actions' && columnPicker ? columnPicker : flexRender(h.column.columnDef.header, h.getContext());
               return (
                 <TableHead key={h.id} className={cn('whitespace-nowrap', h.column.columnDef.meta?.className)}>
                   {sortKey ? (
@@ -308,6 +310,7 @@ export default function RedemptionTable({
 }
 
 RedemptionTable.propTypes = {
+  columnPicker: PropTypes.node,
   redemptions: PropTypes.array.isRequired,
   columnVisibility: PropTypes.object.isRequired,
   rtf: PropTypes.object.isRequired,

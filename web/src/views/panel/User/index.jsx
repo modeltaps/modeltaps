@@ -412,6 +412,7 @@ export default function Users() {
       <UserTable
         users={users}
         columnVisibility={columns.visibility}
+        columnPicker={<ColumnPicker columns={columns} />}
         selectedIds={selection.selectedIds}
         onToggleSelect={selection.toggle}
         onToggleSelectAll={selection.toggleAll}
@@ -491,7 +492,6 @@ export default function Users() {
                     className="h-8 pl-8"
                   />
                 </div>
-                <ColumnPicker columns={columns} />
               </div>
               {selection.count > 0 ? (
                 <BatchBar

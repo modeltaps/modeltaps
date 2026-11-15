@@ -65,8 +65,11 @@ export default function TaskTable({
   onRowDetail,
   searching,
   columnVisibility,
+  columnPicker = null,
   layout = 'table'
 }) {
+  const hasPicker = !!columnPicker;
+
   const columns = useMemo(() => {
     const cells = {
       task_id: (i) => <span className="font-mono text-xs">{i.task_id}</span>,
@@ -83,21 +86,30 @@ export default function TaskTable({
     };
     const sortable = new Set(['submit_time', 'finish_time', 'channel_id', 'user_id', 'platform', 'status']);
     const right = new Set(['progress', 'time', 'quota']);
-    return TASK_COLUMNS.filter((c) => !c.adminOnly || userIsAdmin).map((c) => ({
+    const cols = TASK_COLUMNS.filter((c) => !c.adminOnly || userIsAdmin).map((c) => ({
       id: c.id,
       header: () => t(c.labelKey),
       cell: ({ row }) => cells[c.id](row.original),
       meta: { sortable: sortable.has(c.id), className: right.has(c.id) ? 'text-right' : undefined }
     }));
-  }, [t, userIsAdmin]);
+    if (hasPicker) {
+      cols.push({
+        id: 'column_picker',
+        header: () => null,
+        cell: () => null,
+        meta: { className: 'w-[1%] !py-0 !pl-0 !pr-2 text-right' }
+      });
+    }
+    return cols;
+  }, [t, userIsAdmin, hasPicker]);
 
   const table = useTable({ features: appTableFeatures, data: data || [], columns, manualSorting: true, state: { columnVisibility } });
   const rows = data || [];
 
-  if (rows.length === 0) {
-    return (
-      <p className="px-4 py-10 text-center text-sm text-muted-foreground">{searching ? t('logPage.searching') : t('common.noData')}</p>
-    );
+  // The table keeps its header when empty so the column picker stays reachable.
+  const emptyText = searching ? t('logPage.searching') : t('common.noData');
+  if (rows.length === 0 && layout === 'list') {
+    return <p className="px-4 py-10 text-center text-sm text-muted-foreground">{emptyText}</p>;
   }
 
   if (layout === 'list') {
@@ -147,9 +159,11 @@ export default function TaskTable({
                     )}
                     onClick={() => onSort(h.column.id)}
                   >
-                    {flexRender(h.column.columnDef.header, h.getContext())}
+                    {h.column.id === 'column_picker' && columnPicker ? columnPicker : flexRender(h.column.columnDef.header, h.getContext())}
                     {sortIcon(h.column.id)}
                   </button>
+                ) : h.column.id === 'column_picker' && columnPicker ? (
+                  columnPicker
                 ) : (
                   flexRender(h.column.columnDef.header, h.getContext())
                 )}
@@ -159,6 +173,13 @@ export default function TaskTable({
         ))}
       </TableHeader>
       <TableBody>
+        {rows.length === 0 && (
+          <TableRow className="hover:bg-transparent">
+            <TableCell colSpan={table.getVisibleLeafColumns().length || 1} className="h-24 text-center text-sm text-muted-foreground">
+              {emptyText}
+            </TableCell>
+          </TableRow>
+        )}
         {table.getRowModel().rows.map((row) => (
           <TableRow key={row.id} className={ROW_OPENS} {...rowOpenProps(() => onRowDetail(row.original))}>
             {row.getVisibleCells().map((cell) => (
@@ -183,5 +204,6 @@ TaskTable.propTypes = {
   onRowDetail: PropTypes.func.isRequired,
   searching: PropTypes.bool,
   columnVisibility: PropTypes.object,
+  columnPicker: PropTypes.node,
   layout: PropTypes.oneOf(['table', 'list'])
 };
