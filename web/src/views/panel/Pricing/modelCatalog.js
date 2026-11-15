@@ -236,11 +236,14 @@ export const modelGroups = (row) => {
   return groups.includes('*') ? ['*'] : groups;
 };
 
-// Default order of the catalog: enabled models first, then models some channel can serve, then
-// the rest; by name within each group. A gateway that lists hundreds of models then still shows
-// what users can call at the top.
+// A model name a channel or the price table knows but the catalog has no row for.
+export const isUncataloged = (row) => !(row?.catalogId > 0);
+
+// Default order of the catalog, by name within each group: models visible to users first
+// (served by a channel before not), then disabled ones (likewise), then names not in the catalog
+// at all. A gateway that lists hundreds of models then still shows what users can call at the top.
 export function sortCatalogRows(rows = []) {
-  const rank = (row) => (isVisibleToUsers(row) ? 0 : 2) + (enabledChannels(row).length > 0 ? 0 : 1);
+  const rank = (row) => (isUncataloged(row) ? 4 : (isVisibleToUsers(row) ? 0 : 2) + (enabledChannels(row).length > 0 ? 0 : 1));
   return rows
     .map((row) => ({ row, rank: rank(row) }))
     .sort((a, b) => a.rank - b.rank || String(a.row.model).localeCompare(String(b.row.model)))
@@ -251,13 +254,14 @@ export function sortCatalogRows(rows = []) {
 export const isFullyUsable = (row) => modelStatus(row) === 'ok' && isVisibleToUsers(row);
 
 // 统计 chip 与「状态」分面共用的筛选值。各分面独立判定、可以重叠(与徽章的单值优先级不同)。
-export const STATUS_FILTERS = ['usable', 'nochannel', 'unpriced', 'hidden'];
+export const STATUS_FILTERS = ['usable', 'nochannel', 'unpriced', 'hidden', 'uncataloged'];
 
 export function matchesStatusFilter(row, filter) {
   if (filter === 'usable') return isFullyUsable(row);
   if (filter === 'hidden') return !isVisibleToUsers(row);
   if (filter === 'nochannel') return enabledChannels(row).length === 0;
   if (filter === 'unpriced') return !row?.price;
+  if (filter === 'uncataloged') return isUncataloged(row);
   return true;
 }
 

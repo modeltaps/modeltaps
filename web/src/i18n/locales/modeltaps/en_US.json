@@ -808,7 +808,8 @@
       "usable": "Callable",
       "nochannel": "No channel",
       "unpriced": "Unpriced",
-      "hidden": "Disabled"
+      "hidden": "Disabled",
+      "uncataloged": "Not in catalog"
     },
     "status": {
       "ok": "Usable",

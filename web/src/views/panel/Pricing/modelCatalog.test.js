@@ -245,13 +245,14 @@ describe('status, visibility and stat chip counts', () => {
     expect(keys('nochannel')).toEqual(['d', 'e']);
     expect(keys('hidden')).toEqual(['b']);
     expect(keys('usable')).toEqual(['a', 'f']);
+    expect(keys('uncataloged')).toEqual(['e', 'f']);
   });
 
   it('counts every chip exactly as many rows as its filter returns', () => {
     const stats = catalogStats(rows);
-    expect(stats).toEqual({ all: 6, usable: 2, nochannel: 2, unpriced: 2, hidden: 1 });
+    expect(stats).toEqual({ all: 6, usable: 2, nochannel: 2, unpriced: 2, hidden: 1, uncataloged: 2 });
     STATUS_FILTERS.forEach((filter) => expect(rows.filter((r) => matchesStatusFilter(r, filter))).toHaveLength(stats[filter]));
-    expect(catalogStats([])).toEqual({ all: 0, usable: 0, nochannel: 0, unpriced: 0, hidden: 0 });
+    expect(catalogStats([])).toEqual({ all: 0, usable: 0, nochannel: 0, unpriced: 0, hidden: 0, uncataloged: 0 });
   });
 
   it('classifies billing type', () => {
@@ -325,5 +326,15 @@ describe('sortCatalogRows', () => {
       { model: 'c-disabled', catalogId: 4, hidden: true, bound_channels: [channel] }
     ];
     expect(sortCatalogRows(rows).map((r) => r.model)).toEqual(['z-enabled', 'a-disabled', 'c-disabled', 'b-no-channel']);
+  });
+
+  it('puts names that are not in the catalog last, even when a channel serves them', () => {
+    const rows = [
+      { model: 'a-uncataloged', catalogId: 0, hidden: false, bound_channels: [channel] },
+      { model: 'z-hidden-no-channel', catalogId: 1, hidden: true, bound_channels: [] },
+      { model: 'm-enabled', catalogId: 2, hidden: false, bound_channels: [channel] }
+    ];
+    expect(sortCatalogRows(rows).map((r) => r.model)).toEqual(['m-enabled', 'z-hidden-no-channel', 'a-uncataloged']);
+    expect(rows.filter((r) => matchesStatusFilter(r, 'uncataloged')).map((r) => r.model)).toEqual(['a-uncataloged']);
   });
 });

@@ -807,7 +807,8 @@
       "usable": "可調用",
       "nochannel": "無渠道",
       "unpriced": "未定價",
-      "hidden": "未啟用"
+      "hidden": "未啟用",
+      "uncataloged": "未入目錄"
     },
     "status": {
       "ok": "可用",

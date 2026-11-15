@@ -807,7 +807,8 @@
       "usable": "呼び出し可能",
       "nochannel": "チャネルなし",
       "unpriced": "未設定",
-      "hidden": "無効"
+      "hidden": "無効",
+      "uncataloged": "カタログ外"
     },
     "status": {
       "ok": "利用可能",
