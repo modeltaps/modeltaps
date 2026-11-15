@@ -1,7 +1,7 @@
 {
   "package": "@lobehub/icons-static-svg",
-  "version": "1.95.1",
-  "integrity": "sha512-Hw7EPPgVnC4NZLXBfTNJG6hyQgqECfUPC11VVXodPSr1aebKcFxDZlSpxhWwYNdCc6bhxps/x5TtXoPmfKH2ag==",
+  "version": "1.102.0",
+  "integrity": "sha512-3Na6S2kdslmsfnBjuL0PQWQClrmuWe/pWThRN/3J2VzPg5MhVghy8knVu7kd1/lqA9ydZBvwmnKLzuBo0Wm6Qw==",
   "icons": [
     "ai21", "ai360", "aionlabs", "alephalpha", "alibaba", "alibabacloud", "antgroup",
     "anthropic", "antigravity", "arcee", "aws", "azure", "azureai", "baai", "baichuan", "baidu",
@@ -17,7 +17,8 @@
     "relace", "replicate", "runway", "sakana", "sambanova", "siliconcloud", "sora", "spark",
     "stability", "stepfun", "suno", "tencent", "tencentcloud", "tii", "together", "upstage",
     "vercel", "vertexai", "vidu", "vllm", "volcengine", "voyage", "wenxin", "workersai", "xai",
-    "xiaomimimo", "yi", "zeroone", "zhipu"
+    "xiaomimimo", "yi", "zeroone", "zhipu",
+    "fishaudio", "topazlabs", "baseten", "reflection"
   ],
   "scale": {
     "anthropic": 1.12,
@@ -63,7 +64,7 @@
     "x": "xai", "x-ai": "xai",
     "voyageai": "voyage", "inclusionai": "antgroup", "aion-labs": "aionlabs", "arcee-ai": "arcee",
     "meituan": "longcat", "rekaai": "reka", "aleph-alpha": "alephalpha",
-    "inference-net": "inference", "paddlepaddle": "baidu", "databricks": "dbrx"
+    "inference-net": "inference", "fish-audio": "fishaudio", "topaz": "topazlabs", "paddlepaddle": "baidu", "databricks": "dbrx"
   },
   "channelTypes": {
     "1": "openai", "3": "azure", "11": "palm", "14": "claude", "15": "wenxin", "16": "zhipu",
@@ -125,7 +126,7 @@
     "databricks.com": "dbrx"
   },
   "ownerDomains": {
-    "mixedbread": "mixedbread.com", "sarvam": "sarvam.ai", "swiss-ai": "swiss-ai.org",
+    "heygen": "heygen.com", "mixedbread": "mixedbread.com", "sarvam": "sarvam.ai", "swiss-ai": "swiss-ai.org",
     "thinkingmachines": "thinkingmachines.ai", "writer": "writer.com"
   }
 }

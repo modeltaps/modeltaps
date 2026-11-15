@@ -1,6 +1,6 @@
 {
-  "version": "1.95.1",
-  "source": "@lobehub/icons-static-svg@1.95.1",
+  "version": "1.102.0",
+  "source": "@lobehub/icons-static-svg@1.102.0",
   "icons": {
     "ai21": {
       "mono": true,
@@ -90,6 +90,11 @@
     "bailian": {
       "mono": true,
       "color": true,
+      "scale": 1
+    },
+    "baseten": {
+      "mono": true,
+      "color": false,
       "scale": 1
     },
     "bedrock": {
@@ -185,6 +190,11 @@
     "fireworks": {
       "mono": true,
       "color": true,
+      "scale": 1
+    },
+    "fishaudio": {
+      "mono": true,
+      "color": false,
       "scale": 1
     },
     "flux": {
@@ -437,6 +447,11 @@
       "color": false,
       "scale": 1
     },
+    "reflection": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
     "reka": {
       "mono": true,
       "color": false,
@@ -517,6 +532,11 @@
       "color": true,
       "scale": 1
     },
+    "topazlabs": {
+      "mono": true,
+      "color": false,
+      "scale": 1
+    },
     "upstage": {
       "mono": true,
       "color": true,
@@ -587,6 +607,16 @@
       "color": true,
       "scale": 1
     },
+    "openbmb": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
+    "parallel": {
+      "mono": true,
+      "color": true,
+      "scale": 1
+    },
     "requesty": {
       "mono": true,
       "color": true,
@@ -620,6 +650,7 @@
     "deepseek-ai": "deepseek",
     "ernie": "wenxin",
     "fireworks-ai": "fireworks",
+    "fish-audio": "fishaudio",
     "github-copilot": "githubcopilot",
     "glm": "zhipu",
     "google-gemini": "gemini",
@@ -656,6 +687,7 @@
     "together-ai": "together",
     "togetherai": "together",
     "tongyi": "qwen",
+    "topaz": "topazlabs",
     "vertex": "vertexai",
     "volcano": "volcengine",
     "voyageai": "voyage",
@@ -894,6 +926,7 @@
     "z.ai": "zhipu"
   },
   "ownerDomains": {
+    "heygen": "heygen.com",
     "mixedbread": "mixedbread.com",
     "sarvam": "sarvam.ai",
     "swiss-ai": "swiss-ai.org",
