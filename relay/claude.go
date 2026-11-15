@@ -141,11 +141,14 @@ const (
 	// claudeRouteCustomAnthropic sends the request as is to the Messages endpoint of a custom
 	// channel that declares the Anthropic protocol for this model.
 	claudeRouteCustomAnthropic
+	// claudeRouteResponses converts the request to OpenAI Responses for a channel whose native
+	// protocol for the model is Responses (Codex, or GPT models on OpenAI / Azure).
+	claudeRouteResponses
 	claudeRouteUnsupported
 )
 
 // resolveClaudeRoute 决定一次 Claude 请求的路由归宿。
-// 顺序：专用分支 → 原生 Claude 实现 → ChatInterface 兜底转换链 → 不支持。
+// 顺序：专用分支 → Responses 直转 → 原生 Claude 实现 → ChatInterface 兜底转换链 → 不支持。
 // 原生判断必须早于兜底，否则 Deepseek/Bedrock 等既有原生 Claude relay 的渠道会被转换链截胡。
 func resolveClaudeRoute(channelType int, modelName string, provider providersBase.ProviderInterface) claudeSendRoute {
 	// Custom / OpenAI 渠道复用同一条 Claude→OpenAI→Claude 转换链。
@@ -153,6 +156,9 @@ func resolveClaudeRoute(channelType int, modelName string, provider providersBas
 	// 客户端的 cache_control 断点才能原样到达上游（转换链会丢掉）。
 	if channelType == config.ChannelTypeCustom && customClaudeProvider(provider, modelName) != nil {
 		return claudeRouteCustomAnthropic
+	}
+	if claudeEntryResponsesProvider(channelType, modelName, provider) != nil {
+		return claudeRouteResponses
 	}
 	if channelType == config.ChannelTypeCustom || channelType == config.ChannelTypeOpenAI {
 		return claudeRouteOpenAIConvert
@@ -198,6 +204,8 @@ func (r *relayClaudeOnly) send() (err *types.OpenAIErrorWithStatusCode, done boo
 		chatProvider = customClaudeProvider(r.provider, r.modelName)
 	case claudeRouteOpenAIConvert:
 		return r.sendCustomChannelWithClaudeFormat()
+	case claudeRouteResponses:
+		return r.sendResponsesWithClaudeFormat(claudeEntryResponsesProvider(channelType, r.modelName, r.provider))
 	case claudeRouteVertexAIGemini:
 		return r.sendVertexAIGeminiWithClaudeFormat()
 	case claudeRouteGemini:

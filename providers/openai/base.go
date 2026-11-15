@@ -449,8 +449,14 @@ func (p *OpenAIProvider) GetRequestTextBody(relayMode int, ModelName string, req
 	}
 	customParams = FilterCustomParamsForRelayMode(customParams, relayMode)
 
+	// A request converted from another protocol must not pick up the client's body.
+	converted := false
+	if responses, ok := request.(*types.OpenAIResponsesRequest); ok && responses.Converted {
+		converted = true
+	}
+
 	// 请求体完整透传：以原始字节为基础，仅改写映射后的模型名，其余字节原样保留
-	if p.Channel.PassThroughBody {
+	if p.Channel.PassThroughBody && !converted {
 		if patched, ok := p.patchPassThroughBody(ModelName, request); ok {
 			return p.NewRequestWithMergedParamsBytes(http.MethodPost, fullRequestURL, patched, headers, customParams, ModelName)
 		}
@@ -473,7 +479,7 @@ func (p *OpenAIProvider) GetRequestTextBody(relayMode int, ModelName string, req
 		}
 
 		// 如果允许额外字段透传，从原始请求中获取额外字段
-		if p.Channel.AllowExtraBody {
+		if p.Channel.AllowExtraBody && !converted {
 			requestMap = p.mergeExtraBodyFromRawRequest(requestMap)
 			p.StripPremiumTierMap(requestMap, base.OpenAIPremiumTierRules)
 		}

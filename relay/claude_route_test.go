@@ -41,7 +41,8 @@ func TestResolveClaudeRoute_DecisionMatrix(t *testing.T) {
 	}{
 		// 专用分支
 		{"custom", config.ChannelTypeCustom, "claude-3-5-sonnet", claudeRouteOpenAIConvert},
-		{"openai", config.ChannelTypeOpenAI, "gpt-4o", claudeRouteOpenAIConvert},
+		{"openai gpt", config.ChannelTypeOpenAI, "gpt-4o", claudeRouteResponses},
+		{"openai other model", config.ChannelTypeOpenAI, "llama-3.1-70b", claudeRouteOpenAIConvert},
 		{"vertexai gemini model", config.ChannelTypeVertexAI, "gemini-2.0-flash", claudeRouteVertexAIGemini},
 		// Claude models on Vertex AI go through the native pass-through
 		{"vertexai claude-3-5-haiku", config.ChannelTypeVertexAI, "claude-3-5-haiku-20241022", claudeRouteNative},
@@ -59,8 +60,8 @@ func TestResolveClaudeRoute_DecisionMatrix(t *testing.T) {
 		{"bedrock native not hijacked by fallback", config.ChannelTypeBedrock, "claude-3-5-sonnet", claudeRouteNative},
 
 		// ChatInterface 兜底：新纳入的对话渠道
-		{"azure", config.ChannelTypeAzure, "gpt-4o", claudeRouteOpenAIConvert},
-		{"azure v1", config.ChannelTypeAzureV1, "gpt-4o", claudeRouteOpenAIConvert},
+		{"azure gpt", config.ChannelTypeAzure, "gpt-4o", claudeRouteResponses},
+		{"azure v1 gpt", config.ChannelTypeAzureV1, "o3-mini", claudeRouteResponses},
 		{"azure databricks", config.ChannelTypeAzureDatabricks, "databricks-claude", claudeRouteOpenAIConvert},
 		{"palm", config.ChannelTypePaLM, "chat-bison", claudeRouteOpenAIConvert},
 		{"baidu", config.ChannelTypeBaidu, "ernie-4.0", claudeRouteOpenAIConvert},
@@ -85,7 +86,7 @@ func TestResolveClaudeRoute_DecisionMatrix(t *testing.T) {
 		{"replicate", config.ChannelTypeReplicate, "meta/llama-3", claudeRouteOpenAIConvert},
 		{"xai", config.ChannelTypeXAI, "grok-3", claudeRouteOpenAIConvert},
 		{"geminicli", config.ChannelTypeGeminiCli, "gemini-2.0-flash", claudeRouteOpenAIConvert},
-		{"codex", config.ChannelTypeCodex, "gpt-5-codex", claudeRouteOpenAIConvert},
+		{"codex", config.ChannelTypeCodex, "gpt-5-codex", claudeRouteResponses},
 		{"vertexai express", config.ChannelTypeVertexAIExpress, "gemini-2.0-flash", claudeRouteOpenAIConvert},
 		{"vertexai claude model", config.ChannelTypeVertexAI, "claude-sonnet-4", claudeRouteNative},
 	}

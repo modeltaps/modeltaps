@@ -80,6 +80,9 @@ type OpenAIResponsesRequest struct {
 	PromptCacheRetention string `json:"prompt_cache_retention,omitempty"`
 
 	ConvertChat bool `json:"-"`
+	// Converted marks a request built from another protocol's request: the client body is not a
+	// Responses body, so providers must serialize this struct instead of forwarding the body.
+	Converted bool `json:"-"`
 }
 
 type ResponsesText struct {
@@ -301,8 +304,8 @@ type InputResponses struct {
 	Arguments json.RawMessage `json:"arguments,omitempty"`
 
 	// reasoning
-	Summary          *SummaryResponses `json:"summary,omitempty"`
-	EncryptedContent *string           `json:"encrypted_content,omitempty"`
+	Summary          []SummaryResponses `json:"summary,omitempty"`
+	EncryptedContent *string            `json:"encrypted_content,omitempty"`
 
 	// image_generation_call
 	Result any `json:"result,omitempty"`

@@ -343,6 +343,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Anthropic Messages and OpenAI Responses now convert to each other in one step, without going
+  through Chat Completions. A `/claude/v1/messages` request for a GPT model on an OpenAI or Azure
+  channel, or for any model on a Codex channel, goes upstream as a Responses request; a
+  `/v1/responses` request for a Claude model on an Anthropic, Claude Code, Bedrock, Vertex AI or
+  Anthropic-protocol custom channel goes upstream as a Messages request. Tool calls, thinking and
+  reasoning (a Claude thinking signature comes back as the reasoning item's encrypted content, so
+  clients that return reasoning items keep it), streaming and cache usage carry over. Channels
+  with "compatible response" turned on, and other OpenAI-compatible channels, keep the chat
+  conversion.
+
 - Claude models prefer Claude sources on every entry. A Claude-family model requested over
   `/v1/chat/completions` or `/v1/responses` now first goes to the Anthropic, Claude Code,
   Bedrock, Vertex AI and Antigravity channels, and to custom channels that declare the
@@ -532,6 +542,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `gpt-5.5-pro` default price includes the long-context tier (over 272K input tokens: $60 / $270).
 
 ### Fixed
+
+- Claude Code channels now authenticate Claude format requests with the account's OAuth token.
+  Requests forwarded natively sent the stored credentials as an API key and were rejected.
+- `/v1/responses` requests whose input carries reasoning items (sent back by Codex and other
+  stateless clients) no longer fail to parse when converted for a non-Responses upstream.
 
 - One model no longer gets two catalog rows because platforms spell it differently. A platform
   spelling that some platforms file under a dated snapshot and others under the undated id

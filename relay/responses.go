@@ -71,12 +71,15 @@ func (r *relayResponses) send() (err *types.OpenAIErrorWithStatusCode, done bool
 		return r.sendCompact()
 	}
 
+	// A Claude model on a channel that speaks Anthropic Messages for it converts once,
+	// Responses → Messages.
+	if claudeProvider := responsesEntryClaudeProvider(r.provider, r.modelName); claudeProvider != nil {
+		return r.sendClaudeWithResponsesFormat(claudeProvider)
+	}
+
 	channel := r.provider.GetChannel()
 	responsesProvider, ok := r.provider.(providersBase.ResponsesInterface)
-	// A custom channel that speaks Anthropic for this model goes through chat, which converts
-	// the request to Claude for its Messages endpoint.
-	if !ok || channel.CompatibleResponse || !r.provider.GetSupportedResponse() ||
-		customClaudeProvider(r.provider, r.modelName) != nil {
+	if !ok || channel.CompatibleResponse || !r.provider.GetSupportedResponse() {
 		// 做一层Chat的兼容
 		chatProvider, ok := r.provider.(providersBase.ChatInterface)
 		if !ok {
