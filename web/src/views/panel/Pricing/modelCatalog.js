@@ -27,6 +27,7 @@ export const MODEL_COLUMNS = [
   { id: 'state', labelKey: 'modelInfoPage.state', fixed: true },
   { id: 'visible', labelKey: 'modelsPage.visibleToUsers', fixed: true },
   { id: 'vendor', labelKey: 'modelInfoPage.vendor', defaultHidden: true },
+  { id: 'released_at', labelKey: 'modelInfoPage.releasedAt' },
   { id: 'context_length', labelKey: 'modelInfoPage.contextLength', defaultHidden: true },
   { id: 'max_tokens', labelKey: 'modelInfoPage.maxTokens', defaultHidden: true },
   { id: 'modalities', labelKey: 'modelInfoPage.modalities', defaultHidden: true },
@@ -238,13 +239,33 @@ export const isUncataloged = (row) => !(row?.catalogId > 0);
 // Default order of the catalog, by name within each group: models visible to users first
 // (served by a channel before not), then disabled ones (likewise), then names not in the catalog
 // at all. A gateway that lists hundreds of models then still shows what users can call at the top.
-export function sortCatalogRows(rows = []) {
+//
+// `sort` reorders rows inside each group and keeps the groups: 'released' is newest release first,
+// 'released_asc' oldest first; a model with no known release date goes last either way.
+export const CATALOG_SORTS = ['default', 'released', 'released_asc'];
+
+export function sortCatalogRows(rows = [], sort = 'default') {
+  const byName = (a, b) => String(a.row.model).localeCompare(String(b.row.model));
+  if (sort === 'released' || sort === 'released_asc') {
+    const dir = sort === 'released' ? -1 : 1;
+    const groupRank = (row) => CATALOG_GROUPS.indexOf(catalogGroup(row));
+    return rows
+      .map((row) => ({ row, rank: groupRank(row), at: Number(row?.released_at) || 0 }))
+      .sort((a, b) => a.rank - b.rank || (b.at > 0) - (a.at > 0) || (a.at - b.at) * dir || byName(a, b))
+      .map(({ row }) => row);
+  }
   const rank = (row) => (isUncataloged(row) ? 4 : (isVisibleToUsers(row) ? 0 : 2) + (enabledChannels(row).length > 0 ? 0 : 1));
   return rows
     .map((row) => ({ row, rank: rank(row) }))
-    .sort((a, b) => a.rank - b.rank || String(a.row.model).localeCompare(String(b.row.model)))
+    .sort((a, b) => a.rank - b.rank || byName(a, b))
     .map(({ row }) => row);
 }
+
+// A release date is a calendar day stored as UTC midnight, so it is shown in UTC.
+export const formatReleaseDate = (ts) => (Number(ts) > 0 ? new Date(ts * 1000).toISOString().slice(0, 10) : '');
+
+// The sort a release-date header click moves to: newest first, oldest first, back to default.
+export const nextReleasedSort = (sort) => (sort === 'released' ? 'released_asc' : sort === 'released_asc' ? 'default' : 'released');
 
 // The section a catalog row is listed under, in the order sortCatalogRows keeps them.
 export const CATALOG_GROUPS = ['enabled', 'disabled', 'uncataloged'];

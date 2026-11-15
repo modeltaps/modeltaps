@@ -737,7 +737,11 @@
       "enabled": "已啟用",
       "disabled": "未啟用",
       "uncataloged": "未入目錄"
-    }
+    },
+    "releasedAt": "發布日期",
+    "sortDefault": "預設排序",
+    "sortReleased": "最新發布在前",
+    "sortReleasedAsc": "最早發布在前"
   },
   "pricingPage": {
     "catalogTabs": {

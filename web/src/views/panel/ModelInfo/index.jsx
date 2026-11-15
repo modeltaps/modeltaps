@@ -60,8 +60,10 @@ import PricingSheet from '../Pricing/PricingSheet';
 import SupplyBatchMenu from './supply/SupplyBatchMenu';
 import CheckUpdatesDialog from '../Pricing/CheckUpdatesDialog';
 import {
+  CATALOG_SORTS,
   COLUMN_STORAGE_KEY,
   catalogGroupCounts,
+  nextReleasedSort,
   LEGACY_COLUMN_STORAGE_KEYS,
   MODEL_COLUMNS,
   STATUS_FILTERS,
@@ -199,6 +201,12 @@ async function fetchAllChannels() {
   return all;
 }
 
+const SORT_LABEL_KEYS = {
+  default: 'modelInfoPage.sortDefault',
+  released: 'modelInfoPage.sortReleased',
+  released_asc: 'modelInfoPage.sortReleasedAsc'
+};
+
 export default function ModelInfo() {
   const { t } = useTranslation();
   const [modelInfos, setModelInfos] = useState([]);
@@ -223,6 +231,7 @@ export default function ModelInfo() {
   const [rowsPerPage, setRowsPerPage] = useState(() => getPageSize('model_info', 50));
   const [keyword, setKeyword] = useState(() => searchParams.get('keyword') || '');
   const [status, setStatus] = useState(() => readStatus(searchParams));
+  const [sort, setSort] = useState(() => (CATALOG_SORTS.includes(searchParams.get('sort')) ? searchParams.get('sort') : 'default'));
   const [selectedKeys, setSelectedKeys] = useState(() => new Set());
   const [selectMode, setSelectMode] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -326,16 +335,17 @@ export default function ModelInfo() {
     setSearchParams(
       (prev) => {
         const params = new URLSearchParams(prev);
-        [...MODELINFO_FILTER_PARAM_KEYS, 'status', 'keyword', 'usable'].forEach((k) => params.delete(k));
+        [...MODELINFO_FILTER_PARAM_KEYS, 'status', 'keyword', 'usable', 'sort'].forEach((k) => params.delete(k));
         const q = filterStateToParams(MODELINFO_FILTER_FIELDS, filterState);
         for (const [k, v] of Object.entries(q)) params.set(k, String(v));
         if (keyword) params.set('keyword', keyword);
         if (status !== 'all') params.set('status', status);
+        if (sort !== 'default') params.set('sort', sort);
         return params;
       },
       { replace: true }
     );
-  }, [filterState, keyword, status, setSearchParams]);
+  }, [filterState, keyword, status, sort, setSearchParams]);
 
   const handleRefresh = () => setRefreshFlag((f) => !f);
 
@@ -356,6 +366,15 @@ export default function ModelInfo() {
     setKeyword('');
     setStatus('all');
   };
+  const changeSort = (next) => {
+    setPage(0);
+    setSort(next);
+  };
+  const sortReleased = useCallback(() => {
+    setPage(0);
+    setSort(nextReleasedSort);
+  }, []);
+
   const changeStatus = (next) => {
     setPage(0);
     setStatus(next);
@@ -408,8 +427,8 @@ export default function ModelInfo() {
   const unlabeledCount = useMemo(() => modelInfos.filter(isUnlabeled).length, [modelInfos]);
 
   const filtered = useMemo(
-    () => sortCatalogRows(filterCatalogRows(rows, { keyword, params, aliasesByTarget })),
-    [rows, keyword, params, aliasesByTarget]
+    () => sortCatalogRows(filterCatalogRows(rows, { keyword, params, aliasesByTarget }), sort),
+    [rows, keyword, params, aliasesByTarget, sort]
   );
 
   const groupCounts = useMemo(() => catalogGroupCounts(filtered), [filtered]);
@@ -784,6 +803,8 @@ export default function ModelInfo() {
         unit={unit}
         onUnitChange={handleUnitChange}
         columnVisibility={columnVisibility}
+        sort={sort}
+        onSortReleased={sortReleased}
         columnPicker={<ColumnPicker columns={columnState} />}
         selectedKeys={selectedKeys}
         onToggleSelect={toggleSelect}
@@ -880,6 +901,14 @@ export default function ModelInfo() {
                   <PhoneListToolbar
                     search={{ value: keyword, onChange: handleKeywordChange, placeholder: t('modelsPage.searchShort') }}
                     filter={{ count: activeConditionFields.length, onOpen: () => setFilterSheetOpen(true) }}
+                    sort={{
+                      options: CATALOG_SORTS.map((value) => ({
+                        key: value,
+                        label: t(SORT_LABEL_KEYS[value]),
+                        active: sort === value,
+                        onSelect: () => changeSort(value)
+                      }))
+                    }}
                     select={{ active: selectMode, onToggle: () => (selectMode ? exitSelectMode() : setSelectMode(true)) }}
                     chips={activeConditionFields.map((f) => ({
                       key: f.key,

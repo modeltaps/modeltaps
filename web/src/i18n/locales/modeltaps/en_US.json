@@ -732,7 +732,11 @@
       "enabled": "Enabled",
       "disabled": "Not enabled",
       "uncataloged": "Not in catalog"
-    }
+    },
+    "releasedAt": "Released",
+    "sortDefault": "Default order",
+    "sortReleased": "Newest release first",
+    "sortReleasedAsc": "Oldest release first"
   },
   "pricingPage": {
     "catalogTabs": {

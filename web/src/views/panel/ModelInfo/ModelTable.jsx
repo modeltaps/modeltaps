@@ -3,7 +3,22 @@ import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { ArrowLeftRight, Copy, DollarSign, Eye, EyeOff, Layers, Lock, MoreHorizontal, Network, Pencil, Trash2 } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowLeftRight,
+  ArrowUp,
+  ArrowUpDown,
+  Copy,
+  DollarSign,
+  Eye,
+  EyeOff,
+  Layers,
+  Lock,
+  MoreHorizontal,
+  Network,
+  Pencil,
+  Trash2
+} from 'lucide-react';
 
 import { GROW_COLUMN, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +40,7 @@ import { cn } from '@/lib/utils';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
 import { ValueFormatter, copy, timestamp2string } from 'utils/common';
 import { statusLabel } from '../Channel/channelApi';
-import { catalogGroup, enabledChannels, isVisibleToUsers, modelStatus } from '../Pricing/modelCatalog';
+import { catalogGroup, enabledChannels, formatReleaseDate, isVisibleToUsers, modelStatus } from '../Pricing/modelCatalog';
 import {
   MODE_LABEL_KEYS,
   CapabilityBadges,
@@ -351,6 +366,35 @@ function GroupHeaderRow({ label, count, colSpan }) {
 
 GroupHeaderRow.propTypes = { label: PropTypes.string.isRequired, count: PropTypes.number, colSpan: PropTypes.number.isRequired };
 
+// The release-date header sorts on click: newest first, oldest first, then back to the default order.
+// The arrow shows the active direction; otherwise a faint one appears on hover only.
+function ReleasedHeader({ sort, onSort }) {
+  const { t } = useTranslation();
+  const label = t('modelInfoPage.releasedAt');
+  if (!onSort) return label;
+  const active = sort === 'released' || sort === 'released_asc';
+  const Icon = sort === 'released' ? ArrowDown : sort === 'released_asc' ? ArrowUp : ArrowUpDown;
+  return (
+    <button
+      type="button"
+      className={cn('group/sort inline-flex items-center gap-1 hover:text-foreground', active && 'text-foreground')}
+      onClick={onSort}
+      title={t(
+        sort === 'released'
+          ? 'modelInfoPage.sortReleasedAsc'
+          : sort === 'released_asc'
+            ? 'modelInfoPage.sortDefault'
+            : 'modelInfoPage.sortReleased'
+      )}
+    >
+      {label}
+      <Icon className={cn('size-3', !active && 'opacity-0 transition-opacity group-hover/sort:opacity-50')} />
+    </button>
+  );
+}
+
+ReleasedHeader.propTypes = { sort: PropTypes.string, onSort: PropTypes.func };
+
 export default function ModelTable({
   items,
   vendors = {},
@@ -365,7 +409,9 @@ export default function ModelTable({
   onDeleteCatalog,
   onDeletePrice,
   columnPicker = null,
-  groupCounts
+  groupCounts,
+  sort = 'default',
+  onSortReleased
 }) {
   const { t } = useTranslation();
 
@@ -459,6 +505,14 @@ export default function ModelTable({
       },
       { id: 'vendor', header: t('modelInfoPage.vendor'), cell: (c) => <VendorCell vendor={vendors[c.row.original.vendor_id]} /> },
       {
+        id: 'released_at',
+        header: () => <ReleasedHeader sort={sort} onSort={onSortReleased} />,
+        cell: (c) => {
+          const date = formatReleaseDate(c.row.original.released_at);
+          return <span className={cn('tabular-nums', !date && 'text-muted-foreground')}>{date || '—'}</span>;
+        }
+      },
+      {
         id: 'context_length',
         header: t('modelInfoPage.contextLength'),
         accessorKey: 'context_length',
@@ -530,6 +584,8 @@ export default function ModelTable({
       t,
       vendors,
       unit,
+      sort,
+      onSortReleased,
       onUnitChange,
       selectedKeys,
       allSelected,
@@ -612,6 +668,8 @@ export default function ModelTable({
 ModelTable.propTypes = {
   columnPicker: PropTypes.node,
   groupCounts: PropTypes.object,
+  sort: PropTypes.string,
+  onSortReleased: PropTypes.func,
   items: PropTypes.array.isRequired,
   vendors: PropTypes.object,
   unit: PropTypes.string,

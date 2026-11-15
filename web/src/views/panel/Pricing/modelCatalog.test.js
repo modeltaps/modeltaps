@@ -21,6 +21,8 @@ import {
   resolveCatalogTab,
   savePriceUnit,
   sortCatalogRows,
+  nextReleasedSort,
+  formatReleaseDate,
   catalogGroup,
   catalogGroupCounts,
   suppliedUpstreamKeys
@@ -52,7 +54,6 @@ describe('legacy route redirects', () => {
     expect(resolveCatalogTab(null)).toBe('models');
     expect(resolveCatalogTab('bogus')).toBe('models');
   });
-
 });
 
 describe('column defaults', () => {
@@ -347,5 +348,52 @@ describe('sortCatalogRows', () => {
     ];
     expect(sortCatalogRows(rows).map((r) => r.model)).toEqual(['m-enabled', 'z-hidden-no-channel', 'a-uncataloged']);
     expect(rows.filter((r) => matchesStatusFilter(r, 'uncataloged')).map((r) => r.model)).toEqual(['a-uncataloged']);
+  });
+
+  describe('by release date', () => {
+    const rows = [
+      { model: 'old', catalogId: 1, hidden: false, bound_channels: [], released_at: 100 },
+      { model: 'unknown', catalogId: 2, hidden: false, bound_channels: [channel], released_at: 0 },
+      { model: 'new', catalogId: 3, hidden: false, bound_channels: [], released_at: 300 },
+      { model: 'hidden-newest', catalogId: 4, hidden: true, bound_channels: [channel], released_at: 900 },
+      { model: 'b-same', catalogId: 5, hidden: false, bound_channels: [], released_at: 200 },
+      { model: 'a-same', catalogId: 6, hidden: false, bound_channels: [], released_at: 200 },
+      { model: 'orphan', catalogId: 0, hidden: false, bound_channels: [channel] }
+    ];
+
+    it('lists the newest first inside each group and unknown dates last', () => {
+      expect(sortCatalogRows(rows, 'released').map((r) => r.model)).toEqual([
+        'new',
+        'a-same',
+        'b-same',
+        'old',
+        'unknown',
+        'hidden-newest',
+        'orphan'
+      ]);
+    });
+
+    it('lists the oldest first and still keeps unknown dates last', () => {
+      expect(sortCatalogRows(rows, 'released_asc').map((r) => r.model)).toEqual([
+        'old',
+        'a-same',
+        'b-same',
+        'new',
+        'unknown',
+        'hidden-newest',
+        'orphan'
+      ]);
+    });
+
+    it('cycles newest, oldest, default on header clicks', () => {
+      expect(nextReleasedSort('default')).toBe('released');
+      expect(nextReleasedSort('released')).toBe('released_asc');
+      expect(nextReleasedSort('released_asc')).toBe('default');
+    });
+
+    it('formats a release date as a UTC day and leaves unknown blank', () => {
+      expect(formatReleaseDate(Date.UTC(2026, 10, 3) / 1000)).toBe('2026-11-03');
+      expect(formatReleaseDate(0)).toBe('');
+    });
   });
 });

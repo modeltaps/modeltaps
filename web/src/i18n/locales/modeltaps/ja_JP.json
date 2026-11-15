@@ -731,7 +731,11 @@
       "enabled": "有効",
       "disabled": "未有効",
       "uncataloged": "カタログ外"
-    }
+    },
+    "releasedAt": "リリース日",
+    "sortDefault": "既定の順序",
+    "sortReleased": "リリースが新しい順",
+    "sortReleasedAsc": "リリースが古い順"
   },
   "pricingPage": {
     "catalogTabs": {
