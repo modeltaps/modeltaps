@@ -2729,7 +2729,6 @@
     "upstream": "上流モデル",
     "upstreamSame": "同名",
     "upstreamSameTip": "{{name}} として上流に送信（公開名と同じ）",
-    "upstreamCopyTip": "クリックで完全な名前をコピー",
     "upstreamPrice": "上流価格 $/M",
     "upstreamPriceTip": "このチャネルの上流がこのモデルに課す価格：100 万トークンあたりの米ドル（入力 / 出力）、チャネルの上流価格表より",
     "noPriceList": "このチャネルの上流は価格表を公開していません",
@@ -3751,28 +3750,5 @@
     "category": {
       "inference": "オープンモデル推論"
     }
-  },
-  "upstreamPrice": {
-    "open": "{{model}} の上流価格の詳細",
-    "title": "{{source}} の価格",
-    "titlePlain": "上流価格",
-    "free": "無料：上流がこのモデルに掲載している価格はすべて 0 です",
-    "row_input": "入力",
-    "row_output": "出力",
-    "row_cacheRead": "キャッシュ読み取り",
-    "row_cacheWrite": "キャッシュ書き込み",
-    "row_image": "画像 1 枚",
-    "row_request": "リクエスト 1 回",
-    "row_videoSecond": "動画（最低）",
-    "unit_M": "100 万トークン",
-    "unit_image": "枚",
-    "unit_request": "回",
-    "unit_second": "秒",
-    "sell": "当サイトの基本価格（入力 / 出力、$/M）",
-    "via": "価格は {{via}} から取得（プラットフォーム自体の API ではありません）",
-    "syncedAt": "{{time}} 取得",
-    "openPage": "{{source}} で確認",
-    "openPricing": "{{source}} の料金ページを開く",
-    "noPage": "この価格を確認できる公開ページはありません"
   }
 }

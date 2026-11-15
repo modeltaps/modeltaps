@@ -2727,7 +2727,6 @@
     "upstream": "上游模型",
     "upstreamSame": "同名",
     "upstreamSameTip": "以 {{name}} 发给上游，与公开名相同",
-    "upstreamCopyTip": "点击复制完整名称",
     "upstreamPrice": "上游价 $/M",
     "upstreamPriceTip": "渠道上游对这个模型的报价：每百万 token 美元（输入 / 输出），来自渠道的上游价格表",
     "noPriceList": "这个渠道的上游没有公开价格表",
@@ -3752,28 +3751,5 @@
     "category": {
       "inference": "开源模型推理"
     }
-  },
-  "upstreamPrice": {
-    "open": "{{model}} 的上游价详情",
-    "title": "{{source}} 报价",
-    "titlePlain": "上游报价",
-    "free": "免费：上游给这个模型列出的价格全是 0",
-    "row_input": "输入",
-    "row_output": "输出",
-    "row_cacheRead": "缓存读",
-    "row_cacheWrite": "缓存写",
-    "row_image": "每张图",
-    "row_request": "每次请求",
-    "row_videoSecond": "视频，最低",
-    "unit_M": "百万 token",
-    "unit_image": "张",
-    "unit_request": "次",
-    "unit_second": "秒",
-    "sell": "本站基础售价（入 / 出，$/M）",
-    "via": "价格取自 {{via}}，不是平台自己的接口",
-    "syncedAt": "{{time}} 读取",
-    "openPage": "去 {{source}} 核对",
-    "openPricing": "打开 {{source}} 价格页",
-    "noPage": "没有可核对这个价格的公开网页"
   }
 }
