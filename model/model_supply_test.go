@@ -22,7 +22,7 @@ func useSupplyTestDB(t *testing.T) {
 		t.Fatal(err)
 	}
 	sqlDB.SetMaxOpenConns(1)
-	if err := testDB.AutoMigrate(&Channel{}, &ModelInfo{}, &Price{}, &ModelSupply{}, &RoutingPolicy{}); err != nil {
+	if err := testDB.AutoMigrate(&Channel{}, &ModelInfo{}, &Price{}, &ModelSupply{}, &RoutingPolicy{}, &ChannelPrice{}); err != nil {
 		t.Fatal(err)
 	}
 	oldDB := DB

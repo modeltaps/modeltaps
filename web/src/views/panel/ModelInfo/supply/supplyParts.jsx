@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Info } from 'lucide-react';
+import { AlertTriangle, Info } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsRoot } from 'utils/common';
 import { fetchSupplySwitches } from './supplyApi';
 import { normalizeModelStatus } from './supplyHelpers';
+import { amount, priceSummary } from '../../Channel/channelPrices';
+import { lossOf } from '../../Channel/channelModelDetails';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -177,3 +179,65 @@ export function SupplySwitchNote({ switches, active, className }) {
 }
 
 SupplySwitchNote.propTypes = { switches: PropTypes.object, active: PropTypes.bool, className: PropTypes.string };
+
+// What the supply's channel charges upstream for the model, from the channel's stored price list:
+// "$3 / $15" per million tokens, a per-image / per-second / per-request price, free, or a dash
+// when the channel has no price list or the list has no entry. A price above the model's own sell
+// price is marked, so a model sold for free on a paid upstream stands out.
+export function UpstreamPriceCell({ supply }) {
+  const { t } = useTranslation();
+  const price = supply.upstream_price;
+  const summary = priceSummary(price);
+  if (!summary) {
+    const tip = supply.upstream_priced ? t('channels.models.priceMissing') : t('modelSupply.noPriceList');
+    return (
+      <span className="text-muted-foreground" title={tip}>
+        —
+      </span>
+    );
+  }
+  if (summary.kind === 'tokens') {
+    const sell = [{ model: supply.model, enabled: true, input_price: supply.sell_input_price, output_price: supply.sell_output_price }];
+    const losses = ['input', 'output']
+      .map((key) => {
+        const loss = lossOf(price, sell, key);
+        return loss && t(`channels.models.loss_${key}`, { model: loss.model, sell: amount(loss.sell), cost: amount(loss.cost) });
+      })
+      .filter(Boolean);
+    const text = (
+      <span className="whitespace-nowrap">
+        ${amount(price.input)}
+        <span className="text-muted-foreground"> / </span>${amount(price.output)}
+      </span>
+    );
+    if (losses.length === 0) return text;
+    return (
+      <TooltipProvider delayDuration={150}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span data-testid="supply-price-loss" className="inline-flex items-center gap-1 text-warning" aria-label={losses.join(' ')}>
+              <AlertTriangle className="size-3 shrink-0" />
+              {text}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-64 space-y-1 whitespace-normal text-xs">
+            {losses.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+  if (summary.kind === 'other') {
+    return (
+      <span className="text-muted-foreground" title={t('channels.models.priceOtherHint')}>
+        {t('channels.models.priceOther')}
+      </span>
+    );
+  }
+  if (summary.kind === 'free') return <span className="text-success">{t('channels.models.priceFree')}</span>;
+  return <span className="whitespace-nowrap">{t(`channels.models.price_${summary.kind}`, { price: summary.value })}</span>;
+}
+
+UpstreamPriceCell.propTypes = { supply: PropTypes.object.isRequired };

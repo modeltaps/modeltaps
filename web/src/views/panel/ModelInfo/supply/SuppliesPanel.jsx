@@ -51,7 +51,7 @@ import {
   supplyUpdateBody,
   upstreamFor
 } from './supplyHelpers';
-import { SupplyStateLabel, SupplySwitchNote, UpstreamName, durationLabel } from './supplyParts';
+import { SupplyStateLabel, SupplySwitchNote, UpstreamName, UpstreamPriceCell, durationLabel } from './supplyParts';
 import { setModelAllocation } from '../../Allocation/allocationApi';
 
 const channelTypeName = (type) => CHANNEL_OPTIONS[type]?.text || `#${type}`;
@@ -342,8 +342,8 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
         <ProviderIcon type={supply.channel_type} name={supply.channel_name} className="size-4" />
       </span>
       <div className="min-w-0">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <span className={cn('truncate', offline && 'text-muted-foreground')} title={supply.channel_name}>
+        <div className="flex min-w-0 flex-wrap items-center gap-x-1.5">
+          <span className={cn('leading-snug [overflow-wrap:anywhere]', offline && 'text-muted-foreground')}>
             {supply.channel_name || t('modelSupply.channelDeleted', { id: supply.channel_id })}
           </span>
           {next && (
@@ -361,7 +361,7 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
             </Link>
           )}
         </div>
-        <p className="truncate text-xs text-muted-foreground" title={groupsText || undefined}>
+        <p className="text-xs leading-snug text-muted-foreground [overflow-wrap:anywhere]">
           {own && !outsideGroup && (
             <span className="text-foreground" title={t('modelSupply.ownNumbersTip')}>
               {t('modelSupply.ownNumbers')}
@@ -388,7 +388,7 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
             className="h-8 rounded-lg px-2 font-mono"
           />
         </td>
-        <td colSpan={3}>
+        <td colSpan={4}>
           <div className="flex items-center gap-2">
             <NumberCell
               label={t('modelSupply.priority')}
@@ -421,13 +421,16 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
     <tr
       data-testid="supply-row"
       className={cn(
-        '[&>td]:h-12 [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0',
+        '[&>td]:h-12 [&>td]:py-2 [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0',
         outsideGroup && '[&>td:not(:last-child)]:opacity-50'
       )}
     >
       <td>{channelCell}</td>
       <td className="py-1.5">
         <UpstreamName upstream={supply.upstream_model} model={supply.model} />
+      </td>
+      <td className="text-right text-xs tabular-nums">
+        <UpstreamPriceCell supply={supply} />
       </td>
       <td className="whitespace-nowrap text-right tabular-nums">
         {supply.weight || 1}
@@ -800,18 +803,22 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
         )
       ) : (
         <div className="overflow-x-auto rounded-[10px] border border-border">
-          <table className="w-full min-w-[480px] table-fixed border-collapse text-[13px]">
+          <table className="w-full min-w-[640px] table-fixed border-collapse text-[13px]">
             <colgroup>
-              <col className="w-[28%]" />
+              <col className="w-[30%]" />
               <col />
+              <col className="w-[6.5rem]" />
               <col className="w-[4.5rem]" />
-              <col className="w-[18%]" />
+              <col className="w-[15%]" />
               <col className="w-[5.5rem]" />
             </colgroup>
             <thead>
               <tr className="text-left text-xs text-muted-foreground [&>th]:h-9 [&>th]:whitespace-nowrap [&>th]:border-b [&>th]:border-border [&>th]:px-3 [&>th]:font-medium">
                 <th>{t('modelSupply.channel')}</th>
                 <th>{t('modelSupply.upstream')}</th>
+                <th className="text-right" title={t('modelSupply.upstreamPriceTip')}>
+                  {t('modelSupply.upstreamPrice')}
+                </th>
                 <th className="text-right">{t('modelSupply.weight')}</th>
                 <th>{t('modelSupply.stateLabel')}</th>
                 <th>
@@ -822,7 +829,7 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
             {tiers.map((tier, index) => (
               <tbody key={tier.priority}>
                 <tr>
-                  <td colSpan={5} className="border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
+                  <td colSpan={6} className="border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
                     <span className="text-foreground">{tierLabel(index)}</span>
                     {/* On the allocation policy the numbers are computed from the call order and mean
                         nothing on their own; a manual model shows the priority it was given. */}

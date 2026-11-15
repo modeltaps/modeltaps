@@ -112,6 +112,16 @@ type ModelSupplyView struct {
 	// FollowsPolicy is true when the priority and weight above come from the allocation policy
 	// rather than from the supply row.
 	FollowsPolicy bool `json:"follows_policy"`
+	// UpstreamPrice is what the channel's upstream charges for UpstreamModel, from the channel's
+	// stored price list; nil when the list has no entry for it. UpstreamPriced is true when the
+	// channel has a price list at all, so a missing entry can be told from an upstream that
+	// publishes no prices.
+	UpstreamPrice  *ChannelPrice `json:"upstream_price"`
+	UpstreamPriced bool          `json:"upstream_priced"`
+	// SellInputPrice and SellOutputPrice are the public model's base sell price per million
+	// tokens, to compare with the upstream price; nil when it is not sold per token.
+	SellInputPrice  *float64 `json:"sell_input_price"`
+	SellOutputPrice *float64 `json:"sell_output_price"`
 }
 
 // GetModelSupplyViews lists supplies like GetModelSupplies, each with its channel's name,
@@ -154,9 +164,23 @@ func GetModelSupplyViews(modelName string, channelId int) ([]*ModelSupplyView, e
 			byId[ch.Id] = ch
 		}
 	}
+	prices, priced, err := supplyUpstreamPrices(supplies, ids)
+	if err != nil {
+		return nil, err
+	}
+	type sellPrice struct{ in, out *float64 }
+	sells := map[string]sellPrice{}
 	views := make([]*ModelSupplyView, 0, len(supplies))
 	for _, s := range supplies {
 		view := &ModelSupplyView{ModelSupply: s}
+		view.UpstreamPrice = prices[channelPriceKey{s.ChannelId, supplyUpstreamName(s)}]
+		view.UpstreamPriced = priced[s.ChannelId]
+		sell, ok := sells[s.Model]
+		if !ok {
+			sell.in, sell.out = tokenSellPrice(s.Model)
+			sells[s.Model] = sell
+		}
+		view.SellInputPrice, view.SellOutputPrice = sell.in, sell.out
 		if n, ok := policyNumbers[s.Id]; ok {
 			copied := *s
 			copied.Priority, copied.Weight = n.Priority, n.Weight
@@ -170,6 +194,53 @@ func GetModelSupplyViews(modelName string, channelId int) ([]*ModelSupplyView, e
 		views = append(views, view)
 	}
 	return views, nil
+}
+
+// supplyUpstreamName is the name the supply sends upstream: its upstream model, else the model.
+func supplyUpstreamName(s *ModelSupply) string {
+	if s.UpstreamModel != "" {
+		return s.UpstreamModel
+	}
+	return s.Model
+}
+
+type channelPriceKey struct {
+	channelID int
+	model     string
+}
+
+// supplyUpstreamPrices reads the stored upstream prices of the supplies' upstream models on
+// their channels, and which of the channels have a price list at all.
+func supplyUpstreamPrices(supplies []*ModelSupply, channelIDs []int) (map[channelPriceKey]*ChannelPrice, map[int]bool, error) {
+	prices := map[channelPriceKey]*ChannelPrice{}
+	priced := map[int]bool{}
+	if len(supplies) == 0 {
+		return prices, priced, nil
+	}
+	var pricedIDs []int
+	if err := DB.Model(&ChannelPrice{}).Where("channel_id IN ?", channelIDs).Distinct().Pluck("channel_id", &pricedIDs).Error; err != nil {
+		return nil, nil, err
+	}
+	for _, id := range pricedIDs {
+		priced[id] = true
+	}
+	if len(pricedIDs) == 0 {
+		return prices, priced, nil
+	}
+	names := make([]string, 0, len(supplies))
+	for _, s := range supplies {
+		if priced[s.ChannelId] {
+			names = append(names, supplyUpstreamName(s))
+		}
+	}
+	var rows []*ChannelPrice
+	if err := DB.Where("channel_id IN ? AND model IN ?", pricedIDs, names).Find(&rows).Error; err != nil {
+		return nil, nil, err
+	}
+	for _, row := range rows {
+		prices[channelPriceKey{row.ChannelId, row.Model}] = row
+	}
+	return prices, priced, nil
 }
 
 func GetModelSupply(id int) (*ModelSupply, error) {
