@@ -2,7 +2,10 @@ package model
 
 import (
 	"regexp"
+	"slices"
 	"strings"
+
+	"github.com/modeltaps/modeltaps/common/utils"
 )
 
 // Kinds of model the channel panel tags next to a model's name. A chat (language) model has no
@@ -106,4 +109,33 @@ func ResolveModelKind(upstreamKind string, outputModalities []string, name strin
 		return kind
 	}
 	return ModelKindFromName(name)
+}
+
+// ModelKindRealtime marks a catalog model served only on the realtime (voice session) endpoint.
+const ModelKindRealtime = "realtime"
+
+// endpointOnlyKinds maps the endpoint of a model that has no chat endpoint to its kind.
+var endpointOnlyKinds = []struct{ endpoint, kind string }{
+	{ModelEndpointImages, ModelKindImage},
+	{ModelEndpointAudioSpeech, ModelKindSpeech},
+	{ModelEndpointAudioTranscription, ModelKindTranscription},
+	{ModelEndpointEmbeddings, ModelKindEmbedding},
+	{ModelEndpointRerank, ModelKindRerank},
+	{ModelEndpointRealtime, ModelKindRealtime},
+}
+
+// CatalogModelKind is the kind the model catalog shows for a row; "" is a chat (language) model.
+// Endpoints an admin set without chat or responses name the kind; otherwise the output
+// modalities and then the name decide, as for a channel's models.
+func CatalogModelKind(name, endpointsJSON, outputModalitiesJSON string) string {
+	endpoints, _ := utils.UnmarshalString[[]string](endpointsJSON)
+	if len(endpoints) > 0 && !slices.Contains(endpoints, ModelEndpointChat) && !slices.Contains(endpoints, ModelEndpointResponses) {
+		for _, rule := range endpointOnlyKinds {
+			if slices.Contains(endpoints, rule.endpoint) {
+				return rule.kind
+			}
+		}
+	}
+	output, _ := utils.UnmarshalString[[]string](outputModalitiesJSON)
+	return ResolveModelKind("", output, name)
 }

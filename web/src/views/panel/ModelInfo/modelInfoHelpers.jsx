@@ -1,5 +1,17 @@
 import { useTranslation } from 'react-i18next';
-import { ArrowUpDown, AudioLines, Binary, Image as ImageIcon, MessageSquare, Mic, Volume2, Workflow } from 'lucide-react';
+import {
+  ArrowUpDown,
+  AudioLines,
+  Binary,
+  Ear,
+  FileText,
+  Film,
+  Image as ImageIcon,
+  MessageSquare,
+  Mic,
+  Volume2,
+  Workflow
+} from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -192,6 +204,46 @@ export function EndpointIcons({ json, className }) {
   );
 }
 
+// What a model does, from the catalog's computed model_kind ("" is a chat model).
+export const MODEL_KIND_VALUES = ['chat', 'image', 'video', 'speech', 'transcription', 'audio', 'embedding', 'rerank', 'realtime'];
+export const modelKindOf = (row) => (row?.catalogId > 0 ? row.model_kind || 'chat' : '');
+export const modelKindLabel = (t, kind) => (MODEL_KIND_VALUES.includes(kind) ? t(`modelInfoPage.kindOptions.${kind}`) : kind);
+
+// Inputs beyond text a chat model takes, each as a small icon named on hover.
+const INPUT_ICONS = { image: ImageIcon, audio: Ear, video: Film, pdf: FileText };
+const INPUT_ALIASES = { file: 'pdf' };
+
+export function ModelKindCell({ row }) {
+  const { t } = useTranslation();
+  const kind = modelKindOf(row);
+  if (!kind) return <span className="text-muted-foreground">—</span>;
+  const declared = new Set(safeJsonArray(row.input_modalities).map((m) => INPUT_ALIASES[m] || m));
+  const inputs = kind === 'chat' ? Object.keys(INPUT_ICONS).filter((m) => declared.has(m)) : [];
+  return (
+    <span className="inline-flex items-center gap-2 whitespace-nowrap text-[13px]">
+      <span>{modelKindLabel(t, kind)}</span>
+      {inputs.length > 0 && (
+        <span className="inline-flex items-center gap-1 text-muted-foreground">
+          {inputs.map((input) => {
+            const Icon = INPUT_ICONS[input];
+            const label = t(`modelInfoPage.inputOptions.${input}`);
+            return (
+              <Tooltip key={input}>
+                <TooltipTrigger asChild>
+                  <span role="img" aria-label={label} className="inline-flex cursor-default">
+                    <Icon className="size-3.5" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{label}</TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </span>
+      )}
+    </span>
+  );
+}
+
 // Kept for callers that want text badges.
 export function EndpointBadges({ json, max = 2 }) {
   const { t } = useTranslation();
@@ -212,7 +264,8 @@ export const MODEL_STATUS_LABEL_KEYS = {
 
 // Model state as a quiet dot and label: most rows in a fresh catalog have no channel yet, so a
 // filled badge per row would flood the table.
-const MODEL_STATUS_DOTS = { ok: 'live', nochannel: 'warn', unpriced: 'warn', unpublished: 'warn' };
+// "Ready" (a draft with a channel and a price) is not a problem: the switch beside it enables it.
+const MODEL_STATUS_DOTS = { ok: 'live', nochannel: 'warn', unpriced: 'warn', unpublished: 'off' };
 
 export function ModelStatusBadge({ status }) {
   const { t } = useTranslation();

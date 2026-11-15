@@ -21,6 +21,8 @@ import {
   resolveCatalogTab,
   savePriceUnit,
   sortCatalogRows,
+  catalogGroup,
+  catalogGroupCounts,
   suppliedUpstreamKeys
 } from './modelCatalog';
 
@@ -56,8 +58,9 @@ describe('legacy route redirects', () => {
 describe('column defaults', () => {
   it('shows the default columns and hides the optional ones', () => {
     const v = defaultColumnVisibility();
-    ['model', 'endpoints', 'supply', 'price', 'state', 'visible'].forEach((id) => expect(v[id]).toBe(true));
+    ['model', 'model_kind', 'supply', 'price', 'state', 'visible'].forEach((id) => expect(v[id]).toBe(true));
     [
+      'endpoints',
       'channels',
       'vendor',
       'context_length',
@@ -308,6 +311,19 @@ describe('channel-listed names a supply already sends', () => {
 
   it('keeps every name without supplies', () => {
     expect([...channelModelNames([{ id: 1, models: 'a,b' }])]).toEqual(['a', 'b']);
+  });
+});
+
+describe('catalogGroup', () => {
+  it('sorts rows into enabled, not enabled and not in the catalog', () => {
+    const rows = [
+      { model: 'a', catalogId: 1 },
+      { model: 'b', catalogId: 2, hidden: true },
+      { model: 'c', catalogId: 3, hidden: true },
+      { model: 'd', catalogId: 0 }
+    ];
+    expect(rows.map(catalogGroup)).toEqual(['enabled', 'disabled', 'disabled', 'uncataloged']);
+    expect(catalogGroupCounts(rows)).toEqual({ enabled: 1, disabled: 2, uncataloged: 1 });
   });
 });
 

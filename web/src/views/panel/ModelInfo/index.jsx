@@ -61,6 +61,7 @@ import SupplyBatchMenu from './supply/SupplyBatchMenu';
 import CheckUpdatesDialog from '../Pricing/CheckUpdatesDialog';
 import {
   COLUMN_STORAGE_KEY,
+  catalogGroupCounts,
   LEGACY_COLUMN_STORAGE_KEYS,
   MODEL_COLUMNS,
   STATUS_FILTERS,
@@ -82,7 +83,7 @@ import ModelTable, { ModelList, ReadinessLegend } from './ModelTable';
 import ModelInfoSheet from './ModelInfoSheet';
 import ImportDialog from './ImportDialog';
 import LibrarySheet from './LibrarySheet';
-import { ENDPOINT_LABEL_KEYS, ENDPOINT_VALUES, isUnlabeled, safeJsonArray } from './modelInfoHelpers';
+import { ENDPOINT_LABEL_KEYS, ENDPOINT_VALUES, MODEL_KIND_VALUES, isUnlabeled, modelKindOf, safeJsonArray } from './modelInfoHelpers';
 import { listSupplies } from './supply/supplyApi';
 import { useSupplySwitches, SupplySwitchNote } from './supply/supplyParts';
 import { MODEL_STATUSES, countSuppliesByModel, isPublicModelRow, normalizeModelStatus } from './supply/supplyHelpers';
@@ -125,10 +126,15 @@ const buildFilterFields = (vendors) => [
     'modelInfoPage.endpoints',
     ENDPOINT_VALUES.map((e) => ({ value: e, labelKey: ENDPOINT_LABEL_KEYS[e] }))
   ),
+  singleEnum(
+    'kind',
+    'modelInfoPage.modelKind',
+    MODEL_KIND_VALUES.map((k) => ({ value: k, labelKey: `modelInfoPage.kindOptions.${k}` }))
+  ),
   singleEnum('labels', 'modelsPage.labeling', [{ value: 'unlabeled', labelKey: 'modelInfoPage.onlyUnlabeled' }])
 ];
 
-const MODELINFO_FILTER_PARAM_KEYS = ['vendor_id', 'publish', 'visible', 'billing', 'endpoint', 'labels'];
+const MODELINFO_FILTER_PARAM_KEYS = ['vendor_id', 'publish', 'visible', 'billing', 'endpoint', 'kind', 'labels'];
 // Parameter mapping depends only on key / type / single / paramInclude, not on the vendor
 // options, so URL parsing can use the static description.
 const MODELINFO_FILTER_FIELDS = buildFilterFields({});
@@ -163,6 +169,7 @@ export function filterCatalogRows(rows, { keyword = '', params = {}, aliasesByTa
     if (params.visible && String(isVisibleToUsers(row)) !== params.visible) return false;
     if (params.billing && billingType(row) !== params.billing) return false;
     if (params.endpoint && !safeJsonArray(row.endpoints).includes(params.endpoint)) return false;
+    if (params.kind && modelKindOf(row) !== params.kind) return false;
     if (params.labels === 'unlabeled' && !(row.catalogId > 0 && isUnlabeled(row))) return false;
     if (!k) return true;
     return (
@@ -404,6 +411,8 @@ export default function ModelInfo() {
     () => sortCatalogRows(filterCatalogRows(rows, { keyword, params, aliasesByTarget })),
     [rows, keyword, params, aliasesByTarget]
   );
+
+  const groupCounts = useMemo(() => catalogGroupCounts(filtered), [filtered]);
 
   const lastPage = Math.max(0, Math.ceil(filtered.length / rowsPerPage) - 1);
   const currentPage = Math.min(page, lastPage);
@@ -754,6 +763,7 @@ export default function ModelInfo() {
     body = (
       <ModelList
         items={pageRows}
+        groupCounts={groupCounts}
         vendors={vendors}
         unit={unit}
         selectMode={selectMode}
@@ -769,6 +779,7 @@ export default function ModelInfo() {
     body = (
       <ModelTable
         items={pageRows}
+        groupCounts={groupCounts}
         vendors={vendors}
         unit={unit}
         onUnitChange={handleUnitChange}

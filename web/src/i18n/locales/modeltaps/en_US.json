@@ -704,7 +704,35 @@
     "sectionSource": "Source & sync time",
     "priceEmptyTip": "Not priced yet. Fill in a price to create one on save, or leave it empty.",
     "catalogNotSaved": "Catalog info was not saved: {{message}}",
-    "priceNotSaved": "Price was not saved: {{message}}"
+    "priceNotSaved": "Price was not saved: {{message}}",
+    "endpoints": "Endpoints",
+    "endpointOptions": {
+      "chat": "Chat Completions",
+      "responses": "Responses"
+    },
+    "modelKind": "Type",
+    "kindOptions": {
+      "chat": "Chat",
+      "image": "Image generation",
+      "video": "Video generation",
+      "speech": "Text to speech",
+      "transcription": "Speech to text",
+      "audio": "Audio generation",
+      "embedding": "Embeddings",
+      "rerank": "Rerank",
+      "realtime": "Realtime voice"
+    },
+    "inputOptions": {
+      "image": "Reads images",
+      "audio": "Hears audio",
+      "video": "Watches video",
+      "pdf": "Reads PDFs"
+    },
+    "groups": {
+      "enabled": "Enabled",
+      "disabled": "Not enabled",
+      "uncataloged": "Not in catalog"
+    }
   },
   "pricingPage": {
     "catalogTabs": {
@@ -816,7 +844,7 @@
       "ok": "Usable",
       "nochannel": "No channel",
       "unpriced": "Unpriced",
-      "unpublished": "Disabled"
+      "unpublished": "Ready"
     },
     "visibleFollowsStatus": "Enabled models are listed and callable; disabled ones are neither",
     "showModelsThat": "Show models that",

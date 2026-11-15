@@ -19,7 +19,8 @@ export function resolveCatalogTab(requested) {
 export const MODEL_COLUMNS = [
   { id: 'select', fixed: true },
   { id: 'model', labelKey: 'modelInfoPage.model', fixed: true },
-  { id: 'endpoints', labelKey: 'modelInfoPage.endpoints' },
+  { id: 'model_kind', labelKey: 'modelInfoPage.modelKind' },
+  { id: 'endpoints', labelKey: 'modelInfoPage.endpoints', defaultHidden: true },
   { id: 'channels', labelKey: 'modelInfoPage.channels', defaultHidden: true },
   { id: 'supply', labelKey: 'modelSupply.column' },
   { id: 'price', labelKey: 'modelInfoPage.price' },
@@ -38,9 +39,10 @@ export const MODEL_COLUMNS = [
   { id: 'actions', fixed: true }
 ];
 
-// The column picker's storage key (v2: channels became optional); the old key is cleaned up.
-export const COLUMN_STORAGE_KEY = 'model-catalog-columns-v2';
-export const LEGACY_COLUMN_STORAGE_KEYS = ['model-catalog-columns'];
+// The column picker's storage key (v3: the type column replaced endpoints as a default); the old
+// keys are cleaned up.
+export const COLUMN_STORAGE_KEY = 'model-catalog-columns-v3';
+export const LEGACY_COLUMN_STORAGE_KEYS = ['model-catalog-columns', 'model-catalog-columns-v2'];
 
 const CHANNEL_STATUS_ENABLED = 1;
 
@@ -242,6 +244,16 @@ export function sortCatalogRows(rows = []) {
     .map((row) => ({ row, rank: rank(row) }))
     .sort((a, b) => a.rank - b.rank || String(a.row.model).localeCompare(String(b.row.model)))
     .map(({ row }) => row);
+}
+
+// The section a catalog row is listed under, in the order sortCatalogRows keeps them.
+export const CATALOG_GROUPS = ['enabled', 'disabled', 'uncataloged'];
+export const catalogGroup = (row) => (isUncataloged(row) ? 'uncataloged' : isVisibleToUsers(row) ? 'enabled' : 'disabled');
+
+export function catalogGroupCounts(rows = []) {
+  const counts = Object.fromEntries(CATALOG_GROUPS.map((g) => [g, 0]));
+  rows.forEach((row) => (counts[catalogGroup(row)] += 1));
+  return counts;
 }
 
 // 完整可用 = 有启用渠道 + 已定价 + 对用户可见。

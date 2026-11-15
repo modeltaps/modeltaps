@@ -40,6 +40,8 @@ type modelInfoCatalogItem struct {
 	State         string         `json:"state"`
 	VendorSlug    string         `json:"vendor_slug"`
 	BoundChannels []boundChannel `json:"bound_channels"`
+	// ModelKind is what the model does (image, video, speech ...); "" is a chat model.
+	ModelKind string `json:"model_kind"`
 }
 
 // boundChannelsByModel 建立「模型名 → 渠道」索引（含禁用渠道，按 status 区分），避免逐行查库。
@@ -206,6 +208,7 @@ func GetModelInfoCatalog(c *gin.Context) {
 		items = append(items, &modelInfoCatalogItem{
 			ModelInfo:     info,
 			State:         modelInfoState(info, countEnabledChannels(channels)),
+			ModelKind:     model.CatalogModelKind(info.Model, info.Endpoints, info.OutputModalities),
 			VendorSlug:    model.ModelOwnedBysInstance.GetSlug(info.VendorID),
 			BoundChannels: channels,
 		})

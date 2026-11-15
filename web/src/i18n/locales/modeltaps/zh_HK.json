@@ -703,7 +703,41 @@
     "sectionSource": "來源與同步時間",
     "priceEmptyTip": "尚未定價；填寫價格後儲存即新建價格，留空則不定價。",
     "catalogNotSaved": "目錄資訊未儲存：{{message}}",
-    "priceNotSaved": "價格未儲存：{{message}}"
+    "priceNotSaved": "價格未儲存：{{message}}",
+    "endpoints": "介面",
+    "endpointOptions": {
+      "chat": "對話介面（Chat Completions）",
+      "responses": "對話介面（Responses）",
+      "realtime": "即時語音",
+      "images": "圖像生成",
+      "audioSpeech": "語音合成",
+      "audioTranscription": "語音轉寫",
+      "embeddings": "向量",
+      "rerank": "重排"
+    },
+    "modelKind": "類型",
+    "kindOptions": {
+      "chat": "對話",
+      "image": "圖像生成",
+      "video": "影片生成",
+      "speech": "語音合成",
+      "transcription": "語音轉寫",
+      "audio": "音訊生成",
+      "embedding": "向量",
+      "rerank": "重排",
+      "realtime": "即時語音"
+    },
+    "inputOptions": {
+      "image": "可看圖",
+      "audio": "可聽音訊",
+      "video": "可看影片",
+      "pdf": "可讀 PDF"
+    },
+    "groups": {
+      "enabled": "已啟用",
+      "disabled": "未啟用",
+      "uncataloged": "未入目錄"
+    }
   },
   "pricingPage": {
     "catalogTabs": {
@@ -815,7 +849,7 @@
       "ok": "可用",
       "nochannel": "無渠道",
       "unpriced": "未定價",
-      "unpublished": "未啟用"
+      "unpublished": "可啟用"
     },
     "visibleFollowsStatus": "啟用後用戶能看到並調用這個模型；停用後不再列出、不可調用",
     "showModelsThat": "篩選模型",

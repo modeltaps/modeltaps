@@ -64,3 +64,23 @@ func TestResolveModelKind(t *testing.T) {
 		t.Errorf("speech output, got %q", got)
 	}
 }
+
+// Endpoints without chat name the kind; otherwise output modalities and the name decide.
+func TestCatalogModelKind(t *testing.T) {
+	cases := []struct {
+		name, endpoints, output, want string
+	}{
+		{"text-embedding-3-small", `["embeddings"]`, "", ModelKindEmbedding},
+		{"gpt-realtime", `["realtime"]`, `["text","audio"]`, ModelKindRealtime},
+		{"gpt-image-1", `["images"]`, `["image"]`, ModelKindImage},
+		{"gpt-5.5", `["chat","responses"]`, `["text"]`, ""},
+		{"gemini-3-flash-image", `["chat","responses","images"]`, `["text","image"]`, ModelKindImage},
+		{"openai/tts-1", "", `["text"]`, ModelKindSpeech},
+		{"claude-opus-5-5", "", "", ""},
+	}
+	for _, c := range cases {
+		if got := CatalogModelKind(c.name, c.endpoints, c.output); got != c.want {
+			t.Errorf("CatalogModelKind(%q) = %q, want %q", c.name, got, c.want)
+		}
+	}
+}

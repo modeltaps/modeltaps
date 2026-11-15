@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
@@ -25,16 +25,18 @@ import { cn } from '@/lib/utils';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
 import { ValueFormatter, copy, timestamp2string } from 'utils/common';
 import { statusLabel } from '../Channel/channelApi';
-import { enabledChannels, isVisibleToUsers, modelStatus } from '../Pricing/modelCatalog';
+import { catalogGroup, enabledChannels, isVisibleToUsers, modelStatus } from '../Pricing/modelCatalog';
 import {
-  ENDPOINT_LABEL_KEYS,
   MODE_LABEL_KEYS,
   CapabilityBadges,
   EndpointIcons,
   ModalityBadges,
+  ModelKindCell,
   ModelStatusBadge,
   TagBadges,
   VendorIcon,
+  modelKindLabel,
+  modelKindOf,
   safeJsonArray
 } from './modelInfoHelpers';
 import { ModelStatusPill } from './supply/supplyParts';
@@ -334,6 +336,21 @@ function VisibleSwitch({ row, onToggleHidden }) {
 
 VisibleSwitch.propTypes = { row: PropTypes.object.isRequired, onToggleHidden: PropTypes.func };
 
+// A thin row naming the section below it: enabled, not enabled, not in the catalog. The count is
+// the whole filtered list's, so a section that runs onto the next page keeps its total.
+function GroupHeaderRow({ label, count, colSpan }) {
+  return (
+    <TableRow className="bg-muted/40 hover:bg-muted/40">
+      <TableCell colSpan={colSpan} className="h-8 py-0 text-xs font-medium text-muted-foreground">
+        {label}
+        {count != null && <span className="ml-1.5 tabular-nums">{count}</span>}
+      </TableCell>
+    </TableRow>
+  );
+}
+
+GroupHeaderRow.propTypes = { label: PropTypes.string.isRequired, count: PropTypes.number, colSpan: PropTypes.number.isRequired };
+
 export default function ModelTable({
   items,
   vendors = {},
@@ -347,7 +364,8 @@ export default function ModelTable({
   onOpen,
   onDeleteCatalog,
   onDeletePrice,
-  columnPicker = null
+  columnPicker = null,
+  groupCounts
 }) {
   const { t } = useTranslation();
 
@@ -381,12 +399,19 @@ export default function ModelTable({
         id: 'model',
         header: t('modelInfoPage.model'),
         // Takes whatever the other columns leave; they size to their content.
-        meta: { className: GROW_COLUMN },
+        meta: { className: GROW_COLUMN, dim: true },
         cell: (c) => <ModelCell row={c.row.original} vendor={vendors[c.row.original.vendor_id]} />
+      },
+      {
+        id: 'model_kind',
+        header: t('modelInfoPage.modelKind'),
+        meta: { dim: true },
+        cell: (c) => <ModelKindCell row={c.row.original} />
       },
       {
         id: 'endpoints',
         header: t('modelInfoPage.endpoints'),
+        meta: { dim: true },
         cell: (c) => (
           <span className="flex flex-nowrap">
             <EndpointIcons json={c.row.original.endpoints} />
@@ -405,6 +430,7 @@ export default function ModelTable({
       {
         id: 'supply',
         header: t('modelSupply.column'),
+        meta: { dim: true },
         cell: (c) => (
           <RowControl>
             <SupplyCell row={c.row.original} onOpen={() => onOpen(c.row.original, 'supplies')} />
@@ -414,7 +440,7 @@ export default function ModelTable({
       {
         id: 'price',
         header: () => <PriceHeader unit={unit} onUnitChange={onUnitChange} />,
-        meta: { className: 'text-right' },
+        meta: { className: 'text-right', dim: true },
         cell: (c) => <PriceCell price={c.row.original.price} unit={unit} hideUnit />
       },
       {
@@ -541,20 +567,42 @@ export default function ModelTable({
           ))}
         </TableHeader>
         <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow
-              key={row.id}
-              className={ROW_OPENS}
-              data-state={selectedKeys?.has(row.original.key) ? 'selected' : undefined}
-              {...rowOpenProps(() => onOpen(row.original, 'profile'))}
-            >
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id} className={cn('whitespace-nowrap', cell.column.columnDef.meta?.className)}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
+          {table.getRowModel().rows.map((row, index, rows) => {
+            const group = catalogGroup(row.original);
+            const off = group !== 'enabled';
+            const startsGroup = index === 0 || catalogGroup(rows[index - 1].original) !== group;
+            return (
+              <Fragment key={row.id}>
+                {startsGroup && (
+                  <GroupHeaderRow
+                    label={t(`modelInfoPage.groups.${group}`)}
+                    count={groupCounts?.[group]}
+                    colSpan={row.getVisibleCells().length}
+                  />
+                )}
+                <TableRow
+                  className={ROW_OPENS}
+                  data-state={selectedKeys?.has(row.original.key) ? 'selected' : undefined}
+                  data-off={off ? '' : undefined}
+                  {...rowOpenProps(() => onOpen(row.original, 'profile'))}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        'whitespace-nowrap',
+                        cell.column.columnDef.meta?.className,
+                        // Rows users cannot call fade back; their switch and menu stay at full strength.
+                        off && cell.column.columnDef.meta?.dim && 'opacity-55'
+                      )}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              </Fragment>
+            );
+          })}
         </TableBody>
       </Table>
     </TooltipProvider>
@@ -563,6 +611,7 @@ export default function ModelTable({
 
 ModelTable.propTypes = {
   columnPicker: PropTypes.node,
+  groupCounts: PropTypes.object,
   items: PropTypes.array.isRequired,
   vendors: PropTypes.object,
   unit: PropTypes.string,
@@ -657,23 +706,18 @@ function StackedPrice({ price, unit }) {
 
 StackedPrice.propTypes = { price: PropTypes.object, unit: PropTypes.string };
 
-// Second line of a phone row: vendor · first endpoint · supplies (public models), or the alias
+// Second line of a phone row: vendor · type · supplies (public models), or the alias
 // target / "not in catalog" when that says more.
 function phoneMeta(t, row, vendor) {
   if (!row.catalogId) return t('modelInfoPage.notInCatalog');
   if (row.alias_of) return t('modelsPage.aliasTo', { model: row.alias_of });
-  const endpoints = safeJsonArray(row.endpoints);
-  const parts = [vendor?.name];
-  if (endpoints.length > 0) {
-    const first = ENDPOINT_LABEL_KEYS[endpoints[0]] ? t(ENDPOINT_LABEL_KEYS[endpoints[0]]) : endpoints[0];
-    parts.push(endpoints.length > 1 ? `${first} +${endpoints.length - 1}` : first);
-  }
+  const parts = [vendor?.name, modelKindLabel(t, modelKindOf(row))];
   if (isPublicModelRow(row)) parts.push(t('modelSupply.count', { count: row.supplyCounts?.total || 0 }));
   return parts.filter(Boolean).join(' · ');
 }
 
 // Phone list: one 60px row per model. The vendor tile leads (a checkbox in select mode); then the
-// name over vendor · endpoint · supplies; on the right the readiness bars and the price, input
+// name over vendor · type · supplies; on the right the readiness bars and the price, input
 // over output. A tap opens the model; ⋯ holds the row actions, including show / hide since there
 // is no switch.
 export function ModelList({
@@ -686,59 +730,69 @@ export function ModelList({
   onToggleHidden,
   onOpen,
   onDeleteCatalog,
-  onDeletePrice
+  onDeletePrice,
+  groupCounts
 }) {
   const { t } = useTranslation();
   return (
     <ul className="divide-y divide-border">
-      {items.map((row) => {
+      {items.map((row, index) => {
         const selected = selectedKeys.has(row.key);
         const vendor = vendors[row.vendor_id];
+        const group = catalogGroup(row);
+        const startsGroup = index === 0 || catalogGroup(items[index - 1]) !== group;
         return (
-          <li
-            key={row.key}
-            className={cn('flex h-15 items-center gap-3 pl-3 pr-1', ROW_OPENS, selected && 'bg-muted/60')}
-            {...rowOpenProps(() => (selectMode ? onToggleSelect(row.key) : onOpen(row, 'profile')))}
-          >
-            {selectMode ? (
-              <RowControl className="flex size-7 shrink-0 items-center justify-center">
-                <Checkbox checked={selected} onCheckedChange={() => onToggleSelect(row.key)} aria-label={row.model} />
-              </RowControl>
-            ) : (
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-border bg-field">
-                <VendorIcon vendor={vendor} model={row.model} />
-              </span>
+          <Fragment key={row.key}>
+            {startsGroup && (
+              <li className="flex h-8 items-center bg-muted/40 px-3 text-xs font-medium text-muted-foreground">
+                {t(`modelInfoPage.groups.${group}`)}
+                {groupCounts?.[group] != null && <span className="ml-1.5 tabular-nums">{groupCounts[group]}</span>}
+              </li>
             )}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1">
-                <MiddleTruncate
-                  text={row.model}
-                  className={cn('text-sm font-medium leading-5', !isVisibleToUsers(row) && 'text-muted-foreground')}
-                />
-                {row.locked && <Lock className="size-3 shrink-0 text-warning" aria-label={t('modelInfoPage.locked')} />}
+            <li
+              className={cn('flex h-15 items-center gap-3 pl-3 pr-1', ROW_OPENS, selected && 'bg-muted/60')}
+              {...rowOpenProps(() => (selectMode ? onToggleSelect(row.key) : onOpen(row, 'profile')))}
+            >
+              {selectMode ? (
+                <RowControl className="flex size-7 shrink-0 items-center justify-center">
+                  <Checkbox checked={selected} onCheckedChange={() => onToggleSelect(row.key)} aria-label={row.model} />
+                </RowControl>
+              ) : (
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-border bg-field">
+                  <VendorIcon vendor={vendor} model={row.model} />
+                </span>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1">
+                  <MiddleTruncate
+                    text={row.model}
+                    className={cn('text-sm font-medium leading-5', !isVisibleToUsers(row) && 'text-muted-foreground')}
+                  />
+                  {row.locked && <Lock className="size-3 shrink-0 text-warning" aria-label={t('modelInfoPage.locked')} />}
+                </div>
+                <div className="truncate text-xs leading-4 text-muted-foreground">{phoneMeta(t, row, vendor)}</div>
               </div>
-              <div className="truncate text-xs leading-4 text-muted-foreground">{phoneMeta(t, row, vendor)}</div>
-            </div>
-            <span className="flex shrink-0 items-center gap-2">
-              <Readiness row={row} />
-              <span className="min-w-10 text-right">
-                <StackedPrice price={row.price} unit={unit} />
+              <span className="flex shrink-0 items-center gap-2">
+                <Readiness row={row} />
+                <span className="min-w-10 text-right">
+                  <StackedPrice price={row.price} unit={unit} />
+                </span>
               </span>
-            </span>
-            {selectMode ? (
-              <span className="size-[30px] shrink-0" />
-            ) : (
-              <RowControl className="shrink-0">
-                <RowActionsCell
-                  row={row}
-                  onOpen={onOpen}
-                  onDeleteCatalog={onDeleteCatalog}
-                  onDeletePrice={onDeletePrice}
-                  onToggleHidden={onToggleHidden}
-                />
-              </RowControl>
-            )}
-          </li>
+              {selectMode ? (
+                <span className="size-[30px] shrink-0" />
+              ) : (
+                <RowControl className="shrink-0">
+                  <RowActionsCell
+                    row={row}
+                    onOpen={onOpen}
+                    onDeleteCatalog={onDeleteCatalog}
+                    onDeletePrice={onDeletePrice}
+                    onToggleHidden={onToggleHidden}
+                  />
+                </RowControl>
+              )}
+            </li>
+          </Fragment>
         );
       })}
     </ul>
@@ -746,6 +800,7 @@ export function ModelList({
 }
 
 ModelList.propTypes = {
+  groupCounts: PropTypes.object,
   items: PropTypes.array.isRequired,
   vendors: PropTypes.object,
   unit: PropTypes.string,

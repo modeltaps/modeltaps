@@ -703,7 +703,35 @@
     "sectionSource": "ソースと同期日時",
     "priceEmptyTip": "価格未設定です。価格を入力して保存すると新規作成され、空欄のままなら設定しません。",
     "catalogNotSaved": "カタログ情報は保存されませんでした：{{message}}",
-    "priceNotSaved": "価格は保存されませんでした：{{message}}"
+    "priceNotSaved": "価格は保存されませんでした：{{message}}",
+    "endpoints": "エンドポイント",
+    "endpointOptions": {
+      "chat": "チャット（Chat Completions）",
+      "responses": "チャット（Responses）"
+    },
+    "modelKind": "種類",
+    "kindOptions": {
+      "chat": "チャット",
+      "image": "画像生成",
+      "video": "動画生成",
+      "speech": "音声合成",
+      "transcription": "文字起こし",
+      "audio": "音声生成",
+      "embedding": "埋め込み",
+      "rerank": "リランク",
+      "realtime": "リアルタイム音声"
+    },
+    "inputOptions": {
+      "image": "画像を読める",
+      "audio": "音声を聞ける",
+      "video": "動画を見られる",
+      "pdf": "PDF を読める"
+    },
+    "groups": {
+      "enabled": "有効",
+      "disabled": "未有効",
+      "uncataloged": "カタログ外"
+    }
   },
   "pricingPage": {
     "catalogTabs": {
@@ -815,7 +843,7 @@
       "ok": "利用可能",
       "nochannel": "チャネルなし",
       "unpriced": "未設定",
-      "unpublished": "無効"
+      "unpublished": "有効化可能"
     },
     "visibleFollowsStatus": "有効にすると一覧に出て呼び出せます。無効にすると一覧に出ず呼び出せません",
     "showModelsThat": "モデルを絞り込む",
