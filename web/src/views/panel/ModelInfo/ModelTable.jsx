@@ -124,24 +124,31 @@ export function ChannelsCell({ channels, onOpen }) {
 
 ChannelsCell.propTypes = { channels: PropTypes.array, onOpen: PropTypes.func };
 
-// Public status and number of supplies of a public model on one line (the supply mode is in the
-// tooltip); opens the Supplies tab. Aliases and routing policies have no supplies of their own.
+// Public status and usable/total supplies of a public model on one line (the counts spelled out and
+// the supply mode are in the tooltip); opens the Supplies tab. Aliases and routing policies have no supplies of their own.
 export function SupplyCell({ row, onOpen }) {
   const { t } = useTranslation();
   if (!isPublicModelRow(row)) return <span className="text-muted-foreground">—</span>;
   const counts = row.supplyCounts || { total: 0, usable: 0 };
+  const partial = counts.usable < counts.total;
+  const tip = [
+    t('modelSupply.countTip', { count: counts.total, usable: counts.usable }),
+    t(`modelSupply.mode.${normalizeSupplyMode(row.supply_mode)}`)
+  ];
   return (
     <button
       type="button"
       onClick={onOpen}
-      title={t(`modelSupply.mode.${normalizeSupplyMode(row.supply_mode)}`)}
+      title={tip.join(' · ')}
+      aria-label={tip.join(' · ')}
       className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md text-left hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {/* Enabled / disabled is the switch column; only "retired" needs saying here. */}
       {row.status === 'retired' && <ModelStatusPill status={row.status} />}
       <span className={cn('text-xs text-muted-foreground', counts.total > 0 && counts.usable === 0 && 'text-warning')}>
         {row.status === 'retired' && '· '}
-        {t('modelSupply.count', { count: counts.total })}
+        {/* The column header says "Supply"; the cell is just usable/total, or one number when all are usable. */}
+        <span className="tabular-nums">{partial ? `${counts.usable}/${counts.total}` : counts.total}</span>
       </span>
       {/* Models on the allocation policy need no mark; one set by hand does. */}
       {row.supplyRouting && row.allocation === 'manual' && (
@@ -777,6 +784,12 @@ function StackedPrice({ price, unit }) {
 
 StackedPrice.propTypes = { price: PropTypes.object, unit: PropTypes.string };
 
+// Supplies with no column header around them: "N supplies", or "usable/N supplies" when some are off.
+function supplyCountLabel(t, counts = { total: 0, usable: 0 }) {
+  const { total = 0, usable = 0 } = counts;
+  return usable < total ? t('modelSupply.countPartial', { count: total, usable }) : t('modelSupply.count', { count: total });
+}
+
 // Second line of a phone row: vendor · release date · type · supplies (public models), or the alias
 // target / "not in catalog" when that says more.
 function phoneMeta(t, row, vendor) {
@@ -784,7 +797,7 @@ function phoneMeta(t, row, vendor) {
   if (row.alias_of) return t('modelsPage.aliasTo', { model: row.alias_of });
   // The release date goes early: the line truncates at the end on a narrow phone.
   const parts = [vendor?.name, formatReleaseDate(row.released_at), modelKindLabel(t, modelKindOf(row))];
-  if (isPublicModelRow(row)) parts.push(t('modelSupply.count', { count: row.supplyCounts?.total || 0 }));
+  if (isPublicModelRow(row)) parts.push(supplyCountLabel(t, row.supplyCounts));
   return parts.filter(Boolean).join(' · ');
 }
 

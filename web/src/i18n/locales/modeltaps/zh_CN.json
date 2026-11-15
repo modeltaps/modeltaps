@@ -2795,6 +2795,8 @@
     "tab": "供应",
     "column": "供应",
     "count_other": "{{count}} 个供应",
+    "countPartial_other": "{{usable}}/{{count}} 个供应",
+    "countTip_other": "共 {{count}} 个供应，{{usable}} 个可用（供应和渠道都已启用）",
     "channel": "渠道",
     "model": "模型",
     "upstream": "上游模型",

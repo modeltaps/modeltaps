@@ -2791,6 +2791,8 @@
     "tab": "供給",
     "column": "供給",
     "count_other": "{{count}} 件の供給",
+    "countPartial_other": "{{usable}}/{{count}} 件の供給",
+    "countTip_other": "供給 {{count}} 件中 {{usable}} 件が利用可能（供給とチャネルがどちらも有効）",
     "channel": "チャネル",
     "model": "モデル",
     "upstream": "上流モデル",
