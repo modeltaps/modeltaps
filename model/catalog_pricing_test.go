@@ -297,6 +297,53 @@ func TestFilterChannelSourced(t *testing.T) {
 	}
 }
 
+// A reseller listing the prefixed id must not beat the vendor listing the bare id.
+func TestCatalogMatchPrefersFirstPartyBareID(t *testing.T) {
+	const fx = `{
+      "openai": {"models": {
+        "gpt-5.4-mini": {"id":"gpt-5.4-mini","cost":{"input":0.75,"output":4.5}}
+      }},
+      "aimlapi": {"models": {
+        "openai/gpt-5.4-mini": {"id":"openai/gpt-5.4-mini","cost":{"input":1.587,"output":9.522}}
+      }},
+      "vivgrid": {"models": {
+        "only-resold": {"id":"only-resold","cost":{"input":1,"output":2}}
+      }}
+    }`
+	data := map[string]catalogProvider{}
+	if err := json.Unmarshal([]byte(fx), &data); err != nil {
+		t.Fatal(err)
+	}
+	idx := buildCatalogIndex(data)
+	for _, name := range []string{"openai/gpt-5.4-mini", "gpt-5.4-mini"} {
+		e, ok := idx.match(name)
+		if !ok || e.Provider != "openai" {
+			t.Errorf("match(%q) = %q, want openai", name, e.Provider)
+		}
+	}
+	if e, ok := idx.match("vendor/only-resold"); !ok || e.Provider != "vivgrid" {
+		t.Errorf("third-party fallback = %q, want vivgrid", e.Provider)
+	}
+}
+
+// models.dev never replaces a price from the built-in official table.
+func TestWithOfficialPrices(t *testing.T) {
+	got := withOfficialPrices([]*Price{
+		{Model: "gpt-5.4-mini", Input: 0.7935, Output: 4.761},
+		{Model: "not-official-xyz", Input: 1, Output: 2},
+		nil,
+	})
+	if len(got) != 2 {
+		t.Fatalf("prices = %+v", got)
+	}
+	if !floatEqM(got[0].Input, 0.375) || !floatEqM(got[0].Output, 2.25) || got[0].ChannelType != config.ChannelTypeOpenAI {
+		t.Errorf("gpt-5.4-mini = %+v, want the official 0.375 / 2.25", got[0])
+	}
+	if !floatEqM(got[1].Input, 1) {
+		t.Errorf("non-official price changed: %+v", got[1])
+	}
+}
+
 func floatEqM(a, b float64) bool {
 	d := a - b
 	if d < 0 {

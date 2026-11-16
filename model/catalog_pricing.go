@@ -362,20 +362,34 @@ func buildCatalogIndex(data map[string]catalogProvider) *catalogIndex {
 
 // match 按「完整 id → 去前缀 id 精确 → 去前缀 id 对齐去前缀索引」的顺序匹配渠道模型名，
 // 使 OpenRouter 风格的 "openai/gpt-4o-mini-tts" 也能对上 models.dev 的 "gpt-4o-mini-tts"。
+// A first-party entry found by any of the lookups wins over an earlier third-party hit: the
+// vendor lists "gpt-5.4-mini" while only resellers list "openai/gpt-5.4-mini", and a reseller's
+// marked-up price must not stand in for the vendor's.
 func (idx *catalogIndex) match(name string) (catalogEntry, bool) {
 	lower := strings.ToLower(strings.TrimSpace(name))
 	if lower == "" {
 		return catalogEntry{}, false
 	}
-	if e, ok := idx.exact[lower]; ok {
-		return e, true
-	}
 	bare := bareModelID(lower)
-	if e, ok := idx.exact[bare]; ok {
-		return e, true
+	lookups := []struct {
+		index map[string]catalogEntry
+		key   string
+	}{{idx.exact, lower}, {idx.exact, bare}, {idx.bare, bare}}
+	var fallback *catalogEntry
+	for _, l := range lookups {
+		e, ok := l.index[l.key]
+		if !ok {
+			continue
+		}
+		if isFirstPartyModelsDevProvider(e.Provider) {
+			return e, true
+		}
+		if fallback == nil {
+			fallback = &e
+		}
 	}
-	if e, ok := idx.bare[bare]; ok {
-		return e, true
+	if fallback != nil {
+		return *fallback, true
 	}
 	return catalogEntry{}, false
 }
@@ -508,6 +522,7 @@ func CatalogMissingModels(names []string) []string {
 }
 
 // filterChannelSourced 去掉已由渠道自带列表（OpenRouter、Vercel AI Gateway）提供的元信息 / 价格：渠道来源优先于 models.dev。
+// Prices of models in the built-in official table are swapped for the official price (see withOfficialPrices).
 func filterChannelSourced(infos []*ModelInfo, prices []*Price) ([]*ModelInfo, []*Price) {
 	keptInfos := make([]*ModelInfo, 0, len(infos))
 	for _, info := range infos {
@@ -517,13 +532,32 @@ func filterChannelSourced(infos []*ModelInfo, prices []*Price) ([]*ModelInfo, []
 		keptInfos = append(keptInfos, info)
 	}
 	keptPrices := make([]*Price, 0, len(prices))
-	for _, price := range prices {
+	for _, price := range withOfficialPrices(prices) {
 		if existing, ok := PricingInstance.priceSnapshot(price.Model); ok && isChannelPriceSource(existing.ChannelType) {
 			continue
 		}
 		keptPrices = append(keptPrices, price)
 	}
 	return keptInfos, keptPrices
+}
+
+// withOfficialPrices replaces the price of every model listed in the built-in official price
+// table (price_official.go) with that official price. Those prices are checked against the
+// vendor's pricing page and carry cache and long-context pricing that models.dev lacks, so a
+// models.dev sync never replaces them with a reseller's or a partial copy.
+func withOfficialPrices(prices []*Price) []*Price {
+	official := officialTokenPricesAt(time.Now())
+	out := make([]*Price, 0, len(prices))
+	for _, price := range prices {
+		if price == nil {
+			continue
+		}
+		if o, ok := official[price.Model]; ok {
+			price = o.toPrice(price.Model)
+		}
+		out = append(out, price)
+	}
+	return out
 }
 
 // syncCatalogChannelModels 把渠道模型名按 models.dev 全量匹配结果 upsert（不覆盖 locked 与渠道来源）。
@@ -621,7 +655,7 @@ func syncCatalogPricing(url string, auto bool) (*CatalogSyncResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	prices := BuildCatalogPrices(data)
+	prices := withOfficialPrices(BuildCatalogPrices(data))
 	if err := writeSyncedPrices(prices, "models.dev", auto); err != nil {
 		return nil, err
 	}
