@@ -28,6 +28,9 @@ type officialTokenPrice struct {
 	// extra maps a usage extra key (config.UsageExtra*) to its USD price per 1M tokens.
 	extra       map[string]float64
 	longContext *LongContextTier
+	// free marks a model the vendor lists as free of charge; it is the only case where the input
+	// price may be zero.
+	free bool
 }
 
 // Long-context tiers as published by each vendor.
@@ -56,6 +59,29 @@ func openAIPrice(input, cached, cacheWrite, output float64, longContext *LongCon
 		extra:       extra,
 		longContext: longContext,
 	}
+}
+
+// openAIImagePrice prices a gpt-image model: image input and output tokens as the base input and
+// output prices, text input tokens through the input_text_tokens extra. Cached input is not modeled:
+// the cached text and cached image rates differ and both extras would add up on the same tokens, so
+// cached tokens are billed at the uncached rate (never below cost).
+func openAIImagePrice(imageInput, textInput, imageOutput float64) officialTokenPrice {
+	return officialTokenPrice{
+		channelType: config.ChannelTypeOpenAI,
+		input:       imageInput,
+		output:      imageOutput,
+		extra:       map[string]float64{config.UsageExtraInputTextTokens: textInput},
+	}
+}
+
+// inputOnlyPrice prices a model billed on input only (embeddings, and TTS where input characters
+// are counted as prompt tokens by relay/speech.go).
+func inputOnlyPrice(channelType int, input float64) officialTokenPrice {
+	return officialTokenPrice{channelType: channelType, input: input}
+}
+
+func freePrice(channelType int) officialTokenPrice {
+	return officialTokenPrice{channelType: channelType, free: true}
 }
 
 func claudePrice(input, write5m, write1h, read, output float64) officialTokenPrice {
@@ -110,6 +136,20 @@ func deepseekPrice(cacheMiss, cacheHit, output float64) officialTokenPrice {
 	}
 }
 
+// mistralPrice: input, cached input, output. Cache hits arrive as cached_tokens on the OpenAI format.
+func mistralPrice(input, cached, output float64) officialTokenPrice {
+	extra := map[string]float64{}
+	if cached > 0 {
+		extra[config.UsageExtraCache] = cached
+	}
+	return officialTokenPrice{
+		channelType: config.ChannelTypeMistral,
+		input:       input,
+		output:      output,
+		extra:       extra,
+	}
+}
+
 // officialTokenPrices lists current models at their official list prices (checked 2026-10-15).
 func officialTokenPrices() map[string]officialTokenPrice {
 	return map[string]officialTokenPrice{
@@ -158,6 +198,24 @@ func officialTokenPrices() map[string]officialTokenPrice {
 		"o4-mini":            openAIPrice(1.1, 0.275, 0, 4.4, nil),
 		"o1":                 openAIPrice(15, 7.5, 0, 60, nil),
 		"o1-pro":             openAIPrice(150, 0, 0, 600, nil),
+		// Embeddings and moderation (checked 2026-11-16, "Specialized models" table).
+		"text-embedding-3-small": inputOnlyPrice(config.ChannelTypeOpenAI, 0.02),
+		"text-embedding-3-large": inputOnlyPrice(config.ChannelTypeOpenAI, 0.13),
+		"text-embedding-ada-002": inputOnlyPrice(config.ChannelTypeOpenAI, 0.1),
+		"omni-moderation-latest": freePrice(config.ChannelTypeOpenAI),
+		// TTS, USD per 1M characters; listed as deprecated (checked 2026-11-16, "Realtime & Audio").
+		"tts-1":    inputOnlyPrice(config.ChannelTypeOpenAI, 15),
+		"tts-1-hd": inputOnlyPrice(config.ChannelTypeOpenAI, 30),
+		// Images, USD per 1M tokens: image input, text input, image output (checked 2026-11-16,
+		// "Images" table; gpt-image-2 is listed as deprecated). Dated snapshot IDs from
+		// https://developers.openai.com/api/docs/models/<model>.
+		"gpt-image-2":                       openAIImagePrice(8, 5, 30),
+		"gpt-image-2.5-flare":               openAIImagePrice(8, 5, 30),
+		"gpt-image-2.5-flare-2026-09-08":    openAIImagePrice(8, 5, 30),
+		"gpt-image-2.5-sunburst":            openAIImagePrice(8, 5, 30),
+		"gpt-image-2.5-sunburst-2026-09-08": openAIImagePrice(8, 5, 30),
+		"gpt-image-2.6-flare":               openAIImagePrice(8, 5, 30),
+		"gpt-image-2.6-sunburst":            openAIImagePrice(8, 5, 30),
 
 		// Anthropic, USD per 1M tokens: base input, 5m cache writes, 1h cache writes, cache hits, output.
 		// https://platform.claude.com/docs/en/about-claude/pricing
@@ -227,6 +285,42 @@ func officialTokenPrices() map[string]officialTokenPrice {
 		"deepseek-v4-flash":            deepseekPrice(0.3, 0.006, 1.2),
 		"deepseek-v4-flash-vision-exp": deepseekPrice(0.3, 0.006, 1.2),
 		"deepseek-v4-pro":              deepseekPrice(1.32, 0.044, 3.96),
+
+		// Mistral, USD per 1M tokens: input, cached input, output (checked 2026-11-16).
+		// https://docs.mistral.ai/inference/pricing; aliases from https://docs.mistral.ai/models/<model>:
+		// mistral-large-latest = Mistral Large 4, mistral-small-latest = Mistral Small 4 (26.03).
+		"mistral-large-latest": mistralPrice(0.7, 0.07, 2.1),
+		"mistral-small-latest": mistralPrice(0.15, 0.015, 0.6),
+		"mistral-embed":        {channelType: config.ChannelTypeMistral, input: 0.1, extra: map[string]float64{config.UsageExtraCache: 0.01}},
+	}
+}
+
+// officialRequestPrice is a vendor's published price per request (per generated item), in USD.
+type officialRequestPrice struct {
+	channelType int
+	usd         float64
+}
+
+// officialRequestPrices lists models billed per request at their official list prices.
+func officialRequestPrices() map[string]officialRequestPrice {
+	return map[string]officialRequestPrice{
+		// Lyria 3 music generation, USD per song, Gemini API paid tier (checked 2026-11-16).
+		// https://ai.google.dev/gemini-api/docs/pricing
+		"lyria-3-clip-preview": {config.ChannelTypeGemini, 0.04},
+		"lyria-3-pro-preview":  {config.ChannelTypeGemini, 0.08},
+	}
+}
+
+// toPrice converts a USD-per-request price into a times Price: the billing side charges
+// 1000 x ratio quota per request (relay/relay_util/quota_calc.go), so ratio = USD / DollarRate.
+func (o officialRequestPrice) toPrice(modelName string) *Price {
+	ratio := roundRatioValue(o.usd / DollarRate)
+	return &Price{
+		Model:       modelName,
+		Type:        TimesPriceType,
+		ChannelType: o.channelType,
+		Input:       ratio,
+		Output:      ratio,
 	}
 }
 

@@ -22,8 +22,14 @@ func defaultPriceByModel(t *testing.T) map[string]*Price {
 
 func TestOfficialTokenPricesAreValid(t *testing.T) {
 	for name, o := range officialTokenPrices() {
-		if o.input <= 0 || o.output <= 0 {
-			t.Errorf("%s: input and output must be positive, got %v / %v", name, o.input, o.output)
+		switch {
+		case o.free:
+			if o.input != 0 || o.output != 0 || len(o.extra) > 0 {
+				t.Errorf("%s: a free model must have no prices, got %+v", name, o)
+			}
+		case o.input <= 0 || o.output < 0:
+			// Output may be zero for models billed on input only (embeddings, TTS).
+			t.Errorf("%s: input must be positive and output non-negative, got %v / %v", name, o.input, o.output)
 		}
 		if o.channelType == config.ChannelTypeUnknown {
 			t.Errorf("%s: channel type must name the vendor", name)
@@ -135,22 +141,155 @@ func nearly(a, b float64) bool {
 	return math.Abs(a-b) < 1e-6
 }
 
-// type=official lists the official table only, at the prices in effect now.
+// officialPriceByModel is every built-in official price in effect now, keyed by model.
+func officialPriceByModel(t *testing.T) map[string]*Price {
+	t.Helper()
+	byModel := make(map[string]*Price)
+	for model, o := range officialTokenPricesAt(time.Now()) {
+		byModel[model] = o.toPrice(model)
+	}
+	for model, o := range officialRequestPrices() {
+		if _, dup := byModel[model]; dup {
+			t.Fatalf("%s is both a per-token and a per-request official price", model)
+		}
+		byModel[model] = o.toPrice(model)
+	}
+	return byModel
+}
+
+func samePriceFields(a, b *Price) bool {
+	if a.Type != b.Type || a.ChannelType != b.ChannelType || a.Input != b.Input || a.Output != b.Output {
+		return false
+	}
+	var ae, be map[string]float64
+	if a.ExtraRatios != nil {
+		ae = a.ExtraRatios.Data()
+	}
+	if b.ExtraRatios != nil {
+		be = b.ExtraRatios.Data()
+	}
+	if len(ae) != len(be) {
+		return false
+	}
+	for k, v := range ae {
+		if bv, ok := be[k]; !ok || bv != v {
+			return false
+		}
+	}
+	if (a.LongContext == nil) != (b.LongContext == nil) {
+		return false
+	}
+	return a.LongContext == nil || a.LongContext.Data() == b.LongContext.Data()
+}
+
+// type=official lists the official tables only, at the prices in effect now.
 func TestGetPricesListOfficial(t *testing.T) {
 	prices := GetPricesList("official")
-	official := officialTokenPricesAt(time.Now())
+	official := officialPriceByModel(t)
 	if len(prices) != len(official) {
 		t.Fatalf("got %d prices, want %d", len(prices), len(official))
 	}
 	for _, p := range prices {
-		o, ok := official[p.Model]
+		want, ok := official[p.Model]
 		if !ok {
 			t.Errorf("%s is not in the official table", p.Model)
 			continue
 		}
-		want := o.toPrice(p.Model)
-		if p.Input != want.Input || p.Output != want.Output || p.ChannelType != want.ChannelType {
+		if !samePriceFields(p, want) {
 			t.Errorf("%s = %+v, want %+v", p.Model, p, want)
+		}
+	}
+}
+
+// The default prices a new deployment starts with are exactly the official prices: every model has
+// the same price in both, and no default entry exists without an official source.
+func TestDefaultPricesMatchOfficial(t *testing.T) {
+	defaults := defaultPriceByModel(t)
+	official := make(map[string]*Price)
+	for _, p := range GetOfficialPrices() {
+		official[p.Model] = p
+	}
+	if len(defaults) != len(official) {
+		t.Errorf("default has %d models, official has %d", len(defaults), len(official))
+	}
+	for model, d := range defaults {
+		o, ok := official[model]
+		if !ok {
+			t.Errorf("%s has a default price but no official price", model)
+			continue
+		}
+		if !samePriceFields(d, o) {
+			t.Errorf("%s: default %+v differs from official %+v", model, d, o)
+		}
+	}
+}
+
+// Retired models and outdated legacy defaults are no longer preset.
+func TestDefaultPricesDropLegacyEntries(t *testing.T) {
+	defaults := defaultPriceByModel(t)
+	for _, model := range []string{
+		"gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "dall-e-3", "whisper-1", "tts-1-1106",
+		"claude-2.1", "claude-3-haiku-20240307", "gemini-1.5-pro",
+		"qwen-max", "qwen-plus", "qwen-turbo", "qwen-vl-max",
+		"deepseek-chat", "deepseek-coder", "mistral-medium-latest", "command-r",
+		"mj_imagine", "chirp-v3-5",
+	} {
+		if _, ok := defaults[model]; ok {
+			t.Errorf("%s should not have a default price", model)
+		}
+	}
+}
+
+// Prices that replaced outdated legacy defaults, as published by each vendor.
+func TestMigratedOfficialPrices(t *testing.T) {
+	cases := map[string]struct {
+		priceType     string
+		channelType   int
+		input, output float64
+		extra         map[string]float64
+	}{
+		// $8 image in, $30 image out, $5 text in.
+		"gpt-image-2.6-flare": {TokensPriceType, config.ChannelTypeOpenAI, 4, 15,
+			map[string]float64{config.UsageExtraInputTextTokens: 0.625}},
+		// $0.13 / 1M, input only.
+		"text-embedding-3-large": {TokensPriceType, config.ChannelTypeOpenAI, 0.065, 0, nil},
+		"omni-moderation-latest": {TokensPriceType, config.ChannelTypeOpenAI, 0, 0, nil},
+		// $15 / 1M characters.
+		"tts-1": {TokensPriceType, config.ChannelTypeOpenAI, 7.5, 0, nil},
+		// $0.15 / $0.60, cached $0.015.
+		"mistral-small-latest": {TokensPriceType, config.ChannelTypeMistral, 0.075, 0.3,
+			map[string]float64{config.UsageExtraCache: 0.1}},
+		// $0.70 / $2.10, cached $0.07.
+		"mistral-large-latest": {TokensPriceType, config.ChannelTypeMistral, 0.35, 1.05,
+			map[string]float64{config.UsageExtraCache: 0.1}},
+		"mistral-embed": {TokensPriceType, config.ChannelTypeMistral, 0.05, 0,
+			map[string]float64{config.UsageExtraCache: 0.1}},
+		// $0.04 / $0.08 per song.
+		"lyria-3-clip-preview": {TimesPriceType, config.ChannelTypeGemini, 20, 20, nil},
+		"lyria-3-pro-preview":  {TimesPriceType, config.ChannelTypeGemini, 40, 40, nil},
+	}
+	prices := defaultPriceByModel(t)
+	for name, w := range cases {
+		p, ok := prices[name]
+		if !ok {
+			t.Errorf("%s: missing", name)
+			continue
+		}
+		if p.Type != w.priceType || p.ChannelType != w.channelType || !nearly(p.Input, w.input) || !nearly(p.Output, w.output) {
+			t.Errorf("%s = %s/%d %v/%v, want %s/%d %v/%v", name, p.Type, p.ChannelType, p.Input, p.Output,
+				w.priceType, w.channelType, w.input, w.output)
+		}
+		var extra map[string]float64
+		if p.ExtraRatios != nil {
+			extra = p.ExtraRatios.Data()
+		}
+		if len(extra) != len(w.extra) {
+			t.Errorf("%s: extra = %v, want %v", name, extra, w.extra)
+		}
+		for k, v := range w.extra {
+			if !nearly(extra[k], v) {
+				t.Errorf("%s: extra %s = %v, want %v", name, k, extra[k], v)
+			}
 		}
 	}
 }
