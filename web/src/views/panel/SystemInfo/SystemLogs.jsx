@@ -10,7 +10,6 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Segmented } from '@/components/objects';
 import { StatusSegments } from '@/components/list-page';
 import { API } from 'utils/api';
 import LogContextDialog from './LogContextDialog';
@@ -18,9 +17,9 @@ import { LogHeader, LogRow } from './LogRows';
 import { LEVELS, processLogEntry } from './logHelpers';
 
 // ==============================|| PANEL — SYSTEM LOGS ||============================== //
-// One viewer over `/api/system_info/log/query` (RootAuth): the in-memory history or the log
-// file, newest first, filtered by level and a search on the server. Clicking a source narrows
-// the list to that request or job; a row opens the lines around it.
+// The raw in-memory history over `/api/system_info/log/query` (RootAuth): the last 1,000 lines
+// plus older warnings and errors, newest first, filtered by level and a search on the server.
+// Clicking a source narrows the list to that request or job; a row opens the lines around it.
 
 const COUNTS = [100, 200, 500, 1000];
 const LIVE_MS = 5000;
@@ -38,7 +37,6 @@ function useDebounced(value, ms) {
 export default function SystemLogs() {
   const { t } = useTranslation();
 
-  const [source, setSource] = useState('memory');
   const [level, setLevel] = useState('all');
   const [search, setSearch] = useState('');
   const [useRegex, setUseRegex] = useState(false);
@@ -52,7 +50,6 @@ export default function SystemLogs() {
 
   const term = useDebounced(search.trim(), 300);
   const reqRef = useRef(0);
-  const fromFile = source === 'file';
 
   const fetchLogs = useCallback(
     async ({ silent = false } = {}) => {
@@ -72,7 +69,6 @@ export default function SystemLogs() {
           count,
           search_term: term,
           use_regex: useRegex,
-          from_file: fromFile,
           level: level === 'all' ? '' : level
         });
         if (id !== reqRef.current) return;
@@ -97,14 +93,14 @@ export default function SystemLogs() {
         }
       }
     },
-    [count, term, useRegex, fromFile, level, t]
+    [count, term, useRegex, level, t]
   );
 
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
 
-  const liveOn = live && !fromFile;
+  const liveOn = live;
   useEffect(() => {
     if (!liveOn) return undefined;
     const id = setInterval(() => fetchLogs({ silent: true }), LIVE_MS);
@@ -124,26 +120,14 @@ export default function SystemLogs() {
     <Card className="overflow-hidden">
       <div className="flex flex-col gap-3 border-b border-border p-4">
         <div className="flex flex-wrap items-center gap-3">
-          <span title={t('systemLogs.sourceHint')}>
-            <Segmented
-              label={t('systemLogs.sourceLabel')}
-              value={source}
-              onChange={setSource}
-              options={[
-                { value: 'memory', label: t('systemLogs.memory') },
-                { value: 'file', label: t('systemLogs.file') }
-              ]}
-            />
-          </span>
           <StatusSegments label={t('systemLogs.levelLabel')} value={level} onChange={setLevel} options={levelOptions} counts={counts} />
           <div className="ml-auto flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               aria-pressed={liveOn}
-              disabled={fromFile}
               onClick={() => setLive((v) => !v)}
-              title={fromFile ? t('systemLogs.liveFileHint') : t('systemLogs.liveHint')}
+              title={t('systemLogs.liveHint')}
               className={cn('gap-2', liveOn && 'border-foreground/20 bg-muted')}
             >
               <span className={cn('size-2 rounded-full', liveOn ? 'bg-success' : 'bg-muted-foreground/45')} />
@@ -270,7 +254,7 @@ export default function SystemLogs() {
         </div>
       </div>
 
-      {contextLog && <LogContextDialog log={contextLog} fromFile={fromFile} onClose={() => setContextLog(null)} />}
+      {contextLog && <LogContextDialog log={contextLog} onClose={() => setContextLog(null)} />}
     </Card>
   );
 }

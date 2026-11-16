@@ -11,12 +11,12 @@ import { LogRow } from './LogRows';
 import { processLogEntry } from './logHelpers';
 
 // ==============================|| SYSTEM LOGS — CONTEXT DIALOG ||============================== //
-// The lines written around one entry, unfiltered, from the same source the list reads
+// The lines written around one entry, unfiltered, from the in-memory history
 // (`/api/system_info/log/context`). The entry itself is marked with a bar on the left.
 
 const LINES = [5, 10, 20];
 
-export default function LogContextDialog({ log, fromFile, onClose }) {
+export default function LogContextDialog({ log, onClose }) {
   const { t } = useTranslation();
   const [lines, setLines] = useState(5);
   const [state, setState] = useState({ loading: true, logs: [], target: -1, error: '' });
@@ -24,7 +24,6 @@ export default function LogContextDialog({ log, fromFile, onClose }) {
   useEffect(() => {
     let cancelled = false;
     API.post('/api/system_info/log/context', {
-      from_file: fromFile,
       timestamp: log.timestamp,
       message: log.message,
       context_lines: lines
@@ -44,7 +43,7 @@ export default function LogContextDialog({ log, fromFile, onClose }) {
     return () => {
       cancelled = true;
     };
-  }, [log, fromFile, lines, t]);
+  }, [log, lines, t]);
 
   const missing = !state.loading && !state.error && state.target < 0;
 
@@ -96,6 +95,5 @@ export default function LogContextDialog({ log, fromFile, onClose }) {
 
 LogContextDialog.propTypes = {
   log: PropTypes.shape({ timestamp: PropTypes.string, message: PropTypes.string }).isRequired,
-  fromFile: PropTypes.bool,
   onClose: PropTypes.func.isRequired
 };

@@ -35,40 +35,47 @@ type LogEntry struct {
 	Message   string
 }
 
-// LogHistory stores the latest logs in memory
+// LogHistory keeps the latest entries in memory, plus a longer tail of warnings and errors
+// so a burst of info lines cannot push them out.
 type LogHistory struct {
-	entries []LogEntry
-	mutex   sync.RWMutex
-	maxSize int
+	entries      []LogEntry
+	important    []LogEntry
+	mutex        sync.RWMutex
+	maxSize      int
+	maxImportant int
 }
 
-// Global log history instance with a default capacity of 1000 entries
+// Global log history: the last 1000 entries of any level and the last 500 warnings and errors.
 var logHistory = &LogHistory{
-	entries: make([]LogEntry, 0, 1000),
-	maxSize: 1000,
+	entries:      make([]LogEntry, 0, 1000),
+	maxSize:      1000,
+	maxImportant: 500,
 }
 
-// AddEntry adds a new log entry to the history
+// AddEntry adds a new log entry to the history and to the problem groups.
 func (lh *LogHistory) AddEntry(level, message string) {
-	lh.mutex.Lock()
-	defer lh.mutex.Unlock()
-
 	entry := LogEntry{
 		Timestamp: time.Now(),
 		Level:     level,
 		Message:   strings.TrimRight(message, " \n"),
 	}
+	problems.add(entry)
 
-	// Add the new entry
+	lh.mutex.Lock()
+	defer lh.mutex.Unlock()
 	lh.entries = append(lh.entries, entry)
-
-	// If we've exceeded the max size, remove the oldest entry
 	if len(lh.entries) > lh.maxSize {
 		lh.entries = lh.entries[1:]
 	}
+	if l := NormalizeLevel(level); l == LevelError || l == LevelWarn {
+		lh.important = append(lh.important, entry)
+		if len(lh.important) > lh.maxImportant {
+			lh.important = lh.important[1:]
+		}
+	}
 }
 
-// GetLatestEntries returns the latest n entries from the log history
+// GetLatestEntries returns the latest n entries from the log history (all when n <= 0).
 func (lh *LogHistory) GetLatestEntries(n int) []LogEntry {
 	lh.mutex.RLock()
 	defer lh.mutex.RUnlock()
@@ -76,18 +83,29 @@ func (lh *LogHistory) GetLatestEntries(n int) []LogEntry {
 	if n <= 0 || n > len(lh.entries) {
 		n = len(lh.entries)
 	}
-
-	// Get the latest n entries
-	startIdx := len(lh.entries) - n
-	if startIdx < 0 {
-		startIdx = 0
-	}
-
-	// Create a copy of the entries to avoid race conditions
-	result := make([]LogEntry, len(lh.entries)-startIdx)
-	copy(result, lh.entries[startIdx:])
-
+	result := make([]LogEntry, n)
+	copy(result, lh.entries[len(lh.entries)-n:])
 	return result
+}
+
+// allEntries returns everything kept in memory in log order: the warnings and errors older
+// than the main buffer, then the main buffer.
+func (lh *LogHistory) allEntries() []LogEntry {
+	lh.mutex.RLock()
+	defer lh.mutex.RUnlock()
+
+	var result []LogEntry
+	if len(lh.entries) > 0 {
+		oldest := lh.entries[0].Timestamp
+		for _, e := range lh.important {
+			if e.Timestamp.Before(oldest) {
+				result = append(result, e)
+			}
+		}
+	} else {
+		result = append(result, lh.important...)
+	}
+	return append(result, lh.entries...)
 }
 
 var Logger *zap.Logger
@@ -122,6 +140,12 @@ func getEncoder() zapcore.Encoder {
 
 	encodeConfig.EncodeDuration = zapcore.StringDurationEncoder
 
+	// logs.format=json writes one JSON object per line for log collectors (Loki, ELK, ...).
+	if strings.EqualFold(utils.GetOrDefault("logs.format", "text"), "json") {
+		encodeConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+		encodeConfig.EncodeLevel = zapcore.LowercaseLevelEncoder
+		return zapcore.NewJSONEncoder(encodeConfig)
+	}
 	return zapcore.NewConsoleEncoder(encodeConfig)
 }
 

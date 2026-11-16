@@ -1,9 +1,7 @@
 package logger
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -40,7 +38,6 @@ type LogQueryParams struct {
 	Count      int    `json:"count"`
 	SearchTerm string `json:"search_term,omitempty"`
 	UseRegex   bool   `json:"use_regex,omitempty"`
-	FromFile   bool   `json:"from_file,omitempty"`
 	// Level keeps only entries of one normalized level; empty keeps every level.
 	Level string `json:"level,omitempty"`
 }
@@ -57,7 +54,6 @@ type LogQueryResult struct {
 
 // LogContextParams locates one entry and asks for the lines around it.
 type LogContextParams struct {
-	FromFile     bool      `json:"from_file,omitempty"`
 	Timestamp    time.Time `json:"timestamp"`
 	Message      string    `json:"message"`
 	ContextLines int       `json:"context_lines"`
@@ -75,16 +71,13 @@ func GetLatestLogs(n int) ([]LogEntry, error) {
 	return logHistory.GetLatestEntries(n), nil
 }
 
-// QueryLogs searches the in-memory history or the log file and returns the newest matches.
+// QueryLogs searches the in-memory history and returns the newest matches.
 func QueryLogs(params LogQueryParams) (*LogQueryResult, error) {
 	match, err := searchMatcher(params.SearchTerm, params.UseRegex)
 	if err != nil {
 		return nil, err
 	}
-	entries, err := loadEntries(params.FromFile)
-	if err != nil {
-		return nil, err
-	}
+	entries := logHistory.allEntries()
 
 	level := ""
 	if params.Level != "" {
@@ -114,13 +107,10 @@ func QueryLogs(params LogQueryParams) (*LogQueryResult, error) {
 	return result, nil
 }
 
-// LogContext returns the entries around the one matching the timestamp (to the second) and
+// LogContext returns the in-memory entries around the one matching the timestamp (to the second) and
 // message, searching from the newest entry back.
 func LogContext(params LogContextParams) (*LogContextResult, error) {
-	entries, err := loadEntries(params.FromFile)
-	if err != nil {
-		return nil, err
-	}
+	entries := logHistory.allEntries()
 	target := -1
 	want := strings.TrimSpace(params.Message)
 	ts := params.Timestamp.Truncate(time.Second)
@@ -157,68 +147,11 @@ func searchMatcher(term string, useRegex bool) (func(string) bool, error) {
 	return func(msg string) bool { return strings.Contains(strings.ToLower(msg), lower) }, nil
 }
 
-// loadEntries returns every entry of one source in log order (oldest first).
-func loadEntries(fromFile bool) ([]LogEntry, error) {
-	if !fromFile {
-		return logHistory.GetLatestEntries(0), nil
-	}
+// LogFilePath is the active log file. Rotated files sit next to it.
+func LogFilePath() (string, error) {
 	logDir := getLogDir()
 	if logDir == "" {
-		return nil, fmt.Errorf("log directory not configured")
+		return "", fmt.Errorf("log directory not configured")
 	}
-	filename := utils.GetOrDefault("logs.filename", "modeltaps.log")
-	return readLogsFromFile(filepath.Join(logDir, filename))
-}
-
-// readLogsFromFile reads every parsable line of the log file, oldest first.
-func readLogsFromFile(logPath string) ([]LogEntry, error) {
-	file, err := os.Open(logPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open log file: %v", err)
-	}
-	defer file.Close()
-
-	var entries []LogEntry
-	scanner := bufio.NewScanner(file)
-	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "" {
-			continue
-		}
-		entry, err := parseLogLine(line)
-		if err != nil {
-			continue
-		}
-		entries = append(entries, entry)
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading log file: %v", err)
-	}
-	return entries, nil
-}
-
-// callerField matches the "pkg/file.go:123" field zap adds before the message on warnings and
-// errors.
-var callerField = regexp.MustCompile(`^[\w./-]+\.go:\d+$`)
-
-// parseLogLine parses "2006/01/02 - 15:04:05<TAB>LEVEL<TAB>[caller<TAB>]message".
-func parseLogLine(line string) (LogEntry, error) {
-	parts := strings.SplitN(line, "\t", 3)
-	if len(parts) < 3 {
-		return LogEntry{}, fmt.Errorf("invalid log line format")
-	}
-	timestamp, err := time.ParseInLocation("2006/01/02 - 15:04:05", parts[0], time.Local)
-	if err != nil {
-		return LogEntry{}, fmt.Errorf("failed to parse timestamp: %v", err)
-	}
-	message := parts[2]
-	if head, rest, ok := strings.Cut(message, "\t"); ok && callerField.MatchString(head) {
-		message = rest
-	}
-	return LogEntry{
-		Timestamp: timestamp,
-		Level:     strings.ToUpper(strings.TrimSpace(parts[1])),
-		Message:   strings.TrimRight(message, " \n"),
-	}, nil
+	return filepath.Join(logDir, utils.GetOrDefault("logs.filename", "modeltaps.log")), nil
 }

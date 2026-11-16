@@ -115,6 +115,8 @@ logs:
   max_age: 7                 # 保留天数
   max_backup: 10             # 最大备份文件数
   compress: false            # 是否压缩历史日志
+  format: "text"             # text 或 json（每行一个 JSON，便于 Loki / ELK 等采集）
+  access_log: true           # 是否为每个 HTTP 请求写访问日志；失败请求与错误始终记录
 
 # ---------- 监控指标（/metrics Basic Auth）----------
 metrics:

@@ -154,6 +154,9 @@ LOGS_FILENAME="modeltaps.log"
 - `LOG_DIR`：ログディレクトリ。既定は `./logs`。
 - `LOG_LEVEL`：ログレベル。`debug` にするとより詳細に出力されます。
 - `LOGS_FILENAME` / `LOGS_MAX_SIZE` / `LOGS_MAX_AGE` / `LOGS_MAX_BACKUP` / `LOGS_COMPRESS`：ログファイル名およびローテーション設定。既定は `modeltaps.log` / `100`（MB）/ `7`（日）/ `10` / `false`。
+- `LOGS_FORMAT`：ログ形式。`text`（既定）または `json`（1 行に 1 つの JSON オブジェクト。Loki や ELK などでの収集向け）。
+- `LOGS_ACCESS_LOG`：HTTP リクエストごとにアクセスログを 1 行書くかどうか。既定は `true`。フロントエンドの静的ファイルとシステムログページ自身への成功したリクエストは記録しません。失敗したリクエストとエラーは常に記録します。
+- ログはログファイルと標準エラー出力の両方に書き出されます。管理画面の「システムログ」には前回の起動以降に繰り返し発生した警告とエラー、およびメモリ内の最近のログだけが表示されます。全履歴を検索するには、`docker logs`、journald またはログ基盤で標準エラー出力かログディレクトリを収集してください。
 - `METRICS_USER` / `METRICS_PASSWORD`：`/metrics` エンドポイントの Basic 認証。空にすると認証を行いません。
 - `MCP_ENABLE`：MCP を有効にするか。既定は `false`。
 - `UPTIME_KUMA_ENABLE` / `UPTIME_KUMA_DOMAIN` / `UPTIME_KUMA_STATUS_PAGE_NAME`：Uptime Kuma ステータスページ連携。

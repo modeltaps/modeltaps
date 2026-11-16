@@ -154,6 +154,9 @@ The following commonly used keys are read by the code but not covered above. For
 - `LOG_DIR`: log directory, defaults to `./logs`.
 - `LOG_LEVEL`: log level; `debug` produces more detail.
 - `LOGS_FILENAME` / `LOGS_MAX_SIZE` / `LOGS_MAX_AGE` / `LOGS_MAX_BACKUP` / `LOGS_COMPRESS`: log file name and rotation settings, defaulting to `modeltaps.log` / `100` (MB) / `7` (days) / `10` / `false`.
+- `LOGS_FORMAT`: log format, `text` (default) or `json` (one JSON object per line, for collectors such as Loki or ELK).
+- `LOGS_ACCESS_LOG`: whether to write one access log line per HTTP request, default `true`. Successful requests for front-end static files and from the system log page itself are left out; failed requests and errors are always logged.
+- Logs go to the log file and to standard error. The admin "System logs" page lists only the warnings and errors that recurred since the last start, plus the recent logs kept in memory; to search the full history, collect standard error or the log directory with `docker logs`, journald or a log platform.
 - `METRICS_USER` / `METRICS_PASSWORD`: Basic Auth for the `/metrics` endpoint; leave empty to disable authentication.
 - `MCP_ENABLE`: whether to enable MCP, defaults to `false`.
 - `UPTIME_KUMA_ENABLE` / `UPTIME_KUMA_DOMAIN` / `UPTIME_KUMA_STATUS_PAGE_NAME`: Uptime Kuma status page integration.

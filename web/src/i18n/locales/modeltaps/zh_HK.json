@@ -673,7 +673,7 @@
     }
   },
   "nav_subtitles": {
-    "systemInfo": "即時查看與檢索服務端日誌",
+    "systemInfo": "反覆出現的問題與最近的服務端日誌",
     "playground": "對話、圖像、語音與多模型對比的線上試運行",
     "api_audio": "在文字與語音之間轉換",
     "api_compare": "多個對話模型並排，同一條輸入同時發出",
@@ -4218,10 +4218,6 @@
     }
   },
   "systemLogs": {
-    "sourceLabel": "日誌來源",
-    "memory": "最近",
-    "file": "日誌檔案",
-    "sourceHint": "「最近」是自上次重新啟動以來留在記憶體中的最近 1000 條；「日誌檔案」檢索磁碟上的完整檔案",
     "levelLabel": "級別",
     "all": "全部",
     "error": "錯誤",
@@ -4231,8 +4227,7 @@
     "search": "搜尋日誌內容",
     "regex": "正規表示式",
     "live": "即時",
-    "liveHint": "每 5 秒重新整理一次",
-    "liveFileHint": "即時重新整理只適用於最近日誌",
+    "liveHint": "每 5 秒重新整理一次。顯示記憶體中最近 1000 行，以及更早的警告和錯誤",
     "refresh": "重新整理",
     "time": "時間",
     "level": "級別",
@@ -4252,6 +4247,22 @@
     "contextLines": "前後行數",
     "contextMissing": "這條日誌已不在目前來源中",
     "contextFailed": "載入前後幾行失敗：{{message}}",
-    "invalidRegex": "正規表示式無效"
+    "invalidRegex": "正規表示式無效",
+    "tabs": {
+      "problems": "問題",
+      "recent": "最近日誌"
+    },
+    "download": "下載日誌檔案",
+    "downloadHint": "伺服器上目前的日誌檔案。要檢索完整歷史，請用 docker logs、journald 或日誌平台收集",
+    "sinceStart": "自上次啟動以來",
+    "resolveAll": "全部標為已處理",
+    "resolve": "標為已處理；再次發生時會重新出現",
+    "noProblems": "沒有警告或錯誤",
+    "noProblemsHint": "自上次啟動以來反覆出現的警告和錯誤會列在這裡，每個問題一行",
+    "requests": "請求",
+    "firstSeen": "首次 {{time}}",
+    "times_other": "{{count}} 次",
+    "latestSamples_other": "最近 {{count}} 次",
+    "problemSummary_other": "{{groups}} 個問題，共 {{count}} 次"
   }
 }

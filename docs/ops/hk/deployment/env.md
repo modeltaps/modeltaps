@@ -154,6 +154,9 @@ LOGS_FILENAME="modeltaps.log"
 - `LOG_DIR`：日誌目錄，預設 `./logs`。
 - `LOG_LEVEL`：日誌級別，`debug` 輸出更詳細。
 - `LOGS_FILENAME` / `LOGS_MAX_SIZE` / `LOGS_MAX_AGE` / `LOGS_MAX_BACKUP` / `LOGS_COMPRESS`：日誌檔案名及輪轉設定，預設 `modeltaps.log` / `100`(MB) / `7`(天) / `10` / `false`。
+- `LOGS_FORMAT`：日誌格式，`text`（預設）或 `json`（每行一個 JSON 物件，方便 Loki、ELK 等平台收集）。
+- `LOGS_ACCESS_LOG`：是否為每個 HTTP 請求寫一行存取日誌，預設 `true`。前端靜態檔案和系統日誌頁本身的成功請求不記錄；失敗請求和錯誤一律記錄。
+- 日誌同時寫入檔案和標準錯誤輸出。後台「系統日誌」只列出自上次啟動以來反覆出現的警告和錯誤，以及記憶體中的最近日誌；要檢索完整歷史，請用 `docker logs`、journald 或日誌平台收集標準錯誤輸出或日誌目錄。
 - `METRICS_USER` / `METRICS_PASSWORD`：`/metrics` 介面 Basic Auth，留空則不鑑權。
 - `MCP_ENABLE`：是否啟用 MCP，預設 `false`。
 - `UPTIME_KUMA_ENABLE` / `UPTIME_KUMA_DOMAIN` / `UPTIME_KUMA_STATUS_PAGE_NAME`：Uptime Kuma 狀態頁集成。

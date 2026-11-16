@@ -5,6 +5,8 @@ import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 )
@@ -77,7 +79,7 @@ func SystemLogQuery(c *gin.Context) {
 	})
 }
 
-// SystemLogContext returns the lines around one log entry, from memory or the log file.
+// SystemLogContext returns the in-memory lines around one log entry.
 func SystemLogContext(c *gin.Context) {
 	var params logger.LogContextParams
 	if err := c.ShouldBindJSON(&params); err != nil {
@@ -102,4 +104,44 @@ func SystemLogContext(c *gin.Context) {
 		"message": "",
 		"data":    result,
 	})
+}
+
+// SystemLogProblems lists warnings and errors folded by message template since the last start.
+func SystemLogProblems(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    logger.ListProblems(),
+	})
+}
+
+// SystemLogResolveProblems removes the given problem groups, or all of them when keys is empty.
+func SystemLogResolveProblems(c *gin.Context) {
+	var body struct {
+		Keys []string `json:"keys"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		common.APIRespondWithError(c, http.StatusBadRequest, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    gin.H{"resolved": logger.ResolveProblems(body.Keys)},
+	})
+}
+
+// SystemLogDownload sends the active log file. Full-history search belongs to a log collector
+// (docker logs, journald, Loki ...), not to this server.
+func SystemLogDownload(c *gin.Context) {
+	path, err := logger.LogFilePath()
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusInternalServerError, err)
+		return
+	}
+	if _, err := os.Stat(path); err != nil {
+		common.APIRespondWithError(c, http.StatusNotFound, errors.New("log file not found"))
+		return
+	}
+	c.FileAttachment(path, filepath.Base(path))
 }

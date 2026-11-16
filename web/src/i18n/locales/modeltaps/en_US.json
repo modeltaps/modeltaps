@@ -674,7 +674,7 @@
     }
   },
   "nav_subtitles": {
-    "systemInfo": "Follow and search the server logs",
+    "systemInfo": "Recurring problems and recent server logs",
     "playground": "Run chat, image, speech and side-by-side comparisons against the gateway",
     "api_audio": "Convert between text and speech",
     "api_compare": "Run several chat models side by side on the same input",
@@ -4320,10 +4320,6 @@
     }
   },
   "systemLogs": {
-    "sourceLabel": "Log source",
-    "memory": "Recent",
-    "file": "Log file",
-    "sourceHint": "Recent shows the last 1,000 entries kept in memory since the last restart. Log file searches the full file on disk",
     "levelLabel": "Level",
     "all": "All",
     "error": "Error",
@@ -4333,8 +4329,7 @@
     "search": "Search messages",
     "regex": "Regular expression",
     "live": "Live",
-    "liveHint": "Refresh every 5 seconds",
-    "liveFileHint": "Live updates only apply to recent logs",
+    "liveHint": "Refresh every 5 seconds. Shows the last 1,000 lines kept in memory plus older warnings and errors",
     "refresh": "Refresh",
     "time": "Time",
     "level": "Level",
@@ -4354,6 +4349,25 @@
     "contextLines": "Lines before and after",
     "contextMissing": "This entry is no longer in the selected source",
     "contextFailed": "Could not load surrounding lines: {{message}}",
-    "invalidRegex": "Not a valid regular expression"
+    "invalidRegex": "Not a valid regular expression",
+    "tabs": {
+      "problems": "Problems",
+      "recent": "Recent logs"
+    },
+    "download": "Download log file",
+    "downloadHint": "The active log file on the server. To search the full history, collect logs with docker logs, journald or a log platform",
+    "sinceStart": "Since the last start",
+    "resolveAll": "Mark all as handled",
+    "resolve": "Mark as handled; it comes back if it happens again",
+    "noProblems": "No warnings or errors",
+    "noProblemsHint": "Recurring warnings and errors since the last start show up here, one row per problem",
+    "requests": "Requests",
+    "firstSeen": "First seen {{time}}",
+    "times_one": "{{count}} time",
+    "times_other": "{{count}} times",
+    "latestSamples_one": "Latest occurrence",
+    "latestSamples_other": "Latest {{count}} occurrences",
+    "problemSummary_one": "{{groups}} problems, {{count}} occurrence",
+    "problemSummary_other": "{{groups}} problems, {{count}} occurrences"
   }
 }

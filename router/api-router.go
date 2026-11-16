@@ -32,6 +32,9 @@ func SetApiRouter(router *gin.Engine) {
 		systemInfo.POST("/log", controller.SystemLog)
 		systemInfo.POST("/log/query", controller.SystemLogQuery)
 		systemInfo.POST("/log/context", controller.SystemLogContext)
+		systemInfo.GET("/log/download", controller.SystemLogDownload)
+		systemInfo.GET("/problems", controller.SystemLogProblems)
+		systemInfo.POST("/problems/resolve", controller.SystemLogResolveProblems)
 	}
 
 	apiRouter.POST("/telegram/:token", middleware.Telegram(), controller.TelegramBotWebHook)

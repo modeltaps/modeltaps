@@ -673,7 +673,7 @@
     }
   },
   "nav_subtitles": {
-    "systemInfo": "サーバーログをリアルタイムで確認・検索",
+    "systemInfo": "繰り返し発生する問題と最近のサーバーログ",
     "playground": "チャット・画像・音声・モデル比較をその場で試す",
     "api_audio": "テキストと音声を相互に変換",
     "api_compare": "複数のチャットモデルを並べ、同じ入力を同時に送信",
@@ -4211,10 +4211,6 @@
     }
   },
   "systemLogs": {
-    "sourceLabel": "ログの取得元",
-    "memory": "最近",
-    "file": "ログファイル",
-    "sourceHint": "「最近」は前回の再起動以降メモリに残っている直近 1,000 件、「ログファイル」はディスク上のファイル全体を検索します",
     "levelLabel": "レベル",
     "all": "すべて",
     "error": "エラー",
@@ -4224,8 +4220,7 @@
     "search": "ログを検索",
     "regex": "正規表現",
     "live": "ライブ",
-    "liveHint": "5 秒ごとに更新",
-    "liveFileHint": "ライブ更新は最近のログにのみ適用されます",
+    "liveHint": "5 秒ごとに更新。メモリ内の直近 1,000 行と、それより古い警告・エラーを表示します",
     "refresh": "更新",
     "time": "時刻",
     "level": "レベル",
@@ -4245,6 +4240,22 @@
     "contextLines": "前後の行数",
     "contextMissing": "このログは選択中の取得元にもうありません",
     "contextFailed": "前後の行を読み込めませんでした: {{message}}",
-    "invalidRegex": "正規表現が正しくありません"
+    "invalidRegex": "正規表現が正しくありません",
+    "tabs": {
+      "problems": "問題",
+      "recent": "最近のログ"
+    },
+    "download": "ログファイルをダウンロード",
+    "downloadHint": "サーバー上の現在のログファイルです。全履歴を検索するには docker logs、journald またはログ基盤で収集してください",
+    "sinceStart": "前回の起動以降",
+    "resolveAll": "すべて対応済みにする",
+    "resolve": "対応済みにする（再発すると再表示されます）",
+    "noProblems": "警告やエラーはありません",
+    "noProblemsHint": "前回の起動以降に繰り返し発生した警告とエラーが、問題ごとに 1 行で表示されます",
+    "requests": "リクエスト",
+    "firstSeen": "初回 {{time}}",
+    "times_other": "{{count}} 回",
+    "latestSamples_other": "直近 {{count}} 回",
+    "problemSummary_other": "{{groups}} 件の問題、計 {{count}} 回"
   }
 }

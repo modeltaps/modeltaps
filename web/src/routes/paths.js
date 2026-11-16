@@ -95,7 +95,7 @@ export const admin = {
   root: () => ADMIN,
   stats: () => `${ADMIN}/stats`,
   statsByUser: () => `${ADMIN}/stats/users`,
-  systemLogs: () => `${ADMIN}/system-logs`,
+  systemLogs: (tab = null) => withTab(`${ADMIN}/system-logs`, tab),
   // `id` is a provider id or 'new'.
   providers: (id = null) => withTab(`${ADMIN}/providers`, id == null ? null : String(id)),
   models: (tab = null) => withTab(`${ADMIN}/models`, tab),

@@ -102,7 +102,7 @@ const MainRoutes = {
         { index: true, element: <Navigate to={admin.stats()} replace /> },
         { path: 'stats', element: <Analytics /> },
         { path: 'stats/users', element: <MultiUserStats /> },
-        { path: 'system-logs', element: rootOnly(<SystemInfo />) },
+        { path: 'system-logs/:tab?', element: rootOnly(<SystemInfo />) },
         // One page: `providers/:id` opens that provider's panel, `providers/new` the new provider
         // sheet, over the providers page.
         { path: 'providers/:id?', element: <Channel /> },

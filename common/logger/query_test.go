@@ -7,9 +7,9 @@ import (
 
 func withHistory(t *testing.T, entries []LogEntry) {
 	t.Helper()
-	saved := logHistory.entries
-	logHistory.entries = entries
-	t.Cleanup(func() { logHistory.entries = saved })
+	saved, savedImportant := logHistory.entries, logHistory.important
+	logHistory.entries, logHistory.important = entries, nil
+	t.Cleanup(func() { logHistory.entries, logHistory.important = saved, savedImportant })
 }
 
 func TestQueryLogsNewestFirstWithLevelCounts(t *testing.T) {
@@ -54,15 +54,5 @@ func TestLogContext(t *testing.T) {
 	}
 	if len(res.Logs) != 5 || res.TargetPosition != 1 || res.Logs[0].Message != "a" {
 		t.Fatalf("unexpected context %+v", res)
-	}
-}
-
-func TestParseLogLineDropsCaller(t *testing.T) {
-	e, err := parseLogLine("2026/11/08 - 05:35:33\tWARN\tlogger/logger.go:301\tunknown | slow \n")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if e.Message != "unknown | slow" || e.Level != "WARN" {
-		t.Fatalf("unexpected entry %+v", e)
 	}
 }
