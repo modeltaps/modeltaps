@@ -3001,7 +3001,25 @@
     "joinLastTip": "他のチャネルがすでに供給していた後に追加されたため、それらの後に試されます。",
     "restorePlacement": "通常の順位に戻す",
     "confirmPending": "有効にする",
-    "keepOff": "無効のままにする"
+    "keepOff": "無効のままにする",
+    "order": {
+      "reason": {
+        "policy_channel": "供給順序でこのチャネル単独で第 {{tier}} 段",
+        "policy_provider": "供給順序でこのプロバイダーが第 {{tier}} 段",
+        "unplaced": "供給順序にないため、すべての段の後",
+        "join_last": "他のチャネルが供給した後に追加されたため最後",
+        "channel": "チャネル自身の優先度",
+        "own": "このモデル専用に設定した優先度"
+      },
+      "byPolicy": "プロバイダーページの呼び出し順で並びます",
+      "byModel": "このモデルは独自の順序です",
+      "byChannel": "チャネルの優先度で並びます",
+      "none": "供給はまだありません",
+      "first": "最初に試す",
+      "then": "予備 {{n}}",
+      "manage": "供給を管理",
+      "failed": "順序を読み込めませんでした"
+    }
   },
   "settingsUi": {
     "search": {

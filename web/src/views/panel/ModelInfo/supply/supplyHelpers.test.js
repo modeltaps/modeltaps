@@ -18,6 +18,8 @@ import {
   previewShares,
   previewSupplyList,
   supplyCandidates,
+  compactOrder,
+  supplyOrderByModel,
   supplyState,
   supplyUpdateBody,
   upstreamFor
@@ -318,5 +320,24 @@ describe('intake states', () => {
   it('keeps join_last unless the change clears it', () => {
     expect(supplyUpdateBody({ id: 1, join_last: true }).join_last).toBe(true);
     expect(supplyUpdateBody({ id: 1, join_last: true }, { join_last: false }).join_last).toBe(false);
+  });
+});
+
+describe('supply order', () => {
+  const list = [
+    { id: 1, model: 'h3', channel_id: 1, channel_type: 1, priority: 0, weight: 1, enabled: true, channel_status: 1 },
+    { id: 2, model: 'h3', channel_id: 2, channel_type: 14, priority: 5, weight: 1, enabled: true, channel_status: 1 },
+    { id: 3, model: 'h3', channel_id: 3, channel_type: 14, priority: 5, weight: 3, enabled: false, pending: true, channel_status: 1 },
+    { id: 4, model: 'h3', channel_id: 4, channel_type: 62, priority: -2, weight: 1, enabled: true, upstream_gone_at: 9, channel_status: 1 }
+  ];
+  it('groups tiers from the highest priority and merges one channel type in a tier', () => {
+    const tiers = supplyOrderByModel(list).h3;
+    expect(tiers.map((tier) => tier.map((e) => [e.type, e.count, e.usable]))).toEqual([[[14, 2, true]], [[1, 1, true]], [[62, 1, false]]]);
+  });
+  it('shows at most three entries and counts the rest', () => {
+    const tiers = [[{ type: 1 }, { type: 2 }], [{ type: 3 }, { type: 4 }], [{ type: 5 }]];
+    const { tiers: shown, hidden } = compactOrder(tiers);
+    expect(shown.map((tier) => tier.map((e) => e.type))).toEqual([[1, 2], [3]]);
+    expect(hidden).toBe(2);
   });
 });

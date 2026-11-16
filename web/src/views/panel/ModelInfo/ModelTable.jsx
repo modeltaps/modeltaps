@@ -55,6 +55,7 @@ import {
   safeJsonArray
 } from './modelInfoHelpers';
 import { ModelStatusPill } from './supply/supplyParts';
+import SupplyOrder from './supply/SupplyOrder';
 import { isPublicModelRow, normalizeSupplyMode } from './supply/supplyHelpers';
 import { admin } from 'routes/paths';
 
@@ -124,8 +125,10 @@ export function ChannelsCell({ channels, onOpen }) {
 
 ChannelsCell.propTypes = { channels: PropTypes.array, onOpen: PropTypes.func };
 
-// Public status and usable/total supplies of a public model on one line (the counts spelled out and
-// the supply mode are in the tooltip); opens the Supplies tab. Aliases and routing policies have no supplies of their own.
+// Public status and the supplies of a public model on one line: while supplies route requests,
+// their order as provider icons (a click shows the order in full and why); otherwise
+// usable/total. The counts spelled out and the supply mode are in the tooltip; the Supplies tab
+// opens from the cell. Aliases and routing policies have no supplies of their own.
 export function SupplyCell({ row, onOpen }) {
   const { t } = useTranslation();
   if (!isPublicModelRow(row)) return <span className="text-muted-foreground">—</span>;
@@ -135,6 +138,15 @@ export function SupplyCell({ row, onOpen }) {
     t('modelSupply.countTip', { count: counts.total, usable: counts.usable }),
     t(`modelSupply.mode.${normalizeSupplyMode(row.supply_mode)}`)
   ];
+  // While supplies route requests, the cell shows who serves the model first, then who next.
+  if (row.supplyRouting && row.supplyOrder?.length) {
+    return (
+      <SupplyOrder model={row.model} tiers={row.supplyOrder} label={tip.join(' · ')} onManage={onOpen}>
+        {row.status === 'retired' && <ModelStatusPill status={row.status} />}
+        {row.allocation === 'manual' && <span className="text-xs text-foreground">{t('modelSupply.allocation.manualShort')} ·</span>}
+      </SupplyOrder>
+    );
+  }
   return (
     <button
       type="button"

@@ -3104,7 +3104,25 @@
     "joinLastTip": "Added after other channels already supplied this model, so it is tried after them.",
     "restorePlacement": "Use its normal position",
     "confirmPending": "Switch on",
-    "keepOff": "Keep it off"
+    "keepOff": "Keep it off",
+    "order": {
+      "reason": {
+        "policy_channel": "This channel is in tier {{tier}} of the supply order",
+        "policy_provider": "Its provider is in tier {{tier}} of the supply order",
+        "unplaced": "Not in the supply order, so after every tier",
+        "join_last": "Joined after other channels already supplied the model, so it comes last",
+        "channel": "The channel's own priority",
+        "own": "A priority set for this model only"
+      },
+      "byPolicy": "Ordered by the supply order on the providers page",
+      "byModel": "This model has an order of its own",
+      "byChannel": "Ordered by the channels' priorities",
+      "none": "No supplies yet",
+      "first": "Tried first",
+      "then": "Backup {{n}}",
+      "manage": "Manage supplies",
+      "failed": "Could not load the order"
+    }
   },
   "settingsUi": {
     "search": {

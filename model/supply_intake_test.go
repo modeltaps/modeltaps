@@ -93,6 +93,22 @@ func TestIntakeJoinsLastUnderPolicy(t *testing.T) {
 	if got := routingShares(t, "h3"); !sameShares(got, want) {
 		t.Fatalf("h3 routes %v, want C then A", got)
 	}
+	preview, err := PreviewModelSupply("h3", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	reasons := map[int]*SupplyPreviewEntry{}
+	for _, tier := range preview.Tiers {
+		for _, e := range tier.Supplies {
+			reasons[e.ChannelId] = e
+		}
+	}
+	if r := reasons[a.Id]; r == nil || r.Reason != SupplyReasonJoinLast {
+		t.Fatalf("A's reason = %+v, want join_last", r)
+	}
+	if r := reasons[c.Id]; r == nil || (r.Reason != SupplyReasonPolicyProvider && r.Reason != SupplyReasonPolicyChannel) || r.PolicyTier == 0 {
+		t.Fatalf("C's reason = %+v, want a policy tier", r)
+	}
 
 	// Saving the supply with the numbers it is shown keeps the model on the policy; clearing
 	// the mark puts A where the policy places it.

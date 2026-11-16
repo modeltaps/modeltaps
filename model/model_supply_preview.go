@@ -34,7 +34,21 @@ type SupplyPreviewEntry struct {
 	// Share is the chance this supply takes a request that reaches its tier: by weight among
 	// the tier's available supplies for balance, the heaviest available ones for failover.
 	Share float64 `json:"share"`
+	// Reason says where the supply's position comes from (a SupplyReason* value); PolicyTier is
+	// the allocation policy tier it sits in, counted from 1, when the reason names one.
+	Reason     string `json:"reason"`
+	PolicyTier int    `json:"policy_tier,omitempty"`
 }
+
+// Where a supply's position comes from.
+const (
+	SupplyReasonPolicyChannel  = "policy_channel"  // the policy places this channel itself
+	SupplyReasonPolicyProvider = "policy_provider" // the policy places the channel's provider
+	SupplyReasonUnplaced       = "unplaced"        // the policy places neither: after every tier
+	SupplyReasonJoinLast       = "join_last"       // joined after the model's other supplies
+	SupplyReasonChannel        = "channel"         // the channel's own priority (no policy, or manual model)
+	SupplyReasonOwn            = "own"             // numbers set on the supply itself
+)
 
 // SupplyPreviewTier holds the supplies of one priority; tiers are tried from the first.
 type SupplyPreviewTier struct {
@@ -128,6 +142,7 @@ func PreviewModelSupply(name, group string) (*SupplyPreview, error) {
 		preview.RequestedModel = name
 	}
 
+	reasonOf := supplyReasons(views, preview.Allocation == "policy")
 	now := time.Now().Unix()
 	byPriority := map[int64]*SupplyPreviewTier{}
 	for _, view := range views {
@@ -139,6 +154,7 @@ func PreviewModelSupply(name, group string) (*SupplyPreview, error) {
 		}
 		entry, _ := supplyStateOf(view, canonical, now)
 		entry.Groups = groups
+		entry.Reason, entry.PolicyTier = reasonOf(view)
 		tier := byPriority[view.Priority]
 		if tier == nil {
 			tier = &SupplyPreviewTier{Priority: view.Priority}
@@ -196,4 +212,55 @@ func PreviewModelSupply(name, group string) (*SupplyPreview, error) {
 		break
 	}
 	return preview, nil
+}
+
+// supplyReasons returns a function telling, for each supply of a model, where its position
+// comes from. onPolicy is true when the model takes its numbers from the allocation policy.
+func supplyReasons(views []*ModelSupplyView, onPolicy bool) func(*ModelSupplyView) (string, int) {
+	var plan *allocationPlan
+	channels := map[int]*Channel{}
+	if onPolicy {
+		if policy, err := GetDefaultAllocationPolicy(); err == nil && policy != nil {
+			plan = newAllocationPlan(policy.TierList())
+		}
+		ids := make([]int, 0, len(views))
+		for _, v := range views {
+			ids = append(ids, v.ChannelId)
+		}
+		if plan != nil && len(ids) > 0 {
+			var list []*Channel
+			if err := DB.Select("id", "type", "base_url").Where("id IN ?", ids).Find(&list).Error; err == nil {
+				for _, ch := range list {
+					channels[ch.Id] = ch
+				}
+			}
+		}
+	}
+	return func(v *ModelSupplyView) (string, int) {
+		if plan != nil {
+			if v.JoinLast {
+				return SupplyReasonJoinLast, 0
+			}
+			ch := channels[v.ChannelId]
+			if ch == nil {
+				return SupplyReasonUnplaced, 0
+			}
+			slot := plan.slotOf(ch)
+			switch {
+			case strings.HasPrefix(slot.key, "c"):
+				return SupplyReasonPolicyChannel, slot.tier + 1
+			case strings.HasPrefix(slot.key, "p"):
+				return SupplyReasonPolicyProvider, slot.tier + 1
+			default:
+				return SupplyReasonUnplaced, 0
+			}
+		}
+		if v.JoinLast {
+			return SupplyReasonJoinLast, 0
+		}
+		if v.Priority == v.ChannelPriority {
+			return SupplyReasonChannel, 0
+		}
+		return SupplyReasonOwn, 0
+	}
 }

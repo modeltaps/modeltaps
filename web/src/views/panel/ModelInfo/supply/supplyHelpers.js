@@ -291,3 +291,48 @@ export function pendingTarget(name, rows = []) {
   }
   return { kind: 'alias', model, canonical: target.model };
 }
+
+// Whether a supply from the supply list can take requests (pauses aside): switched on, not
+// waiting for review, still listed upstream, on an enabled channel.
+export const supplyRoutable = (s) =>
+  s.enabled !== false && !s.pending && !(s.upstream_gone_at > 0) && (s.channel_status ?? CHANNEL_STATUS_ENABLED) === CHANNEL_STATUS_ENABLED;
+
+// Each model's supplies in the order requests try them, from the supply list: tiers from the
+// highest priority, and in a tier the heavier supplies first. Supplies of one channel type in a
+// tier are shown as one entry with a count; an entry can take requests when any of its supplies can.
+export function supplyOrderByModel(supplies = []) {
+  const byModel = {};
+  supplies.forEach((s) => (byModel[s.model] ||= []).push(s));
+  const out = {};
+  Object.entries(byModel).forEach(([model, list]) => {
+    const tiers = new Map();
+    [...list]
+      .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0) || (b.weight || 1) - (a.weight || 1) || a.id - b.id)
+      .forEach((s) => {
+        const key = s.priority ?? 0;
+        if (!tiers.has(key)) tiers.set(key, new Map());
+        const entries = tiers.get(key);
+        const type = s.channel_type ?? 0;
+        const entry = entries.get(type) || { type, name: s.channel_name || '', count: 0, usable: false };
+        entry.count += 1;
+        entry.usable = entry.usable || supplyRoutable(s);
+        entries.set(type, entry);
+      });
+    out[model] = [...tiers.values()].map((entries) => [...entries.values()]);
+  });
+  return out;
+}
+
+// The entries a compact order shows: at most `max` across the tiers, in order, and how many were left out.
+export function compactOrder(tiers = [], max = 3) {
+  let left = max;
+  let hidden = 0;
+  const shown = [];
+  tiers.forEach((tier) => {
+    const take = tier.slice(0, Math.max(left, 0));
+    hidden += tier.length - take.length;
+    left -= take.length;
+    if (take.length) shown.push(take);
+  });
+  return { tiers: shown, hidden };
+}

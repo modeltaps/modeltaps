@@ -3005,7 +3005,25 @@
     "joinLastTip": "此模型已有其他渠道供應時才加入，因此排在它們之後。",
     "restorePlacement": "恢復正常排位",
     "confirmPending": "啟用",
-    "keepOff": "不啟用"
+    "keepOff": "不啟用",
+    "order": {
+      "reason": {
+        "policy_channel": "供應順序中此渠道單獨在第 {{tier}} 檔",
+        "policy_provider": "供應順序中其供應商在第 {{tier}} 檔",
+        "unplaced": "供應順序中沒有它，排在所有檔之後",
+        "join_last": "此模型已有其他渠道供應時才加入，排在最後",
+        "channel": "按渠道自身的優先級",
+        "own": "為此模型單獨設定的優先級"
+      },
+      "byPolicy": "按供應商頁的調用順序排列",
+      "byModel": "此模型單獨設定了順序",
+      "byChannel": "按渠道的優先級排列",
+      "none": "尚未有供應",
+      "first": "優先嘗試",
+      "then": "備用 {{n}}",
+      "manage": "管理供應",
+      "failed": "順序載入失敗"
+    }
   },
   "settingsUi": {
     "search": {

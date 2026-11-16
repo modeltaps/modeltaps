@@ -88,7 +88,7 @@ import LibrarySheet from './LibrarySheet';
 import { ENDPOINT_LABEL_KEYS, ENDPOINT_VALUES, MODEL_KIND_VALUES, isUnlabeled, modelKindOf, safeJsonArray } from './modelInfoHelpers';
 import { listSupplies } from './supply/supplyApi';
 import { useSupplySwitches, SupplySwitchNote } from './supply/supplyParts';
-import { MODEL_STATUSES, countSuppliesByModel, isPublicModelRow, normalizeModelStatus } from './supply/supplyHelpers';
+import { MODEL_STATUSES, countSuppliesByModel, isPublicModelRow, normalizeModelStatus, supplyOrderByModel } from './supply/supplyHelpers';
 
 // Conditions in the "Show models that" bar: vendor, public status, visibility, billing, endpoint
 // and "unlabeled". All filter locally; each single-choice field's URL key is its field key, so a
@@ -216,6 +216,7 @@ export default function ModelInfo() {
   const [channelList, setChannelList] = useState([]);
   const [supplyRouting, setSupplyRouting] = useState(false);
   const [supplyCounts, setSupplyCounts] = useState({});
+  const [supplyOrder, setSupplyOrder] = useState({});
   // (channel, upstream name) pairs supplies send: those channel-listed names are not models of
   // their own while supplies route requests.
   const [suppliedUpstreams, setSuppliedUpstreams] = useState(null);
@@ -285,6 +286,7 @@ export default function ModelInfo() {
           onStart: () => setLoading(true),
           onResult: ({ cres, catalog, priceRows, models, channels, supplies }) => {
             setSupplyCounts(supplies?.success ? countSuppliesByModel(supplies.data || []) : {});
+            setSupplyOrder(supplies?.success ? supplyOrderByModel(supplies.data || []) : {});
             setSuppliedUpstreams(supplies?.success ? suppliedUpstreamKeys(supplies.data || []) : null);
             if (!cres.data.success) showError(cres.data.message);
             setModelInfos(catalog);
@@ -416,8 +418,12 @@ export default function ModelInfo() {
         }
       )
         .map((row) => (supplyRouting ? { ...row, supplyRouting } : row))
-        .map((row) => (isPublicModelRow(row) ? { ...row, supplyCounts: supplyCounts[row.model] || { total: 0, usable: 0 } } : row)),
-    [modelInfos, prices, modelList, channelsByModel, channelList, supplyCounts, supplyRouting, suppliedUpstreams]
+        .map((row) =>
+          isPublicModelRow(row)
+            ? { ...row, supplyCounts: supplyCounts[row.model] || { total: 0, usable: 0 }, supplyOrder: supplyOrder[row.model] || [] }
+            : row
+        ),
+    [modelInfos, prices, modelList, channelsByModel, channelList, supplyCounts, supplyOrder, supplyRouting, suppliedUpstreams]
   );
 
   // Local filtering: search box, segment and conditions.
