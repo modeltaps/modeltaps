@@ -1,9 +1,9 @@
 package controller
 
 import (
+	"errors"
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/logger"
-	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -60,8 +60,38 @@ func SystemLogQuery(c *gin.Context) {
 		params.Count = 1000 // Max count
 	}
 
-	// Query logs
+	if params.Level != "" {
+		params.Level = logger.NormalizeLevel(params.Level)
+	}
+
 	result, err := logger.QueryLogs(params)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusBadRequest, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    result,
+	})
+}
+
+// SystemLogContext returns the lines around one log entry, from memory or the log file.
+func SystemLogContext(c *gin.Context) {
+	var params logger.LogContextParams
+	if err := c.ShouldBindJSON(&params); err != nil {
+		common.APIRespondWithError(c, http.StatusBadRequest, err)
+		return
+	}
+	if params.ContextLines <= 0 {
+		params.ContextLines = 5
+	}
+	if params.ContextLines > 50 {
+		params.ContextLines = 50
+	}
+
+	result, err := logger.LogContext(params)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusInternalServerError, err)
 		return

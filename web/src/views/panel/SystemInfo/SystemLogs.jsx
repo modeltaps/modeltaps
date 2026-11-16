@@ -1,248 +1,276 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowDown, Code, RefreshCw, Search, Trash2, X } from 'lucide-react';
+import { Regex, RefreshCw, ScrollText, Search, X } from 'lucide-react';
 
+import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Segmented } from '@/components/objects';
+import { StatusSegments } from '@/components/list-page';
 import { API } from 'utils/api';
-import { showError } from 'utils/common';
 import LogContextDialog from './LogContextDialog';
-import { filterLogs, formatTimestamp, levelBadge, processLogEntry } from './logHelpers';
+import { LogHeader, LogRow } from './LogRows';
+import { LEVELS, processLogEntry } from './logHelpers';
 
 // ==============================|| PANEL — SYSTEM LOGS ||============================== //
-// shadcn port of v1 SystemInfo/components/SystemLogs. Auto-refresh, regex search,
-// and per-entry context lookup against the unchanged `/api/system_info/log` API.
+// One viewer over `/api/system_info/log/query` (RootAuth): the in-memory history or the log
+// file, newest first, filtered by level and a search on the server. Clicking a source narrows
+// the list to that request or job; a row opens the lines around it.
+
+const COUNTS = [100, 200, 500, 1000];
+const LIVE_MS = 5000;
+const EMPTY = { logs: [], total: 0, hasMore: false, levelCounts: null };
+
+function useDebounced(value, ms) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), ms);
+    return () => clearTimeout(id);
+  }, [value, ms]);
+  return debounced;
+}
 
 export default function SystemLogs() {
   const { t } = useTranslation();
 
-  const [autoRefresh, setAutoRefresh] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState(5000);
-  const [maxEntries, setMaxEntries] = useState(50);
-  const [logs, setLogs] = useState([]);
-  const [originalLogs, setOriginalLogs] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [source, setSource] = useState('memory');
+  const [level, setLevel] = useState('all');
+  const [search, setSearch] = useState('');
   const [useRegex, setUseRegex] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [count, setCount] = useState(200);
+  const [live, setLive] = useState(false);
+  const [data, setData] = useState(EMPTY);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
-  const [initialized, setInitialized] = useState(false);
-  const [contextTarget, setContextTarget] = useState(null);
-  const [showScrollDown, setShowScrollDown] = useState(false);
+  const [contextLog, setContextLog] = useState(null);
 
-  const scrollRef = useRef(null);
-  const userScrolledUpRef = useRef(false);
+  const term = useDebounced(search.trim(), 300);
+  const reqRef = useRef(0);
+  const fromFile = source === 'file';
 
   const fetchLogs = useCallback(
-    async (isAuto = false) => {
-      if (!isAuto) setLoading(true);
-      setError('');
+    async ({ silent = false } = {}) => {
+      const id = ++reqRef.current;
+      if (useRegex && term) {
+        try {
+          new RegExp(term);
+        } catch {
+          setError(t('systemLogs.invalidRegex'));
+          setLoading(false);
+          return;
+        }
+      }
+      if (!silent) setRefreshing(true);
       try {
-        const res = await API.post('/api/system_info/log', { count: maxEntries });
+        const res = await API.post('/api/system_info/log/query', {
+          count,
+          search_term: term,
+          use_regex: useRegex,
+          from_file: fromFile,
+          level: level === 'all' ? '' : level
+        });
+        if (id !== reqRef.current) return;
         if (res.data.success) {
-          const processed = res.data.data.map(processLogEntry);
-          setOriginalLogs(processed);
-          setLogs(filterLogs(processed, searchTerm, useRegex));
+          const result = res.data.data || {};
+          setData({
+            logs: (result.logs || []).map(processLogEntry),
+            total: result.total_count || 0,
+            hasMore: Boolean(result.has_more),
+            levelCounts: result.level_counts || null
+          });
+          setError('');
         } else {
-          setError('Failed to fetch logs: ' + res.data.message);
-          if (!isAuto) showError(res.data.message);
+          setError(res.data.message);
         }
       } catch (err) {
-        setError('Error fetching logs: ' + err.message);
-        if (!isAuto) showError(err.message);
+        if (id === reqRef.current) setError(err?.response?.data?.message || err.message);
       } finally {
-        if (!isAuto) setLoading(false);
+        if (id === reqRef.current) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     },
-    [maxEntries, searchTerm, useRegex]
+    [count, term, useRegex, fromFile, level, t]
   );
 
   useEffect(() => {
-    if (!initialized) {
-      fetchLogs();
-      setInitialized(true);
-    }
-  }, [fetchLogs, initialized]);
+    fetchLogs();
+  }, [fetchLogs]);
 
+  const liveOn = live && !fromFile;
   useEffect(() => {
-    if (initialized) setLogs(filterLogs(originalLogs, searchTerm, useRegex));
-  }, [initialized, originalLogs, searchTerm, useRegex]);
+    if (!liveOn) return undefined;
+    const id = setInterval(() => fetchLogs({ silent: true }), LIVE_MS);
+    return () => clearInterval(id);
+  }, [liveOn, fetchLogs]);
 
-  useEffect(() => {
-    if (!autoRefresh || !initialized) return undefined;
-    const interval = setInterval(() => fetchLogs(true), refreshInterval);
-    return () => clearInterval(interval);
-  }, [autoRefresh, initialized, refreshInterval, fetchLogs]);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    if (autoRefresh && !userScrolledUpRef.current) el.scrollTop = el.scrollHeight;
-  }, [logs, autoRefresh]);
-
-  const handleScroll = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const atBottom = el.scrollTop >= el.scrollHeight - el.clientHeight - 50;
-    userScrolledUpRef.current = !atBottom;
-    setShowScrollDown(!atBottom && logs.length > 0);
+  const filtered = Boolean(term) || level !== 'all';
+  const clearFilters = () => {
+    setSearch('');
+    setLevel('all');
   };
 
-  const scrollToBottom = () => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollTop = el.scrollHeight;
-    userScrolledUpRef.current = false;
-    setShowScrollDown(false);
-  };
-
-  const handleMaxEntries = (e) => {
-    const value = parseInt(e.target.value, 10);
-    if (!Number.isNaN(value) && value > 0 && value <= 999) setMaxEntries(value);
-  };
-
-  const handleInterval = (e) => {
-    const seconds = Math.min(Math.max(parseInt(e.target.value, 10) || 1, 1), 60);
-    setRefreshInterval(seconds * 1000);
-  };
+  const counts = data.levelCounts ? { all: LEVELS.reduce((sum, l) => sum + (data.levelCounts[l] || 0), 0), ...data.levelCounts } : null;
+  const levelOptions = ['all', ...LEVELS].map((value) => ({ value, label: t(`systemLogs.${value}`) }));
 
   return (
-    <Card>
-      <CardContent className="space-y-3 p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2 text-sm">
-              <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} />
-              {t('Auto Refresh', { defaultValue: 'Auto Refresh' })}
-            </label>
-            <Input type="number" min={1} max={60} value={refreshInterval / 1000} onChange={handleInterval} className="h-9 w-20" />
-            <Input type="number" min={1} max={999} value={maxEntries} onChange={handleMaxEntries} className="h-9 w-20" />
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => fetchLogs()} disabled={loading}>
-              <RefreshCw className={loading ? 'size-4 animate-spin' : 'size-4'} />
+    <Card className="overflow-hidden">
+      <div className="flex flex-col gap-3 border-b border-border p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <span title={t('systemLogs.sourceHint')}>
+            <Segmented
+              label={t('systemLogs.sourceLabel')}
+              value={source}
+              onChange={setSource}
+              options={[
+                { value: 'memory', label: t('systemLogs.memory') },
+                { value: 'file', label: t('systemLogs.file') }
+              ]}
+            />
+          </span>
+          <StatusSegments label={t('systemLogs.levelLabel')} value={level} onChange={setLevel} options={levelOptions} counts={counts} />
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              aria-pressed={liveOn}
+              disabled={fromFile}
+              onClick={() => setLive((v) => !v)}
+              title={fromFile ? t('systemLogs.liveFileHint') : t('systemLogs.liveHint')}
+              className={cn('gap-2', liveOn && 'border-foreground/20 bg-muted')}
+            >
+              <span className={cn('size-2 rounded-full', liveOn ? 'bg-success' : 'bg-muted-foreground/45')} />
+              {t('systemLogs.live')}
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                setLogs([]);
-                setOriginalLogs([]);
-              }}
+              className="w-8 px-0"
+              onClick={() => fetchLogs()}
+              disabled={refreshing}
+              title={t('systemLogs.refresh')}
+              aria-label={t('systemLogs.refresh')}
             >
-              <Trash2 className="size-4 text-destructive" />
+              <RefreshCw className={cn('size-4', refreshing && 'animate-spin')} strokeWidth={1.5} />
             </Button>
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={
-                useRegex
-                  ? t('Enter regular expression...', { defaultValue: 'Enter regular expression...' })
-                  : t('Search logs...', { defaultValue: 'Search logs...' })
-              }
-              className="h-9 pl-9 pr-9"
-            />
-            {searchTerm && (
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" strokeWidth={1.5} />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('systemLogs.search')}
+            aria-label={t('systemLogs.search')}
+            className={cn('h-9 pl-9 pr-16', useRegex && 'font-mono')}
+          />
+          <div className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-0.5">
+            {search && (
               <button
                 type="button"
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                onClick={() => setSearch('')}
+                aria-label={t('systemLogs.clearFilters')}
+                className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
               >
-                <X className="size-4" />
+                <X className="size-4" strokeWidth={1.5} />
               </button>
             )}
+            <button
+              type="button"
+              aria-pressed={useRegex}
+              onClick={() => setUseRegex((v) => !v)}
+              title={t('systemLogs.regex')}
+              aria-label={t('systemLogs.regex')}
+              className={cn(
+                'flex size-6 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                useRegex ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              )}
+            >
+              <Regex className="size-4" strokeWidth={1.5} />
+            </button>
           </div>
-          <label className="flex items-center gap-2 text-sm">
-            <Switch checked={useRegex} onCheckedChange={setUseRegex} />
-            <Code className="size-4" /> {t('Regex', { defaultValue: 'Regex' })}
-          </label>
-          <span className="whitespace-nowrap text-sm text-muted-foreground">
-            {searchTerm ? `${logs.length} results` : `${logs.length} logs`}
-          </span>
         </div>
+      </div>
 
-        {error && (
+      {error && (
+        <div className="border-b border-border p-4">
           <Alert variant="error">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
-        )}
-
-        <div className="relative">
-          {showScrollDown && (
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={scrollToBottom}
-              className="absolute bottom-3 left-1/2 z-10 size-9 -translate-x-1/2 rounded-full shadow-md"
-            >
-              <ArrowDown className="size-4" />
-            </Button>
-          )}
-          <div
-            ref={scrollRef}
-            onScroll={handleScroll}
-            className="max-h-[70vh] min-h-[300px] overflow-y-auto rounded-md border border-border"
-          >
-            {logs.length === 0 ? (
-              <div className="py-12 text-center text-sm text-muted-foreground">
-                {searchTerm
-                  ? t('No matching logs found', { defaultValue: 'No matching logs found' })
-                  : t('No logs available', { defaultValue: 'No logs available' })}
-              </div>
-            ) : (
-              <table className="w-full text-left text-sm">
-                <tbody>
-                  {logs.map((log, index) => {
-                    const badge = levelBadge(log.type);
-                    return (
-                      <tr key={index} className="border-b border-border last:border-0 hover:bg-muted/50">
-                        <td className="w-44 px-3 py-2 align-top font-mono text-[11px] text-muted-foreground">
-                          {formatTimestamp(log.timestamp)}
-                        </td>
-                        <td className="w-20 px-3 py-2 align-top">
-                          <Badge variant={badge.variant} className={badge.className}>
-                            {log.type.toUpperCase()}
-                          </Badge>
-                        </td>
-                        <td className="whitespace-pre-wrap break-words px-3 py-2 align-top font-mono text-xs">{log.message}</td>
-                        <td className="w-12 px-3 py-2 align-top">
-                          <button
-                            type="button"
-                            onClick={() => setContextTarget({ index, log })}
-                            className="text-muted-foreground hover:text-foreground"
-                            title={t('View Context', { defaultValue: 'View Context' })}
-                          >
-                            <Code className="size-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
         </div>
-      </CardContent>
-
-      {contextTarget && (
-        <LogContextDialog
-          target={contextTarget}
-          logs={logs}
-          originalLogs={originalLogs}
-          searchTerm={searchTerm}
-          onClose={() => setContextTarget(null)}
-        />
       )}
+
+      <div className="max-h-[calc(100vh-300px)] min-h-[320px] overflow-y-auto">
+        {loading ? (
+          <div className="space-y-2 p-3">
+            {Array.from({ length: 10 }, (_, i) => (
+              <Skeleton key={i} className="h-5 w-full" />
+            ))}
+          </div>
+        ) : data.logs.length === 0 ? (
+          <EmptyState
+            icon={ScrollText}
+            title={filtered ? t('systemLogs.noMatch') : t('systemLogs.empty')}
+            description={filtered ? null : t('systemLogs.emptyHint')}
+            action={
+              filtered && (
+                <Button variant="outline" size="sm" onClick={clearFilters}>
+                  {t('systemLogs.clearFilters')}
+                </Button>
+              )
+            }
+            className="py-20"
+          />
+        ) : (
+          <>
+            <LogHeader />
+            <div className="divide-y divide-border/60">
+              {data.logs.map((log, i) => (
+                <LogRow
+                  key={`${log.timestamp}-${i}`}
+                  log={log}
+                  onSource={(s) => setSearch(s === 'SYS' ? '[SYS]' : s)}
+                  onContext={setContextLog}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="flex h-11 items-center justify-between gap-3 border-t border-border px-4 text-xs text-muted-foreground">
+        <span className="tabular-nums">
+          {data.hasMore
+            ? t('systemLogs.shown', { shown: data.logs.length, total: data.total })
+            : t('systemLogs.matched', { count: data.total })}
+        </span>
+        <div className="flex items-center gap-2">
+          <span>{t('systemLogs.showLatest')}</span>
+          <Select value={String(count)} onValueChange={(v) => setCount(Number(v))}>
+            <SelectTrigger className="h-7 w-20 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {COUNTS.map((n) => (
+                <SelectItem key={n} value={String(n)}>
+                  {n}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span>{t('systemLogs.entries')}</span>
+        </div>
+      </div>
+
+      {contextLog && <LogContextDialog log={contextLog} fromFile={fromFile} onClose={() => setContextLog(null)} />}
     </Card>
   );
 }

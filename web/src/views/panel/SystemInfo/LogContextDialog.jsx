@@ -1,130 +1,87 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import i18n from 'i18n/i18n';
-import { Loader2 } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Segmented } from '@/components/objects';
 import { API } from 'utils/api';
-import { showError } from 'utils/common';
-import { formatTimestamp, levelBadge, processLogEntry } from './logHelpers';
+import { LogRow } from './LogRows';
+import { processLogEntry } from './logHelpers';
 
 // ==============================|| SYSTEM LOGS — CONTEXT DIALOG ||============================== //
-// Shows N lines around a target log entry. Resolves from the already-loaded data
-// when possible; falls back to the `/api/system_info/log/context` endpoint.
+// The lines written around one entry, unfiltered, from the same source the list reads
+// (`/api/system_info/log/context`). The entry itself is marked with a bar on the left.
 
-export default function LogContextDialog({ target, logs, originalLogs, searchTerm, onClose }) {
+const LINES = [5, 10, 20];
+
+export default function LogContextDialog({ log, fromFile, onClose }) {
   const { t } = useTranslation();
-  const [contextLines, setContextLines] = useState(3);
-  const [contextLogs, setContextLogs] = useState([]);
-  const [targetPosition, setTargetPosition] = useState(-1);
-  const [loading, setLoading] = useState(false);
-
-  const fromBackend = useCallback(async (targetLog, lines) => {
-    setLoading(true);
-    try {
-      const res = await API.post('/api/system_info/log/context', {
-        timestamp: targetLog.timestamp,
-        message: targetLog.message,
-        type: targetLog.type,
-        context_lines: lines
-      });
-      const result = res.data?.success ? res.data.data : null;
-      if (result?.logs && Array.isArray(result.logs)) {
-        const processed = result.logs.map(processLogEntry);
-        setContextLogs(processed);
-        setTargetPosition(result.target_position ?? Math.floor(processed.length / 2));
-      } else {
-        setContextLogs([targetLog]);
-        setTargetPosition(0);
-      }
-    } catch (err) {
-      showError(i18n.t('logPage.contextFailed', { message: err.message }));
-      setContextLogs([targetLog]);
-      setTargetPosition(0);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const compute = useCallback(
-    (lines) => {
-      const targetLog = logs[target.index];
-      if (!targetLog) return;
-      let source;
-      let realIndex;
-      if (searchTerm.trim() && originalLogs.length > 0) {
-        source = originalLogs;
-        realIndex = originalLogs.findIndex(
-          (log) => log.timestamp === targetLog.timestamp && log.message === targetLog.message && log.type === targetLog.type
-        );
-        if (realIndex === -1) realIndex = originalLogs.findIndex((log) => log.message === targetLog.message);
-        if (realIndex === -1) {
-          fromBackend(targetLog, lines);
-          return;
-        }
-      } else {
-        source = logs;
-        realIndex = target.index;
-      }
-      const start = Math.max(0, realIndex - lines);
-      const end = Math.min(source.length, realIndex + lines + 1);
-      setContextLogs(source.slice(start, end));
-      setTargetPosition(realIndex - start);
-    },
-    [logs, originalLogs, searchTerm, target.index, fromBackend]
-  );
+  const [lines, setLines] = useState(5);
+  const [state, setState] = useState({ loading: true, logs: [], target: -1, error: '' });
 
   useEffect(() => {
-    compute(contextLines);
-  }, [compute, contextLines]);
+    let cancelled = false;
+    API.post('/api/system_info/log/context', {
+      from_file: fromFile,
+      timestamp: log.timestamp,
+      message: log.message,
+      context_lines: lines
+    })
+      .then((res) => {
+        if (cancelled) return;
+        if (!res.data.success) {
+          setState({ loading: false, logs: [], target: -1, error: t('systemLogs.contextFailed', { message: res.data.message }) });
+          return;
+        }
+        const result = res.data.data || {};
+        setState({ loading: false, logs: (result.logs || []).map(processLogEntry), target: result.target_position ?? -1, error: '' });
+      })
+      .catch((err) => {
+        if (!cancelled) setState({ loading: false, logs: [], target: -1, error: t('systemLogs.contextFailed', { message: err.message }) });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [log, fromFile, lines, t]);
+
+  const missing = !state.loading && !state.error && state.target < 0;
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader className="flex-row flex-wrap items-center gap-3">
-          <DialogTitle>{t('Log Context', { defaultValue: 'Log Context' })}</DialogTitle>
-          <Input
-            type="number"
-            min={1}
-            max={20}
-            value={contextLines}
-            onChange={(e) => {
-              const value = parseInt(e.target.value, 10);
-              if (!Number.isNaN(value) && value >= 1 && value <= 20) setContextLines(value);
-            }}
-            className="h-9 w-24"
-          />
+      <DialogContent className="max-w-5xl">
+        <DialogHeader className="flex-row items-center justify-between gap-3 space-y-0">
+          <DialogTitle>{t('systemLogs.contextTitle')}</DialogTitle>
+          <div className="mr-8 flex items-center gap-2 text-xs text-muted-foreground">
+            <span>{t('systemLogs.contextLines')}</span>
+            <Segmented
+              size="mini"
+              label={t('systemLogs.contextLines')}
+              value={String(lines)}
+              onChange={(v) => {
+                setLines(Number(v));
+                setState((s) => ({ ...s, loading: true }));
+              }}
+              options={LINES.map((n) => ({ value: String(n), label: String(n) }))}
+            />
+          </div>
         </DialogHeader>
-        <DialogBody>
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        <DialogBody className="px-0">
+          {state.loading ? (
+            <div className="space-y-2 px-3">
+              {Array.from({ length: 6 }, (_, i) => (
+                <Skeleton key={i} className="h-5 w-full" />
+              ))}
             </div>
+          ) : state.error || missing ? (
+            <p className="px-6 py-8 text-center text-sm text-muted-foreground">{state.error || t('systemLogs.contextMissing')}</p>
           ) : (
-            <table className="w-full text-left text-sm">
-              <tbody>
-                {contextLogs.map((log, index) => {
-                  const badge = levelBadge(log.type);
-                  const isTarget = index === targetPosition;
-                  return (
-                    <tr key={index} className={isTarget ? 'bg-muted ring-1 ring-inset ring-border' : ''}>
-                      <td className="w-44 px-2 py-2 align-top font-mono text-[11px] text-muted-foreground">
-                        {formatTimestamp(log.timestamp)}
-                      </td>
-                      <td className="w-20 px-2 py-2 align-top">
-                        <Badge variant={badge.variant} className={badge.className}>
-                          {log.type.toUpperCase()}
-                        </Badge>
-                      </td>
-                      <td className="whitespace-pre-wrap break-words px-2 py-2 align-top font-mono text-xs">{log.message}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="divide-y divide-border/60 border-y border-border">
+              {state.logs.map((entry, i) => (
+                <LogRow key={`${entry.timestamp}-${i}`} log={entry} target={i === state.target} />
+              ))}
+            </div>
           )}
         </DialogBody>
         <DialogFooter>
@@ -136,3 +93,9 @@ export default function LogContextDialog({ target, logs, originalLogs, searchTer
     </Dialog>
   );
 }
+
+LogContextDialog.propTypes = {
+  log: PropTypes.shape({ timestamp: PropTypes.string, message: PropTypes.string }).isRequired,
+  fromFile: PropTypes.bool,
+  onClose: PropTypes.func.isRequired
+};
