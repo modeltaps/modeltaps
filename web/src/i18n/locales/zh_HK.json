@@ -1052,6 +1052,7 @@
     },
     "retry": {
       "noStatus": "無回應",
+      "attempt": "第 {{n}} 次嘗試",
       "cooldown": "已冷卻",
       "failed": "失敗",
       "errorLabel": "錯誤"

@@ -1613,6 +1613,7 @@
     },
     "retry": {
       "noStatus": "无响应",
+      "attempt": "第 {{n}} 次尝试",
       "cooldown": "已冷却",
       "failed": "失败",
       "errorLabel": "错误"

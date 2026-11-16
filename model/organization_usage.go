@@ -156,6 +156,8 @@ func GetOrgLogsList(shadowUserId int, params *OrgLogsListParams) (*DataResult[Lo
 	if err != nil {
 		return nil, err
 	}
+	// Organization owners and members see their usage, not the gateway's channels or costs.
+	RedactLogsForMember(*result.Data)
 	if err := FillLogsHasDetail(*result.Data); err != nil {
 		return nil, err
 	}
@@ -168,6 +170,7 @@ func GetAllOrgLogsList(shadowUserId int, params *OrgLogsListParams) ([]*Log, err
 	tx := applyOrgLogsFilters(DB, shadowUserId, params)
 	tx = applyOrgLogMetricFilters(tx, params)
 	err := tx.Order("id DESC").Find(&logs).Error
+	RedactLogsForMember(logs)
 	return logs, err
 }
 

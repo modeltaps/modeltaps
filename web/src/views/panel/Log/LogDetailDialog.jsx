@@ -288,7 +288,7 @@ function ProviderResponsesChart({ item, t }) {
         <div className="grid grid-cols-[max-content_1fr_auto] items-center gap-x-3 gap-y-1.5">
           {/* Failed attempts before the final one: channel | status | cooldown note */}
           {attempts.map((a, idx) => (
-            <AttemptRow key={`${a.channel_id}-${idx}`} attempt={a} t={t} />
+            <AttemptRow key={`${a.channel_id ?? 'attempt'}-${idx}`} attempt={a} index={idx} t={t} />
           ))}
           {!isError && (
             <>
@@ -339,12 +339,14 @@ function ProviderResponsesChart({ item, t }) {
 ProviderResponsesChart.propTypes = { item: PropTypes.object, t: PropTypes.func.isRequired };
 
 // One failed upstream attempt of the retry chain: channel id, status code, and whether the
-// channel was put on cooldown before the next attempt.
-function AttemptRow({ attempt, t }) {
+// channel was put on cooldown before the next attempt. Logs shown to users and organization
+// members carry no channel id, so the row is labelled by its position instead.
+function AttemptRow({ attempt, index, t }) {
+  const label = attempt.channel_id ? `${t('logPage.channelLabel')} ${attempt.channel_id}` : t('logPage.retry.attempt', { n: index + 1 });
   return (
     <>
       <div className="flex items-center gap-1.5">
-        <span className="text-sm font-medium text-foreground">{`${t('logPage.channelLabel')} ${attempt.channel_id}`}</span>
+        <span className="text-sm font-medium text-foreground">{label}</span>
         <span className="shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-medium text-destructive">
           {attempt.status || t('logPage.retry.noStatus')}
         </span>
@@ -359,7 +361,7 @@ function AttemptRow({ attempt, t }) {
   );
 }
 
-AttemptRow.propTypes = { attempt: PropTypes.object.isRequired, t: PropTypes.func.isRequired };
+AttemptRow.propTypes = { attempt: PropTypes.object.isRequired, index: PropTypes.number.isRequired, t: PropTypes.func.isRequired };
 
 // Collapsible section container (Usage, Prompt, Completion, Generation Data).
 function CollapsibleSection({ title, summary, open, onToggle, children }) {

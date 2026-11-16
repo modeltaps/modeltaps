@@ -1052,6 +1052,7 @@
     },
     "retry": {
       "noStatus": "No response",
+      "attempt": "Attempt {{n}}",
       "cooldown": "Cooled down",
       "failed": "Failed",
       "errorLabel": "Error"

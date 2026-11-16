@@ -1052,6 +1052,7 @@
     },
     "retry": {
       "noStatus": "応答なし",
+      "attempt": "試行 {{n}}",
       "cooldown": "クールダウン済み",
       "failed": "失敗",
       "errorLabel": "エラー"

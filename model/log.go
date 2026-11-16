@@ -696,6 +696,7 @@ func GetUserLogsList(userId int, params *LogsListParams) (*DataResult[Log], erro
 			log.SourceIp = ""
 		}
 	}
+	RedactLogsForMember(*result.Data)
 
 	if err := FillLogsHasDetail(*result.Data); err != nil {
 		return nil, err
@@ -760,6 +761,7 @@ func GetAllUserLogsList(userId int, params *LogsListParams) ([]*Log, error) {
 			log.SourceIp = ""
 		}
 	}
+	RedactLogsForMember(logs)
 
 	return logs, nil
 }
@@ -771,6 +773,7 @@ func SearchAllLogs(keyword string) (logs []*Log, err error) {
 
 func SearchUserLogs(userId int, keyword string) (logs []*Log, err error) {
 	err = DB.Where("user_id = ? and type = ?", userId, keyword).Order("id desc").Limit(config.MaxRecentItems).Omit("cost_quota", "upstream_request_id", "upstream_cost", "expected_cost").Find(&logs).Error
+	RedactLogsForMember(logs)
 	return logs, err
 }
 
