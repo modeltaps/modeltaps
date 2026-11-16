@@ -295,10 +295,12 @@ func officialTokenPrices() map[string]officialTokenPrice {
 	}
 }
 
-// officialRequestPrice is a vendor's published price per request (per generated item), in USD.
+// officialRequestPrice is a vendor's published price per request (per generated item), in USD, or
+// per minute of audio when perMinute is set (speech-to-text).
 type officialRequestPrice struct {
 	channelType int
 	usd         float64
+	perMinute   bool
 }
 
 // officialRequestPrices lists models billed per request at their official list prices.
@@ -306,18 +308,26 @@ func officialRequestPrices() map[string]officialRequestPrice {
 	return map[string]officialRequestPrice{
 		// Lyria 3 music generation, USD per song, Gemini API paid tier (checked 2026-11-16).
 		// https://ai.google.dev/gemini-api/docs/pricing
-		"lyria-3-clip-preview": {config.ChannelTypeGemini, 0.04},
-		"lyria-3-pro-preview":  {config.ChannelTypeGemini, 0.08},
+		"lyria-3-clip-preview": {config.ChannelTypeGemini, 0.04, false},
+		"lyria-3-pro-preview":  {config.ChannelTypeGemini, 0.08, false},
+		// OpenAI Whisper transcription, USD per minute of audio (checked 2026-11-16).
+		// https://developers.openai.com/api/docs/pricing
+		"whisper-1": {config.ChannelTypeOpenAI, 0.006, true},
 	}
 }
 
 // toPrice converts a USD-per-request price into a times Price: the billing side charges
 // 1000 x ratio quota per request (relay/relay_util/quota_calc.go), so ratio = USD / DollarRate.
+// A per-minute price becomes a minutes Price in the same unit (ratio per minute of audio).
 func (o officialRequestPrice) toPrice(modelName string) *Price {
 	ratio := roundRatioValue(o.usd / DollarRate)
+	priceType := TimesPriceType
+	if o.perMinute {
+		priceType = MinutesPriceType
+	}
 	return &Price{
 		Model:       modelName,
-		Type:        TimesPriceType,
+		Type:        priceType,
 		ChannelType: o.channelType,
 		Input:       ratio,
 		Output:      ratio,

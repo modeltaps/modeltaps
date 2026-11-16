@@ -266,7 +266,6 @@ func TestGatewayDefaultPricesPreset(t *testing.T) {
 		"mj_turbo_upload":   {TimesPriceType, config.ChannelTypeMidjourney, 0, 0},
 		"chirp-v3-5":        {TimesPriceType, config.ChannelTypeSuno, 50, 50},
 		"suno_lyrics":       {TimesPriceType, config.ChannelTypeSuno, 5, 5},
-		"whisper-1":         {TokensPriceType, config.ChannelTypeOpenAI, 15, 15},
 		"dall-e-2":          {TokensPriceType, config.ChannelTypeOpenAI, 8, 8},
 		"dall-e-3":          {TokensPriceType, config.ChannelTypeOpenAI, 20, 20},
 		"stable-image-core": {TokensPriceType, config.ChannelTypeStabilityAI, 15, 15},
@@ -361,5 +360,21 @@ func TestMigratedOfficialPrices(t *testing.T) {
 				t.Errorf("%s: extra %s = %v, want %v", name, k, extra[k], v)
 			}
 		}
+	}
+}
+
+// Whisper is an official per-minute price ($0.006 / minute = ratio 3), not a gateway default.
+func TestWhisperOfficialMinutesPrice(t *testing.T) {
+	var whisper *Price
+	for _, p := range GetOfficialPrices() {
+		if p.Model == "whisper-1" {
+			whisper = p
+		}
+	}
+	if whisper == nil || whisper.Type != MinutesPriceType || whisper.Input != 3 || whisper.ChannelType != config.ChannelTypeOpenAI {
+		t.Fatalf("whisper-1 = %+v, want an official minutes price of 3", whisper)
+	}
+	if _, ok := gatewayDefaultPrices()["whisper-1"]; ok {
+		t.Error("whisper-1 must not also be a gateway default")
 	}
 }

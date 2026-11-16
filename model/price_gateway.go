@@ -6,8 +6,8 @@ import "github.com/modeltaps/modeltaps/common/config"
 //
 // These are NOT vendor list prices. They are defaults the gateway presets for models it still
 // supports but whose vendor publishes no per-token API price that converts into the official price
-// table: per-request and task models (Midjourney, Suno), and models priced per minute or per image
-// while the gateway bills them by tokens (Whisper, DALL-E, Stability AI). Without a preset, a new
+// table: per-request and task models (Midjourney, Suno), and models priced per image
+// while the gateway bills them by tokens (DALL-E, Stability AI). Without a preset, a new
 // deployment with unpriced_model_policy=block would reject these models outright. Administrators
 // should adjust them to their own cost.
 //
@@ -32,8 +32,6 @@ func gatewayTokensPrice(channelType int, input, output float64) gatewayDefaultPr
 
 func gatewayDefaultPrices() map[string]gatewayDefaultPrice {
 	prices := map[string]gatewayDefaultPrice{
-		// OpenAI Whisper: officially $0.006 per minute, billed here by transcript tokens.
-		"whisper-1": gatewayTokensPrice(config.ChannelTypeOpenAI, 15, 15),
 		// DALL-E: officially priced per image ($0.016-$0.020 for DALL-E 2, $0.040-$0.120 for DALL-E 3);
 		// no longer listed on the OpenAI pricing page.
 		"dall-e-2": gatewayTokensPrice(config.ChannelTypeOpenAI, 8, 8),

@@ -415,8 +415,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   values such as `qwen-max` at 8.57 or `deepseek-chat` at 0.75. Verified current models move into
   the official table at today's prices: gpt-image-2 / 2.5 / 2.6, OpenAI embeddings,
   `omni-moderation-latest` (free), `tts-1` / `tts-1-hd`, `mistral-large-latest` ($0.70 / $2.10,
-  cached $0.07), `mistral-small-latest` ($0.15 / $0.60), `mistral-embed`, and Lyria 3 ($0.04 /
-  $0.08 per song). Midjourney (`mj_*`), Suno, `whisper-1`, DALL-E 2 / 3 and Stability AI
+  cached $0.07), `mistral-small-latest` ($0.15 / $0.60), `mistral-embed`, Lyria 3 ($0.04 /
+  $0.08 per song), and `whisper-1` as a per-minute price ($0.006 / minute of audio, the
+  speech-to-text billing by duration). Midjourney (`mj_*`), Suno, DALL-E 2 / 3 and Stability AI
   (`sd3`, `sd3-turbo`, `stable-image-core`) stay preset at their previous values as gateway
   default prices: they have no per-token official price, are not official prices and are not
   returned by `/api/prices?type=official`, and administrators should set them to their own cost.
