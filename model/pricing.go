@@ -549,6 +549,8 @@ func GetPricesList(pricingType string) []*Price {
 	switch pricingType {
 	case "default":
 		prices = GetDefaultPrice()
+	case "official":
+		prices = GetOfficialPrices()
 	case "db":
 		prices = PricingInstance.GetAllPricesList()
 	case "old":

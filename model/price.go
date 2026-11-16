@@ -601,6 +601,18 @@ func GetDefaultPrice() []*Price {
 	return prices
 }
 
+// GetOfficialPrices returns only the built-in official list prices in effect now (price_official.go
+// and price_schedule.go), without the older default entries of GetDefaultPrice. It is the source
+// to restore prices that a sync replaced, without bringing back outdated defaults.
+func GetOfficialPrices() []*Price {
+	official := officialTokenPricesAt(time.Now())
+	prices := make([]*Price, 0, len(official))
+	for model, o := range official {
+		prices = append(prices, o.toPrice(model))
+	}
+	return prices
+}
+
 func GetDefaultExtraRatio() string {
 	return `{"gpt-4o-audio-preview":{"input_audio_tokens":40,"output_audio_tokens":20},"gpt-4o-audio-preview-2024-10-01":{"input_audio_tokens":40,"output_audio_tokens":20},"gpt-4o-audio-preview-2024-12-17":{"input_audio_tokens":16,"output_audio_tokens":8},"gpt-4o-mini-audio-preview":{"input_audio_tokens":67,"output_audio_tokens":34},"gpt-4o-mini-audio-preview-2024-12-17":{"input_audio_tokens":67,"output_audio_tokens":34},"gpt-4o-realtime-preview":{"input_audio_tokens":20,"output_audio_tokens":10},"gpt-4o-realtime-preview-2024-10-01":{"input_audio_tokens":20,"output_audio_tokens":10},"gpt-4o-realtime-preview-2024-12-17":{"input_audio_tokens":8,"output_audio_tokens":4},"gpt-4o-mini-realtime-preview":{"input_audio_tokens":17,"output_audio_tokens":8.4},"gpt-4o-mini-realtime-preview-2024-12-17":{"input_audio_tokens":17,"output_audio_tokens":8.4},"gemini-2.5-flash-preview-04-17":{"reasoning_tokens":5.833},"gpt-image-1":{"input_text_tokens": 0.5},"gpt-image-2":{"input_text_tokens": 0.625},"gpt-image-2.5-flare":{"input_text_tokens": 0.625},"gpt-image-2.5-flare-2026-09-08":{"input_text_tokens": 0.625},"gpt-image-2.5-sunburst":{"input_text_tokens": 0.625},"gpt-image-2.5-sunburst-2026-09-08":{"input_text_tokens": 0.625},"gpt-image-2.6-flare":{"input_text_tokens": 0.625},"gpt-image-2.6-sunburst":{"input_text_tokens": 0.625}}`
 

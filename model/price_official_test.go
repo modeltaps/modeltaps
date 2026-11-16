@@ -3,6 +3,7 @@ package model
 import (
 	"math"
 	"testing"
+	"time"
 
 	"github.com/modeltaps/modeltaps/common/config"
 )
@@ -132,4 +133,24 @@ func TestDefaultPriceRatioConversion(t *testing.T) {
 
 func nearly(a, b float64) bool {
 	return math.Abs(a-b) < 1e-6
+}
+
+// type=official lists the official table only, at the prices in effect now.
+func TestGetPricesListOfficial(t *testing.T) {
+	prices := GetPricesList("official")
+	official := officialTokenPricesAt(time.Now())
+	if len(prices) != len(official) {
+		t.Fatalf("got %d prices, want %d", len(prices), len(official))
+	}
+	for _, p := range prices {
+		o, ok := official[p.Model]
+		if !ok {
+			t.Errorf("%s is not in the official table", p.Model)
+			continue
+		}
+		want := o.toPrice(p.Model)
+		if p.Input != want.Input || p.Output != want.Output || p.ChannelType != want.ChannelType {
+			t.Errorf("%s = %+v, want %+v", p.Model, p, want)
+		}
+	}
 }
