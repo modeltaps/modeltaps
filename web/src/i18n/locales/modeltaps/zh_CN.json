@@ -3035,7 +3035,8 @@
       "then": "备用 {{n}}",
       "manage": "管理线路",
       "failed": "顺序加载失败",
-      "more_other": "+{{count}} 备用"
+      "more": "+{{count}}",
+      "moreTip_other": "另有 {{count}} 条线路作为备用"
     }
   },
   "settingsUi": {

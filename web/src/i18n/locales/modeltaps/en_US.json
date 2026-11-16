@@ -3134,8 +3134,9 @@
       "then": "Backup {{n}}",
       "manage": "Manage supplies",
       "failed": "Could not load the order",
-      "more_one": "+{{count}} backup",
-      "more_other": "+{{count}} backups"
+      "more": "+{{count}}",
+      "moreTip_one": "{{count}} more supply backs it up",
+      "moreTip_other": "{{count}} more supplies back it up"
     }
   },
   "settingsUi": {

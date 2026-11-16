@@ -3031,7 +3031,8 @@
       "then": "予備 {{n}}",
       "manage": "供給を管理",
       "failed": "順序を読み込めませんでした",
-      "more_other": "+{{count}} 予備"
+      "more": "+{{count}}",
+      "moreTip_other": "ほかに {{count}} 件の供給が予備"
     }
   },
   "settingsUi": {

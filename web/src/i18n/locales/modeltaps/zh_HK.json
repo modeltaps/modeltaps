@@ -3035,7 +3035,8 @@
       "then": "備用 {{n}}",
       "manage": "管理線路",
       "failed": "順序載入失敗",
-      "more_other": "+{{count}} 備用"
+      "more": "+{{count}}",
+      "moreTip_other": "另有 {{count}} 條線路作為後備"
     }
   },
   "settingsUi": {

@@ -49,7 +49,10 @@ export function SupplyOrderGlyphs({ tiers }) {
         <Glyph key={entry.type} entry={entry} />
       ))}
       {rest > 0 && (
-        <span className={cn('text-xs tabular-nums text-muted-foreground', (fallback || down) && 'text-warning')}>
+        <span
+          title={t('modelSupply.order.moreTip', { count: rest })}
+          className={cn('text-xs tabular-nums text-muted-foreground', (fallback || down) && 'text-warning')}
+        >
           {t('modelSupply.order.more', { count: rest })}
         </span>
       )}
