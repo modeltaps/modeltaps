@@ -1121,7 +1121,7 @@ func routingSupplyMode(info *ModelInfo, allocationActive bool) string {
 // channel. There is no wildcard matching; supplies name models exactly.
 func (cc *ChannelsChooser) loadFromSupplies(channels []*Channel, allGroups []string) {
 	var supplies []*ModelSupply
-	if err := DB.Where("enabled = ?", true).Find(&supplies).Error; err != nil {
+	if err := DB.Where("enabled = ? AND upstream_gone_at = ?", true, 0).Find(&supplies).Error; err != nil {
 		logger.SysError("load model supplies failed: " + err.Error())
 		return
 	}

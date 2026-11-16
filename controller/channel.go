@@ -91,6 +91,9 @@ func AddChannel(c *gin.Context) {
 	if rejectInvalidPauseRules(c, channel.PauseRules) {
 		return
 	}
+	if rejectInvalidIntakeRules(c, channel.SupplyIntakeRules) {
+		return
+	}
 	if rejectInvalidDriftRules(c, channel.DriftIgnoreRules) {
 		return
 	}
@@ -244,6 +247,9 @@ func UpdateChannel(c *gin.Context) {
 	// 也要校验，防止单渠道编辑把同一标签分组变成混合类型。仅编辑已有成员且类型未变则放行，
 	// 避免阻断历史遗留的混合分组成员的正常编辑。
 	if rejectInvalidPauseRules(c, channel.PauseRules) {
+		return
+	}
+	if rejectInvalidIntakeRules(c, channel.SupplyIntakeRules) {
 		return
 	}
 	if rejectInvalidDriftRules(c, channel.DriftIgnoreRules) {

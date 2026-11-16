@@ -326,6 +326,10 @@ var PauseRulesEnabled = true
 // PauseRules holds custom pause rules as JSON; empty means the built-in defaults.
 var PauseRules = ""
 
+// SupplyIntakeRules holds the site-wide intake rules as JSON (see model.SupplyIntakeRule);
+// empty means the built-in defaults.
+var SupplyIntakeRules = ""
+
 // ModelLibraryRulesEnabled runs the library inclusion rules after each model library sync.
 var ModelLibraryRulesEnabled = true
 

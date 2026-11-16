@@ -162,7 +162,7 @@ func (p *allocationPlan) allocate(supplies []*ModelSupply, channels map[int]*Cha
 		slot := p.slotOf(channel)
 		slots[s.Id] = slot
 		all[slot.key]++
-		if s.Enabled && channel.Status == config.ChannelStatusEnabled {
+		if s.Enabled && s.UpstreamGoneAt == 0 && channel.Status == config.ChannelStatusEnabled {
 			active[slot.key]++
 		}
 	}
@@ -193,6 +193,15 @@ func (p *allocationPlan) allocate(supplies []*ModelSupply, channels map[int]*Cha
 		out[s.Id] = supplyNumbers{Priority: int64(p.tiers - slot.tier), Weight: weight}
 	}
 	return out
+}
+
+// allocateModel computes one model's numbers like allocate, then moves the supplies that join
+// last below the others (see ModelSupply.JoinLast). Routing and the console both use it, so the
+// order shown is the order requests take.
+func (p *allocationPlan) allocateModel(supplies []*ModelSupply, channels map[int]*Channel) map[int]supplyNumbers {
+	numbers := p.allocate(supplies, channels)
+	placeJoinLast(supplies, numbers)
+	return numbers
 }
 
 // followsPolicy reports whether a model takes its supply numbers from the policy.
@@ -230,7 +239,7 @@ func applyAllocation(policy *AllocationPolicy, supplies []*ModelSupply, channels
 		if !followsPolicy(infos[name]) {
 			continue
 		}
-		for id, n := range plan.allocate(list, channels) {
+		for id, n := range plan.allocateModel(list, channels) {
 			numbers[id] = n
 		}
 	}
@@ -277,7 +286,7 @@ func allocatedNumbers(models []string) (map[int]supplyNumbers, error) {
 		if !followsPolicy(infos[name]) {
 			continue
 		}
-		for id, n := range plan.allocate(list, channels) {
+		for id, n := range plan.allocateModel(list, channels) {
 			out[id] = n
 		}
 	}

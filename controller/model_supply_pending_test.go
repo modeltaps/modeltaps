@@ -11,7 +11,8 @@ import (
 )
 
 // While supplies route requests, the drift check of an opted-in channel adds a supply for a new
-// upstream model that belongs to a public model, leaves the others for the models page instead
+// upstream model that belongs to a public model (a chat model: the default intake rules switch
+// it on), leaves the others for the models page instead
 // of adding them to the channel's model list, and does not report a model a supply on the
 // channel already sends.
 func TestDriftWithSuppliesLeavesNewModelsPending(t *testing.T) {
@@ -50,7 +51,7 @@ func TestDriftWithSuppliesLeavesNewModelsPending(t *testing.T) {
 	if err := model.DB.Create(&model.ModelSupply{Model: "m", ChannelId: ch.Id, UpstreamModel: "m-supplied", Enabled: true}).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := model.DB.Create(&model.ModelInfo{Model: "m-known", Status: model.ModelStatusPublished}).Error; err != nil {
+	if err := model.DB.Create(&model.ModelInfo{Model: "m-known", Status: model.ModelStatusPublished, Endpoints: `["chat"]`}).Error; err != nil {
 		t.Fatal(err)
 	}
 

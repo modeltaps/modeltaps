@@ -12,7 +12,9 @@ import (
 // States of a supply in a preview, checked in this order.
 const (
 	SupplyStateChannelDisabled = "channel_disabled" // the channel is disabled or deleted
+	SupplyStatePending         = "pending"          // an intake rule added it for an admin to confirm
 	SupplyStateDisabled        = "disabled"         // the supply is switched off
+	SupplyStateUpstreamGone    = "upstream_gone"    // the upstream no longer lists its model
 	SupplyStatePaused          = "paused"           // a stored pause runs until Until
 	SupplyStateAwaitingTest    = "awaiting_test"    // the pause is over; a recovery test decides
 	SupplyStateCoolingDown     = "cooling_down"     // a short in-memory cooldown runs until Until
@@ -72,8 +74,12 @@ func supplyStateOf(view *ModelSupplyView, modelName string, now int64) (*SupplyP
 	switch {
 	case view.ChannelStatus != config.ChannelStatusEnabled:
 		entry.State = SupplyStateChannelDisabled
+	case view.Pending:
+		entry.State = SupplyStatePending
 	case !view.Enabled:
 		entry.State = SupplyStateDisabled
+	case view.UpstreamGoneAt > 0:
+		entry.State = SupplyStateUpstreamGone
 	default:
 		if pause := ActivePauseFor(view.ChannelId, modelName); pause != nil {
 			entry.State, entry.Until = SupplyStatePaused, pause.Until

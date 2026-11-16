@@ -272,6 +272,7 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			supplyPauseRoute.GET("/", controller.GetSupplyPauses)
 			supplyPauseRoute.GET("/rules", controller.GetPauseRules)
+			supplyPauseRoute.GET("/intake_rules", controller.GetIntakeRules)
 			supplyPauseRoute.POST("/", controller.CreateSupplyPause)
 			supplyPauseRoute.DELETE("/:id", controller.DeleteSupplyPause)
 		}

@@ -186,6 +186,15 @@ func registerOptions() {
 		config.PauseRules = value
 		return nil
 	}, "", config.ScopeAdmin)
+	config.GlobalOption.RegisterCustom("SupplyIntakeRules", func() string {
+		return config.SupplyIntakeRules
+	}, func(value string) error {
+		if err := SetCustomIntakeRules(value); err != nil {
+			return err
+		}
+		config.SupplyIntakeRules = value
+		return nil
+	}, "", config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("ModelLibraryRulesEnabled", &config.ModelLibraryRulesEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("ModelLibraryRulesApply", &config.ModelLibraryRulesApply, config.ScopeAdmin)
 	config.GlobalOption.RegisterCustom("ModelLibraryRules", func() string {

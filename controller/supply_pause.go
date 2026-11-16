@@ -299,3 +299,40 @@ func rejectInvalidPauseRules(c *gin.Context, raw *string) bool {
 	}
 	return false
 }
+
+// GetIntakeRules returns what the intake rules settings show: whether custom rules replace the
+// defaults, the rules in effect, the built-in defaults, and with ?channel_id= that channel's own
+// rules (nil when it uses the site-wide ones).
+func GetIntakeRules(c *gin.Context) {
+	data := gin.H{
+		"custom":   strings.TrimSpace(config.SupplyIntakeRules) != "",
+		"rules":    model.EffectiveIntakeRules(),
+		"defaults": model.DefaultIntakeRules(),
+	}
+	if raw := c.Query("channel_id"); raw != "" {
+		channelId, err := strconv.Atoi(raw)
+		if err != nil {
+			common.APIRespondWithError(c, http.StatusOK, err)
+			return
+		}
+		channel, err := model.GetChannelById(channelId)
+		if err != nil {
+			common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeModelSupplyChannelNotFound, "the channel does not exist", nil)
+			return
+		}
+		data["channel_rules"] = model.ChannelIntakeRules(channel)
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": data})
+}
+
+// rejectInvalidIntakeRules answers a channel save whose own intake rules do not parse.
+func rejectInvalidIntakeRules(c *gin.Context, raw *string) bool {
+	if raw == nil || strings.TrimSpace(*raw) == "" {
+		return false
+	}
+	if _, err := model.ParseIntakeRules(*raw); err != nil {
+		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeSupplyIntakeRulesInvalid, err.Error(), map[string]any{"message": err.Error()})
+		return true
+	}
+	return false
+}

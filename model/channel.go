@@ -83,6 +83,14 @@ type Channel struct {
 	// DriftAutoAdd adds new upstream models (not ignored) to the channel's models when the
 	// drift check finds them, instead of only reporting them.
 	DriftAutoAdd bool `json:"drift_auto_add" form:"drift_auto_add" gorm:"default:false"`
+	// DriftKeepMissing keeps supplies routed when the upstream list stops showing their model:
+	// for upstreams whose list is incomplete. Off, the model check marks them gone (see
+	// ModelSupply.UpstreamGoneAt).
+	DriftKeepMissing bool `json:"drift_keep_missing" form:"drift_keep_missing" gorm:"default:false"`
+	// SupplyIntakeRules are this channel's own intake rules as JSON (see SupplyIntakeRule),
+	// used instead of the site-wide ones; empty means the site-wide rules. Nil in an update keeps
+	// the stored value, since the console saves channels whole.
+	SupplyIntakeRules *string `json:"supply_intake_rules,omitempty" gorm:"type:text"`
 
 	// BalanceThreshold 低余额提醒阈值（USD）：余额刷新后低于该值发通知；0 = 不提醒。
 	BalanceThreshold float64 `json:"balance_threshold" form:"balance_threshold" gorm:"type:decimal(10,4);default:0"`
@@ -157,6 +165,11 @@ type ModelDriftResult struct {
 	NewModels        []string `json:"new_models,omitempty"`
 	UpstreamSnapshot []string `json:"upstream_snapshot,omitempty"`
 	OK               bool     `json:"ok"`
+	// Supplies is what the check changed on the channel's supplies while they route requests:
+	// supplies marked gone or back (see MarkSupplyUpstreams); nil when nothing changed.
+	Supplies *SupplyUpstreamChange `json:"supplies,omitempty"`
+	// Intake is what the intake rules did with the new upstream models at this check.
+	Intake []IntakeOutcome `json:"intake,omitempty"`
 }
 
 func (c *Channel) AllowStream(modelName string) bool {
@@ -675,6 +688,9 @@ func (channel *Channel) UpdateRaw(overwrite bool) error {
 		}
 		if channel.PauseRules == nil {
 			omit = append(omit, "PauseRules")
+		}
+		if channel.SupplyIntakeRules == nil {
+			omit = append(omit, "SupplyIntakeRules")
 		}
 		err = DB.Model(channel).Select("*").Omit(omit...).Updates(channel).Error
 	} else {

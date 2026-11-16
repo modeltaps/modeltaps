@@ -8,6 +8,7 @@ import (
 // States of an upstream model on a channel, checked in this order.
 const (
 	UpstreamModelInUse        = "in_use"         // an enabled supply on the channel sends the name
+	UpstreamModelPending      = "pending"        // an intake rule added a supply that waits for an admin
 	UpstreamModelOff          = "off"            // a supply on the channel sends the name but is switched off
 	UpstreamModelAvailable    = "available"      // it belongs to a public model that has no supply on this channel
 	UpstreamModelNotInCatalog = "not_in_catalog" // a known model that is not in the catalog
@@ -102,7 +103,10 @@ func (r *CanonicalResolver) upstreamModelRow(name string, supply *ModelSupply) *
 			row.PublicStatus = info.Status
 		}
 		row.State = UpstreamModelOff
-		if supply.Enabled {
+		switch {
+		case supply.Pending:
+			row.State = UpstreamModelPending
+		case supply.Enabled:
 			row.State = UpstreamModelInUse
 		}
 		return row

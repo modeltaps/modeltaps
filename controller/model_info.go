@@ -87,7 +87,7 @@ func boundChannelsFromSupplies(channels []*model.Channel) (map[string][]boundCha
 	index := make(map[string][]boundChannel)
 	for _, supply := range supplies {
 		channel := byId[supply.ChannelId]
-		if !supply.Enabled || channel == nil {
+		if !supply.Enabled || supply.UpstreamGoneAt > 0 || channel == nil {
 			continue
 		}
 		index[supply.Model] = append(index[supply.Model], boundChannel{

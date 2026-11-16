@@ -25,6 +25,8 @@ func useAllocationTestDB(t *testing.T) {
 		modelInfoCache.Lock()
 		modelInfoCache.loaded = oldLoaded
 		modelInfoCache.Unlock()
+		// Loading the routing table records whether a policy routes; later tests start without.
+		allocationActive.Store(false)
 	})
 }
 

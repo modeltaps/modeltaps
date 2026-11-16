@@ -31,11 +31,24 @@ type ModelSupply struct {
 	Weight        uint   `json:"weight" gorm:"default:1"`
 	// Enabled has no column default: gorm skips false on insert, and a default of true would
 	// silently turn a disabled supply back on.
-	Enabled   bool   `json:"enabled" gorm:"not null"`
-	Source    string `json:"source" gorm:"type:varchar(16);default:'manual'"`
-	Note      string `json:"note" gorm:"type:text"`
-	CreatedAt int64  `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt int64  `json:"updated_at" gorm:"autoUpdateTime"`
+	Enabled bool `json:"enabled" gorm:"not null"`
+	// Pending marks a supply an intake rule added for an admin to confirm. It is off (Enabled
+	// false) until then; any admin update of the supply clears it.
+	Pending bool `json:"pending" gorm:"not null;default:false"`
+	// JoinLast routes the supply after every other supply of its model. Intake rules set it on
+	// supplies added to a model other channels already supply, so a new arrival does not take the
+	// model's traffic. Models that follow the allocation policy apply it when the policy's numbers
+	// are computed; for the others the supply was given the lowest priority when it was added.
+	JoinLast bool `json:"join_last" gorm:"not null;default:false"`
+	// UpstreamMissing counts the model checks in a row whose upstream list lacked UpstreamModel;
+	// UpstreamGoneAt is when that count reached upstreamGoneChecks, 0 while the upstream lists
+	// it. A supply whose upstream is gone is not routed; it comes back when the name returns.
+	UpstreamMissing int    `json:"upstream_missing" gorm:"default:0"`
+	UpstreamGoneAt  int64  `json:"upstream_gone_at" gorm:"bigint;default:0"`
+	Source          string `json:"source" gorm:"type:varchar(16);default:'manual'"`
+	Note            string `json:"note" gorm:"type:text"`
+	CreatedAt       int64  `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt       int64  `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
 func (s *ModelSupply) TableName() string {
@@ -285,7 +298,7 @@ func CreateModelSupply(supply *ModelSupply) error {
 }
 
 // UpdateModelSupply changes what can change on a supply: upstream name, priority, weight,
-// enabled and note. Model and channel identify the supply and stay as they are.
+// enabled, note and whether it joins last; it also clears Pending. Model and channel identify the supply and stay as they are.
 func UpdateModelSupply(supply *ModelSupply) error {
 	current, err := GetModelSupply(supply.Id)
 	if err != nil {
@@ -298,12 +311,14 @@ func UpdateModelSupply(supply *ModelSupply) error {
 	if err := takeManualOnRenumber(current.Model, supply); err != nil {
 		return err
 	}
-	err = DB.Model(current).Select("upstream_model", "priority", "weight", "enabled", "note").Updates(&ModelSupply{
+	// An admin's update decides a pending supply: it stays as the update leaves it.
+	err = DB.Model(current).Select("upstream_model", "priority", "weight", "enabled", "note", "pending", "join_last").Updates(&ModelSupply{
 		UpstreamModel: upstream,
 		Priority:      supply.Priority,
 		Weight:        supply.Weight,
 		Enabled:       supply.Enabled,
 		Note:          supply.Note,
+		JoinLast:      supply.JoinLast,
 	}).Error
 	if err != nil {
 		return err

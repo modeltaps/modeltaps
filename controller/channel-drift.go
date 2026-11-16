@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"github.com/modeltaps/modeltaps/common"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/modeltaps/modeltaps/common"
 	"net/http"
 	"strings"
 
@@ -36,6 +36,14 @@ func CheckChannelModelDrift(channel *model.Channel) (*model.ModelDriftResult, er
 	// A model a supply on this channel already sends upstream is configured, whatever the
 	// channel's own model list says.
 	result.NewModels = model.WithoutSuppliedModels(channel.Id, result.NewModels)
+	if config.ModelSupplyEnabled {
+		change, err := model.MarkSupplyUpstreams(channel, upstream)
+		if err != nil {
+			logger.SysError("supply upstream check failed for channel " + channel.Name + ": " + err.Error())
+		} else if !change.Empty() || len(change.Missing) > 0 {
+			result.Supplies = change
+		}
+	}
 	return result, nil
 }
 
@@ -50,23 +58,28 @@ func filterIgnoredModels(models []string, matcher *driftIgnoreMatcher) []string 
 }
 
 // applyDriftAutoAdd handles the new upstream models of a channel that opted in, clears the ones
-// it handled from the drift result and returns them. Without supplies it adds them to the
-// channel's model list and fills their prices and metadata. While supplies route requests the
-// channel's model list serves nothing, so it adds a supply for each new name that belongs to a
-// public model instead; the rest stay in the result and wait on the models page for an admin.
+// it handled from the drift result and returns the ones that route at once. Without supplies it
+// adds them to the channel's model list and fills their prices and metadata. While supplies
+// route requests the channel's model list serves nothing, so the channel's intake rules decide,
+// for each new name that belongs to a public model, whether a supply is added, switched on or
+// left for an admin to confirm, and where it joins (see model.IntakeChannelModels); names the
+// rules skip, and names of no public model, stay in the result for an admin.
 func applyDriftAutoAdd(ch *model.Channel, result *model.ModelDriftResult) []string {
 	if !ch.DriftAutoAdd || len(result.NewModels) == 0 {
 		return nil
 	}
 	if config.ModelSupplyEnabled {
-		supplies, err := model.AutoSupplyChannel(ch, result.NewModels)
+		outcomes, err := model.IntakeChannelModels(ch, result.NewModels)
 		if err != nil {
-			logger.SysError("model drift auto supply failed for channel " + ch.Name + ": " + err.Error())
+			logger.SysError("model drift intake failed for channel " + ch.Name + ": " + err.Error())
 			return nil
 		}
-		added := make([]string, 0, len(supplies))
-		for _, s := range supplies {
-			added = append(added, s.UpstreamModel)
+		result.Intake = outcomes
+		var added []string
+		for _, o := range outcomes {
+			if o.Action == model.IntakeActionEnable {
+				added = append(added, o.Name)
+			}
 		}
 		result.NewModels = model.WithoutSuppliedModels(ch.Id, result.NewModels)
 		return added
@@ -88,15 +101,21 @@ type DriftedChannel struct {
 	MissingModels []string `json:"missing_models"`
 	NewModels     []string `json:"new_models,omitempty"`
 	AddedModels   []string `json:"added_models,omitempty"`
+	// PendingModels are new upstream models the intake rules added for an admin to confirm.
+	PendingModels []string `json:"pending_models,omitempty"`
+	// Supplies is what the check changed on the channel's supplies (gone / back / held).
+	Supplies *model.SupplyUpstreamChange `json:"supplies,omitempty"`
 }
 
 // ModelDriftCheckSummary 汇总一次全量漂移检测：写回结果的渠道数、检出漂移的渠道数、有上游新增的渠道数与其明细。
 type ModelDriftCheckSummary struct {
-	Checked  int              `json:"checked"`
-	Drifted  int              `json:"drifted"`
-	WithNew  int              `json:"with_new"`
-	Added    int              `json:"added"`
-	Channels []DriftedChannel `json:"channels"`
+	Checked int `json:"checked"`
+	Drifted int `json:"drifted"`
+	WithNew int `json:"with_new"`
+	Added   int `json:"added"`
+	// SuppliesChanged counts channels with supplies marked gone or back, or held.
+	SuppliesChanged int              `json:"supplies_changed"`
+	Channels        []DriftedChannel `json:"channels"`
 }
 
 // CheckAllChannelsModelDrift 遍历所有启用渠道，仅对实现 ModelListInterface 的 provider 检测。
@@ -135,13 +154,21 @@ func CheckAllChannelsModelDrift() (*ModelDriftCheckSummary, error) {
 		if len(result.NewModels) > 0 {
 			summary.WithNew++
 		}
-		if !result.OK || len(result.NewModels) > 0 || len(added) > 0 {
+		pending := pendingIntake(result.Intake)
+		var supplies *model.SupplyUpstreamChange
+		if !result.Supplies.Empty() {
+			supplies = result.Supplies
+			summary.SuppliesChanged++
+		}
+		if !result.OK || len(result.NewModels) > 0 || len(added) > 0 || len(pending) > 0 || supplies != nil {
 			summary.Channels = append(summary.Channels, DriftedChannel{
 				ChannelId:     ch.Id,
 				ChannelName:   ch.Name,
 				MissingModels: result.MissingModels,
 				NewModels:     result.NewModels,
 				AddedModels:   added,
+				PendingModels: pending,
+				Supplies:      supplies,
 			})
 		}
 	}
@@ -155,7 +182,7 @@ func CheckAndNotifyModelDrift() (*ModelDriftCheckSummary, error) {
 	if err != nil {
 		return nil, err
 	}
-	if summary.Drifted > 0 || summary.WithNew > 0 || summary.Added > 0 {
+	if summary.Drifted > 0 || summary.WithNew > 0 || summary.Added > 0 || summary.SuppliesChanged > 0 || hasPending(summary) {
 		notifyModelDrift(summary)
 	}
 	return summary, nil
@@ -173,6 +200,12 @@ func notifyModelDrift(summary *ModelDriftCheckSummary) {
 	if summary.Added > 0 {
 		parts = append(parts, fmt.Sprintf("%d channel(s) with models added automatically", summary.Added))
 	}
+	if summary.SuppliesChanged > 0 {
+		parts = append(parts, fmt.Sprintf("%d channel(s) with supplies gone or back upstream", summary.SuppliesChanged))
+	}
+	if len(parts) == 0 {
+		parts = append(parts, "new upstream models waiting for review")
+	}
 	subject := "Detected " + strings.Join(parts, ", ")
 
 	var b strings.Builder
@@ -185,6 +218,23 @@ func notifyModelDrift(summary *ModelDriftCheckSummary) {
 		}
 		if len(ch.AddedModels) > 0 {
 			b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d) added upstream models automatically: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(ch.AddedModels, ", ")))
+		}
+		if len(ch.PendingModels) > 0 {
+			b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d) has new models waiting for review: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(ch.PendingModels, ", ")))
+		}
+		if c := ch.Supplies; c != nil {
+			if len(c.Gone) > 0 {
+				b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d) stopped supplying models its upstream no longer lists: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(c.Gone, ", ")))
+			}
+			if len(c.Unsupplied) > 0 {
+				b.WriteString(fmt.Sprintf("No supply can serve these models any more: %s\n", strings.Join(c.Unsupplied, ", ")))
+			}
+			if len(c.Back) > 0 {
+				b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d) supplies models its upstream lists again: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(c.Back, ", ")))
+			}
+			if c.Held {
+				b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d): the upstream listed none of the supplied models; nothing was marked gone, check its model list\n", ch.ChannelName, ch.ChannelId))
+			}
 		}
 	}
 	notify.SendKind(notify.KindModelDrift, subject, b.String())
@@ -382,4 +432,24 @@ func parseModelMapping(modelMapping string) map[string]string {
 		return make(map[string]string)
 	}
 	return modelMap
+}
+
+// pendingIntake returns the upstream names the intake rules left waiting for an admin.
+func pendingIntake(outcomes []model.IntakeOutcome) []string {
+	var out []string
+	for _, o := range outcomes {
+		if o.Action == model.IntakeActionPending {
+			out = append(out, o.Name)
+		}
+	}
+	return out
+}
+
+func hasPending(summary *ModelDriftCheckSummary) bool {
+	for _, ch := range summary.Channels {
+		if len(ch.PendingModels) > 0 {
+			return true
+		}
+	}
+	return false
 }
