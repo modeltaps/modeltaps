@@ -255,7 +255,7 @@ export default function ModelPicker({
                 className="h-8 min-w-0 flex-1"
               />
               <label className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground">
-                <Switch checked={hideUnavailable} onCheckedChange={setHideUnavailable} className="h-5 w-9" />
+                <Switch checked={hideUnavailable} onCheckedChange={setHideUnavailable} size="sm" />
                 {t('playground.picker.hideUnavailable')}
               </label>
             </div>
