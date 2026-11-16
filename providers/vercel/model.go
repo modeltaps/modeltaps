@@ -20,7 +20,7 @@ type gatewayModel struct {
 	Description   string       `json:"description"`
 	ContextWindow int          `json:"context_window"`
 	MaxTokens     int          `json:"max_tokens"`
-	Type          string       `json:"type"` // language / embedding / reranking / image / video
+	Type          string       `json:"type"` // language / embedding / reranking / image / video / transcription
 	Tags          []string     `json:"tags"` // reasoning / tool-use / vision / file-input / open-weights …
 	Pricing       modelPricing `json:"pricing"`
 	// Released 发布时间、Created 上架时间（Unix 秒）；发布时间缺失时退回上架时间。
@@ -35,6 +35,8 @@ type modelPricing struct {
 	InputCacheWrite string `json:"input_cache_write"`
 	Image           string `json:"image"`
 	Request         string `json:"request"`
+	// TranscriptionSecond is a speech-to-text model's price in USD per second of audio.
+	TranscriptionSecond string `json:"transcription_duration_cost_per_second"`
 	// VideoDuration lists video models' price per second, one entry per resolution.
 	VideoDuration []videoSecondPrice `json:"video_duration_pricing"`
 	// fields counts every key the gateway sent, including the kinds read nowhere above (speech
@@ -156,6 +158,20 @@ func buildPriceSync(resp *modelListResponse) ([]*model.Price, []model.Unconverti
 		if m.Id == "" {
 			continue
 		}
+		if m.Type == "transcription" {
+			// Billed by audio length. The nominal token price some list next to it is not the
+			// bill; token-priced speech-to-text cannot be billed on the transcript alone.
+			if perSecond := parseUSD(m.Pricing.TranscriptionSecond); perSecond > 0 {
+				prices = append(prices, model.PriceFromUSDPerAudioSecond(m.Id, config.ChannelTypeVercelAIGateway, perSecond))
+				continue
+			}
+			reason := model.UnconvertibleNoPrice
+			if m.Pricing.Input != "" || m.Pricing.Output != "" {
+				reason = model.UnconvertibleAudioTokenPricing
+			}
+			unconvertible = append(unconvertible, model.UnconvertiblePrice{Model: m.Id, Reason: reason})
+			continue
+		}
 		input := parseUSD(m.Pricing.Input)
 		output := parseUSD(m.Pricing.Output)
 		if input == 0 && output == 0 {
@@ -181,6 +197,8 @@ func modalitiesFor(m gatewayModel) (input, output []string) {
 		return []string{"text"}, []string{"video"}
 	case "embedding", "reranking":
 		return []string{"text"}, []string{"text"}
+	case "transcription":
+		return []string{"audio"}, []string{"transcription"}
 	}
 	input = []string{"text"}
 	for _, tag := range m.Tags {
