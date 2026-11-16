@@ -326,9 +326,32 @@ func TestCatalogMatchPrefersFirstPartyBareID(t *testing.T) {
 	}
 }
 
+// A model on several mapped providers yields one price, the first-party one.
+func TestBuildCatalogPricesOnePricePerModel(t *testing.T) {
+	const fx = `{
+      "azure":  {"models": {"gpt-5.1": {"id":"gpt-5.1","cost":{"input":9,"output":9}}}},
+      "openai": {"models": {"gpt-5.1": {"id":"gpt-5.1","cost":{"input":1.25,"output":10}}}},
+      "groq":   {"models": {"x-1": {"id":"x-1","cost":{"input":1,"output":1}}}},
+      "azure2": {"models": {"x-1": {"id":"x-1","cost":{"input":5,"output":5}}}}
+    }`
+	data := map[string]catalogProvider{}
+	if err := json.Unmarshal([]byte(fx), &data); err != nil {
+		t.Fatal(err)
+	}
+	prices := BuildCatalogPrices(data)
+	if len(prices) != 2 {
+		t.Fatalf("prices = %+v, want one per model", prices)
+	}
+	for _, p := range prices {
+		if p.Model == "gpt-5.1" && (p.ChannelType != config.ChannelTypeOpenAI || !floatEqM(p.Input, 0.625)) {
+			t.Errorf("gpt-5.1 = %+v, want the openai price", p)
+		}
+	}
+}
+
 // models.dev never replaces a price from the built-in official table.
 func TestWithOfficialPrices(t *testing.T) {
-	got := withOfficialPrices([]*Price{
+	got := WithOfficialPrices([]*Price{
 		{Model: "gpt-5.4-mini", Input: 0.7935, Output: 4.761},
 		{Model: "not-official-xyz", Input: 1, Output: 2},
 		nil,

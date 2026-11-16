@@ -61,7 +61,8 @@ func setupAggregatorSyncDB(t *testing.T) {
 
 // The OpenRouter and Vercel lists use platform spellings. The sync writes catalog rows under the
 // public names (one per model across both lists, OpenRouter first), keeps the prices under the
-// spellings and copies them to the public names; the channels' supplies then land on those rows.
+// spellings and copies them to the public names (official prices for models in the built-in
+// table); the channels' supplies then land on those rows.
 func TestSyncAllChannelsOwnPricingUsesPublicNames(t *testing.T) {
 	setupAggregatorSyncDB(t)
 	openrouter := fakeModelList(t, `{"data":[
@@ -110,9 +111,11 @@ func TestSyncAllChannelsOwnPricingUsesPublicNames(t *testing.T) {
 		prices = append(prices, fmt.Sprintf("%s:%d", name, p.ChannelType))
 	}
 	sort.Strings(prices)
+	// Public names in the built-in official table (claude-opus-5, gpt-4.1-mini) get the official
+	// price, not an aggregator's copy.
 	wantPrices := fmt.Sprintf("anthropic/claude-opus-5:%d,bar-1:%d,claude-opus-5:%d,foo/bar-1:%d,gpt-4.1-mini:%d,openai/gpt-4.1-mini:%d,other/bar-1:%d",
-		config.ChannelTypeOpenRouter, config.ChannelTypeOpenRouter, config.ChannelTypeOpenRouter, config.ChannelTypeOpenRouter,
-		config.ChannelTypeVercelAIGateway, config.ChannelTypeVercelAIGateway, config.ChannelTypeVercelAIGateway)
+		config.ChannelTypeOpenRouter, config.ChannelTypeOpenRouter, config.ChannelTypeAnthropic, config.ChannelTypeOpenRouter,
+		config.ChannelTypeOpenAI, config.ChannelTypeVercelAIGateway, config.ChannelTypeVercelAIGateway)
 	if strings.Join(prices, ",") != wantPrices {
 		t.Fatalf("prices\n got %v\nwant %s", prices, wantPrices)
 	}

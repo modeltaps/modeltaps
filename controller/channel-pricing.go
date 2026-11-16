@@ -224,6 +224,9 @@ func SyncAllChannelsOwnPricing() (int, error) {
 		return 0, err
 	}
 	list = append(list, model.KeepChannelPricedOrMissing(model.PublicNamePrices(resolver, priceGroups))...)
+	// Some lists also use the vendor's own spelling ("claude-fable-5" on Requesty), at the
+	// platform's marked-up price; models in the built-in official table keep the official price.
+	list = model.WithOfficialPrices(list)
 	// 启动、每日定时与保存渠道都走这里：已有价格的变动按 PriceSyncAutoApply 处理并通知。
 	if _, err := model.PricingInstance.ApplyAutoPriceSync(list, "channel price lists"); err != nil {
 		return 0, err

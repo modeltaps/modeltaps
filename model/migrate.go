@@ -612,6 +612,7 @@ func postMigrations() []*gormigrate.Migration {
 		cleanupSyncedCatalogDrafts(),
 		migrateSupplyModeFollowDefault(),
 		splitChannelManageKey(),
+		dedupePrices(),
 		migratePlatformSpellingDrafts(),
 		migrateAttachRenamedPublicModels(),
 		migrateVendorCleanup(),
@@ -1859,6 +1860,49 @@ func splitChannelManageKey() *gormigrate.Migration {
 				err = tx.Unscoped().Model(&Channel{}).Where("id = ?", channel.Id).
 					Updates(map[string]any{"key": strings.TrimSpace(apiKey), "manage_key": strings.TrimSpace(manageKey)}).Error
 				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return nil
+		},
+	}
+}
+
+// dedupePrices keeps one row per model in the prices table. The table has no unique key on model,
+// and syncs that wrote the same model from two sources in one batch (gpt-5.1 from openai and
+// azure on models.dev) stored two rows. The row that was in effect is kept: a locked row if there
+// is one, otherwise the last row read, which the price cache loaded (Pricing.Init).
+func dedupePrices() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202611160001",
+		Migrate: func(tx *gorm.DB) error {
+			if !tx.Migrator().HasTable(&Price{}) {
+				return nil
+			}
+			var prices []*Price
+			if err := tx.Find(&prices).Error; err != nil {
+				return err
+			}
+			count := map[string]int{}
+			keep := map[string]*Price{}
+			for _, price := range prices {
+				count[price.Model]++
+				if cur, ok := keep[price.Model]; ok && cur.Locked && !price.Locked {
+					continue
+				}
+				keep[price.Model] = price
+			}
+			for model, n := range count {
+				if n < 2 {
+					continue
+				}
+				if err := tx.Where("model = ?", model).Delete(&Price{}).Error; err != nil {
+					return err
+				}
+				if err := tx.Create(keep[model]).Error; err != nil {
 					return err
 				}
 			}

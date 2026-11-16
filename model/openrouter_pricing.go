@@ -73,7 +73,14 @@ func (p *Pricing) UpsertPrices(pricing []*Price) error {
 	var toUpdate []*Price
 	var updateNames []string
 
+	// The prices table has no unique key on model: a batch naming a model twice would store two
+	// rows, and which one is loaded would depend on row order. The first price of a model wins.
+	seen := make(map[string]bool, len(pricing))
 	for _, price := range pricing {
+		if price == nil || seen[price.Model] {
+			continue
+		}
+		seen[price.Model] = true
 		existing, ok := p.Prices[price.Model]
 		if !ok {
 			toInsert = append(toInsert, price)

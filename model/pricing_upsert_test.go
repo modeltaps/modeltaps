@@ -128,3 +128,49 @@ func TestCatalogWriteRefreshesPricingModelInfo(t *testing.T) {
 		t.Fatalf("元信息编辑后价格快照应已刷新，实际 %+v", snapshot)
 	}
 }
+
+// A batch naming a model twice stores one row, the first price.
+func TestUpsertPricesDedupesBatch(t *testing.T) {
+	setupPriceTestDB(t)
+	p := &Pricing{Prices: map[string]*Price{}, Match: []string{}}
+	err := p.UpsertPrices([]*Price{
+		{Model: "gpt-5.1", Type: TokensPriceType, ChannelType: 1, Input: 0.625, Output: 5},
+		{Model: "gpt-5.1", Type: TokensPriceType, ChannelType: 3, Input: 9, Output: 9},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rows []Price
+	DB.Where("model = ?", "gpt-5.1").Find(&rows)
+	if len(rows) != 1 || rows[0].ChannelType != 1 {
+		t.Errorf("rows = %+v, want one row from the first price", rows)
+	}
+}
+
+// The migration keeps one row per model: a locked row, otherwise the last row read.
+func TestDedupePricesMigration(t *testing.T) {
+	setupPriceTestDB(t)
+	for _, price := range []*Price{
+		{Model: "dup", Type: TokensPriceType, ChannelType: 3, Input: 1},
+		{Model: "dup", Type: TokensPriceType, ChannelType: 1, Input: 2},
+		{Model: "locked", Type: TokensPriceType, ChannelType: 1, Input: 3, Locked: true},
+		{Model: "locked", Type: TokensPriceType, ChannelType: 3, Input: 4},
+		{Model: "single", Type: TokensPriceType, Input: 5},
+	} {
+		if err := DB.Create(price).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := dedupePrices().Migrate(DB); err != nil {
+		t.Fatal(err)
+	}
+	var rows []Price
+	DB.Order("model").Find(&rows)
+	got := map[string]float64{}
+	for _, r := range rows {
+		got[r.Model] = r.Input
+	}
+	if len(rows) != 3 || got["dup"] != 2 || got["locked"] != 3 || got["single"] != 5 {
+		t.Errorf("rows = %+v", rows)
+	}
+}

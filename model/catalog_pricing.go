@@ -131,22 +131,44 @@ func catalogPrice(modelName string, channelType int, m catalogModel) (*Price, st
 
 // BuildCatalogPrices 纯函数：把 models.dev 数据转为 []*Price。
 // 仅处理已映射的 provider；未映射(含 openrouter) 一律跳过；无价或音频模型不写。
+// A model several providers list (gpt-5.1 on openai and azure) yields one price: the first-party
+// provider's, otherwise the first provider by name.
 func BuildCatalogPrices(data map[string]catalogProvider) []*Price {
-	var prices []*Price
-	for providerID, prov := range data {
-		channelType, ok := catalogProviderToChannelType[providerID]
-		if !ok {
-			continue
+	providerIDs := make([]string, 0, len(data))
+	for providerID := range data {
+		if _, ok := catalogProviderToChannelType[providerID]; ok {
+			providerIDs = append(providerIDs, providerID)
 		}
-		for modelID, m := range prov.Models {
+	}
+	sort.Strings(providerIDs)
+	byModel := map[string]*Price{}
+	fromFirstParty := map[string]bool{}
+	var order []string
+	for _, providerID := range providerIDs {
+		channelType := catalogProviderToChannelType[providerID]
+		firstParty := isFirstPartyModelsDevProvider(providerID)
+		for modelID, m := range data[providerID].Models {
 			id := m.Id
 			if id == "" {
 				id = modelID
 			}
-			if price, _ := catalogPrice(id, channelType, m); price != nil {
-				prices = append(prices, price)
+			price, _ := catalogPrice(id, channelType, m)
+			if price == nil {
+				continue
 			}
+			if _, seen := byModel[id]; !seen {
+				order = append(order, id)
+			} else if fromFirstParty[id] || !firstParty {
+				continue
+			}
+			byModel[id] = price
+			fromFirstParty[id] = firstParty
 		}
+	}
+	sort.Strings(order)
+	prices := make([]*Price, 0, len(order))
+	for _, id := range order {
+		prices = append(prices, byModel[id])
 	}
 	return prices
 }
@@ -522,7 +544,7 @@ func CatalogMissingModels(names []string) []string {
 }
 
 // filterChannelSourced 去掉已由渠道自带列表（OpenRouter、Vercel AI Gateway）提供的元信息 / 价格：渠道来源优先于 models.dev。
-// Prices of models in the built-in official table are swapped for the official price (see withOfficialPrices).
+// Prices of models in the built-in official table are swapped for the official price (see WithOfficialPrices).
 func filterChannelSourced(infos []*ModelInfo, prices []*Price) ([]*ModelInfo, []*Price) {
 	keptInfos := make([]*ModelInfo, 0, len(infos))
 	for _, info := range infos {
@@ -532,7 +554,7 @@ func filterChannelSourced(infos []*ModelInfo, prices []*Price) ([]*ModelInfo, []
 		keptInfos = append(keptInfos, info)
 	}
 	keptPrices := make([]*Price, 0, len(prices))
-	for _, price := range withOfficialPrices(prices) {
+	for _, price := range WithOfficialPrices(prices) {
 		if existing, ok := PricingInstance.priceSnapshot(price.Model); ok && isChannelPriceSource(existing.ChannelType) {
 			continue
 		}
@@ -541,11 +563,12 @@ func filterChannelSourced(infos []*ModelInfo, prices []*Price) ([]*ModelInfo, []
 	return keptInfos, keptPrices
 }
 
-// withOfficialPrices replaces the price of every model listed in the built-in official price
+// WithOfficialPrices replaces the price of every model listed in the built-in official price
 // table (price_official.go) with that official price. Those prices are checked against the
 // vendor's pricing page and carry cache and long-context pricing that models.dev lacks, so a
-// models.dev sync never replaces them with a reseller's or a partial copy.
-func withOfficialPrices(prices []*Price) []*Price {
+// automatic sync (models.dev, channel price lists) never replaces them with a reseller's or a
+// partial copy.
+func WithOfficialPrices(prices []*Price) []*Price {
 	official := officialTokenPricesAt(time.Now())
 	out := make([]*Price, 0, len(prices))
 	for _, price := range prices {
@@ -655,7 +678,7 @@ func syncCatalogPricing(url string, auto bool) (*CatalogSyncResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	prices := withOfficialPrices(BuildCatalogPrices(data))
+	prices := WithOfficialPrices(BuildCatalogPrices(data))
 	if err := writeSyncedPrices(prices, "models.dev", auto); err != nil {
 		return nil, err
 	}
