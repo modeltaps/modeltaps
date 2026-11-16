@@ -4,13 +4,16 @@ import { safeJsonArray } from '../ModelInfo/modelInfoHelpers';
 
 // rate is the backend storage unit; USD/RMB x K/M is converted through rate.
 // Base: 1 rate = $0.002 / 1K tokens (also 1 rate = ￥0.014 / 1K, implied FX 7).
-// priceType='times' is per-call billing, K/M is meaningless and ignored.
+// priceType='times' is per-call billing and 'minutes' is per minute of audio (same rate unit,
+// 1 rate = $0.002 / minute); for both, K/M is meaningless and ignored.
+export const isFlatPriceType = (priceType) => priceType === 'times' || priceType === 'minutes';
+
 export const valueToRate = (value, unitType, localUnit, priceType) => {
   if (value === '' || value == null) return '';
   const v = new Decimal(value);
   if (unitType === 'rate') return Number(v.toFixed(4));
   let r = v;
-  if (priceType !== 'times' && localUnit === 'M') r = r.div(1000);
+  if (!isFlatPriceType(priceType) && localUnit === 'M') r = r.div(1000);
   if (unitType === 'USD') r = r.div(0.002);
   if (unitType === 'RMB') r = r.div(0.014);
   return Number(r.toFixed(4));
@@ -23,7 +26,7 @@ export const rateToValue = (rate, unitType, localUnit, priceType) => {
   let v = r;
   if (unitType === 'USD') v = v.mul(0.002);
   if (unitType === 'RMB') v = v.mul(0.014);
-  if (priceType !== 'times' && localUnit === 'M') v = v.mul(1000);
+  if (!isFlatPriceType(priceType) && localUnit === 'M') v = v.mul(1000);
   return Number(v.toFixed(6));
 };
 
@@ -35,7 +38,8 @@ export const convertUnit = (value, fromType, fromUnit, toType, toUnit, priceType
 
 export const getPriceTypeOptions = (t) => [
   { value: 'tokens', label: t('modelpricePage.tokens') },
-  { value: 'times', label: t('modelpricePage.times') }
+  { value: 'times', label: t('modelpricePage.times') },
+  { value: 'minutes', label: t('modelpricePage.minutes') }
 ];
 
 // Format a stored rate value for display in the table (USD only, with unit suffix).
@@ -47,6 +51,7 @@ export const formatPrice = (value, type, unit) => {
     unitLabel = ` / 1${unit}`;
   } else {
     isM = false;
+    if (type === 'minutes') unitLabel = ' / min';
   }
   return ValueFormatter(value, true, isM) + unitLabel;
 };

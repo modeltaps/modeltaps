@@ -185,8 +185,11 @@ function VendorCell({ vendor }) {
 
 VendorCell.propTypes = { vendor: PropTypes.object };
 
+// Unit after a price that is not per token: per minute of audio, otherwise per call.
+const flatPriceUnit = (type, t) => (type === 'minutes' ? t('modelpricePage.perMinuteUnit') : t('modelpricePage.times'));
+
 // Price on one line: per token "input / output" in the chosen unit (the header names it), per call
-// the single price; a dash without a price.
+// or per minute the single price with its unit; a dash without a price.
 export function PriceCell({ price, unit, hideUnit = false }) {
   const { t } = useTranslation();
   if (!price) return <span className="text-muted-foreground">—</span>;
@@ -196,7 +199,7 @@ export function PriceCell({ price, unit, hideUnit = false }) {
     return (
       <span className="inline-flex items-center gap-1 whitespace-nowrap tabular-nums">
         {ValueFormatter(price.input, true, false)}
-        <span className="text-xs text-muted-foreground">/ {t('modelpricePage.times')}</span>
+        <span className="text-xs text-muted-foreground">/ {flatPriceUnit(price.type, t)}</span>
         {lock}
       </span>
     );
@@ -770,7 +773,7 @@ export function ReadinessLegend() {
   );
 }
 
-// Input over output, mono and right-aligned; a per-call price shows once with its unit.
+// Input over output, mono and right-aligned; a per-call or per-minute price shows once with its unit.
 function StackedPrice({ price, unit }) {
   const { t } = useTranslation();
   if (!price) return <span className="text-[13px] text-muted-foreground">—</span>;
@@ -779,7 +782,7 @@ function StackedPrice({ price, unit }) {
     return (
       <span className="flex flex-col items-end font-mono text-[13px] leading-5 tabular-nums">
         {ValueFormatter(price.input, true, false)}
-        <span className="text-xs leading-4 text-muted-foreground">/ {t('modelpricePage.times')}</span>
+        <span className="text-xs leading-4 text-muted-foreground">/ {flatPriceUnit(price.type, t)}</span>
       </span>
     );
   }

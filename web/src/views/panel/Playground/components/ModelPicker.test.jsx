@@ -190,6 +190,7 @@ describe('ModelRow formatting', () => {
     const t = (key) => (key === 'modelpricePage.free' ? '免费' : key);
     expect(formatPricing({ type: 'tokens', input: 1.5, output: 7.5 }, t)).toBe('$3 / $15');
     expect(formatPricing({ type: 'times', input: 0.5 }, t)).toBe('$0.001');
+    expect(formatPricing({ type: 'minutes', input: 3, output: 0 }, t)).toBe('$0.006');
     expect(formatPricing({ type: 'tokens', input: 0, output: 0 }, t)).toBe('免费 / 免费');
     expect(formatPricing(undefined, t)).toBeNull();
   });
@@ -209,6 +210,13 @@ describe('ModelRow formatting', () => {
       createElement(ModelPicker, { open: true, items: [row({ id: 'per-call', price: { type: 'times', input: 0.5 } })] })
     );
     expect(html).toMatch(/>\$0\.001<\/span><span[^>]*>按次</);
+  });
+
+  it('shows a per-minute model as one price in the input column, labelled per minute', () => {
+    const html = renderToStaticMarkup(
+      createElement(ModelPicker, { open: true, items: [row({ id: 'stt', price: { type: 'minutes', input: 3, output: 0 } })] })
+    );
+    expect(html).toMatch(/>\$0\.006<\/span><span[^>]*>按分钟</);
   });
 
   it('不可用提示与多渠道入口都落在名称下方同一行，行内不画能力标签', () => {

@@ -348,6 +348,7 @@
       "channels": "{{count}} 渠道",
       "priceUnknown": "價格未配置",
       "perCall": "按次",
+      "perMinute": "按分鐘",
       "columns": {
         "unit": "價格 / 1M tokens",
         "context": "上下文",
@@ -794,6 +795,7 @@
     "batchHide": "批量停用",
     "batchShow": "批量啟用",
     "billing": "計費方式",
+    "billingMinutes": "按分鐘",
     "billingNone": "未定價",
     "billingTimes": "按次",
     "billingTokens": "按 Token",
@@ -2005,6 +2007,13 @@
       "value": "{{policy}} → {{label}}（{{reason}}{{confidence}}）",
       "noLabel": "兜底",
       "decisionCall": "{{policy}} 的決策呼叫"
+    },
+    "quotaDetail": {
+      "audioLength": "音訊時長",
+      "seconds": "{{count}} 秒",
+      "unitPrice": "單價",
+      "perMinute": "分鐘",
+      "perRequest": "次"
     }
   },
   "setting_index": {
@@ -2042,7 +2051,10 @@
       "fallback": "兜底",
       "fallbackDescription": "置信度不足、決策失敗或首條訊息沒有文字",
       "priceNote": "策略本身沒有價格：每次請求按實際應答模型的價格計費。下表是兜底模型（{{model}}）的價格。"
-    }
+    },
+    "minutes": "按分鐘付費",
+    "minutesPrice": "每分鐘價格",
+    "perMinuteUnit": "分鐘"
   },
   "channels": {
     "action": {

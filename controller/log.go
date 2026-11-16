@@ -514,6 +514,10 @@ func formatLogDetail(log *model.Log) string {
 				// Calculate price for 'times' type
 				price := calculatePrice(inputRatioFloat, groupRatio, true)
 				return fmt.Sprintf("$%s / request", price)
+			} else if priceType == model.MinutesPriceType {
+				// A minutes ratio is in the per-call unit, per minute of audio
+				price := calculatePrice(inputRatioFloat, groupRatio, true)
+				return fmt.Sprintf("$%s / min", price)
 			} else {
 				// Calculate prices for standard type
 				inputPrice := calculatePrice(inputRatioFloat, groupRatio, false)

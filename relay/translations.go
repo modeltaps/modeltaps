@@ -25,6 +25,7 @@ func (r *relayTranslations) setRequest() error {
 		return err
 	}
 
+	probeAudioSeconds(r.c, &r.request)
 	r.setOriginalModel(r.request.Model)
 
 	return nil
@@ -48,6 +49,7 @@ func (r *relayTranslations) send() (err *types.OpenAIErrorWithStatusCode, done b
 	if err != nil {
 		return
 	}
+	setAudioSeconds(r.c, r.provider.GetUsage(), response)
 	err = responseCustom(r.c, response)
 
 	if err != nil {

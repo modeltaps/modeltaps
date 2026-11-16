@@ -257,6 +257,7 @@ describe('status, visibility and stat chip counts', () => {
 
   it('classifies billing type', () => {
     expect(rows.map(billingType)).toEqual(['tokens', 'tokens', 'none', 'tokens', 'none', 'times']);
+    expect(billingType({ price: { type: 'minutes', input: 3, output: 0 } })).toBe('minutes');
   });
 });
 

@@ -348,6 +348,7 @@
       "channels": "{{count}} チャネル",
       "priceUnknown": "価格未設定",
       "perCall": "回数課金",
+      "perMinute": "分単位課金",
       "columns": {
         "unit": "価格 / 1M トークン",
         "context": "コンテキスト",
@@ -788,6 +789,7 @@
     "batchHide": "一括無効化",
     "batchShow": "一括有効化",
     "billing": "課金方式",
+    "billingMinutes": "分単位課金",
     "billingNone": "未設定",
     "billingTimes": "回数課金",
     "billingTokens": "Token 課金",
@@ -1999,6 +2001,13 @@
       "value": "{{policy}} → {{label}}（{{reason}}{{confidence}}）",
       "noLabel": "フォールバック",
       "decisionCall": "{{policy}} の判定呼び出し"
+    },
+    "quotaDetail": {
+      "audioLength": "音声の長さ",
+      "seconds": "{{count}} 秒",
+      "unitPrice": "単価",
+      "perMinute": "分",
+      "perRequest": "回"
     }
   },
   "setting_index": {
@@ -2038,7 +2047,10 @@
       "fallback": "フォールバック",
       "fallbackDescription": "確信度不足、判定失敗、または最初のメッセージにテキストがない場合",
       "priceNote": "ポリシー自体に価格はなく、各リクエストは実際に応答したモデルの価格で課金されます。下の表はフォールバックモデル（{{model}}）の価格です。"
-    }
+    },
+    "minutes": "分単位課金",
+    "minutesPrice": "1分あたりの価格",
+    "perMinuteUnit": "分"
   },
   "channels": {
     "action": {

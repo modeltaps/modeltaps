@@ -276,6 +276,10 @@ var QuotaRemindEnabled = true
 var QuotaRemindThreshold = 1000
 var PreConsumedQuota = 500
 
+// DefaultAudioSeconds is the audio length billed for a minutes-priced request when neither
+// the upstream response nor the uploaded file tells how long the audio is.
+const DefaultAudioSeconds = 60.0
+
 // PreConsumedOutputTokens is the number of output tokens reserved up front for every request priced
 // per token: the request's own max_tokens when it is smaller, otherwise this value. It keeps the
 // reservation close to what the request can cost so concurrent requests cannot drive a balance

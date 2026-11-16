@@ -11,8 +11,11 @@ import (
 )
 
 const (
-	TokensPriceType    = "tokens"
-	TimesPriceType     = "times"
+	TokensPriceType = "tokens"
+	TimesPriceType  = "times"
+	// MinutesPriceType bills by audio length (speech-to-text). Input is the rate per minute,
+	// in the same unit as a times price per call (1 = $0.002); usage is pro-rated by the second.
+	MinutesPriceType   = "minutes"
 	DefaultPrice       = 30.0
 	DollarRate         = 0.002
 	RMBRate            = 0.014
@@ -150,7 +153,7 @@ func (price *Price) GetInput() float64 {
 }
 
 func (price *Price) GetOutput() float64 {
-	if price.Output <= 0 || price.Type == TimesPriceType {
+	if price.Output <= 0 || price.Type == TimesPriceType || price.Type == MinutesPriceType {
 		return 0
 	}
 
@@ -176,7 +179,7 @@ func (price *Price) GetExtraRatio(key string) float64 {
 // GetLongContextMultiplier 返回本次请求输入侧/输出侧应额外乘的倍率。
 // 按次计费、未配置、阈值 <= 0 或输入 token 未超阈值时返回 (1, 1)。
 func (price *Price) GetLongContextMultiplier(inputTokens int) (float64, float64) {
-	if price.LongContext == nil || price.Type == TimesPriceType {
+	if price.LongContext == nil || price.Type == TimesPriceType || price.Type == MinutesPriceType {
 		return 1, 1
 	}
 

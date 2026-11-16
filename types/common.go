@@ -25,6 +25,10 @@ type Usage struct {
 	// StepFun's international site do for some models. Used when no other cache field is set.
 	TopLevelCachedTokens int `json:"cached_tokens,omitempty"`
 
+	// AudioSeconds is the length of the input audio of a speech-to-text request; minutes
+	// prices bill on it.
+	AudioSeconds float64 `json:"-"`
+
 	ExtraTokens  map[string]int          `json:"-"`
 	ExtraBilling map[string]ExtraBilling `json:"-"`
 	TextBuilder  strings.Builder         `json:"-"`

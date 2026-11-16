@@ -25,18 +25,23 @@ export const formatContext = (length) => {
   return String(length);
 };
 
-// 按量计费给「输入 / 输出」两个单价（每 1M tokens），按次计费只有一个单次价。
+// Per-call and per-minute billing carry one price (per call / per minute), never scaled to 1M tokens.
+const isFlatPricing = (pricing) => pricing?.type === 'times' || pricing?.type === 'minutes';
+
+// Per-token billing shows input / output prices (per 1M tokens); per-call and per-minute show one price.
 export const formatPricing = (pricing, t) => {
   if (!pricing) return null;
+  const flat = isFlatPricing(pricing);
   const one = (value) => {
     if (value === undefined) return '—';
     if (value === 0) return t('modelpricePage.free');
-    return ValueFormatter(value, true, pricing.type !== 'times');
+    return ValueFormatter(value, true, !flat);
   };
-  return pricing.type === 'times' ? one(pricing.input) : `${one(pricing.input)} / ${one(pricing.output)}`;
+  return flat ? one(pricing.input) : `${one(pricing.input)} / ${one(pricing.output)}`;
 };
 
-// 行内的两列价格：按量计费拆成输入 / 输出，按次计费只占输入列、输出列标「按次」。
+// The row's two price columns: per token splits into input / output; per call and per minute fill the
+// input column and name the billing unit in the output column.
 function PriceCells({ pricing }) {
   const { t } = useTranslation();
   if (!pricing) {
@@ -44,11 +49,13 @@ function PriceCells({ pricing }) {
       <span className="col-span-2 truncate text-right text-xs leading-5 text-muted-foreground">{t('playground.picker.priceUnknown')}</span>
     );
   }
-  if (pricing.type === 'times') {
+  if (isFlatPricing(pricing)) {
     return (
       <>
         <span className="text-right text-xs font-medium leading-5 tabular-nums">{formatPricing(pricing, t)}</span>
-        <span className="text-right text-xs leading-5 text-muted-foreground">{t('playground.picker.perCall')}</span>
+        <span className="text-right text-xs leading-5 text-muted-foreground">
+          {t(pricing.type === 'minutes' ? 'playground.picker.perMinute' : 'playground.picker.perCall')}
+        </span>
       </>
     );
   }

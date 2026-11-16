@@ -7,6 +7,7 @@ package relay_util
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/url"
 	"strings"
 	"unicode"
@@ -271,6 +272,10 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 		"group_ratio":       q.groupRatio,
 		"input_ratio":       q.price.GetInput(),
 		"output_ratio":      q.price.GetOutput(),
+	}
+
+	if usage != nil && usage.AudioSeconds > 0 {
+		meta["audio_seconds"] = math.Ceil(usage.AudioSeconds)
 	}
 
 	// 组织令牌:记账主体为影子账户,metadata 记录实际成员 ID 用于按成员聚合(规格 §5.2 散点③)

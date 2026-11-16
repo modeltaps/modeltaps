@@ -25,8 +25,11 @@ func (q *Quota) getRequestTime() int {
 // ratio 用于额外计费项。销售额与成本共用同一计算逻辑，仅倍率不同。
 // 依赖调用方已通过 GetExtraBillingData 设置好 extraBillingData。
 func (q *Quota) calcQuota(promptTokens, completionTokens int, inputRatio, outputRatio, ratio float64) (quota int) {
+	minutes := q.price.Type == model.MinutesPriceType
 	if q.price.Type == model.TimesPriceType {
 		quota = common.QuotaFromFloat(1000 * inputRatio)
+	} else if minutes {
+		quota = minutesQuota(q.audioSeconds, inputRatio)
 	} else {
 		quota = common.QuotaFromFloat(math.Ceil((float64(promptTokens) * inputRatio) + (float64(completionTokens) * outputRatio)))
 	}
@@ -50,7 +53,12 @@ func (q *Quota) calcQuota(promptTokens, completionTokens int, inputRatio, output
 		quota = 1
 	}
 	totalTokens := promptTokens + completionTokens
-	if totalTokens == 0 {
+	if minutes {
+		// Minutes prices bill the audio length; no audio means nothing was transcribed.
+		if q.audioSeconds <= 0 {
+			quota = 0
+		}
+	} else if totalTokens == 0 {
 		// in this case, must be some error happened
 		// we cannot just return, because we may have to return the pre-consumed quota
 		quota = 0
@@ -59,11 +67,30 @@ func (q *Quota) calcQuota(promptTokens, completionTokens int, inputRatio, output
 	// 空回复计费闸对按次计费（times）属于误伤：按次语义是"调用成功即全额收"，
 	// 与 completion token 无关（Lyria 等音乐模型成功返回音频时 completionTokens 常为 0）。
 	// 仅对 token 计费类型生效；闸1（totalTokens==0，上游未成功返回）对两类都保留。
-	if q.price.Type != model.TimesPriceType && !config.EmptyResponseBillingEnabled && completionTokens == 0 {
+	if q.price.Type != model.TimesPriceType && !minutes && !config.EmptyResponseBillingEnabled && completionTokens == 0 {
 		quota = 0
 	}
 
 	return quota
+}
+
+// minutesQuota prices audio of the given length at a per-minute rate, rounding the length up
+// to whole seconds: 61.2 s bills as 62 s.
+func minutesQuota(seconds, perMinuteRatio float64) int {
+	if seconds <= 0 || perMinuteRatio <= 0 {
+		return 0
+	}
+	return common.QuotaFromFloat(math.Ceil(1000 * perMinuteRatio * math.Ceil(seconds) / 60))
+}
+
+// minutesPreConsumeQuota reserves the probed length of the uploaded audio, or the default
+// length when the file could not be probed.
+func (q *Quota) minutesPreConsumeQuota() int {
+	seconds := q.audioSecondsEstimate
+	if seconds <= 0 {
+		seconds = config.DefaultAudioSeconds
+	}
+	return minutesQuota(seconds, q.inputRatio)
 }
 
 // 获取计算的 token 数
@@ -110,6 +137,7 @@ func (q *Quota) GetTotalQuotaByUsage(usage *types.Usage) (quota int) {
 	// 上游按处理档位（OpenAI fast / flex、Claude fast、US 区推理）整体调价时，token 部分同比例计费。
 	tier := usage.TierMultiplier()
 	q.GetExtraBillingData(usage.ExtraBilling)
+	q.audioSeconds = usage.AudioSeconds
 	return q.calcQuota(promptTokens, completionTokens, q.inputRatio*inRatio*tier, q.outputRatio*outRatio*tier, q.groupRatio)
 }
 
@@ -128,6 +156,7 @@ func (q *Quota) costQuotaAt(usage *types.Usage, ratio float64) int {
 	inRatio, outRatio := q.price.GetLongContextMultiplier(usage.PromptTokens)
 	tier := usage.TierMultiplier()
 	q.GetExtraBillingData(usage.ExtraBilling)
+	q.audioSeconds = usage.AudioSeconds
 	return q.calcQuota(promptTokens, completionTokens, q.price.GetInput()*ratio*inRatio*tier, q.price.GetOutput()*ratio*outRatio*tier, ratio)
 }
 

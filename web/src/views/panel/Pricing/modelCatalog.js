@@ -311,10 +311,11 @@ export function catalogStats(rows = []) {
   return stats;
 }
 
-// 计费方式:按量 / 按次 / 未定价。
+// Billing type: per token / per call / per minute / unpriced.
 export const billingType = (row) => {
   if (!row?.price) return 'none';
-  return row.price.type === 'tokens' ? 'tokens' : 'times';
+  if (row.price.type === 'tokens') return 'tokens';
+  return row.price.type === 'minutes' ? 'minutes' : 'times';
 };
 
 const parseJsonArray = (value) => {

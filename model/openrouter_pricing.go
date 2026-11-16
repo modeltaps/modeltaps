@@ -29,6 +29,26 @@ func RatioFromUSDPerMillion(usdPerMillion float64) float64 {
 	return RatioFromUSDPerToken(usdPerMillion / 1_000_000)
 }
 
+// RatioFromUSDPerMinute converts a USD-per-minute audio price into the internal rate of a
+// minutes price (1 rate = $0.002 per minute, the same unit as a per-call price).
+func RatioFromUSDPerMinute(usdPerMinute float64) float64 {
+	if usdPerMinute <= 0 {
+		return 0
+	}
+	return usdPerMinute / DollarRate
+}
+
+// PriceFromUSDPerAudioSecond builds a minutes price from a USD-per-second-of-audio quote,
+// the unit OpenRouter uses for speech-to-text models.
+func PriceFromUSDPerAudioSecond(modelID string, channelType int, usdPerSecond float64) *Price {
+	return &Price{
+		Model:       modelID,
+		Type:        MinutesPriceType,
+		ChannelType: channelType,
+		Input:       roundRatio(RatioFromUSDPerMinute(usdPerSecond * 60)),
+	}
+}
+
 // newRatioPrice 构造一条 token 计费 Price；cacheReadRatio>0 时写入 ExtraRatios（相对 input 的倍数）。
 // 供 OpenRouter 直连与 models.dev 目录两条路径共用。
 func newRatioPrice(modelID string, channelType int, inputRatio, outputRatio, cacheReadRatio float64) *Price {

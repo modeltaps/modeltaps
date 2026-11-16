@@ -22,10 +22,13 @@ const formatContext = (length) => {
 
 // 按次计费给出「单次价格」，按量计费给出每 1M tokens 的参考价：价格数字不带单位
 // 会让按次与按量看起来是同一口径。0 一律显示为本地化的「免费」。
+// Per-minute billing (speech-to-text) also has a single price, quoted per minute of audio.
 const formatPrice = (value, type, t) => {
   if (typeof value !== 'number') return null;
   if (value === 0) return t('modelpricePage.free');
-  return type === 'times' ? ValueFormatter(value, true, false) : `${ValueFormatter(value, true, true)} / 1M tokens`;
+  if (type === 'times') return ValueFormatter(value, true, false);
+  if (type === 'minutes') return `${ValueFormatter(value, true, false)} / ${t('modelpricePage.perMinuteUnit')}`;
+  return `${ValueFormatter(value, true, true)} / 1M tokens`;
 };
 
 function Field({ label, value }) {
@@ -61,8 +64,11 @@ export function ModelFacts({ model }) {
       <div className="flex flex-wrap gap-x-8 gap-y-2">
         <Field label={t('apiCatalogPage.contextLength')} value={formatContext(model.info?.contextLength)} />
         {/* 按次计费只有一个价格，拆成「输入价 / 输出价」两列会让人以为要付两次。 */}
-        {priceType === 'times' ? (
-          <Field label={t('modelpricePage.timesPrice')} value={formatPrice(model.price?.input, priceType, t)} />
+        {priceType === 'times' || priceType === 'minutes' ? (
+          <Field
+            label={t(priceType === 'minutes' ? 'modelpricePage.minutesPrice' : 'modelpricePage.timesPrice')}
+            value={formatPrice(model.price?.input, priceType, t)}
+          />
         ) : (
           <>
             <Field label={t('apiCatalogPage.inputPrice')} value={formatPrice(model.price?.input, priceType, t)} />

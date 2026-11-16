@@ -349,6 +349,7 @@
       "channels": "{{count}} channels",
       "priceUnknown": "Price not configured",
       "perCall": "per call",
+      "perMinute": "per minute",
       "columns": {
         "unit": "Price / 1M tokens",
         "context": "Context",
@@ -789,6 +790,7 @@
     "batchHide": "Disable selected",
     "batchShow": "Enable selected",
     "billing": "Billing",
+    "billingMinutes": "Per minute",
     "billingNone": "Unpriced",
     "billingTimes": "Per request",
     "billingTokens": "Per token",
@@ -2084,6 +2086,13 @@
       "value": "{{policy}} → {{label}} ({{reason}}{{confidence}})",
       "noLabel": "fallback",
       "decisionCall": "Decision call for {{policy}}"
+    },
+    "quotaDetail": {
+      "audioLength": "Audio length",
+      "seconds": "{{count}} s",
+      "unitPrice": "Unit price",
+      "perMinute": "min",
+      "perRequest": "request"
     }
   },
   "setting_index": {
@@ -2123,7 +2132,10 @@
       "fallback": "Fallback",
       "fallbackDescription": "Low confidence, decision failure, or no text in the first message",
       "priceNote": "A policy has no price of its own: each request is billed at the price of the model that answered. The prices below are the fallback model's ({{model}})."
-    }
+    },
+    "minutes": "Pay per minute",
+    "minutesPrice": "Price per Minute",
+    "perMinuteUnit": "min"
   },
   "channels": {
     "action": {

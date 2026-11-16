@@ -81,6 +81,12 @@ const parseJson = (str) => {
   }
 };
 
+const PRICE_TYPE_LABEL_KEYS = {
+  tokens: 'modelpricePage.tokens',
+  times: 'modelpricePage.times',
+  minutes: 'modelpricePage.minutes'
+};
+
 export default function ModelDetailModal({ open, onClose, model, provider, modelInfo, priceData, ownedbyIcon, formatPrice, routing }) {
   const { t } = useTranslation();
   if (!model) return null;
@@ -132,7 +138,7 @@ export default function ModelDetailModal({ open, onClose, model, provider, model
             </div>
             <div className="space-y-3">
               <InfoRow icon={<Package className={iconCls} />} label={t('modelpricePage.type')}>
-                <Pill tone="primary">{priceData?.price?.type === 'tokens' ? t('modelpricePage.tokens') : t('modelpricePage.times')}</Pill>
+                <Pill tone="primary">{t(PRICE_TYPE_LABEL_KEYS[priceData?.price?.type] || 'modelpricePage.times')}</Pill>
               </InfoRow>
               {modelInfo?.context_length > 0 && (
                 <InfoRow icon={<FileText className={iconCls} />} label={t('modelpricePage.contextLength')}>

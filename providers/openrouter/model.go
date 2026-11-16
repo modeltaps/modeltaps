@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/model"
 )
 
@@ -110,12 +111,12 @@ func parseUSD(s string) float64 {
 }
 
 // audioPriceSkipReason 判断音频模型的价格是否无法映射到网关计费口径，返回原因（空串表示可导入）：
-// STT 按音频秒数计价而网关只计转写文本 token，一律跳过；
+// STT 只有纯按音频秒数计价（completion 为 0）的能导入为按分钟价，按 token 计价的跳过；
 // TTS 网关按输入字符计费，仅纯按字符计价（completion 为 0）的模型可导入。
 func audioPriceSkipReason(m modelWithPricing, completion float64) string {
 	output := m.Architecture.OutputModalities
-	if hasModality(output, "transcription") {
-		return model.UnconvertibleAudioDuration
+	if hasModality(output, "transcription") && completion > 0 {
+		return model.UnconvertibleAudioTokenPricing
 	}
 	if hasModality(output, "speech") && completion > 0 {
 		return model.UnconvertibleAudioOutputTokens
@@ -160,6 +161,11 @@ func buildOpenRouterPriceSync(resp *modelPricingResponse) ([]*model.Price, []mod
 		}
 		if reason := audioPriceSkipReason(m, completion); reason != "" {
 			unconvertible = append(unconvertible, model.UnconvertiblePrice{Model: m.Id, Reason: reason})
+			continue
+		}
+		if hasModality(m.Architecture.OutputModalities, "transcription") {
+			// OpenRouter quotes speech-to-text prompt prices in USD per second of audio.
+			prices = append(prices, model.PriceFromUSDPerAudioSecond(m.Id, config.ChannelTypeOpenRouter, prompt))
 			continue
 		}
 		cacheRead := parseUSD(m.Pricing.InputCacheRead)

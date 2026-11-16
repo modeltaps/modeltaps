@@ -739,9 +739,14 @@ export default function LogDetailDialog({
     { key: 'reasoning_tokens', labelKey: 'logPage.usage.reasoning' }
   ].filter((r) => Number(metadata[r.key]) > 0);
 
-  const inputPrice = metadata.input_price || (metadata.input_ratio ? `$${calculatePrice(metadata.input_ratio, groupRatio, false)}` : '$0');
+  // times and minutes prices are a single per-call / per-minute rate, not per 1M tokens.
+  const flatPrice = metadata.price_type === 'times' || metadata.price_type === 'minutes';
+  const flatPriceUnit = metadata.price_type === 'minutes' ? t('logPage.quotaDetail.perMinute') : t('logPage.quotaDetail.perRequest');
+  const inputPrice =
+    metadata.input_price || (metadata.input_ratio ? `$${calculatePrice(metadata.input_ratio, groupRatio, flatPrice)}` : '$0');
   const outputPrice =
     metadata.output_price || (metadata.output_ratio ? `$${calculatePrice(metadata.output_ratio, groupRatio, false)}` : '$0');
+  const audioSeconds = Number(metadata.audio_seconds) || 0;
 
   const groupName = metadata.is_backup_group
     ? `${userGroup?.[metadata.group_name]?.name || metadata.group_name} → ${userGroup?.[metadata.backup_group_name]?.name || metadata.backup_group_name}`
@@ -975,8 +980,20 @@ export default function LogDetailDialog({
                   </div>
                 )}
                 <div className="space-y-1">
-                  <KeyValueRow label={t('logPage.quotaDetail.input')} value={`${inputPrice} /M`} />
-                  <KeyValueRow label={t('logPage.quotaDetail.output')} value={`${outputPrice} /M`} />
+                  {audioSeconds > 0 && (
+                    <KeyValueRow
+                      label={t('logPage.quotaDetail.audioLength')}
+                      value={t('logPage.quotaDetail.seconds', { count: audioSeconds })}
+                    />
+                  )}
+                  {flatPrice ? (
+                    <KeyValueRow label={t('logPage.quotaDetail.unitPrice')} value={`${inputPrice} / ${flatPriceUnit}`} />
+                  ) : (
+                    <>
+                      <KeyValueRow label={t('logPage.quotaDetail.input')} value={`${inputPrice} /M`} />
+                      <KeyValueRow label={t('logPage.quotaDetail.output')} value={`${outputPrice} /M`} />
+                    </>
+                  )}
                   <KeyValueRow label={t('logPage.quotaDetail.groupRatioValue')} value={groupRatio} />
                   <KeyValueRow label={t('logPage.quotaDetail.originalBilling')} value={renderQuota(originalQuota, 6)} />
                   <KeyValueRow label={t('logPage.usage.cost')} value={renderQuota(quota, 6)} />

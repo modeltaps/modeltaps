@@ -27,7 +27,6 @@ type catalogCost struct {
 const (
 	UnconvertibleNoPrice           = "no_price"
 	UnconvertiblePerRequest        = "per_request"
-	UnconvertibleAudioDuration     = "audio_duration"
 	UnconvertibleAudioOutputTokens = "audio_output_tokens"
 	UnconvertibleAudioTokenPricing = "audio_token_pricing"
 )

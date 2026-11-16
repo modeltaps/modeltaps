@@ -450,8 +450,9 @@ export default function ModelPrice({ embedded = false, initialModality }) {
     if (typeof value === 'number') {
       let nowUnit = '';
       let isM = unit === 'M';
-      if (type === 'times') isM = false;
+      if (type === 'times' || type === 'minutes') isM = false;
       if (type === 'tokens') nowUnit = `/ 1${unit}`;
+      if (type === 'minutes') nowUnit = ` / ${t('modelpricePage.perMinuteUnit')}`;
       return ValueFormatter(value, true, isM) + nowUnit;
     }
     return value;
@@ -648,13 +649,16 @@ export default function ModelPrice({ embedded = false, initialModality }) {
     />
   );
 
-  // The selected group's price as "input / output"; per-call models say so after the figure.
+  // The selected group's price as "input / output"; per-call and per-minute models name their unit
+  // after the figure.
   const priceText = (row) => {
     if (row.routing) return t('modelpricePage.routing.billedByTarget', { model: row.routing.fallback_model });
     const { input, output } = row.price;
     if (typeof input !== 'number') return input;
     if (row.type !== 'tokens')
-      return `${input > 0 ? ValueFormatter(input, true, false) : t('modelpricePage.free')} · ${t('modelpricePage.times')}`;
+      return `${input > 0 ? ValueFormatter(input, true, false) : t('modelpricePage.free')} · ${t(
+        row.type === 'minutes' ? 'modelpricePage.minutes' : 'modelpricePage.times'
+      )}`;
     if (input <= 0 && output <= 0) return t('modelpricePage.free');
     return `${ValueFormatter(input, true, unit === 'M')} / ${ValueFormatter(output, true, unit === 'M')}`;
   };

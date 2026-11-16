@@ -80,6 +80,10 @@ type Quota struct {
 	inputRatio            float64
 	outputRatio           float64
 	costRatio             float64
+	// audioSecondsEstimate is the probed length of the uploaded audio (0 when unknown), used
+	// to pre-consume minutes prices; audioSeconds is the billed length, taken from the usage.
+	audioSecondsEstimate float64
+	audioSeconds         float64
 
 	// —— 结算状态:预扣额与实时累计额,结算/回退时对账 ——
 	preConsumedQuota int
@@ -172,6 +176,7 @@ func NewQuota(c *gin.Context, modelName string, promptTokens int) *Quota {
 		tokenAccessListId: tokenAccessListIdFrom(c),
 	}
 	quota.requestedOutputTokens = requestedMaxOutputTokens(c)
+	quota.audioSecondsEstimate = c.GetFloat64(config.GinAudioSecondsEstimateKey)
 	quota.routingDecision = RoutingDecisionFromContext(c)
 	quota.routingDecisionCall = c.GetBool(RoutingDecisionCallContextKey)
 	quota.routingPolicyId = c.GetInt(RoutingPolicyIdContextKey)
@@ -241,6 +246,8 @@ func (q *Quota) PreQuotaConsumption() *types.OpenAIErrorWithStatusCode {
 
 	if q.price.Type == model.TimesPriceType {
 		q.preConsumedQuota = common.QuotaFromFloat(1000 * q.inputRatio)
+	} else if q.price.Type == model.MinutesPriceType {
+		q.preConsumedQuota = q.minutesPreConsumeQuota()
 	} else if q.price.Input != 0 || q.price.Output != 0 {
 		// 预扣要覆盖输出成本：只按输入估算时，高输出单价的请求实际花费可达预扣额的上百倍。
 		q.preConsumedQuota = common.QuotaFromFloat(float64(q.promptTokens)*q.inputRatio+

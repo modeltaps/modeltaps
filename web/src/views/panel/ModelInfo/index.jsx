@@ -122,6 +122,7 @@ const buildFilterFields = (vendors) => [
   singleEnum('billing', 'modelsPage.billing', [
     { value: 'tokens', labelKey: 'modelsPage.billingTokens' },
     { value: 'times', labelKey: 'modelsPage.billingTimes' },
+    { value: 'minutes', labelKey: 'modelsPage.billingMinutes' },
     { value: 'none', labelKey: 'modelsPage.billingNone' }
   ]),
   singleEnum(

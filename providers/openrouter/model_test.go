@@ -171,13 +171,15 @@ func TestBuildOpenRouterModelInfosSupportedVoices(t *testing.T) {
 	}
 }
 
-// 音频模型：STT 按秒计价一律不导入价格；TTS 仅纯按字符计价(completion=0)的导入；
+// 音频模型：STT 按秒计价的导入为按分钟价，按 token 计价的跳过；TTS 仅纯按字符计价(completion=0)的导入；
 // endpoints 分别推出 audio.transcription / audio.speech。
 func TestOpenRouterAudioModels(t *testing.T) {
 	const fx = `{
   "data": [
     {"id": "openai/whisper-1", "architecture": {"input_modalities": ["audio"], "output_modalities": ["transcription"]},
      "pricing": {"prompt": "0.0001", "completion": "0"}},
+    {"id": "google/gemini-transcribe", "architecture": {"input_modalities": ["audio"], "output_modalities": ["transcription"]},
+     "pricing": {"prompt": "0.000002", "completion": "0.000012"}},
     {"id": "hexgrad/kokoro-82m", "architecture": {"input_modalities": ["text"], "output_modalities": ["speech"]},
      "pricing": {"prompt": "0.000004", "completion": "0"}},
     {"id": "google/gemini-tts", "architecture": {"input_modalities": ["text"], "output_modalities": ["speech"]},
@@ -190,11 +192,17 @@ func TestOpenRouterAudioModels(t *testing.T) {
 	}
 
 	prices := map[string]float64{}
+	types := map[string]string{}
 	for _, p := range buildOpenRouterPrices(resp) {
 		prices[p.Model] = p.Input
+		types[p.Model] = p.Type
 	}
-	if _, ok := prices["openai/whisper-1"]; ok {
-		t.Error("STT 模型不应导入价格")
+	// $0.0001 / s = $0.006 / min = 3 rate per minute
+	if types["openai/whisper-1"] != model.MinutesPriceType || !floatEq(prices["openai/whisper-1"], 3) {
+		t.Errorf("whisper price = %s %g, want minutes 3", types["openai/whisper-1"], prices["openai/whisper-1"])
+	}
+	if _, ok := prices["google/gemini-transcribe"]; ok {
+		t.Error("按 token 计价的 STT 模型不应导入价格")
 	}
 	if _, ok := prices["google/gemini-tts"]; ok {
 		t.Error("按音频 token 计价的 TTS 模型不应导入价格")
@@ -208,8 +216,11 @@ func TestOpenRouterAudioModels(t *testing.T) {
 	for _, u := range unconvertible {
 		reasons[u.Model] = u.Reason
 	}
-	if reasons["openai/whisper-1"] != model.UnconvertibleAudioDuration {
-		t.Errorf("whisper reason = %q, want %q", reasons["openai/whisper-1"], model.UnconvertibleAudioDuration)
+	if _, ok := reasons["openai/whisper-1"]; ok {
+		t.Error("按秒计价的 STT 不应列入 unconvertible")
+	}
+	if reasons["google/gemini-transcribe"] != model.UnconvertibleAudioTokenPricing {
+		t.Errorf("gemini-transcribe reason = %q, want %q", reasons["google/gemini-transcribe"], model.UnconvertibleAudioTokenPricing)
 	}
 	if reasons["google/gemini-tts"] != model.UnconvertibleAudioOutputTokens {
 		t.Errorf("gemini-tts reason = %q, want %q", reasons["google/gemini-tts"], model.UnconvertibleAudioOutputTokens)

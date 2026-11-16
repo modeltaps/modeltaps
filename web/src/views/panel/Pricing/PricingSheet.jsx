@@ -16,7 +16,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetBody, SheetFooter } from '@/components/ui/sheet';
 import ExtraRatiosSelector from './ExtraRatiosSelector';
 import LongContextSelector from './LongContextSelector';
-import { valueToRate, convertUnit, getPriceTypeOptions, formatRatePreview } from './pricingUtils';
+import { valueToRate, convertUnit, getPriceTypeOptions, formatRatePreview, isFlatPriceType } from './pricingUtils';
 
 const EMPTY = {
   model: '',
@@ -42,7 +42,7 @@ const normalizeLongContext = (lc) => (lc && Number(lc.threshold) > 0 ? lc : unde
 // 表单值 → 价格载荷(倍率);校验不通过返回 { error }(i18n key)。
 export function buildPricePayload(values, unitType, localUnit) {
   const inputRate = valueToRate(values.input, unitType, localUnit, values.type);
-  const outputRate = values.type === 'times' ? inputRate : valueToRate(values.output, unitType, localUnit, values.type);
+  const outputRate = isFlatPriceType(values.type) ? inputRate : valueToRate(values.output, unitType, localUnit, values.type);
   if (values.channel_type < 1) return { error: 'pricing_edit.channelTypeErr' };
   if (inputRate === '' || inputRate < 0) return { error: 'pricing_edit.inputVal' };
   if (values.type === 'tokens' && (outputRate === '' || outputRate < 0)) return { error: 'pricing_edit.outputVal' };
@@ -58,6 +58,13 @@ export function buildPricePayload(values, unitType, localUnit) {
     }
   };
 }
+
+// Per-call and per-minute prices are a single field labelled with their unit; per token it is the input price.
+const singlePriceLabel = (type, t) => {
+  if (type === 'times') return t('modelpricePage.timesPrice');
+  if (type === 'minutes') return t('modelpricePage.minutesPrice');
+  return t('modelpricePage.inputMultiplier');
+};
 
 // 价格输入单位(倍率 / USD / RMB × K / M):打开时新建默认 USD/M,编辑默认倍率 + 外部单位;切换时换算已填数值。
 export function usePriceUnits({ open, isEdit, unit, getValues, setValue }) {
@@ -182,15 +189,11 @@ export function PriceFields({ control, type, ownedby = [], units, children }) {
 
       <div className="flex flex-wrap items-center gap-3">
         <UnitToggle value={unitType} options={unitTypeOptions} onChange={onUnitTypeChange} />
-        {type !== 'times' && <UnitToggle value={localUnit} options={kmOptions} onChange={onLocalUnitChange} />}
+        {!isFlatPriceType(type) && <UnitToggle value={localUnit} options={kmOptions} onChange={onLocalUnitChange} />}
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">
-        <FormField
-          className="flex-1"
-          label={type === 'times' ? t('modelpricePage.timesPrice') : t('modelpricePage.inputMultiplier')}
-          required
-        >
+        <FormField className="flex-1" label={singlePriceLabel(type, t)} required>
           <Controller
             control={control}
             name="input"

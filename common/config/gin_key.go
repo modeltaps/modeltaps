@@ -1,7 +1,10 @@
 package config
 
 const (
-	GinRequestBodyKey          = "cached_request_body"
+	GinRequestBodyKey = "cached_request_body"
+	// GinAudioSecondsEstimateKey holds the length of the uploaded audio probed before the
+	// request is sent, used to pre-consume minutes prices.
+	GinAudioSecondsEstimateKey = "audio_seconds_estimate"
 	GinProcessedBodyKey        = "processed_request_body"
 	GinProcessedBodyIsVertexAI = "processed_body_is_vertexai"
 	GinRawMapBodyKey           = "raw_map_body"
