@@ -3,14 +3,15 @@ package openai
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/types"
-	"fmt"
 	"io"
 	"net/http"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -62,7 +63,11 @@ func (p *OpenAIProvider) CreateTranscriptions(request *types.AudioRequest) (*typ
 }
 
 func hasJSONResponse(request *types.AudioRequest) bool {
-	return request.ResponseFormat == "" || request.ResponseFormat == "json" || request.ResponseFormat == "verbose_json"
+	switch request.ResponseFormat {
+	case "", "json", "verbose_json", types.AudioResponseFormatDiarizedJSON:
+		return true
+	}
+	return false
 }
 
 func (p *OpenAIProvider) getRequestAudioBody(relayMode int, ModelName string, request *types.AudioRequest) (*http.Request, *types.OpenAIErrorWithStatusCode) {
@@ -113,47 +118,69 @@ func (p *OpenAIProvider) getRequestAudioBody(relayMode int, ModelName string, re
 	return req, nil
 }
 
+// audioMultipartForm rebuilds the upstream form when the model name was remapped. Every
+// field the caller sent is forwarded as-is (only model is replaced), so options such as
+// diarization, chunking_strategy or timestamp_granularities[] survive the rebuild.
 func audioMultipartForm(request *types.AudioRequest, b requester.FormBuilder) error {
-
-	err := b.CreateFormFile("file", request.File)
-	if err != nil {
+	if err := b.CreateFormFile("file", request.File); err != nil {
 		return fmt.Errorf("creating form file: %w", err)
 	}
 
-	err = b.WriteField("model", request.Model)
-	if err != nil {
+	if err := b.WriteField("model", request.Model); err != nil {
 		return fmt.Errorf("writing model name: %w", err)
 	}
 
-	if request.Prompt != "" {
-		err = b.WriteField("prompt", request.Prompt)
-		if err != nil {
-			return fmt.Errorf("writing prompt: %w", err)
-		}
-	}
-
-	if request.ResponseFormat != "" {
-		err = b.WriteField("response_format", request.ResponseFormat)
-		if err != nil {
-			return fmt.Errorf("writing format: %w", err)
-		}
-	}
-
-	if request.Temperature != 0 {
-		err = b.WriteField("temperature", fmt.Sprintf("%.2f", request.Temperature))
-		if err != nil {
-			return fmt.Errorf("writing temperature: %w", err)
-		}
-	}
-
-	if request.Language != "" {
-		err = b.WriteField("language", request.Language)
-		if err != nil {
-			return fmt.Errorf("writing language: %w", err)
+	for _, field := range audioFormFields(request) {
+		if err := b.WriteField(field[0], field[1]); err != nil {
+			return fmt.Errorf("writing %s: %w", field[0], err)
 		}
 	}
 
 	return b.Close()
+}
+
+// audioFormFields lists the non-file, non-model fields to send upstream in a stable order.
+// It prefers the raw incoming form; requests built in code fall back to the typed fields.
+func audioFormFields(request *types.AudioRequest) [][2]string {
+	var fields [][2]string
+	if request.FormValues != nil {
+		keys := make([]string, 0, len(request.FormValues))
+		for key := range request.FormValues {
+			if key != "model" && key != "file" {
+				keys = append(keys, key)
+			}
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			for _, value := range request.FormValues[key] {
+				fields = append(fields, [2]string{key, value})
+			}
+		}
+		return fields
+	}
+
+	add := func(key, value string) {
+		if value != "" {
+			fields = append(fields, [2]string{key, value})
+		}
+	}
+	addAll := func(key string, values []string) {
+		for _, value := range values {
+			fields = append(fields, [2]string{key, value})
+		}
+	}
+	add("prompt", request.Prompt)
+	add("response_format", request.ResponseFormat)
+	if request.Temperature != 0 {
+		add("temperature", fmt.Sprintf("%.2f", request.Temperature))
+	}
+	add("language", request.Language)
+	add("chunking_strategy", request.ChunkingStrategy)
+	addAll("timestamp_granularities[]", request.TimestampGranularities)
+	addAll("include[]", request.Include)
+	addAll("known_speaker_names[]", request.KnownSpeakerNames)
+	addAll("known_speaker_references[]", request.KnownSpeakerReferences)
+	return fields
 }
 
 func getTextContent(text, format string) string {

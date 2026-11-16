@@ -25,6 +25,10 @@ func (p *GeminiProvider) CreateTranscriptions(request *types.AudioRequest) (*typ
 		return nil, common.StringErrorWrapperLocal("audio file is required", "invalid_request", http.StatusBadRequest)
 	}
 
+	if request.WantsDiarization() {
+		return nil, common.StringErrorWrapperLocal("speaker diarization is not supported by gemini", "unsupported_response_format", http.StatusBadRequest)
+	}
+
 	switch request.ResponseFormat {
 	case "", "json", "verbose_json", "text":
 	default:

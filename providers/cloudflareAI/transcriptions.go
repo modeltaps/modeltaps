@@ -2,15 +2,18 @@ package cloudflareAI
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/types"
-	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
 func (p *CloudflareAIProvider) CreateTranscriptions(request *types.AudioRequest) (*types.AudioResponseWrapper, *types.OpenAIErrorWithStatusCode) {
+	if request.WantsDiarization() {
+		return nil, common.StringErrorWrapperLocal("speaker diarization is not supported by cloudflare", "unsupported_response_format", http.StatusBadRequest)
+	}
 	req, errWithCode := p.getRequestAudioBody(request.Model, request)
 	if errWithCode != nil {
 		return nil, errWithCode

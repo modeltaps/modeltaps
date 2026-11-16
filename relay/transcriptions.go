@@ -25,9 +25,23 @@ func (r *relayTranscriptions) setRequest() error {
 		return err
 	}
 
+	r.request.FormValues = multipartValues(r.c)
 	r.setOriginalModel(r.request.Model)
 
 	return nil
+}
+
+// multipartValues copies the parsed non-file form fields so providers that rebuild the
+// upstream form can forward them unchanged.
+func multipartValues(c *gin.Context) map[string][]string {
+	if c.Request.MultipartForm == nil {
+		return nil
+	}
+	values := make(map[string][]string, len(c.Request.MultipartForm.Value))
+	for key, v := range c.Request.MultipartForm.Value {
+		values[key] = append([]string(nil), v...)
+	}
+	return values
 }
 
 func (r *relayTranscriptions) getPromptTokens() (int, error) {

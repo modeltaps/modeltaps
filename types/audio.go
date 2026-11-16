@@ -18,6 +18,13 @@ type TTSVoice struct {
 	Gender   string `json:"gender"`
 }
 
+// AudioResponseFormatDiarizedJSON is the response_format that asks for speaker-labelled
+// segments. Modeltaps uses the OpenAI diarized_json shape as its outward standard for
+// meeting transcription; adapters for other upstreams translate to and from it.
+const AudioResponseFormatDiarizedJSON = "diarized_json"
+
+// AudioRequest is the multipart body of /v1/audio/transcriptions and /v1/audio/translations.
+// Array fields use the `name[]` keys the OpenAI SDKs send.
 type AudioRequest struct {
 	File           *multipart.FileHeader `form:"file" binding:"required"`
 	Model          string                `form:"model" binding:"required"`
@@ -25,21 +32,64 @@ type AudioRequest struct {
 	Prompt         string                `form:"prompt"`
 	ResponseFormat string                `form:"response_format"`
 	Temperature    float32               `form:"temperature"`
+
+	TimestampGranularities []string `form:"timestamp_granularities[]"`
+	Include                []string `form:"include[]"`
+	// ChunkingStrategy is "auto" or a JSON-encoded server_vad object; required upstream for
+	// diarization of audio longer than 30 seconds.
+	ChunkingStrategy string `form:"chunking_strategy"`
+	// KnownSpeakerNames and KnownSpeakerReferences pair up by index: a name and a short
+	// reference clip (data URL) of that speaker.
+	KnownSpeakerNames      []string `form:"known_speaker_names[]"`
+	KnownSpeakerReferences []string `form:"known_speaker_references[]"`
+
+	// FormValues holds every non-file field of the incoming form, so a rebuilt upstream
+	// form can carry fields this struct does not know about.
+	FormValues map[string][]string `form:"-" json:"-"`
 }
 
+// WantsDiarization reports whether the caller asked for speaker-labelled output.
+func (r *AudioRequest) WantsDiarization() bool {
+	return r.ResponseFormat == AudioResponseFormatDiarizedJSON ||
+		len(r.KnownSpeakerNames) > 0 || len(r.KnownSpeakerReferences) > 0
+}
+
+// AudioResponse covers the json, verbose_json and diarized_json transcription shapes.
 type AudioResponse struct {
 	Task     string           `json:"task,omitempty"`
 	Language string           `json:"language,omitempty"`
 	Duration float64          `json:"duration,omitempty"`
-	Segments any              `json:"segments,omitempty"`
+	Segments []AudioSegment   `json:"segments,omitempty"`
 	Text     string           `json:"text"`
 	Words    []AudioWordsList `json:"words,omitempty"`
+	Usage    *AudioUsage      `json:"usage,omitempty"`
+}
+
+// AudioSegment is one transcript segment. Speaker is set only in diarized_json.
+// ID is an integer in verbose_json and a string ("seg_0") in diarized_json.
+type AudioSegment struct {
+	ID      any     `json:"id,omitempty"`
+	Type    string  `json:"type,omitempty"`
+	Speaker string  `json:"speaker,omitempty"`
+	Start   float64 `json:"start"`
+	End     float64 `json:"end"`
+	Text    string  `json:"text"`
 }
 
 type AudioWordsList struct {
 	Word  string  `json:"word"`
 	Start float64 `json:"start"`
 	End   float64 `json:"end"`
+}
+
+// AudioUsage is the upstream usage block: type "duration" carries Seconds, type "tokens"
+// carries the token counts.
+type AudioUsage struct {
+	Type         string  `json:"type,omitempty"`
+	Seconds      float64 `json:"seconds,omitempty"`
+	InputTokens  int     `json:"input_tokens,omitempty"`
+	OutputTokens int     `json:"output_tokens,omitempty"`
+	TotalTokens  int     `json:"total_tokens,omitempty"`
 }
 
 type AudioResponseWrapper struct {
