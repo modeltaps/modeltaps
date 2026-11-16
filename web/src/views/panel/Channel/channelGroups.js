@@ -1,3 +1,5 @@
+import { matchesSearch, searchTerms } from 'utils/textSearch';
+
 // Pure helpers behind the provider page: channels grouped by provider type, the order of rows
 // inside a provider, and the attention items a channel raises.
 
@@ -104,13 +106,10 @@ function hostText(url) {
 // Whether a channel matches a search query: name, models, tag, the visible suffix of its masked
 // key and the host of its base URL, case-insensitive. An empty query matches everything.
 export function channelMatches(channel, query) {
-  const q = String(query || '')
-    .trim()
-    .toLowerCase();
-  if (!q) return true;
+  if (!String(query || '').trim()) return true;
   const keys = (channel.key_status?.masked || []).map((m) => String(m).split('*').pop());
   const fields = [channel.name, channel.tag, hostText(channel.base_url), ...splitList(channel.models), ...keys];
-  return fields.some((f) => f && String(f).toLowerCase().includes(q));
+  return matchesSearch(query, fields);
 }
 
 // Status filter values: enabled (1), manual (2, disabled by hand), auto (3, disabled by the
@@ -134,15 +133,13 @@ function matchesIssue(channel, issue, dismissed) {
 // `group` (one of the channel's groups), `model` (part of a model name) and `issue` (an
 // ISSUE_FILTERS value). Empty values do not filter.
 export function filterChannels(channels = [], { status, tag, group, model, issue } = {}, dismissed = new Set()) {
-  const m = String(model || '')
-    .trim()
-    .toLowerCase();
+  const m = searchTerms(model);
   return channels.filter((c) => {
     if (status && STATUS_FILTERS[status] !== c.status) return false;
     if (tag === NO_TAG && c.tag) return false;
     if (tag && tag !== NO_TAG && c.tag !== tag) return false;
     if (group && !channelInGroup(c, group)) return false;
-    if (m && !splitList(c.models).some((x) => x.toLowerCase().includes(m))) return false;
+    if (m.length && !splitList(c.models).some((x) => matchesSearch(m, x))) return false;
     if (issue && !matchesIssue(c, issue, dismissed)) return false;
     return true;
   });

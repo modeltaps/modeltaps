@@ -5,6 +5,7 @@
 // Callers that know the vendor (catalog data) pass it; otherwise it is inferred from the id.
 
 import { BRAND_LABELS, resolveBrandFromText } from '@/components/brand/brandIcons';
+import { matchesSearch } from 'utils/textSearch';
 
 // Model-id tokens the channel-name rules in brandIcons do not cover. Checked after them.
 const EXTRA_VENDOR_RULES = [
@@ -69,7 +70,7 @@ export function mergeOptions(...lists) {
   return out;
 }
 
-// Groups the options that match `query` (substring of the id or vendor name) by vendor.
+// Groups the options that match `query` (every word in the id or vendor name) by vendor.
 // Groups are ordered by their newest model, undated groups by name after them, and the custom
 // bucket last. `onlySelected` keeps the selected ids only. Returns
 // [{ key, name, icon, newest, items: option[] }].
@@ -79,7 +80,7 @@ export function groupOptions(options, { query = '', selected = new Set(), onlySe
   options.forEach((option) => {
     if (onlySelected && !selected.has(option.id)) return;
     const vendor = vendorOf(option);
-    if (q && !option.id.toLowerCase().includes(q) && !(vendor.name || '').toLowerCase().includes(q)) return;
+    if (q && !matchesSearch(q, [option.id, vendor.name])) return;
     if (!groups.has(vendor.key)) groups.set(vendor.key, { key: vendor.key, name: vendor.name, icon: vendor.icon, newest: 0, items: [] });
     const group = groups.get(vendor.key);
     group.items.push(option);

@@ -2,6 +2,7 @@ import * as React from 'react';
 import PropTypes from 'prop-types';
 import { cn } from '@/lib/utils';
 import { FloatingPanel } from '@/components/ui/floating';
+import { matchesSearch } from 'utils/textSearch';
 
 // Creatable combobox: the text input IS the value (free text allowed). The
 // dropdown offers `options` as filtered suggestions, matched case-insensitively.
@@ -49,7 +50,7 @@ export function ModelCombobox({
 
   const q = (value || '').trim();
   const ql = q.toLowerCase();
-  const filtered = options.filter((o) => o && o.toLowerCase().includes(ql));
+  const filtered = options.filter((o) => o && matchesSearch(q, o));
   const hasExact = options.some((o) => o && o.toLowerCase() === ql);
   const showCreate = allowCreate && q !== '' && !hasExact;
 

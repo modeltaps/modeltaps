@@ -30,6 +30,7 @@ import { buildModelFilterFields, buildModalityOptions, buildCapabilityOptions, C
 import { Switch } from '@/components/ui/switch';
 import { ListEmptyState, ListFooter, useListLayout } from '@/components/list-page';
 import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
+import { matchesSearch } from 'utils/textSearch';
 
 // 模态 Tab 的动词文案兜底值（i18n 缺 key 时使用），与 modelpricePage.modalityTab 对应。
 const MODALITY_TAB_FALLBACK = {
@@ -465,10 +466,7 @@ export default function ModelPrice({ embedded = false, initialModality }) {
         // 只显示可用（一等公民，常驻工具栏）。
         if (onlyShowAvailable && !model.groups.includes(selectedGroup)) return false;
         if (searchQuery) {
-          const query = searchQuery.toLowerCase();
-          const matchModel = modelName.toLowerCase().includes(query);
-          const matchDescription = modelInfo?.description?.toLowerCase().includes(query);
-          if (!matchModel && !matchDescription) return false;
+          if (!matchesSearch(searchQuery, modelName) && !matchesSearch(searchQuery, modelInfo?.description)) return false;
         }
         // 模态 Tab = 范围导航（非漏斗），只按输出模态归类。
         if (selectedModality !== 'all') {

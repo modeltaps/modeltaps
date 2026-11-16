@@ -89,6 +89,7 @@ import { ENDPOINT_LABEL_KEYS, ENDPOINT_VALUES, MODEL_KIND_VALUES, isUnlabeled, m
 import { listSupplies } from './supply/supplyApi';
 import { useSupplySwitches, SupplySwitchNote } from './supply/supplyParts';
 import { MODEL_STATUSES, countSuppliesByModel, isPublicModelRow, normalizeModelStatus, supplyOrderByModel } from './supply/supplyHelpers';
+import { matchesSearch } from 'utils/textSearch';
 
 // Conditions in the "Show models that" bar: vendor, public status, visibility, billing, endpoint
 // and "unlabeled". All filter locally; each single-choice field's URL key is its field key, so a
@@ -174,13 +175,7 @@ export function filterCatalogRows(rows, { keyword = '', params = {}, aliasesByTa
     if (params.kind && modelKindOf(row) !== params.kind) return false;
     if (params.labels === 'unlabeled' && !(row.catalogId > 0 && isUnlabeled(row))) return false;
     if (!k) return true;
-    return (
-      row.model?.toLowerCase().includes(k) ||
-      row.name?.toLowerCase().includes(k) ||
-      row.alias_of?.toLowerCase().includes(k) ||
-      (aliasesByTarget[row.model] || []).some((alias) => alias.toLowerCase().includes(k)) ||
-      row.tags?.toLowerCase().includes(k)
-    );
+    return matchesSearch(k, [row.model, row.name, row.alias_of, aliasesByTarget[row.model] || [], row.tags]);
   });
 }
 

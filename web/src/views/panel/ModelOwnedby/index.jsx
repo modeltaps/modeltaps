@@ -19,6 +19,7 @@ import { enabledChannels } from '../Pricing/modelCatalog';
 import ModelOwnedbyTable, { VendorList } from './ModelOwnedbyTable';
 import ModelOwnedbySheet from './ModelOwnedbySheet';
 import { workbench } from 'routes/paths';
+import { matchesSearch } from 'utils/textSearch';
 
 // ==============================|| PANEL — MODEL OWNEDBY (admin) ||============================== //
 // Vendors tab of the model catalog: admin CRUD over `/api/model_ownedby/` (flat list: id, name,
@@ -113,7 +114,7 @@ export default function ModelOwnedby() {
   const filtered = useMemo(() => {
     const k = keyword.trim().toLowerCase();
     const list = rows.filter(
-      (row) => inSegment(row, segment) && (!k || row.name?.toLowerCase().includes(k) || row.slug?.toLowerCase().includes(k))
+      (row) => inSegment(row, segment) && matchesSearch(k, [row.name, row.slug])
     );
     return sort.key ? [...list].sort(compareRows(sort)) : list;
   }, [rows, keyword, segment, sort]);

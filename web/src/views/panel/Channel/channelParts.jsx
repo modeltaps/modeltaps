@@ -11,6 +11,7 @@ import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
 import { useProviderLabel } from './ProviderPicker';
 import { keyPageUrl } from './providerDefaults';
 import { ALL_GROUPS, isAllGroups } from './channelGroups';
+import { matchesSearch } from 'utils/textSearch';
 
 // Channel-specific building blocks shared by the provider page, the channel panel and the new
 // channel sheet: provider names and tiles, the key link, group and usage option lists and chip
@@ -193,7 +194,7 @@ export function ChipInput({ id, values, onChange, placeholder, suggestions = [],
     setQuery('');
   };
   const q = query.trim().toLowerCase();
-  const shown = suggestions.filter((s) => !values.includes(s) && (!q || s.toLowerCase().includes(q))).slice(0, 8);
+  const shown = suggestions.filter((s) => !values.includes(s) && matchesSearch(q, s)).slice(0, 8);
   return (
     <div
       onFocus={() => setFocused(true)}

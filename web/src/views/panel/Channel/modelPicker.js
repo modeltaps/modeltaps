@@ -1,3 +1,5 @@
+import { matchesSearch } from 'utils/textSearch';
+
 // Pure helpers for the channel model picker (ModelSelectorModal). The backend
 // (`provider_models_list?detail=1`, see model/model_picker.go) already splits
 // every upstream id into family / version, marks the newest version of each
@@ -58,12 +60,7 @@ const parseLimit = (value) => {
 // Whether one row passes every filter except the "latest only" folding, which
 // groupFamilies applies per family. `selected` is a Set of model ids.
 export function matchesFilters(item, filters, selected) {
-  const search = filters.search.trim().toLowerCase();
-  if (search) {
-    const id = item.model.toLowerCase();
-    const family = (item.family || '').toLowerCase();
-    if (!id.includes(search) && !family.includes(search)) return false;
-  }
+  if (!matchesSearch(filters.search, [item.model, item.family])) return false;
   if (filters.status === 'selected' && !selected.has(item.model)) return false;
   if (filters.status === 'unselected' && selected.has(item.model)) return false;
   if (filters.status === 'elsewhere' && !(item.other_channels > 0)) return false;

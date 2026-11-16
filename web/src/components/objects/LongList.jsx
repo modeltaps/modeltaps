@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
+import { matchesSearch } from 'utils/textSearch';
 
 // Lists in an object panel can hold hundreds of rows (a gateway channel lists every model it
 // resells). Past `limit` rows the list gets a search box; past `pageSize` matches it shows one
@@ -31,7 +32,7 @@ export function useLongList(items, { text, limit = LONG_LIST_LIMIT, pageSize = L
     setPage(0);
   }
   const q = query.trim().toLowerCase();
-  const matches = useMemo(() => (q ? items.filter((item) => text(item).toLowerCase().includes(q)) : items), [items, q, text]);
+  const matches = useMemo(() => (q ? items.filter((item) => matchesSearch(q, text(item))) : items), [items, q, text]);
   const long = items.length > limit;
   // A page past the end (the list shrank) shows the last one.
   const slice = pageOf(matches.length, page, pageSize);

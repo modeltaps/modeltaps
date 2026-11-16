@@ -15,6 +15,7 @@ import { API } from 'utils/api';
 
 import BrandIcon from '@/components/brand/BrandIcon';
 import { ENDPOINT_LABEL_KEYS, ENDPOINT_VALUES, EndpointIcons, VendorIcon, safeJsonArray } from './modelInfoHelpers';
+import { matchesSearch } from 'utils/textSearch';
 
 const PAGE = 150;
 
@@ -46,7 +47,7 @@ export function filterLibrary(items, f, now = Math.floor(Date.now() / 1000)) {
     if (f.lab && it.lab !== f.lab) return false;
     if (f.endpoint && !safeJsonArray(it.endpoints).includes(f.endpoint)) return false;
     if (f.days && !(it.released_at && it.released_at >= now - Number(f.days) * DAY)) return false;
-    if (kw && !`${it.model} ${it.name} ${it.lab}`.toLowerCase().includes(kw)) return false;
+    if (kw && !matchesSearch(kw, [it.model, it.name, it.lab])) return false;
     return true;
   });
 }

@@ -1,3 +1,5 @@
+import { matchesSearch } from 'utils/textSearch';
+
 // ==============================|| PLAYGROUND — MODEL INDEX ||============================== //
 // 把 /api/available_model（经 useCatalogModels 归一）的目录数据整理成选择器要的行结构：
 //   { provider, id, contextLength?, pricing?, capabilities[], availability, channels? }
@@ -70,18 +72,12 @@ export function collectCapabilities(rows) {
   return [...seen].sort((a, b) => a.localeCompare(b));
 }
 
-const matchesSearch = (row, search) => {
-  const q = search.trim().toLowerCase();
-  if (!q) return true;
-  if (row.id.toLowerCase().includes(q)) return true;
-  if (row.provider.toLowerCase().includes(q)) return true;
-  return (row.aliases || []).some((alias) => String(alias).toLowerCase().includes(q));
-};
+const rowMatchesSearch = (row, search) => matchesSearch(search, [row.id, row.provider, row.aliases || []]);
 
 // 过滤顺序与 UI 一致：搜索 → 供应商 → 能力（多选取交集）→ 隐藏不可用。
 export function filterRows(rows, { search = '', provider = '', capabilities = [], hideUnavailable = false } = {}) {
   return (rows || []).filter((row) => {
-    if (!matchesSearch(row, search)) return false;
+    if (!rowMatchesSearch(row, search)) return false;
     if (provider && row.provider !== provider) return false;
     if (capabilities.length && !capabilities.every((cap) => (row.capabilities || []).includes(cap))) return false;
     if (hideUnavailable && row.availability === AVAILABILITY.unavailable) return false;
