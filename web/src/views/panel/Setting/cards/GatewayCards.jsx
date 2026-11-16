@@ -15,6 +15,8 @@ import { SelectRow, TextRow, ToggleRow } from '../parts';
 import OptionCard, { bindSwitch, cardText } from './OptionCard';
 import { describePauseRule, pauseRulesError, pauseRulesText } from './pauseRules';
 import { admin } from 'routes/paths';
+import IntakeRulesEditor, { IntakeRuleList, intakeRulesJSON, parseIntakeRules } from 'views/panel/ModelInfo/supply/IntakeRules';
+import { fetchIntakeRules } from 'views/panel/ModelInfo/supply/supplyApi';
 
 // ==============================|| PLATFORM SETTINGS — 网关 ||============================== //
 // Retry, error handling, channel auto disable / recover, session affinity, model name matching,
@@ -378,6 +380,65 @@ export function SupplyPauseRulesCard({ ctx }) {
     </OptionCard>
   );
 }
+
+// What happens to a model a channel's upstream starts listing (for channels that add new
+// upstream models on their own). Empty means the built-in rules; editing them saves a copy that
+// replaces them as a whole.
+export function SupplyIntakeRulesCard({ ctx }) {
+  const { t } = useTranslation();
+  const { inputs, setField } = ctx;
+  const [defaults, setDefaults] = useState(null);
+  // Bumped to reload the editor after "use the built-in rules".
+  const [version, setVersion] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    fetchIntakeRules()
+      .then((res) => alive && res.success && setDefaults(res.data?.defaults || []))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const saved = parseIntakeRules(inputs.SupplyIntakeRules);
+  const custom = saved !== null;
+  const rules = saved || defaults;
+  if (!rules) return <OptionCard ctx={ctx} id="supply-intake-rules" />;
+  return (
+    <OptionCard ctx={ctx} id="supply-intake-rules">
+      <div className="space-y-3">
+        <p className="text-[13px] text-muted-foreground">{t(custom ? 'intakeRules.customNote' : 'intakeRules.defaultNote')}</p>
+        <IntakeRulesEditor
+          key={`${version}-${custom}`}
+          rules={rules}
+          onChange={(next) => setField('SupplyIntakeRules', intakeRulesJSON(next))}
+        />
+        {custom && defaults && (
+          <details className="group space-y-2">
+            <summary className="flex cursor-pointer list-none items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
+              <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" />
+              {t('intakeRules.showBuiltIn')}
+            </summary>
+            <IntakeRuleList rules={defaults} />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-[10px]"
+              onClick={() => {
+                setField('SupplyIntakeRules', '');
+                setVersion((v) => v + 1);
+              }}
+            >
+              {t('intakeRules.useBuiltIn')}
+            </Button>
+          </details>
+        )}
+      </div>
+    </OptionCard>
+  );
+}
+
+SupplyIntakeRulesCard.propTypes = { ctx: PropTypes.object.isRequired };
 
 // How a model that follows the default picks a supply within one priority tier.
 export function SupplyModeCard({ ctx }) {

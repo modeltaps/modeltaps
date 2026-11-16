@@ -64,6 +64,7 @@ import ModelListInput from './ModelListInput';
 import ModelMappingInput from './ModelMappingInput';
 import ModelHeadersInput from './ModelHeadersInput';
 import PauseRulesField, { pauseRulesPatch, pauseRulesText } from './PauseRulesField';
+import IntakeRulesField, { intakeRulesPatch } from './IntakeRulesField';
 import PluginForm from './PluginForm';
 import pluginConfig from './pluginConfig';
 import PriceSyncDialog from './PriceSyncDialog';
@@ -251,7 +252,7 @@ function PublicLine({ publics, offer, busy, onAttach }) {
             {t('channels.models.attach', { model: offer.suggested })}
           </LineAction>
         )}
-        {offer.reason === 'off' && first && (
+        {['off', 'pending', 'upstream_gone'].includes(offer.reason) && first && (
           <Link to={modelSupplyPath(first.model)} className="shrink-0 px-1 text-foreground underline-offset-2 hover:underline">
             {t('channels.models.openSupply')}
           </Link>
@@ -1270,6 +1271,8 @@ function MonitorBody({ object: channel, draft, setDraft, ctx }) {
   const drift = channel.model_drift;
   const missing = drift?.missing_models || [];
   const added = drift?.new_models || [];
+  const goneSupplies = drift?.supplies?.gone || [];
+  const pendingIntake = (drift?.intake || []).filter((o) => o.action === 'pending').map((o) => o.model);
   const firstModel = splitList(channel.models)[0] || '';
   // Providers without a model list endpoint cannot be compared with their upstream.
   const canCheckModels = Boolean(typeLabels(channel.type).canFetchModels);
@@ -1334,6 +1337,19 @@ function MonitorBody({ object: channel, draft, setDraft, ctx }) {
               </button>
             </p>
           )}
+          {goneSupplies.length > 0 && (
+            <p className="font-mono text-xs">
+              <span className="font-sans text-muted-foreground">{t('channels.monitor.suppliesGone', { count: goneSupplies.length })}: </span>
+              {goneSupplies.join(', ')}
+            </p>
+          )}
+          {drift?.supplies?.held && <p className="text-xs text-warning">{t('channels.monitor.suppliesHeld')}</p>}
+          {pendingIntake.length > 0 && (
+            <p className="font-mono text-xs">
+              <span className="font-sans text-muted-foreground">{t('channels.monitor.intakePending', { count: pendingIntake.length })}: </span>
+              {pendingIntake.join(', ')}
+            </p>
+          )}
         </div>
       </Field>
       <ToggleField
@@ -1342,6 +1358,21 @@ function MonitorBody({ object: channel, draft, setDraft, ctx }) {
         checked={draft.drift_auto_add}
         onChange={(v) => setDraft({ ...draft, drift_auto_add: v })}
       />
+      {draft.drift_auto_add && ctx.supplyRouting && (
+        <IntakeRulesField
+          channelId={channel.id}
+          value={draft.supply_intake_rules}
+          onChange={(v) => setDraft({ ...draft, supply_intake_rules: v })}
+        />
+      )}
+      {ctx.supplyRouting && (
+        <ToggleField
+          label={t('channels.monitor.keepMissing')}
+          hint={t('channels.monitor.keepMissingHint')}
+          checked={draft.drift_keep_missing}
+          onChange={(v) => setDraft({ ...draft, drift_keep_missing: v })}
+        />
+      )}
       <Field label={t('channels.monitor.ignore')} htmlFor="cp-ignore" optional hint={t('channels.monitor.ignoreHint')}>
         <Textarea
           id="cp-ignore"
@@ -1364,6 +1395,8 @@ const monitorTab = {
     balance_threshold: c.balance_threshold ? String(c.balance_threshold) : '',
     drift_auto_add: !!c.drift_auto_add,
     drift_ignore_rules: c.drift_ignore_rules || '',
+    drift_keep_missing: !!c.drift_keep_missing,
+    supply_intake_rules: c.supply_intake_rules || '',
     pause_rules: pauseRulesText(c.pause_rules)
   }),
   patch: (d, c, { t }) => {
@@ -1374,6 +1407,8 @@ const monitorTab = {
       balance_threshold: Math.max(0, Number(d.balance_threshold) || 0),
       drift_auto_add: d.drift_auto_add,
       drift_ignore_rules: d.drift_ignore_rules.trim(),
+      drift_keep_missing: d.drift_keep_missing,
+      ...intakeRulesPatch(d.supply_intake_rules, c),
       ...rules
     };
   },

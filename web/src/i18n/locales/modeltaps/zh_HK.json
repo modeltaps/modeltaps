@@ -1739,7 +1739,8 @@
     "smtp_test_recipient_invalid": "請填寫有效的收件地址",
     "smtp_test_incomplete": "請先填寫郵件伺服器和連接埠",
     "smtp_test_failed": "測試郵件沒發出去：{{reason}}",
-    "smtp_managed": "發信設定由部署設定（smtp.url）管理，不能在這裡修改"
+    "smtp_managed": "發信設定由部署設定（smtp.url）管理，不能在這裡修改",
+    "supply_intake_rules_invalid": "上新規則無效：{{message}}"
   },
   "channelOAuth": {
     "tip": {
@@ -2206,7 +2207,9 @@
         "wildcard": "萬用字元不會公開",
         "off": "{{model}} 的供應已停用",
         "duplicate": "和 {{other}} 同屬 {{model}}，一個渠道只能用一個名字提供它",
-        "duplicateShort": "與 {{other}} 重複"
+        "duplicateShort": "與 {{other}} 重複",
+        "pending": "{{model}} 待確認",
+        "upstream_gone": "{{model}} 上游已下架"
       },
       "addToCatalog": "加入目錄",
       "attach": "接入",
@@ -2250,7 +2253,7 @@
       "testModelHint": "測試連線和定時檢查用它；留空就用模型列表第一個",
       "thresholdHint": "上游餘額低於這個數時通知你",
       "thresholdOff": "不提醒",
-      "autoAddHint": "每日模型檢測發現上游新提供的模型時，直接加入本渠道（並補齊價格與元資訊），而不只是提醒。開啟按供應路由後，新模型不再加入渠道的模型列表：屬於模型目錄裡某個公開模型的，直接為它加一條本渠道的供應；其餘列在模型目錄的「新上游模型」裡等你處理。符合忽略規則的模型會略過。",
+      "autoAddHint": "每日模型檢測發現上游新提供的模型時，直接加入本渠道（並補齊價格與元資訊），而不只是提醒。開啟按供應路由後，新模型不再加入渠道的模型列表：屬於模型目錄裡某個公開模型的，按下方的上新規則為它加一條本渠道的供應（直接啟用或待確認）；其餘列在模型目錄的「新上游模型」裡等你處理。符合忽略規則的模型會略過。",
       "thresholdIn": "餘額提醒（{{currency}}）",
       "thresholdSupport": {
         "none": "這個供應商不提供餘額介面，沒法按餘額提醒。",
@@ -2270,7 +2273,12 @@
       "problemLink": {
         "kindOff": "通知設定",
         "noTarget": "發送渠道"
-      }
+      },
+      "keepMissing": "上游列表中沒有也繼續供應",
+      "keepMissingHint": "用於模型列表不完整的上游。關閉時，連續兩次檢查都沒有的模型會停止接收請求，直至上游重新列出。",
+      "suppliesGone": "已停止供應·上游下架（{{count}}）",
+      "suppliesHeld": "上游一個已供應的模型都沒有列出，沒有停止任何供應，請檢查其模型列表。",
+      "intakePending": "待確認（{{count}}）"
     },
     "pauseRules": {
       "label": "暫停規則",
@@ -2891,7 +2899,11 @@
       "wholeChannel": "整個渠道",
       "cooling": "冷卻中",
       "coolingUntil": "冷卻到 {{time}}",
-      "coolingHint": "出錯（如普通限流）後的短暫冷卻，只記在記憶體中，且只反映回應本頁的那台伺服器。"
+      "coolingHint": "出錯（如普通限流）後的短暫冷卻，只記在記憶體中，且只反映回應本頁的那台伺服器。",
+      "pending": "待確認",
+      "pendingHint": "上游開始提供此模型時由上新規則加入，啟用前不接收請求。",
+      "gone": "上游已下架",
+      "goneHint": "上游連續兩次檢查都沒有此模型，已停止接收請求；上游重新提供後會自動恢復。"
     },
     "pause": {
       "rule": "規則：{{rule}}",
@@ -2988,7 +3000,12 @@
       "becameManual": "這個模型已改為單獨設定",
       "nowManual": "已改為單獨設定，目前排位保持不變",
       "nowPolicy": "已恢復按調用順序"
-    }
+    },
+    "joinLast": "後加入·排最後",
+    "joinLastTip": "此模型已有其他渠道供應時才加入，因此排在它們之後。",
+    "restorePlacement": "恢復正常排位",
+    "confirmPending": "啟用",
+    "keepOff": "不啟用"
   },
   "settingsUi": {
     "search": {
@@ -3272,6 +3289,11 @@
         "notify-logs": {
           "title": "通知發送記錄",
           "description": "最近 30 天每條通知在各渠道的發送結果"
+        },
+        "supply-intake-rules": {
+          "title": "上游新模型的上新規則",
+          "description": "渠道自動加入上游新模型時：直接啟用、待確認還是不加入，以及排在哪個位置",
+          "hint": "渠道可在「監控」中改用自己的規則"
         }
       },
       "actions": {
@@ -4120,5 +4142,60 @@
     "openPage": "去 {{source}} 核對",
     "openPricing": "開啟 {{source}} 價格頁",
     "noPage": "沒有可核對這個價格的公開網頁"
+  },
+  "intakeRules": {
+    "defaultNames": {
+      "previews": "預覽版待確認",
+      "chat": "聊天模型直接加入",
+      "rest": "其餘待確認"
+    },
+    "name": "規則名稱",
+    "namePlaceholder": "為規則命名",
+    "up": "上移",
+    "down": "下移",
+    "remove": "刪除規則",
+    "add": "新增規則",
+    "orderHint": "由上至下逐條比對，首條符合的規則決定；全不符合的模型待確認。",
+    "endpoints": "能力（任一）",
+    "families": "系列",
+    "patterns": "模型名稱",
+    "supplied": "已有其他渠道供應",
+    "action": "處理",
+    "placement": "排位",
+    "tri": {
+      "any": "不限",
+      "yes": "是",
+      "no": "否"
+    },
+    "actions": {
+      "enable": "啟用",
+      "pending": "待確認",
+      "disable": "加入但停用",
+      "skip": "不加入"
+    },
+    "placements": {
+      "auto": "已有供應就排最後",
+      "policy": "正常排位",
+      "last": "總是排最後"
+    },
+    "when": {
+      "endpoints": "能力 {{list}}",
+      "families": "系列 {{list}}",
+      "patterns": "名稱 {{list}}",
+      "vendors": "廠商 #{{list}}",
+      "supplied": "已有其他渠道供應",
+      "unsupplied": "尚未有渠道供應",
+      "any": "任何模型"
+    },
+    "defaultNote": "目前為內置規則，修改後會儲存為你自己的一份。",
+    "customNote": "你自己的規則取代了內置規則。",
+    "showBuiltIn": "內置規則",
+    "useBuiltIn": "還原內置規則",
+    "channel": {
+      "label": "上新規則",
+      "hint": "決定哪些上游新模型直接啟用、哪些待確認，以及在其他渠道已供應的模型中排在哪個位置。",
+      "site": "使用全站規則",
+      "custom": "本渠道自訂"
+    }
   }
 }

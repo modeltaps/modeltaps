@@ -121,6 +121,7 @@ export const PLATFORM_GROUPS = [
       ),
       card('error-handling', 'form', ['ChannelFailErrorWrapEnabled', 'ChannelFailErrorMessage'], 'resilience'),
       card('supply-mode', 'form', ['SupplyModeDefault'], 'allocation'),
+      card('supply-intake-rules', 'form', ['SupplyIntakeRules'], 'allocation'),
       card('session-affinity', 'form', ['SessionAffinityEnabled', 'SessionAffinityStrict', 'SessionAffinityTTLSeconds'], 'allocation'),
       card(
         'auto-routing',

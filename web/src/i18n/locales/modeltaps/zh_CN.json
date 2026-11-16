@@ -1739,7 +1739,8 @@
     "smtp_test_recipient_invalid": "请填写有效的收件地址",
     "smtp_test_incomplete": "请先填写邮件服务器和端口",
     "smtp_test_failed": "测试邮件没发出去：{{reason}}",
-    "smtp_managed": "发信设置由部署配置（smtp.url）管理，不能在这里修改"
+    "smtp_managed": "发信设置由部署配置（smtp.url）管理，不能在这里修改",
+    "supply_intake_rules_invalid": "上新规则无效：{{message}}"
   },
   "channelOAuth": {
     "tip": {
@@ -2206,7 +2207,9 @@
         "wildcard": "通配符不会公开",
         "off": "{{model}} 的供应已停用",
         "duplicate": "和 {{other}} 同属 {{model}}，一个渠道只能用一个名字提供它",
-        "duplicateShort": "与 {{other}} 重复"
+        "duplicateShort": "与 {{other}} 重复",
+        "pending": "{{model}} 待确认",
+        "upstream_gone": "{{model}} 上游已下架"
       },
       "addToCatalog": "加入目录",
       "attach": "接入",
@@ -2250,7 +2253,7 @@
       "testModelHint": "测试连接和定时检查用它；留空就用模型列表第一个",
       "thresholdHint": "上游余额低于这个数时通知你",
       "thresholdOff": "不提醒",
-      "autoAddHint": "每日模型检测发现上游新提供的模型时，直接加入本渠道（并补齐价格与元信息），而不只是提醒。开启按供应路由后，新模型不再加入渠道的模型列表：属于模型目录里某个公开模型的，直接给它加一条本渠道的供应；其余列在模型目录的「新上游模型」里等你处理。匹配忽略规则的模型跳过。",
+      "autoAddHint": "每日模型检测发现上游新提供的模型时，直接加入本渠道（并补齐价格与元信息），而不只是提醒。开启按供应路由后，新模型不再加入渠道的模型列表：属于模型目录里某个公开模型的，按下方的上新规则给它加一条本渠道的供应（直接启用或待确认）；其余列在模型目录的「新上游模型」里等你处理。匹配忽略规则的模型跳过。",
       "thresholdIn": "余额提醒（{{currency}}）",
       "thresholdSupport": {
         "none": "这个供应商不提供余额接口，没法按余额提醒。",
@@ -2270,7 +2273,12 @@
       "problemLink": {
         "kindOff": "通知设置",
         "noTarget": "发送渠道"
-      }
+      },
+      "keepMissing": "上游列表里没有也继续供应",
+      "keepMissingHint": "用于模型列表不完整的上游。关闭时，连续两次检查都没有的模型会停止接请求，直到上游重新列出。",
+      "suppliesGone": "已停止供应·上游下架（{{count}}）",
+      "suppliesHeld": "上游一个已供应的模型都没列出，没有停止任何供应，请检查它的模型列表。",
+      "intakePending": "待确认（{{count}}）"
     },
     "pauseRules": {
       "label": "暂停规则",
@@ -2891,7 +2899,11 @@
       "wholeChannel": "整个渠道",
       "cooling": "冷却中",
       "coolingUntil": "冷却到 {{time}}",
-      "coolingHint": "出错（如普通限流）后的短暂冷却，只记在内存里，且只反映响应本页的那台服务器。"
+      "coolingHint": "出错（如普通限流）后的短暂冷却，只记在内存里，且只反映响应本页的那台服务器。",
+      "pending": "待确认",
+      "pendingHint": "上游开始提供这个模型时由上新规则加入，开启前不接请求。",
+      "gone": "上游已下架",
+      "goneHint": "上游连续两次检查都没有这个模型，已停止接请求；上游重新提供后自动恢复。"
     },
     "pause": {
       "rule": "规则：{{rule}}",
@@ -2988,7 +3000,12 @@
       "becameManual": "这个模型已改为单独设置",
       "nowManual": "已改为单独设置，当前排位保持不变",
       "nowPolicy": "已恢复按调用顺序"
-    }
+    },
+    "joinLast": "后加入·排最后",
+    "joinLastTip": "这个模型已有别的渠道供应时才加入，所以排在它们之后。",
+    "restorePlacement": "恢复正常排位",
+    "confirmPending": "启用",
+    "keepOff": "不启用"
   },
   "settingsUi": {
     "search": {
@@ -3272,6 +3289,11 @@
         "notify-logs": {
           "title": "通知发送记录",
           "description": "最近 30 天每条通知在各渠道的发送结果"
+        },
+        "supply-intake-rules": {
+          "title": "上游新模型的上新规则",
+          "description": "渠道自动加入上游新模型时：直接启用、待确认还是不加入，以及排在哪",
+          "hint": "渠道可以在「监控」里改用自己的规则"
         }
       },
       "actions": {
@@ -4120,5 +4142,60 @@
     "openPage": "去 {{source}} 核对",
     "openPricing": "打开 {{source}} 价格页",
     "noPage": "没有可核对这个价格的公开网页"
+  },
+  "intakeRules": {
+    "defaultNames": {
+      "previews": "预览版待确认",
+      "chat": "聊天模型直接加入",
+      "rest": "其余待确认"
+    },
+    "name": "规则名",
+    "namePlaceholder": "给规则起个名字",
+    "up": "上移",
+    "down": "下移",
+    "remove": "删除规则",
+    "add": "添加规则",
+    "orderHint": "从上往下试，第一条命中的规则决定；都不中的模型待确认。",
+    "endpoints": "能力（任一）",
+    "families": "系列",
+    "patterns": "模型名",
+    "supplied": "已有别的渠道供应",
+    "action": "处理",
+    "placement": "排位",
+    "tri": {
+      "any": "不限",
+      "yes": "是",
+      "no": "否"
+    },
+    "actions": {
+      "enable": "启用",
+      "pending": "待确认",
+      "disable": "加入但停用",
+      "skip": "不加入"
+    },
+    "placements": {
+      "auto": "已有供应就排最后",
+      "policy": "正常排位",
+      "last": "总是排最后"
+    },
+    "when": {
+      "endpoints": "能力 {{list}}",
+      "families": "系列 {{list}}",
+      "patterns": "名称 {{list}}",
+      "vendors": "厂商 #{{list}}",
+      "supplied": "已有别的渠道供应",
+      "unsupplied": "还没有渠道供应",
+      "any": "任何模型"
+    },
+    "defaultNote": "当前是内置规则，修改后保存为你自己的一份。",
+    "customNote": "你自己的规则替代了内置规则。",
+    "showBuiltIn": "内置规则",
+    "useBuiltIn": "恢复内置规则",
+    "channel": {
+      "label": "上新规则",
+      "hint": "决定哪些上游新模型直接启用、哪些待确认，以及在别的渠道已供应的模型里排在哪。",
+      "site": "使用全站规则",
+      "custom": "本渠道自定义"
+    }
   }
 }

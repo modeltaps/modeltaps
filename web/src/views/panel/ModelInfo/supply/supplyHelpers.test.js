@@ -244,7 +244,8 @@ describe('supplyUpdateBody', () => {
       priority: 5,
       weight: 2,
       enabled: false,
-      note: 'n'
+      note: 'n',
+      join_last: false
     });
   });
 });
@@ -303,5 +304,19 @@ describe('followsChannel', () => {
   it('does not flag supplies without channel numbers', () => {
     expect(followsChannel({ priority: 1, weight: 1 })).toBe(true);
     expect(followsChannel({ channel_priority: 5, channel_weight: 1, priority: 1, weight: 1 })).toBe(true);
+  });
+});
+
+describe('intake states', () => {
+  it('reads pending and gone supplies before the switch', () => {
+    expect(supplyState({ enabled: false, pending: true }).kind).toBe('pending');
+    expect(supplyState({ enabled: true, upstream_gone_at: 5 }).kind).toBe('gone');
+    expect(supplyState({ enabled: false, upstream_gone_at: 5 }).kind).toBe('disabled');
+    expect(previewEntryState({ state: 'pending' }).kind).toBe('pending');
+    expect(previewEntryState({ state: 'upstream_gone' }).kind).toBe('gone');
+  });
+  it('keeps join_last unless the change clears it', () => {
+    expect(supplyUpdateBody({ id: 1, join_last: true }).join_last).toBe(true);
+    expect(supplyUpdateBody({ id: 1, join_last: true }, { join_last: false }).join_last).toBe(false);
   });
 });

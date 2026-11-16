@@ -55,6 +55,11 @@ export const resumePause = (id) => API.delete(`/api/supply_pause/${id}`).then(bo
 export const fetchPauseRules = (channelId) =>
   API.get('/api/supply_pause/rules', { params: channelId ? { channel_id: channelId } : {} }).then(body);
 
+// Intake rules: { custom, rules, defaults } and, with a channel id, that channel's own rules
+// (channel_rules, null when it uses the site-wide ones).
+export const fetchIntakeRules = (channelId) =>
+  API.get('/api/supply_pause/intake_rules', { params: channelId ? { channel_id: channelId } : {} }).then(body);
+
 // The supply switches live in the root-only options. Returns { supplyEnabled, pauseRulesEnabled }
 // as booleans, or null when they cannot be read (not root, or the request failed).
 export async function fetchSupplySwitches() {

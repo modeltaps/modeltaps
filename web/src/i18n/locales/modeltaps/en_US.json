@@ -1823,7 +1823,8 @@
     "smtp_test_recipient_invalid": "Enter a valid recipient address",
     "smtp_test_incomplete": "Fill in the mail server and port first",
     "smtp_test_failed": "The test email was not sent: {{reason}}",
-    "smtp_managed": "Mail sending is set in the deployment (smtp.url) and cannot be changed here"
+    "smtp_managed": "Mail sending is set in the deployment (smtp.url) and cannot be changed here",
+    "supply_intake_rules_invalid": "The intake rules are not valid: {{message}}"
   },
   "channelOAuth": {
     "tip": {
@@ -2299,7 +2300,9 @@
         "wildcard": "wildcards are never public",
         "off": "the {{model}} supply is off",
         "duplicate": "same model as {{other}} ({{model}}); a channel supplies a model under one name",
-        "duplicateShort": "duplicates {{other}}"
+        "duplicateShort": "duplicates {{other}}",
+        "pending": "{{model}} waits for review",
+        "upstream_gone": "{{model}} is gone upstream"
       },
       "addToCatalog": "Add to catalog",
       "attach": "Supply",
@@ -2344,7 +2347,7 @@
       "testModelHint": "Used by connection tests and scheduled checks; empty uses the first model",
       "thresholdHint": "Notifies you when the upstream balance drops below this",
       "thresholdOff": "Off",
-      "autoAddHint": "When the daily model check finds models newly offered upstream, add them to this channel (with prices and metadata) instead of only reporting them. Once routing by supply is on, new models are not added to the channel's model list: a model that belongs to a public model in the catalog gets a supply from this channel right away, and the rest wait under New upstream models in the model catalog. Models matching the ignore rules are skipped.",
+      "autoAddHint": "When the daily model check finds models newly offered upstream, add them to this channel (with prices and metadata) instead of only reporting them. Once routing by supply is on, new models are not added to the channel's model list: a model that belongs to a public model in the catalog gets a supply from this channel as the intake rules below say (on at once, or waiting for review), and the rest wait under New upstream models in the model catalog. Models matching the ignore rules are skipped.",
       "thresholdIn": "Low-balance alert ({{currency}})",
       "thresholdSupport": {
         "none": "This provider has no balance endpoint, so there is no balance to alert on.",
@@ -2364,7 +2367,12 @@
       "problemLink": {
         "kindOff": "Notification settings",
         "noTarget": "Channels"
-      }
+      },
+      "keepMissing": "Keep supplying models the upstream stops listing",
+      "keepMissingHint": "For upstreams whose model list is incomplete. Off, a supply whose model is missing in two checks in a row stops taking requests until it is listed again.",
+      "suppliesGone": "Stopped, gone upstream ({{count}})",
+      "suppliesHeld": "The upstream listed none of the supplied models. Nothing was stopped; check its model list.",
+      "intakePending": "Waiting for review ({{count}})"
     },
     "pauseRules": {
       "label": "Pause rules",
@@ -2984,7 +2992,11 @@
       "wholeChannel": "whole channel",
       "cooling": "Cooling down",
       "coolingUntil": "Cooling down until {{time}}",
-      "coolingHint": "A short cool-down after an error such as a rate limit. It is kept in memory on the server that answered this page only."
+      "coolingHint": "A short cool-down after an error such as a rate limit. It is kept in memory on the server that answered this page only.",
+      "pending": "Waiting for review",
+      "pendingHint": "An intake rule added this supply when the upstream started listing the model. It does not take requests until you switch it on.",
+      "gone": "Gone upstream",
+      "goneHint": "The upstream stopped listing this model in two checks in a row, so it takes no requests. It comes back by itself when the upstream lists it again."
     },
     "pause": {
       "rule": "Rule: {{rule}}",
@@ -3087,7 +3099,12 @@
       "becameManual": "This model is now set by hand",
       "nowManual": "Set by hand; the current order is kept",
       "nowPolicy": "This model follows the call order again"
-    }
+    },
+    "joinLast": "Joined last",
+    "joinLastTip": "Added after other channels already supplied this model, so it is tried after them.",
+    "restorePlacement": "Use its normal position",
+    "confirmPending": "Switch on",
+    "keepOff": "Keep it off"
   },
   "settingsUi": {
     "search": {
@@ -3372,6 +3389,11 @@
         "notify-logs": {
           "title": "Sent notices",
           "description": "Every notice delivery from the last 30 days, per channel"
+        },
+        "supply-intake-rules": {
+          "title": "Intake rules for new upstream models",
+          "description": "When a channel adds new upstream models on its own: switch on, wait for review or skip, and where they join",
+          "hint": "A channel can use rules of its own under Monitor"
         }
       },
       "actions": {
@@ -4221,5 +4243,60 @@
     "openPage": "Check on {{source}}",
     "openPricing": "Open {{source}} pricing",
     "noPage": "No public page to check this price on"
+  },
+  "intakeRules": {
+    "defaultNames": {
+      "previews": "Previews wait for review",
+      "chat": "Chat models join at once",
+      "rest": "Everything else waits for review"
+    },
+    "name": "Rule name",
+    "namePlaceholder": "Name this rule",
+    "up": "Move up",
+    "down": "Move down",
+    "remove": "Remove rule",
+    "add": "Add rule",
+    "orderHint": "Tried from the top; the first matching rule decides. A model no rule matches waits for review.",
+    "endpoints": "Abilities (any of)",
+    "families": "Families",
+    "patterns": "Model names",
+    "supplied": "Other channels supply it",
+    "action": "Then",
+    "placement": "Placement",
+    "tri": {
+      "any": "Any",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "actions": {
+      "enable": "Switch on",
+      "pending": "Wait for review",
+      "disable": "Add switched off",
+      "skip": "Do not add"
+    },
+    "placements": {
+      "auto": "Last if others supply it",
+      "policy": "Normal position",
+      "last": "Always last"
+    },
+    "when": {
+      "endpoints": "ability {{list}}",
+      "families": "family {{list}}",
+      "patterns": "name {{list}}",
+      "vendors": "vendor #{{list}}",
+      "supplied": "others supply it",
+      "unsupplied": "nobody supplies it yet",
+      "any": "any model"
+    },
+    "defaultNote": "These are the built-in rules. Editing them saves your own copy.",
+    "customNote": "Your own rules replace the built-in ones.",
+    "showBuiltIn": "Built-in rules",
+    "useBuiltIn": "Go back to the built-in rules",
+    "channel": {
+      "label": "Intake rules",
+      "hint": "Decide which new upstream models switch on at once, which wait for review, and where they join a model other channels already supply.",
+      "site": "Use the site rules",
+      "custom": "Use rules of its own"
+    }
   }
 }

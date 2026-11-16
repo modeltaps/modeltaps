@@ -52,7 +52,16 @@ export function ModelStatusPill({ status, className }) {
 
 ModelStatusPill.propTypes = { status: PropTypes.string, className: PropTypes.string };
 
-const STATE_TONES = { ok: 'ok', paused: 'warn', probing: 'warn', cooling: 'warn', disabled: 'off', channel_off: 'bad' };
+const STATE_TONES = {
+  ok: 'ok',
+  paused: 'warn',
+  probing: 'warn',
+  cooling: 'warn',
+  pending: 'warn',
+  disabled: 'off',
+  gone: 'bad',
+  channel_off: 'bad'
+};
 
 // State of one supply (see supplyState and previewEntryState). Pauses and cool-downs show until
 // when; pauses show the rule and upstream error on hover.
@@ -109,6 +118,8 @@ export function SupplyStateLabel({ state }) {
     </span>
   );
   if (kind === 'cooling') return <TooltipLabel label={label} lines={[t('modelSupply.state.coolingHint')]} />;
+  if (kind === 'pending') return <TooltipLabel label={label} lines={[t('modelSupply.state.pendingHint')]} />;
+  if (kind === 'gone') return <TooltipLabel label={label} lines={[t('modelSupply.state.goneHint')]} />;
   if (!pause) return label;
   return (
     <TooltipProvider delayDuration={150}>

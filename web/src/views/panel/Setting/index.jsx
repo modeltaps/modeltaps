@@ -32,7 +32,8 @@ import {
   RetryCard,
   SessionAffinityCard,
   SupplyModeCard,
-  SupplyPauseRulesCard
+  SupplyPauseRulesCard,
+  SupplyIntakeRulesCard
 } from './cards/GatewayCards';
 import { LogConsumeCard, LogIOCard, SafetyCard } from './cards/PrivacyCards';
 import { BuiltinChatCard, ChatLinksCard, MjNotifyCard, NotificationsCard, NotifyChannelsCard, TelegramCard } from './cards/NotifyCards';
@@ -78,6 +79,7 @@ const CARD_COMPONENTS = {
   'channel-auto': ChannelAutoCard,
   'supply-mode': SupplyModeCard,
   'supply-pause-rules': SupplyPauseRulesCard,
+  'supply-intake-rules': SupplyIntakeRulesCard,
   'session-affinity': SessionAffinityCard,
   'model-name-match': ModelNameMatchCard,
   'native-protocol': NativeProtocolCard,

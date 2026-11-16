@@ -140,7 +140,8 @@ describe('SuppliesPanel', () => {
         priority: 0,
         weight: 3,
         enabled: false,
-        note: 'n'
+        note: 'n',
+        join_last: false
       })
     );
   });

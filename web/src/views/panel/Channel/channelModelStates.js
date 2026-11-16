@@ -8,11 +8,14 @@ import { upstreamNameOf } from './channelPrices';
 export const STATE_FILTERS = ['offered', 'unoffered', 'gone', 'unlisted'];
 
 // Whether a listed model serves an enabled public model, and why not when it does not:
-// not_in_catalog / no_supply / duplicate / wildcard (from the model details) or off (its supplies
+// not_in_catalog / no_supply / duplicate / wildcard (from the model details), pending (an intake
+// rule added it for review), upstream_gone (the upstream stopped listing it) or off (its supplies
 // are all switched off). null while the details have not loaded or supplies do not route requests.
 export function offerOf(detail) {
   if (!detail || !Array.isArray(detail.public)) return null;
-  if (detail.public.some((p) => p.enabled)) return { offered: true };
+  if (detail.public.some((p) => p.enabled && !p.gone)) return { offered: true };
+  if (detail.public.some((p) => p.pending)) return { offered: false, reason: 'pending' };
+  if (detail.public.some((p) => p.enabled && p.gone)) return { offered: false, reason: 'upstream_gone' };
   if (detail.public.length) return { offered: false, reason: 'off' };
   const offer = { offered: false, reason: detail.unoffered || 'not_in_catalog', suggested: detail.suggested || '' };
   if (offer.reason === 'duplicate') Object.assign(offer, { sameAs: detail.same_as || '', suppliedBy: detail.supplied_by || '' });

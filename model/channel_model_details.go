@@ -11,8 +11,12 @@ import (
 // while supplies route requests, otherwise the listed name itself. InputPrice / OutputPrice are
 // its base sell prices in USD per million tokens, nil when it is not sold per token.
 type ChannelModelPublic struct {
-	Model       string   `json:"model"`
-	Enabled     bool     `json:"enabled"`
+	Model   string `json:"model"`
+	Enabled bool   `json:"enabled"`
+	// Pending says an intake rule added the supply for review; Gone that the upstream no longer
+	// lists its model, so it does not route.
+	Pending     bool     `json:"pending,omitempty"`
+	Gone        bool     `json:"gone,omitempty"`
 	InputPrice  *float64 `json:"input_price"`
 	OutputPrice *float64 `json:"output_price"`
 }
@@ -155,7 +159,7 @@ func BuildChannelModelDetails(channelID int, models []string, mapping map[string
 					}
 					seen[s.Id] = true
 					in, outPrice := tokenSellPrice(s.Model)
-					detail.Public = append(detail.Public, ChannelModelPublic{Model: s.Model, Enabled: s.Enabled, InputPrice: in, OutputPrice: outPrice})
+					detail.Public = append(detail.Public, ChannelModelPublic{Model: s.Model, Enabled: s.Enabled, Pending: s.Pending, Gone: s.UpstreamGoneAt > 0, InputPrice: in, OutputPrice: outPrice})
 				}
 			}
 			if len(detail.Public) == 0 {

@@ -2,7 +2,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { ArrowDown, ArrowUp, ArrowUpRight, Link2, Loader2, MoreHorizontal, Pause, Pencil, Play, Plus, Trash2 } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpRight,
+  Link2,
+  ListOrdered,
+  Loader2,
+  MoreHorizontal,
+  Pause,
+  Pencil,
+  Play,
+  Plus,
+  Trash2,
+  X
+} from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -323,7 +337,9 @@ RequestPreview.propTypes = {
 function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMoveDown, busy, onAction }) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState(null);
-  const offline = state.kind === 'channel_off' || state.kind === 'disabled';
+  const offline = ['channel_off', 'disabled', 'pending', 'gone'].includes(state.kind);
+  // Joined after the model's other supplies (an intake rule): only the policy applies the mark.
+  const joinedLast = supply.join_last === true && supply.follows_policy;
   const groups = channelGroups(supply);
   const groupsText = groups.length > 0 ? t('modelSupply.channelGroups', { groups: groups.join(', ') }) : '';
 
@@ -366,6 +382,12 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
           {own && !outsideGroup && (
             <span className="text-foreground" title={t('modelSupply.ownNumbersTip')}>
               {t('modelSupply.ownNumbers')}
+              {' · '}
+            </span>
+          )}
+          {joinedLast && !outsideGroup && (
+            <span className="text-foreground" title={t('modelSupply.joinLastTip')}>
+              {t('modelSupply.joinLast')}
               {' · '}
             </span>
           )}
@@ -442,6 +464,17 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
       </td>
       <td className="!px-1">
         <div className="flex items-center justify-end gap-1">
+          {supply.pending && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 rounded-lg px-2 text-xs"
+              disabled={busy}
+              onClick={() => onAction('update', supply, { enabled: true })}
+            >
+              {t('modelSupply.confirmPending')}
+            </Button>
+          )}
           <Switch
             checked={supply.enabled !== false}
             disabled={busy}
@@ -475,6 +508,18 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
                 <ArrowDown className="size-4" />
                 {t('modelSupply.moveDown')}
               </DropdownMenuItem>
+              {supply.pending && (
+                <DropdownMenuItem onClick={() => onAction('update', supply, { enabled: false })}>
+                  <X className="size-4" />
+                  {t('modelSupply.keepOff')}
+                </DropdownMenuItem>
+              )}
+              {joinedLast && (
+                <DropdownMenuItem onClick={() => onAction('update', supply, { join_last: false })}>
+                  <ListOrdered className="size-4" />
+                  {t('modelSupply.restorePlacement')}
+                </DropdownMenuItem>
+              )}
               {own && (
                 <DropdownMenuItem
                   onClick={() => onAction('update', supply, { priority: supply.channel_priority, weight: supply.channel_weight })}

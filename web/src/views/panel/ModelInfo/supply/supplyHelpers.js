@@ -134,11 +134,14 @@ export function pausesFor(supply, pauses = []) {
 }
 
 // State of a supply row, first match wins:
-// channel_off (channel disabled or deleted) → disabled (supply switched off) → paused (until a
+// channel_off (channel disabled or deleted) → pending (an intake rule added it for review) →
+// disabled (supply switched off) → gone (the upstream no longer lists it) → paused (until a
 // time) → probing (time is up, waiting for the recovery test) → ok.
 export function supplyState(supply, pauses = [], now = Math.floor(Date.now() / 1000)) {
   if ((supply.channel_status ?? CHANNEL_STATUS_ENABLED) !== CHANNEL_STATUS_ENABLED) return { kind: 'channel_off' };
+  if (supply.pending) return { kind: 'pending' };
   if (supply.enabled === false) return { kind: 'disabled' };
+  if (supply.upstream_gone_at > 0) return { kind: 'gone', since: supply.upstream_gone_at };
   const matching = pausesFor(supply, pauses);
   const active = matching.filter((p) => p.until > now).sort((a, b) => b.until - a.until)[0];
   if (active) return { kind: 'paused', pause: active, pauses: matching };
@@ -150,7 +153,9 @@ export function supplyState(supply, pauses = [], now = Math.floor(Date.now() / 1
 // Preview states (from the preview API) as the state kinds SupplyStateLabel shows.
 const PREVIEW_KINDS = {
   channel_disabled: 'channel_off',
+  pending: 'pending',
   disabled: 'disabled',
+  upstream_gone: 'gone',
   paused: 'paused',
   awaiting_test: 'probing',
   cooling_down: 'cooling',
@@ -223,7 +228,8 @@ export function countSuppliesByModel(supplies = []) {
   supplies.forEach((s) => {
     const entry = (counts[s.model] ||= { total: 0, usable: 0 });
     entry.total += 1;
-    if (s.enabled !== false && (s.channel_status ?? CHANNEL_STATUS_ENABLED) === CHANNEL_STATUS_ENABLED) entry.usable += 1;
+    const routable = s.enabled !== false && !s.pending && !(s.upstream_gone_at > 0);
+    if (routable && (s.channel_status ?? CHANNEL_STATUS_ENABLED) === CHANNEL_STATUS_ENABLED) entry.usable += 1;
   });
   return counts;
 }
@@ -237,6 +243,7 @@ export function supplyUpdateBody(supply, changes = {}) {
     weight: Number(supply.weight) || 0,
     enabled: supply.enabled !== false,
     note: supply.note || '',
+    join_last: supply.join_last === true,
     ...changes
   };
 }
