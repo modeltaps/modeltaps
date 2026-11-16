@@ -657,7 +657,8 @@
       "stopRecord": "停止錄音",
       "transcript": "轉寫結果",
       "upload": "上傳音訊",
-      "sttEmpty": "選擇音訊開始轉寫"
+      "sttEmpty": "選擇音訊開始轉寫",
+      "speaker": "說話人 {{label}}"
     },
     "compare": {
       "addColumn": "新增欄",
@@ -2054,7 +2055,8 @@
     },
     "minutes": "按分鐘付費",
     "minutesPrice": "每分鐘價格",
-    "perMinuteUnit": "分鐘"
+    "perMinuteUnit": "分鐘",
+    "perHourTitle": "每小時音訊 {{price}}"
   },
   "channels": {
     "action": {

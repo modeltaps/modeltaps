@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 
+import { isInFloatingPanel } from '@/components/ui/floating';
 import { cn } from '@/lib/utils';
 import ChipButton from './ChipButton';
 import { clipBounds, resolveAlign } from './ModelPicker';
@@ -65,7 +66,8 @@ export default function ChipPopover({
       if (event.key === 'Escape') setOpen(false);
     };
     const onPointerDown = (event) => {
-      if (!wrapper.current?.contains(event.target)) setOpen(false);
+      // A select inside the popover opens its options in a floating panel on document.body.
+      if (!wrapper.current?.contains(event.target) && !isInFloatingPanel(event.target)) setOpen(false);
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onPointerDown);

@@ -20,7 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { AUDIO_ACCEPT, formatTimestamp } from 'views/panel/ApiCatalog/playground/audio';
+import { AUDIO_ACCEPT, formatTimestamp, speakerColors, speakerTurns } from 'views/panel/ApiCatalog/playground/audio';
 import ChipPopover from '../components/ChipPopover';
 import ConsolePage from '../components/ConsolePage';
 import ModelChip from '../components/ModelChip';
@@ -406,6 +406,8 @@ function TranscribePanel({ session, modelChip, gate, running, runnable, hasModel
   const [dragging, setDragging] = useState(false);
   const fileUrl = useFileUrl(session.file);
   const result = session.sttResult;
+  const turns = useMemo(() => speakerTurns(result?.segments), [result]);
+  const colors = useMemo(() => speakerColors(turns), [turns]);
   const inputDisabled = running || !hasModels;
 
   const onDrop = (event) => {
@@ -533,15 +535,41 @@ function TranscribePanel({ session, modelChip, gate, running, runnable, hasModel
                 <span key={fact}>{fact}</span>
               ))}
             </div>
-            <p className="whitespace-pre-wrap break-words text-sm">{result.text || t('playgroundConsole.result.empty')}</p>
-            {result.segments.map((segment) => (
-              <p key={segment.id} className="break-words text-xs text-muted-foreground">
-                <span className="font-mono">
-                  {formatTimestamp(segment.start)} – {formatTimestamp(segment.end)}
-                </span>{' '}
-                {segment.text}
-              </p>
-            ))}
+            {turns.length > 0 ? (
+              <ol className="space-y-3">
+                {turns.map((turn) => (
+                  <li key={turn.key} className="flex gap-3">
+                    <span
+                      aria-hidden="true"
+                      className="mt-0.5 w-1 shrink-0 self-stretch rounded-full"
+                      style={{ backgroundColor: colors[turn.speaker] }}
+                    />
+                    <div className="min-w-0 space-y-0.5">
+                      <div className="flex items-baseline gap-2 text-xs">
+                        <span className="font-medium" style={{ color: colors[turn.speaker] }}>
+                          {t('playgroundConsole.audio.speaker', { label: turn.speaker })}
+                        </span>
+                        <span className="font-mono text-muted-foreground">
+                          {formatTimestamp(turn.start)} – {formatTimestamp(turn.end)}
+                        </span>
+                      </div>
+                      <p className="whitespace-pre-wrap break-words text-sm">{turn.text}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="whitespace-pre-wrap break-words text-sm">{result.text || t('playgroundConsole.result.empty')}</p>
+            )}
+            {turns.length === 0 &&
+              result.segments.map((segment) => (
+                <p key={segment.id} className="break-words text-xs text-muted-foreground">
+                  <span className="font-mono">
+                    {formatTimestamp(segment.start)} – {formatTimestamp(segment.end)}
+                  </span>{' '}
+                  {segment.text}
+                </p>
+              ))}
           </div>
         ) : (
           <div className="flex min-h-[12rem] flex-1 items-center justify-center px-4 text-center text-sm text-muted-foreground">

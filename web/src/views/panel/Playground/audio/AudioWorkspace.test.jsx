@@ -182,6 +182,30 @@ describe('AudioWorkspace 语音转文字', () => {
   });
 });
 
+describe('AudioWorkspace 说话人分离', () => {
+  it('按说话人分轮显示，不再重复整段文本', () => {
+    const html = render({
+      tab: 'stt',
+      session: session({
+        file: { name: 'meeting.mp3' },
+        sttResult: {
+          text: '整段文本',
+          segments: [
+            { id: 'seg_0', speaker: 'A', start: 0, end: 1, text: '早上好' },
+            { id: 'seg_1', speaker: 'B', start: 1, end: 2, text: '开始吧' }
+          ]
+        }
+      })
+    });
+
+    expect(html).toContain('说话人 A');
+    expect(html).toContain('说话人 B');
+    expect(html).toContain('早上好');
+    expect(html).toContain('var(--chart-2)');
+    expect(html).not.toContain('整段文本');
+  });
+});
+
 describe('AudioWorkspace 无可用模型', () => {
   const empty = { options: [], model: null };
 

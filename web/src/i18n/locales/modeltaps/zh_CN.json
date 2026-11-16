@@ -657,7 +657,8 @@
       "stopRecord": "停止录音",
       "transcript": "转写结果",
       "upload": "上传音频",
-      "sttEmpty": "选择音频开始转写"
+      "sttEmpty": "选择音频开始转写",
+      "speaker": "说话人 {{label}}"
     },
     "compare": {
       "addColumn": "添加列",
@@ -2054,7 +2055,8 @@
     },
     "minutes": "按分钟付费",
     "minutesPrice": "每分钟价格",
-    "perMinuteUnit": "分钟"
+    "perMinuteUnit": "分钟",
+    "perHourTitle": "每小时音频 {{price}}"
   },
   "channels": {
     "action": {

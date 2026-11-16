@@ -78,7 +78,8 @@ export function validateAudioFile(file) {
   return { ok: true };
 }
 
-// verbose_json 才有 segments；普通 json 只有 text。缺字段的响应按「没有分段」处理，不抛。
+// verbose_json / diarized_json 才有 segments（后者每段带 speaker）；普通 json 只有 text。
+// 缺字段的响应按「没有分段」处理，不抛。
 export function normalizeTranscription(payload) {
   if (typeof payload === 'string') return { text: payload, segments: [] };
   const text = typeof payload?.text === 'string' ? payload.text : '';
@@ -87,9 +88,36 @@ export function normalizeTranscription(payload) {
     id: segment?.id ?? index,
     start: Number(segment?.start) || 0,
     end: Number(segment?.end) || 0,
-    text: String(segment?.text ?? '').trim()
+    text: String(segment?.text ?? '').trim(),
+    speaker: typeof segment?.speaker === 'string' ? segment.speaker : ''
   }));
   return { text, segments };
+}
+
+// Consecutive segments of one speaker merge into a turn, so a meeting reads as who said what.
+// Returns [] when no segment carries a speaker.
+export function speakerTurns(segments = []) {
+  if (!segments.some((segment) => segment.speaker)) return [];
+  const turns = [];
+  for (const segment of segments) {
+    const last = turns[turns.length - 1];
+    if (last && last.speaker === segment.speaker) {
+      last.end = segment.end;
+      last.text = [last.text, segment.text].filter(Boolean).join(' ');
+    } else {
+      turns.push({ key: String(segment.id), speaker: segment.speaker, start: segment.start, end: segment.end, text: segment.text });
+    }
+  }
+  return turns;
+}
+
+// Speaker colours cycle through the chart palette in order of first appearance.
+export function speakerColors(turns = []) {
+  const colors = {};
+  for (const turn of turns) {
+    if (turn.speaker && !colors[turn.speaker]) colors[turn.speaker] = `var(--chart-${(Object.keys(colors).length % 10) + 1})`;
+  }
+  return colors;
 }
 
 // 分段时间戳：m:ss.s，超过一小时也只多累加分钟数，面板里够用。

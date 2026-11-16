@@ -26,13 +26,18 @@ export function transcriptionFields({ model, params = {} }) {
   for (const [key, value] of Object.entries(params)) {
     fields.push([key === 'timestamp_granularities' ? 'timestamp_granularities[]' : key, String(value)]);
   }
+  // OpenAI requires a chunking strategy to diarize audio longer than 30 s.
+  if (params.response_format === 'diarized_json' && !('chunking_strategy' in params)) fields.push(['chunking_strategy', 'auto']);
   return fields;
 }
 
 // 等效代码里 timestamp_granularities 要写成数组：Python / JavaScript 的 SDK 收数组，
 // 只有 multipart 才需要 `[]` 后缀的字段名（见 transcriptionFields）。
-export const transcriptionParams = (params = {}) =>
-  params.timestamp_granularities ? { ...params, timestamp_granularities: [params.timestamp_granularities] } : params;
+export const transcriptionParams = (params = {}) => {
+  let out = params.timestamp_granularities ? { ...params, timestamp_granularities: [params.timestamp_granularities] } : params;
+  if (out.response_format === 'diarized_json' && !('chunking_strategy' in out)) out = { ...out, chunking_strategy: 'auto' };
+  return out;
+};
 
 export function buildTranscriptionForm({ file, model, params }) {
   const form = new FormData();

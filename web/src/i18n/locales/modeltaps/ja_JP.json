@@ -657,7 +657,8 @@
       "stopRecord": "録音停止",
       "transcript": "文字起こし結果",
       "upload": "音声をアップロード",
-      "sttEmpty": "音声を選んで文字起こしを開始"
+      "sttEmpty": "音声を選んで文字起こしを開始",
+      "speaker": "話者 {{label}}"
     },
     "compare": {
       "addColumn": "列を追加",
@@ -2050,7 +2051,8 @@
     },
     "minutes": "分単位課金",
     "minutesPrice": "1分あたりの価格",
-    "perMinuteUnit": "分"
+    "perMinuteUnit": "分",
+    "perHourTitle": "音声1時間あたり {{price}}"
   },
   "channels": {
     "action": {

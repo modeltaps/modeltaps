@@ -7,6 +7,8 @@ import {
   buildSpeechBody,
   formatTimestamp,
   normalizeTranscription,
+  speakerColors,
+  speakerTurns,
   parseSpeed,
   speechCurl,
   speechFileName,
@@ -125,8 +127,8 @@ describe('normalizeTranscription', () => {
       ]
     });
     expect(out.segments).toEqual([
-      { id: 0, start: 0, end: 1.5, text: 'hello' },
-      { id: 1, start: 1.5, end: 3, text: 'there' }
+      { id: 0, start: 0, end: 1.5, text: 'hello', speaker: '' },
+      { id: 1, start: 1.5, end: 3, text: 'there', speaker: '' }
     ]);
   });
 
@@ -162,5 +164,35 @@ describe('curl 示例', () => {
     expect(curl).toContain(`--form 'file=@${STT_FILE_PLACEHOLDER}'`);
     expect(curl).toContain("--form 'model=whisper-1'");
     expect(curl).toContain("--form 'response_format=json'");
+  });
+});
+
+describe('speaker turns', () => {
+  const payload = {
+    text: 'Hi. Let us start. Thanks.',
+    segments: [
+      { id: 'seg_0', speaker: 'A', start: 0, end: 1.1, text: 'Hi.' },
+      { id: 'seg_1', speaker: 'A', start: 1.4, end: 2.8, text: ' Let us start.' },
+      { id: 'seg_2', speaker: 'B', start: 3.1, end: 3.7, text: 'Thanks.' }
+    ]
+  };
+
+  it('keeps the speaker of each diarized segment', () => {
+    expect(normalizeTranscription(payload).segments.map((s) => s.speaker)).toEqual(['A', 'A', 'B']);
+    expect(normalizeTranscription({ segments: [{ id: 0, start: 0, end: 1, text: 'x' }] }).segments[0].speaker).toBe('');
+  });
+
+  it('merges consecutive segments of one speaker into a turn', () => {
+    const turns = speakerTurns(normalizeTranscription(payload).segments);
+    expect(turns).toEqual([
+      { key: 'seg_0', speaker: 'A', start: 0, end: 2.8, text: 'Hi. Let us start.' },
+      { key: 'seg_2', speaker: 'B', start: 3.1, end: 3.7, text: 'Thanks.' }
+    ]);
+    expect(speakerColors(turns)).toEqual({ A: 'var(--chart-1)', B: 'var(--chart-2)' });
+  });
+
+  it('has no turns when no segment names a speaker', () => {
+    expect(speakerTurns(normalizeTranscription({ segments: [{ id: 0, start: 0, end: 1, text: 'x' }] }).segments)).toEqual([]);
+    expect(speakerTurns()).toEqual([]);
   });
 });

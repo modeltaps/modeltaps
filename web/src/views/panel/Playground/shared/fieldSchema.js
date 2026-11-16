@@ -38,7 +38,9 @@ const imagesApiOnly = (model) => !isChatImageModel(model);
 export const IMAGE_SIZES = ['1024x1024', '1024x1536', '1536x1024', '1024x1792', '1792x1024', '512x512', '256x256'];
 export const TTS_FORMATS = ['mp3', 'wav', 'opus', 'aac', 'flac', 'pcm'];
 // 只给 json / verbose_json：text、srt、vtt 回的不是 JSON，结果区拿不到结构化分段。
-export const STT_FORMATS = ['json', 'verbose_json'];
+// diarized_json labels each segment with its speaker (meeting transcription); models that
+// cannot tell speakers apart answer 400.
+export const STT_FORMATS = ['json', 'verbose_json', 'diarized_json'];
 
 // 模型家族只看模型名前缀：gpt-image 与 dall-e-3 各自支持的可选参数不同，
 // 其余（dall-e-2、第三方生图模型）一律只发通用字段。

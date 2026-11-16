@@ -89,3 +89,13 @@ describe('ModelChip', () => {
     expect(render({ open: true, error: true })).toContain('模型列表加载失败');
   });
 });
+
+describe('isInFloatingPanel', () => {
+  it('认出落在浮动面板（下拉选项）里的点击，其余都算外部', async () => {
+    const { isInFloatingPanel } = await import('@/components/ui/floating');
+    const at = (match) => ({ closest: (selector) => (selector === '[data-floating-panel]' && match ? {} : null) });
+    expect(isInFloatingPanel(at(true))).toBe(true);
+    expect(isInFloatingPanel(at(false))).toBe(false);
+    expect(isInFloatingPanel(null)).toBe(false);
+  });
+});

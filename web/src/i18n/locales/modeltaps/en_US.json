@@ -658,7 +658,8 @@
       "stopRecord": "Stop recording",
       "transcript": "Transcript",
       "upload": "Upload audio",
-      "sttEmpty": "Pick an audio file to start transcribing"
+      "sttEmpty": "Pick an audio file to start transcribing",
+      "speaker": "Speaker {{label}}"
     },
     "compare": {
       "addColumn": "Add column",
@@ -2135,7 +2136,8 @@
     },
     "minutes": "Pay per minute",
     "minutesPrice": "Price per Minute",
-    "perMinuteUnit": "min"
+    "perMinuteUnit": "min",
+    "perHourTitle": "{{price}} per hour of audio"
   },
   "channels": {
     "action": {

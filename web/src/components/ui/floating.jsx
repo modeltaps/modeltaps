@@ -109,6 +109,10 @@ export function useFloatingPosition({
 
 const HIDDEN = { position: 'fixed', top: 0, left: 0, visibility: 'hidden' };
 
+// Floating panels render into document.body, outside the component that opened them. A popover
+// that closes on outside clicks must not count a click inside one (a select's options) as outside.
+export const isInFloatingPanel = (target) => Boolean(target?.closest?.('[data-floating-panel]'));
+
 // A panel anchored to `anchorRef`, rendered into document.body. `open=false` renders nothing
 // unless `keepMounted` (then it stays in the DOM, hidden, e.g. so select items register labels).
 export const FloatingPanel = React.forwardRef(
@@ -147,6 +151,7 @@ export const FloatingPanel = React.forwardRef(
         ref={setRefs}
         style={{ ...(open ? (position ?? HIDDEN) : { display: 'none' }), ...style }}
         className={cn('z-[1300]', clamp && 'overflow-y-auto', className)}
+        data-floating-panel=""
         {...props}
       >
         {children}

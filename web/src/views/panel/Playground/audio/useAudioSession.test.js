@@ -29,6 +29,18 @@ describe('buildSpeechBody', () => {
 });
 
 describe('transcriptionFields', () => {
+  it('adds chunking_strategy=auto for diarized_json', () => {
+    expect(transcriptionFields({ model: 'm', params: { response_format: 'diarized_json' } })).toEqual([
+      ['model', 'm'],
+      ['response_format', 'diarized_json'],
+      ['chunking_strategy', 'auto']
+    ]);
+    expect(transcriptionParams({ response_format: 'diarized_json' })).toEqual({
+      response_format: 'diarized_json',
+      chunking_strategy: 'auto'
+    });
+  });
+
   it('model 在最前，时间戳粒度在 multipart 里带 `[]` 后缀', () => {
     expect(
       transcriptionFields({ model: 'whisper-1', params: { response_format: 'verbose_json', timestamp_granularities: 'word' } })
