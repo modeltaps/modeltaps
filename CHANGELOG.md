@@ -408,14 +408,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The built-in default prices are now only the official price table, each with its source and
-  check date. Retired and outdated legacy defaults are no longer preset (GPT-3.5/GPT-4, DALL-E,
-  Whisper, Claude 2/3, Gemini 1.x, older Qwen, DeepSeek, Cohere, ERNIE, GLM, Moonshot, Midjourney,
-  Suno and others), so "Update prices" with the default source no longer writes stale values such
-  as `qwen-max` at 8.57 or `deepseek-chat` at 0.75. Verified current models move into the official
-  table at today's prices: gpt-image-2 / 2.5 / 2.6, OpenAI embeddings, `omni-moderation-latest`
-  (free), `tts-1` / `tts-1-hd`, `mistral-large-latest` ($0.70 / $2.10, cached $0.07),
-  `mistral-small-latest` ($0.15 / $0.60), `mistral-embed`, and Lyria 3 ($0.04 / $0.08 per song).
+- The built-in default prices are now the official price table, each with its source and check
+  date, plus a separate table of gateway default prices. Retired and outdated legacy defaults are
+  no longer preset (GPT-3.5/GPT-4, Claude 2/3, Gemini 1.x, older Qwen, DeepSeek, Cohere, ERNIE,
+  GLM, Moonshot and others), so "Update prices" with the default source no longer writes stale
+  values such as `qwen-max` at 8.57 or `deepseek-chat` at 0.75. Verified current models move into
+  the official table at today's prices: gpt-image-2 / 2.5 / 2.6, OpenAI embeddings,
+  `omni-moderation-latest` (free), `tts-1` / `tts-1-hd`, `mistral-large-latest` ($0.70 / $2.10,
+  cached $0.07), `mistral-small-latest` ($0.15 / $0.60), `mistral-embed`, and Lyria 3 ($0.04 /
+  $0.08 per song). Midjourney (`mj_*`), Suno, `whisper-1`, DALL-E 2 / 3 and Stability AI
+  (`sd3`, `sd3-turbo`, `stable-image-core`) stay preset at their previous values as gateway
+  default prices: they have no per-token official price, are not official prices and are not
+  returned by `/api/prices?type=official`, and administrators should set them to their own cost.
   Prices already stored in a deployment are not changed.
 - Anthropic Messages and OpenAI Responses now convert to each other in one step, without going
   through Chat Completions. A `/claude/v1/messages` request for a GPT model on an OpenAI or Azure

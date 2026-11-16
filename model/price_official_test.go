@@ -201,25 +201,95 @@ func TestGetPricesListOfficial(t *testing.T) {
 	}
 }
 
-// The default prices a new deployment starts with are exactly the official prices: every model has
-// the same price in both, and no default entry exists without an official source.
+// The default prices a new deployment starts with are the official prices plus the gateway default
+// prices: every official model has the same price in both, and every other default entry is a gateway
+// default.
 func TestDefaultPricesMatchOfficial(t *testing.T) {
 	defaults := defaultPriceByModel(t)
-	official := make(map[string]*Price)
-	for _, p := range GetOfficialPrices() {
-		official[p.Model] = p
-	}
-	if len(defaults) != len(official) {
-		t.Errorf("default has %d models, official has %d", len(defaults), len(official))
+	official := officialPriceByModel(t)
+	gateway := gatewayDefaultPrices()
+	if len(defaults) != len(official)+len(gateway) {
+		t.Errorf("default has %d models, want %d official + %d gateway", len(defaults), len(official), len(gateway))
 	}
 	for model, d := range defaults {
-		o, ok := official[model]
-		if !ok {
-			t.Errorf("%s has a default price but no official price", model)
+		if o, ok := official[model]; ok {
+			if !samePriceFields(d, o) {
+				t.Errorf("%s: default %+v differs from official %+v", model, d, o)
+			}
 			continue
 		}
-		if !samePriceFields(d, o) {
-			t.Errorf("%s: default %+v differs from official %+v", model, d, o)
+		g, ok := gateway[model]
+		if !ok {
+			t.Errorf("%s has a default price but neither an official nor a gateway price", model)
+			continue
+		}
+		if !samePriceFields(d, g.toPrice(model)) {
+			t.Errorf("%s: default %+v differs from gateway %+v", model, d, g)
+		}
+	}
+}
+
+// A model is either officially priced or a gateway default, never both.
+func TestGatewayDefaultPricesDoNotOverlapOfficial(t *testing.T) {
+	official := officialPriceByModel(t)
+	for model := range gatewayDefaultPrices() {
+		if _, ok := official[model]; ok {
+			t.Errorf("%s is in both the official and the gateway default tables", model)
+		}
+	}
+}
+
+// Official prices (and type=official) never include gateway defaults.
+func TestOfficialPricesExcludeGatewayDefaults(t *testing.T) {
+	gateway := gatewayDefaultPrices()
+	for _, p := range GetOfficialPrices() {
+		if _, ok := gateway[p.Model]; ok {
+			t.Errorf("GetOfficialPrices includes gateway default %s", p.Model)
+		}
+	}
+	for _, p := range GetPricesList("official") {
+		if _, ok := gateway[p.Model]; ok {
+			t.Errorf("type=official includes gateway default %s", p.Model)
+		}
+	}
+}
+
+// Supported models without a convertible official price stay preset, at the gateway defaults.
+func TestGatewayDefaultPricesPreset(t *testing.T) {
+	cases := map[string]struct {
+		priceType     string
+		channelType   int
+		input, output float64
+	}{
+		"mj_imagine":        {TimesPriceType, config.ChannelTypeMidjourney, 50, 50},
+		"mj_relax_upscale":  {TimesPriceType, config.ChannelTypeMidjourney, 25, 25},
+		"mj_turbo_upload":   {TimesPriceType, config.ChannelTypeMidjourney, 0, 0},
+		"chirp-v3-5":        {TimesPriceType, config.ChannelTypeSuno, 50, 50},
+		"suno_lyrics":       {TimesPriceType, config.ChannelTypeSuno, 5, 5},
+		"whisper-1":         {TokensPriceType, config.ChannelTypeOpenAI, 15, 15},
+		"dall-e-2":          {TokensPriceType, config.ChannelTypeOpenAI, 8, 8},
+		"dall-e-3":          {TokensPriceType, config.ChannelTypeOpenAI, 20, 20},
+		"stable-image-core": {TokensPriceType, config.ChannelTypeStabilityAI, 15, 15},
+	}
+	defaults := defaultPriceByModel(t)
+	mj := 0
+	for model := range defaults {
+		if len(model) > 3 && model[:3] == "mj_" {
+			mj++
+		}
+	}
+	if mj != 48 {
+		t.Errorf("got %d Midjourney default prices, want 48", mj)
+	}
+	for name, w := range cases {
+		p, ok := defaults[name]
+		if !ok {
+			t.Errorf("%s: missing", name)
+			continue
+		}
+		if p.Type != w.priceType || p.ChannelType != w.channelType || p.Input != w.input || p.Output != w.output {
+			t.Errorf("%s = %s/%d %v/%v, want %s/%d %v/%v", name, p.Type, p.ChannelType, p.Input, p.Output,
+				w.priceType, w.channelType, w.input, w.output)
 		}
 	}
 }
@@ -228,11 +298,11 @@ func TestDefaultPricesMatchOfficial(t *testing.T) {
 func TestDefaultPricesDropLegacyEntries(t *testing.T) {
 	defaults := defaultPriceByModel(t)
 	for _, model := range []string{
-		"gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "dall-e-3", "whisper-1", "tts-1-1106",
+		"gpt-3.5-turbo", "gpt-4", "gpt-4-turbo", "davinci-002", "tts-1-1106",
 		"claude-2.1", "claude-3-haiku-20240307", "gemini-1.5-pro",
 		"qwen-max", "qwen-plus", "qwen-turbo", "qwen-vl-max",
 		"deepseek-chat", "deepseek-coder", "mistral-medium-latest", "command-r",
-		"mj_imagine", "chirp-v3-5",
+		"ERNIE-Bot-4", "text-embedding-v1", "@cf/openai/whisper",
 	} {
 		if _, ok := defaults[model]; ok {
 			t.Errorf("%s should not have a default price", model)

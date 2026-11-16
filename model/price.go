@@ -257,16 +257,21 @@ func (price *Price) Delete() error {
 }
 
 // GetDefaultPrice returns the prices a new deployment starts with: the built-in official list prices
-// in effect now (price_official.go and price_schedule.go). Every entry cites the vendor's pricing page;
-// models that are retired or whose official price could not be verified are not preset (instances
-// that already stored them keep their rows, since the startup sync only adds missing models).
+// in effect now (price_official.go and price_schedule.go), each citing the vendor's pricing page, plus
+// the gateway default prices (price_gateway.go) for supported models without a convertible official
+// price. Retired models are not preset (instances that already stored them keep their rows, since the
+// startup sync only adds missing models).
 func GetDefaultPrice() []*Price {
-	return GetOfficialPrices()
+	prices := GetOfficialPrices()
+	for model, g := range gatewayDefaultPrices() {
+		prices = append(prices, g.toPrice(model))
+	}
+	return prices
 }
 
 // GetOfficialPrices returns the built-in official list prices in effect now: per-token prices
 // (price_official.go, with announced changes from price_schedule.go applied) and per-request prices.
-// It is the source to restore prices that a sync replaced.
+// It is the source to restore prices that a sync replaced, and never includes gateway default prices.
 func GetOfficialPrices() []*Price {
 	tokens := officialTokenPricesAt(time.Now())
 	requests := officialRequestPrices()
