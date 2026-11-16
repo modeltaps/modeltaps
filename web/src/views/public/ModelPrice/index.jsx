@@ -22,7 +22,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { toast } from '@/components/ui/sonner';
 import { FilterBar, isEntryActive, OP_NOT_IN } from '@/components/filter-bar';
 import { API } from 'utils/api';
-import { showError, ValueFormatter } from 'utils/common';
+import { MinutePriceFormatter, showError, ValueFormatter } from 'utils/common';
 import { MODALITY_OPTIONS } from 'constants/Modality';
 import ModelCard from './ModelCard';
 import ModelDetailModal from './ModelDetailModal';
@@ -453,7 +453,7 @@ export default function ModelPrice({ embedded = false, initialModality }) {
       if (type === 'times' || type === 'minutes') isM = false;
       if (type === 'tokens') nowUnit = `/ 1${unit}`;
       if (type === 'minutes') nowUnit = ` / ${t('modelpricePage.perMinuteUnit')}`;
-      return ValueFormatter(value, true, isM) + nowUnit;
+      return (type === 'minutes' ? MinutePriceFormatter(value) : ValueFormatter(value, true, isM)) + nowUnit;
     }
     return value;
   };

@@ -743,6 +743,22 @@ export function trims(values) {
   return values;
 }
 
+// A per-minute price (speech-to-text) in USD to 4 significant digits. Gateway catalogs quote per
+// second, so the per-minute value carries rounding noise (0.0035004); billing keeps full precision.
+export function MinutePriceFormatter(value) {
+  if (value == null) return '';
+  if (value === 0) return 'Free';
+  return `$${new Decimal(value.toString()).mul(0.002).toSignificantDigits(4).toFixed()}`;
+}
+
+// The same per-minute price per hour of audio, for comparing with vendors that quote per hour.
+export function HourPriceFormatter(value) {
+  if (value == null) return '';
+  const usd = new Decimal(value.toString()).mul(0.002).mul(60).toSignificantDigits(4);
+  // At least cents, so $0.10 does not read as $0.1.
+  return `$${usd.decimalPlaces() < 2 ? usd.toFixed(2) : usd.toFixed()}`;
+}
+
 export function ValueFormatter(value, onlyUsd = false, unitMillion = false) {
   if (value == null) {
     return '';

@@ -38,7 +38,7 @@ import { ROW_OPENS, RowControl, rowOpenProps } from '@/components/objects';
 
 import { cn } from '@/lib/utils';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
-import { ValueFormatter, copy, timestamp2string } from 'utils/common';
+import { HourPriceFormatter, MinutePriceFormatter, ValueFormatter, copy, timestamp2string } from 'utils/common';
 import { statusLabel } from '../Channel/channelApi';
 import { catalogGroup, enabledChannels, formatReleaseDate, isVisibleToUsers, modelStatus, releasedAgo } from '../Pricing/modelCatalog';
 import {
@@ -188,6 +188,13 @@ VendorCell.propTypes = { vendor: PropTypes.object };
 // Unit after a price that is not per token: per minute of audio, otherwise per call.
 const flatPriceUnit = (type, t) => (type === 'minutes' ? t('modelpricePage.perMinuteUnit') : t('modelpricePage.times'));
 
+// A per-call or per-minute price; per minute is rounded to 4 significant digits.
+const flatPrice = (price) => (price.type === 'minutes' ? MinutePriceFormatter(price.input) : ValueFormatter(price.input, true, false));
+
+// Hover text of a per-minute price: the same price per hour of audio.
+const flatPriceTitle = (price, t) =>
+  price.type === 'minutes' && price.input ? t('modelpricePage.perHourTitle', { price: HourPriceFormatter(price.input) }) : undefined;
+
 // Price on one line: per token "input / output" in the chosen unit (the header names it), per call
 // or per minute the single price with its unit; a dash without a price.
 export function PriceCell({ price, unit, hideUnit = false }) {
@@ -197,8 +204,8 @@ export function PriceCell({ price, unit, hideUnit = false }) {
   const lock = price.locked && <Lock className="size-3 shrink-0 text-warning" aria-label={t('pricing_edit.locked')} />;
   if (price.type !== 'tokens') {
     return (
-      <span className="inline-flex items-center gap-1 whitespace-nowrap tabular-nums">
-        {ValueFormatter(price.input, true, false)}
+      <span className="inline-flex items-center gap-1 whitespace-nowrap tabular-nums" title={flatPriceTitle(price, t)}>
+        {flatPrice(price)}
         <span className="text-xs text-muted-foreground">/ {flatPriceUnit(price.type, t)}</span>
         {lock}
       </span>
@@ -780,8 +787,8 @@ function StackedPrice({ price, unit }) {
   const isM = unit === 'M';
   if (price.type !== 'tokens') {
     return (
-      <span className="flex flex-col items-end font-mono text-[13px] leading-5 tabular-nums">
-        {ValueFormatter(price.input, true, false)}
+      <span className="flex flex-col items-end font-mono text-[13px] leading-5 tabular-nums" title={flatPriceTitle(price, t)}>
+        {flatPrice(price)}
         <span className="text-xs leading-4 text-muted-foreground">/ {flatPriceUnit(price.type, t)}</span>
       </span>
     );

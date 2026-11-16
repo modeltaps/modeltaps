@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { ValueFormatter } from 'utils/common';
+import { MinutePriceFormatter, ValueFormatter } from 'utils/common';
 import { AVAILABILITY } from '../shared/modelIndex';
 import StatusDot from './StatusDot';
 
@@ -35,7 +35,7 @@ export const formatPricing = (pricing, t) => {
   const one = (value) => {
     if (value === undefined) return '—';
     if (value === 0) return t('modelpricePage.free');
-    return ValueFormatter(value, true, !flat);
+    return pricing.type === 'minutes' ? MinutePriceFormatter(value) : ValueFormatter(value, true, !flat);
   };
   return flat ? one(pricing.input) : `${one(pricing.input)} / ${one(pricing.output)}`;
 };

@@ -5,7 +5,7 @@ import { ArrowRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ValueFormatter } from 'utils/common';
+import { MinutePriceFormatter, ValueFormatter } from 'utils/common';
 import { workbench } from 'routes/paths';
 import { useInScope } from 'routes/useScope';
 
@@ -27,7 +27,7 @@ const formatPrice = (value, type, t) => {
   if (typeof value !== 'number') return null;
   if (value === 0) return t('modelpricePage.free');
   if (type === 'times') return ValueFormatter(value, true, false);
-  if (type === 'minutes') return `${ValueFormatter(value, true, false)} / ${t('modelpricePage.perMinuteUnit')}`;
+  if (type === 'minutes') return `${MinutePriceFormatter(value)} / ${t('modelpricePage.perMinuteUnit')}`;
   return `${ValueFormatter(value, true, true)} / 1M tokens`;
 };
 

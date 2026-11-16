@@ -408,6 +408,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Per-minute speech-to-text prices show 4 significant digits ($0.0035 instead of $0.0035004, the
+  rounding left by gateway per-second prices), and the model list shows the price per hour of
+  audio on hover. Billing keeps the full price.
 - The built-in default prices are now the official price table, each with its source and check
   date, plus a separate table of gateway default prices. Retired and outdated legacy defaults are
   no longer preset (GPT-3.5/GPT-4, Claude 2/3, Gemini 1.x, older Qwen, DeepSeek, Cohere, ERNIE,
