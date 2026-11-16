@@ -323,16 +323,21 @@ export function supplyOrderByModel(supplies = []) {
   return out;
 }
 
-// The entries a compact order shows: at most `max` across the tiers, in order, and how many were left out.
-export function compactOrder(tiers = [], max = 3) {
-  let left = max;
-  let hidden = 0;
-  const shown = [];
-  tiers.forEach((tier) => {
-    const take = tier.slice(0, Math.max(left, 0));
-    hidden += tier.length - take.length;
-    left -= take.length;
-    if (take.length) shown.push(take);
-  });
-  return { tiers: shown, hidden };
+// What the list cell shows of an order: the tier that takes requests now (the first with an
+// entry that can; the first tier when none can), at most `max` of its entries, and how many
+// other lines there are. `fallback` is true when that tier is not the first, so the preferred
+// lines are all down.
+export function leadOrder(tiers = [], max = 2) {
+  if (!tiers.length) return { lead: [], rest: 0, fallback: false, down: false };
+  let index = tiers.findIndex((tier) => tier.some((e) => e.usable));
+  const down = index < 0;
+  if (down) index = 0;
+  const lead = tiers[index].slice(0, max);
+  const lines = (entries) => entries.reduce((n, e) => n + (e.count || 1), 0);
+  const rest = lines(tiers.flat()) - lines(lead);
+  return { lead, rest, fallback: index > 0, down };
 }
+
+// The whole order in words, for the cell's tooltip: "A, B › C › D".
+export const orderText = (tiers = []) =>
+  tiers.map((tier) => tier.map((e) => (e.count > 1 ? `${e.name} ×${e.count}` : e.name)).join(', ')).join(' › ');

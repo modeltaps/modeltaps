@@ -18,7 +18,8 @@ import {
   previewShares,
   previewSupplyList,
   supplyCandidates,
-  compactOrder,
+  leadOrder,
+  orderText,
   supplyOrderByModel,
   supplyState,
   supplyUpdateBody,
@@ -334,10 +335,30 @@ describe('supply order', () => {
     const tiers = supplyOrderByModel(list).h3;
     expect(tiers.map((tier) => tier.map((e) => [e.type, e.count, e.usable]))).toEqual([[[14, 2, true]], [[1, 1, true]], [[62, 1, false]]]);
   });
-  it('shows at most three entries and counts the rest', () => {
-    const tiers = [[{ type: 1 }, { type: 2 }], [{ type: 3 }, { type: 4 }], [{ type: 5 }]];
-    const { tiers: shown, hidden } = compactOrder(tiers);
-    expect(shown.map((tier) => tier.map((e) => e.type))).toEqual([[1, 2], [3]]);
-    expect(hidden).toBe(2);
+  it('shows the tier taking requests and counts the other lines', () => {
+    const tiers = supplyOrderByModel(list).h3;
+    expect(leadOrder(tiers)).toMatchObject({ rest: 2, fallback: false, down: false });
+    expect(leadOrder(tiers).lead.map((e) => e.type)).toEqual([14]);
+    const down = [
+      [{ type: 1, usable: false, count: 1 }],
+      [
+        { type: 2, usable: true, count: 1 },
+        { type: 3, usable: true, count: 1 },
+        { type: 4, usable: true, count: 1 }
+      ]
+    ];
+    const shown = leadOrder(down);
+    expect(shown.lead.map((e) => e.type)).toEqual([2, 3]);
+    expect(shown).toMatchObject({ rest: 2, fallback: true });
+    expect(leadOrder([[{ type: 1, usable: false, count: 1 }]])).toMatchObject({ rest: 0, down: true });
+    expect(
+      orderText([
+        [
+          { name: 'A', count: 1 },
+          { name: 'B', count: 2 }
+        ],
+        [{ name: 'C', count: 1 }]
+      ])
+    ).toBe('A, B ×2 › C');
   });
 });

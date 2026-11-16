@@ -836,9 +836,9 @@
       "status": "狀態",
       "tabPricing": "定價",
       "tabProfile": "資料",
-      "noSupplyHint": "沒有啟用的供應提供此模型，用戶無法調用。",
-      "goSupplies": "前往供應頁",
-      "channelsFromSupplies": "這些渠道來自模型的供應，在「供應」頁修改"
+      "noSupplyHint": "沒有啟用的線路提供此模型，用戶無法調用。",
+      "goSupplies": "前往線路頁",
+      "channelsFromSupplies": "這些渠道來自模型的線路，在「線路」頁修改"
     },
     "stats": {
       "all": "全部",
@@ -1678,12 +1678,12 @@
     "model_capabilities_invalid": "模型能力無效",
     "model_endpoints_invalid": "模型端點無效",
     "model_status_invalid": "模型狀態無效，可選未啟用、已啟用或已下架",
-    "model_supply_mode_invalid": "供應模式無效，可選負載均衡或主備",
+    "model_supply_mode_invalid": "分流方式無效，可選負載均衡或主備",
     "model_supply_model_not_found": "公開模型不存在",
-    "model_supply_model_not_public": "只能為公開模型新增供應，不能為別名或自動路由策略新增",
+    "model_supply_model_not_public": "只能為公開模型新增線路，不能為別名或自動路由策略新增",
     "model_supply_channel_not_found": "渠道不存在",
     "model_supply_upstream_missing": "請填寫傳給該渠道的模型名稱",
-    "model_supply_exists": "該渠道已經在供應這個模型",
+    "model_supply_exists": "該渠道已經有這個模型的線路",
     "supply_pause_seconds_invalid": "請填寫暫停秒數，需大於 0",
     "model_identifier_exists": "此模型標識已存在",
     "model_referenced_by_aliases": "此模型仍被別名引用：{{aliases}}",
@@ -2148,12 +2148,12 @@
       "pricesRefreshed": "已更新上游價格",
       "syncPrices": "同步價格",
       "ttft": "首字",
-      "supplyNote": "儲存後，模型列表的改動會同步到由這個渠道產生的供應：新加的模型自動接入對應的公開模型，移除的模型會撤下供應。手動新增或在模型頁改過上游名的供應保持不變。",
+      "supplyNote": "儲存後，模型列表的改動會同步到由這個渠道產生的線路：新加的模型自動接入對應的公開模型，移除的模型會撤下線路。手動新增或在模型頁改過上游名的線路保持不變。",
       "saved": {
         "summary": "已儲存，{{changes}}",
         "attached_other": "新接入 {{count}} 個公開模型",
-        "updated_other": "{{count}} 個供應改用新的上游名",
-        "removed_other": "撤下 {{count}} 個供應"
+        "updated_other": "{{count}} 條線路改用新的上游名",
+        "removed_other": "撤下 {{count}} 條線路"
       },
       "upstreamPrice_input": "輸入 $/M",
       "upstreamPrice_output": "輸出 $/M",
@@ -2173,7 +2173,7 @@
       },
       "public": "公開名",
       "notOffered": "未關聯",
-      "supplyOff": "供應已停用",
+      "supplyOff": "線路已停用",
       "context": "上下文",
       "orderHint": "預設按常用程度排：近 30 天本站請求多的系列在前，沒有用量時主流系列在前，同系列最新版本在前。點表頭按名稱排",
       "loss_input": "{{model}} 的輸入售價 ${{sell}}/M 低於上游 ${{cost}}/M（按基礎售價，未計分組倍率）",
@@ -2205,7 +2205,7 @@
         "not_in_catalog": "目錄裏沒有",
         "no_supply": "目錄裏有 {{model}}，這個渠道尚未接入",
         "wildcard": "萬用字元不會公開",
-        "off": "{{model}} 的供應已停用",
+        "off": "{{model}} 的線路已停用",
         "duplicate": "和 {{other}} 同屬 {{model}}，一個渠道只能用一個名字提供它",
         "duplicateShort": "與 {{other}} 重複",
         "pending": "{{model}} 待確認",
@@ -2221,7 +2221,7 @@
       "addOne": "加入 {{model}}",
       "unlistedState": {
         "in_use": "公開名：{{model}}",
-        "off": "公開名：{{model}}（供應已停用）",
+        "off": "公開名：{{model}}（線路已停用）",
         "available": "加入後公開為 {{model}}",
         "not_in_catalog": "目錄裏沒有",
         "unknown": "認不出來"
@@ -2253,7 +2253,7 @@
       "testModelHint": "測試連線和定時檢查用它；留空就用模型列表第一個",
       "thresholdHint": "上游餘額低於這個數時通知你",
       "thresholdOff": "不提醒",
-      "autoAddHint": "每日模型檢測發現上游新提供的模型時，直接加入本渠道（並補齊價格與元資訊），而不只是提醒。開啟按供應路由後，新模型不再加入渠道的模型列表：屬於模型目錄裡某個公開模型的，按下方的上新規則為它加一條本渠道的供應（直接啟用或待確認）；其餘列在模型目錄的「新上游模型」裡等你處理。符合忽略規則的模型會略過。",
+      "autoAddHint": "每日模型檢測發現上游新提供的模型時，直接加入本渠道（並補齊價格與元資訊），而不只是提醒。開啟按線路路由後，新模型不再加入渠道的模型列表：屬於模型目錄裡某個公開模型的，按下方的上新規則為它加一條本渠道的線路（直接啟用或待確認）；其餘列在模型目錄的「新上游模型」裡等你處理。符合忽略規則的模型會略過。",
       "thresholdIn": "餘額提醒（{{currency}}）",
       "thresholdSupport": {
         "none": "這個供應商不提供餘額介面，沒法按餘額提醒。",
@@ -2274,10 +2274,10 @@
         "kindOff": "通知設定",
         "noTarget": "發送渠道"
       },
-      "keepMissing": "上游列表中沒有也繼續供應",
+      "keepMissing": "上游列表中沒有也繼續接收請求",
       "keepMissingHint": "用於模型列表不完整的上游。關閉時，連續兩次檢查都沒有的模型會停止接收請求，直至上游重新列出。",
-      "suppliesGone": "已停止供應·上游下架（{{count}}）",
-      "suppliesHeld": "上游一個已供應的模型都沒有列出，沒有停止任何供應，請檢查其模型列表。",
+      "suppliesGone": "已停用·上游下架（{{count}}）",
+      "suppliesHeld": "上游一個已接入的模型都沒有列出，沒有停用任何線路，請檢查其模型列表。",
       "intakePending": "待確認（{{count}}）"
     },
     "pauseRules": {
@@ -2435,7 +2435,7 @@
     "unknownProvider": "類型 {{type}}",
     "usage": {
       "label": "使用方式",
-      "syncHint": "在這裡的變更會同步到這個渠道的所有供應；在模型頁單獨設定過優先級或權重的供應不變。",
+      "syncHint": "在這裡的變更會同步到這個渠道的所有線路；在模型頁單獨設定過優先級或權重的線路不變。",
       "only": "唯一提供方",
       "onlyDesc": "同組裏沒有別的渠道提供這些模型",
       "backup": "作為備用",
@@ -2624,7 +2624,7 @@
       "speed": "輸出速度",
       "cacheHit": "快取命中率",
       "model": "上游模型",
-      "modelHint": "按發往上游的模型名統計（映射或供應改名之後）",
+      "modelHint": "按發往上游的模型名統計（映射或線路改名之後）",
       "chartRequests": "請求 {{count}}",
       "chartFailures": "失敗 {{count}}"
     }
@@ -2798,11 +2798,11 @@
     }
   },
   "modelSupply": {
-    "tab": "供應",
-    "column": "供應",
-    "count_other": "{{count}} 個供應",
-    "countPartial_other": "{{usable}}/{{count}} 個供應",
-    "countTip_other": "共 {{count}} 個供應，{{usable}} 個可用（供應和渠道都已啟用）",
+    "tab": "線路",
+    "column": "線路",
+    "count_other": "{{count}} 條線路",
+    "countPartial_other": "{{usable}}/{{count}} 條線路",
+    "countTip_other": "共 {{count}} 條線路，{{usable}} 條可用（線路和渠道都已啟用）",
     "channel": "渠道",
     "model": "模型",
     "upstream": "上游模型",
@@ -2815,17 +2815,17 @@
     "priority": "優先級",
     "weight": "權重",
     "stateLabel": "狀態",
-    "enabled": "啟用此供應",
-    "actions": "供應操作",
+    "enabled": "啟用此線路",
+    "actions": "線路操作",
     "edit": "編輯",
     "save": "儲存",
-    "delete": "刪除供應",
-    "deleteTitle": "刪除供應",
+    "delete": "刪除線路",
+    "deleteTitle": "刪除線路",
     "deleteConfirm": "不再把 {{model}} 傳給 {{channel}}？渠道本身不受影響。",
-    "deleted": "已刪除供應",
+    "deleted": "已刪除線路",
     "moveUp": "移到更高一檔",
     "ownNumbers": "單獨設定",
-    "ownNumbersTip": "這條供應的優先級或權重與渠道不同，渠道變更時不會跟著變",
+    "ownNumbersTip": "這條線路的優先級或權重與渠道不同，渠道變更時不會跟著變",
     "followChannel": "恢復跟隨渠道",
     "moveDown": "移到更低一檔",
     "pauseFor": "暫停",
@@ -2837,10 +2837,10 @@
     "openChannel": "打開渠道 {{name}}",
     "channelDeleted": "已刪除的渠道 #{{id}}",
     "savedRightAway": "此頁的改動會即時儲存。",
-    "empty": "還沒有渠道供應這個模型",
-    "emptyHint": "新增供應，指定由哪個渠道提供、傳給上游時用甚麼模型名稱。",
+    "empty": "還沒有渠道提供這個模型",
+    "emptyHint": "新增線路，指定由哪個渠道提供、傳給上游時用甚麼模型名稱。",
     "orderHint": "優先級高的檔先試；只有上面一檔全部不可用時才用下一檔。",
-    "switchOff": "按供應路由尚未開啟。這些供應已儲存，但在開啟 ModelSupplyEnabled 之前，請求仍按各渠道的模型列表路由。",
+    "switchOff": "按線路路由尚未開啟。這些線路已儲存，但在開啟 ModelSupplyEnabled 之前，請求仍按各渠道的模型列表路由。",
     "upstreamRequired": "請填寫傳給該渠道的模型名稱",
     "priorityInvalid": "優先級須為整數",
     "weightInvalid": "權重須為 0 或以上的整數",
@@ -2849,24 +2849,24 @@
     "seconds_other": "{{count}} 秒",
     "status": {
       "label": "狀態",
-      "help": "未啟用：不列出、不可調用；已啟用：列出且可調用；已下架：仍可調用但不再列出。開啟按供應路由後生效。",
+      "help": "未啟用：不列出、不可調用；已啟用：列出且可調用；已下架：仍可調用但不再列出。開啟按線路路由後生效。",
       "draft": "未啟用",
       "published": "已啟用",
       "retired": "已下架"
     },
     "available": {
       "title": "還能提供這個模型的渠道",
-      "hint": "已列出此模型、尚未加入供應；新增後優先級和權重跟隨渠道"
+      "hint": "已列出此模型、尚未加入線路；新增後優先級和權重跟隨渠道"
     },
     "batch": {
-      "menu": "供應",
+      "menu": "線路",
       "modeLabel": "同一檔內",
       "add": "新增來源…",
       "remove": "移除來源…",
       "addTitle": "為 {{count}} 個模型新增來源",
       "removeTitle": "從 {{count}} 個模型移除來源",
-      "addHint": "所選渠道會成為這些模型的供應：上游模型名自動填寫，優先級和權重跟隨渠道。已由它供應的模型會略過。",
-      "removeHint": "刪除所選渠道對這些模型的供應。渠道本身不受影響。",
+      "addHint": "所選渠道會成為這些模型的線路：上游模型名自動填寫，優先級和權重跟隨渠道。已有它的線路的模型會略過。",
+      "removeHint": "刪除所選渠道在這些模型上的線路。渠道本身不受影響。",
       "pick": "選擇渠道",
       "confirmAdd": "新增",
       "confirmRemove": "移除",
@@ -2879,9 +2879,9 @@
       "defaultHint": "跟隨平台設定裡的預設模式，現在是「{{mode}}」。",
       "balance": "負載均衡",
       "failover": "主備",
-      "balanceHint": "同一檔的供應按權重分擔請求。",
-      "failoverHint": "同一檔中權重最高的供應承接全部請求，其餘作為它的後備。",
-      "saved": "供應模式已儲存"
+      "balanceHint": "同一檔的線路按權重分擔請求。",
+      "failoverHint": "同一檔中權重最高的線路承接全部請求，其餘作為它的後備。",
+      "saved": "分流方式已儲存"
     },
     "tier": {
       "only": "僅一檔",
@@ -2917,20 +2917,20 @@
       "manual": "管理員手動暫停"
     },
     "add": {
-      "button": "新增供應",
+      "button": "新增線路",
       "submit": "新增",
-      "done": "已新增供應",
+      "done": "已新增線路",
       "offering": "已列出此模型",
       "others": "其他渠道",
       "pickChannel": "選擇渠道",
       "searchChannel": "搜尋渠道",
       "noChannel": "找不到渠道",
       "channelRequired": "請選擇渠道",
-      "hint": "上游模型名按渠道自動填寫：先看模型映射，再看渠道已列出的名字，最後按該平台的寫法（如 Vertex 的 @default）。新供應預設作為備用，排在最低一檔之下。",
+      "hint": "上游模型名按渠道自動填寫：先看模型映射，再看渠道已列出的名字，最後按該平台的寫法（如 Vertex 的 @default）。新線路預設作為備用，排在最低一檔之下。",
       "fromLibrary": "已按該平台的寫法填寫"
     },
     "channelSupplies": {
-      "title_other": "供應 {{count}} 個公開模型"
+      "title_other": "提供 {{count}} 個公開模型"
     },
     "pausedPage": {
       "description": "被暫停規則或管理員暫時移出調度的渠道，或渠道上的某個模型。暫停結束後會自動恢復。",
@@ -2950,17 +2950,17 @@
       "group": "請求所屬分組",
       "anyGroup": "任意分組",
       "first": "下一個請求會發往 {{channel}}",
-      "split_other": "下一個請求會按佔比發往 {{count}} 個供應之一",
-      "none": "現在沒有可接請求的供應",
-      "outside_other": "{{count}} 個供應不在分組 {{group}} 中",
+      "split_other": "下一個請求會按佔比發往 {{count}} 條線路之一",
+      "none": "現在沒有可接請求的線路",
+      "outside_other": "{{count}} 條線路不在分組 {{group}} 中",
       "outsideRow": "不在分組 {{group}} 中",
-      "notActive": "按供應路由開啟後才生效",
+      "notActive": "按線路路由開啟後才生效",
       "next": "下一個",
       "servingTier": "正在接請求",
       "failed": "無法讀取該分組的預覽"
     },
     "pendingPage": {
-      "description": "渠道上游新列出、尚未有任何供應使用的模型。掛到公開模型之前，它們不會對外公開。",
+      "description": "渠道上游新列出、尚未有任何線路使用的模型。掛到公開模型之前，它們不會對外公開。",
       "empty": "沒有新的上游模型",
       "emptyHint": "模型漂移檢測發現渠道上游新提供某個模型時，會列在這裡。",
       "upstream": "上游模型",
@@ -2977,15 +2977,15 @@
       "ignored": "{{model}} 不會再列出",
       "ignoreHint": "忽略後不再列出，除非該渠道的上游先下架、之後又重新提供這個模型。",
       "attachTitle": "掛接 {{model}}",
-      "attachDescription": "每個選中的渠道都會新增一條該公開模型的供應，發給上游的就是這個名字，優先級和權重沿用渠道自己的設定，之後可在模型的「供應」頁調整。",
+      "attachDescription": "每個選中的渠道都會新增一條該公開模型的線路，發給上游的就是這個名字，優先級和權重沿用渠道自己的設定，之後可在模型的「線路」頁調整。",
       "publicModel": "公開模型",
       "willCreate": "{{model}} 還不是公開模型，會先新建為未啟用：設好價格後在它的頁面上啟用。",
-      "isAlias": "{{model}} 是 {{canonical}} 的別名，供應會記在 {{canonical}} 下。",
+      "isAlias": "{{model}} 是 {{canonical}} 的別名，線路會記在 {{canonical}} 下。",
       "isPolicy": "{{model}} 是路由策略，不是公開模型。",
       "noChannel": "至少選一個渠道",
       "attachButton": "掛接",
       "attached_other": "已掛到 {{model}}，共 {{count}} 個渠道",
-      "skipped_other": "{{count}} 個渠道已有 {{model}} 的供應（上游名不同），這個模型在那些渠道上仍待處理。"
+      "skipped_other": "{{count}} 個渠道已有 {{model}} 的線路（上游名不同），這個模型在那些渠道上仍待處理。"
     },
     "allocation": {
       "label": "順序",
@@ -3002,27 +3002,28 @@
       "nowPolicy": "已恢復按調用順序"
     },
     "joinLast": "後加入·排最後",
-    "joinLastTip": "此模型已有其他渠道供應時才加入，因此排在它們之後。",
+    "joinLastTip": "此模型已有其他渠道提供時才加入，因此排在它們之後。",
     "restorePlacement": "恢復正常排位",
     "confirmPending": "啟用",
     "keepOff": "不啟用",
     "order": {
       "reason": {
-        "policy_channel": "供應順序中此渠道單獨在第 {{tier}} 檔",
-        "policy_provider": "供應順序中其供應商在第 {{tier}} 檔",
-        "unplaced": "供應順序中沒有它，排在所有檔之後",
-        "join_last": "此模型已有其他渠道供應時才加入，排在最後",
+        "policy_channel": "調用順序中此渠道單獨在第 {{tier}} 檔",
+        "policy_provider": "調用順序中其供應商在第 {{tier}} 檔",
+        "unplaced": "調用順序中沒有它，排在所有檔之後",
+        "join_last": "此模型已有其他渠道提供時才加入，排在最後",
         "channel": "按渠道自身的優先級",
         "own": "為此模型單獨設定的優先級"
       },
       "byPolicy": "按供應商頁的調用順序排列",
       "byModel": "此模型單獨設定了順序",
       "byChannel": "按渠道的優先級排列",
-      "none": "尚未有供應",
+      "none": "尚未有線路",
       "first": "優先嘗試",
       "then": "備用 {{n}}",
-      "manage": "管理供應",
-      "failed": "順序載入失敗"
+      "manage": "管理線路",
+      "failed": "順序載入失敗",
+      "more_other": "+{{count}} 備用"
     }
   },
   "settingsUi": {
@@ -3286,12 +3287,12 @@
           "hint": "已有組織不受影響"
         },
         "supply-mode": {
-          "title": "預設供應模式",
-          "description": "沒有單獨設定的模型，同一檔裡的供應如何分擔請求",
-          "hint": "在模型的「供應」頁籤裡可以為單個模型另選"
+          "title": "預設分流方式",
+          "description": "沒有單獨設定的模型，同一檔裡的線路如何分擔請求",
+          "hint": "在模型的「線路」頁籤裡可以為單個模型另選"
         },
         "supply-pause-rules": {
-          "title": "供應暫停規則",
+          "title": "線路暫停規則",
           "description": "上游報錯時按規則暫停渠道或模型，到點測試通過後恢復",
           "hint": "關閉後回到舊的自動停用與冷卻"
         },
@@ -3352,7 +3353,7 @@
           "perStatus": "該狀態碼設定了單獨冷卻",
           "anyError": "任何錯誤",
           "times_other": "{{duration}} 內 {{count}} 次",
-          "retry": "改試下一條供應",
+          "retry": "改試下一條線路",
           "pause_channel": "暫停渠道 {{duration}}",
           "pause_model": "暫停該模型 {{duration}}",
           "pauseUntilReset_channel": "暫停渠道到重置時間",
@@ -3849,7 +3850,7 @@
     "anyTime": "不限時間",
     "withinDays_one": "近 {{count}} 天",
     "withinDays_other": "近 {{count}} 天",
-    "suppliedOnly": "有渠道能供應",
+    "suppliedOnly": "有渠道能提供",
     "openOnly": "開源",
     "hideAdded": "隱藏已加入",
     "hideDeprecated": "隱藏已棄用",
@@ -3865,12 +3866,12 @@
     "deprecated": "已棄用",
     "showMore": "再顯示 {{count}} 個",
     "selected": "已選 {{count}} 個",
-    "createSupplies": "為匹配到的渠道建供應",
+    "createSupplies": "為匹配到的渠道建立線路",
     "status": "狀態",
     "asDraft": "先不啟用",
     "asPublished": "直接啟用",
     "add": "添加 {{count}} 個",
-    "added": "已添加 {{count}} 個模型，建立了 {{supplies}} 條供應",
+    "added": "已添加 {{count}} 個模型，建立了 {{supplies}} 條線路",
     "unsureCount_one": "+{{count}} 待確認",
     "unsureCount_other": "+{{count}} 待確認",
     "excludedBefore": "之前取消過",
@@ -3995,7 +3996,7 @@
     "days": "發佈天數以內",
     "anyTime": "不限",
     "endpoints": "介面（任一）",
-    "supplied": "有渠道能供應",
+    "supplied": "有渠道能提供",
     "deprecated": "已棄用",
     "openWeights": "開源",
     "tri": {
@@ -4023,7 +4024,7 @@
       "retireDeprecated": "下架已棄用的模型",
       "previews": "預覽版加入但不啟用",
       "publishMain": "主流廠商的新模型直接啟用",
-      "otherSupplied": "其餘有渠道能供應的加入但不啟用"
+      "otherSupplied": "其餘有渠道能提供的加入但不啟用"
     }
   },
   "modelAccess": {
@@ -4177,7 +4178,7 @@
     "endpoints": "能力（任一）",
     "families": "系列",
     "patterns": "模型名稱",
-    "supplied": "已有其他渠道供應",
+    "supplied": "已有其他渠道提供",
     "action": "處理",
     "placement": "排位",
     "tri": {
@@ -4192,7 +4193,7 @@
       "skip": "不加入"
     },
     "placements": {
-      "auto": "已有供應就排最後",
+      "auto": "已有線路就排最後",
       "policy": "正常排位",
       "last": "總是排最後"
     },
@@ -4201,8 +4202,8 @@
       "families": "系列 {{list}}",
       "patterns": "名稱 {{list}}",
       "vendors": "廠商 #{{list}}",
-      "supplied": "已有其他渠道供應",
-      "unsupplied": "尚未有渠道供應",
+      "supplied": "已有其他渠道提供",
+      "unsupplied": "尚未有渠道提供",
       "any": "任何模型"
     },
     "defaultNote": "目前為內置規則，修改後會儲存為你自己的一份。",
@@ -4211,7 +4212,7 @@
     "useBuiltIn": "還原內置規則",
     "channel": {
       "label": "上新規則",
-      "hint": "決定哪些上游新模型直接啟用、哪些待確認，以及在其他渠道已供應的模型中排在哪個位置。",
+      "hint": "決定哪些上游新模型直接啟用、哪些待確認，以及在其他渠道已提供的模型中排在哪個位置。",
       "site": "使用全站規則",
       "custom": "本渠道自訂"
     }

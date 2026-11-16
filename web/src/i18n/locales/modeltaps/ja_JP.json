@@ -3018,7 +3018,8 @@
       "first": "最初に試す",
       "then": "予備 {{n}}",
       "manage": "供給を管理",
-      "failed": "順序を読み込めませんでした"
+      "failed": "順序を読み込めませんでした",
+      "more_other": "+{{count}} 予備"
     }
   },
   "settingsUi": {

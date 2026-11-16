@@ -3121,7 +3121,9 @@
       "first": "Tried first",
       "then": "Backup {{n}}",
       "manage": "Manage supplies",
-      "failed": "Could not load the order"
+      "failed": "Could not load the order",
+      "more_one": "+{{count}} backup",
+      "more_other": "+{{count}} backups"
     }
   },
   "settingsUi": {

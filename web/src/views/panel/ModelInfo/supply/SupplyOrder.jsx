@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 import ProviderIcon from '@/components/brand/ProviderIcon';
 import {
@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { previewSupplies } from './supplyApi';
-import { compactOrder, previewEntryState } from './supplyHelpers';
+import { leadOrder, orderText, previewEntryState } from './supplyHelpers';
 import { SupplyStateLabel } from './supplyParts';
 
 // Why a supply sits where it does, in words (reason and policy_tier from the preview API).
@@ -37,21 +37,22 @@ function Glyph({ entry }) {
 
 Glyph.propTypes = { entry: PropTypes.object.isRequired };
 
-// The model's supplies as provider icons in the order requests try them: tiers left to right
-// split by ›, providers that cannot take requests now greyed out.
+// The line that takes requests now as provider icons, then how many other lines back it up.
+// When the preferred lines are all down the icons are those of the backup now serving and the
+// count turns to the warning colour; when nothing can serve, the first tier shows greyed out.
 export function SupplyOrderGlyphs({ tiers }) {
-  const { tiers: shown, hidden } = compactOrder(tiers);
+  const { t } = useTranslation();
+  const { lead, rest, fallback, down } = leadOrder(tiers);
   return (
     <span className="inline-flex items-center gap-1">
-      {shown.map((tier, i) => (
-        <span key={i} className="inline-flex items-center gap-1">
-          {i > 0 && <ChevronRight aria-hidden className="size-3 text-muted-foreground" />}
-          {tier.map((entry) => (
-            <Glyph key={entry.type} entry={entry} />
-          ))}
-        </span>
+      {lead.map((entry) => (
+        <Glyph key={entry.type} entry={entry} />
       ))}
-      {hidden > 0 && <span className="text-xs tabular-nums text-muted-foreground">+{hidden}</span>}
+      {rest > 0 && (
+        <span className={cn('text-xs tabular-nums text-muted-foreground', (fallback || down) && 'text-warning')}>
+          {t('modelSupply.order.more', { count: rest })}
+        </span>
+      )}
     </span>
   );
 }
@@ -135,8 +136,8 @@ export default function SupplyOrder({ model, tiers, label, onManage, children })
     <DropdownMenu>
       <DropdownMenuTrigger
         type="button"
-        title={label}
-        aria-label={label}
+        title={[orderText(tiers), label].filter(Boolean).join(' · ')}
+        aria-label={[orderText(tiers), label].filter(Boolean).join(' · ')}
         className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md text-left hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {children}
