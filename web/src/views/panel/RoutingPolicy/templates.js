@@ -2,35 +2,36 @@
 // 标签用英文短词，决策模型回答时更稳定；描述是给决策模型看的，也用英文。
 export const POLICY_TEMPLATES = [
   {
-    id: 'coding_change_size',
-    question: 'The user is asking a coding agent for help. How large is the change they are asking for?',
+    // What a coding agent (Claude Code, Codex) is asked to do: reading and answering is cheap,
+    // planning a larger piece of work needs the strongest model.
+    id: 'agent_task',
+    question: 'This is the first thing a developer typed into a coding agent. What do they want the agent to do?',
     routes: [
-      {
-        label: 'additive',
-        description: 'Adds something new without changing existing behaviour: a log line, a flag, a test, a small helper'
-      },
-      { label: 'single_change', description: 'Changes existing behaviour in one place: fix a bug, adjust one function or component' },
-      { label: 'multi_change', description: 'Changes behaviour across several files or modules, or touches shared interfaces' },
-      { label: 'refactor', description: 'Restructures code without changing behaviour, or asks for design and architecture work' }
+      { label: 'explain', description: 'Read code or docs and answer a question about them; nothing is edited' },
+      { label: 'edit', description: 'Make a concrete, already decided change: add a flag, rename a field, write a test, update a config' },
+      { label: 'debug', description: 'Find out why something fails: an error message, a failing test, a crash or wrong output' },
+      { label: 'plan', description: 'Design or carry out a larger piece of work over many files: a new feature, a migration, an architecture change' }
     ]
   },
   {
-    id: 'support_triage',
-    question: 'This is the first message of a customer support conversation. What kind of request is it?',
+    // One general model name for a team: code goes to a coding model, prose to a writing model,
+    // numbers and tables to a model that is good at analysis.
+    id: 'content_type',
+    question: 'What is the main material of this request?',
     routes: [
-      { label: 'faq', description: 'A common question answered by documentation: pricing, hours, how to do a basic task' },
-      { label: 'account', description: 'Account or billing issue that needs looking up records or changing settings' },
-      { label: 'technical', description: 'A bug report or technical problem that needs diagnosis' },
-      { label: 'escalation', description: 'Complaint, legal or safety matter, or an angry customer that needs careful handling' }
+      { label: 'chat', description: 'Small talk or a short everyday question that needs no special skill' },
+      { label: 'writing', description: 'Drafting, rewriting, translating or summarising text such as an email, an article or a report' },
+      { label: 'code', description: 'Source code, shell commands, SQL or configuration files' },
+      { label: 'data', description: 'Numbers, tables, spreadsheets or calculations to analyse' }
     ]
   },
   {
-    id: 'reasoning_depth',
-    question: 'How much reasoning does answering this request need?',
+    // Requests where a wrong answer is costly go to the most careful model, the rest stay cheap.
+    id: 'stakes',
+    question: 'How costly would a wrong or careless answer to this request be?',
     routes: [
-      { label: 'lookup', description: 'A factual question, a definition, a translation or a short rewrite' },
-      { label: 'moderate', description: 'Needs some analysis or a few steps: summarising, comparing, writing a structured piece' },
-      { label: 'deep', description: 'Needs careful multi-step reasoning: maths, complex planning, tricky debugging, nuanced judgement' }
+      { label: 'routine', description: 'Everyday work where a small mistake is easy to notice and fix' },
+      { label: 'careful', description: 'Legal, medical, financial or security matters, or anything that will be sent to customers as is' }
     ]
   }
 ];

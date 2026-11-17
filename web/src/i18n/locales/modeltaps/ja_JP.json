@@ -1929,9 +1929,9 @@
       "nameHintOwn": "model に policy/<この名前>（例: policy/coder）を指定して呼び出します。"
     },
     "templates": {
-      "coding_change_size": "コーディング: 変更の大きさ",
-      "support_triage": "サポートの振り分け",
-      "reasoning_depth": "推論の深さ"
+      "agent_task": "コーディングエージェント: 作業の種類",
+      "content_type": "内容の種類: 会話・文章・コード・データ",
+      "stakes": "誤りのコスト"
     },
     "tryIt": {
       "intro": "保存済みのポリシーで判定ステップだけを実行します。転送も課金もセッション固定も行いません。",

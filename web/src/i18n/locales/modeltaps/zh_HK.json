@@ -1935,9 +1935,9 @@
       "nameHintOwn": "呼叫時 model 寫 policy/<這個名字>，如 policy/coder。"
     },
     "templates": {
-      "coding_change_size": "編碼：改動大小",
-      "support_triage": "客服分流",
-      "reasoning_depth": "推理深度"
+      "agent_task": "編程 Agent：任務類型",
+      "content_type": "內容類型：閒聊、寫作、程式碼、數據",
+      "stakes": "出錯代價"
     },
     "tryIt": {
       "intro": "只跑決策這一步，用的是已儲存的策略。不轉發、不計費、不寫會話固定記錄。",

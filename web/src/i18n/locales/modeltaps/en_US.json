@@ -2014,9 +2014,9 @@
       "nameHintOwn": "Call it with model set to policy/<this name>, e.g. policy/coder."
     },
     "templates": {
-      "coding_change_size": "Coding: size of change",
-      "support_triage": "Support triage",
-      "reasoning_depth": "Reasoning depth"
+      "agent_task": "Coding agent: kind of task",
+      "content_type": "Material: chat, writing, code or data",
+      "stakes": "Cost of a mistake"
     },
     "tryIt": {
       "intro": "Run the decision step only, with the saved policy. Nothing is forwarded, billed or pinned.",

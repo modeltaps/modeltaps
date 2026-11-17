@@ -475,6 +475,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- New routing policy templates: the kind of task for a coding agent (explain, edit, debug, plan),
+  the material of a request (chat, writing, code, data) and the cost of a mistake (routine,
+  careful). Existing policies are not changed. The routing guide explains labels, the fallback
+  model and the threshold in its own terms.
 - Channel types whose service has shut down (GitHub Models, 01.AI and Tencent Hunyuan on its old
   platform) are no longer offered for new channels. Existing channels of these types show a
   "Retired" attention item with the shutdown date and, for Hunyuan, where its models went
