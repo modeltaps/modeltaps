@@ -104,3 +104,21 @@ func TestUpdateKeepsOrPrunesDisabledModels(t *testing.T) {
 		t.Fatalf("pruned list = %v", *reloaded.DisabledModels)
 	}
 }
+
+func TestUpdateClearsNewModelsTheChannelNowLists(t *testing.T) {
+	useAllGroupsTestDB(t, "default")
+	channel := createGroupTestChannel(t, "c", "default", "a")
+	if err := channel.UpdateModelDrift(ModelDriftResult{NewModels: []string{"b", "vendor/c", "d"}}); err != nil {
+		t.Fatal(err)
+	}
+	mapping := `{"c":"vendor/c"}`
+	channel.Models = "a,b,c"
+	channel.ModelMapping = &mapping
+	if err := channel.Update(true); err != nil {
+		t.Fatal(err)
+	}
+	reloaded, _ := GetChannelById(channel.Id)
+	if got := reloaded.GetModelDrift().NewModels; !slices.Equal(got, []string{"d"}) {
+		t.Fatalf("new models after save = %v", got)
+	}
+}

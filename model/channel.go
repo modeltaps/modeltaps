@@ -730,6 +730,10 @@ func (channel *Channel) Update(overwrite bool) error {
 	err := channel.UpdateRaw(overwrite)
 
 	if err == nil {
+		// A new upstream model the admin added by hand is no longer new.
+		if err := channel.clearConfiguredNewModels(); err != nil {
+			logger.SysError("failed to clear new models of channel " + channel.Name + ": " + err.Error())
+		}
 		if old, ok := before[channel.Id]; ok {
 			if _, syncErr := SyncSuppliesWithChannel(channel.Id, old[0], channel.GetPriority(), old[1], channel.GetWeight()); syncErr != nil {
 				logger.SysError("failed to sync supplies of channel " + channel.Name + ": " + syncErr.Error())
@@ -846,6 +850,27 @@ func (channel *Channel) RemoveNewModels(names ...string) error {
 	}
 	result.NewModels = kept
 	return channel.UpdateModelDrift(*result)
+}
+
+// clearConfiguredNewModels takes the names the channel now lists off the drift check's new
+// models, by its own name or as a mapping target. Without this a model added by hand stayed
+// flagged as new, and removing it again before the next check had the check add it back.
+func (channel *Channel) clearConfiguredNewModels() error {
+	result := channel.GetModelDrift()
+	if result == nil || len(result.NewModels) == 0 {
+		return nil
+	}
+	mapping := channelMappingOf(channel)
+	var configured []string
+	for _, name := range strings.Split(channel.Models, ",") {
+		if name = strings.TrimSpace(name); name != "" {
+			configured = append(configured, name)
+			if up, ok := mapping[name]; ok {
+				configured = append(configured, up)
+			}
+		}
+	}
+	return channel.RemoveNewModels(configured...)
 }
 
 // AddDriftModels appends models to the channel's model list (deduplicated) and reloads the
