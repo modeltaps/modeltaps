@@ -2692,7 +2692,7 @@
           "percentage": "Percentage"
         },
         "rechargeRewardValue": {
-          "description": "Inviter rebate when an invited user tops up: a fixed quota for the fixed type, or a percentage of the recharge for the percentage type; 0 disables it",
+          "description": "Inviter rebate for an invited user's first paid top-up only (later top-ups and redemption codes earn nothing): a fixed quota for the fixed type, or a percentage of that top-up for the percentage type; 0 disables it",
           "fixedPlaceholder": "e.g., 2000",
           "label": "Recharge Reward Value",
           "percentagePlaceholder": "e.g., 10"
@@ -3402,7 +3402,7 @@
     "name": "Name",
     "nameTip": "Name for users",
     "promotion": "Auto Upgrade",
-    "promotionTip": "When enabled, users will automatically upgrade to this group when their recharge amount meets the min-max conditions.",
+    "promotionTip": "When enabled, users will automatically upgrade to this group when their total paid top-ups meet the min-max conditions. Gifted quota (sign-up and invite bonuses, redemption codes, admin adjustments) does not count.",
     "public": "Is it public?",
     "ratio": "magnification",
     "symbol": "Identification",

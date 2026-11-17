@@ -3,8 +3,6 @@ package model
 import (
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/limit"
-	"github.com/modeltaps/modeltaps/common/logger"
-	"fmt"
 	"sync"
 )
 
@@ -216,20 +214,21 @@ func (cgrm *UserGroupRatio) GetAPILimiter(symbol string) limit.RateLimiter {
 
 // CheckAndUpgradeUserGroup checks if a user's cumulative recharge amount falls within any promotion group's range
 // and upgrades the user to that group if a match is found.
-// The cumulative recharge amount is calculated as Quota + UsedQuota as stored in the users table, so call it
-// only after the recharge has been committed to users.quota. A recharge still queued by the batch updater
-// (IncreaseUserQuota with batch_update_enabled) is not counted.
+// The cumulative recharge amount is the quota the user has paid for (PaidTopUpQuota: the sum of the user's
+// credited orders), so gifted quota (sign-up and invite bonuses, redemption codes, admin adjustments) never
+// counts toward a promotion. Call it after a paid order has been credited (CreditPendingOrder).
 func CheckAndUpgradeUserGroup(userId int) error {
-	// Get user's current quota and used quota
 	user := &User{}
 	err := DB.Where("id = ?", userId).First(user).Error
 	if err != nil {
 		return err
 	}
 
-	// Calculate cumulative recharge amount
-	cumulativeAmount := user.Quota + user.UsedQuota
-	logger.SysLog(fmt.Sprintf("use:%f q:%f  cumulative:%f", (float64)(user.UsedQuota)/config.QuotaPerUnit, (float64)(user.Quota)/config.QuotaPerUnit, (float64)(cumulativeAmount)/config.QuotaPerUnit))
+	paidQuota, err := PaidTopUpQuota(userId)
+	if err != nil {
+		return err
+	}
+	cumulativeAmount := float64(paidQuota)
 	// Get all promotion-enabled user groups
 	var promotionGroups []*UserGroup
 	err = DB.Where("promotion = ? AND enable = ?", true, true).Find(&promotionGroups).Error
@@ -242,7 +241,7 @@ func CheckAndUpgradeUserGroup(userId int) error {
 	for _, group := range promotionGroups {
 		var minQuota = (float64)(group.Min) * config.QuotaPerUnit
 		var maxQuota = (float64)(group.Max) * config.QuotaPerUnit
-		if (float64)(cumulativeAmount) >= minQuota && (group.Max == 0 || (float64)(cumulativeAmount) < maxQuota) {
+		if cumulativeAmount >= minQuota && (group.Max == 0 || cumulativeAmount < maxQuota) {
 			// If multiple groups match, choose the one with higher min value
 			if targetGroup == nil || group.Min > targetGroup.Min {
 				targetGroup = group

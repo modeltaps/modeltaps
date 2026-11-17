@@ -271,13 +271,8 @@ func creditPaidOrder(c *gin.Context, payNotify *types.PayNotify, gatewayID int) 
 		logger.SysError(fmt.Sprintf("failed to check and upgrade user group, trade_no: %s, error: %s", payNotify.TradeNo, err.Error()))
 	}
 
+	// The inviter rebate, if this is the user's first paid top-up, was paid in CreditPendingOrder.
 	model.RecordQuotaLog(order.UserId, model.LogTypeTopup, order.Quota, c.ClientIP(), fmt.Sprintf("Online top-up successful, quota: %d, amount paid: %.2f %s", order.Quota, order.OrderAmount, order.OrderCurrency))
-
-	// 处理邀请人充值返利
-	err = model.ProcessInviterReward(order.UserId, order.Quota, c.ClientIP())
-	if err != nil {
-		logger.SysError(fmt.Sprintf("failed to process inviter reward, trade_no: %s, error: %s", payNotify.TradeNo, err.Error()))
-	}
 	return nil
 }
 

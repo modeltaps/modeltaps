@@ -619,6 +619,8 @@ func postMigrations() []*gormigrate.Migration {
 		migrateNotifyChannels(),
 		foldChannelDisableNotifyOption(),
 		migrateMailTemplateLanguages(),
+		backfillUserEmailCanonical(),
+		backfillUserFirstTopUp(),
 	}
 }
 

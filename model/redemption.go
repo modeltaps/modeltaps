@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
-	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/utils"
 
 	"time"
@@ -188,20 +187,9 @@ func Redeem(key string, userId int, ip string) (quota int, err error) {
 		return 0, fmt.Errorf("redemption failed: %w", err)
 	}
 
-	// Try to upgrade user group based on cumulative recharge amount
-	// (the transaction above has committed the redeemed quota to users.quota)
-	err = CheckAndUpgradeUserGroup(userId)
-	if err != nil {
-		logger.SysError("failed to check and upgrade user group: " + err.Error())
-	}
-
+	// Redeemed quota is not a paid top-up: nothing records a payment behind a code, so it neither
+	// counts toward group promotion nor earns the inviter a rebate (see CreditPendingOrder).
 	RecordQuotaLog(userId, LogTypeTopup, redemption.Quota, ip, fmt.Sprintf("Top-up of %s via redemption code", common.LogQuota(redemption.Quota)))
-
-	// 处理邀请人充值返利
-	err = ProcessInviterReward(userId, redemption.Quota, ip)
-	if err != nil {
-		logger.SysError("failed to process inviter reward for redemption: " + err.Error())
-	}
 
 	return redemption.Quota, nil
 }

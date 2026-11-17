@@ -15,6 +15,34 @@ func NormalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }
 
+// CanonicalEmail returns the form shared by every address that reaches the same mailbox, so one
+// mailbox cannot register several accounts (and collect their sign-up and invite bonuses). It
+// normalizes the address and drops a "+suffix" from the local part. Gmail also ignores dots in
+// the local part and treats googlemail.com as gmail.com, so for those two domains the dots are
+// dropped and the domain becomes gmail.com. An address without a usable "@" is only normalized.
+// The canonical form is for uniqueness checks only; mail is still sent to the address as entered.
+func CanonicalEmail(email string) string {
+	email = NormalizeEmail(email)
+	at := strings.LastIndex(email, "@")
+	if at <= 0 || at == len(email)-1 {
+		return email
+	}
+	local, domain := email[:at], email[at+1:]
+	if plus := strings.Index(local, "+"); plus >= 0 {
+		local = local[:plus]
+	}
+	if domain == "googlemail.com" {
+		domain = "gmail.com"
+	}
+	if domain == "gmail.com" {
+		local = strings.ReplaceAll(local, ".", "")
+	}
+	if local == "" {
+		return email
+	}
+	return local + "@" + domain
+}
+
 // ValidateEmailStrict 严格验证邮箱格式，防止恶意别名注册
 func ValidateEmailStrict(email string) error {
 	// 首先使用标准邮箱验证

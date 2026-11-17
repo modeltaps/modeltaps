@@ -1,6 +1,8 @@
 package model
 
 import (
+	"fmt"
+	"sync/atomic"
 	"testing"
 
 	"github.com/modeltaps/modeltaps/common/config"
@@ -25,7 +27,7 @@ func setupPromotionTestDB(t *testing.T) {
 		t.Fatalf("获取底层 DB 失败: %v", err)
 	}
 	sqlDB.SetMaxOpenConns(1)
-	if err := testDB.AutoMigrate(&User{}, &UserGroup{}, &Redemption{}, &Log{}); err != nil {
+	if err := testDB.AutoMigrate(&User{}, &UserGroup{}, &Redemption{}, &Log{}, &Order{}); err != nil {
 		t.Fatalf("迁移测试表失败: %v", err)
 	}
 	oldDB := DB
@@ -69,71 +71,111 @@ func userGroupSymbol(t *testing.T, userId int) string {
 	return group
 }
 
-// 充值先同步入账（批量更新关闭时 IncreaseUserQuota 直接写库），再判定晋级：累计充值 = 入账后的
-// quota + used_quota，本次充值只算一次。重复计入时 100 会被当成 200 直接进 gold。
-func TestCheckAndUpgradeUserGroupCountsCreditedRechargeOnce(t *testing.T) {
-	if config.BatchUpdateEnabled {
-		t.Fatal("本用例需要 IncreaseUserQuota 同步写库")
+// seedPromotionOrder writes an order of units dollars for the user in the given status.
+func seedPromotionOrder(t *testing.T, userId, units int, status OrderStatus) *Order {
+	t.Helper()
+	order := &Order{
+		UserId:  userId,
+		TradeNo: fmt.Sprintf("promo-%d-%d-%s-%d", userId, units, status, promotionOrderSeq.Add(1)),
+		Amount:  units,
+		Quota:   promotionQuota(units),
+		Status:  status,
 	}
+	if err := DB.Create(order).Error; err != nil {
+		t.Fatalf("create order: %v", err)
+	}
+	return order
+}
+
+var promotionOrderSeq atomic.Int64
+
+// Promotion counts only credited orders: gifted balance and used quota (sign-up and invite
+// bonuses, admin grants) never count, nor do orders that were not paid.
+func TestCheckAndUpgradeUserGroupCountsPaidOrdersOnly(t *testing.T) {
 	cases := []struct {
 		name            string
-		quota, used     int // 充值前的余额与已用额度（单位：美元）
-		recharge        int
+		gifted, used    int   // balance and used quota not bought through orders (dollars)
+		paid            []int // credited orders (dollars)
+		unpaid          []int // pending, failed and closed orders (dollars)
 		wantGroupSymbol string
 	}{
-		{"first recharge of 100 lands in silver", 0, 0, 100, "silver"},
-		{"recharge below every min keeps the group", 0, 0, 40, "default"},
-		{"used quota counts toward the total", 0, 60, 90, "gold"},
-		{"just under max stays in silver", 10, 39, 100, "silver"},
-		{"max is exclusive", 20, 30, 100, "gold"},
-		{"max 0 has no upper bound", 0, 900, 100, "gold"},
+		{"gifted quota alone never promotes", 1000, 0, nil, nil, "default"},
+		{"used gifted quota alone never promotes", 0, 1000, nil, nil, "default"},
+		{"unpaid orders do not count", 0, 0, nil, []int{100, 100}, "default"},
+		{"a paid order of 100 lands in silver", 500, 500, []int{100}, nil, "silver"},
+		{"paid below every min keeps the group", 900, 0, []int{40}, []int{200}, "default"},
+		{"paid orders add up", 0, 0, []int{60, 90}, nil, "gold"},
+		{"just under max stays in silver", 0, 0, []int{149}, []int{1}, "silver"},
+		{"max is exclusive", 0, 0, []int{150}, nil, "gold"},
+		{"max 0 has no upper bound", 0, 0, []int{1000}, nil, "gold"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			setupPromotionTestDB(t)
 			seedPromotionGroups(t)
 			const userId = 7
-			seedPromotionUser(t, userId, promotionQuota(tc.quota), promotionQuota(tc.used))
-
-			if err := IncreaseUserQuota(userId, promotionQuota(tc.recharge)); err != nil {
-				t.Fatalf("入账失败: %v", err)
+			seedPromotionUser(t, userId, promotionQuota(tc.gifted), promotionQuota(tc.used))
+			for _, units := range tc.paid {
+				seedPromotionOrder(t, userId, units, OrderStatusSuccess)
 			}
+			for i, units := range tc.unpaid {
+				status := []OrderStatus{OrderStatusPending, OrderStatusFailed, OrderStatusClosed}[i%3]
+				seedPromotionOrder(t, userId, units, status)
+			}
+
 			if err := CheckAndUpgradeUserGroup(userId); err != nil {
-				t.Fatalf("判定晋级失败: %v", err)
+				t.Fatalf("check promotion: %v", err)
 			}
 			if got := userGroupSymbol(t, userId); got != tc.wantGroupSymbol {
-				t.Fatalf("累计充值 %d 后分组应为 %q，got %q",
-					tc.quota+tc.used+tc.recharge, tc.wantGroupSymbol, got)
+				t.Fatalf("group = %q, want %q", got, tc.wantGroupSymbol)
 			}
 		})
 	}
 }
 
-// 兑换码在同一事务里加额度并提交后才判定晋级：第一次兑换 100 进 silver 而不是 gold，
-// 再兑换 50 累计 150 才进 gold。
-func TestRedeemPromotesOnRedeemedQuotaOnce(t *testing.T) {
+// A credited order counts once toward the promotion: paying 100 lands in silver, not gold.
+func TestCreditPendingOrderPromotesOnPaidQuotaOnce(t *testing.T) {
+	setupPromotionTestDB(t)
+	seedPromotionGroups(t)
+	const userId = 9
+	seedPromotionUser(t, userId, 0, 0)
+
+	for _, step := range []struct {
+		units           int
+		wantGroupSymbol string
+	}{
+		{100, "silver"},
+		{50, "gold"},
+	} {
+		order := seedPromotionOrder(t, userId, step.units, OrderStatusPending)
+		credited, err := CreditPendingOrder(order, "gw-"+order.TradeNo)
+		if err != nil || !credited {
+			t.Fatalf("credit order of %d: credited=%v err=%v", step.units, credited, err)
+		}
+		if err := CheckAndUpgradeUserGroup(userId); err != nil {
+			t.Fatalf("check promotion: %v", err)
+		}
+		if got := userGroupSymbol(t, userId); got != step.wantGroupSymbol {
+			t.Fatalf("after paying %d, group = %q, want %q", step.units, got, step.wantGroupSymbol)
+		}
+	}
+}
+
+// Redemption codes are not paid top-ups: redeeming any amount leaves the group as it is.
+func TestRedeemDoesNotPromote(t *testing.T) {
 	setupPromotionTestDB(t)
 	seedPromotionGroups(t)
 	const userId = 8
 	seedPromotionUser(t, userId, 0, 0)
 
-	for _, step := range []struct {
-		key             string
-		units           int
-		wantGroupSymbol string
-	}{
-		{"PROMOTIONCODE0000000000000000100", 100, "silver"},
-		{"PROMOTIONCODE0000000000000000050", 50, "gold"},
-	} {
-		code := &Redemption{Key: step.key, Status: config.RedemptionCodeStatusEnabled, Quota: promotionQuota(step.units)}
-		if err := DB.Create(code).Error; err != nil {
-			t.Fatalf("创建兑换码失败: %v", err)
-		}
-		if _, err := Redeem(step.key, userId, "127.0.0.1"); err != nil {
-			t.Fatalf("兑换 %d 失败: %v", step.units, err)
-		}
-		if got := userGroupSymbol(t, userId); got != step.wantGroupSymbol {
-			t.Fatalf("兑换 %d 后分组应为 %q，got %q", step.units, step.wantGroupSymbol, got)
-		}
+	code := &Redemption{Key: "PROMOTIONCODE0000000000000000500", Status: config.RedemptionCodeStatusEnabled, Quota: promotionQuota(500)}
+	if err := DB.Create(code).Error; err != nil {
+		t.Fatalf("create redemption code: %v", err)
+	}
+	if _, err := Redeem(code.Key, userId, "127.0.0.1"); err != nil {
+		t.Fatalf("redeem: %v", err)
+	}
+	if got := userGroupSymbol(t, userId); got != "default" {
+		t.Fatalf("after redeeming 500, group = %q, want default", got)
 	}
 }

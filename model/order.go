@@ -73,8 +73,12 @@ func (o *Order) Update() error {
 // 同成同败——加额度失败时订单仍是 pending，网关重发的通知可以再次入账。
 // 置 success 用 status = pending 条件更新，即使跨进程并发也只有一次转换生效；
 // 返回 false 表示订单已不是 pending（已入账或已关闭），本次没有入账。
+//
+// The same transaction claims the user's first paid top-up (claimFirstTopUp) and, if this order
+// is it, pays the inviter rebate: later orders, and gifted quota of any kind, earn no rebate.
 func CreditPendingOrder(order *Order, gatewayNo string) (bool, error) {
 	credited := false
+	var rebate *inviterRebate
 	err := DB.Transaction(func(tx *gorm.DB) error {
 		result := tx.Model(&Order{}).
 			Where("id = ? AND status = ?", order.ID, OrderStatusPending).
@@ -88,6 +92,15 @@ func CreditPendingOrder(order *Order, gatewayNo string) (bool, error) {
 		if err := IncreaseUserQuotaWithTx(tx, order.UserId, order.Quota); err != nil {
 			return err
 		}
+		first, err := claimFirstTopUp(tx, order.UserId)
+		if err != nil {
+			return err
+		}
+		if first {
+			if rebate, err = payFirstTopUpRebateWithTx(tx, order.UserId, order.Quota); err != nil {
+				return err
+			}
+		}
 		credited = true
 		return nil
 	})
@@ -99,7 +112,20 @@ func CreditPendingOrder(order *Order, gatewayNo string) (bool, error) {
 	if config.RedisEnabled {
 		redis.RedisDel(fmt.Sprintf(UserQuotaCacheKey, order.UserId))
 	}
+	rebate.settle()
 	return true, nil
+}
+
+// PaidTopUpQuota returns the quota the user has bought through the payment gateways: the sum of
+// the user's credited orders. Gifted quota (sign-up and invite bonuses, redemption codes, admin
+// adjustments) is not included.
+func PaidTopUpQuota(userId int) (int64, error) {
+	var total int64
+	err := DB.Model(&Order{}).
+		Where("user_id = ? AND status = ?", userId, OrderStatusSuccess).
+		Select("COALESCE(SUM(quota), 0)").
+		Scan(&total).Error
+	return total, err
 }
 
 var allowedOrderFields = map[string]bool{

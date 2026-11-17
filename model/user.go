@@ -103,8 +103,13 @@ type User struct {
 	// email claim 写入时为 true；管理员后台直接改写等不经验证的写入一律为 false。
 	// 账号安全页的「已验证」角标与按已验证邮箱自动关联（link_by_verified_email）都以它为准，
 	// 故它只能由服务端授予：任何来自请求体的 email_verified 都不得采信。
-	EmailVerified bool   `json:"email_verified" gorm:"type:boolean;default:false;column:email_verified"`
-	AvatarUrl     string `json:"avatar_url" gorm:"type:varchar(500);column:avatar_url;default:''"`
+	EmailVerified bool `json:"email_verified" gorm:"type:boolean;default:false;column:email_verified"`
+	// EmailCanonical is common.CanonicalEmail(Email), kept next to Email wherever Email is written,
+	// so addresses reaching the same mailbox (a.b@gmail.com, ab+1@gmail.com) count as one when
+	// checking whether an email is taken. It is not a unique constraint, since existing accounts
+	// may already share a mailbox; the checks are done in code. Never shown or used to send mail.
+	EmailCanonical string `json:"-" gorm:"type:varchar(255);column:email_canonical;index;default:''"`
+	AvatarUrl      string `json:"avatar_url" gorm:"type:varchar(500);column:avatar_url;default:''"`
 	// PhoneNumber 来源是 IdP 下发的已验证 phone_number claim，用户不可自改。
 	// 它同时是可关联标识：同一已验证手机号只能归属一个账号（提供方开启
 	// link_by_verified_phone 时据此关联），故加唯一索引；空值以 NULL 落库，
@@ -137,6 +142,10 @@ type User struct {
 	Type              int            `json:"type" gorm:"type:int;default:0;index"` // 0=普通用户 1=组织影子记账账户(见 config.UserTypeOrgShadow)
 	CreatedTime       int64          `json:"created_time" gorm:"bigint"`
 	DeletedAt         gorm.DeletedAt `json:"-" gorm:"index"`
+	// FirstTopUpTime is when the user's first paid order was credited, 0 until then. It is
+	// claimed with a conditional update in the crediting transaction, so exactly one order is
+	// the first even under concurrent payment callbacks; only that order pays the inviter rebate.
+	FirstTopUpTime int64 `json:"-" gorm:"type:bigint;default:0;column:first_top_up_time"`
 
 	Setting database.JSONType[UserSetting] `json:"setting" gorm:"type:json"`
 }
@@ -406,10 +415,11 @@ func (user *User) Insert(inviterId int) error {
 		if err := common.ValidateEmailStrict(string(user.Email)); err != nil {
 			return common.NewAPIError(common.APICodeInvalidEmail, "invalid email format", nil)
 		}
-		if RecordExists(&User{}, "email", string(user.Email), nil) {
+		if emailInUse(DB, string(user.Email), 0) {
 			return common.NewAPIError(common.APICodeEmailTaken, "this email is already in use", nil)
 		}
 	}
+	user.EmailCanonical = common.CanonicalEmail(string(user.Email))
 	var err error
 	if user.Password != "" {
 		user.Password, err = common.Password2Hash(user.Password)
@@ -464,10 +474,11 @@ func (user *User) insertWithTx(tx *gorm.DB, inviterId int, grantSignupBonus bool
 		if err := common.ValidateEmailStrict(string(user.Email)); err != nil {
 			return common.NewAPIError(common.APICodeInvalidEmail, "invalid email format", nil)
 		}
-		if RecordExistsWithTx(tx, &User{}, "email", string(user.Email), nil) {
+		if emailInUse(tx, string(user.Email), 0) {
 			return common.NewAPIError(common.APICodeEmailTaken, "this email is already in use", nil)
 		}
 	}
+	user.EmailCanonical = common.CanonicalEmail(string(user.Email))
 	var err error
 	if user.Password != "" {
 		user.Password, err = common.Password2Hash(user.Password)
@@ -504,7 +515,7 @@ func (user *User) insertWithTx(tx *gorm.DB, inviterId int, grantSignupBonus bool
 
 func (user *User) Update(updatePassword bool) error {
 	var err error
-	omitFields := []string{"quota", "used_quota", "request_count", "aff_count", "aff_quota", "aff_history"}
+	omitFields := []string{"quota", "used_quota", "request_count", "aff_count", "aff_quota", "aff_history", "first_top_up_time"}
 
 	if updatePassword {
 		user.Password, err = common.Password2Hash(user.Password)
@@ -516,9 +527,17 @@ func (user *User) Update(updatePassword bool) error {
 	}
 
 	user.Email = NullableEmail(common.NormalizeEmail(string(user.Email)))
-	if user.Email != "" && RecordExists(&User{}, "email", string(user.Email), user.Id) {
-		return common.NewAPIError(common.APICodeEmailTaken, "this email is already in use", nil)
+	if user.Email != "" {
+		if RecordExists(&User{}, "email", string(user.Email), user.Id) {
+			return common.NewAPIError(common.APICodeEmailTaken, "this email is already in use", nil)
+		}
+		// The mailbox check runs only when the address changes: accounts that already shared a
+		// mailbox before canonical emails were checked must stay editable.
+		if user.emailChanged() && emailInUse(DB, string(user.Email), user.Id) {
+			return common.NewAPIError(common.APICodeEmailTaken, "this email is already in use", nil)
+		}
 	}
+	user.EmailCanonical = common.CanonicalEmail(string(user.Email))
 
 	err = DB.Model(user).Omit(omitFields...).Updates(user).Error
 
@@ -535,6 +554,15 @@ func (user *User) Update(updatePassword bool) error {
 }
 
 func UpdateUser(id int, fields map[string]interface{}) error {
+	if email, ok := fields["email"]; ok {
+		// Keep email_canonical in step with email, without changing the caller's map.
+		withCanonical := make(map[string]interface{}, len(fields)+1)
+		for k, v := range fields {
+			withCanonical[k] = v
+		}
+		withCanonical["email_canonical"] = common.CanonicalEmail(emailFieldString(email))
+		fields = withCanonical
+	}
 	err := DB.Model(&User{}).Where("id = ?", id).Updates(fields).Error
 	if err != nil {
 		return err
@@ -623,10 +651,11 @@ func (user *User) Delete() error {
 	// 邮箱没了，「已验证」也就无从谈起，一并复位。
 	// 需显式写列：Update 走 Updates(struct)，空串与 false 都是零值会被 GORM 跳过。
 	if err := DB.Model(&User{}).Where("id = ?", user.Id).
-		Updates(map[string]interface{}{"email": nil, "phone_number": nil, "email_verified": false}).Error; err != nil {
+		Updates(map[string]interface{}{"email": nil, "email_canonical": "", "phone_number": nil, "email_verified": false}).Error; err != nil {
 		return err
 	}
 	user.Email = ""
+	user.EmailCanonical = ""
 	user.EmailVerified = false
 	user.PhoneNumber = ""
 
@@ -870,12 +899,59 @@ func IsUsernameAlreadyTaken(username string) bool {
 	return IsFieldAlreadyTaken("username", username)
 }
 
+// IsEmailAlreadyTaken reports whether an account already holds email or another address of the
+// same mailbox (see common.CanonicalEmail).
 func IsEmailAlreadyTaken(email string) bool {
 	email = common.NormalizeEmail(email)
 	if email == "" {
 		return false
 	}
-	return IsFieldAlreadyTaken("email", email)
+	return emailInUse(DB, email, 0)
+}
+
+// emailInUse reports whether an account other than excludeId (0 for none) holds email or an
+// address with the same canonical form. email must already be normalized. Soft-deleted accounts
+// do not count: User.Delete clears their email.
+func emailInUse(tx *gorm.DB, email string, excludeId int) bool {
+	query := tx.Model(&User{}).Where("email = ? OR email_canonical = ?", email, common.CanonicalEmail(email))
+	if excludeId != 0 {
+		query = query.Where("id <> ?", excludeId)
+	}
+	var count int64
+	query.Limit(1).Count(&count)
+	return count > 0
+}
+
+// emailChanged reports whether user.Email (normalized) differs from the stored address. A user
+// that is not stored yet counts as changed.
+func (user *User) emailChanged() bool {
+	if user.Id == 0 {
+		return true
+	}
+	var stored []sql.NullString
+	if err := DB.Model(&User{}).Where("id = ?", user.Id).Pluck("email", &stored).Error; err != nil || len(stored) == 0 {
+		return true
+	}
+	return common.NormalizeEmail(stored[0].String) != string(user.Email)
+}
+
+// emailFieldString reads an "email" value of an update map: NullableEmail, string or nil.
+func emailFieldString(value interface{}) string {
+	switch v := value.(type) {
+	case NullableEmail:
+		return string(v)
+	case *NullableEmail:
+		if v != nil {
+			return string(*v)
+		}
+	case string:
+		return v
+	case *string:
+		if v != nil {
+			return *v
+		}
+	}
+	return ""
 }
 
 // IsPhoneAlreadyTaken 手机号是否已归属某个账号。空手机号永不算被占用（多个账号可无手机号）。
@@ -1269,62 +1345,76 @@ func ChangeUserQuota(id int, quota int, isRecharge bool) (err error) {
 	return nil
 }
 
-// ProcessInviterReward 处理邀请人的充值返利
-func ProcessInviterReward(userId int, rechargeQuota int, ip string) error {
-	// 获取用户信息，查看是否有邀请人
-	user := &User{}
-	err := DB.Where("id = ?", userId).First(user).Error
-	if err != nil {
-		return err
+// inviterRebate is a rebate paid to an inviter inside a crediting transaction. It is logged, and
+// the inviter's cached quota cleared, once that transaction has committed.
+type inviterRebate struct {
+	inviterId int
+	quota     int
+	message   string
+}
+
+// claimFirstTopUp records that the order being credited in tx is the user's first paid top-up.
+// It returns true only for the call that set first_top_up_time: the update is conditional on the
+// column still being 0, so of two concurrent callbacks for the user's first two orders only one
+// claims it (the other waits on the row lock and then matches no row).
+func claimFirstTopUp(tx *gorm.DB, userId int) (bool, error) {
+	result := tx.Model(&User{}).
+		Where("id = ? AND first_top_up_time = ?", userId, 0).
+		Update("first_top_up_time", utils.GetTimestamp())
+	if result.Error != nil {
+		return false, result.Error
 	}
+	return result.RowsAffected == 1, nil
+}
 
-	// 如果没有邀请人，直接返回
-	if user.InviterId == 0 {
-		return nil
+// payFirstTopUpRebateWithTx pays the inviter of userId the rebate for the user's first paid
+// top-up of rechargeQuota, as set by InviterRewardType and InviterRewardValue. Only the first
+// paid top-up earns a rebate, so the caller must have won claimFirstTopUp in the same
+// transaction. Returns nil when no rebate is due (no inviter, or the rebate is off).
+func payFirstTopUpRebateWithTx(tx *gorm.DB, userId int, rechargeQuota int) (*inviterRebate, error) {
+	if config.InviterRewardValue <= 0 || config.InviterRewardType == "" {
+		return nil, nil
 	}
-
-	// 如果奖励值为0或奖励类型为空，直接返回
-	if config.InviterRewardValue == 0 || config.InviterRewardType == "" {
-		return nil
+	var inviterIds []int
+	if err := tx.Model(&User{}).Where("id = ?", userId).Pluck("inviter_id", &inviterIds).Error; err != nil {
+		return nil, err
 	}
-
-	var rewardQuota int
-	var logMessage string
-
+	if len(inviterIds) == 0 || inviterIds[0] == 0 {
+		return nil, nil
+	}
+	rebate := &inviterRebate{inviterId: inviterIds[0]}
 	if config.InviterRewardType == "percentage" {
-		// 百分比奖励
-		rewardQuota = common.QuotaFromFloat(float64(rechargeQuota) * float64(config.InviterRewardValue) / 100.0)
-		logMessage = fmt.Sprintf("Referral top-up reward of %s \n\n (top-up amount: %s, reward rate: %d%%)",
-			common.LogQuota(rewardQuota),
+		rebate.quota = common.QuotaFromFloat(float64(rechargeQuota) * float64(config.InviterRewardValue) / 100.0)
+		rebate.message = fmt.Sprintf("Referral reward of %s for an invited user's first top-up \n\n (top-up amount: %s, reward rate: %d%%)",
+			common.LogQuota(rebate.quota),
 			common.LogQuota(rechargeQuota),
 			config.InviterRewardValue)
 	} else {
-		// 固定奖励
-		rewardQuota = config.InviterRewardValue
-		logMessage = fmt.Sprintf("Referral top-up reward of %s (fixed reward)",
-			common.LogQuota(rewardQuota))
+		rebate.quota = config.InviterRewardValue
+		rebate.message = fmt.Sprintf("Referral reward of %s for an invited user's first top-up (fixed reward)",
+			common.LogQuota(rebate.quota))
 	}
-
-	if rewardQuota <= 0 {
-		return nil
+	if rebate.quota <= 0 {
+		return nil, nil
 	}
-
-	// 给邀请人增加额度
-	err = IncreaseUserQuota(user.InviterId, rewardQuota)
-	if err != nil {
-		return err
+	if err := tx.Model(&User{}).Where("id = ?", rebate.inviterId).Updates(map[string]interface{}{
+		"quota":     gorm.Expr("quota + ?", rebate.quota),
+		"aff_quota": gorm.Expr("aff_quota + ?", rebate.quota),
+	}).Error; err != nil {
+		return nil, err
 	}
+	return rebate, nil
+}
 
-	// 更新邀请人的aff_quota
-	err = DB.Model(&User{}).Where("id = ?", user.InviterId).Update("aff_quota", gorm.Expr("aff_quota + ?", rewardQuota)).Error
-	if err != nil {
-		logger.SysError("failed to update inviter aff_quota: " + err.Error())
+// settle runs the side effects of a committed rebate: drop the inviter's cached quota and log it.
+func (rebate *inviterRebate) settle() {
+	if rebate == nil {
+		return
 	}
-
-	// 记录日志
-	RecordLog(user.InviterId, LogTypeSystem, logMessage)
-
-	return nil
+	if config.RedisEnabled {
+		redis.RedisDel(fmt.Sprintf(UserQuotaCacheKey, rebate.inviterId))
+	}
+	RecordLog(rebate.inviterId, LogTypeSystem, rebate.message)
 }
 
 // WebAuthn 相关方法，实现 webauthn.User 接口
