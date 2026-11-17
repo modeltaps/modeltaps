@@ -3,8 +3,9 @@ import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router';
-import { Boxes, CalendarClock, ChevronDown, KeyRound, Loader2, Wallet, X } from 'lucide-react';
+import { Boxes, CalendarClock, ChevronDown, KeyRound, Loader2, TriangleAlert, Wallet, X } from 'lucide-react';
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
@@ -34,6 +35,10 @@ import { recognizeClient } from './agentClient';
 //            client, network and time of the request; whose key it is and what it may do
 //   done     approved: follows the request until the agent has its key; denied; or it ran out
 //
+// Whoever answers a code first decides whose key the agent gets, and a code can leak or be sent by
+// a phisher (SEC-73). So the key expires by default, and a key without a spending limit or without
+// an expiry is approved only after a second, explicit confirmation.
+//
 // The key is created on approval; the agent receives its secret on its next poll, so it never
 // shows up here.
 
@@ -42,6 +47,13 @@ const NO_PARENTS = [];
 // Approve stays off for a moment after the request shows, so a click meant for something else
 // (or a page layered over this one) cannot land on it.
 export const APPROVE_DELAY_MS = 1000;
+// A key handed to an agent expires unless the user chooses otherwise.
+export const DEFAULT_EXPIRY = 'month';
+
+// What makes a key open-ended: no spending limit, no expiry. Approving one needs a second click.
+export function openEndedParts(form) {
+  return { quota: form.quota === '' || form.quota == null, expiry: form.expiry === 'never' };
+}
 
 // "abcd efgh" → "ABCD-EFGH"; anything else is passed on as typed and refused by the server.
 export function formatUserCode(raw) {
@@ -121,17 +133,22 @@ export default function AgentDevice() {
   const [confirmed, setConfirmed] = useState(false);
   const [lookupError, setLookupError] = useState('');
   const [looking, setLooking] = useState(Boolean(linkCode));
-  const [form, setForm] = useState({ owner: PERSONAL, name: '', quota: '', expiry: 'never', models: [] });
+  const [form, setForm] = useState({ owner: PERSONAL, name: '', quota: '', expiry: DEFAULT_EXPIRY, models: [] });
   const [editing, setEditing] = useState(false);
   const [nameError, setNameError] = useState('');
   const [busy, setBusy] = useState(null); // 'approve' | 'deny'
+  // Approve was clicked on an open-ended key: the warning shows and the next click approves.
+  const [warned, setWarned] = useState(false);
   const [done, setDone] = useState(null); // { approved: bool, name }
   const [models, setModels] = useState([]);
   const [orgLimits, setOrgLimits] = useState({ owner: null, parents: [] });
   const now = useNow(Boolean(request));
   const secondsLeft = request ? Math.max(0, Math.round(request.expires_at - now / 1000)) : null;
   const expired = request && secondsLeft === 0;
-  const armed = useArmed(confirmed ? request?.user_code : null, APPROVE_DELAY_MS);
+  const openEnded = openEndedParts(form);
+  const confirmingOpenEnded = warned && (openEnded.quota || openEnded.expiry);
+  // The warning re-arms Approve, so a double click cannot pass through it.
+  const armed = useArmed(confirmed && request ? `${request.user_code}${confirmingOpenEnded ? ':open' : ''}` : null, APPROVE_DELAY_MS);
 
   const owners = useMemo(
     () => [
@@ -210,6 +227,7 @@ export default function AgentDevice() {
     setLookupError('');
     setEditing(false);
     setNameError('');
+    setWarned(false);
   };
 
   const answer = async (approve) => {
@@ -222,6 +240,10 @@ export default function AgentDevice() {
       if (quota.error) {
         setEditing(true);
         showError(quota.error);
+        return;
+      }
+      if ((openEnded.quota || openEnded.expiry) && !confirmingOpenEnded) {
+        setWarned(true);
         return;
       }
       const setting = structuredClone(DEFAULT_SETTING);
@@ -472,14 +494,26 @@ export default function AgentDevice() {
           )}
         </CardSection>
 
-        <div className="grid grid-cols-2 gap-3 border-t border-border/60 px-5 py-4 sm:px-6">
+        {confirmingOpenEnded && (
+          <div className="border-t border-border/60 px-5 pt-4 sm:px-6">
+            <Alert variant="warning" data-testid="device-open-ended">
+              <TriangleAlert />
+              <AlertTitle>{t('agentDevice.openEndedTitle')}</AlertTitle>
+              <AlertDescription>
+                {openEnded.quota && <p>{t('agentDevice.openEndedQuota')}</p>}
+                {openEnded.expiry && <p>{t('agentDevice.openEndedExpiry')}</p>}
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+        <div className={cn('grid grid-cols-2 gap-3 px-5 py-4 sm:px-6', !confirmingOpenEnded && 'border-t border-border/60')}>
           <Button type="button" variant="outline" className="h-10" onClick={() => answer(false)} disabled={Boolean(busy)}>
             {busy === 'deny' && <Loader2 className="size-4 animate-spin" />}
             {t('agentDevice.deny')}
           </Button>
           <Button type="button" className="h-10" onClick={() => answer(true)} disabled={Boolean(busy) || !armed}>
             {busy === 'approve' && <Loader2 className="size-4 animate-spin" />}
-            {t('agentDevice.approve')}
+            {t(confirmingOpenEnded ? 'agentDevice.approveAnyway' : 'agentDevice.approve')}
           </Button>
         </div>
       </div>

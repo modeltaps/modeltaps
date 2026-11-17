@@ -4621,7 +4621,11 @@
     "orgAccountPlain": "組織",
     "searchAccounts": "アカウントを検索",
     "noAccountMatch": "一致するアカウントはありません",
-    "linkTitle": "「{{client}}」があなたのアカウントへの接続を求めています"
+    "linkTitle": "「{{client}}」があなたのアカウントへの接続を求めています",
+    "openEndedTitle": "制限のないキーを承認しますか？",
+    "openEndedQuota": "利用上限なし：エージェントはアカウントの残高をすべて使えます。",
+    "openEndedExpiry": "期限なし：削除するまでこのキーは有効なままです。",
+    "approveAnyway": "このまま承認"
   },
   "login": {
     "oidcLinkPrivileged": "これは管理者アカウントのため、新しいログイン方法を自動で関連付けることはできません。先にこのアカウントにログインしてアカウント設定から関連付けるか、サイトの管理責任者にお問い合わせください。"

@@ -40,7 +40,9 @@ func respondAgentError(c *gin.Context, status int, code, message string) {
 	})
 }
 
-// respondAgentKey answers an agent with its API key: the only response that carries it.
+// respondAgentKey answers an agent with its API key: the only response that carries it. The
+// answer names the account the key belongs to, for the agent to show: whoever answers a leaked
+// user code first gets to choose it, and the agent cannot tell otherwise (SEC-73).
 func respondAgentKey(c *gin.Context, token *model.Token) {
 	c.Header("Cache-Control", "no-store")
 	c.Header("Pragma", "no-cache")
@@ -53,6 +55,7 @@ func respondAgentKey(c *gin.Context, token *model.Token) {
 		"key_hint":     token.KeyHint,
 		// Unix seconds, -1 = never.
 		"expires_at": token.ExpiredTime,
+		"account":    model.AgentKeyAccountOf(token),
 	})
 }
 

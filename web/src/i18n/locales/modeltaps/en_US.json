@@ -4739,7 +4739,11 @@
     "orgAccountPlain": "Organization",
     "searchAccounts": "Search accounts",
     "noAccountMatch": "No account matches",
-    "linkTitle": "“{{client}}” wants to connect to your account"
+    "linkTitle": "“{{client}}” wants to connect to your account",
+    "openEndedTitle": "Approve a key without limits?",
+    "openEndedQuota": "No spending limit: the agent can spend up to the account's whole balance.",
+    "openEndedExpiry": "Never expires: the key keeps working until you delete it.",
+    "approveAnyway": "Approve anyway"
   },
   "login": {
     "oidcLinkPrivileged": "This is an admin account, so a new sign-in can't be linked to it automatically. Sign in to the account first and link it from your account settings, or contact the site owner."

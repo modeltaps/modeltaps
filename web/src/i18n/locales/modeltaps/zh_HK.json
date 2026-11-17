@@ -4629,6 +4629,10 @@
     "orgAccountPlain": "組織",
     "searchAccounts": "搜尋帳戶",
     "noAccountMatch": "沒有相符的帳戶",
-    "linkTitle": "「{{client}}」想連接你的帳戶"
+    "linkTitle": "「{{client}}」想連接你的帳戶",
+    "openEndedTitle": "確定批准一把不設限的 Key？",
+    "openEndedQuota": "沒有額度上限：Agent 最多可以用完這個帳戶的全部餘額。",
+    "openEndedExpiry": "永不過期：這把 Key 會一直有效，直到你刪除它。",
+    "approveAnyway": "仍然批准"
   }
 }

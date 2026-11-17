@@ -4629,6 +4629,10 @@
     "orgAccountPlain": "组织",
     "searchAccounts": "搜索账号",
     "noAccountMatch": "没有匹配的账号",
-    "linkTitle": "“{{client}}” 想连接你的账号"
+    "linkTitle": "“{{client}}” 想连接你的账号",
+    "openEndedTitle": "确定批准一把不设限的 Key？",
+    "openEndedQuota": "没有额度上限：Agent 最多可以用掉这个账号的全部余额。",
+    "openEndedExpiry": "永不过期：这把 Key 会一直有效，直到你删除它。",
+    "approveAnyway": "仍然批准"
   }
 }

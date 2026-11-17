@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import i18n from 'i18n/i18n';
 import { API } from 'utils/api';
-import AgentDevice, { formatUserCode } from './index';
+import AgentDevice, { formatUserCode, openEndedParts } from './index';
 import { recognizeClient } from './agentClient';
 import OwnerPicker, { PERSONAL, orderOwners, rememberOwner } from './OwnerPicker';
 
@@ -31,12 +31,20 @@ const request = {
 
 let deviceStatus = { status: 'approved' };
 
-// Approve is armed a moment after the request shows.
-const approve = async () => {
-  const button = screen.getByRole('button', { name: i18n.t('agentDevice.approve') });
+// Approve is armed a moment after the request shows (and again after the open-ended warning).
+const clickArmed = async (name) => {
+  const button = screen.getByRole('button', { name });
   await waitFor(() => expect(button.disabled).toBe(false), { timeout: 2000 });
   fireEvent.click(button);
 };
+
+// Approves, confirming once more when the key has no spending limit or no expiry.
+const approve = async () => {
+  await clickArmed(i18n.t('agentDevice.approve'));
+  if (screen.queryByTestId('device-open-ended')) await clickArmed(i18n.t('agentDevice.approveAnyway'));
+};
+
+const MONTH_SECONDS = 28 * 86400;
 
 const adjust = () => fireEvent.click(screen.getByRole('button', { name: i18n.t('agentDevice.adjust') }));
 
@@ -80,6 +88,14 @@ describe('recognizeClient', () => {
   });
 });
 
+describe('openEndedParts', () => {
+  it('flags a key without a limit or without an expiry', () => {
+    expect(openEndedParts({ quota: '', expiry: 'month' })).toEqual({ quota: true, expiry: false });
+    expect(openEndedParts({ quota: 5000, expiry: 'never' })).toEqual({ quota: false, expiry: true });
+    expect(openEndedParts({ quota: 0, expiry: 'week' })).toEqual({ quota: false, expiry: false });
+  });
+});
+
 describe('formatUserCode', () => {
   it('normalizes what users type', () => {
     expect(formatUserCode('bcdf ghjk')).toBe('BCDF-GHJK');
@@ -113,13 +129,43 @@ describe('AgentDevice confirmation page (AGENT-7)', () => {
     const [url, body] = API.post.mock.calls[0];
     expect(url).toBe('/api/agent/device/BCDF-GHJK/approve');
     expect(body.name).toBe('claw');
-    expect(body.expired_time).toBe(-1);
+    // The key expires in a month unless the user picks otherwise.
+    expect(body.expired_time).toBeGreaterThan(Date.now() / 1000 + MONTH_SECONDS);
     expect(body.unlimited_quota).toBe(true);
     expect(body.setting.limits.limit_model_setting).toEqual({ enabled: false, models: [] });
     expect((await screen.findByTestId('device-done')).textContent).toContain(i18n.t('agentDevice.approvedTitle'));
     expect(screen.getByTestId('device-status').textContent).toContain(i18n.t('agentDevice.stepWaiting'));
   });
 
+  it('asks once more before approving a key without a spending limit', async () => {
+    await openConfirmed();
+    expect(screen.getByTestId('device-summary').textContent).toContain(i18n.t('apiKey.expiry.month'));
+    await clickArmed(i18n.t('agentDevice.approve'));
+    const warning = await screen.findByTestId('device-open-ended');
+    expect(warning.textContent).toContain(i18n.t('agentDevice.openEndedQuota'));
+    expect(warning.textContent).not.toContain(i18n.t('agentDevice.openEndedExpiry'));
+    expect(API.post).not.toHaveBeenCalled();
+    // The confirmation is armed anew, so a double click does not approve.
+    expect(screen.getByRole('button', { name: i18n.t('agentDevice.approveAnyway') }).disabled).toBe(true);
+    await clickArmed(i18n.t('agentDevice.approveAnyway'));
+    await waitFor(() => expect(API.post).toHaveBeenCalledTimes(1));
+    expect(API.post.mock.calls[0][1].unlimited_quota).toBe(true);
+  });
+
+  it('approves a key with a limit and an expiry in one click', async () => {
+    await openConfirmed();
+    adjust();
+    fireEvent.change(document.getElementById('device-quota'), { target: { value: '5000' } });
+    await clickArmed(i18n.t('agentDevice.approve'));
+    await waitFor(() => expect(API.post).toHaveBeenCalledTimes(1));
+    expect(screen.queryByTestId('device-open-ended')).toBeNull();
+    const body = API.post.mock.calls[0][1];
+    expect(body.unlimited_quota).toBe(false);
+    expect(body.remain_quota).toBe(5000);
+    expect(body.expired_time).toBeGreaterThan(Date.now() / 1000 + MONTH_SECONDS);
+  });
+
+  // Approving the default (open-ended) key takes two armed clicks before the status is polled.
   it('follows the approval until the agent has its key', async () => {
     await openConfirmed();
     await approve();
@@ -130,7 +176,7 @@ describe('AgentDevice confirmation page (AGENT-7)', () => {
       timeout: 5000
     });
     expect(screen.getByTestId('device-status').textContent).toContain('203.0.113.9');
-  });
+  }, 10000);
 
   it('approves with an organization key when an organization is picked', async () => {
     await openConfirmed();

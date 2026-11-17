@@ -545,6 +545,34 @@ func PollAgentDeviceAuthorization(deviceCode, ip, userAgent string) (*Token, *Ag
 	return token, &row, nil
 }
 
+const (
+	AgentKeyAccountPersonal     = "personal"
+	AgentKeyAccountOrganization = "organization"
+)
+
+// AgentKeyAccount is the account an API key handed to an agent belongs to. The agent shows it, so
+// the user can tell when someone else approved their code (SEC-73): a leaked user code approved
+// first by another account yields that account's key, which reads the agent's traffic in its logs.
+type AgentKeyAccount struct {
+	Type string `json:"type"`
+	// Name is the username of a personal key's owner, or the organization's name.
+	Name string `json:"name"`
+	// Slug identifies an organization (names need not be unique); empty for a personal key.
+	Slug string `json:"slug,omitempty"`
+}
+
+// AgentKeyAccountOf names the account of token: the organization when its owner is an
+// organization's shadow account, the owning user otherwise.
+func AgentKeyAccountOf(token *Token) AgentKeyAccount {
+	var org Organization
+	if err := DB.Select("id", "name", "slug").Where("shadow_user_id = ?", token.UserId).Limit(1).Find(&org).Error; err != nil {
+		logger.SysError("failed to read the organization of an API key: " + err.Error())
+	} else if org.Id > 0 {
+		return AgentKeyAccount{Type: AgentKeyAccountOrganization, Name: org.Name, Slug: org.Slug}
+	}
+	return AgentKeyAccount{Type: AgentKeyAccountPersonal, Name: GetUsernameById(token.UserId)}
+}
+
 // OrganizationIdOfShadowUser returns the organization whose shadow account userId is, or 0.
 func OrganizationIdOfShadowUser(userId int) int {
 	var org Organization
