@@ -58,6 +58,11 @@ func setupQuotaTestDB(t *testing.T) {
 	oldDB := model.DB
 	model.DB = testDB
 	t.Cleanup(func() { model.DB = oldDB })
+	// A charge below the warning threshold sends the email from a goroutine that outlives the
+	// test and reads model.DB after the cleanup above restored it. Warnings are covered in model.
+	oldRemind := config.QuotaRemindEnabled
+	config.QuotaRemindEnabled = false
+	t.Cleanup(func() { config.QuotaRemindEnabled = oldRemind })
 }
 
 // seedUserAndToken 写入一个用户与其令牌，返回 token id。
