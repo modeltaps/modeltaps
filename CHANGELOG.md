@@ -632,6 +632,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Deleting a channel or a catalog model removes its supplies, and deleting disabled channels or a
+  tag group also removes their model aliases and price lists. Orphan supplies left by earlier
+  deletions are removed on upgrade.
+- On PostgreSQL, startup no longer logs a primary key error for each built-in vendor it adds.
+- Bedrock no longer logs "invalid aws key format" every time the channel capabilities are read.
 - Upstream-gone models no longer come back after "Remove all". The button on the provider
   panel's models tab now saves the removal at once, with an undo, instead of leaving it in an
   unsaved draft that was dropped without asking when another provider was opened from the list.
@@ -813,6 +818,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- API keys are random and stored only as a hash. A new key is shown once, when it is created or
+  reset (new "Reset key" action; in an organization only the member who created a key can reset
+  it), and lists show a hint such as `sk-…zcSI`. Existing keys keep working: on upgrade their
+  hashes are stored and the plaintext is cleared, so an older release cannot read them anymore;
+  back up the database before upgrading. The Playground uses a one-hour key issued for the
+  signed-in session instead of the user's long-lived key, and links to external chat apps are
+  built only from a key just created or pasted.
+- Stored credentials can be encrypted at rest. With `ENCRYPTION_KEY` set (32 random bytes, base64
+  or hex), upstream channel keys including OAuth refresh tokens, channel management keys, payment
+  gateway settings, notification channel secrets, OIDC client secrets and the secret system
+  settings are written with AES-256-GCM, and existing plaintext is encrypted on the next start.
+  `ENCRYPTION_KEY_PREVIOUS` rotates the key. Without the setting nothing changes apart from a
+  warning. A stored value that cannot be decrypted stops startup; keep a backup of the key.
+- The gateway refuses to start when `USER_TOKEN_SECRET`, or `SESSION_SECRET` when set, is still the
+  example placeholder or shorter than 32 characters. A deployment whose existing
+  `USER_TOKEN_SECRET` is shorter can set `USER_TOKEN_SECRET_ALLOW_SHORT=true` to keep running with
+  a warning, since replacing it invalidates every API key.
+- Content moderation checks all text of a request (message parts, system prompts, tool
+  descriptions, Responses input and instructions) on every entry: chat, Claude, Responses, Gemini,
+  completions, embeddings, image generation, edits and variations, rerank, speech, decisions, Veo
+  and realtime client events. It used to read the wrong field of array messages and skipped most
+  entries.
+- Only the root user can change a channel's base URL without entering the key again, copy a key
+  into a channel with another type or base URL, or change a tag group's base URL, so an admin can
+  no longer have a stored key sent to an address of their choosing.
+- MCP takes the access token from the `Authorization` header only, at `POST /mcp`, `GET /mcp/sse`
+  and `POST /mcp/message`; the `/mcp/<token>` forms are removed. The access log masks credential
+  query parameters such as `key`, `api_key` and `access_token`.
+- The HTTP server times out slow header reads (10 s) and idle connections (120 s) and caps headers
+  at 1 MiB; realtime sessions reject frames over 15 MiB and are limited to 1000 per node and 10
+  per user (`server.*`, `realtime.*`).
+- Group auto-promotion counts only paid orders, not sign-up or invite bonuses, redemption codes or
+  admin grants. The inviter rebate is paid once, for the invitee's first paid order. Gmail dot and
+  `+` variants of an email address count as the same address. The "Enable invite reward" switch
+  now also stops the sign-up bonuses and the rebate; before, it only hid the invite card.
 - Image URLs in requests are no longer fetched from loopback, private-network or cloud-metadata
   addresses; redirects are re-checked on every hop.
 - The Midjourney notify endpoint is disabled (the gateway never registers it and task state is
