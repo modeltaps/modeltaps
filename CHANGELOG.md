@@ -27,6 +27,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   policy by its bare name must add the `policy/` prefix. The "replaced by your policy" marks are
   gone, and an empty **Managed** tab shows the same empty page as the other lists.
 
+### Security
+
+- Upgrade notes: the bundled Docker Compose Redis now requires `REDIS_PASSWORD` in `.env`
+  (`openssl rand -hex 32`); `docker compose up` stops without it. These endpoints are POST now
+  and scripts calling them with GET must change: `/api/channel/test`, `/api/channel/test/:id`,
+  `/api/channel/check/:id`, `/api/channel/update_balance`, `/api/channel/update_balance/:id`,
+  `/api/user/logout`, `/api/user/token`, `/api/verification`, `/api/reset_password` and the
+  console bind calls for email, WeChat and LinuxDo.
+- Two-factor sign-in: password and email-code sign-in can ask for a code from an authenticator
+  app, turned on per user in the security settings with ten one-time recovery codes. Root's
+  emergency password login asks for it too once root turns it on; passkey, OIDC and API key
+  sign-ins are unchanged.
+- Failed sign-ins count per account and address: `LOGIN_MAX_FAILURES` (default 5) applies to one
+  account from one address, and one account from all addresses or one address across all
+  accounts may fail four times as often, so a single address can no longer lock an account for
+  its owner.
+- Cookie-authenticated changes must come from the site's own origin, and `/debug/pprof` needs
+  root. Behind a reverse proxy that rewrites the Host, set the server address in the settings.
+- Console pages send a Content-Security-Policy that only runs scripts from the site, Turnstile,
+  the analytics code configured in the settings and the built pages' own inline scripts.
+  Scripts added by other means, such as a reverse proxy injecting them into the HTML, are
+  blocked.
+- Organizations: only the Owner can read stored request and response bodies of members' keys,
+  every such read is in the audit log, and members see on their API keys when storing is on and
+  who turned it on.
+- The sensitive word and keyword matcher no longer depends on unmaintained libraries; blank lines
+  in the channel disabling keywords no longer stop it. GitHub Actions are pinned to commits, the
+  bundled Redis to a version and digest, DOMPurify is 3.4.18 and CI fails on reachable Go
+  vulnerabilities.
+- On MySQL and PostgreSQL, startup makes `users.email` nullable again when it was changed to NOT
+  NULL by hand, instead of failing.
+- Gemini: when an assistant message held two or more of the gateway's image markers, the text
+  after them was sent more than once; it is sent once.
+
 ## [0.4.0] - 2026-11-17
 
 ### Added
