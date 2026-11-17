@@ -12,12 +12,15 @@ import { ChevronLeft } from 'lucide-react';
 // on the same row (via PageTitleExtra); it uses `display:contents` so an empty
 // slot adds no DOM/spacing on pages that don't use it. Relies on the <main>
 // padding for left/top spacing; only adds the bottom gap to content.
+// The `centerRef` slot (via PageTitleCenter) holds a view switch centered on the title row; once
+// it has content the row becomes a three-column grid from md up so the switch sits in the true
+// middle whatever the title and action widths, and below md it wraps to its own row.
 // `leading` sits left of the title, centered on the title line (sidebar
 // expand / mobile menu buttons).
 
-export default function PageHeader({ title, subtitle, back, leading, actionsRef, titleExtraRef }) {
+export default function PageHeader({ title, subtitle, back, leading, actionsRef, titleExtraRef, centerRef }) {
   return (
-    <div className="mb-4 flex flex-wrap items-start gap-x-4 gap-y-3">
+    <div className="mb-4 flex flex-wrap items-start gap-x-4 gap-y-3 md:has-[[data-slot=page-title-center]>*]:grid md:has-[[data-slot=page-title-center]>*]:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
       <div className="flex min-w-0 grow basis-48 flex-wrap items-center gap-x-3 gap-y-2">
         <div className="flex min-w-0 items-start gap-2">
           {leading}
@@ -37,6 +40,11 @@ export default function PageHeader({ title, subtitle, back, leading, actionsRef,
         </div>
         <div ref={titleExtraRef} className="contents" />
       </div>
+      <div
+        ref={centerRef}
+        data-slot="page-title-center"
+        className="order-last flex min-w-0 basis-full empty:hidden md:order-none md:basis-auto md:justify-center"
+      />
       <div ref={actionsRef} className="flex min-w-0 flex-wrap items-center justify-end gap-2" />
     </div>
   );
@@ -48,5 +56,6 @@ PageHeader.propTypes = {
   back: PropTypes.shape({ label: PropTypes.string, to: PropTypes.string }),
   leading: PropTypes.node,
   actionsRef: PropTypes.oneOfType([PropTypes.func, PropTypes.object]),
-  titleExtraRef: PropTypes.oneOfType([PropTypes.func, PropTypes.object])
+  titleExtraRef: PropTypes.oneOfType([PropTypes.func, PropTypes.object]),
+  centerRef: PropTypes.oneOfType([PropTypes.func, PropTypes.object])
 };

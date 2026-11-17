@@ -14,6 +14,7 @@ import { PageHeaderOverrideContext } from '@/components/chrome/PageHeaderOverrid
 import { SidebarToggle } from '@/components/chrome/SidebarControls';
 import { PageActionsContext } from '@/components/chrome/PageActions';
 import { PageTitleExtraContext } from '@/components/chrome/PageTitleExtra';
+import { PageTitleCenterContext } from '@/components/chrome/PageTitleCenter';
 import Sidebar from '@/components/chrome/Sidebar';
 import SettingsSidebar from '@/components/chrome/SettingsSidebar';
 import CommandMenu from '@/components/chrome/CommandMenu';
@@ -98,6 +99,8 @@ export default function MainLayout() {
   // DOM node of the PageHeader inline title-extra slot; pages portal controls
   // that sit left-aligned next to the title into it via <PageTitleExtra>.
   const [titleExtraSlot, setTitleExtraSlot] = useState(null);
+  // DOM node of the PageHeader centered slot (view switches, via <PageTitleCenter>).
+  const [titleCenterSlot, setTitleCenterSlot] = useState(null);
   // Title set by a detail page through usePageHeader; replaces the nav-derived one.
   const [headerOverride, setHeaderOverride] = useState(null);
 
@@ -186,6 +189,7 @@ export default function MainLayout() {
                     leading={toggle}
                     actionsRef={setActionsSlot}
                     titleExtraRef={setTitleExtraSlot}
+                    centerRef={setTitleCenterSlot}
                   />
                 ) : (
                   /* 当前页没有标题时按钮单独占一行,电脑端侧栏展开时整行隐藏 */
@@ -194,7 +198,9 @@ export default function MainLayout() {
                 <PageHeaderOverrideContext.Provider value={setHeaderOverride}>
                   <PageActionsContext.Provider value={actionsSlot}>
                     <PageTitleExtraContext.Provider value={titleExtraSlot}>
-                      <Outlet />
+                      <PageTitleCenterContext.Provider value={titleCenterSlot}>
+                        <Outlet />
+                      </PageTitleCenterContext.Provider>
                     </PageTitleExtraContext.Provider>
                   </PageActionsContext.Provider>
                 </PageHeaderOverrideContext.Provider>

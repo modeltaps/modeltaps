@@ -6,6 +6,8 @@ import { Link, Navigate, useLocation, useParams, useSearchParams } from 'react-r
 
 import { cn } from '@/lib/utils';
 import { findActiveItem } from '@/components/chrome/nav-config';
+import PageActions from '@/components/chrome/PageActions';
+import PageTitleCenter from '@/components/chrome/PageTitleCenter';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { resolveServerAddress } from 'utils/serverAddress';
 import useCatalogModels from 'views/panel/ApiCatalog/useCatalogModels';
@@ -20,8 +22,8 @@ import { useOrgSlug } from 'routes/useScope';
 // 正式页壳与输入框 chip 由组件任务提供。接口文档在 `/panel/docs/:modality`。
 // 分层规则见 modalities.js 顶部注释。
 
-// The sidebar has one 演练场 item for every console; this segmented switch on the toolbar row
-// under the page title moves between modalities (each keeps its own route). Sub-modes such as
+// The sidebar has one 演练场 item for every console; this segmented switch, centered on the page
+// title row, moves between modalities (each keeps its own route). Sub-modes such as
 // compare are not listed: their parent modality stays selected.
 function ModalitySwitch({ activeId }) {
   const { t } = useTranslation();
@@ -162,28 +164,47 @@ export default function ApiConsole() {
   // 标题优先由 MainLayout 的 PageHeader 提供(导航登记该路径后);未登记时页面自带标题。
   const hasNavHeader = Boolean(findActiveItem(pathname));
 
+  const modalitySwitch = <ModalitySwitch activeId={entry.parent || entry.id} />;
+  const actions = (
+    <>
+      <ModeToggle entry={entry} modelId={selectedId} />
+      {Actions && (
+        <div className="flex items-center gap-1">
+          <Actions />
+        </div>
+      )}
+    </>
+  );
+
   return (
     <ConsoleContext.Provider value={consoleValue}>
       <ModalityProvider>
+        {/* 标题行：左标题、中间模态栏、右边模式开关与本模态的动作（PageHeader 插槽）。 */}
+        {hasNavHeader && (
+          <>
+            <PageTitleCenter>{modalitySwitch}</PageTitleCenter>
+            <PageActions>{actions}</PageActions>
+          </>
+        )}
         {/* 定高而不是 min-height：控制台页自己滚(消息区滚、composer 贴底)，
             高度不定的话整页会跟着长，输入框被顶出视口。 */}
-        {/* 5.5rem = main 上内边距 + PageHeader 标题行与下边距 + main 下内边距。 */}
-        <div className="flex h-[calc(100vh-5.5rem)] min-h-[520px] flex-col gap-4">
-          {!hasNavHeader && <h1 className="text-2xl font-semibold tracking-tight">{t(entry.labelKey)}</h1>}
-          {/* 工具行：左边模态栏（与页面标题同一左边线），右边模式开关与本模态的动作。 */}
-          <div className="flex shrink-0 items-center gap-2">
-            <div className="min-w-0">
-              <ModalitySwitch activeId={entry.parent || entry.id} />
-            </div>
-            <div className="ml-auto flex shrink-0 items-center gap-2">
-              <ModeToggle entry={entry} modelId={selectedId} />
-              {Actions && (
-                <div className="flex items-center gap-1">
-                  <Actions />
-                </div>
-              )}
-            </div>
-          </div>
+        {/* 5.5rem = main 上内边距 + PageHeader 标题行与下边距 + main 下内边距；
+            md 以下模态栏在标题下单独一行，再减 2.75rem（行高 + 行间距）。 */}
+        <div
+          className={cn(
+            'flex min-h-[520px] flex-col gap-4',
+            hasNavHeader ? 'h-[calc(100vh-8.25rem)] md:h-[calc(100vh-5.5rem)]' : 'h-[calc(100vh-5.5rem)]'
+          )}
+        >
+          {!hasNavHeader && (
+            <>
+              <h1 className="text-2xl font-semibold tracking-tight">{t(entry.labelKey)}</h1>
+              <div className="flex shrink-0 items-center gap-2">
+                <div className="min-w-0">{modalitySwitch}</div>
+                <div className="ml-auto flex shrink-0 items-center gap-2">{actions}</div>
+              </div>
+            </>
+          )}
           {/* min-h-0：flex 子项默认 min-height:auto，内容一多就把定高撑破，
               滚动落到 MainLayout 的 main 上、composer 被顶出视口。 */}
           <div className={`mx-auto flex w-full min-h-0 flex-1 flex-col ${multiModel || entry.fullWidth ? 'max-w-none' : 'max-w-3xl'}`}>

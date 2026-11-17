@@ -6,7 +6,7 @@ import { AudioLines, Clapperboard, Image, ListChecks, MessageSquare } from 'luci
 
 import { cn } from '@/lib/utils';
 import { findActiveItem } from '@/components/chrome/nav-config';
-import PageTitleExtra from '@/components/chrome/PageTitleExtra';
+import PageTitleCenter from '@/components/chrome/PageTitleCenter';
 import CatalogLayout from './CatalogLayout';
 import { CATALOG, getCatalogEntry, DEFAULT_MODALITY } from './catalog';
 import { workbench } from 'routes/paths';
@@ -15,7 +15,7 @@ import { useInScope } from 'routes/useScope';
 // ==============================|| PANEL — API CATALOG (DOCS) ||============================== //
 // `/panel/docs/:modality` 的接口文档页:按路由参数渲染对应模态的能力目录;
 // 未登记的模态回落到「对话」。控制台在 `/panel/playground/:modality`。
-// The sidebar's 文档 item opens chat; the switch next to the page title moves between the
+// The sidebar's 文档 item opens chat; the switch centered on the page title row moves between the
 // modalities (same look as the playground's switch), each on its own route.
 
 const SWITCH = [
@@ -82,9 +82,9 @@ export default function ApiCatalog() {
   return (
     <div className="space-y-4">
       {hasNavHeader ? (
-        <PageTitleExtra>
+        <PageTitleCenter>
           <DocsModalitySwitch activeId={modality} />
-        </PageTitleExtra>
+        </PageTitleCenter>
       ) : (
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">{t(entry.titleKey)}</h1>
