@@ -2306,6 +2306,7 @@
         "offered": "Linked",
         "unoffered": "Not linked",
         "gone": "Gone upstream",
+        "new": "New upstream",
         "unlisted": "Upstream, not added"
       },
       "unoffered": {
@@ -2333,6 +2334,7 @@
       "disableOne": "Turn off {{model}}",
       "off": "Off",
       "offFilter": "Off",
+      "dismissFlag": "Don't flag again",
       "addUnlisted": "Add all {{count}}",
       "addOne": "Add {{model}}",
       "unlistedState": {

@@ -413,6 +413,7 @@
     "keyMissing": "キー未設定",
     "keyMissingTip": "このチャネルにはキーが設定されていないため、リクエストは失敗します。チャネルを編集してキーを入力してください。",
     "newModelsDismissed": "チャネル「{{channel}}」のアップストリーム新規モデル表示を無視しました",
+    "missingModelsDismissed": "チャネル「{{channel}}」のアップストリーム廃止モデルの表示を止めました",
     "newModelsMore": "…ほか {{count}} 個",
     "newModelsTitle": "アップストリームに追加されたモデル",
     "noTagChannels": "タグチャネルが見つかりません",

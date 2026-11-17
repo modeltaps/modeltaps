@@ -50,6 +50,7 @@ export default function ChannelPanel({
   actions,
   busyIds,
   issues = [],
+  modelsFocus = null,
   onIssueAction,
   issueBusy
 }) {
@@ -96,6 +97,8 @@ export default function ChannelPanel({
         listRow.test_time,
         listRow.balance_updated_time,
         listRow.model_drift?.checked_at,
+        (listRow.model_drift?.dismissed_missing || []).join(','),
+        (listRow.model_drift?.new_models || []).join(','),
         listRow.priority,
         listRow.weight
       ].join('|')
@@ -115,6 +118,7 @@ export default function ChannelPanel({
     metricsRows,
     rangeKey,
     actions,
+    modelsFocus,
     busy: {
       refreshing: busyIds.refreshing.has(channelId),
       drift: busyIds.drift.has(channelId),
@@ -317,6 +321,7 @@ ChannelPanel.propTypes = {
   actions: PropTypes.object.isRequired,
   busyIds: PropTypes.object.isRequired,
   issues: PropTypes.array,
+  modelsFocus: PropTypes.shape({ filter: PropTypes.string, n: PropTypes.number }),
   onIssueAction: PropTypes.func,
   issueBusy: PropTypes.func
 };

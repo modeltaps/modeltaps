@@ -2209,6 +2209,7 @@
         "offered": "紐付け済み",
         "unoffered": "未紐付け",
         "gone": "上流で提供終了",
+        "new": "アップストリーム新規",
         "unlisted": "上流にあり・未追加"
       },
       "unoffered": {
@@ -2236,6 +2237,7 @@
       "disableOne": "{{model}} を無効にする",
       "off": "無効",
       "offFilter": "無効",
+      "dismissFlag": "今後表示しない",
       "addUnlisted": "{{count}} 件をすべて追加",
       "addOne": "{{model}} を追加",
       "unlistedState": {

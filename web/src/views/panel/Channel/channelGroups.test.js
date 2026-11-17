@@ -54,6 +54,13 @@ describe('channelIssues', () => {
     expect(issues[3].count).toBe(2);
   });
 
+  it('does not flag dismissed missing models until another one goes missing', () => {
+    const dismissed = ch(3, 1, { model_drift: { missing_models: ['a', 'b'], dismissed_missing: ['a', 'b'] } });
+    expect(channelIssues(dismissed)).toEqual([]);
+    const more = ch(3, 1, { model_drift: { missing_models: ['a', 'b', 'c'], dismissed_missing: ['a', 'b'] } });
+    expect(channelIssues(more).map((i) => [i.kind, i.count])).toEqual([['driftMissing', 1]]);
+  });
+
   it('has none for a healthy channel', () => {
     expect(channelIssues(ch(1, 1, { key_status: { configured: true } }))).toEqual([]);
   });

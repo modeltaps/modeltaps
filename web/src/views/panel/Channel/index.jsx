@@ -319,9 +319,15 @@ export default function Channel() {
     }
   });
 
+  // Filter the models tab opens on from an issue; `n` changes at every click so it applies again.
+  const [modelsFocus, setModelsFocus] = useState({ filter: '', n: 0 });
   const dismissIssue = (issue) => {
     if (issue.kind === 'driftNew') {
       actions.onDismissNewModels(issue.channel);
+      return;
+    }
+    if (issue.kind === 'driftMissing') {
+      actions.onDismissMissingModels(issue.channel);
       return;
     }
     setDismissed((prev) => {
@@ -339,11 +345,15 @@ export default function Channel() {
     if (issue.kind === 'autoDisabled') actions.onToggleStatus(c);
     else if (issue.kind === 'keyMissing') openChannel(c.id, 'connection');
     else if (issue.kind === 'lowBalance') actions.onRefreshBalance(c);
-    else openChannel(c.id, 'models');
+    else {
+      // Model drift opens the models tab on the filter of the flagged models, at every click.
+      setModelsFocus((cur) => ({ filter: issue.kind === 'driftMissing' ? 'gone' : 'new', n: cur.n + 1 }));
+      openChannel(c.id, 'models');
+    }
   };
   const issueBusy = (issue) =>
     (issue.kind === 'lowBalance' && refreshingIds.has(issue.channel.id)) ||
-    (issue.kind === 'driftNew' && dismissingIds.has(issue.channel.id));
+    ((issue.kind === 'driftNew' || issue.kind === 'driftMissing') && dismissingIds.has(issue.channel.id));
 
   // Refresh the model list of every enabled channel of the provider (the drift check reads the
   // upstream list and, where auto-add is on, adds what is new).
@@ -576,6 +586,7 @@ export default function Channel() {
           key={openId}
           channelId={openId}
           tab={tab}
+          modelsFocus={modelsFocus}
           onTabChange={(next) => {
             const p = new URLSearchParams(searchParams);
             ['view', 'section'].forEach((k) => p.delete(k));

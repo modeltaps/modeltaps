@@ -468,15 +468,32 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   const removedRows = useMemo(() => removed.map((name) => ({ name, removed: true })), [removed]);
   const range = t(`channels.range.short.${ctx.rangeKey}`);
   // Showing only the rows of one filter (a state, or unused / failing traffic); '' shows all.
-  const [picked, setOnly] = useState('');
-  const counts = useMemo(() => stateCounts(rows, unlisted), [rows, unlisted]);
+  const [picked, setOnly] = useState(ctx.modelsFocus?.filter || '');
+  // Opening the tab from an issue selects its filter, also when the tab is already open.
+  const focusN = ctx.modelsFocus?.n;
+  useEffect(() => {
+    if (ctx.modelsFocus?.filter) setOnly(ctx.modelsFocus.filter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusN]);
+  // Missing models the drift check flags and nobody dismissed yet.
+  const dismissedMissing = new Set(channel.model_drift?.dismissed_missing || []);
+  const flaggedMissing = (channel.model_drift?.missing_models || []).filter((m) => !dismissedMissing.has(m));
+  // New upstream models the drift check flags (and nobody dismissed): part of the unlisted ones.
+  const newKey = (channel.model_drift?.new_models || []).join(',');
+  const fresh = useMemo(() => {
+    const names = new Set(splitList(newKey));
+    return unlisted.filter((u) => names.has(u.name));
+  }, [unlisted, newKey]);
+  const counts = useMemo(() => ({ ...stateCounts(rows, unlisted), new: fresh.length }), [rows, unlisted, fresh]);
   // Offered / not offered only mean something while supplies route requests; gone and unlisted
   // need an upstream list.
   const stateKeys = STATE_FILTERS.filter((key) =>
-    key === 'offered' || key === 'unoffered' ? ctx.supplyRouting && details : key === 'gone' ? snapshot : counts.unlisted > 0
+    key === 'offered' || key === 'unoffered' ? ctx.supplyRouting && details : key === 'gone' ? snapshot : counts[key] > 0
   );
   // A filter whose chip went away (the last unlisted model was added) shows everything again.
   const only = STATE_FILTERS.includes(picked) && !stateKeys.includes(picked) ? '' : picked;
+  // The new and unlisted filters list upstream models the channel does not have.
+  const upstreamOnly = only === 'unlisted' || only === 'new';
   const signalCounts = useMemo(() => {
     const out = { idle: 0, failing: 0, off: 0 };
     for (const r of rows) {
@@ -720,7 +737,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                   key={key}
                   active={only === key}
                   onClick={() => setOnly(only === key ? '' : key)}
-                  icon={key === 'gone' && counts.gone > 0 ? <AlertTriangle className="size-3 text-warning" /> : null}
+                  icon={(key === 'gone' || key === 'new') && counts[key] > 0 ? <AlertTriangle className="size-3 text-warning" /> : null}
                   label={t(`channels.models.state.${key}`)}
                   count={counts[key]}
                 />
@@ -754,10 +771,46 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                   )}
                 </>
               )}
-              {only === 'gone' && counts.gone > 0 && (
-                <Button variant="outline" size="sm" className="ml-auto h-[26px] rounded-lg bg-card text-xs" onClick={removeGone}>
-                  {t('channels.models.removeGone', { count: counts.gone })}
-                </Button>
+              {only === 'gone' && (counts.gone > 0 || flaggedMissing.length > 0) && (
+                <div className="ml-auto flex items-center gap-1.5">
+                  {flaggedMissing.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-[26px] rounded-lg text-xs"
+                      disabled={ctx.busy?.dismissing}
+                      onClick={() => ctx.actions.onDismissMissingModels(channel)}
+                    >
+                      {t('channels.models.dismissFlag')}
+                    </Button>
+                  )}
+                  {counts.gone > 0 && (
+                    <Button variant="outline" size="sm" className="h-[26px] rounded-lg bg-card text-xs" onClick={removeGone}>
+                      {t('channels.models.removeGone', { count: counts.gone })}
+                    </Button>
+                  )}
+                </div>
+              )}
+              {only === 'new' && fresh.length > 0 && (
+                <div className="ml-auto flex items-center gap-1.5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-[26px] rounded-lg text-xs"
+                    disabled={ctx.busy?.dismissing}
+                    onClick={() => ctx.actions.onDismissNewModels(channel)}
+                  >
+                    {t('channels.models.dismissFlag')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-[26px] rounded-lg bg-card text-xs"
+                    onClick={() => addNames(fresh.map((u) => u.name))}
+                  >
+                    {t('channels.models.addUnlisted', { count: fresh.length })}
+                  </Button>
+                </div>
               )}
               {only === 'unlisted' && counts.unlisted > 0 && (
                 <Button
@@ -826,7 +879,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                 </tr>
               </thead>
               <tbody>
-                {only !== 'unlisted' &&
+                {!upstreamOnly &&
                   list.visible.map(({ name, m, signal, offer, gone, off, removed: isRemoved }) => (
                     <tr
                       key={name}
@@ -916,15 +969,20 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                       </td>
                     </tr>
                   ))}
-                {only === 'unlisted' &&
-                  unlisted.map((u) => (
+                {upstreamOnly &&
+                  (only === 'new' ? fresh : unlisted).map((u) => (
                     <tr
                       key={u.name}
                       data-testid="unlisted-model"
                       className="[&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0"
                     >
                       <td colSpan={hasMapping ? 3 : 2}>
-                        <span className="block min-w-0 truncate font-mono">{u.name}</span>
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <span className="min-w-0 truncate font-mono">{u.name}</span>
+                          {only === 'unlisted' && fresh.includes(u) && (
+                            <span className={cn(TAG_TEXT, 'bg-warning/10 text-warning')}>{t('channels.models.state.new')}</span>
+                          )}
+                        </span>
                         <span className="block truncate text-xs text-muted-foreground">
                           {t(`channels.models.unlistedState.${u.state}`, { model: u.public_model, defaultValue: u.state })}
                         </span>
@@ -945,7 +1003,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                   ))}
               </tbody>
             </table>
-            {only !== 'unlisted' && <LongListMore list={list} />}
+            {!upstreamOnly && <LongListMore list={list} />}
           </div>
         </>
       )}

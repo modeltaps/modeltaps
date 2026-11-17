@@ -3179,7 +3179,8 @@
     "newModelsDismiss": "忽略",
     "keyMissing": "未配置 key",
     "keyMissingTip": "该渠道没有配置 key，请求会失败。请编辑渠道填入 key。",
-    "newModelsDismissed": "已忽略渠道「{{channel}}」的上游新增模型标记"
+    "newModelsDismissed": "已忽略渠道「{{channel}}」的上游新增模型标记",
+    "missingModelsDismissed": "已忽略渠道「{{channel}}」的上游下架模型提示"
   },
   "validation": {
     "requiredName": "名称 不能为空"

@@ -162,3 +162,19 @@ func TestComputeModelDrift_StaleNewModelsPruned(t *testing.T) {
 		t.Fatalf("new models mismatch: want %v got %v", want, got.NewModels)
 	}
 }
+
+func TestComputeModelDrift_DismissedMissingLastsWhileMissing(t *testing.T) {
+	prev := &model.ModelDriftResult{
+		MissingModels:    []string{"a", "b"},
+		DismissedMissing: []string{"a", "b"},
+		UpstreamSnapshot: []string{"c"},
+	}
+	// b came back; a is still missing and d went missing after the dismissal.
+	got := computeModelDrift("a,b,c,d", "", []string{"b", "c"}, prev)
+	if !reflect.DeepEqual(got.DismissedMissing, []string{"a"}) {
+		t.Fatalf("expected only a to stay dismissed, got %v", got.DismissedMissing)
+	}
+	if left := undismissedMissing(&got); !reflect.DeepEqual(left, []string{"d"}) {
+		t.Fatalf("expected d to be reported, got %v", left)
+	}
+}

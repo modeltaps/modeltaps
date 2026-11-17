@@ -5,7 +5,8 @@
 import { upstreamNameOf } from './channelPrices';
 
 // Filters in the order the table shows them.
-export const STATE_FILTERS = ['offered', 'unoffered', 'gone', 'unlisted'];
+// `new` is the part of `unlisted` the drift check flags as new upstream.
+export const STATE_FILTERS = ['offered', 'unoffered', 'gone', 'new', 'unlisted'];
 
 // Whether a listed model serves an enabled public model, and why not when it does not:
 // not_in_catalog / no_supply / duplicate / wildcard (from the model details), pending (an intake

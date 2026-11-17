@@ -413,6 +413,7 @@
     "keyMissing": "未配置 key",
     "keyMissingTip": "該渠道沒有配置 key，請求會失敗。請編輯渠道填入 key。",
     "newModelsDismissed": "已忽略通道「{{channel}}」的上游新增模型標記",
+    "missingModelsDismissed": "已忽略通道「{{channel}}」的上游下架模型提示",
     "newModelsMore": "…等 {{count}} 個",
     "newModelsTitle": "上游新增的模型",
     "noTagChannels": "未能找到標籤渠道",

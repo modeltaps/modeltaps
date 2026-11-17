@@ -75,7 +75,9 @@ export function channelIssues(channel) {
   if (hasLowBalance(channel)) push('lowBalance', channel.balance_updated_time);
   const drift = channel.model_drift;
   const added = drift?.new_models || [];
-  const missing = drift?.missing_models || [];
+  // Missing models an admin dismissed are not flagged until another one goes missing.
+  const dismissedMissing = new Set(drift?.dismissed_missing || []);
+  const missing = (drift?.missing_models || []).filter((m) => !dismissedMissing.has(m));
   if (added.length) push('driftNew', added.join(','), { count: added.length });
   if (missing.length) push('driftMissing', missing.join(','), { count: missing.length });
   return issues;

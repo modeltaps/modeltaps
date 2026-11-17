@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/modeltaps/modeltaps/common"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/modeltaps/modeltaps/common/config"
@@ -148,7 +149,9 @@ func CheckAllChannelsModelDrift() (*ModelDriftCheckSummary, error) {
 		if len(added) > 0 {
 			summary.Added++
 		}
-		if !result.OK {
+		// Missing models an admin dismissed are not reported again.
+		missing := undismissedMissing(result)
+		if len(missing) > 0 {
 			summary.Drifted++
 		}
 		if len(result.NewModels) > 0 {
@@ -160,11 +163,11 @@ func CheckAllChannelsModelDrift() (*ModelDriftCheckSummary, error) {
 			supplies = result.Supplies
 			summary.SuppliesChanged++
 		}
-		if !result.OK || len(result.NewModels) > 0 || len(added) > 0 || len(pending) > 0 || supplies != nil {
+		if len(missing) > 0 || len(result.NewModels) > 0 || len(added) > 0 || len(pending) > 0 || supplies != nil {
 			summary.Channels = append(summary.Channels, DriftedChannel{
 				ChannelId:     ch.Id,
 				ChannelName:   ch.Name,
-				MissingModels: result.MissingModels,
+				MissingModels: missing,
 				NewModels:     result.NewModels,
 				AddedModels:   added,
 				PendingModels: pending,
@@ -299,6 +302,29 @@ func DismissNewModels(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": channel.GetModelDrift()})
 }
 
+// DismissMissingModels stops flagging the models a channel's last drift check found missing
+// (AdminAuth). Body: {"id": <channelId>}. Returns the updated drift result.
+func DismissMissingModels(c *gin.Context) {
+	var req struct {
+		Id int `json:"id"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.Id <= 0 {
+		common.APIRespondWithError(c, http.StatusOK, invalidChannelIDError())
+		return
+	}
+
+	channel, err := model.GetChannelById(req.Id)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, channelLookupError(err))
+		return
+	}
+	if err := channel.DismissMissingModels(); err != nil {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": channel.GetModelDrift()})
+}
+
 // fetchUpstreamModels 构造 provider 并拉取上游实时模型列表（取 key 首行，同 GetModelList）。
 // The drift check runs from a scheduled job with no recover above it, so a panic in one
 // provider would stop the whole process: turn it into an error and the channel is skipped.
@@ -381,8 +407,35 @@ func computeModelDrift(modelsCSV, modelMapping string, upstream []string, prev *
 		MissingModels:    missing,
 		NewModels:        computeNewModels(snapshot, upstreamSet, configured, prev),
 		UpstreamSnapshot: snapshot,
+		DismissedMissing: stillDismissed(missing, prev),
 		OK:               len(missing) == 0,
 	}
+}
+
+// stillDismissed keeps the dismissed missing models of the previous check that are still
+// missing, so a dismissal lasts while the model stays missing and no longer.
+func stillDismissed(missing []string, prev *model.ModelDriftResult) []string {
+	if prev == nil || len(prev.DismissedMissing) == 0 {
+		return nil
+	}
+	var kept []string
+	for _, m := range prev.DismissedMissing {
+		if slices.Contains(missing, m) {
+			kept = append(kept, m)
+		}
+	}
+	return kept
+}
+
+// undismissedMissing is the missing models of a drift result an admin has not dismissed.
+func undismissedMissing(result *model.ModelDriftResult) []string {
+	var out []string
+	for _, m := range result.MissingModels {
+		if !slices.Contains(result.DismissedMissing, m) {
+			out = append(out, m)
+		}
+	}
+	return out
 }
 
 // computeNewModels 计算累计的「上游新增且渠道未配置」模型列表，顺序为 prev.NewModels 原序 + 本次新增按上游顺序。

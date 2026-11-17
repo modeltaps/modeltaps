@@ -2213,6 +2213,7 @@
         "offered": "已關聯",
         "unoffered": "未關聯",
         "gone": "上游已下架",
+        "new": "上游新增",
         "unlisted": "上游有、未加入"
       },
       "unoffered": {
@@ -2240,6 +2241,7 @@
       "disableOne": "停用 {{model}}",
       "off": "已停用",
       "offFilter": "已停用",
+      "dismissFlag": "不再提示",
       "addUnlisted": "全部加入 {{count}} 個",
       "addOne": "加入 {{model}}",
       "unlistedState": {

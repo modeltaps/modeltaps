@@ -167,6 +167,10 @@ type ModelDriftResult struct {
 	MissingModels    []string `json:"missing_models"`
 	NewModels        []string `json:"new_models,omitempty"`
 	UpstreamSnapshot []string `json:"upstream_snapshot,omitempty"`
+	// DismissedMissing are missing models an admin dismissed: they are no longer flagged. The
+	// check keeps only the ones still missing, so a model that comes back and goes again is
+	// flagged again, and so is any model that goes missing after the dismissal.
+	DismissedMissing []string `json:"dismissed_missing,omitempty"`
 	OK               bool     `json:"ok"`
 	// Supplies is what the check changed on the channel's supplies while they route requests:
 	// supplies marked gone or back (see MarkSupplyUpstreams); nil when nothing changed.
@@ -808,6 +812,17 @@ func (channel *Channel) DismissNewModels() error {
 		return nil
 	}
 	result.NewModels = nil
+	return channel.UpdateModelDrift(*result)
+}
+
+// DismissMissingModels stops flagging the models the last check found missing, keeping the
+// rest of the result. Models that go missing later are flagged again.
+func (channel *Channel) DismissMissingModels() error {
+	result := channel.GetModelDrift()
+	if result == nil || len(result.MissingModels) == 0 {
+		return nil
+	}
+	result.DismissedMissing = append([]string(nil), result.MissingModels...)
 	return channel.UpdateModelDrift(*result)
 }
 

@@ -413,6 +413,7 @@
     "keyMissing": "No key",
     "keyMissingTip": "This channel has no key configured, so requests will fail. Edit the channel to add a key.",
     "newModelsDismissed": "Dismissed the new upstream model badge for channel \"{{channel}}\"",
+    "missingModelsDismissed": "Stopped flagging the models channel \"{{channel}}\" lost upstream",
     "newModelsMore": "…and {{count}} more",
     "newModelsTitle": "Models newly offered by the provider",
     "noTagChannels": "No tag channel found",

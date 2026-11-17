@@ -285,6 +285,11 @@ export async function dismissChannelNewModels(id) {
   return res.data;
 }
 
+export async function dismissChannelMissingModels(id) {
+  const res = await API.post('/api/channel/dismiss_missing_models', { id });
+  return res.data;
+}
+
 // OAuth helpers for the channel form (GeminiCli 57 / ClaudeCode 58 /
 // Codex 59 / Antigravity 60). `endpoint` is the backend route segment:
 // geminicli | claudecode | codex | antigravity. All return raw `res.data`

@@ -6,7 +6,7 @@ import { toast } from '@/components/ui/sonner';
 import ChannelCheckDialog from './ChannelCheckDialog';
 import ChannelTestDialog from './ChannelTestDialog';
 import ConfirmDialog from './ConfirmDialog';
-import { manageChannel, checkChannelDrift, dismissChannelNewModels } from './channelApi';
+import { manageChannel, checkChannelDrift, dismissChannelMissingModels, dismissChannelNewModels } from './channelApi';
 
 const addId = (set, id) => new Set(set).add(id);
 const dropId = (set, id) => {
@@ -78,6 +78,21 @@ export default function useChannelActions({ onChanged, onDriftDismissed, onDelet
         if (success) {
           onDriftDismissed?.(row, data);
           toast.success(t('channel_row.newModelsDismissed', { channel: row.name }));
+        } else if (message) toast.error(message);
+      } catch (e) {
+        toast.error(e.message);
+      } finally {
+        setDismissingIds((prev) => dropId(prev, row.id));
+      }
+    },
+    onDismissMissingModels: async (row) => {
+      if (dismissingIds.has(row.id)) return;
+      setDismissingIds((prev) => addId(prev, row.id));
+      try {
+        const { success, message, data } = await dismissChannelMissingModels(row.id);
+        if (success) {
+          onDriftDismissed?.(row, data);
+          toast.success(t('channel_row.missingModelsDismissed', { channel: row.name }));
         } else if (message) toast.error(message);
       } catch (e) {
         toast.error(e.message);

@@ -78,7 +78,7 @@ export function BalanceText({ channel }) {
 BalanceText.propTypes = { channel: PropTypes.object.isRequired };
 
 // What needs doing on a channel, as a tag on its row: what is wrong and the one action, the
-// action runs on click; × dismisses it for this session.
+// action runs on click; × dismisses it (model drift items for good, the rest for this session).
 function IssueTag({ issue, onAction, onDismiss, busy }) {
   const { t } = useTranslation();
   const label = {
