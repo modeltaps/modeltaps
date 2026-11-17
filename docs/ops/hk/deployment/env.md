@@ -160,6 +160,7 @@ LOGS_FILENAME="modeltaps.log"
 - 日誌同時寫入檔案和標準錯誤輸出。後台「系統日誌」只列出自上次啟動以來反覆出現的警告和錯誤，以及記憶體中的最近日誌；要檢索完整歷史，請用 `docker logs`、journald 或日誌平台收集標準錯誤輸出或日誌目錄。
 - `METRICS_USER` / `METRICS_PASSWORD`：`/metrics` 介面 Basic Auth，留空則不鑑權。
 - `MCP_ENABLE`：是否啟用 MCP，預設 `false`。
+  - 地址：`POST /mcp`（Streamable HTTP）、`GET /mcp/sse` + `POST /mcp/message`（SSE）。訪問令牌放在 `Authorization: Bearer <訪問令牌>` 請求頭裡；舊的 `/mcp/<令牌>` 路徑寫法已下線。
 - `UPTIME_KUMA_ENABLE` / `UPTIME_KUMA_DOMAIN` / `UPTIME_KUMA_STATUS_PAGE_NAME`：Uptime Kuma 狀態頁集成。
 - `DISABLE_TOKEN_ENCODERS`：禁用本地 token 編碼器（改用估算），預設 `false`。
 - `TG_HTTP_PROXY`：訪問 Telegram 的 HTTP/SOCKS5 代理。

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"net/url"
 	"path"
 	"strings"
 	"time"
@@ -45,20 +46,8 @@ func GinzapWithConfig() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path
-		query := c.Request.URL.RawQuery
-		// 如果query的值包含key=sk-fsdfsdfsdf 则把sk-fsdfsdfsdf脱敏处理
-		if query != "" {
-			if i := strings.Index(query, "key=sk-"); i >= 0 {
-				start := i + 4 // "key=" length
-				end := strings.Index(query[start:], "&")
-				if end == -1 {
-					end = len(query)
-				} else {
-					end += start
-				}
-				query = query[:start] + "sk-***" + query[end:]
-			}
-		}
+		query := redactLogQuery(c.Request.URL.RawQuery)
+		path = redactLogPath(path)
 		c.Next()
 		end := time.Now()
 		latency := end.Sub(start)
@@ -99,4 +88,52 @@ func GinzapWithConfig() gin.HandlerFunc {
 		}
 		metrics.RecordHttp(c, latency)
 	}
+}
+
+// credentialQueryParams are query parameters that carry a credential (Gemini's ?key=, OpenAI-style
+// keys pasted into URLs, access tokens). Their values are replaced before the access log line is
+// written.
+var credentialQueryParams = map[string]bool{
+	"key": true, "api_key": true, "apikey": true, "access_token": true, "token": true,
+	"auth": true, "authorization": true, "x-api-key": true, "x-goog-api-key": true,
+}
+
+// redactLogQuery masks credential values in a raw query string and keeps everything else as sent.
+func redactLogQuery(raw string) string {
+	if raw == "" {
+		return raw
+	}
+	parts := strings.Split(raw, "&")
+	for i, part := range parts {
+		name, value, ok := strings.Cut(part, "=")
+		if !ok || value == "" {
+			continue
+		}
+		decoded, err := url.QueryUnescape(name)
+		if err != nil {
+			decoded = name
+		}
+		if credentialQueryParams[strings.ToLower(decoded)] {
+			parts[i] = name + "=***"
+		}
+	}
+	return strings.Join(parts, "&")
+}
+
+// redactLogPath masks a token sent in an MCP path. The /mcp/<token>, /mcp/sse/<token> and
+// /mcp/message/<token> forms are no longer served, but clients still configured with them would
+// write their token into the log on every 404.
+func redactLogPath(p string) string {
+	rest, ok := strings.CutPrefix(p, "/mcp/")
+	if !ok || rest == "" {
+		return p
+	}
+	first, tail, hasTail := strings.Cut(rest, "/")
+	if first == "sse" || first == "message" {
+		if hasTail && tail != "" {
+			return "/mcp/" + first + "/***"
+		}
+		return p
+	}
+	return "/mcp/***"
 }

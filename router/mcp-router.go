@@ -19,9 +19,11 @@ func SetMcpRouter(router *gin.Engine) {
 	mcpRouter.Use(middleware.UserAuth())
 	mcpRouter.Use(middleware.ContextUserId())
 	{
-		mcpRouter.POST("/:accessToken", mcpServer.HandleStreamable)
-		mcpRouter.GET("/sse/:accessToken", mcpServer.HandleSSE)
-		mcpRouter.POST("/message/:accessToken", mcpServer.HandleMessage)
+		// Clients authenticate with an Authorization: Bearer <access token> header. The old
+		// /mcp/<token> forms are gone: a token in the path lands in proxy and access logs.
+		mcpRouter.POST("", mcpServer.HandleStreamable)
+		mcpRouter.GET("/sse", mcpServer.HandleSSE)
+		mcpRouter.POST("/message", mcpServer.HandleMessage)
 	}
 
 	go func() {

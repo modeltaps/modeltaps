@@ -24,15 +24,13 @@ func authHelper(c *gin.Context, minRole int) {
 	useAccessToken := false
 	if username == nil {
 		// Check access token
+		// The access token is read from the Authorization header only: a token in the URL ends up
+		// in browser history and in proxy and access logs.
 		accessToken := c.Request.Header.Get("Authorization")
 		if accessToken == "" {
-			token := c.Param("accessToken")
-			if token == "" {
-				common.APIRespondWithCode(c, http.StatusUnauthorized, common.APICodeNotSignedIn, "Permission denied: not signed in and no access token provided", nil)
-				c.Abort()
-				return
-			}
-			accessToken = fmt.Sprintf("Bearer %s", token)
+			common.APIRespondWithCode(c, http.StatusUnauthorized, common.APICodeNotSignedIn, "Permission denied: not signed in and no access token provided", nil)
+			c.Abort()
+			return
 		}
 		user := model.ValidateAccessToken(accessToken)
 		if user != nil && user.Username != "" {
