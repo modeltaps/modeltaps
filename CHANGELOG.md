@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Endpoints for coding agents. Claude Code points at `/claude-code` (its model list shows this
+  site's models as `claude-code/<model>`, with `[1m]` on models with a context of a million
+  tokens or more, and the prefix and suffix are removed before forwarding), Codex at `/codex/v1`
+  (including `/models` in the shape Codex reads) and other coding agents at `/coding-agent/v1` or
+  the Anthropic-shaped `/coding-agent`. They take the same keys, routes and prices as `/v1` and
+  `/claude`, pass prompt cache markers through unchanged and keep a session on one channel. The
+  consume log records the client (from the endpoint, else the User-Agent), and organization
+  usage can be filtered and grouped by tool.
 - Routing policies can classify with a decision model. The decision model picker lists decision
   models first (recommended) and chat models below them; with a decision model the gateway asks
   one multiple-choice question on `/v1/decisions` (the policy's question, with each route label
