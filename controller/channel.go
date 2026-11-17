@@ -265,7 +265,7 @@ func UpdateChannel(c *gin.Context) {
 		return
 	}
 	oldChannel, getErr := model.GetChannelById(channel.Id)
-	if getErr == nil && rejectBaseURLMoveWithoutKey(c, oldChannel, &channel, channel.Key != "") {
+	if getErr == nil && rejectTargetMoveWithoutKey(c, oldChannel, &channel, channel.Models != "") {
 		return
 	}
 	if getErr != nil || oldChannel.Tag != channel.Tag || (channel.Tag != "" && oldChannel.Type != channel.Type) {
@@ -340,6 +340,14 @@ func BatchUpdateChannelsAzureApi(c *gin.Context) {
 
 	if params.Ids == nil || len(params.Ids) == 0 {
 		common.APIRespondWithCode(c, http.StatusOK, common.APICodeChannelIDsRequired, "ids must not be empty", nil)
+		return
+	}
+	channels, err := model.GetChannelsByIds(params.Ids)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	if rejectOtherMoveWithoutKey(c, channels, params.Value) {
 		return
 	}
 	var count int64

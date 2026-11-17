@@ -113,3 +113,24 @@ func errorBodyToError(t *testing.T, body, projectID string) *types.OpenAIError {
 	resp := &http.Response{StatusCode: http.StatusForbidden, Body: io.NopCloser(strings.NewReader(body))}
 	return RequestErrorHandle(nil, projectID)(resp)
 }
+
+// SEC-54: the region is part of the host, so a value that is not a plain label must not build a
+// URL (it would send the service account token to another host).
+func TestGetFullRequestURLRejectsInvalidRegion(t *testing.T) {
+	for _, region := range []string{"attacker.tld/x?", "evil.com#", "a@b", ""} {
+		p := providerWithBaseURL(region, nil, category.CategoryMap["gemini"])
+		if got := p.GetFullRequestURL("m", "act"); got != "" {
+			t.Errorf("region %q built %q, want rejection", region, got)
+		}
+	}
+	p := &VertexAIProvider{}
+	p.Channel = &model.Channel{Id: 2, Other: "us-central1|attacker.tld/x?|proj"}
+	p.Config = getConfig()
+	for i := 0; i < 20; i++ {
+		getKeyConfig(p)
+		got := p.GetFullRequestURL("m", "act")
+		if got != "" && !strings.HasPrefix(got, "https://us-central1-aiplatform.googleapis.com/") {
+			t.Fatalf("mixed regions built %q", got)
+		}
+	}
+}

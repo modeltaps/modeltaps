@@ -81,18 +81,17 @@ func UpdateChannelsTag(c *gin.Context) {
 		return
 	}
 
-	// A tag edit applies one base URL to every channel of the group, and a key left empty keeps
-	// each channel's stored key, so a non-root admin must not move the group's keys elsewhere.
-	if !isRootRequest(c) && channel.BaseURL != nil {
+	// A tag edit applies one target (base URL, other setting, proxy, plugins) to every channel of
+	// the group and keeps each channel's stored key, so a non-root admin must not move the group's
+	// keys elsewhere.
+	if !isRootRequest(c) {
 		members, listErr := model.GetChannelsByTag(tag)
 		if listErr != nil {
 			common.APIRespondWithError(c, http.StatusOK, listErr)
 			return
 		}
-		for _, member := range members {
-			if rejectBaseURLMoveWithoutKey(c, member, &channel, false) {
-				return
-			}
+		if rejectTagTargetMoveWithoutKey(c, members, &channel) {
+			return
 		}
 	}
 

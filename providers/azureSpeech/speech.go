@@ -122,6 +122,9 @@ func (p *AzureSpeechProvider) CreateSpeech(request *types.SpeechAudioRequest) (*
 		return nil, errWithCode
 	}
 	fullRequestURL := p.GetFullRequestURL(url)
+	if fullRequestURL == "" {
+		return nil, common.StringErrorWrapperLocal("azure speech region must contain only lowercase letters, digits and hyphens", "invalid_azure_speech_config", http.StatusInternalServerError)
+	}
 	headers := p.GetRequestHeaders()
 	responseFormatr := outputFormatMap[request.ResponseFormat]
 	if responseFormatr == "" {

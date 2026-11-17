@@ -28,9 +28,15 @@ type AzureSpeechProvider struct {
 	base.BaseProvider
 }
 
+// GetFullRequestURL builds the request URL from the region in Other, or from the base URL when
+// there is none. It returns "" when the region is not a plain host label: it becomes part of the
+// host, so a value with a dot or slash could send the subscription key to another host.
 func (p *AzureSpeechProvider) GetFullRequestURL(requestURL string) string {
 	baseURL := ""
 	if p.Channel.Other != "" {
+		if !base.IsHostLabel(p.Channel.Other) {
+			return ""
+		}
 		baseURL = fmt.Sprintf("https://%s.tts.speech.microsoft.com", p.Channel.Other)
 	} else {
 		baseURL = strings.TrimSuffix(p.GetBaseURL(), "/")

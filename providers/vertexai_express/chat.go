@@ -137,6 +137,9 @@ func (p *VertexAIExpressProvider) getChatRequest(geminiRequest *gemini.GeminiCha
 	url := getActionURL(geminiRequest)
 	// 获取请求地址
 	fullRequestURL := p.GetFullRequestURL(url, geminiRequest.Model)
+	if fullRequestURL == "" {
+		return nil, common.StringErrorWrapperLocal("vertexAI express region is invalid", "invalid_vertexai_config", http.StatusInternalServerError)
+	}
 
 	// 获取请求头
 	headers := p.GetRequestHeaders()

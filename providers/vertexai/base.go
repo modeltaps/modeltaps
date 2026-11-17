@@ -121,6 +121,12 @@ func (p *VertexAIProvider) GetFullRequestURL(modelName string, other string) str
 		publisher = p.Category.Publisher
 	}
 
+	// The region becomes part of the host: anything but a plain label could name another host.
+	if !base.IsHostLabel(p.Region) {
+		p.warnInvalidRegion()
+		return ""
+	}
+
 	tpl := p.GetBaseURL()
 	switch strings.Count(tpl, "%s") {
 	case vertexURLPlaceholders:
@@ -158,6 +164,19 @@ func (p *VertexAIProvider) warnInvalidBaseURL(publisher string) {
 	}
 	logger.SysError(fmt.Sprintf("vertexai channel %d: custom base_url must contain %d %%s placeholders (host/project/region/publisher/model/action) to serve publisher %s, request rejected",
 		channelID, vertexURLPlaceholders, publisher))
+}
+
+// warnInvalidRegion logs once per channel that its region is not a plain host label (letters,
+// digits and hyphens), so its requests are rejected.
+func (p *VertexAIProvider) warnInvalidRegion() {
+	var channelID int
+	if p.Channel != nil {
+		channelID = p.Channel.Id
+	}
+	if _, warned := invalidBaseURLWarned.LoadOrStore(fmt.Sprintf("%d:region", channelID), struct{}{}); warned {
+		return
+	}
+	logger.SysError(fmt.Sprintf("vertexai channel %d: region must contain only lowercase letters, digits and hyphens, request rejected", channelID))
 }
 
 func (p *VertexAIProvider) GetRequestHeaders() (headers map[string]string) {

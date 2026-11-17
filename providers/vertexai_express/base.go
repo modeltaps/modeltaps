@@ -1,6 +1,7 @@
 package vertexai_express
 
 import (
+	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/providers/base"
@@ -23,9 +24,14 @@ func (f VertexAIExpressProviderFactory) Create(channel *model.Channel) base.Prov
 		region = "us-central1"
 	}
 
-	// 动态设置 BaseURL
-	config.BaseURL = fmt.Sprintf("https://%s-aiplatform.googleapis.com/v1beta1/projects/%s/locations/%s/publishers/google/models",
-		region, projectID, region)
+	// The base URL is built from the region, which becomes part of the host, so a value that is not a plain label
+	// (it could name another host) leaves the base URL empty and the requests are rejected.
+	if base.IsHostLabel(region) {
+		config.BaseURL = fmt.Sprintf("https://%s-aiplatform.googleapis.com/v1beta1/projects/%s/locations/%s/publishers/google/models",
+			region, projectID, region)
+	} else {
+		logger.SysError(fmt.Sprintf("vertexai express channel %d: region must contain only lowercase letters, digits and hyphens", channel.Id))
+	}
 
 	proxyAddr := channel.GetProxy()
 
@@ -76,8 +82,12 @@ func parseOtherConfig(other string) (region, projectID string) {
 }
 
 // GetFullRequestURL 构建完整的请求 URL
+// It returns "" when the channel has no usable base URL (see Create).
 func (p *VertexAIExpressProvider) GetFullRequestURL(requestURL string, modelName string) string {
 	baseURL := strings.TrimSuffix(p.GetBaseURL(), "/")
+	if baseURL == "" {
+		return ""
+	}
 
 	// 构建 URL: baseURL/modelName:action?key=apiKey
 	actionURL := requestURL
