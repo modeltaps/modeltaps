@@ -70,6 +70,11 @@ func (p *BedrockProvider) GetRequestHeaders() (headers map[string]string) {
 
 // getKeyConfig parses channel.Key; the formats are documented on awscreds.ParseKey.
 func getKeyConfig(bedrock *BedrockProvider) {
+	if strings.TrimSpace(bedrock.Channel.Key) == "" {
+		// No key at all is not a malformed key: capability lookups build a provider from a bare
+		// channel type, and logging an error for each of those only adds noise.
+		return
+	}
 	cfg, ok := awscreds.ParseKey(bedrock.Channel.Key)
 	if !ok {
 		// A malformed key must not be swallowed: the channel would look configured while the
