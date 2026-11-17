@@ -165,6 +165,7 @@ name = "Modeltaps"
 base_url = "https://your-modeltaps-domain.com/codex/v1"
 env_key = "MODELTAPS_API_KEY"
 wire_api = "responses"
+model_catalog_url = "https://your-modeltaps-domain.com/codex/v1/models"
 ```
 
 ```bash
@@ -172,7 +173,7 @@ export MODELTAPS_API_KEY=sk-替换为你的key
 ```
 
 - `wire_api` 必须是 `responses`：Codex 只支持 Responses API。
-- `/codex/v1/models` 按 Codex 读取的模型目录格式返回，`/model` 里就能看到你的 Key 可调用的对话模型。如果 `/model` 里没有出现，在 provider 里再加一行 `model_catalog_url = "https://your-modeltaps-domain.com/codex/v1/models"`。
+- `model_catalog_url` 让 Codex 从 Modeltaps 读取模型目录：`/model` 里能看到你的 Key 可调用的对话模型，Codex 也不再提示找不到模型元数据。每个条目带的是 Codex 自己的系统提示，行为和用它内置模型时一样。
 - Codex 发送的 `prompt_cache_key` 原样送到上游，同一个 Codex 会话的请求固定在同一个渠道上。
 
 ### 其他编程 Agent

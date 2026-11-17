@@ -165,6 +165,7 @@ name = "Modeltaps"
 base_url = "https://your-modeltaps-domain.com/codex/v1"
 env_key = "MODELTAPS_API_KEY"
 wire_api = "responses"
+model_catalog_url = "https://your-modeltaps-domain.com/codex/v1/models"
 ```
 
 ```bash
@@ -172,7 +173,7 @@ export MODELTAPS_API_KEY=sk-replace-with-your-key
 ```
 
 - `wire_api` must be `responses`: Codex only speaks the Responses API.
-- `/codex/v1/models` answers in the model catalogue format Codex reads, so `/model` lists the chat models your key can call. If `/model` does not show them, also add `model_catalog_url = "https://your-modeltaps-domain.com/codex/v1/models"` to the provider.
+- `model_catalog_url` makes Codex read its model list from Modeltaps, so `/model` lists the chat models your key can call and Codex does not warn about unknown model metadata. Each entry carries Codex's own system prompt, so Codex behaves as it does with its built-in models.
 - The `prompt_cache_key` Codex sends reaches the upstream unchanged, and the requests of one Codex session stay on one channel.
 
 ### Other coding agents

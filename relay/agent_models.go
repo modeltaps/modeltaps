@@ -6,6 +6,7 @@ package relay
 // (image, audio, embedding, rerank). See common/agentclient for the client conventions.
 
 import (
+	_ "embed"
 	"encoding/json"
 	"net/http"
 	"regexp"
@@ -205,14 +206,11 @@ type codexModelInfo struct {
 }
 
 // codexBaseInstructions is the system prompt Codex uses for a model listed by /codex/v1/models:
-// the catalog replaces the prompt the client would use for an unknown model.
-const codexBaseInstructions = `You are a coding agent running in the Codex CLI, a terminal-based coding assistant. You and the user share one workspace; your job is to complete the user's request.
-
-- Read the relevant code before changing it, and keep changes focused on the task.
-- Use the shell tool to inspect files and run commands, and the apply_patch tool (or the apply_patch command in the shell) to edit files.
-- Follow the conventions of the repository; run its tests and checks when they exist.
-- Do not undo changes you did not make, and ask before destructive actions.
-- When you finish, summarize what you changed and anything left to do, briefly.`
+// the catalog replaces the prompt the client would use, so it carries Codex's own prompt
+// (Apache-2.0, see third_party/codex).
+//
+//go:embed third_party/codex/prompt.md
+var codexBaseInstructions string
 
 var codexReasoningLevels = []codexReasoningLevel{
 	{Effort: "low", Description: "Fast responses with lighter reasoning"},

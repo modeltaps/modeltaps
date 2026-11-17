@@ -30,6 +30,15 @@ substantial backend components — are derived from these upstream projects.
 The frontend (web/) is periodically synced one-way from the done-hub
 upstream; the backend is fully forked and is never synced from upstream.
 
+Bundled third-party content:
+
+  - OpenAI Codex system prompt — Apache License, Version 2.0
+    Copyright 2025 OpenAI
+    https://github.com/openai/codex
+    relay/third_party/codex/prompt.md is sent unchanged to Codex clients as the
+    model instructions of /codex/v1/models; its license and NOTICE are in
+    relay/third_party/codex/.
+
 Bundled fonts:
 
   - Fredoka — SIL Open Font License, Version 1.1

@@ -384,6 +384,10 @@ func TestCodexModelsList(t *testing.T) {
 			m.TruncationPolicy == nil || m.ExperimentalSupportedTools == nil || m.SupportedReasoningLevels == nil {
 			t.Fatalf("entry lacks a required field: %s", w.Body.String())
 		}
+		// The instructions are Codex's own prompt (relay/third_party/codex/prompt.md), whole.
+		if !strings.HasPrefix(*m.BaseInstructions, "You are a coding agent running in the Codex CLI") || len(*m.BaseInstructions) < 10000 {
+			t.Fatalf("base_instructions is not the Codex prompt (%d bytes)", len(*m.BaseInstructions))
+		}
 		slugs[*m.Slug] = true
 		if *m.Slug == agentCodexModel {
 			if *m.DisplayName != "GPT-5.5" || m.ContextWindow == nil || *m.ContextWindow != 400_000 ||

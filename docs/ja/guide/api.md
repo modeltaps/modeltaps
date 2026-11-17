@@ -165,6 +165,7 @@ name = "Modeltaps"
 base_url = "https://your-modeltaps-domain.com/codex/v1"
 env_key = "MODELTAPS_API_KEY"
 wire_api = "responses"
+model_catalog_url = "https://your-modeltaps-domain.com/codex/v1/models"
 ```
 
 ```bash
@@ -172,7 +173,7 @@ export MODELTAPS_API_KEY=sk-ここを自分のキーに置き換えてくださ�
 ```
 
 - `wire_api` は `responses` にしてください。Codex は Responses API のみに対応しています。
-- `/codex/v1/models` は Codex が読むモデルカタログの形式で返すため、`/model` に API キーで呼び出せるチャットモデルが表示されます。表示されない場合は、provider に `model_catalog_url = "https://your-modeltaps-domain.com/codex/v1/models"` も追加してください。
+- `model_catalog_url` を設定すると、Codex は Modeltaps からモデルカタログを読み込みます。`/model` に API キーで呼び出せるチャットモデルが表示され、モデルのメタデータが見つからないという警告も出なくなります。各エントリには Codex 自身のシステムプロンプトが含まれるため、内蔵モデルを使う場合と同じように動作します。
 - Codex が送る `prompt_cache_key` はそのまま上流に送られ、同じ Codex セッションのリクエストは同じチャネルに固定されます。
 
 ### その他のコーディングエージェント
