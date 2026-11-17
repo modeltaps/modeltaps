@@ -916,6 +916,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- OAuth and OIDC callbacks bind a provider to the signed-in account only while that session is
+  still valid; a revoked or expired session counts as signed out. GitHub sign-in matches an
+  account by its GitHub id; an older account that only stored the login name matches it once and
+  then stores the id, and admin or root accounts never match by login name.
+- Verification codes and password reset mails go out at most once a minute per address and
+  purpose; asking again sooner keeps the code already sent.
+- Accounts an organization creates never get the sign-up credit and follow the site's
+  registration switches and email domain allowlist (site admins excepted). Creating an
+  organization needs a verified email or a phone number. Organization keys stop working once the
+  site bans or deletes the member who created them.
+- Per-minute transcription prices bill at least the length the uploaded audio can hold, so a
+  forged file header no longer cuts the price, and the upstream's own duration counts when it is
+  longer. Uploaded files are removed when the request ends.
+- Midjourney tasks record what they were charged and a timeout refunds only that; a task the
+  upstream already finished is no longer timed out.
+- The Gemini native route serves only `generateContent`, `streamGenerateContent` and
+  `countTokens`. Responses requests with `background` set are refused, since the gateway cannot
+  bill background runs.
+- With an image proxy configured, image URLs are checked against private addresses on every
+  connection and the proxy is sent the checked IP. A proxy that refuses CONNECT to port 80 can no
+  longer fetch plain `http://` images.
+- Log exports (site, personal and organization) need a time range of at most 31 days and at most
+  100,000 rows, and one export per user runs at a time.
 - Only the root user can manage sign-in (OIDC) providers. Changing a provider's issuer or client
   ID needs the client secret again, and a new issuer removes the provider's account links, so
   users link again on their next sign-in. Linking by verified email or phone never picks an admin
