@@ -2251,7 +2251,7 @@
     },
     "models": {
       "add": "Add",
-      "autoAdd": "new upstream models are added automatically",
+      "autoAdd": "new upstream models are switched on automatically",
       "count_one": "{{count}} model",
       "count_other": "{{count}} models",
       "doneAdding": "Done",
@@ -2343,6 +2343,7 @@
       "addedToCatalog": "Added {{model}} to the catalog as a draft; it becomes public once it has a price and is published on the model page",
       "attached": "Now supplying {{model}}",
       "removeGone": "Remove all {{count}}",
+      "switchOnNew": "Switch on all {{count}}",
       "bulkAdd": "Add {{count}}",
       "bulkOff": "Turn off {{count}}",
       "bulkOn": "Turn on {{count}}",
@@ -2416,7 +2417,7 @@
       "testModelHint": "Used by connection tests and scheduled checks; empty uses the first model",
       "thresholdHint": "Notifies you when the upstream balance drops below this",
       "thresholdOff": "Off",
-      "autoAddHint": "When the daily model check finds models newly offered upstream, add them to this channel (with prices and metadata) instead of only reporting them. Once routing by supply is on, new models are not added to the channel's model list: a model that belongs to a public model in the catalog gets a supply from this channel as the intake rules below say (on at once, or waiting for review), and the rest wait under New upstream models in the model catalog. Models matching the ignore rules are skipped.",
+      "autoAddHint": "The daily model check keeps this channel's model list in step with the upstream: models newly offered upstream join the list, and a model the upstream stops listing stays, marked gone. With this on, new models join switched on (with prices and metadata) instead of switched off. Once routing by supply is on, the list itself routes nothing: new models join switched on, and a model that belongs to a public model in the catalog gets a supply from this channel as the intake rules below say (on at once, or waiting for review); the rest wait under New upstream models in the model catalog. Models you remove are not added back, and models matching the ignore rules are skipped.",
       "thresholdIn": "Low-balance alert ({{currency}})",
       "thresholdSupport": {
         "none": "This provider has no balance endpoint, so there is no balance to alert on.",

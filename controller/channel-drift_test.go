@@ -109,16 +109,21 @@ func TestComputeModelDrift_NewModelsAgainstSnapshot(t *testing.T) {
 	}
 }
 
-// 管理员把新增模型加入渠道 models（或经 model_mapping 映射）后，下次检测应自动从 NewModels 移除。
-func TestComputeModelDrift_NewModelsDropWhenConfigured(t *testing.T) {
+// A flagged new model stays flagged once the check (or an admin) adds it to the list; a model
+// new upstream that the channel already listed is not flagged; a removed one is never flagged.
+func TestComputeModelDrift_NewModelsAfterJoining(t *testing.T) {
 	prev := &model.ModelDriftResult{
-		NewModels:        []string{"o3", "o3-mini"},
-		UpstreamSnapshot: []string{"gpt-4o", "o3", "o3-mini"},
+		NewModels:        []string{"o3"},
+		UpstreamSnapshot: []string{"gpt-4o", "o3"},
+		Removed:          []string{"o4"},
 	}
-	got := computeModelDrift("gpt-4o,o3-alias", `{"o3-alias":"o3"}`, []string{"gpt-4o", "o3", "o3-mini"}, prev)
-	want := []string{"o3-mini"}
+	got := computeModelDrift("gpt-4o,o3-alias,o3-mini", `{"o3-alias":"o3"}`, []string{"gpt-4o", "o3", "o3-mini", "o3-pro", "o4"}, prev)
+	want := []string{"o3", "o3-pro"}
 	if !reflect.DeepEqual(got.NewModels, want) {
 		t.Fatalf("new models mismatch: want %v got %v", want, got.NewModels)
+	}
+	if !reflect.DeepEqual(got.Removed, []string{"o4"}) {
+		t.Fatalf("removed = %v", got.Removed)
 	}
 }
 

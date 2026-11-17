@@ -12,8 +12,8 @@ import (
 
 // While supplies route requests, the drift check of an opted-in channel adds a supply for a new
 // upstream model that belongs to a public model (a chat model: the default intake rules switch
-// it on), leaves the others for the models page instead
-// of adding them to the channel's model list, and does not report a model a supply on the
+// it on), leaves the others for the models page, adds every upstream name to the channel's model
+// list switched on (the supplies decide what routes), and does not report a model a supply on the
 // channel already sends.
 func TestDriftWithSuppliesLeavesNewModelsPending(t *testing.T) {
 	setupBalanceTestDB(t)
@@ -60,8 +60,8 @@ func TestDriftWithSuppliesLeavesNewModelsPending(t *testing.T) {
 		t.Fatal(err)
 	}
 	stored, _ := model.GetChannelById(ch.Id)
-	if stored.Models != "m-old" {
-		t.Fatalf("models = %q; the model list must stay as it is while supplies route", stored.Models)
+	if stored.Models != "m-old,m-new,m-supplied,m-known" || stored.DisabledModels == nil || len(*stored.DisabledModels) != 0 {
+		t.Fatalf("models = %q, disabled %v; the list follows the upstream, switched on while supplies route", stored.Models, stored.DisabledModels)
 	}
 	if summary.Added != 1 || len(summary.Channels) != 1 || strings.Join(summary.Channels[0].AddedModels, ",") != "m-known" {
 		t.Fatalf("summary = %+v, want m-known supplied", summary)

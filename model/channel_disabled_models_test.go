@@ -105,20 +105,39 @@ func TestUpdateKeepsOrPrunesDisabledModels(t *testing.T) {
 	}
 }
 
-func TestUpdateClearsNewModelsTheChannelNowLists(t *testing.T) {
+// A save remembers the names it removed (and their mapping targets) and unflags new models it
+// removed or switched; new models it only kept stay flagged.
+func TestUpdateNotesRemovedAndReviewedModels(t *testing.T) {
 	useAllGroupsTestDB(t, "default")
-	channel := createGroupTestChannel(t, "c", "default", "a")
-	if err := channel.UpdateModelDrift(ModelDriftResult{NewModels: []string{"b", "vendor/c", "d"}}); err != nil {
-		t.Fatal(err)
-	}
+	channel := createGroupTestChannel(t, "c", "default", "a,b,c,d")
 	mapping := `{"c":"vendor/c"}`
-	channel.Models = "a,b,c"
 	channel.ModelMapping = &mapping
 	if err := channel.Update(true); err != nil {
 		t.Fatal(err)
 	}
-	reloaded, _ := GetChannelById(channel.Id)
-	if got := reloaded.GetModelDrift().NewModels; !slices.Equal(got, []string{"d"}) {
-		t.Fatalf("new models after save = %v", got)
+	if err := channel.UpdateModelDrift(ModelDriftResult{NewModels: []string{"b", "vendor/c", "d"}, Removed: []string{"a", "z"}}); err != nil {
+		t.Fatal(err)
 	}
+	off := datatypes.JSONSlice[string]{"d"}
+	channel.Models = "a,b,d"
+	channel.DisabledModels = &off
+	if err := channel.Update(true); err != nil {
+		t.Fatal(err)
+	}
+	drift := mustDrift(t, channel.Id)
+	if !slices.Equal(drift.NewModels, []string{"b"}) {
+		t.Fatalf("new models after save = %v, want b (c removed, d switched off)", drift.NewModels)
+	}
+	if !slices.Equal(drift.Removed, []string{"c", "vendor/c", "z"}) {
+		t.Fatalf("removed after save = %v, want c and vendor/c added, a (listed) forgotten", drift.Removed)
+	}
+}
+
+func mustDrift(t *testing.T, id int) *ModelDriftResult {
+	t.Helper()
+	reloaded, err := GetChannelById(id)
+	if err != nil || reloaded.GetModelDrift() == nil {
+		t.Fatalf("no drift result: %v", err)
+	}
+	return reloaded.GetModelDrift()
 }

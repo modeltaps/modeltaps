@@ -160,7 +160,7 @@ func (channel *Channel) GetManageKey() string {
 
 // ModelDriftResult 记录一次「渠道 models vs 上游实时模型列表」对比结果。
 // MissingModels 为渠道配置了、但上游已不再返回的模型名（对外别名按 model_mapping 解析为上游名后对比）。
-// NewModels 为上游相对「上次检测快照」新出现、且渠道尚未配置的模型名（累计，直到被加入渠道或被管理员忽略）。
+// NewModels 为上游相对「上次检测快照」新出现的模型名：检测会把它们加入渠道列表，标记保留到管理员忽略、开关或移除为止。
 // UpstreamSnapshot 为本次上游返回的完整模型 id 列表，作为下次检测判定「新增」的基线。
 type ModelDriftResult struct {
 	CheckedAt        int64    `json:"checked_at"`
@@ -171,7 +171,10 @@ type ModelDriftResult struct {
 	// check keeps only the ones still missing, so a model that comes back and goes again is
 	// flagged again, and so is any model that goes missing after the dismissal.
 	DismissedMissing []string `json:"dismissed_missing,omitempty"`
-	OK               bool     `json:"ok"`
+	// Removed are upstream names an admin removed from the channel's list: the check does not
+	// add them back while they stay removed (see JoinUpstreamModels). Listing one again forgets it.
+	Removed []string `json:"removed,omitempty"`
+	OK      bool     `json:"ok"`
 	// Supplies is what the check changed on the channel's supplies while they route requests:
 	// supplies marked gone or back (see MarkSupplyUpstreams); nil when nothing changed.
 	Supplies *SupplyUpstreamChange `json:"supplies,omitempty"`
@@ -492,6 +495,7 @@ func BatchDelModelChannels(params *BatchChannelsParams) (int64, error) {
 	}
 
 	for _, channel := range channels {
+		_, listBefore, listed := loadModelListState(channel.Id)
 		modelsSlice := strings.Split(channel.Models, ",")
 		for i, m := range modelsSlice {
 			if m == params.Value {
@@ -502,6 +506,11 @@ func BatchDelModelChannels(params *BatchChannelsParams) (int64, error) {
 
 		channel.Models = strings.Join(modelsSlice, ",")
 		channel.UpdateRaw(false)
+		if listed {
+			if err := noteModelListChange(channel.Id, listBefore); err != nil {
+				logger.SysError("failed to note model list change of channel " + channel.Name + ": " + err.Error())
+			}
+		}
 		count++
 	}
 
@@ -726,13 +735,16 @@ func (channel *Channel) Insert() error {
 func (channel *Channel) Update(overwrite bool) error {
 	// The numbers before the change, so supplies that follow the channel can move with it.
 	before, _ := channelNumbers(DB.Where("id = ?", channel.Id))
+	_, listBefore, listed := loadModelListState(channel.Id)
 
 	err := channel.UpdateRaw(overwrite)
 
 	if err == nil {
-		// A new upstream model the admin added by hand is no longer new.
-		if err := channel.clearConfiguredNewModels(); err != nil {
-			logger.SysError("failed to clear new models of channel " + channel.Name + ": " + err.Error())
+		// Remember removed models so the model check does not add them back.
+		if listed {
+			if err := noteModelListChange(channel.Id, listBefore); err != nil {
+				logger.SysError("failed to note model list change of channel " + channel.Name + ": " + err.Error())
+			}
 		}
 		if old, ok := before[channel.Id]; ok {
 			if _, syncErr := SyncSuppliesWithChannel(channel.Id, old[0], channel.GetPriority(), old[1], channel.GetWeight()); syncErr != nil {
@@ -850,53 +862,6 @@ func (channel *Channel) RemoveNewModels(names ...string) error {
 	}
 	result.NewModels = kept
 	return channel.UpdateModelDrift(*result)
-}
-
-// clearConfiguredNewModels takes the names the channel now lists off the drift check's new
-// models, by its own name or as a mapping target. Without this a model added by hand stayed
-// flagged as new, and removing it again before the next check had the check add it back.
-func (channel *Channel) clearConfiguredNewModels() error {
-	result := channel.GetModelDrift()
-	if result == nil || len(result.NewModels) == 0 {
-		return nil
-	}
-	mapping := channelMappingOf(channel)
-	var configured []string
-	for _, name := range strings.Split(channel.Models, ",") {
-		if name = strings.TrimSpace(name); name != "" {
-			configured = append(configured, name)
-			if up, ok := mapping[name]; ok {
-				configured = append(configured, up)
-			}
-		}
-	}
-	return channel.RemoveNewModels(configured...)
-}
-
-// AddDriftModels appends models to the channel's model list (deduplicated) and reloads the
-// routing cache, for the drift check's auto add. It touches no other column.
-func (channel *Channel) AddDriftModels(models []string) error {
-	if len(models) == 0 {
-		return nil
-	}
-	existing := SplitChannelModels(channel.Models)
-	seen := make(map[string]bool, len(existing))
-	for _, m := range existing {
-		seen[m] = true
-	}
-	for _, m := range models {
-		if m != "" && !seen[m] {
-			seen[m] = true
-			existing = append(existing, m)
-		}
-	}
-	merged := strings.Join(existing, ",")
-	if err := DB.Model(&Channel{}).Where("id = ?", channel.Id).Update("models", merged).Error; err != nil {
-		return err
-	}
-	channel.Models = merged
-	ChannelGroup.Load()
-	return nil
 }
 
 // UpdateModelDrift 只更新渠道漂移结果列，不触及其它字段（供漂移检测 cron / 手动触发写回）。

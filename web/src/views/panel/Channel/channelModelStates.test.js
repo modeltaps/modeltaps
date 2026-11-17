@@ -58,14 +58,15 @@ describe('state filters', () => {
   const rows = [
     { offer: { offered: true }, gone: false },
     { offer: { offered: false, reason: 'not_in_catalog' }, gone: true },
-    { offer: null, gone: false }
+    { offer: null, gone: false, fresh: true }
   ];
   it('counts each state', () => {
-    expect(stateCounts(rows, [{ name: 'x' }])).toEqual({ offered: 1, unoffered: 1, gone: 1, unlisted: 1 });
+    expect(stateCounts(rows, [{ name: 'x' }])).toEqual({ offered: 1, unoffered: 1, gone: 1, new: 1, unlisted: 1 });
   });
   it('matches rows to a filter', () => {
     expect(rows.filter((r) => matchesState(r, 'offered'))).toHaveLength(1);
     expect(rows.filter((r) => matchesState(r, 'unoffered'))).toHaveLength(1);
     expect(rows.filter((r) => matchesState(r, 'gone'))).toHaveLength(1);
+    expect(rows.filter((r) => matchesState(r, 'new'))).toHaveLength(1);
   });
 });

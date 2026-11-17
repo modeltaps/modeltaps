@@ -58,14 +58,47 @@ func filterIgnoredModels(models []string, matcher *driftIgnoreMatcher) []string 
 	return kept
 }
 
-// applyDriftAutoAdd handles the new upstream models of a channel that opted in, clears the ones
-// it handled from the drift result and returns the ones that route at once. Without supplies it
-// adds them to the channel's model list and fills their prices and metadata. While supplies
-// route requests the channel's model list serves nothing, so the channel's intake rules decide,
-// for each new name that belongs to a public model, whether a supply is added, switched on or
-// left for an admin to confirm, and where it joins (see model.IntakeChannelModels); names the
-// rules skip, and names of no public model, stay in the result for an admin.
-func applyDriftAutoAdd(ch *model.Channel, result *model.ModelDriftResult) []string {
+// syncDriftModels keeps a channel's model list in step with its upstream and returns the new
+// upstream models that route at once. Every name the upstream lists that the channel does not
+// list (by name, as a mapping target or under an enabled wildcard), did not have removed and does
+// not ignore joins the list. While supplies route requests the list serves nothing by itself, so
+// names join switched on and the supplies decide; otherwise a name joins switched off unless it
+// is new at this check and the channel adds new models automatically.
+//
+// With auto add on, the new names are then handled as before: while supplies route requests the
+// channel's intake rules decide, for each new name that belongs to a public model, whether a
+// supply is added, switched on or left for an admin to confirm (see model.IntakeChannelModels);
+// otherwise the names switched on get their prices and metadata. Names handled this way are
+// taken off the result's new models; the rest stay flagged for an admin.
+func syncDriftModels(ch *model.Channel, result *model.ModelDriftResult) []string {
+	matcher := newDriftIgnoreMatcher(ch.DriftIgnoreRules)
+	listed := ch.ListedUpstreamNames()
+	removed := make(map[string]bool, len(result.Removed))
+	for _, name := range result.Removed {
+		removed[name] = true
+	}
+	fresh := make(map[string]bool, len(result.NewModels))
+	for _, name := range result.NewModels {
+		fresh[name] = true
+	}
+	var join, off, switchedOn []string
+	for _, name := range result.UpstreamSnapshot {
+		if name == "" || listed[name] || removed[name] || strings.Contains(name, "*") || matcher.ignored(name) || ch.CoveredByWildcard(name) {
+			continue
+		}
+		join = append(join, name)
+		switch {
+		case config.ModelSupplyEnabled:
+		case ch.DriftAutoAdd && fresh[name]:
+			switchedOn = append(switchedOn, name)
+		default:
+			off = append(off, name)
+		}
+	}
+	if err := ch.JoinUpstreamModels(join, off); err != nil {
+		logger.SysError("model drift sync failed for channel " + ch.Name + ": " + err.Error())
+		return nil
+	}
 	if !ch.DriftAutoAdd || len(result.NewModels) == 0 {
 		return nil
 	}
@@ -85,14 +118,15 @@ func applyDriftAutoAdd(ch *model.Channel, result *model.ModelDriftResult) []stri
 		result.NewModels = model.WithoutSuppliedModels(ch.Id, result.NewModels)
 		return added
 	}
-	added := result.NewModels
-	if err := ch.AddDriftModels(added); err != nil {
-		logger.SysError("model drift auto add failed for channel " + ch.Name + ": " + err.Error())
+	if len(switchedOn) == 0 {
 		return nil
 	}
-	result.NewModels = nil
-	AutoSyncChannelCatalog(ch.Type, strings.Join(added, ","), "drift auto add")
-	return added
+	result.NewModels = slices.DeleteFunc(result.NewModels, func(name string) bool { return slices.Contains(switchedOn, name) })
+	if len(result.NewModels) == 0 {
+		result.NewModels = nil
+	}
+	AutoSyncChannelCatalog(ch.Type, strings.Join(switchedOn, ","), "drift auto add")
+	return switchedOn
 }
 
 // DriftedChannel 记录一个检出漂移或有上游新增模型的渠道，供通知与手动触发 API 汇报。
@@ -140,7 +174,7 @@ func CheckAllChannelsModelDrift() (*ModelDriftCheckSummary, error) {
 			}
 			continue
 		}
-		added := applyDriftAutoAdd(ch, result)
+		added := syncDriftModels(ch, result)
 		if err := ch.UpdateModelDrift(*result); err != nil {
 			logger.SysError("model drift persist failed for channel " + ch.Name + ": " + err.Error())
 			continue
@@ -262,7 +296,7 @@ func CheckModelDrift(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			return
 		}
-		applyDriftAutoAdd(channel, result)
+		syncDriftModels(channel, result)
 		if err := channel.UpdateModelDrift(*result); err != nil {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			return
@@ -408,6 +442,7 @@ func computeModelDrift(modelsCSV, modelMapping string, upstream []string, prev *
 		NewModels:        computeNewModels(snapshot, upstreamSet, configured, prev),
 		UpstreamSnapshot: snapshot,
 		DismissedMissing: stillDismissed(missing, prev),
+		Removed:          stillRemoved(configured, prev),
 		OK:               len(missing) == 0,
 	}
 }
@@ -427,6 +462,21 @@ func stillDismissed(missing []string, prev *model.ModelDriftResult) []string {
 	return kept
 }
 
+// stillRemoved keeps the removed names of the previous check that the channel does not list
+// again, so a removal lasts until the admin adds the model back.
+func stillRemoved(configured map[string]bool, prev *model.ModelDriftResult) []string {
+	if prev == nil {
+		return nil
+	}
+	var kept []string
+	for _, m := range prev.Removed {
+		if !configured[m] {
+			kept = append(kept, m)
+		}
+	}
+	return kept
+}
+
 // undismissedMissing is the missing models of a drift result an admin has not handled yet:
 // neither dismissed nor switched off on the channel (disabled, keyed by the channel's names).
 func undismissedMissing(result *model.ModelDriftResult, disabled map[string]bool) []string {
@@ -439,12 +489,20 @@ func undismissedMissing(result *model.ModelDriftResult, disabled map[string]bool
 	return out
 }
 
-// computeNewModels 计算累计的「上游新增且渠道未配置」模型列表，顺序为 prev.NewModels 原序 + 本次新增按上游顺序。
+// computeNewModels 计算累计的「上游新增」模型列表，顺序为 prev.NewModels 原序 + 本次新增按上游顺序。
+// 上次已标记的名称在检测把它加入渠道列表后仍保留标记（直到管理员忽略、开关或移除），只要上游仍列出且未被移除；
+// 本次新出现的名称若渠道早已配置（管理员先手动加过）则不标记。
 func computeNewModels(snapshot []string, upstreamSet, configured map[string]bool, prev *model.ModelDriftResult) []string {
 	var newModels []string
 	seen := make(map[string]bool)
-	appendIfEligible := func(name string) {
-		if name == "" || seen[name] || configured[name] || !upstreamSet[name] {
+	removed := make(map[string]bool)
+	if prev != nil {
+		for _, m := range prev.Removed {
+			removed[m] = true
+		}
+	}
+	appendIfEligible := func(name string, flagged bool) {
+		if name == "" || seen[name] || removed[name] || !upstreamSet[name] || (!flagged && configured[name]) {
 			return
 		}
 		seen[name] = true
@@ -453,7 +511,7 @@ func computeNewModels(snapshot []string, upstreamSet, configured map[string]bool
 
 	if prev != nil {
 		for _, m := range prev.NewModels {
-			appendIfEligible(strings.TrimSpace(m))
+			appendIfEligible(strings.TrimSpace(m), true)
 		}
 	}
 
@@ -470,7 +528,7 @@ func computeNewModels(snapshot []string, upstreamSet, configured map[string]bool
 	}
 	for _, u := range snapshot {
 		if !prevSet[u] {
-			appendIfEligible(u)
+			appendIfEligible(u, false)
 		}
 	}
 	return newModels

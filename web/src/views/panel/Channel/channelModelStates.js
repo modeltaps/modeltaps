@@ -5,7 +5,8 @@
 import { upstreamNameOf } from './channelPrices';
 
 // Filters in the order the table shows them.
-// `new` is the part of `unlisted` the drift check flags as new upstream.
+// `new` is the listed models the drift check flags as new upstream (it adds them to the list);
+// `unlisted` is what the upstream lists that the channel removed or ignores.
 export const STATE_FILTERS = ['offered', 'unoffered', 'gone', 'new', 'unlisted'];
 
 // Whether a listed model serves an enabled public model, and why not when it does not:
@@ -47,12 +48,14 @@ export function matchesState(row, key) {
   if (key === 'offered') return row.offer?.offered === true;
   if (key === 'unoffered') return row.offer?.offered === false;
   if (key === 'gone') return row.gone;
+  if (key === 'new') return row.fresh;
   return false;
 }
 
 export function stateCounts(rows, unlisted) {
-  const out = { offered: 0, unoffered: 0, gone: 0, unlisted: unlisted.length };
+  const out = { offered: 0, unoffered: 0, gone: 0, new: 0, unlisted: unlisted.length };
   for (const r of rows) {
+    if (r.fresh) out.new += 1;
     if (r.offer?.offered === true) out.offered += 1;
     if (r.offer?.offered === false) out.unoffered += 1;
     if (r.gone) out.gone += 1;
