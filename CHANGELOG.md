@@ -475,6 +475,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Mail sending is a list of mail services, one in use. Adding one opens a sheet: pick the service
+  (or custom SMTP), fill in what it hands out, send a test and save. The first service goes into
+  use; using another replaces it, and the one in use can only be deleted after switching, so a new
+  service can be set up and tested before the switch. Settings saved before move into the first
+  service, in use, on upgrade.
 - Per-minute speech-to-text prices show 4 significant digits ($0.0035 instead of $0.0035004, the
   rounding left by gateway per-second prices), and the model list shows the price per hour of
   audio on hover. Billing keeps the full price.
