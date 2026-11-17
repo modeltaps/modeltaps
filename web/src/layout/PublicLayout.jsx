@@ -1,9 +1,7 @@
 import { Outlet, Link } from 'react-router';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { Moon, Sun } from 'lucide-react';
 
-import useTheme from 'hooks/useTheme';
 import { Button } from '@/components/ui/button';
 import { BrandLockup } from '@/components/chrome/Logo';
 import UserMenu from '@/components/chrome/UserMenu';
@@ -18,10 +16,8 @@ import { workbench } from 'routes/paths';
 
 export default function PublicLayout() {
   const { t } = useTranslation();
-  const { resolved, cycle } = useTheme();
   const siteInfo = useSelector((state) => state.siteInfo);
   const account = useSelector((state) => state.account);
-  const dark = resolved === 'dark';
   // Docs: the configured external link, else the in-app API docs for signed-in users.
   const docsExternal = Boolean(siteInfo.docs_link);
   const docsHref = siteInfo.docs_link || (account.user ? workbench.docs() : '');
@@ -51,15 +47,6 @@ export default function PublicLayout() {
         </div>
         <div className="flex items-center gap-0.5">
           <LanguageSwitcher iconOnly />
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Toggle theme"
-            className="text-muted-foreground hover:text-foreground"
-            onClick={cycle}
-          >
-            {dark ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />}
-          </Button>
           <span aria-hidden className="mx-2 h-5 w-px bg-border" />
           {account.user ? (
             <div className="flex items-center gap-3">
