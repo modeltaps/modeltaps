@@ -372,13 +372,13 @@ export default function AgentDevice() {
 
         <dl className="mt-5 space-y-1 border-t border-border/60 pt-4 text-xs text-muted-foreground">
           <div className="flex justify-between gap-4">
-            <dt>{t('agentDevice.source')}</dt>
+            <dt className="shrink-0">{t('agentDevice.source')}</dt>
             <dd className="min-w-0 truncate font-mono" title={source}>
               {source || '—'}
             </dd>
           </div>
           <div className="flex justify-between gap-4">
-            <dt>{t('agentDevice.openFor')}</dt>
+            <dt className="shrink-0">{t('agentDevice.openFor')}</dt>
             <dd className="font-mono tabular-nums">{secondsLeft !== null ? clock(secondsLeft) : '—'}</dd>
           </div>
         </dl>
