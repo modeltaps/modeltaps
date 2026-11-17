@@ -147,6 +147,34 @@ func TestUpsertPricesDedupesBatch(t *testing.T) {
 	}
 }
 
+// Every sync mode stores one row per model when the source names a model twice.
+func TestSyncPricesDedupeBatch(t *testing.T) {
+	twice := func() []*Price {
+		return []*Price{
+			{Model: "gpt-5.1", Type: TokensPriceType, ChannelType: 1, Input: 0.625, Output: 5},
+			{Model: "gpt-5.1", Type: TokensPriceType, ChannelType: 3, Input: 9, Output: 9},
+		}
+	}
+	syncs := map[string]func(p *Pricing, prices []*Price) error{
+		"overwrite":         (*Pricing).SyncPriceWithOverwrite,
+		"without overwrite": (*Pricing).SyncPriceWithoutOverwrite,
+	}
+	for name, sync := range syncs {
+		t.Run(name, func(t *testing.T) {
+			setupPriceTestDB(t)
+			p := &Pricing{Prices: map[string]*Price{}, Match: []string{}}
+			if err := sync(p, twice()); err != nil {
+				t.Fatal(err)
+			}
+			var rows []Price
+			DB.Where("model = ?", "gpt-5.1").Find(&rows)
+			if len(rows) != 1 || rows[0].ChannelType != 1 {
+				t.Errorf("rows = %+v, want one row from the first price", rows)
+			}
+		})
+	}
+}
+
 // The migration keeps one row per model: a locked row, otherwise the last row read.
 func TestDedupePricesMigration(t *testing.T) {
 	setupPriceTestDB(t)

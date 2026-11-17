@@ -734,6 +734,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Price syncs (overwrite, update only, add only) and batch price edits store one row per model
+  when the source names a model twice; the first price wins, as the models.dev sync already did.
 - English console buttons and labels such as Create, Delete, Edit, Submit, Close and Back are
   capitalised; Close and Back no longer read "closure" and "return".
 - Image edit and variation requests with `n` above 64 (or below 1) are refused instead of passed

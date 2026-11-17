@@ -230,9 +230,24 @@ func DeletePrices(tx *gorm.DB, models []string) error {
 	return err
 }
 
+// InsertPrices stores the prices, one row per model: the table has no unique key on model, and a
+// list naming a model twice (a sync source that lists it on two providers) would otherwise store
+// two rows, the one loaded depending on row order. The first price of a model wins, as in
+// UpsertPrices.
 func InsertPrices(tx *gorm.DB, prices []*Price) error {
-	err := tx.CreateInBatches(prices, 100).Error
-	return err
+	seen := make(map[string]bool, len(prices))
+	unique := make([]*Price, 0, len(prices))
+	for _, price := range prices {
+		if price == nil || seen[price.Model] {
+			continue
+		}
+		seen[price.Model] = true
+		unique = append(unique, price)
+	}
+	if len(unique) == 0 {
+		return nil
+	}
+	return tx.CreateInBatches(unique, 100).Error
 }
 
 func DeleteAllPrices(tx *gorm.DB) error {
