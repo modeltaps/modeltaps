@@ -44,6 +44,11 @@ export default function OidcProviderSheet({ open, onOpenChange, editing, serverA
   // discovery 失败时后端返回 4xx，把原文留在这里并解锁「仍保存为停用」。
   const [discoveryError, setDiscoveryError] = useState('');
   const isEdit = !!editing;
+  // Mirrors the backend rule: a new issuer or client ID needs the secret again, and a new issuer
+  // unlinks every account from this provider. Trailing slashes do not make a new issuer.
+  const sameIssuer = (a, b) => (a || '').trim().replace(/\/+$/, '') === (b || '').trim().replace(/\/+$/, '');
+  const identityChanged =
+    isEdit && (!sameIssuer(values.issuer, editing.issuer) || (values.client_id || '').trim() !== (editing.client_id || ''));
 
   const setField = (key, value) => setValues((prev) => ({ ...prev, [key]: value }));
 
@@ -163,6 +168,11 @@ export default function OidcProviderSheet({ open, onOpenChange, editing, serverA
           {text('display_name', t(tk('form.displayName')), { placeholder: t(tk('form.displayNamePlaceholder')) })}
           {text('issuer', t(tk('form.issuer')), { placeholder: t(tk('form.issuerPlaceholder')) })}
           {text('client_id', t(tk('form.clientId')), { placeholder: t(tk('form.clientIdPlaceholder')) })}
+          {identityChanged && (
+            <Alert variant="warning">
+              <AlertDescription>{t(tk('form.identityChangeHint'))}</AlertDescription>
+            </Alert>
+          )}
           {text('client_secret', t(tk('form.clientSecret')), {
             type: 'password',
             placeholder: isEdit ? t(tk('form.clientSecretPlaceholderEdit')) : t(tk('form.clientSecretPlaceholder')),

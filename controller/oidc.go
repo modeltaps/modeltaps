@@ -111,6 +111,14 @@ func oidcLinkConflictMessage(provider *model.OidcProvider) string {
 	return "OIDC_LINK_CONFLICT:" + detail + ", " + oidcFailureAdvice()
 }
 
+// oidcLinkPrivilegedMessage is sent when a verified email or phone matched an admin account,
+// which is never linked automatically. It names no provider, like the other link messages of a
+// first-party provider, and does not repeat the matched email or phone.
+func oidcLinkPrivilegedMessage() string {
+	return "OIDC_LINK_PRIVILEGED:This account has admin rights and cannot be linked to a new sign-in identity automatically, " +
+		"sign in to it first, then link this identity on the \"Linked accounts\" page"
+}
+
 // oidcRegisterDisabledMessage 提供方禁止首登自动建号时的下发文案，同样按 first_party 隐藏提供方名称。
 func oidcRegisterDisabledMessage(provider *model.OidcProvider) string {
 	detail := "This sign-in identity is not linked to an account on this site"
@@ -390,6 +398,9 @@ const (
 	oidcLinkError
 	// oidcLinkConflict 已验证标识命中的账号在同一提供方下已绑定另一个 subject，拒绝自动关联。
 	oidcLinkConflict
+	// oidcLinkPrivileged the verified email or phone matched an admin or root account, which is
+	// never linked automatically: such accounts only bind a new identity while signed in.
+	oidcLinkPrivileged
 )
 
 // resolveOidcUser 按 (provider, subject) 查身份行；未命中时依次尝试按已验证邮箱
@@ -405,6 +416,11 @@ const (
 // IdP 下换了 subject（账号重建、租户迁移或 IdP 侧标识复用），自动补写第二条身份
 // 会把陌生 subject 静默接入已有账号，故返回 oidcLinkConflict 并要求用户登录后
 // 在「账号绑定」页显式绑定（oidcBind 仍允许同提供方多个 subject）。
+//
+// Accounts with role >= admin are never linked by email or phone (oidcLinkPrivileged): whoever
+// controls an IdP that asserts a verified email or phone would otherwise sign in as that admin.
+// They only bind a new identity explicitly while signed in (oidcBind); a subject that is already
+// linked keeps signing in as before.
 func resolveOidcUser(provider *model.OidcProvider, subject string, trustedEmail string, trustedPhone string) (*model.User, oidcLinkOutcome, error) {
 	identity, err := model.FindUserOidcIdentity(provider.Id, subject)
 	if err == nil {
@@ -430,6 +446,9 @@ func resolveOidcUser(provider *model.OidcProvider, subject string, trustedEmail 
 	}
 	if existingUser == nil {
 		return nil, oidcLinkNone, nil
+	}
+	if existingUser.Role >= config.RoleAdminUser {
+		return existingUser, oidcLinkPrivileged, nil
 	}
 	if existingUser.Status != config.UserStatusEnabled {
 		return existingUser, oidcLinkDisabled, nil
@@ -625,7 +644,8 @@ func oidcIdToken(c *gin.Context, provider *model.OidcProvider, verifier string, 
 // 关联顺序：先按 (provider_id, subject) 查身份行，命中即登录（遵循用户禁用条件）；
 // 未命中且该提供方开启 link_by_verified_email 且 id_token 携带已验证邮箱时，按邮箱
 // 关联已有账号并补写身份行；若该账号在同一提供方下已绑定别的 subject 则拒绝关联，
-// 返回 OIDC_LINK_CONFLICT 让用户改走登录后手动绑定；未关联到账号且该提供方开启
+// 返回 OIDC_LINK_CONFLICT 让用户改走登录后手动绑定（an admin or root account is never linked
+// automatically and gets OIDC_LINK_PRIVILEGED instead）；未关联到账号且该提供方开启
 // disable_auto_register 时返回 OIDC_REGISTER_DISABLED，否则注册新用户（站点关闭注册时返回
 // OIDC_REGISTER_CLOSED）。
 // 注意：绝不按 username claim 关联已有账号——IdP 侧可任意设置该 claim，会形成账号接管路径。
@@ -678,6 +698,14 @@ func OIDCAuth(c *gin.Context) {
 		logger.SysError(fmt.Sprintf("OIDC verified identifier link conflict: provider=%s user_id=%d subject=%s account already linked to another identity under this provider", provider.Slug, existingUser.Id, subject))
 		c.JSON(http.StatusOK, gin.H{
 			"message": oidcLinkConflictMessage(provider),
+			"success": false,
+		})
+		return
+	case oidcLinkPrivileged:
+		// Only the provider slug, the target user id and the subject are logged, never the email or phone.
+		logger.SysError(fmt.Sprintf("OIDC verified identifier matched an admin account, automatic linking refused: provider=%s user_id=%d subject=%s", provider.Slug, existingUser.Id, subject))
+		c.JSON(http.StatusOK, gin.H{
+			"message": oidcLinkPrivilegedMessage(),
 			"success": false,
 		})
 		return

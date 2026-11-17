@@ -322,6 +322,8 @@ func CreateOidcProvider(c *gin.Context) {
 
 // UpdateOidcProvider 更新提供方。slug 不可修改（IdP 侧已登记回调地址 /oauth/oidc/{slug}），
 // 入参里的 slug 被忽略；client_secret 为空表示不修改。
+// Changing the issuer or client_id requires client_secret to be re-entered; changing the issuer
+// also removes the provider's user identities (see model.OidcProvider.Update).
 func UpdateOidcProvider(c *gin.Context) {
 	id, ok := oidcProviderIdParam(c)
 	if !ok {
@@ -342,16 +344,37 @@ func UpdateOidcProvider(c *gin.Context) {
 		oidcProviderError(c, http.StatusBadRequest, err.Error())
 		return
 	}
+	// A new issuer or client ID is a different client: the stored secret must not follow it to
+	// the new token endpoint. Checked before discovery so nothing is sent to the new issuer.
+	issuerChanged := !model.SameOidcIssuer(provider.Issuer, req.Issuer)
+	if (issuerChanged || provider.ClientId != req.ClientId) && req.ClientSecret == "" {
+		oidcProviderError(c, http.StatusBadRequest, model.ErrOidcProviderSecretRequired.Error())
+		return
+	}
+	var unlinked int64
+	if issuerChanged {
+		count, err := model.CountOidcProviderIdentities(id)
+		if err != nil {
+			oidcProviderError(c, http.StatusInternalServerError, "Failed to count linked identities: "+err.Error())
+			return
+		}
+		unlinked = count
+	}
 
-	message := ""
+	var notes []string
 	if err := runOidcDiscovery(req.Issuer); err != nil {
 		if c.Query("force") != "true" {
 			oidcProviderError(c, http.StatusBadRequest, err.Error())
 			return
 		}
 		req.Enabled = false
-		message = err.Error() + "; saved as disabled because force was set"
+		notes = append(notes, err.Error()+"; saved as disabled because force was set")
 	}
+	if unlinked > 0 {
+		notes = append(notes, fmt.Sprintf(
+			"The issuer changed, so %d linked user identities of this provider were removed; users link again on their next sign-in", unlinked))
+	}
+	message := strings.Join(notes, "; ")
 
 	provider.DisplayName = req.DisplayName
 	provider.Issuer = req.Issuer
@@ -373,6 +396,10 @@ func UpdateOidcProvider(c *gin.Context) {
 	provider.Enabled = req.Enabled
 	provider.Sort = req.Sort
 	if err := provider.Update(); err != nil {
+		if errors.Is(err, model.ErrOidcProviderSecretRequired) {
+			oidcProviderError(c, http.StatusBadRequest, err.Error())
+			return
+		}
 		oidcProviderError(c, http.StatusInternalServerError, "Failed to update identity provider: "+err.Error())
 		return
 	}

@@ -6,6 +6,7 @@ import { isExternalAccountSystem } from 'utils/authAvailability';
 // 一律不展示,只用前端文案。
 const FAILURE_KEYS = {
   'OIDC_LINK_CONFLICT:': 'login.oidcLinkConflict',
+  'OIDC_LINK_PRIVILEGED:': 'login.oidcLinkPrivileged',
   'OIDC_REGISTER_DISABLED:': 'login.oidcRegisterDisabled',
   'OIDC_REGISTER_CLOSED:': 'login.oidcRegisterClosed'
 };

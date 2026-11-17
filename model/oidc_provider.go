@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"regexp"
+	"strings"
 
 	"github.com/modeltaps/modeltaps/common/utils"
 
@@ -142,8 +143,31 @@ func (provider *OidcProvider) Insert() error {
 	return DB.Create(provider).Error
 }
 
+// ErrOidcProviderSecretRequired is returned when an update changes the issuer or the client ID
+// without a new client secret. Keeping the stored secret across such a change would hand it to
+// whatever token endpoint the new issuer advertises.
+var ErrOidcProviderSecretRequired = errors.New("client_secret must be re-entered when the issuer or client ID changes")
+
+// NormalizeOidcIssuer is the form issuers are compared in: surrounding spaces and trailing
+// slashes do not make a different issuer.
+func NormalizeOidcIssuer(issuer string) string {
+	return strings.TrimRight(strings.TrimSpace(issuer), "/")
+}
+
+// SameOidcIssuer reports whether two issuer values name the same issuer.
+func SameOidcIssuer(a, b string) bool {
+	return NormalizeOidcIssuer(a) == NormalizeOidcIssuer(b)
+}
+
 // Update 更新提供方配置。ClientSecret 为空表示不改：后台读接口不下发密钥，
 // 回写时若把空值当有效值会直接清空已配置的密钥。
+//
+// Changing the issuer or the client ID requires a new ClientSecret (ErrOidcProviderSecretRequired).
+// Changing the issuer also removes every user identity of this provider and clears the id_token
+// kept on its sessions, in the same transaction: subjects are only unique within one issuer, so a
+// subject issued by the new issuer must never sign in to an account linked under the old one, and
+// an old id_token must not be sent to the new issuer's end_session endpoint. Existing sessions stay
+// signed in; users link again on their next sign-in.
 func (provider *OidcProvider) Update() error {
 	if err := ValidateOidcProviderSlug(provider.Slug); err != nil {
 		return err
@@ -153,7 +177,33 @@ func (provider *OidcProvider) Update() error {
 	if provider.ClientSecret != "" {
 		columns = append(append([]string{}, columns...), "client_secret")
 	}
-	return DB.Model(provider).Select(columns).Updates(provider).Error
+	return DB.Transaction(func(tx *gorm.DB) error {
+		var stored OidcProvider
+		if err := tx.Select("id", "issuer", "client_id").First(&stored, "id = ?", provider.Id).Error; err != nil {
+			return err
+		}
+		issuerChanged := !SameOidcIssuer(stored.Issuer, provider.Issuer)
+		if (issuerChanged || stored.ClientId != provider.ClientId) && provider.ClientSecret == "" {
+			return ErrOidcProviderSecretRequired
+		}
+		if issuerChanged {
+			if err := tx.Where("provider_id = ?", provider.Id).Delete(&UserOidcIdentity{}).Error; err != nil {
+				return err
+			}
+			if err := tx.Model(&UserSession{}).Where("provider_id = ? AND id_token <> ?", provider.Id, "").
+				Update("id_token", "").Error; err != nil {
+				return err
+			}
+		}
+		return tx.Model(provider).Select(columns).Updates(provider).Error
+	})
+}
+
+// CountOidcProviderIdentities returns how many user identities are linked under a provider.
+func CountOidcProviderIdentities(providerId int) (int64, error) {
+	var count int64
+	err := DB.Model(&UserOidcIdentity{}).Where("provider_id = ?", providerId).Count(&count).Error
+	return count, err
 }
 
 // Delete 删除提供方及其下所有用户身份（身份行没有外键，须显式清理）。

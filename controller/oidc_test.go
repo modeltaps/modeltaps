@@ -838,6 +838,7 @@ func TestOIDCEndpointUILocales(t *testing.T) {
 
 			provider := seedOidcProvider(t, "keycloak", false)
 			provider.Issuer = idp.URL
+			provider.ClientSecret = "secret" // an issuer change requires the secret again
 			if err := provider.Update(); err != nil {
 				t.Fatalf("更新提供方失败: %v", err)
 			}

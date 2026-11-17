@@ -170,3 +170,44 @@ func TestUserDeleteRemovesOidcIdentities(t *testing.T) {
 		t.Fatalf("删号后同 (provider_id, subject) 应可重新插入: %v", err)
 	}
 }
+
+// SEC-53: the model refuses an issuer or client ID change that keeps the stored secret, whatever
+// the caller, and an issuer change removes the provider's identities in the same transaction.
+func TestOidcProviderUpdateIdentityChange(t *testing.T) {
+	setupOidcTestDB(t)
+	provider := &OidcProvider{Slug: "idp", Issuer: "https://idp.example.com", ClientId: "cid", ClientSecret: "stored"}
+	if err := provider.Insert(); err != nil {
+		t.Fatalf("failed to insert provider: %v", err)
+	}
+	if err := (&UserOidcIdentity{UserId: 1, ProviderId: provider.Id, Subject: "sub"}).Insert(); err != nil {
+		t.Fatalf("failed to insert identity: %v", err)
+	}
+
+	for _, change := range []OidcProvider{
+		{Id: provider.Id, Slug: "idp", Issuer: "https://other.example.com", ClientId: "cid"},
+		{Id: provider.Id, Slug: "idp", Issuer: "https://idp.example.com", ClientId: "cid-2"},
+	} {
+		if err := change.Update(); err != ErrOidcProviderSecretRequired {
+			t.Fatalf("expected ErrOidcProviderSecretRequired for %+v, got %v", change, err)
+		}
+	}
+	same := OidcProvider{Id: provider.Id, Slug: "idp", Issuer: "https://idp.example.com/", ClientId: "cid", DisplayName: "renamed"}
+	if err := same.Update(); err != nil {
+		t.Fatalf("an edit that keeps issuer and client_id should not need the secret: %v", err)
+	}
+	if count, _ := CountOidcProviderIdentities(provider.Id); count != 1 {
+		t.Fatalf("identities must be kept while the issuer stays the same, got %d", count)
+	}
+
+	moved := OidcProvider{Id: provider.Id, Slug: "idp", Issuer: "https://other.example.com", ClientId: "cid", ClientSecret: "new"}
+	if err := moved.Update(); err != nil {
+		t.Fatalf("an issuer change with a new secret should be saved: %v", err)
+	}
+	if count, _ := CountOidcProviderIdentities(provider.Id); count != 0 {
+		t.Fatalf("an issuer change must remove the provider's identities, got %d", count)
+	}
+	stored, err := GetOidcProviderById(provider.Id)
+	if err != nil || stored.ClientSecret != "new" || stored.Issuer != "https://other.example.com" {
+		t.Fatalf("issuer and secret should be updated, got %+v err=%v", stored, err)
+	}
+}

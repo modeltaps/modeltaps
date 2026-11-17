@@ -10,6 +10,8 @@ describe('oidcFailureKey', () => {
     expect(oidcFailureKey('OIDC_LINK_CONFLICT: 邮箱 a@b.c 已绑定 Authany 的另一身份')).toBe('login.oidcLinkConflict');
     expect(oidcFailureKey('OIDC_REGISTER_DISABLED: 该提供方不允许首登建号')).toBe('login.oidcRegisterDisabled');
     expect(oidcFailureKey('OIDC_REGISTER_CLOSED: 管理员关闭了新用户注册')).toBe('login.oidcRegisterClosed');
+    // An admin account is never linked automatically (SEC-53).
+    expect(oidcFailureKey('OIDC_LINK_PRIVILEGED:This account has admin rights')).toBe('login.oidcLinkPrivileged');
   });
 
   it('无前缀 / 空 / 非字符串走通用失败分支', () => {
@@ -48,6 +50,7 @@ describe('localLoginIsDeadEnd / oidcFailureExit', () => {
 describe('回调页失败文案', () => {
   const keys = [
     'login.oidcLinkConflict',
+    'login.oidcLinkPrivileged',
     'login.oidcRegisterDisabled',
     'login.oidcRegisterClosed',
     'login.oidcError',

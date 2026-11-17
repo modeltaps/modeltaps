@@ -217,7 +217,7 @@ func SetApiRouter(router *gin.Engine) {
 		}
 
 		oidcProviderRoute := apiRouter.Group("/oidc_provider")
-		oidcProviderRoute.Use(middleware.AdminAuth())
+		oidcProviderRoute.Use(middleware.RootAuth())
 		{
 			oidcProviderRoute.GET("/", controller.GetOidcProvidersList)
 			oidcProviderRoute.GET("/:id", controller.GetOidcProvider)

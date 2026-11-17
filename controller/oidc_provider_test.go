@@ -25,7 +25,7 @@ func setupOidcProviderTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("打开内存数据库失败: %v", err)
 	}
-	if err := testDB.AutoMigrate(&model.OidcProvider{}, &model.UserOidcIdentity{}); err != nil {
+	if err := testDB.AutoMigrate(&model.OidcProvider{}, &model.UserOidcIdentity{}, &model.UserSession{}); err != nil {
 		t.Fatalf("迁移测试表失败: %v", err)
 	}
 	oldDB := model.DB
@@ -160,7 +160,7 @@ func TestUpdateOidcProviderKeepsSecretAndSlug(t *testing.T) {
 	}
 
 	params := gin.Params{{Key: "id", Value: fmt.Sprint(provider.Id)}}
-	body := fmt.Sprintf(`{"slug":"renamed","display_name":"New","issuer":%q,"client_id":"cid2","client_secret":"","scopes":"openid email","enabled":false}`, issuer)
+	body := fmt.Sprintf(`{"slug":"renamed","display_name":"New","issuer":%q,"client_id":"cid","client_secret":"","scopes":"openid email","enabled":false}`, issuer)
 	code, resp := callOidcProvider(UpdateOidcProvider, http.MethodPut, "/api/oidc_provider/1", body, params)
 	if code != http.StatusOK || resp["success"] != true {
 		t.Fatalf("更新应成功，实际 %d: %v", code, resp)
@@ -175,7 +175,7 @@ func TestUpdateOidcProviderKeepsSecretAndSlug(t *testing.T) {
 	if updated.ClientSecret != secret {
 		t.Fatalf("空 client_secret 不应清空已配密钥，实际 %q", updated.ClientSecret)
 	}
-	if updated.ClientId != "cid2" || updated.DisplayName != "New" || updated.Enabled {
+	if updated.ClientId != "cid" || updated.Scopes != "openid email" || updated.DisplayName != "New" || updated.Enabled {
 		t.Fatalf("其余字段未按入参更新: %+v", updated)
 	}
 }
@@ -385,5 +385,151 @@ func TestOidcProviderRequestValidation(t *testing.T) {
 	// slug 唯一：重复新建返回 409。
 	if code, resp := callOidcProvider(CreateOidcProvider, http.MethodPost, "/api/oidc_provider/", body, nil); code != http.StatusConflict {
 		t.Fatalf("重复 slug 应返回 409，实际 %d: %v", code, resp)
+	}
+}
+
+// seedIssuerChangeProvider creates a provider at issuer with a stored secret, one linked identity
+// and one session that carries an id_token issued through it.
+func seedIssuerChangeProvider(t *testing.T, issuer string) *model.OidcProvider {
+	t.Helper()
+	provider := &model.OidcProvider{
+		Slug: "idp", DisplayName: "IdP", Issuer: issuer, ClientId: "cid", ClientSecret: "stored-secret",
+		Scopes: "openid", UsernameClaim: "sub", DisplayNameClaim: "name", AvatarClaim: "picture", Enabled: true,
+	}
+	if err := provider.Insert(); err != nil {
+		t.Fatalf("failed to insert provider: %v", err)
+	}
+	identity := model.UserOidcIdentity{UserId: 1, ProviderId: provider.Id, Subject: "root-subject"}
+	if err := identity.Insert(); err != nil {
+		t.Fatalf("failed to insert identity: %v", err)
+	}
+	session := model.UserSession{UserId: 1, SessionKey: "session-key-1", ProviderId: provider.Id, IdToken: "old-id-token"}
+	if err := model.DB.Create(&session).Error; err != nil {
+		t.Fatalf("failed to insert session: %v", err)
+	}
+	return provider
+}
+
+func providerUpdateBody(issuer, clientId, secret string) string {
+	return fmt.Sprintf(`{"display_name":"IdP","issuer":%q,"client_id":%q,"client_secret":%q,"scopes":"openid","enabled":true}`,
+		issuer, clientId, secret)
+}
+
+func countProviderIdentities(t *testing.T, providerId int) int64 {
+	t.Helper()
+	count, err := model.CountOidcProviderIdentities(providerId)
+	if err != nil {
+		t.Fatalf("failed to count identities: %v", err)
+	}
+	return count
+}
+
+// SEC-53: changing the issuer or the client ID without re-entering client_secret is rejected and
+// changes nothing, so the stored secret is never sent to another token endpoint.
+func TestUpdateOidcProviderIdentityChangeRequiresSecret(t *testing.T) {
+	cases := []struct {
+		name     string
+		issuer   func(original string) string
+		clientId string
+	}{
+		{"issuer changed", func(string) string { return newFakeIdP(t) }, "cid"},
+		{"client_id changed", func(original string) string { return original }, "cid-other"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			setupOidcProviderTestDB(t)
+			original := newFakeIdP(t)
+			provider := seedIssuerChangeProvider(t, original)
+			params := gin.Params{{Key: "id", Value: fmt.Sprint(provider.Id)}}
+
+			for _, query := range []string{"", "?force=true"} {
+				body := providerUpdateBody(tc.issuer(original), tc.clientId, "")
+				code, resp := callOidcProvider(UpdateOidcProvider, http.MethodPut, "/api/oidc_provider/1"+query, body, params)
+				if code != http.StatusBadRequest || resp["success"] != false {
+					t.Fatalf("update%s without client_secret should be rejected with 400, got %d: %v", query, code, resp)
+				}
+				if message, _ := resp["message"].(string); !strings.Contains(message, "client_secret must be re-entered") {
+					t.Fatalf("unexpected rejection message: %q", message)
+				}
+			}
+			stored, err := model.GetOidcProviderById(provider.Id)
+			if err != nil {
+				t.Fatalf("failed to read provider: %v", err)
+			}
+			if stored.Issuer != original || stored.ClientId != "cid" || stored.ClientSecret != "stored-secret" {
+				t.Fatalf("a rejected update must not change the provider: %+v", stored)
+			}
+			if countProviderIdentities(t, provider.Id) != 1 {
+				t.Fatal("a rejected update must keep the linked identities")
+			}
+		})
+	}
+}
+
+// SEC-53: an issuer change with a new secret is saved and removes every identity of the
+// provider, so a subject from the new issuer cannot sign in to an account linked under the old
+// one; the id_token of the old issuer is cleared from sessions.
+func TestUpdateOidcProviderIssuerChangeDropsIdentities(t *testing.T) {
+	setupOidcProviderTestDB(t)
+	provider := seedIssuerChangeProvider(t, newFakeIdP(t))
+	next := newFakeIdP(t)
+	params := gin.Params{{Key: "id", Value: fmt.Sprint(provider.Id)}}
+
+	code, resp := callOidcProvider(UpdateOidcProvider, http.MethodPut, "/api/oidc_provider/1", providerUpdateBody(next, "cid", "new-secret"), params)
+	if code != http.StatusOK || resp["success"] != true {
+		t.Fatalf("update with a new secret should succeed, got %d: %v", code, resp)
+	}
+	if message, _ := resp["message"].(string); !strings.Contains(message, "1 linked user identities") {
+		t.Fatalf("the response should say how many identities were removed, got %q", message)
+	}
+	stored, err := model.GetOidcProviderById(provider.Id)
+	if err != nil {
+		t.Fatalf("failed to read provider: %v", err)
+	}
+	if stored.Issuer != next || stored.ClientSecret != "new-secret" {
+		t.Fatalf("issuer and secret should be updated: %+v", stored)
+	}
+	if countProviderIdentities(t, provider.Id) != 0 {
+		t.Fatal("identities of the old issuer must be removed")
+	}
+	if _, err := model.FindUserOidcIdentity(provider.Id, "root-subject"); err == nil {
+		t.Fatal("the old subject must no longer resolve to an account")
+	}
+	session, err := model.GetUserSessionByKey("session-key-1")
+	if err != nil {
+		t.Fatalf("the session should stay signed in: %v", err)
+	}
+	if session.IdToken != "" {
+		t.Fatalf("the old issuer's id_token must be cleared, got %q", session.IdToken)
+	}
+}
+
+// A client_id change with a new secret keeps the identities (subjects are unique per issuer), and
+// an edit that keeps issuer and client_id needs no secret; a trailing slash is not a new issuer.
+func TestUpdateOidcProviderSameIssuerKeepsIdentities(t *testing.T) {
+	setupOidcProviderTestDB(t)
+	issuer := newFakeIdP(t)
+	provider := seedIssuerChangeProvider(t, issuer)
+	params := gin.Params{{Key: "id", Value: fmt.Sprint(provider.Id)}}
+
+	if code, resp := callOidcProvider(UpdateOidcProvider, http.MethodPut, "/api/oidc_provider/1", providerUpdateBody(issuer+"/", "cid", ""), params); code != http.StatusOK || resp["success"] != true {
+		t.Fatalf("an edit that keeps issuer and client_id should not need the secret, got %d: %v", code, resp)
+	}
+	if code, resp := callOidcProvider(UpdateOidcProvider, http.MethodPut, "/api/oidc_provider/1", providerUpdateBody(issuer, "cid-2", "new-secret"), params); code != http.StatusOK || resp["success"] != true {
+		t.Fatalf("a client_id change with a new secret should succeed, got %d: %v", code, resp)
+	}
+	stored, err := model.GetOidcProviderById(provider.Id)
+	if err != nil {
+		t.Fatalf("failed to read provider: %v", err)
+	}
+	if stored.ClientId != "cid-2" || stored.ClientSecret != "new-secret" {
+		t.Fatalf("client_id and secret should be updated: %+v", stored)
+	}
+	if countProviderIdentities(t, provider.Id) != 1 {
+		t.Fatal("identities must be kept while the issuer stays the same")
+	}
+	session, err := model.GetUserSessionByKey("session-key-1")
+	if err != nil || session.IdToken != "old-id-token" {
+		t.Fatalf("the session id_token must be kept while the issuer stays the same, got %+v err=%v", session, err)
 	}
 }

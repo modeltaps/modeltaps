@@ -2186,6 +2186,11 @@
         "label": "Subscription usage alert tiers (%)",
         "description": "Subscription channels (Codex, Claude Code) send one notice per tier when a usage window reaches it, and again after the window resets. Comma separated; empty means 50, 75, 100; 0 turns the alerts off. A channel can set its own tiers on its monitoring tab."
       }
+    },
+    "oidcProviders": {
+      "form": {
+        "identityChangeHint": "Changing the issuer or client ID needs the client secret again. A new issuer also unlinks every account from this provider: users link again on their next sign-in, admins link from their account settings."
+      }
     }
   },
   "modelpricePage": {
@@ -4680,5 +4685,8 @@
     "searchAccounts": "Search accounts",
     "noAccountMatch": "No account matches",
     "linkTitle": "“{{client}}” wants to connect to your account"
+  },
+  "login": {
+    "oidcLinkPrivileged": "This is an admin account, so a new sign-in can't be linked to it automatically. Sign in to the account first and link it from your account settings, or contact the site owner."
   }
 }

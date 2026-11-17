@@ -6,7 +6,7 @@ import { Check, PlugZap, Power, Trash2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { API } from 'utils/api';
-import { showError } from 'utils/common';
+import { showError, useIsRoot } from 'utils/common';
 import { LoadStatusContext } from 'contexts/StatusContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -235,6 +235,9 @@ export function LoginMethodsCard({ ctx }) {
 export function OidcProvidersCard({ ctx }) {
   const { t } = useTranslation();
   const loadStatus = useContext(LoadStatusContext);
+  // Identity providers decide who can sign in as whom, so only root manages them (the API is
+  // root only as well).
+  const isRoot = useIsRoot();
   const external = isExternalSaved(ctx);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -259,10 +262,10 @@ export function OidcProvidersCard({ ctx }) {
   }, []);
 
   useEffect(() => {
-    if (external) fetchData();
-  }, [external, fetchData]);
+    if (external && isRoot) fetchData();
+  }, [external, isRoot, fetchData]);
 
-  if (!external) return null;
+  if (!external || !isRoot) return null;
 
   const afterChange = async () => {
     await fetchData();
