@@ -101,6 +101,7 @@ describe('ManagementKeyList', () => {
     await waitFor(() => expect(screen.getAllByTestId('management-key-row')).toHaveLength(3));
     expect(API.get).toHaveBeenCalledWith('/api/management_key/');
     const tags = screen.getAllByTestId('management-key-type').map((el) => el.textContent);
+    expect(screen.getByText(i18n.t('apiKey.management.legacyName'))).toBeTruthy();
     expect(tags).toEqual([i18n.t('apiKey.type.read'), i18n.t('apiKey.type.write'), i18n.t('apiKey.type.legacy')]);
     const rows = screen.getAllByTestId('management-key-row');
     expect(rows[0].textContent).toContain('mk-R****rrrr');

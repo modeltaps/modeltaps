@@ -3955,7 +3955,8 @@
       "expired": "已過期",
       "never": "永不過期",
       "lastUsed": "{{when}}使用",
-      "neverUsed": "從未使用"
+      "neverUsed": "從未使用",
+      "legacyName": "帳戶訪問令牌"
     }
   },
   "redemptionList": {

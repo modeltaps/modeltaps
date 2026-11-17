@@ -3951,7 +3951,8 @@
       "expired": "期限切れ",
       "never": "期限なし",
       "lastUsed": "{{when}}に使用",
-      "neverUsed": "未使用"
+      "neverUsed": "未使用",
+      "legacyName": "アカウントのアクセストークン"
     }
   },
   "redemptionList": {

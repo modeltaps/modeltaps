@@ -4061,7 +4061,8 @@
       "expired": "Expired",
       "never": "Never expires",
       "lastUsed": "Used {{when}}",
-      "neverUsed": "Never used"
+      "neverUsed": "Never used",
+      "legacyName": "Account access token"
     }
   },
   "redemptionList": {

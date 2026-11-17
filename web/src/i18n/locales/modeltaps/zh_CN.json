@@ -3955,7 +3955,8 @@
       "expired": "已过期",
       "never": "永不过期",
       "lastUsed": "{{when}}使用",
-      "neverUsed": "从未使用"
+      "neverUsed": "从未使用",
+      "legacyName": "账户访问令牌"
     }
   },
   "redemptionList": {

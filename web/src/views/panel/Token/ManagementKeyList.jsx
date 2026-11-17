@@ -84,11 +84,13 @@ export default function ManagementKeyList({ reloadKey = 0 }) {
             key.accessed_time > 0
               ? t('apiKey.management.lastUsed', { when: relativeTime(rtf, key.accessed_time) })
               : t('apiKey.management.neverUsed');
+          // A migrated access token is stored with a fixed English name; show it in the UI language.
+          const name = key.scope === 'legacy' ? t('apiKey.management.legacyName') : key.name;
           return (
             <li key={key.id} className="flex items-center gap-3 px-4 py-2.5" data-testid="management-key-row">
               <div className="min-w-0 flex-1">
                 <div className="flex min-w-0 items-center gap-2">
-                  <span className="min-w-0 truncate text-sm font-medium">{key.name}</span>
+                  <span className="min-w-0 truncate text-sm font-medium">{name}</span>
                   <Badge
                     variant={key.scope === 'read' || key.scope === 'write' ? 'secondary' : 'destructive'}
                     className="shrink-0 px-1.5 py-0 text-[11px] font-normal"
@@ -109,7 +111,7 @@ export default function ManagementKeyList({ reloadKey = 0 }) {
                 variant="ghost"
                 size="icon"
                 className="size-8 shrink-0 text-muted-foreground hover:text-destructive"
-                aria-label={`${t('common.delete')} ${key.name}`}
+                aria-label={`${t('common.delete')} ${name}`}
                 onClick={() => setDeleteTarget(key)}
               >
                 <Trash2 className="size-4" />
@@ -123,7 +125,11 @@ export default function ManagementKeyList({ reloadKey = 0 }) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('apiKey.management.deleteTitle')}</DialogTitle>
-            <DialogDescription>{t('apiKey.management.deleteConfirm', { name: deleteTarget?.name || '' })}</DialogDescription>
+            <DialogDescription>
+              {t('apiKey.management.deleteConfirm', {
+                name: deleteTarget ? (deleteTarget.scope === 'legacy' ? t('apiKey.management.legacyName') : deleteTarget.name) : ''
+              })}
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>
