@@ -930,6 +930,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- The Telegram bot webhook moves to the fixed path `/api/telegram/webhook` and is checked by its
+  secret header only; the gateway registers the new address on start. Old access logs may hold
+  the bot token in the former path, so rotate the token if those logs are shared.
+- Web pages can no longer be shown in a frame on another site. Per-IP rate limits count an IPv6
+  /64 as one client, and the loopback exemption applies only to requests without forwarding
+  headers. `/mj/image` is rate limited and returns PNG, JPEG, GIF and WebP only.
+- `llms.txt` and `skill.md` read `X-Forwarded-Proto` only from trusted proxies; set the site
+  address, or add the reverse proxy to `trusted_proxies`, to get `https://` links.
+- Release builds use Go 1.27.4, which fixes standard library issues reachable from the gateway.
+- Changing or resetting a password and signing out other devices revoke the legacy access token,
+  and legacy tokens expire 366 days after they were created; management keys keep working.
+  `GET /api/user/token` needs a console session.
+- Organization admins who are not site admins no longer set a member's email when creating the
+  account; the member binds their own address after signing in.
+- Device approvals default to a one-month expiry and ask once more before approving a key
+  without a spending limit or expiry. The key response names the account or organization it
+  belongs to, and agents are told to report it.
+- Organization keys see only their own usage, or their member's budget, on the
+  `/dashboard/billing` endpoints, not the organization balance.
+- Realtime sessions stop when the token quota, member budget or team budget runs out during
+  the session, with or without Redis.
+- Veo requests ask for one video of at most 8 seconds, which is what the per-request price
+  covers. Content moderation also checks Gemini function and code parts.
+- Alipay notices must carry the configured app ID. Mail service passwords are encrypted at rest
+  when `ENCRYPTION_KEY` is set.
+- Non-root admins can fetch a channel's model list only from public addresses. Claude channels
+  no longer forward client IP or identity headers added by proxies. Vertex Express channels send
+  the key in the `x-goog-api-key` header; run a channel test after upgrading.
 - OAuth and OIDC callbacks bind a provider to the signed-in account only while that session is
   still valid; a revoked or expired session counts as signed out. GitHub sign-in matches an
   account by its GitHub id; an older account that only stored the login name matches it once and
