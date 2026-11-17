@@ -163,4 +163,23 @@ describe('RoutingPolicyList, organization client', () => {
     expect(API.get).toHaveBeenCalledWith('/api/org/5/routing_policy/models');
     expect(API.get).toHaveBeenCalledWith('/api/org/5/routing_policy/3');
   });
+
+  it('shows a member that a decision model scores the policy without listing the models', async () => {
+    const decided = { ...POLICY, decision_model: 'router-decision-1', decision_model_kind: 'decision' };
+    API.get.mockImplementation((url) => {
+      if (url === '/api/org/5/routing_policy/') return Promise.resolve({ data: { success: true, data: [decided] } });
+      if (url === '/api/org/5/routing_policy/3') return Promise.resolve({ data: { success: true, data: decided } });
+      return Promise.resolve({ data: { success: true, data: [] } });
+    });
+    const api = orgRoutingPolicyApi(5, { readOnly: true });
+    render(
+      h(
+        MemoryRouter,
+        { initialEntries: ['/org?id=3'] },
+        h(Routes, null, h(Route, { path: '/org', element: h(RoutingPolicyList, { api }) }))
+      )
+    );
+    await screen.findByText(i18n.t('routingPolicy.scoringUsed.decision'));
+    expect(API.get).not.toHaveBeenCalledWith('/api/org/5/routing_policy/models');
+  });
 });

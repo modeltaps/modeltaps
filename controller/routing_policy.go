@@ -84,8 +84,20 @@ func GetRoutingPolicy(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    policy,
+		"data":    viewRoutingPolicy(policy),
 	})
+}
+
+// routingPolicyView is a policy as its panel reads it: with the kind of its decision model, so
+// the overview can tell a decision model's probabilities from a chat model's scoring setting even
+// for readers who cannot list the models (organization members).
+type routingPolicyView struct {
+	*model.RoutingPolicy
+	DecisionModelKind string `json:"decision_model_kind"`
+}
+
+func viewRoutingPolicy(policy *model.RoutingPolicy) routingPolicyView {
+	return routingPolicyView{RoutingPolicy: policy, DecisionModelKind: model.ModelKindOf(policy.DecisionModel)}
 }
 
 // routingPolicyRequest 在策略之上把 enabled 改成指针：请求里省略时默认启用。
@@ -347,7 +359,7 @@ func GetOrgRoutingPolicies(c *gin.Context) {
 func GetOrgRoutingPolicy(c *gin.Context) {
 	_, scope := orgRoutingScope(c)
 	if policy, ok := scopedRoutingPolicyParam(c, scope); ok {
-		c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": policy})
+		c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": viewRoutingPolicy(policy)})
 	}
 }
 
@@ -424,7 +436,7 @@ func GetUserRoutingPolicies(c *gin.Context) {
 
 func GetUserRoutingPolicy(c *gin.Context) {
 	if policy, ok := scopedRoutingPolicyParam(c, personalRoutingScope(c)); ok {
-		c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": policy})
+		c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": viewRoutingPolicy(policy)})
 	}
 }
 

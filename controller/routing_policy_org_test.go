@@ -185,3 +185,21 @@ func TestOrgRoutingModelsTagKinds(t *testing.T) {
 		t.Fatalf("kinds = %v, want %v", resp.Kinds, want)
 	}
 }
+
+// A policy read on its own carries its decision model's kind, so a member who cannot list the
+// models still sees that a decision model scores it.
+func TestOrgRoutingPolicyCarriesDecisionModelKind(t *testing.T) {
+	r := setupOrgRoutingControllerTest(t)
+	draft := orgRoutingDraft("auto/coder")
+	draft["decision_model"] = "router-decision-1"
+	code, resp := orgRoutingCall(t, r, http.MethodPost, "/api/org/1/routing_policy/", draft)
+	if code != http.StatusOK {
+		t.Fatalf("create: %d %v", code, resp)
+	}
+	id := int(resp["data"].(map[string]any)["id"].(float64))
+	code, resp = orgRoutingCall(t, r, http.MethodGet, "/api/org/1/routing_policy/"+strconv.Itoa(id), nil)
+	data, _ := resp["data"].(map[string]any)
+	if code != http.StatusOK || data["decision_model_kind"] != "decision" || data["decision_model"] != "router-decision-1" {
+		t.Fatalf("get: %d %v", code, resp)
+	}
+}

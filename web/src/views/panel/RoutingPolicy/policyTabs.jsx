@@ -55,7 +55,7 @@ function OverviewBody({ object: policy, ctx }) {
           </InfoRow>
           <InfoRow label={t('routingPolicy.form.threshold')}>{pct(policy.threshold)}</InfoRow>
           <InfoRow label={t('routingPolicy.form.scoring')}>
-            {isDecisionClassifier(ctx.classifiers, policy.decision_model)
+            {policy.decision_model_kind === 'decision' || isDecisionClassifier(ctx.classifiers, policy.decision_model)
               ? t('routingPolicy.scoringUsed.decision')
               : t(`routingPolicy.scoring.${policy.scoring || 'auto'}`)}
           </InfoRow>
