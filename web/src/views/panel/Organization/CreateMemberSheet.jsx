@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
+import { useSelector } from 'react-redux';
 import { Loader2 } from 'lucide-react';
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetBody, SheetFooter } from '@/components/ui/sheet';
@@ -18,6 +19,9 @@ import { showError, showSuccess, trims } from 'utils/common';
 
 export default function CreateMemberSheet({ open, onOpenChange, orgId, onSaved }) {
   const { t } = useTranslation();
+  // Only site admins can set an email here: for anyone else the server ignores it, so the member
+  // binds their own address with a verification code after signing in.
+  const canSetEmail = useSelector((state) => (state.account.user?.role ?? 0) >= 10);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -52,7 +56,7 @@ export default function CreateMemberSheet({ open, onOpenChange, orgId, onSaved }
         username: u,
         password,
         display_name: trims(displayName),
-        email: trims(email),
+        email: canSetEmail ? trims(email) : '',
         role
       });
       const { success, message } = res.data;
@@ -99,9 +103,11 @@ export default function CreateMemberSheet({ open, onOpenChange, orgId, onSaved }
           <FormField label={t('orgPage.members.displayName')}>
             <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
           </FormField>
-          <FormField label={t('orgPage.members.email')}>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          </FormField>
+          {canSetEmail && (
+            <FormField label={t('orgPage.members.email')}>
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </FormField>
+          )}
           <FormField label={t('orgPage.members.role')}>
             <Select value={role} onValueChange={setRole}>
               <SelectTrigger>

@@ -548,6 +548,12 @@ func (user *User) Update(updatePassword bool) error {
 	if err == nil {
 		ClearUserGroupAndTokensCache(user.Id)
 	}
+	// A new password also ends the legacy access token, which is not tied to a session (SEC-71).
+	if err == nil && updatePassword {
+		if revokeErr := RevokeLegacyAccessToken(user.Id); revokeErr != nil {
+			logger.SysError(fmt.Sprintf("failed to revoke the legacy access token of user %d after a password change: %s", user.Id, revokeErr.Error()))
+		}
+	}
 
 	return err
 }
@@ -1017,6 +1023,9 @@ func ResetUserPasswordByEmail(email string, password string) error {
 		for _, id := range ids {
 			if err := DeleteUserSessionsExcept(nil, id, ""); err != nil {
 				logger.SysError("failed to clear sessions after password reset: " + err.Error())
+			}
+			if err := RevokeLegacyAccessToken(id); err != nil {
+				logger.SysError("failed to revoke the legacy access token after password reset: " + err.Error())
 			}
 		}
 	}

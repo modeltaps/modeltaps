@@ -96,9 +96,16 @@ func RevokeUserSession(c *gin.Context) {
 }
 
 // LogoutOtherSessions 登出当前用户除本次会话外的全部会话。
+// It also revokes the legacy access token, which a stolen session could have minted and which
+// no session sign-out would otherwise end (SEC-71); management keys stay, see
+// model.RevokeLegacyAccessToken.
 func LogoutOtherSessions(c *gin.Context) {
 	userId := c.GetInt("id")
 	if err := model.DeleteUserSessionsExcept(nil, userId, currentSessionKey(c)); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	if err := model.RevokeLegacyAccessToken(userId); err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}

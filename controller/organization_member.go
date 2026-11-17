@@ -35,9 +35,10 @@ type CreateOrgMemberAccountRequest struct {
 //
 // Email verification, invite codes and the bot check deliberately do not apply: the admin cannot
 // answer a code sent to someone else's mailbox, the admin is an existing member of the site who
-// is inviting the person, and the request comes from a signed-in session. The account is
-// created with an unverified email and no sign-up bonus, and it cannot create organizations of
-// its own until it verifies a contact (see model.CreateOrganizationWithOwner).
+// is inviting the person, and the request comes from a signed-in session. Since nobody verified
+// the email, the account is created without it (see CreateOrgMemberAccount) and with no sign-up
+// bonus, and it cannot create organizations of its own until it verifies a contact (see
+// model.CreateOrganizationWithOwner).
 func orgMemberAccountSignupCheck(email string) error {
 	if !config.RegisterEnabled {
 		return common.NewAPIError(common.APICodeRegisterDisabled, "the site has disabled new user sign-up, so organizations cannot create member accounts", nil)
@@ -102,6 +103,15 @@ func CreateOrgMemberAccount(c *gin.Context) {
 			return
 		}
 	}
+	// An email is unique to one account, and nobody proved this one belongs to the member: stored
+	// on the account, it would lock the mailbox's real owner out of signing up with it or binding
+	// it (SEC-72). So an organization admin who is not a site admin gets the account created
+	// without it, and the member binds the email after signing in, with a code sent to it.
+	emailSaved := req.Email != "" && c.GetInt("role") >= config.RoleAdminUser
+	accountEmail := ""
+	if emailSaved {
+		accountEmail = req.Email
+	}
 	if err := common.Validate.Struct(&model.User{
 		Username:    req.Username,
 		Password:    req.Password,
@@ -111,7 +121,7 @@ func CreateOrgMemberAccount(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, friendlyValidationError(err))
 		return
 	}
-	user, _, err := model.CreateOrgMemberAccount(org, req.Username, req.Password, req.DisplayName, req.Email, role)
+	user, _, err := model.CreateOrgMemberAccount(org, req.Username, req.Password, req.DisplayName, accountEmail, role)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
@@ -129,9 +139,10 @@ func CreateOrgMemberAccount(c *gin.Context) {
 		"success": true,
 		"message": "",
 		"data": gin.H{
-			"user_id":  user.Id,
-			"username": user.Username,
-			"role":     role,
+			"user_id":     user.Id,
+			"username":    user.Username,
+			"role":        role,
+			"email_saved": emailSaved,
 		},
 	})
 }

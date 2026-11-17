@@ -29,7 +29,8 @@ func setupGetUserTestDB(t *testing.T) {
 		t.Fatalf("打开内存数据库失败: %v", err)
 	}
 	// user_oidc_identities：删除用户会连带清理身份行，缺表会让删除用例直接报错
-	if err := testDB.AutoMigrate(&model.User{}, &model.UserOidcIdentity{}, &model.UserSession{}); err != nil {
+	// management_keys: a password change revokes the legacy access token (SEC-71).
+	if err := testDB.AutoMigrate(&model.User{}, &model.UserOidcIdentity{}, &model.UserSession{}, &model.ManagementKey{}); err != nil {
 		t.Fatalf("迁移测试表失败: %v", err)
 	}
 	oldDB := model.DB

@@ -41,6 +41,10 @@ const (
 	managementKeyTouchInterval = 60
 	// LegacyAccessTokenName is the name of a migrated or newly generated legacy access token.
 	LegacyAccessTokenName = "Access token (deprecated)"
+	// LegacyAccessTokenMaxLifetime caps a legacy access token (SEC-71): a new one expires this
+	// long after it is issued, and one stored without an expiry (-1, every migrated token) stops
+	// working this long after it was created.
+	LegacyAccessTokenMaxLifetime = ManagementKeyMaxLifetime
 )
 
 var (
@@ -125,10 +129,24 @@ func CreateManagementKey(userId int, name string, scope string, expiredTime int6
 	return key, nil
 }
 
-// ListManagementKeys returns the user's management keys, newest first.
+// effectiveExpiry is when the key stops working (Unix seconds): its ExpiredTime, except that a
+// legacy access token stored without an expiry is capped at LegacyAccessTokenMaxLifetime after
+// it was created.
+func (key *ManagementKey) effectiveExpiry() int64 {
+	if key.ExpiredTime == -1 && key.Scope == ManagementKeyScopeLegacy {
+		return key.CreatedTime + int64(LegacyAccessTokenMaxLifetime/time.Second)
+	}
+	return key.ExpiredTime
+}
+
+// ListManagementKeys returns the user's management keys, newest first. A legacy access token
+// stored without an expiry is listed with its capped expiry, so the console shows when it stops.
 func ListManagementKeys(userId int) ([]*ManagementKey, error) {
 	keys := make([]*ManagementKey, 0)
 	err := DB.Where("user_id = ?", userId).Order("id DESC").Find(&keys).Error
+	for _, key := range keys {
+		key.ExpiredTime = key.effectiveExpiry()
+	}
 	return keys, err
 }
 
@@ -160,12 +178,12 @@ func ValidateManagementKey(credential string) (*ManagementKey, *User, error) {
 		return nil, nil, ErrManagementKeyInvalid
 	}
 	now := utils.GetTimestamp()
-	if key.ExpiredTime != -1 && key.ExpiredTime <= now {
-		return nil, nil, ErrManagementKeyExpired
-	}
 	if key.ExpiredTime == -1 && key.Scope != ManagementKeyScopeLegacy {
-		// Only legacy access tokens may never expire; anything else is a corrupt row.
+		// Only legacy access tokens may be stored without an expiry; anything else is a corrupt row.
 		return nil, nil, ErrManagementKeyInvalid
+	}
+	if key.effectiveExpiry() <= now {
+		return nil, nil, ErrManagementKeyExpired
 	}
 	user := &User{}
 	if ExcludeShadowUsers(DB.Omit("password").Where("id = ?", key.UserId)).First(user).Error != nil {
@@ -191,9 +209,10 @@ func ValidateAccessToken(token string) *User {
 
 // IssueLegacyAccessToken replaces the user's legacy access token with a new one and returns it
 // once (deprecated: kept for one release so existing integrations can rotate). Only its hash is
-// stored.
+// stored, and it expires after LegacyAccessTokenMaxLifetime.
 func IssueLegacyAccessToken(userId int) (string, error) {
 	token := utils.GetUUID()
+	expiry := time.Now().Add(LegacyAccessTokenMaxLifetime).Unix()
 	err := DB.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("user_id = ? AND scope = ?", userId, ManagementKeyScopeLegacy).Delete(&ManagementKey{}).Error; err != nil {
 			return err
@@ -203,11 +222,25 @@ func IssueLegacyAccessToken(userId int) (string, error) {
 			Name:        LegacyAccessTokenName,
 			Scope:       ManagementKeyScopeLegacy,
 			Key:         token,
-			ExpiredTime: -1,
+			ExpiredTime: expiry,
 		}).Error
 	})
 	if err != nil {
 		return "", err
 	}
 	return token, nil
+}
+
+// RevokeLegacyAccessToken deletes the user's legacy access token, if there is one (SEC-71).
+// Changing or resetting the password and signing out other devices call it: the token is not
+// tied to a session and has the user's full access, so whoever copied it from a stolen session
+// would otherwise keep that access after the user secured the account.
+//
+// Read and write management keys are deliberately kept: the user creates them one by one for
+// automation, they expire within a year, they cannot change the password, sign-in methods,
+// sessions or management keys, and the console lists each with its last use, so a user who
+// suspects a stolen session reviews and deletes them there instead of having every integration
+// break on a routine password change.
+func RevokeLegacyAccessToken(userId int) error {
+	return DB.Where("user_id = ? AND scope = ?", userId, ManagementKeyScopeLegacy).Delete(&ManagementKey{}).Error
 }
