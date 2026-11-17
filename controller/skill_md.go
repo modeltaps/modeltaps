@@ -161,13 +161,15 @@ func renderSkillMd(base string) string {
 
 	// 7. Provider configuration.
 	w("## 6. Configure the provider\n\n")
+	w("Register %s in your own model configuration, the place your runtime reads providers from (its config command, settings file or provider registry), so you and the user can pick its models. A note or a file of your own that nothing reads does not count. Point the provider's key at where you stored it in step 4 instead of copying the key in.\n\n", name)
 	w("- Add %s as an OpenAI-compatible provider with base URL `%s/v1`", name, base)
 	if config.ClaudeAPIEnabled {
 		w(", and as an Anthropic-compatible provider with base URL `%s/claude` where you need that protocol", base)
 	}
 	w(".\n")
 	w("- Take model IDs from `GET %s/v1/models` at run time; never hard-code them. The list depends on the key and changes over time.\n", base)
-	w("- When a model the user asks for is missing, fetch the list again and offer the closest available ones instead of guessing.\n\n")
+	w("- When a model the user asks for is missing, fetch the list again and offer the closest available ones instead of guessing.\n")
+	w("- Finish with one short request through the configured provider (a cheap model, a one-word reply) to prove it works end to end.\n\n")
 
 	// 8. Wrap-up.
 	w("## 7. Report back to the user\n\n")

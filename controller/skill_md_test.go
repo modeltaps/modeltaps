@@ -62,6 +62,7 @@ func TestSkillMdRendersSiteSettings(t *testing.T) {
 		`description: "Connect this agent to Acme AI: Gateway (https://gw.example.com)`,
 		"compatibility: \"Needs an API key from https://gw.example.com",
 		"# Acme AI: Gateway",
+		"Register Acme AI: Gateway in your own model configuration",
 		"`ANTHROPIC_BASE_URL=https://gw.example.com/claude-code`",
 		"`base_url = \"https://gw.example.com/codex/v1\"`",
 		"`https://gw.example.com/coding-agent/v1`",
