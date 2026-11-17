@@ -4448,7 +4448,9 @@
     "unit_hour": "時間",
     "filterSame": "「{{kind}}」のモデルだけ表示",
     "cost": "チャネル原価",
-    "costWithFee": "チャネル原価（手数料 {{rate}}% 込み）"
+    "costWithFee": "チャネル原価（手数料 {{rate}}% 込み）",
+    "titleOfficial": "公式価格",
+    "officialHint": "このチャネルはモデルのベンダー自身で既定のアドレスを使うため、公式価格（ゲートウェイ内蔵の価格表）で課金されます。"
   },
   "intakeRules": {
     "defaultNames": {

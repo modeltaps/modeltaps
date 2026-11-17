@@ -215,7 +215,14 @@ func GetModelSupplyViews(modelName string, channelId int) ([]*ModelSupplyView, e
 			view.ChannelGroup = ch.Group
 			view.ChannelPriority, view.ChannelWeight = ch.GetPriority(), ch.GetWeight()
 		}
-		view.Cost = supplyCostOf(s.Model, byId[s.ChannelId], view.UpstreamPrice)
+		// A vendor channel at its own address has no price list but charges the official price.
+		if view.UpstreamPrice == nil && byId[s.ChannelId] != nil {
+			if official := OfficialChannelPrice(byId[s.ChannelId], supplyUpstreamName(s)); official != nil {
+				official.Source = "Official"
+				view.UpstreamPrice, view.UpstreamPriced = official, true
+			}
+		}
+		view.Cost = supplyCostOf(s.Model, supplyUpstreamName(s), byId[s.ChannelId], realChannelPrice(view.UpstreamPrice))
 		views = append(views, view)
 	}
 	if err := attachCheaperUpstreams(views, byId); err != nil {
@@ -400,4 +407,13 @@ func reloadSupplies() {
 	if config.ModelSupplyEnabled && ChannelGroup.Loaded() {
 		ChannelGroup.Load()
 	}
+}
+
+// realChannelPrice drops the official price shown for a vendor channel, so the channel cost is
+// worked out from the full official price (text and image rates, long-context tiers) instead.
+func realChannelPrice(cp *ChannelPrice) *ChannelPrice {
+	if cp != nil && cp.Official {
+		return nil
+	}
+	return cp
 }

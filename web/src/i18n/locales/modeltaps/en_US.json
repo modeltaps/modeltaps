@@ -4561,7 +4561,9 @@
     "unit_hour": "hour",
     "filterSame": "Show only models priced: {{kind}}",
     "cost": "Channel cost",
-    "costWithFee": "Channel cost (incl. {{rate}}% fee)"
+    "costWithFee": "Channel cost (incl. {{rate}}% fee)",
+    "titleOfficial": "Official list price",
+    "officialHint": "This channel is the vendor at its own address, so it charges the official list price (built into the gateway)."
   },
   "intakeRules": {
     "defaultNames": {

@@ -22,7 +22,8 @@ const (
 // (SupplyCostFloorBilling).
 type SupplyCost struct {
 	Known bool `json:"known"`
-	// Source is where the cost comes from: CostSourceChannelPrice or CostSourceCostRatio.
+	// Source is where the cost comes from: CostSourceChannelPrice, CostSourceCostRatio or
+	// CostSourceOfficial.
 	Source  string  `json:"source,omitempty"`
 	FeeRate float64 `json:"fee_rate,omitempty"`
 	// Input and Output are USD per million tokens; Flat is USD per request or per minute for
@@ -39,7 +40,7 @@ type SupplyCost struct {
 const aboveQuoteSlack = 1.000001
 
 // supplyCostOf prices a supply's channel cost against the model's billing price.
-func supplyCostOf(modelName string, ch *Channel, cp *ChannelPrice) *SupplyCost {
+func supplyCostOf(modelName, upstreamModel string, ch *Channel, cp *ChannelPrice) *SupplyCost {
 	out := &SupplyCost{}
 	if PricingInstance == nil || ch == nil {
 		return out
@@ -48,7 +49,7 @@ func supplyCostOf(modelName string, ch *Channel, cp *ChannelPrice) *SupplyCost {
 	if catalog == nil || catalog.Unconfigured {
 		return out
 	}
-	cost, source, ok := SupplyCostPrice(catalog, ch, cp)
+	cost, source, ok := SupplyCostPrice(catalog, ch, cp, upstreamModel)
 	if !ok {
 		return out
 	}

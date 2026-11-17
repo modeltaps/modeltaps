@@ -71,9 +71,14 @@ export default function UpstreamPriceDetails({
       <DropdownMenuContent role="dialog" align={align} className="w-72 space-y-3 p-3 text-left text-xs">
         <div className="space-y-0.5">
           <p className="text-sm font-medium text-foreground">
-            {source ? t('upstreamPrice.title', { source }) : t('upstreamPrice.titlePlain')}
+            {price.official
+              ? t('upstreamPrice.titleOfficial')
+              : source
+                ? t('upstreamPrice.title', { source })
+                : t('upstreamPrice.titlePlain')}
           </p>
           <p className="break-all font-mono text-muted-foreground">{upstream}</p>
+          {price.official && <p className="text-muted-foreground">{t('upstreamPrice.officialHint')}</p>}
         </div>
 
         {free ? (

@@ -13,7 +13,9 @@ import (
 // gateway bills with. Billing charges the higher of the catalog price (times the group ratio)
 // and this cost, so a request served by a pricier channel never loses money.
 
-// Where a channel cost comes from.
+// Where a channel cost comes from, in this order: the channel's upstream price list, the cost ratio
+// set on the channel (an admin who knows the real discount), and the official list price for a
+// vendor channel at its own address (CostSourceOfficial).
 const (
 	CostSourceChannelPrice = "channel_price" // the channel's upstream price list
 	CostSourceCostRatio    = "cost_ratio"    // the catalog price times the channel's cost ratio
@@ -24,7 +26,7 @@ const (
 // channel's price does not list (1h cache writes, long-context tiers) keep the catalog's ratios.
 // known is false when the cost cannot be told: no channel price and no cost ratio, or a channel
 // price in a unit the catalog price does not use.
-func SupplyCostPrice(catalog *Price, ch *Channel, cp *ChannelPrice) (price *Price, source string, known bool) {
+func SupplyCostPrice(catalog *Price, ch *Channel, cp *ChannelPrice, upstreamModel string) (price *Price, source string, known bool) {
 	if catalog == nil || ch == nil {
 		return nil, "", false
 	}
@@ -41,6 +43,11 @@ func SupplyCostPrice(catalog *Price, ch *Channel, cp *ChannelPrice) (price *Pric
 		p.Input = catalog.GetInput() * ratio * fee
 		p.Output = catalog.GetOutput() * ratio * fee
 		return p, CostSourceCostRatio, true
+	}
+	if p := OfficialChannelCost(catalog, ch, upstreamModel); p != nil {
+		p.Input *= fee
+		p.Output *= fee
+		return p, CostSourceOfficial, true
 	}
 	return nil, "", false
 }

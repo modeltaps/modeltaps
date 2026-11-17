@@ -4456,7 +4456,9 @@
     "unit_hour": "小时",
     "filterSame": "只看「{{kind}}」的模型",
     "cost": "渠道成本",
-    "costWithFee": "渠道成本（含 {{rate}}% 费率）"
+    "costWithFee": "渠道成本（含 {{rate}}% 费率）",
+    "titleOfficial": "官方报价",
+    "officialHint": "这个渠道就是模型厂商本身、用的是默认地址，按官方报价收费（网关内置的官方价表）。"
   },
   "intakeRules": {
     "defaultNames": {

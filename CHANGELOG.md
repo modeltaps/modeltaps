@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Vendor channels at their own address (an OpenAI channel serving an OpenAI model, with no base URL
+  of its own) cost the built-in official price of the model. They have no price list to sync, so
+  their cost was unknown unless a cost ratio was set; the cost floor and the above-quote warnings
+  now cover them. A channel price or a cost ratio still comes first. Relays are not covered.
 - Supply routing stays off after the upgrade (`ModelSupplyEnabled` is off by default) and requests
   are routed as before. The operator guide `docs/ops/en/use/supply_routing.md` walks through a
   backup, a dry run of the migration and its report, switching on, checking and switching back.

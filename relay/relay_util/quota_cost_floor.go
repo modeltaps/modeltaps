@@ -45,7 +45,7 @@ func (q *Quota) EnableCostFloor(c *gin.Context) {
 		upstream = q.modelName
 	}
 	cp := model.CachedChannelPrice(channel.Id, upstream)
-	if price, source, ok := model.SupplyCostPrice(&q.price, channel, cp); ok {
+	if price, source, ok := model.SupplyCostPrice(&q.price, channel, cp, upstream); ok {
 		q.costPrice, q.costSource = price, source
 	}
 }

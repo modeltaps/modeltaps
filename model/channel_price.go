@@ -43,6 +43,9 @@ type ChannelPrice struct {
 	Via       string `json:"via,omitempty" gorm:"-"`
 	PageURL   string `json:"page_url,omitempty" gorm:"-"`
 	PageExact bool   `json:"page_exact,omitempty" gorm:"-"`
+	// Official marks the vendor's list price shown for a vendor channel that has no price list of
+	// its own (OfficialChannelPrice); not stored.
+	Official bool `json:"official,omitempty" gorm:"-"`
 }
 
 // USDPerMillionTokens converts a per-token USD price, the unit upstream price lists use, to USD
