@@ -174,7 +174,7 @@ The following commonly used keys are read by the code but not covered above. For
 
 ### Mail sending
 
-When unset, the mail service is configured in the console under Platform admin → Mail. When `SMTP_URL` is set the deployment wins: the console turns read-only and can only send a test email.
+When unset, mail services are configured in the console under Platform admin → Mail. Several can be stored and one is in use: the first one added goes into use, using another replaces it, and the one in use can only be deleted after switching to another, so a new service can be set up and tested before switching. When `SMTP_URL` is set the deployment wins: the console turns read-only and can only send a test email.
 
 - `SMTP_URL`: `smtps://user:password@host:465` (implicit TLS) or `smtp://user:password@host:587`; add `?tls=starttls` and so on to choose the encryption (`auto`, `ssl`, `starttls`, `starttls_opportunistic`, `none`). URL-encode special characters in the password.
 - `SMTP_FROM`: sender address, required when `SMTP_URL` is set.

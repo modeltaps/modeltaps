@@ -175,10 +175,10 @@ export const PLATFORM_GROUPS = [
   },
   {
     id: 'mail',
-    // The one mail setup behind every email: login codes, password resets, quota warnings and
-    // email notices.
+    // The mail services behind every email (login codes, password resets, quota warnings, email
+    // notices), one in use. The SMTP* keys mirror the one in use and are not saved by a form.
     cards: [
-      card('smtp', 'form', [
+      card('smtp', 'collection', [
         'SMTPProvider',
         'SMTPServer',
         'SMTPPort',

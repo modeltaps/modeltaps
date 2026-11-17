@@ -8,6 +8,9 @@ import {
   missingMailFields,
   providerPatch,
   savedSecretApplies,
+  searchMailProviders,
+  servicePayload,
+  serviceToDraft,
   smtpTestPayload
 } from './mailProviders';
 
@@ -91,5 +94,52 @@ describe('mail provider presets', () => {
     expect(savedSecretApplies({ SMTPServer: 'smtp.resend.com', SMTPAccount: 'resend' }, origin, true)).toBe(true);
     expect(savedSecretApplies({ SMTPServer: 'smtp.gmail.com', SMTPAccount: 'me@gmail.com' }, origin, true)).toBe(false);
     expect(savedSecretApplies(origin, origin, false)).toBe(false);
+  });
+});
+
+describe('mail services', () => {
+  const row = {
+    id: 4,
+    provider: 'resend',
+    server: 'smtp.resend.com',
+    port: 465,
+    account: 'resend',
+    tls_mode: 'ssl',
+    from: 'noreply@example.com',
+    from_name: 'Example',
+    reply_to: '',
+    token_masked: 're_1****abcd'
+  };
+
+  it('round-trips a stored service through the draft, without its password', () => {
+    const draft = serviceToDraft(row);
+    expect(draft.SMTPToken).toBe('');
+    expect(detectMailProvider(draft)).toBe('resend');
+    expect(servicePayload(draft, row.id)).toEqual({
+      id: 4,
+      provider: 'resend',
+      server: 'smtp.resend.com',
+      port: 465,
+      account: 'resend',
+      token: '',
+      tls_mode: 'ssl',
+      from: 'noreply@example.com',
+      from_name: 'Example',
+      reply_to: ''
+    });
+  });
+
+  it('starts a new service with no provider picked', () => {
+    expect(detectMailProvider(serviceToDraft(null))).toBe('');
+    const picked = { ...serviceToDraft(null), ...providerPatch('gmail', serviceToDraft(null)) };
+    expect(servicePayload(picked)).toMatchObject({ id: 0, provider: 'gmail', server: 'smtp.gmail.com', port: 465, tls_mode: 'ssl' });
+  });
+
+  it('searches by id, English name and console name', () => {
+    const nameOf = (p) => (p.id === 'qq' ? 'QQ 邮箱' : p.name);
+    expect(searchMailProviders('', nameOf)).toBe(MAIL_PROVIDERS);
+    expect(searchMailProviders('SES', nameOf).map((p) => p.id)).toEqual(['ses']);
+    expect(searchMailProviders('邮箱', nameOf).map((p) => p.id)).toEqual(['qq']);
+    expect(searchMailProviders('nothing-like-this', nameOf)).toEqual([]);
   });
 });

@@ -58,8 +58,13 @@ func UpdateOption(c *gin.Context) {
 		common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeInvalidParams, "Invalid parameters", nil)
 		return
 	}
-	if smtpOptionKeys[option.Key] && stmp.IsManaged() {
-		common.APIRespondWithCode(c, http.StatusOK, common.APICodeSmtpManaged, "Mail sending is set in the deployment (smtp.url) and cannot be changed here", nil)
+	if smtpOptionKeys[option.Key] {
+		if stmp.IsManaged() {
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeSmtpManaged, "Mail sending is set in the deployment (smtp.url) and cannot be changed here", nil)
+			return
+		}
+		// They mirror the mail service in use (model/mail_service.go) and change with it.
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeSmtpUseMailServices, "Mail sending is changed through the mail services", nil)
 		return
 	}
 	switch option.Key {

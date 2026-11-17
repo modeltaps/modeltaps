@@ -297,3 +297,60 @@ export function missingMailFields(id, inputs, secretSaved) {
   if (!inputs.SMTPToken && !secretSaved) missing.push('SMTPToken');
   return missing;
 }
+
+// ---------------------------------------------------------------- mail services
+// The sheet edits a service in the shape of the old SMTP* options, so the preset helpers above
+// apply unchanged; these convert to and from /api/mail_service/.
+
+export const SERVICE_DRAFT_KEYS = [
+  'SMTPProvider',
+  'SMTPServer',
+  'SMTPPort',
+  'SMTPAccount',
+  'SMTPToken',
+  'SMTPTLSMode',
+  'SMTPFrom',
+  'SMTPFromName',
+  'SMTPReplyTo'
+];
+
+export function serviceToDraft(row) {
+  if (!row) return { SMTPProvider: '', SMTPPort: '', SMTPTLSMode: 'auto' };
+  return {
+    SMTPProvider: row.provider || '',
+    SMTPServer: row.server || '',
+    SMTPPort: row.port ? String(row.port) : '',
+    SMTPAccount: row.account || '',
+    SMTPToken: '',
+    SMTPTLSMode: row.tls_mode || 'auto',
+    SMTPFrom: row.from || '',
+    SMTPFromName: row.from_name || '',
+    SMTPReplyTo: row.reply_to || ''
+  };
+}
+
+// Body for POST/PUT /api/mail_service/ and /test. An empty token keeps the stored one when the
+// server and username are unchanged.
+export function servicePayload(draft, id = 0) {
+  return {
+    id,
+    provider: detectMailProvider(draft),
+    server: (draft.SMTPServer ?? '').trim(),
+    port: Number(draft.SMTPPort) || 0,
+    account: (draft.SMTPAccount ?? '').trim(),
+    token: draft.SMTPToken ?? '',
+    tls_mode: draft.SMTPTLSMode || 'auto',
+    from: (draft.SMTPFrom ?? '').trim(),
+    from_name: draft.SMTPFromName ?? '',
+    reply_to: (draft.SMTPReplyTo ?? '').trim()
+  };
+}
+
+// Providers whose name (in the console language) or id contains the query.
+export function searchMailProviders(query, nameOf) {
+  const q = String(query || '')
+    .trim()
+    .toLowerCase();
+  if (!q) return MAIL_PROVIDERS;
+  return MAIL_PROVIDERS.filter((p) => p.id.includes(q) || p.name.toLowerCase().includes(q) || nameOf(p).toLowerCase().includes(q));
+}

@@ -364,6 +364,11 @@ func InitDB() (err error) {
 			return err
 		}
 
+		err = db.AutoMigrate(&MailService{})
+		if err != nil {
+			return err
+		}
+
 		err = db.AutoMigrate(&OidcProvider{})
 		if err != nil {
 			return err

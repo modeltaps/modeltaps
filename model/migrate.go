@@ -626,6 +626,7 @@ func postMigrations() []*gormigrate.Migration {
 		hashTokenKeys(),
 		cleanOrphanSupplies(),
 		migrateAccessTokensToManagementKeys(),
+		migrateMailServices(),
 	}
 }
 

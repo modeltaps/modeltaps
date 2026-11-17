@@ -1871,7 +1871,14 @@
     "invalid_grant": "Invalid or already used device code",
     "device_user_code_invalid": "This code is invalid, expired or was already answered",
     "unsupported_grant_type": "Unsupported grant type",
-    "device_authorization_failed": "Failed to create the API key, please try again"
+    "device_authorization_failed": "Failed to create the API key, please try again",
+    "smtp_use_mail_services": "Mail sending is changed through the mail services",
+    "mail_service_not_found": "Mail service not found",
+    "mail_service_incomplete": "Fill in the server, port, username, password and sender address",
+    "mail_service_from_invalid": "Enter a valid sender address",
+    "mail_service_reply_to_invalid": "Enter a valid reply-to address",
+    "mail_service_in_use": "Switch to another mail service before deleting the one in use",
+    "mail_service_password_required": "Enter the password again: the server or username changed"
   },
   "channelOAuth": {
     "tip": {
@@ -3713,8 +3720,7 @@
         "notReadyRecipient": "No recipient"
       },
       "mail": {
-        "pick": "Mail service",
-        "empty": "Pick the service you send mail with. Only what it hands out is needed; the server settings are filled in for you.",
+        "empty": "No mail service yet. Add one so login codes, password resets and quota warnings can be sent",
         "groups": {
           "service": "Sending services",
           "mailbox": "Mailboxes"
@@ -3769,28 +3775,43 @@
           "none": "None (local network / development only)"
         },
         "mailboxNote": "Personal mailboxes have low daily limits and may show your server IP to recipients. Use a sending service for production.",
-        "incomplete": "Fill in the mail settings first",
+        "incomplete": "Fill in the fields above first",
         "test": {
           "open": "Send test email",
-          "hint": "Uses what is filled in above, no need to save first",
-          "incomplete": "Fill in the fields above to send a test email",
+          "hint": "Uses the settings above, saved or not",
+          "incomplete": "Fill in the fields above to send a test",
           "title": "Send a test email",
-          "description": "Sends one short email with the settings in the form, saved or not.",
+          "description": "Sends a short email through this service.",
           "to": "Recipient",
           "send": "Send",
-          "sent": "Sent to {{to}}. Check the inbox (and the spam folder)."
+          "sent": "Sent to {{to}}. Check the inbox (and the spam folder).",
+          "toInline": "Send a test to"
         },
         "setUp": "Set up mail",
         "managed": {
           "title": "Set in the deployment",
           "description": "Mail sending comes from smtp.url (SMTP_URL) in the config file or environment, so it cannot be changed here. Remove it to manage mail in the console."
         },
-        "summary": {
-          "ready": "Configured",
-          "from": "From",
-          "replyTo": "replies to",
-          "change": "Change"
-        }
+        "add": "Add mail service",
+        "search": "Search services",
+        "noMatch": "No service matches. Pick Custom SMTP for any other server",
+        "changeProvider": "Change",
+        "sheetDescription": "Pick the service, then fill in only what it hands out. The server, port and encryption are filled in for you",
+        "columns": {
+          "service": "Service",
+          "server": "Server"
+        },
+        "inUse": "In use",
+        "notInUse": "Not in use",
+        "use": "Use this service",
+        "switched": "Switched from {{from}} to {{to}}",
+        "nowInUse": "{{name}} is now sending mail",
+        "saved": "Saved",
+        "useNow": "Use it to send mail",
+        "useNowHint": "Replaces {{name}}, which sends mail now",
+        "deleteInUse": "In use: switch to another service to delete it",
+        "deleteLast": "This is the only mail service. After deleting it the platform cannot send mail: login codes, password resets and quota warnings stop.",
+        "from": "Sender"
       },
       "mailTemplates": {
         "names": {

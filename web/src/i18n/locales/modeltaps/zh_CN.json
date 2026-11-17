@@ -1787,7 +1787,14 @@
     "invalid_grant": "设备码无效或已被使用",
     "device_user_code_invalid": "代码无效、已过期或已被处理",
     "unsupported_grant_type": "不支持的 grant_type",
-    "device_authorization_failed": "创建 API Key 失败，请重试"
+    "device_authorization_failed": "创建 API Key 失败，请重试",
+    "smtp_use_mail_services": "发信设置请在邮件服务列表里修改",
+    "mail_service_not_found": "找不到这个邮件服务",
+    "mail_service_incomplete": "请填写服务器、端口、用户名、密码和发件地址",
+    "mail_service_from_invalid": "请输入有效的发件地址",
+    "mail_service_reply_to_invalid": "请输入有效的回复地址",
+    "mail_service_in_use": "先改用别的邮件服务，再删除正在使用的这个",
+    "mail_service_password_required": "服务器或用户名改了，请重新填写密码"
   },
   "channelOAuth": {
     "tip": {
@@ -3606,8 +3613,7 @@
         "notReadyRecipient": "没有收件人"
       },
       "mail": {
-        "pick": "发信服务",
-        "empty": "选择你用来发信的服务，只需填它给你的凭据，服务器地址等会自动填好。",
+        "empty": "还没有邮件服务。添加一个后，登录验证码、重置密码和额度提醒才能发出",
         "groups": {
           "service": "发信平台",
           "mailbox": "邮箱"
@@ -3662,28 +3668,43 @@
           "none": "不加密（仅限内网 / 开发环境）"
         },
         "mailboxNote": "个人邮箱每日发信量有限，部分邮箱还会把服务器 IP 暴露给收件人；正式使用建议选发信服务。",
-        "incomplete": "请先把发信设置填完整",
+        "incomplete": "先把上面的字段填完整",
         "test": {
           "open": "发送测试邮件",
           "hint": "用上面填的内容发，不必先保存",
           "incomplete": "填完上面的字段才能发测试邮件",
           "title": "发送测试邮件",
-          "description": "用表单里当前的设置发一封短邮件，保存与否都可以。",
+          "description": "通过这个服务发一封短邮件。",
           "to": "收件地址",
           "send": "发送",
-          "sent": "已发到 {{to}}，请查看收件箱（也看看垃圾邮件）。"
+          "sent": "已发到 {{to}}，请查看收件箱（也看看垃圾邮件）。",
+          "toInline": "发测试邮件到"
         },
         "setUp": "去设置邮件服务",
         "managed": {
           "title": "由部署配置管理",
           "description": "发信设置来自配置文件或环境变量里的 smtp.url（SMTP_URL），这里不能修改；去掉它即可改回在后台管理。"
         },
-        "summary": {
-          "ready": "已配置",
-          "from": "发件人",
-          "replyTo": "回复到",
-          "change": "更改"
-        }
+        "add": "添加邮件服务",
+        "search": "搜索服务",
+        "noMatch": "没有匹配的服务，其他服务器可以选自定义 SMTP",
+        "changeProvider": "换一个",
+        "sheetDescription": "选好服务后只填它给你的凭据，服务器、端口和加密方式会自动填好",
+        "columns": {
+          "service": "服务",
+          "server": "服务器"
+        },
+        "inUse": "使用中",
+        "notInUse": "未使用",
+        "use": "改用这个服务",
+        "switched": "已从 {{from}} 切换到 {{to}}",
+        "nowInUse": "{{name}} 已开始发信",
+        "saved": "已保存",
+        "useNow": "用它发信",
+        "useNowHint": "替换当前在用的 {{name}}",
+        "deleteInUse": "使用中：先改用别的服务再删除",
+        "deleteLast": "这是唯一的邮件服务。删除后平台将无法发信，登录验证码、重置密码和额度提醒都会停止。",
+        "from": "发件人"
       },
       "mailTemplates": {
         "names": {

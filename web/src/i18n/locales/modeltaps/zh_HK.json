@@ -1787,7 +1787,14 @@
     "invalid_grant": "裝置碼無效或已被使用",
     "device_user_code_invalid": "代碼無效、已過期或已被處理",
     "unsupported_grant_type": "不支援的 grant_type",
-    "device_authorization_failed": "建立 API Key 失敗，請重試"
+    "device_authorization_failed": "建立 API Key 失敗，請重試",
+    "smtp_use_mail_services": "寄信設定請在郵件服務列表裡修改",
+    "mail_service_not_found": "找不到這個郵件服務",
+    "mail_service_incomplete": "請填寫伺服器、連接埠、用戶名稱、密碼和寄件地址",
+    "mail_service_from_invalid": "請輸入有效的寄件地址",
+    "mail_service_reply_to_invalid": "請輸入有效的回覆地址",
+    "mail_service_in_use": "先改用別的郵件服務，再刪除正在使用的這個",
+    "mail_service_password_required": "伺服器或用戶名稱改了，請重新填寫密碼"
   },
   "channelOAuth": {
     "tip": {
@@ -3606,8 +3613,7 @@
         "notReadyRecipient": "沒有收件人"
       },
       "mail": {
-        "pick": "發信服務",
-        "empty": "選擇你用來發信的服務，只需填它給你的憑據，伺服器地址等會自動填好。",
+        "empty": "還沒有郵件服務。新增一個後，登入驗證碼、重設密碼和額度提醒才能寄出",
         "groups": {
           "service": "發信平台",
           "mailbox": "郵箱"
@@ -3662,28 +3668,43 @@
           "none": "不加密（僅限內網 / 開發環境）"
         },
         "mailboxNote": "個人郵箱每日發信量有限，部分郵箱還會把伺服器 IP 暴露給收件人；正式使用建議選發信服務。",
-        "incomplete": "請先把發信設定填完整",
+        "incomplete": "先把上面的欄位填完整",
         "test": {
           "open": "發送測試郵件",
-          "hint": "用上面填的內容發，不必先儲存",
-          "incomplete": "填完上面的欄位才能發測試郵件",
+          "hint": "用上面填的內容寄，不必先儲存",
+          "incomplete": "填完上面的欄位才能寄測試郵件",
           "title": "發送測試郵件",
-          "description": "用表單裡目前的設定發一封短郵件，儲存與否都可以。",
+          "description": "透過這個服務寄一封短郵件。",
           "to": "收件地址",
           "send": "發送",
-          "sent": "已發到 {{to}}，請查看收件匣（也看看垃圾郵件）。"
+          "sent": "已發到 {{to}}，請查看收件匣（也看看垃圾郵件）。",
+          "toInline": "寄測試郵件到"
         },
         "setUp": "去設定郵件服務",
         "managed": {
           "title": "由部署設定管理",
           "description": "發信設定來自設定檔或環境變數裡的 smtp.url（SMTP_URL），這裡不能修改；去掉它即可改回在後台管理。"
         },
-        "summary": {
-          "ready": "已設定",
-          "from": "寄件人",
-          "replyTo": "回覆到",
-          "change": "更改"
-        }
+        "add": "新增郵件服務",
+        "search": "搜尋服務",
+        "noMatch": "沒有相符的服務，其他伺服器可以選自訂 SMTP",
+        "changeProvider": "換一個",
+        "sheetDescription": "選好服務後只填它給你的憑證，伺服器、連接埠和加密方式會自動填好",
+        "columns": {
+          "service": "服務",
+          "server": "伺服器"
+        },
+        "inUse": "使用中",
+        "notInUse": "未使用",
+        "use": "改用這個服務",
+        "switched": "已從 {{from}} 切換到 {{to}}",
+        "nowInUse": "{{name}} 已開始寄信",
+        "saved": "已儲存",
+        "useNow": "用它寄信",
+        "useNowHint": "取代目前使用的 {{name}}",
+        "deleteInUse": "使用中：先改用別的服務再刪除",
+        "deleteLast": "這是唯一的郵件服務。刪除後平台將無法寄信，登入驗證碼、重設密碼和額度提醒都會停止。",
+        "from": "寄件人"
       },
       "mailTemplates": {
         "names": {

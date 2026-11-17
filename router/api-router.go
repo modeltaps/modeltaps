@@ -205,6 +205,17 @@ func SetApiRouter(router *gin.Engine) {
 			notifyChannelRoute.DELETE("/:id", controller.DeleteNotifyChannel)
 		}
 
+		mailServiceRoute := apiRouter.Group("/mail_service")
+		mailServiceRoute.Use(middleware.RootAuth())
+		{
+			mailServiceRoute.GET("/", controller.GetMailServices)
+			mailServiceRoute.POST("/", controller.CreateMailService)
+			mailServiceRoute.POST("/test", controller.TestMailService)
+			mailServiceRoute.PUT("/:id", controller.UpdateMailService)
+			mailServiceRoute.POST("/:id/activate", controller.ActivateMailService)
+			mailServiceRoute.DELETE("/:id", controller.DeleteMailService)
+		}
+
 		oidcProviderRoute := apiRouter.Group("/oidc_provider")
 		oidcProviderRoute.Use(middleware.AdminAuth())
 		{
