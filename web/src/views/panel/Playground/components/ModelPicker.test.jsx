@@ -219,7 +219,7 @@ describe('ModelRow formatting', () => {
     expect(html).toMatch(/>\$0\.006<\/span><span[^>]*>按分钟</);
   });
 
-  it('不可用提示与多渠道入口都落在名称下方同一行，能力只画成名称列右侧的图标标记', () => {
+  it('不可用提示与多渠道入口落在名称下方同一行，没有内容就不占位，能力只画成名称列右侧的图标标记', () => {
     const meta = (html) => html.match(/<div class="h-4[^"]*">([\s\S]*?)<\/div>/)[1];
     const unavailable = renderToStaticMarkup(createElement(ModelRow, { model: row({ groups: [] }) }));
     const multiChannel = renderToStaticMarkup(
@@ -231,7 +231,7 @@ describe('ModelRow formatting', () => {
     expect(meta(unavailable)).toBe('无可用渠道');
     expect(meta(multiChannel)).toContain('aria-expanded="false"');
     expect(meta(multiChannel)).toContain('2 渠道');
-    expect(meta(plain)).toBe('');
+    expect(plain).not.toMatch(/<div class="h-4/);
     expect(plain).toContain('role="img" aria-label="推理"');
     expect(plain).not.toContain('>推理<');
   });

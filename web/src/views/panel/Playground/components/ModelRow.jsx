@@ -81,7 +81,7 @@ export default function ModelRow({ model, selected = false, active = false, mult
   const channels = model.channels || [];
   const extra = channels.slice(1);
 
-  // 名称下方固定一行小字：不可用提示 / 渠道数 / 多渠道展开入口共用这一处，行高不随内容跳动。
+  // 名称下方一行小字：不可用提示 / 渠道数 / 多渠道展开入口共用这一处；没有内容就不占位，免得行底留白。
   let meta = null;
   if (unavailable) {
     meta = t('playground.picker.noChannel');
@@ -104,7 +104,7 @@ export default function ModelRow({ model, selected = false, active = false, mult
   return (
     <div
       className={cn(
-        'rounded-lg border border-transparent px-3 py-1.5 transition-colors',
+        'rounded-lg border border-transparent px-3 py-2 transition-colors',
         active && 'border-border bg-muted/60',
         selected && 'border-primary/40 bg-primary/5',
         unavailable && 'opacity-60'
@@ -142,7 +142,7 @@ export default function ModelRow({ model, selected = false, active = false, mult
             <PriceCells pricing={model.pricing} />
           </button>
 
-          <div className="h-4 truncate pl-4 text-[0.6875rem] leading-4 text-muted-foreground">{meta}</div>
+          {meta && <div className="h-4 truncate pl-4 text-[0.6875rem] leading-4 text-muted-foreground">{meta}</div>}
 
           {expanded && (
             <ul className="mt-1 space-y-0.5 pl-4">
