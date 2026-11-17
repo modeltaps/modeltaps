@@ -45,6 +45,16 @@ export default defineConfig(({ mode }) => {
   // of silently hopping to another port.
   const devPort = Number(env.VITE_DEV_PORT) || 3010;
 
+  // Backend paths the dev server forwards: the panel API plus every relay entry point, so API
+  // clients can also point at the dev server (the token test dialog and the built-in console
+  // call /v1, /claude and /gemini directly).
+  const backendProxy = Object.fromEntries(
+    ['/api', '/v1', '/claude', '/gemini', '/mj', '/suno', '/kling', '/recraftAI', '/mcp', '/dashboard', '/llms.txt'].map((prefix) => [
+      prefix,
+      { target: proxyTarget, changeOrigin: true }
+    ])
+  );
+
   return {
     plugins: [react(), jsconfigPaths(), tailwindcss()],
     // vitest picks this up via the shared vite config (run: pnpm test)
@@ -89,17 +99,7 @@ export default defineConfig(({ mode }) => {
       port: devPort,
       strictPort: true,
       allowedHosts: devAllowedHosts,
-      proxy: {
-        '/api': {
-          target: proxyTarget, // 设置代理的目标服务器
-          changeOrigin: true
-        },
-        // 令牌测试弹窗按协议探测可用模型,需直连各协议中继端点
-        '/gemini': { target: proxyTarget, changeOrigin: true },
-        '/claude': { target: proxyTarget, changeOrigin: true },
-        // 面板内置控制台直连 /v1/* 中继端点,与上面两条同理
-        '/v1': { target: proxyTarget, changeOrigin: true }
-      }
+      proxy: backendProxy
     },
     preview: {
       // this ensures that the browser opens upon preview start
@@ -108,17 +108,7 @@ export default defineConfig(({ mode }) => {
       port: devPort,
       strictPort: true,
       allowedHosts: devAllowedHosts,
-      proxy: {
-        '/api': {
-          target: proxyTarget,
-          changeOrigin: true
-        },
-        // 令牌测试弹窗按协议探测可用模型,需直连各协议中继端点
-        '/gemini': { target: proxyTarget, changeOrigin: true },
-        '/claude': { target: proxyTarget, changeOrigin: true },
-        // 面板内置控制台直连 /v1/* 中继端点,与上面两条同理
-        '/v1': { target: proxyTarget, changeOrigin: true }
-      }
+      proxy: backendProxy
     },
     build: {
       // 生产构建不产出 sourcemap,避免线上暴露源码
