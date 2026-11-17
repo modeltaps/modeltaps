@@ -217,4 +217,4 @@ console.log(decision.answers);
 
 ## 查找决策模型
 
-在控制台打开「模型」，找带「决策」标签的模型；或打开「文档 → 决策」，查看本接口和你的 Key 可用的模型。决策模型来自多家厂商，例如 Google、OpenAI、Microsoft、HeyGen、Perplexity，具体能调用哪些取决于你所在的站点。
+在控制台打开「模型」，找带「决策」标签的模型；或打开「接口文档 → 决策」，查看本接口和你的 Key 可用的模型。决策模型来自多家厂商，例如 Google、OpenAI、Microsoft、HeyGen、Perplexity，具体能调用哪些取决于你所在的站点。

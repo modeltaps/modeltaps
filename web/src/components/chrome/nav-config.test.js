@@ -136,7 +136,7 @@ describe('navSectionsFor (platform admin)', () => {
 });
 
 describe('findActiveItem', () => {
-  it('every API console resolves to 演练场, docs to 文档', () => {
+  it('every API console resolves to 演练场, docs to 接口文档', () => {
     for (const m of ['chat', 'image', 'speech', 'compare', 'video']) expect(findActiveItem(`/panel/playground/${m}`)?.id).toBe('playground');
     expect(findActiveItem('/panel/orgs/acme/playground/chat')?.id).toBe('playground');
     expect(findActiveItem('/panel/docs/chat')?.id).toBe('api_docs');

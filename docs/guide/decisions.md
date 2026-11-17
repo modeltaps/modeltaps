@@ -217,4 +217,4 @@ A decision request is billed by its input tokens at the model's input price; the
 
 ## Finding decision models
 
-Open **Models** in the console and look for the **Decision** tag, or open **Docs → Decisions** for this API with the models your key can use. Decision models come from several vendors, such as Google, OpenAI, Microsoft, HeyGen and Perplexity; which ones you can call depends on your site.
+Open **Models** in the console and look for the **Decision** tag, or open **API docs → Decisions** for this API with the models your key can use. Decision models come from several vendors, such as Google, OpenAI, Microsoft, HeyGen and Perplexity; which ones you can call depends on your site.
