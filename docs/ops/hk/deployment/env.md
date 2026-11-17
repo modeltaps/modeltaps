@@ -91,6 +91,7 @@ LOGS_FILENAME="modeltaps.log"
 18. `TG_WEBHOOK_SECRET`：（可選）webhook 密鑰，可自訂。設定該密鑰後將使用 `webhook` 方式接收訊息，否則使用輪詢（Polling）方式。
 19. `USER_TOKEN_SECRET` ： 設定用戶令牌簽名密鑰，必填，大於 32 位以上， 設定後請勿修改，否則會導致用戶令牌失效。
     - 取值請用 `openssl rand -base64 48 | tr -d '\n'` 生成，且與 `SESSION_SECRET` 使用不同的值。
+    - 啟動時會檢查：仍是示例佔位值（如 `<change-me-…>`）或短於 32 位時拒絕啟動；`SESSION_SECRET` 設定了的話也按同樣規則檢查。已上線、密鑰短於 32 位又不能立刻更換的部署，可設 `USER_TOKEN_SECRET_ALLOW_SHORT=true` 先照常啟動（日誌裡會有警告），更換密鑰會讓所有已發的 API Key 失效。
 20. `HASHIDS_SALT` ：Sqids 字母表，用於混淆用戶令牌信息， 可空，如為空則使用預設字母表`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789`，如設定，則需要保證字母表中無重複字元。
 21. `AUTO_PRICE_UPDATES`：自動更新價格，可選值為 `true` 和 `false`，未設定則預設為 `false`。開啟後每次啟動程式時，會比對數據庫中的數據與程式內建的預設模型價格，若數據庫中的模型價格有缺失將自動同步到數據庫中。需注意：開啟後無法刪除程式內建的預設模型價格，刪除後重啟會重新寫入，該選項適用於價格與官方保持一致的場景。
 22. `AUTO_PRICE_UPDATES_MODE`：價格更新模式，可選值為 `add`：僅增加系統不存在的價格；`overwrite`：覆蓋系統所有價格配置；`update`：僅更新現有數據；`system`：使用程式內建價格表初始化價格配置，預設為 `system`。生產環境建議使用 `system` 模式，並在 Web 端價格管理模組手動獲取價格更新服務數據後逐條核對更新。

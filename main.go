@@ -30,6 +30,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"strings"
 	"syscall"
 	"time"
 
@@ -69,6 +70,18 @@ func main() {
 
 	if !config.SessionSecretExplicit {
 		logger.LogWarn(nil, "[SYS] | SESSION_SECRET is not set, using a random session secret for this run: all login sessions are lost on restart and sessions are not shared across replicas. Set SESSION_SECRET explicitly in production")
+	}
+
+	secretErrs, secretWarnings := config.ValidateSecrets()
+	for _, w := range secretWarnings {
+		logger.LogWarn(nil, "[SYS] | "+w)
+	}
+	if len(secretErrs) > 0 {
+		msgs := make([]string, 0, len(secretErrs))
+		for _, e := range secretErrs {
+			msgs = append(msgs, e.Error())
+		}
+		logger.FatalLog("refusing to start: " + strings.Join(msgs, "; "))
 	}
 
 	// Initialize user token
