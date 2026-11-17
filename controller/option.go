@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/common/encryption"
 	"github.com/modeltaps/modeltaps/common/lang"
 	"github.com/modeltaps/modeltaps/common/stmp"
 	"github.com/modeltaps/modeltaps/common/utils"
@@ -34,6 +35,9 @@ func GetOptions(c *gin.Context) {
 		"message": "",
 		"data":    options,
 		"secrets": secrets,
+		// Whether stored credentials are encrypted at rest (ENCRYPTION_KEY is set); the settings
+		// page shows a notice when they are not.
+		"encryption_enabled": encryption.Enabled(),
 	})
 	return
 }

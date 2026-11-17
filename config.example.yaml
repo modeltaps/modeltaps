@@ -28,6 +28,12 @@ node_type: "master"          # 节点类型：master / slave
 session_secret: "<change-me-to-a-random-string>"        # 会话签名密钥，为空则每次启动随机
 user_token_secret: "<change-me-to-a-32-char-random-string>"  # 用户令牌签名密钥，必填且 >32 位，勿改
 hashids_salt: ""             # Sqids 字母表/盐，用于混淆用户令牌信息，可空
+# Master key that encrypts stored credentials (channel keys, payment / notification / sign-in
+# secrets) with AES-256-GCM: 32 random bytes in base64 or hex (openssl rand -base64 32).
+# Empty keeps them in plaintext. BACK IT UP separately from the database: encrypted values cannot
+# be read without it, and once values are encrypted the program refuses to start without it.
+encryption_key: ""
+encryption_key_previous: ""  # only while rotating encryption_key: the old key, decrypt-only
 
 # ---------- 数据库 ----------
 sql_dsn: ""                  # 设置后使用 MySQL/PostgreSQL；为空则用 SQLite

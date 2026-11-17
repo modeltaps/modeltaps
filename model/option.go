@@ -6,15 +6,55 @@ import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/brandicon"
 	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/common/encryption"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"strconv"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Option struct {
 	Key   string `json:"key" gorm:"primaryKey"`
 	Value string `json:"value"`
+}
+
+// BeforeSave encrypts the value of a secret option (config.ScopeSecret) when ENCRYPTION_KEY is
+// set; AfterSave puts the plaintext back on the struct, and AfterFind decrypts on load.
+func (option *Option) BeforeSave(_ *gorm.DB) error {
+	if !config.GlobalOption.IsSecret(option.Key) {
+		return nil
+	}
+	stored, err := encryption.Encrypt(option.Value, optionSecretLabel(option.Key))
+	if err != nil {
+		return fmt.Errorf("encrypt option %s: %w", option.Key, err)
+	}
+	option.Value = stored
+	return nil
+}
+
+func (option *Option) AfterSave(_ *gorm.DB) error {
+	if !config.GlobalOption.IsSecret(option.Key) {
+		return nil
+	}
+	return option.decryptValue()
+}
+
+func (option *Option) AfterFind(_ *gorm.DB) error { return option.decryptValue() }
+
+// decryptValue leaves a value it cannot decrypt as it is (still encrypted) and reports it;
+// loadOptionsFromDatabase skips such values.
+func (option *Option) decryptValue() error {
+	if !encryption.IsEncrypted(option.Value) {
+		return nil
+	}
+	plaintext, err := encryption.Decrypt(option.Value, optionSecretLabel(option.Key))
+	if err != nil {
+		return fmt.Errorf("option %s: %w", option.Key, err)
+	}
+	option.Value = plaintext
+	return nil
 }
 
 func AllOption() ([]*Option, error) {
@@ -363,8 +403,15 @@ func registerOptions() {
 }
 
 func loadOptionsFromDatabase() {
-	options, _ := AllOption()
+	options, err := AllOption()
+	if err != nil {
+		logger.SysError("failed to load options: " + err.Error())
+	}
 	for _, option := range options {
+		if encryption.IsEncrypted(option.Value) {
+			// Could not be decrypted (see Option.AfterFind): keep the running value.
+			continue
+		}
 		err := config.GlobalOption.Set(option.Key, option.Value)
 		if err != nil {
 			logger.SysError("failed to update option map: " + err.Error())

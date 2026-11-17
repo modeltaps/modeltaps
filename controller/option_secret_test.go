@@ -1,12 +1,14 @@
 package controller
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/common/encryption"
 	"github.com/modeltaps/modeltaps/model"
 
 	"github.com/gin-gonic/gin"
@@ -48,5 +50,38 @@ func TestGetOptionsReturnsMaskedSecrets(t *testing.T) {
 	}
 	if got, ok := body.Secrets["TurnstileSecretKey"]; !ok || got != "" {
 		t.Errorf("未设置的 TurnstileSecretKey 应以空串出现, got %q (present=%v)", got, ok)
+	}
+}
+
+// /api/option/ tells the settings page whether stored credentials are encrypted at rest.
+func TestGetOptionsReportsEncryptionAtRest(t *testing.T) {
+	setupOidcTestDB(t)
+	model.InitOptionMap()
+	t.Cleanup(func() { _ = encryption.Configure("", "") })
+
+	get := func() bool {
+		gin.SetMode(gin.TestMode)
+		recorder := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(recorder)
+		c.Request = httptest.NewRequest("GET", "/api/option/", nil)
+		GetOptions(c)
+		var body struct {
+			EncryptionEnabled *bool `json:"encryption_enabled"`
+		}
+		if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil || body.EncryptionEnabled == nil {
+			t.Fatalf("encryption_enabled missing: %s", recorder.Body.String())
+		}
+		return *body.EncryptionEnabled
+	}
+
+	_ = encryption.Configure("", "")
+	if get() {
+		t.Error("encryption_enabled = true without a key")
+	}
+	if err := encryption.Configure(base64.StdEncoding.EncodeToString([]byte("0123456789abcdef0123456789abcdef")), ""); err != nil {
+		t.Fatal(err)
+	}
+	if !get() {
+		t.Error("encryption_enabled = false with a key")
 	}
 }

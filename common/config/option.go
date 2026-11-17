@@ -190,6 +190,28 @@ func (cm *OptionManager) GetAllNonSecret() map[string]string {
 	return all
 }
 
+// IsSecret reports whether key is a registered ScopeSecret option. Its stored value is encrypted
+// when ENCRYPTION_KEY is set.
+func (cm *OptionManager) IsSecret(key string) bool {
+	cm.mutex.RLock()
+	defer cm.mutex.RUnlock()
+	entry, ok := cm.entries[key]
+	return ok && entry.scope == ScopeSecret
+}
+
+// SecretKeys lists the registered ScopeSecret option keys.
+func (cm *OptionManager) SecretKeys() []string {
+	cm.mutex.RLock()
+	defer cm.mutex.RUnlock()
+	var keys []string
+	for k, v := range cm.entries {
+		if v.scope == ScopeSecret {
+			keys = append(keys, k)
+		}
+	}
+	return keys
+}
+
 // GetAllSecret 返回 ScopeSecret 配置的原值(含未设置的空串),仅供后台接口脱敏后下发回显。
 func (cm *OptionManager) GetAllSecret() map[string]string {
 	cm.mutex.RLock()

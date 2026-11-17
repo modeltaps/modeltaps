@@ -2039,6 +2039,11 @@
     "cards": {
       "autoRouting": "自动路由"
     },
+    "systemSettings": {
+      "generalSettings": {
+        "encryptionKeyMissing": "未设置 ENCRYPTION_KEY，上游渠道密钥、支付网关密钥、通知渠道密钥和登录客户端密钥以明文存放在数据库中。请在部署配置中设置 ENCRYPTION_KEY（可用 openssl rand -base64 32 生成）并备份好，重启后已存的密钥会被加密。密钥丢失后这些数据将无法读回。"
+      }
+    },
     "operationSettings": {
       "generalSettings": {
         "routingDecisionBilling": "决策调用计费",

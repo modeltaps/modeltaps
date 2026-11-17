@@ -981,7 +981,10 @@ func (cc *ChannelsChooser) Loaded() bool {
 
 func (cc *ChannelsChooser) Load() {
 	var channels []*Channel
-	DB.Where("status = ?", config.ChannelStatusEnabled).Find(&channels)
+	if err := DB.Where("status = ?", config.ChannelStatusEnabled).Find(&channels).Error; err != nil {
+		// A key that cannot be decrypted fails only its own field; the other channels still load.
+		logger.SysError("failed to load channels: " + err.Error())
+	}
 
 	// Read the groups from the database: at startup this runs before the user group cache loads.
 	allGroups := userGroupSymbolsFromDB()

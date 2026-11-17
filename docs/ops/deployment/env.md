@@ -105,6 +105,13 @@ LOGS_FILENAME="modeltaps.log"
 27. `ROOT_PASSWORD_ALLOW_INSECURE`：是否跳过 `ROOT_PASSWORD` 的 8–64 位长度校验，可选值 `true` / `false`，默认 `false`。**仅限本地开发环境，生产环境严禁开启。**
     - 本地开发约定：`ROOT_PASSWORD=admin` + `ROOT_PASSWORD_ALLOW_INSECURE=true`，首次启动后即可用 `admin/admin` 登录。在此之前建的库种的是 `root`，继续用原来的账号登录。
     - 开启后启动日志会打印一行警告；未设置 `ROOT_PASSWORD` 时该开关不生效，仍走 16 位随机密码分支。
+28. `ENCRYPTION_KEY`：数据库里已存凭据的加密主密钥（AES-256-GCM）。设置后，上游渠道密钥（含 Codex、Claude Code 等 OAuth 渠道的 refresh token）、渠道管理密钥、支付网关配置、通知渠道的密钥、OIDC 提供方的客户端密钥，以及后台系统设置里的密钥类配置（SMTP 令牌、GitHub / OIDC / LinuxDo 客户端密钥、微信服务器令牌、Turnstile 密钥、CF Worker 图片密钥）都先加密再写入数据库。
+    - 取值为 32 字节随机数的 base64 或 hex 编码，请用 `openssl rand -base64 32` 生成。格式不对或仍是文档里的占位符时，程序拒绝启动。
+    - 未设置时与以前一样以明文存储，启动日志会打印一行警告，后台「系统设置 → 站点」也会提示。
+    - 设置后重启，主节点会把已有的明文值分批加密，并在日志里记下每列加密了多少条；之后再启动不会重复处理。多节点部署时所有节点必须使用同一个值。
+    - **务必备份这个密钥**，并与数据库备份分开保管：密钥丢失后已加密的数据无法恢复，只能清空这些值（以 `enc:v1:` 开头）后重新填写。数据库里有已加密的值、启动时却没有能解开它们的密钥（未设置或填错）时，程序拒绝启动，以免带着读不出来的渠道密钥继续服务。
+    - 设置后不要随意更换，需要轮换时用下面的 `ENCRYPTION_KEY_PREVIOUS`。
+29. `ENCRYPTION_KEY_PREVIOUS`：轮换 `ENCRYPTION_KEY` 时填旧密钥，只用于解密。做法：把旧值移到 `ENCRYPTION_KEY_PREVIOUS`，`ENCRYPTION_KEY` 填新生成的值，重启全部节点；主节点启动时把仍在旧密钥下的数据用新密钥重新加密，日志里出现 `re-encrypted` 记录后，即可删掉 `ENCRYPTION_KEY_PREVIOUS` 再重启一次。
 
 ## 更多配置项
 

@@ -2033,6 +2033,11 @@
     "cards": {
       "autoRouting": "自動ルーティング"
     },
+    "systemSettings": {
+      "generalSettings": {
+        "encryptionKeyMissing": "ENCRYPTION_KEY が設定されていないため、上流チャネルのキー、決済ゲートウェイのシークレット、通知チャネルのシークレット、ログイン用クライアントシークレットがデータベースに平文で保存されています。デプロイ設定で ENCRYPTION_KEY を設定し（openssl rand -base64 32 で生成できます）、バックアップを取ってから再起動すると、保存済みのシークレットが暗号化されます。キーを失うとこれらのデータは読み戻せません。"
+      }
+    },
     "operationSettings": {
       "generalSettings": {
         "routingDecisionBilling": "判定呼び出しを課金する",

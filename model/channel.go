@@ -18,7 +18,7 @@ import (
 type Channel struct {
 	Id                 int      `json:"id"`
 	Type               int      `json:"type" form:"type" gorm:"default:0"`
-	Key                string   `json:"key" form:"key" gorm:"type:text"`
+	Key                string   `json:"key" form:"key" gorm:"type:text;serializer:encrypted"` // encrypted at rest, see secret_storage.go
 	Status             int      `json:"status" form:"status" gorm:"default:1"`
 	Name               string   `json:"name" form:"name" gorm:"index"`
 	Weight             *uint    `json:"weight" gorm:"default:1"`
@@ -51,7 +51,7 @@ type Channel struct {
 	// ManageKey is an optional key of the same upstream account with management permission. It is
 	// never used to send requests: providers read the account balance (and later the cost reports)
 	// with it. Nil in an update keeps the stored value; an empty string clears it.
-	ManageKey *string `json:"manage_key,omitempty" gorm:"type:text"`
+	ManageKey *string `json:"manage_key,omitempty" gorm:"type:text;serializer:encrypted"`
 	// Remark is a free-text note for admins; it is kept per channel and not shared across a tag.
 	Remark string `json:"remark" form:"remark" gorm:"type:text"`
 	// Need2ResponseModels adjusts which chat models go to the Responses API on this channel
@@ -340,8 +340,12 @@ func GetChannelsList(params *SearchChannelsParams) (*DataResult[Channel], error)
 	}
 
 	if params.Key != "" {
-		db = db.Where(quotePostgresField("key")+" = ?", params.Key)
-		tagDB = tagDB.Where(quotePostgresField("key")+" = ?", params.Key)
+		ids, err := channelIDsWithKey(params.Key)
+		if err != nil {
+			return nil, err
+		}
+		db = db.Where("id IN ?", ids)
+		tagDB = tagDB.Where("id IN ?", ids)
 	}
 
 	if params.TestModel != "" {
@@ -1035,8 +1039,25 @@ func ClearChannelTokenCache(channelId int) {
 	}
 }
 
+// channelIDsWithKey finds the channels whose key equals key. The key column may be encrypted,
+// and ciphertext differs on every write, so the keys are compared after loading, not in SQL.
+func channelIDsWithKey(key string) ([]int, error) {
+	var channels []Channel
+	if err := DB.Select("id", "key").Find(&channels).Error; err != nil {
+		return nil, err
+	}
+	ids := []int{}
+	for _, channel := range channels {
+		if channel.Key == key {
+			ids = append(ids, channel.Id)
+		}
+	}
+	return ids, nil
+}
+
 func UpdateChannelKey(id int, key string) error {
-	err := DB.Model(&Channel{}).Where("id = ?", id).Update("key", key).Error
+	// A struct update, so the key goes through the encrypted serializer (a map would not).
+	err := DB.Model(&Channel{}).Where("id = ?", id).Select("key").Updates(&Channel{Key: key}).Error
 	if err != nil {
 		logger.SysError("failed to update channel key: " + err.Error())
 		return err

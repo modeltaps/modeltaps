@@ -50,6 +50,20 @@ describe('useOptionSettings secrets', () => {
   });
 });
 
+describe('useOptionSettings encryption at rest', () => {
+  it('is unknown when the server does not say', async () => {
+    const { result } = renderHook(() => useOptionSettings());
+    await waitFor(() => expect(result.current.secrets.SMTPToken).toBe('smtp****cdef'));
+    expect(result.current.encryptionEnabled).toBeNull();
+  });
+
+  it('reports whether ENCRYPTION_KEY is set', async () => {
+    API.get.mockResolvedValue({ data: { success: true, data: [], secrets: {}, encryption_enabled: false } });
+    const { result } = renderHook(() => useOptionSettings());
+    await waitFor(() => expect(result.current.encryptionEnabled).toBe(false));
+  });
+});
+
 describe('TextRow secret', () => {
   it('shows the mask and the keep hint when the secret is set', () => {
     render(<TextRow id="s" label="Token" value="" onChange={() => {}} placeholder="Enter token" secret="smtp****cdef" />);

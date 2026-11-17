@@ -23,6 +23,8 @@ export function useOptionSettings() {
   // Secret options ({ key: mask }, '' when unset): the backend never returns their values,
   // only a mask. Their inputs start empty, and saving an empty one keeps the stored value.
   const [secrets, setSecrets] = useState({});
+  // Whether stored credentials are encrypted at rest (ENCRYPTION_KEY set); null until loaded.
+  const [encryptionEnabled, setEncryptionEnabled] = useState(null);
   const [loading, setLoading] = useState(false);
   const loadStatus = useContext(LoadStatusContext);
   // Latest values for the async save path, which must not depend on a stale render.
@@ -52,6 +54,7 @@ export function useOptionSettings() {
         setInputs(merged);
         setOrigin(next);
         setSecrets(res.data.secrets || {});
+        setEncryptionEnabled(typeof res.data.encryption_enabled === 'boolean' ? res.data.encryption_enabled : null);
       } else {
         showError(message);
       }
@@ -138,7 +141,7 @@ export function useOptionSettings() {
   // number inputs turn origin values like 10 into '10'.
   const isDirty = useCallback((keys) => keys.some((key) => !sameOption(inputs[key], origin[key])), [inputs, origin]);
 
-  return { inputs, origin, secrets, setField, setBool, saveKeys, resetKeys, loading, refresh, isDirty };
+  return { inputs, origin, secrets, encryptionEnabled, setField, setBool, saveKeys, resetKeys, loading, refresh, isDirty };
 }
 
 const sameOption = (a, b) => String(a ?? '') === String(b ?? '');

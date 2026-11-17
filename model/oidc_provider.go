@@ -20,7 +20,7 @@ type OidcProvider struct {
 	DisplayName         string `json:"display_name" gorm:"type:varchar(64);default:''"`
 	Issuer              string `json:"issuer" gorm:"type:varchar(500);default:''"`
 	ClientId            string `json:"client_id" gorm:"type:varchar(255);default:''"`
-	ClientSecret        string `json:"-" gorm:"type:varchar(500);default:''"`
+	ClientSecret        string `json:"-" gorm:"type:varchar(1024);default:'';serializer:encrypted"`
 	Scopes              string `json:"scopes" gorm:"type:varchar(255);default:''"`
 	UsernameClaim       string `json:"username_claim" gorm:"type:varchar(64);default:''"`
 	DisplayNameClaim    string `json:"display_name_claim" gorm:"type:varchar(64);default:''"`

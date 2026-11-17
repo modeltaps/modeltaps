@@ -2118,6 +2118,11 @@
     "cards": {
       "autoRouting": "Auto routing"
     },
+    "systemSettings": {
+      "generalSettings": {
+        "encryptionKeyMissing": "ENCRYPTION_KEY is not set, so upstream channel keys, payment gateway secrets, notification channel secrets and sign-in client secrets are stored in plaintext in the database. Set ENCRYPTION_KEY in the deployment (generate one with openssl rand -base64 32), back it up and restart: the stored secrets are then encrypted. Without the key they cannot be read back."
+      }
+    },
     "operationSettings": {
       "generalSettings": {
         "routingDecisionBilling": "Charge the decision call",

@@ -22,7 +22,7 @@ type NotifyChannel struct {
 	Name     string `json:"name" gorm:"type:varchar(64);default:''"`
 	Type     string `json:"type" gorm:"type:varchar(16);not null"`
 	Settings string `json:"-" gorm:"type:text"`
-	Secrets  string `json:"-" gorm:"type:text"`
+	Secrets  string `json:"-" gorm:"type:text;serializer:encrypted"` // encrypted at rest, see secret_storage.go
 	Enabled  bool   `json:"enabled" gorm:"default:false"`
 	// Kinds limits the channel to these notice kinds, comma separated; empty takes every kind.
 	Kinds       string `json:"kinds" gorm:"type:varchar(512);default:''"`

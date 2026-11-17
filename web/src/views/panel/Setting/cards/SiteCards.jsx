@@ -41,6 +41,13 @@ export function ServerAddressCard({ ctx }) {
           <span>{tr('generalSettings.serverAddressWarning', { suggested: window.location.origin })}</span>
         </Alert>
       )}
+      {/* A deployment setting like the server address: shown until ENCRYPTION_KEY is set. */}
+      {ctx.encryptionEnabled === false && (
+        <Alert variant="warning">
+          <AlertTriangle />
+          <span>{tr('generalSettings.encryptionKeyMissing')}</span>
+        </Alert>
+      )}
     </OptionCard>
   );
 }

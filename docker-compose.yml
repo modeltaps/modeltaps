@@ -17,6 +17,9 @@ services:
       - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET must be set - see .env.example}
       - USER_TOKEN_SECRET=${USER_TOKEN_SECRET:?USER_TOKEN_SECRET must be set - see .env.example}
       - TZ=${TZ:-UTC}
+      # Optional but recommended: encrypts stored credentials; back it up (see .env.example)
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+      - ENCRYPTION_KEY_PREVIOUS=${ENCRYPTION_KEY_PREVIOUS:-}
       # - HASHIDS_SALT=${HASHIDS_SALT} # 可空，建议设置，字符串元素不能重复
     #      - NODE_TYPE=slave  # 多机部署时从节点取消注释该行
     #      - SYNC_FREQUENCY=60  # 需要定期从数据库加载数据时取消注释该行

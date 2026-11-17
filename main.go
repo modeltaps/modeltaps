@@ -10,6 +10,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/brandicon"
 	"github.com/modeltaps/modeltaps/common/cache"
 	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/common/encryption"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/notify"
 	"github.com/modeltaps/modeltaps/common/stmp"
@@ -84,6 +85,14 @@ func main() {
 		logger.FatalLog("refusing to start: " + strings.Join(msgs, "; "))
 	}
 
+	// Encryption of stored credentials (channel keys, payment and notification secrets ...).
+	if err := encryption.Configure(viper.GetString("encryption_key"), viper.GetString("encryption_key_previous")); err != nil {
+		logger.FatalLog("invalid encryption key: " + err.Error())
+	}
+	if !encryption.Enabled() {
+		logger.LogWarn(nil, "[SYS] | ENCRYPTION_KEY is not set: upstream channel keys, payment gateway secrets, notification channel secrets and sign-in client secrets are stored in plaintext in the database. Set ENCRYPTION_KEY (openssl rand -base64 32) and keep a backup of it")
+	}
+
 	// Initialize user token
 	err := common.InitUserToken()
 	if err != nil {
@@ -100,6 +109,11 @@ func main() {
 	model.InitInviteCodeLock()
 	// Initialize options
 	model.InitOptionMap()
+	// Needs the registered options (secret options are encrypted too) and runs before anything
+	// serves: stored secrets that no configured key decrypts stop the start.
+	if err := model.PrepareStoredSecrets(); err != nil {
+		logger.FatalLog("stored secrets: " + err.Error())
+	}
 	model.NewPricing()
 	model.HandleOldTokenMaxId()
 

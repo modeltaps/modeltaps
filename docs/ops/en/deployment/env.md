@@ -105,6 +105,13 @@ LOGS_FILENAME="modeltaps.log"
 27. `ROOT_PASSWORD_ALLOW_INSECURE`: whether to skip the 8–64 character length check on `ROOT_PASSWORD`. Accepts `true` / `false`, defaults to `false`. **For local development only; never enable it in production.**
     - Local development convention: `ROOT_PASSWORD=admin` plus `ROOT_PASSWORD_ALLOW_INSECURE=true`, so you can sign in with `admin/admin` after the first startup. Databases created before this change seeded `root` instead; keep signing in with that account.
     - When enabled, a warning line is printed to the startup log. The switch has no effect when `ROOT_PASSWORD` is unset: the 16-character random password branch still applies.
+28. `ENCRYPTION_KEY`: the master key that encrypts stored credentials in the database (AES-256-GCM). When it is set, upstream channel keys (including the refresh tokens of OAuth channels such as Codex and Claude Code), channel management keys, payment gateway configurations, notification channel secrets, OIDC provider client secrets and the secret system settings (SMTP token, GitHub / OIDC / LinuxDo client secrets, WeChat server token, Turnstile secret key, CF Worker image key) are encrypted before they are written to the database.
+    - The value is 32 random bytes in base64 or hex; generate it with `openssl rand -base64 32`. The program refuses to start when the value is malformed or still a placeholder from the docs.
+    - When unset, values are stored in plaintext as before; the startup log prints a warning and the admin settings (System settings → Site) show a notice.
+    - After you set it and restart, the master node encrypts the existing plaintext values in batches and logs how many it encrypted per column; later starts do not process them again. Every node of a multi-node deployment must use the same value.
+    - **Back up this key**, separately from the database backups: encrypted data cannot be recovered without it, only cleared (the values start with `enc:v1:`) and entered again. When the database holds encrypted values but no configured key opens them (unset or wrong), the program refuses to start rather than serve channels whose keys it cannot read.
+    - Do not change it casually; to rotate it, use `ENCRYPTION_KEY_PREVIOUS` below.
+29. `ENCRYPTION_KEY_PREVIOUS`: the old key while rotating `ENCRYPTION_KEY`, used only to decrypt. Move the old value to `ENCRYPTION_KEY_PREVIOUS`, put a newly generated value in `ENCRYPTION_KEY` and restart every node; at startup the master node re-encrypts the data still under the old key with the new one. Once the log shows the `re-encrypted` line, remove `ENCRYPTION_KEY_PREVIOUS` and restart again.
 
 ## Additional configuration keys
 
