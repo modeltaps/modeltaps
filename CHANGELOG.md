@@ -904,6 +904,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Only the root user can manage sign-in (OIDC) providers. Changing a provider's issuer or client
+  ID needs the client secret again, and a new issuer removes the provider's account links, so
+  users link again on their next sign-in. Linking by verified email or phone never picks an admin
+  or root account: an admin signs in first and links the provider in the account settings.
+- A non-root admin has to enter a channel's key again when changing anything that decides where
+  its requests go: type, base URL, region or other settings, proxy or endpoint plugins, including
+  batch and tag edits and copying a key. Vertex AI and Azure Speech regions must be plain names
+  such as `us-central1`; an uppercase Azure Speech region needs to be written in lowercase.
+- A request is refunded at most once: tasks retried across channels and the Midjourney relax path
+  could pay one charge back several times. The pre-charge counts the largest output limit a
+  request declares (`max_tokens`, `max_completion_tokens` and the like), and the Claude, Gemini
+  and OpenAI conversions read the two fields the same way.
+- Request bodies of the management API, dashboard and MCP are capped at 2 MB by default
+  (`API_MAX_BODY_MB`), bulk admin imports at 32 MB and payment notifications at 1 MB, and a client
+  has 60 seconds to send a body (`SERVER_BODY_READ_TIMEOUT`). Before, only relay requests were
+  capped and a single unauthenticated request could exhaust memory.
 - API keys are random and stored only as a hash. A new key is shown once, when it is created or
   reset (new "Reset key" action; in an organization only the member who created a key can reset
   it), and lists show a hint such as `sk-…zcSI`. Existing keys keep working: on upgrade their
