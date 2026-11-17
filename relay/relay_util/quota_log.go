@@ -278,6 +278,15 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 		"input_ratio":       q.price.GetInput(),
 		"output_ratio":      q.price.GetOutput(),
 	}
+	// The platform markup is part of group_ratio (the ratio charged); the log keeps both parts and
+	// the amount at the catalog price, so the markup's revenue can be told apart.
+	if q.markup > 1 {
+		meta["markup_rate"] = q.markup - 1
+		meta["user_group_ratio"] = q.userGroupRatio
+	}
+	if q.baseQuota > 0 {
+		meta["base_quota"] = q.baseQuota
+	}
 
 	if usage != nil && usage.AudioSeconds > 0 {
 		meta["audio_seconds"] = math.Ceil(usage.AudioSeconds)

@@ -75,6 +75,8 @@ func NewHarness(t *testing.T, opts HarnessOptions) *Harness {
 
 	setupTestConfig(t)
 	setupTestDB(t)
+	// Channel prices are cached process-wide by channel id; a fresh database reuses the ids.
+	model.InvalidateChannelPriceCache()
 	// Failed attempts write pauses and send notices in the background; let that finish before
 	// the cleanups above swap the database and settings back (cleanups run last-in first-out).
 	t.Cleanup(relay.WaitRelayErrorHandling)

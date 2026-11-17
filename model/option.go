@@ -226,6 +226,8 @@ func registerOptions() {
 	config.GlobalOption.RegisterInt("ChannelTestIntervalMinutes", &config.ChannelTestIntervalMinutes, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("PauseRulesEnabled", &config.PauseRulesEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("SupplyCostFloorBilling", &config.SupplyCostFloorBilling, config.ScopeAdmin)
+	config.GlobalOption.RegisterFloat("PlatformMarkupPercent", &config.PlatformMarkupPercent, config.ScopeAdmin)
+	config.GlobalOption.RegisterFloat("PaymentCostPercent", &config.PaymentCostPercent, config.ScopeAdmin)
 	config.GlobalOption.RegisterCustom("PauseRules", func() string {
 		return config.PauseRules
 	}, func(value string) error {

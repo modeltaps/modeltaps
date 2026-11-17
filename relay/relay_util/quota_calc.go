@@ -171,6 +171,7 @@ func (q *Quota) GetTotalQuotaByUsage(usage *types.Usage) (quota int) {
 	q.GetExtraBillingData(usage.ExtraBilling)
 	q.audioSeconds = usage.AudioSeconds
 	quota = q.calcQuota(promptTokens, completionTokens, q.inputRatio*inRatio*tier, q.outputRatio*outRatio*tier, q.groupRatio)
+	q.baseQuota = q.calcQuota(promptTokens, completionTokens, q.price.GetInput()*inRatio*tier, q.price.GetOutput()*outRatio*tier, 1)
 	return q.applyCostFloor(usage, quota)
 }
 
@@ -206,13 +207,15 @@ func (q *Quota) channelCostQuota(usage *types.Usage) int {
 	return q.calcQuotaWith(price, promptTokens, completionTokens, price.GetInput()*inRatio*tier, price.GetOutput()*outRatio*tier, 1+q.feeRate)
 }
 
-// GetCostQuotaByUsage 按渠道成本倍率计算本次请求的上游成本配额，仅用于成本/利润统计，不参与扣费。
+// GetCostQuotaByUsage is the request's cost for the cost and margin figures: the channel's list
+// price with its fee (channelCostQuota), 0 when the cost is not known. It is never charged.
+//
+// Requests billed without a chosen channel's price (task and Midjourney settlements) fall back
+// to the catalog price at the channel's cost ratio, as before.
 func (q *Quota) GetCostQuotaByUsage(usage *types.Usage) (costQuota int) {
-	// With the cost floor on, the cost is what the channel charges.
-	if q.costFloor && q.costPrice != nil {
+	if q.costPrice != nil {
 		return q.channelCostQuota(usage)
 	}
-	// 未配置成本倍率时不计成本，省去无谓计算。
 	if q.costRatio <= 0 {
 		return 0
 	}
@@ -232,9 +235,20 @@ func (q *Quota) costQuotaAt(usage *types.Usage, ratio float64) int {
 // ExpectedUpstreamCost is the gateway's estimate, in USD, of what the upstream charges for the
 // usage: the price table at the channel's cost ratio, or at 1 (the listed price) when the
 // channel has none. It is logged next to the cost the upstream reports, to show the difference.
+//
+// It is the channel's list price, without the fee: upstreams deduct the list price from the
+// account's credits (the fee was paid when the credits were bought), so this is what their own
+// per-request and daily figures are compared with. Without a known list price, the catalog price.
 func (q *Quota) ExpectedUpstreamCost(usage *types.Usage) float64 {
-	if q.costFloor && q.costPrice != nil {
-		return float64(q.channelCostQuota(usage)) / float64(config.QuotaPerUnit)
+	if q.listPrice != nil {
+		price := q.listPrice
+		promptTokens, completionTokens := getComputeTokensWith(price, usage)
+		inRatio, outRatio := price.GetLongContextMultiplier(usage.PromptTokens)
+		tier := usage.TierMultiplier()
+		q.GetExtraBillingData(usage.ExtraBilling)
+		q.audioSeconds = usage.AudioSeconds
+		listQuota := q.calcQuotaWith(price, promptTokens, completionTokens, price.GetInput()*inRatio*tier, price.GetOutput()*outRatio*tier, 1)
+		return float64(listQuota) / float64(config.QuotaPerUnit)
 	}
 	ratio := q.costRatio
 	if ratio <= 0 {

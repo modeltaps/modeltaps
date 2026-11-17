@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import {
+  CheckCheck,
   ArrowDown,
   ArrowUp,
   ArrowUpRight,
@@ -38,6 +39,7 @@ import ProviderIcon from '@/components/brand/ProviderIcon';
 import { CHANNEL_OPTIONS } from 'constants/ChannelConstants';
 import {
   batchSupplies,
+  confirmChannelPending,
   createSupply,
   deleteSupply,
   listPauses,
@@ -519,6 +521,12 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
                   {t('modelSupply.keepOff')}
                 </DropdownMenuItem>
               )}
+              {supply.pending && (
+                <DropdownMenuItem onClick={() => onAction('confirmChannel', supply)}>
+                  <CheckCheck className="size-4" />
+                  {t('modelSupply.confirmChannel', { channel: supply.channel_name })}
+                </DropdownMenuItem>
+              )}
               {joinedLast && (
                 <DropdownMenuItem onClick={() => onAction('update', supply, { join_last: false })}>
                   <ListOrdered className="size-4" />
@@ -712,6 +720,17 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
       case 'resume': {
         const ok = await run(supply.id, () => resumePause(arg.id));
         if (ok) toast.success(t('modelSupply.resumed'));
+        return ok;
+      }
+      case 'confirmChannel': {
+        if (!window.confirm(t('modelSupply.confirmChannelAsk', { channel: supply.channel_name }))) return false;
+        let confirmed = 0;
+        const ok = await run(supply.id, async () => {
+          const res = await confirmChannelPending(supply.channel_id);
+          confirmed = res?.data?.confirmed || 0;
+          return res;
+        });
+        if (ok) toast.success(t('modelSupply.confirmChannelDone', { count: confirmed, channel: supply.channel_name }));
         return ok;
       }
       case 'delete':

@@ -333,6 +333,41 @@ var SupplyModeDefault = "balance"
 // automatic disabling, per-status cooldowns and model-not-found quarantine.
 var PauseRulesEnabled = true
 
+// PlatformMarkupPercent is the site's markup on the catalog (official) price, in percent: every
+// request is charged the catalog price times (1 + markup) times the group ratio. It covers the
+// channels' fees, the cost of taking payments and the margin. 0 charges the catalog price.
+var PlatformMarkupPercent = 0.0
+
+// PaymentCostPercent is what taking a payment costs the site, in percent of the amount (card
+// fees, currency conversion). It is not charged to anyone: it only lowers the net revenue the
+// price check and the margin figures compare channel costs with.
+var PaymentCostPercent = 0.0
+
+// MarkupMultiplier is 1 + PlatformMarkupPercent / 100.
+func MarkupMultiplier() float64 {
+	if PlatformMarkupPercent <= 0 {
+		return 1
+	}
+	return 1 + PlatformMarkupPercent/100
+}
+
+// NetRevenueFactor is what one unit of catalog price brings in after the markup and the cost of
+// taking payments, at group ratio 1: (1 + markup) x (1 - payment cost).
+func NetRevenueFactor() float64 {
+	return NetRevenueFactorAt(PlatformMarkupPercent, PaymentCostPercent)
+}
+
+// NetRevenueFactorAt is NetRevenueFactor for other percentages (the settings preview).
+func NetRevenueFactorAt(markupPercent, paymentPercent float64) float64 {
+	if markupPercent < 0 {
+		markupPercent = 0
+	}
+	if paymentPercent < 0 {
+		paymentPercent = 0
+	}
+	return (1 + markupPercent/100) * (1 - paymentPercent/100)
+}
+
 // SupplyCostFloorBilling charges a request at least what its channel costs: the higher of the
 // catalog price times the group ratio and the channel's price with its fee (model.SupplyCostPrice).
 // Off: requests are charged the catalog price only.

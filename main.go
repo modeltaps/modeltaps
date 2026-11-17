@@ -208,6 +208,12 @@ func initSync() {
 	model.StartChannelMetricsFlusher()
 	if config.IsMasterNode {
 		go controller.AutomaticallyRefreshChannelCredentials()
+		// Supplies already above the quote get the review new ones get, once the startup price
+		// syncs have had time to run.
+		go func() {
+			time.Sleep(2 * time.Minute)
+			model.ReviewSuppliesAboveQuoteLogged("startup")
+		}()
 	}
 }
 

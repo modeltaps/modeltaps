@@ -3233,7 +3233,10 @@
     "useCheaperUpstream": "換成這個",
     "costUnknown": "成本未知",
     "confirmAboveQuote": "這條線路的成本高於模型報價。開啟「扣費不低於渠道成本」時，走它的請求按渠道成本扣費；沒開啟就由平台承擔差價。想讓用戶價格不變，請先調高報價。仍要確認嗎？",
-    "costFromRatio": "按渠道的成本倍率估算（上游沒有價格表）"
+    "costFromRatio": "按渠道的成本倍率估算（上游沒有價格表）",
+    "confirmChannel": "確認 {{channel}} 的全部待確認線路",
+    "confirmChannelAsk": "確認 {{channel}} 在所有模型上的待確認線路？因成本高於售價被攔下的線路會按這個成本接請求。",
+    "confirmChannelDone": "已確認 {{channel}} 的 {{count}} 條線路"
   },
   "settingsUi": {
     "search": {
@@ -3527,6 +3530,11 @@
           "title": "上游新模型的上新規則",
           "description": "渠道自動加入上游新模型時：直接啟用、待確認還是不加入，以及排在哪個位置",
           "hint": "渠道可在「監控」中改用自己的規則"
+        },
+        "pricing-markup": {
+          "title": "平台加價率",
+          "description": "在目錄價之上加收的比例，以及收款要付出的成本",
+          "hint": "保存後對新請求立即生效；上調前請先告知用戶"
         }
       },
       "actions": {
@@ -4772,5 +4780,47 @@
     "openEndedQuota": "沒有額度上限：Agent 最多可以用完這個帳戶的全部餘額。",
     "openEndedExpiry": "永不過期：這把 Key 會一直有效，直到你刪除它。",
     "approveAnyway": "仍然批准"
+  },
+  "markupSettings": {
+    "markup": {
+      "label": "平台加價率",
+      "description": "每次請求按目錄價（官方價）加上這個比例，再乘分組倍率扣費。用來覆蓋渠道費率、收款成本和毛利。0 表示按目錄價收費。"
+    },
+    "payment": {
+      "label": "收款成本率",
+      "description": "收款時自己要付出的成本：刷卡手續費加換匯損耗。不向用戶收取，只用來算扣掉收款成本後的淨收入，下面的檢查拿它和渠道成本比。"
+    },
+    "invalidMarkup": "加價率要在 0 到 1000% 之間。",
+    "invalidPayment": "收款成本率要大於等於 0、小於 100%。",
+    "risk": {
+      "loading": "正在按這組數值核算各渠道…",
+      "net": "加價 {{markup}}、收款成本 {{payment}} 時，每 $1 目錄價扣掉收款成本後實際收入 ${{factor}}。",
+      "ok": "按這組數值，所有已知成本的線路都不虧。",
+      "modelsAtLoss_one": "{{count}} 個模型所有在用線路都虧：{{models}}",
+      "modelsAtLoss_other": "{{count}} 個模型所有在用線路都虧：{{models}}",
+      "servingAbove_one": "{{count}} 條正在接請求的線路會虧。它不會被關，請調高價格或把它往後排。",
+      "servingAbove_other": "{{count}} 條正在接請求的線路會虧。它們不會被關，請調高價格或把它們往後排。",
+      "backupAbove_one": "{{count}} 條備用線路會虧，會轉為待確認。",
+      "backupAbove_other": "{{count}} 條備用線路會虧，會轉為待確認。",
+      "costUnknown_one": "{{count}} 條在用線路成本未知，不在檢查範圍內。",
+      "costUnknown_other": "{{count}} 條在用線路成本未知，不在檢查範圍內。",
+      "notRouting": "線路路由未開啟：以下是開啟後的情況。",
+      "col": {
+        "channel": "渠道",
+        "fee": "費率",
+        "breakeven": "費率保本線",
+        "margin": "毛利",
+        "worst": "最貴線路需要",
+        "losing": "虧損線路"
+      },
+      "losingCount": "在用 {{serving}} · 備用 {{backup}}",
+      "worstTitle": "會虧的線路（{{count}}）",
+      "needs": "需要 {{markup}}",
+      "traffic": {
+        "primary": "在用",
+        "balanced": "在用",
+        "backup": "備用"
+      }
+    }
   }
 }

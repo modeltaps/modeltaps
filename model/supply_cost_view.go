@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/notify"
 )
 
@@ -31,9 +32,29 @@ type SupplyCost struct {
 	Input  *float64 `json:"input,omitempty"`
 	Output *float64 `json:"output,omitempty"`
 	Flat   *float64 `json:"flat,omitempty"`
-	// AboveQuote is true when some part of the cost is above the model's quoted price (at group
-	// ratio 1): requests served by this supply are charged more than the quote with the floor on.
+	// AboveQuote is true when some part of the cost is above what the model's price brings in:
+	// the catalog price times the platform markup, less the cost of taking payments
+	// (config.NetRevenueFactor), at group ratio 1. Requests served by this supply lose money.
 	AboveQuote bool `json:"above_quote"`
+	// CostToCatalog is the cost over the catalog price, the highest of its parts (1.05: the
+	// channel costs 5% more than the catalog price). The settings preview compares it with other
+	// markups. 0 when the catalog price is 0.
+	CostToCatalog float64 `json:"cost_to_catalog,omitempty"`
+}
+
+// costToCatalog is the highest part of cost over catalog.
+func costToCatalog(cost, catalog *Price) float64 {
+	ratio := 0.0
+	over := func(c, q float64) {
+		if q > 0 && c/q > ratio {
+			ratio = c / q
+		}
+	}
+	over(cost.GetInput(), catalog.GetInput())
+	if catalog.Type != TimesPriceType && catalog.Type != MinutesPriceType {
+		over(cost.GetOutput(), catalog.GetOutput())
+	}
+	return ratio
 }
 
 // aboveQuoteSlack ignores rounding in synced prices.
@@ -54,16 +75,18 @@ func supplyCostOf(modelName, upstreamModel string, ch *Channel, cp *ChannelPrice
 		return out
 	}
 	out.Known, out.Source, out.FeeRate = true, source, ch.GetFeeRate()
+	line := config.NetRevenueFactor() * aboveQuoteSlack
 	switch catalog.Type {
 	case TimesPriceType, MinutesPriceType:
 		out.Flat = ptrFloat(cost.GetInput() * DollarRate)
-		out.AboveQuote = cost.GetInput() > catalog.GetInput()*aboveQuoteSlack
+		out.AboveQuote = cost.GetInput() > catalog.GetInput()*line
 	default:
 		out.Input = tokenPricePerMillion(cost.GetInput())
 		out.Output = tokenPricePerMillion(cost.GetOutput())
-		out.AboveQuote = cost.GetInput() > catalog.GetInput()*aboveQuoteSlack ||
-			cost.GetOutput() > catalog.GetOutput()*aboveQuoteSlack
+		out.AboveQuote = cost.GetInput() > catalog.GetInput()*line ||
+			cost.GetOutput() > catalog.GetOutput()*line
 	}
+	out.CostToCatalog = costToCatalog(cost, catalog)
 	return out
 }
 

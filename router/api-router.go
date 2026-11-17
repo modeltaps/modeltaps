@@ -364,6 +364,8 @@ func SetApiRouter(router *gin.Engine) {
 			modelSupplyRoute.GET("/", controller.GetModelSupplies)
 			modelSupplyRoute.GET("/preview", controller.PreviewModelSupply)
 			modelSupplyRoute.GET("/cost_floor_stats", controller.GetCostFloorStats)
+			modelSupplyRoute.GET("/markup_risk", controller.PreviewMarkupRisk)
+			modelSupplyRoute.POST("/confirm_pending", controller.ConfirmPendingSupplies)
 			modelSupplyRoute.GET("/pending", controller.GetPendingUpstreamModels)
 			modelSupplyRoute.GET("/upstream_suggestion", controller.SuggestModelSupplyUpstream)
 			modelSupplyRoute.POST("/pending/attach", controller.AttachPendingUpstreamModel)

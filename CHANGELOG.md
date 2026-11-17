@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Supplies already in use are reviewed against the net revenue when prices sync and at startup:
+  backups that would lose money wait for review, supplies taking requests are reported but left on.
+  Nothing is held until the markup has been saved once. Switching a supply on accepts its cost,
+  and the pending supplies of a channel can be confirmed at once from a supply's menu.
+- A platform markup (Platform settings, Billing): every request is charged the catalog price
+  times (1 + markup) times the group ratio, to cover channel fees, payment costs and the margin.
+  0 by default, which charges the catalog price as before. Next to it, the payment cost (card fees,
+  currency conversion) is not charged; it lowers the net revenue channel costs are checked against.
+  A preview shows, for the values being typed, each channel's break-even markup and margin and the
+  supplies that would lose money.
 - New supplies that cost more than the quote wait for review. When a channel is created, or the
   daily check finds a new upstream model on a channel that adds them on its own, a supply whose
   channel cost is above the model's quoted price is switched off and waits on the model's Supplies
@@ -32,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The price check for new supplies compares a supply's cost with what the price brings in (the
+  catalog price with the markup, less the payment cost) instead of the catalog price.
 - The built-in official prices include `gpt-image-1.5`, `chatgpt-image-latest` ($8 image in, $5
   text in, $32 image out, $10 text out per 1M tokens) and `gpt-image-1-mini` ($2.50 image in, $2
   text in, $8 image out). Synced prices billed their image input at the text rate.
@@ -43,6 +55,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The expected upstream charge in the consume log is the channel's list price without its fee,
+  the basis upstreams report and bill on, so reconciliation no longer shows the fee as a
+  difference. The cost is logged for every request whose channel cost is known, with the cost
+  floor off too.
 - Alibaba Cloud OSS image storage signs uploads and links with V4 signatures, so it works with
   accounts created since March 2025 and buckets created since September 2025, which reject V1
   signatures. V4 needs the bucket region: the new `storage.alioss.region` setting, derived from a

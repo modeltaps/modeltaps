@@ -144,7 +144,9 @@ func SyncAllChannelsOwnPricing() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	// Supplies the new prices put above the quote are reported once the sync is done.
+	// Supplies the new prices put above the quote are reported once the sync is done, and backup
+	// supplies above the quote are held for review (deferred calls run last first).
+	defer model.ReviewSuppliesAboveQuoteLogged("price sync")
 	defer model.NotifyNewAboveQuote(model.AboveQuoteSnapshot())
 
 	// Channels that keep an upstream price list without feeding the catalog (the preset

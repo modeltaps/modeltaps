@@ -20,6 +20,7 @@ import {
   WeChatAuthCard
 } from './cards/AuthCards';
 import { BillingRulesCard, InviteRewardCard, QuotaCard, QuotaResetCard } from './cards/BillingCards';
+import { MarkupCard } from './cards/MarkupCard';
 import { InvoiceCard, PaymentGatewaysCard, PaymentSettingsCard } from './cards/PaymentCards';
 import {
   AutoRoutingCard,
@@ -69,6 +70,7 @@ const CARD_COMPONENTS = {
   turnstile: TurnstileCard,
   'email-domain': EmailDomainCard,
   quota: QuotaCard,
+  'pricing-markup': MarkupCard,
   'billing-rules': BillingRulesCard,
   'quota-reset': QuotaResetCard,
   'invite-reward': InviteRewardCard,

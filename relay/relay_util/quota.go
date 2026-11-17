@@ -87,18 +87,27 @@ type Quota struct {
 	groupName             string
 	isBackupGroup         bool // 新增字段记录是否使用备用分组
 	backupGroupName       string
-	groupRatio            float64
-	inputRatio            float64
-	outputRatio           float64
-	costRatio             float64
+	// groupRatio is the ratio requests are charged at: the user group's ratio times the platform
+	// markup (config.MarkupMultiplier). userGroupRatio and markup keep the two parts for the log.
+	groupRatio     float64
+	userGroupRatio float64
+	markup         float64
+	inputRatio     float64
+	outputRatio    float64
+	costRatio      float64
 	// Cost floor (SupplyCostFloorBilling, see EnableCostFloor): costPrice is the channel's cost as
 	// a price list, nil when unknown; billing is the outcome of the last settlement, for the log.
 	costFloor  bool
 	costPrice  *model.Price
 	costSource string
-	feeRate    float64
-	feeNote    string
-	billing    *costFloorResult
+	// listPrice is the channel's list price without its fee (model.SupplyListPrice), nil when
+	// unknown: the price the upstream charges against its credits, logged as the expected cost.
+	listPrice *model.Price
+	// baseQuota is the usage at the catalog price, without the markup and the group ratio.
+	baseQuota int
+	feeRate   float64
+	feeNote   string
+	billing   *costFloorResult
 	// audioSecondsEstimate is the probed length of the uploaded audio (0 when unknown), used
 	// to pre-consume minutes prices; audioSeconds is the billed length, taken from the usage.
 	audioSecondsEstimate float64
@@ -226,7 +235,9 @@ func NewQuota(c *gin.Context, modelName string, promptTokens int) *Quota {
 		quota.backupGroupName = ""
 	}
 
-	quota.groupRatio = c.GetFloat64("group_ratio") // 这里的倍率已经在 common.go 中正确设置了
+	quota.userGroupRatio = c.GetFloat64("group_ratio") // 这里的倍率已经在 common.go 中正确设置了
+	quota.markup = config.MarkupMultiplier()
+	quota.groupRatio = quota.userGroupRatio * quota.markup
 	quota.inputRatio = quota.price.GetInput() * quota.groupRatio
 	quota.outputRatio = quota.price.GetOutput() * quota.groupRatio
 

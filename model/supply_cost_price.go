@@ -27,26 +27,35 @@ const (
 // known is false when the cost cannot be told: no channel price and no cost ratio, or a channel
 // price in a unit the catalog price does not use.
 func SupplyCostPrice(catalog *Price, ch *Channel, cp *ChannelPrice, upstreamModel string) (price *Price, source string, known bool) {
-	if catalog == nil || ch == nil {
+	price, source, known = SupplyListPrice(catalog, ch, cp, upstreamModel)
+	if !known {
 		return nil, "", false
 	}
 	fee := 1 + ch.GetFeeRate()
+	price.Input *= fee
+	price.Output *= fee
+	return price, source, true
+}
+
+// SupplyListPrice is the channel's list price for upstreamModel, without its fee: what the
+// upstream deducts from the account's credits, the fee having been paid when the credits were
+// bought. It is the side of the reconciliation that the upstream's own charge is compared with.
+func SupplyListPrice(catalog *Price, ch *Channel, cp *ChannelPrice, upstreamModel string) (price *Price, source string, known bool) {
+	if catalog == nil || ch == nil {
+		return nil, "", false
+	}
 	if cp != nil {
 		if p, ok := priceFromChannelPrice(catalog, cp); ok {
-			p.Input *= fee
-			p.Output *= fee
 			return p, CostSourceChannelPrice, true
 		}
 	}
 	if ratio := ch.GetCostRatio(); ratio > 0 {
 		p := clonePrice(catalog)
-		p.Input = catalog.GetInput() * ratio * fee
-		p.Output = catalog.GetOutput() * ratio * fee
+		p.Input = catalog.GetInput() * ratio
+		p.Output = catalog.GetOutput() * ratio
 		return p, CostSourceCostRatio, true
 	}
 	if p := OfficialChannelCost(catalog, ch, upstreamModel); p != nil {
-		p.Input *= fee
-		p.Output *= fee
 		return p, CostSourceOfficial, true
 	}
 	return nil, "", false

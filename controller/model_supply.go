@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/modeltaps/modeltaps/common"
+	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/model"
 
 	"github.com/gin-gonic/gin"
@@ -161,6 +162,46 @@ func PreviewModelSupply(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": preview})
+}
+
+// PreviewMarkupRisk shows, for ?markup= and ?payment= (percent; the saved settings when left
+// out), what each channel needs to break even and which supplies would lose money. Read only.
+func PreviewMarkupRisk(c *gin.Context) {
+	markup := config.PlatformMarkupPercent
+	payment := config.PaymentCostPercent
+	if v, err := strconv.ParseFloat(c.Query("markup"), 64); err == nil {
+		markup = v
+	}
+	if v, err := strconv.ParseFloat(c.Query("payment"), 64); err == nil {
+		payment = v
+	}
+	if markup < 0 || markup > 1000 || payment < 0 || payment >= 100 {
+		common.APIRespondWithError(c, http.StatusOK, errors.New("markup must be 0 to 1000 and payment cost 0 to under 100 percent"))
+		return
+	}
+	risk, err := model.PreviewMarkupRisk(markup, payment)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": risk})
+}
+
+// ConfirmPendingSupplies confirms every supply of {"channel_id"} waiting for review.
+func ConfirmPendingSupplies(c *gin.Context) {
+	var req struct {
+		ChannelId int `json:"channel_id"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.ChannelId <= 0 {
+		common.APIRespondWithError(c, http.StatusOK, errors.New("channel_id is required"))
+		return
+	}
+	n, err := model.ConfirmPendingSupplies(req.ChannelId)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": gin.H{"confirmed": n}})
 }
 
 // GetCostFloorStats sums up the requests of the last days (days, default 7) charged at the

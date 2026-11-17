@@ -47,8 +47,11 @@ type ModelSupply struct {
 	UpstreamGoneAt  int64  `json:"upstream_gone_at" gorm:"bigint;default:0"`
 	Source          string `json:"source" gorm:"type:varchar(16);default:'manual'"`
 	Note            string `json:"note" gorm:"type:text"`
-	CreatedAt       int64  `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt       int64  `json:"updated_at" gorm:"autoUpdateTime"`
+	// CostAcceptedAt is when an admin switched the supply on (or confirmed it); the review of
+	// supplies above the quote leaves such a supply alone. 0 until then.
+	CostAcceptedAt int64 `json:"cost_accepted_at" gorm:"bigint;default:0"`
+	CreatedAt      int64 `json:"created_at" gorm:"autoCreateTime"`
+	UpdatedAt      int64 `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
 func (s *ModelSupply) TableName() string {
@@ -331,13 +334,14 @@ func UpdateModelSupply(supply *ModelSupply) error {
 		return err
 	}
 	// An admin's update decides a pending supply: it stays as the update leaves it.
-	err = DB.Model(current).Select("upstream_model", "priority", "weight", "enabled", "note", "pending", "join_last").Updates(&ModelSupply{
-		UpstreamModel: upstream,
-		Priority:      supply.Priority,
-		Weight:        supply.Weight,
-		Enabled:       supply.Enabled,
-		Note:          supply.Note,
-		JoinLast:      supply.JoinLast,
+	err = DB.Model(current).Select("upstream_model", "priority", "weight", "enabled", "note", "pending", "join_last", "cost_accepted_at").Updates(&ModelSupply{
+		UpstreamModel:  upstream,
+		Priority:       supply.Priority,
+		Weight:         supply.Weight,
+		Enabled:        supply.Enabled,
+		Note:           supply.Note,
+		JoinLast:       supply.JoinLast,
+		CostAcceptedAt: acceptCostOnSwitchOn(current, supply.Enabled),
 	}).Error
 	if err != nil {
 		return err

@@ -65,8 +65,9 @@ func TestCostFloorCharging(t *testing.T) {
 	if got := q.GetTotalQuotaByUsage(usage()); got != 8750 || q.billing != nil {
 		t.Errorf("floor off: charged %d billing %+v", got, q.billing)
 	}
-	if q.GetCostQuotaByUsage(usage()) != 0 {
-		t.Error("floor off: the cost changed")
+	// The cost is still known and logged for the margin figures; it is just not charged.
+	if q.GetCostQuotaByUsage(usage()) == 0 {
+		t.Error("floor off: the known channel cost was not logged")
 	}
 }
 

@@ -29,15 +29,17 @@ type costFloorResult struct {
 // the channel and upstream model the current attempt goes to, so it must be called after the
 // channel is chosen; relay retries build a new Quota per attempt, so the floor follows the
 // channel that served the request. Unpriced models are left alone: their policy decides.
+//
+// The channel's list price and cost are read for every request, floor or not: the list price is
+// logged as the expected upstream charge and the cost as the request's cost.
 func (q *Quota) EnableCostFloor(c *gin.Context) {
-	if !config.SupplyCostFloorBilling || q.price.Unconfigured {
+	if q.price.Unconfigured {
 		return
 	}
 	channel := model.ChannelGroup.GetChannel(q.channelId)
 	if channel == nil {
 		return
 	}
-	q.costFloor = true
 	q.feeRate = channel.GetFeeRate()
 	q.feeNote = channel.FeeNote
 	upstream := c.GetString("new_model")
@@ -45,9 +47,14 @@ func (q *Quota) EnableCostFloor(c *gin.Context) {
 		upstream = q.modelName
 	}
 	cp := model.CachedChannelPrice(channel.Id, upstream)
-	if price, source, ok := model.SupplyCostPrice(&q.price, channel, cp, upstream); ok {
-		q.costPrice, q.costSource = price, source
+	if list, source, ok := model.SupplyListPrice(&q.price, channel, cp, upstream); ok {
+		q.listPrice = list
+		cost := *list
+		cost.Input = list.Input * (1 + q.feeRate)
+		cost.Output = list.Output * (1 + q.feeRate)
+		q.costPrice, q.costSource = &cost, source
 	}
+	q.costFloor = config.SupplyCostFloorBilling
 }
 
 // billingLogMeta is the billing breakdown of a request charged with the cost floor. Keys that

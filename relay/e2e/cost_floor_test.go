@@ -142,7 +142,7 @@ func TestCostFloorFollowsRetry(t *testing.T) {
 	}
 }
 
-// With the setting off, a channel price changes nothing.
+// With the setting off, a channel price changes nothing charged; the cost is still logged.
 func TestCostFloorOff(t *testing.T) {
 	fake := NewFakeProvider(t)
 	fake.SetResponse(FakeResponse{JSON: ChatCompletionJSON("gpt-4o-mini", "ok", 1000, 1000)})
@@ -159,7 +159,11 @@ func TestCostFloorOff(t *testing.T) {
 		t.Fatalf("charged %d, want %d", got, want)
 	}
 	log := soleConsumeLog(t)
-	if _, ok := log.Metadata.Data()[model.LogMetaBilling]; ok || log.CostQuota != 0 {
-		t.Errorf("floor off left a breakdown or a cost: %v cost=%d", log.Metadata.Data(), log.CostQuota)
+	if _, ok := log.Metadata.Data()[model.LogMetaBilling]; ok {
+		t.Errorf("floor off left a breakdown: %v", log.Metadata.Data())
+	}
+	// $40 / $60 per 1M with the 5% fee: (1000 x 40 + 1000 x 60) / 1M x 1.05 = $0.105.
+	if want := 52500; log.CostQuota != want {
+		t.Errorf("cost = %d, want the channel cost %d", log.CostQuota, want)
 	}
 }

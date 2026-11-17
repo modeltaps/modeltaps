@@ -3337,7 +3337,10 @@
     "useCheaperUpstream": "Use it",
     "costUnknown": "Cost unknown",
     "confirmAboveQuote": "This supply costs more than the model’s quoted price. With \"Never charge below the channel cost\" on, its requests are charged the channel cost; otherwise the difference is lost. Raise the quote first if it should stay the same for users. Confirm anyway?",
-    "costFromRatio": "Cost from the channel's cost ratio (no upstream price list)"
+    "costFromRatio": "Cost from the channel's cost ratio (no upstream price list)",
+    "confirmChannel": "Confirm all pending supplies of {{channel}}",
+    "confirmChannelAsk": "Confirm every supply of {{channel}} waiting for review, on every model? Supplies held because they cost more than the price will take requests at that cost.",
+    "confirmChannelDone": "Confirmed {{count}} supplies of {{channel}}"
   },
   "settingsUi": {
     "search": {
@@ -3632,6 +3635,11 @@
           "title": "Intake rules for new upstream models",
           "description": "When a channel adds new upstream models on its own: switch on, wait for review or skip, and where they join",
           "hint": "A channel can use rules of its own under Monitor"
+        },
+        "pricing-markup": {
+          "title": "Platform markup",
+          "description": "What the site adds to the catalog price, and what taking payments costs",
+          "hint": "Applies to new requests at once; tell users before raising it"
         }
       },
       "actions": {
@@ -4885,5 +4893,47 @@
     "useAuthenticator": "Use the authenticator app",
     "totpVerify": "Verify",
     "totpCodeRequired": "Enter the code"
+  },
+  "markupSettings": {
+    "markup": {
+      "label": "Platform markup",
+      "description": "Every request is charged the catalog (official) price plus this markup, times the group ratio. It should cover channel fees, payment costs and your margin. 0 charges the catalog price."
+    },
+    "payment": {
+      "label": "Payment cost",
+      "description": "What taking a payment costs you: card fees plus currency conversion. Not charged to users; it only lowers the net revenue the checks below compare costs with."
+    },
+    "invalidMarkup": "The markup must be between 0 and 1000%.",
+    "invalidPayment": "The payment cost must be at least 0 and under 100%.",
+    "risk": {
+      "loading": "Working out what these values mean for each channel…",
+      "net": "At {{markup}} markup and {{payment}} payment cost, each $1 of catalog price brings in ${{factor}} after payment costs.",
+      "ok": "Every supply with a known cost breaks even at these values.",
+      "modelsAtLoss_one": "{{count}} model loses money on every supply that serves it: {{models}}",
+      "modelsAtLoss_other": "{{count}} models lose money on every supply that serves them: {{models}}",
+      "servingAbove_one": "{{count}} supply that takes requests would lose money. It stays on; raise the price or move it down.",
+      "servingAbove_other": "{{count}} supplies that take requests would lose money. They stay on; raise the price or move them down.",
+      "backupAbove_one": "{{count}} backup supply would lose money and wait for review.",
+      "backupAbove_other": "{{count}} backup supplies would lose money and wait for review.",
+      "costUnknown_one": "{{count}} supply taking requests has no known cost and is not checked.",
+      "costUnknown_other": "{{count}} supplies taking requests have no known cost and are not checked.",
+      "notRouting": "Supply routing is off: these figures describe the supplies once it is on.",
+      "col": {
+        "channel": "Channel",
+        "fee": "Fee",
+        "breakeven": "Fee break-even",
+        "margin": "Margin",
+        "worst": "Dearest supply needs",
+        "losing": "Losing supplies"
+      },
+      "losingCount": "{{serving}} serving · {{backup}} backup",
+      "worstTitle": "Supplies that would lose money ({{count}})",
+      "needs": "needs {{markup}}",
+      "traffic": {
+        "primary": "serving",
+        "balanced": "serving",
+        "backup": "backup"
+      }
+    }
   }
 }
