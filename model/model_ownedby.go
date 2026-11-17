@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 
@@ -282,6 +283,8 @@ func (m *ModelOwnedBys) SyncModelOwnedBy(modelOwnedBies []*ModelOwnedBy) {
 		} else {
 			changed = true
 		}
+		// The defaults carry fixed ids, which a PostgreSQL sequence does not see.
+		syncPostgresIdSequence("model_owned_by")
 	}
 
 	if !changed {
@@ -387,6 +390,9 @@ func (m *ModelOwnedBys) SyncLabVendors(vendors []*ModelOwnedBy) {
 		byName[strings.ToLower(strings.TrimSpace(v.Name))] = v
 	}
 	m.RUnlock()
+	// New rows take their id from the sequence; deployments seeded before the sequence was kept
+	// in step would collide with the fixed ids of the default vendors.
+	syncPostgresIdSequence("model_owned_by")
 	changed := false
 	for _, v := range vendors {
 		if m.GetIdBySlug(string(v.Slug)) != 0 {
@@ -449,4 +455,17 @@ func GetDefaultModelOwnedBy() []*ModelOwnedBy {
 	}
 
 	return owners
+}
+
+// syncPostgresIdSequence moves a PostgreSQL id sequence past the largest id in the table. Rows
+// inserted with explicit ids leave the sequence behind, and the next insert without an id would
+// fail on the primary key. Other databases need nothing.
+func syncPostgresIdSequence(table string) {
+	if !common.UsingPostgreSQL {
+		return
+	}
+	err := DB.Exec("SELECT setval(pg_get_serial_sequence(?, 'id'), GREATEST((SELECT COALESCE(MAX(id), 0) FROM "+table+"), 1))", table).Error
+	if err != nil {
+		logger.SysError("failed to sync the id sequence of " + table + ": " + err.Error())
+	}
 }
