@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Turn single models of a channel off without removing them. The provider panel's models tab has
+  an on/off switch per model: a model switched off stays listed, keeps its supplies and gets no
+  requests until it is switched back on. A Re-pick button next to Add opens the model picker on
+  the current list, and models left unticked there are removed from the channel.
 - User emails in every console language. The verification code, password reset and quota emails
   have built-in text in English, Simplified Chinese, Traditional Chinese and Japanese, and the
   admin can rewrite each email per language under Settings, Mail. An email goes out in the

@@ -1018,12 +1018,13 @@ func (cc *ChannelsChooser) Load() {
 		// 处理groups和models
 		groups := expandChannelGroup(channel.Group, allGroups)
 		models := strings.Split(channel.Models, ",")
+		disabled := channel.DisabledModelSet()
 
 		for _, group := range groups {
 
 			for _, model := range models {
 				model = strings.TrimSpace(model)
-				if model == "" {
+				if model == "" || disabled[model] {
 					continue
 				}
 
@@ -1140,9 +1141,15 @@ func (cc *ChannelsChooser) loadFromSupplies(channels []*Channel, allGroups []str
 	newSupplies := make(map[string]map[int]*ModelSupply)
 	newModelGroup := make(map[string]map[string]bool)
 	newModelChannelType := make(map[string]int)
+	disabledUpstreams := make(map[int]map[string]bool)
+	for _, channel := range channels {
+		if set := channel.DisabledUpstreams(); len(set) > 0 {
+			disabledUpstreams[channel.Id] = set
+		}
+	}
 	for _, supply := range supplies {
 		choice, ok := newChannels[supply.ChannelId]
-		if !ok {
+		if !ok || disabledUpstreams[supply.ChannelId][supplyUpstreamName(supply)] {
 			continue
 		}
 		channel := choice.Channel

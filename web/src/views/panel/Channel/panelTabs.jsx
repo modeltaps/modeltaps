@@ -8,6 +8,7 @@ import {
   ArrowUpDown,
   CloudDownload,
   Copy,
+  Filter,
   KeyRound,
   Loader2,
   Plus,
@@ -23,6 +24,7 @@ import { configText } from 'i18n/configText';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -398,6 +400,8 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   const { t } = useTranslation();
   const labels = typeLabels(channel.type);
   const models = useMemo(() => splitList(draft.models), [draft.models]);
+  // Listed models switched off: they stay in the list (and keep their supplies) but get no traffic.
+  const disabled = useMemo(() => new Set(splitList(draft.disabled)), [draft.disabled]);
   // The mapping is edited on the Advanced tab; this tab reads the saved one.
   const mapping = useMemo(() => parseMapping(channel.model_mapping) || {}, [channel.model_mapping]);
   // Traffic only flags models here (unused or failing); the numbers live on the Performance
@@ -455,10 +459,11 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
           m,
           signal: modelSignal(m, hasTraffic),
           offer: ctx.supplyRouting ? offerOf(details?.get(name)) : null,
-          gone: isGone(name, mapping, snapshot)
+          gone: isGone(name, mapping, snapshot),
+          off: disabled.has(name)
         };
       }),
-    [draft.models, mapping, perModel, hasTraffic, ctx.supplyRouting, details, snapshot]
+    [draft.models, mapping, perModel, hasTraffic, ctx.supplyRouting, details, snapshot, disabled]
   );
   const removedRows = useMemo(() => removed.map((name) => ({ name, removed: true })), [removed]);
   const range = t(`channels.range.short.${ctx.rangeKey}`);
@@ -473,8 +478,11 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   // A filter whose chip went away (the last unlisted model was added) shows everything again.
   const only = STATE_FILTERS.includes(picked) && !stateKeys.includes(picked) ? '' : picked;
   const signalCounts = useMemo(() => {
-    const out = { idle: 0, failing: 0 };
-    for (const r of rows) if (r.signal) out[r.signal] += 1;
+    const out = { idle: 0, failing: 0, off: 0 };
+    for (const r of rows) {
+      if (r.signal) out[r.signal] += 1;
+      if (r.off) out.off += 1;
+    }
     return out;
   }, [rows]);
   // Removed rows show only in the unfiltered list, where they were.
@@ -484,7 +492,9 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
         ? [...rows, ...removedRows]
         : STATE_FILTERS.includes(only)
           ? rows.filter((r) => matchesState(r, only))
-          : rows.filter((r) => r.signal === only),
+          : only === 'off'
+            ? rows.filter((r) => r.off)
+            : rows.filter((r) => r.signal === only),
     [rows, removedRows, only]
   );
   // Sorting by name or an upstream price is asked for from the column header; otherwise the usual
@@ -618,6 +628,12 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
     }
   };
 
+  const setOff = (name, off) => {
+    const next = new Set(disabled);
+    if (off) next.add(name);
+    else next.delete(name);
+    setDraft({ ...draft, disabled: models.filter((m) => next.has(m)).join(',') });
+  };
   const remove = (name) => {
     setDraft({ ...draft, models: models.filter((m) => m !== name).join(',') });
     setRemovedNames((cur) => (cur.includes(name) ? cur : [...cur, name]));
@@ -658,6 +674,15 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
             {t('channels.models.syncPrices')}
           </ToolButton>
         )}
+        {labels.canFetchModels && (
+          <ToolButton
+            icon={Filter}
+            onClick={() => setSelector({ values: { ...body, models: draft.models }, replace: true })}
+            title={t('channels.models.refilterHint')}
+          >
+            {t('channels.models.refilter')}
+          </ToolButton>
+        )}
         <ToolButton icon={adding ? X : Plus} onClick={() => setAdding((v) => !v)}>
           {adding ? t('channels.models.doneAdding') : t('channels.models.add')}
         </ToolButton>
@@ -673,7 +698,11 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
             onOpen={loadUpstream}
             loading={upstream.status === 'loading'}
             notice={upstream.status === 'error' ? t('modelSelect.upstreamFailed') : null}
-            advanced={labels.canFetchModels ? { onClick: () => setSelector({ ...body, models: draft.models }) } : undefined}
+            advanced={
+              labels.canFetchModels
+                ? { onClick: () => setSelector({ values: { ...body, models: draft.models }, replace: false }) }
+                : undefined
+            }
           />
         </div>
       )}
@@ -684,7 +713,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
         </p>
       ) : (
         <>
-          {(stateKeys.length > 0 || signalCounts.idle > 0 || signalCounts.failing > 0) && (
+          {(stateKeys.length > 0 || signalCounts.idle > 0 || signalCounts.failing > 0 || signalCounts.off > 0) && (
             <div className="flex flex-wrap items-center gap-1.5 pb-2 text-[13px]">
               {stateKeys.map((key) => (
                 <FilterChip
@@ -696,6 +725,17 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                   count={counts[key]}
                 />
               ))}
+              {signalCounts.off > 0 && (
+                <>
+                  {stateKeys.length > 0 && <span className="mx-1 h-4 w-px bg-border" />}
+                  <FilterChip
+                    active={only === 'off'}
+                    onClick={() => setOnly(only === 'off' ? '' : 'off')}
+                    label={t('channels.models.offFilter')}
+                    count={signalCounts.off}
+                  />
+                </>
+              )}
               {(signalCounts.idle > 0 || signalCounts.failing > 0) && (
                 <>
                   {stateKeys.length > 0 && <span className="mx-1 h-4 w-px bg-border" />}
@@ -749,6 +789,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                 <col className="w-[4.5rem]" />
                 {showPrices && <col className="w-[5.5rem]" />}
                 {showPrices && <col className="w-[5.5rem]" />}
+                <col className="w-14" />
                 <col className="w-9" />
               </colgroup>
               <thead>
@@ -778,17 +819,21 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                         }
                       />
                     ))}
+                  <th className="text-center" title={t('channels.models.enabledHint')}>
+                    {t('channels.models.enabled')}
+                  </th>
                   <th />
                 </tr>
               </thead>
               <tbody>
                 {only !== 'unlisted' &&
-                  list.visible.map(({ name, m, signal, offer, gone, removed: isRemoved }) => (
+                  list.visible.map(({ name, m, signal, offer, gone, off, removed: isRemoved }) => (
                     <tr
                       key={name}
                       className={cn(
                         'group [&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0',
-                        isRemoved && '[&>td:not(:last-child)]:opacity-50'
+                        isRemoved && '[&>td:not(:last-child)]:opacity-50',
+                        off && !isRemoved && '[&>td:not(:nth-last-child(-n+2))]:opacity-55'
                       )}
                     >
                       <td title={isRemoved ? t('channels.models.removedHint', { model: name }) : modelHint(t, name, detailOf(name))}>
@@ -801,6 +846,9 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                               <ModelSignal signal={signal} m={m} range={range} />
                               {gone && (
                                 <span className={cn(TAG_TEXT, 'bg-warning/10 text-warning')}>{t('channels.models.state.gone')}</span>
+                              )}
+                              {off && !isRemoved && (
+                                <span className={cn(TAG_TEXT, 'bg-muted text-muted-foreground')}>{t('channels.models.off')}</span>
                               )}
                             </span>
                             {isRemoved && <span className="block truncate text-xs">{t('channels.models.removedLine')}</span>}
@@ -831,6 +879,17 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                       {showPrices && (
                         <UpstreamPriceCells price={pricesByModel.get(upstreamNameOf(name, mapping))} publics={detailOf(name)?.public} />
                       )}
+                      <td className="text-center">
+                        {!isRemoved && (
+                          <Switch
+                            size="sm"
+                            checked={!off}
+                            onCheckedChange={(on) => setOff(name, !on)}
+                            aria-label={t(off ? 'channels.models.enableOne' : 'channels.models.disableOne', { model: name })}
+                            title={t(off ? 'channels.models.enableOne' : 'channels.models.disableOne', { model: name })}
+                          />
+                        )}
+                      </td>
                       <td className="!px-1 text-right">
                         {isRemoved ? (
                           <button
@@ -871,6 +930,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                         </span>
                       </td>
                       {showPrices && <UpstreamPriceCells price={pricesByModel.get(u.name)} publics={[]} />}
+                      <td />
                       <td className="!px-1 text-right">
                         <button
                           type="button"
@@ -894,7 +954,8 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
 
       <ModelSelectorModal
         open={!!selector}
-        channelValues={selector}
+        channelValues={selector?.values}
+        replace={Boolean(selector?.replace)}
         onClose={() => setSelector(null)}
         onConfirm={(ids, overwrite) =>
           setDraft({ ...draft, models: (overwrite ? ids : Array.from(new Set([...models, ...ids]))).join(',') })
@@ -909,11 +970,14 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
 
 const modelsTab = {
   key: 'models',
-  make: (c) => ({ models: splitList(c.models).join(',') }),
+  make: (c) => ({ models: splitList(c.models).join(','), disabled: (c.disabled_models || []).join(',') }),
   patch: (d, c, { t }) => {
     const models = splitList(d.models);
     if (!models.length) return { error: t('channel_edit.requiredModels') };
-    return { models: applyMappingToModels(models, parseMapping(c.model_mapping) || {}).join(',') };
+    const listed = applyMappingToModels(models, parseMapping(c.model_mapping) || {});
+    // The mapping renames models in place, so a switched-off model keeps its index.
+    const off = new Set(splitList(d.disabled));
+    return { models: listed.join(','), disabled_models: models.flatMap((m, i) => (off.has(m) ? [listed[i]] : [])) };
   },
   Body: ModelsBody
 };
@@ -1344,14 +1408,18 @@ function MonitorBody({ object: channel, draft, setDraft, ctx }) {
           )}
           {goneSupplies.length > 0 && (
             <p className="font-mono text-xs">
-              <span className="font-sans text-muted-foreground">{t('channels.monitor.suppliesGone', { count: goneSupplies.length })}: </span>
+              <span className="font-sans text-muted-foreground">
+                {t('channels.monitor.suppliesGone', { count: goneSupplies.length })}:{' '}
+              </span>
               {goneSupplies.join(', ')}
             </p>
           )}
           {drift?.supplies?.held && <p className="text-xs text-warning">{t('channels.monitor.suppliesHeld')}</p>}
           {pendingIntake.length > 0 && (
             <p className="font-mono text-xs">
-              <span className="font-sans text-muted-foreground">{t('channels.monitor.intakePending', { count: pendingIntake.length })}: </span>
+              <span className="font-sans text-muted-foreground">
+                {t('channels.monitor.intakePending', { count: pendingIntake.length })}:{' '}
+              </span>
               {pendingIntake.join(', ')}
             </p>
           )}

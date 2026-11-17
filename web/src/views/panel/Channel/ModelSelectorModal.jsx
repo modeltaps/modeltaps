@@ -41,7 +41,9 @@ const splitModels = (value) =>
 
 const dateOf = (unix) => (unix ? new Date(unix * 1000).toISOString().slice(0, 10) : '');
 
-export default function ModelSelectorModal({ open, onClose, onConfirm, channelValues }) {
+// `replace` opens it to re-pick an existing list: the selection replaces the list, so unticking
+// a model removes it.
+export default function ModelSelectorModal({ open, onClose, onConfirm, channelValues, replace = false }) {
   const { t } = useTranslation();
   const p = (key, opts) => t(`channel_edit.picker.${key}`, opts);
   const [loading, setLoading] = useState(false);
@@ -83,11 +85,11 @@ export default function ModelSelectorModal({ open, onClose, onConfirm, channelVa
     setFilters(EMPTY_FILTERS);
     setLatestOnly(true);
     setExpanded(new Set());
-    setOverwrite(false);
+    setOverwrite(replace);
     setShowSelected(false);
     load(channelValues);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, channelValues]);
+  }, [open, channelValues, replace]);
 
   const options = useMemo(() => filterOptions(items), [items]);
   const groups = useMemo(
@@ -328,7 +330,7 @@ export default function ModelSelectorModal({ open, onClose, onConfirm, channelVa
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-5xl">
         <DialogHeader>
-          <DialogTitle>{t('channel_edit.modelSelector')}</DialogTitle>
+          <DialogTitle>{t(replace ? 'channels.models.refilterTitle' : 'channel_edit.modelSelector')}</DialogTitle>
         </DialogHeader>
         <DialogBody className="flex flex-col gap-3 md:min-h-0 md:overflow-hidden">
           <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -440,5 +442,6 @@ ModelSelectorModal.propTypes = {
   open: PropTypes.bool,
   onClose: PropTypes.func,
   onConfirm: PropTypes.func,
-  channelValues: PropTypes.object
+  channelValues: PropTypes.object,
+  replace: PropTypes.bool
 };

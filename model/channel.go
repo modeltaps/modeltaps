@@ -68,6 +68,9 @@ type Channel struct {
 	CancelOnDisconnect *bool `json:"cancel_on_disconnect" form:"cancel_on_disconnect" gorm:"default:null"`
 
 	DisabledStream *datatypes.JSONSlice[string] `json:"disabled_stream,omitempty" gorm:"type:json"`
+	// DisabledModels are names from Models an admin turned off: they stay listed (and keep their
+	// supplies) but are not routed until turned back on. nil in an update keeps the stored list.
+	DisabledModels *datatypes.JSONSlice[string] `json:"disabled_models,omitempty" gorm:"type:json"`
 
 	Plugin     *datatypes.JSONType[PluginType]       `json:"plugin" form:"plugin" gorm:"type:json"`
 	ModelDrift *datatypes.JSONType[ModelDriftResult] `json:"model_drift,omitempty" gorm:"type:json"`
@@ -178,6 +181,74 @@ func (c *Channel) AllowStream(modelName string) bool {
 	}
 
 	return !slices.Contains(*c.DisabledStream, modelName)
+}
+
+// DisabledModelSet is the set of listed models the channel does not route. Names the model
+// list no longer has are left out.
+func (c *Channel) DisabledModelSet() map[string]bool {
+	if c.DisabledModels == nil || len(*c.DisabledModels) == 0 {
+		return nil
+	}
+	listed := map[string]bool{}
+	for _, name := range strings.Split(c.Models, ",") {
+		listed[strings.TrimSpace(name)] = true
+	}
+	set := make(map[string]bool, len(*c.DisabledModels))
+	for _, name := range *c.DisabledModels {
+		if name = strings.TrimSpace(name); name != "" && listed[name] {
+			set[name] = true
+		}
+	}
+	return set
+}
+
+// DisabledUpstreams are the upstream names that only disabled models of the channel send: a
+// supply of the channel with one of them as its upstream model is not routed. An upstream name
+// that an enabled model also maps to stays routed.
+func (c *Channel) DisabledUpstreams() map[string]bool {
+	disabled := c.DisabledModelSet()
+	if len(disabled) == 0 {
+		return nil
+	}
+	mapping := channelMappingOf(c)
+	upstreamOf := func(name string) string {
+		if up, ok := mapping[name]; ok {
+			return up
+		}
+		return name
+	}
+	enabled := map[string]bool{}
+	for _, name := range strings.Split(c.Models, ",") {
+		if name = strings.TrimSpace(name); name != "" && !disabled[name] {
+			enabled[upstreamOf(name)] = true
+		}
+	}
+	out := map[string]bool{}
+	for name := range disabled {
+		if up := upstreamOf(name); !enabled[up] {
+			out[up] = true
+		}
+	}
+	return out
+}
+
+// pruneDisabledModels drops disabled names the model list no longer has, so a model removed and
+// added again comes back enabled. A partial update without a model list keeps them all.
+func (c *Channel) pruneDisabledModels() {
+	if c.DisabledModels == nil || strings.TrimSpace(c.Models) == "" {
+		return
+	}
+	listed := map[string]bool{}
+	for _, name := range strings.Split(c.Models, ",") {
+		listed[strings.TrimSpace(name)] = true
+	}
+	kept := datatypes.JSONSlice[string]{}
+	for _, name := range *c.DisabledModels {
+		if name = strings.TrimSpace(name); name != "" && listed[name] && !slices.Contains(kept, name) {
+			kept = append(kept, name)
+		}
+	}
+	c.DisabledModels = &kept
 }
 
 type PluginType map[string]map[string]interface{}
@@ -691,6 +762,11 @@ func (channel *Channel) UpdateRaw(overwrite bool) error {
 		}
 		if channel.SupplyIntakeRules == nil {
 			omit = append(omit, "SupplyIntakeRules")
+		}
+		if channel.DisabledModels == nil {
+			omit = append(omit, "DisabledModels")
+		} else {
+			channel.pruneDisabledModels()
 		}
 		err = DB.Model(channel).Select("*").Omit(omit...).Updates(channel).Error
 	} else {
