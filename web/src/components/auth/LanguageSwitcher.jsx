@@ -7,10 +7,11 @@ import i18nList from 'i18n/i18nList';
 import useI18n from 'hooks/useI18n';
 import { setAppLanguage } from 'utils/userSetting';
 import { useTranslation } from 'react-i18next';
+import PropTypes from 'prop-types';
 
 // ==============================|| AUTH — i18n LANGUAGE SWITCHER ||============================== //
 
-export default function LanguageSwitcher() {
+export default function LanguageSwitcher({ iconOnly = false }) {
   const i18n = useI18n();
   const { t } = useTranslation();
 
@@ -33,10 +34,22 @@ export default function LanguageSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" aria-label={ariaLabel} className="gap-1.5 px-2">
-          <Globe className="size-5" />
-          <span className="text-sm font-medium">{current.shortCode}</span>
-        </Button>
+        {iconOnly ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={ariaLabel}
+            title={current.name}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Globe className="size-[18px]" />
+          </Button>
+        ) : (
+          <Button variant="ghost" size="sm" aria-label={ariaLabel} className="gap-1.5 px-2">
+            <Globe className="size-5" />
+            <span className="text-sm font-medium">{current.shortCode}</span>
+          </Button>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-40" onKeyDown={onMenuKeyDown}>
         {i18nList.map((item) => {
@@ -52,3 +65,5 @@ export default function LanguageSwitcher() {
     </DropdownMenu>
   );
 }
+
+LanguageSwitcher.propTypes = { iconOnly: PropTypes.bool };
