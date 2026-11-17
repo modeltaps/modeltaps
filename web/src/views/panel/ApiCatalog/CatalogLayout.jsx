@@ -172,9 +172,13 @@ export default function CatalogLayout({ entry }) {
 
       <RecommendedModelCard model={recommended} />
 
-      <Section title={t('apiCatalogPage.models')}>
-        <ModelPrice embedded initialModality={entry.modality} />
-      </Section>
+      {/* The price list is split by output modality; an entry without one (decision) lists its
+          models in the capability sections only. */}
+      {entry.modality && (
+        <Section title={t('apiCatalogPage.models')}>
+          <ModelPrice embedded initialModality={entry.modality} />
+        </Section>
+      )}
 
       {entry.extras && (
         <CollapsibleSection title={t(entry.extras.titleKey)} description={entry.extras.hintKey ? t(entry.extras.hintKey) : undefined}>

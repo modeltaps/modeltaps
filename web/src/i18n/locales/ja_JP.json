@@ -116,6 +116,7 @@
   "api_image": "画像",
   "api_token": "API キー",
   "api_video": "動画",
+  "api_decision": "意思決定",
   "api_docs": "API ドキュメント",
   "auth": {
     "invalidLink": "無効なリンク",
@@ -1443,6 +1444,7 @@
     "api_chat": "対話 API のエンドポイント・例・利用可能なモデル",
     "api_image": "画像 API のエンドポイント・例・利用可能なモデル",
     "api_video": "動画 API のエンドポイント・例・利用可能なモデル",
+    "api_decision": "意思決定 API のエンドポイント・例・利用可能なモデル",
     "api_docs": "各モダリティのエンドポイント・例・利用可能なモデル",
     "billing": "取引履歴と月次請求書を確認",
     "channel": "上流チャネルとプロバイダーを設定",

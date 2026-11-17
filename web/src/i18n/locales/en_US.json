@@ -116,6 +116,7 @@
   "api_image": "Image",
   "api_token": "API Keys",
   "api_video": "Video",
+  "api_decision": "Decisions",
   "api_docs": "API docs",
   "auth": {
     "invalidLink": "Invalid link",
@@ -1443,6 +1444,7 @@
     "api_chat": "Endpoints, examples and available models for chat completions",
     "api_image": "Endpoints, examples and available models for image",
     "api_video": "Endpoints, examples and available models for video",
+    "api_decision": "Endpoints, examples and available models for decisions",
     "api_docs": "Endpoints, examples and available models for every modality",
     "billing": "Review your transaction history and monthly bills",
     "channel": "Configure upstream channels and providers",

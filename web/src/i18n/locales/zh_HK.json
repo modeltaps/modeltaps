@@ -116,6 +116,7 @@
   "api_image": "圖像",
   "api_token": "API Key",
   "api_video": "影片",
+  "api_decision": "決策",
   "api_docs": "介面文件",
   "auth": {
     "invalidLink": "無效的鏈接",
@@ -1443,6 +1444,7 @@
     "api_chat": "對話接口的端點、示例與可用模型",
     "api_image": "圖像接口的端點、示例與可用模型",
     "api_video": "影片接口的端點、示例與可用模型",
+    "api_decision": "決策接口的端點、示例與可用模型",
     "api_docs": "各模態介面的端點、範例與可用模型",
     "billing": "查看交易流水與月度賬單",
     "channel": "設定上游渠道與供應商",

@@ -282,6 +282,22 @@
         "tasks": "任務記錄見日誌頁 → 非同步任務"
       }
     },
+    "decision": {
+      "apiName": "決策接口",
+      "intro": "對同一份輸入向決策模型提出有類型的問題：是否、多選一、按檔位評分。返回概率而不是文字，只按輸入 token 計費。",
+      "capabilities": {
+        "questions": {
+          "title": "分類與評分",
+          "desc": "一次請求裏對同一段文字問是否題、選擇題和評分題，每個答案都帶概率。",
+          "note": "決策模型只能用 /v1/decisions 調用，對話和 Responses 請求會被拒絕。輸出免費，按輸入 token 計費。"
+        },
+        "image": {
+          "title": "圖片輸入",
+          "desc": "在輸入裏加入 base64 圖片，針對圖片內容提問。",
+          "note": "圖片必須是 base64 data URL，不支援外部連結。只讀文字的模型會拒絕圖片。"
+        }
+      }
+    },
     "model": "模型",
     "modelCount_other": "{{count}} 個可用模型",
     "noModels": "暫無可用模型",

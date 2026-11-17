@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate, useLocation, useParams } from 'react-router';
-import { AudioLines, Clapperboard, Image, MessageSquare } from 'lucide-react';
+import { AudioLines, Clapperboard, Image, ListChecks, MessageSquare } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { findActiveItem } from '@/components/chrome/nav-config';
@@ -22,7 +22,8 @@ const SWITCH = [
   { id: 'chat', icon: MessageSquare, labelKey: 'playgroundConsole.modality.chat' },
   { id: 'image', icon: Image, labelKey: 'playgroundConsole.modality.image' },
   { id: 'speech', icon: AudioLines, labelKey: 'playgroundConsole.modality.audio' },
-  { id: 'video', icon: Clapperboard, labelKey: 'playgroundConsole.modality.video' }
+  { id: 'video', icon: Clapperboard, labelKey: 'playgroundConsole.modality.video' },
+  { id: 'decision', icon: ListChecks, labelKey: 'api_decision' }
 ].filter((m) => CATALOG[m.id]);
 
 function DocsModalitySwitch({ activeId }) {

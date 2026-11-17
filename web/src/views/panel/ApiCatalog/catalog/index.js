@@ -3,6 +3,7 @@
 // 路由参数 :modality 直接取这里的 key;未登记的值由 index.jsx 回落到 DEFAULT_MODALITY。
 
 import chat from './chat';
+import decision from './decision';
 import image from './image';
 import speech from './speech';
 import video from './video';
@@ -11,7 +12,8 @@ export const CATALOG = {
   chat,
   image,
   speech,
-  video
+  video,
+  decision
 };
 
 export const DEFAULT_MODALITY = 'chat';

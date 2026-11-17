@@ -282,6 +282,22 @@
         "tasks": "任务记录见日志页 → 异步任务"
       }
     },
+    "decision": {
+      "apiName": "决策接口",
+      "intro": "对同一份输入向决策模型提出带类型的问题：是否、多选一、按档位打分。返回概率而不是文本，只按输入 token 计费。",
+      "capabilities": {
+        "questions": {
+          "title": "分类与打分",
+          "desc": "一次请求里对同一段文本问是否题、选择题和打分题，每个答案都带概率。",
+          "note": "决策模型只能用 /v1/decisions 调用，对话和 Responses 请求会被拒绝。输出免费，按输入 token 计费。"
+        },
+        "image": {
+          "title": "图片输入",
+          "desc": "在输入里加入 base64 图片，针对图片内容提问。",
+          "note": "图片必须是 base64 data URL，不支持外部链接。只读文本的模型会拒绝图片。"
+        }
+      }
+    },
     "model": "模型",
     "modelCount_other": "{{count}} 个可用模型",
     "noModels": "暂无可用模型",

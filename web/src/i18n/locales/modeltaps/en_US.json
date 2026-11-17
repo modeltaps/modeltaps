@@ -282,6 +282,22 @@
         "tasks": "Task history on the Logs page → Tasks"
       }
     },
+    "decision": {
+      "apiName": "Decisions API",
+      "intro": "Ask a decision model typed questions about one input: yes/no, pick one of several choices, or score against levels. It answers with probabilities instead of text and bills input tokens only.",
+      "capabilities": {
+        "questions": {
+          "title": "Classify and score",
+          "desc": "Ask yes/no, choice and score questions about the same text in one request; each answer comes back with its probabilities.",
+          "note": "Decision models answer only on /v1/decisions; chat and Responses requests for them are refused. Output is free: a request is billed by its input tokens."
+        },
+        "image": {
+          "title": "Image input",
+          "desc": "Add base64 images to the input and ask about what they show.",
+          "note": "Images must be base64 data URLs; external URLs are not accepted. Models that read text only reject images."
+        }
+      }
+    },
     "model": "Model",
     "modelCount_one": "{{count}} model available",
     "modelCount_other": "{{count}} models available",
