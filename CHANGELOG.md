@@ -697,6 +697,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- English console buttons and labels such as Create, Delete, Edit, Submit, Close and Back are
+  capitalised; Close and Back no longer read "closure" and "return".
 - Image edit and variation requests with `n` above 64 (or below 1) are refused instead of passed
   on, since OpenAI channels forward the request body as it is.
 - Deleting a channel or a catalog model removes its supplies, and deleting disabled channels or a
