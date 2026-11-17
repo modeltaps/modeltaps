@@ -34,13 +34,13 @@ import { SPEECH_EXAMPLES, STT_PARAM_FIELDS, TTS_PARAM_FIELDS, speechSummary, tra
 import { canRecordAudio, isPlayableSpeechFormat, speechFileName } from './useAudioSession';
 
 // ==============================|| PLAYGROUND — AUDIO WORKSPACE ||============================== //
-// xAI Voice 页形态：H1 下一行分段 tab（文字转语音 / 语音转文字，URL 上的 ?tab= 由装配层管），
-// tab 与页面标题同一左边线，内容居中一列。合成这边是「示例 chip → 波形播放条 → 大编辑卡」：
+// xAI Voice 页形态：内容居中一列，列顶是分段 tab（文字转语音 / 语音转文字，URL 上的 ?tab=
+// 由装配层管），与下方卡片同一左边线。合成这边是「示例 chip → 波形播放条 → 大编辑卡」：
 // 编辑卡顶部一行控件（模型 / 音色 / 参数 + 生成按钮），卡内就是 textarea，卡片撑满到主区底部；
 // 页面没有贴底输入框、也没有设置栏。
 // 转写这边同一列：同款播放条（录音 + 回放 + 上传，整条可拖放）+ 常驻结果卡（顶部控件行 + 结果 / 空态）。
-// 没有可用模型时两个方向都把顶部说明换成 NoModelsCard，编辑区置灰；合成的控件行复述一遍原因，
-// 转写的控件行不再复述（说明卡已写全原因与出口）。
+// 没有可用模型时两个方向都把顶部说明换成 NoModelsCard，编辑区置灰；控件行不再复述
+// （说明卡已写全原因与出口）。
 // 只吃 props：会话、门禁与当前 tab 都由装配层（index.jsx）传入。
 
 const sessionShape = PropTypes.object;
@@ -157,15 +157,8 @@ export default function AudioWorkspace({
   const running = session.status === 'running';
   const hasModels = session.options.length > 0;
   const runnable = !gated && !running && Boolean(session.model) && (tts ? session.input.trim() !== '' : Boolean(session.file));
-  // 控件行那句话同一个位置：门禁优先，其次是「没有可用模型」（仅合成）。
-  const gate = gated
-    ? { gated: true, message: gateMessage, actionHref: gateActionHref, actionLabel: gateActionLabel }
-    : {
-        gated: tts && !hasModels,
-        message: noModels?.description,
-        actionHref: noModels?.actionHref,
-        actionLabel: noModels?.actionLabel
-      };
+  // 控件行那句话只说门禁；「没有可用模型」由上方 NoModelsCard 说全，控件行不复述。
+  const gate = gated ? { gated: true, message: gateMessage, actionHref: gateActionHref, actionLabel: gateActionLabel } : { gated: false };
 
   // 模型 chip 两个方向同一颗：候选与当前选中都由会话按方向给（见 useAudioSession）。
   const modelChip = (
@@ -181,25 +174,24 @@ export default function AudioWorkspace({
   const panelProps = { session, modelChip, gate, running, runnable, hasModels, noModels };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-1">
-      <Segmented
-        label={t('playgroundConsole.modality.audio')}
-        value={tab}
-        onChange={onTabChange}
-        items={[
-          { id: 'tts', label: t('playgroundConsole.audio.tts') },
-          { id: 'stt', label: t('playgroundConsole.audio.stt') }
-        ]}
-      />
+    <ConsolePage className="min-h-0 flex-1" columnClassName="max-w-3xl">
+      <div className="flex flex-1 flex-col gap-4">
+        {/* 方向切换放进内容列，与下方卡片同一左边线；模态栏在上面的工具行里。 */}
+        <Segmented
+          label={t('playgroundConsole.modality.audio')}
+          value={tab}
+          onChange={onTabChange}
+          items={[
+            { id: 'tts', label: t('playgroundConsole.audio.tts') },
+            { id: 'stt', label: t('playgroundConsole.audio.stt') }
+          ]}
+        />
 
-      <ConsolePage className="min-h-0 flex-1" columnClassName="max-w-[46rem]">
-        <div className="flex flex-1 flex-col gap-5">
-          {tts ? <SpeechPanel {...panelProps} /> : <TranscribePanel {...panelProps} />}
+        {tts ? <SpeechPanel {...panelProps} /> : <TranscribePanel {...panelProps} />}
 
-          <ErrorLine error={session.error} />
-        </div>
-      </ConsolePage>
-    </div>
+        <ErrorLine error={session.error} />
+      </div>
+    </ConsolePage>
   );
 }
 
@@ -254,6 +246,7 @@ function SpeechPanel({ session, modelChip, gate, running, runnable, hasModels, n
           description={noModels?.description}
           actionLabel={noModels?.actionLabel}
           actionHref={noModels?.actionHref}
+          className="w-full max-w-none"
         />
         <SpeechEditor session={session} modelChip={modelChip} gate={gate} running={running} runnable={runnable} disabled />
       </div>
@@ -473,6 +466,7 @@ function TranscribePanel({ session, modelChip, gate, running, runnable, hasModel
           description={noModels?.description}
           actionLabel={noModels?.actionLabel}
           actionHref={noModels?.actionHref}
+          className="w-full max-w-none"
         />
       )}
 

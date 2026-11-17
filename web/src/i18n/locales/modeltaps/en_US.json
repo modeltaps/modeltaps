@@ -677,7 +677,6 @@
   },
   "nav_subtitles": {
     "systemInfo": "Recurring problems and recent server logs",
-    "playground": "Run chat, image, speech and side-by-side comparisons against the gateway",
     "api_audio": "Convert between text and speech",
     "api_compare": "Run several chat models side by side on the same input",
     "pricing": "Model catalog, prices, channels and vendors",

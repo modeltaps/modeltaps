@@ -6,11 +6,10 @@ import { Link, Navigate, useLocation, useParams, useSearchParams } from 'react-r
 
 import { cn } from '@/lib/utils';
 import { findActiveItem } from '@/components/chrome/nav-config';
-import PageActions from '@/components/chrome/PageActions';
-import PageTitleExtra from '@/components/chrome/PageTitleExtra';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { resolveServerAddress } from 'utils/serverAddress';
 import useCatalogModels from 'views/panel/ApiCatalog/useCatalogModels';
-import { DEFAULT_MODALITY, MODALITIES, modalityHref, resolveModality } from './modalities';
+import { DEFAULT_MODALITY, SWITCH_MODALITIES, modalityHref, modeOf, resolveModality } from './modalities';
 import { ConsoleContext } from './shared/ConsoleContext';
 import { workbench } from 'routes/paths';
 import { useOrgSlug } from 'routes/useScope';
@@ -21,8 +20,9 @@ import { useOrgSlug } from 'routes/useScope';
 // 正式页壳与输入框 chip 由组件任务提供。接口文档在 `/panel/docs/:modality`。
 // 分层规则见 modalities.js 顶部注释。
 
-// The sidebar has one 演练场 item for every console; this segmented switch next to the page
-// title moves between modalities (each keeps its own route).
+// The sidebar has one 演练场 item for every console; this segmented switch on the toolbar row
+// under the page title moves between modalities (each keeps its own route). Sub-modes such as
+// compare are not listed: their parent modality stays selected.
 function ModalitySwitch({ activeId }) {
   const { t } = useTranslation();
   const orgSlug = useOrgSlug();
@@ -41,7 +41,7 @@ function ModalitySwitch({ activeId }) {
       aria-label={t('nav.playground.modality')}
       className="no-scrollbar relative flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg bg-control p-0.5"
     >
-      {MODALITIES.map((entry) => {
+      {SWITCH_MODALITIES.map((entry) => {
         const active = entry.id === activeId;
         const Icon = entry.icon;
         return (
@@ -64,6 +64,46 @@ function ModalitySwitch({ activeId }) {
 }
 
 ModalitySwitch.propTypes = { activeId: PropTypes.string };
+
+// Toggle between a modality and its multi-model sub-mode (chat ↔ compare). On the way in the
+// selected model rides along as ?model= and becomes the first column.
+function ModeToggle({ entry, modelId }) {
+  const { t } = useTranslation();
+  const orgSlug = useOrgSlug();
+  const mode = modeOf(entry);
+  if (!mode) return null;
+  const on = entry.id === mode.id;
+  const target = on ? SWITCH_MODALITIES.find((m) => m.id === mode.parent) : mode;
+  const href = modalityHref(target, orgSlug) + (!on && modelId ? `?model=${encodeURIComponent(modelId)}` : '');
+  const Icon = mode.icon;
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {/* 同模态栏一样的轨道 + 滑块：开着时滑块亮起，关着时只剩轨道。 */}
+          <Link
+            to={href}
+            aria-pressed={on}
+            className="flex rounded-lg bg-control p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span
+              className={cn(
+                'flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium transition-colors',
+                on ? 'bg-control-thumb text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <Icon className="size-3.5" />
+              {t(mode.labelKey)}
+            </span>
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent>{t(`nav_subtitles.api_${mode.id}`)}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+ModeToggle.propTypes = { entry: PropTypes.object.isRequired, modelId: PropTypes.string };
 
 export default function ApiConsole() {
   const { t } = useTranslation();
@@ -127,27 +167,23 @@ export default function ApiConsole() {
       <ModalityProvider>
         {/* 定高而不是 min-height：控制台页自己滚(消息区滚、composer 贴底)，
             高度不定的话整页会跟着长，输入框被顶出视口。 */}
-        <div
-          className={`flex min-h-[520px] flex-col gap-4 ${hasNavHeader ? 'h-[calc(100vh-11rem)] sm:h-[calc(100vh-8rem)]' : 'h-[calc(100vh-11rem)]'}`}
-        >
-          {/* 有导航标题时动作传送到 PageHeader 标题行右侧，页内不再单独占一行。 */}
-          {hasNavHeader ? (
-            <>
-              <PageTitleExtra>
-                <ModalitySwitch activeId={entry.id} />
-              </PageTitleExtra>
-              {Actions && (
-                <PageActions>
-                  <Actions />
-                </PageActions>
-              )}
-            </>
-          ) : (
-            <div className="flex items-start justify-between gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight">{t(entry.labelKey)}</h1>
-              <div className="ml-auto flex items-center gap-2">{Actions ? <Actions /> : null}</div>
+        {/* 5.5rem = main 上内边距 + PageHeader 标题行与下边距 + main 下内边距。 */}
+        <div className="flex h-[calc(100vh-5.5rem)] min-h-[520px] flex-col gap-4">
+          {!hasNavHeader && <h1 className="text-2xl font-semibold tracking-tight">{t(entry.labelKey)}</h1>}
+          {/* 工具行：左边模态栏（与页面标题同一左边线），右边模式开关与本模态的动作。 */}
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="min-w-0">
+              <ModalitySwitch activeId={entry.parent || entry.id} />
             </div>
-          )}
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              <ModeToggle entry={entry} modelId={selectedId} />
+              {Actions && (
+                <div className="flex items-center gap-1">
+                  <Actions />
+                </div>
+              )}
+            </div>
+          </div>
           {/* min-h-0：flex 子项默认 min-height:auto，内容一多就把定高撑破，
               滚动落到 MainLayout 的 main 上、composer 被顶出视口。 */}
           <div className={`mx-auto flex w-full min-h-0 flex-1 flex-col ${multiModel || entry.fullWidth ? 'max-w-none' : 'max-w-3xl'}`}>

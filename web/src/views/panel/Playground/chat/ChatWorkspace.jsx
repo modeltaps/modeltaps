@@ -24,7 +24,7 @@ import useFollowBottom from './useFollowBottom';
 // 下面一行常显「tokens · ms + 该条代码 / 复制 / 重跑」。
 // 门禁只卡发送：输入框整体置灰 + 一句说明 + 去向链接，消息与代码照常可看。
 // 没有可用模型同理：示例位置换成 noModels 说明卡，外壳与输入框都留在原处。
-// 列宽：空态时示例网格与输入框一起放宽到 1100px，有消息后回到 768px 的阅读列宽（max-width 过渡）。
+// 列宽：空态时示例网格与输入框一起放宽到 1000px（与图像页模板网格同宽），有消息后回到 768px 的阅读列宽（max-width 过渡）。
 
 // 消息列表本身在 components/MessageThread（对比页每列共用）。
 export { threadSignal };
@@ -133,7 +133,7 @@ export default function ChatWorkspace({
       className="min-h-0 flex-1"
       columnClassName={cn(
         'transition-[max-width] duration-300 ease-out motion-reduce:transition-none',
-        turns.length === 0 ? 'max-w-[1100px]' : 'max-w-3xl'
+        turns.length === 0 ? 'max-w-[1000px]' : 'max-w-3xl'
       )}
       bodyRef={bodyRef}
       composer={composer}

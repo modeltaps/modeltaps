@@ -268,10 +268,10 @@ describe('AudioWorkspace 无可用模型', () => {
     expect(html).toContain('先创建一个令牌');
   });
 
-  it('合成这边控件行仍复述原因', () => {
+  it('合成这边原因只在说明卡里说一次，控件行不复述', () => {
     const html = render({ session: session(empty) });
 
-    expect(html.split(noModels.description)).toHaveLength(3);
+    expect(html.split(noModels.description)).toHaveLength(2);
   });
 
   it('合成这边不受转写说明影响', () => {

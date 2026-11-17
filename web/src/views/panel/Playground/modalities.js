@@ -73,7 +73,10 @@ export const MODALITIES = [
   {
     // 多列并排对比：参数收在输入框与列头的 chip 里。multiModel：各列各选模型，主区放宽到
     // 全宽，路由页也不回写 ?model=（已有的 ?model= 保留，用作第一列的默认模型）。
+    // parent：对比不是一种模态，而是对话的多模型模式——模态栏里不单列，对话 tab 保持选中，
+    // 由页面右上的「对比」开关进出。
     id: 'compare',
+    parent: 'chat',
     path: 'compare',
     icon: Columns2,
     labelKey: 'playgroundConsole.modality.compare',
@@ -100,6 +103,12 @@ export const MODALITIES = [
     comingSoon: true
   }
 ];
+
+// 模态栏只列真正的模态（对话 / 图像 / 语音 / 视频）；带 parent 的条目是某个模态的子模式。
+export const SWITCH_MODALITIES = MODALITIES.filter((m) => !m.parent);
+
+// 有子模式的模态（对话 ↔ 对比）：给页面右上的模式开关用。
+export const modeOf = (entry) => MODALITIES.find((m) => m.parent === (entry?.parent || entry?.id)) || null;
 
 // 路由段 → 模态。缺省(裸 /panel/api)给默认模态；未登记的值返回 null，由路由页回落到
 // 默认模态。id 与 path 不同的模态(audio ↔ speech)两种写法都认。
