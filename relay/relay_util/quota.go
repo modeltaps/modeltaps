@@ -89,6 +89,14 @@ type Quota struct {
 	inputRatio            float64
 	outputRatio           float64
 	costRatio             float64
+	// Cost floor (SupplyCostFloorBilling, see EnableCostFloor): costPrice is the channel's cost as
+	// a price list, nil when unknown; billing is the outcome of the last settlement, for the log.
+	costFloor  bool
+	costPrice  *model.Price
+	costSource string
+	feeRate    float64
+	feeNote    string
+	billing    *costFloorResult
 	// audioSecondsEstimate is the probed length of the uploaded audio (0 when unknown), used
 	// to pre-consume minutes prices; audioSeconds is the billed length, taken from the usage.
 	audioSecondsEstimate float64
@@ -262,14 +270,12 @@ func (q *Quota) PreQuotaConsumption() *types.OpenAIErrorWithStatusCode {
 			"model_price_not_configured", http.StatusForbidden)
 	}
 
-	if q.price.Type == model.TimesPriceType {
-		q.preConsumedQuota = common.QuotaFromFloat(1000 * q.inputRatio)
-	} else if q.price.Type == model.MinutesPriceType {
-		q.preConsumedQuota = q.minutesPreConsumeQuota()
-	} else if q.price.Input != 0 || q.price.Output != 0 {
-		// 预扣要覆盖输出成本：只按输入估算时，高输出单价的请求实际花费可达预扣额的上百倍。
-		q.preConsumedQuota = common.QuotaFromFloat(float64(q.promptTokens)*q.inputRatio+
-			float64(q.expectedOutputTokens())*q.outputRatio) + config.PreConsumedQuota
+	q.preConsumedQuota = q.preConsumeQuotaWith(&q.price, q.inputRatio, q.outputRatio)
+	// With the cost floor, settlement may charge the channel cost: reserve the higher of the two.
+	if q.costFloor && q.costPrice != nil {
+		if cost := q.preConsumeQuotaWith(q.costPrice, q.costPrice.GetInput(), q.costPrice.GetOutput()); cost > q.preConsumedQuota {
+			q.preConsumedQuota = cost
+		}
 	}
 
 	if q.preConsumedQuota == 0 {

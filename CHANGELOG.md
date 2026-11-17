@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Requests can be charged at least what their channel costs. With "Never charge below the channel
+  cost" on (Billing rules, off by default), a request is charged the higher of the quoted price
+  times the group ratio and the price of the channel that served it plus the channel's fee rate;
+  after a retry, the channel that answered counts. The channel cost comes from the channel's
+  synced price list, else the catalog price times its cost ratio; when neither is known the quote
+  is charged. The consume log shows the quote, the amount charged and why; users see the channel
+  cost only when they were charged it, never the channel or its fee source. Channels have a fee
+  rate and fee source (Advanced tab): new Requesty channels start at 5% and OpenRouter at 5.5%,
+  and existing channels of these types without a fee get the same.
 - Endpoints for coding agents. Claude Code points at `/claude-code` (its model list shows this
   site's models as `claude-code/<model>`, with `[1m]` on models with a context of a million
   tokens or more, and the prefix and suffix are removed before forwarding), Codex at `/codex/v1`

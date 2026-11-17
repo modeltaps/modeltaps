@@ -2147,7 +2147,13 @@
       "seconds": "{{count}} s",
       "unitPrice": "Unit price",
       "perMinute": "min",
-      "perRequest": "request"
+      "perRequest": "request",
+      "quoteBilling": "Quoted price",
+      "channelCost": "Channel cost",
+      "channelCostWithFee": "Channel cost (incl. {{rate}}% provider fee)",
+      "chargedAtChannelCost": "The channel that served this request costs more than the quoted price, so it was charged at the channel cost.",
+      "channelCostUnknown": "The channel cost is not known; charged at the quoted price.",
+      "chargedBilling": "Charged"
     }
   },
   "setting_index": {
@@ -3437,7 +3443,7 @@
         },
         "billing-rules": {
           "title": "Billing rules",
-          "description": "Empty replies, approximate counting and price sync",
+          "description": "Empty replies, approximate counting, the channel cost floor and price sync",
           "hint": "Applies to new requests right away"
         },
         "quota-reset": {

@@ -2376,7 +2376,9 @@
           "all": "全部写入",
           "none": "只写入新模型",
           "description": "每日与启动时的价格同步（OpenRouter、Vercel AI Gateway、models.dev）对已有价格的模型如何写入。新模型总会写入，锁定的价格不会改。未写入的变动、以及锁定价低于上游的模型会发通知，可在渠道的「同步价格」里核对后写入。"
-        }
+        },
+        "supplyCostFloor": "扣费不低于渠道成本",
+        "supplyCostFloorDescription": "每次请求按「报价 × 分组倍率」和实际承接请求的渠道收费（含渠道费率）两者取高扣费。渠道成本未知时按报价扣。"
       },
       "invoice": {
         "title": "账单设置",

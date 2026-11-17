@@ -1,6 +1,10 @@
 package model
 
-import "gorm.io/datatypes"
+import (
+	"strings"
+
+	"gorm.io/datatypes"
+)
 
 // Logs shown outside the site admin's log page (a user's own logs, an organization's logs, and
 // their CSV exports) must not reveal how the gateway served a request: which channel or supply,
@@ -41,6 +45,13 @@ func (l *Log) RedactForMember() {
 	for _, k := range adminOnlyLogMetaKeys {
 		delete(redacted, k)
 	}
+	if billing, ok := redacted[LogMetaBilling]; ok {
+		if kept := redactBilling(billing); kept != nil {
+			redacted[LogMetaBilling] = kept
+		} else {
+			delete(redacted, LogMetaBilling)
+		}
+	}
 	if attempts, ok := redacted["retry_attempts"]; ok {
 		if kept := redactRetryAttempts(attempts); len(kept) > 0 {
 			redacted["retry_attempts"] = kept
@@ -80,4 +91,26 @@ func redactRetryAttempts(v any) []any {
 		out = append(out, kept)
 	}
 	return out
+}
+
+// redactBilling keeps the billing breakdown a user may see: the quoted amount, the amount
+// charged and why. The channel cost is shown only when the request was charged at it, so a
+// request charged the quote does not reveal the gateway's margin; admin keys never are.
+func redactBilling(v any) map[string]any {
+	billing, ok := v.(map[string]any)
+	if !ok {
+		return nil
+	}
+	kept := make(map[string]any, len(billing))
+	for k, val := range billing {
+		if strings.HasPrefix(k, "_admin_") {
+			continue
+		}
+		kept[k] = val
+	}
+	if kept["basis"] != "channel_cost" {
+		delete(kept, "channel_cost_quota")
+		delete(kept, "fee_rate")
+	}
+	return kept
 }

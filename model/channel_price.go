@@ -77,6 +77,7 @@ func ReplaceChannelPrices(channelID int, prices []*ChannelPrice) error {
 		row.Id, row.ChannelId, row.SyncedAt = 0, channelID, now
 		rows = append(rows, &row)
 	}
+	defer InvalidateChannelPriceCache()
 	return DB.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("channel_id = ?", channelID).Delete(&ChannelPrice{}).Error; err != nil {
 			return err
@@ -103,5 +104,6 @@ func GetChannelPrices(channelID int) (*ChannelPriceList, error) {
 func deleteChannelPrices(channelIDs []int) {
 	if len(channelIDs) > 0 {
 		DB.Where("channel_id IN ?", channelIDs).Delete(&ChannelPrice{})
+		InvalidateChannelPriceCache()
 	}
 }

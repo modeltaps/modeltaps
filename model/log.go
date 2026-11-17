@@ -170,6 +170,8 @@ const (
 	LogMetaUpstreamCost = "_upstream_cost"
 	LogMetaExpectedCost = "_expected_cost"
 	LogMetaClient       = "_client"
+	// LogMetaBilling is the breakdown of a request charged with the cost floor (SupplyCostFloorBilling).
+	LogMetaBilling = "billing"
 )
 
 // takeLogClient removes the client from the metadata and returns it, cut to the column width.

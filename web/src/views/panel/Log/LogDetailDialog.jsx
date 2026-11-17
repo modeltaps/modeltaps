@@ -720,6 +720,9 @@ export default function LogDetailDialog({
   const showNativeFinish = Boolean(userIsAdmin || platformIsAdmin);
   const groupRatio = metadata.group_ratio || 1;
   const originalQuota = calculateOriginalQuota(item);
+  // Requests charged with the cost floor carry their breakdown: the quote, the channel cost
+  // (shown to users only when it was charged) and which one applied.
+  const billing = metadata.billing && typeof metadata.billing === 'object' ? metadata.billing : null;
   const quota = item.quota || 0;
 
   const cachedWriteTokens = Number(metadata.cached_write_tokens) || 0;
@@ -995,8 +998,33 @@ export default function LogDetailDialog({
                     </>
                   )}
                   <KeyValueRow label={t('logPage.quotaDetail.groupRatioValue')} value={groupRatio} />
-                  <KeyValueRow label={t('logPage.quotaDetail.originalBilling')} value={renderQuota(originalQuota, 6)} />
-                  <KeyValueRow label={t('logPage.usage.cost')} value={renderQuota(quota, 6)} />
+                  {billing ? (
+                    <>
+                      <KeyValueRow label={t('logPage.quotaDetail.quoteBilling')} value={renderQuota(billing.quote_quota || 0, 6)} />
+                      {billing.channel_cost_quota !== undefined && (
+                        <KeyValueRow
+                          label={
+                            Number(billing.fee_rate) > 0
+                              ? t('logPage.quotaDetail.channelCostWithFee', { rate: +(Number(billing.fee_rate) * 100).toFixed(2) })
+                              : t('logPage.quotaDetail.channelCost')
+                          }
+                          value={renderQuota(billing.channel_cost_quota, 6)}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <KeyValueRow label={t('logPage.quotaDetail.originalBilling')} value={renderQuota(originalQuota, 6)} />
+                  )}
+                  <KeyValueRow
+                    label={billing ? t('logPage.quotaDetail.chargedBilling') : t('logPage.usage.cost')}
+                    value={renderQuota(quota, 6)}
+                  />
+                  {billing?.basis === 'channel_cost' && (
+                    <p className="text-xs text-warning">{t('logPage.quotaDetail.chargedAtChannelCost')}</p>
+                  )}
+                  {billing?.basis === 'cost_unknown' && showNativeFinish && (
+                    <p className="text-xs text-muted-foreground">{t('logPage.quotaDetail.channelCostUnknown')}</p>
+                  )}
                 </div>
               </div>
             </CollapsibleSection>

@@ -2062,7 +2062,13 @@
       "seconds": "{{count}} 秒",
       "unitPrice": "単価",
       "perMinute": "分",
-      "perRequest": "回"
+      "perRequest": "回",
+      "quoteBilling": "提示価格",
+      "channelCost": "チャネル原価",
+      "channelCostWithFee": "チャネル原価（提供元手数料 {{rate}}% を含む）",
+      "chargedAtChannelCost": "このリクエストは提示価格より原価の高いチャネルで処理されたため、チャネル原価で課金しました。",
+      "channelCostUnknown": "チャネル原価が不明なため、提示価格で課金しました。",
+      "chargedBilling": "今回の課金額"
     }
   },
   "setting_index": {
@@ -3328,7 +3334,7 @@
         },
         "billing-rules": {
           "title": "課金ルール",
-          "description": "空の応答、概算カウントと価格同期",
+          "description": "空の応答、概算カウント、チャネル原価の下限と価格同期",
           "hint": "新しいリクエストからすぐに適用されます"
         },
         "quota-reset": {

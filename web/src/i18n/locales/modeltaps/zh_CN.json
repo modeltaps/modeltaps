@@ -2068,7 +2068,13 @@
       "seconds": "{{count}} 秒",
       "unitPrice": "单价",
       "perMinute": "分钟",
-      "perRequest": "次"
+      "perRequest": "次",
+      "quoteBilling": "按报价算",
+      "channelCost": "渠道成本",
+      "channelCostWithFee": "渠道成本（含 {{rate}}% 渠道商服务费）",
+      "chargedAtChannelCost": "本次请求由成本高于报价的渠道完成，按渠道成本扣费。",
+      "channelCostUnknown": "渠道成本未知，按报价扣费。",
+      "chargedBilling": "本次扣费"
     }
   },
   "setting_index": {
@@ -3332,7 +3338,7 @@
         },
         "billing-rules": {
           "title": "计费规则",
-          "description": "空回复、近似计费与价格同步",
+          "description": "空回复、近似计费、渠道成本保底与价格同步",
           "hint": "改动对新请求立即生效"
         },
         "quota-reset": {

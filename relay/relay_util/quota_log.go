@@ -314,6 +314,10 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 		meta["relay_mode"] = q.relayMode
 	}
 
+	if billing := q.billingLogMeta(); billing != nil {
+		meta[model.LogMetaBilling] = billing
+	}
+
 	firstResponseTime := q.GetFirstResponseTime()
 	if firstResponseTime > 0 {
 		meta["first_response"] = firstResponseTime

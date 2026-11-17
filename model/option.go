@@ -225,6 +225,7 @@ func registerOptions() {
 	}, "recovery", config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("ChannelTestIntervalMinutes", &config.ChannelTestIntervalMinutes, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("PauseRulesEnabled", &config.PauseRulesEnabled, config.ScopeAdmin)
+	config.GlobalOption.RegisterBool("SupplyCostFloorBilling", &config.SupplyCostFloorBilling, config.ScopeAdmin)
 	config.GlobalOption.RegisterCustom("PauseRules", func() string {
 		return config.PauseRules
 	}, func(value string) error {

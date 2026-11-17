@@ -333,6 +333,11 @@ var SupplyModeDefault = "balance"
 // automatic disabling, per-status cooldowns and model-not-found quarantine.
 var PauseRulesEnabled = true
 
+// SupplyCostFloorBilling charges a request at least what its channel costs: the higher of the
+// catalog price times the group ratio and the channel's price with its fee (model.SupplyCostPrice).
+// Off: requests are charged the catalog price only.
+var SupplyCostFloorBilling = false
+
 // PauseRules holds custom pause rules as JSON; empty means the built-in defaults.
 var PauseRules = ""
 
