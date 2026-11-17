@@ -25,6 +25,8 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
+import { BatchBar } from '@/components/list-page';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -668,10 +670,34 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
     else next.delete(name);
     setDraft({ ...draft, disabled: models.filter((m) => next.has(m)).join(',') });
   };
-  const remove = (name) => {
-    setDraft({ ...draft, models: models.filter((m) => m !== name).join(',') });
-    setRemovedNames((cur) => (cur.includes(name) ? cur : [...cur, name]));
+
+  const remove = (name) => removeMany([name]);
+  const removeMany = (names) => {
+    const drop = new Set(names);
+    setDraft({ ...draft, models: models.filter((m) => !drop.has(m)).join(',') });
+    setRemovedNames((cur) => Array.from(new Set([...cur, ...names])));
   };
+
+  // Ticked rows for the batch bar; names no longer listed drop out on their own.
+  const [ticked, setTicked] = useState(() => new Set());
+  const tickedNames = models.filter((m) => ticked.has(m));
+  // The header box ticks every listed row the filter and search show, on all pages.
+  const tickable = only === 'unlisted' ? [] : list.matches.filter((r) => !r.removed).map((r) => r.name);
+  const allTicked = tickable.length > 0 && tickable.every((n) => ticked.has(n));
+  const someTicked = !allTicked && tickable.some((n) => ticked.has(n));
+  const tick = (names, on) =>
+    setTicked((cur) => {
+      const next = new Set(cur);
+      names.forEach((n) => (on ? next.add(n) : next.delete(n)));
+      return next;
+    });
+  const setOffMany = (names, off) => {
+    const next = new Set(disabled);
+    names.forEach((n) => (off ? next.add(n) : next.delete(n)));
+    setDraft({ ...draft, disabled: models.filter((m) => next.has(m)).join(',') });
+    setTicked(new Set());
+  };
+  const pickedOff = tickedNames.filter((n) => disabled.has(n)).length;
   // Puts models back where the saved list had them, so undoing every removal leaves the tab
   // unchanged; models added in this draft keep their place after the saved ones.
   const restore = (names) => {
@@ -864,11 +890,54 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
               </button>
             </p>
           )}
+          {tickedNames.length > 0 && (
+            <BatchBar
+              count={tickedNames.length}
+              onClear={() => setTicked(new Set())}
+              className="min-h-0 py-0 pb-2"
+              actions={
+                <>
+                  {pickedOff < tickedNames.length && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-[26px] rounded-lg bg-card text-xs"
+                      onClick={() => setOffMany(tickedNames, true)}
+                    >
+                      {t('channels.models.bulkOff', { count: tickedNames.length - pickedOff })}
+                    </Button>
+                  )}
+                  {pickedOff > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-[26px] rounded-lg bg-card text-xs"
+                      onClick={() => setOffMany(tickedNames, false)}
+                    >
+                      {t('channels.models.bulkOn', { count: pickedOff })}
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-[26px] rounded-lg bg-card text-xs text-destructive hover:text-destructive"
+                    onClick={() => {
+                      removeMany(tickedNames);
+                      setTicked(new Set());
+                    }}
+                  >
+                    {t('channels.models.bulkRemove', { count: tickedNames.length })}
+                  </Button>
+                </>
+              }
+            />
+          )}
           <LongListSearch list={list} className="pb-2" />
           <div className="overflow-hidden rounded-lg border border-border">
             {/* Fixed widths for the narrow columns, so the model name gets the rest of the panel. */}
             <table className="w-full table-fixed border-collapse text-[13px]">
               <colgroup>
+                <col className="w-8" />
                 <col />
                 {hasMapping && <col className="w-[22%]" />}
                 <col className="w-[4.5rem]" />
@@ -879,6 +948,16 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
               </colgroup>
               <thead>
                 <tr className="text-left text-xs text-muted-foreground [&>th]:h-9 [&>th]:whitespace-nowrap [&>th]:border-b [&>th]:border-border [&>th]:px-3 [&>th]:font-medium">
+                  <th className="!pl-3 !pr-0">
+                    {tickable.length > 0 && (
+                      <Checkbox
+                        checked={allTicked}
+                        indeterminate={someTicked}
+                        onCheckedChange={() => tick(tickable, !allTicked)}
+                        aria-label={t('channels.models.tickAll')}
+                      />
+                    )}
+                  </th>
                   <SortHeader
                     align="left"
                     label={t('channels.models.model')}
@@ -918,9 +997,18 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                       className={cn(
                         'group [&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0',
                         isRemoved && '[&>td:not(:last-child)]:opacity-50',
-                        off && !isRemoved && '[&>td:not(:nth-last-child(-n+2))]:opacity-55'
+                        off && !isRemoved && '[&>td:not(:first-child):not(:nth-last-child(-n+2))]:opacity-55'
                       )}
                     >
+                      <td className="!pl-3 !pr-0">
+                        {!isRemoved && (
+                          <Checkbox
+                            checked={ticked.has(name)}
+                            onCheckedChange={(on) => tick([name], on)}
+                            aria-label={t('channels.models.tickOne', { model: name })}
+                          />
+                        )}
+                      </td>
                       <td title={isRemoved ? t('channels.models.removedHint', { model: name }) : modelHint(t, name, detailOf(name))}>
                         {/* Name and public name stack on the left; the marks center on the whole row like the other cells. */}
                         <div className="flex min-w-0 items-center gap-2">
@@ -931,9 +1019,6 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                               <ModelSignal signal={signal} m={m} range={range} />
                               {gone && (
                                 <span className={cn(TAG_TEXT, 'bg-warning/10 text-warning')}>{t('channels.models.state.gone')}</span>
-                              )}
-                              {off && !isRemoved && (
-                                <span className={cn(TAG_TEXT, 'bg-muted text-muted-foreground')}>{t('channels.models.off')}</span>
                               )}
                             </span>
                             {isRemoved && <span className="block truncate text-xs">{t('channels.models.removedLine')}</span>}
@@ -1012,6 +1097,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                       data-testid="unlisted-model"
                       className="[&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0"
                     >
+                      <td />
                       <td colSpan={hasMapping ? 3 : 2}>
                         <span className="flex min-w-0 items-center gap-1.5">
                           <span className="min-w-0 truncate font-mono">{u.name}</span>

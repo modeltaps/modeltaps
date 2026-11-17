@@ -45,6 +45,8 @@ export function useLongList(items, { text, limit = LONG_LIST_LIMIT, pageSize = L
       setPage(0);
     },
     visible: matches.slice(slice.start, slice.end),
+    // Every row the search matches, on all pages.
+    matches,
     total: matches.length,
     ...slice,
     setPage
