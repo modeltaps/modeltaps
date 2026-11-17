@@ -2,6 +2,7 @@
 import { createElement as h, useState } from 'react';
 import PropTypes from 'prop-types';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { createMemoryRouter, RouterProvider, useNavigate } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import i18n from 'i18n/i18n';
@@ -105,5 +106,36 @@ describe('ObjectPanel', () => {
     expect(screen.getByText('info alpha')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: i18n.t('common.close') }));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('asks before a route change drops unsaved changes, once', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    function Routed() {
+      const navigate = useNavigate();
+      return h('div', null, [
+        h('button', { key: 'go', type: 'button', onClick: () => navigate('/items/2') }, 'open 2'),
+        h(Harness, { key: 'panel', onSave: vi.fn(), initialTab: 'name', onClose: () => navigate('/items') })
+      ]);
+    }
+    const router = createMemoryRouter(
+      [
+        { path: '/items/1', element: h(Routed) },
+        { path: '/items/2', element: h('p', null, 'item 2') },
+        { path: '/items', element: h('p', null, 'list') }
+      ],
+      { initialEntries: ['/items/1'] }
+    );
+    render(h(RouterProvider, { router }));
+    fireEvent.change(screen.getByLabelText('name'), { target: { value: 'gamma' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'open 2' }));
+    await waitFor(() => expect(confirm).toHaveBeenCalledWith(i18n.t('objects.panel.discardConfirm')));
+    expect(screen.getByLabelText('name').value).toBe('gamma');
+
+    confirm.mockClear();
+    confirm.mockReturnValue(true);
+    fireEvent.click(screen.getByRole('button', { name: i18n.t('common.close') }));
+    expect(await screen.findByText('list')).toBeTruthy();
+    expect(confirm).toHaveBeenCalledTimes(1);
   });
 });

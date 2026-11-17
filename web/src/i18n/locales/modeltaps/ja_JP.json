@@ -2153,6 +2153,7 @@
       "mappingInvalid": "モデルマッピングが正しい JSON ではありません",
       "model": "モデル",
       "none": "まだモデルがありません。追加するか上流から取得してください",
+      "goneRemoved_other": "上流にない {{count}} モデルを削除しました",
       "pruned_other": "上流にない {{count}} モデルを削除しました。保存すると反映されます",
       "remove": "{{model}} を削除",
       "pricesRefreshed": "上流価格を更新しました",

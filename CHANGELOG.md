@@ -632,6 +632,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Upstream-gone models no longer come back after "Remove all". The button on the provider
+  panel's models tab now saves the removal at once, with an undo, instead of leaving it in an
+  unsaved draft that was dropped without asking when another provider was opened from the list.
+  Opening another provider with unsaved edits now asks first. Gone models that were removed or
+  switched off are no longer flagged on the provider list, in the panel banner or in the drift
+  notification.
 - Claude Code channels now authenticate Claude format requests with the account's OAuth token.
   Requests forwarded natively sent the stored credentials as an API key and were rejected.
 - `/v1/responses` requests whose input carries reasoning items (sent back by Codex and other

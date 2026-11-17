@@ -174,7 +174,14 @@ func TestComputeModelDrift_DismissedMissingLastsWhileMissing(t *testing.T) {
 	if !reflect.DeepEqual(got.DismissedMissing, []string{"a"}) {
 		t.Fatalf("expected only a to stay dismissed, got %v", got.DismissedMissing)
 	}
-	if left := undismissedMissing(&got); !reflect.DeepEqual(left, []string{"d"}) {
+	if left := undismissedMissing(&got, nil); !reflect.DeepEqual(left, []string{"d"}) {
 		t.Fatalf("expected d to be reported, got %v", left)
+	}
+}
+
+func TestUndismissedMissing_SkipsSwitchedOffModels(t *testing.T) {
+	result := &model.ModelDriftResult{MissingModels: []string{"a", "b", "c"}, DismissedMissing: []string{"a"}}
+	if left := undismissedMissing(result, map[string]bool{"b": true}); !reflect.DeepEqual(left, []string{"c"}) {
+		t.Fatalf("expected only c to be reported, got %v", left)
 	}
 }

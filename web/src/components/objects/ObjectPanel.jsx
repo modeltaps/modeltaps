@@ -1,5 +1,7 @@
 import PropTypes from 'prop-types';
+import { useCallback, useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { UNSAFE_DataRouterContext, useBlocker } from 'react-router';
 import { Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -87,6 +89,32 @@ SaveBar.propTypes = {
   onSave: PropTypes.func.isRequired
 };
 
+// Asks before a route change drops unsaved edits, such as opening another object from the list
+// while this panel is open (the panel is keyed by the object, so it would remount silently).
+// Changes that keep the path (the tab in the query) are left to the panel's own checks.
+function RouteLeaveGuard({ when, leave }) {
+  const { t } = useTranslation();
+  const { confirmed, confirm } = leave;
+  const shouldBlock = useCallback(
+    ({ currentLocation, nextLocation }) => when && !confirmed() && currentLocation.pathname !== nextLocation.pathname,
+    [when, confirmed]
+  );
+  const blocker = useBlocker(shouldBlock);
+  useEffect(() => {
+    if (blocker.state !== 'blocked') return;
+    if (window.confirm(t('objects.panel.discardConfirm'))) {
+      confirm();
+      blocker.proceed();
+    } else blocker.reset();
+  }, [blocker, confirm, t]);
+  return null;
+}
+
+RouteLeaveGuard.propTypes = {
+  when: PropTypes.bool,
+  leave: PropTypes.shape({ confirmed: PropTypes.func, confirm: PropTypes.func }).isRequired
+};
+
 // Right-side panel of one object: header (icon, title, subtitle, actions, close) and a box with
 // one tab per part of the object. Each tab saves on its own through `onSave(patch, { tab })`
 // (which resolves to `{ success, message }`), shows its own Discard / Save footer, marks unsaved
@@ -120,7 +148,9 @@ export default function ObjectPanel({
 }) {
   const { t } = useTranslation();
   const current = tabs.find((x) => x.key === tab) || tabs[0];
-  const { ready, dirty, draft, setDraft, version, saving, requestClose, switchTab, discard, save } = useTabDrafts({
+  // Only under a data router (tests may render the panel without one).
+  const dataRouter = useContext(UNSAFE_DataRouterContext);
+  const { ready, dirty, leave, draft, setDraft, version, saving, requestClose, switchTab, discard, save } = useTabDrafts({
     object,
     tab: current,
     ctx,
@@ -179,6 +209,7 @@ export default function ObjectPanel({
         </>
       )}
       {children}
+      {dataRouter && <RouteLeaveGuard when={dirty} leave={leave} />}
     </ObjectSheet>
   );
 }

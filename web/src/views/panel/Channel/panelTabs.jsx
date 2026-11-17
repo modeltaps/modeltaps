@@ -50,7 +50,7 @@ import UpstreamPriceDetails from './UpstreamPriceDetails';
 import { STATE_FILTERS, isGone, matchesState, offerOf, snapshotOf, stateCounts, unlistedOf } from './channelModelStates';
 import { CAPABILITY_FILTERS, formatContext } from './modelPicker';
 import { buildModelSuggestions, fetchPriceList } from './modelSuggestions';
-import { splitList } from './channelGroups';
+import { flaggedMissingModels, splitList } from './channelGroups';
 import { usageNumbers, usageOf, usageOptions, usagePeers } from './channelUsage';
 import { applyMappingToModels, normalizeKeyInput } from './newChannel';
 import {
@@ -484,9 +484,8 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
     if (ctx.modelsFocus?.filter) setOnly(ctx.modelsFocus.filter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusN]);
-  // Missing models the drift check flags and nobody dismissed yet.
-  const dismissedMissing = new Set(channel.model_drift?.dismissed_missing || []);
-  const flaggedMissing = (channel.model_drift?.missing_models || []).filter((m) => !dismissedMissing.has(m));
+  // Missing models the drift check flags and nobody handled yet (removed, dismissed or switched off).
+  const flaggedMissing = flaggedMissingModels(channel);
   // New upstream models the drift check flags (and nobody dismissed): part of the unlisted ones.
   const newKey = (channel.model_drift?.new_models || []).join(',');
   const fresh = useMemo(() => {
@@ -619,10 +618,37 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   };
   const removeGone = () => {
     const gone = new Set(rows.filter((r) => r.gone).map((r) => r.name));
-    setDraft({ ...draft, models: models.filter((m) => !gone.has(m)).join(',') });
-    setRemovedNames((cur) => Array.from(new Set([...cur, ...gone])));
-    toast.success(t('channels.models.pruned', { count: gone.size }));
+    if (!gone.size) return;
+    const next = {
+      ...draft,
+      models: models.filter((m) => !gone.has(m)).join(','),
+      disabled: splitList(draft.disabled)
+        .filter((m) => !gone.has(m))
+        .join(',')
+    };
     setOnly('');
+    // A one-off cleanup: with no other edit pending it is saved at once, with an undo, so it is
+    // not lost by leaving the panel. Next to other edits it joins the draft and is saved with them.
+    const saved = modelsTab.make(channel);
+    if (!ctx.saveModels || draft.models !== saved.models || draft.disabled !== saved.disabled) {
+      setDraft(next);
+      setRemovedNames((cur) => Array.from(new Set([...cur, ...gone])));
+      toast.success(t('channels.models.pruned', { count: gone.size }));
+      return;
+    }
+    run('removeGone', async () => {
+      const res = await ctx.saveModels(modelsTab.patch(next, channel, ctx));
+      if (!res?.success) throw new Error(res?.message);
+      toast.success(t('channels.models.goneRemoved', { count: gone.size }), {
+        // Long enough to reach the undo.
+        duration: 10000,
+        action: {
+          label: t('settingsUi.undo'),
+          onClick: () =>
+            ctx.saveModels(modelsTab.patch(saved, channel, ctx)).then((r) => !r?.success && r?.message && toast.error(r.message))
+        }
+      });
+    });
   };
 
   const priceChannel = () => ({
@@ -843,7 +869,13 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                     </Button>
                   )}
                   {counts.gone > 0 && (
-                    <Button variant="outline" size="sm" className="h-[26px] rounded-lg bg-card text-xs" onClick={removeGone}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-[26px] rounded-lg bg-card text-xs"
+                      disabled={busy === 'removeGone'}
+                      onClick={removeGone}
+                    >
                       {t('channels.models.removeGone', { count: counts.gone })}
                     </Button>
                   )}

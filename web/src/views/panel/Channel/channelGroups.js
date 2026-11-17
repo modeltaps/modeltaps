@@ -61,6 +61,16 @@ export function hasLowBalance(channel) {
   return threshold > 0 && channel.balance_updated_time > 0 && Number(channel.balance || 0) < threshold;
 }
 
+// Missing models of the last drift check still waiting for an admin: listed on the channel and
+// neither dismissed nor switched off. A dismissal lasts until another model goes missing.
+export function flaggedMissingModels(channel) {
+  const drift = channel?.model_drift;
+  // Rows without the model list (none known) keep every missing model.
+  const listed = typeof channel?.models === 'string' ? new Set(splitList(channel.models)) : null;
+  const handled = new Set([...(drift?.dismissed_missing || []), ...(channel?.disabled_models || [])]);
+  return (drift?.missing_models || []).filter((m) => (!listed || listed.has(m)) && !handled.has(m));
+}
+
 // Attention items of one channel, in display order. Each is { key, kind, channel, count? }:
 // autoDisabled (status 3), keyMissing (no stored key), lowBalance, driftNew (models the
 // upstream added) and driftMissing (models the upstream no longer lists). `key` identifies the
@@ -75,9 +85,7 @@ export function channelIssues(channel) {
   if (hasLowBalance(channel)) push('lowBalance', channel.balance_updated_time);
   const drift = channel.model_drift;
   const added = drift?.new_models || [];
-  // Missing models an admin dismissed are not flagged until another one goes missing.
-  const dismissedMissing = new Set(drift?.dismissed_missing || []);
-  const missing = (drift?.missing_models || []).filter((m) => !dismissedMissing.has(m));
+  const missing = flaggedMissingModels(channel);
   if (added.length) push('driftNew', added.join(','), { count: added.length });
   if (missing.length) push('driftMissing', missing.join(','), { count: missing.length });
   return issues;

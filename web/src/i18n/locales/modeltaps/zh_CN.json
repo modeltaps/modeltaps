@@ -2157,6 +2157,7 @@
       "mappingInvalid": "模型映射不是有效的 JSON",
       "model": "模型",
       "none": "还没有模型，添加或从上游拉取",
+      "goneRemoved_other": "已移除 {{count}} 个上游已下架的模型",
       "pruned_other": "移除了 {{count}} 个上游已不存在的模型，保存后生效",
       "remove": "移除 {{model}}",
       "pricesRefreshed": "已更新上游价格",

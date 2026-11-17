@@ -61,6 +61,16 @@ describe('channelIssues', () => {
     expect(channelIssues(more).map((i) => [i.kind, i.count])).toEqual([['driftMissing', 1]]);
   });
 
+  it('does not flag missing models switched off on the channel', () => {
+    const off = ch(3, 1, { disabled_models: ['a'], model_drift: { missing_models: ['a', 'b'], dismissed_missing: ['b'] } });
+    expect(channelIssues(off)).toEqual([]);
+  });
+
+  it('does not flag missing models no longer on the channel', () => {
+    const removed = ch(3, 1, { models: 'b,c', model_drift: { missing_models: ['a', 'b'] } });
+    expect(channelIssues(removed).map((i) => [i.kind, i.count])).toEqual([['driftMissing', 1]]);
+  });
+
   it('has none for a healthy channel', () => {
     expect(channelIssues(ch(1, 1, { key_status: { configured: true } }))).toEqual([]);
   });

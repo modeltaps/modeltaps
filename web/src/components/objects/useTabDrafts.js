@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { toast } from '@/components/ui/sonner';
@@ -11,7 +11,8 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 //
 // The draft is rebuilt whenever the tab or the stored object changes, except that a reload of
 // the same tab keeps unsaved edits (a status toggle elsewhere must not wipe what is being
-// typed). Leaving the page, closing the panel or switching tabs with unsaved changes asks first.
+// typed). Leaving the page, closing the panel, switching tabs or opening another object (a route
+// change, see ObjectPanel) with unsaved changes asks first.
 export default function useTabDrafts({ object, tab, ctx, onTabChange, onClose, onSave, onSaved }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState(null);
@@ -23,6 +24,8 @@ export default function useTabDrafts({ object, tab, ctx, onTabChange, onClose, o
 
   const resetTab = useRef(null);
   const dirtyRef = useRef(false);
+  // Set once the user agreed to drop the draft, so the route guard does not ask a second time.
+  const leaveConfirmed = useRef(false);
 
   useEffect(() => {
     if (!object) return;
@@ -55,7 +58,11 @@ export default function useTabDrafts({ object, tab, ctx, onTabChange, onClose, o
   }, [dirty]);
 
   const requestClose = () => {
-    if (!dirty || window.confirm(t('objects.panel.discardConfirm'))) onClose();
+    if (!dirty) return onClose();
+    if (!window.confirm(t('objects.panel.discardConfirm'))) return undefined;
+    leaveConfirmed.current = true;
+    onClose();
+    return undefined;
   };
   const switchTab = (key) => {
     if (key === tab.key) return;
@@ -87,5 +94,8 @@ export default function useTabDrafts({ object, tab, ctx, onTabChange, onClose, o
     }
   };
 
-  return { ready, dirty, draft, setDraft, version, saving, requestClose, switchTab, discard, save };
+  // For the route guard: whether the user already agreed to drop the draft, and to record that.
+  const leave = useMemo(() => ({ confirmed: () => leaveConfirmed.current, confirm: () => (leaveConfirmed.current = true) }), []);
+
+  return { ready, dirty, leave, draft, setDraft, version, saving, requestClose, switchTab, discard, save };
 }

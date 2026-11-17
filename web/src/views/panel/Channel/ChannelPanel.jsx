@@ -110,8 +110,22 @@ export default function ChannelPanel({
     if (listStamp) load();
   }, [listStamp, load]);
 
+  // The latest stored channel, for saves that finish (or are undone) after a reload.
+  const channelRef = useRef(channel);
+  useEffect(() => {
+    channelRef.current = channel;
+  }, [channel]);
   const ctx = {
     t,
+    // Saves the models tab outside its draft (the one-off cleanup of upstream-gone models).
+    saveModels: async (patch) => {
+      const res = await updateChannel(channelRef.current, patch);
+      if (res?.success) {
+        await load();
+        onChanged();
+      }
+      return res;
+    },
     allChannels,
     groups,
     supplyRouting,

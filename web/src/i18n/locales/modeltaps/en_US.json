@@ -2247,6 +2247,8 @@
       "model": "Model",
       "none": "No models yet; add some or fetch them from the upstream",
       "pruned_one": "Removed {{count}} model the upstream no longer lists; save to apply",
+      "goneRemoved_one": "Removed {{count}} model the upstream no longer lists",
+      "goneRemoved_other": "Removed {{count}} models the upstream no longer lists",
       "pruned_other": "Removed {{count}} models the upstream no longer lists; save to apply",
       "remove": "Remove {{model}}",
       "pricesRefreshed": "Upstream prices updated",

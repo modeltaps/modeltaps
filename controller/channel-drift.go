@@ -149,8 +149,8 @@ func CheckAllChannelsModelDrift() (*ModelDriftCheckSummary, error) {
 		if len(added) > 0 {
 			summary.Added++
 		}
-		// Missing models an admin dismissed are not reported again.
-		missing := undismissedMissing(result)
+		// Missing models an admin dismissed or switched off are not reported again.
+		missing := undismissedMissing(result, ch.DisabledModelSet())
 		if len(missing) > 0 {
 			summary.Drifted++
 		}
@@ -427,11 +427,12 @@ func stillDismissed(missing []string, prev *model.ModelDriftResult) []string {
 	return kept
 }
 
-// undismissedMissing is the missing models of a drift result an admin has not dismissed.
-func undismissedMissing(result *model.ModelDriftResult) []string {
+// undismissedMissing is the missing models of a drift result an admin has not handled yet:
+// neither dismissed nor switched off on the channel (disabled, keyed by the channel's names).
+func undismissedMissing(result *model.ModelDriftResult, disabled map[string]bool) []string {
 	var out []string
 	for _, m := range result.MissingModels {
-		if !slices.Contains(result.DismissedMissing, m) {
+		if !slices.Contains(result.DismissedMissing, m) && !disabled[m] {
 			out = append(out, m)
 		}
 	}
