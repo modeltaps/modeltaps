@@ -61,6 +61,7 @@ export const NOTIFY_KINDS = [
   'supply_paused',
   'supply_resumed',
   'supply_failover',
+  'supply_above_quote',
   'model_library'
 ];
 

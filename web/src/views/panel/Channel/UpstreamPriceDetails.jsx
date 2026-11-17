@@ -34,6 +34,7 @@ export default function UpstreamPriceDetails({
   price,
   upstream,
   sell,
+  cost,
   losses = [],
   align = 'end',
   className,
@@ -46,6 +47,13 @@ export default function UpstreamPriceDetails({
   const free = rows.length === 0 && !price.other;
   const source = price.source || '';
   const sellText = sell && (sell.input != null || sell.output != null) ? `${usd(sell.input ?? 0)} / ${usd(sell.output ?? 0)}` : '';
+  // The channel cost is shown when it differs from the listed price: a fee on top, or a cost ratio.
+  const costText =
+    cost && (cost.fee_rate > 0 || cost.source === 'cost_ratio')
+      ? cost.flat != null
+        ? usd(cost.flat)
+        : `${usd(cost.input ?? 0)} / ${usd(cost.output ?? 0)}`
+      : '';
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -86,8 +94,18 @@ export default function UpstreamPriceDetails({
           </dl>
         )}
 
-        {(sellText || losses.length > 0) && (
+        {(sellText || costText || losses.length > 0) && (
           <div className="space-y-1 border-t border-border pt-2">
+            {costText && (
+              <p className="flex justify-between gap-3">
+                <span className="text-muted-foreground">
+                  {cost.fee_rate > 0
+                    ? t('upstreamPrice.costWithFee', { rate: +(cost.fee_rate * 100).toFixed(2) })
+                    : t('upstreamPrice.cost')}
+                </span>
+                <span className="tabular-nums text-foreground">{costText}</span>
+              </p>
+            )}
             {sellText && (
               <p className="flex justify-between gap-3">
                 <span className="text-muted-foreground">{t('upstreamPrice.sell')}</span>
@@ -134,6 +152,13 @@ UpstreamPriceDetails.propTypes = {
   price: PropTypes.object.isRequired,
   upstream: PropTypes.string.isRequired,
   sell: PropTypes.shape({ input: PropTypes.number, output: PropTypes.number }),
+  cost: PropTypes.shape({
+    fee_rate: PropTypes.number,
+    source: PropTypes.string,
+    input: PropTypes.number,
+    output: PropTypes.number,
+    flat: PropTypes.number
+  }),
   losses: PropTypes.arrayOf(PropTypes.string),
   align: PropTypes.oneOf(['start', 'end']),
   className: PropTypes.string,

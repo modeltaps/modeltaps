@@ -24,6 +24,29 @@ describe('UpstreamPriceCell', () => {
     expect(screen.getByTestId('supply-price-loss')).toBeTruthy();
   });
 
+  it('marks a supply whose channel cost with its fee is above the quote, even at the listed price', () => {
+    show({
+      upstream_price: { model: 'v/m', input: 3, output: 15 },
+      cost: { known: true, source: 'channel_price', fee_rate: 0.05, input: 3.15, output: 15.75, above_quote: true },
+      traffic: 'balanced'
+    });
+    expect(screen.getByTestId('supply-price-loss')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /v\/m|m/ }));
+    expect(screen.getByText(i18n.t('upstreamPrice.costWithFee', { rate: 5 }))).toBeTruthy();
+    expect(screen.getByText('$3.15 / $15.75')).toBeTruthy();
+    expect(screen.getByText(i18n.t('modelSupply.aboveQuote'))).toBeTruthy();
+  });
+
+  it('trusts the channel cost over the listed price when it is not above the quote', () => {
+    show({
+      upstream_price: { model: 'v/m', input: 1, output: 2 },
+      sell_input_price: 0,
+      sell_output_price: 0,
+      cost: { known: true, source: 'cost_ratio', input: 0, output: 0, above_quote: false }
+    });
+    expect(screen.queryByTestId('supply-price-loss')).toBeNull();
+  });
+
   it('says free, and tells a missing entry from a channel without a price list', () => {
     show({ upstream_price: { model: 'v/m', input: 0, output: 0 } });
     expect(screen.getByText('Free')).toBeTruthy();

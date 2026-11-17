@@ -7,6 +7,7 @@ import (
 
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/model"
 
 	"github.com/gin-gonic/gin"
@@ -42,6 +43,8 @@ type modelInfoCatalogItem struct {
 	BoundChannels []boundChannel `json:"bound_channels"`
 	// ModelKind is what the model does (image, video, speech ...); "" is a chat model.
 	ModelKind string `json:"model_kind"`
+	// CostSummary notes supplies above the quoted price or of unknown cost; nil when none.
+	CostSummary *model.ModelCostSummary `json:"cost_summary,omitempty"`
 }
 
 // boundChannelsByModel 建立「模型名 → 渠道」索引（含禁用渠道，按 status 区分），避免逐行查库。
@@ -199,6 +202,12 @@ func GetModelInfoCatalog(c *gin.Context) {
 		return
 	}
 
+	// The cost notes are extra: the catalog is listed without them when supplies cannot be read.
+	costs, err := model.ModelCostSummaries()
+	if err != nil {
+		logger.SysError("model catalog: read supply costs: " + err.Error())
+	}
+
 	items := make([]*modelInfoCatalogItem, 0, len(modelInfos))
 	for _, info := range modelInfos {
 		channels := channelsByModel[info.Model]
@@ -211,6 +220,7 @@ func GetModelInfoCatalog(c *gin.Context) {
 			ModelKind:     model.CatalogModelKind(info.Model, info.Endpoints, info.OutputModalities),
 			VendorSlug:    model.ModelOwnedBysInstance.GetSlug(info.VendorID),
 			BoundChannels: channels,
+			CostSummary:   costs[info.Model],
 		})
 	}
 

@@ -163,6 +163,18 @@ func PreviewModelSupply(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": preview})
 }
 
+// GetCostFloorStats sums up the requests of the last days (days, default 7) charged at the
+// channel cost because it was above the quote, by model, channel and group.
+func GetCostFloorStats(c *gin.Context) {
+	days, _ := strconv.Atoi(c.Query("days"))
+	stats, err := model.GetCostFloorStats(days)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": stats})
+}
+
 // GetPendingUpstreamModels lists new upstream models waiting on channels for an admin: each
 // with the channels it waits on and the public model it most likely belongs to.
 func GetPendingUpstreamModels(c *gin.Context) {

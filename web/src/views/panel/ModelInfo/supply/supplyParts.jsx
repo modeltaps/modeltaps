@@ -219,8 +219,14 @@ export function UpstreamPriceCell({ supply }) {
   }
   const sell = { input: supply.sell_input_price ?? undefined, output: supply.sell_output_price ?? undefined };
   const sellers = [{ model: supply.model, enabled: true, input_price: supply.sell_input_price, output_price: supply.sell_output_price }];
-  const losses =
-    summary.kind === 'tokens'
+  // The channel cost (the price with the channel's fee) decides whether the supply is above the
+  // quote; the upstream price alone misses the fee.
+  const cost = supply.cost?.known ? supply.cost : null;
+  const losses = cost
+    ? cost.above_quote
+      ? [t(supply.traffic === 'backup' ? 'modelSupply.aboveQuoteBackup' : 'modelSupply.aboveQuote')]
+      : []
+    : summary.kind === 'tokens'
       ? ['input', 'output']
           .map((key) => {
             const loss = lossOf(price, sellers, key);
@@ -247,7 +253,7 @@ export function UpstreamPriceCell({ supply }) {
     content = <span className="whitespace-nowrap">{t(`channels.models.price_${summary.kind}`, { price: summary.value })}</span>;
   }
   return (
-    <UpstreamPriceDetails price={price} upstream={supply.upstream_model || supply.model} sell={sell} losses={losses}>
+    <UpstreamPriceDetails price={price} upstream={supply.upstream_model || supply.model} sell={sell} cost={cost} losses={losses}>
       {content}
     </UpstreamPriceDetails>
   );

@@ -88,6 +88,7 @@ import LibrarySheet from './LibrarySheet';
 import { ENDPOINT_LABEL_KEYS, ENDPOINT_VALUES, MODEL_KIND_VALUES, isUnlabeled, modelKindOf, safeJsonArray } from './modelInfoHelpers';
 import { listSupplies } from './supply/supplyApi';
 import { useSupplySwitches, SupplySwitchNote } from './supply/supplyParts';
+import CostFloorNote from './supply/CostFloorNote';
 import { MODEL_STATUSES, countSuppliesByModel, isPublicModelRow, normalizeModelStatus, supplyOrderByModel } from './supply/supplyHelpers';
 import { matchesSearch } from 'utils/textSearch';
 
@@ -135,10 +136,14 @@ const buildFilterFields = (vendors) => [
     'modelInfoPage.modelKind',
     MODEL_KIND_VALUES.map((k) => ({ value: k, labelKey: `modelInfoPage.kindOptions.${k}` }))
   ),
-  singleEnum('labels', 'modelsPage.labeling', [{ value: 'unlabeled', labelKey: 'modelInfoPage.onlyUnlabeled' }])
+  singleEnum('labels', 'modelsPage.labeling', [{ value: 'unlabeled', labelKey: 'modelInfoPage.onlyUnlabeled' }]),
+  singleEnum('cost', 'modelsPage.costFilter', [
+    { value: 'above_quote', labelKey: 'modelsPage.costAboveQuote' },
+    { value: 'cost_unknown', labelKey: 'modelsPage.costUnknown' }
+  ])
 ];
 
-const MODELINFO_FILTER_PARAM_KEYS = ['vendor_id', 'publish', 'visible', 'billing', 'endpoint', 'kind', 'labels'];
+const MODELINFO_FILTER_PARAM_KEYS = ['vendor_id', 'publish', 'visible', 'billing', 'endpoint', 'kind', 'labels', 'cost'];
 // Parameter mapping depends only on key / type / single / paramInclude, not on the vendor
 // options, so URL parsing can use the static description.
 const MODELINFO_FILTER_FIELDS = buildFilterFields({});
@@ -175,6 +180,7 @@ export function filterCatalogRows(rows, { keyword = '', params = {}, aliasesByTa
     if (params.endpoint && !safeJsonArray(row.endpoints).includes(params.endpoint)) return false;
     if (params.kind && modelKindOf(row) !== params.kind) return false;
     if (params.labels === 'unlabeled' && !(row.catalogId > 0 && isUnlabeled(row))) return false;
+    if (params.cost && !(row.cost_summary?.[params.cost] > 0)) return false;
     if (!k) return true;
     return matchesSearch(k, [row.model, row.name, row.alias_of, aliasesByTarget[row.model] || [], row.tags]);
   });
@@ -427,6 +433,7 @@ export default function ModelInfo() {
 
   const stats = useMemo(() => catalogStats(rows), [rows]);
   const unlabeledCount = useMemo(() => modelInfos.filter(isUnlabeled).length, [modelInfos]);
+  const aboveQuoteCount = useMemo(() => modelInfos.filter((m) => m.cost_summary?.above_quote > 0).length, [modelInfos]);
 
   const filtered = useMemo(
     () => sortCatalogRows(filterCatalogRows(rows, { keyword, params, aliasesByTarget }), sort),
@@ -1004,6 +1011,19 @@ export default function ModelInfo() {
       )}
 
       {params.publish && <SupplySwitchNote switches={supplySwitches} className="mt-2" />}
+
+      {aboveQuoteCount > 0 && params.cost !== 'above_quote' && (
+        <p className="mt-2 text-xs text-warning">
+          <button
+            type="button"
+            className="underline-offset-2 hover:underline"
+            onClick={() => handleFilterChange((prev) => ({ ...prev, cost: enumFilterEntry('cost', 'above_quote') }))}
+          >
+            {t('modelsPage.aboveQuoteCount', { count: aboveQuoteCount })}
+          </button>
+        </p>
+      )}
+      <CostFloorNote />
 
       {unlabeledCount > 0 && params.labels !== 'unlabeled' && (
         <p className="mt-2 text-xs text-muted-foreground">

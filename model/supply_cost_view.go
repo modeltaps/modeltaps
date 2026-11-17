@@ -1,0 +1,253 @@
+package model
+
+import (
+	"fmt"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/modeltaps/modeltaps/common/notify"
+)
+
+// How much of a model's traffic a supply takes, as the console shows it next to the channel cost.
+const (
+	SupplyTrafficPrimary  = "primary"  // takes every request of its model (failover, or the only one)
+	SupplyTrafficBalanced = "balanced" // shares requests with others of its tier by weight
+	SupplyTrafficBackup   = "backup"   // available, but only reached when the supplies above fail
+	SupplyTrafficNone     = ""         // disabled, paused, or its channel is off
+)
+
+// SupplyCost is what a supply's channel charges for its model, in USD with the channel's fee,
+// next to the model's quoted price. It is the cost the cost floor charges at least
+// (SupplyCostFloorBilling).
+type SupplyCost struct {
+	Known bool `json:"known"`
+	// Source is where the cost comes from: CostSourceChannelPrice or CostSourceCostRatio.
+	Source  string  `json:"source,omitempty"`
+	FeeRate float64 `json:"fee_rate,omitempty"`
+	// Input and Output are USD per million tokens; Flat is USD per request or per minute for
+	// models priced that way. Only the ones that apply are set.
+	Input  *float64 `json:"input,omitempty"`
+	Output *float64 `json:"output,omitempty"`
+	Flat   *float64 `json:"flat,omitempty"`
+	// AboveQuote is true when some part of the cost is above the model's quoted price (at group
+	// ratio 1): requests served by this supply are charged more than the quote with the floor on.
+	AboveQuote bool `json:"above_quote"`
+}
+
+// aboveQuoteSlack ignores rounding in synced prices.
+const aboveQuoteSlack = 1.000001
+
+// supplyCostOf prices a supply's channel cost against the model's billing price.
+func supplyCostOf(modelName string, ch *Channel, cp *ChannelPrice) *SupplyCost {
+	out := &SupplyCost{}
+	if PricingInstance == nil || ch == nil {
+		return out
+	}
+	catalog := PricingInstance.GetBillingPrice(modelName)
+	if catalog == nil || catalog.Unconfigured {
+		return out
+	}
+	cost, source, ok := SupplyCostPrice(catalog, ch, cp)
+	if !ok {
+		return out
+	}
+	out.Known, out.Source, out.FeeRate = true, source, ch.GetFeeRate()
+	switch catalog.Type {
+	case TimesPriceType, MinutesPriceType:
+		out.Flat = ptrFloat(cost.GetInput() * DollarRate)
+		out.AboveQuote = cost.GetInput() > catalog.GetInput()*aboveQuoteSlack
+	default:
+		out.Input = tokenPricePerMillion(cost.GetInput())
+		out.Output = tokenPricePerMillion(cost.GetOutput())
+		out.AboveQuote = cost.GetInput() > catalog.GetInput()*aboveQuoteSlack ||
+			cost.GetOutput() > catalog.GetOutput()*aboveQuoteSlack
+	}
+	return out
+}
+
+func ptrFloat(v float64) *float64 { return &v }
+
+// markSupplyTraffic sets each view's Traffic: within a model, the first priority tier with an
+// available supply takes the requests (all of it by weight with balance, the heaviest with
+// failover); available supplies of the tiers below are backups.
+func markSupplyTraffic(views []*ModelSupplyView) {
+	byModel := map[string][]*ModelSupplyView{}
+	for _, v := range views {
+		byModel[v.Model] = append(byModel[v.Model], v)
+	}
+	allocation := allocationInForce()
+	now := time.Now().Unix()
+	for name, list := range byModel {
+		var available []*ModelSupplyView
+		for _, v := range list {
+			if _, ok := supplyStateOf(v, name, now); ok {
+				available = append(available, v)
+			}
+		}
+		if len(available) == 0 {
+			continue
+		}
+		sort.SliceStable(available, func(i, j int) bool {
+			if available[i].Priority != available[j].Priority {
+				return available[i].Priority > available[j].Priority
+			}
+			return available[i].EffectiveWeight() > available[j].EffectiveWeight()
+		})
+		top := available[0].Priority
+		failover := false
+		if info := lookupModelInfo(name); info != nil {
+			failover = routingSupplyMode(info, allocation) == SupplyModeFailover
+		}
+		var tier []*ModelSupplyView
+		for _, v := range available {
+			if v.Priority == top {
+				tier = append(tier, v)
+			} else {
+				v.Traffic = SupplyTrafficBackup
+			}
+		}
+		heaviest := tier[0].EffectiveWeight()
+		for _, v := range tier {
+			switch {
+			case len(tier) == 1:
+				v.Traffic = SupplyTrafficPrimary
+			case failover && v.EffectiveWeight() < heaviest:
+				v.Traffic = SupplyTrafficBackup
+			case failover:
+				v.Traffic = SupplyTrafficPrimary
+			default:
+				v.Traffic = SupplyTrafficBalanced
+			}
+		}
+	}
+}
+
+// ModelCostSummary sums up the channel costs of a public model's supplies for the catalog list.
+type ModelCostSummary struct {
+	// AboveQuote counts supplies that take traffic (primary or balanced) and cost more than the
+	// quote; AboveQuoteBackup counts backups that do.
+	AboveQuote       int `json:"above_quote"`
+	AboveQuoteBackup int `json:"above_quote_backup"`
+	// CostUnknown counts supplies taking traffic whose cost is not known: the floor cannot
+	// protect them.
+	CostUnknown int `json:"cost_unknown"`
+	// MaxInput and MaxOutput are the highest channel cost per million tokens among the supplies
+	// above the quote that take traffic; MaxFlat the same for per-request or per-minute models.
+	MaxInput  *float64 `json:"max_input,omitempty"`
+	MaxOutput *float64 `json:"max_output,omitempty"`
+	MaxFlat   *float64 `json:"max_flat,omitempty"`
+}
+
+// ModelCostSummaries returns the summary of every public model that has a supply worth noting
+// (above the quote or of unknown cost); models with nothing to note are left out.
+func ModelCostSummaries() (map[string]*ModelCostSummary, error) {
+	views, err := GetModelSupplyViews("", 0)
+	if err != nil {
+		return nil, err
+	}
+	return summarizeSupplyCosts(views), nil
+}
+
+func summarizeSupplyCosts(views []*ModelSupplyView) map[string]*ModelCostSummary {
+	out := map[string]*ModelCostSummary{}
+	get := func(name string) *ModelCostSummary {
+		if s := out[name]; s != nil {
+			return s
+		}
+		s := &ModelCostSummary{}
+		out[name] = s
+		return s
+	}
+	maxOf := func(cur **float64, v *float64) {
+		if v != nil && (*cur == nil || *v > **cur) {
+			*cur = ptrFloat(*v)
+		}
+	}
+	for _, v := range views {
+		if v.Traffic == SupplyTrafficNone || v.Cost == nil {
+			continue
+		}
+		serving := v.Traffic != SupplyTrafficBackup
+		switch {
+		case !v.Cost.Known && serving:
+			get(v.Model).CostUnknown++
+		case v.Cost.AboveQuote && serving:
+			s := get(v.Model)
+			s.AboveQuote++
+			maxOf(&s.MaxInput, v.Cost.Input)
+			maxOf(&s.MaxOutput, v.Cost.Output)
+			maxOf(&s.MaxFlat, v.Cost.Flat)
+		case v.Cost.AboveQuote:
+			get(v.Model).AboveQuoteBackup++
+		}
+	}
+	return out
+}
+
+// supplyCostChannelColumns are the channel columns supplyCostOf reads.
+var supplyCostChannelColumns = []string{"fee_rate", "cost_ratio"}
+
+// AboveQuoteSnapshot returns the supplies that take traffic and cost more than the quote, by
+// supply id, to compare before and after a price sync. nil when the supplies cannot be read.
+func AboveQuoteSnapshot() map[int]*ModelSupplyView {
+	views, err := GetModelSupplyViews("", 0)
+	if err != nil {
+		return nil
+	}
+	out := map[int]*ModelSupplyView{}
+	for _, v := range views {
+		if v.Cost != nil && v.Cost.AboveQuote && (v.Traffic == SupplyTrafficPrimary || v.Traffic == SupplyTrafficBalanced) {
+			out[v.Id] = v
+		}
+	}
+	return out
+}
+
+// NotifyNewAboveQuote tells admins about supplies that take traffic and cost more than the quote
+// now but did not in before (a snapshot taken by AboveQuoteSnapshot before a price sync).
+func NotifyNewAboveQuote(before map[int]*ModelSupplyView) {
+	if before == nil {
+		return
+	}
+	after := AboveQuoteSnapshot()
+	var lines []string
+	for id, v := range after {
+		if before[id] != nil {
+			continue
+		}
+		lines = append(lines, "- "+v.Model+" via "+v.ChannelName+": "+describeSupplyCost(v))
+	}
+	if len(lines) == 0 {
+		return
+	}
+	sort.Strings(lines)
+	body := "These supplies now cost more than the model's quoted price and take requests. " +
+		"With the cost floor on, those requests are charged the channel cost; otherwise the " +
+		"difference is lost. Raise the quote, move the supply down, or use a cheaper upstream.\n\n" +
+		strings.Join(lines, "\n")
+	notify.SendKind(notify.KindSupplyAboveQuote, "Supplies above the quoted price", body)
+}
+
+func describeSupplyCost(v *ModelSupplyView) string {
+	c := v.Cost
+	fee := ""
+	if c.FeeRate > 0 {
+		fee = fmt.Sprintf(" incl. %.4g%% fee", c.FeeRate*100)
+	}
+	if c.Flat != nil {
+		return fmt.Sprintf("$%.4g%s", *c.Flat, fee)
+	}
+	in, out := 0.0, 0.0
+	if c.Input != nil {
+		in = *c.Input
+	}
+	if c.Output != nil {
+		out = *c.Output
+	}
+	quote := ""
+	if v.SellInputPrice != nil && v.SellOutputPrice != nil {
+		quote = fmt.Sprintf(" (quote $%.4g / $%.4g)", *v.SellInputPrice, *v.SellOutputPrice)
+	}
+	return fmt.Sprintf("$%.4g / $%.4g per 1M%s%s", in, out, fee, quote)
+}

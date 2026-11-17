@@ -266,9 +266,10 @@ type GroupLoss struct {
 }
 
 // ChannelGroupLosses lists the channel's groups priced below its cost ratio. A channel
-// without a cost ratio has no known cost and reports nothing.
+// without a cost ratio has no known cost and reports nothing. With the cost floor on
+// (SupplyCostFloorBilling) a known cost is never undercut, so nothing is reported either.
 func ChannelGroupLosses(channel *Channel) []GroupLoss {
-	if channel == nil || channel.CostRatio == nil || *channel.CostRatio <= 0 {
+	if channel == nil || channel.CostRatio == nil || *channel.CostRatio <= 0 || config.SupplyCostFloorBilling {
 		return nil
 	}
 	cost := *channel.CostRatio

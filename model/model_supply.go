@@ -135,6 +135,10 @@ type ModelSupplyView struct {
 	// tokens, to compare with the upstream price; nil when it is not sold per token.
 	SellInputPrice  *float64 `json:"sell_input_price"`
 	SellOutputPrice *float64 `json:"sell_output_price"`
+	// Cost is what the channel charges for the model with its fee, against the quoted price.
+	Cost *SupplyCost `json:"cost"`
+	// Traffic says whether the supply takes requests now (SupplyTraffic*).
+	Traffic string `json:"traffic"`
 }
 
 // GetModelSupplyViews lists supplies like GetModelSupplies, each with its channel's name,
@@ -170,7 +174,8 @@ func GetModelSupplyViews(modelName string, channelId int) ([]*ModelSupplyView, e
 	byId := map[int]*Channel{}
 	if len(ids) > 0 {
 		var channels []*Channel
-		if err := DB.Select("id", "name", "status", "type", "tag", "group", "priority", "weight").Where("id IN ?", ids).Find(&channels).Error; err != nil {
+		columns := append([]string{"id", "name", "status", "type", "tag", "group", "priority", "weight"}, supplyCostChannelColumns...)
+		if err := DB.Select(columns).Where("id IN ?", ids).Find(&channels).Error; err != nil {
 			return nil, err
 		}
 		for _, ch := range channels {
@@ -208,8 +213,10 @@ func GetModelSupplyViews(modelName string, channelId int) ([]*ModelSupplyView, e
 			view.ChannelGroup = ch.Group
 			view.ChannelPriority, view.ChannelWeight = ch.GetPriority(), ch.GetWeight()
 		}
+		view.Cost = supplyCostOf(s.Model, byId[s.ChannelId], view.UpstreamPrice)
 		views = append(views, view)
 	}
+	markSupplyTraffic(views)
 	return views, nil
 }
 

@@ -892,7 +892,19 @@
     "vendorUnused": "未使用",
     "vendorModels": "{{count}} 個模型",
     "vendorNoChannel": "{{count}} 無渠道",
-    "viewVendorModels": "查看模型"
+    "viewVendorModels": "查看模型",
+    "aboveQuoteTip": "{{count}} 條承接請求的線路渠道成本高於報價（最高 {{max}}）。開啟渠道成本保底後，這些請求按渠道成本扣費。",
+    "costUnknownTip": "{{count}} 條承接請求的線路渠道成本未知，渠道成本保底管不到。",
+    "costFilter": "渠道成本",
+    "costAboveQuote": "高於報價",
+    "costUnknown": "成本未知",
+    "aboveQuoteCount": "{{count}} 個模型有承接請求的線路高於報價",
+    "costFloorNote": "近 {{days}} 天有 {{count}} 次請求按渠道成本扣費，比報價多收 {{extra}}",
+    "costFloorHint": "這些線路的渠道成本高於報價。可以調高報價、把線路往後排，或把渠道放進單獨的分組並設倍率。",
+    "costFloorModel": "模型",
+    "costFloorChannel": "渠道 · 分組",
+    "costFloorRequests": "請求",
+    "costFloorExtra": "多收"
   },
   "brandIconPicker": {
     "mode": {
@@ -1739,6 +1751,10 @@
     "oidc_login_failed": "登入失敗，請重試",
     "log_cleanup_started": "日誌清理已在背景開始，進度見系統日誌",
     "log_cleanup_running": "已有日誌清理任務在執行，請稍後再試",
+    "log_export_range_required": "匯出需要選擇時間範圍，最長 {{max_days}} 天",
+    "log_export_range_too_long": "單次匯出最長 {{max_days}} 天，請縮短時間範圍",
+    "log_export_too_many_rows": "本次匯出有 {{count}} 行，超過 {{max_rows}} 行的上限，請縮短時間範圍或增加篩選條件",
+    "log_export_running": "已有匯出在進行，請等它完成後再試",
     "channel_drift_rule_invalid": "忽略規則裏的正則表達式無效：{{rule}}",
     "routing_policy_scoring_invalid": "評分方式只能是自動、logprobs 或自報",
     "routing_policy_model_unavailable": "{{field}} 對本組織不可用（{{model}}）",
@@ -3190,7 +3206,9 @@
       "failed": "順序載入失敗",
       "more": "+{{count}}",
       "moreTip_other": "另有 {{count}} 條線路作為後備"
-    }
+    },
+    "aboveQuote": "渠道成本（含費率）高於報價：開啟渠道成本保底後，經這條線路的請求按渠道成本扣費。",
+    "aboveQuoteBackup": "渠道成本高於報價；這條是備用線路，前面的線路都失敗時才承接請求。"
   },
   "settingsUi": {
     "search": {
@@ -4425,7 +4443,9 @@
     "row_audioHour": "音訊時長（折合）",
     "unit_minute": "分鐘",
     "unit_hour": "小時",
-    "filterSame": "只看「{{kind}}」的模型"
+    "filterSame": "只看「{{kind}}」的模型",
+    "cost": "渠道成本",
+    "costWithFee": "渠道成本（含 {{rate}}% 費率）"
   },
   "intakeRules": {
     "defaultNames": {

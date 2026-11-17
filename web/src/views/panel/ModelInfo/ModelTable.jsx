@@ -8,6 +8,7 @@ import {
   ArrowLeftRight,
   ArrowUp,
   ArrowUpDown,
+  CircleHelp,
   Copy,
   DollarSign,
   Eye,
@@ -17,7 +18,8 @@ import {
   MoreHorizontal,
   Network,
   Pencil,
-  Trash2
+  Trash2,
+  TrendingUp
 } from 'lucide-react';
 
 import { GROW_COLUMN, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -226,6 +228,52 @@ export function PriceCell({ price, unit, hideUnit = false }) {
 }
 
 PriceCell.propTypes = { price: PropTypes.object, unit: PropTypes.string, hideUnit: PropTypes.bool };
+
+// A mark before the price when supplies that take requests cost more than the quote (they are
+// charged the channel cost with the cost floor on) or have no known cost. A click opens the
+// model's supplies.
+export function CostMark({ summary, unit, onOpen }) {
+  const { t } = useTranslation();
+  if (!summary || (!summary.above_quote && !summary.cost_unknown)) return null;
+  const isM = unit === 'M';
+  const lines = [];
+  if (summary.above_quote > 0) {
+    const max =
+      summary.max_flat != null
+        ? '$' + +summary.max_flat.toPrecision(4)
+        : `${ValueFormatter(summary.max_input ?? 0, true, isM)} / ${ValueFormatter(summary.max_output ?? 0, true, isM)}`;
+    lines.push(t('modelsPage.aboveQuoteTip', { count: summary.above_quote, max }));
+  }
+  if (summary.cost_unknown > 0) lines.push(t('modelsPage.costUnknownTip', { count: summary.cost_unknown }));
+  const above = summary.above_quote > 0;
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            data-testid="cost-mark"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen?.();
+            }}
+            aria-label={lines.join(' ')}
+            className={cn('inline-flex shrink-0 rounded-sm', above ? 'text-warning' : 'text-muted-foreground')}
+          >
+            {above ? <TrendingUp className="size-3.5" /> : <CircleHelp className="size-3.5" />}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs space-y-1 text-xs">
+          {lines.map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+CostMark.propTypes = { summary: PropTypes.object, unit: PropTypes.string, onOpen: PropTypes.func };
 
 // Second part of the model cell: not in the catalog / alias target / display name · aliases · tags.
 function modelSubtitle(t, row) {
@@ -543,7 +591,12 @@ export default function ModelTable({
         id: 'price',
         header: () => <PriceHeader unit={unit} onUnitChange={onUnitChange} />,
         meta: { className: 'text-right', dim: true },
-        cell: (c) => <PriceCell price={c.row.original.price} unit={unit} hideUnit />
+        cell: (c) => (
+          <span className="inline-flex items-center justify-end gap-1">
+            <CostMark summary={c.row.original.cost_summary} unit={unit} onOpen={() => onOpen(c.row.original, 'supplies')} />
+            <PriceCell price={c.row.original.price} unit={unit} hideUnit />
+          </span>
+        )
       },
       {
         id: 'state',

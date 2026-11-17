@@ -22,6 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cost only when they were charged it, never the channel or its fee source. Channels have a fee
   rate and fee source (Advanced tab): new Requesty channels start at 5% and OpenRouter at 5.5%,
   and existing channels of these types without a fee get the same.
+- The model catalog shows where a channel costs more than the quote. Supplies list their channel
+  cost with the channel's fee and say whether they take requests now (by weight, as the only or
+  heaviest supply, or as a backup); a supply above the quoted price is marked, judged on the cost
+  with the fee rather than the listed price. The catalog marks the price of models whose supplies
+  that take requests are above the quote or have no known cost, with a "Channel cost" filter for
+  either, and notes how many requests of the last 7 days were charged at the channel cost and by
+  how much, by model, channel and group. A new notice kind reports supplies that a price sync put
+  above the quote. With the cost floor on, the group loss warning on cost ratios is no longer shown.
 - Endpoints for coding agents. Claude Code points at `/claude-code` (its model list shows this
   site's models as `claude-code/<model>`, with `[1m]` on models with a context of a million
   tokens or more, and the prefix and suffix are removed before forwarding), Codex at `/codex/v1`

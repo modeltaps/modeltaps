@@ -886,7 +886,19 @@
     "vendorUnused": "未使用",
     "vendorModels": "{{count}} モデル",
     "vendorNoChannel": "{{count}} チャネルなし",
-    "viewVendorModels": "モデルを見る"
+    "viewVendorModels": "モデルを見る",
+    "aboveQuoteTip": "リクエストを受けている {{count}} 本のルートのチャネル原価が提示価格を上回っています（最大 {{max}}）。原価下限をオンにすると、これらのリクエストはチャネル原価で課金されます。",
+    "costUnknownTip": "リクエストを受けている {{count}} 本のルートは原価が不明で、原価下限が効きません。",
+    "costFilter": "チャネル原価",
+    "costAboveQuote": "提示価格超え",
+    "costUnknown": "原価不明",
+    "aboveQuoteCount": "{{count}} 個のモデルに、提示価格を上回るリクエスト受付中のルートがあります",
+    "costFloorNote": "過去 {{days}} 日で {{count}} 件のリクエストをチャネル原価で課金し、提示価格より {{extra}} 多く課金しました",
+    "costFloorHint": "これらのルートはチャネル原価が提示価格を上回っています。提示価格を上げる、ルートの順位を下げる、またはチャネルを専用グループに入れて倍率を設定してください。",
+    "costFloorModel": "モデル",
+    "costFloorChannel": "チャネル · グループ",
+    "costFloorRequests": "リクエスト",
+    "costFloorExtra": "超過分"
   },
   "brandIconPicker": {
     "mode": {
@@ -1733,6 +1745,10 @@
     "oidc_login_failed": "ログインに失敗しました。もう一度お試しください",
     "log_cleanup_started": "ログのクリーンアップをバックグラウンドで開始しました。進捗はシステムログに記録されます",
     "log_cleanup_running": "ログのクリーンアップがすでに実行中です。しばらくしてからもう一度お試しください",
+    "log_export_range_required": "エクスポートするには {{max_days}} 日以内の期間を選択してください",
+    "log_export_range_too_long": "エクスポートできる期間は最大 {{max_days}} 日です。期間を短くしてください",
+    "log_export_too_many_rows": "このエクスポートは {{count}} 行あり、上限の {{max_rows}} 行を超えています。期間を短くするか、絞り込み条件を追加してください",
+    "log_export_running": "別のエクスポートを実行中です。完了してからもう一度お試しください",
     "channel_drift_rule_invalid": "無視ルールの正規表現が無効です：{{rule}}",
     "routing_policy_scoring_invalid": "スコアリングは auto、logprobs、自己申告のいずれかを指定してください",
     "routing_policy_model_unavailable": "{{field}} はこの組織では利用できません（{{model}}）",
@@ -3186,7 +3202,9 @@
       "failed": "順序を読み込めませんでした",
       "more": "+{{count}}",
       "moreTip_other": "ほかに {{count}} 件の供給が予備"
-    }
+    },
+    "aboveQuote": "チャネル原価（手数料込み）が提示価格を上回っています。原価下限をオンにすると、このルートのリクエストはチャネル原価で課金されます。",
+    "aboveQuoteBackup": "チャネル原価が提示価格を上回っています。このルートは予備で、上位のルートが失敗したときだけリクエストを受けます。"
   },
   "settingsUi": {
     "search": {
@@ -4417,7 +4435,9 @@
     "row_audioHour": "音声（換算）",
     "unit_minute": "分",
     "unit_hour": "時間",
-    "filterSame": "「{{kind}}」のモデルだけ表示"
+    "filterSame": "「{{kind}}」のモデルだけ表示",
+    "cost": "チャネル原価",
+    "costWithFee": "チャネル原価（手数料 {{rate}}% 込み）"
   },
   "intakeRules": {
     "defaultNames": {

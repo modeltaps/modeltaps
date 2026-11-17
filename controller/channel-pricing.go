@@ -144,6 +144,8 @@ func SyncAllChannelsOwnPricing() (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	// Supplies the new prices put above the quote are reported once the sync is done.
+	defer model.NotifyNewAboveQuote(model.AboveQuoteSnapshot())
 
 	// Channels that keep an upstream price list without feeding the catalog (the preset
 	// platforms, priced from models.dev) refresh their list here too.

@@ -29,13 +29,15 @@ const (
 	KindModelLibrary = "model_library"
 	// KindSubscriptionUsage reports a usage window of a subscription channel reaching an alert tier.
 	KindSubscriptionUsage = "subscription_usage"
+	// KindSupplyAboveQuote reports supplies that take traffic and newly cost more than the quote.
+	KindSupplyAboveQuote = "supply_above_quote"
 )
 
 // Kinds lists every notice kind, in the order the settings page shows them.
 var Kinds = []string{
 	KindChannelDisabled, KindChannelEnabled, KindChannelTest, KindLowBalance,
 	KindSubscriptionUsage, KindPriceChange, KindModelDrift, KindModelConsistency, KindCredential,
-	KindSupplyPaused, KindSupplyResumed, KindSupplyFailover, KindModelLibrary,
+	KindSupplyPaused, KindSupplyResumed, KindSupplyFailover, KindSupplyAboveQuote, KindModelLibrary,
 }
 
 // KindEnabled reports whether notices of this kind are sent.

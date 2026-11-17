@@ -887,7 +887,19 @@
     "vendorUnused": "Unused",
     "vendorModels": "{{count}} models",
     "vendorNoChannel": "{{count}} without channel",
-    "viewVendorModels": "View models"
+    "viewVendorModels": "View models",
+    "aboveQuoteTip": "{{count}} supplies taking requests cost more than the quote (up to {{max}}). With the cost floor on, their requests are charged the channel cost.",
+    "costUnknownTip": "{{count}} supplies taking requests have no known cost: the cost floor cannot protect them.",
+    "costFilter": "Channel cost",
+    "costAboveQuote": "Above the quote",
+    "costUnknown": "Cost unknown",
+    "aboveQuoteCount": "{{count}} models have supplies taking requests above the quoted price",
+    "costFloorNote": "Last {{days}} days: {{count}} requests charged at the channel cost, {{extra}} above the quote",
+    "costFloorHint": "These supplies cost more than the quote. Raise the quote, move the supply down, or put the channel in a group of its own with its own ratio.",
+    "costFloorModel": "Model",
+    "costFloorChannel": "Channel · group",
+    "costFloorRequests": "Requests",
+    "costFloorExtra": "Above quote"
   },
   "brandIconPicker": {
     "mode": {
@@ -1823,6 +1835,10 @@
     "oidc_login_failed": "Sign-in failed. Try again.",
     "log_cleanup_started": "Log cleanup started in the background. Progress is written to the system log.",
     "log_cleanup_running": "A log cleanup is already running. Try again later.",
+    "log_export_range_required": "Choose a time range of at most {{max_days}} days to export.",
+    "log_export_range_too_long": "Exports cover at most {{max_days}} days. Choose a shorter time range.",
+    "log_export_too_many_rows": "This export has {{count}} rows, more than the limit of {{max_rows}}. Choose a shorter time range or add filters.",
+    "log_export_running": "An export is already running. Wait for it to finish and try again.",
     "channel_drift_rule_invalid": "Invalid regular expression in the ignore rules: {{rule}}",
     "routing_policy_scoring_invalid": "Scoring must be auto, logprobs or self-reported",
     "routing_policy_model_unavailable": "{{field}} is not available to this organization ({{model}})",
@@ -3294,7 +3310,9 @@
       "more": "+{{count}}",
       "moreTip_one": "{{count}} more supply backs it up",
       "moreTip_other": "{{count}} more supplies back it up"
-    }
+    },
+    "aboveQuote": "The channel cost, with its fee, is above the quote: with the cost floor on, requests through this supply are charged the channel cost.",
+    "aboveQuoteBackup": "The channel cost is above the quote; this supply is a backup and only takes requests when the ones above fail."
   },
   "settingsUi": {
     "search": {
@@ -4530,7 +4548,9 @@
     "row_audioHour": "Audio (same rate)",
     "unit_minute": "minute",
     "unit_hour": "hour",
-    "filterSame": "Show only models priced: {{kind}}"
+    "filterSame": "Show only models priced: {{kind}}",
+    "cost": "Channel cost",
+    "costWithFee": "Channel cost (incl. {{rate}}% fee)"
   },
   "intakeRules": {
     "defaultNames": {
