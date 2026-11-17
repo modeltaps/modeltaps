@@ -238,14 +238,18 @@ cp <交付包目录>/.env.example ./.env
 
 3. 编辑 `.env` 填入密钥，**不要**直接修改 `docker-compose.yml` 中的密钥：
 
-`docker-compose.yml` 中的密钥全部写成 `${VAR:?...}`，会自动从同目录的 `.env` 读取；任一项缺失时 `docker-compose up` 会直接报错退出。至少需要填写 `SESSION_SECRET`、`USER_TOKEN_SECRET`、`MYSQL_PASSWORD`、`MYSQL_ROOT_PASSWORD`，取值请用命令生成：
+`docker-compose.yml` 中的密钥全部写成 `${VAR:?...}`，会自动从同目录的 `.env` 读取；任一项缺失时 `docker-compose up` 会直接报错退出。至少需要填写 `SESSION_SECRET`、`USER_TOKEN_SECRET`、`MYSQL_PASSWORD`、`MYSQL_ROOT_PASSWORD`、`REDIS_PASSWORD`，取值请用命令生成：
 
 ```bash
 # 会话与令牌密钥
 openssl rand -base64 48 | tr -d '\n'; echo
 # 数据库口令
 openssl rand -base64 24 | tr -d '\n'; echo
+# Redis 口令（会拼进 REDIS_CONN_STRING，须用 URL 安全的十六进制）
+openssl rand -hex 32
 ```
+
+内置的 Redis 只接受带口令的连接，`docker-compose.yml` 会把 `REDIS_PASSWORD` 同时交给 Redis 和网关的 `REDIS_CONN_STRING`，无需另行配置。
 
 写好后收紧文件权限：
 
@@ -475,6 +479,12 @@ docker rm -f modeltaps && docker run -d ...   # 用原来的启动命令重新�
 - **可以关闭**：后台「系统设置 → 登录方式 → 管理员应急登录」（`AdminLoginEnabled`，默认开）能关掉该入口；关闭后 `/login/admin` 与 root 的本站密码、通行密钥一并失效，只剩身份提供方一条路，请确认提供方自身有灾备再关。
 - **切换前置**：切换到外部身份提供方**之前**，请先为 root 设置一个强密码（建议 16 位以上，保存在密码管理器中），并在「设置 → 登录与安全 → 登录验证 → 通行密钥」注册至少一枚通行密钥，作为第二条不依赖身份提供方的路径。
 - **随时轮换**：外部模式下 root 仍可在「设置 → 登录与安全 → 管理员应急登录」修改该密码、增删通行密钥；其余账号在此状态下不能设置或修改本站密码。
+- **两步验证**：root 可在「设置 → 登录与安全 → 管理员应急登录 → 两步验证」开启。开启后应急密码登录在密码之后还要输入验证器 App 里的验证码或一个恢复码；用通行密钥登录不需要。验证器和所有恢复码都丢失时，只能在数据库里删掉 root 在 `user_totps` 表中的那一行（第一条语句顺带清掉剩余的恢复码），之后 root 只凭密码即可登录，登录后请重新开启：
+
+  ```sql
+  DELETE FROM user_totp_recovery_codes WHERE user_id IN (SELECT id FROM users WHERE role = 100);
+  DELETE FROM user_totps WHERE user_id IN (SELECT id FROM users WHERE role = 100);
+  ```
 - **`ROOT_PASSWORD` 只是初始值**：该环境变量仅在首次建库（数据库中还没有任何用户）时生效，之后修改或删除都不影响已存在的 root 密码，因此不能当作逃生手段。参见 [环境变量](./env.md#环境变量说明) 的 `ROOT_PASSWORD` 条目。
 
 ## 多机部署

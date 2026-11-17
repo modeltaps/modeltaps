@@ -238,14 +238,18 @@ cp <交付包目錄>/.env.example ./.env
 
 3. 編輯 `.env` 填入密鑰，**不要**直接修改 `docker-compose.yml` 中的密鑰：
 
-`docker-compose.yml` 中的密鑰全部寫成 `${VAR:?...}`，會自動從同目錄的 `.env` 讀取；任一項缺失時 `docker-compose up` 會直接報錯退出。至少需要填寫 `SESSION_SECRET`、`USER_TOKEN_SECRET`、`MYSQL_PASSWORD`、`MYSQL_ROOT_PASSWORD`，取值請用命令生成：
+`docker-compose.yml` 中的密鑰全部寫成 `${VAR:?...}`，會自動從同目錄的 `.env` 讀取；任一項缺失時 `docker-compose up` 會直接報錯退出。至少需要填寫 `SESSION_SECRET`、`USER_TOKEN_SECRET`、`MYSQL_PASSWORD`、`MYSQL_ROOT_PASSWORD`、`REDIS_PASSWORD`，取值請用命令生成：
 
 ```bash
 # 會話與令牌密鑰
 openssl rand -base64 48 | tr -d '\n'; echo
 # 數據庫口令
 openssl rand -base64 24 | tr -d '\n'; echo
+# Redis 口令（會拼進 REDIS_CONN_STRING，須用 URL 安全的十六進制）
+openssl rand -hex 32
 ```
+
+內置的 Redis 只接受帶口令的連線，`docker-compose.yml` 會把 `REDIS_PASSWORD` 同時交給 Redis 和網關的 `REDIS_CONN_STRING`，無需另行設定。
 
 寫好後收緊檔案權限：
 
@@ -475,6 +479,12 @@ docker rm -f modeltaps && docker run -d ...   # 用原來的啟動命令重新�
 - **可以關閉**：後台「系統設定 → 登入方式 → 管理員應急登入」（`AdminLoginEnabled`，預設開啟）能關掉該入口；關閉後 `/login/admin` 與 root 的本站密碼、通行密鑰一併失效，只剩身份提供方一條路，請確認提供方自身有災備再關。
 - **切換前置**：切換到外部身份提供方**之前**，請先為 root 設定一個強密碼（建議 16 位以上，保存在密碼管理器中），並在「設定 → 登入與安全 → 登入方式 → 通行密鑰」註冊至少一枚通行密鑰，作為第二條不依賴身份提供方的路徑。
 - **隨時輪換**：外部模式下 root 仍可在「設定 → 登入與安全 → 管理員應急登入」修改該密碼、增刪通行密鑰；其餘帳戶在此狀態下不能設定或修改本站密碼。
+- **兩步驗證**：root 可在「設定 → 登入與安全 → 管理員應急登入 → 兩步驗證」開啟。開啟後應急密碼登入在密碼之後還要輸入驗證器 App 裡的驗證碼或一個恢復碼；用通行密鑰登入不需要。驗證器和所有恢復碼都遺失時，只能在數據庫裡刪掉 root 在 `user_totps` 表中的那一行（第一條語句順帶清掉剩餘的恢復碼），之後 root 只憑密碼即可登入，登入後請重新開啟：
+
+  ```sql
+  DELETE FROM user_totp_recovery_codes WHERE user_id IN (SELECT id FROM users WHERE role = 100);
+  DELETE FROM user_totps WHERE user_id IN (SELECT id FROM users WHERE role = 100);
+  ```
 - **`ROOT_PASSWORD` 只是初始值**：該環境變數僅在首次建庫（數據庫中還沒有任何用戶）時生效，之後修改或刪除都不影響已存在的 root 密碼，因此不能當作逃生手段。參見 [環境變數](./env.md#環境變數說明) 的 `ROOT_PASSWORD` 條目。
 
 ## 多機部署

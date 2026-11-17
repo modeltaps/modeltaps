@@ -65,6 +65,20 @@ jobs:
       - name: Build
         run: go build ./...
 
+      # Fails on known vulnerabilities in code the module actually calls (dependencies and the
+      # standard library of the toolchain in go.mod); unreachable ones are only listed. The
+      # toolchain check makes sure the standard library being scanned is the one releases ship.
+      - name: Vulnerability check
+        run: |
+          want=$(go mod edit -json | jq -r .Toolchain)
+          have=$(go env GOVERSION)
+          if [ "$want" != "$have" ]; then
+            echo "::error::running $have, but go.mod pins toolchain $want"
+            exit 1
+          fi
+          go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+          "$(go env GOPATH)/bin/govulncheck" ./...
+
       # -race guards the project's core concurrency work (atomic budget/period
       # accrual, redemption single-winner, order locks) which plain `go test`
       # cannot catch. CGO is already on (go-sqlite3), which -race requires.

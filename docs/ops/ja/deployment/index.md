@@ -238,14 +238,18 @@ cp <配布パッケージのディレクトリ>/.env.example ./.env
 
 3. `.env` を編集して秘密鍵を記入します。`docker-compose.yml` 内の秘密鍵を直接変更**しないでください**。
 
-`docker-compose.yml` の秘密鍵はすべて `${VAR:?...}` の形式で書かれており、同じディレクトリの `.env` から自動的に読み込まれます。いずれかが欠けている場合、`docker-compose up` はエラーで終了します。少なくとも `SESSION_SECRET`、`USER_TOKEN_SECRET`、`MYSQL_PASSWORD`、`MYSQL_ROOT_PASSWORD` を記入する必要があります。値は次のコマンドで生成してください。
+`docker-compose.yml` の秘密鍵はすべて `${VAR:?...}` の形式で書かれており、同じディレクトリの `.env` から自動的に読み込まれます。いずれかが欠けている場合、`docker-compose up` はエラーで終了します。少なくとも `SESSION_SECRET`、`USER_TOKEN_SECRET`、`MYSQL_PASSWORD`、`MYSQL_ROOT_PASSWORD`、`REDIS_PASSWORD` を記入する必要があります。値は次のコマンドで生成してください。
 
 ```bash
 # セッションとトークンの秘密鍵
 openssl rand -base64 48 | tr -d '\n'; echo
 # データベースのパスワード
 openssl rand -base64 24 | tr -d '\n'; echo
+# Redis のパスワード（REDIS_CONN_STRING に埋め込まれるため、URL セーフな 16 進数を使用）
+openssl rand -hex 32
 ```
+
+同梱の Redis はパスワード付きの接続しか受け付けません。`docker-compose.yml` が `REDIS_PASSWORD` を Redis とゲートウェイの `REDIS_CONN_STRING` の両方に渡すため、追加の設定は不要です。
 
 作成後はファイル権限を強化します。
 
@@ -475,6 +479,12 @@ docker rm -f modeltaps && docker run -d ...   # 元の起動コマンドで再�
 - **無効にできます**：管理画面「システム設定 → ログイン方式 → 管理者の緊急ログイン」（`AdminLoginEnabled`、既定は有効）でこの入口を閉じられます。閉じると `/login/admin` と root の本サイトのパスワード・パスキーも使えなくなり、ID プロバイダーだけが唯一の経路になるため、プロバイダー側に災害対策があることを確認してから無効にしてください。
 - **切り替えの前提**：外部 ID プロバイダーへ切り替える**前に**、root に強力なパスワード（16 文字以上、パスワードマネージャーで保管）を設定し、「設定 → ログインとセキュリティ → ログイン方法 → パスキー」でパスキーを 1 つ以上登録してください。ID プロバイダーに依存しない 2 本目の経路になります。
 - **いつでもローテーション可能**：外部モードでも root は「設定 → ログインとセキュリティ → 管理者の緊急ログイン」でこのパスワードを変更し、パスキーを追加・削除できます。他のアカウントはこの状態では本サイトのパスワードを設定・変更できません。
+- **2 段階認証**：root は「設定 → ログインとセキュリティ → 管理者の緊急ログイン → 2 段階認証」で有効にできます。有効にすると、緊急用パスワードでのログインではパスワードのあとに認証アプリのコードかリカバリーコードを 1 つ求められます。パスキーでのログインでは求められません。認証アプリとリカバリーコードをすべて失った場合は、データベースで `user_totps` テーブルの root の行を削除するしかありません（1 つ目の文で残りのリカバリーコードも削除します）。その後 root はパスワードだけでログインできるので、ログイン後に 2 段階認証を有効にし直してください。
+
+  ```sql
+  DELETE FROM user_totp_recovery_codes WHERE user_id IN (SELECT id FROM users WHERE role = 100);
+  DELETE FROM user_totps WHERE user_id IN (SELECT id FROM users WHERE role = 100);
+  ```
 - **`ROOT_PASSWORD` は初期値にすぎません**：この環境変数はデータベースの初回作成時（ユーザーがまだ存在しないとき）にのみ有効です。その後に変更・削除しても既存の root パスワードには影響しないため、緊急手段としては使えません。[環境変数](./env.md#環境変数の説明) の `ROOT_PASSWORD` の項目を参照してください。
 
 ## マルチサーバーでのデプロイ

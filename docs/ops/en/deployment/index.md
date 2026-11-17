@@ -238,14 +238,18 @@ cp <delivery package directory>/.env.example ./.env
 
 3. Edit `.env` to fill in the secrets. **Do not** edit the secrets directly in `docker-compose.yml`.
 
-All secrets in `docker-compose.yml` are written as `${VAR:?...}` and are read automatically from the `.env` file in the same directory; if any of them is missing, `docker-compose up` exits with an error. At minimum you must provide `SESSION_SECRET`, `USER_TOKEN_SECRET`, `MYSQL_PASSWORD` and `MYSQL_ROOT_PASSWORD`. Generate the values with:
+All secrets in `docker-compose.yml` are written as `${VAR:?...}` and are read automatically from the `.env` file in the same directory; if any of them is missing, `docker-compose up` exits with an error. At minimum you must provide `SESSION_SECRET`, `USER_TOKEN_SECRET`, `MYSQL_PASSWORD`, `MYSQL_ROOT_PASSWORD` and `REDIS_PASSWORD`. Generate the values with:
 
 ```bash
 # session and token secrets
 openssl rand -base64 48 | tr -d '\n'; echo
 # database passwords
 openssl rand -base64 24 | tr -d '\n'; echo
+# Redis password (embedded in REDIS_CONN_STRING, so it must be URL-safe hex)
+openssl rand -hex 32
 ```
+
+The bundled Redis only accepts authenticated connections. `docker-compose.yml` passes `REDIS_PASSWORD` both to Redis and to the gateway's `REDIS_CONN_STRING`, so nothing else needs configuring.
 
 Then restrict the file permissions:
 
@@ -475,6 +479,12 @@ Once the site's account system is switched to an external **identity provider**,
 - **It can be switched off**: Admin → System Settings → Sign-in → Admin emergency sign-in (`AdminLoginEnabled`, on by default) disables the entry; once it is off, `/login/admin` and root's local password and passkeys stop working and the identity provider is the only way in, so make sure the provider itself has a disaster-recovery plan first.
 - **Before you switch**: **before** switching to the external identity provider, give root a strong password (16 characters or more, kept in a password manager) and register at least one passkey under Settings → Sign-in & security → Sign-in methods → Passkeys as a second path that does not depend on the identity provider.
 - **Rotate at any time**: in external mode root can still change that password and manage passkeys under Settings → Sign-in & security → Admin emergency sign-in; every other account cannot set or change a local password in this state.
+- **Two-step verification**: root can turn it on under Settings → Sign-in & security → Admin emergency sign-in → Two-step verification. With it on, the emergency password sign-in also asks for a code from the authenticator app or a recovery code; a passkey sign-in does not. If both the authenticator and every recovery code are lost, the only way back is to delete root's row in the `user_totps` table (the first statement also removes the remaining recovery codes). Root then signs in with the password alone; turn two-step verification on again afterwards:
+
+  ```sql
+  DELETE FROM user_totp_recovery_codes WHERE user_id IN (SELECT id FROM users WHERE role = 100);
+  DELETE FROM user_totps WHERE user_id IN (SELECT id FROM users WHERE role = 100);
+  ```
 - **`ROOT_PASSWORD` is only an initial value**: the variable takes effect only when the database is first created (no users exist yet). Changing or removing it afterwards does not affect the existing root password, so it is not a break-glass mechanism. See the `ROOT_PASSWORD` entry under [Environment Variables](./env.md#variable-reference).
 
 ## Multi-node deployment

@@ -13,7 +13,8 @@ services:
       # 秘密类变量必须显式提供，缺失即 fail-fast（${VAR:?...}）；取值/生成方式见 .env.example
       # SQL_DSN 数据库名（末尾 /modeltaps）须与下方 MYSQL_DATABASE 一致；注释掉本行改用 SQLite
       - SQL_DSN=modeltaps:${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set - see .env.example}@tcp(db:3306)/modeltaps
-      - REDIS_CONN_STRING=redis://redis # redis
+      # Password must match the redis service below; use a URL-safe value (openssl rand -hex 32)
+      - REDIS_CONN_STRING=redis://default:${REDIS_PASSWORD:?REDIS_PASSWORD must be set - see .env.example}@redis:6379
       - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET must be set - see .env.example}
       - USER_TOKEN_SECRET=${USER_TOKEN_SECRET:?USER_TOKEN_SECRET must be set - see .env.example}
       - TZ=${TZ:-UTC}
@@ -52,11 +53,24 @@ services:
       - "3001:80"
 
   redis:
-    image: redis:latest
+    # Pinned by tag and digest so a pull never brings in an unreviewed image. To upgrade, pick the
+    # new tag and take its index digest from: docker buildx imagetools inspect redis:<tag>
+    image: redis:8.10.3@sha256:1f88291b4c57bdf249f02eb085a8669889b2d2954e91d4de5118a5da6b78dd53
     container_name: redis
     restart: always
+    # Redis refuses unauthenticated clients. Redis replaces its process title at startup, so the
+    # password does not stay visible in the process list.
+    command:
+      [
+        "redis-server",
+        "--requirepass",
+        "${REDIS_PASSWORD:?REDIS_PASSWORD must be set - see .env.example}",
+      ]
+    environment:
+      # Read by redis-cli in the healthcheck, so the password stays off its command line.
+      REDISCLI_AUTH: "${REDIS_PASSWORD:?REDIS_PASSWORD must be set - see .env.example}"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
