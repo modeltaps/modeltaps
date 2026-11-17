@@ -70,6 +70,20 @@ func TestExtractTextContentParts(t *testing.T) {
 			data: json.RawMessage(`{"system":[{"type":"text","text":"sys"}]}`),
 			want: "sys",
 		},
+		{
+			name: "Gemini function and code parts: every string, media still skipped",
+			data: json.RawMessage(`[{"functionCall":{"name":"f","args":{"q":"call arg"}}},
+				{"functionResponse":{"name":"f","response":{"n":3,"out":{"summary":"tool said"},
+					"parts":[{"inlineData":{"mimeType":"image/png","data":"Zm9yYmlkZGVu"}}]}}},
+				{"executableCode":{"language":"PYTHON","code":"print(1)"}},
+				{"codeExecutionResult":{"outcome":"OUTCOME_OK","output":"1"}}]`),
+			want: "call arg\nf\nf\ntool said\nprint(1)\nPYTHON\nOUTCOME_OK\n1",
+		},
+		{
+			name: "duplicate keys in raw JSON are all read",
+			data: json.RawMessage(`{"messages":[{"role":"user","content":"first","content":"second"}]}`),
+			want: "first\nsecond",
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

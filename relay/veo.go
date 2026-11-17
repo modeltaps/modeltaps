@@ -73,10 +73,30 @@ func (r *relayVeoOnly) setRequest() error {
 		}
 	}
 
+	clampVeoParameters(r.veoRequest)
+
 	r.setOriginalModel(modelList[0])
 	r.c.Set("original_model", modelList[0])
 
 	return nil
+}
+
+// veoMaxDurationSeconds is the longest video the fixed Veo price covers: 8 seconds, the
+// longest (and default) duration Veo models generate.
+const veoMaxDurationSeconds = 8
+
+// clampVeoParameters keeps a Veo request within what the fixed per-request price covers. The
+// upstream bills every sample for its duration while the gateway bills one fixed price and
+// returns only the first sample, so sampleCount is always 1 and durationSeconds is capped at
+// veoMaxDurationSeconds (a shorter duration costs the upstream less and is kept).
+func clampVeoParameters(request *gemini.VeoVideoRequest) {
+	if request.Parameters == nil {
+		request.Parameters = &gemini.VeoVideoParameters{}
+	}
+	request.Parameters.SampleCount = 1
+	if request.Parameters.DurationSeconds > veoMaxDurationSeconds {
+		request.Parameters.DurationSeconds = veoMaxDurationSeconds
+	}
 }
 
 func (r *relayVeoOnly) getRequest() interface{} {

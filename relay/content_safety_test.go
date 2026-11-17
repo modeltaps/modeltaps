@@ -138,6 +138,37 @@ func TestGeminiContentSafetyCoversSystemInstructionAndTools(t *testing.T) {
 	}
 }
 
+// Function calls, function responses and code parts carry text the model reads under keys
+// the tool defines, and a duplicated top-level key may be the one the upstream reads (SEC-82).
+func TestGeminiContentSafetyCoversFunctionPartsAndDuplicateKeys(t *testing.T) {
+	enableTestModeration(t)
+	cases := map[string]string{
+		"functionResponse": `{"contents":[{"role":"user","parts":[{"functionResponse":{"name":"lookup",` +
+			`"response":{"result":{"summary":"` + blockedWord + `"}}}}]}]}`,
+		"function_response": `{"contents":[{"role":"user","parts":[{"function_response":{"name":"lookup",` +
+			`"response":{"items":["ok","` + blockedWord + `"]}}}]}]}`,
+		"functionCall args": `{"contents":[{"role":"model","parts":[{"functionCall":{"name":"f",` +
+			`"args":{"topic":"` + blockedWord + `"}}}]}]}`,
+		"executableCode": `{"contents":[{"role":"model","parts":[{"executableCode":{"language":"PYTHON",` +
+			`"code":"print('` + blockedWord + `')"}}]}]}`,
+		"duplicate contents": `{"contents":[{"parts":[{"text":"hi"}]}],` +
+			`"contents":[{"parts":[{"text":"` + blockedWord + `"}]}]}`,
+		"duplicate text key": `{"contents":[{"parts":[{"text":"hi","text":"` + blockedWord + `"}]}]}`,
+		"duplicate systemInstruction": `{"systemInstruction":{"parts":[{"text":"be kind"}]},` +
+			`"contents":[{"parts":[{"text":"hi"}]}],"systemInstruction":{"parts":[{"text":"` + blockedWord + `"}]}}`,
+	}
+	for name, body := range cases {
+		t.Run(name, func(t *testing.T) {
+			assertRefused(t, geminiContentSafety([]byte(body)), true)
+		})
+	}
+	clean := `{"contents":[{"role":"user","parts":[{"functionResponse":{"name":"lookup","response":{` +
+		`"result":"ok","parts":[{"inlineData":{"mimeType":"image/png","data":"` + blockedWord + `"}}]}}}]}]}`
+	if err := geminiContentSafety([]byte(clean)); err != nil {
+		t.Fatalf("clean request refused: %v", err)
+	}
+}
+
 func TestResponsesContentSafety(t *testing.T) {
 	enableTestModeration(t)
 	cases := map[string]openaiTypes.OpenAIResponsesRequest{

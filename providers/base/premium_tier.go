@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
 )
 
 // PremiumTierRule names a request field that can move the upstream to a pricier
@@ -44,33 +43,102 @@ func (p *BaseProvider) StripPremiumTierFields(body []byte, rules []PremiumTierRu
 }
 
 // StripPremiumTierFields removes each rule's field whose value is not a standard one.
+//
+// The top-level members are read one by one instead of through a path lookup, because a path
+// lookup only sees the first of duplicate keys while an upstream parser may take the last one:
+// {"speed":"standard","speed":"fast"} would otherwise pass. Keys are compared after JSON
+// unescaping and without regard to case (some upstream parsers match keys case-insensitively).
+// A field that appears more than once is removed in every occurrence, whatever its values, and
+// so is every occurrence of a field when any of them holds a non-standard value. Bodies that
+// need no change are returned as they are; otherwise the top-level object is rebuilt from the
+// raw bytes of the members that are kept, in their original order.
 func StripPremiumTierFields(body []byte, rules []PremiumTierRule) []byte {
-	for _, rule := range rules {
-		value := gjson.GetBytes(body, rule.Field)
-		if !value.Exists() || isStandardTierValue(value, rule.Standard) {
-			continue
-		}
-		if patched, err := sjson.DeleteBytes(body, rule.Field); err == nil {
-			body = patched
+	parsed := gjson.ParseBytes(body)
+	if !parsed.IsObject() || len(rules) == 0 {
+		return body
+	}
+
+	type member struct{ key, value gjson.Result }
+	members := make([]member, 0, 16)
+	parsed.ForEach(func(key, value gjson.Result) bool {
+		members = append(members, member{key, value})
+		return true
+	})
+
+	drop := make([]bool, len(rules))
+	for i, rule := range rules {
+		seen := 0
+		for _, m := range members {
+			if !strings.EqualFold(m.key.String(), rule.Field) {
+				continue
+			}
+			seen++
+			if seen > 1 || !isStandardTierValue(m.value, rule.Standard) {
+				drop[i] = true
+			}
 		}
 	}
-	return body
+
+	anyDropped := false
+	for _, d := range drop {
+		anyDropped = anyDropped || d
+	}
+	if !anyDropped {
+		return body
+	}
+
+	dropped := func(key string) bool {
+		for i, rule := range rules {
+			if drop[i] && strings.EqualFold(key, rule.Field) {
+				return true
+			}
+		}
+		return false
+	}
+
+	var out strings.Builder
+	out.Grow(len(body))
+	out.WriteByte('{')
+	first := true
+	for _, m := range members {
+		if dropped(m.key.String()) {
+			continue
+		}
+		if !first {
+			out.WriteByte(',')
+		}
+		first = false
+		out.WriteString(m.key.Raw)
+		out.WriteByte(':')
+		out.WriteString(m.value.Raw)
+	}
+	out.WriteByte('}')
+	return []byte(out.String())
 }
 
-// StripPremiumTierMap is StripPremiumTierFields for a decoded request body.
+// StripPremiumTierMap is StripPremiumTierFields for a decoded request body. Keys that differ
+// only in case count as the same field, as they do there.
 func (p *BaseProvider) StripPremiumTierMap(body map[string]any, rules []PremiumTierRule) {
 	if p.AllowsPremiumTier() || body == nil {
 		return
 	}
 	for _, rule := range rules {
-		value, ok := body[rule.Field]
-		if !ok {
-			continue
+		keys := make([]string, 0, 1)
+		standard := true
+		for key, value := range body {
+			if !strings.EqualFold(key, rule.Field) {
+				continue
+			}
+			keys = append(keys, key)
+			if text, isText := value.(string); !isText || !containsFold(rule.Standard, text) {
+				standard = false
+			}
 		}
-		if text, isText := value.(string); isText && containsFold(rule.Standard, text) {
-			continue
+		if len(keys) > 1 || !standard {
+			for _, key := range keys {
+				delete(body, key)
+			}
 		}
-		delete(body, rule.Field)
 	}
 }
 

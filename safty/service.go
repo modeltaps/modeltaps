@@ -1,14 +1,17 @@
 package safty
 
 import (
-	"github.com/modeltaps/modeltaps/common/config"
-	"github.com/modeltaps/modeltaps/common/logger"
-	"github.com/modeltaps/modeltaps/safty/types"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/common/logger"
+	"github.com/modeltaps/modeltaps/safty/types"
+
+	"github.com/tidwall/gjson"
 )
 
 // RegisterTool 注册一个新的安全检查器
@@ -76,64 +79,124 @@ var binaryKeys = map[string]bool{
 	"inlineData":  true,
 }
 
+// opaqueTextKeys hold tool calls, tool results and code that the client sends back to the
+// model: Gemini function calls and responses (whose args and response objects use any keys the
+// tool defines) and executable code with its result. Every string anywhere in their subtrees is
+// text, whatever its key; binaryKeys subtrees inside them are still skipped.
+var opaqueTextKeys = map[string]bool{
+	"functionCall":          true,
+	"function_call":         true,
+	"functionResponse":      true,
+	"function_response":     true,
+	"executableCode":        true,
+	"executable_code":       true,
+	"codeExecutionResult":   true,
+	"code_execution_result": true,
+}
+
+// textMode says which strings at a position of the JSON tree are text.
+type textMode int
+
+const (
+	textNone textMode = iota // only strings under textKeys, at any depth below
+	textHere                 // strings here and in arrays here; objects decide per key
+	textAll                  // every string in the subtree
+)
+
 // extractText collects every human-text string in data and joins them with "\n".
 //
 // data may be a string, or any value that encodes to JSON (request structs, slices of message
-// structs, maps, json.RawMessage); it is normalized through a JSON round trip and walked
-// recursively. Strings directly in data, or in arrays directly in data, are text; inside an
-// object only strings under textKeys (or in arrays under them) are. Objects are searched at
-// every depth, so text nested in messages, content parts, tools and items is found wherever it
-// sits. Data URLs are never collected.
+// structs, maps, json.RawMessage); it is encoded to JSON and walked recursively. Strings
+// directly in data, or in arrays directly in data, are text; inside an object only strings
+// under textKeys (or in arrays under them) are, plus every string under opaqueTextKeys. Objects
+// are searched at every depth, so text nested in messages, content parts, tools and items is
+// found wherever it sits. Data URLs are never collected.
 func extractText(data interface{}) (string, error) {
 	if data == nil {
 		return "", nil
 	}
 
-	var normalized interface{}
+	var raw []byte
 	switch v := data.(type) {
 	case string:
-		normalized = v
+		return collectString(v), nil
 	case []byte:
-		normalized = string(v)
+		return collectString(string(v)), nil
 	default:
-		raw, err := json.Marshal(v)
+		encoded, err := json.Marshal(v)
 		if err != nil {
 			return "", err
 		}
-		if err := json.Unmarshal(raw, &normalized); err != nil {
-			return "", err
-		}
+		raw = encoded
 	}
 
-	texts := make([]string, 0)
-	collectText(normalized, true, &texts)
-	return strings.Join(texts, "\n"), nil
+	return strings.Join(collectJSONText(gjson.ParseBytes(raw)), "\n"), nil
 }
 
-// collectText appends the text in v to out. isText says whether a string at this position is
-// text: true at the top level and under textKeys, false elsewhere. Arrays keep the setting of
-// their position; objects decide per key.
-func collectText(v interface{}, isText bool, out *[]string) {
-	switch t := v.(type) {
-	case string:
-		if isText && strings.TrimSpace(t) != "" && !strings.HasPrefix(t, "data:") {
-			*out = append(*out, t)
+func collectString(s string) string {
+	texts := make([]string, 0, 1)
+	appendText(s, &texts)
+	return strings.Join(texts, "\n")
+}
+
+// ExtractJSONText returns the human-text strings of a raw JSON value, with the rules of
+// extractText (strings at the top level and in top-level arrays are text). It reads the bytes
+// with gjson without decoding them, so large inline media costs no allocation, and it visits
+// every occurrence of a duplicated key: a decoder keeps only one of them and an upstream parser
+// may keep the other, so each one must be checked.
+func ExtractJSONText(raw string) []string {
+	return collectJSONText(gjson.Parse(raw))
+}
+
+func collectJSONText(v gjson.Result) []string {
+	texts := make([]string, 0)
+	collectText(v, textHere, &texts)
+	return texts
+}
+
+func appendText(s string, out *[]string) {
+	if strings.TrimSpace(s) != "" && !strings.HasPrefix(s, "data:") {
+		*out = append(*out, s)
+	}
+}
+
+// collectText appends the text in v to out; mode says which strings at this position are text.
+// Arrays keep the mode of their position; objects decide per key unless the mode is textAll.
+func collectText(v gjson.Result, mode textMode, out *[]string) {
+	switch {
+	case v.Type == gjson.String:
+		if mode != textNone {
+			appendText(v.String(), out)
 		}
-	case []interface{}:
-		for _, item := range t {
-			collectText(item, isText, out)
+	case v.IsArray():
+		v.ForEach(func(_, item gjson.Result) bool {
+			collectText(item, mode, out)
+			return true
+		})
+	case v.IsObject():
+		type member struct {
+			key   string
+			value gjson.Result
 		}
-	case map[string]interface{}:
-		keys := make([]string, 0, len(t))
-		for key := range t {
-			if !binaryKeys[key] {
-				keys = append(keys, key)
+		members := make([]member, 0, 8)
+		v.ForEach(func(key, value gjson.Result) bool {
+			if name := key.String(); !binaryKeys[name] {
+				members = append(members, member{name, value})
 			}
-		}
-		// A fixed order keeps the checked text the same for the same request.
-		sort.Strings(keys)
-		for _, key := range keys {
-			collectText(t[key], textKeys[key], out)
+			return true
+		})
+		// A fixed order keeps the checked text the same for the same request; the stable sort
+		// keeps duplicates of a key in document order.
+		sort.SliceStable(members, func(i, j int) bool { return members[i].key < members[j].key })
+		for _, m := range members {
+			childMode := textNone
+			switch {
+			case mode == textAll || opaqueTextKeys[m.key]:
+				childMode = textAll
+			case textKeys[m.key]:
+				childMode = textHere
+			}
+			collectText(m.value, childMode, out)
 		}
 	}
 }

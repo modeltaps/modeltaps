@@ -29,30 +29,33 @@ func checkContentSafety(parts ...any) *types.OpenAIErrorWithStatusCode {
 	return common.StringErrorWrapperLocal(result.Reason, result.Code, http.StatusBadRequest)
 }
 
-// geminiContentSafety moderates a raw Gemini generateContent body: the text parts of contents
-// (read with gjson so inline media is never decoded), the system instruction, and the tool
-// declarations (their descriptions).
+// geminiModeratedFields are the top-level members of a Gemini generateContent body that carry
+// text the model reads.
+var geminiModeratedFields = map[string]bool{
+	"contents":           true,
+	"systemInstruction":  true,
+	"system_instruction": true,
+	"tools":              true,
+}
+
+// geminiContentSafety moderates a raw Gemini generateContent body: the text parts of contents,
+// the function calls and responses and code parts in them (every string, whatever its key), the
+// system instruction, and the tool declarations (their descriptions). The bytes are read with
+// gjson so inline media is never decoded, and every occurrence of a duplicated top-level key is
+// checked, since the upstream may read a different one than the gateway does.
 func geminiContentSafety(body []byte) *types.OpenAIErrorWithStatusCode {
 	if !config.EnableSafe || body == nil {
 		return nil
 	}
 
-	parts := make([]any, 0, 4)
 	texts := make([]string, 0)
-	for _, content := range gjson.GetBytes(body, "contents").Array() {
-		for _, part := range content.Get("parts").Array() {
-			if text := part.Get("text").String(); text != "" {
-				texts = append(texts, text)
-			}
+	gjson.ParseBytes(body).ForEach(func(key, value gjson.Result) bool {
+		if geminiModeratedFields[key.String()] {
+			texts = append(texts, safty.ExtractJSONText(value.Raw)...)
 		}
-	}
-	parts = append(parts, texts)
-	for _, path := range []string{"systemInstruction", "system_instruction", "tools"} {
-		if value := gjson.GetBytes(body, path); value.Exists() && value.Raw != "" {
-			parts = append(parts, json.RawMessage(value.Raw))
-		}
-	}
-	return checkContentSafety(parts...)
+		return true
+	})
+	return checkContentSafety(texts)
 }
 
 // realtimeClientEventSafety moderates a client event of a Realtime session before it is
