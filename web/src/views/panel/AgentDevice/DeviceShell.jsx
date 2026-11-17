@@ -56,7 +56,7 @@ export function Shell({ children, returnTo }) {
         )}
       </header>
       <main className="flex flex-1 justify-center px-4 pb-16 pt-6 sm:pt-[9vh]">
-        <div className="w-full max-w-[440px]">{children}</div>
+        <div className="w-full max-w-[480px]">{children}</div>
       </main>
     </div>
   );

@@ -4491,7 +4491,7 @@
     "lookup": "继续",
     "unnamed": "未命名客户端",
     "warning": "只批准你自己在信任的 Agent 上发起的请求，不要批准别人发给你的代码。",
-    "owner": "归属",
+    "owner": "Key 归属",
     "personal": "个人",
     "models": "模型",
     "modelsHint": "留空表示允许这把 Key 能用的全部模型。",
@@ -4502,7 +4502,6 @@
     "deniedHint": "已告知 Agent 被拒绝，没有创建 API Key。",
     "openKeys": "打开 API Key 页",
     "codeHint": "8 个字母，形如 BCDF-GHJK",
-    "confirmTitle": "“{{client}}” 申请一把 API Key",
     "compareHint": "确认与 Agent 显示的代码一致",
     "grantTitle": "Agent 将获得",
     "adjust": "调整",
@@ -4522,8 +4521,6 @@
     "requestedJustNow": "刚刚发起",
     "requestedAgo_other": "{{count}} 分钟前发起",
     "expiresIn": "剩余",
-    "personalHint": "你自己的 Key",
-    "orgHint": "组织的 Key",
     "waitingHint": "正在等 Agent 领取 Key，保持此页打开即可看到它连上。",
     "connectedTitle": "Agent 已连接",
     "notClaimedTitle": "Agent 没有领取 Key",
@@ -4532,6 +4529,12 @@
     "stepApprovedHint": "已创建 API Key「{{name}}」",
     "stepWaiting": "等待 Agent 领取…",
     "stepClaimed": "Agent 已拿到 Key",
-    "stepNotClaimed": "未在有效期内领取"
+    "stepNotClaimed": "未在有效期内领取",
+    "authorizeTitle": "授权 {{client}}",
+    "wantsKey": "申请一把 API Key",
+    "verifyTitle": "核对请求",
+    "ownerHint": "Key 和它产生的用量记在所选账号下",
+    "personalAccount": "个人账号",
+    "orgAccount": "组织 · {{role}}"
   }
 }

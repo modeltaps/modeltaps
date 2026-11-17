@@ -4495,7 +4495,6 @@
     "deniedHint": "エージェントに拒否を伝えました。API キーは作成されていません。",
     "openKeys": "API キーを開く",
     "codeHint": "8 文字の英字（例: BCDF-GHJK）",
-    "confirmTitle": "「{{client}}」が API キーを求めています",
     "compareHint": "エージェントに表示されたコードと一致するか確認してください",
     "grantTitle": "エージェントに渡すもの",
     "adjust": "調整",
@@ -4515,8 +4514,6 @@
     "requestedJustNow": "たった今リクエスト",
     "requestedAgo_other": "{{count}} 分前にリクエスト",
     "expiresIn": "残り",
-    "personalHint": "自分のキー",
-    "orgHint": "組織のキー",
     "waitingHint": "エージェントがキーを受け取るのを待っています。このページを開いたままにすると接続を確認できます。",
     "connectedTitle": "エージェントが接続しました",
     "notClaimedTitle": "エージェントがキーを受け取りませんでした",
@@ -4525,6 +4522,12 @@
     "stepApprovedHint": "API キー「{{name}}」を作成",
     "stepWaiting": "エージェントを待っています…",
     "stepClaimed": "エージェントがキーを受け取りました",
-    "stepNotClaimed": "期限内に受け取られませんでした"
+    "stepNotClaimed": "期限内に受け取られませんでした",
+    "authorizeTitle": "{{client}} を承認",
+    "wantsKey": "が API キーを求めています",
+    "verifyTitle": "リクエストを確認",
+    "ownerHint": "キーとその利用量は選んだアカウントに記録されます",
+    "personalAccount": "個人アカウント",
+    "orgAccount": "組織 · {{role}}"
   }
 }

@@ -3,12 +3,14 @@ import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router';
-import { ChevronDown, Loader2, X } from 'lucide-react';
+import { Boxes, CalendarClock, ChevronDown, KeyRound, Loader2, Wallet, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
-import { Field, OptionList, OptionRow } from '@/components/objects';
+import { Field } from '@/components/objects';
+import UserAvatar, { accountDisplayName } from '@/components/chrome/avatar';
+import { ContextMark } from '@/components/chrome/ContextSwitcher';
 import QuotaInput from '@/components/QuotaInput';
 import { cn } from '@/lib/utils';
 import { API } from 'utils/api';
@@ -20,7 +22,7 @@ import { DEFAULT_SETTING, EXPIRY_PRESETS, expiryFromPreset, quotaPatch } from 'v
 import ApprovedStatus from './ApprovedStatus';
 import CodeCells, { CODE_LENGTH, codeLetters } from './CodeCells';
 import { Heading, Outcome, Shell } from './DeviceShell';
-import { Handshake, RequestFacts } from './RequestParts';
+import { ClientMark, Handshake, RequestFacts } from './RequestParts';
 import { recognizeClient } from './agentClient';
 
 // ==============================|| AGENT DEVICE AUTHORIZATION (AGENT-7) ||============================== //
@@ -73,17 +75,95 @@ function useArmed(key, delay) {
   return Boolean(key) && armedKey === key;
 }
 
-// One line of the "what the agent gets" summary.
-function SummaryRow({ label, children }) {
+// One part of the confirmation card, divided from the next by a hairline.
+function CardSection({ title, hint, action, children }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 py-2.5 text-sm [&+&]:border-t [&+&]:border-border/60">
+    <section className="px-5 py-4 sm:px-6 [&+&]:border-t [&+&]:border-border/60">
+      {(title || action) && (
+        <div className="mb-3 flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-sm font-medium">{title}</h2>
+            {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
+          </div>
+          {action}
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
+
+CardSection.propTypes = { title: PropTypes.node, hint: PropTypes.node, action: PropTypes.node, children: PropTypes.node };
+
+// One line of the "what the agent gets" summary, like a permission in a consent screen.
+function SummaryRow({ icon: Icon, label, children }) {
+  return (
+    <div className="flex items-center gap-3 py-2 text-sm">
+      <Icon className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
       <span className="shrink-0 text-muted-foreground">{label}</span>
-      <span className="min-w-0 truncate text-right">{children}</span>
+      <span className="ml-auto min-w-0 truncate text-right">{children}</span>
     </div>
   );
 }
 
-SummaryRow.propTypes = { label: PropTypes.node, children: PropTypes.node };
+SummaryRow.propTypes = { icon: PropTypes.elementType.isRequired, label: PropTypes.node, children: PropTypes.node };
+
+// Whose key it is: the user's own account and each organization they belong to, one row each with
+// its mark and the user's role there, the way consent screens list the accounts an app can reach.
+function OwnerPicker({ owners, value, user, onChange }) {
+  const { t } = useTranslation();
+  return (
+    <div role="radiogroup" aria-label={t('agentDevice.owner')} className="-mx-2 space-y-0.5">
+      {owners.map((o) => {
+        const selected = value === o.value;
+        const personal = o.value === PERSONAL;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(o.value)}
+            className={cn(
+              'flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              selected ? 'bg-muted' : 'hover:bg-muted/60'
+            )}
+          >
+            {personal ? (
+              <UserAvatar user={user} className="size-8" textClass="text-[11px]" />
+            ) : (
+              <ContextMark kind="org" org={o.org} className="size-8" />
+            )}
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-medium">{personal ? accountDisplayName(user) : o.label}</span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {personal
+                  ? t('agentDevice.personalAccount')
+                  : t('agentDevice.orgAccount', { role: t(`org.roles.${o.org?.role}`, { defaultValue: o.org?.role || '' }) })}
+              </span>
+            </span>
+            <span
+              aria-hidden="true"
+              className={cn(
+                'size-4 shrink-0 rounded-full',
+                selected
+                  ? 'shadow-[inset_0_0_0_5px_var(--foreground)]'
+                  : 'shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--foreground)_35%,transparent)]'
+              )}
+            />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+OwnerPicker.propTypes = {
+  owners: PropTypes.array.isRequired,
+  value: PropTypes.string,
+  user: PropTypes.object,
+  onChange: PropTypes.func.isRequired
+};
 
 export default function AgentDevice() {
   const { t } = useTranslation();
@@ -110,7 +190,7 @@ export default function AgentDevice() {
   const owners = useMemo(
     () => [
       { value: PERSONAL, label: t('agentDevice.personal') },
-      ...(orgEnabled ? organizations.map((o) => ({ value: String(o.id), label: o.name })) : [])
+      ...(orgEnabled ? organizations.map((o) => ({ value: String(o.id), label: o.name, org: o })) : [])
     ],
     [t, orgEnabled, organizations]
   );
@@ -307,131 +387,135 @@ export default function AgentDevice() {
   return (
     <Shell returnTo={`${agentDevice()}?user_code=${encodeURIComponent(request.user_code)}`}>
       <Handshake client={known} user={user} org={ownerOrg} />
-      <Heading title={t('agentDevice.confirmTitle', { client })}>
-        <span data-testid="device-identity">
-          {known
-            ? t('agentDevice.recognized', { name: [known.name, known.version].filter(Boolean).join(' ') })
-            : t('agentDevice.unrecognized')}
-        </span>
-      </Heading>
+      <Heading title={t('agentDevice.authorizeTitle', { client })} className="mb-5" />
 
-      <section className="rounded-xl border border-border bg-card p-5 sm:p-6" data-testid="device-request">
-        <div className="text-center">
-          <CodeCells readOnly label={t('agentDevice.codeLabel')} value={request.user_code} />
-          <p className="mt-3 text-sm text-muted-foreground">{t('agentDevice.compareHint')}</p>
-        </div>
-        <div className="mt-5 border-t border-border/60 pt-4">
-          <RequestFacts request={request} secondsLeft={secondsLeft} now={now} />
-        </div>
-      </section>
-
-      {owners.length > 1 && (
-        <section className="mt-4">
-          <h2 className="mb-2 px-1 text-sm font-medium">{t('agentDevice.owner')}</h2>
-          <OptionList label={t('agentDevice.owner')}>
-            {owners.map((o) => (
-              <OptionRow
-                key={o.value}
-                kind="radio"
-                selected={form.owner === o.value}
-                title={o.label}
-                meta={o.value === PERSONAL ? t('agentDevice.personalHint') : t('agentDevice.orgHint')}
-                onClick={() => pickOwner(o.value)}
-              />
-            ))}
-          </OptionList>
-        </section>
-      )}
-
-      <section className="mt-4 rounded-xl border border-border bg-card px-5 py-3 sm:px-6">
-        <div className="flex items-center justify-between gap-4 py-2">
-          <h2 className="text-sm font-medium">{t('agentDevice.grantTitle')}</h2>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="-mr-2 text-muted-foreground"
-            aria-expanded={editing}
-            onClick={() => setEditing((v) => !v)}
-          >
-            {t(editing ? 'agentDevice.doneEditing' : 'agentDevice.adjust')}
-            <ChevronDown className={cn('transition-transform', editing && 'rotate-180')} />
-          </Button>
-        </div>
-
-        {!editing ? (
-          <div data-testid="device-summary">
-            <SummaryRow label={t('token_index.name')}>{form.name.trim() || client}</SummaryRow>
-            <SummaryRow label={t('apiKey.new.limit')}>{quotaText}</SummaryRow>
-            <SummaryRow label={t('apiKey.new.expiry')}>{t(`apiKey.expiry.${form.expiry}`)}</SummaryRow>
-            <SummaryRow label={t('agentDevice.models')}>{modelsText}</SummaryRow>
+      <div className="overflow-hidden rounded-xl border border-border bg-card" data-testid="device-request">
+        <CardSection>
+          <div className="flex items-start gap-3">
+            <ClientMark client={known} className="size-10 rounded-lg [&_svg]:size-5" />
+            <div className="min-w-0 pt-0.5">
+              <p className="text-sm">
+                <span className="font-medium">{client}</span> {t('agentDevice.wantsKey')}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground" data-testid="device-identity">
+                {known
+                  ? t('agentDevice.recognized', { name: [known.name, known.version].filter(Boolean).join(' ') })
+                  : t('agentDevice.unrecognized')}
+              </p>
+            </div>
           </div>
-        ) : (
-          <div className="pb-1">
-            <Field label={t('token_index.name')} htmlFor="device-name" error={nameError}>
-              <Input
-                id="device-name"
-                autoComplete="off"
-                maxLength={30}
-                value={form.name}
-                placeholder={t('apiKey.new.namePlaceholder')}
-                aria-invalid={Boolean(nameError)}
-                onChange={(e) => {
-                  setNameError('');
-                  setForm((f) => ({ ...f, name: e.target.value }));
-                }}
-              />
-            </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label={t('apiKey.new.limit')} optional className="[&+&]:border-t-0">
-                <QuotaInput
-                  name="device-quota"
-                  value={form.quota}
-                  placeholder={t('token_index.noLimit')}
-                  allowEmpty
-                  onChange={(v) => setForm((f) => ({ ...f, quota: v }))}
+        </CardSection>
+
+        <CardSection title={t('agentDevice.verifyTitle')}>
+          <CodeCells readOnly label={t('agentDevice.codeLabel')} value={request.user_code} />
+          <p className="mt-2.5 text-center text-xs text-muted-foreground">{t('agentDevice.compareHint')}</p>
+          <div className="mt-4">
+            <RequestFacts request={request} secondsLeft={secondsLeft} now={now} />
+          </div>
+        </CardSection>
+
+        <CardSection title={t('agentDevice.owner')} hint={t('agentDevice.ownerHint')}>
+          <OwnerPicker owners={owners} value={form.owner} user={user} onChange={pickOwner} />
+        </CardSection>
+
+        <CardSection
+          title={t('agentDevice.grantTitle')}
+          action={
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="-my-1.5 -mr-2 h-7 text-muted-foreground"
+              aria-expanded={editing}
+              onClick={() => setEditing((v) => !v)}
+            >
+              {t(editing ? 'agentDevice.doneEditing' : 'agentDevice.adjust')}
+              <ChevronDown className={cn('transition-transform', editing && 'rotate-180')} />
+            </Button>
+          }
+        >
+          {!editing ? (
+            <div data-testid="device-summary">
+              <SummaryRow icon={KeyRound} label={t('token_index.name')}>
+                {form.name.trim() || client}
+              </SummaryRow>
+              <SummaryRow icon={Wallet} label={t('apiKey.new.limit')}>
+                {quotaText}
+              </SummaryRow>
+              <SummaryRow icon={CalendarClock} label={t('apiKey.new.expiry')}>
+                {t(`apiKey.expiry.${form.expiry}`)}
+              </SummaryRow>
+              <SummaryRow icon={Boxes} label={t('agentDevice.models')}>
+                {modelsText}
+              </SummaryRow>
+            </div>
+          ) : (
+            <div className="-my-3">
+              <Field label={t('token_index.name')} htmlFor="device-name" error={nameError}>
+                <Input
+                  id="device-name"
+                  autoComplete="off"
+                  maxLength={30}
+                  value={form.name}
+                  placeholder={t('apiKey.new.namePlaceholder')}
+                  aria-invalid={Boolean(nameError)}
+                  onChange={(e) => {
+                    setNameError('');
+                    setForm((f) => ({ ...f, name: e.target.value }));
+                  }}
                 />
               </Field>
-              <Field label={t('apiKey.new.expiry')} htmlFor="device-expiry" className="[&+&]:border-t-0">
-                <Select value={form.expiry} onValueChange={(v) => setForm((f) => ({ ...f, expiry: v }))}>
-                  <SelectTrigger id="device-expiry">
-                    <span className="truncate">{t(`apiKey.expiry.${form.expiry}`)}</span>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EXPIRY_PRESETS.map((p) => (
-                      <SelectItem key={p} value={p}>
-                        {t(`apiKey.expiry.${p}`)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={t('apiKey.new.limit')} optional className="[&+&]:border-t-0">
+                  <QuotaInput
+                    name="device-quota"
+                    value={form.quota}
+                    placeholder={t('token_index.noLimit')}
+                    allowEmpty
+                    onChange={(v) => setForm((f) => ({ ...f, quota: v }))}
+                  />
+                </Field>
+                <Field label={t('apiKey.new.expiry')} htmlFor="device-expiry" className="[&+&]:border-t-0">
+                  <Select value={form.expiry} onValueChange={(v) => setForm((f) => ({ ...f, expiry: v }))}>
+                    <SelectTrigger id="device-expiry">
+                      <span className="truncate">{t(`apiKey.expiry.${form.expiry}`)}</span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EXPIRY_PRESETS.map((p) => (
+                        <SelectItem key={p} value={p}>
+                          {t(`apiKey.expiry.${p}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+              <Field label={t('agentDevice.models')} htmlFor="device-models" hint={t('agentDevice.modelsHint')}>
+                <ModelLimitSelector
+                  id="device-models"
+                  models={models}
+                  value={form.models}
+                  parents={parents}
+                  onChange={(ids) => setForm((f) => ({ ...f, models: ids }))}
+                />
               </Field>
             </div>
-            <Field label={t('agentDevice.models')} htmlFor="device-models" hint={t('agentDevice.modelsHint')}>
-              <ModelLimitSelector
-                id="device-models"
-                models={models}
-                value={form.models}
-                parents={parents}
-                onChange={(ids) => setForm((f) => ({ ...f, models: ids }))}
-              />
-            </Field>
-          </div>
-        )}
-      </section>
+          )}
+        </CardSection>
 
-      <p className="mt-4 px-1 text-xs leading-relaxed text-muted-foreground">{t('agentDevice.warning')}</p>
-
-      <div className="mt-6 grid grid-cols-2 gap-3">
-        <Button type="button" variant="outline" className="h-10" onClick={() => answer(false)} disabled={Boolean(busy)}>
-          {busy === 'deny' && <Loader2 className="size-4 animate-spin" />}
-          {t('agentDevice.deny')}
-        </Button>
-        <Button type="button" className="h-10" onClick={() => answer(true)} disabled={Boolean(busy) || !armed}>
-          {busy === 'approve' && <Loader2 className="size-4 animate-spin" />}
-          {t('agentDevice.approve')}
-        </Button>
+        <div className="grid grid-cols-2 gap-3 border-t border-border/60 px-5 py-4 sm:px-6">
+          <Button type="button" variant="outline" className="h-10" onClick={() => answer(false)} disabled={Boolean(busy)}>
+            {busy === 'deny' && <Loader2 className="size-4 animate-spin" />}
+            {t('agentDevice.deny')}
+          </Button>
+          <Button type="button" className="h-10" onClick={() => answer(true)} disabled={Boolean(busy) || !armed}>
+            {busy === 'approve' && <Loader2 className="size-4 animate-spin" />}
+            {t('agentDevice.approve')}
+          </Button>
+        </div>
       </div>
+
+      <p className="mt-4 px-2 text-center text-xs leading-relaxed text-muted-foreground">{t('agentDevice.warning')}</p>
     </Shell>
   );
 }

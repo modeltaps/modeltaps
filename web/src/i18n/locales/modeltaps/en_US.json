@@ -4600,7 +4600,7 @@
     "lookup": "Continue",
     "unnamed": "Unnamed client",
     "warning": "Only approve a request you started on an agent you trust. Never approve a code someone else sent you.",
-    "owner": "Key for",
+    "owner": "Key belongs to",
     "personal": "Personal",
     "models": "Models",
     "modelsHint": "Leave empty to allow every model the key can reach.",
@@ -4611,7 +4611,6 @@
     "deniedHint": "The agent was told no. No key was created.",
     "openKeys": "Open API keys",
     "codeHint": "8 letters, like BCDF-GHJK",
-    "confirmTitle": "“{{client}}” wants an API key",
     "compareHint": "Check that this matches the code your agent shows",
     "grantTitle": "The agent gets",
     "adjust": "Adjust",
@@ -4633,8 +4632,6 @@
     "requestedAgo_one": "Requested {{count}} minute ago",
     "requestedAgo_other": "Requested {{count}} minutes ago",
     "expiresIn": "expires in",
-    "personalHint": "Your own key",
-    "orgHint": "Organization key",
     "waitingHint": "Waiting for the agent to pick up its key. Keep this page open to see it connect.",
     "connectedTitle": "Agent connected",
     "notClaimedTitle": "The agent did not pick up its key",
@@ -4643,6 +4640,12 @@
     "stepApprovedHint": "API key “{{name}}” created",
     "stepWaiting": "Waiting for the agent…",
     "stepClaimed": "The agent has its key",
-    "stepNotClaimed": "Not picked up in time"
+    "stepNotClaimed": "Not picked up in time",
+    "authorizeTitle": "Authorize {{client}}",
+    "wantsKey": "wants an API key",
+    "verifyTitle": "Check the request",
+    "ownerHint": "The key and its usage are recorded under this account",
+    "personalAccount": "Personal account",
+    "orgAccount": "Organization · {{role}}"
   }
 }

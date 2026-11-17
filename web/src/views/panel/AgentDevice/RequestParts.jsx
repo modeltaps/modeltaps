@@ -1,9 +1,10 @@
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Building2, Clock, Network, SquareTerminal } from 'lucide-react';
+import { Clock, Network, SquareTerminal } from 'lucide-react';
 
 import BrandIcon from '@/components/brand/BrandIcon';
 import UserAvatar from '@/components/chrome/avatar';
+import { ContextMark } from '@/components/chrome/ContextSwitcher';
 import { Dot } from '@/components/objects';
 import { cn } from '@/lib/utils';
 
@@ -25,13 +26,7 @@ export function ClientMark({ client, className }) {
 ClientMark.propTypes = { client: PropTypes.object, className: PropTypes.string };
 
 function OwnerMark({ user, org }) {
-  if (org) {
-    return (
-      <span className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-border bg-card" title={org.name}>
-        <Building2 className="size-6 text-muted-foreground" strokeWidth={1.5} />
-      </span>
-    );
-  }
+  if (org) return <ContextMark kind="org" org={org} className="size-12 rounded-xl" />;
   return <UserAvatar user={user} className="size-12" textClass="text-sm" />;
 }
 
