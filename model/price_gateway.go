@@ -49,7 +49,9 @@ func gatewayDefaultPrices() map[string]gatewayDefaultPrice {
 	}
 
 	// Midjourney (relay/midjourney): per action, for the fast, turbo and relax modes; Midjourney has
-	// no official API price.
+	// no official API price. inpaint and custom_zoom only open the upstream's input dialog and are
+	// never charged, whatever their price: the edit itself is submitted and billed as modal, priced
+	// like zoom and variation.
 	mjActions := map[string]float64{
 		"imagine":        50,
 		"variation":      50,

@@ -3,7 +3,6 @@ package midjourney
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/logger"
@@ -208,19 +207,16 @@ func RelaySwapFace(c *gin.Context) *provider.MidjourneyResponse {
 		return &mjResp.Response
 	}
 
-	// The deferred settlement acts on the reservation current when the handler returns: the relax
-	// fallback below swaps quotaInstance after refunding the fast one, and leaves sendFailed set
-	// instead of refunding itself, so each reservation is settled exactly once (SEC-55).
+	// The settlement acts on the reservation current when it runs: the relax fallback below swaps
+	// quotaInstance after refunding the fast one, and leaves sendFailed set instead of refunding
+	// itself, so each reservation is settled exactly once (SEC-55). It runs before the task is
+	// recorded, so the task keeps what was actually charged; the deferred call covers early returns.
 	sendFailed := false
-	defer func(ctx context.Context) {
-		if !sendFailed && mjResp.StatusCode == 200 && mjResp.Response.Code == 1 {
-			quotaInstance.Consume(c, &types.Usage{CompletionTokens: 0, PromptTokens: 1, TotalTokens: 1}, false)
-		} else {
-			quotaInstance.Undo(c)
-		}
-	}(c.Request.Context())
-
-	quota := quotaInstance.GetTotalQuotaByUsage(&types.Usage{CompletionTokens: 0, PromptTokens: 1, TotalTokens: 1})
+	var settler mjSettler
+	settle := func() int {
+		return settler.settle(c, quotaInstance, !sendFailed && mjResp.StatusCode == 200 && mjResp.Response.Code == 1)
+	}
+	defer func() { settle() }()
 
 	midjResponse := &mjResp.Response
 
@@ -247,7 +243,6 @@ func RelaySwapFace(c *gin.Context) *provider.MidjourneyResponse {
 			sendFailed = true
 			return &mjResp.Response
 		}
-		quota = quotaInstance.GetTotalQuotaByUsage(&types.Usage{CompletionTokens: 0, PromptTokens: 1, TotalTokens: 1})
 
 		midjResponse = &mjResp.Response
 	}
@@ -270,8 +265,10 @@ func RelaySwapFace(c *gin.Context) *provider.MidjourneyResponse {
 		Progress:    "0%",
 		FailReason:  "",
 		ChannelId:   c.GetInt("channel_id"),
-		Quota:       quota,
-		Mode:        mjModelType,
+		// A failed task is refunded from Quota: record what was charged, 0 when the upstream did
+		// not accept the job (SEC-63).
+		Quota: settle(),
+		Mode:  mjModelType,
 	}
 	err = midjourneyTask.Insert()
 	if err != nil {
@@ -483,7 +480,7 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *provider.MidjourneyRe
 		//}
 	}
 
-	if midjRequest.Action == provider.MjActionInPaint || midjRequest.Action == provider.MjActionCustomZoom {
+	if !mjActionCharged(midjRequest.Action) {
 		consumeQuota = false
 	}
 
@@ -506,18 +503,15 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *provider.MidjourneyRe
 		return &midjResponseWithStatus.Response
 	}
 
-	// The deferred settlement acts on the reservation current when the handler returns: the relax
-	// fallback below swaps quotaInstance after refunding the fast one, and clears consumeQuota
-	// instead of refunding itself, so each reservation is settled exactly once (SEC-55).
-	defer func(ctx context.Context) {
-		if consumeQuota && midjResponseWithStatus.StatusCode == 200 {
-			quotaInstance.Consume(c, &types.Usage{CompletionTokens: 0, PromptTokens: 1, TotalTokens: 1}, false)
-		} else {
-			quotaInstance.Undo(c)
-		}
-	}(c.Request.Context())
-
-	quota := quotaInstance.GetTotalQuotaByUsage(&types.Usage{CompletionTokens: 0, PromptTokens: 1, TotalTokens: 1})
+	// The settlement acts on the reservation current when it runs: the relax fallback below swaps
+	// quotaInstance after refunding the fast one, and clears consumeQuota instead of refunding
+	// itself, so each reservation is settled exactly once (SEC-55). It runs before the task is
+	// recorded, so the task keeps what was actually charged; the deferred call covers early returns.
+	var settler mjSettler
+	settle := func() int {
+		return settler.settle(c, quotaInstance, consumeQuota && midjResponseWithStatus.StatusCode == 200)
+	}
+	defer func() { settle() }()
 
 	midjResponse := &midjResponseWithStatus.Response
 
@@ -528,9 +522,11 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *provider.MidjourneyRe
 		quotaInstance.Undo(c)
 		mjModelType = "relax"
 		c.Set("mj_model", mjModelType)
-		// On failure quotaInstance stays the refunded fast reservation, whose deferred Undo is a no-op.
+		// On failure quotaInstance stays the refunded fast reservation, whose deferred Undo is a no-op;
+		// clearing consumeQuota keeps the settlement from charging that refunded reservation in full.
 		relaxQuota, relaxErr := getQuota(c, midjRequest.Action)
 		if relaxErr != nil {
+			consumeQuota = false
 			return &provider.MidjourneyResponse{
 				Code:        4,
 				Description: relaxErr.Message,
@@ -544,7 +540,6 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *provider.MidjourneyRe
 			consumeQuota = false
 			return &midjResponseWithStatus.Response
 		}
-		quota = quotaInstance.GetTotalQuotaByUsage(&types.Usage{CompletionTokens: 0, PromptTokens: 1, TotalTokens: 1})
 		midjResponse = &midjResponseWithStatus.Response
 	}
 
@@ -573,7 +568,6 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *provider.MidjourneyRe
 		Progress:    "0%",
 		FailReason:  "",
 		ChannelId:   c.GetInt("channel_id"),
-		Quota:       quota,
 		Mode:        mjModelType,
 	}
 
@@ -611,6 +605,10 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *provider.MidjourneyRe
 		midjourneyTask.Progress = "100%"
 		midjourneyTask.Status = "SUCCESS"
 	}
+
+	// A failed task is refunded from Quota, so it must hold what this request was charged: 0 for
+	// actions that are never charged (INPAINT, CUSTOM_ZOOM) and for rejected submissions (SEC-63).
+	midjourneyTask.Quota = settle()
 
 	err = midjourneyTask.Insert()
 	if err != nil {

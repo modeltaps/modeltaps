@@ -172,12 +172,15 @@ func MjTaskHandler(midjourneyChannel *model.Channel, taskIds []string, taskM map
 
 	for _, responseItem := range responseItems {
 		task := taskM[responseItem.MjId]
+		if task == nil {
+			continue
+		}
 
-		useTime := (time.Now().UnixNano() / int64(time.Millisecond)) - task.SubmitTime
-		// 如果时间超过一小时，且进度不是100%，则认为任务失败
-		if useTime > 3600000 && task.Progress != "100%" {
+		if mjTaskTimedOut(task, responseItem, time.Now().UnixMilli()) {
 			responseItem.FailReason = "Upstream task timed out (over 1 hour)"
 			responseItem.Status = "FAILURE"
+			// The task is refunded, so it must not keep a result the user could still fetch.
+			responseItem.ImageUrl = ""
 		}
 
 		if !checkMjTaskNeedUpdate(task, responseItem) {
@@ -202,31 +205,56 @@ func MjTaskHandler(midjourneyChannel *model.Channel, taskIds []string, taskM map
 			task.Buttons = string(buttonStr)
 		}
 
-		if (task.Progress != "100%" && responseItem.FailReason != "") || (task.Progress == "100%" && task.Status == "FAILURE") {
+		failed := (task.Progress != "100%" && responseItem.FailReason != "") || (task.Progress == "100%" && task.Status == "FAILURE")
+		if failed {
 			logger.LogError(ctx, task.MjId+" build failed, "+task.FailReason)
 			task.Progress = "100%"
-			err = model.CacheUpdateUserQuota(task.UserId)
-			if err != nil {
-				logger.LogError(ctx, "error update user quota cache: "+err.Error())
-			} else {
-				quota := task.Quota
-				if quota != 0 {
-					err = model.IncreaseUserQuota(task.UserId, quota)
-					if err != nil {
-						logger.LogError(ctx, "fail to increase user quota: "+err.Error())
-					}
-					logContent := fmt.Sprintf("Image generation failed %s, refunded %s", task.MjId, common.LogQuota(quota))
-					model.RecordLog(task.UserId, model.LogTypeSystem, logContent)
-				}
-			}
 		}
+		// Save first: the task leaves the unfinished set only once it is stored at 100%, so a
+		// failed save must not refund, or the next round would refund it again.
 		err = task.Update()
 		if err != nil {
 			logger.LogError(ctx, "UpdateMidjourneyTask task error: "+err.Error())
+			continue
+		}
+		if failed {
+			refundMjTask(ctx, task)
 		}
 	}
 
 	return nil
+}
+
+// mjTaskTimeoutMs is how long a task may stay unfinished upstream before it is failed and refunded.
+const mjTaskTimeoutMs = 3600 * 1000
+
+// mjTaskTimedOut reports whether a task the upstream has not finished ran past the timeout. A task
+// the upstream reports as finished (SUCCESS, FAILURE or 100%) is never timed out, so a late success
+// is not refunded while its image stays available (SEC-76).
+func mjTaskTimedOut(task *model.Midjourney, item provider.MidjourneyDto, nowMs int64) bool {
+	if task.Progress == "100%" || item.Progress == "100%" || item.Status == "SUCCESS" || item.Status == "FAILURE" {
+		return false
+	}
+	return nowMs-task.SubmitTime > mjTaskTimeoutMs
+}
+
+// refundMjTask returns the quota a failed task was charged. task.Quota is the amount its
+// submission was actually charged (0 for actions that are never billed), so the refund never
+// exceeds the charge (SEC-63).
+func refundMjTask(ctx context.Context, task *model.Midjourney) {
+	quota := task.Quota
+	if quota <= 0 {
+		return
+	}
+	if err := model.IncreaseUserQuota(task.UserId, quota); err != nil {
+		logger.LogError(ctx, "fail to increase user quota: "+err.Error())
+		return
+	}
+	if err := model.CacheUpdateUserQuota(task.UserId); err != nil {
+		logger.LogError(ctx, "error update user quota cache: "+err.Error())
+	}
+	logContent := fmt.Sprintf("Image generation failed %s, refunded %s", task.MjId, common.LogQuota(quota))
+	model.RecordLog(task.UserId, model.LogTypeSystem, logContent)
 }
 
 func checkMjTaskNeedUpdate(oldTask *model.Midjourney, newTask provider.MidjourneyDto) bool {
