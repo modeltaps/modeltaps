@@ -7,20 +7,21 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useSettingsPlane } from '@/components/settings/SettingsPlane';
 import { useOrg } from 'contexts/OrgContext';
 import { settingsReturnPath } from 'utils/settingsReturn';
+import { adminReturnPath } from 'utils/adminReturn';
 import OrgPicker from 'views/panel/Settings/org/OrgPicker';
 import { ORG_TREE, orgSettingsUrl, parseSettingsPath, settingsTree } from 'views/panel/Settings/sections';
 import { isAdminPath } from './nav-config';
-import { BackRow, SidebarSearch, sidebarRow } from './SidebarControls';
+import { SidebarSearch, TitleBackRow, sidebarRow } from './SidebarControls';
 import SidebarBrandRow from './SidebarBrandRow';
 
 // ==============================|| CHROME — SETTINGS SIDEBAR (设置) ||============================== //
 // On 设置 the whole sidebar is the settings tree, laid out like the workbench and platform admin
 // sidebars so nothing moves between them:
-//   brand row  the same first row (SidebarBrandRow): brand, search (the panel's search palette)
-//              and the collapse button where it is needed;
-//   back row   where the workbench has its context switcher: back to the page the user came from
-//              (工作台, or 平台管理 when they came from there), as in platform admin;
-//   picker     right under it, the organizations the user manages (owners and admins only; it
+//   title row  the same first row (SidebarBrandRow) as platform admin: "‹ 设置" in the brand's
+//              place, leading back to the workbench page the user came from (when they came from
+//              platform admin, the workbench page before it), then search and collapse;
+//   picker     where the workbench has its context switcher, the organizations the user manages
+//              (owners and admins only; it
 //              names the organization part, no heading);
 //   menu       常规 / 成员与预算 / 危险操作 of that organization, then 个人设置.
 // The collapse button shows on narrow screens, where the rail collapses by itself and can be
@@ -80,10 +81,8 @@ export default function SettingsSidebar({ collapsed = false, showCollapse = fals
   const plane = useSettingsPlane();
 
   const tree = settingsTree({ pathname, organizations, currentOrgId });
-  const backTo = settingsReturnPath();
-  const backToAdmin = isAdminPath(backTo.split('?')[0]);
-  const backName = backToAdmin ? t('nav.context.admin') : t('admin_console.workspace');
-  const backLabel = backToAdmin ? t('settingsUi.sections.backToAdmin') : t('admin_console.back');
+  const lastPage = settingsReturnPath();
+  const backTo = isAdminPath(lastPage.split(/[?#]/)[0]) ? adminReturnPath() : lastPage;
   const unsaved = t('settingsUi.unsaved');
 
   // Picking another organization keeps the current item.
@@ -111,6 +110,9 @@ export default function SettingsSidebar({ collapsed = false, showCollapse = fals
       <div className="flex h-full flex-col bg-sidebar">
         <SidebarBrandRow
           collapsed={collapsed}
+          lead={
+            <TitleBackRow to={backTo} title={t('settings')} label={t('admin_console.back')} collapsed={collapsed} onClick={onItemClick} />
+          }
           onItemClick={onItemClick}
           onOpenCommand={onOpenCommand}
           onToggleCollapse={showCollapse ? onToggleCollapse : undefined}
@@ -118,7 +120,6 @@ export default function SettingsSidebar({ collapsed = false, showCollapse = fals
 
         {/* Where the workbench has its context switcher (same box, same spacing). */}
         <div className={cn('flex shrink-0 flex-col pb-1', collapsed ? 'items-center gap-1 px-1' : 'gap-2 px-2')}>
-          <BackRow to={backTo} name={backName} label={backLabel} collapsed={collapsed} onClick={onItemClick} />
           {tree.org && <OrgPicker orgs={tree.managedOrgs} value={tree.org.id} onChange={openOrg} collapsed={collapsed} />}
           {collapsed && onOpenCommand && <SidebarSearch collapsed onClick={onOpenCommand} />}
         </div>

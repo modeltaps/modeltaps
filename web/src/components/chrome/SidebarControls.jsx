@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 // ==============================|| CHROME — SIDEBAR CONTROLS ||============================== //
 // The panel has no top bar: the search and collapse buttons sit at the end of the sidebar's first
-// row (brand row, or the back row on 设置). When the rail is collapsed (desktop) or hidden (mobile),
+// row (brand row, or the title back row in platform admin and 设置). When the rail is collapsed (desktop) or hidden (mobile),
 // the expand / drawer buttons sit left of the page title (SidebarToggle).
 
 // Menu rows of the sidebars (the workbench / admin menu and the 设置 tree). Active: a subtle
@@ -121,30 +121,42 @@ export function BackChevron({ className }) {
 
 BackChevron.propTypes = { className: PropTypes.string };
 
-export function BackRow({ to, name, label, collapsed = false, onClick }) {
-  if (collapsed) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Link to={to} onClick={onClick} aria-label={label} className={iconButtonClass.replace('size-8', 'size-9')}>
-            <BackChevron className="text-[1.125rem]" />
-          </Link>
-        </TooltipTrigger>
-        <TooltipContent side="right">{label}</TooltipContent>
-      </Tooltip>
-    );
-  }
-  return (
-    <Link to={to} onClick={onClick} aria-label={label} className={cn(sidebarRow.base, sidebarRow.idle, 'h-9 gap-2.5 px-3 font-medium')}>
-      <BackChevron className="text-muted-foreground group-hover:text-foreground" />
-      <span className="min-w-0 flex-1 truncate">{name}</span>
+// The title row that takes the brand's place in platform admin ("‹ 平台管理") and 设置 ("‹ 设置"):
+// the space's name as the heading, and the whole row leads back to the workbench. Collapsed, the
+// chevron alone remains.
+export function TitleBackRow({ to, title, label, collapsed = false, onClick }) {
+  const link = (
+    <Link
+      to={to}
+      onClick={onClick}
+      aria-label={label}
+      className={cn(
+        'group flex items-center rounded-lg transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        collapsed ? 'size-9 justify-center text-lg' : 'h-9 w-full gap-2.5 pr-2 text-base'
+      )}
+    >
+      <span
+        className={cn(
+          'flex shrink-0 justify-center text-muted-foreground transition-colors group-hover:text-foreground',
+          !collapsed && 'w-7'
+        )}
+      >
+        <BackChevron />
+      </span>
+      {!collapsed && <span className="min-w-0 truncate font-semibold text-foreground">{title}</span>}
     </Link>
+  );
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{link}</TooltipTrigger>
+      <TooltipContent side={collapsed ? 'right' : 'bottom'}>{label}</TooltipContent>
+    </Tooltip>
   );
 }
 
-BackRow.propTypes = {
+TitleBackRow.propTypes = {
   to: PropTypes.string.isRequired,
-  name: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
   collapsed: PropTypes.bool,
   onClick: PropTypes.func

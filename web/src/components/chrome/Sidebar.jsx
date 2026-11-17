@@ -14,7 +14,7 @@ import { adminReturnPath } from 'utils/adminReturn';
 import { SETTINGS_ROOT, findActiveItem, isOrgAdminRole, navLabel, navSectionsFor } from './nav-config';
 import ContextSwitcher from './ContextSwitcher';
 import AccountMenu from './AccountMenu';
-import { BackChevron, SidebarIconButton, SidebarSearch, sidebarRow } from './SidebarControls';
+import { SidebarIconButton, SidebarSearch, TitleBackRow, sidebarRow } from './SidebarControls';
 import SidebarBrandRow from './SidebarBrandRow';
 import { orgSlugOf, workbench } from 'routes/paths';
 
@@ -37,39 +37,19 @@ try {
 
 const { base: rowBase, active: rowActive, idle: rowIdle, collapsed: rowCollapsed, divider } = sidebarRow;
 
-// Platform admin has no brand row and no space switcher. The brand's place holds a title row,
-// "‹ 平台管理": the context name as the heading, and the whole row leads back to the workbench
-// page the user came from (organization context is kept while in platform admin). Collapsed, the
-// chevron alone remains.
+// Platform admin has no brand row and no space switcher. The brand's place holds "‹ 平台管理",
+// which leads back to the workbench page the user came from (organization context is kept while
+// in platform admin).
 export function AdminBackRow({ collapsed, onClick }) {
   const { t } = useTranslation();
-  const label = t('admin_console.back');
-  const link = (
-    <Link
-      to={adminReturnPath()}
-      onClick={onClick}
-      aria-label={label}
-      className={cn(
-        'group flex items-center rounded-lg transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        collapsed ? 'size-9 justify-center text-lg' : 'h-9 w-full gap-2.5 pr-2 text-base'
-      )}
-    >
-      <span
-        className={cn(
-          'flex shrink-0 justify-center text-muted-foreground transition-colors group-hover:text-foreground',
-          !collapsed && 'w-7'
-        )}
-      >
-        <BackChevron />
-      </span>
-      {!collapsed && <span className="min-w-0 truncate font-semibold text-foreground">{t('nav.context.admin')}</span>}
-    </Link>
-  );
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>{link}</TooltipTrigger>
-      <TooltipContent side={collapsed ? 'right' : 'bottom'}>{label}</TooltipContent>
-    </Tooltip>
+    <TitleBackRow
+      to={adminReturnPath()}
+      title={t('nav.context.admin')}
+      label={t('admin_console.back')}
+      collapsed={collapsed}
+      onClick={onClick}
+    />
   );
 }
 

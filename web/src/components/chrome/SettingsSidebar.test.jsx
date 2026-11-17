@@ -8,14 +8,19 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { OrgContext } from 'contexts/OrgContext';
 import { SettingsPlaneContext } from '@/components/settings/SettingsPlane';
+import { rememberAdminReturn } from 'utils/adminReturn';
+import { rememberSettingsReturn } from 'utils/settingsReturn';
 import SettingsSidebar from './SettingsSidebar';
 
 // On 设置 the sidebar is the settings tree, laid out like the workbench and platform admin sidebars:
-// the brand row (brand, search button that opens the palette, collapse button where needed), the
-// back row where the context switcher is, the organization picker under it, then the organization
-// items and 个人设置. Unsaved groups reported by the page get a dot.
+// the first row ("‹ 设置" back to the workbench, search button that opens the palette, collapse
+// button where needed), the organization picker where the context switcher is, then the
+// organization items and 个人设置. Unsaved groups reported by the page get a dot.
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  sessionStorage.clear();
+});
 
 const orgs = [
   { id: 4, slug: 'acme', name: 'Acme', role: 'owner' },
@@ -70,12 +75,20 @@ describe('SettingsSidebar', () => {
     expect(within(org).getByRole('link', { name: '成员与预算' }).getAttribute('href')).toBe('/panel/settings/orgs/acme/members');
   });
 
-  it('has a back row to the workbench and no footer', () => {
+  it('has a "‹ 设置" title row back to the workbench in the first row and no footer', () => {
     renderAt('/panel/settings/profile');
-    expect(screen.getByRole('link', { name: '返回工作台' }).textContent).toContain('工作台');
-    // The same brand row as the workbench comes first.
-    expect(screen.getAllByRole('link')[0].getAttribute('href')).toBe('/panel/dashboard');
+    const back = screen.getAllByRole('link')[0];
+    expect(back.getAttribute('aria-label')).toBe('返回工作台');
+    expect(back.textContent).toBe('设置');
+    expect(back.getAttribute('href')).toBe('/panel/dashboard');
     expect(screen.queryByRole('button', { name: /账号菜单/ })).toBeNull();
+  });
+
+  it('leads to the workbench page before platform admin when opened from there', () => {
+    rememberAdminReturn('/panel/log?p=2');
+    rememberSettingsReturn('/panel/admin/users');
+    renderAt('/panel/settings/profile');
+    expect(screen.getByRole('link', { name: '返回工作台' }).getAttribute('href')).toBe('/panel/log?p=2');
   });
 
   it('shows only personal settings to users who manage no organization', () => {

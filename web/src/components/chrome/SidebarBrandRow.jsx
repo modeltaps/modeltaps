@@ -12,7 +12,7 @@ import { CollapseButton, SidebarSearch } from './SidebarControls';
 // The first row of every sidebar (workbench, platform admin, 设置): the brand (links to the
 // dashboard), then the search button (the panel's search palette) and the collapse button when
 // one is given (the drawer uses it to close). The collapsed rail shows the mark only; its search
-// icon sits under the switcher row. Platform admin passes `lead` (its "‹ 平台管理" title row),
+// icon sits under the switcher row. Platform admin and 设置 pass `lead` (their "‹ 平台管理" / "‹ 设置" title row),
 // which takes the brand's place in both states.
 
 export default function SidebarBrandRow({ collapsed = false, lead, onItemClick, onOpenCommand, onToggleCollapse }) {
