@@ -624,13 +624,53 @@ func GetLogsList(params *LogsListParams) (*DataResult[Log], error) {
 	return result, nil
 }
 
-// GetAllLogsList returns all logs matching the criteria without pagination (for export)
-func GetAllLogsList(params *LogsListParams) ([]*Log, error) {
-	var logs []*Log
+// LogExportPage is one page of a CSV export. Rows are limited to id <= MaxId, the newest
+// matching row when the export started, so logs written during the export do not shift the
+// offsets of later pages.
+type LogExportPage struct {
+	MaxId  int
+	Offset int
+	Limit  int
+}
 
-	tx := DB.Preload("Channel", func(db *gorm.DB) *gorm.DB {
-		return db.Select("id, name, type, base_url")
-	})
+// LogExportStat is the size of an export before it starts: the number of matching rows and the
+// newest matching id (0 when nothing matches).
+type LogExportStat struct {
+	Count int64 `gorm:"column:row_count"`
+	MaxId int   `gorm:"column:max_id"`
+}
+
+func countLogExport(tx *gorm.DB) (LogExportStat, error) {
+	var stat LogExportStat
+	err := tx.Select("COUNT(*) AS row_count, COALESCE(MAX(id), 0) AS max_id").Scan(&stat).Error
+	return stat, err
+}
+
+// orderLogExportPage applies the requested order with id as the final key, so offset pages
+// never repeat or skip rows, and then the page bounds.
+func orderLogExportPage(tx *gorm.DB, order string, page LogExportPage) *gorm.DB {
+	if order != "" {
+		for _, field := range strings.Split(order, ",") {
+			field = strings.TrimSpace(field)
+			desc := strings.HasPrefix(field, "-")
+			if desc {
+				field = field[1:]
+			}
+			if allowedLogsOrderFields[field] {
+				if desc {
+					field = field + " DESC"
+				}
+				tx = tx.Order(field)
+			}
+		}
+	}
+	return tx.Order("id DESC").Where("id <= ?", page.MaxId).Offset(page.Offset).Limit(page.Limit)
+}
+
+// allLogsExportQuery filters the site logs for an admin export, with the same filters as
+// GetLogsList.
+func allLogsExportQuery(params *LogsListParams) *gorm.DB {
+	tx := DB.Model(&Log{})
 
 	if params.LogType != LogTypeUnknown {
 		tx = tx.Where("type = ?", params.LogType)
@@ -657,30 +697,21 @@ func GetAllLogsList(params *LogsListParams) ([]*Log, error) {
 		tx = tx.Where("source_ip = ?", params.SourceIp)
 	}
 	tx = applyLogMetricFilters(tx, params)
-	tx = applyLogEnumFilters(tx, params, true)
+	return applyLogEnumFilters(tx, params, true)
+}
 
-	// Apply ordering
-	if params.Order != "" {
-		orderFields := strings.Split(params.Order, ",")
-		for _, field := range orderFields {
-			field = strings.TrimSpace(field)
-			desc := strings.HasPrefix(field, "-")
-			if desc {
-				field = field[1:]
-			}
-			if allowedLogsOrderFields[field] {
-				if desc {
-					field = field + " DESC"
-				}
-				tx = tx.Order(field)
-			}
-		}
-	} else {
-		// Default ordering
-		tx = tx.Order("id DESC")
-	}
+// CountAllLogsList sizes an admin export before it starts.
+func CountAllLogsList(params *LogsListParams) (LogExportStat, error) {
+	return countLogExport(allLogsExportQuery(params))
+}
 
-	err := tx.Find(&logs).Error
+// GetAllLogsList returns one page of the logs matching the criteria (for export).
+func GetAllLogsList(params *LogsListParams, page LogExportPage) ([]*Log, error) {
+	var logs []*Log
+	tx := allLogsExportQuery(params).Preload("Channel", func(db *gorm.DB) *gorm.DB {
+		return db.Select("id, name, type, base_url")
+	})
+	err := orderLogExportPage(tx, params.Order, page).Find(&logs).Error
 	return logs, err
 }
 
@@ -726,11 +757,10 @@ func GetUserLogsList(userId int, params *LogsListParams) (*DataResult[Log], erro
 	return result, nil
 }
 
-// GetAllUserLogsList returns all user logs matching the criteria without pagination (for export)
-func GetAllUserLogsList(userId int, params *LogsListParams) ([]*Log, error) {
-	var logs []*Log
-
-	tx := DB.Where("user_id = ?", userId).Omit("cost_quota", "upstream_request_id", "upstream_cost", "expected_cost")
+// userLogsExportQuery filters a user's own logs for an export, with the same filters as
+// GetUserLogsList.
+func userLogsExportQuery(userId int, params *LogsListParams) *gorm.DB {
+	tx := DB.Model(&Log{}).Where("user_id = ?", userId)
 
 	if params.LogType != LogTypeUnknown {
 		tx = tx.Where("type = ?", params.LogType)
@@ -748,30 +778,20 @@ func GetAllUserLogsList(userId int, params *LogsListParams) ([]*Log, error) {
 		tx = tx.Where("created_at <= ?", params.EndTimestamp)
 	}
 	tx = applyLogMetricFilters(tx, params)
-	tx = applyLogEnumFilters(tx, params, false)
+	return applyLogEnumFilters(tx, params, false)
+}
 
-	// Apply ordering
-	if params.Order != "" {
-		orderFields := strings.Split(params.Order, ",")
-		for _, field := range orderFields {
-			field = strings.TrimSpace(field)
-			desc := strings.HasPrefix(field, "-")
-			if desc {
-				field = field[1:]
-			}
-			if allowedLogsOrderFields[field] {
-				if desc {
-					field = field + " DESC"
-				}
-				tx = tx.Order(field)
-			}
-		}
-	} else {
-		// Default ordering
-		tx = tx.Order("id DESC")
-	}
+// CountAllUserLogsList sizes a user's export before it starts.
+func CountAllUserLogsList(userId int, params *LogsListParams) (LogExportStat, error) {
+	return countLogExport(userLogsExportQuery(userId, params))
+}
 
-	err := tx.Find(&logs).Error
+// GetAllUserLogsList returns one page of a user's logs matching the criteria (for export).
+func GetAllUserLogsList(userId int, params *LogsListParams, page LogExportPage) ([]*Log, error) {
+	var logs []*Log
+
+	tx := userLogsExportQuery(userId, params).Omit("cost_quota", "upstream_request_id", "upstream_cost", "expected_cost")
+	err := orderLogExportPage(tx, params.Order, page).Find(&logs).Error
 	if err != nil {
 		return nil, err
 	}

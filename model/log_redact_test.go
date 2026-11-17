@@ -75,7 +75,7 @@ func TestUserLogsAreRedacted(t *testing.T) {
 		t.Fatalf("GetUserLogsList: %v %v", err, result)
 	}
 	assertRedacted(t, "list", (*result.Data)[0])
-	all, err := GetAllUserLogsList(7, params)
+	all, err := GetAllUserLogsList(7, params, testExportPage)
 	if err != nil || len(all) != 1 {
 		t.Fatalf("GetAllUserLogsList: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestOrgLogsAreRedacted(t *testing.T) {
 		t.Fatalf("GetOrgLogsList: %v %v", err, result)
 	}
 	assertRedacted(t, "org list", (*result.Data)[0])
-	all, err := GetAllOrgLogsList(500, &OrgLogsListParams{})
+	all, err := GetAllOrgLogsList(500, &OrgLogsListParams{}, testExportPage)
 	if err != nil || len(all) != 1 {
 		t.Fatalf("GetAllOrgLogsList: %v", err)
 	}

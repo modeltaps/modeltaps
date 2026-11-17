@@ -1,4 +1,5 @@
 import { rewriteOrgUrl } from 'utils/orgScope';
+import { apiMessage } from 'utils/apiError';
 import { toSearchParams } from '@/components/filter-bar';
 
 // ==============================|| LOG — CSV EXPORT ||============================== //
@@ -22,6 +23,12 @@ export async function exportLogs({ params: filterParams, order, orderBy, userIsA
   });
 
   if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+  // A refused export (no range, range over 31 days, too many rows, an export already running)
+  // answers 200 with a JSON body instead of the CSV; show its message instead of saving it.
+  if ((response.headers.get('Content-Type') || '').includes('application/json')) {
+    const data = await response.json();
+    throw new Error(apiMessage(data, `HTTP error! status: ${response.status}`));
+  }
 
   const contentDisposition = response.headers.get('Content-Disposition');
   let filename = `logs_export_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`;

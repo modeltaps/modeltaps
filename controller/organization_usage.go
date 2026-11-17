@@ -214,15 +214,13 @@ func attachOrgUsageUsernames(statistics []*model.OrgUsageStatistic) {
 	}
 }
 
-// ExportOrgLogs 组织日志 CSV 导出(Member+,受可见性策略约束;规格 §3.6 / b9)
+// ExportOrgLogs 组织日志 CSV 导出(Member+,受可见性策略约束;规格 §3.6 / b9)。
+// Range, row and concurrency limits are those of streamLogExport.
 func ExportOrgLogs(c *gin.Context) {
 	org, role := getOrgFromContext(c)
 	var params model.OrgLogsListParams
 	if err := c.ShouldBindQuery(&params); err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
-		return
-	}
-	if checkLogTimeRange(c, params.StartTimestamp, params.EndTimestamp) {
 		return
 	}
 	memberId, err := resolveOrgUsageMemberFilter(c, org, role, params.MemberId)
@@ -231,34 +229,24 @@ func ExportOrgLogs(c *gin.Context) {
 		return
 	}
 	params.MemberId = memberId
-	logs, err := model.GetAllOrgLogsList(org.ShadowUserId, &params)
-	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
-		return
-	}
-	attachOrgMemberUsernames(logs)
 
-	filename := fmt.Sprintf("org_logs_export_%s.csv", time.Now().Format("20060102_150405"))
-	c.Header("Content-Type", "text/csv")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
-
-	writer := csv.NewWriter(c.Writer)
-	defer writer.Flush()
-
-	headers := []string{
-		"Time", "Member", "API Key", "Type", "Model",
-		"Duration (s)", "Input tokens", "Output tokens", "Quota", "Details",
-	}
-	if err := writer.Write(headers); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
-		return
-	}
-	for _, log := range logs {
-		if err := writer.Write(formatOrgLogToCSVRow(log)); err != nil {
-			common.APIRespondWithError(c, http.StatusOK, err)
-			return
-		}
-	}
+	streamLogExport(c, params.StartTimestamp, params.EndTimestamp, logExport{
+		filenamePrefix: "org_logs_export",
+		headers: []string{
+			"Time", "Member", "API Key", "Type", "Model",
+			"Duration (s)", "Input tokens", "Output tokens", "Quota", "Details",
+		},
+		count: func() (model.LogExportStat, error) { return model.CountAllOrgLogsList(org.ShadowUserId, &params) },
+		page: func(page model.LogExportPage) ([]*model.Log, error) {
+			logs, err := model.GetAllOrgLogsList(org.ShadowUserId, &params, page)
+			if err != nil {
+				return nil, err
+			}
+			attachOrgMemberUsernames(logs)
+			return logs, nil
+		},
+		row: formatOrgLogToCSVRow,
+	})
 }
 
 // ExportOrgUsageAnalytics 组织用量聚合 CSV 导出(Member+,受可见性策略约束;W8-H)。

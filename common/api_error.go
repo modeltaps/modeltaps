@@ -40,6 +40,13 @@ const (
 	// Subscription usage alert tiers that are not percentages between 1 and 100 (site or channel).
 	APICodeUsageAlertTiersInvalid = "usage_alert_tiers_invalid"
 
+	// Log CSV exports: a time range is required, at most 31 days and 100,000 rows, one export per
+	// user at a time.
+	APICodeLogExportRangeRequired = "log_export_range_required"
+	APICodeLogExportRangeTooLong  = "log_export_range_too_long"
+	APICodeLogExportTooManyRows   = "log_export_too_many_rows"
+	APICodeLogExportRunning       = "log_export_running"
+
 	// Channel OAuth (ClaudeCode / Codex). The provider's own text goes in params.reason.
 	APICodeChannelOAuthSessionExpired    = "channel_oauth_session_expired"
 	APICodeChannelOAuthStateMismatch     = "channel_oauth_state_mismatch"

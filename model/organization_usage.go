@@ -174,12 +174,20 @@ func GetOrgLogsList(shadowUserId int, params *OrgLogsListParams) (*DataResult[Lo
 	return result, nil
 }
 
-// GetAllOrgLogsList 组织日志全量列表(CSV 导出用,不分页)
-func GetAllOrgLogsList(shadowUserId int, params *OrgLogsListParams) ([]*Log, error) {
+func orgLogsExportQuery(shadowUserId int, params *OrgLogsListParams) *gorm.DB {
+	tx := applyOrgLogsFilters(DB.Model(&Log{}), shadowUserId, params)
+	return applyOrgLogMetricFilters(tx, params)
+}
+
+// CountAllOrgLogsList sizes an organization log export before it starts.
+func CountAllOrgLogsList(shadowUserId int, params *OrgLogsListParams) (LogExportStat, error) {
+	return countLogExport(orgLogsExportQuery(shadowUserId, params))
+}
+
+// GetAllOrgLogsList returns one page of the organization's logs (for CSV export), newest first.
+func GetAllOrgLogsList(shadowUserId int, params *OrgLogsListParams, page LogExportPage) ([]*Log, error) {
 	var logs []*Log
-	tx := applyOrgLogsFilters(DB, shadowUserId, params)
-	tx = applyOrgLogMetricFilters(tx, params)
-	err := tx.Order("id DESC").Find(&logs).Error
+	err := orderLogExportPage(orgLogsExportQuery(shadowUserId, params), "", page).Find(&logs).Error
 	RedactLogsForMember(logs)
 	return logs, err
 }

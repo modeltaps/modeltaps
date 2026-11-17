@@ -4,10 +4,12 @@ import (
 	"encoding/csv"
 	"fmt"
 	"github.com/modeltaps/modeltaps/common"
+	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/model"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -265,6 +267,124 @@ func DeleteHistoryLogs(c *gin.Context) {
 	}, common.APICodeLogCleanupStarted, nil))
 }
 
+// CSV export limits (SEC-70). An export reads logs page by page and streams them, so memory per
+// export stays at one page; the limits bound the database work and the file size.
+//   - Time range: required and at most 31 days, enough for any calendar month, the period a
+//     bill or an invoice is reconciled against. Longer reviews are exported month by month.
+//   - Rows: at most 100,000. With the Details column a row is a few hundred bytes to about 1 KB,
+//     so the file stays near or below 100 MB, which browsers and spreadsheet programs open
+//     without trouble. A range with more rows is refused before anything is read, and the
+//     message asks for a shorter range or more filters.
+//   - Page size 2,000 rows keeps a page to a few MB while a full export takes at most 50 queries.
+//   - One export at a time per user, across the site, self and organization exports.
+const MaxLogExportSpanDays = 31
+
+// Variables rather than constants so tests can use small values.
+var (
+	logExportMaxRows  = 100000
+	logExportPageSize = 2000
+)
+
+// validateLogExportRange requires both ends of the range and a span of at most
+// MaxLogExportSpanDays, on top of the lookback and order checks of validateLogTimeRange.
+func validateLogExportRange(startTimestamp, endTimestamp int64) error {
+	params := map[string]any{"max_days": MaxLogExportSpanDays}
+	if startTimestamp <= 0 || endTimestamp <= 0 {
+		return common.NewAPIError(common.APICodeLogExportRangeRequired,
+			fmt.Sprintf("Exports need a start and an end time, at most %d days apart", MaxLogExportSpanDays), params)
+	}
+	if err := validateLogTimeRange(startTimestamp, endTimestamp); err != nil {
+		return err
+	}
+	if endTimestamp-startTimestamp > int64(MaxLogExportSpanDays)*24*3600 {
+		return common.NewAPIError(common.APICodeLogExportRangeTooLong,
+			fmt.Sprintf("Exports cover at most %d days. Choose a shorter time range", MaxLogExportSpanDays), params)
+	}
+	return nil
+}
+
+// runningLogExports holds the ids of users with an export in progress.
+var runningLogExports sync.Map
+
+// acquireLogExport reserves the user's single export slot; the caller must call the returned
+// release function. It answers with an error and returns nil when an export is already running.
+func acquireLogExport(c *gin.Context, userId int) func() {
+	if _, running := runningLogExports.LoadOrStore(userId, struct{}{}); running {
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeLogExportRunning,
+			"An export is already running. Wait for it to finish and try again", nil)
+		return nil
+	}
+	return func() { runningLogExports.Delete(userId) }
+}
+
+// logExport describes one CSV export: how to size it, how to read a page and how to format a row.
+type logExport struct {
+	filenamePrefix string
+	headers        []string
+	count          func() (model.LogExportStat, error)
+	page           func(page model.LogExportPage) ([]*model.Log, error)
+	row            func(log *model.Log) []string
+}
+
+// streamLogExport checks the range and the row limit, then writes the CSV page by page. Errors
+// found before the first byte is written are answered as JSON; a database error after that ends
+// the download early and is written to the system log.
+func streamLogExport(c *gin.Context, startTimestamp, endTimestamp int64, export logExport) {
+	if err := validateLogExportRange(startTimestamp, endTimestamp); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	release := acquireLogExport(c, c.GetInt("id"))
+	if release == nil {
+		return
+	}
+	defer release()
+
+	stat, err := export.count()
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	if stat.Count > int64(logExportMaxRows) {
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeLogExportTooManyRows,
+			fmt.Sprintf("This export has %d rows, more than the limit of %d. Choose a shorter time range or add filters", stat.Count, logExportMaxRows),
+			map[string]any{"count": stat.Count, "max_rows": logExportMaxRows})
+		return
+	}
+
+	filename := fmt.Sprintf("%s_%s.csv", export.filenamePrefix, time.Now().Format("20060102_150405"))
+	c.Header("Content-Type", "text/csv")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+
+	writer := csv.NewWriter(c.Writer)
+	defer writer.Flush()
+	if err := writer.Write(export.headers); err != nil {
+		return
+	}
+	// The row limit holds even if rows are added between the count and the last page.
+	for offset := 0; offset < logExportMaxRows; offset += logExportPageSize {
+		limit := min(logExportPageSize, logExportMaxRows-offset)
+		logs, err := export.page(model.LogExportPage{MaxId: stat.MaxId, Offset: offset, Limit: limit})
+		if err != nil {
+			logger.SysError(fmt.Sprintf("log export stopped after %d rows: %s", offset, err.Error()))
+			return
+		}
+		for _, log := range logs {
+			if err := writer.Write(export.row(log)); err != nil {
+				return
+			}
+		}
+		writer.Flush()
+		if writer.Error() != nil {
+			return
+		}
+		c.Writer.Flush()
+		if len(logs) < limit {
+			return
+		}
+	}
+}
+
 func ExportLogsList(c *gin.Context) {
 	var params model.LogsListParams
 	if err := c.ShouldBindQuery(&params); err != nil {
@@ -272,44 +392,18 @@ func ExportLogsList(c *gin.Context) {
 		return
 	}
 
-	if checkLogTimeRange(c, params.StartTimestamp, params.EndTimestamp) {
-		return
-	}
-
-	// Get all matching records without pagination
-	logs, err := model.GetAllLogsList(&params)
-	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
-		return
-	}
-
-	// Set response headers for CSV download
-	filename := fmt.Sprintf("logs_export_%s.csv", time.Now().Format("20060102_150405"))
-	c.Header("Content-Type", "text/csv")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
-
-	// Create CSV writer
-	writer := csv.NewWriter(c.Writer)
-	defer writer.Flush()
-
-	// Write CSV headers
-	headers := []string{
-		"Time", "Channel", "User", "Group", "API Key", "Type", "Model",
-		"Duration (s)", "Input Tokens", "Output Tokens", "Quota", "Source IP", "Request ID", "Upstream Request ID", "Details",
-	}
-	if err := writer.Write(headers); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
-		return
-	}
-
-	// Write data rows
-	for _, log := range logs {
-		row := formatLogToCSVRow(log, true) // true for admin
-		if err := writer.Write(row); err != nil {
-			common.APIRespondWithError(c, http.StatusOK, err)
-			return
-		}
-	}
+	streamLogExport(c, params.StartTimestamp, params.EndTimestamp, logExport{
+		filenamePrefix: "logs_export",
+		headers: []string{
+			"Time", "Channel", "User", "Group", "API Key", "Type", "Model",
+			"Duration (s)", "Input Tokens", "Output Tokens", "Quota", "Source IP", "Request ID", "Upstream Request ID", "Details",
+		},
+		count: func() (model.LogExportStat, error) { return model.CountAllLogsList(&params) },
+		page: func(page model.LogExportPage) ([]*model.Log, error) {
+			return model.GetAllLogsList(&params, page)
+		},
+		row: func(log *model.Log) []string { return formatLogToCSVRow(log, true) },
+	})
 }
 
 func ExportUserLogsList(c *gin.Context) {
@@ -321,44 +415,19 @@ func ExportUserLogsList(c *gin.Context) {
 		return
 	}
 
-	if checkLogTimeRange(c, params.StartTimestamp, params.EndTimestamp) {
-		return
-	}
-
-	// Get all matching records without pagination
-	logs, err := model.GetAllUserLogsList(userId, &params)
-	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
-		return
-	}
-
-	// Set response headers for CSV download
-	filename := fmt.Sprintf("logs_export_%s.csv", time.Now().Format("20060102_150405"))
-	c.Header("Content-Type", "text/csv")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
-
-	// Create CSV writer
-	writer := csv.NewWriter(c.Writer)
-	defer writer.Flush()
-
-	// Write CSV headers (without admin-only columns)
-	headers := []string{
-		"Time", "Group", "API Key", "Type", "Model",
-		"Duration (s)", "Input Tokens", "Output Tokens", "Quota", "Source IP", "Request ID", "Details",
-	}
-	if err := writer.Write(headers); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
-		return
-	}
-
-	// Write data rows
-	for _, log := range logs {
-		row := formatLogToCSVRow(log, false) // false for regular user
-		if err := writer.Write(row); err != nil {
-			common.APIRespondWithError(c, http.StatusOK, err)
-			return
-		}
-	}
+	// Without the admin-only columns.
+	streamLogExport(c, params.StartTimestamp, params.EndTimestamp, logExport{
+		filenamePrefix: "logs_export",
+		headers: []string{
+			"Time", "Group", "API Key", "Type", "Model",
+			"Duration (s)", "Input Tokens", "Output Tokens", "Quota", "Source IP", "Request ID", "Details",
+		},
+		count: func() (model.LogExportStat, error) { return model.CountAllUserLogsList(userId, &params) },
+		page: func(page model.LogExportPage) ([]*model.Log, error) {
+			return model.GetAllUserLogsList(userId, &params, page)
+		},
+		row: func(log *model.Log) []string { return formatLogToCSVRow(log, false) },
+	})
 }
 
 // csvSafeField 防 CSV 公式注入：值以 = + - @ 或制表/回车开头时前置单引号，

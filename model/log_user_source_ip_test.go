@@ -49,7 +49,7 @@ func userLogContents(t *testing.T, params *LogsListParams) []string {
 	if err != nil {
 		t.Fatalf("GetUserLogsList: %v", err)
 	}
-	all, err := GetAllUserLogsList(7, params)
+	all, err := GetAllUserLogsList(7, params, testExportPage)
 	if err != nil {
 		t.Fatalf("GetAllUserLogsList: %v", err)
 	}

@@ -271,7 +271,7 @@ func TestOrgLogsMetricFilters(t *testing.T) {
 	})
 
 	t.Run("导出路径同样施加", func(t *testing.T) {
-		logs, err := GetAllOrgLogsList(shadowUserId, &OrgLogsListParams{MinQuota: 300})
+		logs, err := GetAllOrgLogsList(shadowUserId, &OrgLogsListParams{MinQuota: 300}, testExportPage)
 		if err != nil {
 			t.Fatalf("导出过滤失败: %v", err)
 		}
