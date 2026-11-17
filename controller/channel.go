@@ -97,6 +97,9 @@ func AddChannel(c *gin.Context) {
 	if rejectInvalidDriftRules(c, channel.DriftIgnoreRules) {
 		return
 	}
+	if rejectInvalidUsageAlertTiers(c, channel.UsageAlertTiers) {
+		return
+	}
 	// 复制渠道时前端拿不到完整 key，由后端从源渠道取
 	if channel.Key == "" && c.Query("copy_key_from") != "" {
 		sourceId, convErr := strconv.Atoi(c.Query("copy_key_from"))
@@ -256,6 +259,9 @@ func UpdateChannel(c *gin.Context) {
 		return
 	}
 	if rejectInvalidDriftRules(c, channel.DriftIgnoreRules) {
+		return
+	}
+	if rejectInvalidUsageAlertTiers(c, channel.UsageAlertTiers) {
 		return
 	}
 	oldChannel, getErr := model.GetChannelById(channel.Id)

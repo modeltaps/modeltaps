@@ -197,7 +197,7 @@ export const PLATFORM_GROUPS = [
     id: 'notify',
     // The platform's admin notices: which kinds are sent, the channels they go to, what went out.
     cards: [
-      card('notifications', 'form', ['NotifyDisabledKinds', 'NotifyKindLimitPerHour']),
+      card('notifications', 'form', ['NotifyDisabledKinds', 'NotifyKindLimitPerHour', 'UsageAlertTiers']),
       card('notify-channels', 'collection'),
       card('notify-logs', 'action')
     ]

@@ -270,6 +270,12 @@ var NotifyDisabledKinds = ""
 // NotifyKindLimitPerHour 每类通知每小时最多发送的条数，超出的丢弃并在下一小时第一条里注明数量；0 不限。
 var NotifyKindLimitPerHour = 20
 
+// UsageAlertTiers are the site's subscription usage alert tiers in percent, comma separated: a
+// notice goes out once per window period when a usage window of a subscription channel (Codex,
+// Claude Code) reaches each tier. Empty means the default 50,75,100; "0" turns the alerts off.
+// A channel's own tiers (Channel.UsageAlertTiers) win over these.
+var UsageAlertTiers = ""
+
 // QuotaRemindEnabled turns quota warning emails on or off. When off, settlement skips the extra
 // read of the user's balance that the warning check needs.
 var QuotaRemindEnabled = true

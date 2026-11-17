@@ -37,6 +37,8 @@ const (
 	APICodeChannelBaseURLNeedsKey = "channel_base_url_needs_key"
 	// A non-root admin copied a channel's key to a channel with another type or address.
 	APICodeChannelCopyKeyMismatch = "channel_copy_key_mismatch"
+	// Subscription usage alert tiers that are not percentages between 1 and 100 (site or channel).
+	APICodeUsageAlertTiersInvalid = "usage_alert_tiers_invalid"
 
 	// Channel OAuth (ClaudeCode / Codex). The provider's own text goes in params.reason.
 	APICodeChannelOAuthSessionExpired    = "channel_oauth_session_expired"

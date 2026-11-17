@@ -53,6 +53,7 @@ export const NOTIFY_KINDS = [
   'channel_enabled',
   'channel_test',
   'low_balance',
+  'subscription_usage',
   'price_change',
   'model_drift',
   'model_consistency',

@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -6,44 +5,22 @@ import { AlertTriangle } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/objects';
-import { settingsGroupUrl } from '../Setting/registry';
-import { fetchChannelCapabilities } from './channelApi';
-import { balanceCurrency, balanceSupport, noticeProblems } from './balanceAlert';
-
-// Where each problem is fixed: the notice kinds, or the SMTP card for email. The refresh
-// interval lives in the config file, so it has no link.
-const PROBLEM_LINKS = {
-  kindOff: `${settingsGroupUrl('notify')}?highlight=notifications`,
-  noTarget: `${settingsGroupUrl('notify')}?highlight=notify-channels`
-};
+import useChannelCapabilities from './useChannelCapabilities';
+import { PROBLEM_LINKS, balanceCurrency, balanceSupport, noticeProblems, noticeTargetName } from './balanceAlert';
 
 // The low-balance notice of the monitoring tab. It says when the provider has no balance to
 // watch, and for the ones that do, how often the balance is checked, where the notice goes and
 // what would keep it from arriving.
 export default function BalanceAlertField({ channel, value, onChange }) {
   const { t } = useTranslation();
-  const [caps, setCaps] = useState(null);
-
-  useEffect(() => {
-    let alive = true;
-    fetchChannelCapabilities()
-      .then((data) => alive && setCaps(data))
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, []);
+  const caps = useChannelCapabilities();
 
   const support = balanceSupport(channel, caps);
   const watchable = support === 'balance' || support === null;
   const currency = balanceCurrency(Number(channel.type));
   const notice = caps?.low_balance;
   const problems = support === 'balance' ? noticeProblems(notice) : [];
-  const targetName = (target) => {
-    const name = target.name || t(`settingsUi.platform.notifyChannels.types.${target.type}`, { defaultValue: target.type });
-    const label = target.detail ? `${name} ${target.detail}` : name;
-    return target.ready ? label : t('channels.monitor.targetNotReady', { name: label });
-  };
+  const targetName = (target) => noticeTargetName(t, target);
 
   return (
     <Field label={t('channels.monitor.thresholdIn', { currency })} htmlFor="cp-threshold" optional>

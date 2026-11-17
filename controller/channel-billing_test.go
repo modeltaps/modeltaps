@@ -20,15 +20,24 @@ import (
 
 // recordingNotifier 收集 notify.Send 发出的通知，供断言。注册后无法移除，所以用计数而不是精确列表。
 type recordingNotifier struct {
-	mu     sync.Mutex
-	titles []string
+	mu       sync.Mutex
+	titles   []string
+	messages []string
 }
 
-func (r *recordingNotifier) Send(_ context.Context, title, _ string) error {
+func (r *recordingNotifier) Send(_ context.Context, title, message string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.titles = append(r.titles, title)
+	r.messages = append(r.messages, message)
 	return nil
+}
+
+// since returns the titles and messages recorded after the first n.
+func (r *recordingNotifier) since(n int) (titles, messages []string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]string(nil), r.titles[n:]...), append([]string(nil), r.messages[n:]...)
 }
 
 func (r *recordingNotifier) Name() string { return "test-recorder" }

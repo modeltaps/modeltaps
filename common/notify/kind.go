@@ -27,12 +27,14 @@ const (
 	KindSupplyFailover   = "supply_failover"
 	// KindModelLibrary reports what the library inclusion rules added, retired or would change.
 	KindModelLibrary = "model_library"
+	// KindSubscriptionUsage reports a usage window of a subscription channel reaching an alert tier.
+	KindSubscriptionUsage = "subscription_usage"
 )
 
 // Kinds lists every notice kind, in the order the settings page shows them.
 var Kinds = []string{
 	KindChannelDisabled, KindChannelEnabled, KindChannelTest, KindLowBalance,
-	KindPriceChange, KindModelDrift, KindModelConsistency, KindCredential,
+	KindSubscriptionUsage, KindPriceChange, KindModelDrift, KindModelConsistency, KindCredential,
 	KindSupplyPaused, KindSupplyResumed, KindSupplyFailover, KindModelLibrary,
 }
 

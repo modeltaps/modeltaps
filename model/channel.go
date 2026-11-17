@@ -99,6 +99,13 @@ type Channel struct {
 	BalanceThreshold float64 `json:"balance_threshold" form:"balance_threshold" gorm:"type:decimal(10,4);default:0"`
 	// BalanceAlertedTime 上次发出低余额提醒的时间戳；余额回到阈值之上时清零，避免每轮刷新重复提醒。
 	BalanceAlertedTime int64 `json:"balance_alerted_time" gorm:"bigint;default:0"`
+	// UsageAlertTiers are this subscription channel's usage alert tiers in percent ("50,75,100";
+	// "0" turns them off); empty uses the site's (config.UsageAlertTiers). Nil in an update keeps
+	// the stored value, since the console saves channels whole.
+	UsageAlertTiers *string `json:"usage_alert_tiers,omitempty" gorm:"type:varchar(64)"`
+	// UsageAlerts records, per usage window, the highest tier alerted in its current period, so a
+	// tier is sent once per period. Kept by the usage refresh.
+	UsageAlerts *datatypes.JSONType[ChannelUsageAlerts] `json:"usage_alerts,omitempty" gorm:"type:json"`
 	// QuotaSnapshot 上游 key 级配额快照（上限 / 剩余 / 重置周期 / 各窗口用量），由余额刷新写入；
 	// 上游不提供这类信息的渠道为空。
 	QuotaSnapshot *datatypes.JSONType[ChannelQuotaSnapshot] `json:"quota_snapshot,omitempty" gorm:"type:json"`
@@ -786,7 +793,7 @@ func (channel *Channel) UpdateRaw(overwrite bool) error {
 		// 运行时字段由刷新 / 检测任务维护，表单保存不得用过期值覆盖。
 		// CreatedTime, TestTime and ResponseTime are not form fields either.
 		omit := []string{"UsedQuota", "Balance", "BalanceUpdatedTime", "BalanceAlertedTime", "QuotaSnapshot", "ModelDrift", "UsageWindows",
-			"CreatedTime", "TestTime", "ResponseTime"}
+			"UsageAlerts", "CreatedTime", "TestTime", "ResponseTime"}
 		// 编辑时 key 留空表示保留原 key，Select("*") 不能把它覆盖成空串
 		if channel.Key == "" {
 			omit = append(omit, "Key")
@@ -796,6 +803,9 @@ func (channel *Channel) UpdateRaw(overwrite bool) error {
 		}
 		if channel.PauseRules == nil {
 			omit = append(omit, "PauseRules")
+		}
+		if channel.UsageAlertTiers == nil {
+			omit = append(omit, "UsageAlertTiers")
 		}
 		if channel.SupplyIntakeRules == nil {
 			omit = append(omit, "SupplyIntakeRules")

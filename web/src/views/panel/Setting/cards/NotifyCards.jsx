@@ -65,6 +65,14 @@ export function NotificationsCard({ ctx }) {
         placeholder="20"
         description={nt('limit.description')}
       />
+      <TextRow
+        id="UsageAlertTiers"
+        label={nt('usageTiers.label')}
+        value={inputs.UsageAlertTiers}
+        onChange={(v) => setField('UsageAlertTiers', v)}
+        placeholder="50, 75, 100"
+        description={nt('usageTiers.description')}
+      />
     </OptionCard>
   );
 }

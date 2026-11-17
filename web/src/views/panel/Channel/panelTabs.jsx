@@ -74,6 +74,10 @@ import pluginConfig from './pluginConfig';
 import PriceSyncDialog from './PriceSyncDialog';
 import ModelSelectorModal from './ModelSelectorModal';
 import BalanceAlertField from './BalanceAlertField';
+import UsageAlertField from './UsageAlertField';
+import useChannelCapabilities from './useChannelCapabilities';
+import { balanceSupport } from './balanceAlert';
+import { parseUsageTiers } from './usageAlert';
 import { attachPendingModel } from '../ModelInfo/supply/supplyApi';
 import { modelSupplyPath } from '../ModelInfo/supply/supplyHelpers';
 import { performanceTab } from './PerformanceTab';
@@ -1639,6 +1643,9 @@ function MonitorBody({ object: channel, draft, setDraft, ctx }) {
   const firstModel = splitList(channel.models)[0] || '';
   // Providers without a model list endpoint cannot be compared with their upstream.
   const canCheckModels = Boolean(typeLabels(channel.type).canFetchModels);
+  // Subscription channels have usage windows instead of a balance: they get the usage alerts.
+  const caps = useChannelCapabilities();
+  const subscription = balanceSupport(channel, caps) === 'usage';
   return (
     <>
       <Field label={t('channels.monitor.testModel')} htmlFor="cp-test-model" optional hint={t('channels.monitor.testModelHint')}>
@@ -1650,7 +1657,20 @@ function MonitorBody({ object: channel, draft, setDraft, ctx }) {
           onChange={(e) => setDraft({ ...draft, test_model: e.target.value })}
         />
       </Field>
-      <BalanceAlertField channel={channel} value={draft.balance_threshold} onChange={(v) => setDraft({ ...draft, balance_threshold: v })} />
+      {subscription ? (
+        <UsageAlertField
+          channel={channel}
+          caps={caps}
+          value={draft.usage_alert_tiers}
+          onChange={(v) => setDraft({ ...draft, usage_alert_tiers: v })}
+        />
+      ) : (
+        <BalanceAlertField
+          channel={channel}
+          value={draft.balance_threshold}
+          onChange={(v) => setDraft({ ...draft, balance_threshold: v })}
+        />
+      )}
       <Field
         label={t('channels.monitor.drift')}
         extra={
@@ -1760,6 +1780,7 @@ const monitorTab = {
   make: (c) => ({
     test_model: c.test_model || '',
     balance_threshold: c.balance_threshold ? String(c.balance_threshold) : '',
+    usage_alert_tiers: c.usage_alert_tiers || '',
     drift_auto_add: !!c.drift_auto_add,
     drift_ignore_rules: c.drift_ignore_rules || '',
     drift_keep_missing: !!c.drift_keep_missing,
@@ -1769,9 +1790,12 @@ const monitorTab = {
   patch: (d, c, { t }) => {
     const rules = pauseRulesPatch(d.pause_rules, c, t);
     if (rules.error) return rules;
+    const usageTiers = parseUsageTiers(d.usage_alert_tiers);
+    if (usageTiers.error) return { error: t('channels.monitor.usage.invalid') };
     return {
       test_model: d.test_model.trim(),
       balance_threshold: Math.max(0, Number(d.balance_threshold) || 0),
+      usage_alert_tiers: usageTiers.value,
       drift_auto_add: d.drift_auto_add,
       drift_ignore_rules: d.drift_ignore_rules.trim(),
       drift_keep_missing: d.drift_keep_missing,

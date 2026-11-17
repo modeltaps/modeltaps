@@ -90,7 +90,8 @@ func updateChannelBalance(channel *model.Channel) (float64, error) {
 var errUsageWindowsUpdated = errors.New("usage windows updated")
 
 // refreshUsageWindows 查询并保存订阅类渠道（Codex）的用量窗口；Claude Code 的窗口随响应头更新，
-// 这里只返回已保存的值。不是订阅类渠道时返回 (nil, nil)。
+// 这里只返回已保存的值。Either way the usage alert tiers are checked against the windows.
+// 不是订阅类渠道时返回 (nil, nil)。
 func refreshUsageWindows(channel *model.Channel, provider providersBase.ProviderInterface) (*model.ChannelUsageWindows, error) {
 	if fetcher, ok := provider.(providersBase.UsageWindowsInterface); ok {
 		w, err := fetcher.FetchUsageWindows()
@@ -100,10 +101,12 @@ func refreshUsageWindows(channel *model.Channel, provider providersBase.Provider
 		if err := channel.UpdateUsageWindows(*w); err != nil {
 			return nil, err
 		}
+		checkUsageAlerts(channel, w)
 		return w, errUsageWindowsUpdated
 	}
 	if channel.Type == config.ChannelTypeClaudeCode && channel.UsageWindows != nil {
 		w := channel.UsageWindows.Data()
+		checkUsageAlerts(channel, &w)
 		return &w, errUsageWindowsUpdated
 	}
 	return nil, nil

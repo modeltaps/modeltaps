@@ -1763,7 +1763,8 @@
     "channel_base_url_needs_key": "只有超級管理員能在不重填 key 的情況下修改接口地址。請重新填寫 key 後再儲存新地址。",
     "channel_copy_key_mismatch": "只有超級管理員能把 key 複製到類型或接口地址不同的渠道。",
     "token_key_reset_managed": "試用區 API Key 由系統管理，不能重設",
-    "token_key_reset_not_creator": "只有建立此 API Key 的成員才能重設它"
+    "token_key_reset_not_creator": "只有建立此 API Key 的成員才能重設它",
+    "usage_alert_tiers_invalid": "用量提醒檔位要填 1 到 100 的百分比，用逗號分隔；填 0 表示關閉"
   },
   "channelOAuth": {
     "tip": {
@@ -2062,6 +2063,15 @@
       "generalSettings": {
         "noticeDescription": "儲存後在控制台頁面頂部以橫幅顯示，用戶查看或關閉後不再出現；內容變更後會再次顯示。留空表示沒有公告。"
       }
+    },
+    "notifications": {
+      "kind": {
+        "subscription_usage": "訂閱用量到檔"
+      },
+      "usageTiers": {
+        "label": "訂閱用量提醒檔位（%）",
+        "description": "訂閱類渠道（Codex、Claude Code）的用量窗口每到一檔發一次通知，窗口重置後重新計。用逗號分隔；留空為 50, 75, 100；填 0 關閉。單個渠道可以在它的「監控」頁設自己的檔位。"
+      }
     }
   },
   "modelpricePage": {
@@ -2353,7 +2363,29 @@
       "keepMissingHint": "用於模型列表不完整的上游。關閉時，連續兩次檢查都沒有的模型會停止接收請求，直至上游重新列出。",
       "suppliesGone": "已停用·上游下架（{{count}}）",
       "suppliesHeld": "上游一個已接入的模型都沒有列出，沒有停用任何線路，請檢查其模型列表。",
-      "intakePending": "待確認（{{count}}）"
+      "intakePending": "待確認（{{count}}）",
+      "usage": {
+        "label": "用量提醒",
+        "hint": "每個用量窗口到一檔提醒一次，窗口重置後重新計。留空用站點檔位；填 0 關閉本渠道的提醒。",
+        "invalid": "填 1 到 100 的百分比，用逗號分隔，或填 0",
+        "on": {
+          "channel": "每個窗口用到 {{tiers}} 時提醒（本渠道檔位）",
+          "site": "每個窗口用到 {{tiers}} 時提醒（站點檔位）"
+        },
+        "off": {
+          "channel": "本渠道的用量提醒已關閉。",
+          "site": "站點關閉了用量提醒。"
+        },
+        "every": {
+          "api": "每 {{minutes}} 分鐘查一次用量",
+          "headers": "用量取自上游回應，每 {{minutes}} 分鐘檢查一次"
+        },
+        "updatedAt": "用量更新於 {{time}}",
+        "problem": {
+          "noRefresh": "自動重新整理已關閉（設定 channel.update_frequency 為 0），只有手動重新整理時才會檢查用量。",
+          "kindOff": "「訂閱用量到檔」提醒在通知設定裡關掉了。"
+        }
+      }
     },
     "pauseRules": {
       "label": "暫停規則",

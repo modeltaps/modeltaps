@@ -117,6 +117,14 @@ func registerOptions() {
 	config.GlobalOption.RegisterBool("AutomaticEnableChannelEnabled", &config.AutomaticEnableChannelEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterString("NotifyDisabledKinds", &config.NotifyDisabledKinds, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("NotifyKindLimitPerHour", &config.NotifyKindLimitPerHour, config.ScopeAdmin)
+	config.GlobalOption.RegisterCustom("UsageAlertTiers", func() string { return config.UsageAlertTiers }, func(value string) error {
+		normalized, err := NormalizeUsageAlertTiers(value)
+		if err != nil {
+			return err
+		}
+		config.UsageAlertTiers = normalized
+		return nil
+	}, "", config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("ApproximateTokenEnabled", &config.ApproximateTokenEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("LogConsumeEnabled", &config.LogConsumeEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("LogAutoDeleteEnabled", &config.LogAutoDeleteEnabled, config.ScopeAdmin)

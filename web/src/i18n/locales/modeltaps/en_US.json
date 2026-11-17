@@ -1847,7 +1847,8 @@
     "channel_base_url_needs_key": "Only the root user can change the base URL without entering the key again. Enter the key to save the new address.",
     "channel_copy_key_mismatch": "Only the root user can copy a key to a channel with a different type or base URL.",
     "token_key_reset_managed": "The playground API key is managed by the system and cannot be reset",
-    "token_key_reset_not_creator": "Only the member who created this API key can reset it"
+    "token_key_reset_not_creator": "Only the member who created this API key can reset it",
+    "usage_alert_tiers_invalid": "Usage alert tiers must be percentages from 1 to 100 separated by commas, or 0 to turn them off"
   },
   "channelOAuth": {
     "tip": {
@@ -2142,6 +2143,15 @@
         "noticeLabel": "Announcement",
         "noticePlaceholder": "Enter the announcement here. Markdown and HTML are supported.",
         "noticeDescription": "Shown to signed-in users as a banner at the top of the console until they read or close it, and again whenever the text changes. Leave empty for no announcement."
+      }
+    },
+    "notifications": {
+      "kind": {
+        "subscription_usage": "Subscription usage tiers reached"
+      },
+      "usageTiers": {
+        "label": "Subscription usage alert tiers (%)",
+        "description": "Subscription channels (Codex, Claude Code) send one notice per tier when a usage window reaches it, and again after the window resets. Comma separated; empty means 50, 75, 100; 0 turns the alerts off. A channel can set its own tiers on its monitoring tab."
       }
     }
   },
@@ -2451,7 +2461,29 @@
       "keepMissingHint": "For upstreams whose model list is incomplete. Off, a supply whose model is missing in two checks in a row stops taking requests until it is listed again.",
       "suppliesGone": "Stopped, gone upstream ({{count}})",
       "suppliesHeld": "The upstream listed none of the supplied models. Nothing was stopped; check its model list.",
-      "intakePending": "Waiting for review ({{count}})"
+      "intakePending": "Waiting for review ({{count}})",
+      "usage": {
+        "label": "Usage alerts",
+        "hint": "One alert per tier and usage window, sent again after the window resets. Empty uses the site tiers; 0 turns them off for this channel.",
+        "invalid": "Enter percentages from 1 to 100 separated by commas, or 0",
+        "on": {
+          "channel": "Alerts at {{tiers}} of each window (this channel)",
+          "site": "Alerts at {{tiers}} of each window (site tiers)"
+        },
+        "off": {
+          "channel": "Usage alerts are off for this channel.",
+          "site": "Usage alerts are off for the site."
+        },
+        "every": {
+          "api": "usage checked every {{minutes}} min",
+          "headers": "usage read from responses, checked every {{minutes}} min"
+        },
+        "updatedAt": "Usage last updated {{time}}",
+        "problem": {
+          "noRefresh": "Automatic refresh is off (channel.update_frequency is 0); the usage is only checked when refreshed by hand.",
+          "kindOff": "Subscription usage notices are turned off in the notification settings."
+        }
+      }
     },
     "pauseRules": {
       "label": "Pause rules",

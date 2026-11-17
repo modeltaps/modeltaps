@@ -81,8 +81,16 @@ type lowBalanceNotice struct {
 	Targets []notify.Target `json:"targets"`
 }
 
+// usageAlertNotice is how subscription usage alerts reach admins right now.
+type usageAlertNotice struct {
+	lowBalanceNotice
+	// Tiers are the site's tiers in percent; empty when the site turned the alerts off. A
+	// channel's own usage_alert_tiers win over them.
+	Tiers []float64 `json:"tiers"`
+}
+
 // GetChannelCapabilities returns which channel types report a balance or usage windows, and
-// where low-balance notices go, so the monitoring tab only offers what works.
+// where low-balance and subscription usage notices go, so the monitoring tab only offers what works.
 func GetChannelCapabilities(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": gin.H{
 		"types": loadChannelTypeCapabilities(),
@@ -90,6 +98,14 @@ func GetChannelCapabilities(c *gin.Context) {
 			RefreshMinutes: viper.GetInt("channel.update_frequency"),
 			KindOn:         notify.KindEnabled(notify.KindLowBalance),
 			Targets:        notify.Targets(),
+		},
+		"usage_alert": usageAlertNotice{
+			lowBalanceNotice: lowBalanceNotice{
+				RefreshMinutes: viper.GetInt("channel.update_frequency"),
+				KindOn:         notify.KindEnabled(notify.KindSubscriptionUsage),
+				Targets:        notify.Targets(),
+			},
+			Tiers: model.SiteUsageAlertTiers(),
 		},
 	}})
 }

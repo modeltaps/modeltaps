@@ -114,6 +114,13 @@ func UpdateOption(c *gin.Context) {
 			common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "Unsupported language", nil)
 			return
 		}
+	case "UsageAlertTiers":
+		normalized, err := model.NormalizeUsageAlertTiers(option.Value)
+		if err != nil {
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeUsageAlertTiersInvalid, model.ErrInvalidUsageAlertTiers.Error(), nil)
+			return
+		}
+		option.Value = normalized
 	case "MailTemplates":
 		if err := stmp.ValidateTemplates(option.Value); err != nil {
 			common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "Invalid mail templates", nil)
