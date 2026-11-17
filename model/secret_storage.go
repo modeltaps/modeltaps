@@ -159,11 +159,12 @@ func prepareSecretColumn(db *gorm.DB, table, column string, write bool, report *
 	quoted := quotePostgresField(column)
 	lastID := 0
 	for {
+		// The alias is not "stored": that is a reserved word on MySQL 8.
 		var rows []struct {
-			Id     int
-			Stored *string
+			Id          int
+			StoredValue *string
 		}
-		err := db.Table(table).Select("id, "+quoted+" AS stored").
+		err := db.Table(table).Select("id, "+quoted+" AS stored_value").
 			Where("id > ? AND "+quoted+" IS NOT NULL AND "+quoted+" <> ''", lastID).
 			Order("id").Limit(secretMigrationBatch).Find(&rows).Error
 		if err != nil {
@@ -171,10 +172,10 @@ func prepareSecretColumn(db *gorm.DB, table, column string, write bool, report *
 		}
 		for _, row := range rows {
 			lastID = row.Id
-			if row.Stored == nil {
+			if row.StoredValue == nil {
 				continue
 			}
-			rewrite, err := report.classify(label, *row.Stored, write)
+			rewrite, err := report.classify(label, *row.StoredValue, write)
 			if err != nil {
 				return err
 			}
@@ -182,7 +183,7 @@ func prepareSecretColumn(db *gorm.DB, table, column string, write bool, report *
 				continue
 			}
 			// The old value in the condition skips a row someone changed meanwhile.
-			err = db.Table(table).Where("id = ? AND "+quoted+" = ?", row.Id, *row.Stored).
+			err = db.Table(table).Where("id = ? AND "+quoted+" = ?", row.Id, *row.StoredValue).
 				UpdateColumn(column, rewrite).Error
 			if err != nil {
 				return fmt.Errorf("encrypt %s of row %d: %w", label, row.Id, err)
