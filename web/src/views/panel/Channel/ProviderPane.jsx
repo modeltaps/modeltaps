@@ -82,6 +82,7 @@ BalanceText.propTypes = { channel: PropTypes.object.isRequired };
 function IssueTag({ issue, onAction, onDismiss, busy }) {
   const { t } = useTranslation();
   const label = {
+    retired: t('channels.issueTag.retired'),
     autoDisabled: t('channels.issueTag.autoDisabled'),
     keyMissing: t('channels.issueTag.keyMissing'),
     lowBalance: t('channels.issueTag.lowBalance'),
@@ -89,6 +90,7 @@ function IssueTag({ issue, onAction, onDismiss, busy }) {
     driftMissing: t('channels.issueTag.driftMissing', { count: issue.count })
   }[issue.kind];
   const action = {
+    retired: t('channels.issue.view'),
     autoDisabled: t('channels.issue.enable'),
     keyMissing: t('channels.issue.setKey'),
     lowBalance: t('channels.issueTag.refresh'),

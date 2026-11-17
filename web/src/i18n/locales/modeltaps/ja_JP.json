@@ -2202,7 +2202,8 @@
       "refreshBalance": "残高を更新",
       "setKey": "キーを設定",
       "view": "表示",
-      "title": "対応が必要"
+      "title": "対応が必要",
+      "retired": "提供元は {{date}} にこのサービスを終了しました。"
     },
     "lane": {
       "allOff": "すべて無効",
@@ -2709,7 +2710,8 @@
       "lowBalance": "残高不足",
       "driftNew_other": "新しいモデル {{count}} 件",
       "driftMissing_other": "終了したモデル {{count}} 件",
-      "refresh": "更新"
+      "refresh": "更新",
+      "retired": "提供終了"
     },
     "head": {
       "order": "番号の小さい順に使用。同じ番号は分担",
@@ -2763,6 +2765,12 @@
       "modelHint": "上流に送ったモデル名で集計（マッピングや供給の名前変更後）",
       "chartRequests": "リクエスト {{count}}",
       "chartFailures": "失敗 {{count}}"
+    },
+    "retired": {
+      "successor": {
+        "tokenhub": "モデルは Tencent TokenHub に移行しました。https://tokenhub.tencentmaas.com/v1 を指す OpenAI 互換チャネルを TokenHub のキーで追加してください。"
+      },
+      "moveElsewhere": "モデルを別のプロバイダーに移し、このチャネルを無効にしてください。"
     }
   },
   "nav": {

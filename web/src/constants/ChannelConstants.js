@@ -520,15 +520,29 @@ export const COMMON_CHANNEL_TYPES = [1, 14, 25, 3, 32, 42, 20, 28, 59, 58, 8];
 // CHANNEL_OPTIONS without a category lands in "other" so it is never lost. The common types are
 // shown again in their own section at the top, they are not removed from their category.
 export const CHANNEL_TYPE_CATEGORIES = [
-  { key: 'vendor', types: [1, 14, 25, 28, 56, 30, 29, 36, 17, 16, 27, 77, 78, 79, 33, 26, 15, 18, 19, 40] },
+  { key: 'vendor', types: [1, 14, 25, 28, 56, 30, 29, 36, 17, 16, 27, 77, 78, 79, 26, 15, 18, 19] },
   { key: 'cloud', types: [3, 55, 32, 42, 61, 80, 81, 54, 35] },
-  { key: 'gateway', types: [20, 62, 63, 45, 31, 49, 52, 38] },
+  { key: 'gateway', types: [20, 62, 63, 45, 31, 52, 38] },
   { key: 'inference', types: [64, 65, 66, 67, 68, 69, 70, 71, 74, 75, 76, 72, 73] },
   { key: 'subscription', types: [58, 59, 57, 60] },
   { key: 'selfhosted', types: [8, 39] },
   { key: 'media', types: [34, 41, 53, 37, 51, 24, 47] },
-  { key: 'legacy', types: [11, 23] }
+  { key: 'legacy', types: [11] }
 ];
+
+// Channel types whose service has shut down: new channels can no longer pick them, and existing
+// channels of these types raise a "retired" attention item. `successor` names where the models
+// went, when there is one (a translation key under channels.retired.successor).
+export const RETIRED_CHANNEL_TYPES = {
+  23: { date: '2026-09-30', successor: 'tokenhub' }, // Tencent's old Hunyuan platform
+  33: { date: '2026-09-03' }, // 01.AI
+  40: { date: '2026-09-30', successor: 'tokenhub' }, // Tencent Hunyuan on the old platform
+  49: { date: '2026-07-30' } // GitHub Models
+};
+
+export function isRetiredChannelType(type) {
+  return Object.prototype.hasOwnProperty.call(RETIRED_CHANNEL_TYPES, Number(type));
+}
 
 // How a provider is connected, shown next to its name. Derived from the channel form's own
 // fields (typeConfig): OAuth login, a key plus an endpoint address, or a key made of several
@@ -546,7 +560,7 @@ export function channelTypeAuth(type) {
 }
 
 // Sections for the provider picker: common first, then each category, then "other" for types
-// no category lists. Within a category the curated order above is kept (main vendors first),
+// no category lists. Retired types are left out. Within a category the curated order above is kept (main vendors first),
 // it is not re-sorted by name. `labelOf` maps a CHANNEL_OPTIONS entry to its display name.
 export function channelTypeSections(labelOf = (o) => o.text) {
   const toOption = (o) => ({ value: String(o.value), label: labelOf(o), type: o.value, auth: channelTypeAuth(o.value) });
@@ -556,7 +570,7 @@ export function channelTypeSections(labelOf = (o) => o.text) {
     { key: 'common', options: pick(COMMON_CHANNEL_TYPES) },
     ...CHANNEL_TYPE_CATEGORIES.map((c) => ({ key: c.key, options: pick(c.types) }))
   ];
-  const other = Object.values(CHANNEL_OPTIONS).filter((o) => !listed.has(o.value));
+  const other = Object.values(CHANNEL_OPTIONS).filter((o) => !listed.has(o.value) && !isRetiredChannelType(o.value));
   if (other.length > 0) sections.push({ key: 'other', options: other.map(toOption) });
   return sections.filter((s) => s.options.length > 0);
 }

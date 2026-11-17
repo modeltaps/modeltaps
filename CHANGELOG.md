@@ -475,6 +475,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Channel types whose service has shut down (GitHub Models, 01.AI and Tencent Hunyuan on its old
+  platform) are no longer offered for new channels. Existing channels of these types show a
+  "Retired" attention item with the shutdown date and, for Hunyuan, where its models went
+  (Tencent TokenHub, added as an OpenAI compatible channel).
 - Mail sending is a list of mail services, one in use. Adding one opens a sheet: pick the service
   (or custom SMTP), fill in what it hands out, send a test and save. The first service goes into
   use; using another replaces it, and the one in use can only be deleted after switching, so a new

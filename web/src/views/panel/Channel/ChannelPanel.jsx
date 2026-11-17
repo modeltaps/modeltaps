@@ -30,6 +30,7 @@ import { EditableTitle, ObjectPanel } from '@/components/objects';
 import { fetchChannel, updateChannel } from './channelApi';
 import { ProviderTile, useProviderName } from './channelParts';
 import { formatBalance } from './channelMetrics';
+import { RETIRED_CHANNEL_TYPES } from 'constants/ChannelConstants';
 import { DEFAULT_BASE_URLS, consoleUrl, hostOf } from './providerDefaults';
 import { PANEL_TABS } from './panelTabs';
 
@@ -169,10 +170,16 @@ export default function ChannelPanel({
         balance: formatBalance(c.type, c.balance),
         threshold: formatBalance(c.type, c.balance_threshold)
       });
+    if (issue.kind === 'retired') {
+      const { date, successor } = RETIRED_CHANNEL_TYPES[c.type];
+      const gone = t('channels.issue.retired', { date });
+      return successor ? `${gone} ${t(`channels.retired.successor.${successor}`)}` : `${gone} ${t('channels.retired.moveElsewhere')}`;
+    }
     if (issue.kind === 'driftNew' || issue.kind === 'driftMissing') return t(`channels.issue.${issue.kind}`, { count: issue.count });
     return t(`channels.issue.${issue.kind}`);
   };
   const issueActionText = {
+    retired: null,
     autoDisabled: 'enable',
     keyMissing: 'setKey',
     lowBalance: 'refreshBalance',
@@ -188,7 +195,7 @@ export default function ChannelPanel({
         <li key={issue.key} className="flex items-center gap-2">
           <AlertTriangle className="size-3.5 shrink-0 text-warning" />
           <span className="min-w-0 flex-1">{issueText(issue)}</span>
-          {onIssueAction && (
+          {onIssueAction && issueActionText[issue.kind] && (
             <button
               type="button"
               disabled={issueBusy?.(issue)}

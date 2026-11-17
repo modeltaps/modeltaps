@@ -2206,7 +2206,8 @@
       "refreshBalance": "重新整理餘額",
       "setKey": "去處理",
       "view": "查看",
-      "title": "需要處理"
+      "title": "需要處理",
+      "retired": "服務商已於 {{date}} 停止此服務。"
     },
     "lane": {
       "allOff": "全部停用",
@@ -2713,7 +2714,8 @@
       "lowBalance": "餘額低",
       "driftNew_other": "{{count}} 個新模型",
       "driftMissing_other": "{{count}} 個模型下架",
-      "refresh": "重新整理"
+      "refresh": "重新整理",
+      "retired": "已停服"
     },
     "head": {
       "order": "先用數字小的；同號渠道一起分擔流量",
@@ -2767,6 +2769,12 @@
       "modelHint": "按發往上游的模型名統計（映射或線路改名之後）",
       "chartRequests": "請求 {{count}}",
       "chartFailures": "失敗 {{count}}"
+    },
+    "retired": {
+      "successor": {
+        "tokenhub": "模型已遷到騰訊 TokenHub：新增一個 OpenAI 相容渠道，地址填 https://tokenhub.tencentmaas.com/v1，金鑰用 TokenHub 的 key。"
+      },
+      "moveElsewhere": "請把它的模型移到其他服務商，再停用這個渠道。"
     }
   },
   "nav": {

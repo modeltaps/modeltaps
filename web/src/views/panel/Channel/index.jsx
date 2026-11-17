@@ -343,7 +343,8 @@ export default function Channel() {
   };
   const issueAction = (issue) => {
     const c = issue.channel;
-    if (issue.kind === 'autoDisabled') actions.onToggleStatus(c);
+    if (issue.kind === 'retired') openChannel(c.id);
+    else if (issue.kind === 'autoDisabled') actions.onToggleStatus(c);
     else if (issue.kind === 'keyMissing') openChannel(c.id, 'connection');
     else if (issue.kind === 'lowBalance') actions.onRefreshBalance(c);
     else {

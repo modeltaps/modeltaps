@@ -2293,7 +2293,8 @@
       "refreshBalance": "Refresh balance",
       "setKey": "Set key",
       "view": "View",
-      "title": "Needs attention"
+      "title": "Needs attention",
+      "retired": "The provider shut this service down on {{date}}."
     },
     "lane": {
       "allOff": "All channels disabled",
@@ -2828,7 +2829,8 @@
       "driftNew_other": "{{count}} new models",
       "driftMissing_one": "{{count}} model gone",
       "driftMissing_other": "{{count}} models gone",
-      "refresh": "Refresh"
+      "refresh": "Refresh",
+      "retired": "Retired"
     },
     "head": {
       "order": "Lower numbers are tried first; channels with the same number share traffic",
@@ -2882,6 +2884,12 @@
       "modelHint": "Counted by the model name sent upstream (after mapping or supply renames)",
       "chartRequests": "{{count}} requests",
       "chartFailures": "{{count}} failed"
+    },
+    "retired": {
+      "successor": {
+        "tokenhub": "Its models moved to Tencent TokenHub: add an OpenAI compatible channel at https://tokenhub.tencentmaas.com/v1 with a TokenHub key."
+      },
+      "moveElsewhere": "Move its models to another provider and disable this channel."
     }
   },
   "nav": {

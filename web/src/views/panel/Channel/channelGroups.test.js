@@ -61,6 +61,11 @@ describe('channelIssues', () => {
     expect(channelIssues(more).map((i) => [i.kind, i.count])).toEqual([['driftMissing', 1]]);
   });
 
+  it('flags a channel whose provider has shut down, before anything else', () => {
+    expect(channelIssues(ch(9, 49, { status: 3 })).map((i) => i.kind)).toEqual(['retired', 'autoDisabled']);
+    expect(channelIssues(ch(10, 1)).map((i) => i.kind)).toEqual([]);
+  });
+
   it('does not flag missing models switched off on the channel', () => {
     const off = ch(3, 1, { disabled_models: ['a'], model_drift: { missing_models: ['a', 'b'], dismissed_missing: ['b'] } });
     expect(channelIssues(off)).toEqual([]);

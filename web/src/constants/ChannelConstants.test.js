@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { CHANNEL_OPTIONS, CHANNEL_TYPE_CATEGORIES, COMMON_CHANNEL_TYPES, channelTypeAuth, channelTypeSections } from './ChannelConstants';
+import {
+  CHANNEL_OPTIONS,
+  CHANNEL_TYPE_CATEGORIES,
+  COMMON_CHANNEL_TYPES,
+  RETIRED_CHANNEL_TYPES,
+  channelTypeAuth,
+  channelTypeSections
+} from './ChannelConstants';
 
 const values = (section) => section.options.map((o) => o.value);
 
@@ -11,12 +18,21 @@ describe('channelTypeSections', () => {
     expect(values(common)).toEqual(COMMON_CHANNEL_TYPES.map(String));
   });
 
-  it('files every channel type under exactly one category', () => {
+  it('files every channel type that is still in service under exactly one category', () => {
     const categorized = channelTypeSections()
       .filter((s) => s.key !== 'common')
       .flatMap(values);
     expect(new Set(categorized).size).toBe(categorized.length);
-    expect([...categorized].sort()).toEqual(Object.keys(CHANNEL_OPTIONS).sort());
+    const inService = Object.keys(CHANNEL_OPTIONS).filter((id) => !(id in RETIRED_CHANNEL_TYPES));
+    expect([...categorized].sort()).toEqual(inService.sort());
+  });
+
+  it('offers no retired type, in a category or under other', () => {
+    const offered = channelTypeSections().flatMap(values);
+    Object.keys(RETIRED_CHANNEL_TYPES).forEach((id) => {
+      expect(CHANNEL_OPTIONS[id]).toBeDefined();
+      expect(offered).not.toContain(id);
+    });
   });
 
   it('keeps every category type known to CHANNEL_OPTIONS, so no section shows a dead entry', () => {

@@ -1,3 +1,4 @@
+import { isRetiredChannelType } from 'constants/ChannelConstants';
 import { matchesSearch, searchTerms } from 'utils/textSearch';
 
 // Pure helpers behind the provider page: channels grouped by provider type, the order of rows
@@ -72,7 +73,7 @@ export function flaggedMissingModels(channel) {
 }
 
 // Attention items of one channel, in display order. Each is { key, kind, channel, count? }:
-// autoDisabled (status 3), keyMissing (no stored key), lowBalance, driftNew (models the
+// retired (the provider has shut down the service), autoDisabled (status 3), keyMissing (no stored key), lowBalance, driftNew (models the
 // upstream added) and driftMissing (models the upstream no longer lists). `key` identifies the
 // item for dismissal and changes when the underlying data changes, so a dismissed item comes
 // back once there is something new to say.
@@ -80,6 +81,7 @@ export function channelIssues(channel) {
   if (!channel) return [];
   const issues = [];
   const push = (kind, sig, extra = {}) => issues.push({ key: `${channel.id}:${kind}:${sig}`, kind, channel, ...extra });
+  if (isRetiredChannelType(channel.type)) push('retired', channel.type);
   if (channel.status === 3) push('autoDisabled', channel.test_time || 0);
   if (channel.key_status && !channel.key_status.configured) push('keyMissing', 0);
   if (hasLowBalance(channel)) push('lowBalance', channel.balance_updated_time);
