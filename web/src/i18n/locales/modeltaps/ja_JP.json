@@ -1307,6 +1307,16 @@
         "name": "カスタムモデル正規表現",
         "description": "regex / auto+custom モードでのみ有効です。モデルマッピング後の上流モデル名に対し、大文字小文字を区別せずに照合します。例：^(anthropic/)?claude または opus|sonnet|haiku"
       }
+    },
+    "requestyCache": {
+      "name": "Requesty のプロンプトキャッシュ",
+      "description": "OpenAI 形式のリクエストに Requesty がキャッシュブレークポイントを付けるようにします。付けない場合、chat completions や responses で呼び出す Claude モデルはキャッシュされません。",
+      "autoCache": {
+        "name": "自動キャッシュブレークポイント",
+        "description": "オン（既定）：コーディングエージェントのように繰り返し送る長いコンテキストを入力価格の 1 割でキャッシュから読み込みます。最初の書き込みは 25% 高くなります。オフ：リクエストをそのまま送ります。",
+        "on": "オン",
+        "off": "オフ"
+      }
     }
   },
   "paymentConfig": {
@@ -1745,10 +1755,6 @@
     "oidc_login_failed": "ログインに失敗しました。もう一度お試しください",
     "log_cleanup_started": "ログのクリーンアップをバックグラウンドで開始しました。進捗はシステムログに記録されます",
     "log_cleanup_running": "ログのクリーンアップがすでに実行中です。しばらくしてからもう一度お試しください",
-    "log_export_range_required": "エクスポートするには {{max_days}} 日以内の期間を選択してください",
-    "log_export_range_too_long": "エクスポートできる期間は最大 {{max_days}} 日です。期間を短くしてください",
-    "log_export_too_many_rows": "このエクスポートは {{count}} 行あり、上限の {{max_rows}} 行を超えています。期間を短くするか、絞り込み条件を追加してください",
-    "log_export_running": "別のエクスポートを実行中です。完了してからもう一度お試しください",
     "log_export_range_required": "エクスポートするには {{max_days}} 日以内の期間を選択してください",
     "log_export_range_too_long": "エクスポートできる期間は最大 {{max_days}} 日です。期間を短くしてください",
     "log_export_too_many_rows": "このエクスポートは {{count}} 行あり、上限の {{max_rows}} 行を超えています。期間を短くするか、絞り込み条件を追加してください",

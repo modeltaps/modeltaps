@@ -1313,6 +1313,16 @@
         "name": "自訂模型正則",
         "description": "僅 regex / auto+custom 模式生效；對模型映射後的上游模型名做大小寫不敏感匹配，例如 ^(anthropic/)?claude 或 opus|sonnet|haiku"
       }
+    },
+    "requestyCache": {
+      "name": "Requesty 提示快取",
+      "description": "讓 Requesty 給 OpenAI 格式的請求自動加快取斷點。不加時，經 chat completions 或 responses 呼叫的 Claude 模型完全不快取。",
+      "autoCache": {
+        "name": "自動快取斷點",
+        "description": "開（預設）：編程 Agent 這類反覆發送的長上下文按輸入價的一成從快取讀取，首次寫入多付 25%。關：請求原樣發送。",
+        "on": "開",
+        "off": "關"
+      }
     }
   },
   "paymentConfig": {
@@ -1751,10 +1761,6 @@
     "oidc_login_failed": "登入失敗，請重試",
     "log_cleanup_started": "日誌清理已在背景開始，進度見系統日誌",
     "log_cleanup_running": "已有日誌清理任務在執行，請稍後再試",
-    "log_export_range_required": "匯出需要選擇時間範圍，最長 {{max_days}} 天",
-    "log_export_range_too_long": "單次匯出最長 {{max_days}} 天，請縮短時間範圍",
-    "log_export_too_many_rows": "本次匯出有 {{count}} 行，超過 {{max_rows}} 行的上限，請縮短時間範圍或增加篩選條件",
-    "log_export_running": "已有匯出在進行，請等它完成後再試",
     "log_export_range_required": "匯出需要選擇時間範圍，最長 {{max_days}} 天",
     "log_export_range_too_long": "單次匯出最長 {{max_days}} 天，請縮短時間範圍",
     "log_export_too_many_rows": "本次匯出有 {{count}} 行，超過 {{max_rows}} 行的上限，請縮短時間範圍或增加篩選條件",

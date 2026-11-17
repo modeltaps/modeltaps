@@ -24,6 +24,9 @@ func getClaudeConfig(baseURL string) base.ProviderConfig {
 // pointed at Requesty does.
 func (p *RequestyProvider) claudeProvider() *claude.ClaudeProvider {
 	provider := &claude.ClaudeProvider{BaseProvider: p.BaseProvider}
+	// Messages requests carry their own cache_control breakpoints; the router flag is for the
+	// OpenAI format only.
+	provider.DefaultCustomParams = nil
 	provider.Config = getClaudeConfig(p.Config.BaseURL)
 	provider.Requester = requester.NewHTTPRequester(p.Channel.GetProxy(), claude.RequestErrorHandle)
 	return provider

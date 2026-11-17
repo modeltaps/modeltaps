@@ -30,15 +30,35 @@ func (f RequestyProviderFactory) Create(channel *model.Channel) base.ProviderInt
 	return &RequestyProvider{
 		OpenAIProvider: openai.OpenAIProvider{
 			BaseProvider: base.BaseProvider{
-				Config:    getConfig(),
-				Channel:   channel,
-				Requester: requester.NewHTTPRequester(channel.GetProxy(), RequestErrorHandle),
+				Config:              getConfig(),
+				Channel:             channel,
+				Requester:           requester.NewHTTPRequester(channel.GetProxy(), RequestErrorHandle),
+				DefaultCustomParams: autoCacheParams(channel),
 			},
 			ReasoningHandler:     true,
 			SupportStreamOptions: true,
 		},
 		manageKey: manageKey,
 	}
+}
+
+// autoCacheParams turns on Requesty's automatic cache breakpoints for chat completions and
+// responses (`"requesty": {"auto_cache": true}`) unless the channel switches them off. Without it
+// Claude models reached over the OpenAI format are not cached at all, and coding agents resend
+// the same long context on every turn: cache reads cost a tenth of input, a write a quarter more,
+// so a one-off long prompt costs 25% more while every repeated one costs far less. The channel's
+// own custom parameters win, and so does a client's own `requesty` object on channels that pass
+// extra body fields through.
+// https://docs.requesty.ai/features/auto-caching
+func autoCacheParams(channel *model.Channel) map[string]interface{} {
+	if channel != nil && channel.Plugin != nil {
+		if opts, ok := channel.Plugin.Data()["requesty"]; ok {
+			if mode, _ := opts["auto_cache"].(string); mode == "off" {
+				return nil
+			}
+		}
+	}
+	return map[string]interface{}{"requesty": map[string]interface{}{"auto_cache": true}}
 }
 
 // RequestErrorHandle parses Requesty's errors, which use OpenAI's error object.

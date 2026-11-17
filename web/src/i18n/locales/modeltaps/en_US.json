@@ -1328,6 +1328,16 @@
         "name": "Custom model regex",
         "description": "Only used in regex and auto+custom modes. Matched case-insensitively against the upstream model name after model mapping, e.g. ^(anthropic/)?claude or opus|sonnet|haiku"
       }
+    },
+    "requestyCache": {
+      "name": "Requesty prompt caching",
+      "description": "Asks Requesty to add cache breakpoints to OpenAI format requests. Without them Claude models reached through chat completions or responses are not cached.",
+      "autoCache": {
+        "name": "Automatic cache breakpoints",
+        "description": "On (default): repeated long context, as coding agents send it, is read from the cache at a tenth of the input price; the first write costs 25% more. Off: requests are sent as they are.",
+        "on": "On",
+        "off": "Off"
+      }
     }
   },
   "paymentConfig": {
@@ -1835,10 +1845,6 @@
     "oidc_login_failed": "Sign-in failed. Try again.",
     "log_cleanup_started": "Log cleanup started in the background. Progress is written to the system log.",
     "log_cleanup_running": "A log cleanup is already running. Try again later.",
-    "log_export_range_required": "Choose a time range of at most {{max_days}} days to export.",
-    "log_export_range_too_long": "Exports cover at most {{max_days}} days. Choose a shorter time range.",
-    "log_export_too_many_rows": "This export has {{count}} rows, more than the limit of {{max_rows}}. Choose a shorter time range or add filters.",
-    "log_export_running": "An export is already running. Wait for it to finish and try again.",
     "log_export_range_required": "Choose a time range of at most {{max_days}} days to export.",
     "log_export_range_too_long": "Exports cover at most {{max_days}} days. Choose a shorter time range.",
     "log_export_too_many_rows": "This export has {{count}} rows, more than the limit of {{max_rows}}. Choose a shorter time range or add filters.",

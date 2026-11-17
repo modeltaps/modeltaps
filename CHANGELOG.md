@@ -496,6 +496,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Requesty channels turn on Requesty's automatic cache breakpoints for OpenAI format requests
+  (`"requesty": {"auto_cache": true}`), so Claude models reached through chat completions or
+  responses are cached. A one-off long prompt costs 25% more for the cache write; repeated context,
+  as coding agents send it, is read at a tenth of the input price. Switch it off under the channel's
+  Advanced tab; the channel's own custom parameters win.
 - New routing policy templates: the kind of task for a coding agent (explain, edit, debug, plan),
   the material of a request (chat, writing, code, data) and the cost of a mistake (routine,
   careful). Existing policies are not changed. The routing guide explains labels, the fallback

@@ -1313,6 +1313,16 @@
         "name": "自定义模型正则",
         "description": "仅 regex / auto+custom 模式生效；对模型映射后的上游模型名做大小写不敏感匹配，例如 ^(anthropic/)?claude 或 opus|sonnet|haiku"
       }
+    },
+    "requestyCache": {
+      "name": "Requesty 提示缓存",
+      "description": "让 Requesty 给 OpenAI 格式的请求自动加缓存断点。不加时，经 chat completions 或 responses 调用的 Claude 模型完全不缓存。",
+      "autoCache": {
+        "name": "自动缓存断点",
+        "description": "开（默认）：编程 Agent 这类反复发送的长上下文按输入价的一成从缓存读取，首次写入多付 25%。关：请求原样发送。",
+        "on": "开",
+        "off": "关"
+      }
     }
   },
   "paymentConfig": {
@@ -1751,10 +1761,6 @@
     "oidc_login_failed": "登录失败，请重试",
     "log_cleanup_started": "日志清理已在后台开始，进度见系统日志",
     "log_cleanup_running": "已有日志清理任务在执行，请稍后再试",
-    "log_export_range_required": "导出需要选择时间范围，最长 {{max_days}} 天",
-    "log_export_range_too_long": "单次导出最长 {{max_days}} 天，请缩短时间范围",
-    "log_export_too_many_rows": "本次导出有 {{count}} 行，超过 {{max_rows}} 行的上限，请缩短时间范围或增加筛选条件",
-    "log_export_running": "已有导出在进行，请等它完成后再试",
     "log_export_range_required": "导出需要选择时间范围，最长 {{max_days}} 天",
     "log_export_range_too_long": "单次导出最长 {{max_days}} 天，请缩短时间范围",
     "log_export_too_many_rows": "本次导出有 {{count}} 行，超过 {{max_rows}} 行的上限，请缩短时间范围或增加筛选条件",

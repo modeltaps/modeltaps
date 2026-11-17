@@ -85,6 +85,11 @@ type BaseProvider struct {
 	Requester       *requester.HTTPRequester
 	OtherArg        string
 	SupportResponse bool
+	// DefaultCustomParams are body fields a provider adds by default, as if they were channel
+	// custom parameters: the channel's own custom parameters win key by key, and the merge keeps
+	// a field the client sent unless the channel sets overwrite. Channels whose custom parameters
+	// are per model take no defaults. Requesty uses it for its automatic cache breakpoints.
+	DefaultCustomParams map[string]interface{}
 }
 
 // 获取基础URL
@@ -502,7 +507,7 @@ func (p *BaseProvider) ModelMappingHandler(modelName string) (string, error) {
 func (p *BaseProvider) CustomParameterHandler() (map[string]interface{}, error) {
 	customParameter := p.Channel.GetCustomParameter()
 	if customParameter == "" || customParameter == "{}" {
-		return nil, nil
+		return withDefaultCustomParams(nil, p.DefaultCustomParams), nil
 	}
 
 	customParams := make(map[string]interface{})
@@ -511,7 +516,25 @@ func (p *BaseProvider) CustomParameterHandler() (map[string]interface{}, error) 
 		return nil, err
 	}
 
-	return customParams, nil
+	return withDefaultCustomParams(customParams, p.DefaultCustomParams), nil
+}
+
+// withDefaultCustomParams adds the provider's default fields the channel does not set itself.
+func withDefaultCustomParams(customParams, defaults map[string]interface{}) map[string]interface{} {
+	if len(defaults) == 0 {
+		return customParams
+	}
+	if perModel, _ := customParams["per_model"].(bool); perModel {
+		return customParams
+	}
+	merged := make(map[string]interface{}, len(customParams)+len(defaults))
+	for key, value := range defaults {
+		merged[key] = value
+	}
+	for key, value := range customParams {
+		merged[key] = value
+	}
+	return merged
 }
 
 func (p *BaseProvider) GetAPIUri(relayMode int) string {

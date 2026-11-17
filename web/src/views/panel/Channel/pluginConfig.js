@@ -317,6 +317,27 @@ const pluginConfig = {
       }
     },
     ...promptCachingPlugin
+  },
+  // Requesty: automatic cache breakpoints on OpenAI format requests (CHAN-46). On by default; the
+  // backend adds `"requesty": {"auto_cache": true}` unless this says off.
+  63: {
+    requesty: {
+      name: `${P}.requestyCache.name`,
+      description: `${P}.requestyCache.description`,
+      params: {
+        auto_cache: {
+          name: `${P}.requestyCache.autoCache.name`,
+          description: `${P}.requestyCache.autoCache.description`,
+          type: 'select',
+          default: 'on',
+          required: false,
+          options: [
+            { value: 'on', label: `${P}.requestyCache.autoCache.on` },
+            { value: 'off', label: `${P}.requestyCache.autoCache.off` }
+          ]
+        }
+      }
+    }
   }
 };
 
