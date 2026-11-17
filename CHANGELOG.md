@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Supply routing stays off after the upgrade (`ModelSupplyEnabled` is off by default) and requests
+  are routed as before. The operator guide `docs/ops/en/use/supply_routing.md` walks through a
+  backup, a dry run of the migration and its report, switching on, checking and switching back.
 - Copy for your agent next to a pairing code: one click copies the setup guide address, the
   pairing code, how to keep the key and what to report back, in the console language and without
   the key. Once the code has expired it asks for a new one; right after creation a secondary copy
