@@ -102,7 +102,7 @@ func TestOrganizationRoutingPolicyNames(t *testing.T) {
 	}
 }
 
-// Requests from an organization resolve to its own enabled policy first, then the platform's.
+// policy/<name> from an organization resolves to its own enabled policy; a bare name to the platform's.
 func TestResolveRoutingPolicyScopes(t *testing.T) {
 	setupOrgRoutingTestDB(t)
 	acme, globex := createRoutingTestOrg(t, "acme"), createRoutingTestOrg(t, "globex")
@@ -121,8 +121,11 @@ func TestResolveRoutingPolicyScopes(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		if got := ResolveRoutingPolicy(OrganizationRoutingScope(acme.Id), "auto/coder"); got == nil || got.Id != own.Id {
+		if got := ResolveRoutingPolicy(OrganizationRoutingScope(acme.Id), "policy/auto/coder"); got == nil || got.Id != own.Id {
 			t.Fatalf("loaded=%v: acme should get its own policy, got %+v", loaded, got)
+		}
+		if got := ResolveRoutingPolicy(OrganizationRoutingScope(acme.Id), "auto/coder"); got == nil || got.Id != platform.Id {
+			t.Fatalf("loaded=%v: the bare name is the platform policy for acme too, got %+v", loaded, got)
 		}
 		if got := ResolveRoutingPolicy(OrganizationRoutingScope(globex.Id), "auto/coder"); got == nil || got.Id != platform.Id {
 			t.Fatalf("loaded=%v: globex should get the platform policy, got %+v", loaded, got)
@@ -130,28 +133,28 @@ func TestResolveRoutingPolicyScopes(t *testing.T) {
 		if got := ResolveRoutingPolicy(PlatformRoutingScope, "auto/coder"); got == nil || got.Id != platform.Id {
 			t.Fatalf("loaded=%v: personal keys get the platform policy, got %+v", loaded, got)
 		}
-		if got := ResolveRoutingPolicy(OrganizationRoutingScope(globex.Id), "auto/acme"); got != nil {
+		if got := ResolveRoutingPolicy(OrganizationRoutingScope(globex.Id), "policy/auto/acme"); got != nil {
 			t.Fatalf("loaded=%v: another organization's policy must not resolve, got %+v", loaded, got)
 		}
-		if got := policyNames(EnabledRoutingPoliciesFor(OrganizationRoutingScope(acme.Id))); len(got) != 2 || got[0] != "auto/acme" || got[1] != "auto/coder" {
-			t.Fatalf("loaded=%v: acme lists its own policies once each, got %v", loaded, got)
+		if got := callNames(EnabledRoutingPoliciesFor(OrganizationRoutingScope(acme.Id))); len(got) != 3 || got[0] != "auto/coder" || got[1] != "policy/auto/acme" || got[2] != "policy/auto/coder" {
+			t.Fatalf("loaded=%v: acme lists the platform policy and its own two, got %v", loaded, got)
 		}
 		if got := policyNames(EnabledRoutingPoliciesFor(OrganizationRoutingScope(globex.Id))); len(got) != 1 || got[0] != "auto/coder" {
 			t.Fatalf("loaded=%v: globex lists the platform policy only, got %v", loaded, got)
 		}
 	}
 
-	// A disabled organization policy no longer hides the platform one.
+	// A disabled organization policy does not resolve, and never falls through to the platform one.
 	if _, err := SetRoutingPolicyEnabled(own.Id, false); err != nil {
 		t.Fatal(err)
 	}
-	if got := ResolveRoutingPolicy(OrganizationRoutingScope(acme.Id), "auto/coder"); got == nil || got.Id != platform.Id {
-		t.Fatalf("disabled own policy should fall through to the platform one, got %+v", got)
+	if got := ResolveRoutingPolicy(OrganizationRoutingScope(acme.Id), "policy/auto/coder"); got != nil {
+		t.Fatalf("a disabled own policy must not resolve, got %+v", got)
 	}
 
 	// With the site option off, organization policies are not resolved at all.
 	config.UserRoutingPolicyEnabled = false
-	if got := ResolveRoutingPolicy(OrganizationRoutingScope(acme.Id), "auto/acme"); got != nil {
+	if got := ResolveRoutingPolicy(OrganizationRoutingScope(acme.Id), "policy/auto/acme"); got != nil {
 		t.Fatalf("organization policies must not resolve while the option is off, got %+v", got)
 	}
 	if got := policyNames(EnabledRoutingPoliciesFor(OrganizationRoutingScope(acme.Id))); len(got) != 1 || got[0] != "auto/coder" {
@@ -349,4 +352,12 @@ func TestOrganizationRoutingModels(t *testing.T) {
 			t.Fatalf("want %v, got %v", want, got)
 		}
 	}
+}
+
+func callNames(policies []*RoutingPolicy) []string {
+	names := make([]string, len(policies))
+	for i, p := range policies {
+		names[i] = p.CallName()
+	}
+	return names
 }

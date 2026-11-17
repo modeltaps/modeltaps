@@ -82,7 +82,7 @@ export function modelPickerOptions({ models = [], kinds = {} } = {}) {
 export const platformRoutingPolicyApi = createRoutingPolicyApi('/api/routing_policy/', { listModels: listCatalogModelNames });
 
 // organizationReviewApi: every organization's policies as the platform console reviews them
-// (?organization_id=-1, rows carry organization_name and overrides_platform). Review is read-only:
+// (?organization_id=-1, rows carry organization_name). Review is read-only:
 // an admin can open a policy and switch it off, nothing else.
 export const organizationReviewApi = {
   ...platformRoutingPolicyApi,

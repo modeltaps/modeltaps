@@ -1,18 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Route } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import PageActions from '@/components/chrome/PageActions';
+import { PageEmptyState } from '@/components/list-page';
 import { showError } from 'utils/common';
 import PolicyCallName from 'views/panel/RoutingPolicy/PolicyCallName';
 
-// 托管: the platform's routing policies this context's keys can call by their bare name. Read-only;
-// a policy the context overrides with its own policy of the same name is marked, since the bare name
-// then reaches the own policy.
+// 托管: the platform's routing policies this context's keys can call by their name. Read-only.
+// The context's own policies never take their place: those are called as policy/<name>.
 export default function ManagedPolicies({ api, filter }) {
   const { t } = useTranslation();
   const [policies, setPolicies] = useState(null);
@@ -57,7 +56,12 @@ export default function ManagedPolicies({ api, filter }) {
           <div className="h-36 animate-pulse rounded-xl bg-muted" />
         </div>
       ) : policies.length === 0 ? (
-        <Card className="py-10 text-center text-sm text-muted-foreground">{t('routingPolicy.managedEmpty')}</Card>
+        <PageEmptyState
+          icon={Route}
+          title={t('pageEmpty.managedRouting.title')}
+          description={t('pageEmpty.managedRouting.description')}
+          docsPath="/guide/routing"
+        />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {policies.map((p) => (
@@ -67,11 +71,6 @@ export default function ManagedPolicies({ api, filter }) {
                   <PolicyCallName name={p.name} hoverCopy />
                   {p.display_name && p.display_name !== p.name && <div className="text-sm">{p.display_name}</div>}
                 </div>
-                {p.overridden && (
-                  <Badge variant="outline" className="font-normal" title={t('routingPolicy.managedOverriddenHint')}>
-                    {t('routingPolicy.managedOverridden')}
-                  </Badge>
-                )}
               </div>
               {p.description && <p className="text-sm text-muted-foreground">{p.description}</p>}
               {/* Routes as one quiet line: label → target. */}

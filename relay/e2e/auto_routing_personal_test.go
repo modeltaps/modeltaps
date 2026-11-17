@@ -64,18 +64,19 @@ func TestAutoRoutingPersonalPolicyCall(t *testing.T) {
 		t.Fatalf("target log should carry the personal policy id %d: %v", policy.Id, meta)
 	}
 
-	// The bare name is the user's own policy too (it overrides the platform's).
+	// The bare name is the platform's policy (small → cheap), never the user's own.
+	target.SetResponse(FakeResponse{JSON: ChatCompletionJSON(routingCheapModel, "done", 100, 50)})
 	w = h.Post("/v1/chat/completions", chatBodyFor(routingPolicyName, "add another log line"))
 	if w.Code != http.StatusOK {
 		t.Fatalf("bare name: want 200, got %d: %s", w.Code, w.Body.String())
 	}
-	if got := target.LastRequest(t).JSONBody(t)["model"]; got != routingBigModel {
-		t.Fatalf("the bare name uses the own policy, upstream got %v", got)
+	if got := target.LastRequest(t).JSONBody(t)["model"]; got != routingCheapModel {
+		t.Fatalf("the bare name uses the platform policy, upstream got %v", got)
 	}
 
 	listed := listedModels(t, h)
-	if !listed[callName] || listed[routingPolicyName] {
-		t.Fatalf("the list shows the own policy as %s and hides the overridden platform name: %v", callName, listed)
+	if !listed[callName] || !listed[routingPolicyName] {
+		t.Fatalf("the list shows the own policy as %s and the platform one by its name: %v", callName, listed)
 	}
 
 	// Switched off: policy/<name> is an unknown model, the bare name is the platform policy again.

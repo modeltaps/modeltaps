@@ -2052,10 +2052,8 @@
       "organization": "组织",
       "personal": "个人"
     },
-    "overridesPlatform": "覆盖平台策略",
     "organizationsIntro": "各组织在自己的「自动路由」页管理的策略，只对该组织的 API Key 生效。这里只能停用。",
-    "orgIntro": "这里的策略只对本组织的 API Key 生效，调用时把 model 设为 policy/<名字>。与托管策略同名时，本组织写裸名也会用这里的策略。「试一试」会真实调用决策模型，费用记在组织账上。",
-    "overridesPlatformHint": "有同名的平台策略。该组织的 API Key 会用组织的这条策略，而不是平台的。",
+    "orgIntro": "这里的策略只对本组织的 API Key 生效，调用时把 model 设为 policy/<名字>。「试一试」会真实调用决策模型，费用记在组织账上。",
     "callName": "调用名",
     "copyCallName": "复制调用名",
     "status": {
@@ -2064,7 +2062,7 @@
     },
     "reviewEmpty": "还没有人建路由策略。",
     "personalIntro": "各用户在工作台「路由策略」里给自己建的策略，只对本人的个人 API Key 生效。这里只能停用。",
-    "personalOwnIntro": "这里的策略只对你的个人 API Key 生效，调用时把 model 设为 policy/<名字>。与托管策略同名时，你的 Key 写裸名也会用这里的策略。「试一试」会真实调用决策模型，费用从你的余额扣。",
+    "personalOwnIntro": "这里的策略只对你的个人 API Key 生效，调用时把 model 设为 policy/<名字>。「试一试」会真实调用决策模型，费用从你的余额扣。",
     "orgMemberIntro": "本组织的 Owner / Admin 建的策略，你的组织 API Key 可以用 policy/<名字> 调用。只有管理员能修改。",
     "types": {
       "label": "策略类型",
@@ -2072,9 +2070,6 @@
       "auto": "自动路由"
     },
     "managedIntro": "平台提供的策略，调用时 model 直接写名字。",
-    "managedEmpty": "平台还没有可用的托管策略。",
-    "managedOverridden": "已被你的同名策略替换",
-    "managedOverriddenHint": "你有一条同名的自建策略，写裸名时会用你自己的。要用这条托管策略，把你的策略改名或停用。",
     "introShort": {
       "personal": "只对你的个人 API Key 生效，调用时 model 写 policy/<名字>",
       "org": "只对本组织的 API Key 生效，调用时 model 写 policy/<名字>",
@@ -4382,6 +4377,10 @@
     }
   },
   "pageEmpty": {
+    "managedRouting": {
+      "title": "还没有托管策略",
+      "description": "托管策略由平台管理员发布，调用时 model 直接写策略名。发布后会出现在这里。"
+    },
     "tokens": {
       "title": "还没有 API Key",
       "description": "客户端用 API Key 调用网关。每个 Key 可以单独设置额度、有效期和可用模型，用完或泄露时随时停用。"

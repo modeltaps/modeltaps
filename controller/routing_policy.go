@@ -39,8 +39,6 @@ func routingPolicyStatus(err error) int {
 type adminOrgRoutingPolicy struct {
 	*model.RoutingPolicy
 	OrganizationName string `json:"organization_name"`
-	// OverridesPlatform the organization's policy hides a platform policy of the same name.
-	OverridesPlatform bool `json:"overrides_platform"`
 }
 
 // GetRoutingPolicies lists the platform policies, one organization's with ?organization_id=N,
@@ -471,8 +469,6 @@ func GetUserRoutingModels(c *gin.Context) {
 type adminPersonalRoutingPolicy struct {
 	*model.RoutingPolicy
 	Username string `json:"username"`
-	// OverridesPlatform the user's policy hides a platform policy of the same name for that user.
-	OverridesPlatform bool `json:"overrides_platform"`
 }
 
 func respondAllPersonalRoutingPolicies(c *gin.Context) {
@@ -492,9 +488,8 @@ func respondAllPersonalRoutingPolicies(c *gin.Context) {
 			names[policy.UserId] = name
 		}
 		items = append(items, adminPersonalRoutingPolicy{
-			RoutingPolicy:     policy,
-			Username:          name,
-			OverridesPlatform: model.LookupRoutingPolicy(policy.Name) != nil,
+			RoutingPolicy: policy,
+			Username:      name,
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": items})
@@ -517,9 +512,8 @@ func respondAllOrganizationRoutingPolicies(c *gin.Context) {
 			names[policy.OrganizationId] = name
 		}
 		items = append(items, adminOrgRoutingPolicy{
-			RoutingPolicy:     policy,
-			OrganizationName:  name,
-			OverridesPlatform: model.LookupRoutingPolicy(policy.Name) != nil,
+			RoutingPolicy:    policy,
+			OrganizationName: name,
 		})
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": items})

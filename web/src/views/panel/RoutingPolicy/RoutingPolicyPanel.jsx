@@ -129,7 +129,7 @@ export default function RoutingPolicyPanel({
         await load();
         onChanged();
       }}
-      ctx={{ t, modelOptions, classifiers, api, readOnly, overridesPlatform: Boolean(listed?.overrides_platform) }}
+      ctx={{ t, modelOptions, classifiers, api, readOnly }}
       tabsLabel={t('routingPolicy.panel.tabs')}
     />
   );

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useOrg } from 'contexts/OrgContext';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
-import { MoreHorizontal, PanelRight, Plus, RotateCcw, Route, Trash2, TriangleAlert } from 'lucide-react';
+import { MoreHorizontal, PanelRight, Plus, RotateCcw, Route, Trash2 } from 'lucide-react';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -175,16 +175,6 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
                 ) : (
                   <span className="font-mono text-sm">{p.name}</span>
                 )}
-                {p.overrides_platform && (
-                  <Badge
-                    variant="outline"
-                    className="gap-1 border-amber-500/40 font-normal"
-                    title={t('routingPolicy.overridesPlatformHint')}
-                  >
-                    <TriangleAlert className="size-3 text-amber-500" />
-                    {t('routingPolicy.overridesPlatform')}
-                  </Badge>
-                )}
               </div>
               {p.display_name && p.display_name !== p.name && (
                 <div className="truncate text-xs text-muted-foreground">{p.display_name}</div>
@@ -314,7 +304,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
       {(filter || intro) && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {filter}
-          {/* One line; the full explanation (overrides, who pays for 试一试) is the tooltip. */}
+          {/* One line; the full explanation (how to call, who pays for 试一试) is the tooltip. */}
           {intro && (
             <p className="text-sm text-muted-foreground" title={introDetail || undefined}>
               {intro}
@@ -411,12 +401,6 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
                             <span className="truncate font-mono text-sm font-medium">
                               {api.callPrefix ? policyCallName(api, p) : p.name}
                             </span>
-                            {p.overrides_platform && (
-                              <TriangleAlert
-                                className="size-3.5 shrink-0 text-amber-500"
-                                aria-label={t('routingPolicy.overridesPlatform')}
-                              />
-                            )}
                           </div>
                           <div className="mt-0.5 truncate text-xs text-muted-foreground">{secondary}</div>
                         </div>

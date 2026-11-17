@@ -1,10 +1,8 @@
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { TriangleAlert } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Field, InfoRow, InfoRows, Section } from '@/components/objects';
 import StatsPanel from './StatsPanel';
 import TryItPanel from './TryItPanel';
@@ -30,12 +28,6 @@ function OverviewBody({ object: policy, ctx }) {
   const { t } = useTranslation();
   return (
     <>
-      {ctx.overridesPlatform && (
-        <Alert variant="warning" className="mt-4">
-          <TriangleAlert />
-          <AlertDescription>{t('routingPolicy.overridesPlatformHint')}</AlertDescription>
-        </Alert>
-      )}
       <Section title={t('routingPolicy.panel.summary')}>
         <InfoRows>
           <InfoRow label={t('routingPolicy.form.decisionModel')} mono>

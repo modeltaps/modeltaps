@@ -49,7 +49,9 @@ func newOrgRoutingFixture(t *testing.T, h *Harness) (tokenKey string, org *model
 	return tokenKey, org, policy
 }
 
-func TestAutoRoutingOrganizationPolicyOverridesPlatform(t *testing.T) {
+// An organization key reaches its organization's policy as policy/<name>; the bare name stays the
+// platform policy for every key.
+func TestAutoRoutingOrganizationPolicyCall(t *testing.T) {
 	decision := NewFakeProvider(t)
 	decision.SetResponse(FakeResponse{JSON: decisionJSON("small", 0.9)})
 	target := NewFakeProvider(t)
@@ -57,7 +59,7 @@ func TestAutoRoutingOrganizationPolicyOverridesPlatform(t *testing.T) {
 	h := newRoutingHarness(t, decision.Server.URL, target.Server.URL, 0)
 	tokenKey, org, policy := newOrgRoutingFixture(t, h)
 
-	w := h.PostWithToken(tokenKey, "/v1/chat/completions", chatBodyFor(routingPolicyName, "add a log line"))
+	w := h.PostWithToken(tokenKey, "/v1/chat/completions", chatBodyFor(model.RoutingPolicyCallPrefix+routingPolicyName, "add a log line"))
 	if w.Code != http.StatusOK {
 		t.Fatalf("want 200, got %d: %s", w.Code, w.Body.String())
 	}
@@ -77,8 +79,17 @@ func TestAutoRoutingOrganizationPolicyOverridesPlatform(t *testing.T) {
 		t.Fatalf("the decision call is charged to the organization, got user %d", logs[routingDecisionName].UserId)
 	}
 
-	// The same name from a personal key still means the platform policy (small → cheap).
+	// The bare name from the organization key is the platform policy (small → cheap).
 	target.SetResponse(FakeResponse{JSON: ChatCompletionJSON(routingCheapModel, "done", 100, 50)})
+	bare := h.PostWithToken(tokenKey, "/v1/chat/completions", chatBodyFor(routingPolicyName, "add a bare log line"))
+	if bare.Code != http.StatusOK {
+		t.Fatalf("bare name: want 200, got %d: %s", bare.Code, bare.Body.String())
+	}
+	if got := target.LastRequest(t).JSONBody(t)["model"]; got != routingCheapModel {
+		t.Fatalf("the bare name uses the platform policy, upstream got %v", got)
+	}
+
+	// So does the same name from a personal key.
 	personal := h.Post("/v1/chat/completions", chatBodyFor(routingPolicyName, "add another log line"))
 	if personal.Code != http.StatusOK {
 		t.Fatalf("want 200, got %d: %s", personal.Code, personal.Body.String())

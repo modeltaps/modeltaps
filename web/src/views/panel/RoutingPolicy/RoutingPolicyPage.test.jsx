@@ -102,7 +102,7 @@ describe('RoutingPolicy page', () => {
   });
 });
 
-const ORG_POLICY = { ...POLICY, id: 8, organization_id: 4, organization_name: 'Acme', overrides_platform: true };
+const ORG_POLICY = { ...POLICY, id: 8, organization_id: 4, organization_name: 'Acme' };
 
 describe('RoutingPolicy page, organization scope', () => {
   const renderReview = (entry) =>
@@ -133,12 +133,11 @@ describe('RoutingPolicy page, organization scope', () => {
     fireEvent.click(await screen.findByRole('radio', { name: i18n.t('routingPolicy.scope.organization') }));
     expect((await screen.findAllByText('Acme')).length).toBeGreaterThan(0);
     expect(search()).toBe('?scope=organization');
-    expect(screen.getAllByText(i18n.t('routingPolicy.overridesPlatform')).length).toBeGreaterThan(0);
   });
 
-  it('opens an organization policy read-only: overview only, the conflict explained', async () => {
+  it('opens an organization policy read-only: overview only', async () => {
     renderReview('/panel/routing_policy?scope=organization&id=8');
-    await screen.findByText(i18n.t('routingPolicy.overridesPlatformHint'));
+    await screen.findByText(i18n.t('routingPolicy.panel.summary'));
     expect(screen.queryByRole('tab', { name: i18n.t('routingPolicy.panel.tab.routes') })).toBeNull();
     expect(screen.queryByRole('button', { name: i18n.t('objects.panel.save') })).toBeNull();
   });

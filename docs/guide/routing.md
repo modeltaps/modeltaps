@@ -20,7 +20,7 @@ There are two kinds of policies, both listed under **Routing policies** in the w
 - **Managed** policies are published by the site administrators. Call them by their name, for example `auto/coder`.
 - Your **own** policies, and those of your organization, are called with the `policy/` prefix, for example `policy/coder`. The prefix only reaches policies of your own key: a personal key reaches your personal policies, an organization key the organization's. A `policy/` name that matches none of them fails with model not found; it never falls through to a managed policy.
 
-An own policy may have the same name as a managed one. Your keys then reach your policy with the bare name too; switch it off and the managed policy applies again.
+An own policy may have the same name as a managed one. The two never get in each other's way: `policy/coder` is always your own policy, `coder` always the managed one.
 
 ```bash
 curl -X POST https://your-modeltaps-domain.com/v1/chat/completions \
@@ -122,7 +122,7 @@ A site administrator turns own policies on or off with **Let users and organizat
 - **Organization policies** are managed by the organization's owners and admins while the organization is selected. Members see them read-only on the same page and call them with an organization API key.
 - The decision model, targets and fallback must be models the key's account (the user, or the organization) can already call and that the catalog does not hide. If the site hides a target later, requests go to the fallback (reason `target_unavailable`). If the fallback is hidden too, the request fails with model not found.
 - **Try it** and **Check support** call the decision model for real and are charged to your balance (personal) or the organization (organization policies). They do not count in the policy statistics. Replaying first messages from the logs is available for your personal policies, not for organization ones.
-- The **Managed** tab lists the managed policies your key can call and marks those your own policy replaces.
+- The **Managed** tab lists the managed policies your key can call.
 - Creating, changing, switching and deleting an organization policy is recorded in the organization's audit log.
 
-Site administrators can review own policies by setting **Scope** to **Organizations** or **Personal** on **Platform admin → Gateway → Auto routing**. The list shows the owner of each policy and marks a policy that replaces a managed policy of the same name. These policies are read-only there: an administrator can open one and switch it off, but not edit or delete it.
+Site administrators can review own policies by setting **Scope** to **Organizations** or **Personal** on **Platform admin → Gateway → Auto routing**. The list shows the owner of each policy. These policies are read-only there: an administrator can open one and switch it off, but not edit or delete it.

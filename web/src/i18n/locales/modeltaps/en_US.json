@@ -2131,10 +2131,8 @@
       "organization": "Organizations",
       "personal": "Personal"
     },
-    "overridesPlatform": "Overrides a platform policy",
     "organizationsIntro": "Policies organizations manage on their own Auto routing page. They only apply to that organization's API keys; you can only switch one off here.",
-    "orgIntro": "Policies here only apply to this organization's API keys; call them with model set to policy/<name>. A policy named like a managed one also takes over the bare name for the organization. \"Try it\" calls the decision model and is charged to the organization.",
-    "overridesPlatformHint": "A platform policy has the same name. This organization's API keys use the organization's policy instead of the platform's.",
+    "orgIntro": "Policies here only apply to this organization's API keys; call them with model set to policy/<name>. \"Try it\" calls the decision model and is charged to the organization.",
     "callName": "model name",
     "copyCallName": "Copy model name",
     "status": {
@@ -2143,7 +2141,7 @@
     },
     "reviewEmpty": "Nobody has created a routing policy yet.",
     "personalIntro": "Policies users created for themselves under Routing policies. They only apply to that user's personal API keys. You can only disable them here.",
-    "personalOwnIntro": "Policies here only apply to your personal API keys; call them with model set to policy/<name>. A policy named like a managed one also takes over the bare name for your keys. \"Try it\" calls the decision model and is charged to your balance.",
+    "personalOwnIntro": "Policies here only apply to your personal API keys; call them with model set to policy/<name>. \"Try it\" calls the decision model and is charged to your balance.",
     "orgMemberIntro": "Policies your organization's owners and admins created. Your organization API keys can call them as policy/<name>. Only admins can change them.",
     "types": {
       "label": "Policy type",
@@ -2151,9 +2149,6 @@
       "auto": "Auto routing"
     },
     "managedIntro": "Policies the platform provides; call them with model set to their name.",
-    "managedEmpty": "The platform has no managed policies you can use yet.",
-    "managedOverridden": "Replaced by your policy",
-    "managedOverriddenHint": "You have an own policy with the same name, so the bare name reaches yours. Rename or disable it to use this managed policy.",
     "introShort": {
       "personal": "For your personal API keys only; call them as policy/<name>",
       "org": "For this organization's API keys only; call them as policy/<name>",
@@ -4487,6 +4482,10 @@
     }
   },
   "pageEmpty": {
+    "managedRouting": {
+      "title": "No managed policies yet",
+      "description": "Managed policies are published by the platform admins; call them with model set to the policy name. Once published, they appear here."
+    },
     "tokens": {
       "title": "No API keys yet",
       "description": "Clients call the gateway with an API key. Each key can have its own quota, expiry and allowed models, and can be disabled at any time."

@@ -80,9 +80,9 @@ func resolveRoutingPolicy(c *gin.Context, modelName string) string {
 // errRoutingFallbackUnavailable an organization policy's target and fallback are both unusable.
 var errRoutingFallbackUnavailable = fmt.Errorf("%w: the routing policy's models are not available", errModelNotFoundSentinel)
 
-// routeRoutingPolicy resolves a model name that may be a routing policy: the key's own policy first
-// (the organization's for organization API keys, the user's for personal keys), then the platform
-// policy. Requests are never refused over the decision itself; the only error is an own policy whose
+// routeRoutingPolicy resolves a model name that may be a routing policy: policy/<name> is the key's
+// own policy (the organization's for organization API keys, the user's for personal keys), a bare
+// name a platform policy. Requests are never refused over the decision itself; the only error is an own policy whose
 // target and fallback have both become unusable, which is a configuration problem the caller
 // reports as model not found.
 func routeRoutingPolicy(c *gin.Context, modelName string) (string, error) {
@@ -113,7 +113,7 @@ func routeRoutingPolicy(c *gin.Context, modelName string) (string, error) {
 		logger.LogWarn(c.Request.Context(), "routing_fallback_unavailable policy="+policy.Name+" id="+strconv.Itoa(policy.Id))
 		return "", errRoutingFallbackUnavailable
 	}
-	// 用户请求的是策略名（policy/<name> 或裸名）；别名改写已经填过 requested_model 时保留用户原文。
+	// 用户请求的是策略名（自建策略 policy/<name>，平台策略直接写名字）；别名改写已经填过 requested_model 时保留用户原文。
 	if c.GetString("requested_model") == "" {
 		c.Set("requested_model", modelName)
 	}

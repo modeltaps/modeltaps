@@ -855,19 +855,19 @@ func ownPoliciesActive(scope RoutingScope) bool {
 // API key's own scope (the organization for organization keys, the user for personal keys).
 //   - "policy/<name>": only the scope's own policy; nil otherwise, so the name fails as an unknown model
 //     (a platform policy is never reached through the prefix, which would skip its catalog row).
-//   - "<name>": the scope's own policy (organization policies were called this way before the
-//     prefix existed), otherwise the platform policy.
+//   - "<name>": only the platform policy. An own policy is never reached by its bare name, so a
+//     bare name always means a platform policy or a model, whatever the scope created.
 func ResolveRoutingPolicy(scope RoutingScope, requested string) *RoutingPolicy {
-	name, prefixed := strings.CutPrefix(requested, RoutingPolicyCallPrefix)
-	if ownPoliciesActive(scope) {
+	if name, prefixed := strings.CutPrefix(requested, RoutingPolicyCallPrefix); prefixed {
+		if !ownPoliciesActive(scope) {
+			return nil
+		}
 		if policy := lookupScopedRoutingPolicy(scope, name); policy != nil && policy.Enabled {
 			return policy
 		}
-	}
-	if prefixed {
 		return nil
 	}
-	if policy := LookupRoutingPolicy(name); policy != nil && policy.Enabled {
+	if policy := LookupRoutingPolicy(requested); policy != nil && policy.Enabled {
 		return policy
 	}
 	return nil
@@ -884,26 +884,14 @@ func EnabledRoutingPolicies() []*RoutingPolicy {
 }
 
 // EnabledRoutingPoliciesFor returns the enabled policies an API key of the scope can call: its own
-// policies plus the platform ones it does not override.
+// policies (called as policy/<name>) and the platform ones (called by name). Both are listed when
+// they share a name, since the two call names differ.
 func EnabledRoutingPoliciesFor(scope RoutingScope) []*RoutingPolicy {
 	platform := EnabledRoutingPolicies()
 	if !ownPoliciesActive(scope) {
 		return platform
 	}
-	own := enabledSorted(scopedRoutingPolicies(scope))
-	if len(own) == 0 {
-		return platform
-	}
-	overridden := make(map[string]bool, len(own))
-	for _, policy := range own {
-		overridden[policy.Name] = true
-	}
-	merged := own
-	for _, policy := range platform {
-		if !overridden[policy.Name] {
-			merged = append(merged, policy)
-		}
-	}
+	merged := append(enabledSorted(scopedRoutingPolicies(scope)), platform...)
 	sort.Slice(merged, func(i, j int) bool { return merged[i].CallName() < merged[j].CallName() })
 	return merged
 }
@@ -942,9 +930,8 @@ func RoutingPolicyModelsFor(scope RoutingScope, existing []string, routable func
 	return added
 }
 
-// ManagedRoutingPolicy is a platform policy as users see it in their console: what it is called,
-// where it routes and whether their own policy of the same name takes its place. The decision
-// question stays with the admins.
+// ManagedRoutingPolicy is a platform policy as users see it in their console: what it is called
+// and where it routes. The decision question stays with the admins.
 type ManagedRoutingPolicy struct {
 	Name          string         `json:"name"`
 	DisplayName   string         `json:"display_name"`
@@ -953,8 +940,6 @@ type ManagedRoutingPolicy struct {
 	Routes        []RoutingRoute `json:"routes"`
 	FallbackModel string         `json:"fallback_model"`
 	Threshold     float64        `json:"threshold"`
-	// Overridden the scope has an enabled policy of the same name, which the bare name now reaches.
-	Overridden bool `json:"overridden"`
 }
 
 // ManagedRoutingPoliciesFor lists the enabled platform policies the scope's API keys can call: listed
@@ -964,12 +949,6 @@ func ManagedRoutingPoliciesFor(scope RoutingScope) ([]ManagedRoutingPolicy, erro
 	group, err := scopeRoutingGroup(scope)
 	if err != nil {
 		return nil, err
-	}
-	own := map[string]bool{}
-	if ownPoliciesActive(scope) {
-		for _, policy := range enabledSorted(scopedRoutingPolicies(scope)) {
-			own[policy.Name] = true
-		}
 	}
 	managed := make([]ManagedRoutingPolicy, 0)
 	for _, policy := range EnabledRoutingPolicies() {
@@ -990,7 +969,6 @@ func ManagedRoutingPoliciesFor(scope RoutingScope) ([]ManagedRoutingPolicy, erro
 			Routes:        routes,
 			FallbackModel: policy.FallbackModel,
 			Threshold:     policy.Threshold,
-			Overridden:    own[policy.Name],
 		})
 	}
 	return managed, nil

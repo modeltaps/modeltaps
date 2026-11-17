@@ -48,18 +48,26 @@ func newOrgRoutingRequest() *gin.Context {
 	return c
 }
 
-// Organization keys get their organization's policy; personal keys and other organizations get the
-// platform's. Decisions carry the policy id so logs and stats can tell them apart.
+// policy/<name> reaches the organization's own policy; the bare name is the platform's, for
+// organization keys too. Decisions carry the policy id so logs and stats can tell them apart.
 func TestRouteRoutingPolicyPrefersOrganizationPolicy(t *testing.T) {
 	platform, own, setResult := setupOrgRoutingResolveTest(t)
 	setResult("small", 0.9, nil)
 
 	orgReq := newOrgRoutingRequest()
-	if got, err := routeRoutingPolicy(orgReq, "auto/t"); err != nil || got != "org-cheap-model" {
+	if got, err := routeRoutingPolicy(orgReq, "policy/auto/t"); err != nil || got != "org-cheap-model" {
 		t.Fatalf("organization key: want org-cheap-model, got %q (%v)", got, err)
 	}
 	if d := decisionOf(t, orgReq); d.PolicyId != own.Id {
 		t.Fatalf("decision should name the organization policy id %d, got %d", own.Id, d.PolicyId)
+	}
+
+	bare := newOrgRoutingRequest()
+	if got := resolveRoutingPolicy(bare, "auto/t"); got != "cheap-model" {
+		t.Fatalf("organization key, bare name: want the platform target, got %q", got)
+	}
+	if d := decisionOf(t, bare); d.PolicyId != platform.Id {
+		t.Fatalf("bare name should use the platform policy id %d, got %d", platform.Id, d.PolicyId)
 	}
 
 	personal := newRoutingRequest("", routingBody)
@@ -70,11 +78,11 @@ func TestRouteRoutingPolicyPrefersOrganizationPolicy(t *testing.T) {
 		t.Fatalf("decision should name the platform policy id %d, got %d", platform.Id, d.PolicyId)
 	}
 
-	// Option off: organization keys fall back to the platform policy.
+	// Option off: an organization's own policy is not reachable at all.
 	config.UserRoutingPolicyEnabled = false
 	off := newOrgRoutingRequest()
-	if got := resolveRoutingPolicy(off, "auto/t"); got != "cheap-model" {
-		t.Fatalf("option off: want the platform target, got %q", got)
+	if got := resolveRoutingPolicy(off, "policy/auto/t"); got != "policy/auto/t" {
+		t.Fatalf("option off: want the name back unresolved, got %q", got)
 	}
 }
 
@@ -92,7 +100,7 @@ func TestRouteRoutingPolicyOrganizationHiddenTarget(t *testing.T) {
 	}
 
 	c := newOrgRoutingRequest()
-	if got, err := routeRoutingPolicy(c, "auto/t"); err != nil || got != "fallback-model" {
+	if got, err := routeRoutingPolicy(c, "policy/auto/t"); err != nil || got != "fallback-model" {
 		t.Fatalf("hidden target: want the fallback, got %q (%v)", got, err)
 	}
 	if d := decisionOf(t, c); d.Reason != RoutingReasonTargetUnavailable || d.Label != "" {
@@ -106,11 +114,11 @@ func TestRouteRoutingPolicyOrganizationHiddenTarget(t *testing.T) {
 		t.Fatal(err)
 	}
 	blocked := newOrgRoutingRequest()
-	if _, err := routeRoutingPolicy(blocked, "auto/t"); err == nil || !IsModelNotFound(err) {
+	if _, err := routeRoutingPolicy(blocked, "policy/auto/t"); err == nil || !IsModelNotFound(err) {
 		t.Fatalf("hidden fallback: want model not found, got %v", err)
 	}
 	// The retry loop asks again within the same request and must get the same answer.
-	if _, err := routeRoutingPolicy(blocked, "auto/t"); err == nil || !IsModelNotFound(err) {
+	if _, err := routeRoutingPolicy(blocked, "policy/auto/t"); err == nil || !IsModelNotFound(err) {
 		t.Fatalf("cached decision: want model not found, got %v", err)
 	}
 }
@@ -125,7 +133,8 @@ func TestRoutingPinScopeUsesPolicyId(t *testing.T) {
 	}
 }
 
-// Model lists of an organization key add its own policies and do not repeat an overridden name.
+// Model lists of an organization key add its own policies as policy/<name> next to the platform ones,
+// also when the names match.
 func TestAppendRoutingPolicyModelsForOrganization(t *testing.T) {
 	_, _, _ = setupOrgRoutingResolveTest(t)
 	extra := testPolicy("auto/org-only", 0)
@@ -139,8 +148,8 @@ func TestAppendRoutingPolicyModelsForOrganization(t *testing.T) {
 	}
 	base := []string{"fallback-model"}
 	got := appendRoutingPolicyModels(model.OrganizationRoutingScope(7), "default", append([]string(nil), base...), nil)
-	if len(got) != 3 || got[1] != "policy/auto/org-only" || got[2] != "policy/auto/t" {
-		t.Fatalf("organization list: want fallback-model, policy/auto/org-only, policy/auto/t (own overrides platform); got %v", got)
+	if len(got) != 4 || got[1] != "auto/t" || got[2] != "policy/auto/org-only" || got[3] != "policy/auto/t" {
+		t.Fatalf("organization list: want fallback-model, auto/t, policy/auto/org-only, policy/auto/t; got %v", got)
 	}
 	got = appendRoutingPolicyModels(model.PersonalRoutingScope(1), "default", append([]string(nil), base...), nil)
 	if len(got) != 2 || got[1] != "auto/t" {

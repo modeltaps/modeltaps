@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Own routing policies (personal and organization) are reached only as `policy/<name>`. A bare
+  name now always means a managed policy or a model, also when an own policy has the same name,
+  so an own policy no longer takes over a managed policy's name. Clients that called an own
+  policy by its bare name must add the `policy/` prefix. The "replaced by your policy" marks are
+  gone, and an empty **Managed** tab shows the same empty page as the other lists.
+
 ## [0.4.0] - 2026-11-17
 
 ### Added

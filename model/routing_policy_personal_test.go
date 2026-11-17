@@ -119,7 +119,7 @@ func TestResolvePersonalRoutingPolicy(t *testing.T) {
 			want  *RoutingPolicy
 		}{
 			{aliceScope, "policy/auto/coder", own},
-			{aliceScope, "auto/coder", own},
+			{aliceScope, "auto/coder", platform},
 			{aliceScope, "auto/shared", shared},
 			{aliceScope, "policy/auto/shared", nil},
 			{bobScope, "policy/auto/coder", nil},
@@ -133,7 +133,7 @@ func TestResolvePersonalRoutingPolicy(t *testing.T) {
 			}
 		}
 		listed := RoutingPolicyModelsFor(aliceScope, nil, nil)
-		if len(listed) != 2 || listed[0] != "auto/shared" || listed[1] != "policy/auto/coder" {
+		if len(listed) != 3 || listed[0] != "auto/coder" || listed[1] != "auto/shared" || listed[2] != "policy/auto/coder" {
 			t.Fatalf("loaded=%v: alice lists %v", loaded, listed)
 		}
 	}
@@ -215,8 +215,9 @@ func TestManagedRoutingPoliciesFor(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 1 || got[0].Name != "auto/coder" || !got[0].Overridden {
-		t.Fatalf("want auto/coder (overridden), got %+v", got)
+	// alice's own auto/coder (called policy/auto/coder) does not hide the platform one.
+	if len(got) != 1 || got[0].Name != "auto/coder" {
+		t.Fatalf("want auto/coder, got %+v", got)
 	}
 }
 
