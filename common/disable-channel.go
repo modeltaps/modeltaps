@@ -1,27 +1,21 @@
 package common
 
 import (
-	"github.com/modeltaps/modeltaps/common/logger"
 	"strings"
 	"sync"
 
-	goahocorasick "github.com/anknown/ahocorasick"
+	"github.com/modeltaps/modeltaps/common/ahocorasick"
 )
 
+// DisableChannelKeyword holds the operator's keyword list: an upstream error message that
+// contains any of them (exact, case-sensitive substring) disables the channel.
 type DisableChannelKeyword struct {
-	keywords   string
-	AcMachines *goahocorasick.Machine
-	ready      bool
-	mutex      sync.RWMutex
+	keywords string
+	matcher  *ahocorasick.Matcher // nil when no keyword is set
+	mutex    sync.RWMutex
 }
 
-var DisableChannelKeywordsInstance *DisableChannelKeyword
-
-func init() {
-	DisableChannelKeywordsInstance = &DisableChannelKeyword{
-		AcMachines: &goahocorasick.Machine{},
-	}
-}
+var DisableChannelKeywordsInstance = &DisableChannelKeyword{}
 
 func GetDefaultDisableChannelKeywords() string {
 	return `Your credit balance is too low
@@ -41,54 +35,29 @@ too many invalid requests`
 }
 
 func (d *DisableChannelKeyword) Load(keywords string) {
-	if keywords == "" {
-		d.mutex.Lock()
-		defer d.mutex.Unlock()
-		d.ready = false
-		d.keywords = ""
-		return
-	}
-
-	keywordsList := strings.Split(keywords, "\n")
-	patterns := make([][]rune, 0, len(keywordsList))
-
-	for _, keyword := range keywordsList {
-		if keyword == "" {
-			continue
+	var patterns []string
+	for _, keyword := range strings.Split(keywords, "\n") {
+		// Trim before the emptiness check: a whitespace-only line must not become an empty
+		// keyword (it would match nothing, and crashed the previous matcher).
+		if keyword = strings.TrimSpace(keyword); keyword != "" {
+			patterns = append(patterns, keyword)
 		}
-
-		keyword = strings.TrimSpace(keyword)
-		patterns = append(patterns, []rune(keyword))
 	}
+	var matcher *ahocorasick.Matcher
+	if len(patterns) > 0 {
+		matcher = ahocorasick.New(patterns)
+	}
+
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
-
-	if len(patterns) > 0 {
-		machine := new(goahocorasick.Machine)
-		if err := machine.Build(patterns); err == nil {
-			d.AcMachines = machine
-			d.ready = true
-		} else {
-			logger.SysError("failed to build Aho-Corasick machine: " + err.Error())
-		}
-	}
+	d.matcher = matcher
 	d.keywords = keywords
 }
 
 func (d *DisableChannelKeyword) IsContains(message string) bool {
-	if !d.ready {
-		return false
-	}
-
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
-
-	// 将消息转换为 rune 数组
-	messageRunes := []rune(message)
-
-	matches := d.AcMachines.MultiPatternSearch(messageRunes, false)
-
-	return len(matches) > 0
+	return d.matcher != nil && d.matcher.ContainsString(message)
 }
 
 func (d *DisableChannelKeyword) GetKeywords() string {

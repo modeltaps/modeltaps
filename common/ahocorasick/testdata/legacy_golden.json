@@ -1,0 +1,5284 @@
+[
+  {
+    "name": "classic",
+    "patterns": [
+      "he",
+      "she",
+      "his",
+      "hers"
+    ],
+    "text": "ushers ahishers she hers HERS He",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "he"
+      },
+      {
+        "pos": 1,
+        "word": "she"
+      },
+      {
+        "pos": 2,
+        "word": "hers"
+      },
+      {
+        "pos": 8,
+        "word": "his"
+      },
+      {
+        "pos": 11,
+        "word": "he"
+      },
+      {
+        "pos": 10,
+        "word": "she"
+      },
+      {
+        "pos": 11,
+        "word": "hers"
+      },
+      {
+        "pos": 17,
+        "word": "he"
+      },
+      {
+        "pos": 16,
+        "word": "she"
+      },
+      {
+        "pos": 20,
+        "word": "he"
+      },
+      {
+        "pos": 20,
+        "word": "hers"
+      }
+    ]
+  },
+  {
+    "name": "self-overlap",
+    "patterns": [
+      "a",
+      "aa",
+      "aaa"
+    ],
+    "text": "aaaaabaaAAa",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "a"
+      },
+      {
+        "pos": 1,
+        "word": "a"
+      },
+      {
+        "pos": 0,
+        "word": "aa"
+      },
+      {
+        "pos": 2,
+        "word": "a"
+      },
+      {
+        "pos": 1,
+        "word": "aa"
+      },
+      {
+        "pos": 0,
+        "word": "aaa"
+      },
+      {
+        "pos": 3,
+        "word": "a"
+      },
+      {
+        "pos": 2,
+        "word": "aa"
+      },
+      {
+        "pos": 1,
+        "word": "aaa"
+      },
+      {
+        "pos": 4,
+        "word": "a"
+      },
+      {
+        "pos": 3,
+        "word": "aa"
+      },
+      {
+        "pos": 2,
+        "word": "aaa"
+      },
+      {
+        "pos": 6,
+        "word": "a"
+      },
+      {
+        "pos": 7,
+        "word": "a"
+      },
+      {
+        "pos": 6,
+        "word": "aa"
+      },
+      {
+        "pos": 10,
+        "word": "a"
+      }
+    ]
+  },
+  {
+    "name": "prefix-chain",
+    "patterns": [
+      "abcd",
+      "abc",
+      "ab",
+      "bc",
+      "c"
+    ],
+    "text": "abcdabcxabcabcd",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "ab"
+      },
+      {
+        "pos": 2,
+        "word": "c"
+      },
+      {
+        "pos": 1,
+        "word": "bc"
+      },
+      {
+        "pos": 0,
+        "word": "abc"
+      },
+      {
+        "pos": 0,
+        "word": "abcd"
+      },
+      {
+        "pos": 4,
+        "word": "ab"
+      },
+      {
+        "pos": 6,
+        "word": "c"
+      },
+      {
+        "pos": 5,
+        "word": "bc"
+      },
+      {
+        "pos": 4,
+        "word": "abc"
+      },
+      {
+        "pos": 8,
+        "word": "ab"
+      },
+      {
+        "pos": 10,
+        "word": "c"
+      },
+      {
+        "pos": 9,
+        "word": "bc"
+      },
+      {
+        "pos": 8,
+        "word": "abc"
+      },
+      {
+        "pos": 11,
+        "word": "ab"
+      },
+      {
+        "pos": 13,
+        "word": "c"
+      },
+      {
+        "pos": 12,
+        "word": "bc"
+      },
+      {
+        "pos": 11,
+        "word": "abc"
+      },
+      {
+        "pos": 11,
+        "word": "abcd"
+      }
+    ]
+  },
+  {
+    "name": "duplicates",
+    "patterns": [
+      "敏感",
+      "敏感",
+      "感",
+      "敏感词"
+    ],
+    "text": "这是敏感词，敏感敏感词汇",
+    "matches": [
+      {
+        "pos": 3,
+        "word": "感"
+      },
+      {
+        "pos": 2,
+        "word": "敏感"
+      },
+      {
+        "pos": 2,
+        "word": "敏感词"
+      },
+      {
+        "pos": 7,
+        "word": "感"
+      },
+      {
+        "pos": 6,
+        "word": "敏感"
+      },
+      {
+        "pos": 9,
+        "word": "感"
+      },
+      {
+        "pos": 8,
+        "word": "敏感"
+      },
+      {
+        "pos": 8,
+        "word": "敏感词"
+      }
+    ]
+  },
+  {
+    "name": "unsorted",
+    "patterns": [
+      "zzz",
+      "a",
+      "😀",
+      "中",
+      "Zz"
+    ],
+    "text": "Zzzz😀中a😀😀zZz",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "Zz"
+      },
+      {
+        "pos": 1,
+        "word": "zzz"
+      },
+      {
+        "pos": 4,
+        "word": "😀"
+      },
+      {
+        "pos": 5,
+        "word": "中"
+      },
+      {
+        "pos": 6,
+        "word": "a"
+      },
+      {
+        "pos": 7,
+        "word": "😀"
+      },
+      {
+        "pos": 8,
+        "word": "😀"
+      },
+      {
+        "pos": 10,
+        "word": "Zz"
+      }
+    ]
+  },
+  {
+    "name": "emoji-zwj",
+    "patterns": [
+      "👍🏽",
+      "👍",
+      "‍❤",
+      "❤️"
+    ],
+    "text": "👍🏽‍❤️👍👍🏽❤",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "👍"
+      },
+      {
+        "pos": 0,
+        "word": "👍🏽"
+      },
+      {
+        "pos": 2,
+        "word": "‍❤"
+      },
+      {
+        "pos": 3,
+        "word": "❤️"
+      },
+      {
+        "pos": 5,
+        "word": "👍"
+      },
+      {
+        "pos": 6,
+        "word": "👍"
+      },
+      {
+        "pos": 6,
+        "word": "👍🏽"
+      }
+    ]
+  },
+  {
+    "name": "combining",
+    "patterns": [
+      "é",
+      "́",
+      "é"
+    ],
+    "text": "café café ́",
+    "matches": [
+      {
+        "pos": 3,
+        "word": "é"
+      },
+      {
+        "pos": 9,
+        "word": "́"
+      },
+      {
+        "pos": 8,
+        "word": "é"
+      },
+      {
+        "pos": 11,
+        "word": "́"
+      }
+    ]
+  },
+  {
+    "name": "replacement-char",
+    "patterns": [
+      "�",
+      "a�b"
+    ],
+    "text": "a�b�x�y",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "�"
+      },
+      {
+        "pos": 0,
+        "word": "a�b"
+      },
+      {
+        "pos": 3,
+        "word": "�"
+      },
+      {
+        "pos": 5,
+        "word": "�"
+      }
+    ]
+  },
+  {
+    "name": "single-rune",
+    "patterns": [
+      "x"
+    ],
+    "text": "xxyxXx",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "x"
+      },
+      {
+        "pos": 1,
+        "word": "x"
+      },
+      {
+        "pos": 3,
+        "word": "x"
+      },
+      {
+        "pos": 5,
+        "word": "x"
+      }
+    ]
+  },
+  {
+    "name": "no-match",
+    "patterns": [
+      "needle"
+    ],
+    "text": "haystack NEEDLE Needle",
+    "matches": []
+  },
+  {
+    "name": "pattern-longer-than-text",
+    "patterns": [
+      "abcdef"
+    ],
+    "text": "abc",
+    "matches": []
+  },
+  {
+    "name": "empty-text",
+    "patterns": [
+      "a"
+    ],
+    "text": "",
+    "matches": []
+  },
+  {
+    "name": "gemini-symbol",
+    "patterns": [
+      "![modeltaps-gemini-image]"
+    ],
+    "text": "图前![modeltaps-gemini-image](https://e.com/a.png)中间![modeltaps-gemini-image]![modeltaps-gemini-image](u)尾",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "![modeltaps-gemini-image]"
+      },
+      {
+        "pos": 50,
+        "word": "![modeltaps-gemini-image]"
+      },
+      {
+        "pos": 75,
+        "word": "![modeltaps-gemini-image]"
+      }
+    ]
+  },
+  {
+    "name": "disable-hit",
+    "patterns": [
+      "Your credit balance is too low",
+      "This organization has been disabled.",
+      "You exceeded your current quota",
+      "Permission denied",
+      "Quota exceeded for quota metric",
+      "API key not valid",
+      "API Key not found",
+      "API key expired",
+      "The security token included in the request is invalid",
+      "Operation not allowed",
+      "Your account is not authorized",
+      "your account balance is insufficient",
+      "Your account is currently blocked",
+      "too many invalid requests"
+    ],
+    "text": "{\"error\":{\"message\":\"You exceeded your current quota, please check your plan\"}}",
+    "matches": [
+      {
+        "pos": 21,
+        "word": "You exceeded your current quota"
+      }
+    ]
+  },
+  {
+    "name": "disable-case",
+    "patterns": [
+      "Your credit balance is too low",
+      "This organization has been disabled.",
+      "You exceeded your current quota",
+      "Permission denied",
+      "Quota exceeded for quota metric",
+      "API key not valid",
+      "API Key not found",
+      "API key expired",
+      "The security token included in the request is invalid",
+      "Operation not allowed",
+      "Your account is not authorized",
+      "your account balance is insufficient",
+      "Your account is currently blocked",
+      "too many invalid requests"
+    ],
+    "text": "api key not valid / API KEY NOT FOUND / permission Denied / Your account is not authorized.",
+    "matches": [
+      {
+        "pos": 60,
+        "word": "Your account is not authorized"
+      }
+    ]
+  },
+  {
+    "name": "disable-multi",
+    "patterns": [
+      "Your credit balance is too low",
+      "This organization has been disabled.",
+      "You exceeded your current quota",
+      "Permission denied",
+      "Quota exceeded for quota metric",
+      "API key not valid",
+      "API Key not found",
+      "API key expired",
+      "The security token included in the request is invalid",
+      "Operation not allowed",
+      "Your account is not authorized",
+      "your account balance is insufficient",
+      "Your account is currently blocked",
+      "too many invalid requests"
+    ],
+    "text": "API key expired; API Key not found; too many invalid requests too many invalid requests",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "API key expired"
+      },
+      {
+        "pos": 17,
+        "word": "API Key not found"
+      },
+      {
+        "pos": 36,
+        "word": "too many invalid requests"
+      },
+      {
+        "pos": 62,
+        "word": "too many invalid requests"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "bBB",
+      "ab"
+    ],
+    "text": "BBbAABbAbABAAabbBAAABb",
+    "matches": [
+      {
+        "pos": 13,
+        "word": "ab"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "b",
+      "BBCb",
+      "aA",
+      "bC",
+      "ba",
+      "aB"
+    ],
+    "text": "AcAaACA",
+    "matches": [
+      {
+        "pos": 3,
+        "word": "aA"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "文词",
+      "词",
+      "文"
+    ],
+    "text": "中中试试汇词试中汇试",
+    "matches": [
+      {
+        "pos": 5,
+        "word": "词"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🏽❤🔥",
+      "👍😃🏽",
+      "😀‍"
+    ],
+    "text": "‍‍😀🏽🏽️😀❤‍😃‍🏽👍‍❤🏽🏽😀",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "Aa",
+      "A",
+      "😀‍"
+    ],
+    "text": "a🏽感aA敏👍A‍🏽A👍🏽感",
+    "matches": [
+      {
+        "pos": 4,
+        "word": "A"
+      },
+      {
+        "pos": 7,
+        "word": "A"
+      },
+      {
+        "pos": 10,
+        "word": "A"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "eｱ",
+      "́é"
+    ],
+    "text": "ｱｲｲエ字エ�漢おおおｲｱ́ｱエｱ",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "eHr"
+    ],
+    "text": "riieHhIs ehssHrHHsIIsreI hsis",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "bbb"
+    ],
+    "text": "baaBbBBABaAbBABABbBBBa",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "A",
+      "ca",
+      "cCAb"
+    ],
+    "text": "CCaACBccCcCbcBbCBccACCBcBCbabAb",
+    "matches": [
+      {
+        "pos": 3,
+        "word": "A"
+      },
+      {
+        "pos": 19,
+        "word": "A"
+      },
+      {
+        "pos": 29,
+        "word": "A"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "测",
+      "试",
+      "感",
+      "感试",
+      "敏敏敏感",
+      "敏敏"
+    ],
+    "text": "汇敏感试词测词",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "感"
+      },
+      {
+        "pos": 3,
+        "word": "试"
+      },
+      {
+        "pos": 2,
+        "word": "感试"
+      },
+      {
+        "pos": 5,
+        "word": "测"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🏽️👍️"
+    ],
+    "text": "‍❤",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "a感感",
+      "感‍",
+      "A😀aa",
+      "感感aA",
+      "‍"
+    ],
+    "text": "感AA感敏A🏽A敏感A😀‍👍👍感👍",
+    "matches": [
+      {
+        "pos": 12,
+        "word": "‍"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "�漢エｱ",
+      "エ",
+      "�́",
+      "ｱｲ",
+      "ウお�お"
+    ],
+    "text": "おウeｱ�おウウ漢́字́ウ�漢ｲ�e",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "s",
+      "Ihss"
+    ],
+    "text": "   Isii s ris s",
+    "matches": [
+      {
+        "pos": 4,
+        "word": "s"
+      },
+      {
+        "pos": 8,
+        "word": "s"
+      },
+      {
+        "pos": 12,
+        "word": "s"
+      },
+      {
+        "pos": 14,
+        "word": "s"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "b"
+    ],
+    "text": "BAabaBaAbbBBaAaAaAaAbbaaAAb",
+    "matches": [
+      {
+        "pos": 3,
+        "word": "b"
+      },
+      {
+        "pos": 8,
+        "word": "b"
+      },
+      {
+        "pos": 9,
+        "word": "b"
+      },
+      {
+        "pos": 20,
+        "word": "b"
+      },
+      {
+        "pos": 21,
+        "word": "b"
+      },
+      {
+        "pos": 26,
+        "word": "b"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "cc",
+      "A",
+      "b",
+      "c"
+    ],
+    "text": "CcACcbBAABACBcCBbC",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "c"
+      },
+      {
+        "pos": 2,
+        "word": "A"
+      },
+      {
+        "pos": 4,
+        "word": "c"
+      },
+      {
+        "pos": 5,
+        "word": "b"
+      },
+      {
+        "pos": 7,
+        "word": "A"
+      },
+      {
+        "pos": 8,
+        "word": "A"
+      },
+      {
+        "pos": 10,
+        "word": "A"
+      },
+      {
+        "pos": 13,
+        "word": "c"
+      },
+      {
+        "pos": 16,
+        "word": "b"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "试"
+    ],
+    "text": "敏文文感测感敏词测敏敏测敏中敏文词汇测试试敏汇文敏汇",
+    "matches": [
+      {
+        "pos": 19,
+        "word": "试"
+      },
+      {
+        "pos": 20,
+        "word": "试"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "😃🏽🔥❤",
+      "😃😃",
+      "❤🔥🏽",
+      "‍",
+      "️"
+    ],
+    "text": "❤❤‍😃🔥🏽🏽❤😀🏽😃‍‍😃😀😃❤😃️😃",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "‍"
+      },
+      {
+        "pos": 11,
+        "word": "‍"
+      },
+      {
+        "pos": 12,
+        "word": "‍"
+      },
+      {
+        "pos": 18,
+        "word": "️"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "a👍",
+      "👍👍",
+      "A",
+      "🏽敏",
+      "😀"
+    ],
+    "text": "‍🏽🏽敏敏A😀‍🏽👍👍a🏽‍感👍感感AA‍",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "🏽敏"
+      },
+      {
+        "pos": 5,
+        "word": "A"
+      },
+      {
+        "pos": 6,
+        "word": "😀"
+      },
+      {
+        "pos": 9,
+        "word": "👍👍"
+      },
+      {
+        "pos": 18,
+        "word": "A"
+      },
+      {
+        "pos": 19,
+        "word": "A"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "おおお",
+      "e",
+      "おｱｲ"
+    ],
+    "text": "おおeeeeウ字ｱウ�́エｱウeéｲ",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "e"
+      },
+      {
+        "pos": 3,
+        "word": "e"
+      },
+      {
+        "pos": 4,
+        "word": "e"
+      },
+      {
+        "pos": 5,
+        "word": "e"
+      },
+      {
+        "pos": 15,
+        "word": "e"
+      },
+      {
+        "pos": 16,
+        "word": "e"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      " ",
+      "hHrs",
+      "sse",
+      " Is",
+      "s ss"
+    ],
+    "text": "rsrhsHeIishrshsrrhrIes",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "AA",
+      "Bb",
+      "A"
+    ],
+    "text": "bababABABBbbAa",
+    "matches": [
+      {
+        "pos": 5,
+        "word": "A"
+      },
+      {
+        "pos": 7,
+        "word": "A"
+      },
+      {
+        "pos": 9,
+        "word": "Bb"
+      },
+      {
+        "pos": 12,
+        "word": "A"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "c"
+    ],
+    "text": "aCAAbaaaaaAbbaAcAAAaCC",
+    "matches": [
+      {
+        "pos": 15,
+        "word": "c"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "中文试汇",
+      "中试"
+    ],
+    "text": "敏词词敏文感感感中词中感敏词敏词试测中敏测敏",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🔥️🏽",
+      "❤‍😀",
+      "🔥🏽😀❤"
+    ],
+    "text": "🏽❤🏽️🔥🔥❤🏽😃‍🔥️‍️🔥️😀️❤😀‍😀🏽🔥😃‍🔥",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🏽🏽AA",
+      "🏽",
+      "🏽😀A",
+      "‍‍a",
+      "感‍‍"
+    ],
+    "text": "😀‍A",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "おウ�ｱ",
+      "エｲ"
+    ],
+    "text": "́e",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      " sse",
+      "rsIi",
+      "he"
+    ],
+    "text": "i iseH ",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "Ab",
+      "Aa",
+      "aaAA",
+      "aAAa",
+      "baA",
+      "b"
+    ],
+    "text": "aAAb",
+    "matches": [
+      {
+        "pos": 3,
+        "word": "b"
+      },
+      {
+        "pos": 2,
+        "word": "Ab"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "AacC",
+      "Bc",
+      "bbca"
+    ],
+    "text": "aCaCABcAAaabbCa",
+    "matches": [
+      {
+        "pos": 5,
+        "word": "Bc"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "感词汇文",
+      "词感",
+      "感汇感文",
+      "感",
+      "试",
+      "汇感测汇"
+    ],
+    "text": "汇中敏汇词汇测测试词敏词中敏汇中敏词敏测文中词感汇文中中文感",
+    "matches": [
+      {
+        "pos": 8,
+        "word": "试"
+      },
+      {
+        "pos": 23,
+        "word": "感"
+      },
+      {
+        "pos": 22,
+        "word": "词感"
+      },
+      {
+        "pos": 29,
+        "word": "感"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "️",
+      "‍",
+      "👍❤",
+      "😀😃️👍",
+      "🏽"
+    ],
+    "text": "😃👍🏽😃❤🔥🔥👍❤👍🔥‍❤🏽🔥‍😃‍❤🔥😃👍🔥❤",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "🏽"
+      },
+      {
+        "pos": 7,
+        "word": "👍❤"
+      },
+      {
+        "pos": 11,
+        "word": "‍"
+      },
+      {
+        "pos": 13,
+        "word": "🏽"
+      },
+      {
+        "pos": 15,
+        "word": "‍"
+      },
+      {
+        "pos": 17,
+        "word": "‍"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "感aa"
+    ],
+    "text": "😀Aa🏽🏽a‍🏽😀👍🏽A😀敏感a",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "お",
+      "�お",
+      "́漢́"
+    ],
+    "text": "ｱ�漢おｲｲｱ字エおウｲ漢ｱお́漢おｱおエｱｱ",
+    "matches": [
+      {
+        "pos": 3,
+        "word": "お"
+      },
+      {
+        "pos": 9,
+        "word": "お"
+      },
+      {
+        "pos": 14,
+        "word": "お"
+      },
+      {
+        "pos": 17,
+        "word": "お"
+      },
+      {
+        "pos": 19,
+        "word": "お"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "re",
+      "rs"
+    ],
+    "text": "ssiIeeeIiersI",
+    "matches": [
+      {
+        "pos": 10,
+        "word": "rs"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "b",
+      "aa",
+      "BA",
+      "BAb",
+      "BAba"
+    ],
+    "text": "bAaAbBAABbBbAAAbbbABbabb",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "b"
+      },
+      {
+        "pos": 4,
+        "word": "b"
+      },
+      {
+        "pos": 5,
+        "word": "BA"
+      },
+      {
+        "pos": 9,
+        "word": "b"
+      },
+      {
+        "pos": 11,
+        "word": "b"
+      },
+      {
+        "pos": 15,
+        "word": "b"
+      },
+      {
+        "pos": 16,
+        "word": "b"
+      },
+      {
+        "pos": 17,
+        "word": "b"
+      },
+      {
+        "pos": 20,
+        "word": "b"
+      },
+      {
+        "pos": 22,
+        "word": "b"
+      },
+      {
+        "pos": 23,
+        "word": "b"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "CA",
+      "AbC",
+      "bAb"
+    ],
+    "text": "AbbAacBbCAccCaCCcAbaABcBBBAacC",
+    "matches": [
+      {
+        "pos": 8,
+        "word": "CA"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "文测",
+      "汇敏",
+      "文汇感"
+    ],
+    "text": "汇文词测汇试词敏词中文感试敏文敏汇敏试测汇敏中敏词汇",
+    "matches": [
+      {
+        "pos": 16,
+        "word": "汇敏"
+      },
+      {
+        "pos": 20,
+        "word": "汇敏"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🏽️",
+      "️🏽😃"
+    ],
+    "text": "👍🏽️🏽❤",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "🏽️"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "aA敏",
+      "😀",
+      "A🏽a👍"
+    ],
+    "text": "",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "�eeウ"
+    ],
+    "text": "字エｲeｱeエ��エｱお漢eeお漢́字字お字ｱｱおe",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "hhIs",
+      "hi"
+    ],
+    "text": "IHssHs eHrss rehIHH",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "bbbA",
+      "a",
+      "Aa",
+      "babB"
+    ],
+    "text": "bbaABBbbaBbBBaBBaBbbbaBB",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "a"
+      },
+      {
+        "pos": 8,
+        "word": "a"
+      },
+      {
+        "pos": 13,
+        "word": "a"
+      },
+      {
+        "pos": 16,
+        "word": "a"
+      },
+      {
+        "pos": 21,
+        "word": "a"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "a",
+      "aa"
+    ],
+    "text": "CbAcaCBcBBCaCBCbBcccCBC",
+    "matches": [
+      {
+        "pos": 4,
+        "word": "a"
+      },
+      {
+        "pos": 11,
+        "word": "a"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "词词词中",
+      "试"
+    ],
+    "text": "敏词汇敏中文中词感测文感敏试文试测",
+    "matches": [
+      {
+        "pos": 13,
+        "word": "试"
+      },
+      {
+        "pos": 15,
+        "word": "试"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🔥😃",
+      "😃🔥️"
+    ],
+    "text": "️",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "敏",
+      "a🏽👍",
+      "‍a敏",
+      "a敏🏽"
+    ],
+    "text": "A😀🏽敏😀A敏👍感感Aa🏽‍🏽🏽敏👍感",
+    "matches": [
+      {
+        "pos": 3,
+        "word": "敏"
+      },
+      {
+        "pos": 6,
+        "word": "敏"
+      },
+      {
+        "pos": 16,
+        "word": "敏"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "e",
+      "おエ字",
+      "漢漢eお",
+      "漢おおウ"
+    ],
+    "text": "ｱ漢漢漢eウ",
+    "matches": [
+      {
+        "pos": 4,
+        "word": "e"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "  s"
+    ],
+    "text": "ssseIhHhHhi heIHIrsIIrI Ih H",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "A",
+      "A",
+      "aba",
+      "B",
+      "AB"
+    ],
+    "text": "ABAabbaaAAbAbaaAAaBBB",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "A"
+      },
+      {
+        "pos": 1,
+        "word": "B"
+      },
+      {
+        "pos": 0,
+        "word": "AB"
+      },
+      {
+        "pos": 2,
+        "word": "A"
+      },
+      {
+        "pos": 8,
+        "word": "A"
+      },
+      {
+        "pos": 9,
+        "word": "A"
+      },
+      {
+        "pos": 11,
+        "word": "A"
+      },
+      {
+        "pos": 15,
+        "word": "A"
+      },
+      {
+        "pos": 16,
+        "word": "A"
+      },
+      {
+        "pos": 18,
+        "word": "B"
+      },
+      {
+        "pos": 19,
+        "word": "B"
+      },
+      {
+        "pos": 20,
+        "word": "B"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "bBb",
+      "bBB",
+      "Bbb",
+      "ca",
+      "cAba",
+      "a"
+    ],
+    "text": "BabBaacCaCBCacbACCBCbBAABaBBaCb",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "a"
+      },
+      {
+        "pos": 4,
+        "word": "a"
+      },
+      {
+        "pos": 5,
+        "word": "a"
+      },
+      {
+        "pos": 8,
+        "word": "a"
+      },
+      {
+        "pos": 12,
+        "word": "a"
+      },
+      {
+        "pos": 25,
+        "word": "a"
+      },
+      {
+        "pos": 28,
+        "word": "a"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "感测",
+      "敏敏中",
+      "感敏感文"
+    ],
+    "text": "敏感敏汇词测试中汇测敏文试中文敏感感敏汇汇中感敏感词文",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "️‍👍",
+      "❤😀️👍",
+      "🏽😃️😃",
+      "️👍️",
+      "😃🏽🏽😀",
+      "🏽🏽"
+    ],
+    "text": "❤️👍😀🏽😀❤️😃🏽🔥🔥❤👍🔥🔥😃‍😃🔥❤️😀🏽👍😃🔥👍🔥👍",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "‍a"
+    ],
+    "text": "感感‍🏽敏",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "́",
+      "ｲ́",
+      "�",
+      "ｲｲ�"
+    ],
+    "text": "ｱｲエ漢エ́ｱエ�字",
+    "matches": [
+      {
+        "pos": 5,
+        "word": "́"
+      },
+      {
+        "pos": 8,
+        "word": "�"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "i hi",
+      "rI",
+      "HI"
+    ],
+    "text": "eIhseihri",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "Aba"
+    ],
+    "text": "BaabBBbaAABBAaAAAAbBAbAaAAb",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "bAcA",
+      "CBaB"
+    ],
+    "text": "aABBbaBaaBCBCaBAAaCAC",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "中",
+      "试感汇感",
+      "文",
+      "文",
+      "试中",
+      "测中感"
+    ],
+    "text": "感汇中汇测敏试试测文文感汇感文试敏词汇测试汇中词",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "中"
+      },
+      {
+        "pos": 9,
+        "word": "文"
+      },
+      {
+        "pos": 10,
+        "word": "文"
+      },
+      {
+        "pos": 14,
+        "word": "文"
+      },
+      {
+        "pos": 22,
+        "word": "中"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🏽🏽"
+    ],
+    "text": "‍😀❤😃🏽😃",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "敏敏a‍",
+      "a感",
+      "Aa",
+      "感🏽😀🏽"
+    ],
+    "text": "🏽👍😀a敏😀‍A🏽‍👍🏽🏽😀😀😀敏🏽A敏😀🏽😀敏",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "字"
+    ],
+    "text": "おｲ�エエ字́字ウeｲ漢ウエ字おお漢エエeｲ字エウ字e",
+    "matches": [
+      {
+        "pos": 5,
+        "word": "字"
+      },
+      {
+        "pos": 7,
+        "word": "字"
+      },
+      {
+        "pos": 14,
+        "word": "字"
+      },
+      {
+        "pos": 22,
+        "word": "字"
+      },
+      {
+        "pos": 25,
+        "word": "字"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "rier"
+    ],
+    "text": "siss rie isshiHeseiIes ssi",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "BB",
+      "AaBB",
+      "aa",
+      "a"
+    ],
+    "text": "bAbaAB",
+    "matches": [
+      {
+        "pos": 3,
+        "word": "a"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "c",
+      "Caca"
+    ],
+    "text": "aabaAbBAaBAA",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "试感",
+      "文试",
+      "词",
+      "文",
+      "汇中测测"
+    ],
+    "text": "测敏测汇感词试感",
+    "matches": [
+      {
+        "pos": 5,
+        "word": "词"
+      },
+      {
+        "pos": 6,
+        "word": "试感"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "😃❤😃‍",
+      "🔥🔥😃",
+      "️",
+      "❤😀😃👍",
+      "️👍🏽",
+      "🏽"
+    ],
+    "text": "‍😃❤‍😀❤🏽👍👍‍👍🏽❤🏽❤️️️‍❤😀",
+    "matches": [
+      {
+        "pos": 6,
+        "word": "🏽"
+      },
+      {
+        "pos": 11,
+        "word": "🏽"
+      },
+      {
+        "pos": 13,
+        "word": "🏽"
+      },
+      {
+        "pos": 15,
+        "word": "️"
+      },
+      {
+        "pos": 16,
+        "word": "️"
+      },
+      {
+        "pos": 17,
+        "word": "️"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "A👍👍",
+      "感"
+    ],
+    "text": "敏🏽A敏感😀感👍‍😀👍aa😀感🏽a😀🏽👍敏",
+    "matches": [
+      {
+        "pos": 4,
+        "word": "感"
+      },
+      {
+        "pos": 6,
+        "word": "感"
+      },
+      {
+        "pos": 14,
+        "word": "感"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "ウｱ字"
+    ],
+    "text": "�eウ字漢ウｱお漢おｱｲお�エ漢漢�漢おお",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "r  ",
+      "shH",
+      "  "
+    ],
+    "text": "iiIeh",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "A"
+    ],
+    "text": "aabBabBAAbab",
+    "matches": [
+      {
+        "pos": 7,
+        "word": "A"
+      },
+      {
+        "pos": 8,
+        "word": "A"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "Acb",
+      "Bb"
+    ],
+    "text": "CCABbCcbacbbcccABABaAAcccBCCbB",
+    "matches": [
+      {
+        "pos": 3,
+        "word": "Bb"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "词汇",
+      "敏",
+      "敏",
+      "汇",
+      "中敏文"
+    ],
+    "text": "敏敏词感感试敏试敏感中文文",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "敏"
+      },
+      {
+        "pos": 1,
+        "word": "敏"
+      },
+      {
+        "pos": 6,
+        "word": "敏"
+      },
+      {
+        "pos": 8,
+        "word": "敏"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🔥🏽‍️",
+      "️👍‍"
+    ],
+    "text": "👍😃🏽️👍🔥😀🔥️😃🔥️❤🏽🔥😃‍😃️️🏽😃🏽😀‍😀👍🏽‍",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "‍😀敏感",
+      "a🏽👍😀"
+    ],
+    "text": "感🏽a",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "ウエエ",
+      "エe",
+      "ウ漢お",
+      "�字ｲ"
+    ],
+    "text": "エエお字お�お�お字",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "ssI",
+      "r",
+      "i "
+    ],
+    "text": "sHs sess HirhHIesHrH s",
+    "matches": [
+      {
+        "pos": 11,
+        "word": "r"
+      },
+      {
+        "pos": 18,
+        "word": "r"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "b",
+      "bAa",
+      "abaB"
+    ],
+    "text": "BABBBbabaAbAAbAAbbbaA",
+    "matches": [
+      {
+        "pos": 5,
+        "word": "b"
+      },
+      {
+        "pos": 7,
+        "word": "b"
+      },
+      {
+        "pos": 10,
+        "word": "b"
+      },
+      {
+        "pos": 13,
+        "word": "b"
+      },
+      {
+        "pos": 16,
+        "word": "b"
+      },
+      {
+        "pos": 17,
+        "word": "b"
+      },
+      {
+        "pos": 18,
+        "word": "b"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "b",
+      "ca",
+      "cb",
+      "BBc",
+      "bc",
+      "Cc"
+    ],
+    "text": "CCCCCAaCBACCcaaAaAcBbac",
+    "matches": [
+      {
+        "pos": 11,
+        "word": "Cc"
+      },
+      {
+        "pos": 12,
+        "word": "ca"
+      },
+      {
+        "pos": 20,
+        "word": "b"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "汇",
+      "感",
+      "敏敏",
+      "测",
+      "文",
+      "中感"
+    ],
+    "text": "汇试敏试感中敏测测词",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "汇"
+      },
+      {
+        "pos": 4,
+        "word": "感"
+      },
+      {
+        "pos": 7,
+        "word": "测"
+      },
+      {
+        "pos": 8,
+        "word": "测"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "❤",
+      "👍",
+      "️👍"
+    ],
+    "text": "😃",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "‍",
+      "敏A🏽感",
+      "感A👍",
+      "😀👍感",
+      "‍",
+      "敏"
+    ],
+    "text": "a感🏽👍a😀敏‍😀😀敏👍敏👍a🏽敏敏🏽感感",
+    "matches": [
+      {
+        "pos": 6,
+        "word": "敏"
+      },
+      {
+        "pos": 7,
+        "word": "‍"
+      },
+      {
+        "pos": 10,
+        "word": "敏"
+      },
+      {
+        "pos": 12,
+        "word": "敏"
+      },
+      {
+        "pos": 16,
+        "word": "敏"
+      },
+      {
+        "pos": 17,
+        "word": "敏"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "́́",
+      "お",
+      "お́",
+      "字ウ�",
+      "ｲ",
+      "お́e"
+    ],
+    "text": "e字�漢ウ漢お字おウ漢おｱｲ",
+    "matches": [
+      {
+        "pos": 6,
+        "word": "お"
+      },
+      {
+        "pos": 8,
+        "word": "お"
+      },
+      {
+        "pos": 11,
+        "word": "お"
+      },
+      {
+        "pos": 13,
+        "word": "ｲ"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "is",
+      "rHi",
+      "Hee",
+      "iise"
+    ],
+    "text": "hee iHsehseIhrsh iiHsHrssss",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "bbA"
+    ],
+    "text": "BBaBaa",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "A"
+    ],
+    "text": "CaaBccAbbbACbAaA",
+    "matches": [
+      {
+        "pos": 6,
+        "word": "A"
+      },
+      {
+        "pos": 10,
+        "word": "A"
+      },
+      {
+        "pos": 13,
+        "word": "A"
+      },
+      {
+        "pos": 15,
+        "word": "A"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "汇敏",
+      "感感敏词",
+      "感"
+    ],
+    "text": "敏感敏敏中试试汇词汇敏敏文词感",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "感"
+      },
+      {
+        "pos": 9,
+        "word": "汇敏"
+      },
+      {
+        "pos": 14,
+        "word": "感"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "️😀",
+      "😀",
+      "😃‍😃🔥"
+    ],
+    "text": "👍🏽‍️🔥😀❤😀👍‍🏽‍🏽️️😀❤🔥😃❤😃❤😃😃🔥️❤❤🏽‍",
+    "matches": [
+      {
+        "pos": 5,
+        "word": "😀"
+      },
+      {
+        "pos": 7,
+        "word": "😀"
+      },
+      {
+        "pos": 15,
+        "word": "😀"
+      },
+      {
+        "pos": 14,
+        "word": "️😀"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🏽‍a",
+      "a‍",
+      "👍敏",
+      "👍👍a👍",
+      "感🏽",
+      "👍👍敏a"
+    ],
+    "text": "😀👍a‍敏‍😀a😀敏敏👍AA感a🏽敏😀AA",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "a‍"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "ウおウ́",
+      "eｱｱ",
+      "エ",
+      "�お",
+      "エ",
+      "ウ́ｲ"
+    ],
+    "text": "字エｱおｲ字漢ウウお漢eお",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "エ"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "s r ",
+      "r i",
+      "Hsh",
+      "sis",
+      "hri"
+    ],
+    "text": "Hesesis rrshrIeIhHe",
+    "matches": [
+      {
+        "pos": 4,
+        "word": "sis"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "ba",
+      "AABa",
+      "ab",
+      "AbAA",
+      "Ba"
+    ],
+    "text": "aBb",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "b"
+    ],
+    "text": "c",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "试中"
+    ],
+    "text": "试感文汇词文敏文敏文试文敏文汇文感敏敏",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🔥😃😃️",
+      "️",
+      "😃",
+      "️‍❤",
+      "‍",
+      "😃🏽️"
+    ],
+    "text": "❤️😃👍️🔥🏽️😃🔥‍️",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "️"
+      },
+      {
+        "pos": 2,
+        "word": "😃"
+      },
+      {
+        "pos": 4,
+        "word": "️"
+      },
+      {
+        "pos": 7,
+        "word": "️"
+      },
+      {
+        "pos": 8,
+        "word": "😃"
+      },
+      {
+        "pos": 10,
+        "word": "‍"
+      },
+      {
+        "pos": 11,
+        "word": "️"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "👍",
+      "🏽",
+      "‍👍A",
+      "A敏A"
+    ],
+    "text": "‍🏽a🏽🏽🏽a感‍敏a👍👍😀‍敏😀a感敏A😀‍a敏👍感A👍敏",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "🏽"
+      },
+      {
+        "pos": 3,
+        "word": "🏽"
+      },
+      {
+        "pos": 4,
+        "word": "🏽"
+      },
+      {
+        "pos": 5,
+        "word": "🏽"
+      },
+      {
+        "pos": 11,
+        "word": "👍"
+      },
+      {
+        "pos": 12,
+        "word": "👍"
+      },
+      {
+        "pos": 25,
+        "word": "👍"
+      },
+      {
+        "pos": 28,
+        "word": "👍"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "おエeｱ",
+      "字ｲ"
+    ],
+    "text": "ｱお́́�ｲé漢エｱ漢́�エe�eエ漢漢́́字",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "Ie"
+    ],
+    "text": "rrhsris I sishHHs ree  ",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "abaB",
+      "a"
+    ],
+    "text": "BAabaaaBbBBAaBbbAbAbBbA",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "a"
+      },
+      {
+        "pos": 4,
+        "word": "a"
+      },
+      {
+        "pos": 5,
+        "word": "a"
+      },
+      {
+        "pos": 6,
+        "word": "a"
+      },
+      {
+        "pos": 12,
+        "word": "a"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "bCbb",
+      "aC",
+      "cBcB"
+    ],
+    "text": "AaCcaABCCAABBbaBcBACBccaC",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "aC"
+      },
+      {
+        "pos": 23,
+        "word": "aC"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "敏感",
+      "测词感感",
+      "中中敏",
+      "文中词敏",
+      "文感敏感",
+      "文文词文"
+    ],
+    "text": "测中文试试试汇测文词敏文敏敏测文中测词文感",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "️😀❤",
+      "😀️",
+      "‍",
+      "😀🏽",
+      "🏽❤",
+      "️"
+    ],
+    "text": "❤👍‍❤❤😀",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "‍"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "敏‍😀🏽",
+      "感",
+      "a",
+      "A"
+    ],
+    "text": "a👍😀‍A感🏽敏😀a😀A👍敏A",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "a"
+      },
+      {
+        "pos": 4,
+        "word": "A"
+      },
+      {
+        "pos": 5,
+        "word": "感"
+      },
+      {
+        "pos": 9,
+        "word": "a"
+      },
+      {
+        "pos": 11,
+        "word": "A"
+      },
+      {
+        "pos": 14,
+        "word": "A"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "́字́",
+      "お�",
+      "字おエｱ",
+      "�漢",
+      "eｲｱ"
+    ],
+    "text": "ｲお",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "i",
+      "hei",
+      " i ",
+      "iiI"
+    ],
+    "text": " is",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "i"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "aBB",
+      "aAB",
+      "bAB",
+      "AABb",
+      "AbBB"
+    ],
+    "text": "",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "cbA",
+      "aB",
+      "aBc",
+      "bB",
+      "Cb",
+      "Ba"
+    ],
+    "text": "CcCCBaBBBAbcBCb",
+    "matches": [
+      {
+        "pos": 4,
+        "word": "Ba"
+      },
+      {
+        "pos": 5,
+        "word": "aB"
+      },
+      {
+        "pos": 13,
+        "word": "Cb"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "词汇词文"
+    ],
+    "text": "中测敏中中敏感中文汇试试试词汇词词汇敏敏感感汇感试试",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "😀",
+      "️😃️",
+      "😃‍🔥👍",
+      "❤"
+    ],
+    "text": "️‍😀😃😃🏽❤❤",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "😀"
+      },
+      {
+        "pos": 6,
+        "word": "❤"
+      },
+      {
+        "pos": 7,
+        "word": "❤"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "😀‍",
+      "感aA"
+    ],
+    "text": "A🏽a😀敏‍😀A😀😀Aa敏a🏽😀🏽‍感‍敏🏽😀😀👍A",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "́"
+    ],
+    "text": "字ｲ漢ウ字漢漢エ漢́おｲ�お́エ�ウ",
+    "matches": [
+      {
+        "pos": 9,
+        "word": "́"
+      },
+      {
+        "pos": 14,
+        "word": "́"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "e"
+    ],
+    "text": "h HiHsIesss ",
+    "matches": [
+      {
+        "pos": 7,
+        "word": "e"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "bb"
+    ],
+    "text": "ABabABABaabbbBbbAbABaBBB",
+    "matches": [
+      {
+        "pos": 10,
+        "word": "bb"
+      },
+      {
+        "pos": 11,
+        "word": "bb"
+      },
+      {
+        "pos": 14,
+        "word": "bb"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "C",
+      "A",
+      "B",
+      "b"
+    ],
+    "text": "BabbAbaAbBB",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "B"
+      },
+      {
+        "pos": 2,
+        "word": "b"
+      },
+      {
+        "pos": 3,
+        "word": "b"
+      },
+      {
+        "pos": 4,
+        "word": "A"
+      },
+      {
+        "pos": 5,
+        "word": "b"
+      },
+      {
+        "pos": 7,
+        "word": "A"
+      },
+      {
+        "pos": 8,
+        "word": "b"
+      },
+      {
+        "pos": 9,
+        "word": "B"
+      },
+      {
+        "pos": 10,
+        "word": "B"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "感试",
+      "测",
+      "敏感试",
+      "敏敏敏汇"
+    ],
+    "text": "敏文",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "👍😀‍",
+      "🏽🏽",
+      "🏽❤️",
+      "😃‍🏽‍",
+      "😃️❤👍",
+      "🔥🏽😃🔥"
+    ],
+    "text": "️😃😀😃😀👍🏽😀😃❤😃🏽‍️😃️❤❤🏽❤",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "👍🏽a敏",
+      "🏽👍A🏽"
+    ],
+    "text": "a敏😀AA敏感🏽Aa‍aa",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "漢ウ"
+    ],
+    "text": "�エエ́字��ｱウお漢ウウ字�ｱ�ｲ",
+    "matches": [
+      {
+        "pos": 10,
+        "word": "漢ウ"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "rrs",
+      "Hr h",
+      "s",
+      "hrH",
+      "rss",
+      "hIe"
+    ],
+    "text": "ierhsssIHhrhsIIresrrrs rHsiese",
+    "matches": [
+      {
+        "pos": 4,
+        "word": "s"
+      },
+      {
+        "pos": 5,
+        "word": "s"
+      },
+      {
+        "pos": 6,
+        "word": "s"
+      },
+      {
+        "pos": 12,
+        "word": "s"
+      },
+      {
+        "pos": 17,
+        "word": "s"
+      },
+      {
+        "pos": 21,
+        "word": "s"
+      },
+      {
+        "pos": 19,
+        "word": "rrs"
+      },
+      {
+        "pos": 25,
+        "word": "s"
+      },
+      {
+        "pos": 28,
+        "word": "s"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "bB",
+      "bA",
+      "A",
+      "A",
+      "AAA"
+    ],
+    "text": "BAaaaBBBaAabAbaaAABABbB",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "A"
+      },
+      {
+        "pos": 9,
+        "word": "A"
+      },
+      {
+        "pos": 12,
+        "word": "A"
+      },
+      {
+        "pos": 11,
+        "word": "bA"
+      },
+      {
+        "pos": 16,
+        "word": "A"
+      },
+      {
+        "pos": 17,
+        "word": "A"
+      },
+      {
+        "pos": 19,
+        "word": "A"
+      },
+      {
+        "pos": 21,
+        "word": "bB"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "cA",
+      "aaBa",
+      "bAAb",
+      "BB",
+      "CBaA"
+    ],
+    "text": "CbcAa",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "cA"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "文感中敏",
+      "中感"
+    ],
+    "text": "文文敏试中中敏中感测文敏试中敏文试敏文敏测感测感测感文测敏",
+    "matches": [
+      {
+        "pos": 7,
+        "word": "中感"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "❤️😃🔥"
+    ],
+    "text": "😀😀😃❤️🏽️👍😃❤❤️❤👍😃👍👍❤😃😃️🏽",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "感😀"
+    ],
+    "text": "a",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "エエウエ",
+      "漢漢"
+    ],
+    "text": "漢eｲｱ�エ",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "rse",
+      "h",
+      "rh"
+    ],
+    "text": "Hs",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "Aab",
+      "b",
+      "ba",
+      "b",
+      "bbba",
+      "a"
+    ],
+    "text": "abbaaabbBAbabaaAaBBbA",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "a"
+      },
+      {
+        "pos": 1,
+        "word": "b"
+      },
+      {
+        "pos": 2,
+        "word": "b"
+      },
+      {
+        "pos": 3,
+        "word": "a"
+      },
+      {
+        "pos": 2,
+        "word": "ba"
+      },
+      {
+        "pos": 4,
+        "word": "a"
+      },
+      {
+        "pos": 5,
+        "word": "a"
+      },
+      {
+        "pos": 6,
+        "word": "b"
+      },
+      {
+        "pos": 7,
+        "word": "b"
+      },
+      {
+        "pos": 10,
+        "word": "b"
+      },
+      {
+        "pos": 11,
+        "word": "a"
+      },
+      {
+        "pos": 10,
+        "word": "ba"
+      },
+      {
+        "pos": 12,
+        "word": "b"
+      },
+      {
+        "pos": 13,
+        "word": "a"
+      },
+      {
+        "pos": 12,
+        "word": "ba"
+      },
+      {
+        "pos": 14,
+        "word": "a"
+      },
+      {
+        "pos": 16,
+        "word": "a"
+      },
+      {
+        "pos": 19,
+        "word": "b"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "cAbB"
+    ],
+    "text": "CAcCcCCaaABCaAcBbbcCBBCbbBBCaBB",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "中试感"
+    ],
+    "text": "敏试敏词中感",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "👍😀👍😃",
+      "‍🏽"
+    ],
+    "text": "‍😀🏽😃👍",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "‍",
+      "🏽🏽A",
+      "a👍😀😀",
+      "🏽👍🏽‍"
+    ],
+    "text": "🏽👍敏敏a🏽😀👍A",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "ｱ"
+    ],
+    "text": "漢漢お漢ウeｱエｱ́エ漢eｲ漢eｱｱお漢ウ",
+    "matches": [
+      {
+        "pos": 6,
+        "word": "ｱ"
+      },
+      {
+        "pos": 8,
+        "word": "ｱ"
+      },
+      {
+        "pos": 16,
+        "word": "ｱ"
+      },
+      {
+        "pos": 17,
+        "word": "ｱ"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "eh",
+      "sIeH",
+      "hre"
+    ],
+    "text": "he  ",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "BBb",
+      "A"
+    ],
+    "text": "BBaBbAbBabABAbbbBBAbB",
+    "matches": [
+      {
+        "pos": 5,
+        "word": "A"
+      },
+      {
+        "pos": 10,
+        "word": "A"
+      },
+      {
+        "pos": 12,
+        "word": "A"
+      },
+      {
+        "pos": 18,
+        "word": "A"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "bBbc",
+      "bBbb",
+      "cBA",
+      "A",
+      "bCCC",
+      "A"
+    ],
+    "text": "BAcA",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "A"
+      },
+      {
+        "pos": 3,
+        "word": "A"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "测词试文",
+      "词词测",
+      "敏感敏",
+      "敏感",
+      "试",
+      "词"
+    ],
+    "text": "敏敏试感词敏词中",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "试"
+      },
+      {
+        "pos": 4,
+        "word": "词"
+      },
+      {
+        "pos": 6,
+        "word": "词"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🏽😃",
+      "️‍😃",
+      "❤‍😀️",
+      "😀😃",
+      "❤👍👍",
+      "️👍"
+    ],
+    "text": "❤‍❤😃",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "AA敏感",
+      "感👍👍A"
+    ],
+    "text": "敏AA👍😀a敏😀‍",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "��エ",
+      "字",
+      "ｱ漢漢",
+      "お��ｱ",
+      "字エ",
+      "字ｲ"
+    ],
+    "text": "�漢字",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "字"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "HiI"
+    ],
+    "text": "sssHsrHssiH rHrHs",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "aaAb",
+      "ABA"
+    ],
+    "text": "bAAbbabbBBbb",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "CcA",
+      "c",
+      "baab",
+      "Bc",
+      "CCC"
+    ],
+    "text": "BbabcaaaccbaAABAAC",
+    "matches": [
+      {
+        "pos": 4,
+        "word": "c"
+      },
+      {
+        "pos": 8,
+        "word": "c"
+      },
+      {
+        "pos": 9,
+        "word": "c"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "中",
+      "感"
+    ],
+    "text": "中感",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "中"
+      },
+      {
+        "pos": 1,
+        "word": "感"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🏽️👍",
+      "😀"
+    ],
+    "text": "👍️👍😃‍‍👍🔥❤👍🔥",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "👍",
+      "👍‍",
+      "a敏",
+      "敏",
+      "感敏敏A",
+      "A"
+    ],
+    "text": "🏽😀敏🏽👍👍A🏽😀👍🏽👍🏽敏‍‍😀敏a",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "敏"
+      },
+      {
+        "pos": 4,
+        "word": "👍"
+      },
+      {
+        "pos": 5,
+        "word": "👍"
+      },
+      {
+        "pos": 6,
+        "word": "A"
+      },
+      {
+        "pos": 9,
+        "word": "👍"
+      },
+      {
+        "pos": 11,
+        "word": "👍"
+      },
+      {
+        "pos": 13,
+        "word": "敏"
+      },
+      {
+        "pos": 17,
+        "word": "敏"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "ウ字",
+      "字",
+      "e字�",
+      "漢字お漢",
+      "eエ�エ"
+    ],
+    "text": "漢́ｱｱお�エｱエウ�́ウ",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "s",
+      "Isss",
+      "r",
+      " r",
+      "hes"
+    ],
+    "text": "I",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "BAa",
+      "b"
+    ],
+    "text": "abaBBBAAaaBABbBB",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "b"
+      },
+      {
+        "pos": 13,
+        "word": "b"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "bC",
+      "b"
+    ],
+    "text": "ccABBBabcbcBCBBacACBcaCBAccAAAa",
+    "matches": [
+      {
+        "pos": 7,
+        "word": "b"
+      },
+      {
+        "pos": 9,
+        "word": "b"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "词文文",
+      "敏感",
+      "测",
+      "汇文"
+    ],
+    "text": "试词敏敏敏测文试词文词试敏敏感文测文敏文试测试敏中汇汇",
+    "matches": [
+      {
+        "pos": 5,
+        "word": "测"
+      },
+      {
+        "pos": 13,
+        "word": "敏感"
+      },
+      {
+        "pos": 16,
+        "word": "测"
+      },
+      {
+        "pos": 21,
+        "word": "测"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "‍️😃😃",
+      "️😃",
+      "🏽🔥‍"
+    ],
+    "text": "",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "😀A😀",
+      "感‍🏽👍",
+      "AA"
+    ],
+    "text": "感A😀A感a🏽感敏👍敏A敏😀a👍👍😀🏽‍",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "éお",
+      "エｲ",
+      "e漢e"
+    ],
+    "text": "�ウe�é́́エ漢漢�お字ｱ字ウｲエエ́�́�おウウ",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "h",
+      "isIs",
+      "s"
+    ],
+    "text": "sissrshHH HisihHse",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "s"
+      },
+      {
+        "pos": 2,
+        "word": "s"
+      },
+      {
+        "pos": 3,
+        "word": "s"
+      },
+      {
+        "pos": 5,
+        "word": "s"
+      },
+      {
+        "pos": 6,
+        "word": "h"
+      },
+      {
+        "pos": 12,
+        "word": "s"
+      },
+      {
+        "pos": 14,
+        "word": "h"
+      },
+      {
+        "pos": 16,
+        "word": "s"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "BBBA",
+      "bb",
+      "BB",
+      "Bbb"
+    ],
+    "text": "bBaAaABaBBbbbBaBB",
+    "matches": [
+      {
+        "pos": 8,
+        "word": "BB"
+      },
+      {
+        "pos": 10,
+        "word": "bb"
+      },
+      {
+        "pos": 9,
+        "word": "Bbb"
+      },
+      {
+        "pos": 11,
+        "word": "bb"
+      },
+      {
+        "pos": 15,
+        "word": "BB"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "cBc",
+      "Aac",
+      "ab"
+    ],
+    "text": "acaa",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "汇测中",
+      "敏汇试敏"
+    ],
+    "text": "词敏敏词文词试文",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "❤😀",
+      "🏽"
+    ],
+    "text": "️‍🔥👍‍🏽👍🔥🔥😀‍🏽",
+    "matches": [
+      {
+        "pos": 5,
+        "word": "🏽"
+      },
+      {
+        "pos": 11,
+        "word": "🏽"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "a‍a👍"
+    ],
+    "text": "感🏽🏽AA敏👍👍a😀感",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "エ́",
+      "ウ漢e字",
+      "ウエお字",
+      "�お",
+      "エ�"
+    ],
+    "text": "�エ�ｱ字́ウ�ウｱｱエ漢́字eエ́漢ウおeé́ｲｲｱ漢",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "エ�"
+      },
+      {
+        "pos": 16,
+        "word": "エ́"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "H "
+    ],
+    "text": " Iiree",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "B",
+      "AaBa"
+    ],
+    "text": "AaABaaBbABAb",
+    "matches": [
+      {
+        "pos": 3,
+        "word": "B"
+      },
+      {
+        "pos": 6,
+        "word": "B"
+      },
+      {
+        "pos": 9,
+        "word": "B"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "b",
+      "B",
+      "c",
+      "a",
+      "B",
+      "bA"
+    ],
+    "text": "CbCACBaBABBAacaaCAACbbCcCabCb",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "b"
+      },
+      {
+        "pos": 5,
+        "word": "B"
+      },
+      {
+        "pos": 6,
+        "word": "a"
+      },
+      {
+        "pos": 7,
+        "word": "B"
+      },
+      {
+        "pos": 9,
+        "word": "B"
+      },
+      {
+        "pos": 10,
+        "word": "B"
+      },
+      {
+        "pos": 12,
+        "word": "a"
+      },
+      {
+        "pos": 13,
+        "word": "c"
+      },
+      {
+        "pos": 14,
+        "word": "a"
+      },
+      {
+        "pos": 15,
+        "word": "a"
+      },
+      {
+        "pos": 20,
+        "word": "b"
+      },
+      {
+        "pos": 21,
+        "word": "b"
+      },
+      {
+        "pos": 23,
+        "word": "c"
+      },
+      {
+        "pos": 25,
+        "word": "a"
+      },
+      {
+        "pos": 26,
+        "word": "b"
+      },
+      {
+        "pos": 28,
+        "word": "b"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "词敏感",
+      "词",
+      "敏测测测",
+      "词词中"
+    ],
+    "text": "文文汇中感感词汇汇词",
+    "matches": [
+      {
+        "pos": 6,
+        "word": "词"
+      },
+      {
+        "pos": 9,
+        "word": "词"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🔥‍❤👍",
+      "😃😃",
+      "😀❤🔥"
+    ],
+    "text": "️👍🏽‍😀‍😃",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "感敏",
+      "敏a",
+      "👍👍Aa",
+      "👍a感"
+    ],
+    "text": "AAaa😀😀敏🏽敏👍‍A‍A敏aAAA敏😀感aa",
+    "matches": [
+      {
+        "pos": 14,
+        "word": "敏a"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "�́",
+      "́",
+      "漢お"
+    ],
+    "text": "ｲe�ウお漢́ｱ�́字おｱお",
+    "matches": [
+      {
+        "pos": 6,
+        "word": "́"
+      },
+      {
+        "pos": 9,
+        "word": "́"
+      },
+      {
+        "pos": 8,
+        "word": "�́"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "i"
+    ],
+    "text": "HIrrsIHrsssrHsI",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "bBaB"
+    ],
+    "text": "aAaabBbbBa",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "caB",
+      "A",
+      "CaB",
+      "A"
+    ],
+    "text": "cacCCbaCaCcaABBaBa",
+    "matches": [
+      {
+        "pos": 12,
+        "word": "A"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "测中词",
+      "敏试",
+      "敏感文试"
+    ],
+    "text": "敏测敏文测",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "️‍",
+      "‍",
+      "️",
+      "😀👍",
+      "🔥😀",
+      "️️😀"
+    ],
+    "text": "🔥🔥😃😃🔥🏽🏽‍🏽🏽👍👍👍😀️😀️",
+    "matches": [
+      {
+        "pos": 7,
+        "word": "‍"
+      },
+      {
+        "pos": 14,
+        "word": "️"
+      },
+      {
+        "pos": 16,
+        "word": "️"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "Aa‍",
+      "‍A",
+      "‍",
+      "A",
+      "A",
+      "敏"
+    ],
+    "text": "感感A敏A敏👍🏽",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "A"
+      },
+      {
+        "pos": 3,
+        "word": "敏"
+      },
+      {
+        "pos": 4,
+        "word": "A"
+      },
+      {
+        "pos": 5,
+        "word": "敏"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "́�漢ウ",
+      "e�お",
+      "字字ｲ́",
+      "eお",
+      "ウｱe"
+    ],
+    "text": "�おおｲ",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "ere",
+      "rs",
+      "s",
+      " hII"
+    ],
+    "text": "hes",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "s"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "ab",
+      "BA",
+      "BA"
+    ],
+    "text": "BBAabBabAabABaA",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "BA"
+      },
+      {
+        "pos": 3,
+        "word": "ab"
+      },
+      {
+        "pos": 6,
+        "word": "ab"
+      },
+      {
+        "pos": 9,
+        "word": "ab"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "aC"
+    ],
+    "text": "ABcCBcababCCabCaBC",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "试感测",
+      "感感汇",
+      "汇感敏试",
+      "敏感",
+      "感敏"
+    ],
+    "text": "中测测测词敏敏敏敏汇敏感感汇汇中汇中测测词感中试敏文",
+    "matches": [
+      {
+        "pos": 10,
+        "word": "敏感"
+      },
+      {
+        "pos": 11,
+        "word": "感感汇"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🏽",
+      "️️️",
+      "‍😀🏽"
+    ],
+    "text": "👍😀‍🏽‍‍️👍",
+    "matches": [
+      {
+        "pos": 3,
+        "word": "🏽"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "A",
+      "👍👍‍",
+      "敏感🏽👍",
+      "A敏😀",
+      "‍A👍",
+      "aa😀A"
+    ],
+    "text": "😀敏🏽😀感‍👍‍A😀aA😀感👍👍😀敏‍感‍‍🏽A‍",
+    "matches": [
+      {
+        "pos": 8,
+        "word": "A"
+      },
+      {
+        "pos": 11,
+        "word": "A"
+      },
+      {
+        "pos": 23,
+        "word": "A"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "ｱ",
+      "漢おお",
+      "�",
+      "eおｱｱ",
+      "漢エｲ́",
+      "́é"
+    ],
+    "text": "お́ｱｱｱ́�エ字おエウエ字́ウお",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "ｱ"
+      },
+      {
+        "pos": 3,
+        "word": "ｱ"
+      },
+      {
+        "pos": 4,
+        "word": "ｱ"
+      },
+      {
+        "pos": 6,
+        "word": "�"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "s  h"
+    ],
+    "text": "ehHrseeHHHhsriIIeH",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "bbb"
+    ],
+    "text": "B",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "aaA",
+      "cCB",
+      "bb",
+      "B",
+      "bbaB"
+    ],
+    "text": "BCCAAbACBCBBc",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "B"
+      },
+      {
+        "pos": 8,
+        "word": "B"
+      },
+      {
+        "pos": 10,
+        "word": "B"
+      },
+      {
+        "pos": 11,
+        "word": "B"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "测敏",
+      "汇文感"
+    ],
+    "text": "",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🏽️",
+      "❤🏽😃‍",
+      "🔥"
+    ],
+    "text": "‍‍👍❤‍😃🏽‍️",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "感‍",
+      "‍",
+      "🏽😀",
+      "👍敏"
+    ],
+    "text": "🏽😀‍敏😀🏽🏽",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "🏽😀"
+      },
+      {
+        "pos": 2,
+        "word": "‍"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "おエお",
+      "字ｲ�漢",
+      "漢́",
+      "ウ"
+    ],
+    "text": "エｱウエ́エ́�お字ｲお字お�ｱ́漢�",
+    "matches": [
+      {
+        "pos": 2,
+        "word": "ウ"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "IH"
+    ],
+    "text": "ssieHhsiisHsreHhrhsreHseiIii",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "B",
+      "b",
+      "AA",
+      "A",
+      "aABb",
+      "BBb"
+    ],
+    "text": "AbabAbabAbaBBAaAbABBAAAbAABBAa",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "A"
+      },
+      {
+        "pos": 1,
+        "word": "b"
+      },
+      {
+        "pos": 3,
+        "word": "b"
+      },
+      {
+        "pos": 4,
+        "word": "A"
+      },
+      {
+        "pos": 5,
+        "word": "b"
+      },
+      {
+        "pos": 7,
+        "word": "b"
+      },
+      {
+        "pos": 8,
+        "word": "A"
+      },
+      {
+        "pos": 9,
+        "word": "b"
+      },
+      {
+        "pos": 11,
+        "word": "B"
+      },
+      {
+        "pos": 12,
+        "word": "B"
+      },
+      {
+        "pos": 13,
+        "word": "A"
+      },
+      {
+        "pos": 15,
+        "word": "A"
+      },
+      {
+        "pos": 16,
+        "word": "b"
+      },
+      {
+        "pos": 17,
+        "word": "A"
+      },
+      {
+        "pos": 18,
+        "word": "B"
+      },
+      {
+        "pos": 19,
+        "word": "B"
+      },
+      {
+        "pos": 20,
+        "word": "A"
+      },
+      {
+        "pos": 21,
+        "word": "A"
+      },
+      {
+        "pos": 20,
+        "word": "AA"
+      },
+      {
+        "pos": 22,
+        "word": "A"
+      },
+      {
+        "pos": 21,
+        "word": "AA"
+      },
+      {
+        "pos": 23,
+        "word": "b"
+      },
+      {
+        "pos": 24,
+        "word": "A"
+      },
+      {
+        "pos": 25,
+        "word": "A"
+      },
+      {
+        "pos": 24,
+        "word": "AA"
+      },
+      {
+        "pos": 26,
+        "word": "B"
+      },
+      {
+        "pos": 27,
+        "word": "B"
+      },
+      {
+        "pos": 28,
+        "word": "A"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "acAA",
+      "C"
+    ],
+    "text": "AaA",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "汇中中感",
+      "测",
+      "汇敏中文",
+      "文文",
+      "测文感"
+    ],
+    "text": "试词试感中文词感文感中汇试测敏敏词文试测敏文敏汇汇试文感",
+    "matches": [
+      {
+        "pos": 13,
+        "word": "测"
+      },
+      {
+        "pos": 19,
+        "word": "测"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "️❤",
+      "❤",
+      "🏽"
+    ],
+    "text": "",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "a‍A"
+    ],
+    "text": "",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "漢漢ウe"
+    ],
+    "text": "é�字字ウ�ｲeお字エウｱ",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "ss"
+    ],
+    "text": "H sH iH HiherIrr",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "bA",
+      "BB",
+      "BB",
+      "BB",
+      "AabB"
+    ],
+    "text": "ABBAAaBaAaAA",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "BB"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "Cc",
+      "a",
+      "aA",
+      "CCBC",
+      "c",
+      "b"
+    ],
+    "text": "CbccccabaAcCacAcbb",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "b"
+      },
+      {
+        "pos": 2,
+        "word": "c"
+      },
+      {
+        "pos": 3,
+        "word": "c"
+      },
+      {
+        "pos": 4,
+        "word": "c"
+      },
+      {
+        "pos": 5,
+        "word": "c"
+      },
+      {
+        "pos": 6,
+        "word": "a"
+      },
+      {
+        "pos": 7,
+        "word": "b"
+      },
+      {
+        "pos": 8,
+        "word": "a"
+      },
+      {
+        "pos": 8,
+        "word": "aA"
+      },
+      {
+        "pos": 10,
+        "word": "c"
+      },
+      {
+        "pos": 12,
+        "word": "a"
+      },
+      {
+        "pos": 13,
+        "word": "c"
+      },
+      {
+        "pos": 15,
+        "word": "c"
+      },
+      {
+        "pos": 16,
+        "word": "b"
+      },
+      {
+        "pos": 17,
+        "word": "b"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "试试文敏",
+      "试文汇敏",
+      "敏测",
+      "文",
+      "词感文"
+    ],
+    "text": "敏试",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🔥",
+      "👍❤😃",
+      "🔥",
+      "️",
+      "🔥"
+    ],
+    "text": "🔥😀🔥‍❤😀️‍️👍‍👍‍❤",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "🔥"
+      },
+      {
+        "pos": 2,
+        "word": "🔥"
+      },
+      {
+        "pos": 6,
+        "word": "️"
+      },
+      {
+        "pos": 8,
+        "word": "️"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "👍😀🏽👍",
+      "aA‍",
+      "😀",
+      "敏‍🏽👍"
+    ],
+    "text": "🏽😀😀👍感A敏😀Aaaa🏽🏽‍a👍😀敏敏Aa",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "😀"
+      },
+      {
+        "pos": 2,
+        "word": "😀"
+      },
+      {
+        "pos": 7,
+        "word": "😀"
+      },
+      {
+        "pos": 17,
+        "word": "😀"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "ウe",
+      "漢�",
+      "漢",
+      "�ｲ́",
+      "字エウ"
+    ],
+    "text": "eｲ́字́漢おｱ�字ｲ字漢ｲ́ｲｱe�́エウｲ漢ウ�",
+    "matches": [
+      {
+        "pos": 5,
+        "word": "漢"
+      },
+      {
+        "pos": 12,
+        "word": "漢"
+      },
+      {
+        "pos": 23,
+        "word": "漢"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "h"
+    ],
+    "text": "ihHIss hHr h",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "h"
+      },
+      {
+        "pos": 7,
+        "word": "h"
+      },
+      {
+        "pos": 11,
+        "word": "h"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "aA",
+      "a",
+      "AB",
+      "AaB"
+    ],
+    "text": "AAbaBbBAAAAaBABaaABaBbAaAbB",
+    "matches": [
+      {
+        "pos": 3,
+        "word": "a"
+      },
+      {
+        "pos": 11,
+        "word": "a"
+      },
+      {
+        "pos": 10,
+        "word": "AaB"
+      },
+      {
+        "pos": 13,
+        "word": "AB"
+      },
+      {
+        "pos": 15,
+        "word": "a"
+      },
+      {
+        "pos": 16,
+        "word": "a"
+      },
+      {
+        "pos": 16,
+        "word": "aA"
+      },
+      {
+        "pos": 17,
+        "word": "AB"
+      },
+      {
+        "pos": 19,
+        "word": "a"
+      },
+      {
+        "pos": 23,
+        "word": "a"
+      },
+      {
+        "pos": 23,
+        "word": "aA"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "bC",
+      "CCca",
+      "BCBB",
+      "ca",
+      "CbC",
+      "AcBB"
+    ],
+    "text": "CcbbcbbbbaCBbbcCcbaAaAaA",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "汇文",
+      "敏",
+      "汇",
+      "词敏",
+      "敏感试汇"
+    ],
+    "text": "敏文敏文敏测感感敏词汇汇",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "敏"
+      },
+      {
+        "pos": 2,
+        "word": "敏"
+      },
+      {
+        "pos": 4,
+        "word": "敏"
+      },
+      {
+        "pos": 8,
+        "word": "敏"
+      },
+      {
+        "pos": 10,
+        "word": "汇"
+      },
+      {
+        "pos": 11,
+        "word": "汇"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "‍️",
+      "‍🏽",
+      "️🔥",
+      "😀",
+      "🔥‍😃🔥",
+      "😃🏽😃😃"
+    ],
+    "text": "🔥❤😃❤😃🔥‍😀😃❤❤🔥😃🔥👍❤😃🔥😃👍😃🏽🔥😃",
+    "matches": [
+      {
+        "pos": 7,
+        "word": "😀"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🏽A",
+      "😀AA敏",
+      "😀👍",
+      "🏽🏽"
+    ],
+    "text": "AA‍a‍🏽a感🏽‍aA敏A😀A‍👍A‍感A感A",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "ｲeｲ́",
+      "ｲeｲ",
+      "ｱ",
+      "漢́エ",
+      "ウ漢",
+      "エｲお"
+    ],
+    "text": "́おおｲ漢ｱエウウウウ́お�エ漢漢ｲ́ｲウエエおｲ́おｲ",
+    "matches": [
+      {
+        "pos": 5,
+        "word": "ｱ"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "hs",
+      "Is",
+      "rhIh",
+      "hsH"
+    ],
+    "text": "esHhrssHI",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "A",
+      "BBa"
+    ],
+    "text": "BbBABaBAAa",
+    "matches": [
+      {
+        "pos": 3,
+        "word": "A"
+      },
+      {
+        "pos": 7,
+        "word": "A"
+      },
+      {
+        "pos": 8,
+        "word": "A"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "BCa",
+      "a",
+      "C",
+      "a"
+    ],
+    "text": "cCBAcABAbCCcAc",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "C"
+      },
+      {
+        "pos": 9,
+        "word": "C"
+      },
+      {
+        "pos": 10,
+        "word": "C"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "测感感敏",
+      "测词敏敏",
+      "敏中词测",
+      "中敏",
+      "文",
+      "测汇测试"
+    ],
+    "text": "试词词敏敏文中感",
+    "matches": [
+      {
+        "pos": 5,
+        "word": "文"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "👍😀",
+      "👍‍️",
+      "🔥👍️",
+      "😃😀🔥",
+      "️‍"
+    ],
+    "text": "❤❤❤😃😃👍️️😃🏽🏽🔥👍️‍🔥‍😀🏽🏽🏽🔥❤🔥‍❤❤❤🔥😃🏽",
+    "matches": [
+      {
+        "pos": 11,
+        "word": "🔥👍️"
+      },
+      {
+        "pos": 13,
+        "word": "️‍"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "感a"
+    ],
+    "text": "😀👍‍‍感👍A感👍a感👍👍感A👍😀😀a👍😀a👍敏🏽感👍a👍a😀",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "eeｱ",
+      "�e",
+      "字エ́�",
+      "エ�ウ",
+      "ウe",
+      "ｲｱeウ"
+    ],
+    "text": "eｲ́ｱé字漢エエｱエ�字��",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "rh"
+    ],
+    "text": "HsrirIHseiIeisi rihr",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "Abab",
+      "Ab",
+      "b",
+      "BBbA"
+    ],
+    "text": "a",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "BaCC",
+      "B"
+    ],
+    "text": "CccAcBcACCACBbcBbCCcBaaabaC",
+    "matches": [
+      {
+        "pos": 5,
+        "word": "B"
+      },
+      {
+        "pos": 12,
+        "word": "B"
+      },
+      {
+        "pos": 15,
+        "word": "B"
+      },
+      {
+        "pos": 20,
+        "word": "B"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "词",
+      "文敏",
+      "文汇中敏",
+      "测敏"
+    ],
+    "text": "汇敏敏敏汇测敏测文汇",
+    "matches": [
+      {
+        "pos": 5,
+        "word": "测敏"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🔥",
+      "❤❤‍👍",
+      "😀😃",
+      "👍👍‍😀",
+      "😀😀",
+      "🔥"
+    ],
+    "text": "❤‍👍️😀",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "a",
+      "Aa感敏",
+      "😀感",
+      "a😀",
+      "感",
+      "😀🏽Aa"
+    ],
+    "text": "🏽A😀‍👍😀AA敏A👍‍感😀a🏽👍",
+    "matches": [
+      {
+        "pos": 12,
+        "word": "感"
+      },
+      {
+        "pos": 14,
+        "word": "a"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "字ｱ",
+      "ｱ漢ｲ",
+      "�́�",
+      "ｱ",
+      "字e",
+      "́漢"
+    ],
+    "text": "ｱお́おｲウおｲ漢ｲe字ｲおおおエｱエ",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "ｱ"
+      },
+      {
+        "pos": 17,
+        "word": "ｱ"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      " iHs"
+    ],
+    "text": "HisrIIrHiI sreheriessherrsrh",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "bb",
+      "bBab"
+    ],
+    "text": "bABBbBBaaaAbAbABabAabbbAA",
+    "matches": [
+      {
+        "pos": 20,
+        "word": "bb"
+      },
+      {
+        "pos": 21,
+        "word": "bb"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "aA",
+      "aC"
+    ],
+    "text": "bCBBbBacCBabacAccAbaBCbbbbA",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "汇感测",
+      "敏"
+    ],
+    "text": "文敏汇测敏测试文测感测敏感敏试词文敏汇文词测试敏词敏文敏",
+    "matches": [
+      {
+        "pos": 1,
+        "word": "敏"
+      },
+      {
+        "pos": 4,
+        "word": "敏"
+      },
+      {
+        "pos": 11,
+        "word": "敏"
+      },
+      {
+        "pos": 13,
+        "word": "敏"
+      },
+      {
+        "pos": 17,
+        "word": "敏"
+      },
+      {
+        "pos": 23,
+        "word": "敏"
+      },
+      {
+        "pos": 25,
+        "word": "敏"
+      },
+      {
+        "pos": 27,
+        "word": "敏"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "❤🏽",
+      "🔥️🔥",
+      "🏽",
+      "😃️😀❤",
+      "❤😃👍👍"
+    ],
+    "text": "🔥😃🔥👍👍😀‍👍🏽👍️👍👍😀🔥❤😃🏽🏽😀",
+    "matches": [
+      {
+        "pos": 8,
+        "word": "🏽"
+      },
+      {
+        "pos": 17,
+        "word": "🏽"
+      },
+      {
+        "pos": 18,
+        "word": "🏽"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "感🏽",
+      "敏敏a",
+      "a",
+      "感a",
+      "感"
+    ],
+    "text": "😀🏽😀敏敏感a🏽😀A感👍😀😀😀",
+    "matches": [
+      {
+        "pos": 5,
+        "word": "感"
+      },
+      {
+        "pos": 6,
+        "word": "a"
+      },
+      {
+        "pos": 5,
+        "word": "感a"
+      },
+      {
+        "pos": 10,
+        "word": "感"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "ｱ",
+      "ウ�字ｱ",
+      "ｲ",
+      "éｱ",
+      "��́漢"
+    ],
+    "text": "ウウ字ｲウ字�ｱ字エエおｲｲeエ字おeｱ字字エｲｱ�ｲ́́",
+    "matches": [
+      {
+        "pos": 3,
+        "word": "ｲ"
+      },
+      {
+        "pos": 7,
+        "word": "ｱ"
+      },
+      {
+        "pos": 12,
+        "word": "ｲ"
+      },
+      {
+        "pos": 13,
+        "word": "ｲ"
+      },
+      {
+        "pos": 19,
+        "word": "ｱ"
+      },
+      {
+        "pos": 23,
+        "word": "ｲ"
+      },
+      {
+        "pos": 24,
+        "word": "ｱ"
+      },
+      {
+        "pos": 26,
+        "word": "ｲ"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      " ",
+      "r",
+      "i",
+      "sisi",
+      "I",
+      "ehhh"
+    ],
+    "text": " ",
+    "matches": [
+      {
+        "pos": 0,
+        "word": " "
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "ABB",
+      "Ab",
+      "bbAb",
+      "aAaa",
+      "a",
+      "abAA"
+    ],
+    "text": "aaAaaAAABAAaB",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "a"
+      },
+      {
+        "pos": 1,
+        "word": "a"
+      },
+      {
+        "pos": 3,
+        "word": "a"
+      },
+      {
+        "pos": 4,
+        "word": "a"
+      },
+      {
+        "pos": 1,
+        "word": "aAaa"
+      },
+      {
+        "pos": 11,
+        "word": "a"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "CaA",
+      "Ba"
+    ],
+    "text": "BC",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "测敏试敏",
+      "试",
+      "文感",
+      "感敏中",
+      "中感中汇"
+    ],
+    "text": "试词测感",
+    "matches": [
+      {
+        "pos": 0,
+        "word": "试"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "🔥👍👍",
+      "😀👍",
+      "👍🏽😀",
+      "🏽️🏽",
+      "🏽👍❤"
+    ],
+    "text": "️🏽👍️👍🏽🔥👍️‍👍👍‍❤‍❤👍️❤️👍👍😀😀👍👍🔥🔥😀🔥",
+    "matches": [
+      {
+        "pos": 23,
+        "word": "😀👍"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "👍a👍"
+    ],
+    "text": "‍感😀😀a感😀‍感‍a👍敏🏽",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "漢ウエ́",
+      "ウウ́",
+      "́漢ウ字",
+      "おエ"
+    ],
+    "text": "́おウウ",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "iHh",
+      " ssI",
+      "hhHs"
+    ],
+    "text": "se eih hIeHe  iHIhiirHeeshiihh",
+    "matches": []
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "bB",
+      "b",
+      "bAa",
+      "baab",
+      "bAb",
+      "baA"
+    ],
+    "text": "ABBbB",
+    "matches": [
+      {
+        "pos": 3,
+        "word": "b"
+      },
+      {
+        "pos": 3,
+        "word": "bB"
+      }
+    ]
+  },
+  {
+    "name": "random",
+    "patterns": [
+      "Ab",
+      "bbcc",
+      "AcB",
+      "b",
+      "a"
+    ],
+    "text": "BBcB",
+    "matches": []
+  }
+]

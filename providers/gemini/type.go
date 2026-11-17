@@ -2,6 +2,7 @@ package gemini
 
 import (
 	"github.com/modeltaps/modeltaps/common"
+	"github.com/modeltaps/modeltaps/common/ahocorasick"
 	"github.com/modeltaps/modeltaps/common/image"
 	"github.com/modeltaps/modeltaps/common/storage"
 	"github.com/modeltaps/modeltaps/common/utils"
@@ -15,7 +16,6 @@ import (
 	"regexp"
 	"strings"
 
-	goahocorasick "github.com/anknown/ahocorasick"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,7 +28,7 @@ const (
 	ModalityVIDEO = "VIDEO"
 )
 
-var ImageSymbolAcMachines = &goahocorasick.Machine{}
+var imageSymbolMatcher = ahocorasick.New([]string{GeminiImageSymbol})
 var imageRegex = regexp.MustCompile(`\!\[modeltaps-gemini-image\]\((.*?)\)`)
 
 // 视频文件扩展名和常见视频域名
@@ -127,10 +127,6 @@ func getMimeTypeFromExtension(ext string) string {
 	default:
 		return "video/mp4"
 	}
-}
-
-func init() {
-	ImageSymbolAcMachines.Build([][]rune{[]rune(GeminiImageSymbol)})
 }
 
 type GeminiChatRequest struct {
@@ -826,7 +822,7 @@ func OpenAIToGeminiChatContent(openaiContents []types.ChatCompletionMessage) ([]
 					if isEmptyOrOnlyNewlines(openaiPart.Text) {
 						continue
 					}
-					imageSymbols := ImageSymbolAcMachines.MultiPatternSearch([]rune(openaiPart.Text), false)
+					imageSymbols := imageSymbolMatcher.FindAll([]rune(openaiPart.Text))
 					if len(imageSymbols) > 0 {
 						lastEndPos := 0 // 上一段文本的结束位置
 						textRunes := []rune(openaiPart.Text)
@@ -868,15 +864,15 @@ func OpenAIToGeminiChatContent(openaiContents []types.ChatCompletionMessage) ([]
 									lastEndPos = endPos + 1
 								}
 							}
-
-							// 添加最后一个图片符号后面的文本，如果不为空且不仅包含换行符
-							if lastEndPos < len(textRunes) {
-								finalText := string(textRunes[lastEndPos:])
-								if !isEmptyOrOnlyNewlines(finalText) {
-									content.Parts = append(content.Parts, GeminiPart{
-										Text: finalText,
-									})
-								}
+						}
+						// The text after the last image symbol, once all symbols are handled: inside the
+						// loop it was appended after every symbol and sent the later text again.
+						if lastEndPos < len(textRunes) {
+							finalText := string(textRunes[lastEndPos:])
+							if !isEmptyOrOnlyNewlines(finalText) {
+								content.Parts = append(content.Parts, GeminiPart{
+									Text: finalText,
+								})
 							}
 						}
 					} else {
