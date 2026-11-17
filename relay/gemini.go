@@ -59,6 +59,10 @@ func (r *relayGeminiOnly) setRequest() error {
 		return errors.New("model error")
 	}
 
+	if err := validateGeminiPath(r.c.Param("version"), modelList[0], modelList[1]); err != nil {
+		return err
+	}
+
 	isStream := false
 	action := modelList[1]
 	if action == "streamGenerateContent" {
@@ -84,6 +88,59 @@ func (r *relayGeminiOnly) setRequest() error {
 	r.c.Set("original_model", r.geminiRequest.Model)
 
 	return nil
+}
+
+// geminiRelayActions are the Gemini methods the native route forwards. The version, model and
+// method from the path go into the upstream URL, and only these methods return a response the
+// gateway can bill: any other method (batchGenerateContent, embedContent, cachedContents and
+// so on) would run on the channel's upstream account without being charged.
+var geminiRelayActions = map[string]bool{
+	"generateContent":       true,
+	"streamGenerateContent": true,
+	"countTokens":           true,
+}
+
+// geminiAPIVersions are the Gemini API versions a client may name in the path.
+var geminiAPIVersions = map[string]bool{
+	"v1":      true,
+	"v1beta":  true,
+	"v1alpha": true,
+}
+
+// validateGeminiPath checks the parts of a native Gemini path that go into the upstream URL.
+func validateGeminiPath(version, model, action string) error {
+	if version != "" && !geminiAPIVersions[version] {
+		return fmt.Errorf("unsupported Gemini API version %q: use v1, v1beta or v1alpha", version)
+	}
+	if !geminiRelayActions[action] {
+		return fmt.Errorf("unsupported Gemini method %q: this endpoint serves generateContent, streamGenerateContent and countTokens", action)
+	}
+	if !isSafeGeminiModelPath(model) {
+		return fmt.Errorf("invalid model name %q", model)
+	}
+	return nil
+}
+
+// isSafeGeminiModelPath reports whether a model name from the path can go into the upstream
+// URL unchanged. A name may hold slashes (partner models such as ai21/jamba-large-1.7), but no
+// empty, "." or ".." segment, and nothing that would start a query or fragment, escape a
+// character, or that is whitespace or a control character.
+func isSafeGeminiModelPath(model string) bool {
+	if model == "" {
+		return false
+	}
+	for _, ch := range model {
+		// Printable ASCII only: this also keeps out Unicode spaces and look-alike characters.
+		if ch <= ' ' || ch >= 0x7f || ch == '?' || ch == '#' || ch == '%' || ch == '\\' {
+			return false
+		}
+	}
+	for _, segment := range strings.Split(model, "/") {
+		if segment == "" || segment == "." || segment == ".." {
+			return false
+		}
+	}
+	return true
 }
 
 func (r *relayGeminiOnly) getRequest() interface{} {

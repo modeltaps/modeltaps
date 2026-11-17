@@ -14,6 +14,7 @@ import (
 
 	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/gin-gonic/gin"
+	"github.com/tidwall/gjson"
 )
 
 type relayResponses struct {
@@ -41,9 +42,33 @@ func (r *relayResponses) setRequest() error {
 		return err
 	}
 
+	if err := rejectBackgroundResponse(r.c); err != nil {
+		return err
+	}
+
 	r.setOriginalModel(r.responsesRequest.Model)
 	preferClaudeSources(r.c, r.responsesRequest.Model)
 
+	return nil
+}
+
+// errBackgroundResponse refuses a Responses request that asks the upstream to run in the
+// background.
+var errBackgroundResponse = errors.New("background responses are not supported: send the request without background, or with background set to false")
+
+// rejectBackgroundResponse refuses background mode. A background response comes back queued,
+// without usage, and the upstream then runs the model on the channel's account: the gateway
+// neither serves GET /v1/responses/{id} nor polls the response, so it could never bill that
+// work. Only an explicit false or null passes.
+func rejectBackgroundResponse(c *gin.Context) error {
+	rawBody, err := common.ReadBodyRaw(c)
+	if err != nil {
+		return err
+	}
+	background := gjson.GetBytes(rawBody, "background")
+	if background.Exists() && background.Type != gjson.False && background.Type != gjson.Null {
+		return errBackgroundResponse
+	}
 	return nil
 }
 

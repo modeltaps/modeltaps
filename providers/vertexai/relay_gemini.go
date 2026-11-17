@@ -7,7 +7,6 @@ import (
 	"github.com/modeltaps/modeltaps/providers/vertexai/category"
 	"github.com/modeltaps/modeltaps/types"
 	"net/http"
-	"strings"
 )
 
 func (p *VertexAIProvider) CreateGeminiChat(request *gemini.GeminiChatRequest) (*gemini.GeminiChatResponse, *types.OpenAIErrorWithStatusCode) {
@@ -175,11 +174,12 @@ func getVertexAIGeminiURL(action string, stream bool) string {
 		}
 		return "generateContent"
 	default:
-		// 对于其他 action，直接使用原始值
-		if stream && !strings.Contains(action, "stream") {
-			return "stream" + strings.Title(action) + "?alt=sse"
+		// Never put an unknown method into the upstream URL: only the methods above return a
+		// response the gateway bills (the native relay rejects the others before routing).
+		if stream {
+			return "streamGenerateContent?alt=sse"
 		}
-		return action
+		return "generateContent"
 	}
 }
 

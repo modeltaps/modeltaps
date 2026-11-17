@@ -190,7 +190,22 @@ func (p *OpenAIProvider) patchResponsesRequestBody(request *types.OpenAIResponse
 		out = p.ResponsesBodyPatch(request.Model, out)
 	}
 
-	return p.StripPremiumTierFields(out, base.OpenAIPremiumTierRules), true
+	return p.StripPremiumTierFields(stripBackgroundMode(out), base.OpenAIPremiumTierRules), true
+}
+
+// stripBackgroundMode removes a top-level background field that is not false. A background
+// response runs on the channel's account after the request has been settled, so the gateway
+// cannot bill it; the Responses relay already refuses it, this keeps it out of any other path
+// that forwards a client body.
+func stripBackgroundMode(body []byte) []byte {
+	background := gjson.GetBytes(body, "background")
+	if !background.Exists() || background.Type == gjson.False {
+		return body
+	}
+	if patched, err := sjson.DeleteBytes(body, "background"); err == nil {
+		return patched
+	}
+	return body
 }
 
 // CreateResponsesCompaction 处理 POST /v1/responses/compact。

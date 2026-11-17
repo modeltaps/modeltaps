@@ -179,11 +179,12 @@ func (p *GeminiProvider) getActionURL(geminiRequest *GeminiChatRequest) string {
 		// Veo 3.0 视频生成
 		return "predictLongRunning"
 	default:
-		// 对于其他 action，直接使用原始值
-		if geminiRequest.Stream && !strings.Contains(action, "stream") {
-			return "stream" + strings.Title(action) + "?alt=sse"
+		// Never put an unknown method into the upstream URL: only the methods above return a
+		// response the gateway bills (the native relay rejects the others before routing).
+		if geminiRequest.Stream {
+			return "streamGenerateContent?alt=sse"
 		}
-		return action
+		return "generateContent"
 	}
 }
 
