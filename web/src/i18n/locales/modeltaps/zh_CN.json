@@ -4532,9 +4532,13 @@
     "stepNotClaimed": "未在有效期内领取",
     "authorizeTitle": "授权 {{client}}",
     "wantsKey": "申请一把 API Key",
-    "verifyTitle": "核对请求",
     "ownerHint": "Key 和它产生的用量记在所选账号下",
     "personalAccount": "个人账号",
-    "orgAccount": "组织 · {{role}}"
+    "orgAccount": "组织 · {{role}}",
+    "ownerHintOrgs": "一把 Key 只属于一个账号。要给多个组织用，请为每个组织各授权一次",
+    "orgAccountPlain": "组织",
+    "searchAccounts": "搜索账号",
+    "noAccountMatch": "没有匹配的账号",
+    "requestFrom": "来自“{{client}}”的请求"
   }
 }

@@ -4643,9 +4643,13 @@
     "stepNotClaimed": "Not picked up in time",
     "authorizeTitle": "Authorize {{client}}",
     "wantsKey": "wants an API key",
-    "verifyTitle": "Check the request",
     "ownerHint": "The key and its usage are recorded under this account",
     "personalAccount": "Personal account",
-    "orgAccount": "Organization · {{role}}"
+    "orgAccount": "Organization · {{role}}",
+    "ownerHintOrgs": "A key belongs to one account. For several organizations, authorize once for each",
+    "orgAccountPlain": "Organization",
+    "searchAccounts": "Search accounts",
+    "noAccountMatch": "No account matches",
+    "requestFrom": "Request from “{{client}}”"
   }
 }

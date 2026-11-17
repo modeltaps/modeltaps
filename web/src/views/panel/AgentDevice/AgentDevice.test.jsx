@@ -8,6 +8,7 @@ import i18n from 'i18n/i18n';
 import { API } from 'utils/api';
 import AgentDevice, { formatUserCode } from './index';
 import { recognizeClient } from './agentClient';
+import OwnerPicker, { PERSONAL, orderOwners, rememberOwner } from './OwnerPicker';
 
 vi.mock('utils/api', () => ({ API: { get: vi.fn(), post: vi.fn() } }));
 vi.mock('@/components/ui/sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() } }));
@@ -56,6 +57,14 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
+// A code from the link is shown first; Continue opens the request.
+const openConfirmed = async () => {
+  openPage();
+  await waitFor(() => expect(API.get).toHaveBeenCalledWith('/api/agent/device/BCDF-GHJK'));
+  fireEvent.click(screen.getByRole('button', { name: i18n.t('agentDevice.lookup') }));
+  return screen.findByTestId('device-request');
+};
+
 const openPage = (search = '?user_code=bcdf-ghjk') =>
   render(createElement(MemoryRouter, { initialEntries: [`/panel/device${search}`] }, createElement(AgentDevice)));
 
@@ -81,14 +90,12 @@ describe('formatUserCode', () => {
 
 describe('AgentDevice confirmation page (AGENT-7)', () => {
   it('looks up the code from the link and shows who is asking', async () => {
-    openPage();
-    const card = await screen.findByTestId('device-request');
+    const card = await openConfirmed();
     expect(API.get).toHaveBeenCalledWith('/api/agent/device/BCDF-GHJK');
     for (const text of ['203.0.113.9', 'openclaw/2.4.1']) expect(card.textContent).toContain(text);
     expect(screen.getByTestId('device-identity').textContent).toContain('OpenClaw 2.4.1');
     expect(screen.getByTestId('device-network').textContent).toBe(i18n.t('agentDevice.sameNetwork'));
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('OpenClaw on laptop');
-    expect(screen.getByTestId('device-code-shown').getAttribute('aria-label')).toContain('BCDF-GHJK');
     // What the key may do is a summary until the user adjusts it.
     expect(screen.getByTestId('device-summary').textContent).toContain('OpenClaw on laptop');
     expect(document.getElementById('device-name')).toBeNull();
@@ -97,8 +104,7 @@ describe('AgentDevice confirmation page (AGENT-7)', () => {
   });
 
   it('approves with the chosen name, limit and expiry as a personal key', async () => {
-    openPage();
-    await screen.findByTestId('device-request');
+    await openConfirmed();
     adjust();
     fireEvent.change(document.getElementById('device-name'), { target: { value: 'claw' } });
     await approve();
@@ -115,8 +121,7 @@ describe('AgentDevice confirmation page (AGENT-7)', () => {
   });
 
   it('follows the approval until the agent has its key', async () => {
-    openPage();
-    await screen.findByTestId('device-request');
+    await openConfirmed();
     await approve();
     await screen.findByTestId('device-done');
     expect(API.get).toHaveBeenCalledWith('/api/agent/device/BCDF-GHJK/status');
@@ -128,8 +133,7 @@ describe('AgentDevice confirmation page (AGENT-7)', () => {
   });
 
   it('approves with an organization key when an organization is picked', async () => {
-    openPage();
-    await screen.findByTestId('device-request');
+    await openConfirmed();
     fireEvent.click(screen.getByRole('radio', { name: /Acme/ }));
     await waitFor(() => expect(API.get).toHaveBeenCalledWith('/api/org/5/model_access'));
     await approve();
@@ -139,11 +143,18 @@ describe('AgentDevice confirmation page (AGENT-7)', () => {
 
   it('denies', async () => {
     API.post.mockResolvedValue({ data: { success: true } });
-    openPage();
-    await screen.findByTestId('device-request');
+    await openConfirmed();
     fireEvent.click(screen.getByRole('button', { name: i18n.t('agentDevice.deny') }));
     await waitFor(() => expect(API.post).toHaveBeenCalledWith('/api/agent/device/BCDF-GHJK/deny', undefined));
     expect((await screen.findByTestId('device-done')).textContent).toContain(i18n.t('agentDevice.deniedTitle'));
+  });
+
+  it('shows a code from the link for comparison before the request', async () => {
+    openPage();
+    await waitFor(() => expect(API.get).toHaveBeenCalledWith('/api/agent/device/BCDF-GHJK'));
+    expect(document.getElementById('device-user-code').value).toBe('BCDF-GHJK');
+    expect(await screen.findByText(i18n.t('agentDevice.requestFrom', { client: 'OpenClaw on laptop' }))).toBeTruthy();
+    expect(screen.queryByTestId('device-request')).toBeNull();
   });
 
   it('shows why an unknown code cannot be answered', async () => {
@@ -173,5 +184,40 @@ describe('AgentDevice confirmation page (AGENT-7)', () => {
     await screen.findByTestId('device-expired');
     fireEvent.click(screen.getByRole('button', { name: i18n.t('agentDevice.enterAnother') }));
     expect(document.getElementById('device-user-code').value).toBe('');
+  });
+});
+
+describe('OwnerPicker', () => {
+  const user = { username: 'ada', display_name: 'Ada' };
+  const owners = (n) => [
+    { value: PERSONAL, label: 'Personal' },
+    ...Array.from({ length: n }, (_, i) => ({
+      value: String(i + 1),
+      label: `Org ${i + 1}`,
+      org: { id: i + 1, name: `Org ${i + 1}`, role: 'member' }
+    }))
+  ];
+
+  it('lists a few accounts without a search field', () => {
+    render(createElement(OwnerPicker, { owners: owners(2), value: PERSONAL, user, onChange: () => {} }));
+    expect(screen.getAllByRole('radio')).toHaveLength(3);
+    expect(screen.queryByRole('searchbox')).toBeNull();
+  });
+
+  it('searches when there are many organizations, keeping the chosen one', () => {
+    render(createElement(OwnerPicker, { owners: owners(30), value: '7', user, onChange: () => {} }));
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'org 2' } });
+    const names = screen.getAllByRole('radio').map((r) => r.textContent);
+    expect(names.some((n) => n.includes('Org 7'))).toBe(true);
+    expect(names.filter((n) => n.includes('Org 2')).length).toBe(11); // Org 2, Org 20–29
+  });
+
+  it('puts organizations chosen recently first', () => {
+    localStorage.clear();
+    rememberOwner('3');
+    rememberOwner('2');
+    const ordered = orderOwners(owners(3).slice(1)).map((o) => o.value);
+    expect(ordered).toEqual(['2', '3', '1']);
+    localStorage.clear();
   });
 });

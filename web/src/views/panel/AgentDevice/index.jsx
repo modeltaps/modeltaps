@@ -9,8 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { Field } from '@/components/objects';
-import UserAvatar, { accountDisplayName } from '@/components/chrome/avatar';
-import { ContextMark } from '@/components/chrome/ContextSwitcher';
 import QuotaInput from '@/components/QuotaInput';
 import { cn } from '@/lib/utils';
 import { API } from 'utils/api';
@@ -21,6 +19,7 @@ import ModelLimitSelector, { toLimitModels } from 'views/panel/Token/ModelLimitS
 import { DEFAULT_SETTING, EXPIRY_PRESETS, expiryFromPreset, quotaPatch } from 'views/panel/Token/tokenData';
 import ApprovedStatus from './ApprovedStatus';
 import CodeCells, { CODE_LENGTH, codeLetters } from './CodeCells';
+import OwnerPicker, { PERSONAL, orderOwners, rememberOwner } from './OwnerPicker';
 import { Heading, Outcome, Shell } from './DeviceShell';
 import { ClientMark, Handshake, RequestFacts } from './RequestParts';
 import { recognizeClient } from './agentClient';
@@ -39,7 +38,6 @@ import { recognizeClient } from './agentClient';
 // shows up here.
 
 const NAME_ERRORS = new Set(['token_name_taken', 'token_name_reserved', 'token_name_too_long']);
-const PERSONAL = 'personal';
 const NO_PARENTS = [];
 // Approve stays off for a moment after the request shows, so a click meant for something else
 // (or a page layered over this one) cannot land on it.
@@ -95,75 +93,20 @@ function CardSection({ title, hint, action, children }) {
 
 CardSection.propTypes = { title: PropTypes.node, hint: PropTypes.node, action: PropTypes.node, children: PropTypes.node };
 
-// One line of the "what the agent gets" summary, like a permission in a consent screen.
+// One cell of the "what the agent gets" summary, like a permission in a consent screen.
 function SummaryRow({ icon: Icon, label, children }) {
   return (
-    <div className="flex items-center gap-3 py-2 text-sm">
-      <Icon className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
-      <span className="shrink-0 text-muted-foreground">{label}</span>
-      <span className="ml-auto min-w-0 truncate text-right">{children}</span>
+    <div className="flex min-w-0 items-start gap-2.5">
+      <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="truncate text-sm">{children}</p>
+      </div>
     </div>
   );
 }
 
 SummaryRow.propTypes = { icon: PropTypes.elementType.isRequired, label: PropTypes.node, children: PropTypes.node };
-
-// Whose key it is: the user's own account and each organization they belong to, one row each with
-// its mark and the user's role there, the way consent screens list the accounts an app can reach.
-function OwnerPicker({ owners, value, user, onChange }) {
-  const { t } = useTranslation();
-  return (
-    <div role="radiogroup" aria-label={t('agentDevice.owner')} className="-mx-2 space-y-0.5">
-      {owners.map((o) => {
-        const selected = value === o.value;
-        const personal = o.value === PERSONAL;
-        return (
-          <button
-            key={o.value}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            onClick={() => onChange(o.value)}
-            className={cn(
-              'flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              selected ? 'bg-muted' : 'hover:bg-muted/60'
-            )}
-          >
-            {personal ? (
-              <UserAvatar user={user} className="size-8" textClass="text-[11px]" />
-            ) : (
-              <ContextMark kind="org" org={o.org} className="size-8" />
-            )}
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium">{personal ? accountDisplayName(user) : o.label}</span>
-              <span className="block truncate text-xs text-muted-foreground">
-                {personal
-                  ? t('agentDevice.personalAccount')
-                  : t('agentDevice.orgAccount', { role: t(`org.roles.${o.org?.role}`, { defaultValue: o.org?.role || '' }) })}
-              </span>
-            </span>
-            <span
-              aria-hidden="true"
-              className={cn(
-                'size-4 shrink-0 rounded-full',
-                selected
-                  ? 'shadow-[inset_0_0_0_5px_var(--foreground)]'
-                  : 'shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--foreground)_35%,transparent)]'
-              )}
-            />
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-OwnerPicker.propTypes = {
-  owners: PropTypes.array.isRequired,
-  value: PropTypes.string,
-  user: PropTypes.object,
-  onChange: PropTypes.func.isRequired
-};
 
 export default function AgentDevice() {
   const { t } = useTranslation();
@@ -173,6 +116,9 @@ export default function AgentDevice() {
   const linkCode = searchParams.get('user_code') || '';
   const [code, setCode] = useState(() => codeLetters(linkCode));
   const [request, setRequest] = useState(null);
+  // The user has compared the code with the agent's. A typed code counts; one that came in the link
+  // is shown first and needs Continue (RFC 8628 §5.4: a link could have been sent by someone else).
+  const [confirmed, setConfirmed] = useState(false);
   const [lookupError, setLookupError] = useState('');
   const [looking, setLooking] = useState(Boolean(linkCode));
   const [form, setForm] = useState({ owner: PERSONAL, name: '', quota: '', expiry: 'never', models: [] });
@@ -185,21 +131,22 @@ export default function AgentDevice() {
   const now = useNow(Boolean(request));
   const secondsLeft = request ? Math.max(0, Math.round(request.expires_at - now / 1000)) : null;
   const expired = request && secondsLeft === 0;
-  const armed = useArmed(request?.user_code, APPROVE_DELAY_MS);
+  const armed = useArmed(confirmed ? request?.user_code : null, APPROVE_DELAY_MS);
 
   const owners = useMemo(
     () => [
       { value: PERSONAL, label: t('agentDevice.personal') },
-      ...(orgEnabled ? organizations.map((o) => ({ value: String(o.id), label: o.name, org: o })) : [])
+      ...orderOwners(orgEnabled ? organizations.map((o) => ({ value: String(o.id), label: o.name, org: o })) : [])
     ],
     [t, orgEnabled, organizations]
   );
 
   // The answer to a lookup; state is only set from here, after the request.
-  const showLookup = useCallback((res) => {
+  const showLookup = useCallback((res, confirm) => {
     const { success, message, data } = res.data;
     if (success) {
       setRequest(data);
+      setConfirmed(confirm);
       setForm((f) => ({ ...f, name: f.name || (data.client_name || '').slice(0, 30) }));
     } else {
       setRequest(null);
@@ -212,7 +159,7 @@ export default function AgentDevice() {
     setLooking(true);
     setLookupError('');
     try {
-      showLookup(await fetchRequest(value));
+      showLookup(await fetchRequest(value), true);
     } catch {
       // surfaced globally
     } finally {
@@ -224,7 +171,7 @@ export default function AgentDevice() {
   useEffect(() => {
     if (!linkCode) return;
     fetchRequest(linkCode)
-      .then(showLookup)
+      .then((res) => showLookup(res, false))
       .catch(() => {})
       .finally(() => setLooking(false));
   }, [linkCode, showLookup]);
@@ -258,6 +205,7 @@ export default function AgentDevice() {
 
   const startOver = () => {
     setRequest(null);
+    setConfirmed(false);
     setCode('');
     setLookupError('');
     setEditing(false);
@@ -296,8 +244,10 @@ export default function AgentDevice() {
     try {
       const res = await API.post(url, body);
       const { success, message, code: errorCode, data } = res.data;
-      if (success) setDone({ approved: approve, name: data?.name || body?.name || '' });
-      else if (NAME_ERRORS.has(errorCode)) {
+      if (success) {
+        if (approve) rememberOwner(form.owner);
+        setDone({ approved: approve, name: data?.name || body?.name || '' });
+      } else if (NAME_ERRORS.has(errorCode)) {
         setEditing(true);
         setNameError(message);
       } else showError(message);
@@ -340,16 +290,18 @@ export default function AgentDevice() {
     );
   }
 
-  // ---- enter ----
-  if (!request) {
+  // ---- step 1: the code ----
+  if (!request || !confirmed) {
     const complete = codeLetters(code).length === CODE_LENGTH;
+    const fromLink = Boolean(request);
     return (
       <Shell>
-        <Heading title={t('agentDevice.title')}>{t('agentDevice.description')}</Heading>
+        <Heading title={t('agentDevice.title')}>{t(fromLink ? 'agentDevice.compareHint' : 'agentDevice.description')}</Heading>
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            lookup(code);
+            if (fromLink) setConfirmed(true);
+            else lookup(code);
           }}
         >
           <CodeCells
@@ -360,12 +312,19 @@ export default function AgentDevice() {
             autoFocus={!linkCode}
             onChange={(v) => {
               setLookupError('');
+              setRequest(null);
               setCode(v);
             }}
             onComplete={lookup}
           />
           <p className={cn('mt-3 min-h-5 text-center text-sm', lookupError ? 'text-destructive' : 'text-muted-foreground')}>
-            {lookupError ? <span data-testid="device-lookup-error">{lookupError}</span> : t('agentDevice.codeHint')}
+            {lookupError ? (
+              <span data-testid="device-lookup-error">{lookupError}</span>
+            ) : fromLink ? (
+              t('agentDevice.requestFrom', { client: request.client_name || t('agentDevice.unnamed') })
+            ) : (
+              t('agentDevice.codeHint')
+            )}
           </p>
           <Button type="submit" className="mt-6 h-10 w-full" disabled={looking || !complete}>
             {looking && <Loader2 className="size-4 animate-spin" />}
@@ -404,17 +363,12 @@ export default function AgentDevice() {
               </p>
             </div>
           </div>
-        </CardSection>
-
-        <CardSection title={t('agentDevice.verifyTitle')}>
-          <CodeCells readOnly label={t('agentDevice.codeLabel')} value={request.user_code} />
-          <p className="mt-2.5 text-center text-xs text-muted-foreground">{t('agentDevice.compareHint')}</p>
-          <div className="mt-4">
+          <div className="mt-3 rounded-lg bg-muted/50 px-3 py-2.5" data-testid="device-request-facts">
             <RequestFacts request={request} secondsLeft={secondsLeft} now={now} />
           </div>
         </CardSection>
 
-        <CardSection title={t('agentDevice.owner')} hint={t('agentDevice.ownerHint')}>
+        <CardSection title={t('agentDevice.owner')} hint={t(owners.length > 1 ? 'agentDevice.ownerHintOrgs' : 'agentDevice.ownerHint')}>
           <OwnerPicker owners={owners} value={form.owner} user={user} onChange={pickOwner} />
         </CardSection>
 
@@ -435,7 +389,7 @@ export default function AgentDevice() {
           }
         >
           {!editing ? (
-            <div data-testid="device-summary">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3" data-testid="device-summary">
               <SummaryRow icon={KeyRound} label={t('token_index.name')}>
                 {form.name.trim() || client}
               </SummaryRow>

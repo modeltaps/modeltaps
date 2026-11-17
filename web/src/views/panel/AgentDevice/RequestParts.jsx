@@ -12,13 +12,13 @@ import { cn } from '@/lib/utils';
 // The pieces of the confirmation step: the agent and the account it connects to, side by side,
 // and the facts of the request (client, network, time) to check before approving.
 
-const TerminalMark = <SquareTerminal className="size-6 text-muted-foreground" strokeWidth={1.5} />;
+const TerminalMark = <SquareTerminal className="size-5 text-muted-foreground" strokeWidth={1.5} />;
 
 // The agent's mark: its brand icon when recognized, a terminal glyph otherwise.
 export function ClientMark({ client, className }) {
   return (
-    <span className={cn('flex size-12 shrink-0 items-center justify-center rounded-xl border border-border bg-card', className)}>
-      {client ? <BrandIcon brandKey={client.brandKey} domain={client.domain} fallback={TerminalMark} className="size-6" /> : TerminalMark}
+    <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card', className)}>
+      {client ? <BrandIcon brandKey={client.brandKey} domain={client.domain} fallback={TerminalMark} className="size-5" /> : TerminalMark}
     </span>
   );
 }
@@ -26,8 +26,8 @@ export function ClientMark({ client, className }) {
 ClientMark.propTypes = { client: PropTypes.object, className: PropTypes.string };
 
 function OwnerMark({ user, org }) {
-  if (org) return <ContextMark kind="org" org={org} className="size-12 rounded-xl" />;
-  return <UserAvatar user={user} className="size-12" textClass="text-sm" />;
+  if (org) return <ContextMark kind="org" org={org} className="size-10 rounded-xl" />;
+  return <UserAvatar user={user} className="size-10" textClass="text-xs" />;
 }
 
 OwnerMark.propTypes = { user: PropTypes.object, org: PropTypes.object };
@@ -43,7 +43,7 @@ const Dots = () => (
 // Agent ··· account: what approving connects.
 export function Handshake({ client, user, org }) {
   return (
-    <div className="mb-5 flex items-center justify-center gap-3" data-testid="device-handshake">
+    <div className="mb-4 flex items-center justify-center gap-3" data-testid="device-handshake">
       <ClientMark client={client} />
       <Dots />
       <OwnerMark user={user} org={org} />
@@ -55,8 +55,8 @@ Handshake.propTypes = { client: PropTypes.object, user: PropTypes.object, org: P
 
 function Fact({ icon: Icon, children }) {
   return (
-    <li className="flex min-w-0 items-start gap-2.5">
-      <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
+    <li className="flex min-w-0 items-start gap-2">
+      <Icon className="mt-px size-3.5 shrink-0 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
       <div className="min-w-0 flex-1">{children}</div>
     </li>
   );
@@ -71,15 +71,15 @@ export function RequestFacts({ request, secondsLeft, now }) {
   const { t } = useTranslation();
   const minutesAgo = Math.max(0, Math.floor((now / 1000 - request.created_time) / 60));
   return (
-    <ul className="space-y-2.5 text-sm" data-testid="device-facts">
+    <ul className="space-y-1.5 text-xs" data-testid="device-facts">
       <Fact icon={SquareTerminal}>
-        <span className="block truncate font-mono text-[13px]" title={request.request_user_agent}>
+        <span className="block truncate font-mono" title={request.request_user_agent}>
           {request.request_user_agent || t('agentDevice.noUserAgent')}
         </span>
       </Fact>
       <Fact icon={Network}>
         <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <span className="font-mono text-[13px]">{request.request_ip || '—'}</span>
+          <span className="font-mono">{request.request_ip || '—'}</span>
           {request.request_ip && (
             <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="device-network">
               <Dot tone={request.same_network ? 'live' : 'warn'} />

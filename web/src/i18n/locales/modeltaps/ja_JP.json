@@ -4525,9 +4525,13 @@
     "stepNotClaimed": "期限内に受け取られませんでした",
     "authorizeTitle": "{{client}} を承認",
     "wantsKey": "が API キーを求めています",
-    "verifyTitle": "リクエストを確認",
     "ownerHint": "キーとその利用量は選んだアカウントに記録されます",
     "personalAccount": "個人アカウント",
-    "orgAccount": "組織 · {{role}}"
+    "orgAccount": "組織 · {{role}}",
+    "ownerHintOrgs": "キーは 1 つのアカウントに属します。複数の組織で使うには組織ごとに承認してください",
+    "orgAccountPlain": "組織",
+    "searchAccounts": "アカウントを検索",
+    "noAccountMatch": "一致するアカウントはありません",
+    "requestFrom": "「{{client}}」からのリクエスト"
   }
 }

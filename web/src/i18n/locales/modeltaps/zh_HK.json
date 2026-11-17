@@ -4532,9 +4532,13 @@
     "stepNotClaimed": "未在有效期內領取",
     "authorizeTitle": "授權 {{client}}",
     "wantsKey": "申請一把 API Key",
-    "verifyTitle": "核對請求",
     "ownerHint": "Key 和它產生的用量記在所選帳戶下",
     "personalAccount": "個人帳戶",
-    "orgAccount": "組織 · {{role}}"
+    "orgAccount": "組織 · {{role}}",
+    "ownerHintOrgs": "一把 Key 只屬於一個帳戶。要給多個組織用，請為每個組織各授權一次",
+    "orgAccountPlain": "組織",
+    "searchAccounts": "搜尋帳戶",
+    "noAccountMatch": "沒有相符的帳戶",
+    "requestFrom": "來自「{{client}}」的請求"
   }
 }
