@@ -67,6 +67,7 @@ export const RELAY_MODES = [
   { value: 'responses', labelKey: 'logPage.relayMode.responses', color: 'success' },
   { value: 'embeddings', labelKey: 'logPage.relayMode.embeddings', color: 'primary' },
   { value: 'rerank', labelKey: 'logPage.relayMode.rerank', color: 'primary' },
+  { value: 'decisions', labelKey: 'logPage.relayMode.decisions', color: 'primary' },
   { value: 'moderations', labelKey: 'logPage.relayMode.moderations', color: 'primary' },
   { value: 'image_generations', labelKey: 'logPage.relayMode.imageGenerations', color: 'info' },
   { value: 'image_edits', labelKey: 'logPage.relayMode.imageEdits', color: 'info' },

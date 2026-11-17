@@ -665,6 +665,7 @@ const (
 	RelayModeChatRealtime
 	RelayModeKling
 	RelayModeResponses
+	RelayModeDecisions
 )
 
 type ContextKey string

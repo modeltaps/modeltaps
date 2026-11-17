@@ -103,6 +103,7 @@ var relayModeLabels = map[int]string{
 	config.RelayModeRerank:             "rerank",
 	config.RelayModeChatRealtime:       "realtime",
 	config.RelayModeResponses:          "responses",
+	config.RelayModeDecisions:          "decisions",
 }
 
 // pathToRelayMode 由请求路径判定 config.RelayMode,分支与 relay.Path2Relay 一一对应,
@@ -136,6 +137,8 @@ func pathToRelayMode(path string) int {
 		return config.RelayModeChatRealtime
 	case strings.HasPrefix(path, "/v1/responses"):
 		return config.RelayModeResponses
+	case strings.HasPrefix(path, "/v1/decisions"):
+		return config.RelayModeDecisions
 	default:
 		return config.RelayModeUnknown
 	}

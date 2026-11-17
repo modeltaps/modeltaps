@@ -37,6 +37,7 @@ type ProviderConfig struct {
 	Rerank              string
 	ChatRealtime        string
 	Responses           string
+	Decisions           string
 }
 
 func (pc *ProviderConfig) SetAPIUri(customMapping map[string]interface{}) {
@@ -541,6 +542,8 @@ func (p *BaseProvider) GetAPIUri(relayMode int) string {
 		return p.Config.ChatRealtime
 	case config.RelayModeResponses:
 		return p.Config.Responses
+	case config.RelayModeDecisions:
+		return p.Config.Decisions
 	default:
 		return ""
 	}

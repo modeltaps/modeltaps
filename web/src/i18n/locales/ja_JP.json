@@ -788,6 +788,7 @@
       "responses": "Responses",
       "embeddings": "埋め込み",
       "rerank": "リランク",
+      "decisions": "意思決定",
       "moderations": "モデレーション",
       "imageGenerations": "画像生成",
       "imageEdits": "画像編集",

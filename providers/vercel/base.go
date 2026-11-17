@@ -11,7 +11,7 @@ import (
 )
 
 // VercelProviderFactory 创建 Vercel AI Gateway 渠道。
-// 网关提供 OpenAI 兼容接口（chat / responses / embeddings / images），模型名形如 "anthropic/claude-sonnet-4"，
+// 网关提供 OpenAI 兼容接口（chat / responses / embeddings / images / decisions），模型名形如 "anthropic/claude-sonnet-4"，
 // 另有 `GET /v1/models`（自带价格与元数据，无需鉴权）和 `GET /v1/credits`（团队余额）。
 // https://vercel.com/docs/ai-gateway/sdks-and-apis/rest-api
 type VercelProviderFactory struct{}
@@ -42,6 +42,7 @@ func getConfig() base.ProviderConfig {
 		Responses:         "/v1/responses",
 		Embeddings:        "/v1/embeddings",
 		ImagesGenerations: "/v1/images/generations",
+		Decisions:         "/v1/decisions",
 		ModelList:         "/v1/models",
 	}
 }

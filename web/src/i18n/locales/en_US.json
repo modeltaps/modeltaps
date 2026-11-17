@@ -796,6 +796,7 @@
       "responses": "Responses",
       "embeddings": "Embeddings",
       "rerank": "Rerank",
+      "decisions": "Decisions",
       "moderations": "Moderations",
       "imageGenerations": "Image",
       "imageEdits": "Image edit",

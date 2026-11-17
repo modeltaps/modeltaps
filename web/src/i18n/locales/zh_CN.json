@@ -1482,6 +1482,7 @@
       "responses": "Responses",
       "embeddings": "向量化",
       "rerank": "重排序",
+      "decisions": "决策",
       "moderations": "内容审核",
       "imageGenerations": "图片生成",
       "imageEdits": "图片编辑",

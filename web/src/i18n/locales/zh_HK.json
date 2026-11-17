@@ -788,6 +788,7 @@
       "responses": "Responses",
       "embeddings": "向量化",
       "rerank": "重排序",
+      "decisions": "決策",
       "moderations": "內容審核",
       "imageGenerations": "圖片生成",
       "imageEdits": "圖片編輯",

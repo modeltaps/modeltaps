@@ -195,6 +195,14 @@ type BalanceCapability interface {
 // 	ResponseHandler(resp *http.Response) (OpenAIResponse any, errWithCode *types.OpenAIErrorWithStatusCode)
 // }
 
+// DecisionsInterface is a provider that serves the OpenAI Decisions API (POST /v1/decisions).
+// CreateDecision sends the client's body with model set to modelName and returns the upstream's
+// response body; it records the usage on the provider.
+type DecisionsInterface interface {
+	ProviderInterface
+	CreateDecision(body []byte, modelName string) ([]byte, *types.OpenAIErrorWithStatusCode)
+}
+
 // Rerank接口
 type RerankInterface interface {
 	ProviderInterface

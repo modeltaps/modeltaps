@@ -47,13 +47,11 @@ func Relay(c *gin.Context) {
 		return
 	}
 
-	// A decision model answers typed questions and generates no text: refuse it here, the way the
-	// upstreams do (400), instead of routing it and retrying other lines.
-	if model.IsDecisionOnlyModel(relay.getOriginalModel()) {
-		relay.HandleJsonError(common.StringErrorWrapperLocal(
-			fmt.Sprintf("model %s is a decision model, not a language model; it cannot be used with %s",
-				relay.getOriginalModel(), c.Request.URL.Path),
-			"invalid_request_error", http.StatusBadRequest))
+	// A decision model answers typed questions and generates no text, and only decision models
+	// answer them: refuse a mismatch here, the way the upstreams do (400), instead of routing it
+	// and retrying other lines.
+	if msg := decisionEndpointMismatch(c.Request.URL.Path, relay.getOriginalModel()); msg != "" {
+		relay.HandleJsonError(common.StringErrorWrapperLocal(msg, "invalid_request_error", http.StatusBadRequest))
 		return
 	}
 

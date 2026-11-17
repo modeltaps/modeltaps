@@ -39,6 +39,11 @@ type OpenAIProvider struct {
 func (f OpenAIProviderFactory) Create(channel *model.Channel) base.ProviderInterface {
 	openAIProvider := CreateOpenAIProvider(channel, "https://api.openai.com")
 	openAIProvider.BalanceAction = true
+	// Only OpenAI itself serves the Decisions API; the OpenAI-compatible providers built on
+	// CreateOpenAIProvider do not, so the path is not part of getOpenAIConfig.
+	if channel.Type == config.ChannelTypeOpenAI {
+		openAIProvider.Config.Decisions = "/v1/decisions"
+	}
 	return openAIProvider
 }
 

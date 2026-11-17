@@ -28,6 +28,9 @@ func TestDefaultURLs(t *testing.T) {
 	if got := cfg.BaseURL + cfg.ChatCompletions; got != "https://ai-gateway.vercel.sh/v1/chat/completions" {
 		t.Errorf("chat URL = %q", got)
 	}
+	if got := cfg.BaseURL + cfg.Decisions; got != "https://ai-gateway.vercel.sh/v1/decisions" {
+		t.Errorf("decisions URL = %q", got)
+	}
 	if got := cfg.BaseURL + cfg.ModelList; got != "https://ai-gateway.vercel.sh/v1/models" {
 		t.Errorf("models URL = %q", got)
 	}
