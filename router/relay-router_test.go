@@ -119,3 +119,37 @@ func TestGeminiCatchAll_MatchesSlashModel(t *testing.T) {
 		t.Fatalf("action param: got %q want /ai21/jamba-large-1.7:generateContent", gotAction)
 	}
 }
+
+// The coding-agent client endpoints mount the bare routes under their prefix, next to the bare
+// routes and the /:mode/mj group, without gin rejecting the registration.
+func TestSetAgentClientRouter_RegistersClientEndpoints(t *testing.T) {
+	engine := gin.New()
+	setOpenAIRouter(engine)
+	setClaudeRouter(engine)
+	setAgentClientRouter(engine)
+	setMJRouter(engine)
+
+	registered := map[string]bool{}
+	for _, ri := range engine.Routes() {
+		registered[ri.Method+" "+ri.Path] = true
+	}
+	for _, route := range []string{
+		"POST /claude/v1/messages/count_tokens",
+		"POST /claude-code/v1/messages",
+		"POST /claude-code/v1/messages/count_tokens",
+		"GET /claude-code/v1/models",
+		"POST /codex/v1/responses",
+		"POST /codex/v1/chat/completions",
+		"GET /codex/v1/models",
+		"GET /codex/v1/models/*model",
+		"POST /coding-agent/v1/chat/completions",
+		"POST /coding-agent/v1/responses",
+		"GET /coding-agent/v1/models",
+		"POST /coding-agent/v1/messages",
+		"POST /coding-agent/v1/messages/count_tokens",
+	} {
+		if !registered[route] {
+			t.Errorf("%s is not registered", route)
+		}
+	}
+}

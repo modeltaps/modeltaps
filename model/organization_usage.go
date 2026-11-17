@@ -80,6 +80,12 @@ type OrgLogsListParams struct {
 
 	// W9-D ID 查找:按日志主键精确定位单条(0 表示不过滤)。
 	Id int `form:"id"`
+
+	// Coding agent (logs.client, agentclient IDs): client is a single value, clients /
+	// exclude_client include and exclude several; empty means no filter.
+	Client         string   `form:"client"`
+	Clients        []string `form:"clients"`
+	ExcludeClients []string `form:"exclude_client"`
 }
 
 // applyOrgLogsFilters 组织日志查询的统一过滤:锁定影子账户 + 各维度条件
@@ -118,6 +124,10 @@ func applyOrgLogsFilters(tx *gorm.DB, shadowUserId int, params *OrgLogsListParam
 	tx = applyAppNameInNotIn(tx, params.AppNames, params.ExcludeAppNames)
 	tx = applyRelayModeInNotIn(tx, params.RelayModes, params.ExcludeRelayModes)
 	tx = applyRoutingPolicyInNotIn(tx, params.RoutingPolicies, params.ExcludeRoutingPolicies)
+	if params.Client != "" {
+		tx = tx.Where("client = ?", params.Client)
+	}
+	tx = applyInNotIn(tx, "client", params.Clients, params.ExcludeClients)
 	if params.Id > 0 {
 		tx = tx.Where("id = ?", params.Id)
 	}
@@ -192,6 +202,9 @@ const (
 	OrgUsageGroupModel  = "model"
 	OrgUsageGroupDate   = "date"
 	OrgUsageGroupApp    = "app"
+	// OrgUsageGroupClient groups by coding agent (logs.client); requests from other callers
+	// form one row with an empty client.
+	OrgUsageGroupClient = "client"
 )
 
 // OrgUsageStatistic 组织用量聚合行;按聚合维度只填充对应维度字段
@@ -204,6 +217,7 @@ type OrgUsageStatistic struct {
 	// AppDomain 仅 group_by=app 时填充:同名 app 组内取任一非空 app_domain(MAX),驱动前端 favicon;
 	// 其他维度不 select,保持零值 + omitempty 省略,向后兼容。
 	AppDomain        string `json:"app_domain,omitempty" gorm:"column:app_domain"`
+	Client           string `json:"client,omitempty" gorm:"column:client"`
 	Date             string `json:"date,omitempty" gorm:"column:date"`
 	RequestCount     int64  `json:"request_count" gorm:"column:request_count"`
 	Quota            int64  `json:"quota" gorm:"column:quota"`
@@ -235,6 +249,10 @@ func GetOrgUsageStatistics(shadowUserId int, groupBy string, params *OrgLogsList
 	case OrgUsageGroupApp:
 		groupExpr = appNameExpr()
 		dimensionSelect = appNameExpr() + " as app_name, MAX(" + appDomainExpr() + ") as app_domain"
+		orderExpr = "quota DESC"
+	case OrgUsageGroupClient:
+		groupExpr = "client"
+		dimensionSelect = "client"
 		orderExpr = "quota DESC"
 	case OrgUsageGroupDate:
 		groupExpr = "date"

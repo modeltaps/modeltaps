@@ -18,9 +18,10 @@ import { calculateQuota, formatSpendAmount, renderNumber, renderSpend, showError
 
 // ==============================|| ORGANIZATION — USAGE TAB (T14) ||============================== //
 // Usage reports from /api/org/:id/analytics + /logs/stat (spec §3.6): time range +
-// total consumption card, then member / token / model sortable tables and a daily
+// total consumption card, then member / token / model / tool sortable tables and a daily
 // trend chart. Member visibility policy is enforced server-side; the member filter
-// is hidden when a plain member cannot see others' usage.
+// is hidden when a plain member cannot see others' usage. The tool filter narrows
+// everything to one coding agent (logs.client).
 
 const RANGES = [
   { key: 'today', i18n: 'rangeToday' },
@@ -29,10 +30,23 @@ const RANGES = [
   { key: 'custom', i18n: 'rangeCustom' }
 ];
 
+// Coding agents the backend records in logs.client (common/agentclient), in display order.
+// Product names stay untranslated; the generic coding-agent endpoint and "no agent" are labels.
+const TOOLS = ['claude-code', 'codex', 'opencode', 'gemini-cli', 'coding-agent'];
+const ALL_TOOLS = 'all';
+const TOOL_NAMES = { 'claude-code': 'Claude Code', codex: 'Codex', opencode: 'OpenCode', 'gemini-cli': 'Gemini CLI' };
+
+function toolLabel(t, client) {
+  if (!client) return t('orgPage.usage.toolOther');
+  if (client === 'coding-agent') return t('orgPage.usage.toolCodingAgent');
+  return TOOL_NAMES[client] || client;
+}
+
 const DIMENSIONS = [
   { key: 'member', i18n: 'byMember', nameOf: (r) => r.username || (r.member_id ? `#${r.member_id}` : '-') },
   { key: 'token', i18n: 'byToken', nameOf: (r) => r.token_name || '-' },
-  { key: 'model', i18n: 'byModel', nameOf: (r) => r.model_name || '-' }
+  { key: 'model', i18n: 'byModel', nameOf: (r) => r.model_name || '-' },
+  { key: 'client', i18n: 'byTool', nameOf: (r, t) => toolLabel(t, r.client) }
 ];
 
 const SORTABLE_COLUMNS = [
@@ -290,11 +304,13 @@ export default function UsageTab({ orgId, isAdmin, detail }) {
   const [customEnd, setCustomEnd] = useState(dayjs().format('YYYY-MM-DD'));
   const [memberId, setMemberId] = useState('0');
   const [members, setMembers] = useState([]);
+  // ALL_TOOLS = no filter; otherwise a logs.client value
+  const [client, setClient] = useState(ALL_TOOLS);
   const [dimension, setDimension] = useState('member');
   const [loading, setLoading] = useState(true);
   const [totalQuota, setTotalQuota] = useState(0);
   const [dateRows, setDateRows] = useState([]);
-  const [dims, setDims] = useState({ member: [], token: [], model: [] });
+  const [dims, setDims] = useState({ member: [], token: [], model: [], client: [] });
 
   // Member 在可见性关闭时后端只返回自己的数据,此时隐藏成员筛选器(规格 §3.6 / a4)
   const showMemberFilter = isAdmin || detail?.organization?.setting?.usage_visible_to_members === true;
@@ -338,19 +354,20 @@ export default function UsageTab({ orgId, isAdmin, detail }) {
       const params = { start_timestamp: startTs, end_timestamp: endTs };
       const mid = parseInt(memberId, 10) || 0;
       if (mid > 0) params.member_id = mid;
+      if (client !== ALL_TOOLS) params.client = client;
       const fetchGroup = async (groupBy) => {
         const res = await API.get(`/api/org/${orgId}/analytics`, { params: { ...params, group_by: groupBy } });
         return res.data?.success ? res.data.data || [] : [];
       };
       try {
-        const [stat, byDate, byMember, byToken, byModel] = await Promise.all([
+        const [stat, byDate, byMember, byToken, byModel, byClient] = await Promise.all([
           API.get(`/api/org/${orgId}/logs/stat`, { params }),
-          ...['date', 'member', 'token', 'model'].map(fetchGroup)
+          ...['date', 'member', 'token', 'model', 'client'].map(fetchGroup)
         ]);
         if (cancelled) return;
         setTotalQuota(stat.data?.success ? stat.data.data?.quota || 0 : 0);
         setDateRows(byDate);
-        setDims({ member: byMember, token: byToken, model: byModel });
+        setDims({ member: byMember, token: byToken, model: byModel, client: byClient });
       } catch (error) {
         // 错误已由全局拦截器提示
       } finally {
@@ -360,7 +377,7 @@ export default function UsageTab({ orgId, isAdmin, detail }) {
     return () => {
       cancelled = true;
     };
-  }, [orgId, startTs, endTs, memberId]);
+  }, [orgId, startTs, endTs, memberId, client]);
 
   // 与个人 Dashboard 一致:按起止日期对齐逐日序列,缺数据日期补零
   const chartData = useMemo(() => {
@@ -447,6 +464,19 @@ export default function UsageTab({ orgId, isAdmin, detail }) {
             </SelectContent>
           </Select>
         )}
+        <Select value={client} onValueChange={setClient}>
+          <SelectTrigger className="w-44" aria-label={t('orgPage.usage.toolFilter')}>
+            <span className="truncate">{client === ALL_TOOLS ? t('orgPage.usage.allTools') : toolLabel(t, client)}</span>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_TOOLS}>{t('orgPage.usage.allTools')}</SelectItem>
+            {TOOLS.map((tool) => (
+              <SelectItem key={tool} value={tool}>
+                {toolLabel(t, tool)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* 与 OverviewTab 相同的 StatCard 栅格,避免单卡半宽悬空 */}
@@ -479,7 +509,7 @@ export default function UsageTab({ orgId, isAdmin, detail }) {
             <DimensionTable
               t={t}
               rows={dims[dimension]}
-              nameOf={activeDim.nameOf}
+              nameOf={(r) => activeDim.nameOf(r, t)}
               onRowClick={
                 showMemberFilter && dimension === 'member'
                   ? (r) => {

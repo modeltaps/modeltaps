@@ -46,6 +46,11 @@ type Log struct {
 	// per day with the account's cost report (see GetExpectedDailyCosts). Admin only.
 	UpstreamCost float64 `json:"upstream_cost" gorm:"default:0"`
 	ExpectedCost float64 `json:"expected_cost" gorm:"default:0"`
+	// Client is the coding agent that sent the request (agentclient.ClaudeCode, Codex, ...):
+	// named by the client endpoint it called, else recognised from its User-Agent; empty for
+	// other callers and for logs written before the column existed. No index, as for
+	// source_ip: filters on it always come with a user and time range.
+	Client string `json:"client" gorm:"type:varchar(32);default:''"`
 
 	Channel *Channel `json:"channel" gorm:"foreignKey:Id;references:ChannelId"`
 
@@ -159,11 +164,23 @@ func RecordLogWithTx(tx *gorm.DB, userId int, logType int, content string) {
 	}
 }
 
-// Metadata keys RecordConsumeLog moves into the upstream_cost and expected_cost columns.
+// Metadata keys RecordConsumeLog moves into the upstream_cost and expected_cost columns, and
+// RecordConsumeLog / RecordRelayErrorLog into the client column.
 const (
 	LogMetaUpstreamCost = "_upstream_cost"
 	LogMetaExpectedCost = "_expected_cost"
+	LogMetaClient       = "_client"
 )
+
+// takeLogClient removes the client from the metadata and returns it, cut to the column width.
+func takeLogClient(metadata map[string]any) string {
+	client, _ := metadata[LogMetaClient].(string)
+	delete(metadata, LogMetaClient)
+	if len(client) > 32 {
+		client = client[:32]
+	}
+	return client
+}
 
 func RecordConsumeLog(
 	ctx context.Context,
@@ -226,6 +243,7 @@ func RecordConsumeLog(
 	log.ExpectedCost, _ = metadata[LogMetaExpectedCost].(float64)
 	delete(metadata, LogMetaUpstreamCost)
 	delete(metadata, LogMetaExpectedCost)
+	log.Client = takeLogClient(metadata)
 
 	if metadata != nil {
 		log.Metadata = datatypes.NewJSONType(metadata)
@@ -267,6 +285,7 @@ func RecordRelayErrorLog(ctx context.Context, userId int, channelId int, modelNa
 		SourceIp:    sourceIp,
 		RequestId:   requestId,
 	}
+	log.Client = takeLogClient(metadata)
 	if metadata != nil {
 		log.Metadata = datatypes.NewJSONType(metadata)
 	}

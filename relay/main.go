@@ -2,6 +2,7 @@ package relay
 
 import (
 	"github.com/modeltaps/modeltaps/common"
+	"github.com/modeltaps/modeltaps/common/agentclient"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/controller"
 	"github.com/modeltaps/modeltaps/common/logger"
@@ -545,6 +546,9 @@ func recordRelayErrorLog(c *gin.Context, relay RelayBaseInterface, channel *mode
 	}
 	if code, ok := clientErr.OpenAIError.Code.(string); ok && code != "" {
 		metadata["error_code"] = code
+	}
+	if client := agentclient.FromContext(c); client != "" {
+		metadata[model.LogMetaClient] = client
 	}
 	channelId := 0
 	if channel != nil {

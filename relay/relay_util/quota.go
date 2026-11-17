@@ -148,6 +148,9 @@ type Quota struct {
 	appName   string
 	appDomain string
 	userAgent string
+	// client is the coding agent that sent the request (agentclient.FromContext), written to
+	// the logs.client column.
+	client string
 
 	// 请求 ID(W9-K1,additive):NewQuota 时从 gin.Context 捕获(中间件已 c.Set,值同响应头
 	// X-Modeltaps-Request-Id),作为值字段存于 Quota,异步扣费闭包持有其副本,不读 c,无 c-pool 竞争。

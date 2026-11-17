@@ -119,6 +119,66 @@ curl https://your-modeltaps-domain.com/gemini/v1beta/models \
   -H "x-goog-api-key: sk-替换为你的key"
 ```
 
+## 编程 Agent
+
+编程 Agent 有各自的专属接入地址。路径表示是哪个 Agent 在调用，协议仍由后面的路径决定；鉴权、路由、计费和错误都与上面的接口相同。不同的只有模型列表：每个地址按对应 Agent 能识别的格式返回，Agent 的模型选择器里就能看到你的 API Key 可调用的模型。
+
+| 接入地址 | 协议 | 适用 |
+| --- | --- | --- |
+| `https://your-modeltaps-domain.com/claude-code` | Anthropic Messages：`/v1/messages`、`/v1/messages/count_tokens`、`/v1/models` | Claude Code 与 Claude Agent SDK |
+| `https://your-modeltaps-domain.com/codex/v1` | OpenAI：`/responses`、`/chat/completions` 以及 `/v1` 下的其他接口 | Codex CLI |
+| `https://your-modeltaps-domain.com/coding-agent/v1` | OpenAI，与 `/v1` 相同 | 其他 OpenAI 兼容的编程 Agent |
+| `https://your-modeltaps-domain.com/coding-agent` | Anthropic Messages，与 `/claude` 相同 | 其他 Anthropic 兼容的编程 Agent |
+
+用量日志会记下每次请求来自哪个 Agent：以接入地址为准，走其他地址时按 User-Agent 识别（Claude Code、Codex、OpenCode、Gemini CLI）。组织可以按工具查看用量，见 [组织](/zh/guide/organization#用量)。
+
+### Claude Code
+
+把网关写进 `~/.claude/settings.json`（也可以在 shell 里 export 同样的变量）：
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://your-modeltaps-domain.com/claude-code",
+    "ANTHROPIC_AUTH_TOKEN": "sk-替换为你的key",
+    "ANTHROPIC_API_KEY": "",
+    "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1"
+  }
+}
+```
+
+- 接入地址不带 `/v1`：Claude Code 会自己补上 `/v1/messages`。
+- `ANTHROPIC_API_KEY` 留空。它有值时 Claude Code 会优先用它，而不是 `ANTHROPIC_AUTH_TOKEN`。
+- 设置 `CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY` 后，`/model` 会以 `claude-code/<模型>` 的形式列出你的 Key 可调用的全部对话模型。可接受一百万 tokens 及以上输入的模型以 `[1m]` 结尾，Claude Code 会据此使用该上下文长度。网关会去掉前缀和后缀，用量与日志里显示的是真实模型名。生图、音频和向量模型不会列出。
+- `cache_control` 缓存断点原样送到上游，同一个 Claude Code 会话的请求固定在同一个渠道上，上游提示缓存可以持续命中。`/context` 的 token 数来自 `/v1/messages/count_tokens`，这是估算值，不计费。
+
+### Codex
+
+在 `~/.codex/config.toml` 里加一个 provider，并把 API Key 放进它指定的环境变量：
+
+```toml
+model_provider = "modeltaps"
+model = "gpt-5.5"
+
+[model_providers.modeltaps]
+name = "Modeltaps"
+base_url = "https://your-modeltaps-domain.com/codex/v1"
+env_key = "MODELTAPS_API_KEY"
+wire_api = "responses"
+```
+
+```bash
+export MODELTAPS_API_KEY=sk-替换为你的key
+```
+
+- `wire_api` 必须是 `responses`：Codex 只支持 Responses API。
+- `/codex/v1/models` 按 Codex 读取的模型目录格式返回，`/model` 里就能看到你的 Key 可调用的对话模型。如果 `/model` 里没有出现，在 provider 里再加一行 `model_catalog_url = "https://your-modeltaps-domain.com/codex/v1/models"`。
+- Codex 发送的 `prompt_cache_key` 原样送到上游，同一个 Codex 会话的请求固定在同一个渠道上。
+
+### 其他编程 Agent
+
+OpenAI 兼容的 Agent 指向 `https://your-modeltaps-domain.com/coding-agent/v1`，Anthropic 兼容的指向 `https://your-modeltaps-domain.com/coding-agent`。行为与 `/v1`、`/claude` 完全一致，请求会计入编程 Agent 流量。
+
 ## 在控制台查看接口目录
 
 侧边栏「API」分组按模态列出各页。`/panel/docs` 是总览，每张模态卡片可进入「接口文档」或「控制台」。接口文档页的内容与本页一致，但地址已经换成你实际使用的站点地址：

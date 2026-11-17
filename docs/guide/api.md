@@ -119,6 +119,66 @@ curl https://your-modeltaps-domain.com/gemini/v1beta/models \
   -H "x-goog-api-key: sk-replace-with-your-key"
 ```
 
+## Coding agents
+
+Coding agents have endpoints of their own. The path says which agent is calling; the protocol still comes from the rest of the path, and authentication, routing, billing and errors are the same as on the endpoints above. What differs is the model list, which each endpoint returns in the format its agent reads, so the agent's model picker shows the models your API key can call.
+
+| Base URL | Protocol | For |
+| --- | --- | --- |
+| `https://your-modeltaps-domain.com/claude-code` | Anthropic Messages: `/v1/messages`, `/v1/messages/count_tokens`, `/v1/models` | Claude Code and the Claude Agent SDK |
+| `https://your-modeltaps-domain.com/codex/v1` | OpenAI: `/responses`, `/chat/completions` and the rest of `/v1` | Codex CLI |
+| `https://your-modeltaps-domain.com/coding-agent/v1` | OpenAI, same as `/v1` | Other OpenAI-compatible coding agents |
+| `https://your-modeltaps-domain.com/coding-agent` | Anthropic Messages, same as `/claude` | Other Anthropic-compatible coding agents |
+
+Usage logs record which agent sent each request: the endpoint decides, and on the other endpoints the agent is recognised from its User-Agent (Claude Code, Codex, OpenCode, Gemini CLI). Organizations can break their usage down by tool; see [Organizations](/guide/organization#usage).
+
+### Claude Code
+
+Add the gateway to `~/.claude/settings.json` (or export the same variables in your shell):
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://your-modeltaps-domain.com/claude-code",
+    "ANTHROPIC_AUTH_TOKEN": "sk-replace-with-your-key",
+    "ANTHROPIC_API_KEY": "",
+    "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1"
+  }
+}
+```
+
+- The base URL has no `/v1`: Claude Code appends `/v1/messages` itself.
+- Leave `ANTHROPIC_API_KEY` empty. Claude Code uses it before `ANTHROPIC_AUTH_TOKEN` when it is set.
+- With `CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY`, `/model` lists every chat model your key can call, as `claude-code/<model>`. Models that accept a prompt of one million tokens or more end in `[1m]`, which makes Claude Code use that context window. The gateway removes the prefix and the suffix, so usage and logs show the real model name. Image, audio and embedding models are not listed.
+- `cache_control` breakpoints reach the upstream unchanged, and the requests of one Claude Code session stay on one channel, so the upstream prompt cache keeps working. `/context` gets token counts from `/v1/messages/count_tokens`, which is an estimate and is not billed.
+
+### Codex
+
+Add a provider to `~/.codex/config.toml` and put your API key in the environment variable it names:
+
+```toml
+model_provider = "modeltaps"
+model = "gpt-5.5"
+
+[model_providers.modeltaps]
+name = "Modeltaps"
+base_url = "https://your-modeltaps-domain.com/codex/v1"
+env_key = "MODELTAPS_API_KEY"
+wire_api = "responses"
+```
+
+```bash
+export MODELTAPS_API_KEY=sk-replace-with-your-key
+```
+
+- `wire_api` must be `responses`: Codex only speaks the Responses API.
+- `/codex/v1/models` answers in the model catalogue format Codex reads, so `/model` lists the chat models your key can call. If `/model` does not show them, also add `model_catalog_url = "https://your-modeltaps-domain.com/codex/v1/models"` to the provider.
+- The `prompt_cache_key` Codex sends reaches the upstream unchanged, and the requests of one Codex session stay on one channel.
+
+### Other coding agents
+
+Point an OpenAI-compatible agent at `https://your-modeltaps-domain.com/coding-agent/v1` and an Anthropic-compatible one at `https://your-modeltaps-domain.com/coding-agent`. They behave exactly like `/v1` and `/claude`; the requests are counted as coding-agent traffic.
+
 ## The API catalogue in the console
 
 The **API** group in the sidebar lists one page per modality. `/panel/docs` is the overview; each modality card opens either the **API docs** or the **console**. The docs pages cover the same ground as this page, but the addresses are already filled in with your actual site address:

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/modeltaps/modeltaps/common/agentclient"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/types"
@@ -46,6 +47,7 @@ func (q *Quota) captureAppAttribution(c *gin.Context) {
 	}
 
 	q.userAgent = sanitizeHeaderValue(c.GetHeader("User-Agent"), userAgentMaxLen)
+	q.client = agentclient.FromContext(c)
 }
 
 // sanitizeHeaderValue 去除控制字符、首尾空白,并按 rune 截断到 maxLen(<=0 表示不截断)。
@@ -295,6 +297,10 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 	}
 	if q.userAgent != "" {
 		meta["user_agent"] = q.userAgent
+	}
+	// The coding agent goes to the logs.client column (RecordConsumeLog takes it out).
+	if q.client != "" {
+		meta[model.LogMetaClient] = q.client
 	}
 
 	// 请求 ID(W9-K1,additive):由 NewQuota 从 gin.Context 捕获,与响应头 X-Modeltaps-Request-Id 一致,

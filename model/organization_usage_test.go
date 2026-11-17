@@ -360,3 +360,49 @@ func TestGetUsernamesByIds(t *testing.T) {
 		t.Fatalf("空 ID 列表应返回空映射: %v, %v", empty, err)
 	}
 }
+
+// The coding agent recorded in logs.client groups the usage and filters it; logs without a
+// client form their own group and are kept by an exclusion.
+func TestOrgUsageByClient(t *testing.T) {
+	setupOrgTestDB(t)
+	shadow, err := CreateShadowUserForOrg(DB, "client-test")
+	if err != nil {
+		t.Fatalf("create shadow user: %v", err)
+	}
+	for _, row := range []struct {
+		client string
+		quota  int
+	}{{"claude-code", 100}, {"claude-code", 50}, {"codex", 30}, {"", 7}} {
+		log := &Log{UserId: shadow.Id, Type: LogTypeConsume, CreatedAt: 1700000000, Quota: row.quota, Client: row.client,
+			Metadata: datatypes.NewJSONType(map[string]any{"org_member_id": 301})}
+		if err := DB.Create(log).Error; err != nil {
+			t.Fatalf("insert log: %v", err)
+		}
+	}
+
+	stats, err := GetOrgUsageStatistics(shadow.Id, OrgUsageGroupClient, &OrgLogsListParams{})
+	if err != nil {
+		t.Fatalf("group by client: %v", err)
+	}
+	got := map[string]int64{}
+	for _, s := range stats {
+		got[s.Client] = s.Quota
+	}
+	if len(stats) != 3 || got["claude-code"] != 150 || got["codex"] != 30 || got[""] != 7 || stats[0].Client != "claude-code" {
+		t.Fatalf("by client = %+v", got)
+	}
+
+	if quota := SumOrgUsedQuota(shadow.Id, &OrgLogsListParams{Client: "codex"}); quota != 30 {
+		t.Fatalf("client=codex sums %d, want 30", quota)
+	}
+	if quota := SumOrgUsedQuota(shadow.Id, &OrgLogsListParams{Clients: []string{"claude-code", "codex"}}); quota != 180 {
+		t.Fatalf("clients=claude-code,codex sums %d, want 180", quota)
+	}
+	if quota := SumOrgUsedQuota(shadow.Id, &OrgLogsListParams{ExcludeClients: []string{"claude-code"}}); quota != 37 {
+		t.Fatalf("exclude_client=claude-code sums %d, want 37", quota)
+	}
+	byModel, err := GetOrgUsageStatistics(shadow.Id, OrgUsageGroupModel, &OrgLogsListParams{Client: "claude-code"})
+	if err != nil || len(byModel) != 1 || byModel[0].Quota != 150 {
+		t.Fatalf("model statistics filtered to claude-code = %+v, %v", byModel, err)
+	}
+}

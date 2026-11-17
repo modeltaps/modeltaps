@@ -151,7 +151,8 @@ The **Usage** tab shows the organization's spend in detail:
 
 - the time range can be today, the last 7 days, the last 30 days or a custom start and end date;
 - three cards at the top show total spend, request count and tokens for the selected range;
-- below that, tables break the data down **by member / by API key / by model**, listing request count, quota consumed, and input and output tokens; click a column header to sort;
+- below that, tables break the data down **by member / by API key / by model / by tool**, listing request count, quota consumed, and input and output tokens; click a column header to sort. **By tool** groups requests by the coding agent that sent them (Claude Code, Codex, OpenCode, Gemini CLI, other coding agents), see [Coding agents](/guide/api#coding-agents); requests from anything else are grouped as **Other**;
+- the **Tool** filter next to the time range narrows every card, table and chart to one coding agent;
 - the dimension switcher also has **by date**, showing a daily trend chart that can toggle between request count, spend and tokens;
 - click a member in the **by member** table to drill down into that member's API key details.
 

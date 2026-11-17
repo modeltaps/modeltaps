@@ -4436,5 +4436,14 @@
   },
   "token_index": {
     "tokenKeySearchPlaceholder": "输入完整的 API Key（可带或不带 sk-）"
+  },
+  "orgPage": {
+    "usage": {
+      "allTools": "全部工具",
+      "byTool": "按工具",
+      "toolCodingAgent": "其他编程 Agent",
+      "toolFilter": "工具",
+      "toolOther": "其他"
+    }
   }
 }

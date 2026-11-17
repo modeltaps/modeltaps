@@ -4545,5 +4545,14 @@
   },
   "token_index": {
     "tokenKeySearchPlaceholder": "Enter the full API key (with or without sk-)"
+  },
+  "orgPage": {
+    "usage": {
+      "allTools": "All Tools",
+      "byTool": "By Tool",
+      "toolCodingAgent": "Other coding agent",
+      "toolFilter": "Tool",
+      "toolOther": "Other"
+    }
   }
 }

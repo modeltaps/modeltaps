@@ -47,12 +47,25 @@ export default defineConfig(({ mode }) => {
 
   // Backend paths the dev server forwards: the panel API plus every relay entry point, so API
   // clients can also point at the dev server (the token test dialog and the built-in console
-  // call /v1, /claude and /gemini directly).
+  // call /v1, /claude and /gemini directly; coding agents use /claude-code, /codex and
+  // /coding-agent).
   const backendProxy = Object.fromEntries(
-    ['/api', '/v1', '/claude', '/gemini', '/mj', '/suno', '/kling', '/recraftAI', '/mcp', '/dashboard', '/llms.txt'].map((prefix) => [
-      prefix,
-      { target: proxyTarget, changeOrigin: true }
-    ])
+    [
+      '/api',
+      '/v1',
+      '/claude',
+      '/claude-code',
+      '/codex',
+      '/coding-agent',
+      '/gemini',
+      '/mj',
+      '/suno',
+      '/kling',
+      '/recraftAI',
+      '/mcp',
+      '/dashboard',
+      '/llms.txt'
+    ].map((prefix) => [prefix, { target: proxyTarget, changeOrigin: true }])
   );
 
   return {

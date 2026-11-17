@@ -4429,5 +4429,14 @@
   },
   "token_index": {
     "tokenKeySearchPlaceholder": "完全な API キーを入力（sk- の有無は問いません）"
+  },
+  "orgPage": {
+    "usage": {
+      "allTools": "すべてのツール",
+      "byTool": "ツール別",
+      "toolCodingAgent": "その他のコーディングエージェント",
+      "toolFilter": "ツール",
+      "toolOther": "その他"
+    }
   }
 }

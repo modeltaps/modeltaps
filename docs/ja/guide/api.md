@@ -119,6 +119,66 @@ curl https://your-modeltaps-domain.com/gemini/v1beta/models \
   -H "x-goog-api-key: sk-ここを自分のキーに置き換えてください"
 ```
 
+## コーディングエージェント
+
+コーディングエージェントには専用の接続先アドレスがあります。パスはどのエージェントが呼び出しているかを表し、プロトコルはその後ろのパスで決まります。認証、ルーティング、課金、エラーは上記の API と同じです。違うのはモデル一覧だけで、各アドレスはそのエージェントが読める形式で返すため、エージェントのモデル選択画面に API キーで呼び出せるモデルが表示されます。
+
+| 接続先アドレス | プロトコル | 対象 |
+| --- | --- | --- |
+| `https://your-modeltaps-domain.com/claude-code` | Anthropic Messages：`/v1/messages`、`/v1/messages/count_tokens`、`/v1/models` | Claude Code と Claude Agent SDK |
+| `https://your-modeltaps-domain.com/codex/v1` | OpenAI：`/responses`、`/chat/completions` など `/v1` の API | Codex CLI |
+| `https://your-modeltaps-domain.com/coding-agent/v1` | OpenAI（`/v1` と同じ） | その他の OpenAI 互換コーディングエージェント |
+| `https://your-modeltaps-domain.com/coding-agent` | Anthropic Messages（`/claude` と同じ） | その他の Anthropic 互換コーディングエージェント |
+
+利用ログには各リクエストを送ったエージェントが記録されます。接続先アドレスで判定し、それ以外のアドレスでは User-Agent から識別します（Claude Code、Codex、OpenCode、Gemini CLI）。組織ではツール別の利用状況を確認できます。[組織](/ja/guide/organization#利用状況) を参照してください。
+
+### Claude Code
+
+`~/.claude/settings.json` にゲートウェイを設定します（同じ変数をシェルで export しても構いません）。
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://your-modeltaps-domain.com/claude-code",
+    "ANTHROPIC_AUTH_TOKEN": "sk-ここを自分のキーに置き換えてください",
+    "ANTHROPIC_API_KEY": "",
+    "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1"
+  }
+}
+```
+
+- 接続先アドレスに `/v1` は付けません。Claude Code が `/v1/messages` を自動で付け足します。
+- `ANTHROPIC_API_KEY` は空にしてください。値があると Claude Code は `ANTHROPIC_AUTH_TOKEN` より先にそちらを使います。
+- `CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY` を設定すると、`/model` に API キーで呼び出せるすべてのチャットモデルが `claude-code/<モデル>` の形式で表示されます。100 万トークン以上の入力を受け付けるモデルは末尾に `[1m]` が付き、Claude Code はそのコンテキスト長を使います。ゲートウェイがプレフィックスとサフィックスを取り除くため、利用状況とログには実際のモデル名が表示されます。画像、音声、埋め込みのモデルは表示されません。
+- `cache_control` のキャッシュブレークポイントはそのまま上流に送られ、同じ Claude Code セッションのリクエストは同じチャネルに固定されるため、上流のプロンプトキャッシュが効き続けます。`/context` のトークン数は `/v1/messages/count_tokens` から取得され、これは推定値で課金されません。
+
+### Codex
+
+`~/.codex/config.toml` に provider を追加し、指定した環境変数に API キーを設定します。
+
+```toml
+model_provider = "modeltaps"
+model = "gpt-5.5"
+
+[model_providers.modeltaps]
+name = "Modeltaps"
+base_url = "https://your-modeltaps-domain.com/codex/v1"
+env_key = "MODELTAPS_API_KEY"
+wire_api = "responses"
+```
+
+```bash
+export MODELTAPS_API_KEY=sk-ここを自分のキーに置き換えてください
+```
+
+- `wire_api` は `responses` にしてください。Codex は Responses API のみに対応しています。
+- `/codex/v1/models` は Codex が読むモデルカタログの形式で返すため、`/model` に API キーで呼び出せるチャットモデルが表示されます。表示されない場合は、provider に `model_catalog_url = "https://your-modeltaps-domain.com/codex/v1/models"` も追加してください。
+- Codex が送る `prompt_cache_key` はそのまま上流に送られ、同じ Codex セッションのリクエストは同じチャネルに固定されます。
+
+### その他のコーディングエージェント
+
+OpenAI 互換のエージェントは `https://your-modeltaps-domain.com/coding-agent/v1`、Anthropic 互換のエージェントは `https://your-modeltaps-domain.com/coding-agent` に向けてください。動作は `/v1`、`/claude` とまったく同じで、リクエストはコーディングエージェントのトラフィックとして集計されます。
+
 ## コンソールの API カタログ
 
 サイドバーの「API」グループには、モダリティごとのページが並びます。`/panel/docs` は概要ページで、各モダリティのカードから「API ドキュメント」または「コンソール」に進めます。API ドキュメントページの内容は本ページと同じですが、アドレスは実際に利用しているサイトアドレスに置き換わっています。
