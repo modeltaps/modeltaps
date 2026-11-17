@@ -126,13 +126,21 @@ LOGS_FILENAME="modeltaps.log"
 - `GIN_MODE`：Gin 運行模式，`release` / `debug`，預設 `release`。
 - `HTTPS`：是否以 HTTPS 對外（影響 cookie `Secure` 等），預設 `false`。
 - `TRUSTED_HEADER`：獲取真實客戶端 IP 的請求頭，例如 `CF-Connecting-IP`。
+- 跨站請求校驗（沒有對應的變數，始終開啟）：用控制台登入會話發出的寫請求（POST / PUT / PATCH / DELETE）必須來自本站頁面：`Origin`（沒有時看 `Referer`）要與後台設定的伺服器地址、`FRONTEND_BASE_URL`、請求的 Host、或 `TRUSTED_PROXIES` 內的反代傳來的 `X-Forwarded-Host` 之一一致，否則返回 `403`。用管理密鑰的呼叫、支付回呼和 Webhook 不受影響。反代改寫了 Host 又不傳 `X-Forwarded-Host` 時，請在後台設定伺服器地址。
 - `SHUTDOWN_TIMEOUT`：優雅關閉逾時，單位秒，預設 `30`。
 - `API_MAX_BODY_MB`：管理 API（`/api`）、dashboard 路由與 MCP 的請求體上限，單位 MB，超出返回 `413`。預設 `2`，`0` 表示不限。管理員批量匯入類介面（價格同步、批量改價、渠道密鑰、系統設定）放寬到 32 MB（本值更大時取本值），支付回調固定為 1 MB。中繼路由另用 `RELAY_MAX_BODY_MB`（預設 `128`）。
 - `SERVER_BODY_READ_TIMEOUT`：客戶端向管理 API、dashboard 路由與 MCP 發送請求體的最長時間，單位秒，預設 `60`，`0` 表示不限。中繼路由不受此限制，長時間上傳與串流回應不受影響。
-- `PPROF_ENABLED`：是否開啟 pprof 性能分析，預設 `false`。
+- `PPROF_ENABLED`：是否開啟 pprof 性能分析，預設 `false`。開啟後 `/debug/pprof/` 只有超級管理員能存取：以超級管理員身份登入後在瀏覽器打開，或在 `Authorization` 頭帶超級管理員的舊版存取令牌；管理密鑰不能存取。
 - `LANGUAGE`：預設語言，預設 `zh_CN`。
 - `FAVICON`：自訂 favicon 路徑。
 - `GITHUB_PROXY`：外部資源下載的代理前綴。
+
+### 登入安全
+
+- `LOGIN_MAX_FAILURES`：同一帳戶在同一 IP 上的登入失敗次數上限，預設 `5`。達到後這個 IP 暫時不能再登入該帳戶，其他地址不受影響，所以別人從一個地址反覆猜密碼鎖不住帳戶本人。另有兩道上限，都是該值的 4 倍（預設 `20`）：同一帳戶在所有 IP 上的失敗總數（擋住輪換地址的撞庫，達到後該帳戶對所有地址鎖定），以及同一 IP 在所有帳戶上的失敗總數（擋住一個地址對大量帳戶試密碼）。密碼、電郵驗證碼、兩步驗證碼輸錯都計入；IPv6 按 /64 網段計。被鎖定時的提示與普通認證失敗一致。登入成功會清空該帳戶的計數，但不清空 IP 的計數。
+- `LOGIN_LOCKOUT_MINUTES`：鎖定窗口，單位分鐘，預設 `15`，從最近一次失敗起算。
+
+> 啟用 Redis 時失敗計數在多副本間共享；未啟用 Redis 時為進程內計數，多副本下實際閾值會按副本數放大。
 
 ### 數據庫與 Redis
 

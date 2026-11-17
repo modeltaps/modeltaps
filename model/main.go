@@ -324,6 +324,11 @@ func InitDB() (err error) {
 			return err
 		}
 
+		err = db.AutoMigrate(&UserTotp{}, &UserTotpRecoveryCode{})
+		if err != nil {
+			return err
+		}
+
 		err = db.AutoMigrate(&StatisticsMonthGeneratedHistory{})
 		if err != nil {
 			return err

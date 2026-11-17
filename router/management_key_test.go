@@ -162,14 +162,24 @@ func (f *mkFixture) do(method, target, credential string, payload any, cookies .
 	if credential != "" {
 		req.Header.Set("Authorization", "Bearer "+credential)
 	}
-	for _, c := range cookies {
-		req.AddCookie(c)
-	}
+	addConsoleCookies(req, cookies)
 	w := httptest.NewRecorder()
 	f.engine.ServeHTTP(w, req)
 	resp := mkResponse{status: w.Code, header: w.Header(), raw: w.Body.String()}
 	_ = json.Unmarshal(w.Body.Bytes(), &resp.body)
 	return resp
+}
+
+// addConsoleCookies attaches session cookies the way the console's own pages send them: with the
+// site's Origin (httptest requests go to example.com), which CrossSiteRequestGuard requires of
+// signed-in writes.
+func addConsoleCookies(req *http.Request, cookies []*http.Cookie) {
+	if len(cookies) > 0 {
+		req.Header.Set("Origin", "http://"+req.Host)
+	}
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
 }
 
 func itoa(n int) string {
@@ -268,7 +278,7 @@ func TestManagementKeyCannotEscalate(t *testing.T) {
 		{http.MethodPost, "/api/management_key/"},
 		{http.MethodPut, "/api/user/self"},
 		{http.MethodPost, "/api/user/unbind"},
-		{http.MethodGet, "/api/user/token"},
+		{http.MethodPost, "/api/user/token"},
 		{http.MethodGet, "/api/user/sessions"},
 		{http.MethodPost, "/api/user/sessions/logout_others"},
 		{http.MethodPost, "/api/webauthn/registration/begin"},
@@ -423,7 +433,7 @@ func TestLegacyAccessTokenStillWorks(t *testing.T) {
 	expectDenied(t, f.do(http.MethodGet, "/api/management_key/", legacy, nil), http.StatusForbidden, common.APICodeManagementKeyForbidden, "legacy token on management keys")
 
 	cookies := f.login(f.admin.Id)
-	regenerated := f.do(http.MethodGet, "/api/user/token", "", nil, cookies...)
+	regenerated := f.do(http.MethodPost, "/api/user/token", "", nil, cookies...)
 	expectAllowed(t, regenerated, "regenerate access token")
 	token, _ := regenerated.body["data"].(string)
 	if len(token) != 32 || regenerated.body["deprecated"] != true {

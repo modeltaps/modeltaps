@@ -114,7 +114,7 @@ func callCheckChannel(id int, query string) *httptest.ResponseRecorder {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/api/channel/check/"+strconv.Itoa(id)+query, nil)
+	c.Request = httptest.NewRequest(http.MethodPost, "/api/channel/check/"+strconv.Itoa(id)+query, nil)
 	c.Params = gin.Params{{Key: "id", Value: strconv.Itoa(id)}}
 	CheckChannel(c)
 	return w
@@ -318,7 +318,7 @@ func TestCheckChannelRejectsBadInput(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/api/channel/check/abc?model=x", nil)
+	c.Request = httptest.NewRequest(http.MethodPost, "/api/channel/check/abc?model=x", nil)
 	c.Params = gin.Params{{Key: "id", Value: "abc"}}
 	CheckChannel(c)
 	if got := decodeCheck(t, w); got.Success {

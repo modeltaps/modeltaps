@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Fingerprint, KeyRound, TriangleAlert } from 'lucide-react';
+import { Fingerprint, KeyRound, ShieldCheck, TriangleAlert } from 'lucide-react';
 
 import { getWebAuthnCredentials } from 'utils/common';
 import { MethodRow, SecurityCard } from './MethodRow';
 import PasswordDialog from './PasswordDialog';
 import PasskeyDialog from './PasskeyDialog';
+import TotpDialog, { fetchTotpStatus } from './TotpDialog';
 
 // ==============================|| SETTINGS — ADMIN EMERGENCY LOGIN CARD ||============================== //
 // 外部身份提供方模式下只对 root 显示:登录服务不可用时从 /login/admin 用这里的密码或通行密钥进后台。
@@ -19,12 +20,16 @@ export default function AdminEmergencyCard({ siteInfo, inputs, reloadUser }) {
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [passkeyOpen, setPasskeyOpen] = useState(false);
   const [passkeyCount, setPasskeyCount] = useState(null);
+  const [totpOpen, setTotpOpen] = useState(false);
+  const [totpStatus, setTotpStatus] = useState(null);
   const hasPassword = inputs?.has_password !== false;
   const url = `${(siteInfo?.server_address || '').replace(/\/+$/, '')}/login/admin`;
 
   const loadPasskeys = () => getWebAuthnCredentials().then((list) => setPasskeyCount(list.length));
+  const loadTotp = () => fetchTotpStatus().then(setTotpStatus);
   useEffect(() => {
     loadPasskeys();
+    loadTotp();
   }, []);
 
   return (
@@ -53,6 +58,15 @@ export default function AdminEmergencyCard({ siteInfo, inputs, reloadUser }) {
         action={t(tk('manage'))}
         onAction={() => setPasskeyOpen(true)}
       />
+      {/* Asked for after the emergency password; the emergency passkey needs nothing more. */}
+      <MethodRow
+        icon={ShieldCheck}
+        title={t(tk('mfa'))}
+        subtitle={totpStatus?.enabled ? t(tk('totpOn'), { count: totpStatus.recovery_codes_left }) : t(tk('totpEmergencyHint'))}
+        action={totpStatus?.enabled ? t(tk('manage')) : t(tk('set'))}
+        onAction={() => setTotpOpen(true)}
+        disabled={totpStatus === null}
+      />
       <PasswordDialog
         open={passwordOpen}
         onOpenChange={setPasswordOpen}
@@ -62,6 +76,9 @@ export default function AdminEmergencyCard({ siteInfo, inputs, reloadUser }) {
         onSaved={reloadUser}
       />
       <PasskeyDialog open={passkeyOpen} onOpenChange={setPasskeyOpen} emergency onChanged={loadPasskeys} />
+      {totpOpen && (
+        <TotpDialog open={totpOpen} onOpenChange={setTotpOpen} status={totpStatus} account={inputs?.username || ''} onChanged={loadTotp} />
+      )}
     </SecurityCard>
   );
 }

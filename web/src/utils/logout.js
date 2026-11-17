@@ -14,7 +14,7 @@ export const signedOutUrl = () => `${(config.basename || '').replace(/\/+$/, '')
 // 带上当前界面语言（ui_locales），让 IdP 侧若出现退出确认页与本站语言一致。
 export const requestLogout = async () => {
   try {
-    const res = await API.get('/api/user/logout' + uiLocalesQuery());
+    const res = await API.post('/api/user/logout' + uiLocalesQuery());
     const url = res?.data?.data?.redirect_url;
     return typeof url === 'string' ? url : '';
   } catch {

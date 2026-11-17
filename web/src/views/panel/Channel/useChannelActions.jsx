@@ -117,7 +117,7 @@ export default function useChannelActions({ onChanged, onDriftDismissed, onDelet
       if (refreshingIds.has(row.id)) return;
       setRefreshingIds((prev) => addId(prev, row.id));
       try {
-        const res = await API.get(`/api/channel/update_balance/${row.id}`);
+        const res = await API.post(`/api/channel/update_balance/${row.id}`);
         const { success, message } = res.data;
         if (success) {
           toast.success(t('channel_row.updateOk'));

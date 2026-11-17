@@ -68,10 +68,14 @@ func TestLoginLockedReturnsSameMessage(t *testing.T) {
 	for i := 0; i < config.LoginMaxFailures; i++ {
 		postLogin(t, r, "ghost", "wrong-password")
 	}
-	if !common.IsLoginLocked(ghostKey) {
+	// The first lock to trip is the one of this account from this address (login_guard.go).
+	if !common.IsLoginLocked(testPairKey(ghostKey)) {
 		t.Fatal("连续失败后账号应进入锁定")
 	}
-	t.Cleanup(func() { common.ClearLoginFailures(ghostKey) })
+	t.Cleanup(func() {
+		common.ClearLoginFailures(ghostKey)
+		common.ClearLoginFailures(testPairKey(ghostKey))
+	})
 
 	locked := postLogin(t, r, "ghost", "wrong-password")
 	if locked["success"] != false {
@@ -119,11 +123,11 @@ func TestLoginFailuresConvergeAcrossIdentifierForms(t *testing.T) {
 		}
 		postLogin(t, r, ident, "wrong-password")
 	}
-	if common.IsLoginLocked(uidKey) {
+	if common.IsLoginLocked(testPairKey(uidKey)) {
 		t.Fatal("未达阈值前不应锁定")
 	}
 	postLogin(t, r, "frank@example.com", "wrong-password")
-	if !common.IsLoginLocked(uidKey) {
+	if !common.IsLoginLocked(testPairKey(uidKey)) {
 		t.Fatal("用户名与邮箱失败次数应累加到同一 uid key")
 	}
 
@@ -188,4 +192,25 @@ func TestLoginIdentifierNoCrossColumnFallback(t *testing.T) {
 	if resp["success"] != true {
 		t.Fatalf("含 @ 的标识符应命中邮箱所属账号，实际: %v", resp)
 	}
+}
+
+// createPasswordUser adds an enabled common user with a password.
+func createPasswordUser(t *testing.T, username, password string) *model.User {
+	t.Helper()
+	hash, err := common.Password2Hash(password)
+	if err != nil {
+		t.Fatalf("hash password: %v", err)
+	}
+	u := &model.User{
+		Username: username,
+		Password: hash,
+		Role:     config.RoleCommonUser,
+		Status:   config.UserStatusEnabled,
+		Type:     config.UserTypeNormal,
+		AffCode:  "aff-" + username,
+	}
+	if err := model.DB.Create(u).Error; err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	return u
 }

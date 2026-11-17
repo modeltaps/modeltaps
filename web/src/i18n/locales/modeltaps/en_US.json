@@ -1905,7 +1905,12 @@
     "mail_service_from_invalid": "Enter a valid sender address",
     "mail_service_reply_to_invalid": "Enter a valid reply-to address",
     "mail_service_in_use": "Switch to another mail service before deleting the one in use",
-    "mail_service_password_required": "Enter the password again: the server or username changed"
+    "mail_service_password_required": "Enter the password again: the server or username changed",
+    "totp_code_invalid": "The code is incorrect or has already been used",
+    "totp_challenge_expired": "Sign-in timed out. Enter your password again.",
+    "totp_already_enabled": "Two-step verification is already on",
+    "totp_not_enabled": "Two-step verification is off",
+    "totp_setup_required": "Setup timed out. Start again."
   },
   "channelOAuth": {
     "tip": {
@@ -4378,7 +4383,25 @@
   "settingsPage": {
     "security": {
       "sessionsHint": "Devices signed in to this account; sign out any you don't recognize",
-      "identifiersHint": "Any of these signs in to this account; the email is also for recovery and notices"
+      "identifiersHint": "Any of these signs in to this account; the email is also for recovery and notices",
+      "totpOn": "On · {{count}} recovery codes left",
+      "totpEmergencyHint": "A code from an app on top of the emergency password",
+      "totpSetupTitle": "Turn on two-step verification",
+      "totpSetupScan": "Scan the QR code with an authenticator app (1Password, Google Authenticator, Microsoft Authenticator and others), then enter the 6-digit code it shows.",
+      "totpSecret": "Can't scan? Enter this key in the app",
+      "totpConfirmCode": "Code from the app",
+      "totpRecoveryTitle": "Save your recovery codes",
+      "totpRecoveryHint": "If you lose your phone, each code signs you in once. They are shown only now: keep them in a password manager or print them.",
+      "totpRecoveryCopy": "Copy",
+      "totpRecoveryDownload": "Download",
+      "totpRecoverySaved": "I've saved them",
+      "totpRecoveryFile": "Recovery codes for {{account}} on {{site}}. Each code signs in once.",
+      "totpManageHint": "On since {{time}}. To change it, enter a code from the app or a recovery code.",
+      "totpCodeOrRecovery": "Code or recovery code",
+      "totpNewRecoveryCodes": "New recovery codes",
+      "totpTurnedOn": "Two-step verification is on",
+      "totpTurnedOff": "Two-step verification is off",
+      "totpTurnOff": "Turn off"
     }
   },
   "authPages": {
@@ -4771,6 +4794,15 @@
     "approveAnyway": "Approve anyway"
   },
   "login": {
-    "oidcLinkPrivileged": "This is an admin account, so a new sign-in can't be linked to it automatically. Sign in to the account first and link it from your account settings, or contact the site owner."
+    "oidcLinkPrivileged": "This is an admin account, so a new sign-in can't be linked to it automatically. Sign in to the account first and link it from your account settings, or contact the site owner.",
+    "totpTitle": "Two-step verification",
+    "totpHint": "Enter the 6-digit code from your authenticator app.",
+    "totpRecoveryHint": "Enter one of the recovery codes you saved when you turned on two-step verification. Each code works once.",
+    "totpCode": "Authentication code",
+    "recoveryCode": "Recovery code",
+    "useRecoveryCode": "Use a recovery code",
+    "useAuthenticator": "Use the authenticator app",
+    "totpVerify": "Verify",
+    "totpCodeRequired": "Enter the code"
   }
 }

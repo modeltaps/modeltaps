@@ -14,6 +14,7 @@ import { FormField } from '@/components/ui/form-field';
 import AuthShell from '@/components/auth/AuthShell';
 import OAuthButtons from '@/components/auth/OAuthButtons';
 import useLogin from 'hooks/useLogin';
+import TotpStep from './TotpStep';
 import { getOIDCEndpoint, onWebAuthnClicked, showSuccess } from 'utils/common';
 import {
   adminLoginEnabled,
@@ -51,7 +52,7 @@ export default function Login() {
   // return the user to their destination. Restricted to internal /panel paths.
   const redirectParam = searchParams.get('redirect');
   const redirectTo = redirectParam && redirectParam.startsWith(PANEL) ? redirectParam : workbench.dashboard();
-  const { login, sendLoginCode, loginWithCode } = useLogin(redirectTo);
+  const { login, sendLoginCode, loginWithCode, loginWithTotp } = useLogin(redirectTo);
   const siteInfo = useSelector((state) => state.siteInfo);
 
   const external = isExternalAccountSystem(siteInfo);
@@ -78,6 +79,8 @@ export default function Login() {
   const [mode, setMode] = useState(passwordLogin || !emailCodeLogin ? 'password' : 'code');
   const [showPassword, setShowPassword] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  // The password (or email code) was right and the account has two-step verification on.
+  const [totpPending, setTotpPending] = useState(false);
   const [codeSentTo, setCodeSentTo] = useState('');
   const [countdown, setCountdown] = useState(0);
   const [sendingCode, setSendingCode] = useState(false);
@@ -134,6 +137,10 @@ export default function Login() {
     }
     const result =
       mode === 'code' ? await loginWithCode(values.email, values.code) : await login(values.username, values.password, turnstileToken);
+    if (result.totpRequired) {
+      setTotpPending(true);
+      return;
+    }
     if (!result.success) {
       if (result.message) setSubmitError(result.message);
       // Turnstile token 一次性，失败后需重置组件才能再次提交。
@@ -198,6 +205,25 @@ export default function Login() {
             </Link>
           </p>
         )}
+      </AuthShell>
+    );
+  }
+
+  if (totpPending) {
+    return (
+      <AuthShell title={t('login.totpTitle')}>
+        <TotpStep
+          onVerify={loginWithTotp}
+          onExpired={(message) => {
+            setTotpPending(false);
+            setSubmitError(message || null);
+            resetTurnstile();
+          }}
+          onCancel={() => {
+            setTotpPending(false);
+            resetTurnstile();
+          }}
+        />
       </AuthShell>
     );
   }

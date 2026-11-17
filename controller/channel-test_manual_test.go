@@ -187,7 +187,7 @@ func callTestChannel(id int, testModel string) *httptest.ResponseRecorder {
 	if testModel != "" {
 		target += "?model=" + testModel
 	}
-	c.Request = httptest.NewRequest(http.MethodGet, target, nil)
+	c.Request = httptest.NewRequest(http.MethodPost, target, nil)
 	c.Params = gin.Params{{Key: "id", Value: strconv.Itoa(id)}}
 	TestChannel(c)
 	return w

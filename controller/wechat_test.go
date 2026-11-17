@@ -19,7 +19,7 @@ func setupWeChatBindRouter(t *testing.T) *gin.Engine {
 	r := gin.New()
 	r.Use(sessions.Sessions("session", cookie.NewStore([]byte("test-secret"))))
 	r.GET("/api/oauth/state", GenerateOAuthCode)
-	r.GET("/api/oauth/wechat/bind", WeChatBind)
+	r.POST("/api/oauth/wechat/bind", WeChatBind)
 
 	oldEnabled := config.WeChatAuthEnabled
 	config.WeChatAuthEnabled = true
@@ -32,7 +32,7 @@ func TestWeChatBindRejectsMissingState(t *testing.T) {
 	r := setupWeChatBindRouter(t)
 
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest("GET", "/api/oauth/wechat/bind?code=abc", nil))
+	r.ServeHTTP(w, httptest.NewRequest("POST", "/api/oauth/wechat/bind?code=abc", nil))
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("无 state 直连应返回 403，实际 %d", w.Code)
 	}
@@ -46,7 +46,7 @@ func TestWeChatBindRejectsMismatchedState(t *testing.T) {
 	r.ServeHTTP(w1, httptest.NewRequest("GET", "/api/oauth/state", nil))
 	sessionCookie := w1.Header().Get("Set-Cookie")
 
-	req := httptest.NewRequest("GET", "/api/oauth/wechat/bind?code=abc&state=wrong", nil)
+	req := httptest.NewRequest("POST", "/api/oauth/wechat/bind?code=abc&state=wrong", nil)
 	req.Header.Set("Cookie", sessionCookie)
 	w2 := httptest.NewRecorder()
 	r.ServeHTTP(w2, req)
@@ -72,7 +72,7 @@ func TestWeChatBindAcceptsValidState(t *testing.T) {
 		t.Fatal("未获取到 state")
 	}
 
-	req := httptest.NewRequest("GET", "/api/oauth/wechat/bind?state="+state, nil)
+	req := httptest.NewRequest("POST", "/api/oauth/wechat/bind?state="+state, nil)
 	req.Header.Set("Cookie", sessionCookie)
 	w2 := httptest.NewRecorder()
 	r.ServeHTTP(w2, req)

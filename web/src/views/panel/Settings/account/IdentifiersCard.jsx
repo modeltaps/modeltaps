@@ -58,7 +58,7 @@ export default function IdentifiersCard({ siteInfo, inputs, reloadUser }) {
     try {
       const state = await getOAuthState();
       if (!state) return;
-      const res = await API.get(`/api/oauth/wechat/bind?code=${encodeURIComponent(wechatCode)}&state=${state}`);
+      const res = await API.post(`/api/oauth/wechat/bind?code=${encodeURIComponent(wechatCode)}&state=${state}`);
       const { success, message } = res.data;
       if (success) {
         showSuccess(t('profilePage.wechatBindSuccess'));

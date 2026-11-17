@@ -51,7 +51,7 @@ export default function ForgetPassword() {
       return;
     }
     try {
-      const res = await API.get(`/api/reset_password?email=${values.email}&turnstile=${turnstileToken}`);
+      const res = await API.post(`/api/reset_password?email=${values.email}&turnstile=${turnstileToken}`);
       const { success, message } = res.data;
       if (success) {
         showSuccess(t('registerForm.restSendEmail'));

@@ -28,7 +28,7 @@ const useRegister = (navPath = '/login') => {
 
   const sendVerificationCode = async (email, turnstile) => {
     try {
-      const res = await API.get(`/api/verification?email=${email}&turnstile=${turnstile}`);
+      const res = await API.post(`/api/verification?email=${email}&turnstile=${turnstile}`);
       const { success, message } = res.data;
       if (success) {
         showSuccess(t('common.registerTip'));

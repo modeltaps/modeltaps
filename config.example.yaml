@@ -74,8 +74,8 @@ global:
 
 # ---------- 登录安全 ----------
 login:
-  max_failures: 5            # 同一账号连续登录失败次数上限（跨来源 IP 统计），达到后进入锁定
-  lockout_minutes: 15        # 账号锁定时长（分钟），窗口从最近一次失败起算
+  max_failures: 5            # failed sign-ins per account + IP before that IP is locked out of the account; per account (all IPs) and per IP (all accounts) the limit is 4x this
+  lockout_minutes: 15        # lockout window (minutes), counted from the latest failure
 turnstile_session_minutes: 10  # 会话内 Turnstile 校验结果的有效期（分钟）
 session:
   idle_days: 7               # 登录会话空闲多少天没有请求即失效

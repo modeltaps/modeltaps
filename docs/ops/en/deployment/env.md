@@ -126,13 +126,21 @@ The following commonly used keys are read by the code but not covered above. For
 - `GIN_MODE`: Gin run mode, `release` or `debug`. Defaults to `release`.
 - `HTTPS`: whether the service is exposed over HTTPS (affects the cookie `Secure` flag and similar). Defaults to `false`.
 - `TRUSTED_HEADER`: the request header used to resolve the real client IP, for example `CF-Connecting-IP`.
+- Cross-site request check (no variable, always on): write requests (POST / PUT / PATCH / DELETE) signed in with a console session must come from this site's pages. Their `Origin` (or `Referer` when `Origin` is missing) must match the server address configured in the admin settings, `FRONTEND_BASE_URL`, the request's Host, or the `X-Forwarded-Host` sent by a proxy in `TRUSTED_PROXIES`; otherwise they get `403`. Calls with a management key, payment notifications and webhooks are not affected. If your reverse proxy rewrites Host without sending `X-Forwarded-Host`, set the server address in the admin settings.
 - `SHUTDOWN_TIMEOUT`: graceful shutdown timeout in seconds, defaults to `30`.
 - `API_MAX_BODY_MB`: request body limit of the management API (`/api`), the dashboard routes and MCP, in MB. Larger bodies get `413`. Defaults to `2`; `0` removes the limit. Bulk admin imports (price sync, batch price updates, channel keys, settings) accept 32 MB, or this value if it is larger; payment notifications always accept 1 MB. Relay routes use `RELAY_MAX_BODY_MB` (default `128`) instead.
 - `SERVER_BODY_READ_TIMEOUT`: how long a client may take to send a request body to the management API, the dashboard routes and MCP, in seconds. Defaults to `60`; `0` removes the bound. Relay routes are not bounded, so long uploads and streamed responses are unaffected.
-- `PPROF_ENABLED`: whether to enable pprof profiling, defaults to `false`.
+- `PPROF_ENABLED`: whether to enable pprof profiling, defaults to `false`. When enabled, `/debug/pprof/` is open to the super admin only: sign in as the super admin and open it in the browser, or send the super admin's legacy access token in the `Authorization` header. Management keys are refused.
 - `LANGUAGE`: default language, defaults to `zh_CN`.
 - `FAVICON`: custom favicon path.
 - `GITHUB_PROXY`: proxy prefix for downloading external resources.
+
+### Login security
+
+- `LOGIN_MAX_FAILURES`: failed sign-ins allowed for one account from one IP, defaults to `5`. Once reached, that IP cannot sign in to the account for a while; other addresses are not affected, so someone guessing from one address cannot lock the owner out. Two wider limits are 4 times this value (`20` by default): failures for one account across all IPs (stops guessing from rotating addresses; once reached, the account is locked for every address) and failures from one IP across all accounts (stops one address trying passwords on many accounts). Wrong passwords, wrong email codes and wrong two-step codes all count; IPv6 addresses count per /64. A locked sign-in gets the same message as a wrong password. A successful sign-in clears the account's counters but not the IP's.
+- `LOGIN_LOCKOUT_MINUTES`: lockout window in minutes, defaults to `15`, counted from the latest failure.
+
+> With Redis enabled the failure counters are shared across replicas; without Redis they are kept per process, so with several replicas the effective limits are multiplied by the number of replicas.
 
 ### Database and Redis
 

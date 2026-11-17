@@ -21,7 +21,9 @@ const useLogin = (navPath = PANEL) => {
         username,
         password
       });
-      const { success, message } = res.data;
+      const { success, message, data } = res.data;
+      // Two-step verification on: the password was right, the second step comes next.
+      if (success && data?.totp_required) return { success: false, totpRequired: true, message: '' };
       if (success) {
         // 等待用户信息加载完成后再跳转
         await loadUser();
@@ -31,6 +33,22 @@ const useLogin = (navPath = PANEL) => {
       return { success, message };
     } catch (err) {
       // 请求失败，返回后端真实错误信息供调用方内联展示/分支判断
+      return { success: false, message: err.message || '' };
+    }
+  };
+
+  // Second sign-in step: a code from the authenticator app or a recovery code.
+  const loginWithTotp = async (code) => {
+    try {
+      const res = await API.post('/api/user/login/totp', { code });
+      const { success, message } = res.data;
+      if (success) {
+        await loadUser();
+        loadUserGroup();
+        navigate(navPath);
+      }
+      return { success, message, code: res.data.code };
+    } catch (err) {
       return { success: false, message: err.message || '' };
     }
   };
@@ -49,7 +67,8 @@ const useLogin = (navPath = PANEL) => {
   const loginWithCode = async (email, code) => {
     try {
       const res = await API.post('/api/user/login/code', { email, code });
-      const { success, message } = res.data;
+      const { success, message, data } = res.data;
+      if (success && data?.totp_required) return { success: false, totpRequired: true, message: '' };
       if (success) {
         await loadUser();
         loadUserGroup();
@@ -227,6 +246,7 @@ const useLogin = (navPath = PANEL) => {
     logout,
     sendLoginCode,
     loginWithCode,
+    loginWithTotp,
     githubLogin,
     wechatLogin,
     larkLogin,

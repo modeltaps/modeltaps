@@ -82,6 +82,7 @@ var secretModels = map[string]any{
 	"NotifyChannel": &NotifyChannel{},
 	"OidcProvider":  &OidcProvider{},
 	"MailService":   &MailService{},
+	"UserTotp":      &UserTotp{},
 }
 
 // modelsWithEncryptedColumns names the structs in this package's source with a field tagged

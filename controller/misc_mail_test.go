@@ -36,15 +36,15 @@ func setupMailCodeRouter(t *testing.T) (*gin.Engine, *int64) {
 
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	r.GET("/api/verification", SendEmailVerification)
-	r.GET("/api/reset_password", SendPasswordResetEmail)
+	r.POST("/api/verification", SendEmailVerification)
+	r.POST("/api/reset_password", SendPasswordResetEmail)
 	return r, &sends
 }
 
-func getJSON(t *testing.T, r *gin.Engine, path string) map[string]interface{} {
+func postMailJSON(t *testing.T, r *gin.Engine, path string) map[string]interface{} {
 	t.Helper()
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodPost, path, nil))
 	var resp map[string]interface{}
 	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("decode response: %v (body=%s)", err, w.Body.String())
@@ -60,7 +60,7 @@ func TestSendEmailVerificationCooldown(t *testing.T) {
 	common.RegisterVerificationCodeWithKey(email, "abc123", common.EmailVerificationPurpose)
 	t.Cleanup(func() { common.DeleteKey(email, common.EmailVerificationPurpose) })
 
-	if resp := getJSON(t, r, "/api/verification?email="+email); resp["success"] != true {
+	if resp := postMailJSON(t, r, "/api/verification?email="+email); resp["success"] != true {
 		t.Fatalf("a request within the cooldown should answer success, got %v", resp)
 	}
 	if n := atomic.LoadInt64(sends); n != 0 {
@@ -77,10 +77,10 @@ func TestSendEmailVerificationFailedSendAllowsRetry(t *testing.T) {
 	const email = "retry@example.test"
 	t.Cleanup(func() { common.DeleteKey(email, common.EmailVerificationPurpose) })
 
-	if resp := getJSON(t, r, "/api/verification?email="+email); resp["success"] != false {
+	if resp := postMailJSON(t, r, "/api/verification?email="+email); resp["success"] != false {
 		t.Fatalf("the send cannot succeed against an unreachable server, got %v", resp)
 	}
-	if resp := getJSON(t, r, "/api/verification?email="+email); resp["success"] != false {
+	if resp := postMailJSON(t, r, "/api/verification?email="+email); resp["success"] != false {
 		t.Fatalf("the retry should send again (and fail again), got %v", resp)
 	}
 	if n := atomic.LoadInt64(sends); n != 2 {
@@ -100,7 +100,7 @@ func TestSendPasswordResetEmailCooldown(t *testing.T) {
 	common.RegisterVerificationCodeWithKey(email, "reset-token", common.PasswordResetPurpose)
 	t.Cleanup(func() { common.DeleteKey(email, common.PasswordResetPurpose) })
 
-	if resp := getJSON(t, r, "/api/reset_password?email="+email); resp["success"] != true {
+	if resp := postMailJSON(t, r, "/api/reset_password?email="+email); resp["success"] != true {
 		t.Fatalf("a request within the cooldown should answer success, got %v", resp)
 	}
 	if n := atomic.LoadInt64(sends); n != 0 {

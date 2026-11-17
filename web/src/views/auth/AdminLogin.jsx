@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
 import AuthShell from '@/components/auth/AuthShell';
 import useLogin from 'hooks/useLogin';
+import TotpStep from './TotpStep';
 import { onWebAuthnClicked, showSuccess } from 'utils/common';
 import { adminLoginEnabled, siteInfoLoaded } from 'utils/authAvailability';
 import { PANEL, workbench } from 'routes/paths';
@@ -28,11 +29,12 @@ export default function AdminLogin() {
   const [searchParams] = useSearchParams();
   const redirectParam = searchParams.get('redirect');
   const redirectTo = redirectParam && redirectParam.startsWith(PANEL) ? redirectParam : workbench.dashboard();
-  const { login } = useLogin(redirectTo);
+  const { login, loginWithTotp } = useLogin(redirectTo);
   const siteInfo = useSelector((state) => state.siteInfo);
 
   const [showPassword, setShowPassword] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [totpPending, setTotpPending] = useState(false);
   const [turnstileEnabled, setTurnstileEnabled] = useState(false);
   const [turnstileSiteKey, setTurnstileSiteKey] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
@@ -77,7 +79,11 @@ export default function AdminLogin() {
       setSubmitError(t('registerForm.verificationInfo'));
       return;
     }
-    const { success, message } = await login(values.username, values.password, turnstileToken);
+    const { success, message, totpRequired } = await login(values.username, values.password, turnstileToken);
+    if (totpRequired) {
+      setTotpPending(true);
+      return;
+    }
     if (!success) {
       if (message) setSubmitError(message);
       if (turnstileEnabled && turnstileRef.current) {
@@ -86,6 +92,33 @@ export default function AdminLogin() {
       }
     }
   };
+
+  const resetTurnstile = () => {
+    if (turnstileEnabled && turnstileRef.current) {
+      setTurnstileToken('');
+      turnstileRef.current.reset();
+    }
+  };
+
+  // The emergency password asks for the second step too when root has it on.
+  if (totpPending) {
+    return (
+      <AuthShell title={t('login.totpTitle')}>
+        <TotpStep
+          onVerify={loginWithTotp}
+          onExpired={(message) => {
+            setTotpPending(false);
+            setSubmitError(message || null);
+            resetTurnstile();
+          }}
+          onCancel={() => {
+            setTotpPending(false);
+            resetTurnstile();
+          }}
+        />
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell title={t('login.adminSignIn')}>

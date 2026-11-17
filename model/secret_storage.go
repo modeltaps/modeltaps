@@ -48,6 +48,7 @@ var encryptedColumns = []struct {
 	{"notify_channels", "secrets"},
 	{"oidc_providers", "client_secret"},
 	{"mail_services", "token"},
+	{"user_totps", "secret"},
 }
 
 func secretLabel(table, column string) string { return table + "." + column }

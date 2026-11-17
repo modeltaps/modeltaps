@@ -27,9 +27,7 @@ func (f *mkFixture) agentCall(method, target, ip, credential string, payload any
 	if credential != "" {
 		req.Header.Set("Authorization", "Bearer "+credential)
 	}
-	for _, c := range cookies {
-		req.AddCookie(c)
-	}
+	addConsoleCookies(req, cookies)
 	w := httptest.NewRecorder()
 	f.engine.ServeHTTP(w, req)
 	resp := mkResponse{status: w.Code, header: w.Header(), raw: w.Body.String()}

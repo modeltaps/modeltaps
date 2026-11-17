@@ -61,7 +61,7 @@ export default function EmailBindModal({ open, onClose, turnstileEnabled, turnst
   const onSubmit = async (values) => {
     setLoading(true);
     try {
-      const res = await API.get(`/api/oauth/email/bind?email=${values.email}&code=${values.email_verification_code}`);
+      const res = await API.post(`/api/oauth/email/bind?email=${values.email}&code=${values.email_verification_code}`);
       const { success, message } = res.data;
       if (success) {
         showSuccess(t('profilePage.emailBindSuccess'));

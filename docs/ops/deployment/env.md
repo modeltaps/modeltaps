@@ -127,18 +127,19 @@ LOGS_FILENAME="modeltaps.log"
 - `HTTPS`：是否以 HTTPS 对外（影响 cookie `Secure` 等），默认 `false`。
 - `TRUSTED_HEADER`：获取真实客户端 IP 的请求头，例如 `CF-Connecting-IP`。**仅当请求来自 `TRUSTED_PROXIES` 内的地址时才被采信**，否则忽略。
 - `TRUSTED_PROXIES`：反向代理的 IP / CIDR 列表，逗号分隔（配置文件中写作 YAML 列表）。默认空 = 不信任任何代理，客户端 IP 一律取直连对端地址。详见下方[反向代理与真实客户端 IP](#反向代理与真实客户端-ip)。
+- 跨站请求校验（没有对应的变量，始终开启）：用控制台登录会话发出的写请求（POST / PUT / PATCH / DELETE）必须来自本站页面：`Origin`（没有时看 `Referer`）要与后台配置的服务器地址、`FRONTEND_BASE_URL`、请求的 Host、或 `TRUSTED_PROXIES` 内的反代传来的 `X-Forwarded-Host` 之一一致，否则返回 `403`。用管理密钥的调用、支付回调和 Webhook 不受影响。反代改写了 Host 又不传 `X-Forwarded-Host` 时，请在后台配置服务器地址。
 - `SHUTDOWN_TIMEOUT`：优雅关闭超时，单位秒，默认 `30`。
 - `API_MAX_BODY_MB`：管理 API（`/api`）、dashboard 路由与 MCP 的请求体上限，单位 MB，超出返回 `413`。默认 `2`，`0` 表示不限。管理员批量导入类接口（价格同步、批量改价、渠道密钥、系统设置）放宽到 32 MB（本值更大时取本值），支付回调固定为 1 MB。中继路由另用 `RELAY_MAX_BODY_MB`（默认 `128`）。
 - `SERVER_BODY_READ_TIMEOUT`：客户端向管理 API、dashboard 路由与 MCP 发送请求体的最长时间，单位秒，默认 `60`，`0` 表示不限。中继路由不受此限制，长时间上传与流式响应不受影响。
-- `PPROF_ENABLED`：是否开启 pprof 性能分析，默认 `false`。
+- `PPROF_ENABLED`：是否开启 pprof 性能分析，默认 `false`。开启后 `/debug/pprof/` 只有超级管理员能访问：以超级管理员身份登录后在浏览器打开，或在 `Authorization` 头带超级管理员的旧版访问令牌；管理密钥不能访问。
 - `LANGUAGE`：默认语言，默认 `zh_CN`。
 - `FAVICON`：自定义 favicon 路径。
 - `GITHUB_PROXY`：外部资源下载的代理前缀。
 
 ### 登录安全
 
-- `LOGIN_MAX_FAILURES`：同一账号连续登录失败次数上限（跨来源 IP 统计），默认 `5`。达到后账号进入锁定，提示语与普通认证失败一致。
-- `LOGIN_LOCKOUT_MINUTES`：账号锁定时长，单位分钟，默认 `15`。窗口从最近一次失败起算。
+- `LOGIN_MAX_FAILURES`：同一账号在同一 IP 上的登录失败次数上限，默认 `5`。达到后这个 IP 暂时不能再登录该账号，其他地址不受影响，所以别人从一个地址反复猜密码锁不住账号本人。另有两道上限，都是该值的 4 倍（默认 `20`）：同一账号在所有 IP 上的失败总数（挡住轮换地址的撞库，达到后该账号对所有地址锁定），以及同一 IP 在所有账号上的失败总数（挡住一个地址对大量账号试密码）。密码、邮箱验证码、两步验证码输错都计入；IPv6 按 /64 网段计。被锁定时的提示与普通认证失败一致。登录成功会清空该账号的计数，但不清空 IP 的计数。
+- `LOGIN_LOCKOUT_MINUTES`：锁定窗口，单位分钟，默认 `15`，从最近一次失败起算。
 - `TURNSTILE_SESSION_MINUTES`：会话内 Turnstile 校验结果的有效期，单位分钟，默认 `10`。需覆盖"发送验证码 → 注册"两步流程。
 - `SESSION_IDLE_DAYS`：登录会话空闲多少天没有任何请求即失效，默认 `7`（配置文件 `session.idle_days`）。
 - `SESSION_MAX_DAYS`：登录会话最长有效天数，无论是否活跃，同时是会话 cookie 的 `Max-Age`，默认 `30`（配置文件 `session.max_days`）。
@@ -243,8 +244,8 @@ LOGS_FILENAME="modeltaps.log"
 
 内置模式独有。开启后登录页在密码之外多一个「用邮箱验证码登录」入口：`POST /api/user/login_code`
 发码（同一邮箱 60 秒内只发一次，未绑定该邮箱的地址静默不发，不暴露账号是否存在）、
-`POST /api/user/login/code` 验码登录。验证码错误计入与密码登录共用的账号锁（`LOGIN_MAX_FAILURES` /
-`LOGIN_LOCKOUT_MINUTES`）。用户可在「设置 → 登录与安全 → 登录验证」自行关闭本人的验证码登录。
+`POST /api/user/login/code` 验码登录。验证码错误计入与密码登录共用的失败计数与锁定（`LOGIN_MAX_FAILURES` /
+`LOGIN_LOCKOUT_MINUTES`）。开启了两步验证的用户在验码之后还要输入两步验证码。用户可在「设置 → 登录与安全 → 登录验证」自行关闭本人的验证码登录。
 
 ### 登录会话
 

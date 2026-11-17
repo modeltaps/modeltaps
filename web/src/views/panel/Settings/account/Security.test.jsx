@@ -105,6 +105,15 @@ describe('Security — 内置账号', () => {
     expect(typed).not.toContain('· 已验证');
   });
 
+  it('本站校验密码或邮箱验证码时有「两步验证」行,排在通行密钥之后;都不由本站校验时没有', () => {
+    const html = render({}, { has_password: true, role: 1 });
+    expect(html).toContain('两步验证');
+    expect(html).toContain('登录时多验证一次，密码泄露也进不来');
+    expect(html.indexOf('两步验证')).toBeGreaterThan(html.indexOf('通行密钥'));
+    expect(render({ password_login: false, email_code_login: true }, { role: 1 })).toContain('两步验证');
+    expect(render({ password_login: false }, { role: 1 })).not.toContain('两步验证');
+  });
+
   it('通行密钥关闭时没有该行;SMTP 未配置时邮箱不可更换', () => {
     const html = render({ passkey_login: false, smtp_configured: false }, { email: 'a@b.c' });
     expect(html).not.toContain('通行密钥');
@@ -208,6 +217,8 @@ describe('Security — 外部身份提供方', () => {
     expect(html).toContain('应急密码');
     expect(html).toContain('>轮换<');
     expect(html).toContain('应急通行密钥');
+    // The emergency password can ask for a code from an app too.
+    expect(html).toContain('应急密码之外，再要一次 App 里的验证码');
     expect(render({ ...external, admin_login_enabled: false }, { role: 100 })).not.toContain('管理员应急登录');
   });
 });

@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
+	"github.com/modeltaps/modeltaps/middleware"
 	"embed"
 	"fmt"
 	"net/http"
@@ -45,9 +46,12 @@ func SetRouter(router *gin.Engine, buildFS embed.FS, indexPage []byte) {
 	}
 }
 
-// SetPprofRouter 设置 pprof 调试路由
+// SetPprofRouter registers the pprof debug routes. Profiles expose memory contents, command lines and
+// goroutine stacks, so only the root user may read them: a root console session, or root's legacy
+// access token in the Authorization header (management keys are refused).
 func SetPprofRouter(router *gin.Engine) {
 	pprofGroup := router.Group("/debug/pprof")
+	pprofGroup.Use(middleware.NoCache(), middleware.RootAuth())
 	{
 		pprofGroup.GET("/", gin.WrapF(pprof.Index))
 		pprofGroup.GET("/cmdline", gin.WrapF(pprof.Cmdline))

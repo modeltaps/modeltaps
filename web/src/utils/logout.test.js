@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const get = vi.fn();
-vi.mock('utils/api', () => ({ API: { get: (...args) => get(...args) } }));
+const post = vi.fn();
+vi.mock('utils/api', () => ({ API: { post: (...args) => post(...args) } }));
 
 const i18n = { language: 'zh_CN' };
 vi.mock('i18n/i18n', () => ({ default: i18n }));
@@ -13,45 +13,45 @@ const { SIGNED_OUT_PATH, requestLogout, signedOutUrl } = await import('./logout'
 
 describe('requestLogout', () => {
   beforeEach(() => {
-    get.mockReset();
+    post.mockReset();
     i18n.language = 'zh_CN';
   });
 
   it('调 /api/user/logout 并返回 redirect_url', async () => {
-    get.mockResolvedValue({ data: { success: true, data: { redirect_url: 'https://idp.example.com/end?x=1' } } });
+    post.mockResolvedValue({ data: { success: true, data: { redirect_url: 'https://idp.example.com/end?x=1' } } });
     await expect(requestLogout()).resolves.toBe('https://idp.example.com/end?x=1');
-    expect(get).toHaveBeenCalledWith('/api/user/logout?ui_locales=zh-CN');
+    expect(post).toHaveBeenCalledWith('/api/user/logout?ui_locales=zh-CN');
   });
 
   // IdP 侧若出现退出确认页,语言应跟随本站界面语言;界面语言未知时不带该参数。
   it('按当前界面语言携带 ui_locales', async () => {
-    get.mockResolvedValue({ data: { success: true, data: { redirect_url: '' } } });
+    post.mockResolvedValue({ data: { success: true, data: { redirect_url: '' } } });
     i18n.language = 'ja_JP';
     await requestLogout();
-    expect(get).toHaveBeenCalledWith('/api/user/logout?ui_locales=ja');
+    expect(post).toHaveBeenCalledWith('/api/user/logout?ui_locales=ja');
 
     i18n.language = 'xx_XX';
     await requestLogout();
-    expect(get).toHaveBeenCalledWith('/api/user/logout');
+    expect(post).toHaveBeenCalledWith('/api/user/logout');
   });
 
   it('redirect_url 为空串(无 IdP 会话)时返回空串', async () => {
-    get.mockResolvedValue({ data: { success: true, data: { redirect_url: '' } } });
+    post.mockResolvedValue({ data: { success: true, data: { redirect_url: '' } } });
     await expect(requestLogout()).resolves.toBe('');
   });
 
   it('旧后端不下发 data / redirect_url 时返回空串', async () => {
-    get.mockResolvedValue({ data: { success: true } });
+    post.mockResolvedValue({ data: { success: true } });
     await expect(requestLogout()).resolves.toBe('');
   });
 
   it('非字符串的 redirect_url 不透传', async () => {
-    get.mockResolvedValue({ data: { data: { redirect_url: 123 } } });
+    post.mockResolvedValue({ data: { data: { redirect_url: 123 } } });
     await expect(requestLogout()).resolves.toBe('');
   });
 
   it('请求失败也不抛错,返回空串让调用方落本站已登出页', async () => {
-    get.mockRejectedValue(new Error('network'));
+    post.mockRejectedValue(new Error('network'));
     await expect(requestLogout()).resolves.toBe('');
   });
 });

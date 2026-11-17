@@ -109,21 +109,25 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// 账号级锁定：与 IP 级限流互补，遏制跨 IP 的分布式撞库。
-	// 提示语与状态码需与普通认证失败完全一致，并同样走一次等价开销的密码比较，
-	// 避免通过响应文案或耗时暴露账号是否存在/是否被锁。
-	if common.IsLoginLocked(failureKey) {
+	// Account + IP, account and IP locks (login_guard.go). A lock answers like a wrong password and
+	// still runs one password comparison, so neither the text nor the timing tells it apart.
+	guard := newLoginGuard(c, failureKey)
+	if guard.locked() {
 		_ = model.ValidateLoginPassword(nil, password)
 		common.APIRespondWithError(c, http.StatusOK, model.ErrLoginFailed)
 		return
 	}
 
 	if err := model.ValidateLoginPassword(resolvedUser, password); err != nil {
-		common.RecordLoginFailure(failureKey)
+		guard.recordFailure()
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
-	common.ClearLoginFailures(failureKey)
+	// With two-factor on, the failures are cleared only once the second step passed.
+	if beginSecondFactor(c, resolvedUser, model.SessionMethodPassword) {
+		return
+	}
+	guard.clear()
 	setupLogin(resolvedUser, c)
 }
 

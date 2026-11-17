@@ -1815,7 +1815,12 @@
     "mail_service_from_invalid": "有効な送信元アドレスを入力してください",
     "mail_service_reply_to_invalid": "有効な返信先アドレスを入力してください",
     "mail_service_in_use": "使用中のサービスを削除する前に、別のメールサービスに切り替えてください",
-    "mail_service_password_required": "サーバーまたはユーザー名が変わったため、パスワードを入力し直してください"
+    "mail_service_password_required": "サーバーまたはユーザー名が変わったため、パスワードを入力し直してください",
+    "totp_code_invalid": "コードが正しくないか、すでに使用されています",
+    "totp_challenge_expired": "ログインの有効期限が切れました。パスワードをもう一度入力してください。",
+    "totp_already_enabled": "2 段階認証はすでに有効です",
+    "totp_not_enabled": "2 段階認証は有効になっていません",
+    "totp_setup_required": "設定の有効期限が切れました。最初からやり直してください。"
   },
   "channelOAuth": {
     "tip": {
@@ -4268,7 +4273,25 @@
   "settingsPage": {
     "security": {
       "sessionsHint": "このアカウントにログイン中の端末。心当たりがなければログアウト",
-      "identifiersHint": "どれでログインしても同じアカウントです。メールは復旧と通知にも使います"
+      "identifiersHint": "どれでログインしても同じアカウントです。メールは復旧と通知にも使います",
+      "totpOn": "有効 · リカバリーコード残り {{count}} 個",
+      "totpEmergencyHint": "緊急用パスワードに加えて、アプリのコードも求めます",
+      "totpSetupTitle": "2 段階認証を有効にする",
+      "totpSetupScan": "認証アプリ（1Password、Google Authenticator、Microsoft Authenticator など）で QR コードを読み取り、表示された 6 桁のコードを入力してください。",
+      "totpSecret": "読み取れない場合は、このキーをアプリに入力してください",
+      "totpConfirmCode": "アプリのコード",
+      "totpRecoveryTitle": "リカバリーコードを保存",
+      "totpRecoveryHint": "スマートフォンをなくしたとき、各コードで 1 回ログインできます。表示されるのは今回だけです。パスワードマネージャーに保存するか印刷してください。",
+      "totpRecoveryCopy": "コピー",
+      "totpRecoveryDownload": "ダウンロード",
+      "totpRecoverySaved": "保存しました",
+      "totpRecoveryFile": "{{site}} のアカウント {{account}} のリカバリーコード。各コードで 1 回ログインできます。",
+      "totpManageHint": "{{time}} から有効です。変更するには、アプリのコードかリカバリーコードを入力してください。",
+      "totpCodeOrRecovery": "コードまたはリカバリーコード",
+      "totpNewRecoveryCodes": "リカバリーコードを再発行",
+      "totpTurnedOn": "2 段階認証を有効にしました",
+      "totpTurnedOff": "2 段階認証を無効にしました",
+      "totpTurnOff": "無効にする"
     }
   },
   "authPages": {
@@ -4653,6 +4676,15 @@
     "approveAnyway": "このまま承認"
   },
   "login": {
-    "oidcLinkPrivileged": "これは管理者アカウントのため、新しいログイン方法を自動で関連付けることはできません。先にこのアカウントにログインしてアカウント設定から関連付けるか、サイトの管理責任者にお問い合わせください。"
+    "oidcLinkPrivileged": "これは管理者アカウントのため、新しいログイン方法を自動で関連付けることはできません。先にこのアカウントにログインしてアカウント設定から関連付けるか、サイトの管理責任者にお問い合わせください。",
+    "totpTitle": "2 段階認証",
+    "totpHint": "認証アプリに表示される 6 桁のコードを入力してください。",
+    "totpRecoveryHint": "2 段階認証を有効にしたときに保存したリカバリーコードを 1 つ入力してください。各コードは 1 回だけ使えます。",
+    "totpCode": "認証コード",
+    "recoveryCode": "リカバリーコード",
+    "useRecoveryCode": "リカバリーコードを使う",
+    "useAuthenticator": "認証アプリを使う",
+    "totpVerify": "確認",
+    "totpCodeRequired": "コードを入力してください"
   }
 }

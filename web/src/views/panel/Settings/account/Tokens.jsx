@@ -21,7 +21,7 @@ export default function AccessTokenCard() {
   const [accessToken, setAccessToken] = useState('');
 
   const generate = async () => {
-    const res = await API.get('/api/user/token');
+    const res = await API.post('/api/user/token');
     const { success, message, data } = res.data;
     if (success) {
       setAccessToken(data);

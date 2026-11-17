@@ -67,6 +67,8 @@ func SetApiRouter(router *gin.Engine) {
 	apiRouter.Use(gzip.Gzip(gzip.DefaultCompression))
 	apiRouter.Use(middleware.SecurityHeaders()) // 添加安全头部
 	apiRouter.Use(middleware.NoCache())         // 确保所有API接口都不缓存
+	// Console-session writes must come from this site's own pages (CSRF).
+	apiRouter.Use(middleware.CrossSiteRequestGuard())
 
 	// metrics接口单独处理，不需要NoCache
 	apiRouter.GET("/metrics", middleware.MetricsWithBasicAuth(), gin.WrapH(promhttp.Handler()))
@@ -105,16 +107,16 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.GET("/available_model", middleware.CORS(), middleware.TrySetUserBySession(), relay.AvailableModel)
 		apiRouter.GET("/user_group_map", middleware.TrySetUserBySession(), controller.GetUserGroupRatio)
 		apiRouter.GET("/home_page_content", controller.GetHomePageContent)
-		apiRouter.GET("/verification", middleware.CriticalRateLimit(), middleware.TurnstileCheck(), controller.SendEmailVerification)
-		apiRouter.GET("/reset_password", middleware.CriticalRateLimit(), middleware.TurnstileCheck(), controller.SendPasswordResetEmail)
+		apiRouter.POST("/verification", middleware.CriticalRateLimit(), middleware.TurnstileCheck(), controller.SendEmailVerification)
+		apiRouter.POST("/reset_password", middleware.CriticalRateLimit(), middleware.TurnstileCheck(), controller.SendPasswordResetEmail)
 		apiRouter.POST("/user/reset", middleware.CriticalRateLimit(), controller.ResetPassword)
 		apiRouter.GET("/oauth/github", middleware.CriticalRateLimit(), middleware.SessionSecurity(), controller.GitHubOAuth)
 		apiRouter.GET("/oauth/lark", middleware.CriticalRateLimit(), middleware.SessionSecurity(), controller.LarkOAuth)
 		apiRouter.GET("/oauth/state", middleware.CriticalRateLimit(), middleware.SessionSecurity(), controller.GenerateOAuthCode)
 		apiRouter.POST("/oauth/invite_code", middleware.CriticalRateLimit(), middleware.SessionSecurity(), controller.SetOAuthInviteCode)
 		apiRouter.GET("/oauth/wechat", middleware.CriticalRateLimit(), middleware.SessionSecurity(), controller.WeChatAuth)
-		apiRouter.GET("/oauth/wechat/bind", middleware.CriticalRateLimit(), middleware.SessionSecurity(), middleware.UserAuth(), controller.WeChatBind)
-		apiRouter.GET("/oauth/email/bind", middleware.CriticalRateLimit(), middleware.SessionSecurity(), middleware.UserAuth(), controller.EmailBind)
+		apiRouter.POST("/oauth/wechat/bind", middleware.CriticalRateLimit(), middleware.SessionSecurity(), middleware.UserAuth(), controller.WeChatBind)
+		apiRouter.POST("/oauth/email/bind", middleware.CriticalRateLimit(), middleware.SessionSecurity(), middleware.UserAuth(), controller.EmailBind)
 
 		// 无 slug 的两条保留为 slug=oidc 的别名：存量部署在 IdP 侧登记的回调地址就是它。
 		apiRouter.GET("/oauth/endpoint", middleware.CriticalRateLimit(), middleware.SessionSecurity(), controller.OIDCEndpoint)
@@ -123,7 +125,7 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.GET("/oauth/oidc/:slug", middleware.CriticalRateLimit(), middleware.SessionSecurity(), controller.OIDCAuth)
 
 		apiRouter.GET("/oauth/linuxdo", middleware.CriticalRateLimit(), middleware.SessionSecurity(), controller.LinuxDoOAuth)
-		apiRouter.GET("/oauth/linuxdo/bind", middleware.CriticalRateLimit(), middleware.SessionSecurity(), middleware.UserAuth(), controller.LinuxDoBind)
+		apiRouter.POST("/oauth/linuxdo/bind", middleware.CriticalRateLimit(), middleware.SessionSecurity(), middleware.UserAuth(), controller.LinuxDoBind)
 
 		webauthnGroup := apiRouter.Group("/webauthn")
 		{
@@ -150,7 +152,9 @@ func SetApiRouter(router *gin.Engine) {
 			// 邮箱验证码登录：发码走人机验证与关键限流，验码只走限流（失败计数与密码登录共用账号锁）
 			userRoute.POST("/login_code", middleware.CriticalRateLimit(), middleware.TurnstileCheck(), middleware.SessionSecurity(), controller.SendLoginCode)
 			userRoute.POST("/login/code", middleware.CriticalRateLimit(), middleware.SessionSecurity(), controller.LoginWithCode)
-			userRoute.GET("/logout", middleware.SessionSecurity(), controller.Logout)
+			// Second sign-in step for accounts with two-factor on (SEC-52); counts against the same locks.
+			userRoute.POST("/login/totp", middleware.CriticalRateLimit(), middleware.SessionSecurity(), controller.LoginWithTotp)
+			userRoute.POST("/logout", middleware.SessionSecurity(), controller.Logout)
 
 			selfRoute := userRoute.Group("/")
 			selfRoute.Use(middleware.UserAuth())
@@ -189,8 +193,14 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.GET("/sessions", controller.GetUserSessions)
 				selfRoute.DELETE("/sessions/:id", controller.RevokeUserSession)
 				selfRoute.POST("/sessions/logout_others", controller.LogoutOtherSessions)
+				// Two-factor authentication: console session only, never a management key.
+				selfRoute.GET("/totp", middleware.SessionOnly(), controller.GetTotpStatus)
+				selfRoute.POST("/totp/setup", middleware.SessionOnly(), controller.BeginTotpSetup)
+				selfRoute.POST("/totp/enable", middleware.CriticalRateLimit(), middleware.SessionOnly(), controller.EnableTotp)
+				selfRoute.POST("/totp/disable", middleware.CriticalRateLimit(), middleware.SessionOnly(), controller.DisableTotp)
+				selfRoute.POST("/totp/recovery_codes", middleware.CriticalRateLimit(), middleware.SessionOnly(), controller.RegenerateTotpRecoveryCodes)
 				// selfRoute.DELETE("/self", controller.DeleteSelf)
-				selfRoute.GET("/token", middleware.SessionOnly(), controller.GenerateAccessToken)
+				selfRoute.POST("/token", middleware.SessionOnly(), controller.GenerateAccessToken)
 				selfRoute.GET("/aff", controller.GetAffCode)
 				selfRoute.POST("/topup", controller.TopUp)
 				selfRoute.GET("/payment", controller.GetUserPaymentList)
@@ -212,6 +222,8 @@ func SetApiRouter(router *gin.Engine) {
 				adminRoute.PUT("/", controller.UpdateUser)
 				adminRoute.DELETE("/:id", controller.DeleteUser)
 			}
+			// Root turns off another user's two-factor (lost app and recovery codes); written to the log.
+			userRoute.DELETE("/:id/totp", middleware.RootAuth(), middleware.SessionOnly(), controller.ResetUserTotp)
 		}
 		optionRoute := apiRouter.Group("/option")
 		optionRoute.Use(middleware.RootAuth())
@@ -404,11 +416,11 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.GET("/:id/prices", controller.GetChannelPrices)
 			channelRoute.POST("/:id/model_details", controller.GetChannelModelDetails)
 			channelRoute.POST("/:id/prices/refresh", controller.RefreshChannelPrices)
-			channelRoute.GET("/test", controller.TestAllChannels)
-			channelRoute.GET("/test/:id", controller.TestChannel)
-			channelRoute.GET("/check/:id", controller.CheckChannel)
-			channelRoute.GET("/update_balance", controller.UpdateAllChannelsBalance)
-			channelRoute.GET("/update_balance/:id", controller.UpdateChannelBalance)
+			channelRoute.POST("/test", controller.TestAllChannels)
+			channelRoute.POST("/test/:id", controller.TestChannel)
+			channelRoute.POST("/check/:id", controller.CheckChannel)
+			channelRoute.POST("/update_balance", controller.UpdateAllChannelsBalance)
+			channelRoute.POST("/update_balance/:id", controller.UpdateChannelBalance)
 			channelRoute.POST("/", controller.AddChannel)
 			channelRoute.PUT("/", controller.UpdateChannel)
 			channelRoute.PUT("/batch/azure_api", controller.BatchUpdateChannelsAzureApi)

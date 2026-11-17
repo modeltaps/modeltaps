@@ -427,13 +427,13 @@ export default function Channel() {
       icon: FlaskConical,
       label: t('channel_index.testAllChannels'),
       confirm: true,
-      run: callAll('/api/channel/test', 'get', () => t('channel_row.testAllChannel'))
+      run: callAll('/api/channel/test', 'post', () => t('channel_row.testAllChannel'))
     },
     {
       icon: DollarSign,
       label: t('channel_index.updateEnabledBalance'),
       confirm: true,
-      run: callAll('/api/channel/update_balance', 'get', () => t('channel_row.updateChannelBalance'))
+      run: callAll('/api/channel/update_balance', 'post', () => t('channel_row.updateChannelBalance'))
     },
     {
       icon: AlertTriangle,

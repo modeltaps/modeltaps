@@ -96,6 +96,13 @@ const (
 	APICodeTurnstileFailed           = "turnstile_failed"
 	APICodeTurnstileUnavailable      = "turnstile_unavailable"
 
+	// Two-factor authentication (TOTP authenticator app and recovery codes, SEC-52).
+	APICodeTotpCodeInvalid      = "totp_code_invalid"
+	APICodeTotpChallengeExpired = "totp_challenge_expired"
+	APICodeTotpAlreadyEnabled   = "totp_already_enabled"
+	APICodeTotpNotEnabled       = "totp_not_enabled"
+	APICodeTotpSetupRequired    = "totp_setup_required"
+
 	// Session and permission checks on signed-in requests.
 	APICodeNotSignedIn        = "not_signed_in"
 	APICodeInvalidAccessToken = "invalid_access_token"

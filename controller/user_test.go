@@ -30,12 +30,14 @@ func setupGetUserTestDB(t *testing.T) {
 	}
 	// user_oidc_identities：删除用户会连带清理身份行，缺表会让删除用例直接报错
 	// management_keys: a password change revokes the legacy access token (SEC-71).
-	if err := testDB.AutoMigrate(&model.User{}, &model.UserOidcIdentity{}, &model.UserSession{}, &model.ManagementKey{}); err != nil {
+	// user_totps: sign-in asks whether the user has two-factor on and fails closed without the table.
+	if err := testDB.AutoMigrate(&model.User{}, &model.UserOidcIdentity{}, &model.UserSession{}, &model.ManagementKey{}, &model.UserTotp{}, &model.UserTotpRecoveryCode{}); err != nil {
 		t.Fatalf("迁移测试表失败: %v", err)
 	}
 	oldDB := model.DB
 	model.DB = testDB
 	t.Cleanup(func() { model.DB = oldDB })
+	resetLoginGuardState(t)
 }
 
 func callGetUser(t *testing.T, id string, role int) map[string]interface{} {
@@ -531,7 +533,7 @@ func TestLoginRootEscapeHatchWhenPasswordLoginDisabled(t *testing.T) {
 				t.Fatalf("root 错密码应返回通用失败文案,实际: %v", resp)
 			}
 		}
-		if !common.IsLoginLocked(rootKey) {
+		if !common.IsLoginLocked(testPairKey(rootKey)) {
 			t.Fatal("root 连续失败后应进入锁定")
 		}
 		locked := postLogin(t, r, "rootlogin", rootPassword)

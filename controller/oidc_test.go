@@ -27,7 +27,7 @@ func setupOidcTestDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("打开内存数据库失败: %v", err)
 	}
-	if err := testDB.AutoMigrate(&model.User{}, &model.OidcProvider{}, &model.UserOidcIdentity{}, &model.UserSession{}); err != nil {
+	if err := testDB.AutoMigrate(&model.User{}, &model.OidcProvider{}, &model.UserOidcIdentity{}, &model.UserSession{}, &model.UserTotp{}, &model.UserTotpRecoveryCode{}); err != nil {
 		t.Fatalf("迁移测试表失败: %v", err)
 	}
 	oldDB := model.DB
@@ -39,6 +39,7 @@ func setupOidcTestDB(t *testing.T) {
 		model.DB = oldDB
 		config.AccountSystem = oldSystem
 	})
+	resetLoginGuardState(t)
 }
 
 func seedOidcUser(t *testing.T, u *model.User) *model.User {

@@ -75,7 +75,7 @@ func SendLoginCode(c *gin.Context) {
 		return
 	}
 	user := resolveEmailCodeUser(email)
-	if user == nil || common.IsLoginLocked(common.LoginFailureKeyForUser(user.Id)) {
+	if user == nil || newLoginGuard(c, common.LoginFailureKeyForUser(user.Id)).locked() {
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": ""})
 		return
 	}
@@ -100,7 +100,7 @@ type loginWithCodeRequest struct {
 	Code  string `json:"code"`
 }
 
-// LoginWithCode POST /api/user/login/code：凭邮箱验证码登录。失败计数与密码登录共用同一把账号锁。
+// LoginWithCode POST /api/user/login/code：凭邮箱验证码登录。失败计数与密码登录共用同一组锁（login_guard.go）。
 func LoginWithCode(c *gin.Context) {
 	if emailCodeLoginUnavailable(c) {
 		return
@@ -120,17 +120,22 @@ func LoginWithCode(c *gin.Context) {
 	if user != nil {
 		failureKey = common.LoginFailureKeyForUser(user.Id)
 	}
-	if common.IsLoginLocked(failureKey) {
+	guard := newLoginGuard(c, failureKey)
+	if guard.locked() {
 		common.APIRespondWithError(c, http.StatusOK, errVerificationCodeInvalid)
 		return
 	}
 	// 先验码再看账号：验证码错误、过期与账号不可用返回同一句，且都记一次失败
 	if !common.VerifyCodeWithKey(email, req.Code, common.LoginCodePurpose) || user == nil {
-		common.RecordLoginFailure(failureKey)
+		guard.recordFailure()
 		common.APIRespondWithError(c, http.StatusOK, errVerificationCodeInvalid)
 		return
 	}
 	common.DeleteKey(email, common.LoginCodePurpose)
-	common.ClearLoginFailures(failureKey)
+	// An email code replaces the password, not the second factor.
+	if beginSecondFactor(c, user, model.SessionMethodEmailCode) {
+		return
+	}
+	guard.clear()
 	setupLoginSession(user, c, loginSessionInfo{method: model.SessionMethodEmailCode})
 }

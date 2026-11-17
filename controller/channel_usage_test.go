@@ -43,7 +43,7 @@ func TestUpdateChannelBalanceCodexUsage(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Params = gin.Params{{Key: "id", Value: "1"}}
-	c.Request = httptest.NewRequest(http.MethodGet, "/api/channel/update_balance/1", nil)
+	c.Request = httptest.NewRequest(http.MethodPost, "/api/channel/update_balance/1", nil)
 	UpdateChannelBalance(c)
 
 	var resp struct {

@@ -9,6 +9,7 @@ import { emailCodeLoginEnabled, isExternalAccountSystem, passkeyLoginEnabled, pa
 import { MethodRow, SecurityCard } from './MethodRow';
 import PasswordDialog from './PasswordDialog';
 import PasskeyDialog from './PasskeyDialog';
+import TotpDialog, { fetchTotpStatus } from './TotpDialog';
 
 // ==============================|| SETTINGS — SIGN-IN VERIFICATION CARD ||============================== //
 // 这张卡只装「证明是你本人」的手段:内置账号下是密码 / 邮箱验证码 / 通行密钥,动作在本站完成。
@@ -52,11 +53,20 @@ export default function LoginMethodsCard({ siteInfo, inputs, reloadUser }) {
   const [passkeyOpen, setPasskeyOpen] = useState(false);
   const [passkeyCount, setPasskeyCount] = useState(null);
   const [emailCodeAllowed, setEmailCodeAllowed] = useState(null);
+  const [totpOpen, setTotpOpen] = useState(false);
+  const [totpStatus, setTotpStatus] = useState(null);
+  // Two-step verification guards the sign-ins this site checks itself (password, email code).
+  const totpApplies = !external && (passwordSite || isRoot || emailCodeSite);
+  const loadTotp = () => fetchTotpStatus().then(setTotpStatus);
 
   useEffect(() => {
     if (external || !passkeySite) return;
     getWebAuthnCredentials().then((list) => setPasskeyCount(list.length));
   }, [external, passkeySite]);
+
+  useEffect(() => {
+    if (totpApplies) loadTotp();
+  }, [totpApplies]);
 
   useEffect(() => {
     if (external || !emailCodeSite) return;
@@ -172,6 +182,16 @@ export default function LoginMethodsCard({ siteInfo, inputs, reloadUser }) {
           onAction={() => setPasskeyOpen(true)}
         />
       )}
+      {totpApplies && (
+        <MethodRow
+          icon={ShieldCheck}
+          title={t(tk('mfa'))}
+          subtitle={totpStatus?.enabled ? t(tk('totpOn'), { count: totpStatus.recovery_codes_left }) : t(tk('mfaHint'))}
+          action={totpStatus?.enabled ? t(tk('manage')) : t(tk('set'))}
+          onAction={() => setTotpOpen(true)}
+          disabled={totpStatus === null}
+        />
+      )}
 
       <PasswordDialog open={passwordOpen} onOpenChange={setPasswordOpen} hasPassword={hasPassword} inputs={inputs} onSaved={reloadUser} />
       <PasskeyDialog
@@ -179,6 +199,9 @@ export default function LoginMethodsCard({ siteInfo, inputs, reloadUser }) {
         onOpenChange={setPasskeyOpen}
         onChanged={() => getWebAuthnCredentials().then((list) => setPasskeyCount(list.length))}
       />
+      {totpApplies && totpOpen && (
+        <TotpDialog open={totpOpen} onOpenChange={setTotpOpen} status={totpStatus} account={inputs?.username || ''} onChanged={loadTotp} />
+      )}
     </SecurityCard>
   );
 }

@@ -119,14 +119,14 @@ export async function manageChannel(id, action, value) {
   }
 }
 
-// Tests one model of a channel (`GET /api/channel/test/:id`). endpointType forces the endpoint
+// Tests one model of a channel (`POST /api/channel/test/:id`). endpointType forces the endpoint
 // (chat / response / embeddings / image); empty lets the backend infer it from the model name.
 // A manual test never disables the channel.
 export async function testChannelModel(id, model, endpointType) {
   const params = { model };
   if (endpointType) params.endpoint_type = endpointType;
   try {
-    const res = await API.get(`/api/channel/test/${id}`, { params });
+    const res = await API.post(`/api/channel/test/${id}`, null, { params });
     return res?.data ?? { success: false, message: '' };
   } catch (error) {
     return { success: false, message: error.message };
@@ -225,11 +225,11 @@ export async function fetchUpstreamModelPicker(channel) {
   return { models: data.models || [], families: data.families || [] };
 }
 
-// Runs every check against one model of a channel (`GET /api/channel/check/:id?model=`) and
+// Runs every check against one model of a channel (`POST /api/channel/check/:id?model=`) and
 // resolves to its result `{ model, status, items }`. Each call sends up to five real requests to
 // the upstream. Rejects with the server message when the check could not run.
 export async function checkChannelModel(id, model) {
-  const res = await API.get(`/api/channel/check/${id}`, { params: { model } });
+  const res = await API.post(`/api/channel/check/${id}`, null, { params: { model } });
   const { success, message, data } = res?.data || {};
   if (!success || !data) {
     throw new Error(message || 'check failed');

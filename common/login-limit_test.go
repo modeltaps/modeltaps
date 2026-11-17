@@ -129,3 +129,28 @@ func TestLoginLockoutDisabledWhenThresholdNonPositive(t *testing.T) {
 		t.Error("阈值 <= 0 时应关闭账号级锁定")
 	}
 }
+
+// A key can be checked at its own threshold; LoginMaxFailures 0 still turns every lock off.
+func TestLoginLockedAtThreshold(t *testing.T) {
+	resetLoginFailures(t)
+
+	for i := 0; i < 7; i++ {
+		RecordLoginFailure("uid:9")
+	}
+	if !IsLoginLockedAt("uid:9", 7) {
+		t.Error("7 failures should lock at threshold 7")
+	}
+	if IsLoginLockedAt("uid:9", 8) {
+		t.Error("7 failures should not lock at threshold 8")
+	}
+	if IsLoginLockedAt("uid:9", 0) || IsLoginLockedAt("", 1) {
+		t.Error("threshold 0 and an empty key never lock")
+	}
+
+	old := config.LoginMaxFailures
+	config.LoginMaxFailures = 0
+	t.Cleanup(func() { config.LoginMaxFailures = old })
+	if IsLoginLockedAt("uid:9", 1) {
+		t.Error("LoginMaxFailures 0 turns the lockout off for every threshold")
+	}
+}

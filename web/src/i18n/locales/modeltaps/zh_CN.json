@@ -1821,7 +1821,12 @@
     "mail_service_from_invalid": "请输入有效的发件地址",
     "mail_service_reply_to_invalid": "请输入有效的回复地址",
     "mail_service_in_use": "先改用别的邮件服务，再删除正在使用的这个",
-    "mail_service_password_required": "服务器或用户名改了，请重新填写密码"
+    "mail_service_password_required": "服务器或用户名改了，请重新填写密码",
+    "totp_code_invalid": "验证码不正确或已经用过",
+    "totp_challenge_expired": "登录已超时，请重新输入密码",
+    "totp_already_enabled": "两步验证已经开启",
+    "totp_not_enabled": "两步验证未开启",
+    "totp_setup_required": "设置已超时，请重新开始"
   },
   "channelOAuth": {
     "tip": {
@@ -4272,7 +4277,25 @@
   "settingsPage": {
     "security": {
       "sessionsHint": "已登录本账号的设备，不认识的就登出",
-      "identifiersHint": "用其中任一项登录，进的都是这个账号；邮箱也用于找回和通知"
+      "identifiersHint": "用其中任一项登录，进的都是这个账号；邮箱也用于找回和通知",
+      "totpOn": "已开启 · 剩余 {{count}} 个恢复码",
+      "totpEmergencyHint": "应急密码之外，再要一次 App 里的验证码",
+      "totpSetupTitle": "开启两步验证",
+      "totpSetupScan": "用身份验证器 App（1Password、Google Authenticator、Microsoft Authenticator 等）扫描二维码，再输入它显示的 6 位验证码。",
+      "totpSecret": "扫不了？在 App 里手动输入这串密钥",
+      "totpConfirmCode": "App 里的验证码",
+      "totpRecoveryTitle": "保存恢复码",
+      "totpRecoveryHint": "手机丢了时，每个恢复码可以登录一次。恢复码只显示这一次：请存进密码管理器或打印出来。",
+      "totpRecoveryCopy": "复制",
+      "totpRecoveryDownload": "下载",
+      "totpRecoverySaved": "我已保存",
+      "totpRecoveryFile": "{{site}} 账号 {{account}} 的恢复码，每个只能登录一次。",
+      "totpManageHint": "{{time}} 开启。要修改，请输入 App 里的验证码或一个恢复码。",
+      "totpCodeOrRecovery": "验证码或恢复码",
+      "totpNewRecoveryCodes": "重新生成恢复码",
+      "totpTurnedOn": "两步验证已开启",
+      "totpTurnedOff": "两步验证已关闭",
+      "totpTurnOff": "关闭两步验证"
     }
   },
   "authPages": {
@@ -4283,7 +4306,16 @@
   },
   "login": {
     "forgetPassword": "忘记密码？",
-    "oidcLinkPrivileged": "这是管理员账号，新的登录方式不能自动关联到它。请先登录该账号，再到账号设置里关联，或联系站点负责人。"
+    "oidcLinkPrivileged": "这是管理员账号，新的登录方式不能自动关联到它。请先登录该账号，再到账号设置里关联，或联系站点负责人。",
+    "totpTitle": "两步验证",
+    "totpHint": "输入身份验证器 App 显示的 6 位验证码。",
+    "totpRecoveryHint": "输入开启两步验证时保存的一个恢复码。每个恢复码只能用一次。",
+    "totpCode": "身份验证码",
+    "recoveryCode": "恢复码",
+    "useRecoveryCode": "使用恢复码",
+    "useAuthenticator": "使用身份验证器 App",
+    "totpVerify": "验证",
+    "totpCodeRequired": "请输入验证码"
   },
   "libraryRules": {
     "intro": "每天同步模型库后，按这些规则决定哪些新模型加入目录、哪些目录里的模型下架。规则从上往下匹配，第一条条件全部满足的规则生效；每个模型只判定一次，你删掉的模型不会被加回来，你改过的模型不会被下架。",

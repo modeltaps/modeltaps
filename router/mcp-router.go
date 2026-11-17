@@ -18,6 +18,8 @@ func SetMcpRouter(router *gin.Engine) {
 	mcpRouter.Use(middleware.CORS())
 	mcpRouter.Use(middleware.GlobalAPIRateLimit())
 	mcpRouter.Use(gzip.Gzip(gzip.DefaultCompression))
+	// CORS lets any origin send credentials; a console session must still come from this site.
+	mcpRouter.Use(middleware.CrossSiteRequestGuard())
 	mcpRouter.Use(middleware.UserAuth())
 	mcpRouter.Use(middleware.ContextUserId())
 	{

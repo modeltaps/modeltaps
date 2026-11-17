@@ -70,14 +70,19 @@ func loginFailureKey(key string) string {
 
 // IsLoginLocked 判断该计数 key 当前是否处于锁定状态。
 func IsLoginLocked(key string) bool {
+	return IsLoginLockedAt(key, config.LoginMaxFailures)
+}
+
+// IsLoginLockedAt reports whether the counter key has reached maxFailures within the lockout
+// window. It lets one failure counted under several keys (account and IP, account alone, IP
+// alone) lock each at its own threshold. A threshold of 0 or less, like LoginMaxFailures 0,
+// never locks.
+func IsLoginLockedAt(key string, maxFailures int) bool {
 	key = loginFailureKey(key)
-	if key == "" {
+	if key == "" || maxFailures <= 0 || config.LoginMaxFailures <= 0 {
 		return false
 	}
-	if config.LoginMaxFailures <= 0 {
-		return false
-	}
-	return loginFailureCount(key) >= config.LoginMaxFailures
+	return loginFailureCount(key) >= maxFailures
 }
 
 // RecordLoginFailure 记录一次失败登录；计数窗口即锁定时长(滚动刷新)。
