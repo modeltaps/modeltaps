@@ -163,30 +163,11 @@ func CheckRedirect(maxRedirects int) func(*http.Request, []*http.Request) error 
 func CheckURL(rawURL string) (*url.URL, error) { return checkURL(rawURL) }
 
 // CheckHost 解析 u 的主机名，任一解析结果不是公网地址即拒绝。
-// 用于请求经代理发出、拨号器看不到真实目标的场景；它无法防御 DNS rebinding，
-// 能直连时应优先用 GuardedDialer。
+// 它只做一次性检查，连接时会再次解析，无法防御 DNS rebinding：能直连时用 GuardedDialer，
+// 经代理时用 NewGuardedProxyTransport（拨号时解析校验，并让代理连到校验过的 IP）。
 func CheckHost(ctx context.Context, u *url.URL) error {
-	host := u.Hostname()
-	port := portOf(u)
-	if ip, err := netip.ParseAddr(host); err == nil {
-		if !allowAddr(netip.AddrPortFrom(ip.Unmap(), port)) {
-			return ErrForbiddenAddr
-		}
-		return nil
-	}
-	addrs, err := net.DefaultResolver.LookupNetIP(ctx, "ip", host)
-	if err != nil {
-		return err
-	}
-	if len(addrs) == 0 {
-		return ErrForbiddenAddr
-	}
-	for _, a := range addrs {
-		if !allowAddr(netip.AddrPortFrom(a.Unmap(), port)) {
-			return ErrForbiddenAddr
-		}
-	}
-	return nil
+	_, err := ResolvePublic(ctx, u.Hostname(), portOf(u))
+	return err
 }
 
 // GuardedDialer 返回在拨号时按实际解析出的 IP 拒绝非公网地址的拨号器，供需要自建 Transport

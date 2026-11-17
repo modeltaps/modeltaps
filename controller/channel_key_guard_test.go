@@ -379,3 +379,41 @@ func TestAddChannelCopyKeyComparesWholeTarget(t *testing.T) {
 		t.Fatalf("root copy refused: %+v", got)
 	}
 }
+
+// SEC-64: an OpenRouter channel sends its management key to <base_url>/v1/credits when the
+// balance is refreshed. A non-root admin who enters any new key but no management key must not
+// move the channel to another host, whether the console saves the whole channel or the API gets
+// only the changed fields.
+func TestUpdateOpenRouterBaseURLKeepsManageKeyNeedsRoot(t *testing.T) {
+	setupBalanceTestDB(t)
+	gin.SetMode(gin.TestMode)
+	ch := createGuardChannel(t, model.Channel{Type: config.ChannelTypeOpenRouter, BaseURL: strPtr("https://openrouter.ai/api"),
+		ManageKey: strPtr("sk-or-manage")})
+	unchanged := func() {
+		t.Helper()
+		got := storedChannel(t, ch.Id)
+		if got.GetBaseURL() != "https://openrouter.ai/api" || got.GetManageKey() != "sk-or-manage" || got.Key != "sk-stored" {
+			t.Fatalf("channel changed by a refused edit: base_url %q", got.GetBaseURL())
+		}
+	}
+
+	partial := map[string]any{"id": ch.Id, "key": "dummy", "base_url": "https://attacker.example"}
+	if got := putChannel(t, config.RoleAdminUser, partial); got.Success || got.Code != common.APICodeChannelBaseURLNeedsKey {
+		t.Fatalf("partial move keeping the management key: %+v", got)
+	}
+	unchanged()
+	whole := wholeSave(ch, map[string]any{"key": "dummy", "base_url": "https://attacker.example"})
+	if got := putChannel(t, config.RoleAdminUser, whole); got.Success || got.Code != common.APICodeChannelBaseURLNeedsKey {
+		t.Fatalf("whole move keeping the management key: %+v", got)
+	}
+	unchanged()
+
+	// Entering the management key too (or clearing it) means nothing stored follows the move.
+	partial["manage_key"] = "sk-or-manage-new"
+	if got := putChannel(t, config.RoleAdminUser, partial); !got.Success {
+		t.Fatalf("move with a new management key refused: %+v", got)
+	}
+	if got := storedChannel(t, ch.Id); got.GetManageKey() != "sk-or-manage-new" {
+		t.Fatalf("management key %q after the move", got.GetManageKey())
+	}
+}
