@@ -231,6 +231,7 @@ func SetApiRouter(router *gin.Engine) {
 			optionRoute.GET("/", controller.GetOptions)
 			optionRoute.PUT("/", controller.UpdateOption)
 			optionRoute.POST("/smtp/test", controller.TestSMTP)
+			optionRoute.POST("/image_storage/test", controller.TestImageStorage)
 			optionRoute.GET("/mail", controller.GetMailSettings)
 			optionRoute.POST("/mail/preview", controller.PreviewMailTemplate)
 			optionRoute.GET("/message_log", controller.GetMessageLogs)

@@ -44,9 +44,11 @@ func sortedKeys[V any](m map[string]V) []string {
 
 // 有意变更(S1, 2026-06-11):TurnstileSecretKey / CFWorkerImageKey 由 ScopeAdmin 收紧为 ScopeSecret,
 // 不再通过 /api/option/ 下发。旧后缀规则(*Token/*Secret)无法覆盖这两个 key,在此显式登记为期望缺席。
+// The Imgur client id of the image storage is kept secret too (2026-11-17).
 var intentionallySecretKeys = map[string]struct{}{
-	"TurnstileSecretKey": {},
-	"CFWorkerImageKey":   {},
+	"TurnstileSecretKey":        {},
+	"CFWorkerImageKey":          {},
+	"ImageStorageImgurClientId": {},
 }
 
 // 有意变更(L2, 2026-06-11):新增 OIDCDisplayName(ScopePublic, StatusKey "oidc_display_name"),

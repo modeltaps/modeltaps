@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   banned; the organization's model access and the key's own limits apply, no member budget or
   member model list. Removing a member can keep their keys this way instead of disabling them, and
   organization usage lists these requests as "Organization (no member)".
+- Image storage is set in the console: **Platform admin → Gateway settings → Requests &
+  protocols → Image storage** (S3 compatible, Alibaba Cloud OSS, SM.MS or Imgur). It applies at
+  once without a restart, keeps its secrets encrypted, and **Test upload** tries the form before
+  saving. While it is off the card says what happens: Gemini, Cloudflare Workers AI and Stability
+  AI images are returned as base64. One storage is in use instead of trying every configured one
+  in no fixed order. The first start after upgrading moves the `storage:` section of `config.yaml`
+  (or `STORAGE_*`) into the settings, keeping one store (S3, then OSS, SM.MS, Imgur); the section
+  is not read afterwards.
 
 ### Changed
 

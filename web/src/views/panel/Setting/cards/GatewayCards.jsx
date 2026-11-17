@@ -686,3 +686,5 @@ export function AutoRoutingCard({ ctx }) {
     </OptionCard>
   );
 }
+
+export { default as ImageStorageCard } from './ImageStorageCard';

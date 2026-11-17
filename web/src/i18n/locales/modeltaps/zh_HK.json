@@ -1786,6 +1786,12 @@
     "smtp_test_incomplete": "請先填寫郵件伺服器和連接埠",
     "smtp_test_failed": "測試郵件沒發出去：{{reason}}",
     "smtp_managed": "發信設定由部署設定（smtp.url）管理，不能在這裡修改",
+    "image_storage_provider_invalid": "不支援的圖片儲存",
+    "image_storage_expiration_invalid": "過期天數須為 0 或更大的整數",
+    "image_storage_off": "請先選擇圖片儲存",
+    "image_storage_incomplete": "請填寫圖片儲存的全部必填項",
+    "image_storage_oss_region": "無法從 endpoint 推導 OSS 地域，請填寫，例如 cn-beijing",
+    "image_storage_test_failed": "測試上傳失敗：{{reason}}",
     "supply_intake_rules_invalid": "上新規則無效：{{message}}",
     "channel_base_url_needs_key": "只有超級管理員能在不重填 key 的情況下修改 key 的發送目標（類型、接口地址、區域等其他設定、代理、端點插件）。請重新填寫 key 後再儲存。",
     "channel_copy_key_mismatch": "只有超級管理員能把 key 複製到類型、接口地址、區域等其他設定或代理不同的渠道。",
@@ -3438,6 +3444,11 @@
           "description": "圖片請求經代理或本站中轉",
           "hint": "留空則不代理"
         },
+        "image-storage": {
+          "title": "圖片儲存",
+          "description": "生成的圖片上傳到哪裡，請求要圖片連結時才能拿到連結",
+          "hint": "儲存後立即生效，無需重啟"
+        },
         "auto-routing": {
           "title": "自動路由",
           "description": "決策調用怎樣計費、組織能否管理自己的策略；平台策略在自動路由頁管理。",
@@ -3823,6 +3834,73 @@
       "defaultLanguage": {
         "label": "預設語言",
         "description": "不知道用戶用甚麼語言時，郵件用這個語言發；首頁在瀏覽器語言不受支援時也用它"
+      },
+      "imageStorage": {
+        "provider": "儲存",
+        "optional": "{{label}}（可選）",
+        "providers": {
+          "off": "不啟用",
+          "s3": "S3 相容儲存",
+          "alioss": "阿里雲 OSS",
+          "smms": "SM.MS",
+          "imgur": "Imgur"
+        },
+        "providerHints": {
+          "s3": "AWS S3、Cloudflare R2、MinIO、Backblaze B2 等 S3 相容儲存",
+          "alioss": "返回帶簽名的連結，1 小時內有效，bucket 可以保持私有",
+          "smms": "免費圖床，圖片公開可見",
+          "imgur": "免費圖床，圖片公開可見"
+        },
+        "offNotice": "未啟用：Gemini、Cloudflare Workers AI、Stability AI 生成的圖片會以 base64 返回。只讀取圖片連結的用戶端拿不到圖，Gemini 的回覆裡會直接嵌入整張圖片。",
+        "fields": {
+          "s3Endpoint": {
+            "label": "Endpoint",
+            "placeholder": "https://<account>.r2.cloudflarestorage.com"
+          },
+          "s3Region": {
+            "label": "地域",
+            "placeholder": "us-east-1",
+            "hint": "AWS、B2、Wasabi 的 endpoint 可自動推導，其餘預設 auto（R2）"
+          },
+          "ossEndpoint": {
+            "label": "Endpoint",
+            "placeholder": "oss-cn-beijing.aliyuncs.com"
+          },
+          "ossRegion": {
+            "label": "地域",
+            "placeholder": "cn-beijing",
+            "hint": "可從 oss-<地域>.aliyuncs.com 推導，其他 endpoint 需要填寫"
+          },
+          "bucket": {
+            "label": "Bucket"
+          },
+          "accessKeyId": {
+            "label": "AccessKey ID"
+          },
+          "accessKeySecret": {
+            "label": "AccessKey Secret"
+          },
+          "s3CDNURL": {
+            "label": "公開存取位址",
+            "placeholder": "https://img.example.com",
+            "hint": "CDN 或 bucket 公開網域；留空用 endpoint/bucket"
+          },
+          "s3ExpirationDays": {
+            "label": "Expires 標頭（天）",
+            "hint": "寫入物件的 Expires 標頭，0 表示不寫；不會刪除檔案"
+          },
+          "smmsSecret": {
+            "label": "API Token"
+          },
+          "imgurClientId": {
+            "label": "Client ID"
+          }
+        },
+        "test": {
+          "button": "測試上傳",
+          "hint": "按表單目前內容測試，不必先儲存",
+          "ok": "上傳成功，下面應能看到圖片："
+        }
       }
     },
     "personal": {

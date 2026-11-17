@@ -17,7 +17,6 @@ import (
 	"github.com/modeltaps/modeltaps/common/redis"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/common/search"
-	"github.com/modeltaps/modeltaps/common/storage"
 	"github.com/modeltaps/modeltaps/common/telegram"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/controller"
@@ -166,7 +165,8 @@ func main() {
 			}
 		}()
 	}
-	storage.InitStorage()
+	// Older deployments set the image storage in the config file: move it into the settings.
+	model.MigrateImageStorageFromConfig()
 	search.InitSearcher()
 	// 初始化安全检查器
 	safty.InitSaftyTools()

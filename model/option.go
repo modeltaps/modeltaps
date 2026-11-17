@@ -336,6 +336,8 @@ func registerOptions() {
 		return nil
 	}, "", config.ScopePublic, config.PublicSpec{StatusValue: func() any { return config.RechargeDiscount }})
 
+	registerImageStorageOptions()
+
 	config.GlobalOption.RegisterString("CFWorkerImageUrl", &config.CFWorkerImageUrl, config.ScopeAdmin)
 	config.GlobalOption.RegisterString("CFWorkerImageKey", &config.CFWorkerImageKey, config.ScopeSecret)
 	config.GlobalOption.RegisterInt("OldTokenMaxId", &config.OldTokenMaxId, config.ScopeAdmin)

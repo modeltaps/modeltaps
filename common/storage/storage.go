@@ -1,92 +1,173 @@
+// Package storage uploads generated images (Cloudflare Workers AI, Stability AI, Gemini) to the
+// image storage set in the platform settings, so a request that asks for an image URL gets one.
+// With no storage set, Upload returns "" and callers answer with base64 instead.
 package storage
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"strings"
+
+	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/storage/drives"
-
-	"github.com/spf13/viper"
 )
 
-type Storage struct {
-	drives map[string]StorageDrive
+type StorageDrive interface {
+	Upload(data []byte, fileName string) (string, error)
+	Name() string
 }
 
-func InitStorage() {
-	InitImgurStorage()
-	InitSMStorage()
-	InitALIOSSStorage()
-	InitS3Storage()
+const (
+	ProviderNone   = ""
+	ProviderS3     = "s3"
+	ProviderAliOSS = "alioss"
+	ProviderSMMS   = "smms"
+	ProviderImgur  = "imgur"
+)
+
+// ValidProvider reports whether p is a provider the settings accept ("" turns storage off).
+func ValidProvider(p string) bool {
+	switch p {
+	case ProviderNone, ProviderS3, ProviderAliOSS, ProviderSMMS, ProviderImgur:
+		return true
+	}
+	return false
 }
 
-func InitALIOSSStorage() {
-	endpoint := viper.GetString("storage.alioss.endpoint")
-	if endpoint == "" {
-		return
-	}
-	accessKeyId := viper.GetString("storage.alioss.accessKeyId")
-	if accessKeyId == "" {
-		return
-	}
-	accessKeySecret := viper.GetString("storage.alioss.accessKeySecret")
-	if accessKeySecret == "" {
-		return
-	}
-	bucketName := viper.GetString("storage.alioss.bucketName")
-	if bucketName == "" {
-		return
-	}
-
-	region := viper.GetString("storage.alioss.region")
-	aliUpload := drives.NewAliOSSUpload(endpoint, region, accessKeyId, accessKeySecret, bucketName)
-	if aliUpload.Region == "" {
-		logger.SysError("storage.alioss: region is not set and cannot be derived from endpoint " + endpoint + "; set storage.alioss.region (for example cn-beijing), OSS storage stays off")
-		return
-	}
-	AddStorageDrive(aliUpload)
+type S3Settings struct {
+	Endpoint        string `json:"endpoint"`
+	Region          string `json:"region"`
+	AccessKeyId     string `json:"access_key_id"`
+	AccessKeySecret string `json:"access_key_secret"`
+	BucketName      string `json:"bucket_name"`
+	CDNURL          string `json:"cdn_url"`
+	ExpirationDays  int    `json:"expiration_days"`
 }
 
-func InitSMStorage() {
-	smSecret := viper.GetString("storage.smms.secret")
-	if smSecret == "" {
-		return
-	}
-
-	smUpload := drives.NewSMUpload(smSecret)
-	AddStorageDrive(smUpload)
+type OSSSettings struct {
+	Endpoint        string `json:"endpoint"`
+	Region          string `json:"region"`
+	AccessKeyId     string `json:"access_key_id"`
+	AccessKeySecret string `json:"access_key_secret"`
+	BucketName      string `json:"bucket_name"`
 }
 
-func InitImgurStorage() {
-	imgurClientId := viper.GetString("storage.imgur.client_id")
-	if imgurClientId == "" {
-		return
-	}
-
-	imgurUpload := drives.NewImgurUpload(imgurClientId)
-	AddStorageDrive(imgurUpload)
+// Settings is one image storage configuration: the provider in use and the fields of each.
+type Settings struct {
+	Provider      string      `json:"provider"`
+	S3            S3Settings  `json:"s3"`
+	OSS           OSSSettings `json:"alioss"`
+	SMMSSecret    string      `json:"smms_secret"`
+	ImgurClientId string      `json:"imgur_client_id"`
 }
 
-func InitS3Storage() {
-	endpoint := viper.GetString("storage.s3.endpoint")
-	if endpoint == "" {
-		return
-	}
-	accessKeyId := viper.GetString("storage.s3.accessKeyId")
-	if accessKeyId == "" {
-		return
-	}
-	accessKeySecret := viper.GetString("storage.s3.accessKeySecret")
-	if accessKeySecret == "" {
-		return
-	}
-	bucketName := viper.GetString("storage.s3.bucketName")
-	if bucketName == "" {
-		return
-	}
-	cdnurl := viper.GetString("storage.s3.cdnurl")
+var (
+	ErrStorageOff        = errors.New("image storage is off")
+	ErrStorageProvider   = errors.New("unknown image storage provider")
+	ErrStorageIncomplete = errors.New("fill in every required field of the image storage")
+	ErrStorageOSSRegion  = errors.New("the OSS region cannot be derived from the endpoint; enter it, for example cn-beijing")
+)
 
-	expirationDays := viper.GetInt("storage.s3.expirationDays")
+// CurrentSettings returns the image storage as saved in the platform settings.
+func CurrentSettings() Settings {
+	return Settings{
+		Provider: config.ImageStorageProvider,
+		S3: S3Settings{
+			Endpoint:        config.ImageStorageS3Endpoint,
+			Region:          config.ImageStorageS3Region,
+			AccessKeyId:     config.ImageStorageS3AccessKeyId,
+			AccessKeySecret: config.ImageStorageS3AccessKeySecret,
+			BucketName:      config.ImageStorageS3BucketName,
+			CDNURL:          config.ImageStorageS3CDNURL,
+			ExpirationDays:  config.ImageStorageS3ExpirationDays,
+		},
+		OSS: OSSSettings{
+			Endpoint:        config.ImageStorageOSSEndpoint,
+			Region:          config.ImageStorageOSSRegion,
+			AccessKeyId:     config.ImageStorageOSSAccessKeyId,
+			AccessKeySecret: config.ImageStorageOSSAccessKeySecret,
+			BucketName:      config.ImageStorageOSSBucketName,
+		},
+		SMMSSecret:    config.ImageStorageSMMSSecret,
+		ImgurClientId: config.ImageStorageImgurClientId,
+	}
+}
 
-	region := viper.GetString("storage.s3.region")
-	s3Upload := drives.NewS3Upload(endpoint, region, accessKeyId, accessKeySecret, bucketName, cdnurl, expirationDays)
-	AddStorageDrive(s3Upload)
+func filled(values ...string) bool {
+	for _, v := range values {
+		if strings.TrimSpace(v) == "" {
+			return false
+		}
+	}
+	return true
+}
+
+// Drive builds the uploader for the settings, or says what is missing.
+func (s Settings) Drive() (StorageDrive, error) {
+	switch s.Provider {
+	case ProviderNone:
+		return nil, ErrStorageOff
+	case ProviderS3:
+		c := s.S3
+		if !filled(c.Endpoint, c.AccessKeyId, c.AccessKeySecret, c.BucketName) {
+			return nil, ErrStorageIncomplete
+		}
+		return drives.NewS3Upload(strings.TrimSpace(c.Endpoint), c.Region, strings.TrimSpace(c.AccessKeyId), c.AccessKeySecret,
+			strings.TrimSpace(c.BucketName), c.CDNURL, c.ExpirationDays), nil
+	case ProviderAliOSS:
+		c := s.OSS
+		if !filled(c.Endpoint, c.AccessKeyId, c.AccessKeySecret, c.BucketName) {
+			return nil, ErrStorageIncomplete
+		}
+		d := drives.NewAliOSSUpload(strings.TrimSpace(c.Endpoint), strings.TrimSpace(c.Region), strings.TrimSpace(c.AccessKeyId),
+			c.AccessKeySecret, strings.TrimSpace(c.BucketName))
+		if d.Region == "" {
+			return nil, ErrStorageOSSRegion
+		}
+		return d, nil
+	case ProviderSMMS:
+		if !filled(s.SMMSSecret) {
+			return nil, ErrStorageIncomplete
+		}
+		return drives.NewSMUpload(strings.TrimSpace(s.SMMSSecret)), nil
+	case ProviderImgur:
+		if !filled(s.ImgurClientId) {
+			return nil, ErrStorageIncomplete
+		}
+		return drives.NewImgurUpload(strings.TrimSpace(s.ImgurClientId)), nil
+	}
+	return nil, ErrStorageProvider
+}
+
+// UploadWith uploads data with the given settings and returns the image URL.
+func UploadWith(s Settings, data []byte, fileName string) (string, error) {
+	drive, err := s.Drive()
+	if err != nil {
+		return "", err
+	}
+	url, err := drive.Upload(data, fileName)
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", drive.Name(), err)
+	}
+	if url == "" {
+		return "", fmt.Errorf("%s returned no URL", drive.Name())
+	}
+	return url, nil
+}
+
+// Upload uploads data to the image storage in use and returns its URL, or "" when storage is
+// off or the upload failed (logged); the caller then answers with base64.
+func Upload(data []byte, fileName string) string {
+	url, err := UploadWith(CurrentSettings(), data, fileName)
+	if err != nil {
+		if !errors.Is(err, ErrStorageOff) {
+			//lint:ignore SA1029 the logger reads the request id under this key
+			ctx := context.WithValue(context.Background(), logger.RequestIdKey, "Upload")
+			logger.LogError(ctx, "image storage upload failed, answering with base64: "+err.Error())
+		}
+		return ""
+	}
+	return url
 }

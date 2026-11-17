@@ -393,7 +393,7 @@ no user exists, created the super admin account: username is admin, initial pass
 - `logs/`：上面提到的日志文件。
 
 ::: tip 图片上传不落本地盘
-图床上传（`STORAGE_*`）一律直传远端服务（sm.ms / imgur / 阿里云 OSS / S3 协议），Modeltaps **不会**在本机创建上传目录，因此无需为上传内容单独设权限——需要保护的是保存这些图床凭据的 `config.yaml` / `.env`。详见 [图床配置](./storage.md)。
+图片存储上传一律直传远端服务（sm.ms / imgur / 阿里云 OSS / S3 协议），Modeltaps **不会**在本机创建上传目录，因此无需为上传内容单独设权限——这些凭据在后台设置里加密保存（需设置 `ENCRYPTION_KEY`）。详见 [图片存储](./storage.md)。
 :::
 
 ### Docker / Docker Compose 部署

@@ -13,6 +13,24 @@ export const SETTINGS_BASE = admin.settings();
 
 export const settingsGroupUrl = (groupId) => `${SETTINGS_BASE}/${groupId}`;
 
+export const IMAGE_STORAGE_KEYS = [
+  'ImageStorageProvider',
+  'ImageStorageS3Endpoint',
+  'ImageStorageS3Region',
+  'ImageStorageS3BucketName',
+  'ImageStorageS3AccessKeyId',
+  'ImageStorageS3AccessKeySecret',
+  'ImageStorageS3CDNURL',
+  'ImageStorageS3ExpirationDays',
+  'ImageStorageOSSEndpoint',
+  'ImageStorageOSSRegion',
+  'ImageStorageOSSBucketName',
+  'ImageStorageOSSAccessKeyId',
+  'ImageStorageOSSAccessKeySecret',
+  'ImageStorageSMMSSecret',
+  'ImageStorageImgurClientId'
+];
+
 const card = (id, kind, keys = [], tab) => ({ id, kind, keys, ...(tab ? { tab } : {}) });
 
 export const PLATFORM_GROUPS = [
@@ -151,6 +169,8 @@ export const PLATFORM_GROUPS = [
       ),
       card('prompt-limits', 'form', ['MaxPromptTokens'], 'request'),
       card('image-proxy', 'form', ['ChatImageRequestProxy', 'CFWorkerImageUrl', 'CFWorkerImageKey'], 'request'),
+      // Where generated images are uploaded so a request asking for a URL gets one.
+      card('image-storage', 'form', IMAGE_STORAGE_KEYS, 'request'),
       card('mj-notify', 'form', ['MjNotifyEnabled'], 'request')
     ]
   },

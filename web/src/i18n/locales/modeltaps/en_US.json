@@ -1870,6 +1870,12 @@
     "smtp_test_incomplete": "Fill in the mail server and port first",
     "smtp_test_failed": "The test email was not sent: {{reason}}",
     "smtp_managed": "Mail sending is set in the deployment (smtp.url) and cannot be changed here",
+    "image_storage_provider_invalid": "Unknown image storage",
+    "image_storage_expiration_invalid": "Expiration days must be a whole number of 0 or more",
+    "image_storage_off": "Choose an image storage first",
+    "image_storage_incomplete": "Fill in every required field of the image storage",
+    "image_storage_oss_region": "The OSS region cannot be derived from the endpoint; enter it, for example cn-beijing",
+    "image_storage_test_failed": "Test upload failed: {{reason}}",
     "supply_intake_rules_invalid": "The intake rules are not valid: {{message}}",
     "channel_base_url_needs_key": "Only the root user can change where a channel sends its key (type, base URL, region or other settings, proxy, endpoint plugins) without entering the key again. Enter the key to save the change.",
     "channel_copy_key_mismatch": "Only the root user can copy a key to a channel with a different type, base URL, region or other settings, or proxy.",
@@ -3543,6 +3549,11 @@
           "description": "Send image requests through a proxy or this site",
           "hint": "Leave empty for no proxy"
         },
+        "image-storage": {
+          "title": "Image storage",
+          "description": "Where generated images are uploaded so requests that ask for an image URL get one",
+          "hint": "Applies at once, no restart"
+        },
         "auto-routing": {
           "title": "Auto routing",
           "description": "How decision calls are billed and whether organizations manage their own policies; platform policies are managed on the auto routing page.",
@@ -3930,6 +3941,73 @@
       "defaultLanguage": {
         "label": "Default language",
         "description": "Emails go out in it when a user's language is unknown; the home page uses it when the browser's language is not supported"
+      },
+      "imageStorage": {
+        "provider": "Storage",
+        "optional": "{{label}} (optional)",
+        "providers": {
+          "off": "Off",
+          "s3": "S3 compatible",
+          "alioss": "Alibaba Cloud OSS",
+          "smms": "SM.MS",
+          "imgur": "Imgur"
+        },
+        "providerHints": {
+          "s3": "AWS S3, Cloudflare R2, MinIO, Backblaze B2 and other S3 compatible storage",
+          "alioss": "Links are signed and stay valid for 1 hour, so the bucket can stay private",
+          "smms": "Free image host; images are public",
+          "imgur": "Free image host; images are public"
+        },
+        "offNotice": "Off: images from Gemini, Cloudflare Workers AI and Stability AI are returned as base64. Clients that only read the image URL get no image, and Gemini replies carry the whole image inline.",
+        "fields": {
+          "s3Endpoint": {
+            "label": "Endpoint",
+            "placeholder": "https://<account>.r2.cloudflarestorage.com"
+          },
+          "s3Region": {
+            "label": "Region",
+            "placeholder": "us-east-1",
+            "hint": "Derived from AWS, B2 and Wasabi endpoints; auto otherwise (R2)"
+          },
+          "ossEndpoint": {
+            "label": "Endpoint",
+            "placeholder": "oss-cn-beijing.aliyuncs.com"
+          },
+          "ossRegion": {
+            "label": "Region",
+            "placeholder": "cn-beijing",
+            "hint": "Derived from oss-<region>.aliyuncs.com; needed for other endpoints"
+          },
+          "bucket": {
+            "label": "Bucket"
+          },
+          "accessKeyId": {
+            "label": "Access key ID"
+          },
+          "accessKeySecret": {
+            "label": "Access key secret"
+          },
+          "s3CDNURL": {
+            "label": "Public URL",
+            "placeholder": "https://img.example.com",
+            "hint": "CDN or public bucket domain; empty uses endpoint/bucket"
+          },
+          "s3ExpirationDays": {
+            "label": "Expires header (days)",
+            "hint": "Written to the object Expires header; 0 writes none. Files are not deleted"
+          },
+          "smmsSecret": {
+            "label": "API token"
+          },
+          "imgurClientId": {
+            "label": "Client ID"
+          }
+        },
+        "test": {
+          "button": "Test upload",
+          "hint": "Uses the form as it is, saved or not",
+          "ok": "Uploaded. The image should show below:"
+        }
       }
     },
     "personal": {

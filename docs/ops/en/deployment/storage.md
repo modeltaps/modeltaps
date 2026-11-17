@@ -7,34 +7,29 @@ lastUpdated: true
 
 # Image Storage
 
-Some providers' image generation APIs do not return a URL. Once image storage is configured, Modeltaps uploads the image to the storage backend first and then returns the link.
+The image APIs of Cloudflare Workers AI and Stability AI, and Gemini's image output, return image data instead of a link. With image storage set, Modeltaps uploads the image first and returns its link to the caller. Without it those responses carry base64: the image API answers with `b64_json` instead of `url`, and Gemini replies embed `data:image/png;base64,...` inline. Clients that only read the image URL get no image.
 
-When using `gemini` models that support image output, an incorrect image storage configuration causes image responses to fail. (The native Gemini API does not require this configuration.)
+Upstreams that return image links themselves, such as OpenAI and Azure, do not use image storage.
 
-You can configure multiple storage backends; if an upload fails, the system automatically falls back to the next one.
+## Set it in the console
 
-```yaml
-storage: # Storage settings (optional; mainly for image generation — some providers only return base64 images, and this lets Modeltaps return a URL instead)
-  smms: # sm.ms image storage
-    secret: "" # sm.ms API key
-  imgur:
-    client_id: "" # imgur client_id
-  alioss: # Alibaba Cloud OSS object storage
-    endpoint: "" # Endpoint (regional node), e.g. oss-cn-beijing.aliyuncs.com
-    region: "" # Region ID, e.g. cn-beijing; when empty it is derived from a standard endpoint (oss-<region>.aliyuncs.com). Required for custom domains and the acceleration endpoint
-    bucketName: "" # Bucket name, e.g. zerodeng-superai
-    accessKeyId: "" # Alibaba Cloud access key ID, from the RAM section of the console
-    accessKeySecret: "" # Alibaba Cloud access key secret, from the RAM section of the console
-  s3: # AWS S3 protocol
-    endpoint: "" # Endpoint (regional node), e.g. https://xxxxxx.r2.cloudflarestorage.com
-    region: "" # Signing region, e.g. us-east-1; when empty it is derived from AWS, Backblaze B2 and Wasabi endpoints, and is auto otherwise (Cloudflare R2)
-    cdnurl: "" # Public access domain, e.g. https://pub-xxxxx.r2.dev; falls back to endpoint/bucketName when unset (the bucket must allow public reads)
-    bucketName: "" # Bucket name, e.g. zerodeng-superai
-    accessKeyId: "" # accessKeyId
-    accessKeySecret: "" # accessKeySecret
-    expirationDays: 3
-```
+Choose a storage and fill in its fields under **Platform admin → Gateway settings → Requests & protocols → Image storage**. Saving applies at once without a restart, and other nodes pick it up with the settings sync. Secrets are stored encrypted and shown masked; leaving one empty keeps it.
 
-Alibaba Cloud OSS uploads and signed links use V4 signatures (accounts and buckets created since 2025 no longer accept V1 signatures), and V4 needs the region of the bucket. You can leave `region` empty when the endpoint is a standard one such as `oss-cn-beijing.aliyuncs.com`; otherwise set it. Without it, startup logs an error and Alibaba Cloud OSS stays off.
+**Test upload** uploads a small image with the form as it stands, saved or not, and shows its link and a thumbnail. With a secret left empty, the saved secret is reused only for the saved endpoint, bucket and access key ID.
 
-S3 signatures need a region. Cloudflare R2 uses `auto`, so leave it empty there. Standard AWS S3, Backblaze B2 and Wasabi endpoints (such as `https://s3.us-west-2.amazonaws.com` or `https://s3.us-west-004.backblazeb2.com`) are derived automatically; for other providers set `region` as their documentation says. Callers get a plain link under `cdnurl`, so the bucket must allow public reads. `expirationDays` only sets the Expires header of the object and deletes nothing; configure a lifecycle rule at the provider to clean up old files.
+One storage is in use at a time:
+
+| Storage | Required | Notes |
+|---|---|---|
+| S3 compatible | Endpoint, bucket, access key ID, access key secret | AWS S3, Cloudflare R2, MinIO, Backblaze B2 and others |
+| Alibaba Cloud OSS | Endpoint, bucket, access key ID, access key secret | Returns signed links valid for 1 hour, so the bucket can stay private |
+| SM.MS | API token | Free image host; images are public |
+| Imgur | Client ID | Free image host; images are public |
+
+S3 signing needs a region. Cloudflare R2 uses `auto`, so leave it empty; standard AWS S3, Backblaze B2 and Wasabi endpoints (such as `https://s3.us-west-2.amazonaws.com` or `https://s3.us-west-004.backblazeb2.com`) are derived automatically; for other providers enter the region from their documentation. Callers get a plain link under the public URL (`endpoint/bucket` when it is empty), so the bucket must allow public reads. The Expires header days only set the object's Expires header and do not delete files; configure a lifecycle rule in the storage console for cleanup.
+
+Alibaba Cloud OSS uploads and signed links use V4 signatures (new accounts and buckets have rejected V1 since 2025), which need the bucket's region. It can be left empty for a standard endpoint such as `oss-cn-beijing.aliyuncs.com`; custom domains and transfer acceleration endpoints need it.
+
+## Upgrading from the config file
+
+Older versions set image storage in the `storage:` section of `config.yaml` (or the matching `STORAGE_*` environment variables). The first start after the upgrade moves it into the console; the `storage:` section is not read afterwards and can be removed. Older versions could set several stores and tried them in no fixed order; the move keeps one, preferring S3, then Alibaba Cloud OSS, SM.MS and Imgur.

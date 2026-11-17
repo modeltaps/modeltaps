@@ -108,7 +108,7 @@ LOGS_FILENAME="modeltaps.log"
 27. `ROOT_PASSWORD_ALLOW_INSECURE`: whether to skip the 8–64 character length check on `ROOT_PASSWORD`. Accepts `true` / `false`, defaults to `false`. **For local development only; never enable it in production.**
     - Local development convention: `ROOT_PASSWORD=admin` plus `ROOT_PASSWORD_ALLOW_INSECURE=true`, so you can sign in with `admin/admin` after the first startup. Databases created before this change seeded `root` instead; keep signing in with that account.
     - When enabled, a warning line is printed to the startup log. The switch has no effect when `ROOT_PASSWORD` is unset: the 16-character random password branch still applies.
-28. `ENCRYPTION_KEY`: the master key that encrypts stored credentials in the database (AES-256-GCM). When it is set, upstream channel keys (including the refresh tokens of OAuth channels such as Codex and Claude Code), channel management keys, payment gateway configurations, notification channel secrets, OIDC provider client secrets and the secret system settings (SMTP token, GitHub / OIDC / LinuxDo client secrets, WeChat server token, Turnstile secret key, CF Worker image key) are encrypted before they are written to the database.
+28. `ENCRYPTION_KEY`: the master key that encrypts stored credentials in the database (AES-256-GCM). When it is set, upstream channel keys (including the refresh tokens of OAuth channels such as Codex and Claude Code), channel management keys, payment gateway configurations, notification channel secrets, OIDC provider client secrets and the secret system settings (SMTP token, GitHub / OIDC / LinuxDo client secrets, WeChat server token, Turnstile secret key, CF Worker image key, image storage secrets) are encrypted before they are written to the database.
     - The value is 32 random bytes in base64 or hex; generate it with `openssl rand -base64 32`. The program refuses to start when the value is malformed or still a placeholder from the docs.
     - When unset, values are stored in plaintext as before; the startup log prints a warning and the admin settings (System settings → Site) show a notice.
     - After you set it and restart, the master node encrypts the existing plaintext values in batches and logs how many it encrypted per column; later starts do not process them again. Every node of a multi-node deployment must use the same value.
@@ -197,5 +197,5 @@ For example with Resend: `SMTP_URL=smtps://resend:re_xxx@smtp.resend.com:465` an
 
 ### Storage and search
 
-The object storage (`STORAGE_*`) and web search (`SEARCH_*`) groups contain many keys. For key names and default values, refer directly to `config.example.yaml` in the root of the delivery package. Notification channels (`NOTIFY_*`) moved to the console, see [Notifications](./notify.md).
+The web search (`SEARCH_*`) group contains many keys. For key names and default values, refer directly to `config.example.yaml` in the root of the delivery package. Notification channels (`NOTIFY_*`) moved to the console, see [Notifications](./notify.md); so did image storage (`STORAGE_*`), see [Image Storage](./storage.md).
 

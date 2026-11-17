@@ -393,7 +393,7 @@ no user exists, created the super admin account: username is admin, initial pass
 - `logs/`：上記のログファイル
 
 ::: tip 画像アップロードはローカルディスクに保存されません
-画像ストレージへのアップロード（`STORAGE_*`）はすべてリモートサービス（sm.ms / imgur / Alibaba Cloud OSS / S3 プロトコル）へ直接送信され、Modeltaps はローカルにアップロード用ディレクトリを**作成しません**。そのためアップロード内容に個別の権限設定は不要です。保護すべきは、これらの画像ストレージ認証情報を保存する `config.yaml` / `.env` です。詳細は [画像ストレージ設定](./storage.md) を参照してください。
+画像ストレージへのアップロードはすべてリモートサービス（sm.ms / imgur / Alibaba Cloud OSS / S3 プロトコル）へ直接送信され、Modeltaps はローカルにアップロード用ディレクトリを**作成しません**。そのためアップロード内容に個別の権限設定は不要です。画像ストレージの認証情報は管理画面の設定に暗号化して保存されます（`ENCRYPTION_KEY` の設定が必要）。詳細は [画像ストレージ](./storage.md) を参照してください。
 :::
 
 ### Docker / Docker Compose でのデプロイ

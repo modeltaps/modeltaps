@@ -1780,6 +1780,12 @@
     "smtp_test_incomplete": "先にメールサーバーとポートを入力してください",
     "smtp_test_failed": "テストメールを送れませんでした：{{reason}}",
     "smtp_managed": "メール送信はデプロイ設定（smtp.url）で管理されており、ここでは変更できません",
+    "image_storage_provider_invalid": "対応していない画像ストレージです",
+    "image_storage_expiration_invalid": "有効期限の日数は 0 以上の整数にしてください",
+    "image_storage_off": "先に画像ストレージを選んでください",
+    "image_storage_incomplete": "画像ストレージの必須項目をすべて入力してください",
+    "image_storage_oss_region": "エンドポイントから OSS のリージョンを判定できません。cn-beijing のように入力してください",
+    "image_storage_test_failed": "テストアップロードに失敗しました：{{reason}}",
     "supply_intake_rules_invalid": "新モデルのルールが無効です：{{message}}",
     "channel_base_url_needs_key": "キーの送信先（種類、Base URL、リージョンなどのその他の設定、プロキシ、エンドポイントプラグイン）をキーを再入力せずに変更できるのはスーパー管理者のみです。保存するにはキーを入力してください。",
     "channel_copy_key_mismatch": "種類、Base URL、リージョンなどのその他の設定、またはプロキシが異なるチャネルにキーをコピーできるのはスーパー管理者のみです。",
@@ -3434,6 +3440,11 @@
           "description": "画像リクエストをプロキシまたは本サイト経由にします",
           "hint": "空欄ならプロキシしません"
         },
+        "image-storage": {
+          "title": "画像ストレージ",
+          "description": "生成した画像のアップロード先。画像 URL を求めるリクエストに URL を返すために使います",
+          "hint": "保存するとすぐに反映され、再起動は不要です"
+        },
         "auto-routing": {
           "title": "自動ルーティング",
           "description": "判定呼び出しの課金方法と、組織が自分のポリシーを管理できるかどうか。プラットフォームのポリシーは自動ルーティングページで管理します。",
@@ -3819,6 +3830,73 @@
       "defaultLanguage": {
         "label": "既定の言語",
         "description": "ユーザーの言語がわからないとき、メールはこの言語で送られます。ブラウザーの言語に対応していないときはホームページもこの言語になります"
+      },
+      "imageStorage": {
+        "provider": "ストレージ",
+        "optional": "{{label}}（任意）",
+        "providers": {
+          "off": "使わない",
+          "s3": "S3 互換ストレージ",
+          "alioss": "Alibaba Cloud OSS",
+          "smms": "SM.MS",
+          "imgur": "Imgur"
+        },
+        "providerHints": {
+          "s3": "AWS S3、Cloudflare R2、MinIO、Backblaze B2 などの S3 互換ストレージ",
+          "alioss": "署名付きリンクを返し、1 時間有効です。バケットは非公開のままで構いません",
+          "smms": "無料の画像ホスティング。画像は公開されます",
+          "imgur": "無料の画像ホスティング。画像は公開されます"
+        },
+        "offNotice": "未設定：Gemini、Cloudflare Workers AI、Stability AI が生成した画像は base64 で返されます。画像 URL だけを読むクライアントには画像が届かず、Gemini の応答には画像全体がそのまま埋め込まれます。",
+        "fields": {
+          "s3Endpoint": {
+            "label": "エンドポイント",
+            "placeholder": "https://<account>.r2.cloudflarestorage.com"
+          },
+          "s3Region": {
+            "label": "リージョン",
+            "placeholder": "us-east-1",
+            "hint": "AWS・B2・Wasabi のエンドポイントからは自動で判定、それ以外は auto（R2）"
+          },
+          "ossEndpoint": {
+            "label": "エンドポイント",
+            "placeholder": "oss-cn-beijing.aliyuncs.com"
+          },
+          "ossRegion": {
+            "label": "リージョン",
+            "placeholder": "cn-beijing",
+            "hint": "oss-<リージョン>.aliyuncs.com から判定。その他のエンドポイントでは入力が必要です"
+          },
+          "bucket": {
+            "label": "バケット"
+          },
+          "accessKeyId": {
+            "label": "アクセスキー ID"
+          },
+          "accessKeySecret": {
+            "label": "アクセスキーシークレット"
+          },
+          "s3CDNURL": {
+            "label": "公開 URL",
+            "placeholder": "https://img.example.com",
+            "hint": "CDN またはバケットの公開ドメイン。空欄なら endpoint/bucket"
+          },
+          "s3ExpirationDays": {
+            "label": "Expires ヘッダー（日）",
+            "hint": "オブジェクトの Expires ヘッダーに書き込みます。0 なら書きません。ファイルは削除されません"
+          },
+          "smmsSecret": {
+            "label": "API トークン"
+          },
+          "imgurClientId": {
+            "label": "クライアント ID"
+          }
+        },
+        "test": {
+          "button": "テストアップロード",
+          "hint": "フォームの現在の内容で試します。保存は不要です",
+          "ok": "アップロードしました。下に画像が表示されるはずです："
+        }
       }
     },
     "personal": {

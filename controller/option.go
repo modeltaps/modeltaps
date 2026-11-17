@@ -6,12 +6,14 @@ import (
 	"github.com/modeltaps/modeltaps/common/encryption"
 	"github.com/modeltaps/modeltaps/common/lang"
 	"github.com/modeltaps/modeltaps/common/stmp"
+	"github.com/modeltaps/modeltaps/common/storage"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/safty"
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -114,6 +116,19 @@ func UpdateOption(c *gin.Context) {
 			return
 		}
 
+	case "ImageStorageProvider":
+		if !storage.ValidProvider(option.Value) {
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeImageStorageProviderInvalid, "Unknown image storage provider", nil)
+			return
+		}
+	case "ImageStorageS3ExpirationDays":
+		if strings.TrimSpace(option.Value) == "" {
+			option.Value = "0"
+		}
+		if days, err := strconv.Atoi(option.Value); err != nil || days < 0 {
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeImageStorageExpirationInvalid, "Expiration days must be a whole number of 0 or more", nil)
+			return
+		}
 	case "DefaultLanguage":
 		if option.Value != "" && lang.Normalize(option.Value) != option.Value {
 			common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "Unsupported language", nil)

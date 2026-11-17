@@ -393,7 +393,7 @@ The mount point (`/data/modeltaps` in the examples) typically contains:
 - `logs/`: the log files mentioned above.
 
 ::: tip Uploaded images are not written to local disk
-Image storage uploads (`STORAGE_*`) always go straight to the remote service (sm.ms / imgur / Alibaba Cloud OSS / S3 protocol). Modeltaps **never** creates a local upload directory, so no permissions are needed for uploaded content — what needs protecting is the `config.yaml` / `.env` holding those storage credentials. See [Image Storage](./storage.md) for details.
+Image storage uploads always go straight to the remote service (sm.ms / imgur / Alibaba Cloud OSS / S3 protocol). Modeltaps **never** creates a local upload directory, so no permissions are needed for uploaded content — the storage credentials are kept encrypted in the console settings (with `ENCRYPTION_KEY` set). See [Image Storage](./storage.md) for details.
 :::
 
 ### Docker / Docker Compose deployment

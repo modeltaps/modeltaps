@@ -1786,6 +1786,12 @@
     "smtp_test_incomplete": "请先填写邮件服务器和端口",
     "smtp_test_failed": "测试邮件没发出去：{{reason}}",
     "smtp_managed": "发信设置由部署配置（smtp.url）管理，不能在这里修改",
+    "image_storage_provider_invalid": "不支持的图片存储",
+    "image_storage_expiration_invalid": "过期天数须为 0 或更大的整数",
+    "image_storage_off": "请先选择图片存储",
+    "image_storage_incomplete": "请填写图片存储的全部必填项",
+    "image_storage_oss_region": "无法从 endpoint 推导 OSS 地域，请填写，例如 cn-beijing",
+    "image_storage_test_failed": "测试上传失败：{{reason}}",
     "supply_intake_rules_invalid": "上新规则无效：{{message}}",
     "channel_base_url_needs_key": "只有超级管理员能在不重填 key 的情况下修改 key 的发送目标（类型、接口地址、区域等其他设置、代理、端点插件）。请重新填写 key 后再保存。",
     "channel_copy_key_mismatch": "只有超级管理员能把 key 复制到类型、接口地址、区域等其他设置或代理不同的渠道。",
@@ -3438,6 +3444,11 @@
           "description": "图片请求走代理或本站中转",
           "hint": "留空则不代理"
         },
+        "image-storage": {
+          "title": "图片存储",
+          "description": "生成的图片上传到哪里，请求要图片链接时才能拿到链接",
+          "hint": "保存后立即生效，无需重启"
+        },
         "auto-routing": {
           "title": "自动路由",
           "description": "决策调用怎么计费、组织能否管理自己的策略；平台策略在自动路由页管理。",
@@ -3823,6 +3834,73 @@
       "defaultLanguage": {
         "label": "默认语言",
         "description": "不知道用户用什么语言时，邮件用这个语言发；首页在浏览器语言不受支持时也用它"
+      },
+      "imageStorage": {
+        "provider": "存储",
+        "optional": "{{label}}（可选）",
+        "providers": {
+          "off": "不启用",
+          "s3": "S3 兼容存储",
+          "alioss": "阿里云 OSS",
+          "smms": "SM.MS",
+          "imgur": "Imgur"
+        },
+        "providerHints": {
+          "s3": "AWS S3、Cloudflare R2、MinIO、Backblaze B2 等 S3 兼容存储",
+          "alioss": "返回带签名的链接，1 小时内有效，bucket 可以保持私有",
+          "smms": "免费图床，图片公开可见",
+          "imgur": "免费图床，图片公开可见"
+        },
+        "offNotice": "未启用：Gemini、Cloudflare Workers AI、Stability AI 生成的图片会以 base64 返回。只读取图片链接的客户端拿不到图，Gemini 的回复里会直接嵌入整张图片。",
+        "fields": {
+          "s3Endpoint": {
+            "label": "Endpoint",
+            "placeholder": "https://<account>.r2.cloudflarestorage.com"
+          },
+          "s3Region": {
+            "label": "地域",
+            "placeholder": "us-east-1",
+            "hint": "AWS、B2、Wasabi 的 endpoint 可自动推导，其余默认 auto（R2）"
+          },
+          "ossEndpoint": {
+            "label": "Endpoint",
+            "placeholder": "oss-cn-beijing.aliyuncs.com"
+          },
+          "ossRegion": {
+            "label": "地域",
+            "placeholder": "cn-beijing",
+            "hint": "可从 oss-<地域>.aliyuncs.com 推导，其他 endpoint 需要填写"
+          },
+          "bucket": {
+            "label": "Bucket"
+          },
+          "accessKeyId": {
+            "label": "AccessKey ID"
+          },
+          "accessKeySecret": {
+            "label": "AccessKey Secret"
+          },
+          "s3CDNURL": {
+            "label": "公开访问地址",
+            "placeholder": "https://img.example.com",
+            "hint": "CDN 或 bucket 公开域名；留空用 endpoint/bucket"
+          },
+          "s3ExpirationDays": {
+            "label": "Expires 头（天）",
+            "hint": "写入对象的 Expires 头，0 表示不写；不会删除文件"
+          },
+          "smmsSecret": {
+            "label": "API Token"
+          },
+          "imgurClientId": {
+            "label": "Client ID"
+          }
+        },
+        "test": {
+          "button": "测试上传",
+          "hint": "按表单当前内容测试，不必先保存",
+          "ok": "上传成功，下面应能看到图片："
+        }
       }
     },
     "personal": {

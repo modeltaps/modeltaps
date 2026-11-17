@@ -108,7 +108,7 @@ LOGS_FILENAME="modeltaps.log"
 27. `ROOT_PASSWORD_ALLOW_INSECURE`：是否跳过 `ROOT_PASSWORD` 的 8–64 位长度校验，可选值 `true` / `false`，默认 `false`。**仅限本地开发环境，生产环境严禁开启。**
     - 本地开发约定：`ROOT_PASSWORD=admin` + `ROOT_PASSWORD_ALLOW_INSECURE=true`，首次启动后即可用 `admin/admin` 登录。在此之前建的库种的是 `root`，继续用原来的账号登录。
     - 开启后启动日志会打印一行警告；未设置 `ROOT_PASSWORD` 时该开关不生效，仍走 16 位随机密码分支。
-28. `ENCRYPTION_KEY`：数据库里已存凭据的加密主密钥（AES-256-GCM）。设置后，上游渠道密钥（含 Codex、Claude Code 等 OAuth 渠道的 refresh token）、渠道管理密钥、支付网关配置、通知渠道的密钥、OIDC 提供方的客户端密钥，以及后台系统设置里的密钥类配置（SMTP 令牌、GitHub / OIDC / LinuxDo 客户端密钥、微信服务器令牌、Turnstile 密钥、CF Worker 图片密钥）都先加密再写入数据库。
+28. `ENCRYPTION_KEY`：数据库里已存凭据的加密主密钥（AES-256-GCM）。设置后，上游渠道密钥（含 Codex、Claude Code 等 OAuth 渠道的 refresh token）、渠道管理密钥、支付网关配置、通知渠道的密钥、OIDC 提供方的客户端密钥，以及后台系统设置里的密钥类配置（SMTP 令牌、GitHub / OIDC / LinuxDo 客户端密钥、微信服务器令牌、Turnstile 密钥、CF Worker 图片密钥、图片存储的密钥）都先加密再写入数据库。
     - 取值为 32 字节随机数的 base64 或 hex 编码，请用 `openssl rand -base64 32` 生成。格式不对或仍是文档里的占位符时，程序拒绝启动。
     - 未设置时与以前一样以明文存储，启动日志会打印一行警告，后台「系统设置 → 站点」也会提示。
     - 设置后重启，主节点会把已有的明文值分批加密，并在日志里记下每列加密了多少条；之后再启动不会重复处理。多节点部署时所有节点必须使用同一个值。
@@ -205,7 +205,7 @@ LOGS_FILENAME="modeltaps.log"
 
 ### 存储 / 搜索
 
-对象存储图床（`STORAGE_*`）、联网搜索（`SEARCH_*`）等分组配置项较多，键名与默认值请直接参考交付包根目录的 `config.example.yaml`。通知渠道（`NOTIFY_*`）已移到后台配置，见[消息通知](./notify.md)。
+联网搜索（`SEARCH_*`）等分组配置项较多，键名与默认值请直接参考交付包根目录的 `config.example.yaml`。通知渠道（`NOTIFY_*`）已移到后台配置，见[消息通知](./notify.md)；图床（`STORAGE_*`）也已移到后台，见[图片存储](./storage.md)。
 
 ## 账号体系
 
