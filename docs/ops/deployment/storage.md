@@ -30,6 +30,29 @@ S3 签名需要地域。Cloudflare R2 用 `auto`，留空即可；AWS S3、Backb
 
 阿里云 OSS 上传和签名链接使用 V4 签名（2025 年起新账号、新 Bucket 已不接受 V1 签名），V4 签名需要 Bucket 所在地域。endpoint 是 `oss-cn-beijing.aliyuncs.com` 这类标准地址时可以不填地域；自定义域名或传输加速 endpoint 必须填写。
 
+### 示例：Cloudflare R2
+
+R2 不收下载流量费，适合做图床。
+
+1. 在 Cloudflare 控制台的 R2 里创建 bucket，记下概览页上的账户 ID。
+2. 在 bucket 设置的公开访问（Public access）里连接自定义域名；也可以开启 `r2.dev` 子域名，但它有限速，只适合测试。
+3. 在 R2 的 API 令牌管理（Manage R2 API Tokens）里创建令牌，权限选对象读写（Object Read & Write），只授权这个 bucket。创建后显示的 Access Key ID 和 Secret Access Key 只出现一次，复制下来。
+
+在图片存储里这样填写：
+
+| 字段 | 填写 |
+|---|---|
+| 存储 | S3 兼容存储 |
+| Endpoint | `https://<账户 ID>.r2.cloudflarestorage.com`（欧盟辖区的 bucket 用 `https://<账户 ID>.eu.r2.cloudflarestorage.com`） |
+| 地域 | 留空，自动使用 `auto` |
+| Bucket | bucket 名称 |
+| AccessKey ID | 令牌的 Access Key ID |
+| AccessKey Secret | 令牌的 Secret Access Key |
+| 公开访问地址 | 自定义域名（如 `https://img.example.com`）或 `https://pub-xxxx.r2.dev`。R2 的 endpoint 不能公开访问，这一项必须填写 |
+| Expires 头（天） | `0` |
+
+点 **测试上传**，能看到缩略图即配置正确，再保存。要定期清理旧图，在 bucket 设置的对象生命周期规则（Object lifecycle rules）里添加删除规则，比如 30 天后删除。
+
 ## 从配置文件升级
 
 旧版本在 `config.yaml` 的 `storage:` 段（或对应的 `STORAGE_*` 环境变量）里配置图床。升级后第一次启动时，这些设置会自动搬进后台，之后不再读取 `storage:` 段，可以删掉。旧版本可以同时配置多个图床并按不固定的顺序尝试；搬迁时只保留一个，优先级为 S3、阿里云 OSS、SM.MS、Imgur。

@@ -30,6 +30,29 @@ S3 signing needs a region. Cloudflare R2 uses `auto`, so leave it empty; standar
 
 Alibaba Cloud OSS uploads and signed links use V4 signatures (new accounts and buckets have rejected V1 since 2025), which need the bucket's region. It can be left empty for a standard endpoint such as `oss-cn-beijing.aliyuncs.com`; custom domains and transfer acceleration endpoints need it.
 
+### Example: Cloudflare R2
+
+R2 charges nothing for downloads, which suits image hosting.
+
+1. Create a bucket under R2 in the Cloudflare dashboard and note the account ID on the overview page.
+2. Under the bucket's **Public access** settings, connect a custom domain. The `r2.dev` subdomain also works but is rate limited and meant for testing.
+3. Under **Manage R2 API Tokens**, create a token with **Object Read & Write** limited to this bucket. Copy the Access Key ID and Secret Access Key it shows; they are shown only once.
+
+Fill in the image storage like this:
+
+| Field | Value |
+|---|---|
+| Storage | S3 compatible |
+| Endpoint | `https://<account ID>.r2.cloudflarestorage.com` (for a bucket in the EU jurisdiction, `https://<account ID>.eu.r2.cloudflarestorage.com`) |
+| Region | Empty; `auto` is used |
+| Bucket | The bucket name |
+| Access key ID | The token's Access Key ID |
+| Access key secret | The token's Secret Access Key |
+| Public URL | The custom domain (such as `https://img.example.com`) or `https://pub-xxxx.r2.dev`. The R2 endpoint is not publicly readable, so this field is required |
+| Expires header (days) | `0` |
+
+Click **Test upload**; a thumbnail means the setup works, then save. To clean up old images, add a delete rule under the bucket's **Object lifecycle rules**, for example after 30 days.
+
 ## Upgrading from the config file
 
 Older versions set image storage in the `storage:` section of `config.yaml` (or the matching `STORAGE_*` environment variables). The first start after the upgrade moves it into the console; the `storage:` section is not read afterwards and can be removed. Older versions could set several stores and tried them in no fixed order; the move keeps one, preferring S3, then Alibaba Cloud OSS, SM.MS and Imgur.
