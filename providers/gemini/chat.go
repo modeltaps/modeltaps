@@ -494,6 +494,14 @@ func ConvertFromChatOpenai(request *types.ChatCompletionRequest) (*GeminiChatReq
 
 	threshold := "BLOCK_NONE"
 
+	// Gemini has a single output limit: fall back to max_completion_tokens when max_tokens is not
+	// set, so the limit sent upstream is one the client declared and pre-consumption reserved for
+	// (SEC-56).
+	maxOutputTokens := request.MaxTokens
+	if maxOutputTokens == 0 {
+		maxOutputTokens = request.MaxCompletionTokens
+	}
+
 	// if strings.HasPrefix(request.Model, "gemini-2.0") && !strings.Contains(request.Model, "thinking") {
 	// 	threshold = "OFF"
 	// }
@@ -525,7 +533,7 @@ func ConvertFromChatOpenai(request *types.ChatCompletionRequest) (*GeminiChatReq
 		GenerationConfig: GeminiChatGenerationConfig{
 			Temperature:        request.Temperature,
 			TopP:               request.TopP,
-			MaxOutputTokens:    request.MaxTokens,
+			MaxOutputTokens:    maxOutputTokens,
 			ResponseModalities: request.Modalities,
 		},
 	}
@@ -547,7 +555,7 @@ func ConvertFromChatOpenai(request *types.ChatCompletionRequest) (*GeminiChatReq
 
 		if canEnableThinking {
 			budget := request.Reasoning.MaxTokens
-			maxTokens := request.MaxTokens
+			maxTokens := maxOutputTokens
 
 			// 3. Token 校验与调整：验证 thinkingBudget < maxOutputTokens
 			// Gemini API 要求 Budget 必须严格小于 MaxOutputTokens

@@ -17,6 +17,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"runtime/debug"
 	"time"
@@ -48,7 +49,11 @@ var maxOutputTokenFields = []string{
 	"generation_config.max_output_tokens",
 }
 
-// requestedMaxOutputTokens 从已缓存的请求体里读出客户端声明的输出 token 上限，未声明返回 0。
+// requestedMaxOutputTokens reads the output token limit the client declared in the cached request
+// body, 0 when none is declared. When several limit fields are present the largest one counts:
+// providers pick different fields (Claude and Gemini conversions read max_tokens, o-series and
+// gpt-5 read max_completion_tokens), so the smallest one is not a bound on what the upstream may
+// generate (SEC-56).
 func requestedMaxOutputTokens(c *gin.Context) int {
 	raw, ok := c.Get(config.GinRequestBodyKey)
 	if !ok {
@@ -58,12 +63,16 @@ func requestedMaxOutputTokens(c *gin.Context) int {
 	if !ok || len(body) == 0 || !gjson.ValidBytes(body) {
 		return 0
 	}
+	largest := 0
 	for _, field := range maxOutputTokenFields {
-		if v := gjson.GetBytes(body, field); v.Exists() && v.Int() > 0 {
-			return int(v.Int())
+		if v := gjson.GetBytes(body, field); v.Exists() && v.Int() > int64(largest) {
+			if v.Int() > math.MaxInt32 {
+				return math.MaxInt32
+			}
+			largest = int(v.Int())
 		}
 	}
-	return 0
+	return largest
 }
 
 type Quota struct {
@@ -87,7 +96,13 @@ type Quota struct {
 
 	// —— 结算状态:预扣额与实时累计额,结算/回退时对账 ——
 	preConsumedQuota int
-	cacheQuota       int
+	// settled is set once the request has been charged (completedQuotaConsumption); later Consume
+	// and Undo calls are no-ops so one reservation is never settled or refunded twice (SEC-55).
+	settled bool
+	// chargedQuota is what the settlement actually took from the account, recorded for callers
+	// that refund it later (async task failures).
+	chargedQuota int
+	cacheQuota   int
 	// 本请求已累计入成员预算 Redis tally 的量(SEC-12),结算时回收(镜像 cacheQuota 模式)
 	memberBudgetCacheQuota int
 
@@ -391,20 +406,34 @@ func (q *Quota) UpdateUserRealtimeQuota(usage *types.UsageEvent, nowUsage *types
 }
 
 func (q *Quota) completedQuotaConsumption(usage *types.Usage, tokenName string, isStream bool, sourceIp string, ctx context.Context, logIODetail *model.LogIODetail) error {
+	if q.settled {
+		// A second settlement would charge the request again; the first one already reconciled
+		// the reservation (SEC-55).
+		logger.LogError(ctx, fmt.Sprintf("quota for model %s already settled, skipping repeated settlement", q.modelName))
+		return nil
+	}
 	defer func() {
 		q.releaseRealtimeQuota()
 		// SEC-12:同步回收成员预算实时 tally(镜像 cacheQuota 回收模式)
 		q.releaseOrgMemberRealtimeBudget()
+		// The reservation is reconciled whether or not the delta could be posted: a later Undo
+		// must not hand it back again.
+		q.settled = true
+		q.HandelStatus = false
+		q.preConsumedQuota = 0
 	}()
 
 	quota := q.GetTotalQuotaByUsage(usage)
 	costQuota := q.GetCostQuotaByUsage(usage)
 
 	quotaDelta := quota - q.preConsumedQuota
+	// When the delta cannot be posted only the reservation stays charged.
+	q.chargedQuota = quota
 	var quotaErr error
 	if quotaDelta != 0 {
 		err := model.PostConsumeTokenQuotaWithInfo(q.tokenId, q.userId, q.unlimitedQuota, quotaDelta, !q.isOrgToken())
 		if err != nil {
+			q.chargedQuota = q.preConsumedQuota
 			quotaErr = errors.New("error consuming token remain quota: " + err.Error())
 			logger.LogError(ctx, quotaErr.Error())
 		} else {
@@ -450,13 +479,16 @@ func (q *Quota) completedQuotaConsumption(usage *types.Usage, tokenName string, 
 	return quotaErr
 }
 
+// Undo refunds the pre-consumed quota of a request that will not be charged. It is idempotent:
+// a successful refund clears the reservation, so repeated calls (retry loops, deferred cleanup)
+// refund it once, and Undo after the request was settled does nothing (SEC-55).
 func (q *Quota) Undo(c *gin.Context) {
 	// SEC-12:回退路径同步回收成员预算实时 tally(与 completedQuotaConsumption 的 defer 对称),
 	// 无累计时 noop;须在 HandelStatus 短路前执行——实时累计与预扣是否成功无关。
 	q.releaseOrgMemberRealtimeBudget()
 	// 在途预留（100x 跳过时登记）与流式实时累计同样要释放，否则失败请求会一直占着用户的可用额度
 	q.releaseRealtimeQuota()
-	if !q.HandelStatus {
+	if q.settled || !q.HandelStatus {
 		return
 	}
 	// Undo 所有调用方都在 gin handler 同步路径上，panic 由 gin.Recovery 兜底（带 stack）。
@@ -475,8 +507,17 @@ func (q *Quota) Undo(c *gin.Context) {
 		// 回退预扣时同步回冲成员/团队预算用量（预扣时已在 PreQuotaConsumption 中累计）
 		q.accrueOrgMemberBudget(-q.preConsumedQuota)
 		q.accrueOrganizationBudget(-q.preConsumedQuota)
+		// Refunded: nothing is reserved any more. A failed refund keeps the reservation so a
+		// later Undo can retry it and a later Consume still reconciles against it.
+		q.HandelStatus = false
+		q.preConsumedQuota = 0
 	}
 	_ = model.CacheUpdateUserQuota(q.userId)
+}
+
+// ChargedQuota is the quota the settlement took from the account, 0 before the request is settled.
+func (q *Quota) ChargedQuota() int {
+	return q.chargedQuota
 }
 
 func (q *Quota) Consume(c *gin.Context, usage *types.Usage, isStream bool) {

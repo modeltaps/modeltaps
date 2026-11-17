@@ -350,10 +350,13 @@ func (h *OpenAIStreamHandler) HandlerChatStream(rawLine *[]byte, dataChan chan s
 func otherProcessing(request *types.ChatCompletionRequest, otherArg string) {
 	matched, _ := regexp.MatchString(`(?i)^o[1-9]`, request.Model)
 	if matched || model_utils.HasPrefixCaseInsensitive(request.Model, "gpt-5") {
-		if request.MaxTokens > 0 {
+		// These models only take max_completion_tokens. An explicit max_completion_tokens wins and
+		// max_tokens is the fallback, the same order as the Claude and Gemini conversions; the
+		// pre-consumption estimate takes the larger of the two, so either choice is covered (SEC-56).
+		if request.MaxCompletionTokens == 0 {
 			request.MaxCompletionTokens = request.MaxTokens
-			request.MaxTokens = 0
 		}
+		request.MaxTokens = 0
 		if request.Model != "gpt-5-chat-latest" {
 			request.Temperature = nil
 		}

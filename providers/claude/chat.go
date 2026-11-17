@@ -218,6 +218,12 @@ func ConvertFromChatOpenai(request *types.ChatCompletionRequest) (*ClaudeRequest
 		claudeRequest.ToolChoice = ConvertToolChoice(toolType, toolFunc)
 	}
 
+	// Claude has a single output limit: fall back to max_completion_tokens when max_tokens is not
+	// set, so the limit sent upstream is one the client declared and pre-consumption reserved for
+	// (SEC-56), and only use the configured default when neither is set.
+	if claudeRequest.MaxTokens == 0 {
+		claudeRequest.MaxTokens = request.MaxCompletionTokens
+	}
 	if claudeRequest.MaxTokens == 0 {
 		claudeRequest.MaxTokens = config.ClaudeSettingsInstance.GetDefaultMaxTokens(request.Model)
 	}

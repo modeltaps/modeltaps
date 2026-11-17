@@ -208,8 +208,12 @@ func RelaySwapFace(c *gin.Context) *provider.MidjourneyResponse {
 		return &mjResp.Response
 	}
 
+	// The deferred settlement acts on the reservation current when the handler returns: the relax
+	// fallback below swaps quotaInstance after refunding the fast one, and leaves sendFailed set
+	// instead of refunding itself, so each reservation is settled exactly once (SEC-55).
+	sendFailed := false
 	defer func(ctx context.Context) {
-		if mjResp.StatusCode == 200 && mjResp.Response.Code == 1 {
+		if !sendFailed && mjResp.StatusCode == 200 && mjResp.Response.Code == 1 {
 			quotaInstance.Consume(c, &types.Usage{CompletionTokens: 0, PromptTokens: 1, TotalTokens: 1}, false)
 		} else {
 			quotaInstance.Undo(c)
@@ -228,16 +232,19 @@ func RelaySwapFace(c *gin.Context) *provider.MidjourneyResponse {
 		quotaInstance.Undo(c)
 		c.Set("mj_model", "relax")
 		mjModelType = "relax"
-		quotaInstance, errWithOA = getQuota(c, provider.MjActionSwapFace)
-		if errWithOA != nil {
+		// On failure quotaInstance stays the refunded fast reservation, whose deferred Undo is a no-op.
+		relaxQuota, relaxErr := getQuota(c, provider.MjActionSwapFace)
+		if relaxErr != nil {
 			return &provider.MidjourneyResponse{
 				Code:        4,
-				Description: errWithOA.Message,
+				Description: relaxErr.Message,
 			}
 		}
+		quotaInstance = relaxQuota
 		mjResp, _, err = mjProvider.Send(60, requestURL)
 		if err != nil {
-			quotaInstance.Undo(c)
+			// The deferred settlement refunds the relax reservation.
+			sendFailed = true
 			return &mjResp.Response
 		}
 		quota = quotaInstance.GetTotalQuotaByUsage(&types.Usage{CompletionTokens: 0, PromptTokens: 1, TotalTokens: 1})
@@ -499,6 +506,9 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *provider.MidjourneyRe
 		return &midjResponseWithStatus.Response
 	}
 
+	// The deferred settlement acts on the reservation current when the handler returns: the relax
+	// fallback below swaps quotaInstance after refunding the fast one, and clears consumeQuota
+	// instead of refunding itself, so each reservation is settled exactly once (SEC-55).
 	defer func(ctx context.Context) {
 		if consumeQuota && midjResponseWithStatus.StatusCode == 200 {
 			quotaInstance.Consume(c, &types.Usage{CompletionTokens: 0, PromptTokens: 1, TotalTokens: 1}, false)
@@ -518,17 +528,20 @@ func RelayMidjourneySubmit(c *gin.Context, relayMode int) *provider.MidjourneyRe
 		quotaInstance.Undo(c)
 		mjModelType = "relax"
 		c.Set("mj_model", mjModelType)
-		quotaInstance, errWithOA = getQuota(c, midjRequest.Action)
-		if errWithOA != nil {
+		// On failure quotaInstance stays the refunded fast reservation, whose deferred Undo is a no-op.
+		relaxQuota, relaxErr := getQuota(c, midjRequest.Action)
+		if relaxErr != nil {
 			return &provider.MidjourneyResponse{
 				Code:        4,
-				Description: errWithOA.Message,
+				Description: relaxErr.Message,
 			}
 		}
+		quotaInstance = relaxQuota
 
 		midjResponseWithStatus, responseBody, err = mjProvider.Send(60, requestURL)
 		if err != nil {
-			quotaInstance.Undo(c)
+			// The deferred settlement refunds the relax reservation.
+			consumeQuota = false
 			return &midjResponseWithStatus.Response
 		}
 		quota = quotaInstance.GetTotalQuotaByUsage(&types.Usage{CompletionTokens: 0, PromptTokens: 1, TotalTokens: 1})

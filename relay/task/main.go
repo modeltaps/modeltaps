@@ -36,15 +36,18 @@ func buildTaskChannelFilters(c *gin.Context) []model.ChannelsFilterFunc {
 }
 
 func RelayTaskSubmit(c *gin.Context) {
-	var taskErr *base.TaskError
 	taskAdaptor, err := GetTaskAdaptor(GetRelayMode(c), c)
 	if err != nil {
-		taskErr = base.StringTaskError(http.StatusBadRequest, "adaptor_not_found", "adaptor not found", true)
+		taskErr := base.StringTaskError(http.StatusBadRequest, "adaptor_not_found", "adaptor not found", true)
 		c.JSON(http.StatusBadRequest, taskErr)
 		return
 	}
+	relayTaskSubmit(c, taskAdaptor)
+}
 
-	taskErr = taskAdaptor.Init()
+// relayTaskSubmit submits the task through taskAdaptor, retrying other channels on failure.
+func relayTaskSubmit(c *gin.Context, taskAdaptor base.TaskInterface) {
+	taskErr := taskAdaptor.Init()
 	if taskErr != nil {
 		taskAdaptor.HandleError(taskErr)
 		return
@@ -71,8 +74,9 @@ func RelayTaskSubmit(c *gin.Context) {
 		return
 	}
 
-	quotaInstance.Undo(c)
-
+	// The reservation is kept across the retries and settled once: Consume on the attempt that
+	// succeeds, or a single Undo when every attempt failed. Refunding after each failed attempt
+	// left the reservation in place for the next one and refunded it again (SEC-55).
 	retryTimes := config.RetryTimes
 
 	// 在重试开始前计算并缓存总渠道数，避免重试过程中动态变化
@@ -160,7 +164,6 @@ func RelayTaskSubmit(c *gin.Context) {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("retry_failed model=%s channel_id=%d attempt=%d/%d status_code=%d error=\"%s\"",
 			modelName, channel.Id, attemptCount, actualRetryTimes, taskErr.StatusCode, taskErr.Message))
 
-		quotaInstance.Undo(c)
 		if !taskAdaptor.ShouldRetry(c, taskErr) {
 			logger.LogError(c.Request.Context(), fmt.Sprintf("retry_stop_condition model=%s channel_id=%d attempt=%d/%d should_retry=false",
 				modelName, channel.Id, attemptCount, actualRetryTimes))
@@ -171,6 +174,7 @@ func RelayTaskSubmit(c *gin.Context) {
 
 	// 记录最终失败
 	if taskErr != nil {
+		quotaInstance.Undo(c)
 		finalAttempt := c.GetInt("attempt_count")
 		actualRetryTimes := c.GetInt("actual_retry_times")
 		logger.LogError(c.Request.Context(), fmt.Sprintf("retry_exhausted model=%s channel_id=%d total_attempts=%d total_channels=%d config_max_retries=%d actual_max_retries=%d status_code=%d error=\"%s\"",
@@ -184,7 +188,9 @@ func CompletedTask(quotaInstance *relay_util.Quota, taskAdaptor base.TaskInterfa
 	quotaInstance.ConsumeWithSnapshot(snap, &types.Usage{CompletionTokens: 0, PromptTokens: 1, TotalTokens: 1}, false)
 
 	task := taskAdaptor.GetTask()
-	task.Quota = common.QuotaFromFloat(quotaInstance.GetInputRatio() * 1000)
+	// Record what the settlement took: an async failure refunds task.Quota, and the input ratio
+	// alone overstates the charge of models priced per token.
+	task.Quota = quotaInstance.ChargedQuota()
 
 	err := task.Insert()
 	if err != nil {

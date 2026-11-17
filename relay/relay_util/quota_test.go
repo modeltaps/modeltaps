@@ -511,7 +511,7 @@ func TestRequestedMaxOutputTokens(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	cases := map[string]int{
 		`{"max_tokens":1234}`:                          1234,
-		`{"max_completion_tokens":50,"max_tokens":99}`: 50,
+		`{"max_completion_tokens":50,"max_tokens":99}`: 99, // largest declared limit (SEC-56)
 		`{"max_output_tokens":77}`:                     77,
 		`{"generationConfig":{"maxOutputTokens":88}}`:  88,
 		`{"messages":[]}`:                              0,
