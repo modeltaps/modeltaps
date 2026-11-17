@@ -9,6 +9,7 @@ import { FormField } from '@/components/ui/form-field';
 import { ModelCombobox } from '@/components/ui/model-combobox';
 import { showError } from 'utils/common';
 import { platformRoutingPolicyApi } from './routingPolicyApi';
+import { useClassifierGroups } from './policyFields';
 import { timestamp2string } from 'utils/common';
 
 // 置信度不足或决策失败的原因，用 routingPolicy.reasons.* 文案。
@@ -22,8 +23,9 @@ const REASON_TONE = {
 
 // 「试一试」：粘贴一条首条用户消息，用当前表单里的策略（可以还没保存）跑一次决策，只调决策模型。
 // 可以再加几个候选决策模型并列比较，看哪个在真实消息上更稳。
-export default function TryItPanel({ policy, policyId = 0, modelOptions = [], api = platformRoutingPolicyApi }) {
+export default function TryItPanel({ policy, policyId = 0, classifiers, api = platformRoutingPolicyApi }) {
   const { t } = useTranslation();
+  const classifierGroups = useClassifierGroups(classifiers);
   const [text, setText] = useState('');
   // 真实样本：从留存了请求明细的被路由日志里取首条消息，点一条填进输入框回放。
   const [samples, setSamples] = useState(null);
@@ -131,7 +133,10 @@ export default function TryItPanel({ policy, policyId = 0, modelOptions = [], ap
             value={candidateInput}
             onChange={setCandidateInput}
             onSelect={addCandidate}
-            options={modelOptions.filter((m) => m !== policy.decision_model && !candidates.includes(m))}
+            groups={classifierGroups.map((g) => ({
+              ...g,
+              options: g.options.filter((m) => m !== policy.decision_model && !candidates.includes(m))
+            }))}
             placeholder={t('routingPolicy.tryIt.candidatesPlaceholder')}
             createLabel={(input) => t('routingPolicy.form.useTyped', { value: input })}
             disabled={candidates.length >= 3}

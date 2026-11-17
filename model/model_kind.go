@@ -151,3 +151,19 @@ func CatalogModelKind(name, endpointsJSON, outputModalitiesJSON string) string {
 	output, _ := utils.UnmarshalString[[]string](outputModalitiesJSON)
 	return ResolveModelKind("", output, name)
 }
+
+// ModelKindOf is the kind the catalog shows for name (aliases follow their main name); a name
+// with no catalog row is judged by the name alone. "" is a chat (language) model.
+func ModelKindOf(name string) string {
+	canonical, _ := ResolveCanonicalModel(name)
+	if info := lookupModelInfo(canonical); info != nil {
+		return CatalogModelKind(info.Model, info.Endpoints, info.OutputModalities)
+	}
+	return ModelKindFromName(name)
+}
+
+// IsRoutingClassifierKind reports whether a model of this kind can classify for a routing
+// policy: a decision model (asked one choice question on /v1/decisions) or a chat model.
+func IsRoutingClassifierKind(kind string) bool {
+	return kind == "" || kind == ModelKindDecision
+}

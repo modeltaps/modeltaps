@@ -1743,6 +1743,7 @@
     "routing_policy_scoring_invalid": "評分方式只能是自動、logprobs 或自報",
     "routing_policy_model_unavailable": "{{field}} 對本組織不可用（{{model}}）",
     "routing_policy_count_exceeded": "本組織的路由策略已達上限 {{max}} 條",
+    "routing_policy_decision_kind": "決策模型只能是決策模型或對話模型，不能是 {{kind}} 模型",
     "org_routing_policy_disabled": "本站未開啟組織路由策略",
     "supply_pause_rules_invalid": "暫停規則無效：{{message}}",
     "model_supply_pending_not_found": "這個上游模型不在這些渠道的待處理清單中",
@@ -1857,7 +1858,9 @@
       "displayNameHint": "目錄裏代替模型名顯示。",
       "description": "描述",
       "decisionModel": "決策模型",
-      "decisionModelHint": "一個小而快的對話模型，負責給首條用戶訊息分類。每個會話向呼叫方計費一次。",
+      "decisionModelHint": "負責給首條用戶訊息分類。推薦用決策模型，它直接給出每個標籤的機率；也可以用小而快的對話模型。每個會話向呼叫方計費一次。",
+      "decisionModelGroupDecision": "決策模型（推薦）",
+      "decisionModelGroupChat": "對話模型",
       "question": "問題",
       "questionHint": "先給決策模型一句背景，再問標籤要回答的那個問題。",
       "questionHelp": "寫短一點：標籤和描述承擔大部分含義。不要在這裏寫長指令，輸出格式由閘道固定。",
@@ -1974,6 +1977,7 @@
       "self_reported": "只用自報"
     },
     "scoringUsed": {
+      "decision": "決策模型機率",
       "logprobs": "logprobs",
       "self_reported": "自報"
     },

@@ -17,7 +17,7 @@ import (
 
 const (
 	routingPolicyName   = "auto/coder"
-	routingDecisionName = "decider"
+	routingDecisionName = "router-llm"
 	routingCheapModel   = "cheap-model"
 	routingBigModel     = "big-model"
 )
@@ -31,7 +31,7 @@ func ftoa(f float64) string {
 	return strconv.FormatFloat(f, 'f', -1, 64)
 }
 
-// newRoutingHarness 两个假上游：决策渠道只提供 decider，目标渠道提供 cheap / big 两个模型；
+// newRoutingHarness 两个假上游：决策渠道只提供 router-llm，目标渠道提供 cheap / big 两个模型；
 // 再建一条策略 small→cheap、large→big、兜底 big。
 func newRoutingHarness(t *testing.T, decisionURL, targetURL string, channelType int) *Harness {
 	t.Helper()
@@ -103,7 +103,7 @@ func TestAutoRoutingChatRoutesToClassifiedTarget(t *testing.T) {
 
 	decisionReq := decision.LastRequest(t).JSONBody(t)
 	if decisionReq["model"] != routingDecisionName {
-		t.Fatalf("决策上游应收到 decider，实际 %v", decisionReq["model"])
+		t.Fatalf("决策上游应收到 router-llm，实际 %v", decisionReq["model"])
 	}
 	msgs := decisionReq["messages"].([]any)
 	userMsg := msgs[len(msgs)-1].(map[string]any)["content"].(string)
@@ -127,7 +127,7 @@ func TestAutoRoutingChatRoutesToClassifiedTarget(t *testing.T) {
 		t.Fatalf("X-Modeltaps-Route 不对: %q", got)
 	}
 
-	// 计费：目标模型 1/1 倍率 150 token → 150；决策调用按 decider 1/1 倍率 28 token → 28，单独一条日志。
+	// 计费：目标模型 1/1 倍率 150 token → 150；决策调用按 router-llm 1/1 倍率 28 token → 28，单独一条日志。
 	if spent := quotaBefore - h.UserQuota(t); spent != 178 {
 		t.Fatalf("应扣 150 + 28 = 178，实际扣 %d", spent)
 	}
@@ -148,7 +148,7 @@ func TestAutoRoutingChatRoutesToClassifiedTarget(t *testing.T) {
 	}
 	decisionLog, ok := logs[routingDecisionName]
 	if !ok {
-		t.Fatalf("应有 decider 的决策消费日志，实际 %v", logKeys(logs))
+		t.Fatalf("应有 router-llm 的决策消费日志，实际 %v", logKeys(logs))
 	}
 	if decisionLog.Quota != 28 || decisionLog.PromptTokens != 20 || decisionLog.CompletionTokens != 8 {
 		t.Fatalf("决策日志用量 / 费用不对: quota=%d prompt=%d completion=%d", decisionLog.Quota, decisionLog.PromptTokens, decisionLog.CompletionTokens)

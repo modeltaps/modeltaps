@@ -320,7 +320,15 @@ func respondScopedRoutingModels(c *gin.Context, scope model.RoutingScope) {
 		common.APIRespondWithError(c, http.StatusInternalServerError, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": models})
+	// kinds tags the models that are not chat models (decision, image, ...), so the decision model
+	// picker can offer decision models first and the target pickers chat models only.
+	kinds := map[string]string{}
+	for _, name := range models {
+		if kind := model.ModelKindOf(name); kind != "" {
+			kinds[name] = kind
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": models, "kinds": kinds})
 }
 
 func orgRoutingScope(c *gin.Context) (*model.Organization, model.RoutingScope) {

@@ -1737,6 +1737,7 @@
     "routing_policy_scoring_invalid": "スコアリングは auto、logprobs、自己申告のいずれかを指定してください",
     "routing_policy_model_unavailable": "{{field}} はこの組織では利用できません（{{model}}）",
     "routing_policy_count_exceeded": "この組織のルーティングポリシーは上限の {{max}} 件に達しています",
+    "routing_policy_decision_kind": "判定モデルには decision モデルかチャットモデルを指定してください（{{kind}} モデルは使えません）",
     "org_routing_policy_disabled": "このサイトでは組織のルーティングポリシーが有効になっていません",
     "supply_pause_rules_invalid": "一時停止ルールが無効です：{{message}}",
     "model_supply_pending_not_found": "この上流モデルは指定したチャネルで保留中ではありません",
@@ -1851,7 +1852,9 @@
       "displayNameHint": "カタログでモデル名の代わりに表示されます。",
       "description": "説明",
       "decisionModel": "判定モデル",
-      "decisionModelHint": "最初のユーザーメッセージを分類する小さく速いチャットモデル。セッションごとに 1 回、呼び出し元に課金されます。",
+      "decisionModelHint": "最初のユーザーメッセージを分類します。ラベルごとの確率を直接返す decision モデルがおすすめです。小さく速いチャットモデルも使えます。セッションごとに 1 回、呼び出し元に課金されます。",
+      "decisionModelGroupDecision": "decision モデル（おすすめ）",
+      "decisionModelGroupChat": "チャットモデル",
       "question": "質問",
       "questionHint": "判定モデルに一文の背景を与えてから、ラベルが答える質問をしてください。",
       "questionHelp": "短くしてください。意味の大半はラベルとその説明が担います。長い指示は書かないでください。出力形式はゲートウェイが固定します。",
@@ -1968,6 +1971,7 @@
       "self_reported": "自己申告のみ"
     },
     "scoringUsed": {
+      "decision": "decision モデルの確率",
       "logprobs": "logprobs",
       "self_reported": "自己申告"
     },

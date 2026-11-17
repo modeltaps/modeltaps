@@ -8,6 +8,10 @@ export const POLICY_CALL_PREFIX = 'policy/';
 // /api/routing_policy/, an organization uses /api/org/:id/routing_policy/ and a user's personal
 // policies /api/user/routing_policy/. Own scopes list their own usable models, bill Try it and call
 // their policies with the policy/ prefix.
+// listModels returns { models, kinds }: the model names, and the kind of each one that is not a
+// chat model (decision, image, embedding, ...).
+const EMPTY_MODEL_LIST = { models: [], kinds: {} };
+
 export function createRoutingPolicyApi(
   base,
   { listModels, samples = true, billedTry = false, billedTo = 'organization', callPrefix = '', readOnly = false } = {}
@@ -38,7 +42,7 @@ export function createRoutingPolicyApi(
     // 探测一个决策模型在当前渠道上能否返回 logprobs；data.supported 为 null 时探测本身失败（data.error）。
     probe: async (decisionModel) => (await API.post(`${base}probe`, { decision_model: decisionModel })).data,
     // 决策 / 目标 / 兜底的下拉建议。
-    listModels: listModels || (async () => []),
+    listModels: listModels || (async () => EMPTY_MODEL_LIST),
     // The platform policies this scope's keys can call (own scopes only).
     listManaged: async () => (await API.get(`${base}managed`)).data
   };
@@ -51,19 +55,28 @@ export function policyCallName(api, policy) {
 
 async function listScopedModels(base) {
   const res = await API.get(`${base}models`);
-  const { success, data } = res.data || {};
-  return success && Array.isArray(data) ? data : [];
+  const { success, data, kinds } = res.data || {};
+  if (!success || !Array.isArray(data)) return EMPTY_MODEL_LIST;
+  return { models: data, kinds: kinds || {} };
 }
 
 // 管理员目录：全部主名模型（去掉别名行与策略行），供决策 / 目标 / 兜底的下拉建议。
 export async function listCatalogModelNames() {
   const res = await API.get('/api/model_info/catalog');
   const { success, data } = res.data || {};
-  if (!success || !Array.isArray(data)) return [];
-  return data
-    .filter((row) => !row.alias_of && row.kind !== 'routing_policy')
-    .map((row) => row.model)
-    .sort((a, b) => a.localeCompare(b));
+  if (!success || !Array.isArray(data)) return EMPTY_MODEL_LIST;
+  const rows = data.filter((row) => !row.alias_of && row.kind !== 'routing_policy').sort((a, b) => a.model.localeCompare(b.model));
+  const kinds = {};
+  for (const row of rows) if (row.model_kind) kinds[row.model] = row.model_kind;
+  return { models: rows.map((row) => row.model), kinds };
+}
+
+// modelPickerOptions splits a model list for the pickers: targets and the fallback take chat
+// models; the decision model takes decision models (recommended, listed first) or chat models.
+export function modelPickerOptions({ models = [], kinds = {} } = {}) {
+  const chat = models.filter((m) => !kinds[m]);
+  const decision = models.filter((m) => kinds[m] === 'decision');
+  return { targets: chat, classifiers: { decision, chat } };
 }
 
 export const platformRoutingPolicyApi = createRoutingPolicyApi('/api/routing_policy/', { listModels: listCatalogModelNames });

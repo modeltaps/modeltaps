@@ -60,8 +60,8 @@ func TestGetRoutingPolicyStats(t *testing.T) {
 		// 一条决策失败走兜底，没有标签
 		routedLog(now-70, "big-model", 500, 50, 6000, with(map[string]any{"routing_target": "big-model", "routing_reason": "decision_error", "routing_decision_ms": 3000})),
 		// 决策调用两条
-		routedLog(now-100, "decider", 20, 8, 28, map[string]any{"routing_policy": "auto/t", "routing_decision": true}),
-		routedLog(now-80, "decider", 20, 8, 28, map[string]any{"routing_policy": "auto/t", "routing_decision": true}),
+		routedLog(now-100, "router-llm", 20, 8, 28, map[string]any{"routing_policy": "auto/t", "routing_decision": true}),
+		routedLog(now-80, "router-llm", 20, 8, 28, map[string]any{"routing_policy": "auto/t", "routing_decision": true}),
 		// 别的策略与 30 天外的不算
 		routedLog(now-60, "cheap-model", 1, 1, 1, map[string]any{"routing_policy": "auto/other", "routing_label": "x", "routing_target": "cheap-model", "routing_reason": "classified"}),
 		routedLog(now-40*24*3600, "cheap-model", 1, 1, 1, with(map[string]any{"routing_label": "small", "routing_target": "cheap-model", "routing_reason": "classified"})),
@@ -125,7 +125,7 @@ func TestGetRoutingPolicyLogSamples(t *testing.T) {
 	l2 := routedLog(now-50, "cheap-model", 1, 1, 1, meta)
 	l2.RequestId = "r2"
 	l3 := routedLog(now-10, "cheap-model", 1, 1, 1, meta) // 无明细
-	d := routedLog(now-5, "decider", 1, 1, 1, map[string]any{"routing_policy": "auto/t", "routing_decision": true})
+	d := routedLog(now-5, "router-llm", 1, 1, 1, map[string]any{"routing_policy": "auto/t", "routing_decision": true})
 	if err := db.Create(&[]*Log{l1, l2, l3, d}).Error; err != nil {
 		t.Fatalf("写日志失败: %v", err)
 	}

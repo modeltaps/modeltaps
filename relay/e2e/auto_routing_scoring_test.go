@@ -78,7 +78,7 @@ func TestAutoRoutingLogprobsScoring(t *testing.T) {
 	if first["label"] != "small" || first["probability"] != 0.8947 {
 		t.Fatalf("最高概率标签不对: %v", first)
 	}
-	// 决策调用按 decider 价 31 token。
+	// 决策调用按 router-llm 价 31 token。
 	if spent := quotaBefore - h.UserQuota(t); spent != 150+31 {
 		t.Fatalf("应扣 150 + 31，实际 %d", spent)
 	}

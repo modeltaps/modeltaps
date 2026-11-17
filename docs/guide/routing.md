@@ -38,7 +38,7 @@ The response `model` field is the model that actually answered (unless the site 
 X-Modeltaps-Route: policy=auto/coder; label=additive; model=claude-haiku-5-5; confidence=0.90; scoring=logprobs; reason=classified
 ```
 
-`confidence` and `scoring` appear when the decision model picked a label. `scoring` says how the confidence was measured: `logprobs` (the label's probability) or `self_reported` (see [Scoring](#scoring)).
+`confidence` and `scoring` appear when the decision model picked a label. `scoring` says how the confidence was measured: `decision` (the probability a decision model gave the label), `logprobs` (the label's probability) or `self_reported` (see [Scoring](#scoring)).
 
 | Reason | Meaning |
 | --- | --- |
@@ -89,9 +89,9 @@ Coding agents add their own context to the conversation: Claude Code puts `<syst
 Every user creates their own policies under **Routing policies → Auto routing** in the workbench sidebar (with an organization selected, owners and admins manage the organization's policies there). Site administrators publish managed policies under **Platform admin → Gateway → Auto routing**. A policy consists of:
 
 - **Model name** — what clients call, for example `coder`: `policy/coder` for an own policy, `coder` for a managed one. Letters, digits and `. _ / -` only; it must not start with `policy/` or collide with an existing model. Once created it shows up in `/v1/models` and can be added to token and organization allow lists like any model. Allow lists are checked against the policy name; the target models do not have to be in the caller's allow list, so you can keep expensive or hidden models reachable only through a policy.
-- **Decision model** — a small, fast chat model that classifies the first message. Any chat model the gateway serves will do; pick one that follows instructions well. It must not itself be a policy.
+- **Decision model** — the model that classifies the first message. The picker lists [decision models](./decisions.md) first, and they are the recommended choice: the gateway asks one multiple-choice question on `/v1/decisions` (your question, with each label and its description as an option) and the model answers with a probability for every label. A small, fast chat model that follows instructions well also works. Image, embedding, speech and other models are refused, and it must not itself be a policy.
 - **Question and routes** — a one-sentence question and two to sixteen labels, each with a short description and a target model. Describe the request, not the model, and keep labels distinct: overlapping labels split the probability and push requests to the fallback. Three templates (coding change size, support triage, reasoning depth) give a starting point.
-- **Scoring** — how the confidence is measured; see [Scoring](#scoring). Auto is the default.
+- **Scoring** — how a chat model's confidence is measured; see [Scoring](#scoring). Auto is the default. A decision model always gives probabilities, so the setting is hidden for it.
 - **Fallback model and threshold** — the fallback answers whenever the decision cannot be trusted. Put your safest model there. The threshold (0 to 1, 0.5 is a good start) is compared with the confidence of the chosen label; raising it sends more borderline requests to the fallback. With logprobs scoring the confidence is a probability; self-reported confidence is only a ranking.
 - **Advanced** — how long a session stays pinned (0 classifies every request), how many characters of the first message are sent to the decision model, and the decision timeout.
 
@@ -99,7 +99,7 @@ The **Try it** tab runs only the decision step on a pasted first message, option
 
 ### Scoring
 
-The decision model can report its confidence in two ways:
+A decision model needs no scoring setting: its answer gives every label a probability, and the threshold is compared with the chosen label's probability. A chat model can report its confidence in two ways:
 
 - **Logprobs** — the labels are presented as lettered options and the model answers with one letter. The gateway reads the model's output probability for each letter, so every label gets a real probability and the threshold means what it says. This needs a non-reasoning model on a channel that returns logprobs: OpenAI-compatible APIs such as GPT-4.1, DeepSeek in non-thinking mode, or a self-hosted vLLM server. Claude, reasoning models and most aggregator gateways do not return logprobs.
 - **Self-reported** — the model answers with a label and a confidence number it chooses itself. It works with any chat model, but the number is not calibrated.

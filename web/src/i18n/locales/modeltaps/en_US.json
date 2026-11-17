@@ -1827,6 +1827,7 @@
     "routing_policy_scoring_invalid": "Scoring must be auto, logprobs or self-reported",
     "routing_policy_model_unavailable": "{{field}} is not available to this organization ({{model}})",
     "routing_policy_count_exceeded": "This organization already has the maximum of {{max}} routing policies",
+    "routing_policy_decision_kind": "Decision model must be a decision model or a chat model, not a {{kind}} model",
     "org_routing_policy_disabled": "Organization routing policies are not enabled on this site",
     "supply_pause_rules_invalid": "The pause rules are not valid: {{message}}",
     "model_supply_pending_not_found": "This upstream model is not waiting on those channels.",
@@ -1936,7 +1937,9 @@
       "displayNameHint": "Shown in the catalog instead of the model name.",
       "description": "Description",
       "decisionModel": "Decision model",
-      "decisionModelHint": "A small, fast chat model that classifies the first user message. Charged to the caller once per session.",
+      "decisionModelHint": "Classifies the first user message. A decision model is recommended: it answers with a probability for every label. A small, fast chat model also works. Charged to the caller once per session.",
+      "decisionModelGroupDecision": "Decision models (recommended)",
+      "decisionModelGroupChat": "Chat models",
       "question": "Question",
       "questionHint": "Give the decision model a sentence of context, then ask the question the labels answer.",
       "questionHelp": "Keep it short: the labels and their descriptions carry most of the meaning. Do not put long instructions here; the output format is fixed by the gateway.",
@@ -2053,6 +2056,7 @@
       "self_reported": "Self-reported only"
     },
     "scoringUsed": {
+      "decision": "Decision model probabilities",
       "logprobs": "Logprobs",
       "self_reported": "Self-reported"
     },

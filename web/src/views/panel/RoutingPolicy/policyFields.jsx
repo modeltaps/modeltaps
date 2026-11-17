@@ -29,7 +29,7 @@ export function missingFields(p) {
   return out;
 }
 
-export function ModelField({ id, label, hint, value, onChange, options }) {
+export function ModelField({ id, label, hint, value, onChange, options = [], groups }) {
   const { t } = useTranslation();
   return (
     <Field label={label} htmlFor={id} hint={hint}>
@@ -38,6 +38,7 @@ export function ModelField({ id, label, hint, value, onChange, options }) {
         value={value || ''}
         onChange={onChange}
         options={options}
+        groups={groups}
         placeholder={t('routingPolicy.form.modelPlaceholder')}
         createLabel={(input) => t('routingPolicy.form.useTyped', { value: input })}
       />
@@ -51,8 +52,47 @@ ModelField.propTypes = {
   hint: PropTypes.node,
   value: PropTypes.string,
   onChange: PropTypes.func.isRequired,
-  options: PropTypes.array.isRequired
+  options: PropTypes.array,
+  groups: PropTypes.array
 };
+
+// classifierGroups: the decision model picker's suggestions, decision models first.
+export function useClassifierGroups(classifiers) {
+  const { t } = useTranslation();
+  return [
+    { label: t('routingPolicy.form.decisionModelGroupDecision'), options: classifiers?.decision || [] },
+    { label: t('routingPolicy.form.decisionModelGroupChat'), options: classifiers?.chat || [] }
+  ];
+}
+
+// DecisionModelField is the decision model picker: decision models (recommended) above chat models.
+export function DecisionModelField({ id, value, onChange, classifiers }) {
+  const { t } = useTranslation();
+  const groups = useClassifierGroups(classifiers);
+  return (
+    <ModelField
+      id={id}
+      label={t('routingPolicy.form.decisionModel')}
+      hint={t('routingPolicy.form.decisionModelHint')}
+      value={value}
+      onChange={onChange}
+      groups={groups}
+    />
+  );
+}
+
+DecisionModelField.propTypes = {
+  id: PropTypes.string.isRequired,
+  value: PropTypes.string,
+  onChange: PropTypes.func.isRequired,
+  classifiers: PropTypes.shape({ decision: PropTypes.array, chat: PropTypes.array })
+};
+
+// isDecisionClassifier: the picked decision model is a decision model, asked on /v1/decisions
+// (scoring does not apply to it).
+export function isDecisionClassifier(classifiers, name) {
+  return Boolean(name) && (classifiers?.decision || []).includes(name);
+}
 
 export function NumberField({ id, label, hint, help, value, onChange, min, max, step }) {
   return (

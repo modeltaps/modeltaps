@@ -9,7 +9,16 @@ import { Field, InfoRow, InfoRows, Section } from '@/components/objects';
 import StatsPanel from './StatsPanel';
 import TryItPanel from './TryItPanel';
 import { normalizePolicy } from './routingPolicyApi';
-import { ModelField, NumberField, QuestionField, RoutesField, ScoringField, missingFields } from './policyFields';
+import {
+  DecisionModelField,
+  ModelField,
+  NumberField,
+  QuestionField,
+  RoutesField,
+  ScoringField,
+  isDecisionClassifier,
+  missingFields
+} from './policyFields';
 
 // Tabs of the routing policy panel (see components/objects/ObjectPanel). Overview and Try it
 // are read-only; Routes and Settings each save on their own. A save sends the whole policy with
@@ -45,7 +54,11 @@ function OverviewBody({ object: policy, ctx }) {
             {policy.fallback_model}
           </InfoRow>
           <InfoRow label={t('routingPolicy.form.threshold')}>{pct(policy.threshold)}</InfoRow>
-          <InfoRow label={t('routingPolicy.form.scoring')}>{t(`routingPolicy.scoring.${policy.scoring || 'auto'}`)}</InfoRow>
+          <InfoRow label={t('routingPolicy.form.scoring')}>
+            {isDecisionClassifier(ctx.classifiers, policy.decision_model)
+              ? t('routingPolicy.scoringUsed.decision')
+              : t(`routingPolicy.scoring.${policy.scoring || 'auto'}`)}
+          </InfoRow>
         </InfoRows>
       </Section>
       {!ctx.readOnly && (
@@ -64,15 +77,15 @@ function RoutesBody({ draft, setDraft, ctx }) {
   const set = (key) => (value) => setDraft((d) => ({ ...d, [key]: value }));
   return (
     <>
-      <ModelField
+      <DecisionModelField
         id="rp-decision_model"
-        label={t('routingPolicy.form.decisionModel')}
-        hint={t('routingPolicy.form.decisionModelHint')}
         value={draft.decision_model}
         onChange={set('decision_model')}
-        options={ctx.modelOptions}
+        classifiers={ctx.classifiers}
       />
-      <ScoringField value={draft.scoring} onChange={set('scoring')} decisionModel={(draft.decision_model || '').trim()} api={ctx.api} />
+      {!isDecisionClassifier(ctx.classifiers, (draft.decision_model || '').trim()) && (
+        <ScoringField value={draft.scoring} onChange={set('scoring')} decisionModel={(draft.decision_model || '').trim()} api={ctx.api} />
+      )}
       <QuestionField value={draft.question} onChange={set('question')} />
       <RoutesField form={draft} setForm={setDraft} modelOptions={ctx.modelOptions} />
       <ModelField
@@ -120,7 +133,7 @@ const routesTab = {
 };
 
 function TryBody({ object: policy, ctx }) {
-  return <TryItPanel policy={normalizePolicy(policy)} policyId={policy.id} modelOptions={ctx.modelOptions} api={ctx.api} />;
+  return <TryItPanel policy={normalizePolicy(policy)} policyId={policy.id} classifiers={ctx.classifiers} api={ctx.api} />;
 }
 
 const tryTab = { key: 'try', Body: TryBody };

@@ -1743,6 +1743,7 @@
     "routing_policy_scoring_invalid": "打分方式只能是自动、logprobs 或自报",
     "routing_policy_model_unavailable": "{{field}} 对本组织不可用（{{model}}）",
     "routing_policy_count_exceeded": "本组织的路由策略已达上限 {{max}} 条",
+    "routing_policy_decision_kind": "决策模型只能是决策模型或对话模型，不能是 {{kind}} 模型",
     "org_routing_policy_disabled": "本站未开启组织路由策略",
     "supply_pause_rules_invalid": "暂停规则无效：{{message}}",
     "model_supply_pending_not_found": "这个上游模型不在这些渠道的待处理列表里",
@@ -1857,7 +1858,9 @@
       "displayNameHint": "目录里代替模型名显示。",
       "description": "描述",
       "decisionModel": "决策模型",
-      "decisionModelHint": "一个小而快的对话模型，负责给首条用户消息分类。每个会话向调用方计费一次。",
+      "decisionModelHint": "负责给首条用户消息分类。推荐用决策模型，它直接给出每个标签的概率；也可以用小而快的对话模型。每个会话向调用方计费一次。",
+      "decisionModelGroupDecision": "决策模型（推荐）",
+      "decisionModelGroupChat": "对话模型",
       "question": "问题",
       "questionHint": "先给决策模型一句背景，再问标签要回答的那个问题。",
       "questionHelp": "写短一点：标签和描述承担大部分含义。不要在这里写长指令，输出格式由网关固定。",
@@ -1974,6 +1977,7 @@
       "self_reported": "仅自报"
     },
     "scoringUsed": {
+      "decision": "决策模型概率",
       "logprobs": "logprobs",
       "self_reported": "自报"
     },

@@ -25,7 +25,7 @@ func setupOrgRoutingTestDB(t *testing.T) {
 	modelInfoCache.Unlock()
 	prevRule, prevEnabled, prevMax := ChannelGroup.Rule, config.UserRoutingPolicyEnabled, config.OrganizationRoutingPolicyMaxCount
 	ChannelGroup.Rule = map[string]map[string][][]int{
-		"default": {"cheap-model": {{1}}, "big-model": {{1}}, "decider": {{1}}, "secret-model": {{1}}},
+		"default": {"cheap-model": {{1}}, "big-model": {{1}}, "router-llm": {{1}}, "secret-model": {{1}}},
 	}
 	config.UserRoutingPolicyEnabled = true
 	t.Cleanup(func() {
@@ -56,7 +56,7 @@ func orgPolicy(organizationId int, name string) *RoutingPolicy {
 		OrganizationId: organizationId,
 		Name:           name,
 		Enabled:        true,
-		DecisionModel:  "decider",
+		DecisionModel:  "router-llm",
 		Routes: []RoutingRoute{
 			{Label: "small", TargetModel: "cheap-model"},
 			{Label: "large", TargetModel: "big-model"},
@@ -260,9 +260,9 @@ func TestRoutingPolicyStatsByPolicyId(t *testing.T) {
 		routedLog(now-8, "cheap-model", 10, 10, 30, meta(2, nil)),
 		routedLog(now-7, "cheap-model", 10, 10, 30, meta(2, nil)),
 		routedLog(now-6, "cheap-model", 10, 10, 30, meta(2, nil)),
-		routedLog(now-5, "decider", 1, 1, 3, map[string]any{"routing_policy": "auto/t", "routing_policy_id": 2, "routing_decision": true}),
+		routedLog(now-5, "router-llm", 1, 1, 3, map[string]any{"routing_policy": "auto/t", "routing_policy_id": 2, "routing_decision": true}),
 		// "Try it" in the organization console is billed but is not traffic.
-		routedLog(now-4, "decider", 1, 1, 3, map[string]any{"routing_policy": "auto/t", "routing_policy_id": 2, "routing_decision": true, "routing_try": true}),
+		routedLog(now-4, "router-llm", 1, 1, 3, map[string]any{"routing_policy": "auto/t", "routing_policy_id": 2, "routing_decision": true, "routing_try": true}),
 	}
 	if err := db.Create(&logs).Error; err != nil {
 		t.Fatal(err)
@@ -340,7 +340,7 @@ func TestOrganizationRoutingModels(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"big-model", "cheap-model", "decider"}
+	want := []string{"big-model", "cheap-model", "router-llm"}
 	if len(got) != len(want) {
 		t.Fatalf("want %v, got %v", want, got)
 	}

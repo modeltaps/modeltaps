@@ -4,6 +4,7 @@ vi.mock('utils/api', () => ({ API: { get: vi.fn(), post: vi.fn(), put: vi.fn(), 
 
 import { API } from 'utils/api';
 import {
+  modelPickerOptions,
   organizationReviewApi,
   orgRoutingPolicyApi,
   personalReviewApi,
@@ -17,7 +18,7 @@ describe('routing policy api scopes', () => {
     API.get.mockResolvedValue({ data: { success: true, data: ['decider'] } });
     await personalRoutingPolicyApi.list();
     expect(API.get).toHaveBeenCalledWith('/api/user/routing_policy/', undefined);
-    expect(await personalRoutingPolicyApi.listModels()).toEqual(['decider']);
+    expect(await personalRoutingPolicyApi.listModels()).toEqual({ models: ['decider'], kinds: {} });
     expect(API.get).toHaveBeenCalledWith('/api/user/routing_policy/models');
     await personalRoutingPolicyApi.listManaged();
     expect(API.get).toHaveBeenCalledWith('/api/user/routing_policy/managed');
@@ -62,7 +63,7 @@ describe('routing policy api scopes', () => {
       text: 'hi',
       decision_models: ['decider']
     });
-    expect(await api.listModels()).toEqual(['decider', 'cheap-model']);
+    expect(await api.listModels()).toEqual({ models: ['decider', 'cheap-model'], kinds: {} });
     expect(API.get).toHaveBeenCalledWith('/api/org/5/routing_policy/models');
   });
 
@@ -79,5 +80,20 @@ describe('routing policy api scopes', () => {
     expect(organizationReviewApi.review).toBe(true);
     expect(organizationReviewApi.getSamples).toBeNull();
     expect(platformRoutingPolicyApi.review).toBe(false);
+  });
+
+  it("reads the kinds of a scope's models and splits them for the pickers", async () => {
+    API.get.mockResolvedValue({
+      data: {
+        success: true,
+        data: ['cheap-model', 'gpt-image-1', 'router-decision-1'],
+        kinds: { 'gpt-image-1': 'image', 'router-decision-1': 'decision' }
+      }
+    });
+    const list = await orgRoutingPolicyApi(5).listModels();
+    expect(modelPickerOptions(list)).toEqual({
+      targets: ['cheap-model'],
+      classifiers: { decision: ['router-decision-1'], chat: ['cheap-model'] }
+    });
   });
 });

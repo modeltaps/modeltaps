@@ -41,6 +41,10 @@ const (
 	RoutingScoringLogprobs = "logprobs"
 	// RoutingScoringSelfReported 让模型用 JSON 回答标签和它自报的置信度。
 	RoutingScoringSelfReported = "self_reported"
+	// RoutingScoringDecision is how a decision made by a decision model was scored: the label
+	// probabilities its /v1/decisions answer gives. It is a result, not a policy setting; a policy
+	// whose decision model is a decision model ignores Scoring.
+	RoutingScoringDecision = "decision"
 )
 
 // RoutingRoute 策略里的一条路由：决策模型选中 Label 时请求转发给 TargetModel。
@@ -173,6 +177,10 @@ func routingPolicyModelIsPolicy(field, name string) error {
 	return common.NewAPIError(common.APICodeRoutingPolicyModelIsPolicy, field+" must be a model, not a routing policy: "+name, map[string]any{"field": field, "model": name})
 }
 
+func routingPolicyDecisionKind(name, kind string) error {
+	return common.NewAPIError(common.APICodeRoutingPolicyDecisionKind, "decision_model must be a decision model or a chat model, not a model of kind "+kind+": "+name, map[string]any{"field": "decision_model", "model": name, "kind": kind})
+}
+
 func routingPolicyLabelInvalid(index int) error {
 	return common.NewAPIError(common.APICodeRoutingPolicyLabelInvalid, "route label is required and at most 64 characters", map[string]any{"index": index})
 }
@@ -239,6 +247,9 @@ func (p *RoutingPolicy) Validate(isPolicy func(name string) bool) error {
 	}
 	if err := notPolicy("decision_model", p.DecisionModel); err != nil {
 		return err
+	}
+	if kind := ModelKindOf(p.DecisionModel); !IsRoutingClassifierKind(kind) {
+		return routingPolicyDecisionKind(p.DecisionModel, kind)
 	}
 	if err := notPolicy("fallback_model", p.FallbackModel); err != nil {
 		return err

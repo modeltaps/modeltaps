@@ -128,7 +128,7 @@ func setupRoutingResolveTest(t *testing.T, policy *model.RoutingPolicy) (calls *
 
 func testPolicy(name string, pinTTL int) *model.RoutingPolicy {
 	return &model.RoutingPolicy{
-		Name: name, Enabled: true, DecisionModel: "decider",
+		Name: name, Enabled: true, DecisionModel: "router-llm",
 		Routes: []model.RoutingRoute{
 			{Label: "small", TargetModel: "cheap-model"},
 			{Label: "large", TargetModel: "big-model"},
@@ -415,7 +415,7 @@ func TestTryRoutingPolicyHandler(t *testing.T) {
 	calls, setResult := setupRoutingResolveTest(t, testPolicy("auto/saved", 3600))
 	setResult("large", 0.8, nil)
 
-	body := `{"policy":{"name":"","decision_model":"decider","routes":[{"label":"small","target_model":"cheap-model"},{"label":"large","target_model":"big-model"}],"fallback_model":"fallback-model","threshold":0.5,"pin_ttl_seconds":3600},"text":"<system-reminder>x</system-reminder>rewrite everything","decision_models":["d1","d2"]}`
+	body := `{"policy":{"name":"","decision_model":"router-llm","routes":[{"label":"small","target_model":"cheap-model"},{"label":"large","target_model":"big-model"}],"fallback_model":"fallback-model","threshold":0.5,"pin_ttl_seconds":3600},"text":"<system-reminder>x</system-reminder>rewrite everything","decision_models":["d1","d2"]}`
 	rec := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(rec)
 	c.Request = httptest.NewRequest("POST", "/api/routing_policy/try", strings.NewReader(body))

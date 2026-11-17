@@ -389,6 +389,9 @@ func classifyWithDecisionModelOpts(c *gin.Context, policy *model.RoutingPolicy, 
 	provider.GetRequester().Context = ctx
 	call := &decisionCall{ctx: ctx, decisionCtx: decisionCtx, provider: provider, upstreamModel: upstreamModel,
 		decisionModel: policy.DecisionModel, timeout: timeout, bill: bill}
+	if isDecisionClassifier(policy.DecisionModel) {
+		return classifyWithDecisionsAPI(policy, call, text)
+	}
 
 	scoring := policy.Scoring
 	if scoring == "" {
@@ -479,40 +482,46 @@ func (d *decisionCall) usesResponses() bool {
 	return ok
 }
 
-// send 发一次请求，用量累加进 total。决策调用按决策模型的价格单独计一笔（站点开关可关）。
-// 预扣失败（额度不足 / 预算超限）时不发起决策，直接兜底：用户的主请求随后也会被同一道闸拦下。
+// send 发一次对话请求，用量累加进 total。
 func (d *decisionCall) send(request *types.ChatCompletionRequest, total *types.Usage) (*types.ChatCompletionChoice, error) {
+	var choice *types.ChatCompletionChoice
+	err := d.do(total, func() error {
+		var err error
+		choice, err = sendDecisionRequest(d.provider, d.upstreamModel, request)
+		return err
+	})
+	return choice, err
+}
+
+// do 执行一次对决策模型的调用，用量累加进 total。决策调用按决策模型的价格单独计一笔（站点开关可关）。
+// 预扣失败（额度不足 / 预算超限）时不发起决策，直接兜底：用户的主请求随后也会被同一道闸拦下。
+func (d *decisionCall) do(total *types.Usage, call func() error) error {
 	usage := &types.Usage{}
 	d.provider.SetUsage(usage)
 	var quota *relay_util.Quota
 	if d.bill {
 		quota = relay_util.NewQuota(d.decisionCtx, d.decisionModel, 0)
 		if errWithCode := quota.PreQuotaConsumption(); errWithCode != nil {
-			return nil, fmt.Errorf("decision model %s: %s", d.decisionModel, errWithCode.Message)
+			return fmt.Errorf("decision model %s: %s", d.decisionModel, errWithCode.Message)
 		}
 	}
 
-	type outcome struct {
-		choice *types.ChatCompletionChoice
-		err    error
-	}
-	done := make(chan outcome, 1)
+	done := make(chan error, 1)
 	go func() {
-		choice, err := sendDecisionRequest(d.provider, d.upstreamModel, request)
-		done <- outcome{choice: choice, err: err}
+		done <- call()
 	}()
 	select {
 	case <-d.ctx.Done():
 		if quota != nil {
 			quota.Undo(d.decisionCtx)
 		}
-		return nil, fmt.Errorf("decision model %s: timed out after %s", d.decisionModel, d.timeout)
-	case out := <-done:
-		if out.err != nil {
+		return fmt.Errorf("decision model %s: timed out after %s", d.decisionModel, d.timeout)
+	case err := <-done:
+		if err != nil {
 			if quota != nil {
 				quota.Undo(d.decisionCtx)
 			}
-			return nil, out.err
+			return err
 		}
 		if quota != nil {
 			// 答案解析失败也要计费：上游已经按用量收了钱。
@@ -521,13 +530,17 @@ func (d *decisionCall) send(request *types.ChatCompletionRequest, total *types.U
 		total.PromptTokens += usage.PromptTokens
 		total.CompletionTokens += usage.CompletionTokens
 		total.TotalTokens += usage.TotalTokens
-		return out.choice, nil
+		return nil
 	}
 }
 
 // newDecisionContext 复制决策调用需要的身份与分组信息，其余（请求体、令牌白名单）不带。
 func newDecisionContext(c *gin.Context, ctx context.Context, policy *model.RoutingPolicy) (*gin.Context, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "/v1/chat/completions", nil)
+	path := "/v1/chat/completions"
+	if isDecisionClassifier(policy.DecisionModel) {
+		path = "/v1/decisions"
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, path, nil)
 	if err != nil {
 		return nil, err
 	}

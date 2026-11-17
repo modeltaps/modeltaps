@@ -108,6 +108,8 @@ func TestRoutingPolicyValidate(t *testing.T) {
 		{"input chars too large", func(p *RoutingPolicy) { p.MaxInputChars = RoutingPolicyMaxInputChars + 1 }, common.APICodeRoutingPolicyLimitInvalid},
 		{"bad name", func(p *RoutingPolicy) { p.Name = "auto coder" }, common.APICodeRoutingPolicyNameInvalid},
 		{"unknown scoring", func(p *RoutingPolicy) { p.Scoring = "vibes" }, common.APICodeRoutingPolicyScoringInvalid},
+		{"decision is an image model", func(p *RoutingPolicy) { p.DecisionModel = "gpt-image-1" }, common.APICodeRoutingPolicyDecisionKind},
+		{"decision is an embedding model", func(p *RoutingPolicy) { p.DecisionModel = "text-embedding-3-small" }, common.APICodeRoutingPolicyDecisionKind},
 	}
 	for _, tc := range cases {
 		p := samplePolicy()
@@ -135,6 +137,10 @@ func TestRoutingPolicyValidate(t *testing.T) {
 	}
 	if p.PinTTLSeconds = 0; p.Validate(isPolicy) != nil {
 		t.Fatalf("pin_ttl_seconds=0（每次分类）应合法")
+	}
+	// A decision model classifies as well as a chat model does.
+	if p.DecisionModel = "gemini-decision-1"; p.Validate(isPolicy) != nil {
+		t.Fatalf("a decision model should be accepted as decision_model")
 	}
 }
 

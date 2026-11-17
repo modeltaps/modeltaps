@@ -15,6 +15,8 @@ import { POLICY_TABS, REVIEW_TAB_KEYS } from './policyTabs';
 // Overview (summary and statistics), Routes, Try it and Settings. `api` is the scoped client; a
 // review client (other scopes' policies in the platform console) only shows Overview and the
 // enable switch; a readOnly client (organization members) only shows Overview, without statistics. `listed` is the policy's row in the list (organization name, name conflicts).
+const EMPTY_CLASSIFIERS = { decision: [], chat: [] };
+
 export default function RoutingPolicyPanel({
   api,
   listed = null,
@@ -25,7 +27,8 @@ export default function RoutingPolicyPanel({
   onChanged,
   onToggleEnabled,
   onDelete,
-  modelOptions
+  modelOptions,
+  classifiers = EMPTY_CLASSIFIERS
 }) {
   const { t } = useTranslation();
   const [policy, setPolicy] = useState(null);
@@ -126,7 +129,7 @@ export default function RoutingPolicyPanel({
         await load();
         onChanged();
       }}
-      ctx={{ t, modelOptions, api, readOnly, overridesPlatform: Boolean(listed?.overrides_platform) }}
+      ctx={{ t, modelOptions, classifiers, api, readOnly, overridesPlatform: Boolean(listed?.overrides_platform) }}
       tabsLabel={t('routingPolicy.panel.tabs')}
     />
   );
@@ -142,5 +145,6 @@ RoutingPolicyPanel.propTypes = {
   onChanged: PropTypes.func.isRequired,
   onToggleEnabled: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
-  modelOptions: PropTypes.array.isRequired
+  modelOptions: PropTypes.array.isRequired,
+  classifiers: PropTypes.shape({ decision: PropTypes.array, chat: PropTypes.array })
 };

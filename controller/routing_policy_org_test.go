@@ -34,7 +34,7 @@ func setupOrgRoutingControllerTest(t *testing.T) *gin.Engine {
 	}
 	prevDB, prevRule, prevEnabled := model.DB, model.ChannelGroup.Rule, config.UserRoutingPolicyEnabled
 	model.DB = testDB
-	model.ChannelGroup.Rule = map[string]map[string][][]int{"default": {"decider": {{1}}, "cheap-model": {{1}}, "big-model": {{1}}}}
+	model.ChannelGroup.Rule = map[string]map[string][][]int{"default": {"router-llm": {{1}}, "cheap-model": {{1}}, "big-model": {{1}}, "router-decision-1": {{1}}, "gpt-image-1": {{1}}}}
 	config.UserRoutingPolicyEnabled = true
 	model.ResetRoutingPolicyCache()
 	t.Cleanup(func() {
@@ -60,6 +60,7 @@ func setupOrgRoutingControllerTest(t *testing.T) *gin.Engine {
 		c.Next()
 	}, middleware.UserRoutingPolicyEnabled())
 	group.GET("/", GetOrgRoutingPolicies)
+	group.GET("/models", GetOrgRoutingModels)
 	group.POST("/", CreateOrgRoutingPolicy)
 	group.GET("/:policy_id", GetOrgRoutingPolicy)
 	group.PUT("/:policy_id", UpdateOrgRoutingPolicy)
@@ -85,7 +86,7 @@ func orgRoutingCall(t *testing.T, r *gin.Engine, method, path string, body any) 
 
 func orgRoutingDraft(name string) map[string]any {
 	return map[string]any{
-		"name": name, "decision_model": "decider", "fallback_model": "big-model", "threshold": 0.5,
+		"name": name, "decision_model": "router-llm", "fallback_model": "big-model", "threshold": 0.5,
 		// A client-supplied organization_id is ignored: the path decides the owner.
 		"organization_id": 2,
 		"routes": []map[string]any{
@@ -158,5 +159,29 @@ func TestOrgRoutingPolicyEndpoints(t *testing.T) {
 	config.UserRoutingPolicyEnabled = false
 	if code, resp := orgRoutingCall(t, r, http.MethodGet, "/api/org/1/routing_policy/", nil); code != http.StatusForbidden || resp["code"] != "org_routing_policy_disabled" {
 		t.Fatalf("option off: want 403 org_routing_policy_disabled, got %d %v", code, resp)
+	}
+}
+
+// The model list tags the models that are not chat models, so the pickers can group decision
+// models first and leave image models out.
+func TestOrgRoutingModelsTagKinds(t *testing.T) {
+	r := setupOrgRoutingControllerTest(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/org/1/routing_policy/models", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	var resp struct {
+		Success bool              `json:"success"`
+		Data    []string          `json:"data"`
+		Kinds   map[string]string `json:"kinds"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil || !resp.Success {
+		t.Fatalf("status %d body %s", w.Code, w.Body.String())
+	}
+	if len(resp.Data) != 5 {
+		t.Fatalf("data = %v", resp.Data)
+	}
+	want := map[string]string{"router-decision-1": "decision", "gpt-image-1": "image"}
+	if len(resp.Kinds) != len(want) || resp.Kinds["router-decision-1"] != "decision" || resp.Kinds["gpt-image-1"] != "image" {
+		t.Fatalf("kinds = %v, want %v", resp.Kinds, want)
 	}
 }

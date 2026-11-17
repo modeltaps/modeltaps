@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Routing policies can classify with a decision model. The decision model picker lists decision
+  models first (recommended) and chat models below them; with a decision model the gateway asks
+  one multiple-choice question on `/v1/decisions` (the policy's question, with each route label
+  and description as an option) and compares the chosen label's probability with the threshold,
+  so the scoring setting is hidden. Image, embedding, speech and other models are refused as a
+  decision model, and the target and fallback pickers suggest chat models only. The model name
+  example for personal and organization policies is now `coder` (called as `policy/coder`).
 - Usage alerts for subscription channels (Codex, Claude Code). When a usage window (5 hours, 7
   days) reaches 50%, 75% or 100%, a "subscription usage" notification names the channel, the
   window, the usage and when it resets; each tier is sent once per window period. The tiers are

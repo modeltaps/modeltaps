@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { NewObjectSheet, Field, ObjectTile } from '@/components/objects';
 import { showError } from 'utils/common';
 import { EMPTY_POLICY, normalizePolicy } from './routingPolicyApi';
-import { ModelField, RoutesField, missingFields } from './policyFields';
+import { DecisionModelField, ModelField, RoutesField, missingFields } from './policyFields';
 
 const LABEL_KEY = {
   name: 'routingPolicy.form.name',
@@ -19,7 +19,7 @@ const LABEL_KEY = {
 // New routing policy: only what a policy cannot work without (model name, decision model,
 // routes, fallback model). Scoring, threshold, pinning and limits start from the defaults and
 // are changed in the policy's panel, which opens after the policy is created.
-export default function NewRoutingPolicySheet({ api, modelOptions, onClose, onCreated }) {
+export default function NewRoutingPolicySheet({ api, modelOptions, classifiers, onClose, onCreated }) {
   const { t } = useTranslation();
   const [form, setForm] = useState(EMPTY_POLICY);
   const [busy, setBusy] = useState(false);
@@ -74,18 +74,16 @@ export default function NewRoutingPolicySheet({ api, modelOptions, onClose, onCr
           id="rp-new-name"
           autoFocus
           className="font-mono text-[13px]"
-          placeholder="auto/coder"
+          placeholder={api.callPrefix ? 'coder' : 'auto/coder'}
           value={form.name}
           onChange={(e) => set('name')(e.target.value)}
         />
       </Field>
-      <ModelField
+      <DecisionModelField
         id="rp-new-decision_model"
-        label={t('routingPolicy.form.decisionModel')}
-        hint={t('routingPolicy.form.decisionModelHint')}
         value={form.decision_model}
         onChange={set('decision_model')}
-        options={modelOptions}
+        classifiers={classifiers}
       />
       <RoutesField form={form} setForm={setForm} modelOptions={modelOptions} />
       <ModelField
@@ -103,6 +101,7 @@ export default function NewRoutingPolicySheet({ api, modelOptions, onClose, onCr
 NewRoutingPolicySheet.propTypes = {
   api: PropTypes.object.isRequired,
   modelOptions: PropTypes.array.isRequired,
+  classifiers: PropTypes.shape({ decision: PropTypes.array, chat: PropTypes.array }),
   onClose: PropTypes.func.isRequired,
   onCreated: PropTypes.func.isRequired
 };

@@ -25,7 +25,7 @@ import RoutingPolicyPanel from './RoutingPolicyPanel';
 import NewRoutingPolicySheet from './NewRoutingPolicySheet';
 import { POLICY_TAB_KEYS } from './policyTabs';
 import PolicyCallName from './PolicyCallName';
-import { organizationReviewApi, personalReviewApi, platformRoutingPolicyApi, policyCallName } from './routingPolicyApi';
+import { modelPickerOptions, organizationReviewApi, personalReviewApi, platformRoutingPolicyApi, policyCallName } from './routingPolicyApi';
 
 const SCOPE_APIS = { platform: platformRoutingPolicyApi, organization: organizationReviewApi, personal: personalReviewApi };
 const SCOPE_INTROS = { organization: 'routingPolicy.organizationsIntro', personal: 'routingPolicy.personalIntro' };
@@ -68,7 +68,8 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [modelOptions, setModelOptions] = useState([]);
+  const [modelList, setModelList] = useState({ models: [], kinds: {} });
+  const { targets: modelOptions, classifiers } = useMemo(() => modelPickerOptions(modelList), [modelList]);
   const [pendingDelete, setPendingDelete] = useState(null);
   // 近 7 天概览（请求数 / 兜底率），按策略逐个取；策略很少，并行几次请求可以接受。
   const [weekStats, setWeekStats] = useState({});
@@ -111,7 +112,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
     if (!canEdit) return;
     api
       .listModels()
-      .then(setModelOptions)
+      .then(setModelList)
       .catch(() => {});
   }, [api, canEdit]);
 
@@ -465,6 +466,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
           onToggleEnabled={toggleEnabled}
           onDelete={setPendingDelete}
           modelOptions={modelOptions}
+          classifiers={classifiers}
         />
       )}
 
@@ -472,6 +474,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
         <NewRoutingPolicySheet
           api={api}
           modelOptions={modelOptions}
+          classifiers={classifiers}
           onClose={route.close}
           onCreated={(policy) => {
             showSuccess(t('routingPolicy.new.created'));

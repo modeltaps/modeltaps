@@ -18,11 +18,15 @@ import { matchesSearch } from 'utils/textSearch';
 // a non-empty query, calls onSelect(value) instead of onChange, and Enter never submits the
 // surrounding form. allowCreate=false hides the "create" row (e.g. the typed value is already
 // taken); inputClassName adds classes to the input (e.g. room for a leading icon).
+//
+// groups: [{ label, options }] in place of options lists the suggestions under headings, in the
+// given order; a group with no match is left out.
 export function ModelCombobox({
   value,
   onChange,
   onSelect,
-  options = [],
+  options: flatOptions = [],
+  groups,
   placeholder,
   createLabel,
   allowCreate = true,
@@ -50,11 +54,17 @@ export function ModelCombobox({
 
   const q = (value || '').trim();
   const ql = q.toLowerCase();
-  const filtered = options.filter((o) => o && matchesSearch(q, o));
+  const sections = groups || [{ label: null, options: flatOptions }];
+  const options = sections.flatMap((g) => g.options);
   const hasExact = options.some((o) => o && o.toLowerCase() === ql);
   const showCreate = allowCreate && q !== '' && !hasExact;
 
-  const rows = [...(showCreate ? [{ type: 'create', value: q }] : []), ...filtered.map((o) => ({ type: 'option', value: o }))];
+  // Headings are drawn above a group's first row; only option and create rows are selectable.
+  const rows = [...(showCreate ? [{ type: 'create', value: q }] : [])];
+  for (const group of sections) {
+    const matched = group.options.filter((o) => o && matchesSearch(q, o));
+    matched.forEach((o, i) => rows.push({ type: 'option', value: o, heading: i === 0 ? group.label : null }));
+  }
 
   React.useEffect(() => {
     setActive(0);
@@ -122,23 +132,29 @@ export function ModelCombobox({
         className="rounded-lg border border-border bg-card p-1 text-card-foreground shadow-md"
       >
         {rows.map((row, i) => (
-          <button
-            key={row.type + ':' + row.value}
-            type="button"
-            // onMouseDown (not onClick) so the commit fires before the input's
-            // blur closes the dropdown.
-            onMouseDown={(e) => {
-              e.preventDefault();
-              commit(row.value);
-            }}
-            onMouseEnter={() => setActive(i)}
-            className={cn(
-              'flex w-full cursor-pointer select-none items-center rounded-md px-2 py-1.5 text-left text-sm outline-none',
-              i === active && 'bg-muted'
+          <React.Fragment key={row.type + ':' + row.value}>
+            {row.heading && (
+              <div role="presentation" className="px-2 pb-1 pt-2 text-xs text-muted-foreground first:pt-1">
+                {row.heading}
+              </div>
             )}
-          >
-            {row.type === 'create' ? (createLabel ? createLabel(row.value) : `"${row.value}"`) : row.value}
-          </button>
+            <button
+              type="button"
+              // onMouseDown (not onClick) so the commit fires before the input's
+              // blur closes the dropdown.
+              onMouseDown={(e) => {
+                e.preventDefault();
+                commit(row.value);
+              }}
+              onMouseEnter={() => setActive(i)}
+              className={cn(
+                'flex w-full cursor-pointer select-none items-center rounded-md px-2 py-1.5 text-left text-sm outline-none',
+                i === active && 'bg-muted'
+              )}
+            >
+              {row.type === 'create' ? (createLabel ? createLabel(row.value) : `"${row.value}"`) : row.value}
+            </button>
+          </React.Fragment>
         ))}
       </FloatingPanel>
     </div>
@@ -150,6 +166,7 @@ ModelCombobox.propTypes = {
   onChange: PropTypes.func.isRequired,
   onSelect: PropTypes.func,
   options: PropTypes.arrayOf(PropTypes.string),
+  groups: PropTypes.arrayOf(PropTypes.shape({ label: PropTypes.node, options: PropTypes.arrayOf(PropTypes.string).isRequired })),
   placeholder: PropTypes.string,
   createLabel: PropTypes.func,
   allowCreate: PropTypes.bool,
