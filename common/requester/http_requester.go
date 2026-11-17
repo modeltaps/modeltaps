@@ -5,14 +5,17 @@ import (
 	"bytes"
 	"context"
 	"github.com/modeltaps/modeltaps/common"
+	"github.com/modeltaps/modeltaps/common/safefetch"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/types"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,6 +32,35 @@ type HTTPRequester struct {
 	// ResponseHook 在收到上游响应后、错误状态判定前调用（成功与失败响应都触发），
 	// 用于统一采集上游响应头（如 request-id）。为 nil 时跳过。
 	ResponseHook func(*http.Response)
+	// PublicOnly refuses to connect to addresses that are not public (loopback, private,
+	// link-local and other reserved ranges), checked when dialing. Set it when the target comes
+	// from someone who must not reach the gateway's internal network (see GetModelList).
+	PublicOnly bool
+}
+
+// ErrUpstreamNotPublic is the message of the error a PublicOnly requester returns when the
+// upstream address is not public.
+var ErrUpstreamNotPublic = errors.New("the upstream address is not a public address")
+
+// do sends req with the client for the requester's proxy, or a public-only client when
+// PublicOnly is set.
+func (r *HTTPRequester) do(req *http.Request) (*http.Response, *types.OpenAIErrorWithStatusCode) {
+	client := GetHTTPClient(r.proxyAddr)
+	if r.PublicOnly {
+		var err error
+		client, err = newPublicOnlyClient(r.proxyAddr)
+		if err != nil {
+			return nil, common.ErrorWrapper(err, "http_request_failed", http.StatusInternalServerError)
+		}
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		if errors.Is(err, safefetch.ErrForbiddenAddr) {
+			return nil, common.StringErrorWrapper(ErrUpstreamNotPublic.Error(), "upstream_address_not_public", http.StatusForbidden)
+		}
+		return nil, common.ErrorWrapper(err, "http_request_failed", http.StatusInternalServerError)
+	}
+	return resp, nil
 }
 
 // NewHTTPRequester 创建一个新的 HTTPRequester 实例。
@@ -84,9 +116,9 @@ func (r *HTTPRequester) SendRequest(req *http.Request, response any, outputResp 
 		req = req.WithContext(ctx)
 	}
 
-	resp, err := GetHTTPClient(r.proxyAddr).Do(req)
-	if err != nil {
-		return nil, common.ErrorWrapper(err, "http_request_failed", http.StatusInternalServerError)
+	resp, errWithCode := r.do(req)
+	if errWithCode != nil {
+		return nil, errWithCode
 	}
 
 	if r.ResponseHook != nil {
@@ -107,6 +139,7 @@ func (r *HTTPRequester) SendRequest(req *http.Request, response any, outputResp 
 		return resp, nil
 	}
 
+	var err error
 	if outputResp {
 		// 先 ReadAll 拿到完整原始字节，再从字节副本解析：TeeReader+Decoder 只镜像
 		// Decoder 已读取的部分，响应末尾字节（尾随 \n / 空白）可能不进副本，导致回填
@@ -140,9 +173,9 @@ func (r *HTTPRequester) SendRequest(req *http.Request, response any, outputResp 
 // 发送请求 RAW
 func (r *HTTPRequester) SendRequestRaw(req *http.Request) (*http.Response, *types.OpenAIErrorWithStatusCode) {
 	// 发送请求
-	resp, err := GetHTTPClient(r.proxyAddr).Do(req)
-	if err != nil {
-		return nil, common.ErrorWrapper(err, "http_request_failed", http.StatusInternalServerError)
+	resp, errWithCode := r.do(req)
+	if errWithCode != nil {
+		return nil, errWithCode
 	}
 
 	if r.ResponseHook != nil {
@@ -216,6 +249,25 @@ func (r *HTTPRequester) IsFailureStatusCode(resp *http.Response) bool {
 	return resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest
 }
 
+// maxErrorBodyBytes bounds how much of an error response is read.
+const maxErrorBodyBytes = 1 << 20
+
+// maxRawErrorEchoBytes bounds an error body passed on as the message when it is not in a known
+// error format: the body may come from any service the base URL points at.
+const maxRawErrorEchoBytes = 1024
+
+// truncateErrorEcho cuts body to maxRawErrorEchoBytes on a character boundary.
+func truncateErrorEcho(body []byte) string {
+	if len(body) <= maxRawErrorEchoBytes {
+		return string(body)
+	}
+	cut := maxRawErrorEchoBytes
+	for cut > 0 && !utf8.RuneStart(body[cut]) {
+		cut--
+	}
+	return string(body[:cut]) + "...(truncated)"
+}
+
 // 处理错误响应
 func HandleErrorResp(resp *http.Response, toOpenAIError HttpErrorHandler, isPrefix bool) *types.OpenAIErrorWithStatusCode {
 
@@ -232,7 +284,7 @@ func HandleErrorResp(resp *http.Response, toOpenAIError HttpErrorHandler, isPref
 	defer resp.Body.Close()
 
 	if toOpenAIError != nil {
-		bodyBytes, err := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodyBytes))
 		if err == nil {
 			resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 			errorResponse := toOpenAIError(resp)
@@ -253,7 +305,7 @@ func HandleErrorResp(resp *http.Response, toOpenAIError HttpErrorHandler, isPref
 
 			// 如果 errorResponse 为 nil，并且响应体为JSON，则将响应体转换为字符串
 			if errorResponse == nil && strings.Contains(resp.Header.Get("Content-Type"), "application/json") {
-				openAIErrorWithStatusCode.OpenAIError.Message = string(bodyBytes)
+				openAIErrorWithStatusCode.OpenAIError.Message = truncateErrorEcho(bodyBytes)
 			}
 		}
 	}

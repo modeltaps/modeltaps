@@ -157,6 +157,64 @@ var passthroughSkipHeaders = map[string]struct{}{
 	"sec-websocket-extensions": {},
 }
 
+// proxyIdentityHeaders and proxyIdentityHeaderPrefixes name the request headers that a reverse
+// proxy, CDN or authenticating proxy in front of the gateway adds about the end user: the user's
+// address (X-Forwarded-For, X-Real-IP, CF-Connecting-IP, Forwarded, Via) and identity
+// (X-Forwarded-User, X-Auth-Request-Email, Remote-User, the identity headers of cloud load
+// balancers and access proxies). They tell the gateway who is calling and are not the upstream's
+// business, so no blanket pass-through forwards them.
+var proxyIdentityHeaders = map[string]struct{}{
+	"forwarded":                 {},
+	"via":                       {},
+	"x-real-ip":                 {},
+	"true-client-ip":            {},
+	"x-client-ip":               {},
+	"x-cluster-client-ip":       {},
+	"fastly-client-ip":          {},
+	"x-original-forwarded-for":  {},
+	"x-envoy-external-address":  {},
+	"remote-user":               {},
+	"x-remote-user":             {},
+	"x-remote-group":            {},
+	"x-webauth-user":            {},
+	"x-authenticated-user":      {},
+	"x-arr-clientcert":          {},
+	"x-client-cert":             {},
+	"x-forwarded-client-cert":   {},
+	"x-ms-client-principal":     {},
+	"x-ms-client-principal-id":  {},
+	"x-ms-client-principal-idp": {},
+}
+
+var proxyIdentityHeaderPrefixes = []string{
+	"x-forwarded-",               // X-Forwarded-For/-Host/-Proto/-User/-Email/-Groups ...
+	"cf-",                        // Cloudflare: CF-Connecting-IP, CF-IPCountry, CF-Access-* ...
+	"x-auth-request-",            // oauth2-proxy
+	"x-amzn-oidc-",               // AWS ALB authentication (carries the user's tokens)
+	"x-goog-authenticated-user-", // Google IAP
+	"x-goog-iap-",                // Google IAP
+	"x-ms-client-principal-",     // Azure App Service authentication
+	"x-ms-token-",                // Azure App Service authentication (carries the user's tokens)
+	"tailscale-user-",            // Tailscale Serve
+	"x-pomerium-",                // Pomerium
+	"x-ssl-client-",              // client certificate details
+}
+
+// IsProxyIdentityHeader reports whether a client request header was added by a proxy in front of
+// the gateway to describe the end user (see proxyIdentityHeaders). name is case-insensitive.
+func IsProxyIdentityHeader(name string) bool {
+	lower := strings.ToLower(strings.TrimSpace(name))
+	if _, ok := proxyIdentityHeaders[lower]; ok {
+		return true
+	}
+	for _, prefix := range proxyIdentityHeaderPrefixes {
+		if strings.HasPrefix(lower, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 var headerPassthroughRegexCache sync.Map // map[string]*regexp.Regexp
 
 // applyHeaderOverride 处理渠道请求头透传配置 HeaderOverride（JSON 对象）：
@@ -165,7 +223,8 @@ var headerPassthroughRegexCache sync.Map // map[string]*regexp.Regexp
 //   - {client_header:X-Name} 占位符：整段取客户端请求头 X-Name 的值
 //   - "*"：透传全部客户端请求头；"re:"/"regex:" 前缀：按正则透传匹配的客户端请求头
 //
-// 透传时会跳过 passthroughSkipHeaders 中的敏感头；显式规则在透传之后应用、优先级更高。
+// 透传时会跳过 passthroughSkipHeaders 中的敏感头和反代加的终端用户地址/身份头（IsProxyIdentityHeader）；
+// 显式规则（如 {client_header:X-Forwarded-For}）在透传之后应用、优先级更高，仍可按名转发。
 // 注意：本方法在 provider 写入 Authorization 之前调用，与 ModelHeaders 一致，不用于覆盖鉴权头。
 func (p *BaseProvider) applyHeaderOverride(headers map[string]string) {
 	if p.Channel == nil || p.Channel.HeaderOverride == nil || *p.Channel.HeaderOverride == "" {
@@ -198,6 +257,9 @@ func (p *BaseProvider) applyHeaderOverride(headers map[string]string) {
 	if (passAll || len(passRegexps) > 0) && p.Context != nil {
 		for name := range p.Context.Request.Header {
 			if _, skip := passthroughSkipHeaders[strings.ToLower(name)]; skip {
+				continue
+			}
+			if IsProxyIdentityHeader(name) {
 				continue
 			}
 			if !passAll && !matchAnyRegex(passRegexps, name) {

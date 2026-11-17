@@ -89,21 +89,22 @@ func (p *VertexAIExpressProvider) GetFullRequestURL(requestURL string, modelName
 		return ""
 	}
 
-	// 构建 URL: baseURL/modelName:action?key=apiKey
+	// 构建 URL: baseURL/modelName:action
 	actionURL := requestURL
 	if actionURL == "" {
 		actionURL = "generateContent"
 	}
 
-	fullURL := fmt.Sprintf("%s/%s:%s?key=%s", baseURL, modelName, actionURL, p.Channel.Key)
-	return fullURL
+	return fmt.Sprintf("%s/%s:%s", baseURL, modelName, actionURL)
 }
 
 // GetRequestHeaders 获取请求头
+// The key goes in the x-goog-api-key header, the way Google Cloud recommends, and not in the
+// ?key= query: a URL ends up in transport errors, logs and proxies.
 func (p *VertexAIExpressProvider) GetRequestHeaders() (headers map[string]string) {
 	headers = make(map[string]string)
 	p.CommonRequestHeaders(headers)
-	// API Key 通过 URL 参数传递，不需要在 header 中设置
+	headers["x-goog-api-key"] = p.Channel.Key
 	return headers
 }
 

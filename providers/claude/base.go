@@ -105,7 +105,8 @@ func (p *ClaudeProvider) GetRequestHeaders() (headers map[string]string) {
 	// 全部对 ModelHeaders 自定义的值让步（通过 hasHeaderCI 做大小写不敏感判断）。
 	//
 	// 透传规则：除了少数由本函数显式管理的头（host / x-api-key / anthropic-version /
-	// anthropic-beta），其它客户端头都透传。这样不需要为每一种新指纹头单独维护白名单：
+	// anthropic-beta）和反代加的终端用户地址/身份头（X-Forwarded-*、CF-*、X-Real-IP 等），
+	// 其它客户端头都透传。这样不需要为每一种新指纹头单独维护白名单：
 	//   - User-Agent：Claude Code CLI 携带 "claude-cli/x.x.x"，上游常用此识别客户端
 	//   - x-app：relay-code-github 等中转会校验非空
 	//   - x-stainless-*：Anthropic SDK 指纹头
@@ -160,7 +161,9 @@ func isProviderManagedHeader(name string) bool {
 	case "origin", "referer":
 		return true
 	}
-	return false
+	// 反代 / CDN / 认证代理加的终端用户真实 IP 与身份头（X-Forwarded-For、CF-Connecting-IP、
+	// X-Forwarded-User 等）：只供本网关识别来者，转给上游会泄露终端用户的隐私（SEC-80）。
+	return base.IsProxyIdentityHeader(name)
 }
 
 // hasHeaderCI 对 headers map 做大小写不敏感的存在性检查。

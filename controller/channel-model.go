@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/modeltaps/modeltaps/common"
+	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/providers"
 	providersBase "github.com/modeltaps/modeltaps/providers/base"
@@ -50,11 +51,24 @@ func GetModelList(c *gin.Context) {
 		return
 	}
 
+	// The request names the target and the upstream's error text comes back in the response, so
+	// an admin could read services on the gateway's internal network through this call. Only the
+	// root user may reach non-public addresses (a self-hosted model on a private network).
+	if !isRootRequest(c) {
+		if r := provider.GetRequester(); r != nil {
+			r.PublicOnly = true
+		}
+	}
+
 	modelList, err := modelProvider.GetModelList()
 	if err != nil {
+		message := err.Error()
+		if strings.Contains(message, requester.ErrUpstreamNotPublic.Error()) {
+			message = requester.ErrUpstreamNotPublic.Error() + "; only the root user can fetch models from a private network address"
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
-			"message": err.Error(),
+			"message": message,
 		})
 		return
 	}

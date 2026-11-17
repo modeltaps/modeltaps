@@ -3,6 +3,7 @@ package requester
 import (
 	"crypto/tls"
 	"github.com/modeltaps/modeltaps/common/logger"
+	"github.com/modeltaps/modeltaps/common/safefetch"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"fmt"
 	"net/http"
@@ -19,6 +20,39 @@ var proxyClients = utils.NewProxyClientPool(func() *http.Client { return HTTPCli
 // 否则为该代理独享 Transport 的 client（继承 HTTPClient 的超时 / TLS / 连接池参数）。
 func GetHTTPClient(proxyAddr string) *http.Client {
 	return proxyClients.Get(proxyAddr)
+}
+
+// newPublicOnlyClient returns a client that connects only to public addresses. The address is
+// checked when dialing, so a name that resolves to a private address is refused as well (DNS
+// rebinding included). Through a proxy the gateway resolves and checks the target itself and asks
+// the proxy for a tunnel to the checked IP. Redirects dial again and are checked again. The client
+// is built for one request and keeps no idle connections; it takes the timeouts and TLS settings
+// of HTTPClient.
+func newPublicOnlyClient(proxyAddr string) (*http.Client, error) {
+	dialTimeout := utils.NewDialer().Timeout
+	var trans *http.Transport
+	if proxyAddr == "" {
+		trans = &http.Transport{DialContext: safefetch.GuardedDialer(dialTimeout).DialContext}
+	} else {
+		var err error
+		trans, err = safefetch.NewGuardedProxyTransport(proxyAddr, dialTimeout)
+		if err != nil {
+			return nil, err
+		}
+	}
+	trans.DisableKeepAlives = true
+	trans.ForceAttemptHTTP2 = true
+
+	client := &http.Client{Transport: trans}
+	if HTTPClient != nil {
+		client.Timeout = HTTPClient.Timeout
+		if base, ok := HTTPClient.Transport.(*http.Transport); ok {
+			trans.TLSHandshakeTimeout = base.TLSHandshakeTimeout
+			trans.ResponseHeaderTimeout = base.ResponseHeaderTimeout
+			trans.TLSClientConfig = base.TLSClientConfig.Clone()
+		}
+	}
+	return client, nil
 }
 
 // streamIdleTimeout 流式空闲超时：每收到一段数据就重置，上游静默超过该时长即中止。

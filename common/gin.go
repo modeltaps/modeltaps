@@ -10,6 +10,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -154,10 +155,26 @@ func SafeNetErrHint(errString string) string {
 	return ""
 }
 
+// urlSecretQueryPattern matches the value of a query parameter that carries a credential (Vertex
+// AI Express and Gemini send ?key=, Baidu ?access_token=, Azure SAS URLs sig=). Transport errors
+// quote the request URL ("Post \"https://...?key=...\": i/o timeout").
+var urlSecretQueryPattern = regexp.MustCompile(`(?i)([?&](?:key|api[_-]?key|x-goog-api-key|access[_-]?token|token|auth|authorization|sig|signature|secret|client_secret|password)=)[^&\s"'#]+`)
+
+// urlPasswordPattern matches the password of a URL with user information (scheme://user:password@host).
+var urlPasswordPattern = regexp.MustCompile(`(://[^/\s:@"']*:)[^/\s@"']+@`)
+
+// RedactURLSecrets masks credentials that URLs in s carry: the values of credential query
+// parameters and the password of the user information. The rest of the text is kept as is.
+func RedactURLSecrets(s string) string {
+	s = urlSecretQueryPattern.ReplaceAllString(s, "${1}***")
+	return urlPasswordPattern.ReplaceAllString(s, "${1}***@")
+}
+
 func ErrorWrapper(err error, code string, statusCode int) *types.OpenAIErrorWithStatusCode {
 	errString := "error"
 	if err != nil {
-		errString = err.Error()
+		// A transport error quotes the request URL, which may carry the channel key.
+		errString = RedactURLSecrets(err.Error())
 	}
 
 	if strings.Contains(errString, "Post") || strings.Contains(errString, "dial") {
