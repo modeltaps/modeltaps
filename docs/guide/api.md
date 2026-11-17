@@ -47,7 +47,7 @@ curl --request POST \
 
 ### Available endpoints
 
-Besides chat, `/v1` also provides text completions, Responses, embeddings, rerank, moderations, image generation / edit / variation, speech synthesis / transcription / translation, and the realtime API. Request and response structures match the official OpenAI ones.
+Besides chat, `/v1` also provides text completions, Responses, embeddings, rerank, moderations, image generation / edit / variation, speech synthesis / transcription / translation, and the realtime API. Request and response structures match the official OpenAI ones. Decision models answer on `/v1/decisions`; see [Decision Models](/guide/decisions).
 
 List the models available to the current API key:
 

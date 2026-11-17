@@ -47,7 +47,7 @@ curl --request POST \
 
 ### 利用できる API
 
-対話のほかに、`/v1` 配下ではテキスト補完、Responses、ベクトル化（embeddings）、リランキング（rerank）、コンテンツモデレーション（moderations）、画像生成 / 編集 / バリエーション、音声合成 / 文字起こし / 翻訳、およびリアルタイム（realtime）の各 API を提供しています。リクエストとレスポンスの構造は OpenAI 公式と同じです。
+対話のほかに、`/v1` 配下ではテキスト補完、Responses、ベクトル化（embeddings）、リランキング（rerank）、コンテンツモデレーション（moderations）、画像生成 / 編集 / バリエーション、音声合成 / 文字起こし / 翻訳、およびリアルタイム（realtime）の各 API を提供しています。リクエストとレスポンスの構造は OpenAI 公式と同じです。意思決定モデルは `/v1/decisions` で呼び出します。詳しくは[意思決定モデル](/ja/guide/decisions)を参照してください。
 
 現在の API キーで利用できるモデルを照会します。
 

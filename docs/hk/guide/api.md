@@ -47,7 +47,7 @@ curl --request POST \
 
 ### 可用的介面
 
-除對話之外，`/v1` 下還提供文本補全、Responses、向量化（embeddings）、重排序（rerank）、內容審核（moderations）、圖片生成 / 編輯 / 變體、語音合成 / 轉寫 / 翻譯，以及實時（realtime）介面。請求與響應結構與 OpenAI 官方一致。
+除對話之外，`/v1` 下還提供文本補全、Responses、向量化（embeddings）、重排序（rerank）、內容審核（moderations）、圖片生成 / 編輯 / 變體、語音合成 / 轉寫 / 翻譯，以及實時（realtime）介面。請求與響應結構與 OpenAI 官方一致。決策模型透過 `/v1/decisions` 調用，見[決策模型](/hk/guide/decisions)。
 
 查詢當前 API Key 可用的模型：
 

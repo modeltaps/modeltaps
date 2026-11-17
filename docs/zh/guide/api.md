@@ -47,7 +47,7 @@ curl --request POST \
 
 ### 可用的接口
 
-除对话之外，`/v1` 下还提供文本补全、Responses、向量化（embeddings）、重排序（rerank）、内容审核（moderations）、图片生成 / 编辑 / 变体、语音合成 / 转写 / 翻译，以及实时（realtime）接口。请求与响应结构与 OpenAI 官方一致。
+除对话之外，`/v1` 下还提供文本补全、Responses、向量化（embeddings）、重排序（rerank）、内容审核（moderations）、图片生成 / 编辑 / 变体、语音合成 / 转写 / 翻译，以及实时（realtime）接口。请求与响应结构与 OpenAI 官方一致。决策模型通过 `/v1/decisions` 调用，见[决策模型](/zh/guide/decisions)。
 
 查询当前 API Key 可用的模型：
 

@@ -18,6 +18,7 @@ export interface LocaleText {
   pages: {
     quickstart: string
     api: string
+    decisions: string
     reasoning: string
     special: string
     routing: string
@@ -61,6 +62,7 @@ export const localeTexts: Record<'root' | 'zh' | 'ja' | 'hk', LocaleText> = {
     pages: {
       quickstart: 'Getting Started',
       api: 'Compatible APIs',
+      decisions: 'Decision Models',
       reasoning: 'Reasoning',
       special: 'Advanced Usage',
       routing: 'Auto Routing',
@@ -102,6 +104,7 @@ export const localeTexts: Record<'root' | 'zh' | 'ja' | 'hk', LocaleText> = {
     pages: {
       quickstart: '快速开始',
       api: '兼容接口',
+      decisions: '决策模型',
       reasoning: '推理设置',
       special: '特殊用法',
       routing: '自动路由',
@@ -143,6 +146,7 @@ export const localeTexts: Record<'root' | 'zh' | 'ja' | 'hk', LocaleText> = {
     pages: {
       quickstart: 'クイックスタート',
       api: '互換 API',
+      decisions: '意思決定モデル',
       reasoning: '推論設定',
       special: '特殊な呼び出し',
       routing: '自動ルーティング',
@@ -184,6 +188,7 @@ export const localeTexts: Record<'root' | 'zh' | 'ja' | 'hk', LocaleText> = {
     pages: {
       quickstart: '快速開始',
       api: '相容介面',
+      decisions: '決策模型',
       reasoning: '推理設定',
       special: '特殊用法',
       routing: '自動路由',
@@ -243,6 +248,7 @@ export function sidebarOf(key: LocaleKey): DefaultTheme.SidebarItem[] {
       text: groups.api,
       items: [
         { text: pages.api, link: `${p}/guide/api` },
+        { text: pages.decisions, link: `${p}/guide/decisions` },
         { text: pages.reasoning, link: `${p}/guide/reasoning` },
         { text: pages.special, link: `${p}/guide/special` },
         { text: pages.routing, link: `${p}/guide/routing` }
