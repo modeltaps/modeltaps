@@ -11,14 +11,36 @@ import (
 // usage.seconds (type "duration"), then duration, then the end of the last segment; SRT
 // and VTT bodies use the end of the last cue. ok is false when the body says nothing.
 func FromResponse(body []byte, contentType string) (seconds float64, ok bool) {
-	trimmed := strings.TrimSpace(string(body))
-	if strings.HasPrefix(trimmed, "{") || strings.Contains(contentType, "json") {
-		return fromJSON(body)
+	if !isJSON(body, contentType) {
+		return fromSubtitles(strings.TrimSpace(string(body)))
 	}
-	return fromSubtitles(trimmed)
+	declared, lastSegment, ok := fromJSON(body)
+	if !ok {
+		return 0, false
+	}
+	if declared > 0 {
+		return declared, true
+	}
+	return lastSegment, lastSegment > 0
 }
 
-func fromJSON(body []byte) (float64, bool) {
+// Declared reads the audio length a JSON response states outright: usage.seconds (type
+// "duration"), then duration. The upstream writes these fields itself and bills on them.
+// Segment and cue end times are not declarations: they mark where speech ends, and a
+// plain-text body can carry text that merely looks like a cue.
+func Declared(body []byte, contentType string) (seconds float64, ok bool) {
+	if !isJSON(body, contentType) {
+		return 0, false
+	}
+	declared, _, _ := fromJSON(body)
+	return declared, declared > 0
+}
+
+func isJSON(body []byte, contentType string) bool {
+	return strings.HasPrefix(strings.TrimSpace(string(body)), "{") || strings.Contains(contentType, "json")
+}
+
+func fromJSON(body []byte) (declared, lastSegment float64, ok bool) {
 	var resp struct {
 		Duration float64 `json:"duration"`
 		Usage    *struct {
@@ -30,21 +52,20 @@ func fromJSON(body []byte) (float64, bool) {
 		} `json:"segments"`
 	}
 	if err := json.Unmarshal(body, &resp); err != nil {
-		return 0, false
+		return 0, 0, false
 	}
-	if resp.Usage != nil && resp.Usage.Seconds > 0 && (resp.Usage.Type == "" || resp.Usage.Type == "duration") {
-		return resp.Usage.Seconds, true
+	switch {
+	case resp.Usage != nil && resp.Usage.Seconds > 0 && (resp.Usage.Type == "" || resp.Usage.Type == "duration"):
+		declared = resp.Usage.Seconds
+	case resp.Duration > 0:
+		declared = resp.Duration
 	}
-	if resp.Duration > 0 {
-		return resp.Duration, true
-	}
-	last := 0.0
 	for _, s := range resp.Segments {
-		if s.End > last {
-			last = s.End
+		if s.End > lastSegment {
+			lastSegment = s.End
 		}
 	}
-	return last, last > 0
+	return declared, lastSegment, true
 }
 
 // cueEnd matches the end time of an SRT ("00:01:02,500") or VTT ("01:02.500") cue.

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"strings"
 
@@ -77,6 +78,7 @@ func UnmarshalBodyReusable(c *gin.Context, v any) error {
 	// 非 JSON（multipart、form 等）：回退到 ShouldBind
 	c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 	err = c.ShouldBind(v)
+	trackMultipartForm(c)
 	if err != nil {
 		if errs, ok := err.(validator.ValidationErrors); ok {
 			return fmt.Errorf("field %s is required", errs[0].Field())
@@ -84,6 +86,43 @@ func UnmarshalBodyReusable(c *gin.Context, v any) error {
 		return err
 	}
 	return nil
+}
+
+// multipartFormsKey holds the multipart forms parsed while handling the request.
+const multipartFormsKey = "multipart_forms"
+
+// trackMultipartForm remembers the form ShouldBind parsed so RemoveMultipartForms can
+// delete its temp files. net/http only cleans the form of the request it created, and the
+// middlewares hand the handlers shallow copies (WithContext), so a form parsed on a copy
+// was never removed.
+func trackMultipartForm(c *gin.Context) {
+	if c.Request == nil || c.Request.MultipartForm == nil {
+		return
+	}
+	forms, _ := c.Get(multipartFormsKey)
+	list, _ := forms.([]*multipart.Form)
+	c.Set(multipartFormsKey, append(list, c.Request.MultipartForm))
+}
+
+// RemoveMultipartForms deletes the temp files of every multipart form parsed for the
+// request: the forms UnmarshalBodyReusable recorded and the one on c.Request (parsed by
+// c.FormFile and the like). Call it once the handlers have returned.
+func RemoveMultipartForms(c *gin.Context) {
+	forms, _ := c.Get(multipartFormsKey)
+	list, _ := forms.([]*multipart.Form)
+	if c.Request != nil && c.Request.MultipartForm != nil {
+		list = append(list, c.Request.MultipartForm)
+	}
+	removed := make(map[*multipart.Form]bool, len(list))
+	for _, form := range list {
+		if form == nil || removed[form] {
+			continue
+		}
+		removed[form] = true
+		if err := form.RemoveAll(); err != nil {
+			logger.SysError(fmt.Sprintf("remove multipart temp files: %s", err))
+		}
+	}
 }
 
 // 已知安全的网络错误短标识：仅追加这些固定短词到客户端可见消息，避免泄露 URL/IP/Key
