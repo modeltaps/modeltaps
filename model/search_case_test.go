@@ -41,8 +41,8 @@ func TestKeywordSearchIgnoresCase(t *testing.T) {
 			t.Cleanup(func() { DB, common.UsingPostgreSQL = oldDB, oldPG })
 
 			users := []*User{
-				{Username: "torworx", Email: "Torworx@Example.com", DisplayName: "Tor", AccessToken: "a1", AffCode: "c1"},
-				{Username: "alice", Email: "alice@example.com", DisplayName: "Alice", AccessToken: "a2", AffCode: "c2"},
+				{Username: "torworx", Email: "Torworx@Example.com", DisplayName: "Tor", AffCode: "c1"},
+				{Username: "alice", Email: "alice@example.com", DisplayName: "Alice", AffCode: "c2"},
 			}
 			for _, u := range users {
 				if err := testDB.Create(u).Error; err != nil {

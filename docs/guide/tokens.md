@@ -37,6 +37,32 @@ Modeltaps does not store your keys, only a fingerprint (hash) of each one, so a 
 
 Keys created before this change keep working unchanged.
 
+## Key types: API keys and management keys
+
+**New API key** first asks for the type:
+
+| Type | What it can do | What it cannot do |
+| --- | --- | --- |
+| **API key** (default) | Call every model API (`/v1/...`, Claude, Gemini and the other relay endpoints); read its own balance and usage (`/v1/dashboard/billing/subscription`, `/v1/dashboard/billing/usage`) and its models (`/v1/models`) | Call the management API (`/api/...`): it is refused with `401` and the code `api_key_not_allowed` |
+| **Management, read-only** | Read your balance, usage, logs (without request and response bodies) and the API key list (keys masked), including those of the organizations you belong to; use MCP | Call models; change anything |
+| **Management, read-write** | Everything read-only can do, plus create, edit, disable, delete and reset **API keys** | Call models; create management keys; change your password, sign-in methods, passkeys / 2FA, sessions or payments; anything in the admin console |
+
+Keep the key an application or agent uses day to day an API key: if it leaks, the damage stops at its spending limit. Give a management key only to the script or agent that manages your keys, and keep it on the server side.
+
+Management keys:
+
+- start with `mk-` and are sent as `Authorization: Bearer mk-...` to the management API (`/api/...`) and to MCP (`/mcp`). Anything outside what their type allows is refused with `403` and the code `management_key_forbidden`; using one on a model API returns `401`.
+- must expire: 90 days by default, at most one year. An expired key is refused with the code `management_key_expired`.
+- are shown once, like API keys: only their fingerprint is stored. Lost keys cannot be reset; delete them and create new ones.
+- act as you, with your current role: inside an organization a management key never does more than your role there allows, and the API keys it creates are yours (your member budget and model list apply).
+- are listed under **Management keys** below the API key list, each with its type tag, and deleted from there; deleting one stops it at once. They can only be created and deleted from the signed-in console, never with another key.
+
+Management keys are personal: in an organization the page creates organization API keys only.
+
+### Access token (deprecated)
+
+The old per-account **access token** (Settings, Account security) is replaced by management keys. It keeps working for one more release with its old permissions, and each response to it carries a `Deprecation: true` header; the server log notes its use. It is now stored as a fingerprint too, so regenerating it shows the new token once. It appears in the management key list as **Access token (deprecated)**, where it can be deleted. Move your scripts to a management key before it stops working.
+
 ## Creating and editing API keys
 
 Click **New API key** to open the editor panel, which is split into several sections.

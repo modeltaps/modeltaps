@@ -83,8 +83,10 @@ export function BaseUrlLine({ value, onCopy }) {
 BaseUrlLine.propTypes = { value: PropTypes.string.isRequired, onCopy: PropTypes.func.isRequired };
 
 // The key, shown once: the "you won't see it again" note, the key with copy, and the base URL.
-export function SecretKeyReveal({ secret, baseUrl, onCopy }) {
+// Management keys pass their own label and note (they are deleted and recreated, not reset).
+export function SecretKeyReveal({ secret, baseUrl, onCopy, label, note }) {
   const { t } = useTranslation();
+  const keyLabel = label || t('token_index.token');
   return (
     <div className="space-y-2.5">
       <p
@@ -93,20 +95,21 @@ export function SecretKeyReveal({ secret, baseUrl, onCopy }) {
         data-testid="key-once-note"
       >
         <TriangleAlert className="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-500" aria-hidden="true" />
-        <span>{t('apiKey.secret.onceNote')}</span>
+        <span>{note || t('apiKey.secret.onceNote')}</span>
       </p>
-      <CopyField
-        label={t('token_index.token')}
-        value={secret}
-        onCopy={() => onCopy(secret, t('token_index.token'))}
-        testId="new-token-key"
-      />
+      <CopyField label={keyLabel} value={secret} onCopy={() => onCopy(secret, keyLabel)} testId="new-token-key" />
       {baseUrl && <BaseUrlLine value={baseUrl} onCopy={() => onCopy(baseUrl, t('token_index.apiAddress'))} />}
     </div>
   );
 }
 
-SecretKeyReveal.propTypes = { secret: PropTypes.string.isRequired, baseUrl: PropTypes.string, onCopy: PropTypes.func.isRequired };
+SecretKeyReveal.propTypes = {
+  secret: PropTypes.string.isRequired,
+  baseUrl: PropTypes.string,
+  onCopy: PropTypes.func.isRequired,
+  label: PropTypes.string,
+  note: PropTypes.string
+};
 
 // The answer to "reset key": the new key, shown once.
 export function KeySecretDialog({ name, secret, baseUrl, onCopy, onClose }) {

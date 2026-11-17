@@ -185,7 +185,6 @@ func CreateShadowUserForOrg(tx *gorm.DB, orgSlug string) (*User, error) {
 		Status:      config.UserStatusEnabled,
 		Type:        config.UserTypeOrgShadow,
 		Quota:       0,
-		AccessToken: utils.GetUUID(),
 		AffCode:     strings.ToLower(utils.GetRandomString(8)),
 		CreatedTime: utils.GetTimestamp(),
 	}

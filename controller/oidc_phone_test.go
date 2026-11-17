@@ -104,7 +104,7 @@ func TestSyncOidcPhoneOnLoginPaths(t *testing.T) {
 	seeded := seedOidcUser(t, &model.User{
 		Username: "linker", Email: "linker@example.com", EmailVerified: true,
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-p1", AffCode: "affp1",
+		Type: config.UserTypeNormal, AffCode: "affp1",
 	})
 
 	linked, outcome, err := resolveOidcUser(provider, "sub-link", "linker@example.com", "")
@@ -147,7 +147,7 @@ func TestSyncOidcPhoneFirstParty(t *testing.T) {
 	changed := seedOidcUser(t, &model.User{
 		Username: "fpphone", Email: "fpphone@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-fpp1", AffCode: "afffpp1",
+		Type: config.UserTypeNormal, AffCode: "afffpp1",
 		PhoneNumber: model.NullablePhone("+85251234567"),
 	})
 	syncOidcPhoneNumber(changed, oidcVerifiedPhoneNumber(map[string]interface{}{
@@ -181,13 +181,13 @@ func TestSyncOidcPhoneSkipsTakenNumber(t *testing.T) {
 	owner := seedOidcUser(t, &model.User{
 		Username: "owner", Email: "owner@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-p3", AffCode: "affp3",
+		Type: config.UserTypeNormal, AffCode: "affp3",
 		PhoneNumber: model.NullablePhone("+85251234567"),
 	})
 	other := seedOidcUser(t, &model.User{
 		Username: "other", Email: "other@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-p4", AffCode: "affp4",
+		Type: config.UserTypeNormal, AffCode: "affp4",
 	})
 
 	syncOidcPhoneNumber(other, "+85251234567", provider)
@@ -202,7 +202,7 @@ func TestSyncOidcPhoneSkipsTakenNumber(t *testing.T) {
 	holder := seedOidcUser(t, &model.User{
 		Username: "fpholder", Email: "fpholder@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-p8", AffCode: "affp8",
+		Type: config.UserTypeNormal, AffCode: "affp8",
 		PhoneNumber: model.NullablePhone("+85258888888"),
 	})
 	syncOidcPhoneNumber(holder, "+85251234567", provider)
@@ -237,7 +237,7 @@ func TestResolveOidcUserLinksByVerifiedPhone(t *testing.T) {
 	seeded := seedOidcUser(t, &model.User{
 		Username: "phonelink", Email: "phonelink@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-p5", AffCode: "affp5",
+		Type: config.UserTypeNormal, AffCode: "affp5",
 		PhoneNumber: model.NullablePhone("+85251234567"),
 	})
 
@@ -261,7 +261,7 @@ func TestResolveOidcUserPhoneLinkConflict(t *testing.T) {
 	seeded := seedOidcUser(t, &model.User{
 		Username: "phoneconflict", Email: "phoneconflict@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-p6", AffCode: "affp6",
+		Type: config.UserTypeNormal, AffCode: "affp6",
 		PhoneNumber: model.NullablePhone("+85251234568"),
 	})
 	seedOidcIdentity(t, seeded.Id, provider.Id, "sub-old")
@@ -285,7 +285,7 @@ func TestResolveOidcUserPhoneLinkDisabled(t *testing.T) {
 	seedOidcUser(t, &model.User{
 		Username: "phoneoff", Email: "phoneoff@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-p7", AffCode: "affp7",
+		Type: config.UserTypeNormal, AffCode: "affp7",
 		PhoneNumber: model.NullablePhone("+85251234569"),
 	})
 
@@ -303,7 +303,7 @@ func TestUpdateSelfIgnoresPhoneNumber(t *testing.T) {
 	user := seedOidcUser(t, &model.User{
 		Username: "selfpu", DisplayName: "old", Email: "selfpu@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-p2", AffCode: "affp2",
+		Type: config.UserTypeNormal, AffCode: "affp2",
 		PhoneNumber: model.NullablePhone("+85251234567"),
 	})
 

@@ -625,6 +625,7 @@ func postMigrations() []*gormigrate.Migration {
 		backfillUserFirstTopUp(),
 		hashTokenKeys(),
 		cleanOrphanSupplies(),
+		migrateAccessTokensToManagementKeys(),
 	}
 }
 

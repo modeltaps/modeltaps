@@ -105,7 +105,6 @@ func createRootAccountIfNeed() error {
 			Role:        config.RoleRootUser,
 			Status:      config.UserStatusEnabled,
 			DisplayName: rootSeedDisplayName,
-			AccessToken: utils.GetUUID(),
 			Quota:       100000000,
 		}
 		if err := DB.Create(&rootUser).Error; err != nil {
@@ -199,6 +198,10 @@ func InitDB() (err error) {
 			return err
 		}
 		err = db.AutoMigrate(&PlaygroundKey{})
+		if err != nil {
+			return err
+		}
+		err = db.AutoMigrate(&ManagementKey{})
 		if err != nil {
 			return err
 		}

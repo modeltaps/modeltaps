@@ -30,25 +30,23 @@ func TestResolveLoginUserExplicitIdentifier(t *testing.T) {
 	setupOrgTestDB(t)
 
 	normal := &User{
-		Username:    "grace",
-		Email:       NullableEmail("grace@example.com"),
-		Role:        config.RoleCommonUser,
-		Status:      config.UserStatusEnabled,
-		Type:        config.UserTypeNormal,
-		AccessToken: "resolve-token-grace",
-		AffCode:     "affg",
+		Username: "grace",
+		Email:    NullableEmail("grace@example.com"),
+		Role:     config.RoleCommonUser,
+		Status:   config.UserStatusEnabled,
+		Type:     config.UserTypeNormal,
+		AffCode:  "affg",
 	}
 	if err := DB.Create(normal).Error; err != nil {
 		t.Fatalf("创建普通用户失败: %v", err)
 	}
 	shadow := &User{
-		Username:    "org-shadow-resolve",
-		Email:       NullableEmail("shadow-resolve@example.com"),
-		Role:        config.RoleGuestUser,
-		Status:      config.UserStatusEnabled,
-		Type:        config.UserTypeOrgShadow,
-		AccessToken: "resolve-token-shadow",
-		AffCode:     "affsr",
+		Username: "org-shadow-resolve",
+		Email:    NullableEmail("shadow-resolve@example.com"),
+		Role:     config.RoleGuestUser,
+		Status:   config.UserStatusEnabled,
+		Type:     config.UserTypeOrgShadow,
+		AffCode:  "affsr",
 	}
 	if err := DB.Create(shadow).Error; err != nil {
 		t.Fatalf("创建影子用户失败: %v", err)

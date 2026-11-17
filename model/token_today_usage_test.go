@@ -10,7 +10,7 @@ import (
 func TestSumUserUsageByTokenSince(t *testing.T) {
 	setupOrgTestDB(t)
 
-	user := &User{Username: "today-usage-user", Password: "x", AccessToken: "at-today", AffCode: "aff-today"}
+	user := &User{Username: "today-usage-user", Password: "x", AffCode: "aff-today"}
 	if err := DB.Create(user).Error; err != nil {
 		t.Fatalf("创建用户失败: %v", err)
 	}

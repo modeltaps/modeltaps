@@ -18,6 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   their undated public model on a channel's Models tab, and adding them attaches that model's
   supply instead of showing "not in catalog". A snapshot with a catalog row of its own, and
   variants such as `-fast`, keep their own name, and requests keep the price of the name asked for.
+- Management keys for scripts and agents. **New API key** now asks for the type: an API key (the
+  default) calls models, while a management key, read-only or read-write, calls the management
+  API (`/api/...`) and MCP but never models. Read-only keys see the balance, usage, logs and the
+  API key list (keys masked); read-write keys also create, edit, disable, delete and reset API
+  keys. No management key can create management keys, change the password, sign-in methods,
+  passkeys, sessions or payments, or reach the admin console, and in an organization it acts
+  within its creator's role. Management keys start with `mk-`, must expire (90 days by default,
+  at most a year), are shown once and stored as a hash, and are listed with a type tag under
+  **Management keys** below the API keys, where they are deleted. API keys sent to the
+  management API are refused with `401` and the code `api_key_not_allowed`.
+
 - Turn single models of a channel off without removing them. The provider panel's models tab has
   an on/off switch per model: a model switched off stays listed, keeps its supplies and gets no
   requests until it is switched back on. A Re-pick button next to Add opens the model picker on
@@ -862,6 +873,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   admin grants. The inviter rebate is paid once, for the invitee's first paid order. Gmail dot and
   `+` variants of an email address count as the same address. The "Enable invite reward" switch
   now also stops the sign-up bonuses and the rebate; before, it only hid the invite card.
+- The per-account access token is deprecated in favor of management keys and no longer stored in
+  plaintext: the upgrade moves each token to a hash (it keeps working, listed as "Access token
+  (deprecated)" among the management keys), and regenerating it in Settings shows the new token
+  once. It keeps its old permissions for one more release; responses to it carry a
+  `Deprecation: true` header and its use is logged. MCP takes a management key in the
+  `Authorization` header. The migration cannot be rolled back.
 - Image URLs in requests are no longer fetched from loopback, private-network or cloud-metadata
   addresses; redirects are re-checked on every hop.
 - The Midjourney notify endpoint is disabled (the gateway never registers it and task state is

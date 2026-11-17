@@ -33,10 +33,9 @@ func boolPtr(b bool) *bool { return &b }
 func seedLogIOUser(t *testing.T, typ int, def *bool) int {
 	t.Helper()
 	u := &User{
-		Username:    utils.GetRandomString(10),
-		AccessToken: utils.GetRandomString(32),
-		AffCode:     utils.GetRandomString(8),
-		Type:        typ,
+		Username: utils.GetRandomString(10),
+		AffCode:  utils.GetRandomString(8),
+		Type:     typ,
 	}
 	u.Setting.Set(UserSetting{LogIODefault: def})
 	if err := DB.Create(u).Error; err != nil {

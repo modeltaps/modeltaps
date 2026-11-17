@@ -157,7 +157,6 @@ func seedUser(t *testing.T, group string, quota int) *model.User {
 		DisplayName: "E2E User",
 		Role:        config.RoleCommonUser,
 		Status:      config.UserStatusEnabled,
-		AccessToken: utils.GetUUID(),
 		AffCode:     utils.GetRandomString(8),
 		Quota:       quota,
 		Group:       group,

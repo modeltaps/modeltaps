@@ -522,32 +522,21 @@ func GetUserDashboard(c *gin.Context) {
 	})
 }
 
+// GenerateAccessToken replaces the user's legacy access token and returns it once (deprecated,
+// AGENT-4: kept for one release so existing integrations can rotate; management keys replace
+// it). Only its hash is stored, so it cannot be shown again.
 func GenerateAccessToken(c *gin.Context) {
-	id := c.GetInt("id")
-	user, err := model.GetUserById(id, true)
+	token, err := model.IssueLegacyAccessToken(c.GetInt("id"))
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
-	user.AccessToken = utils.GetUUID()
-
-	if model.DB.Where("access_token = ?", user.AccessToken).First(user).RowsAffected != 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": "Please try again: the generated UUID was a duplicate.",
-		})
-		return
-	}
-
-	if err := user.Update(false); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
-		return
-	}
-
+	c.Header("Deprecation", "true")
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    user.AccessToken,
+		"success":    true,
+		"message":    "",
+		"data":       token,
+		"deprecated": true,
 	})
 }
 

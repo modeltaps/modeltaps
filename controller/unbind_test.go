@@ -48,7 +48,7 @@ func seedUnbindUser(t *testing.T, username, password, email string) *model.User 
 	return seedOidcUser(t, &model.User{
 		Username: username, Password: password, Email: model.NullableEmail(email),
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-" + username, AffCode: "aff-" + username,
+		Type: config.UserTypeNormal, AffCode: "aff-" + username,
 	})
 }
 

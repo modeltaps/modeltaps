@@ -98,6 +98,17 @@ const (
 	APICodeUserBanned         = "user_banned"
 	APICodePermissionDenied   = "permission_denied"
 
+	// Management keys (AGENT-4). An API key sent to the management API is refused with 401; a
+	// management key outside what its scope allows (or on a sign-in-only endpoint) with 403.
+	APICodeAPIKeyNotAllowed            = "api_key_not_allowed"
+	APICodeManagementKeyExpired        = "management_key_expired"
+	APICodeManagementKeyForbidden      = "management_key_forbidden"
+	APICodeManagementKeyNotFound       = "management_key_not_found"
+	APICodeManagementKeyNameRequired   = "management_key_name_required"
+	APICodeManagementKeyScopeInvalid   = "management_key_scope_invalid"
+	APICodeManagementKeyExpiryRequired = "management_key_expiry_required"
+	APICodeManagementKeyExpiryTooLong  = "management_key_expiry_too_long"
+
 	// Account security page.
 	APICodeSelfPasswordUnavailable    = "self_password_unavailable"
 	APICodeCurrentPasswordRequired    = "current_password_required"

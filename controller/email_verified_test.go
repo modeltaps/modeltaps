@@ -41,7 +41,7 @@ func TestEmailBindMarksEmailVerified(t *testing.T) {
 	setupGetUserTestDB(t)
 	user := seedEmailUser(t, &model.User{
 		Username: "binder", Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-ev1", AffCode: "affev1",
+		Type: config.UserTypeNormal, AffCode: "affev1",
 	})
 
 	const email = "binder@example.com"
@@ -98,7 +98,7 @@ func TestUpdateUserResetsEmailVerified(t *testing.T) {
 	user := seedEmailUser(t, &model.User{
 		Username: "target", Email: "target@example.com", EmailVerified: true,
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-ev2", AffCode: "affev2",
+		Type: config.UserTypeNormal, AffCode: "affev2",
 	})
 
 	t.Run("换邮箱降级为未验证", func(t *testing.T) {
@@ -150,7 +150,7 @@ func TestSyncOidcEmailMarksVerified(t *testing.T) {
 
 	blank := seedOidcUser(t, &model.User{
 		Username: "evblank", Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-ev3", AffCode: "affev3",
+		Type: config.UserTypeNormal, AffCode: "affev3",
 	})
 	syncOidcEmail(blank, "idp@example.com", provider)
 	if !getUserEmailVerified(t, blank.Id) {
@@ -164,7 +164,7 @@ func TestSyncOidcEmailMarksVerified(t *testing.T) {
 	stale := seedOidcUser(t, &model.User{
 		Username: "evstale", Email: "stale@example.com", EmailVerified: false,
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-ev4", AffCode: "affev4",
+		Type: config.UserTypeNormal, AffCode: "affev4",
 	})
 	syncOidcEmail(stale, " Stale@Example.com ", provider)
 	if got := getUserEmail(t, stale.Id); got != "stale@example.com" {
@@ -209,7 +209,7 @@ func TestResolveOidcUserSkipsUnverifiedEmail(t *testing.T) {
 	seeded := seedOidcUser(t, &model.User{
 		Username: "unverified", Email: "victim@example.com", EmailVerified: false,
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-ev5", AffCode: "affev5",
+		Type: config.UserTypeNormal, AffCode: "affev5",
 	})
 
 	user, outcome, err := resolveOidcUser(provider, "sub-ev-skip", "victim@example.com", "")

@@ -23,32 +23,28 @@ func authHelper(c *gin.Context, minRole int) {
 	status := session.Get("status")
 	useAccessToken := false
 	if username == nil {
-		// Check access token
-		// The access token is read from the Authorization header only: a token in the URL ends up
-		// in browser history and in proxy and access logs.
-		accessToken := c.Request.Header.Get("Authorization")
-		if accessToken == "" {
-			common.APIRespondWithCode(c, http.StatusUnauthorized, common.APICodeNotSignedIn, "Permission denied: not signed in and no access token provided", nil)
+		// Without a session the request must carry a management key (or a deprecated access
+		// token), read from the Authorization header only: a key in the URL ends up in browser
+		// history and in proxy and access logs. API keys are refused here (AGENT-4).
+		credential := c.Request.Header.Get("Authorization")
+		if credential == "" {
+			common.APIRespondWithCode(c, http.StatusUnauthorized, common.APICodeNotSignedIn, "Permission denied: not signed in and no management key provided", nil)
 			c.Abort()
 			return
 		}
-		user := model.ValidateAccessToken(accessToken)
-		if user != nil && user.Username != "" {
-			// Token is valid
-			username = user.Username
-			role = user.Role
-			id = user.Id
-			status = user.Status
-			useAccessToken = true
-		} else {
-			common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidAccessToken, "Permission denied: invalid access token", nil)
-			c.Abort()
+		user, ok := authenticateByKey(c, credential)
+		if !ok {
 			return
 		}
+		username = user.Username
+		role = user.Role
+		id = user.Id
+		status = user.Status
+		useAccessToken = true
 	}
 	// Cookie session 路径：不信任 cookie 中签发的 role/status，统一以服务端（缓存/DB）为准，
 	// 保证降级管理员、封禁、删除用户等变更下一次请求即生效。
-	// access token 路径（ValidateAccessToken）已是实时查库，无需重复校验。
+	// management key 路径（ValidateManagementKey）已是实时查库，无需重复校验。
 	if !useAccessToken {
 		idInt, ok := id.(int)
 		if !ok {
@@ -162,6 +158,11 @@ func RootAuth() func(c *gin.Context) {
 
 func tokenAuth(c *gin.Context, key string) {
 	key = strings.TrimPrefix(key, "Bearer ")
+	// Management keys only call the management API (AGENT-4); say so instead of "invalid".
+	if strings.HasPrefix(strings.TrimSpace(key), common.ManagementKeyPrefix) {
+		abortWithMessage(c, http.StatusUnauthorized, "Management keys cannot call model APIs; use an API key")
+		return
+	}
 	key = strings.TrimPrefix(key, "sk-")
 
 	if len(key) < 48 {

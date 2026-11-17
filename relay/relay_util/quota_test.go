@@ -65,8 +65,7 @@ func seedUserAndToken(t *testing.T, userId int, userQuota int, tokenRemain int) 
 	t.Helper()
 	user := &model.User{Id: userId, Username: fmt.Sprintf("quota-user-%d-%d", userId, quotaTestDBSeq.Load()),
 		Password: "placeholder", Quota: userQuota, Group: "default",
-		AccessToken: fmt.Sprintf("quota-test-at-%d-%d", quotaTestDBSeq.Load(), userId),
-		AffCode:     fmt.Sprintf("qt%d-%d", quotaTestDBSeq.Load(), userId)}
+		AffCode: fmt.Sprintf("qt%d-%d", quotaTestDBSeq.Load(), userId)}
 	if err := model.DB.Create(user).Error; err != nil {
 		t.Fatalf("创建用户失败: %v", err)
 	}

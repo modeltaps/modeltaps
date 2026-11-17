@@ -34,7 +34,7 @@ func createQuotaWarningUser(t *testing.T, id int, quota int, userType int, setti
 	t.Helper()
 	var value database.JSONType[UserSetting]
 	value.Set(setting)
-	user := User{Id: id, Username: fmt.Sprintf("u%d", id), AccessToken: fmt.Sprintf("at%d", id), AffCode: fmt.Sprintf("af%d", id), Quota: quota, Type: userType, Setting: value}
+	user := User{Id: id, Username: fmt.Sprintf("u%d", id), AffCode: fmt.Sprintf("af%d", id), Quota: quota, Type: userType, Setting: value}
 	if err := DB.Create(&user).Error; err != nil {
 		t.Fatalf("create user: %v", err)
 	}

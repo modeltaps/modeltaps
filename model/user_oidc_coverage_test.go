@@ -10,12 +10,11 @@ import (
 func createCoverageUser(t *testing.T, username string, status int, userType int) *User {
 	t.Helper()
 	user := User{
-		Username:    username,
-		Password:    "test-password",
-		Status:      status,
-		Type:        userType,
-		AccessToken: "token-" + username,
-		AffCode:     "aff-" + username,
+		Username: username,
+		Password: "test-password",
+		Status:   status,
+		Type:     userType,
+		AffCode:  "aff-" + username,
 	}
 	if err := DB.Create(&user).Error; err != nil {
 		t.Fatalf("创建用户 %s 失败: %v", username, err)

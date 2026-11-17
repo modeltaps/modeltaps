@@ -1548,7 +1548,7 @@
     "turnstile_failed": "人間であることの確認に失敗しました。ページを再読み込みしてもう一度お試しください",
     "turnstile_unavailable": "人間であることの確認を現在利用できません。しばらくしてから再試行してください",
     "not_signed_in": "ログインしていません",
-    "invalid_access_token": "アクセストークンが無効です",
+    "invalid_access_token": "管理キーまたはアクセストークンが無効です",
     "invalid_session": "セッションが無効です。もう一度ログインしてください",
     "session_expired": "ログインの有効期限が切れました。もう一度ログインしてください",
     "user_check_failed": "アカウントを確認できませんでした。もう一度お試しください",
@@ -1758,7 +1758,15 @@
     "channel_copy_key_mismatch": "種類または Base URL が異なるチャネルにキーをコピーできるのはスーパー管理者のみです。",
     "token_key_reset_managed": "プレイグラウンドの API キーはシステムが管理しているため、再発行できません",
     "token_key_reset_not_creator": "この API キーを再発行できるのは、作成したメンバーだけです",
-    "usage_alert_tiers_invalid": "利用量アラートの段階は 1〜100 のパーセントをカンマ区切りで入力してください。0 でオフになります"
+    "usage_alert_tiers_invalid": "利用量アラートの段階は 1〜100 のパーセントをカンマ区切りで入力してください。0 でオフになります",
+    "api_key_not_allowed": "API キーはモデル API の呼び出し専用です。管理 API には管理キーを使ってください",
+    "management_key_expired": "この管理キーは期限切れです",
+    "management_key_forbidden": "この管理キーにはこの操作の権限がありません",
+    "management_key_not_found": "管理キーが見つかりません",
+    "management_key_name_required": "管理キーの名前を入力してください",
+    "management_key_scope_invalid": "管理キーの権限を読み取り専用か読み書きから選んでください",
+    "management_key_expiry_required": "管理キーには未来の有効期限が必要です",
+    "management_key_expiry_too_long": "管理キーの有効期間は最長 1 年です"
   },
   "channelOAuth": {
     "tip": {
@@ -3749,7 +3757,10 @@
           "title": "アクセストークン",
           "rowHint": "管理 API 用で、モデル呼び出しの API キーではありません",
           "reset": "再生成",
-          "confirm": "再生成すると、以前のアクセストークンはすぐに使えなくなります。"
+          "confirm": "再生成すると、以前のアクセストークンはすぐに使えなくなります。",
+          "deprecated": "アクセストークンは非推奨で、今後のリリースで使えなくなります。代わりに API キーのページで管理キーを作成してください。",
+          "onceNote": "表示はこの一度だけです。保存されるのは指紋のみです。",
+          "openKeys": "管理キーを作成"
         }
       },
       "sessions": {
@@ -3897,7 +3908,10 @@
       "never": "期限なし",
       "day": "1日",
       "week": "1週間",
-      "month": "1か月"
+      "month": "1か月",
+      "quarter": "90日",
+      "halfYear": "180日",
+      "year": "1年"
     },
     "secret": {
       "onceNote": "今すぐコピーして安全な場所に保管してください。キーが表示されるのはこの一度だけで、後から確認することはできません。紛失した場合はキーを再発行してください。",
@@ -3913,6 +3927,31 @@
       "pasteHint": "キーは一度しか表示されないため、ここに貼り付けて入力してください。このページでのみ使われ、保存されません。",
       "pasteMismatch": "この API キーのキーではありません（{{hint}}）。",
       "pasteForModels": "上にキーを貼り付けると、このプロトコルで呼び出せるモデルが表示されます。"
+    },
+    "type": {
+      "label": "種類",
+      "api": "API キー",
+      "apiHint": "モデルを呼び出し、自分の残高・使用量・モデルも確認できます。",
+      "read": "管理キー・読み取り専用",
+      "readHint": "残高、使用量、ログ、API キー一覧を確認できます。モデルは呼び出せません。",
+      "write": "管理キー・読み書き",
+      "writeHint": "API キーの作成・編集・無効化・削除もできます。モデルは呼び出せません。",
+      "legacy": "アクセストークン（非推奨）"
+    },
+    "management": {
+      "title": "管理キー",
+      "hint": "スクリプトやエージェントが管理 API と MCP でアカウントを管理するためのキーです。モデルは呼び出せません。",
+      "key": "管理キー",
+      "expiryHint": "必須、最長 1 年",
+      "createdHint": "Authorization: Bearer <キー> として管理 API または MCP に送ってください。",
+      "onceNote": "今すぐコピーして安全な場所に保管してください。キーが表示されるのはこの一度だけで、後から確認することはできません。紛失した場合は削除して作り直してください。",
+      "deleteTitle": "管理キーを削除",
+      "deleteConfirm": "「{{name}}」を削除しますか？使用中のプログラムはすぐに使えなくなります。",
+      "expires": "{{when}}に期限切れ",
+      "expired": "期限切れ",
+      "never": "期限なし",
+      "lastUsed": "{{when}}に使用",
+      "neverUsed": "未使用"
     }
   },
   "redemptionList": {

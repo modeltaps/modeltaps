@@ -51,9 +51,9 @@ func setupKeyTest(t *testing.T) *keyTestEnv {
 	model.DB = testDB
 	t.Cleanup(func() { model.DB = prevDB })
 
-	owner := &model.User{Id: 1, Username: "owner", AccessToken: "t-owner", AffCode: "a-owner", Group: "default", Status: config.UserStatusEnabled}
-	member := &model.User{Id: 2, Username: "member", AccessToken: "t-member", AffCode: "a-member", Group: "default", Status: config.UserStatusEnabled}
-	shadow := &model.User{Id: 11, Username: "shadow", AccessToken: "t-shadow", AffCode: "a-shadow", Group: "default", Status: config.UserStatusEnabled, Type: config.UserTypeOrgShadow}
+	owner := &model.User{Id: 1, Username: "owner", AffCode: "a-owner", Group: "default", Status: config.UserStatusEnabled}
+	member := &model.User{Id: 2, Username: "member", AffCode: "a-member", Group: "default", Status: config.UserStatusEnabled}
+	shadow := &model.User{Id: 11, Username: "shadow", AffCode: "a-shadow", Group: "default", Status: config.UserStatusEnabled, Type: config.UserTypeOrgShadow}
 	for _, u := range []*model.User{owner, member, shadow} {
 		if err := testDB.Create(u).Error; err != nil {
 			t.Fatal(err)

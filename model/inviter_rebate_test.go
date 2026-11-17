@@ -25,8 +25,8 @@ func setInviterReward(t *testing.T, rewardType string, value int) {
 func seedRebateUsers(t *testing.T) {
 	t.Helper()
 	for _, user := range []*User{
-		{Id: rebateInviterId, Username: "inviter", Password: "placeholder", AccessToken: "rebate-inviter", AffCode: "inv1", Group: "default"},
-		{Id: rebateInviteeId, Username: "invitee", Password: "placeholder", AccessToken: "rebate-invitee", AffCode: "inv2", Group: "default", InviterId: rebateInviterId},
+		{Id: rebateInviterId, Username: "inviter", Password: "placeholder", AffCode: "inv1", Group: "default"},
+		{Id: rebateInviteeId, Username: "invitee", Password: "placeholder", AffCode: "inv2", Group: "default", InviterId: rebateInviterId},
 	} {
 		if err := DB.Create(user).Error; err != nil {
 			t.Fatalf("create user %s: %v", user.Username, err)
@@ -280,7 +280,7 @@ func TestInviteSignupBonusFollowsSwitch(t *testing.T) {
 			t.Cleanup(func() {
 				config.QuotaForInviter, config.QuotaForInvitee, config.QuotaForNewUser = oldInviter, oldInvitee, oldNew
 			})
-			inviter := &User{Id: rebateInviterId, Username: "inviter", Password: "placeholder", AccessToken: "rebate-inviter", AffCode: "inv1", Group: "default"}
+			inviter := &User{Id: rebateInviterId, Username: "inviter", Password: "placeholder", AffCode: "inv1", Group: "default"}
 			if err := DB.Create(inviter).Error; err != nil {
 				t.Fatal(err)
 			}

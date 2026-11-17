@@ -1554,7 +1554,7 @@
     "turnstile_failed": "人机验证失败，请刷新页面后重试",
     "turnstile_unavailable": "人机验证暂时不可用，请稍后重试",
     "not_signed_in": "未登录",
-    "invalid_access_token": "访问令牌无效",
+    "invalid_access_token": "管理密钥或访问令牌无效",
     "invalid_session": "会话无效，请重新登录",
     "session_expired": "登录已过期，请重新登录",
     "user_check_failed": "账号校验失败，请重试",
@@ -1764,7 +1764,15 @@
     "channel_copy_key_mismatch": "只有超级管理员能把 key 复制到类型或接口地址不同的渠道。",
     "token_key_reset_managed": "试用区 API Key 由系统管理，不能重置",
     "token_key_reset_not_creator": "只有创建该 API Key 的成员才能重置它",
-    "usage_alert_tiers_invalid": "用量提醒档位要填 1 到 100 的百分比，用逗号分隔；填 0 表示关闭"
+    "usage_alert_tiers_invalid": "用量提醒档位要填 1 到 100 的百分比，用逗号分隔；填 0 表示关闭",
+    "api_key_not_allowed": "API Key 只能调用模型接口，管理接口请使用管理密钥",
+    "management_key_expired": "该管理密钥已过期",
+    "management_key_forbidden": "该管理密钥无权执行此操作",
+    "management_key_not_found": "管理密钥不存在",
+    "management_key_name_required": "请填写管理密钥名称",
+    "management_key_scope_invalid": "请为管理密钥选择只读或读写",
+    "management_key_expiry_required": "管理密钥必须设置一个未来的过期时间",
+    "management_key_expiry_too_long": "管理密钥的有效期最长一年"
   },
   "channelOAuth": {
     "tip": {
@@ -3753,7 +3761,10 @@
           "title": "访问令牌",
           "rowHint": "用于调用管理接口，不是调用模型的 API Key",
           "reset": "重新生成",
-          "confirm": "重新生成后，原来的访问令牌立即失效。"
+          "confirm": "重新生成后，原来的访问令牌立即失效。",
+          "deprecated": "访问令牌已弃用，将在后续版本停用。请改在 API Key 页面新建管理密钥。",
+          "onceNote": "只显示这一次：系统只保存它的指纹。",
+          "openKeys": "新建管理密钥"
         }
       },
       "sessions": {
@@ -3901,7 +3912,10 @@
       "never": "永不过期",
       "day": "1 天",
       "week": "1 周",
-      "month": "1 个月"
+      "month": "1 个月",
+      "quarter": "90 天",
+      "halfYear": "180 天",
+      "year": "1 年"
     },
     "secret": {
       "onceNote": "请立即复制并妥善保存。密钥只显示这一次，之后无法再查看；如果遗失，请重置密钥。",
@@ -3917,6 +3931,31 @@
       "pasteHint": "密钥只显示一次，请在此粘贴以填入命令。它只在本页面使用，不会保存。",
       "pasteMismatch": "这不是该 API Key 的密钥（{{hint}}）。",
       "pasteForModels": "在上方粘贴密钥后，即可列出它在该协议下可调用的模型。"
+    },
+    "type": {
+      "label": "类型",
+      "api": "API Key",
+      "apiHint": "调用模型，并可查询自己的余额、用量与模型。",
+      "read": "管理密钥 · 只读",
+      "readHint": "查看余额、用量、日志与 API Key 列表，不能调用模型。",
+      "write": "管理密钥 · 读写",
+      "writeHint": "另可新建、修改、停用、删除 API Key，不能调用模型。",
+      "legacy": "访问令牌（已弃用）"
+    },
+    "management": {
+      "title": "管理密钥",
+      "hint": "供脚本和 Agent 通过管理接口与 MCP 管理你的账户，不能调用模型。",
+      "key": "管理密钥",
+      "expiryHint": "必填，最长一年",
+      "createdHint": "以 Authorization: Bearer <密钥> 调用管理接口或 MCP。",
+      "onceNote": "请立即复制并妥善保存。密钥只显示这一次，之后无法再查看；如果遗失，请删除后重新创建。",
+      "deleteTitle": "删除管理密钥",
+      "deleteConfirm": "删除「{{name}}」？正在使用它的程序会立即失效。",
+      "expires": "{{when}}过期",
+      "expired": "已过期",
+      "never": "永不过期",
+      "lastUsed": "{{when}}使用",
+      "neverUsed": "从未使用"
     }
   },
   "redemptionList": {

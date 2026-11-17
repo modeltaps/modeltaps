@@ -42,6 +42,7 @@ import ConnectInfo, { useApiAddresses } from './ConnectInfo';
 import TokenTable from './TokenTable';
 import TokenPanel from './TokenPanel';
 import NewTokenDialog from './NewTokenDialog';
+import ManagementKeyList from './ManagementKeyList';
 import { TOKEN_TAB_KEYS } from './tokenTabs';
 import TokenUsageDialog from './TokenUsageDialog';
 import OpenClawConnectDialog from './OpenClawConnectDialog';
@@ -193,6 +194,8 @@ export default function Token() {
   // The key open in the right-side panel (?id=, &tab=) and the create dialog (?new=1).
   const route = useObjectRoute(TOKEN_TAB_KEYS);
   const [reloadKey, setReloadKey] = useState(0);
+  // Management keys (AGENT-4) are personal: listed and created here outside organizations only.
+  const [managementReload, setManagementReload] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [usageTarget, setUsageTarget] = useState(null);
@@ -739,6 +742,7 @@ export default function Token() {
             </Card>
           </>
         )}
+        {!isOrgContext && <ManagementKeyList reloadKey={managementReload} />}
         {/* The panel comes first so the dialogs it opens (delete, test command, client setup) stack above it. */}
         {route.openId > 0 && (
           <TokenPanel
@@ -774,9 +778,11 @@ export default function Token() {
               rememberSecret(created?.id, created?.key);
               handleRefresh();
             }}
+            onManagementCreated={() => setManagementReload((k) => k + 1)}
             onOpen={(id) => route.open(id)}
             baseUrl={apiAddresses[0]?.url}
             onCopy={copyText}
+            allowManagement={!isOrgContext}
           />
         )}
 

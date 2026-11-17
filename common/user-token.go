@@ -165,6 +165,69 @@ func IsPlaygroundKeyFormat(key string) bool {
 	return ok && len(secret) == PlaygroundKeySecretLength && isBase62(secret)
 }
 
+// Management keys (AGENT-4) call the management API (/api/...) and MCP for their user; they can
+// never call model APIs. They are ManagementKeyPrefix followed by ManagementKeySecretLength base62
+// characters and, like API keys, only their hash and a masked hint are stored.
+//
+// Legacy access tokens (32 hex characters, the old per-user "system access token") are stored
+// the same way after migration and are accepted for one release as a deprecated path.
+const (
+	ManagementKeyPrefix       = "mk-"
+	ManagementKeySecretLength = 56
+)
+
+// NewManagementKey returns a new random management key, prefix included.
+func NewManagementKey() (string, error) {
+	secret, err := randomBase62(ManagementKeySecretLength)
+	if err != nil {
+		return "", err
+	}
+	return ManagementKeyPrefix + secret, nil
+}
+
+// NormalizeManagementKey strips the optional "Bearer " prefix and surrounding blanks. Unlike API
+// keys the prefix ("mk-") is part of the key.
+func NormalizeManagementKey(key string) string {
+	key = strings.TrimSpace(key)
+	key = strings.TrimPrefix(key, "Bearer ")
+	return strings.TrimSpace(key)
+}
+
+// HashManagementKey is the value stored in management_keys.key_hash: the hex SHA-256 of the
+// normalized key. Management keys carry about 333 bits of entropy and legacy access tokens 122,
+// so a plain hash leaves nothing to brute-force.
+func HashManagementKey(key string) string {
+	sum := sha256.Sum256([]byte(NormalizeManagementKey(key)))
+	return hex.EncodeToString(sum[:])
+}
+
+// ManagementKeyHint is the masked form of a management key kept for lists.
+func ManagementKeyHint(key string) string {
+	return utils.MaskSecret(NormalizeManagementKey(key))
+}
+
+// IsManagementKeyFormat reports whether key (normalized) has the shape of a management key.
+func IsManagementKeyFormat(key string) bool {
+	secret, ok := strings.CutPrefix(key, ManagementKeyPrefix)
+	return ok && len(secret) == ManagementKeySecretLength && isBase62(secret)
+}
+
+// LooksLikeAPIKey reports whether a credential sent to the management API is an API key (a
+// model-call key) rather than a management key or a legacy access token: anything sent with the
+// "sk-" prefix, and every API key format with or without it.
+func LooksLikeAPIKey(credential string) bool {
+	credential = NormalizeManagementKey(credential)
+	if strings.HasPrefix(credential, "sk-") {
+		return true
+	}
+	// A management key has the length of a legacy signed key.
+	if strings.HasPrefix(credential, ManagementKeyPrefix) {
+		return false
+	}
+	return IsUserTokenKeyFormat(credential) || IsPlaygroundKeyFormat(credential) ||
+		len(credential) == LegacySignedTokenLength || IsLegacyRandomTokenFormat(credential)
+}
+
 // ValidateToken checks the signature of a legacy 59-character key and returns the ids encoded in
 // it. A valid signature does not make a key valid: it must still be found by its hash.
 func ValidateToken(token string) (tokenID, userID int, err error) {

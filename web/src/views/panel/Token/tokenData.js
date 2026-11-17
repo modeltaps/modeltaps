@@ -93,3 +93,18 @@ export const expiryFromPreset = (preset, now = new Date()) => {
   }
   return -1;
 };
+
+// Key types offered when creating a key (AGENT-4): an API key calls models; a management key
+// (read-only or read-write) calls the management API and MCP and never models.
+export const KEY_TYPES = ['api', 'read', 'write'];
+export const isManagementKeyType = (type) => type === 'read' || type === 'write';
+
+// A management key must expire: 90 days by default, at most a year (the server refuses more).
+export const MANAGEMENT_EXPIRY_PRESETS = ['month', 'quarter', 'halfYear', 'year'];
+export const MANAGEMENT_EXPIRY_DEFAULT = 'quarter';
+const MANAGEMENT_EXPIRY_DAYS = { month: 30, quarter: 90, halfYear: 180, year: 365 };
+export const managementExpiryFromPreset = (preset, now = new Date()) =>
+  Math.floor(now.getTime() / 1000) + (MANAGEMENT_EXPIRY_DAYS[preset] || MANAGEMENT_EXPIRY_DAYS[MANAGEMENT_EXPIRY_DEFAULT]) * 86400;
+
+// The i18n key of a management key's type tag ("legacy" is a migrated access token).
+export const managementKeyTypeLabel = (scope) => `apiKey.type.${scope === 'read' || scope === 'write' ? scope : 'legacy'}`;

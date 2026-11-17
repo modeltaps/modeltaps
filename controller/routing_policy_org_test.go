@@ -43,7 +43,7 @@ func setupOrgRoutingControllerTest(t *testing.T) *gin.Engine {
 	})
 	orgs := map[string]*model.Organization{}
 	for i := 1; i <= 2; i++ {
-		shadow := &model.User{Id: 10 + i, Username: "shadow" + strconv.Itoa(i), AccessToken: "t" + strconv.Itoa(i), AffCode: "a" + strconv.Itoa(i), Group: "default"}
+		shadow := &model.User{Id: 10 + i, Username: "shadow" + strconv.Itoa(i), AffCode: "a" + strconv.Itoa(i), Group: "default"}
 		if err := testDB.Create(shadow).Error; err != nil {
 			t.Fatal(err)
 		}

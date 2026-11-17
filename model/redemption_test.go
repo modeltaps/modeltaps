@@ -50,7 +50,7 @@ func setupRedeemTestDB(t *testing.T) {
 func TestRedeemConcurrentSingleWinner(t *testing.T) {
 	setupRedeemTestDB(t)
 
-	user := &User{Username: "redeem-user", Password: "x", AccessToken: "at-redeem", AffCode: "aff-redeem"}
+	user := &User{Username: "redeem-user", Password: "x", AffCode: "aff-redeem"}
 	if err := DB.Create(user).Error; err != nil {
 		t.Fatalf("创建用户失败: %v", err)
 	}
@@ -120,7 +120,7 @@ func TestRedeemConcurrentSingleWinner(t *testing.T) {
 func TestRedeemReusedCodeRejected(t *testing.T) {
 	setupRedeemTestDB(t)
 
-	user := &User{Username: "redeem-user-2", Password: "x", AccessToken: "at-redeem-2", AffCode: "aff-redeem-2"}
+	user := &User{Username: "redeem-user-2", Password: "x", AffCode: "aff-redeem-2"}
 	if err := DB.Create(user).Error; err != nil {
 		t.Fatalf("创建用户失败: %v", err)
 	}
@@ -166,11 +166,10 @@ func TestRedeemScopeMatrix(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			setupRedeemTestDB(t)
 			user := &User{
-				Username:    fmt.Sprintf("scope-user-%d", i),
-				Password:    "x",
-				AccessToken: fmt.Sprintf("at-scope-%d", i),
-				AffCode:     fmt.Sprintf("aff-scope-%d", i),
-				Type:        tc.userType,
+				Username: fmt.Sprintf("scope-user-%d", i),
+				Password: "x",
+				AffCode:  fmt.Sprintf("aff-scope-%d", i),
+				Type:     tc.userType,
 			}
 			if err := DB.Create(user).Error; err != nil {
 				t.Fatalf("创建用户失败: %v", err)
@@ -224,7 +223,7 @@ func TestRedeemScopeMatrix(t *testing.T) {
 // TestRedeemEmptyScopeTreatedAsAny 断言存量数据(scope 为空)不受限制。
 func TestRedeemEmptyScopeTreatedAsAny(t *testing.T) {
 	setupRedeemTestDB(t)
-	user := &User{Username: "legacy-scope", Password: "x", AccessToken: "at-legacy", AffCode: "aff-legacy", Type: config.UserTypeOrgShadow}
+	user := &User{Username: "legacy-scope", Password: "x", AffCode: "aff-legacy", Type: config.UserTypeOrgShadow}
 	if err := DB.Create(user).Error; err != nil {
 		t.Fatalf("创建用户失败: %v", err)
 	}

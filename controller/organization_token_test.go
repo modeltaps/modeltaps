@@ -36,7 +36,7 @@ func TestAddOrgTokenReturnsIdAndKey(t *testing.T) {
 	model.DB = testDB
 	t.Cleanup(func() { model.DB = prevDB })
 
-	shadow := &model.User{Id: 11, Username: "shadow1", AccessToken: "t1", AffCode: "a1", Group: "default"}
+	shadow := &model.User{Id: 11, Username: "shadow1", AffCode: "a1", Group: "default"}
 	if err := testDB.Create(shadow).Error; err != nil {
 		t.Fatal(err)
 	}

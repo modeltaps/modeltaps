@@ -340,8 +340,8 @@ func TestUserStatisticsExcludeShadow(t *testing.T) {
 
 func TestGetUsernamesByIds(t *testing.T) {
 	setupOrgTestDB(t)
-	u1 := &User{Username: "bob", Password: "x", AccessToken: "at-bob", AffCode: "aff-bob"}
-	u2 := &User{Username: "carol", Password: "x", AccessToken: "at-carol", AffCode: "aff-carol"}
+	u1 := &User{Username: "bob", Password: "x", AffCode: "aff-bob"}
+	u2 := &User{Username: "carol", Password: "x", AffCode: "aff-carol"}
 	if err := DB.Create(u1).Error; err != nil {
 		t.Fatalf("创建用户失败: %v", err)
 	}

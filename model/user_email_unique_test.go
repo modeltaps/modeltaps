@@ -54,7 +54,6 @@ func newEmailTestUser(username, email string) *User {
 		Email:       NullableEmail(email),
 		Role:        config.RoleCommonUser,
 		Status:      config.UserStatusEnabled,
-		AccessToken: utils.GetUUID(),
 		AffCode:     strings.ToLower(utils.GetRandomString(8)),
 		CreatedTime: utils.GetTimestamp(),
 	}
@@ -273,8 +272,8 @@ func TestEnsureUserEmailUniqueReadyNormalizes(t *testing.T) {
 	db := setupEmailTestDB(t, false)
 
 	for _, row := range [][2]string{{"empty1", ""}, {"empty2", ""}, {"mixed", " Mixed@Case.COM "}} {
-		if err := db.Exec("INSERT INTO users (username, password, email, aff_code, access_token) VALUES (?, ?, ?, ?, ?)",
-			row[0], "test-password", row[1], utils.GetRandomString(8), utils.GetUUID()).Error; err != nil {
+		if err := db.Exec("INSERT INTO users (username, password, email, aff_code) VALUES (?, ?, ?, ?)",
+			row[0], "test-password", row[1], utils.GetRandomString(8)).Error; err != nil {
 			t.Fatalf("构造历史数据失败: %v", err)
 		}
 	}
@@ -339,8 +338,8 @@ func TestEnsureUserEmailUniqueReadyFailsClosed(t *testing.T) {
 func TestEnsureUserEmailUniqueReadySkipsWhenIndexExists(t *testing.T) {
 	db := setupEmailTestDB(t, true)
 
-	if err := db.Exec("INSERT INTO users (username, password, email, aff_code, access_token) VALUES (?, ?, ?, ?, ?)",
-		"legacy", "test-password", " Keep@Case.COM ", utils.GetRandomString(8), utils.GetUUID()).Error; err != nil {
+	if err := db.Exec("INSERT INTO users (username, password, email, aff_code) VALUES (?, ?, ?, ?)",
+		"legacy", "test-password", " Keep@Case.COM ", utils.GetRandomString(8)).Error; err != nil {
 		t.Fatalf("构造数据失败: %v", err)
 	}
 	if err := ensureUserEmailUniqueReady(db); err != nil {
@@ -358,8 +357,8 @@ func TestEnsureUserEmailUniqueReadySkipsWhenIndexExists(t *testing.T) {
 // seedRawUser 绕过 gorm 的软删过滤直接造行，deletedAt 非空即为已软删账号。
 func seedRawUser(t *testing.T, db *gorm.DB, username, email string, deletedAt *time.Time) {
 	t.Helper()
-	if err := db.Exec("INSERT INTO users (username, password, email, aff_code, access_token, deleted_at) VALUES (?, ?, ?, ?, ?, ?)",
-		username, "test-password", email, utils.GetRandomString(8), utils.GetUUID(), deletedAt).Error; err != nil {
+	if err := db.Exec("INSERT INTO users (username, password, email, aff_code, deleted_at) VALUES (?, ?, ?, ?, ?)",
+		username, "test-password", email, utils.GetRandomString(8), deletedAt).Error; err != nil {
 		t.Fatalf("构造用户 %s 失败: %v", username, err)
 	}
 }

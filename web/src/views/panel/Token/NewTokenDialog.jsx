@@ -11,62 +11,127 @@ import { Field } from '@/components/objects';
 import QuotaInput from '@/components/QuotaInput';
 import { API } from 'utils/api';
 import { showError } from 'utils/common';
-import { DEFAULT_SETTING, EXPIRY_PRESETS, expiryFromPreset, quotaPatch } from './tokenData';
+import {
+  DEFAULT_SETTING,
+  EXPIRY_PRESETS,
+  KEY_TYPES,
+  MANAGEMENT_EXPIRY_DEFAULT,
+  MANAGEMENT_EXPIRY_PRESETS,
+  expiryFromPreset,
+  isManagementKeyType,
+  managementExpiryFromPreset,
+  quotaPatch
+} from './tokenData';
 import { SecretKeyReveal } from './KeySecret';
 
 // Server answers that belong under the name field rather than in a toast.
-const NAME_ERRORS = new Set(['token_name_taken', 'token_name_reserved']);
+const NAME_ERRORS = new Set(['token_name_taken', 'token_name_reserved', 'token_name_too_long', 'management_key_name_required']);
 
-// New API key, in a dialog as most consoles do it: a name, and optionally a spending limit and an
-// expiry. Groups, model and IP restrictions start open (the account's group, every model, any
-// address) and are changed in the key's panel. After creating, the dialog shows the key with copy
-// and the base URL, then closes or opens the key's panel. This is the only time the key is shown:
-// only its hash is stored. `onCreated` receives { id, key } so the page can still build the
-// test command and client setup for it while it stays open.
-export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, onCopy }) {
+// New key, in a dialog as most consoles do it. The type comes first: an API key (the default)
+// takes a name, and optionally a spending limit and an expiry; groups, model and IP restrictions
+// start open and are changed in the key's panel. A management key (read-only or read-write,
+// AGENT-4) takes a name and a required expiry, and calls the management API instead of models;
+// `allowManagement` is off in an organization, where management keys are not created.
+// After creating, the dialog shows the key with copy (and the base URL for an API key). This is
+// the only time the key is shown: only its hash is stored. `onCreated` receives { id, key } of a
+// new API key so the page can still build its test command and client setup while it stays open;
+// `onManagementCreated` is called after a management key was created.
+export default function NewTokenDialog({ onClose, onCreated, onManagementCreated, onOpen, baseUrl, onCopy, allowManagement = false }) {
   const { t } = useTranslation();
-  const [form, setForm] = useState({ name: '', quota: '', expiry: 'never' });
+  const [form, setForm] = useState({ type: 'api', name: '', quota: '', expiry: 'never', managementExpiry: MANAGEMENT_EXPIRY_DEFAULT });
   const [busy, setBusy] = useState(false);
   const [nameError, setNameError] = useState('');
   const [created, setCreated] = useState(null);
   const name = form.name.trim();
+  const management = allowManagement && isManagementKeyType(form.type);
 
   const requestClose = () => {
     if (created || !form.name || window.confirm(t('objects.new.discardConfirm'))) onClose();
   };
 
-  const create = async () => {
-    if (!name || busy) return;
+  const createManagementKey = async () => {
+    const res = await API.post('/api/management_key/', {
+      name,
+      scope: form.type,
+      expired_time: managementExpiryFromPreset(form.managementExpiry)
+    });
+    const { success, message, data, code } = res.data;
+    if (success) {
+      setCreated({ id: data?.id, key: data?.key || '', management: true });
+      onManagementCreated?.();
+    } else if (NAME_ERRORS.has(code)) setNameError(message);
+    else showError(message);
+  };
+
+  const createApiKey = async () => {
     const quota = quotaPatch({ quota: form.quota, period: '' }, t);
     if (quota.error) {
       showError(quota.error);
       return;
     }
+    const { unlimited_quota, remain_quota } = quota;
+    const res = await API.post('/api/token/', {
+      name,
+      expired_time: expiryFromPreset(form.expiry),
+      group: '',
+      backup_group: '',
+      unlimited_quota,
+      remain_quota,
+      setting: structuredClone(DEFAULT_SETTING)
+    });
+    const { success, message, data, code } = res.data;
+    if (success) {
+      const next = { id: data?.id, key: data?.key ? `sk-${data.key}` : '' };
+      setCreated(next);
+      onCreated(next);
+    } else if (NAME_ERRORS.has(code)) setNameError(message);
+    else showError(message);
+  };
+
+  const create = async () => {
+    if (!name || busy) return;
     setBusy(true);
     try {
-      const { unlimited_quota, remain_quota } = quota;
-      const res = await API.post('/api/token/', {
-        name,
-        expired_time: expiryFromPreset(form.expiry),
-        group: '',
-        backup_group: '',
-        unlimited_quota,
-        remain_quota,
-        setting: structuredClone(DEFAULT_SETTING)
-      });
-      const { success, message, data, code } = res.data;
-      if (success) {
-        const next = { id: data?.id, key: data?.key ? `sk-${data.key}` : '' };
-        setCreated(next);
-        onCreated(next);
-      } else if (NAME_ERRORS.has(code)) setNameError(message);
-      else showError(message);
+      if (management) await createManagementKey();
+      else await createApiKey();
     } catch {
       // surfaced globally
     } finally {
       setBusy(false);
     }
   };
+
+  const expiryField = management ? (
+    <Field label={t('apiKey.new.expiry')} htmlFor="nt-expiry" hint={t('apiKey.management.expiryHint')} className="[&+&]:border-t-0">
+      <Select value={form.managementExpiry} onValueChange={(v) => setForm((f) => ({ ...f, managementExpiry: v }))}>
+        <SelectTrigger id="nt-expiry">
+          <span className="truncate">{t(`apiKey.expiry.${form.managementExpiry}`)}</span>
+        </SelectTrigger>
+        <SelectContent>
+          {MANAGEMENT_EXPIRY_PRESETS.map((p) => (
+            <SelectItem key={p} value={p}>
+              {t(`apiKey.expiry.${p}`)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Field>
+  ) : (
+    <Field label={t('apiKey.new.expiry')} htmlFor="nt-expiry" className="[&+&]:border-t-0">
+      <Select value={form.expiry} onValueChange={(v) => setForm((f) => ({ ...f, expiry: v }))}>
+        <SelectTrigger id="nt-expiry">
+          <span className="truncate">{t(`apiKey.expiry.${form.expiry}`)}</span>
+        </SelectTrigger>
+        <SelectContent>
+          {EXPIRY_PRESETS.map((p) => (
+            <SelectItem key={p} value={p}>
+              {t(`apiKey.expiry.${p}`)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Field>
+  );
 
   return (
     <Dialog open onOpenChange={(o) => !o && requestClose()}>
@@ -77,13 +142,22 @@ export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, on
               <DialogTitle id="new-token-title" className="text-base font-semibold">
                 {t('apiKey.new.createdTitle', { name })}
               </DialogTitle>
-              <DialogDescription>{t('apiKey.new.createdHint')}</DialogDescription>
+              <DialogDescription>{created.management ? t('apiKey.management.createdHint') : t('apiKey.new.createdHint')}</DialogDescription>
             </DialogHeader>
             <div className="px-6 pb-6">
-              <SecretKeyReveal secret={created.key} baseUrl={baseUrl} onCopy={onCopy} />
+              {created.management ? (
+                <SecretKeyReveal
+                  secret={created.key}
+                  onCopy={onCopy}
+                  label={t('apiKey.management.key')}
+                  note={t('apiKey.management.onceNote')}
+                />
+              ) : (
+                <SecretKeyReveal secret={created.key} baseUrl={baseUrl} onCopy={onCopy} />
+              )}
             </div>
             <DialogFooter>
-              {created.id ? (
+              {created.id && !created.management ? (
                 <Button variant="ghost" className="rounded-lg text-muted-foreground" onClick={() => onOpen(created.id)}>
                   {t('apiKey.new.openDetails')}
                 </Button>
@@ -104,9 +178,25 @@ export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, on
               <DialogTitle id="new-token-title" className="text-base font-semibold">
                 {t('token_index.createToken')}
               </DialogTitle>
-              <DialogDescription>{t('apiKey.new.description')}</DialogDescription>
+              <DialogDescription>{management ? t('apiKey.management.hint') : t('apiKey.new.description')}</DialogDescription>
             </DialogHeader>
             <div className="px-6 pb-4">
+              {allowManagement && (
+                <Field label={t('apiKey.type.label')} htmlFor="nt-type" hint={t(`apiKey.type.${form.type}Hint`)}>
+                  <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}>
+                    <SelectTrigger id="nt-type" data-testid="key-type-trigger">
+                      <span className="truncate">{t(`apiKey.type.${form.type}`)}</span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {KEY_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {t(`apiKey.type.${type}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
               <Field label={t('token_index.name')} htmlFor="nt-name" error={nameError}>
                 <Input
                   id="nt-name"
@@ -122,34 +212,25 @@ export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, on
                   }}
                 />
               </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label={t('apiKey.new.limit')} optional className="[&+&]:border-t-0">
-                  <QuotaInput
-                    name="nt-quota"
-                    value={form.quota}
-                    placeholder={t('token_index.noLimit')}
-                    allowEmpty
-                    onChange={(v) => setForm((f) => ({ ...f, quota: v }))}
-                  />
-                </Field>
-                <Field label={t('apiKey.new.expiry')} htmlFor="nt-expiry" className="[&+&]:border-t-0">
-                  <Select value={form.expiry} onValueChange={(v) => setForm((f) => ({ ...f, expiry: v }))}>
-                    <SelectTrigger id="nt-expiry">
-                      <span className="truncate">{t(`apiKey.expiry.${form.expiry}`)}</span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {EXPIRY_PRESETS.map((p) => (
-                        <SelectItem key={p} value={p}>
-                          {t(`apiKey.expiry.${p}`)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </div>
+              {management ? (
+                expiryField
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label={t('apiKey.new.limit')} optional className="[&+&]:border-t-0">
+                    <QuotaInput
+                      name="nt-quota"
+                      value={form.quota}
+                      placeholder={t('token_index.noLimit')}
+                      allowEmpty
+                      onChange={(v) => setForm((f) => ({ ...f, quota: v }))}
+                    />
+                  </Field>
+                  {expiryField}
+                </div>
+              )}
             </div>
             <DialogFooter className="items-center sm:justify-between">
-              <span className="hidden text-xs text-muted-foreground sm:block">{t('apiKey.new.later')}</span>
+              <span className="hidden text-xs text-muted-foreground sm:block">{management ? '' : t('apiKey.new.later')}</span>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" className="rounded-lg" onClick={requestClose}>
                   {t('common.cancel')}
@@ -170,7 +251,9 @@ export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, on
 NewTokenDialog.propTypes = {
   onClose: PropTypes.func.isRequired,
   onCreated: PropTypes.func.isRequired,
+  onManagementCreated: PropTypes.func,
   onOpen: PropTypes.func.isRequired,
   baseUrl: PropTypes.string,
-  onCopy: PropTypes.func.isRequired
+  onCopy: PropTypes.func.isRequired,
+  allowManagement: PropTypes.bool
 };

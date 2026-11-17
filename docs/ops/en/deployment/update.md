@@ -12,7 +12,7 @@ The upgrade scripts below run `docker pull ghcr.io/modeltaps/modeltaps:latest` a
 :::
 
 ::: danger Upgrades cannot simply be rolled back
-From the version that stores API keys as hashes, the database keeps only the hash of each key and the plaintext is cleared. This step cannot be undone: downgrading to an older version makes every API key invalid. Back up the database before upgrading, and restore that backup together with the old version if you need to roll back.
+From the version that stores API keys as hashes, the database keeps only the hash of each key and the plaintext is cleared. This step cannot be undone: downgrading to an older version makes every API key invalid. Back up the database before upgrading, and restore that backup together with the old version if you need to roll back. The version that introduces management keys does the same with each account's access token: it is moved to a hash and the plaintext cleared, so after a downgrade no old access token works.
 :::
 
 ### Using a control panel scheduled task

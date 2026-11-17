@@ -13,11 +13,11 @@ func TestBackfillUserEmailVerified(t *testing.T) {
 
 	withEmail := &User{
 		Username: "hasmail", Email: "hasmail@example.com",
-		AccessToken: utils.GetUUID(), AffCode: utils.GetRandomString(8),
+		AffCode: utils.GetRandomString(8),
 	}
 	withoutEmail := &User{
-		Username:    "nomail",
-		AccessToken: utils.GetUUID(), AffCode: utils.GetRandomString(8),
+		Username: "nomail",
+		AffCode:  utils.GetRandomString(8),
 	}
 	for _, user := range []*User{withEmail, withoutEmail} {
 		if err := db.Create(user).Error; err != nil {

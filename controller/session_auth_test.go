@@ -30,7 +30,7 @@ func TestSessionRevocationInvalidatesCookie(t *testing.T) {
 	}
 	user := seedOidcUser(t, &model.User{
 		Username: "carol", Password: hash, Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		AccessToken: "tok-carol", AffCode: "aff-carol",
+		AffCode: "aff-carol",
 	})
 
 	gin.SetMode(gin.TestMode)

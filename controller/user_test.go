@@ -59,23 +59,21 @@ func TestGetUserShadowUserFiltered(t *testing.T) {
 	setupGetUserTestDB(t)
 
 	normal := &model.User{
-		Username:    "alice",
-		Role:        config.RoleCommonUser,
-		Status:      config.UserStatusEnabled,
-		Type:        config.UserTypeNormal,
-		AccessToken: "test-token-normal",
-		AffCode:     "affn",
+		Username: "alice",
+		Role:     config.RoleCommonUser,
+		Status:   config.UserStatusEnabled,
+		Type:     config.UserTypeNormal,
+		AffCode:  "affn",
 	}
 	if err := model.DB.Create(normal).Error; err != nil {
 		t.Fatalf("创建普通用户失败: %v", err)
 	}
 	shadow := &model.User{
-		Username:    "org-acme",
-		Role:        config.RoleGuestUser,
-		Status:      config.UserStatusEnabled,
-		Type:        config.UserTypeOrgShadow,
-		AccessToken: "test-token-shadow",
-		AffCode:     "affs",
+		Username: "org-acme",
+		Role:     config.RoleGuestUser,
+		Status:   config.UserStatusEnabled,
+		Type:     config.UserTypeOrgShadow,
+		AffCode:  "affs",
 	}
 	if err := model.DB.Create(shadow).Error; err != nil {
 		t.Fatalf("创建影子用户失败: %v", err)
@@ -126,12 +124,11 @@ func decodeResp(t *testing.T, w *httptest.ResponseRecorder) map[string]interface
 func createTestUser(t *testing.T, username string, role int, userType int) *model.User {
 	t.Helper()
 	u := &model.User{
-		Username:    username,
-		Role:        role,
-		Status:      config.UserStatusEnabled,
-		Type:        userType,
-		AccessToken: "token-" + username,
-		AffCode:     "aff-" + username,
+		Username: username,
+		Role:     role,
+		Status:   config.UserStatusEnabled,
+		Type:     userType,
+		AffCode:  "aff-" + username,
 	}
 	if err := model.DB.Create(u).Error; err != nil {
 		t.Fatalf("创建用户 %s 失败: %v", username, err)

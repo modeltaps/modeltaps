@@ -96,14 +96,13 @@ func TestLoginFailuresConvergeAcrossIdentifierForms(t *testing.T) {
 		t.Fatalf("生成密码哈希失败: %v", err)
 	}
 	u := &model.User{
-		Username:    "frank",
-		Email:       model.NullableEmail("frank@example.com"),
-		Password:    hash,
-		Role:        config.RoleCommonUser,
-		Status:      config.UserStatusEnabled,
-		Type:        config.UserTypeNormal,
-		AccessToken: "test-token-frank",
-		AffCode:     "afff",
+		Username: "frank",
+		Email:    model.NullableEmail("frank@example.com"),
+		Password: hash,
+		Role:     config.RoleCommonUser,
+		Status:   config.UserStatusEnabled,
+		Type:     config.UserTypeNormal,
+		AffCode:  "afff",
 	}
 	if err := model.DB.Create(u).Error; err != nil {
 		t.Fatalf("创建用户失败: %v", err)
@@ -149,14 +148,13 @@ func TestLoginIdentifierNoCrossColumnFallback(t *testing.T) {
 		t.Fatalf("生成密码哈希失败: %v", err)
 	}
 	victim := &model.User{
-		Username:    "victim",
-		Email:       model.NullableEmail("shared@example.com"),
-		Password:    hash,
-		Role:        config.RoleCommonUser,
-		Status:      config.UserStatusEnabled,
-		Type:        config.UserTypeNormal,
-		AccessToken: "test-token-victim",
-		AffCode:     "affv",
+		Username: "victim",
+		Email:    model.NullableEmail("shared@example.com"),
+		Password: hash,
+		Role:     config.RoleCommonUser,
+		Status:   config.UserStatusEnabled,
+		Type:     config.UserTypeNormal,
+		AffCode:  "affv",
 	}
 	if err := model.DB.Create(victim).Error; err != nil {
 		t.Fatalf("创建用户失败: %v", err)
@@ -166,13 +164,12 @@ func TestLoginIdentifierNoCrossColumnFallback(t *testing.T) {
 		t.Fatalf("生成密码哈希失败: %v", err)
 	}
 	attacker := &model.User{
-		Username:    "shared@example.com",
-		Password:    attackerHash,
-		Role:        config.RoleCommonUser,
-		Status:      config.UserStatusEnabled,
-		Type:        config.UserTypeNormal,
-		AccessToken: "test-token-attacker",
-		AffCode:     "affa",
+		Username: "shared@example.com",
+		Password: attackerHash,
+		Role:     config.RoleCommonUser,
+		Status:   config.UserStatusEnabled,
+		Type:     config.UserTypeNormal,
+		AffCode:  "affa",
 	}
 	if err := model.DB.Create(attacker).Error; err != nil {
 		t.Fatalf("创建用户失败: %v", err)

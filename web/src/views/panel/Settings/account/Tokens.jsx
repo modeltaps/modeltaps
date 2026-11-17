@@ -1,15 +1,20 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { KeyRound } from 'lucide-react';
+import { Link } from 'react-router';
+import { KeyRound, TriangleAlert } from 'lucide-react';
 
 import { API } from 'utils/api';
 import { copy, showError } from 'utils/common';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ActionCard, ActionRow } from '@/components/settings/cards';
+import { workbench } from 'routes/paths';
 import { TextRow } from '../../Setting/parts';
 
 // ==============================|| SETTINGS — ACCOUNT / ACCESS TOKEN ||============================== //
-// The access token for the management API (not an API key for model calls): generated or reset as
-// a one-off action. Resetting invalidates the previous token, so it asks first.
+// The deprecated access token for the management API (not an API key for model calls). Management
+// keys replace it (AGENT-4): it still works for one release, and regenerating it here shows the
+// new token once, since only its hash is stored. Resetting invalidates the previous token, so it
+// asks first.
 
 export default function AccessTokenCard() {
   const { t } = useTranslation();
@@ -29,6 +34,15 @@ export default function AccessTokenCard() {
 
   return (
     <ActionCard title={t('settingsUi.personal.cards.accessToken.title')} highlight="access-token">
+      <Alert variant="warning" className="mb-2" data-testid="access-token-deprecated">
+        <TriangleAlert />
+        <AlertDescription>
+          {t('settingsUi.personal.cards.accessToken.deprecated')}{' '}
+          <Link to={`${workbench.keys()}?new=1`} className="font-medium underline underline-offset-2">
+            {t('settingsUi.personal.cards.accessToken.openKeys')}
+          </Link>
+        </AlertDescription>
+      </Alert>
       <ActionRow
         icon={KeyRound}
         title={t('settingsUi.personal.cards.accessToken.title')}
@@ -50,7 +64,7 @@ export default function AccessTokenCard() {
             onChange={() => {}}
             readOnly
             copyable
-            description={t('profilePage.keepSafe')}
+            description={t('settingsUi.personal.cards.accessToken.onceNote')}
           />
         </div>
       )}

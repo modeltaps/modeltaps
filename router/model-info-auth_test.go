@@ -33,7 +33,7 @@ func setupModelInfoRouter(t *testing.T) *gin.Engine {
 	if err != nil {
 		t.Fatalf("打开内存数据库失败: %v", err)
 	}
-	if err := testDB.AutoMigrate(&model.User{}, &model.ModelInfo{}, &model.Channel{}); err != nil {
+	if err := testDB.AutoMigrate(&model.User{}, &model.ModelInfo{}, &model.Channel{}, &model.ManagementKey{}); err != nil {
 		t.Fatalf("迁移测试表失败: %v", err)
 	}
 	oldDB := model.DB
@@ -43,16 +43,21 @@ func setupModelInfoRouter(t *testing.T) *gin.Engine {
 	users := []*model.User{
 		{
 			Username: "catalog-admin", DisplayName: "admin", Role: config.RoleAdminUser,
-			Status: config.UserStatusEnabled, AccessToken: modelInfoAdminToken, AffCode: "affadmin",
+			Status: config.UserStatusEnabled, AffCode: "affadmin",
 		},
 		{
 			Username: "catalog-user", DisplayName: "user", Role: config.RoleCommonUser,
-			Status: config.UserStatusEnabled, AccessToken: modelInfoCommonToken, AffCode: "affuser",
+			Status: config.UserStatusEnabled, AffCode: "affuser",
 		},
 	}
-	for _, u := range users {
+	for i, u := range users {
 		if err := testDB.Create(u).Error; err != nil {
 			t.Fatalf("创建测试用户 %s 失败: %v", u.Username, err)
+		}
+		// Deprecated access tokens (legacy management keys) keep their old full access.
+		token := []string{modelInfoAdminToken, modelInfoCommonToken}[i]
+		if err := testDB.Create(&model.ManagementKey{UserId: u.Id, Scope: model.ManagementKeyScopeLegacy, Key: token, ExpiredTime: -1}).Error; err != nil {
+			t.Fatalf("创建 access token 失败: %v", err)
 		}
 	}
 	if err := testDB.Create(&model.ModelInfo{Model: "gpt-5", Name: "GPT-5"}).Error; err != nil {

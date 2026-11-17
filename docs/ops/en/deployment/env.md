@@ -167,7 +167,7 @@ The following commonly used keys are read by the code but not covered above. For
 - Logs go to the log file and to standard error. The admin "System logs" page lists only the warnings and errors that recurred since the last start, plus the recent logs kept in memory; to search the full history, collect standard error or the log directory with `docker logs`, journald or a log platform.
 - `METRICS_USER` / `METRICS_PASSWORD`: Basic Auth for the `/metrics` endpoint; leave empty to disable authentication.
 - `MCP_ENABLE`: whether to enable MCP, defaults to `false`.
-  - Endpoints: `POST /mcp` (Streamable HTTP), `GET /mcp/sse` + `POST /mcp/message` (SSE). Send the access token in an `Authorization: Bearer <access token>` header; the old `/mcp/<token>` path form has been removed.
+  - Endpoints: `POST /mcp` (Streamable HTTP), `GET /mcp/sse` + `POST /mcp/message` (SSE). Send a management key (read-only is enough) in an `Authorization: Bearer <management key>` header; the old `/mcp/<token>` path form has been removed. Deprecated access tokens keep working until the next release; API keys are refused (`401`).
 - `UPTIME_KUMA_ENABLE` / `UPTIME_KUMA_DOMAIN` / `UPTIME_KUMA_STATUS_PAGE_NAME`: Uptime Kuma status page integration.
 - `DISABLE_TOKEN_ENCODERS`: disable local token encoders and fall back to estimation, defaults to `false`.
 - `TG_HTTP_PROXY`: HTTP/SOCKS5 proxy used to reach Telegram.

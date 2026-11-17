@@ -182,7 +182,7 @@ LOGS_FILENAME="modeltaps.log"
 - 日志同时写入文件和标准错误输出。后台「系统日志」只列出自上次启动以来反复出现的警告和错误，以及内存里的最近日志；要检索完整历史，请用 `docker logs`、journald 或日志平台采集标准错误输出或日志目录。
 - `METRICS_USER` / `METRICS_PASSWORD`：`/metrics` 接口 Basic Auth，留空则不鉴权。
 - `MCP_ENABLE`：是否启用 MCP，默认 `false`。
-  - 地址：`POST /mcp`（Streamable HTTP）、`GET /mcp/sse` + `POST /mcp/message`（SSE）。访问令牌放在 `Authorization: Bearer <访问令牌>` 请求头里；旧的 `/mcp/<令牌>` 路径写法已下线。
+  - 地址：`POST /mcp`（Streamable HTTP）、`GET /mcp/sse` + `POST /mcp/message`（SSE）。管理密钥（只读档即可）放在 `Authorization: Bearer <管理密钥>` 请求头里；旧的 `/mcp/<令牌>` 路径写法已下线。已弃用的访问令牌在下一个版本之前仍可用，API Key 会被拒绝（`401`）。
 - `UPTIME_KUMA_ENABLE` / `UPTIME_KUMA_DOMAIN` / `UPTIME_KUMA_STATUS_PAGE_NAME`：Uptime Kuma 状态页集成。
 - `DISABLE_TOKEN_ENCODERS`：禁用本地 token 编码器（改用估算），默认 `false`。
 - `TG_HTTP_PROXY`：访问 Telegram 的 HTTP/SOCKS5 代理。
@@ -551,7 +551,7 @@ Logto 在 `profile` scope 下同时下发标准 claim（`preferred_username`、`
 
 退出登录不受影响：登出接口会下发 IdP 的结束会话地址，浏览器跳过去清掉 IdP 侧的 SSO 会话后回本站
 `/signed-out`，不会被立即登回。IdP 不可达时 root 从 `/login/admin` 登录后在「登录方式」切回内置账号，
-或用 root 的 access token 调 `PUT /api/option/` 把 `AccountSystem` 写回 `builtin`。
+或用 root 的访问令牌（已弃用，下一个版本停用；管理密钥不能调用设置接口）调 `PUT /api/option/` 把 `AccountSystem` 写回 `builtin`。
 
 第 1 步开启「按已验证邮箱关联」是为了让邮箱一致的老用户零操作完成迁移，但它同时是账号接管面，
 前提与限制见上方[账号关联规则](#账号关联规则)里的警告块；面向公开注册的 IdP 请保持关闭，

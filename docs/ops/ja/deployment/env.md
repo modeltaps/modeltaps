@@ -167,7 +167,7 @@ LOGS_FILENAME="modeltaps.log"
 - ログはログファイルと標準エラー出力の両方に書き出されます。管理画面の「システムログ」には前回の起動以降に繰り返し発生した警告とエラー、およびメモリ内の最近のログだけが表示されます。全履歴を検索するには、`docker logs`、journald またはログ基盤で標準エラー出力かログディレクトリを収集してください。
 - `METRICS_USER` / `METRICS_PASSWORD`：`/metrics` エンドポイントの Basic 認証。空にすると認証を行いません。
 - `MCP_ENABLE`：MCP を有効にするか。既定は `false`。
-  - エンドポイント：`POST /mcp`（Streamable HTTP）、`GET /mcp/sse` + `POST /mcp/message`（SSE）。アクセストークンは `Authorization: Bearer <アクセストークン>` ヘッダーで送ります。従来の `/mcp/<トークン>` 形式のパスは廃止されました。
+  - エンドポイント：`POST /mcp`（Streamable HTTP）、`GET /mcp/sse` + `POST /mcp/message`（SSE）。管理キー（読み取り専用で十分です）を `Authorization: Bearer <管理キー>` ヘッダーで送ります。従来の `/mcp/<トークン>` 形式のパスは廃止されました。非推奨のアクセストークンは次のリリースまで使え、API キーは拒否されます（`401`）。
 - `UPTIME_KUMA_ENABLE` / `UPTIME_KUMA_DOMAIN` / `UPTIME_KUMA_STATUS_PAGE_NAME`：Uptime Kuma ステータスページ連携。
 - `DISABLE_TOKEN_ENCODERS`：ローカルのトークンエンコーダーを無効にします（推定値に切り替えます）。既定は `false`。
 - `TG_HTTP_PROXY`：Telegram へアクセスする際の HTTP/SOCKS5 プロキシ。

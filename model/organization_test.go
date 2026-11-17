@@ -29,7 +29,7 @@ func setupOrgTestDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("打开内存数据库失败: %v", err)
 	}
-	err = testDB.AutoMigrate(&User{}, &Token{}, &Log{}, &LogDetail{}, &Organization{}, &OrganizationMember{}, &ModelAccessList{}, &OrganizationInvitation{}, &OrganizationAuditLog{})
+	err = testDB.AutoMigrate(&User{}, &Token{}, &Log{}, &LogDetail{}, &Organization{}, &OrganizationMember{}, &ModelAccessList{}, &OrganizationInvitation{}, &OrganizationAuditLog{}, &ManagementKey{})
 	if err != nil {
 		t.Fatalf("迁移测试表失败: %v", err)
 	}
@@ -156,7 +156,7 @@ func TestOrganizationUniqueConstraints(t *testing.T) {
 func createOrgTestUser(t *testing.T, username string) *User {
 	t.Helper()
 	hashed, _ := common.Password2Hash("test-password-123")
-	user := &User{Username: username, Password: hashed, Email: NullableEmail(strings.ToLower(username) + "@test.local"), Role: config.RoleCommonUser, Status: config.UserStatusEnabled, AccessToken: utils.GetUUID(), AffCode: strings.ToLower(utils.GetRandomString(8))}
+	user := &User{Username: username, Password: hashed, Email: NullableEmail(strings.ToLower(username) + "@test.local"), Role: config.RoleCommonUser, Status: config.UserStatusEnabled, AffCode: strings.ToLower(utils.GetRandomString(8))}
 	if err := DB.Create(user).Error; err != nil {
 		t.Fatalf("创建测试用户失败: %v", err)
 	}
@@ -205,7 +205,7 @@ func TestCreateOrganizationWithOwner(t *testing.T) {
 	hashed, _ := common.Password2Hash("test-password-123")
 	newUser := func(username string, role int, email NullableEmail, phone NullablePhone) *User {
 		t.Helper()
-		u := &User{Username: username, Password: hashed, Email: email, PhoneNumber: phone, Role: role, Status: config.UserStatusEnabled, AccessToken: utils.GetUUID(), AffCode: strings.ToLower(utils.GetRandomString(8))}
+		u := &User{Username: username, Password: hashed, Email: email, PhoneNumber: phone, Role: role, Status: config.UserStatusEnabled, AffCode: strings.ToLower(utils.GetRandomString(8))}
 		if err := DB.Create(u).Error; err != nil {
 			t.Fatalf("创建用户 %s 失败: %v", username, err)
 		}
@@ -773,11 +773,20 @@ func TestShadowUserExclusionHardening(t *testing.T) {
 		t.Fatalf("查询影子账户失败: %v", err)
 	}
 
-	// ValidateAccessToken:影子账户 access_token 不可登录,真实用户不受影响
-	if got := ValidateAccessToken(shadow.AccessToken); got != nil {
+	// A shadow account's access token (left over from before AGENT-4) never authenticates; a real
+	// user's still does.
+	shadowToken := "shadowaccesstoken000000000000001"
+	if err := DB.Create(&ManagementKey{UserId: shadow.Id, Scope: ManagementKeyScopeLegacy, Key: shadowToken, ExpiredTime: -1}).Error; err != nil {
+		t.Fatalf("create shadow access token: %v", err)
+	}
+	if got := ValidateAccessToken(shadowToken); got != nil {
 		t.Fatal("影子账户的 access_token 不应通过校验")
 	}
-	if got := ValidateAccessToken(owner.AccessToken); got == nil || got.Id != owner.Id {
+	ownerToken, err := IssueLegacyAccessToken(owner.Id)
+	if err != nil {
+		t.Fatalf("issue access token: %v", err)
+	}
+	if got := ValidateAccessToken(ownerToken); got == nil || got.Id != owner.Id {
 		t.Fatal("真实用户的 access_token 应通过校验")
 	}
 

@@ -124,7 +124,7 @@ func TestResolveOidcUserByIdentity(t *testing.T) {
 	user := seedOidcUser(t, &model.User{
 		Username: "alice", Email: "alice@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-1", AffCode: "aff1",
+		Type: config.UserTypeNormal, AffCode: "aff1",
 	})
 	seedOidcIdentity(t, user.Id, provider.Id, "sub-1")
 
@@ -144,7 +144,7 @@ func TestResolveOidcUserLinksByVerifiedEmail(t *testing.T) {
 	seeded := seedOidcUser(t, &model.User{
 		Username: "bob", Email: "bob@example.com", EmailVerified: true,
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-2", AffCode: "aff2",
+		Type: config.UserTypeNormal, AffCode: "aff2",
 	})
 
 	user, outcome, err := resolveOidcUser(provider, "sub-2", "bob@example.com", "")
@@ -171,7 +171,7 @@ func TestResolveOidcUserRefusesLinkWhenProviderIdentityExists(t *testing.T) {
 	seeded := seedOidcUser(t, &model.User{
 		Username: "conflict", Email: "conflict@example.com", EmailVerified: true,
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-c1", AffCode: "affc1",
+		Type: config.UserTypeNormal, AffCode: "affc1",
 	})
 	seedOidcIdentity(t, seeded.Id, provider.Id, "sub-old")
 
@@ -199,7 +199,7 @@ func TestResolveOidcUserLinksByEmailAcrossProviders(t *testing.T) {
 	seeded := seedOidcUser(t, &model.User{
 		Username: "cross", Email: "cross@example.com", EmailVerified: true,
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-c2", AffCode: "affc2",
+		Type: config.UserTypeNormal, AffCode: "affc2",
 	})
 	seedOidcIdentity(t, seeded.Id, providerQ.Id, "sub-q")
 
@@ -223,7 +223,7 @@ func TestResolveOidcUserLinkByEmailDisabled(t *testing.T) {
 	seedOidcUser(t, &model.User{
 		Username: "bella", Email: "bella@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-2b", AffCode: "aff2b",
+		Type: config.UserTypeNormal, AffCode: "aff2b",
 	})
 
 	if _, outcome, err := resolveOidcUser(provider, "sub-2b", "bella@example.com", ""); err != nil || outcome != oidcLinkNone {
@@ -242,12 +242,12 @@ func TestResolveOidcUserIsolatedByProvider(t *testing.T) {
 	userA := seedOidcUser(t, &model.User{
 		Username: "ann", Email: "ann@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-7", AffCode: "aff7",
+		Type: config.UserTypeNormal, AffCode: "aff7",
 	})
 	userB := seedOidcUser(t, &model.User{
 		Username: "ben", Email: "ben@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-8", AffCode: "aff8",
+		Type: config.UserTypeNormal, AffCode: "aff8",
 	})
 	seedOidcIdentity(t, userA.Id, first.Id, "same-sub")
 	seedOidcIdentity(t, userB.Id, second.Id, "same-sub")
@@ -269,7 +269,7 @@ func TestResolveOidcUserUnverifiedEmailDoesNotLink(t *testing.T) {
 	seedOidcUser(t, &model.User{
 		Username: "carol", Email: "carol@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-3", AffCode: "aff3",
+		Type: config.UserTypeNormal, AffCode: "aff3",
 	})
 
 	if _, outcome, err := resolveOidcUser(provider, "sub-3", "", ""); err != nil || outcome != oidcLinkNone {
@@ -284,7 +284,7 @@ func TestResolveOidcUserIgnoresUsernameMatch(t *testing.T) {
 	seedOidcUser(t, &model.User{
 		Username: "dave", Email: "dave@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-4", AffCode: "aff4",
+		Type: config.UserTypeNormal, AffCode: "aff4",
 	})
 
 	if _, outcome, err := resolveOidcUser(provider, "sub-4", "other@example.com", ""); err != nil || outcome != oidcLinkNone {
@@ -299,7 +299,7 @@ func TestResolveOidcUserExcludesShadowUser(t *testing.T) {
 	seedOidcUser(t, &model.User{
 		Username: "org-acme", Email: "shadow@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeOrgShadow, AccessToken: "tok-5", AffCode: "aff5",
+		Type: config.UserTypeOrgShadow, AffCode: "aff5",
 	})
 
 	if _, outcome, err := resolveOidcUser(provider, "sub-5", "shadow@example.com", ""); err != nil || outcome != oidcLinkNone {
@@ -314,7 +314,7 @@ func TestResolveOidcUserDisabledAccount(t *testing.T) {
 	seedOidcUser(t, &model.User{
 		Username: "erin", Email: "erin@example.com", EmailVerified: true,
 		Role: config.RoleCommonUser, Status: config.UserStatusDisabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-6", AffCode: "aff6",
+		Type: config.UserTypeNormal, AffCode: "aff6",
 	})
 
 	if _, outcome, err := resolveOidcUser(provider, "sub-6", "erin@example.com", ""); err != nil || outcome != oidcLinkDisabled {
@@ -332,7 +332,7 @@ func TestBindOidcIdentityNewBinding(t *testing.T) {
 	user := seedOidcUser(t, &model.User{
 		Username: "binder", Email: "binder@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-b1", AffCode: "affb1",
+		Type: config.UserTypeNormal, AffCode: "affb1",
 	})
 
 	outcome, err := bindOidcIdentity(provider.Id, user.Id, "sub-bind")
@@ -352,7 +352,7 @@ func TestBindOidcIdentityIdempotent(t *testing.T) {
 	user := seedOidcUser(t, &model.User{
 		Username: "rebinder", Email: "rebinder@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-b2", AffCode: "affb2",
+		Type: config.UserTypeNormal, AffCode: "affb2",
 	})
 	seedOidcIdentity(t, user.Id, provider.Id, "sub-again")
 
@@ -372,7 +372,7 @@ func TestBindOidcIdentityRejectsDisabledUser(t *testing.T) {
 	user := seedOidcUser(t, &model.User{
 		Username: "banned", Email: "banned@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusDisabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-b3", AffCode: "affb3",
+		Type: config.UserTypeNormal, AffCode: "affb3",
 	})
 
 	outcome, err := bindOidcIdentity(provider.Id, user.Id, "sub-banned")
@@ -391,7 +391,7 @@ func TestBindOidcIdentityRejectsDeletedUser(t *testing.T) {
 	user := seedOidcUser(t, &model.User{
 		Username: "gone", Email: "gone@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-b4", AffCode: "affb4",
+		Type: config.UserTypeNormal, AffCode: "affb4",
 	})
 	if err := user.Delete(); err != nil {
 		t.Fatalf("软删用户失败: %v", err)
@@ -413,12 +413,12 @@ func TestBindOidcIdentityRejectsTakenSubject(t *testing.T) {
 	owner := seedOidcUser(t, &model.User{
 		Username: "owner", Email: "owner@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-b5", AffCode: "affb5",
+		Type: config.UserTypeNormal, AffCode: "affb5",
 	})
 	other := seedOidcUser(t, &model.User{
 		Username: "other", Email: "other@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-b6", AffCode: "affb6",
+		Type: config.UserTypeNormal, AffCode: "affb6",
 	})
 	seedOidcIdentity(t, owner.Id, provider.Id, "sub-taken")
 
@@ -448,12 +448,12 @@ func TestOidcIdentityBindConflict(t *testing.T) {
 	userA := seedOidcUser(t, &model.User{
 		Username: "ownera", Email: "ownera@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-9", AffCode: "aff9",
+		Type: config.UserTypeNormal, AffCode: "aff9",
 	})
 	userB := seedOidcUser(t, &model.User{
 		Username: "ownerb", Email: "ownerb@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-10", AffCode: "aff10",
+		Type: config.UserTypeNormal, AffCode: "aff10",
 	})
 	seedOidcIdentity(t, userA.Id, provider.Id, "taken-sub")
 
@@ -511,7 +511,7 @@ func TestOidcAccountSettingsUrlDownstream(t *testing.T) {
 		t.Fatalf("/api/status 应下发 account_settings_url，实际 %+v", got)
 	}
 
-	user := seedOidcUser(t, &model.User{Username: "grace", AccessToken: "token-grace", AffCode: "aff-grace"})
+	user := seedOidcUser(t, &model.User{Username: "grace", AffCode: "aff-grace"})
 	for _, provider := range []*model.OidcProvider{enabled, disabled} {
 		identity := &model.UserOidcIdentity{UserId: user.Id, ProviderId: provider.Id, Subject: "sub-" + provider.Slug}
 		if err := identity.Insert(); err != nil {
@@ -789,7 +789,7 @@ func TestOAuthUsernameFallback(t *testing.T) {
 	seedOidcUser(t, &model.User{
 		Username: "taken", Email: "taken@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-a", AffCode: "affa",
+		Type: config.UserTypeNormal, AffCode: "affa",
 	})
 
 	if got := oauthUsername("foo@x.com", "oidc"); got != "foo" {
@@ -809,7 +809,7 @@ func TestOAuthUsernameTruncation(t *testing.T) {
 	seedOidcUser(t, &model.User{
 		Username: "abcdefghijkl", Email: "abcdefghijkl@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-b", AffCode: "affb",
+		Type: config.UserTypeNormal, AffCode: "affb",
 	})
 
 	if got := oauthUsername("sc59116longusername", "oidc"); got != "sc59116longu" {
@@ -888,7 +888,7 @@ func TestSyncOidcEmail(t *testing.T) {
 
 	blank := seedOidcUser(t, &model.User{
 		Username: "blankmail", Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-e1", AffCode: "affe1",
+		Type: config.UserTypeNormal, AffCode: "affe1",
 	})
 	syncOidcEmail(blank, "idp@example.com", provider)
 	if blank.Email != "idp@example.com" {
@@ -901,7 +901,7 @@ func TestSyncOidcEmail(t *testing.T) {
 	existing := seedOidcUser(t, &model.User{
 		Username: "hasmail", Email: "local@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-e2", AffCode: "affe2",
+		Type: config.UserTypeNormal, AffCode: "affe2",
 	})
 	syncOidcEmail(existing, "other@example.com", provider)
 	if got := getUserEmail(t, existing.Id); got != "local@example.com" {
@@ -910,7 +910,7 @@ func TestSyncOidcEmail(t *testing.T) {
 
 	taken := seedOidcUser(t, &model.User{
 		Username: "takenmail", Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-e3", AffCode: "affe3",
+		Type: config.UserTypeNormal, AffCode: "affe3",
 	})
 	syncOidcEmail(taken, "local@example.com", provider)
 	if got := getUserEmail(t, taken.Id); got != "" {
@@ -928,7 +928,7 @@ func TestSyncOidcEmailFirstParty(t *testing.T) {
 	changed := seedOidcUser(t, &model.User{
 		Username: "fpchanged", Email: "old@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-fp1", AffCode: "afffp1",
+		Type: config.UserTypeNormal, AffCode: "afffp1",
 	})
 	syncOidcEmail(changed, "new@example.com", provider)
 	if changed.Email != "new@example.com" {
@@ -941,7 +941,7 @@ func TestSyncOidcEmailFirstParty(t *testing.T) {
 	shadow := seedOidcUser(t, &model.User{
 		Username: "fpshadow", Email: "occupied@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeOrgShadow, AccessToken: "tok-fp2", AffCode: "afffp2",
+		Type: config.UserTypeOrgShadow, AffCode: "afffp2",
 	})
 	if shadow.Id == 0 {
 		t.Fatal("影子账户应已落库")
@@ -949,7 +949,7 @@ func TestSyncOidcEmailFirstParty(t *testing.T) {
 	blocked := seedOidcUser(t, &model.User{
 		Username: "fpblocked", Email: "mine@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-fp3", AffCode: "afffp3",
+		Type: config.UserTypeNormal, AffCode: "afffp3",
 	})
 	syncOidcEmail(blocked, "occupied@example.com", provider)
 	if got := getUserEmail(t, blocked.Id); got != "mine@example.com" {
@@ -959,7 +959,7 @@ func TestSyncOidcEmailFirstParty(t *testing.T) {
 	same := seedOidcUser(t, &model.User{
 		Username: "fpsame", Email: "same@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-fp4", AffCode: "afffp4",
+		Type: config.UserTypeNormal, AffCode: "afffp4",
 	})
 	syncOidcEmail(same, " Same@Example.com ", provider)
 	if got := getUserEmail(t, same.Id); got != "same@example.com" {
@@ -1008,7 +1008,7 @@ func TestOidcBindWritesAndLoginRefreshesSnapshot(t *testing.T) {
 	provider := seedOidcProvider(t, "authgear", false)
 	user := seedOidcUser(t, &model.User{
 		Username: "snapuser", Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-s1", AffCode: "affs1",
+		Type: config.UserTypeNormal, AffCode: "affs1",
 	})
 
 	r := newOidcPhoneRouter(t)
@@ -1071,7 +1071,7 @@ func TestSelfOidcIdentitiesExposesSnapshot(t *testing.T) {
 	provider := seedOidcProvider(t, "authgear", false)
 	user := seedOidcUser(t, &model.User{
 		Username: "selfsnap", Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-s2", AffCode: "affs2",
+		Type: config.UserTypeNormal, AffCode: "affs2",
 	})
 	identity := &model.UserOidcIdentity{
 		UserId: user.Id, ProviderId: provider.Id, Subject: "sub-self",
@@ -1129,12 +1129,12 @@ func TestOidcBindRejectsSubjectOwnedByOthers(t *testing.T) {
 	provider := seedOidcProvider(t, "authgear", false)
 	owner := seedOidcUser(t, &model.User{
 		Username: "bindowner", Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-b1", AffCode: "affb1",
+		Type: config.UserTypeNormal, AffCode: "affb1",
 	})
 	seedOidcIdentity(t, owner.Id, provider.Id, "sub-taken")
 	taker := seedOidcUser(t, &model.User{
 		Username: "bindtaker", Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-b2", AffCode: "affb2",
+		Type: config.UserTypeNormal, AffCode: "affb2",
 	})
 
 	resp := callOidcBind(t, provider, taker.Id, "sub-taken", map[string]interface{}{"preferred_username": "taker"})
@@ -1159,7 +1159,7 @@ func TestOidcBindRejectsBannedUser(t *testing.T) {
 	provider := seedOidcProvider(t, "authgear", false)
 	banned := seedOidcUser(t, &model.User{
 		Username: "bindbanned", Role: config.RoleCommonUser, Status: config.UserStatusDisabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-b3", AffCode: "affb3",
+		Type: config.UserTypeNormal, AffCode: "affb3",
 	})
 
 	resp := callOidcBind(t, provider, banned.Id, "sub-banned", map[string]interface{}{"preferred_username": "banned"})
@@ -1185,7 +1185,7 @@ func TestOidcBindFirstPartySyncsEmail(t *testing.T) {
 	user := seedOidcUser(t, &model.User{
 		Username: "bindmail", Email: "old@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-b4", AffCode: "affb4",
+		Type: config.UserTypeNormal, AffCode: "affb4",
 	})
 
 	resp := callOidcBind(t, provider, user.Id, "sub-bindmail", map[string]interface{}{
@@ -1217,7 +1217,7 @@ func TestOidcLoginPathFirstPartyRefreshesEmail(t *testing.T) {
 	user := seedOidcUser(t, &model.User{
 		Username: "loginmail", Email: "stale@example.com",
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-b5", AffCode: "affb5",
+		Type: config.UserTypeNormal, AffCode: "affb5",
 	})
 	seedOidcIdentity(t, user.Id, provider.Id, "sub-loginmail")
 

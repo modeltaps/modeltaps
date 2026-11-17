@@ -204,7 +204,6 @@ func orgTokenFixture(t *testing.T, h *Harness, group string, budget *model.Quota
 		Role:        config.RoleGuestUser,
 		Status:      config.UserStatusEnabled,
 		Type:        config.UserTypeOrgShadow,
-		AccessToken: "org-e2e-shadow-token",
 		AffCode:     "orge2esd",
 		Quota:       10_000_000,
 		Group:       group,

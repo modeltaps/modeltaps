@@ -89,7 +89,7 @@ func TestGetUserByGitHubSkipsUnverifiedEmail(t *testing.T) {
 	seeded := seedEmailUser(t, &model.User{
 		Username: "ghvictim", Email: "victim@example.com", EmailVerified: false,
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-gh1", AffCode: "affgh1",
+		Type: config.UserTypeNormal, AffCode: "affgh1",
 	})
 
 	githubUser := &GitHubUser{Id: 9001, Login: "attacker", Email: "victim@example.com"}
@@ -145,7 +145,7 @@ func TestGitHubOAuthRegistersWithoutTakenEmail(t *testing.T) {
 	seedEmailUser(t, &model.User{
 		Username: "ghholder", Email: "held@example.com", EmailVerified: false,
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-gh2", AffCode: "affgh2",
+		Type: config.UserTypeNormal, AffCode: "affgh2",
 	})
 	stubGitHubUserInfo(t, &GitHubUser{Id: 9200, Login: "stranger", Email: "held@example.com"})
 
@@ -173,7 +173,7 @@ func TestGitHubOAuthBackfillMarksEmailVerified(t *testing.T) {
 	seeded := seedEmailUser(t, &model.User{
 		Username: "ghold", GitHubIdNew: 9300,
 		Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-gh3", AffCode: "affgh3",
+		Type: config.UserTypeNormal, AffCode: "affgh3",
 	})
 	stubGitHubUserInfo(t, &GitHubUser{Id: 9300, Login: "ghold", Email: "ghold@example.com"})
 
@@ -200,7 +200,7 @@ func TestGitHubBindMarksEmailVerified(t *testing.T) {
 	enableGitHubLogin(t)
 	seeded := seedEmailUser(t, &model.User{
 		Username: "ghbinder", Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		Type: config.UserTypeNormal, AccessToken: "tok-gh4", AffCode: "affgh4",
+		Type: config.UserTypeNormal, AffCode: "affgh4",
 	})
 	stubGitHubUserInfo(t, &GitHubUser{Id: 9400, Login: "ghbinder-gh", Email: "ghbinder@example.com"})
 

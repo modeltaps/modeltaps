@@ -1638,7 +1638,7 @@
     "turnstile_failed": "Human verification failed. Refresh the page and try again.",
     "turnstile_unavailable": "Human verification is unavailable right now. Try again later.",
     "not_signed_in": "You are not signed in",
-    "invalid_access_token": "The access token is invalid",
+    "invalid_access_token": "The management key or access token is invalid",
     "invalid_session": "The session is invalid. Sign in again.",
     "session_expired": "Your session has expired. Sign in again.",
     "user_check_failed": "Could not verify your account. Try again.",
@@ -1848,7 +1848,15 @@
     "channel_copy_key_mismatch": "Only the root user can copy a key to a channel with a different type or base URL.",
     "token_key_reset_managed": "The playground API key is managed by the system and cannot be reset",
     "token_key_reset_not_creator": "Only the member who created this API key can reset it",
-    "usage_alert_tiers_invalid": "Usage alert tiers must be percentages from 1 to 100 separated by commas, or 0 to turn them off"
+    "usage_alert_tiers_invalid": "Usage alert tiers must be percentages from 1 to 100 separated by commas, or 0 to turn them off",
+    "api_key_not_allowed": "API keys can only call model APIs. Use a management key for the management API.",
+    "management_key_expired": "This management key has expired",
+    "management_key_forbidden": "This management key is not allowed to do this",
+    "management_key_not_found": "Management key not found",
+    "management_key_name_required": "Enter a name for the management key",
+    "management_key_scope_invalid": "Choose read-only or read-write for the management key",
+    "management_key_expiry_required": "A management key needs an expiry date in the future",
+    "management_key_expiry_too_long": "A management key can be valid for at most one year"
   },
   "channelOAuth": {
     "tip": {
@@ -3860,7 +3868,10 @@
           "title": "Access token",
           "rowHint": "For the management API; not an API key for model calls",
           "reset": "Regenerate",
-          "confirm": "Once regenerated, the previous access token stops working."
+          "confirm": "Once regenerated, the previous access token stops working.",
+          "deprecated": "Access tokens are deprecated and will stop working in a future release. Create a management key on the API keys page instead.",
+          "onceNote": "Shown only this once: only its fingerprint is stored.",
+          "openKeys": "Create a management key"
         }
       },
       "sessions": {
@@ -4007,7 +4018,10 @@
       "never": "Never",
       "day": "1 day",
       "week": "1 week",
-      "month": "1 month"
+      "month": "1 month",
+      "quarter": "90 days",
+      "halfYear": "180 days",
+      "year": "1 year"
     },
     "secret": {
       "onceNote": "Copy the key now and keep it somewhere safe. It is shown only this once and cannot be viewed again; if you lose it, reset the key.",
@@ -4023,6 +4037,31 @@
       "pasteHint": "Keys are shown only once, so paste it here to fill it in. It is only used on this page and is not saved.",
       "pasteMismatch": "This is not the key of this entry ({{hint}}).",
       "pasteForModels": "Paste the key above to list the models it can call with this protocol."
+    },
+    "type": {
+      "label": "Type",
+      "api": "API key",
+      "apiHint": "Calls models, and can read its own balance, usage and models.",
+      "read": "Management, read-only",
+      "readHint": "Reads balance, usage, logs and API keys. Cannot call models.",
+      "write": "Management, read-write",
+      "writeHint": "Also creates, edits, disables and deletes API keys. Cannot call models.",
+      "legacy": "Access token (deprecated)"
+    },
+    "management": {
+      "title": "Management keys",
+      "hint": "For scripts and agents that manage your account through the management API and MCP. They cannot call models.",
+      "key": "Management key",
+      "expiryHint": "Required, at most one year",
+      "createdHint": "Send it as Authorization: Bearer <key> to the management API or MCP.",
+      "onceNote": "Copy the key now and keep it somewhere safe. It is shown only this once and cannot be viewed again; if you lose it, delete it and create a new one.",
+      "deleteTitle": "Delete management key",
+      "deleteConfirm": "Delete “{{name}}”? Anything using it stops working at once.",
+      "expires": "Expires {{when}}",
+      "expired": "Expired",
+      "never": "Never expires",
+      "lastUsed": "Used {{when}}",
+      "neverUsed": "Never used"
     }
   },
   "redemptionList": {

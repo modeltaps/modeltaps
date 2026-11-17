@@ -416,6 +416,14 @@ func SetApiRouter(router *gin.Engine) {
 			tokenRoute.DELETE("/:id", controller.DeleteToken)
 			tokenRoute.POST("/:id/reset_key", controller.ResetTokenKey)
 		}
+		// Management keys (AGENT-4): managed from a console session only, never with a key.
+		managementKeyRoute := apiRouter.Group("/management_key")
+		managementKeyRoute.Use(middleware.UserAuth(), middleware.SessionOnly())
+		{
+			managementKeyRoute.GET("/", controller.GetManagementKeys)
+			managementKeyRoute.POST("/", controller.CreateManagementKey)
+			managementKeyRoute.DELETE("/:id", controller.DeleteManagementKey)
+		}
 		tokenAdminRoute := apiRouter.Group("/token")
 		tokenAdminRoute.Use(middleware.AdminAuth())
 		{

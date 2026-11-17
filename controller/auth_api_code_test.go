@@ -57,7 +57,7 @@ func TestAuthFailuresCarryCodes(t *testing.T) {
 		t.Fatalf("params.min = %v, want 8", resp["params"])
 	}
 
-	if err := model.DB.Create(&model.User{Username: "taken", Password: "x", AccessToken: "tok-taken", AffCode: "tkn1"}).Error; err != nil {
+	if err := model.DB.Create(&model.User{Username: "taken", Password: "x", AffCode: "tkn1"}).Error; err != nil {
 		t.Fatalf("create user: %v", err)
 	}
 	_, resp = postJSON(t, r, "/register", `{"username":"taken","password":"password123"}`)

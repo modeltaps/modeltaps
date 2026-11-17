@@ -47,7 +47,6 @@ func newPhoneTestUser(username, phone string) *User {
 		PhoneNumber: NullablePhone(phone),
 		Role:        config.RoleCommonUser,
 		Status:      config.UserStatusEnabled,
-		AccessToken: utils.GetUUID(),
 		AffCode:     strings.ToLower(utils.GetRandomString(8)),
 		CreatedTime: utils.GetTimestamp(),
 	}
@@ -104,8 +103,8 @@ func TestEnsureUserPhoneUniqueReadyNormalizesAndDedupes(t *testing.T) {
 	db := setupPhoneTestDB(t, false)
 
 	for _, row := range [][2]string{{"empty1", ""}, {"empty2", ""}, {"dup1", "+85251234567"}, {"dup2", " +85251234567 "}} {
-		if err := db.Exec("INSERT INTO users (username, password, phone_number, aff_code, access_token) VALUES (?, ?, ?, ?, ?)",
-			row[0], "test-password", row[1], utils.GetRandomString(8), utils.GetUUID()).Error; err != nil {
+		if err := db.Exec("INSERT INTO users (username, password, phone_number, aff_code) VALUES (?, ?, ?, ?)",
+			row[0], "test-password", row[1], utils.GetRandomString(8)).Error; err != nil {
 			t.Fatalf("构造历史数据失败: %v", err)
 		}
 	}

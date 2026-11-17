@@ -127,7 +127,6 @@ type User struct {
 	VerificationCode  string         `json:"verification_code" gorm:"-:all"`                                    // this field is only for Email verification, don't save it to database!
 	InviteCode        string         `json:"invite_code" gorm:"-:all"`                                          // this field is only for registration, don't save it to database!
 	UsedInviteCode    string         `json:"used_invite_code" gorm:"type:varchar(32);index;default:''"`         // the invite code used during registration, for statistics
-	AccessToken       string         `json:"access_token" gorm:"type:char(32);column:access_token;uniqueIndex"` // this token is for system management
 	Quota             int            `json:"quota" gorm:"type:bigint;default:0"`
 	UsedQuota         int            `json:"used_quota" gorm:"type:bigint;default:0;column:used_quota"` // used quota
 	RequestCount      int            `json:"request_count" gorm:"type:int;default:0;"`                  // request number
@@ -193,10 +192,10 @@ type UserListItem struct {
 	IsShadow bool   `json:"is_shadow"`
 }
 
-// userSensitiveColumns are never loaded for queries about other users (admin list, detail).
-// An access_token calls the management API as its user, so an admin who can read root's token
-// effectively has root.
-var userSensitiveColumns = []string{"password", "access_token"}
+// userSensitiveColumns are never loaded for queries about other users (admin list, detail). The
+// old plaintext access_token column is no longer mapped: access tokens are management keys now,
+// stored as hashes (AGENT-4).
+var userSensitiveColumns = []string{"password"}
 
 func GetUsersList(params *SearchUserParams) (*DataResult[UserListItem], error) {
 	var users []*User
@@ -348,8 +347,8 @@ func GetUserById(id int, selectAll bool) (*User, error) {
 	return &user, err
 }
 
-// GetSelfById is only for /api/user/self, after the caller is authenticated: it keeps the
-// access_token (users may see their own) and still omits the password. Never use it for other users.
+// GetSelfById is only for /api/user/self, after the caller is authenticated: it omits the
+// password. Never use it for other users.
 func GetSelfById(id int) (*User, error) {
 	if id == 0 {
 		return nil, errors.New("id is empty")
@@ -428,7 +427,6 @@ func (user *User) Insert(inviterId int) error {
 		}
 	}
 	user.Quota = config.QuotaForNewUser
-	user.AccessToken = utils.GetUUID()
 	user.AffCode = utils.GetRandomString(4)
 	user.CreatedTime = utils.GetTimestamp()
 	result := DB.Create(user)
@@ -490,7 +488,6 @@ func (user *User) insertWithTx(tx *gorm.DB, inviterId int, grantSignupBonus bool
 	if grantSignupBonus {
 		user.Quota = config.QuotaForNewUser
 	}
-	user.AccessToken = utils.GetUUID()
 	user.AffCode = utils.GetRandomString(4)
 	user.CreatedTime = utils.GetTimestamp()
 	result := tx.Create(user)
@@ -1076,18 +1073,6 @@ func IsUserEnabled(userId int) (bool, error) {
 		return false, err
 	}
 	return user.Status == config.UserStatusEnabled, nil
-}
-
-func ValidateAccessToken(token string) (user *User) {
-	if token == "" {
-		return nil
-	}
-	token = strings.Replace(token, "Bearer ", "", 1)
-	user = &User{}
-	if ExcludeShadowUsers(DB.Where("access_token = ?", token)).First(user).RowsAffected == 1 {
-		return user
-	}
-	return nil
 }
 
 func GetUserFields(id int, fields []string) (map[string]interface{}, error) {

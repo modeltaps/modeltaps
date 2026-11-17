@@ -59,7 +59,7 @@ func TestEmailCodeLoginFlow(t *testing.T) {
 	r := setupEmailCodeLogin(t)
 	user := seedOidcUser(t, &model.User{
 		Username: "alice", Email: "alice@example.test", Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		AccessToken: "tok-alice", AffCode: "aff-alice",
+		AffCode: "aff-alice",
 	})
 
 	if _, resp := postJSON(t, r, "/send", `{"email":"nobody@example.test"}`); resp["success"] != true {
@@ -95,7 +95,7 @@ func TestEmailCodeLoginRespectsUserSettingAndAccountSystem(t *testing.T) {
 	r := setupEmailCodeLogin(t)
 	user := seedOidcUser(t, &model.User{
 		Username: "bob", Email: "bob@example.test", Role: config.RoleCommonUser, Status: config.UserStatusEnabled,
-		AccessToken: "tok-bob", AffCode: "aff-bob",
+		AffCode: "aff-bob",
 	})
 	off := false
 	if err := model.UpdateUserSettingById(user.Id, model.UserSetting{EmailCodeLogin: &off}); err != nil {

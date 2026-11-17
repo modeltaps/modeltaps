@@ -12,7 +12,7 @@ import (
 // cached 为 metadata.cached_read_tokens(0 表示不写 metadata,覆盖缺失键归零口径)。
 func seedUserUsageLogs(t *testing.T) (userId int) {
 	t.Helper()
-	user := &User{Username: "usage-user", Password: "x", AccessToken: "at-usage", AffCode: "aff-usage"}
+	user := &User{Username: "usage-user", Password: "x", AffCode: "aff-usage"}
 	if err := DB.Create(user).Error; err != nil {
 		t.Fatalf("创建用户失败: %v", err)
 	}

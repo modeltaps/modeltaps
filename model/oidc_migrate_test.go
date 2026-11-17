@@ -29,8 +29,8 @@ func seedLegacyOidcOptions(t *testing.T, db *gorm.DB) {
 
 func seedLegacyOidcUser(t *testing.T, db *gorm.DB, username, oidcId string) {
 	t.Helper()
-	if err := db.Exec("INSERT INTO users (username, password, oidc_id, aff_code, access_token) VALUES (?, ?, ?, ?, ?)",
-		username, "test-password", oidcId, utils.GetRandomString(8), utils.GetUUID()).Error; err != nil {
+	if err := db.Exec("INSERT INTO users (username, password, oidc_id, aff_code) VALUES (?, ?, ?, ?)",
+		username, "test-password", oidcId, utils.GetRandomString(8)).Error; err != nil {
 		t.Fatalf("预置用户 %s 失败: %v", username, err)
 	}
 }
