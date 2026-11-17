@@ -11,6 +11,10 @@ lastUpdated: true
 The upgrade scripts below run `docker pull ghcr.io/modeltaps/modeltaps:latest` against a private image. The host running the script must first complete [Signing in to the private registry](./index.md#signing-in-to-the-private-registry), otherwise the pull fails with an authorization error.
 :::
 
+::: danger Upgrades cannot simply be rolled back
+From the version that stores API keys as hashes, the database keeps only the hash of each key and the plaintext is cleared. This step cannot be undone: downgrading to an older version makes every API key invalid. Back up the database before upgrading, and restore that backup together with the old version if you need to roll back.
+:::
+
 ### Using a control panel scheduled task
 
 If you deploy through an operations panel such as aaPanel, you can add a scheduled task directly.
