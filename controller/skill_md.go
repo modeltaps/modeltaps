@@ -92,6 +92,18 @@ func renderSkillMd(base string) string {
 	if config.ClaudeAPIEnabled {
 		w("Anthropic SDKs and clients append `/v1/messages` to the base URL themselves; give them `%s/claude`, not the full path.\n\n", base)
 	}
+	// Client-specific endpoints (AGENT-1): same behavior as the bare paths, and the console can
+	// show usage per tool.
+	w("Coding agents have endpoints of their own, with the same keys, models and prices; using them lets the user see usage per tool:\n\n")
+	if config.ClaudeAPIEnabled {
+		w("- Claude Code: `ANTHROPIC_BASE_URL=%s/claude-code` (model IDs are listed as `claude-code/<model>`).\n", base)
+	}
+	w("- Codex: a provider with `base_url = \"%s/codex/v1\"` and `wire_api = \"responses\"`.\n", base)
+	w("- Other coding agents: `%s/coding-agent/v1` (OpenAI-compatible)", base)
+	if config.ClaudeAPIEnabled {
+		w(" or `%s/coding-agent` (Anthropic-compatible)", base)
+	}
+	w(".\n\n")
 
 	// 4. Getting a key.
 	w("## 3. Get an API key\n\n")
