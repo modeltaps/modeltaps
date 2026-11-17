@@ -12,10 +12,9 @@ export async function exportOrgUsageCsv({ orgId, startTimestamp, endTimestamp, m
 
   const queryString = new URLSearchParams(params).toString();
   const url = `/api/org/${orgId}/analytics/export${queryString ? `?${queryString}` : ''}`;
-  const token = localStorage.getItem('token');
   const response = await fetch(url, {
     method: 'GET',
-    headers: { Authorization: token ? `Bearer ${token}` : '' }
+    credentials: 'same-origin'
   });
 
   if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);

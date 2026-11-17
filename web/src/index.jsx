@@ -1,3 +1,5 @@
+// Must run before any module that builds a Zod schema.
+import './zodConfig';
 import { createRoot } from 'react-dom/client';
 
 // third party

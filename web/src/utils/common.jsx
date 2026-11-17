@@ -313,8 +313,7 @@ export async function onWebAuthnRegister(showError, showSuccess, onSuccess, alia
     const beginResponse = await fetch('/api/webauthn/registration/begin', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: localStorage.getItem('token')
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ alias })
     });
@@ -414,8 +413,7 @@ export async function onWebAuthnRegister(showError, showSuccess, onSuccess, alia
     const finishResponse = await fetch('/api/webauthn/registration/finish', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: localStorage.getItem('token')
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(credentialData)
     });
@@ -448,10 +446,7 @@ export async function onWebAuthnRegister(showError, showSuccess, onSuccess, alia
 export async function getWebAuthnCredentials() {
   try {
     const response = await fetch('/api/webauthn/credentials', {
-      method: 'GET',
-      headers: {
-        Authorization: localStorage.getItem('token')
-      }
+      method: 'GET'
     });
 
     const data = await response.json();
@@ -468,10 +463,7 @@ export async function getWebAuthnCredentials() {
 export async function deleteWebAuthnCredential(credentialId, showError, showSuccess, onSuccess) {
   try {
     const response = await fetch(`/api/webauthn/credentials/${credentialId}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: localStorage.getItem('token')
-      }
+      method: 'DELETE'
     });
 
     const data = await response.json();

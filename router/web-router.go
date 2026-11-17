@@ -15,6 +15,13 @@ func SetWebRouter(router *gin.Engine, buildFS embed.FS, indexPage []byte) {
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	// Anti-framing and the other common headers on every page, including the SPA fallback.
 	router.Use(middleware.SecurityHeaders())
+	// The pages' script policy: the hashes of the inline scripts the build put in them are allowed.
+	homePages := loadHomePages(buildFS)
+	pages := [][]byte{indexPage}
+	for _, page := range homePages {
+		pages = append(pages, []byte(page))
+	}
+	router.Use(middleware.WebPageCSP(pages...))
 
 	embedFS, err := static.EmbedFolder(buildFS, "web/build")
 	if err != nil {
@@ -39,7 +46,7 @@ func SetWebRouter(router *gin.Engine, buildFS embed.FS, indexPage []byte) {
 
 	// `/` is the prerendered static home page; registered before static.Serve, which would answer
 	// `/` with the app's index.html.
-	registerStaticHome(router, loadHomePages(buildFS), spaIndex)
+	registerStaticHome(router, homePages, spaIndex)
 
 	router.Use(static.Serve("/", embedFS))
 

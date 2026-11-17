@@ -16,10 +16,9 @@ export async function exportLogs({ params: filterParams, order, orderBy, userIsA
   const url = rewriteOrgUrl(userIsAdmin ? '/api/log/export' : '/api/log/self/export');
   // 数组值以重复键展开(gin 切片绑定所需),标量按原样;空值跳过。
   const queryString = toSearchParams({ order: orderByExport, ...filterParams }).toString();
-  const token = localStorage.getItem('token');
   const response = await fetch(`${url}?${queryString}`, {
     method: 'GET',
-    headers: { Authorization: token ? `Bearer ${token}` : '' }
+    credentials: 'same-origin'
   });
 
   if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);

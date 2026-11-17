@@ -1,7 +1,9 @@
 package router
 
 import (
+	"crypto/sha256"
 	"embed"
+	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -53,5 +55,27 @@ func TestStaticFilesServeSingleRangeOnly(t *testing.T) {
 	}
 	if strings.Contains(w.Header().Get("Content-Type"), "multipart") {
 		t.Fatalf("multiple ranges must not produce a multipart response")
+	}
+}
+
+// SEC-20: the web app's pages carry the script policy, which allows the index page's own inline
+// script by its hash and no other inline script.
+func TestWebPagesCarryScriptPolicy(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	const inline = "document.title='x'"
+	SetWebRouter(r, embed.FS{}, []byte("<html><head><script>"+inline+"</script></head></html>"))
+	sum := sha256.Sum256([]byte(inline))
+	hash := "'sha256-" + base64.StdEncoding.EncodeToString(sum[:]) + "'"
+	for _, path := range []string{"/panel/dashboard", "/login", "/"} {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		req.RemoteAddr = "198.51.100.31:1234"
+		r.ServeHTTP(w, req)
+		policy := w.Header().Get("Content-Security-Policy")
+		want := "script-src 'self' https://challenges.cloudflare.com " + hash + ";"
+		if !strings.Contains(policy, want) {
+			t.Errorf("%s: Content-Security-Policy = %q, want %q", path, policy, want)
+		}
 	}
 }
