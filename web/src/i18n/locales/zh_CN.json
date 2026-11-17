@@ -2495,7 +2495,7 @@
         "title": "额度设置",
         "inviteRewardEnabled": {
           "label": "启用邀请奖励",
-          "description": "关闭后站点不再展示邀请奖励入口"
+          "description": "关闭后不再发放邀请奖励（注册奖励与首充返利），站点也不再展示邀请入口"
         },
         "quotaForNewUser": {
           "label": "新用户初始额度",

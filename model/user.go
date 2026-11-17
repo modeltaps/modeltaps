@@ -438,12 +438,13 @@ func (user *User) Insert(inviterId int) error {
 	if config.QuotaForNewUser > 0 {
 		RecordLog(user.Id, LogTypeSystem, fmt.Sprintf("Sign-up bonus of %s for new user", common.LogQuota(config.QuotaForNewUser)))
 	}
-	if inviterId != 0 {
+	// InviteRewardEnabled turns off every invite reward: both sign-up bonuses here and the
+	// first top-up rebate. The inviter is still recorded.
+	if inviterId != 0 && config.InviteRewardEnabled {
 		if config.QuotaForInvitee > 0 {
 			_ = IncreaseUserQuota(user.Id, config.QuotaForInvitee)
 			RecordLog(user.Id, LogTypeSystem, fmt.Sprintf("Invite code bonus of %s", common.LogQuota(config.QuotaForInvitee)))
 		}
-		// 注册时的邀请奖励保持原有逻辑，充值时的返利使用新的配置
 		if config.QuotaForInviter > 0 {
 			_ = IncreaseUserQuota(inviterId, config.QuotaForInviter)
 			RecordLog(inviterId, LogTypeSystem, fmt.Sprintf("Referral bonus of %s for inviting a user", common.LogQuota(config.QuotaForInviter)))
@@ -499,12 +500,13 @@ func (user *User) insertWithTx(tx *gorm.DB, inviterId int, grantSignupBonus bool
 	if grantSignupBonus && config.QuotaForNewUser > 0 {
 		RecordLogWithTx(tx, user.Id, LogTypeSystem, fmt.Sprintf("Sign-up bonus of %s for new user", common.LogQuota(config.QuotaForNewUser)))
 	}
-	if inviterId != 0 {
+	// InviteRewardEnabled turns off every invite reward: both sign-up bonuses here and the
+	// first top-up rebate. The inviter is still recorded.
+	if inviterId != 0 && config.InviteRewardEnabled {
 		if config.QuotaForInvitee > 0 {
 			_ = IncreaseUserQuotaWithTx(tx, user.Id, config.QuotaForInvitee)
 			RecordLogWithTx(tx, user.Id, LogTypeSystem, fmt.Sprintf("Invite code bonus of %s", common.LogQuota(config.QuotaForInvitee)))
 		}
-		// 注册时的邀请奖励保持原有逻辑，充值时的返利使用新的配置
 		if config.QuotaForInviter > 0 {
 			_ = IncreaseUserQuotaWithTx(tx, inviterId, config.QuotaForInviter)
 			RecordLogWithTx(tx, inviterId, LogTypeSystem, fmt.Sprintf("Referral bonus of %s for inviting a user", common.LogQuota(config.QuotaForInviter)))
@@ -1370,9 +1372,9 @@ func claimFirstTopUp(tx *gorm.DB, userId int) (bool, error) {
 // payFirstTopUpRebateWithTx pays the inviter of userId the rebate for the user's first paid
 // top-up of rechargeQuota, as set by InviterRewardType and InviterRewardValue. Only the first
 // paid top-up earns a rebate, so the caller must have won claimFirstTopUp in the same
-// transaction. Returns nil when no rebate is due (no inviter, or the rebate is off).
+// transaction. Returns nil when no rebate is due (no inviter, invite rewards switched off, or no rebate set).
 func payFirstTopUpRebateWithTx(tx *gorm.DB, userId int, rechargeQuota int) (*inviterRebate, error) {
-	if config.InviterRewardValue <= 0 || config.InviterRewardType == "" {
+	if !config.InviteRewardEnabled || config.InviterRewardValue <= 0 || config.InviterRewardType == "" {
 		return nil, nil
 	}
 	var inviterIds []int

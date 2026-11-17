@@ -2659,7 +2659,7 @@
       },
       "quotaSettings": {
         "inviteRewardEnabled": {
-          "description": "When off, the site no longer shows invite reward entries",
+          "description": "When off, no invite rewards are paid (sign-up bonuses and the first top-up rebate) and the site hides invite entries",
           "label": "Enable Invite Reward"
         },
         "preConsumedOutputTokens": {

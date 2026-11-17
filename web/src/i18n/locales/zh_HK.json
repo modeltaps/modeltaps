@@ -2659,7 +2659,7 @@
       },
       "quotaSettings": {
         "inviteRewardEnabled": {
-          "description": "關閉後站點不再展示邀請獎勵入口",
+          "description": "關閉後不再發放邀請獎勵（註冊獎勵與首充返利），站點也不再展示邀請入口",
           "label": "啟用邀請獎勵"
         },
         "preConsumedOutputTokens": {

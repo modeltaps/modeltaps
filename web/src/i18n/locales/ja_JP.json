@@ -2659,7 +2659,7 @@
       },
       "quotaSettings": {
         "inviteRewardEnabled": {
-          "description": "オフにすると、サイトに招待報酬の導線を表示しません",
+          "description": "オフにすると招待特典（登録ボーナスと初回チャージの還元）を付与せず、サイトの招待導線も表示しません",
           "label": "招待報酬を有効化"
         },
         "preConsumedOutputTokens": {

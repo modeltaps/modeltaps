@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/modeltaps/modeltaps/common/config"
+	"gorm.io/gorm"
 )
 
 const (
@@ -231,5 +232,84 @@ func TestBackfillUserFirstTopUp(t *testing.T) {
 	creditOrder(t, seedPromotionOrder(t, rebateInviteeId, 100, OrderStatusPending))
 	if got := reloadUser(t, rebateInviterId).Quota; got != 0 {
 		t.Fatalf("inviter quota after an order following the backfill = %d, want 0", got)
+	}
+}
+
+func setInviteRewardEnabled(t *testing.T, enabled bool) {
+	t.Helper()
+	old := config.InviteRewardEnabled
+	config.InviteRewardEnabled = enabled
+	t.Cleanup(func() { config.InviteRewardEnabled = old })
+}
+
+// With invite rewards switched off the first paid order pays no rebate, and switching them back
+// on afterwards does not pay it later: the first top-up has been used.
+func TestInviterRebateNotPaidWhenInviteRewardsOff(t *testing.T) {
+	setupPromotionTestDB(t)
+	setInviterReward(t, "fixed", 500)
+	setInviteRewardEnabled(t, false)
+	seedRebateUsers(t)
+
+	creditOrder(t, seedPromotionOrder(t, rebateInviteeId, 100, OrderStatusPending))
+	if inviter := reloadUser(t, rebateInviterId); inviter.Quota != 0 || inviter.AffQuota != 0 {
+		t.Fatalf("inviter quota=%d aff_quota=%d with invite rewards off, want 0", inviter.Quota, inviter.AffQuota)
+	}
+	if got := countRebateLogs(t); got != 0 {
+		t.Fatalf("rebate logs = %d, want 0", got)
+	}
+
+	config.InviteRewardEnabled = true
+	creditOrder(t, seedPromotionOrder(t, rebateInviteeId, 100, OrderStatusPending))
+	if got := reloadUser(t, rebateInviterId).Quota; got != 0 {
+		t.Fatalf("inviter quota = %d after re-enabling, want 0 (no rebate for a later order)", got)
+	}
+}
+
+// Sign-up bonuses for both sides follow the switch; the inviter (set by the caller) is kept.
+func TestInviteSignupBonusFollowsSwitch(t *testing.T) {
+	for _, enabled := range []bool{true, false} {
+		name := "on"
+		if !enabled {
+			name = "off"
+		}
+		t.Run(name, func(t *testing.T) {
+			setupPromotionTestDB(t)
+			setInviteRewardEnabled(t, enabled)
+			oldInviter, oldInvitee, oldNew := config.QuotaForInviter, config.QuotaForInvitee, config.QuotaForNewUser
+			config.QuotaForInviter, config.QuotaForInvitee, config.QuotaForNewUser = 300, 200, 0
+			t.Cleanup(func() {
+				config.QuotaForInviter, config.QuotaForInvitee, config.QuotaForNewUser = oldInviter, oldInvitee, oldNew
+			})
+			inviter := &User{Id: rebateInviterId, Username: "inviter", Password: "placeholder", AccessToken: "rebate-inviter", AffCode: "inv1", Group: "default"}
+			if err := DB.Create(inviter).Error; err != nil {
+				t.Fatal(err)
+			}
+
+			viaInsert := &User{Username: "invitee-a", Password: "placeholder-password", Group: "default", InviterId: rebateInviterId}
+			if err := viaInsert.Insert(rebateInviterId); err != nil {
+				t.Fatalf("Insert: %v", err)
+			}
+			viaTx := &User{Username: "invitee-b", Password: "placeholder-password", Group: "default", InviterId: rebateInviterId}
+			if err := DB.Transaction(func(tx *gorm.DB) error { return viaTx.InsertWithTx(tx, rebateInviterId) }); err != nil {
+				t.Fatalf("InsertWithTx: %v", err)
+			}
+
+			wantInvitee, wantInviter := 0, 0
+			if enabled {
+				wantInvitee, wantInviter = 200, 600
+			}
+			for _, u := range []*User{viaInsert, viaTx} {
+				got := reloadUser(t, u.Id)
+				if got.Quota != wantInvitee {
+					t.Fatalf("%s quota = %d, want %d", u.Username, got.Quota, wantInvitee)
+				}
+				if got.InviterId != rebateInviterId {
+					t.Fatalf("%s inviter_id = %d, want %d", u.Username, got.InviterId, rebateInviterId)
+				}
+			}
+			if got := reloadUser(t, rebateInviterId).Quota; got != wantInviter {
+				t.Fatalf("inviter quota = %d, want %d", got, wantInviter)
+			}
+		})
 	}
 }
