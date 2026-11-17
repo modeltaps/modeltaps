@@ -178,11 +178,12 @@ storage:
     bucketName: ""          # bucket 名称
   s3:
     endpoint: ""            # S3 兼容 endpoint
+    region: ""              # 签名地域，如 us-east-1；留空时从 AWS/B2/Wasabi endpoint 推导，否则用 auto（R2）
     accessKeyId: ""         # AccessKeyId
     accessKeySecret: ""     # AccessKeySecret
     bucketName: ""          # bucket 名称
     cdnurl: ""              # CDN 访问地址
-    expirationDays: 0       # 对象过期天数，0 表示不过期
+    expirationDays: 0       # 写入对象 Expires 头的天数，0 表示不写；不会删除文件
   smms:
     secret: ""             # SM.MS API secret
   imgur:
