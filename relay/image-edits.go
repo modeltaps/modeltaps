@@ -1,13 +1,14 @@
 package relay
 
 import (
+	"errors"
+	"fmt"
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/requester"
 	providersBase "github.com/modeltaps/modeltaps/providers/base"
 	"github.com/modeltaps/modeltaps/providers/openai"
 	"github.com/modeltaps/modeltaps/types"
-	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -41,10 +42,26 @@ func (r *relayImageEdits) setRequest() error {
 		r.request.Size = "1024x1024"
 	}
 
+	if err := checkImageEditN(&r.request); err != nil {
+		return err
+	}
 	r.request.PartialImages = clampPartialImages(r.request.PartialImages)
 
 	r.setOriginalModel(r.request.Model)
 
+	return nil
+}
+
+// checkImageEditN rejects an image count outside [1, MaxImageN] instead of clamping it: OpenAI
+// channels forward the original body, so a clamped struct would still let the upstream render
+// (and bill this site for) the number the client asked for. An absent n means one image.
+func checkImageEditN(request *types.ImageEditRequest) error {
+	if request.N == 0 {
+		request.N = 1
+	}
+	if request.N < 1 || request.N > MaxImageN {
+		return fmt.Errorf("field n must be between 1 and %d", MaxImageN)
+	}
 	return nil
 }
 

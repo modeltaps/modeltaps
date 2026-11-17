@@ -33,6 +33,10 @@ func (r *relayImageVariations) setRequest() error {
 		r.request.Size = "1024x1024"
 	}
 
+	if err := checkImageEditN(&r.request); err != nil {
+		return err
+	}
+
 	r.setOriginalModel(r.request.Model)
 
 	return nil
