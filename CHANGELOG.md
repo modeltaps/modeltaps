@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- New supplies that cost more than the quote wait for review. When a channel is created, or the
+  daily check finds a new upstream model on a channel that adds them on its own, a supply whose
+  channel cost is above the model's quoted price is switched off and waits on the model's Supplies
+  tab, whatever the intake rules say, and admins get a "New supplies above the quoted price"
+  notice with the cost and the quote. Confirming one asks first. Supplies whose cost cannot be told
+  follow the intake rules as before and show "Cost unknown" while they wait.
 - Organization API keys can be owned by the organization instead of a member. Owners and admins
   pick **Owner: Organization** when creating a key, or make a member's key owned by the
   organization from its panel. Such keys keep working when members are removed, leave or are

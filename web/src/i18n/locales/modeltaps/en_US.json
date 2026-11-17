@@ -3328,7 +3328,10 @@
     "aboveQuote": "The channel cost, with its fee, is above the quote: with the cost floor on, requests through this supply are charged the channel cost.",
     "aboveQuoteBackup": "The channel cost is above the quote; this supply is a backup and only takes requests when the ones above fail.",
     "cheaperUpstream": "Cheaper on this channel: {{model}} (${{input}} / ${{output}})",
-    "useCheaperUpstream": "Use it"
+    "useCheaperUpstream": "Use it",
+    "costUnknown": "Cost unknown",
+    "confirmAboveQuote": "This supply costs more than the model’s quoted price. With \"Never charge below the channel cost\" on, its requests are charged the channel cost; otherwise the difference is lost. Raise the quote first if it should stay the same for users. Confirm anyway?",
+    "costFromRatio": "Cost from the channel's cost ratio (no upstream price list)"
   },
   "settingsUi": {
     "search": {

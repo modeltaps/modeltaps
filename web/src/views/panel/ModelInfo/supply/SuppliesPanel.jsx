@@ -471,7 +471,11 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
               size="sm"
               className="h-7 rounded-lg px-2 text-xs"
               disabled={busy}
-              onClick={() => onAction('update', supply, { enabled: true })}
+              onClick={() => {
+                // Held back by the price check: confirming accepts a cost above the quote.
+                if (supply.cost?.above_quote && !window.confirm(t('modelSupply.confirmAboveQuote'))) return;
+                onAction('update', supply, { enabled: true });
+              }}
             >
               {t('modelSupply.confirmPending')}
             </Button>

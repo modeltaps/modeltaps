@@ -271,3 +271,37 @@ func TestMarkSupplyUpstreams(t *testing.T) {
 		t.Fatalf("keep-missing check = %+v", change)
 	}
 }
+
+// The price check comes before the intake rules: a chat model the rules would switch on waits for
+// review when the channel costs more than the quote.
+func TestIntakeHoldsSuppliesAboveQuote(t *testing.T) {
+	useAllocationTestDB(t)
+	a := makeAllocationChannel(t, testChannel{"a", 1, "https://a.example", 10, 1})
+	b := makeAllocationChannel(t, testChannel{"b", 1, "https://b.example", 0, 1})
+	if err := DB.Model(b).Update("cost_ratio", 1.5).Error; err != nil {
+		t.Fatal(err)
+	}
+	b.CostRatio = floatPtr(1.5)
+	makePublicModel(t, "chatty")
+	setModelEndpoints(t, "chatty", `["chat"]`)
+	makeSupply(t, "chatty", a, 10, 1)
+	ChannelGroup.Load()
+	oldPricing := PricingInstance
+	PricingInstance = &Pricing{Prices: map[string]*Price{
+		"chatty": {Model: "chatty", Type: TokensPriceType, Input: 1, Output: 2},
+	}}
+	t.Cleanup(func() { PricingInstance = oldPricing })
+
+	outcomes, err := IntakeChannelModels(b, []string{"chatty"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(outcomes) != 1 || outcomes[0].Action != IntakeActionPending || outcomes[0].Rule != IntakeRuleAboveQuote {
+		t.Fatalf("outcomes = %+v, want pending by the price check", outcomes)
+	}
+	var supply ModelSupply
+	DB.Where("model = ? AND channel_id = ?", "chatty", b.Id).First(&supply)
+	if supply.Enabled || !supply.Pending {
+		t.Fatalf("supply = %+v, want switched off and pending", supply)
+	}
+}

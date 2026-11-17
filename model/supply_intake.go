@@ -260,6 +260,8 @@ func IntakeChannelModels(channel *Channel, names []string) ([]IntakeOutcome, err
 	if len(candidates) == 0 {
 		return nil, nil
 	}
+	markCostAboveQuote(channel, candidates)
+	var held []supplyCostOverQuote
 	models := make([]string, 0, len(candidates))
 	for _, c := range candidates {
 		models = append(models, c.model)
@@ -302,6 +304,11 @@ func IntakeChannelModels(channel *Channel, names []string) ([]IntakeOutcome, err
 				continue
 			}
 			rule := decideIntake(rules, newIntakeSubject(info, supplied[c.model]))
+			// The price check comes before the rules: a supply above the quote never routes on its own.
+			if rule.Action == IntakeActionEnable && c.costAbove != nil {
+				rule.Action, rule.Name = IntakeActionPending, IntakeRuleAboveQuote
+				held = append(held, overQuoteOf(c))
+			}
 			outcome := IntakeOutcome{Name: c.upstream, Model: c.model, Action: rule.Action, Rule: rule.Name}
 			if rule.Action == IntakeActionSkip {
 				outcomes = append(outcomes, outcome)
@@ -338,6 +345,7 @@ func IntakeChannelModels(channel *Channel, names []string) ([]IntakeOutcome, err
 	if len(created) > 0 {
 		reloadSupplies()
 	}
+	notifyHeldAboveQuote(channel, held)
 	return outcomes, nil
 }
 

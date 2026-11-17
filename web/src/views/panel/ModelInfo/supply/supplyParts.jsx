@@ -237,6 +237,29 @@ export function UpstreamPriceCell({ supply }) {
   const summary = priceSummary(price);
   if (!summary) {
     const tip = supply.upstream_priced ? t('channels.models.priceMissing') : t('modelSupply.noPriceList');
+    // No upstream price, but the channel's cost ratio gives a cost: show it, marked when above the quote.
+    const known = supply.cost?.known ? supply.cost : null;
+    if (known && (known.input != null || known.flat != null)) {
+      const above = known.above_quote;
+      return (
+        <span
+          className={cn('inline-flex items-center gap-1 whitespace-nowrap', above && 'text-warning')}
+          title={above ? t('modelSupply.aboveQuote') : t('modelSupply.costFromRatio')}
+          data-testid="supply-cost-ratio"
+        >
+          {above && <AlertTriangle data-testid="supply-price-loss" className="size-3 shrink-0" />}
+          {known.flat != null ? `$${amount(known.flat)}` : `$${amount(known.input)} / $${amount(known.output ?? 0)}`}
+        </span>
+      );
+    }
+    // A supply waiting for review says so: confirming it is accepting a cost nobody can check here.
+    if (supply.pending && !supply.cost?.known) {
+      return (
+        <span className="whitespace-nowrap text-warning" title={tip} data-testid="supply-cost-unknown">
+          {t('modelSupply.costUnknown')}
+        </span>
+      );
+    }
     return (
       <span className="text-muted-foreground" title={tip}>
         —

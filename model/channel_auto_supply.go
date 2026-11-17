@@ -50,6 +50,7 @@ func AutoSupplyChannel(channel *Channel, names []string) ([]*ModelSupply, error)
 	// Names are resolved before the transaction: the resolver may load the model library through
 	// the global connection, which a SQLite transaction would block.
 	candidates := autoSupplyCandidates(resolver, channel, names)
+	markCostAboveQuote(channel, candidates)
 	var created []*ModelSupply
 	err = DB.Transaction(func(tx *gorm.DB) error {
 		var err error
@@ -62,10 +63,31 @@ func AutoSupplyChannel(channel *Channel, names []string) ([]*ModelSupply, error)
 	if len(created) > 0 {
 		reloadSupplies()
 	}
+	var held []supplyCostOverQuote
+	for _, c := range candidates {
+		if c.costAbove != nil && createdFor(created, c.model) {
+			held = append(held, overQuoteOf(c))
+		}
+	}
+	notifyHeldAboveQuote(channel, held)
 	return created, nil
 }
 
-type autoSupplyCandidate struct{ model, upstream string }
+func createdFor(created []*ModelSupply, model string) bool {
+	for _, s := range created {
+		if s.Model == model && s.Pending {
+			return true
+		}
+	}
+	return false
+}
+
+// autoSupplyCandidate is a public model a channel lists. costAbove is set (markCostAboveQuote)
+// when the channel costs more than the model's quote: its supply then waits for an admin.
+type autoSupplyCandidate struct {
+	model, upstream string
+	costAbove       *SupplyCost
+}
 
 // autoSupplyCandidates gives the public model and upstream name for each listed name that belongs
 // to a public model, ordered so the preferred spelling of each model comes first.
@@ -121,10 +143,11 @@ func createAutoSupplies(tx *gorm.DB, channel *Channel, candidates []autoSupplyCa
 			continue
 		}
 		supplied[c.model] = true
+		above := c.costAbove != nil
 		supply := &ModelSupply{
 			Model: c.model, ChannelId: channel.Id, UpstreamModel: c.upstream,
 			Priority: channel.GetPriority(), Weight: uint(channel.GetWeight()),
-			Enabled: true, Source: ModelSupplySourceChannel,
+			Enabled: !above, Pending: above, Source: ModelSupplySourceChannel,
 		}
 		if err := tx.Create(supply).Error; err != nil {
 			return nil, err
