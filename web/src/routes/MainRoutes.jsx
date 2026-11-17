@@ -36,7 +36,6 @@ const Usage = Loadable(lazy(() => import('views/panel/Usage')));
 const OrgAdmin = Loadable(lazy(() => import('views/panel/OrgAdmin')));
 const Organization = Loadable(lazy(() => import('views/panel/Organization')));
 const MyInvitations = Loadable(lazy(() => import('views/panel/Organization/MyInvitations')));
-const AgentDevice = Loadable(lazy(() => import('views/panel/AgentDevice')));
 const Settings = Loadable(lazy(() => import('views/panel/Settings')));
 
 // `playground` without a modality opens the chat console, keeping the query (`?model=`).
@@ -84,8 +83,7 @@ const MainRoutes = {
       children: [
         { index: true, element: <Navigate to="dashboard" replace /> },
         ...workbenchPages(),
-        { path: 'invitations', element: <MyInvitations /> },
-        { path: 'device', element: <AgentDevice /> }
+        { path: 'invitations', element: <MyInvitations /> }
       ]
     },
     {

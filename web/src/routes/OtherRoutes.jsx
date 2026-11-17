@@ -4,6 +4,7 @@ import { Navigate, useLocation } from 'react-router';
 // project imports
 import Loadable from 'ui-component/Loadable';
 import PublicLayout from 'layout/PublicLayout';
+import AuthGuard from 'utils/route-guard/AuthGuard';
 import { agentDevice, publicPricing, workbench } from 'routes/paths';
 
 // Auth + sandbox pages render standalone (no public chrome wrapper).
@@ -14,6 +15,7 @@ const Register = Loadable(lazy(() => import('views/auth/Register')));
 const ForgetPassword = Loadable(lazy(() => import('views/auth/ForgetPassword')));
 const ResetPassword = Loadable(lazy(() => import('views/auth/ResetPassword')));
 const SignedOut = Loadable(lazy(() => import('views/auth/SignedOut')));
+const AgentDevice = Loadable(lazy(() => import('views/panel/AgentDevice')));
 
 // OAuth callbacks stay at /oauth/* so external providers can redirect back.
 const OAuthCallback = Loadable(lazy(() => import('views/auth-callbacks/OAuthCallback')));
@@ -29,8 +31,9 @@ const PlaygroundRedirect = () => {
   return <Navigate to={`${workbench.playground()}${search}${hash}`} replace />;
 };
 
-// `/device` is the short verification address an agent shows (RFC 8628); the page itself is in the
-// signed-in console, which sends visitors through sign-in and back. The query (`?user_code=`) stays.
+// `/device` is the short verification address an agent shows (RFC 8628). The page lives under the
+// panel prefix so sign-in sends visitors back to it, but renders standalone like other consent
+// screens: no console sidebar. The query (`?user_code=`) stays.
 const AgentDeviceRedirect = () => {
   const { search, hash } = useLocation();
   return <Navigate to={`${agentDevice()}${search}${hash}`} replace />;
@@ -85,6 +88,14 @@ const OtherRoutes = [
   {
     path: '/device',
     element: <AgentDeviceRedirect />
+  },
+  {
+    path: agentDevice(),
+    element: (
+      <AuthGuard>
+        <AgentDevice />
+      </AuthGuard>
+    )
   },
   {
     path: '/',

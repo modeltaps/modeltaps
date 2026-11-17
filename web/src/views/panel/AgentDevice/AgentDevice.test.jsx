@@ -10,6 +10,9 @@ import AgentDevice, { formatUserCode } from './index';
 
 vi.mock('utils/api', () => ({ API: { get: vi.fn(), post: vi.fn() } }));
 vi.mock('@/components/ui/sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() } }));
+vi.mock('react-redux', () => ({
+  useSelector: (pick) => pick({ siteInfo: { system_name: 'Modeltaps' }, account: { user: { username: 'ada', display_name: 'Ada' } } })
+}));
 vi.mock('contexts/OrgContext', () => ({
   useOrg: () => ({ orgEnabled: true, organizations: [{ id: 5, name: 'Acme', slug: 'acme' }] })
 }));
@@ -19,9 +22,11 @@ const request = {
   client_name: 'OpenClaw on laptop',
   request_ip: '203.0.113.9',
   request_user_agent: 'openclaw/2',
-  created_time: 1700000000,
-  expires_at: 1700000900
+  created_time: Math.floor(Date.now() / 1000),
+  expires_at: Math.floor(Date.now() / 1000) + 900
 };
+
+const adjust = () => fireEvent.click(screen.getByRole('button', { name: i18n.t('agentDevice.adjust') }));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -54,13 +59,20 @@ describe('AgentDevice confirmation page (AGENT-7)', () => {
     openPage();
     const card = await screen.findByTestId('device-request');
     expect(API.get).toHaveBeenCalledWith('/api/agent/device/BCDF-GHJK');
-    for (const text of ['OpenClaw on laptop', '203.0.113.9', 'openclaw/2']) expect(card.textContent).toContain(text);
+    for (const text of ['203.0.113.9', 'openclaw/2']) expect(card.textContent).toContain(text);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('OpenClaw on laptop');
+    expect(screen.getByTestId('device-code-shown').getAttribute('aria-label')).toContain('BCDF-GHJK');
+    // What the key may do is a summary until the user adjusts it.
+    expect(screen.getByTestId('device-summary').textContent).toContain('OpenClaw on laptop');
+    expect(document.getElementById('device-name')).toBeNull();
+    adjust();
     expect(document.getElementById('device-name').value).toBe('OpenClaw on laptop');
   });
 
   it('approves with the chosen name, limit and expiry as a personal key', async () => {
     openPage();
     await screen.findByTestId('device-request');
+    adjust();
     fireEvent.change(document.getElementById('device-name'), { target: { value: 'claw' } });
     fireEvent.click(screen.getByRole('button', { name: i18n.t('agentDevice.approve') }));
 
@@ -77,6 +89,7 @@ describe('AgentDevice confirmation page (AGENT-7)', () => {
   it('approves with an organization key when an organization is picked', async () => {
     openPage();
     await screen.findByTestId('device-request');
+    adjust();
     fireEvent.click(screen.getByTestId('device-owner-trigger'));
     fireEvent.click(await screen.findByRole('option', { name: 'Acme', hidden: true }));
     await waitFor(() => expect(API.get).toHaveBeenCalledWith('/api/org/5/model_access'));
@@ -96,9 +109,30 @@ describe('AgentDevice confirmation page (AGENT-7)', () => {
 
   it('shows why an unknown code cannot be answered', async () => {
     openPage('');
+    // A complete code is looked up as soon as the last letter is typed.
     fireEvent.change(document.getElementById('device-user-code'), { target: { value: 'zzzz-zzzz' } });
-    fireEvent.click(screen.getByRole('button', { name: i18n.t('agentDevice.lookup') }));
     expect((await screen.findByTestId('device-lookup-error')).textContent).toBe('invalid code');
+    expect(API.get).toHaveBeenCalledWith('/api/agent/device/ZZZZ-ZZZZ');
     expect(screen.queryByTestId('device-request')).toBeNull();
+  });
+
+  it('keeps Continue off until all eight letters are in', () => {
+    openPage('');
+    fireEvent.change(document.getElementById('device-user-code'), { target: { value: 'bcd-1f' } });
+    expect(document.getElementById('device-user-code').value).toBe('BCDF');
+    expect(screen.getByRole('button', { name: i18n.t('agentDevice.lookup') }).disabled).toBe(true);
+  });
+
+  it('turns into an expired notice when the request runs out', async () => {
+    const past = Math.floor(Date.now() / 1000) - 1;
+    API.get.mockImplementation((url) =>
+      url === '/api/agent/device/BCDF-GHJK'
+        ? Promise.resolve({ data: { success: true, data: { ...request, expires_at: past } } })
+        : Promise.resolve({ data: { success: true, data: {} } })
+    );
+    openPage();
+    await screen.findByTestId('device-expired');
+    fireEvent.click(screen.getByRole('button', { name: i18n.t('agentDevice.enterAnother') }));
+    expect(document.getElementById('device-user-code').value).toBe('');
   });
 });
