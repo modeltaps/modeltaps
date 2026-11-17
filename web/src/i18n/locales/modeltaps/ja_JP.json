@@ -2130,7 +2130,7 @@
       "baseUrl": "ベース URL",
       "baseUrlDefault": "空欄なら {{url}} を使います",
       "key": "キー",
-      "manageKey": "管理キー",
+      "manageKey": "上流の管理キー",
       "manageKeyKeep": "空欄のままなら {{masked}} を保持します",
       "manageKeyRemove": "削除",
       "manageKeyRemoved": "保存すると削除されます",

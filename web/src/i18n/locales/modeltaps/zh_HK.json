@@ -2134,7 +2134,7 @@
       "baseUrl": "地址",
       "baseUrlDefault": "留空就用 {{url}}",
       "key": "密鑰",
-      "manageKey": "管理密鑰",
+      "manageKey": "上游管理密鑰",
       "manageKeyKeep": "留空則保留 {{masked}}",
       "manageKeyRemove": "移除",
       "manageKeyRemoved": "儲存後移除",

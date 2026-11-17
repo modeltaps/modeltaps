@@ -2215,7 +2215,7 @@
       "baseUrl": "Base URL",
       "baseUrlDefault": "Leave empty to use {{url}}",
       "key": "Key",
-      "manageKey": "Management key",
+      "manageKey": "Upstream management key",
       "manageKeyKeep": "Leave empty to keep {{masked}}",
       "manageKeyRemove": "Remove",
       "manageKeyRemoved": "will be removed when you save",
