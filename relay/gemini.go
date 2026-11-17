@@ -6,7 +6,6 @@ import (
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/providers/gemini"
-	"github.com/modeltaps/modeltaps/safty"
 	"github.com/modeltaps/modeltaps/types"
 	"encoding/json"
 	"errors"
@@ -116,22 +115,12 @@ func (r *relayGeminiOnly) send() (err *types.OpenAIErrorWithStatusCode, done boo
 		return nil, false
 	}
 
-	// 内容审查：使用 gjson 直接在原始 bytes 上提取 text，避免完整 JSON 反序列化
+	// Content moderation reads the raw bytes with gjson (contents text parts, system
+	// instruction, tool declarations) to avoid decoding the whole body.
 	// 注意：这是 r.requestBody 最后一次被使用的地方
-	if config.EnableSafe && r.requestBody != nil {
-		contents := gjson.GetBytes(r.requestBody, "contents")
-		for _, content := range contents.Array() {
-			for _, part := range content.Get("parts").Array() {
-				if text := part.Get("text").String(); text != "" {
-					CheckResult, _ := safty.CheckContent(text)
-					if !CheckResult.IsSafe {
-						err = common.StringErrorWrapperLocal(CheckResult.Reason, CheckResult.Code, http.StatusBadRequest)
-						done = true
-						return
-					}
-				}
-			}
-		}
+	if err = geminiContentSafety(r.requestBody); err != nil {
+		done = true
+		return
 	}
 
 	// 阶梯1释放：安全检查完毕后，relay 不再需要 raw bytes

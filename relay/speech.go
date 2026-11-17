@@ -41,6 +41,12 @@ func speechInputChars(input string) int {
 }
 
 func (r *relaySpeech) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
+	// Content moderation, before any upstream call.
+	if err = checkContentSafety(r.request.Input); err != nil {
+		done = true
+		return
+	}
+
 	provider, ok := r.provider.(providersBase.SpeechInterface)
 	if !ok {
 		err = common.StringErrorWrapperLocal("channel not implemented", "channel_error", http.StatusServiceUnavailable)

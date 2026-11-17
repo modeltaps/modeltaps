@@ -7,7 +7,6 @@ import (
 	"github.com/modeltaps/modeltaps/common/utils"
 	modelPkg "github.com/modeltaps/modeltaps/model"
 	providersBase "github.com/modeltaps/modeltaps/providers/base"
-	"github.com/modeltaps/modeltaps/safty"
 	"github.com/modeltaps/modeltaps/types"
 	"encoding/json"
 	"errors"
@@ -86,6 +85,13 @@ func (r *relayChat) forcePromptTokens() int {
 }
 
 func (r *relayChat) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
+	// Content moderation runs first so the image and Responses compatibility branches below
+	// are covered too.
+	if err = r.contentSafety(); err != nil {
+		done = true
+		return
+	}
+
 	// 图像生成模型走 chat 入口是非标用法，按 chat 协议处理会把上游 base64 当文本反算成百万级 token、
 	// 计费爆炸；按渠道降级约定，在 chat 入口分流到 image generations 协议。
 	// 同时查映射后名与原始名，避免渠道做了模型重命名时漏判。
@@ -122,20 +128,6 @@ func (r *relayChat) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
 	// 入口协议 == chat 且响应原样直返，放行 provider 的响应字节透传（保留上游指纹）。
 	// image / need2Response 等异协议兼容分支在上方已提前返回，不会走到这里。
 	r.c.Set(config.GinRawPassThroughAllowedKey, true)
-	// 内容审查
-	if config.EnableSafe {
-		for _, message := range r.chatRequest.Messages {
-			if message.Content != nil {
-				CheckResult, _ := safty.CheckContent(message.Content)
-				if !CheckResult.IsSafe {
-					err = common.StringErrorWrapperLocal(CheckResult.Reason, CheckResult.Code, http.StatusBadRequest)
-					done = true
-					return
-				}
-			}
-		}
-	}
-
 	if r.chatRequest.Stream {
 		var response requester.StreamReaderInterface[string]
 		response, err = chatProvider.CreateChatCompletionStream(&r.chatRequest)
@@ -182,6 +174,19 @@ func (r *relayChat) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
 	}
 
 	return
+}
+
+// contentSafety moderates every text the chat request carries: messages, system prompt,
+// instructions, tools, legacy functions and predicted output.
+func (r *relayChat) contentSafety() *types.OpenAIErrorWithStatusCode {
+	return checkContentSafety(
+		r.chatRequest.Messages,
+		r.chatRequest.System,
+		r.chatRequest.Instructions,
+		r.chatRequest.Tools,
+		r.chatRequest.Functions,
+		r.chatRequest.Prediction,
+	)
 }
 
 func (r *relayChat) getUsageResponse() string {

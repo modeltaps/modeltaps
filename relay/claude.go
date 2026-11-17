@@ -17,7 +17,6 @@ import (
 	"github.com/modeltaps/modeltaps/providers/preset"
 	"github.com/modeltaps/modeltaps/providers/vertexai"
 	"github.com/modeltaps/modeltaps/relay/transformer"
-	"github.com/modeltaps/modeltaps/safty"
 	"github.com/modeltaps/modeltaps/types"
 	"io"
 	"net/http"
@@ -312,21 +311,13 @@ func (r *relayClaudeOnly) HandleStreamError(err *types.OpenAIErrorWithStatusCode
 
 // 公共工具函数
 
-// performContentSafety 执行内容安全检查
+// performContentSafety moderates every text the Messages request carries: messages (all
+// content blocks), the system prompt and the tool descriptions.
 func (r *relayClaudeOnly) performContentSafety() *types.OpenAIErrorWithStatusCode {
-	if !config.EnableSafe {
+	if r.claudeRequest == nil {
 		return nil
 	}
-
-	for _, message := range r.claudeRequest.Messages {
-		if message.Content != nil {
-			CheckResult, _ := safty.CheckContent(message.Content)
-			if !CheckResult.IsSafe {
-				return common.StringErrorWrapperLocal(CheckResult.Reason, CheckResult.Code, http.StatusBadRequest)
-			}
-		}
-	}
-	return nil
+	return checkContentSafety(r.claudeRequest.Messages, r.claudeRequest.System, r.claudeRequest.Tools)
 }
 
 // convertFinishReason 转换停止原因从OpenAI格式到Claude格式

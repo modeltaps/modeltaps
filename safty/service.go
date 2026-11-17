@@ -4,8 +4,11 @@ import (
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/safty/types"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 )
 
 // RegisterTool 注册一个新的安全检查器
@@ -32,30 +35,106 @@ func getTool(name string) (SaftyTool, error) {
 	return tool, nil
 }
 
-// convertToString 将任意类型转换为字符串
-func convertToString(data interface{}) (string, error) {
+// textKeys are the JSON keys whose string values carry human-written text in the request
+// formats the gateway accepts: message and content-part text (OpenAI, Claude, Gemini,
+// Responses, Realtime), prompts, system prompts and instructions, rerank queries and documents,
+// tool descriptions, and tool-call arguments and outputs the client sends back. Strings under
+// any other key (model names, roles, ids, enum values) are not text and are not checked, so a
+// keyword list cannot match them by accident.
+var textKeys = map[string]bool{
+	"text":            true,
+	"content":         true,
+	"input":           true,
+	"prompt":          true,
+	"negative_prompt": true,
+	"negativePrompt":  true,
+	"instructions":    true,
+	"system":          true,
+	"query":           true,
+	"documents":       true,
+	"description":     true,
+	"arguments":       true,
+	"output":          true,
+	"transcript":      true,
+	"suffix":          true,
+}
+
+// binaryKeys hold image, audio and file payloads (URLs, base64 blobs). Their subtrees are
+// skipped whole.
+var binaryKeys = map[string]bool{
+	"image_url":   true,
+	"url":         true,
+	"data":        true,
+	"b64_json":    true,
+	"file_data":   true,
+	"file":        true,
+	"image":       true,
+	"mask":        true,
+	"audio":       true,
+	"input_audio": true,
+	"inline_data": true,
+	"inlineData":  true,
+}
+
+// extractText collects every human-text string in data and joins them with "\n".
+//
+// data may be a string, or any value that encodes to JSON (request structs, slices of message
+// structs, maps, json.RawMessage); it is normalized through a JSON round trip and walked
+// recursively. Strings directly in data, or in arrays directly in data, are text; inside an
+// object only strings under textKeys (or in arrays under them) are. Objects are searched at
+// every depth, so text nested in messages, content parts, tools and items is found wherever it
+// sits. Data URLs are never collected.
+func extractText(data interface{}) (string, error) {
 	if data == nil {
 		return "", nil
 	}
 
+	var normalized interface{}
 	switch v := data.(type) {
 	case string:
-		return v, nil
+		normalized = v
+	case []byte:
+		normalized = string(v)
+	default:
+		raw, err := json.Marshal(v)
+		if err != nil {
+			return "", err
+		}
+		if err := json.Unmarshal(raw, &normalized); err != nil {
+			return "", err
+		}
+	}
+
+	texts := make([]string, 0)
+	collectText(normalized, true, &texts)
+	return strings.Join(texts, "\n"), nil
+}
+
+// collectText appends the text in v to out. isText says whether a string at this position is
+// text: true at the top level and under textKeys, false elsewhere. Arrays keep the setting of
+// their position; objects decide per key.
+func collectText(v interface{}, isText bool, out *[]string) {
+	switch t := v.(type) {
+	case string:
+		if isText && strings.TrimSpace(t) != "" && !strings.HasPrefix(t, "data:") {
+			*out = append(*out, t)
+		}
 	case []interface{}:
-		// 处理数组类型的内容
-		for _, item := range v {
-			if text, ok := item.(map[string]interface{}); ok {
-				if textType, ok := text["type"].(string); ok && textType == "text" {
-					if textContent, ok := text["content"].(string); ok {
-						return textContent, nil
-					}
-				}
+		for _, item := range t {
+			collectText(item, isText, out)
+		}
+	case map[string]interface{}:
+		keys := make([]string, 0, len(t))
+		for key := range t {
+			if !binaryKeys[key] {
+				keys = append(keys, key)
 			}
 		}
-		return "", nil
-	default:
-		// 尝试使用反射获取字符串表示
-		return fmt.Sprintf("%v", v), nil
+		// A fixed order keeps the checked text the same for the same request.
+		sort.Strings(keys)
+		for _, key := range keys {
+			collectText(t[key], textKeys[key], out)
+		}
 	}
 }
 
@@ -100,7 +179,7 @@ func CheckContentByToolName(toolName string, content interface{}) (types.CheckRe
 	}
 
 	// 将内容转换为字符串
-	contentStr, err := convertToString(content)
+	contentStr, err := extractText(content)
 	if err != nil {
 		result.Reason = "convert to string failed"
 		logger.SysLog(fmt.Sprintf("Safety tool %s convert to string failed", toolName))
@@ -153,7 +232,7 @@ func CheckContent(content interface{}) (types.CheckResult, error) {
 	}
 
 	// 将内容转换为字符串
-	contentStr, err := convertToString(content)
+	contentStr, err := extractText(content)
 	if err != nil {
 		result.RiskLevel = 1
 		result.Code = types.SafeDefaultErrorCode

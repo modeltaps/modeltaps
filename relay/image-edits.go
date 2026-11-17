@@ -58,6 +58,12 @@ func (r *relayImageEdits) IsStream() bool {
 }
 
 func (r *relayImageEdits) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
+	// Content moderation, before any upstream call.
+	if err = checkContentSafety(r.request.Prompt); err != nil {
+		done = true
+		return
+	}
+
 	provider, ok := r.provider.(providersBase.ImageEditsInterface)
 	if !ok {
 		err = common.StringErrorWrapperLocal("channel not implemented", "channel_error", http.StatusServiceUnavailable)

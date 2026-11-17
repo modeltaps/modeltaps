@@ -78,7 +78,13 @@ func ChatRealtime(c *gin.Context) {
 
 	relay.usage = &types.UsageEvent{}
 
-	wsProxy := requester.NewWSProxy(relay.userConn, relay.providerConn, time.Minute*2, relay.messageHandler, relay.usageHandler)
+	// Client text events are moderated before they are forwarded; a refusal is answered
+	// through the proxy so it never writes to the user connection concurrently.
+	var wsProxy *requester.WSProxy
+	messageHandler := moderateRealtimeClientEvents(relay.messageHandler, func(data []byte) error {
+		return wsProxy.WriteToUser(websocket.TextMessage, data)
+	})
+	wsProxy = requester.NewWSProxy(relay.userConn, relay.providerConn, time.Minute*2, messageHandler, relay.usageHandler)
 
 	wsProxy.Start()
 

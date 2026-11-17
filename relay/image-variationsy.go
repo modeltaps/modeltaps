@@ -47,6 +47,12 @@ func (r *relayImageVariations) getPromptTokens() (int, error) {
 }
 
 func (r *relayImageVariations) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
+	// Content moderation, before any upstream call.
+	if err = checkContentSafety(r.request.Prompt); err != nil {
+		done = true
+		return
+	}
+
 	provider, ok := r.provider.(providersBase.ImageVariationsInterface)
 	if !ok {
 		err = common.StringErrorWrapperLocal("channel not implemented", "channel_error", http.StatusServiceUnavailable)

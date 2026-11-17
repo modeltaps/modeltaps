@@ -2,9 +2,7 @@ package relay
 
 import (
 	"github.com/modeltaps/modeltaps/common"
-	"github.com/modeltaps/modeltaps/common/config"
 	providersBase "github.com/modeltaps/modeltaps/providers/base"
-	"github.com/modeltaps/modeltaps/safty"
 	"github.com/modeltaps/modeltaps/types"
 	"net/http"
 	"strings"
@@ -43,23 +41,17 @@ func (r *relayEmbeddings) getPromptTokens() (int, error) {
 }
 
 func (r *relayEmbeddings) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
+	// Content moderation, before any upstream call.
+	if err = checkContentSafety(r.request.Input); err != nil {
+		done = true
+		return
+	}
+
 	provider, ok := r.provider.(providersBase.EmbeddingsInterface)
 	if !ok {
 		err = common.StringErrorWrapperLocal("channel not implemented", "channel_error", http.StatusServiceUnavailable)
 		done = true
 		return
-	}
-
-	// 内容审查
-	if config.EnableSafe {
-		if r.request.Input != nil {
-			CheckResult, _ := safty.CheckContent(r.request)
-			if !CheckResult.IsSafe {
-				err = common.StringErrorWrapperLocal(CheckResult.Reason, CheckResult.Code, http.StatusBadRequest)
-				done = true
-				return
-			}
-		}
 	}
 
 	r.request.Model = r.modelName

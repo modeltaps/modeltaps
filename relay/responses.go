@@ -67,6 +67,13 @@ func (r *relayResponses) getPromptTokens() (int, error) {
 func (r *relayResponses) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
 	r.responsesRequest.Model = r.modelName
 
+	// Content moderation covers every route below (compact, Messages upstream, chat
+	// compatibility, native Responses): input items, instructions and tool descriptions.
+	if err = checkContentSafety(r.responsesRequest.Input, r.responsesRequest.Instructions, r.responsesRequest.Tools); err != nil {
+		done = true
+		return
+	}
+
 	if r.isCompact {
 		return r.sendCompact()
 	}

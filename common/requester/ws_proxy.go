@@ -2,6 +2,7 @@ package requester
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -19,6 +20,10 @@ type WSProxy struct {
 	done           chan struct{}
 	userClosed     chan struct{}
 	supplierClosed chan struct{}
+	// A websocket connection allows one writer at a time; these serialize the proxy's own
+	// writes with WriteToUser calls made from a MessageHandler.
+	userWriteMu     sync.Mutex
+	supplierWriteMu sync.Mutex
 }
 
 type MessageSource int
@@ -66,6 +71,22 @@ func (p *WSProxy) SupplierClosed() <-chan struct{} {
 	return p.supplierClosed
 }
 
+// WriteToUser sends a message to the user connection. It is safe to call from a MessageHandler
+// (for example to answer a client event that is not forwarded) while the proxy runs.
+func (p *WSProxy) WriteToUser(messageType int, data []byte) error {
+	return p.write(p.userConn, messageType, data)
+}
+
+func (p *WSProxy) write(conn *websocket.Conn, messageType int, data []byte) error {
+	mu := &p.supplierWriteMu
+	if conn == p.userConn {
+		mu = &p.userWriteMu
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	return conn.WriteMessage(messageType, data)
+}
+
 func (p *WSProxy) transfer(src, dst *websocket.Conn, source MessageSource, closed chan<- struct{}) {
 	defer func() {
 		close(closed)
@@ -85,7 +106,7 @@ func (p *WSProxy) transfer(src, dst *websocket.Conn, source MessageSource, close
 			shouldContinue, usage, newMessage, err := p.handler(source, messageType, message)
 			if err != nil {
 				errMsg := []byte(err.Error())
-				dst.WriteMessage(websocket.TextMessage, errMsg)
+				p.write(dst, websocket.TextMessage, errMsg)
 				logger.SysError(fmt.Sprintf("source: %d, handler error: %s", source, err.Error()))
 				return
 			}
@@ -101,16 +122,16 @@ func (p *WSProxy) transfer(src, dst *websocket.Conn, source MessageSource, close
 			if usage != nil && p.usageHandler != nil {
 				err := p.usageHandler(usage)
 				if err != nil {
-					dst.WriteMessage(websocket.TextMessage, message)
+					p.write(dst, websocket.TextMessage, message)
 					errMsg := []byte(err.Error())
-					dst.WriteMessage(websocket.TextMessage, errMsg)
+					p.write(dst, websocket.TextMessage, errMsg)
 					logger.SysError(fmt.Sprintf("source: %d, usageHandler error: %s", source, err.Error()))
 					return
 				}
 			}
 		}
 
-		err = dst.WriteMessage(messageType, message)
+		err = p.write(dst, messageType, message)
 		if err != nil {
 			logger.SysError(fmt.Sprintf("source: %d, WriteMessage error: %s", source, err.Error()))
 			return

@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"slices"
@@ -76,6 +77,15 @@ func collectText(v gjson.Result, out *strings.Builder) {
 }
 
 func (r *relayDecisions) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
+	// Content moderation: the input and the question instructions and choice descriptions.
+	if err = checkContentSafety(map[string]json.RawMessage{
+		"input":     r.request.Input,
+		"questions": r.request.Questions,
+	}); err != nil {
+		done = true
+		return
+	}
+
 	provider, ok := r.provider.(providersBase.DecisionsInterface)
 	if !ok {
 		err = common.StringErrorWrapperLocal("channel not implemented", "channel_error", http.StatusServiceUnavailable)

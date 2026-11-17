@@ -2,9 +2,7 @@ package relay
 
 import (
 	"github.com/modeltaps/modeltaps/common"
-	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/providers/gemini"
-	"github.com/modeltaps/modeltaps/safty"
 	"github.com/modeltaps/modeltaps/types"
 	"encoding/json"
 	"errors"
@@ -106,18 +104,10 @@ func (r *relayVeoOnly) send() (err *types.OpenAIErrorWithStatusCode, done bool) 
 		return common.StringErrorWrapperLocal("channel not implemented", "channel_error", http.StatusServiceUnavailable), true
 	}
 
-	// 内容审查
-	if config.EnableSafe {
-		for _, instance := range r.veoRequest.Instances {
-			if instance.Prompt != "" {
-				CheckResult, _ := safty.CheckContent(instance.Prompt)
-				if !CheckResult.IsSafe {
-					err = common.StringErrorWrapperLocal(CheckResult.Reason, CheckResult.Code, http.StatusBadRequest)
-					done = true
-					return
-				}
-			}
-		}
+	// Content moderation, before any upstream call.
+	if err = checkContentSafety(r.veoRequest.Instances, r.veoRequest.Parameters); err != nil {
+		done = true
+		return
 	}
 
 	// 处理视频生成请求（包含轮询和下载）

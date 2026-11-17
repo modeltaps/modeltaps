@@ -2,11 +2,9 @@ package relay
 
 import (
 	"github.com/modeltaps/modeltaps/common"
-	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/common/utils"
 	providersBase "github.com/modeltaps/modeltaps/providers/base"
-	"github.com/modeltaps/modeltaps/safty"
 	"github.com/modeltaps/modeltaps/types"
 	"encoding/json"
 	"errors"
@@ -60,6 +58,12 @@ func (r *relayCompletions) getPromptTokens() (int, error) {
 }
 
 func (r *relayCompletions) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
+	// Content moderation, before any upstream call.
+	if err = checkContentSafety(r.request.Prompt, r.request.Suffix); err != nil {
+		done = true
+		return
+	}
+
 	provider, ok := r.provider.(providersBase.CompletionInterface)
 	if !ok {
 		err = common.StringErrorWrapperLocal("channel not implemented", "channel_error", http.StatusServiceUnavailable)
@@ -68,18 +72,6 @@ func (r *relayCompletions) send() (err *types.OpenAIErrorWithStatusCode, done bo
 	}
 
 	r.request.Model = r.modelName
-
-	// 内容审查
-	if config.EnableSafe {
-		if r.request.Prompt != nil {
-			CheckResult, _ := safty.CheckContent(r.request.Prompt)
-			if !CheckResult.IsSafe {
-				err = common.StringErrorWrapperLocal(CheckResult.Reason, CheckResult.Code, http.StatusBadRequest)
-				done = true
-				return
-			}
-		}
-	}
 
 	if r.request.Stream {
 		var response requester.StreamReaderInterface[string]

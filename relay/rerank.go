@@ -173,6 +173,12 @@ func (r *relayRerank) getPromptTokens() (int, error) {
 }
 
 func (r *relayRerank) send() (err *types.OpenAIErrorWithStatusCode, done bool) {
+	// Content moderation, before any upstream call.
+	if err = checkContentSafety(r.request.Query, r.request.Documents); err != nil {
+		done = true
+		return
+	}
+
 	chatProvider, ok := r.provider.(providersBase.RerankInterface)
 	if !ok {
 		err = common.StringErrorWrapperLocal("channel not implemented", "channel_error", http.StatusServiceUnavailable)
