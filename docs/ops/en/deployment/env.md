@@ -76,7 +76,9 @@ LOGS_FILENAME="modeltaps.log"
     - How requests are counted:
       - **When a signed-in user is recognized** (a valid web session is present), each request takes from two buckets: the **user** quota and the **source IP** ceiling; whichever fills first returns `429`. The user quota is the value configured above and the IP ceiling is four times that. Users behind the same NAT or office gateway get separate quotas and do not crowd each other out, while registering more accounts on one machine does not multiply the quota.
       - **When no signed-in user is recognized** (anonymous access, or token-authenticated endpoints such as `/dashboard`), requests are counted per source IP only, at exactly the configured value.
-      - Direct local requests (both the peer and the resolved client IP are loopback) are not counted; requests forwarded by a reverse proxy on the same host are still counted by the real client IP.
+      - IPv6 sources are counted per `/64` block: switching addresses within one block does not give a fresh quota.
+      - Direct local requests (a loopback peer and no `X-Forwarded-For` / `X-Real-IP` / `TRUSTED_HEADER` header) are not counted. Requests forwarded by a proxy in `TRUSTED_PROXIES` are counted by the client IP it reports, also when that is a loopback address.
+      - When a reverse proxy on the same host is missing from `TRUSTED_PROXIES`, every client looks local: requests it forwards are not rate limited (otherwise the whole site would share one bucket), and the system log warns about it once an hour. Add the proxy to `TRUSTED_PROXIES`.
     - `GLOBAL_RATE_LIMIT_WHITELIST`: source addresses exempt from rate limiting, as IPs or CIDRs separated by commas. Empty by default. Intended for trusted high-volume callers such as admin scripts and monitoring probes.
       - Example: `GLOBAL_RATE_LIMIT_WHITELIST=10.0.0.5,192.168.0.0/16`
       - It only applies to the two global limits above. Sensitive endpoints (sign-in, registration, password change, OAuth callbacks) and uploads / downloads have their own limits and are **not exempted**, so brute-force protection stays in place.
@@ -89,6 +91,7 @@ LOGS_FILENAME="modeltaps.log"
 16. `SQLITE_BUSY_TIMEOUT`: SQLite lock wait timeout in milliseconds. Defaults to `3000`.
 17. `TG_BOT_API_KEY`: the Telegram bot API key, obtainable from [BotFather](https://t.me/BotFather).
 18. `TG_WEBHOOK_SECRET`: (optional) a webhook secret of your choosing. When set, messages are received via `webhook` instead of polling.
+    - Telegram delivers to the fixed address `/api/telegram/webhook`, checked by this secret alone. Earlier versions put the bot token in the delivery address, so access logs may hold `/api/telegram/<token>`; if anyone else could read those logs, rotate the token in BotFather.
 19. `USER_TOKEN_SECRET`: the signing secret for user tokens. Required, longer than 32 characters. Do not change it after the first run, or existing user tokens become invalid.
     - Generate it with `openssl rand -base64 48 | tr -d '\n'` and use a different value from `SESSION_SECRET`.
     - Checked at startup: the gateway refuses to start when it is still the example placeholder (such as `<change-me-…>`) or shorter than 32 characters. `SESSION_SECRET` is checked the same way when it is set. An existing deployment with a shorter secret that cannot rotate right away can set `USER_TOKEN_SECRET_ALLOW_SHORT=true` to start anyway with a warning in the log; rotating the secret invalidates every API key issued so far.

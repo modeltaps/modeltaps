@@ -5,7 +5,7 @@ go 1.26.0
 
 // Release, image and CI builds compile with this toolchain; the go line above
 // stays the minimum. Keep it on the latest patch: go get toolchain@patch
-toolchain go1.27.1
+toolchain go1.27.4
 
 require (
 	github.com/ThinkInAIXYZ/go-mcp v0.2.29

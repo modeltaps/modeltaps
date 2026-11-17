@@ -11,7 +11,9 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	goredis "github.com/redis/go-redis/v9"
@@ -24,6 +26,116 @@ import (
 func isLoopbackIP(remoteIP string) bool {
 	ip := net.ParseIP(remoteIP)
 	return ip != nil && ip.IsLoopback()
+}
+
+// rateLimitIPKey is the part of a bucket key that names the client address. IPv6 clients are
+// grouped by /64, the smallest block a provider hands to one subscriber: counting every address
+// on its own would let anyone holding a /64 open a fresh bucket per request.
+func rateLimitIPKey(clientIP string) string {
+	ip := net.ParseIP(clientIP)
+	if ip == nil || ip.To4() != nil {
+		return clientIP
+	}
+	return ip.Mask(net.CIDRMask(64, 128)).String() + "/64"
+}
+
+// trustedProxySet is trusted_proxies parsed the way gin's SetTrustedProxies reads it: one bad
+// entry makes main.go trust no proxy at all, so it yields no network here too. It is kept with
+// the raw list it came from and parsed again only when that list changes.
+type trustedProxySet struct {
+	raw  string
+	nets []*net.IPNet
+}
+
+var trustedProxyCache atomic.Pointer[trustedProxySet]
+
+func trustedProxyNets() []*net.IPNet {
+	entries := config.TrustedProxies()
+	raw := strings.Join(entries, ",")
+	if set := trustedProxyCache.Load(); set != nil && set.raw == raw {
+		return set.nets
+	}
+	set := &trustedProxySet{raw: raw, nets: parseTrustedProxyNets(entries)}
+	trustedProxyCache.Store(set)
+	return set.nets
+}
+
+func parseTrustedProxyNets(entries []string) []*net.IPNet {
+	nets := make([]*net.IPNet, 0, len(entries))
+	for _, entry := range entries {
+		if !strings.Contains(entry, "/") {
+			ip := net.ParseIP(entry)
+			if ip == nil {
+				return nil
+			}
+			bits := 128
+			if ip.To4() != nil {
+				bits = 32
+			}
+			nets = append(nets, &net.IPNet{IP: ip, Mask: net.CIDRMask(bits, bits)})
+			continue
+		}
+		_, ipNet, err := net.ParseCIDR(entry)
+		if err != nil {
+			return nil
+		}
+		nets = append(nets, ipNet)
+	}
+	return nets
+}
+
+// FromTrustedProxy reports whether the request's TCP peer is one of trusted_proxies, the only
+// peers whose forwarding headers (X-Forwarded-For, X-Forwarded-Proto, ...) may be believed.
+func FromTrustedProxy(c *gin.Context) bool {
+	ip := net.ParseIP(c.RemoteIP())
+	if ip == nil {
+		return false
+	}
+	for _, ipNet := range trustedProxyNets() {
+		if ipNet.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+// hasForwardingHeader reports whether the request carries one of the headers gin reads the
+// client address from: a request that came through a proxy, not a direct local call.
+func hasForwardingHeader(c *gin.Context) bool {
+	if c.GetHeader("X-Forwarded-For") != "" || c.GetHeader("X-Real-IP") != "" {
+		return true
+	}
+	if h := viper.GetString("trusted_header"); h != "" && c.GetHeader(h) != "" {
+		return true
+	}
+	return false
+}
+
+var untrustedLocalProxyWarned atomic.Int64 // last warning, Unix seconds
+
+// loopbackExempt reports whether the request is a call from the same host (a script or a probe)
+// that skips the limit. Only a direct call qualifies:
+//   - a loopback client reported by a trusted proxy is either a forged X-Forwarded-For passed on
+//     by the proxy or a local call through the proxy, and is limited like any other client;
+//   - a proxied request from a loopback peer that is not in trusted_proxies means a same-host
+//     proxy was left out of trusted_proxies, so every client looks like 127.0.0.1. Limiting would
+//     put the whole site into one bucket, so the request still passes, and the log says why.
+func loopbackExempt(c *gin.Context, clientIP string) bool {
+	if !isLoopbackIP(c.RemoteIP()) || !isLoopbackIP(clientIP) {
+		return false
+	}
+	if !hasForwardingHeader(c) {
+		return true
+	}
+	if FromTrustedProxy(c) {
+		return false
+	}
+	now := time.Now().Unix()
+	if last := untrustedLocalProxyWarned.Load(); now-last >= 3600 && untrustedLocalProxyWarned.CompareAndSwap(last, now) {
+		logger.SysError("rate limits are off for proxied requests: they come from a proxy on this host that is not in trusted_proxies, " +
+			"so every client looks like the loopback address; add the proxy to trusted_proxies")
+	}
+	return true
 }
 
 // rateLimitWhitelist 是免限流的来源，取自 global.rate_limit_whitelist，
@@ -92,11 +204,11 @@ func rateLimitBuckets(c *gin.Context, clientIP string, maxRequestNum int, perUse
 		if id, ok := sessionUserID(c); ok {
 			return []rateLimitBucket{
 				{name: "u:" + strconv.Itoa(id), limit: maxRequestNum},
-				{name: "ipc:" + clientIP, limit: maxRequestNum * rateLimitIPToleranceFactor},
+				{name: "ipc:" + rateLimitIPKey(clientIP), limit: maxRequestNum * rateLimitIPToleranceFactor},
 			}
 		}
 	}
-	return []rateLimitBucket{{name: "ip:" + clientIP, limit: maxRequestNum}}
+	return []rateLimitBucket{{name: "ip:" + rateLimitIPKey(clientIP), limit: maxRequestNum}}
 }
 
 // abortWithTooManyRequests 返回 429，带 Retry-After（秒）、X-RateLimit-* 与 JSON 错误体。
@@ -278,9 +390,7 @@ func rateLimitFactory(maxRequestNum int, duration int64, mark string, allowWhite
 		// 分桶与白名单用 ClientIP：其可信度由 main.go 的 SetTrustedProxies 保证，
 		// 来自不可信对端的转发头会被 gin 忽略。
 		clientIP := c.ClientIP()
-		// 回环豁免要求 RemoteIP 与 ClientIP 同为回环：只看 ClientIP，信任全部代理时伪造头可白嫖豁免；
-		// 只看 RemoteIP，同机反代（对端恒为 127.0.0.1）会让所有流量都被豁免。
-		if isLoopbackIP(c.RemoteIP()) && isLoopbackIP(clientIP) {
+		if loopbackExempt(c, clientIP) {
 			return
 		}
 		if allowWhitelist && isRateLimitWhitelisted(net.ParseIP(clientIP)) {
@@ -308,6 +418,18 @@ func DownloadRateLimit() func(c *gin.Context) {
 
 func UploadRateLimit() func(c *gin.Context) {
 	return rateLimitFactory(UploadRateLimitNum, UploadRateLimitDuration, "UP", false, false)
+}
+
+// MJImageRateLimit limits /mj/image, which anyone may call with a task ID and which makes the
+// server fetch the image from upstream. A page of results loads a few dozen images; this leaves
+// room for that and for a few users behind one address.
+var (
+	MJImageRateLimitNum            = 300
+	MJImageRateLimitDuration int64 = 3 * 60
+)
+
+func MJImageRateLimit() func(c *gin.Context) {
+	return rateLimitFactory(MJImageRateLimitNum, MJImageRateLimitDuration, "MI", true, false)
 }
 
 // Agent handover (AGENT-7). The endpoints an agent calls without signing in are limited per IP;

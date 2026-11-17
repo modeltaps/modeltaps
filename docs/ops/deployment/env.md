@@ -76,7 +76,9 @@ LOGS_FILENAME="modeltaps.log"
     - 计数口径分两种情况：
       - **能识别出登录用户时**（携带有效 Web 会话），同时占用**用户**配额与**来源 IP**上限两个桶，任一满即 `429`。用户配额为上面配置的值，IP 上限为其 4 倍。这样同一 NAT / 公司出口后面的多个用户各有独立额度、不会互相挤占，而单机靠多注册账号也无法线性放大配额。
       - **识别不出登录用户时**（未登录访问，或按令牌鉴权的 `/dashboard` 等接口），只按来源 IP 计，限额就是上面配置的值、不做放宽。
-      - 本机直连（对端与解析出的客户端 IP 均为 loopback）的请求不计入；经同机反向代理转发的请求仍按真实客户端 IP 计数。
+      - IPv6 来源按 `/64` 网段合并计数：同一网段内换地址不会换到新的额度。
+      - 本机直连（对端为 loopback，且请求不带 `X-Forwarded-For` / `X-Real-IP` / `TRUSTED_HEADER` 头）的请求不计入。经 `TRUSTED_PROXIES` 内的反代转发的请求按它报出的客户端 IP 计数，报出的是回环地址也一样计数。
+      - 同机反代没有列入 `TRUSTED_PROXIES` 时，所有客户端看起来都是本机：经它转发的请求不受限流（否则全站会挤进同一个桶），系统日志每小时告警一次。请按[反向代理与真实客户端 IP](#反向代理与真实客户端-ip)配置。
     - `GLOBAL_RATE_LIMIT_WHITELIST`：免限流的来源地址，支持 IP 与 CIDR，多个用逗号分隔，默认为空。供管理脚本、监控探针等高频可信调用方使用。
       - 例子：`GLOBAL_RATE_LIMIT_WHITELIST=10.0.0.5,192.168.0.0/16`
       - 生效范围仅限上面两项总量限流。登录、注册、改密、OAuth 回调等敏感端点以及上传 / 下载有独立的限流，**不受白名单豁免**，以保留口令爆破防护。
@@ -89,6 +91,7 @@ LOGS_FILENAME="modeltaps.log"
 16. `SQLITE_BUSY_TIMEOUT`：SQLite 锁等待超时设置，单位为毫秒，默认 `3000`。
 17. `TG_BOT_API_KEY`：Telegram bot 的 API 密钥，可在 [BotFather](https://t.me/BotFather) 获取。
 18. `TG_WEBHOOK_SECRET`：（可选）webhook 密钥，可自定义。设置该密钥后将使用 `webhook` 方式接收消息，否则使用轮询（Polling）方式。
+    - Telegram 推送到固定地址 `/api/telegram/webhook`，只凭这个密钥校验。旧版本把 bot token 写在推送地址里，访问日志中可能留有 `/api/telegram/<token>`；如果日志曾被他人读到，请在 BotFather 轮换 token。
 19. `USER_TOKEN_SECRET` ： 设置用户令牌签名密钥，必填，大于 32 位以上， 设置后请勿修改，否则会导致用户令牌失效。
     - 取值请用 `openssl rand -base64 48 | tr -d '\n'` 生成，且与 `SESSION_SECRET` 使用不同的值。
     - 启动时会检查：仍是示例占位值（如 `<change-me-…>`）或短于 32 位时拒绝启动；`SESSION_SECRET` 设置了的话也按同样规则检查。已上线、密钥短于 32 位又不能立刻更换的部署，可设 `USER_TOKEN_SECRET_ALLOW_SHORT=true` 先照常启动（日志里会有警告），更换密钥会让所有已发的 API Key 失效。
@@ -619,7 +622,8 @@ Modeltaps 也不发短信——手机号登录与短信验证码全部由 IdP �
 客户端 IP 一律取 TCP 直连对端地址，`TRUSTED_HEADER` 即使配了也会被忽略。
 
 ::: warning 部署在反向代理后面必须配置 TRUSTED_PROXIES
-否则所有请求的客户端 IP 都会是反代自身的地址，限流会把全站流量算到同一个桶里。
+否则所有请求的客户端 IP 都会是反代自身的地址：反代在别的机器上时，限流会把全站流量算到同一个桶里；
+反代在同一台机器上时，所有请求看起来都来自本机，经它转发的请求不受限流，系统日志会每小时告警一次。
 :::
 
 ### Cloudflare

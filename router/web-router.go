@@ -13,6 +13,8 @@ import (
 
 func SetWebRouter(router *gin.Engine, buildFS embed.FS, indexPage []byte) {
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
+	// Anti-framing and the other common headers on every page, including the SPA fallback.
+	router.Use(middleware.SecurityHeaders())
 
 	embedFS, err := static.EmbedFolder(buildFS, "web/build")
 	if err != nil {
@@ -60,12 +62,18 @@ func SetWebRouter(router *gin.Engine, buildFS embed.FS, indexPage []byte) {
 
 // registerAgentDocs serves /llms.txt and /skill.md (AGENT-5): machine-readable notes for AI tools
 // and agents, rendered from site settings only, no sign-in, cacheable for a few minutes. They name
-// the site's address, which falls back to the request's host, so caches keep them apart by it.
+// the site's address. When no address is configured it comes from the request's Host and
+// forwarding headers, and a shared cache that ignores Vary could hand one client's version to
+// everyone, so the response is then cacheable by the client only.
 func registerAgentDocs(router *gin.Engine) {
 	agentDoc := func(handler gin.HandlerFunc) gin.HandlerFunc {
 		return func(c *gin.Context) {
-			c.Header("Cache-Control", "public, max-age=300")
-			c.Header("Vary", "Host, X-Forwarded-Proto")
+			if controller.SiteURLConfigured() {
+				c.Header("Cache-Control", "public, max-age=300")
+			} else {
+				c.Header("Cache-Control", "private, max-age=300")
+				c.Header("Vary", "Host, X-Forwarded-Proto")
+			}
 			handler(c)
 		}
 	}
@@ -75,9 +83,16 @@ func registerAgentDocs(router *gin.Engine) {
 
 // skipStaticFiles runs limit only for requests that static.Serve("/", fs) would not answer from
 // the embedded build, so loading the JS/CSS/image bundle does not use up the web rate limit.
+//
+// Since those files are not rate limited, they answer single-range requests only: a Range header
+// listing many ranges turns one small request into a large multipart response. The header is
+// dropped and the whole file is sent, which every client has to accept.
 func skipStaticFiles(fs static.ServeFileSystem, limit gin.HandlerFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if fs.Exists("/", c.Request.URL.Path) {
+			if strings.Contains(c.Request.Header.Get("Range"), ",") {
+				c.Request.Header.Del("Range")
+			}
 			return
 		}
 		limit(c)

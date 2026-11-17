@@ -16,6 +16,7 @@ import (
 	"github.com/modeltaps/modeltaps/types"
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"net/url"
 	"strings"
@@ -67,6 +68,28 @@ func mjImageClient(task *model.Midjourney, imageURL *url.URL) *http.Client {
 	return mjImagePublicClient
 }
 
+// mjImageTypes are the image formats /mj/image passes on: raster formats only. SVG is left out
+// because it is a document that can run script in the site's origin.
+var mjImageTypes = map[string]bool{
+	"image/png":  true,
+	"image/jpeg": true,
+	"image/gif":  true,
+	"image/webp": true,
+}
+
+// mjImageContentType is the Content-Type to answer with for an upstream one, and whether the
+// image may be passed on at all. An upstream that sends none is taken to send a JPEG.
+func mjImageContentType(upstream string) (string, bool) {
+	if strings.TrimSpace(upstream) == "" {
+		return "image/jpeg", true
+	}
+	mediaType, _, err := mime.ParseMediaType(upstream)
+	if err != nil || !mjImageTypes[mediaType] {
+		return "", false
+	}
+	return mediaType, true
+}
+
 func RelayMidjourneyImage(c *gin.Context) {
 	taskId := c.Param("id")
 	midjourneyTask := model.GetByOnlyMJId(taskId)
@@ -110,12 +133,9 @@ func RelayMidjourneyImage(c *gin.Context) {
 		})
 		return
 	}
-	// 只回流图片，避免把任意上游内容（HTML/JSON 等）以本站源返回给浏览器
-	contentType := resp.Header.Get("Content-Type")
-	if contentType == "" {
-		contentType = "image/jpeg"
-	}
-	if !strings.HasPrefix(strings.ToLower(contentType), "image/") {
+	// 只回流栅格图片，避免把任意上游内容（HTML/JSON/SVG 等可执行脚本的格式）以本站源返回给浏览器
+	contentType, ok := mjImageContentType(resp.Header.Get("Content-Type"))
+	if !ok {
 		c.JSON(http.StatusBadGateway, gin.H{
 			"error": "unexpected_content_type",
 		})
@@ -123,6 +143,8 @@ func RelayMidjourneyImage(c *gin.Context) {
 	}
 	c.Writer.Header().Set("Content-Type", contentType)
 	c.Writer.Header().Set("X-Content-Type-Options", "nosniff")
+	// Opened at the top level, the image still runs nothing and loads nothing.
+	c.Writer.Header().Set("Content-Security-Policy", "default-src 'none'; sandbox")
 	_, err = io.Copy(c.Writer, io.LimitReader(resp.Body, mjImageMaxBytes))
 	if err != nil {
 		log.Println("Failed to stream image:", err)

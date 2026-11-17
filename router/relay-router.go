@@ -101,7 +101,8 @@ func setMJRouter(router *gin.Engine) {
 
 // Path: router/relay-router.go
 func registerMjRouterGroup(relayMjRouter *gin.RouterGroup) {
-	relayMjRouter.GET("/image/:id", midjourney.RelayMidjourneyImage)
+	// Image links are opened without a key (img tags, shared links), so the route is limited per IP.
+	relayMjRouter.GET("/image/:id", middleware.MJImageRateLimit(), midjourney.RelayMidjourneyImage)
 	relayMjRouter.Use(middleware.RelayMJPanicRecover(), middleware.MjAuth(), middleware.ContextUserId(), middleware.Distribute(), middleware.DynamicRedisRateLimiter())
 	{
 		relayMjRouter.POST("/submit/action", midjourney.RelayMidjourney)

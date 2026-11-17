@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/modeltaps/modeltaps/common/logger"
+	"github.com/modeltaps/modeltaps/common/telegram"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/metrics"
 
@@ -120,10 +121,18 @@ func redactLogQuery(raw string) string {
 	return strings.Join(parts, "&")
 }
 
-// redactLogPath masks a token sent in an MCP path. The /mcp/<token>, /mcp/sse/<token> and
+// redactLogPath masks a token sent in a path. The /mcp/<token>, /mcp/sse/<token> and
 // /mcp/message/<token> forms are no longer served, but clients still configured with them would
-// write their token into the log on every 404.
+// write their token into the log on every 404. The Telegram webhook used to live at
+// /api/telegram/<bot token>; it now has a fixed path, and anything else under /api/telegram/ is
+// masked so a delivery to the old address does not log the bot token.
 func redactLogPath(p string) string {
+	if rest, ok := strings.CutPrefix(p, "/api/telegram/"); ok {
+		if rest == "" || "/api/telegram/"+rest == telegram.WebhookPath {
+			return p
+		}
+		return "/api/telegram/***"
+	}
 	rest, ok := strings.CutPrefix(p, "/mcp/")
 	if !ok || rest == "" {
 		return p

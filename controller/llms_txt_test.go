@@ -100,6 +100,7 @@ func TestLlmsTxtFallsBackToRequestHost(t *testing.T) {
 	req := httptest.NewRequest("GET", "/llms.txt", nil)
 	req.Host = "gateway.example.org"
 	req.Header.Set("X-Forwarded-Proto", "https")
+	trustRequestPeer(t, req)
 	body := fetchLlmsTxt(t, r, req).Body.String()
 
 	if !strings.Contains(body, "`https://gateway.example.org/v1`") {

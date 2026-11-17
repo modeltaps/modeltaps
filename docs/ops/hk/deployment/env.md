@@ -76,7 +76,9 @@ LOGS_FILENAME="modeltaps.log"
     - 計數口徑分兩種情況：
       - **能識別出登入用戶時**（攜帶有效 Web 會話），同時佔用**用戶**配額與**來源 IP**上限兩個桶，任一滿即 `429`。用戶配額為上面配置的值，IP 上限為其 4 倍。這樣同一 NAT / 公司出口後面的多個用戶各有獨立額度、不會互相擠佔，而單機靠多註冊帳戶也無法線性放大配額。
       - **識別不出登入用戶時**（未登入訪問，或按令牌鑑權的 `/dashboard` 等介面），只按來源 IP 計，限額就是上面配置的值、不做放寬。
-      - 本機直連（對端與解析出的客戶端 IP 均為 loopback）的請求不計入；經同機反向代理轉發的請求仍按真實客戶端 IP 計數。
+      - IPv6 來源按 `/64` 網段合併計數：同一網段內換地址不會換到新的額度。
+      - 本機直連（對端為 loopback，且請求不帶 `X-Forwarded-For` / `X-Real-IP` / `TRUSTED_HEADER` 頭）的請求不計入。經 `TRUSTED_PROXIES` 內的反代轉發的請求按它報出的客戶端 IP 計數，報出的是回環地址也一樣計數。
+      - 同機反代沒有列入 `TRUSTED_PROXIES` 時，所有客戶端看起來都是本機：經它轉發的請求不受限流（否則全站會擠進同一個桶），系統日誌每小時告警一次。請把反代加入 `TRUSTED_PROXIES`。
     - `GLOBAL_RATE_LIMIT_WHITELIST`：免限流的來源地址，支援 IP 與 CIDR，多個用逗號分隔，預設為空。供管理腳本、監控探針等高頻可信調用方使用。
       - 例子：`GLOBAL_RATE_LIMIT_WHITELIST=10.0.0.5,192.168.0.0/16`
       - 生效範圍僅限上面兩項總量限流。登入、註冊、改密、OAuth 回調等敏感端點以及上傳 / 下載有獨立的限流，**不受白名單豁免**，以保留口令爆破防護。
@@ -89,6 +91,7 @@ LOGS_FILENAME="modeltaps.log"
 16. `SQLITE_BUSY_TIMEOUT`：SQLite 鎖等待逾時設定，單位為毫秒，預設 `3000`。
 17. `TG_BOT_API_KEY`：Telegram bot 的 API 密鑰，可在 [BotFather](https://t.me/BotFather) 獲取。
 18. `TG_WEBHOOK_SECRET`：（可選）webhook 密鑰，可自訂。設定該密鑰後將使用 `webhook` 方式接收訊息，否則使用輪詢（Polling）方式。
+    - Telegram 推送到固定地址 `/api/telegram/webhook`，只憑這個密鑰校驗。舊版本把 bot token 寫在推送地址裡，訪問日誌中可能留有 `/api/telegram/<token>`；如果日誌曾被他人讀到，請在 BotFather 輪換 token。
 19. `USER_TOKEN_SECRET` ： 設定用戶令牌簽名密鑰，必填，大於 32 位以上， 設定後請勿修改，否則會導致用戶令牌失效。
     - 取值請用 `openssl rand -base64 48 | tr -d '\n'` 生成，且與 `SESSION_SECRET` 使用不同的值。
     - 啟動時會檢查：仍是示例佔位值（如 `<change-me-…>`）或短於 32 位時拒絕啟動；`SESSION_SECRET` 設定了的話也按同樣規則檢查。已上線、密鑰短於 32 位又不能立刻更換的部署，可設 `USER_TOKEN_SECRET_ALLOW_SHORT=true` 先照常啟動（日誌裡會有警告），更換密鑰會讓所有已發的 API Key 失效。

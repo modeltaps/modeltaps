@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,18 +15,32 @@ import (
 // 此时用请求自身的 scheme+Host 拼 base URL 更贴近真实部署域名。
 const defaultServerAddress = "http://localhost:3000"
 
+// SiteURLConfigured reports whether the administrator set the site's address. Otherwise
+// publicSiteURL derives it from the request, and the result must not be shared between clients.
+func SiteURLConfigured() bool {
+	addr := strings.TrimRight(strings.TrimSpace(config.ServerAddress), "/")
+	return addr != "" && addr != defaultServerAddress
+}
+
 // publicSiteURL 按 ServerAddress > 请求 Host 的优先级得出对外可访问的根地址（无尾部斜杠）。
+//
+// Without a configured address the scheme comes from the connection, or from X-Forwarded-Proto
+// when the request came through one of trusted_proxies; only http and https are accepted, so
+// the header cannot put another origin into the base URL.
 func publicSiteURL(c *gin.Context) string {
-	addr := strings.TrimSpace(config.ServerAddress)
-	if addr != "" && strings.TrimRight(addr, "/") != defaultServerAddress {
-		return strings.TrimRight(addr, "/")
+	if SiteURLConfigured() {
+		return strings.TrimRight(strings.TrimSpace(config.ServerAddress), "/")
 	}
 
 	scheme := "http"
-	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
-		scheme = strings.TrimSpace(strings.Split(proto, ",")[0])
-	} else if c.Request != nil && c.Request.TLS != nil {
+	if c.Request != nil && c.Request.TLS != nil {
 		scheme = "https"
+	}
+	if c.Request != nil && middleware.FromTrustedProxy(c) {
+		proto := strings.ToLower(strings.TrimSpace(strings.Split(c.GetHeader("X-Forwarded-Proto"), ",")[0]))
+		if proto == "http" || proto == "https" {
+			scheme = proto
+		}
 	}
 
 	host := ""

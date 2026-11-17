@@ -1,8 +1,10 @@
 package router
 
 import (
+	"strings"
 	"time"
 
+	"github.com/modeltaps/modeltaps/common/telegram"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/controller"
 	"github.com/modeltaps/modeltaps/middleware"
@@ -86,7 +88,9 @@ func SetApiRouter(router *gin.Engine) {
 		systemInfo.POST("/problems/resolve", controller.SystemLogResolveProblems)
 	}
 
-	apiRouter.POST("/telegram/:token", middleware.Telegram(), controller.TelegramBotWebHook)
+	// Fixed path: the bot token is not part of it (it would land in access logs); deliveries are
+	// authenticated by the webhook secret header alone.
+	apiRouter.POST(strings.TrimPrefix(telegram.WebhookPath, "/api"), middleware.Telegram(), controller.TelegramBotWebHook)
 	apiRouter.Use(middleware.GlobalAPIRateLimit())
 	{
 		apiRouter.GET("/brand-icon/domain/:domain", controller.GetBrandIconByDomain)
@@ -186,7 +190,7 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.DELETE("/sessions/:id", controller.RevokeUserSession)
 				selfRoute.POST("/sessions/logout_others", controller.LogoutOtherSessions)
 				// selfRoute.DELETE("/self", controller.DeleteSelf)
-				selfRoute.GET("/token", controller.GenerateAccessToken)
+				selfRoute.GET("/token", middleware.SessionOnly(), controller.GenerateAccessToken)
 				selfRoute.GET("/aff", controller.GetAffCode)
 				selfRoute.POST("/topup", controller.TopUp)
 				selfRoute.GET("/payment", controller.GetUserPaymentList)

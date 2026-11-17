@@ -23,8 +23,8 @@ ARG VERSION
 RUN VER="${VERSION:-$(cat VERSION 2>/dev/null || echo dev)}" && \
     cd web && VITE_APP_VERSION="$VER" pnpm build
 
-# golang:1.27.1
-FROM golang:1.27.1@sha256:e0174e51e81218523251d85d248a90d24c3d5e81543b4f07a5d66229397db190 AS builder2
+# golang:1.27.4
+FROM golang:1.27.4@sha256:205c7636d74e0ffbe3d007162df7d74f859f5a8c8322dfb9f907977686c126cf AS builder2
 
 ENV GO111MODULE=on \
     CGO_ENABLED=1 \

@@ -28,6 +28,11 @@ var TGDispatcher *ext.Dispatcher
 var TGWebHookSecret = ""
 var TGEnabled = false
 
+// WebhookPath is where Telegram delivers updates. It is fixed and holds no secret: Telegram
+// authenticates each delivery with the X-Telegram-Bot-Api-Secret-Token header (tg.webhook_secret).
+// The bot token must never be part of the path, since request paths end up in access logs.
+const WebhookPath = "/api/telegram/webhook"
+
 func InitTelegramBot() {
 	if !config.IsMasterNode {
 		return
@@ -67,13 +72,12 @@ func StartTelegramBot() {
 		}
 		TGWebHookSecret = botWebhook
 		serverAddress := strings.TrimSuffix(config.ServerAddress, "/")
-		urlPath := fmt.Sprintf("/api/telegram/%s", viper.GetString("tg.bot_api_key"))
 
 		webHookOpts := &ext.AddWebhookOpts{
 			SecretToken: TGWebHookSecret,
 		}
 
-		err := TGupdater.AddWebhook(TGBot, urlPath, webHookOpts)
+		err := TGupdater.AddWebhook(TGBot, WebhookPath, webHookOpts)
 		if err != nil {
 			logger.SysError("Telegram bot failed to add webhook:" + err.Error())
 			return

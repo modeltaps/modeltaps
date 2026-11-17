@@ -121,6 +121,7 @@ func TestSkillMdFallsBackToRequestHost(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/skill.md", nil)
 	req.Host = "gateway.example.org"
 	req.Header.Set("X-Forwarded-Proto", "https")
+	trustRequestPeer(t, req)
 	body := fetchSkillMd(t, req)
 	if !strings.Contains(body, "`https://gateway.example.org/v1`") || !strings.Contains(body, "name: modeltaps\n") {
 		t.Errorf("want the request's origin and the default name, got:\n%s", body)

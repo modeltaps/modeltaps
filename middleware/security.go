@@ -6,10 +6,18 @@ import (
 )
 
 // SecurityHeaders 添加通用的安全头部
+//
+// Mounted on /api and on every page of the embedded web app. No page of the site is meant to be
+// shown inside a frame (the console frames other sites, never itself), so framing is refused
+// outright: X-Frame-Options for older browsers, CSP frame-ancestors for current ones. This keeps
+// pages such as /panel/device out of clickjacking frames, including ones on a same-site subdomain.
+// Handlers that set a Content-Security-Policy of their own replace this one; X-Frame-Options
+// still applies to them.
 func SecurityHeaders() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 添加通用的安全头部
 		c.Header("X-Frame-Options", "DENY")
+		c.Header("Content-Security-Policy", "frame-ancestors 'none'")
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("X-XSS-Protection", "1; mode=block")
 
