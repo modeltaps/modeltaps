@@ -442,10 +442,32 @@ func ModelAliasReferences(modelName string) ([]string, error) {
 }
 
 func DeleteModelInfo(id int) error {
-	err := DB.Delete(&ModelInfo{}, id).Error
+	var info ModelInfo
+	if err := DB.Select("id", "model").First(&info, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil
+		}
+		return err
+	}
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Delete(&ModelInfo{}, id).Error; err != nil {
+			return err
+		}
+		// Supplies serve a catalog model; without the model they would be orphans. Another row
+		// with the same name keeps them.
+		var left int64
+		if err := tx.Model(&ModelInfo{}).Where("model = ?", info.Model).Count(&left).Error; err != nil {
+			return err
+		}
+		if left > 0 {
+			return nil
+		}
+		return tx.Where("model = ?", info.Model).Delete(&ModelSupply{}).Error
+	})
 	if err != nil {
 		return err
 	}
+	ChannelGroup.Load()
 	refreshCatalogCaches()
 	return nil
 }

@@ -624,6 +624,7 @@ func postMigrations() []*gormigrate.Migration {
 		backfillUserEmailCanonical(),
 		backfillUserFirstTopUp(),
 		hashTokenKeys(),
+		cleanOrphanSupplies(),
 	}
 }
 

@@ -233,18 +233,26 @@ func DeleteChannelsTag(tag string, delDisabled bool) error {
 		return nil
 	}
 
-	// 单条 Delete 本身原子，无需显式事务；条件从 DB.Where 起新建，避免污染共享句柄
+	// The ids are read first so the channels' supplies, aliases and prices can go with them.
 	query := DB.Where("tag = ?", tag)
 	if delDisabled {
 		query = query.Where("status IN ?", []int{config.ChannelStatusAutoDisabled, config.ChannelStatusManuallyDisabled})
 	}
 
-	result := query.Delete(&Channel{})
+	var ids []int
+	if err := query.Model(&Channel{}).Pluck("id", &ids).Error; err != nil {
+		return err
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	result := DB.Where("id IN ?", ids).Delete(&Channel{})
 	if result.Error != nil {
 		return result.Error
 	}
 
 	if result.RowsAffected > 0 {
+		cleanUpDeletedChannels(ids)
 		ChannelGroup.Load()
 	}
 

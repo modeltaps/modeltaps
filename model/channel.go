@@ -452,11 +452,24 @@ func DeleteChannelTag(channelId int) error {
 func BatchDeleteChannel(ids []int) (int64, error) {
 	result := DB.Where("id IN ?", ids).Delete(&Channel{})
 	if result.Error == nil && result.RowsAffected > 0 {
-		deleteChannelAliases(ids)
-		deleteChannelPrices(ids)
+		cleanUpDeletedChannels(ids)
 		ChannelGroup.Load()
 	}
 	return result.RowsAffected, result.Error
+}
+
+// cleanUpDeletedChannels removes what belongs to deleted channels: their aliases, their price
+// lists and their supplies. A supply of a deleted channel never routes, but it would still show
+// on the model page and in statistics.
+func cleanUpDeletedChannels(ids []int) {
+	if len(ids) == 0 {
+		return
+	}
+	deleteChannelAliases(ids)
+	deleteChannelPrices(ids)
+	if err := DB.Where("channel_id IN ?", ids).Delete(&ModelSupply{}).Error; err != nil {
+		logger.SysError("failed to delete supplies of deleted channels: " + err.Error())
+	}
 }
 
 func BatchInsertChannels(channels []Channel) error {
@@ -949,8 +962,7 @@ func (channel *Channel) UpdateBalanceAlertedTime(ts int64) error {
 func (channel *Channel) Delete() error {
 	err := DB.Delete(channel).Error
 	if err == nil {
-		deleteChannelAliases([]int{channel.Id})
-		deleteChannelPrices([]int{channel.Id})
+		cleanUpDeletedChannels([]int{channel.Id})
 		ChannelGroup.Load()
 	}
 	return err
@@ -1070,8 +1082,16 @@ func UpdateChannelKey(id int, key string) error {
 }
 
 func DeleteDisabledChannel() (int64, error) {
-	result := DB.Where("status = ? or status = ?", config.ChannelStatusAutoDisabled, config.ChannelStatusManuallyDisabled).Delete(&Channel{})
+	var ids []int
+	if err := DB.Model(&Channel{}).Where("status = ? or status = ?", config.ChannelStatusAutoDisabled, config.ChannelStatusManuallyDisabled).Pluck("id", &ids).Error; err != nil {
+		return 0, err
+	}
+	if len(ids) == 0 {
+		return 0, nil
+	}
+	result := DB.Where("id IN ?", ids).Delete(&Channel{})
 	if result.Error == nil && result.RowsAffected > 0 {
+		cleanUpDeletedChannels(ids)
 		ChannelGroup.Load()
 	}
 	return result.RowsAffected, result.Error
