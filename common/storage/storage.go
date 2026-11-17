@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/storage/drives"
 
 	"github.com/spf13/viper"
@@ -32,11 +33,15 @@ func InitALIOSSStorage() {
 	}
 	bucketName := viper.GetString("storage.alioss.bucketName")
 	if bucketName == "" {
-
 		return
 	}
 
-	aliUpload := drives.NewAliOSSUpload(endpoint, accessKeyId, accessKeySecret, bucketName)
+	region := viper.GetString("storage.alioss.region")
+	aliUpload := drives.NewAliOSSUpload(endpoint, region, accessKeyId, accessKeySecret, bucketName)
+	if aliUpload.Region == "" {
+		logger.SysError("storage.alioss: region is not set and cannot be derived from endpoint " + endpoint + "; set storage.alioss.region (for example cn-beijing), OSS storage stays off")
+		return
+	}
 	AddStorageDrive(aliUpload)
 }
 

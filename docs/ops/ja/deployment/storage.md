@@ -21,6 +21,7 @@ storage: # ストレージ設定（任意。主に画像生成向け。URL を�
     client_id: "" # imgur client_id
   alioss: # Alibaba Cloud OSS オブジェクトストレージ
     endpoint: "" # Endpoint（リージョンのエンドポイント）。例：oss-cn-beijing.aliyuncs.com
+    region: "" # リージョン ID。例：cn-beijing。空の場合は標準 endpoint（oss-<リージョン>.aliyuncs.com）から導出します。カスタムドメインや転送アクセラレーションの endpoint では必須です
     bucketName: "" # バケット名。例：zerodeng-superai
     accessKeyId: "" # Alibaba Cloud の認可 KEY。コンソールの RAM 管理画面で取得します
     accessKeySecret: "" # Alibaba Cloud の認可 SECRET。コンソールの RAM 管理画面で取得します
@@ -32,3 +33,5 @@ storage: # ストレージ設定（任意。主に画像生成向け。URL を�
     accessKeySecret: "" # accessKeySecret
     expirationDays: 3
 ```
+
+Alibaba Cloud OSS のアップロードと署名付きリンクは V4 署名を使います（2025 年以降に作成されたアカウントとバケットは V1 署名を受け付けません）。V4 署名にはバケットのリージョンが必要です。endpoint が `oss-cn-beijing.aliyuncs.com` のような標準形式なら `region` は空のままで構いません。それ以外の場合は設定してください。未設定だと起動時にエラーがログに出力され、Alibaba Cloud OSS は無効のままになります。

@@ -21,6 +21,7 @@ storage: # 存储设置 (可选,主要用于图片生成，有些供应商不提
     client_id: "" # imgur client_id
   alioss: # 阿里云OSS对象存储
     endpoint: "" # Endpoint（地域节点）,比如oss-cn-beijing.aliyuncs.com
+    region: "" # 地域 ID，比如 cn-beijing；留空时从标准 endpoint（oss-<地域>.aliyuncs.com）推导，自定义域名或传输加速 endpoint 必须填写
     bucketName: "" # Bucket名称，比如zerodeng-superai
     accessKeyId: "" # 阿里授权KEY,在阿里云后台用户RAM控制部分获取
     accessKeySecret: "" # 阿里授权SECRET,在阿里云后台用户RAM控制部分获取
@@ -32,3 +33,5 @@ storage: # 存储设置 (可选,主要用于图片生成，有些供应商不提
     accessKeySecret: "" # accessKeySecret
     expirationDays: 3
 ```
+
+阿里云 OSS 上传和签名链接使用 V4 签名（2025 年起新账号、新 Bucket 已不接受 V1 签名），V4 签名需要 Bucket 所在地域。endpoint 是 `oss-cn-beijing.aliyuncs.com` 这类标准地址时可以不填 `region`；否则必须填写，未填写时启动日志会报错并且不启用阿里云 OSS。

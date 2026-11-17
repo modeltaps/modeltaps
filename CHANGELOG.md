@@ -27,6 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   policy by its bare name must add the `policy/` prefix. The "replaced by your policy" marks are
   gone, and an empty **Managed** tab shows the same empty page as the other lists.
 
+### Fixed
+
+- Alibaba Cloud OSS image storage signs uploads and links with V4 signatures, so it works with
+  accounts created since March 2025 and buckets created since September 2025, which reject V1
+  signatures. V4 needs the bucket region: the new `storage.alioss.region` setting, derived from a
+  standard `oss-<region>.aliyuncs.com` endpoint when left empty. With a custom domain or the
+  acceleration endpoint, set it; otherwise startup logs an error and OSS storage stays off.
+
 ### Security
 
 - Upgrade notes: the bundled Docker Compose Redis now requires `REDIS_PASSWORD` in `.env`

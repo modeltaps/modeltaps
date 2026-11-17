@@ -172,6 +172,7 @@ smtp:
 storage:
   alioss:
     endpoint: ""            # 阿里云 OSS endpoint
+    region: ""              # 地域 ID，如 cn-beijing；留空时从 oss-<地域>.aliyuncs.com 推导（V4 签名需要）
     accessKeyId: ""         # AccessKeyId
     accessKeySecret: ""     # AccessKeySecret
     bucketName: ""          # bucket 名称

@@ -21,6 +21,7 @@ storage: # Storage settings (optional; mainly for image generation — some prov
     client_id: "" # imgur client_id
   alioss: # Alibaba Cloud OSS object storage
     endpoint: "" # Endpoint (regional node), e.g. oss-cn-beijing.aliyuncs.com
+    region: "" # Region ID, e.g. cn-beijing; when empty it is derived from a standard endpoint (oss-<region>.aliyuncs.com). Required for custom domains and the acceleration endpoint
     bucketName: "" # Bucket name, e.g. zerodeng-superai
     accessKeyId: "" # Alibaba Cloud access key ID, from the RAM section of the console
     accessKeySecret: "" # Alibaba Cloud access key secret, from the RAM section of the console
@@ -32,3 +33,5 @@ storage: # Storage settings (optional; mainly for image generation — some prov
     accessKeySecret: "" # accessKeySecret
     expirationDays: 3
 ```
+
+Alibaba Cloud OSS uploads and signed links use V4 signatures (accounts and buckets created since 2025 no longer accept V1 signatures), and V4 needs the region of the bucket. You can leave `region` empty when the endpoint is a standard one such as `oss-cn-beijing.aliyuncs.com`; otherwise set it. Without it, startup logs an error and Alibaba Cloud OSS stays off.
