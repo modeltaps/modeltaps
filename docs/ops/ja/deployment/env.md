@@ -124,6 +124,8 @@ LOGS_FILENAME="modeltaps.log"
 - `HTTPS`：HTTPS で外部公開するか（cookie の `Secure` などに影響します）。既定は `false`。
 - `TRUSTED_HEADER`：実際のクライアント IP を取得するリクエストヘッダー。例：`CF-Connecting-IP`。
 - `SHUTDOWN_TIMEOUT`：グレースフルシャットダウンのタイムアウト。単位は秒、既定は `30`。
+- `API_MAX_BODY_MB`：管理 API（`/api`）、dashboard ルート、MCP のリクエストボディ上限。単位は MB で、超えると `413` を返します。既定は `2`、`0` で無制限。管理者の一括インポート系エンドポイント（価格同期、価格の一括更新、チャネルキー、システム設定）は 32 MB（この値の方が大きければこの値）、決済通知は常に 1 MB です。リレーのルートは代わりに `RELAY_MAX_BODY_MB`（既定 `128`）を使います。
+- `SERVER_BODY_READ_TIMEOUT`：クライアントが管理 API、dashboard ルート、MCP にリクエストボディを送り終えるまでの上限時間。単位は秒、既定は `60`、`0` で無制限。リレーのルートには適用されないため、長いアップロードやストリーミング応答には影響しません。
 - `PPROF_ENABLED`：pprof によるパフォーマンス分析を有効にするか。既定は `false`。
 - `LANGUAGE`：既定の言語。既定は `zh_CN`。
 - `FAVICON`：カスタム favicon のパス。

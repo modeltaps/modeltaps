@@ -267,7 +267,9 @@ func initHttpServer() {
 
 	// Slow clients must not hold connections forever (slowloris). Only the header read and idle
 	// keep-alive time are bounded: a whole-request ReadTimeout or WriteTimeout would cut off long
-	// streamed completions and large uploads, which the relay bounds on its own.
+	// streamed completions and large uploads, which the relay bounds on its own. The time to send a
+	// request body to /api, the dashboard and MCP is bounded per request instead
+	// (server.body_read_timeout, see middleware.BodyReadTimeout).
 	srv := &http.Server{
 		Addr:              ":" + port,
 		Handler:           server,

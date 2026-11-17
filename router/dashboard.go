@@ -11,6 +11,7 @@ import (
 func SetDashboardRouter(router *gin.Engine) {
 	router.Use(middleware.CORS())
 	apiRouter := router.Group("/")
+	apiRouter.Use(middleware.BodyLimit(apiBodyLimit()), middleware.BodyReadTimeout(apiBodyReadTimeout()))
 	apiRouter.Use(gzip.Gzip(gzip.DefaultCompression))
 	apiRouter.Use(middleware.GlobalAPIRateLimit())
 	apiRouter.Use(middleware.OpenaiAuth())

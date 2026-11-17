@@ -125,6 +125,8 @@ LOGS_FILENAME="modeltaps.log"
 - `TRUSTED_HEADER`：获取真实客户端 IP 的请求头，例如 `CF-Connecting-IP`。**仅当请求来自 `TRUSTED_PROXIES` 内的地址时才被采信**，否则忽略。
 - `TRUSTED_PROXIES`：反向代理的 IP / CIDR 列表，逗号分隔（配置文件中写作 YAML 列表）。默认空 = 不信任任何代理，客户端 IP 一律取直连对端地址。详见下方[反向代理与真实客户端 IP](#反向代理与真实客户端-ip)。
 - `SHUTDOWN_TIMEOUT`：优雅关闭超时，单位秒，默认 `30`。
+- `API_MAX_BODY_MB`：管理 API（`/api`）、dashboard 路由与 MCP 的请求体上限，单位 MB，超出返回 `413`。默认 `2`，`0` 表示不限。管理员批量导入类接口（价格同步、批量改价、渠道密钥、系统设置）放宽到 32 MB（本值更大时取本值），支付回调固定为 1 MB。中继路由另用 `RELAY_MAX_BODY_MB`（默认 `128`）。
+- `SERVER_BODY_READ_TIMEOUT`：客户端向管理 API、dashboard 路由与 MCP 发送请求体的最长时间，单位秒，默认 `60`，`0` 表示不限。中继路由不受此限制，长时间上传与流式响应不受影响。
 - `PPROF_ENABLED`：是否开启 pprof 性能分析，默认 `false`。
 - `LANGUAGE`：默认语言，默认 `zh_CN`。
 - `FAVICON`：自定义 favicon 路径。

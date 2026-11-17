@@ -13,6 +13,8 @@ func SetMcpRouter(router *gin.Engine) {
 	mcpServer.RegisterTools()
 
 	mcpRouter := router.Group("/mcp")
+	// MCP is registered after the relay routes, so RelayBodyLimit runs too; the smaller cap wins.
+	mcpRouter.Use(middleware.BodyLimit(apiBodyLimit()), middleware.BodyReadTimeout(apiBodyReadTimeout()))
 	mcpRouter.Use(middleware.CORS())
 	mcpRouter.Use(middleware.GlobalAPIRateLimit())
 	mcpRouter.Use(gzip.Gzip(gzip.DefaultCompression))

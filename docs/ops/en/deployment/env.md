@@ -124,6 +124,8 @@ The following commonly used keys are read by the code but not covered above. For
 - `HTTPS`: whether the service is exposed over HTTPS (affects the cookie `Secure` flag and similar). Defaults to `false`.
 - `TRUSTED_HEADER`: the request header used to resolve the real client IP, for example `CF-Connecting-IP`.
 - `SHUTDOWN_TIMEOUT`: graceful shutdown timeout in seconds, defaults to `30`.
+- `API_MAX_BODY_MB`: request body limit of the management API (`/api`), the dashboard routes and MCP, in MB. Larger bodies get `413`. Defaults to `2`; `0` removes the limit. Bulk admin imports (price sync, batch price updates, channel keys, settings) accept 32 MB, or this value if it is larger; payment notifications always accept 1 MB. Relay routes use `RELAY_MAX_BODY_MB` (default `128`) instead.
+- `SERVER_BODY_READ_TIMEOUT`: how long a client may take to send a request body to the management API, the dashboard routes and MCP, in seconds. Defaults to `60`; `0` removes the bound. Relay routes are not bounded, so long uploads and streamed responses are unaffected.
 - `PPROF_ENABLED`: whether to enable pprof profiling, defaults to `false`.
 - `LANGUAGE`: default language, defaults to `zh_CN`.
 - `FAVICON`: custom favicon path.

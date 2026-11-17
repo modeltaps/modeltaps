@@ -124,6 +124,8 @@ LOGS_FILENAME="modeltaps.log"
 - `HTTPS`：是否以 HTTPS 對外（影響 cookie `Secure` 等），預設 `false`。
 - `TRUSTED_HEADER`：獲取真實客戶端 IP 的請求頭，例如 `CF-Connecting-IP`。
 - `SHUTDOWN_TIMEOUT`：優雅關閉逾時，單位秒，預設 `30`。
+- `API_MAX_BODY_MB`：管理 API（`/api`）、dashboard 路由與 MCP 的請求體上限，單位 MB，超出返回 `413`。預設 `2`，`0` 表示不限。管理員批量匯入類介面（價格同步、批量改價、渠道密鑰、系統設定）放寬到 32 MB（本值更大時取本值），支付回調固定為 1 MB。中繼路由另用 `RELAY_MAX_BODY_MB`（預設 `128`）。
+- `SERVER_BODY_READ_TIMEOUT`：客戶端向管理 API、dashboard 路由與 MCP 發送請求體的最長時間，單位秒，預設 `60`，`0` 表示不限。中繼路由不受此限制，長時間上傳與串流回應不受影響。
 - `PPROF_ENABLED`：是否開啟 pprof 性能分析，預設 `false`。
 - `LANGUAGE`：預設語言，預設 `zh_CN`。
 - `FAVICON`：自訂 favicon 路徑。

@@ -1,6 +1,9 @@
 package router
 
 import (
+	"time"
+
+	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/controller"
 	"github.com/modeltaps/modeltaps/middleware"
 	"github.com/modeltaps/modeltaps/relay"
@@ -10,8 +13,54 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+// Request body caps of the management API. The default (api_max_body_mb) fits every JSON form
+// of the console; the routes below take bulk data and get more, payment notifications less.
+const (
+	// Price lists from the update service or models.dev, channel key batches and free-form
+	// option values such as the home page content; all of them need an admin.
+	apiImportBodyLimit int64 = 32 << 20
+	// Payment notifications are reachable without signing in and are a few KB at most.
+	apiCallbackBodyLimit int64 = 1 << 20
+)
+
+// apiBodyLimit is the default request body cap of /api, the dashboard and MCP routes, in bytes;
+// 0 means no cap.
+func apiBodyLimit() int64 {
+	return int64(utils.GetOrDefault("api_max_body_mb", 2)) << 20
+}
+
+// apiBodyReadTimeout is how long a client may take to send a request body to /api, the dashboard
+// and MCP routes; 0 means no bound. Relay routes are not bounded: their uploads can be large.
+func apiBodyReadTimeout() time.Duration {
+	return time.Duration(utils.GetOrDefault("server.body_read_timeout", 60)) * time.Second
+}
+
+// apiRouteBodyLimits lists the /api routes whose body cap differs from apiBodyLimit, by gin route
+// path (every method of the path). A larger cap never goes below the default, so raising
+// api_max_body_mb raises them too, and 0 lifts every cap but the callback one.
+func apiRouteBodyLimits() map[string]int64 {
+	def := apiBodyLimit()
+	larger := func(limit int64) int64 {
+		if def <= 0 || def > limit {
+			return def
+		}
+		return limit
+	}
+	return map[string]int64{
+		"/api/prices/sync":          larger(apiImportBodyLimit),
+		"/api/prices/multiple":      larger(apiImportBodyLimit),
+		"/api/channel/":             larger(apiImportBodyLimit),
+		"/api/option/":              larger(apiImportBodyLimit),
+		"/api/payment/notify/:uuid": apiCallbackBodyLimit,
+		"/api/user/epay/notify":     apiCallbackBodyLimit,
+	}
+}
+
 func SetApiRouter(router *gin.Engine) {
 	apiRouter := router.Group("/api")
+	// Body cap and body read deadline come first: nothing before them may read the body.
+	apiRouter.Use(middleware.RouteBodyLimit(apiBodyLimit(), apiRouteBodyLimits()))
+	apiRouter.Use(middleware.BodyReadTimeout(apiBodyReadTimeout()))
 	// 先设置通用中间件
 	apiRouter.Use(gzip.Gzip(gzip.DefaultCompression))
 	apiRouter.Use(middleware.SecurityHeaders()) // 添加安全头部

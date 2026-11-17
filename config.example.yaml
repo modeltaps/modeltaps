@@ -15,6 +15,7 @@ server:
   read_header_timeout: 10    # 读取请求头的超时（秒），防慢速连接占满服务
   idle_timeout: 120          # keep-alive 空闲连接超时（秒）
   max_header_bytes: 1048576  # 请求头上限（字节）
+  body_read_timeout: 60      # seconds a client may take to send a request body to /api, dashboard and MCP routes; 0 = no bound (relay routes are never bounded)
 realtime:
   max_message_bytes: 15728640  # realtime WebSocket 单帧上限（字节）
   max_sessions: 1000           # 本节点同时打开的 realtime 会话上限，0 不限
@@ -85,6 +86,7 @@ connect_timeout: 5           # 连接超时（秒）
 relay_timeout: 600           # 中继整体超时（秒）
 relay_request_timeout: 300   # 中继单次请求超时（秒）
 relay_max_body_mb: 128       # 中继请求体上限（MB），超出返回 413；0 表示不限
+api_max_body_mb: 2           # request body cap (MB) of /api, dashboard and MCP routes, 413 above it; 0 = no cap. Bulk admin imports (price sync, channel keys, options) get 32 MB or this value if larger; payment notifications always 1 MB
 response_header_timeout: 120 # 响应头超时（秒）
 tls_handshake_timeout: 30    # TLS 握手超时（秒）
 tls_insecure_skip_verify: false  # 跳过 TLS 证书校验（不安全，慎用）
