@@ -18,6 +18,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/search"
 	"github.com/modeltaps/modeltaps/common/storage"
 	"github.com/modeltaps/modeltaps/common/telegram"
+	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/controller"
 	"github.com/modeltaps/modeltaps/cron"
 	"github.com/modeltaps/modeltaps/middleware"
@@ -236,9 +237,15 @@ func initHttpServer() {
 	router.SetRouter(server, buildFS, indexPage)
 	port := viper.GetString("port")
 
+	// Slow clients must not hold connections forever (slowloris). Only the header read and idle
+	// keep-alive time are bounded: a whole-request ReadTimeout or WriteTimeout would cut off long
+	// streamed completions and large uploads, which the relay bounds on its own.
 	srv := &http.Server{
-		Addr:    ":" + port,
-		Handler: server,
+		Addr:              ":" + port,
+		Handler:           server,
+		ReadHeaderTimeout: time.Duration(utils.GetOrDefault("server.read_header_timeout", 10)) * time.Second,
+		IdleTimeout:       time.Duration(utils.GetOrDefault("server.idle_timeout", 120)) * time.Second,
+		MaxHeaderBytes:    utils.GetOrDefault("server.max_header_bytes", 1<<20),
 	}
 
 	serverErr := make(chan error, 1)

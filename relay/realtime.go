@@ -46,12 +46,21 @@ func ChatRealtime(c *gin.Context) {
 		return
 	}
 
+	release, ok := acquireRealtimeSession(c.GetInt("id"))
+	if !ok {
+		common.AbortWithMessage(c, http.StatusTooManyRequests, "too many open realtime sessions, close one and retry")
+		return
+	}
+	defer release()
+
 	userConn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		fmt.Println("upgrade failed", err)
 		common.AbortWithMessage(c, http.StatusInternalServerError, "upgrade_failed")
 		return
 	}
+	// A frame over the limit makes the next read fail, which closes the session.
+	userConn.SetReadLimit(realtimeMaxMessageBytes())
 
 	relay := &RelayModeChatRealtime{
 		relayBase: relayBase{
