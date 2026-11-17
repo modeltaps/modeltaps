@@ -1,6 +1,9 @@
 package model
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+)
 
 // Ways an upstream model name can resolve to one of our canonical names, in the order they are
 // tried. CanonicalSourceNone means no canonical name was found and the upstream name is used as is.
@@ -11,7 +14,10 @@ const (
 	// CanonicalSourceLibrary: the model library knows the name as a platform's spelling of a model
 	// ("claude-fable-5-2@default" on Vertex).
 	CanonicalSourceLibrary = "library"
-	CanonicalSourceNone    = ""
+	// CanonicalSourceSnapshot: the name is a dated snapshot of a catalog model
+	// ("gpt-4o-2024-08-06" of "gpt-4o"); tried last.
+	CanonicalSourceSnapshot = "snapshot"
+	CanonicalSourceNone     = ""
 )
 
 // CanonicalMatch is the canonical name suggested for an upstream model name.
@@ -94,12 +100,67 @@ func (r *CanonicalResolver) canonicalOf(info *ModelInfo) (string, bool) {
 //  1. the catalog row for the exact name is an alias;
 //  2. the seed lists the exact name as an alias;
 //     (a name that is itself a catalog row or a seed canonical name stops here, unchanged)
-//  3. for a "vendor/model" name, the bare model id (case-insensitive) is a catalog alias, a seed
-//     alias, a seed canonical name or a non-alias catalog row.
+//  3. the model library knows the name as a platform's spelling of a model;
+//  4. for a "vendor/model" name, the bare model id (case-insensitive) is a catalog alias, a seed
+//     alias, a seed canonical name or a non-alias catalog row;
+//  5. when rules 1-4 find no catalog row, a name ending in a release date ("-2024-08-06",
+//     "-20250929") is a snapshot of the model without the date, when rules 1-4 find that one in
+//     the catalog: "gpt-4o-2024-08-06" and "anthropic/claude-sonnet-4-5-20250929" resolve to
+//     "gpt-4o" and "claude-sonnet-4-5". A dated name with a catalog row of its own stays that
+//     model, and a variant ("gpt-4o-mini-2024-07-18", "gpt-5.5-fast-2026-01-15") resolves only to
+//     its own undated name, never to the model it is a variant of.
 //
 // When nothing matches, or the name is already canonical, Canonical is the name itself and Source is
 // CanonicalSourceNone. Wildcard entries ("claude-*") are never resolved.
 func (r *CanonicalResolver) Resolve(upstream string) CanonicalMatch {
+	match := r.resolveName(upstream)
+	if r.byModel[match.Canonical] != nil {
+		return match
+	}
+	if snapshot, ok := r.resolveSnapshot(upstream, match.Canonical); ok {
+		return snapshot
+	}
+	return match
+}
+
+// snapshotDate matches a release date at the end of a model name, with or without dashes
+// ("-2024-08-06", "-20250929"), as labs name the snapshots of one model.
+var snapshotDate = regexp.MustCompile(`-(?:(?:19|20)\d{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])|(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01]))$`)
+
+// undatedName returns the name without its trailing release date; ok is false when it has none
+// or nothing is left of the model id.
+func undatedName(name string) (string, bool) {
+	loc := snapshotDate.FindStringIndex(name)
+	if loc == nil || loc[0] == 0 || strings.HasSuffix(name[:loc[0]], "/") {
+		return "", false
+	}
+	return name[:loc[0]], true
+}
+
+// resolveSnapshot is rule 5 of Resolve. Each of names (the upstream name, then what rules 1-4 made
+// of it) is tried without its date; the first undated name that rules 1-4 find in the catalog as
+// a model (not a routing policy) wins, following alias_of.
+func (r *CanonicalResolver) resolveSnapshot(names ...string) (CanonicalMatch, bool) {
+	for _, name := range names {
+		base, ok := undatedName(name)
+		if !ok {
+			continue
+		}
+		canonical := r.resolveName(base).Canonical
+		info := r.byModel[canonical]
+		if c, ok := r.canonicalOf(info); ok {
+			canonical, info = c, r.byModel[c]
+		}
+		if info == nil || info.Kind != "" {
+			continue
+		}
+		return CanonicalMatch{Canonical: canonical, Source: CanonicalSourceSnapshot}, true
+	}
+	return CanonicalMatch{}, false
+}
+
+// resolveName is Resolve without the snapshot rule (rules 1-4).
+func (r *CanonicalResolver) resolveName(upstream string) CanonicalMatch {
 	none := CanonicalMatch{Canonical: upstream, Source: CanonicalSourceNone}
 	if upstream == "" || strings.HasSuffix(upstream, "*") {
 		return none

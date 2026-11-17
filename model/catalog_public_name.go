@@ -9,7 +9,8 @@ import "strings"
 // from such lists the public name to write under.
 
 // PublicName returns the public catalog name for a name a channel lists:
-//  1. the canonical name Resolve finds (catalog alias, seed alias, model library, bare id);
+//  1. the canonical name Resolve finds (catalog alias, seed alias, model library, bare id), but
+//     not the undated model of a dated snapshot;
 //  2. otherwise the name itself when it already has a catalog row of its own, so a row an admin
 //     added under a platform spelling keeps being the model that spelling belongs to;
 //  3. otherwise, for a "vendor/model" name, the model id after the last "/" in its own case;
@@ -23,7 +24,10 @@ func (r *CanonicalResolver) PublicName(upstream string) string {
 	if upstream == "" || strings.HasSuffix(upstream, "*") {
 		return upstream
 	}
-	if match := r.Resolve(upstream); match.Source != CanonicalSourceNone {
+	// A dated snapshot keeps a name of its own here: Resolve serves it as the undated model, but
+	// its catalog row, metadata and price are its own (the "gpt-4o-2024-05-13" snapshot costs
+	// more than "gpt-4o"), so syncs must not write them under the undated model.
+	if match := r.Resolve(upstream); match.Source != CanonicalSourceNone && match.Source != CanonicalSourceSnapshot {
 		return match.Canonical
 	}
 	if r.byModel[upstream] != nil || !strings.Contains(upstream, "/") {

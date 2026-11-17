@@ -16,7 +16,7 @@ import { modelSupplyPath, pendingTarget, publicModelNames } from './supplyHelper
 import { SupplySwitchNote, useSupplySwitches } from './supplyParts';
 import { admin } from 'routes/paths';
 
-const SOURCES = ['alias', 'seed', 'bare'];
+const SOURCES = ['alias', 'seed', 'bare', 'snapshot'];
 
 // Dialog that supplies a public model with a waiting upstream model on some of its channels.
 function AttachDialog({ item, rows, onClose, onDone }) {

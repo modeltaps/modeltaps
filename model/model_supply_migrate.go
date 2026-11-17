@@ -248,7 +248,9 @@ func planSupplyMigration(in supplyMigrationInput) (*supplyMigrationPlan, *Supply
 		if info := byModel[canonical]; canonical == name || (info != nil && info.Kind != "") {
 			return name
 		}
-		if record {
+		// A dated snapshot is supplied as the undated model but does not become its alias: an
+		// alias bills at the model's price, and a snapshot may be priced on its own.
+		if record && match.Source != CanonicalSourceSnapshot {
 			newAliases[name] = SupplyNewAlias{Alias: name, Model: canonical, Source: match.Source}
 		}
 		return canonical

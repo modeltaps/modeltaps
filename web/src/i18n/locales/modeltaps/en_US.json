@@ -3145,7 +3145,8 @@
       "source": {
         "alias": "catalog alias",
         "seed": "catalog seed",
-        "bare": "name without vendor prefix"
+        "bare": "name without vendor prefix",
+        "snapshot": "dated snapshot"
       },
       "isNew": "new",
       "attach": "Attach…",
