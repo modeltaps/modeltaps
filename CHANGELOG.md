@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Usage alerts for subscription channels (Codex, Claude Code). When a usage window (5 hours, 7
+  days) reaches 50%, 75% or 100%, a "subscription usage" notification names the channel, the
+  window, the usage and when it resets; each tier is sent once per window period. The tiers are
+  set per site under Settings, Notifications, and per channel on its Monitoring tab (`0` turns
+  them off), where the channel also shows what is watched, how often and who is notified.
+- Dated official snapshot names such as `gpt-4o-2024-11-20` or `claude-sonnet-4-5-20250929` match
+  their undated public model on a channel's Models tab, and adding them attaches that model's
+  supply instead of showing "not in catalog". A snapshot with a catalog row of its own, and
+  variants such as `-fast`, keep their own name, and requests keep the price of the name asked for.
 - Turn single models of a channel off without removing them. The provider panel's models tab has
   an on/off switch per model: a model switched off stays listed, keeps its supplies and gets no
   requests until it is switched back on. A Re-pick button next to Add opens the model picker on
