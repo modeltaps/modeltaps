@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from 'i18n/i18n';
 import { API } from 'utils/api';
 import NewTokenDialog from './NewTokenDialog';
-import { AgentHandover } from './PairingCode';
+import { AgentHandover, PairingCodeReveal } from './PairingCode';
 
 vi.mock('utils/api', () => ({ API: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() } }));
 vi.mock('react-redux', () => ({ useSelector: (select) => select({ siteInfo: { server_address: 'https://gw.example.com' } }) }));
@@ -79,5 +79,38 @@ describe('AgentHandover (key details)', () => {
     fireEvent.click(screen.getByRole('button', { name: i18n.t('apiKey.agent.newCode') }));
     await waitFor(() => expect(API.post).toHaveBeenCalledWith('/api/token/7/pairing_code'));
     expect(await screen.findByTestId('pairing-code-value')).toHaveProperty('textContent', CODE);
+  });
+});
+
+describe('Copy for your agent (AGENT-6)', () => {
+  const future = () => Math.floor(Date.now() / 1000) + 600;
+
+  it('copies the guide, the pairing code and what to report, never the key', () => {
+    const onCopy = vi.fn();
+    render(createElement(PairingCodeReveal, { code: CODE, expiresAt: future(), secret: 'sk-secret', onCopy }));
+    fireEvent.click(screen.getByTestId('copy-for-agent'));
+    const [text, label] = onCopy.mock.calls[0];
+    expect(label).toBe(i18n.t('apiKey.pairing.promptLabel'));
+    expect(text).toContain('https://gw.example.com/skill.md');
+    expect(text).toContain(CODE);
+    expect(text).toContain(i18n.t('apiKey.pairing.prompt.report'));
+    expect(text).not.toContain('sk-secret');
+  });
+
+  it('offers the copy with the key only while the key is known', () => {
+    const onCopy = vi.fn();
+    render(createElement(PairingCodeReveal, { code: CODE, expiresAt: future(), secret: 'sk-secret', onCopy }));
+    fireEvent.click(screen.getByTestId('copy-for-agent-with-key'));
+    expect(onCopy.mock.calls[0][0]).toContain('sk-secret');
+    expect(onCopy.mock.calls[0][0]).not.toContain(CODE);
+    cleanup();
+    render(createElement(PairingCodeReveal, { code: CODE, expiresAt: future(), onCopy }));
+    expect(screen.queryByTestId('copy-for-agent-with-key')).toBeNull();
+  });
+
+  it('asks for a new code once the code has expired', () => {
+    render(createElement(PairingCodeReveal, { code: CODE, expiresAt: Math.floor(Date.now() / 1000) - 1, onCopy: vi.fn() }));
+    expect(screen.getByTestId('copy-for-agent')).toHaveProperty('disabled', true);
+    expect(screen.getByTestId('pairing-expired').textContent).toBe(i18n.t('apiKey.pairing.expired'));
   });
 });

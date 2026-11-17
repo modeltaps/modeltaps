@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Copy for your agent next to a pairing code: one click copies the setup guide address, the
+  pairing code, how to keep the key and what to report back, in the console language and without
+  the key. Once the code has expired it asks for a new one; right after creation a secondary copy
+  includes the key, with advice to give it a short expiry and reset it once the agent is set up.
 - Requests can be charged at least what their channel costs. With "Never charge below the channel
   cost" on (Billing rules, off by default), a request is charged the higher of the quoted price
   times the group ratio and the price of the channel that served it plus the channel's fee rate;

@@ -158,7 +158,12 @@ export default function NewTokenDialog({ onClose, onCreated, onManagementCreated
                 <div className="space-y-4">
                   <SecretKeyReveal secret={created.key} baseUrl={baseUrl} onCopy={onCopy} />
                   {created.pairingCode && (
-                    <PairingCodeReveal code={created.pairingCode} expiresAt={created.pairingExpiresAt} onCopy={onCopy} />
+                    <PairingCodeReveal
+                      code={created.pairingCode}
+                      expiresAt={created.pairingExpiresAt}
+                      secret={created.key}
+                      onCopy={onCopy}
+                    />
                   )}
                 </div>
               )}

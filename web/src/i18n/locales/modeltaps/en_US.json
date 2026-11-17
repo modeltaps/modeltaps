@@ -4130,7 +4130,19 @@
     "pairing": {
       "label": "Pairing code",
       "hint": "Give this code to your agent instead of the key: it redeems it for the key itself, following {{url}}. Valid until {{time}}, once.",
-      "rotateNote": "When an agent redeems it, this key gets a new secret: the key shown above stops working and only the agent holds a working copy."
+      "rotateNote": "When an agent redeems it, this key gets a new secret: the key shown above stops working and only the agent holds a working copy.",
+      "copyForAgent": "Copy for your agent",
+      "promptLabel": "Agent instructions",
+      "expired": "This pairing code has expired. Issue a new one in the key’s details, then copy again.",
+      "copyWithKey": "Copy with the key",
+      "copyWithKeyHint": "Only if the agent cannot redeem a pairing code: the key then stays in the chat history. Give the key a short expiry and reset it once the agent is set up.",
+      "prompt": {
+        "intro": "Set yourself up to use this AI gateway by following {{url}}.",
+        "code": "Get the API key with this one-time pairing code, valid until {{time}}: {{code}}",
+        "key": "Use this API key: {{key}}",
+        "store": "Store the key the way the guide describes. Do not write it into this chat, your memory or any file you commit.",
+        "report": "When you are done, tell me which base URL and model you configured, where you stored the key, and the result of the test request."
+      }
     },
     "agent": {
       "title": "Agent",

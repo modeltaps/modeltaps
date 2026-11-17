@@ -4024,7 +4024,19 @@
     "pairing": {
       "label": "配對碼",
       "hint": "把這個配對碼而不是密鑰交給 Agent：它會按 {{url}} 自行兌換出這把密鑰。有效期至 {{time}}，只能兌換一次。",
-      "rotateNote": "Agent 兌換後，這把 API Key 會換上新的密鑰：上方顯示的密鑰隨即失效，只有 Agent 手上的那份可用。"
+      "rotateNote": "Agent 兌換後，這把 API Key 會換上新的密鑰：上方顯示的密鑰隨即失效，只有 Agent 手上的那份可用。",
+      "copyForAgent": "複製給 AI",
+      "promptLabel": "給 AI 的說明",
+      "expired": "配對碼已過期。請到 key 詳情裏產生新的配對碼，再複製。",
+      "copyWithKey": "連金鑰複製",
+      "copyWithKeyHint": "只在 Agent 無法兌換配對碼時使用：key 會留在對話記錄裏。請給這個 key 設較短的到期時間，接好後重設一次。",
+      "prompt": {
+        "intro": "請按照 {{url}} 的說明，把你自己接入這個 AI 閘道。",
+        "code": "用這個一次性配對碼換取 API key（{{time}} 前有效）：{{code}}",
+        "key": "使用這個 API key：{{key}}",
+        "store": "按說明裏的方式保存 key，不要寫進這段對話、你的記憶或任何會提交的檔案。",
+        "report": "完成後告訴我：設定了哪個 base URL 和模型、key 存在哪裏、測試請求的結果。"
+      }
     },
     "agent": {
       "title": "Agent",
