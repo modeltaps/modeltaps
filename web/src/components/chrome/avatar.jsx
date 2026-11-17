@@ -3,8 +3,8 @@ import PropTypes from 'prop-types';
 import { cn } from '@/lib/utils';
 
 // ==============================|| CHROME — USER AVATAR ||============================== //
-// 头像回退：无上传头像时用名字首字母 + 按名字哈希出的固定色相(ChatGPT 式)。
-// 侧栏顶部账号行与公开页头部共用，保证同一个人在两处长得一样。
+// Fallback without an uploaded avatar: initials on a neutral grey, with a hairline ring.
+// Shared by the sidebar account row and the public header so a person looks the same in both.
 
 export const accountDisplayName = (user) => user?.display_name || user?.email || user?.phone_number || user?.username || 'User';
 
@@ -31,8 +31,11 @@ export default function UserAvatar({ user, className, textClass = 'text-xs' }) {
   }
   return (
     <span
-      className={cn('inline-flex shrink-0 items-center justify-center rounded-full font-medium text-white', className, textClass)}
-      style={{ backgroundColor: `hsl(${hueOf(name)} 55% 42%)` }}
+      className={cn(
+        'inline-flex shrink-0 items-center justify-center rounded-full bg-muted font-medium text-muted-foreground ring-1 ring-inset ring-border',
+        className,
+        textClass
+      )}
     >
       {initialsOf(name)}
     </span>
