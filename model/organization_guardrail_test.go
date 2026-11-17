@@ -14,10 +14,11 @@ import (
 func createGuardrailFixture(t *testing.T) (*Organization, int) {
 	t.Helper()
 	user := &User{
-		Username:    "guardrail-" + utils.GetRandomString(8),
-		Password:    "test-password",
-		Email:       NullableEmail(strings.ToLower(utils.GetRandomString(8)) + "@example.com"),
-		CreatedTime: utils.GetTimestamp(),
+		Username:      "guardrail-" + utils.GetRandomString(8),
+		Password:      "test-password",
+		Email:         NullableEmail(strings.ToLower(utils.GetRandomString(8)) + "@example.com"),
+		EmailVerified: true,
+		CreatedTime:   utils.GetTimestamp(),
 	}
 	if err := DB.Create(user).Error; err != nil {
 		t.Fatalf("创建用户失败: %v", err)
@@ -344,7 +345,7 @@ func TestReserveOrgMemberBudget(t *testing.T) {
 	assertUsed(30)
 
 	// 未配置预算的成员 → 直接放行(不记账)
-	_, plain, err := CreateOrgMemberAccount(org, "plain-"+utils.GetRandomString(6), "secret123", "", "", OrgRoleMember, false)
+	_, plain, err := CreateOrgMemberAccount(org, "plain-"+utils.GetRandomString(6), "secret123", "", "", OrgRoleMember)
 	if err != nil {
 		t.Fatalf("代建成员失败: %v", err)
 	}

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/modeltaps/modeltaps/common"
+	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/model"
 
@@ -21,8 +22,44 @@ type CreateOrgMemberAccountRequest struct {
 	Email       string                   `json:"email"`
 	Role        string                   `json:"role"`   // admin / member,默认 member,不得高于操作者
 	Budget      *model.QuotaResetSetting `json:"budget"` // 可选:初始周期预算
-	// GrantSignupBonus 可选:是否发放新用户注册奖励,默认 false(SEC-11:防止代建刷免费额度)
-	GrantSignupBonus bool `json:"grant_signup_bonus"`
+	// There is deliberately no way to ask for the new-user sign-up bonus: an organization admin
+	// must not be able to mint free site credit (SEC-11, SEC-60). Old clients that still send
+	// grant_signup_bonus are ignored.
+}
+
+// orgMemberAccountSignupCheck applies the site's sign-up rules to an account an organization
+// admin creates for a member (SEC-60), so provisioning cannot be used to get around them:
+//   - sign-up turned off, or password sign-up turned off (including an external account system,
+//     where accounts come from the identity provider), refuses the request;
+//   - with an email domain allowlist, an email given for the account must be on it.
+//
+// Email verification, invite codes and the bot check deliberately do not apply: the admin cannot
+// answer a code sent to someone else's mailbox, the admin is an existing member of the site who
+// is inviting the person, and the request comes from a signed-in session. The account is
+// created with an unverified email and no sign-up bonus, and it cannot create organizations of
+// its own until it verifies a contact (see model.CreateOrganizationWithOwner).
+func orgMemberAccountSignupCheck(email string) error {
+	if !config.RegisterEnabled {
+		return common.NewAPIError(common.APICodeRegisterDisabled, "the site has disabled new user sign-up, so organizations cannot create member accounts", nil)
+	}
+	if !config.EffectivePasswordRegister() {
+		return common.NewAPIError(common.APICodePasswordRegisterDisabled, "the site has disabled password sign-up, so organizations cannot create member accounts", nil)
+	}
+	if email != "" && config.EmailDomainRestrictionEnabled && !emailDomainAllowed(email) {
+		return common.NewAPIError(common.APICodeEmailDomainNotAllowed, "the site only allows emails on its domain allowlist, and this email domain is not on it", nil)
+	}
+	return nil
+}
+
+// emailDomainAllowed reports whether a normalized email is on the site's domain allowlist, with
+// the same rule the sign-up verification email uses.
+func emailDomainAllowed(email string) bool {
+	for _, domain := range config.EmailDomainWhitelist {
+		if strings.HasSuffix(email, "@"+domain) {
+			return true
+		}
+	}
+	return false
 }
 
 // CreateOrgMemberAccount 组织内代建成员账号(Owner/Admin):创建新用户并加入本组织,可选预置周期预算。
@@ -57,6 +94,14 @@ func CreateOrgMemberAccount(c *gin.Context) {
 	}
 	// 代建账号复用注册路径的用户名/密码/显示名/邮箱校验规则(SEC-16)
 	req.Email = common.NormalizeEmail(req.Email)
+	// Site admins can create accounts from the user admin page anyway, so the sign-up rules only
+	// bind organization admins who are ordinary users.
+	if c.GetInt("role") < config.RoleAdminUser {
+		if err := orgMemberAccountSignupCheck(req.Email); err != nil {
+			common.APIRespondWithError(c, http.StatusOK, err)
+			return
+		}
+	}
 	if err := common.Validate.Struct(&model.User{
 		Username:    req.Username,
 		Password:    req.Password,
@@ -66,7 +111,7 @@ func CreateOrgMemberAccount(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, friendlyValidationError(err))
 		return
 	}
-	user, _, err := model.CreateOrgMemberAccount(org, req.Username, req.Password, req.DisplayName, req.Email, role, req.GrantSignupBonus)
+	user, _, err := model.CreateOrgMemberAccount(org, req.Username, req.Password, req.DisplayName, req.Email, role)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return

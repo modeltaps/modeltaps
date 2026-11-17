@@ -45,7 +45,7 @@ func TestCreateOrgMemberAccountMemberCapLocked(t *testing.T) {
 	readSeq := recordLockedOrgReads(t, "test:org_member_cap_lock")
 
 	// 传入的 org 结构体仍是旧值(MaxMembers=nil),上限须以锁内读到的组织行为准
-	if _, _, err := CreateOrgMemberAccount(org, "cap-u1", "secret123", "", "", OrgRoleMember, false); err == nil {
+	if _, _, err := CreateOrgMemberAccount(org, "cap-u1", "secret123", "", "", OrgRoleMember); err == nil {
 		t.Fatal("成员已达上限,代建应被拒绝")
 	}
 
@@ -105,16 +105,16 @@ func TestCreateOrgMemberAccount(t *testing.T) {
 	}
 
 	// owner 角色不可代建
-	if _, _, err := CreateOrgMemberAccount(org, "u1", "pw", "", "", OrgRoleOwner, false); err == nil {
+	if _, _, err := CreateOrgMemberAccount(org, "u1", "pw", "", "", OrgRoleOwner); err == nil {
 		t.Fatal("owner 角色应被拒绝")
 	}
 	// 空密码拒绝
-	if _, _, err := CreateOrgMemberAccount(org, "u1", "", "", "", OrgRoleMember, false); err == nil {
+	if _, _, err := CreateOrgMemberAccount(org, "u1", "", "", "", OrgRoleMember); err == nil {
 		t.Fatal("空密码应被拒绝")
 	}
 
 	// 正常创建
-	user, member, err := CreateOrgMemberAccount(org, "newbie", "secret123", "", "", OrgRoleMember, false)
+	user, member, err := CreateOrgMemberAccount(org, "newbie", "secret123", "", "", OrgRoleMember)
 	if err != nil {
 		t.Fatalf("代建成员失败: %v", err)
 	}
@@ -138,13 +138,14 @@ func TestCreateOrgMemberAccount(t *testing.T) {
 	}
 
 	// 用户名重复 → 事务回滚,不应残留成员
-	if _, _, err := CreateOrgMemberAccount(org, "newbie", "x", "", "", OrgRoleMember, false); err == nil {
+	if _, _, err := CreateOrgMemberAccount(org, "newbie", "x", "", "", OrgRoleMember); err == nil {
 		t.Fatal("重复用户名应失败")
 	}
 }
 
-// TestCreateOrgMemberAccountSignupBonus 代建账号注册奖励开关(SEC-11):
-// 默认不发 QuotaForNewUser 与赠送日志,显式开启才发;自助注册路径(InsertWithTx)行为不变。
+// TestCreateOrgMemberAccountSignupBonus: an account an organization creates never gets the new-user
+// sign-up bonus, and nobody can ask for it (SEC-11, SEC-60); self sign-up (InsertWithTx) still
+// gets it.
 func TestCreateOrgMemberAccountSignupBonus(t *testing.T) {
 	setupOrgTestDB(t)
 	oldQuota := config.QuotaForNewUser
@@ -166,8 +167,7 @@ func TestCreateOrgMemberAccountSignupBonus(t *testing.T) {
 		return count
 	}
 
-	// 代建默认不发奖励:Quota 为 0,无赠送日志
-	noBonus, _, err := CreateOrgMemberAccount(org, "no-bonus", "secret123", "", "", OrgRoleMember, false)
+	noBonus, _, err := CreateOrgMemberAccount(org, "no-bonus", "secret123", "", "", OrgRoleMember)
 	if err != nil {
 		t.Fatalf("代建成员失败: %v", err)
 	}
@@ -177,17 +177,12 @@ func TestCreateOrgMemberAccountSignupBonus(t *testing.T) {
 	if n := countBonusLogs(noBonus.Id); n != 0 {
 		t.Fatalf("代建账号不应有赠送日志, got %d 条", n)
 	}
-
-	// 显式开启时才发奖励
-	withBonus, _, err := CreateOrgMemberAccount(org, "with-bonus", "secret123", "", "", OrgRoleMember, true)
-	if err != nil {
-		t.Fatalf("代建成员失败: %v", err)
+	var stored User
+	if err := DB.Select("quota").First(&stored, noBonus.Id).Error; err != nil {
+		t.Fatal(err)
 	}
-	if withBonus.Quota != 500 {
-		t.Fatalf("显式开启应发放奖励 500, got %d", withBonus.Quota)
-	}
-	if n := countBonusLogs(withBonus.Id); n != 1 {
-		t.Fatalf("显式开启应有 1 条赠送日志, got %d 条", n)
+	if stored.Quota != 0 {
+		t.Fatalf("the stored account must have no quota, got %d", stored.Quota)
 	}
 
 	// 自助注册路径(InsertWithTx)仍发奖励
@@ -202,5 +197,27 @@ func TestCreateOrgMemberAccountSignupBonus(t *testing.T) {
 	}
 	if n := countBonusLogs(selfReg.Id); n != 1 {
 		t.Fatalf("自助注册应有 1 条赠送日志, got %d 条", n)
+	}
+}
+
+// TestOrgCreatedAccountCannotCreateOrganization: an account an organization created carries an
+// email nobody verified, so it cannot create organizations of its own until it verifies a contact;
+// otherwise accounts could multiply without limit (SEC-60).
+func TestOrgCreatedAccountCannotCreateOrganization(t *testing.T) {
+	setupOrgTestDB(t)
+	owner := createOrgTestUser(t, "spawn-owner")
+	org, err := CreateOrganizationWithOwner("Spawn Org", "", owner.Id)
+	if err != nil {
+		t.Fatalf("create organization: %v", err)
+	}
+	created, _, err := CreateOrgMemberAccount(org, "spawned", "secret123", "", "spawned@example.com", OrgRoleMember)
+	if err != nil {
+		t.Fatalf("create member account: %v", err)
+	}
+	if created.EmailVerified {
+		t.Fatal("an email set by the organization must not be marked verified")
+	}
+	if _, err := CreateOrganizationWithOwner("Spawned Org", "", created.Id); err == nil {
+		t.Fatal("an account with only an unverified email must not create an organization")
 	}
 }

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -156,7 +157,7 @@ func TestOrganizationUniqueConstraints(t *testing.T) {
 func createOrgTestUser(t *testing.T, username string) *User {
 	t.Helper()
 	hashed, _ := common.Password2Hash("test-password-123")
-	user := &User{Username: username, Password: hashed, Email: NullableEmail(strings.ToLower(username) + "@test.local"), Role: config.RoleCommonUser, Status: config.UserStatusEnabled, AffCode: strings.ToLower(utils.GetRandomString(8))}
+	user := &User{Username: username, Password: hashed, Email: NullableEmail(strings.ToLower(username) + "@test.local"), EmailVerified: true, Role: config.RoleCommonUser, Status: config.UserStatusEnabled, AffCode: strings.ToLower(utils.GetRandomString(8))}
 	if err := DB.Create(user).Error; err != nil {
 		t.Fatalf("创建测试用户失败: %v", err)
 	}
@@ -229,6 +230,25 @@ func TestCreateOrganizationWithOwner(t *testing.T) {
 	rootNoContact := newUser("root-no-contact-u", config.RoleRootUser, "", "")
 	if _, err := CreateOrganizationWithOwner("Root Org", "", rootNoContact.Id); err != nil {
 		t.Fatalf("root 无联系方式创建组织应成功: %v", err)
+	}
+	adminNoContact := newUser("admin-no-contact-u", config.RoleAdminUser, "", "")
+	if _, err := CreateOrganizationWithOwner("Admin Org", "", adminNoContact.Id); err != nil {
+		t.Fatalf("a site admin without a contact should be able to create an organization: %v", err)
+	}
+
+	// SEC-60: an email nobody verified (set by an admin, or by an organization that created the
+	// account) is not a verified contact, so it cannot be used to create organizations.
+	unverified := newUser("unverified-u", config.RoleCommonUser, "unverified-u@test.local", "")
+	_, err = CreateOrganizationWithOwner("Unverified Org", "", unverified.Id)
+	var apiErr *common.APIError
+	if !errors.As(err, &apiErr) || apiErr.Code != common.APICodeOrgCreateRequiresVerifiedContact {
+		t.Fatalf("an unverified email should not count as a verified contact, got %v", err)
+	}
+	if err := DB.Model(&User{}).Where("id = ?", unverified.Id).Update("email_verified", true).Error; err != nil {
+		t.Fatal(err)
+	}
+	if _, err := CreateOrganizationWithOwner("Verified Org", "", unverified.Id); err != nil {
+		t.Fatalf("a verified email should be enough to create an organization: %v", err)
 	}
 }
 

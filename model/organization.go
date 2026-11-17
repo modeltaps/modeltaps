@@ -225,14 +225,16 @@ func CreateOrganizationWithOwner(name string, avatarUrl string, creatorId int) (
 	if creatorId == 0 {
 		return nil, errors.New("creator id must not be empty")
 	}
-	// 普通用户须有一条已验证的联系通道(邮箱或手机号任一非空即已验证:邮箱经验证码/IdP 已验证 claim
-	// 写入,手机号只由 IdP 已验证 claim 写入);root 免检
+	// Ordinary users need a verified contact: a verified email (email_verified), or a phone number,
+	// which only a verified IdP claim writes. A non-empty email is not enough, because an admin or
+	// an organization can set one without verification; otherwise every account an organization
+	// creates could create organizations of its own (SEC-60). Site admins and root are exempt.
 	var creator User
-	if err := DB.Select("id", "role", "email", "phone_number").Where("id = ?", creatorId).First(&creator).Error; err != nil {
+	if err := DB.Select("id", "role", "email", "email_verified", "phone_number").Where("id = ?", creatorId).First(&creator).Error; err != nil {
 		return nil, errors.New("creator not found")
 	}
-	if creator.Role != config.RoleRootUser &&
-		strings.TrimSpace(string(creator.Email)) == "" &&
+	if creator.Role < config.RoleAdminUser &&
+		!(creator.EmailVerified && strings.TrimSpace(string(creator.Email)) != "") &&
 		strings.TrimSpace(string(creator.PhoneNumber)) == "" {
 		return nil, common.NewAPIError(common.APICodeOrgCreateRequiresVerifiedContact, "verify your email or phone number before creating an organization", nil)
 	}

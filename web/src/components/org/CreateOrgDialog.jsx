@@ -33,8 +33,10 @@ export default function CreateOrgDialog({ open, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // 用户信息还没回来时不拦(否则打开即禁用),root 与已有联系方式的人照旧。
-  const needsContact = Boolean(user) && user.role !== 100 && !user.email && !user.phone_number;
+  // Don't block before the user info has loaded (the dialog would open disabled). Site admins
+  // and users with a verified email or a phone number may create organizations.
+  const needsContact =
+    Boolean(user) && user.role < 10 && !(user.email && user.email_verified) && !user.phone_number;
 
   const handleClose = () => {
     if (loading) return;

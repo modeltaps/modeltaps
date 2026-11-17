@@ -391,6 +391,15 @@ func GetTokenModel(key string) (token *Token, err error) {
 	if userEnabled, err := CacheIsUserEnabled(token.UserId); err != nil || !userEnabled {
 		return nil, ErrTokenInvalid
 	}
+	// An organization key is owned by the shadow account, so the check above only sees whether the
+	// organization is enabled. The member who created it is checked the same way a personal key's
+	// owner is, so banning or deleting that user stops the key at once (SEC-61). The cached flag
+	// is the one banning and deleting already clear (ClearUserGroupAndTokensCache).
+	if tokenIsOrganizationToken(token) {
+		if creatorEnabled, err := CacheIsUserEnabled(token.CreatedBy); err != nil || !creatorEnabled {
+			return nil, ErrTokenInvalid
+		}
+	}
 
 	return token, nil
 }

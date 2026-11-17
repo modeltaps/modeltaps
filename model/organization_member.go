@@ -220,8 +220,9 @@ func GetOrgMemberBudget(organizationId int, userId int) (*MemberBudgetView, erro
 
 // CreateOrgMemberAccount 在组织下代为创建新用户并加入为成员(Owner/Admin;规格 §2.3 扩展)。
 // 事务内:行锁组织 → 复核成员上限 → 创建 User → 建立成员关系。role 仅限 admin/member;失败整体回滚。
-// grantSignupBonus 默认应传 false:代建账号不发新用户注册奖励,防止刷免费额度(SEC-11)。
-func CreateOrgMemberAccount(org *Organization, username, password, displayName, email, role string, grantSignupBonus bool) (*User, *OrganizationMember, error) {
+// The account never gets the new-user sign-up bonus, whoever asks: otherwise an organization
+// admin could mint free site credit by creating and removing members (SEC-11, SEC-60).
+func CreateOrgMemberAccount(org *Organization, username, password, displayName, email, role string) (*User, *OrganizationMember, error) {
 	if role != OrgRoleAdmin && role != OrgRoleMember {
 		return nil, nil, common.NewAPIError(common.APICodeOrgRoleInvalid, "role must be admin or member", nil)
 	}
@@ -251,7 +252,7 @@ func CreateOrgMemberAccount(org *Organization, username, password, displayName, 
 				return common.NewAPIError(common.APICodeOrgMemberLimitReached, "organization member limit reached", nil)
 			}
 		}
-		if err := user.insertWithTx(tx, 0, grantSignupBonus); err != nil {
+		if err := user.insertWithTx(tx, 0, false); err != nil {
 			return err
 		}
 		now := utils.GetTimestamp()
