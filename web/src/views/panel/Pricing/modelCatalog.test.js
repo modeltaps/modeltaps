@@ -60,7 +60,7 @@ describe('legacy route redirects', () => {
 describe('column defaults', () => {
   it('shows the default columns and hides the optional ones', () => {
     const v = defaultColumnVisibility();
-    ['model', 'model_kind', 'supply', 'price', 'state', 'visible'].forEach((id) => expect(v[id]).toBe(true));
+    ['model', 'model_kind', 'capabilities', 'supply', 'price', 'state', 'visible'].forEach((id) => expect(v[id]).toBe(true));
     [
       'endpoints',
       'channels',
@@ -69,7 +69,6 @@ describe('column defaults', () => {
       'max_tokens',
       'modalities',
       'tags',
-      'capabilities',
       'mode',
       'alias_of',
       'source',

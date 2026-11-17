@@ -2255,7 +2255,8 @@
         "transcription": "語音辨識",
         "embedding": "向量",
         "rerank": "重排",
-        "audio": "音訊"
+        "audio": "音訊",
+        "realtime": "實時語音"
       }
     },
     "monitor": {

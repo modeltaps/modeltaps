@@ -2251,7 +2251,8 @@
         "transcription": "音声認識",
         "embedding": "埋め込み",
         "rerank": "リランク",
-        "audio": "音声"
+        "audio": "音声",
+        "realtime": "リアルタイム"
       }
     },
     "monitor": {

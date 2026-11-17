@@ -4,13 +4,15 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Checkbox } from '@/components/ui/checkbox';
+import { ModelKindTag, ModelTraitMarks, TAG_TEXT } from '@/components/model/ModelTraits';
 import { cn } from '@/lib/utils';
 import { MinutePriceFormatter, ValueFormatter } from 'utils/common';
 import { AVAILABILITY } from '../shared/modelIndex';
 import StatusDot from './StatusDot';
 
 // ==============================|| PLAYGROUND — MODEL ROW ||============================== //
-// 选择器右列的一行模型：状态点 / 名称 / 上下文 / 输入 / 输出单价，名称下方一行小字放渠道数与展开入口。
+// 选择器右列的一行模型：状态点 / 名称 + 类型 tag / 能力标记（靠名称列右侧）/ 上下文 / 输入 / 输出单价，
+// 名称下方一行小字放渠道数与展开入口。
 // 缺失字段留空——目录没给的东西不编。
 // multi 模式在行首补一个 checkbox，与整行点击同一个 onPick 切换。
 // 行上可带可选的 badge 文案（如图像页的「对话出图」），由上层注入。
@@ -132,11 +134,9 @@ export default function ModelRow({ model, selected = false, active = false, mult
               <span className="truncate font-mono text-sm font-medium leading-5" title={model.id}>
                 {model.id}
               </span>
-              {model.badge && (
-                <span className="shrink-0 rounded border border-primary/30 px-1.5 text-[0.6875rem] leading-4 text-primary">
-                  {model.badge}
-                </span>
-              )}
+              <ModelKindTag kind={model.kind} />
+              {model.badge && <span className={cn(TAG_TEXT, 'border border-primary/30 font-normal text-primary')}>{model.badge}</span>}
+              <ModelTraitMarks traits={model.traits || model.capabilities} size="sm" className="ml-auto pl-1" />
             </span>
             <span className="text-right text-xs leading-5 tabular-nums text-muted-foreground">{context || ''}</span>
             <PriceCells pricing={model.pricing} />

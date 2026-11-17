@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { TraitGlyph } from '@/components/model/ModelTraits';
+import { traitOf } from '@/components/model/traits';
 import { cn } from '@/lib/utils';
 import ModelRow, { ROW_COLUMNS } from './ModelRow';
 import { buildProviders, collectCapabilities, filterRows, nextActiveIndex } from '../shared/modelIndex';
@@ -18,8 +20,8 @@ import { buildProviders, collectCapabilities, filterRows, nextActiveIndex } from
 
 // 浮层高度上限（max-h-[60vh] 的像素兜底），翻转判断按它算可用余量。
 export const MENU_MAX_HEIGHT = 420;
-// 浮层宽度（w-[420px]），横向翻转与收边按它算。
-export const MENU_WIDTH = 420;
+// 浮层宽度（w-[520px]，名称列要放下模型名和能力标记），横向翻转与收边按它算。
+export const MENU_WIDTH = 520;
 // 贴边时留一点缝，避免浮层压在容器边框上。
 const EDGE_GUTTER = 8;
 // 能力 chip 与供应商 tab 共用同一种高度与圆角。
@@ -236,7 +238,7 @@ export default function ModelPicker({
             maxWidth: box.maxWidth ?? undefined
           }}
           className={cn(
-            'absolute z-30 flex max-h-[60vh] w-[420px] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-xl',
+            'absolute z-30 flex max-h-[60vh] w-[520px] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-xl',
             placement === 'top' ? 'bottom-full mb-2' : 'top-full mt-2',
             box.align === 'end' ? 'right-0' : 'left-0'
           )}
@@ -267,9 +269,10 @@ export default function ModelPicker({
                     type="button"
                     aria-pressed={caps.includes(cap)}
                     onClick={() => toggleCap(cap)}
-                    className={cn(CHIP_CLASS, chipState(caps.includes(cap)))}
+                    className={cn(CHIP_CLASS, 'pl-1', chipState(caps.includes(cap)))}
                   >
-                    {t(`modelpricePage.capability.${cap}`, { defaultValue: cap })}
+                    <TraitGlyph trait={cap} size="sm" />
+                    {traitOf(cap) ? t(traitOf(cap).label) : t(`modelpricePage.capability.${cap}`, { defaultValue: cap })}
                   </button>
                 ))}
               </div>

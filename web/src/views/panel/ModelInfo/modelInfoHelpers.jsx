@@ -1,17 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import {
-  ArrowUpDown,
-  AudioLines,
-  Binary,
-  Ear,
-  FileText,
-  Film,
-  Image as ImageIcon,
-  MessageSquare,
-  Mic,
-  Volume2,
-  Workflow
-} from 'lucide-react';
+import { ArrowUpDown, AudioLines, Binary, Image as ImageIcon, MessageSquare, Mic, Volume2, Workflow } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -21,6 +9,8 @@ import { resolveBrandFromText } from '@/components/brand/brandIcons';
 import { Dot } from '@/components/objects';
 import { MODALITY_OPTIONS } from 'constants/Modality';
 import { CAPABILITY_OPTIONS } from 'constants/Capability';
+import { ModelKindTag, ModelTraitMarks } from '@/components/model/ModelTraits';
+import { modelTraits } from '@/components/model/traits';
 
 // Modality tags are categories, not states: one quiet neutral chip for all.
 const MODALITY_CHIP = 'bg-muted text-foreground';
@@ -155,16 +145,6 @@ export function ModalityBadges({ input, output, max = 3 }) {
   );
 }
 
-export function CapabilityBadges({ json, max = 2 }) {
-  const { t } = useTranslation();
-  const items = safeJsonArray(json).map((cap, i) => ({
-    key: `${cap}-${i}`,
-    label: CAPABILITY_LABEL_KEYS[cap] ? t(CAPABILITY_LABEL_KEYS[cap]) : cap,
-    icon: CAPABILITY_OPTIONS[cap]?.icon
-  }));
-  return <BadgeOverflow items={items} max={max} />;
-}
-
 // One small icon per endpoint, named on hover; the vocabulary's order, unknown values last as text.
 export const ENDPOINT_ICONS = {
   chat: MessageSquare,
@@ -209,39 +189,19 @@ export const MODEL_KIND_VALUES = ['chat', 'image', 'video', 'speech', 'transcrip
 export const modelKindOf = (row) => (row?.catalogId > 0 ? row.model_kind || 'chat' : '');
 export const modelKindLabel = (t, kind) => (MODEL_KIND_VALUES.includes(kind) ? t(`modelInfoPage.kindOptions.${kind}`) : kind);
 
-// Inputs beyond text a chat model takes, each as a small icon named on hover.
-const INPUT_ICONS = { image: ImageIcon, audio: Ear, video: Film, pdf: FileText };
-const INPUT_ALIASES = { file: 'pdf' };
-
+// Every row gets a tag: chat in neutral grey, the other kinds in their medium's hue.
 export function ModelKindCell({ row }) {
-  const { t } = useTranslation();
   const kind = modelKindOf(row);
   if (!kind) return <span className="text-muted-foreground">—</span>;
-  const declared = new Set(safeJsonArray(row.input_modalities).map((m) => INPUT_ALIASES[m] || m));
-  const inputs = kind === 'chat' ? Object.keys(INPUT_ICONS).filter((m) => declared.has(m)) : [];
-  return (
-    <span className="inline-flex items-center gap-2 whitespace-nowrap text-[13px]">
-      <span>{modelKindLabel(t, kind)}</span>
-      {inputs.length > 0 && (
-        <span className="inline-flex items-center gap-1 text-muted-foreground">
-          {inputs.map((input) => {
-            const Icon = INPUT_ICONS[input];
-            const label = t(`modelInfoPage.inputOptions.${input}`);
-            return (
-              <Tooltip key={input}>
-                <TooltipTrigger asChild>
-                  <span role="img" aria-label={label} className="inline-flex cursor-default">
-                    <Icon className="size-3.5" />
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>{label}</TooltipContent>
-              </Tooltip>
-            );
-          })}
-        </span>
-      )}
-    </span>
-  );
+  return <ModelKindTag kind={kind} />;
+}
+
+// What the model takes in beyond text and what it can do, as tinted marks named on hover.
+export function ModelTraitsCell({ row }) {
+  const traits = modelTraits({ kind: modelKindOf(row), inputModalities: row?.input_modalities, capabilities: row?.capabilities });
+  if (!row?.catalogId || traits.length === 0) return <span className="text-muted-foreground">—</span>;
+  // Right-aligned: the capabilities come last in the order, so they line up down the column.
+  return <ModelTraitMarks traits={traits} />;
 }
 
 // Kept for callers that want text badges.

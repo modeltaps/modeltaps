@@ -22,9 +22,11 @@ describe('normalizeModel', () => {
     expect(normalizeModel(catalogModel())).toEqual({
       id: 'claude-sonnet-5',
       provider: 'anthropic',
+      kind: '',
       contextLength: 200000,
       pricing: { type: 'tokens', input: 1.5, output: 7.5 },
       capabilities: ['reasoning', 'tool_call'],
+      traits: ['tool_call', 'reasoning'],
       availability: AVAILABILITY.available,
       channels: undefined,
       aliases: []
@@ -82,7 +84,7 @@ describe('buildProviders / collectCapabilities', () => {
   });
 
   it('能力过滤项取目录里实际出现过的能力', () => {
-    expect(collectCapabilities(rows)).toEqual(['reasoning', 'tool_call']);
+    expect(collectCapabilities(rows)).toEqual(['tool_call', 'reasoning']);
   });
 });
 

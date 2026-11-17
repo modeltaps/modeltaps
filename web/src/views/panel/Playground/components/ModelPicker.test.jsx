@@ -219,7 +219,7 @@ describe('ModelRow formatting', () => {
     expect(html).toMatch(/>\$0\.006<\/span><span[^>]*>按分钟</);
   });
 
-  it('不可用提示与多渠道入口都落在名称下方同一行，行内不画能力标签', () => {
+  it('不可用提示与多渠道入口都落在名称下方同一行，能力只画成名称列右侧的图标标记', () => {
     const meta = (html) => html.match(/<div class="h-4[^"]*">([\s\S]*?)<\/div>/)[1];
     const unavailable = renderToStaticMarkup(createElement(ModelRow, { model: row({ groups: [] }) }));
     const multiChannel = renderToStaticMarkup(
@@ -232,7 +232,18 @@ describe('ModelRow formatting', () => {
     expect(meta(multiChannel)).toContain('aria-expanded="false"');
     expect(meta(multiChannel)).toContain('2 渠道');
     expect(meta(plain)).toBe('');
-    expect(plain).not.toContain('推理');
+    expect(plain).toContain('role="img" aria-label="推理"');
+    expect(plain).not.toContain('>推理<');
+  });
+
+  it('非对话模型在名称后带类型 tag，对话模型不带', () => {
+    const stt = renderToStaticMarkup(
+      createElement(ModelRow, {
+        model: row({ id: 'elevenlabs/scribe-v2', endpoints: ['audio.transcription'], info: { capabilities: [] } })
+      })
+    );
+    expect(stt).toContain('>语音识别<');
+    expect(renderToStaticMarkup(createElement(ModelRow, { model: row() }))).not.toContain('>语音识别<');
   });
 
   it('模型名带完整 id 的原生悬停提示，截断时也能看到全名', () => {

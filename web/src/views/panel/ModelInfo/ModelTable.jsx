@@ -43,10 +43,10 @@ import { statusLabel } from '../Channel/channelApi';
 import { catalogGroup, enabledChannels, formatReleaseDate, isVisibleToUsers, modelStatus, releasedAgo } from '../Pricing/modelCatalog';
 import {
   MODE_LABEL_KEYS,
-  CapabilityBadges,
   EndpointIcons,
   ModalityBadges,
   ModelKindCell,
+  ModelTraitsCell,
   ModelStatusBadge,
   TagBadges,
   VendorIcon,
@@ -499,6 +499,12 @@ export default function ModelTable({
         cell: (c) => <ModelKindCell row={c.row.original} />
       },
       {
+        id: 'capabilities',
+        header: t('modelInfoPage.capabilities'),
+        meta: { className: 'text-right' },
+        cell: (c) => <ModelTraitsCell row={c.row.original} />
+      },
+      {
         id: 'released_at',
         header: () => <ReleasedHeader sort={sort} onSort={onSortReleased} />,
         meta: { dim: true },
@@ -574,7 +580,6 @@ export default function ModelTable({
         cell: (c) => <ModalityBadges input={c.row.original.input_modalities} output={c.row.original.output_modalities} />
       },
       { id: 'tags', header: t('modelInfoPage.tags'), cell: (c) => <TagBadges json={c.row.original.tags} /> },
-      { id: 'capabilities', header: t('modelInfoPage.capabilities'), cell: (c) => <CapabilityBadges json={c.row.original.capabilities} /> },
       {
         id: 'mode',
         header: t('modelInfoPage.mode'),

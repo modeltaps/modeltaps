@@ -1,8 +1,10 @@
 import { matchesSearch } from 'utils/textSearch';
+import { TRAIT_KEYS, modelKindOf, modelTraits } from '@/components/model/traits';
 
 // ==============================|| PLAYGROUND — MODEL INDEX ||============================== //
 // 把 /api/available_model（经 useCatalogModels 归一）的目录数据整理成选择器要的行结构：
-//   { provider, id, contextLength?, pricing?, capabilities[], availability, channels? }
+//   { provider, id, kind, contextLength?, pricing?, capabilities[], traits[], availability, channels? }
+// kind is "" for a chat model; traits are the marks the row shows (see components/model/traits).
 // 目录接口没有的字段一律返回 undefined，由 UI 隐藏对应列——「未知」不冒充「有」。
 // 当前目录接口不带逐渠道报价，channels 恒为 undefined；后端补上同名字段后自动生效。
 // 本文件只放纯函数：不 import react，也不 import 取数层，供组件与单测直接使用。
@@ -38,12 +40,17 @@ const toAvailability = (model) => {
 };
 
 export function normalizeModel(model) {
+  const id = model?.id || '';
+  const capabilities = model?.info?.capabilities || [];
+  const kind = modelKindOf({ name: id, endpoints: model?.endpoints, outputModalities: model?.info?.outputModalities });
   return {
-    id: model?.id || '',
+    id,
     provider: trimmed(model?.vendor) || trimmed(model?.ownedBy).toLowerCase(),
+    kind,
     contextLength: toContextLength(model?.info?.contextLength),
     pricing: toPricing(model?.price),
-    capabilities: model?.info?.capabilities || [],
+    capabilities,
+    traits: modelTraits({ kind, inputModalities: model?.info?.inputModalities, capabilities }),
     availability: toAvailability(model),
     channels: toChannels(model?.channels),
     aliases: model?.aliases || []
@@ -65,11 +72,14 @@ export function buildProviders(rows) {
     });
 }
 
-// 能力 chip 过滤项：目录里实际出现过的能力词，按字典序。
+// A row's marks; rows built without normalizeModel fall back to their capabilities.
+const traitsOf = (row) => row.traits || row.capabilities || [];
+
+// Filter chips: the traits the catalog actually has, in the order the rows show them.
 export function collectCapabilities(rows) {
   const seen = new Set();
-  (rows || []).forEach((row) => (row.capabilities || []).forEach((cap) => seen.add(cap)));
-  return [...seen].sort((a, b) => a.localeCompare(b));
+  (rows || []).forEach((row) => traitsOf(row).forEach((trait) => seen.add(trait)));
+  return [...TRAIT_KEYS.filter((key) => seen.has(key)), ...[...seen].filter((key) => !TRAIT_KEYS.includes(key)).sort()];
 }
 
 const rowMatchesSearch = (row, search) => matchesSearch(search, [row.id, row.provider, row.aliases || []]);
@@ -79,7 +89,7 @@ export function filterRows(rows, { search = '', provider = '', capabilities = []
   return (rows || []).filter((row) => {
     if (!rowMatchesSearch(row, search)) return false;
     if (provider && row.provider !== provider) return false;
-    if (capabilities.length && !capabilities.every((cap) => (row.capabilities || []).includes(cap))) return false;
+    if (capabilities.length && !capabilities.every((cap) => traitsOf(row).includes(cap))) return false;
     if (hideUnavailable && row.availability === AVAILABILITY.unavailable) return false;
     return true;
   });

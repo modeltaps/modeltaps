@@ -20,6 +20,7 @@ export const MODEL_COLUMNS = [
   { id: 'select', fixed: true },
   { id: 'model', labelKey: 'modelInfoPage.model', fixed: true },
   { id: 'model_kind', labelKey: 'modelInfoPage.modelKind' },
+  { id: 'capabilities', labelKey: 'modelInfoPage.capabilities' },
   { id: 'released_at', labelKey: 'modelInfoPage.releasedAt' },
   { id: 'endpoints', labelKey: 'modelInfoPage.endpoints', defaultHidden: true },
   { id: 'channels', labelKey: 'modelInfoPage.channels', defaultHidden: true },
@@ -32,7 +33,6 @@ export const MODEL_COLUMNS = [
   { id: 'max_tokens', labelKey: 'modelInfoPage.maxTokens', defaultHidden: true },
   { id: 'modalities', labelKey: 'modelInfoPage.modalities', defaultHidden: true },
   { id: 'tags', labelKey: 'modelInfoPage.tags', defaultHidden: true },
-  { id: 'capabilities', labelKey: 'modelInfoPage.capabilities', defaultHidden: true },
   { id: 'mode', labelKey: 'modelInfoPage.mode', defaultHidden: true },
   { id: 'alias_of', labelKey: 'modelInfoPage.aliasOf', defaultHidden: true },
   { id: 'source', labelKey: 'modelInfoPage.source', defaultHidden: true },
@@ -40,10 +40,10 @@ export const MODEL_COLUMNS = [
   { id: 'actions', fixed: true }
 ];
 
-// The column picker's storage key (v3: the type column replaced endpoints as a default); the old
-// keys are cleaned up.
-export const COLUMN_STORAGE_KEY = 'model-catalog-columns-v3';
-export const LEGACY_COLUMN_STORAGE_KEYS = ['model-catalog-columns', 'model-catalog-columns-v2'];
+// The column picker's storage key (v4: the capabilities column shows by default, next to the
+// type); the old keys are cleaned up.
+export const COLUMN_STORAGE_KEY = 'model-catalog-columns-v4';
+export const LEGACY_COLUMN_STORAGE_KEYS = ['model-catalog-columns', 'model-catalog-columns-v2', 'model-catalog-columns-v3'];
 
 const CHANNEL_STATUS_ENABLED = 1;
 

@@ -74,6 +74,7 @@ import { attachPendingModel } from '../ModelInfo/supply/supplyApi';
 import { modelSupplyPath } from '../ModelInfo/supply/supplyHelpers';
 import { performanceTab } from './PerformanceTab';
 import { admin } from 'routes/paths';
+import { ModelKindTag, ModelTraitMarks, TAG_TEXT } from '@/components/model/ModelTraits';
 
 // Tabs of the channel panel (see components/objects/ObjectPanel). Each tab edits a part of the
 // channel on its own: `make(channel)` builds the tab's draft, `patch(draft, channel, ctx)` turns
@@ -791,29 +792,33 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                       )}
                     >
                       <td title={isRemoved ? t('channels.models.removedHint', { model: name }) : modelHint(t, name, detailOf(name))}>
-                        <span className="flex min-w-0 items-center gap-1.5">
-                          <span className={cn('min-w-0 truncate font-mono', isRemoved && 'line-through')}>{name}</span>
-                          {detailOf(name)?.kind && (
-                            <span className="shrink-0 rounded bg-muted px-1.5 text-[11px] leading-[18px] text-muted-foreground">
-                              {t(`channels.models.kind.${detailOf(name).kind}`, { defaultValue: detailOf(name).kind })}
+                        {/* Name and public name stack on the left; the marks center on the whole row like the other cells. */}
+                        <div className="flex min-w-0 items-center gap-2">
+                          <div className="min-w-0 flex-1">
+                            <span className="flex min-w-0 items-center gap-1.5">
+                              <span className={cn('min-w-0 truncate font-mono', isRemoved && 'line-through')}>{name}</span>
+                              <ModelKindTag kind={detailOf(name)?.kind} />
+                              <ModelSignal signal={signal} m={m} range={range} />
+                              {gone && (
+                                <span className={cn(TAG_TEXT, 'bg-warning/10 text-warning')}>{t('channels.models.state.gone')}</span>
+                              )}
                             </span>
-                          )}
-                          <ModelSignal signal={signal} m={m} range={range} />
-                          {gone && (
-                            <span className="shrink-0 rounded bg-warning/10 px-1.5 text-[11px] leading-[18px] text-warning">
-                              {t('channels.models.state.gone')}
-                            </span>
-                          )}
-                        </span>
-                        {isRemoved && <span className="block truncate text-xs">{t('channels.models.removedLine')}</span>}
-                        {showPublic && !isRemoved && (
-                          <PublicLine
-                            publics={detailOf(name)?.public}
-                            offer={offer}
-                            busy={busy === `attach:${name}`}
-                            onAttach={(publicModel, create) => attach(name, publicModel, create)}
+                            {isRemoved && <span className="block truncate text-xs">{t('channels.models.removedLine')}</span>}
+                            {showPublic && !isRemoved && (
+                              <PublicLine
+                                publics={detailOf(name)?.public}
+                                offer={offer}
+                                busy={busy === `attach:${name}`}
+                                onAttach={(publicModel, create) => attach(name, publicModel, create)}
+                              />
+                            )}
+                          </div>
+                          <ModelTraitMarks
+                            kind={detailOf(name)?.kind}
+                            inputModalities={detailOf(name)?.input_modalities}
+                            capabilities={detailOf(name)?.capabilities}
                           />
-                        )}
+                        </div>
                       </td>
                       {hasMapping && (
                         <td className="font-mono text-muted-foreground" title={mapping[name] || ''}>

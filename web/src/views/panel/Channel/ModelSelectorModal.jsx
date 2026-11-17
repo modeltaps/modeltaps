@@ -12,6 +12,8 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/sonner';
+import { ModelKindTag, ModelTraitMarks } from '@/components/model/ModelTraits';
+import { modelKindOf } from '@/components/model/traits';
 import { fetchUpstreamModelPicker } from './channelApi';
 import {
   CAPABILITY_FILTERS,
@@ -224,55 +226,64 @@ export default function ModelSelectorModal({ open, onClose, onConfirm, channelVa
     </aside>
   );
 
-  const renderRow = (row) => (
-    <label key={row.model} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-muted/50" data-model={row.model}>
-      <Checkbox checked={selected.has(row.model)} onCheckedChange={() => toggleModel(row.model)} aria-label={row.model} />
-      <span className="min-w-0 flex-1 truncate font-mono text-xs" title={row.model}>
-        {row.model}
-      </span>
-      <span className="flex shrink-0 items-center gap-1">
-        {row.latest && <Badge className="px-1.5 py-0 text-[10px]">{p('latest')}</Badge>}
-        {row.preview && (
-          <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-            {p('preview')}
-          </Badge>
-        )}
-        {row.variant && (
-          <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-            {row.variant}
-          </Badge>
-        )}
-        {row.alias && (
-          <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-            {p('alias')}
-          </Badge>
-        )}
-        {row.open_weights && (
-          <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
-            {p('openWeights')}
-          </Badge>
-        )}
-        {expiresSoon(row) && (
-          <Badge variant="destructive" className="px-1.5 py-0 text-[10px]" title={dateOf(row.expires_at)}>
-            {p('retiring', { date: dateOf(row.expires_at) })}
-          </Badge>
-        )}
-        {row.other_channels > 0 && (
-          <span className="text-[10px] text-muted-foreground" title={p('elsewhereTip', { count: row.other_channels })}>
-            {p('elsewhere', { count: row.other_channels })}
-          </span>
-        )}
-      </span>
-      <span className="hidden w-12 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground sm:inline">
-        {formatContext(row.context_length)}
-      </span>
-      <span className="hidden w-24 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground sm:inline">
-        {row.input_price !== null && row.input_price !== undefined
-          ? `${formatPrice(row.input_price)} / ${formatPrice(row.output_price)}`
-          : ''}
-      </span>
-    </label>
-  );
+  const renderRow = (row) => {
+    const kind = modelKindOf({ name: row.model, outputModalities: row.output_modalities });
+    return (
+      <label
+        key={row.model}
+        className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 hover:bg-muted/50"
+        data-model={row.model}
+      >
+        <Checkbox checked={selected.has(row.model)} onCheckedChange={() => toggleModel(row.model)} aria-label={row.model} />
+        <span className="min-w-0 flex-1 truncate font-mono text-xs" title={row.model}>
+          {row.model}
+        </span>
+        <span className="flex shrink-0 items-center gap-1">
+          <ModelKindTag kind={kind} />
+          <ModelTraitMarks kind={kind} inputModalities={row.input_modalities} capabilities={row.capabilities} />
+          {row.latest && <Badge className="px-1.5 py-0 text-[10px]">{p('latest')}</Badge>}
+          {row.preview && (
+            <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+              {p('preview')}
+            </Badge>
+          )}
+          {row.variant && (
+            <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+              {row.variant}
+            </Badge>
+          )}
+          {row.alias && (
+            <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+              {p('alias')}
+            </Badge>
+          )}
+          {row.open_weights && (
+            <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
+              {p('openWeights')}
+            </Badge>
+          )}
+          {expiresSoon(row) && (
+            <Badge variant="destructive" className="px-1.5 py-0 text-[10px]" title={dateOf(row.expires_at)}>
+              {p('retiring', { date: dateOf(row.expires_at) })}
+            </Badge>
+          )}
+          {row.other_channels > 0 && (
+            <span className="text-[10px] text-muted-foreground" title={p('elsewhereTip', { count: row.other_channels })}>
+              {p('elsewhere', { count: row.other_channels })}
+            </span>
+          )}
+        </span>
+        <span className="hidden w-12 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground sm:inline">
+          {formatContext(row.context_length)}
+        </span>
+        <span className="hidden w-24 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground sm:inline">
+          {row.input_price !== null && row.input_price !== undefined
+            ? `${formatPrice(row.input_price)} / ${formatPrice(row.output_price)}`
+            : ''}
+        </span>
+      </label>
+    );
+  };
 
   const renderGroup = (group) => {
     const ids = group.rows.map((r) => r.model);
