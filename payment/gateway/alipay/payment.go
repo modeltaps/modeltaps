@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/smartwalle/alipay/v3"
@@ -86,8 +87,11 @@ func (a *Alipay) HandleCallback(c *gin.Context, gatewayConfig string) (*types.Pa
 	for k, v := range c.Request.PostForm {
 		params[k] = v
 	}
+	// This site uses the Alipay public key mode, so a notification is only ever verified against
+	// the configured public key. alipay_cert_sn is not covered by the signature; left in, the SDK
+	// would download the certificate it names, calling Alipay as the merchant for any POST.
+	params.Del("alipay_cert_sn")
 	// 验证通知签名
-	// SDK 仅在通知带有未加载的 alipay_cert_sn 时用 ctx 下载支付宝证书；请求取消只会让验签失败
 	ctx := c.Request.Context()
 	if err := client.VerifySign(ctx, params); err != nil {
 		c.Writer.Write([]byte("failure"))
@@ -98,6 +102,13 @@ func (a *Alipay) HandleCallback(c *gin.Context, gatewayConfig string) (*types.Pa
 	if err != nil {
 		c.Writer.Write([]byte("failure"))
 		return nil, fmt.Errorf("Alipay Error decoding notification: %v", err)
+	}
+
+	// The signature only shows the notification comes from Alipay, not that it is for this app:
+	// a payment to another app with the same out_trade_no must not credit the order here.
+	if reason := notificationAppMismatch(noti, alipayConfig); reason != "" {
+		c.Writer.Write([]byte("failure"))
+		return nil, fmt.Errorf("Alipay notification %s, out_trade_no: %s, trade_no: %s", reason, noti.OutTradeNo, noti.TradeNo)
 	}
 
 	if noti.TradeStatus == alipay.TradeStatusSuccess {
@@ -120,6 +131,20 @@ func (a *Alipay) RespondCallback(c *gin.Context, success bool) {
 		return
 	}
 	c.Writer.Write([]byte("failure"))
+}
+
+// notificationAppMismatch returns why the notification is not for the configured app, or "".
+// auth_app_id is the app the payment was made through; Alipay sends it equal to app_id for an
+// app that collects for itself, which is the only mode this gateway places orders in.
+func notificationAppMismatch(noti *alipay.Notification, config *AlipayConfig) string {
+	appID := strings.TrimSpace(config.AppID)
+	if appID == "" || noti.AppId != appID {
+		return "app_id mismatch"
+	}
+	if noti.AuthAppId != "" && noti.AuthAppId != appID {
+		return "auth_app_id mismatch"
+	}
+	return ""
 }
 
 func getAlipayConfig(gatewayConfig string) (*AlipayConfig, error) {

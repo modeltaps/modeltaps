@@ -175,29 +175,73 @@ func TestAlipayHandleCallback_ValidSignatureSuccess(t *testing.T) {
 	}
 }
 
-// 通知带未加载的 alipay_cert_sn → SDK 转去下载支付宝证书，且必须用请求 ctx：
-// 请求已取消时不发出网络请求，即使签名本身正确也验签失败并响应 failure。
-func TestAlipayHandleCallback_UnknownCertSNUsesRequestContext(t *testing.T) {
+// A notification naming an alipay_cert_sn is still verified against the configured public key:
+// the SDK must not download the certificate it names (no outbound call, so a cancelled request
+// context does not matter), and a certificate it could fetch cannot vouch for the notification.
+func TestAlipayHandleCallback_CertSNIgnored(t *testing.T) {
 	priv, privB64, pubB64 := testKeys(t)
 	params := successNotifyParams()
 	params.Set("alipay_cert_sn", "unknown-cert-sn")
 	params.Set("sign", signNotifyParams(t, priv, params))
 
-	c, w := newAlipayNotifyContext(t, params)
+	c, _ := newAlipayNotifyContext(t, params)
 	ctx, cancel := context.WithCancel(c.Request.Context())
 	cancel()
 	c.Request = c.Request.WithContext(ctx)
 
 	notify, err := (&Alipay{}).HandleCallback(c, alipayGatewayConfig(privB64, pubB64))
-	if err == nil || notify != nil {
-		t.Fatalf("证书下载失败必须拒绝, notify=%v err=%v", notify, err)
+	if err != nil || notify == nil {
+		t.Fatalf("a notification signed with the configured key must pass without a certificate download, notify=%v err=%v", notify, err)
 	}
-	if !strings.Contains(err.Error(), "Signature verification failed") ||
-		!strings.Contains(err.Error(), context.Canceled.Error()) {
-		t.Fatalf("应为请求取消导致的验签失败: %v", err)
+
+	// Signed by another key, it fails verification instead of fetching a certificate for it.
+	other, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if w.Body.String() != "failure" {
-		t.Fatalf("应响应 failure，got %q", w.Body.String())
+	params.Set("sign", signNotifyParams(t, other, params))
+	c, w := newAlipayNotifyContext(t, params)
+	notify, err = (&Alipay{}).HandleCallback(c, alipayGatewayConfig(privB64, pubB64))
+	if err == nil || notify != nil || w.Body.String() != "failure" {
+		t.Fatalf("a foreign signature must be rejected, notify=%v err=%v body=%q", notify, err, w.Body.String())
+	}
+}
+
+// A correctly signed notification for another app (another merchant's payment carrying the same
+// out_trade_no) must not be credited.
+func TestAlipayHandleCallback_OtherAppRejected(t *testing.T) {
+	priv, privB64, pubB64 := testKeys(t)
+	cases := map[string]func(url.Values){
+		"other app_id":      func(p url.Values) { p.Set("app_id", "2021009999999999") },
+		"missing app_id":    func(p url.Values) { p.Del("app_id") },
+		"other auth_app_id": func(p url.Values) { p.Set("auth_app_id", "2021009999999999") },
+	}
+	for name, mutate := range cases {
+		t.Run(name, func(t *testing.T) {
+			params := successNotifyParams()
+			mutate(params)
+			params.Set("sign", signNotifyParams(t, priv, params))
+			c, w := newAlipayNotifyContext(t, params)
+			notify, err := (&Alipay{}).HandleCallback(c, alipayGatewayConfig(privB64, pubB64))
+			if err == nil || notify != nil {
+				t.Fatalf("a notification for another app must be rejected, notify=%v err=%v", notify, err)
+			}
+			if !strings.Contains(err.Error(), "app_id mismatch") {
+				t.Fatalf("want an app_id mismatch, got %v", err)
+			}
+			if w.Body.String() != "failure" {
+				t.Fatalf("want failure, got %q", w.Body.String())
+			}
+		})
+	}
+
+	// auth_app_id equal to app_id is what Alipay sends for an app collecting for itself.
+	params := successNotifyParams()
+	params.Set("auth_app_id", "2021000000000000")
+	params.Set("sign", signNotifyParams(t, priv, params))
+	c, _ := newAlipayNotifyContext(t, params)
+	if notify, err := (&Alipay{}).HandleCallback(c, alipayGatewayConfig(privB64, pubB64)); err != nil || notify == nil {
+		t.Fatalf("auth_app_id equal to app_id must pass, notify=%v err=%v", notify, err)
 	}
 }
 

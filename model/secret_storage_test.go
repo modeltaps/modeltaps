@@ -4,6 +4,10 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -41,7 +45,7 @@ func setupSecretStorageDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open memory db: %v", err)
 	}
-	if err := testDB.AutoMigrate(&Channel{}, &Payment{}, &NotifyChannel{}, &OidcProvider{}, &Option{}); err != nil {
+	if err := testDB.AutoMigrate(&Channel{}, &Payment{}, &NotifyChannel{}, &OidcProvider{}, &MailService{}, &Option{}); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
 	oldDB := DB
@@ -71,11 +75,72 @@ func assertCiphertext(t *testing.T, stored, plaintext string) {
 	}
 }
 
+// secretModels holds every model with a column stored through the encrypted serializer.
+var secretModels = map[string]any{
+	"Channel":       &Channel{},
+	"Payment":       &Payment{},
+	"NotifyChannel": &NotifyChannel{},
+	"OidcProvider":  &OidcProvider{},
+	"MailService":   &MailService{},
+}
+
+// modelsWithEncryptedColumns names the structs in this package's source with a field tagged
+// serializer:encrypted, so a new secret column cannot be missed by the test below.
+func modelsWithEncryptedColumns(t *testing.T) []string {
+	t.Helper()
+	files, err := filepath.Glob("*.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fset := token.NewFileSet()
+	var names []string
+	for _, file := range files {
+		if strings.HasSuffix(file, "_test.go") {
+			continue
+		}
+		f, err := parser.ParseFile(fset, file, nil, parser.SkipObjectResolution)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ast.Inspect(f, func(n ast.Node) bool {
+			spec, ok := n.(*ast.TypeSpec)
+			if !ok {
+				return true
+			}
+			st, ok := spec.Type.(*ast.StructType)
+			if !ok {
+				return true
+			}
+			for _, field := range st.Fields.List {
+				if field.Tag != nil && strings.Contains(field.Tag.Value, "serializer:"+encryptedSerializerName) {
+					names = append(names, spec.Name.Name)
+					break
+				}
+			}
+			return true
+		})
+	}
+	sort.Strings(names)
+	return names
+}
+
 // The startup migration walks encryptedColumns; every column tagged with the encrypted
-// serializer must be in it, under the table name the serializer uses as label.
+// serializer, in any model, must be in it, under the table name the serializer uses as label.
 func TestEncryptedColumnsMatchModels(t *testing.T) {
+	found := modelsWithEncryptedColumns(t)
+	if len(found) == 0 {
+		t.Fatal("found no model with an encrypted column")
+	}
+	for _, name := range found {
+		if _, ok := secretModels[name]; !ok {
+			t.Errorf("%s has an encrypted column: add it to secretModels and its columns to encryptedColumns", name)
+		}
+	}
+	if len(found) != len(secretModels) {
+		t.Errorf("models with encrypted columns %v, secretModels has %d", found, len(secretModels))
+	}
 	var tagged []string
-	for _, m := range []any{&Channel{}, &Payment{}, &NotifyChannel{}, &OidcProvider{}} {
+	for _, m := range secretModels {
 		s, err := schema.Parse(m, &sync.Map{}, schema.NamingStrategy{})
 		if err != nil {
 			t.Fatal(err)
@@ -375,6 +440,10 @@ func seedPlaintextSecrets(t *testing.T) {
 	if err := DB.Create(&OidcProvider{Slug: "legacy", ClientSecret: "legacy-client-secret"}).Error; err != nil {
 		t.Fatal(err)
 	}
+	if err := DB.Create(&MailService{Server: "smtp.legacy.test", Port: 465, Account: "legacy", Token: "legacy-mail-password",
+		TLSMode: "ssl", From: "noreply@legacy.test", Active: true}).Error; err != nil {
+		t.Fatal(err)
+	}
 	if err := DB.Create(&Option{Key: "SMTPToken", Value: "legacy-smtp"}).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -402,6 +471,10 @@ func assertSecretsReadable(t *testing.T) {
 		o.ClientSecret != "legacy-client-secret" || option.Value != "legacy-smtp" {
 		t.Errorf("read back payment=%q notify=%q oidc=%q option=%q", p.Config, n.Secrets, o.ClientSecret, option.Value)
 	}
+	services, err := GetMailServices()
+	if err != nil || len(services) != 1 || services[0].Client().Password != "legacy-mail-password" {
+		t.Errorf("mail services read back %+v, %v", services, err)
+	}
 }
 
 func TestPrepareStoredSecretsMigratesIdempotently(t *testing.T) {
@@ -414,14 +487,15 @@ func TestPrepareStoredSecretsMigratesIdempotently(t *testing.T) {
 	if err != nil || report.err() != nil {
 		t.Fatalf("first run: %v %v", err, report.err())
 	}
-	if n, detail := countSummary(report.encrypted); n != 7 {
-		t.Errorf("first run encrypted %d (%s), want 7", n, detail)
+	if n, detail := countSummary(report.encrypted); n != 8 {
+		t.Errorf("first run encrypted %d (%s), want 8", n, detail)
 	}
 	assertCiphertext(t, rawColumn(t, "channels", "key", "id = ?", 1), "sk-legacy-a")
 	assertCiphertext(t, rawColumn(t, "channels", "manage_key", "id = ?", 1), "mk-legacy-a")
 	assertCiphertext(t, rawColumn(t, "payments", "config", "1 = 1"), "sk_legacy_pay")
 	assertCiphertext(t, rawColumn(t, "notify_channels", "secrets", "1 = 1"), "legacy-bot")
 	assertCiphertext(t, rawColumn(t, "oidc_providers", "client_secret", "1 = 1"), "legacy-client-secret")
+	assertCiphertext(t, rawColumn(t, "mail_services", "token", "1 = 1"), "legacy-mail-password")
 	assertCiphertext(t, rawColumn(t, "options", "value", quotePostgresField("key")+" = ?", "SMTPToken"), "legacy-smtp")
 	if stored := rawColumn(t, "options", "value", quotePostgresField("key")+" = ?", "SMTPServer"); stored != "smtp.legacy.test" {
 		t.Errorf("a non-secret option was rewritten to %q", stored)
@@ -518,8 +592,8 @@ func TestPrepareStoredSecretsRotatesAndRejectsWrongKey(t *testing.T) {
 	if err != nil || report.err() != nil {
 		t.Fatalf("rotation run: %v %v", err, report.err())
 	}
-	if n, detail := countSummary(report.reencrypted); n != 7 {
-		t.Errorf("rotation re-encrypted %d (%s), want 7", n, detail)
+	if n, detail := countSummary(report.reencrypted); n != 8 {
+		t.Errorf("rotation re-encrypted %d (%s), want 8", n, detail)
 	}
 
 	// The previous key is no longer needed.
@@ -595,5 +669,50 @@ func TestOidcClientSecretColumnWidened(t *testing.T) {
 	var got OidcProvider
 	if err := testDB.First(&got, "slug = ?", "old").Error; err != nil || got.ClientSecret != "old-secret" {
 		t.Errorf("row after widening: %q, %v", got.ClientSecret, err)
+	}
+}
+
+// The mail service password is stored encrypted and reads back for sending: the service list,
+// the mirror into the SMTP options that sending uses, and the move from the old SMTP options.
+func TestMailServiceTokenEncrypted(t *testing.T) {
+	db := setupMailServiceTestDB(t)
+	useEncryptionKey(t, secretTestKey(1), "")
+
+	s := newTestMailService("mail.example.test")
+	if err := s.Insert(); err != nil {
+		t.Fatal(err)
+	}
+	assertCiphertext(t, rawColumn(t, "mail_services", "token", "id = ?", s.Id), "secret-mail.example.test")
+	s.FromName = "Example"
+	if err := s.Update(); err != nil {
+		t.Fatal(err)
+	}
+	assertCiphertext(t, rawColumn(t, "mail_services", "token", "id = ?", s.Id), "secret-mail.example.test")
+	loaded, err := GetMailServiceById(s.Id)
+	if err != nil || loaded.Client().Password != "secret-mail.example.test" {
+		t.Fatalf("loaded service password = %q, %v", loaded.Client().Password, err)
+	}
+	if _, err := ActivateMailService(s.Id); err != nil {
+		t.Fatal(err)
+	}
+	if config.SMTPToken != "secret-mail.example.test" {
+		t.Errorf("sending uses password %q", config.SMTPToken)
+	}
+	assertCiphertext(t, rawColumn(t, "options", "value", quotePostgresField("key")+" = ?", "SMTPToken"), "secret-mail.example.test")
+
+	// The move from the SMTP options writes the password encrypted.
+	if err := db.Exec("DELETE FROM mail_services").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := UpdateOption("SMTPToken", "re_migrated"); err != nil {
+		t.Fatal(err)
+	}
+	if err := migrateMailServices().Migrate(db); err != nil {
+		t.Fatal(err)
+	}
+	assertCiphertext(t, rawColumn(t, "mail_services", "token", "1 = 1"), "re_migrated")
+	services, err := GetMailServices()
+	if err != nil || len(services) != 1 || services[0].Token != "re_migrated" {
+		t.Fatalf("migrated services %+v, %v", services, err)
 	}
 }
