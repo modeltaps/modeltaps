@@ -7,6 +7,7 @@ import (
 
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
+	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/model"
 
@@ -25,6 +26,68 @@ func getOrgTokenForOperator(c *gin.Context, tokenId int) (*model.Token, error) {
 		return nil, common.NewAPIError(common.APICodeTokenAccessDenied, "Not allowed to operate on this API key", nil)
 	}
 	return token, nil
+}
+
+// orgLogIODisclosure tells the members of an organization whether the request and response bodies
+// of its API keys are being stored, who turned that on and when (SEC-51). The organization default
+// is the only switch (the key-level log_io is not read), so the answer is the same for every key.
+type orgLogIODisclosure struct {
+	Stored bool `json:"stored"`
+	// Source is "organization" when the organization turned it on, "site" when the organization
+	// follows the site default and the site stores bodies.
+	Source      string `json:"source,omitempty"`
+	ChangedBy   string `json:"changed_by,omitempty"`
+	ChangedById int    `json:"changed_by_id,omitempty"`
+	ChangedAt   int64  `json:"changed_at,omitempty"`
+	// RetentionDays is how long stored bodies are kept.
+	RetentionDays int `json:"retention_days,omitempty"`
+}
+
+// Values of orgLogIODisclosure.Source.
+const (
+	orgLogIOSourceOrganization = "organization"
+	orgLogIOSourceSite         = "site"
+)
+
+// orgLogIOActive reports whether request and response bodies of the organization's API keys are
+// stored now (the site switch and the organization default, as model.ResolveTokenLogIO resolves it).
+func orgLogIOActive(org *model.Organization) bool {
+	return config.LogIOEnabled && org.ResolveLogIODefault()
+}
+
+// orgLogIOStatus is the disclosure shown with the organization's API keys.
+func orgLogIOStatus(org *model.Organization) orgLogIODisclosure {
+	if !orgLogIOActive(org) {
+		return orgLogIODisclosure{}
+	}
+	status := orgLogIODisclosure{Stored: true, Source: orgLogIOSourceSite, RetentionDays: model.LogIORetentionDays}
+	if org.Setting.Data().LogIODefault == nil {
+		return status
+	}
+	status.Source = orgLogIOSourceOrganization
+	entry, err := model.GetLatestOrgLogIOUpdate(org.Id)
+	if err != nil {
+		logger.SysError(fmt.Sprintf("failed to read the LogIO change of organization %d: %v", org.Id, err))
+		return status
+	}
+	if entry != nil {
+		status.ChangedBy = entry.ActorName
+		status.ChangedById = entry.ActorId
+		status.ChangedAt = entry.CreatedTime
+	}
+	return status
+}
+
+// recordOrgLogIOUpdate records a change of the organization's LogIO default in the audit log under
+// its own action, so the disclosure can name who changed it and when. Turning storage on is also
+// written to the system log.
+func recordOrgLogIOUpdate(org *model.Organization, actorId int, value string, wasStored bool) {
+	stored := orgLogIOActive(org)
+	model.RecordOrgAudit(org.Id, actorId, model.OrgAuditActionLogIOUpdate,
+		fmt.Sprintf("Set request and response retention of organization API keys to %s (bodies stored: %t)", value, stored))
+	if stored && !wasStored {
+		logger.SysLog(fmt.Sprintf("organization %d: user %d turned on storing request and response bodies of organization API keys", org.Id, actorId))
+	}
 }
 
 // GetOrgTokensList 组织令牌列表:Member 仅自己创建的,Owner/Admin 全部
@@ -65,6 +128,7 @@ func GetOrgTokensList(c *gin.Context) {
 		"message":       "",
 		"data":          tokens,
 		"status_counts": statusCounts,
+		"log_io":        orgLogIOStatus(org),
 	})
 }
 
@@ -89,10 +153,12 @@ func GetOrgToken(c *gin.Context) {
 	}
 	model.AttachAgentInfo(token)
 
+	org, _ := getOrgFromContext(c)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
 		"data":    token,
+		"log_io":  orgLogIOStatus(org),
 	})
 }
 
@@ -218,7 +284,6 @@ func newOrgToken(org *model.Organization, userId int, operatorRole string, userR
 		UnlimitedQuota: token.UnlimitedQuota,
 		Group:          token.Group,
 		BackupGroup:    token.BackupGroup,
-		LogIO:          token.LogIO,
 	}
 	cleanToken.Setting.Set(setting)
 	return cleanToken, nil
@@ -317,7 +382,8 @@ func UpdateOrgToken(c *gin.Context) {
 		cleanToken.UnlimitedQuota = token.UnlimitedQuota
 		cleanToken.Group = token.Group
 		cleanToken.BackupGroup = token.BackupGroup
-		cleanToken.LogIO = token.LogIO
+		// log_io is not taken from the request: retention follows the organization default only
+		// (SEC-51), so nobody can switch it on for one member's key without the members being told.
 
 		// 处理 BillingTag: 非可信用户保持原值不变
 		oldSetting := cleanToken.Setting.Data()

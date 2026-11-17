@@ -44,7 +44,7 @@ import TokenTable from './TokenTable';
 import TokenPanel from './TokenPanel';
 import NewTokenDialog from './NewTokenDialog';
 import ManagementKeyList from './ManagementKeyList';
-import { TOKEN_TAB_KEYS } from './tokenTabs';
+import { LogIONotice, TOKEN_TAB_KEYS } from './tokenTabs';
 import TokenUsageDialog from './TokenUsageDialog';
 import OpenClawConnectDialog from './OpenClawConnectDialog';
 import { KeySecretDialog } from './KeySecret';
@@ -191,6 +191,8 @@ export default function Token() {
   const [orgMemberNames, setOrgMemberNames] = useState({});
   // 当日(TZ 零点起)按 API Key 名聚合的已用额度映射(token_name -> quota);管理员搜索接口不返回时为 null
   const [todayUsage, setTodayUsage] = useState(null);
+  // Organization keys: whether their request contents are stored, by whom and since when (SEC-51).
+  const [logIO, setLogIO] = useState(null);
 
   // The key open in the right-side panel (?id=, &tab=) and the create dialog (?new=1).
   const route = useObjectRoute(TOKEN_TAB_KEYS);
@@ -294,6 +296,7 @@ export default function Token() {
     },
     onSuccess: (payload) => {
       setTodayUsage(payload.today_usage ?? null);
+      setLogIO(payload.log_io ?? null);
       // The admin search returns no segment counts; the segments then show without numbers.
       setStatusCounts(payload.status_counts ?? null);
     },
@@ -625,6 +628,8 @@ export default function Token() {
           </DropdownMenu>
           <ResponsiveToolbarButton primary icon={Plus} label={t('token_index.createToken')} onClick={openCreate} />
         </PageActions>
+
+        {isOrgContext && <LogIONotice logIO={logIO} />}
 
         {blank ? (
           <PageEmptyState

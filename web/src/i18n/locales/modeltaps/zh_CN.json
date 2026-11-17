@@ -2078,6 +2078,9 @@
     }
   },
   "logPage": {
+    "io": {
+      "forbidden": "只有组织所有者可以查看留存的请求和响应。"
+    },
     "routing": {
       "filterLabel": "路由策略",
       "label": "自动路由",
@@ -3902,6 +3905,13 @@
     }
   },
   "apiKey": {
+    "logIO": {
+      "title": "请求内容会被留存",
+      "body": "用本组织 API Key 发出的请求和响应会保留 {{days}} 天，组织所有者可以查看。",
+      "byMember": "由 {{name}} 于 {{time}} 开启。",
+      "byOrg": "已在组织设置中开启。",
+      "bySite": "站点默认为组织 API Key 留存请求内容。"
+    },
     "panel": {
       "tabs": "API Key 设置",
       "tab": {
@@ -4213,6 +4223,8 @@
       "org_update": "更新组织资料",
       "org_update_budget": "更新组织预算",
       "org_update_setting": "更新组织设置",
+      "org_log_io_update": "更改请求留存",
+      "log_view_detail": "查看留存的请求",
       "org_dissolve": "解散组织",
       "org_transfer_ownership": "转让所有权",
       "org_admin_enable": "站点管理员启用组织",

@@ -41,6 +41,7 @@ There are three roles in an organization:
 | Edit organization profile and settings | — | ✅ | ✅ |
 | Top up the organization, transfer personal quota in | — | ✅ | ✅ |
 | View the audit log | — | ✅ | ✅ |
+| Read stored request and response bodies | — | — | ✅ |
 | Transfer ownership, delete the organization | — | — | ✅ |
 
 Admins cannot act on one another, and you cannot change your own role or remove yourself. The interface hides entry points you are not allowed to use, and the server validates permissions again.
@@ -180,7 +181,7 @@ Organization settings live on the **Settings** page (user menu). The organizatio
 
 - **Organization name**, **Avatar URL**: how the organization appears in the switcher and on the overview page.
 - **Members can view everyone's usage**: when on, ordinary members can view everyone's usage; when off, only their own. New organizations start with it off.
-- **Retain the organization's API request and response bodies**: a switch that decides whether request and response bodies for organization API key calls are retained for later troubleshooting; it is hidden when the site does not allow retention.
+- **Retain the organization's API request and response bodies**: a switch that decides whether request and response bodies for organization API key calls are retained for later troubleshooting; it is hidden when the site does not allow retention. It applies to every organization API key. Owners and admins can change it, but only the owner can read the stored bodies; admins and members cannot, not even for their own keys. Every time the owner opens another member's stored request, it is recorded in the [audit log](#audit-log). While bodies are being stored, members see a notice on their **API Keys** page saying that request contents are kept, for how many days, and who turned it on and when (or that the site stores them by default).
 
 Click **Save** to apply changes.
 
@@ -192,6 +193,6 @@ Click **Save** to apply changes.
 
 ## Audit log
 
-The **Audit log** tab is visible to owners and admins only. It records key operations in the organization in reverse chronological order, including time, actor, action and details. You can filter by action keyword or actor ID. Member management, invitation handling, quota transfers and top-ups, organization deletion and similar operations all leave a record.
+The **Audit log** tab is visible to owners and admins only. It records key operations in the organization in reverse chronological order, including time, actor, action and details. You can filter by action keyword or actor ID. Member management, invitation handling, quota transfers and top-ups, organization deletion and similar operations all leave a record, as do changes to request and response retention and every read of another member's stored request.
 
 Invitations that have been accepted, declined, revoked or expired no longer appear in the **Invitations** segment; you can trace them in the audit log.

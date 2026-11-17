@@ -17,6 +17,33 @@ type OrganizationAuditLog struct {
 	ActorName string `json:"actor_name" gorm:"-"`
 }
 
+// Audit actions of request and response retention (SEC-51). Every change of the organization's
+// LogIO default is recorded under OrgAuditActionLogIOUpdate, so members can be told who turned it
+// on and when; every read of a member's stored request or response body is recorded under
+// OrgAuditActionLogIOView.
+const (
+	OrgAuditActionLogIOUpdate = "org.log_io_update"
+	OrgAuditActionLogIOView   = "log.view_detail"
+
+	// legacyLogIOAuditContent is how changes of the LogIO default were recorded (as
+	// org.update_setting) before they got an action of their own.
+	legacyLogIOAuditContent = "Updated organization API key LogIO default:%"
+)
+
+// GetLatestOrgLogIOUpdate returns the newest change of the organization's LogIO default, with the
+// actor's username, or nil when there is none.
+func GetLatestOrgLogIOUpdate(organizationId int) (*OrganizationAuditLog, error) {
+	var logs []*OrganizationAuditLog
+	err := DB.Where("organization_id = ?", organizationId).
+		Where("action = ? OR (action = ? AND content LIKE ?)", OrgAuditActionLogIOUpdate, "org.update_setting", legacyLogIOAuditContent).
+		Order("id desc").Limit(1).Find(&logs).Error
+	if err != nil || len(logs) == 0 {
+		return nil, err
+	}
+	fillAuditActorNames(logs)
+	return logs[0], nil
+}
+
 // RecordOrgAudit 记录组织审计日志;失败仅写系统日志,不影响主流程
 func RecordOrgAudit(organizationId int, actorId int, action string, content string) {
 	log := &OrganizationAuditLog{

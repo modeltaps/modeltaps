@@ -562,8 +562,9 @@ func LogIOWriteEnabled(token *Token) bool {
 //
 // 站点管理员(全局 role>=RoleAdminUser)在任意场景均可见全部。
 // 个人场景(orgRole==""):个人(非组织)令牌所有者可见自己的令牌 body。
-// 组织场景(orgRole 非空):仅 Owner/Admin 可见组织内令牌 body;组织成员(Member)一律拒绝,
-// 不得借「self」查看自建组织令牌 body(D2=b 后端权威拒绝,见 spec)。self 放行仅适用于个人/非组织令牌所有者。
+// 组织场景(orgRole 非空):only the organization owner reads stored bodies (SEC-51); admins and
+// members are refused. A member cannot read the bodies of an organization key they created either
+// (D2=b). The self rule applies to personal keys only.
 func CanViewTokenLogIO(viewerId, viewerRole int, orgRole string, token *Token) bool {
 	if token == nil {
 		return false
@@ -572,9 +573,9 @@ func CanViewTokenLogIO(viewerId, viewerRole int, orgRole string, token *Token) b
 		return true
 	}
 	switch orgRole {
-	case OrgRoleOwner, OrgRoleAdmin:
+	case OrgRoleOwner:
 		return true
-	case OrgRoleMember:
+	case OrgRoleAdmin, OrgRoleMember:
 		return false
 	default:
 		return token.UserId == viewerId

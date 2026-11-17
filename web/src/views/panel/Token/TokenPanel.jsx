@@ -54,6 +54,7 @@ export default function TokenPanel({
   const { t, i18n } = useTranslation();
   const navigate = useScopedNavigate();
   const [token, setToken] = useState(null);
+  const [logIO, setLogIO] = useState(null);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -61,6 +62,7 @@ export default function TokenPanel({
       const res = await fetchToken(tokenId, adminMode);
       if (res.success) {
         setToken(res.data);
+        setLogIO(res.logIO);
         setError('');
       } else setError(res.message || t('objects.notFound'));
     } catch (e) {
@@ -190,7 +192,8 @@ export default function TokenPanel({
         loadModels,
         loadModelAccess,
         resetKey,
-        onCopyText
+        onCopyText,
+        logIO
       }}
       tabsLabel={t('apiKey.panel.tabs')}
     />

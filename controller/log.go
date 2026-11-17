@@ -619,7 +619,9 @@ func formatLogDetail(log *model.Log) string {
 // respondLogDetail 渲染单条日志的完整请求/响应明细,以 CanViewTokenLogIO 为唯一鉴权闸门(T50f)。
 // orgRole 非空表示组织上下文;ownerUserId>0 时(组织上下文影子账户)额外要求明细/日志归属该账户,
 // 防止跨组织/跨个人凭 log_id 越权读取。无明细时区分「未开启留存」与「已过期清理」返回空态而非报错。
-func respondLogDetail(c *gin.Context, logId, viewerId, viewerRole int, orgRole string, ownerUserId int) {
+// It returns the stored detail when its bodies were sent, nil otherwise, so the organization
+// endpoint can audit the read.
+func respondLogDetail(c *gin.Context, logId, viewerId, viewerRole int, orgRole string, ownerUserId int) *model.LogDetail {
 	forbid := func() {
 		c.JSON(http.StatusForbidden, gin.H{
 			"success": false,
@@ -630,13 +632,13 @@ func respondLogDetail(c *gin.Context, logId, viewerId, viewerRole int, orgRole s
 	if detail, err := model.GetLogDetailByLogId(logId); err == nil && detail != nil {
 		if ownerUserId != 0 && detail.UserId != ownerUserId {
 			forbid()
-			return
+			return nil
 		}
 		// 归属字段在写入时随明细落库,专供读取端鉴权(见 model.LogDetail 注释)。
 		token := &model.Token{Id: detail.TokenId, UserId: detail.UserId, CreatedBy: detail.CreatedBy}
 		if !model.CanViewTokenLogIO(viewerId, viewerRole, orgRole, token) {
 			forbid()
-			return
+			return nil
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
@@ -650,7 +652,7 @@ func respondLogDetail(c *gin.Context, logId, viewerId, viewerRole int, orgRole s
 				"created_at":         detail.CreatedAt,
 			},
 		})
-		return
+		return detail
 	}
 
 	// 无明细:仍以日志归属做鉴权(空态也不得绕过权限),再据日志时间区分空态原因。
@@ -661,16 +663,16 @@ func respondLogDetail(c *gin.Context, logId, viewerId, viewerRole int, orgRole s
 			"message": "",
 			"data":    gin.H{"has_detail": false, "reason": "expired"},
 		})
-		return
+		return nil
 	}
 	if ownerUserId != 0 && logRow.UserId != ownerUserId {
 		forbid()
-		return
+		return nil
 	}
 	token := &model.Token{UserId: logRow.UserId, CreatedBy: orgMemberIdFromLog(logRow)}
 	if !model.CanViewTokenLogIO(viewerId, viewerRole, orgRole, token) {
 		forbid()
-		return
+		return nil
 	}
 	reason := "not_enabled"
 	if logRow.CreatedAt < time.Now().AddDate(0, 0, -model.LogIORetentionDays).Unix() {
@@ -681,6 +683,7 @@ func respondLogDetail(c *gin.Context, logId, viewerId, viewerRole int, orgRole s
 		"message": "",
 		"data":    gin.H{"has_detail": false, "reason": reason},
 	})
+	return nil
 }
 
 // GetLogDetail 返回单条日志的完整请求/响应明细(站点管理员 /api/log 与个人 /api/log/self 上下文)。

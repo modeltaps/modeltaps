@@ -67,7 +67,7 @@ func TestRespondLogDetail_DetailPresent(t *testing.T) {
 	}{
 		{"站点管理员全见", 99, config.RoleAdminUser, "", 0, http.StatusOK, true},
 		{"组织Owner全见", otherUid, config.RoleCommonUser, model.OrgRoleOwner, shadowUid, http.StatusOK, true},
-		{"组织Admin全见", otherUid, config.RoleCommonUser, model.OrgRoleAdmin, shadowUid, http.StatusOK, true},
+		{"organization admin refused (SEC-51)", otherUid, config.RoleCommonUser, model.OrgRoleAdmin, shadowUid, http.StatusForbidden, false},
 		{"组织Member-自建组织令牌一律403", memberUid, config.RoleCommonUser, model.OrgRoleMember, shadowUid, http.StatusForbidden, false},
 		{"组织Member-他人自建403", otherUid, config.RoleCommonUser, model.OrgRoleMember, shadowUid, http.StatusForbidden, false},
 		{"个人-非本人403", otherUid, config.RoleCommonUser, "", 0, http.StatusForbidden, false},

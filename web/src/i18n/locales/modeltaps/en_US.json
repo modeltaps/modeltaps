@@ -2157,6 +2157,9 @@
     }
   },
   "logPage": {
+    "io": {
+      "forbidden": "Only the organization owner can read stored requests and responses."
+    },
     "routing": {
       "filterLabel": "Routing policy",
       "label": "Auto routing",
@@ -4009,6 +4012,13 @@
     }
   },
   "apiKey": {
+    "logIO": {
+      "title": "Request contents are stored",
+      "body": "Requests and responses sent with this organization's API keys are kept for {{days}} days. The organization owner can read them.",
+      "byMember": "Turned on by {{name}} on {{time}}.",
+      "byOrg": "Turned on in the organization settings.",
+      "bySite": "The site stores them for organization keys by default."
+    },
     "panel": {
       "tabs": "API key settings",
       "tab": {
@@ -4319,6 +4329,8 @@
       "org_update": "Updated the profile",
       "org_update_budget": "Updated the budget",
       "org_update_setting": "Updated settings",
+      "org_log_io_update": "Changed request retention",
+      "log_view_detail": "Read a stored request",
       "org_dissolve": "Dissolved the organization",
       "org_transfer_ownership": "Transferred ownership",
       "org_admin_enable": "Enabled by site admin",

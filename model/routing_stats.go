@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"math"
 	"sort"
 	"time"
@@ -253,10 +254,43 @@ type RoutingPolicyLogSample struct {
 	RequestBody string  `json:"-"`
 }
 
+// routingPolicySampleAccount returns the account whose requests the samples of an own policy may
+// come from: the user of a personal policy, the shadow account of an organization policy. It is 0
+// for platform policies, whose samples only site admins see.
+func routingPolicySampleAccount(policy *RoutingPolicy) (int, error) {
+	if policy.UserId > 0 {
+		return policy.UserId, nil
+	}
+	if policy.OrganizationId > 0 {
+		var org Organization
+		if err := DB.Select("shadow_user_id").Where("id = ?", policy.OrganizationId).First(&org).Error; err != nil {
+			return 0, err
+		}
+		if org.ShadowUserId <= 0 {
+			return 0, errors.New("organization has no shadow account")
+		}
+		return org.ShadowUserId, nil
+	}
+	return 0, nil
+}
+
 // GetRoutingPolicyLogSamples 返回最近 limit 条带请求明细的被路由日志（新的在前）。
+// Samples of a personal or organization policy only come from the owner's own requests (SEC-51):
+// the logs must belong to the policy's user or the organization's shadow account, on top of the
+// policy id the relay recorded.
 func GetRoutingPolicyLogSamples(policy *RoutingPolicy, limit int) ([]*RoutingPolicyLogSample, error) {
 	if limit <= 0 || limit > 50 {
 		limit = 20
+	}
+	account, err := routingPolicySampleAccount(policy)
+	if err != nil {
+		return nil, err
+	}
+	query := DB.Table("logs").
+		Joins("JOIN log_details ON log_details.log_id = logs.id").
+		Where("logs.type = ?", LogTypeConsume)
+	if account > 0 {
+		query = query.Where("logs.user_id = ?", account)
 	}
 	var rows []struct {
 		LogId       int
@@ -268,9 +302,7 @@ func GetRoutingPolicyLogSamples(policy *RoutingPolicy, limit int) ([]*RoutingPol
 		Confidence  *float64
 		RequestBody string
 	}
-	err := routingPolicyLogScope(DB.Table("logs").
-		Joins("JOIN log_details ON log_details.log_id = logs.id").
-		Where("logs.type = ?", LogTypeConsume), policy).
+	err = routingPolicyLogScope(query, policy).
 		Where(metadataTextExpr("routing_decision") + " IS NULL").
 		Select("logs.id as log_id, logs.created_at as created_at, logs.request_id as request_id, " +
 			metadataTextExpr("routing_label") + " as label, " + metadataTextExpr("routing_reason") + " as reason, " +

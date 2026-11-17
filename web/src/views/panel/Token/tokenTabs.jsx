@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, ScrollText } from 'lucide-react';
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,33 @@ import { isOrgOwnedToken } from './orgOwned';
 // (name, expiry, limit), Access (groups, models, IPs) and Advanced each save on their own.
 
 const bodyProps = { object: PropTypes.object, draft: PropTypes.object, setDraft: PropTypes.func, ctx: PropTypes.object };
+
+// Tells the members of an organization that the request and response bodies of its API keys are
+// stored, who turned that on and when (SEC-51). `logIO` is the disclosure the organization key
+// endpoints return; nothing is shown when bodies are not stored.
+export function LogIONotice({ logIO, className }) {
+  const { t } = useTranslation();
+  if (!logIO?.stored) return null;
+  let origin;
+  if (logIO.source === 'site') origin = t('apiKey.logIO.bySite');
+  else if (logIO.changed_at > 0)
+    origin = t('apiKey.logIO.byMember', {
+      name: logIO.changed_by || `#${logIO.changed_by_id}`,
+      time: timestamp2string(logIO.changed_at)
+    });
+  else origin = t('apiKey.logIO.byOrg');
+  return (
+    <Alert variant="warning" className={className} data-testid="token-log-io-notice">
+      <ScrollText />
+      <AlertTitle>{t('apiKey.logIO.title')}</AlertTitle>
+      <AlertDescription>
+        {t('apiKey.logIO.body', { days: logIO.retention_days })} {origin}
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+LogIONotice.propTypes = { logIO: PropTypes.object, className: PropTypes.string };
 
 // The key itself, masked: only its hint is stored (SEC-47), the full key was shown once when it
 // was created or reset. Reset issues a new one. Keys the playground manages are not shown.
@@ -143,6 +171,7 @@ function OverviewBody({ object: token, ctx }) {
 
   return (
     <>
+      <LogIONotice logIO={ctx.logIO} />
       <Field label={t('apiKey.panel.key')}>
         <KeyRow token={token} onReset={ctx.resetKey} />
       </Field>

@@ -26,6 +26,8 @@ export const AUDIT_ACTIONS = [
   'org.update',
   'org.update_budget',
   'org.update_setting',
+  'org.log_io_update',
+  'log.view_detail',
   'org.transfer_ownership',
   'org.dissolve',
   'org.invitation_create',

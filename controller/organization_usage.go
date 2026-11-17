@@ -131,6 +131,8 @@ func GetOrgLogsHistogram(c *gin.Context) {
 
 // GetOrgLogDetail 组织上下文返回单条日志的完整请求/响应明细(T50f)。
 // 以 CanViewTokenLogIO 为唯一鉴权闸门(组织角色语义),并要求日志/明细归属本组织影子账户。
+// Only the owner reads stored bodies, and every read of another member's request is recorded in
+// the organization audit log (SEC-51).
 func GetOrgLogDetail(c *gin.Context) {
 	org, role := getOrgFromContext(c)
 	id, err := strconv.Atoi(c.Param("log_id"))
@@ -138,7 +140,12 @@ func GetOrgLogDetail(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
-	respondLogDetail(c, id, c.GetInt("id"), c.GetInt("role"), role, org.ShadowUserId)
+	viewerId := c.GetInt("id")
+	detail := respondLogDetail(c, id, viewerId, c.GetInt("role"), role, org.ShadowUserId)
+	if detail != nil && detail.CreatedBy != viewerId {
+		model.RecordOrgAudit(org.Id, viewerId, model.OrgAuditActionLogIOView,
+			fmt.Sprintf("Read the stored request and response of log %d (API key ID: %d, created by user ID: %d)", detail.LogId, detail.TokenId, detail.CreatedBy))
+	}
 }
 
 // GetOrgLogsStat 组织消费总额统计(Member+,受可见性策略约束)

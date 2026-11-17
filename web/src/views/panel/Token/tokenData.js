@@ -37,7 +37,8 @@ export async function fetchToken(id, adminMode) {
   const { success, message, data } = res.data;
   const token = adminMode ? data?.data?.[0] : data;
   if (!success || !token) return { success: false, message };
-  return { success: true, data: normalizeToken(token) };
+  // Organization keys come with whether their request contents are stored (SEC-51).
+  return { success: true, data: normalizeToken(token), logIO: res.data.log_io ?? null };
 }
 
 // `patch` holds top-level fields and an optional partial `setting`; `setting.quota_reset: null`

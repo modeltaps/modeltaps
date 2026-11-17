@@ -85,6 +85,32 @@ describe('TokenPanel', () => {
     expect(screen.queryByRole('button', { name: i18n.t('apiKey.secret.reset') })).toBeNull();
   });
 
+  it('tells the member that request contents of the key are stored, by whom and since when', async () => {
+    const logIO = {
+      stored: true,
+      source: 'organization',
+      changed_by: 'alice',
+      changed_by_id: 5,
+      changed_at: 1763337600,
+      retention_days: 30
+    };
+    API.get.mockImplementation((url) => {
+      if (url === '/api/token/7') return Promise.resolve({ data: { success: true, data: structuredClone(stored), log_io: logIO } });
+      return Promise.resolve({ data: { success: true, data: [] } });
+    });
+    openPanel('overview');
+    const notice = await screen.findByTestId('token-log-io-notice');
+    expect(notice.textContent).toContain(i18n.t('apiKey.logIO.title'));
+    expect(notice.textContent).toContain(i18n.t('apiKey.logIO.body', { days: 30 }));
+    expect(notice.textContent).toContain('alice');
+  });
+
+  it('shows no retention notice when request contents are not stored', async () => {
+    openPanel('overview');
+    await screen.findByTestId('token-key-hint');
+    expect(screen.queryByTestId('token-log-io-notice')).toBeNull();
+  });
+
   it('saves the access tab with the model limit on and no model, keeping the other stored fields', async () => {
     openPanel('access');
     fireEvent.click(await screen.findByRole('switch', { name: i18n.t('token_index.limits_models_switch') }));

@@ -148,3 +148,56 @@ func TestGetRoutingPolicyLogSamples(t *testing.T) {
 		t.Fatalf("样本字段不对: %+v", samples[0])
 	}
 }
+
+// Samples of a personal or organization policy only come from the owner's own requests: a log of
+// another account carrying the same policy name and id is never shown (SEC-51).
+func TestGetRoutingPolicyLogSamplesOwnRequestsOnly(t *testing.T) {
+	db := setupRoutingStatsTestDB(t)
+	if err := db.AutoMigrate(&Organization{}); err != nil {
+		t.Fatal(err)
+	}
+	org := &Organization{Id: 3, Name: "Org", Slug: "org3", Status: OrganizationStatusEnabled, ShadowUserId: 30, CreatedBy: 1}
+	if err := db.Create(org).Error; err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().Unix()
+	personal := &RoutingPolicy{Id: 7, Name: "mine", UserId: 20}
+	orgPolicy := &RoutingPolicy{Id: 8, Name: "team", OrganizationId: org.Id}
+	logFor := func(userId int, policy *RoutingPolicy, requestId string) *Log {
+		l := routedLog(now, "cheap-model", 1, 1, 1, map[string]any{"routing_policy": policy.Name, "routing_policy_id": policy.Id})
+		l.UserId, l.RequestId = userId, requestId
+		return l
+	}
+	logs := []*Log{
+		logFor(20, personal, "own-personal"),
+		logFor(99, personal, "foreign-personal"),
+		logFor(30, orgPolicy, "own-org"),
+		logFor(99, orgPolicy, "foreign-org"),
+	}
+	if err := db.Create(&logs).Error; err != nil {
+		t.Fatal(err)
+	}
+	for _, l := range logs {
+		body := `{"messages":[{"role":"user","content":"` + l.RequestId + `"}]}`
+		if err := db.Create(&LogDetail{LogId: l.Id, UserId: l.UserId, RequestBody: body}).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, tc := range []struct {
+		policy *RoutingPolicy
+		want   string
+	}{{personal, "own-personal"}, {orgPolicy, "own-org"}} {
+		samples, err := GetRoutingPolicyLogSamples(tc.policy, 10)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(samples) != 1 || samples[0].RequestId != tc.want {
+			t.Fatalf("%s: samples = %+v, want only %s", tc.policy.Name, samples, tc.want)
+		}
+	}
+
+	// An organization that no longer exists has no samples.
+	if _, err := GetRoutingPolicyLogSamples(&RoutingPolicy{Id: 9, Name: "gone", OrganizationId: 404}, 10); err == nil {
+		t.Fatal("samples of a policy of a missing organization should fail")
+	}
+}

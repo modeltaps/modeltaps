@@ -93,8 +93,10 @@ export default function Log() {
   const { currentOrgId, orgRole } = useOrg();
   const isOrgContext = Boolean(currentOrgId);
   const effectiveAdmin = userIsAdmin && !isOrgContext;
-  // 仅管理员可见(D2=b):组织成员看不到 LogIO 详情入口;个人上下文(仅见己方日志)、
-  // 组织 Owner/Admin、平台管理员可见,与后端 CanViewTokenLogIO 收紧一致。
+  // Whether rows open the request/response detail: in the personal context (own logs only), for
+  // site admins, and for the organization Owner and Admins; organization members get no entry.
+  // The server (CanViewTokenLogIO) is stricter: in an organization only the Owner (and site
+  // admins) read stored bodies, so an organization Admin who opens a row is refused the bodies.
   const orgIsAdmin = orgRole === 'owner' || orgRole === 'admin';
   const canViewLogIO = !isOrgContext || orgIsAdmin || userIsAdmin;
   const [orgMembers, setOrgMembers] = useState([]);

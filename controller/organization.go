@@ -149,6 +149,7 @@ func UpdateOrganization(c *gin.Context) {
 			common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "invalid log_io_default value", nil)
 			return
 		}
+		wasStored := orgLogIOActive(org)
 		setting := org.Setting.Data()
 		setting.LogIODefault = v
 		org.Setting.Set(setting)
@@ -156,7 +157,8 @@ func UpdateOrganization(c *gin.Context) {
 			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
-		model.RecordOrgAudit(org.Id, c.GetInt("id"), "org.update_setting", fmt.Sprintf("Updated organization API key LogIO default: %s", *req.LogIODefault))
+		// Members are told on their API keys page who turned retention on and when (SEC-51).
+		recordOrgLogIOUpdate(org, c.GetInt("id"), *req.LogIODefault, wasStored)
 	}
 	if req.Budget != nil {
 		budget := req.Budget

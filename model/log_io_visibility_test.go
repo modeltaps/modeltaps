@@ -12,7 +12,8 @@ import (
 )
 
 // TestCanViewTokenLogIO 覆盖 T50e 三档可见性矩阵(后端权威鉴权源,D2=b):
-// 站点管理员全见 / 个人仅本人 / 组织 owner-admin 全见、member 一律拒绝(含自建组织令牌)。
+// 站点管理员全见 / 个人仅本人 / organization owner sees all, admins and members are refused
+// (members also for keys they created).
 func TestCanViewTokenLogIO(t *testing.T) {
 	const viewer = 7
 	selfToken := &Token{UserId: viewer, CreatedBy: viewer}
@@ -32,7 +33,7 @@ func TestCanViewTokenLogIO(t *testing.T) {
 		{"个人-本人令牌可见", config.RoleCommonUser, "", selfToken, true},
 		{"个人-他人令牌不可见", config.RoleCommonUser, "", othersToken, false},
 		{"组织Owner-组织内全部可见", config.RoleCommonUser, OrgRoleOwner, memberOthersToken, true},
-		{"组织Admin-组织内全部可见", config.RoleCommonUser, OrgRoleAdmin, memberOthersToken, true},
+		{"organization admin refused (SEC-51)", config.RoleCommonUser, OrgRoleAdmin, memberOthersToken, false},
 		{"组织Member-自建组织令牌一律不可见", config.RoleCommonUser, OrgRoleMember, memberSelfToken, false},
 		{"组织Member-他人自建不可见", config.RoleCommonUser, OrgRoleMember, memberOthersToken, false},
 		{"nil 令牌-恒不可见", config.RoleAdminUser, OrgRoleOwner, nil, false},
