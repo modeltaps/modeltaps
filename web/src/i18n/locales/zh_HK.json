@@ -1270,7 +1270,8 @@
       "audioSpeech": "語音合成",
       "audioTranscription": "語音轉寫",
       "embeddings": "向量",
-      "rerank": "重排"
+      "rerank": "重排",
+      "decisions": "決策"
     },
     "aliasOf": "別名指向",
     "aliasOfTip": "填寫主名後本行成為別名：不進入公開清單，但可呼叫並按主名計費。",

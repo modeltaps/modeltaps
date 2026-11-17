@@ -726,6 +726,7 @@
       "audio": "音訊生成",
       "embedding": "向量",
       "rerank": "重排",
+      "decision": "決策",
       "realtime": "即時語音"
     },
     "inputOptions": {
@@ -2271,6 +2272,7 @@
         "transcription": "語音辨識",
         "embedding": "向量",
         "rerank": "重排",
+        "decision": "決策",
         "audio": "音訊",
         "realtime": "實時語音"
       },

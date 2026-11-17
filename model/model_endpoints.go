@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"slices"
 	"strings"
 
 	"github.com/modeltaps/modeltaps/types"
@@ -16,6 +17,8 @@ const (
 	ModelEndpointAudioTranscription = "audio.transcription"
 	ModelEndpointEmbeddings         = "embeddings"
 	ModelEndpointRerank             = "rerank"
+	// ModelEndpointDecisions 对应 /v1/decisions（OpenAI Decisions API）：决策模型只能经它调用。
+	ModelEndpointDecisions = "decisions"
 	// ModelEndpointRealtime 对应 /v1/realtime 的 WebSocket 入口：它与 chat 是两套连接语义，
 	// 既推不出也不影响任务类型（mode），只声明「该模型可经实时接口调用」。
 	ModelEndpointRealtime = "realtime"
@@ -31,6 +34,7 @@ var modelEndpointOrder = []string{
 	ModelEndpointAudioTranscription,
 	ModelEndpointEmbeddings,
 	ModelEndpointRerank,
+	ModelEndpointDecisions,
 }
 
 // isKnownModelEndpoint 判断单个取值是否属于词表。
@@ -141,7 +145,23 @@ func isSpeechToText(modelName string, input, output []string) bool {
 	return false
 }
 
+// DecisionEndpointsJSON is the endpoints of a decision model: /v1/decisions only.
+var DecisionEndpointsJSON = ModelEndpointsJSON([]string{ModelEndpointDecisions})
+
+// chatEndpointsJSON is what syncs derived for a text-input model before decision models were
+// told apart; a synced row still holding it may be corrected to DecisionEndpointsJSON.
+var chatEndpointsJSON = ModelEndpointsJSON([]string{ModelEndpointChat, ModelEndpointResponses})
+
+// IsDecisionOnlyModel reports whether the catalog serves name only on /v1/decisions, so a chat,
+// responses, Claude or Gemini request for it can be refused before it reaches an upstream.
+func IsDecisionOnlyModel(name string) bool {
+	endpoints := ModelEndpoints(name)
+	return slices.Contains(endpoints, ModelEndpointDecisions) &&
+		!slices.Contains(endpoints, ModelEndpointChat) && !slices.Contains(endpoints, ModelEndpointResponses)
+}
+
 // ModelEndpointsFromModalities 由模态推导接口能力（同步用）：
+// 名称是决策模型（decision / decisions / decider）→ 仅 decisions；
 // 输入含 text → chat + responses；输出含 image 且模型属图像生成名单 → images；
 // 对话模型即使输出含 audio 也不推 audio.speech（音频经 chat 输出，不是 TTS 接口）。
 // 推不出任何一项时返回空串，留给管理员设置。
@@ -150,6 +170,9 @@ func isSpeechToText(modelName string, input, output []string) bool {
 // models.dev 的通用模态：输出只有 audio（TTS）→ 仅 audio.speech；输入只有 audio、输出只有 text（STT），
 // 或输入含 audio 且名称带转写标记（transcribe / whisper / asr / stt）→ 仅 audio.transcription。
 func ModelEndpointsFromModalities(modelName string, input, output []string) string {
+	if decisionModelName.MatchString(strings.ToLower(modelName)) {
+		return DecisionEndpointsJSON
+	}
 	if hasModality(output, "transcription") {
 		return ModelEndpointsJSON([]string{ModelEndpointAudioTranscription})
 	}

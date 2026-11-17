@@ -31,6 +31,12 @@ describe('modelKindOf', () => {
     expect(modelKindOf({ name: 'openai/text-embedding-3-small' })).toBe('embedding');
     expect(modelKindOf({ name: 'claude-fable-5-2', endpoints: ['chat'], outputModalities: ['text'] })).toBe('');
   });
+
+  it('marks decision models by their endpoint or name', () => {
+    expect(modelKindOf({ name: 'typesafe-ai/jev', endpoints: ['decisions'] })).toBe('decision');
+    expect(modelKindOf({ name: 'perplexity/pplx-decider-v1.3' })).toBe('decision');
+    expect(modelKindOf({ name: 'gpt-6-luna-decisions', outputModalities: ['text'] })).toBe('decision');
+  });
 });
 
 describe('tones', () => {

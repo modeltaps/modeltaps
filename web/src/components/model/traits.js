@@ -15,7 +15,7 @@ const TONES = {
 };
 
 // Kinds tagged next to a name; a chat model is the default and carries no tag.
-export const MODEL_KINDS = ['image', 'video', 'speech', 'transcription', 'audio', 'realtime', 'embedding', 'rerank'];
+export const MODEL_KINDS = ['image', 'video', 'speech', 'transcription', 'audio', 'realtime', 'embedding', 'rerank', 'decision'];
 
 const KIND_TONES = {
   chat: 'var(--muted-foreground)',
@@ -26,7 +26,8 @@ const KIND_TONES = {
   audio: TONES.audio,
   realtime: TONES.audio,
   embedding: TONES.retrieval,
-  rerank: TONES.retrieval
+  rerank: TONES.retrieval,
+  decision: TONES.retrieval
 };
 
 export const kindTone = (kind) => KIND_TONES[kind];
@@ -80,6 +81,7 @@ const ENDPOINT_KINDS = [
   ['audio.transcription', 'transcription'],
   ['embeddings', 'embedding'],
   ['rerank', 'rerank'],
+  ['decisions', 'decision'],
   ['realtime', 'realtime']
 ];
 
@@ -94,6 +96,7 @@ const OUTPUT_KINDS = [
 ];
 
 const NAME_KINDS = [
+  ['decision', /(^|[/_-])(decisions?|decider)([_.-]|$)/],
   ['rerank', /rerank/],
   ['embedding', /embed/],
   ['transcription', /transcri|whisper|scribe|(^|[/_-])stt([_.-]|$)|(^|[/_-])asr([_.-]|$)/],

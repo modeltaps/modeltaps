@@ -443,3 +443,40 @@ func TestUpsertModelInfosLifecycle(t *testing.T) {
 		t.Errorf("new values not written: %+v", got)
 	}
 }
+
+// A synced row still holding the chat + responses that syncs derived for decision models before
+// they were told apart moves to decisions; a row an admin edited keeps its endpoints.
+func TestUpsertModelInfosCorrectsDecisionEndpoints(t *testing.T) {
+	setupModelInfoTestDB(t)
+	rows := []*ModelInfo{
+		{Model: "jev", Endpoints: `["chat","responses"]`, Source: ModelInfoSourceVercel},
+		{Model: "d1", Endpoints: `["chat","responses"]`, Source: ModelInfoSourceManual},
+		{Model: "elephant-1", Endpoints: `["chat"]`, Source: ModelInfoSourceVercel},
+	}
+	for _, r := range rows {
+		if err := DB.Create(r).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	err := UpsertModelInfos([]*ModelInfo{
+		{Model: "jev", Endpoints: DecisionEndpointsJSON},
+		{Model: "d1", Endpoints: DecisionEndpointsJSON},
+		{Model: "elephant-1", Endpoints: DecisionEndpointsJSON},
+	}, ModelInfoSourceVercel)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{"jev": `["decisions"]`, "d1": `["chat","responses"]`, "elephant-1": `["chat"]`}
+	for name, endpoints := range want {
+		var got ModelInfo
+		if err := DB.Where("model = ?", name).First(&got).Error; err != nil {
+			t.Fatal(err)
+		}
+		if got.Endpoints != endpoints {
+			t.Errorf("%s endpoints = %s, want %s", name, got.Endpoints, endpoints)
+		}
+	}
+	if !IsDecisionOnlyModel("jev") || IsDecisionOnlyModel("d1") {
+		t.Errorf("IsDecisionOnlyModel: jev=%v d1=%v", IsDecisionOnlyModel("jev"), IsDecisionOnlyModel("d1"))
+	}
+}

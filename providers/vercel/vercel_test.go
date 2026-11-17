@@ -158,3 +158,29 @@ func TestBuildModelInfosLifecycle(t *testing.T) {
 		t.Errorf("closed model = %+v", infos[1])
 	}
 }
+
+// A decision model ("evaluation") is served only on /v1/decisions, even when its name does not
+// say so; its channel price carries the decision kind.
+func TestDecisionModelEndpoints(t *testing.T) {
+	var resp modelListResponse
+	body := `{"object":"list","data":[
+ {"id":"typesafe-ai/jev","owned_by":"typesafe-ai","name":"Jev","type":"evaluation","pricing":{"input":"0.000000042","output":"0"}},
+ {"id":"heygen/heygen-decision-1","owned_by":"heygen","name":"HeyGen Decision 1","type":"evaluation","tags":["vision","video-input"],"pricing":{"input":"0.00000014","output":"0"}}
+]}`
+	if err := json.Unmarshal([]byte(body), &resp); err != nil {
+		t.Fatal(err)
+	}
+	for _, info := range buildModelInfos(&resp) {
+		if info.Endpoints != `["decisions"]` {
+			t.Errorf("%s endpoints = %s, want decisions only", info.Model, info.Endpoints)
+		}
+		if kind := model.CatalogModelKind(info.Model, info.Endpoints, info.OutputModalities); kind != model.ModelKindDecision {
+			t.Errorf("%s catalog kind = %q", info.Model, kind)
+		}
+	}
+	for _, price := range buildChannelPrices(&resp) {
+		if price.Kind != model.ModelKindDecision || price.Output != 0 || price.Input <= 0 {
+			t.Errorf("%s price = %+v", price.Model, price)
+		}
+	}
+}

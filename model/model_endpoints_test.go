@@ -73,6 +73,8 @@ func TestModelEndpointsFromModalities(t *testing.T) {
 		{"kokoro-82m", []string{"text"}, []string{"audio"}, `["audio.speech"]`},
 		{"gemini-3.5-live-translate-preview", []string{"audio"}, []string{"audio", "text"}, ""},
 		{"gemini-2.5-flash", []string{"text", "image", "audio", "video"}, []string{"text"}, `["chat","responses"]`},
+		{"heygen-decision-1", []string{"text", "image"}, []string{"text"}, `["decisions"]`},
+		{"perplexity/pplx-decider-flash-v1.3", []string{"text"}, []string{"text"}, `["decisions"]`},
 		{"mystery", nil, nil, ""},
 	}
 	for _, c := range cases {

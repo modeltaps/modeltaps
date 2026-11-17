@@ -20,7 +20,7 @@ type gatewayModel struct {
 	Description   string       `json:"description"`
 	ContextWindow int          `json:"context_window"`
 	MaxTokens     int          `json:"max_tokens"`
-	Type          string       `json:"type"` // language / embedding / reranking / image / video / transcription
+	Type          string       `json:"type"` // language / embedding / reranking / image / video / transcription / evaluation
 	Tags          []string     `json:"tags"` // reasoning / tool-use / vision / file-input / open-weights …
 	Pricing       modelPricing `json:"pricing"`
 	// Released 发布时间、Created 上架时间（Unix 秒）；发布时间缺失时退回上架时间。
@@ -214,6 +214,15 @@ func modalitiesFor(m gatewayModel) (input, output []string) {
 	return input, []string{"text"}
 }
 
+// endpointsFor derives a model's endpoints; a decision model ("evaluation") is served only on
+// /v1/decisions, whatever its name says.
+func endpointsFor(m gatewayModel, input, output []string) string {
+	if model.ModelKindFromUpstreamType(m.Type) == model.ModelKindDecision {
+		return model.DecisionEndpointsJSON
+	}
+	return model.ModelEndpointsFromModalities(m.Id, input, output)
+}
+
 // capabilitiesJSON 把网关的能力标签映射为目录能力数组。网关没有结构化输出标签，所以这里只能给出两项；
 // 空标签视为「未知」而不是「都不支持」。
 func capabilitiesJSON(tags []string) string {
@@ -270,7 +279,7 @@ func buildModelInfos(resp *modelListResponse) []*model.ModelInfo {
 			Capabilities:     capabilitiesJSON(m.Tags),
 			// The id is "vendor/model"; GuessVendorID maps the prefix, else asks the model library.
 			VendorID:    model.GuessVendorID(m.Id),
-			Endpoints:   model.ModelEndpointsFromModalities(m.Id, input, output),
+			Endpoints:   endpointsFor(m, input, output),
 			OpenWeights: &openWeights,
 			ReleasedAt:  releasedAt,
 		})

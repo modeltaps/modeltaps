@@ -152,7 +152,8 @@
       "audioSpeech": "语音合成",
       "audioTranscription": "语音转写",
       "embeddings": "向量",
-      "rerank": "重排"
+      "rerank": "重排",
+      "decisions": "决策"
     },
     "aliasOf": "别名指向",
     "aliasOfTip": "填写主名后本行成为别名：不进入公开列表，但可调用并按主名计费。",

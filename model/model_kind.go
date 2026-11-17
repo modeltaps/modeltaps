@@ -18,11 +18,14 @@ const (
 	ModelKindEmbedding     = "embedding"
 	ModelKindRerank        = "rerank"
 	ModelKindAudio         = "audio" // other generated audio: music, sound effects
+	// ModelKindDecision answers typed questions (yes/no, choice, score) with probabilities
+	// instead of generating text; it is served only on /v1/decisions.
+	ModelKindDecision = "decision"
 )
 
 // ModelKindFromUpstreamType reads the model type an upstream's own list states: Vercel AI
-// Gateway's "type" (language / embedding / reranking / image / video). "" for a language model or
-// a type it does not know.
+// Gateway's "type" (language / embedding / reranking / image / video / evaluation). "" for a
+// language model or a type it does not know.
 func ModelKindFromUpstreamType(t string) string {
 	switch strings.ToLower(strings.TrimSpace(t)) {
 	case "image":
@@ -37,6 +40,8 @@ func ModelKindFromUpstreamType(t string) string {
 		return ModelKindSpeech
 	case "transcription", "stt", "asr":
 		return ModelKindTranscription
+	case "evaluation", "decision":
+		return ModelKindDecision
 	}
 	return ""
 }
@@ -66,12 +71,18 @@ func ModelKindFromOutputModalities(out []string) string {
 	return ""
 }
 
+// decisionModelName matches decision models named as such ("gemini-decision-1",
+// "gpt-6-luna-decisions", "pplx-decider-v1.3"). Decision models named otherwise (Liquid d1,
+// TypeSafe jev) are known only from an upstream's own type.
+var decisionModelName = regexp.MustCompile(`(^|[/_-])(decisions?|decider)([_.-]|$)`)
+
 // Name rules, tried in this order: the more specific kinds first, so "grok-imagine-video" is a
 // video model and "text-embedding-3" an embedding model.
 var modelKindNameRules = []struct {
 	kind string
 	re   *regexp.Regexp
 }{
+	{ModelKindDecision, decisionModelName},
 	{ModelKindRerank, regexp.MustCompile(`rerank`)},
 	{ModelKindEmbedding, regexp.MustCompile(`embed`)},
 	{ModelKindTranscription, regexp.MustCompile(`transcri|whisper|scribe|(^|[/_-])stt([_.-]|$)|(^|[/_-])asr([_.-]|$)`)},
@@ -121,6 +132,7 @@ var endpointOnlyKinds = []struct{ endpoint, kind string }{
 	{ModelEndpointAudioTranscription, ModelKindTranscription},
 	{ModelEndpointEmbeddings, ModelKindEmbedding},
 	{ModelEndpointRerank, ModelKindRerank},
+	{ModelEndpointDecisions, ModelKindDecision},
 	{ModelEndpointRealtime, ModelKindRealtime},
 }
 

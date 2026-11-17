@@ -721,6 +721,7 @@
       "audio": "Audio generation",
       "embedding": "Embeddings",
       "rerank": "Rerank",
+      "decision": "Decision",
       "realtime": "Realtime voice"
     },
     "inputOptions": {
@@ -2366,6 +2367,7 @@
         "transcription": "Transcription",
         "embedding": "Embedding",
         "rerank": "Rerank",
+        "decision": "Decision",
         "audio": "Audio",
         "realtime": "Realtime"
       },

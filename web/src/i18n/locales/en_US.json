@@ -1270,7 +1270,8 @@
       "audioSpeech": "Speech",
       "audioTranscription": "Transcription",
       "embeddings": "Embeddings",
-      "rerank": "Rerank"
+      "rerank": "Rerank",
+      "decisions": "Decisions"
     },
     "aliasOf": "Alias of",
     "aliasOfTip": "Set a canonical model to turn this row into an alias: hidden from public lists, still callable and billed as the canonical model.",

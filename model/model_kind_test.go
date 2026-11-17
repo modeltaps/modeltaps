@@ -22,6 +22,11 @@ func TestModelKindFromName(t *testing.T) {
 		"openai/text-embedding-3-small":         ModelKindEmbedding,
 		"cohere/embed-v4.0":                     ModelKindEmbedding,
 		"cohere/rerank-v3.5":                    ModelKindRerank,
+		"google/gemini-decision-1":              ModelKindDecision,
+		"openai/gpt-6-luna-decisions":           ModelKindDecision,
+		"parallel/parallel-decisions-fast":      ModelKindDecision,
+		"perplexity/pplx-decider-v1.3":          ModelKindDecision,
+		"decision-1":                            ModelKindDecision,
 		"google/veo-3.1-fast-generate-001":      ModelKindVideo,
 		"klingai/kling-v3.0-t2v":                ModelKindVideo,
 		"spacexai/grok-imagine-video":           ModelKindVideo,
@@ -57,6 +62,9 @@ func TestResolveModelKind(t *testing.T) {
 	if got := ResolveModelKind("", []string{"text"}, "openai/tts-1"); got != ModelKindSpeech {
 		t.Errorf("text-only output leaves it to the name, got %q", got)
 	}
+	if got := ModelKindFromUpstreamType("evaluation"); got != ModelKindDecision {
+		t.Errorf("Vercel's evaluation type is a decision model, got %q", got)
+	}
 	if got := ModelKindFromUpstreamType("language"); got != "" {
 		t.Errorf("a language model has no kind, got %q", got)
 	}
@@ -73,6 +81,7 @@ func TestCatalogModelKind(t *testing.T) {
 		{"text-embedding-3-small", `["embeddings"]`, "", ModelKindEmbedding},
 		{"gpt-realtime", `["realtime"]`, `["text","audio"]`, ModelKindRealtime},
 		{"gpt-image-1", `["images"]`, `["image"]`, ModelKindImage},
+		{"liquid-d1", `["decisions"]`, `["text"]`, ModelKindDecision},
 		{"gpt-5.5", `["chat","responses"]`, `["text"]`, ""},
 		{"gemini-3-flash-image", `["chat","responses","images"]`, `["text","image"]`, ModelKindImage},
 		{"openai/tts-1", "", `["text"]`, ModelKindSpeech},

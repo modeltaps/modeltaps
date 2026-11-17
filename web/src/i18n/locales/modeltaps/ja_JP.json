@@ -720,6 +720,7 @@
       "audio": "音声生成",
       "embedding": "埋め込み",
       "rerank": "リランク",
+      "decision": "意思決定",
       "realtime": "リアルタイム音声"
     },
     "inputOptions": {
@@ -2267,6 +2268,7 @@
         "transcription": "音声認識",
         "embedding": "埋め込み",
         "rerank": "リランク",
+        "decision": "意思決定",
         "audio": "音声",
         "realtime": "リアルタイム"
       },

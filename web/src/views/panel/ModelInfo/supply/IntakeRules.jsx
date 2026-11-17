@@ -14,7 +14,17 @@ import { cn } from '@/lib/utils';
 
 export const INTAKE_ACTIONS = ['enable', 'pending', 'disable', 'skip'];
 export const INTAKE_PLACEMENTS = ['auto', 'policy', 'last'];
-export const INTAKE_ENDPOINTS = ['chat', 'responses', 'realtime', 'images', 'audio.speech', 'audio.transcription', 'embeddings', 'rerank'];
+export const INTAKE_ENDPOINTS = [
+  'chat',
+  'responses',
+  'realtime',
+  'images',
+  'audio.speech',
+  'audio.transcription',
+  'embeddings',
+  'rerank',
+  'decisions'
+];
 const TRISTATE = ['any', 'yes', 'no'];
 
 // The built-in rules carry English names; show them in the UI language until an admin renames one.

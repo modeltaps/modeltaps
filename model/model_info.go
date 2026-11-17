@@ -326,7 +326,12 @@ func UpsertModelInfos(infos []*ModelInfo, source string) error {
 			}
 			// endpoints 只在库里为空时填入：已有值可能是管理员改过的，同步不得覆盖。
 			// hidden / alias_of 只由管理员维护，同步一概不写。
+			// 例外：同步以前把决策模型推成 chat + responses；仍是这个同步原值、且不是管理员
+			// 改过的行（source 非 manual），改成同步现在给出的 decisions。
 			if existing.Endpoints == "" && info.Endpoints != "" {
+				updates["endpoints"] = info.Endpoints
+			} else if info.Endpoints == DecisionEndpointsJSON && existing.Endpoints == chatEndpointsJSON &&
+				existing.Source != ModelInfoSourceManual {
 				updates["endpoints"] = info.Endpoints
 			}
 			if e := DB.Model(&ModelInfo{}).Where("id = ?", existing.Id).Updates(updates).Error; e != nil {

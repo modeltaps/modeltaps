@@ -1270,7 +1270,8 @@
       "audioSpeech": "音声合成",
       "audioTranscription": "文字起こし",
       "embeddings": "埋め込み",
-      "rerank": "リランク"
+      "rerank": "リランク",
+      "decisions": "意思決定"
     },
     "aliasOf": "エイリアス先",
     "aliasOfTip": "正式名を指定するとこの行はエイリアスになります。公開一覧には出ませんが、呼び出し可能で正式名として課金されます。",

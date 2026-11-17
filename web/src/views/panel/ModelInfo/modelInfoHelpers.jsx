@@ -47,7 +47,17 @@ export const CAPABILITY_LABEL_KEYS = {
 };
 
 // 接口能力词表：取值与后端 model_info.endpoints 一致；空串表示未设置。
-export const ENDPOINT_VALUES = ['chat', 'responses', 'realtime', 'images', 'audio.speech', 'audio.transcription', 'embeddings', 'rerank'];
+export const ENDPOINT_VALUES = [
+  'chat',
+  'responses',
+  'realtime',
+  'images',
+  'audio.speech',
+  'audio.transcription',
+  'embeddings',
+  'rerank',
+  'decisions'
+];
 
 export const ENDPOINT_LABEL_KEYS = {
   chat: 'modelInfoPage.endpointOptions.chat',
@@ -57,7 +67,8 @@ export const ENDPOINT_LABEL_KEYS = {
   'audio.speech': 'modelInfoPage.endpointOptions.audioSpeech',
   'audio.transcription': 'modelInfoPage.endpointOptions.audioTranscription',
   embeddings: 'modelInfoPage.endpointOptions.embeddings',
-  rerank: 'modelInfoPage.endpointOptions.rerank'
+  rerank: 'modelInfoPage.endpointOptions.rerank',
+  decisions: 'modelInfoPage.endpointOptions.decisions'
 };
 
 export const modalityText = (value) => MODALITY_OPTIONS[value]?.text || value;
@@ -185,7 +196,18 @@ export function EndpointIcons({ json, className }) {
 }
 
 // What a model does, from the catalog's computed model_kind ("" is a chat model).
-export const MODEL_KIND_VALUES = ['chat', 'image', 'video', 'speech', 'transcription', 'audio', 'embedding', 'rerank', 'realtime'];
+export const MODEL_KIND_VALUES = [
+  'chat',
+  'image',
+  'video',
+  'speech',
+  'transcription',
+  'audio',
+  'embedding',
+  'rerank',
+  'decision',
+  'realtime'
+];
 export const modelKindOf = (row) => (row?.catalogId > 0 ? row.model_kind || 'chat' : '');
 export const modelKindLabel = (t, kind) => (MODEL_KIND_VALUES.includes(kind) ? t(`modelInfoPage.kindOptions.${kind}`) : kind);
 

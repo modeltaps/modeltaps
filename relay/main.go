@@ -47,6 +47,16 @@ func Relay(c *gin.Context) {
 		return
 	}
 
+	// A decision model answers typed questions and generates no text: refuse it here, the way the
+	// upstreams do (400), instead of routing it and retrying other lines.
+	if model.IsDecisionOnlyModel(relay.getOriginalModel()) {
+		relay.HandleJsonError(common.StringErrorWrapperLocal(
+			fmt.Sprintf("model %s is a decision model, not a language model; it cannot be used with %s",
+				relay.getOriginalModel(), c.Request.URL.Path),
+			"invalid_request_error", http.StatusBadRequest))
+		return
+	}
+
 	c.Set("is_stream", relay.IsStream())
 	if err := relay.setProvider(relay.getOriginalModel()); err != nil {
 		// 配置错误 → 404 model_not_found（SDK 不重试）；运行时错误 → 503 collapse（SDK 重试）。
