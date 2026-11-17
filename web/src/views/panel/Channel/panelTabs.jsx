@@ -19,7 +19,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
-import { timestamp2string } from 'utils/common';
+import { timestamp2string, timestamp2stringCompact } from 'utils/common';
 import { configText } from 'i18n/configText';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -121,16 +121,25 @@ function parseMapping(raw) {
   }
 }
 
-function ToolButton({ busy, icon: Icon, children, ...props }) {
+function ToolButton({ busy, icon: Icon, children, className, ...props }) {
   return (
-    <Button variant="outline" size="sm" className="h-[30px] rounded-lg bg-card" disabled={busy || props.disabled} {...props}>
+    <Button variant="outline" size="sm" className={cn('h-8 rounded-lg bg-card', className)} disabled={busy || props.disabled} {...props}>
       {busy ? <Loader2 className="animate-spin" /> : Icon ? <Icon /> : null}
       {children}
     </Button>
   );
 }
 
-ToolButton.propTypes = { busy: PropTypes.bool, icon: PropTypes.elementType, children: PropTypes.node, disabled: PropTypes.bool };
+// A tool button inside a bordered group: the group draws the border and the dividers.
+const GROUPED = 'h-full rounded-none border-0 bg-transparent shadow-none';
+
+ToolButton.propTypes = {
+  className: PropTypes.string,
+  busy: PropTypes.bool,
+  icon: PropTypes.elementType,
+  children: PropTypes.node,
+  disabled: PropTypes.bool
+};
 
 // What the upstream charges for one listed model, as the Input and Output cells. A model not
 // priced per token (per image, per second, per request, free, other, or no price) gets one cell
@@ -298,7 +307,7 @@ function FilterChip({ active, onClick, icon, label, count }) {
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        'inline-flex h-[26px] items-center gap-1 rounded-full border px-2.5 text-xs',
+        'inline-flex h-7 items-center gap-1 rounded-full border px-2.5 text-xs',
         active ? 'border-foreground/30 bg-muted text-foreground' : 'border-border bg-field text-muted-foreground hover:text-foreground'
       )}
     >
@@ -503,6 +512,9 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   const stateKeys = STATE_FILTERS.filter((key) =>
     key === 'offered' || key === 'unoffered' ? ctx.supplyRouting && details : key === 'gone' ? snapshot : counts[key] > 0
   );
+  // Chips with nothing behind them stay hidden, except the picked one and a gone chip that still
+  // carries flags to dismiss.
+  const shownStateKeys = stateKeys.filter((key) => counts[key] > 0 || key === picked || (key === 'gone' && flaggedMissing.length > 0));
   // A filter whose chip went away (the last unlisted model was added) shows everything again.
   const only = STATE_FILTERS.includes(picked) && !stateKeys.includes(picked) ? '' : picked;
   // The new and unlisted filters list upstream models the channel does not have.
@@ -731,6 +743,50 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
     setTicked(new Set());
   };
   const pickedOff = tickedNames.filter((n) => disabled.has(n)).length;
+  // The picked upstream filter's summary and actions, as a strip at the top of the table.
+  const flagButton = 'h-7 rounded-lg text-xs';
+  const dismissButton = (onClick) => (
+    <Button variant="ghost" size="sm" className={flagButton} disabled={ctx.busy?.dismissing} onClick={onClick}>
+      {t('channels.models.dismissFlag')}
+    </Button>
+  );
+  let flagStrip = null;
+  if (only === 'gone' && (counts.gone > 0 || flaggedMissing.length > 0)) {
+    flagStrip = {
+      text: t('channels.models.flagSummary.gone', { count: counts.gone || flaggedMissing.length }),
+      actions: (
+        <>
+          {flaggedMissing.length > 0 && dismissButton(() => ctx.actions.onDismissMissingModels(channel))}
+          {counts.gone > 0 && (
+            <Button variant="outline" size="sm" className={cn(flagButton, 'bg-card')} disabled={busy === 'removeGone'} onClick={removeGone}>
+              {t('channels.models.removeGone', { count: counts.gone })}
+            </Button>
+          )}
+        </>
+      )
+    };
+  } else if (only === 'new' && fresh.length > 0) {
+    flagStrip = {
+      text: t('channels.models.flagSummary.new', { count: fresh.length }),
+      actions: (
+        <>
+          {dismissButton(() => ctx.actions.onDismissNewModels(channel))}
+          <Button variant="outline" size="sm" className={cn(flagButton, 'bg-card')} onClick={() => addNames(fresh.map((u) => u.name))}>
+            {t('channels.models.addUnlisted', { count: fresh.length })}
+          </Button>
+        </>
+      )
+    };
+  } else if (only === 'unlisted' && counts.unlisted > 0) {
+    flagStrip = {
+      text: t('channels.models.flagSummary.unlisted', { count: unlisted.length }),
+      actions: (
+        <Button variant="outline" size="sm" className={cn(flagButton, 'bg-card')} onClick={() => addNames(unlisted.map((u) => u.name))}>
+          {t('channels.models.addUnlisted', { count: unlisted.length })}
+        </Button>
+      )
+    };
+  }
   // Puts models back where the saved list had them, so undoing every removal leaves the tab
   // unchanged; models added in this draft keep their place after the saved ones.
   const restore = (names) => {
@@ -744,41 +800,54 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2 py-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
         <span className="text-[13px] text-muted-foreground">
           {t('channels.models.count', { count: models.length })}
           {channel.drift_auto_add ? ` · ${t('channels.models.autoAdd')}` : ''}
-          {labels.canFetchModels &&
-            ` · ${checkedAt ? t('channelDetail.driftCheckedAt', { time: timestamp2string(checkedAt) }) : t('channelDetail.driftNever')}`}
+          {labels.canFetchModels && ' · '}
+          {labels.canFetchModels && (
+            <span className="tabular-nums" title={checkedAt ? timestamp2string(checkedAt) : undefined}>
+              {checkedAt ? t('channelDetail.driftCheckedAt', { time: timestamp2stringCompact(checkedAt) }) : t('channelDetail.driftNever')}
+            </span>
+          )}
         </span>
         <span className="flex-1" />
-        {labels.canFetchModels && (
-          <ToolButton
-            icon={RefreshCw}
-            busy={Boolean(ctx.busy?.drift)}
-            onClick={() => ctx.actions?.onCheckDrift(channel)}
-            title={t('channels.models.checkHint')}
-          >
-            {t('channels.models.check')}
+        <div className="flex items-center gap-2">
+          {(labels.canFetchModels || hasUpstreamPriceList(channel.type)) && (
+            // The upstream actions read as one group, apart from adding models by hand.
+            <div className="flex h-8 items-center divide-x divide-border overflow-hidden rounded-lg border border-border bg-card">
+              {labels.canFetchModels && (
+                <ToolButton
+                  icon={RefreshCw}
+                  className={GROUPED}
+                  busy={Boolean(ctx.busy?.drift)}
+                  onClick={() => ctx.actions?.onCheckDrift(channel)}
+                  title={t('channels.models.checkHint')}
+                >
+                  {t('channels.models.check')}
+                </ToolButton>
+              )}
+              {hasUpstreamPriceList(channel.type) && (
+                <ToolButton icon={CloudDownload} className={GROUPED} busy={busy === 'price'} onClick={syncPrices}>
+                  {t('channels.models.syncPrices')}
+                </ToolButton>
+              )}
+              {labels.canFetchModels && (
+                <ToolButton
+                  icon={Filter}
+                  className={GROUPED}
+                  onClick={() => setSelector({ values: { ...body, models: draft.models }, replace: true })}
+                  title={t('channels.models.refilterHint')}
+                >
+                  {t('channels.models.refilter')}
+                </ToolButton>
+              )}
+            </div>
+          )}
+          <ToolButton icon={adding ? X : Plus} onClick={() => setAdding((v) => !v)}>
+            {adding ? t('channels.models.doneAdding') : t('channels.models.add')}
           </ToolButton>
-        )}
-        {hasUpstreamPriceList(channel.type) && (
-          <ToolButton icon={CloudDownload} busy={busy === 'price'} onClick={syncPrices}>
-            {t('channels.models.syncPrices')}
-          </ToolButton>
-        )}
-        {labels.canFetchModels && (
-          <ToolButton
-            icon={Filter}
-            onClick={() => setSelector({ values: { ...body, models: draft.models }, replace: true })}
-            title={t('channels.models.refilterHint')}
-          >
-            {t('channels.models.refilter')}
-          </ToolButton>
-        )}
-        <ToolButton icon={adding ? X : Plus} onClick={() => setAdding((v) => !v)}>
-          {adding ? t('channels.models.doneAdding') : t('channels.models.add')}
-        </ToolButton>
+        </div>
       </div>
 
       {adding && (
@@ -808,7 +877,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
         <>
           {(stateKeys.length > 0 || signalCounts.idle > 0 || signalCounts.failing > 0 || signalCounts.off > 0 || priceKind) && (
             <div className="flex flex-wrap items-center gap-1.5 pb-2 text-[13px]">
-              {stateKeys.map((key) => (
+              {shownStateKeys.map((key) => (
                 <FilterChip
                   key={key}
                   active={only === key}
@@ -820,7 +889,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
               ))}
               {signalCounts.off > 0 && (
                 <>
-                  {stateKeys.length > 0 && <span className="mx-1 h-4 w-px bg-border" />}
+                  {shownStateKeys.length > 0 && <span className="mx-1 h-4 w-px bg-border" />}
                   <FilterChip
                     active={only === 'off'}
                     onClick={() => setOnly(only === 'off' ? '' : 'off')}
@@ -831,7 +900,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
               )}
               {(signalCounts.idle > 0 || signalCounts.failing > 0) && (
                 <>
-                  {stateKeys.length > 0 && <span className="mx-1 h-4 w-px bg-border" />}
+                  {shownStateKeys.length > 0 && <span className="mx-1 h-4 w-px bg-border" />}
                   {['idle', 'failing'].map(
                     (key) =>
                       signalCounts[key] > 0 && (
@@ -861,63 +930,6 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                     <X className="size-3 text-muted-foreground" />
                   </button>
                 </>
-              )}
-              {only === 'gone' && (counts.gone > 0 || flaggedMissing.length > 0) && (
-                <div className="ml-auto flex items-center gap-1.5">
-                  {flaggedMissing.length > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-[26px] rounded-lg text-xs"
-                      disabled={ctx.busy?.dismissing}
-                      onClick={() => ctx.actions.onDismissMissingModels(channel)}
-                    >
-                      {t('channels.models.dismissFlag')}
-                    </Button>
-                  )}
-                  {counts.gone > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-[26px] rounded-lg bg-card text-xs"
-                      disabled={busy === 'removeGone'}
-                      onClick={removeGone}
-                    >
-                      {t('channels.models.removeGone', { count: counts.gone })}
-                    </Button>
-                  )}
-                </div>
-              )}
-              {only === 'new' && fresh.length > 0 && (
-                <div className="ml-auto flex items-center gap-1.5">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-[26px] rounded-lg text-xs"
-                    disabled={ctx.busy?.dismissing}
-                    onClick={() => ctx.actions.onDismissNewModels(channel)}
-                  >
-                    {t('channels.models.dismissFlag')}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-[26px] rounded-lg bg-card text-xs"
-                    onClick={() => addNames(fresh.map((u) => u.name))}
-                  >
-                    {t('channels.models.addUnlisted', { count: fresh.length })}
-                  </Button>
-                </div>
-              )}
-              {only === 'unlisted' && counts.unlisted > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="ml-auto h-[26px] rounded-lg bg-card text-xs"
-                  onClick={() => addNames(unlisted.map((u) => u.name))}
-                >
-                  {t('channels.models.addUnlisted', { count: unlisted.length })}
-                </Button>
               )}
             </div>
           )}
@@ -993,6 +1005,13 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
           )}
           <LongListSearch list={list} className="pb-2" />
           <div className="overflow-hidden rounded-lg border border-border">
+            {flagStrip && (
+              <div className="flex min-h-11 flex-wrap items-center gap-2 border-b border-border bg-muted/40 px-3 py-2 text-[13px]">
+                {only !== 'unlisted' && <AlertTriangle className="size-4 shrink-0 text-warning" />}
+                <span className="text-foreground">{flagStrip.text}</span>
+                <div className="ml-auto flex items-center gap-1.5">{flagStrip.actions}</div>
+              </div>
+            )}
             {/* Fixed widths for the narrow columns, so the model name gets the rest of the panel. */}
             <table className="w-full table-fixed border-collapse text-[13px]">
               <colgroup>

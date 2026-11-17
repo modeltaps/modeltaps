@@ -2248,6 +2248,11 @@
       "disableOne": "停用 {{model}}",
       "offFilter": "已停用",
       "dismissFlag": "不再提示",
+      "flagSummary": {
+        "gone_other": "上游已下架 {{count}} 個模型",
+        "new_other": "上游新增 {{count}} 個模型",
+        "unlisted_other": "上游有 {{count}} 個模型還沒加入"
+      },
       "addUnlisted": "全部加入 {{count}} 個",
       "addOne": "加入 {{model}}",
       "unlistedState": {

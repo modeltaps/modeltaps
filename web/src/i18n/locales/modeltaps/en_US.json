@@ -2342,6 +2342,14 @@
       "disableOne": "Turn off {{model}}",
       "offFilter": "Off",
       "dismissFlag": "Don't flag again",
+      "flagSummary": {
+        "gone_one": "{{count}} model is gone upstream",
+        "gone_other": "{{count}} models are gone upstream",
+        "new_one": "{{count}} new model upstream",
+        "new_other": "{{count}} new models upstream",
+        "unlisted_one": "{{count}} upstream model not added yet",
+        "unlisted_other": "{{count}} upstream models not added yet"
+      },
       "addUnlisted": "Add all {{count}}",
       "addOne": "Add {{model}}",
       "unlistedState": {

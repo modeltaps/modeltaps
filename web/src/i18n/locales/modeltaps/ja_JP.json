@@ -2244,6 +2244,11 @@
       "disableOne": "{{model}} を無効にする",
       "offFilter": "無効",
       "dismissFlag": "今後表示しない",
+      "flagSummary": {
+        "gone_other": "上流で提供終了したモデル {{count}} 件",
+        "new_other": "上流の新しいモデル {{count}} 件",
+        "unlisted_other": "上流にあって未追加のモデル {{count}} 件"
+      },
       "addUnlisted": "{{count}} 件をすべて追加",
       "addOne": "{{model}} を追加",
       "unlistedState": {
