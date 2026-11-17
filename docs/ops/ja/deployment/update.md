@@ -114,3 +114,31 @@ echo "バージョン: $(docker inspect ghcr.io/modeltaps/modeltaps:latest | gre
 docker images | grep 'ghcr.io/modeltaps/modeltaps' | grep -v 'latest' | awk '{print $3}' | xargs -r docker rmi > /dev/null 2>&1
 echo "古いイメージを削除しました."
 ```
+
+### セルフチェック：users.email は NULL を許可する必要があります
+
+メールアドレスのないアカウントは `users.email` に NULL を保存し、メールアドレスの一意制約はこれを前提にしています。この列を手動で `NOT NULL` に変更したことがある場合、Modeltaps は起動時に自動で NULL を許可する定義に戻し（元の型・文字セット・照合順序を保ち、データは変更しません）、実行した SQL をログに記録します。
+
+データベースユーザーに `ALTER` 権限がない場合は自動修復が失敗して起動が停止し、実行すべき SQL がログに表示されます。`ALTER` 権限のあるユーザーでその SQL を実行してから、もう一度起動してください。
+
+この列が NULL を許可しているかの確認方法（結果が `YES` なら問題ありません）：
+
+```sql
+-- MySQL
+SELECT IS_NULLABLE, COLUMN_TYPE FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'email';
+
+-- PostgreSQL
+SELECT is_nullable FROM information_schema.columns
+WHERE table_schema = current_schema() AND table_name = 'users' AND column_name = 'email';
+```
+
+手動で修復する場合（MySQL では `varchar(255)` を上で確認した `COLUMN_TYPE` に置き換え、元の文字セットと照合順序を保ってください）：
+
+```sql
+-- MySQL
+ALTER TABLE `users` MODIFY COLUMN `email` varchar(255) NULL;
+
+-- PostgreSQL
+ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
+```

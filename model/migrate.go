@@ -1376,6 +1376,9 @@ func ensureUserEmailUniqueReady(db *gorm.DB) error {
 	if !db.Migrator().HasTable("users") {
 		return nil
 	}
+	if err := ensureUserEmailNullable(db); err != nil {
+		return err
+	}
 	if db.Migrator().HasIndex(&User{}, "idx_users_email_unique") {
 		return nil
 	}
@@ -1383,6 +1386,96 @@ func ensureUserEmailUniqueReady(db *gorm.DB) error {
 		return err
 	}
 	return detectDuplicateUserEmails(db)
+}
+
+// ensureUserEmailNullable makes users.email nullable again when an operator changed it to
+// NOT NULL by hand (SEC-22). "No email" is stored as NULL (NullableEmail), so normalizeUserEmails
+// and every later write of an empty email would stop with Error 1048 "Column 'email' cannot be
+// null" (or, without strict mode, quietly write empty strings and then break the unique index).
+//
+// The fix is applied automatically: it only relaxes a constraint the schema never declared
+// (GORM creates the column nullable, and AutoMigrate, which runs right after this, would make it
+// nullable again anyway, only too late), it rewrites no data, and it keeps the column's own type, character set and
+// collation instead of GORM's default type, so no value can be truncated. When the ALTER fails
+// (typically a database user without ALTER privilege), startup stops with the exact SQL to run.
+//
+// PostgreSQL gets the same treatment with DROP NOT NULL, which keeps the type by itself. SQLite
+// is left alone: it cannot drop NOT NULL without rebuilding the table, and a hand-edited SQLite
+// schema is not a supported upgrade path.
+func ensureUserEmailNullable(db *gorm.DB) error {
+	switch db.Dialector.Name() {
+	case "mysql":
+		return ensureUserEmailNullableMySQL(db)
+	case "postgres":
+		return ensureUserEmailNullablePostgres(db)
+	}
+	return nil
+}
+
+func ensureUserEmailNullableMySQL(db *gorm.DB) error {
+	var columns []mysqlColumnInfo
+	if err := db.Raw("SELECT IS_NULLABLE AS is_nullable, COLUMN_TYPE AS column_type, " +
+		"CHARACTER_SET_NAME AS character_set_name, COLLATION_NAME AS collation_name " +
+		"FROM information_schema.COLUMNS " +
+		"WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'email'").
+		Scan(&columns).Error; err != nil {
+		logger.SysLog("failed to read the definition of users.email: " + err.Error())
+		return err
+	}
+	if len(columns) == 0 || !strings.EqualFold(columns[0].IsNullable, "NO") {
+		return nil
+	}
+	return makeUserEmailNullable(db, userEmailNullableSQL(columns[0]))
+}
+
+func ensureUserEmailNullablePostgres(db *gorm.DB) error {
+	var nullable []string
+	if err := db.Raw("SELECT is_nullable FROM information_schema.columns " +
+		"WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'users' AND column_name = 'email'").
+		Scan(&nullable).Error; err != nil {
+		logger.SysLog("failed to read the definition of users.email: " + err.Error())
+		return err
+	}
+	if len(nullable) == 0 || !strings.EqualFold(nullable[0], "NO") {
+		return nil
+	}
+	return makeUserEmailNullable(db, "ALTER TABLE users ALTER COLUMN email DROP NOT NULL")
+}
+
+// makeUserEmailNullable runs the ALTER built for the current dialect and, when it fails, stops
+// startup with a message that carries the exact SQL for the operator.
+func makeUserEmailNullable(db *gorm.DB, stmt string) error {
+	logger.SysLog("users.email is NOT NULL, but accounts without an email store NULL; making the column nullable: " + stmt)
+	if err := db.Exec(stmt).Error; err != nil {
+		msg := "users.email is NOT NULL, but accounts without an email store NULL, so startup cannot continue. " +
+			"Making the column nullable failed (" + err.Error() + "). Run this SQL as a database user with ALTER privilege and restart:\n" + stmt
+		logger.SysLog(msg)
+		return errors.New(msg)
+	}
+	return nil
+}
+
+// mysqlColumnInfo is one column definition read from information_schema.COLUMNS.
+type mysqlColumnInfo struct {
+	IsNullable       string  `gorm:"column:is_nullable"`
+	ColumnType       string  `gorm:"column:column_type"`
+	CharacterSetName *string `gorm:"column:character_set_name"`
+	CollationName    *string `gorm:"column:collation_name"`
+}
+
+// userEmailNullableSQL builds the ALTER that drops NOT NULL from users.email while keeping its
+// type, character set and collation. MODIFY replaces the whole definition, so leaving those out
+// would fall back to the table defaults. The default value is dropped on purpose: the schema has
+// none, and a hand-added empty-string default would bring the duplicate empty emails back.
+func userEmailNullableSQL(column mysqlColumnInfo) string {
+	stmt := "ALTER TABLE `users` MODIFY COLUMN `email` " + column.ColumnType
+	if column.CharacterSetName != nil && *column.CharacterSetName != "" {
+		stmt += " CHARACTER SET " + *column.CharacterSetName
+	}
+	if column.CollationName != nil && *column.CollationName != "" {
+		stmt += " COLLATE " + *column.CollationName
+	}
+	return stmt + " NULL"
 }
 
 // migrateUserEmailUnique 让 users.email 成为可信的唯一登录凭证：

@@ -114,3 +114,31 @@ echo "版本: $(docker inspect ghcr.io/modeltaps/modeltaps:latest | grep 'org.op
 docker images | grep 'ghcr.io/modeltaps/modeltaps' | grep -v 'latest' | awk '{print $3}' | xargs -r docker rmi > /dev/null 2>&1
 echo "已移除舊的鏡像."
 ```
+
+### 自查：users.email 必須允許 NULL
+
+沒有電郵的帳戶在 `users.email` 裡存的是 NULL，電郵唯一約束依賴這一點。如果曾手動把這一列改成 `NOT NULL`，Modeltaps 啟動時會自動把它改回允許 NULL（保留原有類型、字符集和排序規則，不改動數據），並在日誌裡記下執行的 SQL。
+
+數據庫帳戶沒有 `ALTER` 權限時，自動修復會失敗，啟動隨之終止，日誌會給出需要執行的 SQL。用有 `ALTER` 權限的帳戶執行後重新啟動即可。
+
+自查這一列是否允許 NULL（結果為 `YES` 即正常）：
+
+```sql
+-- MySQL
+SELECT IS_NULLABLE, COLUMN_TYPE FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'email';
+
+-- PostgreSQL
+SELECT is_nullable FROM information_schema.columns
+WHERE table_schema = current_schema() AND table_name = 'users' AND column_name = 'email';
+```
+
+手動修復（MySQL 中把 `varchar(255)` 換成上面查到的 `COLUMN_TYPE`，並保留原有字符集與排序規則）：
+
+```sql
+-- MySQL
+ALTER TABLE `users` MODIFY COLUMN `email` varchar(255) NULL;
+
+-- PostgreSQL
+ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
+```

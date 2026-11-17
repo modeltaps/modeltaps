@@ -114,3 +114,31 @@ echo "version: $(docker inspect ghcr.io/modeltaps/modeltaps:latest | grep 'org.o
 docker images | grep 'ghcr.io/modeltaps/modeltaps' | grep -v 'latest' | awk '{print $3}' | xargs -r docker rmi > /dev/null 2>&1
 echo "old images removed."
 ```
+
+### Self-check: users.email must allow NULL
+
+Accounts without an email store NULL in `users.email`, and the unique email constraint relies on that. If this column was ever changed to `NOT NULL` by hand, Modeltaps makes it nullable again on startup (keeping its type, character set and collation, and changing no data) and logs the SQL it ran.
+
+If the database user has no `ALTER` privilege, the automatic fix fails and startup stops; the log shows the SQL to run. Run it as a user with `ALTER` privilege and start Modeltaps again.
+
+To check whether the column allows NULL (`YES` means it is fine):
+
+```sql
+-- MySQL
+SELECT IS_NULLABLE, COLUMN_TYPE FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'email';
+
+-- PostgreSQL
+SELECT is_nullable FROM information_schema.columns
+WHERE table_schema = current_schema() AND table_name = 'users' AND column_name = 'email';
+```
+
+To fix it by hand (on MySQL, replace `varchar(255)` with the `COLUMN_TYPE` returned above and keep the column's character set and collation):
+
+```sql
+-- MySQL
+ALTER TABLE `users` MODIFY COLUMN `email` varchar(255) NULL;
+
+-- PostgreSQL
+ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
+```
