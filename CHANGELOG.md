@@ -28,6 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The key's details show which agent claimed it (time, IP, User-Agent) and issue new pairing
   codes; resetting a key voids its pending code. Both paths only hand out API keys, never
   management keys, and are rate limited per IP.
+- `/skill.md` at the site root: one file for the whole site that tells an open agent (OpenClaw,
+  Hermes and the like) how to connect itself, so "read https://<site>/skill.md and set it up" is
+  enough. Rendered from the site name and public server address only, with no user data or key,
+  it covers the base URLs, getting a key (pairing code, device authorization, or the user's own
+  entry through the agent's credential storage, never the chat), key custody principles,
+  verification, configuring the provider with model IDs fetched at run time, and what to report
+  back. `/llms.txt` is now a short index pointing to it and the public docs, served as
+  `text/plain`; both are cacheable for five minutes.
 - Usage alerts for subscription channels (Codex, Claude Code). When a usage window (5 hours, 7
   days) reaches 50%, 75% or 100%, a "subscription usage" notification names the channel, the
   window, the usage and when it resets; each tier is sent once per window period. The tiers are

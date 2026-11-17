@@ -33,8 +33,8 @@ func fetchLlmsTxt(t *testing.T, r *gin.Engine, req *http.Request) *httptest.Resp
 	if w.Code != http.StatusOK {
 		t.Fatalf("期望 200，实际 %d", w.Code)
 	}
-	if ct := w.Header().Get("Content-Type"); ct != "text/markdown; charset=utf-8" {
-		t.Fatalf("Content-Type 应为 text/markdown; charset=utf-8，实际 %q", ct)
+	if ct := w.Header().Get("Content-Type"); ct != "text/plain; charset=utf-8" {
+		t.Fatalf("Content-Type 应为 text/plain; charset=utf-8，实际 %q", ct)
 	}
 	return w
 }
@@ -55,10 +55,11 @@ func TestLlmsTxtFullOutput(t *testing.T) {
 		"# Modeltaps Test",
 		"## Docs",
 		"- [Modeltaps Test docs](https://docs.example.com)",
-		"https://api.example.com/v1/chat/completions",
-		"https://api.example.com/claude/v1/messages",
-		"https://api.example.com/gemini/v1beta/models",
-		"https://api.example.com/mcp/",
+		"[skill.md](https://api.example.com/skill.md)",
+		"`https://api.example.com/v1`",
+		"`https://api.example.com/claude`",
+		"`https://api.example.com/gemini`",
+		"POST https://api.example.com/mcp`",
 		"Authorization: Bearer <API key>",
 		"x-api-key",
 		"https://api.example.com/v1/models",
@@ -81,12 +82,12 @@ func TestLlmsTxtTrimsDisabledProtocols(t *testing.T) {
 
 	body := fetchLlmsTxt(t, r, httptest.NewRequest("GET", "/llms.txt", nil)).Body.String()
 
-	for _, unwanted := range []string{"/claude", "/gemini", "/mcp/", "x-api-key"} {
+	for _, unwanted := range []string{"/claude", "/gemini", "/mcp", "x-api-key", "Anthropic"} {
 		if strings.Contains(body, unwanted) {
 			t.Errorf("开关关闭后输出仍含 %q", unwanted)
 		}
 	}
-	if !strings.Contains(body, "https://api.example.com/v1/chat/completions") {
+	if !strings.Contains(body, "`https://api.example.com/v1`") {
 		t.Error("OpenAI 段落不应被裁剪")
 	}
 }
@@ -101,7 +102,7 @@ func TestLlmsTxtFallsBackToRequestHost(t *testing.T) {
 	req.Header.Set("X-Forwarded-Proto", "https")
 	body := fetchLlmsTxt(t, r, req).Body.String()
 
-	if !strings.Contains(body, "https://gateway.example.org/v1/chat/completions") {
+	if !strings.Contains(body, "`https://gateway.example.org/v1`") {
 		t.Errorf("应使用请求 Host 拼 base URL，实际输出：%s", body)
 	}
 	if strings.Contains(body, defaultServerAddress) {
@@ -118,7 +119,7 @@ func TestLlmsTxtEmptyServerAddressUsesHTTPHost(t *testing.T) {
 	req.Host = "127.0.0.1:8080"
 	body := fetchLlmsTxt(t, r, req).Body.String()
 
-	if !strings.Contains(body, "http://127.0.0.1:8080/v1/chat/completions") {
+	if !strings.Contains(body, "`http://127.0.0.1:8080/v1`") {
 		t.Errorf("应使用 http + 请求 Host，实际输出：%s", body)
 	}
 }

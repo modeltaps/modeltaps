@@ -64,7 +64,8 @@ export default defineConfig(({ mode }) => {
       '/recraftAI',
       '/mcp',
       '/dashboard',
-      '/llms.txt'
+      '/llms.txt',
+      '/skill.md'
     ].map((prefix) => [prefix, { target: proxyTarget, changeOrigin: true }])
   );
 

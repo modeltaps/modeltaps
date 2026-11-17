@@ -38,75 +38,46 @@ func publicSiteURL(c *gin.Context) string {
 	return scheme + "://" + host
 }
 
-// LlmsTxt 按 https://llmstxt.org 格式输出本网关的机器可读说明，无需认证。
+// LlmsTxt serves /llms.txt (https://llmstxt.org): a short index for AI tools that points to
+// /skill.md for setting an agent up, to the base URLs and to the public docs. Like skill.md it is
+// rendered from site settings only and holds no user data. No sign-in needed.
 func LlmsTxt(c *gin.Context) {
 	base := publicSiteURL(c)
-	systemName := strings.TrimSpace(config.SystemName)
-	if systemName == "" {
-		systemName = "Modeltaps"
-	}
+	name := siteDisplayName()
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "# %s\n\n", systemName)
-	b.WriteString("> Multi-protocol AI gateway, compatible with the OpenAI / Claude / Gemini APIs.\n\n")
-
-	b.WriteString("## API Endpoints\n\n")
-	fmt.Fprintf(&b, "- OpenAI-compatible (base URL: `%s/v1`)\n", base)
-	fmt.Fprintf(&b, "  - `POST %s/v1/chat/completions`\n", base)
-	fmt.Fprintf(&b, "  - `POST %s/v1/completions`\n", base)
-	fmt.Fprintf(&b, "  - `POST %s/v1/responses`\n", base)
-	fmt.Fprintf(&b, "  - `POST %s/v1/embeddings`\n", base)
-	fmt.Fprintf(&b, "  - `POST %s/v1/images/generations`\n", base)
-	fmt.Fprintf(&b, "  - `POST %s/v1/audio/speech`\n", base)
-	fmt.Fprintf(&b, "  - `POST %s/v1/rerank`\n", base)
+	fmt.Fprintf(&b, "# %s\n\n", name)
+	fmt.Fprintf(&b, "> %s is a multi-provider AI gateway with OpenAI-compatible APIs", name)
 	if config.ClaudeAPIEnabled {
-		fmt.Fprintf(&b, "- Claude native (base URL: `%s/claude`)\n", base)
-		fmt.Fprintf(&b, "  - `POST %s/claude/v1/messages`\n", base)
-		fmt.Fprintf(&b, "  - `GET %s/claude/v1/models`\n", base)
+		b.WriteString(" and Anthropic-compatible APIs")
+	}
+	b.WriteString(". Calls use an API key created in its console.\n\n")
+
+	b.WriteString("## Agents\n\n")
+	fmt.Fprintf(&b, "- [skill.md](%s/skill.md): how an agent connects itself: getting an API key without it passing through the chat "+
+		"(pairing code or device authorization), keeping it, verifying it and configuring the provider\n\n", base)
+
+	b.WriteString("## API\n\n")
+	fmt.Fprintf(&b, "- OpenAI-compatible base URL: `%s/v1` (`Authorization: Bearer <API key>`)\n", base)
+	if config.ClaudeAPIEnabled {
+		fmt.Fprintf(&b, "- Anthropic-compatible base URL: `%s/claude` (`x-api-key: <API key>`)\n", base)
 	}
 	if config.GeminiAPIEnabled {
-		fmt.Fprintf(&b, "- Gemini native (base URL: `%s/gemini`)\n", base)
-		fmt.Fprintf(&b, "  - `POST %s/gemini/v1beta/models/{model}:generateContent`\n", base)
-		fmt.Fprintf(&b, "  - `GET %s/gemini/v1beta/models`\n", base)
+		fmt.Fprintf(&b, "- Gemini-compatible base URL: `%s/gemini`\n", base)
 	}
+	fmt.Fprintf(&b, "- Models: `GET %s/v1/models` lists the models the API key may call; never hard-code model IDs\n", base)
+	fmt.Fprintf(&b, "- Pricing: `GET %s/api/prices`; status: `GET %s/api/status`\n", base, base)
 	if config.MCP_ENABLE {
-		fmt.Fprintf(&b, "- MCP (Model Context Protocol)\n")
-		fmt.Fprintf(&b, "  - Streamable HTTP: `POST %s/mcp/{accessToken}`\n", base)
-		fmt.Fprintf(&b, "  - SSE: `GET %s/mcp/sse/{accessToken}`\n", base)
-	}
-	b.WriteString("\n")
-
-	b.WriteString("## Authentication\n\n")
-	b.WriteString("- All endpoints use the `Authorization: Bearer <API key>` header.\n")
-	if config.ClaudeAPIEnabled {
-		b.WriteString("- Claude endpoints also accept `x-api-key: <API key>`.\n")
-	}
-	fmt.Fprintf(&b, "- Create API keys in the console: sign in to %s and open the \"API Keys\" page.\n\n", base)
-
-	b.WriteString("## Discovery\n\n")
-	fmt.Fprintf(&b, "- `GET %s/v1/models`: list the models available to the current API key\n", base)
-	fmt.Fprintf(&b, "- `GET %s/api/prices`: model pricing\n", base)
-	fmt.Fprintf(&b, "- `GET %s/api/status`: service status and version\n\n", base)
-
-	b.WriteString("## Client Configuration\n\n")
-	b.WriteString("Any client that supports an \"OpenAI-compatible / custom base URL\" setting (OpenAI SDK, LangChain, Cline, LobeChat, etc.) ")
-	b.WriteString("can connect with just two settings:\n\n")
-	fmt.Fprintf(&b, "- `base_url` / `OPENAI_BASE_URL` = `%s/v1`\n", base)
-	b.WriteString("- `api_key` / `OPENAI_API_KEY` = an API key created in the console\n")
-	if config.ClaudeAPIEnabled {
-		fmt.Fprintf(&b, "- Anthropic SDK clients: `ANTHROPIC_BASE_URL` = `%s/claude`\n", base)
-	}
-	if config.GeminiAPIEnabled {
-		fmt.Fprintf(&b, "- Gemini SDK clients: base URL = `%s/gemini`\n", base)
+		fmt.Fprintf(&b, "- MCP (with a management key in the `Authorization` header): `POST %s/mcp`\n", base)
 	}
 	b.WriteString("\n")
 
 	if docsLink := strings.TrimSpace(config.DocsLink); docsLink != "" {
 		b.WriteString("## Docs\n\n")
-		fmt.Fprintf(&b, "- [%s docs](%s)\n\n", systemName, docsLink)
+		fmt.Fprintf(&b, "- [%s docs](%s)\n\n", name, docsLink)
 	}
 
 	fmt.Fprintf(&b, "Version: %s\n", config.Version)
 
-	c.Data(http.StatusOK, "text/markdown; charset=utf-8", []byte(b.String()))
+	c.Data(http.StatusOK, "text/plain; charset=utf-8", []byte(b.String()))
 }

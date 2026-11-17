@@ -27,11 +27,8 @@ func SetWebRouter(router *gin.Engine, buildFS embed.FS, indexPage []byte) {
 		controller.Favicon(buildFS)(c)
 	})
 
-	// llms.txt：面向 AI 工具的机器可读说明，无需认证，需在静态资源中间件之前注册
-	router.GET("/llms.txt", func(c *gin.Context) {
-		c.Header("Cache-Control", "public, max-age=3600") // 1小时缓存
-		controller.LlmsTxt(c)
-	})
+	// Registered before the static file middleware.
+	registerAgentDocs(router)
 
 	spaIndex := func(c *gin.Context) {
 		c.Header("Cache-Control", "no-cache")
@@ -59,6 +56,21 @@ func SetWebRouter(router *gin.Engine, buildFS embed.FS, indexPage []byte) {
 		}
 		spaIndex(c)
 	})
+}
+
+// registerAgentDocs serves /llms.txt and /skill.md (AGENT-5): machine-readable notes for AI tools
+// and agents, rendered from site settings only, no sign-in, cacheable for a few minutes. They name
+// the site's address, which falls back to the request's host, so caches keep them apart by it.
+func registerAgentDocs(router *gin.Engine) {
+	agentDoc := func(handler gin.HandlerFunc) gin.HandlerFunc {
+		return func(c *gin.Context) {
+			c.Header("Cache-Control", "public, max-age=300")
+			c.Header("Vary", "Host, X-Forwarded-Proto")
+			handler(c)
+		}
+	}
+	router.GET("/llms.txt", agentDoc(controller.LlmsTxt))
+	router.GET("/skill.md", agentDoc(controller.SkillMd))
 }
 
 // skipStaticFiles runs limit only for requests that static.Serve("/", fs) would not answer from
