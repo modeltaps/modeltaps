@@ -30,6 +30,7 @@ import { ISSUE_FILTERS, NO_TAG, STATUS_FILTERS, channelMatches, groupChannelsByT
 import useBatchActions from './useBatchActions';
 import { checkChannelDrift, fetchAllChannels, fetchChannelMetrics, fetchGroupOptions, fetchModels, manageChannel } from './channelApi';
 import { fetchAllocation, saveAllocation } from '../Allocation/allocationApi';
+import { listSupplies } from '../ModelInfo/supply/supplyApi';
 import {
   joinPosition,
   moveAfter,
@@ -455,12 +456,41 @@ export default function Channel() {
     }
   ];
 
-  const onCreated = ({ ids, type, name, summary }) => {
-    setCreated({ ids, type, name, summary });
+  const onCreated = ({ ids, type, name, summary, supplies }) => {
+    setCreated({ ids, type, name, summary, supplies });
     setHighlightIds(new Set(ids));
     navigate(withType(admin.providers(), selectedType ? type : 0));
     reload();
   };
+
+  // A new channel's names the catalog lacks are attached to public models by a background sync a
+  // few seconds after creation, so the banner re-counts the channel's supplies for a while.
+  const createdKey = created?.ids.join(',');
+  useEffect(() => {
+    if (!createdKey || !supplyRouting) return undefined;
+    const ids = createdKey.split(',');
+    let stop = false;
+    let rounds = 0;
+    const count = async () => {
+      try {
+        const lists = await Promise.all(ids.map((id) => listSupplies({ channel_id: id })));
+        if (stop || lists.some((r) => !r?.success)) return;
+        const total = lists.reduce((n, r) => n + (r.data?.length || 0), 0);
+        setCreated((c) => (c && c.ids.join(',') === createdKey && c.supplies !== total ? { ...c, supplies: total } : c));
+      } catch {
+        // A failed count keeps the number shown.
+      }
+    };
+    const timer = setInterval(() => {
+      rounds += 1;
+      if (rounds > 30) clearInterval(timer);
+      else count();
+    }, 2000);
+    return () => {
+      stop = true;
+      clearInterval(timer);
+    };
+  }, [createdKey, supplyRouting]);
 
   if (legacyId) return <Navigate to={admin.providers(legacyId)} replace />;
 
