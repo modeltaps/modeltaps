@@ -182,7 +182,7 @@ storage:
     accessKeyId: ""         # AccessKeyId
     accessKeySecret: ""     # AccessKeySecret
     bucketName: ""          # bucket 名称
-    cdnurl: ""              # CDN 访问地址
+    cdnurl: ""              # 公开访问地址（CDN 或 R2 公开域名），留空时用 endpoint/bucketName
     expirationDays: 0       # 写入对象 Expires 头的天数，0 表示不写；不会删除文件
   smms:
     secret: ""             # SM.MS API secret

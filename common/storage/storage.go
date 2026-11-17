@@ -83,9 +83,6 @@ func InitS3Storage() {
 		return
 	}
 	cdnurl := viper.GetString("storage.s3.cdnurl")
-	if cdnurl == "" {
-		cdnurl = endpoint
-	}
 
 	expirationDays := viper.GetInt("storage.s3.expirationDays")
 

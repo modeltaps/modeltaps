@@ -44,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   B2 accept uploads. Set the new `storage.s3.region`, or leave it empty: it is derived from
   standard AWS, Backblaze B2 and Wasabi endpoints and stays `auto` otherwise, as Cloudflare R2
   expects.
+- S3 image links without `storage.s3.cdnurl` include the bucket name
+  (`<endpoint>/<bucket>/<key>`). They pointed at `<endpoint>/<key>`, which does not exist.
 
 ### Security
 

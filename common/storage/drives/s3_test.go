@@ -116,7 +116,7 @@ func TestS3RegionFromEndpoint(t *testing.T) {
 	}
 }
 
-// 已存在的对象直接返回 URL，不再上传；未配置 CDN 时用 endpoint 拼 URL。
+// 已存在的对象直接返回 URL，不再上传；未配置 CDN 时按路径风格拼 <endpoint>/<bucket>/<key>。
 func TestS3UploadSkipsExistingObject(t *testing.T) {
 	fake := &fakeS3{existing: true}
 	srv := httptest.NewServer(fake)
@@ -127,10 +127,23 @@ func TestS3UploadSkipsExistingObject(t *testing.T) {
 	if err != nil {
 		t.Fatalf("upload failed: %v", err)
 	}
-	if !strings.HasPrefix(url, srv.URL+"/") {
-		t.Fatalf("url = %q, want endpoint prefix", url)
+	if want := srv.URL + "/bucket/" + time.Now().Format("2006-01-02") + "/a.png"; url != want {
+		t.Fatalf("url = %q, want %q", url, want)
 	}
 	if len(fake.puts) != 0 {
 		t.Fatalf("expected no PUT for an existing object, got %d", len(fake.puts))
+	}
+}
+
+func TestS3UploadLinkBase(t *testing.T) {
+	cases := []struct{ endpoint, cdnurl, want string }{
+		{"https://acct.r2.cloudflarestorage.com", "https://pub-x.r2.dev/", "https://pub-x.r2.dev"},
+		{"https://s3.us-west-2.amazonaws.com/", "", "https://s3.us-west-2.amazonaws.com/bucket"},
+		{"s3.us-west-004.backblazeb2.com", "", "https://s3.us-west-004.backblazeb2.com/bucket"},
+	}
+	for _, c := range cases {
+		if got := NewS3Upload(c.endpoint, "", "ak", "sk", "bucket", c.cdnurl, 0).CustomDomain; got != c.want {
+			t.Errorf("endpoint %q cdnurl %q: link base = %q, want %q", c.endpoint, c.cdnurl, got, c.want)
+		}
 	}
 }

@@ -28,7 +28,7 @@ storage: # 存储设置 (可选,主要用于图片生成，有些供应商不提
   s3: # AwsS3协议
     endpoint: "" # Endpoint（地域节点）,比如https://xxxxxx.r2.cloudflarestorage.com
     region: "" # 签名地域，比如 us-east-1；留空时从 AWS、Backblaze B2、Wasabi 的 endpoint 推导，其他（如 Cloudflare R2）用 auto
-    cdnurl: "" # 公共访问域名，比如https://pub-xxxxx.r2.dev，如果不配置则使用endpoint
+    cdnurl: "" # 公共访问域名，比如https://pub-xxxxx.r2.dev，不配置时使用 endpoint/bucketName（需要 Bucket 允许公开读取）
     bucketName: "" # Bucket名称，比如zerodeng-superai
     accessKeyId: "" # accessKeyId
     accessKeySecret: "" # accessKeySecret

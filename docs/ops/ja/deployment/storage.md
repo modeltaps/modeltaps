@@ -28,7 +28,7 @@ storage: # ストレージ設定（任意。主に画像生成向け。URL を�
   s3: # AWS S3 互換プロトコル
     endpoint: "" # Endpoint（リージョンのエンドポイント）。例：https://xxxxxx.r2.cloudflarestorage.com
     region: "" # 署名リージョン。例：us-east-1。空の場合は AWS、Backblaze B2、Wasabi の endpoint から導出し、それ以外（Cloudflare R2 など）は auto を使います
-    cdnurl: "" # 公開アクセス用ドメイン。例：https://pub-xxxxx.r2.dev。未設定の場合は endpoint を使用します
+    cdnurl: "" # 公開アクセス用ドメイン。例：https://pub-xxxxx.r2.dev。未設定の場合は endpoint/bucketName を使用します（バケットの公開読み取りが必要です）
     bucketName: "" # バケット名。例：zerodeng-superai
     accessKeyId: "" # accessKeyId
     accessKeySecret: "" # accessKeySecret

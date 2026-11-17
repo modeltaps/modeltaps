@@ -28,7 +28,7 @@ storage: # Storage settings (optional; mainly for image generation — some prov
   s3: # AWS S3 protocol
     endpoint: "" # Endpoint (regional node), e.g. https://xxxxxx.r2.cloudflarestorage.com
     region: "" # Signing region, e.g. us-east-1; when empty it is derived from AWS, Backblaze B2 and Wasabi endpoints, and is auto otherwise (Cloudflare R2)
-    cdnurl: "" # Public access domain, e.g. https://pub-xxxxx.r2.dev; falls back to endpoint when unset
+    cdnurl: "" # Public access domain, e.g. https://pub-xxxxx.r2.dev; falls back to endpoint/bucketName when unset (the bucket must allow public reads)
     bucketName: "" # Bucket name, e.g. zerodeng-superai
     accessKeyId: "" # accessKeyId
     accessKeySecret: "" # accessKeySecret

@@ -25,11 +25,16 @@ type S3Upload struct {
 
 // NewS3Upload builds the driver. The region goes into the SigV4 signature: an empty region is
 // derived from an AWS, Backblaze B2 or Wasabi endpoint and is "auto" otherwise, which is what
-// Cloudflare R2 expects.
+// Cloudflare R2 expects. Links use cdnurl when set and <endpoint>/<bucket> otherwise.
 func NewS3Upload(endpoint, region, accessKeyId, accessKeySecret, bucketName, cdnurl string, expirationDays int) *S3Upload {
-	_cdnurl := cdnurl
+	// Without a CDN, objects are served path-style from the endpoint: <endpoint>/<bucket>/<key>.
+	_cdnurl := strings.TrimRight(strings.TrimSpace(cdnurl), "/")
 	if _cdnurl == "" {
-		_cdnurl = endpoint
+		base := strings.TrimRight(strings.TrimSpace(endpoint), "/")
+		if !strings.Contains(base, "://") {
+			base = "https://" + base
+		}
+		_cdnurl = base + "/" + bucketName
 	}
 	region = strings.TrimSpace(region)
 	if region == "" {
