@@ -1843,7 +1843,9 @@
     "smtp_test_incomplete": "Fill in the mail server and port first",
     "smtp_test_failed": "The test email was not sent: {{reason}}",
     "smtp_managed": "Mail sending is set in the deployment (smtp.url) and cannot be changed here",
-    "supply_intake_rules_invalid": "The intake rules are not valid: {{message}}"
+    "supply_intake_rules_invalid": "The intake rules are not valid: {{message}}",
+    "channel_base_url_needs_key": "Only the root user can change the base URL without entering the key again. Enter the key to save the new address.",
+    "channel_copy_key_mismatch": "Only the root user can copy a key to a channel with a different type or base URL."
   },
   "channelOAuth": {
     "tip": {

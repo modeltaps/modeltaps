@@ -109,6 +109,9 @@ func AddChannel(c *gin.Context) {
 			common.APIRespondWithError(c, http.StatusOK, getErr)
 			return
 		}
+		if rejectCopyKeyMismatch(c, source, &channel) {
+			return
+		}
 		channel.Key = source.Key
 		if channel.ManageKey == nil {
 			channel.ManageKey = source.ManageKey
@@ -256,6 +259,9 @@ func UpdateChannel(c *gin.Context) {
 		return
 	}
 	oldChannel, getErr := model.GetChannelById(channel.Id)
+	if getErr == nil && rejectBaseURLMoveWithoutKey(c, oldChannel, &channel, channel.Key != "") {
+		return
+	}
 	if getErr != nil || oldChannel.Tag != channel.Tag || (channel.Tag != "" && oldChannel.Type != channel.Type) {
 		if err = model.CheckTagTypeConsistency(channel.Tag, channel.Type, channel.Id); err != nil {
 			common.APIRespondWithError(c, http.StatusOK, err)

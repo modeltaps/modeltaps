@@ -33,6 +33,10 @@ const (
 	APICodeChannelTagTypeMismatch        = "channel_tag_type_mismatch"
 	APICodeChannelTagInvalidSettingType  = "channel_tag_invalid_setting_type"
 	APICodeChannelTagInvalidStatus       = "channel_tag_invalid_status"
+	// A non-root admin moved a channel's key to another address without entering the key again.
+	APICodeChannelBaseURLNeedsKey = "channel_base_url_needs_key"
+	// A non-root admin copied a channel's key to a channel with another type or address.
+	APICodeChannelCopyKeyMismatch = "channel_copy_key_mismatch"
 
 	// Channel OAuth (ClaudeCode / Codex). The provider's own text goes in params.reason.
 	APICodeChannelOAuthSessionExpired    = "channel_oauth_session_expired"

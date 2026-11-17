@@ -1759,7 +1759,9 @@
     "smtp_test_incomplete": "请先填写邮件服务器和端口",
     "smtp_test_failed": "测试邮件没发出去：{{reason}}",
     "smtp_managed": "发信设置由部署配置（smtp.url）管理，不能在这里修改",
-    "supply_intake_rules_invalid": "上新规则无效：{{message}}"
+    "supply_intake_rules_invalid": "上新规则无效：{{message}}",
+    "channel_base_url_needs_key": "只有超级管理员能在不重填 key 的情况下修改接口地址。请重新填写 key 后再保存新地址。",
+    "channel_copy_key_mismatch": "只有超级管理员能把 key 复制到类型或接口地址不同的渠道。"
   },
   "channelOAuth": {
     "tip": {

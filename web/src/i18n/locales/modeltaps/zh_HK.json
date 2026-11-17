@@ -1759,7 +1759,9 @@
     "smtp_test_incomplete": "請先填寫郵件伺服器和連接埠",
     "smtp_test_failed": "測試郵件沒發出去：{{reason}}",
     "smtp_managed": "發信設定由部署設定（smtp.url）管理，不能在這裡修改",
-    "supply_intake_rules_invalid": "上新規則無效：{{message}}"
+    "supply_intake_rules_invalid": "上新規則無效：{{message}}",
+    "channel_base_url_needs_key": "只有超級管理員能在不重填 key 的情況下修改接口地址。請重新填寫 key 後再儲存新地址。",
+    "channel_copy_key_mismatch": "只有超級管理員能把 key 複製到類型或接口地址不同的渠道。"
   },
   "channelOAuth": {
     "tip": {
