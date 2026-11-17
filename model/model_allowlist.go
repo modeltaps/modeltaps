@@ -113,7 +113,7 @@ func TokenAvailableModels(token *Token) ([]string, error) {
 	sort.Strings(models)
 	setting := token.Setting.Data()
 	models = FilterModelsByTokenSetting(&setting, models)
-	if token.CreatedBy > 0 && token.CreatedBy != token.UserId {
+	if tokenIsOrganizationToken(token) {
 		guardrail, err := CacheGetOrgMemberGuardrail(token.UserId, token.CreatedBy)
 		if err != nil {
 			return nil, err

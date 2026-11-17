@@ -40,6 +40,11 @@ func GetOrgTokensList(c *gin.Context) {
 	if role == model.OrgRoleMember {
 		createdBy = c.GetInt("id")
 	}
+	// created_by=-1 lists the keys the organization owns (ORG-16); the shadow account id stays
+	// on the server.
+	if params.CreatedBy == -1 {
+		params.CreatedBy = org.ShadowUserId
+	}
 	tokens, statusCounts, err := model.ListOrgTokens(org.ShadowUserId, createdBy, &params)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
@@ -106,16 +111,47 @@ func GetOrgTokenModels(c *gin.Context) {
 	respondTokenModels(c, token)
 }
 
-// AddOrgToken 组织上下文创建令牌:user_id 指向影子账户,created_by 记录实际创建成员
+// Owners of an organization API key, as the create request names them (ORG-16).
+const (
+	orgTokenOwnerMember       = "member"
+	orgTokenOwnerOrganization = "organization"
+)
+
+// addOrgTokenRequest is a new organization API key plus who owns it: the member creating it (the
+// default) or the organization, whose keys keep working when that member leaves.
+type addOrgTokenRequest struct {
+	model.Token
+	Owner string `json:"owner"`
+}
+
+// AddOrgToken 组织上下文创建令牌:user_id 指向影子账户,created_by 记录实际创建成员;
+// 组织所有的 key(ORG-16)created_by 为影子账户,仅 Owner/Admin 可创建
 func AddOrgToken(c *gin.Context) {
 	org, operatorRole := getOrgFromContext(c)
 	userId := c.GetInt("id")
-	token := model.Token{}
-	if err := c.ShouldBindJSON(&token); err != nil {
+	req := addOrgTokenRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
-	cleanToken, err := newOrgToken(org, userId, operatorRole, c.GetInt("role"), &token)
+	orgOwned := false
+	switch req.Owner {
+	case "", orgTokenOwnerMember:
+	case orgTokenOwnerOrganization:
+		if !isOrgAdmin(operatorRole) {
+			common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenOrgOwnedAdminOnly, "Only organization owners and admins can manage API keys owned by the organization", nil)
+			return
+		}
+		orgOwned = true
+	default:
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "owner must be member or organization", nil)
+		return
+	}
+	creatorId := userId
+	if orgOwned {
+		creatorId = org.ShadowUserId
+	}
+	cleanToken, err := newOrgToken(org, creatorId, operatorRole, c.GetInt("role"), &req.Token)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
@@ -124,7 +160,11 @@ func AddOrgToken(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
-	model.RecordOrgAudit(org.Id, userId, "token.create", fmt.Sprintf("Created organization API key %s (ID: %d)", cleanToken.Name, cleanToken.Id))
+	detail := fmt.Sprintf("Created organization API key %s (ID: %d)", cleanToken.Name, cleanToken.Id)
+	if orgOwned {
+		detail = fmt.Sprintf("Created organization API key %s (ID: %d), owned by the organization", cleanToken.Name, cleanToken.Id)
+	}
+	model.RecordOrgAudit(org.Id, userId, "token.create", detail)
 	// Same shape as the personal endpoint: the console shows the new key once, right away.
 	respondCreatedTokenKey(c, cleanToken, userId)
 }
@@ -132,6 +172,8 @@ func AddOrgToken(c *gin.Context) {
 // newOrgToken checks what a member asked for in a new organization API key and returns the key to
 // insert: owned by the organization's shadow account, created_by the member, within the member's
 // model access (ORG-15). Shared by the console's create and the device flow's approval (AGENT-7).
+// userId is the shadow account for a key the organization owns (ORG-16): only the organization
+// layers of model access apply to it.
 func newOrgToken(org *model.Organization, userId int, operatorRole string, userRole int, token *model.Token) (*model.Token, error) {
 	if len(token.Name) > 30 {
 		return nil, common.NewAPIError(common.APICodeTokenNameTooLong, "API key name is too long", nil)
@@ -199,7 +241,7 @@ func ResetOrgTokenKey(c *gin.Context) {
 		return
 	}
 	userId := c.GetInt("id")
-	if token.CreatedBy != userId {
+	if !canHandOverOrgToken(c, token) {
 		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenKeyResetNotCreator, "Only the member who created this API key can reset it", nil)
 		return
 	}
@@ -342,6 +384,52 @@ func DeleteOrgToken(c *gin.Context) {
 		return
 	}
 	model.RecordOrgAudit(org.Id, c.GetInt("id"), "token.delete", fmt.Sprintf("Deleted organization API key %s (ID: %d)", token.Name, token.Id))
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+	})
+}
+
+// canHandOverOrgToken reports whether the operator may get a working secret of the key (reset it,
+// hand it to an agent): the member who created it, or for a key the organization owns, its owners
+// and admins (ORG-16). Nobody gets to see another member's key (SEC-47).
+func canHandOverOrgToken(c *gin.Context, token *model.Token) bool {
+	if model.TokenIsOrgOwned(token) {
+		_, role := getOrgFromContext(c)
+		return isOrgAdmin(role)
+	}
+	return token.CreatedBy == c.GetInt("id")
+}
+
+// TransferOrgTokenToOrganization makes a member's organization API key owned by the organization
+// (ORG-16, owners and admins): it no longer follows the member, so removing them, their leaving or
+// a ban leaves it working, and no member budget or model list applies. The key keeps its status
+// and secret: whoever already holds the secret can still use it until the key is reset.
+func TransferOrgTokenToOrganization(c *gin.Context) {
+	org, role := getOrgFromContext(c)
+	if !isOrgAdmin(role) {
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenOrgOwnedAdminOnly, "Only organization owners and admins can manage API keys owned by the organization", nil)
+		return
+	}
+	id, err := strconv.Atoi(c.Param("token_id"))
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	token, err := getOrgTokenForOperator(c, id)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	if !model.TokenIsOrgOwned(token) {
+		formerMember := token.CreatedBy
+		if err := model.TransferOrgTokensToOrganization(org, []int{token.Id}); err != nil {
+			common.APIRespondWithError(c, http.StatusOK, err)
+			return
+		}
+		model.RecordOrgAudit(org.Id, c.GetInt("id"), "token.transfer",
+			fmt.Sprintf("Made organization API key %s (ID: %d) owned by the organization (created by member %d)", token.Name, token.Id, formerMember))
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

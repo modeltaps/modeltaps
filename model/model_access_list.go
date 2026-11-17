@@ -366,7 +366,7 @@ func ValidateOrgTokenModelAccess(org *Organization, creatorUserId int, operatorR
 	if err := validateAllowlistSize(limit.Models); err != nil {
 		return err
 	}
-	member, err := GetOrganizationMember(org.Id, creatorUserId)
+	member, err := orgKeyMember(org, creatorUserId)
 	if err != nil {
 		return common.NewAPIError(common.APICodeOrgUserNotMember, "this user is not a member of the organization", nil)
 	}
@@ -396,6 +396,16 @@ func ValidateOrgTokenModelAccess(org *Organization, creatorUserId int, operatorR
 		return errModelAccessUncovered("token", missing)
 	}
 	return nil
+}
+
+// orgKeyMember is the member an organization API key is checked against: the member who created it,
+// or, for a key the organization owns (created_by is the shadow account, ORG-16), an empty member,
+// so only the organization layers apply.
+func orgKeyMember(org *Organization, creatorUserId int) (*OrganizationMember, error) {
+	if creatorUserId > 0 && creatorUserId == org.ShadowUserId {
+		return &OrganizationMember{OrganizationId: org.Id, UserId: creatorUserId}, nil
+	}
+	return GetOrganizationMember(org.Id, creatorUserId)
 }
 
 // memberAllowlist is the member layer: the member override when set, else the organization default.
@@ -491,7 +501,7 @@ func GetOrgModelAccessScope(org *Organization, memberUserId int) (*OrgModelAcces
 		MemberModels:   []string{},
 	}
 	scope.EffectiveMember = nonNil(orgDefaultAllowlist(org, lists))
-	if memberUserId > 0 {
+	if memberUserId > 0 && memberUserId != org.ShadowUserId {
 		member, err := GetOrganizationMember(org.Id, memberUserId)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {

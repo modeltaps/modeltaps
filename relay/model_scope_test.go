@@ -77,16 +77,23 @@ func TestFilterModelsByOrgGuardrail(t *testing.T) {
 		}
 	}
 
-	// 个人令牌（created_by 为 0 或等于 user_id）不加载守护数据，原样返回
+	// 个人令牌（created_by 为 0）不加载守护数据，原样返回
 	loaded = nil
-	for _, c := range []*gin.Context{orgTokenContext(7, 0), orgTokenContext(7, 7)} {
-		got, err := filterModelsByOrgGuardrail(c, all)
-		if err != nil || len(got) != len(all) {
-			t.Fatalf("个人令牌应原样返回, got %v err %v", got, err)
-		}
+	got, err = filterModelsByOrgGuardrail(orgTokenContext(7, 0), all)
+	if err != nil || len(got) != len(all) {
+		t.Fatalf("个人令牌应原样返回, got %v err %v", got, err)
 	}
 	if loaded != nil {
 		t.Fatal("个人令牌不应加载组织守护数据")
+	}
+
+	// 组织所有的 key（created_by 为影子账户，ORG-16）按组织层过滤，守护以影子账户自身加载
+	got, err = filterModelsByOrgGuardrail(orgTokenContext(100, 100), all)
+	if err != nil || len(got) == len(all) {
+		t.Fatalf("组织所有的 key 应按组织层过滤, got %v err %v", got, err)
+	}
+	if len(loaded) != 2 || loaded[0] != 100 || loaded[1] != 100 {
+		t.Fatalf("组织所有的 key 应以 (影子账户, 影子账户) 加载守护, got %v", loaded)
 	}
 }
 

@@ -32,8 +32,8 @@ func getOrgKeyQuota(orgId int, token *model.Token) (remainQuota int, usedQuota i
 	if !token.UnlimitedQuota {
 		return token.RemainQuota, token.UsedQuota, token.ExpiredTime
 	}
-	if token.CreatedBy > 0 {
-		if budget, err := model.GetOrgMemberBudget(orgId, token.CreatedBy); err == nil && budget != nil {
+	if memberId := model.TokenOrgMemberId(token); memberId > 0 {
+		if budget, err := model.GetOrgMemberBudget(orgId, memberId); err == nil && budget != nil {
 			return max(budget.Budget.Limit-budget.Used, 0), budget.Used, token.ExpiredTime
 		}
 	}

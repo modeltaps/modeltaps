@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Organization API keys can be owned by the organization instead of a member. Owners and admins
+  pick **Owner: Organization** when creating a key, or make a member's key owned by the
+  organization from its panel. Such keys keep working when members are removed, leave or are
+  banned; the organization's model access and the key's own limits apply, no member budget or
+  member model list. Removing a member can keep their keys this way instead of disabling them, and
+  organization usage lists these requests as "Organization (no member)".
+
 ### Changed
 
 - The built-in official prices include `gpt-image-1.5`, `chatgpt-image-latest` ($8 image in, $5

@@ -84,9 +84,10 @@ func (q *Quota) accrueOrganizationBudget(delta int) {
 	}
 }
 
-// isOrgToken 组织令牌判定:userId 为影子账户,createdBy 为实际成员(同 GetLogMeta 散点③)
+// isOrgToken 组织令牌判定:userId 为影子账户,createdBy 为实际成员;组织所有的 key(ORG-16)
+// createdBy 就是影子账户,守护只含组织层。个人令牌 createdBy 恒为 0。
 func (q *Quota) isOrgToken() bool {
-	return q.createdBy > 0 && q.createdBy != q.userId
+	return q.createdBy > 0
 }
 
 // checkOrgMemberGuardrails 组织令牌执行成员级限制(规格 §3.5):模型白名单 + 周期预算。

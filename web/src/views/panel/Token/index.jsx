@@ -20,6 +20,7 @@ import { showError, useIsReliable, useIsAdmin } from 'utils/common';
 import { UserContext } from 'contexts/UserContext';
 import { useOrg } from 'contexts/OrgContext';
 import { isOrgAdminRole } from '@/components/chrome/nav-config';
+import { ORG_OWNED_CREATOR_FILTER, isOrgOwnedToken } from './orgOwned';
 import usePaginatedList from 'hooks/usePaginatedList';
 import {
   BatchBar,
@@ -206,6 +207,9 @@ export default function Token() {
   const [freshSecrets, setFreshSecrets] = useState({});
   const rememberSecret = (id, key) => id && key && setFreshSecrets((prev) => ({ ...prev, [id]: key }));
   const [resetTarget, setResetTarget] = useState(null);
+  // A member's key an owner or admin is making owned by the organization (ORG-16).
+  const [transferTarget, setTransferTarget] = useState(null);
+  const [transferring, setTransferring] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [revealed, setRevealed] = useState(null);
   const myId = useSelector((state) => state.account.user?.id);
@@ -227,7 +231,10 @@ export default function Token() {
       ? [
           {
             ...CREATOR_FIELD,
-            options: Object.entries(orgMemberNames).map(([id, name]) => ({ value: id, label: name }))
+            options: [
+              { value: ORG_OWNED_CREATOR_FILTER, labelKey: 'apiKey.owner.organization' },
+              ...Object.entries(orgMemberNames).map(([id, name]) => ({ value: id, label: name }))
+            ]
           }
         ]
       : [];
@@ -511,8 +518,27 @@ export default function Token() {
   const canResetKey = (item) => {
     if (!item || isPlaygroundToken(item)) return false;
     if (isAdminSearch) return item.user_id === myId;
-    if (isOrgContext) return item.created_by === myId;
+    if (isOrgContext) return isOrgOwnedToken(item) ? isOrgAdminRole(orgRole) : item.created_by === myId;
     return true;
+  };
+
+  const confirmTransfer = async () => {
+    if (!transferTarget || transferring) return;
+    setTransferring(true);
+    try {
+      const res = await API.post(`/api/token/${transferTarget.id}/transfer`);
+      const { success, message } = res.data;
+      if (success) {
+        toast.success(t('apiKey.owner.transferred'));
+        setReloadKey((k) => k + 1);
+        handleRefresh();
+        setTransferTarget(null);
+      } else showError(message);
+    } catch {
+      // surfaced globally
+    } finally {
+      setTransferring(false);
+    }
   };
 
   const confirmReset = async () => {
@@ -764,6 +790,7 @@ export default function Token() {
             onToggleStatus={onToggleStatus}
             onResetKey={setResetTarget}
             canResetKey={canResetKey}
+            onTransferToOrg={isOrgContext && isOrgAdminRole(orgRole) ? setTransferTarget : undefined}
             onCopyText={copyText}
             onDelete={setDeleteTarget}
             onShowUsage={setUsageTarget}
@@ -783,6 +810,7 @@ export default function Token() {
             baseUrl={apiAddresses[0]?.url}
             onCopy={copyText}
             allowManagement={!isOrgContext}
+            allowOrgOwned={isOrgContext && isOrgAdminRole(orgRole)}
           />
         )}
 
@@ -817,6 +845,23 @@ export default function Token() {
               </Button>
               <Button variant="destructive" onClick={() => runBatch('delete')} disabled={batchBusy}>
                 {t('token_index.delete')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!transferTarget} onOpenChange={(o) => !o && setTransferTarget(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('apiKey.owner.transferTitle', { name: transferTarget?.name || '' })}</DialogTitle>
+              <DialogDescription>{t('apiKey.owner.transferConfirm')}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setTransferTarget(null)}>
+                {t('token_index.cancel')}
+              </Button>
+              <Button onClick={confirmTransfer} disabled={transferring}>
+                {t('apiKey.owner.transfer')}
               </Button>
             </DialogFooter>
           </DialogContent>

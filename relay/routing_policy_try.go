@@ -261,7 +261,7 @@ func usePersonalBilling(c *gin.Context) error {
 	if err != nil {
 		return err
 	}
-	c.Set("token_created_by", userId)
+	c.Set("token_created_by", 0) // personal: created_by > 0 means an organization key
 	c.Set("token_id", 0)
 	c.Set("token_unlimited_quota", true)
 	c.Set("group", group)

@@ -39,6 +39,7 @@ import { isPlaygroundToken } from 'utils/playgroundToken';
 import { relativeTime } from 'utils/relativeTime';
 import { workbench } from 'routes/paths';
 import { useScopedNavigate } from 'routes/useScope';
+import { isOrgOwnedToken } from './orgOwned';
 
 // The short form of a key shown next to its name, from its stored hint ("sk-a****Rc6g"): the
 // prefix and the last four characters. The full key is never listed (SEC-47).
@@ -478,6 +479,7 @@ export default function TokenTable({
               cell: (c) => {
                 const createdBy = c.row.original.created_by;
                 if (!createdBy) return '-';
+                if (isOrgOwnedToken(c.row.original)) return <Badge variant="secondary">{t('apiKey.owner.organization')}</Badge>;
                 return <Badge variant="outline">{orgMemberNames[createdBy] || `#${createdBy}`}</Badge>;
               }
             }

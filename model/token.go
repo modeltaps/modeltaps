@@ -395,8 +395,8 @@ func GetTokenModel(key string) (token *Token, err error) {
 	// organization is enabled. The member who created it is checked the same way a personal key's
 	// owner is, so banning or deleting that user stops the key at once (SEC-61). The cached flag
 	// is the one banning and deleting already clear (ClearUserGroupAndTokensCache).
-	if tokenIsOrganizationToken(token) {
-		if creatorEnabled, err := CacheIsUserEnabled(token.CreatedBy); err != nil || !creatorEnabled {
+	if memberId := TokenOrgMemberId(token); memberId > 0 {
+		if creatorEnabled, err := CacheIsUserEnabled(memberId); err != nil || !creatorEnabled {
 			return nil, ErrTokenInvalid
 		}
 	}
@@ -811,9 +811,26 @@ func PreConsumeTokenQuota(tokenId int, quota int) (err error) {
 }
 
 // tokenIsOrganizationToken reports whether the token charges an organization's shadow account:
-// its user_id is the shadow account and created_by the member who created it.
+// its user_id is the shadow account and created_by the member who created it, or the shadow
+// account itself for a key the organization owns (ORG-16). Personal keys keep created_by 0.
 func tokenIsOrganizationToken(token *Token) bool {
-	return token.CreatedBy > 0 && token.CreatedBy != token.UserId
+	return token.CreatedBy > 0
+}
+
+// TokenIsOrgOwned reports whether an organization API key belongs to the organization rather than
+// to a member (ORG-16): created_by is the shadow account. No member layer (budget, model list)
+// applies to it, and removing or banning a member leaves it working.
+func TokenIsOrgOwned(token *Token) bool {
+	return token.CreatedBy > 0 && token.CreatedBy == token.UserId
+}
+
+// TokenOrgMemberId is the member an organization API key is attributed to, or 0 for a personal key
+// and a key the organization owns.
+func TokenOrgMemberId(token *Token) int {
+	if token.CreatedBy > 0 && token.CreatedBy != token.UserId {
+		return token.CreatedBy
+	}
+	return 0
 }
 
 func sendQuotaWarningEmail(userId int, userQuota int, noMoreQuota bool) {

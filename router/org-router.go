@@ -81,6 +81,9 @@ func setOrgRouter(apiRouter *gin.RouterGroup) {
 			orgAdminRoute.PUT("/members/:user_id", controller.UpdateOrgMemberRole)
 			orgAdminRoute.DELETE("/members/:user_id", controller.RemoveOrgMember)
 
+			// Make a member's organization API key owned by the organization (ORG-16)
+			orgAdminRoute.POST("/token/:token_id/transfer", controller.TransferOrgTokenToOrganization)
+
 			// 成员预算与模型白名单(T5)
 			orgAdminRoute.GET("/members/:user_id/limits", controller.GetOrgMemberLimits)
 			orgAdminRoute.PUT("/members/:user_id/limits", controller.UpdateOrgMemberLimits)

@@ -1791,6 +1791,7 @@
     "channel_copy_key_mismatch": "只有超级管理员能把 key 复制到类型、接口地址、区域等其他设置或代理不同的渠道。",
     "token_key_reset_managed": "试用区 API Key 由系统管理，不能重置",
     "token_key_reset_not_creator": "只有创建该 API Key 的成员才能重置它",
+    "token_org_owned_admin_only": "只有组织所有者和管理员才能管理组织所有的 API Key",
     "usage_alert_tiers_invalid": "用量提醒档位要填 1 到 100 的百分比，用逗号分隔；填 0 表示关闭",
     "api_key_not_allowed": "API Key 只能调用模型接口，管理接口请使用管理密钥",
     "management_key_expired": "该管理密钥已过期",
@@ -4019,6 +4020,17 @@
       "pasteHint": "密钥只显示一次，请在此粘贴以填入命令。它只在本页面使用，不会保存。",
       "pasteMismatch": "这不是该 API Key 的密钥（{{hint}}）。",
       "pasteForModels": "在上方粘贴密钥后，即可列出它在该协议下可调用的模型。"
+    },
+    "owner": {
+      "label": "归属",
+      "member": "我",
+      "organization": "组织",
+      "memberHint": "Key 跟随你：你离开组织时会停用，你的预算和模型权限对它生效。",
+      "organizationHint": "用于服务和共用工具：成员离开不受影响。只有所有者和管理员能查看和管理。",
+      "transfer": "改为组织所有",
+      "transferTitle": "将 {{name}} 改为组织所有？",
+      "transferConfirm": "这个 Key 不再跟随创建人：创建人离开后它照常可用，创建人的预算和模型权限也不再对它生效。之后只有所有者和管理员能查看和管理。创建人仍持有这个 Key，需要收回的请重置。",
+      "transferred": "API Key 已改为组织所有"
     },
     "type": {
       "label": "类型",

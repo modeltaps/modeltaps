@@ -34,7 +34,7 @@ type OrgMemberSetting struct {
 // OrgMemberGuardrail relay 执行点使用的成员限制视图(已合并组织级白名单缺省)
 type OrgMemberGuardrail struct {
 	OrganizationId int
-	MemberId       int // org_members.id,预算累计的批量更新 key
+	MemberId       int // org_members.id,预算累计的批量更新 key;组织所有的 key(ORG-16)为 0,无成员预算
 	MemberUserId   int
 	Budget         *QuotaResetSetting
 	BudgetUsed     int
@@ -141,6 +141,8 @@ func invalidateOrgGuardrailCacheAllMembers(org *Organization) {
 		logger.SysError(fmt.Sprintf("failed to list org members for guardrail cache invalidation (org=%d): %s", org.Id, err.Error()))
 		return
 	}
+	// Keys the organization owns load their guardrail under the shadow account itself (ORG-16).
+	userIds = append(userIds, org.ShadowUserId)
 	for _, userId := range userIds {
 		invalidateOrgMemberGuardrailCache(org.ShadowUserId, userId)
 	}
@@ -151,7 +153,8 @@ func getOrgMemberGuardrailFromDB(shadowUserId int, memberUserId int) (*OrgMember
 	if err := DB.Select("id", "setting", "approved_models").Where("shadow_user_id = ?", shadowUserId).First(&org).Error; err != nil {
 		return nil, err
 	}
-	member, err := GetOrganizationMember(org.Id, memberUserId)
+	org.ShadowUserId = shadowUserId
+	member, err := orgKeyMember(&org, memberUserId)
 	if err != nil {
 		return nil, err
 	}

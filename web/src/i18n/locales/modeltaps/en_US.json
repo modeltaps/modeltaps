@@ -1875,6 +1875,7 @@
     "channel_copy_key_mismatch": "Only the root user can copy a key to a channel with a different type, base URL, region or other settings, or proxy.",
     "token_key_reset_managed": "The playground API key is managed by the system and cannot be reset",
     "token_key_reset_not_creator": "Only the member who created this API key can reset it",
+    "token_org_owned_admin_only": "Only organization owners and admins can manage API keys owned by the organization",
     "usage_alert_tiers_invalid": "Usage alert tiers must be percentages from 1 to 100 separated by commas, or 0 to turn them off",
     "api_key_not_allowed": "API keys can only call model APIs. Use a management key for the management API.",
     "management_key_expired": "This management key has expired",
@@ -4125,6 +4126,17 @@
       "pasteHint": "Keys are shown only once, so paste it here to fill it in. It is only used on this page and is not saved.",
       "pasteMismatch": "This is not the key of this entry ({{hint}}).",
       "pasteForModels": "Paste the key above to list the models it can call with this protocol."
+    },
+    "owner": {
+      "label": "Owner",
+      "member": "Me",
+      "organization": "Organization",
+      "memberHint": "The key follows you: it is disabled when you leave the organization, and your budget and model access apply.",
+      "organizationHint": "For services and shared tools: it keeps working when members leave. Only owners and admins can see and manage it.",
+      "transfer": "Make owned by the organization",
+      "transferTitle": "Make {{name}} owned by the organization?",
+      "transferConfirm": "The key will no longer follow its creator: it keeps working when they leave, and their budget and model access no longer apply. Only owners and admins can see and manage it. The creator still holds the key; reset it if you want to take it back.",
+      "transferred": "The API key is now owned by the organization"
     },
     "type": {
       "label": "Type",

@@ -21,6 +21,7 @@ import { buildTokenActions } from './TokenTable';
 import { TOKEN_TABS } from './tokenTabs';
 import { fetchToken, saveToken } from './tokenData';
 import { useScopedNavigate } from 'routes/useScope';
+import { isOrgOwnedToken } from './orgOwned';
 
 // Right-side panel of one API key. Header: the enable switch (applies at once) and a menu with
 // test command, client setup, usage, logs and delete. Tabs: Overview, Basics, Access, Advanced;
@@ -44,6 +45,7 @@ export default function TokenPanel({
   onToggleStatus,
   onResetKey,
   canResetKey,
+  onTransferToOrg,
   onCopyText,
   onDelete,
   onShowUsage,
@@ -100,6 +102,9 @@ export default function TokenPanel({
       return cache[key];
     };
   }, [currentOrgId, adminMode]);
+
+  // Owners and admins can make a member's key owned by the organization (ORG-16).
+  const transferToOrg = token && onTransferToOrg && !isOrgOwnedToken(token) ? () => onTransferToOrg(token) : undefined;
 
   // Reset is offered on the key row of the overview, not in this menu.
   const resetKey = token && onResetKey && !playground && (!canResetKey || canResetKey(token)) ? () => onResetKey(token) : undefined;
@@ -172,6 +177,7 @@ export default function TokenPanel({
       }}
       ctx={{
         t,
+        transferToOrg,
         adminMode,
         userGroup,
         groupOptions,
@@ -209,6 +215,7 @@ TokenPanel.propTypes = {
   onToggleStatus: PropTypes.func.isRequired,
   onResetKey: PropTypes.func,
   canResetKey: PropTypes.func,
+  onTransferToOrg: PropTypes.func,
   onCopyText: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onShowUsage: PropTypes.func.isRequired,

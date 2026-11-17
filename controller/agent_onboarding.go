@@ -125,7 +125,7 @@ func CreateOrgTokenPairingCode(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
-	if token.CreatedBy != c.GetInt("id") {
+	if !canHandOverOrgToken(c, token) {
 		common.APIRespondWithCode(c, http.StatusOK, common.APICodePairingCodeNotCreator, "Only the member who created this API key can hand it to an agent", nil)
 		return
 	}
@@ -172,7 +172,7 @@ func recordAgentClaimAudit(token *model.Token, via string) {
 	if orgId == 0 {
 		return
 	}
-	actor := token.CreatedBy
+	actor := model.TokenOrgMemberId(token) // 0 for a key the organization owns (ORG-16)
 	model.RecordOrgAudit(orgId, actor, "token.agent_claim", fmt.Sprintf("An agent claimed organization API key %s (ID: %d) via %s", token.Name, token.Id, via))
 }
 

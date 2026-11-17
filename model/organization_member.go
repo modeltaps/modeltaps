@@ -299,6 +299,13 @@ func UpdateOrganizationMemberRole(organizationId int, targetUserId int, newRole 
 // 删除成员关系并禁用其创建的全部组织令牌(tokens.user_id=影子账户 AND created_by=该成员),
 // 事务提交后清理令牌 Redis 缓存。Owner 不可经本函数移除(须先转移所有权)
 func RemoveOrganizationMember(org *Organization, targetUserId int) error {
+	return RemoveOrganizationMemberWithKeys(org, targetUserId, false)
+}
+
+// RemoveOrganizationMemberWithKeys removes a member like RemoveOrganizationMember; with keepKeys the
+// member's organization API keys become owned by the organization (ORG-16) instead of being
+// disabled, so the services that use them keep working.
+func RemoveOrganizationMemberWithKeys(org *Organization, targetUserId int, keepKeys bool) error {
 	if targetUserId == 0 {
 		return errors.New("user id must not be empty")
 	}
@@ -318,11 +325,38 @@ func RemoveOrganizationMember(org *Organization, targetUserId int) error {
 		if err := memberTokens.Pluck("key_hash", &tokenKeys).Error; err != nil {
 			return err
 		}
+		update := map[string]interface{}{
+			"status":        config.TokenStatusDisabled,
+			"accessed_time": utils.GetTimestamp(),
+		}
+		if keepKeys {
+			update = map[string]interface{}{"created_by": org.ShadowUserId}
+		}
 		return tx.Model(&Token{}).Where("user_id = ? AND created_by = ?", org.ShadowUserId, targetUserId).
-			Updates(map[string]interface{}{
-				"status":        config.TokenStatusDisabled,
-				"accessed_time": utils.GetTimestamp(),
-			}).Error
+			Updates(update).Error
+	})
+	if err != nil {
+		return err
+	}
+	invalidateTokenCaches(tokenKeys)
+	return nil
+}
+
+// TransferOrgTokensToOrganization makes organization API keys owned by the organization (ORG-16):
+// created_by becomes the shadow account, so no member layer applies and the keys no longer follow
+// a member. Status and secret are kept. Keys of other accounts are left alone.
+func TransferOrgTokensToOrganization(org *Organization, tokenIds []int) error {
+	if len(tokenIds) == 0 {
+		return nil
+	}
+	var tokenKeys []string
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		scope := tx.Model(&Token{}).Where("user_id = ? AND id IN ?", org.ShadowUserId, tokenIds)
+		if err := scope.Pluck("key_hash", &tokenKeys).Error; err != nil {
+			return err
+		}
+		return tx.Model(&Token{}).Where("user_id = ? AND id IN ?", org.ShadowUserId, tokenIds).
+			Update("created_by", org.ShadowUserId).Error
 	})
 	if err != nil {
 		return err

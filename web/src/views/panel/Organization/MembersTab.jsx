@@ -20,6 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -88,6 +89,8 @@ export default function MembersTab({ orgId, role }) {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [removeTarget, setRemoveTarget] = useState(null);
+  // Keep the member's organization API keys working, owned by the organization (ORG-16).
+  const [keepKeys, setKeepKeys] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [limitsTarget, setLimitsTarget] = useState(null);
 
@@ -223,10 +226,10 @@ export default function MembersTab({ orgId, role }) {
     if (!removeTarget) return;
     setRemoving(true);
     try {
-      const res = await API.delete(`/api/org/${orgId}/members/${removeTarget.user_id}`);
+      const res = await API.delete(`/api/org/${orgId}/members/${removeTarget.user_id}`, { params: keepKeys ? { keep_keys: true } : {} });
       const { success, message } = res.data;
       if (success) {
-        showSuccess(t('orgPage.members.removeSuccess'));
+        showSuccess(t(keepKeys ? 'orgPage.members.removeSuccessKeptKeys' : 'orgPage.members.removeSuccess'));
         fetchData();
       } else {
         showError(message);
@@ -236,6 +239,7 @@ export default function MembersTab({ orgId, role }) {
     } finally {
       setRemoving(false);
       setRemoveTarget(null);
+      setKeepKeys(false);
     }
   };
 
@@ -583,16 +587,39 @@ export default function MembersTab({ orgId, role }) {
         }}
       />
 
-      <Dialog open={!!removeTarget} onOpenChange={(o) => !o && setRemoveTarget(null)}>
+      <Dialog
+        open={!!removeTarget}
+        onOpenChange={(o) => {
+          if (o) return;
+          setRemoveTarget(null);
+          setKeepKeys(false);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('orgPage.members.removeTitle')}</DialogTitle>
             <DialogDescription>
-              {t('orgPage.members.removeConfirm', { name: removeTarget?.display_name || removeTarget?.username || removeTarget?.user_id })}
+              {t(keepKeys ? 'orgPage.members.removeConfirmKeepKeys' : 'orgPage.members.removeConfirm', {
+                name: removeTarget?.display_name || removeTarget?.username || removeTarget?.user_id
+              })}
             </DialogDescription>
           </DialogHeader>
+          <label htmlFor="remove-keep-keys" className="flex cursor-pointer items-start gap-2.5 px-6 pb-2 text-sm">
+            <Checkbox id="remove-keep-keys" className="mt-0.5" checked={keepKeys} onCheckedChange={(v) => setKeepKeys(v === true)} />
+            <span>
+              <span className="font-medium">{t('orgPage.members.keepKeys')}</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">{t('orgPage.members.keepKeysHint')}</span>
+            </span>
+          </label>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRemoveTarget(null)} disabled={removing}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRemoveTarget(null);
+                setKeepKeys(false);
+              }}
+              disabled={removing}
+            >
               {t('common.cancel')}
             </Button>
             <Button variant="destructive" onClick={confirmRemove} disabled={removing}>

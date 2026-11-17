@@ -20,6 +20,7 @@ import ModelAccessField, { accessPayload, accessValueFrom } from '@/components/m
 import { GroupBadge, nextResetTime, relativeTime, statusInfo } from './TokenTable';
 import { EXPIRY_PRESETS, RESET_PERIODS, expiryFromPreset, quotaDraft, quotaPatch } from './tokenData';
 import { AgentHandover } from './PairingCode';
+import { isOrgOwnedToken } from './orgOwned';
 
 // Tabs of the API key panel (see components/objects/ObjectPanel), laid out like a gateway's
 // virtual-key details: Overview is read-only (the key, what it spent, what it can reach); Basics
@@ -171,7 +172,20 @@ function OverviewBody({ object: token, ctx }) {
           </InfoRow>
           <InfoRow label={t('token_index.createdTime')}>{timestamp2string(token.created_time)}</InfoRow>
           {ctx.orgMemberNames && token.created_by > 0 && (
-            <InfoRow label={t('org.creator')}>{ctx.orgMemberNames[token.created_by] || `#${token.created_by}`}</InfoRow>
+            <InfoRow label={t('apiKey.owner.label')}>
+              {isOrgOwnedToken(token) ? (
+                t('apiKey.owner.organization')
+              ) : (
+                <span className="inline-flex flex-wrap items-center gap-x-2">
+                  {ctx.orgMemberNames[token.created_by] || `#${token.created_by}`}
+                  {ctx.transferToOrg && (
+                    <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={ctx.transferToOrg}>
+                      {t('apiKey.owner.transfer')}
+                    </Button>
+                  )}
+                </span>
+              )}
+            </InfoRow>
           )}
           {ctx.adminMode && (
             <InfoRow label={t('apiKey.panel.owner')} mono>

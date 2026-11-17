@@ -206,6 +206,7 @@ const (
 	APICodeTokenQuotaExhaustedCannotEnable  = "token_quota_exhausted_cannot_enable"
 	APICodeTokenKeyResetManaged             = "token_key_reset_managed"
 	APICodeTokenKeyResetNotCreator          = "token_key_reset_not_creator"
+	APICodeTokenOrgOwnedAdminOnly           = "token_org_owned_admin_only"
 
 	// Handing an API key to an agent (AGENT-7): pairing codes and the device authorization flow.
 	// The /api/agent/* endpoints an agent calls also send the code as `error` (with

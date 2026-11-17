@@ -29,7 +29,11 @@ import { exportOrgUsageCsv } from './orgUsageExport';
 const RANGE_DAYS = { '7d': 7, '30d': 30, '90d': 90 };
 
 const DIMENSIONS = [
-  { key: 'member', labelKey: 'org.usage.byMember', nameOf: (r) => r.username || (r.member_id ? `#${r.member_id}` : '-') },
+  {
+    key: 'member',
+    labelKey: 'org.usage.byMember',
+    nameOf: (r, t) => r.username || (r.member_id ? `#${r.member_id}` : t('orgPage.usage.noMember'))
+  },
   { key: 'token', labelKey: 'org.usage.byToken', nameOf: (r) => r.token_name || '-' },
   { key: 'model', labelKey: 'org.usage.byModel', nameOf: (r) => r.model_name || '-' }
 ];
@@ -57,7 +61,7 @@ function DimensionTable({ t, rows, nameOf }) {
             ) : (
               rows.map((r, idx) => (
                 <TableRow key={idx}>
-                  <TableCell className="font-medium">{nameOf(r)}</TableCell>
+                  <TableCell className="font-medium">{nameOf(r, t)}</TableCell>
                   <TableCell className="text-right font-mono tabular-nums">{renderNumber(r.request_count)}</TableCell>
                   <TableCell className="text-right font-mono tabular-nums">
                     {renderNumber((r.prompt_tokens || 0) + (r.completion_tokens || 0))}
@@ -79,7 +83,7 @@ function DimensionTable({ t, rows, nameOf }) {
         <div className="md:hidden flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
           {rows.map((r, idx) => (
             <div key={idx} className="p-3.5">
-              <div className="mb-2 text-sm font-medium">{nameOf(r)}</div>
+              <div className="mb-2 text-sm font-medium">{nameOf(r, t)}</div>
               <dl className="flex flex-col divide-y divide-border/60">
                 <div className="flex items-start justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
                   <dt className="shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">{t('org.usage.requests')}</dt>

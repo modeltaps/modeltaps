@@ -43,7 +43,8 @@ function toolLabel(t, client) {
 }
 
 const DIMENSIONS = [
-  { key: 'member', i18n: 'byMember', nameOf: (r) => r.username || (r.member_id ? `#${r.member_id}` : '-') },
+  // Requests without a member come from keys the organization owns (ORG-16).
+  { key: 'member', i18n: 'byMember', nameOf: (r, t) => r.username || (r.member_id ? `#${r.member_id}` : t('orgPage.usage.noMember')) },
   { key: 'token', i18n: 'byToken', nameOf: (r) => r.token_name || '-' },
   { key: 'model', i18n: 'byModel', nameOf: (r) => r.model_name || '-' },
   { key: 'client', i18n: 'byTool', nameOf: (r, t) => toolLabel(t, r.client) }
@@ -137,7 +138,7 @@ function DimensionTable({ t, rows, nameOf, onRowClick }) {
               sorted.map((r, idx) => (
                 <TableRow key={idx}>
                   <TableCell className="py-1.5 font-medium">
-                    {onRowClick ? (
+                    {onRowClick && r.member_id > 0 ? (
                       <button
                         type="button"
                         className="text-left underline-offset-2 hover:text-foreground hover:underline"
@@ -171,7 +172,7 @@ function DimensionTable({ t, rows, nameOf, onRowClick }) {
           {sorted.map((r, idx) => (
             <div key={idx} className="p-3.5">
               <div className="mb-2 text-sm font-medium">
-                {onRowClick ? (
+                {onRowClick && r.member_id > 0 ? (
                   <button type="button" className="underline-offset-2 hover:underline" onClick={() => onRowClick(r)}>
                     {nameOf(r)}
                   </button>

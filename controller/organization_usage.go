@@ -323,7 +323,8 @@ func ExportOrgUsageAnalytics(c *gin.Context) {
 		if stat.MemberId > 0 {
 			return fmt.Sprintf("#%d", stat.MemberId)
 		}
-		return ""
+		// Requests without a member come from keys the organization owns (ORG-16).
+		return "Organization (no member)"
 	}
 
 	if err := writeDimension("Date", byDate, func(s *model.OrgUsageStatistic) string { return s.Date }); err != nil {

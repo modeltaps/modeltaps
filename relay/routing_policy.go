@@ -139,7 +139,7 @@ func routingScope(c *gin.Context) model.RoutingScope {
 	scope := model.PlatformRoutingScope
 	userId, memberId := c.GetInt("id"), c.GetInt("token_created_by")
 	if config.UserRoutingPolicyEnabled && userId > 0 {
-		if memberId > 0 && memberId != userId {
+		if memberId > 0 { // organization keys, the ones the organization owns included (ORG-16)
 			if guardrail, err := cacheGetOrgMemberGuardrailFn(userId, memberId); err == nil && guardrail != nil {
 				scope = model.OrganizationRoutingScope(guardrail.OrganizationId)
 			}

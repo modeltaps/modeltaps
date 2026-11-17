@@ -196,13 +196,13 @@ func TestTokenAvailableModels(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	personal := &Token{UserId: owner.Id, CreatedBy: owner.Id}
+	personal := &Token{UserId: owner.Id}
 	got, err := TokenAvailableModels(personal)
 	if err != nil || !reflect.DeepEqual(got, []string{"claude-x", "gpt-a", "gpt-b"}) {
 		t.Fatalf("personal token without limit: got %v err %v", got, err)
 	}
 
-	limited := &Token{UserId: owner.Id, CreatedBy: owner.Id, Group: "vip"}
+	limited := &Token{UserId: owner.Id, Group: "vip"}
 	s := limited.Setting.Data()
 	s.Limits.LimitModelSetting = LimitModelSetting{Enabled: true, Models: []string{"GPT-*"}}
 	limited.Setting.Set(s)

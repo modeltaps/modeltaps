@@ -455,12 +455,19 @@ func RemoveOrgMember(c *gin.Context) {
 		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOrgMemberRoleHigherRemove, "you cannot remove members with a higher role than yours", nil)
 		return
 	}
-	if err := model.RemoveOrganizationMember(org, targetUserId); err != nil {
+	// keep_keys: the member's organization API keys become owned by the organization (ORG-16)
+	// instead of being disabled.
+	keepKeys := c.Query("keep_keys") == "true"
+	if err := model.RemoveOrganizationMemberWithKeys(org, targetUserId, keepKeys); err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
+	outcome := "their organization API keys have been disabled"
+	if keepKeys {
+		outcome = "their organization API keys are now owned by the organization"
+	}
 	model.RecordOrgAudit(org.Id, operatorId, "org.member_remove",
-		fmt.Sprintf("Removed member %d (previous role %s); their organization API keys have been disabled", targetUserId, target.Role))
+		fmt.Sprintf("Removed member %d (previous role %s); %s", targetUserId, target.Role, outcome))
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",

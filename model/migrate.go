@@ -628,6 +628,30 @@ func postMigrations() []*gormigrate.Migration {
 		migrateAccessTokensToManagementKeys(),
 		migrateMailServices(),
 		backfillChannelFeeRates(),
+		clearPersonalTokenCreatedBy(),
+	}
+}
+
+// clearPersonalTokenCreatedBy keeps created_by 0 on personal API keys. A key whose created_by is its
+// own owner is one the organization owns (ORG-16), which only an organization's shadow account can
+// be; any other key with created_by = user_id is cleared so it is not taken for an organization key.
+func clearPersonalTokenCreatedBy() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202611171601",
+		Migrate: func(tx *gorm.DB) error {
+			var shadowIds []int
+			if err := tx.Model(&Organization{}).Unscoped().Pluck("shadow_user_id", &shadowIds).Error; err != nil {
+				return err
+			}
+			query := tx.Model(&Token{}).Unscoped().Where("created_by > 0 AND created_by = user_id")
+			if len(shadowIds) > 0 {
+				query = query.Where("user_id NOT IN ?", shadowIds)
+			}
+			return query.Update("created_by", 0).Error
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return nil
+		},
 	}
 }
 

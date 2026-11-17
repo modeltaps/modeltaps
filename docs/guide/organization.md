@@ -33,6 +33,7 @@ There are three roles in an organization:
 | Call models against the organization quota pool | ✅ | ✅ | ✅ |
 | Create and manage their own organization API keys | ✅ | ✅ | ✅ |
 | View organization API keys (all) | — | ✅ | ✅ |
+| Create and manage API keys owned by the organization | — | ✅ | ✅ |
 | View organization usage | Own (subject to settings) | Everyone | Everyone |
 | Invite members, create member accounts | — | ✅ | ✅ |
 | Change member roles, remove members | — | ✅ | ✅ |
@@ -95,7 +96,7 @@ If someone does not have a site account yet, an admin can click **New member** a
 
 ### Changing roles and removing members
 
-A member row's actions let you change their role. Removing a member requires a second confirmation, and **that member's organization API keys are disabled**.
+A member row's actions let you change their role. Removing a member requires a second confirmation, and **that member's organization API keys are disabled** — unless you check **Keep their API keys working**, which makes them [owned by the organization](#api-keys-owned-by-the-organization) instead.
 
 ### Member budgets and model allowlists
 
@@ -135,8 +136,19 @@ Once you switch to the organization context, the **API Keys** page manages organ
 Organization API keys draw on the organization quota pool and are subject to your member budget and [model access](#model-access).
 
 ::: warning API keys follow membership
-When a member is removed or leaves the organization, their organization API keys are disabled; when an organization is deleted, its API keys stop working too.
+When a member is removed or leaves the organization, their organization API keys are disabled; when an organization is deleted, its API keys stop working too. Keys owned by the organization are the exception, see below.
 :::
+
+### API keys owned by the organization
+
+A key a member creates belongs to that member. For a service, a CI job or a tool the whole team shares, owners and admins can choose **Owner: Organization** when creating the key instead. Such a key:
+
+- keeps working when members are removed, leave or are banned;
+- draws on the organization quota pool within the organization's model access, and is limited by its own spending limit and **Access** settings — no member budget or member model list applies;
+- can only be seen and managed by owners and admins, who can also reset it;
+- shows **Organization** as its creator in the key list; the creator filter has an **Organization** option.
+
+Owners and admins can also turn a member's key into one the organization owns: open the key and click **Make owned by the organization** next to its owner. The member who created it still holds the secret, so reset the key if you want to take it back. A key that was disabled when its member left stays disabled after the change; enable it again from its panel.
 
 Opening the **Top up** page in the organization context — from the balance row at the bottom of the sidebar — shows a notice at the top that the top-up will go into the organization quota pool:
 
@@ -154,7 +166,7 @@ The **Usage** tab shows the organization's spend in detail:
 - below that, tables break the data down **by member / by API key / by model / by tool**, listing request count, quota consumed, and input and output tokens; click a column header to sort. **By tool** groups requests by the coding agent that sent them (Claude Code, Codex, OpenCode, Gemini CLI, other coding agents), see [Coding agents](/guide/api#coding-agents); requests from anything else are grouped as **Other**;
 - the **Tool** filter next to the time range narrows every card, table and chart to one coding agent;
 - the dimension switcher also has **by date**, showing a daily trend chart that can toggle between request count, spend and tokens;
-- click a member in the **by member** table to drill down into that member's API key details.
+- click a member in the **by member** table to drill down into that member's API key details; requests made with keys owned by the organization are listed as **Organization (no member)**.
 
 How much ordinary members can see depends on the **Members can view everyone's usage** switch in the organization settings: when it is on, members can view everyone's usage; when it is off, they only see their own data and the member filter is not shown.
 
@@ -174,7 +186,7 @@ Click **Save** to apply changes.
 
 ### Danger zone
 
-- **Leave organization**: any member may leave voluntarily and returns to the personal context; **your organization API keys will be disabled**. An owner must transfer ownership before leaving. Ordinary members have no settings page — use **Leave organization** at the top right of the **Overview** tab instead.
+- **Leave organization**: any member may leave voluntarily and returns to the personal context; **your organization API keys will be disabled** (an owner or admin can make them owned by the organization afterwards). An owner must transfer ownership before leaving. Ordinary members have no settings page — use **Leave organization** at the top right of the **Overview** tab instead.
 - **Transfer ownership** (owner only): pick one of the organization's admins as the new owner; after the transfer you are demoted to admin. If the organization has no admin yet, promote a member to admin first.
 - **Delete organization** (owner only): you must type the organization name exactly to confirm. After deletion the organization and its API keys are disabled, and the action cannot be undone.
 

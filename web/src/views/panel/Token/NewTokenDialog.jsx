@@ -38,9 +38,27 @@ const NAME_ERRORS = new Set(['token_name_taken', 'token_name_reserved', 'token_n
 // code (AGENT-7), which an agent redeems for the key so it never goes through the chat. `onCreated` receives { id, key } of a
 // new API key so the page can still build its test command and client setup while it stays open;
 // `onManagementCreated` is called after a management key was created.
-export default function NewTokenDialog({ onClose, onCreated, onManagementCreated, onOpen, baseUrl, onCopy, allowManagement = false }) {
+// `allowOrgOwned` (organization owners and admins) adds the owner choice: the member creating the
+// key, or the organization, whose keys keep working when members leave (ORG-16).
+export default function NewTokenDialog({
+  onClose,
+  onCreated,
+  onManagementCreated,
+  onOpen,
+  baseUrl,
+  onCopy,
+  allowManagement = false,
+  allowOrgOwned = false
+}) {
   const { t } = useTranslation();
-  const [form, setForm] = useState({ type: 'api', name: '', quota: '', expiry: 'never', managementExpiry: MANAGEMENT_EXPIRY_DEFAULT });
+  const [form, setForm] = useState({
+    type: 'api',
+    name: '',
+    quota: '',
+    expiry: 'never',
+    managementExpiry: MANAGEMENT_EXPIRY_DEFAULT,
+    owner: 'member'
+  });
   const [busy, setBusy] = useState(false);
   const [nameError, setNameError] = useState('');
   const [created, setCreated] = useState(null);
@@ -79,7 +97,8 @@ export default function NewTokenDialog({ onClose, onCreated, onManagementCreated
       backup_group: '',
       unlimited_quota,
       remain_quota,
-      setting: structuredClone(DEFAULT_SETTING)
+      setting: structuredClone(DEFAULT_SETTING),
+      ...(allowOrgOwned ? { owner: form.owner } : {})
     });
     const { success, message, data, code } = res.data;
     if (success) {
@@ -224,6 +243,22 @@ export default function NewTokenDialog({ onClose, onCreated, onManagementCreated
                   }}
                 />
               </Field>
+              {allowOrgOwned && !management && (
+                <Field label={t('apiKey.owner.label')} htmlFor="nt-owner" hint={t(`apiKey.owner.${form.owner}Hint`)}>
+                  <Select value={form.owner} onValueChange={(v) => setForm((f) => ({ ...f, owner: v }))}>
+                    <SelectTrigger id="nt-owner" data-testid="key-owner-trigger">
+                      <span className="truncate">{t(`apiKey.owner.${form.owner}`)}</span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['member', 'organization'].map((owner) => (
+                        <SelectItem key={owner} value={owner}>
+                          {t(`apiKey.owner.${owner}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
               {management ? (
                 expiryField
               ) : (
@@ -267,5 +302,6 @@ NewTokenDialog.propTypes = {
   onOpen: PropTypes.func.isRequired,
   baseUrl: PropTypes.string,
   onCopy: PropTypes.func.isRequired,
-  allowManagement: PropTypes.bool
+  allowManagement: PropTypes.bool,
+  allowOrgOwned: PropTypes.bool
 };

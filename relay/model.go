@@ -61,7 +61,7 @@ var errOrgGuardrailUnavailable = errors.New("organization member guardrail is te
 func filterModelsByOrgGuardrail(c *gin.Context, models []string) ([]string, error) {
 	userId := c.GetInt("id")
 	createdBy := c.GetInt("token_created_by")
-	if createdBy <= 0 || createdBy == userId {
+	if createdBy <= 0 { // 个人令牌;组织所有的 key(createdBy 为影子账户)仍按组织层过滤
 		return models, nil
 	}
 	guardrail, err := cacheGetOrgMemberGuardrailFn(userId, createdBy)
