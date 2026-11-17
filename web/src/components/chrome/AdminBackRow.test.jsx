@@ -8,7 +8,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { rememberAdminReturn } from 'utils/adminReturn';
 import { AdminBackRow } from './Sidebar';
 
-// Platform admin has no space switcher; its row names the context and leads back to the workbench.
+// Platform admin has no space switcher; its title row names it and leads back to the workbench.
 
 afterEach(() => {
   cleanup();
@@ -30,8 +30,7 @@ describe('AdminBackRow', () => {
     renderRow();
     const link = screen.getByRole('link', { name: '返回工作台' });
     expect(link.getAttribute('href')).toBe('/panel/log?p=2');
-    expect(link.textContent).toContain('平台管理');
-    expect(link.textContent).toContain('工作台');
+    expect(link.textContent).toBe('平台管理');
   });
 
   it('falls back to the dashboard', () => {

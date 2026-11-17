@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { Link } from 'react-router';
-import { ArrowLeft, Menu, PanelLeft, Search } from 'lucide-react';
+import { Menu, PanelLeft, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils';
@@ -100,13 +100,34 @@ export function SidebarSearch({ collapsed = false, onClick }) {
 // A row back to where the user came from (platform admin and 设置 show it where the workbench has
 // its context switcher, at the same height). Its arrow and text use the columns of the menu rows
 // below, so they line up. Collapsed: the arrow only, with the label as tooltip.
+// The back chevron of back rows, drawn like the iOS one (tall, narrow, semibold stroke). Its viewBox hugs the stroke, so at 1em tall the stroke spans the
+// glyph height of the text next to it (lucide's chevron fills only the middle half of its box).
+export function BackChevron({ className }) {
+  return (
+    <svg
+      viewBox="0 0 9 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={cn('h-[1em] w-[0.5625em] shrink-0', className)}
+    >
+      <path d="M7.5 1.25 1.5 8l6 6.75" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+BackChevron.propTypes = { className: PropTypes.string };
+
 export function BackRow({ to, name, label, collapsed = false, onClick }) {
   if (collapsed) {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
           <Link to={to} onClick={onClick} aria-label={label} className={iconButtonClass.replace('size-8', 'size-9')}>
-            <ArrowLeft className="size-[1.125rem]" />
+            <BackChevron className="text-[1.125rem]" />
           </Link>
         </TooltipTrigger>
         <TooltipContent side="right">{label}</TooltipContent>
@@ -115,7 +136,7 @@ export function BackRow({ to, name, label, collapsed = false, onClick }) {
   }
   return (
     <Link to={to} onClick={onClick} aria-label={label} className={cn(sidebarRow.base, sidebarRow.idle, 'h-9 gap-2.5 px-3 font-medium')}>
-      <ArrowLeft className="size-4 shrink-0 text-muted-foreground group-hover:text-foreground" />
+      <BackChevron className="text-muted-foreground group-hover:text-foreground" />
       <span className="min-w-0 flex-1 truncate">{name}</span>
     </Link>
   );
