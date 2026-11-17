@@ -320,6 +320,14 @@ func TestMigratedOfficialPrices(t *testing.T) {
 		// $8 image in, $30 image out, $5 text in.
 		"gpt-image-2.6-flare": {TokensPriceType, config.ChannelTypeOpenAI, 4, 15,
 			map[string]float64{config.UsageExtraInputTextTokens: 0.625}},
+		// $8 image in, $32 image out, $5 text in, $10 text out.
+		"gpt-image-1.5": {TokensPriceType, config.ChannelTypeOpenAI, 4, 16,
+			map[string]float64{config.UsageExtraInputTextTokens: 0.625, config.UsageExtraOutputTextTokens: 0.3125}},
+		"chatgpt-image-latest": {TokensPriceType, config.ChannelTypeOpenAI, 4, 16,
+			map[string]float64{config.UsageExtraInputTextTokens: 0.625, config.UsageExtraOutputTextTokens: 0.3125}},
+		// $2.50 image in, $8 image out, $2 text in.
+		"gpt-image-1-mini": {TokensPriceType, config.ChannelTypeOpenAI, 1.25, 4,
+			map[string]float64{config.UsageExtraInputTextTokens: 0.8}},
 		// $0.13 / 1M, input only.
 		"text-embedding-3-large": {TokensPriceType, config.ChannelTypeOpenAI, 0.065, 0, nil},
 		"omni-moderation-latest": {TokensPriceType, config.ChannelTypeOpenAI, 0, 0, nil},

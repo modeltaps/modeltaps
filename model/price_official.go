@@ -74,6 +74,14 @@ func openAIImagePrice(imageInput, textInput, imageOutput float64) officialTokenP
 	}
 }
 
+// openAIImageTextPrice is openAIImagePrice for a gpt-image model that also lists a text output
+// price, billed through the output_text_tokens extra.
+func openAIImageTextPrice(imageInput, textInput, imageOutput, textOutput float64) officialTokenPrice {
+	price := openAIImagePrice(imageInput, textInput, imageOutput)
+	price.extra[config.UsageExtraOutputTextTokens] = textOutput
+	return price
+}
+
 // inputOnlyPrice prices a model billed on input only (embeddings, and TTS where input characters
 // are counted as prompt tokens by relay/speech.go).
 func inputOnlyPrice(channelType int, input float64) officialTokenPrice {
@@ -216,6 +224,12 @@ func officialTokenPrices() map[string]officialTokenPrice {
 		"gpt-image-2.5-sunburst-2026-09-08": openAIImagePrice(8, 5, 30),
 		"gpt-image-2.6-flare":               openAIImagePrice(8, 5, 30),
 		"gpt-image-2.6-sunburst":            openAIImagePrice(8, 5, 30),
+		// gpt-image-1.5 and chatgpt-image-latest also list text output at $10; gpt-image-1-mini is $2.50
+		// image in, $2 text in, $8 image out (checked 2026-11-17, "Image generation" table).
+		// gpt-image-1 is no longer listed and keeps its synced price.
+		"gpt-image-1.5":        openAIImageTextPrice(8, 5, 32, 10),
+		"chatgpt-image-latest": openAIImageTextPrice(8, 5, 32, 10),
+		"gpt-image-1-mini":     openAIImagePrice(2.5, 2, 8),
 
 		// Anthropic, USD per 1M tokens: base input, 5m cache writes, 1h cache writes, cache hits, output.
 		// https://platform.claude.com/docs/en/about-claude/pricing

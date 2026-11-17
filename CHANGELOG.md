@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The built-in official prices include `gpt-image-1.5`, `chatgpt-image-latest` ($8 image in, $5
+  text in, $32 image out, $10 text out per 1M tokens) and `gpt-image-1-mini` ($2.50 image in, $2
+  text in, $8 image out). Synced prices billed their image input at the text rate.
 - Own routing policies (personal and organization) are reached only as `policy/<name>`. A bare
   name now always means a managed policy or a model, also when an own policy has the same name,
   so an own policy no longer takes over a managed policy's name. Clients that called an own
