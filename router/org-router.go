@@ -42,6 +42,10 @@ func setOrgRouter(apiRouter *gin.RouterGroup) {
 			orgMemberRoute.PUT("/token", controller.UpdateOrgToken)
 			orgMemberRoute.DELETE("/token/:token_id", controller.DeleteOrgToken)
 			orgMemberRoute.POST("/token/:token_id/reset_key", controller.ResetOrgTokenKey)
+			// Agent handover (AGENT-7): console sessions only. Pairing codes are for the key's creator,
+			// and a device request can be answered with a key of this organization.
+			orgMemberRoute.POST("/token/:token_id/pairing_code", middleware.SessionOnly(), controller.CreateOrgTokenPairingCode)
+			orgMemberRoute.POST("/agent/device/:user_code/approve", middleware.CriticalRateLimit(), middleware.SessionOnly(), controller.ApproveOrgDeviceAuthorization)
 
 			// Model access (ORG-15): read-only view of the approved models, default, member layer and lists
 			orgMemberRoute.GET("/model_access", controller.GetOrgModelAccess)

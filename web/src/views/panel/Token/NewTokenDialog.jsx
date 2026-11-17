@@ -23,6 +23,7 @@ import {
   quotaPatch
 } from './tokenData';
 import { SecretKeyReveal } from './KeySecret';
+import { PairingCodeReveal } from './PairingCode';
 
 // Server answers that belong under the name field rather than in a toast.
 const NAME_ERRORS = new Set(['token_name_taken', 'token_name_reserved', 'token_name_too_long', 'management_key_name_required']);
@@ -33,7 +34,8 @@ const NAME_ERRORS = new Set(['token_name_taken', 'token_name_reserved', 'token_n
 // AGENT-4) takes a name and a required expiry, and calls the management API instead of models;
 // `allowManagement` is off in an organization, where management keys are not created.
 // After creating, the dialog shows the key with copy (and the base URL for an API key). This is
-// the only time the key is shown: only its hash is stored. `onCreated` receives { id, key } of a
+// the only time the key is shown: only its hash is stored. An API key also comes with a pairing
+// code (AGENT-7), which an agent redeems for the key so it never goes through the chat. `onCreated` receives { id, key } of a
 // new API key so the page can still build its test command and client setup while it stays open;
 // `onManagementCreated` is called after a management key was created.
 export default function NewTokenDialog({ onClose, onCreated, onManagementCreated, onOpen, baseUrl, onCopy, allowManagement = false }) {
@@ -82,7 +84,7 @@ export default function NewTokenDialog({ onClose, onCreated, onManagementCreated
     const { success, message, data, code } = res.data;
     if (success) {
       const next = { id: data?.id, key: data?.key ? `sk-${data.key}` : '' };
-      setCreated(next);
+      setCreated({ ...next, pairingCode: data?.pairing_code || '', pairingExpiresAt: data?.pairing_expires_at || 0 });
       onCreated(next);
     } else if (NAME_ERRORS.has(code)) setNameError(message);
     else showError(message);
@@ -153,7 +155,12 @@ export default function NewTokenDialog({ onClose, onCreated, onManagementCreated
                   note={t('apiKey.management.onceNote')}
                 />
               ) : (
-                <SecretKeyReveal secret={created.key} baseUrl={baseUrl} onCopy={onCopy} />
+                <div className="space-y-4">
+                  <SecretKeyReveal secret={created.key} baseUrl={baseUrl} onCopy={onCopy} />
+                  {created.pairingCode && (
+                    <PairingCodeReveal code={created.pairingCode} expiresAt={created.pairingExpiresAt} onCopy={onCopy} />
+                  )}
+                </div>
               )}
             </div>
             <DialogFooter>

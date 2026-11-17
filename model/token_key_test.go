@@ -45,7 +45,7 @@ func legacySignedKey(t *testing.T, tokenID, userID int) string {
 func setupTokenKeyTestDB(t *testing.T) *User {
 	t.Helper()
 	setupOrgTestDB(t)
-	if err := DB.AutoMigrate(&PlaygroundKey{}); err != nil {
+	if err := DB.AutoMigrate(&PlaygroundKey{}, &AgentPairingCode{}, &AgentKeyClaim{}, &AgentDeviceAuthorization{}); err != nil {
 		t.Fatal(err)
 	}
 	return createOrgTestUser(t, "key-owner")

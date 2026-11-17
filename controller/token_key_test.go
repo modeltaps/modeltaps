@@ -44,7 +44,8 @@ func setupKeyTest(t *testing.T) *keyTestEnv {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := testDB.AutoMigrate(&model.User{}, &model.Organization{}, &model.OrganizationAuditLog{}, &model.Token{}, &model.PlaygroundKey{}, &model.Log{}); err != nil {
+	if err := testDB.AutoMigrate(&model.User{}, &model.Organization{}, &model.OrganizationAuditLog{}, &model.Token{}, &model.PlaygroundKey{}, &model.Log{},
+		&model.AgentPairingCode{}, &model.AgentKeyClaim{}, &model.AgentDeviceAuthorization{}); err != nil {
 		t.Fatal(err)
 	}
 	prevDB := model.DB

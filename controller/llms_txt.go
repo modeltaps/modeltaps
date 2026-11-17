@@ -14,8 +14,8 @@ import (
 // 此时用请求自身的 scheme+Host 拼 base URL 更贴近真实部署域名。
 const defaultServerAddress = "http://localhost:3000"
 
-// llmsTxtBaseURL 按 ServerAddress > 请求 Host 的优先级得出对外可访问的根地址（无尾部斜杠）。
-func llmsTxtBaseURL(c *gin.Context) string {
+// publicSiteURL 按 ServerAddress > 请求 Host 的优先级得出对外可访问的根地址（无尾部斜杠）。
+func publicSiteURL(c *gin.Context) string {
 	addr := strings.TrimSpace(config.ServerAddress)
 	if addr != "" && strings.TrimRight(addr, "/") != defaultServerAddress {
 		return strings.TrimRight(addr, "/")
@@ -40,7 +40,7 @@ func llmsTxtBaseURL(c *gin.Context) string {
 
 // LlmsTxt 按 https://llmstxt.org 格式输出本网关的机器可读说明，无需认证。
 func LlmsTxt(c *gin.Context) {
-	base := llmsTxtBaseURL(c)
+	base := publicSiteURL(c)
 	systemName := strings.TrimSpace(config.SystemName)
 	if systemName == "" {
 		systemName = "Modeltaps"

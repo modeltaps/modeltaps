@@ -16,6 +16,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so the scoring setting is hidden. Image, embedding, speech and other models are refused as a
   decision model, and the target and fallback pickers suggest chat models only. The model name
   example for personal and organization policies is now `coder` (called as `policy/coder`).
+- Hand an API key to an agent without pasting it into the chat. Creating an API key also shows a
+  pairing code that the agent redeems at `POST /api/agent/pair` for the key itself: valid for 10
+  minutes, once, for that key only, and void after five wrong tries. Redeeming gives the key a
+  new secret, so only the agent holds a working copy; no plaintext key is ever stored. An agent
+  without a key can use the device authorization flow (RFC 8628): `POST /api/agent/device`
+  returns a code and a link to the console's `/device` page, where the signed-in user sees the
+  client's name, IP address and User-Agent, picks personal or an organization, the spending
+  limit, expiry and models, and approves or denies; the agent polls `POST /api/agent/device/token`
+  (`authorization_pending`, `slow_down`, `access_denied`, `expired_token`) and gets the key once.
+  The key's details show which agent claimed it (time, IP, User-Agent) and issue new pairing
+  codes; resetting a key voids its pending code. Both paths only hand out API keys, never
+  management keys, and are rate limited per IP.
 - Usage alerts for subscription channels (Codex, Claude Code). When a usage window (5 hours, 7
   days) reaches 50%, 75% or 100%, a "subscription usage" notification names the channel, the
   window, the usage and when it resets; each tier is sent once per window period. The tiers are

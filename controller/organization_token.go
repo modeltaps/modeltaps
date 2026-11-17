@@ -82,6 +82,7 @@ func GetOrgToken(c *gin.Context) {
 		setting.BillingTag = nil
 		token.Setting.Set(setting)
 	}
+	model.AttachAgentInfo(token)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -107,45 +108,56 @@ func GetOrgTokenModels(c *gin.Context) {
 
 // AddOrgToken 组织上下文创建令牌:user_id 指向影子账户,created_by 记录实际创建成员
 func AddOrgToken(c *gin.Context) {
-	org, _ := getOrgFromContext(c)
+	org, operatorRole := getOrgFromContext(c)
 	userId := c.GetInt("id")
-	userRole := c.GetInt("role")
 	token := model.Token{}
 	if err := c.ShouldBindJSON(&token); err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
-	if len(token.Name) > 30 {
-		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenNameTooLong, "API key name is too long", nil)
+	cleanToken, err := newOrgToken(org, userId, operatorRole, c.GetInt("role"), &token)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
-	if rejectTokenName(c, token.Name, org.ShadowUserId, 0, false) {
+	if err := cleanToken.Insert(); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
+	}
+	model.RecordOrgAudit(org.Id, userId, "token.create", fmt.Sprintf("Created organization API key %s (ID: %d)", cleanToken.Name, cleanToken.Id))
+	// Same shape as the personal endpoint: the console shows the new key once, right away.
+	respondCreatedTokenKey(c, cleanToken, userId)
+}
+
+// newOrgToken checks what a member asked for in a new organization API key and returns the key to
+// insert: owned by the organization's shadow account, created_by the member, within the member's
+// model access (ORG-15). Shared by the console's create and the device flow's approval (AGENT-7).
+func newOrgToken(org *model.Organization, userId int, operatorRole string, userRole int, token *model.Token) (*model.Token, error) {
+	if len(token.Name) > 30 {
+		return nil, common.NewAPIError(common.APICodeTokenNameTooLong, "API key name is too long", nil)
+	}
+	if err := checkTokenName(token.Name, org.ShadowUserId, 0); err != nil {
+		return nil, err
 	}
 
 	// 分组校验以影子账户(组织)的用户组为准
 	if token.Group != "" {
 		if err := validateTokenGroupForUser(token.Group, org.ShadowUserId); err != nil {
-			common.APIRespondWithError(c, http.StatusOK, err)
-			return
+			return nil, err
 		}
 	}
 	if token.BackupGroup != "" {
 		if err := validateTokenGroupForUser(token.BackupGroup, org.ShadowUserId); err != nil {
-			common.APIRespondWithError(c, http.StatusOK, err)
-			return
+			return nil, err
 		}
 	}
 
 	setting := token.Setting.Data()
 	if err := validateTokenSetting(&setting); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
-		return
+		return nil, err
 	}
-	_, operatorRole := getOrgFromContext(c)
 	if err := model.ValidateOrgTokenModelAccess(org, userId, operatorRole, &setting.Limits.LimitModelSetting); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
-		return
+		return nil, err
 	}
 
 	// 非可信用户不能设置 BillingTag
@@ -153,7 +165,7 @@ func AddOrgToken(c *gin.Context) {
 		setting.BillingTag = nil
 	}
 
-	cleanToken := model.Token{
+	cleanToken := &model.Token{
 		UserId:         org.ShadowUserId,
 		CreatedBy:      userId,
 		Name:           token.Name,
@@ -167,13 +179,7 @@ func AddOrgToken(c *gin.Context) {
 		LogIO:          token.LogIO,
 	}
 	cleanToken.Setting.Set(setting)
-	if err := cleanToken.Insert(); err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
-		return
-	}
-	model.RecordOrgAudit(org.Id, userId, "token.create", fmt.Sprintf("Created organization API key %s (ID: %d)", cleanToken.Name, cleanToken.Id))
-	// Same shape as the personal endpoint: the console shows the new key once, right away.
-	respondNewTokenKey(c, &cleanToken)
+	return cleanToken, nil
 }
 
 // ResetOrgTokenKey gives an organization API key a new secret and returns it once. Only the

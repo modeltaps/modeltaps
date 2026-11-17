@@ -19,6 +19,7 @@ import ModelLimitSelector from './ModelLimitSelector';
 import ModelAccessField, { accessPayload, accessValueFrom } from '@/components/model/ModelAccessField';
 import { GroupBadge, nextResetTime, relativeTime, statusInfo } from './TokenTable';
 import { EXPIRY_PRESETS, RESET_PERIODS, expiryFromPreset, quotaDraft, quotaPatch } from './tokenData';
+import { AgentHandover } from './PairingCode';
 
 // Tabs of the API key panel (see components/objects/ObjectPanel), laid out like a gateway's
 // virtual-key details: Overview is read-only (the key, what it spent, what it can reach); Basics
@@ -179,6 +180,12 @@ function OverviewBody({ object: token, ctx }) {
           )}
         </InfoRows>
       </Section>
+      {/* Which agent holds the key (AGENT-7); a new pairing code hands it to one. */}
+      {!ctx.adminMode && !isPlaygroundToken(token) && (
+        <Section title={t('apiKey.agent.title')}>
+          <AgentHandover token={token} canIssue={Boolean(ctx.resetKey)} onCopy={ctx.onCopyText} />
+        </Section>
+      )}
       {/* Where this key sends requests, so it can be copied right next to the key itself. */}
       <Section title={t('apiKey.list.connect')}>
         <ConnectInfo addresses={apiAddresses} onCopy={ctx.onCopyText} />

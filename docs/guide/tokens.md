@@ -37,6 +37,27 @@ Modeltaps does not store your keys, only a fingerprint (hash) of each one, so a 
 
 Keys created before this change keep working unchanged.
 
+## Handing a key to an agent
+
+Agents that take third-party keys (OpenClaw, Hermes and the like) can connect themselves: tell the agent to read `https://<your site>/skill.md` and set Modeltaps up. That file, served by every Modeltaps site from its own settings, explains the base URLs, how to get a key, how to keep it, how to verify it and what to report back; `/llms.txt` is a short index pointing to it. Neither holds any user data or key.
+
+Don't paste the key into the chat: conversations are stored and synced, and agents with memory may write it down. Give the agent the key one of these two ways instead.
+
+### Pairing code
+
+When you create an API key, the dialog also shows a **pairing code** (`pair-...`). Give the agent the code instead of the key: it redeems it at `POST /api/agent/pair` and receives the key itself.
+
+- A pairing code is valid for 10 minutes, works once and only for that key. Five wrong tries void it.
+- Redeeming gives the key a new secret: the key shown in the dialog stops working, and only the agent holds a working copy.
+- The **Agent** section of the key's details shows when the key was claimed, from which IP address and with which User-Agent. **New pairing code** issues another code (a pending one stops working); in an organization only the member who created the key can do this.
+- **Reset key** voids a pending pairing code, and the agent's copy stops working.
+
+### Device authorization
+
+An agent without a key can ask for one (the OAuth device flow, RFC 8628): it shows you a link to `https://<your site>/device` and a code such as `BCDF-GHJK`. Open the link, sign in, check that the request shows the agent's name, IP address and User-Agent, then choose who the key belongs to (you or an organization you are a member of), its spending limit, expiry and models, and **Approve**. The agent receives the new key on its next check; nothing is shown on the page. A request is open for 15 minutes and is answered once; **Deny** tells the agent no.
+
+Only approve a request you started yourself on an agent you trust. Both ways only ever hand out API keys: management keys cannot be paired or requested, and issuing codes or answering requests needs the signed-in console, never a key.
+
 ## Key types: API keys and management keys
 
 **New API key** first asks for the type:

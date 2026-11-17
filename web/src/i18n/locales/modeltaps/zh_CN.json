@@ -1773,7 +1773,21 @@
     "management_key_name_required": "请填写管理密钥名称",
     "management_key_scope_invalid": "请为管理密钥选择只读或读写",
     "management_key_expiry_required": "管理密钥必须设置一个未来的过期时间",
-    "management_key_expiry_too_long": "管理密钥的有效期最长一年"
+    "management_key_expiry_too_long": "管理密钥的有效期最长一年",
+    "pairing_code_invalid": "配对码无效",
+    "pairing_code_expired": "配对码已过期，请在 API Key 详情里生成新的配对码",
+    "pairing_code_used": "配对码已被使用，请在 API Key 详情里生成新的配对码",
+    "pairing_key_unavailable": "该配对码对应的 API Key 已停用、过期或删除",
+    "pairing_code_managed": "演练场的 API Key 由系统管理，不能交给 Agent",
+    "pairing_code_not_creator": "只有创建该 API Key 的成员才能把它交给 Agent",
+    "authorization_pending": "请求尚未得到答复",
+    "slow_down": "查询太频繁，请拉长查询间隔",
+    "access_denied": "请求已被拒绝",
+    "expired_token": "请求已过期，请重新发起",
+    "invalid_grant": "设备码无效或已被使用",
+    "device_user_code_invalid": "代码无效、已过期或已被处理",
+    "unsupported_grant_type": "不支持的 grant_type",
+    "device_authorization_failed": "创建 API Key 失败，请重试"
   },
   "channelOAuth": {
     "tip": {
@@ -3961,6 +3975,26 @@
       "lastUsed": "{{when}}使用",
       "neverUsed": "从未使用",
       "legacyName": "账户访问令牌"
+    },
+    "pairing": {
+      "label": "配对码",
+      "hint": "把这个配对码而不是密钥交给 Agent：它会按 {{url}} 自行兑换出这把密钥。有效期至 {{time}}，只能兑换一次。",
+      "rotateNote": "Agent 兑换后，这把 API Key 会换上新的密钥：上方显示的密钥随即失效，只有 Agent 手里的那份可用。"
+    },
+    "agent": {
+      "title": "Agent",
+      "claim": "状态",
+      "claimed": "已由 Agent 领取（{{via}}）",
+      "viaPairingCode": "配对码",
+      "viaDeviceFlow": "设备授权",
+      "notClaimed": "尚未由 Agent 领取",
+      "claimedAt": "领取时间",
+      "client": "客户端",
+      "ip": "IP 地址",
+      "userAgent": "User-Agent",
+      "pendingUntil": "待兑换，有效期至 {{time}}",
+      "newCode": "新配对码",
+      "newCodeConfirm": "生成新的配对码？Agent 兑换后，这把 API Key 会换上新的密钥，正在使用的副本随即失效。之前未用的配对码现在作废。"
     }
   },
   "redemptionList": {
@@ -4449,5 +4483,30 @@
       "toolFilter": "工具",
       "toolOther": "其他"
     }
+  },
+  "agentDevice": {
+    "title": "连接 Agent",
+    "description": "有 Agent 申请一把 API Key。输入它显示的代码，核对请求，选好这把 Key 的权限后批准。",
+    "codeLabel": "代码",
+    "lookup": "继续",
+    "requestTitle": "请求",
+    "client": "客户端",
+    "unnamed": "未命名客户端",
+    "ip": "IP 地址",
+    "userAgent": "User-Agent",
+    "requestedAt": "申请时间",
+    "openUntil": "有效期至",
+    "warning": "只批准你自己在信任的 Agent 上发起的请求，不要批准别人发给你的代码。",
+    "owner": "归属",
+    "personal": "个人",
+    "models": "模型",
+    "modelsHint": "留空表示允许这把 Key 能用的全部模型。",
+    "approve": "批准",
+    "deny": "拒绝",
+    "approvedTitle": "已批准",
+    "approvedHint": "Agent 下次查询时会拿到 API Key「{{name}}」。你可以在 API Key 页停用、重置或删除它。",
+    "deniedTitle": "已拒绝",
+    "deniedHint": "已告知 Agent 被拒绝，没有创建 API Key。",
+    "openKeys": "打开 API Key 页"
   }
 }

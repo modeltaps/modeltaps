@@ -1857,7 +1857,21 @@
     "management_key_name_required": "Enter a name for the management key",
     "management_key_scope_invalid": "Choose read-only or read-write for the management key",
     "management_key_expiry_required": "A management key needs an expiry date in the future",
-    "management_key_expiry_too_long": "A management key can be valid for at most one year"
+    "management_key_expiry_too_long": "A management key can be valid for at most one year",
+    "pairing_code_invalid": "The pairing code is invalid",
+    "pairing_code_expired": "The pairing code has expired; issue a new one in the API key’s details",
+    "pairing_code_used": "The pairing code was already used; issue a new one in the API key’s details",
+    "pairing_key_unavailable": "The API key of this pairing code is disabled, expired or deleted",
+    "pairing_code_managed": "The playground API key is managed by the system and cannot be handed to an agent",
+    "pairing_code_not_creator": "Only the member who created this API key can hand it to an agent",
+    "authorization_pending": "The request has not been answered yet",
+    "slow_down": "Checking too often; wait a little longer between checks",
+    "access_denied": "The request was denied",
+    "expired_token": "The request has expired; start again",
+    "invalid_grant": "Invalid or already used device code",
+    "device_user_code_invalid": "This code is invalid, expired or was already answered",
+    "unsupported_grant_type": "Unsupported grant type",
+    "device_authorization_failed": "Failed to create the API key, please try again"
   },
   "channelOAuth": {
     "tip": {
@@ -4067,6 +4081,26 @@
       "lastUsed": "Used {{when}}",
       "neverUsed": "Never used",
       "legacyName": "Account access token"
+    },
+    "pairing": {
+      "label": "Pairing code",
+      "hint": "Give this code to your agent instead of the key: it redeems it for the key itself, following {{url}}. Valid until {{time}}, once.",
+      "rotateNote": "When an agent redeems it, this key gets a new secret: the key shown above stops working and only the agent holds a working copy."
+    },
+    "agent": {
+      "title": "Agent",
+      "claim": "Status",
+      "claimed": "Claimed by an agent {{via}}",
+      "viaPairingCode": "with a pairing code",
+      "viaDeviceFlow": "through device authorization",
+      "notClaimed": "Not claimed by an agent",
+      "claimedAt": "Claimed",
+      "client": "Client",
+      "ip": "IP address",
+      "userAgent": "User-Agent",
+      "pendingUntil": "Waiting, valid until {{time}}",
+      "newCode": "New pairing code",
+      "newCodeConfirm": "Issue a new pairing code? When an agent redeems it, this key gets a new secret and the copies in use stop working. A previous unused code stops working now."
     }
   },
   "redemptionList": {
@@ -4558,5 +4592,30 @@
       "toolFilter": "Tool",
       "toolOther": "Other"
     }
+  },
+  "agentDevice": {
+    "title": "Connect an agent",
+    "description": "An agent asked for an API key. Enter the code it shows, check the request, choose what the key may do, then approve.",
+    "codeLabel": "Code",
+    "lookup": "Continue",
+    "requestTitle": "Request",
+    "client": "Client",
+    "unnamed": "Unnamed client",
+    "ip": "IP address",
+    "userAgent": "User-Agent",
+    "requestedAt": "Requested",
+    "openUntil": "Open until",
+    "warning": "Only approve a request you started on an agent you trust. Never approve a code someone else sent you.",
+    "owner": "Key for",
+    "personal": "Personal",
+    "models": "Models",
+    "modelsHint": "Leave empty to allow every model the key can reach.",
+    "approve": "Approve",
+    "deny": "Deny",
+    "approvedTitle": "Approved",
+    "approvedHint": "The agent receives the key “{{name}}” on its next check. You can disable, reset or delete it under API keys.",
+    "deniedTitle": "Denied",
+    "deniedHint": "The agent was told no. No key was created.",
+    "openKeys": "Open API keys"
   }
 }

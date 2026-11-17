@@ -123,6 +123,7 @@ func GetToken(c *gin.Context) {
 		setting.BillingTag = nil
 		token.Setting.Set(setting)
 	}
+	model.AttachAgentInfo(token)
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -197,25 +198,32 @@ func resetTokenKey(c *gin.Context, token *model.Token) {
 // cannot take them.
 const reservedTokenNamePrefix = "sys_"
 
+// checkTokenName returns why name cannot be stored for an API key of ownerId, or nil: it uses the
+// reserved prefix or another key of the same owner already has it. Usage, logs and today's spend
+// group keys by name, so names are unique per owner.
+func checkTokenName(name string, ownerId, selfId int) error {
+	if strings.HasPrefix(name, reservedTokenNamePrefix) {
+		return common.NewAPIError(common.APICodeTokenNameReserved, "API key names starting with sys_ are reserved", nil)
+	}
+	taken, err := model.TokenNameTaken(ownerId, name, selfId)
+	if err != nil {
+		return err
+	}
+	if taken {
+		return common.NewAPIError(common.APICodeTokenNameTaken, "An API key with this name already exists", nil)
+	}
+	return nil
+}
+
 // rejectTokenName answers the request and returns true when name cannot be stored for an API key
-// of ownerId: it uses the reserved prefix or another key of the same owner already has it. Usage,
-// logs and today's spend group keys by name, so names are unique per owner. Saving a key whose
-// name and owner did not change is always allowed, so keys that already share a name keep working.
+// of ownerId (checkTokenName). Saving a key whose name and owner did not change is always allowed,
+// so keys that already share a name keep working.
 func rejectTokenName(c *gin.Context, name string, ownerId, selfId int, unchanged bool) bool {
 	if unchanged {
 		return false
 	}
-	if strings.HasPrefix(name, reservedTokenNamePrefix) {
-		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenNameReserved, "API key names starting with sys_ are reserved", nil)
-		return true
-	}
-	taken, err := model.TokenNameTaken(ownerId, name, selfId)
-	if err != nil {
+	if err := checkTokenName(name, ownerId, selfId); err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
-		return true
-	}
-	if taken {
-		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenNameTaken, "An API key with this name already exists", nil)
 		return true
 	}
 	return false
@@ -223,49 +231,53 @@ func rejectTokenName(c *gin.Context, name string, ownerId, selfId int, unchanged
 
 func AddToken(c *gin.Context) {
 	userId := c.GetInt("id")
-	userRole := c.GetInt("role")
 	token := model.Token{}
-	err := c.ShouldBindJSON(&token)
+	if err := c.ShouldBindJSON(&token); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	cleanToken, err := newPersonalToken(userId, c.GetInt("role"), &token)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
-	if len(token.Name) > 30 {
-		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenNameTooLong, "API key name is too long", nil)
+	if err := cleanToken.Insert(); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
-	if rejectTokenName(c, token.Name, userId, 0, false) {
-		return
-	}
+	respondCreatedTokenKey(c, cleanToken, userId)
+}
 
+// newPersonalToken checks what a user asked for in a new API key of their own and returns the key
+// to insert. Shared by the console's create and the device flow's approval (AGENT-7).
+func newPersonalToken(userId, userRole int, token *model.Token) (*model.Token, error) {
+	if len(token.Name) > 30 {
+		return nil, common.NewAPIError(common.APICodeTokenNameTooLong, "API key name is too long", nil)
+	}
+	if err := checkTokenName(token.Name, userId, 0); err != nil {
+		return nil, err
+	}
 	if token.Group != "" {
-		err = validateTokenGroup(token.Group, userId)
-		if err != nil {
-			common.APIRespondWithError(c, http.StatusOK, err)
-			return
+		if err := validateTokenGroup(token.Group, userId); err != nil {
+			return nil, err
 		}
 	}
 	if token.BackupGroup != "" {
-		err = validateTokenGroup(token.BackupGroup, userId)
-		if err != nil {
-			common.APIRespondWithError(c, http.StatusOK, err)
-			return
+		if err := validateTokenGroup(token.BackupGroup, userId); err != nil {
+			return nil, err
 		}
 	}
 
 	setting := token.Setting.Data()
-	err = validatePersonalTokenSetting(&setting)
-	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
-		return
+	if err := validatePersonalTokenSetting(&setting); err != nil {
+		return nil, err
 	}
-
 	// 非可信用户不能设置 BillingTag
 	if userRole < config.RoleReliableUser {
 		setting.BillingTag = nil
 	}
 
-	cleanToken := model.Token{
+	cleanToken := &model.Token{
 		UserId:         userId,
 		Name:           token.Name,
 		CreatedTime:    utils.GetTimestamp(),
@@ -278,12 +290,7 @@ func AddToken(c *gin.Context) {
 		LogIO:          token.LogIO,
 	}
 	cleanToken.Setting.Set(setting)
-	err = cleanToken.Insert()
-	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
-		return
-	}
-	respondNewTokenKey(c, &cleanToken)
+	return cleanToken, nil
 }
 
 func DeleteToken(c *gin.Context) {

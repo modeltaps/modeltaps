@@ -415,6 +415,24 @@ func SetApiRouter(router *gin.Engine) {
 			tokenRoute.PUT("/", controller.UpdateToken)
 			tokenRoute.DELETE("/:id", controller.DeleteToken)
 			tokenRoute.POST("/:id/reset_key", controller.ResetTokenKey)
+			// Hands the key to an agent (AGENT-7): console sessions only, never with a key.
+			tokenRoute.POST("/:id/pairing_code", middleware.SessionOnly(), controller.CreateTokenPairingCode)
+		}
+		// Agent handover (AGENT-7). An agent redeems a pairing code or runs the device flow without
+		// signing in; the signed-in user answers a device request from the console's /device page.
+		agentRoute := apiRouter.Group("/agent")
+		{
+			agentRoute.POST("/pair", middleware.AgentPairRateLimit(), controller.RedeemPairingCode)
+			agentRoute.POST("/device", middleware.AgentDeviceStartRateLimit(), controller.StartDeviceAuthorization)
+			agentRoute.POST("/device/token", middleware.AgentDevicePollRateLimit(), controller.PollDeviceToken)
+
+			deviceConsole := agentRoute.Group("/device/:user_code")
+			deviceConsole.Use(middleware.CriticalRateLimit(), middleware.UserAuth(), middleware.SessionOnly())
+			{
+				deviceConsole.GET("", controller.GetDeviceAuthorization)
+				deviceConsole.POST("/approve", controller.ApproveDeviceAuthorization)
+				deviceConsole.POST("/deny", controller.DenyDeviceAuthorization)
+			}
 		}
 		// Management keys (AGENT-4): managed from a console session only, never with a key.
 		managementKeyRoute := apiRouter.Group("/management_key")

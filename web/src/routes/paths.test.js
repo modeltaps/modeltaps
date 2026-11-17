@@ -1,6 +1,20 @@
 import { describe, expect, it } from 'vitest';
 
-import { admin, invitations, inviteLink, isAdminPath, isOrgPath, isSettingsPath, org, orgSlugOf, rescope, settings, unscope, workbench } from './paths';
+import {
+  admin,
+  agentDevice,
+  invitations,
+  inviteLink,
+  isAdminPath,
+  isOrgPath,
+  isSettingsPath,
+  org,
+  orgSlugOf,
+  rescope,
+  settings,
+  unscope,
+  workbench
+} from './paths';
 
 describe('path builders', () => {
   it('workbench pages, personal and in an organization', () => {
@@ -18,6 +32,7 @@ describe('path builders', () => {
     expect(org.overview('acme')).toBe('/panel/orgs/acme/overview');
     expect(invitations()).toBe('/panel/invitations');
     expect(inviteLink('a b')).toBe('/panel/invitations?invite=a%20b');
+    expect(agentDevice()).toBe('/panel/device');
   });
 
   it('settings hub and platform admin', () => {

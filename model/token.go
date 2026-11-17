@@ -56,6 +56,11 @@ type Token struct {
 	DeletedAt      gorm.DeletedAt `json:"-" gorm:"index"`
 
 	Setting database.JSONType[TokenSetting] `json:"setting" form:"setting" gorm:"type:json"`
+
+	// Agent handover (AGENT-7), filled for a key's details only (AttachAgentInfo): the agent that
+	// claimed the key, and until when its pending pairing code can be redeemed (0 = none).
+	AgentClaim       *AgentKeyClaim `json:"agent_claim,omitempty" gorm:"-" msgpack:"-"`
+	PairingExpiresAt int64          `json:"pairing_expires_at,omitempty" gorm:"-" msgpack:"-"`
 }
 
 var allowedTokenOrderFields = map[string]bool{
@@ -94,7 +99,8 @@ func (token *Token) BeforeCreate(tx *gorm.DB) error {
 }
 
 // ResetKey replaces the key's secret with a new random one and returns it (without "sk-"). The
-// old key stops working at once; the new one is not stored and cannot be read back later.
+// old key stops working at once; the new one is not stored and cannot be read back later. A
+// pending pairing code of the key is void, and an agent's claim of it no longer applies (AGENT-7).
 func (token *Token) ResetKey() (string, error) {
 	key, err := common.NewUserTokenKey()
 	if err != nil {
@@ -102,15 +108,21 @@ func (token *Token) ResetKey() (string, error) {
 	}
 	hash := common.HashUserTokenKey(key)
 	hint := common.UserTokenKeyHint(key)
-	result := DB.Model(&Token{}).Where("id = ?", token.Id).UpdateColumns(map[string]interface{}{
-		"key_hash": hash,
-		"key_hint": hint,
+	err = DB.Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&Token{}).Where("id = ?", token.Id).UpdateColumns(map[string]interface{}{
+			"key_hash": hash,
+			"key_hint": hint,
+		})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return ErrTokenNotFound
+		}
+		return forgetAgentHandoverTx(tx, token.Id)
 	})
-	if result.Error != nil {
-		return "", result.Error
-	}
-	if result.RowsAffected == 0 {
-		return "", ErrTokenNotFound
+	if err != nil {
+		return "", err
 	}
 	invalidateTokenCache(token.KeyHash)
 	token.KeyHash = hash

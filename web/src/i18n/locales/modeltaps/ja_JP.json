@@ -1767,7 +1767,21 @@
     "management_key_name_required": "管理キーの名前を入力してください",
     "management_key_scope_invalid": "管理キーの権限を読み取り専用か読み書きから選んでください",
     "management_key_expiry_required": "管理キーには未来の有効期限が必要です",
-    "management_key_expiry_too_long": "管理キーの有効期間は最長 1 年です"
+    "management_key_expiry_too_long": "管理キーの有効期間は最長 1 年です",
+    "pairing_code_invalid": "ペアリングコードが無効です",
+    "pairing_code_expired": "ペアリングコードの有効期限が切れました。API キーの詳細で新しいコードを発行してください",
+    "pairing_code_used": "ペアリングコードは使用済みです。API キーの詳細で新しいコードを発行してください",
+    "pairing_key_unavailable": "このペアリングコードの API キーは無効化、期限切れ、または削除されています",
+    "pairing_code_managed": "プレイグラウンドの API キーはシステムが管理しているため、エージェントに渡せません",
+    "pairing_code_not_creator": "この API キーをエージェントに渡せるのは、作成したメンバーだけです",
+    "authorization_pending": "リクエストはまだ応答されていません",
+    "slow_down": "確認の間隔が短すぎます。間隔を空けてください",
+    "access_denied": "リクエストは拒否されました",
+    "expired_token": "リクエストの有効期限が切れました。最初からやり直してください",
+    "invalid_grant": "デバイスコードが無効か、使用済みです",
+    "device_user_code_invalid": "このコードは無効、期限切れ、または処理済みです",
+    "unsupported_grant_type": "サポートされていない grant_type です",
+    "device_authorization_failed": "API キーを作成できませんでした。もう一度お試しください"
   },
   "channelOAuth": {
     "tip": {
@@ -3957,6 +3971,26 @@
       "lastUsed": "{{when}}に使用",
       "neverUsed": "未使用",
       "legacyName": "アカウントのアクセストークン"
+    },
+    "pairing": {
+      "label": "ペアリングコード",
+      "hint": "キーの代わりにこのコードをエージェントに渡してください。エージェントは {{url}} に従ってコードをキーと引き換えます。{{time}} まで有効、1 回限りです。",
+      "rotateNote": "エージェントが引き換えると、この API キーには新しいシークレットが発行されます。上に表示されたキーは使えなくなり、有効なのはエージェントの手元のものだけになります。"
+    },
+    "agent": {
+      "title": "エージェント",
+      "claim": "状態",
+      "claimed": "エージェントが受け取り済み（{{via}}）",
+      "viaPairingCode": "ペアリングコード",
+      "viaDeviceFlow": "デバイス認可",
+      "notClaimed": "エージェントはまだ受け取っていません",
+      "claimedAt": "受け取り日時",
+      "client": "クライアント",
+      "ip": "IP アドレス",
+      "userAgent": "User-Agent",
+      "pendingUntil": "引き換え待ち、{{time}} まで有効",
+      "newCode": "新しいペアリングコード",
+      "newCodeConfirm": "新しいペアリングコードを発行しますか？エージェントが引き換えると、この API キーには新しいシークレットが発行され、使用中のコピーは使えなくなります。未使用の以前のコードは今すぐ無効になります。"
     }
   },
   "redemptionList": {
@@ -4442,5 +4476,30 @@
       "toolFilter": "ツール",
       "toolOther": "その他"
     }
+  },
+  "agentDevice": {
+    "title": "エージェントを接続",
+    "description": "エージェントが API キーを求めています。表示されたコードを入力してリクエストを確認し、キーの権限を選んでから承認してください。",
+    "codeLabel": "コード",
+    "lookup": "続行",
+    "requestTitle": "リクエスト",
+    "client": "クライアント",
+    "unnamed": "名前のないクライアント",
+    "ip": "IP アドレス",
+    "userAgent": "User-Agent",
+    "requestedAt": "リクエスト日時",
+    "openUntil": "有効期限",
+    "warning": "信頼できるエージェントで自分が開始したリクエストだけを承認してください。他人から送られたコードは承認しないでください。",
+    "owner": "キーの所属",
+    "personal": "個人",
+    "models": "モデル",
+    "modelsHint": "空欄にすると、このキーで使えるすべてのモデルを許可します。",
+    "approve": "承認",
+    "deny": "拒否",
+    "approvedTitle": "承認しました",
+    "approvedHint": "エージェントは次の確認時に API キー「{{name}}」を受け取ります。API キーのページで無効化、再発行、削除できます。",
+    "deniedTitle": "拒否しました",
+    "deniedHint": "エージェントに拒否を伝えました。API キーは作成されていません。",
+    "openKeys": "API キーを開く"
   }
 }

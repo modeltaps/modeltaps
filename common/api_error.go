@@ -200,6 +200,24 @@ const (
 	APICodeTokenKeyResetManaged             = "token_key_reset_managed"
 	APICodeTokenKeyResetNotCreator          = "token_key_reset_not_creator"
 
+	// Handing an API key to an agent (AGENT-7): pairing codes and the device authorization flow.
+	// The /api/agent/* endpoints an agent calls also send the code as `error` (with
+	// `error_description`), the shape RFC 8628 clients read; the device flow codes are the RFC's.
+	APICodePairingCodeInvalid     = "pairing_code_invalid"
+	APICodePairingCodeExpired     = "pairing_code_expired"
+	APICodePairingCodeUsed        = "pairing_code_used"
+	APICodePairingKeyUnavailable  = "pairing_key_unavailable"
+	APICodePairingCodeManaged     = "pairing_code_managed"
+	APICodePairingCodeNotCreator  = "pairing_code_not_creator"
+	APICodeDeviceAuthPending      = "authorization_pending"
+	APICodeDeviceSlowDown         = "slow_down"
+	APICodeDeviceAccessDenied     = "access_denied"
+	APICodeDeviceExpiredToken     = "expired_token"
+	APICodeDeviceInvalidGrant     = "invalid_grant"
+	APICodeDeviceUserCodeInvalid  = "device_user_code_invalid"
+	APICodeDeviceUnsupportedGrant = "unsupported_grant_type"
+	APICodeDeviceAuthorizeFailed  = "device_authorization_failed"
+
 	// System settings.
 	APICodeOptionIdpReadFailed               = "option_idp_read_failed"
 	APICodeOptionExternalRequiresSiteIdp     = "option_external_requires_site_idp"

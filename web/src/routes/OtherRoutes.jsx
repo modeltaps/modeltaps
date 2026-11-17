@@ -4,7 +4,7 @@ import { Navigate, useLocation } from 'react-router';
 // project imports
 import Loadable from 'ui-component/Loadable';
 import PublicLayout from 'layout/PublicLayout';
-import { publicPricing, workbench } from 'routes/paths';
+import { agentDevice, publicPricing, workbench } from 'routes/paths';
 
 // Auth + sandbox pages render standalone (no public chrome wrapper).
 const Sandbox = Loadable(lazy(() => import('views/Sandbox')));
@@ -27,6 +27,13 @@ const ModelPrice = Loadable(lazy(() => import('views/public/ModelPrice')));
 const PlaygroundRedirect = () => {
   const { search, hash } = useLocation();
   return <Navigate to={`${workbench.playground()}${search}${hash}`} replace />;
+};
+
+// `/device` is the short verification address an agent shows (RFC 8628); the page itself is in the
+// signed-in console, which sends visitors through sign-in and back. The query (`?user_code=`) stays.
+const AgentDeviceRedirect = () => {
+  const { search, hash } = useLocation();
+  return <Navigate to={`${agentDevice()}${search}${hash}`} replace />;
 };
 
 const PricingRedirect = () => {
@@ -74,6 +81,10 @@ const OtherRoutes = [
   {
     path: '/sandbox',
     element: <Sandbox />
+  },
+  {
+    path: '/device',
+    element: <AgentDeviceRedirect />
   },
   {
     path: '/',

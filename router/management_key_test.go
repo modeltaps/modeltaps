@@ -41,7 +41,7 @@ func setupManagementKeyRouter(t *testing.T, withMCP bool) *mkFixture {
 	if err := testDB.AutoMigrate(&model.User{}, &model.Token{}, &model.ManagementKey{}, &model.UserSession{},
 		&model.PlaygroundKey{}, &model.Log{}, &model.LogDetail{}, &model.Organization{}, &model.OrganizationMember{},
 		&model.OrganizationInvitation{}, &model.OrganizationAuditLog{}, &model.ModelAccessList{}, &model.Channel{},
-		&model.UserGroup{}); err != nil {
+		&model.UserGroup{}, &model.AgentPairingCode{}, &model.AgentKeyClaim{}, &model.AgentDeviceAuthorization{}); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
 	oldDB := model.DB

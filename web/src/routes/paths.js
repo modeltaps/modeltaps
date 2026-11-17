@@ -78,6 +78,8 @@ export const org = {
 
 // Personal-only pages.
 export const invitations = () => `${PANEL}/invitations`;
+// Answering an agent's device authorization (AGENT-7); agents send users to `/device`.
+export const agentDevice = () => `${PANEL}/device`;
 export const inviteLink = (token) => `${invitations()}?invite=${encodeURIComponent(token)}`;
 
 // ---------------------------------------------------------------- settings hub

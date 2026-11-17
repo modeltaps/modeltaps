@@ -309,3 +309,31 @@ func DownloadRateLimit() func(c *gin.Context) {
 func UploadRateLimit() func(c *gin.Context) {
 	return rateLimitFactory(UploadRateLimitNum, UploadRateLimitDuration, "UP", false, false)
 }
+
+// Agent handover (AGENT-7). The endpoints an agent calls without signing in are limited per IP;
+// per code, a pairing code is void after model.AgentPairingMaxFailures wrong secrets and a device
+// code answers slow_down when polled faster than its interval.
+var (
+	AgentPairRateLimitNum            = 20
+	AgentPairRateLimitDuration int64 = 10 * 60
+
+	AgentDeviceStartRateLimitNum            = 20
+	AgentDeviceStartRateLimitDuration int64 = 10 * 60
+
+	// A poll every 5 seconds for the 15 minutes a device code lives is 180 requests; this leaves
+	// room for a few agents behind one address.
+	AgentDevicePollRateLimitNum            = 600
+	AgentDevicePollRateLimitDuration int64 = 15 * 60
+)
+
+func AgentPairRateLimit() func(c *gin.Context) {
+	return rateLimitFactory(AgentPairRateLimitNum, AgentPairRateLimitDuration, "AP", false, false)
+}
+
+func AgentDeviceStartRateLimit() func(c *gin.Context) {
+	return rateLimitFactory(AgentDeviceStartRateLimitNum, AgentDeviceStartRateLimitDuration, "AS", false, false)
+}
+
+func AgentDevicePollRateLimit() func(c *gin.Context) {
+	return rateLimitFactory(AgentDevicePollRateLimitNum, AgentDevicePollRateLimitDuration, "AT", false, false)
+}
