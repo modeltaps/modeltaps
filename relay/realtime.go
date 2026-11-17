@@ -12,6 +12,7 @@ import (
 	"github.com/modeltaps/modeltaps/types"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +26,9 @@ type RelayModeChatRealtime struct {
 	providerConn   *websocket.Conn
 	quota          *relay_util.Quota
 	usage          *types.UsageEvent
+	// quotaMu serializes the mid-session quota updates with the settlement at close: a usage event
+	// still in flight when the session ends must not extend a reservation that is already settled.
+	quotaMu sync.Mutex
 }
 
 var upgrader = websocket.Upgrader{
@@ -103,6 +107,8 @@ func ChatRealtime(c *gin.Context) {
 
 		logger.LogInfo(snap.Ctx, fmt.Sprintf("Connection closed by %s", closedBy))
 		wsProxy.Close()
+		relay.quotaMu.Lock()
+		defer relay.quotaMu.Unlock()
 		relay.quota.ConsumeWithSnapshot(snap, relay.usage.ToChatUsage(), false)
 	})
 
@@ -235,8 +241,13 @@ func (r *RelayModeChatRealtime) getRealtimeFirstMessage() bool {
 	return true
 }
 
+// usageHandler accounts each usage event while the session runs (SEC-75): the reservation grows
+// with the usage through the key, balance, member and team budget gates, and the session is
+// closed as soon as one of them is exhausted.
 func (r *RelayModeChatRealtime) usageHandler(usage *types.UsageEvent) error {
-	err := r.quota.UpdateUserRealtimeQuota(r.usage, usage)
+	r.quotaMu.Lock()
+	defer r.quotaMu.Unlock()
+	err := r.quota.UpdateRealtimeSessionQuota(r.usage, usage)
 	if err != nil {
 		return types.NewErrorEvent("", "system_error", "system_error", err.Error())
 	}

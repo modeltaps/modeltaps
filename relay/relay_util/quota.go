@@ -9,6 +9,8 @@
 //   - 实时配额 Redis 关闭 = 降级(fail-open):UpdateUserRealtimeQuota 在 !config.RedisEnabled 时
 //     跳过实时累计,不拦截请求。成员预算实时兜底(SEC-12)同此降级,退化为 SEC-9 入场预留硬闸;
 //     Redis 可用但操作出错时与 token 实时路径同语义:返回错误中断流。
+//     Realtime sessions with a database reservation do not use this path: they extend the
+//     reservation mid-session and fail closed (UpdateRealtimeSessionQuota in quota_org.go, SEC-75).
 //   - 结算侧尽力而为(fail-open):completedQuotaConsumption 扣费/缓存失败仅记错误日志,
 //     消费日志始终落库(避免上游已计费但本地无记录),不向调用方返回失败。
 package relay_util

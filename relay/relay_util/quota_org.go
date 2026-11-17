@@ -177,3 +177,56 @@ func (q *Quota) releaseOrgMemberRealtimeBudget() {
 	}
 	q.memberBudgetCacheQuota = 0
 }
+
+// UpdateRealtimeSessionQuota accounts one usage event of a running realtime session (SEC-75).
+// A session that holds a database reservation (HandelStatus) grows it as the usage passes it,
+// through the same atomic gates as PreQuotaConsumption: member budget, team budget, then the API
+// key and account balance. Exceeding any of them returns an error and the caller closes the
+// session. This does not depend on Redis, so a deployment without Redis no longer lets a session
+// run past the balance, and concurrent sessions cannot push the team budget over its limit.
+// Sessions without a database reservation (the Redis in-flight path, open only to keys with no
+// quota, period limit or budget, or free models) keep the Redis live counter.
+func (q *Quota) UpdateRealtimeSessionQuota(usage *types.UsageEvent, nowUsage *types.UsageEvent) error {
+	if q.settled {
+		return errors.New("realtime session already settled")
+	}
+	if !q.HandelStatus {
+		return q.UpdateUserRealtimeQuota(usage, nowUsage)
+	}
+	usage.Merge(nowUsage)
+	shortfall := q.GetTotalQuotaByUsage(usage.ToChatUsage()) - q.preConsumedQuota
+	if shortfall <= 0 {
+		return nil
+	}
+	if errResp := q.extendReservation(shortfall); errResp != nil {
+		return fmt.Errorf("%v: %s", errResp.OpenAIError.Code, errResp.OpenAIError.Message)
+	}
+	return nil
+}
+
+// extendReservation adds amount to a reservation already taken by PreQuotaConsumption, in the same
+// order and with the same rollbacks. Settlement and Undo reconcile against the grown
+// preConsumedQuota, so the extra amount is settled or refunded like the first one.
+func (q *Quota) extendReservation(amount int) *types.OpenAIErrorWithStatusCode {
+	if errResp := q.reserveOrgMemberBudget(amount); errResp != nil {
+		return errResp
+	}
+	if errResp := q.reserveOrganizationBudget(amount); errResp != nil {
+		q.accrueOrgMemberBudget(-amount)
+		return errResp
+	}
+	var err error
+	if q.tokenId > 0 {
+		err = model.PreConsumeTokenQuota(q.tokenId, amount)
+	} else {
+		err = model.PreDecreaseUserQuota(q.userId, amount)
+	}
+	if err != nil {
+		q.accrueOrgMemberBudget(-amount)
+		q.accrueOrganizationBudget(-amount)
+		return common.ErrorWrapperLocal(err, "pre_consume_token_quota_failed", http.StatusForbidden)
+	}
+	q.preConsumedQuota += amount
+	_ = model.CacheUpdateUserQuota(q.userId)
+	return nil
+}

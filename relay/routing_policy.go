@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -545,15 +546,16 @@ func newDecisionContext(c *gin.Context, ctx context.Context, policy *model.Routi
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	// The sub-call runs on a throwaway engine that trusts every proxy, so forwarding headers
+	// would be taken at face value. Carry over the client IP the main engine already resolved
+	// with its trusted-proxy settings instead, and turn header parsing off.
 	if c.Request != nil {
-		req.RemoteAddr = c.Request.RemoteAddr
-		for _, header := range []string{"X-Forwarded-For", "X-Real-Ip"} {
-			if v := c.Request.Header.Get(header); v != "" {
-				req.Header.Set(header, v)
-			}
+		if ip := c.ClientIP(); ip != "" {
+			req.RemoteAddr = net.JoinHostPort(ip, "0")
 		}
 	}
-	decisionCtx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	decisionCtx, decisionEngine := gin.CreateTestContext(httptest.NewRecorder())
+	decisionEngine.ForwardedByClientIP = false
 	decisionCtx.Request = req
 	// 身份、分组与额度相关的键照搬，计费才能落到同一个用户 / 令牌 / 组织成员上；
 	// token_setting 不带（它承载令牌模型白名单）。
