@@ -29,9 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   minutes, once, for that key only, and void after five wrong tries. Redeeming gives the key a
   new secret, so only the agent holds a working copy; no plaintext key is ever stored. An agent
   without a key can use the device authorization flow (RFC 8628): `POST /api/agent/device`
-  returns a code and a link to the console's `/device` page, where the signed-in user sees the
-  client's name, IP address and User-Agent, picks personal or an organization, the spending
-  limit, expiry and models, and approves or denies; the agent polls `POST /api/agent/device/token`
+  returns a code and a link to `/device`, a consent page of its own where the signed-in user
+  (who can switch accounts there) compares the code with the agent's, sees which agent is asking
+  (known agents with their mark, always marked as reported by the agent), its User-Agent, IP
+  address with whether it is the network the user is on, and when it asked, picks personal or an
+  organization, the spending limit, expiry and models, and approves or denies. After approving,
+  the page shows when the agent has picked up its key; the agent polls `POST /api/agent/device/token`
   (`authorization_pending`, `slow_down`, `access_denied`, `expired_token`) and gets the key once.
   The key's details show which agent claimed it (time, IP, User-Agent) and issue new pairing
   codes; resetting a key voids its pending code. Both paths only hand out API keys, never

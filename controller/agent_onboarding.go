@@ -277,8 +277,30 @@ func GetDeviceAuthorization(c *gin.Context) {
 			"request_user_agent": row.RequestUserAgent,
 			"created_time":       row.CreatedTime,
 			"expires_at":         row.ExpiresAt,
+			// Whether the request came from the network the user is on now: a request from
+			// somewhere else is worth a second look before approving.
+			"same_network": row.RequestIp != "" && row.RequestIp == c.ClientIP(),
 		},
 	})
+}
+
+// GetDeviceAuthorizationStatus follows a request the signed-in user answered: approved, denied,
+// claimed (the agent received its key, with when and from where) or expired (approved but not
+// claimed in time). The confirmation page polls it after the answer.
+func GetDeviceAuthorizationStatus(c *gin.Context) {
+	row, claim, err := model.GetAnsweredAgentDeviceAuthorization(c.Param("user_code"), c.GetInt("id"))
+	if err != nil {
+		if !errors.Is(err, model.ErrDeviceUserCodeInvalid) {
+			logger.SysError("failed to read a device authorization: " + err.Error())
+		}
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeDeviceUserCodeInvalid, model.ErrDeviceUserCodeInvalid.Error(), nil)
+		return
+	}
+	data := gin.H{"status": row.AnswerStatus(), "expires_at": row.ExpiresAt}
+	if claim != nil {
+		data["claim"] = gin.H{"claimed_at": claim.CreatedTime, "ip": claim.Ip, "user_agent": claim.UserAgent}
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": data})
 }
 
 // defaultDeviceKeyName names a key approved without a name after the requesting client.

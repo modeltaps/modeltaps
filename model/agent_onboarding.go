@@ -391,6 +391,45 @@ func GetPendingAgentDeviceAuthorization(userCode string) (*AgentDeviceAuthorizat
 	return &row, nil
 }
 
+// AgentDeviceStatusExpired is not stored: AnswerStatus reports it for an approval whose agent did
+// not come for the key in time.
+const AgentDeviceStatusExpired = "expired"
+
+// AnswerStatus is the state of an answered authorization as the confirmation page shows it.
+func (row *AgentDeviceAuthorization) AnswerStatus() string {
+	if row.Status == AgentDeviceStatusApproved && row.ExpiresAt <= agentNow() {
+		return AgentDeviceStatusExpired
+	}
+	return row.Status
+}
+
+// GetAnsweredAgentDeviceAuthorization finds the newest authorization of a user code that decidedBy
+// answered, for the confirmation page to follow it after the answer, and the claim of its key once
+// the agent received it (nil before).
+func GetAnsweredAgentDeviceAuthorization(userCode string, decidedBy int) (*AgentDeviceAuthorization, *AgentKeyClaim, error) {
+	code := common.NormalizeDeviceUserCode(userCode)
+	if code == "" || decidedBy == 0 {
+		return nil, nil, ErrDeviceUserCodeInvalid
+	}
+	var row AgentDeviceAuthorization
+	err := DB.Where("user_code = ? AND decided_by = ? AND status <> ?", code, decidedBy, AgentDeviceStatusPending).
+		Order("id desc").First(&row).Error
+	if err != nil {
+		return nil, nil, ErrDeviceUserCodeInvalid
+	}
+	if row.Status != AgentDeviceStatusClaimed || row.TokenId == 0 {
+		return &row, nil, nil
+	}
+	var claim AgentKeyClaim
+	if err := DB.Where("token_id = ? AND via = ?", row.TokenId, AgentClaimViaDeviceFlow).Order("id desc").Limit(1).Find(&claim).Error; err != nil {
+		return nil, nil, err
+	}
+	if claim.Id == 0 {
+		return &row, nil, nil
+	}
+	return &row, &claim, nil
+}
+
 // ApproveAgentDeviceAuthorization answers a pending authorization with yes: it creates the API key
 // (token, prepared by the caller with the user's choices) and binds it to the authorization. The
 // key's secret is only issued to the agent's next poll, so the plaintext never exists before.

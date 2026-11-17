@@ -2,34 +2,36 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
-import { Link, useSearchParams } from 'react-router';
-import { Check, ChevronDown, Loader2, X } from 'lucide-react';
+import { useSearchParams } from 'react-router';
+import { ChevronDown, Loader2, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
-import { Field } from '@/components/objects';
-import { BrandLockup } from '@/components/chrome/Logo';
-import UserAvatar, { accountDisplayName } from '@/components/chrome/avatar';
+import { Field, OptionList, OptionRow } from '@/components/objects';
 import QuotaInput from '@/components/QuotaInput';
 import { cn } from '@/lib/utils';
 import { API } from 'utils/api';
 import { renderQuota, showError } from 'utils/common';
-import { brandName } from 'utils/brand';
 import { useOrg } from 'contexts/OrgContext';
-import { workbench } from 'routes/paths';
+import { agentDevice, workbench } from 'routes/paths';
 import ModelLimitSelector, { toLimitModels } from 'views/panel/Token/ModelLimitSelector';
 import { DEFAULT_SETTING, EXPIRY_PRESETS, expiryFromPreset, quotaPatch } from 'views/panel/Token/tokenData';
+import ApprovedStatus from './ApprovedStatus';
 import CodeCells, { CODE_LENGTH, codeLetters } from './CodeCells';
+import { Heading, Outcome, Shell } from './DeviceShell';
+import { Handshake, RequestFacts } from './RequestParts';
+import { recognizeClient } from './agentClient';
 
 // ==============================|| AGENT DEVICE AUTHORIZATION (AGENT-7) ||============================== //
 // The page an agent's device authorization (RFC 8628) sends the user to: `/device?user_code=...`.
 // A focused page outside the console chrome, like other consent screens: the brand and the signed-in
-// account on top, one step in the middle.
+// account (with a way to switch) on top, one step in the middle.
 //
 //   enter    type the code the agent shows (skipped when the link carries it)
-//   confirm  compare the code, see who is asking, choose whose key it is and what it may do
-//   done     approved or denied: go back to the agent; or the request ran out
+//   confirm  the agent and the account it connects to; the code to compare with the agent's; the
+//            client, network and time of the request; whose key it is and what it may do
+//   done     approved: follows the request until the agent has its key; denied; or it ran out
 //
 // The key is created on approval; the agent receives its secret on its next poll, so it never
 // shows up here.
@@ -37,6 +39,9 @@ import CodeCells, { CODE_LENGTH, codeLetters } from './CodeCells';
 const NAME_ERRORS = new Set(['token_name_taken', 'token_name_reserved', 'token_name_too_long']);
 const PERSONAL = 'personal';
 const NO_PARENTS = [];
+// Approve stays off for a moment after the request shows, so a click meant for something else
+// (or a page layered over this one) cannot land on it.
+export const APPROVE_DELAY_MS = 1000;
 
 // "abcd efgh" → "ABCD-EFGH"; anything else is passed on as typed and refused by the server.
 export function formatUserCode(raw) {
@@ -46,61 +51,27 @@ export function formatUserCode(raw) {
 
 const fetchRequest = (value) => API.get(`/api/agent/device/${encodeURIComponent(formatUserCode(value))}`);
 
-// Seconds left until `expiresAt` (Unix seconds), ticking while the request is open.
-function useSecondsLeft(expiresAt) {
+// The clock while a request is open (ms), ticking each second.
+function useNow(active) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (!expiresAt) return undefined;
+    if (!active) return undefined;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, [expiresAt]);
-  return expiresAt ? Math.max(0, Math.round(expiresAt - now / 1000)) : null;
+  }, [active]);
+  return now;
 }
 
-const clock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-
-function Shell({ children }) {
-  const { t } = useTranslation();
-  const siteInfo = useSelector((state) => state.siteInfo);
-  const user = useSelector((state) => state.account.user);
-  const name = brandName(siteInfo.system_name);
-  return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <header className="flex h-14 shrink-0 items-center justify-between gap-4 px-4 sm:px-6">
-        <Link to={workbench.dashboard()} className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          {siteInfo.logo ? (
-            <img src={siteInfo.logo} alt={name} className="h-6 object-contain" />
-          ) : (
-            <BrandLockup text={name} wordmark className="text-foreground" />
-          )}
-        </Link>
-        {user && (
-          <span className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground" data-testid="device-account">
-            <span className="hidden sm:inline">{t('agentDevice.signedInAs')}</span>
-            <UserAvatar user={user} className="size-6" textClass="text-[10px]" />
-            <span className="truncate font-medium text-foreground">{accountDisplayName(user)}</span>
-          </span>
-        )}
-      </header>
-      <main className="flex flex-1 justify-center px-4 pb-16 pt-8 sm:pt-[12vh]">
-        <div className="w-full max-w-[440px]">{children}</div>
-      </main>
-    </div>
-  );
+// True once `delay` has passed since `key` (non-empty) last changed.
+function useArmed(key, delay) {
+  const [armedKey, setArmedKey] = useState(null);
+  useEffect(() => {
+    if (!key) return undefined;
+    const id = setTimeout(() => setArmedKey(key), delay);
+    return () => clearTimeout(id);
+  }, [key, delay]);
+  return Boolean(key) && armedKey === key;
 }
-
-Shell.propTypes = { children: PropTypes.node };
-
-function Heading({ title, children }) {
-  return (
-    <div className="mb-6 text-center">
-      <h1 className="text-xl font-medium tracking-[-0.01em]">{title}</h1>
-      {children && <p className="mt-2 text-sm text-muted-foreground">{children}</p>}
-    </div>
-  );
-}
-
-Heading.propTypes = { title: PropTypes.node, children: PropTypes.node };
 
 // One line of the "what the agent gets" summary.
 function SummaryRow({ label, children }) {
@@ -114,35 +85,11 @@ function SummaryRow({ label, children }) {
 
 SummaryRow.propTypes = { label: PropTypes.node, children: PropTypes.node };
 
-function Outcome({ icon: Icon, tone, title, children, testId }) {
-  return (
-    <div className="text-center" data-testid={testId}>
-      <span
-        className={cn(
-          'mx-auto mb-5 flex size-12 items-center justify-center rounded-full',
-          tone === 'good' ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'
-        )}
-      >
-        <Icon className="size-6" strokeWidth={1.75} />
-      </span>
-      <h1 className="text-xl font-medium tracking-[-0.01em]">{title}</h1>
-      <div className="mt-2 text-sm text-muted-foreground">{children}</div>
-    </div>
-  );
-}
-
-Outcome.propTypes = {
-  icon: PropTypes.elementType.isRequired,
-  tone: PropTypes.oneOf(['good']),
-  title: PropTypes.node,
-  children: PropTypes.node,
-  testId: PropTypes.string
-};
-
 export default function AgentDevice() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const { orgEnabled, organizations } = useOrg();
+  const user = useSelector((state) => state.account.user);
   const linkCode = searchParams.get('user_code') || '';
   const [code, setCode] = useState(() => codeLetters(linkCode));
   const [request, setRequest] = useState(null);
@@ -155,8 +102,10 @@ export default function AgentDevice() {
   const [done, setDone] = useState(null); // { approved: bool, name }
   const [models, setModels] = useState([]);
   const [orgLimits, setOrgLimits] = useState({ owner: null, parents: [] });
-  const secondsLeft = useSecondsLeft(request?.expires_at);
+  const now = useNow(Boolean(request));
+  const secondsLeft = request ? Math.max(0, Math.round(request.expires_at - now / 1000)) : null;
   const expired = request && secondsLeft === 0;
+  const armed = useArmed(request?.user_code, APPROVE_DELAY_MS);
 
   const owners = useMemo(
     () => [
@@ -165,7 +114,6 @@ export default function AgentDevice() {
     ],
     [t, orgEnabled, organizations]
   );
-  const owner = owners.find((o) => o.value === form.owner) || owners[0];
 
   // The answer to a lookup; state is only set from here, after the request.
   const showLookup = useCallback((res) => {
@@ -287,13 +235,7 @@ export default function AgentDevice() {
     return (
       <Shell>
         {done.approved ? (
-          <Outcome icon={Check} tone="good" title={t('agentDevice.approvedTitle')} testId="device-done">
-            <p>{t('agentDevice.approvedHint', { name: done.name })}</p>
-            <p className="mt-1">{t('agentDevice.closeHint')}</p>
-            <Button asChild variant="outline" className="mt-6">
-              <Link to={keysPath}>{t('agentDevice.openKeys')}</Link>
-            </Button>
-          </Outcome>
+          <ApprovedStatus userCode={request.user_code} keyName={done.name} keysPath={keysPath} />
         ) : (
           <Outcome icon={X} title={t('agentDevice.deniedTitle')} testId="device-done">
             <p>{t('agentDevice.deniedHint')}</p>
@@ -356,33 +298,50 @@ export default function AgentDevice() {
 
   // ---- confirm ----
   const client = request.client_name || t('agentDevice.unnamed');
-  const source = [request.request_ip, request.request_user_agent].filter(Boolean).join(' · ');
+  const known = recognizeClient(request.client_name, request.request_user_agent);
+  const ownerOrg = form.owner === PERSONAL ? null : organizations.find((o) => String(o.id) === form.owner);
   const quotaText = form.quota !== '' ? renderQuota(form.quota) : t('token_index.noLimit');
   const modelsText = form.models.length ? t('agentDevice.modelsCount', { count: form.models.length }) : t('agentDevice.allModels');
+  const pickOwner = (v) => setForm((f) => (f.owner === v ? f : { ...f, owner: v, models: [] }));
 
   return (
-    <Shell>
-      <Heading title={t('agentDevice.confirmTitle', { client })} />
+    <Shell returnTo={`${agentDevice()}?user_code=${encodeURIComponent(request.user_code)}`}>
+      <Handshake client={known} user={user} org={ownerOrg} />
+      <Heading title={t('agentDevice.confirmTitle', { client })}>
+        <span data-testid="device-identity">
+          {known
+            ? t('agentDevice.recognized', { name: [known.name, known.version].filter(Boolean).join(' ') })
+            : t('agentDevice.unrecognized')}
+        </span>
+      </Heading>
 
       <section className="rounded-xl border border-border bg-card p-5 sm:p-6" data-testid="device-request">
         <div className="text-center">
           <CodeCells readOnly label={t('agentDevice.codeLabel')} value={request.user_code} />
           <p className="mt-3 text-sm text-muted-foreground">{t('agentDevice.compareHint')}</p>
         </div>
-
-        <dl className="mt-5 space-y-1 border-t border-border/60 pt-4 text-xs text-muted-foreground">
-          <div className="flex justify-between gap-4">
-            <dt className="shrink-0">{t('agentDevice.source')}</dt>
-            <dd className="min-w-0 truncate font-mono" title={source}>
-              {source || '—'}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="shrink-0">{t('agentDevice.openFor')}</dt>
-            <dd className="font-mono tabular-nums">{secondsLeft !== null ? clock(secondsLeft) : '—'}</dd>
-          </div>
-        </dl>
+        <div className="mt-5 border-t border-border/60 pt-4">
+          <RequestFacts request={request} secondsLeft={secondsLeft} now={now} />
+        </div>
       </section>
+
+      {owners.length > 1 && (
+        <section className="mt-4">
+          <h2 className="mb-2 px-1 text-sm font-medium">{t('agentDevice.owner')}</h2>
+          <OptionList label={t('agentDevice.owner')}>
+            {owners.map((o) => (
+              <OptionRow
+                key={o.value}
+                kind="radio"
+                selected={form.owner === o.value}
+                title={o.label}
+                meta={o.value === PERSONAL ? t('agentDevice.personalHint') : t('agentDevice.orgHint')}
+                onClick={() => pickOwner(o.value)}
+              />
+            ))}
+          </OptionList>
+        </section>
+      )}
 
       <section className="mt-4 rounded-xl border border-border bg-card px-5 py-3 sm:px-6">
         <div className="flex items-center justify-between gap-4 py-2">
@@ -402,7 +361,6 @@ export default function AgentDevice() {
 
         {!editing ? (
           <div data-testid="device-summary">
-            {owners.length > 1 && <SummaryRow label={t('agentDevice.owner')}>{owner.label}</SummaryRow>}
             <SummaryRow label={t('token_index.name')}>{form.name.trim() || client}</SummaryRow>
             <SummaryRow label={t('apiKey.new.limit')}>{quotaText}</SummaryRow>
             <SummaryRow label={t('apiKey.new.expiry')}>{t(`apiKey.expiry.${form.expiry}`)}</SummaryRow>
@@ -410,22 +368,6 @@ export default function AgentDevice() {
           </div>
         ) : (
           <div className="pb-1">
-            {owners.length > 1 && (
-              <Field label={t('agentDevice.owner')} htmlFor="device-owner">
-                <Select value={owner.value} onValueChange={(v) => setForm((f) => ({ ...f, owner: v, models: [] }))}>
-                  <SelectTrigger id="device-owner" data-testid="device-owner-trigger">
-                    <span className="truncate">{owner.label}</span>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {owners.map((o) => (
-                      <SelectItem key={o.value} value={o.value}>
-                        {o.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            )}
             <Field label={t('token_index.name')} htmlFor="device-name" error={nameError}>
               <Input
                 id="device-name"
@@ -485,7 +427,7 @@ export default function AgentDevice() {
           {busy === 'deny' && <Loader2 className="size-4 animate-spin" />}
           {t('agentDevice.deny')}
         </Button>
-        <Button type="button" className="h-10" onClick={() => answer(true)} disabled={Boolean(busy)}>
+        <Button type="button" className="h-10" onClick={() => answer(true)} disabled={Boolean(busy) || !armed}>
           {busy === 'approve' && <Loader2 className="size-4 animate-spin" />}
           {t('agentDevice.approve')}
         </Button>

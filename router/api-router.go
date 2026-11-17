@@ -433,6 +433,8 @@ func SetApiRouter(router *gin.Engine) {
 				deviceConsole.POST("/approve", controller.ApproveDeviceAuthorization)
 				deviceConsole.POST("/deny", controller.DenyDeviceAuthorization)
 			}
+			// Polled by the confirmation page after the answer, so outside the critical limit.
+			agentRoute.GET("/device/:user_code/status", middleware.UserAuth(), middleware.SessionOnly(), controller.GetDeviceAuthorizationStatus)
 		}
 		// Management keys (AGENT-4): managed from a console session only, never with a key.
 		managementKeyRoute := apiRouter.Group("/management_key")

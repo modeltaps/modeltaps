@@ -210,6 +210,13 @@ func TestDeviceFlowEndToEnd(t *testing.T) {
 	if shown.data()["client_name"] != "Hermes on build box" || shown.data()["request_ip"] != ip || shown.data()["request_user_agent"] != "test-agent/1.0" {
 		t.Fatalf("the request should show the client: %s", shown.raw)
 	}
+	if shown.data()["same_network"] != false {
+		t.Fatalf("a request from another address is not on the user's network: %s", shown.raw)
+	}
+	status := func() mkResponse { return f.do(http.MethodGet, "/api/agent/device/"+userCode+"/status", "", nil, cookies...) }
+	if w := status(); w.success() {
+		t.Fatalf("an unanswered request has no status for the page to follow: %s", w.raw)
+	}
 
 	approved := f.do(http.MethodPost, "/api/agent/device/"+userCode+"/approve", "", map[string]any{
 		"name": "hermes", "expired_time": -1, "remain_quota": 5000, "unlimited_quota": false,
@@ -221,6 +228,9 @@ func TestDeviceFlowEndToEnd(t *testing.T) {
 	}
 	again := f.do(http.MethodPost, "/api/agent/device/"+userCode+"/approve", "", map[string]any{"name": "twice"}, cookies...)
 	expectDenied(t, again, http.StatusOK, common.APICodeDeviceUserCodeInvalid, "second approval")
+	if w := status(); !w.success() || w.data()["status"] != model.AgentDeviceStatusApproved || w.data()["claim"] != nil {
+		t.Fatalf("after approval the page sees it waiting for the agent: %s", w.raw)
+	}
 
 	resetPollClock(t)
 	got := poll()
@@ -230,6 +240,11 @@ func TestDeviceFlowEndToEnd(t *testing.T) {
 	}
 	if !f.keyCalls(key) {
 		t.Fatal("the issued key should work")
+	}
+	claimed := status()
+	claim, _ := claimed.data()["claim"].(map[string]any)
+	if claimed.data()["status"] != model.AgentDeviceStatusClaimed || claim == nil || claim["ip"] != ip || claim["claimed_at"] == nil {
+		t.Fatalf("once the agent has its key the page shows when and from where: %s", claimed.raw)
 	}
 	var stored model.Token
 	model.DB.First(&stored, int(approved.data()["id"].(float64)))
@@ -256,6 +271,9 @@ func TestDeviceFlowDenied(t *testing.T) {
 		t.Fatalf("want access_denied, got %s", w.raw)
 	}
 	expectDenied(t, f.do(http.MethodGet, "/api/agent/device/"+userCode, "", nil, cookies...), http.StatusOK, common.APICodeDeviceUserCodeInvalid, "answered request")
+	if st := f.do(http.MethodGet, "/api/agent/device/"+userCode+"/status", "", nil, cookies...); st.data()["status"] != model.AgentDeviceStatusDenied {
+		t.Fatalf("the page follows a denial too: %s", st.raw)
+	}
 }
 
 // Organization keys: the paired key is the organization's key, only its creator can issue a code,
