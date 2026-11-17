@@ -24,7 +24,7 @@ async function switchAccount(returnTo) {
   window.location.assign(providerLogout || `/login?redirect=${encodeURIComponent(returnTo)}`);
 }
 
-export function Shell({ children, returnTo }) {
+export function Shell({ children, returnTo, lead = false }) {
   const { t } = useTranslation();
   const { pathname, search } = useLocation();
   const siteInfo = useSelector((state) => state.siteInfo);
@@ -55,14 +55,14 @@ export function Shell({ children, returnTo }) {
           </div>
         )}
       </header>
-      <main className="flex flex-1 justify-center px-4 pb-12 pt-4 sm:pt-[5vh]">
+      <main className={cn('flex flex-1 justify-center px-4 pb-12 pt-4', lead ? 'sm:pt-[14vh]' : 'sm:pt-[5vh]')}>
         <div className="w-full max-w-[480px]">{children}</div>
       </main>
     </div>
   );
 }
 
-Shell.propTypes = { children: PropTypes.node, returnTo: PropTypes.string };
+Shell.propTypes = { children: PropTypes.node, returnTo: PropTypes.string, lead: PropTypes.bool };
 
 export function Heading({ title, children, className }) {
   return (

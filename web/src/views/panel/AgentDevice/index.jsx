@@ -293,10 +293,27 @@ export default function AgentDevice() {
   // ---- step 1: the code ----
   if (!request || !confirmed) {
     const complete = codeLetters(code).length === CODE_LENGTH;
+    // Came in the agent's link: lead with who is asking, the code below to compare.
     const fromLink = Boolean(request);
+    const asker = fromLink ? recognizeClient(request.client_name, request.request_user_agent) : null;
     return (
-      <Shell>
-        <Heading title={t('agentDevice.title')}>{t(fromLink ? 'agentDevice.compareHint' : 'agentDevice.description')}</Heading>
+      <Shell lead>
+        {fromLink ? (
+          <>
+            <div className="mb-5 flex justify-center">
+              <ClientMark client={asker} large />
+            </div>
+            <Heading title={t('agentDevice.linkTitle', { client: request.client_name || t('agentDevice.unnamed') })}>
+              <span data-testid="device-identity">
+                {asker
+                  ? t('agentDevice.recognized', { name: [asker.name, asker.version].filter(Boolean).join(' ') })
+                  : t('agentDevice.unrecognized')}
+              </span>
+            </Heading>
+          </>
+        ) : (
+          <Heading title={t('agentDevice.title')}>{t('agentDevice.description')}</Heading>
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -320,10 +337,8 @@ export default function AgentDevice() {
           <p className={cn('mt-3 min-h-5 text-center text-sm', lookupError ? 'text-destructive' : 'text-muted-foreground')}>
             {lookupError ? (
               <span data-testid="device-lookup-error">{lookupError}</span>
-            ) : fromLink ? (
-              t('agentDevice.requestFrom', { client: request.client_name || t('agentDevice.unnamed') })
             ) : (
-              t('agentDevice.codeHint')
+              t(fromLink ? 'agentDevice.compareHint' : 'agentDevice.codeHint')
             )}
           </p>
           <Button type="submit" className="mt-6 h-10 w-full" disabled={looking || !complete}>

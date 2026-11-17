@@ -4560,6 +4560,6 @@
     "orgAccountPlain": "組織",
     "searchAccounts": "搜尋帳戶",
     "noAccountMatch": "沒有相符的帳戶",
-    "requestFrom": "來自「{{client}}」的請求"
+    "linkTitle": "「{{client}}」想連接你的帳戶"
   }
 }

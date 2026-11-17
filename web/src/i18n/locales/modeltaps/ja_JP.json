@@ -4553,6 +4553,6 @@
     "orgAccountPlain": "組織",
     "searchAccounts": "アカウントを検索",
     "noAccountMatch": "一致するアカウントはありません",
-    "requestFrom": "「{{client}}」からのリクエスト"
+    "linkTitle": "「{{client}}」があなたのアカウントへの接続を求めています"
   }
 }

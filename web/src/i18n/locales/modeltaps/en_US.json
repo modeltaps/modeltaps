@@ -4671,6 +4671,6 @@
     "orgAccountPlain": "Organization",
     "searchAccounts": "Search accounts",
     "noAccountMatch": "No account matches",
-    "requestFrom": "Request from “{{client}}”"
+    "linkTitle": "“{{client}}” wants to connect to your account"
   }
 }

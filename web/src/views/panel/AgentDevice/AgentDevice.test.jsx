@@ -153,7 +153,9 @@ describe('AgentDevice confirmation page (AGENT-7)', () => {
     openPage();
     await waitFor(() => expect(API.get).toHaveBeenCalledWith('/api/agent/device/BCDF-GHJK'));
     expect(document.getElementById('device-user-code').value).toBe('BCDF-GHJK');
-    expect(await screen.findByText(i18n.t('agentDevice.requestFrom', { client: 'OpenClaw on laptop' }))).toBeTruthy();
+    expect((await screen.findByRole('heading', { level: 1 })).textContent).toContain('OpenClaw on laptop');
+    expect(screen.getByTestId('device-identity').textContent).toContain('OpenClaw 2.4.1');
+    expect(screen.getByText(i18n.t('agentDevice.compareHint'))).toBeTruthy();
     expect(screen.queryByTestId('device-request')).toBeNull();
   });
 

@@ -14,16 +14,30 @@ import { cn } from '@/lib/utils';
 
 const TerminalMark = <SquareTerminal className="size-5 text-muted-foreground" strokeWidth={1.5} />;
 
-// The agent's mark: its brand icon when recognized, a terminal glyph otherwise.
-export function ClientMark({ client, className }) {
+const LargeTerminalMark = <SquareTerminal className="size-8 text-muted-foreground" strokeWidth={1.5} />;
+
+// The agent's mark: its brand icon when recognized, a terminal glyph otherwise. `large` is the
+// lead of the code step, where who is asking is the first thing to read.
+export function ClientMark({ client, large = false, className }) {
+  const fallback = large ? LargeTerminalMark : TerminalMark;
   return (
-    <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card', className)}>
-      {client ? <BrandIcon brandKey={client.brandKey} domain={client.domain} fallback={TerminalMark} className="size-5" /> : TerminalMark}
+    <span
+      className={cn(
+        'flex shrink-0 items-center justify-center border border-border bg-card',
+        large ? 'size-16 rounded-2xl shadow-sm' : 'size-10 rounded-xl',
+        className
+      )}
+    >
+      {client ? (
+        <BrandIcon brandKey={client.brandKey} domain={client.domain} fallback={fallback} className={large ? 'size-8' : 'size-5'} />
+      ) : (
+        fallback
+      )}
     </span>
   );
 }
 
-ClientMark.propTypes = { client: PropTypes.object, className: PropTypes.string };
+ClientMark.propTypes = { client: PropTypes.object, large: PropTypes.bool, className: PropTypes.string };
 
 function OwnerMark({ user, org }) {
   if (org) return <ContextMark kind="org" org={org} className="size-10 rounded-xl" />;
