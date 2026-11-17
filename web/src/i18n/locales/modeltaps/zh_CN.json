@@ -2232,6 +2232,7 @@
       "addedToCatalog": "已把 {{model}} 加入目录（草稿），在模型页设好价格并发布后公开",
       "attached": "已接入 {{model}}",
       "removeGone": "全部移除 {{count}} 个",
+      "bulkAdd": "加入 {{count}} 个",
       "bulkOff": "停用 {{count}} 个",
       "bulkOn": "启用 {{count}} 个",
       "bulkRemove": "移除 {{count}} 个",

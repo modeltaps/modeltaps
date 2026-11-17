@@ -429,19 +429,6 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   const [removedNames, setRemovedNames] = useState([]);
   const removed = useMemo(() => removedNames.filter((n) => !models.includes(n)), [removedNames, models]);
   const removedKey = removed.join(',');
-  useEffect(() => {
-    let alive = true;
-    const timer = setTimeout(() => {
-      fetchChannelModelDetails(channel.id, [...splitList(draft.models), ...splitList(removedKey)], mapping)
-        .then((list) => alive && setDetails(new Map(list.map((d) => [d.model, d]))))
-        .catch(() => alive && setDetails((cur) => cur || new Map()));
-    }, 300);
-    return () => {
-      alive = false;
-      clearTimeout(timer);
-    };
-  }, [channel.id, draft.models, removedKey, mapping, detailsStamp]);
-  const detailOf = (name) => details?.get(name);
 
   // What the upstream listed at the last model check, read again after each check.
   const checkedAt = channel.model_drift?.checked_at || 0;
@@ -457,6 +444,24 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   }, [channel.id, checkedAt]);
   const snapshot = useMemo(() => snapshotOf(upstreamList), [upstreamList]);
   const unlisted = useMemo(() => unlistedOf(upstreamList, models, mapping), [upstreamList, models, mapping]);
+  // Upstream models the channel does not list are read too, for their kind, marks and context.
+  const unlistedKey = unlisted
+    .slice(0, 300)
+    .map((u) => u.name)
+    .join(',');
+  useEffect(() => {
+    let alive = true;
+    const timer = setTimeout(() => {
+      fetchChannelModelDetails(channel.id, [...splitList(draft.models), ...splitList(removedKey), ...splitList(unlistedKey)], mapping)
+        .then((list) => alive && setDetails(new Map(list.map((d) => [d.model, d]))))
+        .catch(() => alive && setDetails((cur) => cur || new Map()));
+    }, 300);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [channel.id, draft.models, removedKey, unlistedKey, mapping, detailsStamp]);
+  const detailOf = (name) => details?.get(name);
 
   // The channel's own order; the table shows the usual order below (most used families first).
   const rows = useMemo(
@@ -708,7 +713,9 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   const [ticked, setTicked] = useState(() => new Set());
   const tickedNames = models.filter((m) => ticked.has(m));
   // The header box ticks every listed row the filter and search show, on all pages.
-  const tickable = only === 'unlisted' ? [] : list.matches.filter((r) => !r.removed).map((r) => r.name);
+  // In the new / unlisted views the rows are upstream models: ticking them is for adding them.
+  const tickable = upstreamOnly ? upstreamShown.map((u) => u.name) : list.matches.filter((r) => !r.removed).map((r) => r.name);
+  const tickedUpstream = upstreamOnly ? tickable.filter((n) => ticked.has(n)) : [];
   const allTicked = tickable.length > 0 && tickable.every((n) => ticked.has(n));
   const someTicked = !allTicked && tickable.some((n) => ticked.has(n));
   const tick = (names, on) =>
@@ -922,7 +929,27 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
               </button>
             </p>
           )}
-          {tickedNames.length > 0 && (
+          {tickedUpstream.length > 0 && (
+            <BatchBar
+              count={tickedUpstream.length}
+              onClear={() => setTicked(new Set())}
+              className="min-h-0 py-0 pb-2"
+              actions={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-[26px] rounded-lg bg-card text-xs"
+                  onClick={() => {
+                    addNames(tickedUpstream);
+                    setTicked(new Set());
+                  }}
+                >
+                  {t('channels.models.bulkAdd', { count: tickedUpstream.length })}
+                </Button>
+              }
+            />
+          )}
+          {!upstreamOnly && tickedNames.length > 0 && (
             <BatchBar
               count={tickedNames.length}
               onClear={() => setTicked(new Set())}
@@ -975,7 +1002,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                 <col className="w-16" />
                 {showPrices && <col className="w-[5.125rem]" />}
                 {showPrices && <col className="w-[5.125rem]" />}
-                <col className="w-11" />
+                <col className="w-12" />
                 <col className="w-8" />
               </colgroup>
               <thead>
@@ -1132,20 +1159,51 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                       data-testid="unlisted-model"
                       className="[&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-2 [&>td:nth-child(2)]:px-3 last:[&>td]:border-b-0"
                     >
-                      <td />
-                      <td colSpan={hasMapping ? 3 : 2}>
-                        <span className="flex min-w-0 items-center gap-1.5">
-                          <span className="min-w-0 truncate font-mono">{u.name}</span>
-                          {only === 'unlisted' && fresh.includes(u) && (
-                            <span className={cn(TAG_TEXT, 'bg-warning/10 text-warning')}>{t('channels.models.state.new')}</span>
-                          )}
-                        </span>
-                        <span className="block truncate text-xs text-muted-foreground">
-                          {t(`channels.models.unlistedState.${u.state}`, { model: u.public_model, defaultValue: u.state })}
-                        </span>
+                      <td className="!pl-3 !pr-0">
+                        <Checkbox
+                          checked={ticked.has(u.name)}
+                          onCheckedChange={(on) => tick([u.name], on)}
+                          aria-label={t('channels.models.tickOne', { model: u.name })}
+                        />
+                      </td>
+                      <td>
+                        <div className="flex min-w-0 items-center gap-2">
+                          <div className="min-w-0 flex-1">
+                            <span className="flex min-w-0 items-center gap-1.5">
+                              <span className="min-w-0 truncate font-mono">{u.name}</span>
+                              <ModelKindTag kind={detailOf(u.name)?.kind} />
+                              {only === 'unlisted' && fresh.includes(u) && (
+                                <span className={cn(TAG_TEXT, 'bg-warning/10 text-warning')}>{t('channels.models.state.new')}</span>
+                              )}
+                            </span>
+                            <span className="block truncate text-xs text-muted-foreground">
+                              {t(`channels.models.unlistedState.${u.state}`, { model: u.public_model, defaultValue: u.state })}
+                            </span>
+                          </div>
+                          <ModelTraitMarks
+                            kind={detailOf(u.name)?.kind}
+                            inputModalities={detailOf(u.name)?.input_modalities}
+                            capabilities={detailOf(u.name)?.capabilities}
+                            size="sm"
+                            className="grid grid-flow-col grid-rows-2 gap-0.5"
+                          />
+                        </div>
+                      </td>
+                      {hasMapping && <td className="text-muted-foreground">—</td>}
+                      <td className="text-right tabular-nums text-muted-foreground">
+                        {formatContext(detailOf(u.name)?.context_length) || '—'}
                       </td>
                       {showPrices && <UpstreamPriceCells price={pricesByModel.get(u.name)} publics={[]} onFilter={setPriceKind} />}
-                      <td />
+                      <td className="text-center">
+                        {/* Not in the list yet, so off; switching it on adds it to the list. */}
+                        <Switch
+                          size="sm"
+                          checked={false}
+                          onCheckedChange={(on) => on && addNames([u.name])}
+                          aria-label={t('channels.models.addOne', { model: u.name })}
+                          title={t('channels.models.addOne', { model: u.name })}
+                        />
+                      </td>
                       <td className="!px-1 text-right">
                         <button
                           type="button"

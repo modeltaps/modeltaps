@@ -2228,6 +2228,7 @@
       "addedToCatalog": "{{model}} を下書きとしてカタログに追加しました。モデルページで価格を設定して公開すると公開されます",
       "attached": "{{model}} に接続しました",
       "removeGone": "{{count}} 件をすべて削除",
+      "bulkAdd": "{{count}} 件を追加",
       "bulkOff": "{{count}} 件を無効にする",
       "bulkOn": "{{count}} 件を有効にする",
       "bulkRemove": "{{count}} 件を削除",

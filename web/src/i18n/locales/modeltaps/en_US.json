@@ -2326,6 +2326,7 @@
       "addedToCatalog": "Added {{model}} to the catalog as a draft; it becomes public once it has a price and is published on the model page",
       "attached": "Now supplying {{model}}",
       "removeGone": "Remove all {{count}}",
+      "bulkAdd": "Add {{count}}",
       "bulkOff": "Turn off {{count}}",
       "bulkOn": "Turn on {{count}}",
       "bulkRemove": "Remove {{count}}",
