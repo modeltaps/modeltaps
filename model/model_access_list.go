@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	"github.com/modeltaps/modeltaps/common"
-	"github.com/modeltaps/modeltaps/common/config"
-	"github.com/modeltaps/modeltaps/common/redis"
 	"github.com/modeltaps/modeltaps/common/utils"
 
 	"gorm.io/datatypes"
@@ -236,20 +234,14 @@ func DeleteOrgModelAccessList(org *Organization, id int) error {
 			if err := tx.Model(token).Select("setting").Updates(token).Error; err != nil {
 				return err
 			}
-			tokenKeys = append(tokenKeys, token.Key)
+			tokenKeys = append(tokenKeys, token.KeyHash)
 		}
 		return nil
 	})
 	if err != nil {
 		return err
 	}
-	if config.RedisEnabled {
-		for _, key := range tokenKeys {
-			if key != "" {
-				redis.RedisDel(fmt.Sprintf(UserTokensKey, key))
-			}
-		}
-	}
+	invalidateTokenCaches(tokenKeys)
 	invalidateOrgGuardrailCacheAllMembers(org)
 	return nil
 }

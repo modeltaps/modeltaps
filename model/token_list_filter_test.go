@@ -38,12 +38,12 @@ func TestListTokensConditionsAndCounts(t *testing.T) {
 	}
 	for i := range seed {
 		seed[i].UserId = 7
-		seed[i].Key = fmt.Sprintf("k%d", i)
+		seed[i].KeyHash = fmt.Sprintf("k%d", i)
 		if err := DB.Session(&gorm.Session{SkipHooks: true}).Create(&seed[i]).Error; err != nil {
 			t.Fatalf("create token: %v", err)
 		}
 	}
-	other := Token{UserId: 8, Key: "other", Name: "other", Status: config.TokenStatusEnabled, ExpiredTime: -1}
+	other := Token{UserId: 8, KeyHash: "other", Name: "other", Status: config.TokenStatusEnabled, ExpiredTime: -1}
 	if err := DB.Session(&gorm.Session{SkipHooks: true}).Create(&other).Error; err != nil {
 		t.Fatalf("create token: %v", err)
 	}
@@ -100,7 +100,7 @@ func TestListTokensConditionsAndCounts(t *testing.T) {
 func TestListOrgTokensCreatedBy(t *testing.T) {
 	setupTokenListDB(t)
 	for i, by := range []int{1, 1, 2} {
-		tk := Token{UserId: 99, Key: fmt.Sprintf("o%d", i), Name: fmt.Sprintf("o%d", i), Status: config.TokenStatusEnabled, ExpiredTime: -1, CreatedBy: by}
+		tk := Token{UserId: 99, KeyHash: fmt.Sprintf("o%d", i), Name: fmt.Sprintf("o%d", i), Status: config.TokenStatusEnabled, ExpiredTime: -1, CreatedBy: by}
 		if err := DB.Session(&gorm.Session{SkipHooks: true}).Create(&tk).Error; err != nil {
 			t.Fatalf("create token: %v", err)
 		}
@@ -139,7 +139,7 @@ func TestListTokensSpendAndLimitConditions(t *testing.T) {
 	}
 	for i := range seed {
 		seed[i].UserId = 3
-		seed[i].Key = fmt.Sprintf("s%d", i)
+		seed[i].KeyHash = fmt.Sprintf("s%d", i)
 		seed[i].Status = config.TokenStatusEnabled
 		seed[i].ExpiredTime = -1
 		if err := DB.Session(&gorm.Session{SkipHooks: true}).Create(&seed[i]).Error; err != nil {

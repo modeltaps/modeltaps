@@ -1,9 +1,9 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { flexRender, useTable } from '@tanstack/react-table';
 import { appTableFeatures } from 'components/ui/table-features';
 import {
-  Copy,
+  RefreshCw,
   Pencil,
   Trash2,
   ArrowUpDown,
@@ -40,10 +40,12 @@ import { relativeTime } from 'utils/relativeTime';
 import { workbench } from 'routes/paths';
 import { useScopedNavigate } from 'routes/useScope';
 
-// The short form of a key shown next to its name: the prefix and the last four characters.
-export function keySuffix(key) {
-  const k = key || '';
-  return k.length > 4 ? `sk-…${k.slice(-4)}` : `sk-${k}`;
+// The short form of a key shown next to its name, from its stored hint ("sk-a****Rc6g"): the
+// prefix and the last four characters. The full key is never listed (SEC-47).
+export function keySuffix(hint) {
+  const h = hint || '';
+  if (!h) return '';
+  return h.length > 4 ? `sk-…${h.slice(-4)}` : h;
 }
 
 export function statusInfo(t, status) {
@@ -188,15 +190,17 @@ function UsageCell({ item, todayUsage, resetTimezone, resetWeekStart }) {
 // Builds one key's actions for the row ⋯ menu (table and mobile card alike). `navigate` takes
 // workbench paths and keeps the current scope (useScopedNavigate). `group` splits the
 // menu into sections: manage, connect, inspect, then the destructive delete.
-export function buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw, onToggleStatus }) {
+// `onResetKey` is left out where the key cannot be reset by this user (canResetKey).
+export function buildTokenActions({ item, t, navigate, onEdit, onDelete, onResetKey, onShowUsage, onConnectOpenClaw, onToggleStatus }) {
   // 按 API Key 名预过滤跳转:用量页用 tokens 参数,日志页用 token_name 参数(与 T50b URL 过滤对齐)
   const goUsage = () => navigate(`${workbench.usage()}?tokens=${encodeURIComponent(item.name)}`);
   const goLog = () => navigate(`${workbench.logs()}?token_name=${encodeURIComponent(item.name)}`);
-  // 试用区专用 Key 由系统托管:不给复制明文与编辑入口,删除仍保留。
+  // The playground's key is managed by the system: no edit or reset, delete stays.
   const isPlayground = isPlaygroundToken(item);
   return [
     !isPlayground && { key: 'edit', group: 'manage', label: t('common.edit'), icon: Pencil, onClick: () => onEdit(item.id) },
-    !isPlayground && { key: 'copy', group: 'manage', label: t('token_index.copy'), icon: Copy, onClick: () => onCopyKey(item) },
+    !isPlayground &&
+      onResetKey && { key: 'reset', group: 'manage', label: t('apiKey.secret.reset'), icon: RefreshCw, onClick: () => onResetKey(item) },
     // Enable / disable appears in the menu where the row has no switch (medium and narrow layouts).
     onToggleStatus && {
       key: 'toggle',
@@ -286,7 +290,7 @@ function KeyListRow({ item, rtf, selectMode, selected, onToggleSelect, onToggleS
         </div>
         <div className="mt-0.5 flex items-baseline gap-3 text-xs text-muted-foreground">
           <span className="min-w-0 truncate">
-            {!isPlaygroundToken(item) && <span className="font-mono">{keySuffix(item.key)}</span>}
+            {!isPlaygroundToken(item) && <span className="font-mono">{keySuffix(item.key_hint)}</span>}
             {!isPlaygroundToken(item) && ' · '}
             <span
               className={cn(state.tone === 'danger' && 'text-destructive', state.tone === 'warn' && 'text-amber-600 dark:text-amber-500')}
@@ -373,7 +377,8 @@ export default function TokenTable({
   orgMemberNames = null,
   userGroup,
   userIsReliable,
-  onCopyKey,
+  onResetKey,
+  canResetKey,
   onEdit,
   onDelete,
   onToggleStatus,
@@ -399,6 +404,11 @@ export default function TokenTable({
   const rtfLocale = (i18n.language || 'zh_CN').replace('_', '-');
   // Medium and narrow layouts use the short relative time ("3h ago").
   const listRtf = useMemo(() => new Intl.RelativeTimeFormat(rtfLocale, { numeric: 'auto', style: 'narrow' }), [rtfLocale]);
+  // The reset action of one row, or undefined where this user cannot reset that key.
+  const resetFor = useCallback(
+    (item) => (onResetKey && (!canResetKey || canResetKey(item)) ? onResetKey : undefined),
+    [onResetKey, canResetKey]
+  );
 
   const columns = useMemo(() => {
     const rtf = new Intl.RelativeTimeFormat(rtfLocale, { numeric: 'auto' });
@@ -434,15 +444,15 @@ export default function TokenTable({
           ]
         : []),
       // API Key: one line, the name followed by the key's last characters ("sk-…Rc6g") so a key can
-      // be told apart without a second row; copy appears on hover (always on touch screens). The
-      // full key is shown in the key's panel. Sorting is by name.
+      // be told apart without a second row. The full key is only shown once, when it is created or
+      // reset. Sorting is by name.
       {
         accessorKey: 'name',
         header: t('token_index.token'),
         meta: { sortable: true },
         cell: (c) => {
           const item = c.row.original;
-          // Keys the playground manages show a badge instead of the suffix and copy button.
+          // Keys the playground manages show a badge instead of the suffix.
           return (
             <div className="group/token flex min-w-0 items-center gap-2 whitespace-nowrap">
               <span className="truncate font-medium">{item.name}</span>
@@ -451,21 +461,9 @@ export default function TokenTable({
                   {t('token_index.playgroundManaged')}
                 </Badge>
               ) : (
-                <>
-                  <code className="shrink-0 font-mono text-xs text-muted-foreground">{keySuffix(item.key)}</code>
-                  <RowControl className="-ml-1 shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover/token:opacity-100 max-md:opacity-100">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-6"
-                      onClick={() => onCopyKey(item)}
-                      aria-label={t('token_index.copy')}
-                      title={t('token_index.copy')}
-                    >
-                      <Copy className="size-3.5" />
-                    </Button>
-                  </RowControl>
-                </>
+                <code className="shrink-0 font-mono text-xs text-muted-foreground" data-testid="token-key-hint">
+                  {keySuffix(item.key_hint)}
+                </code>
               )}
             </div>
           );
@@ -595,7 +593,7 @@ export default function TokenTable({
                 navigate,
                 onEdit,
                 onDelete,
-                onCopyKey,
+                onResetKey: resetFor(c.row.original),
                 onShowUsage,
                 onConnectOpenClaw
               })}
@@ -609,7 +607,7 @@ export default function TokenTable({
     t,
     userGroup,
     userIsReliable,
-    onCopyKey,
+    resetFor,
     onEdit,
     onDelete,
     onToggleStatus,
@@ -657,7 +655,7 @@ export default function TokenTable({
             onToggleStatus={onToggleStatus}
             onOpen={onOpen}
             active={item.id === openId}
-            actions={buildTokenActions({ item, t, navigate, onEdit, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw })}
+            actions={buildTokenActions({ item, t, navigate, onEdit, onDelete, onResetKey: resetFor(item), onShowUsage, onConnectOpenClaw })}
           />
         ))}
       </ul>

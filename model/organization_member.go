@@ -2,13 +2,11 @@ package model
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/database"
-	"github.com/modeltaps/modeltaps/common/redis"
 	"github.com/modeltaps/modeltaps/common/utils"
 
 	"gorm.io/gorm"
@@ -316,7 +314,7 @@ func RemoveOrganizationMember(org *Organization, targetUserId int) error {
 			return err
 		}
 		memberTokens := tx.Model(&Token{}).Where("user_id = ? AND created_by = ?", org.ShadowUserId, targetUserId)
-		if err := memberTokens.Pluck("key", &tokenKeys).Error; err != nil {
+		if err := memberTokens.Pluck("key_hash", &tokenKeys).Error; err != nil {
 			return err
 		}
 		return tx.Model(&Token{}).Where("user_id = ? AND created_by = ?", org.ShadowUserId, targetUserId).
@@ -328,12 +326,6 @@ func RemoveOrganizationMember(org *Organization, targetUserId int) error {
 	if err != nil {
 		return err
 	}
-	if config.RedisEnabled {
-		for _, key := range tokenKeys {
-			if key != "" {
-				redis.RedisDel(fmt.Sprintf(UserTokensKey, key))
-			}
-		}
-	}
+	invalidateTokenCaches(tokenKeys)
 	return nil
 }

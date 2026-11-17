@@ -3,22 +3,29 @@ import { useCallback, useRef, useState } from 'react';
 import { RelayError } from './useRelayRequest';
 
 // ==============================|| PLAYGROUND — API KEY ||============================== //
-// 试用面板用个人的 sys_playground 长期 token 调同源 /v1（后端 GET /api/token/playground
-// 自动建 / 复用）。key 只活在本 hook 的 ref 里，只经 Authorization 头发出：
-// 不落任何浏览器存储、不进 URL、不进 Redux、不渲染到 DOM。
-// 面板里展示的等效 curl 一律用占位符，不回填真实 key。
-// 取 key 走裸 fetch 而不是 utils/api 的 API 实例：后者的响应拦截器会额外弹一次全局 toast，
-// 而取 key 失败在这里只是面板内的一次失败，由面板的错误条呈现。
+// The playground calls the same-origin relay (/v1) with a short-lived playground key: POST
+// /api/token/playground (signed-in session) issues one that spends on the user's playground API
+// key and expires after an hour (model.PlaygroundKey). Long-lived API keys are never fetched,
+// they cannot be read back. The key only lives in memory and only goes out in the Authorization
+// header: never in browser storage, URLs, Redux or the DOM; the code shown next to the
+// playground uses a placeholder. The request uses a bare fetch rather than utils/api: that
+// instance's interceptor would pop a global toast, while a failure here is one failure inside the
+// panel, shown by its error bar.
 
 export const PLAYGROUND_TOKEN_PATH = '/api/token/playground';
 
-// 后端回的是裸 key，调用方要的是 sk- 前缀的完整值。
+// Renew the key this many seconds before it expires, so a request never goes out with a key
+// about to lapse.
+export const PLAYGROUND_KEY_RENEW_SECONDS = 120;
+
+// The backend returns the key without its prefix; callers want the full "sk-" value and when it
+// expires (Unix seconds).
 export async function requestPlaygroundKey(fetchImpl) {
   const doFetch = fetchImpl || ((...args) => fetch(...args));
   let res;
   try {
     res = await doFetch(PLAYGROUND_TOKEN_PATH, {
-      method: 'GET',
+      method: 'POST',
       credentials: 'same-origin',
       headers: { Accept: 'application/json' }
     });
@@ -27,26 +34,31 @@ export async function requestPlaygroundKey(fetchImpl) {
   }
   const body = await res.json().catch(() => null);
   const { success, message, data } = body || {};
-  if (!res.ok || !success || !data) throw new RelayError({ i18nKey: 'playground.errors.keyFailed', message: message || '' });
-  return `sk-${data}`;
+  if (!res.ok || !success || !data?.key) throw new RelayError({ i18nKey: 'playground.errors.keyFailed', message: message || '' });
+  return { key: `sk-${data.key}`, expiresAt: Number(data.expires_at) || 0 };
+}
+
+// True while a key from requestPlaygroundKey can still be used.
+export function playgroundKeyFresh(entry, nowSeconds = Date.now() / 1000) {
+  return Boolean(entry?.key) && entry.expiresAt - PLAYGROUND_KEY_RENEW_SECONDS > nowSeconds;
 }
 
 export default function usePlaygroundKey() {
-  const keyRef = useRef('');
+  const keyRef = useRef(null);
   const pendingRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // 懒取：页面打开不动 key，用户第一次点「运行」才请求，之后整个会话复用同一份内存副本。
+  // Lazy: nothing is requested until the first run; the key is then reused until it nears expiry.
   const ensureKey = useCallback(async () => {
-    if (keyRef.current) return keyRef.current;
+    if (playgroundKeyFresh(keyRef.current)) return keyRef.current.key;
     if (!pendingRef.current) {
       setLoading(true);
       setError(null);
       pendingRef.current = requestPlaygroundKey()
-        .then((key) => {
-          keyRef.current = key;
-          return key;
+        .then((entry) => {
+          keyRef.current = entry;
+          return entry.key;
         })
         .catch((err) => {
           setError(err);

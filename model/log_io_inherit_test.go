@@ -114,13 +114,13 @@ func TestTokenLogIOColumnPreservedButIgnored(t *testing.T) {
 	setupLogIOInheritTestDB(t)
 	uid := seedLogIOUser(t, config.UserTypeNormal, nil) // 个人默认未配,回退站点
 
-	if err := DB.Exec("INSERT INTO tokens (user_id, name, `key`, log_io) VALUES (?,?,?,1)", uid, "legacy-on", utils.GetRandomString(48)).Error; err != nil {
+	if err := DB.Exec("INSERT INTO tokens (user_id, name, key_hash, log_io) VALUES (?,?,?,1)", uid, "legacy-on", utils.GetRandomString(48)).Error; err != nil {
 		t.Fatalf("写入存量强制开令牌失败: %v", err)
 	}
-	if err := DB.Exec("INSERT INTO tokens (user_id, name, `key`, log_io) VALUES (?,?,?,0)", uid, "legacy-off", utils.GetRandomString(48)).Error; err != nil {
+	if err := DB.Exec("INSERT INTO tokens (user_id, name, key_hash, log_io) VALUES (?,?,?,0)", uid, "legacy-off", utils.GetRandomString(48)).Error; err != nil {
 		t.Fatalf("写入存量强制关令牌失败: %v", err)
 	}
-	if err := DB.Exec("INSERT INTO tokens (user_id, name, `key`, log_io) VALUES (?,?,?,NULL)", uid, "inherit", utils.GetRandomString(48)).Error; err != nil {
+	if err := DB.Exec("INSERT INTO tokens (user_id, name, key_hash, log_io) VALUES (?,?,?,NULL)", uid, "inherit", utils.GetRandomString(48)).Error; err != nil {
 		t.Fatalf("写入继承令牌失败: %v", err)
 	}
 

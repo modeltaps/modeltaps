@@ -45,6 +45,8 @@ import NewTokenDialog from './NewTokenDialog';
 import { TOKEN_TAB_KEYS } from './tokenTabs';
 import TokenUsageDialog from './TokenUsageDialog';
 import OpenClawConnectDialog from './OpenClawConnectDialog';
+import { KeySecretDialog } from './KeySecret';
+import { isPlaygroundToken } from 'utils/playgroundToken';
 
 // Column registry for the show/hide menu. Ids match TokenTable column ids. The name and
 // actions columns are always shown and stay out of the menu (fixed). Usage carries spend, the
@@ -195,6 +197,15 @@ export default function Token() {
   const [deleting, setDeleting] = useState(false);
   const [usageTarget, setUsageTarget] = useState(null);
   const [openClawTarget, setOpenClawTarget] = useState(null);
+  // Keys are stored as hashes only (SEC-47). A key created or reset on this page stays known here,
+  // in memory and only while the page is open, so its test command and client setup can be built;
+  // for other keys those dialogs ask the user to paste the key.
+  const [freshSecrets, setFreshSecrets] = useState({});
+  const rememberSecret = (id, key) => id && key && setFreshSecrets((prev) => ({ ...prev, [id]: key }));
+  const [resetTarget, setResetTarget] = useState(null);
+  const [resetting, setResetting] = useState(false);
+  const [revealed, setRevealed] = useState(null);
+  const myId = useSelector((state) => state.account.user?.id);
 
   const { loadUserGroup } = useContext(UserContext);
   const siteInfo = useSelector((state) => state.siteInfo);
@@ -492,7 +503,35 @@ export default function Token() {
     }
   };
 
-  const onCopyKey = (item) => copyText(`sk-${item.key}`, t('token_index.token'));
+  // Who may reset a key: its owner. In an organization only the member who created the key, owners
+  // and admins included (the backend enforces the same), and in the site admin search only one's own.
+  const canResetKey = (item) => {
+    if (!item || isPlaygroundToken(item)) return false;
+    if (isAdminSearch) return item.user_id === myId;
+    if (isOrgContext) return item.created_by === myId;
+    return true;
+  };
+
+  const confirmReset = async () => {
+    if (!resetTarget || resetting) return;
+    setResetting(true);
+    try {
+      const res = await API.post(`/api/token/${resetTarget.id}/reset_key`);
+      const { success, message, data } = res.data;
+      if (success && data?.key) {
+        const key = `sk-${data.key}`;
+        rememberSecret(resetTarget.id, key);
+        setRevealed({ name: resetTarget.name, key });
+        setTokens((prev) => prev.map((x) => (x.id === resetTarget.id ? { ...x, key_hint: data.key_hint } : x)));
+        setReloadKey((k) => k + 1);
+        setResetTarget(null);
+      } else showError(message);
+    } catch {
+      // surfaced globally
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const openCreate = route.openNew;
   const openEdit = (id) => route.open(id, 'basics');
@@ -663,7 +702,8 @@ export default function Token() {
                   orgMemberNames={isOrgContext ? orgMemberNames : null}
                   userGroup={userGroup}
                   userIsReliable={userIsReliable}
-                  onCopyKey={onCopyKey}
+                  onResetKey={setResetTarget}
+                  canResetKey={canResetKey}
                   onEdit={openEdit}
                   onDelete={setDeleteTarget}
                   onToggleStatus={onToggleStatus}
@@ -718,7 +758,8 @@ export default function Token() {
             resetTimezone={siteInfo?.quota_reset_timezone}
             resetWeekStart={siteInfo?.quota_reset_week_start}
             onToggleStatus={onToggleStatus}
-            onCopyKey={onCopyKey}
+            onResetKey={setResetTarget}
+            canResetKey={canResetKey}
             onCopyText={copyText}
             onDelete={setDeleteTarget}
             onShowUsage={setUsageTarget}
@@ -729,7 +770,10 @@ export default function Token() {
         {route.isNew && (
           <NewTokenDialog
             onClose={route.close}
-            onCreated={handleRefresh}
+            onCreated={(created) => {
+              rememberSecret(created?.id, created?.key);
+              handleRefresh();
+            }}
             onOpen={(id) => route.open(id)}
             baseUrl={apiAddresses[0]?.url}
             onCopy={copyText}
@@ -772,10 +816,38 @@ export default function Token() {
           </DialogContent>
         </Dialog>
 
+        <Dialog open={!!resetTarget} onOpenChange={(o) => !o && setResetTarget(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('apiKey.secret.resetTitle', { name: resetTarget?.name || '' })}</DialogTitle>
+              <DialogDescription>{t('apiKey.secret.resetConfirm')}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setResetTarget(null)}>
+                {t('token_index.cancel')}
+              </Button>
+              <Button variant="destructive" onClick={confirmReset} disabled={resetting}>
+                {t('apiKey.secret.reset')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {revealed && (
+          <KeySecretDialog
+            name={revealed.name}
+            secret={revealed.key}
+            baseUrl={apiAddresses[0]?.url}
+            onCopy={copyText}
+            onClose={() => setRevealed(null)}
+          />
+        )}
+
         <TokenUsageDialog
           open={!!usageTarget}
           onOpenChange={(o) => !o && setUsageTarget(null)}
           token={usageTarget}
+          secret={usageTarget ? freshSecrets[usageTarget.id] : undefined}
           serverAddress={siteInfo?.server_address}
         />
 
@@ -783,6 +855,7 @@ export default function Token() {
           open={!!openClawTarget}
           onOpenChange={(o) => !o && setOpenClawTarget(null)}
           token={openClawTarget}
+          secret={openClawTarget ? freshSecrets[openClawTarget.id] : undefined}
           serverAddress={siteInfo?.server_address}
         />
       </div>

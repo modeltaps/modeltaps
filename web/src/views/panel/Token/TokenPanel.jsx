@@ -16,7 +16,6 @@ import { ObjectPanel, ObjectTile } from '@/components/objects';
 import { API } from 'utils/api';
 import { useOrg } from 'contexts/OrgContext';
 import { isPlaygroundToken } from 'utils/playgroundToken';
-import { maskSecret } from 'utils/maskSecret';
 import { toLimitModels } from './ModelLimitSelector';
 import { buildTokenActions } from './TokenTable';
 import { TOKEN_TABS } from './tokenTabs';
@@ -43,7 +42,8 @@ export default function TokenPanel({
   resetTimezone,
   resetWeekStart,
   onToggleStatus,
-  onCopyKey,
+  onResetKey,
+  canResetKey,
   onCopyText,
   onDelete,
   onShowUsage,
@@ -101,8 +101,10 @@ export default function TokenPanel({
     };
   }, [currentOrgId, adminMode]);
 
+  // Reset is offered on the key row of the overview, not in this menu.
+  const resetKey = token && onResetKey && !playground && (!canResetKey || canResetKey(token)) ? () => onResetKey(token) : undefined;
   const menu = token
-    ? buildTokenActions({ item: token, t, navigate, onEdit: () => {}, onDelete, onCopyKey, onShowUsage, onConnectOpenClaw }).filter(
+    ? buildTokenActions({ item: token, t, navigate, onEdit: () => {}, onDelete, onShowUsage, onConnectOpenClaw }).filter(
         (a) => a && a.overflow
       )
     : [];
@@ -118,7 +120,7 @@ export default function TokenPanel({
         </ObjectTile>
       }
       title={token?.name}
-      subtitle={token && !playground ? maskSecret(`sk-${token.key || ''}`) : null}
+      subtitle={token && !playground ? token.key_hint || null : null}
       subtitleMono
       actions={
         token && (
@@ -181,7 +183,7 @@ export default function TokenPanel({
         locale: i18n.language,
         loadModels,
         loadModelAccess,
-        onCopyKey,
+        resetKey,
         onCopyText
       }}
       tabsLabel={t('apiKey.panel.tabs')}
@@ -205,7 +207,8 @@ TokenPanel.propTypes = {
   resetTimezone: PropTypes.string,
   resetWeekStart: PropTypes.string,
   onToggleStatus: PropTypes.func.isRequired,
-  onCopyKey: PropTypes.func.isRequired,
+  onResetKey: PropTypes.func,
+  canResetKey: PropTypes.func,
   onCopyText: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onShowUsage: PropTypes.func.isRequired,

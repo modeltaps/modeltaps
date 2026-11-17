@@ -307,7 +307,7 @@ func DissolveOrganization(org *Organization, ownerId int) error {
 	var tokenKeys []string
 	err := DB.Transaction(func(tx *gorm.DB) error {
 		// 先收集组织令牌 key,事务提交后统一清缓存
-		if err := tx.Model(&Token{}).Where("user_id = ?", shadowId).Pluck("key", &tokenKeys).Error; err != nil {
+		if err := tx.Model(&Token{}).Where("user_id = ?", shadowId).Pluck("key_hash", &tokenKeys).Error; err != nil {
 			return err
 		}
 		// 1. 组织令牌全部失效
@@ -357,11 +357,7 @@ func DissolveOrganization(org *Organization, ownerId int) error {
 		return err
 	}
 	if config.RedisEnabled {
-		for _, key := range tokenKeys {
-			if key != "" {
-				redis.RedisDel(fmt.Sprintf(UserTokensKey, key))
-			}
-		}
+		invalidateTokenCaches(tokenKeys)
 		redis.RedisDel(fmt.Sprintf(UserQuotaCacheKey, shadowId))
 		redis.RedisDel(fmt.Sprintf(UserQuotaCacheKey, ownerId))
 	}

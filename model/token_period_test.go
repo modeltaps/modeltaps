@@ -170,11 +170,11 @@ func TestValidateUserTokenPeriodMode(t *testing.T) {
 		if err := DB.Create(tk).Error; err != nil {
 			t.Fatalf("创建令牌失败: %v", err)
 		}
-		got, err := GetTokenById(tk.Id)
-		if err != nil {
+		// Only the hash is stored; the key itself is on the struct right after Create.
+		if _, err := GetTokenById(tk.Id); err != nil {
 			t.Fatalf("回读令牌失败: %v", err)
 		}
-		return got.Key
+		return tk.Key
 	}
 
 	t.Run("period 模式 remain=0 周期未超放行", func(t *testing.T) {

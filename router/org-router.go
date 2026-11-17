@@ -41,6 +41,7 @@ func setOrgRouter(apiRouter *gin.RouterGroup) {
 			orgMemberRoute.POST("/token", controller.AddOrgToken)
 			orgMemberRoute.PUT("/token", controller.UpdateOrgToken)
 			orgMemberRoute.DELETE("/token/:token_id", controller.DeleteOrgToken)
+			orgMemberRoute.POST("/token/:token_id/reset_key", controller.ResetOrgTokenKey)
 
 			// Model access (ORG-15): read-only view of the approved models, default, member layer and lists
 			orgMemberRoute.GET("/model_access", controller.GetOrgModelAccess)

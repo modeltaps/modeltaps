@@ -10,12 +10,13 @@ import TokenPanel from './TokenPanel';
 import NewTokenDialog from './NewTokenDialog';
 
 vi.mock('utils/api', () => ({ API: { get: vi.fn(), post: vi.fn(), put: vi.fn() } }));
+vi.mock('react-redux', () => ({ useSelector: (select) => select({ siteInfo: {}, account: {} }) }));
 vi.mock('@/components/ui/sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() } }));
 
 const stored = {
   id: 7,
   name: 'agent key',
-  key: 'abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl',
+  key_hint: 'sk-a****ijkl',
   status: 1,
   expired_time: -1,
   unlimited_quota: true,
@@ -41,7 +42,7 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-const openPanel = (tab) =>
+const openPanel = (tab, extra = {}) =>
   render(
     createElement(
       MemoryRouter,
@@ -55,11 +56,11 @@ const openPanel = (tab) =>
         groupOptions: [],
         userGroup: {},
         onToggleStatus: vi.fn(),
-        onCopyKey: vi.fn(),
         onCopyText: vi.fn(),
         onDelete: vi.fn(),
         onShowUsage: vi.fn(),
-        onConnectOpenClaw: vi.fn()
+        onConnectOpenClaw: vi.fn(),
+        ...extra
       })
     )
   );
@@ -67,6 +68,23 @@ const openPanel = (tab) =>
 const save = () => fireEvent.click(screen.getByRole('button', { name: i18n.t('objects.panel.save') }));
 
 describe('TokenPanel', () => {
+  it('shows only the masked key on the overview, with reset and no reveal', async () => {
+    const onResetKey = vi.fn();
+    openPanel('overview', { onResetKey });
+    const hint = await screen.findByTestId('token-key-hint');
+    expect(hint.textContent).toBe('sk-a****ijkl');
+    expect(screen.queryByRole('button', { name: i18n.t('apiKey.panel.reveal') })).toBeNull();
+    expect(screen.getByText(i18n.t('apiKey.secret.listNote'))).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: i18n.t('apiKey.secret.reset') }));
+    expect(onResetKey).toHaveBeenCalledWith(expect.objectContaining({ id: 7 }));
+  });
+
+  it('offers no reset where the user may not reset the key', async () => {
+    openPanel('overview', { onResetKey: vi.fn(), canResetKey: () => false });
+    await screen.findByTestId('token-key-hint');
+    expect(screen.queryByRole('button', { name: i18n.t('apiKey.secret.reset') })).toBeNull();
+  });
+
   it('saves the access tab with the model limit on and no model, keeping the other stored fields', async () => {
     openPanel('access');
     fireEvent.click(await screen.findByRole('switch', { name: i18n.t('token_index.limits_models_switch') }));
@@ -97,7 +115,7 @@ describe('TokenPanel', () => {
 });
 
 describe('NewTokenDialog', () => {
-  it('creates with only a name and shows the new key', async () => {
+  it('creates with only a name and shows the new key once', async () => {
     const onCreated = vi.fn();
     render(createElement(NewTokenDialog, { onClose: vi.fn(), onCreated, onOpen: vi.fn(), onCopy: vi.fn(), baseUrl: 'http://x/v1' }));
     fireEvent.change(document.getElementById('nt-name'), { target: { value: 'ci' } });
@@ -107,7 +125,8 @@ describe('NewTokenDialog', () => {
     const body = API.post.mock.calls[0][1];
     expect(body).toMatchObject({ name: 'ci', expired_time: -1, unlimited_quota: true, group: '' });
     expect(await screen.findByTestId('new-token-key')).toHaveProperty('textContent', 'sk-newkey');
-    expect(onCreated).toHaveBeenCalled();
+    expect(screen.getByTestId('key-once-note').textContent).toBe(i18n.t('apiKey.secret.onceNote'));
+    expect(onCreated).toHaveBeenCalledWith({ id: 9, key: 'sk-newkey' });
   });
 
   it('shows a taken name under the name field', async () => {

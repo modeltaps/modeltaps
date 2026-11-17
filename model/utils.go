@@ -320,15 +320,9 @@ func batchIncreaseTokenQuota(store map[int]int) {
 	}
 
 	if config.RedisEnabled && len(successIDs) > 0 {
-		// 与 model/user.go:283、model/cache.go:212 同款 Pluck 写法：挂 Model schema 后，GORM 会
-		// 帮 reserved word 列名（如 `key`）做 dialect-aware quote。
 		var keys []string
-		if err := DB.Model(&Token{}).Where("id IN ?", successIDs).Pluck("key", &keys).Error; err == nil {
-			for _, k := range keys {
-				if k != "" {
-					redis.RedisDel(fmt.Sprintf(UserTokensKey, k))
-				}
-			}
+		if err := DB.Model(&Token{}).Where("id IN ?", successIDs).Pluck("key_hash", &keys).Error; err == nil {
+			invalidateTokenCaches(keys)
 		} else {
 			logger.SysError(fmt.Sprintf("batchIncreaseTokenQuota: failed to fetch keys for cache invalidation (%d ids): %s",
 				len(successIDs), err.Error()))

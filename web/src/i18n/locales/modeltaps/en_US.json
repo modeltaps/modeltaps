@@ -1845,7 +1845,9 @@
     "smtp_managed": "Mail sending is set in the deployment (smtp.url) and cannot be changed here",
     "supply_intake_rules_invalid": "The intake rules are not valid: {{message}}",
     "channel_base_url_needs_key": "Only the root user can change the base URL without entering the key again. Enter the key to save the new address.",
-    "channel_copy_key_mismatch": "Only the root user can copy a key to a channel with a different type or base URL."
+    "channel_copy_key_mismatch": "Only the root user can copy a key to a channel with a different type or base URL.",
+    "token_key_reset_managed": "The playground API key is managed by the system and cannot be reset",
+    "token_key_reset_not_creator": "Only the member who created this API key can reset it"
   },
   "channelOAuth": {
     "tip": {
@@ -3912,7 +3914,7 @@
       "create": "Create",
       "later": "Defaults: account group, all models, any IP",
       "createdTitle": "Created “{{name}}”",
-      "createdHint": "Paste it into your client. You can also view it in its details later.",
+      "createdHint": "Paste it into your client.",
       "copied": "Copied",
       "openDetails": "Open details",
       "done": "Done"
@@ -3973,6 +3975,21 @@
       "day": "1 day",
       "week": "1 week",
       "month": "1 month"
+    },
+    "secret": {
+      "onceNote": "Copy the key now and keep it somewhere safe. It is shown only this once and cannot be viewed again; if you lose it, reset the key.",
+      "listNote": "The full key is shown only once, when it is created or reset.",
+      "reset": "Reset key",
+      "resetTitle": "Reset the key of “{{name}}”?",
+      "resetConfirm": "A new key is issued and the current one stops working at once. Apps that use it need the new key. Settings, limits and usage stay as they are.",
+      "resetDoneTitle": "New key for “{{name}}”",
+      "resetDoneHint": "The previous key no longer works. Paste this one into your clients.",
+      "pasteLabel": "API key",
+      "pastePlaceholder": "Paste the key (sk-…)",
+      "pastePlaceholderHint": "Paste the key ({{hint}})",
+      "pasteHint": "Keys are shown only once, so paste it here to fill it in. It is only used on this page and is not saved.",
+      "pasteMismatch": "This is not the key of this entry ({{hint}}).",
+      "pasteForModels": "Paste the key above to list the models it can call with this protocol."
     }
   },
   "redemptionList": {
@@ -4452,5 +4469,8 @@
     "latestSamples_other": "Latest {{count}} occurrences",
     "problemSummary_one": "{{groups}} problems, {{count}} occurrence",
     "problemSummary_other": "{{groups}} problems, {{count}} occurrences"
+  },
+  "token_index": {
+    "tokenKeySearchPlaceholder": "Enter the full API key (with or without sk-)"
   }
 }

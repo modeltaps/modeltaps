@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-import { requestPlaygroundKey } from 'views/panel/ApiCatalog/playground/usePlaygroundKey';
+import { playgroundKeyFresh, requestPlaygroundKey } from 'views/panel/ApiCatalog/playground/usePlaygroundKey';
 import { RelayError, isRelayPath, relayErrorFromNetwork, relayErrorFromResponse } from 'views/panel/ApiCatalog/playground/useRelayRequest';
 
 // ==============================|| PLAYGROUND — SESSION STORE ||============================== //
@@ -34,18 +34,20 @@ export function createSessionStore(initialState) {
 
 export const useSessionState = (store) => useSyncExternalStore(store.subscribe, store.getState, store.getState);
 
-// 个人 playground key：整页只取一次，只活在本模块的闭包里，只经 Authorization 头发出——
-// 不落浏览器存储、不进 URL、不进 Redux、不渲染到 DOM（等效代码一律用占位符）。
-let cachedKey = '';
+// The short-lived playground key (see usePlaygroundKey): requested on the first run, reused until
+// it nears expiry, then renewed. It only lives in this module's closure and only goes out in the
+// Authorization header: never in browser storage, URLs, Redux or the DOM (the code views use a
+// placeholder).
+let cachedKey = null;
 let pendingKey = null;
 
-export async function playgroundAuthHeaders() {
-  if (!cachedKey) {
+export async function playgroundAuthHeaders(request = requestPlaygroundKey) {
+  if (!playgroundKeyFresh(cachedKey)) {
     if (!pendingKey) {
-      pendingKey = requestPlaygroundKey()
-        .then((key) => {
-          cachedKey = key;
-          return key;
+      pendingKey = request()
+        .then((entry) => {
+          cachedKey = entry;
+          return entry;
         })
         .finally(() => {
           pendingKey = null;
@@ -53,7 +55,13 @@ export async function playgroundAuthHeaders() {
     }
     await pendingKey;
   }
-  return { Authorization: `Bearer ${cachedKey}` };
+  return { Authorization: `Bearer ${cachedKey.key}` };
+}
+
+// Forgets the playground key (tests, sign-out).
+export function clearPlaygroundKey() {
+  cachedKey = null;
+  pendingKey = null;
 }
 
 // 错误体可能不是 JSON（网关 502 的 HTML 页、空 body），解析失败时退回纯文本。

@@ -184,6 +184,8 @@ const (
 	APICodeTokenNameReserved                = "token_name_reserved"
 	APICodeTokenExpiredCannotEnable         = "token_expired_cannot_enable"
 	APICodeTokenQuotaExhaustedCannotEnable  = "token_quota_exhausted_cannot_enable"
+	APICodeTokenKeyResetManaged             = "token_key_reset_managed"
+	APICodeTokenKeyResetNotCreator          = "token_key_reset_not_creator"
 
 	// System settings.
 	APICodeOptionIdpReadFailed               = "option_idp_read_failed"

@@ -407,13 +407,14 @@ func SetApiRouter(router *gin.Engine) {
 		tokenRoute := apiRouter.Group("/token")
 		tokenRoute.Use(middleware.UserAuth())
 		{
-			tokenRoute.GET("/playground", controller.GetPlaygroundToken)
+			tokenRoute.POST("/playground", controller.IssuePlaygroundKey)
 			tokenRoute.GET("/", controller.GetUserTokensList)
 			tokenRoute.GET("/:id", controller.GetToken)
 			tokenRoute.GET("/:id/models", controller.GetTokenModels)
 			tokenRoute.POST("/", controller.AddToken)
 			tokenRoute.PUT("/", controller.UpdateToken)
 			tokenRoute.DELETE("/:id", controller.DeleteToken)
+			tokenRoute.POST("/:id/reset_key", controller.ResetTokenKey)
 		}
 		tokenAdminRoute := apiRouter.Group("/token")
 		tokenAdminRoute.Use(middleware.AdminAuth())

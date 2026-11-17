@@ -19,7 +19,6 @@ import (
 // console can show the new key right away.
 func TestAddOrgTokenReturnsIdAndKey(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	// Token.AfterCreate derives the key with the token encoder.
 	if viper.GetString("user_token_secret") == "" {
 		viper.Set("user_token_secret", "org-token-test-secret")
 		if err := common.InitUserToken(); err != nil {
@@ -65,7 +64,8 @@ func TestAddOrgTokenReturnsIdAndKey(t *testing.T) {
 	if err := testDB.First(&stored).Error; err != nil {
 		t.Fatal(err)
 	}
-	if stored.Key != data["key"] || float64(stored.Id) != data["id"] || stored.UserId != shadow.Id {
+	key, _ := data["key"].(string)
+	if stored.KeyHash != common.HashUserTokenKey(key) || float64(stored.Id) != data["id"] || stored.UserId != shadow.Id {
 		t.Fatalf("response %v does not match stored key %+v", data, stored)
 	}
 }

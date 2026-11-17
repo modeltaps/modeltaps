@@ -13,6 +13,7 @@ import { toast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
 import { API } from 'utils/api';
 import { resolveServerAddress } from 'utils/serverAddress';
+import { PasteKeyField, normalizePastedKey, pastedKeyMatches } from './KeySecret';
 
 const FALLBACK_MODEL = 'gpt-4o-mini';
 // 三标签页内容区定高:最高的 Claude 命令为 5 行,取略高于其自然高度的固定值,
@@ -26,7 +27,10 @@ const PANEL_MIN_H = 'min-h-[180px]';
 //   - Gemini  : POST /gemini/v1beta/models/{m}:generateContent  x-goog-api-key
 // 后端 tokenAuth 会剥离 "Bearer "/"sk-" 前缀,故三协议均沿用 sk-{key}。
 // OpenAI 用 /api/available_model;Claude/Gemini 用该 Key 调各自中继端点,取该协议真正可路由的模型。
-export default function TokenUsageDialog({ open, onOpenChange, token, serverAddress }) {
+// Keys are stored as hashes only (SEC-47): `secret` is the key when this page just created or reset
+// it; otherwise the user pastes it, and until then the commands show a placeholder and the
+// Claude/Gemini model lists wait for it. The key is never fetched.
+export default function TokenUsageDialog({ open, onOpenChange, token, secret, serverAddress }) {
   const { t } = useTranslation();
   const siteInfo = useSelector((state) => state.siteInfo);
   // 各协议均保存「完整可选模型列表 + 当前选中模型」:列表喂给选择器,选中值拼进 curl。
@@ -35,9 +39,18 @@ export default function TokenUsageDialog({ open, onOpenChange, token, serverAddr
   const [gemini, setGemini] = useState({ status: 'idle', model: '', models: [] });
   const [claude, setClaude] = useState({ status: 'idle', model: '', models: [] });
   const [protocol, setProtocol] = useState('openai');
+  const [pasted, setPasted] = useState('');
 
   const base = resolveServerAddress(serverAddress);
-  const key = token?.key ? `sk-${token.key}` : 'sk-xxxxxx';
+  const typedKey = normalizePastedKey(pasted);
+  const knownKey = secret || (typedKey && pastedKeyMatches(typedKey, token?.key_hint) ? typedKey : '');
+  const key = knownKey || 'sk-xxxxxx';
+
+  // A pasted key belongs to one dialog opening only.
+  const handleOpenChange = (next) => {
+    if (!next) setPasted('');
+    onOpenChange(next);
+  };
   const geminiEnabled = siteInfo?.GeminiAPIEnabled;
   const claudeEnabled = siteInfo?.ClaudeAPIEnabled;
 
@@ -47,17 +60,19 @@ export default function TokenUsageDialog({ open, onOpenChange, token, serverAddr
   // 激活态用品牌主色高亮,与灰底页签列拉开对比、与下方代码块形成清晰的「选中→内容」层级。
   const activeTabClass = 'data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm';
 
-  useEffect(() => {
-    if (!open) return;
-    let alive = true;
-    // 优先 API Key 白名单里的模型,否则取第一个可用模型,保证命令开箱即用
+  // 优先 API Key 白名单里的模型,否则取第一个可用模型,保证命令开箱即用
+  const pick = useMemo(() => {
     const wl = token?.setting?.limits?.limit_model_setting;
-    const pick = (ids) => {
+    return (ids) => {
       if (!ids.length) return '';
       if (wl?.enabled && wl.models?.length && ids.includes(wl.models[0])) return wl.models[0];
       return ids[0];
     };
+  }, [token]);
 
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
     API.get('/api/available_model')
       .then((res) => {
         const { success, data } = res.data;
@@ -68,6 +83,20 @@ export default function TokenUsageDialog({ open, onOpenChange, token, serverAddr
         if (p) setModel(p);
       })
       .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [open, pick]);
+
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    // Without the key the relay cannot be asked which models each protocol can route.
+    if (!knownKey) {
+      setGemini({ status: 'needKey', model: '', models: [] });
+      setClaude({ status: 'needKey', model: '', models: [] });
+      return undefined;
+    }
 
     // Gemini/Claude 各调协议中继端点(用该 Key 直连,避开 API 拦截器的 401 登出/报错弹窗)
     if (geminiEnabled) {
@@ -103,7 +132,7 @@ export default function TokenUsageDialog({ open, onOpenChange, token, serverAddr
     return () => {
       alive = false;
     };
-  }, [open, token, key, geminiEnabled, claudeEnabled]);
+  }, [open, pick, key, knownKey, geminiEnabled, claudeEnabled]);
 
   const commands = useMemo(
     () => ({
@@ -168,6 +197,9 @@ export default function TokenUsageDialog({ open, onOpenChange, token, serverAddr
     if (state.status === 'loading') {
       return renderCenteredState(<p className="text-sm text-muted-foreground">{t('token_index.testCommandLoadingModels')}</p>);
     }
+    if (state.status === 'needKey') {
+      return renderCenteredState(<p className="max-w-sm text-sm text-muted-foreground">{t('apiKey.secret.pasteForModels')}</p>);
+    }
     if (state.status === 'ready' && state.model) {
       return (
         <>
@@ -187,13 +219,14 @@ export default function TokenUsageDialog({ open, onOpenChange, token, serverAddr
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader className="gap-1 px-6 py-4">
           <DialogTitle>{t('token_index.testCommandTitle')}</DialogTitle>
           <DialogDescription>{t('token_index.testCommandDesc')}</DialogDescription>
         </DialogHeader>
-        <DialogBody className="px-6 py-4">
+        <DialogBody className="space-y-4 px-6 py-4">
+          {!secret && <PasteKeyField id="token-test-key" value={pasted} onChange={setPasted} hint={token?.key_hint} />}
           <Tabs value={protocol} onValueChange={setProtocol}>
             <TabsList className={cn('grid h-auto w-full p-1', gridColsClass)}>
               <TabsTrigger value="openai" className={activeTabClass}>
@@ -235,5 +268,6 @@ TokenUsageDialog.propTypes = {
   open: PropTypes.bool,
   onOpenChange: PropTypes.func.isRequired,
   token: PropTypes.object,
+  secret: PropTypes.string,
   serverAddress: PropTypes.string
 };

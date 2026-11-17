@@ -169,7 +169,7 @@ func seedUser(t *testing.T, group string, quota int) *model.User {
 	return user
 }
 
-// seedToken 依赖 Token.AfterCreate 生成合法 Key（59 字符，满足 middleware/auth.go 的长度校验）。
+// seedToken relies on Token.BeforeCreate to generate a random key; Key holds it only in memory.
 func seedToken(t *testing.T, userId int, quota int) *model.Token {
 	t.Helper()
 	token := &model.Token{

@@ -9,8 +9,10 @@ import { Combobox } from '@/components/ui/combobox';
 import CodeBlock from '@/components/ui/code-block';
 import { toast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
+import { API } from 'utils/api';
 import { resolveServerAddress } from 'utils/serverAddress';
 import { maskSecret } from 'utils/maskSecret';
+import { PasteKeyField, normalizePastedKey, pastedKeyMatches } from './KeySecret';
 
 // curated 默认优先级(子串匹配,兼容 anthropic/claude-opus-4.8 这类带供应商前缀的 id)
 const CURATED = [/claude-opus/i, /claude-sonnet/i, /gpt-5/i, /gemini.*pro/i];
@@ -22,28 +24,39 @@ const curatedPick = (ids) => {
   return ids[0] || '';
 };
 
-// API Key 密钥脱敏展示(与 TokenTable 一致);命令里用真实 sk-{key}。
+// Keys are stored as hashes only (SEC-47): the command and config carry the real key only when it
+// is known (`secret`, right after this page created or reset it) or pasted by the user; otherwise
+// a placeholder. The key is never fetched.
 
 // OpenClaw 官网(桌面版 App / CLI 下载入口);未安装 OpenClaw 的用户由此前往安装。
 const OPENCLAW_SITE_URL = 'https://openclaw.ai';
 
 // 「接入 OpenClaw」弹窗:选中 API Key 可用模型后,给出两条接入路径 ——「一键接入」拼出托管脚本
 // openclaw-setup.sh 的一键命令(桌面版 App / CLI 通用),「配置文件」给出等价 openclaw.json 片段。
-// 模型数据源:用该 Key 鉴权请求 /v1/models(服务端已做分组∩API Key 白名单过滤),
-// 默认选中按 curated 优先级 → 列表第一个。
-export default function OpenClawConnectDialog({ open, onOpenChange, token, serverAddress }) {
+// Models: the key's available models from the console session (/api/token/:id/models, the same
+// answer as /v1/models: groups ∩ the key's model limit), so no key is needed to list them;
+// the default follows the curated order, then the first.
+export default function OpenClawConnectDialog({ open, onOpenChange, token, secret, serverAddress }) {
   const { t } = useTranslation();
   const [models, setModels] = useState([]);
   const [model, setModel] = useState('');
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState('desktop');
+  const [pasted, setPasted] = useState('');
 
   // 激活态用品牌主色高亮,与 TokenUsageDialog 的 Tabs 样式一致。
   const activeTabClass = 'data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm';
 
   const base = resolveServerAddress(serverAddress);
-  const rawKey = token?.key || '';
-  const key = rawKey ? `sk-${rawKey}` : 'sk-xxxxxx';
+  const typedKey = normalizePastedKey(pasted);
+  const knownKey = secret || (typedKey && pastedKeyMatches(typedKey, token?.key_hint) ? typedKey : '');
+  const key = knownKey || 'sk-xxxxxx';
+
+  // A pasted key belongs to one dialog opening only.
+  const handleOpenChange = (next) => {
+    if (!next) setPasted('');
+    onOpenChange(next);
+  };
 
   // provider id 按站点 host 区分:正式站用 modeltaps,其余(本地/内网/测试域名)用 modeltaps-local。
   const providerId = useMemo(() => {
@@ -57,21 +70,18 @@ export default function OpenClawConnectDialog({ open, onOpenChange, token, serve
   }, [base]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !token?.id) return;
     let alive = true;
     setLoading(true);
     setModels([]);
     setModel('');
 
-    // 用该 Key 鉴权拉取其真实可用模型(服务端已做分组∩白名单过滤);同源相对路径避免 CORS。
-    fetch('/v1/models', { headers: rawKey ? { Authorization: `Bearer sk-${rawKey}` } : {} })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((body) => {
+    API.get(`/api/token/${token.id}/models`)
+      .then((res) => {
         if (!alive) return;
-        const data = Array.isArray(body?.data) ? body.data : [];
-        const list = data.filter((m) => m && typeof m.id === 'string').map((m) => ({ id: m.id }));
-        setModels(list);
-        setModel(curatedPick(list.map((m) => m.id)));
+        const ids = res.data?.success && Array.isArray(res.data.data) ? res.data.data.filter((m) => typeof m === 'string') : [];
+        setModels(ids.map((id) => ({ id })));
+        setModel(curatedPick(ids));
         setLoading(false);
       })
       .catch(() => {
@@ -81,7 +91,7 @@ export default function OpenClawConnectDialog({ open, onOpenChange, token, serve
     return () => {
       alive = false;
     };
-  }, [open, token, rawKey]);
+  }, [open, token]);
 
   // 桌面版一键命令:入参走环境变量,交由托管脚本 openclaw-setup.sh 三层降级完成接入。
   const desktopCommand = useMemo(
@@ -131,7 +141,7 @@ bash -c "$(curl -fsSL ${base}/openclaw-setup.sh)"`,
   const modelOptions = useMemo(() => models.map((m) => ({ value: m.id, label: m.id })), [models]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader className="gap-1 px-6 py-4">
           <DialogTitle>{t('token_index.openclawConnectTitle')}</DialogTitle>
@@ -142,12 +152,16 @@ bash -c "$(curl -fsSL ${base}/openclaw-setup.sh)"`,
             <span className="text-sm font-medium text-foreground">{t('token_index.openclawBaseUrl')}</span>
             <code className="block truncate rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-xs">{`${base}/v1`}</code>
           </div>
-          <div className="grid gap-1.5">
-            <span className="text-sm font-medium text-foreground">{t('token_index.openclawApiKey')}</span>
-            <code className="block truncate rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-xs">
-              {maskSecret(`sk-${rawKey}`)}
-            </code>
-          </div>
+          {secret ? (
+            <div className="grid gap-1.5">
+              <span className="text-sm font-medium text-foreground">{t('token_index.openclawApiKey')}</span>
+              <code className="block truncate rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-xs">
+                {maskSecret(secret)}
+              </code>
+            </div>
+          ) : (
+            <PasteKeyField id="openclaw-key" value={pasted} onChange={setPasted} hint={token?.key_hint} />
+          )}
           <div className="grid gap-1.5">
             <span className="text-sm font-medium text-foreground">{t('token_index.openclawModel')}</span>
             {loading ? (
@@ -229,5 +243,6 @@ OpenClawConnectDialog.propTypes = {
   open: PropTypes.bool,
   onOpenChange: PropTypes.func.isRequired,
   token: PropTypes.object,
+  secret: PropTypes.string,
   serverAddress: PropTypes.string
 };

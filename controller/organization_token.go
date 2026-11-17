@@ -172,15 +172,37 @@ func AddOrgToken(c *gin.Context) {
 		return
 	}
 	model.RecordOrgAudit(org.Id, userId, "token.create", fmt.Sprintf("Created organization API key %s (ID: %d)", cleanToken.Name, cleanToken.Id))
-	// Same shape as the personal endpoint: the console shows the new key right away.
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data": gin.H{
-			"id":  cleanToken.Id,
-			"key": cleanToken.Key,
-		},
-	})
+	// Same shape as the personal endpoint: the console shows the new key once, right away.
+	respondNewTokenKey(c, &cleanToken)
+}
+
+// ResetOrgTokenKey gives an organization API key a new secret and returns it once. Only the
+// member who created the key may reset it, owners and admins included: resetting hands over a
+// working key, and nobody gets to see another member's key (SEC-47). Others can still disable
+// or delete it.
+func ResetOrgTokenKey(c *gin.Context) {
+	org, _ := getOrgFromContext(c)
+	id, err := strconv.Atoi(c.Param("token_id"))
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	token, err := getOrgTokenForOperator(c, id)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	userId := c.GetInt("id")
+	if token.CreatedBy != userId {
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenKeyResetNotCreator, "Only the member who created this API key can reset it", nil)
+		return
+	}
+	if _, err := token.ResetKey(); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	model.RecordOrgAudit(org.Id, userId, "token.reset_key", fmt.Sprintf("Reset the secret of organization API key %s (ID: %d)", token.Name, token.Id))
+	respondNewTokenKey(c, token)
 }
 
 // UpdateOrgToken 更新组织令牌(Member 仅自己创建的;分组校验以影子账户为准)

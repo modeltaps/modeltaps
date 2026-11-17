@@ -614,7 +614,7 @@ func ClearUserGroupAndTokensCache(userId int) {
 
 	// 获取用户所有Token的Key
 	var tokenKeys []string
-	err := DB.Model(&Token{}).Where("user_id = ?", userId).Pluck("key", &tokenKeys).Error
+	err := DB.Model(&Token{}).Where("user_id = ?", userId).Pluck("key_hash", &tokenKeys).Error
 	if err != nil {
 		logger.SysError(fmt.Sprintf("failed to get user API key list userId=%d: %v", userId, err))
 		return
@@ -625,10 +625,10 @@ func ClearUserGroupAndTokensCache(userId int) {
 		if tokenKey != "" {
 			cacheKey := fmt.Sprintf(UserTokensKey, tokenKey)
 			if err := redis.RedisDel(cacheKey); err != nil {
-				logger.SysError(fmt.Sprintf("failed to clear API key Redis cache key=%s: %v", tokenKey, err))
+				logger.SysError(fmt.Sprintf("failed to clear API key Redis cache userId=%d: %v", userId, err))
 			}
 			if err := cache.DeleteCache(cacheKey); err != nil {
-				logger.SysError(fmt.Sprintf("failed to clear API key cache key=%s: %v", tokenKey, err))
+				logger.SysError(fmt.Sprintf("failed to clear API key cache userId=%d: %v", userId, err))
 			}
 		}
 	}

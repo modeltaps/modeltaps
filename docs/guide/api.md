@@ -12,7 +12,7 @@ Modeltaps exposes OpenAI-, Claude- and Gemini-compatible APIs at the same time. 
 In the examples below, replace `https://your-modeltaps-domain.com` with your actual site address and `sk-replace-with-your-key` with your API key. The same API key works across all three protocols.
 
 ::: tip Verify before integrating
-Open **Test command** on any API key in the **API Keys** page and Modeltaps assembles your real key, site address and available models into a runnable `curl`. Copy it into a terminal to verify.
+Open **Test command** on any API key in the **API Keys** page and Modeltaps assembles your key, site address and available models into a runnable `curl`. Copy it into a terminal to verify. Keys are shown only once, so for a key you did not just create or reset, paste it into the dialog first.
 :::
 
 ## OpenAI-compatible API
@@ -138,7 +138,7 @@ The **Chat**, **Image** and **Audio** pages are the console, calling this site's
 
 The model picker is a menu anchored to the model chip, with search, capability filters and grouping by provider; it only lists models available for that capability.
 
-- The console uses a dedicated key the system creates for you — never shown, never copied. **Its usage and cost are billed to your personal account**, separately from the API keys you create by hand.
+- The console uses a dedicated key the system creates for you — never shown, never copied; the page signs its requests with a short-lived credential (valid for an hour and renewed automatically). **Its usage and cost are billed to your personal account**, separately from the API keys you create by hand.
 - It is only usable in a personal context; after switching to an organization the page explains why and links a way out (organization-quota usage is tracked separately).
 - When a capability has no available model the page stays browsable, explains why and where to fix it, and sends no request.
 - Administrators can turn `builtin_chat_enabled` off in system settings to disable the console site-wide.

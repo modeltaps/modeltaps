@@ -3,16 +3,43 @@ package common
 import (
 	"bytes"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"hash"
+	"strings"
 	"sync"
 
+	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/spf13/viper"
 	"github.com/sqids/sqids-go"
 )
+
+// User API keys (SEC-47). Clients send "sk-" followed by the key; the prefix is optional and is
+// not part of what is hashed. Three formats are accepted:
+//
+//   - current keys: UserTokenKeyLength characters drawn from crypto/rand (base62, about 333 bits);
+//   - legacy signed keys (59 characters): a sqids payload of (token id, user id), "_" and an
+//     HMAC-SHA256 of the payload under user_token_secret. They are no longer issued; the signature
+//     is still checked as a cheap filter before the database is asked;
+//   - legacy random keys (48 characters), issued by the oldest releases.
+//
+// Playground keys (PlaygroundKeyPrefix + PlaygroundKeySecretLength characters) are short-lived
+// credentials of the console playground, see model.PlaygroundKey.
+//
+// Only HashUserTokenKey(key) and a masked hint are stored; the key itself is shown once.
+const (
+	UserTokenKeyLength        = 56
+	LegacySignedTokenLength   = 59
+	LegacyRandomTokenLength   = 48
+	PlaygroundKeyPrefix       = "pg_"
+	PlaygroundKeySecretLength = 48
+)
+
+const userTokenKeyChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 var (
 	hashidsMinLength = 15
@@ -51,24 +78,95 @@ func InitUserToken() error {
 	return err
 }
 
-func GenerateToken(tokenID, userID int) (string, error) {
-	payload, err := hashids.Encode([]uint64{uint64(tokenID), uint64(userID)})
+// randomBase62 returns n characters drawn uniformly from crypto/rand. Unlike
+// utils.GetSecureRandomString it never falls back to a weaker source: it fails instead.
+func randomBase62(n int) (string, error) {
+	// Rejection sampling keeps the distribution uniform (256 is not a multiple of 62).
+	limit := byte(256 - 256%len(userTokenKeyChars))
+	out := make([]byte, 0, n)
+	buf := make([]byte, n+n/4)
+	for len(out) < n {
+		if _, err := rand.Read(buf); err != nil {
+			return "", fmt.Errorf("failed to read random bytes: %w", err)
+		}
+		for _, b := range buf {
+			if b >= limit {
+				continue
+			}
+			out = append(out, userTokenKeyChars[int(b)%len(userTokenKeyChars)])
+			if len(out) == n {
+				break
+			}
+		}
+	}
+	return string(out), nil
+}
+
+// NewUserTokenKey returns a new random API key, without the "sk-" prefix.
+func NewUserTokenKey() (string, error) {
+	return randomBase62(UserTokenKeyLength)
+}
+
+// NewPlaygroundKey returns a new random playground key, without the "sk-" prefix.
+func NewPlaygroundKey() (string, error) {
+	secret, err := randomBase62(PlaygroundKeySecretLength)
 	if err != nil {
 		return "", err
 	}
-
-	h := hmacPool.Get().(hash.Hash)
-	defer func() {
-		h.Reset()
-		hmacPool.Put(h)
-	}()
-
-	h.Write([]byte(payload))
-	signature := base64.RawURLEncoding.EncodeToString(h.Sum(nil))
-
-	return payload + "_" + signature, nil
+	return PlaygroundKeyPrefix + secret, nil
 }
 
+// NormalizeUserTokenKey strips the optional "Bearer " and "sk-" prefixes and surrounding blanks.
+func NormalizeUserTokenKey(key string) string {
+	key = strings.TrimSpace(key)
+	key = strings.TrimPrefix(key, "Bearer ")
+	key = strings.TrimPrefix(key, "sk-")
+	return strings.TrimSpace(key)
+}
+
+// HashUserTokenKey is the value stored in tokens.key_hash: the hex SHA-256 of the key without
+// its "sk-" prefix. A plain hash is enough because every accepted key carries well over 192 bits
+// of entropy, so there is nothing to brute-force from it.
+func HashUserTokenKey(key string) string {
+	sum := sha256.Sum256([]byte(NormalizeUserTokenKey(key)))
+	return hex.EncodeToString(sum[:])
+}
+
+// UserTokenKeyHint is the non-secret form of a key kept for lists: the first and last four
+// characters of "sk-<key>", the same mask the console uses for every secret.
+func UserTokenKeyHint(key string) string {
+	return utils.MaskSecret("sk-" + NormalizeUserTokenKey(key))
+}
+
+func isBase62(s string) bool {
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') {
+			return false
+		}
+	}
+	return true
+}
+
+// IsUserTokenKeyFormat reports whether key (without "sk-") has the shape of a current API key.
+func IsUserTokenKeyFormat(key string) bool {
+	return len(key) == UserTokenKeyLength && isBase62(key)
+}
+
+// IsLegacyRandomTokenFormat reports whether key has the length of a 48-character legacy key. The
+// characters are not checked: the oldest releases did not all use the same alphabet.
+func IsLegacyRandomTokenFormat(key string) bool {
+	return len(key) == LegacyRandomTokenLength
+}
+
+// IsPlaygroundKeyFormat reports whether key (without "sk-") has the shape of a playground key.
+func IsPlaygroundKeyFormat(key string) bool {
+	secret, ok := strings.CutPrefix(key, PlaygroundKeyPrefix)
+	return ok && len(secret) == PlaygroundKeySecretLength && isBase62(secret)
+}
+
+// ValidateToken checks the signature of a legacy 59-character key and returns the ids encoded in
+// it. A valid signature does not make a key valid: it must still be found by its hash.
 func ValidateToken(token string) (tokenID, userID int, err error) {
 	parts := bytes.SplitN([]byte(token), []byte("_"), 2)
 	if len(parts) != 2 {
@@ -91,7 +189,7 @@ func ValidateToken(token string) (tokenID, userID int, err error) {
 		return 0, 0, fmt.Errorf("Failed to decode signature")
 	}
 
-	if !bytes.Equal(decodedSignature, expectedSignature) {
+	if !hmac.Equal(decodedSignature, expectedSignature) {
 		return 0, 0, fmt.Errorf("Signature verification failed")
 	}
 

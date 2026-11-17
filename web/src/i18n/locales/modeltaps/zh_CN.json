@@ -1761,7 +1761,9 @@
     "smtp_managed": "发信设置由部署配置（smtp.url）管理，不能在这里修改",
     "supply_intake_rules_invalid": "上新规则无效：{{message}}",
     "channel_base_url_needs_key": "只有超级管理员能在不重填 key 的情况下修改接口地址。请重新填写 key 后再保存新地址。",
-    "channel_copy_key_mismatch": "只有超级管理员能把 key 复制到类型或接口地址不同的渠道。"
+    "channel_copy_key_mismatch": "只有超级管理员能把 key 复制到类型或接口地址不同的渠道。",
+    "token_key_reset_managed": "试用区 API Key 由系统管理，不能重置",
+    "token_key_reset_not_creator": "只有创建该 API Key 的成员才能重置它"
   },
   "channelOAuth": {
     "tip": {
@@ -3806,7 +3808,7 @@
       "create": "创建",
       "later": "默认：账户分组，全部模型，不限 IP",
       "createdTitle": "已创建「{{name}}」",
-      "createdHint": "复制到客户端即可使用，之后也能在详情里查看。",
+      "createdHint": "把它填入你的客户端。",
       "copied": "已复制",
       "openDetails": "打开详情",
       "done": "完成"
@@ -3867,6 +3869,21 @@
       "day": "1 天",
       "week": "1 周",
       "month": "1 个月"
+    },
+    "secret": {
+      "onceNote": "请立即复制并妥善保存。密钥只显示这一次，之后无法再查看；如果遗失，请重置密钥。",
+      "listNote": "完整密钥只在创建或重置时显示一次。",
+      "reset": "重置密钥",
+      "resetTitle": "重置「{{name}}」的密钥？",
+      "resetConfirm": "将签发新密钥，当前密钥立即失效，使用它的应用需要换成新密钥。设置、额度和用量保持不变。",
+      "resetDoneTitle": "「{{name}}」的新密钥",
+      "resetDoneHint": "旧密钥已失效，请把新密钥填入你的客户端。",
+      "pasteLabel": "API Key",
+      "pastePlaceholder": "粘贴密钥（sk-…）",
+      "pastePlaceholderHint": "粘贴密钥（{{hint}}）",
+      "pasteHint": "密钥只显示一次，请在此粘贴以填入命令。它只在本页面使用，不会保存。",
+      "pasteMismatch": "这不是该 API Key 的密钥（{{hint}}）。",
+      "pasteForModels": "在上方粘贴密钥后，即可列出它在该协议下可调用的模型。"
     }
   },
   "redemptionList": {
@@ -4343,5 +4360,8 @@
     "times_other": "{{count}} 次",
     "latestSamples_other": "最近 {{count}} 次",
     "problemSummary_other": "{{groups}} 个问题，共 {{count}} 次"
+  },
+  "token_index": {
+    "tokenKeySearchPlaceholder": "输入完整的 API Key（可带或不带 sk-）"
   }
 }

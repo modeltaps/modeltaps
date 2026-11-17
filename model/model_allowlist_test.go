@@ -142,7 +142,7 @@ func TestMigrateTokenModelLimitNormalized(t *testing.T) {
 		t.Fatal(err)
 	}
 	insertRaw := func(name string, status int, settingJSON string) {
-		if err := db.Exec("INSERT INTO tokens (user_id, name, `key`, status, setting) VALUES (1, ?, ?, ?, ?)", name, name+"-key-padding-padding-padding-padding-padding", status, settingJSON).Error; err != nil {
+		if err := db.Exec("INSERT INTO tokens (user_id, name, key_hash, status, setting) VALUES (1, ?, ?, ?, ?)", name, name+"-key-padding-padding-padding-padding-padding", status, settingJSON).Error; err != nil {
 			t.Fatal(err)
 		}
 	}

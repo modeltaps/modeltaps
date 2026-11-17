@@ -15,7 +15,7 @@ The **API Keys** page lists all of your API keys. The columns shown by default a
 
 | Column | Meaning |
 | --- | --- |
-| API key | Name and key (the key is masked by default; you can reveal or copy it) |
+| API key | Name and the last characters of the key (`sk-…Rc6g`); the full key is never listed |
 | Group | The channel group this API key uses; shows **Follow user** when unset |
 | Expiry | **Never**, the remaining time, or **Expired** |
 | Last used | Time of the last successful call, or **Never used** |
@@ -25,7 +25,17 @@ The **API Keys** page lists all of your API keys. The columns shown by default a
 
 **Column settings** in the top right lets you show or hide columns (for example **Created at**, hidden by default). The filter bar at the top supports searching by API key name.
 
-Each row's action menu offers: copy key, open in a chat client, **Test command**, **Connect OpenClaw**, jump to that API key's **Usage** and **Logs**, edit and delete.
+Each row's action menu offers: edit, **Reset key**, **Test command**, **Connect OpenClaw**, jump to that API key's **Usage** and **Logs**, and delete.
+
+## The key is shown only once
+
+Modeltaps does not store your keys, only a fingerprint (hash) of each one, so a key cannot be shown again after it was created:
+
+- When you create an API key, the dialog shows the full key once, with a copy button. Copy it then and keep it somewhere safe, for example in your password manager or your application's secret store.
+- Lists and the API key's details only show it masked (`sk-A****Rc6g`), enough to tell keys apart.
+- If you lost a key, or think it leaked, choose **Reset key** (in the action menu or on the key row of its details). A new key is shown once and the old one stops working at once; the name, settings, limits and usage stay as they are. In an organization, only the member who created a key can reset it.
+
+Keys created before this change keep working unchanged.
 
 ## Creating and editing API keys
 
@@ -65,7 +75,9 @@ If a group has been deleted or you are not allowed to use it, the group tag in t
 
 ## Testing an API key
 
-Choose **Test command** from the action menu and the dialog shows a runnable `curl` on each of the OpenAI / Claude / Gemini tabs: the command already contains your real key, site address and the selected model, so you can paste it into a terminal to confirm the API key works. Models can be searched and switched in the dropdown.
+Choose **Test command** from the action menu and the dialog shows a runnable `curl` on each of the OpenAI / Claude / Gemini tabs, with your site address and the selected model. Models can be searched and switched in the dropdown.
+
+Right after you create or reset a key on the page, the commands already contain it. Otherwise paste the key into the **API key** field at the top of the dialog: it is only used on that page and is not saved. The same applies to **Connect OpenClaw**.
 
 If a protocol reports **No models available under this protocol**, your current group has no channel of that type and the protocol is temporarily unusable — test with the OpenAI tab instead.
 

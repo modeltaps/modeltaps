@@ -8,7 +8,8 @@ import {
   relayErrorFromResponse,
   statusErrorKey
 } from './useRelayRequest';
-import { PLAYGROUND_TOKEN_PATH, requestPlaygroundKey } from './usePlaygroundKey';
+import { PLAYGROUND_KEY_RENEW_SECONDS, PLAYGROUND_TOKEN_PATH, playgroundKeyFresh, requestPlaygroundKey } from './usePlaygroundKey';
+import { clearPlaygroundKey, playgroundAuthHeaders } from 'views/panel/Playground/shared/sessionStore';
 import { createSseParser, eventData, isDoneData, parseChunk, splitEvents } from './sse';
 
 // 控制台请求层的回归：错误映射（relay 的 OpenAI 错误体 + HTTP 状态）、
@@ -132,12 +133,12 @@ describe('requestPlaygroundKey', () => {
     const session = fakeStorage();
     vi.stubGlobal('localStorage', local);
     vi.stubGlobal('sessionStorage', session);
-    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ success: true, data: 'abc' }));
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ success: true, data: { key: 'pg_abc', expires_at: 1000 } }));
 
-    const key = await requestPlaygroundKey(fetchImpl);
+    const entry = await requestPlaygroundKey(fetchImpl);
 
-    expect(fetchImpl).toHaveBeenCalledWith(PLAYGROUND_TOKEN_PATH, expect.objectContaining({ method: 'GET', credentials: 'same-origin' }));
-    expect(key).toBe('sk-abc');
+    expect(fetchImpl).toHaveBeenCalledWith(PLAYGROUND_TOKEN_PATH, expect.objectContaining({ method: 'POST', credentials: 'same-origin' }));
+    expect(entry).toEqual({ key: 'sk-pg_abc', expiresAt: 1000 });
     expect(local.setItem).not.toHaveBeenCalled();
     expect(session.setItem).not.toHaveBeenCalled();
   });
@@ -158,6 +159,36 @@ describe('requestPlaygroundKey', () => {
   it('请求本身失败时也不外泄原始异常', async () => {
     const fetchImpl = vi.fn().mockRejectedValue(new Error('500'));
     await expect(requestPlaygroundKey(fetchImpl)).rejects.toBeInstanceOf(RelayError);
+  });
+});
+
+describe('playgroundKeyFresh', () => {
+  it('renews a key shortly before it expires', () => {
+    const entry = { key: 'sk-pg_abc', expiresAt: 10_000 };
+    expect(playgroundKeyFresh(entry, 10_000 - PLAYGROUND_KEY_RENEW_SECONDS - 1)).toBe(true);
+    expect(playgroundKeyFresh(entry, 10_000 - PLAYGROUND_KEY_RENEW_SECONDS)).toBe(false);
+    expect(playgroundKeyFresh(null, 0)).toBe(false);
+  });
+});
+
+describe('playgroundAuthHeaders', () => {
+  afterEach(() => clearPlaygroundKey());
+
+  it('reuses a fresh playground key and asks for a new one once it expires', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const fresh = vi.fn().mockResolvedValue({ key: 'sk-pg_fresh', expiresAt: now + 3600 });
+    expect(await playgroundAuthHeaders(fresh)).toEqual({ Authorization: 'Bearer sk-pg_fresh' });
+    expect(await playgroundAuthHeaders(fresh)).toEqual({ Authorization: 'Bearer sk-pg_fresh' });
+    expect(fresh).toHaveBeenCalledTimes(1);
+
+    clearPlaygroundKey();
+    const renewing = vi
+      .fn()
+      .mockResolvedValueOnce({ key: 'sk-pg_stale', expiresAt: now + 10 })
+      .mockResolvedValueOnce({ key: 'sk-pg_new', expiresAt: now + 3600 });
+    expect(await playgroundAuthHeaders(renewing)).toEqual({ Authorization: 'Bearer sk-pg_stale' });
+    expect(await playgroundAuthHeaders(renewing)).toEqual({ Authorization: 'Bearer sk-pg_new' });
+    expect(renewing).toHaveBeenCalledTimes(2);
   });
 });
 

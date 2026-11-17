@@ -115,6 +115,7 @@ func main() {
 		logger.FatalLog("stored secrets: " + err.Error())
 	}
 	model.NewPricing()
+	model.PurgeLegacyTokenCache()
 	model.HandleOldTokenMaxId()
 
 	initMemoryCache()

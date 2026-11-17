@@ -12,7 +12,6 @@ import (
 	"github.com/modeltaps/modeltaps/common/stmp"
 	"github.com/modeltaps/modeltaps/common/utils"
 	"os"
-	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -31,7 +30,14 @@ var (
 type Token struct {
 	Id             int            `json:"id"`
 	UserId         int            `json:"user_id"`
-	Key            string         `json:"key" gorm:"type:varchar(59);uniqueIndex"`
+	// KeyHash identifies the key: common.HashUserTokenKey of its secret. The key itself is never
+	// stored (SEC-47); it is returned once, by the request that created or reset it.
+	KeyHash string `json:"-" gorm:"type:char(64);uniqueIndex"`
+	// KeyHint is the masked key the console lists (common.UserTokenKeyHint); it is not a secret.
+	KeyHint string `json:"key_hint" gorm:"type:varchar(32);default:''"`
+	// Key holds the plaintext key in memory only, right after it was generated (Insert, ResetKey),
+	// so the request that made it can return it once. It is never stored, cached or serialized.
+	Key            string         `json:"-" gorm:"-" msgpack:"-"`
 	Status         int            `json:"status" gorm:"default:1"`
 	Name           string         `json:"name" gorm:"index" `
 	CreatedTime    int64          `json:"created_time" gorm:"bigint"`
@@ -70,18 +76,73 @@ func (token *Token) BeforeSave(tx *gorm.DB) error {
 	return nil
 }
 
-// 添加 AfterCreate 钩子方法
-func (token *Token) AfterCreate(tx *gorm.DB) (err error) {
-	tokenKey, err := common.GenerateToken(token.Id, token.UserId)
-	if err != nil {
-		return err
+// BeforeCreate gives a new API key its secret: a random key unless the caller already set Key
+// (tests). Only the hash and the hint are written; Key stays readable on the struct
+// so the caller can return it once.
+func (token *Token) BeforeCreate(tx *gorm.DB) error {
+	if token.Key == "" {
+		key, err := common.NewUserTokenKey()
+		if err != nil {
+			return err
+		}
+		token.Key = key
 	}
+	token.Key = common.NormalizeUserTokenKey(token.Key)
+	token.KeyHash = common.HashUserTokenKey(token.Key)
+	token.KeyHint = common.UserTokenKeyHint(token.Key)
+	return nil
+}
 
-	// 同步到内存中的 token 实例，使 caller 可以在 Insert 返回后直接读取 Key
-	token.Key = tokenKey
+// ResetKey replaces the key's secret with a new random one and returns it (without "sk-"). The
+// old key stops working at once; the new one is not stored and cannot be read back later.
+func (token *Token) ResetKey() (string, error) {
+	key, err := common.NewUserTokenKey()
+	if err != nil {
+		return "", err
+	}
+	hash := common.HashUserTokenKey(key)
+	hint := common.UserTokenKeyHint(key)
+	result := DB.Model(&Token{}).Where("id = ?", token.Id).UpdateColumns(map[string]interface{}{
+		"key_hash": hash,
+		"key_hint": hint,
+	})
+	if result.Error != nil {
+		return "", result.Error
+	}
+	if result.RowsAffected == 0 {
+		return "", ErrTokenNotFound
+	}
+	invalidateTokenCache(token.KeyHash)
+	token.KeyHash = hash
+	token.KeyHint = hint
+	token.Key = key
+	return key, nil
+}
 
-	// 更新 key 字段
-	return tx.Model(token).Update("key", tokenKey).Error
+// invalidateTokenCache drops the cached copy of the API key with this hash.
+func invalidateTokenCache(keyHash string) {
+	if keyHash == "" || !config.RedisEnabled {
+		return
+	}
+	redis.RedisDel(fmt.Sprintf(UserTokensKey, keyHash))
+}
+
+// invalidateTokenCacheById drops the cached copy of the API key with this id.
+func invalidateTokenCacheById(id int) {
+	if !config.RedisEnabled {
+		return
+	}
+	var hash string
+	if err := DB.Model(&Token{}).Where("id = ?", id).Select("key_hash").Scan(&hash).Error; err == nil {
+		invalidateTokenCache(hash)
+	}
+}
+
+// invalidateTokenCaches drops the cached copies of these API keys (by hash).
+func invalidateTokenCaches(keyHashes []string) {
+	for _, hash := range keyHashes {
+		invalidateTokenCache(hash)
+	}
 }
 
 type TokenSetting struct {
@@ -223,13 +284,9 @@ func GetTokensListByAdmin(params *AdminSearchTokensParams) (*DataResult[TokenWit
 		db = db.Where("id = ?", params.TokenId)
 	}
 
-	if params.Key != "" {
-		keyCol := "`key`"
-		if common.UsingPostgreSQL {
-			keyCol = `"key"`
-		}
-		key := strings.TrimPrefix(params.Key, "sk-")
-		db = db.Where(keyCol+" LIKE ?", key+"%")
+	// Keys are stored as hashes only, so a key is found by its full value, not by a prefix.
+	if key := common.NormalizeUserTokenKey(params.Key); key != "" {
+		db = db.Where("key_hash = ?", common.HashUserTokenKey(key))
 	}
 
 	if params.Keyword != "" {
@@ -282,46 +339,45 @@ func GetTokensListByAdmin(params *AdminSearchTokensParams) (*DataResult[TokenWit
 	}, nil
 }
 
+// GetTokenModel finds the API key a request presented (without "Bearer " and "sk-"). Cheap
+// format checks run first so garbage never reaches the database; keys of every format are then
+// looked up by their hash.
 func GetTokenModel(key string) (token *Token, err error) {
 	if key == "" {
 		return nil, ErrTokenInvalid
 	}
 
-	var userId int
-	var tokenId int
-	validUser := false
-
-	switch len(key) {
-	case 48:
-		validUser = true
-		if config.RedisEnabled {
-			exists, _ := redis.RedisSIsMember(OldUserTokensCacheKey, key)
-			if !exists {
-				return nil, ErrTokenInvalid
-			}
-		}
-	case 59:
-		tokenId, userId, err = common.ValidateToken(key)
+	switch {
+	case common.IsUserTokenKeyFormat(key):
+	case common.IsPlaygroundKeyFormat(key):
+		return getPlaygroundTokenModel(key)
+	case len(key) == common.LegacySignedTokenLength:
+		// Legacy signed keys: a bad signature cannot be a key that was ever issued.
+		tokenId, userId, err := common.ValidateToken(key)
 		if err != nil || userId == 0 || tokenId == 0 {
 			return nil, ErrTokenInvalid
 		}
-		if userEnabled, err := CacheIsUserEnabled(userId); err != nil || !userEnabled {
-			return nil, ErrTokenInvalid
+	case common.IsLegacyRandomTokenFormat(key):
+		if config.RedisEnabled {
+			exists, _ := redis.RedisSIsMember(OldUserTokenHashesKey, common.HashUserTokenKey(key))
+			if !exists {
+				return nil, ErrTokenInvalid
+			}
 		}
 	default:
 		return nil, ErrTokenInvalid
 	}
 
-	token, err = CacheGetTokenByKey(key)
+	token, err = CacheGetTokenByKeyHash(common.HashUserTokenKey(key))
 	if err != nil {
-		logger.SysError(fmt.Sprintf("DB Not Found: userId=%d, tokenId=%d, key=%s, err=%s", userId, tokenId, utils.MaskSecret(key), err.Error()))
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.SysError(fmt.Sprintf("failed to look up API key %s: %s", common.UserTokenKeyHint(key), err.Error()))
+		}
 		return nil, ErrTokenInvalid
 	}
 
-	if validUser {
-		if userEnabled, err := CacheIsUserEnabled(token.UserId); err != nil || !userEnabled {
-			return nil, ErrTokenInvalid
-		}
+	if userEnabled, err := CacheIsUserEnabled(token.UserId); err != nil || !userEnabled {
+		return nil, ErrTokenInvalid
 	}
 
 	return token, nil
@@ -407,15 +463,13 @@ func GetTokenByName(name string, userId int) (*Token, error) {
 	return &token, err
 }
 
-func GetTokenByKey(key string) (*Token, error) {
-	keyCol := "`key`"
-	if common.UsingPostgreSQL {
-		keyCol = `"key"`
+// GetTokenByKeyHash finds an API key by common.HashUserTokenKey of its secret.
+func GetTokenByKeyHash(keyHash string) (*Token, error) {
+	if keyHash == "" {
+		return nil, gorm.ErrRecordNotFound
 	}
-
 	var token Token
-
-	err := DB.Where(keyCol+" = ?", key).First(&token).Error
+	err := DB.Where("key_hash = ?", keyHash).First(&token).Error
 	return &token, err
 }
 
@@ -429,7 +483,7 @@ func (token *Token) Update() error {
 	err := DB.Model(token).Select("name", "status", "expired_time", "remain_quota", "unlimited_quota", "group", "backup_group", "setting", "log_io").Updates(token).Error
 	// 防止Redis缓存不生效，直接删除
 	if err == nil && config.RedisEnabled {
-		redis.RedisDel(fmt.Sprintf(UserTokensKey, token.Key))
+		invalidateTokenCache(token.KeyHash)
 	}
 
 	return err
@@ -439,7 +493,7 @@ func (token *Token) Update() error {
 func (token *Token) UpdateByAdmin() error {
 	err := DB.Model(token).Select("user_id", "name", "status", "expired_time", "remain_quota", "unlimited_quota", "group", "backup_group", "setting", "log_io").Updates(token).Error
 	if err == nil && config.RedisEnabled {
-		redis.RedisDel(fmt.Sprintf(UserTokensKey, token.Key))
+		invalidateTokenCache(token.KeyHash)
 	}
 
 	return err
@@ -512,7 +566,7 @@ func (token *Token) SelectUpdate() error {
 
 	// 清除缓存
 	if err == nil && config.RedisEnabled {
-		redis.RedisDel(fmt.Sprintf(UserTokensKey, token.Key))
+		invalidateTokenCache(token.KeyHash)
 	}
 
 	return err
@@ -520,6 +574,9 @@ func (token *Token) SelectUpdate() error {
 
 func (token *Token) Delete() error {
 	err := DB.Delete(token).Error
+	if err == nil {
+		deletePlaygroundKeysOf(token)
+	}
 	return err
 }
 
@@ -536,7 +593,7 @@ func DeleteTokenById(id int, userId int) (err error) {
 	err = token.Delete()
 
 	if err == nil && config.RedisEnabled {
-		redis.RedisDel(fmt.Sprintf(UserTokensKey, token.Key))
+		invalidateTokenCache(token.KeyHash)
 	}
 
 	return err
@@ -556,7 +613,7 @@ func DeleteTokenByIdAdmin(id int) (err error) {
 	err = token.Delete()
 
 	if err == nil && config.RedisEnabled {
-		redis.RedisDel(fmt.Sprintf(UserTokensKey, token.Key))
+		invalidateTokenCache(token.KeyHash)
 	}
 
 	return err
@@ -583,15 +640,8 @@ func increaseTokenQuota(id int, quota int) (err error) {
 	).Error
 
 	// 清除缓存
-	if err == nil && config.RedisEnabled {
-		var key string
-		keyCol := "`key`"
-		if common.UsingPostgreSQL {
-			keyCol = `"key"`
-		}
-		if getErr := DB.Model(&Token{}).Where("id = ?", id).Select(keyCol).Scan(&key).Error; getErr == nil && key != "" {
-			redis.RedisDel(fmt.Sprintf(UserTokensKey, key))
-		}
+	if err == nil {
+		invalidateTokenCacheById(id)
 	}
 
 	return err
@@ -618,15 +668,8 @@ func decreaseTokenQuota(id int, quota int) (err error) {
 	).Error
 
 	// 清除缓存
-	if err == nil && config.RedisEnabled {
-		var key string
-		keyCol := "`key`"
-		if common.UsingPostgreSQL {
-			keyCol = `"key"`
-		}
-		if getErr := DB.Model(&Token{}).Where("id = ?", id).Select(keyCol).Scan(&key).Error; getErr == nil && key != "" {
-			redis.RedisDel(fmt.Sprintf(UserTokensKey, key))
-		}
+	if err == nil {
+		invalidateTokenCacheById(id)
 	}
 
 	return err
@@ -660,16 +703,7 @@ func PreDecreaseTokenQuota(id int, quota int) (err error) {
 		return ErrTokenQuotaNotEnough
 	}
 	// 清除缓存
-	if config.RedisEnabled {
-		var key string
-		keyCol := "`key`"
-		if common.UsingPostgreSQL {
-			keyCol = `"key"`
-		}
-		if getErr := DB.Model(&Token{}).Where("id = ?", id).Select(keyCol).Scan(&key).Error; getErr == nil && key != "" {
-			redis.RedisDel(fmt.Sprintf(UserTokensKey, key))
-		}
-	}
+	invalidateTokenCacheById(id)
 	return nil
 }
 

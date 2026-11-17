@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Copy, Eye, EyeOff } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,6 @@ import QuotaInput from '@/components/QuotaInput';
 import { API } from 'utils/api';
 import { renderQuota, SpendAmount, timestamp2string } from 'utils/common';
 import { isPlaygroundToken } from 'utils/playgroundToken';
-import { maskSecret } from 'utils/maskSecret';
 import ModelLimitSelector from './ModelLimitSelector';
 import ModelAccessField, { accessPayload, accessValueFrom } from '@/components/model/ModelAccessField';
 import { GroupBadge, nextResetTime, relativeTime, statusInfo } from './TokenTable';
@@ -27,10 +26,10 @@ import { EXPIRY_PRESETS, RESET_PERIODS, expiryFromPreset, quotaDraft, quotaPatch
 
 const bodyProps = { object: PropTypes.object, draft: PropTypes.object, setDraft: PropTypes.func, ctx: PropTypes.object };
 
-// The key itself: masked until revealed, with copy. Keys the playground manages are not shown.
-function KeyRow({ token, onCopy }) {
+// The key itself, masked: only its hint is stored (SEC-47), the full key was shown once when it
+// was created or reset. Reset issues a new one. Keys the playground manages are not shown.
+function KeyRow({ token, onReset }) {
   const { t } = useTranslation();
-  const [shown, setShown] = useState(false);
   if (isPlaygroundToken(token)) {
     return (
       <Badge variant="secondary" className="w-fit">
@@ -38,28 +37,25 @@ function KeyRow({ token, onCopy }) {
       </Badge>
     );
   }
-  const full = `sk-${token.key || ''}`;
   return (
-    <div className="flex h-10 items-center gap-1 rounded-lg border border-input bg-field pl-3 pr-1">
-      <code className="min-w-0 flex-1 truncate font-mono text-[13px]">{shown ? full : maskSecret(full)}</code>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="size-8 rounded-md"
-        aria-label={t(shown ? 'apiKey.panel.hide' : 'apiKey.panel.reveal')}
-        onClick={() => setShown((v) => !v)}
-      >
-        {shown ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-      </Button>
-      <Button type="button" variant="ghost" size="icon" className="size-8 rounded-md" aria-label={t('token_index.copy')} onClick={onCopy}>
-        <Copy className="size-4" />
-      </Button>
+    <div className="space-y-1.5">
+      <div className="flex h-10 items-center gap-1 rounded-lg border border-input bg-muted/40 pl-3 pr-1">
+        <code className="min-w-0 flex-1 truncate font-mono text-[13px]" data-testid="token-key-hint">
+          {token.key_hint || '—'}
+        </code>
+        {onReset && (
+          <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 rounded-md" onClick={onReset}>
+            <RefreshCw className="size-3.5" />
+            {t('apiKey.secret.reset')}
+          </Button>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">{t('apiKey.secret.listNote')}</p>
     </div>
   );
 }
 
-KeyRow.propTypes = { token: PropTypes.object.isRequired, onCopy: PropTypes.func };
+KeyRow.propTypes = { token: PropTypes.object.isRequired, onReset: PropTypes.func };
 
 // What the key can call with its saved settings: groups ∩ model limit ∩ organization member
 // allowlist, the same answer as /v1/models.
@@ -146,7 +142,7 @@ function OverviewBody({ object: token, ctx }) {
   return (
     <>
       <Field label={t('apiKey.panel.key')}>
-        <KeyRow token={token} onCopy={() => ctx.onCopyKey(token)} />
+        <KeyRow token={token} onReset={ctx.resetKey} />
       </Field>
       <StatRow
         items={[

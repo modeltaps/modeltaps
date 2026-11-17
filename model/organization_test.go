@@ -16,7 +16,7 @@ import (
 
 func setupOrgTestDB(t *testing.T) {
 	t.Helper()
-	// Token.AfterCreate 钩子依赖令牌编码器,测试环境需先初始化
+	// Legacy signed keys are checked with the token encoder (common.ValidateToken).
 	if viper.GetString("user_token_secret") == "" {
 		viper.Set("user_token_secret", "org-test-secret")
 		if err := common.InitUserToken(); err != nil {

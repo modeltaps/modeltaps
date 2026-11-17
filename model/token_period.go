@@ -3,7 +3,6 @@ package model
 import (
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
-	"github.com/modeltaps/modeltaps/common/redis"
 	"fmt"
 	"strings"
 	"sync"
@@ -164,7 +163,7 @@ func accrueTokenPeriodUsed(id int, delta int) error {
 	})
 	// period_used 参与令牌校验，写入后必须清缓存（token.go:330-336 模式）
 	if res.Error == nil && config.RedisEnabled {
-		redis.RedisDel(fmt.Sprintf(UserTokensKey, token.Key))
+		invalidateTokenCache(token.KeyHash)
 	}
 	return res.Error
 }
@@ -178,7 +177,7 @@ func ResetTokenPeriodCounters(id int) error {
 	err = DB.Model(&Token{}).Where("id = ?", id).
 		UpdateColumns(map[string]interface{}{"period_used": 0, "period_start": 0}).Error
 	if err == nil && config.RedisEnabled {
-		redis.RedisDel(fmt.Sprintf(UserTokensKey, token.Key))
+		invalidateTokenCache(token.KeyHash)
 	}
 	return err
 }
@@ -213,7 +212,7 @@ func ResetTokenPeriodQuota() {
 				continue
 			}
 			if config.RedisEnabled {
-				redis.RedisDel(fmt.Sprintf(UserTokensKey, token.Key))
+				invalidateTokenCache(token.KeyHash)
 			}
 		}
 		return nil

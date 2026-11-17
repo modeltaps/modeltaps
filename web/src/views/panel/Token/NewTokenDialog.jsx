@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { Check, Copy, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -12,76 +12,7 @@ import QuotaInput from '@/components/QuotaInput';
 import { API } from 'utils/api';
 import { showError } from 'utils/common';
 import { DEFAULT_SETTING, EXPIRY_PRESETS, expiryFromPreset, quotaPatch } from './tokenData';
-
-// A read-only value with an icon copy button inside its box: the whole value is shown (wrapped,
-// never cut off) and a click on it selects all of it. The icon turns into a check for a moment.
-function useCopied() {
-  const [copied, setCopied] = useState(false);
-  useEffect(() => {
-    if (!copied) return undefined;
-    const id = setTimeout(() => setCopied(false), 1500);
-    return () => clearTimeout(id);
-  }, [copied]);
-  return [copied, () => setCopied(true)];
-}
-
-function CopyField({ label, value, onCopy, testId }) {
-  const { t } = useTranslation();
-  const [copied, markCopied] = useCopied();
-  return (
-    <div>
-      <p className="mb-1.5 text-sm font-medium">{label}</p>
-      <div className="flex items-start gap-1 rounded-lg border border-input bg-muted/40 py-1 pl-3 pr-1">
-        <code className="min-w-0 flex-1 select-all break-all py-1.5 font-mono text-[13px] leading-5" data-testid={testId}>
-          {value}
-        </code>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-8 shrink-0 rounded-md text-muted-foreground hover:text-foreground"
-          aria-label={copied ? t('apiKey.new.copied') : t('token_index.copy')}
-          title={copied ? t('apiKey.new.copied') : t('token_index.copy')}
-          onClick={() => {
-            onCopy();
-            markCopied();
-          }}
-        >
-          {copied ? <Check className="size-4 text-success" /> : <Copy className="size-4" />}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// The base URL as a secondary line under the key: needed to point a client at this gateway, but
-// also on the list page, so it does not compete with the key.
-function BaseUrlLine({ value, onCopy }) {
-  const { t } = useTranslation();
-  const [copied, markCopied] = useCopied();
-  return (
-    <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-      <span className="shrink-0">{t('token_index.apiAddress')}</span>
-      <code className="min-w-0 select-all truncate font-mono text-foreground/80">{value}</code>
-      <button
-        type="button"
-        className="flex size-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
-        aria-label={copied ? t('apiKey.new.copied') : t('token_index.copy')}
-        title={copied ? t('apiKey.new.copied') : t('token_index.copy')}
-        onClick={() => {
-          onCopy();
-          markCopied();
-        }}
-      >
-        {copied ? <Check className="size-3.5 text-success" /> : <Copy className="size-3.5" />}
-      </button>
-    </div>
-  );
-}
-
-BaseUrlLine.propTypes = { value: PropTypes.string.isRequired, onCopy: PropTypes.func.isRequired };
-
-CopyField.propTypes = { label: PropTypes.node, value: PropTypes.string, onCopy: PropTypes.func.isRequired, testId: PropTypes.string };
+import { SecretKeyReveal } from './KeySecret';
 
 // Server answers that belong under the name field rather than in a toast.
 const NAME_ERRORS = new Set(['token_name_taken', 'token_name_reserved']);
@@ -89,7 +20,9 @@ const NAME_ERRORS = new Set(['token_name_taken', 'token_name_reserved']);
 // New API key, in a dialog as most consoles do it: a name, and optionally a spending limit and an
 // expiry. Groups, model and IP restrictions start open (the account's group, every model, any
 // address) and are changed in the key's panel. After creating, the dialog shows the key with copy
-// and the base URL, then closes or opens the key's panel.
+// and the base URL, then closes or opens the key's panel. This is the only time the key is shown:
+// only its hash is stored. `onCreated` receives { id, key } so the page can still build the
+// test command and client setup for it while it stays open.
 export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, onCopy }) {
   const { t } = useTranslation();
   const [form, setForm] = useState({ name: '', quota: '', expiry: 'never' });
@@ -123,8 +56,9 @@ export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, on
       });
       const { success, message, data, code } = res.data;
       if (success) {
-        setCreated({ id: data?.id, key: data?.key ? `sk-${data.key}` : '' });
-        onCreated();
+        const next = { id: data?.id, key: data?.key ? `sk-${data.key}` : '' };
+        setCreated(next);
+        onCreated(next);
       } else if (NAME_ERRORS.has(code)) setNameError(message);
       else showError(message);
     } catch {
@@ -145,14 +79,8 @@ export default function NewTokenDialog({ onClose, onCreated, onOpen, baseUrl, on
               </DialogTitle>
               <DialogDescription>{t('apiKey.new.createdHint')}</DialogDescription>
             </DialogHeader>
-            <div className="space-y-2.5 px-6 pb-6">
-              <CopyField
-                label={t('token_index.token')}
-                value={created.key}
-                onCopy={() => onCopy(created.key, t('token_index.token'))}
-                testId="new-token-key"
-              />
-              {baseUrl && <BaseUrlLine value={baseUrl} onCopy={() => onCopy(baseUrl, t('token_index.apiAddress'))} />}
+            <div className="px-6 pb-6">
+              <SecretKeyReveal secret={created.key} baseUrl={baseUrl} onCopy={onCopy} />
             </div>
             <DialogFooter>
               {created.id ? (

@@ -131,34 +131,66 @@ func GetToken(c *gin.Context) {
 	})
 }
 
-func GetPlaygroundToken(c *gin.Context) {
-	tokenName := "sys_playground"
-	userId := c.GetInt("id")
-	token, err := model.GetTokenByName(tokenName, userId)
+// IssuePlaygroundKey gives the signed-in user a short-lived key for the console playground (see
+// model.PlaygroundKey): it spends on the user's playground API key and expires after an hour.
+// The long-lived API keys themselves cannot be read back.
+func IssuePlaygroundKey(c *gin.Context) {
+	key, expiresAt, err := model.IssuePlaygroundKey(c.GetInt("id"))
 	if err != nil {
-		cleanToken := model.Token{
-			UserId: userId,
-			Name:   tokenName,
-			// Key:            utils.GenerateKey(),
-			CreatedTime:    utils.GetTimestamp(),
-			AccessedTime:   utils.GetTimestamp(),
-			ExpiredTime:    0,
-			RemainQuota:    0,
-			UnlimitedQuota: true,
-		}
-		err = cleanToken.Insert()
-		if err != nil {
-			common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenChatCreateFailed, "Failed to create the chat API key, please try again later or contact the admin", nil)
-			return
-		}
-		token = &cleanToken
+		logger.SysError("failed to issue a playground key: " + err.Error())
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenChatCreateFailed, "Failed to create the chat API key, please try again later or contact the admin", nil)
+		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    token.Key,
+		"data": gin.H{
+			"key":        key,
+			"expires_at": expiresAt,
+		},
 	})
+}
+
+// respondNewTokenKey answers a request that created or reset an API key: the only response that
+// carries the key itself (without "sk-"). It cannot be read back later.
+func respondNewTokenKey(c *gin.Context, token *model.Token) {
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data": gin.H{
+			"id":       token.Id,
+			"key":      token.Key,
+			"key_hint": token.KeyHint,
+		},
+	})
+}
+
+// ResetTokenKey gives one of the user's API keys a new secret and returns it once; the old key
+// stops working at once. The playground's key is managed by the system and cannot be reset.
+func ResetTokenKey(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	token, err := model.GetTokenByIds(id, c.GetInt("id"))
+	if err != nil {
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenNotFound, "API key not found", nil)
+		return
+	}
+	resetTokenKey(c, token)
+}
+
+func resetTokenKey(c *gin.Context, token *model.Token) {
+	if token.Name == model.PlaygroundTokenName {
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeTokenKeyResetManaged, "The playground API key is managed by the system and cannot be reset", nil)
+		return
+	}
+	if _, err := token.ResetKey(); err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	respondNewTokenKey(c, token)
 }
 
 // reservedTokenNamePrefix marks names the system gives its own keys (the playground key); users
@@ -234,9 +266,8 @@ func AddToken(c *gin.Context) {
 	}
 
 	cleanToken := model.Token{
-		UserId: userId,
-		Name:   token.Name,
-		// Key:            utils.GenerateKey(),
+		UserId:         userId,
+		Name:           token.Name,
 		CreatedTime:    utils.GetTimestamp(),
 		AccessedTime:   utils.GetTimestamp(),
 		ExpiredTime:    token.ExpiredTime,
@@ -252,14 +283,7 @@ func AddToken(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data": gin.H{
-			"id":  cleanToken.Id,
-			"key": cleanToken.Key,
-		},
-	})
+	respondNewTokenKey(c, &cleanToken)
 }
 
 func DeleteToken(c *gin.Context) {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"sort"
@@ -47,8 +48,9 @@ func changeTokenKeyColumnType() *gormigrate.Migration {
 		ID: "202411300001",
 		Migrate: func(tx *gorm.DB) error {
 			// 如果表不存在，说明是新数据库，直接跳过
-			if !tx.Migrator().HasTable("tokens") {
-				return nil
+			// Databases created after SEC-47 have no plaintext key column at all.
+			if hasKey, err := tokensHaveKeyColumn(tx); err != nil || !hasKey {
+				return err
 			}
 
 			dialect := tx.Dialector.Name()
@@ -621,7 +623,100 @@ func postMigrations() []*gormigrate.Migration {
 		migrateMailTemplateLanguages(),
 		backfillUserEmailCanonical(),
 		backfillUserFirstTopUp(),
+		hashTokenKeys(),
 	}
+}
+
+// legacyTokenKeyRow is a row of the plaintext tokens.key column, which the Token model no
+// longer maps.
+type legacyTokenKeyRow struct {
+	Id  int
+	Key string
+}
+
+// hashTokenKeys stops storing API keys in plaintext (SEC-47). AutoMigrate has added key_hash and
+// key_hint; for every key still in the old key column (soft-deleted ones included) this writes
+// the hash and the hint and clears the column to NULL (not '': the column keeps its unique
+// index). Keys keep working, now found by hash. Running it again finds nothing left to move.
+func hashTokenKeys() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202611170047",
+		Migrate: func(tx *gorm.DB) error {
+			return migrateTokenKeysToHash(tx)
+		},
+		Rollback: func(tx *gorm.DB) error {
+			return nil
+		},
+	}
+}
+
+// tokensHaveKeyColumn reports whether tokens still has the plaintext key column. It reads the
+// column list rather than Migrator().HasColumn, which on SQLite matches "key" anywhere in the
+// table definition (PRIMARY KEY, key_hash) and would report a column that is not there.
+func tokensHaveKeyColumn(tx *gorm.DB) (bool, error) {
+	if !tx.Migrator().HasTable("tokens") {
+		return false, nil
+	}
+	columns, err := tx.Migrator().ColumnTypes("tokens")
+	if err != nil {
+		return false, err
+	}
+	for _, column := range columns {
+		if strings.EqualFold(column.Name(), "key") {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func migrateTokenKeysToHash(tx *gorm.DB) error {
+	hasKey, err := tokensHaveKeyColumn(tx)
+	if err != nil || !hasKey {
+		return err
+	}
+	// The column is no longer written: new keys leave it NULL.
+	switch tx.Dialector.Name() {
+	case "mysql":
+		if err := tx.Exec("ALTER TABLE tokens MODIFY COLUMN `key` varchar(59) NULL").Error; err != nil {
+			return err
+		}
+	case "postgres":
+		if err := tx.Exec(`ALTER TABLE tokens ALTER COLUMN "key" DROP NOT NULL`).Error; err != nil {
+			return err
+		}
+	}
+	keyCol := quotePostgresField("key")
+	if err := tx.Table("tokens").Where(keyCol+" = ?", "").UpdateColumn("key", nil).Error; err != nil {
+		return err
+	}
+	moved := 0
+	for {
+		var rows []legacyTokenKeyRow
+		err := tx.Table("tokens").Select("id", "key").Where(keyCol + " IS NOT NULL").
+			Order("id").Limit(500).Find(&rows).Error
+		if err != nil {
+			return err
+		}
+		if len(rows) == 0 {
+			break
+		}
+		for _, row := range rows {
+			key := common.NormalizeUserTokenKey(row.Key)
+			err := tx.Table("tokens").Where("id = ?", row.Id).UpdateColumns(map[string]interface{}{
+				"key_hash": common.HashUserTokenKey(key),
+				"key_hint": common.UserTokenKeyHint(key),
+				"key":      nil,
+			}).Error
+			if err != nil {
+				return err
+			}
+		}
+		moved += len(rows)
+	}
+	if moved > 0 {
+		logger.SysLog(fmt.Sprintf("stored %d API keys as hashes and cleared their plaintext", moved))
+	}
+	return nil
 }
 
 // migrateRoutingPolicyScopedNameIndex drops the old global unique index on routing_policies.name.

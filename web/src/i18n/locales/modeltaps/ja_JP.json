@@ -1755,7 +1755,9 @@
     "smtp_managed": "メール送信はデプロイ設定（smtp.url）で管理されており、ここでは変更できません",
     "supply_intake_rules_invalid": "新モデルのルールが無効です：{{message}}",
     "channel_base_url_needs_key": "キーを再入力せずに Base URL を変更できるのはスーパー管理者のみです。新しいアドレスを保存するにはキーを入力してください。",
-    "channel_copy_key_mismatch": "種類または Base URL が異なるチャネルにキーをコピーできるのはスーパー管理者のみです。"
+    "channel_copy_key_mismatch": "種類または Base URL が異なるチャネルにキーをコピーできるのはスーパー管理者のみです。",
+    "token_key_reset_managed": "プレイグラウンドの API キーはシステムが管理しているため、再発行できません",
+    "token_key_reset_not_creator": "この API キーを再発行できるのは、作成したメンバーだけです"
   },
   "channelOAuth": {
     "tip": {
@@ -3802,7 +3804,7 @@
       "create": "作成",
       "later": "既定: アカウントのグループ、全モデル、IP 制限なし",
       "createdTitle": "「{{name}}」を作成しました",
-      "createdHint": "クライアントに貼り付けて使えます。あとから詳細でも確認できます。",
+      "createdHint": "クライアントに貼り付けてください。",
       "copied": "コピーしました",
       "openDetails": "詳細を開く",
       "done": "完了"
@@ -3863,6 +3865,21 @@
       "day": "1日",
       "week": "1週間",
       "month": "1か月"
+    },
+    "secret": {
+      "onceNote": "今すぐコピーして安全な場所に保管してください。キーが表示されるのはこの一度だけで、後から確認することはできません。紛失した場合はキーを再発行してください。",
+      "listNote": "完全なキーは作成時または再発行時に一度だけ表示されます。",
+      "reset": "キーを再発行",
+      "resetTitle": "「{{name}}」のキーを再発行しますか？",
+      "resetConfirm": "新しいキーが発行され、現在のキーはただちに使えなくなります。このキーを使うアプリには新しいキーが必要です。設定、上限、使用量はそのまま残ります。",
+      "resetDoneTitle": "「{{name}}」の新しいキー",
+      "resetDoneHint": "以前のキーは使えなくなりました。このキーをクライアントに設定してください。",
+      "pasteLabel": "API キー",
+      "pastePlaceholder": "キーを貼り付け（sk-…）",
+      "pastePlaceholderHint": "キーを貼り付け（{{hint}}）",
+      "pasteHint": "キーは一度しか表示されないため、ここに貼り付けて入力してください。このページでのみ使われ、保存されません。",
+      "pasteMismatch": "この API キーのキーではありません（{{hint}}）。",
+      "pasteForModels": "上にキーを貼り付けると、このプロトコルで呼び出せるモデルが表示されます。"
     }
   },
   "redemptionList": {
@@ -4336,5 +4353,8 @@
     "times_other": "{{count}} 回",
     "latestSamples_other": "直近 {{count}} 回",
     "problemSummary_other": "{{groups}} 件の問題、計 {{count}} 回"
+  },
+  "token_index": {
+    "tokenKeySearchPlaceholder": "完全な API キーを入力（sk- の有無は問いません）"
   }
 }

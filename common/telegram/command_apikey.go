@@ -1,11 +1,8 @@
 package telegram
 
 import (
-	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/model"
 	"fmt"
-	"net/url"
-	"strings"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
@@ -55,40 +52,13 @@ func getApikeyList(userId, page int) (message string, pageParams *paginationPara
 		return "No API key found", nil
 	}
 
-	chatUrlTmp := ""
-	if config.ServerAddress != "" {
-		chatUrlTmp = getChatUrl()
-	}
-
-	message = "Tap an API key to copy it:\n"
+	// Keys are stored as hashes only (SEC-47): the bot lists the masked form, and a key is only
+	// ever shown in the console, once, when it is created or reset.
+	message = escapeText("Your API keys (masked). A key is only shown once, in the console, when it is created or reset.", "MarkdownV2") + "\n\n"
 
 	for _, token := range *list.Data {
-		key := "sk-" + token.Key
-		message += fmt.Sprintf("*%s* : `%s`\n", escapeText(token.Name, "MarkdownV2"), key)
-		if chatUrlTmp != "" {
-			message += strings.ReplaceAll(chatUrlTmp, `setToken`, key)
-		}
-		message += "\n"
+		message += fmt.Sprintf("*%s* : `%s`\n\n", escapeText(token.Name, "MarkdownV2"), token.KeyHint)
 	}
 
 	return message, getPageParams("apikey", page, genericParams.Size, int(list.TotalCount))
-}
-
-func getChatUrl() string {
-	serverAddress := strings.TrimSuffix(config.ServerAddress, "/")
-	chatNextUrl := fmt.Sprintf(`{"key":"setToken","url":"%s"}`, serverAddress)
-	if config.ChatLink != "" {
-		chatLink := strings.TrimSuffix(config.ChatLink, "/")
-		chatNextUrl = chatLink + "/#/?settings=" + url.QueryEscape(chatNextUrl)
-	} else {
-		chatNextUrl = ""
-	}
-
-	jumpUrl := fmt.Sprintf(`%s/jump?url=`, serverAddress)
-
-	amaUrl := jumpUrl + url.QueryEscape(fmt.Sprintf(`ama://set-api-key?server=%s&key=setToken`, serverAddress))
-
-	openCatUrl := jumpUrl + url.QueryEscape(fmt.Sprintf(`opencat://team/join?domain=%s&token=setToken`, serverAddress))
-
-	return fmt.Sprintf("[Next Chat](%s)  [AMA](%s)  [OpenCat](%s)\n", chatNextUrl, amaUrl, openCatUrl)
 }

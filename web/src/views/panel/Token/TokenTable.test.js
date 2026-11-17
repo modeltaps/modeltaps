@@ -4,9 +4,10 @@ import { describe, expect, it } from 'vitest';
 import { keySuffix, keyState } from './TokenTable';
 
 describe('keySuffix', () => {
-  it('shows the prefix and the last four characters', () => {
-    expect(keySuffix('abcdefghRc6g')).toBe('sk-…Rc6g');
-    expect(keySuffix('ab')).toBe('sk-ab');
+  it('shows the prefix and the last four characters of the stored hint', () => {
+    expect(keySuffix('sk-a****Rc6g')).toBe('sk-…Rc6g');
+    expect(keySuffix('')).toBe('');
+    expect(keySuffix(undefined)).toBe('');
   });
 });
 
@@ -23,4 +24,3 @@ describe('keyState', () => {
     expect(keyState(key({ expired_time: now + 30 * 86400 }), now).key).toBe('enabled');
   });
 });
-

@@ -16,7 +16,7 @@ After signing in with your account you land on the **Dashboard**, which shows:
 - available quota, today's request count, today's spend and today's token volume;
 - usage trends and model usage over the last seven days;
 - **Available models**, the list of models you can call under your current group;
-- the **Quickstart** card — clicking one of the chat client buttons automatically creates a chat-only API key for you and opens that client with the key already filled in, which is a good way to try things out first.
+- the **Quickstart** card — it opens the console's **Chat** page, where you can try models right away without creating an API key (in an organization it opens the API guide instead).
 
 The balance row at the bottom of the sidebar shows your available quota; clicking it opens **Top up**. The group you belong to determines which channels you can be routed to and your requests-per-minute limit.
 
@@ -39,7 +39,7 @@ An API key quota only caps how much that single key may use. Actual charges are 
 
 ## 3. Verify with the test command
 
-Find the API key you just created in the **API Keys** list and open its **Test command**. In the dialog you can switch between the OpenAI / Claude / Gemini tabs and pick a model; Modeltaps assembles your real key, site address and model name into a `curl` command you can run as-is. Click **Copy command** and paste it into a terminal.
+When the API key is created, the dialog shows the full key once: copy it now, it cannot be shown again (you can reset the key to get a new one). Then find the API key in the **API Keys** list and open its **Test command**. In the dialog you can switch between the OpenAI / Claude / Gemini tabs and pick a model; Modeltaps assembles your key, site address and model name into a `curl` command you can run as-is (if you reloaded the page in between, paste the key into the dialog first). Click **Copy command** and paste it into a terminal.
 
 If a protocol tab reports that no models are available, there is no channel of that type in your current group — switch back to the **OpenAI** tab to test.
 

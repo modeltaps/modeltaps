@@ -14,7 +14,8 @@ import (
 var (
 	TokenCacheSeconds           = 0
 	UserGroupCacheKey           = "user_group:%d"
-	UserTokensKey               = "token:%s"
+	// UserTokensKey caches an API key by its hash (SEC-47); never by the key itself.
+	UserTokensKey               = "token_hash:%s"
 	UsernameCacheKey            = "user_name:%d"
 	UserQuotaCacheKey           = "user_quota:%d"
 	UserEnabledCacheKey         = "user_enabled:%d"
@@ -26,7 +27,15 @@ var (
 	OrgMemberBudgetRealtimeKey = "org_member_budget_realtime:%d"
 	LogIOOwnerDefaultCacheKey   = "log_io_owner_default:%d"
 
-	OldUserTokensCacheKey = "old_user_tokens_cache"
+	// OldUserTokenHashesKey is the set of hashes of the 48-character legacy keys, a cheap filter
+	// before the database is asked (see HandleOldTokenMaxId).
+	OldUserTokenHashesKey = "old_user_token_hashes"
+
+	// legacyPlaintextTokenCachePattern and legacyOldUserTokensCacheKey are where releases before
+	// SEC-47 cached API keys under the plaintext key; PurgeLegacyTokenCache removes them.
+	legacyPlaintextTokenCachePattern = "token:*"
+	legacyOldUserTokensCacheKey      = "old_user_tokens_cache"
+	legacyTokenCachePurgedKey        = "token_cache_plaintext_purged"
 )
 
 // LogIO 分层继承中,令牌归属主体的默认配置原值(三态),供 ResolveTokenLogIO 在令牌为「继承」时回退。
@@ -105,16 +114,17 @@ type UserRoleStatus struct {
 	Status int `json:"status"`
 }
 
-func CacheGetTokenByKey(key string) (*Token, error) {
+// CacheGetTokenByKeyHash reads an API key by the hash of its secret, through the cache.
+func CacheGetTokenByKeyHash(keyHash string) (*Token, error) {
 	if !config.RedisEnabled {
-		return GetTokenByKey(key)
+		return GetTokenByKeyHash(keyHash)
 	}
 
 	token, err := cache.GetOrSetCache(
-		fmt.Sprintf(UserTokensKey, key),
+		fmt.Sprintf(UserTokensKey, keyHash),
 		time.Duration(TokenCacheSeconds)*time.Second,
 		func() (*Token, error) {
-			return GetTokenByKey(key)
+			return GetTokenByKeyHash(keyHash)
 		},
 		cache.CacheTimeout)
 
@@ -325,13 +335,61 @@ func cacheUpdateOrgMemberRealtimeBudget(memberId int, quota int) (int64, error) 
 	return newValue, nil
 }
 
+// PurgeLegacyTokenCache deletes, once per Redis, the cache entries releases before SEC-47 kept
+// under the plaintext API key ("token:<key>" and the set of legacy keys). Entries written with
+// no expiry would otherwise keep every key readable in Redis after the upgrade.
+func PurgeLegacyTokenCache() {
+	if !config.RedisEnabled {
+		return
+	}
+	if done, _ := redis.RedisExists(legacyTokenCachePurgedKey); done {
+		return
+	}
+	ctx := context.Background()
+	client := redis.GetRedisClient()
+	deleted := 0
+	batch := make([]string, 0, 500)
+	flush := func() bool {
+		if len(batch) == 0 {
+			return true
+		}
+		if err := client.Del(ctx, batch...).Err(); err != nil {
+			logger.SysError("failed to delete legacy API key cache entries: " + err.Error())
+			return false
+		}
+		deleted += len(batch)
+		batch = batch[:0]
+		return true
+	}
+	iter := client.Scan(ctx, 0, legacyPlaintextTokenCachePattern, 1000).Iterator()
+	for iter.Next(ctx) {
+		batch = append(batch, iter.Val())
+		if len(batch) == cap(batch) && !flush() {
+			return
+		}
+	}
+	if err := iter.Err(); err != nil {
+		logger.SysError("failed to scan legacy API key cache entries: " + err.Error())
+		return
+	}
+	batch = append(batch, legacyOldUserTokensCacheKey)
+	if !flush() {
+		return
+	}
+	if err := redis.RedisSet(legacyTokenCachePurgedKey, "1", 0); err != nil {
+		logger.SysError("failed to record the legacy API key cache purge: " + err.Error())
+	}
+	logger.SysLog(fmt.Sprintf("removed %d legacy API key cache entries", deleted))
+}
+
+// HandleOldTokenMaxId fills the Redis set of hashes of the 48-character legacy keys (ids up to
+// OldTokenMaxId), so a 48-character key that is not one of them is refused without a query.
 func HandleOldTokenMaxId() {
 	if config.OldTokenMaxId == 0 || !config.RedisEnabled {
 		return
 	}
 
-	// 检测OldUserTokensCacheKey是否存在
-	exists, _ := redis.RedisExists(OldUserTokensCacheKey)
+	exists, _ := redis.RedisExists(OldUserTokenHashesKey)
 	if exists {
 		return
 	}
@@ -341,10 +399,11 @@ func HandleOldTokenMaxId() {
 	for {
 		var tokenKeys []interface{}
 		result := DB.Model(&Token{}).
-			Where("id <= ?", config.OldTokenMaxId).
+			Where("id <= ? AND key_hash IS NOT NULL AND key_hash <> ''", config.OldTokenMaxId).
+			Order("id").
 			Limit(batchSize).
 			Offset(offset).
-			Pluck("key", &tokenKeys)
+			Pluck("key_hash", &tokenKeys)
 
 		if result.Error != nil {
 			logger.SysError("failed to query legacy tokens: " + result.Error.Error())
@@ -358,7 +417,7 @@ func HandleOldTokenMaxId() {
 			break
 		}
 
-		if err := redis.RedisSAdd(OldUserTokensCacheKey, tokenKeys...); err != nil {
+		if err := redis.RedisSAdd(OldUserTokenHashesKey, tokenKeys...); err != nil {
 			logger.SysError("failed to add legacy token to Redis: " + err.Error())
 		}
 
