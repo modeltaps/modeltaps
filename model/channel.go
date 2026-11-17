@@ -46,6 +46,13 @@ type Channel struct {
 	AllowExtraBody     bool     `json:"allow_extra_body" form:"allow_extra_body" gorm:"default:false"`
 	PassThroughBody    bool     `json:"pass_through_body" form:"pass_through_body" gorm:"default:false"`
 	CostRatio          *float64 `json:"cost_ratio" form:"cost_ratio" gorm:"type:decimal(10,4);default:0"`
+	// FeeRate is what the channel's provider charges on top of its listed prices, as a fraction
+	// (0.05 = 5%), such as a top-up fee. It raises the channel cost that billing never goes below
+	// (see SupplyCostPrice). Nil in an update keeps the stored value; a new channel without one
+	// takes its type's default (channelFeeDefaults).
+	FeeRate *float64 `json:"fee_rate" form:"fee_rate" gorm:"type:decimal(10,4);default:0"`
+	// FeeNote says where the fee comes from. Admins only: users see a generic label.
+	FeeNote string `json:"fee_note" form:"fee_note" gorm:"type:varchar(255);default:''"`
 	// UnifiedRequestResponseModel 渠道级「响应模型名统一为请求模型名」开关；全局开关开启时对所有渠道生效。
 	UnifiedRequestResponseModel bool `json:"unified_request_response_model" form:"unified_request_response_model" gorm:"default:false"`
 	// ManageKey is an optional key of the same upstream account with management permission. It is
@@ -482,6 +489,7 @@ func cleanUpDeletedChannels(ids []int) {
 func BatchInsertChannels(channels []Channel) error {
 	for i := range channels {
 		channels[i].Group = NormalizeChannelGroup(channels[i].Group)
+		channels[i].applyFeeDefault()
 	}
 	err := DB.Omit("UsedQuota").Create(&channels).Error
 	if err != nil {
@@ -725,6 +733,14 @@ func (channel *Channel) GetCostRatio() float64 {
 	return *channel.CostRatio
 }
 
+// GetFeeRate is the channel's fee rate, 0 when unset or negative.
+func (channel *Channel) GetFeeRate() float64 {
+	if channel == nil || channel.FeeRate == nil || *channel.FeeRate <= 0 {
+		return 0
+	}
+	return *channel.FeeRate
+}
+
 func (channel *Channel) GetBaseURL() string {
 	if channel.BaseURL == nil {
 		return ""
@@ -748,6 +764,7 @@ func (channel *Channel) GetCustomParameter() string {
 
 func (channel *Channel) Insert() error {
 	channel.Group = NormalizeChannelGroup(channel.Group)
+	channel.applyFeeDefault()
 	err := DB.Omit("UsedQuota").Create(channel).Error
 	if err == nil {
 		ChannelGroup.Load()
@@ -801,6 +818,9 @@ func (channel *Channel) UpdateRaw(overwrite bool) error {
 		if channel.ManageKey == nil {
 			omit = append(omit, "ManageKey")
 		}
+		if channel.FeeRate == nil {
+			omit = append(omit, "FeeRate", "FeeNote")
+		}
 		if channel.PauseRules == nil {
 			omit = append(omit, "PauseRules")
 		}
@@ -818,6 +838,11 @@ func (channel *Channel) UpdateRaw(overwrite bool) error {
 		err = DB.Model(channel).Select("*").Omit(omit...).Updates(channel).Error
 	} else {
 		err = DB.Model(channel).Omit("UsedQuota").Updates(channel).Error
+		// The fee note comes with the fee rate, and an empty note clears it: a struct update
+		// skips empty strings.
+		if err == nil && channel.FeeRate != nil {
+			err = DB.Model(channel).Update("fee_note", channel.FeeNote).Error
+		}
 	}
 	if err != nil {
 		return err

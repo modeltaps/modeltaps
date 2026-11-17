@@ -2150,7 +2150,12 @@
       "dangerHint": "复制会用同一密钥和设置新建一个渠道；删除不能撤销",
       "name": "名称",
       "otherUnused": "这个供应商不读取这个字段，可以清空",
-      "n2rPlaceholder": "模型名\n-不转换的模型名"
+      "n2rPlaceholder": "模型名\n-不转换的模型名",
+      "feeRate": "渠道费率（%）",
+      "feeRateHint": "渠道商在标价之外另收的比例，例如充值服务费。打开「扣费不低于渠道成本」后，请求扣费不低于渠道价加上这部分费用。",
+      "feeNote": "费率来源",
+      "feeNoteHint": "费率依据（仅管理员可见）",
+      "feeNoteRequired": "请填写费率来源"
     },
     "chart": {
       "aria": "各渠道请求量",

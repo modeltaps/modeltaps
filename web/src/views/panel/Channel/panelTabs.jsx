@@ -1878,6 +1878,14 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
           </Select>
         </Field>
       </div>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label={t('channels.advanced.feeRate')} htmlFor="cp-fee" optional hint={t('channels.advanced.feeRateHint')}>
+          <Input id="cp-fee" type="number" min="0" step="0.1" className="tabular-nums" value={draft.fee_rate} onChange={set('fee_rate')} />
+        </Field>
+        <Field label={t('channels.advanced.feeNote')} htmlFor="cp-fee-note" optional hint={t('channels.advanced.feeNoteHint')}>
+          <Input id="cp-fee-note" value={draft.fee_note} onChange={set('fee_note')} />
+        </Field>
+      </div>
       {draft.mapping || mappingOpen ? (
         <Field label={configText(t, labels.label.model_mapping)} optional hint={t('channels.models.mappingHint')}>
           <ModelMappingInput
@@ -2002,6 +2010,9 @@ const advancedTab = {
     remark: c.remark || '',
     other: c.other || '',
     cost_ratio: c.cost_ratio ? String(c.cost_ratio) : '',
+    // The fee rate is stored as a fraction (0.05) and edited as a percentage (5).
+    fee_rate: c.fee_rate ? String(+(Number(c.fee_rate) * 100).toFixed(4)) : '',
+    fee_note: c.fee_note || '',
     pre_cost: c.pre_cost || 1,
     disabled_stream: Array.isArray(c.disabled_stream) ? c.disabled_stream.join(',') : '',
     need2response_models: c.need2response_models || '',
@@ -2015,12 +2026,16 @@ const advancedTab = {
   }),
   patch: (d, c, { t }) => {
     if (!d.name.trim()) return { error: t('channel_edit.requiredName') };
+    const feeRate = Math.max(0, Number(d.fee_rate) || 0) / 100;
+    if (feeRate > 0 && !d.fee_note.trim()) return { error: t('channels.advanced.feeNoteRequired') };
     const mapping = parseMapping(d.mapping);
     if (mapping === null) return { error: t('channels.models.mappingInvalid') };
     const patch = {
       name: d.name.trim(),
       remark: d.remark.trim(),
       cost_ratio: Math.max(0, Number(d.cost_ratio) || 0),
+      fee_rate: feeRate,
+      fee_note: d.fee_note.trim(),
       pre_cost: d.pre_cost,
       disabled_stream: splitList(d.disabled_stream),
       need2response_models: d.need2response_models.trim(),

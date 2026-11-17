@@ -2231,7 +2231,12 @@
       "dangerHint": "Copy creates a new channel with the same key and settings; delete cannot be undone",
       "name": "Name",
       "otherUnused": "This provider does not read this field; you can clear it",
-      "n2rPlaceholder": "model-name\n-model-not-converted"
+      "n2rPlaceholder": "model-name\n-model-not-converted",
+      "feeRate": "Fee rate (%)",
+      "feeRateHint": "What this channel's provider charges on top of its listed prices, such as a top-up fee. Requests never cost less than the channel price plus this fee when the channel cost setting is on.",
+      "feeNote": "Fee source",
+      "feeNoteHint": "Where the fee comes from (shown to admins only)",
+      "feeNoteRequired": "Say where the fee rate comes from"
     },
     "chart": {
       "aria": "Requests per channel",

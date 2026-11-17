@@ -2150,7 +2150,12 @@
       "dangerHint": "複製會用同一密鑰和設定新建一個渠道；刪除不能撤銷",
       "name": "名稱",
       "otherUnused": "這個供應商不讀取這個欄位，可以清空",
-      "n2rPlaceholder": "模型名\n-不轉換的模型名"
+      "n2rPlaceholder": "模型名\n-不轉換的模型名",
+      "feeRate": "渠道費率（%）",
+      "feeRateHint": "渠道商在標價之外另收的比例，例如充值服務費。開啟「扣費不低於渠道成本」後，請求扣費不低於渠道價加上這部分費用。",
+      "feeNote": "費率來源",
+      "feeNoteHint": "費率依據（僅管理員可見）",
+      "feeNoteRequired": "請填寫費率來源"
     },
     "chart": {
       "aria": "各渠道請求量",

@@ -627,6 +627,7 @@ func postMigrations() []*gormigrate.Migration {
 		cleanOrphanSupplies(),
 		migrateAccessTokensToManagementKeys(),
 		migrateMailServices(),
+		backfillChannelFeeRates(),
 	}
 }
 
