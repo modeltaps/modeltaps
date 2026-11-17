@@ -972,14 +972,14 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                 <col className="w-8" />
                 <col />
                 {hasMapping && <col className="w-[22%]" />}
-                <col className="w-[4.5rem]" />
-                {showPrices && <col className="w-[5.5rem]" />}
-                {showPrices && <col className="w-[5.5rem]" />}
-                <col className="w-14" />
-                <col className="w-9" />
+                <col className="w-16" />
+                {showPrices && <col className="w-[5.125rem]" />}
+                {showPrices && <col className="w-[5.125rem]" />}
+                <col className="w-11" />
+                <col className="w-8" />
               </colgroup>
               <thead>
-                <tr className="text-left text-xs text-muted-foreground [&>th]:h-9 [&>th]:whitespace-nowrap [&>th]:border-b [&>th]:border-border [&>th]:px-3 [&>th]:font-medium">
+                <tr className="text-left text-xs text-muted-foreground [&>th]:h-9 [&>th]:whitespace-nowrap [&>th]:border-b [&>th]:border-border [&>th]:px-2 [&>th:nth-child(2)]:px-3 [&>th]:font-medium">
                   <th className="!pl-3 !pr-0">
                     {tickable.length > 0 && (
                       <Checkbox
@@ -1027,7 +1027,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                     <tr
                       key={name}
                       className={cn(
-                        'group [&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0',
+                        'group [&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-2 [&>td:nth-child(2)]:px-3 last:[&>td]:border-b-0',
                         isRemoved && '[&>td:not(:last-child)]:opacity-50',
                         off && !isRemoved && '[&>td:not(:first-child):not(:nth-last-child(-n+2))]:opacity-55'
                       )}
@@ -1063,10 +1063,13 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                               />
                             )}
                           </div>
+                          {/* Small marks in two rows: four marks take the width of two, and the name keeps the rest. */}
                           <ModelTraitMarks
                             kind={detailOf(name)?.kind}
                             inputModalities={detailOf(name)?.input_modalities}
                             capabilities={detailOf(name)?.capabilities}
+                            size="sm"
+                            className="grid grid-flow-col grid-rows-2 gap-0.5"
                           />
                         </div>
                       </td>
@@ -1127,7 +1130,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                     <tr
                       key={u.name}
                       data-testid="unlisted-model"
-                      className="[&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-3 last:[&>td]:border-b-0"
+                      className="[&>td]:h-11 [&>td]:overflow-hidden [&>td]:text-ellipsis [&>td]:whitespace-nowrap [&>td]:border-b [&>td]:border-border [&>td]:px-2 [&>td:nth-child(2)]:px-3 last:[&>td]:border-b-0"
                     >
                       <td />
                       <td colSpan={hasMapping ? 3 : 2}>
