@@ -2362,7 +2362,18 @@
         "rerank": "Rerank",
         "audio": "Audio",
         "realtime": "Realtime"
-      }
+      },
+      "priceKind": {
+        "tokens": "Per token",
+        "image": "Per image",
+        "audio": "Per audio minute",
+        "video": "Per video second",
+        "request": "Per request",
+        "free": "Free",
+        "other": "Other pricing"
+      },
+      "priceKindClear": "Clear filter: {{kind}}",
+      "price_audio": "{{price}} / min"
     },
     "monitor": {
       "checkNow": "Check model list now",
@@ -4289,7 +4300,12 @@
     "syncedAt": "Read {{time}}",
     "openPage": "Check on {{source}}",
     "openPricing": "Open {{source}} pricing",
-    "noPage": "No public page to check this price on"
+    "noPage": "No public page to check this price on",
+    "row_audioMinute": "Audio",
+    "row_audioHour": "Audio (same rate)",
+    "unit_minute": "minute",
+    "unit_hour": "hour",
+    "filterSame": "Show only models priced: {{kind}}"
   },
   "intakeRules": {
     "defaultNames": {

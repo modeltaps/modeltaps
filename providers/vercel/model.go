@@ -37,6 +37,8 @@ type modelPricing struct {
 	Request         string `json:"request"`
 	// TranscriptionSecond is a speech-to-text model's price in USD per second of audio.
 	TranscriptionSecond string `json:"transcription_duration_cost_per_second"`
+	// SpeechOutputSecond is a model's price in USD per second of generated audio (music, sound).
+	SpeechOutputSecond string `json:"speech_output_cost_per_second"`
 	// VideoDuration lists video models' price per second, one entry per resolution.
 	VideoDuration []videoSecondPrice `json:"video_duration_pricing"`
 	// fields counts every key the gateway sent, including the kinds read nowhere above (speech
@@ -288,7 +290,7 @@ func (p *VercelProvider) GetChannelPrices() ([]*model.ChannelPrice, error) {
 
 // buildChannelPrices keeps every listed model that states a price, token prices converted to USD
 // per million tokens; image models keep their per-image price and video models the lowest
-// per-second price. A model with no price fields at all is skipped, so it does not look free.
+// per-second price, audio models their price per second of audio. A model with no price fields at all is skipped, so it does not look free.
 // Tiered prices (input_tiers and the like) keep the base tier.
 func buildChannelPrices(resp *modelListResponse) []*model.ChannelPrice {
 	if resp == nil {
@@ -309,10 +311,16 @@ func buildChannelPrices(resp *modelListResponse) []*model.ChannelPrice {
 			Image:       parseUSD(pr.Image),
 			Request:     parseUSD(pr.Request),
 			VideoSecond: lowestVideoSecond(pr.VideoDuration),
+			AudioSecond: parseUSD(pr.TranscriptionSecond) + parseUSD(pr.SpeechOutputSecond),
 			Kind:        model.ModelKindFromUpstreamType(m.Type),
 		}
+		// Speech-to-text billed by audio length lists a nominal token price ("0" or 1e-10) next
+		// to it; that is not the bill, so only the per-second price is kept.
+		if pr.TranscriptionSecond != "" {
+			price.Input, price.Output, price.CacheRead, price.CacheWrite = 0, 0, 0, 0
+		}
 		read := pr.Input != "" || pr.Output != "" || pr.Image != "" || pr.InputCacheRead != "" || pr.InputCacheWrite != "" ||
-			pr.Request != "" || len(pr.VideoDuration) > 0
+			pr.Request != "" || len(pr.VideoDuration) > 0 || pr.TranscriptionSecond != "" || pr.SpeechOutputSecond != ""
 		if !read {
 			if pr.fields == 0 {
 				continue

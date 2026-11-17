@@ -2268,7 +2268,18 @@
         "rerank": "重排",
         "audio": "音频",
         "realtime": "实时语音"
-      }
+      },
+      "priceKind": {
+        "tokens": "按 token 计价",
+        "image": "按张计价",
+        "audio": "按音频时长计价",
+        "video": "按视频时长计价",
+        "request": "按次计价",
+        "free": "免费",
+        "other": "其他计价"
+      },
+      "priceKindClear": "取消筛选：{{kind}}",
+      "price_audio": "{{price}} / 分钟"
     },
     "monitor": {
       "checkNow": "立即检查模型列表",
@@ -4187,7 +4198,12 @@
     "syncedAt": "{{time}} 读取",
     "openPage": "去 {{source}} 核对",
     "openPricing": "打开 {{source}} 价格页",
-    "noPage": "没有可核对这个价格的公开网页"
+    "noPage": "没有可核对这个价格的公开网页",
+    "row_audioMinute": "音频时长",
+    "row_audioHour": "音频时长（折合）",
+    "unit_minute": "分钟",
+    "unit_hour": "小时",
+    "filterSame": "只看「{{kind}}」的模型"
   },
   "intakeRules": {
     "defaultNames": {

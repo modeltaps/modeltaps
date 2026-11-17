@@ -31,17 +31,21 @@ export function tokenAmount(value) {
 
 // The short form the table shows: input and output per million tokens (two decimals; the column
 // headers carry "$/M"), or for a model not priced per token one text for both columns: a
-// per-image, per-second or per-request price, free, or other.
+// per-image, per-minute of audio, per-second of video or per-request price, free, or other.
 export function priceSummary(price) {
   if (!price) return null;
-  const { input = 0, output = 0, image = 0, request = 0, video_second: videoSecond = 0 } = price;
+  const { input = 0, output = 0, image = 0, request = 0, video_second: videoSecond = 0, audio_second: audioSecond = 0 } = price;
   if (input || output) return { kind: 'tokens', input: tokenAmount(input), output: tokenAmount(output) };
   if (image) return { kind: 'image', value: usd(image) };
+  if (audioSecond) return { kind: 'audio', value: usd(audioSecond * 60) };
   if (videoSecond) return { kind: 'video', value: usd(videoSecond) };
   if (price.other) return { kind: 'other' };
   if (request) return { kind: 'request', value: usd(request) };
   return { kind: 'free' };
 }
+
+// How a model is priced, for the price filter: a priceSummary kind, or 'none' without a price.
+export const priceKindOf = (price) => priceSummary(price)?.kind || 'none';
 
 // The input or output price per million tokens, for sorting; null when the model is not priced
 // per token (or has no price).

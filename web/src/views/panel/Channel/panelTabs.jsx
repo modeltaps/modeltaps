@@ -42,7 +42,7 @@ import {
   previewChannelPricing,
   refreshChannelPrices
 } from './channelApi';
-import { amount, priceIndex, priceSummary, sortByTokenPrice, upstreamNameOf } from './channelPrices';
+import { amount, priceIndex, priceKindOf, priceSummary, sortByTokenPrice, upstreamNameOf } from './channelPrices';
 import { lossOf, orderByRank, sortByName } from './channelModelDetails';
 import UpstreamPriceDetails from './UpstreamPriceDetails';
 import { STATE_FILTERS, isGone, matchesState, offerOf, snapshotOf, stateCounts, unlistedOf } from './channelModelStates';
@@ -133,7 +133,7 @@ ToolButton.propTypes = { busy: PropTypes.bool, icon: PropTypes.elementType, chil
 // What the upstream charges for one listed model, as the Input and Output cells. A model not
 // priced per token (per image, per second, per request, free, other, or no price) gets one cell
 // across both. A click on a price opens its details, with a link to the upstream's page.
-function UpstreamPriceCells({ price, publics }) {
+function UpstreamPriceCells({ price, publics, onFilter }) {
   const { t } = useTranslation();
   const summary = priceSummary(price);
   const losses =
@@ -145,7 +145,14 @@ function UpstreamPriceCells({ price, publics }) {
   const only = (publics || []).filter((p) => p.enabled);
   const sell = only.length === 1 ? { input: only[0].input_price ?? undefined, output: only[0].output_price ?? undefined } : undefined;
   const details = (content) => (
-    <UpstreamPriceDetails price={price} upstream={price.model} sell={sell} losses={lossLines}>
+    <UpstreamPriceDetails
+      price={price}
+      upstream={price.model}
+      sell={sell}
+      losses={lossLines}
+      filterLabel={summary && t(`channels.models.priceKind.${summary.kind}`)}
+      onFilter={onFilter && summary ? () => onFilter(summary.kind) : undefined}
+    >
       {content}
     </UpstreamPriceDetails>
   );
@@ -185,7 +192,7 @@ function UpstreamPriceCells({ price, publics }) {
   );
 }
 
-UpstreamPriceCells.propTypes = { price: PropTypes.object, publics: PropTypes.array };
+UpstreamPriceCells.propTypes = { price: PropTypes.object, publics: PropTypes.array, onFilter: PropTypes.func };
 
 // A price the upstream charges above what a public model it serves sells for.
 function LossMark({ text, value }) {
@@ -542,15 +549,25 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   const pricesByModel = useMemo(() => priceIndex(upstreamPrices?.prices), [upstreamPrices]);
 
   const showPrices = Boolean(upstreamPrices?.supported);
+  // Picked from a price's details: only the models priced the same way ('' shows all), on top of
+  // the state filter.
+  const [priceKind, setPriceKind] = useState('');
+  const kindOf = (name) => priceKindOf(pricesByModel.get(upstreamNameOf(name, mapping)));
+  const priced = useMemo(
+    () => (priceKind && showPrices ? filtered.filter((r) => !r.removed && kindOf(r.name) === priceKind) : filtered),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filtered, priceKind, showPrices, pricesByModel, mapping]
+  );
+  const upstreamShown = (only === 'new' ? fresh : unlisted).filter((u) => !priceKind || !showPrices || kindOf(u.name) === priceKind);
   const shown = useMemo(() => {
-    if (sort?.key === 'name') return sortByName(filtered, sort.dir);
+    if (sort?.key === 'name') return sortByName(priced, sort.dir);
     if (sort && showPrices) {
-      return sortByTokenPrice(filtered, sort.key, sort.dir, (r) => pricesByModel.get(upstreamNameOf(r.name, mapping)));
+      return sortByTokenPrice(priced, sort.key, sort.dir, (r) => pricesByModel.get(upstreamNameOf(r.name, mapping)));
     }
-    return orderByRank(filtered, (r) => details?.get(r.name));
-  }, [filtered, sort, showPrices, pricesByModel, mapping, details]);
+    return orderByRank(priced, (r) => details?.get(r.name));
+  }, [priced, sort, showPrices, pricesByModel, mapping, details]);
   const showPublic = Boolean(ctx.supplyRouting);
-  const list = useLongList(shown, { text: modelRowText, resetKey: `${only}|${sort?.key || ''}|${sort?.dir || ''}` });
+  const list = useLongList(shown, { text: modelRowText, resetKey: `${only}|${priceKind}|${sort?.key || ''}|${sort?.dir || ''}` });
 
   useEffect(() => {
     if (adding && prices === null) fetchPriceList().then(setPrices);
@@ -730,7 +747,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
         </p>
       ) : (
         <>
-          {(stateKeys.length > 0 || signalCounts.idle > 0 || signalCounts.failing > 0 || signalCounts.off > 0) && (
+          {(stateKeys.length > 0 || signalCounts.idle > 0 || signalCounts.failing > 0 || signalCounts.off > 0 || priceKind) && (
             <div className="flex flex-wrap items-center gap-1.5 pb-2 text-[13px]">
               {stateKeys.map((key) => (
                 <FilterChip
@@ -769,6 +786,21 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                         />
                       )
                   )}
+                </>
+              )}
+              {priceKind && (
+                <>
+                  <span className="mx-1 h-4 w-px bg-border" />
+                  <button
+                    type="button"
+                    aria-label={t('channels.models.priceKindClear', { kind: t(`channels.models.priceKind.${priceKind}`) })}
+                    onClick={() => setPriceKind('')}
+                    className="inline-flex h-[26px] items-center gap-1 rounded-full border border-foreground/30 bg-muted px-2.5 text-xs text-foreground"
+                  >
+                    {t(`channels.models.priceKind.${priceKind}`)}
+                    <span className="tabular-nums">{upstreamOnly ? upstreamShown.length : priced.length}</span>
+                    <X className="size-3 text-muted-foreground" />
+                  </button>
                 </>
               )}
               {only === 'gone' && (counts.gone > 0 || flaggedMissing.length > 0) && (
@@ -930,7 +962,11 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                         {formatContext(detailOf(name)?.context_length) || '—'}
                       </td>
                       {showPrices && (
-                        <UpstreamPriceCells price={pricesByModel.get(upstreamNameOf(name, mapping))} publics={detailOf(name)?.public} />
+                        <UpstreamPriceCells
+                          price={pricesByModel.get(upstreamNameOf(name, mapping))}
+                          publics={detailOf(name)?.public}
+                          onFilter={setPriceKind}
+                        />
                       )}
                       <td className="text-center">
                         {!isRemoved && (
@@ -970,7 +1006,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                     </tr>
                   ))}
                 {upstreamOnly &&
-                  (only === 'new' ? fresh : unlisted).map((u) => (
+                  upstreamShown.map((u) => (
                     <tr
                       key={u.name}
                       data-testid="unlisted-model"
@@ -987,7 +1023,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                           {t(`channels.models.unlistedState.${u.state}`, { model: u.public_model, defaultValue: u.state })}
                         </span>
                       </td>
-                      {showPrices && <UpstreamPriceCells price={pricesByModel.get(u.name)} publics={[]} />}
+                      {showPrices && <UpstreamPriceCells price={pricesByModel.get(u.name)} publics={[]} onFilter={setPriceKind} />}
                       <td />
                       <td className="!px-1 text-right">
                         <button

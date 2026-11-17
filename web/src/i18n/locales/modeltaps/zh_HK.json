@@ -2268,7 +2268,18 @@
         "rerank": "重排",
         "audio": "音訊",
         "realtime": "實時語音"
-      }
+      },
+      "priceKind": {
+        "tokens": "按 token 計價",
+        "image": "按張計價",
+        "audio": "按音訊時長計價",
+        "video": "按影片時長計價",
+        "request": "按次計價",
+        "free": "免費",
+        "other": "其他計價"
+      },
+      "priceKindClear": "取消篩選：{{kind}}",
+      "price_audio": "{{price}} / 分鐘"
     },
     "monitor": {
       "checkNow": "立即檢查模型列表",
@@ -4187,7 +4198,12 @@
     "syncedAt": "{{time}} 讀取",
     "openPage": "去 {{source}} 核對",
     "openPricing": "開啟 {{source}} 價格頁",
-    "noPage": "沒有可核對這個價格的公開網頁"
+    "noPage": "沒有可核對這個價格的公開網頁",
+    "row_audioMinute": "音訊時長",
+    "row_audioHour": "音訊時長（折合）",
+    "unit_minute": "分鐘",
+    "unit_hour": "小時",
+    "filterSame": "只看「{{kind}}」的模型"
   },
   "intakeRules": {
     "defaultNames": {

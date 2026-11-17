@@ -2264,7 +2264,18 @@
         "rerank": "リランク",
         "audio": "音声",
         "realtime": "リアルタイム"
-      }
+      },
+      "priceKind": {
+        "tokens": "トークン課金",
+        "image": "画像単位",
+        "audio": "音声の長さ",
+        "video": "動画の長さ",
+        "request": "リクエスト単位",
+        "free": "無料",
+        "other": "その他の課金"
+      },
+      "priceKindClear": "フィルタを解除：{{kind}}",
+      "price_audio": "{{price}} / 分"
     },
     "monitor": {
       "checkNow": "今すぐモデル一覧を確認",
@@ -4180,7 +4191,12 @@
     "syncedAt": "{{time}} 取得",
     "openPage": "{{source}} で確認",
     "openPricing": "{{source}} の料金ページを開く",
-    "noPage": "この価格を確認できる公開ページはありません"
+    "noPage": "この価格を確認できる公開ページはありません",
+    "row_audioMinute": "音声",
+    "row_audioHour": "音声（換算）",
+    "unit_minute": "分",
+    "unit_hour": "時間",
+    "filterSame": "「{{kind}}」のモデルだけ表示"
   },
   "intakeRules": {
     "defaultNames": {

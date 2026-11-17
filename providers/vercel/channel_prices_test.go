@@ -16,17 +16,32 @@ func TestBuildChannelPrices(t *testing.T) {
 		t.Fatal(err)
 	}
 	var speech gatewayModel
-	if err := json.Unmarshal([]byte(`{"id":"vendor/tts","pricing":{"speech_output_cost_per_second":"0.001"}}`), &speech); err != nil {
+	if err := json.Unmarshal([]byte(`{"id":"vendor/tts","pricing":{"realtime_session_cost":"0.001"}}`), &speech); err != nil {
 		t.Fatal(err)
 	}
-	resp.Data = append(resp.Data, gatewayModel{Id: "vendor/unpriced"}, video, speech)
+	var stt gatewayModel
+	if err := json.Unmarshal([]byte(`{"id":"microsoft/mai-transcribe-2","type":"transcription","pricing":{"input":"0",
+	  "transcription_duration_cost_per_second":"0.00002778"}}`), &stt); err != nil {
+		t.Fatal(err)
+	}
+	var music gatewayModel
+	if err := json.Unmarshal([]byte(`{"id":"vendor/music","type":"speech","pricing":{"speech_output_cost_per_second":"0.0025"}}`), &music); err != nil {
+		t.Fatal(err)
+	}
+	resp.Data = append(resp.Data, gatewayModel{Id: "vendor/unpriced"}, video, speech, stt, music)
 	prices := buildChannelPrices(&resp)
 	byModel := map[string]int{}
 	for i, p := range prices {
 		byModel[p.Model] = i
 	}
-	if len(prices) != 5 {
-		t.Fatalf("prices = %d, want 5 (sonnet, embedding, image, video, speech): %+v", len(prices), prices)
+	if len(prices) != 7 {
+		t.Fatalf("prices = %d, want 7 (sonnet, embedding, image, video, speech, stt, music): %+v", len(prices), prices)
+	}
+	if s := prices[byModel["microsoft/mai-transcribe-2"]]; s.AudioSecond != 0.00002778 || s.Input != 0 || s.Other {
+		t.Errorf("stt = %+v, want 0.00002778 per audio second, not free", s)
+	}
+	if m := prices[byModel["vendor/music"]]; m.AudioSecond != 0.0025 || m.Other {
+		t.Errorf("music = %+v, want 0.0025 per audio second", m)
 	}
 	if s := prices[byModel["vendor/tts"]]; !s.Other {
 		t.Errorf("speech = %+v, want marked as priced another way", s)

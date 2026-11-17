@@ -13,6 +13,7 @@ import (
 // types whose upstream publishes prices (OpenRouter, Vercel AI Gateway) have rows.
 //
 // Token prices are USD per million tokens; Image and Request are USD per image and per request;
+// AudioSecond is USD per second of audio;
 // VideoSecond is the lowest USD per second of video the upstream lists (prices vary by
 // resolution). A model whose prices are all zero is free on that upstream.
 type ChannelPrice struct {
@@ -26,8 +27,10 @@ type ChannelPrice struct {
 	Image       float64 `json:"image,omitempty"`
 	Request     float64 `json:"request,omitempty"`
 	VideoSecond float64 `json:"video_second,omitempty"`
-	// Other marks a model the upstream prices only in a way not kept here (per second of speech,
-	// per realtime session, per video token): it has a price, just not one of the above.
+	// AudioSecond is USD per second of audio: transcribed (speech-to-text) or generated.
+	AudioSecond float64 `json:"audio_second,omitempty"`
+	// Other marks a model the upstream prices only in a way not kept here (per realtime session,
+	// per video token): it has a price, just not one of the above.
 	Other bool `json:"other,omitempty"`
 	// Kind is the model kind the upstream's own list states (ModelKind*; "" for a language model
 	// or when the list does not say). The channel panel tags non-chat models with it.

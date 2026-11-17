@@ -1,10 +1,10 @@
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, ListFilter } from 'lucide-react';
 
 import { timestamp2string } from 'utils/common';
 import { cn } from '@/lib/utils';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { usd } from './channelPrices';
 
 // The rows the details list for an upstream price entry: every price it has, in the order the
@@ -19,6 +19,8 @@ export function priceDetailRows(price) {
   add('cacheWrite', price.cache_write, 'M');
   add('image', price.image, 'image');
   add('request', price.request, 'request');
+  add('audioMinute', price.audio_second && price.audio_second * 60, 'minute');
+  add('audioHour', price.audio_second && price.audio_second * 3600, 'hour');
   add('videoSecond', price.video_second, 'second');
   return rows;
 }
@@ -26,8 +28,19 @@ export function priceDetailRows(price) {
 // A price cell that opens the upstream price's details on click: every price the upstream lists
 // for the model (cache prices included), where and when it was read, the model's own sell price
 // when given, and a link to the upstream's page for the model so the price can be checked there.
-// `children` is the cell's short form, the trigger.
-export default function UpstreamPriceDetails({ price, upstream, sell, losses = [], align = 'end', className, children }) {
+// `children` is the cell's short form, the trigger. With `filterLabel` and `onFilter` the details
+// end with an item that filters the list to the models priced the same way.
+export default function UpstreamPriceDetails({
+  price,
+  upstream,
+  sell,
+  losses = [],
+  align = 'end',
+  className,
+  filterLabel,
+  onFilter,
+  children
+}) {
   const { t } = useTranslation();
   const rows = priceDetailRows(price);
   const free = rows.length === 0 && !price.other;
@@ -106,6 +119,12 @@ export default function UpstreamPriceDetails({ price, upstream, sell, losses = [
             <p>{t('upstreamPrice.noPage')}</p>
           )}
         </div>
+        {onFilter && filterLabel && (
+          <DropdownMenuItem onClick={onFilter} className="-mx-1 -mb-1 gap-1.5 border-t border-border text-xs">
+            <ListFilter className="size-3.5" />
+            {t('upstreamPrice.filterSame', { kind: filterLabel })}
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -118,5 +137,7 @@ UpstreamPriceDetails.propTypes = {
   losses: PropTypes.arrayOf(PropTypes.string),
   align: PropTypes.oneOf(['start', 'end']),
   className: PropTypes.string,
+  filterLabel: PropTypes.string,
+  onFilter: PropTypes.func,
   children: PropTypes.node
 };

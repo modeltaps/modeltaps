@@ -37,6 +37,8 @@ describe('priceSummary', () => {
     expect(priceSummary({ image: 0.04 })).toEqual({ kind: 'image', value: '$0.04' });
     expect(priceSummary({ request: 0.01 })).toEqual({ kind: 'request', value: '$0.01' });
     expect(priceSummary({ video_second: 0.05 })).toEqual({ kind: 'video', value: '$0.05' });
+    // $0.1 an hour of audio reads per minute, and is not free.
+    expect(priceSummary({ input: 0, output: 0, audio_second: 0.00002778 })).toEqual({ kind: 'audio', value: '$0.001667' });
     expect(priceSummary({ input: 0, output: 0 })).toEqual({ kind: 'free' });
     expect(priceSummary({ input: 0, output: 0, other: true })).toEqual({ kind: 'other' });
     expect(priceSummary(undefined)).toBeNull();
