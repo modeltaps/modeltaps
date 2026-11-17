@@ -65,7 +65,7 @@ import {
   supplyUpdateBody,
   upstreamFor
 } from './supplyHelpers';
-import { SupplyStateLabel, SupplySwitchNote, UpstreamName, UpstreamPriceCell, durationLabel } from './supplyParts';
+import { CheaperUpstreamHint, SupplyStateLabel, SupplySwitchNote, UpstreamName, UpstreamPriceCell, durationLabel } from './supplyParts';
 import { setModelAllocation } from '../../Allocation/allocationApi';
 import { admin } from 'routes/paths';
 
@@ -451,6 +451,7 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
       <td>{channelCell}</td>
       <td className="py-1.5">
         <UpstreamName upstream={supply.upstream_model} model={supply.model} />
+        <CheaperUpstreamHint supply={supply} busy={busy} onUse={(id) => onAction('update', supply, { upstream_model: id })} />
       </td>
       <td className="text-right text-xs tabular-nums">
         <UpstreamPriceCell supply={supply} />

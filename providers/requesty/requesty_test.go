@@ -202,3 +202,34 @@ func TestBalance(t *testing.T) {
 		t.Error("a key without manage permission should give an error")
 	}
 }
+
+// A managed name priced above a pinned id of the same model gives way to the cheapest such id;
+// at the same price the managed name stays, and regional or unpriced ids never replace it.
+func TestDefaultModelsPreferCheaperPinned(t *testing.T) {
+	m := func(id, lab, canonical string, in, out float64) routerModel {
+		return routerModel{Id: id, ModelLab: lab, ModelCanonicalName: canonical, InputPrice: in / 1e6, OutputPrice: out / 1e6}
+	}
+	c := &catalog{
+		managed: []routerModel{
+			m("claude-fable-5", "anthropic", "claude-fable-5", 5.5, 27.5),
+			m("gemini-3.6-flash", "google", "gemini-3.6-flash", 1.5, 7),
+			m("gpt-5.5", "openai", "gpt-5.5", 5, 30),
+		},
+		pinned: []routerModel{
+			m("bedrock/claude-fable-5", "anthropic", "claude-fable-5", 5.5, 27.5),
+			m("vertex/claude-fable-5", "anthropic", "claude-fable-5", 5, 25),
+			m("anthropic/claude-fable-5", "anthropic", "claude-fable-5", 5, 25),
+			m("anthropic/claude-fable-5@eu", "anthropic", "claude-fable-5", 1, 1),
+			m("google/gemini-3.6-flash", "google", "gemini-3.6-flash", 0.75, 3.75),
+			m("cheap/gemini-3.6-flash", "google", "gemini-3.6-flash", 0.75, 8),
+			m("openai/gpt-5.5", "openai", "gpt-5.5", 5, 30),
+			m("free/gpt-5.5", "openai", "gpt-5.5", 0, 0),
+		},
+	}
+	got := strings.Join(ids(defaultModels(c)), ",")
+	// The lab's own id wins the tie with vertex; a cheaper input with a dearer output is not cheaper.
+	want := "anthropic/claude-fable-5,google/gemini-3.6-flash,gpt-5.5"
+	if got != want {
+		t.Fatalf("default models = %s, want %s", got, want)
+	}
+}

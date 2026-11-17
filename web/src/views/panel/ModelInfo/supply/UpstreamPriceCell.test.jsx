@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { createElement } from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import i18n from 'i18n/i18n';
-import { UpstreamName, UpstreamPriceCell } from './supplyParts';
+import { CheaperUpstreamHint, UpstreamName, UpstreamPriceCell } from './supplyParts';
 
 const supply = (fields) => ({ model: 'm', upstream_priced: true, sell_input_price: 3, sell_output_price: 15, ...fields });
 const show = (fields) => render(createElement(UpstreamPriceCell, { supply: supply(fields) }));
@@ -89,5 +89,29 @@ describe('UpstreamName', () => {
     expect(screen.getByText('accounts/fireworks/models/')).toBeTruthy();
     expect(screen.getByText('llama-v3p3-70b-instruct')).toBeTruthy();
     expect(screen.getByRole('button').getAttribute('title')).toContain('accounts/fireworks/models/llama-v3p3-70b-instruct');
+  });
+});
+
+describe('CheaperUpstreamHint', () => {
+  beforeEach(() => i18n.changeLanguage('en'));
+  afterEach(cleanup);
+
+  it('offers a cheaper id and switches to it only on a click', () => {
+    const onUse = vi.fn();
+    render(
+      createElement(CheaperUpstreamHint, {
+        supply: supply({ cheaper_upstream: { model: 'anthropic/claude-fable-5', input: 5, output: 25 } }),
+        onUse
+      })
+    );
+    expect(screen.getByTestId('cheaper-upstream').textContent).toContain('anthropic/claude-fable-5');
+    expect(onUse).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: i18n.t('modelSupply.useCheaperUpstream') }));
+    expect(onUse).toHaveBeenCalledWith('anthropic/claude-fable-5');
+  });
+
+  it('shows nothing without a cheaper id', () => {
+    render(createElement(CheaperUpstreamHint, { supply: supply({}), onUse: () => {} }));
+    expect(screen.queryByTestId('cheaper-upstream')).toBeNull();
   });
 });

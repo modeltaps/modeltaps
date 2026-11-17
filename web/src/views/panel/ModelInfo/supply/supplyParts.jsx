@@ -200,6 +200,32 @@ export function SupplySwitchNote({ switches, active, className }) {
 
 SupplySwitchNote.propTypes = { switches: PropTypes.object, active: PropTypes.bool, className: PropTypes.string };
 
+// A cheaper id of the same model on the supply's channel (Requesty lists a model under its
+// managed name and under provider-pinned ids at different prices), with a button that switches
+// the supply to it. Nothing is switched on its own.
+export function CheaperUpstreamHint({ supply, busy, onUse }) {
+  const { t } = useTranslation();
+  const cheaper = supply.cheaper_upstream;
+  if (!cheaper?.model) return null;
+  return (
+    <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground" data-testid="cheaper-upstream">
+      <span>
+        {t('modelSupply.cheaperUpstream', { model: cheaper.model, input: amount(cheaper.input), output: amount(cheaper.output) })}
+      </span>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => onUse(cheaper.model)}
+        className="font-medium text-foreground underline-offset-2 hover:underline disabled:opacity-50"
+      >
+        {t('modelSupply.useCheaperUpstream')}
+      </button>
+    </p>
+  );
+}
+
+CheaperUpstreamHint.propTypes = { supply: PropTypes.object.isRequired, busy: PropTypes.bool, onUse: PropTypes.func.isRequired };
+
 // What the supply's channel charges upstream for the model, from the channel's stored price list:
 // "$3 / $15" per million tokens, a per-image / per-second / per-request price, free, or a dash
 // when the channel has no price list or the list has no entry. A price above the model's own sell

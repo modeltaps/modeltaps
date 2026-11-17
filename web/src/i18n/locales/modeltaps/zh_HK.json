@@ -3218,7 +3218,9 @@
       "moreTip_other": "另有 {{count}} 條線路作為後備"
     },
     "aboveQuote": "渠道成本（含費率）高於報價：開啟渠道成本保底後，經這條線路的請求按渠道成本扣費。",
-    "aboveQuoteBackup": "渠道成本高於報價；這條是備用線路，前面的線路都失敗時才承接請求。"
+    "aboveQuoteBackup": "渠道成本高於報價；這條是備用線路，前面的線路都失敗時才承接請求。",
+    "cheaperUpstream": "本渠道有更便宜的上游 ID：{{model}}（${{input}} / ${{output}}）",
+    "useCheaperUpstream": "換成這個"
   },
   "settingsUi": {
     "search": {

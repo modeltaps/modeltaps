@@ -104,8 +104,11 @@ func regional(id string) bool {
 }
 
 // defaultModels lists each model once: its managed name, which Requesty routes across providers
-// with failover, else one provider-pinned id, preferring the lab's own provider. Regional and tier
-// variants are left out; they can still be added to a channel by hand and are priced.
+// with failover, else one provider-pinned id, preferring the lab's own provider. A managed name
+// that costs more than a pinned id of the same model gives way to the cheapest such id: managed
+// names are often priced at a regional endpoint (about 10% above the global one), and the
+// gateway fails over between its own channels anyway. Regional and tier variants are left out;
+// they can still be added to a channel by hand and are priced.
 func defaultModels(c *catalog) []routerModel {
 	if c == nil {
 		return nil
@@ -118,6 +121,9 @@ func defaultModels(c *catalog) []routerModel {
 		}
 		seen[canonicalKey(m)] = true
 		seen[strings.ToLower(m.Id)] = true
+		if cheaper, ok := cheapestPinned(c.pinned, m); ok {
+			m = cheaper
+		}
 		out = append(out, m)
 	}
 	best := map[string]routerModel{}
@@ -141,6 +147,34 @@ func defaultModels(c *catalog) []routerModel {
 		out = append(out, best[key])
 	}
 	return out
+}
+
+// cheaper reports whether a costs less than b: no more for input and output, less for one of them.
+func cheaper(a, b routerModel) bool {
+	return a.InputPrice <= b.InputPrice && a.OutputPrice <= b.OutputPrice &&
+		(a.InputPrice < b.InputPrice || a.OutputPrice < b.OutputPrice)
+}
+
+// cheapestPinned returns the cheapest pinned id of the managed model's canonical model that costs
+// less than the managed name, preferring the lab's own provider on equal prices. Regional and tier
+// variants and unpriced ids are not considered.
+func cheapestPinned(pinned []routerModel, managed routerModel) (routerModel, bool) {
+	var best routerModel
+	found := false
+	key := canonicalKey(managed)
+	for _, m := range pinned {
+		if m.Id == "" || regional(m.Id) || canonicalKey(m) != key || (m.InputPrice <= 0 && m.OutputPrice <= 0) {
+			continue
+		}
+		if !cheaper(m, managed) {
+			continue
+		}
+		if !found || cheaper(m, best) || (!cheaper(best, m) && (pinnedRank(m) > pinnedRank(best) ||
+			(pinnedRank(m) == pinnedRank(best) && m.Id < best.Id))) {
+			best, found = m, true
+		}
+	}
+	return best, found
 }
 
 // pinnedRank prefers the lab's own provider ("anthropic/claude-x" for an Anthropic model).

@@ -139,6 +139,8 @@ type ModelSupplyView struct {
 	Cost *SupplyCost `json:"cost"`
 	// Traffic says whether the supply takes requests now (SupplyTraffic*).
 	Traffic string `json:"traffic"`
+	// CheaperUpstream is a cheaper id of the same model on the channel, nil when there is none.
+	CheaperUpstream *CheaperUpstream `json:"cheaper_upstream,omitempty"`
 }
 
 // GetModelSupplyViews lists supplies like GetModelSupplies, each with its channel's name,
@@ -215,6 +217,9 @@ func GetModelSupplyViews(modelName string, channelId int) ([]*ModelSupplyView, e
 		}
 		view.Cost = supplyCostOf(s.Model, byId[s.ChannelId], view.UpstreamPrice)
 		views = append(views, view)
+	}
+	if err := attachCheaperUpstreams(views, byId); err != nil {
+		return nil, err
 	}
 	markSupplyTraffic(views)
 	return views, nil

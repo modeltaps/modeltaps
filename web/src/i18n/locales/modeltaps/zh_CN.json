@@ -3218,7 +3218,9 @@
       "moreTip_other": "另有 {{count}} 条线路作为备用"
     },
     "aboveQuote": "渠道成本（含费率）高于报价：打开渠道成本保底后，走这条线路的请求按渠道成本扣费。",
-    "aboveQuoteBackup": "渠道成本高于报价；这条是备用线路，前面的线路都失败时才承接请求。"
+    "aboveQuoteBackup": "渠道成本高于报价；这条是备用线路，前面的线路都失败时才承接请求。",
+    "cheaperUpstream": "本渠道有更便宜的上游 ID：{{model}}（${{input}} / ${{output}}）",
+    "useCheaperUpstream": "换成这个"
   },
   "settingsUi": {
     "search": {

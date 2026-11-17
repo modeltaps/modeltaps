@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   either, and notes how many requests of the last 7 days were charged at the channel cost and by
   how much, by model, channel and group. A new notice kind reports supplies that a price sync put
   above the quote. With the cost floor on, the group loss warning on cost ratios is no longer shown.
+- Requesty channels list the provider-pinned id of a model when its managed name costs more (the
+  managed name is often priced at a regional endpoint, about 10% above the official price), in
+  "fetch models" and so in new supplies and the catalog prices it feeds. Existing supplies are not
+  changed: a supply on a pricier id shows the cheaper one with a button to switch to it.
 - Endpoints for coding agents. Claude Code points at `/claude-code` (its model list shows this
   site's models as `claude-code/<model>`, with `[1m]` on models with a context of a million
   tokens or more, and the prefix and suffix are removed before forwarding), Codex at `/codex/v1`

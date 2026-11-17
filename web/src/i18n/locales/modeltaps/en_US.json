@@ -3322,7 +3322,9 @@
       "moreTip_other": "{{count}} more supplies back it up"
     },
     "aboveQuote": "The channel cost, with its fee, is above the quote: with the cost floor on, requests through this supply are charged the channel cost.",
-    "aboveQuoteBackup": "The channel cost is above the quote; this supply is a backup and only takes requests when the ones above fail."
+    "aboveQuoteBackup": "The channel cost is above the quote; this supply is a backup and only takes requests when the ones above fail.",
+    "cheaperUpstream": "Cheaper on this channel: {{model}} (${{input}} / ${{output}})",
+    "useCheaperUpstream": "Use it"
   },
   "settingsUi": {
     "search": {
