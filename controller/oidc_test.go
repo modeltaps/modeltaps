@@ -1014,10 +1014,7 @@ func TestOidcBindWritesAndLoginRefreshesSnapshot(t *testing.T) {
 
 	r := newOidcPhoneRouter(t)
 	r.GET("/bind", func(c *gin.Context) {
-		session := sessions.Default(c)
-		session.Set("id", user.Id)
-		_ = session.Save()
-		oidcBind(c, provider, "sub-snap", map[string]interface{}{
+		oidcBind(c, user.Id, provider, "sub-snap", map[string]interface{}{
 			"preferred_username": "alice",
 			"email":              "alice@idp.com",
 		})
@@ -1107,10 +1104,7 @@ func callOidcBind(t *testing.T, provider *model.OidcProvider, userId int, subjec
 	t.Helper()
 	r := newOidcPhoneRouter(t)
 	r.GET("/bind", func(c *gin.Context) {
-		session := sessions.Default(c)
-		session.Set("id", userId)
-		_ = session.Save()
-		oidcBind(c, provider, subject, claims)
+		oidcBind(c, userId, provider, subject, claims)
 	})
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/bind", nil))

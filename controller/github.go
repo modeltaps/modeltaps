@@ -7,6 +7,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/utils"
+	"github.com/modeltaps/modeltaps/middleware"
 	"github.com/modeltaps/modeltaps/model"
 	"encoding/json"
 	"errors"
@@ -148,7 +149,9 @@ var getGitHubUserInfoByCode = func(code string) (*GitHubUser, error) {
 	if err != nil {
 		return nil, err
 	}
-	if githubUser.Login == "" {
+	// The numeric id is the only stable key of a GitHub account (the login can be renamed and
+	// then registered by someone else): without it the account cannot be matched safely.
+	if githubUser.Login == "" || githubUser.Id == 0 {
 		return nil, common.NewAPIError(common.APICodeOauthInvalidResponse, "Invalid response: user field is empty. Please try again later.", nil)
 	}
 
@@ -198,9 +201,10 @@ func getUserByGitHub(githubUser *GitHubUser) (user *model.User, err error) {
 		}
 	}
 
-	// 如果 GitHubIdNew 不存在，并且没有关闭 GitHubOldId登录，则检测 GitHubId
-	if user == nil && !config.GitHubOldIdCloseEnabled && model.IsGitHubIdAlreadyTaken(githubUser.Login) {
-		user, err = model.FindUserByField("github_id", githubUser.Login)
+	// No account carries this GitHub id: unless the admin turned it off, fall back to the login
+	// name, but only for legacy accounts that never stored a GitHub id. See findLegacyGitHubUser.
+	if user == nil && !config.GitHubOldIdCloseEnabled {
+		user, err = findLegacyGitHubUser(githubUser.Login)
 		if err != nil {
 			return nil, err
 		}
@@ -228,6 +232,70 @@ func getUserByGitHub(githubUser *GitHubUser) (user *model.User, err error) {
 	return user, nil
 }
 
+// findLegacyGitHubUser finds the account linked to the GitHub login name before GitHub ids were
+// stored. A login name can be renamed and then registered by someone else, so it only identifies
+// an account that has no GitHub id: an account that has one is matched by the id alone, and the
+// login stored on it may be stale and now belong to another person. The caller stores the id
+// on the match, so each legacy account is matched by login at most once. Two legacy accounts
+// with the same login cannot be told apart, so neither is matched; an admin or root account is
+// refused with errGitHubLegacyPrivileged.
+func findLegacyGitHubUser(login string) (*model.User, error) {
+	if login == "" {
+		return nil, nil
+	}
+	var users []*model.User
+	err := model.DB.Where("github_id = ? AND (github_id_new = 0 OR github_id_new IS NULL)", login).
+		Limit(2).Find(&users).Error
+	if err != nil {
+		return nil, err
+	}
+	if len(users) != 1 {
+		if len(users) > 1 {
+			logger.SysLog("GitHub login name matches several legacy accounts, none is linked")
+		}
+		return nil, nil
+	}
+	// Like the email and phone linking of sign-in providers, an admin or root account is never
+	// matched automatically: its owner signs in with the password and links GitHub explicitly.
+	if users[0].Role >= config.RoleAdminUser {
+		logger.SysLog(fmt.Sprintf("GitHub login name matched an admin account, automatic linking refused: user_id=%d", users[0].Id))
+		return nil, errGitHubLegacyPrivileged
+	}
+	return users[0], nil
+}
+
+// errGitHubLegacyPrivileged ends a GitHub sign-in whose login name matched a legacy admin or root
+// account. Signing up a new account instead would store the GitHub id on it and so keep the
+// admin from linking this GitHub account later.
+var errGitHubLegacyPrivileged = errors.New("This account has admin rights and cannot be linked to GitHub automatically, " +
+	"sign in to it with the password first, then link GitHub on the \"Linked accounts\" page")
+
+// gitHubAccountLinkedElsewhere reports whether the GitHub account is already linked to an account
+// other than userId: one that stores its id, or a legacy account (no id stored) that stores its
+// login name and so would be matched by it at sign-in.
+func gitHubAccountLinkedElsewhere(userId int, githubUser *GitHubUser) (bool, error) {
+	var count int64
+	err := model.DB.Model(&model.User{}).
+		Where("id <> ? AND (github_id_new = ? OR (github_id = ? AND (github_id_new = 0 OR github_id_new IS NULL)))",
+			userId, githubUser.Id, githubUser.Login).
+		Count(&count).Error
+	return count > 0, err
+}
+
+// oauthSessionUserId tells an OAuth callback whether it links the identity to the signed-in
+// account (a user id) or signs in with it (0). The session row is checked as UserAuth does
+// (middleware.SessionUserId): a revoked or expired cookie signs in instead of linking. ok is false
+// when the session could not be checked; the response has then been written.
+func oauthSessionUserId(c *gin.Context) (userId int, ok bool) {
+	userId, err := middleware.SessionUserId(c)
+	if err != nil && !errors.Is(err, model.ErrUserSessionInvalid) {
+		logger.SysError("failed to check login session: " + err.Error())
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeUserCheckFailed, "Unable to verify the current sign-in, please try again", nil)
+		return 0, false
+	}
+	return userId, true
+}
+
 func GitHubOAuth(c *gin.Context) {
 	session := sessions.Default(c)
 	state := c.Query("state")
@@ -239,9 +307,12 @@ func GitHubOAuth(c *gin.Context) {
 	session.Delete("oauth_state")
 	_ = session.Save()
 
-	username := session.Get("username")
-	if username != nil {
-		GitHubBind(c)
+	userId, ok := oauthSessionUserId(c)
+	if !ok {
+		return
+	}
+	if userId != 0 {
+		gitHubBind(c, userId)
 		return
 	}
 
@@ -259,6 +330,13 @@ func GitHubOAuth(c *gin.Context) {
 	}
 
 	user, err := getUserByGitHub(githubUser)
+	if errors.Is(err, errGitHubLegacyPrivileged) {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
@@ -361,7 +439,9 @@ func GitHubOAuth(c *gin.Context) {
 	setupLoginSession(user, c, loginSessionInfo{method: model.LoginMethodGitHub})
 }
 
-func GitHubBind(c *gin.Context) {
+// gitHubBind links the GitHub account to the signed-in account userId (checked by
+// oauthSessionUserId).
+func gitHubBind(c *gin.Context, userId int) {
 	if !config.EffectiveSocialLogin(config.GitHubOAuthEnabled) {
 		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOauthProviderDisabled, "The admin has not enabled sign-in and sign-up via GitHub", map[string]any{"provider": "GitHub"})
 		return
@@ -372,17 +452,17 @@ func GitHubBind(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
-	user := model.User{
-		GitHubId: githubUser.Login,
+	// Checked by id as well as by login: the same GitHub account must not end up on two accounts.
+	linked, err := gitHubAccountLinkedElsewhere(userId, githubUser)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
 	}
-	if model.IsGitHubIdAlreadyTaken(user.GitHubId) {
+	if linked {
 		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOauthAccountLinked, "This GitHub account is already linked", map[string]any{"provider": "GitHub"})
 		return
 	}
-	session := sessions.Default(c)
-	id := session.Get("id")
-	// id := c.GetInt("id")  // critical bug!
-	user.Id = id.(int)
+	user := model.User{Id: userId}
 	err = user.FillUserById()
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)

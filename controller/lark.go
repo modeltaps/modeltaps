@@ -164,9 +164,12 @@ func LarkOAuth(c *gin.Context) {
 	session.Delete("oauth_state")
 	_ = session.Save()
 
-	username := session.Get("username")
-	if username != nil {
-		LarkBind(c)
+	userId, ok := oauthSessionUserId(c)
+	if !ok {
+		return
+	}
+	if userId != 0 {
+		larkBind(c, userId)
 		return
 	}
 	code := c.Query("code")
@@ -229,7 +232,9 @@ func LarkOAuth(c *gin.Context) {
 	setupLoginSession(&user, c, loginSessionInfo{method: model.LoginMethodLark})
 }
 
-func LarkBind(c *gin.Context) {
+// larkBind links the Lark account to the signed-in account userId (checked by
+// oauthSessionUserId).
+func larkBind(c *gin.Context, userId int) {
 	if !config.EffectiveSocialLogin(config.LarkAuthEnabled) {
 		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOauthProviderDisabled, "The admin has not enabled sign-in and sign-up via Lark", map[string]any{"provider": "Lark"})
 		return
@@ -247,9 +252,7 @@ func LarkBind(c *gin.Context) {
 		common.APIRespondWithCode(c, http.StatusOK, common.APICodeOauthAccountLinked, "This Lark account is already linked", map[string]any{"provider": "Lark"})
 		return
 	}
-	session := sessions.Default(c)
-	id := session.Get("id")
-	user.Id = id.(int)
+	user.Id = userId
 	err = user.FillUserById()
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)

@@ -205,18 +205,8 @@ func TestGitHubBindMarksEmailVerified(t *testing.T) {
 	stubGitHubUserInfo(t, &GitHubUser{Id: 9400, Login: "ghbinder-gh", Email: "ghbinder@example.com"})
 
 	r := newGitHubRouter(t)
-	// GitHubOAuth 见到 session 里有 username 就转交 GitHubBind，模拟「已登录后去绑定」
-	r.GET("/test/login", func(c *gin.Context) {
-		session := sessions.Default(c)
-		session.Set("id", seeded.Id)
-		session.Set("username", seeded.Username)
-		_ = session.Save()
-		c.Status(http.StatusOK)
-	})
-	w0 := httptest.NewRecorder()
-	r.ServeHTTP(w0, httptest.NewRequest(http.MethodGet, "/test/login", nil))
-
-	resp := githubOAuthLogin(t, r, w0.Header().Get("Set-Cookie"))
+	// A signed-in session (with a valid session row) makes GitHubOAuth link instead of sign in.
+	resp := githubOAuthLogin(t, r, signInTestSession(t, r, seeded))
 	if resp["success"] != true {
 		t.Fatalf("绑定应成功，实际: %v", resp)
 	}

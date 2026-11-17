@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
@@ -17,9 +16,6 @@ import (
 
 // 邮箱验证码登录（内置账号模式）：先向已注册且已验证的邮箱发一枚验证码，再凭验证码建立会话。
 // 发码接口对「邮箱不存在 / 用户关闭了该方式 / 账号被锁」一律返回成功，不暴露账号是否存在。
-
-// loginCodeResendInterval 同一邮箱两次发码的最小间隔。
-const loginCodeResendInterval = 60 * time.Second
 
 // loginCodeLength 验证码长度（十六进制字符，与注册验证码一致）。
 const loginCodeLength = 6
@@ -74,7 +70,7 @@ func SendLoginCode(c *gin.Context) {
 		return
 	}
 	// 冷却期内重复请求静默成功：既防刷邮件，也不暴露邮箱是否存在
-	if common.VerificationCodeSentWithin(email, common.LoginCodePurpose, loginCodeResendInterval) {
+	if common.VerificationCodeSentWithin(email, common.LoginCodePurpose, verificationMailCooldown) {
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": ""})
 		return
 	}
@@ -84,7 +80,11 @@ func SendLoginCode(c *gin.Context) {
 		return
 	}
 	code := common.GenerateVerificationCode(loginCodeLength)
-	common.RegisterVerificationCodeWithKey(email, code, common.LoginCodePurpose)
+	// A concurrent request may have registered a code meanwhile: only one of them sends.
+	if !reserveVerificationCode(email, code, common.LoginCodePurpose) {
+		c.JSON(http.StatusOK, gin.H{"success": true, "message": ""})
+		return
+	}
 	if err := stmp.SendVerificationCodeEmail(requestLanguage(c), email, code); err != nil {
 		// 发信失败要让用户知道，否则会一直等；邮箱明文不入日志
 		logger.SysError(fmt.Sprintf("Failed to send login verification code: user_id=%d err=%s", user.Id, err.Error()))

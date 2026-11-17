@@ -12,6 +12,8 @@ import (
 	"github.com/modeltaps/modeltaps/model"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -148,6 +150,29 @@ func GetHomePageContent(c *gin.Context) {
 	})
 }
 
+// verificationMailCooldown is the shortest time between two emails carrying a code or a link for
+// the same address and purpose (sign-up code, password reset, sign-in code). Requests within it
+// get the usual success response, so neither the cooldown nor whether the address is registered
+// shows; the code already sent stays valid.
+const verificationMailCooldown = 60 * time.Second
+
+// verificationCodeMu makes the cooldown check and the registration of the new code one step, so
+// concurrent requests for the same address cannot each send an email.
+var verificationCodeMu sync.Mutex
+
+// reserveVerificationCode registers code for key and purpose unless a code was registered for them
+// within verificationMailCooldown, and reports whether it did. Only a caller that got true may
+// send the email; if sending fails it must DeleteKey, so that the user can retry at once.
+func reserveVerificationCode(key string, code string, purpose string) bool {
+	verificationCodeMu.Lock()
+	defer verificationCodeMu.Unlock()
+	if common.VerificationCodeSentWithin(key, purpose, verificationMailCooldown) {
+		return false
+	}
+	common.RegisterVerificationCodeWithKey(key, code, purpose)
+	return true
+}
+
 func SendEmailVerification(c *gin.Context) {
 	email := common.NormalizeEmail(c.Query("email"))
 	if err := common.ValidateEmailStrict(email); err != nil {
@@ -175,10 +200,19 @@ func SendEmailVerification(c *gin.Context) {
 		})
 		return
 	}
+	// Within the cooldown: answer success, send nothing and keep the code already sent.
 	code := common.GenerateVerificationCode(6)
-	common.RegisterVerificationCodeWithKey(email, code, common.EmailVerificationPurpose)
+	if !reserveVerificationCode(email, code, common.EmailVerificationPurpose) {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+		})
+		return
+	}
 	err := stmp.SendVerificationCodeEmail(requestLanguage(c), email, code)
 	if err != nil {
+		// Withdraw the code so that the cooldown does not hold back a retry.
+		common.DeleteKey(email, common.EmailVerificationPurpose)
 		common.APIRespondWithError(c, http.StatusOK, emailSendFailed(err))
 		return
 	}
@@ -225,12 +259,20 @@ func SendPasswordResetEmail(c *gin.Context) {
 		userName = user.Username
 	}
 
+	// Within the cooldown: answer success, send nothing and keep the link already sent valid.
 	code := common.GenerateVerificationCode(0)
-	common.RegisterVerificationCodeWithKey(email, code, common.PasswordResetPurpose)
+	if !reserveVerificationCode(email, code, common.PasswordResetPurpose) {
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+		})
+		return
+	}
 	link := fmt.Sprintf("%s/user/reset?email=%s&token=%s", config.ServerAddress, email, code)
 	err := stmp.SendPasswordResetEmail(requestLanguage(c), userName, email, link)
 
 	if err != nil {
+		common.DeleteKey(email, common.PasswordResetPurpose)
 		common.APIRespondWithError(c, http.StatusOK, emailSendFailed(err))
 		return
 	}

@@ -70,9 +70,13 @@ func LinuxDoBind(c *gin.Context) {
 		return
 	}
 
-	// UserAuth also accepts access tokens, which leave no id in the session, so do not assert the type.
-	userId, ok := session.Get("id").(int)
-	if !ok || userId == 0 {
+	// The account is the one signed in through the cookie session, its session row checked as
+	// UserAuth does. UserAuth also accepts management keys, which leave no id in the session.
+	userId, ok := oauthSessionUserId(c)
+	if !ok {
+		return
+	}
+	if userId == 0 {
 		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidSession, "Session is invalid, please sign in again", nil)
 		return
 	}
@@ -201,8 +205,11 @@ func LinuxDoOAuth(c *gin.Context) {
 		return
 	}
 
-	username := session.Get("username")
-	if username != nil {
+	userId, ok := oauthSessionUserId(c)
+	if !ok {
+		return
+	}
+	if userId != 0 {
 		// 绑定分支的 state 由 LinuxDoBind 复检后再删除
 		LinuxDoBind(c)
 		return

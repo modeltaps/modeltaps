@@ -674,8 +674,12 @@ func OIDCAuth(c *gin.Context) {
 		return
 	}
 
-	if session.Get("id") != nil {
-		oidcBind(c, provider, subject, claims)
+	userId, ok := oauthSessionUserId(c)
+	if !ok {
+		return
+	}
+	if userId != 0 {
+		oidcBind(c, userId, provider, subject, claims)
 		return
 	}
 
@@ -783,11 +787,10 @@ func bindOidcIdentity(providerId int, userId int, subject string) (oidcBindOutco
 }
 
 // oidcBind 登录态回调：把 (provider, subject) 绑定到当前账号。
+// userId is the signed-in account, its session row checked by oauthSessionUserId.
 // 会话用户已失效时拒绝；该身份已归属其它账号时拒绝；已归属当前账号则视作幂等成功。
-func oidcBind(c *gin.Context, provider *model.OidcProvider, subject string, claims map[string]interface{}) {
-	session := sessions.Default(c)
-	userId, ok := session.Get("id").(int)
-	if !ok || userId == 0 {
+func oidcBind(c *gin.Context, userId int, provider *model.OidcProvider, subject string, claims map[string]interface{}) {
+	if userId == 0 {
 		common.APIRespondWithCode(c, http.StatusOK, common.APICodeCurrentAccountLoadFailed, "Unable to read the currently signed-in user", nil)
 		return
 	}

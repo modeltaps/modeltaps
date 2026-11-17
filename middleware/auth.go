@@ -138,6 +138,45 @@ func TrySetUserBySession() func(c *gin.Context) {
 	}
 }
 
+// sessionSignInKeys are the cookie session values that sign a request in (setupLoginSession).
+var sessionSignInKeys = []string{"sid", "id", "username", "role", "status"}
+
+// SessionUserId returns the user signed in through the request's cookie session, after the same
+// session row check UserAuth makes (model.ValidateUserSession on the cookie's sid and id). Handlers
+// on routes without UserAuth that act for the signed-in user (the OAuth callbacks' linking
+// branches) must use it instead of reading "id" from the cookie: the cookie is only signed, so a
+// cookie copied before the user signed out, changed the password or was banned still carries
+// the id.
+//
+//   - (id, nil): signed in, the session row is valid.
+//   - (0, nil): the cookie carries no signed-in user.
+//   - (0, model.ErrUserSessionInvalid): the session was revoked or has expired, or the cookie is
+//     malformed. Its sign-in values are removed from the cookie, so the request goes on signed
+//     out; other values in it (OAuth state, an invite code) are kept for the flow under way.
+//   - (0, any other error): the session could not be checked; the cookie is left as it is.
+func SessionUserId(c *gin.Context) (int, error) {
+	session := sessions.Default(c)
+	rawId := session.Get("id")
+	if rawId == nil && session.Get("username") == nil {
+		return 0, nil
+	}
+	userId, _ := rawId.(int)
+	sid, _ := session.Get("sid").(string)
+	if _, err := model.ValidateUserSession(sid, userId); err != nil {
+		if !errors.Is(err, model.ErrUserSessionInvalid) {
+			return 0, err
+		}
+		for _, key := range sessionSignInKeys {
+			session.Delete(key)
+		}
+		if saveErr := session.Save(); saveErr != nil {
+			logger.SysError("Failed to clear expired session: " + saveErr.Error())
+		}
+		return 0, err
+	}
+	return userId, nil
+}
+
 func UserAuth() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		authHelper(c, config.RoleCommonUser)
