@@ -72,11 +72,28 @@ export function flaggedMissingModels(channel) {
   return (drift?.missing_models || []).filter((m) => (!listed || listed.has(m)) && !handled.has(m));
 }
 
+// Flagged missing models that matter to users, split into the ones the upstream renamed (it
+// lists the same public model under a new name) and the ones it dropped. The server works out
+// which missing models a published public model is served through (`drift_impact`); without
+// that every flagged model counts.
+export function servingDrift(channel) {
+  const flagged = flaggedMissingModels(channel);
+  const impact = channel?.drift_impact;
+  const serving = impact ? flagged.filter((m) => impact.serving?.includes(m)) : flagged;
+  const renamedTo = impact?.renamed || {};
+  return {
+    renamed: serving.filter((m) => renamedTo[m]),
+    gone: serving.filter((m) => !renamedTo[m]),
+    renamedTo
+  };
+}
+
 // Attention items of one channel, in display order. Each is { key, kind, channel, count? }:
 // retired (the provider has shut down the service), autoDisabled (status 3), keyMissing (no
-// stored key), lowBalance and driftMissing (listed models the upstream no longer serves, so
-// their requests fail). Models the upstream added are not an item: nothing breaks until someone
-// offers them, and the list shows them as plain news. `key` identifies the
+// stored key), lowBalance, driftRenamed and driftMissing (models users are served that the
+// upstream renamed or dropped, so their requests fail; see servingDrift). Missing models no
+// public model is served through are not an item, nor are models the upstream added: nothing
+// breaks for users, and the channel shows them as plain news. `key` identifies the
 // item for dismissal and changes when the underlying data changes, so a dismissed item comes
 // back once there is something new to say.
 export function channelIssues(channel) {
@@ -87,8 +104,9 @@ export function channelIssues(channel) {
   if (channel.status === 3) push('autoDisabled', channel.test_time || 0);
   if (channel.key_status && !channel.key_status.configured) push('keyMissing', 0);
   if (hasLowBalance(channel)) push('lowBalance', channel.balance_updated_time);
-  const missing = flaggedMissingModels(channel);
-  if (missing.length) push('driftMissing', missing.join(','), { count: missing.length });
+  const { renamed, gone } = servingDrift(channel);
+  if (renamed.length) push('driftRenamed', renamed.join(','), { count: renamed.length });
+  if (gone.length) push('driftMissing', gone.join(','), { count: gone.length });
   return issues;
 }
 
@@ -136,7 +154,7 @@ export const ISSUE_FILTERS = ['any', 'lowBalance', 'keyMissing', 'drift'];
 function matchesIssue(channel, issue, dismissed) {
   const open = openIssues([channel], dismissed);
   if (issue === 'any') return open.length > 0;
-  if (issue === 'drift') return open.some((i) => i.kind === 'driftMissing');
+  if (issue === 'drift') return open.some((i) => i.kind === 'driftMissing' || i.kind === 'driftRenamed');
   return open.some((i) => i.kind === issue);
 }
 

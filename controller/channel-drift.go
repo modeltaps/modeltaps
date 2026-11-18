@@ -134,8 +134,10 @@ type DriftedChannel struct {
 	ChannelId     int      `json:"channel_id"`
 	ChannelName   string   `json:"channel_name"`
 	MissingModels []string `json:"missing_models"`
-	NewModels     []string `json:"new_models,omitempty"`
-	AddedModels   []string `json:"added_models,omitempty"`
+	// Renamed maps missing models to the name the upstream now lists for the same public model.
+	Renamed     map[string]string `json:"renamed,omitempty"`
+	NewModels   []string          `json:"new_models,omitempty"`
+	AddedModels []string          `json:"added_models,omitempty"`
 	// PendingModels are new upstream models the intake rules added for an admin to confirm.
 	PendingModels []string `json:"pending_models,omitempty"`
 	// Supplies is what the check changed on the channel's supplies (gone / back / held).
@@ -183,8 +185,9 @@ func CheckAllChannelsModelDrift() (*ModelDriftCheckSummary, error) {
 		if len(added) > 0 {
 			summary.Added++
 		}
-		// Missing models an admin dismissed or switched off are not reported again.
-		missing := undismissedMissing(result, ch.DisabledModelSet())
+		// Missing models an admin dismissed or switched off are not reported again, nor the ones
+		// no public model is served through: their going away changes nothing for users.
+		missing, renamed := servingMissing(ch, result)
 		if len(missing) > 0 {
 			summary.Drifted++
 		}
@@ -202,6 +205,7 @@ func CheckAllChannelsModelDrift() (*ModelDriftCheckSummary, error) {
 				ChannelId:     ch.Id,
 				ChannelName:   ch.Name,
 				MissingModels: missing,
+				Renamed:       renamed,
 				NewModels:     result.NewModels,
 				AddedModels:   added,
 				PendingModels: pending,
@@ -212,69 +216,88 @@ func CheckAllChannelsModelDrift() (*ModelDriftCheckSummary, error) {
 	return summary, nil
 }
 
-// CheckAndNotifyModelDrift 供 cron 调用：执行全量漂移检测，检出缺失模型或上游新增模型时发通知。
-// 通知内容含渠道名/ID 与缺失模型 / 上游新增模型清单（参照 DisableChannel 的通知用法）。
+// servingMissing is the missing models of a check worth telling an admin about: not dismissed
+// or switched off, and served to users (see model.DriftImpacts), with the upstream's new name
+// for those it renamed. When the impact cannot be worked out every unhandled missing model counts.
+func servingMissing(ch *model.Channel, result *model.ModelDriftResult) ([]string, map[string]string) {
+	impacts, err := model.DriftImpacts([]*model.Channel{ch})
+	if err != nil {
+		logger.SysError("model drift impact failed for channel " + ch.Name + ": " + err.Error())
+		return undismissedMissing(result, ch.DisabledModelSet()), nil
+	}
+	impact := impacts[ch.Id]
+	if impact == nil || len(impact.Serving) == 0 {
+		return nil, nil
+	}
+	renamed := map[string]string{}
+	for _, m := range impact.Serving {
+		if to := impact.Renamed[m]; to != "" {
+			renamed[m] = to
+		}
+	}
+	if len(renamed) == 0 {
+		renamed = nil
+	}
+	return impact.Serving, renamed
+}
+
+// CheckAndNotifyModelDrift 供 cron 调用：执行全量漂移检测，只在会影响服务时发通知：在服务中的模型
+// 上游不再列出（含改名）、线路因此停用、或上游列表异常。上游新增、自动加入和待确认的模型是资讯，
+// 在渠道页查看，不发通知。
 func CheckAndNotifyModelDrift() (*ModelDriftCheckSummary, error) {
 	summary, err := CheckAllChannelsModelDrift()
 	if err != nil {
 		return nil, err
 	}
-	if summary.Drifted > 0 || summary.WithNew > 0 || summary.Added > 0 || summary.SuppliesChanged > 0 || hasPending(summary) {
-		notifyModelDrift(summary)
+	if subject, body := modelDriftNotice(summary); body != "" {
+		notify.SendKind(notify.KindModelDrift, subject, body)
 	}
 	return summary, nil
 }
 
-// notifyModelDrift 组装漂移通知：标题含漂移 / 新增渠道数，正文逐条列出渠道名/ID 与缺失模型、上游新增模型。
-func notifyModelDrift(summary *ModelDriftCheckSummary) {
-	var parts []string
-	if summary.Drifted > 0 {
-		parts = append(parts, fmt.Sprintf("%d channel(s) with model drift", summary.Drifted))
-	}
-	if summary.WithNew > 0 {
-		parts = append(parts, fmt.Sprintf("%d channel(s) with new upstream models", summary.WithNew))
-	}
-	if summary.Added > 0 {
-		parts = append(parts, fmt.Sprintf("%d channel(s) with models added automatically", summary.Added))
-	}
-	if summary.SuppliesChanged > 0 {
-		parts = append(parts, fmt.Sprintf("%d channel(s) with supplies gone or back upstream", summary.SuppliesChanged))
-	}
-	if len(parts) == 0 {
-		parts = append(parts, "new upstream models waiting for review")
-	}
-	subject := "Detected " + strings.Join(parts, ", ")
-
+// modelDriftNotice is the subject and body of the drift notice; an empty body when nothing in
+// the summary affects what the site serves.
+func modelDriftNotice(summary *ModelDriftCheckSummary) (string, string) {
 	var b strings.Builder
+	affected := 0
 	for _, ch := range summary.Channels {
-		if len(ch.MissingModels) > 0 {
-			b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d) is missing models: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(ch.MissingModels, ", ")))
+		before := b.Len()
+		var gone, renamed []string
+		for _, m := range ch.MissingModels {
+			if to := ch.Renamed[m]; to != "" {
+				renamed = append(renamed, m+" → "+to)
+			} else {
+				gone = append(gone, m)
+			}
 		}
-		if len(ch.NewModels) > 0 {
-			b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d) has new upstream models: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(ch.NewModels, ", ")))
+		if len(renamed) > 0 {
+			b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d): the upstream renamed models still in use; switch to the new names from the channel's models tab: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(renamed, ", ")))
 		}
-		if len(ch.AddedModels) > 0 {
-			b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d) added upstream models automatically: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(ch.AddedModels, ", ")))
-		}
-		if len(ch.PendingModels) > 0 {
-			b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d) has new models waiting for review: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(ch.PendingModels, ", ")))
+		if len(gone) > 0 {
+			b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d): the upstream no longer lists models still in use: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(gone, ", ")))
 		}
 		if c := ch.Supplies; c != nil {
-			if len(c.Gone) > 0 {
-				b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d) stopped supplying models its upstream no longer lists: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(c.Gone, ", ")))
+			// Only supplies that served users: a switched-off supply or one of an unpublished
+			// model going away changes nothing.
+			gone, unsupplied := servedOnly(ch.ChannelId, c.Gone), servedOnly(ch.ChannelId, c.Unsupplied)
+			if len(gone) > 0 {
+				b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d) stopped supplying models its upstream no longer lists: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(gone, ", ")))
 			}
-			if len(c.Unsupplied) > 0 {
-				b.WriteString(fmt.Sprintf("No supply can serve these models any more: %s\n", strings.Join(c.Unsupplied, ", ")))
-			}
-			if len(c.Back) > 0 {
-				b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d) supplies models its upstream lists again: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(c.Back, ", ")))
+			if len(unsupplied) > 0 {
+				b.WriteString(fmt.Sprintf("No supply can serve these models any more: %s\n", strings.Join(unsupplied, ", ")))
 			}
 			if c.Held {
 				b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d): the upstream listed none of the supplied models; nothing was marked gone, check its model list\n", ch.ChannelName, ch.ChannelId))
 			}
 		}
+		if b.Len() > before {
+			affected++
+		}
 	}
-	notify.SendKind(notify.KindModelDrift, subject, b.String())
+	if affected == 0 {
+		return "", ""
+	}
+	return fmt.Sprintf("Upstream model changes affect %d channel(s)", affected), b.String()
 }
 
 // CheckModelDrift 手动触发漂移检测（AdminAuth）。
@@ -357,6 +380,31 @@ func DismissMissingModels(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": channel.GetModelDrift()})
+}
+
+// AdoptUpstreamRenames switches a channel from models its upstream renamed to their new names
+// (AdminAuth). Body: {"id": <channelId>, "models": [<old names>]}; no models switches every
+// rename the channel's drift impact reports. Returns how many were switched and the channel.
+func AdoptUpstreamRenames(c *gin.Context) {
+	var req struct {
+		Id     int      `json:"id"`
+		Models []string `json:"models"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.Id <= 0 {
+		common.APIRespondWithError(c, http.StatusOK, invalidChannelIDError())
+		return
+	}
+	channel, err := model.GetChannelById(req.Id)
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, channelLookupError(err))
+		return
+	}
+	switched, err := model.AdoptUpstreamRenames(channel, req.Models)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": gin.H{"switched": switched}})
 }
 
 // fetchUpstreamModels 构造 provider 并拉取上游实时模型列表（取 key 首行，同 GetModelList）。
@@ -557,11 +605,13 @@ func pendingIntake(outcomes []model.IntakeOutcome) []string {
 	return out
 }
 
-func hasPending(summary *ModelDriftCheckSummary) bool {
-	for _, ch := range summary.Channels {
-		if len(ch.PendingModels) > 0 {
-			return true
-		}
+// servedOnly keeps the public models the channel serves users through (see
+// model.ServedThroughChannel); all of them when that cannot be read, so no notice is lost.
+func servedOnly(channelID int, names []string) []string {
+	out, err := model.ServedThroughChannel(channelID, names)
+	if err != nil {
+		logger.SysError("served models lookup failed: " + err.Error())
+		return names
 	}
-	return false
+	return out
 }

@@ -410,6 +410,7 @@ func SetApiRouter(router *gin.Engine) {
 			channelRoute.POST("/check_drift", controller.CheckModelDrift)
 			channelRoute.POST("/dismiss_new_models", controller.DismissNewModels)
 			channelRoute.POST("/dismiss_missing_models", controller.DismissMissingModels)
+			channelRoute.POST("/adopt_renames", controller.AdoptUpstreamRenames)
 			channelRoute.POST("/sync_pricing", controller.SyncChannelPricing)
 			channelRoute.GET("/capabilities", controller.GetChannelCapabilities)
 			channelRoute.GET("/:id", controller.GetChannel)

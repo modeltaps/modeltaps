@@ -120,6 +120,9 @@ type Channel struct {
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 
 	KeyStatus *ChannelKeyStatus `json:"key_status,omitempty" gorm:"-"`
+	// DriftImpact is what the missing models of the last model check mean for what the site
+	// serves (see AttachDriftImpacts); nil when nothing is flagged.
+	DriftImpact *ChannelDriftImpact `json:"drift_impact,omitempty" gorm:"-"`
 	// CancelOnDisconnectAuto is the automatic value of CancelOnDisconnect for the stored type and
 	// base URL, so the console can show what "automatic" means for this channel.
 	CancelOnDisconnectAuto bool `json:"cancel_on_disconnect_auto" gorm:"-"`

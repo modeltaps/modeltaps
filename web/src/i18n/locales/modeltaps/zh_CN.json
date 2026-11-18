@@ -2280,7 +2280,6 @@
     "issue": {
       "autoDisabled": "请求失败后已被自动禁用",
       "dismiss": "忽略",
-      "driftMissing_other": "上游下架了 {{count}} 个模型",
       "driftNew_other": "上游新增 {{count}} 个模型",
       "enable": "重新启用",
       "keyMissing": "没有保存密钥",
@@ -2289,7 +2288,9 @@
       "setKey": "去处理",
       "view": "查看",
       "title": "需要处理",
-      "retired": "服务商已于 {{date}} 停止此服务。"
+      "retired": "服务商已于 {{date}} 停止此服务。",
+      "driftRenamed_other": "上游给 {{count}} 个在用的模型改了名，请求会失败",
+      "driftMissing_other": "上游下架了 {{count}} 个在用的模型"
     },
     "lane": {
       "allOff": "全部停用",
@@ -2403,7 +2404,8 @@
       "flagSummary": {
         "gone_other": "上游已下架 {{count}} 个模型",
         "new_other": "上游新增 {{count}} 个模型",
-        "unlisted_other": "上游有 {{count}} 个模型还没加入"
+        "unlisted_other": "上游有 {{count}} 个模型还没加入",
+        "goneServing_other": "{{count}} 个在用"
       },
       "addUnlisted": "全部加入 {{count}} 个",
       "addOne": "加入 {{model}}",
@@ -2443,7 +2445,14 @@
         "other": "其他计价"
       },
       "priceKindClear": "取消筛选：{{kind}}",
-      "price_audio": "{{price}} / 分钟"
+      "price_audio": "{{price}} / 分钟",
+      "adoptRenames_other": "改用新名 {{count}} 个",
+      "adopted_other": "已改用 {{count}} 个新名字",
+      "adoptRenamesHint": "渠道列表和线路改用上游的新名字，立即保存",
+      "renamedTo": "上游改名为 {{model}}",
+      "notServing": "未在服务",
+      "notServingHint": "没有已上架的公开模型通过它提供，下架不影响用户",
+      "adoptFailed": "改用新名失败"
     },
     "monitor": {
       "checkNow": "立即检查模型列表",
@@ -2797,7 +2806,8 @@
       "driftNew_other": "{{count}} 个新模型",
       "driftMissing_other": "{{count}} 个模型下架",
       "refresh": "刷新",
-      "retired": "已停服"
+      "retired": "已停服",
+      "driftRenamed_other": "{{count}} 个模型上游改名"
     },
     "head": {
       "order": "先用数字小的；同号渠道一起分担流量",

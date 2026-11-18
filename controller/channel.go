@@ -27,6 +27,9 @@ func GetChannelsList(c *gin.Context) {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
 	}
+	if channels.Data != nil {
+		attachDriftImpacts(*channels.Data)
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
@@ -46,11 +49,20 @@ func GetChannel(c *gin.Context) {
 		return
 	}
 	channel.HideKey()
+	attachDriftImpacts([]*model.Channel{channel})
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
 		"data":    channel,
 	})
+}
+
+// attachDriftImpacts fills what the channels' missing models mean for serving. A failure only
+// costs the panel that detail (it then flags every missing model, as before), so it is logged.
+func attachDriftImpacts(channels []*model.Channel) {
+	if err := model.AttachDriftImpacts(channels); err != nil {
+		logger.SysError("model drift impact failed: " + err.Error())
+	}
 }
 
 // GetChannelUpstreamModels lists what the channel's upstream returned at the last model check,

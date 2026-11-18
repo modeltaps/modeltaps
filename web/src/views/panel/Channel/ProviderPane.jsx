@@ -735,7 +735,7 @@ export default function ProviderPane({
                             </span>
                           )}
                           {(issuesById.get(c.id) || [])
-                            .filter((i) => i.kind !== 'driftMissing')
+                            .filter((i) => i.kind !== 'driftMissing' && i.kind !== 'driftRenamed')
                             .map((i) => (
                               <IssueTag key={i.key} issue={i} onAction={onIssueAction} onDismiss={onDismissIssue} busy={issueBusy(i)} />
                             ))}
@@ -761,18 +761,26 @@ export default function ProviderPane({
                               : ''
                           ].filter(Boolean);
                           // Model drift reads on this line, in full (a narrow column wraps it onto a
-                          // line of its own): gone models (their requests fail) in the warning color,
-                          // models the upstream added, which are news and not a problem, as a quiet
-                          // link. Both open the models tab on them.
-                          const gone = (issuesById.get(c.id) || []).find((i) => i.kind === 'driftMissing');
-                          const added = c.model_drift?.new_models?.length || 0;
+                          // line of its own): served models the upstream renamed or dropped (their
+                          // requests fail) in the warning color, models the upstream added, which are
+                          // news and not a problem, as a quiet link. All open the models tab on them.
+                          // New names that are renames of listed models are not counted as new.
+                          const own = issuesById.get(c.id) || [];
+                          const renamedTo = new Set(Object.values(c.drift_impact?.renamed || {}));
+                          const added = (c.model_drift?.new_models || []).filter((m) => !renamedTo.has(m)).length;
                           const links = [
-                            gone && {
-                              key: 'gone',
-                              issue: gone,
-                              className: 'text-warning',
-                              text: t('channels.issueTag.driftMissing', { count: gone.count })
-                            },
+                            ...['driftRenamed', 'driftMissing'].map((kind) => {
+                              const issue = own.find((i) => i.kind === kind);
+                              return (
+                                issue && {
+                                  key: kind,
+                                  issue,
+                                  warn: true,
+                                  className: 'text-warning',
+                                  text: t(`channels.issueTag.${kind}`, { count: issue.count })
+                                }
+                              );
+                            }),
                             added > 0 && {
                               key: 'new',
                               issue: { kind: 'driftNew', channel: c },
@@ -798,7 +806,7 @@ export default function ProviderPane({
                                     )}
                                     title={x.text}
                                   >
-                                    {x.key === 'gone' && <AlertTriangle className="size-3 shrink-0 self-center" />}
+                                    {x.warn && <AlertTriangle className="size-3 shrink-0 self-center" />}
                                     <span className="truncate">{x.text}</span>
                                   </button>
                                 </span>

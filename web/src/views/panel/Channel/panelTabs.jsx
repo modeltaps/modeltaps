@@ -478,7 +478,13 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
 
   // New upstream models the drift check flags (and nobody dismissed). The check adds them to the
   // list, so they are listed rows; the flag goes once they are switched, removed or dismissed.
-  const newKey = (channel.model_drift?.new_models || []).join(',');
+  // What the missing models mean for users (worked out by the server): the ones a published
+  // public model is served through, and the new name of the ones the upstream renamed. The new
+  // names of renamed models are not new models.
+  const impact = channel.drift_impact;
+  const renamedTo = useMemo(() => impact?.renamed || {}, [impact]);
+  const servingSet = useMemo(() => (impact ? new Set(impact.serving || []) : null), [impact]);
+  const newKey = (channel.model_drift?.new_models || []).filter((m) => !Object.values(renamedTo).includes(m)).join(',');
   const freshNames = useMemo(() => new Set(splitList(newKey)), [newKey]);
   // The channel's own order; the table shows the usual order below (most used families first).
   const rows = useMemo(
@@ -491,11 +497,13 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
           signal: modelSignal(m, hasTraffic),
           offer: ctx.supplyRouting ? offerOf(details?.get(name)) : null,
           gone: isGone(name, mapping, snapshot),
+          renamedTo: renamedTo[name] || '',
+          serving: !servingSet || servingSet.has(name),
           fresh: freshNames.has(name) || freshNames.has(upstreamNameOf(name, mapping)),
           off: disabled.has(name)
         };
       }),
-    [draft.models, mapping, perModel, hasTraffic, ctx.supplyRouting, details, snapshot, disabled, freshNames]
+    [draft.models, mapping, perModel, hasTraffic, ctx.supplyRouting, details, snapshot, disabled, freshNames, renamedTo, servingSet]
   );
   const removedRows = useMemo(() => removed.map((name) => ({ name, removed: true })), [removed]);
   const range = t(`channels.range.short.${ctx.rangeKey}`);
@@ -755,11 +763,38 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
   );
   let flagStrip = null;
   if (only === 'gone' && (counts.gone > 0 || flaggedMissing.length > 0)) {
+    const servingGone = rows.filter((r) => r.gone && r.serving && !r.off).length;
+    const renames = rows.filter((r) => r.gone && r.renamedTo).map((r) => r.name);
     flagStrip = {
-      text: t('channels.models.flagSummary.gone', { count: counts.gone || flaggedMissing.length }),
+      text: [
+        t('channels.models.flagSummary.gone', { count: counts.gone || flaggedMissing.length }),
+        servingSet && t('channels.models.flagSummary.goneServing', { count: servingGone })
+      ]
+        .filter(Boolean)
+        .join(' · '),
       actions: (
         <>
           {flaggedMissing.length > 0 && dismissButton(() => ctx.actions.onDismissMissingModels(channel))}
+          {renames.length > 0 && ctx.adoptRenames && (
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(flagButton, 'bg-card')}
+              disabled={busy === 'adopt'}
+              title={t('channels.models.adoptRenamesHint')}
+              onClick={async () => {
+                setBusy('adopt');
+                try {
+                  await ctx.adoptRenames(renames);
+                } finally {
+                  setBusy('');
+                }
+              }}
+            >
+              {busy === 'adopt' && <Loader2 className="animate-spin" />}
+              {t('channels.models.adoptRenames', { count: renames.length })}
+            </Button>
+          )}
           {counts.gone > 0 && (
             <Button variant="outline" size="sm" className={cn(flagButton, 'bg-card')} disabled={busy === 'removeGone'} onClick={removeGone}>
               {t('channels.models.removeGone', { count: counts.gone })}
@@ -888,7 +923,11 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                   key={key}
                   active={only === key}
                   onClick={() => setOnly(only === key ? '' : key)}
-                  icon={key === 'gone' && counts[key] > 0 ? <AlertTriangle className="size-3 text-warning" /> : null}
+                  icon={
+                    key === 'gone' && rows.some((r) => r.gone && r.serving && !r.off) ? (
+                      <AlertTriangle className="size-3 text-warning" />
+                    ) : null
+                  }
                   label={t(`channels.models.state.${key}`)}
                   count={counts[key]}
                 />
@@ -1075,7 +1114,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
               </thead>
               <tbody>
                 {!upstreamOnly &&
-                  list.visible.map(({ name, m, signal, offer, gone, fresh, off, removed: isRemoved }) => (
+                  list.visible.map(({ name, m, signal, offer, gone, renamedTo, serving, fresh, off, removed: isRemoved }) => (
                     <tr
                       key={name}
                       className={cn(
@@ -1102,8 +1141,31 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                               <ModelKindTag kind={detailOf(name)?.kind} />
                               <ModelSignal signal={signal} m={m} range={range} />
                               {/* Under the filter of the same flag every row has it: the tag is left out. */}
-                              {gone && only !== 'gone' && (
-                                <span className={cn(TAG_TEXT, 'bg-warning/10 text-warning')}>{t('channels.models.state.gone')}</span>
+                              {/* A gone model nobody is served reads muted: its going changes nothing. */}
+                              {gone && !renamedTo && only !== 'gone' && (
+                                <span className={cn(TAG_TEXT, serving ? 'bg-warning/10 text-warning' : 'bg-muted text-muted-foreground')}>
+                                  {t('channels.models.state.gone')}
+                                </span>
+                              )}
+                              {gone && renamedTo && (
+                                <span
+                                  className={cn(
+                                    TAG_TEXT,
+                                    'min-w-0 shrink',
+                                    serving ? 'bg-warning/10 text-warning' : 'bg-muted text-muted-foreground'
+                                  )}
+                                  title={t('channels.models.renamedTo', { model: renamedTo })}
+                                >
+                                  <span className="truncate">{t('channels.models.renamedTo', { model: renamedTo })}</span>
+                                </span>
+                              )}
+                              {gone && !serving && only === 'gone' && (
+                                <span
+                                  className={cn(TAG_TEXT, 'bg-muted text-muted-foreground')}
+                                  title={t('channels.models.notServingHint')}
+                                >
+                                  {t('channels.models.notServing')}
+                                </span>
                               )}
                               {fresh && !isRemoved && only !== 'new' && (
                                 <span className={cn(TAG_TEXT, 'bg-info/10 text-info')}>{t('channels.models.state.new')}</span>

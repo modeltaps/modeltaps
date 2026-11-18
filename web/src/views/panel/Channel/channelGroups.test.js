@@ -76,6 +76,20 @@ describe('channelIssues', () => {
     expect(channelIssues(removed).map((i) => [i.kind, i.count])).toEqual([['driftMissing', 1]]);
   });
 
+  it('flags only served missing models, renames apart', () => {
+    const c = ch(4, 1, {
+      models: 'gpt-5.5,glm-5.3,deepseek-v4-pro',
+      model_drift: { missing_models: ['gpt-5.5', 'glm-5.3', 'deepseek-v4-pro'] },
+      drift_impact: { serving: ['glm-5.3', 'deepseek-v4-pro'], renamed: { 'gpt-5.5': 'openai/gpt-5.5', 'glm-5.3': 'melious/glm-5.3' } }
+    });
+    expect(channelIssues(c).map((i) => [i.kind, i.count])).toEqual([
+      ['driftRenamed', 1],
+      ['driftMissing', 1]
+    ]);
+    const unserved = { ...c, drift_impact: { serving: [] } };
+    expect(channelIssues(unserved)).toEqual([]);
+  });
+
   it('has none for a healthy channel', () => {
     expect(channelIssues(ch(1, 1, { key_status: { configured: true } }))).toEqual([]);
   });

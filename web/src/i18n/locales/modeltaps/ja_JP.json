@@ -2276,7 +2276,6 @@
     "issue": {
       "autoDisabled": "リクエスト失敗のため自動で無効化されました",
       "dismiss": "閉じる",
-      "driftMissing_other": "上流から {{count}} モデルがなくなりました",
       "driftNew_other": "上流に {{count}} モデルが追加されました",
       "enable": "再度有効化",
       "keyMissing": "キーが保存されていません",
@@ -2285,7 +2284,9 @@
       "setKey": "キーを設定",
       "view": "表示",
       "title": "対応が必要",
-      "retired": "提供元は {{date}} にこのサービスを終了しました。"
+      "retired": "提供元は {{date}} にこのサービスを終了しました。",
+      "driftRenamed_other": "提供中の {{count}} 件のモデルがアップストリームで改名され、リクエストが失敗します",
+      "driftMissing_other": "提供中の {{count}} 件のモデルがアップストリームから削除されました"
     },
     "lane": {
       "allOff": "すべて無効",
@@ -2399,7 +2400,8 @@
       "flagSummary": {
         "gone_other": "上流で提供終了したモデル {{count}} 件",
         "new_other": "上流の新しいモデル {{count}} 件",
-        "unlisted_other": "上流にあって未追加のモデル {{count}} 件"
+        "unlisted_other": "上流にあって未追加のモデル {{count}} 件",
+        "goneServing_other": "うち {{count}} 件が提供中"
       },
       "addUnlisted": "{{count}} 件をすべて追加",
       "addOne": "{{model}} を追加",
@@ -2439,7 +2441,14 @@
         "other": "その他の課金"
       },
       "priceKindClear": "フィルタを解除：{{kind}}",
-      "price_audio": "{{price}} / 分"
+      "price_audio": "{{price}} / 分",
+      "adoptRenames_other": "新しい名前に切り替え（{{count}} 件）",
+      "adopted_other": "{{count}} 件を新しい名前に切り替えました",
+      "adoptRenamesHint": "チャネルのモデル一覧と供給をアップストリームの新しい名前に切り替え、すぐ保存します",
+      "renamedTo": "新しい名前: {{model}}",
+      "notServing": "未提供",
+      "notServingHint": "公開済みの公開モデルはこれを通じて提供されていないため、削除の影響はありません",
+      "adoptFailed": "新しい名前への切り替えに失敗しました"
     },
     "monitor": {
       "checkNow": "今すぐモデル一覧を確認",
@@ -2793,7 +2802,8 @@
       "driftNew_other": "新しいモデル {{count}} 件",
       "driftMissing_other": "終了したモデル {{count}} 件",
       "refresh": "更新",
-      "retired": "提供終了"
+      "retired": "提供終了",
+      "driftRenamed_other": "{{count}} 件のモデル名が変更"
     },
     "head": {
       "order": "番号の小さい順に使用。同じ番号は分担",

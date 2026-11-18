@@ -290,6 +290,14 @@ export async function dismissChannelMissingModels(id) {
   return res.data;
 }
 
+// Switches a channel from models its upstream renamed to their new names
+// (`POST /api/channel/adopt_renames`, AdminAuth); no `models` switches every reported rename.
+// Returns `{ switched }`.
+export async function adoptChannelRenames(id, models) {
+  const res = await API.post('/api/channel/adopt_renames', { id, models });
+  return res.data;
+}
+
 // OAuth helpers for the channel form (GeminiCli 57 / ClaudeCode 58 /
 // Codex 59 / Antigravity 60). `endpoint` is the backend route segment:
 // geminicli | claudecode | codex | antigravity. All return raw `res.data`

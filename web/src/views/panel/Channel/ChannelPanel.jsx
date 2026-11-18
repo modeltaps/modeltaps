@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/sonner';
 import { EditableTitle, ObjectPanel } from '@/components/objects';
-import { fetchChannel, updateChannel } from './channelApi';
+import { adoptChannelRenames, fetchChannel, updateChannel } from './channelApi';
 import { ProviderTile, useProviderName } from './channelParts';
 import { formatBalance } from './channelMetrics';
 import { RETIRED_CHANNEL_TYPES } from 'constants/ChannelConstants';
@@ -127,6 +127,22 @@ export default function ChannelPanel({
       }
       return res;
     },
+    // Switches the listed models the upstream renamed to their new names, saved at once (the
+    // drift impact on the stored channel says which).
+    adoptRenames: async (models) => {
+      try {
+        const res = await adoptChannelRenames(channelRef.current.id, models);
+        if (!res?.success) {
+          toast.error(res?.message || t('channels.models.adoptFailed'));
+          return;
+        }
+        toast.success(t('channels.models.adopted', { count: res.data?.switched || 0 }));
+        await load();
+        onChanged();
+      } catch (e) {
+        toast.error(e.message);
+      }
+    },
     allChannels,
     groups,
     supplyRouting,
@@ -175,7 +191,7 @@ export default function ChannelPanel({
       const gone = t('channels.issue.retired', { date });
       return successor ? `${gone} ${t(`channels.retired.successor.${successor}`)}` : `${gone} ${t('channels.retired.moveElsewhere')}`;
     }
-    if (issue.kind === 'driftMissing') return t('channels.issue.driftMissing', { count: issue.count });
+    if (issue.kind === 'driftMissing' || issue.kind === 'driftRenamed') return t(`channels.issue.${issue.kind}`, { count: issue.count });
     return t(`channels.issue.${issue.kind}`);
   };
   const issueActionText = {
@@ -183,12 +199,13 @@ export default function ChannelPanel({
     autoDisabled: 'enable',
     keyMissing: 'setKey',
     lowBalance: 'refreshBalance',
-    driftMissing: 'view'
+    driftMissing: 'view',
+    driftRenamed: 'view'
   };
   // The models tab shows the upstream's gone models in its own filter, so the notice leaves them
   // out there.
   const currentTab = tab || PANEL_TABS[0].key;
-  const shown = currentTab === 'models' ? issues.filter((i) => i.kind !== 'driftMissing') : issues;
+  const shown = currentTab === 'models' ? issues.filter((i) => i.kind !== 'driftMissing' && i.kind !== 'driftRenamed') : issues;
   const notice = shown.length ? (
     <ul
       className="mb-3 space-y-1 rounded-[10px] border border-warning/40 bg-warning/10 px-3 py-2 text-[13px]"

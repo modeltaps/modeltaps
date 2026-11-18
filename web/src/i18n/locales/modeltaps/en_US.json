@@ -2365,8 +2365,6 @@
     "issue": {
       "autoDisabled": "Disabled automatically after failed requests",
       "dismiss": "Dismiss",
-      "driftMissing_one": "{{count}} model is no longer listed upstream",
-      "driftMissing_other": "{{count}} models are no longer listed upstream",
       "driftNew_one": "Upstream added {{count}} model",
       "driftNew_other": "Upstream added {{count}} models",
       "enable": "Enable again",
@@ -2376,7 +2374,11 @@
       "setKey": "Set key",
       "view": "View",
       "title": "Needs attention",
-      "retired": "The provider shut this service down on {{date}}."
+      "retired": "The provider shut this service down on {{date}}.",
+      "driftRenamed_one": "The upstream renamed {{count}} model in use; its requests will fail",
+      "driftRenamed_other": "The upstream renamed {{count}} models in use; their requests will fail",
+      "driftMissing_one": "The upstream dropped {{count}} model in use",
+      "driftMissing_other": "The upstream dropped {{count}} models in use"
     },
     "lane": {
       "allOff": "All channels disabled",
@@ -2500,7 +2502,9 @@
         "new_one": "{{count}} new model upstream",
         "new_other": "{{count}} new models upstream",
         "unlisted_one": "{{count}} upstream model not added yet",
-        "unlisted_other": "{{count}} upstream models not added yet"
+        "unlisted_other": "{{count}} upstream models not added yet",
+        "goneServing_one": "{{count}} in use",
+        "goneServing_other": "{{count}} in use"
       },
       "addUnlisted": "Add all {{count}}",
       "addOne": "Add {{model}}",
@@ -2541,7 +2545,16 @@
         "other": "Other pricing"
       },
       "priceKindClear": "Clear filter: {{kind}}",
-      "price_audio": "{{price}} / min"
+      "price_audio": "{{price}} / min",
+      "adoptRenames_one": "Switch {{count}} to the new name",
+      "adoptRenames_other": "Switch {{count}} to the new names",
+      "adopted_one": "Switched {{count}} model to its new name",
+      "adopted_other": "Switched {{count}} models to their new names",
+      "renamedTo": "Renamed upstream to {{model}}",
+      "notServing": "Not in use",
+      "notServingHint": "No published public model is served through it, so its removal does not affect users",
+      "adoptFailed": "Could not switch to the new names",
+      "adoptRenamesHint": "Switches the channel's list and supplies to the upstream's new names and saves at once"
     },
     "monitor": {
       "checkNow": "Check model list now",
@@ -2912,7 +2925,9 @@
       "driftMissing_one": "{{count}} model gone",
       "driftMissing_other": "{{count}} models gone",
       "refresh": "Refresh",
-      "retired": "Retired"
+      "retired": "Retired",
+      "driftRenamed_one": "{{count}} model renamed",
+      "driftRenamed_other": "{{count}} models renamed"
     },
     "head": {
       "order": "Lower numbers are tried first; channels with the same number share traffic",
