@@ -115,7 +115,7 @@ describe('navSectionsFor (workbench)', () => {
 describe('navSectionsFor (platform admin)', () => {
   it('root sees every group', () => {
     expect(idsOf(navSectionsFor({ context: 'admin', isRoot: true }))).toEqual([
-      { id: 'admin_main', items: ['analytics', 'systemInfo'] },
+      { id: 'admin_main', items: ['analytics', 'alerts', 'systemInfo'] },
       { id: 'gateway', items: ['channel', 'pricing', 'routing_policy', 'setting_gateway'] },
       { id: 'people', items: ['user', 'user_group', 'org_admin', 'setting_auth', 'setting_orgpolicy'] },
       { id: 'finance', items: ['payment', 'redemption', 'invite_code', 'setting_billing', 'setting_payment'] },
@@ -305,6 +305,7 @@ describe('commandSections', () => {
     expect(admin.items.map((i) => i.id)).toEqual([
       'admin_home',
       'analytics',
+      'alerts',
       'channel',
       'pricing',
       'routing_policy',

@@ -701,7 +701,8 @@
     "organization": "組織の残高、使用量、監査ログ",
     "token": "API を呼び出すためのキー",
     "invite_code": "登録用の招待コードの作成、有効化、無効化",
-    "routing": "API キーで呼び出せるルーティングポリシー"
+    "routing": "API キーで呼び出せるルーティングポリシー",
+    "alerts": "ユーザーに影響するアップストリームの変更、価格変更、認証情報の問題。各件は一度だけ通知し、解消すると自動で閉じます"
   },
   "api_compare": "比較",
   "modelInfoPage": {
@@ -2929,7 +2930,8 @@
       "settingOrgPolicy": "組織ポリシー",
       "settingEntries": "ユーザー向け入口",
       "settingMail": "メール",
-      "settingModified": "変更済みの設定"
+      "settingModified": "変更済みの設定",
+      "alerts": "アラート"
     },
     "context": {
       "personal": "個人",
@@ -4949,5 +4951,60 @@
     "reload": "再読み込み",
     "details": "エラーの詳細",
     "goDashboard": "ダッシュボードへ"
+  },
+  "alerts": {
+    "stateLabel": "状態",
+    "state": {
+      "open": "未対応",
+      "closed": "クローズ済み"
+    },
+    "stateHint": {
+      "open": "次のチェックで見つからなければ自動で閉じます",
+      "closed": "過去 30 日"
+    },
+    "refresh": "更新",
+    "empty": {
+      "open": "未対応のアラートはありません",
+      "closed": "過去 30 日に閉じたアラートはありません"
+    },
+    "emptyHint": "提供中のモデルがアップストリームで改名・削除されたとき、価格が大きく変わって続いたとき、認証情報の更新に失敗したときにここに表示されます",
+    "kind": {
+      "model_drift": "モデルの変更",
+      "price_change": "価格の変更",
+      "credential": "認証情報の更新失敗",
+      "model_consistency": "モデル情報の不足"
+    },
+    "subject": {
+      "source": "ソース: {{source}}",
+      "catalog": "モデルカタログ",
+      "goneChannel": "チャネル #{{id}}（削除済み）"
+    },
+    "item": {
+      "drift": {
+        "renamed": "改名: {{model}}",
+        "gone": "アップストリームから削除: {{model}}",
+        "stopped": "供給を停止: {{model}}",
+        "unsupplied": "利用できる供給がありません: {{model}}",
+        "held": "アップストリームの一覧に提供中のモデルが一つもありません。一覧の異常とみなし、削除扱いにしていません"
+      },
+      "price": {
+        "raised": "値上げを適用 {{model}}: 入力 ${{oldIn}} → ${{newIn}}、出力 ${{oldOut}} → ${{newOut}}",
+        "held": "確認待ち {{model}}: 入力 ${{oldIn}} → ${{newIn}}、出力 ${{oldOut}} → ${{newOut}}",
+        "locked": "固定価格がアップストリームを下回る {{model}}: 入力 ${{oldIn}} / 上流 ${{newIn}}、出力 ${{oldOut}} / 上流 ${{newOut}}"
+      },
+      "credential": "現在のトークンが切れるとリクエストが失敗します。チャネルで再ログインしてください",
+      "consistency": "{{model}} は画像生成モデルですが、出力モダリティに画像がありません"
+    },
+    "showAll_other": "すべて表示（{{count}} 件）",
+    "showLess": "折りたたむ",
+    "openedAt": "{{time}}に発生",
+    "resolvedAt": "{{time}}に自動クローズ",
+    "dismissedAt": "{{time}}に手動クローズ",
+    "dismiss": "閉じる",
+    "dismissHint": "この内容はもう通知しません。新しい状況があれば再び開きます",
+    "sources": {
+      "channel_price_lists": "チャネルの価格表",
+      "models_dev": "公開モデルカタログ"
+    }
   }
 }

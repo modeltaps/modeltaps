@@ -23,6 +23,7 @@ const User = Loadable(lazy(() => import('views/panel/User')));
 const UserGroup = Loadable(lazy(() => import('views/panel/UserGroup')));
 const Setting = Loadable(lazy(() => import('views/panel/Setting')));
 const SystemInfo = Loadable(lazy(() => import('views/panel/SystemInfo')));
+const Alerts = Loadable(lazy(() => import('views/panel/Alerts')));
 const MultiUserStats = Loadable(lazy(() => import('views/panel/MultiUserStats')));
 const ApiCatalog = Loadable(lazy(() => import('views/panel/ApiCatalog')));
 const ApiConsole = Loadable(lazy(() => import('views/panel/Playground')));
@@ -102,6 +103,7 @@ const MainRoutes = {
         { index: true, element: <Navigate to={admin.stats()} replace /> },
         { path: 'stats', element: <Analytics /> },
         { path: 'stats/users', element: <MultiUserStats /> },
+        { path: 'alerts/:tab?', element: <Alerts /> },
         { path: 'system-logs/:tab?', element: rootOnly(<SystemInfo />) },
         // One page: `providers/:id` opens that provider's panel, `providers/new` the new provider
         // sheet, over the providers page.

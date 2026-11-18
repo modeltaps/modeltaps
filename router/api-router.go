@@ -247,6 +247,13 @@ func SetApiRouter(router *gin.Engine) {
 			optionRoute.POST("/system_info/log", controller.SystemLog)
 		}
 
+		alertRoute := apiRouter.Group("/alert")
+		alertRoute.Use(middleware.AdminAuth())
+		{
+			alertRoute.GET("/", controller.GetAlerts)
+			alertRoute.POST("/:id/dismiss", controller.DismissAlert)
+		}
+
 		inviteCodeRoute := apiRouter.Group("/invite-code")
 		inviteCodeRoute.Use(middleware.AdminAuth())
 		{

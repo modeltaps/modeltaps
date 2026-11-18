@@ -702,7 +702,8 @@
     "organization": "Organization balance, usage and audit log",
     "token": "Keys for calling the API",
     "invite_code": "Create, enable and revoke registration invite codes",
-    "routing": "Routing policies your API keys can call"
+    "routing": "Routing policies your API keys can call",
+    "alerts": "Upstream changes, price changes and credential problems that reach users; each is told once and closes when it is over"
   },
   "api_compare": "Compare",
   "modelInfoPage": {
@@ -3053,7 +3054,8 @@
       "settingOrgPolicy": "Organization policy",
       "settingEntries": "User entries",
       "settingMail": "Mail",
-      "settingModified": "Modified settings"
+      "settingModified": "Modified settings",
+      "alerts": "Alerts"
     },
     "context": {
       "personal": "Personal",
@@ -5072,5 +5074,61 @@
     "reload": "Reload",
     "details": "Error details",
     "goDashboard": "Back to dashboard"
+  },
+  "alerts": {
+    "stateLabel": "State",
+    "state": {
+      "open": "Open",
+      "closed": "Closed"
+    },
+    "stateHint": {
+      "open": "Closes by itself once the next check no longer finds it",
+      "closed": "Last 30 days"
+    },
+    "refresh": "Refresh",
+    "empty": {
+      "open": "No open alerts",
+      "closed": "No alerts closed in the last 30 days"
+    },
+    "emptyHint": "Served models the upstream renames or drops, price changes that last, and failing credentials show up here",
+    "kind": {
+      "model_drift": "Model changes",
+      "price_change": "Price changes",
+      "credential": "Credential refresh failed",
+      "model_consistency": "Model details missing"
+    },
+    "subject": {
+      "source": "Source: {{source}}",
+      "catalog": "Model catalog",
+      "goneChannel": "Channel #{{id}} (deleted)"
+    },
+    "item": {
+      "drift": {
+        "renamed": "Renamed upstream: {{model}}",
+        "gone": "Dropped upstream: {{model}}",
+        "stopped": "Supply stopped: {{model}}",
+        "unsupplied": "No supply left: {{model}}",
+        "held": "The upstream listed none of the models in use; taken as a broken list, nothing was marked gone"
+      },
+      "price": {
+        "raised": "Increase applied for {{model}}: input ${{oldIn}} → ${{newIn}}, output ${{oldOut}} → ${{newOut}}",
+        "held": "Waiting for review, {{model}}: input ${{oldIn}} → ${{newIn}}, output ${{oldOut}} → ${{newOut}}",
+        "locked": "Locked price below the upstream, {{model}}: input ${{oldIn}} / upstream ${{newIn}}, output ${{oldOut}} / upstream ${{newOut}}"
+      },
+      "credential": "Requests will fail once the current token expires; sign in again on the channel",
+      "consistency": "{{model}} generates images, but its output modalities lack image"
+    },
+    "showAll_one": "Show all {{count}}",
+    "showAll_other": "Show all {{count}}",
+    "showLess": "Show less",
+    "openedAt": "Opened {{time}}",
+    "resolvedAt": "Closed by itself {{time}}",
+    "dismissedAt": "Closed by hand {{time}}",
+    "dismiss": "Close",
+    "dismissHint": "Stops telling these facts; something new opens it again",
+    "sources": {
+      "channel_price_lists": "Channel price lists",
+      "models_dev": "Public model catalog"
+    }
   }
 }

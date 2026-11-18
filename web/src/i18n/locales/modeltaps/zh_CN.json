@@ -701,7 +701,8 @@
     "organization": "组织的余额、用量与审计记录",
     "token": "调用接口用的密钥",
     "invite_code": "生成、启用与作废注册用的邀请码",
-    "routing": "API Key 可调用的路由策略"
+    "routing": "API Key 可调用的路由策略",
+    "alerts": "影响用户的上游变动、价格变动和凭据问题；每件事只通知一次，解决后自动关闭"
   },
   "api_compare": "对比",
   "modelInfoPage": {
@@ -2933,7 +2934,8 @@
       "settingOrgPolicy": "组织策略",
       "settingEntries": "用户入口",
       "settingMail": "邮件",
-      "settingModified": "已修改的设置"
+      "settingModified": "已修改的设置",
+      "alerts": "提醒"
     },
     "context": {
       "personal": "个人",
@@ -4954,5 +4956,60 @@
     "reload": "重新加载",
     "details": "错误详情",
     "goDashboard": "回到仪表盘"
+  },
+  "alerts": {
+    "stateLabel": "状态",
+    "state": {
+      "open": "待处理",
+      "closed": "已关闭"
+    },
+    "stateHint": {
+      "open": "下次检查不再发现时自动关闭",
+      "closed": "最近 30 天"
+    },
+    "refresh": "刷新",
+    "empty": {
+      "open": "没有待处理的提醒",
+      "closed": "最近 30 天没有关闭的提醒"
+    },
+    "emptyHint": "在服务中的模型被上游改名或下架、价格大幅变动并持续、凭据刷新失败时，会出现在这里",
+    "kind": {
+      "model_drift": "模型变动",
+      "price_change": "价格变动",
+      "credential": "凭据刷新失败",
+      "model_consistency": "模型资料缺失"
+    },
+    "subject": {
+      "source": "来源：{{source}}",
+      "catalog": "模型目录",
+      "goneChannel": "渠道 #{{id}}（已删除）"
+    },
+    "item": {
+      "drift": {
+        "renamed": "上游改名：{{model}}",
+        "gone": "上游已下架：{{model}}",
+        "stopped": "线路已停用：{{model}}",
+        "unsupplied": "已没有可用线路：{{model}}",
+        "held": "上游列表里没有任何在用模型，可能是列表出错，未做下架处理"
+      },
+      "price": {
+        "raised": "已涨价 {{model}}：输入 ${{oldIn}} → ${{newIn}}，输出 ${{oldOut}} → ${{newOut}}",
+        "held": "待审核 {{model}}：输入 ${{oldIn}} → ${{newIn}}，输出 ${{oldOut}} → ${{newOut}}",
+        "locked": "锁定价低于上游 {{model}}：输入 ${{oldIn}} / 上游 ${{newIn}}，输出 ${{oldOut}} / 上游 ${{newOut}}"
+      },
+      "credential": "当前令牌过期后请求会失败，请在渠道里重新登录",
+      "consistency": "{{model}} 是生图模型，但输出模态里没有图片"
+    },
+    "showAll_other": "展开全部 {{count}} 条",
+    "showLess": "收起",
+    "openedAt": "{{time}}出现",
+    "resolvedAt": "{{time}}自动关闭",
+    "dismissedAt": "{{time}}手动关闭",
+    "dismiss": "关闭",
+    "dismissHint": "不再提示这些情况；有新情况时会重新打开",
+    "sources": {
+      "channel_price_lists": "渠道价格表",
+      "models_dev": "公共模型目录"
+    }
   }
 }

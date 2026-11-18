@@ -34,6 +34,7 @@ import {
   Landmark,
   LogIn,
   Bell,
+  BellRing,
   Mail,
   MessagesSquare,
   ShieldCheck,
@@ -170,6 +171,9 @@ export const adminSections = [
       // 统计 comes first: entering platform admin lands on the first visible item.
       // Analytics and per-user stats share one item; the pages switch with in-page tabs.
       { id: 'analytics', url: admin.stats(), icon: BarChart3, labelKey: 'nav.items.stats' },
+      // What needs an admin now: upstream model changes, price changes and failing credentials
+      // that reach users. Notices tell each once; this page keeps them while they last.
+      { id: 'alerts', url: admin.alerts(), icon: BellRing, labelKey: 'nav.items.alerts' },
       { id: 'systemInfo', url: admin.systemLogs(), icon: ScrollText, labelKey: 'nav.items.systemLogs', root: true }
     ]
   },

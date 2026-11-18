@@ -23,7 +23,10 @@ type Alert struct {
 	OpenedAt   int64                       `json:"opened_at" gorm:"bigint;default:0"`
 	NotifiedAt int64                       `json:"notified_at" gorm:"bigint;default:0"`
 	ResolvedAt int64                       `json:"resolved_at" gorm:"bigint;default:0"`
-	UpdatedAt  int64                       `json:"updated_at" gorm:"autoUpdateTime"`
+	// DismissedAt is when an admin closed the alert while its condition went on: it leaves the
+	// list and its items are not told again; a new item opens it again.
+	DismissedAt int64 `json:"dismissed_at" gorm:"bigint;default:0"`
+	UpdatedAt   int64 `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
 func (a *Alert) TableName() string {
@@ -53,7 +56,7 @@ func ReportAlert(kind, subject string, items []string) ([]string, error) {
 			if !current.Open() {
 				return nil
 			}
-			return tx.Model(&current).Updates(map[string]any{"items": datatypes.JSONSlice[string]{}, "resolved_at": now}).Error
+			return tx.Model(&current).Updates(map[string]any{"items": datatypes.JSONSlice[string]{}, "resolved_at": now, "dismissed_at": 0}).Error
 		}
 		var known []string
 		if current.Open() {
@@ -65,6 +68,9 @@ func ReportAlert(kind, subject string, items []string) ([]string, error) {
 			}
 		}
 		updates := map[string]any{"items": datatypes.JSONSlice[string](items), "resolved_at": 0}
+		if len(fresh) > 0 {
+			updates["dismissed_at"] = 0
+		}
 		if !current.Open() {
 			updates["opened_at"] = now
 		}
@@ -92,10 +98,11 @@ func ResolveAlertsExcept(kind string, keep []string) error {
 	return q.Updates(map[string]any{"items": datatypes.JSONSlice[string]{}, "resolved_at": utils.GetTimestamp()}).Error
 }
 
-// OpenAlerts lists the open alerts of kind (all kinds when empty), newest first.
+// OpenAlerts lists the open alerts of kind (all kinds when empty) an admin has not dismissed,
+// newest first.
 func OpenAlerts(kind string) ([]*Alert, error) {
 	var out []*Alert
-	q := DB.Where("resolved_at = ?", 0)
+	q := DB.Where("resolved_at = ? AND dismissed_at = ?", 0, 0)
 	if kind != "" {
 		q = q.Where("kind = ?", kind)
 	}
@@ -130,4 +137,27 @@ func AlertItems(kind, subject string) ([]string, error) {
 		return nil, nil
 	}
 	return current.Items, nil
+}
+
+// ClosedAlerts lists the alerts resolved or dismissed since `since` (unix seconds), newest
+// first; resolved ones keep no items, so the list says what was closed, not what it held.
+func ClosedAlerts(since int64) ([]*Alert, error) {
+	var out []*Alert
+	err := DB.Where("(resolved_at > ? OR dismissed_at > ?)", 0, 0).Where("updated_at >= ?", since).
+		Order("updated_at DESC").Limit(200).Find(&out).Error
+	return out, err
+}
+
+// DismissAlert closes an open alert by hand: its items stay known, so the same condition is
+// not told again, and a new item opens it again.
+func DismissAlert(id int) error {
+	res := DB.Model(&Alert{}).Where("id = ? AND resolved_at = ? AND dismissed_at = ?", id, 0, 0).
+		Update("dismissed_at", utils.GetTimestamp())
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }

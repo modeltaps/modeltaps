@@ -52,3 +52,29 @@ func TestResolveAlertsExcept(t *testing.T) {
 		t.Fatalf("open = %+v", open)
 	}
 }
+
+func TestDismissedAlertStaysQuietUntilSomethingNew(t *testing.T) {
+	useAlertTestDB(t)
+	if _, err := ReportAlert("model_drift", "channel:4", []string{"gone:a"}); err != nil {
+		t.Fatal(err)
+	}
+	open, _ := OpenAlerts("")
+	if err := DismissAlert(open[0].Id); err != nil {
+		t.Fatal(err)
+	}
+	if open, _ := OpenAlerts(""); len(open) != 0 {
+		t.Fatalf("a dismissed alert leaves the list: %+v", open)
+	}
+	if fresh, _ := ReportAlert("model_drift", "channel:4", []string{"gone:a"}); fresh != nil {
+		t.Fatalf("the same condition is not told again: %v", fresh)
+	}
+	if closed, _ := ClosedAlerts(0); len(closed) != 1 {
+		t.Fatalf("closed = %+v", closed)
+	}
+	if fresh, _ := ReportAlert("model_drift", "channel:4", []string{"gone:a", "gone:b"}); len(fresh) != 1 {
+		t.Fatalf("something new is told: %v", fresh)
+	}
+	if open, _ := OpenAlerts(""); len(open) != 1 {
+		t.Fatalf("and opens it again: %+v", open)
+	}
+}

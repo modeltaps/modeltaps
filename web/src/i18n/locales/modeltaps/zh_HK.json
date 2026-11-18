@@ -701,7 +701,8 @@
     "organization": "組織的餘額、用量與審計記錄",
     "token": "調用介面用的金鑰",
     "invite_code": "生成、啟用與作廢註冊用的邀請碼",
-    "routing": "API Key 可呼叫的路由策略"
+    "routing": "API Key 可呼叫的路由策略",
+    "alerts": "影響用戶的上游變動、價格變動和憑證問題；每件事只通知一次，解決後自動關閉"
   },
   "api_compare": "對比",
   "modelInfoPage": {
@@ -2933,7 +2934,8 @@
       "settingOrgPolicy": "組織策略",
       "settingEntries": "用戶入口",
       "settingMail": "郵件",
-      "settingModified": "已修改的設定"
+      "settingModified": "已修改的設定",
+      "alerts": "提醒"
     },
     "context": {
       "personal": "個人",
@@ -4954,5 +4956,60 @@
     "reload": "重新載入",
     "details": "錯誤詳情",
     "goDashboard": "回到儀表板"
+  },
+  "alerts": {
+    "stateLabel": "狀態",
+    "state": {
+      "open": "待處理",
+      "closed": "已關閉"
+    },
+    "stateHint": {
+      "open": "下次檢查不再發現時自動關閉",
+      "closed": "最近 30 天"
+    },
+    "refresh": "重新整理",
+    "empty": {
+      "open": "沒有待處理的提醒",
+      "closed": "最近 30 天沒有關閉的提醒"
+    },
+    "emptyHint": "服務中的模型被上游改名或下架、價格大幅變動並持續、憑證刷新失敗時，會出現在這裏",
+    "kind": {
+      "model_drift": "模型變動",
+      "price_change": "價格變動",
+      "credential": "憑證刷新失敗",
+      "model_consistency": "模型資料缺失"
+    },
+    "subject": {
+      "source": "來源：{{source}}",
+      "catalog": "模型目錄",
+      "goneChannel": "通道 #{{id}}（已刪除）"
+    },
+    "item": {
+      "drift": {
+        "renamed": "上游改名：{{model}}",
+        "gone": "上游已下架：{{model}}",
+        "stopped": "線路已停用：{{model}}",
+        "unsupplied": "已沒有可用線路：{{model}}",
+        "held": "上游列表裏沒有任何在用模型，可能是列表出錯，未做下架處理"
+      },
+      "price": {
+        "raised": "已漲價 {{model}}：輸入 ${{oldIn}} → ${{newIn}}，輸出 ${{oldOut}} → ${{newOut}}",
+        "held": "待審核 {{model}}：輸入 ${{oldIn}} → ${{newIn}}，輸出 ${{oldOut}} → ${{newOut}}",
+        "locked": "鎖定價低於上游 {{model}}：輸入 ${{oldIn}} / 上游 ${{newIn}}，輸出 ${{oldOut}} / 上游 ${{newOut}}"
+      },
+      "credential": "目前令牌過期後請求會失敗，請在通道裏重新登入",
+      "consistency": "{{model}} 是生圖模型，但輸出模態裏沒有圖片"
+    },
+    "showAll_other": "展開全部 {{count}} 條",
+    "showLess": "收起",
+    "openedAt": "{{time}}出現",
+    "resolvedAt": "{{time}}自動關閉",
+    "dismissedAt": "{{time}}手動關閉",
+    "dismiss": "關閉",
+    "dismissHint": "不再提示這些情況；有新情況時會重新打開",
+    "sources": {
+      "channel_price_lists": "通道價格表",
+      "models_dev": "公共模型目錄"
+    }
   }
 }
