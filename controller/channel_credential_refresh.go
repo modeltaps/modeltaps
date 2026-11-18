@@ -25,13 +25,16 @@ func credentialRefreshAhead(interval time.Duration) time.Duration {
 // RefreshChannelCredentialsOnce refreshes the OAuth credentials of every account channel
 // (Codex, Claude Code, Gemini CLI, Antigravity) that expires within ahead, including
 // auto-disabled channels so they can recover; manually disabled channels are skipped.
-// Failures are logged and sent as one credential notice.
+// Failures are logged and kept as one credential alert per channel: a notice tells the channels
+// that started failing, a channel that keeps failing is not told again, and one that refreshes
+// (or is no longer checked) closes its alert.
 func RefreshChannelCredentialsOnce(ahead time.Duration) (refreshed int, failed []string) {
 	channels, err := model.GetAllChannels()
 	if err != nil {
 		logger.SysError("credential refresh: list channels failed: " + err.Error())
 		return 0, nil
 	}
+	var failing, fresh []string
 	for _, ch := range channels {
 		if ch.Status == config.ChannelStatusManuallyDisabled {
 			continue
@@ -45,17 +48,28 @@ func RefreshChannelCredentialsOnce(ahead time.Duration) (refreshed int, failed [
 		if err != nil {
 			reason := utils.MaskSensitiveInfo(err.Error())
 			logger.SysError(fmt.Sprintf("credential refresh failed for channel %d (%s): %s", ch.Id, ch.Name, reason))
-			failed = append(failed, fmt.Sprintf("- %s (#%d): %s", ch.Name, ch.Id, reason))
+			line := fmt.Sprintf("- %s (#%d): %s", ch.Name, ch.Id, reason)
+			failed = append(failed, line)
+			subject := fmt.Sprintf("channel:%d", ch.Id)
+			failing = append(failing, subject)
+			// The item is the failure itself, not its text: a changing error message is the
+			// same condition.
+			if isNew, err := model.ReportAlert(notify.KindCredential, subject, []string{"refresh failed"}); err != nil || len(isNew) > 0 {
+				fresh = append(fresh, line)
+			}
 			continue
 		}
 		if did {
 			refreshed++
 		}
 	}
-	if len(failed) > 0 {
+	if err := model.ResolveAlertsExcept(notify.KindCredential, failing); err != nil {
+		logger.SysError("credential alerts: " + err.Error())
+	}
+	if len(fresh) > 0 {
 		notify.SendKind(notify.KindCredential,
-			fmt.Sprintf("%d channel credential(s) could not be refreshed", len(failed)),
-			"Sign in to these channels again from the channel form, or their requests will fail once the current token expires.\n\n"+strings.Join(failed, "\n"))
+			fmt.Sprintf("%d channel credential(s) could not be refreshed", len(fresh)),
+			"Sign in to these channels again from the channel form, or their requests will fail once the current token expires.\n\n"+strings.Join(fresh, "\n"))
 	}
 	return refreshed, failed
 }

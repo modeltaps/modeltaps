@@ -376,3 +376,53 @@ func AdoptUpstreamRenames(channel *Channel, only []string) (int, error) {
 	ChannelGroup.Load()
 	return len(renames), nil
 }
+
+// ServedModelNames is the set of model names users are served now. While supplies route
+// requests: published public models with an enabled, confirmed supply that its upstream still
+// lists, on an enabled channel. Otherwise: names switched on in an enabled channel's list.
+func ServedModelNames() (map[string]bool, error) {
+	served := map[string]bool{}
+	channels, err := GetAllChannels()
+	if err != nil {
+		return nil, err
+	}
+	enabled := map[int]bool{}
+	for _, ch := range channels {
+		if ch.Status != config.ChannelStatusEnabled {
+			continue
+		}
+		enabled[ch.Id] = true
+		if config.ModelSupplyEnabled {
+			continue
+		}
+		disabled := ch.DisabledModelSet()
+		for _, name := range SplitChannelModels(ch.Models) {
+			if !disabled[name] {
+				served[name] = true
+			}
+		}
+	}
+	if !config.ModelSupplyEnabled {
+		return served, nil
+	}
+	var supplies []*ModelSupply
+	if err := DB.Select("model", "channel_id").Where("enabled = ? AND pending = ? AND upstream_gone_at = ?", true, false, 0).Find(&supplies).Error; err != nil {
+		return nil, err
+	}
+	supplied := map[string]bool{}
+	for _, s := range supplies {
+		if enabled[s.ChannelId] {
+			supplied[s.Model] = true
+		}
+	}
+	var infos []*ModelInfo
+	if err := DB.Select("model").Where("status = ?", ModelStatusPublished).Find(&infos).Error; err != nil {
+		return nil, err
+	}
+	for _, info := range infos {
+		if supplied[info.Model] {
+			served[info.Model] = true
+		}
+	}
+	return served, nil
+}

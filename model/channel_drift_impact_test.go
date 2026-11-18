@@ -88,3 +88,30 @@ func TestDriftImpactAndAdoptingARename(t *testing.T) {
 		t.Fatalf("drift = %+v", drift)
 	}
 }
+
+func TestServedModelNamesWithSupplies(t *testing.T) {
+	useAllocationTestDB(t)
+	for _, info := range []*ModelInfo{{Model: "gpt-5.5", Status: ModelStatusPublished}, {Model: "glm-5.3", Status: ModelStatusDraft}, {Model: "hy3", Status: ModelStatusPublished}} {
+		if err := DB.Create(info).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	ch := createGroupTestChannel(t, "c", "default", "openai/gpt-5.5,glm-5.3,hy3")
+	for _, s := range []*ModelSupply{
+		{Model: "gpt-5.5", ChannelId: ch.Id, UpstreamModel: "openai/gpt-5.5", Enabled: true},
+		{Model: "glm-5.3", ChannelId: ch.Id, UpstreamModel: "glm-5.3", Enabled: true},
+		{Model: "hy3", ChannelId: ch.Id, UpstreamModel: "hy3", Enabled: true, UpstreamGoneAt: 1},
+	} {
+		if err := DB.Create(s).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	served, err := ServedModelNames()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// glm-5.3 is a draft and hy3's only supply is gone upstream.
+	if !reflect.DeepEqual(served, map[string]bool{"gpt-5.5": true}) {
+		t.Fatalf("served = %v", served)
+	}
+}

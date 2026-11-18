@@ -153,6 +153,9 @@ type ModelDriftCheckSummary struct {
 	// SuppliesChanged counts channels with supplies marked gone or back, or held.
 	SuppliesChanged int              `json:"supplies_changed"`
 	Channels        []DriftedChannel `json:"channels"`
+	// checkedIds are the channels whose check succeeded, for closing the alerts of the ones
+	// with nothing to report.
+	checkedIds []int
 }
 
 // CheckAllChannelsModelDrift 遍历所有启用渠道，仅对实现 ModelListInterface 的 provider 检测。
@@ -182,6 +185,7 @@ func CheckAllChannelsModelDrift() (*ModelDriftCheckSummary, error) {
 			continue
 		}
 		summary.Checked++
+		summary.checkedIds = append(summary.checkedIds, ch.Id)
 		if len(added) > 0 {
 			summary.Added++
 		}
@@ -249,49 +253,107 @@ func CheckAndNotifyModelDrift() (*ModelDriftCheckSummary, error) {
 	if err != nil {
 		return nil, err
 	}
-	if subject, body := modelDriftNotice(summary); body != "" {
+	if subject, body := modelDriftNotice(summary, reportDriftAlert); body != "" {
 		notify.SendKind(notify.KindModelDrift, subject, body)
 	}
 	return summary, nil
 }
 
-// modelDriftNotice is the subject and body of the drift notice; an empty body when nothing in
-// the summary affects what the site serves.
-func modelDriftNotice(summary *ModelDriftCheckSummary) (string, string) {
+// reportDriftAlert records a checked channel's drift items as its alert and returns the new
+// ones; when the alert cannot be read every item counts as new, so no notice is lost.
+func reportDriftAlert(channelID int, items []string) []string {
+	fresh, err := model.ReportAlert(notify.KindModelDrift, fmt.Sprintf("channel:%d", channelID), items)
+	if err != nil {
+		logger.SysError("model drift alert failed: " + err.Error())
+		return items
+	}
+	return fresh
+}
+
+// driftFacts is what a checked channel's drift means for users, as lines for the notice and
+// alert items (stable strings, so the same facts at the next check are not new).
+type driftFacts struct {
+	renamed, gone, stopped, unsupplied []string
+	held                               bool
+}
+
+func driftFactsOf(ch DriftedChannel) driftFacts {
+	var f driftFacts
+	for _, m := range ch.MissingModels {
+		if to := ch.Renamed[m]; to != "" {
+			f.renamed = append(f.renamed, m+" → "+to)
+		} else {
+			f.gone = append(f.gone, m)
+		}
+	}
+	if c := ch.Supplies; c != nil {
+		// Only supplies that served users: a switched-off supply or one of an unpublished
+		// model going away changes nothing.
+		f.stopped, f.unsupplied = servedOnly(ch.ChannelId, c.Gone), servedOnly(ch.ChannelId, c.Unsupplied)
+		f.held = c.Held
+	}
+	return f
+}
+
+func (f driftFacts) items() []string {
+	var out []string
+	for _, x := range f.renamed {
+		out = append(out, "renamed:"+x)
+	}
+	for _, x := range f.gone {
+		out = append(out, "gone:"+x)
+	}
+	for _, x := range f.stopped {
+		out = append(out, "stopped:"+x)
+	}
+	for _, x := range f.unsupplied {
+		out = append(out, "unsupplied:"+x)
+	}
+	if f.held {
+		out = append(out, "held")
+	}
+	return out
+}
+
+func (f driftFacts) write(b *strings.Builder, name string, id int) {
+	if len(f.renamed) > 0 {
+		b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d): the upstream renamed models still in use; switch to the new names from the channel's models tab: %s\n", name, id, strings.Join(f.renamed, ", ")))
+	}
+	if len(f.gone) > 0 {
+		b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d): the upstream no longer lists models still in use: %s\n", name, id, strings.Join(f.gone, ", ")))
+	}
+	if len(f.stopped) > 0 {
+		b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d) stopped supplying models its upstream no longer lists: %s\n", name, id, strings.Join(f.stopped, ", ")))
+	}
+	if len(f.unsupplied) > 0 {
+		b.WriteString(fmt.Sprintf("No supply can serve these models any more: %s\n", strings.Join(f.unsupplied, ", ")))
+	}
+	if f.held {
+		b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d): the upstream listed none of the supplied models; nothing was marked gone, check its model list\n", name, id))
+	}
+}
+
+// modelDriftNotice is the subject and body of the drift notice: the channels whose drift has
+// something new for users since the alert last told it (report records each checked channel's
+// items and returns the new ones). A channel whose drift goes on unchanged, shrinks or ends
+// sends nothing; one with something new is told in full. Empty body: nothing to send.
+func modelDriftNotice(summary *ModelDriftCheckSummary, report func(int, []string) []string) (string, string) {
 	var b strings.Builder
 	affected := 0
+	drifted := map[int]bool{}
 	for _, ch := range summary.Channels {
-		before := b.Len()
-		var gone, renamed []string
-		for _, m := range ch.MissingModels {
-			if to := ch.Renamed[m]; to != "" {
-				renamed = append(renamed, m+" → "+to)
-			} else {
-				gone = append(gone, m)
-			}
+		drifted[ch.ChannelId] = true
+		facts := driftFactsOf(ch)
+		if len(report(ch.ChannelId, facts.items())) == 0 {
+			continue
 		}
-		if len(renamed) > 0 {
-			b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d): the upstream renamed models still in use; switch to the new names from the channel's models tab: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(renamed, ", ")))
-		}
-		if len(gone) > 0 {
-			b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d): the upstream no longer lists models still in use: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(gone, ", ")))
-		}
-		if c := ch.Supplies; c != nil {
-			// Only supplies that served users: a switched-off supply or one of an unpublished
-			// model going away changes nothing.
-			gone, unsupplied := servedOnly(ch.ChannelId, c.Gone), servedOnly(ch.ChannelId, c.Unsupplied)
-			if len(gone) > 0 {
-				b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d) stopped supplying models its upstream no longer lists: %s\n", ch.ChannelName, ch.ChannelId, strings.Join(gone, ", ")))
-			}
-			if len(unsupplied) > 0 {
-				b.WriteString(fmt.Sprintf("No supply can serve these models any more: %s\n", strings.Join(unsupplied, ", ")))
-			}
-			if c.Held {
-				b.WriteString(fmt.Sprintf("Channel \"%s\" (#%d): the upstream listed none of the supplied models; nothing was marked gone, check its model list\n", ch.ChannelName, ch.ChannelId))
-			}
-		}
-		if b.Len() > before {
-			affected++
+		facts.write(&b, ch.ChannelName, ch.ChannelId)
+		affected++
+	}
+	// Checked channels with nothing to say close their alert.
+	for _, id := range summary.checkedIds {
+		if !drifted[id] {
+			report(id, nil)
 		}
 	}
 	if affected == 0 {

@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/model_utils"
 	"github.com/modeltaps/modeltaps/common/notify"
 	"github.com/modeltaps/modeltaps/model"
@@ -116,22 +117,43 @@ func CheckAllModelInfoConsistency() *ModelInfoConsistencySummary {
 	return computeModelInfoConsistency(models)
 }
 
-// CheckAndNotifyModelInfoConsistency 供 cron 调用：执行一致性校验，
-// 仅当强制方向（MissingImage）非空时发通知，反向差异不触发通知。
+// CheckAndNotifyModelInfoConsistency 供 cron 调用：执行一致性校验，只对用户正在使用的模型
+// （model.ServedModelNames）的强制方向差异（MissingImage）发通知，反向差异不触发通知。结果记为
+// 一条告警：同样的差异只通知一次，新出现的模型才再通知，全部修好后告警关闭。
 func CheckAndNotifyModelInfoConsistency() *ModelInfoConsistencySummary {
 	summary := CheckAllModelInfoConsistency()
-	if len(summary.MissingImage) > 0 {
-		notifyModelInfoConsistency(summary)
+	missing := summary.MissingImage
+	if served, err := model.ServedModelNames(); err == nil {
+		missing = nil
+		for _, m := range summary.MissingImage {
+			if served[m.Model] {
+				missing = append(missing, m)
+			}
+		}
+	} else {
+		logger.SysError("model consistency: served models: " + err.Error())
+	}
+	items := make([]string, 0, len(missing))
+	for _, m := range missing {
+		items = append(items, m.Model)
+	}
+	fresh, err := model.ReportAlert(notify.KindModelConsistency, "catalog", items)
+	if err != nil {
+		logger.SysError("model consistency alert failed: " + err.Error())
+		fresh = items
+	}
+	if len(fresh) > 0 {
+		notifyModelInfoConsistency(missing)
 	}
 	return summary
 }
 
 // notifyModelInfoConsistency 组装一致性告警：标题含待修模型数，正文逐条列出模型名与当前输出模态。
-func notifyModelInfoConsistency(summary *ModelInfoConsistencySummary) {
-	subject := fmt.Sprintf("Detected %d image generation model(s) without the image output modality", len(summary.MissingImage))
+func notifyModelInfoConsistency(missing []ModelModalities) {
+	subject := fmt.Sprintf("Detected %d image generation model(s) without the image output modality", len(missing))
 
 	var b strings.Builder
-	for _, m := range summary.MissingImage {
+	for _, m := range missing {
 		current := strings.Join(m.OutputModalities, ", ")
 		if current == "" {
 			current = "(missing model_info)"
