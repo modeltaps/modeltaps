@@ -3961,7 +3961,7 @@
         },
         "providerHints": {
           "local": "Kept on this gateway for 1 hour, at most 5 downloads per link, 2 MB/s per download. Several nodes need Redis so every node can serve every link.",
-          "s3": "AWS S3, Cloudflare R2, MinIO, Backblaze B2 and other S3 compatible storage",
+          "s3": "AWS S3, Cloudflare R2, MinIO, Backblaze B2 and other S3 compatible storage. Without a public URL, links are signed for 1 hour and the bucket can stay private. The gateway does not delete files: add a lifecycle rule in the storage console (for example 1 day)",
           "alioss": "Links are signed and stay valid for 1 hour, so the bucket can stay private",
           "smms": "Free image host; images are public",
           "imgur": "Free image host; images are public"
@@ -3998,7 +3998,7 @@
           "s3CDNURL": {
             "label": "Public URL",
             "placeholder": "https://img.example.com",
-            "hint": "CDN or public bucket domain; empty uses endpoint/bucket"
+            "hint": "Empty: links signed for 1 hour. A CDN or public bucket domain: public links"
           },
           "s3ExpirationDays": {
             "label": "Expires header (days)",

@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	neturl "net/url"
 	"strings"
 	"sync"
 	"testing"
@@ -127,8 +128,8 @@ func TestS3UploadSkipsExistingObject(t *testing.T) {
 	if err != nil {
 		t.Fatalf("upload failed: %v", err)
 	}
-	if want := srv.URL + "/bucket/" + time.Now().Format("2006-01-02") + "/a.png"; url != want {
-		t.Fatalf("url = %q, want %q", url, want)
+	if want := srv.URL + "/bucket/" + time.Now().Format("2006-01-02") + "/a.png?"; !strings.HasPrefix(url, want) {
+		t.Fatalf("url = %q, want it to start with %q", url, want)
 	}
 	if len(fake.puts) != 0 {
 		t.Fatalf("expected no PUT for an existing object, got %d", len(fake.puts))
@@ -145,5 +146,34 @@ func TestS3UploadLinkBase(t *testing.T) {
 		if got := NewS3Upload(c.endpoint, "", "ak", "sk", "bucket", c.cdnurl, 0).CustomDomain; got != c.want {
 			t.Errorf("endpoint %q cdnurl %q: link base = %q, want %q", c.endpoint, c.cdnurl, got, c.want)
 		}
+	}
+}
+
+// Without a CDN URL the link is signed for an hour, so the bucket can stay private; with one it
+// is a plain link under it.
+func TestS3UploadSignsLinksWithoutCDN(t *testing.T) {
+	fake := &fakeS3{}
+	srv := httptest.NewServer(fake)
+	defer srv.Close()
+
+	link, err := NewS3Upload(srv.URL, "us-east-1", "ak", "sk", "bucket", "", 0).Upload([]byte("x"), "a.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	u, err := neturl.Parse(link)
+	if err != nil {
+		t.Fatal(err)
+	}
+	q := u.Query()
+	if q.Get("X-Amz-Expires") != "3600" || q.Get("X-Amz-Signature") == "" || !strings.HasPrefix(u.Path, "/bucket/") {
+		t.Fatalf("not a link signed for an hour: %s", link)
+	}
+
+	plain, err := NewS3Upload(srv.URL, "us-east-1", "ak", "sk", "bucket", "https://img.example.com/", 0).Upload([]byte("x"), "b.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(plain, "X-Amz-") || !strings.HasPrefix(plain, "https://img.example.com/") {
+		t.Fatalf("a CDN link must be plain: %s", plain)
 	}
 }

@@ -45,6 +45,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Kling CDN links. The first download of a link fetches the video through the channel's proxy,
   passing it on while writing it to disk; later downloads read that copy. Links live for an hour
   from the first query, with the image download limit and speed, up to 512 MB per video.
+- S3 image links are signed for an hour when no public URL is set, so the bucket can stay
+  private and links cannot be passed around once they expire. With a public URL (a CDN or a
+  public bucket domain) they stay plain links under it. Files are not deleted by the gateway; a
+  lifecycle rule in the storage console does that.
 - Midjourney task queries answer with gateway image links the same way, so Discord and CDN
   images reach clients where those hosts are blocked. Images on the channel's own host (a
   Midjourney proxy the admin runs) are passed on.

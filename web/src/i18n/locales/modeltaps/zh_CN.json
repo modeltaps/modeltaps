@@ -3854,7 +3854,7 @@
         },
         "providerHints": {
           "local": "图片暂存在本网关，链接 1 小时有效，每个链接最多下载 5 次，单次下载限速 2 MB/s。多节点部署需启用 Redis，任一节点才能提供链接。",
-          "s3": "AWS S3、Cloudflare R2、MinIO、Backblaze B2 等 S3 兼容存储",
+          "s3": "AWS S3、Cloudflare R2、MinIO、Backblaze B2 等 S3 兼容存储。不填公开访问地址时返回 1 小时有效的签名链接，bucket 可保持私有。网关不删除文件，请在存储后台配置生命周期规则（如 1 天后删除）",
           "alioss": "返回带签名的链接，1 小时内有效，bucket 可以保持私有",
           "smms": "免费图床，图片公开可见",
           "imgur": "免费图床，图片公开可见"
@@ -3891,7 +3891,7 @@
           "s3CDNURL": {
             "label": "公开访问地址",
             "placeholder": "https://img.example.com",
-            "hint": "CDN 或 bucket 公开域名；留空用 endpoint/bucket"
+            "hint": "留空时返回 1 小时有效的签名链接；填写 CDN 或 bucket 公开域名时返回公开链接"
           },
           "s3ExpirationDays": {
             "label": "Expires 头（天）",

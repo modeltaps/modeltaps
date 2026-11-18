@@ -3854,7 +3854,7 @@
         },
         "providerHints": {
           "local": "圖片暫存在本網關，連結 1 小時有效，每個連結最多下載 5 次，單次下載限速 2 MB/s。多節點部署需啟用 Redis，任一節點才能提供連結。",
-          "s3": "AWS S3、Cloudflare R2、MinIO、Backblaze B2 等 S3 相容儲存",
+          "s3": "AWS S3、Cloudflare R2、MinIO、Backblaze B2 等 S3 相容儲存。不填公開存取位址時返回 1 小時有效的簽名連結，bucket 可保持私有。網關不刪除檔案，請在儲存後台設定生命週期規則（如 1 天後刪除）",
           "alioss": "返回帶簽名的連結，1 小時內有效，bucket 可以保持私有",
           "smms": "免費圖床，圖片公開可見",
           "imgur": "免費圖床，圖片公開可見"
@@ -3891,7 +3891,7 @@
           "s3CDNURL": {
             "label": "公開存取位址",
             "placeholder": "https://img.example.com",
-            "hint": "CDN 或 bucket 公開網域；留空用 endpoint/bucket"
+            "hint": "留空時返回 1 小時有效的簽名連結；填寫 CDN 或 bucket 公開網域時返回公開連結"
           },
           "s3ExpirationDays": {
             "label": "Expires 標頭（天）",

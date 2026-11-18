@@ -41,7 +41,7 @@ Midjourney 任務查詢返回的圖片連結也會換成本站連結，方式和
 | SM.MS | API Token | 免費圖床，圖片公開 |
 | Imgur | Client ID | 免費圖床，圖片公開 |
 
-S3 簽名需要地域。Cloudflare R2 用 `auto`，留空即可；AWS S3、Backblaze B2、Wasabi 的標準 endpoint（如 `https://s3.us-west-2.amazonaws.com`、`https://s3.us-west-004.backblazeb2.com`）會自動推導；其他廠商請按其文件填寫。返回給呼叫方的是公開存取位址下的普通連結（未填寫時為 `endpoint/bucket`），Bucket 需要允許公開讀取。Expires 標頭天數只寫入物件的 Expires 標頭，不會刪除檔案，自動清理請在儲存後台設定生命週期規則。
+S3 簽名需要地域。Cloudflare R2 用 `auto`，留空即可；AWS S3、Backblaze B2、Wasabi 的標準 endpoint（如 `https://s3.us-west-2.amazonaws.com`、`https://s3.us-west-004.backblazeb2.com`）會自動推導；其他廠商請按其文件填寫。不填公開存取位址時，返回 1 小時有效的簽名連結，Bucket 可以保持私有，連結過期後無法再轉發；填寫後返回該位址下的普通連結，CDN 或 Bucket 需要允許公開讀取。網關不會刪除外部儲存裏的檔案，請在儲存後台設定生命週期規則，例如 1 天後刪除。Expires 標頭天數只寫入物件的 Expires 標頭，不會刪除檔案。
 
 阿里雲 OSS 上傳和簽名連結使用 V4 簽名（2025 年起新帳戶、新 Bucket 已不接受 V1 簽名），V4 簽名需要 Bucket 所在地域。endpoint 是 `oss-cn-beijing.aliyuncs.com` 這類標準位址時可以不填地域；自訂網域或傳輸加速 endpoint 必須填寫。
 
@@ -50,7 +50,7 @@ S3 簽名需要地域。Cloudflare R2 用 `auto`，留空即可；AWS S3、Backb
 R2 不收下載流量費，適合做圖床。
 
 1. 在 Cloudflare 控制台的 R2 裏建立 bucket，記下概覽頁上的帳戶 ID。
-2. 在 bucket 設定的公開存取（Public access）裏連接自訂網域；也可以開啟 `r2.dev` 子網域，但它有限速，只適合測試。
+2. （可選）想讓圖片走 CDN 時，在 bucket 設定的公開存取（Public access）裏連接自訂網域；`r2.dev` 子網域有限速，只適合測試。不需要 CDN 就跳過這一步，bucket 保持私有，網關返回簽名連結。
 3. 在 R2 的 API 權杖管理（Manage R2 API Tokens）裏建立權杖，權限選物件讀寫（Object Read & Write），只授權這個 bucket。建立後顯示的 Access Key ID 和 Secret Access Key 只出現一次，複製下來。
 
 在圖片儲存裏這樣填寫：
@@ -63,10 +63,10 @@ R2 不收下載流量費，適合做圖床。
 | Bucket | bucket 名稱 |
 | AccessKey ID | 權杖的 Access Key ID |
 | AccessKey Secret | 權杖的 Secret Access Key |
-| 公開存取位址 | 自訂網域（如 `https://img.example.com`）或 `https://pub-xxxx.r2.dev`。R2 的 endpoint 不能公開存取，這一項必須填寫 |
+| 公開存取位址 | 留空返回 1 小時有效的簽名連結；連接了自訂網域時填它（如 `https://img.example.com`），返回公開連結 |
 | Expires 標頭（天） | `0` |
 
-按 **測試上傳**，能看到縮圖即設定正確，再儲存。要定期清理舊圖，在 bucket 設定的物件生命週期規則（Object lifecycle rules）裏加入刪除規則，例如 30 天後刪除。
+按 **測試上傳**，能看到縮圖即設定正確，再儲存。生成的圖片只需短期保留，在 bucket 設定的物件生命週期規則（Object lifecycle rules）裏加入刪除規則，例如 1 天後刪除。
 
 ## 從設定檔升級
 

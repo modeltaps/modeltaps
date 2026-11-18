@@ -21,11 +21,19 @@ type S3Upload struct {
 	AccessKeySecret string
 	BucketName      string
 	expirationDays  int
+	// public: cdnurl is set, so links are plain links under it (the bucket or CDN is public).
+	// Otherwise links are signed and valid for SignedLinkTTL, and the bucket can stay private.
+	public bool
 }
+
+// SignedLinkTTL is how long a signed link works. Clients fetch generated images right away, and
+// a link that expires cannot be passed around as a free image host.
+const SignedLinkTTL = time.Hour
 
 // NewS3Upload builds the driver. The region goes into the SigV4 signature: an empty region is
 // derived from an AWS, Backblaze B2 or Wasabi endpoint and is "auto" otherwise, which is what
-// Cloudflare R2 expects. Links use cdnurl when set and <endpoint>/<bucket> otherwise.
+// Cloudflare R2 expects. Links are plain links under cdnurl when it is set, and links signed for
+// SignedLinkTTL on <endpoint>/<bucket> otherwise.
 func NewS3Upload(endpoint, region, accessKeyId, accessKeySecret, bucketName, cdnurl string, expirationDays int) *S3Upload {
 	// Without a CDN, objects are served path-style from the endpoint: <endpoint>/<bucket>/<key>.
 	_cdnurl := strings.TrimRight(strings.TrimSpace(cdnurl), "/")
@@ -48,6 +56,7 @@ func NewS3Upload(endpoint, region, accessKeyId, accessKeySecret, bucketName, cdn
 		AccessKeyId:     accessKeyId,
 		AccessKeySecret: accessKeySecret,
 		expirationDays:  expirationDays,
+		public:          strings.TrimSpace(cdnurl) != "",
 	}
 }
 
@@ -123,8 +132,8 @@ func (a *S3Upload) Upload(data []byte, s3Key string) (string, error) {
 	})
 
 	if err == nil {
-		// 文件已存在，直接返回自定义域名 URL
-		return fmt.Sprintf("%s/%s", a.CustomDomain, datedKey), nil
+		// 文件已存在，直接返回链接
+		return a.link(ctx, svc, datedKey)
 	}
 	fileBytes := bytes.NewReader(data)
 
@@ -149,5 +158,20 @@ func (a *S3Upload) Upload(data []byte, s3Key string) (string, error) {
 		return "", fmt.Errorf("failed to upload file to S3: %v", err)
 	}
 
-	return fmt.Sprintf("%s/%s", a.CustomDomain, datedKey), nil
+	return a.link(ctx, svc, datedKey)
+}
+
+// link is the public link of key under cdnurl, or a link signed for SignedLinkTTL.
+func (a *S3Upload) link(ctx context.Context, svc *s3.Client, key string) (string, error) {
+	if a.public {
+		return fmt.Sprintf("%s/%s", a.CustomDomain, key), nil
+	}
+	req, err := s3.NewPresignClient(svc).PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(a.BucketName),
+		Key:    aws.String(key),
+	}, s3.WithPresignExpires(SignedLinkTTL))
+	if err != nil {
+		return "", fmt.Errorf("signing the object link: %w", err)
+	}
+	return req.URL, nil
 }

@@ -41,7 +41,7 @@ One storage is in use at a time. External storage returns its own links, which a
 | SM.MS | API token | Free image host; images are public |
 | Imgur | Client ID | Free image host; images are public |
 
-S3 signing needs a region. Cloudflare R2 uses `auto`, so leave it empty; standard AWS S3, Backblaze B2 and Wasabi endpoints (such as `https://s3.us-west-2.amazonaws.com` or `https://s3.us-west-004.backblazeb2.com`) are derived automatically; for other providers enter the region from their documentation. Callers get a plain link under the public URL (`endpoint/bucket` when it is empty), so the bucket must allow public reads. The Expires header days only set the object's Expires header and do not delete files; configure a lifecycle rule in the storage console for cleanup.
+S3 signing needs a region. Cloudflare R2 uses `auto`, so leave it empty; standard AWS S3, Backblaze B2 and Wasabi endpoints (such as `https://s3.us-west-2.amazonaws.com` or `https://s3.us-west-004.backblazeb2.com`) are derived automatically; for other providers enter the region from their documentation. Without a public URL, callers get a link signed for 1 hour, so the bucket can stay private and the link cannot be passed around once it expires; with one, they get a plain link under it, and the CDN or bucket must allow public reads. The gateway does not delete files in external storage: add a lifecycle rule in the storage console, for example deleting after 1 day. The Expires header days only set the object's Expires header and do not delete files.
 
 Alibaba Cloud OSS uploads and signed links use V4 signatures (new accounts and buckets have rejected V1 since 2025), which need the bucket's region. It can be left empty for a standard endpoint such as `oss-cn-beijing.aliyuncs.com`; custom domains and transfer acceleration endpoints need it.
 
@@ -50,7 +50,7 @@ Alibaba Cloud OSS uploads and signed links use V4 signatures (new accounts and b
 R2 charges nothing for downloads, which suits image hosting.
 
 1. Create a bucket under R2 in the Cloudflare dashboard and note the account ID on the overview page.
-2. Under the bucket's **Public access** settings, connect a custom domain. The `r2.dev` subdomain also works but is rate limited and meant for testing.
+2. (Optional) To serve images through a CDN, connect a custom domain under the bucket's **Public access** settings; the `r2.dev` subdomain is rate limited and meant for testing. Without a CDN, skip this step: the bucket stays private and the gateway returns signed links.
 3. Under **Manage R2 API Tokens**, create a token with **Object Read & Write** limited to this bucket. Copy the Access Key ID and Secret Access Key it shows; they are shown only once.
 
 Fill in the image storage like this:
@@ -63,10 +63,10 @@ Fill in the image storage like this:
 | Bucket | The bucket name |
 | Access key ID | The token's Access Key ID |
 | Access key secret | The token's Secret Access Key |
-| Public URL | The custom domain (such as `https://img.example.com`) or `https://pub-xxxx.r2.dev`. The R2 endpoint is not publicly readable, so this field is required |
+| Public URL | Leave empty for links signed for 1 hour; with a custom domain connected, enter it (such as `https://img.example.com`) for public links |
 | Expires header (days) | `0` |
 
-Click **Test upload**; a thumbnail means the setup works, then save. To clean up old images, add a delete rule under the bucket's **Object lifecycle rules**, for example after 30 days.
+Click **Test upload**; a thumbnail means the setup works, then save. Generated images are only needed briefly: add a delete rule under the bucket's **Object lifecycle rules**, for example after 1 day.
 
 ## Upgrading from the config file
 
