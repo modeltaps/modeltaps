@@ -29,7 +29,8 @@ export default function RoutingPolicyPanel({
   onDelete,
   modelOptions,
   classifiers = EMPTY_CLASSIFIERS,
-  suggest
+  suggest,
+  prices
 }) {
   const { t } = useTranslation();
   const [policy, setPolicy] = useState(null);
@@ -130,7 +131,7 @@ export default function RoutingPolicyPanel({
         await load();
         onChanged();
       }}
-      ctx={{ t, modelOptions, classifiers, suggest, api, readOnly }}
+      ctx={{ t, modelOptions, classifiers, suggest, prices, api, readOnly }}
       tabsLabel={t('routingPolicy.panel.tabs')}
     />
   );
@@ -148,5 +149,6 @@ RoutingPolicyPanel.propTypes = {
   onDelete: PropTypes.func.isRequired,
   modelOptions: PropTypes.array.isRequired,
   classifiers: PropTypes.shape({ decision: PropTypes.array, chat: PropTypes.array }),
-  suggest: PropTypes.shape({ models: PropTypes.array, classifiers: PropTypes.object })
+  suggest: PropTypes.shape({ models: PropTypes.array, classifiers: PropTypes.object }),
+  prices: PropTypes.object
 };

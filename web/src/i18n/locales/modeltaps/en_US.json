@@ -1988,20 +1988,14 @@
       "displayNameHint": "Shown in the catalog instead of the model name.",
       "description": "Description",
       "decisionModel": "Decision model",
-      "decisionModelHint": "Classifies the first user message. A decision model is recommended: it answers with a probability for every label. A small, fast chat model also works. Charged to the caller once per session.",
       "decisionModelGroupDecision": "Decision models (recommended)",
       "decisionModelGroupChat": "Chat models",
       "question": "Question",
-      "questionHint": "Give the decision model a sentence of context, then ask the question the labels answer.",
-      "questionHelp": "Keep it short: the labels and their descriptions carry most of the meaning. Do not put long instructions here; the output format is fixed by the gateway.",
       "routes": "Routes",
-      "routesHint": "The decision model reads each description as one answer to the question and picks the best match; the request then goes to that route's model. The short name is optional and shows in logs.",
-      "routesHelp": "2 to 16 routes. Labels must be distinct; overlapping labels split the probability and push requests to the fallback. Describe the request, not the model. Targets must be models, not other policies.",
       "useTemplate": "Use a template",
       "routeLabel": "Label",
-      "routeLabelPlaceholder": "short name",
       "routeDescription": "Description",
-      "routeDescriptionPlaceholder": "Which requests this route covers, e.g. \"Rename, move or restructure code without changing what it does\"",
+      "routeDescriptionPlaceholder": "Which requests this route covers",
       "routeTargetPlaceholder": "Target model",
       "addRoute": "Add route",
       "removeRoute": "Remove route",
@@ -2010,10 +2004,7 @@
       "useTyped": "Use \"{{value}}\"",
       "modelPlaceholder": "Pick or type a model",
       "fallbackModel": "Fallback model",
-      "fallbackModelHint": "Used when confidence is below the threshold, the decision fails, or the first message has no text. Put your safest model here.",
       "threshold": "Confidence threshold",
-      "thresholdHint": "0 to 1. Below it the request goes to the fallback.",
-      "thresholdHelp": "0.5 is a good start. Raise it to send more borderline requests to the fallback; lower it to trust the decision model more. With logprobs scoring the confidence is the label's probability; self-reported confidence is only a ranking.",
       "pinTtl": "Pin per session (seconds)",
       "pinTtlHint": "How long a session keeps the model chosen at its first message. 0 classifies every request.",
       "pinTtlHelp": "Later turns of a pinned session skip the decision, keep the upstream prompt cache warm and never switch models mid-conversation. Sessions are identified by the session header, Claude Code metadata, prompt_cache_key or the prompt prefix.",
@@ -2157,20 +2148,8 @@
     },
     "new": {
       "subtitle": "A model name clients call; the first message picks the real model",
-      "defaults": "Created enabled with automatic scoring and a {{threshold}} threshold; change these in Routes",
-      "created": "Policy created",
-      "blank": "Blank policy",
-      "fromTemplate": "From template: {{name}}",
-      "changeTemplate": "Change template",
-      "templates": "Templates",
-      "useTemplate": "Use this template",
-      "startBlank": "Start from a blank policy",
-      "unresolved": "Choose later",
-      "preview": {
-        "decision": "First user message, classified by",
-        "fallback": "Below {{threshold}} or on error",
-        "callAs": "Clients call it as"
-      }
+      "defaults": "Created enabled with automatic scoring; pinning and limits are set in the policy panel",
+      "created": "Policy created"
     },
     "editTitle": "Edit routing policy",
     "scope": {
@@ -2202,15 +2181,16 @@
       "org": "For this organization's API keys only; call them as policy/<name>",
       "orgMember": "Policies your organization's admins made; call them as policy/<name>"
     },
-    "templateGroups": {
-      "coding": "Coding",
-      "general": "General",
-      "business": "Support and business"
-    },
-    "tier": {
-      "fast": "Fast",
-      "balanced": "Balanced",
-      "strongest": "Strongest"
+    "map": {
+      "startFrom": "Start from a template",
+      "decision": "Decision",
+      "decisionNote": "Reads only the first user message and picks the route that fits it best; the pick holds for the rest of the session",
+      "questionPlaceholder": "e.g. How much reasoning does answering this request need?",
+      "fallback": "Fallback · when no route is sure enough or the decision fails",
+      "threshold": "Confidence threshold {{threshold}}",
+      "price": "{{input}} / {{output}} per 1M",
+      "priceInput": "{{input}} per 1M input",
+      "replaceConfirm": "Replace what you have entered with this template?"
     }
   },
   "logPage": {

@@ -1,18 +1,13 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
-import { LayoutTemplate } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ModelCombobox } from '@/components/ui/model-combobox';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Field } from '@/components/objects';
 import { showError } from 'utils/common';
-import RoutesEditor, { MIN_ROUTES } from './RoutesEditor';
-import { POLICY_TEMPLATES, applyTemplate } from './templates';
+import { MIN_ROUTES } from './templates';
 import { SCORING_MODES, platformRoutingPolicyApi } from './routingPolicyApi';
 
 // Fields shared by the policy panel's tabs and the new policy sheet. Each takes the form (or
@@ -29,33 +24,6 @@ export function missingFields(p) {
   return out;
 }
 
-export function ModelField({ id, label, hint, value, onChange, options = [], groups }) {
-  const { t } = useTranslation();
-  return (
-    <Field label={label} htmlFor={id} hint={hint}>
-      <ModelCombobox
-        id={id}
-        value={value || ''}
-        onChange={onChange}
-        options={options}
-        groups={groups}
-        placeholder={t('routingPolicy.form.modelPlaceholder')}
-        createLabel={(input) => t('routingPolicy.form.useTyped', { value: input })}
-      />
-    </Field>
-  );
-}
-
-ModelField.propTypes = {
-  id: PropTypes.string.isRequired,
-  label: PropTypes.node,
-  hint: PropTypes.node,
-  value: PropTypes.string,
-  onChange: PropTypes.func.isRequired,
-  options: PropTypes.array,
-  groups: PropTypes.array
-};
-
 // classifierGroups: the decision model picker's suggestions, decision models first.
 export function useClassifierGroups(classifiers) {
   const { t } = useTranslation();
@@ -64,29 +32,6 @@ export function useClassifierGroups(classifiers) {
     { label: t('routingPolicy.form.decisionModelGroupChat'), options: classifiers?.chat || [] }
   ];
 }
-
-// DecisionModelField is the decision model picker: decision models (recommended) above chat models.
-export function DecisionModelField({ id, value, onChange, classifiers }) {
-  const { t } = useTranslation();
-  const groups = useClassifierGroups(classifiers);
-  return (
-    <ModelField
-      id={id}
-      label={t('routingPolicy.form.decisionModel')}
-      hint={t('routingPolicy.form.decisionModelHint')}
-      value={value}
-      onChange={onChange}
-      groups={groups}
-    />
-  );
-}
-
-DecisionModelField.propTypes = {
-  id: PropTypes.string.isRequired,
-  value: PropTypes.string,
-  onChange: PropTypes.func.isRequired,
-  classifiers: PropTypes.shape({ decision: PropTypes.array, chat: PropTypes.array })
-};
 
 // isDecisionClassifier: the picked decision model is a decision model, asked on /v1/decisions
 // (scoring does not apply to it).
@@ -189,66 +134,4 @@ ScoringField.propTypes = {
   onChange: PropTypes.func.isRequired,
   decisionModel: PropTypes.string,
   api: PropTypes.object
-};
-
-export function QuestionField({ id = 'rp-question', value, onChange }) {
-  const { t } = useTranslation();
-  return (
-    <Field
-      label={t('routingPolicy.form.question')}
-      htmlFor={id}
-      hint={t('routingPolicy.form.questionHint')}
-      help={t('routingPolicy.form.questionHelp')}
-    >
-      <Textarea id={id} rows={3} value={value || ''} onChange={(e) => onChange(e.target.value)} />
-    </Field>
-  );
-}
-
-QuestionField.propTypes = { id: PropTypes.string, value: PropTypes.string, onChange: PropTypes.func.isRequired };
-
-// Route table with a template menu. A template fills the question and the routes, keeps the
-// targets already chosen by position and fills the empty ones (see applyTemplate).
-export function RoutesField({ form, setForm, modelOptions, suggest, showTemplates = true }) {
-  const { t } = useTranslation();
-  return (
-    <Field
-      label={t('routingPolicy.form.routes')}
-      hint={t('routingPolicy.form.routesHint')}
-      help={t('routingPolicy.form.routesHelp')}
-      extra={
-        showTemplates && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="sm" className="h-7 rounded-lg px-2 text-xs font-normal">
-                <LayoutTemplate className="size-3.5" />
-                {t('routingPolicy.form.useTemplate')}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {POLICY_TEMPLATES.map((template) => (
-                <DropdownMenuItem key={template.id} onClick={() => setForm((prev) => applyTemplate(prev, template, suggest))}>
-                  {t(`routingPolicy.templates.${template.id}.title`)}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
-      }
-    >
-      <RoutesEditor
-        routes={form.routes || []}
-        onChange={(routes) => setForm((prev) => ({ ...prev, routes }))}
-        modelOptions={modelOptions}
-      />
-    </Field>
-  );
-}
-
-RoutesField.propTypes = {
-  form: PropTypes.object.isRequired,
-  setForm: PropTypes.func.isRequired,
-  modelOptions: PropTypes.array.isRequired,
-  suggest: PropTypes.shape({ models: PropTypes.array, classifiers: PropTypes.object }),
-  showTemplates: PropTypes.bool
 };

@@ -87,10 +87,9 @@ describe('RoutingPolicy page', () => {
     expect(body.enabled).toBe(true);
   });
 
-  it('opens the new policy sheet on the template picker, then lists what a blank policy still misses', async () => {
+  it('opens the new policy sheet blank on the routing map and lists what is still missing', async () => {
     renderPage('/panel/routing_policy?new=1');
-    await screen.findByTestId('rp-template-preview');
-    fireEvent.click(screen.getByTestId('rp-template-blank'));
+    await screen.findByTestId('rp-routing-map');
     const create = screen.getByRole('button', { name: i18n.t('objects.new.create') });
     expect(create.disabled).toBe(true);
     const missing = i18n.t('objects.new.missing', {
@@ -114,15 +113,21 @@ describe('RoutingPolicy page', () => {
         return Promise.resolve({ data: { success: true, data: rows } });
       }
       if (url === '/api/routing_policy/') return Promise.resolve({ data: { success: true, data: [] } });
+      if (url === '/api/prices')
+        return Promise.resolve({
+          data: { success: true, data: [{ model: 'claude-haiku-5-5', type: 'tokens', input: 0.05, output: 0.25 }] }
+        });
       return Promise.resolve({ data: { success: true, data: [] } });
     });
     API.post.mockResolvedValue({ data: { success: true, data: { id: 9 } } });
     renderPage('/panel/routing_policy?new=1');
     await waitFor(() => expect(API.get).toHaveBeenCalledWith('/api/model_info/catalog'));
+    await waitFor(() => expect(API.get).toHaveBeenCalledWith('/api/prices'));
+    // A second template replaces the first without asking: nothing was edited by hand.
     fireEvent.click(await screen.findByTestId('rp-template-agent_task'));
     fireEvent.click(screen.getByTestId('rp-template-coding_change'));
-    await waitFor(() => expect(screen.getByTestId('rp-template-preview').textContent).toContain('jev-1.14.0'));
-    fireEvent.click(screen.getByRole('button', { name: i18n.t('routingPolicy.new.useTemplate') }));
+    expect(screen.getByTestId('rp-template-coding_change').getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByLabelText(i18n.t('routingPolicy.form.decisionModel')).value).toBe('jev-1.14.0');
     const create = screen.getByRole('button', { name: i18n.t('objects.new.create') });
     await waitFor(() => expect(create.disabled).toBe(false));
     fireEvent.click(create);
@@ -133,6 +138,18 @@ describe('RoutingPolicy page', () => {
     expect(body.fallback_model).toBe('claude-opus-5-5');
     expect(body.routes.map((r) => r.target_model)).toEqual(['claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5', 'claude-opus-5-5']);
     expect(body.question).toContain('coding agent');
+    expect(screen.getByTestId('route-row-0').textContent).toContain('$0.1 / $0.5');
+  });
+
+  it('asks before a template replaces what was typed by hand', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    renderPage('/panel/routing_policy?new=1');
+    const question = await screen.findByLabelText(i18n.t('routingPolicy.form.question'));
+    fireEvent.change(question, { target: { value: 'my own question' } });
+    fireEvent.click(screen.getByTestId('rp-template-stakes'));
+    expect(confirm).toHaveBeenCalled();
+    expect(question.value).toBe('my own question');
+    confirm.mockRestore();
   });
 });
 

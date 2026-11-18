@@ -1910,20 +1910,14 @@
       "displayNameHint": "目录里代替模型名显示。",
       "description": "描述",
       "decisionModel": "决策模型",
-      "decisionModelHint": "负责给首条用户消息分类。推荐用决策模型，它直接给出每个标签的概率；也可以用小而快的对话模型。每个会话向调用方计费一次。",
       "decisionModelGroupDecision": "决策模型（推荐）",
       "decisionModelGroupChat": "对话模型",
       "question": "问题",
-      "questionHint": "先给决策模型一句背景，再问标签要回答的那个问题。",
-      "questionHelp": "写短一点：标签和描述承担大部分含义。不要在这里写长指令，输出格式由网关固定。",
       "routes": "路由",
-      "routesHint": "决策模型把每条描述当作问题的一个答案，选出最匹配的一条，请求随即转给这条路由的模型。短名可不填，会显示在日志里。",
-      "routesHelp": "2 到 16 条。标签要互不重叠，重叠会分散概率、把请求推向兜底。描述请求本身而不是模型。目标必须是模型，不能是另一条策略。",
       "useTemplate": "使用模板",
       "routeLabel": "标签",
-      "routeLabelPlaceholder": "短名",
       "routeDescription": "描述",
-      "routeDescriptionPlaceholder": "这条路由覆盖哪类请求，例如“重命名、移动或重构代码，不改变行为”",
+      "routeDescriptionPlaceholder": "这条路由覆盖哪类请求",
       "routeTargetPlaceholder": "目标模型",
       "addRoute": "添加路由",
       "removeRoute": "删除路由",
@@ -1932,10 +1926,7 @@
       "useTyped": "使用「{{value}}」",
       "modelPlaceholder": "选择或输入模型",
       "fallbackModel": "兜底模型",
-      "fallbackModelHint": "置信度低于阈值、决策失败或首条消息没有文本时使用。放你最稳的模型。",
       "threshold": "置信度阈值",
-      "thresholdHint": "0 到 1，低于它走兜底。",
-      "thresholdHelp": "0.5 是不错的起点。调高会把更多模棱两可的请求送去兜底，调低则更信任决策模型。用 logprobs 打分时置信度就是该标签的概率；自报的置信度只能当排序看。",
       "pinTtl": "会话固定时长（秒）",
       "pinTtlHint": "会话在首条消息选定模型后保持多久。0 表示每次请求都分类。",
       "pinTtlHelp": "固定期间的后续轮次跳过决策，上游提示缓存保持命中，对话中途不会换模型。会话靠会话头、Claude Code 元数据、prompt_cache_key 或提示前缀识别。",
@@ -2079,20 +2070,8 @@
     },
     "new": {
       "subtitle": "客户端调用的模型名，由首条消息决定实际模型",
-      "defaults": "创建后即启用，自动打分、阈值 {{threshold}}，可在「路由」里修改",
-      "created": "策略已创建",
-      "blank": "空白策略",
-      "fromTemplate": "模板：{{name}}",
-      "changeTemplate": "换模板",
-      "templates": "模板",
-      "useTemplate": "使用此模板",
-      "startBlank": "从空白策略开始",
-      "unresolved": "稍后选择",
-      "preview": {
-        "decision": "首条用户消息，由它判断",
-        "fallback": "低于 {{threshold}} 或出错时",
-        "callAs": "客户端调用名"
-      }
+      "defaults": "创建后启用、自动打分；会话固定和限制在策略面板里设置",
+      "created": "策略已创建"
     },
     "editTitle": "编辑路由策略",
     "scope": {
@@ -2124,15 +2103,16 @@
       "org": "只对本组织的 API Key 生效，调用时 model 写 policy/<名字>",
       "orgMember": "本组织管理员建的策略，用 policy/<名字> 调用"
     },
-    "templateGroups": {
-      "coding": "编码",
-      "general": "通用",
-      "business": "客服与业务"
-    },
-    "tier": {
-      "fast": "快",
-      "balanced": "均衡",
-      "strongest": "最强"
+    "map": {
+      "startFrom": "从模板开始",
+      "decision": "决策",
+      "decisionNote": "只读首条用户消息，选出最匹配的路由；同一会话之后都用选中的模型",
+      "questionPlaceholder": "例如：回答这个请求需要多少推理？",
+      "fallback": "兜底 · 没有路由达到阈值或决策出错时",
+      "threshold": "置信度阈值 {{threshold}}",
+      "price": "{{input}} / {{output}} · 每百万",
+      "priceInput": "{{input}} · 每百万输入",
+      "replaceConfirm": "用这个模板替换已填写的内容？"
     }
   },
   "logPage": {

@@ -1904,20 +1904,14 @@
       "displayNameHint": "カタログでモデル名の代わりに表示されます。",
       "description": "説明",
       "decisionModel": "判定モデル",
-      "decisionModelHint": "最初のユーザーメッセージを分類します。ラベルごとの確率を直接返す decision モデルがおすすめです。小さく速いチャットモデルも使えます。セッションごとに 1 回、呼び出し元に課金されます。",
       "decisionModelGroupDecision": "decision モデル（おすすめ）",
       "decisionModelGroupChat": "チャットモデル",
       "question": "質問",
-      "questionHint": "判定モデルに一文の背景を与えてから、ラベルが答える質問をしてください。",
-      "questionHelp": "短くしてください。意味の大半はラベルとその説明が担います。長い指示は書かないでください。出力形式はゲートウェイが固定します。",
       "routes": "ルート",
-      "routesHint": "判定モデルは各説明を質問への答えの一つとして読み、最も合うものを選びます。リクエストはそのルートのモデルへ送られます。短い名前は任意で、ログに表示されます。",
-      "routesHelp": "2 〜 16 件。ラベルは重ならないように。重なると確率が分散してフォールバックに流れます。モデルではなくリクエストを説明してください。ターゲットはモデルで、別のポリシーは指定できません。",
       "useTemplate": "テンプレートを使う",
       "routeLabel": "ラベル",
-      "routeLabelPlaceholder": "短い名前",
       "routeDescription": "説明",
-      "routeDescriptionPlaceholder": "このルートが扱うリクエスト。例:「動作を変えずにコードの名前変更・移動・再構成」",
+      "routeDescriptionPlaceholder": "このルートが扱うリクエスト",
       "routeTargetPlaceholder": "ターゲットモデル",
       "addRoute": "ルートを追加",
       "removeRoute": "ルートを削除",
@@ -1926,10 +1920,7 @@
       "useTyped": "「{{value}}」を使う",
       "modelPlaceholder": "モデルを選択または入力",
       "fallbackModel": "フォールバックモデル",
-      "fallbackModelHint": "確信度がしきい値未満、判定失敗、最初のメッセージにテキストがない場合に使います。最も安全なモデルを置いてください。",
       "threshold": "確信度のしきい値",
-      "thresholdHint": "0 〜 1。これ未満はフォールバックへ。",
-      "thresholdHelp": "0.5 が良い出発点です。上げると境界的なリクエストがよりフォールバックへ、下げると判定モデルをより信頼します。logprobs でスコアリングする場合、確信度はそのラベルの確率です。自己申告の確信度は順位としてだけ扱ってください。",
       "pinTtl": "セッション固定時間（秒）",
       "pinTtlHint": "最初のメッセージで選んだモデルをセッションが保持する時間。0 なら毎回分類します。",
       "pinTtlHelp": "固定中の後続ターンは判定を省略し、上流のプロンプトキャッシュを保ち、会話の途中でモデルが切り替わりません。セッションはセッションヘッダー、Claude Code のメタデータ、prompt_cache_key、またはプロンプト接頭辞で識別します。",
@@ -2073,20 +2064,8 @@
     },
     "new": {
       "subtitle": "クライアントが呼ぶモデル名。最初のメッセージで実際のモデルが決まります",
-      "defaults": "有効・自動スコアリング・しきい値 {{threshold}} で作成します。「ルート」で変更できます",
-      "created": "ポリシーを作成しました",
-      "blank": "空のポリシー",
-      "fromTemplate": "テンプレート: {{name}}",
-      "changeTemplate": "テンプレートを変更",
-      "templates": "テンプレート",
-      "useTemplate": "このテンプレートを使う",
-      "startBlank": "空のポリシーから始める",
-      "unresolved": "あとで選択",
-      "preview": {
-        "decision": "最初のユーザーメッセージを判定",
-        "fallback": "{{threshold}} 未満またはエラー時",
-        "callAs": "クライアントの呼び出し名"
-      }
+      "defaults": "有効な状態で作成され、自動で採点します。セッション固定と制限はポリシーパネルで設定します",
+      "created": "ポリシーを作成しました"
     },
     "editTitle": "ルーティングポリシーを編集",
     "scope": {
@@ -2118,15 +2097,16 @@
       "org": "この組織の API キーでのみ有効。model に policy/<名前> を指定",
       "orgMember": "組織の管理者が作成したポリシー。policy/<名前> で呼び出します"
     },
-    "templateGroups": {
-      "coding": "コーディング",
-      "general": "汎用",
-      "business": "サポートと業務"
-    },
-    "tier": {
-      "fast": "高速",
-      "balanced": "バランス",
-      "strongest": "最強"
+    "map": {
+      "startFrom": "テンプレートから始める",
+      "decision": "判定",
+      "decisionNote": "最初のユーザーメッセージだけを読み、最も合うルートを選びます。選んだモデルはセッションの間固定されます",
+      "questionPlaceholder": "例: このリクエストに答えるにはどれくらいの推論が必要か",
+      "fallback": "フォールバック · どのルートも閾値に届かないか判定に失敗したとき",
+      "threshold": "信頼度の閾値 {{threshold}}",
+      "price": "{{input}} / {{output}} · 100 万あたり",
+      "priceInput": "{{input}} · 100 万入力あたり",
+      "replaceConfirm": "入力した内容をこのテンプレートで置き換えますか"
     }
   },
   "logPage": {

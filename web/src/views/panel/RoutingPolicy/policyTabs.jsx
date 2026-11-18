@@ -7,16 +7,9 @@ import { Field, InfoRow, InfoRows, Section } from '@/components/objects';
 import StatsPanel from './StatsPanel';
 import TryItPanel from './TryItPanel';
 import { normalizePolicy } from './routingPolicyApi';
-import {
-  DecisionModelField,
-  ModelField,
-  NumberField,
-  QuestionField,
-  RoutesField,
-  ScoringField,
-  isDecisionClassifier,
-  missingFields
-} from './policyFields';
+import { NumberField, ScoringField, isDecisionClassifier, missingFields } from './policyFields';
+import { applyTemplate } from './templates';
+import RoutingMap, { TemplateMenu } from './RoutingMap';
 
 // Tabs of the routing policy panel (see components/objects/ObjectPanel). Overview and Try it
 // are read-only; Routes and Settings each save on their own. A save sends the whole policy with
@@ -65,41 +58,32 @@ function OverviewBody({ object: policy, ctx }) {
 const overviewTab = { key: 'overview', Body: OverviewBody };
 
 function RoutesBody({ draft, setDraft, ctx }) {
-  const { t } = useTranslation();
-  const set = (key) => (value) => setDraft((d) => ({ ...d, [key]: value }));
+  const decisionModel = (draft.decision_model || '').trim();
   return (
-    <>
-      <DecisionModelField
-        id="rp-decision_model"
-        value={draft.decision_model}
-        onChange={set('decision_model')}
+    <div className="space-y-4 py-3">
+      <div className="flex justify-end">
+        <TemplateMenu onApply={(template) => setDraft((d) => applyTemplate(d, template, ctx.suggest))} />
+      </div>
+      <RoutingMap
+        form={draft}
+        setForm={setDraft}
+        modelOptions={ctx.modelOptions}
         classifiers={ctx.classifiers}
+        prices={ctx.prices}
+        decisionExtra={
+          !isDecisionClassifier(ctx.classifiers, decisionModel) && (
+            <div className="mt-3 [&>div]:py-0">
+              <ScoringField
+                value={draft.scoring}
+                onChange={(v) => setDraft((d) => ({ ...d, scoring: v }))}
+                decisionModel={decisionModel}
+                api={ctx.api}
+              />
+            </div>
+          )
+        }
       />
-      {!isDecisionClassifier(ctx.classifiers, (draft.decision_model || '').trim()) && (
-        <ScoringField value={draft.scoring} onChange={set('scoring')} decisionModel={(draft.decision_model || '').trim()} api={ctx.api} />
-      )}
-      <QuestionField value={draft.question} onChange={set('question')} />
-      <RoutesField form={draft} setForm={setDraft} modelOptions={ctx.modelOptions} suggest={ctx.suggest} />
-      <ModelField
-        id="rp-fallback_model"
-        label={t('routingPolicy.form.fallbackModel')}
-        hint={t('routingPolicy.form.fallbackModelHint')}
-        value={draft.fallback_model}
-        onChange={set('fallback_model')}
-        options={ctx.modelOptions}
-      />
-      <NumberField
-        id="rp-threshold"
-        label={t('routingPolicy.form.threshold')}
-        hint={t('routingPolicy.form.thresholdHint')}
-        help={t('routingPolicy.form.thresholdHelp')}
-        min={0}
-        max={1}
-        step={0.05}
-        value={draft.threshold}
-        onChange={set('threshold')}
-      />
-    </>
+    </div>
   );
 }
 

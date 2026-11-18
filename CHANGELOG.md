@@ -20,13 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Official prices for the Gemini Live models (3.8 Live, 3.8 Live Extended Thinking, 3.1 Flash Live,
   2.5 Flash native audio, 3.5 Live Translate, 3.5 Transcribe Live): audio input, image and video
   frames and audio output are billed at their own listed rates instead of the text rate.
-- New routing policies start from a template: seven templates (coding change size, coding agent
-  task, support triage, reasoning depth, material, writing work, cost of a mistake) fill the name,
-  question, routes, targets, fallback and decision model from the published models, with a model
-  tier per route and a recommended decision model (Jev for coding, a general decision model
-  otherwise). The new policy sheet now shows the question, and each route leads with its
-  description, which is what the decision model reads; the short name is optional. Recommended
-  decision models are listed first in the decision model picker.
+- Routing policies are edited as a routing map: the decision model and its question at the top,
+  one card per route hanging off a line below it, and the fallback with its threshold at the end.
+  Every model shows its logo and price per million tokens. Seven templates (coding change size,
+  coding agent task, reasoning depth, material, writing work, support triage, cost of a mistake)
+  fill the whole map from the published models, with a model tier per route and a recommended
+  decision model (Jev for coding, a general decision model otherwise); a template asks before it
+  replaces what was typed. Each route leads with its description, which is what the decision model
+  reads; the short name is optional.
 - Supplies already in use are reviewed against the net revenue when prices sync and at startup:
   backups that would lose money wait for review, supplies taking requests are reported but left on.
   Nothing is held until the markup has been saved once. Switching a supply on accepts its cost,

@@ -25,6 +25,7 @@ import RoutingPolicyPanel from './RoutingPolicyPanel';
 import NewRoutingPolicySheet from './NewRoutingPolicySheet';
 import { POLICY_TAB_KEYS } from './policyTabs';
 import PolicyCallName from './PolicyCallName';
+import { fetchPriceList } from '../Channel/modelSuggestions';
 import { modelPickerOptions, organizationReviewApi, personalReviewApi, platformRoutingPolicyApi, policyCallName } from './routingPolicyApi';
 
 const SCOPE_APIS = { platform: platformRoutingPolicyApi, organization: organizationReviewApi, personal: personalReviewApi };
@@ -69,6 +70,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [modelList, setModelList] = useState({ models: [], kinds: {} });
+  const [prices, setPrices] = useState({});
   const { targets: modelOptions, classifiers, suggest } = useMemo(() => modelPickerOptions(modelList), [modelList]);
   const [pendingDelete, setPendingDelete] = useState(null);
   // 近 7 天概览（请求数 / 兜底率），按策略逐个取；策略很少，并行几次请求可以接受。
@@ -114,6 +116,10 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
       .listModels()
       .then(setModelList)
       .catch(() => {});
+    // Prices shown next to every model in the routing map; the map works without them.
+    fetchPriceList().then((list) =>
+      setPrices(Object.fromEntries(list.map((p) => [p.model, { type: p.type, input: p.input, output: p.output }])))
+    );
   }, [api, canEdit]);
 
   const toggleEnabled = async (policy, enabled) => {
@@ -452,6 +458,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
           modelOptions={modelOptions}
           classifiers={classifiers}
           suggest={suggest}
+          prices={prices}
         />
       )}
 
@@ -461,6 +468,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
           modelOptions={modelOptions}
           classifiers={classifiers}
           suggest={suggest}
+          prices={prices}
           onClose={route.close}
           onCreated={(policy) => {
             showSuccess(t('routingPolicy.new.created'));
