@@ -69,7 +69,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [modelList, setModelList] = useState({ models: [], kinds: {} });
-  const { targets: modelOptions, classifiers } = useMemo(() => modelPickerOptions(modelList), [modelList]);
+  const { targets: modelOptions, classifiers, suggest } = useMemo(() => modelPickerOptions(modelList), [modelList]);
   const [pendingDelete, setPendingDelete] = useState(null);
   // 近 7 天概览（请求数 / 兜底率），按策略逐个取；策略很少，并行几次请求可以接受。
   const [weekStats, setWeekStats] = useState({});
@@ -451,6 +451,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
           onDelete={setPendingDelete}
           modelOptions={modelOptions}
           classifiers={classifiers}
+          suggest={suggest}
         />
       )}
 
@@ -459,6 +460,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
           api={api}
           modelOptions={modelOptions}
           classifiers={classifiers}
+          suggest={suggest}
           onClose={route.close}
           onCreated={(policy) => {
             showSuccess(t('routingPolicy.new.created'));

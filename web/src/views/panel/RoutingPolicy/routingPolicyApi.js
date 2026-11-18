@@ -1,4 +1,5 @@
 import { API } from 'utils/api';
+import { RECOMMENDED_DECISION_MODELS } from './templates';
 
 // Own policies (organization and personal) are called as policy/<name>; platform policies by name.
 export const POLICY_CALL_PREFIX = 'policy/';
@@ -68,15 +69,30 @@ export async function listCatalogModelNames() {
   const rows = data.filter((row) => !row.alias_of && row.kind !== 'routing_policy').sort((a, b) => a.model.localeCompare(b.model));
   const kinds = {};
   for (const row of rows) if (row.model_kind) kinds[row.model] = row.model_kind;
-  return { models: rows.map((row) => row.model), kinds };
+  // Templates fill targets only from models clients can already call.
+  const published = rows.filter((row) => row.status === 'published').map((row) => row.model);
+  return { models: rows.map((row) => row.model), kinds, published };
 }
 
 // modelPickerOptions splits a model list for the pickers: targets and the fallback take chat
 // models; the decision model takes decision models (recommended, listed first) or chat models.
-export function modelPickerOptions({ models = [], kinds = {} } = {}) {
+export function modelPickerOptions({ models = [], kinds = {}, published } = {}) {
   const chat = models.filter((m) => !kinds[m]);
-  const decision = models.filter((m) => kinds[m] === 'decision');
-  return { targets: chat, classifiers: { decision, chat } };
+  const rank = (m) => {
+    const i = RECOMMENDED_DECISION_MODELS.indexOf(m);
+    return i < 0 ? RECOMMENDED_DECISION_MODELS.length : i;
+  };
+  // Recommended decision models first, in order of preference; the rest by name.
+  const decision = models.filter((m) => kinds[m] === 'decision').sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+  // suggest: what a template may fill in. The admin catalog lists drafts too; scoped lists only
+  // hold models the caller can use, so they suggest everything.
+  const ready = published ? new Set(published) : null;
+  const usable = (list) => (ready ? list.filter((m) => ready.has(m)) : list);
+  return {
+    targets: chat,
+    classifiers: { decision, chat },
+    suggest: { models: usable(chat), classifiers: { decision: usable(decision), chat: usable(chat) } }
+  };
 }
 
 export const platformRoutingPolicyApi = createRoutingPolicyApi('/api/routing_policy/', { listModels: listCatalogModelNames });
@@ -157,6 +173,15 @@ export function normalizePolicy(form) {
       target_model: (r.target_model || '').trim()
     }))
     .filter((r) => r.label || r.description || r.target_model);
+  // The short name is optional: a described route without one is named after its position.
+  const taken = new Set(routes.map((r) => r.label.toLowerCase()).filter(Boolean));
+  routes.forEach((r, index) => {
+    if (r.label || !r.description) return;
+    let n = index + 1;
+    while (taken.has(`route_${n}`)) n++;
+    r.label = `route_${n}`;
+    taken.add(r.label);
+  });
   return {
     name: (form.name || '').trim(),
     display_name: (form.display_name || '').trim(),

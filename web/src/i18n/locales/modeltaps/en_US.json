@@ -2001,13 +2001,13 @@
       "questionHint": "Give the decision model a sentence of context, then ask the question the labels answer.",
       "questionHelp": "Keep it short: the labels and their descriptions carry most of the meaning. Do not put long instructions here; the output format is fixed by the gateway.",
       "routes": "Routes",
-      "routesHint": "Each label is one answer to the question, mapped to the model that should handle it.",
+      "routesHint": "The decision model reads each description as one answer to the question and picks the best match; the request then goes to that route's model. The short name is optional and shows in logs.",
       "routesHelp": "2 to 16 routes. Labels must be distinct; overlapping labels split the probability and push requests to the fallback. Describe the request, not the model. Targets must be models, not other policies.",
       "useTemplate": "Use a template",
       "routeLabel": "Label",
-      "routeLabelPlaceholder": "label",
+      "routeLabelPlaceholder": "short name",
       "routeDescription": "Description",
-      "routeDescriptionPlaceholder": "What kind of request this label covers",
+      "routeDescriptionPlaceholder": "Which requests this route covers, e.g. \"Rename, move or restructure code without changing what it does\"",
       "routeTargetPlaceholder": "Target model",
       "addRoute": "Add route",
       "removeRoute": "Remove route",
@@ -2050,9 +2050,34 @@
       "nameHintOwn": "Call it with model set to policy/<this name>, e.g. policy/coder."
     },
     "templates": {
-      "agent_task": "Coding agent: kind of task",
-      "content_type": "Material: chat, writing, code or data",
-      "stakes": "Cost of a mistake"
+      "coding_change": {
+        "title": "Coding: size of the change",
+        "summary": "Small additions go to a fast model; changes that must stay consistent across many places go to the strongest one."
+      },
+      "agent_task": {
+        "title": "Coding agent: kind of task",
+        "summary": "Questions about code stay cheap; debugging and edits use a balanced model; larger plans use the strongest one."
+      },
+      "support_triage": {
+        "title": "Support triage",
+        "summary": "Account and how-to questions go to a cheap model; problems and escalations go to stronger ones."
+      },
+      "reasoning_depth": {
+        "title": "Reasoning depth",
+        "summary": "Chit-chat and lookups stay fast; multi-step reasoning, math and planning escalate."
+      },
+      "content_type": {
+        "title": "Material: chat, writing, code or data",
+        "summary": "One model name for a team: each kind of material goes to the model that handles it best."
+      },
+      "writing_task": {
+        "title": "Writing work",
+        "summary": "Translation and light edits stay cheap; new drafts and creative pieces use stronger models."
+      },
+      "stakes": {
+        "title": "Cost of a mistake",
+        "summary": "Everyday requests stay cheap; legal, medical, financial or customer-facing ones go to the most careful model."
+      }
     },
     "tryIt": {
       "intro": "Run the decision step only, with the saved policy. Nothing is forwarded, billed or pinned.",
@@ -2132,7 +2157,14 @@
     "new": {
       "subtitle": "A model name clients call; the first message picks the real model",
       "defaults": "Created enabled with automatic scoring and a {{threshold}} threshold; change these in Routes",
-      "created": "Policy created"
+      "created": "Policy created",
+      "startFrom": "Start from",
+      "startFromHint": "A template fills the name, question, routes, targets, fallback and decision model; change anything after.",
+      "blank": "Blank policy",
+      "blankHint": "Write the question and routes yourself.",
+      "pickFirst": "Pick a template or a blank policy",
+      "fromTemplate": "From template: {{name}}",
+      "changeTemplate": "Change template"
     },
     "editTitle": "Edit routing policy",
     "scope": {

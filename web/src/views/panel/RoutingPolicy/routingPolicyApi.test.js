@@ -93,7 +93,9 @@ describe('routing policy api scopes', () => {
     const list = await orgRoutingPolicyApi(5).listModels();
     expect(modelPickerOptions(list)).toEqual({
       targets: ['cheap-model'],
-      classifiers: { decision: ['router-decision-1'], chat: ['cheap-model'] }
+      classifiers: { decision: ['router-decision-1'], chat: ['cheap-model'] },
+      // A scope lists only usable models, so templates may suggest all of them.
+      suggest: { models: ['cheap-model'], classifiers: { decision: ['router-decision-1'], chat: ['cheap-model'] } }
     });
   });
 });

@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- New routing policies start from a template: seven templates (coding change size, coding agent
+  task, support triage, reasoning depth, material, writing work, cost of a mistake) fill the name,
+  question, routes, targets, fallback and decision model from the published models, with a model
+  tier per route and a recommended decision model (Jev for coding, a general decision model
+  otherwise). The new policy sheet now shows the question, and each route leads with its
+  description, which is what the decision model reads; the short name is optional. Recommended
+  decision models are listed first in the decision model picker.
 - Supplies already in use are reviewed against the net revenue when prices sync and at startup:
   backups that would lose money wait for review, supplies taking requests are reported but left on.
   Nothing is held until the markup has been saved once. Switching a supply on accepts its cost,

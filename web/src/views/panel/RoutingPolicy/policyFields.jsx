@@ -191,25 +191,25 @@ ScoringField.propTypes = {
   api: PropTypes.object
 };
 
-export function QuestionField({ value, onChange }) {
+export function QuestionField({ id = 'rp-question', value, onChange }) {
   const { t } = useTranslation();
   return (
     <Field
       label={t('routingPolicy.form.question')}
-      htmlFor="rp-question"
+      htmlFor={id}
       hint={t('routingPolicy.form.questionHint')}
       help={t('routingPolicy.form.questionHelp')}
     >
-      <Textarea id="rp-question" rows={3} value={value || ''} onChange={(e) => onChange(e.target.value)} />
+      <Textarea id={id} rows={3} value={value || ''} onChange={(e) => onChange(e.target.value)} />
     </Field>
   );
 }
 
-QuestionField.propTypes = { value: PropTypes.string, onChange: PropTypes.func.isRequired };
+QuestionField.propTypes = { id: PropTypes.string, value: PropTypes.string, onChange: PropTypes.func.isRequired };
 
-// Route table with a template menu. A template fills the question and the labels and keeps the
-// targets already chosen by position.
-export function RoutesField({ form, setForm, modelOptions }) {
+// Route table with a template menu. A template fills the question and the routes, keeps the
+// targets already chosen by position and fills the empty ones (see applyTemplate).
+export function RoutesField({ form, setForm, modelOptions, suggest, showTemplates = true }) {
   const { t } = useTranslation();
   return (
     <Field
@@ -217,21 +217,23 @@ export function RoutesField({ form, setForm, modelOptions }) {
       hint={t('routingPolicy.form.routesHint')}
       help={t('routingPolicy.form.routesHelp')}
       extra={
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button type="button" variant="ghost" size="sm" className="h-7 rounded-lg px-2 text-xs font-normal">
-              <LayoutTemplate className="size-3.5" />
-              {t('routingPolicy.form.useTemplate')}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {POLICY_TEMPLATES.map((template) => (
-              <DropdownMenuItem key={template.id} onClick={() => setForm((prev) => applyTemplate(prev, template))}>
-                {t(`routingPolicy.templates.${template.id}`)}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        showTemplates && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="ghost" size="sm" className="h-7 rounded-lg px-2 text-xs font-normal">
+                <LayoutTemplate className="size-3.5" />
+                {t('routingPolicy.form.useTemplate')}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {POLICY_TEMPLATES.map((template) => (
+                <DropdownMenuItem key={template.id} onClick={() => setForm((prev) => applyTemplate(prev, template, suggest))}>
+                  {t(`routingPolicy.templates.${template.id}.title`)}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
       }
     >
       <RoutesEditor
@@ -243,4 +245,10 @@ export function RoutesField({ form, setForm, modelOptions }) {
   );
 }
 
-RoutesField.propTypes = { form: PropTypes.object.isRequired, setForm: PropTypes.func.isRequired, modelOptions: PropTypes.array.isRequired };
+RoutesField.propTypes = {
+  form: PropTypes.object.isRequired,
+  setForm: PropTypes.func.isRequired,
+  modelOptions: PropTypes.array.isRequired,
+  suggest: PropTypes.shape({ models: PropTypes.array, classifiers: PropTypes.object }),
+  showTemplates: PropTypes.bool
+};

@@ -87,10 +87,12 @@ describe('RoutingPolicy page', () => {
     expect(body.enabled).toBe(true);
   });
 
-  it('opens the new policy sheet and lists what is still missing', async () => {
+  it('opens the new policy sheet on the template picker, then lists what is still missing', async () => {
     renderPage('/panel/routing_policy?new=1');
     const create = await screen.findByRole('button', { name: i18n.t('objects.new.create') });
     expect(create.disabled).toBe(true);
+    expect(screen.getByText(i18n.t('routingPolicy.new.pickFirst'))).toBeTruthy();
+    fireEvent.click(screen.getByTestId('rp-template-blank'));
     const missing = i18n.t('objects.new.missing', {
       items: ['name', 'decisionModel', 'routes', 'fallbackModel']
         .map((k) => i18n.t(`routingPolicy.form.${k}`))
@@ -99,6 +101,35 @@ describe('RoutingPolicy page', () => {
     expect(screen.getByText(missing)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: i18n.t('common.cancel') }));
     await waitFor(() => expect(search()).toBe(''));
+  });
+
+  it('fills a new policy from a template with the available models', async () => {
+    API.get.mockImplementation((url) => {
+      if (url === '/api/model_info/catalog') {
+        const rows = ['claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5', 'jev-1.14.0', 'd1'].map((model) => ({
+          model,
+          status: 'published',
+          model_kind: model === 'jev-1.14.0' || model === 'd1' ? 'decision' : ''
+        }));
+        return Promise.resolve({ data: { success: true, data: rows } });
+      }
+      if (url === '/api/routing_policy/') return Promise.resolve({ data: { success: true, data: [] } });
+      return Promise.resolve({ data: { success: true, data: [] } });
+    });
+    API.post.mockResolvedValue({ data: { success: true, data: { id: 9 } } });
+    renderPage('/panel/routing_policy?new=1');
+    await waitFor(() => expect(API.get).toHaveBeenCalledWith('/api/model_info/catalog'));
+    fireEvent.click(await screen.findByTestId('rp-template-coding_change'));
+    const create = screen.getByRole('button', { name: i18n.t('objects.new.create') });
+    await waitFor(() => expect(create.disabled).toBe(false));
+    fireEvent.click(create);
+    await waitFor(() => expect(API.post).toHaveBeenCalled());
+    const body = API.post.mock.calls[0][1];
+    expect(body.name).toBe('auto/coder');
+    expect(body.decision_model).toBe('jev-1.14.0');
+    expect(body.fallback_model).toBe('claude-opus-5-5');
+    expect(body.routes.map((r) => r.target_model)).toEqual(['claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5', 'claude-opus-5-5']);
+    expect(body.question).toContain('coding agent');
   });
 });
 

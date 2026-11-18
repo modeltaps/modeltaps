@@ -79,7 +79,7 @@ function RoutesBody({ draft, setDraft, ctx }) {
         <ScoringField value={draft.scoring} onChange={set('scoring')} decisionModel={(draft.decision_model || '').trim()} api={ctx.api} />
       )}
       <QuestionField value={draft.question} onChange={set('question')} />
-      <RoutesField form={draft} setForm={setDraft} modelOptions={ctx.modelOptions} />
+      <RoutesField form={draft} setForm={setDraft} modelOptions={ctx.modelOptions} suggest={ctx.suggest} />
       <ModelField
         id="rp-fallback_model"
         label={t('routingPolicy.form.fallbackModel')}

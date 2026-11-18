@@ -1922,13 +1922,13 @@
       "questionHint": "先给决策模型一句背景，再问标签要回答的那个问题。",
       "questionHelp": "写短一点：标签和描述承担大部分含义。不要在这里写长指令，输出格式由网关固定。",
       "routes": "路由",
-      "routesHint": "每个标签是问题的一个答案，对应应当处理它的模型。",
+      "routesHint": "决策模型把每条描述当作问题的一个答案，选出最匹配的一条，请求随即转给这条路由的模型。短名可不填，会显示在日志里。",
       "routesHelp": "2 到 16 条。标签要互不重叠，重叠会分散概率、把请求推向兜底。描述请求本身而不是模型。目标必须是模型，不能是另一条策略。",
       "useTemplate": "使用模板",
       "routeLabel": "标签",
-      "routeLabelPlaceholder": "标签",
+      "routeLabelPlaceholder": "短名",
       "routeDescription": "描述",
-      "routeDescriptionPlaceholder": "这个标签覆盖哪类请求",
+      "routeDescriptionPlaceholder": "这条路由覆盖哪类请求，例如“重命名、移动或重构代码，不改变行为”",
       "routeTargetPlaceholder": "目标模型",
       "addRoute": "添加路由",
       "removeRoute": "删除路由",
@@ -1971,9 +1971,34 @@
       "nameHintOwn": "调用时 model 写 policy/<这个名字>，如 policy/coder。"
     },
     "templates": {
-      "agent_task": "编程 Agent：任务类型",
-      "content_type": "内容类型：闲聊、写作、代码、数据",
-      "stakes": "出错代价"
+      "coding_change": {
+        "title": "编码：改动大小",
+        "summary": "小的新增用快模型；需要多处保持一致的改动用最强模型。"
+      },
+      "agent_task": {
+        "title": "编程 Agent：任务类型",
+        "summary": "读代码、答问题用便宜模型；排错和修改用均衡模型；大块规划用最强模型。"
+      },
+      "support_triage": {
+        "title": "客服分流",
+        "summary": "账户和操作类问题用便宜模型；故障和升级投诉用更强的模型。"
+      },
+      "reasoning_depth": {
+        "title": "推理深度",
+        "summary": "闲聊和查询保持快速；多步推理、数学和规划升级到强模型。"
+      },
+      "content_type": {
+        "title": "内容类型：闲聊、写作、代码、数据",
+        "summary": "团队共用一个模型名：每类内容交给最擅长的模型。"
+      },
+      "writing_task": {
+        "title": "写作任务",
+        "summary": "翻译和润色用便宜模型；新写的稿件和创意内容用更强的模型。"
+      },
+      "stakes": {
+        "title": "出错代价",
+        "summary": "日常请求用便宜模型；法律、医疗、财务或直接发给客户的内容用最稳的模型。"
+      }
     },
     "tryIt": {
       "intro": "只跑决策这一步，用的是已保存的策略。不转发、不计费、不写会话固定记录。",
@@ -2053,7 +2078,14 @@
     "new": {
       "subtitle": "客户端调用的模型名，由首条消息决定实际模型",
       "defaults": "创建后即启用，自动打分、阈值 {{threshold}}，可在「路由」里修改",
-      "created": "策略已创建"
+      "created": "策略已创建",
+      "startFrom": "从哪里开始",
+      "startFromHint": "模板会填好名称、问题、路由、目标模型、兜底和决策模型，之后都能改。",
+      "blank": "空白策略",
+      "blankHint": "自己写问题和路由。",
+      "pickFirst": "先选一个模板或空白策略",
+      "fromTemplate": "模板：{{name}}",
+      "changeTemplate": "换模板"
     },
     "editTitle": "编辑路由策略",
     "scope": {
