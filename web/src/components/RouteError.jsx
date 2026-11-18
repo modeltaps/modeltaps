@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { useRouteError } from 'react-router';
-import { RefreshCw, TriangleAlert } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import ErrorDrip from '@/components/ErrorDrip';
 import ErrorState from '@/components/ErrorState';
 import config from 'config';
 
@@ -21,14 +21,15 @@ export default function RouteError() {
   if (import.meta.env.DEV) console.error(error);
   const stale = isStaleChunkError(error);
   const home = `${config.basename.replace(/\/+$/, '')}/`;
+  const title = stale ? t('errorPage.updateTitle') : t('errorPage.crashTitle');
   const detail = import.meta.env.DEV && (error?.stack || error?.message || String(error));
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <ErrorState
         className="min-h-screen"
-        icon={stale ? RefreshCw : TriangleAlert}
-        title={stale ? t('errorPage.updateTitle') : t('errorPage.crashTitle')}
+        art={<ErrorDrip variant={stale ? 'update' : 'crash'} ariaLabel={title} />}
+        title={title}
         description={stale ? t('errorPage.updateBody') : t('errorPage.crashBody')}
         actions={
           <>

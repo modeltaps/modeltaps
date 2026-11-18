@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
+import ErrorDrip from '@/components/ErrorDrip';
 import ErrorState from '@/components/ErrorState';
 import { PANEL, workbench } from 'routes/paths';
 
@@ -20,13 +21,15 @@ export default function NotFoundView() {
   const toConsole = inPanel || signedIn;
   // 'default' is the first entry of this tab: there is no in-app page to go back to.
   const canGoBack = key !== 'default';
+  // The address the visitor asked for is written on the surface where the drop fell.
+  const address = pathname === '/404' ? '' : `${pathname}${search}`;
 
   return (
     <ErrorState
+      art={<ErrorDrip variant="missing" label={address} ariaLabel={t('errorPage.notFoundTitle')} />}
       code="404"
       title={inPanel ? null : t('errorPage.notFoundTitle')}
       description={t('errorPage.notFoundBody')}
-      path={pathname === '/404' ? null : `${pathname}${search}`}
       actions={
         <>
           {canGoBack && (
