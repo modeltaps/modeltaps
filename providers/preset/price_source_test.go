@@ -26,10 +26,17 @@ func TestPresetPricePages(t *testing.T) {
 		{config.ChannelTypeLongCat, "LongCat-2.5", "https://longcat.chat/platform/docs/pricing/longcat-2.5", true},
 		{config.ChannelTypeTogether, "meta-llama/Llama-3.3-70B-Instruct-Turbo", "https://www.together.ai/pricing", false},
 	}
+	// Platforms read from their own list name no third-party list; the rest read models.dev.
+	wantVia := func(typ int) string {
+		if ownPriceLists[typ] != nil {
+			return ""
+		}
+		return "models.dev"
+	}
 	for _, c := range cases {
 		p := &model.ChannelPrice{Model: c.model}
 		model.DescribeChannelPrices(c.typ, p)
-		if p.PageURL != c.want || p.PageExact != c.exact || p.Via != "models.dev" || p.Source == "" {
+		if p.PageURL != c.want || p.PageExact != c.exact || p.Via != wantVia(c.typ) || p.Source == "" {
 			t.Errorf("%d %s = %+v", c.typ, c.model, p)
 		}
 	}

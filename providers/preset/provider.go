@@ -76,9 +76,12 @@ func (p *Provider) GetModelList() ([]string, error) {
 	return list, err
 }
 
-// GetChannelPrices implements base.ChannelPriceListInterface with models.dev's price list for
-// the platform.
+// GetChannelPrices implements base.ChannelPriceListInterface: the platform's own price list where
+// it publishes one (prices.go), else models.dev's.
 func (p *Provider) GetChannelPrices() ([]*model.ChannelPrice, error) {
+	if read := ownPriceLists[p.preset.Type]; read != nil {
+		return read(p)
+	}
 	return model.ModelsDevChannelPrices(p.preset.ModelsDev)
 }
 

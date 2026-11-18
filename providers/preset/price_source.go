@@ -37,11 +37,16 @@ var pricePages = map[int]func(string) (string, bool){
 	config.ChannelTypeBytePlus:   model.PricingPage("https://docs.byteplus.com/en/docs/modelark/model-pricing"),
 }
 
-// The preset platforms' channel prices are read from models.dev. Runs after presets.go's init
-// (files initialise in name order), so Presets is filled.
+// The preset platforms' channel prices come from their own list where they publish one
+// (ownPriceLists), else from models.dev. Runs after presets.go's init (files initialise in name
+// order), so Presets is filled.
 func init() {
 	for t, p := range Presets {
-		model.SetChannelPriceSource(t, model.ChannelPriceSource{Name: p.Name, Via: "models.dev", Page: pricePages[t]})
+		via := "models.dev"
+		if ownPriceLists[t] != nil {
+			via = ""
+		}
+		model.SetChannelPriceSource(t, model.ChannelPriceSource{Name: p.Name, Via: via, Page: pricePages[t]})
 	}
 }
 

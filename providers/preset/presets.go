@@ -1,6 +1,7 @@
 // Package preset serves OpenAI compatible platforms that need nothing of their own: each is a
-// channel type with a fixed API root, its models.dev provider id for the channel's price list and
-// for the model list when the platform's own /models fails, and the endpoints it serves.
+// channel type with a fixed API root, its models.dev provider id for the model list when the
+// platform's own /models fails and for the channel's price list when the platform publishes none
+// of its own (prices.go), and the endpoints it serves.
 //
 // Checked against each platform's docs on 2026-11-15: roots, cache reporting (all but Fireworks,
 // NVIDIA, ModelScope, Chutes and Hugging Face put cache hits in prompt_tokens_details.cached_tokens
