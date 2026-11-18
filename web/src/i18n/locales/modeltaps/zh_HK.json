@@ -695,7 +695,7 @@
     "api_audio": "在文字與語音之間轉換",
     "api_compare": "多個對話模型並排，同一條輸入同時發出",
     "pricing": "模型目錄、價格、渠道與廠商",
-    "routing_policy": "虛擬模型：按每個會話的首條訊息選擇實際應答的模型",
+    "routing_policy": "虛擬模型：按每個會話的首條訊息分流，或在模型失敗時按順序兜底",
     "channel": "每個供應商下可以有多個渠道；一個渠道是連到該供應商的一組憑證和地址",
     "org_members": "邀請成員、設定每人的預算與模型範圍",
     "organization": "組織的餘額、用量與審計記錄",
@@ -1714,7 +1714,7 @@
     "model_status_invalid": "模型狀態無效，可選未啟用、已啟用或已下架",
     "model_supply_mode_invalid": "分流方式無效，可選負載均衡或主備",
     "model_supply_model_not_found": "公開模型不存在",
-    "model_supply_model_not_public": "只能為公開模型新增線路，不能為別名或自動路由策略新增",
+    "model_supply_model_not_public": "只能為公開模型新增線路，不能為別名或路由策略新增",
     "model_supply_channel_not_found": "渠道不存在",
     "model_supply_upstream_missing": "請填寫傳給該渠道的模型名稱",
     "model_supply_exists": "該渠道已經有這個模型的線路",
@@ -1724,7 +1724,7 @@
     "model_alias_self": "模型不能是自己的別名",
     "model_alias_target_missing": "別名指向的模型不存在",
     "model_alias_target_is_alias": "別名不能指向另一個別名",
-    "model_managed_by_routing_policy": "該模型由自動路由策略維護，請到策略裏修改",
+    "model_managed_by_routing_policy": "該模型由路由策略維護，請到策略裏修改",
     "routing_policy_not_found": "路由策略不存在",
     "routing_policy_name_invalid": "名稱只能包含字母、數字和 . _ / -，最多 100 個字元，不能以 / 開頭或結尾，也不能以 policy/ 開頭",
     "routing_policy_name_taken": "該名稱已被某個模型或另一條策略佔用",
@@ -1887,7 +1887,7 @@
     "usageWindow": "{{name}} 窗口：已用 {{percent}}%，{{reset}} 重設",
     "usageFetchedAt": "更新於 {{time}}"
   },
-  "routing_policy": "自動路由",
+  "routing_policy": "路由策略",
   "routingPolicy": {
     "enable": "啟用",
     "disable": "停用",
@@ -2085,7 +2085,7 @@
       "organization": "組織",
       "personal": "個人"
     },
-    "organizationsIntro": "各組織在自己的「自動路由」頁管理的策略，只對該組織的 API Key 生效。這裏只能停用。",
+    "organizationsIntro": "各組織在自己的「路由策略」頁管理的策略，只對該組織的 API Key 生效。這裏只能停用。",
     "orgIntro": "這裏的策略只對本組織的 API Key 生效，呼叫時把 model 設為 policy/<名字>。「試一試」會實際呼叫決策模型，費用記在組織賬上。",
     "callName": "呼叫名稱",
     "copyCallName": "複製呼叫名稱",
@@ -2141,7 +2141,7 @@
     },
     "routing": {
       "filterLabel": "路由策略",
-      "label": "自動路由",
+      "label": "路由策略",
       "value": "{{policy}} → {{label}}（{{reason}}{{confidence}}）",
       "noLabel": "兜底",
       "decisionCall": "{{policy}} 的決策呼叫"
@@ -2201,7 +2201,7 @@
   },
   "modelpricePage": {
     "routing": {
-      "badge": "自動路由",
+      "badge": "路由策略",
       "badgeTitle": "路由策略：每個會話的首條訊息決定由哪個模型應答",
       "billedByTarget": "按目標模型計費（兜底：{{model}}）",
       "title": "路由",
@@ -2931,7 +2931,7 @@
       "stats": "統計",
       "channels": "供應商",
       "catalog": "模型目錄",
-      "routing": "自動路由",
+      "routing": "路由策略",
       "users": "用戶",
       "userGroups": "用戶分組",
       "orgs": "組織",
@@ -3540,9 +3540,9 @@
           "hint": "儲存後立即生效，無需重啟"
         },
         "auto-routing": {
-          "title": "自動路由",
-          "description": "決策調用怎樣計費、組織能否管理自己的策略；平台策略在自動路由頁管理。",
-          "hint": "策略的增刪改在自動路由頁"
+          "title": "路由策略",
+          "description": "決策調用怎樣計費、組織能否管理自己的策略；平台策略在路由策略頁管理。",
+          "hint": "策略的增刪改在路由策略頁"
         },
         "log-consume": {
           "title": "消費日誌",
@@ -3627,7 +3627,7 @@
       },
       "actions": {
         "manageInviteCodes": "管理邀請碼 ›",
-        "openRouting": "打開自動路由 ›",
+        "openRouting": "打開路由策略 ›",
         "currentVersion": "目前版本 {{version}}",
         "check": "檢查",
         "purge": "清理",
@@ -4659,7 +4659,7 @@
     },
     "routing": {
       "title": "還沒有路由策略",
-      "description": "路由策略是一個可調用的模型名，網關根據每個會話的首條消息判斷任務難度，自動交給合適的模型應答。",
+      "description": "路由策略是一個可調用的模型名：自動路由按每個會話的首條訊息交給合適的模型，兜底策略在模型失敗時按順序換下一個。",
       "memberDescription": "組織管理員還沒有創建路由策略，創建後會在這裡顯示，你可以直接調用。"
     },
     "redemption": {

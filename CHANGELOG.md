@@ -93,6 +93,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The platform admin page and the settings card formerly called Auto routing are now called Routing
+  policies, since they hold fallback policies as well.
 - The price check for new supplies compares a supply's cost with what the price brings in (the
   catalog price with the markup, less the payment cost) instead of the catalog price.
 - The built-in official prices include `gpt-image-1.5`, `chatgpt-image-latest` ($8 image in, $5

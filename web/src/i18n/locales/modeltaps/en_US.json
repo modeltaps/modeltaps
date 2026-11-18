@@ -696,7 +696,7 @@
     "api_audio": "Convert between text and speech",
     "api_compare": "Run several chat models side by side on the same input",
     "pricing": "Model catalog, prices, channels and vendors",
-    "routing_policy": "Virtual models that pick a target model from the first message of each session",
+    "routing_policy": "Virtual models: route by the first message of each session, or fall back through models in order",
     "channel": "Each provider can have several channels; a channel is one set of credentials and an address for that provider",
     "org_members": "Invite members and set each member’s budget and model scope",
     "organization": "Organization balance, usage and audit log",
@@ -1965,7 +1965,7 @@
       "backToDevice": "Back to device code login"
     }
   },
-  "routing_policy": "Auto routing",
+  "routing_policy": "Routing policies",
   "routingPolicy": {
     "enable": "Enable",
     "disable": "Disable",
@@ -2163,7 +2163,7 @@
       "organization": "Organizations",
       "personal": "Personal"
     },
-    "organizationsIntro": "Policies organizations manage on their own Auto routing page. They only apply to that organization's API keys; you can only switch one off here.",
+    "organizationsIntro": "Policies organizations manage on their own Routing policies page. They only apply to that organization's API keys; you can only switch one off here.",
     "orgIntro": "Policies here only apply to this organization's API keys; call them with model set to policy/<name>. \"Try it\" calls the decision model and is charged to the organization.",
     "callName": "model name",
     "copyCallName": "Copy model name",
@@ -2219,7 +2219,7 @@
     },
     "routing": {
       "filterLabel": "Routing policy",
-      "label": "Auto routing",
+      "label": "Routing policy",
       "value": "{{policy}} → {{label}} ({{reason}}{{confidence}})",
       "noLabel": "fallback",
       "decisionCall": "Decision call for {{policy}}"
@@ -2281,7 +2281,7 @@
   },
   "modelpricePage": {
     "routing": {
-      "badge": "Auto routing",
+      "badge": "Routing policy",
       "badgeTitle": "A routing policy: the first message of each session decides which model answers",
       "billedByTarget": "Billed by the target model (fallback: {{model}})",
       "title": "Routing",
@@ -3050,7 +3050,7 @@
       "stats": "Statistics",
       "channels": "Providers",
       "catalog": "Model catalog",
-      "routing": "Auto routing",
+      "routing": "Routing policies",
       "users": "Users",
       "userGroups": "User groups",
       "orgs": "Organizations",
@@ -3650,9 +3650,9 @@
           "hint": "Applies at once, no restart"
         },
         "auto-routing": {
-          "title": "Auto routing",
-          "description": "How decision calls are billed and whether organizations manage their own policies; platform policies are managed on the auto routing page.",
-          "hint": "Add and edit policies on the auto routing page"
+          "title": "Routing policies",
+          "description": "How decision calls are billed and whether organizations manage their own policies; platform policies are managed on the routing policies page.",
+          "hint": "Add and edit policies on the routing policies page"
         },
         "log-consume": {
           "title": "Consume logs",
@@ -3737,7 +3737,7 @@
       },
       "actions": {
         "manageInviteCodes": "Manage invite codes ›",
-        "openRouting": "Open auto routing ›",
+        "openRouting": "Open routing policies ›",
         "currentVersion": "Current version {{version}}",
         "check": "Check",
         "purge": "Purge",
@@ -4760,7 +4760,7 @@
     },
     "routing": {
       "title": "No routing policies yet",
-      "description": "A routing policy is a model name clients can call. The gateway judges each session from its first message and hands it to a suitable model.",
+      "description": "A routing policy is a model name clients call: auto routing hands each session to a fitting model by its first message, and a fallback policy moves to the next model when one fails.",
       "memberDescription": "Your organization admins have not created a routing policy yet. Once they do, it appears here and you can call it directly."
     },
     "redemption": {

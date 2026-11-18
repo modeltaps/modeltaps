@@ -86,7 +86,7 @@ Coding agents add their own context to the conversation: Claude Code puts `<syst
 
 ## Setting up a policy
 
-Every user creates their own policies under **Routing policies → Auto routing** in the workbench sidebar (with an organization selected, owners and admins manage the organization's policies there). Site administrators publish managed policies under **Platform admin → Gateway → Auto routing**. A policy consists of:
+Every user creates their own policies under **Routing policies → Auto routing** in the workbench sidebar (with an organization selected, owners and admins manage the organization's policies there). Site administrators publish managed policies under **Platform admin → Gateway → Routing policies**. A policy consists of:
 
 - **Model name** — what clients call, for example `coder`: `policy/coder` for an own policy, `coder` for a managed one. Letters, digits and `. _ / -` only; it must not start with `policy/` or collide with an existing model. Once created it shows up in `/v1/models` and can be added to token and organization allow lists like any model. Allow lists are checked against the policy name; the target models do not have to be in the caller's allow list, so you can keep expensive or hidden models reachable only through a policy.
 - **Decision model** — the model that classifies the first message. The picker lists [decision models](./decisions.md) first, and they are the recommended choice: the gateway asks one multiple-choice question on `/v1/decisions` (your question, with each label and its description as an option) and the model answers with a probability for every label. A small, fast chat model that follows instructions well also works. Image, embedding, speech and other models are refused, and it must not itself be a policy.
@@ -112,7 +112,7 @@ A decision model needs no scoring setting: its answer gives every label a probab
 
 **Check support** next to the setting sends one small test request to the decision model and tells you whether the channel it was routed to returns logprobs.
 
-The decision billing switch is under **Platform admin → Platform settings → Gateway → Auto routing**.
+The decision billing switch is under **Platform admin → Platform settings → Gateway → Routing policies**.
 
 ## Fallback policies
 
@@ -135,7 +135,7 @@ The listed models are tried in order with the same rules as a fallback policy. E
 
 ## Personal and organization policies
 
-A site administrator turns own policies on or off with **Let users and organizations create their own routing policies** under **Platform admin → Platform settings → Gateway → Auto routing** (on by default). The same card sets how many policies each user (20 by default) and each organization (20 by default) may create.
+A site administrator turns own policies on or off with **Let users and organizations create their own routing policies** under **Platform admin → Platform settings → Gateway → Routing policies** (on by default). The same card sets how many policies each user (20 by default) and each organization (20 by default) may create.
 
 - **Personal policies** are created by any signed-in user and only apply to that user's personal API keys. They also show up in the user's Playground and model lists as `policy/<name>`.
 - **Organization policies** are managed by the organization's owners and admins while the organization is selected. Members see them read-only on the same page and call them with an organization API key.
@@ -144,4 +144,4 @@ A site administrator turns own policies on or off with **Let users and organizat
 - The **Managed** tab lists the managed policies your key can call.
 - Creating, changing, switching and deleting an organization policy is recorded in the organization's audit log.
 
-Site administrators can review own policies by setting **Scope** to **Organizations** or **Personal** on **Platform admin → Gateway → Auto routing**. The list shows the owner of each policy. These policies are read-only there: an administrator can open one and switch it off, but not edit or delete it.
+Site administrators can review own policies by setting **Scope** to **Organizations** or **Personal** on **Platform admin → Gateway → Routing policies**. The list shows the owner of each policy. These policies are read-only there: an administrator can open one and switch it off, but not edit or delete it.
