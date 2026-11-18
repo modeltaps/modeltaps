@@ -2046,31 +2046,38 @@
     "templates": {
       "coding_change": {
         "title": "Coding: size of the change",
-        "summary": "Small additions go to a fast model; changes that must stay consistent across many places go to the strongest one."
+        "summary": "Small additions go to a fast model; changes that must stay consistent across many places go to the strongest one.",
+        "short": "Size of the change"
       },
       "agent_task": {
         "title": "Coding agent: kind of task",
-        "summary": "Questions about code stay cheap; debugging and edits use a balanced model; larger plans use the strongest one."
+        "summary": "Questions about code stay cheap; debugging and edits use a balanced model; larger plans use the strongest one.",
+        "short": "Agent task"
       },
       "support_triage": {
         "title": "Support triage",
-        "summary": "Account and how-to questions go to a cheap model; problems and escalations go to stronger ones."
+        "summary": "Account and how-to questions go to a cheap model; problems and escalations go to stronger ones.",
+        "short": "Support triage"
       },
       "reasoning_depth": {
         "title": "Reasoning depth",
-        "summary": "Chit-chat and lookups stay fast; multi-step reasoning, math and planning escalate."
+        "summary": "Chit-chat and lookups stay fast; multi-step reasoning, math and planning escalate.",
+        "short": "Reasoning depth"
       },
       "content_type": {
         "title": "Material: chat, writing, code or data",
-        "summary": "One model name for a team: each kind of material goes to the model that handles it best."
+        "summary": "One model name for a team: each kind of material goes to the model that handles it best.",
+        "short": "Kind of material"
       },
       "writing_task": {
         "title": "Writing work",
-        "summary": "Translation and light edits stay cheap; new drafts and creative pieces use stronger models."
+        "summary": "Translation and light edits stay cheap; new drafts and creative pieces use stronger models.",
+        "short": "Writing work"
       },
       "stakes": {
         "title": "Cost of a mistake",
-        "summary": "Everyday requests stay cheap; legal, medical, financial or customer-facing ones go to the most careful model."
+        "summary": "Everyday requests stay cheap; legal, medical, financial or customer-facing ones go to the most careful model.",
+        "short": "Cost of a mistake"
       }
     },
     "tryIt": {
@@ -2152,13 +2159,18 @@
       "subtitle": "A model name clients call; the first message picks the real model",
       "defaults": "Created enabled with automatic scoring and a {{threshold}} threshold; change these in Routes",
       "created": "Policy created",
-      "startFrom": "Start from",
-      "startFromHint": "A template fills the name, question, routes, targets, fallback and decision model; change anything after.",
       "blank": "Blank policy",
-      "blankHint": "Write the question and routes yourself.",
-      "pickFirst": "Pick a template or a blank policy",
       "fromTemplate": "From template: {{name}}",
-      "changeTemplate": "Change template"
+      "changeTemplate": "Change template",
+      "templates": "Templates",
+      "useTemplate": "Use this template",
+      "startBlank": "Start from a blank policy",
+      "unresolved": "Choose later",
+      "preview": {
+        "decision": "First user message, classified by",
+        "fallback": "Below {{threshold}} or on error",
+        "callAs": "Clients call it as"
+      }
     },
     "editTitle": "Edit routing policy",
     "scope": {
@@ -2189,6 +2201,16 @@
       "personal": "For your personal API keys only; call them as policy/<name>",
       "org": "For this organization's API keys only; call them as policy/<name>",
       "orgMember": "Policies your organization's admins made; call them as policy/<name>"
+    },
+    "templateGroups": {
+      "coding": "Coding",
+      "general": "General",
+      "business": "Support and business"
+    },
+    "tier": {
+      "fast": "Fast",
+      "balanced": "Balanced",
+      "strongest": "Strongest"
     }
   },
   "logPage": {

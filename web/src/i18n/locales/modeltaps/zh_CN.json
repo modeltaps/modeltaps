@@ -1968,31 +1968,38 @@
     "templates": {
       "coding_change": {
         "title": "编码：改动大小",
-        "summary": "小的新增用快模型；需要多处保持一致的改动用最强模型。"
+        "summary": "小的新增用快模型；需要多处保持一致的改动用最强模型。",
+        "short": "改动大小"
       },
       "agent_task": {
         "title": "编程 Agent：任务类型",
-        "summary": "读代码、答问题用便宜模型；排错和修改用均衡模型；大块规划用最强模型。"
+        "summary": "读代码、答问题用便宜模型；排错和修改用均衡模型；大块规划用最强模型。",
+        "short": "Agent 任务类型"
       },
       "support_triage": {
         "title": "客服分流",
-        "summary": "账户和操作类问题用便宜模型；故障和升级投诉用更强的模型。"
+        "summary": "账户和操作类问题用便宜模型；故障和升级投诉用更强的模型。",
+        "short": "客服分流"
       },
       "reasoning_depth": {
         "title": "推理深度",
-        "summary": "闲聊和查询保持快速；多步推理、数学和规划升级到强模型。"
+        "summary": "闲聊和查询保持快速；多步推理、数学和规划升级到强模型。",
+        "short": "推理深度"
       },
       "content_type": {
         "title": "内容类型：闲聊、写作、代码、数据",
-        "summary": "团队共用一个模型名：每类内容交给最擅长的模型。"
+        "summary": "团队共用一个模型名：每类内容交给最擅长的模型。",
+        "short": "内容类型"
       },
       "writing_task": {
         "title": "写作任务",
-        "summary": "翻译和润色用便宜模型；新写的稿件和创意内容用更强的模型。"
+        "summary": "翻译和润色用便宜模型；新写的稿件和创意内容用更强的模型。",
+        "short": "写作任务"
       },
       "stakes": {
         "title": "出错代价",
-        "summary": "日常请求用便宜模型；法律、医疗、财务或直接发给客户的内容用最稳的模型。"
+        "summary": "日常请求用便宜模型；法律、医疗、财务或直接发给客户的内容用最稳的模型。",
+        "short": "出错代价"
       }
     },
     "tryIt": {
@@ -2074,13 +2081,18 @@
       "subtitle": "客户端调用的模型名，由首条消息决定实际模型",
       "defaults": "创建后即启用，自动打分、阈值 {{threshold}}，可在「路由」里修改",
       "created": "策略已创建",
-      "startFrom": "从哪里开始",
-      "startFromHint": "模板会填好名称、问题、路由、目标模型、兜底和决策模型，之后都能改。",
       "blank": "空白策略",
-      "blankHint": "自己写问题和路由。",
-      "pickFirst": "先选一个模板或空白策略",
       "fromTemplate": "模板：{{name}}",
-      "changeTemplate": "换模板"
+      "changeTemplate": "换模板",
+      "templates": "模板",
+      "useTemplate": "使用此模板",
+      "startBlank": "从空白策略开始",
+      "unresolved": "稍后选择",
+      "preview": {
+        "decision": "首条用户消息，由它判断",
+        "fallback": "低于 {{threshold}} 或出错时",
+        "callAs": "客户端调用名"
+      }
     },
     "editTitle": "编辑路由策略",
     "scope": {
@@ -2111,6 +2123,16 @@
       "personal": "只对你的个人 API Key 生效，调用时 model 写 policy/<名字>",
       "org": "只对本组织的 API Key 生效，调用时 model 写 policy/<名字>",
       "orgMember": "本组织管理员建的策略，用 policy/<名字> 调用"
+    },
+    "templateGroups": {
+      "coding": "编码",
+      "general": "通用",
+      "business": "客服与业务"
+    },
+    "tier": {
+      "fast": "快",
+      "balanced": "均衡",
+      "strongest": "最强"
     }
   },
   "logPage": {

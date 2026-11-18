@@ -87,12 +87,12 @@ describe('RoutingPolicy page', () => {
     expect(body.enabled).toBe(true);
   });
 
-  it('opens the new policy sheet on the template picker, then lists what is still missing', async () => {
+  it('opens the new policy sheet on the template picker, then lists what a blank policy still misses', async () => {
     renderPage('/panel/routing_policy?new=1');
-    const create = await screen.findByRole('button', { name: i18n.t('objects.new.create') });
-    expect(create.disabled).toBe(true);
-    expect(screen.getByText(i18n.t('routingPolicy.new.pickFirst'))).toBeTruthy();
+    await screen.findByTestId('rp-template-preview');
     fireEvent.click(screen.getByTestId('rp-template-blank'));
+    const create = screen.getByRole('button', { name: i18n.t('objects.new.create') });
+    expect(create.disabled).toBe(true);
     const missing = i18n.t('objects.new.missing', {
       items: ['name', 'decisionModel', 'routes', 'fallbackModel']
         .map((k) => i18n.t(`routingPolicy.form.${k}`))
@@ -119,7 +119,10 @@ describe('RoutingPolicy page', () => {
     API.post.mockResolvedValue({ data: { success: true, data: { id: 9 } } });
     renderPage('/panel/routing_policy?new=1');
     await waitFor(() => expect(API.get).toHaveBeenCalledWith('/api/model_info/catalog'));
-    fireEvent.click(await screen.findByTestId('rp-template-coding_change'));
+    fireEvent.click(await screen.findByTestId('rp-template-agent_task'));
+    fireEvent.click(screen.getByTestId('rp-template-coding_change'));
+    await waitFor(() => expect(screen.getByTestId('rp-template-preview').textContent).toContain('jev-1.14.0'));
+    fireEvent.click(screen.getByRole('button', { name: i18n.t('routingPolicy.new.useTemplate') }));
     const create = screen.getByRole('button', { name: i18n.t('objects.new.create') });
     await waitFor(() => expect(create.disabled).toBe(false));
     fireEvent.click(create);

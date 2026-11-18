@@ -39,11 +39,15 @@ export const DECISION_MODELS = {
 // Recommended decision models in the order the picker lists them.
 export const RECOMMENDED_DECISION_MODELS = [...new Set([...DECISION_MODELS.coding, ...DECISION_MODELS.general])];
 
+// Groups the template picker lists templates under, in this order.
+export const TEMPLATE_GROUPS = ['coding', 'general', 'business'];
+
 export const POLICY_TEMPLATES = [
   {
     // How much of the codebase a change touches. Additive work following an existing pattern is
     // cheap; behaviour that must change consistently in several places needs the strongest model.
     id: 'coding_change',
+    group: 'coding',
     name: 'coder',
     decision: 'coding',
     question:
@@ -72,6 +76,7 @@ export const POLICY_TEMPLATES = [
     // What a coding agent is asked to do: reading and answering is cheap, planning a larger piece
     // of work needs the strongest model.
     id: 'agent_task',
+    group: 'coding',
     name: 'agent',
     decision: 'coding',
     question: 'This is the first thing a developer typed into a coding agent. What do they want the agent to do?',
@@ -95,9 +100,65 @@ export const POLICY_TEMPLATES = [
     ]
   },
   {
+    // How much thinking a request needs: chit-chat and lookups stay fast, multi-step reasoning
+    // escalates.
+    id: 'reasoning_depth',
+    group: 'general',
+    name: 'general',
+    decision: 'general',
+    question: 'How much thinking does it take to answer this request well?',
+    routes: [
+      { label: 'quick', tier: 'fast', description: 'Small talk, a greeting, a fact lookup or a short answer that needs no reasoning' },
+      { label: 'explain', tier: 'balanced', description: 'Explain, compare or summarise something in a few paragraphs' },
+      {
+        label: 'deep',
+        tier: 'strongest',
+        description: 'Multi-step reasoning: math, logic puzzles, planning, weighing trade-offs or a decision with many constraints'
+      }
+    ]
+  },
+  {
+    // One general model name for a team: code goes to a coding model, prose to a writing model,
+    // numbers and tables to a model that is good at analysis.
+    id: 'content_type',
+    group: 'general',
+    name: 'team',
+    decision: 'general',
+    question: 'What is the main material of this request?',
+    routes: [
+      { label: 'chat', tier: 'fast', description: 'Small talk or a short everyday question that needs no special skill' },
+      {
+        label: 'writing',
+        tier: 'balanced',
+        description: 'Drafting, rewriting, translating or summarising text such as an email, an article or a report'
+      },
+      { label: 'code', tier: 'strongest', description: 'Source code, shell commands, SQL or configuration files' },
+      { label: 'data', tier: 'balanced', description: 'Numbers, tables, spreadsheets or calculations to analyse' }
+    ]
+  },
+  {
+    // Writing work: translation and light edits are cheap, long or creative pieces are not.
+    id: 'writing_task',
+    group: 'general',
+    name: 'writer',
+    decision: 'general',
+    question: 'This is a request to a writing assistant. What kind of writing work is it?',
+    routes: [
+      { label: 'translate', tier: 'fast', description: 'Translate a given text into another language' },
+      { label: 'polish', tier: 'fast', description: 'Fix grammar, shorten or change the tone of a text that is already written' },
+      { label: 'draft', tier: 'balanced', description: 'Write a new email, post, document or report from notes or a brief' },
+      {
+        label: 'creative',
+        tier: 'strongest',
+        description: 'Long or creative work: a story, a speech, a campaign, or a piece that must persuade'
+      }
+    ]
+  },
+  {
     // Customer support: simple account questions stay cheap, real problems and upset customers
     // go to a careful model.
     id: 'support_triage',
+    group: 'business',
     name: 'support',
     decision: 'general',
     question: 'This is the first message a customer sent to our support assistant. What does the customer need?',
@@ -121,60 +182,9 @@ export const POLICY_TEMPLATES = [
     ]
   },
   {
-    // How much thinking a request needs: chit-chat and lookups stay fast, multi-step reasoning
-    // escalates.
-    id: 'reasoning_depth',
-    name: 'general',
-    decision: 'general',
-    question: 'How much thinking does it take to answer this request well?',
-    routes: [
-      { label: 'quick', tier: 'fast', description: 'Small talk, a greeting, a fact lookup or a short answer that needs no reasoning' },
-      { label: 'explain', tier: 'balanced', description: 'Explain, compare or summarise something in a few paragraphs' },
-      {
-        label: 'deep',
-        tier: 'strongest',
-        description: 'Multi-step reasoning: math, logic puzzles, planning, weighing trade-offs or a decision with many constraints'
-      }
-    ]
-  },
-  {
-    // One general model name for a team: code goes to a coding model, prose to a writing model,
-    // numbers and tables to a model that is good at analysis.
-    id: 'content_type',
-    name: 'team',
-    decision: 'general',
-    question: 'What is the main material of this request?',
-    routes: [
-      { label: 'chat', tier: 'fast', description: 'Small talk or a short everyday question that needs no special skill' },
-      {
-        label: 'writing',
-        tier: 'balanced',
-        description: 'Drafting, rewriting, translating or summarising text such as an email, an article or a report'
-      },
-      { label: 'code', tier: 'strongest', description: 'Source code, shell commands, SQL or configuration files' },
-      { label: 'data', tier: 'balanced', description: 'Numbers, tables, spreadsheets or calculations to analyse' }
-    ]
-  },
-  {
-    // Writing work: translation and light edits are cheap, long or creative pieces are not.
-    id: 'writing_task',
-    name: 'writer',
-    decision: 'general',
-    question: 'This is a request to a writing assistant. What kind of writing work is it?',
-    routes: [
-      { label: 'translate', tier: 'fast', description: 'Translate a given text into another language' },
-      { label: 'polish', tier: 'fast', description: 'Fix grammar, shorten or change the tone of a text that is already written' },
-      { label: 'draft', tier: 'balanced', description: 'Write a new email, post, document or report from notes or a brief' },
-      {
-        label: 'creative',
-        tier: 'strongest',
-        description: 'Long or creative work: a story, a speech, a campaign, or a piece that must persuade'
-      }
-    ]
-  },
-  {
     // Requests where a wrong answer is costly go to the most careful model, the rest stay cheap.
     id: 'stakes',
+    group: 'business',
     name: 'careful',
     decision: 'general',
     question: 'How costly would a wrong or careless answer to this request be?',
