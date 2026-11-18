@@ -112,12 +112,15 @@ function IssueTag({ issue, onAction, onDismiss, busy }) {
     : `${label} · ${action}`;
   return (
     // Gives way before the channel name: it shrinks down to its icon when the row is narrow. The
-    // model drift tag is short and stays whole, so the name gives way to it.
+    // model drift tag gives way as much as the name, but only down to its counts ("+13 −15"):
+    // the word goes first.
     <span
       title={title}
+      // The counts, the icon and × (3.25rem with the padding) stay whole.
+      style={drift ? { minWidth: `calc(${label.length + 1}ch + 3.25rem)` } : undefined}
       className={cn(
-        'inline-flex h-[22px] min-w-[44px] items-center overflow-hidden rounded-full border border-warning/40 bg-warning/10 text-xs text-warning',
-        drift ? 'shrink-0' : 'shrink-[8]'
+        'inline-flex h-[22px] items-center overflow-hidden rounded-full border border-warning/40 bg-warning/10 text-xs text-warning',
+        drift ? 'shrink' : 'min-w-[44px] shrink-[8]'
       )}
     >
       <button
@@ -130,17 +133,16 @@ function IssueTag({ issue, onAction, onDismiss, busy }) {
         className="inline-flex h-full min-w-0 items-center gap-1 pl-2 pr-1.5 hover:bg-warning/15 disabled:opacity-60"
       >
         {busy ? <Loader2 className="size-3 shrink-0 animate-spin" /> : <AlertTriangle className="size-3 shrink-0" />}
-        <span className="truncate">
-          {drift ? (
-            <>
-              {action} <span className="tabular-nums">{label}</span>
-            </>
-          ) : (
-            <>
-              {label} · <span className="underline-offset-2 hover:underline">{action}</span>
-            </>
-          )}
-        </span>
+        {drift ? (
+          <>
+            <span className="shrink-0 tabular-nums">{label}</span>
+            <span className="min-w-0 truncate">{action}</span>
+          </>
+        ) : (
+          <span className="truncate">
+            {label} · <span className="underline-offset-2 hover:underline">{action}</span>
+          </span>
+        )}
       </button>
       <button
         type="button"
@@ -157,7 +159,7 @@ function IssueTag({ issue, onAction, onDismiss, busy }) {
   );
 }
 
-// A row's tags: the upstream's new and gone models make one short tag, "Models +13 −15" (a click
+// A row's tags: the upstream's new and gone models make one short tag, "+13 −15 Models" (a click
 // opens the models tab on the new ones first, × dismisses both); the other issues keep a tag each.
 function rowTags(issues = []) {
   const drift = issues.filter((i) => i.kind === 'driftNew' || i.kind === 'driftMissing');
