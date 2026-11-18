@@ -107,15 +107,17 @@ for (const [key, entry] of Object.entries(icons)) {
 const total = [...out.values()].reduce((n, b) => n + b.length, 0);
 if (total >= MAX_TOTAL_BYTES) fail(`total SVG size ${total} bytes exceeds ${MAX_TOTAL_BYTES}`);
 
+// Model prefixes may also name a lab of ownerDomains, whose site icon then stands in.
+const ownerDomains = cfg.ownerDomains || {};
 const mapping = { aliases: cfg.aliases, channelTypes: cfg.channelTypes, modelPrefixes: cfg.modelPrefixes, domains: cfg.domains };
 for (const [section, table] of Object.entries(mapping)) {
   for (const [from, to] of Object.entries(table)) {
-    if (!icons[to]) fail(`${section}.${from} -> ${to}: unknown icon key`);
+    const target = icons[to] || (section === 'modelPrefixes' && ownerDomains[to]);
+    if (!target) fail(`${section}.${from} -> ${to}: unknown icon key`);
     if (from !== from.toLowerCase()) fail(`${section}.${from}: keys must be lowercase`);
   }
 }
 // Labs with no mark in the package: the site icon of their domain is fetched instead.
-const ownerDomains = cfg.ownerDomains || {};
 for (const [owner, domain] of Object.entries(ownerDomains)) {
   if (owner !== owner.toLowerCase()) fail(`ownerDomains.${owner}: keys must be lowercase`);
   if (icons[owner] || cfg.aliases[owner]) fail(`ownerDomains.${owner}: already has a mark`);

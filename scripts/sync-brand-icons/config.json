@@ -28,6 +28,7 @@
   "aliases": {
     "01-ai": "yi", "01ai": "yi", "lingyi": "yi", "lingyiwanwu": "yi", "零一万物": "yi",
     "360": "ai360", "360ai": "ai360",
+    "nace-ai": "nace",
     "ali": "qwen", "aliyun": "alibabacloud", "dashscope": "qwen", "tongyi": "qwen",
     "通义千问": "qwen", "阿里云": "alibabacloud",
     "amazon": "aws", "amazon-bedrock": "bedrock", "amazonwebservices": "aws",
@@ -102,7 +103,11 @@
     "internlm": "internlm", "nemotron": "nvidia", "phi-": "microsoft", "jamba": "ai21",
     "solar": "upstage", "reka": "reka", "hermes": "nousresearch", "lfm": "liquid",
     "falcon": "tii", "voyage": "voyage", "eleven_": "elevenlabs", "vidu": "vidu",
-    "jimeng": "jimeng", "pika": "pika", "dbrx": "dbrx", "llava": "llava"
+    "jimeng": "jimeng", "pika": "pika", "dbrx": "dbrx", "llava": "llava",
+    "d1": "liquid", "drex-": "nace", "decision-1": "microsoft", "microsoft-": "microsoft",
+    "elephant-": "baseten", "joey-": "baseten", "mammoth-": "baseten", "parallel-": "parallel",
+    "pplx-": "perplexity", "heygen-": "heygen", "jev": "typesafe-ai", "laya": "convaiinnovations",
+    "scaledown-": "scaledown"
   },
   "domains": {
     "openai.com": "openai", "anthropic.com": "claude", "claude.ai": "claude",
@@ -125,11 +130,12 @@
     "bfl.ai": "bfl", "suno.com": "suno", "ollama.com": "ollama", "360.cn": "ai360",
     "hunyuan.cloud.tencent.com": "hunyuan", "xiaomimimo.com": "xiaomimimo",
     "vercel.sh": "vercel", "vercel.com": "vercel", "requesty.ai": "requesty", "bytepluses.com": "byteplus", "byteplus.com": "byteplus",
-    "deepinfra.com": "deepinfra", "cerebras.ai": "cerebras", "nebius.com": "nebius", "novita.ai": "novita", "sambanova.ai": "sambanova", "modelscope.cn": "modelscope", "qnaigc.com": "qiniu", "qiniu.com": "qiniu", "chutes.ai": "chutes", "baseten.co": "baseten", "longcat.chat": "longcat", "azuredatabricks.net": "dbrx",
+    "deepinfra.com": "deepinfra", "cerebras.ai": "cerebras", "nebius.com": "nebius", "novita.ai": "novita", "sambanova.ai": "sambanova", "modelscope.cn": "modelscope", "qnaigc.com": "qiniu", "qiniu.com": "qiniu", "chutes.ai": "chutes", "baseten.co": "baseten", "nace.ai": "nace", "longcat.chat": "longcat", "azuredatabricks.net": "dbrx",
     "databricks.com": "dbrx"
   },
   "ownerDomains": {
     "heygen": "heygen.com", "mixedbread": "mixedbread.com", "sarvam": "sarvam.ai", "swiss-ai": "swiss-ai.org",
-    "thinkingmachines": "thinkingmachines.ai", "writer": "writer.com"
+    "thinkingmachines": "thinkingmachines.ai", "writer": "writer.com",
+    "typesafe-ai": "typesafe.ai", "convaiinnovations": "convaiinnovations.com", "scaledown": "scaledown.ai"
   }
 }

@@ -590,7 +590,12 @@ export default function ModelPrice({ embedded = false, initialModality }) {
     return owner?.icon;
   };
 
-  const renderProviderIcon = (name) => <BrandIcon icon={getIconByName(name)} ownedBy={name} fallbackText={name} className="size-4" />;
+  // The vendor slug (typesafe-ai, liquid …) names the mark; the display name rarely does.
+  const getSlugByName = (name) => ownedby?.find((item) => item.name === name)?.slug || name;
+
+  const renderProviderIcon = (name) => (
+    <BrandIcon icon={getIconByName(name)} ownedBy={getSlugByName(name)} fallbackText={name} className="size-4" />
+  );
 
   // 漏斗筛选候选项（不含「全部」；多选语义下空 = 不约束）。供应商带厂商 icon。
   const providerOptions = uniqueOwnedBy.filter((ob) => ob !== 'all').map((ob) => ({ value: ob, label: ob, icon: renderProviderIcon(ob) }));

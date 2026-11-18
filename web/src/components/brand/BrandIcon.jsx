@@ -7,6 +7,7 @@ import {
   brandIconUploadUrl,
   brandIconUrl,
   iconCacheHost,
+  modelOwnerDomain,
   ownerDomain,
   resolveBrandIconKey,
   uploadIconId,
@@ -20,7 +21,7 @@ import {
 // - brands with a color variant as <img src="/api/brand-icon/{key}?variant=color">;
 // - mono-only brands via CSS mask + currentColor so they follow the text color in dark mode;
 // - the cached favicon of `domain` / the base_url host / the lab's domain (manifest
-//   ownerDomains) via /api/brand-icon/domain/{host};
+//   ownerDomains, from `ownedBy` or a model-name prefix) via /api/brand-icon/domain/{host};
 // - `fallback` (default: a circular first-letter placeholder) when nothing resolves or loads.
 // Per-brand optical `scale` from the manifest is applied as a transform on the mark only.
 // Every request stays on the same origin; external icon URLs are never rendered.
@@ -137,7 +138,7 @@ export default function BrandIcon({ icon, brandKey, ownedBy, channelType, model,
   const iconKey = resolveBrandIconKey(manifest, { icon, brandKey, ownedBy, channelType, model, baseUrl: baseUrl || domain });
   const meta = iconKey ? manifest.icons[iconKey] : null;
   if (!meta || (!meta.color && !meta.mono)) {
-    const host = iconCacheHost(domain) || iconCacheHost(baseUrl) || ownerDomain(manifest, ownedBy);
+    const host = iconCacheHost(domain) || iconCacheHost(baseUrl) || ownerDomain(manifest, ownedBy) || modelOwnerDomain(manifest, model);
     if (host) {
       return (
         <ImageMark

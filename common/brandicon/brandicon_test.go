@@ -135,6 +135,9 @@ func TestMappingTargetsExist(t *testing.T) {
 		"modelPrefixes": m.ModelPrefixes, "domains": m.Domains,
 	} {
 		for from, to := range table {
+			if _, ok := m.OwnerDomains[to]; ok && name == "modelPrefixes" {
+				continue // a lab without a mark: its site icon stands in
+			}
 			if _, ok := m.Icons[to]; !ok {
 				t.Errorf("%s.%s -> %s 指向不存在的图标", name, from, to)
 			}

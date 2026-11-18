@@ -378,6 +378,11 @@ var labVendors = []*ModelOwnedBy{
 	{Name: "Sarvam AI", Slug: "sarvam"},
 	{Name: "BAAI", Slug: "baai"},
 	{Name: "OpenBMB", Slug: "openbmb"},
+	// Decision-model labs on Vercel AI Gateway.
+	{Name: "TypeSafe AI", Slug: "typesafe-ai"},
+	{Name: "Nace AI", Slug: "nace-ai"},
+	{Name: "Convai Innovations", Slug: "convaiinnovations"},
+	{Name: "ScaleDown", Slug: "scaledown"},
 }
 
 // SyncLabVendors creates the vendors a deployment does not have yet. A vendor is found by slug,

@@ -20,7 +20,7 @@ const manifest = {
   },
   aliases: { glm: 'zhipu', microsoftazure: 'azure', x: 'xai', ghost: 'missing' },
   channelTypes: { 1: 'openai', 3: 'azure', 16: 'zhipu' },
-  modelPrefixes: { gpt: 'openai', claude: 'claude', deepseek: 'deepseek', glm: 'zhipu', qwen: 'qwen', q: 'xai' },
+  modelPrefixes: { gpt: 'openai', claude: 'claude', deepseek: 'deepseek', glm: 'zhipu', qwen: 'qwen', q: 'xai', palmyra: 'writer' },
   domains: { 'deepseek.com': 'deepseek', 'aliyuncs.com': 'alibabacloud', 'dashscope.aliyuncs.com': 'qwen' },
   ownerDomains: { writer: 'writer.com' }
 };
@@ -139,6 +139,8 @@ describe('BrandIcon rendering', () => {
     expect(render(BrandIcon, { domain: 'cursor.com' })).toContain('/api/brand-icon/domain/cursor.com');
     expect(render(BrandIcon, { ownedBy: 'Writer', fallbackText: 'Writer' })).toContain('/api/brand-icon/domain/writer.com');
     expect(render(BrandIcon, { ownedBy: 'openai' })).not.toContain('/api/brand-icon/domain/');
+    expect(render(ModelIcon, { model: 'palmyra-x5' })).toContain('/api/brand-icon/domain/writer.com');
+    expect(render(ModelIcon, { model: 'gpt-4o' })).not.toContain('/api/brand-icon/domain/');
     expect(render(BrandIcon, { baseUrl: 'http://10.0.0.1:8080', fallbackText: 'Acme' })).toContain('>A</span>');
     expect(render(BrandIcon, { baseUrl: 'https://api.deepseek.com' })).toContain('/api/brand-icon/deepseek?variant=color');
   });
@@ -153,9 +155,7 @@ describe('BrandIcon rendering', () => {
 
   it('resolves brandKey / ownedBy aliases and keeps ModelIcon props working', () => {
     setBrandIconManifest(manifest);
-    expect(render(BrandIcon, { brandKey: 'microsoftazure', fallbackText: 'Azure' })).toContain(
-      '/api/brand-icon/azure?variant=color'
-    );
+    expect(render(BrandIcon, { brandKey: 'microsoftazure', fallbackText: 'Azure' })).toContain('/api/brand-icon/azure?variant=color');
     expect(render(BrandIcon, { ownedBy: 'glm', fallbackText: 'glm' })).toContain('/api/brand-icon/zhipu?variant=color');
     expect(render(BrandIcon, { ownedBy: 'Acme', fallbackText: 'Acme' })).toContain('>A</span>');
     expect(render(ModelIcon, { model: 'gpt-4o', className: 'size-5' })).toContain('size-5');

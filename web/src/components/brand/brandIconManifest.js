@@ -117,19 +117,29 @@ function sortedPrefixes(manifest) {
 }
 
 // Longest-prefix match on the model name, then on its last path segment
-// (e.g. `deepseek-ai/DeepSeek-V3` → `deepseek-v3`).
-function fromModel(manifest, model) {
+// (e.g. `deepseek-ai/DeepSeek-V3` → `deepseek-v3`). The target is an icon key, or a lab of
+// ownerDomains that has no mark.
+function modelPrefixTarget(manifest, model) {
   const name = normalize(model);
-  if (!name) return null;
+  if (!name || !manifest?.modelPrefixes) return null;
   const candidates = [name];
   const segment = name.split('/').pop();
   if (segment && segment !== name) candidates.push(segment);
   const prefixes = sortedPrefixes(manifest);
   for (const candidate of candidates) {
     const prefix = prefixes.find((p) => candidate.startsWith(p));
-    if (prefix) return lookupBrandKey(manifest, manifest.modelPrefixes[prefix]);
+    if (prefix) return manifest.modelPrefixes[prefix];
   }
   return null;
+}
+
+function fromModel(manifest, model) {
+  return lookupBrandKey(manifest, modelPrefixTarget(manifest, model));
+}
+
+// Domain whose site icon stands in for a model of a lab without a mark (e.g. jev → typesafe.ai).
+export function modelOwnerDomain(manifest, model) {
+  return ownerDomain(manifest, modelPrefixTarget(manifest, model));
 }
 
 export function hostnameFromBaseUrl(baseUrl) {
