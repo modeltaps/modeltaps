@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Gemini Live API sessions (realtime voice, camera and screen frames over one WebSocket) are
+  relayed in their native protocol at
+  `/gemini/ws/google.ai.generativelanguage.{v1alpha,v1beta}.GenerativeService.BidiGenerateContent`,
+  so the Google SDKs work with the gateway as the base URL. The model is read from the setup
+  message, the session goes to a Gemini channel (AI Studio key or service account), each turn is
+  billed from its usageMetadata by modality, client text is moderated, and errors reach the client
+  as close frames.
 - New routing policies start from a template: seven templates (coding change size, coding agent
   task, support triage, reasoning depth, material, writing work, cost of a mistake) fill the name,
   question, routes, targets, fallback and decision model from the published models, with a model
@@ -83,6 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Realtime sessions pass the upstream's close frame (code and reason) on to the client instead of
+  dropping the connection, so a client sees why the provider ended the session.
 - The expected upstream charge in the consume log is the channel's list price without its fee,
   the basis upstreams report and bill on, so reconciliation no longer shows the fee as a
   difference. The cost is logged for every request whose channel cost is known, with the cost

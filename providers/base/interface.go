@@ -214,6 +214,13 @@ type RealtimeInterface interface {
 	CreateChatRealtime(modelName string) (*websocket.Conn, requester.MessageHandler, *types.OpenAIErrorWithStatusCode)
 }
 
+// GeminiLiveInterface opens the upstream WebSocket of the Gemini Live API (BidiGenerateContent)
+// for an API version. The session is relayed in its native protocol.
+type GeminiLiveInterface interface {
+	ProviderInterface
+	CreateGeminiLive(version string) (*websocket.Conn, *types.OpenAIErrorWithStatusCode)
+}
+
 type ResponsesInterface interface {
 	ProviderInterface
 	CreateResponses(request *types.OpenAIResponsesRequest) (*types.OpenAIResponsesResponses, *types.OpenAIErrorWithStatusCode)

@@ -207,6 +207,8 @@ func setGeminiRouter(router *gin.Engine) {
 	{
 		relayGeminiRouter.POST("/:version/models/*action", relay.Relay)
 		relayGeminiRouter.GET("/:version/models", relay.ListGeminiModelsByToken)
+		// Live API: the Google SDKs open {base}/ws/google.ai.generativelanguage.{version}.GenerativeService.BidiGenerateContent.
+		relayGeminiRouter.GET("/ws/*rpc", relay.GeminiLive)
 	}
 }
 

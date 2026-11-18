@@ -119,6 +119,32 @@ curl https://your-modeltaps-domain.com/gemini/v1beta/models \
   -H "x-goog-api-key: sk-replace-with-your-key"
 ```
 
+### Live API (realtime voice and video)
+
+Gemini Live sessions (voice, camera frames and screen sharing over one WebSocket) go through the same base URL. The Google SDKs build the address from it, so set the base URL and connect as usual:
+
+```text
+wss://your-modeltaps-domain.com/gemini/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent
+```
+
+```python
+from google import genai
+from google.genai import types
+
+client = genai.Client(
+    api_key="sk-replace-with-your-key",
+    http_options=types.HttpOptions(base_url="https://your-modeltaps-domain.com/gemini"),
+)
+
+async with client.aio.live.connect(model="gemini-3.8-live", config={"response_modalities": ["AUDIO"]}) as session:
+    ...
+```
+
+- The key goes in the `x-goog-api-key` header or the `key` query parameter. `v1alpha` and `v1beta` are both accepted; ephemeral tokens (`BidiGenerateContentConstrained`) are not.
+- The model comes from `setup.model` in the first message, and the session is routed to a Gemini channel (Google AI Studio key or service account) that carries it. Messages pass through unchanged.
+- Each turn is billed from the `usageMetadata` the model reports: input tokens by modality (text, audio, image and video frames), output tokens and thinking. A session stops when the key, balance or budget runs out.
+- Errors arrive as WebSocket close frames with the reason, as from Google: 1007 for an invalid setup, 1008 for a refused request (key, quota, model, content moderation).
+
 ## Coding agents
 
 Coding agents have endpoints of their own. The path says which agent is calling; the protocol still comes from the rest of the path, and authentication, routing, billing and errors are the same as on the endpoints above. What differs is the model list, which each endpoint returns in the format its agent reads, so the agent's model picker shows the models your API key can call.

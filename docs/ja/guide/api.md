@@ -119,6 +119,32 @@ curl https://your-modeltaps-domain.com/gemini/v1beta/models \
   -H "x-goog-api-key: sk-ここを自分のキーに置き換えてください"
 ```
 
+### Live API（リアルタイム音声・映像）
+
+Gemini Live のセッション（音声、カメラ映像、画面共有を 1 本の WebSocket で送る）も同じベース URL を使います。Google SDK が完全なアドレスを組み立てるので、base URL を設定していつもどおり接続してください：
+
+```text
+wss://your-modeltaps-domain.com/gemini/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent
+```
+
+```python
+from google import genai
+from google.genai import types
+
+client = genai.Client(
+    api_key="sk-replace-with-your-key",
+    http_options=types.HttpOptions(base_url="https://your-modeltaps-domain.com/gemini"),
+)
+
+async with client.aio.live.connect(model="gemini-3.8-live", config={"response_modalities": ["AUDIO"]}) as session:
+    ...
+```
+
+- キーは `x-goog-api-key` ヘッダーか `key` クエリパラメーターで渡します。`v1alpha` と `v1beta` に対応し、エフェメラルトークン（`BidiGenerateContentConstrained`）には未対応です。
+- モデルは最初のメッセージの `setup.model` から決まり、そのモデルを持つ Gemini チャネル（Google AI Studio のキーまたはサービスアカウント）にルーティングされます。メッセージはそのまま転送されます。
+- 各ターンはモデルが返す `usageMetadata` で課金されます：モダリティ別の入力トークン（テキスト、音声、画像・映像フレーム）、出力トークン、思考トークン。キー、残高、予算を使い切るとセッションは終了します。
+- エラーは Google と同じく理由付きの WebSocket クローズフレームで返ります：1007 は無効な setup、1008 は拒否されたリクエスト（キー、クォータ、モデル、コンテンツ審査）です。
+
 ## コーディングエージェント
 
 コーディングエージェントには専用の接続先アドレスがあります。パスはどのエージェントが呼び出しているかを表し、プロトコルはその後ろのパスで決まります。認証、ルーティング、課金、エラーは上記の API と同じです。違うのはモデル一覧だけで、各アドレスはそのエージェントが読める形式で返すため、エージェントのモデル選択画面に API キーで呼び出せるモデルが表示されます。

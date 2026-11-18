@@ -106,3 +106,74 @@ func moderateRealtimeClientEvents(next requester.MessageHandler, replyToUser fun
 		return next(source, messageType, message)
 	}
 }
+
+// geminiLiveModeratedFields maps the members of a Gemini Live client message to the text the
+// model reads in them: the system instruction and tool declarations of setup, the turns of
+// clientContent, the text of realtimeInput (its audio and video carry no text) and the function
+// responses of toolResponse. Both the JSON (lowerCamelCase) and the proto (snake_case) names are
+// read, since the upstream accepts either.
+var geminiLiveModeratedFields = map[string][]string{
+	"setup":          {"systemInstruction", "system_instruction", "tools"},
+	"clientContent":  {"turns"},
+	"client_content": {"turns"},
+	"realtimeInput":  {"text"},
+	"realtime_input": {"text"},
+	"toolResponse":   {""},
+	"tool_response":  {""},
+}
+
+// geminiLiveClientMessageSafety moderates a Gemini Live client message before it is forwarded.
+// Media is never decoded: the bytes are read with gjson and only the members above are checked.
+func geminiLiveClientMessageSafety(message []byte) *types.OpenAIErrorWithStatusCode {
+	if !config.EnableSafe || !gjson.ValidBytes(message) {
+		return nil
+	}
+
+	texts := make([]string, 0)
+	gjson.ParseBytes(message).ForEach(func(key, value gjson.Result) bool {
+		fields, ok := geminiLiveModeratedFields[key.String()]
+		if !ok || !value.IsObject() {
+			return true
+		}
+		for _, field := range fields {
+			if field == "" {
+				texts = append(texts, safty.ExtractJSONText(value.Raw)...)
+				continue
+			}
+			value.ForEach(func(k, v gjson.Result) bool {
+				if k.String() == field {
+					if v.Type == gjson.String {
+						if s := v.String(); s != "" {
+							texts = append(texts, s)
+						}
+					} else {
+						texts = append(texts, safty.ExtractJSONText(v.Raw)...)
+					}
+				}
+				return true
+			})
+		}
+		return true
+	})
+	if len(texts) == 0 {
+		return nil
+	}
+	return checkContentSafety(texts)
+}
+
+// moderateGeminiLiveClientMessages wraps a Gemini Live message handler so client messages are
+// moderated before they are forwarded. A refused message is not forwarded: closeUser ends the
+// session with the reason, the way the Live API reports errors.
+func moderateGeminiLiveClientMessages(next requester.MessageHandler, closeUser func(reason string)) requester.MessageHandler {
+	return func(source requester.MessageSource, messageType int, message []byte) (bool, *types.UsageEvent, []byte, error) {
+		if source == requester.UserMessage && (messageType == websocket.TextMessage || messageType == websocket.BinaryMessage) {
+			if apiErr := geminiLiveClientMessageSafety(message); apiErr != nil {
+				if closeUser != nil {
+					closeUser(apiErr.OpenAIError.Message)
+				}
+				return false, nil, nil, nil
+			}
+		}
+		return next(source, messageType, message)
+	}
+}

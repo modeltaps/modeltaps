@@ -119,6 +119,32 @@ curl https://your-modeltaps-domain.com/gemini/v1beta/models \
   -H "x-goog-api-key: sk-替换为你的key"
 ```
 
+### Live API（实时语音与视频）
+
+Gemini Live 会话（语音、摄像头画面、屏幕共享走同一条 WebSocket）也用这个基础地址。Google SDK 会自己拼出完整地址，设置好 base URL 照常连接即可：
+
+```text
+wss://your-modeltaps-domain.com/gemini/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent
+```
+
+```python
+from google import genai
+from google.genai import types
+
+client = genai.Client(
+    api_key="sk-replace-with-your-key",
+    http_options=types.HttpOptions(base_url="https://your-modeltaps-domain.com/gemini"),
+)
+
+async with client.aio.live.connect(model="gemini-3.8-live", config={"response_modalities": ["AUDIO"]}) as session:
+    ...
+```
+
+- 密钥放在 `x-goog-api-key` 请求头或 `key` 查询参数里。支持 `v1alpha` 和 `v1beta`；暂不支持临时令牌（`BidiGenerateContentConstrained`）。
+- 模型取自第一条消息的 `setup.model`，会话路由到带有该模型的 Gemini 渠道（Google AI Studio 密钥或服务账号），消息原样转发。
+- 每一轮按模型返回的 `usageMetadata` 计费：按模态区分的输入 token（文本、音频、图片和视频帧）、输出 token 和思考 token。密钥、余额或预算用完时会话结束。
+- 错误和 Google 一样以带原因的 WebSocket 关闭帧返回：1007 表示 setup 无效，1008 表示请求被拒（密钥、额度、模型、内容审核）。
+
 ## 编程 Agent
 
 编程 Agent 有各自的专属接入地址。路径表示是哪个 Agent 在调用，协议仍由后面的路径决定；鉴权、路由、计费和错误都与上面的接口相同。不同的只有模型列表：每个地址按对应 Agent 能识别的格式返回，Agent 的模型选择器里就能看到你的 API Key 可调用的模型。
