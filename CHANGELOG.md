@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   message, the session goes to a Gemini channel (AI Studio key or service account), each turn is
   billed from its usageMetadata by modality, client text is moderated, and errors reach the client
   as close frames.
+- Official prices for the Gemini Live models (3.8 Live, 3.8 Live Extended Thinking, 3.1 Flash Live,
+  2.5 Flash native audio, 3.5 Live Translate, 3.5 Transcribe Live): audio input, image and video
+  frames and audio output are billed at their own listed rates instead of the text rate.
 - New routing policies start from a template: seven templates (coding change size, coding agent
   task, support triage, reasoning depth, material, writing work, cost of a mistake) fill the name,
   question, routes, targets, fallback and decision model from the published models, with a model

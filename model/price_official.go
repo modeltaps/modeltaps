@@ -127,6 +127,30 @@ func geminiPrice(input, cached, audio, output, image float64, longContext *LongC
 	}
 }
 
+// geminiLivePrice prices a Live API model: text input, audio input, image and video input, text
+// output and audio output (thinking is billed as text output). Live sessions report the tokens of
+// each modality, so audio and frames are billed at their own rates through the input_audio_tokens,
+// input_image_tokens and output_audio_tokens extras. A zero price means the vendor lists none and
+// those tokens are billed at the text rate.
+func geminiLivePrice(textInput, audioInput, imageInput, textOutput, audioOutput float64) officialTokenPrice {
+	extra := map[string]float64{}
+	if audioInput > 0 {
+		extra[config.UsageExtraInputAudio] = audioInput
+	}
+	if imageInput > 0 {
+		extra[config.UsageExtraInputImageTokens] = imageInput
+	}
+	if audioOutput > 0 {
+		extra[config.UsageExtraOutputAudio] = audioOutput
+	}
+	return officialTokenPrice{
+		channelType: config.ChannelTypeGemini,
+		input:       textInput,
+		output:      textOutput,
+		extra:       extra,
+	}
+}
+
 // deepseekPrice: DeepSeek has no cache write fee. Cache hits arrive as cached_tokens on the OpenAI
 // format and as cache_read_input_tokens on the Anthropic format, and cache creation tokens on the
 // Anthropic format are billed as cache misses.
@@ -290,6 +314,16 @@ func officialTokenPrices() map[string]officialTokenPrice {
 		"gemini-3.1-flash-image":      geminiPrice(0.5, 0, 0, 3, 60, nil),
 		"gemini-3.1-flash-lite-image": geminiPrice(0.25, 0, 0, 1.5, 30, nil),
 		"gemini-nano-banana-2.1":      geminiPrice(1.5, 0, 0, 7.5, 30, nil),
+		// Live API models, USD per 1M tokens: text input, audio input, image/video input, text
+		// output (thinking included), audio output. No context caching is listed (checked 2026-11-18).
+		"gemini-3.8-live":                               geminiLivePrice(0.75, 3, 1, 4.5, 12),
+		"gemini-3.8-live-extended-thinking":             geminiLivePrice(0.75, 3, 1, 4.5, 12),
+		"gemini-3.1-flash-live-preview":                 geminiLivePrice(0.75, 3, 1, 4.5, 12),
+		"gemini-2.5-flash-native-audio-preview-12-2025": geminiLivePrice(0.5, 3, 3, 2, 12), // audio and video input share $3; no image price is listed
+		// Audio-only Live models list no text price: input is the audio input price, output the
+		// listed output (audio for translate, the transcript text for transcribe).
+		"gemini-3.5-live-translate-preview": geminiLivePrice(3.5, 0, 0, 21, 0),
+		"gemini-3.5-transcribe-live":        geminiLivePrice(3.5, 0, 0, 21, 0),
 
 		// DeepSeek, USD per 1M tokens at peak hours: cache miss input, cache hit input, output.
 		// Off-peak rates are half; a static price cannot follow the time of day, so the peak rate

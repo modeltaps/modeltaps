@@ -386,3 +386,26 @@ func TestWhisperOfficialMinutesPrice(t *testing.T) {
 		t.Error("whisper-1 must not also be a gateway default")
 	}
 }
+
+// Live sessions report audio and frame tokens; the Live prices bill them at their own rates
+// relative to text (audio in 4x, frames 1.33x, audio out 2.67x for gemini-3.8-live).
+func TestGeminiLiveOfficialPrice(t *testing.T) {
+	price := officialTokenPrices()["gemini-3.8-live"].toPrice("gemini-3.8-live")
+	if price.Input != usdPerMillionToRatio(0.75) || price.Output != usdPerMillionToRatio(4.5) {
+		t.Fatalf("base prices: %v / %v", price.Input, price.Output)
+	}
+	want := map[string]float64{
+		config.UsageExtraInputAudio:       4,
+		config.UsageExtraInputImageTokens: roundRatioValue(1 / 0.75),
+		config.UsageExtraOutputAudio:      roundRatioValue(12 / 4.5),
+	}
+	for key, ratio := range want {
+		if got := price.GetExtraRatio(key); got != ratio {
+			t.Errorf("%s: got %v, want %v", key, got, ratio)
+		}
+	}
+	// Audio-only models have no extras: every token is billed at the listed audio price.
+	if p := officialTokenPrices()["gemini-3.5-live-translate-preview"]; len(p.extra) != 0 {
+		t.Errorf("translate extras: %v", p.extra)
+	}
+}
