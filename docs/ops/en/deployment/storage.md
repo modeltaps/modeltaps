@@ -11,6 +11,8 @@ The image APIs of Cloudflare Workers AI and Stability AI, and Gemini's image out
 
 Upstreams such as DALL·E and Flux return image links themselves. **Also store images and videos upstreams return as links** (on by default) fetches each image once through the channel's proxy and stores it, so clients get a link on this site that works where the upstream host is blocked or slow; if the fetch fails, the upstream link is passed on. Turned off, those links are passed on as they are.
 
+Midjourney task queries answer with gateway image links too, taken over the same way as the Kling videos below (fetched on the first download); an image on the channel's own host (a Midjourney proxy you run) is passed on.
+
 For a finished Kling video task, the video links returned when the task is queried become `<server address>/media/...` too. Videos are not fetched ahead: the first download of the link fetches the video from the upstream through the channel's proxy, passing it on while writing it to the data directory, and later downloads read that copy (with several nodes, each node fetches its own). The link lives for 1 hour from the first query, with the same download limit and speed as images, and a video may be up to 512 MB. Videos are always kept by this gateway, never uploaded to external storage.
 
 ## Default: this gateway

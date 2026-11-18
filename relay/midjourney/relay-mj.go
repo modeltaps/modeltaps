@@ -171,9 +171,7 @@ func coverMidjourneyTaskDto(originTask *model.Midjourney) (midjourneyTask provid
 	midjourneyTask.SubmitTime = originTask.SubmitTime
 	midjourneyTask.StartTime = originTask.StartTime
 	midjourneyTask.FinishTime = originTask.FinishTime
-	midjourneyTask.ImageUrl = ""
-
-	midjourneyTask.ImageUrl = originTask.ImageUrl
+	midjourneyTask.ImageUrl = clientImageURL(originTask)
 	midjourneyTask.Status = originTask.Status
 	midjourneyTask.FailReason = originTask.FailReason
 	midjourneyTask.Action = originTask.Action

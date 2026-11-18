@@ -45,6 +45,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Kling CDN links. The first download of a link fetches the video through the channel's proxy,
   passing it on while writing it to disk; later downloads read that copy. Links live for an hour
   from the first query, with the image download limit and speed, up to 512 MB per video.
+- Midjourney task queries answer with gateway image links the same way, so Discord and CDN
+  images reach clients where those hosts are blocked. Images on the channel's own host (a
+  Midjourney proxy the admin runs) are passed on.
 - Image storage is set in the console: **Platform admin → Gateway settings → Requests & protocols
   → Image storage** (this gateway, S3 compatible, Alibaba Cloud OSS, SM.MS or Imgur). It applies
   at once without a restart, keeps its secrets encrypted, and **Test upload** tries the form

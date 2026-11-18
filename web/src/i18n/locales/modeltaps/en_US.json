@@ -4022,7 +4022,7 @@
         },
         "rehost": {
           "label": "Also store images and videos upstreams return as links",
-          "hint": "When an upstream such as DALL·E or Flux returns an image link, or a Kling task a video link, clients get a link on this site that works where the upstream host is blocked or slow. Images are fetched at once; a video is fetched on its first download and kept, up to 512 MB. A link that cannot be fetched is passed on."
+          "hint": "When an upstream such as DALL·E or Flux returns an image link, a Midjourney task an image link or a Kling task a video link, clients get a link on this site that works where the upstream host is blocked or slow. Images are fetched at once; a video is fetched on its first download and kept, up to 512 MB. A link that cannot be fetched is passed on."
         }
       }
     },
