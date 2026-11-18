@@ -212,7 +212,7 @@ describe('model supply options', () => {
   });
 
   it('the default supply mode is a gateway form card', () => {
-    expect(cardById('supply-mode')).toMatchObject({ groupId: 'gateway', kind: 'form', keys: ['SupplyModeDefault'] });
+    expect(cardById('supply-mode')).toMatchObject({ groupId: 'gateway', kind: 'form', keys: ['SupplyModeDefault', 'SupplyCostOrder'] });
   });
 
   it('pause rules must be empty or a JSON array', () => {

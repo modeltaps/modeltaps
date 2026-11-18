@@ -787,11 +787,9 @@ func (cc *ChannelsChooser) Next(group, modelName string, filters ...ChannelsFilt
 		return nil, errors.New(ErrChannelNotFound)
 	}
 
-	for _, priority := range channelsPriority {
-		for _, tier := range cc.costTiers(modelName, priority) {
-			if channel := cc.balancer(tier, filters, modelName, nil); channel != nil {
-				return channel, nil
-			}
+	for _, tier := range cc.routeTiers(modelName, channelsPriority) {
+		if channel := cc.balancer(tier, filters, modelName, nil); channel != nil {
+			return channel, nil
 		}
 	}
 
@@ -817,11 +815,9 @@ func (cc *ChannelsChooser) NextByValidatedModel(group, validatedModelName string
 		return nil, ErrNoChannelsAvailableSentinel
 	}
 
-	for _, priority := range channelsPriority {
-		for _, tier := range cc.costTiers(validatedModelName, priority) {
-			if channel := cc.balancer(tier, filters, validatedModelName, ginContext); channel != nil {
-				return channel, nil
-			}
+	for _, tier := range cc.routeTiers(validatedModelName, channelsPriority) {
+		if channel := cc.balancer(tier, filters, validatedModelName, ginContext); channel != nil {
+			return channel, nil
 		}
 	}
 

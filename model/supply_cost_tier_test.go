@@ -3,6 +3,8 @@ package model
 import (
 	"reflect"
 	"testing"
+
+	"github.com/modeltaps/modeltaps/common/config"
 )
 
 func TestCostTierIndex(t *testing.T) {
@@ -80,5 +82,64 @@ func TestRouterPrefersCheaperSupply(t *testing.T) {
 	}
 	if len(preview.Tiers) != 3 || preview.Tiers[0].Supplies[0].ChannelId != cheap.Id || preview.Tiers[2].CostTier != 2 {
 		t.Fatalf("preview tiers = %d, want three cost tiers cheapest first", len(preview.Tiers))
+	}
+}
+
+func TestOrderSupplyTiers(t *testing.T) {
+	prio := []int64{10, 10, 0, 0}
+	costs := []float64{1.05, 1, 0.6, 0}
+	// Priority first: priority 10 split by cost, then priority 0 split by cost (unknown last).
+	if got := orderSupplyTiers(prio, costs, false); !reflect.DeepEqual(got, [][]int{{1}, {0}, {2}, {3}}) {
+		t.Errorf("priority first = %v", got)
+	}
+	// Cost first: cheapest anywhere first; unknown last.
+	if got := orderSupplyTiers(prio, costs, true); !reflect.DeepEqual(got, [][]int{{2}, {1}, {0}, {3}}) {
+		t.Errorf("cost first = %v", got)
+	}
+	// Same cost across priorities: priority orders them.
+	if got := orderSupplyTiers([]int64{0, 10}, []float64{1, 1}, true); !reflect.DeepEqual(got, [][]int{{1}, {0}}) {
+		t.Errorf("same cost = %v", got)
+	}
+}
+
+// With SupplyCostOrder "cost" a cheaper backup of a lower priority takes the requests.
+func TestRouterCostFirstAcrossPriorities(t *testing.T) {
+	useAllocationTestDB(t)
+	old := config.SupplyCostOrder
+	t.Cleanup(func() { config.SupplyCostOrder = old })
+	top := makeAllocationChannel(t, testChannel{"top", 1, "https://top.example", 0, 1})
+	low := makeAllocationChannel(t, testChannel{"low", 1, "https://low.example", 0, 1})
+	DB.Model(top).Updates(map[string]any{"cost_ratio": 1.0, "fee_rate": 0.05})
+	DB.Model(low).Update("cost_ratio", 1.0)
+	makePublicModel(t, "m")
+	makeSupply(t, "m", top, 10, 1)
+	makeSupply(t, "m", low, 0, 1)
+	oldPricing := PricingInstance
+	PricingInstance = &Pricing{Prices: map[string]*Price{"m": {Model: "m", Type: TokensPriceType, Input: 1, Output: 2}}}
+	t.Cleanup(func() { PricingInstance = oldPricing })
+	InvalidateChannelPriceCache()
+	ChannelGroup.Load()
+
+	config.SupplyCostOrder = SupplyCostOrderPriority
+	if ch, _ := ChannelGroup.Next("default", "m"); ch == nil || ch.Id != top.Id {
+		t.Fatalf("priority first picked %v, want the higher priority", ch)
+	}
+	config.SupplyCostOrder = SupplyCostOrderCost
+	if ch, _ := ChannelGroup.Next("default", "m"); ch == nil || ch.Id != low.Id {
+		t.Fatalf("cost first picked %v, want the cheaper supply", ch)
+	}
+	views, _ := GetModelSupplyViews("m", 0)
+	for _, v := range views {
+		want := SupplyTrafficBackup
+		if v.ChannelId == low.Id {
+			want = SupplyTrafficPrimary
+		}
+		if v.Traffic != want || (v.ChannelId == top.Id && !v.DearerBackup) {
+			t.Errorf("%s: traffic %q dearer %v", v.ChannelName, v.Traffic, v.DearerBackup)
+		}
+	}
+	preview, _ := PreviewModelSupply("m", "")
+	if preview.CostOrder != SupplyCostOrderCost || preview.Tiers[0].Supplies[0].ChannelId != low.Id {
+		t.Fatalf("preview order = %s, first %d", preview.CostOrder, preview.Tiers[0].Supplies[0].ChannelId)
 	}
 }

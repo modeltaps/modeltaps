@@ -281,6 +281,15 @@ func registerOptions() {
 		config.SupplyModeDefault = value
 		return nil
 	}, SupplyModeBalance, config.ScopeAdmin)
+	config.GlobalOption.RegisterCustom("SupplyCostOrder", func() string {
+		return config.SupplyCostOrder
+	}, func(value string) error {
+		if value != SupplyCostOrderPriority && value != SupplyCostOrderCost {
+			return fmt.Errorf("invalid SupplyCostOrder %q", value)
+		}
+		config.SupplyCostOrder = value
+		return nil
+	}, SupplyCostOrderPriority, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("ChannelMetricsEnabled", &config.ChannelMetricsEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("ChannelMetricsRetentionDays", &config.ChannelMetricsRetentionDays, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("ChannelCredentialRefreshMinutes", &config.ChannelCredentialRefreshMinutes, config.ScopeAdmin)

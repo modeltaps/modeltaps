@@ -440,11 +440,13 @@ export function SupplyIntakeRulesCard({ ctx }) {
 
 SupplyIntakeRulesCard.propTypes = { ctx: PropTypes.object.isRequired };
 
-// How a model that follows the default picks a supply within one priority tier.
+// How a model that follows the default picks a supply within one priority tier, and how far a
+// supply's cost reorders the tiers (within a priority, or across priorities).
 export function SupplyModeCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, setField } = ctx;
   const value = inputs.SupplyModeDefault === 'failover' ? 'failover' : 'balance';
+  const costOrder = inputs.SupplyCostOrder === 'cost' ? 'cost' : 'priority';
   return (
     <OptionCard ctx={ctx} id="supply-mode">
       <SelectRow
@@ -454,6 +456,14 @@ export function SupplyModeCard({ ctx }) {
         value={value}
         onChange={(v) => setField('SupplyModeDefault', v)}
         options={['balance', 'failover'].map((mode) => ({ value: mode, label: t(`modelSupply.mode.${mode}`) }))}
+      />
+      <SelectRow
+        id="SupplyCostOrder"
+        label={t('modelSupply.costOrder.label')}
+        description={t(`modelSupply.costOrder.${costOrder}Hint`)}
+        value={costOrder}
+        onChange={(v) => setField('SupplyCostOrder', v)}
+        options={['priority', 'cost'].map((order) => ({ value: order, label: t(`modelSupply.costOrder.${order}`) }))}
       />
     </OptionCard>
   );

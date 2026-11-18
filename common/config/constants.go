@@ -328,6 +328,12 @@ var ModelSupplyEnabled = false
 // priority tier: "balance" (by weight) or "failover" (the heaviest takes every request).
 var SupplyModeDefault = "balance"
 
+// SupplyCostOrder decides how far a supply's cost reorders a model's supplies:
+// "priority" (default): priorities come first; within one priority the cheapest supplies take
+// the requests and dearer ones back them up. "cost": the cheapest supplies of the model take the
+// requests whatever their priority, and priority only orders supplies of the same cost.
+var SupplyCostOrder = "priority"
+
 // PauseRulesEnabled sends every relay failure through the pause rules (see model.PauseRule):
 // channels or models are paused for a while and resumed automatically, instead of the older
 // automatic disabling, per-status cooldowns and model-not-found quarantine.

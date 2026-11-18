@@ -112,35 +112,30 @@ func markSupplyTraffic(views []*ModelSupplyView) {
 			continue
 		}
 		sort.SliceStable(available, func(i, j int) bool {
-			if available[i].Priority != available[j].Priority {
-				return available[i].Priority > available[j].Priority
-			}
 			return available[i].EffectiveWeight() > available[j].EffectiveWeight()
 		})
-		top := available[0].Priority
 		failover := false
 		if info := lookupModelInfo(name); info != nil {
 			failover = routingSupplyMode(info, allocation) == SupplyModeFailover
 		}
-		var topTier []*ModelSupplyView
-		for _, v := range available {
-			if v.Priority == top {
-				topTier = append(topTier, v)
-			} else {
-				v.Traffic = SupplyTrafficBackup
-			}
+		// The first tier the router tries takes the requests (supply_cost_tier.go).
+		prio := make([]int64, len(available))
+		costs := make([]float64, len(available))
+		for i, v := range available {
+			prio[i], costs[i] = v.Priority, supplyViewCost(v)
 		}
-		// Within the tier only the cheapest supplies take requests (supply_cost_tier.go).
-		costs := make([]float64, len(topTier))
-		for i, v := range topTier {
-			costs[i] = supplyViewCost(v)
-		}
+		groups := orderSupplyTiers(prio, costs, costFirst())
 		var tier []*ModelSupplyView
-		for i, t := range costTierIndex(costs) {
-			if t == 0 {
-				tier = append(tier, topTier[i])
-			} else {
-				topTier[i].Traffic, topTier[i].DearerBackup = SupplyTrafficBackup, true
+		for _, i := range groups[0] {
+			tier = append(tier, available[i])
+		}
+		top := available[groups[0][0]].Priority
+		for _, idx := range groups[1:] {
+			for _, i := range idx {
+				v := available[i]
+				v.Traffic = SupplyTrafficBackup
+				// Behind only for its cost: it ranks as high as the supplies that take requests.
+				v.DearerBackup = v.Priority >= top
 			}
 		}
 		heaviest := tier[0].EffectiveWeight()

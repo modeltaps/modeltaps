@@ -3144,7 +3144,8 @@
       "first": "優先嘗試",
       "backup_other": "後備 {{count}}",
       "priority": "優先級 {{priority}}",
-      "dearer": "更貴，同優先級更便宜的線路之後才用"
+      "dearer": "更貴，同優先級更便宜的線路之後才用",
+      "dearerAcross": "較貴，較便宜的線路都失敗後才用"
     },
     "state": {
       "ok": "可用",
@@ -3262,7 +3263,7 @@
     "joinLast": "後加入·排最後",
     "joinLastTip": "此模型已有其他渠道提供時才加入，因此排在它們之後。",
     "dearerBackup": "更貴，僅兜底",
-    "dearerBackupTip": "同優先級有更便宜的線路承接請求，這條只在它們失敗時才用。",
+    "dearerBackupTip": "有較便宜的線路承接請求，這條只在它們失敗時才用。",
     "restorePlacement": "恢復正常排位",
     "confirmPending": "啟用",
     "keepOff": "不啟用",
@@ -3295,7 +3296,14 @@
     "costFromRatio": "按渠道的成本倍率估算（上游沒有價格表）",
     "confirmChannel": "確認 {{channel}} 的全部待確認線路",
     "confirmChannelAsk": "確認 {{channel}} 在所有模型上的待確認線路？因成本高於售價被攔下的線路會按這個成本接請求。",
-    "confirmChannelDone": "已確認 {{channel}} 的 {{count}} 條線路"
+    "confirmChannelDone": "已確認 {{channel}} 的 {{count}} 條線路",
+    "costOrder": {
+      "label": "成本與優先級",
+      "priority": "優先級優先",
+      "cost": "成本優先",
+      "priorityHint": "按優先級排先後；同一優先級裏最便宜的線路承接請求，較貴的兜底。優先級代表成本以外的考慮（質素、速度、信任的廠商）時用這個。",
+      "costHint": "不論優先級，一個模型最便宜的線路先承接請求；優先級只決定同價線路的先後。用戶付的價格不變，只影響你的成本。較便宜的託管商可能較慢或是量化版。"
+    }
   },
   "settingsUi": {
     "search": {
@@ -3563,8 +3571,8 @@
           "hint": "已有組織不受影響"
         },
         "supply-mode": {
-          "title": "預設分流方式",
-          "description": "沒有單獨設定的模型，同一檔裡的線路如何分擔請求",
+          "title": "分流方式與成本",
+          "description": "同一檔裡的線路如何分擔請求，以及成本能把線路往前排多遠",
           "hint": "在模型的「線路」頁籤裡可以為單個模型另選"
         },
         "supply-pause-rules": {

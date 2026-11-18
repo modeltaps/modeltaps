@@ -106,7 +106,12 @@ function OrderDetail({ model }) {
           <li key={`${tier.priority}-${tier.cost_tier || 0}`} className="space-y-1">
             <p className="text-xs font-medium text-muted-foreground">
               {i === 0 ? t('modelSupply.order.first') : t('modelSupply.order.then', { n: i })}
-              {tier.cost_tier > 0 && <span className="font-normal"> · {t('modelSupply.tier.dearer')}</span>}
+              {tier.cost_tier > 0 && (
+                <span className="font-normal">
+                  {' '}
+                  · {t(preview.cost_order === 'cost' ? 'modelSupply.tier.dearerAcross' : 'modelSupply.tier.dearer')}
+                </span>
+              )}
             </p>
             <ul className="divide-y divide-border overflow-hidden rounded-[10px] border border-border">
               {(tier.supplies || []).map((s) => (

@@ -3144,7 +3144,8 @@
       "first": "优先尝试",
       "backup_other": "备用 {{count}}",
       "priority": "优先级 {{priority}}",
-      "dearer": "更贵，同优先级更便宜的线路之后才用"
+      "dearer": "更贵，同优先级更便宜的线路之后才用",
+      "dearerAcross": "更贵，更便宜的线路都失败后才用"
     },
     "state": {
       "ok": "可用",
@@ -3262,7 +3263,7 @@
     "joinLast": "后加入·排最后",
     "joinLastTip": "这个模型已有别的渠道提供时才加入，所以排在它们之后。",
     "dearerBackup": "更贵，仅兜底",
-    "dearerBackupTip": "同优先级有更便宜的线路承接请求，这条只在它们失败时才用。",
+    "dearerBackupTip": "有更便宜的线路承接请求，这条只在它们失败时才用。",
     "restorePlacement": "恢复正常排位",
     "confirmPending": "启用",
     "keepOff": "不启用",
@@ -3295,7 +3296,14 @@
     "costFromRatio": "按渠道的成本倍率估算（上游没有价格表）",
     "confirmChannel": "确认 {{channel}} 的全部待确认线路",
     "confirmChannelAsk": "确认 {{channel}} 在所有模型上的待确认线路？因成本高于售价被拦下的线路会按这个成本接请求。",
-    "confirmChannelDone": "已确认 {{channel}} 的 {{count}} 条线路"
+    "confirmChannelDone": "已确认 {{channel}} 的 {{count}} 条线路",
+    "costOrder": {
+      "label": "成本与优先级",
+      "priority": "优先级优先",
+      "cost": "成本优先",
+      "priorityHint": "按优先级排先后；同一优先级里最便宜的线路承接请求，更贵的兜底。优先级代表成本以外的考虑（质量、速度、信任的厂商）时用这个。",
+      "costHint": "不管优先级，一个模型最便宜的线路先承接请求；优先级只决定同价线路的先后。用户付的价格不变，只影响你的成本。更便宜的托管商可能更慢或是量化版。"
+    }
   },
   "settingsUi": {
     "search": {
@@ -3563,8 +3571,8 @@
           "hint": "已有组织不受影响"
         },
         "supply-mode": {
-          "title": "默认分流方式",
-          "description": "没有单独设置的模型，同一档里的线路怎么分担请求",
+          "title": "分流方式与成本",
+          "description": "同一档里的线路怎么分担请求，以及成本能把线路往前排多远",
           "hint": "在模型的「线路」页签里可以给单个模型另选"
         },
         "supply-pause-rules": {

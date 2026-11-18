@@ -912,7 +912,7 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
                     {/* A dearer split of a priority: tried once the cheaper supplies of it fail. */}
                     {tier.cost_tier > 0 ? (
                       <span className="ml-2" data-testid="supply-tier-dearer">
-                        {t('modelSupply.tier.dearer')}
+                        {t(preview?.cost_order === 'cost' ? 'modelSupply.tier.dearerAcross' : 'modelSupply.tier.dearer')}
                       </span>
                     ) : (
                       allocation !== 'policy' && (

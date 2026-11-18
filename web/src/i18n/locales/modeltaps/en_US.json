@@ -3246,7 +3246,8 @@
       "backup_one": "Backup {{count}}",
       "backup_other": "Backup {{count}}",
       "priority": "priority {{priority}}",
-      "dearer": "dearer, tried after the cheaper supplies of this priority"
+      "dearer": "dearer, tried after the cheaper supplies of this priority",
+      "dearerAcross": "Dearer: tried once every cheaper supply fails"
     },
     "state": {
       "ok": "Available",
@@ -3370,7 +3371,7 @@
     "joinLast": "Joined last",
     "joinLastTip": "Added after other channels already supplied this model, so it is tried after them.",
     "dearerBackup": "Dearer — backup only",
-    "dearerBackupTip": "A cheaper supply of the same priority takes the requests; this one is tried only when the cheaper ones fail.",
+    "dearerBackupTip": "Cheaper supplies take the requests; this one is used only when they fail.",
     "restorePlacement": "Use its normal position",
     "confirmPending": "Switch on",
     "keepOff": "Keep it off",
@@ -3404,7 +3405,14 @@
     "costFromRatio": "Cost from the channel's cost ratio (no upstream price list)",
     "confirmChannel": "Confirm all pending supplies of {{channel}}",
     "confirmChannelAsk": "Confirm every supply of {{channel}} waiting for review, on every model? Supplies held because they cost more than the price will take requests at that cost.",
-    "confirmChannelDone": "Confirmed {{count}} supplies of {{channel}}"
+    "confirmChannelDone": "Confirmed {{count}} supplies of {{channel}}",
+    "costOrder": {
+      "label": "Cost and priority",
+      "priority": "Priority first",
+      "cost": "Cost first",
+      "priorityHint": "Priorities decide the order. Within one priority the cheapest supplies take the requests and dearer ones back them up. Use it when a priority stands for something besides cost (quality, speed, a provider you trust).",
+      "costHint": "The cheapest supplies of a model take the requests whatever their priority; priority only orders supplies of the same cost. Users pay the same price either way, only your cost changes. A cheaper host may be slower or quantized."
+    }
   },
   "settingsUi": {
     "search": {
@@ -3673,8 +3681,8 @@
           "hint": "Existing organizations are not affected"
         },
         "supply-mode": {
-          "title": "Default supply mode",
-          "description": "How supplies in one tier share requests for models without a mode of their own",
+          "title": "Supply mode and cost",
+          "description": "How supplies in one tier share requests, and how far a supply's cost moves it ahead",
           "hint": "A single model can pick another mode under Supplies on the models page"
         },
         "supply-pause-rules": {
