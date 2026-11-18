@@ -27,7 +27,17 @@ import (
 
 // geminiLiveRPC matches the method path of the Gemini Live API WebSocket, as the Google SDKs build
 // it from a base URL: {base}/ws/google.ai.generativelanguage.{version}.GenerativeService.BidiGenerateContent.
-var geminiLiveRPC = regexp.MustCompile(`^/google\.ai\.generativelanguage\.(v1alpha|v1beta)\.GenerativeService\.BidiGenerateContent$`)
+var geminiLiveRPC = regexp.MustCompile(`^/google\.ai\.generativelanguage\.(v1|v1alpha|v1beta)\.GenerativeService\.BidiGenerateContent$`)
+
+// geminiLiveUpstreamVersion maps the API version of the client's path to one the Gemini API
+// serves Live on. The Google SDKs use v1 when given a custom base URL, but the Live endpoint only
+// exists under v1beta and v1alpha, so v1 goes upstream as v1beta.
+func geminiLiveUpstreamVersion(version string) string {
+	if version == "v1" {
+		return "v1beta"
+	}
+	return version
+}
 
 // geminiLiveHandshakeTimeout bounds the wait for the client's setup message and for the
 // upstream's setupComplete.
@@ -71,7 +81,7 @@ func GeminiLive(c *gin.Context) {
 
 	r := &relayGeminiLive{
 		RelayModeChatRealtime: RelayModeChatRealtime{relayBase: relayBase{c: c}, userConn: userConn},
-		version:               match[1],
+		version:               geminiLiveUpstreamVersion(match[1]),
 	}
 	if !r.readSetup() || !r.connect() {
 		return

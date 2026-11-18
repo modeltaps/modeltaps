@@ -140,7 +140,7 @@ async with client.aio.live.connect(model="gemini-3.8-live", config={"response_mo
     ...
 ```
 
-- 密钥放在 `x-goog-api-key` 请求头或 `key` 查询参数里。支持 `v1alpha` 和 `v1beta`；暂不支持临时令牌（`BidiGenerateContentConstrained`）。
+- 密钥放在 `x-goog-api-key` 请求头或 `key` 查询参数里。支持 `v1`、`v1alpha` 和 `v1beta`（SDK 设了自定义 base URL 时用 `v1`，转发上游时按 `v1beta`）；暂不支持临时令牌（`BidiGenerateContentConstrained`）。
 - 模型取自第一条消息的 `setup.model`，会话路由到带有该模型的 Gemini 渠道（Google AI Studio 密钥或服务账号），消息原样转发。
 - 每一轮按模型返回的 `usageMetadata` 计费：按模态区分的输入 token（文本、音频、图片和视频帧）、输出 token 和思考 token。密钥、余额或预算用完时会话结束。
 - 错误和 Google 一样以带原因的 WebSocket 关闭帧返回：1007 表示 setup 无效，1008 表示请求被拒（密钥、额度、模型、内容审核）。

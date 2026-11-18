@@ -61,3 +61,15 @@ func TestTruncateCloseReason(t *testing.T) {
 		t.Fatal("short reason changed")
 	}
 }
+
+// The Google SDKs use v1 with a custom base URL; Live only exists under v1beta and v1alpha.
+func TestGeminiLiveUpstreamVersion(t *testing.T) {
+	for in, want := range map[string]string{"v1": "v1beta", "v1beta": "v1beta", "v1alpha": "v1alpha"} {
+		if got := geminiLiveUpstreamVersion(in); got != want {
+			t.Fatalf("%s: got %s, want %s", in, got, want)
+		}
+	}
+	if geminiLiveRPC.FindStringSubmatch("/google.ai.generativelanguage.v1.GenerativeService.BidiGenerateContent") == nil {
+		t.Fatal("v1 path not accepted")
+	}
+}

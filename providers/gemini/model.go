@@ -32,8 +32,9 @@ func (p *GeminiProvider) GetModelList() ([]string, error) {
 
 	var modelList []string
 	for _, model := range response.Models {
+		// Live models only list bidiGenerateContent; they are served at /gemini/ws/....
 		for _, modelType := range model.SupportedGenerationMethods {
-			if modelType == "generateContent" {
+			if modelType == "generateContent" || modelType == "bidiGenerateContent" {
 				modelName := strings.TrimPrefix(model.Name, "models/")
 				modelList = append(modelList, modelName)
 				break

@@ -11,8 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Gemini Live API sessions (realtime voice, camera and screen frames over one WebSocket) are
   relayed in their native protocol at
-  `/gemini/ws/google.ai.generativelanguage.{v1alpha,v1beta}.GenerativeService.BidiGenerateContent`,
-  so the Google SDKs work with the gateway as the base URL. The model is read from the setup
+  `/gemini/ws/google.ai.generativelanguage.{v1,v1alpha,v1beta}.GenerativeService.BidiGenerateContent`,
+  so the Google SDKs work with the gateway as the base URL. Fetching a Gemini channel's models
+  now lists the Live models too. The model is read from the setup
   message, the session goes to a Gemini channel (AI Studio key or service account), each turn is
   billed from its usageMetadata by modality, client text is moderated, and errors reach the client
   as close frames.

@@ -140,7 +140,7 @@ async with client.aio.live.connect(model="gemini-3.8-live", config={"response_mo
     ...
 ```
 
-- キーは `x-goog-api-key` ヘッダーか `key` クエリパラメーターで渡します。`v1alpha` と `v1beta` に対応し、エフェメラルトークン（`BidiGenerateContentConstrained`）には未対応です。
+- キーは `x-goog-api-key` ヘッダーか `key` クエリパラメーターで渡します。`v1`、`v1alpha`、`v1beta` に対応し（カスタム base URL では SDK が `v1` を使い、上流には `v1beta` で転送します）、エフェメラルトークン（`BidiGenerateContentConstrained`）には未対応です。
 - モデルは最初のメッセージの `setup.model` から決まり、そのモデルを持つ Gemini チャネル（Google AI Studio のキーまたはサービスアカウント）にルーティングされます。メッセージはそのまま転送されます。
 - 各ターンはモデルが返す `usageMetadata` で課金されます：モダリティ別の入力トークン（テキスト、音声、画像・映像フレーム）、出力トークン、思考トークン。キー、残高、予算を使い切るとセッションは終了します。
 - エラーは Google と同じく理由付きの WebSocket クローズフレームで返ります：1007 は無効な setup、1008 は拒否されたリクエスト（キー、クォータ、モデル、コンテンツ審査）です。

@@ -140,7 +140,7 @@ async with client.aio.live.connect(model="gemini-3.8-live", config={"response_mo
     ...
 ```
 
-- The key goes in the `x-goog-api-key` header or the `key` query parameter. `v1alpha` and `v1beta` are both accepted; ephemeral tokens (`BidiGenerateContentConstrained`) are not.
+- The key goes in the `x-goog-api-key` header or the `key` query parameter. `v1`, `v1alpha` and `v1beta` are accepted (the SDKs use `v1` with a custom base URL; it goes upstream as `v1beta`); ephemeral tokens (`BidiGenerateContentConstrained`) are not.
 - The model comes from `setup.model` in the first message, and the session is routed to a Gemini channel (Google AI Studio key or service account) that carries it. Messages pass through unchanged.
 - Each turn is billed from the `usageMetadata` the model reports: input tokens by modality (text, audio, image and video frames), output tokens and thinking. A session stops when the key, balance or budget runs out.
 - Errors arrive as WebSocket close frames with the reason, as from Google: 1007 for an invalid setup, 1008 for a refused request (key, quota, model, content moderation).
