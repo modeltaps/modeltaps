@@ -77,6 +77,11 @@ var managementKeyRoutes = map[string]string{
 	"POST /mcp":         model.ManagementKeyScopeRead,
 	"GET /mcp/sse":      model.ManagementKeyScopeRead,
 	"POST /mcp/message": model.ManagementKeyScopeRead,
+
+	// Admin MCP: the settings tools only read; RootAuth still requires the key's user to be root.
+	"POST /mcp/admin":         model.ManagementKeyScopeRead,
+	"GET /mcp/admin/sse":      model.ManagementKeyScopeRead,
+	"POST /mcp/admin/message": model.ManagementKeyScopeRead,
 }
 
 // managementKeyAllows reports whether a management key of this scope may call the route.

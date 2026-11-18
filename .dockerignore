@@ -26,9 +26,11 @@ web/build
 .env.*
 !.env.deploy.example
 
-# Tests / docs
+# Tests / docs (the English operator docs are embedded in the binary: docs/ops/embed.go)
 ittest
 docs
+!docs/ops/embed.go
+!docs/ops/en
 
 # Editor / IDE
 .idea

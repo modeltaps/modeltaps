@@ -44,3 +44,36 @@ func SetMcpRouter(router *gin.Engine) {
 	}()
 
 }
+
+// SetAdminMcpRouter serves the admin MCP endpoint: the settings tools, for root only (the same
+// permission as the platform settings). A read management key of a root user may call it. It is
+// served whether or not the user MCP endpoint (MCP_ENABLE) is on: it only reads, and only root
+// gets in.
+func SetAdminMcpRouter(router *gin.Engine) {
+	adminServer := mcp.NewAdminMcpServer()
+	if adminServer == nil {
+		return
+	}
+	adminRouter := router.Group("/mcp/admin")
+	adminRouter.Use(middleware.BodyLimit(apiBodyLimit()), middleware.BodyReadTimeout(apiBodyReadTimeout()))
+	adminRouter.Use(middleware.CORS())
+	adminRouter.Use(middleware.GlobalAPIRateLimit())
+	adminRouter.Use(gzip.Gzip(gzip.DefaultCompression))
+	adminRouter.Use(middleware.CrossSiteRequestGuard())
+	adminRouter.Use(middleware.RootAuth())
+	adminRouter.Use(middleware.ContextUserId())
+	{
+		adminRouter.POST("", adminServer.HandleStreamable)
+		adminRouter.GET("/sse", adminServer.HandleSSE)
+		adminRouter.POST("/message", adminServer.HandleMessage)
+	}
+	go func() {
+		if err := adminServer.SSEServer.Run(); err != nil {
+			logger.SysError("admin mcp sse server error: " + err.Error())
+			return
+		}
+		if err := adminServer.StreamableServer.Run(); err != nil {
+			logger.SysError("admin mcp streamable server error: " + err.Error())
+		}
+	}()
+}

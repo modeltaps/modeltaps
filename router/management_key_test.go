@@ -86,6 +86,7 @@ func setupManagementKeyRouter(t *testing.T, withMCP bool) *mkFixture {
 	SetRelayRouter(engine)
 	if withMCP {
 		SetMcpRouter(engine)
+		SetAdminMcpRouter(engine)
 	}
 	f.engine = engine
 	return f
@@ -466,4 +467,27 @@ func TestMCPAcceptsManagementKey(t *testing.T) {
 	}
 	expectDenied(t, f.do(http.MethodPost, "/mcp", apiKey, initialize), http.StatusUnauthorized, common.APICodeAPIKeyNotAllowed, "API key on MCP")
 	expectDenied(t, f.do(http.MethodPost, "/mcp", "", initialize), http.StatusUnauthorized, common.APICodeNotSignedIn, "MCP without a key")
+}
+
+// The admin MCP endpoint answers root only: a read management key of root works, an admin's or
+// a user's is refused. Its tool list holds the settings tools.
+func TestAdminMCPIsRootOnly(t *testing.T) {
+	f := setupManagementKeyRouter(t, true)
+	root := f.createUser("mk-root", config.RoleRootUser)
+	rootKey := f.managementKey(root.Id, model.ManagementKeyScopeRead)
+	adminKey := f.managementKey(f.admin.Id, model.ManagementKeyScopeRead)
+	userKey := f.managementKey(f.user.Id, model.ManagementKeyScopeRead)
+	initialize := map[string]any{
+		"jsonrpc": "2.0", "id": 1, "method": "initialize",
+		"params": map[string]any{"protocolVersion": "2025-03-26", "capabilities": map[string]any{}, "clientInfo": map[string]any{"name": "test", "version": "1"}},
+	}
+	if w := f.do(http.MethodPost, "/mcp/admin", rootKey, initialize); w.status != http.StatusOK || w.code() != "" {
+		t.Fatalf("admin MCP should accept root's read key, got %d %s", w.status, w.raw)
+	}
+	for name, key := range map[string]string{"admin": adminKey, "user": userKey} {
+		w := f.do(http.MethodPost, "/mcp/admin", key, initialize)
+		if w.status == http.StatusOK && w.code() == "" {
+			t.Errorf("admin MCP accepted the %s's key: %s", name, w.raw)
+		}
+	}
 }

@@ -26,6 +26,7 @@ func SetRouter(router *gin.Engine, buildFS embed.FS, indexPage []byte) {
 		logger.SysLog("Enable MCP Server")
 		SetMcpRouter(router)
 	}
+	SetAdminMcpRouter(router)
 	// 启用 pprof 调试端点
 	if viper.GetBool("pprof_enabled") {
 		logger.SysLog("Enable pprof debug endpoints at /debug/pprof/")

@@ -40,6 +40,8 @@ The **payment cost** is what taking a payment costs you (card fees, currency con
 | Cost vs. priority | Same card → Cost and priority | `SupplyCostOrder` |
 | Tier order | **Platform settings → Gateway → Allocation** → allocation policy; or a model's Supplies tab for manual models | allocation policy, supply priority |
 
+Every setting above, with its type, range and more examples, is in the [settings reference](../settings/index.md). An AI assistant can look them up through the [admin MCP](./admin_mcp.md).
+
 ## Channel fee rates
 
 The fee rate is what a provider charges on top of its list price. Most providers charge it when you buy credit, so it is:

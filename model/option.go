@@ -73,6 +73,10 @@ func InitOptionMap() {
 	loadOptionsFromDatabase()
 }
 
+// RegisterOptions registers every option with its default and reads nothing from the database:
+// for tools that need the defaults (the settings reference generator).
+func RegisterOptions() { registerOptions() }
+
 func registerOptions() {
 
 	// 登录页要在提交前就知道密码登录 / 密码注册是否开放,据此隐藏密码表单与注册入口(UX-33);
