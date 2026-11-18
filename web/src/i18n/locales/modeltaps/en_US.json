@@ -4019,6 +4019,10 @@
         "local": {
           "address": "Links use the server address {{address}}.",
           "changeAddress": "Change"
+        },
+        "rehost": {
+          "label": "Also store images upstreams return as links",
+          "hint": "When an upstream such as DALL·E or Flux returns an image link, fetch it once and store it here, so clients get a link on this site that works where the upstream host is blocked or slow. If the fetch fails, the upstream link is passed on."
         }
       }
     },

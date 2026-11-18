@@ -9,7 +9,7 @@ lastUpdated: true
 
 The image APIs of Cloudflare Workers AI and Stability AI, and Gemini's image output, return image data instead of a link. By default Modeltaps keeps these images on the gateway itself and returns a temporary link on the site's own address, with no third-party storage. External storage can be used instead. Turned off, those responses carry base64: the image API answers with `b64_json` instead of `url`, and Gemini replies embed `data:image/png;base64,...` inline, so clients that only read the image URL get no image.
 
-Upstreams that return image links themselves, such as OpenAI and Azure, do not use image storage.
+Upstreams such as DALL·E and Flux return image links themselves. **Also store images upstreams return as links** (on by default) fetches each once through the channel's proxy and stores it, so clients get a link on this site that works where the upstream host is blocked or slow; if the fetch fails, the upstream link is passed on. Turned off, those links are passed on as they are.
 
 ## Default: this gateway
 

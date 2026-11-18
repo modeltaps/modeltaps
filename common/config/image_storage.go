@@ -23,3 +23,8 @@ var (
 	ImageStorageSMMSSecret    = ""
 	ImageStorageImgurClientId = ""
 )
+
+// ImageStorageRehostUpstream also moves images an upstream returns as links (DALL·E, Flux,
+// Seedream ...) into the image storage, so clients get a link on the site's own address that
+// works where the upstream host is blocked or slow. A link that cannot be fetched is passed on.
+var ImageStorageRehostUpstream = true

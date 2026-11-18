@@ -28,7 +28,8 @@ export const IMAGE_STORAGE_KEYS = [
   'ImageStorageOSSAccessKeyId',
   'ImageStorageOSSAccessKeySecret',
   'ImageStorageSMMSSecret',
-  'ImageStorageImgurClientId'
+  'ImageStorageImgurClientId',
+  'ImageStorageRehostUpstream'
 ];
 
 const card = (id, kind, keys = [], tab) => ({ id, kind, keys, ...(tab ? { tab } : {}) });

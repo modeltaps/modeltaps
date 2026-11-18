@@ -226,6 +226,7 @@ func (r *relayImageGenerations) send() (err *types.OpenAIErrorWithStatusCode, do
 				err = common.StringErrorWrapper("upstream did not return any image output", "no_image_output", http.StatusBadGateway)
 				return
 			}
+			rehostUpstreamImages(r.c, r.provider, response)
 			stream = openai.NewImageSyntheticStream(openai.ImageResponseToSSE(openai.ImageGenerationStreamPrefix, response))
 		}
 		if err != nil {
@@ -250,6 +251,7 @@ func (r *relayImageGenerations) send() (err *types.OpenAIErrorWithStatusCode, do
 	if err != nil {
 		return
 	}
+	rehostUpstreamImages(r.c, r.provider, response)
 	err = responseJsonClient(r.c, response)
 
 	if err != nil {

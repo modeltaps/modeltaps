@@ -40,6 +40,9 @@ type Options struct {
 	// Truncate returns the first MaxBytes of a larger body instead of ErrTooLarge, for callers
 	// that only need the start of a document (the <head> of a page).
 	Truncate bool
+	// Proxy sends the request through this proxy (http, https, socks5 or socks5h), keeping the
+	// SSRF check (NewGuardedProxyTransport). Empty connects directly.
+	Proxy string
 }
 
 // Result 是一次成功抓取（2xx）的结果。
@@ -78,7 +81,11 @@ func Fetch(ctx context.Context, rawURL string, opts Options) (*Result, error) {
 	if opts.Accept != "" {
 		req.Header.Set("Accept", opts.Accept)
 	}
-	resp, err := newClient(opts).Do(req)
+	client, err := newClient(opts)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -123,20 +130,26 @@ func portOf(u *url.URL) uint16 {
 	return 80
 }
 
-func newClient(opts Options) *http.Client {
-	transport := &http.Transport{
-		Proxy:                  nil,
-		DialContext:            GuardedDialer(opts.Timeout).DialContext,
-		TLSHandshakeTimeout:    opts.Timeout,
-		ResponseHeaderTimeout:  opts.Timeout,
-		DisableKeepAlives:      true,
-		MaxResponseHeaderBytes: 32 << 10,
+func newClient(opts Options) (*http.Client, error) {
+	var transport *http.Transport
+	if strings.TrimSpace(opts.Proxy) != "" {
+		t, err := NewGuardedProxyTransport(strings.TrimSpace(opts.Proxy), opts.Timeout)
+		if err != nil {
+			return nil, err
+		}
+		transport = t
+	} else {
+		transport = &http.Transport{Proxy: nil, DialContext: GuardedDialer(opts.Timeout).DialContext}
 	}
+	transport.TLSHandshakeTimeout = opts.Timeout
+	transport.ResponseHeaderTimeout = opts.Timeout
+	transport.DisableKeepAlives = true
+	transport.MaxResponseHeaderBytes = 32 << 10
 	return &http.Client{
 		Transport:     transport,
 		Timeout:       opts.Timeout,
 		CheckRedirect: CheckRedirect(opts.MaxRedirects),
-	}
+	}, nil
 }
 
 // CheckRedirect 返回一个 http.Client.CheckRedirect：限制跳数，且每一跳只允许 http(s)、

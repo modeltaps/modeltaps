@@ -8,11 +8,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/media"
+	"github.com/modeltaps/modeltaps/common/safefetch"
+	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/common/storage/drives"
 )
 
@@ -183,4 +187,38 @@ func Upload(data []byte, fileName string) string {
 		return ""
 	}
 	return url
+}
+
+// Rehost fetches an image an upstream returned as a link (through proxy when set, with the SSRF
+// check of safefetch) and stores it, returning the new link. Off, it returns ErrStorageOff.
+func Rehost(ctx context.Context, rawURL, proxy string) (string, error) {
+	settings := CurrentSettings()
+	if settings.Provider == ProviderOff {
+		return "", ErrStorageOff
+	}
+	res, err := safefetch.Fetch(ctx, rawURL, safefetch.Options{
+		MaxBytes: media.MaxSize,
+		Timeout:  60 * time.Second,
+		Accept:   "image/*",
+		Proxy:    proxy,
+	})
+	if err != nil {
+		return "", fmt.Errorf("fetching the upstream image: %w", err)
+	}
+	if !strings.HasPrefix(http.DetectContentType(res.Body), "image/") {
+		return "", errors.New("the upstream link is not an image")
+	}
+	return UploadWith(settings, res.Body, "image-"+utils.GetUUID()+imageExt(res.Body))
+}
+
+func imageExt(data []byte) string {
+	switch http.DetectContentType(data) {
+	case "image/jpeg":
+		return ".jpg"
+	case "image/webp":
+		return ".webp"
+	case "image/gif":
+		return ".gif"
+	}
+	return ".png"
 }

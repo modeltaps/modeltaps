@@ -244,6 +244,8 @@ func (r *relayChat) compatibleSendImage(provider providersBase.ImageGenerationsI
 	if err != nil {
 		return
 	}
+	// While the heartbeat still keeps a streaming client waiting.
+	rehostUpstreamImages(r.c, r.provider, response)
 
 	if r.heartbeat != nil {
 		r.heartbeat.Stop()

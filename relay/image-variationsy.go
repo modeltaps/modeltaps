@@ -70,6 +70,7 @@ func (r *relayImageVariations) send() (err *types.OpenAIErrorWithStatusCode, don
 	if err != nil {
 		return
 	}
+	rehostUpstreamImages(r.c, r.provider, response)
 	err = responseJsonClient(r.c, response)
 
 	if err != nil {

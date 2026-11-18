@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   served at `<server address>/media/...`, so clients asking for `url` get one instead of base64.
   A link allows 5 downloads at 2 MB/s and the files are deleted when they expire; with Redis any
   node serves any link. This is the default image storage.
+- Images an upstream returns as links (DALL·E, Flux, Seedream ...) are fetched once through the
+  channel's proxy and moved into the image storage, so clients get a link on the site's own
+  address where the upstream host is blocked or slow. A link that cannot be fetched is passed on.
+  Switch it off under **Image storage → Also store images upstreams return as links**.
 - Image storage is set in the console: **Platform admin → Gateway settings → Requests & protocols
   → Image storage** (this gateway, S3 compatible, Alibaba Cloud OSS, SM.MS or Imgur). It applies
   at once without a restart, keeps its secrets encrypted, and **Test upload** tries the form

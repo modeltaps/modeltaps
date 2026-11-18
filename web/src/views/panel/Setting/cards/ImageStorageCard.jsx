@@ -8,8 +8,8 @@ import { API } from 'utils/api';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { SelectRow, TextRow } from '../parts';
-import OptionCard from './OptionCard';
+import { SelectRow, TextRow, ToggleRow } from '../parts';
+import OptionCard, { bindSwitch } from './OptionCard';
 import { settingsGroupUrl } from '../registry';
 
 // ==============================|| PLATFORM SETTINGS — IMAGE STORAGE ||============================== //
@@ -165,6 +165,14 @@ export default function ImageStorageCard({ ctx }) {
             {s('local.changeAddress')}
           </Link>
         </p>
+      )}
+      {provider !== OFF && (
+        <ToggleRow
+          id="ImageStorageRehostUpstream"
+          label={s('rehost.label')}
+          description={s('rehost.hint')}
+          {...bindSwitch(ctx, 'ImageStorageRehostUpstream')}
+        />
       )}
       {FIELDS[provider] && (
         <div className="grid gap-5 sm:grid-cols-2">

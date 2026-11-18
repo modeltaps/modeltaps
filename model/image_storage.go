@@ -28,6 +28,7 @@ func registerImageStorageOptions() {
 	o.RegisterString("ImageStorageOSSBucketName", &config.ImageStorageOSSBucketName, config.ScopeAdmin)
 	o.RegisterString("ImageStorageSMMSSecret", &config.ImageStorageSMMSSecret, config.ScopeSecret)
 	o.RegisterString("ImageStorageImgurClientId", &config.ImageStorageImgurClientId, config.ScopeSecret)
+	o.RegisterBool("ImageStorageRehostUpstream", &config.ImageStorageRehostUpstream, config.ScopeAdmin)
 }
 
 // legacyImageStorageOptions reads the image storage of the config file's old `storage:` section
