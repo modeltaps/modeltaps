@@ -48,3 +48,39 @@ func TestRedisPath(t *testing.T) {
 		t.Fatalf("after limit: %d", w.Code)
 	}
 }
+
+func TestRedisDeferredPath(t *testing.T) {
+	url := os.Getenv("MEDIA_TEST_REDIS")
+	if url == "" {
+		t.Skip("MEDIA_TEST_REDIS not set")
+	}
+	dir := setup(t)
+	opt, err := goredis.ParseURL(url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	redis.RDB = goredis.NewClient(opt)
+	config.RedisEnabled = true
+	t.Cleanup(func() { config.RedisEnabled = false; redis.RDB = nil })
+
+	video := bytes.Repeat([]byte("v"), 2048)
+	srv, hits := fakeUpstream(t, video, "video/mp4")
+	link, err := Defer(srv.URL+"/a.mp4", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again, _ := Defer(srv.URL+"/a.mp4", 0); again != link {
+		t.Fatal("polling again gave a new link")
+	}
+	if _, err := os.Stat(filepath.Join(dir, filepath.Base(link)+metaSuffix)); err == nil {
+		t.Fatal("meta written to disk with Redis on")
+	}
+	for i := 0; i < 2; i++ {
+		if w := serve(filepath.Base(link)); w.Code != http.StatusOK || !bytes.Equal(w.Body.Bytes(), video) {
+			t.Fatalf("download %d: %d", i+1, w.Code)
+		}
+	}
+	if *hits != 1 {
+		t.Fatalf("upstream fetched %d times", *hits)
+	}
+}

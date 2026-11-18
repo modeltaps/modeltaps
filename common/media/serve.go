@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
@@ -48,25 +47,27 @@ func Serve(c *gin.Context) {
 		c.Status(http.StatusTooManyRequests)
 		return
 	}
-	data, ctype, left, err := Get(c.Param("name"))
+	name := c.Param("name")
+	if !namePattern.MatchString(name) {
+		c.Status(http.StatusNotFound)
+		return
+	}
+	data, ctype, left, err := Get(name)
 	switch {
 	case errors.Is(err, ErrExhausted):
 		c.Status(http.StatusGone)
 		return
 	case errors.Is(err, ErrNotFound):
-		c.Status(http.StatusNotFound)
+		if !serveRemote(c, name) {
+			c.Status(http.StatusNotFound)
+		}
 		return
 	case err != nil:
 		c.Status(http.StatusServiceUnavailable)
 		return
 	}
-	h := c.Writer.Header()
-	h.Set("Content-Type", ctype)
-	h.Set("Content-Length", strconv.Itoa(len(data)))
-	h.Set("Content-Disposition", "inline")
-	h.Set("X-Content-Type-Options", "nosniff")
-	h.Set("Cache-Control", "private, max-age="+strconv.Itoa(int(left/time.Second)))
+	setMediaHeaders(c, ctype, left)
+	c.Header("Content-Length", strconv.Itoa(len(data)))
 	c.Status(http.StatusOK)
-	lim := rate.NewLimiter(rate.Limit(BytesPerSecond), 64<<10)
-	_, _ = throttledWriter{ctx: c.Request.Context(), w: c.Writer, lim: lim}.Write(data)
+	_, _ = throttled(c).Write(data)
 }

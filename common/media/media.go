@@ -71,7 +71,7 @@ var typeByExt = func() map[string]string {
 	return m
 }()
 
-var namePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{32}\.[a-z]{3,4}$`)
+var namePattern = regexp.MustCompile(`^[A-Za-z0-9_-]{32}\.[a-z0-9]{3,4}$`)
 
 // Dir is where files go without Redis.
 func Dir() string {
@@ -80,6 +80,8 @@ func Dir() string {
 	}
 	return filepath.Join("data", "media")
 }
+
+func serverAddress() string { return config.ServerAddress }
 
 func useRedis() bool { return config.RedisEnabled && redis.RDB != nil }
 
@@ -109,7 +111,7 @@ func Put(data []byte) (string, error) {
 	if !ok {
 		return "", ErrType
 	}
-	if strings.TrimSpace(config.ServerAddress) == "" {
+	if strings.TrimSpace(serverAddress()) == "" {
 		return "", ErrNoAddress
 	}
 	name, err := newName(ext)
@@ -199,7 +201,8 @@ func Get(name string) ([]byte, string, time.Duration, error) {
 	return data, ctype, left, nil
 }
 
-// Cleanup removes files past TTL from the media directory (Redis expires its own).
+// Cleanup removes files past TTL from the media directory (Redis expires its own): stored media,
+// deferred links and their disk copies, and downloads left half written.
 func Cleanup(now time.Time) int {
 	entries, err := os.ReadDir(Dir())
 	if err != nil {
@@ -217,7 +220,9 @@ func Cleanup(now time.Time) int {
 	}
 	countMu.Lock()
 	for name := range counts {
-		if _, err := os.Stat(filepath.Join(Dir(), name)); err != nil {
+		_, stored := os.Stat(filepath.Join(Dir(), name))
+		_, deferred := os.Stat(filepath.Join(Dir(), name+metaSuffix))
+		if stored != nil && deferred != nil {
 			delete(counts, name)
 		}
 	}

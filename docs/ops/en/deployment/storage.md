@@ -9,7 +9,9 @@ lastUpdated: true
 
 The image APIs of Cloudflare Workers AI and Stability AI, and Gemini's image output, return image data instead of a link. By default Modeltaps keeps these images on the gateway itself and returns a temporary link on the site's own address, with no third-party storage. External storage can be used instead. Turned off, those responses carry base64: the image API answers with `b64_json` instead of `url`, and Gemini replies embed `data:image/png;base64,...` inline, so clients that only read the image URL get no image.
 
-Upstreams such as DALL·E and Flux return image links themselves. **Also store images upstreams return as links** (on by default) fetches each once through the channel's proxy and stores it, so clients get a link on this site that works where the upstream host is blocked or slow; if the fetch fails, the upstream link is passed on. Turned off, those links are passed on as they are.
+Upstreams such as DALL·E and Flux return image links themselves. **Also store images and videos upstreams return as links** (on by default) fetches each image once through the channel's proxy and stores it, so clients get a link on this site that works where the upstream host is blocked or slow; if the fetch fails, the upstream link is passed on. Turned off, those links are passed on as they are.
+
+For a finished Kling video task, the video links returned when the task is queried become `<server address>/media/...` too. Videos are not fetched ahead: the first download of the link fetches the video from the upstream through the channel's proxy, passing it on while writing it to the data directory, and later downloads read that copy (with several nodes, each node fetches its own). The link lives for 1 hour from the first query, with the same download limit and speed as images, and a video may be up to 512 MB. Videos are always kept by this gateway, never uploaded to external storage.
 
 ## Default: this gateway
 

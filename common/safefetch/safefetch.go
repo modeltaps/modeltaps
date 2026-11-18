@@ -130,6 +130,18 @@ func portOf(u *url.URL) uint16 {
 	return 80
 }
 
+// NewClient returns the SSRF-guarded client Fetch uses (through opts.Proxy when set), for
+// callers that stream the body themselves. Zero fields take the defaults.
+func NewClient(opts Options) (*http.Client, error) {
+	if opts.Timeout <= 0 {
+		opts.Timeout = DefaultTimeout
+	}
+	if opts.MaxRedirects <= 0 {
+		opts.MaxRedirects = DefaultMaxRedirects
+	}
+	return newClient(opts)
+}
+
 func newClient(opts Options) (*http.Client, error) {
 	var transport *http.Transport
 	if strings.TrimSpace(opts.Proxy) != "" {

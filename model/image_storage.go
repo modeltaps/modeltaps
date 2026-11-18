@@ -6,10 +6,26 @@ import (
 
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
+	"github.com/modeltaps/modeltaps/common/media"
 	"github.com/modeltaps/modeltaps/common/storage"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
+
+func init() {
+	// Deferred media links (common/media) fetch through the proxy of the channel that made them.
+	media.ProxyForChannel = func(id int) string {
+		if id <= 0 {
+			return ""
+		}
+		ch, err := GetChannelById(id)
+		if err != nil || ch.Proxy == nil {
+			return ""
+		}
+		ch.SetProxy()
+		return *ch.Proxy
+	}
+}
 
 func registerImageStorageOptions() {
 	o := config.GlobalOption

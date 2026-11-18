@@ -16,8 +16,8 @@ import (
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/media"
 	"github.com/modeltaps/modeltaps/common/safefetch"
-	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/common/storage/drives"
+	"github.com/modeltaps/modeltaps/common/utils"
 )
 
 type StorageDrive interface {
@@ -221,4 +221,15 @@ func imageExt(data []byte) string {
 		return ".gif"
 	}
 	return ".png"
+}
+
+// RehostLater returns a gateway link for media an upstream returned as a link (a finished video
+// task) when ImageStorageRehostUpstream is on: the file is fetched through the channel's proxy on the first
+// download of that link (common/media). It always uses the gateway, whatever storage is set for
+// images, since videos are too large to upload before answering.
+func RehostLater(rawURL string, channelID int) (string, error) {
+	if !config.ImageStorageRehostUpstream || CurrentSettings().Provider == ProviderOff {
+		return "", ErrStorageOff
+	}
+	return media.Defer(rawURL, channelID)
 }

@@ -23,6 +23,7 @@ func GetFetchByID(c *gin.Context) {
 	}
 
 	data := TaskModel2Dto(task)
+	rehostVideos(c.Request.Context(), task, data)
 
 	c.JSON(http.StatusOK, data)
 }

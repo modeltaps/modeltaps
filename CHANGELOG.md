@@ -39,7 +39,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Images an upstream returns as links (DALL·E, Flux, Seedream ...) are fetched once through the
   channel's proxy and moved into the image storage, so clients get a link on the site's own
   address where the upstream host is blocked or slow. A link that cannot be fetched is passed on.
-  Switch it off under **Image storage → Also store images upstreams return as links**.
+  Switch it off under **Image storage → Also store images and videos upstreams return as
+  links**.
+- Finished Kling video tasks answer with gateway links (`<server address>/media/...`) instead of
+  Kling CDN links. The first download of a link fetches the video through the channel's proxy,
+  passing it on while writing it to disk; later downloads read that copy. Links live for an hour
+  from the first query, with the image download limit and speed, up to 512 MB per video.
 - Image storage is set in the console: **Platform admin → Gateway settings → Requests & protocols
   → Image storage** (this gateway, S3 compatible, Alibaba Cloud OSS, SM.MS or Imgur). It applies
   at once without a restart, keeps its secrets encrypted, and **Test upload** tries the form
