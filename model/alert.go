@@ -115,3 +115,19 @@ func normalizeAlertItems(items []string) []string {
 	sort.Strings(out)
 	return out
 }
+
+// AlertItems is the items of the open alert of (kind, subject); nil when there is none.
+func AlertItems(kind, subject string) ([]string, error) {
+	var current Alert
+	err := DB.Where("kind = ? AND subject = ?", kind, subject).First(&current).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !current.Open() {
+		return nil, nil
+	}
+	return current.Items, nil
+}

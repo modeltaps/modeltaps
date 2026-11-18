@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	"github.com/modeltaps/modeltaps/common/config"
-	"github.com/modeltaps/modeltaps/common/logger"
-	"github.com/modeltaps/modeltaps/common/notify"
 )
 
 // Price change kinds between the price table and an upstream price list.
@@ -164,55 +162,6 @@ func autoApplies(kind string) bool {
 	default:
 		return kind == PriceChangeRaised
 	}
-}
-
-// notifyPriceSync tells admins about applied increases, held changes and underpriced locked
-// models that users are served (catalog lists carry thousands of unused models). The changes
-// of a source are kept as its price alert: a sync tells only changes the alert does not hold
-// yet, so the same held or locked changes are told once, also across restarts, and a source
-// with nothing left to say closes its alert.
-func notifyPriceSync(report *PriceSyncReport) {
-	served := servedModelSet()
-	var raised []PriceChange
-	for _, c := range report.Applied {
-		if c.Kind == PriceChangeRaised && served(c.Model) {
-			raised = append(raised, c)
-		}
-	}
-	held := filterServed(report.Held, served)
-	locked := filterServed(report.Locked, served)
-
-	var items []string
-	for _, group := range []struct {
-		tag     string
-		changes []PriceChange
-	}{{"raised", raised}, {"held", held}, {"locked", locked}} {
-		for _, c := range group.changes {
-			items = append(items, priceAlertItem(group.tag, c))
-		}
-	}
-	fresh, err := ReportAlert(notify.KindPriceChange, "source:"+report.Source, items)
-	if err != nil {
-		logger.SysError("price change alert failed: " + err.Error())
-		fresh = items
-	}
-	if len(fresh) == 0 {
-		return
-	}
-	var b strings.Builder
-	writeChanges(&b, "Price increases applied", raised)
-	writeChanges(&b, "Price changes waiting for review (apply them from the channel's price sync)", held)
-	writeChanges(&b, "Locked prices below the upstream price (requests on these models may lose money)", locked)
-
-	logger.SysLog(fmt.Sprintf("price sync %s: %d increases applied, %d held, %d locked below upstream",
-		report.Source, len(raised), len(held), len(locked)))
-	notify.SendKind(notify.KindPriceChange, "Upstream price changes: "+report.Source, b.String())
-}
-
-// priceAlertItem names one change for the source's price alert: the same change from the
-// next sync gives the same item.
-func priceAlertItem(tag string, c PriceChange) string {
-	return fmt.Sprintf("%s:%s:%g/%g→%g/%g", tag, c.Model, c.OldInput, c.OldOutput, c.NewInput, c.NewOutput)
 }
 
 func writeChanges(b *strings.Builder, title string, changes []PriceChange) {
