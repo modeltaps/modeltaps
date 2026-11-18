@@ -2793,7 +2793,8 @@
       "driftNew_other": "新しいモデル {{count}} 件",
       "driftMissing_other": "終了したモデル {{count}} 件",
       "refresh": "更新",
-      "retired": "提供終了"
+      "retired": "提供終了",
+      "drift": "モデル変更"
     },
     "head": {
       "order": "番号の小さい順に使用。同じ番号は分担",

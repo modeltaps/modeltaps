@@ -186,12 +186,16 @@ export default function ChannelPanel({
     driftNew: 'view',
     driftMissing: 'view'
   };
-  const notice = issues.length ? (
+  // The models tab shows the upstream's new and gone models in its own filters, so the notice
+  // leaves them out there.
+  const currentTab = tab || PANEL_TABS[0].key;
+  const shown = currentTab === 'models' ? issues.filter((i) => i.kind !== 'driftNew' && i.kind !== 'driftMissing') : issues;
+  const notice = shown.length ? (
     <ul
       className="mb-3 space-y-1 rounded-[10px] border border-warning/40 bg-warning/10 px-3 py-2 text-[13px]"
       aria-label={t('channels.issue.title')}
     >
-      {issues.map((issue) => (
+      {shown.map((issue) => (
         <li key={issue.key} className="flex items-center gap-2">
           <AlertTriangle className="size-3.5 shrink-0 text-warning" />
           <span className="min-w-0 flex-1">{issueText(issue)}</span>
@@ -213,6 +217,7 @@ export default function ChannelPanel({
   return (
     <ObjectPanel
       titleId="channel-panel-title"
+      size="xl"
       object={channel}
       error={error}
       errorTitle={t('channelDetail.notFound')}

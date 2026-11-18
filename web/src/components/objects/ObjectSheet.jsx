@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Sheet } from '@/components/ui/sheet';
 
 // Widths of the right-side sheets, as a share of the window: an object's panel (lg) takes half
-// the window but never less than 640px so its tabs fit; a new-object sheet with many fields (md)
-// and a short one (sm) take three quarters, up to 672px and 480px. All leave a 0.5rem margin.
+// the window but never less than 640px so its tabs fit; one built around a wide table (xl, a
+// channel's models) takes 62%, at least 820px; a new-object sheet with many fields (md) and a
+// short one (sm) take three quarters, up to 672px and 480px. All leave a 0.5rem margin.
 const WIDTH = {
+  xl: 'w-[max(62%,820px)]',
   lg: 'w-[max(50%,640px)]',
   md: 'w-3/4 max-w-[672px]',
   sm: 'w-3/4 max-w-[480px]'
@@ -43,7 +45,7 @@ export function ObjectSheet({
           WIDTH[size]
         )}
       >
-        <div className="flex items-center justify-between gap-4 border-b border-border px-6 py-[18px]">
+        <div className="flex items-center justify-between gap-4 border-b border-border px-6 py-3">
           <div className="flex min-w-0 items-center gap-3">
             {icon}
             <div className="min-w-0">
@@ -71,7 +73,7 @@ export function ObjectSheet({
 
 ObjectSheet.propTypes = {
   titleId: PropTypes.string.isRequired,
-  size: PropTypes.oneOf(['lg', 'md', 'sm']),
+  size: PropTypes.oneOf(['xl', 'lg', 'md', 'sm']),
   icon: PropTypes.node,
   title: PropTypes.node,
   subtitle: PropTypes.node,

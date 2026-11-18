@@ -323,14 +323,9 @@ export default function Channel() {
   // Filter the models tab opens on from an issue; `n` changes at every click so it applies again.
   const [modelsFocus, setModelsFocus] = useState({ filter: '', n: 0 });
   const dismissIssue = (issue) => {
-    if (issue.kind === 'driftNew') {
-      actions.onDismissNewModels(issue.channel);
-      return;
-    }
-    if (issue.kind === 'driftMissing') {
-      actions.onDismissMissingModels(issue.channel);
-      return;
-    }
+    // Returns the request so a tag that dismisses both kinds can run them one after the other.
+    if (issue.kind === 'driftNew') return actions.onDismissNewModels(issue.channel);
+    if (issue.kind === 'driftMissing') return actions.onDismissMissingModels(issue.channel);
     setDismissed((prev) => {
       const next = new Set(prev).add(issue.key);
       try {

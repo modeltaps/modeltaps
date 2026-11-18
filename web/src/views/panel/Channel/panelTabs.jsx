@@ -1101,10 +1101,11 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                               <span className={cn('min-w-0 truncate font-mono', isRemoved && 'line-through')}>{name}</span>
                               <ModelKindTag kind={detailOf(name)?.kind} />
                               <ModelSignal signal={signal} m={m} range={range} />
-                              {gone && (
+                              {/* Under the filter of the same flag every row has it: the tag is left out. */}
+                              {gone && only !== 'gone' && (
                                 <span className={cn(TAG_TEXT, 'bg-warning/10 text-warning')}>{t('channels.models.state.gone')}</span>
                               )}
-                              {fresh && !isRemoved && (
+                              {fresh && !isRemoved && only !== 'new' && (
                                 <span className={cn(TAG_TEXT, 'bg-info/10 text-info')}>{t('channels.models.state.new')}</span>
                               )}
                             </span>

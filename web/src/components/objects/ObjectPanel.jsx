@@ -216,7 +216,7 @@ export default function ObjectPanel({
 
 ObjectPanel.propTypes = {
   titleId: PropTypes.string.isRequired,
-  size: PropTypes.oneOf(['lg', 'md', 'sm']),
+  size: PropTypes.oneOf(['xl', 'lg', 'md', 'sm']),
   object: PropTypes.object,
   error: PropTypes.node,
   errorTitle: PropTypes.node,
