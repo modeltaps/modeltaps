@@ -137,6 +137,9 @@ export const personalRoutingPolicyApi = createRoutingPolicyApi(PERSONAL_BASE, {
   listModels: () => listScopedModels(PERSONAL_BASE)
 });
 
+// Policy types: auto asks a decision model, fallback tries its models in order.
+export const POLICY_TYPES = ['auto', 'fallback'];
+
 // 打分方式：auto 先用 logprobs，不支持时改用自报；logprobs 只用概率；self_reported 只用自报。
 export const SCORING_MODES = ['auto', 'logprobs', 'self_reported'];
 
@@ -146,6 +149,8 @@ export const EMPTY_POLICY = {
   display_name: '',
   description: '',
   enabled: true,
+  type: 'auto',
+  models: [],
   decision_model: '',
   question: '',
   routes: [
@@ -187,6 +192,8 @@ export function normalizePolicy(form) {
     display_name: (form.display_name || '').trim(),
     description: (form.description || '').trim(),
     enabled: Boolean(form.enabled),
+    type: form.type === 'fallback' ? 'fallback' : 'auto',
+    models: (form.models || []).map((m) => (m || '').trim()).filter(Boolean),
     decision_model: (form.decision_model || '').trim(),
     question: (form.question || '').trim(),
     routes,

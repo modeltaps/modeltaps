@@ -8,13 +8,14 @@ import { NewObjectSheet, Field, ObjectTile } from '@/components/objects';
 import { showError } from 'utils/common';
 import { EMPTY_POLICY, normalizePolicy } from './routingPolicyApi';
 import { missingFields } from './policyFields';
-import { applyTemplate, templateName } from './templates';
-import RoutingMap, { TemplateBar } from './RoutingMap';
+import { applyTemplate, suggestFallbackChain, templateName } from './templates';
+import RoutingMap, { FallbackChain, PolicyTypeSwitch, TemplateBar } from './RoutingMap';
 
 const LABEL_KEY = {
   name: 'routingPolicy.form.name',
   decision_model: 'routingPolicy.form.decisionModel',
   routes: 'routingPolicy.form.routes',
+  models: 'routingPolicy.chain.models',
   fallback_model: 'routingPolicy.form.fallbackModel'
 };
 
@@ -52,6 +53,15 @@ export default function NewRoutingPolicySheet({ api, modelOptions, classifiers, 
     setForm(next);
   };
 
+  const fallback = form.type === 'fallback';
+  // A new fallback policy starts from the strongest model with the balanced one behind it.
+  const setType = (type) =>
+    setForm((f) => {
+      if (type !== 'fallback' || f.models?.some(Boolean)) return { ...f, type };
+      const chain = suggestFallbackChain((suggest || { models: modelOptions }).models);
+      return { ...f, type, models: chain.length >= 2 ? chain : [...chain, '', ''].slice(0, 2) };
+    });
+
   const create = async () => {
     if (missing.length) return;
     setBusy(true);
@@ -83,13 +93,14 @@ export default function NewRoutingPolicySheet({ api, modelOptions, classifiers, 
       status={
         missing.length
           ? t('objects.new.missing', { items: missing.map((k) => t(LABEL_KEY[k])).join(t('objects.new.listSep')) })
-          : t('routingPolicy.new.defaults')
+          : t(fallback ? 'routingPolicy.new.defaultsFallback' : 'routingPolicy.new.defaults')
       }
       onCreate={create}
       onClose={onClose}
     >
       <div className="space-y-6 pb-2">
-        <TemplateBar active={templateId} onApply={apply} />
+        <PolicyTypeSwitch value={form.type} onChange={setType} />
+        {!fallback && <TemplateBar active={templateId} onApply={apply} />}
         <Field
           label={t('routingPolicy.form.name')}
           htmlFor="rp-new-name"
@@ -101,12 +112,23 @@ export default function NewRoutingPolicySheet({ api, modelOptions, classifiers, 
             id="rp-new-name"
             autoFocus
             className="font-mono text-[13px]"
-            placeholder={api.callPrefix ? 'coder' : 'auto/coder'}
+            placeholder={fallback ? (api.callPrefix ? 'steady' : 'auto/steady') : api.callPrefix ? 'coder' : 'auto/coder'}
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           />
         </Field>
-        <RoutingMap idPrefix="rp-new" form={form} setForm={setForm} modelOptions={modelOptions} classifiers={classifiers} prices={prices} />
+        {fallback ? (
+          <FallbackChain idPrefix="rp-new" form={form} setForm={setForm} modelOptions={modelOptions} prices={prices} />
+        ) : (
+          <RoutingMap
+            idPrefix="rp-new"
+            form={form}
+            setForm={setForm}
+            modelOptions={modelOptions}
+            classifiers={classifiers}
+            prices={prices}
+          />
+        )}
       </div>
     </NewObjectSheet>
   );

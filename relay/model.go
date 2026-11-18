@@ -137,7 +137,7 @@ func filterModelsByChannelTypeFor(scope model.RoutingScope, groupName string, mo
 // （兜底是策略永远可能转发到的目标）。
 func modelSupportsChannelTypes(scope model.RoutingScope, groupName, modelName string, channelTypes []int) bool {
 	if policy := model.ResolveRoutingPolicy(scope, modelName); policy != nil {
-		return model.ChannelGroup.ModelSupportsChannelTypes(groupName, policy.FallbackModel, channelTypes)
+		return model.ChannelGroup.ModelSupportsChannelTypes(groupName, policy.AnchorModel(), channelTypes)
 	}
 	return model.ChannelGroup.ModelSupportsChannelTypes(groupName, modelName, channelTypes)
 }
@@ -496,6 +496,9 @@ type AvailableModelResponse struct {
 
 // RoutingSummary 自动路由策略对用户可见的部分：不含决策模型与问题（那是运营配置），只讲「会被路由到哪些模型」。
 type RoutingSummary struct {
+	// Type is auto or fallback; a fallback policy lists Models in the order they are tried.
+	Type          string                `json:"type"`
+	Models        []string              `json:"models,omitempty"`
 	Routes        []RoutingSummaryRoute `json:"routes"`
 	FallbackModel string                `json:"fallback_model"`
 	Threshold     float64               `json:"threshold"`
@@ -513,7 +516,7 @@ func routingSummaryOf(policy *model.RoutingPolicy) *RoutingSummary {
 	for _, route := range policy.Routes {
 		routes = append(routes, RoutingSummaryRoute{Label: route.Label, Description: route.Description, TargetModel: route.TargetModel})
 	}
-	return &RoutingSummary{Routes: routes, FallbackModel: policy.FallbackModel, Threshold: policy.Threshold, PinTTLSeconds: policy.PinTTLSeconds}
+	return &RoutingSummary{Type: policy.Type, Models: append([]string(nil), policy.Models...), Routes: routes, FallbackModel: policy.FallbackModel, Threshold: policy.Threshold, PinTTLSeconds: policy.PinTTLSeconds}
 }
 
 // ttsFormatsAll 是 OpenAI 原生 /v1/audio/speech 接受的全部 response_format。
@@ -632,17 +635,17 @@ func appendOwnRoutingPolicyAvailableModels(availableModels map[string]*Available
 		if _, exists := availableModels[name]; exists {
 			continue
 		}
-		canonical, _ := model.ResolveCanonicalModel(policy.FallbackModel)
+		canonical, _ := model.ResolveCanonicalModel(policy.AnchorModel())
 		if _, err := model.ChannelGroup.GetMatchedModelName(groupName, canonical); err != nil {
 			continue
 		}
-		price := model.PricingInstance.GetPrice(policy.FallbackModel)
+		price := model.PricingInstance.GetPrice(policy.AnchorModel())
 		if price.Unconfigured {
-			if mapped := model.ChannelGroup.ResolveMappedPrice(policy.FallbackModel); mapped != nil {
+			if mapped := model.ChannelGroup.ResolveMappedPrice(policy.AnchorModel()); mapped != nil {
 				price = mapped
 			}
 		}
-		vendor := resolveModelVendor(policy.FallbackModel)
+		vendor := resolveModelVendor(policy.AnchorModel())
 		availableModels[name] = &AvailableModelResponse{
 			Kind:      model.ModelInfoKindRoutingPolicy,
 			Routing:   routingSummaryOf(policy),
@@ -725,7 +728,7 @@ func appendRoutingPolicyAvailableModels(availableModels map[string]*AvailableMod
 		if !isCatalogVisible(policy.Name) {
 			continue
 		}
-		fallbackGroups := publicModels[policy.FallbackModel]
+		fallbackGroups := publicModels[policy.AnchorModel()]
 		groups := []string{}
 		for _, publicGroup := range publicGroups {
 			if fallbackGroups[publicGroup] {
@@ -735,13 +738,13 @@ func appendRoutingPolicyAvailableModels(availableModels map[string]*AvailableMod
 		if len(groups) == 0 {
 			continue
 		}
-		price := model.PricingInstance.GetPrice(policy.FallbackModel)
+		price := model.PricingInstance.GetPrice(policy.AnchorModel())
 		if price.Unconfigured {
-			if mapped := model.ChannelGroup.ResolveMappedPrice(policy.FallbackModel); mapped != nil {
+			if mapped := model.ChannelGroup.ResolveMappedPrice(policy.AnchorModel()); mapped != nil {
 				price = mapped
 			}
 		}
-		vendor := resolveModelVendor(policy.FallbackModel)
+		vendor := resolveModelVendor(policy.AnchorModel())
 		availableModels[policy.Name] = &AvailableModelResponse{
 			Kind:      model.ModelInfoKindRoutingPolicy,
 			Routing:   routingSummaryOf(policy),

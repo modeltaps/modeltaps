@@ -57,7 +57,7 @@ func Relay(c *gin.Context) {
 	}
 
 	c.Set("is_stream", relay.IsStream())
-	if err := relay.setProvider(relay.getOriginalModel()); err != nil {
+	if err := setProviderOnChain(relay); err != nil {
 		// 配置错误 → 404 model_not_found（SDK 不重试）；运行时错误 → 503 collapse（SDK 重试）。
 		if IsModelNotFound(err) {
 			relay.HandleJsonError(common.ModelNotFoundError(relay.getOriginalModel()))
@@ -84,149 +84,179 @@ func Relay(c *gin.Context) {
 	firstChannel := channel
 	notifyChannelRelayError(c.Request.Context(), c, channel, apiErr)
 	relay_util.RecordRelayAttempt(c, channel.Id, apiErr)
+	firstModel := RoutingModelName(c)
+	var breakReason string
 
-	retryTimes := config.RetryTimes
-	// 在重试开始前计算并缓存总渠道数，避免重试过程中动态变化
-	groupName := c.GetString("token_group")
-	if groupName == "" {
-		groupName = c.GetString("group")
-	}
-	// 选路 / 计数 / cooldown / 过滤统一用 balancer 口径的 routing_model，
-	// 否则配了 model_mapping 的渠道会查不到 Rule 键（total_channels=0，完全不重试）。
-	modelName := RoutingModelName(c)
-	totalChannelsAtStart := model.ChannelGroup.CountAvailableChannels(groupName, modelName)
-
-	// Evaluate once: shouldRetry records the failure in the provider metrics.
-	retryable := shouldRetry(c, apiErr, channel.Type)
-	if done || !retryable {
-		logger.LogError(c.Request.Context(), fmt.Sprintf("retry_skip model=%s channel_id=%d status_code=%d upstream_id=%s done=%t should_retry=%t total_channels=%d error=\"%s\"",
-			modelName, channel.Id, apiErr.StatusCode, c.GetString(config.GinUpstreamRequestIdKey), done, retryable, totalChannelsAtStart, utils.TruncateBase64InMessage(apiErr.OpenAIError.Message)))
-		retryTimes = 0
-	}
-
-	startTime := c.GetTime("requestStartTime")
-	timeout := time.Duration(config.RetryTimeOut) * time.Second
-
-	// 实际重试次数 = min(配置的重试数, 可用渠道数)
-	actualRetryTimes := retryTimes
-	if totalChannelsAtStart < retryTimes {
-		actualRetryTimes = totalChannelsAtStart
-	}
-
-	c.Set("total_channels_at_start", totalChannelsAtStart)
-	c.Set("actual_retry_times", actualRetryTimes)
-	c.Set("attempt_count", 1) // 初始化尝试计数
-
-	// 记录初始失败 - 使用统一的结构化日志格式
-	logger.LogError(c.Request.Context(), fmt.Sprintf("retry_start model=%s channel_id=%d total_channels=%d config_max_retries=%d actual_max_retries=%d status_code=%d upstream_id=%s error=\"%s\"",
-		modelName, channel.Id, totalChannelsAtStart, retryTimes, actualRetryTimes, apiErr.StatusCode, c.GetString(config.GinUpstreamRequestIdKey), utils.TruncateBase64InMessage(apiErr.OpenAIError.Message)))
-
-	// breakReason 区分循环退出原因，避免最终日志一律打成 retry_exhausted 而产生误导。
-	// 默认值 "exhausted" 表示循环自然跑完（真的把可用渠道用完了）。
-	// 注意：done==true 或 shouldRetry==false 触发的早跳过路径上方会把 retryTimes 置 0，
-	// 导致 actualRetryTimes=0，循环根本不进入；此时若不预置 "skipped"，最终会落到
-	// "retry_exhausted reason=exhausted actual_max_retries=0" 的自相矛盾日志。
-	breakReason := "exhausted"
-	if actualRetryTimes == 0 {
-		breakReason = "skipped"
-	}
-
-	// pendingCooldown: the channel that failed last has not been through shouldCooldowns yet.
-	// Each loop turn cools the previous failure before picking the next channel, so the channel
-	// tried last (and the first one when the loop never runs) is cooled after the loop instead.
-	pendingCooldown := true
-
-	for i := actualRetryTimes; i > 0; i-- {
-		// 冻结通道并记录是否应用了冷却
-		cooldownApplied := shouldCooldowns(c, channel, apiErr)
-		relay_util.MarkLastRelayAttemptCooldown(c, cooldownApplied)
-		pendingCooldown = false
-
-		if time.Since(startTime) > timeout {
-			logger.LogError(c.Request.Context(), fmt.Sprintf("retry_timeout model=%s channel_id=%d elapsed_time=%.2fs timeout=%.2fs",
-				modelName, channel.Id, time.Since(startTime).Seconds(), timeout.Seconds()))
-			// UpstreamUnavailableError 让 FilterOpenAIErr 坍缩为 503 + 统一文案，与"无可用渠道"出口对齐。
-			// 原 message 保留供 retry_aborted 日志诊断。
-			apiErr = common.UpstreamUnavailableError("Retry timed out, upstream is at capacity. Please try again later.")
-			breakReason = "timeout"
-			break
+	// A routing policy may name more models than one (a fallback policy's models, an auto policy's
+	// target and then its fallback): each round retries the lines of one model, and when they are
+	// used up the request moves to the next model of the chain.
+	for {
+		retryTimes := config.RetryTimes
+		// 在重试开始前计算并缓存总渠道数，避免重试过程中动态变化
+		groupName := c.GetString("token_group")
+		if groupName == "" {
+			groupName = c.GetString("group")
 		}
+		// 选路 / 计数 / cooldown / 过滤统一用 balancer 口径的 routing_model，
+		// 否则配了 model_mapping 的渠道会查不到 Rule 键（total_channels=0，完全不重试）。
+		modelName := RoutingModelName(c)
+		totalChannelsAtStart := model.ChannelGroup.CountAvailableChannels(groupName, modelName)
 
-		// 客户端已断开：没有人等结果，再换渠道只会白白产生上游费用。
-		if c.Request.Context().Err() != nil {
-			logger.LogInfo(c.Request.Context(), fmt.Sprintf("retry_client_gone model=%s channel_id=%d", modelName, channel.Id))
-			breakReason = "client_gone"
-			break
-		}
-
-		if err := relay.setProvider(relay.getOriginalModel()); err != nil {
-			logger.LogError(c.Request.Context(), fmt.Sprintf("retry_provider_error model=%s channel_id=%d error=\"%s\"",
-				modelName, channel.Id, err.Error()))
-			breakReason = "provider_error"
-			break
-		}
-
-		channel = relay.getProvider().GetChannel()
-
-		// 更新尝试计数
-		attemptCount := c.GetInt("attempt_count")
-		c.Set("attempt_count", attemptCount+1)
-
-		// 计算剩余渠道数
-		filters := buildChannelFilters(c, modelName)
-		skipChannelIds, _ := utils.GetGinValue[[]int](c, "skip_channel_ids")
-		tempFilters := append(filters, model.FilterChannelId(skipChannelIds))
-		remainChannels := model.ChannelGroup.CountAvailableChannels(groupName, modelName, tempFilters...)
-
-		// 获取实际重试次数
-		actualRetryTimes := c.GetInt("actual_retry_times")
-
-		// 记录重试尝试 - 使用统一的结构化日志格式
-		logger.LogWarn(c.Request.Context(), fmt.Sprintf("retry_attempt model=%s channel_id=%d attempt=%d/%d remaining_channels=%d total_channels=%d cooldown_applied=%t",
-			modelName, channel.Id, attemptCount, actualRetryTimes, remainChannels, c.GetInt("total_channels_at_start"), cooldownApplied))
-
-		apiErr, done = RelayHandler(relay)
-		if apiErr == nil {
-			// 重试成功
-			logger.LogInfo(c.Request.Context(), fmt.Sprintf("retry_success model=%s channel_id=%d attempt=%d/%d total_channels=%d",
-				modelName, channel.Id, attemptCount, actualRetryTimes, c.GetInt("total_channels_at_start")))
-			metrics.RecordProvider(c, 200)
-			if config.PauseRulesEnabled {
-				controller.NotifySupplyFailover(modelName, firstChannel, channel)
-			}
-			return
-		}
-
-		// 记录重试失败
-		logger.LogError(c.Request.Context(), fmt.Sprintf("retry_failed model=%s channel_id=%d attempt=%d/%d status_code=%d upstream_id=%s error_type=\"%s\" error=\"%s\"",
-			modelName, channel.Id, attemptCount, actualRetryTimes, apiErr.StatusCode, c.GetString(config.GinUpstreamRequestIdKey), apiErr.OpenAIError.Type, utils.TruncateBase64InMessage(apiErr.OpenAIError.Message)))
-
-		notifyChannelRelayError(c.Request.Context(), c, channel, apiErr)
-		relay_util.RecordRelayAttempt(c, channel.Id, apiErr)
-		pendingCooldown = true
+		// Evaluate once: shouldRetry records the failure in the provider metrics.
 		retryable := shouldRetry(c, apiErr, channel.Type)
 		if done || !retryable {
-			logger.LogError(c.Request.Context(), fmt.Sprintf("retry_stop_condition model=%s channel_id=%d attempt=%d/%d done=%t should_retry=%t",
-				modelName, channel.Id, attemptCount, actualRetryTimes, done, retryable))
-			breakReason = "stop_condition"
+			logger.LogError(c.Request.Context(), fmt.Sprintf("retry_skip model=%s channel_id=%d status_code=%d upstream_id=%s done=%t should_retry=%t total_channels=%d error=\"%s\"",
+				modelName, channel.Id, apiErr.StatusCode, c.GetString(config.GinUpstreamRequestIdKey), done, retryable, totalChannelsAtStart, utils.TruncateBase64InMessage(apiErr.OpenAIError.Message)))
+			retryTimes = 0
+		}
+
+		startTime := c.GetTime("requestStartTime")
+		timeout := time.Duration(config.RetryTimeOut) * time.Second
+
+		// 实际重试次数 = min(配置的重试数, 可用渠道数)
+		actualRetryTimes := retryTimes
+		if totalChannelsAtStart < retryTimes {
+			actualRetryTimes = totalChannelsAtStart
+		}
+
+		c.Set("total_channels_at_start", totalChannelsAtStart)
+		c.Set("actual_retry_times", actualRetryTimes)
+		c.Set("attempt_count", 1) // 初始化尝试计数
+
+		// 记录初始失败 - 使用统一的结构化日志格式
+		logger.LogError(c.Request.Context(), fmt.Sprintf("retry_start model=%s channel_id=%d total_channels=%d config_max_retries=%d actual_max_retries=%d status_code=%d upstream_id=%s error=\"%s\"",
+			modelName, channel.Id, totalChannelsAtStart, retryTimes, actualRetryTimes, apiErr.StatusCode, c.GetString(config.GinUpstreamRequestIdKey), utils.TruncateBase64InMessage(apiErr.OpenAIError.Message)))
+
+		// breakReason 区分循环退出原因，避免最终日志一律打成 retry_exhausted 而产生误导。
+		// 默认值 "exhausted" 表示循环自然跑完（真的把可用渠道用完了）。
+		// 注意：done==true 或 shouldRetry==false 触发的早跳过路径上方会把 retryTimes 置 0，
+		// 导致 actualRetryTimes=0，循环根本不进入；此时若不预置 "skipped"，最终会落到
+		// "retry_exhausted reason=exhausted actual_max_retries=0" 的自相矛盾日志。
+		breakReason = "exhausted"
+		if actualRetryTimes == 0 {
+			breakReason = "skipped"
+		}
+
+		// pendingCooldown: the channel that failed last has not been through shouldCooldowns yet.
+		// Each loop turn cools the previous failure before picking the next channel, so the channel
+		// tried last (and the first one when the loop never runs) is cooled after the loop instead.
+		pendingCooldown := true
+
+		for i := actualRetryTimes; i > 0; i-- {
+			// 冻结通道并记录是否应用了冷却
+			cooldownApplied := shouldCooldowns(c, channel, apiErr)
+			relay_util.MarkLastRelayAttemptCooldown(c, cooldownApplied)
+			pendingCooldown = false
+
+			if time.Since(startTime) > timeout {
+				logger.LogError(c.Request.Context(), fmt.Sprintf("retry_timeout model=%s channel_id=%d elapsed_time=%.2fs timeout=%.2fs",
+					modelName, channel.Id, time.Since(startTime).Seconds(), timeout.Seconds()))
+				// UpstreamUnavailableError 让 FilterOpenAIErr 坍缩为 503 + 统一文案，与"无可用渠道"出口对齐。
+				// 原 message 保留供 retry_aborted 日志诊断。
+				apiErr = common.UpstreamUnavailableError("Retry timed out, upstream is at capacity. Please try again later.")
+				breakReason = "timeout"
+				break
+			}
+
+			// 客户端已断开：没有人等结果，再换渠道只会白白产生上游费用。
+			if c.Request.Context().Err() != nil {
+				logger.LogInfo(c.Request.Context(), fmt.Sprintf("retry_client_gone model=%s channel_id=%d", modelName, channel.Id))
+				breakReason = "client_gone"
+				break
+			}
+
+			if err := relay.setProvider(relay.getOriginalModel()); err != nil {
+				logger.LogError(c.Request.Context(), fmt.Sprintf("retry_provider_error model=%s channel_id=%d error=\"%s\"",
+					modelName, channel.Id, err.Error()))
+				breakReason = "provider_error"
+				break
+			}
+
+			channel = relay.getProvider().GetChannel()
+
+			// 更新尝试计数
+			attemptCount := c.GetInt("attempt_count")
+			c.Set("attempt_count", attemptCount+1)
+
+			// 计算剩余渠道数
+			filters := buildChannelFilters(c, modelName)
+			skipChannelIds, _ := utils.GetGinValue[[]int](c, "skip_channel_ids")
+			tempFilters := append(filters, model.FilterChannelId(skipChannelIds))
+			remainChannels := model.ChannelGroup.CountAvailableChannels(groupName, modelName, tempFilters...)
+
+			// 获取实际重试次数
+			actualRetryTimes := c.GetInt("actual_retry_times")
+
+			// 记录重试尝试 - 使用统一的结构化日志格式
+			logger.LogWarn(c.Request.Context(), fmt.Sprintf("retry_attempt model=%s channel_id=%d attempt=%d/%d remaining_channels=%d total_channels=%d cooldown_applied=%t",
+				modelName, channel.Id, attemptCount, actualRetryTimes, remainChannels, c.GetInt("total_channels_at_start"), cooldownApplied))
+
+			apiErr, done = RelayHandler(relay)
+			if apiErr == nil {
+				// 重试成功
+				logger.LogInfo(c.Request.Context(), fmt.Sprintf("retry_success model=%s channel_id=%d attempt=%d/%d total_channels=%d",
+					modelName, channel.Id, attemptCount, actualRetryTimes, c.GetInt("total_channels_at_start")))
+				metrics.RecordProvider(c, 200)
+				if config.PauseRulesEnabled && modelName == firstModel {
+					controller.NotifySupplyFailover(modelName, firstChannel, channel)
+				}
+				return
+			}
+
+			// 记录重试失败
+			logger.LogError(c.Request.Context(), fmt.Sprintf("retry_failed model=%s channel_id=%d attempt=%d/%d status_code=%d upstream_id=%s error_type=\"%s\" error=\"%s\"",
+				modelName, channel.Id, attemptCount, actualRetryTimes, apiErr.StatusCode, c.GetString(config.GinUpstreamRequestIdKey), apiErr.OpenAIError.Type, utils.TruncateBase64InMessage(apiErr.OpenAIError.Message)))
+
+			notifyChannelRelayError(c.Request.Context(), c, channel, apiErr)
+			relay_util.RecordRelayAttempt(c, channel.Id, apiErr)
+			pendingCooldown = true
+			retryable := shouldRetry(c, apiErr, channel.Type)
+			if done || !retryable {
+				logger.LogError(c.Request.Context(), fmt.Sprintf("retry_stop_condition model=%s channel_id=%d attempt=%d/%d done=%t should_retry=%t",
+					modelName, channel.Id, attemptCount, actualRetryTimes, done, retryable))
+				breakReason = "stop_condition"
+				break
+			}
+		}
+
+		// With pause rules on, this only records whether the rules paused the last channel.
+		if pendingCooldown && (config.PauseRulesEnabled || shouldCooldownFinalFailure(c, apiErr)) {
+			relay_util.MarkLastRelayAttemptCooldown(c, shouldCooldowns(c, channel, apiErr))
+		}
+
+		// 记录最终失败：循环自然跑完用 retry_exhausted，中途 break 用 retry_aborted + reason
+		finalAttempt := c.GetInt("attempt_count")
+		actualRetryTimes = c.GetInt("actual_retry_times")
+		finalLogTag := "retry_exhausted"
+		if breakReason != "exhausted" {
+			finalLogTag = "retry_aborted"
+		}
+		logger.LogError(c.Request.Context(), fmt.Sprintf("%s reason=%s model=%s channel_id=%d total_attempts=%d total_channels=%d config_max_retries=%d actual_max_retries=%d status_code=%d upstream_id=%s error=\"%s\"",
+			finalLogTag, breakReason, modelName, channel.Id, finalAttempt, c.GetInt("total_channels_at_start"), retryTimes, actualRetryTimes, apiErr.StatusCode, c.GetString(config.GinUpstreamRequestIdKey), utils.TruncateBase64InMessage(apiErr.OpenAIError.Message)))
+
+
+		if done || breakReason == "timeout" || breakReason == "client_gone" {
 			break
 		}
+		if !relay_util.RoutingChainHasNext(c) {
+			break
+		}
+		next, switchErr := switchRoutingModel(relay)
+		if switchErr != nil {
+			logger.LogError(c.Request.Context(), fmt.Sprintf("routing_fallback_unavailable model=%s error=\"%s\"", modelName, switchErr.Error()))
+			break
+		}
+		channel = relay.getProvider().GetChannel()
+		c.Set("attempt_count", c.GetInt("attempt_count")+1)
+		logger.LogWarn(c.Request.Context(), fmt.Sprintf("routing_fallback from=%s to=%s channel_id=%d", modelName, next, channel.Id))
+		apiErr, done = RelayHandler(relay)
+		if apiErr == nil {
+			metrics.RecordProvider(c, 200)
+			return
+		}
+		notifyChannelRelayError(c.Request.Context(), c, channel, apiErr)
+		relay_util.RecordRelayAttempt(c, channel.Id, apiErr)
 	}
-
-	// With pause rules on, this only records whether the rules paused the last channel.
-	if pendingCooldown && (config.PauseRulesEnabled || shouldCooldownFinalFailure(c, apiErr)) {
-		relay_util.MarkLastRelayAttemptCooldown(c, shouldCooldowns(c, channel, apiErr))
-	}
-
-	// 记录最终失败：循环自然跑完用 retry_exhausted，中途 break 用 retry_aborted + reason
-	finalAttempt := c.GetInt("attempt_count")
-	actualRetryTimes = c.GetInt("actual_retry_times")
-	finalLogTag := "retry_exhausted"
-	if breakReason != "exhausted" {
-		finalLogTag = "retry_aborted"
-	}
-	logger.LogError(c.Request.Context(), fmt.Sprintf("%s reason=%s model=%s channel_id=%d total_attempts=%d total_channels=%d config_max_retries=%d actual_max_retries=%d status_code=%d upstream_id=%s error=\"%s\"",
-		finalLogTag, breakReason, modelName, channel.Id, finalAttempt, c.GetInt("total_channels_at_start"), retryTimes, actualRetryTimes, apiErr.StatusCode, c.GetString(config.GinUpstreamRequestIdKey), utils.TruncateBase64InMessage(apiErr.OpenAIError.Message)))
 
 	if apiErr != nil {
 		// 确保 channel_type 存在，用于 FilterOpenAIErr 正确过滤错误

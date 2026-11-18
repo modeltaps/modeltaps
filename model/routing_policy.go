@@ -33,6 +33,16 @@ const (
 	routingPolicyMaxNameLen        = 100
 )
 
+// Policy types: an auto policy asks a decision model which route a request takes; a fallback
+// policy tries its models in order, the next one when every line of the one before has failed.
+const (
+	RoutingPolicyTypeAuto     = "auto"
+	RoutingPolicyTypeFallback = "fallback"
+	// A fallback policy lists 2 to 8 models.
+	RoutingPolicyMinFallbackModels = 2
+	RoutingPolicyMaxFallbackModels = 8
+)
+
 // 决策的打分方式。
 const (
 	// RoutingScoringAuto 先用 logprobs 打分；决策模型或渠道不返回 logprobs 时改用自报置信度。
@@ -73,6 +83,12 @@ type RoutingPolicy struct {
 	// Enabled 不带 gorm 默认值：带了 default:true 时 false 会被当零值替换成 true。
 	// 请求里省略 enabled 时的「默认启用」由控制器补。
 	Enabled bool `json:"enabled"`
+	// Type is RoutingPolicyType*; rows written before fallback policies existed are empty and
+	// Normalize reads them as auto.
+	Type string `json:"type" gorm:"type:varchar(20);default:''"`
+	// Models is a fallback policy's models in the order they are tried. Empty for auto policies,
+	// whose decision model, question, routes and fallback model are empty for fallback policies.
+	Models datatypes.JSONSlice[string] `json:"models" gorm:"type:json"`
 	// DecisionModel 做分类的模型；Question 是给它的问题（含少量上下文，不写长指令）。
 	DecisionModel string                            `json:"decision_model" gorm:"type:varchar(255);not null"`
 	Question      string                            `json:"question" gorm:"type:text"`
@@ -152,7 +168,13 @@ var (
 	ErrRoutingPolicyScoringInvalid   = common.NewAPIError(common.APICodeRoutingPolicyScoringInvalid, "scoring must be auto, logprobs or self_reported", nil)
 	ErrRoutingPolicyReferenced       = common.NewAPIError(common.APICodeRoutingPolicyReferenced, "policy is referenced by model aliases", nil)
 	ErrOrgRoutingPolicyDisabled      = common.NewAPIError(common.APICodeOrgRoutingPolicyDisabled, "organization routing policies are not enabled", nil)
+	ErrRoutingPolicyTypeInvalid      = common.NewAPIError(common.APICodeRoutingPolicyTypeInvalid, "type must be auto or fallback", nil)
+	ErrRoutingPolicyModelsCount      = common.NewAPIError(common.APICodeRoutingPolicyModelsCount, "a fallback policy needs between 2 and 8 models", map[string]any{"min": RoutingPolicyMinFallbackModels, "max": RoutingPolicyMaxFallbackModels})
 )
+
+func routingPolicyModelDuplicate(name string) error {
+	return common.NewAPIError(common.APICodeRoutingPolicyModelDuplicate, "a fallback policy lists a model twice: "+name, map[string]any{"model": name})
+}
 
 // routingPolicyModelUnavailable a model an own policy refers to is hidden or has no channel in the
 // scope's group.
@@ -215,6 +237,23 @@ func (p *RoutingPolicy) Normalize() {
 		p.Routes[i].Description = strings.TrimSpace(p.Routes[i].Description)
 		p.Routes[i].TargetModel = strings.TrimSpace(p.Routes[i].TargetModel)
 	}
+	p.Type = strings.TrimSpace(p.Type)
+	if p.Type == "" {
+		p.Type = RoutingPolicyTypeAuto
+	}
+	models := make([]string, 0, len(p.Models))
+	for _, name := range p.Models {
+		if name = strings.TrimSpace(name); name != "" {
+			models = append(models, name)
+		}
+	}
+	p.Models = models
+	if p.IsFallback() {
+		p.DecisionModel, p.Question, p.FallbackModel = "", "", ""
+		p.Routes = nil
+	} else {
+		p.Models = nil
+	}
 	p.Scoring = strings.TrimSpace(p.Scoring)
 	if p.Scoring == "" {
 		p.Scoring = RoutingScoringAuto
@@ -242,6 +281,29 @@ func (p *RoutingPolicy) Validate(isPolicy func(name string) bool) error {
 		}
 		if name == p.Name || (isPolicy != nil && isPolicy(name)) {
 			return routingPolicyModelIsPolicy(field, name)
+		}
+		return nil
+	}
+	if p.Type != RoutingPolicyTypeAuto && p.Type != RoutingPolicyTypeFallback {
+		return ErrRoutingPolicyTypeInvalid
+	}
+	if p.IsFallback() {
+		if len(p.Models) < RoutingPolicyMinFallbackModels || len(p.Models) > RoutingPolicyMaxFallbackModels {
+			return ErrRoutingPolicyModelsCount
+		}
+		seen := make(map[string]bool, len(p.Models))
+		for _, name := range p.Models {
+			if err := notPolicy("models[]", name); err != nil {
+				return err
+			}
+			key := strings.ToLower(name)
+			if seen[key] {
+				return routingPolicyModelDuplicate(name)
+			}
+			seen[key] = true
+		}
+		if p.PinTTLSeconds < 0 || p.PinTTLSeconds > RoutingPolicyMaxPinTTL {
+			return routingPolicyLimitInvalid("pin_ttl_seconds", RoutingPolicyMaxPinTTL)
 		}
 		return nil
 	}
@@ -301,8 +363,47 @@ func (p *RoutingPolicy) RouteFor(label string) *RoutingRoute {
 	return nil
 }
 
-// TargetModels 返回策略可能转发到的所有模型（各路由目标 + 兜底），去重、保持出现顺序。
+// IsFallback reports whether the policy is a fallback policy.
+func (p *RoutingPolicy) IsFallback() bool {
+	return p.Type == RoutingPolicyTypeFallback
+}
+
+// AnchorModel is the model the policy always may reach: an auto policy's fallback model, a
+// fallback policy's first model. Model lists show a policy only when its anchor can be routed,
+// and the catalog prices it by the anchor.
+func (p *RoutingPolicy) AnchorModel() string {
+	if p.IsFallback() {
+		if len(p.Models) == 0 {
+			return ""
+		}
+		return p.Models[0]
+	}
+	return p.FallbackModel
+}
+
+// Chain is the models a request that the policy sent to target may still go to, in order, when
+// every line of the one before fails: a fallback policy's models from target on, an auto
+// policy's target and then its fallback model.
+func (p *RoutingPolicy) Chain(target string) []string {
+	if p.IsFallback() {
+		for i, name := range p.Models {
+			if name == target {
+				return append([]string(nil), p.Models[i:]...)
+			}
+		}
+		return append([]string(nil), p.Models...)
+	}
+	if target == "" || target == p.FallbackModel {
+		return []string{p.FallbackModel}
+	}
+	return []string{target, p.FallbackModel}
+}
+
+// TargetModels 返回策略可能转发到的所有模型（各路由目标 + 兜底；兜底策略为它的模型），去重、保持出现顺序。
 func (p *RoutingPolicy) TargetModels() []string {
+	if p.IsFallback() {
+		return append([]string(nil), p.Models...)
+	}
 	seen := make(map[string]bool, len(p.Routes)+1)
 	targets := make([]string, 0, len(p.Routes)+1)
 	add := func(name string) {
@@ -491,6 +592,14 @@ func (p *RoutingPolicy) ValidateScopedModels(scope RoutingScope) error {
 	}
 	check := func(field, name string) error {
 		return checkScopedRoutingModel(group, field, name)
+	}
+	if p.IsFallback() {
+		for _, name := range p.Models {
+			if err := check("models[]", name); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 	if err := check("decision_model", p.DecisionModel); err != nil {
 		return err
@@ -922,7 +1031,7 @@ func RoutingPolicyModelsFor(scope RoutingScope, existing []string, routable func
 		if present[name] {
 			continue
 		}
-		if routable != nil && !routable(policy.FallbackModel) {
+		if routable != nil && !routable(policy.AnchorModel()) {
 			continue
 		}
 		added = append(added, name)
@@ -936,6 +1045,8 @@ type ManagedRoutingPolicy struct {
 	Name          string         `json:"name"`
 	DisplayName   string         `json:"display_name"`
 	Description   string         `json:"description"`
+	Type          string         `json:"type"`
+	Models        []string       `json:"models"`
 	DecisionModel string         `json:"decision_model"`
 	Routes        []RoutingRoute `json:"routes"`
 	FallbackModel string         `json:"fallback_model"`
@@ -955,7 +1066,7 @@ func ManagedRoutingPoliciesFor(scope RoutingScope) ([]ManagedRoutingPolicy, erro
 		if !IsCatalogVisible(policy.Name) {
 			continue
 		}
-		canonical, _ := ResolveCanonicalModel(policy.FallbackModel)
+		canonical, _ := ResolveCanonicalModel(policy.AnchorModel())
 		if _, err := ChannelGroup.GetMatchedModelName(group, canonical); err != nil {
 			continue
 		}
@@ -965,6 +1076,8 @@ func ManagedRoutingPoliciesFor(scope RoutingScope) ([]ManagedRoutingPolicy, erro
 			Name:          policy.Name,
 			DisplayName:   policy.DisplayName,
 			Description:   policy.Description,
+			Type:          policy.Type,
+			Models:        append([]string(nil), policy.Models...),
 			DecisionModel: policy.DecisionModel,
 			Routes:        routes,
 			FallbackModel: policy.FallbackModel,

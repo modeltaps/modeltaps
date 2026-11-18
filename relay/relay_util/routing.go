@@ -24,6 +24,8 @@ const (
 	// RoutingReasonTargetUnavailable the chosen target of an organization policy is no longer usable
 	// (hidden in the catalog), so the request went to the fallback model.
 	RoutingReasonTargetUnavailable = "target_unavailable"
+	// RoutingReasonPrimary a fallback policy sent the request to its first usable model.
+	RoutingReasonPrimary = "primary"
 )
 
 // RoutingPolicyIdContextKey gin context key holding the id of the policy a decision call belongs to.
@@ -69,6 +71,32 @@ type RoutingDecision struct {
 	DecisionUsage *types.Usage
 	// Error 决策失败的原因文本（只进系统日志与后台「试一试」，不进消费日志）。
 	Error string
+	// Chain is the models the request may go to, in order, when every line of the one before
+	// fails (see RoutingPolicy.Chain); Step is the one it is on, 0 for the first. TargetModel is
+	// Chain[Step] once the request has moved on.
+	Chain []string
+	Step  int
+}
+
+// HasNext reports whether the chain has a model after the current one.
+func (d *RoutingDecision) HasNext() bool {
+	return d != nil && d.Step+1 < len(d.Chain)
+}
+
+// Advance moves the decision to the next model of its chain and returns it.
+func (d *RoutingDecision) Advance() (string, bool) {
+	if !d.HasNext() {
+		return "", false
+	}
+	d.Step++
+	d.TargetModel = d.Chain[d.Step]
+	return d.TargetModel, true
+}
+
+// RoutingChainHasNext reports whether the request's routing decision has another model to fall
+// back to.
+func RoutingChainHasNext(c *gin.Context) bool {
+	return RoutingDecisionFromContext(c).HasNext()
 }
 
 // HeaderValue 组成 X-Modeltaps-Route 的值：policy=…; label=…; model=…; confidence=…; reason=…。
@@ -85,6 +113,9 @@ func (d *RoutingDecision) HeaderValue() string {
 			value += "; scoring=" + d.Scoring
 		}
 	}
+	if d.Step > 0 {
+		value += "; step=" + strconv.Itoa(d.Step)
+	}
 	return value + "; reason=" + d.Reason
 }
 
@@ -96,6 +127,9 @@ func (d *RoutingDecision) LogMeta(meta map[string]any) {
 	}
 	meta["routing_reason"] = d.Reason
 	meta["routing_target"] = d.TargetModel
+	if d.Step > 0 {
+		meta["routing_step"] = d.Step
+	}
 	if d.Label != "" {
 		meta["routing_label"] = d.Label
 	}
@@ -128,8 +162,8 @@ func roundProbability(value float64) float64 {
 }
 
 func (d *RoutingDecision) String() string {
-	return fmt.Sprintf("policy=%s label=%s target=%s confidence=%.2f scoring=%s reason=%s decision_ms=%d",
-		d.Policy, d.Label, d.TargetModel, d.Confidence, d.Scoring, d.Reason, d.DecisionMs)
+	return fmt.Sprintf("policy=%s label=%s target=%s confidence=%.2f scoring=%s reason=%s decision_ms=%d step=%d chain=%v",
+		d.Policy, d.Label, d.TargetModel, d.Confidence, d.Scoring, d.Reason, d.DecisionMs, d.Step, d.Chain)
 }
 
 // RoutingDecisionFromContext 取本次请求的决策，没有返回 nil。

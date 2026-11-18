@@ -42,6 +42,16 @@ export const RECOMMENDED_DECISION_MODELS = [...new Set([...DECISION_MODELS.codin
 // A policy has 2 to 16 routes.
 export const MIN_ROUTES = 2;
 export const MAX_ROUTES = 16;
+// A fallback policy has 2 to 8 models.
+export const MIN_FALLBACK_MODELS = 2;
+export const MAX_FALLBACK_MODELS = 8;
+
+// suggestFallbackChain: a starting chain for a new fallback policy, the strongest model first and
+// the balanced one behind it; models already chosen are kept.
+export function suggestFallbackChain(models = []) {
+  const chain = [pickTierModel(models, 'strongest'), pickTierModel(models, 'balanced')].filter(Boolean);
+  return [...new Set(chain)];
+}
 
 export const POLICY_TEMPLATES = [
   {

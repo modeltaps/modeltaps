@@ -1825,7 +1825,10 @@
     "totp_challenge_expired": "登入已逾時，請重新輸入密碼",
     "totp_already_enabled": "兩步驗證已經開啟",
     "totp_not_enabled": "兩步驗證未開啟",
-    "totp_setup_required": "設定已逾時，請重新開始"
+    "totp_setup_required": "設定已逾時，請重新開始",
+    "routing_policy_type_invalid": "策略類型只能是自動路由或兜底",
+    "routing_policy_models_count": "兜底策略需要 {{min}} 到 {{max}} 個模型",
+    "routing_policy_model_duplicate": "兜底策略裡模型重複：{{model}}"
   },
   "channelOAuth": {
     "tip": {
@@ -1938,7 +1941,8 @@
         "name": "請填寫模型名",
         "decision_model": "請選擇決策模型",
         "fallback_model": "請選擇兜底模型",
-        "routes": "至少兩條路由，每條都要有標籤和目標模型"
+        "routes": "至少兩條路由，每條都要有標籤和目標模型",
+        "models": "至少兩個模型"
       },
       "tabStats": "統計",
       "scoring": "評分方式",
@@ -2071,7 +2075,8 @@
     "new": {
       "subtitle": "客戶端呼叫的模型名，由首條訊息決定實際模型",
       "defaults": "建立後啟用、自動打分；會話固定和限制在策略面板裡設定",
-      "created": "策略已建立"
+      "created": "策略已建立",
+      "defaultsFallback": "建立後啟用；只有模型失敗時請求才往下走"
     },
     "editTitle": "編輯路由策略",
     "scope": {
@@ -2113,6 +2118,21 @@
       "price": "{{input}} / {{output}} · 每百萬",
       "priceInput": "{{input}} · 每百萬輸入",
       "replaceConfirm": "用這個範本取代已填寫的內容？"
+    },
+    "type": {
+      "label": "策略類型",
+      "auto": "自動路由",
+      "autoHint": "由決策模型讀首條訊息，選出一條路由",
+      "fallback": "兜底",
+      "fallbackHint": "按順序排的模型，前一個的線路全部失敗才換下一個"
+    },
+    "chain": {
+      "models": "模型",
+      "note": "請求先發給第一個模型；只有前一個模型的所有線路都失敗，才換下一個。已經開始串流輸出的請求不會再換。",
+      "first": "第一個模型",
+      "next": "下一個模型",
+      "add": "新增模型",
+      "remove": "移除模型"
     }
   },
   "logPage": {

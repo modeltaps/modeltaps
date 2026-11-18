@@ -181,6 +181,11 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
                 ) : (
                   <span className="font-mono text-sm">{p.name}</span>
                 )}
+                {p.type === 'fallback' && (
+                  <Badge variant="outline" className="font-normal text-muted-foreground">
+                    {t('routingPolicy.type.fallback')}
+                  </Badge>
+                )}
               </div>
               {p.display_name && p.display_name !== p.name && (
                 <div className="truncate text-xs text-muted-foreground">{p.display_name}</div>
@@ -192,13 +197,27 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
       {
         accessorKey: 'decision_model',
         header: t('routingPolicy.columns.decisionModel'),
-        cell: (c) => <span className="font-mono text-sm">{c.getValue()}</span>
+        cell: (c) =>
+          c.getValue() ? <span className="font-mono text-sm">{c.getValue()}</span> : <span className="text-muted-foreground">—</span>
       },
       {
         id: 'routes',
         header: t('routingPolicy.columns.routes'),
         cell: (c) => {
-          const routes = c.row.original.routes || [];
+          const p = c.row.original;
+          if (p.type === 'fallback') {
+            return (
+              <div className="flex max-w-xs flex-wrap items-center gap-1 font-mono text-[13px]">
+                {(p.models || []).map((name, i) => (
+                  <span key={name} className="inline-flex items-center gap-1">
+                    {i > 0 && <span className="text-muted-foreground">→</span>}
+                    {name}
+                  </span>
+                ))}
+              </div>
+            );
+          }
+          const routes = p.routes || [];
           return (
             <div className="flex max-w-xs flex-wrap gap-1">
               {routes.map((r) => (
@@ -213,12 +232,18 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
       {
         accessorKey: 'fallback_model',
         header: t('routingPolicy.columns.fallback'),
-        cell: (c) => <span className="font-mono text-sm">{c.getValue()}</span>
+        cell: (c) =>
+          c.getValue() ? <span className="font-mono text-sm">{c.getValue()}</span> : <span className="text-muted-foreground">—</span>
       },
       {
         accessorKey: 'threshold',
         header: t('routingPolicy.columns.threshold'),
-        cell: (c) => `${Math.round(Number(c.getValue() || 0) * 100)}%`
+        cell: (c) =>
+          c.row.original.type === 'fallback' ? (
+            <span className="text-muted-foreground">—</span>
+          ) : (
+            `${Math.round(Number(c.getValue() || 0) * 100)}%`
+          )
       },
       ...(readOnly
         ? []
@@ -230,6 +255,7 @@ export function RoutingPolicyList({ api, filter = null, intro = null, introDetai
                 const s = weekStats[c.row.original.id];
                 if (!s) return <span className="text-muted-foreground">—</span>;
                 if (!s.requests) return <span className="text-muted-foreground">0</span>;
+                if (c.row.original.type === 'fallback') return <span className="tabular-nums">{s.requests}</span>;
                 const rate = Math.round((s.fallback_requests / s.requests) * 100);
                 return (
                   <span className="tabular-nums">

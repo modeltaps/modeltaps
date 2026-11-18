@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Field } from '@/components/objects';
 import { showError } from 'utils/common';
-import { MIN_ROUTES } from './templates';
+import { MIN_FALLBACK_MODELS, MIN_ROUTES } from './templates';
 import { SCORING_MODES, platformRoutingPolicyApi } from './routingPolicyApi';
 
 // Fields shared by the policy panel's tabs and the new policy sheet. Each takes the form (or
@@ -17,6 +17,10 @@ import { SCORING_MODES, platformRoutingPolicyApi } from './routingPolicyApi';
 export function missingFields(p) {
   const out = [];
   if (p.name !== undefined && !p.name) out.push('name');
+  if (p.type === 'fallback') {
+    if ((p.models || []).length < MIN_FALLBACK_MODELS) out.push('models');
+    return out;
+  }
   if (!p.decision_model) out.push('decision_model');
   const routes = p.routes || [];
   if (routes.length < MIN_ROUTES || routes.some((r) => !r.label || !r.target_model)) out.push('routes');

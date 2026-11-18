@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Fallback routing policies: one model name for a list of models tried in order (2 to 8). A request
+  moves to the next model only when every line of the one before has failed or none can take it;
+  it stays put once a streamed answer has started, when the client has gone, when the retry time is
+  up, or for errors of the request itself. Auto routing policies now fall back the same way, from a
+  chosen target whose lines all fail to the policy's fallback model. The log records
+  `routing_step` and the `X-Modeltaps-Route` header carries `step=`. Pick **Fallback** at the top of
+  **New policy**; it starts from the strongest model with a balanced one behind it.
 - Gemini Live API sessions (realtime voice, camera and screen frames over one WebSocket) are
   relayed in their native protocol at
   `/gemini/ws/google.ai.generativelanguage.{v1,v1alpha,v1beta}.GenerativeService.BidiGenerateContent`,

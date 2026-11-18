@@ -141,6 +141,36 @@ describe('RoutingPolicy page', () => {
     expect(screen.getByTestId('route-row-0').textContent).toContain('$0.1 / $0.5');
   });
 
+  it('creates a fallback policy starting from the strongest model', async () => {
+    API.get.mockImplementation((url) => {
+      if (url === '/api/model_info/catalog') {
+        const rows = ['claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5'].map((model) => ({ model, status: 'published' }));
+        return Promise.resolve({ data: { success: true, data: rows } });
+      }
+      return Promise.resolve({ data: { success: true, data: [] } });
+    });
+    API.post.mockResolvedValue({ data: { success: true, data: { id: 10 } } });
+    renderPage('/panel/routing_policy?new=1');
+    await waitFor(() => expect(API.get).toHaveBeenCalledWith('/api/model_info/catalog'));
+    await screen.findByTestId('rp-routing-map');
+    await waitFor(() => expect(screen.getByTestId('rp-type-fallback')).toBeTruthy());
+    // Let the model list land before switching, so the suggested chain is filled.
+    await new Promise((r) => setTimeout(r, 0));
+    fireEvent.click(screen.getByTestId('rp-type-fallback'));
+    expect(screen.queryByTestId('rp-template-bar')).toBeNull();
+    expect(screen.getByTestId('chain-row-0').querySelector('input').value).toBe('claude-opus-5-5');
+    expect(screen.getByTestId('chain-row-1').querySelector('input').value).toBe('claude-sonnet-5-5');
+    fireEvent.change(screen.getByLabelText(i18n.t('routingPolicy.form.name'), { exact: false }), { target: { value: 'auto/steady' } });
+    const create = screen.getByRole('button', { name: i18n.t('objects.new.create') });
+    await waitFor(() => expect(create.disabled).toBe(false));
+    fireEvent.click(create);
+    await waitFor(() => expect(API.post).toHaveBeenCalled());
+    const body = API.post.mock.calls[0][1];
+    expect(body.type).toBe('fallback');
+    expect(body.models).toEqual(['claude-opus-5-5', 'claude-sonnet-5-5']);
+    expect(body.name).toBe('auto/steady');
+  });
+
   it('asks before a template replaces what was typed by hand', async () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
     renderPage('/panel/routing_policy?new=1');

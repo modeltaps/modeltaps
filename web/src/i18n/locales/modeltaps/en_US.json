@@ -1908,7 +1908,10 @@
     "totp_challenge_expired": "Sign-in timed out. Enter your password again.",
     "totp_already_enabled": "Two-step verification is already on",
     "totp_not_enabled": "Two-step verification is off",
-    "totp_setup_required": "Setup timed out. Start again."
+    "totp_setup_required": "Setup timed out. Start again.",
+    "routing_policy_type_invalid": "Policy type must be auto routing or fallback",
+    "routing_policy_models_count": "A fallback policy needs between {{min}} and {{max}} models",
+    "routing_policy_model_duplicate": "A fallback policy lists a model twice: {{model}}"
   },
   "channelOAuth": {
     "tip": {
@@ -2016,7 +2019,8 @@
         "name": "Model name is required",
         "decision_model": "Decision model is required",
         "fallback_model": "Fallback model is required",
-        "routes": "At least two routes, each with a label and a target model"
+        "routes": "At least two routes, each with a label and a target model",
+        "models": "At least two models"
       },
       "tabStats": "Statistics",
       "scoring": "Scoring",
@@ -2149,7 +2153,8 @@
     "new": {
       "subtitle": "A model name clients call; the first message picks the real model",
       "defaults": "Created enabled with automatic scoring; pinning and limits are set in the policy panel",
-      "created": "Policy created"
+      "created": "Policy created",
+      "defaultsFallback": "Created enabled; requests move down the list only when a model fails"
     },
     "editTitle": "Edit routing policy",
     "scope": {
@@ -2191,6 +2196,21 @@
       "price": "{{input}} / {{output}} per 1M",
       "priceInput": "{{input}} per 1M input",
       "replaceConfirm": "Replace what you have entered with this template?"
+    },
+    "type": {
+      "label": "Policy type",
+      "auto": "Auto routing",
+      "autoHint": "A decision model reads the first message and picks a route",
+      "fallback": "Fallback",
+      "fallbackHint": "Models in order; the next one when every line of the one before fails"
+    },
+    "chain": {
+      "models": "Models",
+      "note": "Every request goes to the first model. The next model is used only when every line of the one before has failed; a request already streaming stays where it is.",
+      "first": "First model",
+      "next": "Next model",
+      "add": "Add model",
+      "remove": "Remove model"
     }
   },
   "logPage": {

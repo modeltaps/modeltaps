@@ -11,6 +11,7 @@ import {
   Plus,
   Scale,
   Shapes,
+  ListOrdered,
   Split,
   SquareTerminal,
   Trash2
@@ -24,7 +25,7 @@ import { ModelCombobox } from '@/components/ui/model-combobox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { ValueFormatter } from 'utils/common';
-import { MAX_ROUTES, MIN_ROUTES, POLICY_TEMPLATES } from './templates';
+import { MAX_FALLBACK_MODELS, MAX_ROUTES, MIN_FALLBACK_MODELS, MIN_ROUTES, POLICY_TEMPLATES } from './templates';
 import { useClassifierGroups } from './policyFields';
 
 // One icon per template, so the templates read apart at a glance.
@@ -348,4 +349,149 @@ RoutingMap.propTypes = {
   classifiers: PropTypes.shape({ decision: PropTypes.array, chat: PropTypes.array }),
   prices: PropTypes.object,
   decisionExtra: PropTypes.node
+};
+
+// PolicyTypeSwitch: auto routing (a decision model picks the route) or fallback (models in order).
+export function PolicyTypeSwitch({ value, onChange }) {
+  const { t } = useTranslation();
+  const options = [
+    { value: 'auto', icon: Split },
+    { value: 'fallback', icon: ListOrdered }
+  ];
+  return (
+    <div role="radiogroup" aria-label={t('routingPolicy.type.label')} className="grid grid-cols-2 gap-2">
+      {options.map(({ value: v, icon: Icon }) => {
+        const on = (value || 'auto') === v;
+        return (
+          <button
+            key={v}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            data-testid={`rp-type-${v}`}
+            onClick={() => onChange(v)}
+            className={cn(
+              'flex items-start gap-3 rounded-xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              on ? 'border-foreground bg-background/60' : 'border-border bg-field hover:border-foreground/30'
+            )}
+          >
+            <span
+              className={cn(
+                'flex size-8 shrink-0 items-center justify-center rounded-lg border',
+                on ? 'border-foreground bg-foreground text-background' : 'border-border text-muted-foreground'
+              )}
+            >
+              <Icon className="size-4" strokeWidth={1.5} />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[13px] font-medium text-foreground">{t(`routingPolicy.type.${v}`)}</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">{t(`routingPolicy.type.${v}Hint`)}</span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+PolicyTypeSwitch.propTypes = { value: PropTypes.string, onChange: PropTypes.func.isRequired };
+
+// FallbackChain edits a fallback policy's models as the line a request walks down: the first
+// model takes every request, and the next one only when every line of the one before has failed.
+export function FallbackChain({ idPrefix = 'rp', form, setForm, modelOptions = [], prices }) {
+  const { t } = useTranslation();
+  const models = form.models?.length ? form.models : ['', ''];
+  const setModels = (next) => setForm((f) => ({ ...f, models: next }));
+  const move = (index, delta) => {
+    const target = index + delta;
+    if (target < 0 || target >= models.length) return;
+    const next = [...models];
+    [next[index], next[target]] = [next[target], next[index]];
+    setModels(next);
+  };
+  return (
+    <div data-testid="rp-fallback-chain">
+      <p className="mb-3 text-xs text-muted-foreground">{t('routingPolicy.chain.note')}</p>
+      <div className="relative ml-5 pl-8">
+        <span aria-hidden="true" className="absolute bottom-11 left-0 top-5 w-px bg-foreground/15" />
+        <ol className="space-y-2">
+          {models.map((name, index) => (
+            <li key={index} className="relative" data-testid={`chain-row-${index}`}>
+              <span aria-hidden="true" className="absolute -left-8 top-[18px] h-px w-8 bg-foreground/15" />
+              <span
+                aria-hidden="true"
+                className="absolute -left-8 top-2 z-10 flex size-5 -translate-x-1/2 items-center justify-center rounded-md border border-foreground/20 bg-popover text-[11px] tabular-nums text-muted-foreground"
+              >
+                {index + 1}
+              </span>
+              <div className={cn(card, 'flex items-start gap-2 p-2')}>
+                <div className="min-w-0 flex-1">
+                  <ModelPick
+                    id={`${idPrefix}-chain-${index}`}
+                    value={name}
+                    onChange={(v) => setModels(models.map((m, i) => (i === index ? v : m)))}
+                    options={modelOptions}
+                    placeholder={t(index === 0 ? 'routingPolicy.chain.first' : 'routingPolicy.chain.next')}
+                    prices={prices}
+                  />
+                </div>
+                <div className="flex shrink-0 items-center pt-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    aria-label={t('routingPolicy.form.moveUp')}
+                    disabled={index === 0}
+                    onClick={() => move(index, -1)}
+                  >
+                    <ArrowUp className="size-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7"
+                    aria-label={t('routingPolicy.form.moveDown')}
+                    disabled={index === models.length - 1}
+                    onClick={() => move(index, 1)}
+                  >
+                    <ArrowDown className="size-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 text-destructive hover:text-destructive"
+                    aria-label={t('routingPolicy.chain.remove')}
+                    disabled={models.length <= MIN_FALLBACK_MODELS}
+                    onClick={() => setModels(models.filter((_, i) => i !== index))}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <button
+          type="button"
+          disabled={models.length >= MAX_FALLBACK_MODELS}
+          onClick={() => setModels([...models, ''])}
+          className="mt-2 flex h-9 w-full items-center gap-1.5 rounded-xl border border-dashed border-border px-3 text-[13px] text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+        >
+          <Plus className="size-4" />
+          {t('routingPolicy.chain.add')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+FallbackChain.propTypes = {
+  idPrefix: PropTypes.string,
+  form: PropTypes.object.isRequired,
+  setForm: PropTypes.func.isRequired,
+  modelOptions: PropTypes.array,
+  prices: PropTypes.object
 };

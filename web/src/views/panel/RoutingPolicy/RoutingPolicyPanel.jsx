@@ -36,14 +36,18 @@ export default function RoutingPolicyPanel({
   const [policy, setPolicy] = useState(null);
   const [error, setError] = useState('');
   const review = Boolean(api.review);
+  const fallback = (policy?.type || listed?.type) === 'fallback';
   const readOnly = Boolean(api.readOnly);
   const tabs = useMemo(
     () =>
-      POLICY_TABS.filter((x) => !(review || readOnly) || REVIEW_TAB_KEYS.includes(x.key)).map((x) => ({
-        ...x,
-        label: t(`routingPolicy.panel.tab.${x.key}`)
-      })),
-    [t, review, readOnly]
+      POLICY_TABS.filter((x) => !(review || readOnly) || REVIEW_TAB_KEYS.includes(x.key))
+        // Try it asks the decision model; a fallback policy has none.
+        .filter((x) => !(fallback && x.key === 'try'))
+        .map((x) => ({
+          ...x,
+          label: t(`routingPolicy.panel.tab.${x.key}`)
+        })),
+    [t, review, readOnly, fallback]
   );
 
   const load = useCallback(async () => {

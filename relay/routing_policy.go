@@ -39,6 +39,7 @@ const (
 	RoutingReasonEmptyInput        = relay_util.RoutingReasonEmptyInput
 	RoutingReasonAuxiliary         = relay_util.RoutingReasonAuxiliary
 	RoutingReasonTargetUnavailable = relay_util.RoutingReasonTargetUnavailable
+	RoutingReasonPrimary           = relay_util.RoutingReasonPrimary
 	RoutingDecisionContextKey      = relay_util.RoutingDecisionContextKey
 )
 
@@ -97,8 +98,15 @@ func routeRoutingPolicy(c *gin.Context, modelName string) (string, error) {
 		return modelName, nil
 	}
 
+	if policy.IsFallback() {
+		decision := fallbackRoute(policy)
+		decision.Requested = modelName
+		return applyRoutingDecision(c, policy, modelName, decision)
+	}
+
 	decision := decideRoute(c, policy)
 	decision.Requested = modelName
+	decision.Chain = usableChain(policy, policy.Chain(decision.TargetModel))
 	if policy.IsOwnPolicy() && !model.RoutingTargetUsable(decision.TargetModel) {
 		// The platform hid the model after the policy was saved; an own policy must not reach it.
 		decision.Label, decision.Reason = "", RoutingReasonTargetUnavailable
@@ -106,7 +114,41 @@ func routeRoutingPolicy(c *gin.Context, modelName string) (string, error) {
 		if !model.RoutingTargetUsable(policy.FallbackModel) {
 			decision.TargetModel = ""
 		}
+		decision.Chain = usableChain(policy, policy.Chain(decision.TargetModel))
 	}
+	return applyRoutingDecision(c, policy, modelName, decision)
+}
+
+// fallbackRoute sends a fallback policy's request to its first model; the rest of the models
+// are the chain the retry loop falls back on. Own policies skip models the platform has since
+// hidden; with none left the target is empty.
+func fallbackRoute(policy *model.RoutingPolicy) *RoutingDecision {
+	chain := usableChain(policy, policy.Chain(""))
+	decision := &RoutingDecision{Policy: policy.Name, PolicyId: policy.Id, Reason: RoutingReasonPrimary, Chain: chain}
+	if len(chain) > 0 {
+		decision.TargetModel = chain[0]
+	}
+	return decision
+}
+
+// usableChain drops the models an own policy may no longer reach (hidden in the catalog after
+// the policy was saved). Platform policies keep them all.
+func usableChain(policy *model.RoutingPolicy, chain []string) []string {
+	if !policy.IsOwnPolicy() {
+		return chain
+	}
+	usable := make([]string, 0, len(chain))
+	for _, name := range chain {
+		if model.RoutingTargetUsable(name) {
+			usable = append(usable, name)
+		}
+	}
+	return usable
+}
+
+// applyRoutingDecision stores the decision for the request (the retry loop reads it again) and
+// returns its target.
+func applyRoutingDecision(c *gin.Context, policy *model.RoutingPolicy, modelName string, decision *RoutingDecision) (string, error) {
 	c.Set(RoutingDecisionContextKey, decision)
 	c.Set("routing_policy", policy.Name)
 	if decision.TargetModel == "" {

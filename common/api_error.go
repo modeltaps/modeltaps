@@ -343,6 +343,9 @@ const (
 	APICodeRoutingPolicyModelUnavailable = "routing_policy_model_unavailable"
 	APICodeRoutingPolicyCountExceeded    = "routing_policy_count_exceeded"
 	APICodeRoutingPolicyDecisionKind     = "routing_policy_decision_kind"
+	APICodeRoutingPolicyTypeInvalid      = "routing_policy_type_invalid"
+	APICodeRoutingPolicyModelsCount      = "routing_policy_models_count"
+	APICodeRoutingPolicyModelDuplicate   = "routing_policy_model_duplicate"
 	APICodeOrgRoutingPolicyDisabled      = "org_routing_policy_disabled"
 
 	// Model access lists (ORG-15).

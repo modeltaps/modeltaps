@@ -1,6 +1,7 @@
 package model
 
 import (
+	"strconv"
 	"encoding/json"
 	"fmt"
 	"maps"
@@ -499,6 +500,9 @@ func planSupplyMigration(in supplyMigrationInput) (*supplyMigrationPlan, *Supply
 		check("fallback", policy.FallbackModel)
 		for _, route := range policy.Routes {
 			check("route:"+route.Label, route.TargetModel)
+		}
+		for i, name := range policy.Models {
+			check("model:"+strconv.Itoa(i+1), name)
 		}
 	}
 

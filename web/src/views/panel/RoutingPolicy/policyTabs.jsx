@@ -9,7 +9,7 @@ import TryItPanel from './TryItPanel';
 import { normalizePolicy } from './routingPolicyApi';
 import { NumberField, ScoringField, isDecisionClassifier, missingFields } from './policyFields';
 import { applyTemplate } from './templates';
-import RoutingMap, { TemplateMenu } from './RoutingMap';
+import RoutingMap, { FallbackChain, TemplateMenu } from './RoutingMap';
 
 // Tabs of the routing policy panel (see components/objects/ObjectPanel). Overview and Try it
 // are read-only; Routes and Settings each save on their own. A save sends the whole policy with
@@ -22,29 +22,44 @@ function OverviewBody({ object: policy, ctx }) {
   return (
     <>
       <Section title={t('routingPolicy.panel.summary')}>
-        <InfoRows>
-          <InfoRow label={t('routingPolicy.form.decisionModel')} mono>
-            {policy.decision_model}
-          </InfoRow>
-          <InfoRow label={t('routingPolicy.form.routes')}>
-            <span className="flex flex-col items-end gap-0.5">
-              {(policy.routes || []).map((r) => (
-                <span key={r.label} className="font-mono text-[13px]">
-                  {r.label} <span className="text-muted-foreground">→</span> {r.target_model}
-                </span>
-              ))}
-            </span>
-          </InfoRow>
-          <InfoRow label={t('routingPolicy.form.fallbackModel')} mono>
-            {policy.fallback_model}
-          </InfoRow>
-          <InfoRow label={t('routingPolicy.form.threshold')}>{pct(policy.threshold)}</InfoRow>
-          <InfoRow label={t('routingPolicy.form.scoring')}>
-            {policy.decision_model_kind === 'decision' || isDecisionClassifier(ctx.classifiers, policy.decision_model)
-              ? t('routingPolicy.scoringUsed.decision')
-              : t(`routingPolicy.scoring.${policy.scoring || 'auto'}`)}
-          </InfoRow>
-        </InfoRows>
+        {policy.type === 'fallback' ? (
+          <InfoRows>
+            <InfoRow label={t('routingPolicy.type.label')}>{t('routingPolicy.type.fallback')}</InfoRow>
+            <InfoRow label={t('routingPolicy.chain.models')}>
+              <span className="flex flex-col items-end gap-0.5">
+                {(policy.models || []).map((name, i) => (
+                  <span key={name} className="font-mono text-[13px]">
+                    <span className="text-muted-foreground">{i + 1}.</span> {name}
+                  </span>
+                ))}
+              </span>
+            </InfoRow>
+          </InfoRows>
+        ) : (
+          <InfoRows>
+            <InfoRow label={t('routingPolicy.form.decisionModel')} mono>
+              {policy.decision_model}
+            </InfoRow>
+            <InfoRow label={t('routingPolicy.form.routes')}>
+              <span className="flex flex-col items-end gap-0.5">
+                {(policy.routes || []).map((r) => (
+                  <span key={r.label} className="font-mono text-[13px]">
+                    {r.label} <span className="text-muted-foreground">→</span> {r.target_model}
+                  </span>
+                ))}
+              </span>
+            </InfoRow>
+            <InfoRow label={t('routingPolicy.form.fallbackModel')} mono>
+              {policy.fallback_model}
+            </InfoRow>
+            <InfoRow label={t('routingPolicy.form.threshold')}>{pct(policy.threshold)}</InfoRow>
+            <InfoRow label={t('routingPolicy.form.scoring')}>
+              {policy.decision_model_kind === 'decision' || isDecisionClassifier(ctx.classifiers, policy.decision_model)
+                ? t('routingPolicy.scoringUsed.decision')
+                : t(`routingPolicy.scoring.${policy.scoring || 'auto'}`)}
+            </InfoRow>
+          </InfoRows>
+        )}
       </Section>
       {!ctx.readOnly && (
         <Section title={t('routingPolicy.form.tabStats')}>
@@ -59,6 +74,13 @@ const overviewTab = { key: 'overview', Body: OverviewBody };
 
 function RoutesBody({ draft, setDraft, ctx }) {
   const decisionModel = (draft.decision_model || '').trim();
+  if (draft.type === 'fallback') {
+    return (
+      <div className="py-3">
+        <FallbackChain form={draft} setForm={setDraft} modelOptions={ctx.modelOptions} prices={ctx.prices} />
+      </div>
+    );
+  }
   return (
     <div className="space-y-4 py-3">
       <div className="flex justify-end">
@@ -87,7 +109,7 @@ function RoutesBody({ draft, setDraft, ctx }) {
   );
 }
 
-const ROUTE_KEYS = ['decision_model', 'scoring', 'question', 'routes', 'fallback_model', 'threshold'];
+const ROUTE_KEYS = ['decision_model', 'scoring', 'question', 'routes', 'fallback_model', 'threshold', 'models'];
 
 const routesTab = {
   key: 'routes',
@@ -97,7 +119,9 @@ const routesTab = {
     question: p.question || '',
     routes: p.routes?.length ? p.routes : [],
     fallback_model: p.fallback_model || '',
-    threshold: p.threshold ?? 0.5
+    threshold: p.threshold ?? 0.5,
+    type: p.type || 'auto',
+    models: p.models?.length ? p.models : []
   }),
   patch: (d, p, { t }) => {
     const next = normalizePolicy({ ...p, ...d });
@@ -133,37 +157,41 @@ function SettingsBody({ draft, setDraft, ctx }) {
       <Field label={t('routingPolicy.form.description')} htmlFor="rp-description" optional>
         <Textarea id="rp-description" rows={2} value={draft.description} onChange={(e) => set('description')(e.target.value)} />
       </Field>
-      <NumberField
-        id="rp-pin_ttl_seconds"
-        label={t('routingPolicy.form.pinTtl')}
-        hint={t('routingPolicy.form.pinTtlHint')}
-        help={t('routingPolicy.form.pinTtlHelp')}
-        min={0}
-        max={604800}
-        step={60}
-        value={draft.pin_ttl_seconds}
-        onChange={set('pin_ttl_seconds')}
-      />
-      <NumberField
-        id="rp-max_input_chars"
-        label={t('routingPolicy.form.maxInputChars')}
-        hint={t('routingPolicy.form.maxInputCharsHint')}
-        min={0}
-        max={200000}
-        step={100}
-        value={draft.max_input_chars}
-        onChange={set('max_input_chars')}
-      />
-      <NumberField
-        id="rp-decision_timeout_ms"
-        label={t('routingPolicy.form.decisionTimeout')}
-        hint={t('routingPolicy.form.decisionTimeoutHint')}
-        min={0}
-        max={60000}
-        step={100}
-        value={draft.decision_timeout_ms}
-        onChange={set('decision_timeout_ms')}
-      />
+      {draft.type !== 'fallback' && (
+        <>
+          <NumberField
+            id="rp-pin_ttl_seconds"
+            label={t('routingPolicy.form.pinTtl')}
+            hint={t('routingPolicy.form.pinTtlHint')}
+            help={t('routingPolicy.form.pinTtlHelp')}
+            min={0}
+            max={604800}
+            step={60}
+            value={draft.pin_ttl_seconds}
+            onChange={set('pin_ttl_seconds')}
+          />
+          <NumberField
+            id="rp-max_input_chars"
+            label={t('routingPolicy.form.maxInputChars')}
+            hint={t('routingPolicy.form.maxInputCharsHint')}
+            min={0}
+            max={200000}
+            step={100}
+            value={draft.max_input_chars}
+            onChange={set('max_input_chars')}
+          />
+          <NumberField
+            id="rp-decision_timeout_ms"
+            label={t('routingPolicy.form.decisionTimeout')}
+            hint={t('routingPolicy.form.decisionTimeoutHint')}
+            min={0}
+            max={60000}
+            step={100}
+            value={draft.decision_timeout_ms}
+            onChange={set('decision_timeout_ms')}
+          />
+        </>
+      )}
     </>
   );
 }
@@ -174,6 +202,7 @@ const settingsTab = {
   key: 'settings',
   make: (p) => ({
     name: p.name || '',
+    type: p.type || 'auto',
     display_name: p.display_name || '',
     description: p.description || '',
     pin_ttl_seconds: p.pin_ttl_seconds ?? 3600,
