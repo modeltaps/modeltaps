@@ -380,23 +380,6 @@
       ]
     },
     {
-      "key": "ChatLink",
-      "scope": "site",
-      "group": "site",
-      "card": "external-links",
-      "type": "url",
-      "label": "Chat link (legacy)",
-      "description": "A single chat client address from older versions, kept for clients that read it from the site status. The console does not link to it; list chat clients under Chat links instead. Empty publishes nothing.",
-      "related": [
-        "ChatLinks"
-      ],
-      "keywords": [
-        "chat client",
-        "web chat"
-      ],
-      "advanced": true
-    },
-    {
       "key": "DocsLink",
       "scope": "site",
       "group": "site",
@@ -3557,35 +3540,6 @@
         "chat",
         "try models",
         "web chat"
-      ]
-    },
-    {
-      "key": "ChatLinks",
-      "scope": "site",
-      "group": "entries",
-      "card": "chat-links",
-      "type": "json",
-      "label": "Chat links",
-      "description": "The chat clients listed for users, each with a name, an address, a sort order and whether it shows. Stored as a JSON array of {id, name, url, show, sort}; the card edits one entry at a time and saves it right away. The list is published in the site status for clients that read it; no API key is added to the links. Empty means no chat links.",
-      "examples": [
-        {
-          "value": "[{\"id\":\"a1\",\"name\":\"Web chat\",\"url\":\"https://chat.example.com\",\"show\":true,\"sort\":1}]",
-          "effect": "One visible entry named Web chat."
-        },
-        {
-          "value": "[{\"id\":\"a1\",\"name\":\"Web chat\",\"url\":\"https://chat.example.com\",\"show\":false,\"sort\":1}]",
-          "effect": "The entry is kept but hidden."
-        }
-      ],
-      "related": [
-        "ChatLink",
-        "BuiltinChatEnabled"
-      ],
-      "keywords": [
-        "chat client",
-        "chat entry",
-        "web chat",
-        "external chat"
       ]
     },
     {

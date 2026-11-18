@@ -246,18 +246,6 @@ Examples:
 
 - `https://shop.example.com/codes` The top-up page shows a button under the redemption code field that opens the shop.
 
-<a id="ChatLink"></a>
-
-### Chat link (legacy)
-
-Key `ChatLink` · Type url · Default `empty` · rarely changed
-
-Where: Platform settings › Site › External links
-
-A single chat client address from older versions, kept for clients that read it from the site status. The console does not link to it; list chat clients under Chat links instead. Empty publishes nothing.
-
-See also: [Chat links](./entries.md#ChatLinks)
-
 <a id="DocsLink"></a>
 
 ### Docs link

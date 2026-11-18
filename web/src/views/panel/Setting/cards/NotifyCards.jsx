@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Eye, EyeOff, Power, RotateCw, Send, Trash2 } from 'lucide-react';
+import { AlertTriangle, Power, RotateCw, Send, Trash2 } from 'lucide-react';
 
 import { Link } from 'react-router';
 
@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { CollectionCard, OptionList, StatusDot } from '@/components/settings/cards';
 import TelegramSheet from '../../Telegram/TelegramSheet';
-import ChatLinkSheet, { parseChatLinks, serializeChatLinks } from '../ChatLinkSheet';
 import NotifyChannelSheet from '../NotifyChannelSheet';
 import { NOTIFY_KINDS, NotifyChannelIcon, channelKinds, channelPayload, channelWhere } from '../notifyChannels';
 import { toast } from '@/components/ui/sonner';
@@ -21,7 +20,7 @@ import { settingsGroupUrl } from '../registry';
 
 // ==============================|| PLATFORM SETTINGS — 通知与集成 ||============================== //
 // Two tabs. 通知: the platform's admin notices — which kinds are sent, the channels they go to
-// and the mail server behind email (cards/MailCard.jsx). 集成: the Telegram user bot, built-in chat and chat links.
+// and the mail server behind email (cards/MailCard.jsx). 集成: the Telegram user bot and built-in chat.
 // (The Midjourney callback card lives here but is shown under the gateway's request tab.)
 
 // One switch per notification kind (NOTIFY_KINDS); stored as the comma-joined list of disabled kinds.
@@ -364,88 +363,6 @@ export function BuiltinChatCard({ ctx }) {
         <ToggleRow id="BuiltinChatEnabled" {...bindSwitch(ctx, 'BuiltinChatEnabled')} />
       </OptionList>
     </OptionCard>
-  );
-}
-
-// Each entry saves the whole ChatLinks option right away (the stored value, not a pending edit).
-export function ChatLinksCard({ ctx }) {
-  const { t } = useTranslation();
-  const ed = (k) => t(`setting_index.operationSettings.chatLinkSettings.editor.${k}`);
-  const links = parseChatLinks(ctx.origin.ChatLinks);
-  const [sheet, setSheet] = useState({ open: false, index: -1 });
-  const [deleteIndex, setDeleteIndex] = useState(-1);
-
-  const write = (next) => ctx.saveKeys(['ChatLinks'], { values: { ChatLinks: serializeChatLinks(next) } });
-
-  const saveEntry = (entry) => {
-    const next = [...links];
-    if (sheet.index >= 0) next[sheet.index] = entry;
-    else next.unshift({ id: Math.random().toString(36).slice(2, 11), ...entry });
-    return write(next);
-  };
-
-  return (
-    <>
-      <CollectionCard
-        title={cardText(t, 'chat-links', 'title')}
-        description={t('setting_index.operationSettings.chatLinkSettings.description')}
-        highlight="chat-links"
-        addLabel={t('settingsUi.platform.chatLinks.add')}
-        onAdd={() => setSheet({ open: true, index: -1 })}
-        empty={ed('empty')}
-        rows={links.map((link, index) => ({ ...link, index }))}
-        rowKey={(row) => row.id || `${row.index}`}
-        onRowClick={(row) => setSheet({ open: true, index: row.index })}
-        columns={[
-          { key: 'name', header: ed('name'), cell: (row) => <span className="font-medium">{row.name}</span> },
-          {
-            key: 'url',
-            header: ed('url'),
-            className: 'max-w-[20rem]',
-            cell: (row) => <span className="block truncate font-mono text-xs text-muted-foreground">{row.url}</span>
-          },
-          { key: 'sort', header: ed('sort'), className: 'tabular-nums' },
-          { key: 'show', header: t('settingsUi.collection.status'), cell: (row) => <StatusDot on={row.show !== false} /> }
-        ]}
-        menu={(row) => [
-          {
-            label: row.show !== false ? t('settingsUi.collection.disable') : t('settingsUi.collection.enable'),
-            icon: row.show !== false ? EyeOff : Eye,
-            onClick: () => write(links.map((link, i) => (i === row.index ? { ...link, show: row.show === false } : link)))
-          },
-          { label: t('common.delete'), icon: Trash2, destructive: true, separator: true, onClick: () => setDeleteIndex(row.index) }
-        ]}
-      />
-      <ChatLinkSheet
-        open={sheet.open}
-        editing={sheet.index >= 0 ? links[sheet.index] : null}
-        onOpenChange={(open) => setSheet((s) => ({ ...s, open }))}
-        onSave={saveEntry}
-      />
-      <Dialog open={deleteIndex >= 0} onOpenChange={(o) => !o && setDeleteIndex(-1)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('common.delete')}</DialogTitle>
-            <DialogDescription>{t('common.deleteConfirm', { title: links[deleteIndex]?.name || '' })}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteIndex(-1)}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                const index = deleteIndex;
-                setDeleteIndex(-1);
-                write(links.filter((_, i) => i !== index));
-              }}
-            >
-              {t('common.delete')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
   );
 }
 

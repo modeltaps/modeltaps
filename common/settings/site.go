@@ -180,15 +180,6 @@ func init() {
 			Keywords: []string{"recharge", "buy", "shop", "redemption code", "card store"},
 		},
 		Setting{
-			Key: "ChatLink", Scope: ScopeSite, Group: "site", Card: "external-links", Type: TypeURL,
-			Label: "Chat link (legacy)",
-			Description: "A single chat client address from older versions, kept for clients that read it from the site " +
-				"status. The console does not link to it; list chat clients under Chat links instead. Empty publishes nothing.",
-			Related:  []string{"ChatLinks"},
-			Keywords: []string{"chat client", "web chat"},
-			Advanced: true,
-		},
-		Setting{
 			Key: "DocsLink", Scope: ScopeSite, Group: "site", Card: "external-links", Type: TypeURL,
 			Label: "Docs link",
 			Description: "Where the site's documentation lives, linked from the footer, the account menu and the API pages. " +

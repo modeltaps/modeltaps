@@ -15,6 +15,7 @@ import { FieldSection, OptionList } from '@/components/settings/cards';
 import { ModifiedDot } from '@/components/settings/SettingHelp';
 import { SelectRow, TextRow, ToggleRow, useSettingCopy } from '../parts';
 import { settingEnumLabel } from '@/components/settings/catalog';
+import { SettingHelpLine } from '@/components/settings/SettingHelp';
 import OptionCard, { bindSwitch, cardText } from './OptionCard';
 import { describePauseRule, pauseRulesError, pauseRulesText } from './pauseRules';
 import { admin } from 'routes/paths';
@@ -327,6 +328,8 @@ export function SupplyPauseRulesCard({ ctx }) {
 
   return (
     <OptionCard ctx={ctx} id="supply-pause-rules" enableKey="PauseRulesEnabled" options={{ validate }}>
+      {/* The header switch has no room for help: its catalog text sits here. */}
+      <SettingHelpLine settingKey="PauseRulesEnabled" />
       <TextRow
         id="PauseRules"
         value={inputs.PauseRules}
@@ -392,6 +395,7 @@ export function SupplyIntakeRulesCard({ ctx }) {
   return (
     <OptionCard ctx={ctx} id="supply-intake-rules">
       <div className="space-y-3">
+        <SettingHelpLine settingKey="SupplyIntakeRules" />
         <p className="text-[13px] text-muted-foreground">{t(custom ? 'intakeRules.customNote' : 'intakeRules.defaultNote')}</p>
         <IntakeRulesEditor
           key={`${version}-${custom}`}

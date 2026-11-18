@@ -52,7 +52,7 @@ export const PLATFORM_GROUPS = [
       ]),
       card('display', 'form', ['DisplayInCurrencyEnabled', 'DisplayTokenStatEnabled', 'QuotaPerUnit']),
       card('site-language', 'form', ['DefaultLanguage']),
-      card('external-links', 'form', ['TopUpLink', 'ChatLink', 'DocsLink']),
+      card('external-links', 'form', ['TopUpLink', 'DocsLink']),
       card('version-notice', 'form', ['Notice'])
     ]
   },
@@ -188,12 +188,8 @@ export const PLATFORM_GROUPS = [
   },
   {
     id: 'entries',
-    // What users reach from outside the console: the Telegram user bot and the chat entries.
-    cards: [
-      card('telegram', 'collection'),
-      card('builtin-chat', 'form', ['BuiltinChatEnabled']),
-      card('chat-links', 'collection', ['ChatLinks'])
-    ]
+    // What users reach from outside the console: the Telegram user bot and the built-in chat.
+    cards: [card('telegram', 'collection'), card('builtin-chat', 'form', ['BuiltinChatEnabled'])]
   },
   {
     id: 'mail',
@@ -281,7 +277,7 @@ const LEGACY_SECTIONS = {
   image: { group: 'gateway', highlight: 'image-proxy' },
   ops: { group: 'gateway', highlight: 'channel-auto' },
   safety: { group: 'privacy', highlight: 'safety' },
-  chat: { group: 'entries', highlight: 'chat-links' },
+  chat: { group: 'entries', highlight: 'builtin-chat' },
   org: { group: 'orgpolicy', highlight: 'org-policy' }
 };
 
@@ -289,7 +285,8 @@ const LEGACY_SECTIONS = {
 const LEGACY_TABS = { other: 'branding' };
 
 // Card anchors that were renamed or merged into another card.
-const HIGHLIGHT_ALIASES = { 'brand-icon': 'branding', chat: 'chat-links' };
+// The chat links card left: its links could no longer open a chat with the user's key.
+const HIGHLIGHT_ALIASES = { 'brand-icon': 'branding', chat: 'builtin-chat', 'chat-links': 'builtin-chat' };
 
 // The invite code table left the settings for a page of its own.
 export const INVITE_CODE_URL = admin.inviteCodes();

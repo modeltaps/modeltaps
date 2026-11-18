@@ -217,3 +217,52 @@ func channelByIdString(id string) (*Channel, error) {
 	}
 	return GetChannelById(n)
 }
+
+// SettingOverride counts the objects that set a field of their own instead of following a site
+// setting.
+type SettingOverride struct {
+	Count int    `json:"count"`
+	Scope string `json:"scope"`
+}
+
+// SettingOverrides tells, per site setting that objects can override, how many do: channels with
+// their own prompt caching switch, models with their own supply mode.
+func SettingOverrides() (map[string]SettingOverride, error) {
+	out := map[string]SettingOverride{}
+	var channels []*Channel
+	if err := DB.Select("id", "plugin").Find(&channels).Error; err != nil {
+		return nil, err
+	}
+	n := 0
+	for _, ch := range channels {
+		if ch.Plugin == nil {
+			continue
+		}
+		if pc, ok := ch.Plugin.Data()["prompt_caching"]; ok {
+			if v, ok := pc["enabled"].(string); ok {
+				if v = strings.ToLower(strings.TrimSpace(v)); v == "on" || v == "off" {
+					n++
+				}
+			}
+		}
+	}
+	out["ClaudePromptCachingEnabled"] = SettingOverride{Count: n, Scope: string(settings.ScopeChannel)}
+	var models int64
+	if err := DB.Model(&ModelInfo{}).Where("supply_mode IN ?", []string{SupplyModeBalance, SupplyModeFailover}).Count(&models).Error; err != nil {
+		return nil, err
+	}
+	out["SupplyModeDefault"] = SettingOverride{Count: int(models), Scope: string(settings.ScopeModel)}
+	return out, nil
+}
+
+// inheritedSiteSettings are the site settings object fields follow; admins who edit those objects
+// may read them (the rest of the platform settings stay root only).
+var inheritedSiteSettings = map[string]bool{"ClaudePromptCachingEnabled": true, "SupplyModeDefault": true}
+
+// InheritedSiteSetting is the value of a site setting an object field follows, for admins.
+func InheritedSiteSetting(key string) (string, bool) {
+	if !inheritedSiteSettings[key] {
+		return "", false
+	}
+	return config.GlobalOption.Get(key), true
+}

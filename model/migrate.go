@@ -631,6 +631,7 @@ func postMigrations() []*gormigrate.Migration {
 		clearPersonalTokenCreatedBy(),
 		foldPlatformMarkupIntoGroups(),
 		backfillVercelFeeNote(),
+		dropChatLinkOptions(),
 	}
 }
 
@@ -2131,5 +2132,22 @@ func dedupePrices() *gormigrate.Migration {
 		Rollback: func(tx *gorm.DB) error {
 			return nil
 		},
+	}
+}
+
+// dropChatLinkOptions removes the chat link options: nothing used them since API keys are stored
+// as hashes and links can no longer open a chat with the user's key.
+func dropChatLinkOptions() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202611181201",
+		Migrate: func(tx *gorm.DB) error {
+			for _, key := range []string{"ChatLink", "ChatLinks"} {
+				if err := tx.Where(&Option{Key: key}).Delete(&Option{}).Error; err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error { return nil },
 	}
 }

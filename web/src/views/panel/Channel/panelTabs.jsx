@@ -84,6 +84,7 @@ import { attachPendingModel } from '../ModelInfo/supply/supplyApi';
 import { modelSupplyPath } from '../ModelInfo/supply/supplyHelpers';
 import { performanceTab } from './PerformanceTab';
 import { admin } from 'routes/paths';
+import { InheritedSiteNote } from '@/components/settings/SettingHelp';
 import { ModelKindTag, ModelTraitMarks, TAG_TEXT } from '@/components/model/ModelTraits';
 
 // Tabs of the channel panel (see components/objects/ObjectPanel). Each tab edits a part of the
@@ -2053,7 +2054,14 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
       </Field>
       {hasPlugin && (
         <Field label={t('channel_edit.pluginConfig')}>
-          <PluginForm type={channel.type} value={draft.plugin} onChange={(v) => setDraft({ ...draft, plugin: v })} />
+          <PluginForm
+            type={channel.type}
+            value={draft.plugin}
+            onChange={(v) => setDraft({ ...draft, plugin: v })}
+            notes={{
+              'prompt_caching.enabled': (v) => (v === 'inherit' ? <InheritedSiteNote settingKey="ClaudePromptCachingEnabled" /> : null)
+            }}
+          />
         </Field>
       )}
       <Field label={t('channel_edit.icon')} hint={t('channel_edit.iconTip')}>

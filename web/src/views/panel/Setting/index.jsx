@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Navigate, useParams, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 
@@ -38,13 +39,14 @@ import {
   SupplyIntakeRulesCard
 } from './cards/GatewayCards';
 import { LogConsumeCard, LogIOCard, SafetyCard } from './cards/PrivacyCards';
-import { BuiltinChatCard, ChatLinksCard, MjNotifyCard, NotificationsCard, NotifyChannelsCard, TelegramCard } from './cards/NotifyCards';
+import { BuiltinChatCard, MjNotifyCard, NotificationsCard, NotifyChannelsCard, TelegramCard } from './cards/NotifyCards';
 import { SmtpCard } from './cards/MailCard';
 import { MailTemplatesCard } from './cards/MailTemplatesCard';
 import { MailLogsCard, NotifyLogsCard } from './cards/MessageLogCard';
 import { OrgPolicyCard } from './cards/OrgPolicyCards';
 import { ModifiedSettingsCard } from './cards/ModifiedSettingsCard';
 import { workbench } from 'routes/paths';
+import { API } from 'utils/api';
 
 // ==============================|| PANEL — PLATFORM SETTINGS (admin) ||============================== //
 // One settings page in ten groups (`/panel/admin/settings/:group`), each group a menu item of
@@ -102,7 +104,6 @@ const CARD_COMPONENTS = {
   'notify-channels': NotifyChannelsCard,
   telegram: TelegramCard,
   'builtin-chat': BuiltinChatCard,
-  'chat-links': ChatLinksCard,
   'mj-notify': MjNotifyCard,
   'org-policy': OrgPolicyCard,
   'modified-settings': ModifiedSettingsCard
@@ -116,6 +117,14 @@ export default function Setting() {
   const { section } = useParams();
   const [searchParams] = useSearchParams();
   useHighlightTarget();
+  // How many objects set their own value instead of following a site setting (root only).
+  const [overrides, setOverrides] = useState({});
+  useEffect(() => {
+    if (!isRoot) return;
+    API.get('/api/settings/overrides')
+      .then((res) => res.data?.success && setOverrides(res.data.data || {}))
+      .catch(() => {});
+  }, [isRoot]);
 
   if (!isAdmin) return <Navigate to={workbench.dashboard()} replace />;
 
@@ -140,7 +149,7 @@ export default function Setting() {
   }));
 
   return (
-    <SettingsMetaContext.Provider value={{ defaults: ctx.defaults, origin: ctx.origin }}>
+    <SettingsMetaContext.Provider value={{ defaults: ctx.defaults, origin: ctx.origin, overrides }}>
       <SettingsPage label={t('settingsUi.platform.label')} groups={groups} activeGroupId={section} hideNav />
     </SettingsMetaContext.Provider>
   );

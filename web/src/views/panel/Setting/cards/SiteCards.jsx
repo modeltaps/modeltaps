@@ -138,7 +138,6 @@ export function ExternalLinksCard({ ctx }) {
     <OptionCard ctx={ctx} id="external-links">
       <div className="grid gap-5 sm:grid-cols-2">
         {link('TopUpLink', 'topUpLink')}
-        {link('ChatLink', 'chatLink')}
         {link('DocsLink', 'docsLink')}
       </div>
     </OptionCard>

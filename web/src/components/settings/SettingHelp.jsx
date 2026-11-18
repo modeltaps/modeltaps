@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,7 @@ import {
   splitFirstSentence
 } from './catalog';
 import { admin } from 'routes/paths';
+import { API } from 'utils/api';
 
 // ==============================|| SETTINGS — FIELD HELP FROM THE CATALOG ||============================== //
 // The text of a setting as the settings catalog has it: the label and the first sentence for the
@@ -145,3 +146,55 @@ export function ModifiedDot({ defaultValue }) {
 }
 
 ModifiedDot.propTypes = { defaultValue: PropTypes.string };
+
+// "Follows the platform setting (now: on) ↗": under an object field set to inherit, the site
+// setting it follows with its current value and a link to it.
+export function InheritedSiteNote({ settingKey }) {
+  const { t } = useTranslation();
+  const [value, setValue] = useState(null);
+  useEffect(() => {
+    let live = true;
+    API.get('/api/settings/inherited', { params: { key: settingKey } })
+      .then((res) => live && res.data?.success && setValue(String(res.data.data.value ?? '')))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [settingKey]);
+  const entry = catalogEntry(settingKey);
+  if (!entry) return null;
+  let shown = value;
+  if (value !== null && entry.type === 'bool') shown = value === 'true' ? t('settingsUi.catalog.on') : t('settingsUi.catalog.off');
+  else if (value !== null && entry.type === 'enum') shown = settingEnumLabel(t, settingKey, value);
+  return (
+    <span data-testid="inherited-site-note">
+      <Link to={settingHref(settingKey)} className="underline underline-offset-2 hover:text-foreground">
+        {shown === null
+          ? t('settingsUi.catalog.followsSite', { setting: settingLabel(t, settingKey) })
+          : t('settingsUi.catalog.followsSiteNow', { setting: settingLabel(t, settingKey), value: shown })}{' '}
+        ↗
+      </Link>
+    </span>
+  );
+}
+
+InheritedSiteNote.propTypes = { settingKey: PropTypes.string.isRequired };
+
+// A setting's name with its `?` help, for a setting drawn without a row of its own (a card's header
+// switch, an editor of its own).
+export function SettingHelpLine({ settingKey }) {
+  const { t } = useTranslation();
+  if (!catalogEntry(settingKey)) return null;
+  return (
+    <div
+      className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-muted-foreground"
+      data-setting-key={settingKey}
+      data-highlight={settingKey}
+    >
+      <span>{settingLabel(t, settingKey)}</span>
+      <SettingHelpToggle settingKey={settingKey} full />
+    </div>
+  );
+}
+
+SettingHelpLine.propTypes = { settingKey: PropTypes.string.isRequired };

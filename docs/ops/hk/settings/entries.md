@@ -19,22 +19,3 @@ outline: deep
 位置：平台設定 › 用戶入口 › 內置聊天
 
 讓用戶在控制台的試用區裏試用模型，並在儀表板上顯示快速開始聊天。關閉後試用區頁面照常顯示，但不能發起請求，改為引導用戶去看 API 文件。API Key 和其他客戶端的請求不受影響。
-
-## 聊天連結
-
-<a id="ChatLinks"></a>
-
-### 聊天連結
-
-設定名 `ChatLinks` · 類型 json · 預設值 `空`
-
-位置：平台設定 › 用戶入口 › 聊天連結
-
-給用戶列出的聊天客戶端，每項有名稱、地址、排序和是否顯示。以 JSON 陣列 {id, name, url, show, sort} 儲存；卡片一次編輯一項並立即儲存。列表透過站點狀態發佈給讀取它的客戶端；連結裏不會附帶 API Key。留空表示沒有聊天連結。
-
-示例：
-
-- `[{"id":"a1","name":"Web chat","url":"https://chat.example.com","show":true,"sort":1}]` 一個名為 Web chat 的可見項目。
-- `[{"id":"a1","name":"Web chat","url":"https://chat.example.com","show":false,"sort":1}]` 項目保留但不顯示。
-
-相關設定：[聊天連結（舊版）](./site.md#ChatLink) · [內置聊天](./entries.md#BuiltinChatEnabled)

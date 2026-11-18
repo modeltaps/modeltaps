@@ -3,13 +3,12 @@
     "BuiltinChatEnabled": {
       "label": "内置聊天",
       "description": "让用户在控制台的试用区里试用模型，并在仪表盘上显示快速开始聊天。关闭后试用区页面照常显示，但不能发起请求，改为引导用户去看 API 文档。API Key 和其他客户端的请求不受影响。",
-      "keywords": ["试用区", "聊天", "Playground", "网页聊天"]
-    },
-    "ChatLinks": {
-      "label": "聊天链接",
-      "description": "给用户列出的聊天客户端，每项有名称、地址、排序和是否显示。以 JSON 数组 {id, name, url, show, sort} 存储；卡片一次编辑一项并立即保存。列表通过站点状态发布给读取它的客户端；链接里不会附带 API Key。留空表示没有聊天链接。",
-      "examples": ["一个名为 Web chat 的可见条目。", "条目保留但不显示。"],
-      "keywords": ["聊天客户端", "聊天入口", "网页聊天", "外部聊天"]
+      "keywords": [
+        "试用区",
+        "聊天",
+        "Playground",
+        "网页聊天"
+      ]
     }
   }
 }

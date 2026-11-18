@@ -12,7 +12,6 @@ const config = {
     UptimePageName: '',
     UserInvoiceMonth: false,
     builtin_chat_enabled: true,
-    chat_link: '',
     display_in_currency: true,
     docs_link: '',
     email_verification: false,

@@ -12,7 +12,8 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
-import { catalogEntry, settingDescription, settingLabel, splitFirstSentence } from '@/components/settings/catalog';
+import { OBJECT_PAGES, catalogEntry, settingDescription, settingLabel, splitFirstSentence } from '@/components/settings/catalog';
+import { Link } from 'react-router';
 import { ModifiedDot, SettingHelpBody, SettingHelpToggle, hasMoreHelp } from '@/components/settings/SettingHelp';
 
 // Shared data layer + field helpers for the platform settings cards.
@@ -175,9 +176,43 @@ export function useSettingCopy(id, label, description) {
     description: description ?? splitFirstSentence(settingDescription(t, id)).first,
     help: hasMoreHelp(t, id, full) ? <SettingHelpBody settingKey={id} full={full} /> : null,
     helpFull: full,
-    modified: isModified(meta, id) ? { defaultValue: String(meta.defaults[id] ?? '') } : null
+    modified: isModified(meta, id) ? { defaultValue: String(meta.defaults[id] ?? '') } : null,
+    overridden: meta?.overrides?.[id]?.count > 0 ? meta.overrides[id] : null
   };
 }
+
+// Objects that set their own value instead of following this site setting, linked to their list.
+const OVERRIDE_PAGES = { channel: OBJECT_PAGES.channels, model: OBJECT_PAGES.models };
+
+function OverriddenNote({ overridden }) {
+  const { t } = useTranslation();
+  if (!overridden) return null;
+  const object = t(`settingsUi.catalog.objects.${overridden.scope}`, { defaultValue: overridden.scope });
+  const text = t('settingsUi.catalog.overridden', { count: overridden.count, object });
+  const href = OVERRIDE_PAGES[overridden.scope];
+  return (
+    <span className="block text-xs text-muted-foreground" data-testid="setting-overridden">
+      {href ? (
+        <Link to={href} className="underline underline-offset-2 hover:text-foreground">
+          {text} ↗
+        </Link>
+      ) : (
+        text
+      )}
+    </span>
+  );
+}
+
+// The description under a field, with the note of objects overriding it.
+const withOverrides = (description, overridden) =>
+  overridden ? (
+    <>
+      {description}
+      <OverriddenNote overridden={overridden} />
+    </>
+  ) : (
+    description
+  );
 
 const withDot = (label, modified) =>
   modified && label ? (
@@ -287,7 +322,7 @@ export function TextRow({
       data-setting-key={catalogEntry(id) ? id : undefined}
       data-highlight={catalogEntry(id) ? id : undefined}
       label={labelHidden ? undefined : withDot(label, copyText.modified)}
-      hint={secretSet ? t('common.secretKeepHint') : description}
+      hint={secretSet ? t('common.secretKeepHint') : withOverrides(description, copyText.overridden)}
       // A hidden label leaves no place for the `?`: the card title and the hint stand for it.
       help={labelHidden ? null : copyText.help}
       error={error}
@@ -365,7 +400,9 @@ export function ToggleRow({ id, label: labelProp, description: descriptionProp, 
             {withDot(label, copyText.modified)}
           </Label>
           {copyText.help && <SettingHelpToggle settingKey={id} full={copyText.helpFull} />}
-          {description && <div className="basis-full text-xs text-muted-foreground">{description}</div>}
+          {(description || copyText.overridden) && (
+            <div className="basis-full text-xs text-muted-foreground">{withOverrides(description, copyText.overridden)}</div>
+          )}
         </div>
         <Switch id={id} checked={!!checked} onCheckedChange={onCheckedChange} disabled={disabled} />
       </div>
@@ -385,7 +422,7 @@ export function SelectRow({ id, label: labelProp, description: descriptionProp, 
       data-setting-key={known ? id : undefined}
       data-highlight={known ? id : undefined}
       label={withDot(copyText.label, copyText.modified)}
-      hint={copyText.description}
+      hint={withOverrides(copyText.description, copyText.overridden)}
       help={copyText.help}
       className={className}
     >

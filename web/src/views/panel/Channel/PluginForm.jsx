@@ -7,7 +7,9 @@ import { FormField } from '@/components/ui/form-field';
 import { configText } from 'i18n/configText';
 import pluginConfig from './pluginConfig';
 
-export default function PluginForm({ type, value, onChange }) {
+// `notes` adds a line under a parameter: { '<pluginId>.<paramId>': (value) => node }, called with
+// the parameter's current value (the site setting an "inherit" value follows, for instance).
+export default function PluginForm({ type, value, onChange, notes }) {
   const { t } = useTranslation();
   const plugins = pluginConfig[String(type)];
   if (!plugins) return null;
@@ -36,7 +38,13 @@ export default function PluginForm({ type, value, onChange }) {
                 <Switch checked={!!plugin[pluginId]?.[paramId]} onCheckedChange={(c) => setParam(pluginId, paramId, c)} />
               </div>
             ) : param.type === 'select' ? (
-              <FormField key={paramId} row label={configText(t, param.name)} help={configText(t, param.description)}>
+              <FormField
+                key={paramId}
+                row
+                label={configText(t, param.name)}
+                help={configText(t, param.description)}
+                hint={notes?.[`${pluginId}.${paramId}`]?.(plugin[pluginId]?.[paramId] ?? param.default ?? '')}
+              >
                 <Select value={plugin[pluginId]?.[paramId] ?? param.default ?? ''} onValueChange={(v) => setParam(pluginId, paramId, v)}>
                   <SelectTrigger>
                     <SelectValue />
@@ -65,5 +73,6 @@ export default function PluginForm({ type, value, onChange }) {
 PluginForm.propTypes = {
   type: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   value: PropTypes.object,
-  onChange: PropTypes.func
+  onChange: PropTypes.func,
+  notes: PropTypes.object
 };

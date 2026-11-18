@@ -32,8 +32,6 @@ const LEGACY_OPTION_KEYS = [
   'ChannelTestIntervalMinutes',
   'ChannelTestMode',
   'ChatImageRequestProxy',
-  'ChatLink',
-  'ChatLinks',
   'ClaudeAPIEnabled',
   'ClaudeBudgetTokensPercentage',
   'ClaudeDefaultMaxTokens',
@@ -298,7 +296,7 @@ describe('resolveSettingsTarget', () => {
     expect(go({ section: 'email' })).toBe('/panel/admin/settings/mail?highlight=smtp');
     expect(go({ section: 'ops' })).toBe('/panel/admin/settings/gateway?highlight=channel-auto');
     expect(go({ section: 'gateways' })).toBe('/panel/admin/settings/payment?highlight=payment-gateways');
-    expect(go({ section: 'chat' })).toBe('/panel/admin/settings/entries?highlight=chat-links');
+    expect(go({ section: 'chat' })).toBe('/panel/admin/settings/entries?highlight=builtin-chat');
     expect(go({ tab: 'other' })).toBe('/panel/admin/settings/site?highlight=branding');
     expect(go({ tab: 'safety' })).toBe('/panel/admin/settings/privacy?highlight=safety');
   });
@@ -330,7 +328,7 @@ describe('tabbed groups', () => {
     expect(cardById('notify-logs').groupId).toBe('notify');
     expect(cardById('telegram').groupId).toBe('entries');
     expect(resolveSettingsTarget({ section: 'notify', tab: 'integrations', highlight: 'chat-links' })).toBe(
-      '/panel/admin/settings/entries?highlight=chat-links'
+      '/panel/admin/settings/entries?highlight=builtin-chat'
     );
   });
 

@@ -14,7 +14,7 @@ vi.mock('utils/common', () => ({ copy: vi.fn(), showError: vi.fn(), showSuccess:
 let stored;
 beforeEach(() => {
   vi.clearAllMocks();
-  stored = { RetryTimes: '2', SMTPServer: 'smtp.example.com', MjNotifyEnabled: 'false', ChatLinks: '[]' };
+  stored = { RetryTimes: '2', SMTPServer: 'smtp.example.com', MjNotifyEnabled: 'false', PauseRules: '[]' };
   API.get.mockImplementation(() =>
     Promise.resolve({ data: { success: true, data: Object.entries(stored).map(([key, value]) => ({ key, value })), secrets: {} } })
   );
@@ -57,10 +57,10 @@ describe('useOptionSettings', () => {
   it('collections save a value right away without a pending edit', async () => {
     const result = await load();
     const links = JSON.stringify([{ name: 'Chat', url: 'https://chat.example.com' }]);
-    await act(() => result.current.saveKeys(['ChatLinks'], { values: { ChatLinks: links } }));
-    expect(API.put.mock.calls.map(([, body]) => body)).toEqual([{ key: 'ChatLinks', value: links }]);
-    expect(result.current.origin.ChatLinks).toBe(links);
-    expect(result.current.isDirty(['ChatLinks'])).toBe(false);
+    await act(() => result.current.saveKeys(['PauseRules'], { values: { PauseRules: links } }));
+    expect(API.put.mock.calls.map(([, body]) => body)).toEqual([{ key: 'PauseRules', value: links }]);
+    expect(result.current.origin.PauseRules).toBe(links);
+    expect(result.current.isDirty(['PauseRules'])).toBe(false);
   });
 
   it('a failed validation saves nothing', async () => {

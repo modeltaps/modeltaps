@@ -10,13 +10,13 @@ outline: deep
 
 Every setting, what it does, where to change it and examples. Generated from the settings catalog (common/settings): do not edit by hand.
 
-- [Platform settings · Site](./site.md) (18)
+- [Platform settings · Site](./site.md) (17)
 - [Platform settings · Sign-in & registration](./auth.md) (31)
 - [Platform settings · Billing](./billing.md) (16)
 - [Platform settings · Payments](./payment.md) (4)
 - [Platform settings · Gateway](./gateway.md) (60)
 - [Platform settings · Logs & privacy](./privacy.md) (12)
-- [Platform settings · User entries](./entries.md) (2)
+- [Platform settings · User entries](./entries.md) (1)
 - [Platform settings · Mail](./mail.md) (10)
 - [Platform settings · Notifications](./notify.md) (3)
 - [Platform settings · Organization policy](./orgpolicy.md) (5)
