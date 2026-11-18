@@ -1452,8 +1452,7 @@
     "enabled": "Enabled",
     "disabled": "Disabled",
     "enableAction": "Enable",
-    "disableAction": "Disable",
-    "emptyTitle": "No user groups yet"
+    "disableAction": "Disable"
   },
   "suno": {
     "lyrics": "Lyrics",
@@ -2218,9 +2217,7 @@
     }
   },
   "setting_index": {
-    "cards": {
-      "autoRouting": "Auto routing"
-    },
+    "cards": {},
     "systemSettings": {
       "generalSettings": {
         "encryptionKeyMissing": "ENCRYPTION_KEY is not set, so upstream channel keys, payment gateway secrets, notification channel secrets and sign-in client secrets are stored in plaintext in the database. Set ENCRYPTION_KEY in the deployment (generate one with openssl rand -base64 32), back it up and restart: the stored secrets are then encrypted. Without the key they cannot be read back."
@@ -3293,10 +3290,6 @@
       "hint": "The upstream name is filled in for the channel: its model mapping, a name the channel already lists, or how the channel's platform names the model (such as Vertex's @default). A new supply joins as a backup below the lowest tier.",
       "fromLibrary": "Filled in with how this platform names the model"
     },
-    "channelSupplies": {
-      "title_one": "Supplies {{count}} public model",
-      "title_other": "Supplies {{count}} public models"
-    },
     "pausedPage": {
       "description": "Channels, or models on a channel, that a pause rule or an admin has taken out of rotation. They come back on their own when the pause ends.",
       "empty": "Nothing is paused",
@@ -3409,14 +3402,7 @@
     "costFromRatio": "Cost from the channel's cost ratio (no upstream price list)",
     "confirmChannel": "Confirm all pending supplies of {{channel}}",
     "confirmChannelAsk": "Confirm every supply of {{channel}} waiting for review, on every model? Supplies held because they cost more than the price will take requests at that cost.",
-    "confirmChannelDone": "Confirmed {{count}} supplies of {{channel}}",
-    "costOrder": {
-      "label": "Cost and priority",
-      "priority": "Priority first",
-      "cost": "Cost first",
-      "priorityHint": "Priorities decide the order. Within one priority the cheapest supplies take the requests and dearer ones back them up. Use it when a priority stands for something besides cost (quality, speed, a provider you trust).",
-      "costHint": "The cheapest supplies of a model take the requests whatever their priority; priority only orders supplies of the same cost. Users pay the same price either way, only your cost changes. A cheaper host may be slower or quantized."
-    }
+    "confirmChannelDone": "Confirmed {{count}} supplies of {{channel}}"
   },
   "settingsUi": {
     "search": {
@@ -3676,9 +3662,6 @@
           "description": "Open the chat page right in the console",
           "hint": "Applies to every user"
         },
-        "chat-links": {
-          "title": "Chat links"
-        },
         "mj-notify": {
           "title": "Midjourney callback",
           "description": "Call the caller's address when a task finishes",
@@ -3735,10 +3718,6 @@
         "purgeDescription": "Deletes logs older than the time you pick; this cannot be undone",
         "invoiceGenDescription": "Creates the invoices of the month you pick",
         "invoiceUpdateDescription": "Recalculates the existing invoices of the month you pick"
-      },
-      "chatLinks": {
-        "add": "Add chat link",
-        "edit": "Edit chat link"
       },
       "telegram": {
         "add": "Add command",
@@ -4030,10 +4009,6 @@
         "prev": "Previous page",
         "next": "Next page"
       },
-      "defaultLanguage": {
-        "label": "Default language",
-        "description": "Emails go out in it when a user's language is unknown; the home page uses it when the browser's language is not supported"
-      },
       "imageStorage": {
         "provider": "Storage",
         "optional": "{{label}} (optional)",
@@ -4213,7 +4188,11 @@
         "routing_policy": "Routing policy",
         "organization": "Organization",
         "token": "API key"
-      }
+      },
+      "overridden_one": "{{count}} {{object}} sets its own value",
+      "overridden_other": "{{count}} {{object}}s set their own value",
+      "followsSite": "Follows the platform setting {{setting}}",
+      "followsSiteNow": "Follows the platform setting {{setting}} (now: {{value}})"
     }
   },
   "home": {

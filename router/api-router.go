@@ -225,6 +225,11 @@ func SetApiRouter(router *gin.Engine) {
 			// Root turns off another user's two-factor (lost app and recovery codes); written to the log.
 			userRoute.DELETE("/:id/totp", middleware.RootAuth(), middleware.SessionOnly(), controller.ResetUserTotp)
 		}
+		settingRoute := apiRouter.Group("/settings")
+		{
+			settingRoute.GET("/overrides", middleware.RootAuth(), controller.GetSettingOverrides)
+			settingRoute.GET("/inherited", middleware.AdminAuth(), controller.GetInheritedSiteSetting)
+		}
 		optionRoute := apiRouter.Group("/option")
 		optionRoute.Use(middleware.RootAuth())
 		{

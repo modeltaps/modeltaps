@@ -2133,9 +2133,7 @@
     }
   },
   "setting_index": {
-    "cards": {
-      "autoRouting": "自動ルーティング"
-    },
+    "cards": {},
     "systemSettings": {
       "generalSettings": {
         "encryptionKeyMissing": "ENCRYPTION_KEY が設定されていないため、上流チャネルのキー、決済ゲートウェイのシークレット、通知チャネルのシークレット、ログイン用クライアントシークレットがデータベースに平文で保存されています。デプロイ設定で ENCRYPTION_KEY を設定し（openssl rand -base64 32 で生成できます）、バックアップを取ってから再起動すると、保存済みのシークレットが暗号化されます。キーを失うとこれらのデータは読み戻せません。"
@@ -3027,8 +3025,7 @@
     "enabled": "有効",
     "disabled": "無効",
     "enableAction": "有効にする",
-    "disableAction": "無効にする",
-    "emptyTitle": "ユーザーグループはまだありません"
+    "disableAction": "無効にする"
   },
   "redemptionPage": {
     "panel": {
@@ -3187,9 +3184,6 @@
       "hint": "上流モデル名はチャネルに合わせて自動入力されます：モデルマッピング、チャネルが既に掲載している名前、またはそのプラットフォームでの表記（Vertex の @default など）の順です。新しい供給は最下位の段の下にバックアップとして追加されます。",
       "fromLibrary": "このプラットフォームでの表記で入力しました"
     },
-    "channelSupplies": {
-      "title_other": "{{count}} 件の公開モデルを供給"
-    },
     "pausedPage": {
       "description": "一時停止ルールまたは管理者によって振り分けから外されたチャネル、またはチャネル上のモデルです。一時停止が終わると自動で戻ります。",
       "empty": "一時停止中のものはありません",
@@ -3296,14 +3290,7 @@
     "costFromRatio": "チャネルの原価倍率から算出（上流に価格表なし）",
     "confirmChannel": "{{channel}} の確認待ちの供給をすべて確定",
     "confirmChannelAsk": "{{channel}} の全モデルの確認待ちの供給を確定しますか？価格を上回るため止められていた供給も、そのコストでリクエストを受けるようになります。",
-    "confirmChannelDone": "{{channel}} の供給を {{count}} 件確定しました",
-    "costOrder": {
-      "label": "コストと優先度",
-      "priority": "優先度を優先",
-      "cost": "コストを優先",
-      "priorityHint": "優先度で順番を決めます。同じ優先度の中では最も安いルートがリクエストを受け、割高なルートは予備になります。優先度がコスト以外（品質、速度、信頼するプロバイダー）を表すときに使います。",
-      "costHint": "優先度に関係なく、モデルの最も安いルートが先にリクエストを受けます。優先度は同じコストのルートの順番だけを決めます。ユーザーの支払額は変わらず、コストだけが変わります。安いホストは遅い、または量子化版の場合があります。"
-    }
+    "confirmChannelDone": "{{channel}} の供給を {{count}} 件確定しました"
   },
   "settingsUi": {
     "search": {
@@ -3562,9 +3549,6 @@
           "description": "コンソールから直接チャットページを開きます",
           "hint": "すべてのユーザーに適用されます"
         },
-        "chat-links": {
-          "title": "チャットリンク"
-        },
         "mj-notify": {
           "title": "Midjourney コールバック",
           "description": "タスク完了時に呼び出し元のアドレスへ通知します",
@@ -3621,10 +3605,6 @@
         "purgeDescription": "選んだ日時より古いログを削除します。元に戻せません",
         "invoiceGenDescription": "選んだ月の請求書を作成します",
         "invoiceUpdateDescription": "選んだ月の既存の請求書を再計算します"
-      },
-      "chatLinks": {
-        "add": "チャットリンクを追加",
-        "edit": "チャットリンクを編集"
       },
       "telegram": {
         "add": "コマンドを追加",
@@ -3914,10 +3894,6 @@
         "prev": "前のページ",
         "next": "次のページ"
       },
-      "defaultLanguage": {
-        "label": "既定の言語",
-        "description": "ユーザーの言語がわからないとき、メールはこの言語で送られます。ブラウザーの言語に対応していないときはホームページもこの言語になります"
-      },
       "imageStorage": {
         "provider": "ストレージ",
         "optional": "{{label}}（任意）",
@@ -4097,7 +4073,11 @@
         "routing_policy": "ルーティングポリシー",
         "organization": "組織",
         "token": "API キー"
-      }
+      },
+      "overridden_one": "{{count}} 件の{{object}}が独自に設定しています",
+      "overridden_other": "{{count}} 件の{{object}}が独自に設定しています",
+      "followsSite": "プラットフォーム設定「{{setting}}」に従う",
+      "followsSiteNow": "プラットフォーム設定「{{setting}}」に従う（現在：{{value}}）"
     }
   },
   "home": {
