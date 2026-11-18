@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Requests can list fallback models of their own in a top-level `models` array (as OpenRouter
+  takes it). They are tried in order like a fallback policy; models the key could not call by itself
+  (outside its or the organization's allow list, hidden, or routing policies) are dropped, and the
+  field is removed before the request goes upstream.
 - Fallback routing policies: one model name for a list of models tried in order (2 to 8). A request
   moves to the next model only when every line of the one before has failed or none can take it;
   it stays put once a streamed answer has started, when the client has gone, when the retry time is

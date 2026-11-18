@@ -123,6 +123,16 @@ A fallback policy is a model name for a list of models tried in order, for examp
 - A fallback policy has no decision model, so it has no **Try it** tab, threshold or session pinning.
 - An auto policy falls back the same way: when every line of the chosen target fails, the request moves on to the policy's fallback model.
 
+### Fallback models in the request
+
+Without a policy, a request can list fallback models of its own in a top-level `models` array, the way OpenRouter takes it:
+
+```json
+{"model": "claude-opus-5-5", "models": ["claude-sonnet-5-5", "gpt-5-mini"], "messages": [...]}
+```
+
+The listed models are tried in order with the same rules as a fallback policy. Each must be a model your key could call by itself: models outside the key's or organization's allow list, hidden models and routing policies are dropped. Up to eight are used. The field is removed before the request goes upstream, on every API.
+
 ## Personal and organization policies
 
 A site administrator turns own policies on or off with **Let users and organizations create their own routing policies** under **Platform admin → Platform settings → Gateway → Auto routing** (on by default). The same card sets how many policies each user (20 by default) and each organization (20 by default) may create.

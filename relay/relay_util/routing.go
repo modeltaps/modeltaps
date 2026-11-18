@@ -26,6 +26,9 @@ const (
 	RoutingReasonTargetUnavailable = "target_unavailable"
 	// RoutingReasonPrimary a fallback policy sent the request to its first usable model.
 	RoutingReasonPrimary = "primary"
+	// RoutingReasonRequestModels the request listed fallback models of its own (the "models" array)
+	// and moved on to one of them.
+	RoutingReasonRequestModels = "request_models"
 )
 
 // RoutingPolicyIdContextKey gin context key holding the id of the policy a decision call belongs to.
@@ -102,11 +105,14 @@ func RoutingChainHasNext(c *gin.Context) bool {
 // HeaderValue 组成 X-Modeltaps-Route 的值：policy=…; label=…; model=…; confidence=…; reason=…。
 // 标签为空（兜底且没有标签）时省略 label。
 func (d *RoutingDecision) HeaderValue() string {
-	value := "policy=" + d.Policy
-	if d.Label != "" {
-		value += "; label=" + d.Label
+	value := ""
+	if d.Policy != "" {
+		value = "policy=" + d.Policy + "; "
 	}
-	value += "; model=" + d.TargetModel
+	if d.Label != "" {
+		value += "label=" + d.Label + "; "
+	}
+	value += "model=" + d.TargetModel
 	if d.scored() {
 		value += "; confidence=" + strconv.FormatFloat(d.Confidence, 'f', 2, 64)
 		if d.Scoring != "" {
@@ -121,6 +127,15 @@ func (d *RoutingDecision) HeaderValue() string {
 
 // LogMeta 写进消费日志 metadata 的字段。
 func (d *RoutingDecision) LogMeta(meta map[string]any) {
+	if d.Policy == "" {
+		// The request's own "models" array: only where it went, no policy to count it under.
+		meta["routing_reason"] = d.Reason
+		meta["routing_target"] = d.TargetModel
+		if d.Step > 0 {
+			meta["routing_step"] = d.Step
+		}
+		return
+	}
 	meta["routing_policy"] = d.Policy
 	if d.PolicyId > 0 {
 		meta["routing_policy_id"] = d.PolicyId

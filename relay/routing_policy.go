@@ -40,6 +40,7 @@ const (
 	RoutingReasonAuxiliary         = relay_util.RoutingReasonAuxiliary
 	RoutingReasonTargetUnavailable = relay_util.RoutingReasonTargetUnavailable
 	RoutingReasonPrimary           = relay_util.RoutingReasonPrimary
+	RoutingReasonRequestModels     = relay_util.RoutingReasonRequestModels
 	RoutingDecisionContextKey      = relay_util.RoutingDecisionContextKey
 )
 
@@ -95,6 +96,11 @@ func routeRoutingPolicy(c *gin.Context, modelName string) (string, error) {
 	}
 	policy := model.ResolveRoutingPolicy(routingScope(c), modelName)
 	if policy == nil {
+		// A plain model may still list fallback models of its own in the request.
+		if decision := requestModelsDecision(c, modelName); decision != nil {
+			c.Set(RoutingDecisionContextKey, decision)
+			logger.LogInfo(c.Request.Context(), "routing_request_models "+decision.String())
+		}
 		return modelName, nil
 	}
 
