@@ -2969,7 +2969,10 @@
     "subnav": {
       "label": "分組"
     },
-    "mainLabel": "主導覽"
+    "mainLabel": "主導覽",
+    "badge": {
+      "alerts_other": "{{count}} 條待處理"
+    }
   },
   "objects": {
     "optional": "可選",

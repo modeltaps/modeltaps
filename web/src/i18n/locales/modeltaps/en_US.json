@@ -3088,7 +3088,11 @@
     "subnav": {
       "label": "Sections"
     },
-    "mainLabel": "Main navigation"
+    "mainLabel": "Main navigation",
+    "badge": {
+      "alerts_one": "{{count}} open alert",
+      "alerts_other": "{{count}} open alerts"
+    }
   },
   "objects": {
     "optional": "optional",

@@ -2969,7 +2969,10 @@
     "subnav": {
       "label": "分组"
     },
-    "mainLabel": "主导航"
+    "mainLabel": "主导航",
+    "badge": {
+      "alerts_other": "{{count}} 条待处理"
+    }
   },
   "objects": {
     "optional": "可选",

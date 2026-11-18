@@ -70,6 +70,23 @@ func GetAlerts(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": views})
 }
 
+// CountOpenAlerts is the number of open alerts an admin has not dismissed, for the sidebar
+// badge (AdminAuth).
+func CountOpenAlerts(c *gin.Context) {
+	alerts, err := model.OpenAlerts("")
+	if err != nil {
+		common.APIRespondWithError(c, http.StatusOK, err)
+		return
+	}
+	open := 0
+	for _, a := range alerts {
+		if alertListKinds[a.Kind] {
+			open++
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": gin.H{"open": open}})
+}
+
 // DismissAlert closes an open alert by hand (AdminAuth): the same condition is not told again,
 // and something new about it opens it again.
 func DismissAlert(c *gin.Context) {

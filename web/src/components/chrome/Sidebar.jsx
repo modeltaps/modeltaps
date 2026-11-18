@@ -14,6 +14,7 @@ import { adminReturnPath } from 'utils/adminReturn';
 import { SETTINGS_ROOT, findActiveItem, isOrgAdminRole, navLabel, navSectionsFor } from './nav-config';
 import ContextSwitcher from './ContextSwitcher';
 import AccountMenu from './AccountMenu';
+import useOpenAlertCount from 'views/panel/Alerts/useOpenAlertCount';
 import { SidebarIconButton, SidebarSearch, TitleBackRow, sidebarRow } from './SidebarControls';
 import SidebarBrandRow from './SidebarBrandRow';
 import { orgSlugOf, workbench } from 'routes/paths';
@@ -75,6 +76,9 @@ export default function Sidebar({ context, collapsed = false, showCollapse = fal
     features: { routingPolicy: routingPolicyEnabled }
   });
   const activeId = findActiveItem(pathname)?.id;
+  // Counts shown on items: the open alerts in platform admin.
+  const openAlerts = useOpenAlertCount(context === 'admin');
+  const badges = { alerts: openAlerts };
 
   // Balance: personal balance; in org context the pool for owners/admins, the member's own
   // balance otherwise (the pool is not visible to members). Hidden in platform admin. It is shown
@@ -101,6 +105,8 @@ export default function Sidebar({ context, collapsed = false, showCollapse = fal
     const Icon = item.icon;
     const label = navLabel(t, item);
     const active = item.id === activeId;
+    const badge = badges[item.id] || 0;
+    const badgeText = badge > 99 ? '99+' : String(badge);
     if (collapsed) {
       return (
         <Tooltip key={item.id}>
@@ -109,15 +115,18 @@ export default function Sidebar({ context, collapsed = false, showCollapse = fal
               to={item.href}
               onClick={onItemClick}
               aria-current={active ? 'page' : undefined}
-              aria-label={label}
-              className={cn(rowBase, rowCollapsed, active ? rowActive : rowIdle)}
+              aria-label={badge ? `${label} (${badgeText})` : label}
+              className={cn(rowBase, rowCollapsed, 'relative', active ? rowActive : rowIdle)}
             >
               <Icon
                 className={cn('size-[1.125rem] shrink-0', active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground')}
               />
+              {badge > 0 && (
+                <span className="absolute right-1 top-1 size-2 rounded-full bg-warning ring-2 ring-sidebar" aria-hidden="true" />
+              )}
             </Link>
           </TooltipTrigger>
-          <TooltipContent side="right">{label}</TooltipContent>
+          <TooltipContent side="right">{badge ? `${label} · ${badgeText}` : label}</TooltipContent>
         </Tooltip>
       );
     }
@@ -131,6 +140,14 @@ export default function Sidebar({ context, collapsed = false, showCollapse = fal
       >
         <Icon className={cn('size-4 shrink-0', active ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground')} />
         <span className="min-w-0 flex-1 truncate text-left">{label}</span>
+        {badge > 0 && (
+          <span
+            className="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-warning/15 px-1.5 text-[11px] font-medium tabular-nums text-warning"
+            aria-label={t('nav.badge.alerts', { count: badge })}
+          >
+            {badgeText}
+          </span>
+        )}
       </Link>
     );
   };

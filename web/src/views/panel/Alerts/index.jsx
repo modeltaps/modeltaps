@@ -15,6 +15,7 @@ import { API } from 'utils/api';
 import { relativeTime } from 'utils/relativeTime';
 import { timestamp2string } from 'utils/common';
 import { alertSubject, alertTarget, describeAlertItem } from './alertItems';
+import { ALERTS_CHANGED } from './useOpenAlertCount';
 
 // ==============================|| PANEL — ALERTS (admin) ||============================== //
 // Conditions that reach users and need an admin: served models the upstream renamed or dropped,
@@ -43,6 +44,7 @@ export default function Alerts() {
       if (res.data.success) {
         setAlerts(res.data.data || []);
         setError('');
+        window.dispatchEvent(new Event(ALERTS_CHANGED));
       } else setError(res.data.message);
     } catch (err) {
       setError(err?.response?.data?.message || err.message);
@@ -64,6 +66,7 @@ export default function Alerts() {
         return;
       }
       setAlerts((list) => list.filter((a) => a.id !== id));
+      window.dispatchEvent(new Event(ALERTS_CHANGED));
     } catch (err) {
       setError(err?.response?.data?.message || err.message);
     }

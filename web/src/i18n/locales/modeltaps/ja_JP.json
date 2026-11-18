@@ -2965,7 +2965,10 @@
     "subnav": {
       "label": "セクション"
     },
-    "mainLabel": "メインナビゲーション"
+    "mainLabel": "メインナビゲーション",
+    "badge": {
+      "alerts_other": "未対応 {{count}} 件"
+    }
   },
   "objects": {
     "optional": "任意",

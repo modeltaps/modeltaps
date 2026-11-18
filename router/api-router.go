@@ -256,6 +256,7 @@ func SetApiRouter(router *gin.Engine) {
 		alertRoute.Use(middleware.AdminAuth())
 		{
 			alertRoute.GET("/", controller.GetAlerts)
+			alertRoute.GET("/count", controller.CountOpenAlerts)
 			alertRoute.POST("/:id/dismiss", controller.DismissAlert)
 		}
 
