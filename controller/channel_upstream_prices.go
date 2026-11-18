@@ -36,6 +36,17 @@ func refreshChannelPrices(ch *model.Channel, provider providersBase.ProviderInte
 	return len(prices), nil
 }
 
+// channelKeepsPriceList says whether the channel's upstream publishes a price list it keeps: the
+// catalog sources (ChannelTypeHasOwnPricing) and the preset platforms, priced from their own lists
+// or models.dev.
+func channelKeepsPriceList(ch *model.Channel) bool {
+	if ChannelTypeHasOwnPricing(ch.Type) {
+		return true
+	}
+	_, ok := providers.GetProvider(ch, nil).(providersBase.ChannelPriceListInterface)
+	return ok
+}
+
 func channelForPrices(c *gin.Context) (*model.Channel, bool) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -58,7 +69,7 @@ func respondChannelPrices(c *gin.Context, channel *model.Channel) {
 	}
 	model.DescribeChannelPrices(channel.Type, list.Prices...)
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": channelPricesResponse{
-		Supported:        ChannelTypeHasOwnPricing(channel.Type),
+		Supported:        channelKeepsPriceList(channel),
 		ChannelPriceList: list,
 	}})
 }
@@ -77,7 +88,7 @@ func RefreshChannelPrices(c *gin.Context) {
 	if !ok {
 		return
 	}
-	if !ChannelTypeHasOwnPricing(channel.Type) {
+	if !channelKeepsPriceList(channel) {
 		common.APIRespondWithError(c, http.StatusOK, common.NewAPIError(common.APICodeChannelPricesUnsupported, "this provider does not publish its prices", nil))
 		return
 	}
