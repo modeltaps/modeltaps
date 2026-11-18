@@ -1080,9 +1080,7 @@
     "submit": "Submit",
     "unknown": "Unknown",
     "secretConfigured": "Configured {{masked}}",
-    "secretKeepHint": "Leave blank to keep the existing value",
-    "reload": "Reload",
-    "reloadHint": "Reload the page to continue. If this keeps happening, contact the administrator."
+    "secretKeepHint": "Leave blank to keep the existing value"
   },
   "Log Context": "Log Context",
   "View Context": "View Context",
@@ -4935,5 +4933,19 @@
         "backup": "backup"
       }
     }
+  },
+  "errorPage": {
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "The address may be mistyped, or the page has moved or been removed.",
+    "crashTitle": "Something went wrong",
+    "crashBody": "This page hit an error. Reload to try again; if it keeps happening, contact the administrator.",
+    "updateTitle": "A new version is available",
+    "updateBody": "The site was updated while this page was open. Reload to get the latest version.",
+    "goHome": "Go to home",
+    "goConsole": "Go to console",
+    "goBack": "Go back",
+    "reload": "Reload",
+    "details": "Error details",
+    "goDashboard": "Back to dashboard"
   }
 }

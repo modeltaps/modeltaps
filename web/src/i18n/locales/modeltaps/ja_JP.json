@@ -1059,9 +1059,7 @@
     "copyFailedManual": "コピーできませんでした。手動でコピーしてください：",
     "copyNamedFailed": "{{name}}をコピーできませんでした。手動でコピーしてください：",
     "secretConfigured": "設定済み {{masked}}",
-    "secretKeepHint": "空欄の場合は既存の値を維持します",
-    "reload": "再読み込み",
-    "reloadHint": "ページを再読み込みして続行してください。繰り返し発生する場合は管理者に連絡してください。"
+    "secretKeepHint": "空欄の場合は既存の値を維持します"
   },
   "Log Context": "ログコンテキスト",
   "View Context": "コンテキストを表示",
@@ -4817,5 +4815,19 @@
         "backup": "予備"
       }
     }
+  },
+  "errorPage": {
+    "notFoundTitle": "ページが見つかりません",
+    "notFoundBody": "アドレスが間違っているか、ページが移動または削除された可能性があります。",
+    "crashTitle": "エラーが発生しました",
+    "crashBody": "このページでエラーが発生しました。再読み込みしてください。繰り返し発生する場合は管理者に連絡してください。",
+    "updateTitle": "新しいバージョンがあります",
+    "updateBody": "ページを開いている間にサイトが更新されました。再読み込みすると最新バージョンになります。",
+    "goHome": "ホームへ",
+    "goConsole": "コンソールへ",
+    "goBack": "前のページへ",
+    "reload": "再読み込み",
+    "details": "エラーの詳細",
+    "goDashboard": "ダッシュボードへ"
   }
 }

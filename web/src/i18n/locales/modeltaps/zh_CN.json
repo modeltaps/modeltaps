@@ -1065,9 +1065,7 @@
     "copyFailedManual": "复制失败，请手动复制：",
     "copyNamedFailed": "复制{{name}}失败，请手动复制：",
     "secretConfigured": "已配置 {{masked}}",
-    "secretKeepHint": "留空则保持原值不变",
-    "reload": "重新加载",
-    "reloadHint": "重新加载页面后继续。如果反复出现，请联系管理员。"
+    "secretKeepHint": "留空则保持原值不变"
   },
   "Log Context": "日志上下文",
   "View Context": "查看上下文",
@@ -4822,5 +4820,19 @@
         "backup": "备用"
       }
     }
+  },
+  "errorPage": {
+    "notFoundTitle": "页面不存在",
+    "notFoundBody": "地址可能输错了，或者页面已经移动或删除。",
+    "crashTitle": "页面出错了",
+    "crashBody": "这个页面运行时出错。重新加载试试；如果反复出现，请联系管理员。",
+    "updateTitle": "有新版本",
+    "updateBody": "打开页面期间站点已经更新，重新加载即可使用最新版本。",
+    "goHome": "回到首页",
+    "goConsole": "进入控制台",
+    "goBack": "返回上一页",
+    "reload": "重新加载",
+    "details": "错误详情",
+    "goDashboard": "回到仪表盘"
   }
 }
