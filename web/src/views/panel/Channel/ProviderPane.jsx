@@ -81,47 +81,23 @@ BalanceText.propTypes = { channel: PropTypes.object.isRequired };
 // action runs on click; × dismisses it (model drift items for good, the rest for this session).
 function IssueTag({ issue, onAction, onDismiss, busy }) {
   const { t } = useTranslation();
-  const drift = issue.kind === 'drift';
-  const label = drift
-    ? [issue.added && `+${issue.added}`, issue.missing && `\u2212${issue.missing}`].filter(Boolean).join(' ')
-    : {
-        retired: t('channels.issueTag.retired'),
-        autoDisabled: t('channels.issueTag.autoDisabled'),
-        keyMissing: t('channels.issueTag.keyMissing'),
-        lowBalance: t('channels.issueTag.lowBalance'),
-        driftNew: t('channels.issueTag.driftNew', { count: issue.count }),
-        driftMissing: t('channels.issueTag.driftMissing', { count: issue.count })
-      }[issue.kind];
-  const action = drift
-    ? t('channels.issueTag.drift')
-    : {
-        retired: t('channels.issue.view'),
-        autoDisabled: t('channels.issue.enable'),
-        keyMissing: t('channels.issue.setKey'),
-        lowBalance: t('channels.issueTag.refresh'),
-        driftNew: t('channels.issue.view'),
-        driftMissing: t('channels.issue.view')
-      }[issue.kind];
-  const title = drift
-    ? [
-        issue.added && t('channels.issueTag.driftNew', { count: issue.added }),
-        issue.missing && t('channels.issueTag.driftMissing', { count: issue.missing })
-      ]
-        .filter(Boolean)
-        .join(' · ')
-    : `${label} · ${action}`;
+  const label = {
+    retired: t('channels.issueTag.retired'),
+    autoDisabled: t('channels.issueTag.autoDisabled'),
+    keyMissing: t('channels.issueTag.keyMissing'),
+    lowBalance: t('channels.issueTag.lowBalance')
+  }[issue.kind];
+  // The action word where the click does something besides opening the channel.
+  const action = {
+    autoDisabled: t('channels.issue.enable'),
+    keyMissing: t('channels.issue.setKey'),
+    lowBalance: t('channels.issueTag.refresh')
+  }[issue.kind];
   return (
-    // Gives way before the channel name: it shrinks down to its icon when the row is narrow. The
-    // model drift tag gives way as much as the name, but only down to its counts ("+13 −15"):
-    // the word goes first.
+    // Gives way as much as the channel name, down to its icon and ×; the tooltip says it in full.
     <span
-      title={title}
-      // The counts, the icon and × (3.25rem with the padding) stay whole.
-      style={drift ? { minWidth: `calc(${label.length + 1}ch + 3.25rem)` } : undefined}
-      className={cn(
-        'inline-flex h-[22px] items-center overflow-hidden rounded-full border border-warning/40 bg-warning/10 text-xs text-warning',
-        drift ? 'shrink' : 'min-w-[44px] shrink-[8]'
-      )}
+      title={action ? `${label} · ${action}` : label}
+      className="inline-flex h-[22px] min-w-[44px] shrink items-center overflow-hidden rounded-full border border-warning/40 bg-warning/10 text-xs text-warning"
     >
       <button
         type="button"
@@ -133,16 +109,15 @@ function IssueTag({ issue, onAction, onDismiss, busy }) {
         className="inline-flex h-full min-w-0 items-center gap-1 pl-2 pr-1.5 hover:bg-warning/15 disabled:opacity-60"
       >
         {busy ? <Loader2 className="size-3 shrink-0 animate-spin" /> : <AlertTriangle className="size-3 shrink-0" />}
-        {drift ? (
-          <>
-            <span className="shrink-0 tabular-nums">{label}</span>
-            <span className="min-w-0 truncate">{action}</span>
-          </>
-        ) : (
-          <span className="truncate">
-            {label} · <span className="underline-offset-2 hover:underline">{action}</span>
-          </span>
-        )}
+        <span className="truncate">
+          {label}
+          {action && (
+            <>
+              {' · '}
+              <span className="underline-offset-2 hover:underline">{action}</span>
+            </>
+          )}
+        </span>
       </button>
       <button
         type="button"
@@ -157,25 +132,6 @@ function IssueTag({ issue, onAction, onDismiss, busy }) {
       </button>
     </span>
   );
-}
-
-// A row's tags: the upstream's new and gone models make one short tag, "+13 −15 Models" (a click
-// opens the models tab on the new ones first, × dismisses both); the other issues keep a tag each.
-function rowTags(issues = []) {
-  const drift = issues.filter((i) => i.kind === 'driftNew' || i.kind === 'driftMissing');
-  if (!drift.length) return issues;
-  const count = (kind) => drift.find((i) => i.kind === kind)?.count || 0;
-  return [
-    ...issues.filter((i) => !drift.includes(i)),
-    {
-      key: drift.map((i) => i.key).join('|'),
-      kind: 'drift',
-      channel: drift[0].channel,
-      added: count('driftNew'),
-      missing: count('driftMissing'),
-      parts: drift
-    }
-  ];
 }
 
 IssueTag.propTypes = { issue: PropTypes.object.isRequired, onAction: PropTypes.func, onDismiss: PropTypes.func, busy: PropTypes.bool };
@@ -778,17 +734,11 @@ export default function ProviderPane({
                               {c.tag}
                             </span>
                           )}
-                          {rowTags(issuesById.get(c.id)).map((i) => (
-                            <IssueTag
-                              key={i.key}
-                              issue={i}
-                              onAction={(x) => onIssueAction(x.parts ? x.parts[0] : x)}
-                              onDismiss={async (x) => {
-                                for (const part of x.parts || [x]) await onDismissIssue(part);
-                              }}
-                              busy={(i.parts || [i]).some(issueBusy)}
-                            />
-                          ))}
+                          {(issuesById.get(c.id) || [])
+                            .filter((i) => i.kind !== 'driftMissing')
+                            .map((i) => (
+                              <IssueTag key={i.key} issue={i} onAction={onIssueAction} onDismiss={onDismissIssue} busy={issueBusy(i)} />
+                            ))}
                           {drop?.id === c.id && (
                             <span className="inline-flex h-[22px] shrink-0 items-center rounded-full bg-info px-2 text-xs text-info-foreground">
                               {t(`channels.order.dropHint.${drop.mode}`)}
@@ -810,9 +760,51 @@ export default function ProviderPane({
                                 })
                               : ''
                           ].filter(Boolean);
-                          return sub.length > 0 ? (
-                            <span className="block truncate text-xs text-muted-foreground">{sub.join(' · ')}</span>
-                          ) : null;
+                          // Model drift reads on this line, in full (a narrow column wraps it onto a
+                          // line of its own): gone models (their requests fail) in the warning color,
+                          // models the upstream added, which are news and not a problem, as a quiet
+                          // link. Both open the models tab on them.
+                          const gone = (issuesById.get(c.id) || []).find((i) => i.kind === 'driftMissing');
+                          const added = c.model_drift?.new_models?.length || 0;
+                          const links = [
+                            gone && {
+                              key: 'gone',
+                              issue: gone,
+                              className: 'text-warning',
+                              text: t('channels.issueTag.driftMissing', { count: gone.count })
+                            },
+                            added > 0 && {
+                              key: 'new',
+                              issue: { kind: 'driftNew', channel: c },
+                              className: 'text-info',
+                              text: t('channels.issueTag.driftNew', { count: added })
+                            }
+                          ].filter(Boolean);
+                          if (!sub.length && !links.length) return null;
+                          return (
+                            <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-xs text-muted-foreground">
+                              {sub.length > 0 && <span className="min-w-0 max-w-full truncate">{sub.join(' · ')}</span>}
+                              {links.map((x) => (
+                                <span key={x.key} className="inline-flex max-w-full items-baseline gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onIssueAction(x.issue);
+                                    }}
+                                    className={cn(
+                                      'inline-flex min-w-0 items-center gap-0.5 underline-offset-2 hover:underline',
+                                      x.className
+                                    )}
+                                    title={x.text}
+                                  >
+                                    {x.key === 'gone' && <AlertTriangle className="size-3 shrink-0 self-center" />}
+                                    <span className="truncate">{x.text}</span>
+                                  </button>
+                                </span>
+                              ))}
+                            </span>
+                          );
                         })()}
                       </span>
                     </span>

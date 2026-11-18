@@ -175,7 +175,7 @@ export default function ChannelPanel({
       const gone = t('channels.issue.retired', { date });
       return successor ? `${gone} ${t(`channels.retired.successor.${successor}`)}` : `${gone} ${t('channels.retired.moveElsewhere')}`;
     }
-    if (issue.kind === 'driftNew' || issue.kind === 'driftMissing') return t(`channels.issue.${issue.kind}`, { count: issue.count });
+    if (issue.kind === 'driftMissing') return t('channels.issue.driftMissing', { count: issue.count });
     return t(`channels.issue.${issue.kind}`);
   };
   const issueActionText = {
@@ -183,13 +183,12 @@ export default function ChannelPanel({
     autoDisabled: 'enable',
     keyMissing: 'setKey',
     lowBalance: 'refreshBalance',
-    driftNew: 'view',
     driftMissing: 'view'
   };
-  // The models tab shows the upstream's new and gone models in its own filters, so the notice
-  // leaves them out there.
+  // The models tab shows the upstream's gone models in its own filter, so the notice leaves them
+  // out there.
   const currentTab = tab || PANEL_TABS[0].key;
-  const shown = currentTab === 'models' ? issues.filter((i) => i.kind !== 'driftNew' && i.kind !== 'driftMissing') : issues;
+  const shown = currentTab === 'models' ? issues.filter((i) => i.kind !== 'driftMissing') : issues;
   const notice = shown.length ? (
     <ul
       className="mb-3 space-y-1 rounded-[10px] border border-warning/40 bg-warning/10 px-3 py-2 text-[13px]"

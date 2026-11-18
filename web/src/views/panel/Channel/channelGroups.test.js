@@ -40,7 +40,7 @@ describe('groupChannelsByType', () => {
 });
 
 describe('channelIssues', () => {
-  it('lists auto-disable, missing key, low balance and drift', () => {
+  it('lists auto-disable, missing key, low balance and gone models, not new ones', () => {
     const c = ch(7, 1, {
       status: 3,
       key_status: { configured: false },
@@ -50,8 +50,8 @@ describe('channelIssues', () => {
       model_drift: { new_models: ['a', 'b'], missing_models: ['c'] }
     });
     const issues = channelIssues(c);
-    expect(issues.map((i) => i.kind)).toEqual(['autoDisabled', 'keyMissing', 'lowBalance', 'driftNew', 'driftMissing']);
-    expect(issues[3].count).toBe(2);
+    expect(issues.map((i) => i.kind)).toEqual(['autoDisabled', 'keyMissing', 'lowBalance', 'driftMissing']);
+    expect(issues[3].count).toBe(1);
   });
 
   it('does not flag dismissed missing models until another one goes missing', () => {
@@ -86,10 +86,10 @@ describe('channelIssues', () => {
   });
 
   it('drops dismissed items and brings them back when the data changes', () => {
-    const c = ch(2, 1, { model_drift: { new_models: ['a'] } });
+    const c = ch(2, 1, { model_drift: { missing_models: ['a'] } });
     const [issue] = channelIssues(c);
     expect(openIssues([c], new Set([issue.key]))).toEqual([]);
-    const changed = { ...c, model_drift: { new_models: ['a', 'b'] } };
+    const changed = { ...c, model_drift: { missing_models: ['a', 'b'] } };
     expect(openIssues([changed], new Set([issue.key]))).toHaveLength(1);
   });
 });

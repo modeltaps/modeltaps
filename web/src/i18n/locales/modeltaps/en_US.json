@@ -2912,8 +2912,7 @@
       "driftMissing_one": "{{count}} model gone",
       "driftMissing_other": "{{count}} models gone",
       "refresh": "Refresh",
-      "retired": "Retired",
-      "drift": "Models"
+      "retired": "Retired"
     },
     "head": {
       "order": "Lower numbers are tried first; channels with the same number share traffic",

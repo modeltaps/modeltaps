@@ -888,7 +888,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                   key={key}
                   active={only === key}
                   onClick={() => setOnly(only === key ? '' : key)}
-                  icon={(key === 'gone' || key === 'new') && counts[key] > 0 ? <AlertTriangle className="size-3 text-warning" /> : null}
+                  icon={key === 'gone' && counts[key] > 0 ? <AlertTriangle className="size-3 text-warning" /> : null}
                   label={t(`channels.models.state.${key}`)}
                   count={counts[key]}
                 />
@@ -1013,7 +1013,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
           <div className="overflow-hidden rounded-lg border border-border">
             {flagStrip && (
               <div className="flex min-h-11 flex-wrap items-center gap-2 border-b border-border bg-muted/40 px-3 py-2 text-[13px]">
-                {only !== 'unlisted' && <AlertTriangle className="size-4 shrink-0 text-warning" />}
+                {only === 'gone' && <AlertTriangle className="size-4 shrink-0 text-warning" />}
                 <span className="text-foreground">{flagStrip.text}</span>
                 <div className="ml-auto flex items-center gap-1.5">{flagStrip.actions}</div>
               </div>

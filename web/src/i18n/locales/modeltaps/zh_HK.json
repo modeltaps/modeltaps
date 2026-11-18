@@ -2797,8 +2797,7 @@
       "driftNew_other": "{{count}} 個新模型",
       "driftMissing_other": "{{count}} 個模型下架",
       "refresh": "重新整理",
-      "retired": "已停服",
-      "drift": "模型變動"
+      "retired": "已停服"
     },
     "head": {
       "order": "先用數字小的；同號渠道一起分擔流量",

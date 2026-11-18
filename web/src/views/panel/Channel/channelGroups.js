@@ -73,8 +73,10 @@ export function flaggedMissingModels(channel) {
 }
 
 // Attention items of one channel, in display order. Each is { key, kind, channel, count? }:
-// retired (the provider has shut down the service), autoDisabled (status 3), keyMissing (no stored key), lowBalance, driftNew (models the
-// upstream added) and driftMissing (models the upstream no longer lists). `key` identifies the
+// retired (the provider has shut down the service), autoDisabled (status 3), keyMissing (no
+// stored key), lowBalance and driftMissing (listed models the upstream no longer serves, so
+// their requests fail). Models the upstream added are not an item: nothing breaks until someone
+// offers them, and the list shows them as plain news. `key` identifies the
 // item for dismissal and changes when the underlying data changes, so a dismissed item comes
 // back once there is something new to say.
 export function channelIssues(channel) {
@@ -85,10 +87,7 @@ export function channelIssues(channel) {
   if (channel.status === 3) push('autoDisabled', channel.test_time || 0);
   if (channel.key_status && !channel.key_status.configured) push('keyMissing', 0);
   if (hasLowBalance(channel)) push('lowBalance', channel.balance_updated_time);
-  const drift = channel.model_drift;
-  const added = drift?.new_models || [];
   const missing = flaggedMissingModels(channel);
-  if (added.length) push('driftNew', added.join(','), { count: added.length });
   if (missing.length) push('driftMissing', missing.join(','), { count: missing.length });
   return issues;
 }
@@ -137,7 +136,7 @@ export const ISSUE_FILTERS = ['any', 'lowBalance', 'keyMissing', 'drift'];
 function matchesIssue(channel, issue, dismissed) {
   const open = openIssues([channel], dismissed);
   if (issue === 'any') return open.length > 0;
-  if (issue === 'drift') return open.some((i) => i.kind === 'driftNew' || i.kind === 'driftMissing');
+  if (issue === 'drift') return open.some((i) => i.kind === 'driftMissing');
   return open.some((i) => i.kind === issue);
 }
 
