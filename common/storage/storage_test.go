@@ -7,11 +7,14 @@
 package storage_test
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/modeltaps/modeltaps/common/utils"
@@ -19,6 +22,9 @@ import (
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/common/storage/drives"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
@@ -94,4 +100,66 @@ func TestImgurUpload(t *testing.T) {
 	fmt.Println(url)
 	fmt.Println(err)
 	assert.Nil(t, err)
+}
+
+// TestS3SignedLink uploads to a private S3 compatible bucket (for example Cloudflare R2) without
+// a public URL and checks that the returned link is signed for an hour, that it fetches the
+// image, and that the same object without the signature is refused. The object is deleted after.
+// MODELTAPS_TEST_CONFIG=$PWD/.dev/r2-test.yaml go test -tags integration -run TestS3SignedLink -v ./common/storage/
+// (an absolute path: the test runs in the package directory).
+func TestS3SignedLink(t *testing.T) {
+	InitConfig()
+	endpoint := viper.GetString("storage.s3.endpoint")
+	bucket := viper.GetString("storage.s3.bucketName")
+	id, secret := viper.GetString("storage.s3.accessKeyId"), viper.GetString("storage.s3.accessKeySecret")
+	if endpoint == "" || bucket == "" || id == "" || secret == "" {
+		t.Skip("storage.s3 is not set in the test config")
+	}
+	up := drives.NewS3Upload(endpoint, viper.GetString("storage.s3.region"), id, secret, bucket, "", 0)
+	image, err := base64.StdEncoding.DecodeString(testImageB64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	key := "modeltaps-test/" + utils.GetUUID() + ".png"
+	link, err := up.Upload(image, key)
+	if !assert.Nil(t, err) {
+		return
+	}
+	u, err := url.Parse(link)
+	if !assert.Nil(t, err) {
+		return
+	}
+	t.Cleanup(func() {
+		svc := s3.New(s3.Options{
+			Credentials:  credentials.NewStaticCredentialsProvider(id, secret, ""),
+			BaseEndpoint: aws.String(endpoint),
+			Region:       up.Region,
+			UsePathStyle: true,
+		})
+		objectKey := strings.TrimPrefix(u.Path, "/"+bucket+"/")
+		if _, err := svc.DeleteObject(context.Background(), &s3.DeleteObjectInput{Bucket: aws.String(bucket), Key: aws.String(objectKey)}); err != nil {
+			t.Logf("deleting the test object %s failed: %v", objectKey, err)
+		}
+	})
+	assert.Equal(t, "3600", u.Query().Get("X-Amz-Expires"))
+	assert.NotEmpty(t, u.Query().Get("X-Amz-Signature"))
+
+	resp, err := http.Get(link)
+	if !assert.Nil(t, err) {
+		return
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode, string(body))
+	assert.Equal(t, image, body)
+
+	plain := *u
+	plain.RawQuery = ""
+	resp, err = http.Get(plain.String())
+	if !assert.Nil(t, err) {
+		return
+	}
+	resp.Body.Close()
+	assert.NotEqual(t, http.StatusOK, resp.StatusCode, "the bucket answered without a signature; make it private")
+	fmt.Println("signed link:", u.Scheme+"://"+u.Host+u.Path, "status ok, expires", u.Query().Get("X-Amz-Expires"), "s")
 }
