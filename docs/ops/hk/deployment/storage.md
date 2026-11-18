@@ -7,9 +7,19 @@ lastUpdated: true
 
 # 圖片儲存
 
-Cloudflare Workers AI、Stability AI 的圖片介面和 Gemini 的圖片輸出只返回圖片資料，不返回連結。設定圖片儲存後，Modeltaps 先把圖片上傳到儲存，再把連結返回給呼叫方；未設定時這些回應以 base64 返回：圖片介面給 `b64_json` 而不是 `url`，Gemini 的回覆裡直接嵌入 `data:image/png;base64,...`。只讀取圖片連結的用戶端會拿不到圖。
+Cloudflare Workers AI、Stability AI 的圖片介面和 Gemini 的圖片輸出只返回圖片資料，不返回連結。預設情況下，Modeltaps 把這些圖片暫存在網關自己這裡，返回本站位址下的臨時連結，不需要任何第三方儲存。也可以改用外部儲存；關閉後這些回應以 base64 返回：圖片介面給 `b64_json` 而不是 `url`，Gemini 的回覆裡直接嵌入 `data:image/png;base64,...`，只讀取圖片連結的用戶端會拿不到圖。
 
 OpenAI、Azure 等自己返回圖片連結的上游不經過圖片儲存。
+
+## 預設：本網關
+
+圖片保存在網關上，連結形如 `<伺服器地址>/media/<隨機名>.png`：
+
+- 1 小時後失效並自動刪除（每 10 分鐘清理一次）；
+- 每個連結最多下載 5 次，第 6 次起返回 `410`，連結無法被當作公開圖床轉發；
+- 單次下載限速 2 MB/s，每個節點同時最多 16 個下載，超出返回 `429`。
+
+連結使用 **平台管理 → 站點 → 伺服器地址**，必須填寫呼叫方能存取的位址。沒有 Redis 時檔案寫在數據目錄的 `data/media`（可用 `media_dir` 修改），只適合單節點；啟用 Redis 後圖片存在 Redis 裡並隨過期時間自動刪除，任一節點都能提供連結，多節點部署需要啟用 Redis。
 
 ## 在後台設定
 
@@ -17,10 +27,11 @@ OpenAI、Azure 等自己返回圖片連結的上游不經過圖片儲存。
 
 **測試上傳** 按表單目前內容上傳一張小圖並顯示連結和縮圖，不必先儲存。密鑰留空時只對已儲存的 endpoint、bucket 和 AccessKey ID 沿用已儲存的密鑰。
 
-同一時間只使用一個儲存：
+同一時間只使用一個儲存。外部儲存返回的是儲存自己的連結，不受上述下載次數和限速限制，也不會被網關刪除：
 
 | 儲存 | 必填 | 說明 |
 |---|---|---|
+| 本網關（預設） | 無 | 見上文 |
 | S3 相容儲存 | Endpoint、Bucket、AccessKey ID、AccessKey Secret | AWS S3、Cloudflare R2、MinIO、Backblaze B2 等 |
 | 阿里雲 OSS | Endpoint、Bucket、AccessKey ID、AccessKey Secret | 返回 1 小時內有效的簽名連結，bucket 可以保持私有 |
 | SM.MS | API Token | 免費圖床，圖片公開 |

@@ -12,6 +12,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/encryption"
 	"github.com/modeltaps/modeltaps/common/logger"
+	"github.com/modeltaps/modeltaps/common/media"
 	"github.com/modeltaps/modeltaps/common/notify"
 	"github.com/modeltaps/modeltaps/common/stmp"
 	"github.com/modeltaps/modeltaps/common/redis"
@@ -167,6 +168,7 @@ func main() {
 	}
 	// Older deployments set the image storage in the config file: move it into the settings.
 	model.MigrateImageStorageFromConfig()
+	media.StartCleanup()
 	search.InitSearcher()
 	// 初始化安全检查器
 	safty.InitSaftyTools()

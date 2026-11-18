@@ -7,9 +7,19 @@ lastUpdated: true
 
 # Image Storage
 
-The image APIs of Cloudflare Workers AI and Stability AI, and Gemini's image output, return image data instead of a link. With image storage set, Modeltaps uploads the image first and returns its link to the caller. Without it those responses carry base64: the image API answers with `b64_json` instead of `url`, and Gemini replies embed `data:image/png;base64,...` inline. Clients that only read the image URL get no image.
+The image APIs of Cloudflare Workers AI and Stability AI, and Gemini's image output, return image data instead of a link. By default Modeltaps keeps these images on the gateway itself and returns a temporary link on the site's own address, with no third-party storage. External storage can be used instead. Turned off, those responses carry base64: the image API answers with `b64_json` instead of `url`, and Gemini replies embed `data:image/png;base64,...` inline, so clients that only read the image URL get no image.
 
 Upstreams that return image links themselves, such as OpenAI and Azure, do not use image storage.
+
+## Default: this gateway
+
+Images are kept on the gateway, with links like `<server address>/media/<random name>.png`:
+
+- a link expires after 1 hour and the file is deleted (cleanup runs every 10 minutes);
+- each link can be downloaded 5 times; from the 6th on it answers `410`, so links cannot be passed around as a public image host;
+- each download runs at 2 MB/s, and a node serves at most 16 downloads at once, answering `429` beyond that.
+
+Links use **Platform admin → Site → Server address**, which must be an address callers can reach. Without Redis the files are written to `data/media` in the data directory (change it with `media_dir`), which suits a single node. With Redis the images are kept in Redis and expire there, so any node can serve any link; several nodes need Redis.
 
 ## Set it in the console
 
@@ -17,10 +27,11 @@ Choose a storage and fill in its fields under **Platform admin → Gateway setti
 
 **Test upload** uploads a small image with the form as it stands, saved or not, and shows its link and a thumbnail. With a secret left empty, the saved secret is reused only for the saved endpoint, bucket and access key ID.
 
-One storage is in use at a time:
+One storage is in use at a time. External storage returns its own links, which are not bound by the download and speed limits above and are not deleted by the gateway:
 
 | Storage | Required | Notes |
 |---|---|---|
+| This gateway (default) | Nothing | See above |
 | S3 compatible | Endpoint, bucket, access key ID, access key secret | AWS S3, Cloudflare R2, MinIO, Backblaze B2 and others |
 | Alibaba Cloud OSS | Endpoint, bucket, access key ID, access key secret | Returns signed links valid for 1 hour, so the bucket can stay private |
 | SM.MS | API token | Free image host; images are public |

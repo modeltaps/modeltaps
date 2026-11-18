@@ -3952,6 +3952,7 @@
         "provider": "Storage",
         "optional": "{{label}} (optional)",
         "providers": {
+          "local": "This gateway (default)",
           "off": "Off",
           "s3": "S3 compatible",
           "alioss": "Alibaba Cloud OSS",
@@ -3959,6 +3960,7 @@
           "imgur": "Imgur"
         },
         "providerHints": {
+          "local": "Kept on this gateway for 1 hour, at most 5 downloads per link, 2 MB/s per download. Several nodes need Redis so every node can serve every link.",
           "s3": "AWS S3, Cloudflare R2, MinIO, Backblaze B2 and other S3 compatible storage",
           "alioss": "Links are signed and stay valid for 1 hour, so the bucket can stay private",
           "smms": "Free image host; images are public",
@@ -4013,6 +4015,10 @@
           "button": "Test upload",
           "hint": "Uses the form as it is, saved or not",
           "ok": "Uploaded. The image should show below:"
+        },
+        "local": {
+          "address": "Links use the server address {{address}}.",
+          "changeAddress": "Change"
         }
       }
     },

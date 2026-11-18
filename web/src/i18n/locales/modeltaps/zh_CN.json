@@ -3845,6 +3845,7 @@
         "provider": "存储",
         "optional": "{{label}}（可选）",
         "providers": {
+          "local": "本网关（默认）",
           "off": "不启用",
           "s3": "S3 兼容存储",
           "alioss": "阿里云 OSS",
@@ -3852,6 +3853,7 @@
           "imgur": "Imgur"
         },
         "providerHints": {
+          "local": "图片暂存在本网关，链接 1 小时有效，每个链接最多下载 5 次，单次下载限速 2 MB/s。多节点部署需启用 Redis，任一节点才能提供链接。",
           "s3": "AWS S3、Cloudflare R2、MinIO、Backblaze B2 等 S3 兼容存储",
           "alioss": "返回带签名的链接，1 小时内有效，bucket 可以保持私有",
           "smms": "免费图床，图片公开可见",
@@ -3906,6 +3908,10 @@
           "button": "测试上传",
           "hint": "按表单当前内容测试，不必先保存",
           "ok": "上传成功，下面应能看到图片："
+        },
+        "local": {
+          "address": "链接使用服务器地址 {{address}}。",
+          "changeAddress": "修改"
         }
       }
     },

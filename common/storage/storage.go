@@ -1,6 +1,7 @@
 // Package storage uploads generated images (Cloudflare Workers AI, Stability AI, Gemini) to the
 // image storage set in the platform settings, so a request that asks for an image URL gets one.
-// With no storage set, Upload returns "" and callers answer with base64 instead.
+// By default the gateway keeps them itself for an hour (common/media). Turned off, Upload returns
+// "" and callers answer with base64 instead.
 package storage
 
 import (
@@ -11,6 +12,7 @@ import (
 
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
+	"github.com/modeltaps/modeltaps/common/media"
 	"github.com/modeltaps/modeltaps/common/storage/drives"
 )
 
@@ -20,7 +22,9 @@ type StorageDrive interface {
 }
 
 const (
-	ProviderNone   = ""
+	// ProviderLocal keeps images on the gateway for an hour (the default; "" means the same).
+	ProviderLocal  = "local"
+	ProviderOff    = "off"
 	ProviderS3     = "s3"
 	ProviderAliOSS = "alioss"
 	ProviderSMMS   = "smms"
@@ -30,7 +34,7 @@ const (
 // ValidProvider reports whether p is a provider the settings accept ("" turns storage off).
 func ValidProvider(p string) bool {
 	switch p {
-	case ProviderNone, ProviderS3, ProviderAliOSS, ProviderSMMS, ProviderImgur:
+	case "", ProviderLocal, ProviderOff, ProviderS3, ProviderAliOSS, ProviderSMMS, ProviderImgur:
 		return true
 	}
 	return false
@@ -107,7 +111,9 @@ func filled(values ...string) bool {
 // Drive builds the uploader for the settings, or says what is missing.
 func (s Settings) Drive() (StorageDrive, error) {
 	switch s.Provider {
-	case ProviderNone:
+	case "", ProviderLocal:
+		return gatewayDrive{}, nil
+	case ProviderOff:
 		return nil, ErrStorageOff
 	case ProviderS3:
 		c := s.S3
@@ -140,6 +146,13 @@ func (s Settings) Drive() (StorageDrive, error) {
 	}
 	return nil, ErrStorageProvider
 }
+
+// gatewayDrive keeps the image on the gateway (common/media).
+type gatewayDrive struct{}
+
+func (gatewayDrive) Name() string { return "Gateway" }
+
+func (gatewayDrive) Upload(data []byte, _ string) (string, error) { return media.Put(data) }
 
 // UploadWith uploads data with the given settings and returns the image URL.
 func UploadWith(s Settings, data []byte, fileName string) (string, error) {

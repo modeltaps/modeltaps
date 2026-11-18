@@ -3,6 +3,8 @@ package storage
 import (
 	"errors"
 	"testing"
+
+	"github.com/modeltaps/modeltaps/common/config"
 )
 
 func TestSettingsDrive(t *testing.T) {
@@ -12,7 +14,9 @@ func TestSettingsDrive(t *testing.T) {
 		want error
 		kind string
 	}{
-		{"off", Settings{}, ErrStorageOff, ""},
+		{"default is the gateway", Settings{}, nil, "Gateway"},
+		{"local", Settings{Provider: ProviderLocal}, nil, "Gateway"},
+		{"off", Settings{Provider: ProviderOff}, ErrStorageOff, ""},
 		{"unknown", Settings{Provider: "ftp"}, ErrStorageProvider, ""},
 		{"s3 missing secret", Settings{Provider: ProviderS3, S3: S3Settings{Endpoint: "https://s3.us-east-1.amazonaws.com", AccessKeyId: "id", BucketName: "b"}}, ErrStorageIncomplete, ""},
 		{"s3", Settings{Provider: ProviderS3, S3: S3Settings{Endpoint: "https://s3.us-east-1.amazonaws.com", AccessKeyId: "id", AccessKeySecret: "k", BucketName: "b"}}, nil, "S3"},
@@ -35,6 +39,9 @@ func TestSettingsDrive(t *testing.T) {
 }
 
 func TestUploadIsEmptyWhenOff(t *testing.T) {
+	saved := config.ImageStorageProvider
+	config.ImageStorageProvider = ProviderOff
+	t.Cleanup(func() { config.ImageStorageProvider = saved })
 	if url := Upload([]byte("x"), "a.png"); url != "" {
 		t.Fatalf("Upload with storage off = %q, want empty", url)
 	}

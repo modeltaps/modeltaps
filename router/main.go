@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
+	"github.com/modeltaps/modeltaps/common/media"
 	"github.com/modeltaps/modeltaps/middleware"
 	"embed"
 	"fmt"
@@ -15,6 +16,8 @@ import (
 )
 
 func SetRouter(router *gin.Engine, buildFS embed.FS, indexPage []byte) {
+	// Generated media the gateway keeps for an hour (common/media); public, served on every node.
+	router.GET("/media/:name", media.Serve)
 	SetApiRouter(router)
 	SetDashboardRouter(router)
 	SetRelayRouter(router)

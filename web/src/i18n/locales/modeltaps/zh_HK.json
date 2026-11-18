@@ -3845,6 +3845,7 @@
         "provider": "儲存",
         "optional": "{{label}}（可選）",
         "providers": {
+          "local": "本網關（預設）",
           "off": "不啟用",
           "s3": "S3 相容儲存",
           "alioss": "阿里雲 OSS",
@@ -3852,6 +3853,7 @@
           "imgur": "Imgur"
         },
         "providerHints": {
+          "local": "圖片暫存在本網關，連結 1 小時有效，每個連結最多下載 5 次，單次下載限速 2 MB/s。多節點部署需啟用 Redis，任一節點才能提供連結。",
           "s3": "AWS S3、Cloudflare R2、MinIO、Backblaze B2 等 S3 相容儲存",
           "alioss": "返回帶簽名的連結，1 小時內有效，bucket 可以保持私有",
           "smms": "免費圖床，圖片公開可見",
@@ -3906,6 +3908,10 @@
           "button": "測試上傳",
           "hint": "按表單目前內容測試，不必先儲存",
           "ok": "上傳成功，下面應能看到圖片："
+        },
+        "local": {
+          "address": "連結使用伺服器地址 {{address}}。",
+          "changeAddress": "修改"
         }
       }
     },

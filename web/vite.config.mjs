@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => {
   // Backend paths the dev server forwards: the panel API plus every relay entry point, so API
   // clients can also point at the dev server (the token test dialog and the built-in console
   // call /v1, /claude and /gemini directly; coding agents use /claude-code, /codex and
-  // /coding-agent).
+  // /coding-agent). /media serves the generated images the gateway keeps for an hour.
   const backendProxy = Object.fromEntries(
     [
       '/api',
@@ -62,6 +62,7 @@ export default defineConfig(({ mode }) => {
       '/suno',
       '/kling',
       '/recraftAI',
+      '/media',
       '/mcp',
       '/dashboard',
       '/llms.txt',
