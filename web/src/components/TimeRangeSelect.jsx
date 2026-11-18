@@ -216,7 +216,7 @@ export default function TimeRangeSelect({ value, preset, minTimestamp = 0, onApp
         onClick={() => (open ? close() : setOpen(true))}
         aria-label={t('logPage.timeRange')}
         aria-expanded={open}
-        className="inline-flex h-9 max-w-[300px] items-center gap-2 rounded-md border border-input bg-field px-2.5 text-sm text-foreground transition-colors hover:bg-muted"
+        className="inline-flex h-9 max-w-[300px] items-center gap-2 rounded-md border border-input bg-field px-2.5 text-sm text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:border-primary aria-expanded:border-primary"
       >
         <span className={cn(badgeCls, 'min-w-[30px]')}>{isPreset ? badge : <SlidersHorizontal className="size-3" />}</span>
         <span className="truncate">{triggerText}</span>

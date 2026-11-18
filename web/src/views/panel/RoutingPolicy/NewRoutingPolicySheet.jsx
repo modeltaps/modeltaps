@@ -3,11 +3,10 @@ import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { Split } from 'lucide-react';
 
-import { Input } from '@/components/ui/input';
 import { NewObjectSheet, Field, ObjectTile } from '@/components/objects';
 import { showError } from 'utils/common';
 import { EMPTY_POLICY, normalizePolicy } from './routingPolicyApi';
-import { missingFields } from './policyFields';
+import { PolicyNameInput, missingFields } from './policyFields';
 import { applyTemplate, suggestFallbackChain, templateName } from './templates';
 import RoutingMap, { FallbackChain, PolicyTypeSwitch, TemplateBar } from './RoutingMap';
 
@@ -108,13 +107,13 @@ export default function NewRoutingPolicySheet({ api, modelOptions, classifiers, 
           help={t('routingPolicy.form.nameHelp')}
           className="py-0"
         >
-          <Input
+          <PolicyNameInput
             id="rp-new-name"
             autoFocus
-            className="font-mono text-[13px]"
+            callPrefix={api.callPrefix}
             placeholder={fallback ? (api.callPrefix ? 'steady' : 'auto/steady') : api.callPrefix ? 'coder' : 'auto/coder'}
             value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            onChange={(v) => setForm((f) => ({ ...f, name: v }))}
           />
         </Field>
         {fallback ? (

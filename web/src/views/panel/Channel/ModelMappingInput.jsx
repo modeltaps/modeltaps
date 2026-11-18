@@ -82,7 +82,7 @@ export default function ModelMappingInput({ value, onChange, models = [] }) {
         {rows.map((row, index) => (
           <div key={index} className="flex items-center gap-2">
             <ModelCombobox
-              className={`flex-1${isDup(row.from) ? ' [&>input]:border-destructive [&>input]:focus:ring-destructive' : ''}`}
+              className={`flex-1${isDup(row.from) ? ' [&>input]:border-destructive [&>input]:focus:border-destructive' : ''}`}
               value={row.from}
               options={fromOptions}
               createLabel={createLabel}

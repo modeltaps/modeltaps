@@ -83,7 +83,7 @@ export default function ProviderStrip({ groups, selected, onSelect, dismissed, q
           placeholder={t('channels.search.short')}
           aria-label={t('channels.search.placeholder')}
           title={t('channels.search.placeholder')}
-          className="h-8 w-full rounded-lg border border-input bg-field pl-8 pr-3 text-[13px] outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          className="h-8 w-full rounded-lg border border-input bg-field pl-8 pr-3 text-[13px] outline-none placeholder:text-muted-foreground focus-visible:border-primary"
         />
       </div>
       <div className="w-36 shrink-0">

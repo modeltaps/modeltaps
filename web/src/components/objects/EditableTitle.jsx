@@ -82,7 +82,7 @@ function TitleInput({ value, onDone, onSave, label }) {
             finish(false);
           }
         }}
-        className="-mx-1.5 h-7 w-full min-w-0 rounded-md border border-input bg-field px-1.5 text-base font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="-mx-1.5 h-7 w-full min-w-0 rounded-md border border-input bg-field px-1.5 text-base font-medium outline-none focus-visible:border-primary"
       />
       {saving && <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />}
     </span>

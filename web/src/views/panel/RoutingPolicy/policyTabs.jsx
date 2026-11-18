@@ -7,7 +7,7 @@ import { Field, InfoRow, InfoRows, Section } from '@/components/objects';
 import StatsPanel from './StatsPanel';
 import TryItPanel from './TryItPanel';
 import { normalizePolicy } from './routingPolicyApi';
-import { NumberField, ScoringField, isDecisionClassifier, missingFields } from './policyFields';
+import { NumberField, PolicyNameInput, ScoringField, isDecisionClassifier, missingFields } from './policyFields';
 import { applyTemplate } from './templates';
 import RoutingMap, { FallbackChain, TemplateMenu } from './RoutingMap';
 
@@ -149,7 +149,7 @@ function SettingsBody({ draft, setDraft, ctx }) {
         hint={t(ctx.api?.callPrefix ? 'routingPolicy.form.nameHintOwn' : 'routingPolicy.form.nameHint')}
         help={t('routingPolicy.form.nameHelp')}
       >
-        <Input id="rp-name" className="font-mono text-[13px]" value={draft.name} onChange={(e) => set('name')(e.target.value)} />
+        <PolicyNameInput id="rp-name" callPrefix={ctx.api?.callPrefix} value={draft.name} onChange={set('name')} />
       </Field>
       <Field label={t('routingPolicy.form.displayName')} htmlFor="rp-display-name" hint={t('routingPolicy.form.displayNameHint')} optional>
         <Input id="rp-display-name" maxLength={100} value={draft.display_name} onChange={(e) => set('display_name')(e.target.value)} />

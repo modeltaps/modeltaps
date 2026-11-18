@@ -1907,7 +1907,7 @@
     },
     "form": {
       "name": "模型名",
-      "nameHint": "客戶端填在 model 欄位裏的名字，如 auto/coder。",
+      "nameHint": "客戶端在 model 欄位裡直接寫這個名字，不加 policy/，例如 auto/coder。",
       "nameHelp": "只能用字母、數字和 . _ / -，最多 100 個字元，不能以 / 開頭或結尾，不能與已有模型重名。它會出現在 /v1/models 裏，也能像普通模型一樣加進令牌和組織白名單。",
       "displayName": "顯示名",
       "displayNameHint": "目錄裏代替模型名顯示。",
@@ -1958,7 +1958,7 @@
       "tabTry": "試一試",
       "enabled": "啟用",
       "enabledHint": "停用的策略不進模型列表，請求它會得到 model_not_found。",
-      "nameHintOwn": "呼叫時 model 寫 policy/<這個名字>，如 policy/coder。"
+      "nameHintOwn": "客戶端呼叫時寫 policy/ 加這個名字，例如 policy/coder；名字裡不用再寫 policy/。"
     },
     "templates": {
       "coding_change": {

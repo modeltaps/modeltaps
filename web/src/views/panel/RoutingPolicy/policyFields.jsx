@@ -139,3 +139,37 @@ ScoringField.propTypes = {
   decisionModel: PropTypes.string,
   api: PropTypes.object
 };
+
+// PolicyNameInput: the policy's name. Own (organization or personal) policies are called as
+// policy/<name>, so the prefix sits in front of the field, fixed; platform policies are called by
+// the bare name.
+export function PolicyNameInput({ id, callPrefix, value, onChange, placeholder, autoFocus }) {
+  const input = (
+    <Input
+      id={id}
+      autoFocus={autoFocus}
+      className={callPrefix ? 'rounded-l-none font-mono text-[13px]' : 'font-mono text-[13px]'}
+      placeholder={placeholder}
+      value={value || ''}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
+  if (!callPrefix) return input;
+  return (
+    <div className="flex">
+      <span className="flex h-9 shrink-0 items-center rounded-l-lg border border-r-0 border-input bg-muted px-3 font-mono text-[13px] text-muted-foreground">
+        {callPrefix}
+      </span>
+      {input}
+    </div>
+  );
+}
+
+PolicyNameInput.propTypes = {
+  id: PropTypes.string.isRequired,
+  callPrefix: PropTypes.string,
+  value: PropTypes.string,
+  onChange: PropTypes.func.isRequired,
+  placeholder: PropTypes.string,
+  autoFocus: PropTypes.bool
+};

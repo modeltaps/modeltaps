@@ -1985,7 +1985,7 @@
     },
     "form": {
       "name": "Model name",
-      "nameHint": "What clients put in the model field, e.g. auto/coder.",
+      "nameHint": "Clients put this name in the model field as is, without policy/, e.g. auto/coder.",
       "nameHelp": "Letters, digits and . _ / - only, up to 100 characters, not starting or ending with /. It must not collide with an existing model. The name shows up in /v1/models and can be used in token and organization allow lists like any model.",
       "displayName": "Display name",
       "displayNameHint": "Shown in the catalog instead of the model name.",
@@ -2036,7 +2036,7 @@
       "tabTry": "Try it",
       "enabled": "Enabled",
       "enabledHint": "Disabled policies are not listed and requests to them get model_not_found.",
-      "nameHintOwn": "Call it with model set to policy/<this name>, e.g. policy/coder."
+      "nameHintOwn": "Clients call it as policy/ plus this name, e.g. policy/coder; the name itself leaves policy/ out."
     },
     "templates": {
       "coding_change": {

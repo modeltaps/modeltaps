@@ -195,7 +195,7 @@ export default function SettingsPage({ label, groups, activeGroupId, hideNav = f
           <button
             type="button"
             onClick={search.openSearch}
-            className="mb-2 flex h-9 w-full items-center gap-2.5 rounded-lg border border-border bg-field px-3 text-sm text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:mb-0"
+            className="mb-2 flex h-9 w-full items-center gap-2.5 rounded-lg border border-border bg-field px-3 text-sm text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground focus-visible:outline-none focus-visible:border-primary md:mb-0"
           >
             <Search className="size-4 shrink-0" />
             <span className="flex-1 text-left">{t('settingsUi.search.placeholder')}</span>

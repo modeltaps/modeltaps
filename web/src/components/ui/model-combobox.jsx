@@ -1,5 +1,7 @@
 import * as React from 'react';
 import PropTypes from 'prop-types';
+import { Check, ChevronDown } from 'lucide-react';
+
 import { cn } from '@/lib/utils';
 import { FloatingPanel } from '@/components/ui/floating';
 import { matchesSearch } from 'utils/textSearch';
@@ -37,6 +39,8 @@ export function ModelCombobox({
 }) {
   const [open, setOpen] = React.useState(false);
   const [active, setActive] = React.useState(0);
+  // The value only filters the list once the user types: opening a filled picker lists every option.
+  const [typed, setTyped] = React.useState(false);
   const rootRef = React.useRef(null);
   const inputRef = React.useRef(null);
   const panelRef = React.useRef(null);
@@ -54,21 +58,28 @@ export function ModelCombobox({
 
   const q = (value || '').trim();
   const ql = q.toLowerCase();
+  const filter = typed ? q : '';
   const sections = groups || [{ label: null, options: flatOptions }];
   const options = sections.flatMap((g) => g.options);
   const hasExact = options.some((o) => o && o.toLowerCase() === ql);
-  const showCreate = allowCreate && q !== '' && !hasExact;
+  const showCreate = allowCreate && typed && q !== '' && !hasExact;
 
   // Headings are drawn above a group's first row; only option and create rows are selectable.
   const rows = [...(showCreate ? [{ type: 'create', value: q }] : [])];
   for (const group of sections) {
-    const matched = group.options.filter((o) => o && matchesSearch(q, o));
+    const matched = group.options.filter((o) => o && matchesSearch(filter, o));
     matched.forEach((o, i) => rows.push({ type: 'option', value: o, heading: i === 0 ? group.label : null }));
   }
 
+  // An untyped list starts on the current value; a typed one on its best match.
+  const selectedIndex = typed ? -1 : rows.findIndex((r) => r.type === 'option' && r.value === value);
   React.useEffect(() => {
-    setActive(0);
-  }, [value, open]);
+    setActive(selectedIndex > 0 ? selectedIndex : 0);
+  }, [value, open, selectedIndex]);
+
+  React.useEffect(() => {
+    if (!open) setTyped(false);
+  }, [open]);
 
   const commit = (v) => {
     if (onSelect) onSelect(v);
@@ -112,15 +123,32 @@ export function ModelCombobox({
         placeholder={placeholder}
         onChange={(e) => {
           onChange(e.target.value);
+          setTyped(true);
           if (!open) setOpen(true);
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
         className={cn(
-          'flex h-9 w-full rounded-lg border border-input bg-field px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+          'flex h-9 w-full rounded-lg border border-input bg-field px-3 py-2 text-sm pr-8 placeholder:text-muted-foreground focus:outline-none focus:border-primary disabled:cursor-not-allowed disabled:opacity-50',
           inputClassName
         )}
       />
+      {/* The arrow says the field is a picker; it opens the list (focusing the input) or closes it. */}
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-hidden="true"
+        disabled={disabled}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          if (open) setOpen(false);
+          else if (document.activeElement === inputRef.current) setOpen(true);
+          else inputRef.current?.focus();
+        }}
+        className="absolute inset-y-0 right-0 flex w-8 items-center justify-center text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none"
+      >
+        <ChevronDown className={cn('size-4 transition-transform', open && 'rotate-180')} />
+      </button>
       <FloatingPanel
         ref={panelRef}
         open={open && rows.length > 0}
@@ -152,7 +180,10 @@ export function ModelCombobox({
                 i === active && 'bg-muted'
               )}
             >
-              {row.type === 'create' ? (createLabel ? createLabel(row.value) : `"${row.value}"`) : row.value}
+              <span className="min-w-0 flex-1 truncate">
+                {row.type === 'create' ? (createLabel ? createLabel(row.value) : `"${row.value}"`) : row.value}
+              </span>
+              {row.type === 'option' && row.value === value && <Check className="ml-2 size-4 shrink-0 text-muted-foreground" />}
             </button>
           </React.Fragment>
         ))}

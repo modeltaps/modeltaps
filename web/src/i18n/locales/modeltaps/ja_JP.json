@@ -1901,7 +1901,7 @@
     },
     "form": {
       "name": "モデル名",
-      "nameHint": "クライアントが model フィールドに指定する名前。例: auto/coder",
+      "nameHint": "クライアントは model フィールドにこの名前をそのまま書きます（policy/ は付けません）。例：auto/coder",
       "nameHelp": "使えるのは英数字と . _ / - のみ、最大 100 文字、先頭と末尾に / は不可、既存モデルと重複不可。/v1/models に表示され、通常のモデルと同様にトークンや組織の許可リストにも追加できます。",
       "displayName": "表示名",
       "displayNameHint": "カタログでモデル名の代わりに表示されます。",
@@ -1952,7 +1952,7 @@
       "tabTry": "試す",
       "enabled": "有効",
       "enabledHint": "無効なポリシーはモデル一覧に出ず、リクエストは model_not_found になります。",
-      "nameHintOwn": "model に policy/<この名前>（例: policy/coder）を指定して呼び出します。"
+      "nameHintOwn": "クライアントは policy/ にこの名前を付けて呼び出します。例：policy/coder。名前自体には policy/ を含めません。"
     },
     "templates": {
       "coding_change": {

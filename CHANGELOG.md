@@ -93,6 +93,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Model pickers show a dropdown arrow, list every model when opened (typing filters them) and mark
+  the current one. Selects, comboboxes, model pickers and search fields now show focus by brightening
+  their border, like text inputs, instead of a ring around them.
+- Own routing policies show the fixed `policy/` prefix in front of the name field, and the name hints
+  say which policies are called with it.
 - The platform admin page and the settings card formerly called Auto routing are now called Routing
   policies, since they hold fallback policies as well.
 - The price check for new supplies compares a supply's cost with what the price brings in (the
