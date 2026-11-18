@@ -104,6 +104,9 @@ func registerOptions() {
 	config.GlobalOption.RegisterBool("GitHubOAuthEnabled", &config.GitHubOAuthEnabled, config.ScopePublic, config.PublicSpec{StatusKey: "github_oauth"})
 	config.GlobalOption.RegisterBool("WeChatAuthEnabled", &config.WeChatAuthEnabled, config.ScopePublic, config.PublicSpec{StatusKey: "wechat_login"})
 	config.GlobalOption.RegisterBool("LarkAuthEnabled", &config.LarkAuthEnabled, config.ScopePublic, config.PublicSpec{StatusKey: "lark_login"})
+	// The Lark app the sign-in uses; /api/status sends the App ID itself (lark_client_id).
+	config.GlobalOption.RegisterString("LarkClientId", &config.LarkClientId, config.ScopeAdmin)
+	config.GlobalOption.RegisterString("LarkClientSecret", &config.LarkClientSecret, config.ScopeSecret)
 	// OIDCAuthEnabled 已由 oidc_providers 表取代（/api/status 的 oidc_auth 由启用行数算出）。
 	// 仍注册是为了让存量 options 行有归属、迁移可重跑；scope 降为 admin，不再对外下发。
 	config.GlobalOption.RegisterBool("OIDCAuthEnabled", &config.OIDCAuthEnabled, config.ScopeAdmin)
@@ -376,7 +379,14 @@ func registerOptions() {
 	config.GlobalOption.RegisterCustom("SafeKeyWords", func() string {
 		return strings.Join(config.SafeKeyWords, "\n")
 	}, func(value string) error {
-		config.SafeKeyWords = strings.Split(value, "\n")
+		// Blank lines are dropped: an empty keyword is in every text and would block every request.
+		var words []string
+		for _, line := range strings.Split(value, "\n") {
+			if word := strings.TrimSpace(line); word != "" {
+				words = append(words, word)
+			}
+		}
+		config.SafeKeyWords = words
 		return nil
 	}, "", config.ScopePublic, config.PublicSpec{StatusValue: func() any { return config.SafeKeyWords }})
 

@@ -226,11 +226,9 @@ export function PricingCard({ ctx }) {
           id="PaymentCostPercent"
           type="number"
           unit="%"
-          label={f('payment.label')}
           value={inputs.PaymentCostPercent}
           onChange={(v) => setField('PaymentCostPercent', v)}
           placeholder="4"
-          description={f('payment.description')}
         />
         <TextRow
           id="PricingTryRatio"

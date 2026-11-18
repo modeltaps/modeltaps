@@ -1,0 +1,115 @@
+{
+  "settingsCatalog": {
+    "ServerAddress": {
+      "label": "服务器地址",
+      "description": "用户访问本站用的公开地址，服务器拼出的每个链接和回调都以它开头。登录回调、邮件和 Telegram 回复里的链接、支付回调、生成图片的链接和文档示例都用它，CSRF 校验也认它的来源。按用户输入的样子填写协议和域名，保存时会去掉末尾的斜杠。默认的 http://localhost:3000 只在服务器本机可用。通行密钥绑定在它的域名上：换域名后用户需要重新注册通行密钥。",
+      "examples": ["重置密码邮件链接到 https://api.example.com/user/reset，OIDC 提供方回调到 https://api.example.com/oauth/oidc/<slug>。"],
+      "keywords": ["域名", "站点地址", "公网地址", "回调地址", "网址"]
+    },
+    "SystemName": {
+      "label": "站点名称",
+      "description": "显示在页面标题、控制台顶部和邮件里的站点名称。支付订单描述、身份验证器 App、通行密钥提示和通知 Webhook 里也用它称呼本站。留空显示 Modeltaps。",
+      "keywords": ["系统名称", "品牌", "标题", "站名"]
+    },
+    "Logo": {
+      "label": "Logo 地址",
+      "description": "显示在每封邮件顶部、退出登录页和设备授权页上的图片。请用 https 绝对地址，邮件客户端才能加载。留空时这些页面显示内置标志，邮件不带图片。",
+      "examples": ["邮件正文上方显示 130 px 宽的 Logo；退出登录页用它代替内置标志。"],
+      "keywords": ["品牌", "图片", "图标", "标志"]
+    },
+    "HomePageContent": {
+      "label": "首页内容",
+      "description": "用你自己的内容代替内置首页。以 http:// 或 https:// 开头的值会以整页内嵌框架显示；其他内容按 Markdown 渲染，以标签开头时按 HTML 渲染（会先做安全过滤）。留空保留内置首页。",
+      "examples": ["首页在站点顶栏下以整页框架显示你的官网。", "首页显示一个标题和一行文字。"],
+      "keywords": ["首页", "落地页", "iframe", "Markdown"]
+    },
+    "About": {
+      "label": "关于页面",
+      "description": "「关于」页面的内容。以 http:// 或 https:// 开头的值会以整页内嵌框架显示；其他内容按 Markdown 渲染，以标签开头时按 HTML 渲染（会先做安全过滤）。留空显示内置的关于文字和项目链接。",
+      "examples": ["关于页显示这两句话。"],
+      "keywords": ["关于我们", "联系方式", "公司介绍", "Markdown"]
+    },
+    "Footer": {
+      "label": "页脚",
+      "description": "替换公开页面页脚的 HTML，显示前会做安全过滤。留空显示带版权和文档链接的默认页脚。设置了自定义页脚后，首页也改由控制台应用渲染，不再用预先生成的静态页。",
+      "examples": ["每个公开页面底部显示这一行，代替默认页脚。"],
+      "keywords": ["版权", "页脚 HTML", "备案", "ICP"]
+    },
+    "AnalyticsCode": {
+      "label": "统计代码",
+      "description": "加到每个页面 head 里的 HTML，用于 Google Analytics、Umami、Plausible 等统计脚本。它对每个访客运行、能访问整个页面，只粘贴你信任的服务商给的代码。留空不加任何内容。",
+      "examples": ["Umami 统计控制台和公开页面的访问量。"],
+      "keywords": ["统计", "Google Analytics", "Umami", "Plausible", "埋点", "脚本"]
+    },
+    "BrandIconSyncEnabled": {
+      "label": "自动同步图标库",
+      "description": "每 24 小时从 npm registry 检查厂商与渠道图标库有没有新版本，校验通过后切换。检查失败时继续用当前图标。关闭则一直用本版本内置的图标。每个节点各自同步；浏览器始终只从本站加载图标。",
+      "keywords": ["lobehub", "图标", "供应商图标", "厂商 Logo", "npm"]
+    },
+    "BrandIconRegistry": {
+      "label": "图标库 registry",
+      "description": "同步图标库时下载用的 npm registry。填 http 或 https 地址，不带查询参数；末尾的斜杠会被去掉。留空使用 https://registry.npmmirror.com。",
+      "examples": ["从官方 npm registry 下载图标库。", "默认镜像，在中国大陆访问更快。"],
+      "keywords": ["npm 源", "镜像", "npmmirror", "图标"]
+    },
+    "BrandIconFaviconFetchEnabled": {
+      "label": "抓取未知厂商图标",
+      "description": "保存没有内置图标的厂商或渠道时，由服务器抓取其网站的 favicon 并缓存。浏览器仍然只从本站加载图标。关闭则这些厂商没有抓取的图标。",
+      "keywords": ["favicon", "图标", "厂商 Logo", "供应商图标"]
+    },
+    "DisplayInCurrencyEnabled": {
+      "label": "以美元显示金额",
+      "description": "在控制台、日志和 Billing API 里把余额、额度和费用显示为美元金额（额度 ÷ 每美元额度）。关闭则显示原始额度数值。只改变显示，不改变扣费。",
+      "examples": ["按默认的每美元 500000 额度，1,000,000 额度的余额显示为 $2.00。", "同一笔余额显示为 1,000,000。"],
+      "keywords": ["货币", "美元", "USD", "额度显示", "余额"]
+    },
+    "DisplayTokenStatEnabled": {
+      "label": "Billing API 按 API Key 报额度",
+      "description": "Billing API 返回调用方 API Key 的额度，而不是用户余额。指的是 OpenAI 风格的 /v1/dashboard/billing/subscription 和 /usage 接口。不限额度的 Key 仍返回用户余额，组织的 Key 始终返回它自己的额度。关闭则始终返回用户余额。",
+      "keywords": ["Billing API", "令牌额度", "API Key 额度", "subscription 接口", "usage 接口"]
+    },
+    "QuotaPerUnit": {
+      "label": "每美元额度",
+      "description": "1 美元等于多少额度，额度和美元之间的所有换算都用它。充值 $1 入账这么多额度；控制台、日志和 Billing API 里的美元金额都是额度除以它。余额按额度存储，在运行中的站点上改它会改变每一笔余额的价值：除非是新站点，请保持 500000。",
+      "examples": [
+        "默认值：充值 $10 入账 5,000,000 额度，1,000 额度等于 $0.002。",
+        "在运行中的站点上，一笔 5,000,000 额度的余额从 $10 变成 $5。"
+      ],
+      "keywords": ["单位额度", "额度", "汇率", "积分", "换算"]
+    },
+    "DefaultLanguage": {
+      "label": "默认语言",
+      "description": "不知道对方用什么语言时使用的语言：邮件用它发送，浏览器语言不受支持时首页也用它。在控制台里选过语言的用户按自己的语言。邮件模板编辑器也默认打开这个语言。留空表示英语。",
+      "enum": {
+        "en_US": { "label": "英语" },
+        "zh_CN": { "label": "简体中文" },
+        "zh_HK": { "label": "繁体中文（香港）" },
+        "ja_JP": { "label": "日语" }
+      },
+      "keywords": ["语言", "地区", "多语言", "邮件语言"]
+    },
+    "TopUpLink": {
+      "label": "充值链接",
+      "description": "用户购买兑换码的外部商店，从充值页在新标签页打开。留空则隐藏这个按钮。",
+      "examples": ["充值页在兑换码输入框下方显示一个按钮，点开就是这个商店。"],
+      "keywords": ["充值", "购买", "发卡", "兑换码", "商店"]
+    },
+    "ChatLink": {
+      "label": "聊天链接（旧版）",
+      "description": "旧版本留下的单个聊天客户端地址，为从站点状态读取它的客户端保留。控制台不会链接到它；请改在「聊天链接」里列出聊天客户端。留空则不发布。",
+      "keywords": ["聊天客户端", "网页聊天"]
+    },
+    "DocsLink": {
+      "label": "文档链接",
+      "description": "站点文档所在的地址，页脚、账户菜单和 API 页面都会链接到它。/llms.txt 和智能体技能文件也指向它。留空则隐藏外部文档链接；已登录用户仍能看到控制台内置文档。",
+      "examples": ["每个 API 页面链接到 https://docs.example.com 下对应的页面。"],
+      "keywords": ["文档", "帮助", "说明", "llms.txt"]
+    },
+    "Notice": {
+      "label": "公告",
+      "description": "在控制台顶部给已登录用户显示的横幅，每个用户查看或关闭后不再出现。内容一改就会重新显示。支持 Markdown 和 HTML。留空表示没有公告。",
+      "examples": ["每个已登录用户看到一次横幅；修改内容后所有人会再看到一次。"],
+      "keywords": ["公告", "横幅", "通知", "维护"]
+    }
+  }
+}

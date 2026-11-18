@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import SettingsPage from '@/components/settings/SettingsPage';
 import { useIsAdmin, useIsRoot } from 'utils/common';
 import useHighlightTarget from 'hooks/useHighlightTarget';
-import { useOptionSettings } from './parts';
+import { SettingsMetaContext, useOptionSettings } from './parts';
 import { groupDescriptionKey, groupLabelKey, resolveSettingsTarget, settingsGroupUrl, tabLabelKey, visibleGroups } from './registry';
 import { BrandingCard, DisplayCard, ExternalLinksCard, ServerAddressCard, SiteLanguageCard, VersionNoticeCard } from './cards/SiteCards';
 import {
@@ -43,6 +43,7 @@ import { SmtpCard } from './cards/MailCard';
 import { MailTemplatesCard } from './cards/MailTemplatesCard';
 import { MailLogsCard, NotifyLogsCard } from './cards/MessageLogCard';
 import { OrgPolicyCard } from './cards/OrgPolicyCards';
+import { ModifiedSettingsCard } from './cards/ModifiedSettingsCard';
 import { workbench } from 'routes/paths';
 
 // ==============================|| PANEL — PLATFORM SETTINGS (admin) ||============================== //
@@ -103,7 +104,8 @@ const CARD_COMPONENTS = {
   'builtin-chat': BuiltinChatCard,
   'chat-links': ChatLinksCard,
   'mj-notify': MjNotifyCard,
-  'org-policy': OrgPolicyCard
+  'org-policy': OrgPolicyCard,
+  'modified-settings': ModifiedSettingsCard
 };
 
 export default function Setting() {
@@ -133,9 +135,13 @@ export default function Setting() {
     tabs: group.tabs?.map((id) => ({ id, label: t(tabLabelKey(id)) })),
     cards: group.cards.map((card) => {
       const Component = CARD_COMPONENTS[card.id];
-      return { id: card.id, tab: card.tab, render: () => <Component ctx={ctx} /> };
+      return { id: card.id, tab: card.tab, keys: card.keys, render: () => <Component ctx={ctx} /> };
     })
   }));
 
-  return <SettingsPage label={t('settingsUi.platform.label')} groups={groups} activeGroupId={section} hideNav />;
+  return (
+    <SettingsMetaContext.Provider value={{ defaults: ctx.defaults, origin: ctx.origin }}>
+      <SettingsPage label={t('settingsUi.platform.label')} groups={groups} activeGroupId={section} hideNav />
+    </SettingsMetaContext.Provider>
+  );
 }

@@ -13,7 +13,7 @@ import PaymentIcon from '../../Payment/PaymentIcon';
 import PaymentSheet from '../../Payment/PaymentSheet';
 import ConfirmDialog from '../../Payment/ConfirmDialog';
 import { fetchGateways, gatewayTypeLabel, managePayment } from '../../Payment/paymentApi';
-import { CollapsibleHelp, TextRow } from '../parts';
+import { TextRow } from '../parts';
 import OptionCard, { cardText } from './OptionCard';
 
 // ==============================|| PLATFORM SETTINGS — 支付 ||============================== //
@@ -28,21 +28,17 @@ export function PaymentSettingsCard({ ctx }) {
 
   return (
     <OptionCard ctx={ctx} id="payment" description={op('description')} options={{ validate }}>
-      <CollapsibleHelp trigger={op('help.trigger')} lines={[op('help.line1'), op('help.line2'), op('help.line3')]} />
       <div className="grid gap-5 sm:grid-cols-2">
         <TextRow
           id="PaymentUSDRate"
           type="number"
-          label={op('usdRate.label')}
           value={inputs.PaymentUSDRate}
           onChange={(v) => setField('PaymentUSDRate', v)}
           placeholder={op('usdRate.placeholder')}
-          description={op('usdRate.description')}
         />
         <TextRow
           id="PaymentMinAmount"
           type="number"
-          label={op('minAmount.label')}
           value={inputs.PaymentMinAmount}
           onChange={(v) => setField('PaymentMinAmount', v)}
           placeholder={op('minAmount.placeholder')}
@@ -50,23 +46,18 @@ export function PaymentSettingsCard({ ctx }) {
       </div>
       <TextRow
         id="PaymentCallbackAddress"
-        label={sys('generalSettings.paymentCallbackAddress')}
         value={inputs.PaymentCallbackAddress}
         onChange={(v) => setField('PaymentCallbackAddress', v)}
         placeholder={sys('generalSettings.paymentCallbackAddressPlaceholder')}
-        description={sys('generalSettings.paymentCallbackAddressDescription')}
       />
       <TextRow
         id="RechargeDiscount"
-        label={op('discount.label')}
         value={inputs.RechargeDiscount}
         onChange={(v) => setField('RechargeDiscount', v)}
         placeholder={op('discount.placeholder')}
-        description={op('discount.description')}
         multiline
         rows={6}
       />
-      <CollapsibleHelp trigger={op('discountHelp.trigger')} lines={[op('discountHelp.line1'), op('discountHelp.line2')]} />
     </OptionCard>
   );
 }

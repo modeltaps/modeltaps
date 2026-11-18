@@ -10,8 +10,11 @@ import { Input } from '@/components/ui/input';
 import { durationLabel } from 'views/panel/ModelInfo/supply/supplyParts';
 
 import { verifyJSON } from 'utils/common';
+import { FormField } from '@/components/ui/form-field';
 import { FieldSection, OptionList } from '@/components/settings/cards';
-import { SelectRow, TextRow, ToggleRow } from '../parts';
+import { ModifiedDot } from '@/components/settings/SettingHelp';
+import { SelectRow, TextRow, ToggleRow, useSettingCopy } from '../parts';
+import { settingEnumLabel } from '@/components/settings/catalog';
 import OptionCard, { bindSwitch, cardText } from './OptionCard';
 import { describePauseRule, pauseRulesError, pauseRulesText } from './pauseRules';
 import { admin } from 'routes/paths';
@@ -20,7 +23,8 @@ import { fetchIntakeRules } from 'views/panel/ModelInfo/supply/supplyApi';
 
 // ==============================|| PLATFORM SETTINGS — 网关 ||============================== //
 // Retry, error handling, channel auto disable / recover, session affinity, model name matching,
-// native protocols, prompt limits, image proxy and the auto routing options.
+// native protocols, prompt limits, image proxy and the auto routing options. Field labels, hints
+// and help come from the settings catalog (common/settings/gateway*.go).
 
 const gsKey = (k) => `setting_index.operationSettings.generalSettings.${k}`;
 
@@ -49,9 +53,11 @@ export function serializeStatusCooldown(rows) {
 }
 
 // One row per status code with its cooldown in seconds; add and remove rows. Rows are kept
-// locally while editing (so a half-typed code is not lost) and written back as JSON.
-function StatusCooldownEditor({ id, label, description, value, onChange }) {
+// locally while editing (so a half-typed code is not lost) and written back as JSON. The label,
+// hint and help are the catalog's for `id`.
+function StatusCooldownEditor({ id, value, onChange }) {
   const { t } = useTranslation();
+  const copy = useSettingCopy(id);
   const parsed = parseStatusCooldown(value);
   const [rows, setRows] = useState(() => parsed || []);
   const [lastWritten, setLastWritten] = useState(value);
@@ -70,21 +76,30 @@ function StatusCooldownEditor({ id, label, description, value, onChange }) {
     return (
       <div className="space-y-2">
         <p className="text-xs text-warning">{t('settingsFields.invalidJson')}</p>
-        <TextRow id={id} label={label} value={value} onChange={onChange} description={description} multiline rows={3} />
+        <TextRow id={id} value={value} onChange={onChange} multiline rows={3} />
       </div>
     );
   }
   return (
-    <div className="space-y-2">
-      <div>
-        <div className="text-sm font-medium">{label}</div>
-        {description && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
-      </div>
+    <FormField
+      id={id}
+      data-setting-key={id}
+      data-highlight={id}
+      label={
+        <>
+          {copy.label}
+          {copy.modified && <ModifiedDot defaultValue={copy.modified.defaultValue} />}
+        </>
+      }
+      hint={copy.description}
+      help={copy.help}
+    >
       {rows.length > 0 && (
         <div className="space-y-2">
           {rows.map((row, i) => (
             <div key={i} className="flex items-center gap-2">
               <Input
+                id={i === 0 ? id : undefined}
                 aria-label={t('settingsFields.statusCode')}
                 placeholder="503"
                 inputMode="numeric"
@@ -123,14 +138,12 @@ function StatusCooldownEditor({ id, label, description, value, onChange }) {
         <Plus className="size-4" />
         {t('settingsFields.addStatus')}
       </Button>
-    </div>
+    </FormField>
   );
 }
 
 StatusCooldownEditor.propTypes = {
   id: PropTypes.string.isRequired,
-  label: PropTypes.string,
-  description: PropTypes.string,
   value: PropTypes.string,
   onChange: PropTypes.func.isRequired
 };
@@ -140,14 +153,7 @@ export function RetryCard({ ctx }) {
   const { inputs, setField } = ctx;
   const gs = (k) => t(gsKey(k));
   const num = (key, name) => (
-    <TextRow
-      id={key}
-      label={gs(`${name}.label`)}
-      value={inputs[key]}
-      onChange={(v) => setField(key, v)}
-      placeholder={gs(`${name}.placeholder`)}
-      description={gs(`${name}.description`)}
-    />
+    <TextRow id={key} value={inputs[key]} onChange={(v) => setField(key, v)} placeholder={gs(`${name}.placeholder`)} />
   );
 
   return (
@@ -159,10 +165,8 @@ export function RetryCard({ ctx }) {
       </div>
       <StatusCooldownEditor
         id="RetryCooldownPerStatus"
-        label={gs('retryCooldownPerStatus.title')}
         value={inputs.RetryCooldownPerStatus}
         onChange={(v) => setField('RetryCooldownPerStatus', v)}
-        description={gs('retryCooldownPerStatus.description')}
       />
     </OptionCard>
   );
@@ -177,16 +181,10 @@ export function ErrorHandlingCard({ ctx }) {
   return (
     <OptionCard ctx={ctx} id="error-handling">
       <OptionList>
-        <ToggleRow
-          id="ChannelFailErrorWrapEnabled"
-          label={gs('channelFailErrorWrapEnabled')}
-          description={gs('channelFailErrorWrapEnabledTooltip')}
-          {...bindSwitch(ctx, 'ChannelFailErrorWrapEnabled')}
-        />
+        <ToggleRow id="ChannelFailErrorWrapEnabled" {...bindSwitch(ctx, 'ChannelFailErrorWrapEnabled')} />
       </OptionList>
       <TextRow
         id="ChannelFailErrorMessage"
-        label={gs('channelFailErrorMessage.label')}
         value={inputs.ChannelFailErrorMessage}
         onChange={(v) => setField('ChannelFailErrorMessage', v)}
         placeholder={gs('channelFailErrorMessage.placeholder')}
@@ -200,56 +198,46 @@ export function ChannelAutoCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, setField } = ctx;
   const ms = (k) => t(`setting_index.operationSettings.monitoringSettings.${k}`);
-  const row = (key, name) => <ToggleRow id={key} label={ms(name)} description={ms(`${name}Description`)} {...bindSwitch(ctx, key)} />;
+  const row = (key) => <ToggleRow id={key} {...bindSwitch(ctx, key)} />;
 
   return (
     <OptionCard ctx={ctx} id="channel-auto">
       <OptionList>
-        {row('AutomaticDisableChannelEnabled', 'automaticDisableChannel')}
-        {row('AutomaticEnableChannelEnabled', 'automaticEnableChannel')}
+        {row('AutomaticDisableChannelEnabled')}
+        {row('AutomaticEnableChannelEnabled')}
       </OptionList>
       <div className="grid gap-5 sm:grid-cols-2">
         <SelectRow
           id="ChannelTestMode"
-          label={ms('channelTestMode.label')}
-          description={ms('channelTestMode.description')}
           value={inputs.ChannelTestMode || 'recovery'}
           onChange={(v) => setField('ChannelTestMode', v)}
-          options={['recovery', 'all', 'off'].map((value) => ({ value, label: ms(`channelTestMode.${value}`) }))}
+          options={['recovery', 'all', 'off'].map((value) => ({ value, label: settingEnumLabel(t, 'ChannelTestMode', value) }))}
         />
         <TextRow
           id="ChannelTestIntervalMinutes"
           type="number"
-          label={ms('channelTestInterval.label')}
           value={inputs.ChannelTestIntervalMinutes}
           onChange={(v) => setField('ChannelTestIntervalMinutes', v)}
           placeholder="10"
-          description={ms('channelTestInterval.description')}
           disabled={inputs.ChannelTestMode === 'off'}
         />
         <TextRow
           id="ChannelCredentialRefreshMinutes"
           type="number"
-          label={ms('credentialRefresh.label')}
           value={inputs.ChannelCredentialRefreshMinutes}
           onChange={(v) => setField('ChannelCredentialRefreshMinutes', v)}
           placeholder="30"
-          description={ms('credentialRefresh.description')}
         />
         <TextRow
           id="ChannelDisableThreshold"
           type="number"
-          label={ms('channelDisableThreshold.label')}
           value={inputs.ChannelDisableThreshold}
           onChange={(v) => setField('ChannelDisableThreshold', v)}
           placeholder={ms('channelDisableThreshold.placeholder')}
-          description={ms('channelDisableThreshold.description')}
         />
       </div>
       <TextRow
         id="DisableChannelKeywords"
-        label={t('setting_index.operationSettings.disableChannelKeywordsSettings.label')}
-        description={t('setting_index.operationSettings.disableChannelKeywordsSettings.description')}
         value={inputs.DisableChannelKeywords}
         onChange={(v) => setField('DisableChannelKeywords', v)}
         placeholder={t('setting_index.operationSettings.disableChannelKeywordsSettings.info')}
@@ -341,11 +329,9 @@ export function SupplyPauseRulesCard({ ctx }) {
     <OptionCard ctx={ctx} id="supply-pause-rules" enableKey="PauseRulesEnabled" options={{ validate }}>
       <TextRow
         id="PauseRules"
-        label={pr('label')}
         value={inputs.PauseRules}
         onChange={(v) => setField('PauseRules', v)}
         placeholder={PAUSE_RULES_EXAMPLE}
-        description={pr('description')}
         error={error ? pr(error) : ''}
         multiline
         rows={10}
@@ -441,29 +427,27 @@ export function SupplyIntakeRulesCard({ ctx }) {
 SupplyIntakeRulesCard.propTypes = { ctx: PropTypes.object.isRequired };
 
 // How a model that follows the default picks a supply within one priority tier, and how far a
-// supply's cost reorders the tiers (within a priority, or across priorities).
+// supply's cost reorders the tiers (within a priority, or across priorities). Labels, hints, the
+// values' descriptions and examples come from the settings catalog.
 export function SupplyModeCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, setField } = ctx;
   const value = inputs.SupplyModeDefault === 'failover' ? 'failover' : 'balance';
   const costOrder = inputs.SupplyCostOrder === 'cost' ? 'cost' : 'priority';
+  const enumOptions = (key, values) => values.map((v) => ({ value: v, label: settingEnumLabel(t, key, v) }));
   return (
     <OptionCard ctx={ctx} id="supply-mode">
       <SelectRow
         id="SupplyModeDefault"
-        label={t('modelSupply.mode.label')}
-        description={t(`modelSupply.mode.${value}Hint`)}
         value={value}
         onChange={(v) => setField('SupplyModeDefault', v)}
-        options={['balance', 'failover'].map((mode) => ({ value: mode, label: t(`modelSupply.mode.${mode}`) }))}
+        options={enumOptions('SupplyModeDefault', ['balance', 'failover'])}
       />
       <SelectRow
         id="SupplyCostOrder"
-        label={t('modelSupply.costOrder.label')}
-        description={t(`modelSupply.costOrder.${costOrder}Hint`)}
         value={costOrder}
         onChange={(v) => setField('SupplyCostOrder', v)}
-        options={['priority', 'cost'].map((order) => ({ value: order, label: t(`modelSupply.costOrder.${order}`) }))}
+        options={enumOptions('SupplyCostOrder', ['priority', 'cost'])}
       />
     </OptionCard>
   );
@@ -477,50 +461,26 @@ export function SessionAffinityCard({ ctx }) {
   return (
     <OptionCard ctx={ctx} id="session-affinity">
       <OptionList>
-        <ToggleRow
-          id="SessionAffinityEnabled"
-          label={gs('sessionAffinityEnabled')}
-          description={gs('sessionAffinityEnabledDescription')}
-          {...bindSwitch(ctx, 'SessionAffinityEnabled')}
-        />
-        <ToggleRow
-          id="SessionAffinityStrict"
-          label={gs('sessionAffinityStrict')}
-          description={gs('sessionAffinityStrictDescription')}
-          {...bindSwitch(ctx, 'SessionAffinityStrict')}
-        />
+        <ToggleRow id="SessionAffinityEnabled" {...bindSwitch(ctx, 'SessionAffinityEnabled')} />
+        <ToggleRow id="SessionAffinityStrict" {...bindSwitch(ctx, 'SessionAffinityStrict')} />
       </OptionList>
       <TextRow
         id="SessionAffinityTTLSeconds"
         type="number"
-        label={gs('sessionAffinityTTL.label')}
         value={inputs.SessionAffinityTTLSeconds}
         onChange={(v) => setField('SessionAffinityTTLSeconds', v)}
         placeholder={gs('sessionAffinityTTL.placeholder')}
-        description={gs('sessionAffinityTTL.description')}
       />
     </OptionCard>
   );
 }
 
 export function ModelNameMatchCard({ ctx }) {
-  const { t } = useTranslation();
-  const gs = (k) => t(gsKey(k));
   return (
     <OptionCard ctx={ctx} id="model-name-match">
       <OptionList>
-        <ToggleRow
-          id="ModelNameCaseInsensitiveEnabled"
-          label={gs('modelNameCaseInsensitive')}
-          description={gs('modelNameCaseInsensitiveDescription')}
-          {...bindSwitch(ctx, 'ModelNameCaseInsensitiveEnabled')}
-        />
-        <ToggleRow
-          id="UnifiedRequestResponseModelEnabled"
-          label={gs('unifiedRequestResponseModel')}
-          description={gs('unifiedRequestResponseModelDescription')}
-          {...bindSwitch(ctx, 'UnifiedRequestResponseModelEnabled')}
-        />
+        <ToggleRow id="ModelNameCaseInsensitiveEnabled" {...bindSwitch(ctx, 'ModelNameCaseInsensitiveEnabled')} />
+        <ToggleRow id="UnifiedRequestResponseModelEnabled" {...bindSwitch(ctx, 'UnifiedRequestResponseModelEnabled')} />
       </OptionList>
     </OptionCard>
   );
@@ -530,14 +490,7 @@ export function NativeProtocolCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, setField } = ctx;
   const op = (k) => t(`setting_index.operationSettings.${k}`);
-  const row = (key, name) => (
-    <ToggleRow
-      id={key}
-      label={op(`otherSettings.${name}`)}
-      description={op(`otherSettings.${name}Description`)}
-      {...bindSwitch(ctx, key)}
-    />
-  );
+  const row = (key) => <ToggleRow id={key} {...bindSwitch(ctx, key)} />;
   const validate = (i) => {
     if (i.ClaudeDefaultMaxTokens && !verifyJSON(i.ClaudeDefaultMaxTokens)) return op('claudeSettings.invalidJson');
     if (i.GeminiOpenThink && !verifyJSON(i.GeminiOpenThink)) return op('geminiSettings.invalidJson');
@@ -547,39 +500,33 @@ export function NativeProtocolCard({ ctx }) {
   return (
     <OptionCard ctx={ctx} id="native-protocol" options={{ validate }}>
       <OptionList>
-        {row('ClaudeAPIEnabled', 'claudeAPIEnabled')}
-        {row('GeminiAPIEnabled', 'geminiAPIEnabled')}
-        {row('ClaudePromptCachingEnabled', 'claudePromptCachingEnabled')}
-        {row('FingerprintPassThroughEnabled', 'fingerprintPassThroughEnabled')}
+        {row('ClaudeAPIEnabled')}
+        {row('GeminiAPIEnabled')}
+        {row('ClaudePromptCachingEnabled')}
+        {row('FingerprintPassThroughEnabled')}
       </OptionList>
       <FieldSection title={op('claudeSettings.title')}>
         <TextRow
           id="ClaudeBudgetTokensPercentage"
           type="number"
-          label={op('claudeSettings.budgetTokensPercentage.label')}
           value={inputs.ClaudeBudgetTokensPercentage}
           onChange={(v) => setField('ClaudeBudgetTokensPercentage', v)}
           placeholder={op('claudeSettings.budgetTokensPercentage.placeholder')}
-          description={op('claudeSettings.budgetTokensPercentage.description')}
         />
         <TextRow
           id="ClaudeDefaultMaxTokens"
-          label={op('claudeSettings.defaultMaxTokens.label')}
           value={inputs.ClaudeDefaultMaxTokens}
           onChange={(v) => setField('ClaudeDefaultMaxTokens', v)}
           placeholder={op('claudeSettings.defaultMaxTokens.placeholder')}
-          description={op('claudeSettings.defaultMaxTokens.description')}
           multiline
         />
       </FieldSection>
       <FieldSection title={op('geminiSettings.title')}>
         <TextRow
           id="GeminiOpenThink"
-          label={op('geminiSettings.geminiOpenThink.label')}
           value={inputs.GeminiOpenThink}
           onChange={(v) => setField('GeminiOpenThink', v)}
           placeholder={op('geminiSettings.geminiOpenThink.placeholder')}
-          description={op('geminiSettings.geminiOpenThink.description')}
           multiline
         />
       </FieldSection>
@@ -588,19 +535,10 @@ export function NativeProtocolCard({ ctx }) {
 }
 
 export function PromptLimitsCard({ ctx }) {
-  const { t } = useTranslation();
   const { inputs, setField } = ctx;
-  const op = (k) => t(`setting_index.operationSettings.promptLimits.${k}`);
   return (
     <OptionCard ctx={ctx} id="prompt-limits">
-      <TextRow
-        id="MaxPromptTokens"
-        type="number"
-        label={op('maxPromptTokens.label')}
-        value={inputs.MaxPromptTokens}
-        onChange={(v) => setField('MaxPromptTokens', v)}
-        description={op('maxPromptTokens.description')}
-      />
+      <TextRow id="MaxPromptTokens" type="number" value={inputs.MaxPromptTokens} onChange={(v) => setField('MaxPromptTokens', v)} />
     </OptionCard>
   );
 }
@@ -614,24 +552,14 @@ export function ImageProxyCard({ ctx }) {
     <OptionCard ctx={ctx} id="image-proxy">
       <TextRow
         id="ChatImageRequestProxy"
-        label={op('chatImageRequestProxy.label')}
         value={inputs.ChatImageRequestProxy}
         onChange={(v) => setField('ChatImageRequestProxy', v)}
         placeholder={op('chatImageRequestProxy.placeholder')}
-        description={op('chatImageRequestProxy.description')}
       />
       <div className="grid gap-5 sm:grid-cols-2">
-        <TextRow
-          id="CFWorkerImageUrl"
-          label={op('CFWorkerImageUrl.label')}
-          value={inputs.CFWorkerImageUrl}
-          onChange={(v) => setField('CFWorkerImageUrl', v)}
-          description={op('CFWorkerImageUrl.description')}
-        />
+        <TextRow id="CFWorkerImageUrl" value={inputs.CFWorkerImageUrl} onChange={(v) => setField('CFWorkerImageUrl', v)} />
         <TextRow
           id="CFWorkerImageKey"
-          label={op('CFWorkerImageUrl.key')}
-          description={op('CFWorkerImageUrl.keyDescription')}
           value={inputs.CFWorkerImageKey}
           onChange={(v) => setField('CFWorkerImageKey', v)}
           secret={secrets?.CFWorkerImageKey}
@@ -647,7 +575,6 @@ export function ImageProxyCard({ ctx }) {
 export function AutoRoutingCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, setField } = ctx;
-  const gs = (k) => t(gsKey(k));
   return (
     <OptionCard
       ctx={ctx}
@@ -662,36 +589,22 @@ export function AutoRoutingCard({ ctx }) {
       }
     >
       <OptionList>
-        <ToggleRow
-          id="RoutingDecisionBillingEnabled"
-          label={gs('routingDecisionBilling')}
-          description={gs('routingDecisionBillingDescription')}
-          {...bindSwitch(ctx, 'RoutingDecisionBillingEnabled')}
-        />
-        <ToggleRow
-          id="UserRoutingPolicyEnabled"
-          label={gs('userRoutingPolicy')}
-          description={gs('userRoutingPolicyDescription')}
-          {...bindSwitch(ctx, 'UserRoutingPolicyEnabled')}
-        />
+        <ToggleRow id="RoutingDecisionBillingEnabled" {...bindSwitch(ctx, 'RoutingDecisionBillingEnabled')} />
+        <ToggleRow id="UserRoutingPolicyEnabled" {...bindSwitch(ctx, 'UserRoutingPolicyEnabled')} />
       </OptionList>
       <TextRow
         id="PersonalRoutingPolicyMaxCount"
         type="number"
-        label={gs('personalRoutingPolicyMaxCount')}
         value={inputs.PersonalRoutingPolicyMaxCount}
         onChange={(v) => setField('PersonalRoutingPolicyMaxCount', v)}
         placeholder="20"
-        description={gs('personalRoutingPolicyMaxCountDescription')}
       />
       <TextRow
         id="OrganizationRoutingPolicyMaxCount"
         type="number"
-        label={gs('orgRoutingPolicyMaxCount')}
         value={inputs.OrganizationRoutingPolicyMaxCount}
         onChange={(v) => setField('OrganizationRoutingPolicyMaxCount', v)}
         placeholder="20"
-        description={gs('orgRoutingPolicyMaxCountDescription')}
       />
     </OptionCard>
   );

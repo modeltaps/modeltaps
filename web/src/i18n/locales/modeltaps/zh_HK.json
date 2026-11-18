@@ -2932,7 +2932,8 @@
       "settingNotify": "通知",
       "settingOrgPolicy": "組織策略",
       "settingEntries": "用戶入口",
-      "settingMail": "郵件"
+      "settingMail": "郵件",
+      "settingModified": "已修改的設定"
     },
     "context": {
       "personal": "個人",
@@ -3137,7 +3138,8 @@
       "failover": "主備",
       "balanceHint": "同一檔的線路按權重分擔請求。",
       "failoverHint": "同一檔中權重最高的線路承接全部請求，其餘作為它的後備。",
-      "saved": "分流方式已儲存"
+      "saved": "分流方式已儲存",
+      "siteDefaultLink": "平台預設設定 ↗"
     },
     "tier": {
       "only": "僅一檔",
@@ -3373,6 +3375,10 @@
         "mail": {
           "label": "郵件",
           "description": "發信服務、用戶郵件範本和發送記錄"
+        },
+        "modified": {
+          "label": "已修改",
+          "description": "與預設值不同的設定"
         }
       },
       "cards": {
@@ -3602,6 +3608,10 @@
           "title": "定價",
           "description": "用戶按目錄價 × 所在分組倍率付費；這裡核算扣掉成本後還剩多少",
           "hint": "保存只影響下面的核算；用戶付多少由用戶分組倍率決定"
+        },
+        "modified-settings": {
+          "title": "已修改的設定",
+          "description": "所有與預設值不同的設定，可一鍵恢復"
         }
       },
       "actions": {
@@ -4065,6 +4075,31 @@
       "org": "組織設定",
       "personal": "個人設定",
       "backToAdmin": "返回平台管理"
+    },
+    "catalog": {
+      "examples": "示例",
+      "related": "相關設定",
+      "help": "說明",
+      "modifiedTitle": "已改過預設值（預設：{{value}}）",
+      "empty": "空",
+      "on": "開",
+      "off": "關",
+      "modifiedCount_one": "{{count}} 項設定與預設值不同",
+      "modifiedCount_other": "{{count}} 項設定與預設值不同",
+      "noneModified": "所有設定都是預設值。",
+      "nowAndDefault": "現在 {{now}} · 預設 {{value}}",
+      "restore": "恢復預設",
+      "objects": {
+        "site": "平台設定",
+        "channel": "渠道",
+        "model": "模型",
+        "supply": "線路",
+        "allocation": "分配策略",
+        "user_group": "用戶分組",
+        "routing_policy": "路由策略",
+        "organization": "組織",
+        "token": "API 密鑰"
+      }
     }
   },
   "home": {

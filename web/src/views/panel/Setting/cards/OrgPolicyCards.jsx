@@ -6,7 +6,8 @@ import OptionCard, { bindSwitch } from './OptionCard';
 
 // ==============================|| PLATFORM SETTINGS — 组织策略 (root) ||============================== //
 // Site-level organization options: whether organizations are open, the per-user organization limit,
-// the default member limit and quota transfer.
+// the default member limit and quota transfer. Field labels and descriptions come from the
+// settings catalog.
 
 const intOrEmpty = (v) => {
   if (v === undefined || v === '') return true;
@@ -24,25 +25,13 @@ export function OrgPolicyCard({ ctx }) {
   return (
     <OptionCard ctx={ctx} id="org-policy" description={os('description')} options={{ validate }}>
       <OptionList>
-        <ToggleRow
-          id="OrganizationEnabled"
-          label={os('enabledLabel')}
-          description={os('enabledDesc')}
-          {...bindSwitch(ctx, 'OrganizationEnabled')}
-        />
-        <ToggleRow
-          id="OrganizationQuotaTransferEnabled"
-          label={os('transferLabel')}
-          description={os('transferDesc')}
-          {...bindSwitch(ctx, 'OrganizationQuotaTransferEnabled')}
-        />
+        <ToggleRow id="OrganizationEnabled" {...bindSwitch(ctx, 'OrganizationEnabled')} />
+        <ToggleRow id="OrganizationQuotaTransferEnabled" {...bindSwitch(ctx, 'OrganizationQuotaTransferEnabled')} />
       </OptionList>
       <div className="grid gap-5 sm:grid-cols-2">
         <TextRow
           id="OrganizationMaxPerUser"
           type="number"
-          label={os('maxPerUserLabel')}
-          description={os('maxPerUserDesc')}
           value={inputs.OrganizationMaxPerUser}
           onChange={(v) => setField('OrganizationMaxPerUser', v)}
           error={intOrEmpty(inputs.OrganizationMaxPerUser) ? '' : os('intError')}
@@ -50,8 +39,6 @@ export function OrgPolicyCard({ ctx }) {
         <TextRow
           id="OrganizationDefaultMaxMembers"
           type="number"
-          label={os('maxMembersLabel')}
-          description={os('maxMembersDesc')}
           value={inputs.OrganizationDefaultMaxMembers}
           onChange={(v) => setField('OrganizationDefaultMaxMembers', v)}
           error={intOrEmpty(inputs.OrganizationDefaultMaxMembers) ? '' : os('intError')}

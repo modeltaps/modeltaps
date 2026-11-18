@@ -5,7 +5,8 @@
 #     commands and payload samples do not trigger false positives)
 #   - the value side of web/src/i18n/locales/zh_HK.json and of the repo's own
 #     web/src/i18n/locales/modeltaps/zh_HK.json (JSON keys are ignored, they carry
-#     upstream naming and never reach the UI)
+#     upstream naming and never reach the UI), and of the settings catalog translations in
+#     web/src/i18n/locales/catalog/zh_HK/*.json
 #
 # Usage: scripts/check-docs-hk.sh [target ...]
 #   target may be a directory (all *.md below it are scanned) or a *.json file
@@ -26,6 +27,10 @@ else
     "$REPO_ROOT/web/src/i18n/locales/zh_HK.json"
     "$REPO_ROOT/web/src/i18n/locales/modeltaps/zh_HK.json"
   )
+  # The settings catalog translations, one file per settings group.
+  for catalog in "$REPO_ROOT"/web/src/i18n/locales/catalog/zh_HK/*.json; do
+    [[ -f "$catalog" ]] && TARGETS+=("$catalog")
+  done
 fi
 
 TARGET_DIRS=()

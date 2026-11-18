@@ -37,6 +37,8 @@ func GetOptions(c *gin.Context) {
 		"message": "",
 		"data":    options,
 		"secrets": secrets,
+		// Values right after registration, before stored options: what "modified" compares with.
+		"defaults": config.GlobalOption.Defaults(),
 		// Whether stored credentials are encrypted at rest (ENCRYPTION_KEY is set); the settings
 		// page shows a notice when they are not.
 		"encryption_enabled": encryption.Enabled(),

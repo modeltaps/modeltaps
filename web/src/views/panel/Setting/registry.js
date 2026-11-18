@@ -225,6 +225,11 @@ export const PLATFORM_GROUPS = [
     ]
   },
   {
+    // Every setting that differs from its default, across the groups.
+    id: 'modified',
+    cards: [card('modified-settings', 'action')]
+  },
+  {
     id: 'orgpolicy',
     rootOnly: true,
     cards: [
@@ -251,6 +256,9 @@ export const cardById = (cardId) => ALL_CARDS.find((c) => c.id === cardId) || nu
 
 // Save scope of a card (its option keys).
 export const cardKeys = (cardId) => cardById(cardId)?.keys || [];
+
+// The card an option key belongs to.
+export const cardOfKey = (key) => (key ? ALL_CARDS.find((c) => c.keys.includes(key)) || null : null);
 
 export const visibleGroups = (isRoot) => PLATFORM_GROUPS.filter((group) => !group.rootOnly || isRoot);
 
@@ -300,7 +308,8 @@ export function resolveSettingsTarget({ section, tab, highlight, isRoot = false 
   if (INVITE_SECTIONS.has(requested) || INVITE_HIGHLIGHTS.has(highlight)) return INVITE_CODE_URL;
 
   const anchor = HIGHLIGHT_ALIASES[highlight] || highlight || null;
-  const owner = anchor ? cardById(anchor)?.groupId : null;
+  // A highlight names a card, or an option key (a field of a card).
+  const owner = anchor ? (cardById(anchor) || cardOfKey(anchor))?.groupId : null;
   const current = Boolean(requested) && groups.includes(requested);
   const legacy = current ? null : LEGACY_SECTIONS[requested];
   let group = current ? requested : legacy?.group;
@@ -309,7 +318,7 @@ export function resolveSettingsTarget({ section, tab, highlight, isRoot = false 
   const hidden = !group || !groups.includes(group);
   if (hidden) group = DEFAULT_GROUP;
   const wanted = anchor || legacy?.highlight || null;
-  const target = wanted && (!hidden || !cardById(wanted)) ? wanted : null;
+  const target = wanted && (!hidden || !(cardById(wanted) || cardOfKey(wanted))) ? wanted : null;
 
   if (section && section === group && target === (highlight || null)) return null;
   return withHighlight(group, target);

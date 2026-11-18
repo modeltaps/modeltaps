@@ -5,6 +5,8 @@ import { SUPPORTED_LANGUAGES } from './languages';
 // Both are picked up by file name for every language in languages.json.
 const upstream = import.meta.glob('./locales/*.json', { eager: true, import: 'default' });
 const own = import.meta.glob('./locales/modeltaps/*.json', { eager: true, import: 'default' });
+// Translations of the settings catalog, one file per settings group: locales/catalog/<code>/<group>.json.
+const catalog = import.meta.glob('./locales/catalog/*/*.json', { eager: true, import: 'default' });
 
 const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -16,9 +18,19 @@ const deepMerge = (base, extra) => {
   return merged;
 };
 
+const catalogOf = (code) =>
+  Object.entries(catalog)
+    .filter(([path]) => path.startsWith(`./locales/catalog/${code}/`))
+    .reduce((merged, [, value]) => deepMerge(merged, value), {});
+
 export const resources = Object.fromEntries(
   SUPPORTED_LANGUAGES.map((code) => [
     code,
-    { translation: deepMerge(upstream[`./locales/${code}.json`] || {}, own[`./locales/modeltaps/${code}.json`] || {}) }
+    {
+      translation: deepMerge(
+        deepMerge(upstream[`./locales/${code}.json`] || {}, own[`./locales/modeltaps/${code}.json`] || {}),
+        catalogOf(code)
+      )
+    }
   ])
 );

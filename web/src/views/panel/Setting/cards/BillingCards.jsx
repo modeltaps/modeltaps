@@ -1,8 +1,13 @@
 import { useTranslation } from 'react-i18next';
 
+import PropTypes from 'prop-types';
+
 import QuotaInput from '@/components/QuotaInput';
+import { FormField } from '@/components/ui/form-field';
 import { OptionList } from '@/components/settings/cards';
-import { SelectRow, TextRow, ToggleRow } from '../parts';
+import { settingDescription, settingEnumLabel } from '@/components/settings/catalog';
+import { ModifiedDot } from '@/components/settings/SettingHelp';
+import { SelectRow, TextRow, ToggleRow, useSettingCopy } from '../parts';
 import OptionCard, { bindSwitch } from './OptionCard';
 
 // ==============================|| PLATFORM SETTINGS — 计费 ||============================== //
@@ -43,57 +48,58 @@ function tzLabel(tz) {
 // Origin values are strings and QuotaInput reports numbers; normalise so the dirty check holds.
 const quotaSetter = (setField, key) => (v) => setField(key, typeof v === 'number' ? String(v) : v);
 
+// A quota option (stored in quota units, typed in dollars or quota) with its text from the settings
+// catalog: the label, the first sentence under the field and the rest in the help of its `?`.
+function QuotaRow({ ctx, id }) {
+  const copyText = useSettingCopy(id);
+  return (
+    <FormField
+      id={id}
+      data-setting-key={id}
+      data-highlight={id}
+      label={
+        <>
+          {copyText.label}
+          {copyText.modified && <ModifiedDot defaultValue={copyText.modified.defaultValue} />}
+        </>
+      }
+      help={copyText.help}
+    >
+      <QuotaInput id={id} name={id} value={ctx.inputs[id]} onChange={quotaSetter(ctx.setField, id)} helperText={copyText.description} />
+    </FormField>
+  );
+}
+
+QuotaRow.propTypes = { ctx: PropTypes.object.isRequired, id: PropTypes.string.isRequired };
+
+const enumOptions = (t, key, values) => values.map((value) => ({ value, label: settingEnumLabel(t, key, value) }));
+
 export function QuotaCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, setField } = ctx;
-  const qs = (k) => t(`setting_index.operationSettings.quotaSettings.${k}`);
   const ms = (k) => t(`setting_index.operationSettings.monitoringSettings.${k}`);
   const remindEnabled = inputs.QuotaRemindEnabled !== 'false';
 
   return (
     <OptionCard ctx={ctx} id="quota">
       <div className="grid gap-5 sm:grid-cols-2">
-        <QuotaInput
-          id="QuotaForNewUser"
-          name="QuotaForNewUser"
-          label={qs('quotaForNewUser.label')}
-          value={inputs.QuotaForNewUser}
-          onChange={quotaSetter(setField, 'QuotaForNewUser')}
-          helperText={qs('quotaForNewUser.description')}
-        />
-        <QuotaInput
-          id="PreConsumedQuota"
-          name="PreConsumedQuota"
-          label={qs('preConsumedQuota.label')}
-          value={inputs.PreConsumedQuota}
-          onChange={quotaSetter(setField, 'PreConsumedQuota')}
-          helperText={qs('preConsumedQuota.description')}
-        />
+        <QuotaRow ctx={ctx} id="QuotaForNewUser" />
+        <QuotaRow ctx={ctx} id="PreConsumedQuota" />
         <TextRow
           id="PreConsumedOutputTokens"
           type="number"
-          label={qs('preConsumedOutputTokens.label')}
           value={inputs.PreConsumedOutputTokens}
           onChange={(v) => setField('PreConsumedOutputTokens', v)}
-          description={qs('preConsumedOutputTokens.description')}
         />
       </div>
       <OptionList>
-        <ToggleRow
-          id="QuotaRemindEnabled"
-          label={ms('quotaRemindEnabled.label')}
-          description={ms('quotaRemindEnabled.description')}
-          checked={remindEnabled}
-          onCheckedChange={(v) => ctx.setBool('QuotaRemindEnabled', v)}
-        >
+        <ToggleRow id="QuotaRemindEnabled" checked={remindEnabled} onCheckedChange={(v) => ctx.setBool('QuotaRemindEnabled', v)}>
           <TextRow
             id="QuotaRemindThreshold"
             type="number"
-            label={ms('quotaRemindThreshold.label')}
             value={inputs.QuotaRemindThreshold}
             onChange={(v) => setField('QuotaRemindThreshold', v)}
             placeholder={ms('quotaRemindThreshold.placeholder')}
-            description={ms('quotaRemindThreshold.description')}
             disabled={!remindEnabled}
           />
         </ToggleRow>
@@ -105,32 +111,18 @@ export function QuotaCard({ ctx }) {
 export function BillingRulesCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, setField } = ctx;
-  const gs = (k) => t(`setting_index.operationSettings.generalSettings.${k}`);
-  const ps = (k) => gs(`priceSyncAutoApply.${k}`);
 
   return (
     <OptionCard ctx={ctx} id="billing-rules">
       <OptionList>
-        <ToggleRow
-          id="EmptyResponseBillingEnabled"
-          label={gs('emptyResponseBilling')}
-          description={gs('emptyResponseBillingDescription')}
-          {...bindSwitch(ctx, 'EmptyResponseBillingEnabled')}
-        />
-        <ToggleRow
-          id="ApproximateTokenEnabled"
-          label={gs('approximateToken')}
-          description={gs('approximateTokenDescription')}
-          {...bindSwitch(ctx, 'ApproximateTokenEnabled')}
-        />
+        <ToggleRow id="EmptyResponseBillingEnabled" {...bindSwitch(ctx, 'EmptyResponseBillingEnabled')} />
+        <ToggleRow id="ApproximateTokenEnabled" {...bindSwitch(ctx, 'ApproximateTokenEnabled')} />
       </OptionList>
       <SelectRow
         id="PriceSyncAutoApply"
-        label={ps('label')}
-        description={ps('description')}
         value={inputs.PriceSyncAutoApply || 'increases'}
         onChange={(v) => setField('PriceSyncAutoApply', v)}
-        options={['increases', 'all', 'none'].map((value) => ({ value, label: ps(value) }))}
+        options={enumOptions(t, 'PriceSyncAutoApply', ['increases', 'all', 'none'])}
         className="sm:max-w-sm"
       />
     </OptionCard>
@@ -151,19 +143,15 @@ export function QuotaResetCard({ ctx }) {
       <div className="grid gap-5 sm:grid-cols-2">
         <SelectRow
           id="QuotaResetTimezone"
-          label={rs('timezone.label')}
-          description={rs('timezone.description')}
           value={tz}
           onChange={(v) => setField('QuotaResetTimezone', v)}
           options={tzOptions.map((value) => ({ value, label: tzLabel(value) }))}
         />
         <SelectRow
           id="QuotaResetWeekStart"
-          label={rs('weekStart.label')}
-          description={rs('weekStart.description')}
           value={weekStart}
           onChange={(v) => setField('QuotaResetWeekStart', v)}
-          options={['monday', 'sunday'].map((value) => ({ value, label: rs(`weekStart.${value}`) }))}
+          options={enumOptions(t, 'QuotaResetWeekStart', ['monday', 'sunday'])}
         />
       </div>
     </OptionCard>
@@ -173,41 +161,25 @@ export function QuotaResetCard({ ctx }) {
 export function InviteRewardCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, setField } = ctx;
-  const qs = (k) => t(`setting_index.operationSettings.quotaSettings.${k}`);
+  // The header switch is InviteRewardEnabled: its catalog text describes the card.
+  const description = settingDescription(t, 'InviteRewardEnabled');
 
   return (
-    <OptionCard ctx={ctx} id="invite-reward" description={qs('inviteRewardEnabled.description')} enableKey="InviteRewardEnabled">
+    <OptionCard ctx={ctx} id="invite-reward" description={description} enableKey="InviteRewardEnabled">
       <div className="grid gap-5 sm:grid-cols-2">
-        <QuotaInput
-          id="QuotaForInviter"
-          name="QuotaForInviter"
-          label={qs('quotaForInviter.label')}
-          value={inputs.QuotaForInviter}
-          onChange={quotaSetter(setField, 'QuotaForInviter')}
-          helperText={qs('quotaForInviter.description')}
-        />
-        <QuotaInput
-          id="QuotaForInvitee"
-          name="QuotaForInvitee"
-          label={qs('quotaForInvitee.label')}
-          value={inputs.QuotaForInvitee}
-          onChange={quotaSetter(setField, 'QuotaForInvitee')}
-          helperText={qs('quotaForInvitee.description')}
-        />
+        <QuotaRow ctx={ctx} id="QuotaForInviter" />
+        <QuotaRow ctx={ctx} id="QuotaForInvitee" />
         <SelectRow
           id="InviterRewardType"
-          label={qs('rechargeRewardType.label')}
           value={inputs.InviterRewardType || 'fixed'}
           onChange={(v) => setField('InviterRewardType', v)}
-          options={['fixed', 'percentage'].map((value) => ({ value, label: qs(`rechargeRewardType.${value}`) }))}
+          options={enumOptions(t, 'InviterRewardType', ['fixed', 'percentage'])}
         />
         <TextRow
           id="InviterRewardValue"
           type="number"
-          label={qs('rechargeRewardValue.label')}
           value={inputs.InviterRewardValue}
           onChange={(v) => setField('InviterRewardValue', v)}
-          description={qs('rechargeRewardValue.description')}
         />
       </div>
     </OptionCard>

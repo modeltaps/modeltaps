@@ -28,12 +28,10 @@ export function ServerAddressCard({ ctx }) {
     <OptionCard ctx={ctx} id="server-address" options={{ transform: { ServerAddress: (v) => removeTrailingSlash(v || '') } }}>
       <TextRow
         id="ServerAddress"
-        label={tr('generalSettings.serverAddress')}
         labelHidden
         value={inputs.ServerAddress}
         onChange={(v) => setField('ServerAddress', v)}
         placeholder={tr('generalSettings.serverAddressPlaceholder')}
-        description={tr('generalSettings.serverAddressDescription')}
       />
       {isPlaceholderServerAddress(inputs.ServerAddress) && (
         <Alert variant="warning">
@@ -57,15 +55,8 @@ export function BrandingCard({ ctx }) {
   const { inputs, setField } = ctx;
   const oth = (k, opts) => t(`setting_index.otherSettings.${k}`, opts);
   const bi = (k, opts) => t(`brandIconSettings.${k}`, opts);
-  const text = (key, labelKey, phKey, extra = {}) => (
-    <TextRow
-      id={key}
-      label={oth(labelKey)}
-      value={inputs[key]}
-      onChange={(v) => setField(key, v)}
-      placeholder={phKey ? oth(phKey) : undefined}
-      {...extra}
-    />
+  const text = (key, phKey, extra = {}) => (
+    <TextRow id={key} value={inputs[key]} onChange={(v) => setField(key, v)} placeholder={phKey ? oth(phKey) : undefined} {...extra} />
   );
 
   return (
@@ -75,41 +66,23 @@ export function BrandingCard({ ctx }) {
         <span>{oth('customSettings.copyrightWarning')}</span>
       </Alert>
       <div className="grid gap-5 sm:grid-cols-2">
-        {text('SystemName', 'customSettings.systemNameLabel', 'customSettings.systemNamePlaceholder', {
-          description: oth('customSettings.systemNameDescription')
-        })}
-        {text('Logo', 'customSettings.logoLabel', 'customSettings.logoPlaceholder', { description: oth('customSettings.logoDescription') })}
+        {text('SystemName', 'customSettings.systemNamePlaceholder')}
+        {text('Logo', 'customSettings.logoPlaceholder')}
       </div>
-      {text('HomePageContent', 'customSettings.homePageContentLabel', 'customSettings.homePageContentPlaceholder', { multiline: true })}
-      {text('About', 'customSettings.aboutLabel', 'customSettings.aboutPlaceholder', { multiline: true })}
-      {text('Footer', 'customSettings.footerLabel', 'customSettings.footerPlaceholder', { multiline: true, rows: 3 })}
-      {text('AnalyticsCode', 'customSettings.analyticsCodeLabel', 'customSettings.analyticsCodePlaceholder', {
-        description: oth('customSettings.analyticsCodeDescription'),
-        multiline: true,
-        rows: 3
-      })}
+      {text('HomePageContent', 'customSettings.homePageContentPlaceholder', { multiline: true })}
+      {text('About', 'customSettings.aboutPlaceholder', { multiline: true })}
+      {text('Footer', 'customSettings.footerPlaceholder', { multiline: true, rows: 3 })}
+      {text('AnalyticsCode', 'customSettings.analyticsCodePlaceholder', { multiline: true, rows: 3 })}
       <FieldSection title={bi('title')} description={bi('description')}>
         <OptionList>
-          <ToggleRow
-            id="BrandIconSyncEnabled"
-            label={bi('syncEnabled')}
-            description={bi('syncEnabledDescription')}
-            {...bindSwitch(ctx, 'BrandIconSyncEnabled')}
-          />
-          <ToggleRow
-            id="BrandIconFaviconFetchEnabled"
-            label={bi('faviconFetchEnabled')}
-            description={bi('faviconFetchEnabledDescription')}
-            {...bindSwitch(ctx, 'BrandIconFaviconFetchEnabled')}
-          />
+          <ToggleRow id="BrandIconSyncEnabled" {...bindSwitch(ctx, 'BrandIconSyncEnabled')} />
+          <ToggleRow id="BrandIconFaviconFetchEnabled" {...bindSwitch(ctx, 'BrandIconFaviconFetchEnabled')} />
         </OptionList>
         <TextRow
           id="BrandIconRegistry"
-          label={bi('registry')}
           value={inputs.BrandIconRegistry}
           onChange={(v) => setField('BrandIconRegistry', v)}
           placeholder="https://registry.npmmirror.com"
-          description={bi('registryDescription')}
         />
       </FieldSection>
     </OptionCard>
@@ -124,42 +97,27 @@ export function DisplayCard({ ctx }) {
   return (
     <OptionCard ctx={ctx} id="display">
       <OptionList>
-        <ToggleRow
-          id="DisplayInCurrencyEnabled"
-          label={gs('displayInCurrency')}
-          description={gs('displayInCurrencyDescription')}
-          {...bindSwitch(ctx, 'DisplayInCurrencyEnabled')}
-        />
-        <ToggleRow
-          id="DisplayTokenStatEnabled"
-          label={gs('displayTokenStat')}
-          description={gs('displayTokenStatDescription')}
-          {...bindSwitch(ctx, 'DisplayTokenStatEnabled')}
-        />
+        <ToggleRow id="DisplayInCurrencyEnabled" {...bindSwitch(ctx, 'DisplayInCurrencyEnabled')} />
+        <ToggleRow id="DisplayTokenStatEnabled" {...bindSwitch(ctx, 'DisplayTokenStatEnabled')} />
       </OptionList>
       <TextRow
         id="QuotaPerUnit"
-        label={gs('quotaPerUnit.label')}
         value={inputs.QuotaPerUnit}
         onChange={(v) => setField('QuotaPerUnit', v)}
         placeholder={gs('quotaPerUnit.placeholder')}
-        description={gs('quotaPerUnit.description')}
       />
     </OptionCard>
   );
 }
 
 // The site default language: emails to people whose language is unknown, and the home page for
-// browsers in a language the console does not have.
+// browsers in a language the console does not have. The options keep each language's own name.
 export function SiteLanguageCard({ ctx }) {
-  const { t } = useTranslation();
   const { inputs, setField } = ctx;
   return (
     <OptionCard ctx={ctx} id="site-language">
       <SelectRow
         id="DefaultLanguage"
-        label={t('settingsUi.platform.defaultLanguage.label')}
-        description={t('settingsUi.platform.defaultLanguage.description')}
         value={inputs.DefaultLanguage || 'en_US'}
         onChange={(v) => setField('DefaultLanguage', v)}
         options={i18nList.map((item) => ({ value: item.lng, label: item.name }))}
@@ -173,14 +131,7 @@ export function ExternalLinksCard({ ctx }) {
   const { inputs, setField } = ctx;
   const gs = (k) => t(`setting_index.operationSettings.generalSettings.${k}`);
   const link = (key, name) => (
-    <TextRow
-      id={key}
-      label={gs(`${name}.label`)}
-      value={inputs[key]}
-      onChange={(v) => setField(key, v)}
-      placeholder={gs(`${name}.placeholder`)}
-      description={gs(`${name}.description`)}
-    />
+    <TextRow id={key} value={inputs[key]} onChange={(v) => setField(key, v)} placeholder={gs(`${name}.placeholder`)} />
   );
 
   return (
@@ -234,11 +185,9 @@ export function VersionNoticeCard({ ctx }) {
     >
       <TextRow
         id="Notice"
-        label={oth('generalSettings.noticeLabel')}
         value={inputs.Notice}
         onChange={(v) => setField('Notice', v)}
         placeholder={oth('generalSettings.noticePlaceholder')}
-        description={oth('generalSettings.noticeDescription')}
         multiline
         rows={4}
       />

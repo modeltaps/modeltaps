@@ -2932,7 +2932,8 @@
       "settingNotify": "通知",
       "settingOrgPolicy": "组织策略",
       "settingEntries": "用户入口",
-      "settingMail": "邮件"
+      "settingMail": "邮件",
+      "settingModified": "已修改的设置"
     },
     "context": {
       "personal": "个人",
@@ -3137,7 +3138,8 @@
       "failover": "主备",
       "balanceHint": "同一档的线路按权重分担请求。",
       "failoverHint": "同一档中权重最高的线路承接全部请求，其余作为它的备用。",
-      "saved": "分流方式已保存"
+      "saved": "分流方式已保存",
+      "siteDefaultLink": "平台默认设置 ↗"
     },
     "tier": {
       "only": "仅一档",
@@ -3373,6 +3375,10 @@
         "mail": {
           "label": "邮件",
           "description": "发信服务、用户邮件模板和发送记录"
+        },
+        "modified": {
+          "label": "已修改",
+          "description": "与默认值不同的设置"
         }
       },
       "cards": {
@@ -3602,6 +3608,10 @@
           "title": "定价",
           "description": "用户按目录价 × 所在分组倍率付费；这里核算扣掉成本后还剩多少",
           "hint": "保存只影响下面的核算；用户付多少由用户分组倍率决定"
+        },
+        "modified-settings": {
+          "title": "已修改的设置",
+          "description": "所有与默认值不同的设置，可一键恢复"
         }
       },
       "actions": {
@@ -4065,6 +4075,31 @@
       "org": "组织设置",
       "personal": "个人设置",
       "backToAdmin": "返回平台管理"
+    },
+    "catalog": {
+      "examples": "示例",
+      "related": "相关设置",
+      "help": "说明",
+      "modifiedTitle": "已改过默认值（默认：{{value}}）",
+      "empty": "空",
+      "on": "开",
+      "off": "关",
+      "modifiedCount_one": "{{count}} 项设置与默认值不同",
+      "modifiedCount_other": "{{count}} 项设置与默认值不同",
+      "noneModified": "所有设置都是默认值。",
+      "nowAndDefault": "现在 {{now}} · 默认 {{value}}",
+      "restore": "恢复默认",
+      "objects": {
+        "site": "平台设置",
+        "channel": "渠道",
+        "model": "模型",
+        "supply": "线路",
+        "allocation": "分配策略",
+        "user_group": "用户分组",
+        "routing_policy": "路由策略",
+        "organization": "组织",
+        "token": "API 密钥"
+      }
     }
   },
   "home": {

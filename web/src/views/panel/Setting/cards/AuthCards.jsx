@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/sonner';
 import { CollectionCard, OptionList, StatusDot } from '@/components/settings/cards';
+import { settingDescription, settingEnumDescription, settingEnumLabel, splitFirstSentence } from '@/components/settings/catalog';
 import { TextRow, ToggleRow } from '../parts';
 import { INVITE_CODE_URL, settingsGroupUrl } from '../registry';
 import useMailStatus from '../mail/useMailStatus';
@@ -134,20 +135,16 @@ export function AccountSystemCard({ ctx }) {
         aria-label={t(tk('accountSystem'))}
         className="divide-y divide-border overflow-hidden rounded-lg border border-border"
       >
-        <AccountSystemChoice
-          value="builtin"
-          current={value}
-          title={t(tk('builtin'))}
-          description={t(tk('builtinDesc'))}
-          onSelect={(v) => setField('AccountSystem', v)}
-        />
-        <AccountSystemChoice
-          value="external"
-          current={value}
-          title={t(tk('external'))}
-          description={t(tk('externalDesc'))}
-          onSelect={(v) => setField('AccountSystem', v)}
-        />
+        {['builtin', 'external'].map((v) => (
+          <AccountSystemChoice
+            key={v}
+            value={v}
+            current={value}
+            title={settingEnumLabel(t, 'AccountSystem', v)}
+            description={settingEnumDescription(t, 'AccountSystem', v)}
+            onSelect={(next) => setField('AccountSystem', next)}
+          />
+        ))}
       </div>
       {external && (
         <p className="text-xs text-muted-foreground">
@@ -163,7 +160,6 @@ export function LoginMethodsCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, origin } = ctx;
   const confirm = useConfirm();
-  const sys = (k) => t(sysKey(k));
   const { status: mailStatus } = useMailStatus();
   // The server's answer counts mail set in the deployment too; the form is the fallback.
   const smtpConfigured = mailStatus ? mailStatus.configured : Boolean(inputs.SMTPServer && inputs.SMTPAccount);
@@ -175,22 +171,18 @@ export function LoginMethodsCard({ ctx }) {
       ? confirm.ask({ title: t(tk('passwordOffTitle')), description: t(tk('passwordOffDesc')), destructive: true })
       : true;
 
-  const row = (key, label, description, extra) => (
-    <ToggleRow id={key} label={label} description={description} {...bindSwitch(ctx, key)}>
-      {extra}
-    </ToggleRow>
-  );
+  // Label and description come from the settings catalog; a description passed here replaces
+  // the catalog's first sentence under the field (the help keeps the whole catalog text).
+  const row = (key, description) => <ToggleRow id={key} description={description} {...bindSwitch(ctx, key)} />;
+  const catalogFirst = (key) => splitFirstSentence(settingDescription(t, key)).first;
 
   return (
     <OptionCard ctx={ctx} id="login-methods" options={{ beforeSave }}>
       <OptionList>
-        {row('PasswordLoginEnabled', sys('configureLoginRegister.passwordLogin'), sys('configureLoginRegister.passwordLoginDescription'))}
+        {row('PasswordLoginEnabled')}
         {row(
           'EmailCodeLoginEnabled',
-          t(tk('emailCodeLogin')),
-          smtpConfigured ? (
-            t(tk('emailCodeLoginDesc'))
-          ) : (
+          smtpConfigured ? undefined : (
             <>
               {t(tk('emailCodeLoginNeedsSmtp'))}{' '}
               <Link to={`${settingsGroupUrl('mail')}?highlight=smtp`} className="text-info hover:underline">
@@ -199,33 +191,20 @@ export function LoginMethodsCard({ ctx }) {
             </>
           )
         )}
-        {row('PasskeyLoginEnabled', t(tk('passkeyLogin')), t(tk('passkeyLoginDesc')))}
-        {row('RegisterEnabled', sys('configureLoginRegister.registerEnabled'), sys('configureLoginRegister.registerEnabledDescription'))}
-        {row(
-          'PasswordRegisterEnabled',
-          sys('configureLoginRegister.passwordRegister'),
-          sys('configureLoginRegister.passwordRegisterDescription')
-        )}
-        {row(
-          'EmailVerificationEnabled',
-          sys('configureLoginRegister.emailVerification'),
-          sys('configureLoginRegister.emailVerificationDescription')
-        )}
+        {row('PasskeyLoginEnabled')}
+        {row('RegisterEnabled')}
+        {row('PasswordRegisterEnabled')}
+        {row('EmailVerificationEnabled')}
         {row(
           'InviteCodeRegisterEnabled',
-          sys('configureLoginRegister.inviteCodeRegister'),
           <>
-            {sys('configureLoginRegister.inviteCodeRegisterDescription')}{' '}
+            {catalogFirst('InviteCodeRegisterEnabled')}{' '}
             <Link to={INVITE_CODE_URL} className="text-primary hover:underline">
               {t('settingsUi.platform.actions.manageInviteCodes')}
             </Link>
           </>
         )}
-        {row(
-          'TurnstileCheckEnabled',
-          sys('configureLoginRegister.turnstileCheck'),
-          sys('configureLoginRegister.turnstileCheckDescription')
-        )}
+        {row('TurnstileCheckEnabled')}
       </OptionList>
       <ConfirmDialog state={confirm.state} close={confirm.close} />
     </OptionCard>
@@ -398,12 +377,7 @@ export function AdminLoginCard({ ctx }) {
   return (
     <OptionCard ctx={ctx} id="admin-login" title={t(tk('adminLogin'))} description={t(tk('adminLoginDesc'))}>
       <OptionList>
-        <ToggleRow
-          id="AdminLoginEnabled"
-          label={t(tk('adminLoginToggle'), { url })}
-          description={t(tk('adminLoginToggleDesc'))}
-          {...bindSwitch(ctx, 'AdminLoginEnabled')}
-        />
+        <ToggleRow id="AdminLoginEnabled" label={t(tk('adminLoginToggle'), { url })} {...bindSwitch(ctx, 'AdminLoginEnabled')} />
       </OptionList>
     </OptionCard>
   );
@@ -450,9 +424,10 @@ SocialCard.propTypes = {
   children: PropTypes.node
 };
 
+// A credential field; its label comes from the settings catalog unless `label` is passed.
 const useCredentialField = (ctx) => {
   const { inputs, secrets, setField } = ctx;
-  return (key, label, placeholder, type = 'text') => (
+  return (key, placeholder, { label, type = 'text' } = {}) => (
     <TextRow
       id={key}
       type={type}
@@ -481,16 +456,11 @@ export function GitHubOAuthCard({ ctx }) {
       urlLabels={[sys('configureGitHubOAuthApp.homepageUrl'), sys('configureGitHubOAuthApp.callbackUrl')]}
     >
       <div className="grid gap-5 sm:grid-cols-2">
-        {field('GitHubClientId', sys('configureGitHubOAuthApp.clientId'), sys('configureGitHubOAuthApp.clientIdPlaceholder'))}
-        {field('GitHubClientSecret', sys('configureGitHubOAuthApp.clientSecret'), sys('configureGitHubOAuthApp.clientSecretPlaceholder'))}
+        {field('GitHubClientId', sys('configureGitHubOAuthApp.clientIdPlaceholder'))}
+        {field('GitHubClientSecret', sys('configureGitHubOAuthApp.clientSecretPlaceholder'))}
       </div>
       <OptionList>
-        <ToggleRow
-          id="GitHubOldIdCloseEnabled"
-          label={sys('configureLoginRegister.gitHubOldIdClose')}
-          description={sys('configureLoginRegister.gitHubOldIdCloseDescription')}
-          {...bindSwitch(ctx, 'GitHubOldIdCloseEnabled')}
-        />
+        <ToggleRow id="GitHubOldIdCloseEnabled" {...bindSwitch(ctx, 'GitHubOldIdCloseEnabled')} />
       </OptionList>
     </SocialCard>
   );
@@ -510,13 +480,9 @@ export function WeChatAuthCard({ ctx }) {
       required={['WeChatServerAddress']}
     >
       <div className="grid gap-5 sm:grid-cols-2">
-        {field('WeChatServerAddress', sys('configureWeChatServer.serverAddress'), sys('configureWeChatServer.serverAddressPlaceholder'))}
-        {field('WeChatServerToken', sys('configureWeChatServer.accessToken'), sys('configureWeChatServer.accessTokenPlaceholder'))}
-        {field(
-          'WeChatAccountQRCodeImageURL',
-          sys('configureWeChatServer.qrCodeImage'),
-          sys('configureWeChatServer.qrCodeImagePlaceholder')
-        )}
+        {field('WeChatServerAddress', sys('configureWeChatServer.serverAddressPlaceholder'))}
+        {field('WeChatServerToken', sys('configureWeChatServer.accessTokenPlaceholder'))}
+        {field('WeChatAccountQRCodeImageURL', sys('configureWeChatServer.qrCodeImagePlaceholder'))}
       </div>
     </SocialCard>
   );
@@ -538,8 +504,8 @@ export function LarkAuthCard({ ctx }) {
       urlLabels={[sys('configureFeishuAuthorization.homepageUrl'), sys('configureFeishuAuthorization.callbackUrl')]}
     >
       <div className="grid gap-5 sm:grid-cols-2">
-        {field('LarkClientId', sys('configureFeishuAuthorization.appId'), sys('configureFeishuAuthorization.appIdPlaceholder'))}
-        {field('LarkClientSecret', sys('configureFeishuAuthorization.appSecret'), sys('configureFeishuAuthorization.appSecretPlaceholder'))}
+        {field('LarkClientId', sys('configureFeishuAuthorization.appIdPlaceholder'))}
+        {field('LarkClientSecret', sys('configureFeishuAuthorization.appSecretPlaceholder'))}
       </div>
     </SocialCard>
   );
@@ -561,31 +527,13 @@ export function LinuxDoOAuthCard({ ctx }) {
       urlLabels={[sys('configureLinuxDoOAuthApp.homepageUrl'), sys('configureLinuxDoOAuthApp.callbackUrl')]}
     >
       <div className="grid gap-5 sm:grid-cols-2">
-        {field('LinuxDoClientId', sys('configureLinuxDoOAuthApp.clientId'), sys('configureLinuxDoOAuthApp.clientIdPlaceholder'))}
-        {field(
-          'LinuxDoClientSecret',
-          sys('configureLinuxDoOAuthApp.clientSecret'),
-          sys('configureLinuxDoOAuthApp.clientSecretPlaceholder')
-        )}
-        {field(
-          'LinuxDoOAuthLowestTrustLevel',
-          sys('configureLinuxDoOAuthApp.lowestTrustLevel'),
-          sys('configureLinuxDoOAuthApp.lowestTrustLevelPlaceholder')
-        )}
+        {field('LinuxDoClientId', sys('configureLinuxDoOAuthApp.clientIdPlaceholder'))}
+        {field('LinuxDoClientSecret', sys('configureLinuxDoOAuthApp.clientSecretPlaceholder'))}
+        {field('LinuxDoOAuthLowestTrustLevel', sys('configureLinuxDoOAuthApp.lowestTrustLevelPlaceholder'))}
       </div>
       <OptionList>
-        <ToggleRow
-          id="LinuxDoOAuthTrustLevelEnabled"
-          label={sys('configureLoginRegister.linuxDoOAuthTrustLevel')}
-          description={sys('configureLoginRegister.linuxDoOAuthTrustLevelDescription')}
-          {...bindSwitch(ctx, 'LinuxDoOAuthTrustLevelEnabled')}
-        />
-        <ToggleRow
-          id="LinuxDoOAuthDynamicTrustLevel"
-          label={sys('configureLoginRegister.linuxDoOAuthDynamicTrustLevel')}
-          description={sys('configureLoginRegister.linuxDoOAuthDynamicTrustLevelDescription')}
-          {...bindSwitch(ctx, 'LinuxDoOAuthDynamicTrustLevel')}
-        />
+        <ToggleRow id="LinuxDoOAuthTrustLevelEnabled" {...bindSwitch(ctx, 'LinuxDoOAuthTrustLevelEnabled')} />
+        <ToggleRow id="LinuxDoOAuthDynamicTrustLevel" {...bindSwitch(ctx, 'LinuxDoOAuthDynamicTrustLevel')} />
       </OptionList>
     </SocialCard>
   );
@@ -599,8 +547,8 @@ export function TurnstileCard({ ctx }) {
   return (
     <OptionCard ctx={ctx} id="turnstile" title={sys('configureTurnstile.title')} description={sys('configureTurnstile.subTitle')}>
       <div className="grid gap-5 sm:grid-cols-2">
-        {field('TurnstileSiteKey', sys('configureTurnstile.siteKey'), sys('configureTurnstile.siteKeyPlaceholder'))}
-        {field('TurnstileSecretKey', sys('configureTurnstile.secretKey'), sys('configureTurnstile.secretKeyPlaceholder'), 'password')}
+        {field('TurnstileSiteKey', sys('configureTurnstile.siteKeyPlaceholder'))}
+        {field('TurnstileSecretKey', sys('configureTurnstile.secretKeyPlaceholder'), { type: 'password' })}
       </div>
     </OptionCard>
   );
@@ -627,7 +575,6 @@ export function EmailDomainCard({ ctx }) {
     >
       <TextRow
         id="EmailDomainWhitelist"
-        label={sys('configureEmailDomainWhitelist.allowedEmailDomains')}
         value={whitelistText}
         onChange={(v) =>
           setField(

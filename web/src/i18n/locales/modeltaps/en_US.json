@@ -3052,7 +3052,8 @@
       "settingNotify": "Notifications",
       "settingOrgPolicy": "Organization policy",
       "settingEntries": "User entries",
-      "settingMail": "Mail"
+      "settingMail": "Mail",
+      "settingModified": "Modified settings"
     },
     "context": {
       "personal": "Personal",
@@ -3238,7 +3239,8 @@
       "failover": "Failover",
       "balanceHint": "Requests are split across the supplies of a tier by weight.",
       "failoverHint": "The supply with the highest weight in a tier takes every request; the others are its backups.",
-      "saved": "Supply mode saved"
+      "saved": "Supply mode saved",
+      "siteDefaultLink": "Site default ↗"
     },
     "tier": {
       "only": "One tier",
@@ -3483,6 +3485,10 @@
         "mail": {
           "label": "Mail",
           "description": "The mail service, user email templates and what was sent"
+        },
+        "modified": {
+          "label": "Modified",
+          "description": "Settings that differ from their defaults"
         }
       },
       "cards": {
@@ -3712,6 +3718,10 @@
           "title": "Pricing",
           "description": "Users pay the catalog price times their group ratio; see what that leaves after costs",
           "hint": "Saving changes only the checks; what users pay follows the user group ratios"
+        },
+        "modified-settings": {
+          "title": "Modified settings",
+          "description": "Every setting that differs from its default, with a way back"
         }
       },
       "actions": {
@@ -4177,6 +4187,31 @@
       "org": "Organization settings",
       "personal": "Personal settings",
       "backToAdmin": "Back to platform admin"
+    },
+    "catalog": {
+      "examples": "Examples",
+      "related": "See also",
+      "help": "Help",
+      "modifiedTitle": "Changed from the default ({{value}})",
+      "empty": "empty",
+      "on": "On",
+      "off": "Off",
+      "modifiedCount_one": "{{count}} setting differs from its default",
+      "modifiedCount_other": "{{count}} settings differ from their defaults",
+      "noneModified": "Every setting is at its default.",
+      "nowAndDefault": "Now {{now}} · default {{value}}",
+      "restore": "Restore default",
+      "objects": {
+        "site": "Platform settings",
+        "channel": "Channel",
+        "model": "Model",
+        "supply": "Supply",
+        "allocation": "Allocation policy",
+        "user_group": "User group",
+        "routing_policy": "Routing policy",
+        "organization": "Organization",
+        "token": "API key"
+      }
     }
   },
   "home": {

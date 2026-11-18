@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Field, ObjectPanel, ObjectTile, ToggleField } from '@/components/objects';
+import { SettingHelpBody } from '@/components/settings/SettingHelp';
 import { API } from 'utils/api';
 
 const NUMBERS = ['ratio', 'api_rate', 'min', 'max'];
@@ -40,7 +41,13 @@ function SettingsBody({ object: group, draft, setDraft }) {
       <Field label={t('userGroup.name')} htmlFor="g-name" hint={t('userGroup.nameTip')}>
         <Input id="g-name" value={draft.name} onChange={(e) => set('name')(e.target.value)} />
       </Field>
-      <NumberRow id="g-ratio" label={t('userGroup.ratio')} value={draft.ratio} onChange={set('ratio')} />
+      <NumberRow
+        id="g-ratio"
+        label={t('userGroup.ratio')}
+        help={<SettingHelpBody settingKey="user_group.ratio" full />}
+        value={draft.ratio}
+        onChange={set('ratio')}
+      />
       <NumberRow
         id="g-api_rate"
         label={t('userGroup.apiRate')}

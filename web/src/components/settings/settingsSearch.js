@@ -75,7 +75,8 @@ export const staysOnPage = (pathname, paths) => (paths || []).includes(String(pa
 export function activeTabOf(group, { tab, highlight } = {}) {
   const tabs = group?.tabs || [];
   if (!tabs.length) return null;
-  const owner = highlight ? group.cards.find((card) => card.id === highlight)?.tab : null;
+  // `highlight` names a card or one of its option keys.
+  const owner = highlight ? group.cards.find((card) => card.id === highlight || card.keys?.includes(highlight))?.tab : null;
   if (owner) return owner;
   return tabs.some((t) => t.id === tab) ? tab : tabs[0].id;
 }

@@ -2928,7 +2928,8 @@
       "settingNotify": "通知",
       "settingOrgPolicy": "組織ポリシー",
       "settingEntries": "ユーザー向け入口",
-      "settingMail": "メール"
+      "settingMail": "メール",
+      "settingModified": "変更済みの設定"
     },
     "context": {
       "personal": "個人",
@@ -3133,7 +3134,8 @@
       "failover": "フェイルオーバー",
       "balanceHint": "同じ段の供給で、重みに応じてリクエストを分けます。",
       "failoverHint": "同じ段で重みが最も高い供給がすべてのリクエストを受け、残りは予備になります。",
-      "saved": "供給モードを保存しました"
+      "saved": "供給モードを保存しました",
+      "siteDefaultLink": "プラットフォームの既定 ↗"
     },
     "tier": {
       "only": "1 段のみ",
@@ -3369,6 +3371,10 @@
         "mail": {
           "label": "メール",
           "description": "メール配信サービス、ユーザー向けメールのテンプレート、送信履歴"
+        },
+        "modified": {
+          "label": "変更済み",
+          "description": "既定値と異なる設定"
         }
       },
       "cards": {
@@ -3598,6 +3604,10 @@
           "title": "料金設定",
           "description": "ユーザーはカタログ価格 × グループ倍率を支払います。コストを引いた残りを確認します",
           "hint": "保存で変わるのは下のチェックだけです。ユーザーの支払額はユーザーグループの倍率で決まります"
+        },
+        "modified-settings": {
+          "title": "変更済みの設定",
+          "description": "既定値と異なるすべての設定。既定値に戻せます"
         }
       },
       "actions": {
@@ -4061,6 +4071,31 @@
       "org": "組織の設定",
       "personal": "個人設定",
       "backToAdmin": "プラットフォーム管理に戻る"
+    },
+    "catalog": {
+      "examples": "例",
+      "related": "関連する設定",
+      "help": "説明",
+      "modifiedTitle": "既定値から変更済み（既定：{{value}}）",
+      "empty": "空",
+      "on": "オン",
+      "off": "オフ",
+      "modifiedCount_one": "{{count}} 件の設定が既定値と異なります",
+      "modifiedCount_other": "{{count}} 件の設定が既定値と異なります",
+      "noneModified": "すべての設定が既定値です。",
+      "nowAndDefault": "現在 {{now}} · 既定 {{value}}",
+      "restore": "既定値に戻す",
+      "objects": {
+        "site": "プラットフォーム設定",
+        "channel": "チャネル",
+        "model": "モデル",
+        "supply": "供給",
+        "allocation": "割り当てポリシー",
+        "user_group": "ユーザーグループ",
+        "routing_policy": "ルーティングポリシー",
+        "organization": "組織",
+        "token": "API キー"
+      }
     }
   },
   "home": {

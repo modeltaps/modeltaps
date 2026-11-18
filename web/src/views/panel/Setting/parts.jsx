@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ChevronRight, Copy, KeyRound } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -12,6 +12,8 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
+import { catalogEntry, settingDescription, settingLabel, splitFirstSentence } from '@/components/settings/catalog';
+import { ModifiedDot, SettingHelpBody, SettingHelpToggle, hasMoreHelp } from '@/components/settings/SettingHelp';
 
 // Shared data layer + field helpers for the platform settings cards.
 // All option keys map 1:1 to the `/api/option/` API.
@@ -25,6 +27,9 @@ export function useOptionSettings() {
   const [secrets, setSecrets] = useState({});
   // Whether stored credentials are encrypted at rest (ENCRYPTION_KEY set); null until loaded.
   const [encryptionEnabled, setEncryptionEnabled] = useState(null);
+  // Each option's value right after registration ({ key: value }, secrets left out): the default
+  // the "modified" marks compare the stored value with.
+  const [defaults, setDefaults] = useState({});
   const [loading, setLoading] = useState(false);
   const loadStatus = useContext(LoadStatusContext);
   // Latest values for the async save path, which must not depend on a stale render.
@@ -54,6 +59,7 @@ export function useOptionSettings() {
         setInputs(merged);
         setOrigin(next);
         setSecrets(res.data.secrets || {});
+        setDefaults(res.data.defaults || {});
         setEncryptionEnabled(typeof res.data.encryption_enabled === 'boolean' ? res.data.encryption_enabled : null);
       } else {
         showError(message);
@@ -141,10 +147,47 @@ export function useOptionSettings() {
   // number inputs turn origin values like 10 into '10'.
   const isDirty = useCallback((keys) => keys.some((key) => !sameOption(inputs[key], origin[key])), [inputs, origin]);
 
-  return { inputs, origin, secrets, encryptionEnabled, setField, setBool, saveKeys, resetKeys, loading, refresh, isDirty };
+  return { inputs, origin, secrets, defaults, encryptionEnabled, setField, setBool, saveKeys, resetKeys, loading, refresh, isDirty };
 }
 
 const sameOption = (a, b) => String(a ?? '') === String(b ?? '');
+
+// Whether a stored option differs from its default ({ defaults, origin } of useOptionSettings).
+export const isModified = (meta, key) =>
+  Boolean(meta?.defaults) && key in meta.defaults && key in (meta.origin || {}) && !sameOption(meta.origin[key], meta.defaults[key]);
+
+// The stored and default values of the settings page, for the "modified" marks of its fields.
+// Null outside the platform settings page.
+export const SettingsMetaContext = createContext(null);
+
+// A field's text from the settings catalog when the card does not pass its own: the label, the
+// first sentence of the description under the field, and the rest in the help its `?` opens.
+// `id` is the option key. With a description of the card's own, the help holds the whole
+// catalog description. `modified` holds the default when the stored value differs from it.
+export function useSettingCopy(id, label, description) {
+  const { t } = useTranslation();
+  const meta = useContext(SettingsMetaContext);
+  const entry = catalogEntry(id);
+  if (!entry) return { label, description, help: null, modified: null };
+  const full = description !== undefined;
+  return {
+    label: label ?? settingLabel(t, id),
+    description: description ?? splitFirstSentence(settingDescription(t, id)).first,
+    help: hasMoreHelp(t, id, full) ? <SettingHelpBody settingKey={id} full={full} /> : null,
+    helpFull: full,
+    modified: isModified(meta, id) ? { defaultValue: String(meta.defaults[id] ?? '') } : null
+  };
+}
+
+const withDot = (label, modified) =>
+  modified && label ? (
+    <>
+      {label}
+      <ModifiedDot defaultValue={modified.defaultValue} />
+    </>
+  ) : (
+    label
+  );
 
 // FormCard props for a card saved through the option API: dirty state, Save and Undo bound to
 // the card's own keys. `options` are passed to saveKeys (validate / transform); `beforeSave`
@@ -195,7 +238,7 @@ export function splitLabelUnit(label) {
 
 export function TextRow({
   id,
-  label: rawLabel,
+  label: labelProp,
   // The card title already names the field (a one-field card): keep the label for screen readers only.
   labelHidden = false,
   unit: unitProp,
@@ -207,15 +250,18 @@ export function TextRow({
   readOnly,
   multiline,
   rows = 6,
-  description,
+  description: descriptionProp,
   error,
   endAdornment,
   copyable,
   secret
 }) {
   const { t } = useTranslation();
-  const { name: label, unit: labelUnit } = splitLabelUnit(rawLabel);
-  const unit = multiline ? null : (unitProp ?? labelUnit);
+  const copyText = useSettingCopy(id, labelProp, descriptionProp);
+  const description = copyText.description;
+  const { name: label, unit: labelUnit } = splitLabelUnit(copyText.label);
+  const catalogUnit = catalogEntry(id)?.unit;
+  const unit = multiline ? null : (unitProp ?? labelUnit ?? catalogUnit ?? null);
   // `secret` is the backend mask of a secret option ('' when unset, undefined for ordinary
   // fields): show it above the empty input so the stored value can be checked.
   const secretSet = Boolean(secret);
@@ -236,7 +282,16 @@ export function TextRow({
       </Button>
     ) : null);
   return (
-    <FormField id={id} label={labelHidden ? undefined : label} hint={secretSet ? t('common.secretKeepHint') : description} error={error}>
+    <FormField
+      id={id}
+      data-setting-key={catalogEntry(id) ? id : undefined}
+      data-highlight={catalogEntry(id) ? id : undefined}
+      label={labelHidden ? undefined : withDot(label, copyText.modified)}
+      hint={secretSet ? t('common.secretKeepHint') : description}
+      // A hidden label leaves no place for the `?`: the card title and the hint stand for it.
+      help={labelHidden ? null : copyText.help}
+      error={error}
+    >
       {secretSet && (
         <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <KeyRound className="size-3.5" />
@@ -298,15 +353,19 @@ export function CollapsibleHelp({ trigger, lines, children, className }) {
 }
 
 // One switch row of an OptionList (the list draws the frame and the lines between rows).
-export function ToggleRow({ id, label, description, checked, onCheckedChange, disabled, children }) {
+export function ToggleRow({ id, label: labelProp, description: descriptionProp, checked, onCheckedChange, disabled, children }) {
+  const copyText = useSettingCopy(id, labelProp, descriptionProp);
+  const { label, description } = copyText;
+  const known = Boolean(catalogEntry(id));
   return (
-    <div className="space-y-3 px-4 py-3">
+    <div className="space-y-3 px-4 py-3" data-setting-key={known ? id : undefined} data-highlight={known ? id : undefined}>
       <div className={`flex ${description ? 'items-start' : 'items-center'} justify-between gap-4`}>
-        <div className="min-w-0 space-y-1">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
           <Label htmlFor={id} className="text-sm font-medium leading-5">
-            {label}
+            {withDot(label, copyText.modified)}
           </Label>
-          {description && <div className="text-xs text-muted-foreground">{description}</div>}
+          {copyText.help && <SettingHelpToggle settingKey={id} full={copyText.helpFull} />}
+          {description && <div className="basis-full text-xs text-muted-foreground">{description}</div>}
         </div>
         <Switch id={id} checked={!!checked} onCheckedChange={onCheckedChange} disabled={disabled} />
       </div>
@@ -315,10 +374,21 @@ export function ToggleRow({ id, label, description, checked, onCheckedChange, di
   );
 }
 
-// Labelled select bound to one option; the label sits above the control.
-export function SelectRow({ id, label, description, value, onChange, options, disabled, className }) {
+// Labelled select bound to one option; the label sits above the control. An enum setting of the
+// catalog may leave out `options` labels: they come from the catalog.
+export function SelectRow({ id, label: labelProp, description: descriptionProp, value, onChange, options, disabled, className }) {
+  const copyText = useSettingCopy(id, labelProp, descriptionProp);
+  const known = Boolean(catalogEntry(id));
   return (
-    <FormField id={id} label={label} hint={description} className={className}>
+    <FormField
+      id={id}
+      data-setting-key={known ? id : undefined}
+      data-highlight={known ? id : undefined}
+      label={withDot(copyText.label, copyText.modified)}
+      hint={copyText.description}
+      help={copyText.help}
+      className={className}
+    >
       <Select value={value} onValueChange={onChange} disabled={disabled}>
         <SelectTrigger id={id}>
           <SelectValue />

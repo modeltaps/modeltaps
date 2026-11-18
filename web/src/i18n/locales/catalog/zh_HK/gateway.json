@@ -1,0 +1,440 @@
+{
+  "settingsCatalog": {
+    "RetryTimes": {
+      "label": "重試次數",
+      "description": "請求失敗後最多再換幾個渠道試，之後才把錯誤返回給呼叫方。限流、上游 5xx、密鑰被拒、餘額用盡會重試；無效請求（大部分 400）、408 逾時、網關自己的錯誤和指定了渠道的請求不重試。重試次數不超過承接該模型的渠道數，過了重試時限也會停止。0 表示第一次失敗就返回。",
+      "examples": [
+        "一個由 5 個渠道承接的模型，請求最多試 3 個渠道（第一次加 2 次重試）。",
+        "只有 2 個渠道承接這個模型時，兩個都試過就失敗：沒有未試過的渠道就不再重試。",
+        "不重試：第一次失敗直接返回給呼叫方。"
+      ],
+      "keywords": ["重試", "故障切換", "兜底", "重試次數", "換渠道"]
+    },
+    "RetryCooldownSeconds": {
+      "label": "限流冷卻（秒）",
+      "description": "渠道對某個模型返回 429 限流後，這個渠道暫停承接該模型多久。冷卻期間該模型的新請求發往其他渠道，這個渠道的其他模型不受影響。上游給出了限流重置時間時，以上游時間為準。開啟線路暫停規則時，這是內置 rate_limit 規則的暫停時長（自訂規則用自己的秒數）；關閉時，「按狀態碼冷卻」裏列出的狀態碼優先。0 表示只在當次請求裏跳過該渠道。",
+      "examples": [
+        "gpt-4o 遇到 429 後，這個渠道 5 秒內不再承接 gpt-4o 請求，其他模型照常。",
+        "按分鐘限流的渠道歇完這一分鐘，而不是繼續收 429。",
+        "不冷卻：下一個請求可能又落到同一個渠道，再次撞上限流。"
+      ],
+      "keywords": ["429", "限流", "冷卻", "凍結", "退避"]
+    },
+    "RetryTimeOut": {
+      "label": "重試時限（秒）",
+      "description": "從請求到達算起超過這麼多秒，就不再發起新的重試。每次重試前檢查，不會打斷正在進行的那次嘗試，長時間生成照樣能完成。因時限停止重試時，呼叫方收到 503「上游繁忙」。0 表示完全不重試。",
+      "examples": [
+        "第一個渠道 12 秒後才失敗，就不再重試；3 秒就失敗的，只要 10 秒未用完還會重試。",
+        "適合長推理請求：一個渠道一分鐘後失敗，仍有時間換一個再試。"
+      ],
+      "keywords": ["逾時", "重試逾時", "總時長", "時限"]
+    },
+    "RetryCooldownPerStatus": {
+      "label": "按狀態碼冷卻",
+      "description": "為其他 HTTP 狀態碼設定冷卻秒數，寫成「狀態碼: 秒數」的 JSON 物件。和限流冷卻一樣，只讓該渠道暫停承接這一個模型。開啟線路暫停規則時，內置 per_status 規則排在額度、憑證、限流、模型不存在幾條規則之後，所以這裏寫 429 不會生效，而列出的 5xx 狀態碼不再等一分鐘內失敗三次才暫停。關閉暫停規則時，順序是上游的重置時間、這裏的設定、再到 429 的限流冷卻。設為 0 的狀態碼從不冷卻。狀態碼須在 100-599 之間，秒數為不小於 0 的整數；留空表示不加。",
+      "examples": [
+        "渠道對某模型返回 503 後，從第一次 503 起 2 分鐘內不再承接該模型。",
+        "502 讓該渠道的這個模型冷卻 1 分鐘，504 冷卻 5 分鐘。",
+        "500 從不讓渠道暫停或冷卻：請求換渠道繼續，下一個請求仍可能用到它。"
+      ],
+      "keywords": ["狀態碼", "503", "502", "冷卻", "凍結"]
+    },
+    "ModelNotFoundCooldownSeconds": {
+      "label": "模型不存在暫停（秒）",
+      "description": "上游說某個模型不存在後，這個渠道暫停承接該模型多久。本頁沒有對應的輸入框，要透過選項 API（PUT /api/option/）修改。它針對「model not found」「does not exist」「no endpoints found」這類錯誤，同一請求裏出現過 429 時不算。開啟線路暫停規則時，這是內置 model_not_found 規則的暫停時長，該規則還會通知管理員；自訂規則用自己的秒數。0 表示從不因此暫停。",
+      "examples": [
+        "失去 gpt-4.5 權限的渠道 6 小時內不再承接 gpt-4.5 請求，之後再試。",
+        "上游只是短暫下架的模型，10 分鐘後恢復。",
+        "渠道一直留在輪換裏，持續讓該模型的請求失敗，直到把模型從渠道上移除。"
+      ],
+      "keywords": ["404", "模型不存在", "隔離", "模型下架"]
+    },
+    "PauseRulesEnabled": {
+      "label": "線路暫停規則",
+      "description": "失敗的請求交給暫停規則處理，規則會暫停渠道或渠道上的某個模型，到時自動恢復。關閉後改用舊的處理方式：自動禁用渠道（如已開啟）、限流冷卻和按狀態碼冷卻、模型不存在暫停。",
+      "examples": [
+        "密鑰被拒的渠道暫停一小時，測試通過後自動恢復，不用人手重新啟用。",
+        "開啟自動禁用時，密鑰被拒會禁用渠道，直到渠道測試通過才恢復。"
+      ],
+      "keywords": ["暫停", "熔斷", "健康檢查", "自動禁用"]
+    },
+    "PauseRules": {
+      "label": "自訂暫停規則",
+      "description": "一組 JSON 暫停規則，整體替換內置規則；留空使用內置規則。規則按順序匹配，第一條命中的生效，渠道自己的規則先於這裏。命中條件是 status_codes、keywords（錯誤訊息裏的子字串，以「re:」開頭為正則）、error_types、error_codes 任一滿足，再加上 unusable、model_not_found、rate_limit_reset、per_status_config 這些標記；times 與 window_seconds 讓規則先計數再觸發。action 為 pause（按 seconds 暫停整個渠道，或預設只暫停該模型）或 retry（不暫停，直接換下一條線路）。probe 表示恢復前先發一次測試請求，失敗則暫停時長加倍；notify 會通知管理員。不足一分鐘的暫停只保存在記憶體裏。儲存的規則帶着自己的秒數，限流冷卻和模型不存在暫停的設定不再作用於它們。",
+      "examples": [
+        "402 或餘額不足的報錯讓整個渠道暫停 30 分鐘並通知管理員；恢復前先發測試請求，餘額刷新發現有錢時提前結束暫停。",
+        "同一渠道上同一模型一分鐘內兩次 529，就在該渠道上暫停這個模型 5 分鐘；恢復前的測試失敗時，下一次暫停 10 分鐘。",
+        "沒有規則：甚麼都不會被暫停，失敗的渠道只在當次請求裏被跳過。"
+      ],
+      "keywords": ["暫停規則", "JSON", "熔斷", "探測", "額度", "關鍵詞"]
+    },
+    "AutomaticDisableChannelEnabled": {
+      "label": "自動禁用無法服務的渠道",
+      "description": "上游表明渠道已無法服務時（例如密鑰被拒、餘額用盡）禁用該渠道。額度耗盡、帳戶被停用、錯誤裏含禁用關鍵詞也算。線上請求只在線路暫停規則關閉時這樣處理；開啟時，這類錯誤改為暫停渠道。渠道測試遇到這類錯誤也會禁用，與暫停規則開關無關。被禁用的渠道只能靠開啟自動恢復後測試通過，或手動啟用。",
+      "keywords": ["自動禁用", "禁用渠道", "失效密鑰", "無效密鑰", "餘額"]
+    },
+    "AutomaticEnableChannelEnabled": {
+      "label": "測試通過後重新啟用",
+      "description": "被自動禁用的渠道，渠道測試通過後重新啟用。這裏的測試指全部渠道測試（定時的或手動發起的），並且要在最長回應時間內返回。管理員手動禁用的渠道不會自動啟用。關閉後，所有被禁用的渠道都等管理員處理。",
+      "keywords": ["自動啟用", "恢復", "重新啟用", "恢復渠道"]
+    },
+    "ChannelDisableThreshold": {
+      "label": "最長回應時間（秒）",
+      "description": "渠道測試慢於這麼多秒，已啟用的渠道會被禁用，已禁用的保持禁用。它作用於全部渠道測試（「全部渠道」模式的定時測試，或在渠道頁手動發起），與是否開啟自動禁用無關；線上請求從不按它計時。0 表示不限制。",
+      "examples": [
+        "測試請求 7.3 秒才返回的渠道被禁用；2 秒返回的照常服務。",
+        "放過較慢的推理模型，只禁用卡死的渠道。",
+        "測試只因出錯禁用渠道，從不因為慢。"
+      ],
+      "keywords": ["慢", "延遲", "回應時間", "閾值", "測試"]
+    },
+    "DisableChannelKeywords": {
+      "label": "禁用關鍵詞",
+      "description": "一行一條錯誤訊息，上游錯誤裏含有其中一條時，視為渠道已無法服務。匹配區分大小寫，請照抄上游原文；關鍵詞優先於內置的豁免規則。命中後請求換渠道；開啟線路暫停規則時，內置的 credential 規則暫停整個渠道（1 小時，恢復前先測試）；關閉暫停規則且開啟自動禁用時，禁用該渠道。留空則只剩內置的狀態碼和已知報錯判斷。",
+      "examples": [
+        "上游錯誤含這句話時，整個渠道暫停一小時，而不是一個接一個地讓請求失敗。",
+        "內置的 quota 規則也會命中它，且排在前面：渠道暫停 30 分鐘，餘額刷新發現有錢時提前恢復。"
+      ],
+      "keywords": ["關鍵詞", "錯誤訊息", "封禁", "封號", "停用"]
+    },
+    "ChannelTestMode": {
+      "label": "定時渠道測試",
+      "description": "網關每隔一個測試間隔自動測試哪些渠道。每次測試是向渠道測試模型發的一個小請求，由上游計費。設定了環境變數 CHANNEL_TEST_FREQUENCY 時以它為準：每隔這麼多分鐘測試全部渠道。",
+      "enum": {
+        "recovery": {
+          "label": "僅被自動禁用的渠道",
+          "description": "只測試被自動禁用的渠道，開啟自動恢復時重新啟用通過的；正常渠道不花錢。"
+        },
+        "all": {
+          "label": "全部渠道",
+          "description": "測試所有未手動禁用的渠道：太慢的禁用，開啟自動禁用時出錯的也禁用，被自動禁用且通過的恢復。"
+        },
+        "off": {
+          "label": "關閉",
+          "description": "不做定時測試：被禁用的渠道一直關着，直到管理員測試或啟用。"
+        }
+      },
+      "keywords": ["健康檢查", "測試", "探測", "監控", "CHANNEL_TEST_FREQUENCY"]
+    },
+    "ChannelTestIntervalMinutes": {
+      "label": "測試間隔（分鐘）",
+      "description": "兩次定時渠道測試之間的分鐘數，至少 1。新間隔從下一輪起生效，無需重新啟動。間隔越短，渠道恢復越快，但測試請求也越多。",
+      "examples": ["上游已恢復的被自動禁用渠道，大約 10 分鐘內回來。", "「全部渠道」模式下有 20 個渠道時，每天 480 個測試請求。"],
+      "keywords": ["間隔", "頻率", "定時"]
+    },
+    "ChannelCredentialRefreshMinutes": {
+      "label": "帳戶憑證刷新（分鐘）",
+      "description": "每隔多久檢查一次 Codex、Claude Code、Gemini CLI、Antigravity 渠道的 OAuth 憑證。在下次檢查之前（再加 15 分鐘）就會過期的憑證會提前刷新，閒置或被自動禁用的渠道也一樣，免得安靜一夜後第一個請求失敗；手動禁用的渠道跳過。某個渠道開始刷新失敗時發一條「渠道憑證問題」通知。0 關閉後台刷新。",
+      "examples": ["每 30 分鐘在後台續期 45 分鐘內到期的令牌。", "不做後台刷新：渠道閒置時令牌可能過期。"],
+      "keywords": ["OAuth", "令牌刷新", "Codex", "Claude Code", "Gemini CLI", "帳戶池"]
+    },
+    "ChannelFailErrorWrapEnabled": {
+      "label": "隱藏上游錯誤",
+      "description": "呼叫方收到通用錯誤，而不是上游原文，原文裏可能有供應商名稱或密鑰片段。400 以外的上游錯誤變成 503 加統一文案（429 仍是 429，讓用戶端退避），渠道密鑰被拒給固定文案，模型不存在給 404。400 錯誤原樣返回，因為它說的是請求本身的問題。只在排查時短暫關閉，看看上游到底說了甚麼。",
+      "keywords": ["錯誤訊息", "脫敏", "上游錯誤", "除錯", "封裝"]
+    },
+    "ChannelFailErrorMessage": {
+      "label": "統一錯誤文案",
+      "description": "隱藏上游錯誤時，上游失敗後呼叫方收到的文案。文案後會附上 request id，方便呼叫方報給你。留空使用「Upstream for the current group is at capacity, please try again later」。顯示上游錯誤時不起作用。",
+      "examples": ["請求失敗時返回 503，內容為「Service busy, please retry in a minute (request id: ...)」。"],
+      "keywords": ["錯誤文案", "503", "繁忙"]
+    },
+    "SupplyModeDefault": {
+      "label": "預設分流方式",
+      "description": "沒有單獨設定的模型，承接請求的線路之間怎樣分擔。只有優先級相同（以及成本相同，見「成本與優先級」）的線路才會分擔；單個模型可以在它的「線路」頁籤裏另選。",
+      "enum": {
+        "balance": {
+          "label": "負載均衡",
+          "description": "同一檔的線路按權重分擔請求。"
+        },
+        "failover": {
+          "label": "主備",
+          "description": "同一檔權重最高的線路承接全部請求，其餘作為備用。"
+        }
+      },
+      "examples": ["權重 3 和 1 的兩條線路，分別承接約 75% 和 25% 的請求。", "權重 3 的線路承接全部請求，權重 1 的只在它出錯時才用。"],
+      "keywords": ["負載均衡", "權重", "主備", "兜底", "備用"]
+    },
+    "SupplyCostOrder": {
+      "label": "成本與優先級",
+      "description": "線路成本（渠道標價 × (1 + 渠道費率)）能把線路往前排多遠。用戶付的價格都是目錄價 × 分組倍率，只影響你的成本。相差 0.1% 以內算同價，成本未知的排最後。",
+      "enum": {
+        "priority": {
+          "label": "優先級優先",
+          "description": "成本只調整同一優先級裏的先後。"
+        },
+        "cost": {
+          "label": "成本優先",
+          "description": "不管優先級，一個模型最便宜的線路先承接請求。"
+        }
+      },
+      "examples": [
+        "gpt-5.1 的 Requesty（成本 ×1.05）在最高優先級，繼續承接請求；低一檔的官方 API（×1.00）兜底。",
+        "官方 API（×1.00）承接 gpt-5.1 的請求，Requesty 變成兜底並標為較貴。"
+      ],
+      "keywords": ["最便宜", "按成本", "按價格", "省錢", "成本優先"]
+    },
+    "ModelSupplyEnabled": {
+      "label": "按線路路由",
+      "description": "請求按每個公開模型的線路分配，而不是按渠道的模型列表和模型映射。本頁沒有這個開關：先把渠道遷移到線路（POST /api/model_supply/migrate，先試運行），再透過選項 API（PUT /api/option/）開啟。開啟後請求按公開模型計費，只列出已發佈的模型，請求去哪由分流方式、成本順序、新模型接入規則和暫停規則決定。關回去會立刻回到渠道的模型列表，線路保留。",
+      "examples": [
+        "請求按各渠道的模型和模型映射路由；線路相關頁面只預覽開啟後會怎樣。",
+        "claude-sonnet-4-5 的請求發往這個公開模型的線路，按優先級和成本排序。"
+      ],
+      "keywords": ["按線路路由", "遷移", "公開模型", "線路"]
+    },
+    "SupplyIntakeRules": {
+      "label": "上游新模型接入規則",
+      "description": "渠道的上游開始提供新模型時怎樣處理，只針對會自動加入上游新模型的渠道。它是一個 JSON 陣列，從上往下匹配，第一條所有條件都滿足的規則說了算；沒有規則命中的模型等待審核。條件有：endpoints（能力，如 chat、responses、images，滿足任一即可）、vendors（廠商 id）、families 和 patterns（萬用字元，如 claude-* 或 *-preview*）、supplied（是否已有其他渠道提供）。action 為 enable（立即承接請求）、pending（先關着，等管理員確認）、disable（加入但關閉）或 skip（不加入）。placement 為 auto（已有其他渠道提供時排最後）、policy（按分配策略的位置）或 last（總在最後）。留空使用內置規則；儲存的規則整體替換內置規則，單個渠道也可以用自己的規則。",
+      "examples": [
+        "內置規則：gpt-5-preview 等待審核，新的對話模型立即承接請求（排在已提供它的渠道後面），圖片模型等待審核。",
+        "新的 Claude 模型立即承接請求，排在該模型其他線路之後；其他新模型不加入，留在「新上游模型」列表裏。"
+      ],
+      "keywords": ["新模型", "模型漂移", "自動加入", "審核", "上游模型"]
+    },
+    "SessionAffinityEnabled": {
+      "label": "同一會話固定到一個渠道",
+      "description": "同一用戶端會話的請求發往最初服務它的渠道，讓上游提示快取持續命中。會話按以下方式識別：metadata.user_id 裏的 Claude Code 會話、Codex 的 session_id 等會話請求標頭、OpenAI 的 prompt_cache_key，都沒有時按相同的系統提示詞與首條用戶訊息。Claude Code、Gemini CLI、Codex 帳戶渠道始終保持黏性，不受此開關影響。關閉後每個請求各自選路。",
+      "keywords": ["會話黏性", "提示快取", "快取命中", "親和", "固定渠道"]
+    },
+    "SessionAffinityStrict": {
+      "label": "失敗時不切換會話渠道",
+      "description": "會話綁定的渠道失敗時，呼叫方直接收到錯誤，不換其他渠道重試。該渠道也不會因此暫停這個模型（整個渠道級別的暫停照常）。換渠道會丟掉上游提示快取和 Codex 存在上游的對話狀態。表明渠道已無法服務的錯誤（密鑰被拒、餘額為零）仍會讓會話換渠道。不開啟則優先保證可用性。",
+      "keywords": ["嚴格", "不切換", "快取", "Codex"]
+    },
+    "SessionAffinityTTLSeconds": {
+      "label": "會話保持時長（秒）",
+      "description": "會話最後一次請求之後保持綁定的時長，每個請求都重新計時。帳戶渠道（Claude Code、Gemini CLI、Codex）始終保持 1 小時。0 也按 1 小時。",
+      "examples": [
+        "停了 50 分鐘的編碼會話回來仍用同一個渠道；停了 70 分鐘則可能換到別的渠道。",
+        "與上游 5 分鐘的提示快取一致：超過這個時間快取已失效，會話可以自由換渠道。"
+      ],
+      "keywords": ["TTL", "會話逾時", "黏性時長"]
+    },
+    "RoutingDecisionBillingEnabled": {
+      "label": "決策呼叫計費",
+      "description": "自動路由策略為選模型而做的呼叫，按決策模型的價格向呼叫方計費。每個會話計一次，單獨記一條日誌。關閉後決策照常進行，但費用由站點承擔，也不寫消費日誌。",
+      "keywords": ["自動路由", "決策模型", "分類", "計費", "策略"]
+    },
+    "UserRoutingPolicyEnabled": {
+      "label": "允許自建路由策略",
+      "description": "用戶和組織可以建立自己的路由策略，用 policy/<名字> 呼叫。用戶在工作台「路由策略」裏建立個人策略，組織 Owner / Admin 建立組織策略；自建策略在自己的 API Key 上覆蓋同名的平台策略。關閉後自建策略保留但不再生效，只有平台策略能解析。",
+      "keywords": ["路由策略", "policy/", "自助", "組織策略"]
+    },
+    "PersonalRoutingPolicyMaxCount": {
+      "label": "每個用戶的策略上限",
+      "description": "一個用戶最多能建立多少條個人路由策略。調低上限時已有的策略保留，只拒絕新建。0 表示不限。",
+      "examples": ["已有 20 條策略的用戶新建第 21 條時報錯。", "用戶想建多少條都可以。"],
+      "keywords": ["上限", "限額", "策略數"]
+    },
+    "OrganizationRoutingPolicyMaxCount": {
+      "label": "每個組織的策略上限",
+      "description": "一個組織最多能建立多少條路由策略。調低上限時已有的策略保留，只拒絕新建。0 表示不限。",
+      "examples": ["已有 20 條策略的組織新建第 21 條時報錯。", "讓組織策略少到可以逐條人手審核。"],
+      "keywords": ["上限", "組織", "策略數"]
+    },
+    "ModelNameCaseInsensitiveEnabled": {
+      "label": "模型名稱不區分大小寫",
+      "description": "呼叫方發來的模型名稱不論大小寫都能匹配渠道和價格。開啟後 GPT-4o 能找到 gpt-4o 的渠道和價格，萬用字元價格也一樣。關閉時名稱必須完全一致，大小寫不同的名稱找不到渠道。",
+      "keywords": ["大小寫不敏感", "大寫", "小寫", "模型名稱"]
+    },
+    "UnifiedRequestResponseModelEnabled": {
+      "label": "回應返回請求的模型名稱",
+      "description": "每個回應的 model 欄位都是呼叫方請求的名稱，而不是映射後的上游模型。有些用戶端會檢查回覆裏的模型是不是自己請求的那個。關閉時，只有自己開啟了此項的渠道和線路才這樣做。",
+      "examples": [
+        "請求 my-chat、映射到 gpt-4o-2024-08-06 時，回應裏是 \"model\": \"my-chat\"。",
+        "同一請求的回應裏是 \"model\": \"gpt-4o-2024-08-06\"，除非它的渠道或線路改了名稱。"
+      ],
+      "keywords": ["模型映射", "回應模型", "改名", "別名"]
+    },
+    "ClaudeAPIEnabled": {
+      "label": "Claude Messages API",
+      "description": "呼叫方除了 OpenAI 格式，還能用 Anthropic Messages 格式（/claude/v1/messages 和編碼代理端點）。Claude Code 和 Anthropic SDK 需要它。關閉後這些端點返回 403，llms.txt 裏也不再列出。",
+      "keywords": ["Anthropic", "Messages API", "Claude Code", "原生", "/v1/messages"]
+    },
+    "GeminiAPIEnabled": {
+      "label": "Gemini API",
+      "description": "呼叫方除了 OpenAI 格式，還能用 Google Gemini 格式（/gemini/v1beta 下的端點，含 Live API）。Gemini CLI 和 Google SDK 需要它。關閉後這些端點返回 403。",
+      "keywords": ["Google", "Gemini", "generateContent", "原生", "Gemini CLI"]
+    },
+    "ClaudePromptCachingEnabled": {
+      "label": "自動加提示快取標記",
+      "description": "給 Anthropic 模型的請求加上 cache_control 標記，讓上游快取提示詞。之後的請求按快取價讀取。它涵蓋任何渠道類型上的 Claude、Opus、Sonnet、Haiku 模型，只作用於提示快取設為「繼承」的渠道；設為開或關的渠道自己決定，TTL 和標記哪些訊息也由渠道決定。已自帶 cache_control 的請求不改動。預設關閉。",
+      "examples": ["不發快取標記的用戶端，長系統提示詞也會在上游快取 5 分鐘。", "只有自己加標記的用戶端，以及設為開啟的渠道，才用到快取。"],
+      "keywords": ["提示快取", "cache_control", "快取", "Anthropic", "成本"]
+    },
+    "FingerprintPassThroughEnabled": {
+      "label": "上游回應透傳",
+      "description": "盡量保持上游回應的原樣。Claude 和 Bedrock 的非串流回應按原始位元組透傳，串流回應保留 model 欄位，anthropic-ratelimit-*、x-ratelimit-*、x-amzn-* 等上游回應標頭傳給呼叫方。關閉後，回應像其他渠道一樣重新組裝。",
+      "keywords": ["指紋", "透傳", "原始回應", "回應標頭", "限流標頭"]
+    },
+    "ClaudeBudgetTokensPercentage": {
+      "label": "預設思考預算",
+      "description": "請求要求思考但沒有給預算時，Claude 可用於思考的 max_tokens 比例。它作用於發往 Claude 的 OpenAI 格式請求。budget_tokens = max_tokens × 此值，且不低於 1024。指定了 effort 的請求按 low、medium、high 分別用 0.2、0.5、0.8。",
+      "examples": [
+        "max_tokens 為 10000 時，Claude 最多思考 8000 token，剩 2000 用於回答。",
+        "max_tokens 為 4096 時，思考預算是 2048 token。",
+        "max_tokens 為 8192 時，819 太小，預算提高到 1024。"
+      ],
+      "keywords": ["思考", "budget_tokens", "推理", "擴展思考"]
+    },
+    "ClaudeDefaultMaxTokens": {
+      "label": "預設 max_tokens",
+      "description": "OpenAI 格式或 Responses 請求沒有設定輸出上限時，發給 Claude 的 max_tokens。Claude 必須有這個值，所以這裏是「模型名稱: token 數」的 JSON 物件，\"default\" 用於其他所有模型。設了 max_tokens 或 max_completion_tokens 的請求用自己的值。留空等於 {\"default\": 8192}；沒有 \"default\" 時未列出的模型沒有上限，會被 Claude 拒絕；不是有效 JSON 的內容會被忽略。",
+      "examples": [
+        "所有沒設上限的 Claude 請求最多輸出 8192 token。",
+        "沒設上限的 claude-sonnet-4-5 請求最多輸出 64000 token，其他模型 8192。"
+      ],
+      "keywords": ["max_tokens", "輸出上限", "Claude", "JSON"]
+    },
+    "GeminiOpenThink": {
+      "label": "顯示 Gemini 思考過程",
+      "description": "回應裏帶思考摘要的 Gemini 模型，寫成「模型名稱: true」的 JSON 物件。只對能思考的模型生效；未列出的模型不返回思考內容，除非請求自己要求。留空表示不列任何模型，不是有效 JSON 的內容會被忽略。",
+      "examples": ["gemini-2.5-pro 的回覆在答案前帶上推理過程；gemini-2.5-flash 不帶。"],
+      "keywords": ["思考", "include_thoughts", "推理", "Gemini"]
+    },
+    "MaxPromptTokens": {
+      "label": "最大輸入 Tokens",
+      "description": "發往 AWS Bedrock 渠道、輸入 token 超過此值的請求，在到達上游前就被拒絕。呼叫方收到 400「prompt is too long」，Claude Code 會像對待 Anthropic 官方報錯一樣處理；否則 Bedrock 會一直掛到逾時。模型目錄裏有上下文長度時以它為準；其他渠道類型不檢查。0 關閉此檢查。",
+      "examples": [
+        "發往目錄裏沒有上下文長度的 Bedrock 模型、120 萬 token 的提示詞立即收到 400。",
+        "對上下文長度未知的 Bedrock 模型，超過 200000 token 的提示詞被拒絕。"
+      ],
+      "keywords": ["上下文長度", "提示詞過長", "Bedrock", "AWS", "輸入限制"]
+    },
+    "ChatImageRequestProxy": {
+      "label": "圖片下載代理",
+      "description": "下載請求中所連結圖片時使用的 HTTP 或 SOCKS5 代理。網關要下載這些圖片來計算 token，並以數據形式轉給上游；不設代理時，圖床會看到本伺服器的 IP。設定了 Cloudflare Worker 時，代理只用於存取 Worker。留空則直接下載。",
+      "examples": ["圖片經本機 1080 端口的 SOCKS5 代理下載。", "圖片經內部網絡的 HTTP 代理下載。"],
+      "keywords": ["代理", "SOCKS5", "圖片連結", "視覺", "伺服器 IP"]
+    },
+    "CFWorkerImageUrl": {
+      "label": "Cloudflare Worker 圖片代理",
+      "description": "由一個 Cloudflare Worker 代替本伺服器下載請求中所連結的圖片。網關把圖片位址和 Worker 密鑰發給它，再讀回圖片，圖床只能看到 Cloudflare。它優先於圖片下載代理。有些圖床拒絕 Cloudflare 存取，這些圖片會下載失敗。留空表示不用 Worker。",
+      "examples": ["請求裏連結的每張圖片都由這個 Worker 下載。"],
+      "keywords": ["Cloudflare", "Worker", "圖片代理", "視覺"]
+    },
+    "CFWorkerImageKey": {
+      "label": "Cloudflare Worker 密鑰",
+      "description": "每次下載圖片時隨請求發給 Cloudflare Worker 的密鑰，供會校驗密鑰的 Worker 使用。Worker 不校驗或沒有設定 Worker 時留空。",
+      "keywords": ["Cloudflare", "Worker", "密鑰"]
+    },
+    "ImageStorageProvider": {
+      "label": "圖片儲存",
+      "description": "生成的圖片存放在哪裏，讓要求返回圖片連結的請求能拿到連結。Gemini、Cloudflare Workers AI 和 Stability AI 只返回圖片數據。選擇不啟用時改為返回 base64：圖片介面給 b64_json 而不是 url，Gemini 的回覆裏直接嵌入整張圖片。修改立即在所有節點生效。",
+      "enum": {
+        "local": {
+          "label": "本網關",
+          "description": "暫存在本網關，連結在伺服器位址下，1 小時有效，每個連結最多下載 5 次，單次下載限速 2 MB/s。多節點部署需啟用 Redis，任一節點才能提供連結。"
+        },
+        "s3": {
+          "label": "S3 相容儲存",
+          "description": "AWS S3、Cloudflare R2、MinIO、Backblaze B2 等 S3 相容儲存。不填公開存取位址時返回 1 小時有效的簽名連結，bucket 可保持私有。網關不刪除檔案，請在儲存後台設定生命週期規則（如 1 天後刪除）。"
+        },
+        "alioss": {
+          "label": "阿里雲 OSS",
+          "description": "返回帶簽名的連結，1 小時內有效，bucket 可以保持私有。"
+        },
+        "smms": {
+          "label": "SM.MS",
+          "description": "免費圖床，圖片公開可見。"
+        },
+        "imgur": {
+          "label": "Imgur",
+          "description": "免費圖床，圖片公開可見。"
+        },
+        "off": {
+          "label": "不啟用",
+          "description": "圖片以 base64 返回，只讀取圖片連結的用戶端拿不到圖。"
+        }
+      },
+      "keywords": ["圖床", "S3", "R2", "OSS", "base64", "b64_json", "生成圖片"]
+    },
+    "ImageStorageRehostUpstream": {
+      "label": "轉存上游返回的圖片和影片連結",
+      "description": "上游返回的圖片和影片連結換成本站連結，上游網域打不開時也能用。它涵蓋 DALL·E、Flux 等上游以及 Midjourney 任務返回的圖片連結，和可靈任務返回的影片連結。圖片立即下載存好；影片在第一次下載時取回並保存，單個最大 512 MB。取不到的連結原樣返回。關閉後上游連結原樣透傳。",
+      "keywords": ["轉存", "鏡像", "圖片連結", "影片", "Midjourney", "可靈"]
+    },
+    "ImageStorageS3Endpoint": {
+      "label": "S3 Endpoint",
+      "description": "儲存的 S3 API 位址，不含 bucket。不填公開存取位址時，連結指向 <endpoint>/<bucket>/... 並帶簽名。",
+      "examples": ["Cloudflare R2，地域為 auto。", "法蘭克福的 AWS S3，從位址裏讀出地域 eu-central-1。"],
+      "keywords": ["S3", "R2", "MinIO", "endpoint"]
+    },
+    "ImageStorageS3Region": {
+      "label": "S3 地域",
+      "description": "簽名使用的地域，通常留空。留空時從 AWS、Backblaze B2、Wasabi 的 endpoint 裏讀出，其他一律用 auto，這正是 Cloudflare R2 要求的。",
+      "examples": ["按 us-east-1 簽名，適用於 MinIO 等要求固定地域的儲存。"],
+      "keywords": ["地域", "S3"]
+    },
+    "ImageStorageS3BucketName": {
+      "label": "S3 Bucket",
+      "description": "圖片上傳到的 bucket。除非設定了公開存取位址，它可以保持私有。",
+      "keywords": ["bucket", "S3"]
+    },
+    "ImageStorageS3AccessKeyId": {
+      "label": "S3 Access Key ID",
+      "description": "有權寫入該 bucket 的存取密鑰 ID，密鑰本身填在下一個欄位。",
+      "keywords": ["存取密鑰", "憑證", "S3"]
+    },
+    "ImageStorageS3AccessKeySecret": {
+      "label": "S3 Access Key Secret",
+      "description": "S3 存取密鑰的 Secret。設定了加密密鑰時加密保存，儲存後不再顯示，留空儲存表示不修改。",
+      "keywords": ["密鑰", "憑證", "S3"]
+    },
+    "ImageStorageS3CDNURL": {
+      "label": "S3 公開存取位址",
+      "description": "bucket 的公開位址，或它前面的 CDN 位址；設定後圖片返回該位址下的公開連結。留空時返回 1 小時有效的簽名連結，bucket 可保持私有。",
+      "examples": ["圖片連結在 https://img.example.com/ 下，只要檔案還在就一直能用。"],
+      "keywords": ["CDN", "公開位址", "自訂網域"]
+    },
+    "ImageStorageS3ExpirationDays": {
+      "label": "S3 Expires 標頭（天）",
+      "description": "寫入每張上傳圖片 Expires 標頭的天數，供快取和 CDN 參考。它不會刪除檔案：刪除請用儲存的生命週期規則。0 表示不寫這個標頭。",
+      "examples": ["今天上傳的圖片標明明天過期；檔案一直保留，直到生命週期規則刪除它。", "不寫 Expires 標頭。"],
+      "keywords": ["過期", "快取標頭", "生命週期"]
+    },
+    "ImageStorageOSSEndpoint": {
+      "label": "OSS Endpoint",
+      "description": "bucket 所在阿里雲 OSS 地域的 endpoint。",
+      "examples": ["北京的 bucket，從位址裏讀出地域 cn-beijing。"],
+      "keywords": ["阿里雲", "OSS", "endpoint"]
+    },
+    "ImageStorageOSSRegion": {
+      "label": "OSS 地域",
+      "description": "bucket 所在的 OSS 地域，通常留空。留空時從 oss-<地域>.aliyuncs.com 形式的 endpoint 裏讀出；其他 endpoint（內網或加速網域）必須填寫，否則上傳失敗。",
+      "examples": ["按杭州簽名，適用於讀不出地域的 endpoint。"],
+      "keywords": ["地域", "OSS"]
+    },
+    "ImageStorageOSSBucketName": {
+      "label": "OSS Bucket",
+      "description": "圖片上傳到的 OSS bucket；連結帶簽名，所以它可以保持私有。",
+      "keywords": ["bucket", "OSS"]
+    },
+    "ImageStorageOSSAccessKeyId": {
+      "label": "OSS AccessKey ID",
+      "description": "有權寫入該 bucket 的 RAM 用戶的 AccessKey ID，Secret 填在下一個欄位。",
+      "keywords": ["AccessKey", "RAM", "憑證", "OSS"]
+    },
+    "ImageStorageOSSAccessKeySecret": {
+      "label": "OSS AccessKey Secret",
+      "description": "該 OSS 用戶的 AccessKey Secret。設定了加密密鑰時加密保存，儲存後不再顯示，留空儲存表示不修改。",
+      "keywords": ["AccessKey Secret", "憑證", "OSS"]
+    },
+    "ImageStorageSMMSSecret": {
+      "label": "SM.MS API Token",
+      "description": "你在這個免費圖床上帳戶的 API Token，用於上傳。那裏的圖片公開可見。",
+      "keywords": ["SM.MS", "smms", "圖床", "token"]
+    },
+    "ImageStorageImgurClientId": {
+      "label": "Imgur Client ID",
+      "description": "在 Imgur 註冊的應用程式的 Client ID，用於匿名上傳。那裏的圖片公開可見。",
+      "keywords": ["Imgur", "圖床", "client id"]
+    },
+    "MjNotifyEnabled": {
+      "label": "Midjourney 回調",
+      "description": "把 Midjourney 任務帶的回調位址（notifyHook）轉給上游，任務有變化時由上游呼叫它。回調來自上游而不是本站，內容是上游眼中的任務，上游也會知道呼叫方的位址。關閉後去掉該位址，呼叫方輪詢任務狀態。",
+      "keywords": ["Midjourney", "notifyHook", "回調", "webhook", "MJ"]
+    }
+  }
+}

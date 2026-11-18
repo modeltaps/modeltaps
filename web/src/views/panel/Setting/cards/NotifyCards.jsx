@@ -59,19 +59,15 @@ export function NotificationsCard({ ctx }) {
       <TextRow
         id="NotifyKindLimitPerHour"
         type="number"
-        label={nt('limit.label')}
         value={inputs.NotifyKindLimitPerHour}
         onChange={(v) => setField('NotifyKindLimitPerHour', v)}
         placeholder="20"
-        description={nt('limit.description')}
       />
       <TextRow
         id="UsageAlertTiers"
-        label={nt('usageTiers.label')}
         value={inputs.UsageAlertTiers}
         onChange={(v) => setField('UsageAlertTiers', v)}
         placeholder="50, 75, 100"
-        description={nt('usageTiers.description')}
       />
     </OptionCard>
   );
@@ -362,15 +358,10 @@ export function TelegramCard() {
 }
 
 export function BuiltinChatCard({ ctx }) {
-  const { t } = useTranslation();
   return (
     <OptionCard ctx={ctx} id="builtin-chat">
       <OptionList>
-        <ToggleRow
-          id="BuiltinChatEnabled"
-          label={t('setting_index.operationSettings.chatLinkSettings.builtinChatEnabled')}
-          {...bindSwitch(ctx, 'BuiltinChatEnabled')}
-        />
+        <ToggleRow id="BuiltinChatEnabled" {...bindSwitch(ctx, 'BuiltinChatEnabled')} />
       </OptionList>
     </OptionCard>
   );
@@ -459,17 +450,10 @@ export function ChatLinksCard({ ctx }) {
 }
 
 export function MjNotifyCard({ ctx }) {
-  const { t } = useTranslation();
-  const os = (k) => t(`setting_index.operationSettings.otherSettings.${k}`);
   return (
     <OptionCard ctx={ctx} id="mj-notify">
       <OptionList>
-        <ToggleRow
-          id="MjNotifyEnabled"
-          label={os('mjNotify')}
-          description={os('mjNotifyDescription')}
-          {...bindSwitch(ctx, 'MjNotifyEnabled')}
-        />
+        <ToggleRow id="MjNotifyEnabled" {...bindSwitch(ctx, 'MjNotifyEnabled')} />
       </OptionList>
     </OptionCard>
   );

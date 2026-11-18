@@ -62,6 +62,7 @@ import {
   typeLabels
 } from './providerDefaults';
 import { Field, LongListMore, LongListSearch, ToggleField, useLongList } from '@/components/objects';
+import { SettingHelpBody } from '@/components/settings/SettingHelp';
 import { GroupOptions, KeyLink, UsageOptions } from './channelParts';
 import ChannelOAuth from './ChannelOAuth';
 import ModelListInput from './ModelListInput';
@@ -1923,7 +1924,13 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
         </Field>
       )}
       <div className="grid grid-cols-2 gap-4">
-        <Field label={t('channels.advanced.costRatio')} htmlFor="cp-cost" optional hint={t('channels.advanced.costRatioHint')}>
+        <Field
+          label={t('channels.advanced.costRatio')}
+          htmlFor="cp-cost"
+          optional
+          hint={t('channels.advanced.costRatioHint')}
+          help={<SettingHelpBody settingKey="channel.cost_ratio" full />}
+        >
           <Input
             id="cp-cost"
             type="number"
@@ -1950,7 +1957,13 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
         </Field>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <Field label={t('channels.advanced.feeRate')} htmlFor="cp-fee" optional hint={t('channels.advanced.feeRateHint')}>
+        <Field
+          label={t('channels.advanced.feeRate')}
+          htmlFor="cp-fee"
+          optional
+          hint={t('channels.advanced.feeRateHint')}
+          help={<SettingHelpBody settingKey="channel.fee_rate" full />}
+        >
           <Input id="cp-fee" type="number" min="0" step="0.1" className="tabular-nums" value={draft.fee_rate} onChange={set('fee_rate')} />
         </Field>
         <Field label={t('channels.advanced.feeNote')} htmlFor="cp-fee-note" optional hint={t('channels.advanced.feeNoteHint')}>

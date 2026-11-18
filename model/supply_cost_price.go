@@ -9,9 +9,10 @@ import (
 	"gorm.io/datatypes"
 )
 
-// Channel cost: what the channel's provider charges for a request, as the price list the
-// gateway bills with. Billing charges the higher of the catalog price (times the group ratio)
-// and this cost, so a request served by a pricier channel never loses money.
+// Channel cost: what the channel's provider charges for a request, as a price list in the units
+// the gateway bills with. It is never charged to users (they pay the catalog price times their
+// group ratio): it orders supplies (supply_cost_tier.go), drives the price check and the cost
+// figures.
 
 // Where a channel cost comes from, in this order: the channel's upstream price list, the cost ratio
 // set on the channel (an admin who knows the real discount), and the official list price for a

@@ -1,0 +1,5369 @@
+{
+  "_comment": "Generated from common/settings by `go generate ./common/settings`. Do not edit.",
+  "settings": [
+    {
+      "key": "ServerAddress",
+      "scope": "site",
+      "group": "site",
+      "card": "server-address",
+      "type": "url",
+      "label": "Server address",
+      "description": "The public address users reach the site at; every link and callback the server builds starts with it. Sign-in callbacks, links in emails and Telegram replies, payment callbacks, generated image links and the docs examples use it, and the CSRF check accepts requests from its origin. Enter the scheme and host as users type them; a trailing slash is removed on save. The default http://localhost:3000 only works on the server itself. Passkeys are bound to its host name: after a move to another domain, users register their passkeys again.",
+      "examples": [
+        {
+          "value": "https://api.example.com",
+          "effect": "Password reset emails link to https://api.example.com/user/reset and an OIDC provider calls back to https://api.example.com/oauth/oidc/<slug>."
+        }
+      ],
+      "related": [
+        "PaymentCallbackAddress",
+        "PasskeyLoginEnabled"
+      ],
+      "keywords": [
+        "domain",
+        "base URL",
+        "public URL",
+        "site URL",
+        "callback URL",
+        "host"
+      ]
+    },
+    {
+      "key": "SystemName",
+      "scope": "site",
+      "group": "site",
+      "card": "branding",
+      "type": "string",
+      "label": "Site name",
+      "description": "The site's name in page titles, the console header and emails. It also names the site in payment descriptions, authenticator apps, passkey prompts and notification webhooks. Empty shows Modeltaps.",
+      "related": [
+        "Logo"
+      ],
+      "keywords": [
+        "system name",
+        "brand",
+        "title",
+        "branding"
+      ]
+    },
+    {
+      "key": "Logo",
+      "scope": "site",
+      "group": "site",
+      "card": "branding",
+      "type": "url",
+      "label": "Logo URL",
+      "description": "The image at the top of every email and on the signed-out and device authorization pages. Use an absolute https address so mail clients can load it. Empty shows the built-in mark on those pages and no image in emails.",
+      "examples": [
+        {
+          "value": "https://cdn.example.com/logo.svg",
+          "effect": "Emails show the logo 130 px wide above the text; the signed-out page shows it instead of the built-in mark."
+        }
+      ],
+      "related": [
+        "SystemName"
+      ],
+      "keywords": [
+        "brand",
+        "image",
+        "icon",
+        "branding"
+      ]
+    },
+    {
+      "key": "HomePageContent",
+      "scope": "site",
+      "group": "site",
+      "card": "branding",
+      "type": "text",
+      "label": "Home page content",
+      "description": "Your own home page in place of the built-in one. A value starting with http:// or https:// is shown in a full-page frame; anything else is rendered as Markdown, or as sanitized HTML when it starts with a tag. Empty keeps the built-in home page.",
+      "examples": [
+        {
+          "value": "https://www.example.com",
+          "effect": "The home page shows your marketing site in a full-page frame under the site header."
+        },
+        {
+          "value": "# Welcome\nSign in to get an API key.",
+          "effect": "The home page shows a heading and one line of text."
+        }
+      ],
+      "related": [
+        "About",
+        "Footer"
+      ],
+      "keywords": [
+        "landing page",
+        "homepage",
+        "index",
+        "iframe",
+        "markdown"
+      ]
+    },
+    {
+      "key": "About",
+      "scope": "site",
+      "group": "site",
+      "card": "branding",
+      "type": "text",
+      "label": "About page",
+      "description": "The content of the About page. A value starting with http:// or https:// is shown in a full-page frame; anything else is rendered as Markdown, or as sanitized HTML when it starts with a tag. Empty shows the built-in About text with a link to the project.",
+      "examples": [
+        {
+          "value": "Example AI is run by Example Inc. Contact: support@example.com",
+          "effect": "The About page shows these two sentences."
+        }
+      ],
+      "related": [
+        "HomePageContent"
+      ],
+      "keywords": [
+        "about us",
+        "contact",
+        "company",
+        "markdown"
+      ]
+    },
+    {
+      "key": "Footer",
+      "scope": "site",
+      "group": "site",
+      "card": "branding",
+      "type": "text",
+      "label": "Footer",
+      "description": "HTML that replaces the footer of the public pages. It is sanitized before display. Empty shows the default footer with the copyright and the docs link. A custom footer also makes the home page render in the console app instead of the prebuilt static page.",
+      "examples": [
+        {
+          "value": "© 2026 Example Inc · <a href=\"/about\">About</a>",
+          "effect": "Every public page ends with this line instead of the default footer."
+        }
+      ],
+      "related": [
+        "HomePageContent",
+        "DocsLink"
+      ],
+      "keywords": [
+        "copyright",
+        "footer html",
+        "ICP",
+        "legal"
+      ]
+    },
+    {
+      "key": "AnalyticsCode",
+      "scope": "site",
+      "group": "site",
+      "card": "branding",
+      "type": "text",
+      "label": "Analytics code",
+      "description": "HTML added to the head of every page, for analytics scripts such as Google Analytics, Umami or Plausible. It runs for every visitor with full access to the page, so paste only code from a provider you trust. Empty adds nothing.",
+      "examples": [
+        {
+          "value": "<script defer src=\"https://umami.example.com/script.js\" data-website-id=\"<site id>\"></script>",
+          "effect": "Umami counts the page views of the console and the public pages."
+        }
+      ],
+      "keywords": [
+        "google analytics",
+        "umami",
+        "plausible",
+        "tracking",
+        "statistics",
+        "script"
+      ]
+    },
+    {
+      "key": "BrandIconSyncEnabled",
+      "scope": "site",
+      "group": "site",
+      "card": "branding",
+      "type": "bool",
+      "label": "Sync the icon library",
+      "description": "Keeps the vendor and channel icon library up to date from the npm registry, checked every 24 hours. A newer version is used once it is verified; a failed check keeps the current icons. Off keeps the icons embedded in this build. Every node syncs on its own; browsers always load icons from this site.",
+      "related": [
+        "BrandIconRegistry",
+        "BrandIconFaviconFetchEnabled"
+      ],
+      "keywords": [
+        "lobehub",
+        "icons",
+        "provider icons",
+        "vendor logo",
+        "npm"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "BrandIconRegistry",
+      "scope": "site",
+      "group": "site",
+      "card": "branding",
+      "type": "url",
+      "label": "Icon library registry",
+      "description": "The npm registry the icon library sync downloads from. Enter an http or https address without a query; a trailing slash is removed. Empty uses https://registry.npmmirror.com.",
+      "examples": [
+        {
+          "value": "https://registry.npmjs.org",
+          "effect": "Downloads the icon library from the official npm registry."
+        },
+        {
+          "value": "https://registry.npmmirror.com",
+          "effect": "The default mirror, quicker to reach from mainland China."
+        }
+      ],
+      "related": [
+        "BrandIconSyncEnabled"
+      ],
+      "keywords": [
+        "npm registry",
+        "mirror",
+        "npmmirror",
+        "icons"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "BrandIconFaviconFetchEnabled",
+      "scope": "site",
+      "group": "site",
+      "card": "branding",
+      "type": "bool",
+      "label": "Fetch icons for unknown vendors",
+      "description": "When a vendor or channel without a built-in icon is saved, the server fetches its website's favicon and caches it. Browsers still load every icon from this site. Off leaves those vendors without a fetched icon.",
+      "related": [
+        "BrandIconSyncEnabled"
+      ],
+      "keywords": [
+        "favicon",
+        "icons",
+        "vendor logo",
+        "provider icons"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "DisplayInCurrencyEnabled",
+      "scope": "site",
+      "group": "site",
+      "card": "display",
+      "type": "bool",
+      "label": "Show amounts in US dollars",
+      "description": "Shows balances, quotas and costs as US dollar amounts in the console, the logs and the billing API. Each amount is quota / quota per dollar. Off shows raw quota numbers. Only the display changes, not what is charged.",
+      "examples": [
+        {
+          "value": "true",
+          "effect": "With the default 500000 quota per dollar, a balance of 1,000,000 quota shows as $2.00."
+        },
+        {
+          "value": "false",
+          "effect": "The same balance shows as 1,000,000."
+        }
+      ],
+      "related": [
+        "QuotaPerUnit"
+      ],
+      "keywords": [
+        "currency",
+        "USD",
+        "dollar",
+        "quota display",
+        "balance"
+      ]
+    },
+    {
+      "key": "DisplayTokenStatEnabled",
+      "scope": "site",
+      "group": "site",
+      "card": "display",
+      "type": "bool",
+      "label": "Report API key quota in the billing API",
+      "description": "The billing API reports the calling API key's quota instead of the user's balance. This covers the OpenAI-style endpoints /v1/dashboard/billing/subscription and /usage. A key with unlimited quota still reports the user's balance, and organization keys always report their own quota. Off always reports the user's balance.",
+      "related": [
+        "DisplayInCurrencyEnabled"
+      ],
+      "keywords": [
+        "billing API",
+        "token quota",
+        "API key quota",
+        "subscription endpoint",
+        "usage endpoint"
+      ]
+    },
+    {
+      "key": "QuotaPerUnit",
+      "scope": "site",
+      "group": "site",
+      "card": "display",
+      "type": "float",
+      "min": 1,
+      "label": "Quota per dollar",
+      "description": "How many quota units make one US dollar; every conversion between quota and dollars uses it. A top-up of $1 credits this much quota, and dollar amounts in the console, logs and billing API are quota divided by it. Balances are stored in quota, so changing it on a running site changes what every balance is worth: keep 500000 unless the site is new.",
+      "examples": [
+        {
+          "value": "500000",
+          "effect": "The default: a $10 top-up credits 5,000,000 quota, and 1,000 quota is $0.002."
+        },
+        {
+          "value": "1000000",
+          "effect": "On a running site, a stored balance of 5,000,000 quota drops from $10 to $5."
+        }
+      ],
+      "related": [
+        "DisplayInCurrencyEnabled"
+      ],
+      "keywords": [
+        "quota",
+        "exchange rate",
+        "credits",
+        "points",
+        "conversion",
+        "unit"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "DefaultLanguage",
+      "scope": "site",
+      "group": "site",
+      "card": "site-language",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "en_US",
+          "label": "English"
+        },
+        {
+          "value": "zh_CN",
+          "label": "Simplified Chinese"
+        },
+        {
+          "value": "zh_HK",
+          "label": "Traditional Chinese (Hong Kong)"
+        },
+        {
+          "value": "ja_JP",
+          "label": "Japanese"
+        }
+      ],
+      "label": "Default language",
+      "description": "The language emails and the home page use when a person's language is unknown. Users who picked a language in the console get emails in theirs; the home page uses it when the browser's language is not supported. The email template editor opens on it. Empty means English.",
+      "related": [
+        "MailTemplates"
+      ],
+      "keywords": [
+        "locale",
+        "language",
+        "i18n",
+        "email language"
+      ]
+    },
+    {
+      "key": "TopUpLink",
+      "scope": "site",
+      "group": "site",
+      "card": "external-links",
+      "type": "url",
+      "label": "Top-up link",
+      "description": "An outside shop where users buy redemption codes, opened in a new tab from the top-up page. Empty hides the button.",
+      "examples": [
+        {
+          "value": "https://shop.example.com/codes",
+          "effect": "The top-up page shows a button under the redemption code field that opens the shop."
+        }
+      ],
+      "keywords": [
+        "recharge",
+        "buy",
+        "shop",
+        "redemption code",
+        "card store"
+      ]
+    },
+    {
+      "key": "ChatLink",
+      "scope": "site",
+      "group": "site",
+      "card": "external-links",
+      "type": "url",
+      "label": "Chat link (legacy)",
+      "description": "A single chat client address from older versions, kept for clients that read it from the site status. The console does not link to it; list chat clients under Chat links instead. Empty publishes nothing.",
+      "related": [
+        "ChatLinks"
+      ],
+      "keywords": [
+        "chat client",
+        "web chat"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "DocsLink",
+      "scope": "site",
+      "group": "site",
+      "card": "external-links",
+      "type": "url",
+      "label": "Docs link",
+      "description": "Where the site's documentation lives, linked from the footer, the account menu and the API pages. /llms.txt and the agent skill file point to it too. Empty hides the external docs links; signed-in users still get the console's built-in docs.",
+      "examples": [
+        {
+          "value": "https://docs.example.com",
+          "effect": "Each API page links to its own page under https://docs.example.com."
+        }
+      ],
+      "related": [
+        "Footer"
+      ],
+      "keywords": [
+        "documentation",
+        "docs",
+        "help",
+        "llms.txt"
+      ]
+    },
+    {
+      "key": "Notice",
+      "scope": "site",
+      "group": "site",
+      "card": "version-notice",
+      "type": "text",
+      "label": "Announcement",
+      "description": "A banner at the top of the console for signed-in users, until each one reads or closes it. It shows again whenever the text changes. Markdown and HTML are supported. Empty shows no announcement.",
+      "examples": [
+        {
+          "value": "Maintenance on Saturday 02:00-03:00 UTC: requests may fail for a few minutes.",
+          "effect": "Every signed-in user sees the banner once; editing the text shows it to everyone again."
+        }
+      ],
+      "keywords": [
+        "notice",
+        "banner",
+        "announcement",
+        "message",
+        "maintenance"
+      ]
+    },
+    {
+      "key": "AccountSystem",
+      "scope": "site",
+      "group": "auth",
+      "card": "account-system",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "builtin",
+          "label": "Built-in accounts",
+          "description": "This site manages users, passwords, email codes and passkeys, optionally with GitHub, WeChat and other third-party sign-in. No external service is needed."
+        },
+        {
+          "value": "external",
+          "label": "External identity provider",
+          "description": "An OIDC service handles sign-in, sign-up, phone numbers, two-step verification and third-party sign-in. This site shows no sign-in form of its own: /login goes straight to the provider."
+        }
+      ],
+      "label": "Account system",
+      "description": "Whether this site manages its own accounts or leaves them to an external identity provider. With an external provider, the site's password, email code, passkey and social sign-in switches stop applying to regular users; only root keeps the emergency sign-in at /login/admin. Switching to external needs an enabled identity provider marked as the site identity, and saving asks for confirmation either way.",
+      "related": [
+        "AdminLoginEnabled",
+        "PasswordLoginEnabled",
+        "RegisterEnabled"
+      ],
+      "keywords": [
+        "OIDC",
+        "SSO",
+        "identity provider",
+        "IdP",
+        "single sign-on",
+        "login mode"
+      ]
+    },
+    {
+      "key": "PasswordLoginEnabled",
+      "scope": "site",
+      "group": "auth",
+      "card": "login-methods",
+      "type": "bool",
+      "label": "Password sign-in",
+      "description": "Users can sign in with their username or email and password. When off, regular users sign in with an email code, a passkey or a social account; root can still use its password to reach the console. Only applies with built-in accounts.",
+      "related": [
+        "PasswordRegisterEnabled",
+        "EmailCodeLoginEnabled",
+        "PasskeyLoginEnabled",
+        "AccountSystem"
+      ],
+      "keywords": [
+        "password login",
+        "username",
+        "local login"
+      ]
+    },
+    {
+      "key": "EmailCodeLoginEnabled",
+      "scope": "site",
+      "group": "auth",
+      "card": "login-methods",
+      "type": "bool",
+      "label": "Email code sign-in",
+      "description": "Users can sign in with a code sent to their verified email instead of a password. It needs a working mail service: without one the option is not offered on the sign-in page. Only applies with built-in accounts.",
+      "related": [
+        "PasswordLoginEnabled",
+        "PasskeyLoginEnabled"
+      ],
+      "keywords": [
+        "magic code",
+        "one-time code",
+        "passwordless",
+        "OTP",
+        "login code"
+      ]
+    },
+    {
+      "key": "PasskeyLoginEnabled",
+      "scope": "site",
+      "group": "auth",
+      "card": "login-methods",
+      "type": "bool",
+      "label": "Passkeys",
+      "description": "Users can add passkeys (fingerprint, face or a hardware key) on their security page and sign in with them. When off, passkeys can neither be added nor used. With an external identity provider only root can use them, for the emergency sign-in.",
+      "related": [
+        "PasswordLoginEnabled",
+        "AdminLoginEnabled"
+      ],
+      "keywords": [
+        "WebAuthn",
+        "FIDO2",
+        "security key",
+        "biometric",
+        "Touch ID"
+      ]
+    },
+    {
+      "key": "RegisterEnabled",
+      "scope": "site",
+      "group": "auth",
+      "card": "login-methods",
+      "type": "bool",
+      "label": "New user sign-up",
+      "description": "Whether new accounts can be created at all. When off, nobody can sign up: not with a password, not on a first social or identity provider sign-in, and organizations cannot create member accounts. Existing users still sign in.",
+      "related": [
+        "PasswordRegisterEnabled",
+        "InviteCodeRegisterEnabled",
+        "EmailVerificationEnabled"
+      ],
+      "keywords": [
+        "registration",
+        "signup",
+        "close registration",
+        "new accounts"
+      ]
+    },
+    {
+      "key": "PasswordRegisterEnabled",
+      "scope": "site",
+      "group": "auth",
+      "card": "login-methods",
+      "type": "bool",
+      "label": "Password sign-up",
+      "description": "New users can sign up with a username and password. When off, new accounts come only from social sign-in, and organizations cannot create member accounts. Needs New user sign-up on; only applies with built-in accounts.",
+      "related": [
+        "RegisterEnabled",
+        "EmailVerificationEnabled",
+        "InviteCodeRegisterEnabled",
+        "PasswordLoginEnabled"
+      ],
+      "keywords": [
+        "registration",
+        "signup form"
+      ]
+    },
+    {
+      "key": "EmailVerificationEnabled",
+      "scope": "site",
+      "group": "auth",
+      "card": "login-methods",
+      "type": "bool",
+      "label": "Email verification at sign-up",
+      "description": "Password sign-up asks for an email and the code sent to it, and the account keeps that email as verified. It needs a working mail service. Social sign-ups are not affected. With the email domain restriction on, codes only go to allowed domains.",
+      "related": [
+        "PasswordRegisterEnabled",
+        "EmailDomainRestrictionEnabled",
+        "EmailDomainWhitelist"
+      ],
+      "keywords": [
+        "verify email",
+        "verification code",
+        "confirm email"
+      ]
+    },
+    {
+      "key": "InviteCodeRegisterEnabled",
+      "scope": "site",
+      "group": "auth",
+      "card": "login-methods",
+      "type": "bool",
+      "label": "Invite code required to sign up",
+      "description": "New users must enter a valid invite code, both for password sign-up and for a first social sign-in. Invite codes are managed on the invite codes page. Existing users and member accounts created by organizations do not need one.",
+      "related": [
+        "RegisterEnabled",
+        "PasswordRegisterEnabled"
+      ],
+      "keywords": [
+        "invitation",
+        "invite only",
+        "closed beta",
+        "referral code"
+      ]
+    },
+    {
+      "key": "TurnstileCheckEnabled",
+      "scope": "site",
+      "group": "auth",
+      "card": "login-methods",
+      "type": "bool",
+      "label": "Bot check",
+      "description": "Cloudflare Turnstile checks that a person is behind sign-in, sign-up, password reset and the emails with codes. It cannot be turned on before the Turnstile site key is saved, and it needs the secret key too. A passed check covers the session for 10 minutes by default.",
+      "related": [
+        "TurnstileSiteKey",
+        "TurnstileSecretKey"
+      ],
+      "keywords": [
+        "captcha",
+        "Turnstile",
+        "Cloudflare",
+        "anti-bot",
+        "human verification"
+      ]
+    },
+    {
+      "key": "AdminLoginEnabled",
+      "scope": "site",
+      "group": "auth",
+      "card": "admin-login",
+      "type": "bool",
+      "label": "Admin emergency sign-in",
+      "description": "Keeps /login/admin open so root can sign in with its password or passkey when the identity provider is down. Only root gets through; account lockout, rate limits and the bot check still apply. It exists only with an external identity provider. When off, nobody can reach the console while the provider is down.",
+      "related": [
+        "AccountSystem",
+        "PasskeyLoginEnabled"
+      ],
+      "keywords": [
+        "break glass",
+        "root login",
+        "emergency access",
+        "backdoor",
+        "fallback login"
+      ]
+    },
+    {
+      "key": "GitHubOAuthEnabled",
+      "scope": "site",
+      "group": "auth",
+      "card": "github-oauth",
+      "type": "bool",
+      "label": "GitHub sign-in",
+      "description": "Users can sign in and sign up with their GitHub account. It cannot be turned on before the GitHub client ID is saved. Only applies with built-in accounts.",
+      "related": [
+        "GitHubClientId",
+        "GitHubClientSecret",
+        "GitHubOldIdCloseEnabled"
+      ],
+      "keywords": [
+        "GitHub",
+        "OAuth",
+        "social login"
+      ]
+    },
+    {
+      "key": "GitHubClientId",
+      "scope": "site",
+      "group": "auth",
+      "card": "github-oauth",
+      "type": "string",
+      "label": "GitHub client ID",
+      "description": "The client ID of the OAuth app you registered on GitHub. Register it with this site's address as the homepage URL and <server address>/oauth/github as the callback URL.",
+      "related": [
+        "GitHubOAuthEnabled",
+        "GitHubClientSecret"
+      ],
+      "keywords": [
+        "GitHub",
+        "OAuth app",
+        "client id"
+      ]
+    },
+    {
+      "key": "GitHubClientSecret",
+      "scope": "site",
+      "group": "auth",
+      "card": "github-oauth",
+      "type": "secret",
+      "label": "GitHub client secret",
+      "description": "The client secret of the same GitHub OAuth app. It is never shown again after saving; leave the field empty to keep the stored one.",
+      "related": [
+        "GitHubOAuthEnabled",
+        "GitHubClientId"
+      ],
+      "keywords": [
+        "GitHub",
+        "OAuth app",
+        "client secret"
+      ]
+    },
+    {
+      "key": "GitHubOldIdCloseEnabled",
+      "scope": "site",
+      "group": "auth",
+      "card": "github-oauth",
+      "type": "bool",
+      "label": "Match GitHub accounts by ID only",
+      "description": "GitHub sign-in no longer matches old accounts by their GitHub login name, only by GitHub's numeric account ID. When off, an account from before IDs were stored is matched once by login name and then keeps the ID. A login name can be renamed and taken by someone else, so turn it on once old accounts have signed in.",
+      "related": [
+        "GitHubOAuthEnabled"
+      ],
+      "keywords": [
+        "legacy GitHub",
+        "username",
+        "impersonation",
+        "old id"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "WeChatAuthEnabled",
+      "scope": "site",
+      "group": "auth",
+      "card": "wechat-auth",
+      "type": "bool",
+      "label": "WeChat sign-in",
+      "description": "Users can sign in and sign up through your WeChat official account. They follow it, get a code and enter it on the sign-in page. It needs a WeChat login server and cannot be turned on before its address is saved. Only applies with built-in accounts.",
+      "related": [
+        "WeChatServerAddress",
+        "WeChatServerToken",
+        "WeChatAccountQRCodeImageURL"
+      ],
+      "keywords": [
+        "WeChat",
+        "Weixin",
+        "official account",
+        "social login"
+      ]
+    },
+    {
+      "key": "WeChatServerAddress",
+      "scope": "site",
+      "group": "auth",
+      "card": "wechat-auth",
+      "type": "url",
+      "label": "WeChat login server address",
+      "description": "The address of the WeChat login server behind your official account. The site asks it which WeChat user a code belongs to.",
+      "examples": [
+        {
+          "value": "https://wechat.example.com",
+          "effect": "Codes are checked at https://wechat.example.com/api/wechat/user."
+        }
+      ],
+      "related": [
+        "WeChatAuthEnabled",
+        "WeChatServerToken"
+      ],
+      "keywords": [
+        "WeChat",
+        "server",
+        "official account"
+      ]
+    },
+    {
+      "key": "WeChatServerToken",
+      "scope": "site",
+      "group": "auth",
+      "card": "wechat-auth",
+      "type": "secret",
+      "label": "WeChat login server token",
+      "description": "The access token the site sends to the WeChat login server with every check, as set on that server. It is never shown again after saving; leave the field empty to keep the stored one.",
+      "related": [
+        "WeChatServerAddress"
+      ],
+      "keywords": [
+        "WeChat",
+        "access token"
+      ]
+    },
+    {
+      "key": "WeChatAccountQRCodeImageURL",
+      "scope": "site",
+      "group": "auth",
+      "card": "wechat-auth",
+      "type": "url",
+      "label": "Official account QR code",
+      "description": "A link to the QR code image of your WeChat official account. The WeChat sign-in dialog shows it so users can scan it, follow the account and get their code.",
+      "examples": [
+        {
+          "value": "https://example.com/wechat-qr.png",
+          "effect": "The sign-in dialog shows this image for users to scan."
+        }
+      ],
+      "related": [
+        "WeChatAuthEnabled"
+      ],
+      "keywords": [
+        "WeChat",
+        "QR code",
+        "official account"
+      ]
+    },
+    {
+      "key": "LarkAuthEnabled",
+      "scope": "site",
+      "group": "auth",
+      "card": "lark-auth",
+      "type": "bool",
+      "label": "Lark sign-in",
+      "description": "Users can sign in and sign up with their Lark (Feishu) account. It uses the app whose App ID and App Secret you enter on this card. Only applies with built-in accounts.",
+      "related": [
+        "LarkClientId",
+        "LarkClientSecret"
+      ],
+      "keywords": [
+        "Lark",
+        "Feishu",
+        "OAuth",
+        "social login"
+      ]
+    },
+    {
+      "key": "LarkClientId",
+      "scope": "site",
+      "group": "auth",
+      "card": "lark-auth",
+      "type": "string",
+      "label": "Lark App ID",
+      "description": "The App ID of the Lark (Feishu) app users sign in with. Create a web app on the Lark open platform and set its redirect URL to <server address>/oauth/lark.",
+      "related": [
+        "LarkAuthEnabled",
+        "LarkClientSecret"
+      ],
+      "keywords": [
+        "Lark",
+        "Feishu",
+        "app id",
+        "client id"
+      ]
+    },
+    {
+      "key": "LarkClientSecret",
+      "scope": "site",
+      "group": "auth",
+      "card": "lark-auth",
+      "type": "secret",
+      "label": "Lark App Secret",
+      "description": "The App Secret of the same Lark app. It is never shown again after saving; leave the field empty to keep the stored one.",
+      "related": [
+        "LarkAuthEnabled",
+        "LarkClientId"
+      ],
+      "keywords": [
+        "Lark",
+        "Feishu",
+        "app secret",
+        "client secret"
+      ]
+    },
+    {
+      "key": "LinuxDoOAuthEnabled",
+      "scope": "site",
+      "group": "auth",
+      "card": "linuxdo-oauth",
+      "type": "bool",
+      "label": "LINUX DO sign-in",
+      "description": "Users can sign in and sign up with their LINUX DO account. It cannot be turned on before the client ID and client secret are saved. Only applies with built-in accounts.",
+      "related": [
+        "LinuxDoClientId",
+        "LinuxDoClientSecret",
+        "LinuxDoOAuthTrustLevelEnabled"
+      ],
+      "keywords": [
+        "LINUX DO",
+        "linuxdo",
+        "OAuth",
+        "social login"
+      ]
+    },
+    {
+      "key": "LinuxDoClientId",
+      "scope": "site",
+      "group": "auth",
+      "card": "linuxdo-oauth",
+      "type": "string",
+      "label": "LINUX DO client ID",
+      "description": "The client ID of the OAuth app you registered on LINUX DO, with <server address>/oauth/linuxdo as its callback URL.",
+      "related": [
+        "LinuxDoOAuthEnabled",
+        "LinuxDoClientSecret"
+      ],
+      "keywords": [
+        "LINUX DO",
+        "OAuth app",
+        "client id"
+      ]
+    },
+    {
+      "key": "LinuxDoClientSecret",
+      "scope": "site",
+      "group": "auth",
+      "card": "linuxdo-oauth",
+      "type": "secret",
+      "label": "LINUX DO client secret",
+      "description": "The client secret of the same LINUX DO OAuth app. It is never shown again after saving; leave the field empty to keep the stored one.",
+      "related": [
+        "LinuxDoOAuthEnabled",
+        "LinuxDoClientId"
+      ],
+      "keywords": [
+        "LINUX DO",
+        "OAuth app",
+        "client secret"
+      ]
+    },
+    {
+      "key": "LinuxDoOAuthTrustLevelEnabled",
+      "scope": "site",
+      "group": "auth",
+      "card": "linuxdo-oauth",
+      "type": "bool",
+      "label": "Minimum trust level",
+      "description": "LINUX DO accounts below the minimum trust level cannot sign up or be linked. Whether existing users are checked too is up to the dynamic limit. It needs LINUX DO sign-in on.",
+      "related": [
+        "LinuxDoOAuthLowestTrustLevel",
+        "LinuxDoOAuthDynamicTrustLevel",
+        "LinuxDoOAuthEnabled"
+      ],
+      "keywords": [
+        "LINUX DO",
+        "trust level",
+        "restriction"
+      ]
+    },
+    {
+      "key": "LinuxDoOAuthLowestTrustLevel",
+      "scope": "site",
+      "group": "auth",
+      "card": "linuxdo-oauth",
+      "type": "int",
+      "min": 1,
+      "max": 4,
+      "label": "Lowest LINUX DO trust level",
+      "description": "The lowest LINUX DO trust level allowed in, from 1 to 4: 1 basic, 2 member, 3 regular, 4 leader. Only applies while the minimum trust level is on.",
+      "examples": [
+        {
+          "value": "1",
+          "effect": "Every account from basic users up gets in: only brand-new level 0 accounts are refused."
+        },
+        {
+          "value": "2",
+          "effect": "Members (level 2) and above get in; basic users (level 1) are refused."
+        },
+        {
+          "value": "3",
+          "effect": "Only regular users (level 3) and leaders (level 4) get in."
+        }
+      ],
+      "related": [
+        "LinuxDoOAuthTrustLevelEnabled",
+        "LinuxDoOAuthDynamicTrustLevel"
+      ],
+      "keywords": [
+        "LINUX DO",
+        "trust level"
+      ]
+    },
+    {
+      "key": "LinuxDoOAuthDynamicTrustLevel",
+      "scope": "site",
+      "group": "auth",
+      "card": "linuxdo-oauth",
+      "type": "bool",
+      "label": "Check existing users too",
+      "description": "The minimum trust level is checked on every LINUX DO sign-in, also for existing users. An existing user whose level is now too low is refused. When off, only new sign-ups are checked. It needs the minimum trust level on.",
+      "related": [
+        "LinuxDoOAuthTrustLevelEnabled",
+        "LinuxDoOAuthLowestTrustLevel"
+      ],
+      "keywords": [
+        "LINUX DO",
+        "trust level",
+        "dynamic"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "TurnstileSiteKey",
+      "scope": "site",
+      "group": "auth",
+      "card": "turnstile",
+      "type": "string",
+      "label": "Turnstile site key",
+      "description": "The site key of the widget you created in the Cloudflare Turnstile dashboard. The sign-in and sign-up pages load the check with it. The invisible widget type disturbs users least.",
+      "related": [
+        "TurnstileSecretKey",
+        "TurnstileCheckEnabled"
+      ],
+      "keywords": [
+        "Turnstile",
+        "Cloudflare",
+        "captcha",
+        "site key"
+      ]
+    },
+    {
+      "key": "TurnstileSecretKey",
+      "scope": "site",
+      "group": "auth",
+      "card": "turnstile",
+      "type": "secret",
+      "label": "Turnstile secret key",
+      "description": "The secret key of the same Turnstile widget; the server uses it to confirm each check with Cloudflare. It is never shown again after saving; leave the field empty to keep the stored one.",
+      "related": [
+        "TurnstileSiteKey",
+        "TurnstileCheckEnabled"
+      ],
+      "keywords": [
+        "Turnstile",
+        "Cloudflare",
+        "captcha",
+        "secret key"
+      ]
+    },
+    {
+      "key": "EmailDomainRestrictionEnabled",
+      "scope": "site",
+      "group": "auth",
+      "card": "email-domain",
+      "type": "bool",
+      "label": "Email domain restriction",
+      "description": "Sign-up verification codes only go to emails on the allowed domains, which keeps out throwaway mailboxes. Organizations cannot create member accounts with other emails either. It only stops password sign-up while email verification is on, and it cannot be turned on with an empty domain list.",
+      "related": [
+        "EmailDomainWhitelist",
+        "EmailVerificationEnabled"
+      ],
+      "keywords": [
+        "allowlist",
+        "whitelist",
+        "disposable email",
+        "temporary email",
+        "domain"
+      ]
+    },
+    {
+      "key": "EmailDomainWhitelist",
+      "scope": "site",
+      "group": "auth",
+      "card": "email-domain",
+      "type": "list",
+      "label": "Allowed email domains",
+      "description": "The email domains allowed while the restriction is on, one per line (stored comma-separated). A domain matches exactly: example.com does not allow mail.example.com.",
+      "examples": [
+        {
+          "value": "gmail.com,outlook.com",
+          "effect": "alice@gmail.com and bob@outlook.com get codes; carol@tempmail.dev is refused."
+        },
+        {
+          "value": "example.com",
+          "effect": "Only company addresses like alice@example.com can sign up; alice@mail.example.com cannot."
+        }
+      ],
+      "related": [
+        "EmailDomainRestrictionEnabled"
+      ],
+      "keywords": [
+        "allowlist",
+        "whitelist",
+        "email domains"
+      ]
+    },
+    {
+      "key": "QuotaForNewUser",
+      "scope": "site",
+      "group": "billing",
+      "card": "quota",
+      "type": "int",
+      "min": 0,
+      "label": "New user quota",
+      "description": "The quota a new account starts with, granted once when it is created and logged as a sign-up bonus. In quota units: 500,000 = $1 at the default quota per unit; the field also takes dollars. Accounts an organization creates for its members start at 0, and changing it leaves existing balances alone. 0 gives new users nothing until they top up or redeem a code.",
+      "examples": [
+        {
+          "value": "1000000",
+          "effect": "$2 of trial credit: about 119,000 output tokens of a $15 per million model sold at ratio 1.12."
+        },
+        {
+          "value": "0",
+          "effect": "New users can call nothing until they top up or redeem a code."
+        }
+      ],
+      "related": [
+        "QuotaPerUnit",
+        "QuotaForInvitee",
+        "PaymentMinAmount"
+      ],
+      "keywords": [
+        "sign-up bonus",
+        "trial credit",
+        "free credit",
+        "initial balance",
+        "welcome credit"
+      ]
+    },
+    {
+      "key": "PreConsumedQuota",
+      "scope": "site",
+      "group": "billing",
+      "card": "quota",
+      "type": "int",
+      "min": 0,
+      "label": "Fixed pre-charge",
+      "description": "A fixed amount added to the up-front reservation of every token-priced request, on top of its estimated cost. The reservation (estimated input + reserved output tokens + this) is held from the balance or the API key's quota while the request runs and settled to the real cost when it ends, so it decides who may start a request, never what is charged. A balance below the reservation is refused with insufficient quota. In quota units: 500 = $0.001. Requests priced per call or per minute reserve their own price instead.",
+      "examples": [
+        {
+          "value": "500",
+          "effect": "The default. A request with 2,000 input tokens on a $3 / $15 per million model at ratio 1.12 holds 3,360 + 34,406 + 500 = 38,266 quota (about $0.077) until it settles."
+        },
+        {
+          "value": "50000",
+          "effect": "Every request needs $0.10 more than its estimate to start, so nearly empty balances are refused earlier."
+        },
+        {
+          "value": "0",
+          "effect": "Only the estimate is held: a balance just above it can still start a request."
+        }
+      ],
+      "related": [
+        "PreConsumedOutputTokens"
+      ],
+      "keywords": [
+        "pre-consume",
+        "reservation",
+        "hold",
+        "insufficient quota",
+        "deposit"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "PreConsumedOutputTokens",
+      "scope": "site",
+      "group": "billing",
+      "card": "quota",
+      "type": "int",
+      "min": 0,
+      "label": "Reserved output tokens",
+      "description": "How many output tokens a token-priced request reserves up front, or the request's own max_tokens when smaller. Reserving its likely output keeps concurrent requests from driving a balance far below zero; the charge is settled to the real usage when the request ends. 0 reserves no output, only the input estimate and the fixed pre-charge.",
+      "examples": [
+        {
+          "value": "4096",
+          "effect": "The default. A $15 per million output model at ratio 1.12 reserves 4,096 x 8.4 = 34,406 quota (about $0.069) per request; a request with max_tokens 1,000 reserves 8,400."
+        },
+        {
+          "value": "32000",
+          "effect": "Long reasoning answers are covered up front: 32,000 x 8.4 = 268,800 quota (about $0.54) on the same model, so a balance below that cannot start a request."
+        }
+      ],
+      "related": [
+        "PreConsumedQuota"
+      ],
+      "keywords": [
+        "pre-consume",
+        "max_tokens",
+        "reservation",
+        "output estimate"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "QuotaRemindEnabled",
+      "scope": "site",
+      "group": "billing",
+      "card": "quota",
+      "type": "bool",
+      "label": "Quota warning emails",
+      "description": "Email users when their balance falls below the warning threshold, and again when it runs out. Each email is sent once; another goes out only after the balance has clearly recovered and fallen again. Needs a mail service. Users can turn the emails off or set their own threshold in their personal settings; organization API keys never send them. When off nobody gets them, and settlement skips the balance read the check needs.",
+      "related": [
+        "QuotaRemindThreshold"
+      ],
+      "keywords": [
+        "low balance",
+        "balance alert",
+        "reminder",
+        "email",
+        "running low",
+        "used up"
+      ]
+    },
+    {
+      "key": "QuotaRemindThreshold",
+      "scope": "site",
+      "group": "billing",
+      "card": "quota",
+      "type": "int",
+      "min": 0,
+      "label": "Warning threshold",
+      "description": "The balance below which a user gets the \"running low\" email, in quota units (500,000 = $1). It is the default for users who have not set their own threshold. After an email the next one waits until the balance has gone back above the threshold plus 10% of it (or plus the fixed pre-charge, if larger) and fallen again. 0 sends only the \"used up\" email.",
+      "examples": [
+        {
+          "value": "1000",
+          "effect": "The default: the email goes out when $0.002 is left, about when the balance runs out."
+        },
+        {
+          "value": "5000000",
+          "effect": "Users hear when less than $10 is left; the next email comes only after the balance went back above $11 and fell again."
+        }
+      ],
+      "related": [
+        "QuotaRemindEnabled",
+        "QuotaPerUnit",
+        "PreConsumedQuota"
+      ],
+      "keywords": [
+        "low balance",
+        "balance alert",
+        "reminder threshold"
+      ]
+    },
+    {
+      "key": "PaymentCostPercent",
+      "scope": "site",
+      "group": "billing",
+      "card": "pricing",
+      "type": "percent",
+      "unit": "%",
+      "min": 0,
+      "max": 99.99,
+      "label": "Payment cost",
+      "description": "What taking a payment costs the site, as a percentage of the amount: card fees and currency conversion. Nobody is charged it. It only lowers the revenue the price check and the margin figures compare channel costs with: net revenue = catalog price x the default group's ratio x (1 - payment cost). 0 counts payments as free.",
+      "examples": [
+        {
+          "value": "4",
+          "effect": "Card fee 3% plus 1% for currency conversion. With the default group at 1.12, $1 of catalog price brings in 1.12 x 0.96 = $1.0752."
+        },
+        {
+          "value": "0",
+          "effect": "Payments cost nothing: the price check compares channel costs with the full price."
+        }
+      ],
+      "related": [
+        "user_group.ratio",
+        "channel.fee_rate"
+      ],
+      "keywords": [
+        "card fee",
+        "stripe fee",
+        "processing fee",
+        "margin",
+        "profit"
+      ],
+      "docs": "use/pricing_and_routing.md#the-price-check"
+    },
+    {
+      "key": "EmptyResponseBillingEnabled",
+      "scope": "site",
+      "group": "billing",
+      "card": "billing-rules",
+      "type": "bool",
+      "label": "Charge empty replies",
+      "description": "Charge token-priced requests whose reply has no output tokens for their input. When off such requests are free, although the upstream may still bill you for the input. Requests priced per call or per minute are charged either way, and a request with no tokens at all is never charged.",
+      "examples": [
+        {
+          "value": "true",
+          "effect": "An empty reply to 10,000 input tokens of a $3 per million model costs the user $0.03 at ratio 1."
+        },
+        {
+          "value": "false",
+          "effect": "The same request is free for the user; you still pay the upstream for the input."
+        }
+      ],
+      "keywords": [
+        "empty response",
+        "no output",
+        "zero tokens",
+        "free request"
+      ]
+    },
+    {
+      "key": "ApproximateTokenEnabled",
+      "scope": "site",
+      "group": "billing",
+      "card": "billing-rules",
+      "type": "bool",
+      "label": "Approximate token counting",
+      "description": "Count tokens locally as 0.38 tokens per byte of text instead of running the model's tokenizer. Local counts are used for the up-front reservation and when an upstream reply carries no usage; replies that report their usage are billed by it. It saves CPU on busy instances at the cost of accuracy, worst for text outside the Latin alphabet.",
+      "examples": [
+        {
+          "value": "true",
+          "effect": "1,000 characters of English (1,000 bytes) count as 380 tokens; 1,000 Chinese characters (3,000 bytes) count as 1,140."
+        }
+      ],
+      "keywords": [
+        "tokenizer",
+        "tiktoken",
+        "token count",
+        "estimate"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "PriceSyncAutoApply",
+      "scope": "site",
+      "group": "billing",
+      "card": "billing-rules",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "increases",
+          "label": "Write increases, hold decreases",
+          "description": "A price that went up is written at once, so you never sell below a new cost; a decrease waits for your review."
+        },
+        {
+          "value": "all",
+          "label": "Write every change",
+          "description": "The price table follows the upstream price lists both ways."
+        },
+        {
+          "value": "none",
+          "label": "New models only",
+          "description": "Every change to an existing price waits for your review."
+        }
+      ],
+      "label": "Automatic price sync",
+      "description": "What the automatic price syncs (at startup, daily and when a channel is saved) write for models that already have a price. New models are always added and locked prices never change. Changes that are not written, and locked prices below the upstream price, are sent as notifications; review and apply them from the channel's price sync.",
+      "examples": [
+        {
+          "value": "increases",
+          "effect": "An upstream raises a model's output from $10 to $12 per million: written at once. It cuts it to $8: the table keeps $10 and you are notified."
+        },
+        {
+          "value": "none",
+          "effect": "Both changes wait in the notification until you apply them."
+        }
+      ],
+      "keywords": [
+        "price update",
+        "price sync",
+        "pricing",
+        "auto update",
+        "price list"
+      ]
+    },
+    {
+      "key": "QuotaResetTimezone",
+      "scope": "site",
+      "group": "billing",
+      "card": "quota-reset",
+      "type": "string",
+      "label": "Reset time zone",
+      "description": "The time zone whose midnight starts each daily, weekly and monthly limit period. It applies to API key period limits, organization budgets and member budgets. An IANA name; empty or unknown names fall back to UTC. Changing it moves the boundary of the current period.",
+      "examples": [
+        {
+          "value": "UTC",
+          "effect": "The default: daily limits reset at 00:00 UTC, which is 08:00 in Beijing."
+        },
+        {
+          "value": "Asia/Shanghai",
+          "effect": "Daily limits reset at 00:00 Beijing time, which is 16:00 UTC the day before."
+        },
+        {
+          "value": "America/New_York",
+          "effect": "Limits reset at local midnight through daylight saving time: 05:00 UTC in winter, 04:00 UTC in summer."
+        }
+      ],
+      "related": [
+        "QuotaResetWeekStart"
+      ],
+      "keywords": [
+        "timezone",
+        "period limit",
+        "daily limit",
+        "budget reset",
+        "midnight"
+      ]
+    },
+    {
+      "key": "QuotaResetWeekStart",
+      "scope": "site",
+      "group": "billing",
+      "card": "quota-reset",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "monday",
+          "label": "Monday"
+        },
+        {
+          "value": "sunday",
+          "label": "Sunday"
+        }
+      ],
+      "label": "Week starts on",
+      "description": "The day weekly limit periods start, at midnight in the reset time zone. Daily and monthly periods are not affected.",
+      "examples": [
+        {
+          "value": "monday",
+          "effect": "A weekly API key limit used up on Saturday is available again on Monday at 00:00."
+        },
+        {
+          "value": "sunday",
+          "effect": "The same limit comes back on Sunday at 00:00."
+        }
+      ],
+      "related": [
+        "QuotaResetTimezone"
+      ],
+      "keywords": [
+        "weekly limit",
+        "week start",
+        "period limit"
+      ]
+    },
+    {
+      "key": "InviteRewardEnabled",
+      "scope": "site",
+      "group": "billing",
+      "card": "invite-reward",
+      "type": "bool",
+      "label": "Invite rewards",
+      "description": "Pay invite rewards: sign-up bonuses for the inviter and the invitee, and the inviter's rebate on the first top-up. When off none are paid and the site hides its invite entries; who invited whom is still recorded.",
+      "related": [
+        "QuotaForInviter",
+        "QuotaForInvitee",
+        "InviterRewardType",
+        "InviterRewardValue"
+      ],
+      "keywords": [
+        "referral",
+        "invite",
+        "affiliate",
+        "aff",
+        "invite code"
+      ]
+    },
+    {
+      "key": "QuotaForInviter",
+      "scope": "site",
+      "group": "billing",
+      "card": "invite-reward",
+      "type": "int",
+      "min": 0,
+      "label": "Inviter sign-up bonus",
+      "description": "The quota an inviter gets each time someone signs up with their invite link or code. In quota units (500,000 = $1). 0 pays nothing at sign-up; the first top-up rebate is set separately.",
+      "examples": [
+        {
+          "value": "1000000",
+          "effect": "Each invited sign-up earns the inviter $2, whether or not the new user ever pays."
+        },
+        {
+          "value": "0",
+          "effect": "Inviters earn only the first top-up rebate, so fake sign-ups bring nothing."
+        }
+      ],
+      "related": [
+        "InviteRewardEnabled",
+        "QuotaForInvitee",
+        "InviterRewardValue"
+      ],
+      "keywords": [
+        "referral bonus",
+        "inviter reward",
+        "affiliate"
+      ]
+    },
+    {
+      "key": "QuotaForInvitee",
+      "scope": "site",
+      "group": "billing",
+      "card": "invite-reward",
+      "type": "int",
+      "min": 0,
+      "label": "Invitee sign-up bonus",
+      "description": "Extra quota a new user gets for signing up with an invite link or code, on top of the new user quota. In quota units (500,000 = $1). 0 gives invited users only the new user quota.",
+      "examples": [
+        {
+          "value": "500000",
+          "effect": "With the new user quota at 1,000,000 ($2), an invited user starts with $3."
+        }
+      ],
+      "related": [
+        "InviteRewardEnabled",
+        "QuotaForNewUser",
+        "QuotaForInviter"
+      ],
+      "keywords": [
+        "invite code bonus",
+        "referral bonus",
+        "invitee reward"
+      ]
+    },
+    {
+      "key": "InviterRewardType",
+      "scope": "site",
+      "group": "billing",
+      "card": "invite-reward",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "fixed",
+          "label": "Fixed",
+          "description": "The rebate is a quota amount, whatever the top-up."
+        },
+        {
+          "value": "percentage",
+          "label": "Percentage",
+          "description": "The rebate is a percentage of the quota the top-up bought."
+        }
+      ],
+      "label": "First top-up rebate type",
+      "description": "How the inviter's rebate on an invited user's first paid top-up is counted: a fixed quota or a percentage of the top-up. The first top-up rebate sets the amount.",
+      "related": [
+        "InviterRewardValue"
+      ],
+      "keywords": [
+        "rebate",
+        "commission",
+        "referral reward",
+        "affiliate"
+      ]
+    },
+    {
+      "key": "InviterRewardValue",
+      "scope": "site",
+      "group": "billing",
+      "card": "invite-reward",
+      "type": "int",
+      "min": 0,
+      "label": "First top-up rebate",
+      "description": "What an inviter earns when someone they invited makes a first paid top-up. For the fixed type it is quota units (500,000 = $1); for the percentage type a whole percentage from 0 to 100 of the quota bought. Only the first paid top-up earns it: later top-ups and redemption codes earn nothing. 0 turns the rebate off.",
+      "examples": [
+        {
+          "value": "10",
+          "effect": "Percentage: an invited user's first $50 top-up (25,000,000 quota) earns the inviter 2,500,000 quota, $5."
+        },
+        {
+          "value": "1000000",
+          "effect": "Fixed: the inviter gets $2 for the first top-up, whether it is $1 or $500."
+        }
+      ],
+      "related": [
+        "InviterRewardType",
+        "InviteRewardEnabled",
+        "RechargeDiscount"
+      ],
+      "keywords": [
+        "rebate",
+        "commission",
+        "referral reward",
+        "first top-up",
+        "affiliate"
+      ]
+    },
+    {
+      "key": "PaymentUSDRate",
+      "scope": "site",
+      "group": "payment",
+      "card": "payment",
+      "type": "float",
+      "unit": "CNY/USD",
+      "min": 0,
+      "label": "CNY collection rate",
+      "description": "How many yuan one US dollar of top-up costs at gateways that charge in CNY. A top-up of $X costs X x this rate there, times the gateway's own rate, plus its fee. It changes neither balances nor the quota a top-up buys, and USD gateways ignore it. Use the real exchange rate; for promotions use top-up discounts or a gateway's rate.",
+      "examples": [
+        {
+          "value": "7.3",
+          "effect": "A $100 top-up costs ¥730 at a CNY gateway and $100 at a USD gateway; both buy 50,000,000 quota."
+        },
+        {
+          "value": "7.1",
+          "effect": "The same top-up costs ¥710: you take ¥20 less for the same quota."
+        }
+      ],
+      "related": [
+        "RechargeDiscount",
+        "PaymentMinAmount",
+        "PaymentCostPercent"
+      ],
+      "keywords": [
+        "exchange rate",
+        "CNY",
+        "RMB",
+        "yuan",
+        "currency",
+        "alipay",
+        "wechat pay"
+      ]
+    },
+    {
+      "key": "PaymentMinAmount",
+      "scope": "site",
+      "group": "payment",
+      "card": "payment",
+      "type": "int",
+      "unit": "USD",
+      "min": 0,
+      "label": "Minimum top-up",
+      "description": "The smallest top-up a user or an organization can pay, in whole US dollars. Smaller amounts are refused before a payment is created. 0 and 1 both allow any amount from $1.",
+      "examples": [
+        {
+          "value": "1",
+          "effect": "Users can top up any whole amount from $1 (500,000 quota)."
+        },
+        {
+          "value": "10",
+          "effect": "A $5 top-up is refused; $10 is the least, buying 5,000,000 quota."
+        }
+      ],
+      "related": [
+        "PaymentUSDRate",
+        "RechargeDiscount"
+      ],
+      "keywords": [
+        "minimum recharge",
+        "minimum payment",
+        "top-up amount"
+      ]
+    },
+    {
+      "key": "PaymentCallbackAddress",
+      "scope": "site",
+      "group": "payment",
+      "card": "payment",
+      "type": "url",
+      "label": "Payment callback address",
+      "description": "The address payment gateways send their payment notices to, when it differs from the server address. Empty uses the gateway's own callback domain, then the server address. Notices go to <address>/api/payment/notify/<gateway id> (EPay: <address>/api/user/epay/notify), which must be reachable from the internet, or paid orders are never credited.",
+      "examples": [
+        {
+          "value": "https://pay.example.com",
+          "effect": "Gateways call https://pay.example.com/api/payment/notify/<gateway id> while users keep using the main domain."
+        }
+      ],
+      "related": [
+        "ServerAddress"
+      ],
+      "keywords": [
+        "notify url",
+        "webhook",
+        "callback",
+        "payment notification",
+        "return url"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "RechargeDiscount",
+      "scope": "site",
+      "group": "payment",
+      "card": "payment",
+      "type": "json",
+      "label": "Top-up discounts",
+      "description": "Discounts for fixed top-up amounts: a JSON object from a whole-dollar amount to the share of the price the user pays. Only those exact amounts are discounted; others pay full price. The quota is never discounted: $100 always buys 100 x 500,000 quota at the default quota per unit. A gateway's percentage fee is charged on the discounted price. Empty means no discounts.",
+      "examples": [
+        {
+          "value": "{\"100\":0.95}",
+          "effect": "A $100 top-up costs $95 (¥693.50 at a CNY rate of 7.3) and buys 50,000,000 quota; $99 or $101 pay full price."
+        },
+        {
+          "value": "{\"50\":0.98,\"200\":0.9}",
+          "effect": "$50 costs $49 and $200 costs $180; every other amount pays full price."
+        }
+      ],
+      "related": [
+        "PaymentUSDRate",
+        "PaymentMinAmount",
+        "QuotaPerUnit"
+      ],
+      "keywords": [
+        "recharge discount",
+        "bulk discount",
+        "promotion",
+        "top-up bonus"
+      ]
+    },
+    {
+      "key": "RetryTimes",
+      "scope": "site",
+      "group": "gateway",
+      "card": "retry",
+      "type": "int",
+      "min": 0,
+      "label": "Retries",
+      "description": "How many other channels a failed request is tried on before the caller gets the error. Rate limits, upstream 5xx errors, rejected keys and exhausted balances are retried; invalid requests (most 400s), 408 timeouts, the gateway's own errors and requests pinned to one channel are not. The retries never exceed the channels that serve the model and stop once the retry time limit has passed. 0 returns the first failure.",
+      "examples": [
+        {
+          "value": "2",
+          "effect": "A request to a model served by 5 channels is tried on at most 3 of them (the first plus 2 retries)."
+        },
+        {
+          "value": "5",
+          "effect": "With only 2 channels serving the model, the request is tried on both and then fails: retries stop when no untried channel is left."
+        },
+        {
+          "value": "0",
+          "effect": "No retry: the first failure is returned to the caller."
+        }
+      ],
+      "related": [
+        "RetryTimeOut",
+        "RetryCooldownSeconds",
+        "SessionAffinityStrict"
+      ],
+      "keywords": [
+        "retry",
+        "failover",
+        "fallback",
+        "attempts",
+        "max retries"
+      ]
+    },
+    {
+      "key": "RetryCooldownSeconds",
+      "scope": "site",
+      "group": "gateway",
+      "card": "retry",
+      "type": "int",
+      "unit": "seconds",
+      "min": 0,
+      "label": "Rate limit cooldown",
+      "description": "How long a channel is kept away from a model after it answers that model with a 429 rate limit. While it cools down, new requests for the model go to other channels; its other models are not affected. When the upstream says when the limit resets, that time is used instead. With supply pause rules on, this is the pause of the built-in rate_limit rule (custom rules carry their own seconds); with them off, a status code listed under per-status cooldowns takes precedence. 0 only skips the channel for the failed request.",
+      "examples": [
+        {
+          "value": "5",
+          "effect": "After a 429 for gpt-4o, that channel takes no gpt-4o requests for 5 seconds; it keeps serving its other models."
+        },
+        {
+          "value": "60",
+          "effect": "A channel with a per-minute limit sits out the rest of the minute instead of collecting more 429s."
+        },
+        {
+          "value": "0",
+          "effect": "No cooldown: the next request may land on the same channel and hit the limit again."
+        }
+      ],
+      "related": [
+        "RetryCooldownPerStatus",
+        "PauseRulesEnabled",
+        "PauseRules"
+      ],
+      "keywords": [
+        "429",
+        "rate limit",
+        "cooldown",
+        "freeze",
+        "backoff",
+        "too many requests"
+      ]
+    },
+    {
+      "key": "RetryTimeOut",
+      "scope": "site",
+      "group": "gateway",
+      "card": "retry",
+      "type": "int",
+      "unit": "seconds",
+      "min": 0,
+      "label": "Retry time limit",
+      "description": "No new retry starts once this many seconds have passed since the request arrived. It is checked before each retry and does not cut an attempt that is already running, so long generations still finish. When it stops the retries, the caller gets a 503 saying the upstream is at capacity. 0 starts no retry at all.",
+      "examples": [
+        {
+          "value": "10",
+          "effect": "A first channel that fails after 12 seconds is not retried; one that fails after 3 seconds is, as long as the 10 seconds are not used up."
+        },
+        {
+          "value": "120",
+          "effect": "Suits long reasoning requests: a channel failing after a minute still leaves room for another try."
+        }
+      ],
+      "related": [
+        "RetryTimes"
+      ],
+      "keywords": [
+        "timeout",
+        "deadline",
+        "retry timeout",
+        "total time"
+      ]
+    },
+    {
+      "key": "RetryCooldownPerStatus",
+      "scope": "site",
+      "group": "gateway",
+      "card": "retry",
+      "type": "json",
+      "label": "Per-status cooldown",
+      "description": "Cooldowns in seconds for other HTTP status codes, as a JSON object of status code and seconds. Like the rate limit cooldown it keeps the channel away from that one model. With supply pause rules on, the built-in per_status rule applies it after the quota, credential, rate limit and model-not-found rules, so a 429 entry is never reached there, and a listed 5xx code no longer waits for three failures in a minute. With pause rules off, the order is the upstream's reset time, then this list, then the rate limit cooldown for 429. A code set to 0 is never cooled. Codes must be 100-599 and seconds whole numbers of 0 or more; empty adds none.",
+      "examples": [
+        {
+          "value": "{\"503\": 120}",
+          "effect": "A channel answering a model with 503 takes no requests for it for 2 minutes, from the first 503 on."
+        },
+        {
+          "value": "{\"502\": 60, \"504\": 300}",
+          "effect": "502 cools the model on that channel for 1 minute, 504 for 5 minutes."
+        },
+        {
+          "value": "{\"500\": 0}",
+          "effect": "A 500 never pauses or cools the channel: the request moves on and the next one may use it again."
+        }
+      ],
+      "related": [
+        "RetryCooldownSeconds",
+        "PauseRules",
+        "PauseRulesEnabled"
+      ],
+      "keywords": [
+        "status code",
+        "503",
+        "502",
+        "cooldown",
+        "freeze"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "ModelNotFoundCooldownSeconds",
+      "scope": "site",
+      "group": "gateway",
+      "card": "retry",
+      "type": "int",
+      "unit": "seconds",
+      "min": 0,
+      "label": "Model not found pause",
+      "description": "How long a channel is kept away from a model after its upstream says the model does not exist. There is no field for it on this page: change it through the option API (PUT /api/option/). It covers errors such as \"model not found\", \"does not exist\" or \"no endpoints found\", but not when a 429 was seen in the same request. With supply pause rules on, it is the pause of the built-in model_not_found rule, which also notifies admins; custom rules carry their own seconds. 0 never pauses for it.",
+      "examples": [
+        {
+          "value": "21600",
+          "effect": "A channel that lost access to gpt-4.5 stays out of gpt-4.5 requests for 6 hours, then gets tried again."
+        },
+        {
+          "value": "600",
+          "effect": "A model that was only briefly missing upstream comes back after 10 minutes."
+        },
+        {
+          "value": "0",
+          "effect": "The channel stays in rotation and keeps failing requests for the model until it is removed from the channel."
+        }
+      ],
+      "related": [
+        "PauseRulesEnabled",
+        "PauseRules",
+        "RetryCooldownSeconds"
+      ],
+      "keywords": [
+        "404",
+        "model not found",
+        "quarantine",
+        "missing model",
+        "no endpoints"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "PauseRulesEnabled",
+      "scope": "site",
+      "group": "gateway",
+      "card": "supply-pause-rules",
+      "type": "bool",
+      "label": "Supply pause rules",
+      "description": "Failed requests go through the pause rules, which pause a channel or one of its models and bring it back on their own. When off, the older handling applies instead: automatic channel disabling (if switched on), the rate limit and per-status cooldowns, and the model-not-found pause.",
+      "examples": [
+        {
+          "value": "true",
+          "effect": "A channel whose key is rejected is paused for an hour and resumes after a passing test, without anyone re-enabling it."
+        },
+        {
+          "value": "false",
+          "effect": "A rejected key disables the channel when automatic disabling is on, and it stays off until a channel test passes."
+        }
+      ],
+      "related": [
+        "PauseRules",
+        "AutomaticDisableChannelEnabled",
+        "RetryCooldownSeconds"
+      ],
+      "keywords": [
+        "pause",
+        "circuit breaker",
+        "health",
+        "auto disable"
+      ]
+    },
+    {
+      "key": "PauseRules",
+      "scope": "site",
+      "group": "gateway",
+      "card": "supply-pause-rules",
+      "type": "json",
+      "label": "Custom pause rules",
+      "description": "A JSON array of pause rules that replaces the built-in rules as a whole; empty uses the built-in ones. Rules are tried in order and the first match decides, after the channel's own rules. A rule matches on any of status_codes, keywords (substrings of the error, \"re:\" for a regular expression), error_types or error_codes, plus the flags unusable, model_not_found, rate_limit_reset and per_status_config; times and window_seconds make it count matches first. action is \"pause\" (for seconds, on the whole channel or, by default, the model) or \"retry\" (move on without pausing). probe sends a test request before resuming and doubles the pause when it fails; notify tells admins. Pauses under a minute are kept in memory only. Saved rules carry their own seconds, so the rate limit and model-not-found settings no longer apply to them.",
+      "examples": [
+        {
+          "value": "[{\"name\":\"quota\",\"status_codes\":[402],\"keywords\":[\"credit balance is too low\"],\"action\":\"pause\",\"seconds\":1800,\"scope\":\"channel\",\"probe\":true,\"notify\":true,\"category\":\"quota\"}]",
+          "effect": "A 402 or a low-balance message pauses the whole channel for 30 minutes and notifies admins; a test request runs before it resumes, and a balance refresh that finds money ends the pause early."
+        },
+        {
+          "value": "[{\"name\":\"overloaded\",\"status_codes\":[529],\"times\":2,\"window_seconds\":60,\"action\":\"pause\",\"seconds\":300,\"probe\":true}]",
+          "effect": "Two 529s for one model on one channel within a minute pause that model there for 5 minutes; if the test before resuming fails, the next pause lasts 10 minutes."
+        },
+        {
+          "value": "[]",
+          "effect": "No rule: nothing is ever paused, a failing channel is only skipped for the request that failed."
+        }
+      ],
+      "related": [
+        "PauseRulesEnabled",
+        "RetryCooldownSeconds",
+        "RetryCooldownPerStatus",
+        "ModelNotFoundCooldownSeconds",
+        "DisableChannelKeywords"
+      ],
+      "keywords": [
+        "pause rules",
+        "JSON",
+        "circuit breaker",
+        "probe",
+        "quota",
+        "keyword"
+      ]
+    },
+    {
+      "key": "AutomaticDisableChannelEnabled",
+      "scope": "site",
+      "group": "gateway",
+      "card": "channel-auto",
+      "type": "bool",
+      "label": "Disable channels that can no longer serve",
+      "description": "Disables a channel whose upstream says it can no longer serve, such as a rejected key or an empty balance. An exhausted quota, a disabled account or a disable keyword in the error count too. On live requests this only happens while supply pause rules are off; with them on, such errors pause the channel instead. Channel tests disable for these errors too, with or without pause rules. A disabled channel comes back only through a passing test with automatic recovery on, or by hand.",
+      "related": [
+        "AutomaticEnableChannelEnabled",
+        "DisableChannelKeywords",
+        "PauseRulesEnabled",
+        "ChannelTestMode"
+      ],
+      "keywords": [
+        "auto disable",
+        "disable channel",
+        "dead key",
+        "invalid key",
+        "balance"
+      ]
+    },
+    {
+      "key": "AutomaticEnableChannelEnabled",
+      "scope": "site",
+      "group": "gateway",
+      "card": "channel-auto",
+      "type": "bool",
+      "label": "Re-enable channels that pass a test",
+      "description": "A channel that was disabled automatically is enabled again when it passes a channel test. The test is a test of all channels, scheduled or started by hand, and must answer within the maximum response time. Channels an admin disabled are never enabled again on their own. When off, every disabled channel waits for an admin.",
+      "related": [
+        "AutomaticDisableChannelEnabled",
+        "ChannelTestMode",
+        "ChannelDisableThreshold"
+      ],
+      "keywords": [
+        "auto enable",
+        "recover",
+        "re-enable",
+        "restore channel"
+      ]
+    },
+    {
+      "key": "ChannelDisableThreshold",
+      "scope": "site",
+      "group": "gateway",
+      "card": "channel-auto",
+      "type": "float",
+      "unit": "seconds",
+      "min": 0,
+      "label": "Maximum response time",
+      "description": "A channel test slower than this many seconds disables an enabled channel and keeps a disabled one off. It applies to tests of all channels (scheduled in the All channels mode, or started from the channels page), whether or not automatic disabling is on; live requests are never timed against it. 0 sets no limit.",
+      "examples": [
+        {
+          "value": "5",
+          "effect": "A channel that takes 7.3 seconds to answer the test request is disabled; one that answers in 2 seconds keeps serving."
+        },
+        {
+          "value": "30",
+          "effect": "Leaves slow reasoning models alone and only disables channels that hang."
+        },
+        {
+          "value": "0",
+          "effect": "Tests disable channels for errors only, never for slowness."
+        }
+      ],
+      "related": [
+        "ChannelTestMode",
+        "AutomaticEnableChannelEnabled"
+      ],
+      "keywords": [
+        "slow",
+        "latency",
+        "response time",
+        "threshold",
+        "test"
+      ]
+    },
+    {
+      "key": "DisableChannelKeywords",
+      "scope": "site",
+      "group": "gateway",
+      "card": "channel-auto",
+      "type": "list",
+      "label": "Disable keywords",
+      "description": "Error messages, one per line, that mark a channel as unable to serve when an upstream error contains one. Matching is case-sensitive, so copy the upstream text exactly; a keyword wins over the built-in exceptions. A match moves the request to another channel, pauses the channel through the built-in credential rule (1 hour, tested before resuming) with supply pause rules on, and disables it with them off and automatic disabling on. Empty leaves only the built-in checks of status codes and known messages.",
+      "examples": [
+        {
+          "value": "Your account is currently blocked",
+          "effect": "An upstream error containing this text pauses the whole channel for an hour instead of failing request after request."
+        },
+        {
+          "value": "Your credit balance is too low",
+          "effect": "Also matched by the built-in quota rule, which comes first: the channel pauses for 30 minutes and resumes early once a balance refresh finds money."
+        }
+      ],
+      "related": [
+        "AutomaticDisableChannelEnabled",
+        "PauseRules"
+      ],
+      "keywords": [
+        "keywords",
+        "error message",
+        "blocked",
+        "banned",
+        "suspended"
+      ]
+    },
+    {
+      "key": "ChannelTestMode",
+      "scope": "site",
+      "group": "gateway",
+      "card": "channel-auto",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "recovery",
+          "label": "Auto-disabled channels only",
+          "description": "Tests only channels that were disabled automatically and, with automatic recovery on, enables those that pass; healthy channels spend nothing."
+        },
+        {
+          "value": "all",
+          "label": "All channels",
+          "description": "Tests every channel not disabled by hand: too slow ones are disabled, failing ones too when automatic disabling is on, and auto-disabled ones that pass come back."
+        },
+        {
+          "value": "off",
+          "label": "Off",
+          "description": "No scheduled test: disabled channels stay off until an admin tests or enables them."
+        }
+      ],
+      "label": "Scheduled channel test",
+      "description": "Which channels the gateway tests on its own, every test interval. Each test is one small request to the channel's test model and is billed by the upstream. The CHANNEL_TEST_FREQUENCY environment variable, when set, overrides this: all channels every that many minutes.",
+      "related": [
+        "ChannelTestIntervalMinutes",
+        "AutomaticEnableChannelEnabled",
+        "ChannelDisableThreshold"
+      ],
+      "keywords": [
+        "health check",
+        "test",
+        "probe",
+        "monitor",
+        "CHANNEL_TEST_FREQUENCY"
+      ]
+    },
+    {
+      "key": "ChannelTestIntervalMinutes",
+      "scope": "site",
+      "group": "gateway",
+      "card": "channel-auto",
+      "type": "int",
+      "unit": "minutes",
+      "min": 1,
+      "label": "Test interval",
+      "description": "Minutes between two scheduled channel tests, at least one. A new interval applies from the next round, without a restart. Shorter intervals bring channels back sooner but send more test requests.",
+      "examples": [
+        {
+          "value": "10",
+          "effect": "An auto-disabled channel whose upstream recovered is back within about 10 minutes."
+        },
+        {
+          "value": "60",
+          "effect": "With All channels and 20 channels, 480 test requests a day."
+        }
+      ],
+      "related": [
+        "ChannelTestMode"
+      ],
+      "keywords": [
+        "interval",
+        "frequency",
+        "schedule"
+      ]
+    },
+    {
+      "key": "ChannelCredentialRefreshMinutes",
+      "scope": "site",
+      "group": "gateway",
+      "card": "channel-auto",
+      "type": "int",
+      "unit": "minutes",
+      "min": 0,
+      "label": "Account credential refresh",
+      "description": "How often the OAuth credentials of Codex, Claude Code, Gemini CLI and Antigravity channels are checked. Credentials expiring before the next check (plus 15 minutes) are refreshed even on idle or auto-disabled channels, so they do not fail on their first request after a quiet night; channels disabled by hand are skipped. A channel whose refresh starts failing sends one channel credential notice. 0 turns the background refresh off.",
+      "examples": [
+        {
+          "value": "30",
+          "effect": "Every 30 minutes, tokens that expire within the next 45 minutes are renewed in the background."
+        },
+        {
+          "value": "0",
+          "effect": "No background refresh: a token can expire while its channel is idle."
+        }
+      ],
+      "keywords": [
+        "OAuth",
+        "token refresh",
+        "Codex",
+        "Claude Code",
+        "Gemini CLI",
+        "account pool"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "ChannelFailErrorWrapEnabled",
+      "scope": "site",
+      "group": "gateway",
+      "card": "error-handling",
+      "type": "bool",
+      "label": "Hide upstream errors",
+      "description": "Callers get a generic error instead of the upstream's own text, which may name the provider or show parts of a key. Upstream errors other than 400 become a 503 with the unified message (a 429 stays a 429 so clients back off), rejected channel keys get a fixed message, and a missing model a 404. 400 errors pass through, since they are about the request. Turn it off only for a while, to see what the upstream really says.",
+      "related": [
+        "ChannelFailErrorMessage"
+      ],
+      "keywords": [
+        "error message",
+        "mask",
+        "sanitize",
+        "upstream error",
+        "debug"
+      ]
+    },
+    {
+      "key": "ChannelFailErrorMessage",
+      "scope": "site",
+      "group": "gateway",
+      "card": "error-handling",
+      "type": "string",
+      "label": "Unified error message",
+      "description": "The message callers get when an upstream fails and upstream errors are hidden. The request id is added to it so a caller can quote it. Empty uses \"Upstream for the current group is at capacity, please try again later\". It has no effect while upstream errors are shown.",
+      "examples": [
+        {
+          "value": "Service busy, please retry in a minute",
+          "effect": "A failed request answers 503 with \"Service busy, please retry in a minute (request id: ...)\"."
+        }
+      ],
+      "related": [
+        "ChannelFailErrorWrapEnabled"
+      ],
+      "keywords": [
+        "error text",
+        "503",
+        "capacity"
+      ]
+    },
+    {
+      "key": "SupplyModeDefault",
+      "scope": "site",
+      "group": "gateway",
+      "card": "supply-mode",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "balance",
+          "label": "Balance",
+          "description": "Supplies of one tier share requests by weight."
+        },
+        {
+          "value": "failover",
+          "label": "Failover",
+          "description": "The heaviest supply of a tier takes every request; the others back it up."
+        }
+      ],
+      "label": "Default supply mode",
+      "description": "How the supplies that take a model's requests share them, for models that follow the default. Only supplies that tie on priority (and on cost, see Cost and priority) share; a model can choose its own mode on its Supplies tab.",
+      "examples": [
+        {
+          "value": "balance",
+          "effect": "Two supplies with weights 3 and 1 take about 75% and 25% of the requests."
+        },
+        {
+          "value": "failover",
+          "effect": "The supply with weight 3 takes every request; the one with weight 1 is used only while it fails."
+        }
+      ],
+      "related": [
+        "SupplyCostOrder",
+        "model.supply_mode"
+      ],
+      "keywords": [
+        "load balancing",
+        "weight",
+        "fallback",
+        "primary",
+        "backup"
+      ],
+      "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
+    },
+    {
+      "key": "SupplyCostOrder",
+      "scope": "site",
+      "group": "gateway",
+      "card": "supply-mode",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "priority",
+          "label": "Priority first",
+          "description": "Cost only orders supplies of the same priority."
+        },
+        {
+          "value": "cost",
+          "label": "Cost first",
+          "description": "The cheapest supplies of a model take the requests whatever their priority."
+        }
+      ],
+      "label": "Cost and priority",
+      "description": "How far a supply's cost (its channel's list price with the channel's fee) moves it ahead. Users pay the catalog price times their group ratio either way; only your cost changes. Costs within 0.1% count as the same, and supplies of unknown cost come last.",
+      "examples": [
+        {
+          "value": "priority",
+          "effect": "Requesty (cost x1.05) at the top priority keeps the requests of gpt-5.1; the official API (x1.00) one priority lower is its backup."
+        },
+        {
+          "value": "cost",
+          "effect": "The official API (x1.00) takes the requests of gpt-5.1; Requesty becomes a backup marked dearer."
+        }
+      ],
+      "related": [
+        "SupplyModeDefault",
+        "channel.fee_rate",
+        "channel.priority"
+      ],
+      "keywords": [
+        "cheapest",
+        "cost routing",
+        "price routing",
+        "lowest cost"
+      ],
+      "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
+    },
+    {
+      "key": "ModelSupplyEnabled",
+      "scope": "site",
+      "group": "gateway",
+      "card": "supply-mode",
+      "type": "bool",
+      "label": "Route by supplies",
+      "description": "Requests are routed through each public model's supplies instead of the channels' model lists and model mappings. There is no switch for it on this page: after migrating the channels to supplies (POST /api/model_supply/migrate, dry run first), turn it on through the option API (PUT /api/option/). While on, requests are billed by the public model, only published models are listed, and the supply mode, cost order, intake rules and pause rules decide where a request goes. Turning it off goes back to the channels' model lists at once and keeps the supplies.",
+      "examples": [
+        {
+          "value": "false",
+          "effect": "Requests follow each channel's models and model mapping; the supply pages only preview what would change."
+        },
+        {
+          "value": "true",
+          "effect": "A request for claude-sonnet-4-5 goes to the supplies of that public model, ordered by priority and cost."
+        }
+      ],
+      "related": [
+        "SupplyModeDefault",
+        "SupplyCostOrder",
+        "SupplyIntakeRules",
+        "PauseRulesEnabled"
+      ],
+      "keywords": [
+        "supply routing",
+        "migration",
+        "public model",
+        "model supplies"
+      ],
+      "advanced": true,
+      "docs": "use/supply_routing.md"
+    },
+    {
+      "key": "SupplyIntakeRules",
+      "scope": "site",
+      "group": "gateway",
+      "card": "supply-intake-rules",
+      "type": "json",
+      "label": "Intake rules for new upstream models",
+      "description": "What happens to a model a channel's upstream starts listing, for channels that add new upstream models on their own. It is a JSON array tried from the top, and the first rule whose conditions all hold decides; a model no rule matches waits for review. Conditions: endpoints (abilities such as chat, responses, images, any of them), vendors (vendor ids), families and patterns (globs such as claude-* or *-preview*), supplied (whether another channel already supplies it). action is enable (routes at once), pending (added switched off until an admin confirms), disable (added switched off) or skip (not added). placement is auto (last when others already supply it), policy (where the allocation policy puts it) or last. Empty uses the built-in rules; saved rules replace them as a whole, and a channel can use rules of its own.",
+      "examples": [
+        {
+          "value": "[{\"name\":\"Previews wait\",\"patterns\":[\"*-preview*\",\"*-exp*\"],\"action\":\"pending\"},{\"name\":\"Chat joins\",\"endpoints\":[\"chat\",\"responses\"],\"action\":\"enable\",\"placement\":\"auto\"},{\"name\":\"Rest waits\",\"action\":\"pending\"}]",
+          "effect": "The built-in rules: gpt-5-preview waits for review, a new chat model routes at once (behind the channels that already supply it), an image model waits for review."
+        },
+        {
+          "value": "[{\"name\":\"Claude joins\",\"families\":[\"claude-*\"],\"action\":\"enable\",\"placement\":\"last\"},{\"name\":\"Rest skipped\",\"action\":\"skip\"}]",
+          "effect": "A new Claude model routes at once after the model's other supplies; any other new model is not added and stays in the list of new upstream models."
+        }
+      ],
+      "related": [
+        "ModelSupplyEnabled",
+        "SupplyModeDefault"
+      ],
+      "keywords": [
+        "new models",
+        "drift",
+        "auto add",
+        "review",
+        "upstream models"
+      ]
+    },
+    {
+      "key": "SessionAffinityEnabled",
+      "scope": "site",
+      "group": "gateway",
+      "card": "session-affinity",
+      "type": "bool",
+      "label": "Keep each session on one channel",
+      "description": "Requests of one client session go to the channel that served it first, so the upstream prompt cache keeps hitting. A session is recognised by the Claude Code session in metadata.user_id, a session header such as Codex's session_id, the OpenAI prompt_cache_key, or else the same system prompt and first user message. Claude Code, Gemini CLI and Codex account channels are always sticky, whatever this says. When off, each request is routed on its own.",
+      "related": [
+        "SessionAffinityStrict",
+        "SessionAffinityTTLSeconds",
+        "ClaudePromptCachingEnabled"
+      ],
+      "keywords": [
+        "sticky session",
+        "prompt cache",
+        "cache hit",
+        "affinity",
+        "pinning"
+      ]
+    },
+    {
+      "key": "SessionAffinityStrict",
+      "scope": "site",
+      "group": "gateway",
+      "card": "session-affinity",
+      "type": "bool",
+      "label": "Do not move a session on failure",
+      "description": "When a session's channel fails, the caller gets the error instead of a retry on another channel. The channel is not paused for that model either (channel-wide pauses still apply). Moving loses the upstream prompt cache and the conversation state Codex keeps upstream. Errors that say the channel can no longer serve (a rejected key, an empty balance) still move the session. Leave it off to favour availability.",
+      "related": [
+        "SessionAffinityEnabled",
+        "RetryTimes"
+      ],
+      "keywords": [
+        "strict",
+        "no failover",
+        "cache",
+        "Codex"
+      ]
+    },
+    {
+      "key": "SessionAffinityTTLSeconds",
+      "scope": "site",
+      "group": "gateway",
+      "card": "session-affinity",
+      "type": "int",
+      "unit": "seconds",
+      "min": 0,
+      "label": "Session lifetime",
+      "description": "How long a session stays bound to its channel after its last request; every request starts the time again. Account channels (Claude Code, Gemini CLI, Codex) always keep 1 hour. 0 uses 1 hour as well.",
+      "examples": [
+        {
+          "value": "3600",
+          "effect": "A coding session paused for 50 minutes comes back to the same channel; after 70 minutes it may land elsewhere."
+        },
+        {
+          "value": "300",
+          "effect": "Matches the upstream's 5-minute prompt cache: past that the cache is gone, so the session is free to move."
+        }
+      ],
+      "related": [
+        "SessionAffinityEnabled"
+      ],
+      "keywords": [
+        "TTL",
+        "session timeout",
+        "sticky duration"
+      ]
+    },
+    {
+      "key": "RoutingDecisionBillingEnabled",
+      "scope": "site",
+      "group": "gateway",
+      "card": "auto-routing",
+      "type": "bool",
+      "label": "Charge the decision call",
+      "description": "Bills the call an auto routing policy makes to pick a model to the caller, at the decision model's price. It is charged once per session, as a log entry of its own. When off, the decision still runs, but the site pays for it and no consume log is written.",
+      "related": [
+        "UserRoutingPolicyEnabled"
+      ],
+      "keywords": [
+        "auto routing",
+        "decision model",
+        "classifier",
+        "billing",
+        "policy"
+      ]
+    },
+    {
+      "key": "UserRoutingPolicyEnabled",
+      "scope": "site",
+      "group": "gateway",
+      "card": "auto-routing",
+      "type": "bool",
+      "label": "Own routing policies",
+      "description": "Users and organizations can create routing policies of their own, called as policy/<name>. Users create personal policies under Routing policies in the workbench, organization owners and admins organization policies; an own policy overrides a platform policy of the same name for its own keys. When off, own policies are kept but no longer apply, and only platform policies resolve.",
+      "related": [
+        "PersonalRoutingPolicyMaxCount",
+        "OrganizationRoutingPolicyMaxCount"
+      ],
+      "keywords": [
+        "routing policy",
+        "policy/",
+        "self-service",
+        "organization policy"
+      ]
+    },
+    {
+      "key": "PersonalRoutingPolicyMaxCount",
+      "scope": "site",
+      "group": "gateway",
+      "card": "auto-routing",
+      "type": "int",
+      "min": 0,
+      "label": "Policies per user",
+      "description": "How many personal routing policies one user can create. Policies a user already has are kept when the cap is lowered; only new ones are refused. 0 sets no limit.",
+      "examples": [
+        {
+          "value": "20",
+          "effect": "A user with 20 policies gets an error when creating the 21st."
+        },
+        {
+          "value": "0",
+          "effect": "Users can create as many policies as they like."
+        }
+      ],
+      "related": [
+        "UserRoutingPolicyEnabled",
+        "OrganizationRoutingPolicyMaxCount"
+      ],
+      "keywords": [
+        "limit",
+        "quota",
+        "max policies"
+      ]
+    },
+    {
+      "key": "OrganizationRoutingPolicyMaxCount",
+      "scope": "site",
+      "group": "gateway",
+      "card": "auto-routing",
+      "type": "int",
+      "min": 0,
+      "label": "Policies per organization",
+      "description": "How many routing policies one organization can create. Policies it already has are kept when the cap is lowered; only new ones are refused. 0 sets no limit.",
+      "examples": [
+        {
+          "value": "20",
+          "effect": "An organization with 20 policies gets an error when creating the 21st."
+        },
+        {
+          "value": "5",
+          "effect": "Keeps organization policies few enough to review by hand."
+        }
+      ],
+      "related": [
+        "UserRoutingPolicyEnabled",
+        "PersonalRoutingPolicyMaxCount"
+      ],
+      "keywords": [
+        "limit",
+        "organization",
+        "max policies"
+      ]
+    },
+    {
+      "key": "ModelNameCaseInsensitiveEnabled",
+      "scope": "site",
+      "group": "gateway",
+      "card": "model-name-match",
+      "type": "bool",
+      "label": "Ignore case in model names",
+      "description": "The model name a caller sends matches channels and prices whatever its case. When on, GPT-4o finds the channels and the price of gpt-4o, including wildcard prices. When off, names must match exactly and a differently cased name gets no channel.",
+      "related": [
+        "UnifiedRequestResponseModelEnabled"
+      ],
+      "keywords": [
+        "case insensitive",
+        "uppercase",
+        "lowercase",
+        "model name"
+      ]
+    },
+    {
+      "key": "UnifiedRequestResponseModelEnabled",
+      "scope": "site",
+      "group": "gateway",
+      "card": "model-name-match",
+      "type": "bool",
+      "label": "Answer with the requested model name",
+      "description": "The model field of every response carries the name the caller asked for, not the upstream model it was mapped to. Some clients check that the reply names the model they requested. When off, it is done only for channels and supplies that switch it on themselves.",
+      "examples": [
+        {
+          "value": "true",
+          "effect": "A request for my-chat mapped to gpt-4o-2024-08-06 answers with \"model\": \"my-chat\"."
+        },
+        {
+          "value": "false",
+          "effect": "The same request answers with \"model\": \"gpt-4o-2024-08-06\", unless its channel or supply renames it."
+        }
+      ],
+      "related": [
+        "ModelNameCaseInsensitiveEnabled",
+        "FingerprintPassThroughEnabled"
+      ],
+      "keywords": [
+        "model mapping",
+        "response model",
+        "rename",
+        "alias"
+      ]
+    },
+    {
+      "key": "ClaudeAPIEnabled",
+      "scope": "site",
+      "group": "gateway",
+      "card": "native-protocol",
+      "type": "bool",
+      "label": "Claude Messages API",
+      "description": "Callers can use the Anthropic Messages format (/claude/v1/messages and the coding agent endpoints) besides the OpenAI format. Claude Code and the Anthropic SDKs need it. When off, those endpoints answer 403 and llms.txt no longer lists them.",
+      "related": [
+        "GeminiAPIEnabled",
+        "ClaudePromptCachingEnabled"
+      ],
+      "keywords": [
+        "Anthropic",
+        "Messages API",
+        "Claude Code",
+        "native",
+        "/v1/messages"
+      ]
+    },
+    {
+      "key": "GeminiAPIEnabled",
+      "scope": "site",
+      "group": "gateway",
+      "card": "native-protocol",
+      "type": "bool",
+      "label": "Gemini API",
+      "description": "Callers can use the Google Gemini format (the /gemini/v1beta endpoints, Live API included) besides the OpenAI format. Gemini CLI and the Google SDKs need it. When off, those endpoints answer 403.",
+      "related": [
+        "ClaudeAPIEnabled",
+        "GeminiOpenThink"
+      ],
+      "keywords": [
+        "Google",
+        "Gemini",
+        "generateContent",
+        "native",
+        "Gemini CLI"
+      ]
+    },
+    {
+      "key": "ClaudePromptCachingEnabled",
+      "scope": "site",
+      "group": "gateway",
+      "card": "native-protocol",
+      "type": "bool",
+      "label": "Add prompt cache markers",
+      "description": "Adds cache_control markers to requests for Anthropic models so the upstream caches the prompt. Later requests then read it at the cache price. It covers Claude, Opus, Sonnet and Haiku models on any channel type, and applies on channels whose prompt caching setting is Inherit; a channel set to On or Off decides for itself, along with the TTL and which messages are marked. Requests that already carry cache_control are left alone. Off by default.",
+      "examples": [
+        {
+          "value": "true",
+          "effect": "A client that sends no cache markers still gets its long system prompt cached upstream for 5 minutes."
+        },
+        {
+          "value": "false",
+          "effect": "Only clients that mark their prompts themselves, and channels set to On, use the cache."
+        }
+      ],
+      "related": [
+        "SessionAffinityEnabled",
+        "ClaudeAPIEnabled"
+      ],
+      "keywords": [
+        "prompt caching",
+        "cache_control",
+        "cache",
+        "Anthropic",
+        "cost"
+      ]
+    },
+    {
+      "key": "FingerprintPassThroughEnabled",
+      "scope": "site",
+      "group": "gateway",
+      "card": "native-protocol",
+      "type": "bool",
+      "label": "Pass upstream responses through",
+      "description": "Keeps upstream responses as close to the original as possible. Non-streaming Claude and Bedrock responses are passed byte for byte, streams keep their model field, and upstream headers such as anthropic-ratelimit-*, x-ratelimit-* and x-amzn-* reach the caller. When off, responses are rebuilt like those of any other channel.",
+      "related": [
+        "UnifiedRequestResponseModelEnabled"
+      ],
+      "keywords": [
+        "fingerprint",
+        "pass-through",
+        "raw response",
+        "headers",
+        "rate limit headers"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "ClaudeBudgetTokensPercentage",
+      "scope": "site",
+      "group": "gateway",
+      "card": "native-protocol",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "label": "Default thinking budget",
+      "description": "The share of max_tokens Claude may spend thinking when a request asks for thinking without its own budget. It applies to OpenAI-format requests sent to Claude. budget_tokens = max_tokens x this value, and never below 1024. A request that names an effort gets 0.2, 0.5 or 0.8 for low, medium and high instead.",
+      "examples": [
+        {
+          "value": "0.8",
+          "effect": "With max_tokens 10000, Claude may think for 8000 tokens and has 2000 left for the answer."
+        },
+        {
+          "value": "0.5",
+          "effect": "With max_tokens 4096, the thinking budget is 2048 tokens."
+        },
+        {
+          "value": "0.1",
+          "effect": "With max_tokens 8192, 819 would be too small, so the budget is raised to 1024."
+        }
+      ],
+      "related": [
+        "ClaudeDefaultMaxTokens"
+      ],
+      "keywords": [
+        "thinking",
+        "budget_tokens",
+        "reasoning",
+        "extended thinking"
+      ]
+    },
+    {
+      "key": "ClaudeDefaultMaxTokens",
+      "scope": "site",
+      "group": "gateway",
+      "card": "native-protocol",
+      "type": "json",
+      "label": "Default max tokens",
+      "description": "The max_tokens sent to Claude when an OpenAI-format or Responses request sets no output limit. Claude requires one, so it is a JSON object of model name and tokens, with \"default\" for every other model. Requests that set max_tokens or max_completion_tokens keep their own. Empty means {\"default\": 8192}; an object without \"default\" leaves unlisted models without a limit and Claude rejects them, and text that is not valid JSON is ignored.",
+      "examples": [
+        {
+          "value": "{\"default\": 8192}",
+          "effect": "Every Claude request without a limit may write up to 8192 tokens."
+        },
+        {
+          "value": "{\"default\": 8192, \"claude-sonnet-4-5\": 64000}",
+          "effect": "claude-sonnet-4-5 requests without a limit may write up to 64000 tokens, other models 8192."
+        }
+      ],
+      "related": [
+        "ClaudeBudgetTokensPercentage"
+      ],
+      "keywords": [
+        "max_tokens",
+        "output limit",
+        "Claude",
+        "JSON"
+      ]
+    },
+    {
+      "key": "GeminiOpenThink",
+      "scope": "site",
+      "group": "gateway",
+      "card": "native-protocol",
+      "type": "json",
+      "label": "Show Gemini thoughts",
+      "description": "Gemini models whose responses include their thought summaries, as a JSON object of model name and true. It only applies to models that can think; unlisted models keep thoughts out unless the request asks for them. Empty lists none, and text that is not valid JSON is ignored.",
+      "examples": [
+        {
+          "value": "{\"gemini-2.5-pro\": true}",
+          "effect": "gemini-2.5-pro replies carry the model's reasoning before the answer; gemini-2.5-flash replies do not."
+        }
+      ],
+      "related": [
+        "GeminiAPIEnabled"
+      ],
+      "keywords": [
+        "thinking",
+        "include_thoughts",
+        "reasoning",
+        "Gemini"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "MaxPromptTokens",
+      "scope": "site",
+      "group": "gateway",
+      "card": "prompt-limits",
+      "type": "int",
+      "min": 0,
+      "label": "Max prompt tokens",
+      "description": "Requests to AWS Bedrock channels with more input tokens than this are refused before reaching the upstream. They get a 400 \"prompt is too long\", which Claude Code reads like Anthropic's own; Bedrock would otherwise hang on them until its timeout. A model's context length in the catalog takes precedence; other channel types are not checked. 0 turns the check off.",
+      "examples": [
+        {
+          "value": "1000000",
+          "effect": "A 1.2 million token prompt to a Bedrock model with no context length in the catalog gets a 400 at once."
+        },
+        {
+          "value": "200000",
+          "effect": "Prompts over 200000 tokens are refused for Bedrock models without a known context length."
+        }
+      ],
+      "keywords": [
+        "context length",
+        "prompt too long",
+        "Bedrock",
+        "AWS",
+        "input limit"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "ChatImageRequestProxy",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-proxy",
+      "type": "url",
+      "label": "Image download proxy",
+      "description": "An HTTP or SOCKS5 proxy for downloading the images that requests link to. The gateway fetches them to count their tokens and to pass them on as data, and without a proxy the image hosts see this server's IP. With a Cloudflare Worker set, the proxy only carries the call to the Worker. Empty downloads directly.",
+      "examples": [
+        {
+          "value": "socks5://127.0.0.1:1080",
+          "effect": "Image downloads go through the local SOCKS5 proxy on port 1080."
+        },
+        {
+          "value": "http://proxy.internal:3128",
+          "effect": "Image downloads go through an HTTP proxy in the private network."
+        }
+      ],
+      "related": [
+        "CFWorkerImageUrl"
+      ],
+      "keywords": [
+        "proxy",
+        "SOCKS5",
+        "image URL",
+        "vision",
+        "server IP"
+      ]
+    },
+    {
+      "key": "CFWorkerImageUrl",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-proxy",
+      "type": "url",
+      "label": "Cloudflare Worker image proxy",
+      "description": "A Cloudflare Worker that downloads the images requests link to, instead of this server. The gateway posts the image address and the Worker key to it and reads the image back, so the image hosts only see Cloudflare. It takes precedence over the image download proxy. Some image hosts refuse Cloudflare, and those images then fail. Empty uses no Worker.",
+      "examples": [
+        {
+          "value": "https://img-proxy.example.workers.dev",
+          "effect": "Every image linked in a request is fetched by that Worker."
+        }
+      ],
+      "related": [
+        "CFWorkerImageKey",
+        "ChatImageRequestProxy"
+      ],
+      "keywords": [
+        "Cloudflare",
+        "Worker",
+        "image proxy",
+        "vision"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "CFWorkerImageKey",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-proxy",
+      "type": "secret",
+      "label": "Cloudflare Worker key",
+      "description": "The key sent to the Cloudflare Worker with every image download, for a Worker that checks one. Leave it empty when the Worker checks none or no Worker is set.",
+      "related": [
+        "CFWorkerImageUrl"
+      ],
+      "keywords": [
+        "Cloudflare",
+        "Worker",
+        "API key"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "ImageStorageProvider",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-storage",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "local",
+          "label": "This gateway",
+          "description": "Kept on this gateway for 1 hour under the server address, at most 5 downloads per link and 2 MB/s per download. Several nodes need Redis so every node can serve every link."
+        },
+        {
+          "value": "s3",
+          "label": "S3 compatible",
+          "description": "AWS S3, Cloudflare R2, MinIO, Backblaze B2 and other S3 compatible storage. Without a public URL, links are signed for 1 hour and the bucket can stay private. The gateway deletes no files: add a lifecycle rule in the storage console (for example 1 day)."
+        },
+        {
+          "value": "alioss",
+          "label": "Alibaba Cloud OSS",
+          "description": "Links are signed and valid for 1 hour, so the bucket can stay private."
+        },
+        {
+          "value": "smms",
+          "label": "SM.MS",
+          "description": "Free image host; images are public."
+        },
+        {
+          "value": "imgur",
+          "label": "Imgur",
+          "description": "Free image host; images are public."
+        },
+        {
+          "value": "off",
+          "label": "Off",
+          "description": "Images come back as base64, and clients that only read the image URL get none."
+        }
+      ],
+      "label": "Image storage",
+      "description": "Where generated images are kept so a request that asks for an image URL gets a link. Gemini, Cloudflare Workers AI and Stability AI return image data only. Off answers with base64 instead: images endpoints give b64_json rather than url, and Gemini replies carry the whole image inline. A change applies at once on every node.",
+      "related": [
+        "ImageStorageRehostUpstream",
+        "ServerAddress"
+      ],
+      "keywords": [
+        "image hosting",
+        "S3",
+        "R2",
+        "OSS",
+        "base64",
+        "b64_json",
+        "generated images"
+      ],
+      "docs": "deployment/storage.md"
+    },
+    {
+      "key": "ImageStorageRehostUpstream",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-storage",
+      "type": "bool",
+      "label": "Also store upstream image and video links",
+      "description": "Image and video links from upstreams are swapped for links on this site, which work where the upstream host is blocked. It covers image links from DALL·E, Flux and similar upstreams and from Midjourney tasks, and video links from Kling tasks. Images are fetched at once; a video is fetched on its first download and kept, up to 512 MB. A link that cannot be fetched is passed on as it is. When off, upstream links pass through.",
+      "related": [
+        "ImageStorageProvider"
+      ],
+      "keywords": [
+        "rehost",
+        "mirror",
+        "image link",
+        "video",
+        "Midjourney",
+        "Kling"
+      ],
+      "docs": "deployment/storage.md"
+    },
+    {
+      "key": "ImageStorageS3Endpoint",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-storage",
+      "type": "url",
+      "label": "S3 endpoint",
+      "description": "The S3 API address of the storage, without the bucket. Without a public URL, links point at <endpoint>/<bucket>/... and are signed.",
+      "examples": [
+        {
+          "value": "https://<account>.r2.cloudflarestorage.com",
+          "effect": "Cloudflare R2; the region is auto."
+        },
+        {
+          "value": "https://s3.eu-central-1.amazonaws.com",
+          "effect": "AWS S3 in Frankfurt; the region eu-central-1 is read from the address."
+        }
+      ],
+      "related": [
+        "ImageStorageS3Region",
+        "ImageStorageS3BucketName",
+        "ImageStorageS3CDNURL"
+      ],
+      "keywords": [
+        "S3",
+        "R2",
+        "MinIO",
+        "endpoint"
+      ],
+      "docs": "deployment/storage.md"
+    },
+    {
+      "key": "ImageStorageS3Region",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-storage",
+      "type": "string",
+      "label": "S3 region",
+      "description": "The region requests are signed for; usually left empty. Empty reads it from AWS, Backblaze B2 and Wasabi endpoints and uses auto for anything else, which is what Cloudflare R2 expects.",
+      "examples": [
+        {
+          "value": "us-east-1",
+          "effect": "Signs for us-east-1, for MinIO or another storage that expects a fixed region."
+        }
+      ],
+      "related": [
+        "ImageStorageS3Endpoint"
+      ],
+      "keywords": [
+        "region",
+        "S3"
+      ]
+    },
+    {
+      "key": "ImageStorageS3BucketName",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-storage",
+      "type": "string",
+      "label": "S3 bucket",
+      "description": "The bucket images are uploaded to. It can stay private unless a public URL is set.",
+      "related": [
+        "ImageStorageS3Endpoint",
+        "ImageStorageS3CDNURL"
+      ],
+      "keywords": [
+        "bucket",
+        "S3"
+      ]
+    },
+    {
+      "key": "ImageStorageS3AccessKeyId",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-storage",
+      "type": "string",
+      "label": "S3 access key ID",
+      "description": "The ID of an access key that may write to the bucket; its secret goes in the next field.",
+      "related": [
+        "ImageStorageS3AccessKeySecret"
+      ],
+      "keywords": [
+        "access key",
+        "credentials",
+        "S3"
+      ]
+    },
+    {
+      "key": "ImageStorageS3AccessKeySecret",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-storage",
+      "type": "secret",
+      "label": "S3 access key secret",
+      "description": "The secret of the S3 access key. It is stored encrypted when an encryption key is set, never shown again, and saving the field empty keeps the stored one.",
+      "related": [
+        "ImageStorageS3AccessKeyId"
+      ],
+      "keywords": [
+        "secret key",
+        "credentials",
+        "S3"
+      ]
+    },
+    {
+      "key": "ImageStorageS3CDNURL",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-storage",
+      "type": "url",
+      "label": "S3 public URL",
+      "description": "A public address of the bucket or of a CDN in front of it; images then get plain public links under it. Empty gives links signed for 1 hour, and the bucket can stay private.",
+      "examples": [
+        {
+          "value": "https://img.example.com",
+          "effect": "Images get links under https://img.example.com/ that work as long as the file exists."
+        }
+      ],
+      "related": [
+        "ImageStorageS3Endpoint",
+        "ImageStorageS3BucketName"
+      ],
+      "keywords": [
+        "CDN",
+        "public URL",
+        "custom domain"
+      ]
+    },
+    {
+      "key": "ImageStorageS3ExpirationDays",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-storage",
+      "type": "int",
+      "unit": "days",
+      "min": 0,
+      "label": "S3 Expires header",
+      "description": "Days written into the Expires header of each uploaded image, for caches and CDNs. It deletes nothing: use a lifecycle rule of the storage for that. 0 writes no header.",
+      "examples": [
+        {
+          "value": "1",
+          "effect": "An image uploaded today says it expires tomorrow; the file stays until a lifecycle rule removes it."
+        },
+        {
+          "value": "0",
+          "effect": "No Expires header."
+        }
+      ],
+      "related": [
+        "ImageStorageS3CDNURL"
+      ],
+      "keywords": [
+        "expires",
+        "cache header",
+        "lifecycle"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "ImageStorageOSSEndpoint",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-storage",
+      "type": "string",
+      "label": "OSS endpoint",
+      "description": "The endpoint of the Alibaba Cloud OSS region the bucket is in.",
+      "examples": [
+        {
+          "value": "oss-cn-beijing.aliyuncs.com",
+          "effect": "A bucket in Beijing; the region cn-beijing is read from the address."
+        }
+      ],
+      "related": [
+        "ImageStorageOSSRegion",
+        "ImageStorageOSSBucketName"
+      ],
+      "keywords": [
+        "Aliyun",
+        "OSS",
+        "endpoint"
+      ]
+    },
+    {
+      "key": "ImageStorageOSSRegion",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-storage",
+      "type": "string",
+      "label": "OSS region",
+      "description": "The OSS region the bucket is in; usually left empty. Empty reads it from an endpoint of the form oss-<region>.aliyuncs.com; other endpoints (an internal or accelerated one) need it, or uploads fail.",
+      "examples": [
+        {
+          "value": "cn-hangzhou",
+          "effect": "Signs for Hangzhou, for an endpoint the region cannot be read from."
+        }
+      ],
+      "related": [
+        "ImageStorageOSSEndpoint"
+      ],
+      "keywords": [
+        "region",
+        "OSS"
+      ]
+    },
+    {
+      "key": "ImageStorageOSSBucketName",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-storage",
+      "type": "string",
+      "label": "OSS bucket",
+      "description": "The OSS bucket images are uploaded to; it can stay private, since links are signed.",
+      "related": [
+        "ImageStorageOSSEndpoint"
+      ],
+      "keywords": [
+        "bucket",
+        "OSS"
+      ]
+    },
+    {
+      "key": "ImageStorageOSSAccessKeyId",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-storage",
+      "type": "string",
+      "label": "OSS AccessKey ID",
+      "description": "The AccessKey ID of a RAM user that may write to the bucket; its secret goes in the next field.",
+      "related": [
+        "ImageStorageOSSAccessKeySecret"
+      ],
+      "keywords": [
+        "AccessKey",
+        "RAM",
+        "credentials",
+        "OSS"
+      ]
+    },
+    {
+      "key": "ImageStorageOSSAccessKeySecret",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-storage",
+      "type": "secret",
+      "label": "OSS AccessKey secret",
+      "description": "The AccessKey secret of the OSS user. It is stored encrypted when an encryption key is set, never shown again, and saving the field empty keeps the stored one.",
+      "related": [
+        "ImageStorageOSSAccessKeyId"
+      ],
+      "keywords": [
+        "AccessKey secret",
+        "credentials",
+        "OSS"
+      ]
+    },
+    {
+      "key": "ImageStorageSMMSSecret",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-storage",
+      "type": "secret",
+      "label": "SM.MS API token",
+      "description": "The API token of your account on the free image host, used for uploads. Images there are public.",
+      "related": [
+        "ImageStorageProvider"
+      ],
+      "keywords": [
+        "SM.MS",
+        "smms",
+        "image host",
+        "token"
+      ]
+    },
+    {
+      "key": "ImageStorageImgurClientId",
+      "scope": "site",
+      "group": "gateway",
+      "card": "image-storage",
+      "type": "secret",
+      "label": "Imgur client ID",
+      "description": "The client ID of an application registered with Imgur, used for anonymous uploads. Images there are public.",
+      "related": [
+        "ImageStorageProvider"
+      ],
+      "keywords": [
+        "Imgur",
+        "image host",
+        "client id"
+      ]
+    },
+    {
+      "key": "MjNotifyEnabled",
+      "scope": "site",
+      "group": "gateway",
+      "card": "mj-notify",
+      "type": "bool",
+      "label": "Midjourney callbacks",
+      "description": "Passes the callback address (notifyHook) of a Midjourney task on to the upstream, which calls it when the task changes. The call comes from the upstream, not this site, so it carries the upstream's view of the task and tells the upstream the caller's address. When off, the address is dropped and callers poll the task status.",
+      "keywords": [
+        "Midjourney",
+        "notifyHook",
+        "callback",
+        "webhook",
+        "MJ"
+      ]
+    },
+    {
+      "key": "ModelLibraryRulesEnabled",
+      "scope": "site",
+      "group": "gateway",
+      "card": "supply-intake-rules",
+      "type": "bool",
+      "label": "Run the inclusion rules",
+      "description": "Runs the inclusion rules after each daily model library sync, so new releases join the catalog on their own. Edited on the Models page, Inclusion rules tab. Off, the library still syncs but nothing is added or retired automatically.",
+      "related": [
+        "ModelLibraryRulesApply",
+        "ModelLibraryRules"
+      ],
+      "keywords": [
+        "model library",
+        "inclusion rules",
+        "auto add",
+        "new models",
+        "catalog sync"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "ModelLibraryRulesApply",
+      "scope": "site",
+      "group": "gateway",
+      "card": "supply-intake-rules",
+      "type": "bool",
+      "label": "Apply the inclusion rules",
+      "description": "Lets the inclusion rules change the catalog: on, they add and retire models and notify admins of what they did. Off is a dry run: they change nothing and only notify admins of what they would do. Edited on the Models page, Inclusion rules tab.",
+      "examples": [
+        {
+          "value": "false",
+          "effect": "A new Claude release is reported as \"would be enabled\"; the catalog stays as it is."
+        },
+        {
+          "value": "true",
+          "effect": "The same release joins the catalog enabled, and admins are told it was added."
+        }
+      ],
+      "related": [
+        "ModelLibraryRulesEnabled",
+        "ModelLibraryRules"
+      ],
+      "keywords": [
+        "dry run",
+        "model library",
+        "inclusion rules",
+        "auto publish"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "ModelLibraryRules",
+      "scope": "site",
+      "group": "gateway",
+      "card": "supply-intake-rules",
+      "type": "json",
+      "label": "Inclusion rules",
+      "description": "The rules that decide which library models join the catalog and which catalog models are retired. They are saved as a JSON list and edited on the Models page, Inclusion rules tab. Rules are tried in order and the first one whose conditions all hold decides: enable, add disabled, leave out or retire. Conditions are labs, id patterns, release age, whether a channel can supply the model, deprecated, open weights and endpoints. Each model is decided once, so a model you remove is not added back. Empty uses the built-in rules; an empty list does nothing.",
+      "examples": [
+        {
+          "value": "[{\"name\":\"Retire deprecated models\",\"deprecated\":true,\"action\":\"retire\"}]",
+          "effect": "Deprecated catalog models stop being listed but stay callable; nothing is added."
+        },
+        {
+          "value": "[{\"name\":\"New Anthropic models\",\"labs\":[\"anthropic\"],\"released_within_days\":60,\"supplied\":true,\"action\":\"publish\"}]",
+          "effect": "An Anthropic model released in the last 60 days that a channel offers joins the catalog enabled."
+        },
+        {
+          "value": "",
+          "effect": "The built-in rules: retire deprecated models, add previews disabled, enable recent models of the main labs, add other supplied models disabled."
+        }
+      ],
+      "related": [
+        "ModelLibraryRulesEnabled",
+        "ModelLibraryRulesApply",
+        "SupplyIntakeRules"
+      ],
+      "keywords": [
+        "model library",
+        "inclusion rules",
+        "auto add",
+        "retire",
+        "models.dev"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "LogConsumeEnabled",
+      "scope": "site",
+      "group": "privacy",
+      "card": "log-consume",
+      "type": "bool",
+      "label": "Consume logs",
+      "description": "Write a consume log for every charged request: user, API key, model, tokens, cost, channel and timing. When off no new records are written and charging goes on as before, but the log list, the usage statistics built from logs and per-user histories have a gap. Top-ups, sign-up bonuses and other system logs are written either way.",
+      "related": [
+        "LogAutoDeleteEnabled",
+        "LogIOEnabled"
+      ],
+      "keywords": [
+        "usage log",
+        "request log",
+        "billing log",
+        "audit"
+      ]
+    },
+    {
+      "key": "LogRelayErrorEnabled",
+      "scope": "site",
+      "group": "privacy",
+      "card": "log-consume",
+      "type": "bool",
+      "label": "Log failed requests",
+      "description": "Write an error log when a request still fails after its retries, with the error the client got and every channel tried. Requests refused locally (insufficient quota, invalid parameters) are not logged.",
+      "keywords": [
+        "error log",
+        "failed request",
+        "upstream error",
+        "troubleshooting"
+      ]
+    },
+    {
+      "key": "ChannelMetricsEnabled",
+      "scope": "site",
+      "group": "privacy",
+      "card": "log-consume",
+      "type": "bool",
+      "label": "Hourly channel metrics",
+      "description": "Count attempts, successes, latency, time to first token and output speed per channel, model and hour. The counters are kept in memory, written every minute and read through GET /api/channel/metrics. When off nothing new is counted; stored hours stay until they expire.",
+      "related": [
+        "ChannelMetricsRetentionDays"
+      ],
+      "keywords": [
+        "success rate",
+        "latency",
+        "TTFT",
+        "throughput",
+        "channel health",
+        "monitoring"
+      ]
+    },
+    {
+      "key": "ChannelMetricsRetentionDays",
+      "scope": "site",
+      "group": "privacy",
+      "card": "log-consume",
+      "type": "int",
+      "unit": "days",
+      "min": 0,
+      "label": "Keep metrics for (days)",
+      "description": "How many days of hourly channel metrics are kept; older hours are deleted every night at 03:10 server time. 0 keeps them forever.",
+      "examples": [
+        {
+          "value": "30",
+          "effect": "The default: at most 30 x 24 = 720 rows per channel and model."
+        },
+        {
+          "value": "0",
+          "effect": "Nothing is deleted: the table grows by one row per channel, model and hour in use."
+        }
+      ],
+      "related": [
+        "ChannelMetricsEnabled"
+      ],
+      "keywords": [
+        "metrics retention",
+        "cleanup"
+      ]
+    },
+    {
+      "key": "LogAutoDeleteEnabled",
+      "scope": "site",
+      "group": "privacy",
+      "card": "log-consume",
+      "type": "bool",
+      "label": "Delete old consume logs",
+      "description": "Delete consume logs older than the retention days every night at 03:00 server time, with their kept bodies. Error and system logs stay, and so do the daily usage statistics already built from the deleted logs.",
+      "related": [
+        "LogAutoDeleteDays",
+        "LogConsumeEnabled"
+      ],
+      "keywords": [
+        "log retention",
+        "cleanup",
+        "purge",
+        "data retention",
+        "GDPR"
+      ]
+    },
+    {
+      "key": "LogAutoDeleteDays",
+      "scope": "site",
+      "group": "privacy",
+      "card": "log-consume",
+      "type": "int",
+      "unit": "days",
+      "min": 0,
+      "label": "Keep consume logs for (days)",
+      "description": "How many days of consume logs are kept when old logs are deleted automatically. Older logs go in the nightly cleanup; 0 deletes nothing.",
+      "examples": [
+        {
+          "value": "30",
+          "effect": "The default: a month of logs is kept; a log written on 1 May is gone by 1 June."
+        },
+        {
+          "value": "90",
+          "effect": "A quarter is kept, about three times the rows of the default."
+        }
+      ],
+      "related": [
+        "LogAutoDeleteEnabled"
+      ],
+      "keywords": [
+        "log retention",
+        "retention days"
+      ]
+    },
+    {
+      "key": "LogIOEnabled",
+      "scope": "site",
+      "group": "privacy",
+      "card": "log-io",
+      "type": "bool",
+      "label": "Allow keeping request bodies",
+      "description": "Site-wide switch for keeping the full request and response bodies of API calls, for troubleshooting. When off (the default, zero data retention) no API key keeps them and the option is hidden from personal and organization settings. When on, each user's or organization's own choice decides, and the defaults for personal and organization API keys apply until they choose. Bodies are cut at 1 MB each by default, kept 30 days, and never include API keys or auth headers.",
+      "related": [
+        "LogIODefaultUser",
+        "OrganizationLogIODefault"
+      ],
+      "keywords": [
+        "zero data retention",
+        "ZDR",
+        "request body",
+        "response body",
+        "prompt logging",
+        "privacy"
+      ]
+    },
+    {
+      "key": "LogIODefaultUser",
+      "scope": "site",
+      "group": "privacy",
+      "card": "log-io",
+      "type": "bool",
+      "label": "Default for personal API keys",
+      "description": "Whether personal API keys keep request and response bodies while their user has not chosen. Users can change it any time in their personal settings. Needs Allow keeping request bodies.",
+      "related": [
+        "LogIOEnabled",
+        "OrganizationLogIODefault"
+      ],
+      "keywords": [
+        "request body",
+        "retention default",
+        "privacy"
+      ]
+    },
+    {
+      "key": "OrganizationLogIODefault",
+      "scope": "site",
+      "group": "privacy",
+      "card": "log-io",
+      "type": "bool",
+      "label": "Default for organization API keys",
+      "description": "Whether organization API keys keep request and response bodies while the organization has not chosen. Organization admins can change it in the organization settings. Needs Allow keeping request bodies.",
+      "related": [
+        "LogIOEnabled",
+        "LogIODefaultUser"
+      ],
+      "keywords": [
+        "request body",
+        "retention default",
+        "organization",
+        "privacy"
+      ]
+    },
+    {
+      "key": "EnableSafe",
+      "scope": "site",
+      "group": "privacy",
+      "card": "safety",
+      "type": "bool",
+      "label": "Content safety check",
+      "description": "Check the text of every request with the safety tool before it goes to a channel, and refuse matches with a 400 error. Messages, system prompts, tool definitions and the client events of Realtime and Gemini Live sessions are checked; images and audio are not.",
+      "related": [
+        "SafeToolName",
+        "SafeKeyWords"
+      ],
+      "keywords": [
+        "moderation",
+        "content filter",
+        "keyword filter",
+        "prompt safety",
+        "censorship"
+      ]
+    },
+    {
+      "key": "SafeToolName",
+      "scope": "site",
+      "group": "privacy",
+      "card": "safety",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "Keyword",
+          "label": "Keyword",
+          "description": "Refuses requests whose text contains a word of the blocked keywords."
+        }
+      ],
+      "label": "Safety tool",
+      "description": "The tool that runs the content safety check. Keyword is the one built in. A tool that is not installed refuses every request.",
+      "related": [
+        "EnableSafe",
+        "SafeKeyWords"
+      ],
+      "keywords": [
+        "moderation tool",
+        "content filter"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "SafeKeyWords",
+      "scope": "site",
+      "group": "privacy",
+      "card": "safety",
+      "type": "list",
+      "label": "Blocked keywords",
+      "description": "The words the Keyword tool blocks, one per line. A request is refused when its text contains any of them, ignoring case, also inside longer words. Empty lines are ignored.",
+      "examples": [
+        {
+          "value": "casino",
+          "effect": "Refuses \"Plan a casino night\" and \"best casinos\"."
+        },
+        {
+          "value": "ass",
+          "effect": "Also refuses \"class\" and \"password\": short words match inside longer ones, so list whole, unusual words."
+        }
+      ],
+      "related": [
+        "EnableSafe",
+        "SafeToolName"
+      ],
+      "keywords": [
+        "blocklist",
+        "banned words",
+        "keyword filter",
+        "moderation"
+      ]
+    },
+    {
+      "key": "BuiltinChatEnabled",
+      "scope": "site",
+      "group": "entries",
+      "card": "builtin-chat",
+      "type": "bool",
+      "label": "Built-in chat",
+      "description": "Lets users try models in the console's playground and shows the quick-start chat on the dashboard. Off keeps the playground pages visible but disables running a request, and points users to the API docs instead. API keys and requests from other clients are not affected.",
+      "keywords": [
+        "playground",
+        "chat",
+        "try models",
+        "web chat"
+      ]
+    },
+    {
+      "key": "ChatLinks",
+      "scope": "site",
+      "group": "entries",
+      "card": "chat-links",
+      "type": "json",
+      "label": "Chat links",
+      "description": "The chat clients listed for users, each with a name, an address, a sort order and whether it shows. Stored as a JSON array of {id, name, url, show, sort}; the card edits one entry at a time and saves it right away. The list is published in the site status for clients that read it; no API key is added to the links. Empty means no chat links.",
+      "examples": [
+        {
+          "value": "[{\"id\":\"a1\",\"name\":\"Web chat\",\"url\":\"https://chat.example.com\",\"show\":true,\"sort\":1}]",
+          "effect": "One visible entry named Web chat."
+        },
+        {
+          "value": "[{\"id\":\"a1\",\"name\":\"Web chat\",\"url\":\"https://chat.example.com\",\"show\":false,\"sort\":1}]",
+          "effect": "The entry is kept but hidden."
+        }
+      ],
+      "related": [
+        "ChatLink",
+        "BuiltinChatEnabled"
+      ],
+      "keywords": [
+        "chat client",
+        "chat entry",
+        "web chat",
+        "external chat"
+      ]
+    },
+    {
+      "key": "SMTPProvider",
+      "scope": "site",
+      "group": "mail",
+      "card": "smtp",
+      "type": "string",
+      "label": "Mail service preset",
+      "description": "Which preset the mail service in use was set up from, such as resend, ses, gmail or custom. It only shapes the console form; sending reads the server, port and account. Like every SMTP setting it mirrors the mail service in use and changes with it.",
+      "related": [
+        "SMTPServer"
+      ],
+      "keywords": [
+        "mail provider",
+        "email provider",
+        "smtp preset"
+      ],
+      "advanced": true,
+      "docs": "deployment/env.md#mail-sending"
+    },
+    {
+      "key": "SMTPServer",
+      "scope": "site",
+      "group": "mail",
+      "card": "smtp",
+      "type": "string",
+      "label": "SMTP server",
+      "description": "The host name of the SMTP server every email is sent through. It mirrors the mail service in use: add, edit or switch services on the Mail services card. Empty means the site cannot send mail, so login codes, password resets and quota warnings stop. When the deployment sets smtp.url (SMTP_URL), that wins and the console is read-only.",
+      "examples": [
+        {
+          "value": "smtp.resend.com",
+          "effect": "Mail goes out through Resend."
+        }
+      ],
+      "related": [
+        "SMTPPort",
+        "SMTPTLSMode",
+        "SMTPAccount"
+      ],
+      "keywords": [
+        "smtp host",
+        "mail server",
+        "email server",
+        "outgoing mail"
+      ],
+      "docs": "deployment/env.md#mail-sending"
+    },
+    {
+      "key": "SMTPPort",
+      "scope": "site",
+      "group": "mail",
+      "card": "smtp",
+      "type": "int",
+      "min": 1,
+      "max": 65535,
+      "label": "SMTP port",
+      "description": "The port of the SMTP server: usually 465 for SSL/TLS and 587 for STARTTLS. With encryption Auto the port decides the encryption, and port 587 logs in with LOGIN instead of PLAIN. It mirrors the mail service in use.",
+      "examples": [
+        {
+          "value": "465",
+          "effect": "With Auto, the connection is TLS from the first byte."
+        },
+        {
+          "value": "587",
+          "effect": "With Auto, the connection must upgrade with STARTTLS and logs in with LOGIN."
+        },
+        {
+          "value": "25",
+          "effect": "With Auto, STARTTLS is still required; pick STARTTLS if offered for a relay without TLS."
+        }
+      ],
+      "related": [
+        "SMTPTLSMode",
+        "SMTPServer"
+      ],
+      "keywords": [
+        "port",
+        "465",
+        "587"
+      ]
+    },
+    {
+      "key": "SMTPAccount",
+      "scope": "site",
+      "group": "mail",
+      "card": "smtp",
+      "type": "string",
+      "label": "SMTP username",
+      "description": "The user name the mail service logs in to the SMTP server with; for a mailbox it is the mailbox address. When no sender address is set, mail is sent from it. It mirrors the mail service in use.",
+      "related": [
+        "SMTPToken",
+        "SMTPFrom"
+      ],
+      "keywords": [
+        "smtp user",
+        "login",
+        "account",
+        "mailbox"
+      ]
+    },
+    {
+      "key": "SMTPFrom",
+      "scope": "site",
+      "group": "mail",
+      "card": "smtp",
+      "type": "string",
+      "label": "Sender address",
+      "description": "The address every email comes from. It must be an address the service lets you send from: one on a domain you verified with it, or the mailbox itself. It mirrors the mail service in use.",
+      "examples": [
+        {
+          "value": "noreply@example.com",
+          "effect": "Users get mail from noreply@example.com; example.com must be verified with the service."
+        }
+      ],
+      "related": [
+        "SMTPFromName",
+        "SMTPReplyTo"
+      ],
+      "keywords": [
+        "from address",
+        "sender",
+        "noreply",
+        "mail from"
+      ]
+    },
+    {
+      "key": "SMTPFromName",
+      "scope": "site",
+      "group": "mail",
+      "card": "smtp",
+      "type": "string",
+      "label": "Sender name",
+      "description": "The display name shown before the sender address. Empty shows the address alone. It mirrors the mail service in use.",
+      "examples": [
+        {
+          "value": "Example AI",
+          "effect": "Mail comes from Example AI <noreply@example.com>."
+        }
+      ],
+      "related": [
+        "SMTPFrom",
+        "SystemName"
+      ],
+      "keywords": [
+        "from name",
+        "display name",
+        "sender"
+      ]
+    },
+    {
+      "key": "SMTPReplyTo",
+      "scope": "site",
+      "group": "mail",
+      "card": "smtp",
+      "type": "string",
+      "label": "Reply-to address",
+      "description": "Where replies to the site's emails go instead of the sender address. Empty sends replies to the sender address. It mirrors the mail service in use.",
+      "examples": [
+        {
+          "value": "support@example.com",
+          "effect": "A user who replies to a login code email writes to support@example.com."
+        }
+      ],
+      "related": [
+        "SMTPFrom"
+      ],
+      "keywords": [
+        "reply to",
+        "support address"
+      ]
+    },
+    {
+      "key": "SMTPToken",
+      "scope": "site",
+      "group": "mail",
+      "card": "smtp",
+      "type": "secret",
+      "label": "SMTP password",
+      "description": "The password, app password or API key the mail service logs in with. It is never shown again after saving and is encrypted in the database when ENCRYPTION_KEY is set. It mirrors the mail service in use.",
+      "related": [
+        "SMTPAccount"
+      ],
+      "keywords": [
+        "smtp password",
+        "api key",
+        "app password",
+        "authorization code",
+        "credentials"
+      ]
+    },
+    {
+      "key": "SMTPTLSMode",
+      "scope": "site",
+      "group": "mail",
+      "card": "smtp",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "auto",
+          "label": "Auto (by port)",
+          "description": "SSL/TLS on port 465, required STARTTLS on any other port."
+        },
+        {
+          "value": "ssl",
+          "label": "SSL/TLS",
+          "description": "TLS from the first byte, usually on port 465."
+        },
+        {
+          "value": "starttls",
+          "label": "STARTTLS (required)",
+          "description": "Upgrades to TLS after connecting; sending fails when the server cannot."
+        },
+        {
+          "value": "starttls_opportunistic",
+          "label": "STARTTLS if offered",
+          "description": "Upgrades when the server offers it, otherwise sends in plain text."
+        },
+        {
+          "value": "none",
+          "label": "None",
+          "description": "Plain text, for a relay on a trusted local network or for development."
+        }
+      ],
+      "label": "Encryption",
+      "description": "How the connection to the SMTP server is encrypted. Auto picks by port and suits almost every service. It mirrors the mail service in use.",
+      "related": [
+        "SMTPPort"
+      ],
+      "keywords": [
+        "tls",
+        "ssl",
+        "starttls",
+        "encryption",
+        "secure connection"
+      ]
+    },
+    {
+      "key": "MailTemplates",
+      "scope": "site",
+      "group": "mail",
+      "card": "mail-templates",
+      "type": "json",
+      "label": "Email templates",
+      "description": "Your own subject and body for each email users get, per console language. The emails are the verification code, password reset, low balance and quota used up. Stored as JSON {\"<template>\": {\"<language>\": {\"subject\", \"body\"}}}; a template or language left out, or an empty subject or body, uses the built-in text of that language. Variables are a name in double curly braces, HTML-escaped in the body; the server adds the shared header with the logo and the footer. Unknown templates or languages are refused on save.",
+      "examples": [
+        {
+          "value": "{\"verification\":{\"en_US\":{\"subject\":\"Your {{site}} code\",\"body\":\"\"}}}",
+          "effect": "English verification emails get the new subject and keep the built-in body; every other email stays built-in."
+        }
+      ],
+      "related": [
+        "DefaultLanguage",
+        "SystemName",
+        "Logo",
+        "QuotaRemindEnabled"
+      ],
+      "keywords": [
+        "email template",
+        "mail content",
+        "verification email",
+        "password reset email",
+        "quota warning"
+      ]
+    },
+    {
+      "key": "NotifyDisabledKinds",
+      "scope": "site",
+      "group": "notify",
+      "card": "notifications",
+      "type": "list",
+      "label": "Turned-off notice kinds",
+      "description": "The kinds of admin notices that are not sent to any notice channel; the card's switches write it. Comma separated; empty sends every kind. The kinds are channel_disabled, channel_enabled, channel_test, low_balance, subscription_usage, price_change, model_drift, model_consistency, credential, supply_paused, supply_resumed, supply_failover, supply_above_quote and model_library. A notice channel can also take only some kinds.",
+      "examples": [
+        {
+          "value": "price_change,model_drift",
+          "effect": "Upstream price and model list changes are not sent; every other kind is."
+        }
+      ],
+      "related": [
+        "NotifyKindLimitPerHour"
+      ],
+      "keywords": [
+        "mute",
+        "silence",
+        "alerts",
+        "notification types",
+        "notice kinds"
+      ],
+      "docs": "deployment/notify.md"
+    },
+    {
+      "key": "NotifyKindLimitPerHour",
+      "scope": "site",
+      "group": "notify",
+      "card": "notifications",
+      "type": "int",
+      "min": 0,
+      "label": "Notices per kind per hour",
+      "description": "The most notices of one kind sent in an hour; the rest are dropped. The hour starts with the first notice of the kind, and the first notice after a limited hour says how many were dropped. Each kind counts on its own, on each node. 0 means no limit.",
+      "examples": [
+        {
+          "value": "20",
+          "effect": "The default: of 50 channel_disabled notices in one hour, 20 are sent; the next one after the hour says 30 were dropped."
+        },
+        {
+          "value": "0",
+          "effect": "Every notice is sent, however many."
+        }
+      ],
+      "related": [
+        "NotifyDisabledKinds"
+      ],
+      "keywords": [
+        "rate limit",
+        "throttle",
+        "flood",
+        "spam"
+      ],
+      "docs": "deployment/notify.md"
+    },
+    {
+      "key": "UsageAlertTiers",
+      "scope": "site",
+      "group": "notify",
+      "card": "notifications",
+      "type": "list",
+      "unit": "%",
+      "label": "Subscription usage alert tiers",
+      "description": "The usage levels, in percent, at which a subscription channel (Codex, Claude Code) sends a notice for a usage window. Each tier fires once per window period and again after the window resets. Comma separated, each between 1 and 100; empty means 50, 75, 100 and 0 turns the alerts off. A channel's own tiers on its monitoring tab win over these. The notices are of the subscription_usage kind.",
+      "examples": [
+        {
+          "value": "80, 95",
+          "effect": "A 5-hour window at 82% sends one notice and at 96% another; after the reset both can fire again."
+        },
+        {
+          "value": "0",
+          "effect": "No usage alerts, except from channels with tiers of their own."
+        }
+      ],
+      "related": [
+        "NotifyDisabledKinds",
+        "NotifyKindLimitPerHour"
+      ],
+      "keywords": [
+        "usage alert",
+        "quota window",
+        "codex",
+        "claude code",
+        "subscription",
+        "threshold"
+      ]
+    },
+    {
+      "key": "OrganizationEnabled",
+      "scope": "site",
+      "group": "orgpolicy",
+      "card": "org-policy",
+      "type": "bool",
+      "label": "Organizations",
+      "description": "Users can create and join organizations that share a balance, members, budgets and API keys. When off, users no longer see organizations and the organization API refuses every request; site admins still manage the existing ones, which are kept as they are.",
+      "related": [
+        "OrganizationMaxPerUser",
+        "OrganizationDefaultMaxMembers",
+        "OrganizationQuotaTransferEnabled"
+      ],
+      "keywords": [
+        "teams",
+        "workspaces",
+        "multi-tenant",
+        "org"
+      ]
+    },
+    {
+      "key": "OrganizationQuotaTransferEnabled",
+      "scope": "site",
+      "group": "orgpolicy",
+      "card": "org-policy",
+      "type": "bool",
+      "label": "Personal balance transfer into organizations",
+      "description": "An organization's owner or admins can move their own personal balance into the organization's shared balance. The transfer is one-way: nothing moves back to a personal account. When off, transfers are refused.",
+      "related": [
+        "OrganizationEnabled",
+        "OrganizationDissolveQuotaRefund"
+      ],
+      "keywords": [
+        "transfer",
+        "quota",
+        "balance",
+        "top up organization",
+        "pool"
+      ]
+    },
+    {
+      "key": "OrganizationMaxPerUser",
+      "scope": "site",
+      "group": "orgpolicy",
+      "card": "org-policy",
+      "type": "int",
+      "min": 0,
+      "label": "Organizations per user",
+      "description": "How many organizations one user can create. Organizations they only joined do not count, nor deleted ones. 0 means no limit.",
+      "examples": [
+        {
+          "value": "3",
+          "effect": "A user who created 3 organizations must delete one before creating a fourth; joining others is not limited."
+        },
+        {
+          "value": "1",
+          "effect": "Each user runs at most one organization of their own."
+        },
+        {
+          "value": "0",
+          "effect": "Users create as many organizations as they like."
+        }
+      ],
+      "related": [
+        "OrganizationEnabled",
+        "OrganizationDefaultMaxMembers"
+      ],
+      "keywords": [
+        "limit",
+        "maximum organizations",
+        "quota"
+      ]
+    },
+    {
+      "key": "OrganizationDefaultMaxMembers",
+      "scope": "site",
+      "group": "orgpolicy",
+      "card": "org-policy",
+      "type": "int",
+      "min": 0,
+      "label": "Default member limit",
+      "description": "How many members an organization can have when a site admin has not set a limit for that organization. Changing it applies to every organization without a limit of its own, existing ones included. 0 means no limit.",
+      "examples": [
+        {
+          "value": "10",
+          "effect": "An organization with 10 members cannot add an 11th until a site admin raises its limit."
+        },
+        {
+          "value": "0",
+          "effect": "Organizations without a limit of their own take any number of members."
+        }
+      ],
+      "related": [
+        "OrganizationMaxPerUser",
+        "OrganizationEnabled"
+      ],
+      "keywords": [
+        "seats",
+        "members",
+        "team size",
+        "limit"
+      ]
+    },
+    {
+      "key": "OrganizationDissolveQuotaRefund",
+      "scope": "site",
+      "group": "orgpolicy",
+      "card": "org-policy",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "owner",
+          "label": "Return to the owner",
+          "description": "The remaining shared balance goes to the owner's personal account, with a log entry."
+        },
+        {
+          "value": "discard",
+          "label": "Discard",
+          "description": "The remaining shared balance is cleared and returned to nobody."
+        }
+      ],
+      "label": "Balance of a deleted organization",
+      "description": "What happens to an organization's remaining shared balance when it is deleted, by its owner or a site admin. It has no field on the settings page and is only set through the option API (PUT /api/option/). Any value other than owner discards the balance.",
+      "related": [
+        "OrganizationQuotaTransferEnabled",
+        "OrganizationEnabled"
+      ],
+      "keywords": [
+        "dissolve",
+        "delete organization",
+        "refund",
+        "leftover balance"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "channel.priority",
+      "scope": "channel",
+      "group": "channels",
+      "card": "routing",
+      "field": "priority",
+      "type": "int",
+      "default": "0",
+      "label": "Priority",
+      "description": "The order channels are tried in for a model: the highest priority takes requests first. A lower priority is used only while every channel above it is unavailable; channels of one priority share requests by weight. The Usage choices (only provider, backup, share, prefer) set it for you. While supplies route requests, the call order on the Providers page orders channels instead, and new supplies of the channel start from its priority.",
+      "examples": [
+        {
+          "value": "10",
+          "effect": "Tried before every channel at 0 that serves the same model in the same group."
+        },
+        {
+          "value": "0",
+          "effect": "The default. A backup at -1 is reached only while every channel at 0 fails."
+        }
+      ],
+      "related": [
+        "channel.weight",
+        "supply.priority",
+        "SupplyCostOrder"
+      ],
+      "keywords": [
+        "order",
+        "fallback",
+        "backup",
+        "tier",
+        "primary"
+      ]
+    },
+    {
+      "key": "channel.weight",
+      "scope": "channel",
+      "group": "channels",
+      "card": "routing",
+      "field": "weight",
+      "type": "int",
+      "min": 0,
+      "default": "1",
+      "label": "Weight",
+      "description": "How channels of the same priority share a model's requests: each takes its weight over the sum of the weights. Channels of other priorities are not counted. While supplies route requests, the supplies' own weights decide, and new supplies of the channel start from its weight.",
+      "examples": [
+        {
+          "value": "3",
+          "effect": "Next to a channel of weight 1 at the same priority, takes about 3 / (3 + 1) = 75% of the requests."
+        },
+        {
+          "value": "1",
+          "effect": "The default: channels of one priority share requests equally."
+        }
+      ],
+      "related": [
+        "channel.priority",
+        "supply.weight",
+        "SupplyModeDefault"
+      ],
+      "keywords": [
+        "load balancing",
+        "share",
+        "split",
+        "traffic"
+      ]
+    },
+    {
+      "key": "channel.cost_ratio",
+      "scope": "channel",
+      "group": "channels",
+      "card": "advanced",
+      "field": "cost_ratio",
+      "type": "ratio",
+      "min": 0,
+      "default": "empty (unknown)",
+      "label": "Cost ratio",
+      "description": "What the channel's upstream charges as a multiple of the catalog price, for channels without a price list. It is used only where the channel publishes no synced price: the channel cost is then catalog price x cost ratio x (1 + fee rate). It feeds the profit figures, the supply cost and the warning on user groups sold below it; users are never charged by it. Empty or 0 means unknown.",
+      "examples": [
+        {
+          "value": "0.8",
+          "effect": "A relay at 80% of the official price: a $3 / $15 per million token model costs $2.40 / $12, or $2.52 / $12.60 with a 5% fee."
+        },
+        {
+          "value": "1",
+          "effect": "The upstream charges the official price; any group below ratio 1 is flagged as selling at a loss here."
+        }
+      ],
+      "related": [
+        "channel.fee_rate",
+        "user_group.ratio",
+        "model.price"
+      ],
+      "keywords": [
+        "cost",
+        "discount",
+        "relay price",
+        "upstream price",
+        "margin"
+      ],
+      "docs": "use/pricing_and_routing.md#where-to-set-what"
+    },
+    {
+      "key": "channel.fee_rate",
+      "scope": "channel",
+      "group": "channels",
+      "card": "advanced",
+      "field": "fee_rate",
+      "type": "percent",
+      "unit": "%",
+      "min": 0,
+      "default": "the provider's published fee",
+      "label": "Fee rate",
+      "description": "What the channel's provider charges on top of its list prices, usually when you buy credit: cash paid / credit received - 1. A channel's cost is its list price x (1 + fee rate); costs decide which supply takes a request and which ones the price check holds. Recorded top-ups set it from the latest 10.",
+      "examples": [
+        {
+          "value": "5",
+          "effect": "Requesty: $105 buys $100 of credit."
+        },
+        {
+          "value": "3",
+          "effect": "Vercel AI Gateway card payments: a $3.00 processing fee on $100 of credit."
+        },
+        {
+          "value": "0",
+          "effect": "An official vendor API billed at list price."
+        }
+      ],
+      "related": [
+        "PaymentCostPercent",
+        "SupplyCostOrder",
+        "user_group.ratio"
+      ],
+      "keywords": [
+        "top-up fee",
+        "processing fee",
+        "markup",
+        "channel cost"
+      ],
+      "docs": "use/pricing_and_routing.md#channel-fee-rates"
+    },
+    {
+      "key": "channel.fee_note",
+      "scope": "channel",
+      "group": "channels",
+      "card": "advanced",
+      "field": "fee_note",
+      "type": "string",
+      "label": "Fee source",
+      "description": "Where the channel's fee rate comes from, such as a billing page or a checkout receipt. It is required once the fee rate is above 0. Only admins see it; users see a generic label.",
+      "related": [
+        "channel.fee_rate"
+      ],
+      "keywords": [
+        "fee note",
+        "receipt",
+        "source"
+      ]
+    },
+    {
+      "key": "channel.group",
+      "scope": "channel",
+      "group": "channels",
+      "card": "routing",
+      "field": "group",
+      "type": "list",
+      "default": "default",
+      "label": "Groups",
+      "description": "The user groups the channel serves: a request is only sent to channels of the group it runs in. A request runs in its API key's group (then the key's backup group), or the user's group when the key has none. A channel needs at least one group.",
+      "examples": [
+        {
+          "value": "default",
+          "effect": "Serves every user of the default group and keys set to it."
+        },
+        {
+          "value": "default,vip",
+          "effect": "Serves both groups; each request is billed at the ratio of the group it ran in."
+        }
+      ],
+      "related": [
+        "user_group.ratio",
+        "token.group",
+        "token.backup_group"
+      ],
+      "keywords": [
+        "user group",
+        "channel group",
+        "audience"
+      ]
+    },
+    {
+      "key": "channel.model_mapping",
+      "scope": "channel",
+      "group": "channels",
+      "card": "advanced",
+      "field": "model_mapping",
+      "type": "json",
+      "label": "Model mapping",
+      "description": "Renames on this channel only: a requested model name is sent upstream as another name. Use it only when the upstream wants its own names, such as deployment names; matching models to the catalog needs nothing here. A target starting with + bills by the requested name. Requests routed through a supply use the supply's upstream model instead. Saving a change rewrites the channel's model list to the requested names.",
+      "examples": [
+        {
+          "value": "{\"gpt-4o\": \"my-gpt4o-deployment\"}",
+          "effect": "Requests for gpt-4o reach the upstream as my-gpt4o-deployment."
+        },
+        {
+          "value": "{\"opus-latest\": \"+claude-opus-4-1\"}",
+          "effect": "opus-latest is sent as claude-opus-4-1 and billed as opus-latest."
+        }
+      ],
+      "related": [
+        "supply.upstream_model"
+      ],
+      "keywords": [
+        "rename",
+        "alias",
+        "deployment name",
+        "redirect"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "channel.pre_cost",
+      "scope": "channel",
+      "group": "channels",
+      "card": "advanced",
+      "field": "pre_cost",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "1",
+          "label": "Normal billing",
+          "description": "Count the input tokens, images included, before the request is sent."
+        },
+        {
+          "value": "2",
+          "label": "Exclude images",
+          "description": "Count the text only; images are left out of the estimate."
+        },
+        {
+          "value": "3",
+          "label": "Exclude all",
+          "description": "Count nothing beforehand; the reply's usage decides the charge."
+        }
+      ],
+      "default": "1",
+      "label": "Pre-billing",
+      "description": "How the gateway counts a request's input before sending it, to hold the user's credit until the reply's usage is known. The count also stands in for the input when an upstream reports no usage, such as some streams. Leaving images or everything out saves server work on heavy requests; the prompt token limit is still checked.",
+      "related": [
+        "MaxPromptTokens"
+      ],
+      "keywords": [
+        "pre-consume",
+        "token count",
+        "estimate",
+        "hold"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "channel.disabled_stream",
+      "scope": "channel",
+      "group": "channels",
+      "card": "advanced",
+      "field": "disabled_stream",
+      "type": "list",
+      "label": "Models with streaming disabled",
+      "description": "Models this channel must not stream: streaming requests for them skip it for another channel serving the model. Requests without streaming still use it. Empty means every model streams.",
+      "examples": [
+        {
+          "value": "o1,o1-pro",
+          "effect": "Streaming requests for o1 and o1-pro go to other channels; plain requests still come here."
+        }
+      ],
+      "keywords": [
+        "stream",
+        "no streaming",
+        "sse"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "channel.prompt_caching",
+      "scope": "channel",
+      "group": "channels",
+      "card": "advanced",
+      "field": "plugin.prompt_caching.enabled",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "inherit",
+          "label": "Follow the site",
+          "description": "Inject when the site-wide Claude prompt caching switch is on."
+        },
+        {
+          "value": "on",
+          "label": "Always on",
+          "description": "Inject on this channel whatever the site switch says."
+        },
+        {
+          "value": "off",
+          "label": "Always off",
+          "description": "Never inject on this channel."
+        }
+      ],
+      "default": "inherit",
+      "label": "Prompt caching injection",
+      "description": "Whether the gateway adds cache_control marks to Claude requests on this channel, so the upstream caches the prompt. Shown for Anthropic, Claude Code and OpenRouter channels, in the plugin settings. Requests that already carry cache_control are left alone. The plugin also sets the cache lifetime (5 minutes or 1 hour), where the marks go and which models match (Claude names by default).",
+      "related": [
+        "ClaudePromptCachingEnabled"
+      ],
+      "keywords": [
+        "cache_control",
+        "prompt cache",
+        "anthropic",
+        "claude",
+        "cache"
+      ],
+      "advanced": true
+    },
+    {
+      "key": "channel.proxy",
+      "scope": "channel",
+      "group": "channels",
+      "card": "connection",
+      "field": "proxy",
+      "type": "url",
+      "label": "Proxy",
+      "description": "A proxy for this channel's upstream requests only, http or socks5. Only needed when this server cannot reach the upstream directly. A %s in the address is replaced with a session ID derived from the key, for proxies that pin one exit per session. Empty connects directly.",
+      "examples": [
+        {
+          "value": "http://127.0.0.1:1080",
+          "effect": "Every request of the channel goes through the local HTTP proxy."
+        },
+        {
+          "value": "socks5://user-%s:pass@proxy.example.com:1080",
+          "effect": "Each key gets its own proxy session, so its exit address stays the same."
+        }
+      ],
+      "keywords": [
+        "http proxy",
+        "socks5",
+        "network",
+        "egress"
+      ]
+    },
+    {
+      "key": "channel.test_model",
+      "scope": "channel",
+      "group": "channels",
+      "card": "monitor",
+      "field": "test_model",
+      "type": "string",
+      "label": "Test model",
+      "description": "The model connection tests and scheduled checks send their request with. Empty picks a cheap chat model from the channel's list, else its first chat model; a channel without a chat model then cannot be tested.",
+      "examples": [
+        {
+          "value": "gpt-4o-mini",
+          "effect": "Tests cost a fraction of a cent and do not touch the expensive models."
+        }
+      ],
+      "keywords": [
+        "health check",
+        "connection test",
+        "probe"
+      ]
+    },
+    {
+      "key": "model.price",
+      "scope": "model",
+      "group": "models",
+      "card": "pricing",
+      "field": "price",
+      "type": "float",
+      "unit": "USD / 1M tokens",
+      "min": 0,
+      "label": "Catalog price",
+      "description": "What the model costs before the group ratio, per million input and output tokens (or per request or minute). Users pay catalog price x their group ratio, whichever channel serves the request. It can be typed in USD, RMB or as a ratio (1 = $2 per million tokens). A model without a price is refused by default.",
+      "examples": [
+        {
+          "value": "3 / 15",
+          "effect": "$3 input and $15 output per million tokens; the default group at 1.12 pays $3.36 / $16.80."
+        },
+        {
+          "value": "ratio 1.5 / 7.5",
+          "effect": "The same price as ratios: 1.5 x $2 = $3 and 7.5 x $2 = $15 per million tokens."
+        }
+      ],
+      "related": [
+        "user_group.ratio",
+        "channel.cost_ratio",
+        "PaymentCostPercent"
+      ],
+      "keywords": [
+        "pricing",
+        "model price",
+        "input price",
+        "output price",
+        "official price"
+      ],
+      "docs": "use/pricing_and_routing.md#the-three-numbers"
+    },
+    {
+      "key": "model.supply_mode",
+      "scope": "model",
+      "group": "models",
+      "card": "supplies",
+      "field": "supply_mode",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "default",
+          "label": "Follow default",
+          "description": "Use the default supply mode of the platform settings."
+        },
+        {
+          "value": "balance",
+          "label": "Balance",
+          "description": "Supplies of one tier share requests by weight."
+        },
+        {
+          "value": "failover",
+          "label": "Failover",
+          "description": "The heaviest supply of a tier takes every request; the others back it up."
+        }
+      ],
+      "default": "default",
+      "label": "Supply mode",
+      "description": "How the supplies of one tier share this model's requests. Tiers are always tried in order; the mode only decides within one. It applies to models whose order is set by hand: a model that follows the call order always shares a tier by weight.",
+      "examples": [
+        {
+          "value": "failover",
+          "effect": "Supplies of weights 3 and 1 in one tier: the weight 3 supply takes every request while it works."
+        },
+        {
+          "value": "balance",
+          "effect": "The same supplies take about 75% and 25% of the requests."
+        }
+      ],
+      "related": [
+        "SupplyModeDefault",
+        "model.allocation",
+        "supply.weight"
+      ],
+      "keywords": [
+        "load balancing",
+        "failover",
+        "primary",
+        "backup"
+      ],
+      "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
+    },
+    {
+      "key": "model.allocation",
+      "scope": "model",
+      "group": "models",
+      "card": "supplies",
+      "field": "allocation",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "policy",
+          "label": "Call order",
+          "description": "The supplies' priority and weight come from the call order on the Providers page."
+        },
+        {
+          "value": "manual",
+          "label": "Set by hand",
+          "description": "The supplies keep the priority and weight stored on them."
+        }
+      ],
+      "default": "policy",
+      "label": "Supply order",
+      "description": "Whether the model's supplies follow the call order of the Providers page or keep their own numbers. Changing a supply's priority or weight on the Supplies tab sets the model to set by hand; switching back to the call order drops those numbers.",
+      "examples": [
+        {
+          "value": "policy",
+          "effect": "Moving a provider up on the Providers page moves it up for this model too."
+        },
+        {
+          "value": "manual",
+          "effect": "This model keeps its order when the call order changes; new channels join below its supplies."
+        }
+      ],
+      "related": [
+        "allocation.tiers",
+        "supply.priority",
+        "model.supply_mode"
+      ],
+      "keywords": [
+        "allocation policy",
+        "call order",
+        "manual order"
+      ]
+    },
+    {
+      "key": "supply.priority",
+      "scope": "supply",
+      "group": "models",
+      "card": "supplies",
+      "field": "priority",
+      "type": "int",
+      "default": "the channel's priority; a supply added by hand joins below the lowest tier",
+      "label": "Priority",
+      "description": "This supply's tier among the model's supplies: higher tiers take requests first, lower ones back them up. A lower tier is used only while every supply above it is unavailable. Supplies of one priority form a tier and share it by the supply mode. Under the call order the policy sets it; a supply with its own number no longer follows its channel.",
+      "examples": [
+        {
+          "value": "2",
+          "effect": "Above two supplies at 1: they are used only while this supply fails."
+        },
+        {
+          "value": "1",
+          "effect": "Next to another supply at 1, the two form one tier and share its requests."
+        }
+      ],
+      "related": [
+        "supply.weight",
+        "model.allocation",
+        "SupplyCostOrder"
+      ],
+      "keywords": [
+        "tier",
+        "order",
+        "backup",
+        "fallback"
+      ],
+      "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
+    },
+    {
+      "key": "supply.weight",
+      "scope": "supply",
+      "group": "models",
+      "card": "supplies",
+      "field": "weight",
+      "type": "int",
+      "min": 0,
+      "default": "the channel's weight",
+      "label": "Weight",
+      "description": "This supply's share of its tier: its weight over the tier's total under balance, all of it if heaviest under failover. 0 counts as 1. Under the call order a provider's weight is split equally between its channels.",
+      "examples": [
+        {
+          "value": "3",
+          "effect": "With a weight 1 supply in its tier: about 75% of the requests under balance, all of them under failover."
+        },
+        {
+          "value": "1",
+          "effect": "Two supplies of weight 1 share a tier 50 / 50 under balance."
+        }
+      ],
+      "related": [
+        "supply.priority",
+        "model.supply_mode",
+        "SupplyModeDefault"
+      ],
+      "keywords": [
+        "share",
+        "split",
+        "load balancing",
+        "traffic"
+      ]
+    },
+    {
+      "key": "supply.enabled",
+      "scope": "supply",
+      "group": "models",
+      "card": "supplies",
+      "field": "enabled",
+      "type": "bool",
+      "default": "on; off for a supply an intake rule adds for review",
+      "label": "Use this supply",
+      "description": "Whether the supply takes the model's requests. Off, it keeps its settings but is skipped. Supplies an intake rule added wait switched off until you switch them on; switching a supply on also accepts its cost, so the price check leaves it alone.",
+      "related": [
+        "SupplyIntakeRules"
+      ],
+      "keywords": [
+        "enable",
+        "disable",
+        "review",
+        "pending"
+      ]
+    },
+    {
+      "key": "supply.upstream_model",
+      "scope": "supply",
+      "group": "models",
+      "card": "supplies",
+      "field": "upstream_model",
+      "type": "string",
+      "default": "filled in from the channel's mapping, its model list or its platform's naming",
+      "label": "Upstream model",
+      "description": "The model name this supply sends to its channel's upstream. The client still asks for the public name and is billed by it; the channel's model mapping does not apply. A supply stops taking requests when the upstream stops listing this name in two checks in a row.",
+      "examples": [
+        {
+          "value": "claude-sonnet-4-5@20250929",
+          "effect": "A Vertex channel serves the public claude-sonnet-4-5 under its own versioned name."
+        },
+        {
+          "value": "anthropic/claude-sonnet-4.5",
+          "effect": "An aggregator that prefixes the vendor serves the same public model."
+        }
+      ],
+      "related": [
+        "channel.model_mapping"
+      ],
+      "keywords": [
+        "upstream name",
+        "model id",
+        "deployment name"
+      ]
+    },
+    {
+      "key": "allocation.tiers",
+      "scope": "allocation",
+      "group": "allocation",
+      "card": "call-order",
+      "field": "tiers",
+      "type": "json",
+      "default": "created from the channels' priorities when supply routing starts",
+      "label": "Call order",
+      "description": "The order channels take requests in while supplies route them, edited as the list on the Providers page. Each position is a provider (every channel of one type and address) or a single channel; positions shared by several split their requests by weight, and a provider's weight is split equally between its channels. Channels not placed come last, newest last. Models set by hand keep their own order.",
+      "examples": [
+        {
+          "value": "[[{\"provider\":\"14:\",\"weight\":1}],[{\"channel_id\":7,\"weight\":1}]]",
+          "effect": "The official Anthropic API first; channel 7 only while it fails."
+        },
+        {
+          "value": "[[{\"channel_id\":3,\"weight\":3},{\"channel_id\":5,\"weight\":1}]]",
+          "effect": "Channels 3 and 5 share the first position: about 75% and 25% of the requests."
+        }
+      ],
+      "related": [
+        "model.allocation",
+        "supply.priority",
+        "SupplyCostOrder"
+      ],
+      "keywords": [
+        "allocation policy",
+        "call order",
+        "provider order",
+        "tiers"
+      ],
+      "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
+    },
+    {
+      "key": "user_group.ratio",
+      "scope": "user_group",
+      "group": "user-groups",
+      "card": "edit",
+      "field": "ratio",
+      "type": "ratio",
+      "min": 0,
+      "default": "1",
+      "label": "Group ratio",
+      "description": "The multiplier on the catalog (official) price for users of the group: every request is charged catalog price x ratio, whatever channel serves it. The default group's ratio is the site's normal price and margin; other groups give discounts or charge more. 0 makes the group's requests free.",
+      "examples": [
+        {
+          "value": "1.12",
+          "effect": "The default group sells at 12% over the official price: a $3 / $15 per million token model costs $3.36 / $16.80."
+        },
+        {
+          "value": "1.05",
+          "effect": "A VIP discount. With a 4% payment cost it brings in $1.008 per $1, below a 3% channel fee."
+        },
+        {
+          "value": "1",
+          "effect": "Sell at the official price: every channel fee and payment cost is a loss."
+        }
+      ],
+      "related": [
+        "PaymentCostPercent",
+        "channel.fee_rate"
+      ],
+      "keywords": [
+        "markup",
+        "margin",
+        "discount",
+        "price multiplier",
+        "profit"
+      ],
+      "docs": "use/pricing_and_routing.md#examples"
+    },
+    {
+      "key": "user_group.api_rate",
+      "scope": "user_group",
+      "group": "user-groups",
+      "card": "edit",
+      "field": "api_rate",
+      "type": "int",
+      "unit": "requests / minute",
+      "min": 0,
+      "default": "300",
+      "label": "API rate",
+      "description": "How many API requests each user of the group may send per minute, counted per user across all their keys. Requests over it get 429. Below 60 a fixed one-minute window counts them; from 60 a token bucket allows short bursts of up to 10 seconds' worth.",
+      "examples": [
+        {
+          "value": "300",
+          "effect": "Five requests a second on average per user."
+        },
+        {
+          "value": "30",
+          "effect": "The 31st request within a minute is refused until the minute is over."
+        }
+      ],
+      "keywords": [
+        "rate limit",
+        "rpm",
+        "throttle",
+        "429"
+      ]
+    },
+    {
+      "key": "user_group.public",
+      "scope": "user_group",
+      "group": "user-groups",
+      "card": "edit",
+      "field": "public",
+      "type": "bool",
+      "default": "off",
+      "label": "Public",
+      "description": "Whether users outside the group may pick it for their API keys, as a key's group or backup group. Off, only users in the group use it. Requests through a picked group are billed at its ratio.",
+      "related": [
+        "token.group",
+        "token.backup_group",
+        "user_group.ratio"
+      ],
+      "keywords": [
+        "selectable",
+        "visible",
+        "open group"
+      ]
+    },
+    {
+      "key": "user_group.promotion",
+      "scope": "user_group",
+      "group": "user-groups",
+      "card": "edit",
+      "field": "promotion",
+      "type": "bool",
+      "default": "off",
+      "label": "Auto upgrade",
+      "description": "Moves users into this group when their total paid top-ups fall between its minimum and maximum. It is checked after each paid order; gifted credit (sign-up and invite bonuses, redemption codes, admin changes) does not count. When several groups match, the one with the highest minimum wins. A user an admin put in another group is moved too.",
+      "related": [
+        "user_group.min",
+        "user_group.max"
+      ],
+      "keywords": [
+        "promotion",
+        "tier",
+        "loyalty",
+        "upgrade"
+      ]
+    },
+    {
+      "key": "user_group.min",
+      "scope": "user_group",
+      "group": "user-groups",
+      "card": "edit",
+      "field": "min",
+      "type": "float",
+      "unit": "$",
+      "min": 0,
+      "default": "0",
+      "label": "Minimum paid top-ups",
+      "description": "The total paid top-ups from which auto upgrade moves a user into the group (inclusive). Only used with auto upgrade on.",
+      "examples": [
+        {
+          "value": "100",
+          "effect": "With a maximum of 500: a user who has paid $100 up to $499.99 in total joins the group."
+        },
+        {
+          "value": "0",
+          "effect": "Every paying user matches, up to the maximum."
+        }
+      ],
+      "related": [
+        "user_group.promotion",
+        "user_group.max"
+      ],
+      "keywords": [
+        "threshold",
+        "spend",
+        "promotion"
+      ]
+    },
+    {
+      "key": "user_group.max",
+      "scope": "user_group",
+      "group": "user-groups",
+      "card": "edit",
+      "field": "max",
+      "type": "float",
+      "unit": "$",
+      "min": 0,
+      "default": "0",
+      "label": "Maximum paid top-ups",
+      "description": "The total paid top-ups at which the group stops matching (exclusive), so a bigger spender moves on to the next group. 0 means no upper bound. Only used with auto upgrade on.",
+      "examples": [
+        {
+          "value": "500",
+          "effect": "A user reaching $500 in total moves to the group whose range starts at 500."
+        },
+        {
+          "value": "0",
+          "effect": "The top level: users stay however much they pay."
+        }
+      ],
+      "related": [
+        "user_group.promotion",
+        "user_group.min"
+      ],
+      "keywords": [
+        "threshold",
+        "spend",
+        "promotion"
+      ]
+    },
+    {
+      "key": "routing_policy.decision_model",
+      "scope": "routing_policy",
+      "group": "routing-policies",
+      "card": "routes",
+      "field": "decision_model",
+      "type": "string",
+      "label": "Decision model",
+      "description": "The model that reads a session's first user message and picks one of the routes. A decision model is best: it answers with a probability for every label. A small, fast chat model also works. It is charged to the caller once per session, and it cannot be another routing policy.",
+      "examples": [
+        {
+          "value": "gpt-4.1-mini",
+          "effect": "A cheap chat model that returns logprobs, so the threshold is a real probability."
+        }
+      ],
+      "related": [
+        "routing_policy.scoring",
+        "routing_policy.threshold",
+        "routing_policy.fallback_model"
+      ],
+      "keywords": [
+        "classifier",
+        "router model",
+        "auto routing"
+      ]
+    },
+    {
+      "key": "routing_policy.scoring",
+      "scope": "routing_policy",
+      "group": "routing-policies",
+      "card": "routes",
+      "field": "scoring",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "auto",
+          "label": "Auto",
+          "description": "Logprobs where the channel returns them, else self-reported confidence for 24 hours."
+        },
+        {
+          "value": "logprobs",
+          "label": "Logprobs only",
+          "description": "The label's real probability; requests fall back when logprobs are missing."
+        },
+        {
+          "value": "self_reported",
+          "label": "Self-reported only",
+          "description": "The model answers its label and a confidence in JSON."
+        }
+      ],
+      "default": "auto",
+      "label": "Scoring",
+      "description": "How the decision model's confidence is measured before it is compared with the threshold. Logprobs need a non-reasoning model on a channel that returns them; Claude, reasoning models and most aggregators do not. A decision model ignores this setting.",
+      "related": [
+        "routing_policy.threshold",
+        "routing_policy.decision_model"
+      ],
+      "keywords": [
+        "logprobs",
+        "confidence",
+        "probability"
+      ]
+    },
+    {
+      "key": "routing_policy.threshold",
+      "scope": "routing_policy",
+      "group": "routing-policies",
+      "card": "routes",
+      "field": "threshold",
+      "type": "float",
+      "min": 0,
+      "max": 1,
+      "default": "0.5",
+      "label": "Confidence threshold",
+      "description": "The confidence the chosen route needs, from 0 to 1; below it the request goes to the fallback model. Raise it to send more borderline requests to the fallback, lower it to trust the decision model more. Self-reported confidence is only a ranking, so it compares less exactly than logprobs.",
+      "examples": [
+        {
+          "value": "0.5",
+          "effect": "A message scored 62% coding / 38% writing goes to the coding route."
+        },
+        {
+          "value": "0.8",
+          "effect": "The same message goes to the fallback, since 62% is below 80%."
+        },
+        {
+          "value": "0",
+          "effect": "The top label always wins; only a failed decision uses the fallback."
+        }
+      ],
+      "related": [
+        "routing_policy.scoring",
+        "routing_policy.fallback_model"
+      ],
+      "keywords": [
+        "confidence",
+        "cutoff",
+        "probability"
+      ]
+    },
+    {
+      "key": "routing_policy.fallback_model",
+      "scope": "routing_policy",
+      "group": "routing-policies",
+      "card": "routes",
+      "field": "fallback_model",
+      "type": "string",
+      "label": "Fallback model",
+      "description": "Where a request goes when the confidence is below the threshold, the decision fails or the message has no text. A decision that times out counts as failed. Put your safest model here; it cannot be another routing policy.",
+      "examples": [
+        {
+          "value": "claude-sonnet-4-5",
+          "effect": "Unclear and failed decisions get a strong general model rather than a cheap one."
+        }
+      ],
+      "related": [
+        "routing_policy.threshold",
+        "routing_policy.decision_model"
+      ],
+      "keywords": [
+        "default model",
+        "fallback",
+        "catch-all"
+      ]
+    },
+    {
+      "key": "routing_policy.pin_ttl_seconds",
+      "scope": "routing_policy",
+      "group": "routing-policies",
+      "card": "settings",
+      "field": "pin_ttl_seconds",
+      "type": "int",
+      "unit": "s",
+      "min": 0,
+      "max": 604800,
+      "default": "3600",
+      "label": "Pin per session",
+      "description": "How long a session keeps the model chosen at its first message. Later turns skip the decision, keep the upstream prompt cache warm and never switch models mid-conversation. 0 classifies every request; at most 7 days.",
+      "examples": [
+        {
+          "value": "3600",
+          "effect": "A conversation stays on its model for an hour after its first message, then is classified again."
+        },
+        {
+          "value": "0",
+          "effect": "Every request pays for a decision and may land on another model."
+        }
+      ],
+      "related": [
+        "routing_policy.decision_model"
+      ],
+      "keywords": [
+        "session",
+        "sticky",
+        "pin",
+        "ttl"
+      ]
+    },
+    {
+      "key": "organization.max_members",
+      "scope": "organization",
+      "group": "organizations",
+      "card": "members",
+      "field": "max_members",
+      "type": "int",
+      "min": 0,
+      "default": "the site default",
+      "label": "Member limit",
+      "description": "The most members the organization may have, set by platform admins. It only stops new members from joining; existing members are not removed. Follow the site default, unlimited (0) or a number.",
+      "examples": [
+        {
+          "value": "20",
+          "effect": "An organization with 20 members cannot invite or add a 21st until one leaves."
+        },
+        {
+          "value": "0",
+          "effect": "No limit, whatever the site default says."
+        }
+      ],
+      "related": [
+        "OrganizationDefaultMaxMembers"
+      ],
+      "keywords": [
+        "seats",
+        "team size",
+        "members"
+      ]
+    },
+    {
+      "key": "organization.approved_models",
+      "scope": "organization",
+      "group": "organizations",
+      "card": "models",
+      "field": "approved_models",
+      "type": "list",
+      "default": "empty (every model)",
+      "label": "Approved models",
+      "description": "The most the organization may use, set by platform admins: every list of the organization stays inside it. Its default, members' lists and keys are all checked against the model actually called. A name ending in * allows a prefix, so new releases of a family follow; exact names need approving one by one. Empty means no limit.",
+      "examples": [
+        {
+          "value": "claude-*, gpt-5*",
+          "effect": "Every Claude and GPT-5 model, including ones released later; nothing else."
+        },
+        {
+          "value": "gpt-4.1-mini",
+          "effect": "Only that model; a request for any other model is refused."
+        }
+      ],
+      "related": [
+        "organization.model_whitelist",
+        "token.model_limits"
+      ],
+      "keywords": [
+        "allowlist",
+        "model access",
+        "whitelist",
+        "approved"
+      ]
+    },
+    {
+      "key": "organization.model_whitelist",
+      "scope": "organization",
+      "group": "organizations",
+      "card": "model-access",
+      "field": "setting.model_whitelist",
+      "type": "list",
+      "default": "empty (every approved model)",
+      "label": "Default model access",
+      "description": "What members may use unless they have limits of their own, set by organization owners and admins. It is a named list or a list of models. Members with their own limits are not affected, and keys can only narrow what their creator may use. A name ending in * allows a prefix. Empty means every approved model.",
+      "examples": [
+        {
+          "value": "claude-haiku-*, gpt-4.1-mini",
+          "effect": "Members use the cheap models only; a member given their own list can use more."
+        }
+      ],
+      "related": [
+        "organization.approved_models",
+        "token.model_limits"
+      ],
+      "keywords": [
+        "allowlist",
+        "model access",
+        "whitelist",
+        "member models"
+      ]
+    },
+    {
+      "key": "organization.budget",
+      "scope": "organization",
+      "group": "organizations",
+      "card": "budget",
+      "field": "setting.budget",
+      "type": "float",
+      "unit": "$",
+      "min": 0,
+      "default": "none",
+      "label": "Organization budget",
+      "description": "The most all members together may spend per day, week or month; then the organization's requests are refused. They are refused until the next period starts. Each member's own budget still applies. Periods start at midnight in the platform's reset time zone; changing the period restarts the count. None means no organization-wide cap.",
+      "examples": [
+        {
+          "value": "1000 monthly",
+          "effect": "When members have spent $1,000 in the month, every request of the organization is refused until the 1st."
+        },
+        {
+          "value": "50 daily",
+          "effect": "A runaway script stops the team at $50 a day."
+        }
+      ],
+      "related": [
+        "organization.member_budget",
+        "QuotaResetTimezone",
+        "QuotaResetWeekStart"
+      ],
+      "keywords": [
+        "spending cap",
+        "budget",
+        "limit",
+        "team budget"
+      ]
+    },
+    {
+      "key": "organization.member_budget",
+      "scope": "organization",
+      "group": "organizations",
+      "card": "members",
+      "field": "member.setting.budget",
+      "type": "float",
+      "unit": "$",
+      "min": 0,
+      "default": "none",
+      "label": "Member budget",
+      "description": "The most one member may spend per day, week or month in the organization, set on the member's limits. Once used up, that member's requests are refused until the next period, while the organization budget caps everyone together. Keys the organization owns have no member budget. None means no cap of the member's own.",
+      "examples": [
+        {
+          "value": "100 weekly",
+          "effect": "The member can spend $100 from Monday (or Sunday, per the site's week start) to the next week start."
+        }
+      ],
+      "related": [
+        "organization.budget",
+        "QuotaResetTimezone",
+        "QuotaResetWeekStart"
+      ],
+      "keywords": [
+        "spending cap",
+        "member limit",
+        "budget"
+      ]
+    },
+    {
+      "key": "organization.log_io_default",
+      "scope": "organization",
+      "group": "organizations",
+      "card": "general",
+      "field": "setting.log_io_default",
+      "type": "bool",
+      "default": "the site's default for organizations",
+      "label": "Retain request and response bodies",
+      "description": "Whether the bodies of the organization's API requests and responses are stored, for all its keys at once. Keys and members cannot change it. Stored bodies never include API keys or auth headers, are deleted after 30 days, and only owners, admins and platform admins can read them. Members are told who turned it on and when. Shown only while the site allows retention.",
+      "related": [
+        "LogIOEnabled",
+        "OrganizationLogIODefault"
+      ],
+      "keywords": [
+        "log io",
+        "retention",
+        "request body",
+        "privacy",
+        "audit"
+      ]
+    },
+    {
+      "key": "token.group",
+      "scope": "token",
+      "group": "tokens",
+      "card": "access",
+      "field": "group",
+      "type": "string",
+      "default": "empty (the user's group)",
+      "label": "Group",
+      "description": "The user group the key's requests run in: only channels of that group serve them, billed at its ratio. It must be the user's own group or a public one. Empty uses the user's group.",
+      "examples": [
+        {
+          "value": "vip",
+          "effect": "Requests use the vip channels and pay the vip ratio, even if the user is in default."
+        }
+      ],
+      "related": [
+        "token.backup_group",
+        "user_group.public",
+        "channel.group"
+      ],
+      "keywords": [
+        "user group",
+        "channel group",
+        "key group"
+      ]
+    },
+    {
+      "key": "token.backup_group",
+      "scope": "token",
+      "group": "tokens",
+      "card": "access",
+      "field": "backup_group",
+      "type": "string",
+      "label": "Backup group",
+      "description": "A second group tried when the key's group has no channel that can take the request. A request served there is billed at the backup group's ratio and marked in the logs. With a group or backup group set, the user's own group is not tried.",
+      "examples": [
+        {
+          "value": "default",
+          "effect": "Group vip with backup default: if every vip channel for the model fails, the request runs in default at its ratio."
+        }
+      ],
+      "related": [
+        "token.group",
+        "user_group.ratio"
+      ],
+      "keywords": [
+        "fallback group",
+        "failover",
+        "backup"
+      ]
+    },
+    {
+      "key": "token.model_limits",
+      "scope": "token",
+      "group": "tokens",
+      "card": "access",
+      "field": "setting.limits.limit_model_setting",
+      "type": "list",
+      "label": "Model limits",
+      "description": "The models the key may call; others are refused. A name ending in * allows a prefix. With the switch on and no model selected, the key is not restricted. On an organization key it can only narrow what its creator may use, and may be a named list.",
+      "examples": [
+        {
+          "value": "gpt-4.1-mini, claude-haiku-*",
+          "effect": "A key for a chatbot that can only reach the two cheap model families."
+        }
+      ],
+      "related": [
+        "organization.model_whitelist",
+        "organization.approved_models"
+      ],
+      "keywords": [
+        "allowlist",
+        "model restriction",
+        "whitelist"
+      ]
+    },
+    {
+      "key": "token.quota",
+      "scope": "token",
+      "group": "tokens",
+      "card": "basics",
+      "field": "remain_quota",
+      "type": "float",
+      "unit": "$",
+      "min": 0,
+      "default": "empty (no limit)",
+      "label": "Spending limit",
+      "description": "The most the key may spend; once used up, its requests are refused. With a reset period it is the limit per period instead. It only caps the key: the account balance always applies. Empty means no limit of the key's own.",
+      "examples": [
+        {
+          "value": "10",
+          "effect": "Without a period, the key stops for good after $10 of usage."
+        },
+        {
+          "value": "5 daily",
+          "effect": "The key can spend $5 a day; the count starts over at midnight."
+        }
+      ],
+      "related": [
+        "token.quota_reset"
+      ],
+      "keywords": [
+        "quota",
+        "budget",
+        "limit",
+        "spend cap"
+      ]
+    },
+    {
+      "key": "token.quota_reset",
+      "scope": "token",
+      "group": "tokens",
+      "card": "basics",
+      "field": "setting.quota_reset.period",
+      "type": "enum",
+      "enum": [
+        {
+          "value": "daily",
+          "label": "Daily",
+          "description": "Starts over at midnight."
+        },
+        {
+          "value": "weekly",
+          "label": "Weekly",
+          "description": "Starts over at midnight on the first day of the week."
+        },
+        {
+          "value": "monthly",
+          "label": "Monthly",
+          "description": "Starts over at midnight on the 1st."
+        }
+      ],
+      "label": "Reset period",
+      "description": "How often the key's spending limit starts over. Without a period the limit is spent once. Periods start at midnight in the platform's reset time zone, weeks on its week start; changing the period restarts the count. A period needs a limit above 0.",
+      "related": [
+        "token.quota",
+        "QuotaResetTimezone",
+        "QuotaResetWeekStart"
+      ],
+      "keywords": [
+        "reset",
+        "period",
+        "daily limit",
+        "monthly limit"
+      ]
+    }
+  ]
+}

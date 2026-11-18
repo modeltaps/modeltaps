@@ -1,0 +1,39 @@
+{
+  "settingsCatalog": {
+    "OrganizationEnabled": {
+      "label": "組織功能",
+      "description": "用戶可以建立和加入組織，共享餘額、成員、預算和 API 密鑰。關閉後用戶看不到組織，組織介面拒絕所有請求；站點管理員仍可管理已有組織，它們原樣保留。",
+      "keywords": ["團隊", "工作區", "多租戶", "組織"]
+    },
+    "OrganizationQuotaTransferEnabled": {
+      "label": "個人額度轉入組織",
+      "description": "組織的 Owner 或管理員可以把自己的個人額度轉入組織的共享額度。轉入是單向的，不能轉回個人帳戶。關閉後拒絕轉入。",
+      "keywords": ["轉入", "額度", "餘額", "組織充值", "組織池"]
+    },
+    "OrganizationMaxPerUser": {
+      "label": "每用戶可建立組織數",
+      "description": "一個用戶最多能建立幾個組織。只是加入的組織不算，已刪除的也不算。0 表示不限制。",
+      "examples": [
+        "已建立 3 個組織的用戶要先刪掉一個才能建第四個；加入別人的組織不受限制。",
+        "每個用戶最多自己經營一個組織。",
+        "用戶想建多少組織都可以。"
+      ],
+      "keywords": ["上限", "組織數量", "限制"]
+    },
+    "OrganizationDefaultMaxMembers": {
+      "label": "預設成員上限",
+      "description": "站點管理員沒給某個組織單獨設上限時，它最多能有多少成員。修改後對所有沒有單獨上限的組織生效，包括已有組織。0 表示不限制。",
+      "examples": ["已有 10 名成員的組織，在站點管理員調高它的上限之前不能再加第 11 人。", "沒有單獨上限的組織成員人數不限。"],
+      "keywords": ["席位", "成員", "團隊規模", "上限"]
+    },
+    "OrganizationDissolveQuotaRefund": {
+      "label": "刪除組織後的餘額",
+      "description": "組織被刪除（由 Owner 或站點管理員）時，剩餘的共享餘額怎麼處理。設定頁上沒有這個欄位，只能通過選項介面（PUT /api/option/）設定。owner 以外的任何值都會作廢餘額。",
+      "enum": {
+        "owner": { "label": "退回 Owner", "description": "剩餘共享餘額退回 Owner 的個人帳戶，並記一條日誌。" },
+        "discard": { "label": "作廢", "description": "剩餘共享餘額清零，不退給任何人。" }
+      },
+      "keywords": ["解散", "刪除組織", "退款", "剩餘餘額"]
+    }
+  }
+}

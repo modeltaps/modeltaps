@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
+import { settingHref } from '@/components/settings/SettingHelp';
 import { Link } from 'react-router';
 import {
   CheckCheck,
@@ -843,7 +844,11 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
             ? t('modelSupply.mode.defaultHint', {
                 mode: t(`modelSupply.mode.${preview?.default_mode === 'failover' ? 'failover' : 'balance'}`)
               })
-            : t(`modelSupply.mode.${mode}Hint`)}
+            : t(`modelSupply.mode.${mode}Hint`)}{' '}
+          {/* The site default this model follows or overrides, one click away. */}
+          <Link to={settingHref('SupplyModeDefault')} className="text-foreground underline underline-offset-2 hover:text-primary">
+            {t('modelSupply.mode.siteDefaultLink')}
+          </Link>
         </p>
       )}
 

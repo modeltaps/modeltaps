@@ -68,6 +68,9 @@ func (k *KeywordChecker) Check(data string) (types.CheckResult, error) {
 	}
 
 	for _, keyword := range config.SafeKeyWords {
+		if strings.TrimSpace(keyword) == "" {
+			continue
+		}
 		if strings.Contains(strings.ToLower(data), strings.ToLower(keyword)) {
 			result.IsSafe = false
 			result.Details = append(result.Details, types.SafeDefaultErrorMessage)

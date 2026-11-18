@@ -79,9 +79,9 @@ describe('navSectionsFor (workbench)', () => {
 
   it('switching context stays on 路由策略 while it is available', () => {
     const features = { routingPolicy: true };
-    expect(contextSwitchTarget({ pathname: '/panel/routing-policies', to: { kind: 'org', orgSlug: 'acme', role: 'member' }, features })).toBe(
-      '/panel/orgs/acme/routing-policies'
-    );
+    expect(
+      contextSwitchTarget({ pathname: '/panel/routing-policies', to: { kind: 'org', orgSlug: 'acme', role: 'member' }, features })
+    ).toBe('/panel/orgs/acme/routing-policies');
     expect(contextSwitchTarget({ pathname: '/panel/orgs/acme/routing-policies', to: { kind: 'personal' }, features })).toBe(
       '/panel/routing-policies'
     );
@@ -104,7 +104,9 @@ describe('navSectionsFor (workbench)', () => {
   });
 
   it('workbench menus never contain admin pages', () => {
-    const ids = navSectionsFor({ context: 'org', orgRole: 'owner', orgSlug: 'acme', isRoot: true }).flatMap((s) => s.items.map((i) => i.id));
+    const ids = navSectionsFor({ context: 'org', orgRole: 'owner', orgSlug: 'acme', isRoot: true }).flatMap((s) =>
+      s.items.map((i) => i.id)
+    );
     expect(ids).not.toContain('channel');
     expect(ids).not.toContain('setting_site');
   });
@@ -117,7 +119,7 @@ describe('navSectionsFor (platform admin)', () => {
       { id: 'gateway', items: ['channel', 'pricing', 'routing_policy', 'setting_gateway'] },
       { id: 'people', items: ['user', 'user_group', 'org_admin', 'setting_auth', 'setting_orgpolicy'] },
       { id: 'finance', items: ['payment', 'redemption', 'invite_code', 'setting_billing', 'setting_payment'] },
-      { id: 'system', items: ['setting_site', 'setting_entries', 'setting_privacy', 'setting_mail', 'setting_notify'] }
+      { id: 'system', items: ['setting_site', 'setting_entries', 'setting_privacy', 'setting_mail', 'setting_notify', 'setting_modified'] }
     ]);
   });
 
@@ -137,7 +139,8 @@ describe('navSectionsFor (platform admin)', () => {
 
 describe('findActiveItem', () => {
   it('every API console resolves to 演练场, docs to 接口文档', () => {
-    for (const m of ['chat', 'image', 'speech', 'compare', 'video']) expect(findActiveItem(`/panel/playground/${m}`)?.id).toBe('playground');
+    for (const m of ['chat', 'image', 'speech', 'compare', 'video'])
+      expect(findActiveItem(`/panel/playground/${m}`)?.id).toBe('playground');
     expect(findActiveItem('/panel/orgs/acme/playground/chat')?.id).toBe('playground');
     expect(findActiveItem('/panel/docs/chat')?.id).toBe('api_docs');
     expect(findActiveItem('/panel/docs/speech')?.id).toBe('api_docs');
@@ -225,15 +228,17 @@ describe('contextSwitchTarget', () => {
     expect(contextSwitchTarget({ pathname: '/panel/orgs/acme/usage', to: { kind: 'org', orgSlug: 'beta', role: 'member' } })).toBe(
       '/panel/orgs/beta/usage'
     );
-    expect(contextSwitchTarget({ pathname: '/panel/orgs/acme/playground/image', to: { kind: 'personal' } })).toBe('/panel/playground/image');
+    expect(contextSwitchTarget({ pathname: '/panel/orgs/acme/playground/image', to: { kind: 'personal' } })).toBe(
+      '/panel/playground/image'
+    );
     expect(contextSwitchTarget({ pathname: '/panel/orgs/acme/billing', to: { kind: 'personal' } })).toBe('/panel/billing');
   });
 
   it('设置 does not depend on the workbench and stays', () => {
     expect(contextSwitchTarget({ pathname: '/panel/settings/profile', to: { kind: 'personal' } })).toBe('/panel/settings/profile');
-    expect(contextSwitchTarget({ pathname: '/panel/settings/orgs/acme/general', to: { kind: 'org', orgSlug: 'beta', role: 'admin' } })).toBe(
-      '/panel/settings/orgs/acme/general'
-    );
+    expect(
+      contextSwitchTarget({ pathname: '/panel/settings/orgs/acme/general', to: { kind: 'org', orgSlug: 'beta', role: 'admin' } })
+    ).toBe('/panel/settings/orgs/acme/general');
   });
 
   it('pages the target context lacks fall back to its dashboard', () => {
@@ -316,7 +321,8 @@ describe('commandSections', () => {
       'setting_entries',
       'setting_privacy',
       'setting_mail',
-      'setting_notify'
+      'setting_notify',
+      'setting_modified'
     ]);
     expect(admin.items[0].href).toBe('/panel/admin/stats');
   });

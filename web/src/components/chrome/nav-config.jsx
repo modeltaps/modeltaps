@@ -1,6 +1,15 @@
-import { PLATFORM_GROUPS, SETTINGS_BASE, cardTitleKey, groupDescriptionKey, groupLabelKey, settingsGroupUrl } from 'views/panel/Setting/registry';
+import {
+  PLATFORM_GROUPS,
+  SETTINGS_BASE,
+  cardTitleKey,
+  groupDescriptionKey,
+  groupLabelKey,
+  settingsGroupUrl
+} from 'views/panel/Setting/registry';
 import { ACCOUNT_GROUPS, ORG_TREE, accountSettingsUrl, orgSettingsUrl } from 'views/panel/Settings/sections';
 import { LEGACY_ADMIN_PATHS } from 'routes/legacyPaths';
+import { OBJECT_PAGES, catalogEntries, settingLabel, settingSearchText } from '@/components/settings/catalog';
+import { settingHref } from '@/components/settings/SettingHelp';
 import {
   ORG_SETTINGS_PREFIX,
   PANEL,
@@ -43,6 +52,7 @@ import {
   ShieldUser,
   SlidersHorizontal,
   Waypoints,
+  History,
   Ticket,
   User,
   Users,
@@ -204,7 +214,8 @@ export const adminSections = [
       settingItem('entries', MessagesSquare, 'nav.items.settingEntries'),
       settingItem('privacy', ShieldCheck, 'nav.items.settingPrivacy'),
       settingItem('mail', Mail, 'nav.items.settingMail'),
-      settingItem('notify', Bell, 'nav.items.settingNotify')
+      settingItem('notify', Bell, 'nav.items.settingNotify'),
+      settingItem('modified', History, 'nav.items.settingModified')
     ]
   }
 ];
@@ -394,12 +405,16 @@ export function commandSections({ isAdmin = false, isRoot = false, orgSlug = nul
   ];
 }
 
-// Command palette entries for the platform settings cards. They only show while typing
-// (`searchOnly`), so the palette indexes the cards without listing ~40 of them; the groups are
-// admin menu items and already listed.
+// Command palette entries for the platform settings cards and for every setting of the settings
+// catalog (each field of a card, and the object fields with the page they are set on). They only
+// show while typing (`searchOnly`), so the palette indexes them without listing them all; the
+// groups are admin menu items and already listed. Field entries carry their search text
+// (`search(t)`: key, label, description, keywords) and their catalog entry (`setting`) for the
+// palette's @ filters.
 export function settingsCommandItems({ isRoot = false } = {}) {
   const groups = PLATFORM_GROUPS.filter((group) => !group.rootOnly || isRoot);
-  return groups.flatMap((group) =>
+  const visible = new Set(groups.map((group) => group.id));
+  const cards = groups.flatMap((group) =>
     group.cards.map((card) => ({
       id: `setting_card_${card.id}`,
       icon: SlidersHorizontal,
@@ -409,9 +424,27 @@ export function settingsCommandItems({ isRoot = false } = {}) {
       href: `${settingsGroupUrl(group.id)}?highlight=${card.id}`
     }))
   );
+  const fields = catalogEntries()
+    .filter((entry) => (entry.scope === 'site' ? visible.has(entry.group) : Boolean(OBJECT_PAGES[entry.group])))
+    .map((entry) => ({
+      id: `setting_field_${entry.key}`,
+      icon: SlidersHorizontal,
+      label: (t) => settingLabel(t, entry.key),
+      prefix: (t) =>
+        entry.scope === 'site'
+          ? `${t(groupLabelKey(entry.group))} › ${t(cardTitleKey(entry.card), { defaultValue: entry.card })}`
+          : t(`settingsUi.catalog.objects.${entry.scope}`, { defaultValue: entry.scope }),
+      detail: entry.key,
+      search: (t) => settingSearchText(t, entry.key),
+      setting: entry,
+      searchOnly: true,
+      href: settingHref(entry.key)
+    }));
+  return [...cards, ...fields];
 }
 
 export function navLabel(t, item) {
-  const label = t(item.labelKey);
+  const label = item.label ? item.label(t) : t(item.labelKey);
+  if (item.prefix) return `${item.prefix(t)} · ${label}`;
   return item.prefixKey ? `${t(item.prefixKey)} · ${label}` : label;
 }

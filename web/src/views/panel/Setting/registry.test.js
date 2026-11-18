@@ -150,6 +150,7 @@ describe('platform settings registry', () => {
       'entries',
       'mail',
       'notify',
+      'modified',
       'orgpolicy'
     ]);
     expect(visibleGroups(false).map((g) => g.id)).not.toContain('orgpolicy');

@@ -38,6 +38,9 @@ type optionEntry struct {
 	scope       OptionScope
 	statusKey   string
 	statusValue func() any
+	// defaultValue is the value right after registration, before stored options are read: the
+	// built-in default, or what the deployment configuration set it to.
+	defaultValue string
 }
 
 // OptionManager 配置管理器
@@ -84,6 +87,7 @@ func (cm *OptionManager) register(key string, handler OptionHandler, defaultValu
 	if defaultValue != "" {
 		handler.SetValue(defaultValue)
 	}
+	entry.defaultValue = handler.GetValue()
 }
 
 // RegisterString 快速注册字符串配置
@@ -188,6 +192,31 @@ func (cm *OptionManager) GetAllNonSecret() map[string]string {
 		all[k] = v.handler.GetValue()
 	}
 	return all
+}
+
+// Defaults returns the value of every non-secret option right after registration (see
+// optionEntry.defaultValue), for the "modified" marks of the settings page.
+func (cm *OptionManager) Defaults() map[string]string {
+	cm.mutex.RLock()
+	defer cm.mutex.RUnlock()
+	out := make(map[string]string, len(cm.entries))
+	for k, v := range cm.entries {
+		if v.scope != ScopeSecret {
+			out[k] = v.defaultValue
+		}
+	}
+	return out
+}
+
+// Keys lists every registered option key with its scope.
+func (cm *OptionManager) Keys() map[string]OptionScope {
+	cm.mutex.RLock()
+	defer cm.mutex.RUnlock()
+	out := make(map[string]OptionScope, len(cm.entries))
+	for k, v := range cm.entries {
+		out[k] = v.scope
+	}
+	return out
 }
 
 // IsSecret reports whether key is a registered ScopeSecret option. Its stored value is encrypted

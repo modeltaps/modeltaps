@@ -6,6 +6,7 @@ import { showError, showSuccess } from 'utils/common';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/ui/form-field';
 import { ActionRow, OptionList } from '@/components/settings/cards';
+import { settingDescription, settingEnumLabel } from '@/components/settings/catalog';
 import { SelectRow, TextRow, ToggleRow } from '../parts';
 import OptionCard, { bindSwitch } from './OptionCard';
 
@@ -69,47 +70,24 @@ export function LogConsumeCard({ ctx }) {
       }
     >
       <OptionList>
-        <ToggleRow
-          id="LogConsumeEnabled"
-          label={ls('logConsume')}
-          description={ls('logConsumeDescription')}
-          {...bindSwitch(ctx, 'LogConsumeEnabled')}
-        />
-        <ToggleRow
-          id="LogRelayErrorEnabled"
-          label={ls('logRelayError')}
-          description={ls('logRelayErrorDescription')}
-          {...bindSwitch(ctx, 'LogRelayErrorEnabled')}
-        />
-        <ToggleRow
-          id="ChannelMetricsEnabled"
-          label={ls('channelMetrics')}
-          description={ls('channelMetricsDescription')}
-          {...bindSwitch(ctx, 'ChannelMetricsEnabled')}
-        >
+        <ToggleRow id="LogConsumeEnabled" {...bindSwitch(ctx, 'LogConsumeEnabled')} />
+        <ToggleRow id="LogRelayErrorEnabled" {...bindSwitch(ctx, 'LogRelayErrorEnabled')} />
+        <ToggleRow id="ChannelMetricsEnabled" {...bindSwitch(ctx, 'ChannelMetricsEnabled')}>
           <TextRow
             id="ChannelMetricsRetentionDays"
             type="number"
-            label={ls('channelMetricsRetention')}
             value={inputs.ChannelMetricsRetentionDays}
             onChange={(v) => setField('ChannelMetricsRetentionDays', v)}
             placeholder="30"
             disabled={!on('ChannelMetricsEnabled')}
           />
         </ToggleRow>
-        <ToggleRow
-          id="LogAutoDeleteEnabled"
-          label={ls('autoDelete')}
-          description={ls('autoDeleteDescription')}
-          {...bindSwitch(ctx, 'LogAutoDeleteEnabled')}
-        >
+        <ToggleRow id="LogAutoDeleteEnabled" {...bindSwitch(ctx, 'LogAutoDeleteEnabled')}>
           <TextRow
             id="LogAutoDeleteDays"
             type="number"
-            label={ls('autoDeleteDays')}
             value={inputs.LogAutoDeleteDays}
             onChange={(v) => setField('LogAutoDeleteDays', v)}
-            description={ls('autoDeleteDaysDescription')}
             disabled={!on('LogAutoDeleteEnabled')}
           />
         </ToggleRow>
@@ -119,19 +97,14 @@ export function LogConsumeCard({ ctx }) {
 }
 
 export function LogIOCard({ ctx }) {
-  const { t } = useTranslation();
-  const os = (k) => t(`setting_index.operationSettings.otherSettings.${k}`);
   const siteOn = ctx.inputs.LogIOEnabled === 'true';
-  const row = (key, name, disabled) => (
-    <ToggleRow id={key} label={os(name)} description={os(`${name}Description`)} disabled={disabled} {...bindSwitch(ctx, key)} />
-  );
 
   return (
     <OptionCard ctx={ctx} id="log-io">
       <OptionList>
-        {row('LogIOEnabled', 'logIOEnabled')}
-        {row('LogIODefaultUser', 'logIODefaultUser', !siteOn)}
-        {row('OrganizationLogIODefault', 'organizationLogIODefault', !siteOn)}
+        <ToggleRow id="LogIOEnabled" {...bindSwitch(ctx, 'LogIOEnabled')} />
+        <ToggleRow id="LogIODefaultUser" disabled={!siteOn} {...bindSwitch(ctx, 'LogIODefaultUser')} />
+        <ToggleRow id="OrganizationLogIODefault" disabled={!siteOn} {...bindSwitch(ctx, 'OrganizationLogIODefault')} />
       </OptionList>
     </OptionCard>
   );
@@ -152,23 +125,19 @@ export function SafetyCard({ ctx }) {
   }, []);
 
   return (
-    <OptionCard ctx={ctx} id="safety" title={ss('title')} description={ss('description')} enableKey="EnableSafe">
+    <OptionCard ctx={ctx} id="safety" title={ss('title')} description={settingDescription(t, 'EnableSafe')} enableKey="EnableSafe">
       <SelectRow
         id="SafeToolName"
-        label={ss('safeToolName.label')}
-        description={ss('safeToolName.description')}
         value={inputs.SafeToolName || ''}
         onChange={(v) => setField('SafeToolName', v)}
-        options={safeTools.map((tool) => ({ value: tool, label: tool }))}
+        options={safeTools.map((tool) => ({ value: tool, label: settingEnumLabel(t, 'SafeToolName', tool) }))}
         className="sm:max-w-sm"
       />
       <TextRow
         id="SafeKeyWords"
-        label={ss('safeKeyWords.label')}
         value={Array.isArray(inputs.SafeKeyWords) ? inputs.SafeKeyWords.join('\n') : inputs.SafeKeyWords}
         onChange={(v) => setField('SafeKeyWords', v)}
         placeholder={ss('safeKeyWords.placeholder')}
-        description={ss('safeKeyWords.description')}
         multiline
       />
     </OptionCard>

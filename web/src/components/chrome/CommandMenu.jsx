@@ -24,7 +24,46 @@ import { orgSlugOf } from 'routes/paths';
 // else keeps cmdk's fuzzy matching.
 const PAGE_ENTRY = 'page-card:';
 
+// Values of settings catalog entries: `setting-field:<key>|<scope>|<advanced 0/1>`, their search
+// text in the keywords. They match when every word of the query is in that text, like page cards.
+const FIELD_ENTRY = 'setting-field:';
+
+// Filters a query may start with: @key:<part of a key>, @object:<scope> (site, channel, model,
+// supply, allocation, user_group, routing_policy, organization, token) and @advanced (rarely
+// changed settings, left out otherwise). The rest of the query is matched as words.
+export function parseSettingFilters(search) {
+  const filters = { key: null, object: null, advanced: false, any: false };
+  const words = [];
+  for (const token of String(search || '')
+    .trim()
+    .split(/\s+/)) {
+    const lower = token.toLowerCase();
+    if (lower.startsWith('@key:')) filters.key = lower.slice(5);
+    else if (lower.startsWith('@object:')) filters.object = lower.slice(8);
+    else if (lower === '@advanced') filters.advanced = true;
+    else {
+      if (token) words.push(token);
+      continue;
+    }
+    filters.any = true;
+  }
+  return { filters, text: words.join(' ') };
+}
+
+export const settingFieldValue = (entry) => `${FIELD_ENTRY}${entry.key}|${entry.scope}|${entry.advanced ? 1 : 0}`;
+
 export function commandFilter(value, search, keywords) {
+  const { filters, text } = parseSettingFilters(search);
+  if (value.startsWith(FIELD_ENTRY)) {
+    const [key, scope, advanced] = value.slice(FIELD_ENTRY.length).split('|');
+    if (filters.key && !key.toLowerCase().includes(filters.key)) return 0;
+    if (filters.object && scope !== filters.object) return 0;
+    if (advanced === '1' && !filters.advanced) return 0;
+    if (!text) return filters.any ? 1 : 0;
+    return matchesQuery([key, ...(keywords || [])].join(' '), text) ? 1 : 0;
+  }
+  // The @ filters only apply to settings.
+  if (filters.any) return 0;
   if (value.startsWith(PAGE_ENTRY)) return matchesQuery([value.slice(PAGE_ENTRY.length), ...(keywords || [])].join(' '), search) ? 1 : 0;
   return defaultFilter(value, search, keywords);
 }
@@ -121,6 +160,24 @@ export default function CommandMenu({ open, setOpen, getPageEntries }) {
                 .map((item) => {
                   const Icon = item.icon;
                   const label = navLabel(t, item);
+                  if (item.setting) {
+                    return (
+                      <Command.Item
+                        key={`${section.id}-${item.id}`}
+                        value={settingFieldValue(item.setting)}
+                        keywords={[item.search(t)]}
+                        onSelect={() => go(item.href)}
+                        className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-sm font-normal text-foreground aria-selected:bg-muted"
+                      >
+                        <Icon className="size-4 shrink-0 text-muted-foreground" />
+                        <span className="min-w-0 flex-1 truncate">
+                          {item.label(t)}
+                          <span className="ml-2 text-xs text-muted-foreground">{item.prefix(t)}</span>
+                        </span>
+                        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">{item.detail}</span>
+                      </Command.Item>
+                    );
+                  }
                   return (
                     <Command.Item
                       key={`${section.id}-${item.id}`}
