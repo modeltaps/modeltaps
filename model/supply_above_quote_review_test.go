@@ -44,20 +44,20 @@ func TestReviewSuppliesAboveQuote(t *testing.T) {
 	ChannelGroup.Load()
 	reloadSupplies()
 
-	// Until the platform markup is saved, the backup is only reported.
+	// While the default group sells at the official price (no margin), the backup is only reported.
+	setDefaultGroupRatio(t, 1)
 	unset, err := ReviewSuppliesAboveQuote()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(unset.Held) != 0 || len(unset.Unheld) != 1 || unset.Unheld[0].Id != heldBackup.Id {
-		t.Fatalf("markup unset: held %v unheld %v, want only reported", viewIds(unset.Held), viewIds(unset.Unheld))
+		t.Fatalf("no margin: held %v unheld %v, want only reported", viewIds(unset.Held), viewIds(unset.Unheld))
 	}
 	if got, _ := GetModelSupply(heldBackup.Id); !got.Enabled || got.Pending {
-		t.Fatalf("markup unset: backup = %+v, want left on", got)
+		t.Fatalf("no margin: backup = %+v, want left on", got)
 	}
-	if err := DB.Create(&Option{Key: "PlatformMarkupPercent", Value: "0"}).Error; err != nil {
-		t.Fatal(err)
-	}
+	// With a margin the default group's price cannot cover a 50% dearer channel either: held.
+	setDefaultGroupRatio(t, 1.12)
 
 	review, err := ReviewSuppliesAboveQuote()
 	if err != nil {
@@ -101,4 +101,23 @@ func viewIds(views []*ModelSupplyView) []int {
 		ids = append(ids, v.Id)
 	}
 	return ids
+}
+
+// setDefaultGroupRatio puts a default group with the ratio in the loaded groups for the test.
+func setDefaultGroupRatio(t *testing.T, ratio float64) {
+	t.Helper()
+	GlobalUserGroupRatio.Lock()
+	old := GlobalUserGroupRatio.UserGroup
+	groups := map[string]*UserGroup{}
+	for k, v := range old {
+		groups[k] = v
+	}
+	groups[DefaultUserGroupSymbol] = &UserGroup{Symbol: DefaultUserGroupSymbol, Name: "Default", Ratio: ratio}
+	GlobalUserGroupRatio.UserGroup = groups
+	GlobalUserGroupRatio.Unlock()
+	t.Cleanup(func() {
+		GlobalUserGroupRatio.Lock()
+		GlobalUserGroupRatio.UserGroup = old
+		GlobalUserGroupRatio.Unlock()
+	})
 }

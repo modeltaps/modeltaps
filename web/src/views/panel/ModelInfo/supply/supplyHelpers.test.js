@@ -208,8 +208,18 @@ describe('preview summary', () => {
   });
 
   it('gives the shares of the tier that takes requests', () => {
-    expect(previewShares(preview())).toEqual({ priority: 0, shares: { 2: 75, 3: 25, 4: 0 }, count: 2 });
+    expect(previewShares(preview())).toEqual({ priority: 0, costTier: 0, shares: { 2: 75, 3: 25, 4: 0 }, count: 2 });
     expect(previewShares({ tiers: [{ priority: 0, supplies: [{ id: 1, share: 0 }] }] }).count).toBe(0);
+  });
+
+  it('tells the cost tiers of one priority apart', () => {
+    const split = {
+      tiers: [
+        { priority: 0, cost_tier: 0, supplies: [{ id: 1, share: 0 }] },
+        { priority: 0, cost_tier: 1, supplies: [{ id: 2, share: 1 }] }
+      ]
+    };
+    expect(previewShares(split)).toMatchObject({ priority: 0, costTier: 1, shares: { 2: 100 } });
   });
 
   it('names the first choice, a random split or no supply', () => {

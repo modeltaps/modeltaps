@@ -629,6 +629,8 @@ func postMigrations() []*gormigrate.Migration {
 		migrateMailServices(),
 		backfillChannelFeeRates(),
 		clearPersonalTokenCreatedBy(),
+		foldPlatformMarkupIntoGroups(),
+		backfillVercelFeeNote(),
 	}
 }
 

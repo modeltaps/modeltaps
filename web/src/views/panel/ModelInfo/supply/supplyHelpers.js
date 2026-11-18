@@ -190,15 +190,22 @@ export function previewSupplyList(preview) {
 }
 
 // The tier that takes requests now (the first with an available supply) and each of its
-// supplies' share in percent. Lower tiers get nothing while this one stays available.
+// supplies' share in percent. Lower tiers get nothing while this one stays available. A priority
+// whose supplies cost differently is split into tiers of the same priority, cheapest first
+// (`cost_tier` 0, 1, ...): `costTier` tells them apart.
 export function previewShares(preview) {
   const serving = (preview?.tiers || []).find((tier) => (tier.supplies || []).some((s) => s.share > 0));
-  if (!serving) return { priority: null, shares: {}, count: 0 };
+  if (!serving) return { priority: null, costTier: 0, shares: {}, count: 0 };
   const shares = {};
   serving.supplies.forEach((s) => {
     shares[s.id] = Math.round((Number(s.share) || 0) * 100);
   });
-  return { priority: serving.priority, shares, count: serving.supplies.filter((s) => s.share > 0).length };
+  return {
+    priority: serving.priority,
+    costTier: serving.cost_tier || 0,
+    shares,
+    count: serving.supplies.filter((s) => s.share > 0).length
+  };
 }
 
 // What the next request does: { kind: 'first', supply } when one supply is certain to take

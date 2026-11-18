@@ -6,8 +6,9 @@ import (
 	"github.com/modeltaps/modeltaps/common/config"
 )
 
-// Supplies of one model: two in the top tier by balance, one backup below. The quote is
-// $5 / $30 per million.
+// Supplies of one model: the top tier holds two at the catalog price (shared by balance), a dearer
+// aggregator and one of unknown cost (both backups, being dearer), with one backup below. The
+// quote is $5 / $30 per million.
 func TestSupplyCostViews(t *testing.T) {
 	usePreviewTestDB(t)
 	oldPricing := PricingInstance
@@ -25,7 +26,7 @@ func TestSupplyCostViews(t *testing.T) {
 	relay := previewChannel(t, "relay", "default", config.ChannelStatusEnabled)
 	DB.Model(aggregator).Update("fee_rate", 0.05)
 	DB.Model(backup).Update("fee_rate", 0.05)
-	DB.Model(relay).Update("cost_ratio", 0.3)
+	DB.Model(relay).Update("cost_ratio", 1.0)
 	for _, cp := range []struct {
 		ch      *Channel
 		in, out float64
@@ -55,6 +56,12 @@ func TestSupplyCostViews(t *testing.T) {
 	if c := byName["aggregator"].Cost; !c.AboveQuote || *c.Input < 5.775-1e-9 || *c.Input > 5.775+1e-9 || c.FeeRate != 0.05 {
 		t.Errorf("aggregator: %+v", c)
 	}
+	if v := byName["aggregator"]; v.Traffic != SupplyTrafficBackup || !v.DearerBackup {
+		t.Errorf("aggregator: traffic %q dearer %v, want a dearer backup", v.Traffic, v.DearerBackup)
+	}
+	if v := byName["relay"]; v.Traffic != SupplyTrafficBalanced {
+		t.Errorf("relay: traffic %q, want balanced with official", v.Traffic)
+	}
 	if c := byName["relay"].Cost; !c.Known || c.Source != CostSourceCostRatio || c.AboveQuote {
 		t.Errorf("relay: %+v", c)
 	}
@@ -66,23 +73,33 @@ func TestSupplyCostViews(t *testing.T) {
 	}
 
 	summary := summarizeSupplyCosts(views)["m"]
-	if summary == nil || summary.AboveQuote != 1 || summary.AboveQuoteBackup != 1 || summary.CostUnknown != 1 {
+	if summary == nil || summary.AboveQuote != 0 || summary.AboveQuoteBackup != 2 || summary.CostUnknown != 0 {
 		t.Fatalf("summary = %+v", summary)
 	}
-	if *summary.MaxOutput < 34.65-1e-9 || *summary.MaxOutput > 34.65+1e-9 {
-		t.Errorf("max output = %v", *summary.MaxOutput)
+
+	// A model only the aggregator supplies takes its traffic above the quote.
+	if err := DB.Create(&ModelInfo{Model: "n", Status: ModelStatusPublished}).Error; err != nil {
+		t.Fatal(err)
+	}
+	PricingInstance.Prices["n"] = &Price{Model: "n", Type: TokensPriceType, Input: 2.5, Output: 15}
+	previewSupply(t, "n", aggregator, 10, 1, true)
+	nViews, _ := GetModelSupplyViews("n", 0)
+	nSummary := summarizeSupplyCosts(nViews)["n"]
+	if nSummary == nil || nSummary.AboveQuote != 1 || *nSummary.MaxOutput < 34.65-1e-9 || *nSummary.MaxOutput > 34.65+1e-9 {
+		t.Fatalf("serving above the quote: summary = %+v", nSummary)
 	}
 
-	// Failover: the heaviest of the top tier takes the traffic, the others are backups.
+	// Failover: the heaviest of the cheapest supplies takes the traffic, the others are backups.
 	DB.Model(&ModelInfo{}).Where("model = ?", "m").Update("supply_mode", SupplyModeFailover)
 	modelInfoCache.Lock()
 	modelInfoCache.loaded = false
 	modelInfoCache.Unlock()
-	DB.Model(&ModelSupply{}).Where("channel_id = ?", aggregator.Id).Update("weight", 5)
+	DB.Model(&ModelSupply{}).Where("channel_id = ? AND model = ?", aggregator.Id, "m").Update("weight", 9)
+	DB.Model(&ModelSupply{}).Where("channel_id = ?", relay.Id).Update("weight", 5)
 	views, _ = GetModelSupplyViews("m", 0)
 	for _, v := range views {
 		want := SupplyTrafficBackup
-		if v.ChannelName == "aggregator" {
+		if v.ChannelName == "relay" {
 			want = SupplyTrafficPrimary
 		}
 		if v.Traffic != want {

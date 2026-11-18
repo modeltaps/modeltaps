@@ -121,6 +121,28 @@ describe('SuppliesPanel', () => {
     expect(second.textContent).not.toContain(i18n.t('modelSupply.preview.next'));
   });
 
+  it('marks the dearer split of a priority and its backups', async () => {
+    const cheap = { ...SUPPLIES[1], id: 3, channel_name: 'cheap', priority: 0, state: 'available', share: 1 };
+    const dear = { ...SUPPLIES[1], priority: 0, state: 'available', share: 0, traffic: 'backup', dearer_backup: true };
+    preview = {
+      ...PREVIEW,
+      first_choice: 3,
+      tiers: [
+        { priority: 0, cost_tier: 0, supplies: [cheap] },
+        { priority: 0, cost_tier: 1, supplies: [dear] }
+      ]
+    };
+    renderPanel();
+    await waitFor(() => expect(screen.getAllByTestId('supply-row')).toHaveLength(2));
+    expect(screen.getAllByTestId('supply-tier-dearer')).toHaveLength(1);
+    expect(screen.getByTestId('supply-tier-dearer').textContent).toBe(i18n.t('modelSupply.tier.dearer'));
+    const [first, second] = screen.getAllByTestId('supply-row');
+    expect(first.textContent).not.toContain(i18n.t('modelSupply.dearerBackup'));
+    expect(second.textContent).toContain(i18n.t('modelSupply.dearerBackup'));
+    // Only the cheap tier is the one taking requests.
+    expect(screen.getAllByText(new RegExp(i18n.t('modelSupply.preview.servingTier')))).toHaveLength(1);
+  });
+
   it('notes when the preview is not in effect yet', async () => {
     preview = { ...PREVIEW, active: false };
     renderPanel();

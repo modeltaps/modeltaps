@@ -898,13 +898,7 @@
     "costFilter": "渠道成本",
     "costAboveQuote": "高于报价",
     "costUnknown": "成本未知",
-    "aboveQuoteCount": "{{count}} 个模型有承接请求的线路高于报价",
-    "costFloorNote": "近 {{days}} 天有 {{count}} 次请求按渠道成本扣费，比报价多收 {{extra}}",
-    "costFloorHint": "这些线路的渠道成本高于报价。可以调高报价、把线路往后排，或把渠道放进单独的分组并设倍率。",
-    "costFloorModel": "模型",
-    "costFloorChannel": "渠道 · 分组",
-    "costFloorRequests": "请求",
-    "costFloorExtra": "多收"
+    "aboveQuoteCount": "{{count}} 个模型有承接请求的线路高于报价"
   },
   "brandIconPicker": {
     "mode": {
@@ -2224,7 +2218,7 @@
       "otherUnused": "这个供应商不读取这个字段，可以清空",
       "n2rPlaceholder": "模型名\n-不转换的模型名",
       "feeRate": "渠道费率（%）",
-      "feeRateHint": "渠道商在标价之外另收的比例，例如充值服务费。打开「扣费不低于渠道成本」后，请求扣费不低于渠道价加上这部分费用。",
+      "feeRateHint": "渠道商在标价之外另收的比例，例如刷卡或充值手续费。记录充值后由下面的充值记录算出。",
       "feeNote": "费率来源",
       "feeNoteHint": "费率依据（仅管理员可见）",
       "feeNoteRequired": "请填写费率来源"
@@ -2867,6 +2861,28 @@
         "tokenhub": "模型已迁到腾讯 TokenHub：新建一个 OpenAI 兼容渠道，地址填 https://tokenhub.tencentmaas.com/v1，密钥用 TokenHub 的 key。"
       },
       "moveElsewhere": "请把它的模型移到其他服务商，再停用这个渠道。"
+    },
+    "topups": {
+      "label": "充值记录",
+      "hint": "实付金额（含刷卡和换汇费用）和渠道商到账的额度，单位美元。",
+      "derived_one": "按最近 {{count}} 次充值算出的费率：{{rate}}",
+      "derived_other": "按最近 {{count}} 次充值算出的费率：{{rate}}",
+      "none": "还没有充值记录：上面的费率是手填的。",
+      "date": "日期",
+      "paid": "实付",
+      "credited": "到账",
+      "rate": "费率",
+      "note": "备注",
+      "delete": "删除充值记录",
+      "deleteConfirm": "删除这条充值记录（实付 {{paid}}，到账 {{credited}}）？费率会按其余记录重新计算。",
+      "paidPlaceholder": "实付 ($)",
+      "creditedPlaceholder": "到账 ($)",
+      "notePlaceholder": "备注（选填）",
+      "add": "添加",
+      "added": "已记录充值，费率已更新",
+      "invalid": "实付和到账都要大于 0",
+      "implied": "这次充值相当于费率 {{rate}}",
+      "loadFailed": "充值记录加载失败"
     }
   },
   "nav": {
@@ -3127,7 +3143,8 @@
       "only": "仅一档",
       "first": "优先尝试",
       "backup_other": "备用 {{count}}",
-      "priority": "优先级 {{priority}}"
+      "priority": "优先级 {{priority}}",
+      "dearer": "更贵，同优先级更便宜的线路之后才用"
     },
     "state": {
       "ok": "可用",
@@ -3244,6 +3261,8 @@
     },
     "joinLast": "后加入·排最后",
     "joinLastTip": "这个模型已有别的渠道提供时才加入，所以排在它们之后。",
+    "dearerBackup": "更贵，仅兜底",
+    "dearerBackupTip": "同优先级有更便宜的线路承接请求，这条只在它们失败时才用。",
     "restorePlacement": "恢复正常排位",
     "confirmPending": "启用",
     "keepOff": "不启用",
@@ -3267,12 +3286,12 @@
       "more": "+{{count}}",
       "moreTip_other": "另有 {{count}} 条线路作为备用"
     },
-    "aboveQuote": "渠道成本（含费率）高于报价：打开渠道成本保底后，走这条线路的请求按渠道成本扣费。",
+    "aboveQuote": "渠道成本（含费率）高于报价：走这条线路的请求会亏。",
     "aboveQuoteBackup": "渠道成本高于报价；这条是备用线路，前面的线路都失败时才承接请求。",
     "cheaperUpstream": "本渠道有更便宜的上游 ID：{{model}}（${{input}} / ${{output}}）",
     "useCheaperUpstream": "换成这个",
     "costUnknown": "成本未知",
-    "confirmAboveQuote": "这条线路的成本高于模型报价。打开「扣费不低于渠道成本」时，走它的请求按渠道成本扣费；没打开就由平台承担差价。想让用户价格不变，请先调高报价。仍要确认吗？",
+    "confirmAboveQuote": "这条线路的成本高于模型报价，走它的请求会亏。不想亏请先调高价格或分组倍率。仍要确认吗？",
     "costFromRatio": "按渠道的成本倍率估算（上游没有价格表）",
     "confirmChannel": "确认 {{channel}} 的全部待确认线路",
     "confirmChannelAsk": "确认 {{channel}} 在所有模型上的待确认线路？因成本高于售价被拦下的线路会按这个成本接请求。",
@@ -3571,10 +3590,10 @@
           "description": "渠道自动加入上游新模型时：直接启用、待确认还是不加入，以及排在哪",
           "hint": "渠道可以在「监控」里改用自己的规则"
         },
-        "pricing-markup": {
-          "title": "平台加价率",
-          "description": "在目录价之上加收的比例，以及收款要付出的成本",
-          "hint": "保存后对新请求立即生效；上调前请先告知用户"
+        "pricing": {
+          "title": "定价",
+          "description": "用户按目录价 × 所在分组倍率付费；这里核算扣掉成本后还剩多少",
+          "hint": "保存只影响下面的核算；用户付多少由用户分组倍率决定"
         }
       },
       "actions": {
@@ -4831,20 +4850,19 @@
     "openEndedExpiry": "永不过期：这把 Key 会一直有效，直到你删除它。",
     "approveAnyway": "仍然批准"
   },
-  "markupSettings": {
-    "markup": {
-      "label": "平台加价率",
-      "description": "每次请求按目录价（官方价）加上这个比例，再乘分组倍率扣费。用来覆盖渠道费率、收款成本和毛利。0 表示按目录价收费。"
-    },
+  "pricingSettings": {
     "payment": {
       "label": "收款成本率",
       "description": "收款时自己要付出的成本：刷卡手续费加换汇损耗。不向用户收取，只用来算扣掉收款成本后的净收入，下面的检查拿它和渠道成本比。"
     },
-    "invalidMarkup": "加价率要在 0 到 1000% 之间。",
+    "tryRatio": {
+      "label": "试算默认分组倍率",
+      "description": "仅用于预览，不保存。用户按目录价 × 分组倍率付费，默认分组的倍率就是站点毛利。实际倍率在用户分组页面修改。",
+      "link": "打开用户分组"
+    },
     "invalidPayment": "收款成本率要大于等于 0、小于 100%。",
     "risk": {
-      "loading": "正在按这组数值核算各渠道…",
-      "net": "加价 {{markup}}、收款成本 {{payment}} 时，每 $1 目录价扣掉收款成本后实际收入 ${{factor}}。",
+      "net": "默认分组倍率 {{ratio}}、收款成本 {{payment}} 时，每 $1 目录价扣掉收款成本后实际收入 ${{factor}}。",
       "ok": "按这组数值，所有已知成本的线路都不亏。",
       "modelsAtLoss_one": "{{count}} 个模型所有在用线路都亏：{{models}}",
       "modelsAtLoss_other": "{{count}} 个模型所有在用线路都亏：{{models}}",
@@ -4858,14 +4876,21 @@
       "col": {
         "channel": "渠道",
         "fee": "费率",
-        "breakeven": "费率保本线",
+        "breakeven": "费率保本倍率",
         "margin": "毛利",
         "worst": "最贵线路需要",
         "losing": "亏损线路"
       },
+      "group": {
+        "name": "用户分组",
+        "ratio": "倍率",
+        "net": "每 $1 目录价",
+        "losing": "亏损渠道",
+        "hint": "各分组每 $1 目录价扣掉收款成本后的收入，以及仅因渠道费率就会亏的渠道数。默认分组按试算倍率计算。"
+      },
       "losingCount": "在用 {{serving}} · 备用 {{backup}}",
       "worstTitle": "会亏的线路（{{count}}）",
-      "needs": "需要 {{markup}}",
+      "needs": "需要 {{ratio}}",
       "traffic": {
         "primary": "在用",
         "balanced": "在用",

@@ -20,7 +20,9 @@ var channelFeeDefaults = map[int]channelFeeDefault{
 	config.ChannelTypeRequesty: {0.05, "Top-up fee: $105 buys $100 of credit; usage is billed at list price."},
 	// Checked 2026-11-16: https://openrouter.ai/docs/faq.md#pricing-and-fees
 	config.ChannelTypeOpenRouter: {0.055, "Credit purchase fee 5.5% (minimum $0.80); inference is resold at list price. Crypto payments: 5%."},
-	// Checked 2026-11-16: https://vercel.com/docs/ai-gateway/pricing.md (no markup on inference).
+	// Checked 2026-11-18: https://vercel.com/docs/ai-gateway/pricing.md — no markup and no
+	// platform fee on tokens; payment processing fees are the buyer's and not published.
+	config.ChannelTypeVercelAIGateway: {0, "No markup or platform fee on tokens. Card processing fees apply but are not published: record top-ups to get the real rate."},
 }
 
 // ChannelFeeDefault returns the default fee rate and note of a channel type; 0 and "" when the
@@ -64,5 +66,23 @@ func backfillChannelFeeRates() *gormigrate.Migration {
 		Rollback: func(tx *gorm.DB) error {
 			return nil
 		},
+	}
+}
+
+// backfillVercelFeeNote gives existing Vercel AI Gateway channels that never had a fee set the
+// note of their default: the rate stays 0 until top-ups are recorded.
+func backfillVercelFeeNote() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202611180902",
+		Migrate: func(tx *gorm.DB) error {
+			if !tx.Migrator().HasColumn(&Channel{}, "fee_note") {
+				return nil
+			}
+			d := channelFeeDefaults[config.ChannelTypeVercelAIGateway]
+			return tx.Model(&Channel{}).
+				Where("type = ? AND (fee_rate IS NULL OR fee_rate = 0) AND (fee_note IS NULL OR fee_note = '')", config.ChannelTypeVercelAIGateway).
+				Update("fee_note", d.note).Error
+		},
+		Rollback: func(tx *gorm.DB) error { return nil },
 	}
 }

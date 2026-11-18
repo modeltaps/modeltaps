@@ -893,13 +893,7 @@
     "costFilter": "Channel cost",
     "costAboveQuote": "Above the quote",
     "costUnknown": "Cost unknown",
-    "aboveQuoteCount": "{{count}} models have supplies taking requests above the quoted price",
-    "costFloorNote": "Last {{days}} days: {{count}} requests charged at the channel cost, {{extra}} above the quote",
-    "costFloorHint": "These supplies cost more than the quote. Raise the quote, move the supply down, or put the channel in a group of its own with its own ratio.",
-    "costFloorModel": "Model",
-    "costFloorChannel": "Channel · group",
-    "costFloorRequests": "Requests",
-    "costFloorExtra": "Above quote"
+    "aboveQuoteCount": "{{count}} models have supplies taking requests above the quoted price"
   },
   "brandIconPicker": {
     "mode": {
@@ -2305,7 +2299,7 @@
       "otherUnused": "This provider does not read this field; you can clear it",
       "n2rPlaceholder": "model-name\n-model-not-converted",
       "feeRate": "Fee rate (%)",
-      "feeRateHint": "What this channel's provider charges on top of its listed prices, such as a top-up fee. Requests never cost less than the channel price plus this fee when the channel cost setting is on.",
+      "feeRateHint": "What this channel's provider charges on top of its listed prices, such as card or top-up fees. Recorded top-ups below set it.",
       "feeNote": "Fee source",
       "feeNoteHint": "Where the fee comes from (shown to admins only)",
       "feeNoteRequired": "Say where the fee rate comes from"
@@ -2987,6 +2981,28 @@
         "tokenhub": "Its models moved to Tencent TokenHub: add an OpenAI compatible channel at https://tokenhub.tencentmaas.com/v1 with a TokenHub key."
       },
       "moveElsewhere": "Move its models to another provider and disable this channel."
+    },
+    "topups": {
+      "label": "Top-up records",
+      "hint": "The cash paid, every card and currency fee included, and the credit the provider added, in USD.",
+      "derived_one": "Fee from the latest top-up: {{rate}}",
+      "derived_other": "Fee from the latest {{count}} top-ups: {{rate}}",
+      "none": "No top-ups recorded: the fee rate above is set by hand.",
+      "date": "Date",
+      "paid": "Paid",
+      "credited": "Credited",
+      "rate": "Fee",
+      "note": "Note",
+      "delete": "Delete top-up",
+      "deleteConfirm": "Delete the top-up of {{paid}} for {{credited}}? The fee is worked out again from the others.",
+      "paidPlaceholder": "Paid ($)",
+      "creditedPlaceholder": "Credited ($)",
+      "notePlaceholder": "Note (optional)",
+      "add": "Add",
+      "added": "Top-up recorded, fee updated",
+      "invalid": "Paid and credited must be above 0",
+      "implied": "This top-up implies a fee of {{rate}}",
+      "loadFailed": "Could not load the top-ups"
     }
   },
   "nav": {
@@ -3229,7 +3245,8 @@
       "first": "Tried first",
       "backup_one": "Backup {{count}}",
       "backup_other": "Backup {{count}}",
-      "priority": "priority {{priority}}"
+      "priority": "priority {{priority}}",
+      "dearer": "dearer, tried after the cheaper supplies of this priority"
     },
     "state": {
       "ok": "Available",
@@ -3352,6 +3369,8 @@
     },
     "joinLast": "Joined last",
     "joinLastTip": "Added after other channels already supplied this model, so it is tried after them.",
+    "dearerBackup": "Dearer — backup only",
+    "dearerBackupTip": "A cheaper supply of the same priority takes the requests; this one is tried only when the cheaper ones fail.",
     "restorePlacement": "Use its normal position",
     "confirmPending": "Switch on",
     "keepOff": "Keep it off",
@@ -3376,12 +3395,12 @@
       "moreTip_one": "{{count}} more supply backs it up",
       "moreTip_other": "{{count}} more supplies back it up"
     },
-    "aboveQuote": "The channel cost, with its fee, is above the quote: with the cost floor on, requests through this supply are charged the channel cost.",
+    "aboveQuote": "The channel cost, with its fee, is above the quote: requests through this supply lose money.",
     "aboveQuoteBackup": "The channel cost is above the quote; this supply is a backup and only takes requests when the ones above fail.",
     "cheaperUpstream": "Cheaper on this channel: {{model}} (${{input}} / ${{output}})",
     "useCheaperUpstream": "Use it",
     "costUnknown": "Cost unknown",
-    "confirmAboveQuote": "This supply costs more than the model’s quoted price. With \"Never charge below the channel cost\" on, its requests are charged the channel cost; otherwise the difference is lost. Raise the quote first if it should stay the same for users. Confirm anyway?",
+    "confirmAboveQuote": "This supply costs more than the model’s quoted price, so its requests lose money. Raise the price or the group ratio first if that is not intended. Confirm anyway?",
     "costFromRatio": "Cost from the channel's cost ratio (no upstream price list)",
     "confirmChannel": "Confirm all pending supplies of {{channel}}",
     "confirmChannelAsk": "Confirm every supply of {{channel}} waiting for review, on every model? Supplies held because they cost more than the price will take requests at that cost.",
@@ -3681,10 +3700,10 @@
           "description": "When a channel adds new upstream models on its own: switch on, wait for review or skip, and where they join",
           "hint": "A channel can use rules of its own under Monitor"
         },
-        "pricing-markup": {
-          "title": "Platform markup",
-          "description": "What the site adds to the catalog price, and what taking payments costs",
-          "hint": "Applies to new requests at once; tell users before raising it"
+        "pricing": {
+          "title": "Pricing",
+          "description": "Users pay the catalog price times their group ratio; see what that leaves after costs",
+          "hint": "Saving changes only the checks; what users pay follows the user group ratios"
         }
       },
       "actions": {
@@ -4949,20 +4968,19 @@
     "totpVerify": "Verify",
     "totpCodeRequired": "Enter the code"
   },
-  "markupSettings": {
-    "markup": {
-      "label": "Platform markup",
-      "description": "Every request is charged the catalog (official) price plus this markup, times the group ratio. It should cover channel fees, payment costs and your margin. 0 charges the catalog price."
-    },
+  "pricingSettings": {
     "payment": {
       "label": "Payment cost",
       "description": "What taking a payment costs you: card fees plus currency conversion. Not charged to users; it only lowers the net revenue the checks below compare costs with."
     },
-    "invalidMarkup": "The markup must be between 0 and 1000%.",
+    "tryRatio": {
+      "label": "Default group ratio to try",
+      "description": "Preview only, not saved. Users pay the catalog price times their group ratio, so the default group's ratio is the site's margin. Change the real ratio on the user groups page.",
+      "link": "Open user groups"
+    },
     "invalidPayment": "The payment cost must be at least 0 and under 100%.",
     "risk": {
-      "loading": "Working out what these values mean for each channel…",
-      "net": "At {{markup}} markup and {{payment}} payment cost, each $1 of catalog price brings in ${{factor}} after payment costs.",
+      "net": "At a default group ratio of {{ratio}} and {{payment}} payment cost, each $1 of catalog price brings in ${{factor}} after payment costs.",
       "ok": "Every supply with a known cost breaks even at these values.",
       "modelsAtLoss_one": "{{count}} model loses money on every supply that serves it: {{models}}",
       "modelsAtLoss_other": "{{count}} models lose money on every supply that serves them: {{models}}",
@@ -4981,9 +4999,16 @@
         "worst": "Dearest supply needs",
         "losing": "Losing supplies"
       },
+      "group": {
+        "name": "User group",
+        "ratio": "Ratio",
+        "net": "Per $1 catalog",
+        "losing": "Channels at a loss",
+        "hint": "What each group brings in per $1 of catalog price after payment costs, and how many channels lose money on it through their fee alone. The default group uses the ratio being tried."
+      },
       "losingCount": "{{serving}} serving · {{backup}} backup",
       "worstTitle": "Supplies that would lose money ({{count}})",
-      "needs": "needs {{markup}}",
+      "needs": "needs {{ratio}}",
       "traffic": {
         "primary": "serving",
         "balanced": "serving",

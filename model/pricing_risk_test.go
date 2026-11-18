@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestPreviewMarkupRiskAndConfirm(t *testing.T) {
+func TestPreviewPricingRiskAndConfirm(t *testing.T) {
 	useAllocationTestDB(t)
 	direct := makeAllocationChannel(t, testChannel{"direct", 1, "https://direct.example", 10, 1})
 	feeChannel := makeAllocationChannel(t, testChannel{"fee5", 1, "https://fee.example", 0, 1})
@@ -32,34 +32,35 @@ func TestPreviewMarkupRiskAndConfirm(t *testing.T) {
 	t.Cleanup(func() { PricingInstance = oldPricing })
 	reloadSupplies()
 
-	// No markup: the 5% channel serving m2 loses money, m2 has no other supply.
-	risk, err := PreviewMarkupRisk(0, 4)
+	// Default group at the official price: the 5% channel serving m2 loses money, m2 has no
+	// other supply.
+	risk, err := PreviewPricingRisk(1, 4)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if risk.ServingAbove != 2 || len(risk.ModelsAtLoss) != 2 {
-		t.Fatalf("markup 0: serving above %d, models at loss %v", risk.ServingAbove, risk.ModelsAtLoss)
+		t.Fatalf("ratio 1: serving above %d, models at loss %v", risk.ServingAbove, risk.ModelsAtLoss)
 	}
-	var fee MarkupRiskChannel
+	var fee PricingRiskChannel
 	for _, ch := range risk.Channels {
 		if ch.ChannelId == feeChannel.Id {
 			fee = ch
 		}
 	}
-	// (1.05 / 0.96 - 1) = 9.375% to break even; at 12%: 1.12 x 0.96 / 1.05 - 1 = 2.4%.
-	if math.Abs(fee.FeeBreakeven-9.375) > 1e-6 || fee.Pending != 1 {
+	// 1.05 / 0.96 = 1.09375 to break even; at 1.12: 1.12 x 0.96 / 1.05 - 1 = 2.4%.
+	if math.Abs(fee.FeeBreakeven-1.09375) > 1e-6 || fee.Pending != 1 {
 		t.Fatalf("fee channel = %+v", fee)
 	}
-	risk, err = PreviewMarkupRisk(12, 4)
+	risk, err = PreviewPricingRisk(1.12, 4)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if risk.ServingAbove != 0 || len(risk.ModelsAtLoss) != 0 {
-		t.Fatalf("markup 12: serving above %d, models at loss %v", risk.ServingAbove, risk.ModelsAtLoss)
+		t.Fatalf("ratio 1.12: serving above %d, models at loss %v", risk.ServingAbove, risk.ModelsAtLoss)
 	}
 	for _, ch := range risk.Channels {
 		if ch.ChannelId == feeChannel.Id && math.Abs(ch.FeeMargin-2.4) > 1e-6 {
-			t.Fatalf("fee margin at 12%% = %v, want 2.4", ch.FeeMargin)
+			t.Fatalf("fee margin at 1.12 = %v, want 2.4", ch.FeeMargin)
 		}
 	}
 

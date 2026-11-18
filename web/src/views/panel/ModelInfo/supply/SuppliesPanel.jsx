@@ -393,6 +393,12 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
               {' · '}
             </span>
           )}
+          {supply.dearer_backup && !outsideGroup && (
+            <span className="text-foreground" title={t('modelSupply.dearerBackupTip')} data-testid="supply-dearer-backup">
+              {t('modelSupply.dearerBackup')}
+              {' · '}
+            </span>
+          )}
           {outsideGroup
             ? t('modelSupply.preview.outsideRow', { group: outsideGroup })
             : [channelTypeName(supply.channel_type), supply.channel_tag, groupsText].filter(Boolean).join(' · ')}
@@ -897,16 +903,25 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
               </tr>
             </thead>
             {tiers.map((tier, index) => (
-              <tbody key={tier.priority}>
+              <tbody key={`${tier.priority}-${tier.cost_tier || 0}`}>
                 <tr>
                   <td colSpan={6} className="border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
                     <span className="text-foreground">{tierLabel(index)}</span>
                     {/* On the allocation policy the numbers are computed from the call order and mean
                         nothing on their own; a manual model shows the priority it was given. */}
-                    {allocation !== 'policy' && (
-                      <span className="ml-2 tabular-nums">{t('modelSupply.tier.priority', { priority: tier.priority })}</span>
+                    {/* A dearer split of a priority: tried once the cheaper supplies of it fail. */}
+                    {tier.cost_tier > 0 ? (
+                      <span className="ml-2" data-testid="supply-tier-dearer">
+                        {t('modelSupply.tier.dearer')}
+                      </span>
+                    ) : (
+                      allocation !== 'policy' && (
+                        <span className="ml-2 tabular-nums">{t('modelSupply.tier.priority', { priority: tier.priority })}</span>
+                      )
                     )}
-                    {view && serving.priority === tier.priority && <span> · {t('modelSupply.preview.servingTier')}</span>}
+                    {view && serving.priority === tier.priority && serving.costTier === (tier.cost_tier || 0) && (
+                      <span> · {t('modelSupply.preview.servingTier')}</span>
+                    )}
                   </td>
                 </tr>
                 {tier.supplies.map((supply) => {

@@ -50,9 +50,12 @@ const (
 	SupplyReasonOwn            = "own"             // numbers set on the supply itself
 )
 
-// SupplyPreviewTier holds the supplies of one priority; tiers are tried from the first.
+// SupplyPreviewTier holds the supplies of one priority and cost; tiers are tried from the
+// first. A priority with supplies at different costs is split into one tier per cost, cheapest
+// first (supply_cost_tier.go): CostTier counts them from 0, and is above 0 on the dearer ones.
 type SupplyPreviewTier struct {
 	Priority int64                 `json:"priority"`
+	CostTier int                   `json:"cost_tier"`
 	Supplies []*SupplyPreviewEntry `json:"supplies"`
 }
 
@@ -164,6 +167,7 @@ func PreviewModelSupply(name, group string) (*SupplyPreview, error) {
 		tier.Supplies = append(tier.Supplies, entry)
 	}
 	sort.Slice(preview.Tiers, func(i, j int) bool { return preview.Tiers[i].Priority > preview.Tiers[j].Priority })
+	preview.Tiers = splitPreviewTiersByCost(preview.Tiers)
 
 	for _, tier := range preview.Tiers {
 		sort.SliceStable(tier.Supplies, func(i, j int) bool {
@@ -263,4 +267,42 @@ func supplyReasons(views []*ModelSupplyView, onPolicy bool) func(*ModelSupplyVie
 		}
 		return SupplyReasonOwn, 0
 	}
+}
+
+// splitPreviewTiersByCost splits each priority tier by supply cost, cheapest first, the way the
+// router tries them (ChannelsChooser.costTiers).
+func splitPreviewTiersByCost(tiers []*SupplyPreviewTier) []*SupplyPreviewTier {
+	out := make([]*SupplyPreviewTier, 0, len(tiers))
+	for _, tier := range tiers {
+		costs := make([]float64, len(tier.Supplies))
+		for i, e := range tier.Supplies {
+			costs[i] = supplyViewCost(e.ModelSupplyView)
+		}
+		index := costTierIndex(costs)
+		n := 0
+		for _, t := range index {
+			n = max(n, t+1)
+		}
+		if n <= 1 {
+			out = append(out, tier)
+			continue
+		}
+		split := make([]*SupplyPreviewTier, n)
+		for i, e := range tier.Supplies {
+			t := index[i]
+			if split[t] == nil {
+				split[t] = &SupplyPreviewTier{Priority: tier.Priority}
+			}
+			split[t].Supplies = append(split[t].Supplies, e)
+		}
+		k := 0
+		for _, t := range split {
+			if t != nil {
+				t.CostTier = k
+				k++
+				out = append(out, t)
+			}
+		}
+	}
+	return out
 }

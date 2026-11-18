@@ -142,6 +142,9 @@ type ModelSupplyView struct {
 	Cost *SupplyCost `json:"cost"`
 	// Traffic says whether the supply takes requests now (SupplyTraffic*).
 	Traffic string `json:"traffic"`
+	// DearerBackup is set on a backup of the first reachable tier: it is only reached when the
+	// cheaper supplies of its tier fail (supply_cost_tier.go).
+	DearerBackup bool `json:"dearer_backup,omitempty"`
 	// CheaperUpstream is a cheaper id of the same model on the channel, nil when there is none.
 	CheaperUpstream *CheaperUpstream `json:"cheaper_upstream,omitempty"`
 }

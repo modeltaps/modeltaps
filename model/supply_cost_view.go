@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/notify"
 )
 
@@ -19,8 +18,7 @@ const (
 )
 
 // SupplyCost is what a supply's channel charges for its model, in USD with the channel's fee,
-// next to the model's quoted price. It is the cost the cost floor charges at least
-// (SupplyCostFloorBilling).
+// next to the model's quoted price. It is the site's cost only: users pay the quoted price.
 type SupplyCost struct {
 	Known bool `json:"known"`
 	// Source is where the cost comes from: CostSourceChannelPrice, CostSourceCostRatio or
@@ -33,8 +31,8 @@ type SupplyCost struct {
 	Output *float64 `json:"output,omitempty"`
 	Flat   *float64 `json:"flat,omitempty"`
 	// AboveQuote is true when some part of the cost is above what the model's price brings in:
-	// the catalog price times the platform markup, less the cost of taking payments
-	// (config.NetRevenueFactor), at group ratio 1. Requests served by this supply lose money.
+	// the catalog price times the default group's ratio, less the cost of taking payments
+	// (NetRevenueLine). Requests served by this supply lose money.
 	AboveQuote bool `json:"above_quote"`
 	// CostToCatalog is the cost over the catalog price, the highest of its parts (1.05: the
 	// channel costs 5% more than the catalog price). The settings preview compares it with other
@@ -75,7 +73,7 @@ func supplyCostOf(modelName, upstreamModel string, ch *Channel, cp *ChannelPrice
 		return out
 	}
 	out.Known, out.Source, out.FeeRate = true, source, ch.GetFeeRate()
-	line := config.NetRevenueFactor() * aboveQuoteSlack
+	line := NetRevenueLine() * aboveQuoteSlack
 	switch catalog.Type {
 	case TimesPriceType, MinutesPriceType:
 		out.Flat = ptrFloat(cost.GetInput() * DollarRate)
@@ -92,9 +90,10 @@ func supplyCostOf(modelName, upstreamModel string, ch *Channel, cp *ChannelPrice
 
 func ptrFloat(v float64) *float64 { return &v }
 
-// markSupplyTraffic sets each view's Traffic: within a model, the first priority tier with an
-// available supply takes the requests (all of it by weight with balance, the heaviest with
-// failover); available supplies of the tiers below are backups.
+// markSupplyTraffic sets each view's Traffic: within a model, the cheapest available supplies of
+// the first priority tier with one take the requests (all of it by weight with balance, the
+// heaviest with failover); dearer supplies of that tier and available supplies of the tiers below
+// are backups.
 func markSupplyTraffic(views []*ModelSupplyView) {
 	byModel := map[string][]*ModelSupplyView{}
 	for _, v := range views {
@@ -123,12 +122,25 @@ func markSupplyTraffic(views []*ModelSupplyView) {
 		if info := lookupModelInfo(name); info != nil {
 			failover = routingSupplyMode(info, allocation) == SupplyModeFailover
 		}
-		var tier []*ModelSupplyView
+		var topTier []*ModelSupplyView
 		for _, v := range available {
 			if v.Priority == top {
-				tier = append(tier, v)
+				topTier = append(topTier, v)
 			} else {
 				v.Traffic = SupplyTrafficBackup
+			}
+		}
+		// Within the tier only the cheapest supplies take requests (supply_cost_tier.go).
+		costs := make([]float64, len(topTier))
+		for i, v := range topTier {
+			costs[i] = supplyViewCost(v)
+		}
+		var tier []*ModelSupplyView
+		for i, t := range costTierIndex(costs) {
+			if t == 0 {
+				tier = append(tier, topTier[i])
+			} else {
+				topTier[i].Traffic, topTier[i].DearerBackup = SupplyTrafficBackup, true
 			}
 		}
 		heaviest := tier[0].EffectiveWeight()

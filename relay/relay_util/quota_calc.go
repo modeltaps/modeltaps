@@ -172,28 +172,7 @@ func (q *Quota) GetTotalQuotaByUsage(usage *types.Usage) (quota int) {
 	q.audioSeconds = usage.AudioSeconds
 	quota = q.calcQuota(promptTokens, completionTokens, q.inputRatio*inRatio*tier, q.outputRatio*outRatio*tier, q.groupRatio)
 	q.baseQuota = q.calcQuota(promptTokens, completionTokens, q.price.GetInput()*inRatio*tier, q.price.GetOutput()*outRatio*tier, 1)
-	return q.applyCostFloor(usage, quota)
-}
-
-// applyCostFloor charges the channel cost when it is higher than the quoted amount (the catalog
-// price times the group ratio), and records both for the log. The amounts of the whole request
-// are compared, not each part: mixing parts would charge a sum neither side lists.
-func (q *Quota) applyCostFloor(usage *types.Usage, quoteQuota int) int {
-	if !q.costFloor {
-		return quoteQuota
-	}
-	q.billing = &costFloorResult{quote: quoteQuota, charged: quoteQuota, basis: billingBasisQuote}
-	if q.costPrice == nil {
-		q.billing.basis = billingBasisCostUnknown
-		return quoteQuota
-	}
-	cost := q.channelCostQuota(usage)
-	q.billing.cost, q.billing.costKnown = cost, true
-	if cost > quoteQuota {
-		q.billing.charged, q.billing.basis = cost, billingBasisChannelCost
-		return cost
-	}
-	return quoteQuota
+	return quota
 }
 
 // channelCostQuota prices the usage at the channel cost (fee included, no group ratio).

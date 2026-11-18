@@ -788,9 +788,10 @@ func (cc *ChannelsChooser) Next(group, modelName string, filters ...ChannelsFilt
 	}
 
 	for _, priority := range channelsPriority {
-		channel := cc.balancer(priority, filters, modelName, nil)
-		if channel != nil {
-			return channel, nil
+		for _, tier := range cc.costTiers(modelName, priority) {
+			if channel := cc.balancer(tier, filters, modelName, nil); channel != nil {
+				return channel, nil
+			}
 		}
 	}
 
@@ -817,9 +818,10 @@ func (cc *ChannelsChooser) NextByValidatedModel(group, validatedModelName string
 	}
 
 	for _, priority := range channelsPriority {
-		channel := cc.balancer(priority, filters, validatedModelName, ginContext)
-		if channel != nil {
-			return channel, nil
+		for _, tier := range cc.costTiers(validatedModelName, priority) {
+			if channel := cc.balancer(tier, filters, validatedModelName, ginContext); channel != nil {
+				return channel, nil
+			}
 		}
 	}
 

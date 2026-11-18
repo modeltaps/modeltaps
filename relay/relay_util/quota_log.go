@@ -278,12 +278,8 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 		"input_ratio":       q.price.GetInput(),
 		"output_ratio":      q.price.GetOutput(),
 	}
-	// The platform markup is part of group_ratio (the ratio charged); the log keeps both parts and
-	// the amount at the catalog price, so the markup's revenue can be told apart.
-	if q.markup > 1 {
-		meta["markup_rate"] = q.markup - 1
-		meta["user_group_ratio"] = q.userGroupRatio
-	}
+	// The amount at the catalog price, without the group ratio: what the group ratio added (or
+	// took off) can be told apart.
 	if q.baseQuota > 0 {
 		meta["base_quota"] = q.baseQuota
 	}
@@ -321,10 +317,6 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 	// 消费模态(additive):NewQuota 时由请求路径判定,非空才写;判不出/旧日志无该键,前端显示 "-"。
 	if q.relayMode != "" {
 		meta["relay_mode"] = q.relayMode
-	}
-
-	if billing := q.billingLogMeta(); billing != nil {
-		meta[model.LogMetaBilling] = billing
 	}
 
 	firstResponseTime := q.GetFirstResponseTime()

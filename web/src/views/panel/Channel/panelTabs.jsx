@@ -75,6 +75,7 @@ import PriceSyncDialog from './PriceSyncDialog';
 import ModelSelectorModal from './ModelSelectorModal';
 import BalanceAlertField from './BalanceAlertField';
 import UsageAlertField from './UsageAlertField';
+import ChannelTopups from './ChannelTopups';
 import useChannelCapabilities from './useChannelCapabilities';
 import { balanceSupport } from './balanceAlert';
 import { parseUsageTiers } from './usageAlert';
@@ -1900,6 +1901,13 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
   // stays folded away until it has entries or is opened.
   const [mappingOpen, setMappingOpen] = useState(false);
   const set = (k) => (e) => setDraft({ ...draft, [k]: e?.target ? e.target.value : e });
+  // A top-up record stores a new fee on the channel. Reloading rebuilds a clean draft; a draft
+  // with unsaved edits is kept, so it takes the new fee fields here.
+  const onTopupsChanged = async () => {
+    const dirty = JSON.stringify(draft) !== JSON.stringify(advancedTab.make(channel));
+    const fresh = await ctx.reload();
+    if (dirty && fresh) setDraft((d) => ({ ...d, ...feeDraft(fresh) }));
+  };
   return (
     <>
       <Field label={t('channels.advanced.name')} htmlFor="cp-name">
@@ -1949,6 +1957,7 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
           <Input id="cp-fee-note" value={draft.fee_note} onChange={set('fee_note')} />
         </Field>
       </div>
+      <ChannelTopups channelId={channel.id} onChanged={onTopupsChanged} />
       {draft.mapping || mappingOpen ? (
         <Field label={configText(t, labels.label.model_mapping)} optional hint={t('channels.models.mappingHint')}>
           <ModelMappingInput
@@ -2066,6 +2075,12 @@ function AdvancedBody({ object: channel, draft, setDraft, ctx }) {
   );
 }
 
+// The fee rate is stored as a fraction (0.05) and edited as a percentage (5).
+const feeDraft = (c) => ({
+  fee_rate: c.fee_rate ? String(+(Number(c.fee_rate) * 100).toFixed(4)) : '',
+  fee_note: c.fee_note || ''
+});
+
 const advancedTab = {
   key: 'advanced',
   make: (c) => ({
@@ -2073,9 +2088,7 @@ const advancedTab = {
     remark: c.remark || '',
     other: c.other || '',
     cost_ratio: c.cost_ratio ? String(c.cost_ratio) : '',
-    // The fee rate is stored as a fraction (0.05) and edited as a percentage (5).
-    fee_rate: c.fee_rate ? String(+(Number(c.fee_rate) * 100).toFixed(4)) : '',
-    fee_note: c.fee_note || '',
+    ...feeDraft(c),
     pre_cost: c.pre_cost || 1,
     disabled_stream: Array.isArray(c.disabled_stream) ? c.disabled_stream.join(',') : '',
     need2response_models: c.need2response_models || '',

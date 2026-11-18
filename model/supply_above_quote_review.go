@@ -29,18 +29,16 @@ const supplyAboveQuoteNoticeKey = "SupplyAboveQuoteNotice"
 type SupplyAboveQuoteReview struct {
 	Held    []*ModelSupplyView // backups switched off, waiting for review
 	Serving []*ModelSupplyView // supplies taking requests above the quote, left on
-	// Unheld are backups that would be held, left on because the platform markup has not been
-	// saved yet: until then most channel fees would count as a loss.
+	// Unheld are backups that would be held, left on because the site sells at no margin over the
+	// official price yet (NetRevenueLine at most 1): until the default group's ratio gives one,
+	// every channel fee counts as a loss and holding them would only take backups away.
 	Unheld []*ModelSupplyView
 }
 
-// markupConfigured reports whether an admin has saved the platform markup (even as 0).
-func markupConfigured() bool {
-	var n int64
-	if err := DB.Model(&Option{}).Where(&Option{Key: "PlatformMarkupPercent"}).Count(&n).Error; err != nil {
-		return false
-	}
-	return n > 0
+// marginConfigured reports whether the site's normal price brings in more than the official
+// price after the payment cost: the default group's ratio is set above it.
+func marginConfigured() bool {
+	return NetRevenueLine() > aboveQuoteSlack
 }
 
 func reviewable(v *ModelSupplyView) bool {
@@ -60,7 +58,7 @@ func ReviewSuppliesAboveQuote() (*SupplyAboveQuoteReview, error) {
 		return nil, err
 	}
 	out := &SupplyAboveQuoteReview{}
-	hold := markupConfigured()
+	hold := marginConfigured()
 	var holdIds []int
 	for _, v := range views {
 		if !reviewable(v) {

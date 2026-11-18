@@ -294,7 +294,7 @@ func InitDB() (err error) {
 		if err != nil {
 			return err
 		}
-		err = db.AutoMigrate(&ChannelPrice{})
+		err = db.AutoMigrate(&ChannelPrice{}, &ChannelTopup{})
 		if err != nil {
 			return err
 		}

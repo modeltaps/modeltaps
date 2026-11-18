@@ -77,10 +77,13 @@ export default function ChannelPanel({
       if (success) {
         setChannel(data);
         setError('');
-      } else setError(message || t('channelDetail.notFound'));
+        return data;
+      }
+      setError(message || t('channelDetail.notFound'));
     } catch (e) {
       setError(e.message);
     }
+    return null;
   }, [channelId, t]);
 
   useEffect(() => {
@@ -118,6 +121,13 @@ export default function ChannelPanel({
   }, [channel]);
   const ctx = {
     t,
+    // Reloads the channel after a change saved outside the tabs' drafts (a top-up record sets the
+    // fee); resolves to the reloaded channel, or null when it could not be read.
+    reload: async () => {
+      const data = await load();
+      onChanged();
+      return data;
+    },
     // Saves the models tab outside its draft (the one-off cleanup of upstream-gone models).
     saveModels: async (patch) => {
       const res = await updateChannel(channelRef.current, patch);

@@ -164,22 +164,23 @@ func PreviewModelSupply(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": preview})
 }
 
-// PreviewMarkupRisk shows, for ?markup= and ?payment= (percent; the saved settings when left
-// out), what each channel needs to break even and which supplies would lose money. Read only.
-func PreviewMarkupRisk(c *gin.Context) {
-	markup := config.PlatformMarkupPercent
+// PreviewPricingRisk shows, for ?ratio= (the default group's ratio) and ?payment= (percent; the
+// saved values when left out), what each channel needs to break even, which supplies would lose
+// money and what each user group brings in. Read only.
+func PreviewPricingRisk(c *gin.Context) {
+	ratio := model.DefaultGroupRatio()
 	payment := config.PaymentCostPercent
-	if v, err := strconv.ParseFloat(c.Query("markup"), 64); err == nil {
-		markup = v
+	if v, err := strconv.ParseFloat(c.Query("ratio"), 64); err == nil {
+		ratio = v
 	}
 	if v, err := strconv.ParseFloat(c.Query("payment"), 64); err == nil {
 		payment = v
 	}
-	if markup < 0 || markup > 1000 || payment < 0 || payment >= 100 {
-		common.APIRespondWithError(c, http.StatusOK, errors.New("markup must be 0 to 1000 and payment cost 0 to under 100 percent"))
+	if ratio <= 0 || ratio > 100 || payment < 0 || payment >= 100 {
+		common.APIRespondWithError(c, http.StatusOK, errors.New("ratio must be above 0 and at most 100, payment cost 0 to under 100 percent"))
 		return
 	}
-	risk, err := model.PreviewMarkupRisk(markup, payment)
+	risk, err := model.PreviewPricingRisk(ratio, payment)
 	if err != nil {
 		common.APIRespondWithError(c, http.StatusOK, err)
 		return
@@ -202,18 +203,6 @@ func ConfirmPendingSupplies(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": gin.H{"confirmed": n}})
-}
-
-// GetCostFloorStats sums up the requests of the last days (days, default 7) charged at the
-// channel cost because it was above the quote, by model, channel and group.
-func GetCostFloorStats(c *gin.Context) {
-	days, _ := strconv.Atoi(c.Query("days"))
-	stats, err := model.GetCostFloorStats(days)
-	if err != nil {
-		common.APIRespondWithError(c, http.StatusOK, err)
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": stats})
 }
 
 // GetPendingUpstreamModels lists new upstream models waiting on channels for an admin: each

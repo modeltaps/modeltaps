@@ -88,7 +88,6 @@ import LibrarySheet from './LibrarySheet';
 import { ENDPOINT_LABEL_KEYS, ENDPOINT_VALUES, MODEL_KIND_VALUES, isUnlabeled, modelKindOf, safeJsonArray } from './modelInfoHelpers';
 import { listSupplies } from './supply/supplyApi';
 import { useSupplySwitches, SupplySwitchNote } from './supply/supplyParts';
-import CostFloorNote from './supply/CostFloorNote';
 import { MODEL_STATUSES, countSuppliesByModel, isPublicModelRow, normalizeModelStatus, supplyOrderByModel } from './supply/supplyHelpers';
 import { matchesSearch } from 'utils/textSearch';
 
@@ -1023,7 +1022,6 @@ export default function ModelInfo() {
           </button>
         </p>
       )}
-      <CostFloorNote />
 
       {unlabeledCount > 0 && params.labels !== 'unlabeled' && (
         <p className="mt-2 text-xs text-muted-foreground">

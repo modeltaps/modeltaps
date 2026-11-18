@@ -7,22 +7,23 @@ import (
 	"github.com/modeltaps/modeltaps/common/config"
 )
 
-// The settings preview of the platform markup: for a markup and a payment cost the admin is
-// typing, what each channel needs to break even and which supplies would lose money. It reads
-// the same supply costs the price check uses (SupplyCost.CostToCatalog) and changes nothing.
+// The settings preview of the site's pricing: for the default group's ratio and a payment cost
+// the admin is trying, what each channel needs to break even and which supplies would lose money,
+// and what every user group brings in. It reads the same supply costs the price check uses
+// (SupplyCost.CostToCatalog) and changes nothing.
 
-// MarkupRiskChannel is one channel in the preview.
-type MarkupRiskChannel struct {
+// PricingRiskChannel is one channel in the preview.
+type PricingRiskChannel struct {
 	ChannelId int     `json:"channel_id"`
 	Name      string  `json:"name"`
 	Type      int     `json:"type"`
 	FeeRate   float64 `json:"fee_rate"`
-	// FeeBreakeven is the markup, in percent, at which the channel's fee alone breaks even:
-	// (1 + fee) / (1 - payment cost) - 1. FeeMargin is the margin left at the previewed markup
-	// on a model the channel sells at the catalog price, in percent (negative is a loss).
+	// FeeBreakeven is the group ratio at which the channel's fee alone breaks even:
+	// (1 + fee) / (1 - payment cost). FeeMargin is the margin left at the previewed ratio on a
+	// model the channel sells at the catalog price, in percent (negative is a loss).
 	FeeBreakeven float64 `json:"fee_breakeven"`
 	FeeMargin    float64 `json:"fee_margin"`
-	// WorstBreakeven is the markup the channel's dearest supply needs, in percent.
+	// WorstBreakeven is the group ratio the channel's dearest supply needs.
 	WorstBreakeven float64 `json:"worst_breakeven"`
 	Supplies       int     `json:"supplies"`      // supplies with a known cost that take or back up requests
 	ServingAbove   int     `json:"serving_above"` // of those, taking requests and losing money
@@ -31,54 +32,69 @@ type MarkupRiskChannel struct {
 	Pending        int     `json:"pending"`       // supplies of the channel waiting for review
 }
 
-// MarkupRiskSupply is a supply that loses money at the previewed markup.
-type MarkupRiskSupply struct {
+// PricingRiskSupply is a supply that loses money at the previewed ratio.
+type PricingRiskSupply struct {
 	Model       string  `json:"model"`
 	ChannelName string  `json:"channel_name"`
 	Traffic     string  `json:"traffic"`
 	CostToCat   float64 `json:"cost_to_catalog"`
-	Breakeven   float64 `json:"breakeven"` // markup this supply needs, in percent
+	Breakeven   float64 `json:"breakeven"` // group ratio this supply needs
 }
 
-// MarkupRisk is the whole preview.
-type MarkupRisk struct {
-	Markup       float64             `json:"markup"`
+// PricingRiskGroup is one user group: what its ratio brings in after the payment cost, and how
+// many channels lose money on it through their fee alone.
+type PricingRiskGroup struct {
+	Symbol    string  `json:"symbol"`
+	Name      string  `json:"name"`
+	Ratio     float64 `json:"ratio"`
+	NetFactor float64 `json:"net_factor"`
+	// LosingChannels counts the channels whose fee is above what the group brings in.
+	LosingChannels int `json:"losing_channels"`
+}
+
+// PricingRisk is the whole preview.
+type PricingRisk struct {
+	// GroupRatio is the default group's ratio previewed: the site's normal price over the
+	// catalog price.
+	GroupRatio   float64             `json:"group_ratio"`
 	PaymentCost  float64             `json:"payment_cost"`
 	NetFactor    float64             `json:"net_factor"`
-	Channels     []MarkupRiskChannel `json:"channels"`
+	Channels     []PricingRiskChannel `json:"channels"`
 	ServingAbove int                 `json:"serving_above"`
 	BackupAbove  int                 `json:"backup_above"`
 	CostUnknown  int                 `json:"cost_unknown"`
 	// ModelsAtLoss are models every serving supply of which loses money.
 	ModelsAtLoss []string           `json:"models_at_loss"`
-	Worst        []MarkupRiskSupply `json:"worst"`
+	Worst        []PricingRiskSupply `json:"worst"`
+	Groups       []PricingRiskGroup  `json:"groups"`
 	// SupplyRouting is false when supplies do not route requests (ModelSupplyEnabled off): the
 	// figures then describe what would happen once they do.
 	SupplyRouting bool `json:"supply_routing"`
 }
 
-// breakevenMarkup is the markup, in percent, at which a cost-to-catalog ratio breaks even.
-func breakevenMarkup(costToCatalog, paymentPercent float64) float64 {
+// breakevenRatio is the group ratio at which a cost-to-catalog ratio breaks even.
+func breakevenRatio(costToCatalog, paymentPercent float64) float64 {
 	keep := 1 - paymentPercent/100
 	if keep <= 0 {
 		return 0
 	}
-	return (costToCatalog/keep - 1) * 100
+	return costToCatalog / keep
 }
 
-// PreviewMarkupRisk works out the preview for a markup and a payment cost, in percent.
-func PreviewMarkupRisk(markupPercent, paymentPercent float64) (*MarkupRisk, error) {
+// PreviewPricingRisk works out the preview for a default group ratio and a payment cost (percent).
+func PreviewPricingRisk(groupRatio, paymentPercent float64) (*PricingRisk, error) {
 	views, err := GetModelSupplyViews("", 0)
 	if err != nil {
 		return nil, err
 	}
-	line := config.NetRevenueFactorAt(markupPercent, paymentPercent) * aboveQuoteSlack
-	out := &MarkupRisk{
-		Markup: markupPercent, PaymentCost: paymentPercent,
-		NetFactor:     config.NetRevenueFactorAt(markupPercent, paymentPercent),
+	net := NetRevenueLineAt(groupRatio, paymentPercent)
+	line := net * aboveQuoteSlack
+	out := &PricingRisk{
+		GroupRatio: groupRatio, PaymentCost: paymentPercent,
+		NetFactor:     net,
 		SupplyRouting: config.ModelSupplyEnabled,
 	}
-	byChannel := map[int]*MarkupRiskChannel{}
+	byChannel := map[int]*PricingRiskChannel{}
 	servingByModel := map[string][2]int{} // serving supplies, of which losing money
 	for _, v := range views {
 		ch := byChannel[v.ChannelId]
@@ -87,7 +103,7 @@ func PreviewMarkupRisk(markupPercent, paymentPercent float64) (*MarkupRisk, erro
 			if v.Cost != nil {
 				fee = v.Cost.FeeRate
 			}
-			ch = &MarkupRiskChannel{ChannelId: v.ChannelId, Name: v.ChannelName, Type: v.ChannelType, FeeRate: fee}
+			ch = &PricingRiskChannel{ChannelId: v.ChannelId, Name: v.ChannelName, Type: v.ChannelType, FeeRate: fee}
 			byChannel[v.ChannelId] = ch
 		}
 		if v.Pending {
@@ -108,7 +124,7 @@ func PreviewMarkupRisk(markupPercent, paymentPercent float64) (*MarkupRisk, erro
 			ch.FeeRate = v.Cost.FeeRate
 		}
 		ch.Supplies++
-		need := breakevenMarkup(v.Cost.CostToCatalog, paymentPercent)
+		need := breakevenRatio(v.Cost.CostToCatalog, paymentPercent)
 		if need > ch.WorstBreakeven {
 			ch.WorstBreakeven = need
 		}
@@ -117,7 +133,7 @@ func PreviewMarkupRisk(markupPercent, paymentPercent float64) (*MarkupRisk, erro
 			counts[0]++
 		}
 		if v.Cost.CostToCatalog > line {
-			out.Worst = append(out.Worst, MarkupRiskSupply{Model: v.Model, ChannelName: v.ChannelName, Traffic: v.Traffic, CostToCat: v.Cost.CostToCatalog, Breakeven: need})
+			out.Worst = append(out.Worst, PricingRiskSupply{Model: v.Model, ChannelName: v.ChannelName, Traffic: v.Traffic, CostToCat: v.Cost.CostToCatalog, Breakeven: need})
 			if serving {
 				ch.ServingAbove++
 				out.ServingAbove++
@@ -136,10 +152,31 @@ func PreviewMarkupRisk(markupPercent, paymentPercent float64) (*MarkupRisk, erro
 	}
 	sort.Strings(out.ModelsAtLoss)
 	for _, ch := range byChannel {
-		ch.FeeBreakeven = breakevenMarkup(1+ch.FeeRate, paymentPercent)
+		ch.FeeBreakeven = breakevenRatio(1+ch.FeeRate, paymentPercent)
 		ch.FeeMargin = (out.NetFactor/(1+ch.FeeRate) - 1) * 100
 		out.Channels = append(out.Channels, *ch)
 	}
+	for symbol, g := range GlobalUserGroupRatio.GetAll() {
+		if g == nil {
+			continue
+		}
+		pg := PricingRiskGroup{Symbol: symbol, Name: g.Name, Ratio: g.Ratio, NetFactor: NetRevenueLineAt(g.Ratio, paymentPercent)}
+		if symbol == DefaultUserGroupSymbol {
+			pg.Ratio, pg.NetFactor = groupRatio, net
+		}
+		for _, ch := range out.Channels {
+			if 1+ch.FeeRate > pg.NetFactor*aboveQuoteSlack {
+				pg.LosingChannels++
+			}
+		}
+		out.Groups = append(out.Groups, pg)
+	}
+	sort.Slice(out.Groups, func(i, j int) bool {
+		if out.Groups[i].Symbol == DefaultUserGroupSymbol || out.Groups[j].Symbol == DefaultUserGroupSymbol {
+			return out.Groups[i].Symbol == DefaultUserGroupSymbol
+		}
+		return out.Groups[i].Ratio < out.Groups[j].Ratio
+	})
 	sort.Slice(out.Channels, func(i, j int) bool {
 		a, b := out.Channels[i], out.Channels[j]
 		if a.ServingAbove+a.BackupAbove != b.ServingAbove+b.BackupAbove {

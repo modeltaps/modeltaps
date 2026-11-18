@@ -123,12 +123,6 @@ export function BillingRulesCard({ ctx }) {
           description={gs('approximateTokenDescription')}
           {...bindSwitch(ctx, 'ApproximateTokenEnabled')}
         />
-        <ToggleRow
-          id="SupplyCostFloorBilling"
-          label={gs('supplyCostFloor')}
-          description={gs('supplyCostFloorDescription')}
-          {...bindSwitch(ctx, 'SupplyCostFloorBilling')}
-        />
       </OptionList>
       <SelectRow
         id="PriceSyncAutoApply"

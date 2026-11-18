@@ -97,13 +97,8 @@ export const PLATFORM_GROUPS = [
         'QuotaRemindEnabled',
         'QuotaRemindThreshold'
       ]),
-      card('pricing-markup', 'form', ['PlatformMarkupPercent', 'PaymentCostPercent']),
-      card('billing-rules', 'form', [
-        'EmptyResponseBillingEnabled',
-        'ApproximateTokenEnabled',
-        'SupplyCostFloorBilling',
-        'PriceSyncAutoApply'
-      ]),
+      card('pricing', 'form', ['PaymentCostPercent']),
+      card('billing-rules', 'form', ['EmptyResponseBillingEnabled', 'ApproximateTokenEnabled', 'PriceSyncAutoApply']),
       card('quota-reset', 'form', ['QuotaResetTimezone', 'QuotaResetWeekStart']),
       card('invite-reward', 'form', [
         'InviteRewardEnabled',

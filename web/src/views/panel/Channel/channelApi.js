@@ -560,3 +560,28 @@ export async function fetchChannelModelDetails(id, models, mapping = {}) {
   if (!res.data?.success) throw new Error(res.data?.message);
   return res.data.data || [];
 }
+
+// A channel's recorded top-ups (newest first) and the fee derived from the latest `window` of
+// them: `{ topups, fee_rate (fraction), derived, window }`. Adding or deleting one returns the
+// same summary and stores the derived fee on the channel. All throw on failure.
+function channelTopupsData({ success, message, data }) {
+  if (!success) throw new Error(message);
+  return { topups: data?.topups || [], fee_rate: data?.fee_rate || 0, derived: Boolean(data?.derived), window: data?.window || 0 };
+}
+
+export async function fetchChannelTopups(id) {
+  const res = await API.get(`/api/channel/${id}/topups`);
+  return channelTopupsData(res.data);
+}
+
+// `paid` is the cash paid with every card and currency fee, `credited` the credit the provider
+// added, both in USD.
+export async function addChannelTopup(id, { paid, credited, note }) {
+  const res = await API.post(`/api/channel/${id}/topups`, { paid, credited, note });
+  return channelTopupsData(res.data);
+}
+
+export async function deleteChannelTopup(id, topupId) {
+  const res = await API.delete(`/api/channel/${id}/topups/${topupId}`);
+  return channelTopupsData(res.data);
+}

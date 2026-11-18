@@ -321,7 +321,7 @@ func RelayHandler(relay RelayBaseInterface) (err *types.OpenAIErrorWithStatusCod
 	relay.getProvider().SetUsage(usage)
 
 	quota := relay_util.NewQuota(relay.getContext(), relay.getModelName(), promptTokens)
-	quota.EnableCostFloor(relay.getContext())
+	quota.LoadSupplyCost(relay.getContext())
 	if err = quota.PreQuotaConsumption(); err != nil {
 		done = true
 		return

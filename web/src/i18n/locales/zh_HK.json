@@ -2513,9 +2513,7 @@
           "all": "全部寫入",
           "none": "只寫入新模型",
           "description": "每日與啟動時的價格同步（OpenRouter、Vercel AI Gateway、models.dev）對已有價格的模型如何寫入。新模型總會寫入，鎖定的價格不會改。未寫入的變動、以及鎖定價低於上游的模型會發通知，可在渠道的「同步價格」裏核對後寫入。"
-        },
-        "supplyCostFloor": "扣費不低於渠道成本",
-        "supplyCostFloorDescription": "每次請求按「報價 × 分組倍率」和實際承接請求的渠道收費（含渠道費率）兩者取高扣費。渠道成本未知時按報價扣。"
+        }
       },
       "imageProxySettings": {
         "title": "圖片代理"

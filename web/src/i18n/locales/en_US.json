@@ -2513,9 +2513,7 @@
           "all": "Write every change",
           "none": "Write new models only",
           "description": "What the daily and startup price syncs (OpenRouter, Vercel AI Gateway, models.dev) write for models that already have a price. New models are always added and locked prices never change. Changes that are not written, and locked prices below the upstream price, are sent as notifications; review and apply them from the channel's price sync."
-        },
-        "supplyCostFloor": "Never charge below the channel cost",
-        "supplyCostFloorDescription": "Each request is charged the higher of the quoted price (times the group ratio) and what the channel that served it charges, including the channel's fee rate. Channels without a known cost are charged the quoted price."
+        }
       },
       "imageProxySettings": {
         "title": "Image Proxy"

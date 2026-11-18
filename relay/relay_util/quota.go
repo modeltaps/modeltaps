@@ -87,27 +87,22 @@ type Quota struct {
 	groupName             string
 	isBackupGroup         bool // 新增字段记录是否使用备用分组
 	backupGroupName       string
-	// groupRatio is the ratio requests are charged at: the user group's ratio times the platform
-	// markup (config.MarkupMultiplier). userGroupRatio and markup keep the two parts for the log.
-	groupRatio     float64
-	userGroupRatio float64
-	markup         float64
-	inputRatio     float64
-	outputRatio    float64
-	costRatio      float64
-	// Cost floor (SupplyCostFloorBilling, see EnableCostFloor): costPrice is the channel's cost as
-	// a price list, nil when unknown; billing is the outcome of the last settlement, for the log.
-	costFloor  bool
-	costPrice  *model.Price
-	costSource string
+	// groupRatio is the ratio requests are charged at: the group's ratio. Requests are charged
+	// the catalog (official) price times it, whatever channel serves them; the site's margin and
+	// discounts are set through the group ratios.
+	groupRatio  float64
+	inputRatio  float64
+	outputRatio float64
+	costRatio   float64
+	// costPrice is the serving channel's cost as a price list (list price with its fee), nil when
+	// unknown (see LoadSupplyCost). It only feeds the cost figures, never the charge.
+	costPrice *model.Price
 	// listPrice is the channel's list price without its fee (model.SupplyListPrice), nil when
 	// unknown: the price the upstream charges against its credits, logged as the expected cost.
 	listPrice *model.Price
-	// baseQuota is the usage at the catalog price, without the markup and the group ratio.
+	// baseQuota is the usage at the catalog price, without the group ratio.
 	baseQuota int
 	feeRate   float64
-	feeNote   string
-	billing   *costFloorResult
 	// audioSecondsEstimate is the probed length of the uploaded audio (0 when unknown), used
 	// to pre-consume minutes prices; audioSeconds is the billed length, taken from the usage.
 	audioSecondsEstimate float64
@@ -235,9 +230,7 @@ func NewQuota(c *gin.Context, modelName string, promptTokens int) *Quota {
 		quota.backupGroupName = ""
 	}
 
-	quota.userGroupRatio = c.GetFloat64("group_ratio") // 这里的倍率已经在 common.go 中正确设置了
-	quota.markup = config.MarkupMultiplier()
-	quota.groupRatio = quota.userGroupRatio * quota.markup
+	quota.groupRatio = c.GetFloat64("group_ratio") // 这里的倍率已经在 common.go 中正确设置了
 	quota.inputRatio = quota.price.GetInput() * quota.groupRatio
 	quota.outputRatio = quota.price.GetOutput() * quota.groupRatio
 
@@ -284,12 +277,6 @@ func (q *Quota) PreQuotaConsumption() *types.OpenAIErrorWithStatusCode {
 	}
 
 	q.preConsumedQuota = q.preConsumeQuotaWith(&q.price, q.inputRatio, q.outputRatio)
-	// With the cost floor, settlement may charge the channel cost: reserve the higher of the two.
-	if q.costFloor && q.costPrice != nil {
-		if cost := q.preConsumeQuotaWith(q.costPrice, q.costPrice.GetInput(), q.costPrice.GetOutput()); cost > q.preConsumedQuota {
-			q.preConsumedQuota = cost
-		}
-	}
 
 	if q.preConsumedQuota == 0 {
 		return nil
