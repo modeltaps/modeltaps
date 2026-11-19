@@ -45,7 +45,8 @@ import {
   refreshChannelPrices
 } from './channelApi';
 import { amount, priceIndex, priceKindOf, priceSummary, sortByTokenPrice, upstreamNameOf } from './channelPrices';
-import { lossOf, orderByRank, sortByName } from './channelModelDetails';
+import { lossOf, orderByRank, rowSellCmp, sellSideOf, sortByName, sortBySellDelta } from './channelModelDetails';
+import SellDelta from './SellDelta';
 import UpstreamPriceDetails from './UpstreamPriceDetails';
 import { STATE_FILTERS, isGone, matchesState, offerOf, snapshotOf, stateCounts, unlistedOf } from './channelModelStates';
 import { CAPABILITY_FILTERS, formatContext } from './modelPicker';
@@ -151,22 +152,30 @@ ToolButton.propTypes = {
 // What the upstream charges for one listed model, as the Input and Output cells. A model not
 // priced per token (per image, per second, per request, free, other, or no price) gets one cell
 // across both. A click on a price opens its details, with a link to the upstream's page.
-function UpstreamPriceCells({ price, publics, onFilter }) {
+function UpstreamPriceCells({ price, publics, cmp, onFilter }) {
   const { t } = useTranslation();
   const summary = priceSummary(price);
+  // Public models with a known channel cost are judged the way the supplies list judges them:
+  // above what the price brings in (default group ratio, less payment costs). The others compare
+  // the upstream price with the sell price directly.
+  const unknown = (publics || []).filter((p) => !p.cost?.known);
   const losses =
-    summary?.kind === 'tokens' ? ['input', 'output'].map((key) => ({ key, loss: lossOf(price, publics, key) })).filter((x) => x.loss) : [];
+    summary?.kind === 'tokens' ? ['input', 'output'].map((key) => ({ key, loss: lossOf(price, unknown, key) })).filter((x) => x.loss) : [];
   const lossLines = losses.map(({ key, loss }) =>
     t(`channels.models.loss_${key}`, { model: loss.model, sell: amount(loss.sell), cost: amount(loss.cost) })
   );
-  // The sell price to compare with when the model serves exactly one public model.
-  const only = (publics || []).filter((p) => p.enabled);
-  const sell = only.length === 1 ? { input: only[0].input_price ?? undefined, output: only[0].output_price ?? undefined } : undefined;
+  const aboveQuote = (publics || []).find((p) => p.enabled && p.cost?.known && p.cost.above_quote);
+  if (aboveQuote) lossLines.push(t('channels.models.aboveQuote', { model: aboveQuote.model }));
+  // The sell price (and the channel cost) to compare with: the public model the comparison
+  // column shows.
+  const shown = cmp?.public;
+  const sell = shown ? { input: shown.input_price ?? undefined, output: shown.output_price ?? undefined } : undefined;
   const details = (content) => (
     <UpstreamPriceDetails
       price={price}
       upstream={price.model}
       sell={sell}
+      cost={shown?.cost?.known ? shown.cost : undefined}
       losses={lossLines}
       filterLabel={summary && t(`channels.models.priceKind.${summary.kind}`)}
       onFilter={onFilter && summary ? () => onFilter(summary.kind) : undefined}
@@ -177,12 +186,17 @@ function UpstreamPriceCells({ price, publics, onFilter }) {
   if (summary?.kind === 'tokens') {
     return ['input', 'output'].map((key) => {
       const loss = losses.find((x) => x.key === key)?.loss;
+      const above = aboveQuote && Number(aboveQuote.cost[key] ?? 0) > Number(aboveQuote[`${key}_price`] ?? Infinity);
       return (
         <td key={key} className="text-right tabular-nums">
           {details(
-            loss ? (
+            loss || above ? (
               <LossMark
-                text={t(`channels.models.loss_${key}`, { model: loss.model, sell: amount(loss.sell), cost: amount(loss.cost) })}
+                text={
+                  loss
+                    ? t(`channels.models.loss_${key}`, { model: loss.model, sell: amount(loss.sell), cost: amount(loss.cost) })
+                    : t('channels.models.aboveQuote', { model: aboveQuote.model })
+                }
                 value={summary[key]}
               />
             ) : (
@@ -210,7 +224,7 @@ function UpstreamPriceCells({ price, publics, onFilter }) {
   );
 }
 
-UpstreamPriceCells.propTypes = { price: PropTypes.object, publics: PropTypes.array, onFilter: PropTypes.func };
+UpstreamPriceCells.propTypes = { price: PropTypes.object, publics: PropTypes.array, cmp: PropTypes.object, onFilter: PropTypes.func };
 
 // A price the upstream charges above what a public model it serves sells for.
 function LossMark({ text, value }) {
@@ -590,16 +604,39 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [filtered, priceKind, showPrices, pricesByModel, mapping]
   );
-  const upstreamShown = unlisted.filter((u) => !priceKind || !showPrices || kindOf(u.name) === priceKind);
-  const shown = useMemo(() => {
-    if (sort?.key === 'name') return sortByName(priced, sort.dir);
-    if (sort && showPrices) {
-      return sortByTokenPrice(priced, sort.key, sort.dir, (r) => pricesByModel.get(upstreamNameOf(r.name, mapping)));
+  // Each listed model against the base sell price of the public model it serves, and a filter on
+  // the side it falls on ('above' | 'below', '' for all), on top of the other filters.
+  const cmpOf = (name) => (showPrices ? rowSellCmp(pricesByModel.get(upstreamNameOf(name, mapping)), detailOf(name)?.public) : null);
+  const [sellSide, setSellSide] = useState('');
+  const sellCounts = useMemo(() => {
+    const out = { above: 0, below: 0 };
+    for (const r of filtered) {
+      const side = !r.removed && sellSideOf(cmpOf(r.name));
+      if (side === 'above' || side === 'below') out[side] += 1;
     }
-    return orderByRank(priced, (r) => details?.get(r.name));
-  }, [priced, sort, showPrices, pricesByModel, mapping, details]);
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered, showPrices, pricesByModel, mapping, details]);
+  const sided = useMemo(
+    () => (sellSide ? priced.filter((r) => !r.removed && sellSideOf(cmpOf(r.name)) === sellSide) : priced),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [priced, sellSide, showPrices, pricesByModel, mapping, details]
+  );
+  const upstreamShown = unlisted.filter((u) => (!priceKind || !showPrices || kindOf(u.name) === priceKind) && !sellSide);
+  const shown = useMemo(() => {
+    if (sort?.key === 'name') return sortByName(sided, sort.dir);
+    if (sort?.key === 'sell') return sortBySellDelta(sided, sort.dir, (r) => cmpOf(r.name));
+    if (sort && showPrices) {
+      return sortByTokenPrice(sided, sort.key, sort.dir, (r) => pricesByModel.get(upstreamNameOf(r.name, mapping)));
+    }
+    return orderByRank(sided, (r) => details?.get(r.name));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sided, sort, showPrices, pricesByModel, mapping, details]);
   const showPublic = Boolean(ctx.supplyRouting);
-  const list = useLongList(shown, { text: modelRowText, resetKey: `${only}|${priceKind}|${sort?.key || ''}|${sort?.dir || ''}` });
+  const list = useLongList(shown, {
+    text: modelRowText,
+    resetKey: `${only}|${priceKind}|${sellSide}|${sort?.key || ''}|${sort?.dir || ''}`
+  });
 
   useEffect(() => {
     if (adding && prices === null) fetchPriceList().then(setPrices);
@@ -919,7 +956,13 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
         </p>
       ) : (
         <>
-          {(stateKeys.length > 0 || signalCounts.idle > 0 || signalCounts.failing > 0 || signalCounts.off > 0 || priceKind) && (
+          {(stateKeys.length > 0 ||
+            signalCounts.idle > 0 ||
+            signalCounts.failing > 0 ||
+            signalCounts.off > 0 ||
+            priceKind ||
+            sellCounts.above > 0 ||
+            sellCounts.below > 0) && (
             <div className="flex flex-wrap items-center gap-1.5 pb-2 text-[13px]">
               {shownStateKeys.map((key) => (
                 <FilterChip
@@ -959,6 +1002,23 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                           icon={key === 'failing' ? <AlertTriangle className="size-3 text-warning" /> : null}
                           label={t(`channels.models.signal.${key}Filter`, { range })}
                           count={signalCounts[key]}
+                        />
+                      )
+                  )}
+                </>
+              )}
+              {(sellCounts.above > 0 || sellCounts.below > 0 || sellSide) && (
+                <>
+                  {shownStateKeys.length > 0 && <span className="mx-1 h-4 w-px bg-border" />}
+                  {['above', 'below'].map(
+                    (key) =>
+                      (sellCounts[key] > 0 || sellSide === key) && (
+                        <FilterChip
+                          key={key}
+                          active={sellSide === key}
+                          onClick={() => setSellSide(sellSide === key ? '' : key)}
+                          label={t(`channels.models.sell.${key}Filter`)}
+                          count={sellCounts[key]}
                         />
                       )
                   )}
@@ -1069,6 +1129,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                 <col className="w-16" />
                 {showPrices && <col className="w-[5.125rem]" />}
                 {showPrices && <col className="w-[5.125rem]" />}
+                {showPrices && <col className="w-[4.75rem]" />}
                 <col className="w-12" />
                 <col className="w-8" />
               </colgroup>
@@ -1109,6 +1170,15 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                         }
                       />
                     ))}
+                  {showPrices && (
+                    <SortHeader
+                      label={t('channels.models.sell.column')}
+                      active={sort?.key === 'sell'}
+                      dir={sort?.dir}
+                      onClick={() => nextSort('sell')}
+                      title={t('channels.models.sell.columnHint')}
+                    />
+                  )}
                   <th className="text-center" title={t('channels.models.enabledHint')}>
                     {t('channels.models.enabled')}
                   </th>
@@ -1206,9 +1276,11 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                         <UpstreamPriceCells
                           price={pricesByModel.get(upstreamNameOf(name, mapping))}
                           publics={detailOf(name)?.public}
+                          cmp={isRemoved ? null : cmpOf(name)}
                           onFilter={setPriceKind}
                         />
                       )}
+                      {showPrices && <td className="text-right">{isRemoved ? null : <SellDelta cmp={cmpOf(name)} />}</td>}
                       <td className="text-center">
                         {!isRemoved && (
                           <Switch
@@ -1285,6 +1357,7 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                         {formatContext(detailOf(u.name)?.context_length) || '—'}
                       </td>
                       {showPrices && <UpstreamPriceCells price={pricesByModel.get(u.name)} publics={[]} onFilter={setPriceKind} />}
+                      {showPrices && <td />}
                       <td className="text-center">
                         {/* Not in the list yet, so off; switching it on adds it to the list. */}
                         <Switch

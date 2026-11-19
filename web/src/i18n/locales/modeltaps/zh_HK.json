@@ -899,7 +899,9 @@
     "costFilter": "渠道成本",
     "costAboveQuote": "高於報價",
     "costUnknown": "成本未知",
-    "aboveQuoteCount": "{{count}} 個模型有承接請求的線路高於報價"
+    "aboveQuoteCount": "{{count}} 個模型有承接請求的線路高於報價",
+    "cheapestVsSell": "最低線路 vs 售價",
+    "cheapestVsSellHint": "可用線路中最便宜的一條，其成本相對本站基礎售價（取輸入、輸出中較高的一側；未計分組倍率）"
   },
   "brandIconPicker": {
     "mode": {
@@ -2501,7 +2503,14 @@
       "renamedTo": "上游改名為 {{model}}",
       "notServing": "未在服務",
       "notServingHint": "沒有已上架的公開模型透過它提供，下架不影響用戶",
-      "adoptFailed": "改用新名失敗"
+      "adoptFailed": "改用新名失敗",
+      "aboveQuote": "渠道成本（含費率）高於 {{model}} 的實際收入：走這裡的請求會虧。",
+      "sell": {
+        "column": "對比售價",
+        "columnHint": "本渠道成本相對所服務模型的本站基礎售價（取輸入、輸出中較高的一側；未計分組倍率）",
+        "aboveFilter": "高於售價",
+        "belowFilter": "低於售價"
+      }
     },
     "monitor": {
       "checkNow": "立即檢查模型列表",
@@ -3353,7 +3362,10 @@
     "costFromRatio": "按渠道的成本倍率估算（上游沒有價格表）",
     "confirmChannel": "確認 {{channel}} 的全部待確認線路",
     "confirmChannelAsk": "確認 {{channel}} 在所有模型上的待確認線路？因成本高於售價被攔下的線路會按這個成本接請求。",
-    "confirmChannelDone": "已確認 {{channel}} 的 {{count}} 條線路"
+    "confirmChannelDone": "已確認 {{channel}} 的 {{count}} 條線路",
+    "vsSell": "對比售價",
+    "vsSellTip": "每條線路的成本相對本站基礎售價（取輸入、輸出中較高的一側；未計分組倍率）",
+    "sellLine": "本站基礎售價 {{input}} / {{output}}（入 / 出，每百萬 token，未計分組倍率）"
   },
   "settingsUi": {
     "search": {
@@ -5069,5 +5081,11 @@
       "models_dev": "公共模型目錄",
       "official_schedule": "官方調價日程"
     }
+  },
+  "sellDelta": {
+    "equalTip": "與本站基礎售價相同",
+    "aboveTip": "比本站基礎售價高 {{pct}}%，仍在預設分組的利潤空間內",
+    "belowTip": "比本站基礎售價低 {{pct}}%",
+    "lossTip": "比本站基礎售價高 {{pct}}%：成本已超過售價的實際收入，走這裡的請求會虧"
   }
 }

@@ -894,7 +894,9 @@
     "costFilter": "Channel cost",
     "costAboveQuote": "Above the quote",
     "costUnknown": "Cost unknown",
-    "aboveQuoteCount": "{{count}} models have supplies taking requests above the quoted price"
+    "aboveQuoteCount": "{{count}} models have supplies taking requests above the quoted price",
+    "cheapestVsSell": "Cheapest vs price",
+    "cheapestVsSellHint": "The cheapest available supply's cost against the base price (the dearer of input and output; before group ratios)"
   },
   "brandIconPicker": {
     "mode": {
@@ -2602,7 +2604,14 @@
       "notServing": "Not in use",
       "notServingHint": "No published public model is served through it, so its removal does not affect users",
       "adoptFailed": "Could not switch to the new names",
-      "adoptRenamesHint": "Switches the channel's list and supplies to the upstream's new names and saves at once"
+      "adoptRenamesHint": "Switches the channel's list and supplies to the upstream's new names and saves at once",
+      "aboveQuote": "The channel cost (fee included) is above what {{model}} brings in: requests through it lose money.",
+      "sell": {
+        "column": "vs price",
+        "columnHint": "This channel's cost against our base price of the model it serves (the dearer of input and output; before group ratios)",
+        "aboveFilter": "Above our price",
+        "belowFilter": "Below our price"
+      }
     },
     "monitor": {
       "checkNow": "Check model list now",
@@ -3462,7 +3471,10 @@
     "costFromRatio": "Cost from the channel's cost ratio (no upstream price list)",
     "confirmChannel": "Confirm all pending supplies of {{channel}}",
     "confirmChannelAsk": "Confirm every supply of {{channel}} waiting for review, on every model? Supplies held because they cost more than the price will take requests at that cost.",
-    "confirmChannelDone": "Confirmed {{count}} supplies of {{channel}}"
+    "confirmChannelDone": "Confirmed {{count}} supplies of {{channel}}",
+    "vsSell": "vs price",
+    "vsSellTip": "Each supply's cost against our base price (the dearer of input and output; before group ratios)",
+    "sellLine": "Our base price {{input}} / {{output}} per M tokens (in / out), before group ratios"
   },
   "settingsUi": {
     "search": {
@@ -5188,5 +5200,11 @@
       "models_dev": "Public model catalog",
       "official_schedule": "Official price dates"
     }
+  },
+  "sellDelta": {
+    "equalTip": "Same as our base price",
+    "aboveTip": "{{pct}}% above our base price, still inside the margin of the default group",
+    "belowTip": "{{pct}}% below our base price",
+    "lossTip": "{{pct}}% above our base price: the cost is above what the price brings in, requests through it lose money"
   }
 }

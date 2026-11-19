@@ -26,6 +26,7 @@ export const MODEL_COLUMNS = [
   { id: 'channels', labelKey: 'modelInfoPage.channels', defaultHidden: true },
   { id: 'supply', labelKey: 'modelSupply.column' },
   { id: 'price', labelKey: 'modelInfoPage.price' },
+  { id: 'vs_sell', labelKey: 'modelsPage.cheapestVsSell' },
   { id: 'state', labelKey: 'modelInfoPage.state', fixed: true },
   { id: 'visible', labelKey: 'modelsPage.visibleToUsers', fixed: true },
   { id: 'vendor', labelKey: 'modelInfoPage.vendor', defaultHidden: true },

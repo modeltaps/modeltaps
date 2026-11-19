@@ -893,7 +893,9 @@
     "costFilter": "チャネル原価",
     "costAboveQuote": "提示価格超え",
     "costUnknown": "原価不明",
-    "aboveQuoteCount": "{{count}} 個のモデルに、提示価格を上回るリクエスト受付中のルートがあります"
+    "aboveQuoteCount": "{{count}} 個のモデルに、提示価格を上回るリクエスト受付中のルートがあります",
+    "cheapestVsSell": "最安ルート vs 価格",
+    "cheapestVsSellHint": "利用可能なルートのうち最安のコストと当サイト基本価格の比較（入力・出力の高い方、グループ倍率適用前）"
   },
   "brandIconPicker": {
     "mode": {
@@ -2497,7 +2499,14 @@
       "renamedTo": "新しい名前: {{model}}",
       "notServing": "未提供",
       "notServingHint": "公開済みの公開モデルはこれを通じて提供されていないため、削除の影響はありません",
-      "adoptFailed": "新しい名前への切り替えに失敗しました"
+      "adoptFailed": "新しい名前への切り替えに失敗しました",
+      "aboveQuote": "チャネルコスト（手数料込み）が {{model}} の実収入を上回っています：ここを通るリクエストは赤字です。",
+      "sell": {
+        "column": "価格比",
+        "columnHint": "このチャネルのコストと、提供先モデルの当サイト基本価格の比較（入力・出力の高い方、グループ倍率適用前）",
+        "aboveFilter": "基本価格より高い",
+        "belowFilter": "基本価格より安い"
+      }
     },
     "monitor": {
       "checkNow": "今すぐモデル一覧を確認",
@@ -3349,7 +3358,10 @@
     "costFromRatio": "チャネルの原価倍率から算出（上流に価格表なし）",
     "confirmChannel": "{{channel}} の確認待ちの供給をすべて確定",
     "confirmChannelAsk": "{{channel}} の全モデルの確認待ちの供給を確定しますか？価格を上回るため止められていた供給も、そのコストでリクエストを受けるようになります。",
-    "confirmChannelDone": "{{channel}} の供給を {{count}} 件確定しました"
+    "confirmChannelDone": "{{channel}} の供給を {{count}} 件確定しました",
+    "vsSell": "価格比",
+    "vsSellTip": "各ルートのコストと当サイト基本価格の比較（入力・出力の高い方、グループ倍率適用前）",
+    "sellLine": "当サイトの基本価格 {{input}} / {{output}}（入力 / 出力、100 万トークンあたり、グループ倍率適用前）"
   },
   "settingsUi": {
     "search": {
@@ -5064,5 +5076,11 @@
       "models_dev": "公開モデルカタログ",
       "official_schedule": "公式価格の改定日程"
     }
+  },
+  "sellDelta": {
+    "equalTip": "当サイトの基本価格と同じ",
+    "aboveTip": "当サイトの基本価格より {{pct}}% 高い（デフォルトグループの利幅内）",
+    "belowTip": "当サイトの基本価格より {{pct}}% 安い",
+    "lossTip": "当サイトの基本価格より {{pct}}% 高い：コストが価格による実収入を上回り、ここを通るリクエストは赤字です"
   }
 }

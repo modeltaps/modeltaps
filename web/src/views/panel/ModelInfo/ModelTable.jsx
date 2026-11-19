@@ -60,6 +60,7 @@ import { ModelStatusPill } from './supply/supplyParts';
 import SupplyOrder from './supply/SupplyOrder';
 import { isPublicModelRow, normalizeSupplyMode } from './supply/supplyHelpers';
 import { admin } from 'routes/paths';
+import SellDelta from '../Channel/SellDelta';
 
 // 同步来源 → 文案 key;空值(历史数据)显示「未知」。
 const SOURCE_LABEL_KEYS = {
@@ -596,6 +597,19 @@ export default function ModelTable({
             <PriceCell price={c.row.original.price} unit={unit} hideUnit />
           </span>
         )
+      },
+      {
+        // The cheapest available supply of known cost against the base price: how much room the
+        // model's price leaves, at a glance.
+        id: 'vs_sell',
+        header: () => <span title={t('modelsPage.cheapestVsSellHint')}>{t('modelsPage.cheapestVsSell')}</span>,
+        meta: { className: 'text-right', dim: true },
+        cell: (c) => {
+          const s = c.row.original.cost_summary;
+          return s?.cheapest_to_catalog > 0 ? (
+            <SellDelta cmp={{ delta: s.cheapest_to_catalog - 1, above: Boolean(s.cheapest_above_quote) }} />
+          ) : null;
+        }
       },
       {
         id: 'state',

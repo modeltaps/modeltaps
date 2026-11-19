@@ -70,6 +70,9 @@ import {
 } from './supplyHelpers';
 import { CheaperUpstreamHint, SupplyStateLabel, SupplySwitchNote, UpstreamName, UpstreamPriceCell, durationLabel } from './supplyParts';
 import { setModelAllocation } from '../../Allocation/allocationApi';
+import SellDelta from '../../Channel/SellDelta';
+import { sellDeltaOf } from '../../Channel/channelModelDetails';
+import { usd } from '../../Channel/channelPrices';
 import { admin } from 'routes/paths';
 
 const channelTypeName = (type) => CHANNEL_OPTIONS[type]?.text || `#${type}`;
@@ -337,6 +340,20 @@ RequestPreview.propTypes = {
   failed: PropTypes.bool
 };
 
+// The model's base sell price above its supplies, so each supply's price (and its comparison
+// column) reads against it: "Base price $2 / $6 per M tokens, before group ratios".
+function SellPriceLine({ supply }) {
+  const { t } = useTranslation();
+  if (!supply || (supply.sell_input_price == null && supply.sell_output_price == null)) return null;
+  return (
+    <p className="-mb-1 text-xs text-muted-foreground" data-testid="supply-sell-price">
+      {t('modelSupply.sellLine', { input: usd(supply.sell_input_price ?? 0), output: usd(supply.sell_output_price ?? 0) })}
+    </p>
+  );
+}
+
+SellPriceLine.propTypes = { supply: PropTypes.object };
+
 function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMoveDown, busy, onAction }) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState(null);
@@ -420,7 +437,7 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
             className="h-8 rounded-lg px-2 font-mono"
           />
         </td>
-        <td colSpan={4}>
+        <td colSpan={5}>
           <div className="flex items-center gap-2">
             <NumberCell
               label={t('modelSupply.priority')}
@@ -464,6 +481,16 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
       </td>
       <td className="text-right text-xs tabular-nums">
         <UpstreamPriceCell supply={supply} />
+      </td>
+      <td className="text-right">
+        <SellDelta
+          cmp={sellDeltaOf({
+            price: supply.upstream_price,
+            cost: supply.cost,
+            sellInput: supply.sell_input_price,
+            sellOutput: supply.sell_output_price
+          })}
+        />
       </td>
       <td className="whitespace-nowrap text-right tabular-nums">
         {supply.weight || 1}
@@ -883,75 +910,82 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
           </div>
         )
       ) : (
-        <div className="overflow-x-auto rounded-[10px] border border-border">
-          <table className="w-full min-w-[640px] table-fixed border-collapse text-[13px]">
-            <colgroup>
-              <col className="w-[30%]" />
-              <col />
-              <col className="w-[6.5rem]" />
-              <col className="w-[4.5rem]" />
-              <col className="w-[15%]" />
-              <col className="w-[5.5rem]" />
-            </colgroup>
-            <thead>
-              <tr className="text-left text-xs text-muted-foreground [&>th]:h-9 [&>th]:whitespace-nowrap [&>th]:border-b [&>th]:border-border [&>th]:px-3 [&>th]:font-medium">
-                <th>{t('modelSupply.channel')}</th>
-                <th>{t('modelSupply.upstream')}</th>
-                <th className="text-right" title={t('modelSupply.upstreamPriceTip')}>
-                  {t('modelSupply.upstreamPrice')}
-                </th>
-                <th className="text-right">{t('modelSupply.weight')}</th>
-                <th>{t('modelSupply.stateLabel')}</th>
-                <th>
-                  <span className="sr-only">{t('modelSupply.actions')}</span>
-                </th>
-              </tr>
-            </thead>
-            {tiers.map((tier, index) => (
-              <tbody key={`${tier.priority}-${tier.cost_tier || 0}`}>
-                <tr>
-                  <td colSpan={6} className="border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
-                    <span className="text-foreground">{tierLabel(index)}</span>
-                    {/* On the allocation policy the numbers are computed from the call order and mean
-                        nothing on their own; a manual model shows the priority it was given. */}
-                    {/* A dearer split of a priority: tried once the cheaper supplies of it fail. */}
-                    {tier.cost_tier > 0 ? (
-                      <span className="ml-2" data-testid="supply-tier-dearer">
-                        {t(preview?.cost_order === 'cost' ? 'modelSupply.tier.dearerAcross' : 'modelSupply.tier.dearer')}
-                      </span>
-                    ) : (
-                      allocation !== 'policy' && (
-                        <span className="ml-2 tabular-nums">{t('modelSupply.tier.priority', { priority: tier.priority })}</span>
-                      )
-                    )}
-                    {view && serving.priority === tier.priority && serving.costTier === (tier.cost_tier || 0) && (
-                      <span> · {t('modelSupply.preview.servingTier')}</span>
-                    )}
-                  </td>
+        <>
+          <SellPriceLine supply={supplies[0]} />
+          <div className="overflow-x-auto rounded-[10px] border border-border">
+            <table className="w-full min-w-[700px] table-fixed border-collapse text-[13px]">
+              <colgroup>
+                <col className="w-[28%]" />
+                <col />
+                <col className="w-[6.5rem]" />
+                <col className="w-[4.75rem]" />
+                <col className="w-[4.5rem]" />
+                <col className="w-[15%]" />
+                <col className="w-[5.5rem]" />
+              </colgroup>
+              <thead>
+                <tr className="text-left text-xs text-muted-foreground [&>th]:h-9 [&>th]:whitespace-nowrap [&>th]:border-b [&>th]:border-border [&>th]:px-3 [&>th]:font-medium">
+                  <th>{t('modelSupply.channel')}</th>
+                  <th>{t('modelSupply.upstream')}</th>
+                  <th className="text-right" title={t('modelSupply.upstreamPriceTip')}>
+                    {t('modelSupply.upstreamPrice')}
+                  </th>
+                  <th className="text-right" title={t('modelSupply.vsSellTip')}>
+                    {t('modelSupply.vsSell')}
+                  </th>
+                  <th className="text-right">{t('modelSupply.weight')}</th>
+                  <th>{t('modelSupply.stateLabel')}</th>
+                  <th>
+                    <span className="sr-only">{t('modelSupply.actions')}</span>
+                  </th>
                 </tr>
-                {tier.supplies.map((supply) => {
-                  const up = moveSupply(supplies, supply.id, 'up').length > 0;
-                  const down = moveSupply(supplies, supply.id, 'down').length > 0;
-                  const outside = inGroup && !inGroup.has(supply.id);
-                  return (
-                    <SupplyRow
-                      key={supply.id}
-                      supply={supply}
-                      state={previewEntryState(supply, pauses)}
-                      share={showShares && !outside ? serving.shares[supply.id] : undefined}
-                      next={Boolean(view?.first_choice) && view.first_choice === supply.id}
-                      outsideGroup={outside ? group : undefined}
-                      canMoveUp={up}
-                      canMoveDown={down}
-                      busy={busyId === supply.id}
-                      onAction={onAction}
-                    />
-                  );
-                })}
-              </tbody>
-            ))}
-          </table>
-        </div>
+              </thead>
+              {tiers.map((tier, index) => (
+                <tbody key={`${tier.priority}-${tier.cost_tier || 0}`}>
+                  <tr>
+                    <td colSpan={7} className="border-b border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
+                      <span className="text-foreground">{tierLabel(index)}</span>
+                      {/* On the allocation policy the numbers are computed from the call order and mean
+                        nothing on their own; a manual model shows the priority it was given. */}
+                      {/* A dearer split of a priority: tried once the cheaper supplies of it fail. */}
+                      {tier.cost_tier > 0 ? (
+                        <span className="ml-2" data-testid="supply-tier-dearer">
+                          {t(preview?.cost_order === 'cost' ? 'modelSupply.tier.dearerAcross' : 'modelSupply.tier.dearer')}
+                        </span>
+                      ) : (
+                        allocation !== 'policy' && (
+                          <span className="ml-2 tabular-nums">{t('modelSupply.tier.priority', { priority: tier.priority })}</span>
+                        )
+                      )}
+                      {view && serving.priority === tier.priority && serving.costTier === (tier.cost_tier || 0) && (
+                        <span> · {t('modelSupply.preview.servingTier')}</span>
+                      )}
+                    </td>
+                  </tr>
+                  {tier.supplies.map((supply) => {
+                    const up = moveSupply(supplies, supply.id, 'up').length > 0;
+                    const down = moveSupply(supplies, supply.id, 'down').length > 0;
+                    const outside = inGroup && !inGroup.has(supply.id);
+                    return (
+                      <SupplyRow
+                        key={supply.id}
+                        supply={supply}
+                        state={previewEntryState(supply, pauses)}
+                        share={showShares && !outside ? serving.shares[supply.id] : undefined}
+                        next={Boolean(view?.first_choice) && view.first_choice === supply.id}
+                        outsideGroup={outside ? group : undefined}
+                        canMoveUp={up}
+                        canMoveDown={down}
+                        busy={busyId === supply.id}
+                        onAction={onAction}
+                      />
+                    );
+                  })}
+                </tbody>
+              ))}
+            </table>
+          </div>
+        </>
       )}
 
       {supplies && supplies.length > 0 && <p className="text-xs text-muted-foreground">{t('modelSupply.orderHint')}</p>}

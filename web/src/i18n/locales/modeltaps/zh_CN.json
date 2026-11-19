@@ -899,7 +899,9 @@
     "costFilter": "渠道成本",
     "costAboveQuote": "高于报价",
     "costUnknown": "成本未知",
-    "aboveQuoteCount": "{{count}} 个模型有承接请求的线路高于报价"
+    "aboveQuoteCount": "{{count}} 个模型有承接请求的线路高于报价",
+    "cheapestVsSell": "最低线路 vs 售价",
+    "cheapestVsSellHint": "可用线路中最便宜的一条，其成本相对本站基础售价（取输入、输出中较高的一侧；未计分组倍率）"
   },
   "brandIconPicker": {
     "mode": {
@@ -2501,7 +2503,14 @@
       "renamedTo": "上游改名为 {{model}}",
       "notServing": "未在服务",
       "notServingHint": "没有已上架的公开模型通过它提供，下架不影响用户",
-      "adoptFailed": "改用新名失败"
+      "adoptFailed": "改用新名失败",
+      "aboveQuote": "渠道成本（含费率）高于 {{model}} 的实际收入：走这里的请求会亏。",
+      "sell": {
+        "column": "对比售价",
+        "columnHint": "本渠道成本相对所服务模型的本站基础售价（取输入、输出中较高的一侧；未计分组倍率）",
+        "aboveFilter": "高于售价",
+        "belowFilter": "低于售价"
+      }
     },
     "monitor": {
       "checkNow": "立即检查模型列表",
@@ -3353,7 +3362,10 @@
     "costFromRatio": "按渠道的成本倍率估算（上游没有价格表）",
     "confirmChannel": "确认 {{channel}} 的全部待确认线路",
     "confirmChannelAsk": "确认 {{channel}} 在所有模型上的待确认线路？因成本高于售价被拦下的线路会按这个成本接请求。",
-    "confirmChannelDone": "已确认 {{channel}} 的 {{count}} 条线路"
+    "confirmChannelDone": "已确认 {{channel}} 的 {{count}} 条线路",
+    "vsSell": "对比售价",
+    "vsSellTip": "每条线路的成本相对本站基础售价（取输入、输出中较高的一侧；未计分组倍率）",
+    "sellLine": "本站基础售价 {{input}} / {{output}}（入 / 出，每百万 token，未计分组倍率）"
   },
   "settingsUi": {
     "search": {
@@ -5069,5 +5081,11 @@
       "models_dev": "公共模型目录",
       "official_schedule": "官方调价日程"
     }
+  },
+  "sellDelta": {
+    "equalTip": "与本站基础售价相同",
+    "aboveTip": "比本站基础售价高 {{pct}}%，仍在默认分组的利润空间内",
+    "belowTip": "比本站基础售价低 {{pct}}%",
+    "lossTip": "比本站基础售价高 {{pct}}%：成本已超过售价的实际收入，走这里的请求会亏"
   }
 }
