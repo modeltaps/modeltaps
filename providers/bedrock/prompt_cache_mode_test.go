@@ -28,8 +28,11 @@ func bedrockWithMode(t *testing.T, rawBody, mode string) *BedrockProvider {
 }
 
 // A key or request set to "on" gets breakpoints on Claude over Bedrock, natively and from chat;
-// "auto" with the site switch off leaves the body alone.
+// "auto" with the site switch turned off leaves the body alone.
 func TestBedrockClaudeBreakpointsFollowMode(t *testing.T) {
+	old := config.ClaudePromptCachingEnabled
+	config.ClaudePromptCachingEnabled = false
+	t.Cleanup(func() { config.ClaudePromptCachingEnabled = old })
 	const raw = `{"model":"claude-sonnet-4-5-20250929","max_tokens":64,"system":"be brief","messages":[{"role":"user","content":"hi"}]}`
 	for mode, want := range map[string]bool{"on": true, "auto": false} {
 		p := bedrockWithMode(t, raw, mode)

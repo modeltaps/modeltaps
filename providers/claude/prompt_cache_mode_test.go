@@ -40,3 +40,17 @@ func TestRequestPromptCacheModeOverridesChannel(t *testing.T) {
 		t.Fatalf("no context: mode %q, want auto", got)
 	}
 }
+
+// Out of the box (site switch on, channel inherit) a Claude request gets breakpoints, and a key
+// set to Off still gets none.
+func TestPromptCachingOnByDefault(t *testing.T) {
+	if !config.ClaudePromptCachingEnabled {
+		t.Fatal("the site-wide prompt cache switch should be on by default")
+	}
+	if GetPromptCachingConfig(modeContext("auto"), channelWithPromptCaching(nil), "claude-sonnet-4-5") == nil {
+		t.Fatal("auto on a default channel: want breakpoints")
+	}
+	if GetPromptCachingConfig(modeContext("off"), channelWithPromptCaching(nil), "claude-sonnet-4-5") != nil {
+		t.Fatal("off: want none")
+	}
+}

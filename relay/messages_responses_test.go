@@ -189,7 +189,10 @@ func TestResponsesEntry_ClaudeGoesToMessages(t *testing.T) {
 	if got.path != "/v1/messages" || got.apiKey != "sk-ant" {
 		t.Fatalf("upstream path = %q, x-api-key = %q", got.path, got.apiKey)
 	}
-	if gjson.GetBytes(got.body, "input").Exists() || gjson.GetBytes(got.body, "system").String() != "be brief" ||
+	// The site-wide prompt cache switch is on by default, so the system prompt arrives as a
+	// block with a cache breakpoint.
+	if gjson.GetBytes(got.body, "input").Exists() || gjson.GetBytes(got.body, "system.0.text").String() != "be brief" ||
+		gjson.GetBytes(got.body, "system.0.cache_control.type").String() != "ephemeral" ||
 		gjson.GetBytes(got.body, "messages.0.content.0.text").String() != "hi" ||
 		gjson.GetBytes(got.body, "max_tokens").Int() != 128 {
 		t.Fatalf("upstream body is not the converted Messages request: %s", got.body)

@@ -53,7 +53,8 @@ func gatewayRequest() []Setting {
 				"Later requests then read it at the cache price. It covers Claude, Opus, Sonnet and Haiku models on any channel " +
 				"type, and applies on channels whose prompt " +
 				"caching setting is Inherit; a channel set to On or Off decides for itself, along with the TTL and which messages " +
-				"are marked. Requests that already carry cache_control are left alone. Off by default.",
+				"are marked. Requests that already carry cache_control are left alone. An API key's prompt caching setting, or " +
+				"the X-Modeltaps-Prompt-Cache header, decides for its own requests. On by default.",
 			Examples: []Example{
 				{Value: "true", Effect: "A client that sends no cache markers still gets its long system prompt cached upstream for 5 minutes."},
 				{Value: "false", Effect: "Only clients that mark their prompts themselves, and channels set to On, use the cache."},

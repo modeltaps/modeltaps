@@ -529,11 +529,11 @@ outline: deep
 
 ### 自動加提示快取標記
 
-設定名 `ClaudePromptCachingEnabled` · 類型 bool · 預設值 `false`
+設定名 `ClaudePromptCachingEnabled` · 類型 bool · 預設值 `true`
 
 位置：平台設定 › 網關 › 原生協議
 
-給 Anthropic 模型的請求加上 cache_control 標記，讓上游快取提示詞。之後的請求按快取價讀取。它涵蓋任何渠道類型上的 Claude、Opus、Sonnet、Haiku 模型，只作用於提示快取設為「繼承」的渠道；設為開或關的渠道自己決定，TTL 和標記哪些訊息也由渠道決定。已自帶 cache_control 的請求不改動。預設關閉。
+給 Anthropic 模型的請求加上 cache_control 標記，讓上游快取提示詞。之後的請求按快取價讀取。它涵蓋任何渠道類型上的 Claude、Opus、Sonnet、Haiku 模型，只作用於提示快取設為「繼承」的渠道；設為開或關的渠道自己決定，TTL 和標記哪些訊息也由渠道決定。已自帶 cache_control 的請求不改動。API Key 的提示快取設定或 X-Modeltaps-Prompt-Cache 請求頭會替自己的請求決定。預設開啟。
 
 示例：
 

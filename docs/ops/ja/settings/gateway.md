@@ -529,11 +529,11 @@ OpenAI 形式に加えて、Google Gemini 形式（/gemini/v1beta のエンド�
 
 ### プロンプトキャッシュの目印を付ける
 
-キー `ClaudePromptCachingEnabled` · 型 bool · 既定値 `false`
+キー `ClaudePromptCachingEnabled` · 型 bool · 既定値 `true`
 
 場所：プラットフォーム設定 › ゲートウェイ › ネイティブプロトコル
 
-Anthropic モデルへのリクエストに cache_control の目印を付け、上流にプロンプトをキャッシュさせます。後続のリクエストはキャッシュ価格で読み込みます。どのチャネル種別の Claude・Opus・Sonnet・Haiku モデルにも効き、プロンプトキャッシュの設定が「継承」のチャネルに適用されます。オンまたはオフにしたチャネルは自分で決め、TTL と目印を付けるメッセージもチャネルが決めます。すでに cache_control を含むリクエストはそのままです。既定はオフです。
+Anthropic モデルへのリクエストに cache_control の目印を付け、上流にプロンプトをキャッシュさせます。後続のリクエストはキャッシュ価格で読み込みます。どのチャネル種別の Claude・Opus・Sonnet・Haiku モデルにも効き、プロンプトキャッシュの設定が「継承」のチャネルに適用されます。オンまたはオフにしたチャネルは自分で決め、TTL と目印を付けるメッセージもチャネルが決めます。すでに cache_control を含むリクエストはそのままです。API キーのプロンプトキャッシュ設定や X-Modeltaps-Prompt-Cache ヘッダーは、そのリクエストについて自分で決めます。既定はオンです。
 
 例：
 

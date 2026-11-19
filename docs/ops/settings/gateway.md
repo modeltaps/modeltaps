@@ -529,11 +529,11 @@ outline: deep
 
 ### 自动加提示缓存标记
 
-设置名 `ClaudePromptCachingEnabled` · 类型 bool · 默认值 `false`
+设置名 `ClaudePromptCachingEnabled` · 类型 bool · 默认值 `true`
 
 位置：平台设置 › 网关 › 原生协议
 
-给 Anthropic 模型的请求加上 cache_control 标记，让上游缓存提示词。之后的请求按缓存价读取。它覆盖任意渠道类型上的 Claude、Opus、Sonnet、Haiku 模型，只作用于提示缓存设为「继承」的渠道；设为开或关的渠道自己决定，TTL 和标记哪些消息也由渠道决定。已自带 cache_control 的请求不改动。默认关闭。
+给 Anthropic 模型的请求加上 cache_control 标记，让上游缓存提示词。之后的请求按缓存价读取。它覆盖任意渠道类型上的 Claude、Opus、Sonnet、Haiku 模型，只作用于提示缓存设为「继承」的渠道；设为开或关的渠道自己决定，TTL 和标记哪些消息也由渠道决定。已自带 cache_control 的请求不改动。API Key 的提示缓存设置或 X-Modeltaps-Prompt-Cache 请求头会替自己的请求决定。默认开启。
 
 示例：
 

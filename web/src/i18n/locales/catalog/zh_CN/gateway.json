@@ -259,7 +259,7 @@
     },
     "ClaudePromptCachingEnabled": {
       "label": "自动加提示缓存标记",
-      "description": "给 Anthropic 模型的请求加上 cache_control 标记，让上游缓存提示词。之后的请求按缓存价读取。它覆盖任意渠道类型上的 Claude、Opus、Sonnet、Haiku 模型，只作用于提示缓存设为「继承」的渠道；设为开或关的渠道自己决定，TTL 和标记哪些消息也由渠道决定。已自带 cache_control 的请求不改动。默认关闭。",
+      "description": "给 Anthropic 模型的请求加上 cache_control 标记，让上游缓存提示词。之后的请求按缓存价读取。它覆盖任意渠道类型上的 Claude、Opus、Sonnet、Haiku 模型，只作用于提示缓存设为「继承」的渠道；设为开或关的渠道自己决定，TTL 和标记哪些消息也由渠道决定。已自带 cache_control 的请求不改动。API Key 的提示缓存设置或 X-Modeltaps-Prompt-Cache 请求头会替自己的请求决定。默认开启。",
       "examples": ["不发缓存标记的客户端，长系统提示词也会在上游缓存 5 分钟。", "只有自己打标记的客户端，以及设为开启的渠道，才用到缓存。"],
       "keywords": ["提示缓存", "cache_control", "缓存", "Anthropic", "成本"]
     },

@@ -2565,7 +2565,7 @@
       "card": "native-protocol",
       "type": "bool",
       "label": "Add prompt cache markers",
-      "description": "Adds cache_control markers to requests for Anthropic models so the upstream caches the prompt. Later requests then read it at the cache price. It covers Claude, Opus, Sonnet and Haiku models on any channel type, and applies on channels whose prompt caching setting is Inherit; a channel set to On or Off decides for itself, along with the TTL and which messages are marked. Requests that already carry cache_control are left alone. Off by default.",
+      "description": "Adds cache_control markers to requests for Anthropic models so the upstream caches the prompt. Later requests then read it at the cache price. It covers Claude, Opus, Sonnet and Haiku models on any channel type, and applies on channels whose prompt caching setting is Inherit; a channel set to On or Off decides for itself, along with the TTL and which messages are marked. Requests that already carry cache_control are left alone. An API key's prompt caching setting, or the X-Modeltaps-Prompt-Cache header, decides for its own requests. On by default.",
       "examples": [
         {
           "value": "true",

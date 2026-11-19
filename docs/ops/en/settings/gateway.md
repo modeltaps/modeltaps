@@ -529,11 +529,11 @@ See also: [Claude Messages API](./gateway.md#ClaudeAPIEnabled) · [Show Gemini t
 
 ### Add prompt cache markers
 
-Key `ClaudePromptCachingEnabled` · Type bool · Default `false`
+Key `ClaudePromptCachingEnabled` · Type bool · Default `true`
 
 Where: Platform settings › Gateway › Native protocols
 
-Adds cache_control markers to requests for Anthropic models so the upstream caches the prompt. Later requests then read it at the cache price. It covers Claude, Opus, Sonnet and Haiku models on any channel type, and applies on channels whose prompt caching setting is Inherit; a channel set to On or Off decides for itself, along with the TTL and which messages are marked. Requests that already carry cache_control are left alone. Off by default.
+Adds cache_control markers to requests for Anthropic models so the upstream caches the prompt. Later requests then read it at the cache price. It covers Claude, Opus, Sonnet and Haiku models on any channel type, and applies on channels whose prompt caching setting is Inherit; a channel set to On or Off decides for itself, along with the TTL and which messages are marked. Requests that already carry cache_control are left alone. An API key's prompt caching setting, or the X-Modeltaps-Prompt-Cache header, decides for its own requests. On by default.
 
 Examples:
 

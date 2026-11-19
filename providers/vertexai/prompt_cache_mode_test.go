@@ -15,6 +15,9 @@ const plainNativeBody = `{"model":"claude-sonnet-4-5-20250929","max_tokens":256,
 
 // A key or request set to "on" gets breakpoints on Claude over Vertex AI, natively and from chat.
 func TestVertexClaudeGetsBreakpointsWhenModeIsOn(t *testing.T) {
+	old := config.ClaudePromptCachingEnabled
+	config.ClaudePromptCachingEnabled = false
+	t.Cleanup(func() { config.ClaudePromptCachingEnabled = old })
 	provider, seen, ctx := newVertexClaudeProvider(t, plainNativeBody, nil, http.StatusOK, "application/json", nativeResponseBody)
 	ctx.Set(config.GinPromptCacheModeKey, config.PromptCacheModeOn)
 	if _, errWithCode := provider.CreateClaudeChat(claudeRequestFromBody(t, plainNativeBody)); errWithCode != nil {
@@ -46,6 +49,9 @@ func TestVertexClaudeGetsBreakpointsWhenModeIsOn(t *testing.T) {
 }
 
 func TestVertexClaudeLeftAloneWhenAuto(t *testing.T) {
+	old := config.ClaudePromptCachingEnabled
+	config.ClaudePromptCachingEnabled = false
+	t.Cleanup(func() { config.ClaudePromptCachingEnabled = old })
 	provider, seen, _ := newVertexClaudeProvider(t, plainNativeBody, nil, http.StatusOK, "application/json", nativeResponseBody)
 	if _, errWithCode := provider.CreateClaudeChat(claudeRequestFromBody(t, plainNativeBody)); errWithCode != nil {
 		t.Fatal(errWithCode.Message)

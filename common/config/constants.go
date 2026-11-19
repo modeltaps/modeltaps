@@ -326,11 +326,21 @@ var ModelSupplyEnabled = false
 // priority tier: "balance" (by weight) or "failover" (the heaviest takes every request).
 var SupplyModeDefault = "balance"
 
-// SupplyCostOrder decides how far a supply's cost reorders a model's supplies:
-// "priority" (default): priorities come first; within one priority the cheapest supplies take
-// the requests and dearer ones back them up. "cost": the cheapest supplies of the model take the
-// requests whatever their priority, and priority only orders supplies of the same cost.
+// SupplyCostOrder decides whether a supply's cost reorders a model's supplies:
+// "priority" (default): it does not; priorities and weights decide. "cost": supplies cheaper by at
+// least SupplyCostMinSavingPercent, and healthy enough (SupplyCostMinSuccessPercent), take the
+// requests whatever their priority; priority and weight order supplies of about the same cost.
 var SupplyCostOrder = "priority"
+
+// SupplyCostMinSavingPercent is how much cheaper (percent of the dearer cost) a supply must be to
+// take requests ahead of another under the "cost" SupplyCostOrder; closer costs count as the same
+// and share by priority and weight.
+var SupplyCostMinSavingPercent = 5.0
+
+// SupplyCostMinSuccessPercent is the success rate a supply needs over the recent hours to be put
+// ahead for its cost under the "cost" SupplyCostOrder; a supply below it is ordered as if its cost
+// were unknown. 0 turns the check off.
+var SupplyCostMinSuccessPercent = 95.0
 
 // PauseRulesEnabled sends every relay failure through the pause rules (see model.PauseRule):
 // channels or models are paused for a while and resumed automatically, instead of the older
@@ -516,9 +526,11 @@ var GeminiAPIEnabled = true
 // Claude
 var ClaudeAPIEnabled = true
 
-// Claude Prompt Caching 自动注入全局兜底开关（渠道 Plugin 可按 on/off 覆盖）。
-// 默认关闭：全局关 + 渠道 inherit 时零注入、零行为变化。
-var ClaudePromptCachingEnabled = false
+// ClaudePromptCachingEnabled is the site-wide switch for adding Claude prompt cache breakpoints,
+// used by channels whose prompt_caching plugin is inherit. It is on by default: agents and multi-turn chats resend the same long
+// prefix, and a cache read costs a tenth of input. A key that should not pay for cache writes is
+// set to Off (PROTO-9).
+var ClaudePromptCachingEnabled = true
 
 const (
 	RoleGuestUser    = 0
