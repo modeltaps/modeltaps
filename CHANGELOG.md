@@ -39,16 +39,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   decision model (Jev for coding, a general decision model otherwise); a template asks before it
   replaces what was typed. Each route leads with its description, which is what the decision model
   reads; the short name is optional.
-- Supplies already in use are reviewed against the net revenue when prices sync and at startup:
-  backups that would lose money wait for review, supplies taking requests are reported but left on.
-  Nothing is held until the markup has been saved once. Switching a supply on accepts its cost,
-  and the pending supplies of a channel can be confirmed at once from a supply's menu.
-- A platform markup (Platform settings, Billing): every request is charged the catalog price
-  times (1 + markup) times the group ratio, to cover channel fees, payment costs and the margin.
-  0 by default, which charges the catalog price as before. Next to it, the payment cost (card fees,
-  currency conversion) is not charged; it lowers the net revenue channel costs are checked against.
-  A preview shows, for the values being typed, each channel's break-even markup and margin and the
-  supplies that would lose money.
+- Supplies already in use are reviewed against the price line (the default group's ratio less the
+  payment cost) when prices sync and at startup: backups that would lose money wait for review,
+  supplies taking requests are reported but left on. Nothing is held while that line is 1 or below.
+  Switching a supply on accepts its cost, and the pending supplies of a channel can be confirmed at
+  once from a supply's menu.
+- A payment cost setting (Platform settings, Billing) for card fees and currency conversion. It is
+  not charged; it lowers the price line channel costs are checked against. The settings preview
+  takes a group ratio to try and lists what each user group brings in.
+- Channels can record top-ups (cash paid, credit received); the channel's fee rate is derived from
+  the latest ten. Vercel AI Gateway channels default to a 3% fee, which Vercel leaves unpublished;
+  untouched channels get it on upgrade.
+- `SupplyCostOrder` (Gateway settings, next to the default supply mode) decides how far cost
+  reorders a model's supplies: `priority` (default) keeps cost within one priority, `cost` lets the
+  cheapest supplies take the requests whatever their priority. A new operator page explains prices,
+  costs and supply order with worked examples.
+- A settings catalog: every platform setting and the fields operators set on channels, models,
+  supplies, groups, routing policies, organizations and API keys is described in one place. Fields
+  on the settings page take their label and a **?** help (values, examples, related settings, the
+  key) from it; the command palette finds any single setting by name, key or keyword and opens the
+  field; a **Modified settings** page lists every value that differs from its default, with a
+  restore button. The operator docs get a generated settings reference in all four languages.
+- `/mcp/admin`, a read-only MCP server for root, so an assistant can search settings, explain one
+  with its current and default value, tell the value in effect and where it comes from, and search
+  the operator docs (now embedded in the binary).
+- An **Alerts** page in platform admin lists open alerts (models the upstream renamed or dropped,
+  lasting price changes, failing credentials, catalog gaps) with a link to where each is handled,
+  and the alerts closed in the last 30 days; the sidebar item shows the open count. A condition is
+  told once: one that goes on, shrinks or survives a restart sends nothing again, and a check that
+  finds nothing closes the alert.
+- DeepInfra, Novita, Hugging Face, Chutes, Cerebras and SambaNova channels sync prices from the
+  platform's own public model list instead of models.dev, and the channel panel shows and refreshes
+  the upstream price list for every provider that keeps one.
+- New 404, crash and "new version available" screens: status code, one-line explanation, the
+  requested address and a way out, each with a short scene in the style of the home page. The crash
+  screen tells a stale bundle after a redeploy apart from a real error.
 - New supplies that cost more than the quote wait for review. When a channel is created, or the
   daily check finds a new upstream model on a channel that adds them on its own, a supply whose
   channel cost is above the model's quoted price is switched off and waits on the model's Supplies
@@ -100,8 +125,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   say which policies are called with it.
 - The platform admin page and the settings card formerly called Auto routing are now called Routing
   policies, since they hold fallback policies as well.
-- The price check for new supplies compares a supply's cost with what the price brings in (the
-  catalog price with the markup, less the payment cost) instead of the catalog price.
+- A request is charged the catalog (official) price times its group ratio, whatever channel serves
+  it; the site's margin is the default group's ratio. Channel costs (list price with the channel's
+  fee) only steer routing and the price check: within one priority the cheapest supplies take the
+  requests and a dearer one is a backup, and supplies of unknown cost come last.
+- The price check for new supplies compares a supply's cost with the price line (the default
+  group's ratio less the payment cost) instead of the catalog price.
+- Price change notices count only models users are served, and only a move of 10% or more in input
+  or output price that the next sync still finds. An automatic increase the upstream takes back
+  before then is undone quietly. Locked prices below the upstream price are still told at once.
+- Upstream model drift counts a missing model only when a published public model is served through
+  it; models the upstream renamed are reported as renames, and the models tab can switch the channel
+  and its supplies to the new names in one step. Models the upstream added are shown as news, not
+  as something to handle.
 - The built-in official prices include `gpt-image-1.5`, `chatgpt-image-latest` ($8 image in, $5
   text in, $32 image out, $10 text out per 1M tokens) and `gpt-image-1-mini` ($2.50 image in, $2
   text in, $8 image out). Synced prices billed their image input at the text rate.
@@ -111,14 +147,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   policy by its bare name must add the `policy/` prefix. The "replaced by your policy" marks are
   gone, and an empty **Managed** tab shows the same empty page as the other lists.
 
+### Removed
+
+- The "Never charge below the channel cost" switch and its statistics, added in 0.4.0: it made a
+  model's price depend on routing. Upgrade note: a platform markup saved before this release is
+  folded into every user group's ratio once at startup, so charges stay the same.
+
 ### Fixed
 
 - Realtime sessions pass the upstream's close frame (code and reason) on to the client instead of
   dropping the connection, so a client sees why the provider ended the session.
 - The expected upstream charge in the consume log is the channel's list price without its fee,
   the basis upstreams report and bill on, so reconciliation no longer shows the fee as a
-  difference. The cost is logged for every request whose channel cost is known, with the cost
-  floor off too.
+  difference. The cost is logged for every request whose channel cost is known.
 - Alibaba Cloud OSS image storage signs uploads and links with V4 signatures, so it works with
   accounts created since March 2025 and buckets created since September 2025, which reject V1
   signatures. V4 needs the bucket region: the new `storage.alioss.region` setting, derived from a
