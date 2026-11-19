@@ -15,6 +15,19 @@ The upgrade scripts below run `docker pull ghcr.io/modeltaps/modeltaps:latest` a
 From the version that stores API keys as hashes, the database keeps only the hash of each key and the plaintext is cleared. This step cannot be undone: downgrading to an older version makes every API key invalid. Back up the database before upgrading, and restore that backup together with the old version if you need to roll back. The version that introduces management keys does the same with each account's access token: it is moved to a hash and the plaintext cleared, so after a downgrade no old access token works.
 :::
 
+### Upgrading from 0.4.0 to 0.5.0
+
+Do these before starting the new version; the database is migrated by itself.
+
+- **Docker Compose:** add `REDIS_PASSWORD` to `.env` (`openssl rand -hex 32`). The bundled Redis requires it and `docker compose up` stops without it.
+- **Set `ENCRYPTION_KEY`** (`openssl rand -base64 32`) if it is not set yet. The first start moves image storage from the `storage:` section of `config.yaml` (or `STORAGE_*`) into the platform settings, and its secrets are stored encrypted only with a key. The section is not read afterwards.
+- **Behind a reverse proxy that rewrites the Host header,** set the server address in the settings: cookie-authenticated changes must come from the site's own origin.
+- **Clients of own routing policies** (personal and organization) must call them as `policy/<name>`; a bare name now means a managed policy or a model.
+- **Scripts calling these endpoints with GET** must use POST: `/api/channel/test`, `/api/channel/test/:id`, `/api/channel/check/:id`, `/api/channel/update_balance`, `/api/channel/update_balance/:id`, `/api/user/logout`, `/api/user/token`, `/api/verification`, `/api/reset_password`.
+- **Billing:** the "Never charge below the channel cost" switch is gone. Requests are charged the catalog price times the group ratio; to keep a margin, raise the default group's ratio.
+
+A user who lost both their authenticator and their recovery codes can have two-step verification turned off by root with `DELETE /api/user/<id>/totp`.
+
 ### Using a control panel scheduled task
 
 If you deploy through an operations panel such as aaPanel, you can add a scheduled task directly.

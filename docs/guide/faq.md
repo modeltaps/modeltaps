@@ -62,3 +62,17 @@ Yes. Click **Transfer quota in** on the organization's **Overview** page to move
 **How do I review the organization's spend?**
 
 The organization's **Usage** page breaks spend down by member, API key, model and date; whether ordinary members can view everyone's usage is controlled by the organization settings.
+
+## Account and sign-in
+
+**How do I turn on two-step verification?**
+
+Open **Settings → Sign-in & security**, choose **Turn on two-step verification**, scan the QR code with an authenticator app (or enter the key shown under it) and type the 6-digit code from the app. You then get ten recovery codes, shown only once: copy or download them, keep them in a password manager, and click **I've saved them**. From then on, signing in with a password or an email code also asks for a code from the app. Passkeys and single sign-on are unchanged.
+
+**I lost my phone. How do I sign in?**
+
+On the code step, use one of your recovery codes instead; each works once. Once signed in, generate new recovery codes or turn two-step verification off in **Sign-in & security** (either needs a code from the app or a recovery code). If you have neither, ask the site administrator to turn it off for your account.
+
+**Why can't I sign in after a few wrong passwords?**
+
+After several failed attempts, sign-in for that account from your address pauses for a while. Wait a few minutes and try again, or sign in another way, such as a passkey or an email code.

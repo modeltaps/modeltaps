@@ -15,6 +15,19 @@ lastUpdated: true
 升级到存储 API Key 哈希的版本后，数据库里只保留 key 的哈希，明文已清空，这一步无法回滚。降级回旧版本会让所有 API Key 失效。升级前请备份数据库；需要回退时连同数据库备份一起恢复。引入管理密钥的版本同样把每个账户的访问令牌转为哈希并清空明文，降级后旧的访问令牌全部失效。
 :::
 
+### 从 0.4.0 升级到 0.5.0
+
+启动新版本前先做这几件事；数据库会自动迁移。
+
+- **Docker Compose：** 在 `.env` 里加上 `REDIS_PASSWORD`（`openssl rand -hex 32`）。自带的 Redis 必须设密码，没有它 `docker compose up` 会停下。
+- **设置 `ENCRYPTION_KEY`**（`openssl rand -base64 32`），如果还没设。首次启动会把 `config.yaml` 的 `storage:` 段（或 `STORAGE_*`）搬进平台设置，其中的密钥只有设了这个变量才会加密存储。之后不再读取该段。
+- **反向代理改写了 Host 头的**，请在设置里填写服务器地址：用 Cookie 登录的修改操作必须来自本站。
+- **调用自建路由策略的客户端**（个人和组织）要改用 `policy/<名字>`；裸名字现在只指平台策略或模型。
+- **用 GET 调用这些接口的脚本**要改成 POST：`/api/channel/test`、`/api/channel/test/:id`、`/api/channel/check/:id`、`/api/channel/update_balance`、`/api/channel/update_balance/:id`、`/api/user/logout`、`/api/user/token`、`/api/verification`、`/api/reset_password`。
+- **计费：**「不低于渠道成本扣费」开关已删除。请求按目录价 × 分组倍率扣费；要保留利润，调高默认分组的倍率。
+
+用户同时丢了验证器和恢复码时，root 可以用 `DELETE /api/user/<id>/totp` 为其关闭两步验证。
+
 ### 通过面板计划任务
 
 若使用宝塔等运维面板部署，可直接添加计划任务。

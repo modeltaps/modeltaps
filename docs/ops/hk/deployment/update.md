@@ -15,6 +15,19 @@ lastUpdated: true
 升級到儲存 API Key 雜湊的版本後，數據庫裡只保留 key 的雜湊，明文已清空，這一步無法回滾。降級回舊版本會讓所有 API Key 失效。升級前請備份數據庫；需要回退時連同數據庫備份一起還原。引入管理密鑰的版本同樣把每個帳戶的存取權杖轉為雜湊並清空明文，降級後舊的存取權杖全部失效。
 :::
 
+### 從 0.4.0 升級到 0.5.0
+
+啟動新版本前先做這幾件事；數據庫會自動遷移。
+
+- **Docker Compose：** 在 `.env` 裡加上 `REDIS_PASSWORD`（`openssl rand -hex 32`）。內置的 Redis 必須設密碼，沒有它 `docker compose up` 會停下。
+- **設定 `ENCRYPTION_KEY`**（`openssl rand -base64 32`），如果還沒設。首次啟動會把 `config.yaml` 的 `storage:` 段（或 `STORAGE_*`）搬進平台設定，其中的密鑰只有設了這個變數才會加密存儲。之後不再讀取該段。
+- **反向代理改寫了 Host 標頭的**，請在設定裡填寫伺服器地址：用 Cookie 登入的修改操作必須來自本站。
+- **調用自建路由策略的客戶端**（個人和組織）要改用 `policy/<名字>`；裸名字現在只指平台策略或模型。
+- **用 GET 調用這些接口的腳本**要改成 POST：`/api/channel/test`、`/api/channel/test/:id`、`/api/channel/check/:id`、`/api/channel/update_balance`、`/api/channel/update_balance/:id`、`/api/user/logout`、`/api/user/token`、`/api/verification`、`/api/reset_password`。
+- **計費：**「不低於渠道成本扣費」開關已刪除。請求按目錄價 × 分組倍率扣費；要保留利潤，調高預設分組的倍率。
+
+用戶同時丟了驗證器和恢復碼時，root 可以用 `DELETE /api/user/<id>/totp` 為其關閉兩步驗證。
+
 ### 透過面板計劃任務
 
 若使用寶塔等運維面板部署，可直接新增計劃任務。
