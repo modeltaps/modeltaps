@@ -58,10 +58,15 @@ type modelEndpointsResponse struct {
 // vendor's own hosting when the two differ.
 var firstPartyAliases = map[string]string{"spacexai": "xai"}
 
-// hostPriceFloor drops hosts priced below this share of the vendor's price: so far below the
-// vendor they are most likely a different deployment (a smaller context, a cut-down model, a
-// promotion about to end) rather than the same model served cheaper.
+// hostPriceFloor drops hosts with any price (input or output) below this share of the vendor's:
+// so far below the vendor they are most likely a different deployment (a smaller context, a
+// cut-down model, a promotion about to end, an input price that only pays with a long output)
+// rather than the same model served cheaper.
 const hostPriceFloor = 0.3
+
+// maxHostOrder is how many hosts the order names. Hosts left out still serve when those fail, as
+// the gateway falls back past the order; a short list keeps requests small and readable.
+const maxHostOrder = 6
 
 func (e modelEndpoint) priced() bool {
 	return parseUSD(e.Pricing.Prompt) > 0 || parseUSD(e.Pricing.Completion) > 0
@@ -105,17 +110,26 @@ func (e modelEndpoint) healthy() bool {
 	return true
 }
 
-// costTo is the host's price over the vendor's, the dearer of input and output.
-func (e modelEndpoint) costTo(vendor modelEndpoint) float64 {
-	ratio := 0.0
+// costTo is the host's price over the vendor's: the dearer of input and output (the cost it is
+// ordered by) and the cheaper one (checked against hostPriceFloor).
+func (e modelEndpoint) costTo(vendor modelEndpoint) (dearer, cheaper float64) {
+	first := true
 	over := func(c, v float64) {
-		if v > 0 && c/v > ratio {
-			ratio = c / v
+		if v <= 0 {
+			return
 		}
+		r := c / v
+		if first || r > dearer {
+			dearer = r
+		}
+		if first || r < cheaper {
+			cheaper = r
+		}
+		first = false
 	}
 	over(parseUSD(e.Pricing.Prompt), parseUSD(vendor.Pricing.Prompt))
 	over(parseUSD(e.Pricing.Completion), parseUSD(vendor.Pricing.Completion))
-	return ratio
+	return dearer, cheaper
 }
 
 // planHosts orders the hosts of a model hosted by several providers, returning the providers'
@@ -125,8 +139,8 @@ func (e modelEndpoint) costTo(vendor modelEndpoint) float64 {
 //
 // The vendor's own hosting comes first. Other hosts follow, cheapest first, if they qualify:
 // serving, up at least SupplyCostMinSuccessPercent of the last day, full precision, a context no
-// shorter than the model's, prompt caching when the vendor caches, and a price no lower than
-// hostPriceFloor of the vendor's. With SupplyCostOrder "cost", qualifying hosts cheaper than the
+// shorter than the model's, prompt caching when the vendor caches, and input and output prices no
+// lower than hostPriceFloor of the vendor's. The order names at most maxHostOrder hosts. With SupplyCostOrder "cost", qualifying hosts cheaper than the
 // vendor by at least SupplyCostMinSavingPercent go ahead of it, the way cheaper supplies do. A
 // vendor that is not serving or up enough goes after the qualifying hosts.
 func planHosts(m gatewayModel, endpoints []modelEndpoint) (order []string, price endpointPricing, ok bool) {
@@ -159,8 +173,8 @@ func planHosts(m gatewayModel, endpoints []modelEndpoint) (order []string, price
 		if vendor.caches() && !e.caches() {
 			continue
 		}
-		cost := e.costTo(*vendor)
-		if cost < hostPriceFloor {
+		cost, lowest := e.costTo(*vendor)
+		if lowest < hostPriceFloor {
 			continue
 		}
 		hosts = append(hosts, host{e, cost})
@@ -193,6 +207,9 @@ func planHosts(m gatewayModel, endpoints []modelEndpoint) (order []string, price
 			first = hosts[0].e.Pricing
 		}
 		names = append(names, vendor.ProviderName)
+	}
+	if len(names) > maxHostOrder {
+		names = names[:maxHostOrder]
 	}
 	return names, first, true
 }

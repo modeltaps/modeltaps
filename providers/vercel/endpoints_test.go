@@ -48,6 +48,7 @@ func TestPlanHosts(t *testing.T) {
 		ep("deepinfra", "0.00000015", "0.000001875"),
 		ep("alibaba", "0.0000005", "0.000003"),
 		ep("runinfra", "0.00000008", "0.00000032"), // 11% of the vendor: left out
+		ep("relace", "0.00000003", "0.0000029"),    // input at 6% of the vendor: left out
 		short, quant, flaky, down, nocache,
 	}
 	order, price, ok := planHosts(m, endpoints)
@@ -79,6 +80,14 @@ func TestPlanHosts(t *testing.T) {
 	grok := []modelEndpoint{ep("vertex", "0.000002", "0.000006"), ep("xai", "0.00000125", "0.0000025")}
 	if order, _, _ := planHosts(gatewayModel{Id: "spacexai/grok-4.20-reasoning"}, grok); names(order) != "xai,vertex" {
 		t.Errorf("aliased vendor: %v", order)
+	}
+	// At most maxHostOrder hosts are named.
+	many := []modelEndpoint{ep("zai", "0.0000014", "0.0000044")}
+	for _, h := range []string{"a", "b", "c", "d", "e", "f", "g"} {
+		many = append(many, ep(h, "0.0000014", "0.0000044"))
+	}
+	if order, _, _ := planHosts(gatewayModel{Id: "zai/glm-5.3"}, many); len(order) != maxHostOrder || order[0] != "zai" {
+		t.Errorf("long order: %v", order)
 	}
 	if _, _, ok := planHosts(gatewayModel{Id: "meta/llama-4-scout"}, []modelEndpoint{ep("bedrock", "0.00000017", "0.00000066")}); ok {
 		t.Error("planned without the vendor")
@@ -176,7 +185,7 @@ func TestFetchPricedModels(t *testing.T) {
 	}
 	near := func(a, b float64) bool { return a > b-1e-9 && a < b+1e-9 }
 	if q := byModel["alibaba/qwen3.8-27b"]; q == nil || !near(q.Input, 0.5) || !near(q.Output, 3) || !near(q.CacheRead, 0.1) ||
-		!near(q.CacheWrite, 0.625) || q.ProviderOrder != "alibaba,wafer" {
+		!near(q.CacheWrite, 0.625) || q.ProviderOrder != "alibaba" {
 		t.Errorf("qwen = %+v", q)
 	}
 	if b := byModel["broken/model"]; b == nil || !near(b.Input, 1) || b.ProviderOrder != "" {
