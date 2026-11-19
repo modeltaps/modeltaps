@@ -138,6 +138,7 @@ func (p *VertexAIProvider) getClaudeNativeRequest(request *claude.ClaudeRequest)
 	// context_management, ...). NewRequestWithCustomParamsBytes still merges the channel's
 	// custom parameters into the body.
 	if patched, ok := p.patchClaudeRequestBody(request); ok {
+		patched = claude.ApplyPromptCachingBytes(p.Context, p.Channel, request.Model, patched)
 		return p.NewRequestWithCustomParamsBytes(http.MethodPost, fullRequestURL, patched, headers, request.Model)
 	}
 
@@ -145,6 +146,7 @@ func (p *VertexAIProvider) getClaudeNativeRequest(request *claude.ClaudeRequest)
 	// builds a synthetic request).
 	copyRequest := *request
 	copyRequest.Model = ""
+	claude.ApplyPromptCachingStruct(p.Context, p.Channel, request.Model, &copyRequest)
 	vertexRequest := &category.ClaudeRequest{
 		ClaudeRequest:    &copyRequest,
 		AnthropicVersion: category.AnthropicVersion,

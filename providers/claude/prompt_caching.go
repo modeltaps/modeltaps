@@ -421,3 +421,27 @@ func injectLastUserBytes(body []byte, cc map[string]any) ([]byte, bool) {
 	}
 	return body, false
 }
+
+// ApplyPromptCachingBytes adds cache breakpoints to a Messages body sent to a cloud platform
+// (Vertex AI, Bedrock) when the request's mode, the channel and the site-wide switch call for
+// them, and records the result for the request log. The platforms take cache_control in the
+// body as Anthropic does; no beta header is added for them.
+func ApplyPromptCachingBytes(c *gin.Context, channel *model.Channel, modelName string, body []byte) []byte {
+	cfg := GetPromptCachingConfig(c, channel, modelName)
+	if cfg == nil {
+		return body
+	}
+	out, injected := InjectPromptCachingBytes(body, cfg)
+	RecordPromptCachingInjection(c, cfg, injected)
+	return out
+}
+
+// ApplyPromptCachingStruct is ApplyPromptCachingBytes for a request built as a struct (a chat
+// completions request converted to Claude, or the fallback when no raw body is available).
+func ApplyPromptCachingStruct(c *gin.Context, channel *model.Channel, modelName string, req *ClaudeRequest) {
+	cfg := GetPromptCachingConfig(c, channel, modelName)
+	if cfg == nil || req == nil {
+		return
+	}
+	RecordPromptCachingInjection(c, cfg, InjectPromptCachingStruct(req, cfg))
+}

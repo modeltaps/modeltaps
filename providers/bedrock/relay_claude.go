@@ -118,6 +118,7 @@ func (p *BedrockProvider) buildInvokeBody(request *claude.ClaudeRequest) ([]byte
 	// 指纹/未知字段），仅去掉 Bedrock 不接受的 model/stream 并注入 anthropic_version；
 	// 取不到原始字节时回退结构体序列化。两条路径都经 custom_params 合并。
 	if patched, ok := p.patchPassThroughBody(request); ok {
+		patched = claude.ApplyPromptCachingBytes(p.Context, p.Channel, request.Model, patched)
 		req, errWithCode = p.NewRequestWithCustomParamsBytes(http.MethodPost, "", patched, headers, request.Model)
 	} else {
 		copyRequest := *request
@@ -127,6 +128,7 @@ func (p *BedrockProvider) buildInvokeBody(request *claude.ClaudeRequest) ([]byte
 		}
 		bedrockRequest.Model = ""
 		bedrockRequest.Stream = false
+		claude.ApplyPromptCachingStruct(p.Context, p.Channel, request.Model, &copyRequest)
 		req, errWithCode = p.NewRequestWithCustomParams(http.MethodPost, "", bedrockRequest, headers, request.Model)
 	}
 	if errWithCode != nil {

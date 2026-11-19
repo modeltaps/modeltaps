@@ -3,6 +3,7 @@ package vertexai
 import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/requester"
+	"github.com/modeltaps/modeltaps/providers/claude"
 	"github.com/modeltaps/modeltaps/providers/gemini"
 	"github.com/modeltaps/modeltaps/providers/vertexai/category"
 	"github.com/modeltaps/modeltaps/types"
@@ -69,6 +70,10 @@ func (p *VertexAIProvider) getChatRequest(request *types.ChatCompletionRequest) 
 	vertexaiRequest, errWithCode := p.Category.ChatComplete(request)
 	if errWithCode != nil {
 		return nil, errWithCode
+	}
+	// Claude on Vertex AI takes cache breakpoints the way Anthropic does.
+	if claudeRequest, ok := vertexaiRequest.(*category.ClaudeRequest); ok {
+		claude.ApplyPromptCachingStruct(p.Context, p.Channel, request.Model, claudeRequest.ClaudeRequest)
 	}
 
 	// 对于 Gemini 模型，需要清理请求数据

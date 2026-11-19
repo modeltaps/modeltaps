@@ -5,6 +5,7 @@ import (
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/providers/bedrock/category"
+	"github.com/modeltaps/modeltaps/providers/claude"
 	"github.com/modeltaps/modeltaps/types"
 	"encoding/json"
 	"io"
@@ -84,6 +85,10 @@ func (p *BedrockProvider) buildChatBody(request *types.ChatCompletionRequest) ([
 	bedrockRequest, errWithCode := p.Category.ChatComplete(request)
 	if errWithCode != nil {
 		return nil, "", errWithCode
+	}
+	// Claude on Bedrock takes cache breakpoints the way Anthropic does.
+	if claudeRequest, ok := bedrockRequest.(*category.ClaudeRequest); ok {
+		claude.ApplyPromptCachingStruct(p.Context, p.Channel, request.Model, claudeRequest.ClaudeRequest)
 	}
 
 	body, err := json.Marshal(bedrockRequest)
