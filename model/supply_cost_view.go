@@ -168,10 +168,16 @@ type ModelCostSummary struct {
 	MaxInput  *float64 `json:"max_input,omitempty"`
 	MaxOutput *float64 `json:"max_output,omitempty"`
 	MaxFlat   *float64 `json:"max_flat,omitempty"`
+	// CheapestToCatalog is the lowest cost over the catalog price (SupplyCost.CostToCatalog) among
+	// the available supplies whose cost is known, 0 when none is: how the cheapest supply compares
+	// with the model's base price. CheapestAboveQuote says even that one is above the quote.
+	CheapestToCatalog  float64 `json:"cheapest_to_catalog,omitempty"`
+	CheapestAboveQuote bool    `json:"cheapest_above_quote,omitempty"`
 }
 
 // ModelCostSummaries returns the summary of every public model that has a supply worth noting
-// (above the quote or of unknown cost); models with nothing to note are left out.
+// (above the quote or of unknown cost) or an available supply of known cost; models with neither
+// are left out.
 func ModelCostSummaries() (map[string]*ModelCostSummary, error) {
 	views, err := GetModelSupplyViews("", 0)
 	if err != nil {
@@ -200,6 +206,11 @@ func summarizeSupplyCosts(views []*ModelSupplyView) map[string]*ModelCostSummary
 			continue
 		}
 		serving := v.Traffic != SupplyTrafficBackup
+		if v.Cost.Known && v.Cost.CostToCatalog > 0 {
+			if s := get(v.Model); s.CheapestToCatalog == 0 || v.Cost.CostToCatalog < s.CheapestToCatalog {
+				s.CheapestToCatalog, s.CheapestAboveQuote = v.Cost.CostToCatalog, v.Cost.AboveQuote
+			}
+		}
 		switch {
 		case !v.Cost.Known && serving:
 			get(v.Model).CostUnknown++

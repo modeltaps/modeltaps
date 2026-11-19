@@ -76,6 +76,10 @@ func TestSupplyCostViews(t *testing.T) {
 	if summary == nil || summary.AboveQuote != 0 || summary.AboveQuoteBackup != 2 || summary.CostUnknown != 0 {
 		t.Fatalf("summary = %+v", summary)
 	}
+	// The cheapest available supply of known cost is at or below the catalog price.
+	if summary.CheapestToCatalog <= 0 || summary.CheapestToCatalog > 1 || summary.CheapestAboveQuote {
+		t.Errorf("cheapest: %v above %v", summary.CheapestToCatalog, summary.CheapestAboveQuote)
+	}
 
 	// A model only the aggregator supplies takes its traffic above the quote.
 	if err := DB.Create(&ModelInfo{Model: "n", Status: ModelStatusPublished}).Error; err != nil {
@@ -87,6 +91,9 @@ func TestSupplyCostViews(t *testing.T) {
 	nSummary := summarizeSupplyCosts(nViews)["n"]
 	if nSummary == nil || nSummary.AboveQuote != 1 || *nSummary.MaxOutput < 34.65-1e-9 || *nSummary.MaxOutput > 34.65+1e-9 {
 		t.Fatalf("serving above the quote: summary = %+v", nSummary)
+	}
+	if nSummary.CheapestToCatalog <= 1 || !nSummary.CheapestAboveQuote {
+		t.Errorf("only supply above the quote: cheapest %v above %v", nSummary.CheapestToCatalog, nSummary.CheapestAboveQuote)
 	}
 
 	// Failover: the heaviest of the cheapest supplies takes the traffic, the others are backups.

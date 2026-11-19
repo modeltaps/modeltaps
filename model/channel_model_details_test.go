@@ -11,7 +11,7 @@ import (
 func setupChannelModelDetailsDB(t *testing.T) {
 	t.Helper()
 	setupModelInfoTestDB(t)
-	if err := DB.AutoMigrate(&Statistics{}, &ModelSupply{}, &ModelLibraryEntry{}, &ModelLibraryHost{}, &ChannelPrice{}); err != nil {
+	if err := DB.AutoMigrate(&Statistics{}, &ModelSupply{}, &ModelLibraryEntry{}, &ModelLibraryHost{}, &ChannelPrice{}, &Channel{}); err != nil {
 		t.Fatal(err)
 	}
 	old := config.ModelSupplyEnabled
@@ -185,6 +185,55 @@ func TestBuildChannelModelDetailsKind(t *testing.T) {
 	for _, d := range details {
 		if d.Kind != want[d.Model] {
 			t.Errorf("%s kind = %q, want %q", d.Model, d.Kind, want[d.Model])
+		}
+	}
+}
+
+// Each public model a channel's listed model serves carries the channel's cost against the base
+// sell price, read from the channel's price list, so the panel can mark models dearer than they
+// sell for.
+func TestBuildChannelModelDetailsCost(t *testing.T) {
+	setupChannelModelDetailsDB(t)
+	config.ModelSupplyEnabled = true
+	oldPricing := PricingInstance
+	// Ratio units: $2 / $6 per million tokens.
+	PricingInstance = &Pricing{Prices: map[string]*Price{
+		"grok-4.7": {Model: "grok-4.7", Type: TokensPriceType, Input: 1, Output: 3},
+	}, Match: []string{}}
+	t.Cleanup(func() { PricingInstance = oldPricing })
+	baseURL := "https://api.venice.example"
+	if err := DB.Create(&Channel{Id: 12, Name: "venice", BaseURL: &baseURL}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := DB.Create(&ChannelPrice{ChannelId: 12, Model: "grok-4-7", Input: 2.27, Output: 6.8}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := DB.Create(&ModelSupply{Model: "grok-4.7", ChannelId: 12, UpstreamModel: "grok-4-7", Enabled: true}).Error; err != nil {
+		t.Fatal(err)
+	}
+	details, err := BuildChannelModelDetails(12, []string{"grok-4-7"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(details) != 1 || len(details[0].Public) != 1 {
+		t.Fatalf("details = %+v", details)
+	}
+	cost := details[0].Public[0].Cost
+	if cost == nil || !cost.Known || cost.Source != CostSourceChannelPrice || !cost.AboveQuote {
+		t.Fatalf("cost = %+v", cost)
+	}
+	if *cost.Input < 2.269 || *cost.Input > 2.271 || *cost.Output < 6.79 || *cost.Output > 6.81 {
+		t.Errorf("cost = %v / %v, want 2.27 / 6.8", *cost.Input, *cost.Output)
+	}
+
+	// A list not saved to a channel has no cost.
+	details, err = BuildChannelModelDetails(0, []string{"grok-4-7"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range details[0].Public {
+		if p.Cost != nil {
+			t.Errorf("unsaved list cost = %+v", p.Cost)
 		}
 	}
 }

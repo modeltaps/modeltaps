@@ -19,6 +19,9 @@ type ChannelModelPublic struct {
 	Gone        bool     `json:"gone,omitempty"`
 	InputPrice  *float64 `json:"input_price"`
 	OutputPrice *float64 `json:"output_price"`
+	// Cost is what the channel charges for the model, fee included, against its base sell price:
+	// the same figures the model's supplies list shows. nil for a list not saved to a channel.
+	Cost *SupplyCost `json:"cost,omitempty"`
 }
 
 // ChannelModelDetail is one model of a channel's list with what the channel panel shows next to
@@ -85,16 +88,35 @@ func BuildChannelModelDetails(channelID int, models []string, mapping map[string
 		return nil, err
 	}
 
-	// Model kinds the upstream's own list stated, kept with the channel's prices.
+	// The channel's prices, with the model kinds the upstream's own list stated.
 	upstreamKinds := map[string]string{}
+	prices := map[string]*ChannelPrice{}
+	var channel *Channel
 	if channelID > 0 {
-		var kinds []ChannelPrice
-		if err := DB.Select("model", "kind").Where("channel_id = ? AND kind <> ''", channelID).Find(&kinds).Error; err != nil {
+		var rows []*ChannelPrice
+		if err := DB.Where("channel_id = ?", channelID).Find(&rows).Error; err != nil {
 			return nil, err
 		}
-		for _, k := range kinds {
-			upstreamKinds[k.Model] = k.Kind
+		for _, p := range rows {
+			prices[p.Model] = p
+			if p.Kind != "" {
+				upstreamKinds[p.Model] = p.Kind
+			}
 		}
+		var found []*Channel
+		columns := append([]string{"id", "type", "base_url"}, supplyCostChannelColumns...)
+		if err := DB.Select(columns).Where("id = ?", channelID).Limit(1).Find(&found).Error; err != nil {
+			return nil, err
+		}
+		if len(found) > 0 {
+			channel = found[0]
+		}
+	}
+	costOf := func(public, upstream string) *SupplyCost {
+		if channel == nil {
+			return nil
+		}
+		return supplyCostOf(public, upstream, channel, prices[upstream])
 	}
 
 	bySupply := map[string][]*ModelSupply{}
@@ -159,7 +181,8 @@ func BuildChannelModelDetails(channelID int, models []string, mapping map[string
 					}
 					seen[s.Id] = true
 					in, outPrice := tokenSellPrice(s.Model)
-					detail.Public = append(detail.Public, ChannelModelPublic{Model: s.Model, Enabled: s.Enabled, Pending: s.Pending, Gone: s.UpstreamGoneAt > 0, InputPrice: in, OutputPrice: outPrice})
+					detail.Public = append(detail.Public, ChannelModelPublic{Model: s.Model, Enabled: s.Enabled, Pending: s.Pending, Gone: s.UpstreamGoneAt > 0,
+						InputPrice: in, OutputPrice: outPrice, Cost: costOf(s.Model, supplyUpstreamName(s))})
 				}
 			}
 			if len(detail.Public) == 0 {
@@ -167,7 +190,8 @@ func BuildChannelModelDetails(channelID int, models []string, mapping map[string
 			}
 		} else {
 			in, outPrice := tokenSellPrice(item.Model)
-			detail.Public = append(detail.Public, ChannelModelPublic{Model: item.Model, Enabled: true, InputPrice: in, OutputPrice: outPrice})
+			detail.Public = append(detail.Public, ChannelModelPublic{Model: item.Model, Enabled: true, InputPrice: in, OutputPrice: outPrice,
+				Cost: costOf(item.Model, upstreamName)})
 		}
 		out = append(out, detail)
 	}
