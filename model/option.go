@@ -372,10 +372,6 @@ func registerOptions() {
 	config.GlobalOption.RegisterInt("RetryTimeOut", &config.RetryTimeOut, config.ScopeAdmin)
 
 	config.GlobalOption.RegisterBool("LogIOEnabled", &config.LogIOEnabled, config.ScopePublic, config.PublicSpec{StatusKey: "log_io_enabled"})
-	// 个人/组织设置页的留存开关要显示「生效值」(用户/组织未设置时即站点默认),
-	// 故两个站点默认值公开下发;它们只描述默认策略,不含敏感信息。
-	config.GlobalOption.RegisterBool("LogIODefaultUser", &config.LogIODefaultUser, config.ScopePublic, config.PublicSpec{StatusKey: "log_io_default_user"})
-	config.GlobalOption.RegisterBool("OrganizationLogIODefault", &config.OrganizationLogIODefault, config.ScopePublic, config.PublicSpec{StatusKey: "organization_log_io_default"})
 
 	config.GlobalOption.RegisterBool("EnableSafe", &config.EnableSafe, config.ScopePublic)
 	config.GlobalOption.RegisterString("SafeToolName", &config.SafeToolName, config.ScopePublic)

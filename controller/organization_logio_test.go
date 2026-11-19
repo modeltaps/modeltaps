@@ -44,11 +44,11 @@ func setupOrgLogIOTest(t *testing.T) (*gorm.DB, *model.Organization) {
 		&model.Log{}, &model.LogDetail{}); err != nil {
 		t.Fatal(err)
 	}
-	prevDB, prevEnabled, prevOrgDefault := model.DB, config.LogIOEnabled, config.OrganizationLogIODefault
+	prevDB, prevEnabled := model.DB, config.LogIOEnabled
 	model.DB = testDB
-	config.LogIOEnabled, config.OrganizationLogIODefault = true, false
+	config.LogIOEnabled = true
 	t.Cleanup(func() {
-		model.DB, config.LogIOEnabled, config.OrganizationLogIODefault = prevDB, prevEnabled, prevOrgDefault
+		model.DB, config.LogIOEnabled = prevDB, prevEnabled
 	})
 
 	for _, u := range []*model.User{
@@ -146,15 +146,13 @@ func TestOrgLogIODefaultIsDisclosedToMembers(t *testing.T) {
 		t.Fatalf("retention turned off, disclosure says %v", got)
 	}
 
-	// Following the site default: stored when the site stores organization keys, with the site as
-	// the source.
-	config.OrganizationLogIODefault = true
+	// Clearing the choice keeps no bodies: there is no site default to follow.
 	code, _ = orgRoutingCall(t, r, http.MethodPut, "/api/org/1", map[string]any{"name": "Org", "log_io_default": "inherit"})
 	if code != http.StatusOK {
 		t.Fatalf("update failed: %d", code)
 	}
-	if got := disclosure(); got["stored"] != true || got["source"] != "site" {
-		t.Fatalf("site default on, disclosure says %v", got)
+	if got := disclosure(); got["stored"] != false {
+		t.Fatalf("no choice, disclosure says %v", got)
 	}
 }
 

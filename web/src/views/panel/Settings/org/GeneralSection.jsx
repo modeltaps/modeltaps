@@ -16,8 +16,8 @@ import { ToggleRow } from '../../Setting/parts';
 // Organization profile card (Admin+): name, avatar, usage visibility and request / response
 // retention, saved by the card footer. The danger zone is its own group (DangerSection).
 
-// 服务端三态可能回 "inherit"|"on"|"off" 字符串,也可能回 *bool;统一归一为哨兵字符串。
-const triFromServer = (v) => (v === 'on' || v === true ? 'on' : v === 'off' || v === false ? 'off' : 'inherit');
+// 服务端可能回 "inherit"|"on"|"off" 字符串,也可能回 *bool;未设置不留存,按 off 显示。
+const triFromServer = (v) => (v === 'on' || v === true ? 'on' : 'off');
 
 // 脏值比较统一归一为字符串,null / undefined / '' 视为相等(as isDirty in Setting/parts.jsx)。
 const sameValue = (a, b) => String(a ?? '') === String(b ?? '');
@@ -31,15 +31,14 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
   const org = detail?.organization;
   const siteInfo = useSelector((state) => state.siteInfo);
   const logIoSiteEnabled = Boolean(siteInfo?.log_io_enabled);
-  const logIoSiteDefault = Boolean(siteInfo?.organization_log_io_default);
   const logIoMaxBodyKb = Number(siteInfo?.log_io_max_body_kb) || DEFAULT_MAX_BODY_KB;
 
   const [name, setName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   // 成员可见全员用量:组织上的普通开关,未设置即关闭
   const [usageVisible, setUsageVisible] = useState(false);
-  // 组织留存三态哨兵(inherit=未设置,取站点默认 / on / off),经 PUT /api/org/:id 写入。
-  const [logIoDefault, setLogIoDefault] = useState('inherit');
+  // 组织留存开关(on / off),经 PUT /api/org/:id 写入。
+  const [logIoDefault, setLogIoDefault] = useState('off');
   const [saving, setSaving] = useState(false);
   // 表单基线:随 org 回流刷新,用于把保存按钮按脏值置灰
   const [baseline, setBaseline] = useState(null);
@@ -162,7 +161,7 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
               id="org-log-io"
               label={t('orgPage.settings.logIOToggle')}
               description={t('orgPage.settings.logIOHint', { kb: logIoMaxBodyKb })}
-              checked={logIoDefault === 'inherit' ? logIoSiteDefault : logIoDefault === 'on'}
+              checked={logIoDefault === 'on'}
               onCheckedChange={(next) => setLogIoDefault(next ? 'on' : 'off')}
             />
           </div>

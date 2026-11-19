@@ -637,13 +637,13 @@ See also: [Organization budget](./objects.md#organization-budget) · [Reset time
 
 ### Retain request and response bodies
 
-Key `organization.log_io_default` · Type bool · Default the site's default for organizations
+Key `organization.log_io_default` · Type bool · Default off
 
 Where: Organizations › general
 
 Whether the bodies of the organization's API requests and responses are stored, for all its keys at once. Keys and members cannot change it. Stored bodies never include API keys or auth headers, are deleted after 30 days, and only owners, admins and platform admins can read them. Members are told who turned it on and when. Shown only while the site allows retention.
 
-See also: [Allow keeping request bodies](./privacy.md#LogIOEnabled) · [Default for organization API keys](./privacy.md#OrganizationLogIODefault)
+See also: [Allow keeping request bodies](./privacy.md#LogIOEnabled)
 
 ## API key
 

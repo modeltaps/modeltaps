@@ -637,13 +637,13 @@ outline: deep
 
 ### 留存请求与响应正文
 
-设置名 `organization.log_io_default` · 类型 bool · 默认值 the site's default for organizations
+设置名 `organization.log_io_default` · 类型 bool · 默认值 off
 
 位置：Organizations › general
 
 是否保存组织 API Key 的请求和响应正文，对所有 Key 一起生效：Key 和成员都不能改。保存的正文从不包含 API Key 或鉴权头，30 天后自动删除，只有所有者、管理员和平台管理员能查看。成员会被告知是谁、在什么时候打开的。只在站点允许留存时显示。
 
-相关设置：[允许留存请求正文](./privacy.md#LogIOEnabled) · [组织 API Key 默认值](./privacy.md#OrganizationLogIODefault)
+相关设置：[允许留存请求正文](./privacy.md#LogIOEnabled)
 
 ## API 密钥
 

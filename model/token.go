@@ -525,36 +525,27 @@ func (token *Token) UpdateByAdmin() error {
 	return err
 }
 
-// ResolveTokenLogIO 解析令牌在两层继承下的 LogIO 生效布尔值(站点开关 && 归属默认),供 middleware 注入。
+// ResolveTokenLogIO 解析令牌的 LogIO 生效布尔值(站点开关 && 归属上的开关),供 middleware 注入。
 // 判定链(权威语义):
 //   - 站点总闸门 config.LogIOEnabled 关闭 → 恒 false,且不做任何上级查询(零开销)。
-//   - 归属默认(按归属):组织令牌取组织默认→站点 OrganizationLogIODefault;个人令牌取用户默认→站点 LogIODefaultUser。
+//   - 归属上的开关:组织令牌取组织设置,个人令牌取用户设置;未设置时为关(ZDR)。
 //
-// 归属默认走缓存避免每请求打库。令牌级 log_io 与覆盖锁已废弃(两层简化),不再读取。
+// 归属设置走缓存避免每请求打库。令牌级 log_io 与覆盖锁已废弃(两层简化),不再读取。
 func ResolveTokenLogIO(token *Token) bool {
 	if !config.LogIOEnabled || token == nil {
 		return false
 	}
 	owner, err := CacheGetOwnerLogIODefault(token.UserId)
 	if err != nil || owner == nil {
-		// 归属解析失败时回退到个人站点默认,保持 ZDR 安全语义
-		return config.LogIODefaultUser
+		// 归属解析失败时不留存,保持 ZDR 安全语义
+		return false
 	}
 	return resolveOwnerDefault(owner)
 }
 
-// resolveOwnerDefault 把归属主体的上级默认三态原值套用站点默认,得到生效的上级默认布尔。
+// resolveOwnerDefault 返回归属主体上的开关:只有明确开启才留存,未设置与关闭都不留存。
 func resolveOwnerDefault(owner *ownerLogIODefault) bool {
-	switch owner.State {
-	case logIODefaultStateOn:
-		return true
-	case logIODefaultStateOff:
-		return false
-	}
-	if owner.IsOrg {
-		return config.OrganizationLogIODefault
-	}
-	return config.LogIODefaultUser
+	return owner.State == logIODefaultStateOn
 }
 
 // LogIOWriteEnabled 报告是否应为该令牌写入完整请求/响应明细(T50e 写入闸门,供 T50d 调用)。

@@ -13,7 +13,7 @@ import (
 type UserSetting struct {
 	Theme    string `json:"theme,omitempty"`    // system / light / dark
 	Language string `json:"language,omitempty"` // zh_CN / zh_HK / en_US / ja_JP
-	// LogIODefault 个人令牌「完整请求/响应留存」继承默认;nil 时取站点默认 config.LogIODefaultUser
+	// LogIODefault 个人令牌「完整请求/响应留存」开关;nil 表示未设置,按关闭处理
 	LogIODefault *bool `json:"log_io_default,omitempty"`
 	// EmailCodeLogin 是否允许用邮箱验证码登录本账号；nil 表示未设置，按开启处理
 	EmailCodeLogin *bool `json:"email_code_login,omitempty"`
@@ -44,7 +44,7 @@ func (s *UserSetting) EffectiveQuotaRemindThreshold() int {
 }
 
 // UserSettingUpdate PUT /api/user/setting 的请求体;nil 字段表示不修改(部分更新)。
-// LogIODefault 用三态哨兵字符串 "inherit"|"on"|"off",使「跟随站点」(nil)可经接口重置。
+// LogIODefault 用哨兵字符串 "inherit"|"on"|"off";"inherit" 清除设置(nil),与 "off" 同样不留存。
 type UserSettingUpdate struct {
 	Theme          *string `json:"theme"`
 	Language       *string `json:"language"`

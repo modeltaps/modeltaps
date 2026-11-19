@@ -45,8 +45,7 @@ export function LogIONotice({ logIO, className }) {
   const { t } = useTranslation();
   if (!logIO?.stored) return null;
   let origin;
-  if (logIO.source === 'site') origin = t('apiKey.logIO.bySite');
-  else if (logIO.changed_at > 0)
+  if (logIO.changed_at > 0)
     origin = t('apiKey.logIO.byMember', {
       name: logIO.changed_by || `#${logIO.changed_by_id}`,
       time: timestamp2string(logIO.changed_at)

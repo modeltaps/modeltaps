@@ -33,8 +33,7 @@ func getOrgTokenForOperator(c *gin.Context, tokenId int) (*model.Token, error) {
 // is the only switch (the key-level log_io is not read), so the answer is the same for every key.
 type orgLogIODisclosure struct {
 	Stored bool `json:"stored"`
-	// Source is "organization" when the organization turned it on, "site" when the organization
-	// follows the site default and the site stores bodies.
+	// Source is "organization": the organization turned it on.
 	Source      string `json:"source,omitempty"`
 	ChangedBy   string `json:"changed_by,omitempty"`
 	ChangedById int    `json:"changed_by_id,omitempty"`
@@ -43,14 +42,11 @@ type orgLogIODisclosure struct {
 	RetentionDays int `json:"retention_days,omitempty"`
 }
 
-// Values of orgLogIODisclosure.Source.
-const (
-	orgLogIOSourceOrganization = "organization"
-	orgLogIOSourceSite         = "site"
-)
+// orgLogIOSourceOrganization is orgLogIODisclosure.Source: the organization's own setting.
+const orgLogIOSourceOrganization = "organization"
 
 // orgLogIOActive reports whether request and response bodies of the organization's API keys are
-// stored now (the site switch and the organization default, as model.ResolveTokenLogIO resolves it).
+// stored now (the site switch and the organization's setting, as model.ResolveTokenLogIO resolves it).
 func orgLogIOActive(org *model.Organization) bool {
 	return config.LogIOEnabled && org.ResolveLogIODefault()
 }
@@ -60,11 +56,7 @@ func orgLogIOStatus(org *model.Organization) orgLogIODisclosure {
 	if !orgLogIOActive(org) {
 		return orgLogIODisclosure{}
 	}
-	status := orgLogIODisclosure{Stored: true, Source: orgLogIOSourceSite, RetentionDays: model.LogIORetentionDays}
-	if org.Setting.Data().LogIODefault == nil {
-		return status
-	}
-	status.Source = orgLogIOSourceOrganization
+	status := orgLogIODisclosure{Stored: true, Source: orgLogIOSourceOrganization, RetentionDays: model.LogIORetentionDays}
 	entry, err := model.GetLatestOrgLogIOUpdate(org.Id)
 	if err != nil {
 		logger.SysError(fmt.Sprintf("failed to read the LogIO change of organization %d: %v", org.Id, err))

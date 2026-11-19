@@ -57,7 +57,7 @@ func seedLogIOOrg(t *testing.T, def *bool) int {
 	return shadowId
 }
 
-// TestResolveTokenLogIO 表驱动覆盖两层判定链:站点闸门、个人/组织逐级回退、组织不受个人默认影响、令牌显式值被忽略。
+// TestResolveTokenLogIO 表驱动覆盖判定链:站点闸门、个人/组织上的开关(未设置为关)、令牌显式值被忽略。
 func TestResolveTokenLogIO(t *testing.T) {
 	setupLogIOInheritTestDB(t)
 
@@ -69,37 +69,28 @@ func TestResolveTokenLogIO(t *testing.T) {
 	orgOff := seedLogIOOrg(t, boolPtr(false))
 
 	cases := []struct {
-		name        string
-		enabled     bool
-		siteUserDef bool
-		siteOrgDef  bool
-		token       *Token
-		want        bool
+		name    string
+		enabled bool
+		token   *Token
+		want    bool
 	}{
-		{"站点闸门关-恒不留存", false, true, true, &Token{UserId: userNil, LogIO: boolPtr(true)}, false},
-		{"令牌显式开被忽略-取用户默认关", true, false, false, &Token{UserId: userOff, LogIO: boolPtr(true)}, false},
-		{"令牌显式关被忽略-取用户默认开", true, true, true, &Token{UserId: userOn, LogIO: boolPtr(false)}, true},
-		{"个人-用户默认开", true, false, false, &Token{UserId: userOn, LogIO: nil}, true},
-		{"个人-用户默认关", true, true, true, &Token{UserId: userOff, LogIO: nil}, false},
-		{"个人-用户未配-站点开", true, true, false, &Token{UserId: userNil, LogIO: nil}, true},
-		{"个人-用户未配-站点关", true, false, false, &Token{UserId: userNil, LogIO: nil}, false},
-		{"组织-组织默认开", true, false, false, &Token{UserId: orgOn, LogIO: nil}, true},
-		{"组织-组织默认关", true, true, true, &Token{UserId: orgOff, LogIO: nil}, false},
-		{"组织-组织未配-站点开", true, false, true, &Token{UserId: orgNil, LogIO: nil}, true},
-		{"组织-组织未配-站点关", true, true, false, &Token{UserId: orgNil, LogIO: nil}, false},
-		{"组织不受成员个人默认影响", true, true, false, &Token{UserId: orgNil, LogIO: nil}, false},
-		{"nil 令牌恒不留存", true, true, true, nil, false},
+		{"站点闸门关-恒不留存", false, &Token{UserId: userOn, LogIO: boolPtr(true)}, false},
+		{"令牌显式开被忽略-取用户关", true, &Token{UserId: userOff, LogIO: boolPtr(true)}, false},
+		{"令牌显式关被忽略-取用户开", true, &Token{UserId: userOn, LogIO: boolPtr(false)}, true},
+		{"个人-用户开", true, &Token{UserId: userOn}, true},
+		{"个人-用户关", true, &Token{UserId: userOff}, false},
+		{"个人-用户未设置-不留存", true, &Token{UserId: userNil}, false},
+		{"组织-组织开", true, &Token{UserId: orgOn}, true},
+		{"组织-组织关", true, &Token{UserId: orgOff}, false},
+		{"组织-组织未设置-不留存", true, &Token{UserId: orgNil}, false},
+		{"nil 令牌恒不留存", true, nil, false},
 	}
 
-	oldEnabled, oldUser, oldOrg := config.LogIOEnabled, config.LogIODefaultUser, config.OrganizationLogIODefault
-	t.Cleanup(func() {
-		config.LogIOEnabled, config.LogIODefaultUser, config.OrganizationLogIODefault = oldEnabled, oldUser, oldOrg
-	})
+	oldEnabled := config.LogIOEnabled
+	t.Cleanup(func() { config.LogIOEnabled = oldEnabled })
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			config.LogIOEnabled = tc.enabled
-			config.LogIODefaultUser = tc.siteUserDef
-			config.OrganizationLogIODefault = tc.siteOrgDef
 			if got := ResolveTokenLogIO(tc.token); got != tc.want {
 				t.Fatalf("ResolveTokenLogIO = %v, 期望 %v", got, tc.want)
 			}
@@ -108,20 +99,20 @@ func TestResolveTokenLogIO(t *testing.T) {
 }
 
 // TestTokenLogIOColumnPreservedButIgnored 验证两层简化后:存量 log_io 列仍保留(回读为 *bool),
-// 但解析恒忽略令牌显式值,只按站点/用户默认回退。以原始 SQL 写入模拟既有布尔列数据。
+// 但解析恒忽略令牌显式值,只看归属用户上的开关。以原始 SQL 写入模拟既有布尔列数据。
 func TestTokenLogIOColumnPreservedButIgnored(t *testing.T) {
 	setupLogIOInheritTestDB(t)
-	uid := seedLogIOUser(t, config.UserTypeNormal, nil) // 个人默认未配,回退站点
+	uidOff := seedLogIOUser(t, config.UserTypeNormal, nil)
+	uidOn := seedLogIOUser(t, config.UserTypeNormal, boolPtr(true))
 
-	if err := DB.Exec("INSERT INTO tokens (user_id, name, key_hash, log_io) VALUES (?,?,?,1)", uid, "legacy-on", utils.GetRandomString(48)).Error; err != nil {
-		t.Fatalf("写入存量强制开令牌失败: %v", err)
+	insert := func(uid int, name, value string) {
+		if err := DB.Exec("INSERT INTO tokens (user_id, name, key_hash, log_io) VALUES (?,?,?,"+value+")", uid, name, utils.GetRandomString(48)).Error; err != nil {
+			t.Fatalf("写入存量令牌 %s 失败: %v", name, err)
+		}
 	}
-	if err := DB.Exec("INSERT INTO tokens (user_id, name, key_hash, log_io) VALUES (?,?,?,0)", uid, "legacy-off", utils.GetRandomString(48)).Error; err != nil {
-		t.Fatalf("写入存量强制关令牌失败: %v", err)
-	}
-	if err := DB.Exec("INSERT INTO tokens (user_id, name, key_hash, log_io) VALUES (?,?,?,NULL)", uid, "inherit", utils.GetRandomString(48)).Error; err != nil {
-		t.Fatalf("写入继承令牌失败: %v", err)
-	}
+	insert(uidOff, "legacy-on", "1")
+	insert(uidOn, "legacy-off", "0")
+	insert(uidOff, "inherit", "NULL")
 
 	read := func(name string) *Token {
 		var tk Token
@@ -136,20 +127,59 @@ func TestTokenLogIOColumnPreservedButIgnored(t *testing.T) {
 		t.Fatalf("存量列值未保留: on=%v off=%v inherit=%v", on.LogIO, off.LogIO, inherit.LogIO)
 	}
 
-	oldEnabled, oldUser := config.LogIOEnabled, config.LogIODefaultUser
-	t.Cleanup(func() {
-		config.LogIOEnabled, config.LogIODefaultUser = oldEnabled, oldUser
-	})
+	oldEnabled := config.LogIOEnabled
+	t.Cleanup(func() { config.LogIOEnabled = oldEnabled })
 	config.LogIOEnabled = true
-
-	// 两层解析忽略令牌显式值:三者均随站点/用户默认。
-	config.LogIODefaultUser = false
-	if ResolveTokenLogIO(on) || ResolveTokenLogIO(off) || ResolveTokenLogIO(inherit) {
-		t.Fatalf("站点默认关时三者都应不留存(令牌显式值被忽略)")
+	if ResolveTokenLogIO(on) || ResolveTokenLogIO(inherit) {
+		t.Fatalf("用户未设置时不留存(令牌显式开被忽略)")
 	}
-	config.LogIODefaultUser = true
-	if !ResolveTokenLogIO(on) || !ResolveTokenLogIO(off) || !ResolveTokenLogIO(inherit) {
-		t.Fatalf("站点默认开时三者都应留存(令牌显式值被忽略)")
+	if !ResolveTokenLogIO(off) {
+		t.Fatalf("用户开启时留存(令牌显式关被忽略)")
+	}
+}
+
+// foldLogIOSiteDefaults 把开着的站点默认写到未设置的用户 / 组织上,已有选择的不动,随后删除两个站点选项。
+func TestFoldLogIOSiteDefaults(t *testing.T) {
+	setupLogIOInheritTestDB(t)
+	if err := DB.AutoMigrate(&Option{}); err != nil {
+		t.Fatal(err)
+	}
+	userNil := seedLogIOUser(t, config.UserTypeNormal, nil)
+	userOff := seedLogIOUser(t, config.UserTypeNormal, boolPtr(false))
+	orgNil := seedLogIOOrg(t, nil)
+	DB.Create(&Option{Key: "LogIODefaultUser", Value: "true"})
+	DB.Create(&Option{Key: "OrganizationLogIODefault", Value: "false"})
+
+	if err := foldLogIOSiteDefaults().Migrate(DB); err != nil {
+		t.Fatal(err)
+	}
+	userDefault := func(id int) *bool {
+		var u User
+		if err := DB.Select("setting").First(&u, id).Error; err != nil {
+			t.Fatal(err)
+		}
+		return u.Setting.Data().LogIODefault
+	}
+	if v := userDefault(userNil); v == nil || !*v {
+		t.Fatalf("user without a choice = %v, want on (the site default)", v)
+	}
+	if v := userDefault(userOff); v == nil || *v {
+		t.Fatalf("user who chose off = %v, want off", v)
+	}
+	if v := userDefault(orgNil); v != nil {
+		t.Fatalf("shadow account = %v, want untouched", v)
+	}
+	var org Organization
+	if err := DB.Where("shadow_user_id = ?", orgNil).First(&org).Error; err != nil {
+		t.Fatal(err)
+	}
+	if org.Setting.Data().LogIODefault != nil {
+		t.Fatalf("organization = %v, want untouched (its site default was off)", org.Setting.Data().LogIODefault)
+	}
+	var left int64
+	DB.Model(&Option{}).Where("key IN ?", []string{"LogIODefaultUser", "OrganizationLogIODefault"}).Count(&left)
+	if left != 0 {
+		t.Fatalf("%d site default options left", left)
 	}
 }
 

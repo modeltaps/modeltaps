@@ -97,14 +97,10 @@ export function LogConsumeCard({ ctx }) {
 }
 
 export function LogIOCard({ ctx }) {
-  const siteOn = ctx.inputs.LogIOEnabled === 'true';
-
   return (
     <OptionCard ctx={ctx} id="log-io">
       <OptionList>
         <ToggleRow id="LogIOEnabled" {...bindSwitch(ctx, 'LogIOEnabled')} />
-        <ToggleRow id="LogIODefaultUser" disabled={!siteOn} {...bindSwitch(ctx, 'LogIODefaultUser')} />
-        <ToggleRow id="OrganizationLogIODefault" disabled={!siteOn} {...bindSwitch(ctx, 'OrganizationLogIODefault')} />
       </OptionList>
     </OptionCard>
   );

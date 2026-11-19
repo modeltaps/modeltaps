@@ -633,6 +633,7 @@ func postMigrations() []*gormigrate.Migration {
 		backfillVercelFeeNote(),
 		dropChatLinkOptions(),
 		dropPauseRulesEnabledOption(),
+		foldLogIOSiteDefaults(),
 	}
 }
 
@@ -2161,6 +2162,78 @@ func dropPauseRulesEnabledOption() *gormigrate.Migration {
 		ID: "202611191201",
 		Migrate: func(tx *gorm.DB) error {
 			return tx.Where(&Option{Key: "PauseRulesEnabled"}).Delete(&Option{}).Error
+		},
+		Rollback: func(tx *gorm.DB) error { return nil },
+	}
+}
+
+// foldLogIOSiteDefaults removes the site defaults of request and response retention
+// (LogIODefaultUser, OrganizationLogIODefault). A user or organization that never chose followed
+// them; where a default was on, the users or organizations without a choice get an explicit on,
+// so their keys keep storing bodies. Without a choice retention is now off.
+func foldLogIOSiteDefaults() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202611191202",
+		Migrate: func(tx *gorm.DB) error {
+			if !tx.Migrator().HasTable("options") {
+				return nil
+			}
+			siteOn := func(key string) (bool, error) {
+				var opt Option
+				if err := tx.Where(&Option{Key: key}).Limit(1).Find(&opt).Error; err != nil {
+					return false, err
+				}
+				return opt.Value == "true", nil
+			}
+			userOn, err := siteOn("LogIODefaultUser")
+			if err != nil {
+				return err
+			}
+			orgOn, err := siteOn("OrganizationLogIODefault")
+			if err != nil {
+				return err
+			}
+			on := true
+			if userOn && tx.Migrator().HasTable("users") {
+				var users []*User
+				if err := tx.Unscoped().Select("id", "setting").Where("type <> ?", config.UserTypeOrgShadow).Find(&users).Error; err != nil {
+					return err
+				}
+				for _, user := range users {
+					setting := user.Setting.Data()
+					if setting.LogIODefault != nil {
+						continue
+					}
+					setting.LogIODefault = &on
+					user.Setting.Set(setting)
+					if err := tx.Unscoped().Model(&User{}).Where("id = ?", user.Id).Update("setting", user.Setting).Error; err != nil {
+						return err
+					}
+				}
+			}
+			if orgOn && tx.Migrator().HasTable("organizations") {
+				var orgs []*Organization
+				if err := tx.Unscoped().Select("id", "setting").Find(&orgs).Error; err != nil {
+					return err
+				}
+				for _, org := range orgs {
+					setting := org.Setting.Data()
+					if setting.LogIODefault != nil {
+						continue
+					}
+					setting.LogIODefault = &on
+					org.Setting.Set(setting)
+					if err := tx.Unscoped().Model(&Organization{}).Where("id = ?", org.Id).Update("setting", org.Setting).Error; err != nil {
+						return err
+					}
+				}
+			}
+			for _, key := range []string{"LogIODefaultUser", "OrganizationLogIODefault"} {
+				if err := tx.Where(&Option{Key: key}).Delete(&Option{}).Error; err != nil {
+					return err
+				}
+			}
+			return nil
 		},
 		Rollback: func(tx *gorm.DB) error { return nil },
 	}

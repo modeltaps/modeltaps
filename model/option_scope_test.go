@@ -92,8 +92,8 @@ var intentionallyAddedStatusKeys = []string{
 	"admin_login_enabled",
 	"email_code_login",
 	"passkey_login",
-	"log_io_default_user",
-	"organization_log_io_default",
+	// Intentional (ORG-10): the site defaults log_io_default_user / organization_log_io_default
+	// are removed; a user or organization without a choice keeps no bodies.
 	"log_io_max_body_kb",
 	// 有意变更：新增 InviteRewardEnabled(ScopePublic, StatusKey "invite_reward_enabled")，
 	// 前端据此决定是否展示邀请奖励入口。
@@ -225,30 +225,13 @@ func TestOidcAutoRedirectPublic(t *testing.T) {
 	}
 }
 
-// 留存开关要显示生效值:两个站点默认值以 log_io_default_user / organization_log_io_default
-// 公开下发,随配置变化,且不以注册 key 原名出现。
-func TestLogIOSiteDefaultsPublic(t *testing.T) {
+// The removed site defaults of request and response retention are not published.
+func TestLogIOSiteDefaultsRemoved(t *testing.T) {
 	registerOptions()
-	origUser, origOrg := config.LogIODefaultUser, config.OrganizationLogIODefault
-	t.Cleanup(func() {
-		config.LogIODefaultUser, config.OrganizationLogIODefault = origUser, origOrg
-	})
-
-	for _, tc := range []struct{ user, org bool }{
-		{false, false}, {true, false}, {false, true}, {true, true},
-	} {
-		config.LogIODefaultUser, config.OrganizationLogIODefault = tc.user, tc.org
-		public := config.GlobalOption.PublicOptions()
-		if v, ok := public["log_io_default_user"]; !ok || v != tc.user {
-			t.Errorf("log_io_default_user: want %v, got %#v (present=%v)", tc.user, v, ok)
-		}
-		if v, ok := public["organization_log_io_default"]; !ok || v != tc.org {
-			t.Errorf("organization_log_io_default: want %v, got %#v (present=%v)", tc.org, v, ok)
-		}
-		for _, raw := range []string{"LogIODefaultUser", "OrganizationLogIODefault"} {
-			if _, ok := public[raw]; ok {
-				t.Errorf("/api/status must not expose %q under its registration key", raw)
-			}
+	public := config.GlobalOption.PublicOptions()
+	for _, key := range []string{"log_io_default_user", "organization_log_io_default", "LogIODefaultUser", "OrganizationLogIODefault"} {
+		if _, ok := public[key]; ok {
+			t.Errorf("/api/status still publishes %q", key)
 		}
 	}
 }

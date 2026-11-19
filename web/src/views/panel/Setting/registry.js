@@ -187,7 +187,7 @@ export const PLATFORM_GROUPS = [
         'LogAutoDeleteEnabled',
         'LogAutoDeleteDays'
       ]),
-      card('log-io', 'form', ['LogIOEnabled', 'LogIODefaultUser', 'OrganizationLogIODefault']),
+      card('log-io', 'form', ['LogIOEnabled']),
       card('safety', 'form', ['EnableSafe', 'SafeToolName', 'SafeKeyWords'])
     ]
   },

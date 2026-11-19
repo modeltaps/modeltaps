@@ -9,8 +9,7 @@ import { ToggleRow } from '../../Setting/parts';
 
 // ==============================|| SETTINGS — ACCOUNT / LOG IO CARD ||============================== //
 // Personal request / response retention, in 数据与隐私. The server keeps three states (unset / on /
-// off); the switch shows the effective value (unset follows the site default log_io_default_user)
-// and saving writes an explicit on / off. When the site switch log_io_enabled is off the page shows
+// off); unset keeps nothing, so the switch shows it as off, and saving writes an explicit on / off. When the site switch log_io_enabled is off the page shows
 // a notice instead (see Privacy.jsx). The log detail dialog deep-links here with ?highlight=log-io.
 
 // The server may answer "inherit" | "on" | "off" or a *bool; normalise to the sentinel strings.
@@ -21,7 +20,6 @@ const DEFAULT_MAX_BODY_KB = 1024;
 export default function LogIOCard() {
   const { t } = useTranslation();
   const siteInfo = useSelector((state) => state.siteInfo);
-  const siteDefault = Boolean(siteInfo?.log_io_default_user);
   const maxBodyKb = Number(siteInfo?.log_io_max_body_kb) || DEFAULT_MAX_BODY_KB;
   const [stored, setStored] = useState('inherit');
   const [draft, setDraft] = useState(null);
@@ -36,7 +34,7 @@ export default function LogIOCard() {
       .catch(() => {});
   }, []);
 
-  const effective = stored === 'inherit' ? siteDefault : stored === 'on';
+  const effective = stored === 'on';
   const checked = draft ?? effective;
   const dirty = draft !== null && draft !== effective;
 

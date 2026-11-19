@@ -4287,8 +4287,7 @@
       "title": "Request contents are stored",
       "body": "Requests and responses sent with this organization's API keys are kept for {{days}} days. The organization owner can read them.",
       "byMember": "Turned on by {{name}} on {{time}}.",
-      "byOrg": "Turned on in the organization settings.",
-      "bySite": "The site stores them for organization keys by default."
+      "byOrg": "Turned on in the organization settings."
     },
     "panel": {
       "tabs": "API key settings",

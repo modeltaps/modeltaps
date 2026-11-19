@@ -637,13 +637,13 @@ outline: deep
 
 ### リクエストとレスポンスの本文を保存
 
-キー `organization.log_io_default` · 型 bool · 既定値 the site's default for organizations
+キー `organization.log_io_default` · 型 bool · 既定値 off
 
 場所：Organizations › general
 
 組織の API キーのリクエストとレスポンスの本文を保存するかどうかで、すべてのキーに一度に適用され、キーやメンバーは変更できません。保存された本文に API キーや認証ヘッダーは含まれず、30 日後に削除され、オーナー・管理者・プラットフォーム管理者だけが閲覧できます。メンバーには誰がいつオンにしたかが表示されます。サイトが保存を許可しているときだけ表示されます。
 
-関連する設定：[リクエスト本文の保存を許可](./privacy.md#LogIOEnabled) · [組織 API キーの既定値](./privacy.md#OrganizationLogIODefault)
+関連する設定：[リクエスト本文の保存を許可](./privacy.md#LogIOEnabled)
 
 ## API キー
 

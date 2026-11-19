@@ -84,12 +84,8 @@ var LinuxDoOAuthDynamicTrustLevel = true // 动态限制已注册用户的信任
 var EnableSafe = false
 
 // 站点级「完整请求/响应留存」总开关(opt-in,默认关闭,ZDR 心智)。
-// 写入明细需站点级总开关与归属默认(用户/组织)同时开启,见 T50e。
+// 写入明细需站点级总开关与令牌归属(用户/组织)上的开关同时开启,见 T50e;归属未设置时为关。
 var LogIOEnabled = false
-
-// LogIO 分层继承的站点级默认值(均默认关闭,ZDR);令牌为「继承」(nil)且上级未配置时回退到这两个值。
-var LogIODefaultUser = false         // 个人令牌「继承」且用户未配置个人默认时的站点默认
-var OrganizationLogIODefault = false // 组织令牌「继承」且组织未配置默认时的站点默认
 
 // 默认使用系统自带关键词审查工具
 var SafeToolName = "Keyword"

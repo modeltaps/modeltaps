@@ -4175,8 +4175,7 @@
       "title": "请求内容会被留存",
       "body": "用本组织 API Key 发出的请求和响应会保留 {{days}} 天，组织所有者可以查看。",
       "byMember": "由 {{name}} 于 {{time}} 开启。",
-      "byOrg": "已在组织设置中开启。",
-      "bySite": "站点默认为组织 API Key 留存请求内容。"
+      "byOrg": "已在组织设置中开启。"
     },
     "panel": {
       "tabs": "API Key 设置",

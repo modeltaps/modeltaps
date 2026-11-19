@@ -100,33 +100,9 @@ outline: deep
 
 位置：平台設定 › 日誌與私隱 › 請求與回應留存
 
-站點總開關：是否允許留存 API 調用的完整請求和回應正文，用於排查問題。關閉時（預設，零數據留存）任何 API Key 都不留存，個人與組織設定中也不顯示此項。開啟後由每個用戶或組織自己的選擇決定，他們未選擇前使用個人 API Key 和組織 API Key 的預設值。正文預設每條最多保留 1 MB、儲存 30 天，從不包含 API Key 或驗證標頭。
+站點總開關：是否允許留存 API 調用的完整請求和回應正文，用於排查問題。關閉時（預設，零數據留存）任何 API Key 都不留存，個人與組織設定中也不顯示此項。開啟後由每個用戶或組織為自己的 API Key 打開，打開之前不留存。正文預設每條最多保留 1 MB、儲存 30 天，從不包含 API Key 或驗證標頭。
 
-相關設定：[個人 API Key 預設值](./privacy.md#LogIODefaultUser) · [組織 API Key 預設值](./privacy.md#OrganizationLogIODefault)
-
-<a id="LogIODefaultUser"></a>
-
-### 個人 API Key 預設值
-
-設定名 `LogIODefaultUser` · 類型 bool · 預設值 `false`
-
-位置：平台設定 › 日誌與私隱 › 請求與回應留存
-
-用戶未自行選擇時，個人 API Key 是否留存請求和回應正文。用戶可以隨時在個人設定中修改。需要先開啟「允許留存請求正文」。
-
-相關設定：[允許留存請求正文](./privacy.md#LogIOEnabled) · [組織 API Key 預設值](./privacy.md#OrganizationLogIODefault)
-
-<a id="OrganizationLogIODefault"></a>
-
-### 組織 API Key 預設值
-
-設定名 `OrganizationLogIODefault` · 類型 bool · 預設值 `false`
-
-位置：平台設定 › 日誌與私隱 › 請求與回應留存
-
-組織未自行選擇時，組織 API Key 是否留存請求和回應正文。組織管理員可以在組織設定中修改。需要先開啟「允許留存請求正文」。
-
-相關設定：[允許留存請求正文](./privacy.md#LogIOEnabled) · [個人 API Key 預設值](./privacy.md#LogIODefaultUser)
+相關設定：[留存請求與回應內文](./objects.md#organization-log_io_default)
 
 ## 內容安全
 

@@ -100,33 +100,9 @@ Key `LogIOEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Logs & privacy › Request & response retention
 
-Site-wide switch for keeping the full request and response bodies of API calls, for troubleshooting. When off (the default, zero data retention) no API key keeps them and the option is hidden from personal and organization settings. When on, each user's or organization's own choice decides, and the defaults for personal and organization API keys apply until they choose. Bodies are cut at 1 MB each by default, kept 30 days, and never include API keys or auth headers.
+Site-wide switch for keeping the full request and response bodies of API calls, for troubleshooting. When off (the default, zero data retention) no API key keeps them and the option is hidden from personal and organization settings. When on, each user or organization turns it on for its own keys; until they do, nothing is kept. Bodies are cut at 1 MB each by default, kept 30 days, and never include API keys or auth headers.
 
-See also: [Default for personal API keys](./privacy.md#LogIODefaultUser) · [Default for organization API keys](./privacy.md#OrganizationLogIODefault)
-
-<a id="LogIODefaultUser"></a>
-
-### Default for personal API keys
-
-Key `LogIODefaultUser` · Type bool · Default `false`
-
-Where: Platform settings › Logs & privacy › Request & response retention
-
-Whether personal API keys keep request and response bodies while their user has not chosen. Users can change it any time in their personal settings. Needs Allow keeping request bodies.
-
-See also: [Allow keeping request bodies](./privacy.md#LogIOEnabled) · [Default for organization API keys](./privacy.md#OrganizationLogIODefault)
-
-<a id="OrganizationLogIODefault"></a>
-
-### Default for organization API keys
-
-Key `OrganizationLogIODefault` · Type bool · Default `false`
-
-Where: Platform settings › Logs & privacy › Request & response retention
-
-Whether organization API keys keep request and response bodies while the organization has not chosen. Organization admins can change it in the organization settings. Needs Allow keeping request bodies.
-
-See also: [Allow keeping request bodies](./privacy.md#LogIOEnabled) · [Default for personal API keys](./privacy.md#LogIODefaultUser)
+See also: [Retain request and response bodies](./objects.md#organization-log_io_default)
 
 ## Content safety
 

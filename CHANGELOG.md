@@ -53,6 +53,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   back to (disabling channels on live requests, the cooldown fallback and the separate
   model-not-found quarantine) is gone. Automatic disabling now only applies to channel tests. An
   installation that had the switch off moves to the pause rules on upgrade.
+- The site defaults for keeping request and response bodies of personal and organization API
+  keys. Retention is a plain switch on the user or the organization, off until they turn it on.
+  Upgrade note: where a site default was on, the users or organizations that had not chosen get
+  it turned on, so their keys keep storing bodies.
 
 ### Fixed
 

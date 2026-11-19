@@ -38,19 +38,17 @@ var (
 	legacyTokenCachePurgedKey        = "token_cache_plaintext_purged"
 )
 
-// LogIO 分层继承中,令牌归属主体的默认配置原值(三态),供 ResolveTokenLogIO 在令牌为「继承」时回退。
-// 缓存原值而非已套用站点默认的结果,使站点默认变更无需失效本缓存即可生效。
+// 令牌归属主体(用户 / 组织)上的 LogIO 开关原值(三态),供 ResolveTokenLogIO 判定;未配置按关闭处理。
 const (
-	logIODefaultStateUnset int8 = 0 // 未配置:跟随站点默认
+	logIODefaultStateUnset int8 = 0 // 未配置:不留存
 	logIODefaultStateOn    int8 = 1 // 强制开
 	logIODefaultStateOff   int8 = 2 // 强制关
 )
 
-// ownerLogIODefault 缓存令牌归属主体(个人用户 / 组织影子账户)的 LogIO 上级默认。
-// 上级默认随 setting 写入失效(触发 InvalidateOwnerLogIODefaultCache)。
+// ownerLogIODefault 缓存令牌归属主体(个人用户 / 组织影子账户)上的 LogIO 开关。
+// 随 setting 写入失效(触发 InvalidateOwnerLogIODefaultCache)。
 type ownerLogIODefault struct {
-	IsOrg bool `json:"is_org"` // 归属是否为组织影子账户(决定 nil 时回退到组织站点默认)
-	State int8 `json:"state"`  // 上级默认三态原值
+	State int8 `json:"state"` // 开关三态原值
 }
 
 func logIODefaultState(b *bool) int8 {
@@ -74,16 +72,10 @@ func getOwnerLogIODefaultFromDB(userId int) (*ownerLogIODefault, error) {
 			return nil, err
 		}
 		orgSetting := org.Setting.Data()
-		return &ownerLogIODefault{
-			IsOrg: true,
-			State: logIODefaultState(orgSetting.LogIODefault),
-		}, nil
+		return &ownerLogIODefault{State: logIODefaultState(orgSetting.LogIODefault)}, nil
 	}
 	userSetting := user.Setting.Data()
-	return &ownerLogIODefault{
-		IsOrg: false,
-		State: logIODefaultState(userSetting.LogIODefault),
-	}, nil
+	return &ownerLogIODefault{State: logIODefaultState(userSetting.LogIODefault)}, nil
 }
 
 // CacheGetOwnerLogIODefault 读取令牌归属主体的 LogIO 默认(走缓存,避免解析链每请求打库)。

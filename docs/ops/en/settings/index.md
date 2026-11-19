@@ -15,7 +15,7 @@ Every setting, what it does, where to change it and examples. Generated from the
 - [Platform settings · Billing](./billing.md) (16)
 - [Platform settings · Payments](./payment.md) (4)
 - [Platform settings · Gateway](./gateway.md) (61)
-- [Platform settings · Logs & privacy](./privacy.md) (12)
+- [Platform settings · Logs & privacy](./privacy.md) (10)
 - [Platform settings · User entries](./entries.md) (1)
 - [Platform settings · Mail](./mail.md) (10)
 - [Platform settings · Notifications](./notify.md) (3)

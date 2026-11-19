@@ -31,7 +31,7 @@ type OrganizationSetting struct {
 	ModelWhitelist []string `json:"model_whitelist,omitempty"`
 	// ModelAccessListId is the named list attached as the organization default (ORG-15); it wins over ModelWhitelist
 	ModelAccessListId int `json:"model_access_list_id,omitempty"`
-	// LogIODefault 组织令牌「完整请求/响应留存」继承默认;nil 时取站点默认 config.OrganizationLogIODefault
+	// LogIODefault 组织令牌「完整请求/响应留存」开关;nil 表示未设置,按关闭处理
 	LogIODefault *bool `json:"log_io_default,omitempty"`
 	// Budget 组织级周期预算(T1):跨全体成员合计上限;nil 或 limit<=0 表示不限
 	Budget *QuotaResetSetting `json:"budget,omitempty"`
@@ -136,13 +136,10 @@ func (org *Organization) IsUsageVisibleToMembers() bool {
 	return visible != nil && *visible
 }
 
-// ResolveLogIODefault 返回组织令牌「继承」时的 LogIO 默认(组织未配置时取站点默认 config.OrganizationLogIODefault)
+// ResolveLogIODefault 返回组织令牌是否留存完整请求/响应(组织未设置时为关)
 func (org *Organization) ResolveLogIODefault() bool {
 	setting := org.Setting.Data()
-	if setting.LogIODefault != nil {
-		return *setting.LogIODefault
-	}
-	return config.OrganizationLogIODefault
+	return setting.LogIODefault != nil && *setting.LogIODefault
 }
 
 var orgSlugInvalidChars = regexp.MustCompile(`[^a-z0-9-]+`)
