@@ -195,5 +195,5 @@ func (p *OpenRouterProvider) ConvertFromChatOpenai(request *ChatCompletionReques
 	}
 
 	// 自动注入 prompt caching cache_control（模型命中 + 开关命中时；复用 openai 共享逻辑）。
-	openai.InjectAnthropicPromptCaching(p.Channel, &request.ChatCompletionRequest)
+	openai.InjectAnthropicPromptCaching(p.Context, p.Channel, &request.ChatCompletionRequest)
 }

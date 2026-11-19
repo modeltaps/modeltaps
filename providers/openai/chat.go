@@ -54,7 +54,7 @@ func (p *OpenAIProvider) CreateChatCompletion(request *types.ChatCompletionReque
 	}
 
 	// Anthropic prompt caching 自动注入（模型命中 + 开关命中时；用户已带 cache_control 时跳过）。
-	InjectAnthropicPromptCaching(p.Channel, request)
+	InjectAnthropicPromptCaching(p.Context, p.Channel, request)
 
 	req, errWithCode := p.GetRequestTextBody(config.RelayModeChatCompletions, request.Model, request)
 	if errWithCode != nil {
@@ -154,7 +154,7 @@ func (p *OpenAIProvider) CreateChatCompletionStream(request *types.ChatCompletio
 	}
 
 	// Anthropic prompt caching 自动注入（模型命中 + 开关命中时；用户已带 cache_control 时跳过）。
-	InjectAnthropicPromptCaching(p.Channel, request)
+	InjectAnthropicPromptCaching(p.Context, p.Channel, request)
 
 	streamOptions := request.StreamOptions
 	// 如果支持流式返回Usage 则需要更改配置：

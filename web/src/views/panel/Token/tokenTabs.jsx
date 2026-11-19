@@ -526,8 +526,24 @@ const accessTab = {
 function AdvancedBody({ draft, setDraft, ctx }) {
   const { t } = useTranslation();
   const set = (patch) => setDraft((d) => ({ ...d, ...patch }));
+  const cacheMode = draft.promptCache || 'auto';
   return (
     <>
+      <Field
+        label={t('apiKey.panel.promptCache')}
+        hint={t('apiKey.panel.promptCacheHeaderHint')}
+        extra={
+          <Segmented
+            size="mini"
+            label={t('apiKey.panel.promptCache')}
+            value={cacheMode}
+            onChange={(v) => set({ promptCache: v })}
+            options={PROMPT_CACHE_MODES.map((m) => ({ value: m, label: t(`apiKey.panel.promptCache_${m}`) }))}
+          />
+        }
+      >
+        <p className="text-sm text-muted-foreground">{t(`apiKey.panel.${PROMPT_CACHE_HINTS[cacheMode]}`)}</p>
+      </Field>
       <ToggleField
         id="tk-heartbeat"
         label={t('token_index.heartbeat')}
@@ -557,16 +573,25 @@ function AdvancedBody({ draft, setDraft, ctx }) {
 
 AdvancedBody.propTypes = bodyProps;
 
+// The key's prompt cache mode (PROTO-9). Auto is stored as no value, the way keys made before the
+// setting existed have it.
+const PROMPT_CACHE_MODES = ['auto', 'on', 'off'];
+const PROMPT_CACHE_HINTS = { auto: 'promptCacheAutoHint', on: 'promptCacheOnHint', off: 'promptCacheOffHint' };
+
 const advancedTab = {
   key: 'advanced',
   make: (tk) => ({
     heartbeat: tk.setting.heartbeat.enabled === true,
     timeout: String(tk.setting.heartbeat.timeout_seconds ?? 30),
+    promptCache: PROMPT_CACHE_MODES.includes(tk.setting.prompt_cache) ? tk.setting.prompt_cache : 'auto',
     user_id: String(tk.user_id ?? '')
   }),
   patch: (d, tk, { adminMode }) => ({
     ...(adminMode && d.user_id ? { user_id: parseInt(d.user_id, 10) } : {}),
-    setting: { heartbeat: { enabled: d.heartbeat, timeout_seconds: parseInt(d.timeout, 10) || 30 } }
+    setting: {
+      heartbeat: { enabled: d.heartbeat, timeout_seconds: parseInt(d.timeout, 10) || 30 },
+      prompt_cache: d.promptCache === 'auto' ? '' : d.promptCache
+    }
   }),
   Body: AdvancedBody
 };

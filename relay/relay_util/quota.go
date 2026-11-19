@@ -158,6 +158,12 @@ type Quota struct {
 	promptCachingInjected bool
 	promptCachingTTL      string
 	promptCachingStrategy string
+	// promptCacheMode / promptCacheSource: the prompt cache mode an API key or a request header
+	// chose (PROTO-9), written to the log metadata when one did; promptCacheStripped is true when
+	// "off" removed the client's markers.
+	promptCacheMode     string
+	promptCacheSource   string
+	promptCacheStripped bool
 	// sessionAffinity 会话亲和结果(hit / bound),非空时写入消费日志 metadata。
 	sessionAffinity string
 	// clientCancelled / usageEstimated: the upstream stream was closed because the client
@@ -552,6 +558,11 @@ type ConsumeSnapshot struct {
 	PromptCachingTTL      string
 	PromptCachingStrategy string
 
+	// Prompt cache mode chosen by the API key or the request header (PROTO-9).
+	PromptCacheMode     string
+	PromptCacheSource   string
+	PromptCacheStripped bool
+
 	// SessionAffinity 本次选渠道的会话亲和结果（hit / bound），由选渠道时写入 gin.Context。
 	SessionAffinity string
 
@@ -590,6 +601,9 @@ func NewConsumeSnapshot(c *gin.Context) ConsumeSnapshot {
 		PromptCachingInjected: c.GetBool("prompt_caching_injected"),
 		PromptCachingTTL:      c.GetString("prompt_caching_ttl"),
 		PromptCachingStrategy: c.GetString("prompt_caching_strategy"),
+		PromptCacheMode:       c.GetString(config.GinPromptCacheModeKey),
+		PromptCacheSource:     c.GetString(config.GinPromptCacheSourceKey),
+		PromptCacheStripped:   c.GetBool(config.GinPromptCacheStrippedKey),
 
 		SessionAffinity: c.GetString(model.SessionAffinityContextKey),
 		RequestedModel:  c.GetString("original_model"),
@@ -624,6 +638,7 @@ func (q *Quota) ConsumeWithSnapshot(snap ConsumeSnapshot, usage *types.Usage, is
 	q.promptCachingInjected = snap.PromptCachingInjected
 	q.promptCachingTTL = snap.PromptCachingTTL
 	q.promptCachingStrategy = snap.PromptCachingStrategy
+	q.promptCacheMode, q.promptCacheSource, q.promptCacheStripped = snap.PromptCacheMode, snap.PromptCacheSource, snap.PromptCacheStripped
 	q.sessionAffinity = snap.SessionAffinity
 	q.requestedModel, q.upstreamModel, q.responseModel, q.channelType = snap.RequestedModel, snap.UpstreamModel, snap.ResponseModel, snap.ChannelType
 	q.retryAttempts = snap.RetryAttempts

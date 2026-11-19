@@ -113,7 +113,7 @@ func (p *ClaudeProvider) getChatRequest(claudeRequest *ClaudeRequest) (*http.Req
 	}
 
 	// Prompt Caching 自动注入（全局兜底 + 渠道覆盖；用户已带 cache_control 时不注入）
-	if cfg := GetPromptCachingConfig(p.Channel, claudeRequest.Model); cfg != nil {
+	if cfg := GetPromptCachingConfig(p.Context, p.Channel, claudeRequest.Model); cfg != nil {
 		injected := InjectPromptCachingStruct(claudeRequest, cfg)
 		if injected {
 			ApplyPromptCachingBeta(headers, cfg)

@@ -48,7 +48,7 @@ func TestInjectAnthropicPromptCaching(t *testing.T) {
 				{Role: types.ChatMessageRoleUser, Content: "hi"},
 			},
 		}
-		InjectAnthropicPromptCaching(channelOn(), req)
+		InjectAnthropicPromptCaching(nil, channelOn(), req)
 		sys, ok := req.Messages[0].Content.([]map[string]any)
 		if !ok || len(sys) != 1 || sys[0]["cache_control"] == nil {
 			t.Fatalf("expected system cache_control injection, got %#v", req.Messages[0].Content)
@@ -65,7 +65,7 @@ func TestInjectAnthropicPromptCaching(t *testing.T) {
 				}},
 			},
 		}
-		InjectAnthropicPromptCaching(channelOn(), req)
+		InjectAnthropicPromptCaching(nil, channelOn(), req)
 		if _, ok := req.Messages[0].Content.(string); !ok {
 			t.Fatalf("system should be untouched when cache_control already present: %#v", req.Messages[0].Content)
 		}
@@ -79,7 +79,7 @@ func TestInjectAnthropicPromptCaching(t *testing.T) {
 				{Role: types.ChatMessageRoleUser, Content: "hi"},
 			},
 		}
-		InjectAnthropicPromptCaching(channelOn(), req)
+		InjectAnthropicPromptCaching(nil, channelOn(), req)
 		if _, ok := req.Messages[0].Content.(string); !ok {
 			t.Fatalf("non-anthropic model should not be injected: %#v", req.Messages[0].Content)
 		}
@@ -143,7 +143,7 @@ func TestInjectAnthropicPromptCaching_VercelSimulation(t *testing.T) {
 	for _, m := range injectCases {
 		t.Run("注入_"+m, func(t *testing.T) {
 			req := newReq(m)
-			InjectAnthropicPromptCaching(vercelChannel(), req)
+			InjectAnthropicPromptCaching(nil, vercelChannel(), req)
 			if !systemInjected(req) {
 				t.Fatalf("expected cache_control injected for %q, got %#v", m, req.Messages[0].Content)
 			}
@@ -152,7 +152,7 @@ func TestInjectAnthropicPromptCaching_VercelSimulation(t *testing.T) {
 
 	t.Run("非anthropic_gpt-4o不注入", func(t *testing.T) {
 		req := newReq("gpt-4o")
-		InjectAnthropicPromptCaching(vercelChannel(), req)
+		InjectAnthropicPromptCaching(nil, vercelChannel(), req)
 		if _, ok := req.Messages[0].Content.(string); !ok {
 			t.Fatalf("gpt-4o must not be injected: %#v", req.Messages[0].Content)
 		}
@@ -171,7 +171,7 @@ func TestInjectAnthropicPromptCaching_VercelSimulation(t *testing.T) {
 				}},
 			},
 		}
-		InjectAnthropicPromptCaching(vercelChannel(), req)
+		InjectAnthropicPromptCaching(nil, vercelChannel(), req)
 		if _, ok := req.Messages[0].Content.(string); !ok {
 			t.Fatalf("system should stay untouched when user supplied cache_control: %#v", req.Messages[0].Content)
 		}

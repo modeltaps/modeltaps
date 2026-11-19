@@ -46,11 +46,17 @@ type PromptCachingConfig struct {
 // 返回 nil 表示对该请求不注入。
 //
 // 解析顺序：
+//  0. 请求的提示缓存档位（PROTO-9，请求头 / API key，由 relay 层写入 c）：off 不注入；on 不看
+//     渠道与全局开关，直接进入模型命中判定；auto（默认）继续往下。
 //  1. 渠道 Plugin["prompt_caching"].enabled：on 强制开 / off 强制关 / inherit(默认) 跟随全局开关
 //  2. 模型命中判定：auto(默认) 走内置 Anthropic 命名规则；custom 走用户通配符列表；
 //     regex 走用户正则；auto+custom 取内置规则与用户规则(通配符/正则)的并集。
 //     modelName 必须是 model_mapping 之后发往上游的模型名。
-func GetPromptCachingConfig(channel *model.Channel, modelName string) *PromptCachingConfig {
+func GetPromptCachingConfig(c *gin.Context, channel *model.Channel, modelName string) *PromptCachingConfig {
+	requestMode := RequestPromptCacheMode(c)
+	if requestMode == config.PromptCacheModeOff {
+		return nil
+	}
 	enabled, ttl, strategy, mode, patterns, regex := "inherit", "5m", "system", "auto", "", ""
 	if channel != nil && channel.Plugin != nil {
 		if pc, ok := channel.Plugin.Data()["prompt_caching"]; ok {
@@ -63,13 +69,15 @@ func GetPromptCachingConfig(channel *model.Channel, modelName string) *PromptCac
 		}
 	}
 
-	switch strings.ToLower(enabled) {
-	case "on":
-	case "off":
-		return nil
-	default: // inherit
-		if !config.ClaudePromptCachingEnabled {
+	if requestMode != config.PromptCacheModeOn {
+		switch strings.ToLower(enabled) {
+		case "on":
+		case "off":
 			return nil
+		default: // inherit
+			if !config.ClaudePromptCachingEnabled {
+				return nil
+			}
 		}
 	}
 
@@ -84,6 +92,18 @@ func GetPromptCachingConfig(channel *model.Channel, modelName string) *PromptCac
 		strategy = "system"
 	}
 	return &PromptCachingConfig{TTL: ttl, Strategy: strategy}
+}
+
+// RequestPromptCacheMode is the request's prompt cache mode the relay resolved (header, then
+// API key): "auto" when nothing set one or there is no request context.
+func RequestPromptCacheMode(c *gin.Context) string {
+	if c == nil {
+		return config.PromptCacheModeAuto
+	}
+	if mode, ok := config.NormalizePromptCacheMode(c.GetString(config.GinPromptCacheModeKey)); ok {
+		return mode
+	}
+	return config.PromptCacheModeAuto
 }
 
 func pluginString(m map[string]interface{}, key, def string) string {

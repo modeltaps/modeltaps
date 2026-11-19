@@ -604,6 +604,16 @@ func validateTokenSetting(setting *model.TokenSetting) error {
 		}
 	}
 
+	mode, ok := config.NormalizePromptCacheMode(setting.PromptCache)
+	if !ok {
+		return common.NewAPIError(common.APICodeTokenPromptCacheInvalid, "prompt_cache must be auto, on or off", nil)
+	}
+	// auto is stored as the empty string, the value keys made before the setting existed carry.
+	if mode == config.PromptCacheModeAuto {
+		mode = ""
+	}
+	setting.PromptCache = mode
+
 	if rs := setting.QuotaReset; rs != nil {
 		switch rs.Period {
 		case model.TokenQuotaResetPeriodDaily, model.TokenQuotaResetPeriodWeekly, model.TokenQuotaResetPeriodMonthly:

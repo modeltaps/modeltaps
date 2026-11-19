@@ -432,6 +432,15 @@ func (q *Quota) GetLogMeta(usage *types.Usage) map[string]any {
 		}
 	}
 
+	// Prompt cache mode (PROTO-9): only when the API key or the request header chose one.
+	if q.promptCacheSource != "" {
+		meta["prompt_cache_mode"] = q.promptCacheMode
+		meta["prompt_cache_source"] = q.promptCacheSource
+		if q.promptCacheStripped {
+			meta["prompt_cache_stripped"] = true
+		}
+	}
+
 	return meta
 }
 

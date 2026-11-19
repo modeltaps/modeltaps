@@ -41,6 +41,8 @@ func Relay(c *gin.Context) {
 
 	// Apply pre-mapping before setRequest to ensure request body modifications take effect
 	applyPreMappingBeforeRequest(c)
+	// The prompt cache mode is settled before the body is parsed: "off" edits the body.
+	applyPromptCacheMode(c)
 
 	if err := relay.setRequest(); err != nil {
 		openaiErr := common.StringErrorWrapperLocal(err.Error(), "modeltaps_error", http.StatusBadRequest)

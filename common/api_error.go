@@ -306,6 +306,7 @@ const (
 	APICodeTokenHeartbeatRange          = "token_heartbeat_range"
 	APICodeTokenQuotaResetPeriodInvalid = "token_quota_reset_period_invalid"
 	APICodeTokenQuotaResetLimitInvalid  = "token_quota_reset_limit_invalid"
+	APICodeTokenPromptCacheInvalid      = "token_prompt_cache_invalid"
 	APICodeModelModeInvalid             = "model_mode_invalid"
 	APICodeModelCapabilitiesInvalid     = "model_capabilities_invalid"
 	APICodeModelEndpointsInvalid        = "model_endpoints_invalid"

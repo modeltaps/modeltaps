@@ -5,10 +5,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/common/session"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/providers/base"
+	"github.com/modeltaps/modeltaps/providers/claude"
 	"github.com/modeltaps/modeltaps/providers/openai"
 	"github.com/modeltaps/modeltaps/types"
 )
@@ -115,12 +117,16 @@ func promptCacheMode(channel *model.Channel) string {
 	return "on"
 }
 
-// openAIHeaders marks OpenAI format requests for caching and keeps each session on one route.
+// openAIHeaders marks OpenAI format requests for caching and keeps each session on one route. A
+// prompt cache mode the API key or the request chose (PROTO-9) wins over the channel's.
 func openAIHeaders(channel *model.Channel) func(*gin.Context, map[string]string) {
 	mode := promptCacheMode(channel)
 	return func(c *gin.Context, headers map[string]string) {
 		fidelityHeaders(headers)
 		headers[headerPromptCache] = mode
+		if requested := claude.RequestPromptCacheMode(c); requested != config.PromptCacheModeAuto {
+			headers[headerPromptCache] = requested
+		}
 		sessionHeader(c, headers)
 	}
 }

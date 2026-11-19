@@ -165,6 +165,11 @@ type TokenSetting struct {
 	// 周期性配额重置（OpenRouter 风格）。QuotaReset 为 nil 时不生效，零行为变化。
 	// 周期计数 PeriodUsed/PeriodStart 已移出为 Token 专用列(SEC-5)，不再存于此 JSON。
 	QuotaReset *QuotaResetSetting `json:"quota_reset,omitempty"`
+
+	// PromptCache is the key's prompt cache mode (PROTO-9): "" or "auto" follows the channel and
+	// the site-wide switch, "on" adds cache breakpoints, "off" removes them. The
+	// X-Modeltaps-Prompt-Cache header overrides it per request.
+	PromptCache string `json:"prompt_cache,omitempty"`
 }
 
 type HeartbeatSetting struct {

@@ -321,7 +321,7 @@ func (p *ClaudeProvider) getClaudeNativeRequest(request *ClaudeRequest) (*http.R
 	}
 
 	// Prompt Caching 自动注入配置（全局兜底 + 渠道覆盖），nil 表示不注入
-	cachingCfg := GetPromptCachingConfig(p.Channel, request.Model)
+	cachingCfg := GetPromptCachingConfig(p.Context, p.Channel, request.Model)
 
 	// 尝试基于原始字节透传。走 NewRequestWithCustomParamsBytes 而不是直接 NewRequest，
 	// 这样 Channel 的自定义参数（remove_params / 模型粒度覆盖 / overwrite 等）仍会通过

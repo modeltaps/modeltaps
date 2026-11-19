@@ -88,8 +88,9 @@ type BaseProvider struct {
 	// DefaultCustomParams are body fields a provider adds by default, as if they were channel
 	// custom parameters: the channel's own custom parameters win key by key, and the merge keeps
 	// a field the client sent unless the channel sets overwrite. Channels whose custom parameters
-	// are per model take no defaults. Requesty uses it for its automatic cache breakpoints.
-	DefaultCustomParams map[string]interface{}
+	// are per model take no defaults. It gets the request context (the prompt cache mode a key
+	// or header chose is read from it). Requesty uses it for its automatic cache breakpoints.
+	DefaultCustomParams func(c *gin.Context) map[string]interface{}
 	// DefaultHeaders adds request headers a provider sends by default. It runs before the
 	// channel's custom headers and header overrides, which win, and gets the request context
 	// (nil for background calls such as a balance check).
@@ -205,6 +206,9 @@ var proxyIdentityHeaderPrefixes = []string{
 	"tailscale-user-",            // Tailscale Serve
 	"x-pomerium-",                // Pomerium
 	"x-ssl-client-",              // client certificate details
+	// The gateway's own request headers (X-Modeltaps-Prompt-Cache, ...) are instructions to this
+	// gateway, not to the upstream, and are never forwarded either.
+	"x-modeltaps-",
 }
 
 // IsProxyIdentityHeader reports whether a client request header was added by a proxy in front of
@@ -576,7 +580,7 @@ func (p *BaseProvider) ModelMappingHandler(modelName string) (string, error) {
 func (p *BaseProvider) CustomParameterHandler() (map[string]interface{}, error) {
 	customParameter := p.Channel.GetCustomParameter()
 	if customParameter == "" || customParameter == "{}" {
-		return withDefaultCustomParams(nil, p.DefaultCustomParams), nil
+		return withDefaultCustomParams(nil, p.defaultCustomParams()), nil
 	}
 
 	customParams := make(map[string]interface{})
@@ -585,7 +589,14 @@ func (p *BaseProvider) CustomParameterHandler() (map[string]interface{}, error) 
 		return nil, err
 	}
 
-	return withDefaultCustomParams(customParams, p.DefaultCustomParams), nil
+	return withDefaultCustomParams(customParams, p.defaultCustomParams()), nil
+}
+
+func (p *BaseProvider) defaultCustomParams() map[string]interface{} {
+	if p.DefaultCustomParams == nil {
+		return nil
+	}
+	return p.DefaultCustomParams(p.Context)
 }
 
 // withDefaultCustomParams adds the provider's default fields the channel does not set itself.

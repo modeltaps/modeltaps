@@ -52,7 +52,7 @@ func TestGetPromptCachingConfigMatrix(t *testing.T) {
 			if c.enabled != "" {
 				params = map[string]interface{}{"enabled": c.enabled}
 			}
-			got := GetPromptCachingConfig(channelWithPromptCaching(params), "claude-sonnet-4-5")
+			got := GetPromptCachingConfig(nil, channelWithPromptCaching(params), "claude-sonnet-4-5")
 			if (got != nil) != c.want {
 				t.Fatalf("want inject=%v, got cfg=%v", c.want, got)
 			}

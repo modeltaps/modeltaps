@@ -1,22 +1,23 @@
 package openai
 
 import (
+	"encoding/json"
+	"github.com/gin-gonic/gin"
 	"github.com/modeltaps/modeltaps/common/model_utils"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/providers/claude"
 	"github.com/modeltaps/modeltaps/types"
-	"encoding/json"
 	"strings"
 )
 
 // InjectAnthropicPromptCaching 在 OpenAI chat 形态请求上自动注入 cache_control 断点，
 // 复用 claude.GetPromptCachingConfig 的全局开关 + 渠道 Plugin["prompt_caching"] + 模型命中判定，
 // 使任意 OpenAI 兼容渠道在服务 Anthropic 家族模型时都能受益。调用方已显式带 cache_control 时整体跳过。
-func InjectAnthropicPromptCaching(channel *model.Channel, request *types.ChatCompletionRequest) {
+func InjectAnthropicPromptCaching(c *gin.Context, channel *model.Channel, request *types.ChatCompletionRequest) {
 	if request == nil {
 		return
 	}
-	cfg := claude.GetPromptCachingConfig(channel, request.Model)
+	cfg := claude.GetPromptCachingConfig(c, channel, request.Model)
 	if cfg == nil {
 		return
 	}

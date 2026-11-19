@@ -3,6 +3,7 @@ package cheaperinference
 import (
 	"github.com/gin-gonic/gin"
 
+	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/providers/base"
 	"github.com/modeltaps/modeltaps/providers/claude"
@@ -23,11 +24,16 @@ func getClaudeConfig() base.ProviderConfig {
 // claudeProvider is a ClaudeProvider over the same BaseProvider (channel, context, usage) with
 // the Messages endpoint and Anthropic's error shape. Messages requests carry the client's own
 // cache_control breakpoints, so no x-ci-prompt-cache mode is sent: "on" would add breakpoints
-// next to them. The cache session and the fidelity headers are still sent.
+// next to them. When the key or the request turned caching off (PROTO-9) "off" is sent, which
+// also keeps the router from adding breakpoints of its own. The cache session and the fidelity
+// headers are still sent.
 func (p *CheaperInferenceProvider) claudeProvider() *claude.ClaudeProvider {
 	provider := &claude.ClaudeProvider{BaseProvider: p.BaseProvider}
 	provider.DefaultHeaders = func(c *gin.Context, headers map[string]string) {
 		fidelityHeaders(headers)
+		if claude.RequestPromptCacheMode(c) == config.PromptCacheModeOff {
+			headers[headerPromptCache] = config.PromptCacheModeOff
+		}
 		sessionHeader(c, headers)
 	}
 	provider.Config = getClaudeConfig()
