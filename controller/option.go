@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/encryption"
@@ -10,7 +12,6 @@ import (
 	"github.com/modeltaps/modeltaps/common/utils"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/safty"
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -72,6 +73,20 @@ func UpdateOption(c *gin.Context) {
 		return
 	}
 	switch option.Key {
+	case "ModelSupplyEnabled":
+		enabled, err := strconv.ParseBool(option.Value)
+		if err != nil {
+			common.APIRespondWithCode(c, http.StatusBadRequest, common.APICodeInvalidParams, "ModelSupplyEnabled must be true or false", nil)
+			return
+		}
+		// Routing by supplies needs the channels' models as supplies first: turning it on migrates
+		// what is still missing (a no-op once done), so no channel model stops being served.
+		if enabled && !config.ModelSupplyEnabled {
+			if err := migrateBeforeSupplyRouting(c.GetInt("id")); err != nil {
+				common.APIRespondWithError(c, http.StatusOK, err)
+				return
+			}
+		}
 	case "AccountSystem":
 		if option.Value == config.AccountSystemExternal {
 			provider, err := model.GetFirstPartyOidcProvider()
@@ -230,4 +245,15 @@ func UpdateOption(c *gin.Context) {
 		"message": "",
 	})
 	return
+}
+
+// migrateBeforeSupplyRouting turns the channels' models and model mappings into supplies and
+// records the migration in the catalog audit log by userId.
+func migrateBeforeSupplyRouting(userId int) error {
+	report, err := model.MigrateChannelsToSupplies(false)
+	if err != nil {
+		return fmt.Errorf("migrate the channels to supplies: %w", err)
+	}
+	recordSupplyMigration(userId, report)
+	return nil
 }

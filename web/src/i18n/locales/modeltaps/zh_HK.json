@@ -3635,8 +3635,14 @@
         },
         "supply-mode": {
           "title": "分流方式與成本",
-          "description": "同一檔裡的線路如何分擔請求，以及成本能把線路往前排多遠",
-          "hint": "在模型的「線路」頁籤裡可以為單個模型另選"
+          "description": "是否按線路分流、同一檔裡的線路如何分擔請求，以及成本能把線路往前排多遠",
+          "hint": "在模型的「線路」頁籤裡可以為單個模型另選",
+          "migrateChecking": "正在核對要遷移的線路…",
+          "migrateNote": "儲存時先把渠道的模型遷移成 {{supplies}} 條線路。",
+          "migrateLost": "切換後有 {{count}} 個模型沒有可用線路。",
+          "migrateNothing": "儲存後直接打開，渠道的模型都已有線路。",
+          "migrateUnknown": "儲存時先把渠道的模型遷移成線路（預覽沒讀到）。",
+          "offNote": "儲存後立刻回到按渠道的模型列表分流，線路保留。"
         },
         "supply-pause-rules": {
           "title": "線路暫停規則",

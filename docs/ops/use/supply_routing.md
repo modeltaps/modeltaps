@@ -7,7 +7,7 @@ lastUpdated: true
 
 # 打开按线路路由
 
-线路把每个公开模型按档位分给承接它的渠道，带暂停规则和故障切换。线路功能发布时是关着的：`ModelSupplyEnabled` 打开之前，请求仍按渠道的模型列表和模型映射路由，和以前完全一样，线路相关页面只展示「打开后会怎样」。
+线路把每个公开模型按档位分给承接它的渠道，带暂停规则和故障切换。新装的实例默认打开。从旧版本升级上来的实例保持原样：`ModelSupplyEnabled` 打开之前，请求仍按渠道的模型列表和模型映射路由，和以前完全一样，线路相关页面只展示「打开后会怎样」，供应商页也不能排渠道的调用顺序。
 
 先用自己的数据核对迁移会改什么，再打开。下面每一步都用 root 账号操作：登录站点后，在浏览器开发者工具的控制台里发请求，用的就是当前登录会话。
 
@@ -42,12 +42,13 @@ const report = (await api('POST', '/api/model_supply/migrate', { dry_run: true }
 
 ## 3. 迁移并打开
 
+在「平台管理 → 网关设置 → 分配 → 分流方式与成本」里打开「按线路路由」。保存之前，开关下方会显示要新建多少条线路，以及切换后有多少个模型没有可用线路。保存时先迁移（只补还没有的线路），再打开。用接口也一样：
+
 ```js
-await api('POST', '/api/model_supply/migrate', { dry_run: false });
 await api('PUT', '/api/option/', { key: 'ModelSupplyEnabled', value: 'true' });
 ```
 
-这次的报告应当和最后一次试运行一致。
+迁移的结果应当和最后一次试运行一致。
 
 ## 4. 核对
 
@@ -56,6 +57,8 @@ await api('PUT', '/api/option/', { key: 'ModelSupplyEnabled', value: 'true' });
 - 打开后的第一个小时留意供应商页和日志。
 
 ## 关回去
+
+在同一个开关上关掉并保存，或者：
 
 ```js
 await api('PUT', '/api/option/', { key: 'ModelSupplyEnabled', value: 'false' });

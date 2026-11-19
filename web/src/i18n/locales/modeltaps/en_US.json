@@ -3745,8 +3745,14 @@
         },
         "supply-mode": {
           "title": "Supply mode and cost",
-          "description": "How supplies in one tier share requests, and how far a supply's cost moves it ahead",
-          "hint": "A single model can pick another mode under Supplies on the models page"
+          "description": "Whether requests route by supplies, how supplies in one tier share requests, and how far a supply's cost moves it ahead",
+          "hint": "A single model can pick another mode under Supplies on the models page",
+          "migrateChecking": "Checking what moves over to supplies…",
+          "migrateNote": "Saving first turns the channels' models into {{supplies}} supplies.",
+          "migrateLost": "{{count}} models would have no usable supply after the switch.",
+          "migrateNothing": "Saving turns it on; every channel model already has its supply.",
+          "migrateUnknown": "Saving first turns the channels' models into supplies (the preview could not be read).",
+          "offNote": "Saving goes back to the channels' model lists right away; the supplies are kept."
         },
         "supply-pause-rules": {
           "title": "Supply pause rules",

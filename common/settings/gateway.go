@@ -52,11 +52,11 @@ func gatewayAllocation() []Setting {
 			Key: "ModelSupplyEnabled", Scope: ScopeSite, Group: "gateway", Card: "supply-mode", Type: TypeBool,
 			Label: "Route by supplies",
 			Description: "Requests are routed through each public model's supplies instead of the channels' model lists and " +
-				"model mappings. There is no switch for it on this page: after migrating the channels to supplies (POST " +
-				"/api/model_supply/migrate, dry run first), turn it on through the option API (PUT /api/option/). While " +
-				"on, requests are billed by the public model, only published models are listed, and the supply mode, cost order, " +
-				"intake rules and pause rules decide where a request goes. Turning it off goes back to the channels' model lists " +
-				"at once and keeps the supplies.",
+				"model mappings. Turning it on first turns the channels' models and model mappings into supplies (only what is " +
+				"still missing), so every model a channel serves keeps working. While on, requests are billed by the public " +
+				"model, only published models are listed, the providers page orders the channels, and the supply mode, cost " +
+				"order, intake rules and pause rules decide where a request goes. New installations start with it on. Turning " +
+				"it off goes back to the channels' model lists at once and keeps the supplies.",
 			Examples: []Example{
 				{Value: "false", Effect: "Requests follow each channel's models and model mapping; the supply pages only preview what would change."},
 				{Value: "true", Effect: "A request for claude-sonnet-4-5 goes to the supplies of that public model, ordered by priority and cost."},

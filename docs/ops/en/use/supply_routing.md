@@ -7,7 +7,7 @@ lastUpdated: true
 
 # Turning on supply routing
 
-Supplies route each public model to the channels that supply it, in tiers, with pause rules and failover. They ship switched off: until the `ModelSupplyEnabled` option is on, requests are routed by the channels' model lists and model mappings exactly as before, and the supply pages only show what would happen.
+Supplies route each public model to the channels that supply it, in tiers, with pause rules and failover. New installations start with them on. Installations upgraded from an earlier release keep their setting: until the `ModelSupplyEnabled` option is on, requests are routed by the channels' model lists and model mappings exactly as before, the supply pages only show what would happen, and the providers page cannot order the channels.
 
 Turn it on once you have checked what the migration changes on your own data. Every step below is done as the root user; the requests are sent from the browser's developer console on your site while you are signed in, so they use your session.
 
@@ -42,12 +42,13 @@ Run the dry run again after each fix until the report shows only changes you wan
 
 ## 3. Migrate and switch on
 
+Turn on **Route by supplies** under Platform admin → Gateway settings → Allocation → Supply mode and cost. Before you save, the switch shows how many supplies will be created and how many models would have no usable supply after the switch. Saving migrates first (only what is still missing), then switches on. The API does the same:
+
 ```js
-await api('POST', '/api/model_supply/migrate', { dry_run: false });
 await api('PUT', '/api/option/', { key: 'ModelSupplyEnabled', value: 'true' });
 ```
 
-The second report should match the last dry run.
+What it migrates should match the last dry run.
 
 ## 4. Check
 
@@ -56,6 +57,8 @@ The second report should match the last dry run.
 - Watch the providers page and the logs for the first hour.
 
 ## Switching back
+
+Turn the same switch off and save, or:
 
 ```js
 await api('PUT', '/api/option/', { key: 'ModelSupplyEnabled', value: 'false' });

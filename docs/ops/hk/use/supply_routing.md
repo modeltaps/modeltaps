@@ -7,7 +7,7 @@ lastUpdated: true
 
 # 開啟按線路路由
 
-線路把每個公開模型按檔位分給承接它的渠道，帶暫停規則和故障切換。線路功能發佈時是關着的：`ModelSupplyEnabled` 開啟之前，請求仍按渠道的模型列表和模型映射路由，和以前完全一樣，線路相關頁面只展示「開啟後會怎樣」。
+線路把每個公開模型按檔位分給承接它的渠道，帶暫停規則和故障切換。新裝的實例預設開啟。從舊版本升級上來的實例保持原樣：`ModelSupplyEnabled` 開啟之前，請求仍按渠道的模型列表和模型映射路由，和以前完全一樣，線路相關頁面只展示「開啟後會怎樣」，供應商頁也不能排渠道的呼叫順序。
 
 先用自己的數據核對遷移會改甚麼，再開啟。下面每一步都用 root 賬號操作：登入網站後，在瀏覽器開發者工具的主控台裏發請求，用的就是目前的登入工作階段。
 
@@ -42,12 +42,13 @@ const report = (await api('POST', '/api/model_supply/migrate', { dry_run: true }
 
 ## 3. 遷移並開啟
 
+在「平台管理 → 閘道設定 → 分配 → 分流方式與成本」裏開啟「按線路路由」。儲存之前，開關下方會顯示要新建多少條線路，以及切換後有多少個模型沒有可用線路。儲存時先遷移（只補還沒有的線路），再開啟。用接口也一樣：
+
 ```js
-await api('POST', '/api/model_supply/migrate', { dry_run: false });
 await api('PUT', '/api/option/', { key: 'ModelSupplyEnabled', value: 'true' });
 ```
 
-這次的報告應當和最後一次試運行一致。
+遷移的結果應當和最後一次試運行一致。
 
 ## 4. 核對
 
@@ -56,6 +57,8 @@ await api('PUT', '/api/option/', { key: 'ModelSupplyEnabled', value: 'true' });
 - 開啟後的第一個小時留意供應商頁和日誌。
 
 ## 關回去
+
+在同一個開關上關掉並儲存，或者：
 
 ```js
 await api('PUT', '/api/option/', { key: 'ModelSupplyEnabled', value: 'false' });

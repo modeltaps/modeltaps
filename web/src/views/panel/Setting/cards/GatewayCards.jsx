@@ -20,7 +20,7 @@ import OptionCard, { bindSwitch, cardText } from './OptionCard';
 import { describePauseRule, pauseRulesError, pauseRulesText } from './pauseRules';
 import { admin } from 'routes/paths';
 import IntakeRulesEditor, { IntakeRuleList, intakeRulesJSON, parseIntakeRules } from 'views/panel/ModelInfo/supply/IntakeRules';
-import { fetchIntakeRules } from 'views/panel/ModelInfo/supply/supplyApi';
+import { fetchIntakeRules, previewSupplyMigration } from 'views/panel/ModelInfo/supply/supplyApi';
 
 // ==============================|| PLATFORM SETTINGS — 网关 ||============================== //
 // Retry, error handling, channel auto disable / recover, session affinity, model name matching,
@@ -430,17 +430,59 @@ export function SupplyIntakeRulesCard({ ctx }) {
 
 SupplyIntakeRulesCard.propTypes = { ctx: PropTypes.object.isRequired };
 
-// How a model that follows the default picks a supply within one priority tier, and how far a
-// supply's cost reorders the tiers (within a priority, or across priorities). Labels, hints, the
-// values' descriptions and examples come from the settings catalog.
+// What saving the routing switch will do: turning it on migrates the channels to supplies first
+// (the dry run says how much), turning it off goes back to the channels' model lists.
+function SupplyRoutingNote({ turningOn }) {
+  const { t } = useTranslation();
+  const [report, setReport] = useState(null);
+  useEffect(() => {
+    if (!turningOn) return undefined;
+    let live = true;
+    setReport(null);
+    previewSupplyMigration()
+      .then((res) => live && setReport(res.success ? res.data : { error: res.message || true }))
+      .catch(() => live && setReport({ error: true }));
+    return () => {
+      live = false;
+    };
+  }, [turningOn]);
+  const text = (part, values) => t(`settingsUi.platform.cards.supply-mode.${part}`, values);
+  let line;
+  if (!turningOn) line = text('offNote');
+  else if (!report) line = text('migrateChecking');
+  else if (report.error) line = text('migrateUnknown');
+  else line = report.supplies_planned ? text('migrateNote', { supplies: report.supplies_planned }) : text('migrateNothing');
+  // Models a group can request today and could not after the switch (no usable supply).
+  const lost =
+    report && !report.error ? new Set((report.routing_differences || []).filter((d) => d.kind === 'lost').map((d) => d.model)).size : 0;
+  return (
+    <p className="text-xs text-muted-foreground">
+      {line}
+      {lost > 0 && <span className="text-warning"> {text('migrateLost', { count: lost })}</span>}
+    </p>
+  );
+}
+
+SupplyRoutingNote.propTypes = { turningOn: PropTypes.bool.isRequired };
+
+// Whether requests route by supplies, how a model that follows the default picks a supply within
+// one priority tier, and how far a supply's cost reorders the tiers (within a priority, or across
+// priorities). Labels, hints, the values' descriptions and examples come from the settings catalog.
 export function SupplyModeCard({ ctx }) {
   const { t } = useTranslation();
-  const { inputs, setField } = ctx;
+  const { inputs, origin, setField } = ctx;
+  const routing = inputs.ModelSupplyEnabled === 'true';
+  const switching = routing !== (origin?.ModelSupplyEnabled === 'true');
   const value = inputs.SupplyModeDefault === 'failover' ? 'failover' : 'balance';
   const costOrder = inputs.SupplyCostOrder === 'cost' ? 'cost' : 'priority';
   const enumOptions = (key, values) => values.map((v) => ({ value: v, label: settingEnumLabel(t, key, v) }));
   return (
     <OptionCard ctx={ctx} id="supply-mode">
+      <OptionList>
+        <ToggleRow id="ModelSupplyEnabled" {...bindSwitch(ctx, 'ModelSupplyEnabled')}>
+          {switching && <SupplyRoutingNote turningOn={routing} />}
+        </ToggleRow>
+      </OptionList>
       <SelectRow
         id="SupplyModeDefault"
         value={value}

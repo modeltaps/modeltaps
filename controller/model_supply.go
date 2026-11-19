@@ -145,12 +145,17 @@ func MigrateModelSupplies(c *gin.Context) {
 		return
 	}
 	if !dryRun {
-		model.RecordModelCatalogAudit(c.GetInt("id"), model.ModelSupplyActionMigrate, "", nil, gin.H{
-			"supplies": report.SuppliesPlanned, "new_models": len(report.NewModels),
-			"status_changes": len(report.StatusChanges), "price_copies": len(report.PriceCopies),
-		})
+		recordSupplyMigration(c.GetInt("id"), report)
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": report})
+}
+
+// recordSupplyMigration writes an applied migration to the catalog audit log.
+func recordSupplyMigration(userId int, report *model.SupplyMigrationReport) {
+	model.RecordModelCatalogAudit(userId, model.ModelSupplyActionMigrate, "", nil, gin.H{
+		"supplies": report.SuppliesPlanned, "new_models": len(report.NewModels),
+		"status_changes": len(report.StatusChanges), "price_copies": len(report.PriceCopies),
+	})
 }
 
 // PreviewModelSupply shows in which order a request for ?model= (optionally from ?group=)

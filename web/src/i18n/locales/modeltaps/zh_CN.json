@@ -3635,8 +3635,14 @@
         },
         "supply-mode": {
           "title": "分流方式与成本",
-          "description": "同一档里的线路怎么分担请求，以及成本能把线路往前排多远",
-          "hint": "在模型的「线路」页签里可以给单个模型另选"
+          "description": "是否按线路分流、同一档里的线路怎么分担请求，以及成本能把线路往前排多远",
+          "hint": "在模型的「线路」页签里可以给单个模型另选",
+          "migrateChecking": "正在核对要迁移的线路…",
+          "migrateNote": "保存时先把渠道的模型迁移成 {{supplies}} 条线路。",
+          "migrateLost": "切换后有 {{count}} 个模型没有可用线路。",
+          "migrateNothing": "保存后直接打开，渠道的模型都已有线路。",
+          "migrateUnknown": "保存时先把渠道的模型迁移成线路（预览没读到）。",
+          "offNote": "保存后立刻回到按渠道的模型列表分流，线路保留。"
         },
         "supply-pause-rules": {
           "title": "线路暂停规则",

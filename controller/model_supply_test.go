@@ -267,3 +267,39 @@ func TestAddChannelRejectsInvalidPauseRules(t *testing.T) {
 		t.Fatalf("%d channels written", count)
 	}
 }
+
+// Turning on routing by supplies through the options migrates the channels first, so their
+// models keep being served; turning it on again migrates nothing new.
+func TestEnableSupplyRoutingMigratesChannels(t *testing.T) {
+	setupSupplyHandlerDB(t)
+	if err := model.DB.AutoMigrate(&model.Option{}); err != nil {
+		t.Fatal(err)
+	}
+	model.InitOptionMap()
+	prev := config.ModelSupplyEnabled
+	config.ModelSupplyEnabled = false
+	t.Cleanup(func() { config.ModelSupplyEnabled = prev })
+	weight := uint(1)
+	if err := model.DB.Create(&model.Channel{Name: "c", Status: config.ChannelStatusEnabled, Group: "default",
+		Weight: &weight, Models: "gpt-4o-mini"}).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < 2; i++ {
+		_, resp := callSupplyHandler(t, UpdateOption, http.MethodPut, `{"key":"ModelSupplyEnabled","value":"true"}`)
+		if resp["success"] != true {
+			t.Fatalf("enable #%d: %v", i+1, resp)
+		}
+	}
+	if !config.ModelSupplyEnabled {
+		t.Fatal("ModelSupplyEnabled is still off")
+	}
+	if list, _ := model.GetModelSupplies("gpt-4o-mini", 0); len(list) != 1 {
+		t.Fatalf("supplies after enabling = %d, want 1", len(list))
+	}
+
+	_, resp := callSupplyHandler(t, UpdateOption, http.MethodPut, `{"key":"ModelSupplyEnabled","value":"maybe"}`)
+	if resp["success"] == true {
+		t.Fatal("a value that is not a boolean was accepted")
+	}
+}

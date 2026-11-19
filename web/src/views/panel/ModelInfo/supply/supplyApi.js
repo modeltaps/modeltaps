@@ -75,6 +75,10 @@ export async function fetchSupplySwitches() {
   }
 }
 
+// What turning on routing by supplies would migrate: the dry-run report of the channels' models
+// becoming supplies ({ supplies_planned, routing_differences, … }).
+export const previewSupplyMigration = () => API.post('/api/model_supply/migrate', { dry_run: true }).then(body);
+
 // Sets the supply mode ('default', 'balance' or 'failover') of several public models by catalog id.
 export const setSupplyModes = ({ ids, mode }) => API.post('/api/model_supply/mode', { ids, mode }).then(body);
 
