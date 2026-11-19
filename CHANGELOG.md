@@ -26,8 +26,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   an admin removed stay out, and models the upstream dropped are still only marked. "Sync
   prices" stays a separate button.
 
+### Changed
+
+- Cost no longer splits a priority. With **Cost and priority** at `priority` (the default),
+  supplies of one priority share requests by the supply mode and weights whatever they cost, so
+  the shares an allocation policy sets hold; before, the cheapest supply of a priority took every
+  request. With `cost`, two guards keep a cheap but unreliable supply from taking a model's
+  traffic on price alone: a supply must be cheaper by **Minimum saving**
+  (`SupplyCostMinSavingPercent`, default 5%) to go ahead, closer costs sharing by priority and
+  weight, and one whose success rate over the current and the previous hour is below **Minimum
+  success rate** (`SupplyCostMinSuccessPercent`, default 95%, at least 20 attempts) is ordered as
+  if its cost were unknown until it recovers. The Supplies tab marks such a supply **Low success
+  rate**.
+
 ### Fixed
 
+- Vercel AI Gateway models hosted by several providers were priced at the one provider price the
+  gateway lists, sometimes a small host far below the vendor's (Qwen3.8 27B at $0.06 input, where
+  Alibaba charges $0.50); the gateway routes such models to a provider of its choosing and bills
+  that provider's price. Price syncs and the channel price list now use the vendor's own hosting's
+  price when the gateway lists it, and keep the listed price otherwise.
+- A low-priority price list that uses bare model ids (Cheaper Inference listing `qwen3.8-27b`) no
+  longer sets a public model's price ahead of a higher-priority list that prices the same model
+  under a platform spelling.
 - A public model created for an upstream name the catalog does not know (say an uncensored
   variant one platform lists) now follows that platform's price: price syncs copy the price of
   the upstream name its supply sends to the public model. Before, its price was set once by hand

@@ -417,6 +417,12 @@ function SupplyRow({ supply, state, share, next, outsideGroup, canMoveUp, canMov
               {' · '}
             </span>
           )}
+          {supply.low_success && !outsideGroup && (
+            <span className="text-warning" title={t('modelSupply.lowSuccessTip')} data-testid="supply-low-success">
+              {t('modelSupply.lowSuccess')}
+              {' · '}
+            </span>
+          )}
           {outsideGroup
             ? t('modelSupply.preview.outsideRow', { group: outsideGroup })
             : [channelTypeName(supply.channel_type), supply.channel_tag, groupsText].filter(Boolean).join(' · ')}
@@ -947,8 +953,13 @@ export default function SuppliesPanel({ model, catalogId, supplyMode, onSupplyMo
                       <span className="text-foreground">{tierLabel(index)}</span>
                       {/* On the allocation policy the numbers are computed from the call order and mean
                         nothing on their own; a manual model shows the priority it was given. */}
-                      {/* A dearer split of a priority: tried once the cheaper supplies of it fail. */}
-                      {tier.cost_tier > 0 ? (
+                      {/* A dearer split of a priority: tried once the cheaper supplies of it fail. A tier of
+                          cheaper supplies held back by their success rate says so instead. */}
+                      {tier.cost_tier > 0 && tier.supplies.every((s) => s.low_success) ? (
+                        <span className="ml-2" data-testid="supply-tier-low-success">
+                          {t('modelSupply.tier.lowSuccess')}
+                        </span>
+                      ) : tier.cost_tier > 0 ? (
                         <span className="ml-2" data-testid="supply-tier-dearer">
                           {t(preview?.cost_order === 'cost' ? 'modelSupply.tier.dearerAcross' : 'modelSupply.tier.dearer')}
                         </span>

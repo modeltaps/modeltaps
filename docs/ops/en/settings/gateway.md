@@ -287,7 +287,7 @@ Key `SupplyModeDefault` · Type enum · Default `balance`
 
 Where: Platform settings › Gateway › Supply mode and cost
 
-How the supplies that take a model's requests share them, for models that follow the default. Only supplies that tie on priority (and on cost, see Cost and priority) share; a model can choose its own mode on its Supplies tab.
+How the supplies that take a model's requests share them, for models that follow the default. Only supplies that tie on priority (and with cost first, on cost) share; a model can choose its own mode on its Supplies tab.
 
 Values:
 
@@ -311,19 +311,57 @@ Key `SupplyCostOrder` · Type enum · Default `priority`
 
 Where: Platform settings › Gateway › Supply mode and cost
 
-How far a supply's cost (its channel's list price with the channel's fee) moves it ahead. Users pay the catalog price times their group ratio either way; only your cost changes. Costs within 0.1% count as the same, and supplies of unknown cost come last.
+Whether a supply's cost (its channel's list price with the channel's fee) moves it ahead. Users pay the catalog price times their group ratio either way; only your cost changes. With cost first, a supply must be cheaper by the minimum saving and reach the minimum success rate to be put ahead; closer costs share by priority and weight, and supplies of unknown cost come last.
 
 Values:
 
-- `priority` Priority first: Cost only orders supplies of the same priority.
-- `cost` Cost first: The cheapest supplies of a model take the requests whatever their priority.
+- `priority` Priority first: Cost does not order supplies: priorities and weights decide.
+- `cost` Cost first: Supplies that are clearly cheaper and serve well take a model's requests whatever their priority.
 
 Examples:
 
-- `priority` Requesty (cost x1.05) at the top priority keeps the requests of gpt-5.1; the official API (x1.00) one priority lower is its backup.
-- `cost` The official API (x1.00) takes the requests of gpt-5.1; Requesty becomes a backup marked dearer.
+- `priority` Requesty (cost x1.05) and the official API (x1.00) at the same priority with weights 3 and 1 take about 75% and 25% of gpt-5.1's requests.
+- `cost` A relay at x0.80 takes gpt-5.1's requests from Requesty at a higher priority while it succeeds 95% of the time; when it drops below, Requesty takes them back.
 
-See also: [Default supply mode](./gateway.md#SupplyModeDefault) · [Fee rate](./objects.md#channel-fee_rate) · [Priority](./objects.md#channel-priority)
+See also: [Minimum saving](./gateway.md#SupplyCostMinSavingPercent) · [Minimum success rate](./gateway.md#SupplyCostMinSuccessPercent) · [Default supply mode](./gateway.md#SupplyModeDefault) · [Fee rate](./objects.md#channel-fee_rate) · [Priority](./objects.md#channel-priority)
+
+Guide: [use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
+
+<a id="SupplyCostMinSavingPercent"></a>
+
+### Minimum saving
+
+Key `SupplyCostMinSavingPercent` · Type percent · Unit % · Range 0–99 · Default `5`
+
+Where: Platform settings › Gateway › Supply mode and cost
+
+With cost first, how much cheaper a supply must be than another to take requests ahead of it, as a percentage of the dearer cost. Supplies closer than that count as the same cost and share requests by priority and weight, so a slightly cheaper supply does not take all of a model's traffic. 0 puts any supply that is cheaper by more than 0.1% ahead.
+
+Examples:
+
+- `5` OpenRouter (fee 5.5%) and Requesty (fee 5%) count as the same cost; a relay at x0.90 is put ahead of both.
+- `0` Requesty (x1.05) is put ahead of OpenRouter (x1.055).
+
+See also: [Cost and priority](./gateway.md#SupplyCostOrder) · [Minimum success rate](./gateway.md#SupplyCostMinSuccessPercent)
+
+Guide: [use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
+
+<a id="SupplyCostMinSuccessPercent"></a>
+
+### Minimum success rate
+
+Key `SupplyCostMinSuccessPercent` · Type percent · Unit % · Range 0–100 · Default `95`
+
+Where: Platform settings › Gateway › Supply mode and cost
+
+With cost first, the success rate a supply needs over the current and the previous hour to be put ahead for its cost. A cheaper supply below it is ordered as if its cost were unknown, behind the supplies that serve well, until its rate recovers. A supply with fewer than 20 attempts in that time is not judged. 0 turns the check off.
+
+Examples:
+
+- `95` A discount reseller that failed 12 of its last 100 requests stops taking requests first; the next healthy supply takes them.
+- `0` The cheapest supply always leads, however often it fails; only pauses keep it out.
+
+See also: [Cost and priority](./gateway.md#SupplyCostOrder) · [Minimum saving](./gateway.md#SupplyCostMinSavingPercent) · [Supply pause rules](./gateway.md#PauseRulesEnabled)
 
 Guide: [use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 

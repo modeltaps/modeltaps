@@ -145,6 +145,9 @@ type ModelSupplyView struct {
 	// DearerBackup is set on a backup of the first reachable tier: it is only reached when the
 	// cheaper supplies of its tier fail (supply_cost_tier.go).
 	DearerBackup bool `json:"dearer_backup,omitempty"`
+	// LowSuccess says cost routing does not put the supply ahead for its cost: its recent success
+	// rate is below SupplyCostMinSuccessPercent (supply_health.go).
+	LowSuccess bool `json:"low_success,omitempty"`
 	// CheaperUpstream is a cheaper id of the same model on the channel, nil when there is none.
 	CheaperUpstream *CheaperUpstream `json:"cheaper_upstream,omitempty"`
 }

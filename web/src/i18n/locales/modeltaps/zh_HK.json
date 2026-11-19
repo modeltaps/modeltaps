@@ -3214,7 +3214,8 @@
       "backup_other": "後備 {{count}}",
       "priority": "優先級 {{priority}}",
       "dearer": "更貴，同優先級更便宜的線路之後才用",
-      "dearerAcross": "較貴，較便宜的線路都失敗後才用"
+      "dearerAcross": "較貴，較便宜的線路都失敗後才用",
+      "lowSuccess": "成功率低，正常的線路都失敗後才用"
     },
     "state": {
       "ok": "可用",
@@ -3330,6 +3331,8 @@
     "joinLastTip": "此模型已有其他渠道提供時才加入，因此排在它們之後。",
     "dearerBackup": "更貴，僅兜底",
     "dearerBackupTip": "有較便宜的線路承接請求，這條只在它們失敗時才用。",
+    "lowSuccess": "成功率低",
+    "lowSuccessTip": "更便宜，但最近兩小時的成功率低於成本優先要求的最低值，排在運行正常的線路後面。",
     "restorePlacement": "恢復正常排位",
     "confirmPending": "啟用",
     "keepOff": "不啟用",
@@ -3635,7 +3638,7 @@
         },
         "supply-mode": {
           "title": "分流方式與成本",
-          "description": "是否按線路分流、同一檔裡的線路如何分擔請求，以及成本能把線路往前排多遠",
+          "description": "是否按線路分流、同一檔裡的線路如何分擔請求，以及成本是否參與排序",
           "hint": "在模型的「線路」頁籤裡可以為單個模型另選",
           "migrateChecking": "正在核對要遷移的線路…",
           "migrateNote": "儲存時先把渠道的模型遷移成 {{supplies}} 條線路。",

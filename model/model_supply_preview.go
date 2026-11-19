@@ -284,7 +284,7 @@ func orderPreviewTiers(tiers []*SupplyPreviewTier) []*SupplyPreviewTier {
 		for _, e := range tier.Supplies {
 			entries = append(entries, e)
 			prio = append(prio, tier.Priority)
-			costs = append(costs, supplyViewCost(e.ModelSupplyView))
+			costs = append(costs, supplyViewRankCost(e.ModelSupplyView))
 		}
 	}
 	byCost := costFirst()

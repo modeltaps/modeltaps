@@ -122,7 +122,7 @@ func markSupplyTraffic(views []*ModelSupplyView) {
 		prio := make([]int64, len(available))
 		costs := make([]float64, len(available))
 		for i, v := range available {
-			prio[i], costs[i] = v.Priority, supplyViewCost(v)
+			prio[i], costs[i] = v.Priority, supplyViewRankCost(v)
 		}
 		groups := orderSupplyTiers(prio, costs, costFirst())
 		var tier []*ModelSupplyView

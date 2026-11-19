@@ -287,7 +287,7 @@ outline: deep
 
 位置：平台設定 › 網關 › 分流方式與成本
 
-沒有單獨設定的模型，承接請求的線路之間怎樣分擔。只有優先級相同（以及成本相同，見「成本與優先級」）的線路才會分擔；單個模型可以在它的「線路」頁籤裏另選。
+沒有單獨設定的模型，承接請求的線路之間怎麼分擔。只有優先級相同（成本優先時還要成本相同）的線路才會分擔；單個模型可以在它的「線路」分頁裡另選。
 
 取值：
 
@@ -311,19 +311,57 @@ outline: deep
 
 位置：平台設定 › 網關 › 分流方式與成本
 
-線路成本（渠道標價 × (1 + 渠道費率)）能把線路往前排多遠。用戶付的價格都是目錄價 × 分組倍率，只影響你的成本。相差 0.1% 以內算同價，成本未知的排最後。
+線路成本（渠道標價 × (1 + 渠道費率)）能不能把線路往前排。用戶付的價格都是目錄價 × 分組倍率，只影響你的成本。成本優先時，線路要便宜到「最低節省」並達到「最低成功率」才會被往前排；成本接近的按優先級和權重分擔，成本未知的排最後。
 
 取值：
 
-- `priority` 優先級優先：成本只調整同一優先級裏的先後。
-- `cost` 成本優先：不管優先級，一個模型最便宜的線路先承接請求。
+- `priority` 優先級優先：成本不參與排序，由優先級和權重決定。
+- `cost` 成本優先：明顯更便宜且運行穩定的線路先承接請求，不管優先級。
 
 示例：
 
-- `priority` gpt-5.1 的 Requesty（成本 ×1.05）在最高優先級，繼續承接請求；低一檔的官方 API（×1.00）兜底。
-- `cost` 官方 API（×1.00）承接 gpt-5.1 的請求，Requesty 變成兜底並標為較貴。
+- `priority` gpt-5.1 的 Requesty（成本 ×1.05）和官方 API（×1.00）同一優先級、權重 3 和 1，分別承接約 75% 和 25% 的請求。
+- `cost` 成本 ×0.80 的中轉在成功率保持 95% 時承接 gpt-5.1 的請求，優先級更高的 Requesty 兜底；成功率掉下去後 Requesty 接回。
 
-相關設定：[預設分流方式](./gateway.md#SupplyModeDefault) · [渠道費率](./objects.md#channel-fee_rate) · [優先級](./objects.md#channel-priority)
+相關設定：[最低節省](./gateway.md#SupplyCostMinSavingPercent) · [最低成功率](./gateway.md#SupplyCostMinSuccessPercent) · [預設分流方式](./gateway.md#SupplyModeDefault) · [渠道費率](./objects.md#channel-fee_rate) · [優先級](./objects.md#channel-priority)
+
+指南：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
+
+<a id="SupplyCostMinSavingPercent"></a>
+
+### 最低節省
+
+設定名 `SupplyCostMinSavingPercent` · 類型 percent · 單位 % · 範圍 0–99 · 預設值 `5`
+
+位置：平台設定 › 網關 › 分流方式與成本
+
+成本優先時，一條線路要比另一條便宜多少（按較貴那條的百分比）才排到它前面。差距在此以內算同價，按優先級和權重分擔，免得便宜一點點的線路拿走一個模型的全部流量。0 表示便宜超過 0.1% 就往前排。
+
+示例：
+
+- `5` OpenRouter（費率 5.5%）和 Requesty（費率 5%）算同價；成本 ×0.90 的中轉排在兩者前面。
+- `0` Requesty（×1.05）排在 OpenRouter（×1.055）前面。
+
+相關設定：[成本與優先級](./gateway.md#SupplyCostOrder) · [最低成功率](./gateway.md#SupplyCostMinSuccessPercent)
+
+指南：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
+
+<a id="SupplyCostMinSuccessPercent"></a>
+
+### 最低成功率
+
+設定名 `SupplyCostMinSuccessPercent` · 類型 percent · 單位 % · 範圍 0–100 · 預設值 `95`
+
+位置：平台設定 › 網關 › 分流方式與成本
+
+成本優先時，線路在本小時和上一小時裡要達到的成功率，才會因為便宜被往前排。低於它的便宜線路按成本未知處理，排在運行正常的線路後面，成功率恢復後再回到前面。這段時間裡請求不到 20 次的線路不做判斷。0 表示不檢查。
+
+示例：
+
+- `95` 最近 100 次失敗了 12 次的折扣轉售商不再優先承接請求，由下一條正常的線路接手。
+- `0` 最便宜的線路總是排第一，不管失敗多少次；只有暫停規則能把它拿掉。
+
+相關設定：[成本與優先級](./gateway.md#SupplyCostOrder) · [最低節省](./gateway.md#SupplyCostMinSavingPercent) · [線路暫停規則](./gateway.md#PauseRulesEnabled)
 
 指南：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 

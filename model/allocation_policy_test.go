@@ -13,6 +13,9 @@ import (
 func useAllocationTestDB(t *testing.T) {
 	t.Helper()
 	useAllGroupsTestDB(t, "default")
+	// Success rates are cached by channel id, which every test database reuses.
+	resetSupplyHealth()
+	t.Cleanup(resetSupplyHealth)
 	if err := DB.AutoMigrate(&AllocationPolicy{}); err != nil {
 		t.Fatal(err)
 	}

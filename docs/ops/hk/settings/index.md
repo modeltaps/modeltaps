@@ -14,7 +14,7 @@ outline: deep
 - [平台設定 · 登入與註冊](./auth.md) (31)
 - [平台設定 · 計費](./billing.md) (16)
 - [平台設定 · 支付](./payment.md) (4)
-- [平台設定 · 網關](./gateway.md) (60)
+- [平台設定 · 網關](./gateway.md) (62)
 - [平台設定 · 日誌與私隱](./privacy.md) (12)
 - [平台設定 · 用戶入口](./entries.md) (1)
 - [平台設定 · 郵件](./mail.md) (10)

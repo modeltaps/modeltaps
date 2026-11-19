@@ -466,8 +466,8 @@ function SupplyRoutingNote({ turningOn }) {
 SupplyRoutingNote.propTypes = { turningOn: PropTypes.bool.isRequired };
 
 // Whether requests route by supplies, how a model that follows the default picks a supply within
-// one priority tier, and how far a supply's cost reorders the tiers (within a priority, or across
-// priorities). Labels, hints, the values' descriptions and examples come from the settings catalog.
+// one priority tier, and whether a supply's cost reorders the tiers (with the saving and success
+// rate a cheaper supply needs to be put ahead). Labels, hints, the values' descriptions and examples come from the settings catalog.
 export function SupplyModeCard({ ctx }) {
   const { t } = useTranslation();
   const { inputs, origin, setField } = ctx;
@@ -495,6 +495,27 @@ export function SupplyModeCard({ ctx }) {
         onChange={(v) => setField('SupplyCostOrder', v)}
         options={enumOptions('SupplyCostOrder', ['priority', 'cost'])}
       />
+      {/* The two guards only mean something while cost orders supplies. */}
+      {costOrder === 'cost' && (
+        <div className="grid gap-5 sm:grid-cols-2">
+          <TextRow
+            id="SupplyCostMinSavingPercent"
+            type="number"
+            unit="%"
+            value={inputs.SupplyCostMinSavingPercent}
+            onChange={(v) => setField('SupplyCostMinSavingPercent', v)}
+            placeholder="5"
+          />
+          <TextRow
+            id="SupplyCostMinSuccessPercent"
+            type="number"
+            unit="%"
+            value={inputs.SupplyCostMinSuccessPercent}
+            onChange={(v) => setField('SupplyCostMinSuccessPercent', v)}
+            placeholder="95"
+          />
+        </div>
+      )}
     </OptionCard>
   );
 }

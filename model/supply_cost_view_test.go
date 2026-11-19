@@ -6,11 +6,15 @@ import (
 	"github.com/modeltaps/modeltaps/common/config"
 )
 
-// Supplies of one model: the top tier holds two at the catalog price (shared by balance), a dearer
-// aggregator and one of unknown cost (both backups, being dearer), with one backup below. The
-// quote is $5 / $30 per million.
+// Supplies of one model under cost routing: the top priority holds two at the catalog price (shared
+// by balance), a dearer aggregator and one of unknown cost (both backups, being dearer), with one
+// backup below. The quote is $5 / $30 per million.
 func TestSupplyCostViews(t *testing.T) {
 	usePreviewTestDB(t)
+	oldOrder := config.SupplyCostOrder
+	config.SupplyCostOrder = SupplyCostOrderCost
+	t.Cleanup(func() { config.SupplyCostOrder = oldOrder })
+	resetSupplyHealth()
 	oldPricing := PricingInstance
 	PricingInstance = &Pricing{Prices: map[string]*Price{
 		"m": {Model: "m", Type: TokensPriceType, Input: 2.5, Output: 15},

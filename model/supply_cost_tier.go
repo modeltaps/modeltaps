@@ -8,15 +8,20 @@ import (
 	"github.com/modeltaps/modeltaps/common/config"
 )
 
-// Supplies are tried cheapest first. Supplies are split by what their channel costs for the model
-// (list price with the channel's fee, over the catalog price): only the cheapest share requests
-// (by weight, or the heaviest with failover), a dearer one is reached only when every cheaper one
-// is unavailable, and supplies of unknown cost come last. Users pay the catalog price times their
-// group ratio either way, so the split only keeps the site's cost down; it never changes a price.
+// How cost orders supplies. With SupplyCostOrder "priority" (default) it does not: the admin's
+// priorities and weights decide, and a cheaper supply in the same tier shares requests by weight
+// like any other. With "cost" the cheapest supplies of a model take the requests whatever their
+// priority, a dearer one being reached only when every cheaper one is unavailable, and supplies
+// of unknown cost come last; priority and weight order supplies of about the same cost. Two
+// guards keep a cheap but poor supply from taking a model's traffic on price alone:
 //
-// SupplyCostOrder sets how far cost reaches. "priority" (default): within one priority only, so an
-// admin who ranks a dearer supply above a cheaper one gets that order. "cost": across priorities,
-// priority only ordering supplies of the same cost.
+//   - a supply must be cheaper by at least SupplyCostMinSavingPercent to be put ahead; closer
+//     costs count as the same (costTierIndex);
+//   - a supply whose recent success rate is below SupplyCostMinSuccessPercent is ordered as if its
+//     cost were unknown (supply_health.go), until it serves well again.
+//
+// Users pay the catalog price times their group ratio either way, so cost only keeps the site's
+// cost down; it never changes a price.
 
 // Values of SupplyCostOrder.
 const (
@@ -28,7 +33,8 @@ func costFirst() bool { return config.SupplyCostOrder == SupplyCostOrderCost }
 
 // orderSupplyTiers groups supplies into the tiers they are tried in, first tier first. prio is
 // each supply's priority (higher first), costs its cost over catalog (0 unknown). It returns the
-// supplies' indexes per tier.
+// supplies' indexes per tier: one tier per priority, or with byCost one per cost tier, priority
+// ordering the supplies inside it.
 func orderSupplyTiers(prio []int64, costs []float64, byCost bool) [][]int {
 	type key struct {
 		first, second int64
@@ -40,18 +46,8 @@ func orderSupplyTiers(prio []int64, costs []float64, byCost bool) [][]int {
 			keys[i] = key{int64(tiers[i]), -prio[i]}
 		}
 	} else {
-		byPrio := map[int64][]int{}
 		for i, p := range prio {
-			byPrio[p] = append(byPrio[p], i)
-		}
-		for p, idx := range byPrio {
-			sub := make([]float64, len(idx))
-			for j, i := range idx {
-				sub[j] = costs[i]
-			}
-			for j, t := range costTierIndex(sub) {
-				keys[idx[j]] = key{-p, int64(t)}
-			}
+			keys[i] = key{-p, 0}
 		}
 	}
 	groups := map[key][]int{}
@@ -75,9 +71,15 @@ func orderSupplyTiers(prio []int64, costs []float64, byCost bool) [][]int {
 	return out
 }
 
-// costTierTolerance treats costs this close (relative) as the same price: synced prices carry
-// rounding, and a supply 0.1% dearer is not worth taking traffic away from.
-const costTierTolerance = 0.001
+// costTierMargin is how much cheaper (relative) a cost must be to make a tier of its own:
+// SupplyCostMinSavingPercent, at least 0.1% so rounding in synced prices never splits a tier.
+func costTierMargin() float64 {
+	m := config.SupplyCostMinSavingPercent / 100
+	if m < 0.001 {
+		m = 0.001
+	}
+	return m
+}
 
 // costTierIndex gives each cost (cost over catalog, 0 when unknown) its tier: 0 for the
 // cheapest, counting up with each dearer price, and the last index for unknown costs. When no
@@ -94,10 +96,12 @@ func costTierIndex(costs []float64) []int {
 		return out
 	}
 	sort.Float64s(known)
-	// Start of each tier: a cost more than the tolerance above the tier's first.
+	// Start of each tier: a cost the margin above the tier's first, so the tier's first is at
+	// least that much cheaper than the next tier.
+	margin := costTierMargin()
 	starts := []float64{known[0]}
 	for _, c := range known[1:] {
-		if c > starts[len(starts)-1]*(1+costTierTolerance) {
+		if c*(1-margin) >= starts[len(starts)-1]*(1+1e-9) {
 			starts = append(starts, c)
 		}
 	}
@@ -165,6 +169,7 @@ func (cc *ChannelsChooser) routeTiers(modelName string, priorities [][]int) [][]
 		return priorities
 	}
 	supplies := cc.Supplies[modelName]
+	byCost := costFirst()
 	var ids []int
 	var prio []int64
 	var costs []float64
@@ -173,13 +178,16 @@ func (cc *ChannelsChooser) routeTiers(modelName string, priorities [][]int) [][]
 			ids = append(ids, id)
 			prio = append(prio, int64(len(priorities)-p))
 			cost := 0.0
-			if choice, ok := cc.Channels[id]; ok {
+			if choice, ok := cc.Channels[id]; ok && byCost {
 				cost = supplyRouteCost(modelName, supplies[id], choice.Channel)
+				if cost > 0 && supplies[id] != nil && !supplyServesWell(id, supplyUpstreamName(supplies[id])) {
+					cost = 0
+				}
 			}
 			costs = append(costs, cost)
 		}
 	}
-	groups := orderSupplyTiers(prio, costs, costFirst())
+	groups := orderSupplyTiers(prio, costs, byCost)
 	out := make([][]int, len(groups))
 	for g, idx := range groups {
 		for _, i := range idx {
@@ -195,4 +203,19 @@ func supplyViewCost(v *ModelSupplyView) float64 {
 		return 0
 	}
 	return v.Cost.CostToCatalog
+}
+
+// supplyViewRankCost is the cost a supply view is ordered by: its cost under the "cost"
+// SupplyCostOrder unless it serves poorly (then 0, like an unknown cost, and LowSuccess is set);
+// 0 under "priority", where cost does not order supplies.
+func supplyViewRankCost(v *ModelSupplyView) float64 {
+	if !costFirst() {
+		return 0
+	}
+	cost := supplyViewCost(v)
+	if cost > 0 && v.ModelSupply != nil && !supplyServesWell(v.ChannelId, supplyUpstreamName(v.ModelSupply)) {
+		v.LowSuccess = true
+		return 0
+	}
+	return cost
 }

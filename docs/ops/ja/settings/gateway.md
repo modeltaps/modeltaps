@@ -287,7 +287,7 @@ Codex・Claude Code・Gemini CLI・Antigravity チャネルの OAuth 認証情�
 
 場所：プラットフォーム設定 › ゲートウェイ › 供給モードとコスト
 
-既定に従うモデルで、リクエストを受ける供給どうしがどう分担するかです。分担するのは優先度が同じ（さらに「コストと優先度」によりコストも同じ）供給だけで、モデルごとに「供給」タブで別の方式を選べます。
+個別設定のないモデルで、リクエストを受けるルートどうしの分担方法です。優先度が同じ（コスト優先ではコストも同じ）ルートだけが分担します。モデルごとに「ルート」タブで別の方式を選べます。
 
 値：
 
@@ -311,19 +311,57 @@ Codex・Claude Code・Gemini CLI・Antigravity チャネルの OAuth 認証情�
 
 場所：プラットフォーム設定 › ゲートウェイ › 供給モードとコスト
 
-供給のコスト（チャネルの表示価格にチャネルの手数料を加えたもの）が、その供給をどこまで前に出すかです。ユーザーが払うのはどちらでもカタログ価格 × グループ倍率で、変わるのは自分のコストだけです。差が 0.1% 以内のコストは同じとみなし、コスト不明の供給は最後になります。
+ルートのコスト（チャネルの定価 × (1 + チャネル手数料率)）でルートを前に出すかどうか。ユーザーの支払いは常にカタログ価格 × グループ倍率で、変わるのは自分のコストだけです。コスト優先では、「最低節約率」以上安く、「最低成功率」に達したルートだけが前に出ます。コストが近いルートは優先度と重みで分担し、コスト不明のルートは最後です。
 
 値：
 
-- `priority` 優先度優先：コストは同じ優先度の供給の順序だけを決めます。
-- `cost` コスト優先：優先度にかかわらず、モデルの最も安い供給がリクエストを受けます。
+- `priority` 優先度優先：コストは順序に影響せず、優先度と重みで決まります。
+- `cost` コスト優先：明らかに安く安定したルートが、優先度に関係なく先にリクエストを受けます。
 
 例：
 
-- `priority` 最上位の優先度にある Requesty（コスト ×1.05）が引き続き gpt-5.1 のリクエストを受け、1 つ下の公式 API（×1.00）が予備です。
-- `cost` 公式 API（×1.00）が gpt-5.1 のリクエストを受け、Requesty は割高と表示された予備になります。
+- `priority` gpt-5.1 の Requesty（コスト ×1.05）と公式 API（×1.00）が同じ優先度・重み 3 と 1 なら、約 75% と 25% を受けます。
+- `cost` コスト ×0.80 の中継が成功率 95% を保つ間は gpt-5.1 のリクエストを受け、優先度の高い Requesty が予備になります。成功率が下がると Requesty が引き継ぎます。
 
-関連する設定：[既定の供給モード](./gateway.md#SupplyModeDefault) · [手数料率](./objects.md#channel-fee_rate) · [優先度](./objects.md#channel-priority)
+関連する設定：[最低節約率](./gateway.md#SupplyCostMinSavingPercent) · [最低成功率](./gateway.md#SupplyCostMinSuccessPercent) · [既定の供給モード](./gateway.md#SupplyModeDefault) · [手数料率](./objects.md#channel-fee_rate) · [優先度](./objects.md#channel-priority)
+
+ガイド：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
+
+<a id="SupplyCostMinSavingPercent"></a>
+
+### 最低節約率
+
+キー `SupplyCostMinSavingPercent` · 型 percent · 単位 % · 範囲 0–99 · 既定値 `5`
+
+場所：プラットフォーム設定 › ゲートウェイ › 供給モードとコスト
+
+コスト優先で、あるルートが別のルートより前に出るために必要な安さ（高い方のコストに対する割合）。差がこれ以内なら同じコストとみなし、優先度と重みで分担します。わずかに安いだけのルートがモデルの全トラフィックを取ることを防ぎます。0 なら 0.1% を超えて安ければ前に出ます。
+
+例：
+
+- `5` OpenRouter（手数料 5.5%）と Requesty（手数料 5%）は同じコスト扱い。コスト ×0.90 の中継が両方より前に出ます。
+- `0` Requesty（×1.05）が OpenRouter（×1.055）より前に出ます。
+
+関連する設定：[コストと優先度](./gateway.md#SupplyCostOrder) · [最低成功率](./gateway.md#SupplyCostMinSuccessPercent)
+
+ガイド：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
+
+<a id="SupplyCostMinSuccessPercent"></a>
+
+### 最低成功率
+
+キー `SupplyCostMinSuccessPercent` · 型 percent · 単位 % · 範囲 0–100 · 既定値 `95`
+
+場所：プラットフォーム設定 › ゲートウェイ › 供給モードとコスト
+
+コスト優先で、安さを理由に前に出るために、現在と直前の 1 時間で必要な成功率。これを下回る安いルートはコスト不明として扱われ、正常なルートの後ろに回り、成功率が戻ると前に戻ります。この期間の試行が 20 回未満のルートは判定しません。0 でチェックしません。
+
+例：
+
+- `95` 直近 100 回のうち 12 回失敗した割引リセラーは優先されなくなり、次の正常なルートが引き継ぎます。
+- `0` 最安ルートは失敗回数に関係なく常に先頭です。外せるのは一時停止ルールだけです。
+
+関連する設定：[コストと優先度](./gateway.md#SupplyCostOrder) · [最低節約率](./gateway.md#SupplyCostMinSavingPercent) · [供給の一時停止ルール](./gateway.md#PauseRulesEnabled)
 
 ガイド：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 

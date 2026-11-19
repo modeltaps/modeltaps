@@ -62,15 +62,19 @@ Record your real top-ups under **Channels → Advanced → Top-up records**: the
 ## Which supply takes a request
 
 1. Priorities (from the allocation policy, or a manual model's own numbers) order the supplies.
-2. Supplies are split by cost. Only the cheapest take requests. A dearer supply is reached only when every cheaper one is unavailable. Supplies whose cost is unknown come last. Costs within 0.1% count as the same price.
+2. With **cost first**, cost orders them too (see below).
 3. Within the supplies that take requests, the supply mode decides: **balance** shares requests by weight, **failover** sends everything to the heaviest.
 
-**Cost and priority** (`SupplyCostOrder`) sets how far step 2 reaches:
+**Cost and priority** (`SupplyCostOrder`) decides whether cost takes part:
 
-- **Priority first** (default): cost only reorders supplies of the same priority. Choose it when a priority means something besides cost, such as quality, speed or a provider you trust.
-- **Cost first**: the cheapest supplies of a model take the requests whatever their priority. Priority only orders supplies of the same cost. A cheaper host may be slower or run a quantized model, so check the supplies before you switch.
+- **Priority first** (default): cost does not order supplies. Supplies of one priority share requests by the supply mode; a cheaper one does not take them all. Choose it when a priority means something besides cost, such as quality, speed or a provider you trust.
+- **Cost first**: the cheapest supplies of a model take the requests whatever their priority. A dearer supply is reached only when every cheaper one is unavailable, and supplies whose cost is unknown come last. Two guards keep a cheap but unreliable supply from taking the traffic on price alone:
+  - **Minimum saving** (`SupplyCostMinSavingPercent`, default 5%): a supply must be this much cheaper than another to go ahead of it. Closer costs count as the same and share by priority and weight.
+  - **Minimum success rate** (`SupplyCostMinSuccessPercent`, default 95%): a supply below this success rate over the current and the previous hour is ordered as if its cost were unknown, behind the supplies that serve well, until it recovers. A supply with fewer than 20 attempts is not judged.
 
-The model's Supplies tab shows the order requests will try. A backup that waits only because it is dearer is marked **Dearer — backup only**.
+  A cheaper host may also be slower or run a quantized model, so check the supplies before you switch.
+
+The model's Supplies tab shows the order requests will try. A backup that waits only because it is dearer is marked **Dearer — backup only**; a cheaper supply held back by its success rate is marked **Low success rate**.
 
 ## The price check
 
@@ -123,14 +127,19 @@ You paid **$103.00** for **$100.00** of AI credit. Add a top-up record with paid
 
 ### 3. Two supplies of one priority
 
-`glm-5.2` is supplied by Vercel (cost ×1.03) and Requesty (cost ×1.05) at the same priority, in balance mode. All requests go to Vercel. Requesty takes requests only while Vercel is paused or failing. A default-group user pays the same price either way.
+`glm-5.2` is supplied by Vercel (cost ×1.03) and Requesty (cost ×1.05) at the same priority, in balance mode, with weights 3 and 1.
+
+- **Priority first**: Vercel takes about 75% of the requests and Requesty about 25%.
+- **Cost first**: they are 2% apart, within the 5% minimum saving, so they count as the same cost and still share 75 / 25. With the minimum saving at 0, every request goes to Vercel, and Requesty takes requests only while Vercel is paused or failing.
+
+A default-group user pays the same price either way.
 
 ### 4. Cost first across priorities
 
-`gpt-5.1` is supplied by Requesty at the top priority (cost ×1.05) and by the official OpenAI API one priority lower (cost ×1.00).
+`gpt-5.1` is supplied by Requesty at the top priority (cost ×1.05) and by a discount relay one priority lower (cost ×0.80).
 
-- **Priority first**: Requesty takes the requests, and OpenAI is the backup.
-- **Cost first**: OpenAI takes the requests, and Requesty is the backup, marked dearer.
+- **Priority first**: Requesty takes the requests, and the relay is the backup.
+- **Cost first**: the relay is 24% cheaper and takes the requests; Requesty is the backup, marked dearer. When the relay fails 10% of its requests over the last two hours, it is below the 95% success rate and Requesty takes the requests back until the relay recovers.
 
 ### 5. A VIP discount that loses money
 

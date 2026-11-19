@@ -295,6 +295,8 @@ func registerOptions() {
 		config.SupplyCostOrder = value
 		return nil
 	}, SupplyCostOrderPriority, config.ScopeAdmin)
+	config.GlobalOption.RegisterFloat("SupplyCostMinSavingPercent", &config.SupplyCostMinSavingPercent, config.ScopeAdmin)
+	config.GlobalOption.RegisterFloat("SupplyCostMinSuccessPercent", &config.SupplyCostMinSuccessPercent, config.ScopeAdmin)
 	config.GlobalOption.RegisterBool("ChannelMetricsEnabled", &config.ChannelMetricsEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("ChannelMetricsRetentionDays", &config.ChannelMetricsRetentionDays, config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("ChannelCredentialRefreshMinutes", &config.ChannelCredentialRefreshMinutes, config.ScopeAdmin)

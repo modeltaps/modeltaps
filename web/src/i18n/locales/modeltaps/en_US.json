@@ -3317,7 +3317,8 @@
       "backup_other": "Backup {{count}}",
       "priority": "priority {{priority}}",
       "dearer": "dearer, tried after the cheaper supplies of this priority",
-      "dearerAcross": "Dearer: tried once every cheaper supply fails"
+      "dearerAcross": "Dearer: tried once every cheaper supply fails",
+      "lowSuccess": "Low success rate, used once the supplies that serve well fail"
     },
     "state": {
       "ok": "Available",
@@ -3438,6 +3439,8 @@
     "joinLastTip": "Added after other channels already supplied this model, so it is tried after them.",
     "dearerBackup": "Dearer — backup only",
     "dearerBackupTip": "Cheaper supplies take the requests; this one is used only when they fail.",
+    "lowSuccess": "Low success rate",
+    "lowSuccessTip": "Cheaper, but its success rate over the last two hours is below the minimum for cost routing, so it waits behind the supplies that serve well.",
     "restorePlacement": "Use its normal position",
     "confirmPending": "Switch on",
     "keepOff": "Keep it off",
@@ -3745,7 +3748,7 @@
         },
         "supply-mode": {
           "title": "Supply mode and cost",
-          "description": "Whether requests route by supplies, how supplies in one tier share requests, and how far a supply's cost moves it ahead",
+          "description": "Whether requests route by supplies, how supplies in one tier share requests, and whether a supply's cost orders them",
           "hint": "A single model can pick another mode under Supplies on the models page",
           "migrateChecking": "Checking what moves over to supplies…",
           "migrateNote": "Saving first turns the channels' models into {{supplies}} supplies.",

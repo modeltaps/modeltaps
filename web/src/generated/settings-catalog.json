@@ -2176,7 +2176,7 @@
         }
       ],
       "label": "Default supply mode",
-      "description": "How the supplies that take a model's requests share them, for models that follow the default. Only supplies that tie on priority (and on cost, see Cost and priority) share; a model can choose its own mode on its Supplies tab.",
+      "description": "How the supplies that take a model's requests share them, for models that follow the default. Only supplies that tie on priority (and with cost first, on cost) share; a model can choose its own mode on its Supplies tab.",
       "examples": [
         {
           "value": "balance",
@@ -2210,27 +2210,29 @@
         {
           "value": "priority",
           "label": "Priority first",
-          "description": "Cost only orders supplies of the same priority."
+          "description": "Cost does not order supplies: priorities and weights decide."
         },
         {
           "value": "cost",
           "label": "Cost first",
-          "description": "The cheapest supplies of a model take the requests whatever their priority."
+          "description": "Supplies that are clearly cheaper and serve well take a model's requests whatever their priority."
         }
       ],
       "label": "Cost and priority",
-      "description": "How far a supply's cost (its channel's list price with the channel's fee) moves it ahead. Users pay the catalog price times their group ratio either way; only your cost changes. Costs within 0.1% count as the same, and supplies of unknown cost come last.",
+      "description": "Whether a supply's cost (its channel's list price with the channel's fee) moves it ahead. Users pay the catalog price times their group ratio either way; only your cost changes. With cost first, a supply must be cheaper by the minimum saving and reach the minimum success rate to be put ahead; closer costs share by priority and weight, and supplies of unknown cost come last.",
       "examples": [
         {
           "value": "priority",
-          "effect": "Requesty (cost x1.05) at the top priority keeps the requests of gpt-5.1; the official API (x1.00) one priority lower is its backup."
+          "effect": "Requesty (cost x1.05) and the official API (x1.00) at the same priority with weights 3 and 1 take about 75% and 25% of gpt-5.1's requests."
         },
         {
           "value": "cost",
-          "effect": "The official API (x1.00) takes the requests of gpt-5.1; Requesty becomes a backup marked dearer."
+          "effect": "A relay at x0.80 takes gpt-5.1's requests from Requesty at a higher priority while it succeeds 95% of the time; when it drops below, Requesty takes them back."
         }
       ],
       "related": [
+        "SupplyCostMinSavingPercent",
+        "SupplyCostMinSuccessPercent",
         "SupplyModeDefault",
         "channel.fee_rate",
         "channel.priority"
@@ -2240,6 +2242,74 @@
         "cost routing",
         "price routing",
         "lowest cost"
+      ],
+      "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
+    },
+    {
+      "key": "SupplyCostMinSavingPercent",
+      "scope": "site",
+      "group": "gateway",
+      "card": "supply-mode",
+      "type": "percent",
+      "unit": "%",
+      "min": 0,
+      "max": 99,
+      "label": "Minimum saving",
+      "description": "With cost first, how much cheaper a supply must be than another to take requests ahead of it, as a percentage of the dearer cost. Supplies closer than that count as the same cost and share requests by priority and weight, so a slightly cheaper supply does not take all of a model's traffic. 0 puts any supply that is cheaper by more than 0.1% ahead.",
+      "examples": [
+        {
+          "value": "5",
+          "effect": "OpenRouter (fee 5.5%) and Requesty (fee 5%) count as the same cost; a relay at x0.90 is put ahead of both."
+        },
+        {
+          "value": "0",
+          "effect": "Requesty (x1.05) is put ahead of OpenRouter (x1.055)."
+        }
+      ],
+      "related": [
+        "SupplyCostOrder",
+        "SupplyCostMinSuccessPercent"
+      ],
+      "keywords": [
+        "price difference",
+        "threshold",
+        "margin",
+        "cost routing"
+      ],
+      "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
+    },
+    {
+      "key": "SupplyCostMinSuccessPercent",
+      "scope": "site",
+      "group": "gateway",
+      "card": "supply-mode",
+      "type": "percent",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "label": "Minimum success rate",
+      "description": "With cost first, the success rate a supply needs over the current and the previous hour to be put ahead for its cost. A cheaper supply below it is ordered as if its cost were unknown, behind the supplies that serve well, until its rate recovers. A supply with fewer than 20 attempts in that time is not judged. 0 turns the check off.",
+      "examples": [
+        {
+          "value": "95",
+          "effect": "A discount reseller that failed 12 of its last 100 requests stops taking requests first; the next healthy supply takes them."
+        },
+        {
+          "value": "0",
+          "effect": "The cheapest supply always leads, however often it fails; only pauses keep it out."
+        }
+      ],
+      "related": [
+        "SupplyCostOrder",
+        "SupplyCostMinSavingPercent",
+        "PauseRulesEnabled"
+      ],
+      "keywords": [
+        "reliability",
+        "stability",
+        "error rate",
+        "health",
+        "unstable"
       ],
       "docs": "use/pricing_and_routing.md#which-supply-takes-a-request"
     },
