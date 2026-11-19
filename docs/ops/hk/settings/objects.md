@@ -637,24 +637,24 @@ outline: deep
 
 ### 請求與回應留存
 
-設定名 `organization.log_io_policy` · 類型 enum · 預設值 member
+設定名 `organization.log_io_policy` · 類型 enum · 預設值 off
 
 位置：Organizations › general
 
-組織的 API Key 是否留存請求和回應正文。留存的正文從不包含 API Key 或驗證標頭，30 天後刪除，只有擁有者和平台管理員能讀。成員會在自己的 Key 上看到是誰、甚麼時候開啟的留存。只在站點允許留存時顯示。
+組織的哪些 API Key 留存請求和回應正文。只有擁有者和管理員能在這裏設定，Key 的建立者不能改。留存的正文從不包含 API Key 或驗證標頭，30 天後刪除，只有擁有者和平台管理員能讀。成員會在自己的 Key 上看到是誰、甚麼時候開啟的留存。只在站點允許留存時顯示。
 
 取值：
 
-- `member` 由每個 Key 決定：由 Key 自己的開關決定；成員設定自己建立的 Key，擁有者和管理員可以設定任何 Key。
-- `on` 所有 Key 都留存：組織的所有 Key 都留存正文，Key 上的開關鎖定。
-- `off` 所有 Key 都不留存：組織的 Key 都不留存正文，Key 上的開關鎖定。
+- `off` 所有 Key 都不留存：組織的 Key 都不留存請求與回應正文。
+- `on` 所有 Key 都留存：組織的所有 Key 都留存正文，包括之後新建的 Key。
+- `selected` 僅選中的 Key 留存：只有在下面列表裏勾選的 Key 留存正文；新建的 Key 預設不勾選。
 
 示例：
 
-- `off` 整個組織零數據留存：成員不能為任何 Key 打開。
-- `member` 成員只為正在除錯的應用的 Key 打開，其他 Key 都不留存。
+- `off` 整個組織零數據留存。
+- `selected` 管理員只勾選正在除錯的應用的 Key，其他 Key 都不留存。
 
-相關設定：[允許留存請求正文](./privacy.md#LogIOEnabled) · [留存請求與回應正文](./objects.md#token-log_io)
+相關設定：[允許留存請求正文](./privacy.md#LogIOEnabled)
 
 ## API 密鑰
 
@@ -689,22 +689,6 @@ Key 的分組沒有渠道能承接請求時再試的第二個分組。在那裏�
 - `default` 分組 vip、備用 default：該模型的 vip 渠道全部出錯時，請求在 default 組裏按它的倍率運行。
 
 相關設定：[分組](./objects.md#token-group) · [分組倍率](./objects.md#user_group-ratio)
-
-<a id="token-log_io"></a>
-
-### 留存請求與回應正文
-
-設定名 `token.log_io` · 類型 bool · 預設值 the owner's default for new keys (off for organization keys)
-
-位置：API keys › access
-
-這個 Key 的請求是否留存完整的請求和回應正文，可在日誌明細裏查看。新建的個人 Key 用用戶的「新建 Key 預設」；改這個預設不影響已有的 Key，除非用戶把它套用到已有 Key。組織 Key 可能被組織的策略鎖定。只在站點允許留存時顯示。
-
-示例：
-
-- `true` 正在測試的應用的 Key 留存 30 天的請求和回覆，用戶的其他 Key 都不留存。
-
-相關設定：[允許留存請求正文](./privacy.md#LogIOEnabled) · [請求與回應留存](./objects.md#organization-log_io_policy)
 
 <a id="token-model_limits"></a>
 

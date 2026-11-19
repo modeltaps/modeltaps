@@ -4073,8 +4073,8 @@
           "hint": "用戶名不能修改"
         },
         "logIO": {
-          "description": "新建 API Key 是否預設留存完整內文",
-          "hint": "每個 Key 可以單獨改"
+          "description": "開啟後可在日誌明細裏看到完整正文",
+          "hint": "只影響之後的請求"
         },
         "appearance": {
           "title": "外觀",
@@ -4176,10 +4176,6 @@
       "body": "用本組織 API Key 發出的請求和回應會保留 {{days}} 天，組織所有者可以查看。",
       "byMember": "由 {{name}} 於 {{time}} 開啟。",
       "byOrg": "已在組織設定中開啟。",
-      "toggle": "留存請求與回應內文",
-      "toggleHint": "開啟後可在日誌明細中看到這個 Key 的完整請求和回覆，30 天後自動刪除",
-      "locked_on": "組織設定為所有 Key 都留存，不能在這裏改",
-      "locked_off": "組織設定為所有 Key 都不留存，不能在這裏改",
       "bodyKey": "這個 Key 發出的請求和回應會保留 {{days}} 天，組織擁有者可以查看。"
     },
     "panel": {
@@ -4906,12 +4902,15 @@
     },
     "settings": {
       "logIOPolicy": "請求與回應留存",
-      "logIOPolicy_member": "由每個 Key 決定",
       "logIOPolicy_on": "所有 Key 都留存",
-      "logIOPolicy_off": "所有 Key 都不留存",
-      "logIOPolicyHint_member": "成員在自己建立的 Key 上開關，擁有者和管理員可以改任何 Key；成員會在 Key 上看到是誰開啟的。留存的內文不含 API 金鑰和鑑權標頭，單條最多 {{kb}} KB，30 天後自動刪除，只有擁有者和平台管理員能查看。",
-      "logIOPolicyHint_on": "組織的所有 Key 都留存請求與回應內文，Key 上的開關鎖定；成員會看到是誰開啟的。內文單條最多 {{kb}} KB，30 天後自動刪除，只有擁有者和平台管理員能查看。",
-      "logIOPolicyHint_off": "組織的 Key 都不留存內文，成員也不能在 Key 上打開。"
+      "logIOPolicy_off": "不留存",
+      "logIOPolicyHint_on": "組織的所有 Key 都留存請求與回應內文，包括之後新建的 Key；成員會看到是誰開啟的。內文單條最多 {{kb}} KB，30 天後自動刪除，只有擁有者和平台管理員能查看。",
+      "logIOPolicyHint_off": "組織的 Key 都不留存請求與回應內文。",
+      "logIOPolicy_selected": "僅選中的 Key 留存",
+      "logIOPolicyHint_selected": "只有下面勾選的 Key 留存請求與回應內文，新建的 Key 預設不勾選；成員會在 Key 上看到是誰勾選的。內文單條最多 {{kb}} KB，30 天後自動刪除，只有擁有者和平台管理員能查看。",
+      "logIOKeysHint": "勾選要留存的 Key，儲存後生效。",
+      "logIOKeysEmpty": "組織還沒有 API Key。",
+      "logIOKeyOrgOwned": "組織所有"
     }
   },
   "agentDevice": {
@@ -5108,14 +5107,5 @@
     "aboveTip": "比本站基礎售價高 {{pct}}%，仍在預設分組的利潤空間內",
     "belowTip": "比本站基礎售價低 {{pct}}%",
     "lossTip": "比本站基礎售價高 {{pct}}%：成本已超過售價的實際收入，走這裡的請求會虧"
-  },
-  "profilePage": {
-    "logIOToggle": "新建 API Key 預設留存請求與回應內文",
-    "logIOHint": "每個 API Key 有自己的留存開關，在 Key 的「進階」裏改。這裏只決定新建 Key 的初始值，改了不影響已有的 Key。留存的內文不含 API 金鑰和鑑權標頭，單條最多 {{kb}} KB，30 天後自動刪除；你本人和平台管理員可以在日誌明細中查看。",
-    "logIOApply": "套用到我現有的全部 Key",
-    "logIOApplyHint": "把已儲存的預設值寫到你現有的全部個人 Key 上",
-    "logIOApplyConfirmOn": "你現有的全部個人 Key 都會開始留存請求與回應內文。繼續嗎？",
-    "logIOApplyConfirmOff": "你現有的全部個人 Key 都會停止留存請求與回應內文。繼續嗎？",
-    "logIOApplied": "已更新 {{count}} 個 Key"
   }
 }

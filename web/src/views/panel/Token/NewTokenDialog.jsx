@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
@@ -8,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
-import { Field, ToggleField } from '@/components/objects';
+import { Field } from '@/components/objects';
 import QuotaInput from '@/components/QuotaInput';
 import { API } from 'utils/api';
 import { showError } from 'utils/common';
@@ -22,8 +21,6 @@ import {
   PROMPT_CACHE_MODES,
   expiryFromPreset,
   isManagementKeyType,
-  logIOHint,
-  logIOLocked,
   managementExpiryFromPreset,
   promptCacheSetting,
   quotaPatch
@@ -46,9 +43,6 @@ const NAME_ERRORS = new Set(['token_name_taken', 'token_name_reserved', 'token_n
 // `onManagementCreated` is called after a management key was created.
 // `allowOrgOwned` (organization owners and admins) adds the owner choice: the member creating the
 // key, or the organization, whose keys keep working when members leave (ORG-16).
-// While the site allows retention, the key's retention switch is shown (ORG-10): a personal key
-// starts with the user's default for new keys; an organization key (`orgContext`) starts off, and
-// `logIO` (the list's disclosure) locks it when the organization's policy does.
 export default function NewTokenDialog({
   onClose,
   onCreated,
@@ -57,13 +51,9 @@ export default function NewTokenDialog({
   baseUrl,
   onCopy,
   allowManagement = false,
-  allowOrgOwned = false,
-  orgContext = false,
-  logIO = null
+  allowOrgOwned = false
 }) {
   const { t } = useTranslation();
-  const siteLogIO = useSelector((state) => Boolean(state.siteInfo?.log_io_enabled));
-  const logIOFixed = logIOLocked(logIO);
   const [form, setForm] = useState({
     type: 'api',
     name: '',
@@ -71,23 +61,9 @@ export default function NewTokenDialog({
     expiry: 'never',
     managementExpiry: MANAGEMENT_EXPIRY_DEFAULT,
     owner: 'member',
-    promptCache: 'auto',
-    logIO: false
+    promptCache: 'auto'
   });
 
-  // A personal key starts with the user's default for new keys.
-  useEffect(() => {
-    if (!siteLogIO || orgContext) return undefined;
-    let alive = true;
-    API.get('/api/user/setting')
-      .then((res) => {
-        if (alive && res.data?.success) setForm((f) => ({ ...f, logIO: res.data.data?.log_io_default === 'on' }));
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, [siteLogIO, orgContext]);
   const [busy, setBusy] = useState(false);
   const [nameError, setNameError] = useState('');
   const [created, setCreated] = useState(null);
@@ -127,7 +103,6 @@ export default function NewTokenDialog({
       unlimited_quota,
       remain_quota,
       setting: { ...structuredClone(DEFAULT_SETTING), prompt_cache: promptCacheSetting(form.promptCache) },
-      ...(siteLogIO && !logIOFixed ? { log_io: form.logIO } : {}),
       ...(allowOrgOwned ? { owner: form.owner } : {})
     });
     const { success, message, data, code } = res.data;
@@ -325,16 +300,6 @@ export default function NewTokenDialog({
                   </Select>
                 </Field>
               )}
-              {!management && siteLogIO && (
-                <ToggleField
-                  id="nt-log-io"
-                  label={t('apiKey.logIO.toggle')}
-                  hint={logIOHint(t, logIO)}
-                  checked={logIOFixed ? logIO.policy === 'on' : form.logIO}
-                  disabled={logIOFixed}
-                  onChange={(c) => setForm((f) => ({ ...f, logIO: c }))}
-                />
-              )}
             </div>
             <DialogFooter className="items-center sm:justify-between">
               <span className="hidden text-xs text-muted-foreground sm:block">{management ? '' : t('apiKey.new.later')}</span>
@@ -363,7 +328,5 @@ NewTokenDialog.propTypes = {
   baseUrl: PropTypes.string,
   onCopy: PropTypes.func.isRequired,
   allowManagement: PropTypes.bool,
-  allowOrgOwned: PropTypes.bool,
-  orgContext: PropTypes.bool,
-  logIO: PropTypes.object
+  allowOrgOwned: PropTypes.bool
 };

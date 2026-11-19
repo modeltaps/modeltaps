@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
 import PropTypes from 'prop-types';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, ScrollText } from 'lucide-react';
@@ -26,8 +25,6 @@ import {
   PROMPT_CACHE_MODES,
   RESET_PERIODS,
   expiryFromPreset,
-  logIOHint,
-  logIOLocked,
   promptCacheSetting,
   quotaDraft,
   quotaPatch
@@ -43,8 +40,9 @@ const bodyProps = { object: PropTypes.object, draft: PropTypes.object, setDraft:
 
 // Tells the members of an organization that the request and response bodies of its API keys are
 // stored, who turned that on and when (SEC-51). `logIO` is the disclosure the organization key
-// endpoints return: for every key when the policy keeps them all, for one key when its own switch
-// does (ORG-10); nothing is shown when bodies are not stored.
+// endpoints return: for every key when the policy keeps them all, for one key when the admins
+// selected it (ORG-10); nothing is shown when bodies are not stored. Keys have no switch of their
+// own: retention is the organization's decision.
 export function LogIONotice({ logIO, className }) {
   const { t } = useTranslation();
   if (!logIO?.stored) return null;
@@ -535,28 +533,12 @@ const accessTab = {
   Body: AccessBody
 };
 
-// Whether the key's retention switch is shown: the site allows retention, and a platform admin
-// editing an organization's key leaves it to the organization (its policy and audit).
-const showsLogIO = (siteOn, token, ctx) => siteOn && !(ctx.adminMode && token?.created_by > 0);
-
-function AdvancedBody({ object, draft, setDraft, ctx }) {
+function AdvancedBody({ draft, setDraft, ctx }) {
   const { t } = useTranslation();
-  const siteLogIO = useSelector((state) => Boolean(state.siteInfo?.log_io_enabled));
   const set = (patch) => setDraft((d) => ({ ...d, ...patch }));
   const cacheMode = draft.promptCache || 'auto';
-  const locked = logIOLocked(ctx.logIO);
   return (
     <>
-      {showsLogIO(siteLogIO, object, ctx) && (
-        <ToggleField
-          id="tk-log-io"
-          label={t('apiKey.logIO.toggle')}
-          hint={logIOHint(t, ctx.logIO)}
-          checked={locked ? ctx.logIO.policy === 'on' : draft.logIO}
-          disabled={locked}
-          onChange={(c) => set({ logIO: c })}
-        />
-      )}
       <Field
         label={t('apiKey.panel.promptCache')}
         hint={t('apiKey.panel.promptCacheHeaderHint')}
@@ -607,14 +589,10 @@ const advancedTab = {
     heartbeat: tk.setting.heartbeat.enabled === true,
     timeout: String(tk.setting.heartbeat.timeout_seconds ?? 30),
     promptCache: PROMPT_CACHE_MODES.includes(tk.setting.prompt_cache) ? tk.setting.prompt_cache : 'auto',
-    logIO: tk.log_io === true,
     user_id: String(tk.user_id ?? '')
   }),
-  patch: (d, tk, { adminMode, logIO }) => ({
+  patch: (d, tk, { adminMode }) => ({
     ...(adminMode && d.user_id ? { user_id: parseInt(d.user_id, 10) } : {}),
-    // The server keeps the switch when it is not sent: a locked one, or an organization key a
-    // platform admin edits.
-    ...(!logIOLocked(logIO) && !(adminMode && tk.created_by > 0) ? { log_io: d.logIO } : {}),
     setting: {
       heartbeat: { enabled: d.heartbeat, timeout_seconds: parseInt(d.timeout, 10) || 30 },
       prompt_cache: promptCacheSetting(d.promptCache)

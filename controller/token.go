@@ -287,7 +287,6 @@ func newPersonalToken(userId, userRole int, token *model.Token) (*model.Token, e
 		UnlimitedQuota: token.UnlimitedQuota,
 		Group:          token.Group,
 		BackupGroup:    token.BackupGroup,
-		LogIO:          personalTokenLogIO(userId, token.LogIO),
 	}
 	cleanToken.Setting.Set(setting)
 	return cleanToken, nil
@@ -377,10 +376,6 @@ func UpdateToken(c *gin.Context) {
 		}
 		cleanToken.Group = token.Group
 		cleanToken.BackupGroup = token.BackupGroup
-		// The retention switch is kept when the request does not send it (ORG-10).
-		if token.LogIO != nil {
-			cleanToken.LogIO = token.LogIO
-		}
 
 		// 处理 BillingTag: 非可信用户保持原值不变
 		oldSetting := cleanToken.Setting.Data()
@@ -520,11 +515,6 @@ func UpdateTokenByAdmin(c *gin.Context) {
 		}
 		cleanToken.Group = token.Group
 		cleanToken.BackupGroup = token.BackupGroup
-		// The retention switch is kept when the request does not send it (ORG-10). An organization
-		// key's switch belongs to the organization's policy and audit, so it is not changed here.
-		if token.LogIO != nil && cleanToken.CreatedBy == 0 {
-			cleanToken.LogIO = token.LogIO
-		}
 
 		// 周期计数为服务端维护的专用列(普通更新不触碰故自动保留);仅 period 配置变化时清零
 		oldSetting := cleanToken.Setting.Data()
@@ -633,18 +623,4 @@ func validateTokenSetting(setting *model.TokenSetting) error {
 	}
 
 	return nil
-}
-
-// personalTokenLogIO is the retention switch a new personal API key is saved with: the requested
-// one, or the user's default for new keys (ORG-10).
-func personalTokenLogIO(userId int, requested *bool) *bool {
-	if requested != nil {
-		value := *requested
-		return &value
-	}
-	value := false
-	if setting, err := model.GetUserSettingById(userId); err == nil {
-		value = setting.NewKeyLogIO()
-	}
-	return &value
 }

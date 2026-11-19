@@ -20,4 +20,4 @@ outline: deep
 - [平台設定 · 郵件](./mail.md) (10)
 - [平台設定 · 通知](./notify.md) (3)
 - [平台設定 · 組織策略](./orgpolicy.md) (5)
-- [物件欄位](./objects.md) (43)
+- [物件欄位](./objects.md) (42)

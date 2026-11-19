@@ -15,7 +15,8 @@ var (
 	TokenCacheSeconds = 0
 	UserGroupCacheKey = "user_group:%d"
 	// UserTokensKey caches an API key by its hash (SEC-47); never by the key itself. v2: the cached
-	// log_io decides retention since ORG-10, so copies cached before it are not read.
+	// log_io marks a key an organization selected for retention (ORG-10), so copies cached before
+	// it are not read.
 	UserTokensKey               = "token_hash:v2:%s"
 	UsernameCacheKey            = "user_name:%d"
 	UserQuotaCacheKey           = "user_quota:%d"
@@ -26,7 +27,7 @@ var (
 	// 成员预算实时 tally(SEC-12):键按 org_members.id 维度,跨并发请求共享,流式期间逐增量累计,
 	// 结算时由 relay 回收;TTL 兜底防结算路径缺失时键泄漏。
 	OrgMemberBudgetRealtimeKey = "org_member_budget_realtime:%d"
-	LogIOOrgPolicyCacheKey     = "log_io_org_policy:%d"
+	LogIOOwnerPolicyCacheKey   = "log_io_owner_policy:%d"
 
 	// OldUserTokenHashesKey is the set of hashes of the 48-character legacy keys, a cheap filter
 	// before the database is asked (see HandleOldTokenMaxId).
@@ -39,35 +40,47 @@ var (
 	legacyTokenCachePurgedKey        = "token_cache_plaintext_purged"
 )
 
-// orgLogIOPolicy caches an organization's retention policy under its shadow account, for
-// ResolveTokenLogIO on every request of an organization API key.
-type orgLogIOPolicy struct {
+// ownerLogIOPolicy caches the retention policy of an API key's owner, read on every request
+// (ResolveTokenLogIO): an organization's policy under its shadow account, a personal account's
+// switch as on or off.
+type ownerLogIOPolicy struct {
 	Policy string `json:"policy"`
 }
 
-func getOrgLogIOPolicyFromDB(shadowUserId int) (*orgLogIOPolicy, error) {
-	var org Organization
-	if err := DB.Select("setting").Where("shadow_user_id = ?", shadowUserId).First(&org).Error; err != nil {
+func getOwnerLogIOPolicyFromDB(userId int) (*ownerLogIOPolicy, error) {
+	var user User
+	if err := DB.Select("type", "setting").Where("id = ?", userId).First(&user).Error; err != nil {
 		return nil, err
 	}
-	return &orgLogIOPolicy{Policy: org.GetLogIOPolicy()}, nil
+	if user.Type != config.UserTypeOrgShadow {
+		setting := user.Setting.Data()
+		if setting.LogIOOn() {
+			return &ownerLogIOPolicy{Policy: LogIOPolicyOn}, nil
+		}
+		return &ownerLogIOPolicy{Policy: LogIOPolicyOff}, nil
+	}
+	var org Organization
+	if err := DB.Select("setting").Where("shadow_user_id = ?", userId).First(&org).Error; err != nil {
+		return nil, err
+	}
+	return &ownerLogIOPolicy{Policy: org.GetLogIOPolicy()}, nil
 }
 
-// CacheGetOrgLogIOPolicy reads the retention policy of the organization whose shadow account is
-// shadowUserId.
-func CacheGetOrgLogIOPolicy(shadowUserId int) (string, error) {
+// CacheGetOwnerLogIOPolicy reads the retention policy of the key owner userId (a personal account
+// or an organization's shadow account).
+func CacheGetOwnerLogIOPolicy(userId int) (string, error) {
 	if !config.RedisEnabled {
-		p, err := getOrgLogIOPolicyFromDB(shadowUserId)
+		p, err := getOwnerLogIOPolicyFromDB(userId)
 		if err != nil {
 			return "", err
 		}
 		return p.Policy, nil
 	}
 	p, err := cache.GetOrSetCache(
-		fmt.Sprintf(LogIOOrgPolicyCacheKey, shadowUserId),
+		fmt.Sprintf(LogIOOwnerPolicyCacheKey, userId),
 		time.Duration(TokenCacheSeconds)*time.Second,
-		func() (*orgLogIOPolicy, error) {
-			return getOrgLogIOPolicyFromDB(shadowUserId)
+		func() (*ownerLogIOPolicy, error) {
+			return getOwnerLogIOPolicyFromDB(userId)
 		},
 		cache.CacheTimeout)
 	if err != nil || p == nil {
@@ -76,12 +89,13 @@ func CacheGetOrgLogIOPolicy(shadowUserId int) (string, error) {
 	return p.Policy, nil
 }
 
-// InvalidateOrgLogIOPolicyCache drops the cached retention policy after the organization changed it.
-func InvalidateOrgLogIOPolicyCache(shadowUserId int) {
-	if !config.RedisEnabled || shadowUserId == 0 {
+// InvalidateOwnerLogIOPolicyCache drops the cached policy after the account or organization
+// changed it.
+func InvalidateOwnerLogIOPolicyCache(userId int) {
+	if !config.RedisEnabled || userId == 0 {
 		return
 	}
-	_ = cache.DeleteCache(fmt.Sprintf(LogIOOrgPolicyCacheKey, shadowUserId))
+	_ = cache.DeleteCache(fmt.Sprintf(LogIOOwnerPolicyCacheKey, userId))
 }
 
 // UserRoleStatus 缓存中保存的用户实时角色与状态。

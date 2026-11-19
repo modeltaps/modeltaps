@@ -872,19 +872,10 @@ func UpdateUserSetting(c *gin.Context) {
 	if update.QuotaRemindEnabled != nil || update.QuotaRemindThreshold != nil {
 		model.ResetQuotaWarning(id)
 	}
-	data := setting.APIView()
-	if update.LogIOApplyToKeys {
-		changed, err := model.SetPersonalTokensLogIO(id, setting.NewKeyLogIO())
-		if err != nil {
-			common.APIRespondWithError(c, http.StatusOK, err)
-			return
-		}
-		data["log_io_keys_changed"] = changed
-	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
-		"data":    data,
+		"data":    setting.APIView(),
 	})
 }
 

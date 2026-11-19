@@ -3440,9 +3440,8 @@
       "card": "log-io",
       "type": "bool",
       "label": "Allow keeping request bodies",
-      "description": "Site-wide switch for keeping the full request and response bodies of API calls, for troubleshooting. When off (the default, zero data retention) no API key keeps them and the option is hidden from personal and organization settings. When on, each API key has its own switch, off until it is turned on, and an organization can lock its keys on or off. Bodies are cut at 1 MB each by default, kept 30 days, and never include API keys or auth headers.",
+      "description": "Site-wide switch for keeping the full request and response bodies of API calls, for troubleshooting. When off (the default, zero data retention) no API key keeps them and the option is hidden from personal and organization settings. When on, a personal account turns it on for its keys in the personal settings, and an organization's owners and admins choose: no key, every key, or the keys they select. Nothing is kept until then. Bodies are cut at 1 MB each by default, kept 30 days, and never include API keys or auth headers.",
       "related": [
-        "token.log_io",
         "organization.log_io_policy"
       ],
       "keywords": [
@@ -5160,37 +5159,36 @@
       "type": "enum",
       "enum": [
         {
-          "value": "member",
-          "label": "Each key decides",
-          "description": "A key's own switch decides; members set it on the keys they create, owners and admins on any key."
+          "value": "off",
+          "label": "Keep for no key",
+          "description": "No organization key keeps its request and response bodies."
         },
         {
           "value": "on",
           "label": "Keep for every key",
-          "description": "Every organization key keeps its bodies; the keys' switches are locked."
+          "description": "Every organization key keeps its bodies, new keys included."
         },
         {
-          "value": "off",
-          "label": "Keep for no key",
-          "description": "No organization key keeps its bodies; the keys' switches are locked."
+          "value": "selected",
+          "label": "Keep for selected keys",
+          "description": "Only the keys ticked in the list below keep their bodies; new keys start unticked."
         }
       ],
-      "default": "member",
+      "default": "off",
       "label": "Request and response retention",
-      "description": "Whether the organization's API keys keep the bodies of their requests and responses. Stored bodies never include API keys or auth headers, are deleted after 30 days, and only owners and platform admins can read them. Members are told on their keys who turned retention on and when. Shown only while the site allows retention.",
+      "description": "Which of the organization's API keys keep the bodies of their requests and responses. Only owners and admins set it, here: a key's creator cannot. Stored bodies never include API keys or auth headers, are deleted after 30 days, and only owners and platform admins can read them. Members are told on their keys who turned retention on and when. Shown only while the site allows retention.",
       "examples": [
         {
           "value": "off",
-          "effect": "Zero data retention for the whole organization: a member cannot turn it on for a key."
+          "effect": "Zero data retention for the whole organization."
         },
         {
-          "value": "member",
-          "effect": "A member turns it on for the key of an app being debugged; the other keys keep nothing."
+          "value": "selected",
+          "effect": "An admin ticks the key of the app being debugged; the other keys keep nothing."
         }
       ],
       "related": [
-        "LogIOEnabled",
-        "token.log_io"
+        "LogIOEnabled"
       ],
       "keywords": [
         "log io",
@@ -5251,34 +5249,6 @@
         "fallback group",
         "failover",
         "backup"
-      ]
-    },
-    {
-      "key": "token.log_io",
-      "scope": "token",
-      "group": "tokens",
-      "card": "access",
-      "field": "log_io",
-      "type": "bool",
-      "default": "the owner's default for new keys (off for organization keys)",
-      "label": "Keep request and response bodies",
-      "description": "Whether the key's requests keep their full request and response bodies, to read in the log details. A new personal key starts with the user's default for new keys; changing that default leaves existing keys alone unless the user applies it to them. On an organization key the organization's policy can lock it. Shown only while the site allows retention.",
-      "examples": [
-        {
-          "value": "true",
-          "effect": "The key of an app under test keeps what it sent and got back for 30 days; the user's other keys keep nothing."
-        }
-      ],
-      "related": [
-        "LogIOEnabled",
-        "organization.log_io_policy"
-      ],
-      "keywords": [
-        "log io",
-        "retention",
-        "request body",
-        "prompt logging",
-        "privacy"
       ]
     },
     {

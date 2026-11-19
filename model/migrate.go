@@ -635,6 +635,7 @@ func postMigrations() []*gormigrate.Migration {
 		dropPauseRulesEnabledOption(),
 		foldLogIOSiteDefaults(),
 		migrateLogIOToKeys(),
+		migrateLogIOToOrgSelection(),
 	}
 }
 
@@ -670,7 +671,7 @@ type legacyTokenKeyRow struct {
 
 // hashTokenKeys stops storing API keys in plaintext (SEC-47). AutoMigrate has added key_hash and
 // key_hint; for every key still in the old key column (soft-deleted ones included) this writes
-// the hash and the hint and clears the column to NULL (not '': the column keeps its unique
+// the hash and the hint and clears the column to NULL (not ”: the column keeps its unique
 // index). Keys keep working, now found by hash. Running it again finds nothing left to move.
 func hashTokenKeys() *gormigrate.Migration {
 	return &gormigrate.Migration{
@@ -2262,7 +2263,7 @@ func migrateLogIOToKeys() *gormigrate.Migration {
 				}
 				var on []int
 				for _, user := range users {
-					if setting := user.Setting.Data(); setting.NewKeyLogIO() {
+					if setting := user.Setting.Data(); setting.LogIOOn() {
 						on = append(on, user.Id)
 					}
 				}
@@ -2286,7 +2287,7 @@ func migrateLogIOToKeys() *gormigrate.Migration {
 				if setting.LogIOPolicy == "" {
 					switch {
 					case setting.LegacyLogIODefault == nil:
-						setting.LogIOPolicy = LogIOPolicyMember
+						setting.LogIOPolicy = legacyLogIOPolicyMember
 					case *setting.LegacyLogIODefault:
 						setting.LogIOPolicy = LogIOPolicyOn
 					default:
@@ -2302,6 +2303,56 @@ func migrateLogIOToKeys() *gormigrate.Migration {
 					if err := tx.Unscoped().Model(&Token{}).Where("user_id = ?", org.ShadowUserId).Update("log_io", true).Error; err != nil {
 						return err
 					}
+				}
+			}
+			return nil
+		},
+		Rollback: func(tx *gorm.DB) error { return nil },
+	}
+}
+
+// legacyLogIOPolicyMember is the organization policy "each key decides" that migrateLogIOToKeys
+// wrote; migrateLogIOToOrgSelection replaces it.
+const legacyLogIOPolicyMember = "member"
+
+// migrateLogIOToOrgSelection moves retention back off the keys' own switches (ORG-10): it is an
+// organization or account decision, not a key creator's. A personal account keeps its switch
+// (users.setting.log_io_default, which never stopped holding it) and its keys' column is cleared.
+// An organization where each key decided keeps the keys that were on as the keys its admins
+// selected, or keeps none when no key was on.
+func migrateLogIOToOrgSelection() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202611191801",
+		Migrate: func(tx *gorm.DB) error {
+			if !tx.Migrator().HasTable("tokens") {
+				return nil
+			}
+			if err := tx.Unscoped().Model(&Token{}).Where("created_by = 0").Update("log_io", false).Error; err != nil {
+				return err
+			}
+			if !tx.Migrator().HasTable("organizations") {
+				return nil
+			}
+			var orgs []*Organization
+			if err := tx.Unscoped().Select("id", "shadow_user_id", "setting").Find(&orgs).Error; err != nil {
+				return err
+			}
+			for _, org := range orgs {
+				setting := org.Setting.Data()
+				if setting.LogIOPolicy != legacyLogIOPolicyMember && setting.LogIOPolicy != "" {
+					continue
+				}
+				var selected int64
+				if err := tx.Unscoped().Model(&Token{}).Where("user_id = ? AND log_io = ?", org.ShadowUserId, true).Count(&selected).Error; err != nil {
+					return err
+				}
+				setting.LogIOPolicy = LogIOPolicyOff
+				if selected > 0 {
+					setting.LogIOPolicy = LogIOPolicySelected
+				}
+				org.Setting.Set(setting)
+				if err := tx.Unscoped().Model(&Organization{}).Where("id = ?", org.Id).Update("setting", org.Setting).Error; err != nil {
+					return err
 				}
 			}
 			return nil

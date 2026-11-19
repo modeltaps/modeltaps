@@ -28,13 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Request and response retention is a switch on each API key, in its Advanced tab and when the key
-  is created. A personal key starts with the user's default for new keys; changing that default
-  leaves existing keys alone, and "Apply to all my keys" sets them once. An organization chooses a
-  policy: each key decides (members on the keys they create, owners and admins on any key), keep
-  for every key, or keep for no key; a locked policy disables the keys' switches. A member's key
-  page says who turned retention on for it and when, and every change is in the audit log.
-  Upgrade note: every key gets the value that applied to it, so nothing changes; an organization
+- Request and response retention is an account and organization decision, never a key creator's.
+  A personal account has one switch in its personal settings. An organization's owners and admins
+  choose in the organization settings: keep for no key (the default), for every key, or for the
+  keys they tick in a list. Keys have no switch of their own; a member's key page says when its
+  bodies are kept and who turned that on, and every change is in the audit log.
+  Upgrade note: what was kept stays kept. A personal account keeps its switch; an organization
   that kept bodies keeps them for every key, one that turned it off keeps them for none.
 - Cost no longer splits a priority. With **Cost and priority** at `priority` (the default),
   supplies of one priority share requests by the supply mode and weights whatever they cost, so

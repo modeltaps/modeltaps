@@ -31,9 +31,9 @@ type OrganizationSetting struct {
 	ModelWhitelist []string `json:"model_whitelist,omitempty"`
 	// ModelAccessListId is the named list attached as the organization default (ORG-15); it wins over ModelWhitelist
 	ModelAccessListId int `json:"model_access_list_id,omitempty"`
-	// LogIOPolicy is how the organization's API keys keep request and response bodies (ORG-10):
-	// LogIOPolicyMember (empty too) lets each key's own switch decide, LogIOPolicyOn and
-	// LogIOPolicyOff lock every key on or off.
+	// LogIOPolicy is which of the organization's API keys keep request and response bodies
+	// (ORG-10), set by owners and admins only: LogIOPolicyOff (empty too, the default) none,
+	// LogIOPolicyOn every key, LogIOPolicySelected the keys admins ticked (their log_io column).
 	LogIOPolicy string `json:"log_io_policy,omitempty"`
 	// LegacyLogIODefault is the former organization-wide switch, read once by
 	// migrateLogIOToKeys and cleared.
@@ -141,36 +141,36 @@ func (org *Organization) IsUsageVisibleToMembers() bool {
 	return visible != nil && *visible
 }
 
-// Values of OrganizationSetting.LogIOPolicy.
+// Values of OrganizationSetting.LogIOPolicy, and of a personal account's retention (on or off).
 const (
-	LogIOPolicyMember = "member"
-	LogIOPolicyOn     = "on"
-	LogIOPolicyOff    = "off"
+	LogIOPolicyOff      = "off"
+	LogIOPolicyOn       = "on"
+	LogIOPolicySelected = "selected"
 )
 
 // ValidLogIOPolicy reports whether policy is one of the LogIOPolicy values.
 func ValidLogIOPolicy(policy string) bool {
-	return policy == LogIOPolicyMember || policy == LogIOPolicyOn || policy == LogIOPolicyOff
+	return policy == LogIOPolicyOff || policy == LogIOPolicyOn || policy == LogIOPolicySelected
 }
 
-// GetLogIOPolicy is the organization's retention policy, LogIOPolicyMember when it never chose.
+// GetLogIOPolicy is the organization's retention policy, LogIOPolicyOff when it never chose.
 func (org *Organization) GetLogIOPolicy() string {
 	if policy := org.Setting.Data().LogIOPolicy; ValidLogIOPolicy(policy) {
 		return policy
 	}
-	return LogIOPolicyMember
+	return LogIOPolicyOff
 }
 
-// ApplyOrgLogIOPolicy is whether an organization API key keeps bodies under policy: a locked
-// policy decides, otherwise the key's own switch.
-func ApplyOrgLogIOPolicy(policy string, keyOn bool) bool {
+// ApplyLogIOPolicy is whether a key keeps bodies under its owner's policy: every key, none, or
+// with LogIOPolicySelected the keys an organization admin ticked.
+func ApplyLogIOPolicy(policy string, keySelected bool) bool {
 	switch policy {
 	case LogIOPolicyOn:
 		return true
-	case LogIOPolicyOff:
-		return false
+	case LogIOPolicySelected:
+		return keySelected
 	}
-	return keyOn
+	return false
 }
 
 var orgSlugInvalidChars = regexp.MustCompile(`[^a-z0-9-]+`)
@@ -237,7 +237,7 @@ func (org *Organization) UpdateSetting() error {
 	err := DB.Model(org).Select("setting", "updated_time").Updates(org).Error
 	if err == nil {
 		// 留存策略进入令牌解析缓存(键为影子账户ID),变更后失效
-		InvalidateOrgLogIOPolicyCache(org.ShadowUserId)
+		InvalidateOwnerLogIOPolicyCache(org.ShadowUserId)
 		// 组织级白名单缺省/预算配置进入成员守护视图,变更后须失效全体成员的守护缓存
 		invalidateOrgGuardrailCacheAllMembers(org)
 	}
@@ -583,4 +583,35 @@ func GetOrganizationOwnerId(orgId int) (int, error) {
 		return 0, errors.New("organization owner not found")
 	}
 	return member.UserId, nil
+}
+
+// SetOrgLogIOSelection makes keyIds the organization's API keys selected for retention (ORG-10)
+// and returns the keys whose selection changed, with their new value. Ids of other owners' keys
+// are ignored.
+func SetOrgLogIOSelection(org *Organization, keyIds []int) ([]*Token, error) {
+	want := make(map[int]bool, len(keyIds))
+	for _, id := range keyIds {
+		want[id] = true
+	}
+	var tokens []*Token
+	if err := DB.Select("id", "name", "key_hash", "log_io").Where("user_id = ?", org.ShadowUserId).Find(&tokens).Error; err != nil {
+		return nil, err
+	}
+	var changed []*Token
+	var hashes []string
+	for _, token := range tokens {
+		on := want[token.Id]
+		if (token.LogIO != nil && *token.LogIO) == on {
+			continue
+		}
+		value := on
+		if err := DB.Model(&Token{}).Where("id = ?", token.Id).Update("log_io", value).Error; err != nil {
+			return changed, err
+		}
+		token.LogIO = &value
+		changed = append(changed, token)
+		hashes = append(hashes, token.KeyHash)
+	}
+	invalidateTokenCaches(hashes)
+	return changed, nil
 }

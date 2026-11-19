@@ -637,24 +637,24 @@ See also: [Organization budget](./objects.md#organization-budget) · [Reset time
 
 ### Request and response retention
 
-Key `organization.log_io_policy` · Type enum · Default member
+Key `organization.log_io_policy` · Type enum · Default off
 
 Where: Organizations › general
 
-Whether the organization's API keys keep the bodies of their requests and responses. Stored bodies never include API keys or auth headers, are deleted after 30 days, and only owners and platform admins can read them. Members are told on their keys who turned retention on and when. Shown only while the site allows retention.
+Which of the organization's API keys keep the bodies of their requests and responses. Only owners and admins set it, here: a key's creator cannot. Stored bodies never include API keys or auth headers, are deleted after 30 days, and only owners and platform admins can read them. Members are told on their keys who turned retention on and when. Shown only while the site allows retention.
 
 Values:
 
-- `member` Each key decides: A key's own switch decides; members set it on the keys they create, owners and admins on any key.
-- `on` Keep for every key: Every organization key keeps its bodies; the keys' switches are locked.
-- `off` Keep for no key: No organization key keeps its bodies; the keys' switches are locked.
+- `off` Keep for no key: No organization key keeps its request and response bodies.
+- `on` Keep for every key: Every organization key keeps its bodies, new keys included.
+- `selected` Keep for selected keys: Only the keys ticked in the list below keep their bodies; new keys start unticked.
 
 Examples:
 
-- `off` Zero data retention for the whole organization: a member cannot turn it on for a key.
-- `member` A member turns it on for the key of an app being debugged; the other keys keep nothing.
+- `off` Zero data retention for the whole organization.
+- `selected` An admin ticks the key of the app being debugged; the other keys keep nothing.
 
-See also: [Allow keeping request bodies](./privacy.md#LogIOEnabled) · [Keep request and response bodies](./objects.md#token-log_io)
+See also: [Allow keeping request bodies](./privacy.md#LogIOEnabled)
 
 ## API key
 
@@ -689,22 +689,6 @@ Examples:
 - `default` Group vip with backup default: if every vip channel for the model fails, the request runs in default at its ratio.
 
 See also: [Group](./objects.md#token-group) · [Group ratio](./objects.md#user_group-ratio)
-
-<a id="token-log_io"></a>
-
-### Keep request and response bodies
-
-Key `token.log_io` · Type bool · Default the owner's default for new keys (off for organization keys)
-
-Where: API keys › access
-
-Whether the key's requests keep their full request and response bodies, to read in the log details. A new personal key starts with the user's default for new keys; changing that default leaves existing keys alone unless the user applies it to them. On an organization key the organization's policy can lock it. Shown only while the site allows retention.
-
-Examples:
-
-- `true` The key of an app under test keeps what it sent and got back for 30 days; the user's other keys keep nothing.
-
-See also: [Allow keeping request bodies](./privacy.md#LogIOEnabled) · [Request and response retention](./objects.md#organization-log_io_policy)
 
 <a id="token-model_limits"></a>
 

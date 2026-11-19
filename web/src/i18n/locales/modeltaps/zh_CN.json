@@ -4073,8 +4073,8 @@
           "hint": "用户名不能修改"
         },
         "logIO": {
-          "description": "新建 API Key 是否默认留存完整正文",
-          "hint": "每个 Key 可以单独改"
+          "description": "开启后可在日志明细里看到完整正文",
+          "hint": "只影响之后的请求"
         },
         "appearance": {
           "title": "外观",
@@ -4176,10 +4176,6 @@
       "body": "用本组织 API Key 发出的请求和响应会保留 {{days}} 天，组织所有者可以查看。",
       "byMember": "由 {{name}} 于 {{time}} 开启。",
       "byOrg": "已在组织设置中开启。",
-      "toggle": "留存请求与响应正文",
-      "toggleHint": "开启后可在日志明细里看到这个 Key 的完整请求和回复，30 天后自动删除",
-      "locked_on": "组织设置为所有 Key 都留存，不能在这里改",
-      "locked_off": "组织设置为所有 Key 都不留存，不能在这里改",
       "bodyKey": "这个 Key 发出的请求和响应会保留 {{days}} 天，组织所有者可以查看。"
     },
     "panel": {
@@ -4906,12 +4902,15 @@
     },
     "settings": {
       "logIOPolicy": "请求与响应留存",
-      "logIOPolicy_member": "由每个 Key 决定",
       "logIOPolicy_on": "所有 Key 都留存",
-      "logIOPolicy_off": "所有 Key 都不留存",
-      "logIOPolicyHint_member": "成员在自己创建的 Key 上开关，所有者和管理员可以改任何 Key；成员会在 Key 上看到是谁开启的。留存的正文不含 API Key 和鉴权头，单条最多 {{kb}} KB，30 天后自动删除，只有所有者和平台管理员能查看。",
-      "logIOPolicyHint_on": "组织的所有 Key 都留存请求与响应正文，Key 上的开关锁定；成员会看到是谁开启的。正文单条最多 {{kb}} KB，30 天后自动删除，只有所有者和平台管理员能查看。",
-      "logIOPolicyHint_off": "组织的 Key 都不留存正文，成员也不能在 Key 上打开。"
+      "logIOPolicy_off": "不留存",
+      "logIOPolicyHint_on": "组织的所有 Key 都留存请求与响应正文，包括之后新建的 Key；成员会看到是谁开启的。正文单条最多 {{kb}} KB，30 天后自动删除，只有所有者和平台管理员能查看。",
+      "logIOPolicyHint_off": "组织的 Key 都不留存请求与响应正文。",
+      "logIOPolicy_selected": "仅选中的 Key 留存",
+      "logIOPolicyHint_selected": "只有下面勾选的 Key 留存请求与响应正文，新建的 Key 默认不勾选；成员会在 Key 上看到是谁勾选的。正文单条最多 {{kb}} KB，30 天后自动删除，只有所有者和平台管理员能查看。",
+      "logIOKeysHint": "勾选要留存的 Key，保存后生效。",
+      "logIOKeysEmpty": "组织还没有 API Key。",
+      "logIOKeyOrgOwned": "组织所有"
     }
   },
   "agentDevice": {
@@ -5108,14 +5107,5 @@
     "aboveTip": "比本站基础售价高 {{pct}}%，仍在默认分组的利润空间内",
     "belowTip": "比本站基础售价低 {{pct}}%",
     "lossTip": "比本站基础售价高 {{pct}}%：成本已超过售价的实际收入，走这里的请求会亏"
-  },
-  "profilePage": {
-    "logIOToggle": "新建 API Key 默认留存请求与响应正文",
-    "logIOHint": "每个 API Key 有自己的留存开关，在 Key 的「高级」里改。这里只决定新建 Key 的初始值，改了不影响已有的 Key。留存的正文不含 API Key 和鉴权头，单条最多 {{kb}} KB，30 天后自动删除；你本人和平台管理员可以在日志明细里查看。",
-    "logIOApply": "应用到我现有的全部 Key",
-    "logIOApplyHint": "把已保存的默认值写到你现有的全部个人 Key 上",
-    "logIOApplyConfirmOn": "你现有的全部个人 Key 都会开始留存请求与响应正文。继续吗？",
-    "logIOApplyConfirmOff": "你现有的全部个人 Key 都会停止留存请求与响应正文。继续吗？",
-    "logIOApplied": "已更新 {{count}} 个 Key"
   }
 }

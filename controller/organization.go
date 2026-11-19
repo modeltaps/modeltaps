@@ -113,9 +113,12 @@ type UpdateOrganizationRequest struct {
 	AvatarUrl string `json:"avatar_url"`
 	// UsageVisibleToMembers 成员用量可见性开关(规格 a4);nil 表示不修改
 	UsageVisibleToMembers *bool `json:"usage_visible_to_members"`
-	// LogIOPolicy is the retention policy of the organization's API keys (ORG-10): "member" (each
-	// key decides), "on" or "off" (every key locked); nil leaves it unchanged.
+	// LogIOPolicy is which of the organization's API keys keep request and response bodies
+	// (ORG-10): "off", "on" (every key) or "selected"; nil leaves it unchanged.
 	LogIOPolicy *string `json:"log_io_policy"`
+	// LogIOKeyIds are the organization's keys that keep bodies under "selected"; the others stop.
+	// nil leaves the selection unchanged.
+	LogIOKeyIds *[]int `json:"log_io_key_ids"`
 	// Budget 团队级周期预算(T1);nil 表示不修改,limit<=0 表示清除限制
 	Budget *model.QuotaResetSetting `json:"budget"`
 }
@@ -144,11 +147,22 @@ func UpdateOrganization(c *gin.Context) {
 		}
 		model.RecordOrgAudit(org.Id, c.GetInt("id"), "org.update_setting", fmt.Sprintf("Updated member usage visibility: %t", *req.UsageVisibleToMembers))
 	}
-	if req.LogIOPolicy != nil && *req.LogIOPolicy != org.GetLogIOPolicy() {
-		if !model.ValidLogIOPolicy(*req.LogIOPolicy) {
-			common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "log_io_policy must be member, on or off", nil)
+	if req.LogIOPolicy != nil && !model.ValidLogIOPolicy(*req.LogIOPolicy) {
+		common.APIRespondWithCode(c, http.StatusOK, common.APICodeInvalidParams, "log_io_policy must be off, on or selected", nil)
+		return
+	}
+	if req.LogIOKeyIds != nil {
+		// Members are told on the selected keys who selected them and when (SEC-51).
+		changed, err := model.SetOrgLogIOSelection(org, *req.LogIOKeyIds)
+		if err != nil {
+			common.APIRespondWithError(c, http.StatusOK, err)
 			return
 		}
+		for _, token := range changed {
+			model.RecordOrgTokenLogIOUpdate(org.Id, c.GetInt("id"), token, config.LogIOEnabled)
+		}
+	}
+	if req.LogIOPolicy != nil && *req.LogIOPolicy != org.GetLogIOPolicy() {
 		wasStored := orgLogIOActive(org)
 		setting := org.Setting.Data()
 		setting.LogIOPolicy = *req.LogIOPolicy

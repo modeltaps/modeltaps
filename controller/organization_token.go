@@ -32,12 +32,12 @@ func getOrgTokenForOperator(c *gin.Context, tokenId int) (*model.Token, error) {
 // of its API keys are being stored, who turned that on and when (SEC-51). With the list it describes
 // the organization's policy; with one key, that key (ORG-10).
 type orgLogIODisclosure struct {
-	// Policy is the organization's retention policy (model.LogIOPolicy*), so the key form can
-	// lock the switch. Empty while the site keeps no bodies at all.
+	// Policy is the organization's retention policy (model.LogIOPolicy*). Empty while the site
+	// keeps no bodies at all.
 	Policy string `json:"policy,omitempty"`
 	Stored bool   `json:"stored"`
-	// Source is "organization" when the policy keeps every key's bodies, "key" when the key's
-	// own switch does.
+	// Source is "organization" when the policy keeps every key's bodies, "key" when the key is
+	// one the admins selected.
 	Source      string `json:"source,omitempty"`
 	ChangedBy   string `json:"changed_by,omitempty"`
 	ChangedById int    `json:"changed_by_id,omitempty"`
@@ -86,10 +86,10 @@ func orgLogIOStatus(org *model.Organization) orgLogIODisclosure {
 }
 
 // orgTokenLogIOStatus is the disclosure shown with one organization API key: the policy when it
-// locks the keys, otherwise the key's own switch and who turned it on.
+// keeps every key, otherwise whether the admins selected this key, by whom and when.
 func orgTokenLogIOStatus(org *model.Organization, token *model.Token) orgLogIODisclosure {
 	status := orgLogIOStatus(org)
-	if status.Policy != model.LogIOPolicyMember || token.LogIO == nil || !*token.LogIO {
+	if status.Policy != model.LogIOPolicySelected || token.LogIO == nil || !*token.LogIO {
 		return status
 	}
 	status.Stored, status.Source, status.RetentionDays = true, orgLogIOSourceKey, model.LogIORetentionDays
@@ -108,19 +108,6 @@ func recordOrgLogIOUpdate(org *model.Organization, actorId int, policy string, w
 	if stored && !wasStored {
 		logger.SysLog(fmt.Sprintf("organization %d: user %d turned on storing request and response bodies of organization API keys", org.Id, actorId))
 	}
-}
-
-// orgTokenLogIO is the switch an organization API key is saved with: the requested one while
-// members choose (off when none was sent), the locked value otherwise.
-func orgTokenLogIO(org *model.Organization, requested *bool) *bool {
-	value := false
-	switch org.GetLogIOPolicy() {
-	case model.LogIOPolicyOn:
-		value = true
-	case model.LogIOPolicyMember:
-		value = requested != nil && *requested
-	}
-	return &value
 }
 
 // GetOrgTokensList 组织令牌列表:Member 仅自己创建的,Owner/Admin 全部
@@ -264,9 +251,6 @@ func AddOrgToken(c *gin.Context) {
 		detail = fmt.Sprintf("Created organization API key %s (ID: %d), owned by the organization", cleanToken.Name, cleanToken.Id)
 	}
 	model.RecordOrgAudit(org.Id, userId, "token.create", detail)
-	if cleanToken.LogIO != nil && *cleanToken.LogIO && org.GetLogIOPolicy() == model.LogIOPolicyMember {
-		model.RecordOrgTokenLogIOUpdate(org.Id, userId, cleanToken, config.LogIOEnabled)
-	}
 	// Same shape as the personal endpoint: the console shows the new key once, right away.
 	respondCreatedTokenKey(c, cleanToken, userId)
 }
@@ -320,7 +304,6 @@ func newOrgToken(org *model.Organization, userId int, operatorRole string, userR
 		UnlimitedQuota: token.UnlimitedQuota,
 		Group:          token.Group,
 		BackupGroup:    token.BackupGroup,
-		LogIO:          orgTokenLogIO(org, token.LogIO),
 	}
 	cleanToken.Setting.Set(setting)
 	return cleanToken, nil
@@ -409,7 +392,6 @@ func UpdateOrgToken(c *gin.Context) {
 		return
 	}
 
-	logIOChanged := false
 	if statusOnly != "" {
 		cleanToken.Status = token.Status
 	} else {
@@ -420,15 +402,8 @@ func UpdateOrgToken(c *gin.Context) {
 		cleanToken.UnlimitedQuota = token.UnlimitedQuota
 		cleanToken.Group = token.Group
 		cleanToken.BackupGroup = token.BackupGroup
-		// The key's own retention switch counts only while members choose (ORG-10); a change is
-		// audited so the key's page can say who turned it on (SEC-51).
-		if token.LogIO != nil && org.GetLogIOPolicy() == model.LogIOPolicyMember {
-			was := cleanToken.LogIO != nil && *cleanToken.LogIO
-			if *token.LogIO != was {
-				cleanToken.LogIO = orgTokenLogIO(org, token.LogIO)
-				logIOChanged = true
-			}
-		}
+		// log_io is not taken from the request: which keys keep bodies is the organization admins'
+		// choice, made in the organization settings (ORG-10).
 
 		// 处理 BillingTag: 非可信用户保持原值不变
 		oldSetting := cleanToken.Setting.Data()
@@ -462,9 +437,6 @@ func UpdateOrgToken(c *gin.Context) {
 		return
 	}
 	model.RecordOrgAudit(org.Id, c.GetInt("id"), "token.update", fmt.Sprintf("Updated organization API key %s (ID: %d)", cleanToken.Name, cleanToken.Id))
-	if logIOChanged {
-		model.RecordOrgTokenLogIOUpdate(org.Id, c.GetInt("id"), cleanToken, config.LogIOEnabled)
-	}
 
 	// 对于非可信用户，返回数据时隐藏 BillingTag 字段
 	if userRole < config.RoleReliableUser {

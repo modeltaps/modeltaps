@@ -70,10 +70,10 @@ func init() {
 			Label: "Allow keeping request bodies",
 			Description: "Site-wide switch for keeping the full request and response bodies of API calls, for troubleshooting. " +
 				"When off (the default, zero data retention) no API key keeps them and the option is hidden from personal and " +
-				"organization settings. When on, each API key has its own switch, off until it is turned on, and an " +
-				"organization can lock its keys on or off. Bodies are cut at 1 MB each by default, kept 30 days, and never " +
-				"include API keys or auth headers.",
-			Related:  []string{"token.log_io", "organization.log_io_policy"},
+				"organization settings. When on, a personal account turns it on for its keys in the personal settings, and an " +
+				"organization's owners and admins choose: no key, every key, or the keys they select. Nothing is kept until " +
+				"then. Bodies are cut at 1 MB each by default, kept 30 days, and never include API keys or auth headers.",
+			Related:  []string{"organization.log_io_policy"},
 			Keywords: []string{"zero data retention", "ZDR", "request body", "response body", "prompt logging", "privacy"},
 		},
 		// Card "safety".

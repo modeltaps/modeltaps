@@ -26,8 +26,8 @@ type OrganizationAuditLog struct {
 const (
 	OrgAuditActionLogIOUpdate = "org.log_io_update"
 	OrgAuditActionLogIOView   = "log.view_detail"
-	// OrgAuditActionTokenLogIOUpdate records a change of one organization API key's own retention
-	// switch, while the organization lets members choose (ORG-10).
+	// OrgAuditActionTokenLogIOUpdate records that an admin selected an organization API key for
+	// retention, or took it out (ORG-10).
 	OrgAuditActionTokenLogIOUpdate = "token.log_io_update"
 
 	// legacyLogIOAuditContent is how changes of the LogIO default were recorded (as
@@ -53,7 +53,7 @@ func GetLatestOrgLogIOUpdate(organizationId int) (*OrganizationAuditLog, error) 
 // matched to find a key's latest change.
 const orgTokenLogIOAuditContent = "Set request and response retention of organization API key %s (ID: %d) to %s"
 
-// RecordOrgTokenLogIOUpdate records that actorId switched the key's retention.
+// RecordOrgTokenLogIOUpdate records that actorId selected the key for retention or took it out.
 func RecordOrgTokenLogIOUpdate(organizationId, actorId int, token *Token, siteEnabled bool) {
 	value := "off"
 	if token.LogIO != nil && *token.LogIO {
@@ -65,7 +65,7 @@ func RecordOrgTokenLogIOUpdate(organizationId, actorId int, token *Token, siteEn
 	}
 }
 
-// GetLatestOrgTokenLogIOUpdate returns the newest change of the key's own retention switch, with
+// GetLatestOrgTokenLogIOUpdate returns the newest change of the key's selection for retention, with
 // the actor's username, or nil when there is none.
 func GetLatestOrgTokenLogIOUpdate(organizationId, tokenId int) (*OrganizationAuditLog, error) {
 	var logs []*OrganizationAuditLog

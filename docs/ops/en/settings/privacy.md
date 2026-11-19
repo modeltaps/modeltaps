@@ -100,9 +100,9 @@ Key `LogIOEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Logs & privacy › Request & response retention
 
-Site-wide switch for keeping the full request and response bodies of API calls, for troubleshooting. When off (the default, zero data retention) no API key keeps them and the option is hidden from personal and organization settings. When on, each API key has its own switch, off until it is turned on, and an organization can lock its keys on or off. Bodies are cut at 1 MB each by default, kept 30 days, and never include API keys or auth headers.
+Site-wide switch for keeping the full request and response bodies of API calls, for troubleshooting. When off (the default, zero data retention) no API key keeps them and the option is hidden from personal and organization settings. When on, a personal account turns it on for its keys in the personal settings, and an organization's owners and admins choose: no key, every key, or the keys they select. Nothing is kept until then. Bodies are cut at 1 MB each by default, kept 30 days, and never include API keys or auth headers.
 
-See also: [Keep request and response bodies](./objects.md#token-log_io) · [Request and response retention](./objects.md#organization-log_io_policy)
+See also: [Request and response retention](./objects.md#organization-log_io_policy)
 
 ## Content safety
 

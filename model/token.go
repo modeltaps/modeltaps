@@ -528,23 +528,18 @@ func (token *Token) UpdateByAdmin() error {
 // ResolveTokenLogIO is whether requests of the API key keep their request and response bodies
 // (ORG-10), injected by the middleware:
 //   - the site switch config.LogIOEnabled off → never, without any lookup;
-//   - a personal key → its own switch;
-//   - an organization key → the organization's policy: locked on or off, or the key's own switch
-//     while members choose. The policy is cached under the shadow account.
+//   - otherwise the owner's policy: a personal account's switch, or the organization's policy
+//     (every key, none, or the keys its admins selected: the key's log_io). The policy is cached.
 func ResolveTokenLogIO(token *Token) bool {
 	if !config.LogIOEnabled || token == nil {
 		return false
 	}
-	keyOn := token.LogIO != nil && *token.LogIO
-	if !tokenIsOrganizationToken(token) {
-		return keyOn
-	}
-	policy, err := CacheGetOrgLogIOPolicy(token.UserId)
+	policy, err := CacheGetOwnerLogIOPolicy(token.UserId)
 	if err != nil {
 		// Without the policy nothing is kept (zero data retention).
 		return false
 	}
-	return ApplyOrgLogIOPolicy(policy, keyOn)
+	return ApplyLogIOPolicy(policy, token.LogIO != nil && *token.LogIO)
 }
 
 // LogIOWriteEnabled 报告是否应为该令牌写入完整请求/响应明细(T50e 写入闸门,供 T50d 调用)。

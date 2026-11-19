@@ -57,15 +57,16 @@ func seedLogIOOrg(t *testing.T, policy string) int {
 	return shadowId
 }
 
-// TestResolveTokenLogIO 表驱动覆盖判定链(ORG-10):站点闸门、个人 key 自己的开关、组织策略锁定或交给 key。
+// TestResolveTokenLogIO 表驱动覆盖判定链(ORG-10):站点闸门、个人账户开关、组织策略(全部 / 不留 / 选中的 key)。
 func TestResolveTokenLogIO(t *testing.T) {
 	setupLogIOInheritTestDB(t)
 
-	user := seedLogIOUser(t, config.UserTypeNormal, boolPtr(true)) // 新建默认不影响已有 key
-	orgMember := seedLogIOOrg(t, LogIOPolicyMember)
+	userOn := seedLogIOUser(t, config.UserTypeNormal, boolPtr(true))
+	userOff := seedLogIOUser(t, config.UserTypeNormal, nil)
 	orgUnset := seedLogIOOrg(t, "")
 	orgOn := seedLogIOOrg(t, LogIOPolicyOn)
 	orgOff := seedLogIOOrg(t, LogIOPolicyOff)
+	orgSel := seedLogIOOrg(t, LogIOPolicySelected)
 	orgKey := func(shadow int, on *bool) *Token { return &Token{UserId: shadow, CreatedBy: 42, LogIO: on} }
 
 	cases := []struct {
@@ -74,15 +75,14 @@ func TestResolveTokenLogIO(t *testing.T) {
 		token   *Token
 		want    bool
 	}{
-		{"站点闸门关-恒不留存", false, &Token{UserId: user, LogIO: boolPtr(true)}, false},
-		{"个人-key 开", true, &Token{UserId: user, LogIO: boolPtr(true)}, true},
-		{"个人-key 关(用户新建默认开不影响)", true, &Token{UserId: user, LogIO: boolPtr(false)}, false},
-		{"个人-key 未设置按关", true, &Token{UserId: user}, false},
-		{"组织成员自选-key 开", true, orgKey(orgMember, boolPtr(true)), true},
-		{"组织成员自选-key 关", true, orgKey(orgMember, boolPtr(false)), false},
-		{"组织未设置策略=成员自选", true, orgKey(orgUnset, boolPtr(true)), true},
-		{"组织强制开-key 关也留存", true, orgKey(orgOn, boolPtr(false)), true},
-		{"组织强制关-key 开也不留存", true, orgKey(orgOff, boolPtr(true)), false},
+		{"站点闸门关-恒不留存", false, &Token{UserId: userOn}, false},
+		{"个人-账户开", true, &Token{UserId: userOn}, true},
+		{"个人-账户关(key 上的值不读)", true, &Token{UserId: userOff, LogIO: boolPtr(true)}, false},
+		{"组织未设置=不留存", true, orgKey(orgUnset, boolPtr(true)), false},
+		{"组织全部留存", true, orgKey(orgOn, boolPtr(false)), true},
+		{"组织不留存", true, orgKey(orgOff, boolPtr(true)), false},
+		{"组织选中的 key", true, orgKey(orgSel, boolPtr(true)), true},
+		{"组织未选中的 key", true, orgKey(orgSel, boolPtr(false)), false},
 		{"nil 令牌恒不留存", true, nil, false},
 	}
 
@@ -95,6 +95,80 @@ func TestResolveTokenLogIO(t *testing.T) {
 				t.Fatalf("ResolveTokenLogIO = %v, 期望 %v", got, tc.want)
 			}
 		})
+	}
+}
+
+// migrateLogIOToOrgSelection: personal keys' column is cleared (the account switch decides); an
+// organization where each key decided keeps the keys that were on as its selection.
+func TestMigrateLogIOToOrgSelection(t *testing.T) {
+	setupLogIOInheritTestDB(t)
+	user := seedLogIOUser(t, config.UserTypeNormal, boolPtr(true))
+	withKeys := seedLogIOOrg(t, legacyLogIOPolicyMember)
+	noKeys := seedLogIOOrg(t, legacyLogIOPolicyMember)
+	locked := seedLogIOOrg(t, LogIOPolicyOn)
+	key := func(name string, userId, createdBy int, on bool) {
+		tk := &Token{UserId: userId, CreatedBy: createdBy, Name: name, KeyHash: utils.GetRandomString(48), LogIO: boolPtr(on)}
+		if err := DB.Create(tk).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	key("personal", user, 0, true)
+	key("sel-on", withKeys, user, true)
+	key("sel-off", withKeys, user, false)
+	key("none", noKeys, user, false)
+
+	if err := migrateLogIOToOrgSelection().Migrate(DB); err != nil {
+		t.Fatal(err)
+	}
+	var personal Token
+	DB.Where("name = ?", "personal").First(&personal)
+	if personal.LogIO == nil || *personal.LogIO {
+		t.Fatalf("personal key column = %v, want cleared", personal.LogIO)
+	}
+	for shadow, want := range map[int]string{withKeys: LogIOPolicySelected, noKeys: LogIOPolicyOff, locked: LogIOPolicyOn} {
+		var org Organization
+		if err := DB.Where("shadow_user_id = ?", shadow).First(&org).Error; err != nil {
+			t.Fatal(err)
+		}
+		if got := org.Setting.Data().LogIOPolicy; got != want {
+			t.Errorf("organization %d: policy %q, want %q", org.Id, got, want)
+		}
+	}
+	config.LogIOEnabled = true
+	t.Cleanup(func() { config.LogIOEnabled = false })
+	var selOn Token
+	DB.Where("name = ?", "sel-on").First(&selOn)
+	if !ResolveTokenLogIO(&selOn) {
+		t.Fatal("the key that was on is no longer kept")
+	}
+}
+
+// SetOrgLogIOSelection selects exactly the given keys of the organization and reports the changes.
+func TestSetOrgLogIOSelection(t *testing.T) {
+	setupLogIOInheritTestDB(t)
+	user := seedLogIOUser(t, config.UserTypeNormal, nil)
+	shadow := seedLogIOOrg(t, LogIOPolicySelected)
+	var org Organization
+	DB.Where("shadow_user_id = ?", shadow).First(&org)
+	var ids []int
+	for i, on := range []bool{true, false, false} {
+		tk := &Token{UserId: shadow, CreatedBy: user, Name: utils.GetRandomString(6), KeyHash: utils.GetRandomString(48), LogIO: boolPtr(on)}
+		if err := DB.Create(tk).Error; err != nil {
+			t.Fatal(i, err)
+		}
+		ids = append(ids, tk.Id)
+	}
+	personal := &Token{UserId: user, Name: "p", KeyHash: utils.GetRandomString(48)}
+	DB.Create(personal)
+
+	changed, err := SetOrgLogIOSelection(&org, []int{ids[1], personal.Id})
+	if err != nil || len(changed) != 2 {
+		t.Fatalf("changed %d keys, err %v; want 2 (first off, second on)", len(changed), err)
+	}
+	var got Token
+	DB.First(&got, personal.Id)
+	if got.LogIO != nil && *got.LogIO {
+		t.Fatal("a key of another owner was selected")
 	}
 }
 
@@ -145,36 +219,14 @@ func TestMigrateLogIOToKeys(t *testing.T) {
 			t.Errorf("%s: log_io = %v, want %v", name, tk.LogIO, w)
 		}
 	}
-	for org, policy := range map[*Organization]string{orgOn: LogIOPolicyOn, orgOff: LogIOPolicyOff, orgNil: LogIOPolicyMember} {
+	for org, policy := range map[*Organization]string{orgOn: LogIOPolicyOn, orgOff: LogIOPolicyOff, orgNil: legacyLogIOPolicyMember} {
 		var got Organization
 		if err := DB.First(&got, org.Id).Error; err != nil {
 			t.Fatal(err)
 		}
-		if got.GetLogIOPolicy() != policy || got.Setting.Data().LogIOPolicy != policy || got.Setting.Data().LegacyLogIODefault != nil {
+		if got.Setting.Data().LogIOPolicy != policy || got.Setting.Data().LegacyLogIODefault != nil {
 			t.Errorf("organization %d: setting %+v, want policy %s and the old switch cleared", org.Id, got.Setting.Data(), policy)
 		}
-	}
-}
-
-// SetPersonalTokensLogIO switches the user's personal keys only.
-func TestSetPersonalTokensLogIO(t *testing.T) {
-	setupLogIOInheritTestDB(t)
-	user := seedLogIOUser(t, config.UserTypeNormal, nil)
-	shadow := seedLogIOOrg(t, LogIOPolicyMember)
-	for i, tk := range []*Token{{UserId: user}, {UserId: user, LogIO: boolPtr(true)}, {UserId: shadow, CreatedBy: user}} {
-		tk.Name, tk.KeyHash = utils.GetRandomString(6), utils.GetRandomString(48)
-		if err := DB.Create(tk).Error; err != nil {
-			t.Fatal(i, err)
-		}
-	}
-	changed, err := SetPersonalTokensLogIO(user, true)
-	if err != nil || changed != 1 {
-		t.Fatalf("changed %d, err %v; want 1", changed, err)
-	}
-	var orgKey Token
-	DB.Where("user_id = ?", shadow).First(&orgKey)
-	if orgKey.LogIO != nil && *orgKey.LogIO {
-		t.Fatal("an organization key was switched")
 	}
 }
 

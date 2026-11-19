@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useSelector } from 'react-redux';
 
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { FormField } from '@/components/ui/form-field';
 import { FormCard, OptionList } from '@/components/settings/cards';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,10 +17,67 @@ import { SelectRow, ToggleRow } from '../../Setting/parts';
 // Organization profile card (Admin+): name, avatar, usage visibility and request / response
 // retention, saved by the card footer. The danger zone is its own group (DangerSection).
 
-// The retention policy of the organization's API keys (ORG-10): each key decides, or every key
-// locked on or off. Never chosen means each key decides.
-const LOG_IO_POLICIES = ['member', 'on', 'off'];
-const policyFromServer = (v) => (LOG_IO_POLICIES.includes(v) ? v : 'member');
+// Which of the organization's API keys keep request and response bodies (ORG-10), chosen by owners
+// and admins here only: none (also when never chosen), every key, or the keys ticked in the list.
+const LOG_IO_POLICIES = ['off', 'on', 'selected'];
+const policyFromServer = (v) => (LOG_IO_POLICIES.includes(v) ? v : 'off');
+const sameIds = (a, b) => [...a].sort().join(',') === [...b].sort().join(',');
+
+// The organization's keys an admin can tick for "selected", with who created each.
+function useOrgKeys(orgId, enabled) {
+  const [keys, setKeys] = useState(null);
+  const [names, setNames] = useState({});
+  useEffect(() => {
+    if (!enabled) return undefined;
+    let alive = true;
+    Promise.all([
+      API.get(`/api/org/${orgId}/token`, { params: { page: 1, size: 100 } }),
+      API.get(`/api/org/${orgId}/members`, { params: { page: 1, size: 100 } })
+    ])
+      .then(([tokens, members]) => {
+        if (!alive) return;
+        setKeys(tokens.data?.success ? tokens.data.data?.data || [] : []);
+        const next = {};
+        (members.data?.data?.data || []).forEach((m) => {
+          next[m.user_id] = m.username;
+        });
+        setNames(next);
+      })
+      .catch(() => alive && setKeys([]));
+    return () => {
+      alive = false;
+    };
+  }, [orgId, enabled]);
+  return { keys, names };
+}
+
+function LogIOKeyList({ keys, names, selected, onChange }) {
+  const { t } = useTranslation();
+  if (keys === null) return <Skeleton className="h-24 rounded-lg" />;
+  if (keys.length === 0) return <p className="text-xs text-muted-foreground">{t('orgPage.settings.logIOKeysEmpty')}</p>;
+  const toggle = (id, on) => onChange(on ? [...selected, id] : selected.filter((x) => x !== id));
+  return (
+    <div className="max-h-64 divide-y divide-border overflow-y-auto rounded-lg border border-border" data-testid="org-log-io-keys">
+      {keys.map((k) => (
+        <label key={k.id} htmlFor={`org-log-io-key-${k.id}`} className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm">
+          <Checkbox id={`org-log-io-key-${k.id}`} checked={selected.includes(k.id)} onCheckedChange={(on) => toggle(k.id, on)} />
+          <span className="min-w-0 truncate font-medium">{k.name}</span>
+          <code className="font-mono text-xs text-muted-foreground">{k.key_hint}</code>
+          <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+            {k.created_by === k.user_id ? t('orgPage.settings.logIOKeyOrgOwned') : names[k.created_by] || `#${k.created_by}`}
+          </span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+LogIOKeyList.propTypes = {
+  keys: PropTypes.array,
+  names: PropTypes.object.isRequired,
+  selected: PropTypes.array.isRequired,
+  onChange: PropTypes.func.isRequired
+};
 
 // 脏值比较统一归一为字符串,null / undefined / '' 视为相等(as isDirty in Setting/parts.jsx)。
 const sameValue = (a, b) => String(a ?? '') === String(b ?? '');
@@ -39,8 +97,19 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
   const [avatarUrl, setAvatarUrl] = useState('');
   // 成员可见全员用量:组织上的普通开关,未设置即关闭
   const [usageVisible, setUsageVisible] = useState(false);
-  // 组织留存策略(member / on / off),经 PUT /api/org/:id 写入。
-  const [logIoPolicy, setLogIoPolicy] = useState('member');
+  // 组织留存策略(off / on / selected)与选中的 Key,经 PUT /api/org/:id 写入。
+  const [logIoPolicy, setLogIoPolicy] = useState('off');
+  const [logIoKeyIds, setLogIoKeyIds] = useState([]);
+  const [keyBaseline, setKeyBaseline] = useState([]);
+  const { keys: orgKeys, names: memberNames } = useOrgKeys(orgId, isAdmin && logIoSiteEnabled);
+
+  useEffect(() => {
+    if (!orgKeys) return;
+    const ids = orgKeys.filter((k) => k.log_io === true).map((k) => k.id);
+    setLogIoKeyIds(ids);
+    setKeyBaseline(ids);
+  }, [orgKeys]);
+  const keysDirty = logIoPolicy === 'selected' && !sameIds(logIoKeyIds, keyBaseline);
   const [saving, setSaving] = useState(false);
   // 表单基线:随 org 回流刷新,用于把保存按钮按脏值置灰
   const [baseline, setBaseline] = useState(null);
@@ -66,7 +135,8 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
     (!sameValue(name.trim(), baseline.name.trim()) ||
       !sameValue(avatarUrl, baseline.avatarUrl) ||
       !sameValue(usageVisible, baseline.usageVisible) ||
-      !sameValue(logIoPolicy, baseline.logIoPolicy));
+      !sameValue(logIoPolicy, baseline.logIoPolicy) ||
+      keysDirty);
 
   const saveProfile = async () => {
     if (!name.trim()) {
@@ -79,6 +149,7 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
       if (!sameValue(usageVisible, baseline?.usageVisible)) payload.usage_visible_to_members = usageVisible;
       // 未改动留存策略时不带该字段,后端保持原值
       if (!sameValue(logIoPolicy, baseline?.logIoPolicy)) payload.log_io_policy = logIoPolicy;
+      if (keysDirty) payload.log_io_key_ids = logIoKeyIds;
       const res = await API.put(`/api/org/${orgId}/`, payload);
       const { success, message } = res.data;
       if (success) {
@@ -87,6 +158,7 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
         setName(payload.name);
         setAvatarUrl(payload.avatar_url);
         setBaseline({ name: payload.name, avatarUrl: payload.avatar_url, usageVisible, logIoPolicy });
+        if (keysDirty) setKeyBaseline(logIoKeyIds);
         onRefresh?.();
         refreshOrganizations();
         // 侧栏 / 仪表盘读的是 OrgContext.orgDetail,同步重拉一次即时生效(UX-25)
@@ -111,6 +183,7 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
     setAvatarUrl(baseline.avatarUrl);
     setUsageVisible(baseline.usageVisible);
     setLogIoPolicy(baseline.logIoPolicy);
+    setLogIoKeyIds(keyBaseline);
   };
 
   return (
@@ -167,6 +240,12 @@ export default function GeneralSection({ orgId, role, detail, onRefresh }) {
               onChange={setLogIoPolicy}
               options={LOG_IO_POLICIES.map((p) => ({ value: p, label: t(`orgPage.settings.logIOPolicy_${p}`) }))}
             />
+            {logIoPolicy === 'selected' && (
+              <div className="space-y-2 pt-3">
+                <p className="text-xs text-muted-foreground">{t('orgPage.settings.logIOKeysHint')}</p>
+                <LogIOKeyList keys={orgKeys} names={memberNames} selected={logIoKeyIds} onChange={setLogIoKeyIds} />
+              </div>
+            )}
           </div>
         )}
       </OptionList>

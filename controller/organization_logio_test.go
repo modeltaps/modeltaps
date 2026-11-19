@@ -109,7 +109,7 @@ func TestOrgLogIOPolicyIsDisclosedToMembers(t *testing.T) {
 		return status
 	}
 
-	if got := disclosure(); got["stored"] != false || got["policy"] != model.LogIOPolicyMember {
+	if got := disclosure(); got["stored"] != false || got["policy"] != model.LogIOPolicyOff {
 		t.Fatalf("members choose, disclosure says %v", got)
 	}
 
@@ -142,7 +142,7 @@ func TestOrgLogIOPolicyIsDisclosedToMembers(t *testing.T) {
 		t.Fatalf("update failed: %d %v", code, body)
 	}
 	if got := disclosure(); got["stored"] != false || got["policy"] != "off" {
-		t.Fatalf("retention locked off, disclosure says %v", got)
+		t.Fatalf("retention off, disclosure says %v", got)
 	}
 
 	code, body = orgRoutingCall(t, r, http.MethodPut, "/api/org/1", map[string]any{"name": "Org", "log_io_policy": "inherit"})
@@ -175,29 +175,25 @@ func TestOrgTokenDetailDisclosesLockedPolicy(t *testing.T) {
 	}
 }
 
-// While members choose, a key's own switch decides: an owner turning it on for a member's key is
-// audited, and the member's key page says who did and when (ORG-10, SEC-51). A locked policy
-// ignores the requested switch.
-func TestOrgTokenOwnLogIOSwitch(t *testing.T) {
+// Under "selected", the keys an admin ticks in the organization settings keep their bodies: each
+// change is audited, and the key's page tells its member who selected it and when (ORG-10, SEC-51).
+// Key creation and edits never change the selection.
+func TestOrgLogIOSelection(t *testing.T) {
 	db, org := setupOrgLogIOTest(t)
+	org.Setting.Set(model.OrganizationSetting{LogIOPolicy: model.LogIOPolicySelected})
+	if err := org.UpdateSetting(); err != nil {
+		t.Fatal(err)
+	}
 	token := &model.Token{Id: 3, UserId: orgLogIOShadow, CreatedBy: orgLogIOMember, Name: "k", KeyHash: "h3", ExpiredTime: -1, UnlimitedQuota: true, Status: config.TokenStatusEnabled}
 	if err := db.Create(token).Error; err != nil {
 		t.Fatal(err)
 	}
 	r := gin.New()
-	r.PUT("/api/org/:id/token", orgLogIOAs(org, orgLogIOOwner, model.OrgRoleOwner), UpdateOrgToken)
+	r.PUT("/api/org/:id", orgLogIOAs(org, orgLogIOAdmin, model.OrgRoleAdmin), UpdateOrganization)
+	r.PUT("/api/org/:id/token", orgLogIOAs(org, orgLogIOMember, model.OrgRoleMember), UpdateOrgToken)
 	r.POST("/api/org/:id/token", orgLogIOAs(org, orgLogIOMember, model.OrgRoleMember), AddOrgToken)
 	r.GET("/api/org/:id/token/:token_id", orgLogIOAs(org, orgLogIOMember, model.OrgRoleMember), GetOrgToken)
-	update := func(logIO bool) {
-		t.Helper()
-		code, body := orgRoutingCall(t, r, http.MethodPut, "/api/org/1/token", map[string]any{
-			"id": 3, "name": "k", "expired_time": -1, "unlimited_quota": true, "status": config.TokenStatusEnabled, "log_io": logIO,
-		})
-		if code != http.StatusOK || body["success"] != true {
-			t.Fatalf("update failed: %d %v", code, body)
-		}
-	}
-	storedLogIO := func(id int) bool {
+	selected := func(id int) bool {
 		t.Helper()
 		var stored model.Token
 		if err := db.First(&stored, id).Error; err != nil {
@@ -205,60 +201,50 @@ func TestOrgTokenOwnLogIOSwitch(t *testing.T) {
 		}
 		return stored.LogIO != nil && *stored.LogIO
 	}
+	selectKeys := func(ids ...int) {
+		t.Helper()
+		code, body := orgRoutingCall(t, r, http.MethodPut, "/api/org/1", map[string]any{"name": "Org", "log_io_key_ids": append([]int{}, ids...)})
+		if code != http.StatusOK || body["success"] != true {
+			t.Fatalf("selection failed: %d %v", code, body)
+		}
+	}
 
-	update(true)
-	if !storedLogIO(3) {
-		t.Fatal("the key's switch was not saved while members choose")
+	selectKeys(3)
+	if !selected(3) {
+		t.Fatal("the admin's selection was not saved")
 	}
+	selectKeys(3) // unchanged: no new entry
 	if n := orgLogIOCount(t, db, model.OrgAuditActionTokenLogIOUpdate); n != 1 {
-		t.Fatalf("turning the key on recorded %d entries, want 1", n)
-	}
-	update(true) // unchanged: no new entry
-	if n := orgLogIOCount(t, db, model.OrgAuditActionTokenLogIOUpdate); n != 1 {
-		t.Fatalf("an unchanged switch was audited (%d entries)", n)
+		t.Fatalf("selecting the key recorded %d entries, want 1", n)
 	}
 	code, body := orgRoutingCall(t, r, http.MethodGet, "/api/org/1/token/3", nil)
 	status, _ := body["log_io"].(map[string]any)
-	if code != http.StatusOK || status == nil || status["stored"] != true || status["source"] != "key" || status["changed_by"] != "olivia" {
+	if code != http.StatusOK || status == nil || status["stored"] != true || status["source"] != "key" || status["changed_by"] != "alice" {
 		t.Fatalf("key disclosure = %v", body["log_io"])
 	}
 
-	// A locked policy keeps the stored switch and ignores the request.
-	org.Setting.Set(model.OrganizationSetting{LogIOPolicy: model.LogIOPolicyOff})
-	if err := org.UpdateSetting(); err != nil {
+	// The member editing the key cannot take it out, and a new key is not selected.
+	code, body = orgRoutingCall(t, r, http.MethodPut, "/api/org/1/token", map[string]any{
+		"id": 3, "name": "k", "expired_time": -1, "unlimited_quota": true, "status": config.TokenStatusEnabled, "log_io": false,
+	})
+	if code != http.StatusOK || body["success"] != true || !selected(3) {
+		t.Fatalf("a member's edit changed the selection: %d %v", code, body)
+	}
+	code, body = orgRoutingCall(t, r, http.MethodPost, "/api/org/1/token", map[string]any{"name": "new", "expired_time": -1, "unlimited_quota": true, "log_io": true})
+	if code != http.StatusOK || body["success"] != true {
+		t.Fatalf("create failed: %d %v", code, body)
+	}
+	var created model.Token
+	if err := db.Where("name = ?", "new").First(&created).Error; err != nil {
 		t.Fatal(err)
 	}
-	update(false)
-	if !storedLogIO(3) {
-		t.Fatal("a locked policy let the request change the key's switch")
-	}
-	keyOn := true
-	if model.ResolveTokenLogIO(&model.Token{UserId: orgLogIOShadow, CreatedBy: orgLogIOMember, LogIO: &keyOn}) {
-		t.Fatal("a key under a policy locked off keeps bodies")
+	if created.LogIO != nil && *created.LogIO {
+		t.Fatal("a new key was selected by its creator")
 	}
 
-	// A new key under a locked policy starts with the locked value; while members choose, with the
-	// requested one (off when none).
-	code, body = orgRoutingCall(t, r, http.MethodPost, "/api/org/1/token", map[string]any{"name": "locked", "expired_time": -1, "unlimited_quota": true, "log_io": true})
-	if code != http.StatusOK || body["success"] != true {
-		t.Fatalf("create failed: %d %v", code, body)
-	}
-	org.Setting.Set(model.OrganizationSetting{LogIOPolicy: model.LogIOPolicyMember})
-	if err := org.UpdateSetting(); err != nil {
-		t.Fatal(err)
-	}
-	code, body = orgRoutingCall(t, r, http.MethodPost, "/api/org/1/token", map[string]any{"name": "plain", "expired_time": -1, "unlimited_quota": true})
-	if code != http.StatusOK || body["success"] != true {
-		t.Fatalf("create failed: %d %v", code, body)
-	}
-	for name, want := range map[string]bool{"locked": false, "plain": false} {
-		var created model.Token
-		if err := db.Where("name = ?", name).First(&created).Error; err != nil {
-			t.Fatal(err)
-		}
-		if created.LogIO == nil || *created.LogIO != want {
-			t.Fatalf("key %s created with log_io %v, want %v", name, created.LogIO, want)
-		}
+	selectKeys()
+	if selected(3) {
+		t.Fatal("an empty selection kept the key")
 	}
 }
 
@@ -304,24 +290,5 @@ func TestGetOrgLogDetailOwnerOnlyAndAudited(t *testing.T) {
 	}
 	if n := orgLogIOCount(t, db, model.OrgAuditActionLogIOView); n != 1 {
 		t.Fatalf("reading one's own body was audited (%d entries)", n)
-	}
-}
-
-// A new personal key starts with the user's default for new keys unless the request sets it.
-func TestPersonalTokenLogIODefault(t *testing.T) {
-	setupOrgLogIOTest(t)
-	if got := personalTokenLogIO(orgLogIOOwner, nil); got == nil || *got {
-		t.Fatalf("no default: log_io %v, want off", got)
-	}
-	on := true
-	if err := model.UpdateUserSettingById(orgLogIOOwner, model.UserSetting{LogIODefault: &on}); err != nil {
-		t.Fatal(err)
-	}
-	if got := personalTokenLogIO(orgLogIOOwner, nil); got == nil || !*got {
-		t.Fatalf("default on: log_io %v, want on", got)
-	}
-	off := false
-	if got := personalTokenLogIO(orgLogIOOwner, &off); got == nil || *got {
-		t.Fatalf("requested off: log_io %v, want off", got)
 	}
 }

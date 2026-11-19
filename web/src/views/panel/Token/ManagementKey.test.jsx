@@ -155,37 +155,11 @@ describe('management key helpers', () => {
   });
 });
 
-// The retention switch of a new key (ORG-10): shown while the site allows retention, starting with
-// the user's default for new keys, and locked by an organization's policy.
-describe('NewTokenDialog retention switch', () => {
-  const siteOn = { log_io_enabled: true };
-
-  it('is hidden while the site keeps no bodies', () => {
-    openDialog({});
+// Keys have no retention switch: it is the account's or the organization's decision (ORG-10).
+describe('NewTokenDialog retention', () => {
+  it('has no retention switch, even while the site allows retention', () => {
+    openDialog({}, { log_io_enabled: true });
     expect(document.getElementById('nt-log-io')).toBeNull();
-  });
-
-  it('starts a personal key with the default for new keys and sends it', async () => {
-    API.get.mockResolvedValue({ data: { success: true, data: { log_io_default: 'on' } } });
-    API.post.mockResolvedValue({ data: { success: true, data: { id: 9, key: 'abc' } } });
-    openDialog({}, siteOn);
-    await waitFor(() => expect(document.getElementById('nt-log-io').getAttribute('aria-checked')).toBe('true'));
-    fireEvent.change(screen.getByLabelText(i18n.t('token_index.name')), { target: { value: 'k' } });
-    fireEvent.click(screen.getByRole('button', { name: i18n.t('apiKey.new.create') }));
-    await waitFor(() => expect(API.post).toHaveBeenCalled());
-    expect(API.post.mock.calls[0][1].log_io).toBe(true);
-  });
-
-  it('is locked by an organization policy and not sent', async () => {
-    API.post.mockResolvedValue({ data: { success: true, data: { id: 9, key: 'abc' } } });
-    openDialog({ orgContext: true, logIO: { policy: 'off' } }, siteOn);
-    const toggle = document.getElementById('nt-log-io');
-    expect(toggle.disabled).toBe(true);
-    expect(screen.getByText(i18n.t('apiKey.logIO.locked_off'))).toBeTruthy();
-    expect(API.get).not.toHaveBeenCalled();
-    fireEvent.change(screen.getByLabelText(i18n.t('token_index.name')), { target: { value: 'k' } });
-    fireEvent.click(screen.getByRole('button', { name: i18n.t('apiKey.new.create') }));
-    await waitFor(() => expect(API.post).toHaveBeenCalled());
-    expect('log_io' in API.post.mock.calls[0][1]).toBe(false);
+    expect(screen.queryByText(i18n.t('profilePage.logIOToggle'))).toBeNull();
   });
 });
