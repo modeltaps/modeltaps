@@ -1,20 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { Info, Loader2, Play, RotateCcw } from 'lucide-react';
+import { Loader2, Play, RotateCcw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/sonner';
 import { listPauses, resumePause } from './supplyApi';
 import { modelSupplyPath } from './supplyHelpers';
-import { StateDot, durationLabel, formatUntil, ruleLabel, useSupplySwitches } from './supplyParts';
+import { StateDot, durationLabel, formatUntil, ruleLabel } from './supplyParts';
 import { admin } from 'routes/paths';
 
 // "Paused" tab of the model page: every channel or model on a channel that a pause rule (or an
 // admin) has taken out of rotation, with a button to put it back now.
 export default function PausedSupplies() {
   const { t } = useTranslation();
-  const switches = useSupplySwitches();
   const [pauses, setPauses] = useState(null);
   const [busyId, setBusyId] = useState(0);
   const [now, setNow] = useState(0);
@@ -57,13 +56,6 @@ export default function PausedSupplies() {
           {t('modelInfoPage.refresh')}
         </Button>
       </div>
-
-      {switches && !switches.pauseRulesEnabled && (
-        <p className="flex items-start gap-2 rounded-[10px] bg-muted px-3 py-2 text-[13px] text-muted-foreground">
-          <Info className="mt-0.5 size-3.5 shrink-0" />
-          <span>{t('modelSupply.pausedPage.rulesOff')}</span>
-        </p>
-      )}
 
       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
         {pauses === null ? (

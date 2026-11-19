@@ -524,23 +524,6 @@ func TestFetchChannelByModel_ClaudeProtocolFiltering(t *testing.T) {
 	}
 }
 
-func TestRelayErrorModelName(t *testing.T) {
-	c := newTestContext()
-	if got := relayErrorModelName(c); got != "" {
-		t.Fatalf("expected empty model name, got %q", got)
-	}
-
-	c.Set("original_model", "gpt-4o")
-	if got := relayErrorModelName(c); got != "gpt-4o" {
-		t.Fatalf("expected fallback to original_model, got %q", got)
-	}
-
-	c.Set("new_model", "gpt-4o-2024-08-06")
-	if got := relayErrorModelName(c); got != "gpt-4o-2024-08-06" {
-		t.Fatalf("expected new_model to take precedence, got %q", got)
-	}
-}
-
 // An error saying the channel can no longer serve moves the request to another channel even
 // when its status code would not, and whether or not automatic disabling is on.
 func TestShouldRetry_UnusableChannel(t *testing.T) {

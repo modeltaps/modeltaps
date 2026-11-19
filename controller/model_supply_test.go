@@ -206,7 +206,7 @@ func TestGetPauseRulesHandler(t *testing.T) {
 	data, _ := resp["data"].(map[string]any)
 	rules, _ := data["rules"].([]any)
 	defaults, _ := data["defaults"].([]any)
-	if data["enabled"] != config.PauseRulesEnabled || data["custom"] != false || len(rules) != 7 || len(defaults) != 7 {
+	if data["custom"] != false || len(rules) != 7 || len(defaults) != 7 {
 		t.Fatalf("rules response = %v", resp)
 	}
 	if _, ok := data["channel_rules"]; ok {

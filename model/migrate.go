@@ -632,6 +632,7 @@ func postMigrations() []*gormigrate.Migration {
 		foldPlatformMarkupIntoGroups(),
 		backfillVercelFeeNote(),
 		dropChatLinkOptions(),
+		dropPauseRulesEnabledOption(),
 	}
 }
 
@@ -2147,6 +2148,19 @@ func dropChatLinkOptions() *gormigrate.Migration {
 				}
 			}
 			return nil
+		},
+		Rollback: func(tx *gorm.DB) error { return nil },
+	}
+}
+
+// dropPauseRulesEnabledOption removes the pause rules switch: every failed request goes through the
+// pause rules, and the older handling it could switch back to (live automatic disabling, the
+// cooldown fallback and the model-not-found quarantine) is gone.
+func dropPauseRulesEnabledOption() *gormigrate.Migration {
+	return &gormigrate.Migration{
+		ID: "202611191201",
+		Migrate: func(tx *gorm.DB) error {
+			return tx.Where(&Option{Key: "PauseRulesEnabled"}).Delete(&Option{}).Error
 		},
 		Rollback: func(tx *gorm.DB) error { return nil },
 	}

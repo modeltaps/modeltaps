@@ -1709,7 +1709,7 @@
       "unit": "seconds",
       "min": 0,
       "label": "Rate limit cooldown",
-      "description": "How long a channel is kept away from a model after it answers that model with a 429 rate limit. While it cools down, new requests for the model go to other channels; its other models are not affected. When the upstream says when the limit resets, that time is used instead. With supply pause rules on, this is the pause of the built-in rate_limit rule (custom rules carry their own seconds); with them off, a status code listed under per-status cooldowns takes precedence. 0 only skips the channel for the failed request.",
+      "description": "How long a channel is kept away from a model after it answers that model with a 429 rate limit. While it cools down, new requests for the model go to other channels; its other models are not affected. When the upstream says when the limit resets, that time is used instead. It is the pause of the built-in rate_limit rule; custom rules carry their own seconds. 0 only skips the channel for the failed request.",
       "examples": [
         {
           "value": "5",
@@ -1726,7 +1726,6 @@
       ],
       "related": [
         "RetryCooldownPerStatus",
-        "PauseRulesEnabled",
         "PauseRules"
       ],
       "keywords": [
@@ -1775,7 +1774,7 @@
       "card": "retry",
       "type": "json",
       "label": "Per-status cooldown",
-      "description": "Cooldowns in seconds for other HTTP status codes, as a JSON object of status code and seconds. Like the rate limit cooldown it keeps the channel away from that one model. With supply pause rules on, the built-in per_status rule applies it after the quota, credential, rate limit and model-not-found rules, so a 429 entry is never reached there, and a listed 5xx code no longer waits for three failures in a minute. With pause rules off, the order is the upstream's reset time, then this list, then the rate limit cooldown for 429. A code set to 0 is never cooled. Codes must be 100-599 and seconds whole numbers of 0 or more; empty adds none.",
+      "description": "Cooldowns in seconds for other HTTP status codes, as a JSON object of status code and seconds. Like the rate limit cooldown it keeps the channel away from that one model. The built-in per_status rule applies it after the quota, credential, rate limit and model-not-found rules, so a 429 entry is never reached, and a listed 5xx code no longer waits for three failures in a minute. A code set to 0 is never cooled. Codes must be 100-599 and seconds whole numbers of 0 or more; empty adds none.",
       "examples": [
         {
           "value": "{\"503\": 120}",
@@ -1792,8 +1791,7 @@
       ],
       "related": [
         "RetryCooldownSeconds",
-        "PauseRules",
-        "PauseRulesEnabled"
+        "PauseRules"
       ],
       "keywords": [
         "status code",
@@ -1813,7 +1811,7 @@
       "unit": "seconds",
       "min": 0,
       "label": "Model not found pause",
-      "description": "How long a channel is kept away from a model after its upstream says the model does not exist. There is no field for it on this page: change it through the option API (PUT /api/option/). It covers errors such as \"model not found\", \"does not exist\" or \"no endpoints found\", but not when a 429 was seen in the same request. With supply pause rules on, it is the pause of the built-in model_not_found rule, which also notifies admins; custom rules carry their own seconds. 0 never pauses for it.",
+      "description": "How long a channel is kept away from a model after its upstream says the model does not exist. There is no field for it on this page: change it through the option API (PUT /api/option/). It covers errors such as \"model not found\", \"does not exist\" or \"no endpoints found\", but not when a 429 was seen in the same request. It is the pause of the built-in model_not_found rule, which also notifies admins; custom rules carry their own seconds. 0 never pauses for it.",
       "examples": [
         {
           "value": "21600",
@@ -1829,7 +1827,6 @@
         }
       ],
       "related": [
-        "PauseRulesEnabled",
         "PauseRules",
         "RetryCooldownSeconds"
       ],
@@ -1841,36 +1838,6 @@
         "no endpoints"
       ],
       "advanced": true
-    },
-    {
-      "key": "PauseRulesEnabled",
-      "scope": "site",
-      "group": "gateway",
-      "card": "supply-pause-rules",
-      "type": "bool",
-      "label": "Supply pause rules",
-      "description": "Failed requests go through the pause rules, which pause a channel or one of its models and bring it back on their own. When off, the older handling applies instead: automatic channel disabling (if switched on), the rate limit and per-status cooldowns, and the model-not-found pause.",
-      "examples": [
-        {
-          "value": "true",
-          "effect": "A channel whose key is rejected is paused for an hour and resumes after a passing test, without anyone re-enabling it."
-        },
-        {
-          "value": "false",
-          "effect": "A rejected key disables the channel when automatic disabling is on, and it stays off until a channel test passes."
-        }
-      ],
-      "related": [
-        "PauseRules",
-        "AutomaticDisableChannelEnabled",
-        "RetryCooldownSeconds"
-      ],
-      "keywords": [
-        "pause",
-        "circuit breaker",
-        "health",
-        "auto disable"
-      ]
     },
     {
       "key": "PauseRules",
@@ -1895,7 +1862,6 @@
         }
       ],
       "related": [
-        "PauseRulesEnabled",
         "RetryCooldownSeconds",
         "RetryCooldownPerStatus",
         "ModelNotFoundCooldownSeconds",
@@ -1903,8 +1869,10 @@
       ],
       "keywords": [
         "pause rules",
+        "pause",
         "JSON",
         "circuit breaker",
+        "health",
         "probe",
         "quota",
         "keyword"
@@ -1917,11 +1885,11 @@
       "card": "channel-auto",
       "type": "bool",
       "label": "Disable channels that can no longer serve",
-      "description": "Disables a channel whose upstream says it can no longer serve, such as a rejected key or an empty balance. An exhausted quota, a disabled account or a disable keyword in the error count too. On live requests this only happens while supply pause rules are off; with them on, such errors pause the channel instead. Channel tests disable for these errors too, with or without pause rules. A disabled channel comes back only through a passing test with automatic recovery on, or by hand.",
+      "description": "Disables a channel whose upstream says it can no longer serve, such as a rejected key or an empty balance. An exhausted quota, a disabled account or a disable keyword in the error count too. It applies to channel tests: on live requests such errors pause the channel through the pause rules instead. A disabled channel comes back only through a passing test with automatic recovery on, or by hand.",
       "related": [
         "AutomaticEnableChannelEnabled",
         "DisableChannelKeywords",
-        "PauseRulesEnabled",
+        "PauseRules",
         "ChannelTestMode"
       ],
       "keywords": [
@@ -1995,7 +1963,7 @@
       "card": "channel-auto",
       "type": "list",
       "label": "Disable keywords",
-      "description": "Error messages, one per line, that mark a channel as unable to serve when an upstream error contains one. Matching is case-sensitive, so copy the upstream text exactly; a keyword wins over the built-in exceptions. A match moves the request to another channel, pauses the channel through the built-in credential rule (1 hour, tested before resuming) with supply pause rules on, and disables it with them off and automatic disabling on. Empty leaves only the built-in checks of status codes and known messages.",
+      "description": "Error messages, one per line, that mark a channel as unable to serve when an upstream error contains one. Matching is case-sensitive, so copy the upstream text exactly; a keyword wins over the built-in exceptions. A match moves the request to another channel and pauses the channel through the built-in credential rule (1 hour, tested before resuming); in a channel test it disables the channel when automatic disabling is on. Empty leaves only the built-in checks of status codes and known messages.",
       "examples": [
         {
           "value": "Your account is currently blocked",
@@ -2302,7 +2270,7 @@
       "related": [
         "SupplyCostOrder",
         "SupplyCostMinSavingPercent",
-        "PauseRulesEnabled"
+        "PauseRules"
       ],
       "keywords": [
         "reliability",
@@ -2335,7 +2303,7 @@
         "SupplyModeDefault",
         "SupplyCostOrder",
         "SupplyIntakeRules",
-        "PauseRulesEnabled"
+        "PauseRules"
       ],
       "keywords": [
         "supply routing",

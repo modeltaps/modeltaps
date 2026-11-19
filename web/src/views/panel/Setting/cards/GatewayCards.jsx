@@ -327,9 +327,7 @@ export function SupplyPauseRulesCard({ ctx }) {
   const fillDefaults = () => setField('PauseRules', pauseRulesText(defaults));
 
   return (
-    <OptionCard ctx={ctx} id="supply-pause-rules" enableKey="PauseRulesEnabled" options={{ validate }}>
-      {/* The header switch has no room for help: its catalog text sits here. */}
-      <SettingHelpLine settingKey="PauseRulesEnabled" />
+    <OptionCard ctx={ctx} id="supply-pause-rules" options={{ validate }}>
       <TextRow
         id="PauseRules"
         value={inputs.PauseRules}

@@ -955,7 +955,7 @@ func shouldRetryBadRequest(c *gin.Context, channelType int, apiErr *types.OpenAI
 //   - OpenAI:     "The model `x` does not exist or you do not have access to it."
 //   - 通用:       "model not found" / "unknown model"
 //
-// 用于 FilterOpenAIErr 最终坍缩阶段的错误映射与 quarantineModelNotFound 的隔离判定，
+// 用于 FilterOpenAIErr 最终坍缩阶段的错误映射与暂停规则的 model_not_found 判定，
 // 不参与 shouldRetry 决策：其他渠道可能仍能服务该模型，重试语义保持不变。
 func isModelNotFoundErr(apiErr *types.OpenAIErrorWithStatusCode) bool {
 	if apiErr == nil {
@@ -971,23 +971,6 @@ func isModelNotFoundErr(apiErr *types.OpenAIErrorWithStatusCode) bool {
 		strings.Contains(msg, "unknown model")
 }
 
-func processChannelRelayError(ctx context.Context, channelId int, channelName string, modelName string, err *types.OpenAIErrorWithStatusCode, channelType int) {
-	if controller.ShouldDisableChannel(channelType, err) {
-		logger.LogError(ctx, fmt.Sprintf("channel_disabled channel_id=%d channel_name=\"%s\" channel_type=%d model=\"%s\" status_code=%d error=\"%s\" auto_disabled=true",
-			channelId, channelName, channelType, modelName, err.StatusCode, err.Message))
-		controller.DisableChannel(channelId, channelName, modelName, err.Message, true)
-	}
-}
-
-// relayErrorModelName 返回渠道禁用日志与通知里使用的模型名：优先 new_model（过映射后真正发给上游的名称），
-// 缺失时（如 setProvider 失败、new_model 尚未写入）退回 original_model。
-func relayErrorModelName(c *gin.Context) string {
-	if modelName := c.GetString("new_model"); modelName != "" {
-		return modelName
-	}
-	return c.GetString("original_model")
-}
-
 // RoutingModelName 返回重试链路上「选路 / 计数 / cooldown / 过滤」应使用的模型名。
 // 必须与 balancer 的 Rule 键与 IsInCooldown 检查口径一致：那里用的是路由时的模型名
 // （routing_model），而非 model_mapping 映射后的上游名（new_model）。routing_model 缺失时
@@ -1000,75 +983,21 @@ func RoutingModelName(c *gin.Context) string {
 	return c.GetString("original_model")
 }
 
-// quarantineModelNotFound 在上游返回"模型不存在 / 无可用端点"类错误时，把该 (渠道, 模型) 对
-// 写入时长为 ModelNotFoundCooldownSeconds 的 cooldown，让后续请求在路由阶段就跳过该渠道，
-// 不再反复撞同一个 404；到期自动恢复。当次请求的重试语义不受影响。
-//
-// 以下情况不隔离：
-//   - ModelNotFoundCooldownSeconds <= 0：管理员显式关闭
-//   - apiErr 为 LocalError：本地路由错误（如 model_not_found）与上游无关
-//   - 状态码 429 或链中已见 429：与 FilterOpenAIErr 的 429 优先语义一致，容量问题不是配置问题
-//   - 文案不命中 isModelNotFoundErr
-func quarantineModelNotFound(ctx context.Context, c *gin.Context, channel *model.Channel, apiErr *types.OpenAIErrorWithStatusCode) bool {
-	duration := int64(config.ModelNotFoundCooldownSeconds)
-	if duration <= 0 || channel == nil || apiErr == nil || apiErr.LocalError {
-		return false
-	}
-	if apiErr.StatusCode == http.StatusTooManyRequests || c.GetBool("upstream_seen_429") {
-		return false
-	}
-	if !isModelNotFoundErr(apiErr) {
-		return false
-	}
-
-	modelName := RoutingModelName(c)
-	if !model.ChannelGroup.SetCooldownsWithDuration(channel.Id, modelName, duration) {
-		return false
-	}
-
-	logger.LogWarn(ctx, fmt.Sprintf("model_not_found_quarantine channel_id=%d model=\"%s\" status_code=%d duration=%ds",
-		channel.Id, modelName, apiErr.StatusCode, duration))
-	return true
-}
-
-// notifyChannelRelayError 是所有有重试循环的入口（main.go / recraftAI.go / rerank.go 等）
-// 在拿到上游失败 apiErr 后的统一通知入口：
-//   - 异步触发 processChannelRelayError（判断是否要永久禁用渠道）
-//   - 记录 429 信号（upstream_seen_429）供 FilterOpenAIErr 坍缩时保留 status code，
-//     让客户端 SDK 的标准退避算法生效
-//   - model-not-found 自动隔离（quarantineModelNotFound）
-//
-// 把这几件事绑在一起，未来加新入口只要调一次，从机制上消除"漏调一个就丢信号"的脆弱约定。
-// 隔离挂在这里而非 shouldCooldowns，是因为后者只在重试循环内调用：单渠道场景下
-// actualRetryTimes=0，循环不执行，隔离会永远不生效。
-// relayErrorNotifyWG 跟踪 notifyChannelRelayError 派生的异步 processChannelRelayError。
-// 生产路径不等待它；测试在还原全局配置前 Wait()，避免与后台 goroutine 读取配置项形成数据竞争。
+// relayErrorNotifyWG tracks the background work the pause rules start for a failed attempt (pause
+// writes, notices). Production does not wait for it; tests Wait() before restoring global settings.
 var relayErrorNotifyWG sync.WaitGroup
 
-// WaitRelayErrorHandling waits for the background work failed attempts start (disable checks,
-// pause writes, notices). Tests call it before checking that work.
+// WaitRelayErrorHandling waits for the background work failed attempts start (pause writes,
+// notices). Tests call it before checking that work.
 func WaitRelayErrorHandling() {
 	relayErrorNotifyWG.Wait()
 }
 
+// notifyChannelRelayError is what every relay entry with a retry loop (main.go, recraftAI.go,
+// rerank.go) calls after an upstream failure: it runs the pause rules for the attempt and records
+// a 429 (upstream_seen_429), so FilterOpenAIErr keeps that status for the clients' backoff.
 func notifyChannelRelayError(ctx context.Context, c *gin.Context, channel *model.Channel, apiErr *types.OpenAIErrorWithStatusCode) {
-	if config.PauseRulesEnabled {
-		c.Set(lastFailurePausedKey, applyPauseRules(ctx, c, channel, apiErr))
-		if apiErr != nil && apiErr.StatusCode == http.StatusTooManyRequests {
-			c.Set("upstream_seen_429", true)
-		}
-		return
-	}
-	// 必须在启动 goroutine 前同步从 c 取值：handler 返回后 c 会被 gin 回收复用，在 goroutine 里读 c 是数据竞争。
-	modelName := relayErrorModelName(c)
-	relayErrorNotifyWG.Add(1)
-	go func() {
-		defer relayErrorNotifyWG.Done()
-		processChannelRelayError(ctx, channel.Id, channel.Name, modelName, apiErr, channel.Type)
-	}()
-	// 先做隔离判定再置 429 标记：本次就是 429 时上面的状态码分支已拦下，顺序不影响结果，
-	// 但保持"读到的是本次调用前的链上状态"更符合直觉。
-	quarantineModelNotFound(ctx, c, channel, apiErr)
+	c.Set(lastFailurePausedKey, applyPauseRules(ctx, c, channel, apiErr))
 	if apiErr != nil && apiErr.StatusCode == http.StatusTooManyRequests {
 		c.Set("upstream_seen_429", true)
 	}

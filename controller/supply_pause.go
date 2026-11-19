@@ -133,13 +133,11 @@ func recoverDuePauses(now int64) {
 	}
 }
 
-// StartPauseRecovery checks for due pauses every interval while pause rules are on.
+// StartPauseRecovery checks for due pauses every interval.
 func StartPauseRecovery(interval time.Duration) {
 	for {
 		time.Sleep(interval)
-		if config.PauseRulesEnabled {
-			recoverDuePauses(time.Now().Unix())
-		}
+		recoverDuePauses(time.Now().Unix())
 	}
 }
 
@@ -155,12 +153,8 @@ func quotaPauseRule(channel *model.Channel) model.PauseRule {
 }
 
 // handleBalanceForPauses applies a refreshed balance: an empty balance pauses the channel like
-// an exhausted quota, money in the account ends the channel's quota pauses early. It reports
-// whether it handled the balance (pause rules are on).
-func handleBalanceForPauses(channel *model.Channel, balance float64) bool {
-	if !config.PauseRulesEnabled {
-		return false
-	}
+// an exhausted quota, money in the account ends the channel's quota pauses early.
+func handleBalanceForPauses(channel *model.Channel, balance float64) {
 	if balance > 0 {
 		resumed, err := model.ResumeChannelPausesInCategory(channel.Id, model.PauseCategoryQuota)
 		if err != nil {
@@ -171,7 +165,7 @@ func handleBalanceForPauses(channel *model.Channel, balance float64) bool {
 				notifySupplyResumed(p, channel.Name, "the balance refresh found money in the account")
 			}
 		}
-		return true
+		return
 	}
 	rule := quotaPauseRule(channel)
 	now := time.Now().Unix()
@@ -186,7 +180,6 @@ func handleBalanceForPauses(channel *model.Channel, balance float64) bool {
 	} else if started && pause.Notify {
 		NotifySupplyPaused(pause, channel.Name)
 	}
-	return true
 }
 
 type supplyPauseView struct {
@@ -263,7 +256,6 @@ func DeleteSupplyPause(c *gin.Context) {
 // ?channel_id= that channel's own rules (tried before the site-wide ones).
 func GetPauseRules(c *gin.Context) {
 	data := gin.H{
-		"enabled":  config.PauseRulesEnabled,
 		"custom":   strings.TrimSpace(config.PauseRules) != "",
 		"rules":    model.EffectivePauseRules(),
 		"defaults": model.DefaultPauseRules(),

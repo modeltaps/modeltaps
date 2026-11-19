@@ -2574,7 +2574,6 @@
       "label": "暫停規則",
       "hint": "JSON 陣列，先於站點規則比對，第一條命中生效。留空則只用站點規則。",
       "siteRules": "目前生效的站點規則（{{count}} 條）",
-      "siteOff": "站點已關閉暫停規則，站點規則和渠道規則都不會生效。",
       "invalidJson": "暫停規則不是有效的 JSON",
       "notArray": "暫停規則必須是 JSON 陣列"
     },
@@ -3266,8 +3265,7 @@
       "until": "暫停到",
       "reason": "上游報錯",
       "probe": "恢復前先測試",
-      "probes_other": "測試失敗 {{count}} 次",
-      "rulesOff": "暫停規則已關閉：出錯時回到舊的自動停用與冷卻。已列出的暫停仍會按時結束。"
+      "probes_other": "測試失敗 {{count}} 次"
     },
     "channelGroups": "分組：{{groups}}",
     "preview": {
@@ -3650,7 +3648,7 @@
         "supply-pause-rules": {
           "title": "線路暫停規則",
           "description": "上游報錯時按規則暫停渠道或模型，到點測試通過後恢復",
-          "hint": "關閉後回到舊的自動停用與冷卻"
+          "hint": "渠道自己的規則先於這裏的規則"
         },
         "mail-templates": {
           "title": "郵件範本",

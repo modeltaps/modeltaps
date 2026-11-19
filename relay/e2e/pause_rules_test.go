@@ -131,36 +131,6 @@ func TestRateLimitStaysShortCooldown(t *testing.T) {
 	}
 }
 
-// With the rules off, an exhausted quota does what it did before: no pause (automatic
-// disabling is off by default), so the next request tries the primary again.
-func TestPauseRulesSwitchOff(t *testing.T) {
-	const modelName = "pause-off-model"
-	primary := NewFakeProvider(t)
-	primary.SetResponse(FakeResponse{Status: http.StatusTooManyRequests,
-		JSON: OpenAIErrorJSON("You exceeded your current quota", "insufficient_quota", "insufficient_quota")})
-	backup := NewFakeProvider(t)
-	backup.SetResponse(FakeResponse{JSON: ChatCompletionJSON(modelName, "ok", 11, 7)})
-	h := NewHarness(t, HarnessOptions{Model: modelName, Channels: []ChannelSpec{
-		{Name: "primary", BaseURL: primary.Server.URL, Priority: 10},
-		{Name: "backup", BaseURL: backup.Server.URL, Priority: 0},
-	}})
-	setAndRestore(t, &config.PauseRulesEnabled, false)
-	setAndRestore(t, &config.RetryTimes, 2)
-	setAndRestore(t, &config.RetryCooldownSeconds, 0)
-
-	for i := 0; i < 2; i++ {
-		if w := h.Post("/v1/chat/completions", chatFor(modelName)); w.Code != http.StatusOK {
-			t.Fatalf("status %d: %s", w.Code, w.Body.String())
-		}
-	}
-	if pauses := storedPauses(t); len(pauses) != 0 {
-		t.Fatalf("pauses stored with the rules off: %+v", pauses)
-	}
-	if len(primary.Requests()) != 2 {
-		t.Fatalf("primary got %d requests, want 2 (nothing keeps it out with the rules off)", len(primary.Requests()))
-	}
-}
-
 // A channel's own rule comes before the site-wide ones: here a single 503 pauses the whole
 // channel for 10 minutes, where the site-wide rule waits for the third failure.
 func TestChannelPauseRulesComeFirst(t *testing.T) {

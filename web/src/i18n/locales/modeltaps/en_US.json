@@ -2675,7 +2675,6 @@
       "label": "Pause rules",
       "hint": "JSON list tried before the site rules; the first matching rule wins. Leave empty to use the site rules only.",
       "siteRules": "Site rules in force ({{count}})",
-      "siteOff": "Pause rules are turned off for the site, so these and the channel's own rules do not apply.",
       "invalidJson": "The pause rules are not valid JSON",
       "notArray": "The pause rules must be a JSON array"
     },
@@ -3370,8 +3369,7 @@
       "reason": "Upstream error",
       "probe": "test before resuming",
       "probes_one": "{{count}} failed test",
-      "probes_other": "{{count}} failed tests",
-      "rulesOff": "Pause rules are off: failures go back to the old auto-disable and cool-down. Pauses already listed still end on time."
+      "probes_other": "{{count}} failed tests"
     },
     "channelGroups": "Groups: {{groups}}",
     "preview": {
@@ -3760,7 +3758,7 @@
         "supply-pause-rules": {
           "title": "Supply pause rules",
           "description": "Pause a channel or model on upstream errors by rule; it comes back after a passing test",
-          "hint": "When off, the older auto disable and cooldown apply"
+          "hint": "A channel's own rules come before these"
         },
         "mail-templates": {
           "title": "Email templates",

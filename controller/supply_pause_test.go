@@ -119,9 +119,7 @@ func TestRecoverDuePauses(t *testing.T) {
 // An empty balance pauses the channel like an exhausted quota; money ends the pause early.
 func TestBalanceRefreshPausesAndResumes(t *testing.T) {
 	channel := setupPauseRecovery(t, http.StatusOK)
-	if !handleBalanceForPauses(channel, 0) {
-		t.Fatal("balance not handled with pause rules on")
-	}
+	handleBalanceForPauses(channel, 0)
 	pauses, _ := model.ListPauses()
 	if len(pauses) != 1 || pauses[0].Model != "" || pauses[0].Category != model.PauseCategoryQuota || pauses[0].Seconds != 1800 {
 		t.Fatalf("pauses = %+v, want a 30-minute quota pause of the channel", pauses)
@@ -133,12 +131,5 @@ func TestBalanceRefreshPausesAndResumes(t *testing.T) {
 	}
 	if got := testNotifier.countContaining("resumed") - before; got != 1 {
 		t.Fatalf("resumed notices = %d, want 1", got)
-	}
-
-	old := config.PauseRulesEnabled
-	config.PauseRulesEnabled = false
-	t.Cleanup(func() { config.PauseRulesEnabled = old })
-	if handleBalanceForPauses(channel, 0) {
-		t.Fatal("balance handled with pause rules off")
 	}
 }

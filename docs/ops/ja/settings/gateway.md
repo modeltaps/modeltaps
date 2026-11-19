@@ -36,7 +36,7 @@ outline: deep
 
 場所：プラットフォーム設定 › ゲートウェイ › リトライ
 
-チャネルがあるモデルで 429 レート制限を返したあと、そのモデルからチャネルを外しておく時間です。クールダウン中、そのモデルの新しいリクエストは他のチャネルへ送られ、同じチャネルの他のモデルには影響しません。上流が制限のリセット時刻を返した場合はその時刻を使います。供給の一時停止ルールがオンのときは組み込みの rate_limit ルールの停止時間になり（カスタムルールは各自の秒数を持ちます）、オフのときは「ステータスコード別クールダウン」に載っているコードが優先されます。0 なら失敗したリクエストでそのチャネルを飛ばすだけです。
+チャネルがあるモデルで 429 レート制限を返したあと、そのモデルからチャネルを外しておく時間です。クールダウン中、そのモデルの新しいリクエストは他のチャネルへ送られ、同じチャネルの他のモデルには影響しません。上流が制限のリセット時刻を返した場合はその時刻を使います。組み込みの rate_limit ルールの停止時間で、カスタムルールは各自の秒数を持ちます。0 なら失敗したリクエストでそのチャネルを飛ばすだけです。
 
 例：
 
@@ -44,7 +44,7 @@ outline: deep
 - `60` 分単位の制限があるチャネルは、429 を受け続ける代わりにその 1 分を休みます。
 - `0` クールダウンなし：次のリクエストが同じチャネルに当たり、また制限にかかることがあります。
 
-関連する設定：[ステータスコード別クールダウン](./gateway.md#RetryCooldownPerStatus) · [供給の一時停止ルール](./gateway.md#PauseRulesEnabled) · [カスタム一時停止ルール](./gateway.md#PauseRules)
+関連する設定：[ステータスコード別クールダウン](./gateway.md#RetryCooldownPerStatus) · [カスタム一時停止ルール](./gateway.md#PauseRules)
 
 <a id="RetryTimeOut"></a>
 
@@ -71,7 +71,7 @@ outline: deep
 
 場所：プラットフォーム設定 › ゲートウェイ › リトライ
 
-他の HTTP ステータスコードのクールダウン秒数を、ステータスコードと秒数の JSON オブジェクトで指定します。レート制限のクールダウンと同じく、チャネルをそのモデルからだけ外します。供給の一時停止ルールがオンのときは、組み込みの per_status ルールが残高、認証情報、レート制限、モデル不在のルールの後に適用されるため、ここに 429 を書いても効きません。また、載せた 5xx コードは 1 分間に 3 回の失敗を待たずに止まります。一時停止ルールがオフのときは、上流のリセット時刻、このリスト、429 のレート制限クールダウンの順です。0 にしたコードはクールダウンしません。コードは 100〜599、秒数は 0 以上の整数です。空欄なら追加しません。
+他の HTTP ステータスコードのクールダウン秒数を、ステータスコードと秒数の JSON オブジェクトで指定します。レート制限のクールダウンと同じく、チャネルをそのモデルからだけ外します。組み込みの per_status ルールは残高、認証情報、レート制限、モデル不在のルールの後に適用されるため、ここに 429 を書いても効きません。また、載せた 5xx コードは 1 分間に 3 回の失敗を待たずに止まります。0 にしたコードはクールダウンしません。コードは 100〜599、秒数は 0 以上の整数です。空欄なら追加しません。
 
 例：
 
@@ -79,7 +79,7 @@ outline: deep
 - `{"502": 60, "504": 300}` 502 ではそのチャネルのモデルを 1 分、504 では 5 分クールダウンします。
 - `{"500": 0}` 500 ではチャネルを止めもクールダウンもしません。リクエストは次へ進み、次のリクエストはまたそのチャネルを使うことがあります。
 
-関連する設定：[レート制限のクールダウン（秒）](./gateway.md#RetryCooldownSeconds) · [カスタム一時停止ルール](./gateway.md#PauseRules) · [供給の一時停止ルール](./gateway.md#PauseRulesEnabled)
+関連する設定：[レート制限のクールダウン（秒）](./gateway.md#RetryCooldownSeconds) · [カスタム一時停止ルール](./gateway.md#PauseRules)
 
 <a id="ModelNotFoundCooldownSeconds"></a>
 
@@ -89,7 +89,7 @@ outline: deep
 
 場所：プラットフォーム設定 › ゲートウェイ › リトライ
 
-上流がそのモデルは存在しないと答えたあと、そのモデルからチャネルを外しておく時間です。このページに入力欄はなく、オプション API（PUT /api/option/）で変更します。「model not found」「does not exist」「no endpoints found」のようなエラーが対象で、同じリクエストで 429 が出ていた場合は除きます。供給の一時停止ルールがオンのときは組み込みの model_not_found ルールの停止時間で、このルールは管理者にも通知します。カスタムルールは各自の秒数を持ちます。0 ならこれで止めることはありません。
+上流がそのモデルは存在しないと答えたあと、そのモデルからチャネルを外しておく時間です。このページに入力欄はなく、オプション API（PUT /api/option/）で変更します。「model not found」「does not exist」「no endpoints found」のようなエラーが対象で、同じリクエストで 429 が出ていた場合は除きます。組み込みの model_not_found ルールの停止時間で、このルールは管理者にも通知します。カスタムルールは各自の秒数を持ちます。0 ならこれで止めることはありません。
 
 例：
 
@@ -97,26 +97,9 @@ outline: deep
 - `600` 上流で一時的に消えていただけのモデルは 10 分後に戻ります。
 - `0` チャネルはローテーションに残り、チャネルからモデルを外すまでそのモデルのリクエストを失敗させ続けます。
 
-関連する設定：[供給の一時停止ルール](./gateway.md#PauseRulesEnabled) · [カスタム一時停止ルール](./gateway.md#PauseRules) · [レート制限のクールダウン（秒）](./gateway.md#RetryCooldownSeconds)
+関連する設定：[カスタム一時停止ルール](./gateway.md#PauseRules) · [レート制限のクールダウン（秒）](./gateway.md#RetryCooldownSeconds)
 
 ## 供給の一時停止ルール
-
-<a id="PauseRulesEnabled"></a>
-
-### 供給の一時停止ルール
-
-キー `PauseRulesEnabled` · 型 bool · 既定値 `true`
-
-場所：プラットフォーム設定 › ゲートウェイ › 供給の一時停止ルール
-
-失敗したリクエストを一時停止ルールに通し、チャネルやそのモデルの 1 つを止めて自動で戻します。オフにすると従来の処理に戻ります：チャネルの自動無効化（オンの場合）、レート制限とステータスコード別のクールダウン、モデル不在時の一時停止です。
-
-例：
-
-- `true` キーを拒否されたチャネルは 1 時間止まり、テストに通ると誰も再有効化しなくても再開します。
-- `false` 自動無効化がオンなら、キーが拒否されるとチャネルは無効になり、チャネルテストに通るまでオフのままです。
-
-関連する設定：[カスタム一時停止ルール](./gateway.md#PauseRules) · [使えなくなったチャネルを無効化](./gateway.md#AutomaticDisableChannelEnabled) · [レート制限のクールダウン（秒）](./gateway.md#RetryCooldownSeconds)
 
 <a id="PauseRules"></a>
 
@@ -134,7 +117,7 @@ outline: deep
 - `[{"name":"overloaded","status_codes":[529],"times":2,"window_seconds":60,"action":"pause","seconds":300,"probe":true}]` 同じチャネルの同じモデルで 1 分以内に 529 が 2 回出ると、そのモデルをそこで 5 分止めます。再開前のテストに失敗すると、次の停止は 10 分です。
 - `[]` ルールなし：何も止まらず、失敗したチャネルはそのリクエストで飛ばされるだけです。
 
-関連する設定：[供給の一時停止ルール](./gateway.md#PauseRulesEnabled) · [レート制限のクールダウン（秒）](./gateway.md#RetryCooldownSeconds) · [ステータスコード別クールダウン](./gateway.md#RetryCooldownPerStatus) · [モデル不在時の一時停止（秒）](./gateway.md#ModelNotFoundCooldownSeconds) · [無効化キーワード](./gateway.md#DisableChannelKeywords)
+関連する設定：[レート制限のクールダウン（秒）](./gateway.md#RetryCooldownSeconds) · [ステータスコード別クールダウン](./gateway.md#RetryCooldownPerStatus) · [モデル不在時の一時停止（秒）](./gateway.md#ModelNotFoundCooldownSeconds) · [無効化キーワード](./gateway.md#DisableChannelKeywords)
 
 ## チャネルの自動停止と復旧
 
@@ -146,9 +129,9 @@ outline: deep
 
 場所：プラットフォーム設定 › ゲートウェイ › チャネルの自動停止と復旧
 
-上流がもう応答できないと示したチャネル（キーの拒否や残高ゼロなど）を無効にします。クォータ切れ、停止されたアカウント、エラー内の無効化キーワードも対象です。実際のリクエストでこうなるのは供給の一時停止ルールがオフのときだけで、オンのときはこうしたエラーでチャネルを一時停止します。チャネルテストでは一時停止ルールに関係なく、これらのエラーで無効にします。無効になったチャネルは、自動復旧がオンの状態でテストに通るか、手動でしか戻りません。
+上流がもう応答できないと示したチャネル（キーの拒否や残高ゼロなど）を無効にします。クォータ切れ、停止されたアカウント、エラー内の無効化キーワードも対象です。効くのはチャネルテストだけで、実際のリクエストでこうしたエラーが出たときは一時停止ルールがチャネルを止めます。無効になったチャネルは、自動復旧がオンの状態でテストに通るか、手動でしか戻りません。
 
-関連する設定：[テストに通ったチャネルを再有効化](./gateway.md#AutomaticEnableChannelEnabled) · [無効化キーワード](./gateway.md#DisableChannelKeywords) · [供給の一時停止ルール](./gateway.md#PauseRulesEnabled) · [チャネルの定期テスト](./gateway.md#ChannelTestMode)
+関連する設定：[テストに通ったチャネルを再有効化](./gateway.md#AutomaticEnableChannelEnabled) · [無効化キーワード](./gateway.md#DisableChannelKeywords) · [カスタム一時停止ルール](./gateway.md#PauseRules) · [チャネルの定期テスト](./gateway.md#ChannelTestMode)
 
 <a id="AutomaticEnableChannelEnabled"></a>
 
@@ -188,7 +171,7 @@ outline: deep
 
 場所：プラットフォーム設定 › ゲートウェイ › チャネルの自動停止と復旧
 
-1 行に 1 つのエラーメッセージで、上流のエラーにこれを含むと、そのチャネルはもう応答できないとみなします。大文字小文字を区別するので、上流の文言をそのまま写してください。キーワードは組み込みの除外より優先されます。一致するとリクエストは別のチャネルへ移り、供給の一時停止ルールがオンなら組み込みの credential ルールでチャネル全体を止め（1 時間、再開前にテスト）、オフで自動無効化がオンならチャネルを無効にします。空欄なら、ステータスコードと既知のメッセージによる組み込みの判定だけになります。
+1 行に 1 つのエラーメッセージで、上流のエラーにこれを含むと、そのチャネルはもう応答できないとみなします。大文字小文字を区別するので、上流の文言をそのまま写してください。キーワードは組み込みの除外より優先されます。一致するとリクエストは別のチャネルへ移り、組み込みの credential ルールでチャネル全体を止めます（1 時間、再開前にテスト）。チャネルテストで一致した場合は、自動無効化がオンならチャネルを無効にします。空欄なら、ステータスコードと既知のメッセージによる組み込みの判定だけになります。
 
 例：
 
@@ -361,7 +344,7 @@ Codex・Claude Code・Gemini CLI・Antigravity チャネルの OAuth 認証情�
 - `95` 直近 100 回のうち 12 回失敗した割引リセラーは優先されなくなり、次の正常なルートが引き継ぎます。
 - `0` 最安ルートは失敗回数に関係なく常に先頭です。外せるのは一時停止ルールだけです。
 
-関連する設定：[コストと優先度](./gateway.md#SupplyCostOrder) · [最低節約率](./gateway.md#SupplyCostMinSavingPercent) · [供給の一時停止ルール](./gateway.md#PauseRulesEnabled)
+関連する設定：[コストと優先度](./gateway.md#SupplyCostOrder) · [最低節約率](./gateway.md#SupplyCostMinSavingPercent) · [カスタム一時停止ルール](./gateway.md#PauseRules)
 
 ガイド：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -380,7 +363,7 @@ Codex・Claude Code・Gemini CLI・Antigravity チャネルの OAuth 認証情�
 - `false` リクエストは各チャネルのモデルとモデルマッピングに従います。供給のページは変更内容をプレビューするだけです。
 - `true` claude-sonnet-4-5 へのリクエストは、その公開モデルの供給へ優先度とコスト順に送られます。
 
-関連する設定：[既定の供給モード](./gateway.md#SupplyModeDefault) · [コストと優先度](./gateway.md#SupplyCostOrder) · [上流の新モデルの取り込みルール](./gateway.md#SupplyIntakeRules) · [供給の一時停止ルール](./gateway.md#PauseRulesEnabled)
+関連する設定：[既定の供給モード](./gateway.md#SupplyModeDefault) · [コストと優先度](./gateway.md#SupplyCostOrder) · [上流の新モデルの取り込みルール](./gateway.md#SupplyIntakeRules) · [カスタム一時停止ルール](./gateway.md#PauseRules)
 
 ガイド：[use/supply_routing.md](../use/supply_routing.md)
 

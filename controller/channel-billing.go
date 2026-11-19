@@ -204,7 +204,7 @@ func UpdateChannelBalance(c *gin.Context) {
 }
 
 // updateAllChannelsBalance 刷新所有启用渠道的余额：不支持余额查询的类型跳过，查询失败只记日志；
-// 余额 ≤ 0 视为额度用尽，自动禁用渠道。低余额提醒在 updateChannelBalance 内处理。
+// 余额 ≤ 0 视为额度用尽，按额度暂停规则暂停渠道。低余额提醒在 updateChannelBalance 内处理。
 func updateAllChannelsBalance() error {
 	channels, err := model.GetAllChannels()
 	if err != nil {
@@ -221,11 +221,8 @@ func updateAllChannelsBalance() error {
 			}
 			continue
 		}
-		// With pause rules on, an empty balance pauses the channel and money ends the pause;
-		// otherwise an empty balance disables it as before.
-		if !handleBalanceForPauses(channel, balance) && balance <= 0 {
-			DisableChannel(channel.Id, channel.Name, "", "Insufficient balance", true)
-		}
+		// An empty balance pauses the channel; money in the account ends the pause.
+		handleBalanceForPauses(channel, balance)
 		time.Sleep(config.RequestInterval)
 	}
 	// The accounts' daily cost reports ride on the same schedule, each read every few hours.

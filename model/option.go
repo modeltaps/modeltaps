@@ -229,7 +229,6 @@ func registerOptions() {
 		return fmt.Errorf("invalid channel test mode %q", value)
 	}, "recovery", config.ScopeAdmin)
 	config.GlobalOption.RegisterInt("ChannelTestIntervalMinutes", &config.ChannelTestIntervalMinutes, config.ScopeAdmin)
-	config.GlobalOption.RegisterBool("PauseRulesEnabled", &config.PauseRulesEnabled, config.ScopeAdmin)
 	config.GlobalOption.RegisterFloat("PaymentCostPercent", &config.PaymentCostPercent, config.ScopeAdmin)
 	config.GlobalOption.RegisterCustom("PauseRules", func() string {
 		return config.PauseRules

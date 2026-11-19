@@ -36,7 +36,7 @@ outline: deep
 
 位置：平台设置 › 网关 › 重试
 
-渠道对某个模型返回 429 限流后，这个渠道暂停承接该模型多久。冷却期间该模型的新请求发往其他渠道，这个渠道的其他模型不受影响。上游给出了限流重置时间时，以上游时间为准。开启线路暂停规则时，这是内置 rate_limit 规则的暂停时长（自定义规则用自己的秒数）；关闭时，「按状态码冷却」里列出的状态码优先。0 表示只在当次请求里跳过该渠道。
+渠道对某个模型返回 429 限流后，这个渠道暂停承接该模型多久。冷却期间该模型的新请求发往其他渠道，这个渠道的其他模型不受影响。上游给出了限流重置时间时，以上游时间为准。这是内置 rate_limit 规则的暂停时长，自定义规则用自己的秒数。0 表示只在当次请求里跳过该渠道。
 
 示例：
 
@@ -44,7 +44,7 @@ outline: deep
 - `60` 按分钟限流的渠道歇完这一分钟，而不是继续收 429。
 - `0` 不冷却：下一个请求可能又落到同一个渠道，再次撞上限流。
 
-相关设置：[按状态码冷却](./gateway.md#RetryCooldownPerStatus) · [线路暂停规则](./gateway.md#PauseRulesEnabled) · [自定义暂停规则](./gateway.md#PauseRules)
+相关设置：[按状态码冷却](./gateway.md#RetryCooldownPerStatus) · [自定义暂停规则](./gateway.md#PauseRules)
 
 <a id="RetryTimeOut"></a>
 
@@ -71,7 +71,7 @@ outline: deep
 
 位置：平台设置 › 网关 › 重试
 
-为其他 HTTP 状态码设置冷却秒数，写成「状态码: 秒数」的 JSON 对象。和限流冷却一样，只让该渠道暂停承接这一个模型。开启线路暂停规则时，内置 per_status 规则排在额度、凭证、限流、模型不存在几条规则之后，所以这里写 429 不会生效，而列出的 5xx 状态码不再等一分钟内失败三次才暂停。关闭暂停规则时，顺序是上游的重置时间、这里的设置、再到 429 的限流冷却。设为 0 的状态码从不冷却。状态码须在 100-599 之间，秒数为不小于 0 的整数；留空表示不加。
+为其他 HTTP 状态码设置冷却秒数，写成「状态码: 秒数」的 JSON 对象。和限流冷却一样，只让该渠道暂停承接这一个模型。内置 per_status 规则排在额度、凭证、限流、模型不存在几条规则之后，所以这里写 429 不会生效，而列出的 5xx 状态码不再等一分钟内失败三次才暂停。设为 0 的状态码从不冷却。状态码须在 100-599 之间，秒数为不小于 0 的整数；留空表示不加。
 
 示例：
 
@@ -79,7 +79,7 @@ outline: deep
 - `{"502": 60, "504": 300}` 502 让该渠道的这个模型冷却 1 分钟，504 冷却 5 分钟。
 - `{"500": 0}` 500 从不让渠道暂停或冷却：请求换渠道继续，下一个请求仍可能用到它。
 
-相关设置：[限流冷却（秒）](./gateway.md#RetryCooldownSeconds) · [自定义暂停规则](./gateway.md#PauseRules) · [线路暂停规则](./gateway.md#PauseRulesEnabled)
+相关设置：[限流冷却（秒）](./gateway.md#RetryCooldownSeconds) · [自定义暂停规则](./gateway.md#PauseRules)
 
 <a id="ModelNotFoundCooldownSeconds"></a>
 
@@ -89,7 +89,7 @@ outline: deep
 
 位置：平台设置 › 网关 › 重试
 
-上游说某个模型不存在后，这个渠道暂停承接该模型多久。本页没有对应的输入框，要通过选项 API（PUT /api/option/）修改。它针对「model not found」「does not exist」「no endpoints found」这类错误，同一请求里出现过 429 时不算。开启线路暂停规则时，这是内置 model_not_found 规则的暂停时长，该规则还会通知管理员；自定义规则用自己的秒数。0 表示从不因此暂停。
+上游说某个模型不存在后，这个渠道暂停承接该模型多久。本页没有对应的输入框，要通过选项 API（PUT /api/option/）修改。它针对「model not found」「does not exist」「no endpoints found」这类错误，同一请求里出现过 429 时不算。这是内置 model_not_found 规则的暂停时长，该规则还会通知管理员；自定义规则用自己的秒数。0 表示从不因此暂停。
 
 示例：
 
@@ -97,26 +97,9 @@ outline: deep
 - `600` 上游只是短暂下架的模型，10 分钟后恢复。
 - `0` 渠道一直留在轮换里，持续让该模型的请求失败，直到把模型从渠道上去掉。
 
-相关设置：[线路暂停规则](./gateway.md#PauseRulesEnabled) · [自定义暂停规则](./gateway.md#PauseRules) · [限流冷却（秒）](./gateway.md#RetryCooldownSeconds)
+相关设置：[自定义暂停规则](./gateway.md#PauseRules) · [限流冷却（秒）](./gateway.md#RetryCooldownSeconds)
 
 ## 线路暂停规则
-
-<a id="PauseRulesEnabled"></a>
-
-### 线路暂停规则
-
-设置名 `PauseRulesEnabled` · 类型 bool · 默认值 `true`
-
-位置：平台设置 › 网关 › 线路暂停规则
-
-失败的请求交给暂停规则处理，规则会暂停渠道或渠道上的某个模型，到时自动恢复。关闭后改用旧的处理方式：自动禁用渠道（如已开启）、限流冷却和按状态码冷却、模型不存在暂停。
-
-示例：
-
-- `true` 密钥被拒的渠道暂停一小时，测试通过后自动恢复，不用人去重新启用。
-- `false` 开启自动禁用时，密钥被拒会禁用渠道，直到渠道测试通过才恢复。
-
-相关设置：[自定义暂停规则](./gateway.md#PauseRules) · [自动禁用无法服务的渠道](./gateway.md#AutomaticDisableChannelEnabled) · [限流冷却（秒）](./gateway.md#RetryCooldownSeconds)
 
 <a id="PauseRules"></a>
 
@@ -134,7 +117,7 @@ outline: deep
 - `[{"name":"overloaded","status_codes":[529],"times":2,"window_seconds":60,"action":"pause","seconds":300,"probe":true}]` 同一渠道上同一模型一分钟内两次 529，就在该渠道上暂停这个模型 5 分钟；恢复前的测试失败时，下一次暂停 10 分钟。
 - `[]` 没有规则：什么都不会被暂停，失败的渠道只在当次请求里被跳过。
 
-相关设置：[线路暂停规则](./gateway.md#PauseRulesEnabled) · [限流冷却（秒）](./gateway.md#RetryCooldownSeconds) · [按状态码冷却](./gateway.md#RetryCooldownPerStatus) · [模型不存在暂停（秒）](./gateway.md#ModelNotFoundCooldownSeconds) · [禁用关键词](./gateway.md#DisableChannelKeywords)
+相关设置：[限流冷却（秒）](./gateway.md#RetryCooldownSeconds) · [按状态码冷却](./gateway.md#RetryCooldownPerStatus) · [模型不存在暂停（秒）](./gateway.md#ModelNotFoundCooldownSeconds) · [禁用关键词](./gateway.md#DisableChannelKeywords)
 
 ## 渠道自动禁用与恢复
 
@@ -146,9 +129,9 @@ outline: deep
 
 位置：平台设置 › 网关 › 渠道自动禁用与恢复
 
-上游表明渠道已无法服务时（例如密钥被拒、余额用尽）禁用该渠道。额度耗尽、账号被停用、错误里含禁用关键词也算。线上请求只在线路暂停规则关闭时这样处理；开启时，这类错误改为暂停渠道。渠道测试遇到这类错误也会禁用，与暂停规则开关无关。被禁用的渠道只能靠开启自动恢复后测试通过，或手动启用。
+上游表明渠道已无法服务时（例如密钥被拒、余额用尽）禁用该渠道。额度耗尽、账号被停用、错误里含禁用关键词也算。只对渠道测试生效：线上请求遇到这类错误时，由暂停规则暂停渠道。被禁用的渠道只能靠开启自动恢复后测试通过，或手动启用。
 
-相关设置：[测试通过后重新启用](./gateway.md#AutomaticEnableChannelEnabled) · [禁用关键词](./gateway.md#DisableChannelKeywords) · [线路暂停规则](./gateway.md#PauseRulesEnabled) · [定时渠道测试](./gateway.md#ChannelTestMode)
+相关设置：[测试通过后重新启用](./gateway.md#AutomaticEnableChannelEnabled) · [禁用关键词](./gateway.md#DisableChannelKeywords) · [自定义暂停规则](./gateway.md#PauseRules) · [定时渠道测试](./gateway.md#ChannelTestMode)
 
 <a id="AutomaticEnableChannelEnabled"></a>
 
@@ -188,7 +171,7 @@ outline: deep
 
 位置：平台设置 › 网关 › 渠道自动禁用与恢复
 
-一行一条错误信息，上游错误里含有其中一条时，视为渠道已无法服务。匹配区分大小写，请照抄上游原文；关键词优先于内置的豁免规则。命中后请求换渠道；开启线路暂停规则时，内置的 credential 规则暂停整个渠道（1 小时，恢复前先测试）；关闭暂停规则且开启自动禁用时，禁用该渠道。留空则只剩内置的状态码和已知报错判断。
+一行一条错误信息，上游错误里含有其中一条时，视为渠道已无法服务。匹配区分大小写，请照抄上游原文；关键词优先于内置的豁免规则。命中后请求换渠道，内置的 credential 规则暂停整个渠道（1 小时，恢复前先测试）；渠道测试命中时，开启自动禁用则禁用该渠道。留空则只剩内置的状态码和已知报错判断。
 
 示例：
 
@@ -361,7 +344,7 @@ outline: deep
 - `95` 最近 100 次失败了 12 次的折扣转售商不再优先承接请求，由下一条正常的线路接手。
 - `0` 最便宜的线路总是排第一，不管失败多少次；只有暂停规则能把它拿掉。
 
-相关设置：[成本与优先级](./gateway.md#SupplyCostOrder) · [最低节省](./gateway.md#SupplyCostMinSavingPercent) · [线路暂停规则](./gateway.md#PauseRulesEnabled)
+相关设置：[成本与优先级](./gateway.md#SupplyCostOrder) · [最低节省](./gateway.md#SupplyCostMinSavingPercent) · [自定义暂停规则](./gateway.md#PauseRules)
 
 指南：[use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -380,7 +363,7 @@ outline: deep
 - `false` 请求按各渠道的模型和模型映射路由；线路相关页面只预览打开后会怎样。
 - `true` claude-sonnet-4-5 的请求发往这个公开模型的线路，按优先级和成本排序。
 
-相关设置：[默认分流方式](./gateway.md#SupplyModeDefault) · [成本与优先级](./gateway.md#SupplyCostOrder) · [上游新模型接入规则](./gateway.md#SupplyIntakeRules) · [线路暂停规则](./gateway.md#PauseRulesEnabled)
+相关设置：[默认分流方式](./gateway.md#SupplyModeDefault) · [成本与优先级](./gateway.md#SupplyCostOrder) · [上游新模型接入规则](./gateway.md#SupplyIntakeRules) · [自定义暂停规则](./gateway.md#PauseRules)
 
 指南：[use/supply_routing.md](../use/supply_routing.md)
 

@@ -199,7 +199,7 @@ func Relay(c *gin.Context) {
 				logger.LogInfo(c.Request.Context(), fmt.Sprintf("retry_success model=%s channel_id=%d attempt=%d/%d total_channels=%d",
 					modelName, channel.Id, attemptCount, actualRetryTimes, c.GetInt("total_channels_at_start")))
 				metrics.RecordProvider(c, 200)
-				if config.PauseRulesEnabled && modelName == firstModel {
+				if modelName == firstModel {
 					controller.NotifySupplyFailover(modelName, firstChannel, channel)
 				}
 				return
@@ -221,8 +221,8 @@ func Relay(c *gin.Context) {
 			}
 		}
 
-		// With pause rules on, this only records whether the rules paused the last channel.
-		if pendingCooldown && (config.PauseRulesEnabled || shouldCooldownFinalFailure(c, apiErr)) {
+		// The pause rules already ran for the last failure; this records whether they paused its channel.
+		if pendingCooldown {
 			relay_util.MarkLastRelayAttemptCooldown(c, shouldCooldowns(c, channel, apiErr))
 		}
 
@@ -394,74 +394,11 @@ func RelayHandler(relay RelayBaseInterface) (err *types.OpenAIErrorWithStatusCod
 	return
 }
 
-// shouldCooldownFinalFailure reports whether the failure that ends a request should go through
-// the cooldown rules. A local error is the gateway's own (quota, validation) and says nothing
-// about the channel, and a session held on its channel by strict affinity stays there: cooling
-// the channel would move the session on its next turn.
-func shouldCooldownFinalFailure(c *gin.Context, apiErr *types.OpenAIErrorWithStatusCode) bool {
-	return apiErr != nil && !apiErr.LocalError && !strictAffinityHolds(c)
-}
-
+// shouldCooldowns keeps the rest of the request away from a channel that failed it and reports
+// whether the pause rules, which already ran for the failure in notifyChannelRelayError, paused it.
 func shouldCooldowns(c *gin.Context, channel *model.Channel, apiErr *types.OpenAIErrorWithStatusCode) bool {
-	if config.PauseRulesEnabled {
-		// The pause rules already ran for this failure in notifyChannelRelayError.
-		skipChannel(c, channel.Id)
-		return c.GetBool(lastFailurePausedKey)
-	}
-	modelName := RoutingModelName(c)
-	channelId := channel.Id
-	statusCode := apiErr.StatusCode
-
-	// 决定冻结时长（秒）。优先级：
-	//   1. 上游返回的精确恢复时间（RateLimitResetAt，如 Gemini retryDelay / anthropic-ratelimit-unified-reset）
-	//   2. 管理员配置的按状态码冻结时长（RetryCooldownPerStatus）
-	//   3. 全局兜底 RetryCooldownSeconds，仅对 429 启用以保持向后兼容
-	//
-	// 任何一步算出 duration <= 0 都视为"不冻结"，直接跳过 channel 而不冻它。
-	//
-	// 注意：RateLimitResetAt 是对任何状态码生效的——provider 只应在拿到上游精确的
-	// Retry-After 信号时设置此字段，详见 types/common.go 上的字段注释。
-	var duration int64
-	var reason string
-
-	if apiErr.RateLimitResetAt > 0 {
-		nowTime := time.Now().Unix()
-		duration = apiErr.RateLimitResetAt - nowTime
-		if duration > 0 {
-			reason = "upstream_retry_after"
-		} else {
-			// 上游告诉的时间已过，落到下一级配置
-			duration = 0
-		}
-	}
-
-	if duration <= 0 {
-		if secs, ok := config.GetRetryCooldownForStatus(statusCode); ok {
-			duration = int64(secs)
-			reason = fmt.Sprintf("per_status_%d", statusCode)
-		} else if statusCode == http.StatusTooManyRequests {
-			duration = int64(config.RetryCooldownSeconds)
-			reason = "rate_limit"
-		}
-	}
-
-	if duration > 0 {
-		model.ChannelGroup.SetCooldownsWithDuration(channelId, modelName, duration)
-		extra := ""
-		if apiErr.RateLimitResetAt > 0 && reason == "upstream_retry_after" {
-			extra = fmt.Sprintf(" reset_at=%s", time.Unix(apiErr.RateLimitResetAt, 0).Format(time.RFC3339))
-		}
-		logger.LogWarn(c.Request.Context(), fmt.Sprintf("channel_cooldown channel_id=%d model=\"%s\" status_code=%d duration=%ds reason=\"%s\"%s",
-			channelId, modelName, statusCode, duration, reason, extra))
-	} else if reason != "" {
-		// 配置命中（如 per-status=0）但显式不冻结。打日志方便线上排查"为什么没冷却"。
-		logger.LogInfo(c.Request.Context(), fmt.Sprintf("channel_cooldown_skipped channel_id=%d model=\"%s\" status_code=%d reason=\"%s\"",
-			channelId, modelName, statusCode, reason))
-	}
-
-	skipChannel(c, channelId)
-
-	return duration > 0
+	skipChannel(c, channel.Id)
+	return c.GetBool(lastFailurePausedKey)
 }
 
 // skipChannel keeps the rest of this request away from a channel that failed it.

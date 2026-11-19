@@ -69,7 +69,6 @@ export default function PauseRulesField({ channelId, value, onChange }) {
           <summary className="cursor-pointer text-muted-foreground">
             {t('channels.pauseRules.siteRules', { count: siteRules.length })}
           </summary>
-          {site.enabled === false && <p className="mt-2 text-warning">{t('channels.pauseRules.siteOff')}</p>}
           <pre data-testid="site-pause-rules" className="mt-2 max-h-64 overflow-auto whitespace-pre font-mono text-[12px] leading-relaxed">
             {JSON.stringify(siteRules, null, 2)}
           </pre>

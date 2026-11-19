@@ -177,7 +177,7 @@ describe('SuppliesPanel', () => {
   });
 
   it('shows the note while supply routing is off', async () => {
-    renderPanel({ switches: { supplyEnabled: false, pauseRulesEnabled: true } });
+    renderPanel({ switches: { supplyEnabled: false } });
     expect(await screen.findByText(i18n.t('modelSupply.switchOff'))).toBeTruthy();
   });
 });

@@ -46,6 +46,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Vercel still fails over past the order. The channel price is the first host's, and the price
   details show the order. Models whose vendor Vercel does not list keep Vercel's own routing.
 
+### Removed
+
+- The "Supply pause rules" switch. Every failed request goes through the pause rules, which pause
+  a channel or one of its models and bring it back after a test; the older handling it switched
+  back to (disabling channels on live requests, the cooldown fallback and the separate
+  model-not-found quarantine) is gone. Automatic disabling now only applies to channel tests. An
+  installation that had the switch off moves to the pause rules on upgrade.
+
 ### Fixed
 
 - The model catalog of an organization workbench (models, playground, API keys) now lists the

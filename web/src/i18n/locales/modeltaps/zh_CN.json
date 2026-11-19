@@ -2574,7 +2574,6 @@
       "label": "暂停规则",
       "hint": "JSON 数组，先于站点规则匹配，第一条命中生效。留空则只用站点规则。",
       "siteRules": "当前生效的站点规则（{{count}} 条）",
-      "siteOff": "站点已关闭暂停规则，站点规则和渠道规则都不会生效。",
       "invalidJson": "暂停规则不是有效的 JSON",
       "notArray": "暂停规则必须是 JSON 数组"
     },
@@ -3266,8 +3265,7 @@
       "until": "暂停到",
       "reason": "上游报错",
       "probe": "恢复前先测试",
-      "probes_other": "测试失败 {{count}} 次",
-      "rulesOff": "暂停规则已关闭：出错时回到旧的自动禁用与冷却。已列出的暂停仍会按时结束。"
+      "probes_other": "测试失败 {{count}} 次"
     },
     "channelGroups": "分组：{{groups}}",
     "preview": {
@@ -3650,7 +3648,7 @@
         "supply-pause-rules": {
           "title": "线路暂停规则",
           "description": "上游报错时按规则暂停渠道或模型，到点测试通过后恢复",
-          "hint": "关闭后回到旧的自动禁用与冷却"
+          "hint": "渠道自己的规则先于这里的规则"
         },
         "mail-templates": {
           "title": "邮件模板",

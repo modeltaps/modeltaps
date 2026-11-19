@@ -207,7 +207,7 @@ describe('auto routing options', () => {
 
 describe('model supply options', () => {
   it('pause rules are a gateway form card with their own switch', () => {
-    expect(cardById('supply-pause-rules')).toMatchObject({ groupId: 'gateway', kind: 'form', keys: ['PauseRulesEnabled', 'PauseRules'] });
+    expect(cardById('supply-pause-rules')).toMatchObject({ groupId: 'gateway', kind: 'form', keys: ['PauseRules'] });
   });
 
   it('the routing switch and the default supply mode are a gateway form card', () => {

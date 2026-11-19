@@ -124,7 +124,7 @@ export const PLATFORM_GROUPS = [
     tabs: ['resilience', 'allocation', 'request'],
     cards: [
       card('retry', 'form', ['RetryTimes', 'RetryCooldownSeconds', 'RetryTimeOut', 'RetryCooldownPerStatus'], 'resilience'),
-      card('supply-pause-rules', 'form', ['PauseRulesEnabled', 'PauseRules'], 'resilience'),
+      card('supply-pause-rules', 'form', ['PauseRules'], 'resilience'),
       card(
         'channel-auto',
         'form',

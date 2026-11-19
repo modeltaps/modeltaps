@@ -36,7 +36,7 @@ Key `RetryCooldownSeconds` · Type int · Unit seconds · Range 0– · Default 
 
 Where: Platform settings › Gateway › Retries
 
-How long a channel is kept away from a model after it answers that model with a 429 rate limit. While it cools down, new requests for the model go to other channels; its other models are not affected. When the upstream says when the limit resets, that time is used instead. With supply pause rules on, this is the pause of the built-in rate_limit rule (custom rules carry their own seconds); with them off, a status code listed under per-status cooldowns takes precedence. 0 only skips the channel for the failed request.
+How long a channel is kept away from a model after it answers that model with a 429 rate limit. While it cools down, new requests for the model go to other channels; its other models are not affected. When the upstream says when the limit resets, that time is used instead. It is the pause of the built-in rate_limit rule; custom rules carry their own seconds. 0 only skips the channel for the failed request.
 
 Examples:
 
@@ -44,7 +44,7 @@ Examples:
 - `60` A channel with a per-minute limit sits out the rest of the minute instead of collecting more 429s.
 - `0` No cooldown: the next request may land on the same channel and hit the limit again.
 
-See also: [Per-status cooldown](./gateway.md#RetryCooldownPerStatus) · [Supply pause rules](./gateway.md#PauseRulesEnabled) · [Custom pause rules](./gateway.md#PauseRules)
+See also: [Per-status cooldown](./gateway.md#RetryCooldownPerStatus) · [Custom pause rules](./gateway.md#PauseRules)
 
 <a id="RetryTimeOut"></a>
 
@@ -71,7 +71,7 @@ Key `RetryCooldownPerStatus` · Type json · Default `empty` · rarely changed
 
 Where: Platform settings › Gateway › Retries
 
-Cooldowns in seconds for other HTTP status codes, as a JSON object of status code and seconds. Like the rate limit cooldown it keeps the channel away from that one model. With supply pause rules on, the built-in per_status rule applies it after the quota, credential, rate limit and model-not-found rules, so a 429 entry is never reached there, and a listed 5xx code no longer waits for three failures in a minute. With pause rules off, the order is the upstream's reset time, then this list, then the rate limit cooldown for 429. A code set to 0 is never cooled. Codes must be 100-599 and seconds whole numbers of 0 or more; empty adds none.
+Cooldowns in seconds for other HTTP status codes, as a JSON object of status code and seconds. Like the rate limit cooldown it keeps the channel away from that one model. The built-in per_status rule applies it after the quota, credential, rate limit and model-not-found rules, so a 429 entry is never reached, and a listed 5xx code no longer waits for three failures in a minute. A code set to 0 is never cooled. Codes must be 100-599 and seconds whole numbers of 0 or more; empty adds none.
 
 Examples:
 
@@ -79,7 +79,7 @@ Examples:
 - `{"502": 60, "504": 300}` 502 cools the model on that channel for 1 minute, 504 for 5 minutes.
 - `{"500": 0}` A 500 never pauses or cools the channel: the request moves on and the next one may use it again.
 
-See also: [Rate limit cooldown](./gateway.md#RetryCooldownSeconds) · [Custom pause rules](./gateway.md#PauseRules) · [Supply pause rules](./gateway.md#PauseRulesEnabled)
+See also: [Rate limit cooldown](./gateway.md#RetryCooldownSeconds) · [Custom pause rules](./gateway.md#PauseRules)
 
 <a id="ModelNotFoundCooldownSeconds"></a>
 
@@ -89,7 +89,7 @@ Key `ModelNotFoundCooldownSeconds` · Type int · Unit seconds · Range 0– · 
 
 Where: Platform settings › Gateway › Retries
 
-How long a channel is kept away from a model after its upstream says the model does not exist. There is no field for it on this page: change it through the option API (PUT /api/option/). It covers errors such as "model not found", "does not exist" or "no endpoints found", but not when a 429 was seen in the same request. With supply pause rules on, it is the pause of the built-in model_not_found rule, which also notifies admins; custom rules carry their own seconds. 0 never pauses for it.
+How long a channel is kept away from a model after its upstream says the model does not exist. There is no field for it on this page: change it through the option API (PUT /api/option/). It covers errors such as "model not found", "does not exist" or "no endpoints found", but not when a 429 was seen in the same request. It is the pause of the built-in model_not_found rule, which also notifies admins; custom rules carry their own seconds. 0 never pauses for it.
 
 Examples:
 
@@ -97,26 +97,9 @@ Examples:
 - `600` A model that was only briefly missing upstream comes back after 10 minutes.
 - `0` The channel stays in rotation and keeps failing requests for the model until it is removed from the channel.
 
-See also: [Supply pause rules](./gateway.md#PauseRulesEnabled) · [Custom pause rules](./gateway.md#PauseRules) · [Rate limit cooldown](./gateway.md#RetryCooldownSeconds)
+See also: [Custom pause rules](./gateway.md#PauseRules) · [Rate limit cooldown](./gateway.md#RetryCooldownSeconds)
 
 ## Supply pause rules
-
-<a id="PauseRulesEnabled"></a>
-
-### Supply pause rules
-
-Key `PauseRulesEnabled` · Type bool · Default `true`
-
-Where: Platform settings › Gateway › Supply pause rules
-
-Failed requests go through the pause rules, which pause a channel or one of its models and bring it back on their own. When off, the older handling applies instead: automatic channel disabling (if switched on), the rate limit and per-status cooldowns, and the model-not-found pause.
-
-Examples:
-
-- `true` A channel whose key is rejected is paused for an hour and resumes after a passing test, without anyone re-enabling it.
-- `false` A rejected key disables the channel when automatic disabling is on, and it stays off until a channel test passes.
-
-See also: [Custom pause rules](./gateway.md#PauseRules) · [Disable channels that can no longer serve](./gateway.md#AutomaticDisableChannelEnabled) · [Rate limit cooldown](./gateway.md#RetryCooldownSeconds)
 
 <a id="PauseRules"></a>
 
@@ -134,7 +117,7 @@ Examples:
 - `[{"name":"overloaded","status_codes":[529],"times":2,"window_seconds":60,"action":"pause","seconds":300,"probe":true}]` Two 529s for one model on one channel within a minute pause that model there for 5 minutes; if the test before resuming fails, the next pause lasts 10 minutes.
 - `[]` No rule: nothing is ever paused, a failing channel is only skipped for the request that failed.
 
-See also: [Supply pause rules](./gateway.md#PauseRulesEnabled) · [Rate limit cooldown](./gateway.md#RetryCooldownSeconds) · [Per-status cooldown](./gateway.md#RetryCooldownPerStatus) · [Model not found pause](./gateway.md#ModelNotFoundCooldownSeconds) · [Disable keywords](./gateway.md#DisableChannelKeywords)
+See also: [Rate limit cooldown](./gateway.md#RetryCooldownSeconds) · [Per-status cooldown](./gateway.md#RetryCooldownPerStatus) · [Model not found pause](./gateway.md#ModelNotFoundCooldownSeconds) · [Disable keywords](./gateway.md#DisableChannelKeywords)
 
 ## Channel auto disable & recovery
 
@@ -146,9 +129,9 @@ Key `AutomaticDisableChannelEnabled` · Type bool · Default `false`
 
 Where: Platform settings › Gateway › Channel auto disable & recovery
 
-Disables a channel whose upstream says it can no longer serve, such as a rejected key or an empty balance. An exhausted quota, a disabled account or a disable keyword in the error count too. On live requests this only happens while supply pause rules are off; with them on, such errors pause the channel instead. Channel tests disable for these errors too, with or without pause rules. A disabled channel comes back only through a passing test with automatic recovery on, or by hand.
+Disables a channel whose upstream says it can no longer serve, such as a rejected key or an empty balance. An exhausted quota, a disabled account or a disable keyword in the error count too. It applies to channel tests: on live requests such errors pause the channel through the pause rules instead. A disabled channel comes back only through a passing test with automatic recovery on, or by hand.
 
-See also: [Re-enable channels that pass a test](./gateway.md#AutomaticEnableChannelEnabled) · [Disable keywords](./gateway.md#DisableChannelKeywords) · [Supply pause rules](./gateway.md#PauseRulesEnabled) · [Scheduled channel test](./gateway.md#ChannelTestMode)
+See also: [Re-enable channels that pass a test](./gateway.md#AutomaticEnableChannelEnabled) · [Disable keywords](./gateway.md#DisableChannelKeywords) · [Custom pause rules](./gateway.md#PauseRules) · [Scheduled channel test](./gateway.md#ChannelTestMode)
 
 <a id="AutomaticEnableChannelEnabled"></a>
 
@@ -188,7 +171,7 @@ Key `DisableChannelKeywords` · Type list
 
 Where: Platform settings › Gateway › Channel auto disable & recovery
 
-Error messages, one per line, that mark a channel as unable to serve when an upstream error contains one. Matching is case-sensitive, so copy the upstream text exactly; a keyword wins over the built-in exceptions. A match moves the request to another channel, pauses the channel through the built-in credential rule (1 hour, tested before resuming) with supply pause rules on, and disables it with them off and automatic disabling on. Empty leaves only the built-in checks of status codes and known messages.
+Error messages, one per line, that mark a channel as unable to serve when an upstream error contains one. Matching is case-sensitive, so copy the upstream text exactly; a keyword wins over the built-in exceptions. A match moves the request to another channel and pauses the channel through the built-in credential rule (1 hour, tested before resuming); in a channel test it disables the channel when automatic disabling is on. Empty leaves only the built-in checks of status codes and known messages.
 
 Examples:
 
@@ -361,7 +344,7 @@ Examples:
 - `95` A discount reseller that failed 12 of its last 100 requests stops taking requests first; the next healthy supply takes them.
 - `0` The cheapest supply always leads, however often it fails; only pauses keep it out.
 
-See also: [Cost and priority](./gateway.md#SupplyCostOrder) · [Minimum saving](./gateway.md#SupplyCostMinSavingPercent) · [Supply pause rules](./gateway.md#PauseRulesEnabled)
+See also: [Cost and priority](./gateway.md#SupplyCostOrder) · [Minimum saving](./gateway.md#SupplyCostMinSavingPercent) · [Custom pause rules](./gateway.md#PauseRules)
 
 Guide: [use/pricing_and_routing.md#which-supply-takes-a-request](../use/pricing_and_routing.md#which-supply-takes-a-request)
 
@@ -380,7 +363,7 @@ Examples:
 - `false` Requests follow each channel's models and model mapping; the supply pages only preview what would change.
 - `true` A request for claude-sonnet-4-5 goes to the supplies of that public model, ordered by priority and cost.
 
-See also: [Default supply mode](./gateway.md#SupplyModeDefault) · [Cost and priority](./gateway.md#SupplyCostOrder) · [Intake rules for new upstream models](./gateway.md#SupplyIntakeRules) · [Supply pause rules](./gateway.md#PauseRulesEnabled)
+See also: [Default supply mode](./gateway.md#SupplyModeDefault) · [Cost and priority](./gateway.md#SupplyCostOrder) · [Intake rules for new upstream models](./gateway.md#SupplyIntakeRules) · [Custom pause rules](./gateway.md#PauseRules)
 
 Guide: [use/supply_routing.md](../use/supply_routing.md)
 

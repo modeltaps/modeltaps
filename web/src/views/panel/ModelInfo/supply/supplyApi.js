@@ -60,8 +60,7 @@ export const fetchPauseRules = (channelId) =>
 export const fetchIntakeRules = (channelId) =>
   API.get('/api/supply_pause/intake_rules', { params: channelId ? { channel_id: channelId } : {} }).then(body);
 
-// The supply switches live in the root-only options. Returns { supplyEnabled, pauseRulesEnabled }
-// as booleans, or null when they cannot be read (not root, or the request failed).
+// The supply switch lives in the root-only options. Returns { supplyEnabled } as a boolean, or null when they cannot be read (not root, or the request failed).
 export async function fetchSupplySwitches() {
   try {
     const { success, data } = body(await API.get('/api/option/'));
@@ -69,7 +68,7 @@ export async function fetchSupplySwitches() {
     const value = (key) => data.find((o) => o.key === key)?.value;
     const supply = value('ModelSupplyEnabled');
     if (supply === undefined) return null;
-    return { supplyEnabled: supply === 'true', pauseRulesEnabled: value('PauseRulesEnabled') !== 'false' };
+    return { supplyEnabled: supply === 'true' };
   } catch {
     return null;
   }

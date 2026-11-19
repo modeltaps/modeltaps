@@ -25,15 +25,14 @@ func gatewayResilience() []Setting {
 			Label: "Rate limit cooldown",
 			Description: "How long a channel is kept away from a model after it answers that model with a 429 rate limit. " +
 				"While it cools down, new requests for the model go to other channels; its other models are not affected. " +
-				"When the upstream says when the limit resets, that time is used instead. With supply pause rules on, this is the " +
-				"pause of the built-in rate_limit rule (custom rules carry their own seconds); with them off, a status code listed " +
-				"under per-status cooldowns takes precedence. 0 only skips the channel for the failed request.",
+				"When the upstream says when the limit resets, that time is used instead. It is the pause of the built-in " +
+				"rate_limit rule; custom rules carry their own seconds. 0 only skips the channel for the failed request.",
 			Examples: []Example{
 				{Value: "5", Effect: "After a 429 for gpt-4o, that channel takes no gpt-4o requests for 5 seconds; it keeps serving its other models."},
 				{Value: "60", Effect: "A channel with a per-minute limit sits out the rest of the minute instead of collecting more 429s."},
 				{Value: "0", Effect: "No cooldown: the next request may land on the same channel and hit the limit again."},
 			},
-			Related:  []string{"RetryCooldownPerStatus", "PauseRulesEnabled", "PauseRules"},
+			Related:  []string{"RetryCooldownPerStatus", "PauseRules"},
 			Keywords: []string{"429", "rate limit", "cooldown", "freeze", "backoff", "too many requests"},
 		},
 		{
@@ -53,17 +52,15 @@ func gatewayResilience() []Setting {
 			Key: "RetryCooldownPerStatus", Scope: ScopeSite, Group: "gateway", Card: "retry", Type: TypeJSON,
 			Label: "Per-status cooldown",
 			Description: "Cooldowns in seconds for other HTTP status codes, as a JSON object of status code and seconds. " +
-				"Like the rate limit cooldown it keeps the channel away from that one model. With supply pause rules on, the " +
-				"built-in per_status rule applies it after the quota, credential, rate limit and model-not-found rules, so a 429 " +
-				"entry is never reached there, and a listed 5xx code no longer waits for three failures in a minute. With pause " +
-				"rules off, the order is the upstream's reset time, then this list, then the rate limit cooldown for 429. A code " +
-				"set to 0 is never cooled. Codes must be 100-599 and seconds whole numbers of 0 or more; empty adds none.",
+				"Like the rate limit cooldown it keeps the channel away from that one model. The built-in per_status rule " +
+				"applies it after the quota, credential, rate limit and model-not-found rules, so a 429 entry is never reached, " +
+				"and a listed 5xx code no longer waits for three failures in a minute. A code set to 0 is never cooled. Codes must be 100-599 and seconds whole numbers of 0 or more; empty adds none.",
 			Examples: []Example{
 				{Value: `{"503": 120}`, Effect: "A channel answering a model with 503 takes no requests for it for 2 minutes, from the first 503 on."},
 				{Value: `{"502": 60, "504": 300}`, Effect: "502 cools the model on that channel for 1 minute, 504 for 5 minutes."},
 				{Value: `{"500": 0}`, Effect: "A 500 never pauses or cools the channel: the request moves on and the next one may use it again."},
 			},
-			Related:  []string{"RetryCooldownSeconds", "PauseRules", "PauseRulesEnabled"},
+			Related:  []string{"RetryCooldownSeconds", "PauseRules"},
 			Keywords: []string{"status code", "503", "502", "cooldown", "freeze"},
 			Advanced: true,
 		},
@@ -73,32 +70,19 @@ func gatewayResilience() []Setting {
 			Description: "How long a channel is kept away from a model after its upstream says the model does not exist. " +
 				"There is no field for it on this page: change it through the option API (PUT /api/option/). It covers errors " +
 				"such as \"model not found\", \"does not exist\" or \"no endpoints found\", but not when a 429 was seen in the same " +
-				"request. With supply pause rules on, it is the pause of the built-in model_not_found rule, which also notifies " +
-				"admins; custom rules carry their own seconds. 0 never pauses for it.",
+				"request. It is the pause of the built-in model_not_found rule, which also notifies admins; custom rules carry " +
+				"their own seconds. 0 never pauses for it.",
 			Examples: []Example{
 				{Value: "21600", Effect: "A channel that lost access to gpt-4.5 stays out of gpt-4.5 requests for 6 hours, then gets tried again."},
 				{Value: "600", Effect: "A model that was only briefly missing upstream comes back after 10 minutes."},
 				{Value: "0", Effect: "The channel stays in rotation and keeps failing requests for the model until it is removed from the channel."},
 			},
-			Related:  []string{"PauseRulesEnabled", "PauseRules", "RetryCooldownSeconds"},
+			Related:  []string{"PauseRules", "RetryCooldownSeconds"},
 			Keywords: []string{"404", "model not found", "quarantine", "missing model", "no endpoints"},
 			Advanced: true,
 		},
 
 		// ---------------------------------------------------------------- supply-pause-rules
-		{
-			Key: "PauseRulesEnabled", Scope: ScopeSite, Group: "gateway", Card: "supply-pause-rules", Type: TypeBool,
-			Label: "Supply pause rules",
-			Description: "Failed requests go through the pause rules, which pause a channel or one of its models and bring it " +
-				"back on their own. When off, the older handling applies instead: automatic channel disabling " +
-				"(if switched on), the rate limit and per-status cooldowns, and the model-not-found pause.",
-			Examples: []Example{
-				{Value: "true", Effect: "A channel whose key is rejected is paused for an hour and resumes after a passing test, without anyone re-enabling it."},
-				{Value: "false", Effect: "A rejected key disables the channel when automatic disabling is on, and it stays off until a channel test passes."},
-			},
-			Related:  []string{"PauseRules", "AutomaticDisableChannelEnabled", "RetryCooldownSeconds"},
-			Keywords: []string{"pause", "circuit breaker", "health", "auto disable"},
-		},
 		{
 			Key: "PauseRules", Scope: ScopeSite, Group: "gateway", Card: "supply-pause-rules", Type: TypeJSON,
 			Label: "Custom pause rules",
@@ -121,8 +105,8 @@ func gatewayResilience() []Setting {
 				},
 				{Value: `[]`, Effect: "No rule: nothing is ever paused, a failing channel is only skipped for the request that failed."},
 			},
-			Related:  []string{"PauseRulesEnabled", "RetryCooldownSeconds", "RetryCooldownPerStatus", "ModelNotFoundCooldownSeconds", "DisableChannelKeywords"},
-			Keywords: []string{"pause rules", "JSON", "circuit breaker", "probe", "quota", "keyword"},
+			Related:  []string{"RetryCooldownSeconds", "RetryCooldownPerStatus", "ModelNotFoundCooldownSeconds", "DisableChannelKeywords"},
+			Keywords: []string{"pause rules", "pause", "JSON", "circuit breaker", "health", "probe", "quota", "keyword"},
 		},
 
 		// ---------------------------------------------------------------- channel-auto
@@ -130,11 +114,10 @@ func gatewayResilience() []Setting {
 			Key: "AutomaticDisableChannelEnabled", Scope: ScopeSite, Group: "gateway", Card: "channel-auto", Type: TypeBool,
 			Label: "Disable channels that can no longer serve",
 			Description: "Disables a channel whose upstream says it can no longer serve, such as a rejected key or an empty balance. " +
-				"An exhausted quota, a disabled account or a disable keyword in the error count too. On live requests this only happens while supply pause " +
-				"rules are off; with them on, such errors pause the channel instead. Channel tests disable for these errors too, " +
-				"with or without pause rules. " +
+				"An exhausted quota, a disabled account or a disable keyword in the error count too. It applies to channel tests: " +
+				"on live requests such errors pause the channel through the pause rules instead. " +
 				"A disabled channel comes back only through a passing test with automatic recovery on, or by hand.",
-			Related:  []string{"AutomaticEnableChannelEnabled", "DisableChannelKeywords", "PauseRulesEnabled", "ChannelTestMode"},
+			Related:  []string{"AutomaticEnableChannelEnabled", "DisableChannelKeywords", "PauseRules", "ChannelTestMode"},
 			Keywords: []string{"auto disable", "disable channel", "dead key", "invalid key", "balance"},
 		},
 		{
@@ -165,8 +148,8 @@ func gatewayResilience() []Setting {
 			Label: "Disable keywords",
 			Description: "Error messages, one per line, that mark a channel as unable to serve when an upstream error contains one. " +
 				"Matching is case-sensitive, so copy the upstream text exactly; a keyword wins over the built-in exceptions. A match " +
-				"moves the request to another channel, pauses the channel through the built-in credential rule (1 hour, tested " +
-				"before resuming) with supply pause rules on, and disables it with them off and automatic disabling on. " +
+				"moves the request to another channel and pauses the channel through the built-in credential rule (1 hour, tested " +
+				"before resuming); in a channel test it disables the channel when automatic disabling is on. " +
 				"Empty leaves only the built-in checks of status codes and known messages.",
 			Examples: []Example{
 				{Value: "Your account is currently blocked", Effect: "An upstream error containing this text pauses the whole channel for an hour instead of failing request after request."},

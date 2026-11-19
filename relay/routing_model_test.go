@@ -50,11 +50,7 @@ func TestRoutingModelName_PrecedenceAndFallback(t *testing.T) {
 // 否则 balancer 的 IsInCooldown 查不到，配了 model_mapping 的渠道冷却完全失效。
 func TestShouldCooldowns_RoutingModelKey(t *testing.T) {
 	prev := config.RetryCooldownSeconds
-	prevRules := config.PauseRulesEnabled
-	defer func() {
-		config.RetryCooldownSeconds = prev
-		config.PauseRulesEnabled = prevRules
-	}()
+	defer func() { config.RetryCooldownSeconds = prev }()
 
 	const channelId = 9400
 	channel := &model.Channel{Id: channelId, Name: "ch", Type: config.ChannelTypeOpenAI}
@@ -68,21 +64,9 @@ func TestShouldCooldowns_RoutingModelKey(t *testing.T) {
 		}
 	}
 
-	t.Run("pause rules off", func(t *testing.T) {
+	t.Run("rate limit", func(t *testing.T) {
 		defer clearCooldown(channelId, rmRouting)
 		defer clearCooldown(channelId, rmMapped)
-		config.PauseRulesEnabled = false
-		config.RetryCooldownSeconds = 60
-		if !shouldCooldowns(newMappedContext(), channel, apiErr(http.StatusTooManyRequests, false)) {
-			t.Fatal("expected cooldown to be applied for 429")
-		}
-		check(t)
-	})
-
-	t.Run("pause rules on", func(t *testing.T) {
-		defer clearCooldown(channelId, rmRouting)
-		defer clearCooldown(channelId, rmMapped)
-		config.PauseRulesEnabled = true
 		// Under a minute, so the rule cools down in memory and nothing is written.
 		config.RetryCooldownSeconds = 30
 		c := newMappedContext()

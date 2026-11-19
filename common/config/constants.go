@@ -342,11 +342,6 @@ var SupplyCostMinSavingPercent = 5.0
 // were unknown. 0 turns the check off.
 var SupplyCostMinSuccessPercent = 95.0
 
-// PauseRulesEnabled sends every relay failure through the pause rules (see model.PauseRule):
-// channels or models are paused for a while and resumed automatically, instead of the older
-// automatic disabling, per-status cooldowns and model-not-found quarantine.
-var PauseRulesEnabled = true
-
 // PaymentCostPercent is what taking a payment costs the site, in percent of the amount (card
 // fees, currency conversion). It is not charged to anyone: it only lowers the net revenue the
 // price check and the margin figures compare channel costs with (model.NetRevenueLine).
