@@ -121,7 +121,7 @@ func TestScheduledPriceItems(t *testing.T) {
 	}
 	got := scheduledPriceItems(time.Date(2026, time.December, 1, 0, 7, 0, 0, time.UTC), all)
 	want := map[string]bool{
-		"scheduled|gemini-4-argon|2|10|4|20": true,
+		"scheduled|gemini-4-argon|2|10|4|20":                                                      true,
 		"review|gpt-5.6-sol|2026-12-01|https://developers.openai.com/api/docs/models/gpt-5.6-sol": true,
 		"review|gpt-5.6|2026-12-01|https://developers.openai.com/api/docs/models/gpt-5.6-sol":     true,
 	}

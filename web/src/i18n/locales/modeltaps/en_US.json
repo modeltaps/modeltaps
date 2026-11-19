@@ -5100,7 +5100,8 @@
       "model_drift": "Model changes",
       "price_change": "Price changes",
       "credential": "Credential refresh failed",
-      "model_consistency": "Model details missing"
+      "model_consistency": "Model details missing",
+      "cost_mismatch": "Upstream charges"
     },
     "subject": {
       "source": "Source: {{source}}",
@@ -5123,7 +5124,13 @@
         "review": "The official price of {{model}} ended on {{day}} and no new price is published yet: check the vendor's page and set the price if it changed"
       },
       "credential": "Requests will fail once the current token expires; sign in again on the channel",
-      "consistency": "{{model}} generates images, but its output modalities lack image"
+      "consistency": "{{model}} generates images, but its output modalities lack image",
+      "cost": {
+        "higher": "{{model}}: the upstream billed more than the price list says (last 3 days). Requests may lose money; check the channel's price, fee rate or cost ratio",
+        "lower": "{{model}}: the upstream billed less than the price list says (last 3 days). The cost may be set too high, which can hold back supplies",
+        "daily_higher": "Account bill per day is above the expected cost (last 3 days). It also counts use of the account outside this site",
+        "daily_lower": "Account bill per day is below the expected cost (last 3 days). The channel's cost may be set too high"
+      }
     },
     "showAll_one": "Show all {{count}}",
     "showAll_other": "Show all {{count}}",

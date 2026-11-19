@@ -73,6 +73,21 @@ func InitCron() {
 		return
 	}
 
+	// Compare what upstreams billed with the expected cost of the price list, every hour.
+	err = scheduler.Manager.AddJob(
+		"check_upstream_costs",
+		gocron.CronJob("37 * * * *", false),
+		gocron.NewTask(func() {
+			if err := model.CheckUpstreamCosts(time.Now()); err != nil {
+				logger.SysError("Failed to check upstream costs: " + err.Error())
+			}
+		}),
+	)
+	if err != nil {
+		logger.SysError("Cron job error: " + err.Error())
+		return
+	}
+
 	// 每小时整点批量重置令牌周期用量（幂等；精确边界由校验路径按配置时区懒重置兜底，
 	// cron 仅负责持久化清扫。改为每小时可覆盖任意配置时区的 0 点边界，TK8a）
 	err = scheduler.Manager.AddJob(

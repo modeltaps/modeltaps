@@ -22,3 +22,14 @@ describe('official price dates', () => {
     expect(alertSubject(t, { subject: 'source:official schedule' })).toContain('alerts.sources.official_schedule');
   });
 });
+
+describe('upstream charges', () => {
+  it('warns when the upstream billed more and links the performance tab', async () => {
+    const { alertTarget } = await import('./alertItems');
+    const x = describeAlertItem(t, 'cost_mismatch', 'cost|gpt-5.6-sol|higher');
+    expect(x.tone).toBe('warn');
+    expect(x.text).toContain('alerts.item.cost.higher');
+    expect(describeAlertItem(t, 'cost_mismatch', 'daily|lower').text).toBe('alerts.item.cost.daily_lower');
+    expect(alertTarget({ kind: 'cost_mismatch', channel_id: 3 })).toContain('tab=performance');
+  });
+});

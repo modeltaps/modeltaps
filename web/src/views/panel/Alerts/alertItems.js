@@ -4,7 +4,8 @@ import { admin } from 'routes/paths';
 // money, info for the rest. Items are written by the server (model/alert.go and its callers):
 // "renamed:a → b", "gone:a", "stopped:m", "unsupplied:m", "held" for model drift;
 // "raised|m|in|out|in|out", "held|…", "locked|…", "scheduled|…" and "review|m|day|source" for
-// price changes; "refresh failed" for
+// price changes; "cost|m|higher|lower" and "daily|higher|lower" for upstream charges that differ
+// from the price list; "refresh failed" for
 // credentials; a model name for model consistency.
 export function describeAlertItem(t, kind, item) {
   if (kind === 'model_drift') {
@@ -30,15 +31,25 @@ export function describeAlertItem(t, kind, item) {
       };
     }
   }
+  if (kind === 'cost_mismatch') {
+    const parts = item.split('|');
+    if (parts[0] === 'cost' && parts.length === 3) {
+      return { tone: parts[2] === 'higher' ? 'warn' : 'info', text: t(`alerts.item.cost.${parts[2]}`, { model: parts[1] }) };
+    }
+    if (parts[0] === 'daily' && parts.length === 2) {
+      return { tone: parts[1] === 'higher' ? 'warn' : 'info', text: t(`alerts.item.cost.daily_${parts[1]}`) };
+    }
+  }
   if (kind === 'credential') return { tone: 'warn', text: t('alerts.item.credential') };
   if (kind === 'model_consistency') return { tone: 'info', text: t('alerts.item.consistency', { model: item }) };
   return { tone: 'info', text: item };
 }
 
-// Where an alert is handled: the channel's models or connection tab, or the model catalog.
+// Where an alert is handled: the channel's models, connection or performance tab, or the model
+// catalog.
 export function alertTarget(alert) {
   if (alert.channel_id) {
-    const tab = alert.kind === 'credential' ? 'connection' : 'models';
+    const tab = alert.kind === 'credential' ? 'connection' : alert.kind === 'cost_mismatch' ? 'performance' : 'models';
     return `${admin.providers(alert.channel_id)}?tab=${tab}`;
   }
   if (alert.kind === 'price_change' || alert.kind === 'model_consistency') return admin.models();

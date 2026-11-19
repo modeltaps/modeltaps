@@ -4982,7 +4982,8 @@
       "model_drift": "模型变动",
       "price_change": "价格变动",
       "credential": "凭据刷新失败",
-      "model_consistency": "模型资料缺失"
+      "model_consistency": "模型资料缺失",
+      "cost_mismatch": "上游扣费核对"
     },
     "subject": {
       "source": "来源：{{source}}",
@@ -5005,7 +5006,13 @@
         "review": "{{model}} 的官方价已于 {{day}} 到期，新价尚未公布：请核对厂商价格页，有变化就手动改价"
       },
       "credential": "当前令牌过期后请求会失败，请在渠道里重新登录",
-      "consistency": "{{model}} 是生图模型，但输出模态里没有图片"
+      "consistency": "{{model}} 是生图模型，但输出模态里没有图片",
+      "cost": {
+        "higher": "{{model}}：上游实际扣费高于价格表（近 3 天），请求可能亏钱；请核对渠道价格、手续费率或成本倍率",
+        "lower": "{{model}}：上游实际扣费低于价格表（近 3 天），成本可能设高了，会误挡线路",
+        "daily_higher": "账号每日账单高于预期成本（近 3 天）；账单也包含本站以外对该账号的使用",
+        "daily_lower": "账号每日账单低于预期成本（近 3 天），渠道成本可能设高了"
+      }
     },
     "showAll_other": "展开全部 {{count}} 条",
     "showLess": "收起",
