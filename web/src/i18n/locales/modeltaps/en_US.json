@@ -2498,6 +2498,13 @@
       "check": "Check again",
       "checkHint": "Read the upstream model list now and mark models it dropped or that are not added yet",
       "state": {
+      "sync": "Sync models",
+      "syncHint": "Read the upstream model list now, add the models not added yet and open their lines by the intake rules; models it dropped are only marked for you to remove",
+      "syncedAdded": "Opened {{count}} models",
+      "syncedPending": "{{count}} cost more than their price and wait for confirmation",
+      "syncedUnmatched": "{{count}} have no model in the catalog: see \"New upstream\"",
+      "syncedNone": "The upstream has no new models",
+      "syncedJoin": "; ",
         "offered": "Linked",
         "unoffered": "Not linked",
         "gone": "Gone upstream",

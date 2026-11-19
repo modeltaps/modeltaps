@@ -70,6 +70,34 @@ export default function useChannelActions({ onChanged, onDriftDismissed, onDelet
         setDriftCheckingIds((prev) => dropId(prev, row.id));
       }
     },
+    // "Sync models": adds every upstream model the channel lacks and opens its lines by the
+    // intake rules; lines that cost more than the price wait for confirmation.
+    onSyncModels: async (row) => {
+      if (driftCheckingIds.has(row.id)) return;
+      setDriftCheckingIds((prev) => addId(prev, row.id));
+      try {
+        const { success, message, data, added } = await checkChannelDrift(row.id, { sync: true });
+        if (success) {
+          const intake = data?.intake || [];
+          const pending = intake.filter((o) => o.action === 'pending').length;
+          const opened = intake.length ? intake.filter((o) => o.action === 'enable').length : (added?.length ?? 0);
+          // What is still flagged as new has no public model to attach to: an admin handles it.
+          const unmatched = data?.new_models?.length ?? 0;
+          const parts = [
+            opened > 0 && t('channels.models.syncedAdded', { count: opened }),
+            pending > 0 && t('channels.models.syncedPending', { count: pending }),
+            unmatched > 0 && t('channels.models.syncedUnmatched', { count: unmatched })
+          ].filter(Boolean);
+          if (!parts.length) toast.success(t('channels.models.syncedNone'));
+          else (pending || unmatched ? toast.warning : toast.success)(parts.join(t('channels.models.syncedJoin')));
+          changed();
+        } else if (message) toast.error(message);
+      } catch (e) {
+        toast.error(e.message);
+      } finally {
+        setDriftCheckingIds((prev) => dropId(prev, row.id));
+      }
+    },
     onDismissNewModels: async (row) => {
       if (dismissingIds.has(row.id)) return;
       setDismissingIds((prev) => addId(prev, row.id));

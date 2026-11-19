@@ -174,3 +174,61 @@ func TestAddChannelAutoSupplies(t *testing.T) {
 		t.Fatalf("supplies = %+v", supplies)
 	}
 }
+
+// "Sync models" adds the upstream models the channel lacks and supplies them by the intake rules
+// with auto add off, and supplies a listed model nothing supplies yet; a model an admin removed
+// stays out.
+func TestSyncUpstreamModelsWithoutAutoAdd(t *testing.T) {
+	setupBalanceTestDB(t)
+	if err := model.DB.AutoMigrate(&model.ModelSupply{}, &model.ModelInfo{}); err != nil {
+		t.Fatal(err)
+	}
+	oldEnabled := config.ModelSupplyEnabled
+	config.ModelSupplyEnabled = true
+	t.Cleanup(func() { config.ModelSupplyEnabled = oldEnabled })
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.RawQuery != "" {
+			_, _ = w.Write([]byte(`{"data":[]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"data":[{"id":"m-listed"},{"id":"m-known"},{"id":"m-removed"}]}`))
+	}))
+	defer srv.Close()
+
+	base := srv.URL + "/api"
+	ch := model.Channel{Name: "or", Type: config.ChannelTypeOpenRouter, Key: "sk", BaseURL: &base, Models: "m-listed",
+		Group: "default", Status: config.ChannelStatusEnabled}
+	if err := model.DB.Create(&ch).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := ch.UpdateModelDrift(model.ModelDriftResult{UpstreamSnapshot: []string{"m-listed", "m-known", "m-removed"},
+		Removed: []string{"m-removed"}, OK: true}); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"m-listed", "m-known", "m-removed"} {
+		if err := model.DB.Create(&model.ModelInfo{Model: name, Status: model.ModelStatusPublished, Endpoints: `["chat"]`}).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	channel, _ := model.GetChannelById(ch.Id)
+	result, err := CheckChannelModelDrift(channel)
+	if err != nil {
+		t.Fatal(err)
+	}
+	added := syncUpstreamModels(channel, result)
+	if strings.Join(added, ",") != "m-known,m-listed" && strings.Join(added, ",") != "m-listed,m-known" {
+		t.Fatalf("added = %v, want m-known and m-listed supplied", added)
+	}
+	stored, _ := model.GetChannelById(ch.Id)
+	if stored.Models != "m-listed,m-known" {
+		t.Fatalf("models = %q", stored.Models)
+	}
+	var n int64
+	model.DB.Model(&model.ModelSupply{}).Where("channel_id = ? AND model = ?", ch.Id, "m-removed").Count(&n)
+	if n != 0 {
+		t.Fatal("a model the admin removed must not be supplied")
+	}
+}

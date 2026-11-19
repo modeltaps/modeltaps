@@ -2404,6 +2404,13 @@
       "check": "重新检查",
       "checkHint": "读取上游当前的模型清单，标出已下架和还没加入的模型",
       "state": {
+      "sync": "同步模型",
+      "syncHint": "读取上游当前的模型清单，把还没加入的模型加进来并按接入规则开通线路；下架的只标出，由你移除",
+      "syncedAdded": "已开通 {{count}} 个模型",
+      "syncedPending": "{{count}} 个价格偏高，待确认",
+      "syncedUnmatched": "{{count}} 个在模型目录里没有对应模型，见「上游新增」",
+      "syncedNone": "上游没有新模型，已是最新",
+      "syncedJoin": "；",
         "offered": "已关联",
         "unoffered": "未关联",
         "gone": "上游已下架",

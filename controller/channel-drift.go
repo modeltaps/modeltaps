@@ -71,6 +71,18 @@ func filterIgnoredModels(models []string, matcher *driftIgnoreMatcher) []string 
 // otherwise the names switched on get their prices and metadata. Names handled this way are
 // taken off the result's new models; the rest stay flagged for an admin.
 func syncDriftModels(ch *model.Channel, result *model.ModelDriftResult) []string {
+	return syncDriftModelsWith(ch, result, false)
+}
+
+// syncUpstreamModels is the "sync models" button: every upstream model the channel does not
+// have yet (not removed by an admin, not ignored) is handled as if new and added automatically,
+// whatever the channel's auto add switch says. Names already listed but supplied by nothing go
+// through the intake rules too, so a model listed before supplies existed starts routing.
+func syncUpstreamModels(ch *model.Channel, result *model.ModelDriftResult) []string {
+	return syncDriftModelsWith(ch, result, true)
+}
+
+func syncDriftModelsWith(ch *model.Channel, result *model.ModelDriftResult, all bool) []string {
 	matcher := newDriftIgnoreMatcher(ch.DriftIgnoreRules)
 	listed := ch.ListedUpstreamNames()
 	removed := make(map[string]bool, len(result.Removed))
@@ -81,15 +93,25 @@ func syncDriftModels(ch *model.Channel, result *model.ModelDriftResult) []string
 	for _, name := range result.NewModels {
 		fresh[name] = true
 	}
-	var join, off, switchedOn []string
+	autoAdd := ch.DriftAutoAdd || all
+	var join, off, switchedOn, unsupplied []string
 	for _, name := range result.UpstreamSnapshot {
-		if name == "" || listed[name] || removed[name] || strings.Contains(name, "*") || matcher.ignored(name) || ch.CoveredByWildcard(name) {
+		if name == "" || removed[name] || strings.Contains(name, "*") || matcher.ignored(name) {
+			continue
+		}
+		if listed[name] || ch.CoveredByWildcard(name) {
+			if all {
+				unsupplied = append(unsupplied, name)
+			}
 			continue
 		}
 		join = append(join, name)
+		if all {
+			fresh[name] = true
+		}
 		switch {
 		case config.ModelSupplyEnabled:
-		case ch.DriftAutoAdd && fresh[name]:
+		case autoAdd && fresh[name]:
 			switchedOn = append(switchedOn, name)
 		default:
 			off = append(off, name)
@@ -99,7 +121,13 @@ func syncDriftModels(ch *model.Channel, result *model.ModelDriftResult) []string
 		logger.SysError("model drift sync failed for channel " + ch.Name + ": " + err.Error())
 		return nil
 	}
-	if !ch.DriftAutoAdd || len(result.NewModels) == 0 {
+	if all {
+		result.NewModels = join
+		if config.ModelSupplyEnabled {
+			result.NewModels = append(join, model.WithoutSuppliedModels(ch.Id, unsupplied)...)
+		}
+	}
+	if !autoAdd || len(result.NewModels) == 0 {
 		return nil
 	}
 	if config.ModelSupplyEnabled {
@@ -367,6 +395,9 @@ func modelDriftNotice(summary *ModelDriftCheckSummary, report func(int, []string
 func CheckModelDrift(c *gin.Context) {
 	var req struct {
 		Id int `json:"id"`
+		// Sync adds every upstream model the channel does not have yet (see syncUpstreamModels);
+		// without it the check flags new models and adds them only under auto add.
+		Sync bool `json:"sync"`
 	}
 	_ = c.ShouldBindJSON(&req)
 
@@ -381,12 +412,17 @@ func CheckModelDrift(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			return
 		}
-		syncDriftModels(channel, result)
+		var added []string
+		if req.Sync {
+			added = syncUpstreamModels(channel, result)
+		} else {
+			added = syncDriftModels(channel, result)
+		}
 		if err := channel.UpdateModelDrift(*result); err != nil {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": result})
+		c.JSON(http.StatusOK, gin.H{"success": true, "message": "", "data": result, "added": added})
 		return
 	}
 

@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Cache writes Venice reports under `prompt_tokens_details.cache_creation_input_tokens` are
   billed as cache writes. The brand icons move to `@lobehub/icons-static-svg` 1.104.0 for
   Venice's mark.
+- A "Sync models" button on a channel's models tab, in place of "Check again": it reads the
+  upstream list, adds every model the channel lacks and opens its lines by the intake rules
+  whether or not the channel adds new models automatically, so a channel added with a short list
+  gets the rest in one click. Lines that cost more than the price wait for confirmation, models
+  an admin removed stay out, and models the upstream dropped are still only marked. "Sync
+  prices" stays a separate button.
 - Cheaper Inference channels. Chat completions, responses and embeddings use its OpenAI
   compatible API; Claude format requests go to its Messages endpoint as they are, keeping the
   client's cache breakpoints. OpenAI format requests ask it to add cache breakpoints

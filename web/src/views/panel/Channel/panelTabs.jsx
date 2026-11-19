@@ -865,10 +865,10 @@ function ModelsBody({ object: channel, draft, setDraft, ctx }) {
                   icon={RefreshCw}
                   className={GROUPED}
                   busy={Boolean(ctx.busy?.drift)}
-                  onClick={() => ctx.actions?.onCheckDrift(channel)}
-                  title={t('channels.models.checkHint')}
+                  onClick={() => ctx.actions?.onSyncModels(channel)}
+                  title={t('channels.models.syncHint')}
                 >
-                  {t('channels.models.check')}
+                  {t('channels.models.sync')}
                 </ToolButton>
               )}
               {hasUpstreamPriceList(channel.type) && (

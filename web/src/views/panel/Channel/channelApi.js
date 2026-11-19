@@ -242,8 +242,8 @@ export async function checkChannelModel(id, model) {
 // ModelDriftResult `{ checked_at, missing_models, ok }`; omit `id` for a full
 // sweep of enabled channels, returning a summary `{ checked, drifted, channels }`.
 // Returns raw `{ success, message, data }` so callers can branch/toast.
-export async function checkChannelDrift(id) {
-  const res = await API.post('/api/channel/check_drift', id ? { id } : {});
+export async function checkChannelDrift(id, { sync = false } = {}) {
+  const res = await API.post('/api/channel/check_drift', id ? { id, ...(sync ? { sync: true } : {}) } : {});
   return res.data;
 }
 
