@@ -57,7 +57,9 @@ const REWRITE_RULES = [
   { from: '/api/token', to: '/token' }, // tokens CRUD → /api/org/:id/token*
   { from: '/api/log/self', to: '/logs' }, // self logs (+/stat,/export) → /api/org/:id/logs*
   { from: '/api/user/topup', to: '/topup' }, // redemption topup → /api/org/:id/topup
-  { from: '/api/user/order', to: '/order' } // payment orders (+/status) → /api/org/:id/order*
+  { from: '/api/user/order', to: '/order' }, // payment orders (+/status) → /api/org/:id/order*
+  // model catalog → the organization's group, narrowed like its keys (ORG-17)
+  { from: '/api/available_model', to: '/available_model' }
 ];
 
 // True when `url` starts with `prefix` at a path-segment boundary.

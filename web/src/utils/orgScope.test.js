@@ -23,6 +23,9 @@ const cases = [
   ['/api/user/topup', '/api/org/5/topup'],
   ['/api/user/order', '/api/org/5/order'],
   ['/api/user/order/status', '/api/org/5/order/status'],
+  // model catalog → the organization's catalog (ORG-17); pickers ask for the approved layer
+  ['/api/available_model', '/api/org/5/available_model'],
+  ['/api/available_model?layer=approved', '/api/org/5/available_model?layer=approved'],
   // untouched personal/global endpoints
   ['/api/user/self', '/api/user/self'],
   ['/api/status', '/api/status'],
@@ -32,7 +35,6 @@ const cases = [
   ['/api/org/invitations/accept', '/api/org/invitations/accept'],
   ['/api/org/5/members', '/api/org/5/members'],
   ['/api/org/5/audit_logs?page=1', '/api/org/5/audit_logs?page=1'],
-  ['/api/available_model', '/api/available_model'],
   // T10 adapted-page endpoints — must never be rewritten
   ['/api/user/payment', '/api/user/payment'], // global payment methods (TopupCard)
   ['/api/user/dashboard', '/api/user/dashboard'], // personal dashboard (org view uses /api/org/:id/analytics)

@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Sheet, SheetBody, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ActionCard, FormCard } from '@/components/settings/cards';
 import ModelAccessField, { accessPayload, accessValueFrom } from '@/components/model/ModelAccessField';
-import ModelLimitSelector, { toLimitModels } from 'views/panel/Token/ModelLimitSelector';
+import ModelLimitSelector, { APPROVED_MODELS_URL, toLimitModels } from 'views/panel/Token/ModelLimitSelector';
 import { API } from 'utils/api';
 import { showError, showSuccess } from 'utils/common';
 
@@ -183,7 +183,7 @@ export default function ModelAccessPage({ orgId }) {
   useEffect(() => {
     setData(null);
     load();
-    API.get('/api/available_model')
+    API.get(APPROVED_MODELS_URL)
       .then((res) => setModels(res.data.success ? toLimitModels(res.data.data) : []))
       .catch(() => setModels([]));
   }, [load]);

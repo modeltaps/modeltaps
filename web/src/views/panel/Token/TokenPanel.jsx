@@ -16,7 +16,7 @@ import { ObjectPanel, ObjectTile } from '@/components/objects';
 import { API } from 'utils/api';
 import { useOrg } from 'contexts/OrgContext';
 import { isPlaygroundToken } from 'utils/playgroundToken';
-import { toLimitModels } from './ModelLimitSelector';
+import { APPROVED_MODELS_URL, toLimitModels } from './ModelLimitSelector';
 import { buildTokenActions } from './TokenTable';
 import { TOKEN_TABS } from './tokenTabs';
 import { fetchToken, saveToken } from './tokenData';
@@ -84,7 +84,7 @@ export default function TokenPanel({
   const loadModels = useMemo(() => {
     let cached;
     return () => {
-      cached ||= API.get('/api/available_model')
+      cached ||= API.get(APPROVED_MODELS_URL)
         .then((res) => (res.data.success ? toLimitModels(res.data.data) : []))
         .catch(() => []);
       return cached;

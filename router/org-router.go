@@ -49,6 +49,8 @@ func setOrgRouter(apiRouter *gin.RouterGroup) {
 
 			// Model access (ORG-15): read-only view of the approved models, default, member layer and lists
 			orgMemberRoute.GET("/model_access", controller.GetOrgModelAccess)
+			// The catalog of the organization workbench, narrowed like its keys are (ORG-17)
+			orgMemberRoute.GET("/available_model", relay.OrgAvailableModel)
 
 			// 组织日志与用量(T6):Member 受可见性策略约束(开关关闭时仅可见自己)
 			orgMemberRoute.GET("/logs", controller.GetOrgLogs)

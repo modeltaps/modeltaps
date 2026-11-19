@@ -7,6 +7,7 @@ import (
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/logger"
 	"github.com/modeltaps/modeltaps/common/utils"
+	"github.com/modeltaps/modeltaps/middleware"
 	"github.com/modeltaps/modeltaps/model"
 	"github.com/modeltaps/modeltaps/providers/azureSpeech"
 	"github.com/modeltaps/modeltaps/providers/claude"
@@ -612,6 +613,67 @@ func AvailableModel(c *gin.Context) {
 	// the Playground key can call.
 	if userId := c.GetInt("id"); userId > 0 && config.UserRoutingPolicyEnabled {
 		appendOwnRoutingPolicyAvailableModels(models, model.PersonalRoutingScope(userId), groupName)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "",
+		"data":    models,
+	})
+}
+
+// orgAvailableModelLayerApproved asks OrgAvailableModel for the approved models only, without the
+// caller's member layer: model pickers of organization admins, whose choices for the organization
+// default, another member or another member's key may go beyond the admin's own layer.
+const orgAvailableModelLayerApproved = "approved"
+
+// cacheGetUserGroupFn reads the group of the organization's shadow account; a variable for tests.
+var cacheGetUserGroupFn = model.CacheGetUserGroup
+
+// OrgAvailableModel is the model catalog of an organization's workbench (ORG-17): the models of the
+// organization's group, plus the organization's own routing policies, narrowed like the
+// organization's keys are (the caller's member layer, then the approved models), so that the
+// catalog matches /v1/models of an organization key. Fails closed when the narrowing cannot be
+// loaded.
+func OrgAvailableModel(c *gin.Context) {
+	org := c.MustGet(middleware.OrgContextKey).(*model.Organization)
+	groupName, err := cacheGetUserGroupFn(org.ShadowUserId)
+	if err != nil {
+		logger.SysError(fmt.Sprintf("failed to load the group of organization %d for its model list: %s", org.Id, err.Error()))
+		common.AbortWithMessage(c, http.StatusServiceUnavailable, errOrgGuardrailUnavailable.Error())
+		return
+	}
+	guardrail, err := cacheGetOrgMemberGuardrailFn(org.ShadowUserId, c.GetInt("id"))
+	if err != nil {
+		logger.SysError(fmt.Sprintf("failed to load org member guardrail for the catalog (org=%d, member=%d): %s", org.Id, c.GetInt("id"), err.Error()))
+		common.AbortWithMessage(c, http.StatusServiceUnavailable, errOrgGuardrailUnavailable.Error())
+		return
+	}
+
+	models := getAvailableModels(groupName)
+	scope := model.OrganizationRoutingScope(org.Id)
+	if config.UserRoutingPolicyEnabled {
+		appendOwnRoutingPolicyAvailableModels(models, scope, groupName)
+	}
+
+	narrowing := *guardrail
+	if c.Query("layer") == orgAvailableModelLayerApproved {
+		narrowing.ModelWhitelist = nil
+	}
+	names := make([]string, 0, len(models))
+	for name := range models {
+		names = append(names, name)
+	}
+	kept := make(map[string]bool, len(names))
+	for _, name := range narrowing.FilterModels(names, 0, func(name string) bool {
+		return model.ResolveRoutingPolicy(scope, name) != nil
+	}) {
+		kept[name] = true
+	}
+	for name := range models {
+		if !kept[name] {
+			delete(models, name)
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{

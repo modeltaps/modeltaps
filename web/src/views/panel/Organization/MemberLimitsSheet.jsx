@@ -11,7 +11,7 @@ import QuotaInput from '@/components/QuotaInput';
 import { API } from 'utils/api';
 import { renderSpend, showError, showSuccess } from 'utils/common';
 import ModelAccessField, { accessPayload, accessValueFrom } from '@/components/model/ModelAccessField';
-import { toLimitModels } from '../Token/ModelLimitSelector';
+import { APPROVED_MODELS_URL, toLimitModels } from '../Token/ModelLimitSelector';
 
 // ==============================|| ORGANIZATION — MEMBER BUDGET & MODEL WHITELIST (T5) ||============================== //
 // Sheet editor for org_members.setting: periodic budget (daily/weekly/monthly,
@@ -45,7 +45,7 @@ export default function MemberLimitsSheet({ open, onOpenChange, orgId, member, o
     setLoading(true);
     Promise.all([
       API.get(`/api/org/${orgId}/members/${member.user_id}/limits`),
-      API.get('/api/available_model'),
+      API.get(APPROVED_MODELS_URL),
       API.get(`/api/org/${orgId}/model_access`, { params: { user_id: member.user_id } })
     ])
       .then(([limitsRes, modelsRes, accessRes]) => {

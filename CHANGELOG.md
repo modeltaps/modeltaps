@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The model catalog of an organization workbench (models, playground, API keys) now lists the
+  models of the organization's group narrowed like its keys: by the member's model access and the
+  approved models the site admin set. It used to list the personal catalog, with models the
+  organization's keys cannot call. Model pickers of organization admins offer the approved models.
 - Vercel AI Gateway models hosted by several providers were priced at the one provider price the
   gateway lists, sometimes a small host far below the vendor's (Qwen3.8 27B at $0.06 input, where
   Alibaba charges $0.50); the gateway routes such models to a provider of its choosing and bills

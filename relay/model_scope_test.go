@@ -225,3 +225,145 @@ func TestCheckLimitModel_NotAllowedIsModelNotFound(t *testing.T) {
 		t.Fatalf("白名单内的模型应放行: %v", err)
 	}
 }
+
+// stubUserGroup makes group the organization's group and lists the models of group "g" of
+// setupProtocolModelGroup in the catalog index (the fixture fills the routing rules only), with
+// empty prices.
+func stubUserGroup(t *testing.T, group string) {
+	t.Helper()
+	prevModelGroup := model.ChannelGroup.ModelGroup
+	model.ChannelGroup.ModelGroup = map[string]map[string]bool{}
+	for name := range model.ChannelGroup.Rule["g"] {
+		model.ChannelGroup.ModelGroup[name] = map[string]bool{"g": true}
+	}
+	prevPricing := model.PricingInstance
+	model.PricingInstance = &model.Pricing{Match: []string{}, Prices: map[string]*model.Price{}}
+	t.Cleanup(func() {
+		model.ChannelGroup.ModelGroup = prevModelGroup
+		model.PricingInstance = prevPricing
+	})
+	orig := cacheGetUserGroupFn
+	cacheGetUserGroupFn = func(int) (string, error) { return group, nil }
+	t.Cleanup(func() { cacheGetUserGroupFn = orig })
+}
+
+// callOrgAvailableModel calls the organization catalog as member 5 of the organization whose
+// shadow account is 100 and returns the model names, or the status when it is not 200.
+func callOrgAvailableModel(t *testing.T, query string) ([]string, int) {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/org/1/available_model"+query, nil)
+	c.Set("org", &model.Organization{Id: 1, ShadowUserId: 100})
+	c.Set("id", 5)
+	OrgAvailableModel(c)
+	if rec.Code != http.StatusOK {
+		return nil, rec.Code
+	}
+	var resp struct {
+		Data map[string]json.RawMessage `json:"data"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatal(err)
+	}
+	names := make([]string, 0, len(resp.Data))
+	for name := range resp.Data {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names, rec.Code
+}
+
+// The organization catalog (ORG-17) uses the organization's group and is narrowed like the
+// organization's keys: the same models as /v1/models of an organization key of the same member.
+func TestOrgAvailableModel_MatchesOrgKeyModelList(t *testing.T) {
+	defer setupProtocolModelGroup(t)()
+	setEnforceHidden(t, false)
+	stubUserGroup(t, "g")
+	var loaded []int
+	stubOrgGuardrail(t, func(shadowUserId, memberUserId int) (*model.OrgMemberGuardrail, error) {
+		loaded = append(loaded, shadowUserId, memberUserId)
+		return &model.OrgMemberGuardrail{
+			OrganizationId: 1,
+			ModelWhitelist: []string{"openai-only", "gemini-model"},
+			ApprovedModels: []string{"openai-*", "gemini-model", "claude-model"},
+		}, nil
+	})
+
+	got, status := callOrgAvailableModel(t, "")
+	if status != http.StatusOK {
+		t.Fatalf("status = %d", status)
+	}
+	if want := []string{"gemini-model", "openai-only"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("catalog = %v, want %v", got, want)
+	}
+	if !reflect.DeepEqual(loaded, []int{100, 5}) {
+		t.Fatalf("guardrail loaded for %v, want shadow 100 and member 5", loaded)
+	}
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodGet, "/v1/models", nil)
+	c.Set("token_group", "g")
+	c.Set("id", 100)
+	c.Set("token_created_by", 5)
+	ListModelsByToken(c)
+	var keyResp struct {
+		Data []OpenAIModels `json:"data"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &keyResp); err != nil {
+		t.Fatal(err)
+	}
+	keyModels := make([]string, 0, len(keyResp.Data))
+	for _, m := range keyResp.Data {
+		keyModels = append(keyModels, m.Id)
+	}
+	sort.Strings(keyModels)
+	if !reflect.DeepEqual(got, keyModels) {
+		t.Fatalf("catalog %v differs from /v1/models of an organization key %v", got, keyModels)
+	}
+}
+
+// Pickers of organization admins ask for the approved models only: the caller's member layer does
+// not narrow them, the approved models still do.
+func TestOrgAvailableModel_ApprovedLayer(t *testing.T) {
+	defer setupProtocolModelGroup(t)()
+	setEnforceHidden(t, false)
+	stubUserGroup(t, "g")
+	stubOrgGuardrail(t, func(int, int) (*model.OrgMemberGuardrail, error) {
+		return &model.OrgMemberGuardrail{
+			OrganizationId: 1,
+			ModelWhitelist: []string{"openai-only"},
+			ApprovedModels: []string{"openai-*", "gemini-model", "claude-model"},
+		}, nil
+	})
+
+	got, status := callOrgAvailableModel(t, "?layer=approved")
+	if status != http.StatusOK {
+		t.Fatalf("status = %d", status)
+	}
+	if want := []string{"claude-model", "gemini-model", "openai-only"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("approved layer = %v, want %v", got, want)
+	}
+
+	// No approved models and no member layer: every model of the group.
+	stubOrgGuardrail(t, func(int, int) (*model.OrgMemberGuardrail, error) {
+		return &model.OrgMemberGuardrail{OrganizationId: 1}, nil
+	})
+	got, _ = callOrgAvailableModel(t, "")
+	if want := []string{"claude-model", "gemini-model", "openai-only", "openrouter-model"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("unrestricted = %v, want %v", got, want)
+	}
+}
+
+// The catalog fails closed when the narrowing cannot be loaded.
+func TestOrgAvailableModel_GuardrailFailClosed(t *testing.T) {
+	defer setupProtocolModelGroup(t)()
+	stubUserGroup(t, "g")
+	stubOrgGuardrail(t, func(int, int) (*model.OrgMemberGuardrail, error) {
+		return nil, errors.New("db down")
+	})
+	if _, status := callOrgAvailableModel(t, ""); status != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want 503", status)
+	}
+}

@@ -14,6 +14,11 @@ import { allowlistCovers, filterPermitted, isPattern } from 'utils/modelAllowlis
 // releases of the family are allowed without editing the list; it must stay inside the parents too.
 
 // Catalog rows from GET /api/available_model ({ [id]: { owned_by, vendor, groups, price } }).
+// Candidates of the model pickers. In an organization this is rewritten to the organization's
+// catalog, and `layer=approved` keeps it to the approved models without the caller's own member
+// layer, since an admin picks for the organization default, other members and their keys (ORG-17).
+export const APPROVED_MODELS_URL = '/api/available_model?layer=approved';
+
 export function toLimitModels(data) {
   return Object.keys(data || {}).map((id) => {
     const row = data[id] || {};
