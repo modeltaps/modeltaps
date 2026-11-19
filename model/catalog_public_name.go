@@ -212,3 +212,67 @@ func KeepChannelPricedOrMissing(prices []*Price) []*Price {
 	}
 	return kept
 }
+
+// SuppliedPublicPrices prices public models that only supplies tie to a platform spelling. A
+// public model an admin created for an upstream name the catalog does not know (an uncensored
+// variant on one platform) has no public name the resolver could find, so PublicNamePrices makes
+// no copy for it and its price would never follow the platform's list. groups holds the synced
+// prices of each channel type in channelTypes, in the same order and priority as PublicNamePrices
+// takes them; have are the prices already being written. For each supply on a channel of one of
+// those types whose public model is not among have, the price of its upstream name is copied
+// under the public model, the type of highest priority first, then the smaller upstream name.
+// A public model priced by another list, the official table or an admin is left alone.
+func SuppliedPublicPrices(channelTypes []int, groups [][]*Price, have []*Price) ([]*Price, error) {
+	taken := make(map[string]bool, len(have))
+	for _, p := range have {
+		if p != nil {
+			taken[p.Model] = true
+		}
+	}
+	type row struct {
+		Model         string
+		UpstreamModel string
+	}
+	var out []*Price
+	for rank, channelType := range channelTypes {
+		if rank >= len(groups) || len(groups[rank]) == 0 {
+			continue
+		}
+		byUpstream := make(map[string]*Price, len(groups[rank]))
+		for _, p := range groups[rank] {
+			if p != nil && byUpstream[p.Model] == nil {
+				byUpstream[p.Model] = p
+			}
+		}
+		var rows []row
+		err := DB.Table("model_supplies").
+			Select("model_supplies.model AS model, model_supplies.upstream_model AS upstream_model").
+			Joins("JOIN channels ON channels.id = model_supplies.channel_id").
+			Where("channels.type = ?", channelType).
+			Order("model_supplies.model, model_supplies.upstream_model").
+			Scan(&rows).Error
+		if err != nil {
+			return nil, err
+		}
+		for _, r := range rows {
+			if r.Model == "" || r.Model == r.UpstreamModel || taken[r.Model] || strings.Contains(r.UpstreamModel, "*") {
+				continue
+			}
+			price := byUpstream[r.UpstreamModel]
+			if price == nil {
+				continue
+			}
+			// Only a public model with no price yet, or one this platform's list priced before:
+			// a price from another list, the official table or an admin is not replaced here.
+			if existing, ok := PricingInstance.priceSnapshot(r.Model); ok && existing.ChannelType != channelType {
+				continue
+			}
+			taken[r.Model] = true
+			copied := *price
+			copied.Model = r.Model
+			copied.ModelInfo = nil
+			out = append(out, &copied)
+		}
+	}
+	return out, nil
+}

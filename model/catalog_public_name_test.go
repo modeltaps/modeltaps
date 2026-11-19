@@ -345,3 +345,44 @@ func TestSyncCatalogChannelModelsKeepsChannelSourced(t *testing.T) {
 		t.Error("a row was created under the platform spelling")
 	}
 }
+
+// A public model an admin created for an upstream name the catalog does not know follows that
+// name's price through its supply; a model priced by another list or officially keeps its price.
+func TestSuppliedPublicPrices(t *testing.T) {
+	usePreviewTestDB(t)
+	venice := Channel{Name: "venice", Type: config.ChannelTypeVenice, Status: config.ChannelStatusEnabled}
+	if err := DB.Create(&venice).Error; err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range []ModelSupply{
+		{Model: "ds-uncensored", ChannelId: venice.Id, UpstreamModel: "deepseek-x-uncensored", Enabled: true},
+		{Model: "official-model", ChannelId: venice.Id, UpstreamModel: "venice-official", Enabled: true},
+		{Model: "already", ChannelId: venice.Id, UpstreamModel: "venice-already", Enabled: true},
+		{Model: "same", ChannelId: venice.Id, UpstreamModel: "same", Enabled: true},
+	} {
+		if err := DB.Create(&s).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	oldPricing := PricingInstance
+	PricingInstance = &Pricing{Prices: map[string]*Price{
+		"official-model": {Model: "official-model", ChannelType: config.ChannelTypeOpenAI, Input: 9, Output: 9},
+		"ds-uncensored":  {Model: "ds-uncensored", ChannelType: config.ChannelTypeVenice, Input: 1, Output: 1},
+	}}
+	t.Cleanup(func() { PricingInstance = oldPricing })
+
+	group := []*Price{
+		{Model: "deepseek-x-uncensored", ChannelType: config.ChannelTypeVenice, Input: 0.165, Output: 0.66},
+		{Model: "venice-official", ChannelType: config.ChannelTypeVenice, Input: 2, Output: 2},
+		{Model: "venice-already", ChannelType: config.ChannelTypeVenice, Input: 3, Output: 3},
+		{Model: "same", ChannelType: config.ChannelTypeVenice, Input: 4, Output: 4},
+	}
+	have := append([]*Price{{Model: "already", Input: 3, Output: 3}}, group...)
+	got, err := SuppliedPublicPrices([]int{config.ChannelTypeVercelAIGateway, config.ChannelTypeVenice}, [][]*Price{nil, group}, have)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].Model != "ds-uncensored" || got[0].Input != 0.165 || got[0].Output != 0.66 {
+		t.Fatalf("got %+v, want only ds-uncensored at the Venice price", got)
+	}
+}

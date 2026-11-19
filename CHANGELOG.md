@@ -25,6 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gets the rest in one click. Lines that cost more than the price wait for confirmation, models
   an admin removed stay out, and models the upstream dropped are still only marked. "Sync
   prices" stays a separate button.
+
+### Fixed
+
+- A public model created for an upstream name the catalog does not know (say an uncensored
+  variant one platform lists) now follows that platform's price: price syncs copy the price of
+  the upstream name its supply sends to the public model. Before, its price was set once by hand
+  and never updated. A public model priced by another list, the official table or an admin keeps
+  its price.
 - Cheaper Inference channels. Chat completions, responses and embeddings use its OpenAI
   compatible API; Claude format requests go to its Messages endpoint as they are, keeping the
   client's cache breakpoints. OpenAI format requests ask it to add cache breakpoints

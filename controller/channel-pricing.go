@@ -233,6 +233,16 @@ func SyncAllChannelsOwnPricing() (int, error) {
 	synced := len(list)
 
 	list = append(list, model.KeepChannelPricedOrMissing(model.PublicNamePrices(resolver, priceGroups))...)
+	// Public models only a supply ties to a platform spelling follow that spelling's price too.
+	types := make([]int, len(ownPricingChannelTypes))
+	for i, t := range ownPricingChannelTypes {
+		types[i] = t.channelType
+	}
+	if supplied, err := model.SuppliedPublicPrices(types, priceGroups, list); err != nil {
+		logger.SysError("channel price sync: supplied public model prices failed: " + err.Error())
+	} else {
+		list = append(list, model.KeepChannelPricedOrMissing(supplied)...)
+	}
 	// Some lists also use the vendor's own spelling ("claude-fable-5" on Requesty), at the
 	// platform's marked-up price; models in the built-in official table keep the official price.
 	list = model.WithOfficialPrices(list)
@@ -351,9 +361,18 @@ func SyncChannelPricing(c *gin.Context) {
 	resolver, err := model.NewCanonicalResolver()
 	if err != nil {
 		logger.SysError("channel price sync: load catalog failed: " + err.Error())
-	} else if copies := model.KeepChannelPricedOrMissing(model.PublicNamePrices(resolver, [][]*model.Price{written})); len(copies) > 0 {
-		if err := model.PricingInstance.UpsertPrices(copies); err != nil {
-			logger.SysError("channel price sync: public name prices failed: " + err.Error())
+	} else {
+		copies := model.KeepChannelPricedOrMissing(model.PublicNamePrices(resolver, [][]*model.Price{written}))
+		// Public models only a supply ties to a platform spelling follow that spelling's price too.
+		if supplied, err := model.SuppliedPublicPrices([]int{channel.Type}, [][]*model.Price{written}, append(append([]*model.Price{}, written...), copies...)); err != nil {
+			logger.SysError("channel price sync: supplied public model prices failed: " + err.Error())
+		} else {
+			copies = append(copies, model.KeepChannelPricedOrMissing(supplied)...)
+		}
+		if len(copies) > 0 {
+			if err := model.PricingInstance.UpsertPrices(copies); err != nil {
+				logger.SysError("channel price sync: public name prices failed: " + err.Error())
+			}
 		}
 	}
 
