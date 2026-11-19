@@ -4771,6 +4771,7 @@
     "unit_image": "張",
     "unit_request": "次",
     "unit_second": "秒",
+    "hostOrder": "按順序嘗試的託管商：{{order}}；價格為第一家的",
     "sell": "本站基礎售價（入 / 出，$/M）",
     "via": "價格取自 {{via}}，不是平台自己的介面",
     "syncedAt": "{{time}} 讀取",

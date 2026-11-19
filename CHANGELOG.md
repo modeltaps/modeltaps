@@ -38,6 +38,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   success rate** (`SupplyCostMinSuccessPercent`, default 95%, at least 20 attempts) is ordered as
   if its cost were unknown until it recovers. The Supplies tab marks such a supply **Low success
   rate**.
+- Vercel AI Gateway requests for models hosted by several providers now carry an order of hosts
+  (`providerOptions.gateway.order`), worked out at price sync: the vendor's own hosting first, then
+  hosts that are serving, up at least the minimum success rate over the last day, full precision,
+  long enough, caching when the vendor caches and priced no lower than 30% of the vendor, cheapest
+  first; with cost first, hosts cheaper than the vendor by the minimum saving go ahead of it.
+  Vercel still fails over past the order. The channel price is the first host's, and the price
+  details show the order. Models whose vendor Vercel does not list keep Vercel's own routing.
 
 ### Fixed
 

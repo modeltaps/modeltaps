@@ -4754,6 +4754,7 @@
     "unit_image": "枚",
     "unit_request": "回",
     "unit_second": "秒",
+    "hostOrder": "試すホストの順序：{{order}}。価格は先頭のホストのもの",
     "sell": "当サイトの基本価格（入力 / 出力、$/M）",
     "via": "価格は {{via}} から取得（プラットフォーム自体の API ではありません）",
     "syncedAt": "{{time}} 取得",

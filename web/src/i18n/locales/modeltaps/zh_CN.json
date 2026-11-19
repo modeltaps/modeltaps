@@ -4771,6 +4771,7 @@
     "unit_image": "张",
     "unit_request": "次",
     "unit_second": "秒",
+    "hostOrder": "按顺序尝试的托管商：{{order}}；价格为第一家的",
     "sell": "本站基础售价（入 / 出，$/M）",
     "via": "价格取自 {{via}}，不是平台自己的接口",
     "syncedAt": "{{time}} 读取",

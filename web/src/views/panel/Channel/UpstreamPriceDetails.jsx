@@ -127,6 +127,10 @@ export default function UpstreamPriceDetails({
 
         <div className="space-y-1.5 border-t border-border pt-2 text-muted-foreground">
           {price.via && <p>{t('upstreamPrice.via', { via: price.via })}</p>}
+          {/* The hosts a gateway is asked to try for the model, first one priced above. */}
+          {price.provider_order && (
+            <p data-testid="upstream-host-order">{t('upstreamPrice.hostOrder', { order: price.provider_order.split(',').join(' → ') })}</p>
+          )}
           {price.synced_at > 0 && <p>{t('upstreamPrice.syncedAt', { time: timestamp2string(price.synced_at) })}</p>}
           {price.page_url ? (
             <a

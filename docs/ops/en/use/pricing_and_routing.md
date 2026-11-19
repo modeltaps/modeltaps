@@ -76,6 +76,16 @@ Record your real top-ups under **Channels → Advanced → Top-up records**: the
 
 The model's Supplies tab shows the order requests will try. A backup that waits only because it is dearer is marked **Dearer — backup only**; a cheaper supply held back by its success rate is marked **Low success rate**.
 
+### Hosts inside a gateway (Vercel AI Gateway)
+
+On Vercel AI Gateway many open models are hosted by several providers at different prices and quality. Left alone, Vercel picks one per request by its own priority and recent health and bills that provider's price, so neither the cost nor what answers is known in advance. For such a model the price sync reads every host and orders them, and every request carries that order (`providerOptions.gateway.order`):
+
+1. The vendor's own hosting first (Alibaba for Qwen, Z.ai for GLM).
+2. Other hosts must qualify: serving, up at least the **minimum success rate** over the last day, full precision, a context no shorter than the model's, prompt caching when the vendor caches, and a price no lower than 30% of the vendor's. Qualifying hosts follow, cheapest first.
+3. With **cost first**, qualifying hosts cheaper than the vendor by the **minimum saving** go ahead of it. A vendor that is down or up too little goes after the qualifying hosts.
+
+When a host up the order is unavailable, Vercel still moves to the next, so requests do not fail for it. The channel's cost is the first host's price, and the price details list the order. A model whose vendor Vercel does not list is left to Vercel's routing at its listed price. The order is refreshed with the prices (at startup, daily, and when the channel is saved).
+
 ## The price check
 
 A supply whose cost is above what the site's normal price brings in loses money on every request it serves. The line is:

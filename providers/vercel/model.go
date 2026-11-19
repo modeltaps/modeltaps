@@ -4,11 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"net/url"
 	"slices"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/model"
@@ -29,6 +27,9 @@ type gatewayModel struct {
 	// Released 发布时间、Created 上架时间（Unix 秒）；发布时间缺失时退回上架时间。
 	Released int64 `json:"released"`
 	Created  int64 `json:"created"`
+	// hostOrder is the order of hosting providers the channel asks for (planHosts); the token
+	// prices above are then the first one's.
+	hostOrder []string
 }
 
 type modelPricing struct {
@@ -46,7 +47,7 @@ type modelPricing struct {
 	VideoDuration []videoSecondPrice `json:"video_duration_pricing"`
 	// VariesByProvider says the model is hosted by several providers at different prices and the
 	// prices above are only the cheapest ("Prices from"); the gateway may bill another one. The
-	// per-provider prices are at /v1/models/{id}/endpoints (see representativePricing).
+	// per-provider prices are at /v1/models/{id}/endpoints (see hosts.go).
 	VariesByProvider bool `json:"varies_by_provider"`
 	// fields counts every key the gateway sent, including the kinds read nowhere above (speech
 	// seconds, realtime sessions, video tokens), so a model priced only that way is told apart
@@ -100,116 +101,6 @@ func (p *VercelProvider) fetchModels() (*modelListResponse, error) {
 	if errWithCode != nil {
 		return nil, errors.New(errWithCode.Message)
 	}
-	return resp, nil
-}
-
-// endpointPricing is one hosting provider's price for a model, from /v1/models/{id}/endpoints,
-// in USD per token.
-type endpointPricing struct {
-	Prompt          string `json:"prompt"`
-	Completion      string `json:"completion"`
-	InputCacheRead  string `json:"input_cache_read"`
-	InputCacheWrite string `json:"input_cache_write"`
-}
-
-type modelEndpoint struct {
-	ProviderName string          `json:"provider_name"`
-	Pricing      endpointPricing `json:"pricing"`
-}
-
-type modelEndpointsResponse struct {
-	Data struct {
-		Endpoints []modelEndpoint `json:"endpoints"`
-	} `json:"data"`
-}
-
-// firstPartyAliases maps a model id's vendor prefix to the provider name the gateway gives the
-// vendor's own hosting when the two differ.
-var firstPartyAliases = map[string]string{"spacexai": "xai"}
-
-// representativePricing picks the price to use for a model hosted by several providers: the
-// vendor's own hosting when the gateway lists it (zai for "zai/glm-5.3"). The gateway routes such
-// a model to a provider of its choosing by priority and recent health and bills that provider's
-// price, so the listed price is only one of them, sometimes a small host far below the vendor's
-// (wafer at $0.06 for Qwen3.8 27B, where Alibaba charges $0.50). The vendor's own price is the
-// one a catalog price should rest on, and the safer channel cost. ok is false when the vendor does
-// not host the model there: the listed price is kept, as no other provider is a better guess.
-func representativePricing(id string, endpoints []modelEndpoint) (endpointPricing, bool) {
-	vendor, _, _ := strings.Cut(id, "/")
-	if alias, ok := firstPartyAliases[vendor]; ok {
-		vendor = alias
-	}
-	for _, e := range endpoints {
-		if !strings.EqualFold(e.ProviderName, vendor) {
-			continue
-		}
-		if parseUSD(e.Pricing.Prompt) == 0 && parseUSD(e.Pricing.Completion) == 0 {
-			return endpointPricing{}, false
-		}
-		return e.Pricing, true
-	}
-	return endpointPricing{}, false
-}
-
-// applyEndpointPricing replaces a model's token prices with the provider's.
-func applyEndpointPricing(m *gatewayModel, e endpointPricing) {
-	m.Pricing.Input, m.Pricing.Output = e.Prompt, e.Completion
-	m.Pricing.InputCacheRead, m.Pricing.InputCacheWrite = e.InputCacheRead, e.InputCacheWrite
-}
-
-// endpointFetchWorkers bounds the concurrent /endpoints requests of one price sync.
-const endpointFetchWorkers = 8
-
-func (p *VercelProvider) fetchEndpoints(id string) ([]modelEndpoint, error) {
-	path := p.Config.ModelList + "/" + (&url.URL{Path: id}).EscapedPath() + "/endpoints"
-	req, err := p.Requester.NewRequest(http.MethodGet, p.GetFullRequestURL(path, ""), p.Requester.WithHeader(p.GetRequestHeaders()))
-	if err != nil {
-		return nil, errors.New("new_request_failed")
-	}
-	resp := &modelEndpointsResponse{}
-	if _, errWithCode := p.Requester.SendRequest(req, resp, false); errWithCode != nil {
-		return nil, errors.New(errWithCode.Message)
-	}
-	return resp.Data.Endpoints, nil
-}
-
-// fetchPricedModels is fetchModels with the token prices of models hosted by several providers
-// replaced by the vendor's own hosting's when the gateway lists it (representativePricing). A
-// model whose endpoints cannot be read keeps the listed price.
-func (p *VercelProvider) fetchPricedModels() (*modelListResponse, error) {
-	resp, err := p.fetchModels()
-	if err != nil {
-		return nil, err
-	}
-	var varied []int
-	for i, m := range resp.Data {
-		if m.Id != "" && m.Pricing.VariesByProvider && m.Type != "transcription" {
-			varied = append(varied, i)
-		}
-	}
-	jobs := make(chan int)
-	var wg sync.WaitGroup
-	for w := 0; w < endpointFetchWorkers && w < len(varied); w++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for i := range jobs {
-				m := &resp.Data[i]
-				endpoints, err := p.fetchEndpoints(m.Id)
-				if err != nil {
-					continue
-				}
-				if e, ok := representativePricing(m.Id, endpoints); ok {
-					applyEndpointPricing(m, e)
-				}
-			}
-		}()
-	}
-	for _, i := range varied {
-		jobs <- i
-	}
-	close(jobs)
-	wg.Wait()
 	return resp, nil
 }
 
@@ -406,7 +297,8 @@ func buildModelInfos(resp *modelListResponse) []*model.ModelInfo {
 
 // GetChannelPrices implements base.ChannelPriceListInterface: the prices the gateway lists for
 // every model, in USD, for the channel's own price list; a model hosted by several providers at
-// different prices gets the vendor's own hosting's price when listed (fetchPricedModels).
+// different prices gets the price of the first host the channel asks for, and that order
+// (fetchPricedModels).
 func (p *VercelProvider) GetChannelPrices() ([]*model.ChannelPrice, error) {
 	resp, err := p.fetchPricedModels()
 	if err != nil {
@@ -440,6 +332,9 @@ func buildChannelPrices(resp *modelListResponse) []*model.ChannelPrice {
 			VideoSecond: lowestVideoSecond(pr.VideoDuration),
 			AudioSecond: parseUSD(pr.TranscriptionSecond) + parseUSD(pr.SpeechOutputSecond),
 			Kind:        model.ModelKindFromUpstreamType(m.Type),
+		}
+		if len(m.hostOrder) > 0 {
+			price.ProviderOrder = strings.Join(m.hostOrder, ",")
 		}
 		// Speech-to-text billed by audio length lists a nominal token price ("0" or 1e-10) next
 		// to it; that is not the bill, so only the per-second price is kept.

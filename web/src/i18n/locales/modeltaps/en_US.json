@@ -4872,6 +4872,7 @@
     "unit_image": "image",
     "unit_request": "request",
     "unit_second": "second",
+    "hostOrder": "Hosts tried in order: {{order}}; the price is the first one's",
     "sell": "Our base price (in / out, $/M)",
     "via": "Prices read from {{via}}, not from the platform itself",
     "syncedAt": "Read {{time}}",

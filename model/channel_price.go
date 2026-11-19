@@ -34,8 +34,12 @@ type ChannelPrice struct {
 	Other bool `json:"other,omitempty"`
 	// Kind is the model kind the upstream's own list states (ModelKind*; "" for a language model
 	// or when the list does not say). The channel panel tags non-chat models with it.
-	Kind     string `json:"kind,omitempty" gorm:"type:varchar(16);default:''"`
-	SyncedAt int64  `json:"synced_at,omitempty"`
+	Kind string `json:"kind,omitempty" gorm:"type:varchar(16);default:''"`
+	// ProviderOrder is the comma-separated order of hosting providers the channel asks the
+	// upstream to try for the model, for gateways that route one model to several hosts (Vercel
+	// AI Gateway); the prices above are the first one's. "" leaves the choice to the upstream.
+	ProviderOrder string `json:"provider_order,omitempty" gorm:"type:varchar(512);default:''"`
+	SyncedAt      int64  `json:"synced_at,omitempty"`
 
 	// Where the price comes from and where to check it, filled in by DescribeChannelPrices for
 	// the console; not stored.

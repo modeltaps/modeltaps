@@ -25,6 +25,7 @@ func (p *VercelProvider) claudeProvider() *claude.ClaudeProvider {
 	provider := &claude.ClaudeProvider{BaseProvider: p.BaseProvider, BearerAuth: true}
 	provider.Config = getClaudeConfig()
 	provider.Requester = requester.NewHTTPRequester(p.Channel.GetProxy(), claude.RequestErrorHandle)
+	provider.Requester.RequestHook = p.Requester.RequestHook
 	return provider
 }
 
