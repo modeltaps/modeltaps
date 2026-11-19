@@ -58,6 +58,20 @@ export default function PluginForm({ type, value, onChange, notes }) {
                   </SelectContent>
                 </Select>
               </FormField>
+            ) : param.type === 'percent' ? (
+              <FormField key={paramId} row label={configText(t, param.name)} help={configText(t, param.description)}>
+                <Input
+                  type="number"
+                  min="0"
+                  max="99.99"
+                  step="0.01"
+                  inputMode="decimal"
+                  placeholder="0"
+                  className="tabular-nums"
+                  value={plugin[pluginId]?.[paramId] ?? ''}
+                  onChange={(e) => setParam(pluginId, paramId, e.target.value)}
+                />
+              </FormField>
             ) : (
               <FormField key={paramId} label={configText(t, param.name)} help={configText(t, param.description)}>
                 <Input value={plugin[pluginId]?.[paramId] ?? ''} onChange={(e) => setParam(pluginId, paramId, e.target.value)} />

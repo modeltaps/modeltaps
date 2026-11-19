@@ -359,6 +359,30 @@ const pluginConfig = {
           ]
         }
       }
+    },
+    // Routing fields the backend writes into every inference request body, over any client value.
+    cheaperinference_routing: {
+      name: `${P}.cheaperInferenceRouting.name`,
+      description: `${P}.cheaperInferenceRouting.description`,
+      params: {
+        zdr: {
+          name: `${P}.cheaperInferenceRouting.zdr.name`,
+          description: `${P}.cheaperInferenceRouting.zdr.description`,
+          type: 'select',
+          default: 'off',
+          required: false,
+          options: [
+            { value: 'off', label: `${P}.cheaperInferenceRouting.zdr.off` },
+            { value: 'on', label: `${P}.cheaperInferenceRouting.zdr.on` }
+          ]
+        },
+        min_discount_percent: {
+          name: `${P}.cheaperInferenceRouting.minDiscount.name`,
+          description: `${P}.cheaperInferenceRouting.minDiscount.description`,
+          type: 'percent',
+          required: false
+        }
+      }
     }
   }
 };

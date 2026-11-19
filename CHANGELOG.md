@@ -34,6 +34,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   whose chat and completions streams carry no charge, are looked up afterwards by request id
   (`/v1/usage/requests`, batched every 20 seconds per account, needs the `usage:read` scope) and
   fill the upstream cost where the response left none.
+- Cheaper Inference channels can require zero data retention and a minimum discount (channel
+  plugin settings). Both are written into every chat, completions, responses and Claude format
+  request right before it is sent, over any value from the client or the channel's custom
+  parameters, so a ZDR channel cannot be talked out of it. A ZDR channel fetches models and
+  syncs prices from the ZDR list; a minimum discount leaves out of fetch models the text models
+  whose price does not clear it, since their requests fail instead of falling back. Upstream
+  requesters gain a hook that runs on every request right before it is sent.
 
 ## [0.5.0] - 2026-11-19
 

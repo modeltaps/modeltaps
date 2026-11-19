@@ -31,6 +31,7 @@ func (p *CheaperInferenceProvider) claudeProvider() *claude.ClaudeProvider {
 	// id, which SetContext put on the original one; the id is what the charge is looked up by.
 	provider.Requester.Context = p.Requester.Context
 	provider.Requester.ResponseHook = p.Requester.ResponseHook
+	provider.Requester.RequestHook = p.Requester.RequestHook
 	return provider
 }
 

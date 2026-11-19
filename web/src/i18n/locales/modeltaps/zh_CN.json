@@ -1328,6 +1328,20 @@
         "passthrough": "原样",
         "off": "关"
       }
+    },
+    "cheaperInferenceRouting": {
+      "name": "Cheaper Inference 路由",
+      "description": "写进每个 chat、completions、responses 和 Claude 格式请求，覆盖客户端自己带的值。embeddings 不支持这两项。",
+      "zdr": {
+        "name": "零数据保留（ZDR）",
+        "description": "开：只由不保留提示和回复的服务商承接，按 ZDR 价格计费，不走市场和未验证的卖家。没有这类服务商的模型直接报错、不回退；拉取模型和同步价格改用 ZDR 列表和价格。",
+        "off": "关",
+        "on": "开"
+      },
+      "minDiscount": {
+        "name": "最低折扣（%）",
+        "description": "只用比厂商标价至少便宜这么多的线路，账单也按这个价封顶。没有这类线路的模型直接报错、不回退；拉取模型时略过达不到的模型。留空表示不限。"
+      }
     }
   },
   "paymentConfig": {

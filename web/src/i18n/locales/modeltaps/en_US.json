@@ -1343,6 +1343,20 @@
         "passthrough": "As sent",
         "off": "Off"
       }
+    },
+    "cheaperInferenceRouting": {
+      "name": "Cheaper Inference routing",
+      "description": "Written into every chat, completions, responses and Claude format request, over any value the client sends. Embeddings take neither.",
+      "zdr": {
+        "name": "Zero data retention (ZDR)",
+        "description": "On: only providers that keep no prompts or responses serve the channel, at the ZDR price; the marketplace and unverified sellers are left out. A model with no such provider fails instead of falling back, and fetch models and price sync use the ZDR list and prices.",
+        "off": "Off",
+        "on": "On"
+      },
+      "minDiscount": {
+        "name": "Minimum discount (%)",
+        "description": "Only supply at least this far under the lab's list price serves the channel, and the bill is capped at that rate. A model without such supply fails instead of falling back; fetch models leaves out the models below it. Empty: no minimum."
+      }
     }
   },
   "paymentConfig": {

@@ -32,6 +32,9 @@ type HTTPRequester struct {
 	// ResponseHook 在收到上游响应后、错误状态判定前调用（成功与失败响应都触发），
 	// 用于统一采集上游响应头（如 request-id）。为 nil 时跳过。
 	ResponseHook func(*http.Response)
+	// RequestHook runs on every request right before it is sent, after the body is final, so a
+	// provider can enforce fields no other layer may override. An error stops the request.
+	RequestHook func(*http.Request) error
 	// PublicOnly refuses to connect to addresses that are not public (loopback, private,
 	// link-local and other reserved ranges), checked when dialing. Set it when the target comes
 	// from someone who must not reach the gateway's internal network (see GetModelList).
@@ -51,6 +54,11 @@ func (r *HTTPRequester) do(req *http.Request) (*http.Response, *types.OpenAIErro
 		client, err = newPublicOnlyClient(r.proxyAddr)
 		if err != nil {
 			return nil, common.ErrorWrapper(err, "http_request_failed", http.StatusInternalServerError)
+		}
+	}
+	if r.RequestHook != nil {
+		if err := r.RequestHook(req); err != nil {
+			return nil, common.ErrorWrapper(err, "request_hook_failed", http.StatusInternalServerError)
 		}
 	}
 	resp, err := client.Do(req)

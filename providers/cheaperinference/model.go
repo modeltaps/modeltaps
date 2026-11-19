@@ -40,6 +40,8 @@ type publicModel struct {
 	Features           []string `json:"features"`
 	IsVisible          *bool    `json:"is_visible"`
 	SupportedEndpoints []string `json:"supported_endpoints"`
+	DiscountPercent    string   `json:"discount_percent"`
+	ReferenceInput     *string  `json:"reference_input_per_million"`
 }
 
 type publicModelList struct {
@@ -64,11 +66,16 @@ func usdPtr(s *string) float64 {
 
 // fetchModels reads the public catalog. It takes no key, so prices keep syncing while the
 // channel's key is wrong or expired. Marketplace-only models are left out of it; they can still
-// be added to a channel by hand.
+// be added to a channel by hand. A ZDR channel reads the ZDR view: only the models a zdr request
+// can be served for, at the price such a request pays.
 func (p *CheaperInferenceProvider) fetchModels() ([]publicModel, error) {
 	headers := p.GetRequestHeaders()
 	delete(headers, "Authorization")
-	req, err := p.Requester.NewRequest(http.MethodGet, p.GetFullRequestURL("/public/models", ""), p.Requester.WithHeader(headers))
+	path := "/public/models"
+	if p.routing.zdr {
+		path += "?zdr=true"
+	}
+	req, err := p.Requester.NewRequest(http.MethodGet, p.GetFullRequestURL(path, ""), p.Requester.WithHeader(headers))
 	if err != nil {
 		return nil, errors.New("new_request_failed")
 	}
@@ -101,13 +108,36 @@ func hidden(m publicModel) bool {
 	return m.IsVisible != nil && !*m.IsVisible
 }
 
+// clearsDiscount reports whether a model's current price is at least minDiscount percent under
+// its list price; a model without a list price fails such a request (list_price_unknown).
+func clearsDiscount(m publicModel, minDiscount float64) bool {
+	if minDiscount <= 0 {
+		return true
+	}
+	if usdPtr(m.ReferenceInput) <= 0 {
+		return false
+	}
+	d, err := strconv.ParseFloat(strings.TrimSpace(m.DiscountPercent), 64)
+	return err == nil && d >= minDiscount
+}
+
 // defaultModels is what "fetch models" adds: the visible text and embedding models, without the
-// batch variants. Other kinds keep a channel price, so one added by hand is priced.
-func defaultModels(models []publicModel) []publicModel {
+// batch variants and, on a channel with a minimum discount, without the models whose price does
+// not clear it (their requests would fail). Embeddings take no routing fields, so the minimum
+// discount does not apply to them. Other kinds keep a channel price, so one added by hand is
+// priced.
+func (p *CheaperInferenceProvider) defaultModels(models []publicModel) []publicModel {
+	return defaultModels(models, p.routing.minDiscount)
+}
+
+func defaultModels(models []publicModel, minDiscount float64) []publicModel {
 	out := make([]publicModel, 0, len(models))
 	seen := map[string]bool{}
 	for _, m := range models {
 		if m.Id == "" || hidden(m) || batch(m) || (m.Type != "text" && m.Type != "embedding") {
+			continue
+		}
+		if m.Type == "text" && !clearsDiscount(m, minDiscount) {
 			continue
 		}
 		if name := listedName(m); !seen[name] {
@@ -125,7 +155,7 @@ func (p *CheaperInferenceProvider) GetModelList() ([]string, error) {
 		return nil, err
 	}
 	list := []string{}
-	for _, m := range defaultModels(models) {
+	for _, m := range p.defaultModels(models) {
 		list = append(list, listedName(m))
 	}
 	return list, nil
@@ -144,7 +174,7 @@ func (p *CheaperInferenceProvider) GetModelPriceSync() ([]*model.Price, []model.
 	if err != nil {
 		return nil, nil, err
 	}
-	prices, unconvertible := buildPriceSync(defaultModels(models))
+	prices, unconvertible := buildPriceSync(p.defaultModels(models))
 	return prices, unconvertible, nil
 }
 
@@ -195,7 +225,7 @@ func (p *CheaperInferenceProvider) GetModelInfoList() ([]*model.ModelInfo, error
 	if err != nil {
 		return nil, err
 	}
-	return buildModelInfos(defaultModels(models)), nil
+	return buildModelInfos(p.defaultModels(models)), nil
 }
 
 func hasFeature(m publicModel, f string) bool {

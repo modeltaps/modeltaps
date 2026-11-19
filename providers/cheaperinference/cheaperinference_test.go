@@ -41,7 +41,7 @@ func sampleModels(t *testing.T) []publicModel {
 
 func TestDefaultModelsUseVendorAliases(t *testing.T) {
 	var got []string
-	for _, m := range defaultModels(sampleModels(t)) {
+	for _, m := range defaultModels(sampleModels(t), 0) {
 		got = append(got, listedName(m))
 	}
 	// Batch variants and non-text kinds are left out; a model with an alias is listed under it,
@@ -53,7 +53,7 @@ func TestDefaultModelsUseVendorAliases(t *testing.T) {
 }
 
 func TestPriceSync(t *testing.T) {
-	prices, unconvertible := buildPriceSync(defaultModels(sampleModels(t)))
+	prices, unconvertible := buildPriceSync(defaultModels(sampleModels(t), 0))
 	byName := map[string]*model.Price{}
 	for _, p := range prices {
 		byName[p.Model] = p

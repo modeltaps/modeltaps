@@ -40,18 +40,21 @@ func (f CheaperInferenceProviderFactory) Create(channel *model.Channel) base.Pro
 	if manageKey == "" {
 		manageKey = channel.Key
 	}
+	req := requester.NewHTTPRequester(channel.GetProxy(), RequestErrorHandle)
+	req.RequestHook = routingHook(channel)
 	return &CheaperInferenceProvider{
 		OpenAIProvider: openai.OpenAIProvider{
 			BaseProvider: base.BaseProvider{
 				Config:         getConfig(),
 				Channel:        channel,
-				Requester:      requester.NewHTTPRequester(channel.GetProxy(), RequestErrorHandle),
+				Requester:      req,
 				DefaultHeaders: openAIHeaders(channel),
 			},
 			ReasoningHandler:     true,
 			SupportStreamOptions: true,
 		},
 		manageKey: manageKey,
+		routing:   routingOf(channel),
 	}
 }
 
@@ -73,6 +76,7 @@ func getConfig() base.ProviderConfig {
 type CheaperInferenceProvider struct {
 	openai.OpenAIProvider
 	manageKey string
+	routing   routing
 }
 
 // RequestErrorHandle parses the errors of the OpenAI endpoints, which use OpenAI's error object.
@@ -90,13 +94,9 @@ const (
 // turn; a cache read costs a tenth of input and a write a quarter more, so one long prompt sent
 // once costs 25% more and every repeated one far less.
 func promptCacheMode(channel *model.Channel) string {
-	if channel != nil && channel.Plugin != nil {
-		if opts, ok := channel.Plugin.Data()["cheaperinference"]; ok {
-			switch mode, _ := opts["prompt_cache"].(string); mode {
-			case "passthrough", "off":
-				return mode
-			}
-		}
+	switch mode, _ := pluginOptions(channel, "cheaperinference")["prompt_cache"].(string); mode {
+	case "passthrough", "off":
+		return mode
 	}
 	return "on"
 }
