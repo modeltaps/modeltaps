@@ -71,6 +71,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - DeepInfra, Novita, Hugging Face, Chutes, Cerebras and SambaNova channels sync prices from the
   platform's own public model list instead of models.dev, and the channel panel shows and refreshes
   the upstream price list for every provider that keeps one.
+- Prices are checked against what upstreams really billed. Every hour the last three days of
+  upstream charges are compared with the expected cost from the price list: per model from the
+  costs OpenRouter reports per request, and per account from the daily bills of OpenAI, Anthropic
+  and OpenRouter channels with a management key. A difference of 10% or more (at least 10 requests
+  and $0.10) opens an **Upstream charges** alert on the channel, linked to its Performance tab,
+  and sends a price change notice; the alert closes once the costs match again.
+- Official price dates: when a scheduled official price change takes effect, or a price ends
+  without a published successor, admins get an alert under **Official price dates** and the price
+  lists are fetched again at once. `gpt-5.6-sol` (and `gpt-5.6`) keep their promotional price,
+  which OpenAI offers until 2026-11-30; from 2026-12-01 the alert asks to check the vendor's page.
 - New 404, crash and "new version available" screens: status code, one-line explanation, the
   requested address and a way out, each with a short scene in the style of the home page. The crash
   screen tells a stale bundle after a redeploy apart from a real error.
@@ -203,6 +213,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   vulnerabilities.
 - On MySQL and PostgreSQL, startup makes `users.email` nullable again when it was changed to NOT
   NULL by hand, instead of failing.
+- Web and docs dependencies are upgraded or pinned past the known advisories (zod, axios, vite,
+  follow-redirects, source-map-js, fast-uri, markdown-it, undici and others); `pnpm audit` is
+  clean.
 - Gemini: when an assistant message held two or more of the gateway's image markers, the text
   after them was sent more than once; it is sent once.
 
