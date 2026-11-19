@@ -110,6 +110,26 @@ func createRootAccountIfNeed() error {
 		if err := DB.Create(&rootUser).Error; err != nil {
 			return err
 		}
+		return seedFreshInstallOptions()
+	}
+	return nil
+}
+
+// freshInstallOptions are the options a new installation starts with where they differ from the
+// defaults existing installations keep: those may still route by the channels' model lists and
+// switch over through the settings page, which migrates them first.
+var freshInstallOptions = map[string]string{
+	"ModelSupplyEnabled": "true",
+}
+
+// seedFreshInstallOptions saves freshInstallOptions. It runs once, when the first user is created,
+// before the options are loaded, so the saved rows take effect at this start.
+func seedFreshInstallOptions() error {
+	for key, value := range freshInstallOptions {
+		option := Option{Key: key}
+		if err := DB.Where(Option{Key: key}).Attrs(Option{Value: value}).FirstOrCreate(&option).Error; err != nil {
+			return fmt.Errorf("seed option %s: %w", key, err)
+		}
 	}
 	return nil
 }

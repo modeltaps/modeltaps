@@ -21,7 +21,7 @@ func setupRootTestDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("打开内存数据库失败: %v", err)
 	}
-	if err := testDB.AutoMigrate(&User{}); err != nil {
+	if err := testDB.AutoMigrate(&User{}, &Option{}); err != nil {
 		t.Fatalf("迁移测试表失败: %v", err)
 	}
 	oldDB := DB
@@ -219,5 +219,35 @@ func TestCreateRootAccountLegacyRootKept(t *testing.T) {
 	DB.Model(&User{}).Where("username = ?", "admin").Count(&adminCount)
 	if adminCount != 0 {
 		t.Fatal("已有 root 时不应再种 admin")
+	}
+}
+
+func TestFreshInstallRoutesBySupplies(t *testing.T) {
+	setupRootTestDB(t)
+	viper.Set("root_password", "")
+	if err := createRootAccountIfNeed(); err != nil {
+		t.Fatalf("createRootAccountIfNeed: %v", err)
+	}
+	var option Option
+	if err := DB.Where("key = ?", "ModelSupplyEnabled").First(&option).Error; err != nil {
+		t.Fatalf("a new installation must save ModelSupplyEnabled: %v", err)
+	}
+	if option.Value != "true" {
+		t.Fatalf("ModelSupplyEnabled = %q, want true", option.Value)
+	}
+}
+
+func TestExistingInstallKeepsChannelRouting(t *testing.T) {
+	setupRootTestDB(t)
+	if err := DB.Create(&User{Username: "someone", Password: "x", Role: config.RoleCommonUser}).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := createRootAccountIfNeed(); err != nil {
+		t.Fatalf("createRootAccountIfNeed: %v", err)
+	}
+	var count int64
+	DB.Model(&Option{}).Where("key = ?", "ModelSupplyEnabled").Count(&count)
+	if count != 0 {
+		t.Fatal("an installation with users must keep its routing setting")
 	}
 }
