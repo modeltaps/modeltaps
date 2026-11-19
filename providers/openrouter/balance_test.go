@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/modeltaps/modeltaps/common"
 	"github.com/modeltaps/modeltaps/common/config"
 	"github.com/modeltaps/modeltaps/common/requester"
 	"github.com/modeltaps/modeltaps/model"
@@ -21,12 +23,22 @@ func setupBalanceTestDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open in-memory database: %v", err)
 	}
+	// Every connection to ":memory:" opens a database of its own: keep one, so goroutines the
+	// test starts (the generation lookup) see the tables it created.
+	sqlDB, err := testDB.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	sqlDB.SetMaxOpenConns(1)
 	if err := testDB.AutoMigrate(&model.Channel{}); err != nil {
 		t.Fatalf("migrate channels: %v", err)
 	}
 	oldDB := model.DB
 	model.DB = testDB
-	t.Cleanup(func() { model.DB = oldDB })
+	t.Cleanup(func() {
+		common.WaitTrackedGoroutines(10 * time.Second)
+		model.DB = oldDB
+	})
 }
 
 func newBalanceTestProvider(t *testing.T, body string) (*OpenRouterProvider, *string, *string) {

@@ -21,9 +21,7 @@ func serverPort(t *testing.T, s *httptest.Server) uint16 {
 // allowOnlyPort 仅放行指定回环端口，模拟「该测试服务器是公网地址」。
 func allowOnlyPort(t *testing.T, port uint16) {
 	t.Helper()
-	orig := allowAddr
-	allowAddr = func(ap netip.AddrPort) bool { return ap.Port() == port }
-	t.Cleanup(func() { allowAddr = orig })
+	t.Cleanup(SetAllowAddrForTest(func(ap netip.AddrPort) bool { return ap.Port() == port }))
 }
 
 func TestIsPublicAddr(t *testing.T) {

@@ -13,6 +13,7 @@ import (
 	"net/netip"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 )
@@ -52,8 +53,17 @@ type Result struct {
 	Body        []byte
 }
 
+// allowAddrOverride replaces the dial rule in tests (to let httptest's loopback through). It is
+// atomic because requests a test started may still dial while the test restores the rule.
+var allowAddrOverride atomic.Pointer[func(netip.AddrPort) bool]
+
 // allowAddr 判断拨号目标是否放行；测试可替换以放行 httptest 的回环地址。
-var allowAddr = func(addr netip.AddrPort) bool { return IsPublicAddr(addr.Addr()) }
+func allowAddr(addr netip.AddrPort) bool {
+	if f := allowAddrOverride.Load(); f != nil {
+		return (*f)(addr)
+	}
+	return IsPublicAddr(addr.Addr())
+}
 
 // Fetch 以 GET 抓取 rawURL，非 2xx 状态返回错误。
 func Fetch(ctx context.Context, rawURL string, opts Options) (*Result, error) {
@@ -213,7 +223,6 @@ func GuardedDialer(timeout time.Duration) *net.Dialer {
 
 // SetAllowAddrForTest 替换地址放行规则（测试用，放行 httptest 的回环地址），返回恢复函数。
 func SetAllowAddrForTest(f func(netip.AddrPort) bool) (restore func()) {
-	orig := allowAddr
-	allowAddr = f
-	return func() { allowAddr = orig }
+	orig := allowAddrOverride.Swap(&f)
+	return func() { allowAddrOverride.Store(orig) }
 }
